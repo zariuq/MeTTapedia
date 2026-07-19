@@ -51,6 +51,7 @@ open Mettapedia.OSLF.Framework.DerivedTyping
 open Mettapedia.OSLF.Framework.TypeSynthesis
 open Mettapedia.OSLF.NativeType
 open Mettapedia.OSLF.MeTTaIL.Engine
+open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open CategoryTheory
 
 private def internalGrammarRule
@@ -464,7 +465,8 @@ def embedSPresentPattern : Pattern :=
 -- Compiled-code regression: EmbedS reduction fires
 #eval do
   let ok := embeddedActivePattern ∈
-    rewriteWithContextWithPremises paperLangKR embedSPresentPattern
+    rewriteAt (engineBasePremises RelationEnv.empty) paperLangKR 1
+      embedSPresentPattern
   if ok then IO.println "PASS: EmbedS(present) reduces to ⊛embedded(clause)"
   else IO.println "FAIL: EmbedS(present) reduction"
 

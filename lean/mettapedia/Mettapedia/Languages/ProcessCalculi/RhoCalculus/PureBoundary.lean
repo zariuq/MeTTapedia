@@ -9,11 +9,11 @@ The strict rho grammar is derived from `rhoReflectivePresentation`.  Its
 parallel constructor is a bag, so a derived rho process cannot contain the
 finite-set constructor used by the optional lookahead extension.
 
-The older low-level reduction relation is defined on the larger shared
-`Pattern` carrier and therefore has contextual constructors for sets.  The
-theorems below show that those constructors are unreachable from derived pure
-rho syntax: semantic COMM substitution and low-level reduction preserve the
-`hashSet`-free fragment.
+The representation-level structural congruence is defined on the larger shared
+`Pattern` carrier and includes equations for the optional finite-set syntax.
+The theorems below show that those equations cannot cross the pure boundary:
+syntax derived from the rho presentation, semantic COMM substitution, and
+low-level COMM/PAR/EQUIV reduction all remain in the `hashSet`-free fragment.
 -/
 
 namespace Mettapedia.Languages.ProcessCalculi.RhoCalculus.PureBoundary
@@ -260,8 +260,8 @@ theorem hashSetFree_semanticCommSubst
 
 /-! ## The ambient low-level relation is conservative on pure syntax -/
 
-/-- Low-level reduction cannot leave the pure carrier.  The set-context cases
-are impossible because their sources are not `hashSet`-free. -/
+/-- Low-level COMM/PAR/EQUIV reduction cannot leave the pure carrier.
+Representation-level equivalence cannot cross the `hashSet` boundary. -/
 theorem hashSetFree_of_reduces :
     ∀ {source target : Pattern}, Reduces source target →
       HashSetFree source → HashSetFree target
@@ -288,11 +288,6 @@ theorem hashSetFree_of_reduces :
       refine ⟨sourceFree.1.1, ?_⟩
       simp only [HashSetFreeList] at sourceFree ⊢
       exact ⟨hashSetFree_of_reduces reduction sourceFree.1.2.1, trivial⟩
-  | _, _, .par_set _, sourceFree => by
-      simp only [HashSetFree] at sourceFree
-  | _, _, .par_set_any _, sourceFree => by
-      simp only [HashSetFree] at sourceFree
-
 /-- A reduction beginning at syntax derived from the authored rho
 presentation remains inside the paper carrier. -/
 theorem rhoReduces_from_derived_stays_pure

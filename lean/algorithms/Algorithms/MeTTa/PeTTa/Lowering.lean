@@ -81,7 +81,6 @@ def toLanguageDef (cfg : FrozenPeTTaConfig) : LanguageDef := {
   terms := []
   equations := []
   rewrites := mkRulesAux 0 cfg.rules
-  congruenceCollections := []
 }
 
 /-! ## Lowering No-Loss Contracts -/
@@ -153,6 +152,7 @@ def toSpecBundle (cfg : FrozenPeTTaConfig) : SpecBundle := {
   builtins := builtinsOfConfig cfg
   policy := {
     maxFuel := cfg.maxSteps
+    maxContextDepth := cfg.maxSteps
     normalizeToFixedPoint := false
   }
 }

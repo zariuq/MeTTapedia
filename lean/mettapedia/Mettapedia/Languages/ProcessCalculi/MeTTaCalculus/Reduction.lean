@@ -2,6 +2,7 @@ import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.StructuralCongruence
 import Mettapedia.Languages.ProcessCalculi.MeTTaCalculus.RelationNames
 import Mettapedia.OSLF.MeTTaIL.Match
 import Mettapedia.OSLF.MeTTaIL.Engine
+import Mettapedia.OSLF.MeTTaIL.ContextualStep
 import Mettapedia.Languages.ProcessCalculi.Common.Common
 import Mathlib.Data.Finset.Basic
 
@@ -30,6 +31,7 @@ namespace Mettapedia.Languages.ProcessCalculi.MeTTaCalculus
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Match
 open Mettapedia.OSLF.MeTTaIL.Engine
+open Mettapedia.OSLF.MeTTaIL.ContextualStep
 
 /-! ## Unification and dot-substitution -/
 
@@ -138,8 +140,12 @@ private def commOnlyRelEnv : RelationEnv where
   tuples := fun rel args =>
     if rel == relMettaComm then mettaCommTuplesFromBuiltin args else []
 
+/-- Explicit contextual-depth bound for the executable frontier.  The
+unbounded semantics remains `ContextualStep.Step`. -/
+def executableContextFuel : Nat := 64
+
 def commOnlyStep (p : Proc) : List Proc :=
-  rewriteWithContextWithPremisesUsing commOnlyRelEnv mettaCalcCommOnly p
+  reductsUsing commOnlyRelEnv mettaCalcCommOnly executableContextFuel p
 
 /-- Runtime adapter for premise builtin `mettaCommOnlyStep`. -/
 def mettaCommOnlyStepBuiltinMany : List Pattern → List Pattern
@@ -177,7 +183,7 @@ def mettaCalcRelEnv : RelationEnv where
       []
 
 def step (p : Proc) : List Proc :=
-  rewriteWithContextWithPremisesUsing mettaCalcRelEnv mettaCalc p
+  reductsUsing mettaCalcRelEnv mettaCalc executableContextFuel p
 
 /-- Canonicalized one-step results (duplicate-insensitive view). -/
 def stepCanonical (p : Proc) : Finset Proc := (step p).toFinset

@@ -268,24 +268,12 @@ structure RewriteRule where
   right : Pattern
 deriving Repr, DecidableEq, BEq
 
-structure CongruenceCollection where
-  collectionType : CollType
-deriving Repr, DecidableEq, BEq
-
 structure LanguageDef where
   name : String
   types : List String
   terms : List GrammarRule
   equations : List Equation
   rewrites : List RewriteRule
-  congruenceCollections : List CongruenceCollection
 deriving Repr
-
-namespace LanguageDef
-
-def allowsCongruenceIn (lang : LanguageDef) (ct : CollType) : Bool :=
-  (lang.congruenceCollections.any (fun c => c.collectionType == ct))
-
-end LanguageDef
 
 end MeTTailCore.MeTTaIL.Syntax

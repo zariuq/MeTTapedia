@@ -1,5 +1,6 @@
 import Mettapedia.OSLF.MeTTaIL.Syntax
 import Mettapedia.OSLF.MeTTaIL.Engine
+import Mettapedia.OSLF.MeTTaIL.ContextualStep
 import Mettapedia.OSLF.Framework.TypeSynthesis
 import Mettapedia.Languages.MeTTa.OSLFCore.Premises
 
@@ -23,6 +24,7 @@ namespace Mettapedia.Languages.MeTTa.OSLFCore.FullLanguageDef
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Engine
+open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open Mettapedia.OSLF.Framework.TypeSynthesis
 
 /-- Legacy full-oriented MeTTa machine language slice.
@@ -360,21 +362,21 @@ abbrev mettaFullRelEnv : RelationEnv := mettaFullLegacyRelEnv
 -- Smoke check: one equation-application step from Eval(true).
 #eval! do
   let s := mkState (iEval aTrue) space0 aFalse
-  let reducts := rewriteWithContextWithPremisesUsing mettaFullRelEnv mettaFull s
+  let reducts := reductsUsing mettaFullRelEnv mettaFull 1 s
   IO.println s!"MeTTaFull demo (eqnLookup true -> false): reduct count = {reducts.length}"
 
 -- Smoke check: two-step run (apply equation + return commit) to Done(false).
 #eval! do
   let s := mkState (iEval aTrue) space0 aFalse
-  let nf := fullRewriteToNormalFormWithPremisesUsing mettaFullRelEnv mettaFull s 8
+  let nf := normalizeFirstUsing mettaFullRelEnv mettaFull 1 8 s
   IO.println s!"MeTTaFull demo normal form: {nf}"
 
 -- Smoke check: unify hit and miss branches.
 #eval! do
   let hit := mkState (iUnify aTrue aTrue) space0 aFalse
   let miss := mkState (iUnify aTrue aFalse) space0 aFalse
-  let hitNF := fullRewriteToNormalFormWithPremisesUsing mettaFullRelEnv mettaFull hit 8
-  let missNF := fullRewriteToNormalFormWithPremisesUsing mettaFullRelEnv mettaFull miss 8
+  let hitNF := normalizeFirstUsing mettaFullRelEnv mettaFull 1 8 hit
+  let missNF := normalizeFirstUsing mettaFullRelEnv mettaFull 1 8 miss
   IO.println s!"MeTTaFull unify hit normal form: {hitNF}"
   IO.println s!"MeTTaFull unify miss normal form: {missNF}"
 
@@ -382,8 +384,8 @@ abbrev mettaFullRelEnv : RelationEnv := mettaFullLegacyRelEnv
 #eval! do
   let hit := mkState (iMatch aTrue aTrue) space0 aFalse
   let miss := mkState (iMatch aTrue aFalse) space0 aFalse
-  let hitNF := fullRewriteToNormalFormWithPremisesUsing mettaFullRelEnv mettaFull hit 8
-  let missNF := fullRewriteToNormalFormWithPremisesUsing mettaFullRelEnv mettaFull miss 8
+  let hitNF := normalizeFirstUsing mettaFullRelEnv mettaFull 1 8 hit
+  let missNF := normalizeFirstUsing mettaFullRelEnv mettaFull 1 8 miss
   IO.println s!"MeTTaFull match hit normal form: {hitNF}"
   IO.println s!"MeTTaFull match miss normal form: {missNF}"
 
@@ -391,8 +393,8 @@ abbrev mettaFullRelEnv : RelationEnv := mettaFullLegacyRelEnv
 #eval! do
   let hit := mkState (iChain aTrue aTrue) space0 aFalse
   let miss := mkState (iChain (.apply "AUnknown" []) aTrue) space0 aFalse
-  let hitNF := fullRewriteToNormalFormWithPremisesUsing mettaFullRelEnv mettaFull hit 8
-  let missNF := fullRewriteToNormalFormWithPremisesUsing mettaFullRelEnv mettaFull miss 8
+  let hitNF := normalizeFirstUsing mettaFullRelEnv mettaFull 1 8 hit
+  let missNF := normalizeFirstUsing mettaFullRelEnv mettaFull 1 8 miss
   IO.println s!"MeTTaFull chain hit normal form: {hitNF}"
   IO.println s!"MeTTaFull chain fallback normal form: {missNF}"
 
@@ -402,19 +404,19 @@ abbrev mettaFullRelEnv : RelationEnv := mettaFullLegacyRelEnv
   let tCheckMiss := mkState (iTypeCheck (.apply "AUnknown" []) (.apply "Bool" [])) space0 aFalse
   let castHit := mkState (iCast aTrue (.apply "Bool" [])) space0 aFalse
   let castMiss := mkState (iCast (.apply "AUnknown" []) (.apply "Bool" [])) space0 aFalse
-  IO.println s!"MeTTaFull typeOf hit: {fullRewriteToNormalFormWithPremisesUsing mettaFullRelEnv mettaFull tCheckHit 8}"
-  IO.println s!"MeTTaFull typeOf miss: {fullRewriteToNormalFormWithPremisesUsing mettaFullRelEnv mettaFull tCheckMiss 8}"
-  IO.println s!"MeTTaFull cast hit: {fullRewriteToNormalFormWithPremisesUsing mettaFullRelEnv mettaFull castHit 8}"
-  IO.println s!"MeTTaFull cast miss: {fullRewriteToNormalFormWithPremisesUsing mettaFullRelEnv mettaFull castMiss 8}"
+  IO.println s!"MeTTaFull typeOf hit: {normalizeFirstUsing mettaFullRelEnv mettaFull 1 8 tCheckHit}"
+  IO.println s!"MeTTaFull typeOf miss: {normalizeFirstUsing mettaFullRelEnv mettaFull 1 8 tCheckMiss}"
+  IO.println s!"MeTTaFull cast hit: {normalizeFirstUsing mettaFullRelEnv mettaFull 1 8 castHit}"
+  IO.println s!"MeTTaFull cast miss: {normalizeFirstUsing mettaFullRelEnv mettaFull 1 8 castMiss}"
 
 -- Smoke check: grounded boolean operations.
 #eval! do
   let gNot := mkState (iGrounded1 (.apply "not" []) aTrue) space0 aFalse
   let gAnd := mkState (iGrounded2 (.apply "and" []) aTrue aFalse) space0 aFalse
   let gMiss := mkState (iGrounded2 (.apply "unknownOp" []) aTrue aFalse) space0 aFalse
-  IO.println s!"MeTTaFull grounded not: {fullRewriteToNormalFormWithPremisesUsing mettaFullRelEnv mettaFull gNot 8}"
-  IO.println s!"MeTTaFull grounded and: {fullRewriteToNormalFormWithPremisesUsing mettaFullRelEnv mettaFull gAnd 8}"
-  IO.println s!"MeTTaFull grounded miss: {fullRewriteToNormalFormWithPremisesUsing mettaFullRelEnv mettaFull gMiss 8}"
+  IO.println s!"MeTTaFull grounded not: {normalizeFirstUsing mettaFullRelEnv mettaFull 1 8 gNot}"
+  IO.println s!"MeTTaFull grounded and: {normalizeFirstUsing mettaFullRelEnv mettaFull 1 8 gAnd}"
+  IO.println s!"MeTTaFull grounded miss: {normalizeFirstUsing mettaFullRelEnv mettaFull 1 8 gMiss}"
 
 -- Smoke check: grounded Int/String operations and cast conversion branches.
 #eval! do
@@ -429,13 +431,13 @@ abbrev mettaFullRelEnv : RelationEnv := mettaFullLegacyRelEnv
   let cBadStrToInt := mkState (iCast (gString "abc") (.apply "Int" [])) space0 aFalse
   let cBoolToStr := mkState (iCast aTrue (.apply "String" [])) space0 aFalse
   let cBadStrToBool := mkState (iCast (gString "maybe") (.apply "Bool" [])) space0 aFalse
-  IO.println s!"MeTTaFull grounded int plus: {fullRewriteToNormalFormWithPremisesUsing mettaFullRelEnv mettaFull gPlus 8}"
-  IO.println s!"MeTTaFull grounded string concat: {fullRewriteToNormalFormWithPremisesUsing mettaFullRelEnv mettaFull gConcat 8}"
-  IO.println s!"MeTTaFull grounded coded-string concat: {fullRewriteToNormalFormWithPremisesUsing mettaFullRelEnv mettaFull gConcatSpaced 8}"
-  IO.println s!"MeTTaFull cast string->int: {fullRewriteToNormalFormWithPremisesUsing mettaFullRelEnv mettaFull cStrToInt 8}"
-  IO.println s!"MeTTaFull cast invalid string->int: {fullRewriteToNormalFormWithPremisesUsing mettaFullRelEnv mettaFull cBadStrToInt 8}"
-  IO.println s!"MeTTaFull cast bool-symbol->string: {fullRewriteToNormalFormWithPremisesUsing mettaFullRelEnv mettaFull cBoolToStr 8}"
-  IO.println s!"MeTTaFull cast invalid string->bool: {fullRewriteToNormalFormWithPremisesUsing mettaFullRelEnv mettaFull cBadStrToBool 8}"
+  IO.println s!"MeTTaFull grounded int plus: {normalizeFirstUsing mettaFullRelEnv mettaFull 1 8 gPlus}"
+  IO.println s!"MeTTaFull grounded string concat: {normalizeFirstUsing mettaFullRelEnv mettaFull 1 8 gConcat}"
+  IO.println s!"MeTTaFull grounded coded-string concat: {normalizeFirstUsing mettaFullRelEnv mettaFull 1 8 gConcatSpaced}"
+  IO.println s!"MeTTaFull cast string->int: {normalizeFirstUsing mettaFullRelEnv mettaFull 1 8 cStrToInt}"
+  IO.println s!"MeTTaFull cast invalid string->int: {normalizeFirstUsing mettaFullRelEnv mettaFull 1 8 cBadStrToInt}"
+  IO.println s!"MeTTaFull cast bool-symbol->string: {normalizeFirstUsing mettaFullRelEnv mettaFull 1 8 cBoolToStr}"
+  IO.println s!"MeTTaFull cast invalid string->bool: {normalizeFirstUsing mettaFullRelEnv mettaFull 1 8 cBadStrToBool}"
 
 -- coded_string_concat_normalForm_shape moved to FullLanguageTests.lean
 -- (kernel reduction of `decide +kernel` is dramatically faster on imported definitions)

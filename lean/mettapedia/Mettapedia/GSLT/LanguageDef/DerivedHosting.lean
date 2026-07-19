@@ -64,7 +64,6 @@ def lfLanguageDef : LanguageDef :=
     }
     logic { }
     oracles { }
-    congruenceCollections { }
   }
 
 def lfOSLF : OSLFTypeSystem (langRewriteSystem lfLanguageDef "LFTerm") :=
@@ -133,7 +132,6 @@ def holLanguageDef : LanguageDef :=
     }
     logic { }
     oracles { }
-    congruenceCollections { }
   }
 
 def holOSLF : OSLFTypeSystem (langRewriteSystem holLanguageDef "HolTerm") :=

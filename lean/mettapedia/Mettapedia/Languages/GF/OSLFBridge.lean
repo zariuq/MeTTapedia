@@ -365,7 +365,7 @@ def gfFunsListToLanguageDef
     grammarName [] -- options
     ((allCats.eraseDups.map TypeDecl.plain) ++ extraTypes).eraseDups
     (termRules ++ extraTerms) eqRules rwRules
-    [.vec, .hashBag, .hashSet] [] [] []
+    [] [] []
 
 /-- Build an OSLF LanguageDef from a real GFCore GrammarSig.
     Categories are extracted from function declarations.
@@ -386,7 +386,7 @@ def gfSigToLanguageDef
     sig.grammar [] -- options
     ((allCats.eraseDups.map TypeDecl.plain) ++ extraTypes).eraseDups
     (termRules ++ extraTerms) eqRules rwRules
-    [.vec, .hashBag, .hashSet] [] [] []
+    [] [] []
 
 /-- Authoritative syntax-only `LanguageDef` from a literal GF function list.
     This is the real GF surface in the MeTTaIL DSL: categories + constructors,
@@ -413,7 +413,7 @@ private def equationSupportedBySig (sig : GrammarSig) (eqn : Equation) : Bool :=
   let baseLang := gfSemanticValidationSeed sig
   let testLang := LanguageDef.mk
     baseLang.name baseLang.options baseLang.types baseLang.terms
-    [eqn] baseLang.rewrites baseLang.congruenceCollections
+    [eqn] baseLang.rewrites
     baseLang.logic baseLang.oracles baseLang.reflectivePresentations
   LanguageDef.validate testLang = []
 
@@ -421,7 +421,7 @@ private def rewriteSupportedBySig (sig : GrammarSig) (rw : RewriteRule) : Bool :
   let baseLang := gfSemanticValidationSeed sig
   let testLang := LanguageDef.mk
     baseLang.name baseLang.options baseLang.types baseLang.terms
-    baseLang.equations [rw] baseLang.congruenceCollections
+    baseLang.equations [rw]
     baseLang.logic baseLang.oracles baseLang.reflectivePresentations
   LanguageDef.validate testLang = []
 
@@ -464,7 +464,7 @@ private def equationSupportedByList
   let baseLang := gfSemanticValidationSeedFromList grammarName funs
   let testLang := LanguageDef.mk
     baseLang.name baseLang.options baseLang.types baseLang.terms
-    [eqn] baseLang.rewrites baseLang.congruenceCollections
+    [eqn] baseLang.rewrites
     baseLang.logic baseLang.oracles baseLang.reflectivePresentations
   LanguageDef.validate testLang = []
 
@@ -473,7 +473,7 @@ private def rewriteSupportedByList
   let baseLang := gfSemanticValidationSeedFromList grammarName funs
   let testLang := LanguageDef.mk
     baseLang.name baseLang.options baseLang.types baseLang.terms
-    baseLang.equations [rw] baseLang.congruenceCollections
+    baseLang.equations [rw]
     baseLang.logic baseLang.oracles baseLang.reflectivePresentations
   LanguageDef.validate testLang = []
 
@@ -540,6 +540,7 @@ abbrev gfGrammar_galois := gfLegacyGrammar_galois
 -- ═══════════════════════════════════════════════════════════════════
 
 open Mettapedia.OSLF.MeTTaIL.Engine
+open Mettapedia.OSLF.MeTTaIL.ContextualStep
 
 /-- If `checkLangUsing` returns `.sat` on a real GF parse tree converted
     to a Pattern, then the formula's denotational semantics hold.
@@ -565,22 +566,27 @@ theorem gfCheckedExpr_diamond_of_reduces
   rw [langDiamond_spec]
   exact ⟨q, hReduce, hφ⟩
 
-/-- Executable reduction on a GF tree implies the declarative relation. -/
-theorem gfCheckedExpr_exec_implies_reduces
-    {lang : LanguageDef} {node : CheckedExpr} {q : Pattern}
-    (h : q ∈ rewriteWithContextWithPremises lang (gfCheckedExprToPattern node)) :
+/-- Membership in the bounded contextual compiler for a GF tree implies the
+least authored reduction relation. -/
+theorem gfCheckedExpr_mem_rewriteAt_implies_reduces
+    {lang : LanguageDef} {contextDepth : Nat}
+    {node : CheckedExpr} {q : Pattern}
+    (h : q ∈ rewriteAt (engineBasePremises RelationEnv.empty) lang contextDepth
+      (gfCheckedExprToPattern node)) :
     langReduces lang (gfCheckedExprToPattern node) q :=
   exec_to_langReducesUsing .empty lang
-    (show langReducesExecUsing .empty lang (gfCheckedExprToPattern node) q from h)
+    ⟨contextDepth, h⟩
 
 /-- Practical bridge: run the rewriter on a GF tree, check a predicate
     on the result, conclude ◇-satisfaction in the OSLF type system. -/
-theorem gfCheckedExpr_diamond_of_exec
-    {lang : LanguageDef}
+theorem gfCheckedExpr_diamond_of_rewriteAt
+    {lang : LanguageDef} {contextDepth : Nat}
     {φ : Pattern → Prop} {node : CheckedExpr} {q : Pattern}
-    (hExec : q ∈ rewriteWithContextWithPremises lang (gfCheckedExprToPattern node))
+    (hExec : q ∈ rewriteAt (engineBasePremises RelationEnv.empty) lang contextDepth
+      (gfCheckedExprToPattern node))
     (hφ : φ q) :
     langDiamond lang φ (gfCheckedExprToPattern node) :=
-  gfCheckedExpr_diamond_of_reduces (gfCheckedExpr_exec_implies_reduces hExec) hφ
+  gfCheckedExpr_diamond_of_reduces
+    (gfCheckedExpr_mem_rewriteAt_implies_reduces hExec) hφ
 
 end Mettapedia.Languages.GF.GFCoreOSLFBridge

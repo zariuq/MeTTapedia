@@ -53,7 +53,8 @@ theorem comm_only_step_adapter_spec (src : Proc) :
 
 /-- Step semantics viewed explicitly as “rewrite + premise contract runtime”. -/
 def stepViaPremiseContract (p : Proc) : List Proc :=
-  Mettapedia.OSLF.MeTTaIL.Engine.rewriteWithContextWithPremisesUsing mettaCalcRelEnv mettaCalc p
+  Mettapedia.OSLF.MeTTaIL.ContextualStep.reductsUsing
+    mettaCalcRelEnv mettaCalc executableContextFuel p
 
 theorem stepViaPremiseContract_eq_step (p : Proc) :
     stepViaPremiseContract p = step p := by

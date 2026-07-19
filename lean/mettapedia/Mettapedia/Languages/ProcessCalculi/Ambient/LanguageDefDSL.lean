@@ -1,5 +1,6 @@
 import Mettapedia.OSLF.MeTTaIL.LanguageDefDSL
 import Mettapedia.OSLF.MeTTaIL.Export
+import Mettapedia.OSLF.MeTTaIL.DerivedContexts
 
 /-!
 # Ambient Calculus in `languageDef!` Form
@@ -22,6 +23,7 @@ namespace Mettapedia.Languages.ProcessCalculi.Ambient.LanguageDefDSL
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.LanguageDefDSL
 open Mettapedia.OSLF.MeTTaIL.Export
+open Mettapedia.OSLF.MeTTaIL.DerivedContexts
 open scoped Mettapedia.OSLF.MeTTaIL.LanguageDefDSL
 
 private def hasSubstring (needle haystack : String) : Bool :=
@@ -65,7 +67,6 @@ def ambientCore : LanguageDef :=
     }
     logic { }
     oracles { }
-    congruenceCollections { HashBag }
   }
 
 def exportedRustSurface : String :=
@@ -106,7 +107,8 @@ example : LanguageDef.validate ambientCore = [] := by
 example : ambientCore.terms.length = 7 := rfl
 example : ambientCore.equations.length = 6 := rfl
 example : ambientCore.rewrites.length = 6 := rfl
-example : ambientCore.congruenceCollections = [.hashBag] := rfl
+example : (ambientCore.rewrites.flatMap compileRuleContexts).length = 3 := by
+  decide +kernel
 example : newCommPreservesBinderOrder = true := by
   native_decide
 example : scopeExtrusionHasFreshnessAndRest = true := by

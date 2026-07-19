@@ -1,7 +1,7 @@
 import Mettapedia.Languages.Metamath.GroundedSemantics
 import Mettapedia.Languages.Metamath.LanguageDefDSL
 import Mettapedia.OSLF.MeTTaIL.Engine
-import Mettapedia.OSLF.MeTTaIL.DeclReducesWithPremises
+import Mettapedia.OSLF.MeTTaIL.ContextualStep
 
 /-!
 # Metamath Simulation Scaffold
@@ -17,7 +17,7 @@ open Mettapedia.Languages.Metamath.GroundedSemantics
 open Mettapedia.Languages.Metamath.LanguageDefDSL
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Engine
-open Mettapedia.OSLF.MeTTaIL.DeclReducesPremises
+open Mettapedia.OSLF.MeTTaIL.ContextualStep
 
 /-- Label lookup over the authored Metamath rewrite table. -/
 def hasRewriteByName (label : String) : Bool :=
@@ -197,68 +197,44 @@ theorem languageTrace_stepManySpec?_iff
     rcases h with ⟨rt', hTrans, hCorr⟩
     exact languageTrace_stepManySpec?_complete rt rt' labels sp' hTrans hCorr
 
-/-- A labeled top-level engine step that witnesses the exact authored rewrite
-rule used (before contextual congruence lifting). -/
-def EngineLabeledTopStep (p q : Pattern) (label : String) : Prop :=
+/-- A labeled root step that witnesses the exact authored rewrite rule used,
+before any contextual schema is applied. -/
+def LabeledRootStep (p q : Pattern) (label : String) : Prop :=
   ∃ rw, rw ∈ metamathCore.rewrites ∧ rw.name = label ∧
-    q ∈ applyRuleWithPremisesUsing RelationEnv.empty metamathCore rw p
+    q ∈ applyRuleUsing (engineBasePremises RelationEnv.empty) metamathCore
+      (fun _ => []) rw p
 
-/-- Any labeled top-level engine step carries an authored rewrite witness. -/
-theorem engineLabeledTopStep_authored
+/-- Every labeled root step carries an authored rewrite witness. -/
+theorem labeledRootStep_authored
     {p q : Pattern} {label : String}
-    (h : EngineLabeledTopStep p q label) :
+    (h : LabeledRootStep p q label) :
     AuthoredRewriteLabel label := by
   rcases h with ⟨rw, hrw, hname, _⟩
   refine ⟨rw, hrw, ?_⟩
   simp [hname]
 
-/-- Top-level labeled engine steps embed into contextual one-step rewriting. -/
-theorem engineLabeledTopStep_in_context
+/-- A labeled root step is emitted at contextual depth one. -/
+theorem labeledRootStep_mem_rewriteAt
     {p q : Pattern} {label : String}
-    (h : EngineLabeledTopStep p q label) :
-    q ∈ rewriteWithContextWithPremises metamathCore p := by
+    (h : LabeledRootStep p q label) :
+    q ∈ rewriteAt (engineBasePremises RelationEnv.empty) metamathCore 1 p := by
   rcases h with ⟨rw, hrw, _hname, hq⟩
-  unfold rewriteWithContextWithPremises
-  unfold rewriteWithContextWithPremisesUsing
-  rw [List.mem_append]
-  left
-  unfold rewriteStepWithPremisesUsing
+  simp only [rewriteAt]
   rw [List.mem_flatMap]
   exact ⟨rw, hrw, hq⟩
 
-/-- Top-level labeled engine steps satisfy the declarative premise-aware
-reduction relation directly. -/
-theorem engineLabeledTopStep_decl
+/-- A labeled root step belongs to the least authored contextual relation. -/
+theorem labeledRootStep_step
     {p q : Pattern} {label : String}
-    (h : EngineLabeledTopStep p q label) :
-    DeclReducesWithPremises RelationEnv.empty metamathCore p q := by
-  rcases h with ⟨rw, hrw, _hname, hq⟩
-  unfold applyRuleWithPremisesUsing at hq
-  rw [List.mem_flatMap] at hq
-  rcases hq with ⟨bs0, hbs0, hq⟩
-  rw [List.mem_map] at hq
-  rcases hq with ⟨bs, hprem, hq⟩
-  exact .topRule rw hrw bs0 hbs0 bs hprem hq
+    (h : LabeledRootStep p q label) :
+    Step (engineBasePremises RelationEnv.empty) metamathCore p q := by
+  exact ⟨1, mem_rewriteAt_iff_stepAt.mp (labeledRootStep_mem_rewriteAt h)⟩
 
-/-- Contextual one-step engine rewriting and declarative premise-aware
-reduction are equivalent for the authored Metamath language. -/
-theorem metamath_engine_context_iff_decl
-    {p q : Pattern} :
-    q ∈ rewriteWithContextWithPremises metamathCore p ↔
-      DeclReducesWithPremises RelationEnv.empty metamathCore p q := by
-  constructor
-  · intro h
-    exact (declReducesWithPremises_iff_langReducesWithPremises
-      (lang := metamathCore) (p := p) (q := q)).2 h
-  · intro h
-    exact (declReducesWithPremises_iff_langReducesWithPremises
-      (lang := metamathCore) (p := p) (q := q)).1 h
+/-! ## LanguageDef acceptance layer -/
 
-/-! ## Engine-Level Acceptance Layer (DeclReducesWithPremises) -/
-
-/-- One-step authored Metamath engine reduction at the declarative layer. -/
+/-- One-step authored Metamath reduction in the least contextual relation. -/
 abbrev LanguageDefStep (p q : Pattern) : Prop :=
-  DeclReducesWithPremises RelationEnv.empty metamathCore p q
+  Step (engineBasePremises RelationEnv.empty) metamathCore p q
 
 /-- Many-step authored Metamath engine reduction (reflexive-transitive closure). -/
 abbrev LanguageDefAccepts (start finish : Pattern) : Prop :=
@@ -277,25 +253,30 @@ structure LanguageDefEngineTraceWitness (start finish : Pattern) where
   last_eq : trace.getLast? = some finish
   reduces : ReducesAlong trace
 
-/-- Engine-labeled top-step witnesses produce declarative one-step reductions. -/
-theorem engineLabeledTopStep_languageDefStep
+/-- Labeled root-step witnesses produce declarative one-step reductions. -/
+theorem labeledRootStep_languageDefStep
     {p q : Pattern} {label : String}
-    (h : EngineLabeledTopStep p q label) :
+    (h : LabeledRootStep p q label) :
     LanguageDefStep p q := by
-  exact engineLabeledTopStep_decl h
+  exact labeledRootStep_step h
 
-/-- A single engine-labeled step is a many-step acceptance witness. -/
-theorem engineLabeledTopStep_accepts
+/-- A single labeled root step is a many-step acceptance witness. -/
+theorem labeledRootStep_accepts
     {p q : Pattern} {label : String}
-    (h : EngineLabeledTopStep p q label) :
+    (h : LabeledRootStep p q label) :
     LanguageDefAccepts p q := by
-  exact Relation.ReflTransGen.single (engineLabeledTopStep_languageDefStep h)
+  exact Relation.ReflTransGen.single (labeledRootStep_languageDefStep h)
 
-/-- `LanguageDefStep` is equivalent to contextual engine membership. -/
-theorem languageDefStep_iff_engineContext
+/-- `LanguageDefStep` is exactly finite-fuel compiled membership. -/
+theorem languageDefStep_iff_exists_mem_rewriteAt
     {p q : Pattern} :
-    LanguageDefStep p q ↔ q ∈ rewriteWithContextWithPremises metamathCore p := by
-  simpa [LanguageDefStep] using (metamath_engine_context_iff_decl (p := p) (q := q)).symm
+    LanguageDefStep p q ↔
+      ∃ fuel, q ∈ rewriteAt (engineBasePremises RelationEnv.empty)
+        metamathCore fuel p := by
+  simpa [LanguageDefStep] using
+    (exists_mem_rewriteAt_iff_step
+      (base := engineBasePremises RelationEnv.empty)
+      (lang := metamathCore) (source := p) (target := q)).symm
 
 private theorem reducesAlong_cons_to_accepts
     (p : Pattern) (tail : List Pattern) (finish : Pattern)
@@ -339,7 +320,7 @@ def LabeledReducesAlong : List Pattern → List String → Prop
   | [_], _ :: _ => False
   | _ :: _ :: _, [] => False
   | p :: q :: rest, lbl :: labels =>
-      EngineLabeledTopStep p q lbl ∧ LabeledReducesAlong (q :: rest) labels
+      LabeledRootStep p q lbl ∧ LabeledReducesAlong (q :: rest) labels
 
 private theorem labeledReducesAlong_to_reducesAlong :
     ∀ {states labels},
@@ -352,7 +333,7 @@ private theorem labeledReducesAlong_to_reducesAlong :
   | p :: q :: rest, _lbl :: labels, h => by
       rcases h with ⟨hStepLbl, hTail⟩
       have hStep : LanguageDefStep p q :=
-        engineLabeledTopStep_languageDefStep hStepLbl
+        labeledRootStep_languageDefStep hStepLbl
       have hTailRed : ReducesAlong (q :: rest) :=
         labeledReducesAlong_to_reducesAlong hTail
       simpa [ReducesAlong] using And.intro hStep hTailRed
@@ -374,7 +355,7 @@ private theorem labeledReducesAlong_labels_authored :
       intro label hMem
       simp at hMem
       rcases hMem with rfl | hTailMem
-      · exact engineLabeledTopStep_authored hStepLbl
+      · exact labeledRootStep_authored hStepLbl
       · exact labeledReducesAlong_labels_authored hTail label hTailMem
 
 /-- Explicit engine trace witness carrying both state path and fired rewrite

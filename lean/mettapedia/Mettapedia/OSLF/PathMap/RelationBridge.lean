@@ -143,7 +143,6 @@ theorem query_comm_bridge {α : Type*} [RelationalSpace α] (a : α) :
 /-! ## Backend Preservation: RelationalSpace → OSLF Synthesis -/
 
 open Mettapedia.OSLF.MeTTaIL.Syntax (LanguageDef)
-open Mettapedia.OSLF.MeTTaIL.DeclReducesPremises (DeclReducesWithPremises)
 
 /-- Two `RelationEnv`s with equal `tuples` are equal. -/
 theorem RelationEnv.ext_tuples {env₁ env₂ : RelationEnv}
@@ -169,8 +168,10 @@ theorem langReducesUsing_of_spacesAgree {α β : Type*}
     (hagree : ∀ rel args,
       RelationalSpace.query a rel args = RelationalSpace.query b rel args)
     (lang : LanguageDef) (p q : Pattern) :
-    DeclReducesWithPremises (toRelationEnv a) lang p q ↔
-    DeclReducesWithPremises (toRelationEnv b) lang p q := by
+    Mettapedia.OSLF.Framework.TypeSynthesis.langReducesUsing
+        (toRelationEnv a) lang p q ↔
+      Mettapedia.OSLF.Framework.TypeSynthesis.langReducesUsing
+        (toRelationEnv b) lang p q := by
   rw [toRelationEnv_eq_of_agree a b hagree]
 
 /-- Backend preservation for diamond: query-agreeing spaces produce

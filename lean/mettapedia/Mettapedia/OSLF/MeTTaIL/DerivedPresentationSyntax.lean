@@ -139,6 +139,42 @@ mutual
           (processesTyped.weakenBoundRight extension)
 end
 
+/-! ## List elimination utilities -/
+
+/-- Every selected component of a well-sorted process list is well-sorted. -/
+theorem ProcListWellSorted.getElem
+    {presentation : ReflectivePresentationDecl} {free : FreeSortContext}
+    {bound : List String} {processes : List Pattern}
+    (typed : ProcListWellSorted presentation free bound processes)
+    (index : Nat) (indexBound : index < processes.length) :
+    ProcWellSorted presentation free bound processes[index] := by
+  induction processes generalizing index with
+  | nil => simp at indexBound
+  | cons process processes inductionHypothesis =>
+      cases typed with
+      | cons headTyped tailTyped =>
+      cases index with
+      | zero => simpa using headTyped
+      | succ index =>
+          exact inductionHypothesis tailTyped index (by simpa using indexBound)
+
+/-- Removing a component preserves well-sortedness of the remaining process
+list. -/
+theorem ProcListWellSorted.eraseIdx
+    {presentation : ReflectivePresentationDecl} {free : FreeSortContext}
+    {bound : List String} {processes : List Pattern}
+    (typed : ProcListWellSorted presentation free bound processes)
+    (index : Nat) :
+    ProcListWellSorted presentation free bound (processes.eraseIdx index) := by
+  induction processes generalizing index with
+  | nil => exact .nil
+  | cons process processes inductionHypothesis =>
+      cases typed with
+      | cons headTyped tailTyped =>
+      cases index with
+      | zero => exact tailTyped
+      | succ index => exact .cons headTyped (inductionHypothesis tailTyped index)
+
 /-! ## Presentation-parametric examples -/
 
 section Examples

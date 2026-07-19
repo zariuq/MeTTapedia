@@ -5,6 +5,7 @@ namespace Mettapedia.OSLF.Framework.PyashCoreInstance
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Engine
+open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open Mettapedia.OSLF.Framework.TypeSynthesis
 
 /-- Consolidated executable step corpus used by PyashCore proof extraction. -/
@@ -162,7 +163,7 @@ This replaces repeated per-theorem `decide +kernel` invocations.
 theorem pyashCore_reduction_cases_cover :
     List.Forall
       (fun case =>
-        case.2.2 ∈ rewriteWithContextWithPremisesUsing RelationEnv.empty pyashCore case.2.1)
+        case.2.2 ∈ reductsUsing RelationEnv.empty pyashCore 1 case.2.1)
       pyashCoreReductionCases := by
   decide +kernel
 
@@ -172,9 +173,9 @@ theorem pyashCore_reduction_case_exec
     (hmem : (label, p, q) ∈ pyashCoreReductionCases) :
     langReducesExecUsing RelationEnv.empty pyashCore p q := by
   have hmemExec :
-      q ∈ rewriteWithContextWithPremisesUsing RelationEnv.empty pyashCore p :=
+      q ∈ reductsUsing RelationEnv.empty pyashCore 1 p :=
     (List.forall_iff_forall_mem.mp pyashCore_reduction_cases_cover) _ hmem
-  simpa [langReducesExecUsing] using hmemExec
+  exact ⟨1, hmemExec⟩
 
 /-- Extract a concrete `langReduces` step from the batch certificate via list membership. -/
 theorem pyashCore_reduction_case
@@ -1289,18 +1290,19 @@ theorem pyashCore_signature_mismatch_surfaces_error :
 
 /-- Executable rewrite set for a finished `Done` state is empty. -/
 theorem pyashCore_done_rewrite_nil :
-    rewriteWithContextWithPremisesUsing RelationEnv.empty pyashCore pyashStateDoneOk = [] := by
+    reductsUsing RelationEnv.empty pyashCore 1 pyashStateDoneOk = [] := by
   decide +kernel
 
 /-- `Done` states are terminal under the focused Pyash core rewrite set. -/
 theorem pyashCore_done_irreducible (q : Pattern) :
     ¬ langReduces pyashCore pyashStateDoneOk q := by
   intro hred
-  have hExec : langReducesExecUsing RelationEnv.empty pyashCore pyashStateDoneOk q :=
-    langReducesUsing_to_exec (relEnv := RelationEnv.empty) (lang := pyashCore) hred
-  have hmem : q ∈ rewriteWithContextWithPremisesUsing RelationEnv.empty pyashCore pyashStateDoneOk := by
-    simpa [langReducesExecUsing] using hExec
-  simp [pyashCore_done_rewrite_nil] at hmem
+  have noMatch : ∀ rule, rule ∈ pyashCore.rewrites →
+      Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule
+        pyashCore rule pyashStateDoneOk = [] := by
+    decide +kernel
+  exact (not_step_of_matchPatternForRule_eq_nil
+    (base := engineBasePremises RelationEnv.empty) noMatch) hred
 
 open Mettapedia.OSLF.Framework.GovernanceInstance (isGovLive)
 

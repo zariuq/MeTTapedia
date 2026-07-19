@@ -25,6 +25,7 @@ LanguageDef, which then automatically gets:
 import Mettapedia.Languages.GF.SUMO.SumoAbstract
 import Mettapedia.Languages.GF.OSLFBridge_handcrafted
 import Mettapedia.OSLF.MeTTaIL.Engine
+import Mettapedia.OSLF.MeTTaIL.ContextualStep
 
 namespace Mettapedia.Languages.GF.SUMO.SumoOSLFBridge
 
@@ -34,6 +35,7 @@ open Mettapedia.Languages.GF.OSLFBridge
 open Mettapedia.Languages.GF.SUMO.SumoAbstract
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Engine
+open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open Mettapedia.OSLF.Framework.TypeSynthesis
 
 /-! ## SUMO-GF Rewrites -/
@@ -118,6 +120,11 @@ def sumoGFLanguageDef : LanguageDef :=
     sumoAllRewrites
     allReflEquations
 
+/-- Root reducts of the SUMO-GF language.  Its authored rules have no
+contextual premises, so one contextual layer is exact. -/
+private def sumoGFRootReducts (term : Pattern) : List Pattern :=
+  rewriteAt (engineBasePremises RelationEnv.empty) sumoGFLanguageDef 1 term
+
 /-! ## OSLF Type System -/
 
 /-- The rewrite system for SUMO-GF.
@@ -163,7 +170,7 @@ section PipelineTests
 -- Test: reflexive coercion reduces (el_Entity_Entity(x) ~> x)
 #eval! do
   let term := Pattern.apply "sumo_el_Entity_Entity" [.fvar "john"]
-  let reducts := rewriteWithContextWithPremises sumoGFLanguageDef term
+  let reducts := sumoGFRootReducts term
   IO.println s!"el_Entity_Entity(john) reducts ({reducts.length}):"
   for r in reducts do
     IO.println s!"  → {r}"
@@ -172,7 +179,7 @@ section PipelineTests
 -- Test: var coercion reduces
 #eval! do
   let term := Pattern.apply "sumo_var_AutonomousAgent_AutonomousAgent" [.fvar "x"]
-  let reducts := rewriteWithContextWithPremises sumoGFLanguageDef term
+  let reducts := sumoGFRootReducts term
   IO.println s!"var_Agent_Agent(x) reducts ({reducts.length}):"
   for r in reducts do
     IO.println s!"  → {r}"
@@ -181,7 +188,7 @@ section PipelineTests
 #eval! do
   let term := Pattern.apply "sumo_el_SentientAgent_AutonomousAgent"
     [.apply "sumo_el_CognitiveAgent_SentientAgent" [.fvar "alice"]]
-  let reducts := rewriteWithContextWithPremises sumoGFLanguageDef term
+  let reducts := sumoGFRootReducts term
   IO.println s!"el_Sent_Auto(el_Cog_Sent(alice)) reducts ({reducts.length}):"
   for r in reducts do
     IO.println s!"  → {r}"
@@ -189,7 +196,7 @@ section PipelineTests
 -- Test: double negation reduces
 #eval! do
   let term := Pattern.apply "sumo_not" [.apply "sumo_not" [.fvar "phi"]]
-  let reducts := rewriteWithContextWithPremises sumoGFLanguageDef term
+  let reducts := sumoGFRootReducts term
   IO.println s!"not(not(φ)) reducts ({reducts.length}):"
   for r in reducts do
     IO.println s!"  → {r}"
@@ -330,11 +337,11 @@ section PipelineTests
   -- Pain: test both Process and (hypothetical) Attribute coercion
   IO.println "Pain (typed as Ind_Process):"
   let painAsProcess := Pattern.apply "sumo_el_Process_Process" [.fvar "pain"]
-  let processReducts := rewriteWithContextWithPremises sumoGFLanguageDef painAsProcess
+  let processReducts := sumoGFRootReducts painAsProcess
   IO.println s!"  el_Process_Process(pain) reduces: {!processReducts.isEmpty} ({processReducts.length} reducts)"
 
   let painAsPhysical := Pattern.apply "sumo_el_Process_Physical" [.fvar "pain"]
-  let physReducts := rewriteWithContextWithPremises sumoGFLanguageDef painAsPhysical
+  let physReducts := sumoGFRootReducts painAsPhysical
   IO.println s!"  el_Process_Physical(pain) reduces: {!physReducts.isEmpty} ({physReducts.length} reducts)"
 
   -- Check: can Pain reach Attribute at all?
@@ -347,7 +354,7 @@ section PipelineTests
   -- Pleasure: Ind_Attribute, should reach Attribute
   IO.println "Pleasure (typed as Ind_Attribute):"
   let pleasureAsAttr := Pattern.apply "sumo_el_Attribute_Attribute" [.fvar "pleasure"]
-  let attrReducts := rewriteWithContextWithPremises sumoGFLanguageDef pleasureAsAttr
+  let attrReducts := sumoGFRootReducts pleasureAsAttr
   IO.println s!"  el_Attribute_Attribute(pleasure) reduces: {!attrReducts.isEmpty} ({attrReducts.length} reducts)"
   IO.println s!"  → Pleasure CAN serve as El_Attribute argument"
   IO.println ""

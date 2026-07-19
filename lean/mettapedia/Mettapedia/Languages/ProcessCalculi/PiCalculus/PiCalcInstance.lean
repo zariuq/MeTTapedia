@@ -1,6 +1,7 @@
 import Mettapedia.OSLF.MeTTaIL.Syntax
 import Mettapedia.OSLF.MeTTaIL.Match
 import Mettapedia.OSLF.MeTTaIL.Engine
+import Mettapedia.OSLF.MeTTaIL.ContextualStep
 import Mettapedia.OSLF.MeTTaIL.Substitution
 import Mettapedia.OSLF.Framework.TypeSynthesis
 import Mettapedia.OSLF.Framework.ConstructorCategory
@@ -53,6 +54,7 @@ namespace Mettapedia.Languages.ProcessCalculi.PiCalculus.PiCalcInstance
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Match
 open Mettapedia.OSLF.MeTTaIL.Engine
+open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open Mettapedia.OSLF.MeTTaIL.Substitution (closeFVar openBVar)
 open Mettapedia.OSLF.Framework.TypeSynthesis
 open Mettapedia.OSLF.Framework.ConstructorCategory
@@ -128,6 +130,12 @@ def piCalc : LanguageDef := {
   ]
 }
 
+/-- π-calculus reducts at an explicit authored-context depth.  Depth one
+contains root COMM steps; each surrounding `ParCong` consumes one further
+unit. -/
+def piCalcReducts (contextDepth : Nat) (process : Pattern) : List Pattern :=
+  rewriteAt (engineBasePremises RelationEnv.empty) piCalc contextDepth process
+
 /-! ## Helper: Pattern-level parallel composition (flattens bags) -/
 
 /-- Parallel composition in π-Pattern representation. Flattens nested bags. -/
@@ -191,7 +199,7 @@ Verify that the OSLF rewrite engine correctly simulates π-calculus reduction. -
   let inp := Pattern.apply "PiInp" [.fvar "x", .lambda none (.apply "PiNil" [])]
   let out := Pattern.apply "PiOut" [.fvar "x", .fvar "z"]
   let process := Pattern.collection .hashBag [inp, out] none
-  rewriteWithContext piCalc process
+  piCalcReducts 1 process
   -- Expected: [{PiNil[]}] (the .subst resolves to PiNil since body has no BVar 0)
 
 -- Demo 2: COMM — x(y).y<w> | x<z> → z<w>
@@ -201,7 +209,7 @@ Verify that the OSLF rewrite engine correctly simulates π-calculus reduction. -
   let inp := Pattern.apply "PiInp" [.fvar "x", .lambda none body]
   let out := Pattern.apply "PiOut" [.fvar "x", .fvar "z"]
   let process := Pattern.collection .hashBag [inp, out] none
-  rewriteWithContext piCalc process
+  piCalcReducts 1 process
   -- Expected: [{PiOut(.fvar "z", .fvar "w")}] (z<w>)
 
 -- Demo 3: COMM with rest — x(y).0 | x<z> | P → 0 | P
@@ -210,7 +218,7 @@ Verify that the OSLF rewrite engine correctly simulates π-calculus reduction. -
   let out := Pattern.apply "PiOut" [.fvar "x", .fvar "z"]
   let extra := Pattern.apply "PiOut" [.fvar "a", .fvar "b"]
   let process := Pattern.collection .hashBag [inp, out, extra] none
-  rewriteWithContext piCalc process
+  piCalcReducts 1 process
   -- Expected: [{PiNil[], PiOut(.fvar "a", .fvar "b")}]
 
 -- Demo 4: No reduction — mismatched channels
@@ -218,12 +226,16 @@ Verify that the OSLF rewrite engine correctly simulates π-calculus reduction. -
   let inp := Pattern.apply "PiInp" [.fvar "x", .lambda none (.apply "PiNil" [])]
   let out := Pattern.apply "PiOut" [.fvar "y", .fvar "z"]  -- different channel!
   let process := Pattern.collection .hashBag [inp, out] none
-  rewriteWithContext piCalc process
+  piCalcReducts 1 process
   -- Expected: [] (no reduction possible)
 
--- Demo 5: Reduction under par via ParCong
--- {x(y).0 | x<z> | P} — the ParCong rule allows COMM inside the bag
--- (This is already handled by Demo 3 since COMM matches in the bag)
+-- Demo 5: Reduction of a nested bag via the authored ParCong rule.
+#eval
+  let inp := Pattern.apply "PiInp" [.fvar "x", .lambda none (.apply "PiNil" [])]
+  let out := Pattern.apply "PiOut" [.fvar "x", .fvar "z"]
+  let inner := Pattern.collection .hashBag [inp, out] none
+  let outer := Pattern.collection .hashBag [inner, .apply "PiNil" []] none
+  piCalcReducts 2 outer
 
 -- Demo 6: piToPattern bridge — verify encoding of a simple process
 #eval
@@ -235,7 +247,7 @@ Verify that the OSLF rewrite engine correctly simulates π-calculus reduction. -
 -- x(y).0 | x<z> as Process → Pattern → reduce
 #eval
   let P : Process := .par (.input "x" "y" .nil) (.output "x" "z")
-  rewriteWithContext piCalc (piToPattern P)
+  piCalcReducts 1 (piToPattern P)
   -- Expected: [{PiNil[]}] (COMM fires, body 0 has no y references)
 
 -- Demo 8: piToPattern with non-trivial body
@@ -243,7 +255,7 @@ Verify that the OSLF rewrite engine correctly simulates π-calculus reduction. -
 #eval
   let P : Process := .par (.input "x" "y" (.output "y" "w")) (.output "x" "z")
   let pat := piToPattern P
-  (pat, rewriteWithContext piCalc pat)
+  (pat, piCalcReducts 1 pat)
   -- Expected pattern has closeFVar applied, reduction produces z<w>
 
 /-! ## Structural Theorems -/
@@ -259,5 +271,37 @@ theorem piCalc_rewrites_length : piCalc.rewrites.length = 2 := by decide
 
 /-- piCalc has no equations (par laws handled by bag structure). -/
 theorem piCalc_equations_length : piCalc.equations.length = 0 := by decide
+
+/-! ## Authored contextual boundary -/
+
+private def commRedexPattern : Pattern :=
+  .collection .hashBag
+    [.apply "PiInp" [.fvar "x", .lambda none (.apply "PiNil" [])],
+      .apply "PiOut" [.fvar "x", .fvar "z"]] none
+
+private def nestedCommPattern : Pattern :=
+  .collection .hashBag [commRedexPattern, .apply "PiNil" []] none
+
+private def nestedCommResult : Pattern :=
+  .collection .hashBag
+    [.collection .hashBag [.apply "PiNil" []] none, .apply "PiNil" []] none
+
+/-- The authored `ParCong` schema lifts a COMM step through one parallel
+context. -/
+theorem nestedCommResult_mem_piCalcReducts :
+    nestedCommResult ∈ piCalcReducts 2 nestedCommPattern := by
+  decide +kernel
+
+/-- `piCalc` authors no contextual schema beneath input binders. -/
+theorem piCalcReducts_input_eq_nil :
+    piCalcReducts 2
+      (.apply "PiInp" [.fvar "a", .lambda none commRedexPattern]) = [] := by
+  decide +kernel
+
+/-- `ParCong` is specific to bag parallel composition; it grants no descent
+through set representation. -/
+theorem piCalcReducts_set_eq_nil :
+    piCalcReducts 2 (.collection .hashSet [commRedexPattern] none) = [] := by
+  decide +kernel
 
 end Mettapedia.Languages.ProcessCalculi.PiCalculus.PiCalcInstance

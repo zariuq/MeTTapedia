@@ -15,6 +15,8 @@ namespace Mettapedia.GSLT.LanguageDef.MIEvalHosting
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution
+open Mettapedia.OSLF.MeTTaIL.Engine
+open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open Mettapedia.GSLT.LanguageDef.DerivedHosting
 
 abbrev LDPattern := Mettapedia.OSLF.MeTTaIL.Syntax.Pattern
@@ -55,7 +57,7 @@ def rewriteDeclsToLanguageDefWithTerms
     (langName : String) (termRules : List LDGrammarRule)
     (rws : List MeTTaIL.RewriteDecl) : LDLanguageDef :=
   Mettapedia.OSLF.MeTTaIL.Syntax.LanguageDef.mk langName [] ["MTerm"]
-    termRules [] (rws.filterMap rewriteDeclToLanguageRewrite?) [] [] [] []
+    termRules [] (rws.filterMap rewriteDeclToLanguageRewrite?) [] [] []
 
 def rewriteDeclsToLanguageDef
     (langName : String) (rws : List MeTTaIL.RewriteDecl) : LDLanguageDef :=
@@ -194,6 +196,14 @@ theorem addDeclsLanguageDef_rewrites_eq :
     addDeclsLanguageDef.rewrites = [addZRule, addSRule] := by
   rfl
 
+@[simp] theorem addDeclsLanguageDef_reflectivePresentations :
+    addDeclsLanguageDef.reflectivePresentations = [] := by
+  rfl
+
+@[simp] theorem revDeclsLanguageDef_reflectivePresentations :
+    revDeclsLanguageDef.reflectivePresentations = [] := by
+  rfl
+
 theorem revDeclsLanguageDef_rewrites_eq :
     revDeclsLanguageDef.rewrites =
       [revAppendNilRule, revAppendConsRule, revNilRule, revConsRule] := by
@@ -255,11 +265,12 @@ theorem sourceStep_add_z_one :
 theorem addDeclsLanguageDef_reduces_add_z_one :
     Mettapedia.OSLF.Framework.TypeSynthesis.langReduces addDeclsLanguageDef
       addZOnePattern addOnePattern := by
-  change Mettapedia.OSLF.MeTTaIL.DeclReducesPremises.DeclReducesWithPremises
-    Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv.empty addDeclsLanguageDef
+  change Step (engineBasePremises RelationEnv.empty) addDeclsLanguageDef
     addZOnePattern addOnePattern
-  refine Mettapedia.OSLF.MeTTaIL.DeclReducesPremises.DeclReducesWithPremises.topRule
-    addZRule ?hr [("n", addOnePattern)] ?hbs0 [("n", addOnePattern)] ?hprem ?hq
+  refine step_of_rule (rule := addZRule)
+    (initialBindings := [("n", addOnePattern)])
+    (finalBindings := [("n", addOnePattern)])
+    ?hr ?hbs0 .nil ?hprem ?hq
   · rw [addDeclsLanguageDef_rewrites_eq]
     simp
   · unfold addZRule addZOnePattern addOnePattern addZeroPattern
@@ -277,22 +288,22 @@ theorem addDeclsLanguageDef_not_reduces_add_z_one_to_zero :
     ¬ Mettapedia.OSLF.Framework.TypeSynthesis.langReduces addDeclsLanguageDef
       addZOnePattern addZeroPattern := by
   intro h
-  change Mettapedia.OSLF.MeTTaIL.DeclReducesPremises.DeclReducesWithPremises
-    Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv.empty addDeclsLanguageDef
+  change Step (engineBasePremises RelationEnv.empty) addDeclsLanguageDef
     addZOnePattern addZeroPattern at h
+  obtain ⟨_, h⟩ := h
   cases h with
-  | topRule r hr bs0 hbs0 bs hprem hq =>
+  | @rule _ _ _ r bs0 bs hr hbs0 hprem hq =>
       rw [addDeclsLanguageDef_rewrites_eq] at hr
       simp at hr
       rcases hr with rfl | rfl
       · simp [addZRule, addZOnePattern, addOnePattern, addZeroPattern,
           Mettapedia.OSLF.MeTTaIL.Match.matchPattern,
           Mettapedia.OSLF.MeTTaIL.Match.matchArgs,
-          Mettapedia.OSLF.MeTTaIL.Match.mergeBindings,
-          Mettapedia.OSLF.MeTTaIL.Engine.applyPremisesWithEnv] at hbs0 hprem hq
+          Mettapedia.OSLF.MeTTaIL.Match.mergeBindings] at hbs0
         subst bs0
-        subst bs
-        simp [applyBindingsForRule, declarationForRule?, addDeclsLanguageDef,
+        cases hprem
+        simp [addZRule, addZeroPattern,
+          applyBindingsForRule, declarationForRule?, addDeclsLanguageDef,
           rewriteDeclsToLanguageDef, rewriteDeclsToLanguageDefWithTerms,
           Mettapedia.OSLF.MeTTaIL.Match.applyBindings] at hq
       · simp [addSRule, addZOnePattern, addOnePattern, addZeroPattern,
@@ -314,12 +325,12 @@ theorem source_and_languageDef_step_agree_add_z_one :
 theorem addDeclsLanguageDef_reduces_add_one_one_root :
     Mettapedia.OSLF.Framework.TypeSynthesis.langReduces addDeclsLanguageDef
       addOneOnePattern addOneOneAfterRootPattern := by
-  change Mettapedia.OSLF.MeTTaIL.DeclReducesPremises.DeclReducesWithPremises
-    Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv.empty addDeclsLanguageDef
+  change Step (engineBasePremises RelationEnv.empty) addDeclsLanguageDef
     addOneOnePattern addOneOneAfterRootPattern
-  refine Mettapedia.OSLF.MeTTaIL.DeclReducesPremises.DeclReducesWithPremises.topRule
-    addSRule ?hr [("n", addOnePattern), ("m", addZeroPattern)] ?hbs0
-    [("n", addOnePattern), ("m", addZeroPattern)] ?hprem ?hq
+  refine step_of_rule (rule := addSRule)
+    (initialBindings := [("n", addOnePattern), ("m", addZeroPattern)])
+    (finalBindings := [("n", addOnePattern), ("m", addZeroPattern)])
+    ?hr ?hbs0 .nil ?hprem ?hq
   · rw [addDeclsLanguageDef_rewrites_eq]
     simp
   · unfold addSRule addOneOnePattern addOnePattern addZeroPattern
@@ -336,12 +347,12 @@ theorem addDeclsLanguageDef_reduces_add_one_one_root :
 theorem addDeclsLanguageDef_reduces_add_two_one_root :
     Mettapedia.OSLF.Framework.TypeSynthesis.langReduces addDeclsLanguageDef
       addTwoOnePattern addTwoOneAfterRootPattern := by
-  change Mettapedia.OSLF.MeTTaIL.DeclReducesPremises.DeclReducesWithPremises
-    Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv.empty addDeclsLanguageDef
+  change Step (engineBasePremises RelationEnv.empty) addDeclsLanguageDef
     addTwoOnePattern addTwoOneAfterRootPattern
-  refine Mettapedia.OSLF.MeTTaIL.DeclReducesPremises.DeclReducesWithPremises.topRule
-    addSRule ?hr [("n", addOnePattern), ("m", addOnePattern)] ?hbs0
-    [("n", addOnePattern), ("m", addOnePattern)] ?hprem ?hq
+  refine step_of_rule (rule := addSRule)
+    (initialBindings := [("n", addOnePattern), ("m", addOnePattern)])
+    (finalBindings := [("n", addOnePattern), ("m", addOnePattern)])
+    ?hr ?hbs0 .nil ?hprem ?hq
   · rw [addDeclsLanguageDef_rewrites_eq]
     simp
   · unfold addSRule addTwoOnePattern addTwoPattern addOnePattern addZeroPattern
@@ -359,11 +370,11 @@ theorem addDeclsLanguageDef_reduces_add_two_one_root :
 theorem revDeclsLanguageDef_reduces_rev_nil :
     Mettapedia.OSLF.Framework.TypeSynthesis.langReduces revDeclsLanguageDef
       (revCallPattern nilValuePattern) nilValuePattern := by
-  change Mettapedia.OSLF.MeTTaIL.DeclReducesPremises.DeclReducesWithPremises
-    Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv.empty revDeclsLanguageDef
+  change Step (engineBasePremises RelationEnv.empty) revDeclsLanguageDef
     (revCallPattern nilValuePattern) nilValuePattern
-  refine Mettapedia.OSLF.MeTTaIL.DeclReducesPremises.DeclReducesWithPremises.topRule
-    revNilRule ?hr [] ?hbs0 [] ?hprem ?hq
+  refine step_of_rule (rule := revNilRule)
+    (initialBindings := []) (finalBindings := [])
+    ?hr ?hbs0 .nil ?hprem ?hq
   · rw [revDeclsLanguageDef_rewrites_eq]
     simp
   · unfold revNilRule revCallPattern nilValuePattern
@@ -380,12 +391,12 @@ theorem revDeclsLanguageDef_reduces_rev_nil :
 theorem revDeclsLanguageDef_reduces_append_nil_list0 :
     Mettapedia.OSLF.Framework.TypeSynthesis.langReduces revDeclsLanguageDef
       revList0AfterInnerPattern list0Pattern := by
-  change Mettapedia.OSLF.MeTTaIL.DeclReducesPremises.DeclReducesWithPremises
-    Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv.empty revDeclsLanguageDef
+  change Step (engineBasePremises RelationEnv.empty) revDeclsLanguageDef
     revList0AfterInnerPattern list0Pattern
-  refine Mettapedia.OSLF.MeTTaIL.DeclReducesPremises.DeclReducesWithPremises.topRule
-    revAppendNilRule ?hr [("ys", list0Pattern)] ?hbs0
-    [("ys", list0Pattern)] ?hprem ?hq
+  refine step_of_rule (rule := revAppendNilRule)
+    (initialBindings := [("ys", list0Pattern)])
+    (finalBindings := [("ys", list0Pattern)])
+    ?hr ?hbs0 .nil ?hprem ?hq
   · rw [revDeclsLanguageDef_rewrites_eq]
     simp
   · unfold revAppendNilRule revList0AfterInnerPattern appendCallPattern
@@ -405,12 +416,12 @@ theorem revDeclsLanguageDef_reduces_append_nil_list0 :
 theorem revDeclsLanguageDef_reduces_rev_list0_root :
     Mettapedia.OSLF.Framework.TypeSynthesis.langReduces revDeclsLanguageDef
       (revCallPattern list0Pattern) revList0AfterRootPattern := by
-  change Mettapedia.OSLF.MeTTaIL.DeclReducesPremises.DeclReducesWithPremises
-    Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv.empty revDeclsLanguageDef
+  change Step (engineBasePremises RelationEnv.empty) revDeclsLanguageDef
     (revCallPattern list0Pattern) revList0AfterRootPattern
-  refine Mettapedia.OSLF.MeTTaIL.DeclReducesPremises.DeclReducesWithPremises.topRule
-    revConsRule ?hr [("xs", nilValuePattern), ("x", addZeroPattern)] ?hbs0
-    [("xs", nilValuePattern), ("x", addZeroPattern)] ?hprem ?hq
+  refine step_of_rule (rule := revConsRule)
+    (initialBindings := [("xs", nilValuePattern), ("x", addZeroPattern)])
+    (finalBindings := [("xs", nilValuePattern), ("x", addZeroPattern)])
+    ?hr ?hbs0 .nil ?hprem ?hq
   · rw [revDeclsLanguageDef_rewrites_eq]
     simp
   · unfold revConsRule revCallPattern list0Pattern consValuePattern

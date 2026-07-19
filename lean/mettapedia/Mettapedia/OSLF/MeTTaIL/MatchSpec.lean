@@ -1,5 +1,4 @@
 import Mettapedia.OSLF.MeTTaIL.Match
-import Mettapedia.OSLF.MeTTaIL.DeclReduces
 import Mathlib.Data.List.Enum
 
 /-!
@@ -8,7 +7,7 @@ import Mathlib.Data.List.Enum
 Defines `MatchRel`, `MatchArgsRel`, `MatchBagRel` as mutual inductive relations
 that specify pattern matching independently of the executable algorithm
 (`matchPattern`, `matchArgs`, `matchBag`). Proves soundness and completeness
-bridges between the two, breaking the circularity in `DeclReduces`.
+bridges between the two without defining any language-level reduction policy.
 
 ## Architecture
 
@@ -18,9 +17,9 @@ bridges between the two, breaking the circularity in `DeclReduces`.
   matchBag      ──sound──►  MatchBagRel
 ```
 
-`DeclReducesRel` uses `MatchRel` instead of `matchPattern`, making it
-truly independent of the executable algorithm. The equivalence
-`DeclReducesRel ↔ DeclReduces` follows from soundness + completeness.
+Language semantics may consume `MatchRel` or the executable matcher through
+the proved equivalence below; contextual closure is defined separately from
+matching.
 
 ## LLM Notes
 
@@ -38,8 +37,6 @@ namespace Mettapedia.OSLF.MeTTaIL.MatchSpec
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Substitution
 open Mettapedia.OSLF.MeTTaIL.Match
-open Mettapedia.OSLF.MeTTaIL.Engine
-open Mettapedia.OSLF.MeTTaIL.DeclReductions
 
 /-! ## Relational Matching Specification -/
 
@@ -477,68 +474,6 @@ theorem matchBag_iff_matchBagRel {ppats : List Pattern} {rest : Option String}
     bs ∈ matchBag ppats rest ct telems ↔ MatchBagRel ppats rest ct telems bs :=
   ⟨matchBag_sound, matchBagRel_complete⟩
 
-/-! ## DeclReducesRel: Reduction using MatchRel -/
-
-/-- Declarative one-step reduction using `MatchRel` instead of `matchPattern`.
-    This is independent of the executable matching algorithm. -/
-inductive DeclReducesRel (lang : LanguageDef) : Pattern → Pattern → Prop where
-  | topRule :
-      (r : RewriteRule) →
-      r ∈ lang.rewrites →
-      r.premises = [] →
-      (bs : Bindings) →
-      MatchRel r.left p bs →
-      applyBindings bs r.right = q →
-      DeclReducesRel lang p q
-  | congElem :
-      {elems : List Pattern} →
-      {ct : CollType} →
-      {rest : Option String} →
-      (hct : LanguageDef.allowsCongruenceIn lang ct) →
-      (i : Nat) →
-      (hi : i < elems.length) →
-      (r : RewriteRule) →
-      r ∈ lang.rewrites →
-      r.premises = [] →
-      (bs : Bindings) →
-      MatchRel r.left elems[i] bs →
-      {q' : Pattern} →
-      applyBindings bs r.right = q' →
-      DeclReducesRel lang (.collection ct elems rest)
-                          (.collection ct (elems.set i q') rest)
-
-/-! ## Equivalence: DeclReducesRel ↔ DeclReduces -/
-
-theorem declReducesRel_of_declReduces {lang : LanguageDef} {p q : Pattern}
-    (h : DeclReduces lang p q) : DeclReducesRel lang p q := by
-  cases h with
-  | topRule r hr hprem bs hbs hq =>
-    exact .topRule r hr hprem bs (matchPattern_sound hbs) hq
-  | @congElem elems ct rest hct i hi r hr hprem bs hbs q' hq =>
-    exact .congElem hct i hi r hr hprem bs (matchPattern_sound hbs) hq
-
-theorem declReduces_of_declReducesRel {lang : LanguageDef} {p q : Pattern}
-    (h : DeclReducesRel lang p q) : DeclReduces lang p q := by
-  cases h with
-  | topRule r hr hprem bs hbs hq =>
-    exact .topRule r hr hprem bs (matchRel_complete hbs) hq
-  | @congElem elems ct rest hct i hi r hr hprem bs hbs q' hq =>
-    exact .congElem hct i hi r hr hprem bs (matchRel_complete hbs) hq
-
-theorem declReducesRel_iff_declReduces {lang : LanguageDef} {p q : Pattern} :
-    DeclReducesRel lang p q ↔ DeclReduces lang p q :=
-  ⟨declReduces_of_declReducesRel, declReducesRel_of_declReduces⟩
-
-/-! ## Independence Triangle -/
-
-theorem engine_sound_rel {lang : LanguageDef} {p q : Pattern}
-    (h : q ∈ rewriteWithContext lang p) : DeclReducesRel lang p q :=
-  declReducesRel_of_declReduces (engine_sound h)
-
-theorem engine_complete_rel {lang : LanguageDef} {p q : Pattern}
-    (h : DeclReducesRel lang p q) : q ∈ rewriteWithContext lang p :=
-  engine_complete (declReduces_of_declReducesRel h)
-
 /-! ## mergeBindings Subsumption
 
 Fold invariants for `mergeBindings b1 b2 = some bs`:
@@ -819,9 +754,9 @@ theorem matchPattern_correct_false :
 ### Falsity (outside isMatchCorrect)
 - `matchPattern_correct_false`: explicit bag-collection counterexample
 
-### Independent Reduction
-- `DeclReducesRel`, `declReducesRel_iff_declReduces`
-- `engine_sound_rel`, `engine_complete_rel`
+This module intentionally contains no reduction relation: it specifies only
+matching, so language-level contextual authority cannot leak in through the
+matcher abstraction.
 -/
 
 end Mettapedia.OSLF.MeTTaIL.MatchSpec

@@ -108,8 +108,7 @@ def gfGrammarLanguageDef
   , types := cats.map (TypeDecl.plain ∘ gfCategoryToType)
   , terms := funs.map gfFunctionSigToGrammarRule
   , equations := equations
-  , rewrites := rewrites
-  , congruenceCollections := [] }
+  , rewrites := rewrites }
 
 /-! ## Phase 2: Czech GF Fragment as LanguageDef
 
@@ -282,8 +281,7 @@ def gfLegacySemanticLanguageDef : LanguageDef :=
   , types := Category.allCategoryNames.map TypeDecl.plain
   , terms := allGFGrammarRules
   , equations := [useNIdentityEquation]
-  , rewrites := allIdentityRewrites ++ allSemanticRewrites
-  , congruenceCollections := [] }
+  , rewrites := allIdentityRewrites ++ allSemanticRewrites }
 
 /-- Czech GF grammar — same abstract syntax as full RGL but named for Czech. -/
 def czechGFLanguageDef : LanguageDef := gfLegacySemanticLanguageDef
@@ -319,6 +317,7 @@ Executable tests demonstrating that ◇/□ have actual behavioral content.
 
 section ModalTests
 open Mettapedia.OSLF.MeTTaIL.Engine
+open Mettapedia.OSLF.MeTTaIL.ContextualStep
 
 -- Verify: 169 core grammar functions, 70+ categories
 #eval! do
@@ -330,7 +329,7 @@ open Mettapedia.OSLF.MeTTaIL.Engine
 -- Test: UseN(house) reduces to house via UseNElim.
 #eval! do
   let term := Pattern.apply "UseN" [.fvar "house"]
-  let reducts := rewriteWithContextWithPremises gfLegacySemanticLanguageDef term
+  let reducts := rewriteAt (engineBasePremises .empty) gfLegacySemanticLanguageDef 1 term
   IO.println s!"UseN(house) reducts ({reducts.length}):"
   for r in reducts do
     IO.println s!"  -> {r}"
@@ -339,7 +338,7 @@ open Mettapedia.OSLF.MeTTaIL.Engine
 -- Test: PositA(big) reduces to big via PositAElim.
 #eval! do
   let term := Pattern.apply "PositA" [.fvar "big"]
-  let reducts := rewriteWithContextWithPremises gfLegacySemanticLanguageDef term
+  let reducts := rewriteAt (engineBasePremises .empty) gfLegacySemanticLanguageDef 1 term
   IO.println s!"PositA(big) reducts ({reducts.length}):"
   for r in reducts do
     IO.println s!"  -> {r}"
@@ -347,7 +346,7 @@ open Mettapedia.OSLF.MeTTaIL.Engine
 -- Test: UseV(sleep) reduces to sleep via UseVElim.
 #eval! do
   let term := Pattern.apply "UseV" [.fvar "sleep"]
-  let reducts := rewriteWithContextWithPremises gfLegacySemanticLanguageDef term
+  let reducts := rewriteAt (engineBasePremises .empty) gfLegacySemanticLanguageDef 1 term
   IO.println s!"UseV(sleep) reducts ({reducts.length}):"
   for r in reducts do
     IO.println s!"  -> {r}"
@@ -355,7 +354,7 @@ open Mettapedia.OSLF.MeTTaIL.Engine
 -- Test: UseComp(warm) reduces to warm via UseCompElim.
 #eval! do
   let term := Pattern.apply "UseComp" [.fvar "warm"]
-  let reducts := rewriteWithContextWithPremises gfLegacySemanticLanguageDef term
+  let reducts := rewriteAt (engineBasePremises .empty) gfLegacySemanticLanguageDef 1 term
   IO.println s!"UseComp(warm) reducts ({reducts.length}):"
   for r in reducts do
     IO.println s!"  -> {r}"
@@ -363,7 +362,7 @@ open Mettapedia.OSLF.MeTTaIL.Engine
 -- Test: bare leaf fvar "house" is irreducible (no ◇⊤).
 #eval! do
   let term := Pattern.fvar "house"
-  let reducts := rewriteWithContextWithPremises gfLegacySemanticLanguageDef term
+  let reducts := rewriteAt (engineBasePremises .empty) gfLegacySemanticLanguageDef 1 term
   IO.println s!"house reducts ({reducts.length}): irreducible = {reducts.isEmpty}"
 
 -- Test: Active-passive rewrite.
@@ -371,7 +370,7 @@ open Mettapedia.OSLF.MeTTaIL.Engine
 #eval! do
   let term := Pattern.apply "PredVP" [.fvar "john",
     .apply "ComplSlash" [.apply "SlashV2a" [.fvar "love"], .fvar "mary"]]
-  let reducts := rewriteWithContextWithPremises gfLegacySemanticLanguageDef term
+  let reducts := rewriteAt (engineBasePremises .empty) gfLegacySemanticLanguageDef 1 term
   IO.println s!"Active->Passive reducts ({reducts.length}):"
   for r in reducts do
     IO.println s!"  -> {r}"
@@ -384,7 +383,7 @@ open Mettapedia.OSLF.MeTTaIL.Engine
     .apply "TTAnt" [.apply "TPast" [], .apply "ASimul" []],
     .apply "PPos" [],
     .fvar "walk_cl"]
-  let reducts := rewriteWithContextWithPremises gfLegacySemanticLanguageDef term
+  let reducts := rewriteAt (engineBasePremises .empty) gfLegacySemanticLanguageDef 1 term
   IO.println s!"PastTense reducts ({reducts.length}):"
   for r in reducts do
     IO.println s!"  -> {r}"
@@ -396,7 +395,7 @@ open Mettapedia.OSLF.MeTTaIL.Engine
     .apply "TTAnt" [.apply "TPres" [], .apply "ASimul" []],
     .apply "PPos" [],
     .fvar "walk_cl"]
-  let reducts := rewriteWithContextWithPremises gfLegacySemanticLanguageDef term
+  let reducts := rewriteAt (engineBasePremises .empty) gfLegacySemanticLanguageDef 1 term
   IO.println s!"PresTense reducts ({reducts.length}):"
   for r in reducts do
     IO.println s!"  -> {r}"
@@ -596,11 +595,13 @@ theorem gfAbstract_diamond_of_reduces
     Uses the soundness/completeness bridge: if the rewrite engine produces
     `q` from the Pattern of a GF tree, then `langReduces` holds. -/
 theorem gfAbstract_exec_implies_reduces
-    {lang : LanguageDef} {node : AbstractNode} {q : Pattern}
-    (h : q ∈ rewriteWithContextWithPremises lang (gfAbstractToPattern node)) :
+    {lang : LanguageDef} {node : AbstractNode} {q : Pattern} {contextFuel : Nat}
+    (h : q ∈ Mettapedia.OSLF.MeTTaIL.ContextualStep.rewriteAt
+      (Mettapedia.OSLF.MeTTaIL.ContextualStep.engineBasePremises .empty)
+      lang contextFuel (gfAbstractToPattern node)) :
     langReduces lang (gfAbstractToPattern node) q := by
   exact exec_to_langReducesUsing .empty lang
-    (show langReducesExecUsing .empty lang (gfAbstractToPattern node) q from h)
+    ⟨contextFuel, h⟩
 
 /-- Combining exec + diamond: if the engine reduces a GF tree to q,
     and φ(q) holds, then ◇(φ)(tree) holds in the OSLF type system.
@@ -609,8 +610,10 @@ theorem gfAbstract_exec_implies_reduces
     check a predicate on it, conclude ◇-satisfaction. -/
 theorem gfAbstract_diamond_of_exec
     {lang : LanguageDef}
-    {φ : Pattern → Prop} {node : AbstractNode} {q : Pattern}
-    (hExec : q ∈ rewriteWithContextWithPremises lang (gfAbstractToPattern node))
+    {φ : Pattern → Prop} {node : AbstractNode} {q : Pattern} {contextFuel : Nat}
+    (hExec : q ∈ Mettapedia.OSLF.MeTTaIL.ContextualStep.rewriteAt
+      (Mettapedia.OSLF.MeTTaIL.ContextualStep.engineBasePremises .empty)
+      lang contextFuel (gfAbstractToPattern node))
     (hφ : φ q) :
     langDiamond lang φ (gfAbstractToPattern node) :=
   gfAbstract_diamond_of_reduces (gfAbstract_exec_implies_reduces hExec) hφ

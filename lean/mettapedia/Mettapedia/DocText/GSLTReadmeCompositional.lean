@@ -102,7 +102,7 @@ def renderGSLTClaim : GSLTClaim → String
         (copulaNP (properNameNP "freshness, congruence, and relationQuery constraints"))
   | .fullLanguageDefSummary =>
       mkPresPos (properNameNP "LanguageDef")
-        (copulaNP (properNameNP "name, types, terms, equations, rewrites, and congruence collection defaults"))
+        (copulaNP (properNameNP "name, types, terms, equations, rewrites, and reflective presentations"))
   | .pipelineEntryPointsSummary =>
       mkPresPos (properNameNP "TypeSynthesis entry points" .AgP3Pl)
         (copulaNP (properNameNP "langRewriteSystem, langDiamond, langBox, langGalois, and langOSLF"))
@@ -310,7 +310,7 @@ def gsltReadmeBlocks : List ReadmeBlock :=
       [ { path := "Mettapedia/OSLF/Framework/TinyMLInstance.lean" }
       , { path := "Mettapedia/OSLF/Framework/MeTTaMinimalInstance.lean" }
       , { path := "Mettapedia/OSLF/Framework/MeTTaFullInstance.lean" }
-      , { path := "Mettapedia/OSLF/MeTTaIL/DeclReducesWithPremises.lean" }
+      , { path := "Mettapedia/OSLF/MeTTaIL/ContextualStep.lean" }
       , { path := "Mettapedia/OSLF/Tools/ExportTinyMLSmokeRoundTrip.lean" }
       ]
   , .heading 2 (renderGSLTHeading .relationToTopos)

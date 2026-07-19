@@ -21,6 +21,7 @@ open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.Framework.TypeSynthesis
 open Mettapedia.OSLF.MeTTaIL.Match
 open Mettapedia.OSLF.MeTTaIL.Engine
+open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open Mettapedia.OSLF.MeTTaIL.Substitution
 open Mettapedia.Languages.MeTTa.Pure.Core
 
@@ -59,16 +60,21 @@ private def betaSigmaSndRule : RewriteRule :=
     left := .apply "Snd" [.apply "Pair" [.fvar "a", .fvar "b"]],
     right := .fvar "b" }
 
-/-- Sealed base steps are sound for profile one-step reduction. -/
+/-- Sealed base steps on genuine, locally closed terms are sound for profile
+one-step reduction.  The scope hypothesis excludes dangling de Bruijn indices,
+which are inhabitants of the raw representation but not MeTTa-Pure terms. -/
 theorem pureProfileBaseStep_sound_langReduces {s t : Pattern}
-    (h : PureProfileBaseStep s t) :
+    (h : PureProfileBaseStep s t) (hs : s.isWellScoped = true) :
     langReduces mettaPure s t := by
   cases h with
   | betaPi body a =>
+      have hscope : body.isWellScopedAt 1 = true ∧ a.isWellScoped = true := by
+        simpa [Pattern.isWellScoped, Pattern.isWellScopedAt,
+          Pattern.isWellScopedListAt, mkApp, mkLam] using hs
       apply exec_to_langReducesUsing (relEnv := RelationEnv.empty) (lang := mettaPure)
-      unfold langReducesExecUsing rewriteWithContextWithPremisesUsing rewriteStepWithPremisesUsing
-      apply List.mem_append.mpr
-      left
+      refine ⟨1, ?_⟩
+      rw [rewriteAt_one_eq_rewriteStepWithPremisesUsing]
+      unfold rewriteStepWithPremisesUsing
       rw [List.mem_flatMap]
       refine ⟨betaPiRule, ?_, ?_⟩
       · simp [betaPiRule, mettaPure]
@@ -76,16 +82,18 @@ theorem pureProfileBaseStep_sound_langReduces {s t : Pattern}
         rw [List.mem_flatMap]
         let bs : Bindings := [("a", a), ("body", body)]
         refine ⟨bs, ?_, ?_⟩
-        · simp [bs, betaPiRule, mkApp, mkLam, matchPattern, matchArgs, mergeBindings]
+        · simp [bs, betaPiRule, mkApp, mkLam, mettaPure,
+            matchPattern, matchArgs, mergeBindings]
         · rw [List.mem_map]
           refine ⟨bs, ?_, ?_⟩
           · simp [applyPremisesWithEnv, bs, betaPiRule]
-          · simp [bs, betaPiRule, applyBindings]
+          · simpa [bs, betaPiRule, mettaPure, applyBindings] using
+              instantiateBVar_eq_openBVar_of_isWellScoped hscope.1 hscope.2
   | @betaSigmaFst aa bb =>
       apply exec_to_langReducesUsing (relEnv := RelationEnv.empty) (lang := mettaPure)
-      unfold langReducesExecUsing rewriteWithContextWithPremisesUsing rewriteStepWithPremisesUsing
-      apply List.mem_append.mpr
-      left
+      refine ⟨1, ?_⟩
+      rw [rewriteAt_one_eq_rewriteStepWithPremisesUsing]
+      unfold rewriteStepWithPremisesUsing
       rw [List.mem_flatMap]
       refine ⟨betaSigmaFstRule, ?_, ?_⟩
       · simp [betaSigmaFstRule, mettaPure]
@@ -93,16 +101,17 @@ theorem pureProfileBaseStep_sound_langReduces {s t : Pattern}
         rw [List.mem_flatMap]
         let bs : Bindings := [("b", bb), ("a", t)]
         refine ⟨bs, ?_, ?_⟩
-        · simp [bs, betaSigmaFstRule, mkFst, mkPair, matchPattern, matchArgs, mergeBindings]
+        · simp [bs, betaSigmaFstRule, mkFst, mkPair, mettaPure,
+            matchPattern, matchArgs, mergeBindings]
         · rw [List.mem_map]
           refine ⟨bs, ?_, ?_⟩
           · simp [applyPremisesWithEnv, bs, betaSigmaFstRule]
-          · simp [bs, betaSigmaFstRule, applyBindings]
+          · simp [bs, betaSigmaFstRule, mettaPure, applyBindings]
   | @betaSigmaSnd aa bb =>
       apply exec_to_langReducesUsing (relEnv := RelationEnv.empty) (lang := mettaPure)
-      unfold langReducesExecUsing rewriteWithContextWithPremisesUsing rewriteStepWithPremisesUsing
-      apply List.mem_append.mpr
-      left
+      refine ⟨1, ?_⟩
+      rw [rewriteAt_one_eq_rewriteStepWithPremisesUsing]
+      unfold rewriteStepWithPremisesUsing
       rw [List.mem_flatMap]
       refine ⟨betaSigmaSndRule, ?_, ?_⟩
       · simp [betaSigmaSndRule, mettaPure]
@@ -110,11 +119,12 @@ theorem pureProfileBaseStep_sound_langReduces {s t : Pattern}
         rw [List.mem_flatMap]
         let bs : Bindings := [("b", t), ("a", aa)]
         refine ⟨bs, ?_, ?_⟩
-        · simp [bs, betaSigmaSndRule, mkSnd, mkPair, matchPattern, matchArgs, mergeBindings]
+        · simp [bs, betaSigmaSndRule, mkSnd, mkPair, mettaPure,
+            matchPattern, matchArgs, mergeBindings]
         · rw [List.mem_map]
           refine ⟨bs, ?_, ?_⟩
           · simp [applyPremisesWithEnv, bs, betaSigmaSndRule]
-          · simp [bs, betaSigmaSndRule, applyBindings]
+          · simp [bs, betaSigmaSndRule, mettaPure, applyBindings]
 
 /-- Pure term-contexts on the `Pattern` side (C1): exactly the constructor positions
 corresponding to kernel congruence (`Red`). -/

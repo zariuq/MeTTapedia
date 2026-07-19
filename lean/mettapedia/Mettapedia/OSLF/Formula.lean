@@ -1,6 +1,7 @@
 import Mettapedia.OSLF.MeTTaIL.Syntax
 import Mettapedia.OSLF.MeTTaIL.Match
 import Mettapedia.OSLF.MeTTaIL.Engine
+import Mettapedia.OSLF.MeTTaIL.ContextualStep
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Engine
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction
 import Mettapedia.OSLF.Framework.TypeSynthesis
@@ -55,6 +56,7 @@ namespace Mettapedia.OSLF.Formula
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Match
 open Mettapedia.OSLF.MeTTaIL.Engine
+open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Engine
 open Mettapedia.OSLF.Framework.TypeSynthesis
@@ -387,7 +389,7 @@ def check (step : Pattern → List Pattern) (I : AtomCheck)
 /-- Formula checker entrypoint bound to a `LanguageDef` and explicit relation env. -/
 def checkLangUsing (relEnv : RelationEnv) (lang : LanguageDef) (I : AtomCheck)
     (fuel : Nat) (p : Pattern) (φ : OSLFFormula) : CheckResult :=
-  check (rewriteWithContextWithPremisesUsing relEnv lang) I fuel p φ
+  check (rewriteAt (engineBasePremises relEnv) lang fuel) I fuel p φ
 
 /-- Formula checker entrypoint bound to a `LanguageDef` (default env). -/
 def checkLang (lang : LanguageDef) (I : AtomCheck)
@@ -497,10 +499,10 @@ theorem checkLangUsing_sat_sound
     (h : checkLangUsing relEnv lang I_check fuel p φ = .sat) :
     sem (langReducesUsing relEnv lang) I_sem φ p := by
   apply (check_sat_sound (R := langReducesUsing relEnv lang)
-      (step := rewriteWithContextWithPremisesUsing relEnv lang)
+      (step := rewriteAt (engineBasePremises relEnv) lang fuel)
       (I_check := I_check) (I_sem := I_sem) h_atoms)
   · intro p q hq
-    exact exec_to_langReducesUsing relEnv lang hq
+    exact exec_to_langReducesUsing relEnv lang ⟨fuel, hq⟩
   · exact h
 
 /-- Proc-fiber corollary for checker soundness on `rhoCalc`.
@@ -952,7 +954,7 @@ semantics (`langReducesUsing`), enabling a non-trivial `.box` path. -/
 def checkLangUsingWithPred (relEnv : RelationEnv) (lang : LanguageDef)
     (pred : Pattern → List Pattern)
     (I : AtomCheck) (fuel : Nat) (p : Pattern) (φ : OSLFFormula) : CheckResult :=
-  checkWithPred (rewriteWithContextWithPremisesUsing relEnv lang ·) pred I fuel p φ
+  checkWithPred (rewriteAt (engineBasePremises relEnv) lang fuel ·) pred I fuel p φ
 
 /-- Default-env predecessor-aware checker. -/
 def checkLangWithPred (lang : LanguageDef)
@@ -973,11 +975,12 @@ theorem checkLangUsingWithPred_sat_sound
   simpa [checkLangUsingWithPred] using
     (checkWithPred_sat_sound
       (R := langReducesUsing relEnv lang)
-      (step := rewriteWithContextWithPremisesUsing relEnv lang)
+      (step := rewriteAt (engineBasePremises relEnv) lang fuel)
       (pred := pred)
       (I_check := I_check) (I_sem := I_sem)
       (h_atoms := h_atoms)
-      (h_step := fun p q hq => exec_to_langReducesUsing relEnv lang hq)
+      (h_step := fun p q hq =>
+        exec_to_langReducesUsing relEnv lang ⟨fuel, hq⟩)
       (h_pred := h_pred_complete)
       (h := h))
 

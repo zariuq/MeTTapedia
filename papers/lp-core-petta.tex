@@ -68,7 +68,8 @@ The main contributions are: (1)~a full LP kernel with $T_P$, least Herbrand
 model via Tarski's theorem, SLD resolution, and assumption-free unification
 completeness; (2)~correctness of \MeTTaIL{} pattern matching on the
 \code{isMatchCorrect} fragment; (3)~the \MeTTaIL{}--LP bridge proving that
-\code{DeclReduces} steps imply least-model membership; (4)~\code{PeTTaEval},
+supplied authored-rule applications belong to the compiled least model;
+(4)~\code{PeTTaEval},
 a pure evaluation relation with LP soundness for rule application;
 (5)~\code{PeTTaCmd}, a stateful effects layer for \code{add-atom},
 \code{remove-atom}, \code{get-atoms}, \code{progn}, and \code{prog1};
@@ -116,7 +117,7 @@ custom axioms):
 \item \textbf{LP kernel} (Sections~\ref{sec:lp-kernel}--\ref{sec:bridge}).
   $T_P$ operator, least Herbrand model via Tarski's theorem, SLD resolution,
   assumption-free unification completeness, and the \MeTTaIL{}--LP bridge
-  proving that \code{DeclReduces} steps imply least-model membership.
+  proving least-model membership for supplied authored-rule applications.
 
 \item \textbf{\MeTTaIL{} pattern matching} (Section~\ref{sec:matchspec}).
   Correctness of the algorithmic matcher on the \code{isMatchCorrect} fragment.
@@ -659,7 +660,7 @@ that grounding distributes over \code{pairTerm} via \code{Matrix.cons\_val\_zero
 and \code{Matrix.cons\_val\_one}.
 \end{proof}
 
-\subsection{Top-Rule Completeness}
+\subsection{Authored Rule-Application Encoding}
 
 Rewrite rules are compiled to LP clauses with empty bodies:
 
@@ -670,7 +671,7 @@ def rewriteRuleToLPClause (r : RewriteRule) : Clause mettailLPSig where
   body        := []
 \end{lstlisting}
 
-\begin{theorem}[\code{lp\_complete\_topRule}]
+\begin{theorem}[\code{ruleApplication\_mem\_leastHerbrandModel}]
 \label{thm:topRule}
 Let $r \in \code{lang.rewrites}$ be a rule with $r.\code{premises} = []$
 and $\code{morkTranslatable}(r.left) = \code{true}$,
@@ -697,67 +698,21 @@ $g.\code{groundAtom}(c.head) = \code{encodeReduces}(p, q)$.
 gives the conclusion; using Theorem~\ref{thm:lfp} to convert from $T_P(LHM)$ to $LHM$.
 \end{proof}
 
-\subsection{Congruence Completeness}
+\subsection{Authored Contextual Boundary}
 
-For collection rewriting (the \code{congElem} case of \code{DeclReduces}),
-two additional clause schemas are added to the LP:
+The LP compiler does not infer contextual closure from collection
+representation.  Such closure would grant every language an accidental
+reduction policy.  Instead, contextual authority is expressed by an authored
+\code{Premise.congruence} and interpreted by the least relation
+\code{ContextualStep.Step}.  An LP backend for that relation must compile the
+actual authored contextual rule and prove agreement with it; this module
+deliberately introduces no generic collection-descent clauses.
 
-\begin{lstlisting}[language=lean]
--- Head position:
--- reduces(coll(pair(x,xs)), coll(pair(y,xs))) :- reduces(x,y).
-def collectionCongHeadClause (ct : CollType) : Clause mettailLPSig := ...
-
--- Tail position (recursive):
--- reduces(coll(pair(x,xs)), coll(pair(x,ys))) :- reduces(coll(xs),coll(ys)).
-def collectionCongTailClause (ct : CollType) : Clause mettailLPSig := ...
-\end{lstlisting}
-
-\begin{lemma}[\code{lp\_complete\_congElem\_none}]
-\label{lem:cong}
-Assume $\code{encodeReduces}(\text{elems}[i], q') \in \mathrm{LHM}$,
-$i < |\text{elems}|$, and \code{ct} is an enabled congruence collection kind.
-Then replacing the $i$-th element by $q'$ preserves encoded reducibility:
-\[
-  \code{encodeReduces}(C, C[i := q']) \in \mathrm{LHM},
-\]
-where $C = \code{.collection ct elems none}$.
-\end{lemma}
-
-\begin{proof}
-By list induction.  For the head position ($i = 0$): instantiate
-\code{collectionCongHeadClause ct} with the grounding $g$ mapping
-$\text{"x"} \mapsto \text{enc}(e)$, $\text{"y"} \mapsto \text{enc}(q')$,
-$\text{"xs"} \mapsto \text{enc}(\text{rest})$.  The body atom reduces to
-\code{encodeReduces}$(e, q')$, which is in the model by hypothesis.
-Theorem~\ref{thm:clause} gives the head.  For the tail position ($i = n+1$):
-use the induction hypothesis on \code{rest}, then instantiate
-\code{collectionCongTailClause ct} to lift.
-\end{proof}
-
-\subsection{Full Completeness}
-
-\begin{theorem}[\code{lp\_complete}]
-\label{thm:complete}
-If $\code{DeclReduces}(\code{lang}, p, q)$,
-all rules in \code{lang.rewrites} are \code{lpTranslatable},
-and $\code{morkTranslatable}(p) = \code{true}$,
-then $\code{encodeReduces}(p, q) \in \mathrm{LHM}(\code{languageDefToLPKB}(\code{lang}))$.
-\end{theorem}
-
-\begin{proof}
-By cases on the \code{DeclReduces} derivation:
-\begin{itemize}
-\item \textbf{\code{topRule}}: The rule $r$ is \code{lpTranslatable}, so both sides are
-  mork-translatable and the LHS is \code{isMatchCorrect}.  The hypothesis
-  $bs \in \code{matchPattern}(r.left, p)$ combined with
-  Theorem~\ref{thm:matchcorrect} (\code{matchPattern\_correct}) gives
-  $\code{applyBindings}(bs, r.left) = p$.  Then Theorem~\ref{thm:topRule}
-  (\code{lp\_complete\_topRule}) gives the conclusion.
-\item \textbf{\code{congElem}}: The inner step is handled by \code{lp\_complete\_topRule};
-  then Lemma~\ref{lem:cong} (\code{lp\_complete\_congElem\_none}) lifts to the
-  collection context.
-\end{itemize}
-\end{proof}
+The theorem above is therefore a forward encoding result for a supplied rule
+application, not a biconditional between arbitrary LP membership and language
+reduction.  The generated clauses are not range-restricted---variables may
+occur in a head while the body is empty---so the least model records ground
+instances of authored rules and can over-approximate operational reachability.
 
 The LP-translatability predicate is:
 \begin{lstlisting}[language=lean]
@@ -874,8 +829,7 @@ fvar-matching LHS).
 
 \begin{lstlisting}[language=lean]
 def pettaSpaceToLangDef (s : PeTTaSpace) : LanguageDef where
-  rewrites              := s.rules
-  congruenceCollections := []   -- flat rules only
+  rewrites := s.rules   -- LP-safe rules are premise-free, hence root-only
   ...
 
 def pettaSpaceToLPKB (s : PeTTaSpace) : KnowledgeBase mettailLPSig :=
@@ -1841,12 +1795,13 @@ $\Diamond \dashv \Box$ Galois connection and Rust code export.
 
 \paragraph{Future work.}
 \begin{itemize}
-\item \textbf{Bridge converse direction.} The current bridge completeness result
-  shows $\code{DeclReduces} \Rightarrow \mathrm{LHM}$; the converse
-  ($\mathrm{LHM} \Rightarrow \code{DeclReduces}$) requires a constrained
-  encoding discipline and a constructive lifting theorem from LP witnesses back
-  into \MeTTaIL{} reductions.  Range restriction (\code{RangeRestriction.lean})
-  is partially formalized.
+\item \textbf{Contextual LP compilation and converse direction.} The current
+  bridge proves least-model membership for a supplied authored-rule
+  application.  A full reduction-level bridge must compile authored
+  \code{Premise.congruence} rules rather than collection representation, and a
+  converse from LP membership requires range restriction plus a constructive
+  lifting theorem from LP witnesses back into \MeTTaIL{} reductions.
+  Range restriction (\code{RangeRestriction.lean}) is partially formalized.
 \item \textbf{First-order connection search refinement.} The propositional
   connection-tableau layer is fully certified; extending executable refinement
   and witness-level completeness to the full first-order
@@ -1907,8 +1862,8 @@ proved \\
 Pattern matching correctness &
 \codepath{matchPattern_correct} &
 proved \\
-MeTTaIL--LP completeness &
-\codepath{lp_complete} &
+Authored rule-application LP encoding &
+\codepath{ruleApplication_mem_leastHerbrandModel} &
 proved \\
 PeTTa ruleApp LP soundness &
 \codepath{petta_ruleApp_lp_sound} &

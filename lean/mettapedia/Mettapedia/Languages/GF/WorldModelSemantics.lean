@@ -9,7 +9,6 @@ import Mettapedia.OSLF.Formula
 import Mettapedia.OSLF.MeTTaIL.Syntax
 import Mettapedia.OSLF.Framework.TypeSynthesis
 import Mettapedia.OSLF.Framework.EvidenceSemantics
-import Mettapedia.OSLF.MeTTaIL.DeclReducesWithPremises
 import Mettapedia.OSLF.QuantifiedFormula
 
 /-!
@@ -443,8 +442,27 @@ equalities exposing the query shape; algebraic composition laws over BinaryEvide
 would require additional WM axioms (e.g. subadditivity). -/
 
 open Mettapedia.OSLF.MeTTaIL.Match
-open Mettapedia.OSLF.MeTTaIL.DeclReducesPremises
 open Mettapedia.OSLF.MeTTaIL.Engine
+
+/-- A root application of an authored, premise-free GF rule is a step of the
+least contextual relation. -/
+private theorem langReduces_rootRule
+    {rule : RewriteRule} {source target : Pattern} {bindings : Bindings}
+    (ruleMember : rule ∈ gfLegacySemanticLanguageDef.rewrites)
+    (matched : bindings ∈
+      Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule
+        gfLegacySemanticLanguageDef rule source)
+    (premisesNil : rule.premises = [])
+    (targetEq :
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule
+        gfLegacySemanticLanguageDef rule bindings = target) :
+    langReduces gfLegacySemanticLanguageDef source target := by
+  show Mettapedia.OSLF.MeTTaIL.ContextualStep.Step
+    (Mettapedia.OSLF.MeTTaIL.ContextualStep.engineBasePremises RelationEnv.empty)
+    gfLegacySemanticLanguageDef source target
+  refine ⟨1, .rule ruleMember matched ?_ targetEq⟩
+  rw [premisesNil]
+  exact .nil bindings
 
 /-- Generic identity-wrapper reduction: a rewrite rule with pattern
 `apply name [fvar v]` ⇝ `fvar v` and no premises induces
@@ -457,14 +475,15 @@ theorem langReduces_identityWrapper
     (hprem : rw.premises = [])
     (p : Pattern) :
     langReduces gfLegacySemanticLanguageDef (.apply wrapperName [p]) p := by
-  unfold langReduces langReducesUsing
-  exact .topRule rw hrw
-    [(varName, p)]
-    (by simp [hleft, matchPattern, matchArgs, BEq.beq, List.length,
-              mergeBindings, List.filterMap])
-    [(varName, p)]
-    (by simp [hprem, applyPremisesWithEnv])
-    (by simp [hright, applyBindings, List.find?, BEq.beq])
+  apply langReduces_rootRule (rule := rw) (bindings := [(varName, p)])
+    hrw (premisesNil := hprem)
+  · simp [hleft,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule,
+      matchPattern, matchArgs, BEq.beq, List.length, mergeBindings,
+      List.filterMap, gfLegacySemanticLanguageDef]
+  · simp [hright,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule,
+      applyBindings, List.find?, BEq.beq, gfLegacySemanticLanguageDef]
 
 private theorem mem_rewrites (rw : RewriteRule) (h : rw ∈ allIdentityRewrites) :
     rw ∈ gfLegacySemanticLanguageDef.rewrites := by
@@ -525,15 +544,18 @@ theorem langReduces_activePassive (np₁ np₂ v : Pattern) :
       (Pattern.apply "PredVP" [np₁,
         Pattern.apply "ComplSlash" [Pattern.apply "SlashV2a" [v], np₂]])
       (Pattern.apply "PredVP" [np₂, Pattern.apply "PassV2" [v]]) := by
-  unfold langReduces langReducesUsing
-  exact .topRule activePassiveRewrite
+  apply langReduces_rootRule (rule := activePassiveRewrite)
+    (bindings := [("v", v), ("np2", np₂), ("np1", np₁)])
     (mem_semantic_rewrites _ (by simp [allSemanticRewrites]))
-    [("v", v), ("np2", np₂), ("np1", np₁)]
-    (by simp [activePassiveRewrite, matchPattern, matchArgs, BEq.beq, List.length,
-              mergeBindings, List.filterMap, List.find?])
-    [("v", v), ("np2", np₂), ("np1", np₁)]
-    (by simp [activePassiveRewrite, applyPremisesWithEnv])
-    (by simp [activePassiveRewrite, applyBindings, List.find?, BEq.beq, List.map])
+    (premisesNil := rfl)
+  · simp [activePassiveRewrite,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule,
+      matchPattern, matchArgs, BEq.beq, List.length, mergeBindings,
+      List.filterMap, List.find?, gfLegacySemanticLanguageDef]
+  · simp [activePassiveRewrite,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule,
+      applyBindings, List.find?, BEq.beq, List.map,
+      gfLegacySemanticLanguageDef]
 
 /-- Active-passive evidence transparency: evidence of φ at the passive clause
     flows through from the active clause via ◇.
@@ -714,16 +736,19 @@ theorem langReduces_pastTense (cl : Pattern) :
         Pattern.apply "PPos" [],
         cl])
       (Pattern.apply "⊛temporal" [cl, Pattern.apply "-1" []]) := by
-  unfold langReduces langReducesUsing
-  refine .topRule pastTenseRewrite
-    (mem_semantic_rewrites _ ?_)
-    [("cl", cl)]
-    ?_ [("cl", cl)] ?_ ?_
-  · simp [allSemanticRewrites, allTenseRewrites]
-  · simp [pastTenseRewrite, matchPattern, matchArgs, BEq.beq, List.length,
-          mergeBindings, List.filterMap, List.find?]
-  · simp [pastTenseRewrite, applyPremisesWithEnv]
-  · simp [pastTenseRewrite, applyBindings, List.find?, BEq.beq, List.map]
+  apply langReduces_rootRule (rule := pastTenseRewrite)
+    (bindings := [("cl", cl)])
+    (mem_semantic_rewrites _ (by
+      simp [allSemanticRewrites, allTenseRewrites]))
+    (premisesNil := rfl)
+  · simp [pastTenseRewrite,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule,
+      matchPattern, matchArgs, BEq.beq, List.length, mergeBindings,
+      List.filterMap, List.find?, gfLegacySemanticLanguageDef]
+  · simp [pastTenseRewrite,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule,
+      applyBindings, List.find?, BEq.beq, List.map,
+      gfLegacySemanticLanguageDef]
 
 /-- Present tense reduction: UseCl(TTAnt(TPres, ASimul), PPos, cl) ⇝ ⊛temporal(cl, 0). -/
 theorem langReduces_presentTense (cl : Pattern) :
@@ -733,16 +758,19 @@ theorem langReduces_presentTense (cl : Pattern) :
         Pattern.apply "PPos" [],
         cl])
       (Pattern.apply "⊛temporal" [cl, Pattern.apply "0" []]) := by
-  unfold langReduces langReducesUsing
-  refine .topRule presentTenseRewrite
-    (mem_semantic_rewrites _ ?_)
-    [("cl", cl)]
-    ?_ [("cl", cl)] ?_ ?_
-  · simp [allSemanticRewrites, allTenseRewrites]
-  · simp [presentTenseRewrite, matchPattern, matchArgs, BEq.beq, List.length,
-          mergeBindings, List.filterMap, List.find?]
-  · simp [presentTenseRewrite, applyPremisesWithEnv]
-  · simp [presentTenseRewrite, applyBindings, List.find?, BEq.beq, List.map]
+  apply langReduces_rootRule (rule := presentTenseRewrite)
+    (bindings := [("cl", cl)])
+    (mem_semantic_rewrites _ (by
+      simp [allSemanticRewrites, allTenseRewrites]))
+    (premisesNil := rfl)
+  · simp [presentTenseRewrite,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule,
+      matchPattern, matchArgs, BEq.beq, List.length, mergeBindings,
+      List.filterMap, List.find?, gfLegacySemanticLanguageDef]
+  · simp [presentTenseRewrite,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule,
+      applyBindings, List.find?, BEq.beq, List.map,
+      gfLegacySemanticLanguageDef]
 
 /-- Future tense reduction: UseCl(TTAnt(TFut, ASimul), PPos, cl) ⇝ ⊛temporal(cl, 1). -/
 theorem langReduces_futureTense (cl : Pattern) :
@@ -752,16 +780,19 @@ theorem langReduces_futureTense (cl : Pattern) :
         Pattern.apply "PPos" [],
         cl])
       (Pattern.apply "⊛temporal" [cl, Pattern.apply "1" []]) := by
-  unfold langReduces langReducesUsing
-  refine .topRule futureTenseRewrite
-    (mem_semantic_rewrites _ ?_)
-    [("cl", cl)]
-    ?_ [("cl", cl)] ?_ ?_
-  · simp [allSemanticRewrites, allTenseRewrites]
-  · simp [futureTenseRewrite, matchPattern, matchArgs, BEq.beq, List.length,
-          mergeBindings, List.filterMap, List.find?]
-  · simp [futureTenseRewrite, applyPremisesWithEnv]
-  · simp [futureTenseRewrite, applyBindings, List.find?, BEq.beq, List.map]
+  apply langReduces_rootRule (rule := futureTenseRewrite)
+    (bindings := [("cl", cl)])
+    (mem_semantic_rewrites _ (by
+      simp [allSemanticRewrites, allTenseRewrites]))
+    (premisesNil := rfl)
+  · simp [futureTenseRewrite,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule,
+      matchPattern, matchArgs, BEq.beq, List.length, mergeBindings,
+      List.filterMap, List.find?, gfLegacySemanticLanguageDef]
+  · simp [futureTenseRewrite,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule,
+      applyBindings, List.find?, BEq.beq, List.map,
+      gfLegacySemanticLanguageDef]
 
 /-- **Positive result**: Past-tense evidence is ◇-accessible from the full
     GF sentence.  If φ holds at the past-temporal pattern, then ◇φ holds at
@@ -801,24 +832,21 @@ private theorem matchPattern_apply_ne_nil {c1 c2 : String} {args1 args2 : List P
     - Identity: UseN, PositA, UseComp, UseV, UseN2, UseA2
     - Semantic: PredVP (active-passive)
     - Tense: UseCl (present, past, future) -/
-private theorem gfRGL_rule_lhs_ne_temporal (r : RewriteRule)
+private theorem gfRGL_rule_does_not_match_temporal (r : RewriteRule)
     (hr : r ∈ gfLegacySemanticLanguageDef.rewrites) :
     ∀ (cl t : Pattern),
-      matchPattern r.left (.apply "⊛temporal" [cl, t]) = [] := by
+      Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule
+        gfLegacySemanticLanguageDef r (.apply "⊛temporal" [cl, t]) = [] := by
   intro cl t
   simp only [gfLegacySemanticLanguageDef, allIdentityRewrites, allSemanticRewrites,
     allTenseRewrites, List.mem_append, List.mem_cons,
     List.mem_nil_iff, or_false] at hr
   -- Each disjunct fixes r to a specific rewrite rule with a known LHS
   rcases hr with (h|h|h|h|h|h)|(h|h|h|h) <;> subst h <;>
-    simp [matchPattern, useNElimRewrite, positAElimRewrite,
+    simp [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule,
+      gfLegacySemanticLanguageDef, matchPattern, useNElimRewrite, positAElimRewrite,
       useCompElimRewrite, useVElimRewrite, useN2ElimRewrite, useA2ElimRewrite,
       activePassiveRewrite, presentTenseRewrite, pastTenseRewrite, futureTenseRewrite]
-
-/-- GF RGL does not allow congruence rewriting in any collection type. -/
-private theorem gfRGL_no_congruence (ct : CollType) :
-    ¬ LanguageDef.allowsCongruenceIn gfLegacySemanticLanguageDef ct := by
-  simp [LanguageDef.allowsCongruenceIn, gfLegacySemanticLanguageDef]
 
 /-- **Semantic negative result**: Temporal patterns are terminal in GF RGL.
     No rewrite rule has `⊛temporal(...)` as its LHS, so temporal patterns
@@ -829,13 +857,11 @@ private theorem gfRGL_no_congruence (ct : CollType) :
     through the rewrite engine. -/
 theorem temporal_irreducible (cl t : Pattern) (q : Pattern) :
     ¬ langReduces gfLegacySemanticLanguageDef (.apply "⊛temporal" [cl, t]) q := by
-  intro hred
-  -- langReduces = DeclReducesWithPremises with empty RelationEnv
-  -- Only topRule can apply (.apply patterns don't match congElem which needs .collection)
-  cases hred with
-  | topRule r hr bs0 hbs0 _ _ _ =>
-    have := gfRGL_rule_lhs_ne_temporal r hr cl t
-    simp [this] at hbs0
+  rintro ⟨_, step⟩
+  cases step with
+  | rule ruleMember matched _ _ =>
+      rw [gfRGL_rule_does_not_match_temporal _ ruleMember cl t] at matched
+      exact List.not_mem_nil matched
 
 /-- **Negative result**: Present-tense does NOT entail past-tense semantically.
     Since temporal patterns are irreducible, `sem R I (◇ φ) present_pattern`

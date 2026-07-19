@@ -1349,16 +1349,12 @@ def rhoIntrinsicReducesCost : {p q : Pattern} → Reduces p q → RhoCostAccount
   | _, _, .equiv _ step _ => rhoIntrinsicReducesCost step
   | _, _, .par step => rhoIntrinsicReducesCost step
   | _, _, .par_any step => rhoIntrinsicReducesCost step
-  | _, _, .par_set step => rhoIntrinsicReducesCost step
-  | _, _, .par_set_any step => rhoIntrinsicReducesCost step
 
 def rhoIntrinsicReducesLedger : {p q : Pattern} → Reduces p q → RhoLedger
   | _, _, .comm (n := n) (q := payload) => rhoIntrinsicCommLedger n payload
   | _, _, .equiv _ step _ => rhoIntrinsicReducesLedger step
   | _, _, .par step => rhoIntrinsicReducesLedger step
   | _, _, .par_any step => rhoIntrinsicReducesLedger step
-  | _, _, .par_set step => rhoIntrinsicReducesLedger step
-  | _, _, .par_set_any step => rhoIntrinsicReducesLedger step
 
 @[simp] theorem rhoIntrinsicReducesLedger_shadow {p q : Pattern}
     (step : Reduces p q) :
@@ -1373,10 +1369,6 @@ def rhoIntrinsicReducesLedger : {p q : Pattern} → Reduces p q → RhoLedger
       exact ih
   | par_any inner ih =>
       exact ih
-  | par_set inner ih =>
-      exact ih
-  | par_set_any inner ih =>
-      exact ih
 
 @[simp] theorem rhoIntrinsicReducesLedger_wellFormed {p q : Pattern}
     (step : Reduces p q) :
@@ -1389,10 +1381,6 @@ def rhoIntrinsicReducesLedger : {p q : Pattern} → Reduces p q → RhoLedger
   | par inner ih =>
       exact ih
   | par_any inner ih =>
-      exact ih
-  | par_set inner ih =>
-      exact ih
-  | par_set_any inner ih =>
       exact ih
 
 @[simp] theorem rhoIntrinsicReducesLedger_traceCoherent {p q : Pattern}
@@ -1451,8 +1439,6 @@ noncomputable def rhoIntrinsicStepCost {p q : Pattern} (h : rhoGSLT.Step p q) :
   | equiv _ inner _ ih => exact ih
   | par inner ih => exact ih
   | par_any inner ih => exact ih
-  | par_set inner ih => exact ih
-  | par_set_any inner ih => exact ih
 
 set_option linter.unnecessarySimpa false in
 @[simp] theorem rhoIntrinsicStepCost_apply_one {p q : Pattern}
@@ -1486,12 +1472,6 @@ theorem rhoIntrinsicReducesLedger_temporal_mem_width_one {p q : Pattern}
       intro sig atom hsig hatom
       exact ih hsig hatom
   | par_any inner ih =>
-      intro sig atom hsig hatom
-      exact ih hsig hatom
-  | par_set inner ih =>
-      intro sig atom hsig hatom
-      exact ih hsig hatom
-  | par_set_any inner ih =>
       intro sig atom hsig hatom
       exact ih hsig hatom
 

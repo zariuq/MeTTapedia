@@ -1,4 +1,4 @@
-import Mettapedia.Languages.ProcessCalculi.MORK.CollectionBridge
+import Mettapedia.Languages.ProcessCalculi.MORK.MeTTaILBridge
 
 /-!
 # PLN Inference Rules as MORK Source Programs
@@ -21,7 +21,7 @@ by `decide`, confirming these rules fall within MORK's executable fragment.
 
 The `plnPremiseLanguageDef` packages these rules into a MeTTaIL `LanguageDef`
 that MORK can execute via `rewriteRuleToSourceExecRule`. When combined with
-the multi-premise bridge (`declReducesWithPremises_multi_implies_mork_fireSourceRule`),
+the multi-premise bridge (`languageStep_implies_mork_fireSourceRule`),
 this gives concrete GSLT routing witnesses: PLN inference steps that MORK
 can execute as work-queue firings.
 -/
@@ -289,26 +289,24 @@ theorem plnGuardedPremise_all_premises_ext_translatable :
 
 /-! ## Concrete bridge instantiation
 
-The multi-premise bridge theorem `declReducesWithPremises_multi_implies_mork_fireSourceRule`
+The multi-premise bridge theorem `languageStep_implies_mork_fireSourceRule`
 applies to `plnPremiseLanguageDef` when:
 1. The reduction uses a rule from `plnPremiseLanguageDef`
 2. The result is ground
 3. A `PremiseChain` witness exists in the workspace
 
-For `congElem` reductions (collection element replacement), the bridge routes
-through `collectionReplaceSourceRule` in the extended rule set. -/
+The PLN languages have only relation-query and freshness premises, so their
+source programs come directly from their authored rules. -/
 
-/-- PLN multi-premise bridge: if `DeclReducesWithPremises` fires using a rule
+/-- PLN multi-premise bridge: if the authored language takes a step using a rule
     from `plnPremiseLanguageDef`, and a `PremiseChain` witness exists, then MORK's
-    `fireSourceRule` produces the result. Handles both `topRule` and `congElem`
-    via `languageDefToSourceExecRulesWithCongr`. -/
-theorem pln_reduces_implies_mork_fireSourceRule
+    `fireSourceRule` produces the result using the directly compiled rule. -/
+theorem pln_step_implies_mork_fireSourceRule
     (relEnv : Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv) (p q : ILP)
-    (h : Mettapedia.OSLF.MeTTaIL.DeclReducesPremises.DeclReducesWithPremises
-        relEnv plnPremiseLanguageDef p q)
+    (step : Mettapedia.OSLF.MeTTaIL.ContextualStep.Step
+      (Mettapedia.OSLF.MeTTaIL.ContextualStep.engineBasePremises relEnv)
+      plnPremiseLanguageDef p q)
     (hground : isGroundAtom (morkPatternToAtom q) = true)
-    (hground_coll : ∀ ct elems rest, p = .collection ct elems rest →
-        isGroundAtom (morkPatternToAtom p) = true)
     (s : Space) (hp_in : morkPatternToAtom p ∈ s)
     (hchain : ∀ r ∈ plnPremiseLanguageDef.rewrites,
         ∀ bs0 ∈ Mettapedia.OSLF.MeTTaIL.Match.matchPattern r.left p,
@@ -318,25 +316,29 @@ theorem pln_reduces_implies_mork_fireSourceRule
           PremiseChain relEnv plnPremiseLanguageDef s bs0 r.premises witnesses bs ∧
           witnesses.Nodup ∧
           ∀ a ∈ witnesses, a ≠ morkPatternToAtom p) :
-    ∃ r_source ∈ languageDefToSourceExecRulesWithCongr plnPremiseLanguageDef
-        [collectionReplaceSourceRule (morkPatternToAtom p) (morkPatternToAtom q)],
+    ∃ r_source ∈ languageDefToSourceExecRules plnPremiseLanguageDef,
       ∃ σ : Subst, applySinks s σ r_source.tmpl ∈ fireSourceRule s r_source :=
-  declReducesWithPremises_multi_implies_mork_fireSourceRule
-    relEnv plnPremiseLanguageDef p q h
+  languageStep_implies_mork_fireSourceRule
+    relEnv plnPremiseLanguageDef p q step rfl
+    (by
+      intro rule ruleMember
+      simp [plnPremiseLanguageDef] at ruleMember
+      rcases ruleMember with rfl | rfl | rfl
+      · exact .relationQuery (.relationQuery .nil)
+      · exact .relationQuery (.relationQuery .nil)
+      · exact .relationQuery .nil)
     plnPremise_all_fvar_lhs plnPremise_all_rhs_translatable
-    plnPremise_all_premises_translatable hground hground_coll s hp_in hchain
+    plnPremise_all_premises_translatable hground s hp_in hchain
 
-/-- PLN guarded ext bridge: if `DeclReducesWithPremises` fires using a rule
+/-- PLN guarded ext bridge: if the authored language takes a step using a rule
     from `plnGuardedPremiseLanguageDef`, and a `PremiseChain` witness exists with
-    guard satisfaction, then MORK's `fireSourceRule` produces the result. Handles
-    both `topRule` and `congElem` via `languageDefToSourceExecRulesExtWithCongr`. -/
-theorem pln_guarded_reduces_implies_mork_fireSourceRule
+    guard satisfaction, then MORK's `fireSourceRule` produces the result. -/
+theorem pln_guarded_step_implies_mork_fireSourceRule
     (relEnv : Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv) (p q : ILP)
-    (h : Mettapedia.OSLF.MeTTaIL.DeclReducesPremises.DeclReducesWithPremises
-        relEnv plnGuardedPremiseLanguageDef p q)
+    (step : Mettapedia.OSLF.MeTTaIL.ContextualStep.Step
+      (Mettapedia.OSLF.MeTTaIL.ContextualStep.engineBasePremises relEnv)
+      plnGuardedPremiseLanguageDef p q)
     (hground : isGroundAtom (morkPatternToAtom q) = true)
-    (hground_coll : ∀ ct elems rest, p = .collection ct elems rest →
-        isGroundAtom (morkPatternToAtom p) = true)
     (s : Space) (hp_in : morkPatternToAtom p ∈ s)
     (hchain : ∀ r ∈ plnGuardedPremiseLanguageDef.rewrites,
         ∀ bs0 ∈ Mettapedia.OSLF.MeTTaIL.Match.matchPattern r.left p,
@@ -348,13 +350,19 @@ theorem pln_guarded_reduces_implies_mork_fireSourceRule
           (∀ a ∈ witnesses, a ≠ morkPatternToAtom p) ∧
           matchSourceGuards (bindingsToSubst bs)
             (premisesToSourceGuards r.premises) = true) :
-    ∃ r_source ∈ languageDefToSourceExecRulesExtWithCongr plnGuardedPremiseLanguageDef
-        [collectionReplaceSourceRule (morkPatternToAtom p) (morkPatternToAtom q)],
+    ∃ r_source ∈ languageDefToSourceExecRulesExt plnGuardedPremiseLanguageDef,
       ∃ σ : Subst, applySinks s σ r_source.tmpl ∈ fireSourceRule s r_source :=
-  declReducesWithPremises_ext_implies_mork_fireSourceRule
-    relEnv plnGuardedPremiseLanguageDef p q h
+  languageStep_implies_mork_fireSourceRuleExt
+    relEnv plnGuardedPremiseLanguageDef p q step rfl
+    (by
+      intro rule ruleMember
+      simp [plnGuardedPremiseLanguageDef] at ruleMember
+      rcases ruleMember with rfl | rfl | rfl
+      · exact .relationQuery (.relationQuery (.freshness .nil))
+      · exact .relationQuery (.relationQuery (.freshness (.freshness .nil)))
+      · exact .relationQuery (.relationQuery .nil))
     plnGuardedPremise_all_fvar_lhs plnGuardedPremise_all_rhs_translatable
-    plnGuardedPremise_all_premises_ext_translatable hground hground_coll s hp_in hchain
+    plnGuardedPremise_all_premises_ext_translatable hground s hp_in hchain
 
 /-! ## Canary -/
 
@@ -371,8 +379,8 @@ section Canaries
 #check @plnGuardedTransitivityRule_premises_translatable_ext
 #check @plnGuardedTransitivityRule_not_strict_translatable
 #check @plnDoubleGuardedDeductionRule_ext_translatable
-#check @pln_reduces_implies_mork_fireSourceRule
-#check @pln_guarded_reduces_implies_mork_fireSourceRule
+#check @pln_step_implies_mork_fireSourceRule
+#check @pln_guarded_step_implies_mork_fireSourceRule
 end Canaries
 
 end Mettapedia.Languages.ProcessCalculi.MORK.PLNRules

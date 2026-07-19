@@ -99,6 +99,16 @@ def matchPatternForRule
       matchPatternWith (canonicalEquivalent declaration) rule.left term
   | none => matchPattern rule.left term
 
+/-- Rule-aware matching is unchanged when two languages share the same
+authored reflective presentations. -/
+theorem matchPatternForRule_eq_of_presentations_eq
+    {lang₁ lang₂ : LanguageDef}
+    (same : lang₁.reflectivePresentations = lang₂.reflectivePresentations)
+    (rule : RewriteRule) (term : Pattern) :
+    matchPatternForRule lang₁ rule term = matchPatternForRule lang₂ rule term := by
+  simp only [matchPatternForRule]
+  rw [declarationForRule?_eq_of_presentations_eq same rule]
+
 /-- Missing or ambiguous reflective data is definitionally backward
 compatible with structural matching. -/
 theorem matchPatternForRule_eq_syntactic_of_no_declaration
@@ -106,6 +116,13 @@ theorem matchPatternForRule_eq_syntactic_of_no_declaration
     (missing : declarationForRule? lang rule = none) (term : Pattern) :
     matchPatternForRule lang rule term = matchPattern rule.left term := by
   simp [matchPatternForRule, missing]
+
+@[simp] theorem matchPatternForRule_eq_syntactic_of_no_presentations
+    {lang : LanguageDef} (empty : lang.reflectivePresentations = [])
+    (rule : RewriteRule) (term : Pattern) :
+    matchPatternForRule lang rule term = matchPattern rule.left term := by
+  apply matchPatternForRule_eq_syntactic_of_no_declaration
+  exact declarationForRule?_eq_none_of_no_presentations empty rule
 
 /-! ## Executable boundary examples -/
 

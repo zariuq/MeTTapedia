@@ -137,7 +137,6 @@ def mm0Lite : LanguageDef := {
                 , .apply "SCons" [.fvar "goal", .apply "SNil" []]
                 , .apply "Verified" [] ] }
   ],
-  congruenceCollections := []
 }
 
 end Mettapedia.Languages.MM0Lite.LanguageDef

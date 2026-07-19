@@ -26,7 +26,7 @@ structure StrictContext (s : Session) (ctor : String) (argsV : List Pattern) : P
   noTranslate : Session.stepTranslateCall s (.apply ctor argsV) = []
   /-- compatRewriteStep returns empty for this term. -/
   noCompat : Session.stepCompatRewrite s (.apply ctor argsV) = []
-  /-- rewriteWithContext returns empty for this term. -/
+  /-- `contextualReducts` returns empty for this term. -/
   noGenerated : Session.stepGeneratedRewrite s (.apply ctor argsV) = []
   /-- Each arg is already irreducible (step returns []). -/
   argsIrreducible : ∀ a ∈ argsV, Session.step s a = []
@@ -180,6 +180,7 @@ theorem stepCompatRewrite_empty_of_noOverlap_builtin
 
 open MeTTailCore.MeTTaIL.Match in
 open MeTTailCore.MeTTaIL.Engine in
+open MeTTailCore.MeTTaIL.ContextualStep in
 /-- Under noOverlap and builtin `ctor`, `stepGeneratedRewrite` returns `[]`. -/
 theorem stepGeneratedRewrite_empty_of_noOverlap_builtin
     (s : Session) (ctor : String) (argsV : List Pattern)
@@ -202,14 +203,11 @@ theorem stepGeneratedRewrite_empty_of_noOverlap_builtin
     | multiLambda n body => exact matchPattern_nonApply_apply _ ctor argsV (fun h as hc => by cases hc) (fun x hc => by cases hc)
     | subst body repl => exact matchPattern_nonApply_apply _ ctor argsV (fun h as hc => by cases hc) (fun x hc => by cases hc)
     | collection ct elems rest => exact matchPattern_nonApply_apply _ ctor argsV (fun h as hc => by cases hc) (fun x hc => by cases hc)
-  -- stepGeneratedRewrite = SpecBundle.rewriteWithContext = flatMap over rules via matchPattern
+  -- stepGeneratedRewrite = SpecBundle.contextualReducts, generated from authored rules
   -- Each rule contributes [] because matchPattern returns []
-  show MeTTailCore.MeTTaIL.Profile.SpecBundle.rewriteWithContext s.bundle (.apply ctor argsV) = []
-  unfold MeTTailCore.MeTTaIL.Profile.SpecBundle.rewriteWithContext
-  simp only [rewriteWithContextWithPremisesUsing, rewriteStepWithPremisesUsing, List.append_nil]
-  apply Algorithms.MeTTa.Simple.Semantics.TranslatorOps.flatMap_eq_nil_of_forall
-  intro rule hrule
-  simp only [applyRuleWithPremisesUsing, hMatchNil rule hrule, List.flatMap_nil]
+  show MeTTailCore.MeTTaIL.Profile.SpecBundle.contextualReducts s.bundle (.apply ctor argsV) = []
+  unfold MeTTailCore.MeTTaIL.Profile.SpecBundle.contextualReducts reductsUsing
+  exact rewriteAt_eq_nil_of_matchPattern_eq_nil hMatchNil _
 
 /-- Under noOverlap and builtin ctor, `StrictContext` holds:
     translateCall, compatRewrite, and generatedRewrite are all empty. -/

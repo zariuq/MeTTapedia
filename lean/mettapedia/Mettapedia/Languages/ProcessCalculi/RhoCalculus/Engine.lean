@@ -128,9 +128,6 @@ def reduceStep (p : Pattern) (fuel : Nat := 100) : List Pattern :=
       let parReducts := reduceElemsAux (reduceStep · fuel) elems |>.map fun (i, elem') =>
         .collection .hashBag (elems.set i elem') none
       commReducts ++ parReducts
-    | .collection .hashSet elems none =>
-      reduceElemsAux (reduceStep · fuel) elems |>.map fun (i, elem') =>
-        .collection .hashSet (elems.set i elem') none
     | _ => []
 
 /-- Executable irreducibility canary for the empty bag. -/
@@ -357,24 +354,6 @@ private theorem reduceStep_mem_par_any
   rw [List.mem_map]
   exact ⟨(before.length, q), haux, by simp⟩
 
-private theorem reduceStep_mem_par_set_any
-    {before after : List Pattern} {p q : Pattern} {fuel : Nat}
-    (h : q ∈ reduceStep p fuel) :
-    .collection .hashSet (before ++ [q] ++ after) none ∈
-      reduceStep (.collection .hashSet (before ++ [p] ++ after) none) (fuel + 1) := by
-  have hidx : before.length < (before ++ [p] ++ after).length := by
-    simp
-  have haux :
-      (before.length, q) ∈
-        reduceElemsAux (reduceStep · fuel) (before ++ [p] ++ after) :=
-    reduceElemsAux_mem hidx (by simpa using h)
-  have hset :
-      (before ++ [p] ++ after).set before.length q = before ++ [q] ++ after := by
-    simp [List.set_eq_take_append_cons_drop]
-  simp only [reduceStep]
-  rw [List.mem_map]
-  exact ⟨(before.length, q), haux, by simp⟩
-
 open StructuralCongruence in
 /-- COMM soundness at specific positions -/
 private theorem comm_at_positions (elems : List Pattern) (i : Nat) (j : Nat)
@@ -468,20 +447,6 @@ theorem reduceStep_sound (p q : Pattern) (fuel : Nat)
       have h := Reduces.par_any (before := elems.take idx) (after := elems.drop (idx + 1)) hred
       rw [← hdecomp, ← hset] at h
       exact ⟨h⟩
-  | fuel + 1, .collection .hashSet elems none =>
-    simp only [reduceStep, List.mem_map] at h
-    obtain ⟨⟨idx, elem'⟩, hmem_aux, hq_eq⟩ := h
-    subst hq_eq
-    obtain ⟨hidx, helem_mem⟩ := reduceElemsAux_spec hmem_aux
-    have hred := reduceStep_sound (elems[idx]) elem' fuel helem_mem
-    obtain ⟨hred⟩ := hred
-    have hdecomp : elems = elems.take idx ++ [elems[idx]] ++ elems.drop (idx + 1) := by
-      simp [List.take_append_drop]
-    have hset : elems.set idx elem' = elems.take idx ++ [elem'] ++ elems.drop (idx + 1) := by
-      simp [List.set_eq_take_append_cons_drop, hidx]
-    have h := Reduces.par_set_any (before := elems.take idx) (after := elems.drop (idx + 1)) hred
-    rw [← hdecomp, ← hset] at h
-    exact ⟨h⟩
   | _ + 1, .bvar _ => simp [reduceStep] at h
   | _ + 1, .fvar _ => simp [reduceStep] at h
   | _ + 1, .lambda _ _ => simp [reduceStep] at h
@@ -512,7 +477,7 @@ theorem comm_head_mem_reduceStep
 
     This is the honest amount of executable lookahead needed for a specific
     semantic one-step derivation: COMM needs one step, and every descent under
-    bag/set structure adds one layer of recursive fuel. Structural-congruence
+    parallel-bag structure adds one layer of recursive fuel. Structural-congruence
     shells themselves do not increase the bound. -/
 def reduceStepCompletenessFuel {p q : Pattern} (h : p ⇝ q) : Nat :=
   match h with
@@ -520,8 +485,6 @@ def reduceStepCompletenessFuel {p q : Pattern} (h : p ⇝ q) : Nat :=
   | .equiv _ hmid _ => reduceStepCompletenessFuel hmid
   | .par hmid => reduceStepCompletenessFuel hmid + 1
   | .par_any hmid => reduceStepCompletenessFuel hmid + 1
-  | .par_set hmid => reduceStepCompletenessFuel hmid + 1
-  | .par_set_any hmid => reduceStepCompletenessFuel hmid + 1
 
 /-- Quotient-exact completeness with an explicit proof-structural fuel bound. -/
 theorem reduceStep_complete_up_to_struct_bounded
@@ -569,26 +532,6 @@ theorem reduceStep_complete_up_to_struct_bounded
         struct_cong_par_any hqRep⟩
       simpa [reduceStepCompletenessFuel] using
         reduceStep_mem_par_any (before := before) (after := after) hmem
-  | @par_set p q rest hstep ih =>
-      rcases ih with ⟨pRep, qRep, hpRep, hmem, hqRep⟩
-      refine ⟨
-        .collection .hashSet (pRep :: rest) none,
-        .collection .hashSet (qRep :: rest) none,
-        struct_cong_set_head hpRep,
-        ?_,
-        struct_cong_set_head hqRep⟩
-      simpa [reduceStepCompletenessFuel] using
-        reduceStep_mem_par_set_any (before := []) (after := rest) hmem
-  | @par_set_any p q before after hstep ih =>
-      rcases ih with ⟨pRep, qRep, hpRep, hmem, hqRep⟩
-      refine ⟨
-        .collection .hashSet (before ++ [pRep] ++ after) none,
-        .collection .hashSet (before ++ [qRep] ++ after) none,
-        struct_cong_set_any hpRep,
-        ?_,
-        struct_cong_set_any hqRep⟩
-      simpa [reduceStepCompletenessFuel] using
-        reduceStep_mem_par_set_any (before := before) (after := after) hmem
 
 /-- Quotient-exact completeness for executable one-step reduction: every
     semantic one-step reduct is represented by an executable one-step reduct

@@ -116,8 +116,8 @@ inductive OSLFClaim where
   | langDiamondAndLangBoxDeriveModalOperators
   | langGaloisUsingProvesAdjunction
   | langOSLFPackagesDerivedTypeSystem
-  | declReducesIsSoundnessCompletenessBridge
-  | declReducesIsExecutableDeclarativeBridge
+  | contextualStepHasExactBoundedCompiler
+  | contextualStepGeneratesLeastAuthoredRelation
   | checkLangUsingProvidesExecutableChecker
   | checkerSoundnessConnectsToSemantics
   | formulaLayerHasCheckerSoundnessBridges
@@ -362,18 +362,18 @@ def renderOSLFClaim : OSLFClaim → String
           (linAdjCN (linPositA (compoundA "type")) (linUseN system_N)))
       mkPresPos subj (complV2 (mkV2 (regV "package")) objNP)
 
-  -- "`...DeclReducesWithPremises.lean` is a soundness-completeness bridge"
-  | .declReducesIsSoundnessCompletenessBridge =>
-      let subj := properNameNP "`Mettapedia/OSLF/MeTTaIL/DeclReducesWithPremises.lean`"
+  -- "`...ContextualStep.lean` has an exact bounded compiler"
+  | .contextualStepHasExactBoundedCompiler =>
+      let subj := properNameNP "`Mettapedia/OSLF/MeTTaIL/ContextualStep.lean`"
       let complement := linDetCN aIndefArt
-        (linAdjCN (linPositA (compoundA "soundness-completeness")) (linUseN bridge_N))
+        (linAdjCN (linPositA (compoundA "exact-bounded")) (linUseN (regN "compiler")))
       mkPresPos subj (copulaNP complement)
 
-  -- "`...DeclReducesWithPremises.lean` is an executable-declarative bridge"
-  | .declReducesIsExecutableDeclarativeBridge =>
-      let subj := properNameNP "`Mettapedia/OSLF/MeTTaIL/DeclReducesWithPremises.lean`"
+  -- "`...ContextualStep.lean` generates the least authored relation"
+  | .contextualStepGeneratesLeastAuthoredRelation =>
+      let subj := properNameNP "`Mettapedia/OSLF/MeTTaIL/ContextualStep.lean`"
       let complement := linDetCN aIndefArt
-        (linAdjCN (linPositA (compoundA "executable-declarative")) (linUseN bridge_N))
+        (linAdjCN (linPositA (compoundA "least-authored")) (linUseN (regN "relation")))
       mkPresPos subj (copulaNP complement)
 
   -- "`checkLangUsing` provides an executable checker"
@@ -678,8 +678,10 @@ private def canonicalApiItems : List ApiItem :=
                  ] }
   , { path := "Mettapedia/OSLF/Formula.lean"
       members := [ "OSLFFormula", "sem", "checkLangUsing" ] }
-  , { path := "Mettapedia/OSLF/MeTTaIL/DeclReducesWithPremises.lean"
-      members := [] }
+  , { path := "Mettapedia/OSLF/MeTTaIL/ContextualStep.lean"
+      members := [ "Step", "StepAt", "rewriteAt"
+                 , "mem_rewriteAt_iff_stepAt"
+                 , "exists_mem_rewriteAt_iff_step" ] }
   ]
 
 private def synthPathApiItems : List ApiItem :=
@@ -696,12 +698,10 @@ private def premiseAwareApiItems : List ApiItem :=
   [ { path := "Mettapedia/OSLF/MeTTaIL/Syntax.lean"
       members := [ "Premise", "RewriteRule", "LanguageDef" ] }
   , { path := "Mettapedia/OSLF/MeTTaIL/Engine.lean"
-      members := [ "RelationEnv"
-                 , "applyRuleWithPremisesUsing"
-                 , "rewriteWithContextWithPremisesUsing"
-                 ] }
-  , { path := "Mettapedia/OSLF/MeTTaIL/DeclReducesWithPremises.lean"
-      members := [] }
+      members := [ "RelationEnv", "applyRuleWithPremisesUsing" ] }
+  , { path := "Mettapedia/OSLF/MeTTaIL/ContextualStep.lean"
+      members := [ "engineBasePremises", "Step", "rewriteAt"
+                 , "exists_mem_rewriteAt_iff_step" ] }
   ]
 
 private def formulaApiItems : List ApiItem :=
@@ -1007,7 +1007,7 @@ def oslfReadmeBlocks : List ReadmeBlock :=
   , .heading 3 (renderOSLFHeading .canonicalAPIs)
   , .apiItems canonicalApiItems
   , .claimBullets
-      [ claimBullet .declReducesIsSoundnessCompletenessBridge ]
+      [ claimBullet .contextualStepHasExactBoundedCompiler ]
 
   , .heading 3 (renderOSLFHeading .startingPoints)
   , .pathItems startingPathItems
@@ -1077,7 +1077,7 @@ def oslfReadmeBlocks : List ReadmeBlock :=
 
   , .apiItems premiseAwareApiItems
   , .claimBullets
-      [ claimBullet .declReducesIsExecutableDeclarativeBridge ]
+      [ claimBullet .contextualStepGeneratesLeastAuthoredRelation ]
 
     -- ### 3) Formula Layer + Checker Soundness
   , .heading 3 (renderOSLFHeading .formulaLayerCheckerSoundness)
@@ -1229,8 +1229,8 @@ def allOSLFClaims : List OSLFClaim :=
   , .langDiamondAndLangBoxDeriveModalOperators
   , .langGaloisUsingProvesAdjunction
   , .langOSLFPackagesDerivedTypeSystem
-  , .declReducesIsSoundnessCompletenessBridge
-  , .declReducesIsExecutableDeclarativeBridge
+  , .contextualStepHasExactBoundedCompiler
+  , .contextualStepGeneratesLeastAuthoredRelation
   , .checkLangUsingProvidesExecutableChecker
   , .checkerSoundnessConnectsToSemantics
   , .formulaLayerHasCheckerSoundnessBridges

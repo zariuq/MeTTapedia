@@ -143,7 +143,6 @@ def minskyLite : LanguageDef := {
                 [ .apply "Halt" []
                 , .fvar "a", .fvar "b", .apply "Done" [] ] }
   ]
-  congruenceCollections := []
 }
 
 end Mettapedia.Languages.MinskyLite.LanguageDef

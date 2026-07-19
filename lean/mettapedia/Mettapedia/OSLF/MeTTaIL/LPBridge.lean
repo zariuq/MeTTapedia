@@ -1,6 +1,5 @@
 import Mettapedia.Logic.LP.Semantics
 import Mettapedia.Logic.LP.RangeRestriction
-import Mettapedia.OSLF.MeTTaIL.DeclReduces
 import Mettapedia.OSLF.MeTTaIL.MatchSpec
 import Mettapedia.Languages.ProcessCalculi.MORK.MeTTaILBridge
 import Mathlib.Data.Matrix.Basic
@@ -8,8 +7,8 @@ import Mathlib.Data.Matrix.Basic
 /-!
 # MeTTaIL ↔ LP Bridge: Grounding OSLF in LP Semantics
 
-Connects MeTTaIL's declarative reduction relation (`DeclReduces`) to the least
-Herbrand model of a logic program (`LP.leastHerbrandModel`).
+Connects authored MeTTaIL rewrite-rule applications to the least Herbrand model
+of a logic program (`LP.leastHerbrandModel`).
 
 ## Signature Design
 
@@ -28,21 +27,24 @@ Patterns are encoded as binary pair-spine trees:
 
 `morkTranslatable` (same as MORK bridge): no `.subst`, no rest-variable collections.
 
-## Scope: lp_complete_topRule
+## Scope: `ruleApplication_mem_leastHerbrandModel`
 
-The main theorem, `lp_complete_topRule`, covers DeclReduces.topRule steps.
+The main theorem covers one explicit authored-rule application.
 Preconditions:
 - `hmt_rl`, `hmt_rr`: both rule sides are morkTranslatable
 - `hbs_lhs`: `applyBindings bs r.left = p` (matchPattern correctness for the LHS;
   this follows from the yet-to-be-proven `matchPattern_correct` theorem which
   establishes that pattern matching is a left-inverse of `applyBindings`)
-- `hbs_rhs`: `applyBindings bs r.right = q` (given directly by DeclReduces.topRule)
+- `hbs_rhs`: `applyBindings bs r.right = q`
 
-`congElem` (sub-collection rewriting) is excluded: it requires LP clauses indexed
-by (rule, collection-index, collection-length), which is future work.
+Contextual closure is deliberately not inferred from collection representation.
+An LP backend for contextual steps must compile the actual authored contextual
+rule and prove agreement with `ContextualStep`; this module does not manufacture
+generic collection-descent clauses.
 
 `lp_sound` is deferred: clauses are not range-restricted (LP variables in heads but
-not in the empty body), so `leastHerbrandModel` over-approximates `DeclReduces`.
+not in the empty body), so the least model records rule instances rather than a
+bidirectional operational-semantics equivalence.
 
 ## LLM Notes
 
@@ -54,7 +56,8 @@ not in the empty body), so `leastHerbrandModel` over-approximates `DeclReduces`.
   `Matrix.cons_val_zero` and `Matrix.cons_val_one`.
 - `groundTerm_pairTerm` (marked @[simp]): unfolds pairTerm/pairGround + groundTerm.
 - Commutation proved by `mutual theorem` with `termination_by sizeOf p` and `sizeOf ps`.
-- `lp_complete_topRule` uses `leastHerbrandModel_clause` after building groundAtom = encodeReduces.
+- `ruleApplication_mem_leastHerbrandModel` uses `leastHerbrandModel_clause`
+  after building `groundAtom = encodeReduces`.
 -/
 
 namespace Mettapedia.OSLF.MeTTaIL.LPBridge
@@ -198,33 +201,6 @@ def reducesAtomTerm (lhs rhs : Term mettailLPSig) : Atom mettailLPSig where
   symbol := ()
   args   := ![lhs, rhs]
 
-/-- LP term constructor for collection payloads. -/
-def collectionTerm (ct : ILCT) (payload : Term mettailLPSig) : Term mettailLPSig :=
-  pairTerm (Term.const s!"coll_{mettailCtStr ct}") payload
-
-/-- Congruence clause (head position):
-    reduces(coll(pair(x,xs)), coll(pair(y,xs))) :- reduces(x,y). -/
-def collectionCongHeadClause (ct : ILCT) : Clause mettailLPSig where
-  head := reducesAtomTerm
-    (collectionTerm ct (pairTerm (Term.var "x") (Term.var "xs")))
-    (collectionTerm ct (pairTerm (Term.var "y") (Term.var "xs")))
-  body := [reducesAtomTerm (Term.var "x") (Term.var "y")]
-
-/-- Congruence clause (tail recursion):
-    reduces(coll(pair(x,xs)), coll(pair(x,ys))) :- reduces(coll(xs), coll(ys)). -/
-def collectionCongTailClause (ct : ILCT) : Clause mettailLPSig where
-  head := reducesAtomTerm
-    (collectionTerm ct (pairTerm (Term.var "x") (Term.var "xs")))
-    (collectionTerm ct (pairTerm (Term.var "x") (Term.var "ys")))
-  body := [reducesAtomTerm (collectionTerm ct (Term.var "xs"))
-                          (collectionTerm ct (Term.var "ys"))]
-
-/-- All congruence clauses generated from enabled collection kinds. -/
-def congruenceClauses (lang : ILLang) : Program mettailLPSig :=
-  lang.congruenceCollections.foldr
-    (fun ct acc => [collectionCongHeadClause ct, collectionCongTailClause ct] ++ acc)
-    []
-
 /-- Encode a rewrite rule as an LP clause `reduces(enc(lhs), enc(rhs)) :- []`.
     LP variables in the head (from `.fvar x` in pattern) are grounded by `bindingsToGrounding`. -/
 def rewriteRuleToLPClause (r : ILRule) : Clause mettailLPSig where
@@ -234,7 +210,7 @@ def rewriteRuleToLPClause (r : ILRule) : Clause mettailLPSig where
 
 /-- Compile a LanguageDef to an LP KnowledgeBase. -/
 def languageDefToLPKB (lang : ILLang) : KnowledgeBase mettailLPSig where
-  prog := lang.rewrites.map rewriteRuleToLPClause ++ congruenceClauses lang
+  prog := lang.rewrites.map rewriteRuleToLPClause
   db   := ∅
 
 /-! ## Commutation Lemma -/
@@ -311,11 +287,17 @@ theorem groundTerm_commutes_applyBindings (bs : ILBind) (p : ILPat)
     patternToLPGroundTerm (ilApplyBindings bs p) :=
   commute_pat bs p hmt
 
-/-! ## Main Completeness Theorem (topRule fragment) -/
+/-! ## Authored rule-application theorem -/
 
-open Mettapedia.OSLF.MeTTaIL.DeclReductions (DeclReduces)
+/-- A rule lies in the LP translation fragment when both sides are MORK
+    translatable and the left-hand side supports the matcher correctness
+    theorem used below. -/
+def lpTranslatable (r : ILRule) : Bool :=
+  morkTranslatable r.left && morkTranslatable r.right &&
+    Mettapedia.OSLF.MeTTaIL.Match.Pattern.isMatchCorrect r.left
 
-/-- **LP Completeness — topRule fragment**.
+/-- An authored rule application is represented in the compiled least
+    Herbrand model.
 
     If a rewrite rule `r` with empty premises fires on `p` to produce `q`
     (i.e., `applyBindings bs r.left = p` and `applyBindings bs r.right = q`),
@@ -328,15 +310,13 @@ open Mettapedia.OSLF.MeTTaIL.DeclReductions (DeclReduces)
       (this is the fundamental correctness of MeTTaIL's `matchPattern`, which says that
        if `bs ∈ matchPattern r.left p` then `applyBindings bs r.left = p`; once the
        theorem `matchPattern_correct` is proven in MatchSpec.lean, `hbs_lhs` follows)
-    - `hbs_rhs`: `applyBindings bs r.right = q` (given directly by DeclReduces.topRule)
-
-    **`congElem` note**: Sub-collection rewriting (DeclReduces.congElem) requires LP
-    clauses indexed by (rule, collection-index, collection-length) and is not covered here.
+    - `hbs_rhs`: `applyBindings bs r.right = q`
 
     **`lp_sound` note**: The LP clauses are not range-restricted (LP variables appear in
     clause heads but not in the empty body), so `leastHerbrandModel` over-approximates
-    `DeclReduces`. The `lp_sound` direction is deferred pending range-restriction. -/
-theorem lp_complete_topRule {lang : ILLang} {p q : ILPat}
+    operational reachability.  This theorem asserts only the forward encoding
+    of the supplied authored-rule witness. -/
+theorem ruleApplication_mem_leastHerbrandModel {lang : ILLang} {p q : ILPat}
     (r : ILRule)
     (hr_mem : r ∈ lang.rewrites)
     (_hr_prem : r.premises = [])
@@ -348,7 +328,7 @@ theorem lp_complete_topRule {lang : ILLang} {p q : ILPat}
     encodeReduces p q ∈ leastHerbrandModel (languageDefToLPKB lang) := by
   -- The clause for r is in the KB
   have hc_mem : rewriteRuleToLPClause r ∈ (languageDefToLPKB lang).prog :=
-    List.mem_append.mpr <| Or.inl <| List.mem_map.mpr ⟨r, hr_mem, rfl⟩
+    List.mem_map.mpr ⟨r, hr_mem, rfl⟩
   -- Body is empty: vacuously satisfied — (rewriteRuleToLPClause r).body = [] by def
   have hbody : ∀ b ∈ (rewriteRuleToLPClause r).body,
       (bindingsToGrounding bs).groundAtom b ∈ leastHerbrandModel (languageDefToLPKB lang) := by
@@ -390,228 +370,6 @@ theorem lp_complete_topRule {lang : ILLang} {p q : ILPat}
     simp only [T_P_LP, Set.mem_union, Set.mem_setOf_eq]
     exact Or.inr ⟨rewriteRuleToLPClause r, bindingsToGrounding bs, hc_mem, hhead, hbody⟩
   rwa [leastHerbrandModel_fixpoint] at hmem
-
-/-! ## Congruence completeness (collection context closure) -/
-
-private lemma mem_congruenceClauses_head_of_mem {cts : List ILCT} {ct : ILCT}
-    (hct : ct ∈ cts) :
-    collectionCongHeadClause ct ∈
-      cts.foldr (fun c acc => [collectionCongHeadClause c, collectionCongTailClause c] ++ acc) [] := by
-  induction cts with
-  | nil =>
-    cases hct
-  | cons c cs ih =>
-    simp only [List.mem_cons] at hct
-    simp only [List.foldr]
-    cases hct with
-    | inl hc =>
-      subst hc
-      simp [List.mem_cons]
-    | inr hcs =>
-      exact List.mem_append.mpr (Or.inr (ih hcs))
-
-private lemma mem_congruenceClauses_tail_of_mem {cts : List ILCT} {ct : ILCT}
-    (hct : ct ∈ cts) :
-    collectionCongTailClause ct ∈
-      cts.foldr (fun c acc => [collectionCongHeadClause c, collectionCongTailClause c] ++ acc) [] := by
-  induction cts with
-  | nil =>
-    cases hct
-  | cons c cs ih =>
-    simp only [List.mem_cons] at hct
-    simp only [List.foldr]
-    cases hct with
-    | inl hc =>
-      subst hc
-      simp [List.mem_cons]
-    | inr hcs =>
-      exact List.mem_append.mpr (Or.inr (ih hcs))
-
-private lemma collectionCongHeadClause_mem_prog {lang : ILLang} {ct : ILCT}
-    (hct : Mettapedia.OSLF.MeTTaIL.Syntax.LanguageDef.allowsCongruenceIn lang ct) :
-    collectionCongHeadClause ct ∈ (languageDefToLPKB lang).prog := by
-  have hct_mem : ct ∈ lang.congruenceCollections := hct
-  have hcong : collectionCongHeadClause ct ∈ congruenceClauses lang := by
-    unfold congruenceClauses
-    exact mem_congruenceClauses_head_of_mem hct_mem
-  exact List.mem_append.mpr (Or.inr hcong)
-
-private lemma collectionCongTailClause_mem_prog {lang : ILLang} {ct : ILCT}
-    (hct : Mettapedia.OSLF.MeTTaIL.Syntax.LanguageDef.allowsCongruenceIn lang ct) :
-    collectionCongTailClause ct ∈ (languageDefToLPKB lang).prog := by
-  have hct_mem : ct ∈ lang.congruenceCollections := hct
-  have hcong : collectionCongTailClause ct ∈ congruenceClauses lang := by
-    unfold congruenceClauses
-    exact mem_congruenceClauses_tail_of_mem hct_mem
-  exact List.mem_append.mpr (Or.inr hcong)
-
-/-- If one element in a collection reduces, the whole collection reduces (rest = none),
-    using LP context-closure clauses. -/
-private theorem lp_complete_congElem_none {lang : ILLang} {ct : ILCT}
-    (hct : Mettapedia.OSLF.MeTTaIL.Syntax.LanguageDef.allowsCongruenceIn lang ct)
-    {elems : List ILPat} {i : Nat} (hi : i < elems.length) {q' : ILPat}
-    (hinner : encodeReduces elems[i] q' ∈ leastHerbrandModel (languageDefToLPKB lang)) :
-    encodeReduces (.collection ct elems none) (.collection ct (elems.set i q') none)
-      ∈ leastHerbrandModel (languageDefToLPKB lang) := by
-  induction elems generalizing i with
-  | nil =>
-    cases hi
-  | cons e rest ih =>
-    cases i with
-    | zero =>
-      have hinner0 : encodeReduces e q' ∈ leastHerbrandModel (languageDefToLPKB lang) := by
-        simpa using hinner
-      let g : Grounding mettailLPSig := fun v =>
-        if v = "x" then patternToLPGroundTerm e
-        else if v = "y" then patternToLPGroundTerm q'
-        else if v = "xs" then patternListToLPGroundSpine rest
-        else GroundTerm.const "unused"
-      have hbody :
-          ∀ b ∈ (collectionCongHeadClause ct).body,
-            g.groundAtom b ∈ leastHerbrandModel (languageDefToLPKB lang) := by
-        intro b hb
-        simp [collectionCongHeadClause, reducesAtomTerm] at hb
-        rcases hb with rfl
-        have hbody_eq :
-            g.groundAtom (reducesAtomTerm (Term.var "x") (Term.var "y")) =
-              encodeReduces e q' := by
-          refine GroundAtom.ext rfl (by
-            refine @heq_of_eq (Fin 2 → GroundTerm mettailLPSig) _ _ ?_
-            funext j
-            have hj01 : j = 0 ∨ j = 1 := by
-              by_cases hj0 : j = 0
-              · exact Or.inl hj0
-              · exact Or.inr (Fin.eq_one_of_ne_zero j hj0)
-            rcases hj01 with hj | hj
-            · subst hj
-              have h_gx : g "x" = patternToLPGroundTerm e := rfl
-              simp only [Grounding.groundAtom, Grounding.groundTerm, reducesAtomTerm, encodeReduces,
-                Matrix.cons_val_zero, h_gx]
-            · subst hj
-              have h_gy : g "y" = patternToLPGroundTerm q' := rfl
-              simp only [Grounding.groundAtom, Grounding.groundTerm, reducesAtomTerm, encodeReduces,
-                Matrix.cons_val_one, Matrix.cons_val_zero, h_gy])
-        have hbody_mem :
-            g.groundAtom (reducesAtomTerm (Term.var "x") (Term.var "y")) ∈
-              leastHerbrandModel (languageDefToLPKB lang) := by
-          rw [hbody_eq]
-          exact hinner0
-        exact hbody_mem
-      have hmem :
-          g.groundAtom (collectionCongHeadClause ct).head ∈
-            leastHerbrandModel (languageDefToLPKB lang) := by
-        exact leastHerbrandModel_clause (languageDefToLPKB lang)
-          (collectionCongHeadClause ct) (collectionCongHeadClause_mem_prog hct) g hbody
-      have hhead_eq :
-          g.groundAtom (collectionCongHeadClause ct).head =
-            encodeReduces (.collection ct (e :: rest) none)
-              (.collection ct (q' :: rest) none) := by
-        refine GroundAtom.ext rfl (by
-          refine @heq_of_eq (Fin 2 → GroundTerm mettailLPSig) _ _ ?_
-          funext j
-          have hj01 : j = 0 ∨ j = 1 := by
-            by_cases hj0 : j = 0
-            · exact Or.inl hj0
-            · exact Or.inr (Fin.eq_one_of_ne_zero j hj0)
-          rcases hj01 with hj | hj
-          · subst hj
-            have h_gx : g "x" = patternToLPGroundTerm e := rfl
-            have h_gxs : g "xs" = patternListToLPGroundSpine rest := rfl
-            simp only [Grounding.groundAtom, Grounding.groundTerm, groundTerm_pairTerm,
-              collectionCongHeadClause, collectionTerm, reducesAtomTerm, encodeReduces,
-              patternToLPGroundTerm, patternListToLPGroundSpine, Matrix.cons_val_zero,
-              h_gx, h_gxs]
-          · subst hj
-            have h_gy : g "y" = patternToLPGroundTerm q' := rfl
-            have h_gxs : g "xs" = patternListToLPGroundSpine rest := rfl
-            simp only [Grounding.groundAtom, Grounding.groundTerm, groundTerm_pairTerm,
-              collectionCongHeadClause, collectionTerm, reducesAtomTerm, encodeReduces,
-              patternToLPGroundTerm, patternListToLPGroundSpine, Matrix.cons_val_one,
-              Matrix.cons_val_zero, h_gy, h_gxs])
-      simpa [hhead_eq] using hmem
-    | succ i =>
-      have hi' : i < rest.length := by simpa using hi
-      have hinner' : encodeReduces rest[i] q' ∈ leastHerbrandModel (languageDefToLPKB lang) := by
-        simpa using hinner
-      have htail :
-          encodeReduces (.collection ct rest none) (.collection ct (rest.set i q') none) ∈
-            leastHerbrandModel (languageDefToLPKB lang) :=
-        ih hi' hinner'
-      let g : Grounding mettailLPSig := fun v =>
-        if v = "x" then patternToLPGroundTerm e
-        else if v = "xs" then patternListToLPGroundSpine rest
-        else if v = "ys" then patternListToLPGroundSpine (rest.set i q')
-        else GroundTerm.const "unused"
-      have hbody :
-          ∀ b ∈ (collectionCongTailClause ct).body,
-            g.groundAtom b ∈ leastHerbrandModel (languageDefToLPKB lang) := by
-        intro b hb
-        simp [collectionCongTailClause, reducesAtomTerm] at hb
-        rcases hb with rfl
-        have hbody_eq :
-            g.groundAtom
-                (reducesAtomTerm (collectionTerm ct (Term.var "xs"))
-                  (collectionTerm ct (Term.var "ys"))) =
-              encodeReduces (.collection ct rest none)
-                (.collection ct (rest.set i q') none) := by
-          refine GroundAtom.ext rfl (by
-            refine @heq_of_eq (Fin 2 → GroundTerm mettailLPSig) _ _ ?_
-            funext j
-            have hj01 : j = 0 ∨ j = 1 := by
-              by_cases hj0 : j = 0
-              · exact Or.inl hj0
-              · exact Or.inr (Fin.eq_one_of_ne_zero j hj0)
-            rcases hj01 with hj | hj
-            · subst hj
-              have h_gxs : g "xs" = patternListToLPGroundSpine rest := rfl
-              simp only [Grounding.groundAtom, Grounding.groundTerm, groundTerm_pairTerm,
-                reducesAtomTerm, collectionTerm, encodeReduces, patternToLPGroundTerm,
-                Matrix.cons_val_zero, h_gxs]
-            · subst hj
-              have h_gys : g "ys" = patternListToLPGroundSpine (rest.set i q') := rfl
-              simp only [Grounding.groundAtom, Grounding.groundTerm, groundTerm_pairTerm,
-                reducesAtomTerm, collectionTerm, encodeReduces, patternToLPGroundTerm,
-                Matrix.cons_val_one, Matrix.cons_val_zero, h_gys])
-        have hbody_mem :
-            g.groundAtom
-                (reducesAtomTerm (collectionTerm ct (Term.var "xs"))
-                  (collectionTerm ct (Term.var "ys"))) ∈
-              leastHerbrandModel (languageDefToLPKB lang) := by
-          rw [hbody_eq]
-          exact htail
-        exact hbody_mem
-      have hmem :
-          g.groundAtom (collectionCongTailClause ct).head ∈
-            leastHerbrandModel (languageDefToLPKB lang) := by
-        exact leastHerbrandModel_clause (languageDefToLPKB lang)
-          (collectionCongTailClause ct) (collectionCongTailClause_mem_prog hct) g hbody
-      have hhead_eq :
-          g.groundAtom (collectionCongTailClause ct).head =
-            encodeReduces (.collection ct (e :: rest) none)
-              (.collection ct (e :: rest.set i q') none) := by
-        refine GroundAtom.ext rfl (by
-          refine @heq_of_eq (Fin 2 → GroundTerm mettailLPSig) _ _ ?_
-          funext j
-          have hj01 : j = 0 ∨ j = 1 := by
-            by_cases hj0 : j = 0
-            · exact Or.inl hj0
-            · exact Or.inr (Fin.eq_one_of_ne_zero j hj0)
-          rcases hj01 with hj | hj
-          · subst hj
-            have h_gx : g "x" = patternToLPGroundTerm e := rfl
-            have h_gxs : g "xs" = patternListToLPGroundSpine rest := rfl
-            simp only [Grounding.groundAtom, Grounding.groundTerm, groundTerm_pairTerm,
-              collectionCongTailClause, collectionTerm, reducesAtomTerm, encodeReduces,
-              patternToLPGroundTerm, patternListToLPGroundSpine, Matrix.cons_val_zero,
-              h_gx, h_gxs]
-          · subst hj
-            have h_gx : g "x" = patternToLPGroundTerm e := rfl
-            have h_gys : g "ys" = patternListToLPGroundSpine (rest.set i q') := rfl
-            simp only [Grounding.groundAtom, Grounding.groundTerm, groundTerm_pairTerm,
-              collectionCongTailClause, collectionTerm, reducesAtomTerm, encodeReduces,
-              patternToLPGroundTerm, patternListToLPGroundSpine, Matrix.cons_val_one,
-              Matrix.cons_val_zero, h_gx, h_gys])
-      simpa [hhead_eq] using hmem
 
 /-! ## Regression checks: focused commutation cases -/
 
@@ -657,190 +415,44 @@ theorem regression_nonTranslatable_collection_some :
     morkTranslatable (.collection .vec [.fvar "x"] (some "rest")) = false := by
   simp [morkTranslatable]
 
-/-! ## Corollary: DeclReduces.topRule → lp_complete
+/-! ## LP soundness for authored rule instances
 
-Fragment restriction: rule LHS must be `isMatchCorrect` (no `.subst`, no `.collection`).
-This ensures `matchPattern_correct` gives `applyBindings bs r.left = p`. -/
+Every clause in `languageDefToLPKB` is a unit clause compiled from one authored
+rewrite rule.  Consequently every atom in its least Herbrand model has an
+explicit rule-and-grounding witness. -/
 
-/-- A rule is LP-translatable: both sides are mork-translatable, and the LHS
-    is match-correct (so `matchPattern_correct` recovers the matched term). -/
-def lpTranslatable (r : Mettapedia.OSLF.MeTTaIL.Syntax.RewriteRule) : Bool :=
-  morkTranslatable r.left && morkTranslatable r.right &&
-  Mettapedia.OSLF.MeTTaIL.Match.Pattern.isMatchCorrect r.left
-
-/-- Full `lp_complete` on the translatable term fragment:
-    `DeclReduces` in the `lpTranslatable` rule fragment implies the encoded
-    reduces atom is in the least Herbrand model.
-
-    `hp_trans` restricts the source term to `morkTranslatable`, which excludes
-    `.collection _ _ (some _)` and allows congruence lifting through the LP
-    context-closure clauses. -/
-theorem lp_complete {lang : ILLang} {p q : ILPat}
-    (h : DeclReduces lang p q)
-    (hmt_all : ∀ r ∈ lang.rewrites, lpTranslatable r = true)
-    (hp_trans : morkTranslatable p = true) :
-    encodeReduces p q ∈ leastHerbrandModel (languageDefToLPKB lang) := by
-  cases h with
-  | topRule r hr hprem bs hbs hrhs =>
-    have hmt := hmt_all r hr
-    simp only [lpTranslatable, Bool.and_eq_true] at hmt
-    obtain ⟨⟨hmt_l, hmt_r⟩, hmc⟩ := hmt
-    have hbs_lhs := Mettapedia.OSLF.MeTTaIL.MatchSpec.matchPattern_correct hbs hmc
-    exact lp_complete_topRule r hr hprem hmt_l hmt_r bs hbs_lhs hrhs
-  | @congElem elems ct rest hct i hi r hr hprem bs hbs q' hq =>
-    have hmt := hmt_all r hr
-    simp only [lpTranslatable, Bool.and_eq_true] at hmt
-    obtain ⟨⟨hmt_l, hmt_r⟩, hmc⟩ := hmt
-    have hbs_lhs : Mettapedia.OSLF.MeTTaIL.Match.applyBindings bs r.left = elems[i] :=
-      Mettapedia.OSLF.MeTTaIL.MatchSpec.matchPattern_correct hbs hmc
-    have hinner : encodeReduces elems[i] q' ∈ leastHerbrandModel (languageDefToLPKB lang) :=
-      lp_complete_topRule r hr hprem hmt_l hmt_r bs hbs_lhs hq
-    have hrest_none : rest = none := by
-      cases rest with
-      | none => rfl
-      | some _ =>
-        simp [morkTranslatable] at hp_trans
-    subst hrest_none
-    exact lp_complete_congElem_none hct hi hinner
-
-/-! ## Canary theorems: congruence clause grounding equivalence -/
-
-/-- Canary: head congruence clause grounds to expected encodeReduces for head replacement. -/
-theorem canary_congHead_grounding (ct : ILCT) (e q' : ILPat) (rest : List ILPat) :
-    let g : Grounding mettailLPSig := fun v =>
-      if v = "x" then patternToLPGroundTerm e
-      else if v = "y" then patternToLPGroundTerm q'
-      else if v = "xs" then patternListToLPGroundSpine rest
-      else GroundTerm.const "unused"
-    g.groundAtom (collectionCongHeadClause ct).head =
-      encodeReduces (.collection ct (e :: rest) none)
-        (.collection ct (q' :: rest) none) := by
-  let g : Grounding mettailLPSig := fun v =>
-    if v = "x" then patternToLPGroundTerm e
-    else if v = "y" then patternToLPGroundTerm q'
-    else if v = "xs" then patternListToLPGroundSpine rest
-    else GroundTerm.const "unused"
-  show g.groundAtom (collectionCongHeadClause ct).head = _
-  have h_gx : g "x" = patternToLPGroundTerm e := rfl
-  have h_gy : g "y" = patternToLPGroundTerm q' := rfl
-  have h_gxs : g "xs" = patternListToLPGroundSpine rest := rfl
-  exact GroundAtom.ext rfl (by
-    refine @heq_of_eq (Fin 2 → GroundTerm mettailLPSig) _ _ ?_
-    funext j
-    have hj01 : j = 0 ∨ j = 1 := by
-      by_cases hj0 : j = 0
-      · exact Or.inl hj0
-      · exact Or.inr (Fin.eq_one_of_ne_zero j hj0)
-    rcases hj01 with hj | hj
-    · subst hj
-      simp only [Grounding.groundAtom, Grounding.groundTerm, groundTerm_pairTerm,
-        collectionCongHeadClause, collectionTerm, reducesAtomTerm, encodeReduces,
-        patternToLPGroundTerm, patternListToLPGroundSpine, Matrix.cons_val_zero,
-        h_gx, h_gxs]
-    · subst hj
-      simp only [Grounding.groundAtom, Grounding.groundTerm, groundTerm_pairTerm,
-        collectionCongHeadClause, collectionTerm, reducesAtomTerm, encodeReduces,
-        patternToLPGroundTerm, patternListToLPGroundSpine, Matrix.cons_val_one,
-        Matrix.cons_val_zero, h_gy, h_gxs])
-
-/-- Canary: tail congruence clause grounds to expected encodeReduces for tail replacement. -/
-theorem canary_congTail_grounding (ct : ILCT) (e : ILPat) (rest rest' : List ILPat) :
-    let g : Grounding mettailLPSig := fun v =>
-      if v = "x" then patternToLPGroundTerm e
-      else if v = "xs" then patternListToLPGroundSpine rest
-      else if v = "ys" then patternListToLPGroundSpine rest'
-      else GroundTerm.const "unused"
-    g.groundAtom (collectionCongTailClause ct).head =
-      encodeReduces (.collection ct (e :: rest) none)
-        (.collection ct (e :: rest') none) := by
-  let g : Grounding mettailLPSig := fun v =>
-    if v = "x" then patternToLPGroundTerm e
-    else if v = "xs" then patternListToLPGroundSpine rest
-    else if v = "ys" then patternListToLPGroundSpine rest'
-    else GroundTerm.const "unused"
-  show g.groundAtom (collectionCongTailClause ct).head = _
-  have h_gx : g "x" = patternToLPGroundTerm e := rfl
-  have h_gxs : g "xs" = patternListToLPGroundSpine rest := rfl
-  have h_gys : g "ys" = patternListToLPGroundSpine rest' := rfl
-  exact GroundAtom.ext rfl (by
-    refine @heq_of_eq (Fin 2 → GroundTerm mettailLPSig) _ _ ?_
-    funext j
-    have hj01 : j = 0 ∨ j = 1 := by
-      by_cases hj0 : j = 0
-      · exact Or.inl hj0
-      · exact Or.inr (Fin.eq_one_of_ne_zero j hj0)
-    rcases hj01 with hj | hj
-    · subst hj
-      simp only [Grounding.groundAtom, Grounding.groundTerm, groundTerm_pairTerm,
-        collectionCongTailClause, collectionTerm, reducesAtomTerm, encodeReduces,
-        patternToLPGroundTerm, patternListToLPGroundSpine, Matrix.cons_val_zero,
-        h_gx, h_gxs]
-    · subst hj
-      simp only [Grounding.groundAtom, Grounding.groundTerm, groundTerm_pairTerm,
-        collectionCongTailClause, collectionTerm, reducesAtomTerm, encodeReduces,
-        patternToLPGroundTerm, patternListToLPGroundSpine, Matrix.cons_val_one,
-        Matrix.cons_val_zero, h_gx, h_gys])
-
-/-! ## LP Soundness (Rewrite-Only Fragment)
-
-The full `languageDefToLPKB` includes congruence clauses (non-unit body), so
-`RangeRestriction.lhm_unit_mem_iff` does not apply directly to it.
-
-For the **rewrite-only** sub-KB (no congruence clauses), all clauses are unit
-(`rewriteRuleToLPClause` sets `body = []`), so the LHM characterization gives
-clean LP soundness:
-
-  `encodeReduces p q ∈ lhm(rewriteOnlyKB) → ∃ r ∈ rewrites, ∃ g, g.groundAtom c.head = encodeReduces p q`
-
-This closes the LP soundness gap for the pure rewrite fragment.
-The congruence extension remains future work (requires non-unit soundness). -/
-
-/-- KB built from only the rewrite-rule unit clauses, without congruence clauses. -/
-def rewriteOnlyKB (lang : ILLang) : KnowledgeBase mettailLPSig where
-  prog := lang.rewrites.map rewriteRuleToLPClause
-  db   := ∅
-
-/-- `rewriteOnlyKB` is a unit KB: empty db and all clauses have empty body. -/
-theorem rewriteOnlyKB_isUnit (lang : ILLang) :
-    (rewriteOnlyKB lang).isUnit := by
+/-- The compiled language knowledge base is a unit KB. -/
+theorem languageDefToLPKB_isUnit (lang : ILLang) :
+    (languageDefToLPKB lang).isUnit := by
   refine ⟨rfl, ?_⟩
   intro c hc
-  simp only [rewriteOnlyKB, List.mem_map] at hc
+  simp only [languageDefToLPKB, List.mem_map] at hc
   obtain ⟨r, _, rfl⟩ := hc
   simp [Clause.isUnit, rewriteRuleToLPClause]
 
-/-- **LP Soundness — rewrite-only fragment**.
-
-    If `encodeReduces p q` is in the least Herbrand model of the rewrite-only KB
-    (no congruence clauses), then there exists a rewrite rule `r ∈ lang.rewrites`
-    and a grounding `g` such that `g` instantiates the compiled clause of `r` to
-    exactly `encodeReduces p q`.
+/-- If `encodeReduces p q` belongs to the compiled least Herbrand model, an
+    authored rule and grounding witness it exactly.
 
     This is the LP soundness direction for unit programs: every element of the
-    LHM is directly witnessed by a single clause instantiation (no chaining needed).
-
-    **Scope**: applies to `rewriteOnlyKB`, not `languageDefToLPKB` (which includes
-    non-unit congruence clauses). The congruence soundness direction is future work. -/
-theorem lp_sound_rewriteOnly {lang : ILLang} {p q : ILPat}
-    (h : encodeReduces p q ∈ leastHerbrandModel (rewriteOnlyKB lang)) :
+    model is directly witnessed by a single authored clause instantiation. -/
+theorem lp_sound {lang : ILLang} {p q : ILPat}
+    (h : encodeReduces p q ∈ leastHerbrandModel (languageDefToLPKB lang)) :
     ∃ r ∈ lang.rewrites, ∃ g : Grounding mettailLPSig,
         g.groundAtom (rewriteRuleToLPClause r).head = encodeReduces p q := by
-  have hunit := rewriteOnlyKB_isUnit lang
-  obtain ⟨c, hc, g, hg⟩ := lhm_unit_mem_witness (rewriteOnlyKB lang) hunit _ h
-  simp only [rewriteOnlyKB, List.mem_map] at hc
+  have hunit := languageDefToLPKB_isUnit lang
+  obtain ⟨c, hc, g, hg⟩ :=
+    lhm_unit_mem_witness (languageDefToLPKB lang) hunit _ h
+  simp only [languageDefToLPKB, List.mem_map] at hc
   obtain ⟨r, hr, rfl⟩ := hc
   exact ⟨r, hr, g, hg⟩
 
-/-- Completeness of `rewriteOnlyKB`: if a rewrite rule fires, the encoded step
-    is in the LHM of the rewrite-only KB.
-
-    This is the complement of `lp_sound_rewriteOnly` and follows from `lhm_unit_mem_of_clause`.
-    Together they give: `encodeReduces p q ∈ LHM(rewriteOnlyKB) ↔ ∃ r, g, rule-instantiation`. -/
-theorem lp_complete_rewriteOnly {lang : ILLang} (r : ILRule)
+/-- Every grounding of an authored rule's compiled clause belongs to the least
+    Herbrand model. -/
+theorem clauseInstance_mem_leastHerbrandModel {lang : ILLang} (r : ILRule)
     (hr : r ∈ lang.rewrites) (g : Grounding mettailLPSig) :
     g.groundAtom (rewriteRuleToLPClause r).head ∈
-      leastHerbrandModel (rewriteOnlyKB lang) :=
-  lhm_unit_mem_of_clause (rewriteOnlyKB lang) (rewriteOnlyKB_isUnit lang)
+      leastHerbrandModel (languageDefToLPKB lang) :=
+  lhm_unit_mem_of_clause (languageDefToLPKB lang) (languageDefToLPKB_isUnit lang)
     (rewriteRuleToLPClause r)
     (List.mem_map.mpr ⟨r, hr, rfl⟩) g
 

@@ -104,7 +104,7 @@ theorem zam_deterministic_box_collapse
 /-! ## §5: Specialization on Trie Backend
 
 Rule-set monotonicity now works for ANY `RelationEnv` (including
-trie-backed stores), following the generalization of `declReduces_mono`. -/
+trie-backed stores), following the generalization of `contextualStep_mono_rules`. -/
 
 /-- Specialization: reduction lifts from sub-language to super-language.
     Works on any backend (trie, flat, etc.). -/
@@ -112,33 +112,33 @@ theorem zam_specialization_preserves_reduction
     (relEnv : RelationEnv)
     {lang₁ lang₂ : LanguageDef}
     (hrules : ∀ r, r ∈ lang₁.rewrites → r ∈ lang₂.rewrites)
-    (hcong : lang₁.congruenceCollections = lang₂.congruenceCollections)
+    (hreflect : lang₁.reflectivePresentations = lang₂.reflectivePresentations)
     {p q : Pattern}
     (hred : langReducesUsing relEnv lang₁ p q) :
     langReducesUsing relEnv lang₂ p q :=
-  specialization_preserves_reduction hrules hcong hred
+  specialization_preserves_reduction hrules hreflect hred
 
 /-- Diamond is monotone across sub-languages (any backend). -/
 theorem zam_diamond_mono
     (relEnv : RelationEnv)
     {lang₁ lang₂ : LanguageDef}
     (hrules : ∀ r, r ∈ lang₁.rewrites → r ∈ lang₂.rewrites)
-    (hcong : lang₁.congruenceCollections = lang₂.congruenceCollections)
+    (hreflect : lang₁.reflectivePresentations = lang₂.reflectivePresentations)
     (φ : Pattern → Prop) (p : Pattern)
     (h : langDiamondUsing relEnv lang₁ φ p) :
     langDiamondUsing relEnv lang₂ φ p :=
-  diamond_mono_rules hrules hcong φ p h
+  diamond_mono_rules hrules hreflect φ p h
 
 /-- Box is contravariant across sub-languages (any backend). -/
 theorem zam_box_contra
     (relEnv : RelationEnv)
     {lang₁ lang₂ : LanguageDef}
     (hrules : ∀ r, r ∈ lang₁.rewrites → r ∈ lang₂.rewrites)
-    (hcong : lang₁.congruenceCollections = lang₂.congruenceCollections)
+    (hreflect : lang₁.reflectivePresentations = lang₂.reflectivePresentations)
     (φ : Pattern → Prop) (p : Pattern)
     (h : langBoxUsing relEnv lang₂ φ p) :
     langBoxUsing relEnv lang₁ φ p :=
-  box_contra_rules hrules hcong φ p h
+  box_contra_rules hrules hreflect φ p h
 
 /-! ## §6: Substitution-Reduction Fusion on Trie Backend
 
@@ -187,7 +187,7 @@ Contracts available on ZAM/trie backend:
 
 All contracts except Beck-Chevalley fusion work for arbitrary `RelationEnv`
 (including trie-backed stores), following the generalization of
-`declReduces_mono` in `HypercubeGSLTFunctor.lean`.
+`contextualStep_mono_rules` in `HypercubeGSLTFunctor.lean`.
 -/
 
 end Mettapedia.OSLF.PathMap.Trie.ZamContracts

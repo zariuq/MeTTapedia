@@ -35,6 +35,7 @@ open Mettapedia.Languages.GF.GeneratedBridgeConformance
 open Mettapedia.Languages.GF.GFCoreOSLFBridge
 open Mettapedia.Languages.GF.PGFWitnessIR
 open Mettapedia.OSLF.MeTTaIL.Engine
+open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.Framework
 open Mettapedia.OSLF.Framework.ConstructorCategory
@@ -112,15 +113,12 @@ theorem paperSatisfiesType (p : Pattern) (nt : PaperSyntaxNativeType) :
 theorem paperSyntax_no_reduces {p q : Pattern} :
     ¬ langReduces paperSyntaxLangKR p q := by
   intro h
-  cases h with
-  | topRule r hr bs0 hbs0 bs hprem hq =>
-      have hnil : r ∈ ([] : List RewriteRule) := by
-        simp [paperSyntaxLangKR, gfSyntaxLanguageDefFromList, gfFunsListToLanguageDef] at hr
-      cases hnil
-  | congElem hct i hi r hr bs0 hbs0 bs hprem hq =>
-      have hnil : r ∈ ([] : List RewriteRule) := by
-        simp [paperSyntaxLangKR, gfSyntaxLanguageDefFromList, gfFunsListToLanguageDef] at hr
-      cases hnil
+  change Step (engineBasePremises RelationEnv.empty) paperSyntaxLangKR p q at h
+  rcases h with ⟨_, hstep⟩
+  cases hstep with
+  | rule ruleMember _ _ _ =>
+      simp [paperSyntaxLangKR, gfSyntaxLanguageDefFromList,
+        gfFunsListToLanguageDef] at ruleMember
 
 theorem paperSyntax_no_diamond (φ : Pattern → Prop) (p : Pattern) :
     ¬ langDiamond paperSyntaxLangKR φ p := by
@@ -384,8 +382,10 @@ private def ensureBool (label : String) (b : Bool) : IO Unit :=
 
 #eval do
   ensureBool "syntax-only KR present sentence has no executable reductions"
-    (rewriteWithContextWithPremises paperSyntaxLangKR presentSentencePattern == [])
+    (rewriteAt (engineBasePremises RelationEnv.empty) paperSyntaxLangKR 1
+      presentSentencePattern == [])
   ensureBool "syntax-only KR telescope VP has no executable reductions"
-    (rewriteWithContextWithPremises paperSyntaxLangKR telescopeVPPattern == [])
+    (rewriteAt (engineBasePremises RelationEnv.empty) paperSyntaxLangKR 1
+      telescopeVPPattern == [])
 
 end Mettapedia.Languages.GF.GFRealSyntaxNTTDiagnostics

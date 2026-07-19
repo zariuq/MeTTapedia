@@ -42,8 +42,7 @@ scoped syntax "languageDef!" "{"
   "equations" ":" term ","
   "rewrites" ":" term ","
   "logic" ":" term ","
-  "oracles" ":" term ","
-  "congruenceCollections" ":" term
+  "oracles" ":" term
   "}" : term
 
 /-! ## Parsed `language!`-Style Surface Syntax -/
@@ -901,7 +900,6 @@ macro
   "rewrites" "{" rws:langDefRewriteDecl* "}"
   "logic" "{" lgs:langDefLogicDecl* "}"
   "oracles" "{" ors:langDefOracleDecl* "}"
-  "congruenceCollections" "{" colls:ident,* "}"
   "}" : term => do
     let typeDecls' ← typeDecls.toList.mapM expandTypeDecl
     let termDecls' ← termDecls.toList.mapM expandTermDecl
@@ -909,16 +907,12 @@ macro
     let rwDecls' ← rws.toList.mapM expandRewriteDecl
     let logicDecls' ← lgs.toList.mapM expandLogicDecl
     let oracleDecls' ← ors.toList.mapM expandOracleDecl
-    let collDecls' ← colls.getElems.toList.mapM (fun stx => do
-      let ct ← resolveCollName stx
-      pure (collTerm ct))
     let typeDeclsTerm ← mkTermList typeDecls'
     let termDeclsTerm ← mkTermList termDecls'
     let eqDeclsTerm ← mkTermList eqDecls'
     let rwDeclsTerm ← mkTermList rwDecls'
     let logicDeclsTerm ← mkTermList logicDecls'
     let oracleDeclsTerm ← mkTermList oracleDecls'
-    let collDeclsTerm ← mkTermList collDecls'
     `(LanguageDef.resolveNullaryPatterns
       (LanguageDef.mk
         $langName
@@ -927,7 +921,6 @@ macro
         $termDeclsTerm
         $eqDeclsTerm
         $rwDeclsTerm
-        $collDeclsTerm
         $logicDeclsTerm
         $oracleDeclsTerm
         []))
@@ -955,10 +948,9 @@ macro_rules
       equations : $eqns,
       rewrites : $rws,
       logic : $lgs,
-      oracles : $ors,
-      congruenceCollections : $ccs
+      oracles : $ors
     }) =>
-      `(LanguageDef.resolveNullaryPatterns (LanguageDef.mk $langName [] $tys $tmRules $eqns $rws $ccs $lgs $ors []))
+      `(LanguageDef.resolveNullaryPatterns (LanguageDef.mk $langName [] $tys $tmRules $eqns $rws $lgs $ors []))
 
 /-! ## Generic Builders -/
 
@@ -983,8 +975,7 @@ def mkLang
     (typeDecls : List TypeDecl)
     (termRules : List GrammarRule)
     (rewriteRules : List RewriteRule)
-    (eqRules : List Equation := [])
-    (congCollections : List CollType := []) : LanguageDef :=
+    (eqRules : List Equation := []) : LanguageDef :=
   LanguageDef.mk
     langName
     []  -- options (default empty)
@@ -992,7 +983,6 @@ def mkLang
     termRules
     eqRules
     rewriteRules
-    congCollections
     []
     []
     []

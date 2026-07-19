@@ -4277,8 +4277,8 @@ Verification surface:
   `theorem_wanted` in the moved MeTTaIL LP bridge file.
 - Spot-check moved theorem axiom footprints remain within the accepted project
   footprint:
-  `groundTerm_pairTerm`, `lp_complete_topRule`, and
-  `lp_sound_rewriteOnly`.
+  `groundTerm_pairTerm`, `ruleApplication_mem_leastHerbrandModel`, and
+  `lp_sound`.
 
 ## Cluster 6c.88: LP-to-OSLF RelationEnv bridge
 

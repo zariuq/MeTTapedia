@@ -72,7 +72,7 @@ def gfFunsListToLanguageDef
     grammarName [] -- options
     ((allCats.eraseDups.map TypeDecl.plain) ++ extraTypes).eraseDups
     (termRules ++ extraTerms) eqRules rwRules
-    [.vec, .hashBag, .hashSet] [] [] []
+    [] [] []
 
 /-- `LanguageDef` construction from a real GFCore `GrammarSig`. -/
 def gfSigToLanguageDef
@@ -89,7 +89,7 @@ def gfSigToLanguageDef
     sig.grammar [] -- options
     ((allCats.eraseDups.map TypeDecl.plain) ++ extraTypes).eraseDups
     (termRules ++ extraTerms) eqRules rwRules
-    [.vec, .hashBag, .hashSet] [] [] []
+    [] [] []
 
 /-- Authoritative syntax-only `LanguageDef` from a literal GF function list. -/
 def gfSyntaxLanguageDefFromList
@@ -117,6 +117,7 @@ theorem gfSyntaxGrammar_galois (sig : GrammarSig) :
   langGalois (gfSyntaxLanguageDef sig)
 
 open Mettapedia.OSLF.MeTTaIL.Engine
+open Mettapedia.OSLF.MeTTaIL.ContextualStep
 
 /-- If `checkLangUsing` reports `sat` on a checked GF tree, semantics hold. -/
 theorem gfCheckedExpr_checkSat_sound
@@ -139,21 +140,26 @@ theorem gfCheckedExpr_diamond_of_reduces
   rw [langDiamond_spec]
   exact ⟨q, hReduce, hφ⟩
 
-/-- Executable reduction on a checked GF tree implies the declarative relation. -/
-theorem gfCheckedExpr_exec_implies_reduces
-    {lang : LanguageDef} {node : CheckedExpr} {q : Pattern}
-    (h : q ∈ rewriteWithContextWithPremises lang (gfCheckedExprToPattern node)) :
+/-- Membership in the bounded contextual compiler for a checked GF tree
+implies the least authored reduction relation. -/
+theorem gfCheckedExpr_mem_rewriteAt_implies_reduces
+    {lang : LanguageDef} {contextDepth : Nat}
+    {node : CheckedExpr} {q : Pattern}
+    (h : q ∈ rewriteAt (engineBasePremises RelationEnv.empty) lang contextDepth
+      (gfCheckedExprToPattern node)) :
     langReduces lang (gfCheckedExprToPattern node) q :=
   exec_to_langReducesUsing .empty lang
-    (show langReducesExecUsing .empty lang (gfCheckedExprToPattern node) q from h)
+    ⟨contextDepth, h⟩
 
 /-- Practical checked-tree bridge from executable reduction to `◇`. -/
-theorem gfCheckedExpr_diamond_of_exec
-    {lang : LanguageDef}
+theorem gfCheckedExpr_diamond_of_rewriteAt
+    {lang : LanguageDef} {contextDepth : Nat}
     {φ : Pattern → Prop} {node : CheckedExpr} {q : Pattern}
-    (hExec : q ∈ rewriteWithContextWithPremises lang (gfCheckedExprToPattern node))
+    (hExec : q ∈ rewriteAt (engineBasePremises RelationEnv.empty) lang contextDepth
+      (gfCheckedExprToPattern node))
     (hφ : φ q) :
     langDiamond lang φ (gfCheckedExprToPattern node) :=
-  gfCheckedExpr_diamond_of_reduces (gfCheckedExpr_exec_implies_reduces hExec) hφ
+  gfCheckedExpr_diamond_of_reduces
+    (gfCheckedExpr_mem_rewriteAt_implies_reduces hExec) hφ
 
 end Mettapedia.Languages.GF.GFCoreOSLFBridge

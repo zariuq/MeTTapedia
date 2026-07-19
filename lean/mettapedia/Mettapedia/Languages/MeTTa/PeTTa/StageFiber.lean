@@ -1,6 +1,6 @@
 import Mettapedia.Languages.MeTTa.PeTTa.OSLFPackage
 import Mettapedia.Languages.MeTTa.PeTTa.GSLTVertex
-import Mettapedia.OSLF.MeTTaIL.DeclReducesWithPremises
+import Mettapedia.OSLF.MeTTaIL.ContextualStep
 
 /-!
 # PeTTa Stage Fiber — ForwardFiber over PeTTaStage
@@ -27,10 +27,9 @@ between stages is identity. The value of the staged fiber is:
 namespace Mettapedia.Languages.MeTTa.PeTTa.StageFiber
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
-open Mettapedia.OSLF.MeTTaIL.Engine (RelationEnv applyPremisesWithEnv)
+open Mettapedia.OSLF.MeTTaIL.Engine (RelationEnv)
 open Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv (empty_le)
-open Mettapedia.OSLF.MeTTaIL.DeclReducesPremises (DeclReducesWithPremises
-  declReducesWithPremises_mono_relEnv)
+open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open Mettapedia.OSLF.Framework.TypeSynthesis
 open Mettapedia.OSLF.Framework.HypercubeGSLTFunctor
 open Mettapedia.Languages.MeTTa.PeTTa.StageIndex
@@ -117,97 +116,29 @@ theorem pettaStageBox_spec (s : PeTTaSpace) (stage : PeTTaStage)
     ∀ q, langReducesUsing (pettaPkg stage s).relEnv (pettaPkg stage s).lang q p → φ q :=
   langBoxUsing_spec (pettaPkg stage s).relEnv (pettaPkg stage s).lang φ p
 
-/-! ## §6 Stage Refinement: sourceCore ⊆ queryCore
+/-! ## §6 Relation-Environment Refinement
 
-The key refinement property: every `sourceCore` reduction is also a `queryCore`
-reduction. This follows from the fact that premise-free reductions
-(`r.premises = []`) produce the same results under **any** `relEnv`, since
-`applyPremisesWithEnv relEnv lang [] seed = [seed]` by definition (foldl over
-empty list).
-
-For rules with premises, extending the relEnv can only add more satisfying
-bindings (more tuples = more premise resolutions), never remove existing ones.
-The general relEnv-monotonicity theorem is deferred; we prove the
-premise-free fragment which covers the LP-safe PeTTa rules. -/
-
-/-- `applyPremisesWithEnv` on an empty premise list returns `[seed]`,
-    regardless of the relation environment. -/
-theorem applyPremisesWithEnv_nil (relEnv : RelationEnv) (lang : LanguageDef)
-    (seed : Mettapedia.OSLF.MeTTaIL.Match.Bindings) :
-    applyPremisesWithEnv relEnv lang [] seed = [seed] := rfl
-
-/-- Premise-free `DeclReducesWithPremises` is relEnv-agnostic:
-    if a rule with `r.premises = []` fires under one relEnv, it fires
-    under any relEnv (since empty premise lists are trivially satisfied). -/
-theorem declReduces_premiseFree_relEnv_agnostic
-    {lang : LanguageDef} {p q : Pattern}
-    {relEnv₁ relEnv₂ : RelationEnv}
-    (hred : DeclReducesWithPremises relEnv₁ lang p q)
-    (hpf : ∀ r ∈ lang.rewrites, r.premises = []) :
-    DeclReducesWithPremises relEnv₂ lang p q := by
-  induction hred with
-  | topRule r hr bs0 hbs0 bs hprem hq =>
-    have hempty := hpf r hr
-    rw [hempty] at hprem
-    -- hprem : bs ∈ applyPremisesWithEnv relEnv₁ lang [] bs0 = [bs0]
-    -- so bs = bs0, and we can construct with relEnv₂
-    exact .topRule r hr bs0 hbs0 bs (hempty ▸ hprem) hq
-  | congElem hct i hi r hr bs0 hbs0 bs hprem hq =>
-    have hempty := hpf r hr
-    rw [hempty] at hprem
-    exact .congElem hct i hi r hr bs0 hbs0 bs (hempty ▸ hprem) hq
-
-/-- sourceCore reductions are preserved at queryCore (and above).
-
-    Since `pettaSpaceToLangDef s` uses `s.rules` directly and the fiber's
-    `langReduces`/`langReducesUsing` wraps `DeclReducesWithPremises`,
-    this theorem bridges the relEnv gap between stages.
-
-    The premise-free assumption `hpf` holds for LP-safe PeTTa spaces
-    where all rules have `r.premises = []`. -/
-theorem sourceCore_refines_queryCore (s : PeTTaSpace) {p q : Pattern}
-    (hpf : ∀ r ∈ s.rules, r.premises = [])
-    (hred : langReducesUsing RelationEnv.empty (pettaSpaceToLangDef s) p q) :
-    langReducesUsing (pettaQueryRelEnv s) (pettaSpaceToLangDef s) p q := by
-  unfold langReducesUsing at hred ⊢
-  exact declReduces_premiseFree_relEnv_agnostic hred (by
-    intro r hr; exact hpf r hr)
-
-/-- Generalization: sourceCore refines any later stage (under premise-free rules). -/
-theorem sourceCore_refines_stage (s : PeTTaSpace) (stage : PeTTaStage) {p q : Pattern}
-    (hpf : ∀ r ∈ s.rules, r.premises = [])
-    (hred : langReducesUsing (pettaPkg .sourceCore s).relEnv
-              (pettaPkg .sourceCore s).lang p q) :
-    langReducesUsing (pettaPkg stage s).relEnv (pettaPkg stage s).lang p q := by
-  simp only [pettaPkg_lang_constant] at hred ⊢
-  cases stage with
-  | sourceCore => exact hred
-  | queryCore => exact sourceCore_refines_queryCore s hpf hred
-  | statefulCore => exact sourceCore_refines_queryCore s hpf hred
-  | boundaryAware => exact sourceCore_refines_queryCore s hpf hred
-
-/-! ## §7 General RelEnv Monotonicity
-
-The general refinement property: if `relEnv₁ ≤ relEnv₂`, then every reduction
-under `relEnv₁` is also a reduction under `relEnv₂`. This subsumes the
-premise-free refinement in §6 and covers rules with arbitrary premises. -/
+If `relEnv₁ ≤ relEnv₂`, every derivation under `relEnv₁` remains valid under
+`relEnv₂`. The proof transports the least contextual derivation itself,
+including recursive congruence premises. -/
 
 /-- `langReducesUsing` is monotone in the relation environment. -/
 theorem langReducesUsing_mono_relEnv {lang : LanguageDef}
     {relEnv₁ relEnv₂ : RelationEnv} (hle : relEnv₁ ≤ relEnv₂)
     {p q : Pattern}
     (hred : langReducesUsing relEnv₁ lang p q) :
-    langReducesUsing relEnv₂ lang p q :=
-  declReducesWithPremises_mono_relEnv hle hred
+    langReducesUsing relEnv₂ lang p q := by
+  unfold langReducesUsing at hred ⊢
+  exact hred.mono_relEnv hle
 
-/-- sourceCore reductions refine queryCore (general, no premise-free assumption). -/
-theorem sourceCore_refines_queryCore_general (s : PeTTaSpace) {p q : Pattern}
+/-- Every source-core reduction remains valid at query-core. -/
+theorem sourceCore_refines_queryCore (s : PeTTaSpace) {p q : Pattern}
     (hred : langReducesUsing RelationEnv.empty (pettaSpaceToLangDef s) p q) :
     langReducesUsing (pettaQueryRelEnv s) (pettaSpaceToLangDef s) p q :=
   langReducesUsing_mono_relEnv (empty_le _) hred
 
-/-- sourceCore reductions refine any later stage (general). -/
-theorem sourceCore_refines_stage_general (s : PeTTaSpace) (stage : PeTTaStage)
+/-- Every source-core reduction remains valid at any later stage. -/
+theorem sourceCore_refines_stage (s : PeTTaSpace) (stage : PeTTaStage)
     {p q : Pattern}
     (hred : langReducesUsing (pettaPkg .sourceCore s).relEnv
               (pettaPkg .sourceCore s).lang p q) :
@@ -215,9 +146,9 @@ theorem sourceCore_refines_stage_general (s : PeTTaSpace) (stage : PeTTaStage)
   simp only [pettaPkg_lang_constant] at hred ⊢
   cases stage with
   | sourceCore => exact hred
-  | _ => exact sourceCore_refines_queryCore_general s hred
+  | _ => exact sourceCore_refines_queryCore s hred
 
-/-! ## §8 Honest 2-Class OSLF Acknowledgment
+/-! ## §7 Honest 2-Class OSLF Acknowledgment
 
 queryCore, statefulCore, and boundaryAware all use `pettaQueryRelEnv s` as their
 `relEnv` (and the same `LanguageDef`). Therefore they produce the **same** OSLF
@@ -248,7 +179,7 @@ theorem pettaStageOSLF_statefulCore_eq_boundaryAware (s : PeTTaSpace) :
 - `pettaStageOSLF` — per-stage OSLF type system with stage-specific `relEnv`
 - `pettaStageGalois` — automatic ◇ ⊣ □ per stage
 - Compatibility: `sourceCore` = existing `pettaForwardFiber` / `pettaOSLF`
-- General monotonicity: `langReducesUsing_mono_relEnv`, `sourceCore_refines_stage_general`
+- General monotonicity: `langReducesUsing_mono_relEnv`, `sourceCore_refines_stage`
 - Honest 2-class: queryCore/statefulCore/boundaryAware share same OSLF (all `rfl`)
 -/
 

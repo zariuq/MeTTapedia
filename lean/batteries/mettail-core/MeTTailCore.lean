@@ -2,6 +2,7 @@ import MeTTailCore.MeTTaIL.Syntax
 import MeTTailCore.MeTTaIL.Substitution
 import MeTTailCore.MeTTaIL.Match
 import MeTTailCore.MeTTaIL.Engine
+import MeTTailCore.MeTTaIL.ContextualStep
 import MeTTailCore.MeTTaIL.RecursiveSpecialize
 import MeTTailCore.MeTTaIL.RecursiveConstructors
 import MeTTailCore.MeTTaIL.RecursiveAnswerSets

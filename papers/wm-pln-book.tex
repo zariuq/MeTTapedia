@@ -8776,11 +8776,11 @@ unconditionally.  The \emph{guarded} (faithful) calculus makes side
 conditions explicit as \texttt{Premise.relationQuery} entries---for example,
 the forgetting rule requires $\mathsf{outsideScope}(S, q)$.
 
-The core WM patterns use \texttt{.apply} constructors (not
-\texttt{.collection}), so the engine's built-in \texttt{congElem}
-constructor never fires on WM terms.  The \emph{congruence extension}
-adds 15~explicit rewrite rules (one per argument position) enabling
-reductions to propagate into subterms.
+The core WM patterns use \texttt{.apply} constructors.  The shared pattern
+representation grants them no implicit subterm reduction.  The
+\emph{congruence extension} therefore adds 15~explicit authored rewrite rules
+(one per argument position), each carrying the contextual premise that enables
+reduction to propagate into that subterm.
 
 These two orthogonal dimensions give four calculi:
 
@@ -8878,11 +8878,13 @@ $\mathsf{WMStep}\;t_1\;t_2 \;\Leftrightarrow\;
 \end{theorem}
 
 \noindent
-The forward direction (\texttt{wmStep\_sound}) constructs the
-$\mathtt{DeclReducesWithPremises}$ witness; the backward direction
-(\texttt{wmStep\_complete}) eliminates the $\mathtt{congElem}$ case
-(WM patterns are $\mathtt{.apply}$, not $\mathtt{.collection}$) and
-inverts $\mathtt{matchPattern}$ on each of the 5~core rules.
+The forward direction (\texttt{wmStep\_sound}) constructs a
+$\mathtt{ContextualStep.Step}$ witness from one of the five authored core
+rules.  The backward direction (\texttt{wmStep\_complete}) inverts the root
+rule of that least authored contextual derivation and then inverts
+$\mathtt{matchPattern}$ for the selected core rule.  Because the core rules
+have no congruence premises, the relation introduces no implicit descent into
+the shared pattern representation.
 
 The biconditional lifts to multi-step reductions.
 Define $\mathsf{WMStepStar} := \mathtt{ReflTransGen}\;\mathsf{WMStep}$
@@ -12377,8 +12379,7 @@ right criticism of this lane is not that it uses a Bayes-net-like scheduler at
 all, but that the particular scheduler is still only an operational
 approximation rather than promoted reusable semantics.
 
-The promotion boundary here is exactly the one the council would want us to
-state plainly:
+The promotion boundary is:
 \begin{description}
 \item[Positive example.] With fixed site hyperstates, the local Bernoulli-logit
 message reduces \emph{exactly} to additive weighted-Normal carried evidence.

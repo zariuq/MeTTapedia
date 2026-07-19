@@ -51,7 +51,7 @@ Under `isFullyGround`:
 ## Relation to `LPSoundness.lean`
 
 `LPSoundness.lean` handles the general (non-ground) case via `matchPattern_correct`
-and `lp_complete_topRule`. This file handles the degenerate ground case directly,
+and `ruleApplication_mem_leastHerbrandModel`. This file handles the degenerate ground case directly,
 establishing the stronger `q = r.left` uniqueness and showing LHM = EDB.
 
 ## References

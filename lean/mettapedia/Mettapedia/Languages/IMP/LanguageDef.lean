@@ -624,7 +624,6 @@ def imp : LanguageDef := {
                  , .apply "KDone" []
                  , .apply "Done" [] ] }
   ]
-  congruenceCollections := []
 }
 
 end Mettapedia.Languages.IMP.LanguageDef

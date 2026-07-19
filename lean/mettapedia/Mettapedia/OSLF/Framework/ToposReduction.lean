@@ -379,7 +379,7 @@ theorem exec_mem_reductionSubfunctorUsing
     (C : Type u) [CategoryTheory.Category.{v} C]
     (relEnv : RelationEnv) (lang : LanguageDef)
     {X : Opposite C} {p q : Pattern}
-    (hq : q ∈ rewriteWithContextWithPremisesUsing relEnv lang p) :
+    (hq : langReducesExecUsing relEnv lang p q) :
     ((ULift.up (p, q)) : (pairConstPresheaf (C := C)).obj X) ∈
       (reductionSubfunctorUsing (C := C) relEnv lang).obj X := by
   change langReducesUsing relEnv lang p q
@@ -393,7 +393,7 @@ theorem reductionSubfunctorUsing_mem_exec
     {X : Opposite C} {p q : Pattern}
     (hmem : ((ULift.up (p, q)) : (pairConstPresheaf (C := C)).obj X) ∈
       (reductionSubfunctorUsing (C := C) relEnv lang).obj X) :
-    q ∈ rewriteWithContextWithPremisesUsing relEnv lang p := by
+    langReducesExecUsing relEnv lang p q := by
   change langReducesUsing relEnv lang p q at hmem
   exact langReducesUsing_to_exec relEnv lang hmem
 

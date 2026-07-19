@@ -2,68 +2,55 @@ import Mettapedia.OSLF.Framework.TypeSynthesis
 import Mettapedia.OSLF.Framework.KSUnificationSketch
 
 /-!
-# OSLF Image-Finiteness Instantiations
+# Bounded OSLF Image-Finiteness
 
-Concrete finite-branching lemmas for `LanguageDef`-induced one-step semantics,
-plus direct HM-converse wrappers for those relations.
+Finite-branching lemmas for the explicitly bounded contextual compiler, plus
+a direct HM-converse wrapper for that relation.
+
+The unbounded least contextual relation is not image-finite for an arbitrary
+`LanguageDef`: a recursive rule can repeatedly wrap the result of its own
+congruence premise.  Recovering unbounded image-finiteness therefore requires
+a separate guarded-context theorem for the particular language; it is not a
+property of the shared `Pattern` representation.
 -/
 
 namespace Mettapedia.OSLF.Framework.ImageFinite
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Engine
+open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open Mettapedia.OSLF.Framework.TypeSynthesis
 open Mettapedia.OSLF.Formula
 open Mettapedia.OSLF.Framework.KSUnificationSketch
 
-/-- Executable one-step semantics from a `LanguageDef` is image-finite:
-successors are exactly a finite list returned by the engine. -/
-theorem imageFinite_langReducesExecUsing
-    (relEnv : RelationEnv) (lang : LanguageDef) (p : Pattern) :
-    Set.Finite { q : Pattern | langReducesExecUsing relEnv lang p q } := by
-  change Set.Finite { q : Pattern | q ∈ rewriteWithContextWithPremisesUsing relEnv lang p }
-  exact List.finite_toSet (rewriteWithContextWithPremisesUsing relEnv lang p)
+/-- At fixed contextual depth, successors are exactly members of one finite
+compiler result list. -/
+theorem imageFinite_langReducesAtUsing
+    (relEnv : RelationEnv) (lang : LanguageDef) (contextFuel : Nat)
+    (p : Pattern) :
+    Set.Finite {q : Pattern |
+      langReducesAtUsing relEnv lang contextFuel p q} := by
+  apply Set.Finite.subset
+    (List.finite_toSet
+      (rewriteAt (engineBasePremises relEnv) lang contextFuel p))
+  intro q step
+  exact (mem_rewriteAt_iff_langReducesAtUsing
+    relEnv lang contextFuel p q).2 step
 
-/-- Declarative one-step semantics from a `LanguageDef` is image-finite, using
-the executable/declarative equivalence. -/
-theorem imageFinite_langReducesUsing
-    (relEnv : RelationEnv) (lang : LanguageDef) (p : Pattern) :
-    Set.Finite { q : Pattern | langReducesUsing relEnv lang p q } := by
-  apply Set.Finite.subset (imageFinite_langReducesExecUsing relEnv lang p)
-  intro q hq
-  exact (langReducesUsing_iff_execUsing relEnv lang p q).1 hq
-
-/-- Default-env one-step semantics is image-finite. -/
-theorem imageFinite_langReduces
-    (lang : LanguageDef) (p : Pattern) :
-    Set.Finite { q : Pattern | langReduces lang p q } := by
-  simpa [langReduces] using
-    (imageFinite_langReducesUsing RelationEnv.empty lang p)
-
-/-- HM converse instantiated for `langReducesUsing` (parametric in `RelationEnv`). -/
-theorem hm_converse_langReducesUsing
-    (relEnv : RelationEnv) (lang : LanguageDef) (I : AtomSem)
+/-- HM converse for the explicitly bounded contextual relation. -/
+theorem hm_converse_langReducesAtUsing
+    (relEnv : RelationEnv) (lang : LanguageDef) (contextFuel : Nat)
+    (I : AtomSem)
     {p q : Pattern}
-    (hobs : OSLFObsEq (langReducesUsing relEnv lang) I p q) :
-    Bisimilar (langReducesUsing relEnv lang) p q := by
+    (hobs : OSLFObsEq
+      (langReducesAtUsing relEnv lang contextFuel) I p q) :
+    Bisimilar (langReducesAtUsing relEnv lang contextFuel) p q := by
   exact
     hm_converse_schema
-      (R := langReducesUsing relEnv lang)
+      (R := langReducesAtUsing relEnv lang contextFuel)
       (I := I)
-      (hImageFinite := imageFinite_langReducesUsing relEnv lang)
-      hobs
-
-/-- HM converse instantiated for default-env `langReduces`. -/
-theorem hm_converse_langReduces
-    (lang : LanguageDef) (I : AtomSem)
-    {p q : Pattern}
-    (hobs : OSLFObsEq (langReduces lang) I p q) :
-    Bisimilar (langReduces lang) p q := by
-  exact
-    hm_converse_schema
-      (R := langReduces lang)
-      (I := I)
-      (hImageFinite := imageFinite_langReduces lang)
+      (hImageFinite := imageFinite_langReducesAtUsing
+        relEnv lang contextFuel)
       hobs
 
 end Mettapedia.OSLF.Framework.ImageFinite

@@ -19,6 +19,7 @@ namespace Mettapedia.Languages.MeTTa.PureKernel.CoreEmbedding
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Match
 open Mettapedia.OSLF.MeTTaIL.Engine
+open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open Mettapedia.OSLF.Framework.TypeSynthesis
 open Mettapedia.OSLF.MeTTaIL.Substitution
 open Mettapedia.Languages.MeTTa.CoreProfile
@@ -255,9 +256,9 @@ private def betaSigmaSndRule : RewriteRule :=
 theorem langReduces_quoteClosed_betaPi_id (a : PureTm 0) :
     langReduces mettaPure (quoteClosedTm (.app (.lam (.var 0)) a)) (quoteClosedTm a) := by
   apply exec_to_langReducesUsing (relEnv := RelationEnv.empty) (lang := mettaPure)
-  unfold langReducesExecUsing rewriteWithContextWithPremisesUsing rewriteStepWithPremisesUsing
-  apply List.mem_append.mpr
-  left
+  refine ⟨1, ?_⟩
+  rw [rewriteAt_one_eq_rewriteStepWithPremisesUsing]
+  unfold rewriteStepWithPremisesUsing
   rw [List.mem_flatMap]
   refine ⟨betaPiRule, ?_, ?_⟩
   · simp [betaPiRule, mettaPure]
@@ -267,20 +268,21 @@ theorem langReduces_quoteClosed_betaPi_id (a : PureTm 0) :
       closeFVar 0 (defaultBinderName 0) (.fvar (defaultBinderName 0))
     let bs : Bindings := [("a", quoteClosedTm a), ("body", qbody)]
     refine ⟨bs, ?_, ?_⟩
-    · simp [bs, qbody, betaPiRule, quoteClosedTm, quoteTm, quoteTmWith,
+    · simp [bs, qbody, betaPiRule, mettaPure, quoteClosedTm, quoteTm, quoteTmWith,
         mkApp, mkLam, matchPattern, matchArgs, mergeBindings, envCons, emptyEnv]
     · rw [List.mem_map]
       refine ⟨bs, ?_, ?_⟩
       · simp [applyPremisesWithEnv, bs, betaPiRule]
-      · simp [bs, qbody, betaPiRule, applyBindings, closeFVar, openBVar]
+      · simp [bs, qbody, betaPiRule, mettaPure, applyBindings, closeFVar,
+          instantiateBVar, instantiateBVarAt, liftBVars_zero]
 
 /-- Positive bridge example (βΣ fst): quoted kernel step is a `langReduces` step. -/
 theorem langReduces_quoteClosed_betaSigmaFst (a b : PureTm 0) :
     langReduces mettaPure (quoteClosedTm (.fst (.pair a b))) (quoteClosedTm a) := by
   apply exec_to_langReducesUsing (relEnv := RelationEnv.empty) (lang := mettaPure)
-  unfold langReducesExecUsing rewriteWithContextWithPremisesUsing rewriteStepWithPremisesUsing
-  apply List.mem_append.mpr
-  left
+  refine ⟨1, ?_⟩
+  rw [rewriteAt_one_eq_rewriteStepWithPremisesUsing]
+  unfold rewriteStepWithPremisesUsing
   rw [List.mem_flatMap]
   refine ⟨betaSigmaFstRule, ?_, ?_⟩
   · simp [betaSigmaFstRule, mettaPure]
@@ -288,20 +290,20 @@ theorem langReduces_quoteClosed_betaSigmaFst (a b : PureTm 0) :
     rw [List.mem_flatMap]
     let bs : Bindings := [("b", quoteClosedTm b), ("a", quoteClosedTm a)]
     refine ⟨bs, ?_, ?_⟩
-    · simp [bs, betaSigmaFstRule, quoteClosedTm, quoteTm, quoteTmWith,
+    · simp [bs, betaSigmaFstRule, mettaPure, quoteClosedTm, quoteTm, quoteTmWith,
         mkFst, mkPair, matchPattern, matchArgs, mergeBindings]
     · rw [List.mem_map]
       refine ⟨bs, ?_, ?_⟩
       · simp [applyPremisesWithEnv, bs, betaSigmaFstRule]
-      · simp [bs, betaSigmaFstRule, applyBindings]
+      · simp [bs, betaSigmaFstRule, mettaPure, applyBindings]
 
 /-- Positive bridge example (βΣ snd): quoted kernel step is a `langReduces` step. -/
 theorem langReduces_quoteClosed_betaSigmaSnd (a b : PureTm 0) :
     langReduces mettaPure (quoteClosedTm (.snd (.pair a b))) (quoteClosedTm b) := by
   apply exec_to_langReducesUsing (relEnv := RelationEnv.empty) (lang := mettaPure)
-  unfold langReducesExecUsing rewriteWithContextWithPremisesUsing rewriteStepWithPremisesUsing
-  apply List.mem_append.mpr
-  left
+  refine ⟨1, ?_⟩
+  rw [rewriteAt_one_eq_rewriteStepWithPremisesUsing]
+  unfold rewriteStepWithPremisesUsing
   rw [List.mem_flatMap]
   refine ⟨betaSigmaSndRule, ?_, ?_⟩
   · simp [betaSigmaSndRule, mettaPure]
@@ -309,12 +311,12 @@ theorem langReduces_quoteClosed_betaSigmaSnd (a b : PureTm 0) :
     rw [List.mem_flatMap]
     let bs : Bindings := [("b", quoteClosedTm b), ("a", quoteClosedTm a)]
     refine ⟨bs, ?_, ?_⟩
-    · simp [bs, betaSigmaSndRule, quoteClosedTm, quoteTm, quoteTmWith,
+    · simp [bs, betaSigmaSndRule, mettaPure, quoteClosedTm, quoteTm, quoteTmWith,
         mkSnd, mkPair, matchPattern, matchArgs, mergeBindings]
     · rw [List.mem_map]
       refine ⟨bs, ?_, ?_⟩
       · simp [applyPremisesWithEnv, bs, betaSigmaSndRule]
-      · simp [bs, betaSigmaSndRule, applyBindings]
+      · simp [bs, betaSigmaSndRule, mettaPure, applyBindings]
 
 /-- **A-layer (operational)**: the closed computational fragment executed as one
 `langReduces` step by current `mettaPure` profile semantics. -/
@@ -820,23 +822,16 @@ theorem not_all_pureTheoryStep_sound_to_langReduces_quoteClosed :
   have hred : PureTheoryStep t u := by
     simpa [PureTheoryStep] using (Red.congAppArg (Red.betaSigmaFst _ _))
   have hlang : langReduces mettaPure (quoteClosedTm t) (quoteClosedTm u) := hsound hred
-  have hexec : langReducesExecUsing RelationEnv.empty mettaPure (quoteClosedTm t) (quoteClosedTm u) :=
-    langReducesUsing_to_exec (relEnv := RelationEnv.empty) (lang := mettaPure) hlang
-  have hempty : rewriteWithContextWithPremisesUsing RelationEnv.empty mettaPure (quoteClosedTm t) = [] := by
-    simp [t, quoteClosedTm, quoteTm, quoteTmWith, mkApp, mkFst, mkPair,
-      rewriteWithContextWithPremisesUsing, rewriteStepWithPremisesUsing,
-      applyRuleWithPremisesUsing, mettaPure, applyPremisesWithEnv]
-    constructor
-    · intro x hx
-      simp [u1, matchArgs, matchPattern] at hx
-    constructor
-    · intro x hx
-      simp [u1, matchPattern] at hx
-    · intro x hx
-      simp [u1, matchPattern] at hx
-  have hfalse : False := by
-    simp [langReducesExecUsing, hempty] at hexec
-  exact False.elim hfalse
+  have noMatch : ∀ rule, rule ∈ mettaPure.rewrites →
+      Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule
+        mettaPure rule (quoteClosedTm t) = [] := by
+    intro rule ruleMember
+    simp only [mettaPure, List.mem_cons, List.not_mem_nil, or_false] at ruleMember
+    rcases ruleMember with rfl | rfl | rfl <;>
+      simp [t, quoteClosedTm, quoteTm, quoteTmWith, mkApp, mkFst, mkPair,
+        mettaPure, u1, matchArgs, matchPattern]
+  apply (not_step_of_matchPatternForRule_eq_nil noMatch)
+  simpa [langReduces, langReducesUsing] using hlang
 
 /-- Backwards-compatible name for the same mismatch fact. -/
 theorem not_all_red_steps_sound_to_langReduces_quoteClosed :

@@ -22,7 +22,6 @@ def tinyLang : LanguageDef where
   terms := []
   equations := []
   rewrites := [ruleAtoB]
-  congruenceCollections := []
 
 def tinyBundle : SpecBundle where
   language := tinyLang

@@ -73,11 +73,10 @@ structure ContextGuardOSLFDescentBridgeProfile where
           Mettapedia.Languages.ProcessCalculi.RhoCalculus.Extended.rhoCalcSetExt
           Mettapedia.Languages.ProcessCalculi.RhoCalculus.Extended.rhoVecCommWitness q)
   extensionBlocksVectorCollectionDescent :
-    Mettapedia.OSLF.MeTTaIL.Engine.rewriteInCollectionWithPremisesUsing
-      Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv.empty
-      Mettapedia.Languages.ProcessCalculi.RhoCalculus.Extended.rhoCalcSetExt
-      .vec
-      [Mettapedia.Languages.ProcessCalculi.RhoCalculus.Extended.rhoCommRedex] none = []
+    ∀ q : Pattern,
+      ¬ Mettapedia.OSLF.Framework.TypeSynthesis.langReduces
+        Mettapedia.Languages.ProcessCalculi.RhoCalculus.Extended.rhoCalcSetExt
+        Mettapedia.Languages.ProcessCalculi.RhoCalculus.Extended.rhoVecCommWitness q
 
 /-- A complete WM-PLN context can coexist with a canonical OSLF language that
 blocks set-context descent; admitting the same syntactic descent is a language
@@ -120,6 +119,6 @@ def contextGuardOSLFDescentBridgeProfile :
   extensionSetNotVectorPolicy :=
     Mettapedia.Languages.ProcessCalculi.RhoCalculus.Extended.rhoCalcSetExt_set_not_vec_context_policy
   extensionBlocksVectorCollectionDescent :=
-    Mettapedia.Languages.ProcessCalculi.RhoCalculus.Extended.rhoVecCommWitness_collectionDescent_nil_setExt
+    Mettapedia.Languages.ProcessCalculi.RhoCalculus.Extended.rhoVecCommWitness_no_langReduces_setExt
 
 end Mettapedia.PLN.Bridges.Languages.PLNContextGuardOSLFDescentBridge

@@ -33,7 +33,7 @@ namespace Mettapedia.OSLF.Framework.WMCalculusBNBridge
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Match
 open Mettapedia.OSLF.MeTTaIL.Engine
-open Mettapedia.OSLF.MeTTaIL.DeclReducesPremises
+open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open Mettapedia.OSLF.Framework.TypeSynthesis
 open Mettapedia.OSLF.Framework.LangMorphism
 open Mettapedia.OSLF.Framework.PLNWMHypercubeBasis
@@ -81,16 +81,21 @@ theorem guarded_forget_of_dsep
       (pExtract (pForget pS pW) pq)
       (pExtract pW pq) := by
   unfold langReducesUsing
-  exact DeclReducesWithPremises.topRule
+  exact step_of_rule
     (relEnv := relEnv)
     (lang := wmExtVertexLanguageDefGuarded v)
-    (r := ruleForgetOutsideGuarded)
+    (rule := ruleForgetOutsideGuarded)
+    (initialBindings := [("q", pq), ("W", pW), ("S", pS)])
+    (finalBindings := [("q", pq), ("W", pW), ("S", pS)])
     (ruleForgetOutsideGuarded_mem_guarded v hf)
-    [("q", pq), ("W", pW), ("S", pS)]
-    (by simp [ruleForgetOutsideGuarded, pExtract, pForget, matchPattern, matchArgs, mergeBindings])
-    [("q", pq), ("W", pW), ("S", pS)]
+    (by simp [ruleForgetOutsideGuarded, pExtract, pForget,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule,
+      matchPattern, matchArgs, mergeBindings])
+    (.relationQuery .nil)
     hprem
-    (by simp [ruleForgetOutsideGuarded, pExtract, applyBindings])
+    (by simp [ruleForgetOutsideGuarded, pExtract,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule,
+      applyBindings])
 
 /-- Existential form: there EXISTS a RelationEnv under which guarded forgetting fires.
     This witnesses that the guarded rule is not vacuous — it CAN fire with
@@ -146,9 +151,7 @@ theorem guarded_reduction_lifts_relEnv
     (hred : langReducesUsing RelationEnv.empty lang p q) :
     langReducesUsing relEnv lang p q := by
   unfold langReducesUsing at hred ⊢
-  exact declReducesWithPremises_mono_relEnv
-    (fun _ _ t ht => absurd ht (by simp [RelationEnv.empty]))
-    hred
+  exact hred.mono_relEnv (RelationEnv.empty_le relEnv)
 
 /-- The evidence-add chain fires under any RelationEnv since it uses
     only core rules (no premises).
@@ -329,12 +332,14 @@ theorem chain_evidence_semantically_sound (I : EvidenceInterpretation)
     (I.extract W₁ q + I.extract W₂ q) + I.extract W₃ q := by
   rw [I.combine_hplus, I.combine_hplus]
 
-/-- The universal property: `combine_hplus` + `zero_extract` (= commutative-monoid
-    homomorphism conditions) imply ALL 5 WM core rule soundness conditions. -/
-theorem wmCore_sound_of_addCommMonoidHom (extract : Pattern → Pattern → BinaryEvidence)
-    (hcomb : ∀ W₁ W₂ q, extract (pRevise W₁ W₂) q = extract W₁ q + extract W₂ q)
-    (hzero : ∀ q, extract (.apply "Zero" []) q = BinaryEvidence.zero) :
-    -- All 5 soundness conditions hold:
+/-- Additivity of extraction under revision implies the four algebraic laws
+    needed in addition to the evidence-add rule itself.  Zero extraction is a
+    separate semantic law of `EvidenceInterpretation`; none of these five
+    rewrite rules has `Extract(Zero, q)` as its left-hand side. -/
+theorem wmCore_algebraic_laws_of_revision_additive
+    (extract : Pattern → Pattern → BinaryEvidence)
+    (hcomb : ∀ W₁ W₂ q,
+      extract (pRevise W₁ W₂) q = extract W₁ q + extract W₂ q) :
     (∀ W₁ W₂ q, extract (pRevise W₁ W₂) q = extract (pRevise W₂ W₁) q) ∧
     (∀ W₁ W₂ W₃ q, extract (pRevise (pRevise W₁ W₂) W₃) q =
       extract (pRevise W₁ (pRevise W₂ W₃)) q) ∧

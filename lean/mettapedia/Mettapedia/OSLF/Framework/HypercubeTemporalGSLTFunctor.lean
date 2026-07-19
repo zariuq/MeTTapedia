@@ -33,7 +33,7 @@ theorem langReduces_mono_vertex_temporal {v w : ProbabilityVertex} (h : v ≤ w)
     (hred : langReduces (vertexTemporalLanguageDef w) p q) :
     langReduces (vertexTemporalLanguageDef v) p q := by
   unfold langReduces langReducesUsing at hred ⊢
-  exact declReduces_mono
+  exact contextualStep_mono_rules
     (activeRulesWithTemporal_subset_of_le h)
     (by rfl)
     hred

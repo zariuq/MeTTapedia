@@ -531,7 +531,7 @@ one-step behavior is the upstream definition of \code{let},
 \code{unify}/\code{chain} programs.  Certifying them required a
 \emph{matcher bridge}: relating the public equation-query surface to the
 official \code{matchAtoms}/\code{mergeBindings} semantics.  The key
-insight from this tranche was that the real seam was \emph{not} merely a
+insight from this development stage was that the real seam was \emph{not} merely a
 direct one-way-to-two-way matcher comparison.  The public \HE{} query
 surface had historically routed equation lookup through the simplified
 \code{simpleMatch} path, while the faithful two-sided matcher already
@@ -873,11 +873,12 @@ event $0$, so its cause list holds two arcs to $0$:
 The algebraic reading is the load-bearing one. A receipt is a \emph{located, measured
 pomset} of spend events: a partially ordered multiset whose order is generated purely by
 consumption --- event $e'$ follows $e$ exactly when $e'$ consumed something $e$ produced.
-The engine's emission order is just one linearization of that partial order; any two
-schedules of the same reactions yield the same pomset, so \emph{schedule-invariance holds by
-construction} rather than by a theorem about the scheduler (the Lean theorem
-\code{boundedBudgetedCausalPrefix\_emission\_linearizes} confirms the emitted sequence
-linearizes the causal order). Locations make purses \emph{fibers} over channels: funding
+The engine's emission order is one linearization of that partial order.  Any
+permutation of one fixed compatible matching yields the same target and receipt
+bag; the emitted sequence linearizes that matching's causal order.  Alternative
+endpoint or funding matchings remain distinct branches.  The Lean theorem
+\code{boundedBudgetedCausalPrefix\_emission\_linearizes} confirms that a budgeted
+prefix's emitted sequence linearizes its causal order. Locations make purses \emph{fibers} over channels: funding
 never crosses a channel, and each per-location account is conserved
 (\code{CostPath.per\_location\_restriction\_account\_conservation}). Finally, the receipt
 itself carries no notion of ``the cost'': costs are \emph{valuations} --- monoid-valued maps
@@ -923,28 +924,44 @@ request, never by accident. A budget-monotonicity gate (59 paired runs at increa
 allowances) checks that raising an allowance never flips a determinate verdict and never
 removes a receipt event: more fuel can only extend what is known.
 
-\paragraph{Certified correspondence.} The declarative side lives in Lean (the
-\href{https://github.com/zariuq/MeTTapedia/tree/2e832da612270ffc5cb9db52e5d835ec94716f4d/lean/mettapedia/Mettapedia/Languages/ProcessCalculi/RhoCalculus/Costed}{\code{Costed/}}
-theory in the Mettapedia repository): cost steps, paths, receipts, valuations,
+\paragraph{Certified correspondence.} The formal side lives in the \code{Cost/}
+theory in the Mettapedia repository: cost steps, paths, receipts, valuations,
 conservation laws, and a budgeted executor, proven equal to one another where they meet.
 The capstone \code{BudgetedPrefixPathRefinement} states that every budgeted machine run
-\emph{is} a prefix of a declarative cost path with the same receipt and the correct status,
+produces a prefix of the occurrence-bearing Lean executable \code{CostPath}, with
+the same receipt and the correct status,
 and its corollaries pin each verdict separately: sufficient allowances yield an actual
 path; exhaustive candidate failure --- unlike bounded exhaustion --- certifies quiescence;
 zero fuel and zero search-work report their own exhaustion and make no negative claim. The
 machine frontier is proven sound and complete up to structural equivalence
 (\code{costStep\_sound\_runtime},
-\code{costStep\_complete\_runtime\_up\_to\_struct}).
+\code{costStep\_complete\_runtime\_up\_to\_struct}); these are the separate
+one-step correspondences with the declarative \code{CostStep} relation.
+The compositional theorem
+\code{budgetedCausalPrefix\_exists\_rhoLanguageDefRewritePath} closes the
+corresponding path square for the Lean executor: every publicly admitted
+budgeted run yields an occurrence-bearing runtime path, a declarative funded
+trace, and a rewrite path in the pure GSLT mechanically derived from
+\code{rhoCalc}, with exactly one pure step per runtime firing.
 
-The pure-rho boundary is now theorem-backed as well.  The matcher and substitution are
-compiled from the one authored rho language definition and proved to agree with the
-established rho GSLT.  On the derived binder-safe fragment, initialization and funded
-reduction preserve scope; each declarative \code{CostStep} erases to one pure
-\textsc{comm}, and each declarative funded path erases to a rho rewrite path whose length is
-exactly its ordered demand-receipt length.  The equivalence used here is pure structural
-congruence: no executable free-Drop step is admitted.  The canonical configuration erasure
-is defined by quotient lifting rather than by a noncomputable representative choice.  A
-rerunnable Lean audit prints the axioms of the exported results; they use only Lean's
+The pure-rho boundary is theorem-backed as well.  The authored rho
+\code{LanguageDef} supplies the strict syntax and primitive COMM presentation;
+its compiled matcher, normalization, substitution, and supported COMM contracta
+are proved to agree with the independently established semantic development.
+The pure GSLT used for erasure is itself derived from that authored declaration;
+full equivalence of its complete contextual relation with the independently
+established relation remains a named theorem obligation.  On the derived
+binder-safe fragment, initialization and funded reduction preserve scope; each
+declarative \code{CostStep} erases to one derived pure \textsc{comm}, and each
+declarative funded or executable path erases to a derived rho rewrite path whose
+length is exactly its ordered demand-receipt length.  The equivalence used here
+is pure structural congruence: no executable free-Drop step is admitted.  The
+canonical configuration erasure is defined by quotient lifting rather than by
+a noncomputable representative choice.  The pure-erasure binder-safety judgment
+covers exactly syntax observable by pure erasure.  The separate public
+runtime-scope check validates every raw field, including purse surfaces, and is
+proved to imply the erasure-domain judgment.
+A rerunnable Lean audit prints the axioms of the exported results; they use only Lean's
 standard quotient and classical infrastructure, with no project axiom and no unfinished
 proof.
 
@@ -968,11 +985,22 @@ occurrences, and causal receipt linearization.  These gates, together with threa
 sanitizers, are implementation evidence; the Lean step/path theorem above supplies the
 declarative semantic boundary.
 
-\paragraph{One root and the corrected algebra.} The profile implements funded rho, not a
-second rho calculus and not a Datalog architecture.  Its pure syntax and \textsc{comm} rule
-come from the same authored language definition as the matcher and GSLT bridge.  Other
-implementations are bounded encoding references, and their executable free-Drop rule is not
-part of this profile.
+At the modeled parallel boundary, a list of enabled runtime candidates whose
+complete endpoint-and-funding source-index family is globally duplicate-free
+lifts to a \code{SelectedRuntimeWave}.  Its witnessed source partition
+constructs an exact \code{CostMatching}, and every permutation of that fixed
+matching serializes as an ordinary declarative cost trace.  This discharges the
+runtime-model wave-to-matching square under the occurrence-claim postcondition;
+the compiled-C correspondence remains the bounded differential, receipt-replay,
+and sanitizer evidence stated above rather than a universal theorem about C.
+
+\paragraph{A strict source presentation and the corrected algebra.} The profile implements
+funded rho and no Datalog architecture.  Its strict syntax and primitive \textsc{comm}
+presentation come from the authored \code{LanguageDef}; the compiled artifacts are
+proved to agree with the established pure semantics on supported COMM contracta,
+while the GSLT used for the cost-erasure theorem is mechanically derived from
+that authored declaration.  Other implementations are bounded encoding
+references, and their executable free-Drop rule is not part of this profile.
 
 The formalization also identifies why the original ordinary-monad faithfulness claim cannot
 be repaired by choosing a more cancellative signature monoid.  Joint injectivity of a monoid

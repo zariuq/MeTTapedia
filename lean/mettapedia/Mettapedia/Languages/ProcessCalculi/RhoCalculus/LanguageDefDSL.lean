@@ -1,6 +1,7 @@
 import Mettapedia.OSLF.Framework.TypeSynthesis
 import Mettapedia.OSLF.MeTTaIL.LanguageDefDSL
 import Mettapedia.OSLF.MeTTaIL.Export
+import Mettapedia.OSLF.MeTTaIL.ContextualStep
 
 /-!
 # Explicit extensions of the canonical rho `LanguageDef`
@@ -23,6 +24,7 @@ open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.LanguageDefDSL
 open Mettapedia.OSLF.MeTTaIL.Export
 open Mettapedia.OSLF.MeTTaIL.Engine
+open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open Mettapedia.OSLF.Framework.TypeSynthesis
 
 /-- An explicitly additive rho-language extension.  Keeping the delta as data
@@ -32,7 +34,6 @@ structure RhoExtensionDelta where
   termDecls : List GrammarRule := []
   equationDecls : List Equation := []
   rewriteDecls : List RewriteRule := []
-  extraCongruenceCollections : List CollType := []
 
 namespace RhoExtensionDelta
 
@@ -42,8 +43,6 @@ def compose (first second : RhoExtensionDelta) : RhoExtensionDelta where
   termDecls := first.termDecls ++ second.termDecls
   equationDecls := first.equationDecls ++ second.equationDecls
   rewriteDecls := first.rewriteDecls ++ second.rewriteDecls
-  extraCongruenceCollections :=
-    first.extraCongruenceCollections ++ second.extraCongruenceCollections
 
 /-- Apply a named delta to an already-authored language. -/
 def extend (delta : RhoExtensionDelta) (base : LanguageDef)
@@ -53,9 +52,7 @@ def extend (delta : RhoExtensionDelta) (base : LanguageDef)
       «types» := base.types ++ delta.typeDecls
       «terms» := base.terms ++ delta.termDecls
       «equations» := base.equations ++ delta.equationDecls
-      «rewrites» := base.rewrites ++ delta.rewriteDecls
-      «congruenceCollections» :=
-        base.congruenceCollections ++ delta.extraCongruenceCollections }
+      «rewrites» := base.rewrites ++ delta.rewriteDecls }
 
 @[simp] theorem extend_rewrites (delta : RhoExtensionDelta)
     (base : LanguageDef) (extendedName : String) :
@@ -83,9 +80,18 @@ def execRewrite : RewriteRule where
 def execDelta : RhoExtensionDelta where
   rewriteDecls := [execRewrite]
 
-/-- Optional finite-set context descent, kept separate from execution. -/
+/-- Explicit transport of one reduction through finite-set context. -/
+def parSetCongRewrite : RewriteRule where
+  «name» := "ParSetCong"
+  typeContext := []
+  premises := [.congruence (.fvar "S") (.fvar "T")]
+  left := .collection .hashSet [.fvar "S"] (some "rest")
+  right := .collection .hashSet [.fvar "T"] (some "rest")
+
+/-- Optional finite-set context descent, kept separate from execution and
+represented by a rule rather than a collection flag. -/
 def setContextDelta : RhoExtensionDelta where
-  extraCongruenceCollections := [.hashSet]
+  rewriteDecls := [parSetCongRewrite]
 
 section DeltaDSL
 
@@ -118,7 +124,6 @@ private def referenceEncodingDeltaSource : LanguageDef :=
     }
     logic { }
     oracles { }
-    congruenceCollections { }
   }
 
 /-- Polyadic input, restriction/extrusion, and their rules as a bounded audit
@@ -145,7 +150,6 @@ private def nativeFoldDeltaSource : LanguageDef :=
     rewrites { }
     logic { }
     oracles { }
-    congruenceCollections { }
   }
 
 end DeltaDSL
@@ -188,26 +192,25 @@ set_option maxRecDepth 4096 in
 set_option maxHeartbeats 800000 in
 /-- Free drop has no executable one-step successor in the canonical calculus. -/
 theorem freeDrop_exec_nil_pure :
-    rewriteWithContextWithPremisesUsing RelationEnv.empty rhoCalc
+    rewriteAt (engineBasePremises RelationEnv.empty) rhoCalc 1
       freeDropWitness = [] := by
   decide +kernel
 
 /-- Declarative form of free-drop inertness in pure rho. -/
 theorem freeDrop_no_langReduces_pure (q : Pattern) :
     ¬ langReduces rhoCalc freeDropWitness q := by
-  intro hred
-  have hmem :
-      q ∈ rewriteWithContextWithPremisesUsing RelationEnv.empty rhoCalc
-        freeDropWitness :=
-    langReducesUsing_to_exec (relEnv := RelationEnv.empty) (lang := rhoCalc) hred
-  simp [freeDrop_exec_nil_pure] at hmem
+  apply not_step_of_matchPatternForRule_eq_nil
+  intro rewriteRule ruleMember
+  change rewriteRule ∈ [rhoCommRewrite, rhoParCongRewrite] at ruleMember
+  simp only [List.mem_cons, List.not_mem_nil, or_false] at ruleMember
+  rcases ruleMember with ruleEq | ruleEq <;> subst rewriteRule <;> decide +kernel
 
 set_option maxRecDepth 4096 in
 set_option maxHeartbeats 800000 in
 /-- The minimal execution extension admits exactly the intended witness step. -/
 theorem freeDrop_exec_mem_execExt :
     freeDropTarget ∈
-      rewriteWithContextWithPremisesUsing RelationEnv.empty rhoCalcExecExt
+      rewriteAt (engineBasePremises RelationEnv.empty) rhoCalcExecExt 1
         freeDropWitness := by
   decide +kernel
 
@@ -216,7 +219,7 @@ theorem freeDrop_langReduces_execExt :
     langReduces rhoCalcExecExt freeDropWitness freeDropTarget := by
   exact exec_to_langReducesUsing
     (relEnv := RelationEnv.empty) (lang := rhoCalcExecExt)
-    freeDrop_exec_mem_execExt
+    ⟨1, freeDrop_exec_mem_execExt⟩
 
 /-- The theorem-level boundary: pure rho rejects free execution and the named
 execution extension admits it. -/
@@ -264,32 +267,31 @@ set_option maxHeartbeats 800000 in
 /-- The COMM witness reduces at top level in canonical pure rho. -/
 theorem rhoCommRedex_exec_mem_pure :
     rhoCommReduct ∈
-      rewriteWithContextWithPremisesUsing RelationEnv.empty rhoCalc rhoCommRedex := by
+      rewriteAt (engineBasePremises RelationEnv.empty) rhoCalc 1 rhoCommRedex := by
   decide +kernel
 
 set_option maxRecDepth 4096 in
 set_option maxHeartbeats 800000 in
 /-- Canonical bag-only rho blocks reduction below a set context. -/
 theorem rhoSetCommWitness_exec_nil_canonical :
-    rewriteWithContextWithPremisesUsing RelationEnv.empty rhoCalc
+    rewriteAt (engineBasePremises RelationEnv.empty) rhoCalc 2
       rhoSetCommWitness = [] := by
   decide +kernel
 
 theorem rhoSetCommWitness_no_langReduces_canonical (q : Pattern) :
     ¬ langReduces rhoCalc rhoSetCommWitness q := by
-  intro hred
-  have hmem :
-      q ∈ rewriteWithContextWithPremisesUsing RelationEnv.empty rhoCalc
-        rhoSetCommWitness :=
-    langReducesUsing_to_exec (relEnv := RelationEnv.empty) (lang := rhoCalc) hred
-  simp [rhoSetCommWitness_exec_nil_canonical] at hmem
+  apply not_step_of_matchPatternForRule_eq_nil
+  intro rewriteRule ruleMember
+  change rewriteRule ∈ [rhoCommRewrite, rhoParCongRewrite] at ruleMember
+  simp only [List.mem_cons, List.not_mem_nil, or_false] at ruleMember
+  rcases ruleMember with ruleEq | ruleEq <;> subst rewriteRule <;> decide +kernel
 
 set_option maxRecDepth 4096 in
 set_option maxHeartbeats 800000 in
 /-- The set-context extension admits the nested COMM step. -/
 theorem rhoSetCommWitness_exec_mem_setExt :
     rhoSetCommWitnessNF ∈
-      rewriteWithContextWithPremisesUsing RelationEnv.empty rhoCalcSetExt
+      rewriteAt (engineBasePremises RelationEnv.empty) rhoCalcSetExt 2
         rhoSetCommWitness := by
   decide +kernel
 
@@ -297,7 +299,7 @@ theorem rhoSetCommWitness_langReduces_setExt :
     langReduces rhoCalcSetExt rhoSetCommWitness rhoSetCommWitnessNF := by
   exact exec_to_langReducesUsing
     (relEnv := RelationEnv.empty) (lang := rhoCalcSetExt)
-    rhoSetCommWitness_exec_mem_setExt
+    ⟨2, rhoSetCommWitness_exec_mem_setExt⟩
 
 theorem rhoSetCommWitness_exists_langReduces_setExt :
     ∃ q, langReduces rhoCalcSetExt rhoSetCommWitness q :=
@@ -313,31 +315,24 @@ set_option maxRecDepth 4096 in
 set_option maxHeartbeats 800000 in
 /-- Neither canonical rho nor the set-only extension enables vector descent. -/
 theorem rhoVecCommWitness_exec_nil_setExt :
-    rewriteWithContextWithPremisesUsing RelationEnv.empty rhoCalcSetExt
+    rewriteAt (engineBasePremises RelationEnv.empty) rhoCalcSetExt 3
       rhoVecCommWitness = [] := by
   decide +kernel
 
 theorem rhoVecCommWitness_no_langReduces_setExt (q : Pattern) :
     ¬ langReduces rhoCalcSetExt rhoVecCommWitness q := by
-  intro hred
-  have hmem :
-      q ∈ rewriteWithContextWithPremisesUsing RelationEnv.empty rhoCalcSetExt
-        rhoVecCommWitness :=
-    langReducesUsing_to_exec
-      (relEnv := RelationEnv.empty) (lang := rhoCalcSetExt) hred
-  simp [rhoVecCommWitness_exec_nil_setExt] at hmem
+  apply not_step_of_matchPatternForRule_eq_nil
+  intro rewriteRule ruleMember
+  change rewriteRule ∈ [rhoCommRewrite, rhoParCongRewrite, parSetCongRewrite] at ruleMember
+  simp only [List.mem_cons, List.not_mem_nil, or_false] at ruleMember
+  rcases ruleMember with ruleEq | ruleEq | ruleEq <;>
+    subst rewriteRule <;> decide +kernel
 
 theorem rhoCalcSetExt_set_not_vec_context_policy :
     (∃ q, langReduces rhoCalcSetExt rhoSetCommWitness q) ∧
       (∀ q, ¬ langReduces rhoCalcSetExt rhoVecCommWitness q) := by
   exact ⟨rhoSetCommWitness_exists_langReduces_setExt,
     rhoVecCommWitness_no_langReduces_setExt⟩
-
-theorem rhoVecCommWitness_collectionDescent_nil_setExt :
-    rewriteInCollectionWithPremisesUsing RelationEnv.empty rhoCalcSetExt .vec
-      [rhoCommRedex] none = [] := by
-  exact rewriteInCollectionWithPremisesUsing_eq_nil_of_not_allowsCongruence
-    RelationEnv.empty rhoCalcSetExt .vec [rhoCommRedex] none (by decide)
 
 /-! ## Structural and export checks -/
 

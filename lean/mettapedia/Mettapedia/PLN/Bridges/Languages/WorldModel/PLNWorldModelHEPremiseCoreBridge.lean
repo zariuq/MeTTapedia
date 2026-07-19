@@ -7,9 +7,9 @@ import Mettapedia.PLN.Bridges.Languages.WorldModel.PLNWorldModelRuntimeBridge
 Composes the first explicit premise-bearing `HE` runtime fragment through the
 existing runtime-to-WM consequence surface.
 
-This bridge deliberately does not reuse `HEJudgmentWMInterface`, because that
-interface is tied to the older `DeclReducesRel mettaHE` surface.  The premise
-fragment lives on the honest `DeclReducesWithPremises` surface instead.
+This bridge deliberately remains fragment-specific: it exposes the
+premise-core execution judgment directly, while `HEJudgmentWMInterface`
+exposes the encompassing authored language step relation.
 
 Positive example:
 - a premise-bearing top-level HE rule can already be packaged as a
@@ -28,7 +28,6 @@ open Mettapedia.PLN.Bridges.Languages.WorldModel.PLNWorldModelRuntimeBridge
 open Mettapedia.Languages.MeTTa.HE.CoreFragment
 open Mettapedia.Languages.MeTTa.RuntimeSpec
 open Mettapedia.OSLF.MeTTaIL.Syntax
-open Mettapedia.OSLF.MeTTaIL.DeclReducesPremises
 
 /-- WM interface for the first premise-bearing HE runtime fragment. -/
 structure HEPremiseCoreWMInterface

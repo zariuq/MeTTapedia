@@ -2,7 +2,7 @@ import Mettapedia.OSLF.PathMap.Core
 import Mettapedia.OSLF.MeTTaIL.Syntax
 import Mettapedia.OSLF.MeTTaIL.Match
 import Mettapedia.OSLF.MeTTaIL.Engine
-import Mettapedia.OSLF.MeTTaIL.DeclReducesWithPremises
+import Mettapedia.OSLF.MeTTaIL.ContextualStep
 import Mettapedia.OSLF.Framework.TypeSynthesis
 
 /-!
@@ -41,7 +41,7 @@ by a `relEnv : RelationEnv` encoding which conditions hold for the token pair.
 
 - Meredith & Stay, "Operational Semantics in Logical Form"
 - Williams & Stay, "Native Type Theory" (ACT 2021)
-- PathMap `ring.rs`: `/home/zar/claude/hyperon/PathMap/src/ring.rs`
+- PathMap `ring.rs` algebraic implementation
 -/
 
 namespace Mettapedia.OSLF.PathMap.OSLFInstance
@@ -49,7 +49,9 @@ namespace Mettapedia.OSLF.PathMap.OSLFInstance
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Match
 open Mettapedia.OSLF.MeTTaIL.Engine
-open Mettapedia.OSLF.MeTTaIL.DeclReducesPremises
+open Mettapedia.OSLF.MeTTaIL.ContextualStep
+open Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical
+open Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution
 open Mettapedia.OSLF.Framework.TypeSynthesis
 
 /-! ## Language Definition -/
@@ -176,6 +178,40 @@ def pathMapLang : LanguageDef := {
       right := .apply "PFilter" [.fvar "a", .fvar "b"] }
   ]
 }
+
+/-- Every PathMap rewrite has only host-supplied relation-query premises.
+Contextual closure therefore contributes no additional PathMap steps. -/
+private theorem pathMapLang_rules_noncontextual :
+    ∀ rule, rule ∈ pathMapLang.rewrites →
+      NoncontextualPremises rule.premises := by
+  intro rule ruleMember
+  simp only [pathMapLang, List.mem_cons, List.mem_nil_iff, or_false] at ruleMember
+  rcases ruleMember with
+    rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
+  all_goals first
+    | exact .relationQuery .nil
+    | exact .relationQuery (.relationQuery .nil)
+    | exact .relationQuery (.relationQuery (.relationQuery .nil))
+
+/-- Introduce a PathMap step directly from one authored root rule.  Since the
+language has no reflective presentation declarations, rule matching and
+substitution are the ordinary syntactic operations. -/
+private theorem pathMap_rootStep
+    {relEnv : RelationEnv} {source target : Pattern}
+    {rule : RewriteRule} {initialBindings finalBindings : Bindings}
+    (ruleMember : rule ∈ pathMapLang.rewrites)
+    (matched : initialBindings ∈ matchPattern rule.left source)
+    (premises : finalBindings ∈
+      applyPremisesWithEnv relEnv pathMapLang rule.premises initialBindings)
+    (targetEq : applyBindings finalBindings rule.right = target) :
+    langReducesUsing relEnv pathMapLang source target := by
+  rw [langReducesUsing,
+    step_iff_rootStep_of_noncontextualRules pathMapLang_rules_noncontextual]
+  refine ⟨rule, ruleMember, initialBindings, ?_, finalBindings, premises, ?_⟩
+  · rw [matchPatternForRule_eq_syntactic_of_no_presentations (by rfl)]
+    exact matched
+  · rw [applyBindingsForRule_eq_syntactic_of_no_presentations (by rfl)]
+    exact targetEq
 
 /-! ## OSLF Pipeline Instantiation -/
 
@@ -312,9 +348,8 @@ private lemma premiseStep_preserves_find (relEnv : RelationEnv) (lang : Language
   | freshness fc =>
     have := premiseStepWithEnv_freshness_mem h_bs
     subst this; exact h_find
-  | congruence src tgt =>
-    obtain ⟨bPrem, hmerge⟩ := premiseStepWithEnv_congruence_mem h_bs
-    exact mergeBindings_find_preserved key val h_find hmerge
+  | congruence _ _ =>
+    simp [premiseStepWithEnv] at h_bs
   | relationQuery rel args =>
     obtain ⟨bPrem, hmerge⟩ := premiseStepWithEnv_relationQuery_mem h_bs
     exact mergeBindings_find_preserved key val h_find hmerge
@@ -463,52 +498,54 @@ theorem pathMap_pjoin_complete (relEnv : RelationEnv) (a b : String) (φ : Patte
   constructor
   · -- Forward: if some reduct q satisfies φ, extract which rule fired
     rintro ⟨q, hq_red, hq_φ⟩
-    rw [langReducesUsing] at hq_red
-    cases hq_red with
-    | topRule r hr bs0 hm bs hp hb =>
-      simp only [pathMapLang, List.mem_cons, List.mem_nil_iff, or_false] at hr
-      rcases hr with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
-      · -- PJoin_self: b⊆a premise, q = fvar a
+    rw [langReducesUsing,
+      step_iff_rootStep_of_noncontextualRules pathMapLang_rules_noncontextual] at hq_red
+    rcases hq_red with ⟨r, hr, bs0, hm, bs, hp, hb⟩
+    rw [matchPatternForRule_eq_syntactic_of_no_presentations (by rfl)] at hm
+    rw [applyBindingsForRule_eq_syntactic_of_no_presentations (by rfl)] at hb
+    simp only [pathMapLang, List.mem_cons, List.mem_nil_iff, or_false] at hr
+    rcases hr with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
+    · -- PJoin_self: b⊆a premise, q = fvar a
         rw [matchPattern_PJoin_eq] at hm; simp at hm; subst hm
         have ha := premisesEval_preserves_a relEnv pathMapLang _ a b bs hp
         rw [ha] at hb
         exact Or.inl ⟨List.ne_nil_of_mem hp, hb ▸ hq_φ⟩
-      · -- PJoin_other: a⊆b premise, q = fvar b
+    · -- PJoin_other: a⊆b premise, q = fvar b
         rw [matchPattern_PJoin_eq] at hm; simp at hm; subst hm
         have hb_bind := premisesEval_preserves_b relEnv pathMapLang _ a b bs hp
         rw [hb_bind] at hb
         exact Or.inr (Or.inl ⟨List.ne_nil_of_mem hp, hb ▸ hq_φ⟩)
-      · -- PJoin_element: nsub×2 premises, q = PUnion(a,b)
+    · -- PJoin_element: nsub×2 premises, q = PUnion(a,b)
         rw [matchPattern_PJoin_eq] at hm; simp at hm; subst hm
         have ha := premisesEval_preserves_a relEnv pathMapLang _ a b bs hp
         have hb_bind := premisesEval_preserves_b relEnv pathMapLang _ a b bs hp
         simp only [applyBindings, List.map, ha, hb_bind] at hb
         exact Or.inr (Or.inr ⟨List.ne_nil_of_mem hp, hb ▸ hq_φ⟩)
-      · -- PMeet_self: match against PJoin fails
+    · -- PMeet_self: match against PJoin fails
         simp only [matchPattern_neq_apply_empty "PMeet" "PJoin" _ _
           (by decide : ("PMeet" == "PJoin") = false)] at hm
         simp at hm
-      · -- PMeet_other
+    · -- PMeet_other
         simp only [matchPattern_neq_apply_empty "PMeet" "PJoin" _ _
           (by decide : ("PMeet" == "PJoin") = false)] at hm
         simp at hm
-      · -- PMeet_element
+    · -- PMeet_element
         simp only [matchPattern_neq_apply_empty "PMeet" "PJoin" _ _
           (by decide : ("PMeet" == "PJoin") = false)] at hm
         simp at hm
-      · -- PSub_self
+    · -- PSub_self
         simp only [matchPattern_neq_apply_empty "PSubtract" "PJoin" _ _
           (by decide : ("PSubtract" == "PJoin") = false)] at hm
         simp at hm
-      · -- PSub_element
+    · -- PSub_element
         simp only [matchPattern_neq_apply_empty "PSubtract" "PJoin" _ _
           (by decide : ("PSubtract" == "PJoin") = false)] at hm
         simp at hm
-      · -- PRes_self
+    · -- PRes_self
         simp only [matchPattern_neq_apply_empty "PRestrict" "PJoin" _ _
           (by decide : ("PRestrict" == "PJoin") = false)] at hm
         simp at hm
-      · -- PRes_element
+    · -- PRes_element
         simp only [matchPattern_neq_apply_empty "PRestrict" "PJoin" _ _
           (by decide : ("PRestrict" == "PJoin") = false)] at hm
         simp at hm
@@ -518,54 +555,48 @@ theorem pathMap_pjoin_complete (relEnv : RelationEnv) (a b : String) (φ : Patte
       obtain ⟨bs, hbs⟩ := List.exists_mem_of_ne_nil _ hcond
       have ha := premisesEval_preserves_a relEnv pathMapLang _ a b bs hbs
       exact ⟨.fvar a,
-        by rw [langReducesUsing]
-           exact DeclReducesWithPremises.topRule
-             (r := { name := "PJoin_self",
-                     typeContext := [("a", .base "V"), ("b", .base "V")],
-                     premises := [.relationQuery "sub" [.fvar "b", .fvar "a"]],
-                     left := .apply "PJoin" [.fvar "a", .fvar "b"],
-                     right := .fvar "a" })
-             (by simp [pathMapLang])
-             (bs0 := [("b", .fvar b), ("a", .fvar a)])
-             (by rw [matchPattern_PJoin_eq]; simp)
-             bs hbs
-             (by exact ha),
+        by
+          exact pathMap_rootStep
+            (rule := { name := "PJoin_self",
+                       typeContext := [("a", .base "V"), ("b", .base "V")],
+                       premises := [.relationQuery "sub" [.fvar "b", .fvar "a"]],
+                       left := .apply "PJoin" [.fvar "a", .fvar "b"],
+                       right := .fvar "a" })
+            (by simp [pathMapLang])
+            (by rw [matchPattern_PJoin_eq]; simp)
+            hbs ha,
         hφa⟩
     · -- condSubAB: PJoin_other fires
       obtain ⟨bs, hbs⟩ := List.exists_mem_of_ne_nil _ hcond
       have hb_bind := premisesEval_preserves_b relEnv pathMapLang _ a b bs hbs
       exact ⟨.fvar b,
-        by rw [langReducesUsing]
-           exact DeclReducesWithPremises.topRule
-             (r := { name := "PJoin_other",
-                     typeContext := [("a", .base "V"), ("b", .base "V")],
-                     premises := [.relationQuery "sub" [.fvar "a", .fvar "b"]],
-                     left := .apply "PJoin" [.fvar "a", .fvar "b"],
-                     right := .fvar "b" })
-             (by simp [pathMapLang])
-             (bs0 := [("b", .fvar b), ("a", .fvar a)])
-             (by rw [matchPattern_PJoin_eq]; simp)
-             bs hbs
-             (by exact hb_bind),
+        by
+          exact pathMap_rootStep
+            (rule := { name := "PJoin_other",
+                       typeContext := [("a", .base "V"), ("b", .base "V")],
+                       premises := [.relationQuery "sub" [.fvar "a", .fvar "b"]],
+                       left := .apply "PJoin" [.fvar "a", .fvar "b"],
+                       right := .fvar "b" })
+            (by simp [pathMapLang])
+            (by rw [matchPattern_PJoin_eq]; simp)
+            hbs hb_bind,
         hφb⟩
     · -- condNSubBANSubAB: PJoin_element fires
       obtain ⟨bs, hbs⟩ := List.exists_mem_of_ne_nil _ hcond
       have ha := premisesEval_preserves_a relEnv pathMapLang _ a b bs hbs
       have hb_bind := premisesEval_preserves_b relEnv pathMapLang _ a b bs hbs
       exact ⟨.apply "PUnion" [.fvar a, .fvar b],
-        by rw [langReducesUsing]
-           exact DeclReducesWithPremises.topRule
-             (r := { name := "PJoin_element",
-                     typeContext := [("a", .base "V"), ("b", .base "V")],
-                     premises := [.relationQuery "nsub" [.fvar "b", .fvar "a"],
-                                  .relationQuery "nsub" [.fvar "a", .fvar "b"]],
-                     left := .apply "PJoin" [.fvar "a", .fvar "b"],
-                     right := .apply "PUnion" [.fvar "a", .fvar "b"] })
-             (by simp [pathMapLang])
-             (bs0 := [("b", .fvar b), ("a", .fvar a)])
-             (by rw [matchPattern_PJoin_eq]; simp)
-             bs hbs
-             (by simp only [applyBindings, List.map, ha, hb_bind]),
+        by
+          exact pathMap_rootStep
+            (rule := { name := "PJoin_element",
+                       typeContext := [("a", .base "V"), ("b", .base "V")],
+                       premises := [.relationQuery "nsub" [.fvar "b", .fvar "a"],
+                                    .relationQuery "nsub" [.fvar "a", .fvar "b"]],
+                       left := .apply "PJoin" [.fvar "a", .fvar "b"],
+                       right := .apply "PUnion" [.fvar "a", .fvar "b"] })
+            (by simp [pathMapLang])
+            (by rw [matchPattern_PJoin_eq]; simp)
+            hbs (by simp only [applyBindings, List.map, ha, hb_bind]),
         hφu⟩
 
 /-- NTT Soundness for PMeet — Complete.
@@ -582,52 +613,54 @@ theorem pathMap_pmeet_complete (relEnv : RelationEnv) (a b : String) (φ : Patte
   rw [langDiamondUsing_spec]
   constructor
   · rintro ⟨q, hq_red, hq_φ⟩
-    rw [langReducesUsing] at hq_red
-    cases hq_red with
-    | topRule r hr bs0 hm bs hp hb =>
-      simp only [pathMapLang, List.mem_cons, List.mem_nil_iff, or_false] at hr
-      rcases hr with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
-      · -- PJoin_self: match against PMeet fails
+    rw [langReducesUsing,
+      step_iff_rootStep_of_noncontextualRules pathMapLang_rules_noncontextual] at hq_red
+    rcases hq_red with ⟨r, hr, bs0, hm, bs, hp, hb⟩
+    rw [matchPatternForRule_eq_syntactic_of_no_presentations (by rfl)] at hm
+    rw [applyBindingsForRule_eq_syntactic_of_no_presentations (by rfl)] at hb
+    simp only [pathMapLang, List.mem_cons, List.mem_nil_iff, or_false] at hr
+    rcases hr with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
+    · -- PJoin_self: match against PMeet fails
         simp only [matchPattern_neq_apply_empty "PJoin" "PMeet" _ _
           (by decide : ("PJoin" == "PMeet") = false)] at hm
         simp at hm
-      · -- PJoin_other
+    · -- PJoin_other
         simp only [matchPattern_neq_apply_empty "PJoin" "PMeet" _ _
           (by decide : ("PJoin" == "PMeet") = false)] at hm
         simp at hm
-      · -- PJoin_element
+    · -- PJoin_element
         simp only [matchPattern_neq_apply_empty "PJoin" "PMeet" _ _
           (by decide : ("PJoin" == "PMeet") = false)] at hm
         simp at hm
-      · -- PMeet_self: ndisj+sub(a,b) premises, q = fvar a
+    · -- PMeet_self: ndisj+sub(a,b) premises, q = fvar a
         rw [matchPattern_PMeet_eq] at hm; simp at hm; subst hm
         have ha := premisesEval_preserves_a relEnv pathMapLang _ a b bs hp
         rw [ha] at hb
         exact Or.inl ⟨List.ne_nil_of_mem hp, hb ▸ hq_φ⟩
-      · -- PMeet_other
+    · -- PMeet_other
         rw [matchPattern_PMeet_eq] at hm; simp at hm; subst hm
         have hb_bind := premisesEval_preserves_b relEnv pathMapLang _ a b bs hp
         rw [hb_bind] at hb
         exact Or.inr (Or.inl ⟨List.ne_nil_of_mem hp, hb ▸ hq_φ⟩)
-      · -- PMeet_element
+    · -- PMeet_element
         rw [matchPattern_PMeet_eq] at hm; simp at hm; subst hm
         have ha := premisesEval_preserves_a relEnv pathMapLang _ a b bs hp
         have hb_bind := premisesEval_preserves_b relEnv pathMapLang _ a b bs hp
         simp only [applyBindings, List.map, ha, hb_bind] at hb
         exact Or.inr (Or.inr ⟨List.ne_nil_of_mem hp, hb ▸ hq_φ⟩)
-      · -- PSub_self: match against PMeet fails
+    · -- PSub_self: match against PMeet fails
         simp only [matchPattern_neq_apply_empty "PSubtract" "PMeet" _ _
           (by decide : ("PSubtract" == "PMeet") = false)] at hm
         simp at hm
-      · -- PSub_element
+    · -- PSub_element
         simp only [matchPattern_neq_apply_empty "PSubtract" "PMeet" _ _
           (by decide : ("PSubtract" == "PMeet") = false)] at hm
         simp at hm
-      · -- PRes_self
+    · -- PRes_self
         simp only [matchPattern_neq_apply_empty "PRestrict" "PMeet" _ _
           (by decide : ("PRestrict" == "PMeet") = false)] at hm
         simp at hm
-      · -- PRes_element
+    · -- PRes_element
         simp only [matchPattern_neq_apply_empty "PRestrict" "PMeet" _ _
           (by decide : ("PRestrict" == "PMeet") = false)] at hm
         simp at hm
@@ -635,50 +668,47 @@ theorem pathMap_pmeet_complete (relEnv : RelationEnv) (a b : String) (φ : Patte
     · obtain ⟨bs, hbs⟩ := List.exists_mem_of_ne_nil _ hcond
       have ha := premisesEval_preserves_a relEnv pathMapLang _ a b bs hbs
       exact ⟨.fvar a,
-        by rw [langReducesUsing]
-           exact DeclReducesWithPremises.topRule
-             (r := { name := "PMeet_self",
-                     typeContext := [("a", .base "V"), ("b", .base "V")],
-                     premises := [.relationQuery "ndisj" [.fvar "a", .fvar "b"],
-                                  .relationQuery "sub"   [.fvar "a", .fvar "b"]],
-                     left := .apply "PMeet" [.fvar "a", .fvar "b"], right := .fvar "a" })
-             (by simp [pathMapLang])
-             (bs0 := [("b", .fvar b), ("a", .fvar a)])
-             (by rw [matchPattern_PMeet_eq]; simp)
-             bs hbs (by exact ha),
+        by
+          exact pathMap_rootStep
+            (rule := { name := "PMeet_self",
+                       typeContext := [("a", .base "V"), ("b", .base "V")],
+                       premises := [.relationQuery "ndisj" [.fvar "a", .fvar "b"],
+                                    .relationQuery "sub"   [.fvar "a", .fvar "b"]],
+                       left := .apply "PMeet" [.fvar "a", .fvar "b"], right := .fvar "a" })
+            (by simp [pathMapLang])
+            (by rw [matchPattern_PMeet_eq]; simp)
+            hbs ha,
         hφa⟩
     · obtain ⟨bs, hbs⟩ := List.exists_mem_of_ne_nil _ hcond
       have hb_bind := premisesEval_preserves_b relEnv pathMapLang _ a b bs hbs
       exact ⟨.fvar b,
-        by rw [langReducesUsing]
-           exact DeclReducesWithPremises.topRule
-             (r := { name := "PMeet_other",
-                     typeContext := [("a", .base "V"), ("b", .base "V")],
-                     premises := [.relationQuery "ndisj" [.fvar "a", .fvar "b"],
-                                  .relationQuery "sub"   [.fvar "b", .fvar "a"]],
-                     left := .apply "PMeet" [.fvar "a", .fvar "b"], right := .fvar "b" })
-             (by simp [pathMapLang])
-             (bs0 := [("b", .fvar b), ("a", .fvar a)])
-             (by rw [matchPattern_PMeet_eq]; simp)
-             bs hbs (by exact hb_bind),
+        by
+          exact pathMap_rootStep
+            (rule := { name := "PMeet_other",
+                       typeContext := [("a", .base "V"), ("b", .base "V")],
+                       premises := [.relationQuery "ndisj" [.fvar "a", .fvar "b"],
+                                    .relationQuery "sub"   [.fvar "b", .fvar "a"]],
+                       left := .apply "PMeet" [.fvar "a", .fvar "b"], right := .fvar "b" })
+            (by simp [pathMapLang])
+            (by rw [matchPattern_PMeet_eq]; simp)
+            hbs hb_bind,
         hφb⟩
     · obtain ⟨bs, hbs⟩ := List.exists_mem_of_ne_nil _ hcond
       have ha := premisesEval_preserves_a relEnv pathMapLang _ a b bs hbs
       have hb_bind := premisesEval_preserves_b relEnv pathMapLang _ a b bs hbs
       exact ⟨.apply "PIntersect" [.fvar a, .fvar b],
-        by rw [langReducesUsing]
-           exact DeclReducesWithPremises.topRule
-             (r := { name := "PMeet_element",
-                     typeContext := [("a", .base "V"), ("b", .base "V")],
-                     premises := [.relationQuery "ndisj" [.fvar "a", .fvar "b"],
-                                  .relationQuery "nsub"  [.fvar "a", .fvar "b"],
-                                  .relationQuery "nsub"  [.fvar "b", .fvar "a"]],
-                     left := .apply "PMeet" [.fvar "a", .fvar "b"],
-                     right := .apply "PIntersect" [.fvar "a", .fvar "b"] })
-             (by simp [pathMapLang])
-             (bs0 := [("b", .fvar b), ("a", .fvar a)])
-             (by rw [matchPattern_PMeet_eq]; simp)
-             bs hbs (by simp only [applyBindings, List.map, ha, hb_bind]),
+        by
+          exact pathMap_rootStep
+            (rule := { name := "PMeet_element",
+                       typeContext := [("a", .base "V"), ("b", .base "V")],
+                       premises := [.relationQuery "ndisj" [.fvar "a", .fvar "b"],
+                                    .relationQuery "nsub"  [.fvar "a", .fvar "b"],
+                                    .relationQuery "nsub"  [.fvar "b", .fvar "a"]],
+                       left := .apply "PMeet" [.fvar "a", .fvar "b"],
+                       right := .apply "PIntersect" [.fvar "a", .fvar "b"] })
+            (by simp [pathMapLang])
+            (by rw [matchPattern_PMeet_eq]; simp)
+            hbs (by simp only [applyBindings, List.map, ha, hb_bind]),
         hφi⟩
 
 /-- NTT Soundness for PSubtract — Complete.
@@ -693,78 +723,85 @@ theorem pathMap_psubtract_complete (relEnv : RelationEnv) (a b : String) (φ : P
   rw [langDiamondUsing_spec]
   constructor
   · rintro ⟨q, hq_red, hq_φ⟩
-    rw [langReducesUsing] at hq_red
-    cases hq_red with
-    | topRule r hr bs0 hm bs hp hb =>
-      simp only [pathMapLang, List.mem_cons, List.mem_nil_iff, or_false] at hr
-      rcases hr with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
-      · -- PJoin_self: match against PSubtract fails
+    rw [langReducesUsing,
+      step_iff_rootStep_of_noncontextualRules pathMapLang_rules_noncontextual] at hq_red
+    rcases hq_red with ⟨r, hr, bs0, hm, bs, hp, hb⟩
+    rw [matchPatternForRule_eq_syntactic_of_no_presentations (by rfl)] at hm
+    rw [applyBindingsForRule_eq_syntactic_of_no_presentations (by rfl)] at hb
+    simp only [pathMapLang, List.mem_cons, List.mem_nil_iff, or_false] at hr
+    rcases hr with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
+    · -- PJoin_self: match against PSubtract fails
         simp only [matchPattern_neq_apply_empty "PJoin" "PSubtract" _ _
           (by decide : ("PJoin" == "PSubtract") = false)] at hm
         simp at hm
-      · simp only [matchPattern_neq_apply_empty "PJoin" "PSubtract" _ _
+    ·
+        simp only [matchPattern_neq_apply_empty "PJoin" "PSubtract" _ _
           (by decide : ("PJoin" == "PSubtract") = false)] at hm
         simp at hm
-      · simp only [matchPattern_neq_apply_empty "PJoin" "PSubtract" _ _
+    ·
+        simp only [matchPattern_neq_apply_empty "PJoin" "PSubtract" _ _
           (by decide : ("PJoin" == "PSubtract") = false)] at hm
         simp at hm
-      · simp only [matchPattern_neq_apply_empty "PMeet" "PSubtract" _ _
+    ·
+        simp only [matchPattern_neq_apply_empty "PMeet" "PSubtract" _ _
           (by decide : ("PMeet" == "PSubtract") = false)] at hm
         simp at hm
-      · simp only [matchPattern_neq_apply_empty "PMeet" "PSubtract" _ _
+    ·
+        simp only [matchPattern_neq_apply_empty "PMeet" "PSubtract" _ _
           (by decide : ("PMeet" == "PSubtract") = false)] at hm
         simp at hm
-      · simp only [matchPattern_neq_apply_empty "PMeet" "PSubtract" _ _
+    ·
+        simp only [matchPattern_neq_apply_empty "PMeet" "PSubtract" _ _
           (by decide : ("PMeet" == "PSubtract") = false)] at hm
         simp at hm
-      · -- PSub_self
+    · -- PSub_self
         rw [matchPattern_PSub_eq] at hm; simp at hm; subst hm
         have ha := premisesEval_preserves_a relEnv pathMapLang _ a b bs hp
         rw [ha] at hb
         exact Or.inl ⟨List.ne_nil_of_mem hp, hb ▸ hq_φ⟩
-      · -- PSub_element
+    · -- PSub_element
         rw [matchPattern_PSub_eq] at hm; simp at hm; subst hm
         have ha := premisesEval_preserves_a relEnv pathMapLang _ a b bs hp
         have hb_bind := premisesEval_preserves_b relEnv pathMapLang _ a b bs hp
         simp only [applyBindings, List.map, ha, hb_bind] at hb
         exact Or.inr ⟨List.ne_nil_of_mem hp, hb ▸ hq_φ⟩
-      · simp only [matchPattern_neq_apply_empty "PRestrict" "PSubtract" _ _
+    ·
+        simp only [matchPattern_neq_apply_empty "PRestrict" "PSubtract" _ _
           (by decide : ("PRestrict" == "PSubtract") = false)] at hm
         simp at hm
-      · simp only [matchPattern_neq_apply_empty "PRestrict" "PSubtract" _ _
+    ·
+        simp only [matchPattern_neq_apply_empty "PRestrict" "PSubtract" _ _
           (by decide : ("PRestrict" == "PSubtract") = false)] at hm
         simp at hm
   · rintro (⟨hcond, hφa⟩ | ⟨hcond, hφd⟩)
     · obtain ⟨bs, hbs⟩ := List.exists_mem_of_ne_nil _ hcond
       have ha := premisesEval_preserves_a relEnv pathMapLang _ a b bs hbs
       exact ⟨.fvar a,
-        by rw [langReducesUsing]
-           exact DeclReducesWithPremises.topRule
-             (r := { name := "PSub_self",
-                     typeContext := [("a", .base "V"), ("b", .base "V")],
-                     premises := [.relationQuery "disj" [.fvar "a", .fvar "b"]],
-                     left := .apply "PSubtract" [.fvar "a", .fvar "b"], right := .fvar "a" })
-             (by simp [pathMapLang])
-             (bs0 := [("b", .fvar b), ("a", .fvar a)])
-             (by rw [matchPattern_PSub_eq]; simp)
-             bs hbs (by exact ha),
+        by
+          exact pathMap_rootStep
+            (rule := { name := "PSub_self",
+                       typeContext := [("a", .base "V"), ("b", .base "V")],
+                       premises := [.relationQuery "disj" [.fvar "a", .fvar "b"]],
+                       left := .apply "PSubtract" [.fvar "a", .fvar "b"], right := .fvar "a" })
+            (by simp [pathMapLang])
+            (by rw [matchPattern_PSub_eq]; simp)
+            hbs ha,
         hφa⟩
     · obtain ⟨bs, hbs⟩ := List.exists_mem_of_ne_nil _ hcond
       have ha := premisesEval_preserves_a relEnv pathMapLang _ a b bs hbs
       have hb_bind := premisesEval_preserves_b relEnv pathMapLang _ a b bs hbs
       exact ⟨.apply "PDiff" [.fvar a, .fvar b],
-        by rw [langReducesUsing]
-           exact DeclReducesWithPremises.topRule
-             (r := { name := "PSub_element",
-                     typeContext := [("a", .base "V"), ("b", .base "V")],
-                     premises := [.relationQuery "nsub"  [.fvar "a", .fvar "b"],
-                                  .relationQuery "ndisj" [.fvar "a", .fvar "b"]],
-                     left := .apply "PSubtract" [.fvar "a", .fvar "b"],
-                     right := .apply "PDiff" [.fvar "a", .fvar "b"] })
-             (by simp [pathMapLang])
-             (bs0 := [("b", .fvar b), ("a", .fvar a)])
-             (by rw [matchPattern_PSub_eq]; simp)
-             bs hbs (by simp only [applyBindings, List.map, ha, hb_bind]),
+        by
+          exact pathMap_rootStep
+            (rule := { name := "PSub_element",
+                       typeContext := [("a", .base "V"), ("b", .base "V")],
+                       premises := [.relationQuery "nsub"  [.fvar "a", .fvar "b"],
+                                    .relationQuery "ndisj" [.fvar "a", .fvar "b"]],
+                       left := .apply "PSubtract" [.fvar "a", .fvar "b"],
+                       right := .apply "PDiff" [.fvar "a", .fvar "b"] })
+            (by simp [pathMapLang])
+            (by rw [matchPattern_PSub_eq]; simp)
+            hbs (by simp only [applyBindings, List.map, ha, hb_bind]),
         hφd⟩
 
 /-- NTT Soundness for PRestrict — Complete.
@@ -779,41 +816,51 @@ theorem pathMap_prestrict_complete (relEnv : RelationEnv) (a b : String) (φ : P
   rw [langDiamondUsing_spec]
   constructor
   · rintro ⟨q, hq_red, hq_φ⟩
-    rw [langReducesUsing] at hq_red
-    cases hq_red with
-    | topRule r hr bs0 hm bs hp hb =>
-      simp only [pathMapLang, List.mem_cons, List.mem_nil_iff, or_false] at hr
-      rcases hr with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
-      · simp only [matchPattern_neq_apply_empty "PJoin" "PRestrict" _ _
+    rw [langReducesUsing,
+      step_iff_rootStep_of_noncontextualRules pathMapLang_rules_noncontextual] at hq_red
+    rcases hq_red with ⟨r, hr, bs0, hm, bs, hp, hb⟩
+    rw [matchPatternForRule_eq_syntactic_of_no_presentations (by rfl)] at hm
+    rw [applyBindingsForRule_eq_syntactic_of_no_presentations (by rfl)] at hb
+    simp only [pathMapLang, List.mem_cons, List.mem_nil_iff, or_false] at hr
+    rcases hr with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
+    ·
+        simp only [matchPattern_neq_apply_empty "PJoin" "PRestrict" _ _
           (by decide : ("PJoin" == "PRestrict") = false)] at hm
         simp at hm
-      · simp only [matchPattern_neq_apply_empty "PJoin" "PRestrict" _ _
+    ·
+        simp only [matchPattern_neq_apply_empty "PJoin" "PRestrict" _ _
           (by decide : ("PJoin" == "PRestrict") = false)] at hm
         simp at hm
-      · simp only [matchPattern_neq_apply_empty "PJoin" "PRestrict" _ _
+    ·
+        simp only [matchPattern_neq_apply_empty "PJoin" "PRestrict" _ _
           (by decide : ("PJoin" == "PRestrict") = false)] at hm
         simp at hm
-      · simp only [matchPattern_neq_apply_empty "PMeet" "PRestrict" _ _
+    ·
+        simp only [matchPattern_neq_apply_empty "PMeet" "PRestrict" _ _
           (by decide : ("PMeet" == "PRestrict") = false)] at hm
         simp at hm
-      · simp only [matchPattern_neq_apply_empty "PMeet" "PRestrict" _ _
+    ·
+        simp only [matchPattern_neq_apply_empty "PMeet" "PRestrict" _ _
           (by decide : ("PMeet" == "PRestrict") = false)] at hm
         simp at hm
-      · simp only [matchPattern_neq_apply_empty "PMeet" "PRestrict" _ _
+    ·
+        simp only [matchPattern_neq_apply_empty "PMeet" "PRestrict" _ _
           (by decide : ("PMeet" == "PRestrict") = false)] at hm
         simp at hm
-      · simp only [matchPattern_neq_apply_empty "PSubtract" "PRestrict" _ _
+    ·
+        simp only [matchPattern_neq_apply_empty "PSubtract" "PRestrict" _ _
           (by decide : ("PSubtract" == "PRestrict") = false)] at hm
         simp at hm
-      · simp only [matchPattern_neq_apply_empty "PSubtract" "PRestrict" _ _
+    ·
+        simp only [matchPattern_neq_apply_empty "PSubtract" "PRestrict" _ _
           (by decide : ("PSubtract" == "PRestrict") = false)] at hm
         simp at hm
-      · -- PRes_self
+    · -- PRes_self
         rw [matchPattern_PRes_eq] at hm; simp at hm; subst hm
         have ha := premisesEval_preserves_a relEnv pathMapLang _ a b bs hp
         rw [ha] at hb
         exact Or.inl ⟨List.ne_nil_of_mem hp, hb ▸ hq_φ⟩
-      · -- PRes_element
+    · -- PRes_element
         rw [matchPattern_PRes_eq] at hm; simp at hm; subst hm
         have ha := premisesEval_preserves_a relEnv pathMapLang _ a b bs hp
         have hb_bind := premisesEval_preserves_b relEnv pathMapLang _ a b bs hp
@@ -823,33 +870,31 @@ theorem pathMap_prestrict_complete (relEnv : RelationEnv) (a b : String) (φ : P
     · obtain ⟨bs, hbs⟩ := List.exists_mem_of_ne_nil _ hcond
       have ha := premisesEval_preserves_a relEnv pathMapLang _ a b bs hbs
       exact ⟨.fvar a,
-        by rw [langReducesUsing]
-           exact DeclReducesWithPremises.topRule
-             (r := { name := "PRes_self",
-                     typeContext := [("a", .base "V"), ("b", .base "V")],
-                     premises := [.relationQuery "sub" [.fvar "a", .fvar "b"]],
-                     left := .apply "PRestrict" [.fvar "a", .fvar "b"], right := .fvar "a" })
-             (by simp [pathMapLang])
-             (bs0 := [("b", .fvar b), ("a", .fvar a)])
-             (by rw [matchPattern_PRes_eq]; simp)
-             bs hbs (by exact ha),
+        by
+          exact pathMap_rootStep
+            (rule := { name := "PRes_self",
+                       typeContext := [("a", .base "V"), ("b", .base "V")],
+                       premises := [.relationQuery "sub" [.fvar "a", .fvar "b"]],
+                       left := .apply "PRestrict" [.fvar "a", .fvar "b"], right := .fvar "a" })
+            (by simp [pathMapLang])
+            (by rw [matchPattern_PRes_eq]; simp)
+            hbs ha,
         hφa⟩
     · obtain ⟨bs, hbs⟩ := List.exists_mem_of_ne_nil _ hcond
       have ha := premisesEval_preserves_a relEnv pathMapLang _ a b bs hbs
       have hb_bind := premisesEval_preserves_b relEnv pathMapLang _ a b bs hbs
       exact ⟨.apply "PFilter" [.fvar a, .fvar b],
-        by rw [langReducesUsing]
-           exact DeclReducesWithPremises.topRule
-             (r := { name := "PRes_element",
-                     typeContext := [("a", .base "V"), ("b", .base "V")],
-                     premises := [.relationQuery "nsub"  [.fvar "a", .fvar "b"],
-                                  .relationQuery "ndisj" [.fvar "a", .fvar "b"]],
-                     left := .apply "PRestrict" [.fvar "a", .fvar "b"],
-                     right := .apply "PFilter" [.fvar "a", .fvar "b"] })
-             (by simp [pathMapLang])
-             (bs0 := [("b", .fvar b), ("a", .fvar a)])
-             (by rw [matchPattern_PRes_eq]; simp)
-             bs hbs (by simp only [applyBindings, List.map, ha, hb_bind]),
+        by
+          exact pathMap_rootStep
+            (rule := { name := "PRes_element",
+                       typeContext := [("a", .base "V"), ("b", .base "V")],
+                       premises := [.relationQuery "nsub"  [.fvar "a", .fvar "b"],
+                                    .relationQuery "ndisj" [.fvar "a", .fvar "b"]],
+                       left := .apply "PRestrict" [.fvar "a", .fvar "b"],
+                       right := .apply "PFilter" [.fvar "a", .fvar "b"] })
+            (by simp [pathMapLang])
+            (by rw [matchPattern_PRes_eq]; simp)
+            hbs (by simp only [applyBindings, List.map, ha, hb_bind]),
         hφf⟩
 
 end Mettapedia.OSLF.PathMap.OSLFInstance

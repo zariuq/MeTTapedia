@@ -29,7 +29,6 @@ namespace Mettapedia.OSLF.Framework.OptimizationTheorems
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Engine (RelationEnv)
-open Mettapedia.OSLF.MeTTaIL.DeclReducesPremises (DeclReducesWithPremises)
 open Mettapedia.OSLF.Framework.TypeSynthesis
 open Mettapedia.OSLF.Framework.HypercubeGSLTFunctor
 
@@ -102,7 +101,7 @@ stronger language (more rules). The engine can specialize rules to stronger
 fragments without re-checking reductions established in weaker fragments. -/
 
 /-- Reduction is monotone in the rule set: if `lang₁`'s rules are a subset
-    of `lang₂`'s rules (with matching congruence collections), then any
+    of `lang₂`'s rules and both use the same reflective presentation, then any
     reduction in `lang₁` is also a reduction in `lang₂`.
 
     The engine can safely specialize rules to stronger fragments.
@@ -112,28 +111,28 @@ fragments without re-checking reductions established in weaker fragments. -/
 theorem specialization_preserves_reduction
     {lang₁ lang₂ : LanguageDef}
     (hrules : ∀ r, r ∈ lang₁.rewrites → r ∈ lang₂.rewrites)
-    (hcong : lang₁.congruenceCollections = lang₂.congruenceCollections)
+    (hreflect : lang₁.reflectivePresentations = lang₂.reflectivePresentations)
     {relEnv : RelationEnv} {p q : Pattern}
     (hred : langReducesUsing relEnv lang₁ p q) :
     langReducesUsing relEnv lang₂ p q :=
-  declReduces_mono hrules hcong hred
+  contextualStep_mono_rules hrules hreflect hred
 
-/-- Diamond is monotone in the rule set: if `lang₁ ⊆ lang₂` (with matching
-    congruence collections), then `◇₁φ ≤ ◇₂φ`.
+/-- Diamond is monotone in the rule set: if `lang₁ ⊆ lang₂`, then
+    `◇₁φ ≤ ◇₂φ`.
 
     The engine can lift diamond-witnesses from weaker fragments.
     Works for any `RelationEnv` (including trie-backed stores). -/
 theorem diamond_mono_rules
     {lang₁ lang₂ : LanguageDef}
     (hrules : ∀ r, r ∈ lang₁.rewrites → r ∈ lang₂.rewrites)
-    (hcong : lang₁.congruenceCollections = lang₂.congruenceCollections)
+    (hreflect : lang₁.reflectivePresentations = lang₂.reflectivePresentations)
     {relEnv : RelationEnv}
     (φ : Pattern → Prop) (p : Pattern)
     (h : langDiamondUsing relEnv lang₁ φ p) :
     langDiamondUsing relEnv lang₂ φ p := by
   rw [langDiamondUsing_spec] at h ⊢
   obtain ⟨q, hred, hφ⟩ := h
-  exact ⟨q, specialization_preserves_reduction hrules hcong hred, hφ⟩
+  exact ⟨q, specialization_preserves_reduction hrules hreflect hred, hφ⟩
 
 /-- Box is contravariant in the rule set: `◇₁ ≤ ◇₂` implies `□₂ ≤ □₁`.
 
@@ -144,14 +143,14 @@ theorem diamond_mono_rules
 theorem box_contra_rules
     {lang₁ lang₂ : LanguageDef}
     (hrules : ∀ r, r ∈ lang₁.rewrites → r ∈ lang₂.rewrites)
-    (hcong : lang₁.congruenceCollections = lang₂.congruenceCollections)
+    (hreflect : lang₁.reflectivePresentations = lang₂.reflectivePresentations)
     {relEnv : RelationEnv}
     (φ : Pattern → Prop) (p : Pattern)
     (h : langBoxUsing relEnv lang₂ φ p) :
     langBoxUsing relEnv lang₁ φ p := by
   rw [langBoxUsing_spec] at h ⊢
   intro q hred
-  exact h q (specialization_preserves_reduction hrules hcong hred)
+  exact h q (specialization_preserves_reduction hrules hreflect hred)
 
 /-! ## §5: Substitution-Reduction Fusion (Beck-Chevalley)
 
@@ -196,7 +195,7 @@ theorem galois_composition [Preorder α] [Preorder β] [Preorder γ]
 
 All theorems follow from existing proven infrastructure:
 - `langDiamondUsing_spec` / `langBoxUsing_spec` (TypeSynthesis.lean)
-- `declReduces_mono` (HypercubeGSLTFunctor.lean)
+- `contextualStep_mono_rules` (HypercubeGSLTFunctor.lean)
 - `commDi_diamond_galois` / `galoisConnection_comp` (BeckChevalleyOSLF.lean)
 
 **Engine optimization contracts:**

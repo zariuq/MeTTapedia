@@ -93,7 +93,7 @@ functional languages via term-reduction rules, imperative languages as rewrites 
 machine states, concurrent languages as rewrites over process/message networks.
 Worked examples to copy: `OSLF/Framework/TinyMLInstance.lean`,
 `MeTTaMinimalInstance.lean`, `MeTTaFullInstance.lean`,
-`OSLF/MeTTaIL/DeclReducesWithPremises.lean`,
+`OSLF/MeTTaIL/ContextualStep.lean`,
 `OSLF/Tools/ExportTinyMLSmokeRoundTrip.lean`.
 
 `LanguageDef` is the *executable* ingestion layer; the `Topos/` modules give the

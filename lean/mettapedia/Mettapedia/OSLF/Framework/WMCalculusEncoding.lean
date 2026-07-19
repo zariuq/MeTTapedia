@@ -32,7 +32,7 @@ namespace Mettapedia.OSLF.Framework.WMCalculusEncoding
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Match
 open Mettapedia.OSLF.MeTTaIL.Engine
-open Mettapedia.OSLF.MeTTaIL.DeclReducesPremises
+open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open Mettapedia.OSLF.Framework.TypeSynthesis
 open Mettapedia.OSLF.Framework.WMCalculusLanguageDef
 open Mettapedia.OSLF.Framework.WMCalculusOSLFBridge
@@ -163,10 +163,10 @@ private theorem wmCoreLangReduces_evidenceAdd (pw₁ pw₂ pq : Pattern) :
       (pCombine (pExtract pw₁ pq) (pExtract pw₂ pq)) := by
   unfold langReduces langReducesUsing
   let bs : Bindings := [("q", pq), ("W2", pw₂), ("W1", pw₁)]
-  refine DeclReducesWithPremises.topRule
+  refine step_of_rule
     (relEnv := RelationEnv.empty) (lang := wmCoreLanguageDef)
-    (r := ruleEvidenceAdd)
-    ?hr bs ?hmatch bs ?hprem ?happly
+    (rule := ruleEvidenceAdd) (initialBindings := bs) (finalBindings := bs)
+    ?hr ?hmatch (by exact .nil) ?hprem ?happly
   · simp [wmCoreLanguageDef, coreRules]
   · simp [bs, ruleEvidenceAdd, pExtract, pRevise, matchPattern, matchArgs, mergeBindings]
   · simp [bs, ruleEvidenceAdd, applyPremisesWithEnv]
@@ -178,10 +178,10 @@ private theorem wmCoreLangReduces_revisionComm (pw₁ pw₂ : Pattern) :
       (pRevise pw₂ pw₁) := by
   unfold langReduces langReducesUsing
   let bs : Bindings := [("W2", pw₂), ("W1", pw₁)]
-  refine DeclReducesWithPremises.topRule
+  refine step_of_rule
     (relEnv := RelationEnv.empty) (lang := wmCoreLanguageDef)
-    (r := ruleRevisionComm)
-    ?hr bs ?hmatch bs ?hprem ?happly
+    (rule := ruleRevisionComm) (initialBindings := bs) (finalBindings := bs)
+    ?hr ?hmatch (by exact .nil) ?hprem ?happly
   · simp [wmCoreLanguageDef, coreRules]
   · simp [bs, ruleRevisionComm, pRevise, matchPattern, matchArgs, mergeBindings]
   · simp [bs, ruleRevisionComm, applyPremisesWithEnv]
@@ -193,10 +193,10 @@ private theorem wmCoreLangReduces_revisionAssoc (pw₁ pw₂ pw₃ : Pattern) :
       (pRevise pw₁ (pRevise pw₂ pw₃)) := by
   unfold langReduces langReducesUsing
   let bs : Bindings := [("W3", pw₃), ("W2", pw₂), ("W1", pw₁)]
-  refine DeclReducesWithPremises.topRule
+  refine step_of_rule
     (relEnv := RelationEnv.empty) (lang := wmCoreLanguageDef)
-    (r := ruleRevisionAssoc)
-    ?hr bs ?hmatch bs ?hprem ?happly
+    (rule := ruleRevisionAssoc) (initialBindings := bs) (finalBindings := bs)
+    ?hr ?hmatch (by exact .nil) ?hprem ?happly
   · simp [wmCoreLanguageDef, coreRules]
   · simp [bs, ruleRevisionAssoc, pRevise, matchPattern, matchArgs, mergeBindings]
   · simp [bs, ruleRevisionAssoc, applyPremisesWithEnv]
@@ -208,10 +208,10 @@ private theorem wmCoreLangReduces_combineComm (pe₁ pe₂ : Pattern) :
       (pCombine pe₂ pe₁) := by
   unfold langReduces langReducesUsing
   let bs : Bindings := [("e2", pe₂), ("e1", pe₁)]
-  refine DeclReducesWithPremises.topRule
+  refine step_of_rule
     (relEnv := RelationEnv.empty) (lang := wmCoreLanguageDef)
-    (r := ruleCombineComm)
-    ?hr bs ?hmatch bs ?hprem ?happly
+    (rule := ruleCombineComm) (initialBindings := bs) (finalBindings := bs)
+    ?hr ?hmatch (by exact .nil) ?hprem ?happly
   · simp [wmCoreLanguageDef, coreRules]
   · simp [bs, ruleCombineComm, pCombine, matchPattern, matchArgs, mergeBindings]
   · simp [bs, ruleCombineComm, applyPremisesWithEnv]
@@ -223,10 +223,10 @@ private theorem wmCoreLangReduces_combineZero (pe : Pattern) :
       pe := by
   unfold langReduces langReducesUsing
   let bs : Bindings := [("e", pe)]
-  refine DeclReducesWithPremises.topRule
+  refine step_of_rule
     (relEnv := RelationEnv.empty) (lang := wmCoreLanguageDef)
-    (r := ruleCombineZero)
-    ?hr bs ?hmatch bs ?hprem ?happly
+    (rule := ruleCombineZero) (initialBindings := bs) (finalBindings := bs)
+    ?hr ?hmatch (by exact .nil) ?hprem ?happly
   · simp [wmCoreLanguageDef, coreRules]
   · simp [bs, ruleCombineZero, pCombine, pEvidenceZero, matchPattern, matchArgs, mergeBindings]
   · simp [bs, ruleCombineZero, applyPremisesWithEnv]
@@ -258,57 +258,16 @@ theorem wmStep_sound {s : WMSort} (t₁ t₂ : WMTerm s) :
 Completeness on image: if `langReduces wmCoreLanguageDef (encodeWM t₁) q` then
 there exists `t₂` with `q = encodeWM t₂` and `WMStep t₁ t₂`.
 
-The proof works by:
-1. `congElem` is impossible (WM patterns use `.apply`, not `.collection`)
-2. Case on which of 5 core rules matched in `topRule`
-3. Inversion on `matchPattern r.left (encodeWM t₁)` to reconstruct `t₁` shape
-4. Show `applyBindings bs r.right = encodeWM t₂` for the corresponding `WMStep` -/
+The proof inverts the single authored rule at the root of a contextual-step
+derivation, identifies which of the five core rules matched, reconstructs the
+source `WMTerm`, and checks the corresponding contractum. -/
 
-/-- No WM-encoded term is a `.collection`. This rules out `congElem`. -/
+/-- No WM-encoded term is a collection.  This records the representation
+boundary used by the completeness argument. -/
 theorem encodeWM_not_collection {s : WMSort} (t : WMTerm s) :
     ∀ ct elems rest, encodeWM t ≠ .collection ct elems rest := by
   intro ct elems rest
   cases t <;> simp [encodeWM, pRevise, pExtract, pCombine, pEvidenceZero]
-
-/-- When the source pattern is not a `.collection`, `DeclReducesWithPremises`
-    can only hold via `topRule` (not `congElem`). -/
-private theorem topRule_of_apply
-    {relEnv : RelationEnv} {lang : LanguageDef} {name : String}
-    {args : List Pattern} {q : Pattern}
-    (h : DeclReducesWithPremises relEnv lang (.apply name args) q) :
-    ∃ (r : RewriteRule), r ∈ lang.rewrites ∧
-      ∃ bs, bs ∈ matchPattern r.left (.apply name args) ∧
-      ∃ bs', bs' ∈ applyPremisesWithEnv relEnv lang r.premises bs ∧
-        applyBindings bs' r.right = q := by
-  cases h with
-  | topRule r hr bs hmatch bs' hprem happly =>
-    exact ⟨r, hr, bs, hmatch, bs', hprem, happly⟩
-
-private theorem topRule_of_fvar
-    {relEnv : RelationEnv} {lang : LanguageDef} {name : String} {q : Pattern}
-    (h : DeclReducesWithPremises relEnv lang (.fvar name) q) :
-    ∃ (r : RewriteRule), r ∈ lang.rewrites ∧
-      ∃ bs, bs ∈ matchPattern r.left (.fvar name) ∧
-      ∃ bs', bs' ∈ applyPremisesWithEnv relEnv lang r.premises bs ∧
-        applyBindings bs' r.right = q := by
-  cases h with
-  | topRule r hr bs hmatch bs' hprem happly =>
-    exact ⟨r, hr, bs, hmatch, bs', hprem, happly⟩
-
-/-- Extract topRule data from any DeclReducesWithPremises on an encoded WM term. -/
-private theorem topRule_of_encodeWM {s : WMSort} (t₁ : WMTerm s) (q : Pattern)
-    (h : DeclReducesWithPremises RelationEnv.empty wmCoreLanguageDef (encodeWM t₁) q) :
-    ∃ (r : RewriteRule), r ∈ wmCoreLanguageDef.rewrites ∧
-      ∃ bs, bs ∈ matchPattern r.left (encodeWM t₁) ∧
-      ∃ bs', bs' ∈ applyPremisesWithEnv RelationEnv.empty wmCoreLanguageDef r.premises bs ∧
-        applyBindings bs' r.right = q := by
-  cases t₁ with
-  | state name => exact topRule_of_fvar (by simp [encodeWM] at h ⊢; exact h)
-  | query name => exact topRule_of_fvar (by simp [encodeWM] at h ⊢; exact h)
-  | revise t₁ t₂ => exact topRule_of_apply (by simp [encodeWM, pRevise] at h ⊢; exact h)
-  | extract tw tq => exact topRule_of_apply (by simp [encodeWM, pExtract] at h ⊢; exact h)
-  | combine t₁ t₂ => exact topRule_of_apply (by simp [encodeWM, pCombine] at h ⊢; exact h)
-  | zero => exact topRule_of_apply (by simp [encodeWM, pEvidenceZero] at h ⊢; exact h)
 
 set_option linter.unusedSimpArgs false in
 /-- Completeness on image: any core reduction from an encoded term yields an
@@ -321,93 +280,94 @@ theorem wmStep_complete {s : WMSort} (t₁ : WMTerm s) (q : Pattern) :
     ∃ t₂ : WMTerm s, WMStep t₁ t₂ ∧ encodeWM t₂ = q := by
   intro h
   unfold langReduces langReducesUsing at h
-  obtain ⟨r, hr, bs, hmatch, bs', hprem, happly⟩ := topRule_of_encodeWM t₁ q h
+  obtain ⟨fuel, bounded⟩ := h
+  cases bounded with
+  | @rule _ _ _ r bs bs' hr hmatch hprem happly =>
+    simp [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule] at hmatch
+    simp [Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule] at happly
   -- r must be one of the 5 core rules
-  simp [wmCoreLanguageDef, coreRules] at hr
+    simp [wmCoreLanguageDef, coreRules] at hr
   -- Case split on which rule matched, then simplify premises (all are [])
-  rcases hr with rfl | rfl | rfl | rfl | rfl <;>
-    simp [ruleEvidenceAdd, ruleRevisionComm, ruleRevisionAssoc, ruleCombineComm,
-          ruleCombineZero, applyPremisesWithEnv] at hprem <;>
-    subst hprem
-  -- Case: ruleEvidenceAdd
-  · cases t₁ with
-    | extract tw tq =>
-      cases tw with
-      | revise s₁ s₂ =>
-        simp [encodeWM, pExtract, pRevise, ruleEvidenceAdd, matchPattern,
-              matchArgs, mergeBindings] at hmatch
-        subst hmatch
-        simp [ruleEvidenceAdd, applyBindings, pCombine, pExtract] at happly
-        subst happly
-        exact ⟨.combine (.extract s₁ tq) (.extract s₂ tq),
-               .evidence_add s₁ s₂ tq, by simp [encodeWM, pCombine, pExtract, pRevise, pEvidenceZero]⟩
+    rcases hr with rfl | rfl | rfl | rfl | rfl <;> cases hprem
+    -- Case: ruleEvidenceAdd
+    · cases t₁ with
+      | extract tw tq =>
+        cases tw with
+        | revise s₁ s₂ =>
+          simp [encodeWM, pExtract, pRevise, ruleEvidenceAdd, matchPattern,
+                matchArgs, mergeBindings] at hmatch
+          subst hmatch
+          simp [ruleEvidenceAdd, applyBindings, pCombine, pExtract] at happly
+          subst happly
+          exact ⟨.combine (.extract s₁ tq) (.extract s₂ tq),
+                 .evidence_add s₁ s₂ tq, by simp [encodeWM, pCombine, pExtract, pRevise, pEvidenceZero]⟩
+        | _ =>
+          simp [encodeWM, pExtract, pRevise, pCombine, pEvidenceZero, ruleEvidenceAdd,
+                matchPattern, matchArgs, mergeBindings] at hmatch
       | _ =>
         simp [encodeWM, pExtract, pRevise, pCombine, pEvidenceZero, ruleEvidenceAdd,
               matchPattern, matchArgs, mergeBindings] at hmatch
-    | _ =>
-      simp [encodeWM, pExtract, pRevise, pCombine, pEvidenceZero, ruleEvidenceAdd,
-            matchPattern, matchArgs, mergeBindings] at hmatch
-  -- Case: ruleRevisionComm
-  · cases t₁ with
-    | revise s₁ s₂ =>
-      simp [encodeWM, pRevise, ruleRevisionComm, matchPattern,
-            matchArgs, mergeBindings] at hmatch
-      subst hmatch
-      simp [ruleRevisionComm, applyBindings, pRevise] at happly
-      subst happly
-      exact ⟨.revise s₂ s₁, .revision_comm s₁ s₂,
-             by simp [encodeWM, pCombine, pExtract, pRevise, pEvidenceZero]⟩
-    | _ =>
-      simp [encodeWM, pRevise, pExtract, pCombine, pEvidenceZero, ruleRevisionComm,
-            matchPattern, matchArgs, mergeBindings] at hmatch
-  -- Case: ruleRevisionAssoc
-  · cases t₁ with
-    | revise tw t₃ =>
-      cases tw with
+    -- Case: ruleRevisionComm
+    · cases t₁ with
       | revise s₁ s₂ =>
-        simp [encodeWM, pRevise, ruleRevisionAssoc, matchPattern,
+        simp [encodeWM, pRevise, ruleRevisionComm, matchPattern,
               matchArgs, mergeBindings] at hmatch
         subst hmatch
-        simp [ruleRevisionAssoc, applyBindings, pRevise] at happly
+        simp [ruleRevisionComm, applyBindings, pRevise] at happly
         subst happly
-        exact ⟨.revise s₁ (.revise s₂ t₃), .revision_assoc s₁ s₂ t₃,
+        exact ⟨.revise s₂ s₁, .revision_comm s₁ s₂,
                by simp [encodeWM, pCombine, pExtract, pRevise, pEvidenceZero]⟩
+      | _ =>
+        simp [encodeWM, pRevise, pExtract, pCombine, pEvidenceZero, ruleRevisionComm,
+              matchPattern, matchArgs, mergeBindings] at hmatch
+    -- Case: ruleRevisionAssoc
+    · cases t₁ with
+      | revise tw t₃ =>
+        cases tw with
+        | revise s₁ s₂ =>
+          simp [encodeWM, pRevise, ruleRevisionAssoc, matchPattern,
+                matchArgs, mergeBindings] at hmatch
+          subst hmatch
+          simp [ruleRevisionAssoc, applyBindings, pRevise] at happly
+          subst happly
+          exact ⟨.revise s₁ (.revise s₂ t₃), .revision_assoc s₁ s₂ t₃,
+                 by simp [encodeWM, pCombine, pExtract, pRevise, pEvidenceZero]⟩
+        | _ =>
+          simp [encodeWM, pRevise, pExtract, pCombine, pEvidenceZero, ruleRevisionAssoc,
+                matchPattern, matchArgs, mergeBindings] at hmatch
       | _ =>
         simp [encodeWM, pRevise, pExtract, pCombine, pEvidenceZero, ruleRevisionAssoc,
               matchPattern, matchArgs, mergeBindings] at hmatch
-    | _ =>
-      simp [encodeWM, pRevise, pExtract, pCombine, pEvidenceZero, ruleRevisionAssoc,
-            matchPattern, matchArgs, mergeBindings] at hmatch
-  -- Case: ruleCombineComm
-  · cases t₁ with
-    | combine e₁ e₂ =>
-      simp [encodeWM, pCombine, ruleCombineComm, matchPattern,
-            matchArgs, mergeBindings] at hmatch
-      subst hmatch
-      simp [ruleCombineComm, applyBindings, pCombine] at happly
-      subst happly
-      exact ⟨.combine e₂ e₁, .combine_comm e₁ e₂,
-             by simp [encodeWM, pCombine, pExtract, pRevise, pEvidenceZero]⟩
-    | _ =>
-      simp [encodeWM, pCombine, pRevise, pExtract, pEvidenceZero, ruleCombineComm,
-            matchPattern, matchArgs, mergeBindings] at hmatch
-  -- Case: ruleCombineZero
-  · cases t₁ with
-    | combine e₁ e₂ =>
-      cases e₂ with
-      | zero =>
-        simp [encodeWM, pCombine, pEvidenceZero, ruleCombineZero, matchPattern,
+    -- Case: ruleCombineComm
+    · cases t₁ with
+      | combine e₁ e₂ =>
+        simp [encodeWM, pCombine, ruleCombineComm, matchPattern,
               matchArgs, mergeBindings] at hmatch
         subst hmatch
-        simp [ruleCombineZero, applyBindings] at happly
+        simp [ruleCombineComm, applyBindings, pCombine] at happly
         subst happly
-        exact ⟨e₁, .combine_zero e₁, by simp [encodeWM, pCombine, pExtract, pRevise, pEvidenceZero]⟩
+        exact ⟨.combine e₂ e₁, .combine_comm e₁ e₂,
+               by simp [encodeWM, pCombine, pExtract, pRevise, pEvidenceZero]⟩
+      | _ =>
+        simp [encodeWM, pCombine, pRevise, pExtract, pEvidenceZero, ruleCombineComm,
+              matchPattern, matchArgs, mergeBindings] at hmatch
+    -- Case: ruleCombineZero
+    · cases t₁ with
+      | combine e₁ e₂ =>
+        cases e₂ with
+        | zero =>
+          simp [encodeWM, pCombine, pEvidenceZero, ruleCombineZero, matchPattern,
+                matchArgs, mergeBindings] at hmatch
+          subst hmatch
+          simp [ruleCombineZero, applyBindings] at happly
+          subst happly
+          exact ⟨e₁, .combine_zero e₁, by simp [encodeWM, pCombine, pExtract, pRevise, pEvidenceZero]⟩
+        | _ =>
+          simp [encodeWM, pCombine, pRevise, pExtract, pEvidenceZero, ruleCombineZero,
+                matchPattern, matchArgs, mergeBindings] at hmatch
       | _ =>
         simp [encodeWM, pCombine, pRevise, pExtract, pEvidenceZero, ruleCombineZero,
               matchPattern, matchArgs, mergeBindings] at hmatch
-    | _ =>
-      simp [encodeWM, pCombine, pRevise, pExtract, pEvidenceZero, ruleCombineZero,
-            matchPattern, matchArgs, mergeBindings] at hmatch
 
 /-! ## Section 8: Star Adequacy
 

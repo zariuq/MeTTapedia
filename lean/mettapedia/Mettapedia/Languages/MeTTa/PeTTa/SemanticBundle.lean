@@ -722,7 +722,7 @@ theorem bundleReduces_sourceCore_refines_stage (s : PeTTaSpace)
               (mkBundle .sourceCore s ts₁ ir₁).lang p q) :
     langReducesUsing (mkBundle stage s ts₂ ir₂).relEnv
       (mkBundle stage s ts₂ ir₂).lang p q :=
-  sourceCore_refines_stage_general s stage hred
+  sourceCore_refines_stage s stage hred
 
 /-! ## §10 Future LLM Instruction Block
 

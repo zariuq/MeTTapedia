@@ -9,6 +9,8 @@ Proof and closure layer over `PyashGFModel`.
 
 namespace Mettapedia.OSLF.Framework.PyashGF
 
+open Mettapedia.OSLF.MeTTaIL.ContextualStep
+
 open Mettapedia.Languages.GF.HandCrafted.Core
 open Mettapedia.Languages.GF.HandCrafted.Abstract
 open Mettapedia.OSLF.MeTTaIL.Syntax
@@ -125,13 +127,11 @@ theorem pyashGF_configure_then_negative_bridge :
       (pyashGFInputOf pyashGFConfigureThenClause)
       pyashStateConfigureThenDoneDispatchErr := by
   unfold langReduces
-  apply (langReducesUsing_iff_execUsing (relEnv := RelationEnv.empty) (lang := pyashCore)
-    (p := pyashGFInputOf pyashGFConfigureThenClause)
-    (q := pyashStateConfigureThenDoneDispatchErr)).2
-  unfold langReducesExecUsing pyashGFInputOf
-  simpa [pyashGF_configure_then_clause_maps] using
+  apply exec_to_langReducesUsing (relEnv := RelationEnv.empty) (lang := pyashCore)
+  refine ⟨1, ?_⟩
+  simpa [reductsUsing, pyashGFInputOf, pyashGF_configure_then_clause_maps] using
     (show pyashStateConfigureThenDoneDispatchErr ∈
-      rewriteWithContextWithPremisesUsing RelationEnv.empty pyashCore pyashStateConfigureThenError by
+      reductsUsing RelationEnv.empty pyashCore 1 pyashStateConfigureThenError by
         decide +kernel)
 
 /-- Bridge claim (OSLF, negative): unsupported GF `then/world` hits dispatch error path. -/
@@ -140,13 +140,11 @@ theorem pyashGF_world_then_negative_bridge :
       (pyashGFInputOf pyashGFWorldThenClause)
       pyashStateWorldThenDoneDispatchErr := by
   unfold langReduces
-  apply (langReducesUsing_iff_execUsing (relEnv := RelationEnv.empty) (lang := pyashCore)
-    (p := pyashGFInputOf pyashGFWorldThenClause)
-    (q := pyashStateWorldThenDoneDispatchErr)).2
-  unfold langReducesExecUsing pyashGFInputOf
-  simpa [pyashGF_world_then_clause_maps] using
+  apply exec_to_langReducesUsing (relEnv := RelationEnv.empty) (lang := pyashCore)
+  refine ⟨1, ?_⟩
+  simpa [reductsUsing, pyashGFInputOf, pyashGF_world_then_clause_maps] using
     (show pyashStateWorldThenDoneDispatchErr ∈
-      rewriteWithContextWithPremisesUsing RelationEnv.empty pyashCore pyashStateWorldThenError by
+      reductsUsing RelationEnv.empty pyashCore 1 pyashStateWorldThenError by
         decide +kernel)
 
 /-- Bridge claim (OSLF, negative): unsupported GF `then/pipeline` hits dispatch error path. -/
@@ -155,13 +153,11 @@ theorem pyashGF_pipeline_then_negative_bridge :
       (pyashGFInputOf pyashGFPipelineThenClause)
       pyashStatePipelineThenDoneDispatchErr := by
   unfold langReduces
-  apply (langReducesUsing_iff_execUsing (relEnv := RelationEnv.empty) (lang := pyashCore)
-    (p := pyashGFInputOf pyashGFPipelineThenClause)
-    (q := pyashStatePipelineThenDoneDispatchErr)).2
-  unfold langReducesExecUsing pyashGFInputOf
-  simpa [pyashGF_pipeline_then_clause_maps] using
+  apply exec_to_langReducesUsing (relEnv := RelationEnv.empty) (lang := pyashCore)
+  refine ⟨1, ?_⟩
+  simpa [reductsUsing, pyashGFInputOf, pyashGF_pipeline_then_clause_maps] using
     (show pyashStatePipelineThenDoneDispatchErr ∈
-      rewriteWithContextWithPremisesUsing RelationEnv.empty pyashCore pyashStatePipelineThenError by
+      reductsUsing RelationEnv.empty pyashCore 1 pyashStatePipelineThenError by
         decide +kernel)
 
 /-- Multi-step closure (negative): GF `then/configure` reaches dispatch-error terminal state. -/

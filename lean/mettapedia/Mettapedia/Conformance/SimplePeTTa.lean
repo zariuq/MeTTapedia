@@ -3,6 +3,7 @@ import Algorithms.MeTTa.ProfileChecksum
 import Algorithms.MeTTa.Simple.Session
 import Mettapedia.Languages.MeTTa.PeTTa.SpaceSemantics
 import Mettapedia.OSLF.MeTTaIL.Engine
+import Mettapedia.OSLF.MeTTaIL.ContextualStep
 
 namespace Mettapedia.Conformance.SimplePeTTa
 
@@ -41,7 +42,6 @@ abbrev SEquation := Mettapedia.OSLF.MeTTaIL.Syntax.Equation
 abbrev CRewriteRule := MeTTailCore.MeTTaIL.Syntax.RewriteRule
 abbrev SRewriteRule := Mettapedia.OSLF.MeTTaIL.Syntax.RewriteRule
 
-abbrev CCongruenceCollection := MeTTailCore.MeTTaIL.Syntax.CongruenceCollection
 abbrev CLanguageDef := MeTTailCore.MeTTaIL.Syntax.LanguageDef
 abbrev SLanguageDef := Mettapedia.OSLF.MeTTaIL.Syntax.LanguageDef
 abbrev STypeDecl := Mettapedia.OSLF.MeTTaIL.Syntax.TypeDecl
@@ -199,8 +199,7 @@ private def coreToSpecLanguage (lang : CLanguageDef) : SLanguageDef :=
     types := lang.types.map coreToSpecTypeDecl
     terms := lang.terms.map coreToSpecGrammarRule
     equations := lang.equations.map coreToSpecEquation
-    rewrites := lang.rewrites.map coreToSpecRewriteRule
-    congruenceCollections := lang.congruenceCollections.map (fun c => coreToSpecCollType c.collectionType) }
+    rewrites := lang.rewrites.map coreToSpecRewriteRule }
 
 private def specToCoreLanguage (lang : SLanguageDef) : Except String CLanguageDef := do
   let coreTypes ← lang.types.mapM specToCoreTypeName
@@ -211,17 +210,14 @@ private def specToCoreLanguage (lang : SLanguageDef) : Except String CLanguageDe
       types := coreTypes
       terms := (← lang.terms.mapM specToCoreGrammarRule)
       equations := coreEquations
-      rewrites := coreRewrites
-      congruenceCollections := lang.congruenceCollections.map
-        (fun ct => ({ collectionType := specToCoreCollType ct } : CCongruenceCollection)) }
+      rewrites := coreRewrites }
 
 private def coreLanguageEq (a b : CLanguageDef) : Bool :=
   decide (a.name = b.name) &&
   decide (a.types = b.types) &&
   decide (a.terms = b.terms) &&
   decide (a.equations = b.equations) &&
-  decide (a.rewrites = b.rewrites) &&
-  decide (a.congruenceCollections = b.congruenceCollections)
+  decide (a.rewrites = b.rewrites)
 
 /-! ## Translation round-trip theorems (direct, non-native_decide) -/
 
@@ -298,12 +294,15 @@ private def specRelationEnvOfRows (rows : List (String × List SPattern)) :
 
 /-! ## Spec-side evaluator (Session-shaped) -/
 
+private def specContextFuel : Nat := 32
+
 private def specRewriteWithContext (cfg : FrozenPeTTaConfig) (term : SPattern) : List SPattern :=
   let lang := coreToSpecLanguage (toLanguageDef cfg)
   let relationRows := cfg.relationFacts.map coreTupleToSpecRow
   let builtinRows := cfg.builtinFacts.map coreTupleToSpecRow
   let relEnv := specRelationEnvOfRows (relationRows ++ builtinRows)
-  Mettapedia.OSLF.MeTTaIL.Engine.rewriteWithContextWithPremisesUsing relEnv lang term
+  Mettapedia.OSLF.MeTTaIL.ContextualStep.reductsUsing
+    relEnv lang specContextFuel term
 
 private def insertUniqueSpec (xs : List SPattern) (x : SPattern) : List SPattern :=
   if xs.contains x then xs else x :: xs

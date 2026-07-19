@@ -91,16 +91,13 @@ private def checksumRewriteRule (rule : RewriteRule) : Nat :=
   let h3 := mix h2 (checksumPattern rule.left)
   mix h3 (checksumPattern rule.right)
 
-private def checksumCongruenceCollection (cc : CongruenceCollection) : Nat :=
-  mix 251 (checksumCollType cc.collectionType)
-
 def checksumLanguageDef (lang : LanguageDef) : Nat :=
   let h0 := mix 257 (checksumString lang.name)
   let h1 := mix h0 (checksumList checksumString lang.types)
   let h2 := mix h1 (checksumList checksumGrammarRule lang.terms)
   let h3 := mix h2 (checksumList checksumEquation lang.equations)
   let h4 := mix h3 (checksumList checksumRewriteRule lang.rewrites)
-  mix h4 (checksumList checksumCongruenceCollection lang.congruenceCollections)
+  h4
 
 def checksumRelationTuple (row : RelationTuple) : Nat :=
   mix 263 (mix (checksumString row.relation) (checksumList checksumPattern row.tuple))

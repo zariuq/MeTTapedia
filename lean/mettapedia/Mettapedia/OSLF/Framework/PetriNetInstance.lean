@@ -1,6 +1,7 @@
 import Mettapedia.OSLF.MeTTaIL.Syntax
 import Mettapedia.OSLF.MeTTaIL.Match
 import Mettapedia.OSLF.MeTTaIL.Engine
+import Mettapedia.OSLF.MeTTaIL.ContextualStep
 import Mettapedia.OSLF.Framework.TypeSynthesis
 import Mettapedia.OSLF.Formula
 
@@ -53,6 +54,7 @@ namespace Mettapedia.OSLF.Framework.PetriNetInstance
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Match
 open Mettapedia.OSLF.MeTTaIL.Engine
+open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open Mettapedia.OSLF.Framework.TypeSynthesis
 open Mettapedia.OSLF.Formula
 
@@ -101,6 +103,11 @@ def petriNet : LanguageDef := {
   ]
 }
 
+/-- All one-step transition firings of `petriNet`.  Both transition rules
+have no contextual premises, so contextual depth one is exact. -/
+def petriNetReducts (marking : Pattern) : List Pattern :=
+  rewriteAt (engineBasePremises RelationEnv.empty) petriNet 1 marking
+
 /-! ## OSLF Pipeline Instantiation -/
 
 /-- The OSLF type system for the Petri net.
@@ -147,7 +154,7 @@ private instance : ToString Pattern := ⟨markingToString⟩
 -- Demo 1: Fire T1 on [A, B] → [C, D]
 #eval! do
   let m := marking [tokA, tokB]
-  let reducts := rewriteWithContext petriNet m
+  let reducts := petriNetReducts m
   IO.println ("Demo 1: Fire T1 on {A, B}")
   IO.println s!"  reducts ({reducts.length}):"
   for r in reducts do
@@ -157,7 +164,7 @@ private instance : ToString Pattern := ⟨markingToString⟩
 -- Non-deterministic: which A is consumed?
 #eval! do
   let m := marking [tokA, tokA, tokB]
-  let reducts := rewriteWithContext petriNet m
+  let reducts := petriNetReducts m
   IO.println ("Demo 2: Fire on {A, A, B}")
   IO.println s!"  reducts ({reducts.length}):"
   for r in reducts do
@@ -166,7 +173,7 @@ private instance : ToString Pattern := ⟨markingToString⟩
 -- Demo 3: [C] — only T2 fires: [C] → [A]
 #eval! do
   let m := marking [tokC]
-  let reducts := rewriteWithContext petriNet m
+  let reducts := petriNetReducts m
   IO.println ("Demo 3: Fire on {C}")
   IO.println s!"  reducts ({reducts.length}):"
   for r in reducts do
@@ -175,14 +182,14 @@ private instance : ToString Pattern := ⟨markingToString⟩
 -- Demo 4: Multi-step: [A, B] →* (T1 then T2 on C)
 #eval! do
   let m := marking [tokA, tokB]
-  let nf := fullRewriteToNormalForm petriNet m 100
+  let nf := normalizeFirst petriNet 1 100 m
   IO.println ("Demo 4: Multi-step from {A, B}")
   IO.println s!"  normal form: {nf}"
 
 -- Demo 5: [D] is a dead marking — nothing can fire
 #eval! do
   let m := marking [tokD]
-  let reducts := rewriteWithContext petriNet m
+  let reducts := petriNetReducts m
   IO.println ("Demo 5: {D} is dead")
   IO.println s!"  reducts ({reducts.length}): expected 0"
   assert! reducts.isEmpty
@@ -191,7 +198,7 @@ private instance : ToString Pattern := ⟨markingToString⟩
 #eval! do
   let m := marking [tokA, tokB]
   let noAtoms : AtomCheck := fun _ _ => false
-  let result := check (rewriteWithContext petriNet) noAtoms 50 m (.dia .top)
+  let result := check (petriNetReducts) noAtoms 50 m (.dia .top)
   IO.println ("Demo 6: Can {A, B} reduce?")
   IO.println s!"  check (◇⊤) = {result}"
 
@@ -199,14 +206,14 @@ private instance : ToString Pattern := ⟨markingToString⟩
 #eval! do
   let m := marking [tokD]
   let noAtoms : AtomCheck := fun _ _ => false
-  let result := check (rewriteWithContext petriNet) noAtoms 50 m (.dia .top)
+  let result := check (petriNetReducts) noAtoms 50 m (.dia .top)
   IO.println ("Demo 7: Can {D} reduce?")
   IO.println s!"  check (◇⊤) = {result}"
 
 -- Demo 8: Non-determinism — [A, B, C] has both T1 and T2 applicable
 #eval! do
   let m := marking [tokA, tokB, tokC]
-  let reducts := rewriteWithContext petriNet m
+  let reducts := petriNetReducts m
   IO.println ("Demo 8: {A, B, C} — both transitions applicable")
   IO.println s!"  reducts ({reducts.length}):"
   for r in reducts do
@@ -222,14 +229,14 @@ theorem C_ne_D : tokC ≠ tokD := by decide
 set_option maxRecDepth 4096 in
 set_option maxHeartbeats 800000 in
 /-- {D} is a dead marking: no transition matches (proven via negation). -/
-theorem D_is_dead : rewriteWithContext petriNet (marking [tokD]) = [] := by
+theorem D_is_dead : petriNetReducts (marking [tokD]) = [] := by
   decide +kernel
 
 set_option maxRecDepth 4096 in
 set_option maxHeartbeats 800000 in
 /-- {A, B} has exactly one reduct via T1. -/
 theorem AB_has_one_reduct :
-    (rewriteWithContext petriNet (marking [tokA, tokB])).length = 1 := by
+    (petriNetReducts (marking [tokA, tokB])).length = 1 := by
   decide +kernel
 
 -- Verification: OSLF pipeline type-checks

@@ -1,5 +1,6 @@
 import Mettapedia.Languages.Metamath.LanguageDefDSL
 import Mettapedia.OSLF.MeTTaIL.Engine
+import Mettapedia.OSLF.MeTTaIL.ContextualStep
 import Mettapedia.OSLF.Framework.ConstructorCategory
 import Mettapedia.OSLF.Framework.CategoryBridge
 import Mettapedia.OSLF.Framework.TypeSynthesis
@@ -134,10 +135,12 @@ theorem minimalCompile_begin_diamond :
     (relEnv := Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv.empty)
     (lang := metamathCore)
   have hmem : minimalCompileAfterLower ∈
-      rewriteWithContextWithPremisesUsing
-        Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv.empty metamathCore minimalCompileStart := by
+      Mettapedia.OSLF.MeTTaIL.ContextualStep.rewriteAt
+        (Mettapedia.OSLF.MeTTaIL.ContextualStep.engineBasePremises
+          Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv.empty)
+        metamathCore 1 minimalCompileStart := by
     decide +kernel
-  simpa [langReducesExecUsing] using hmem
+  exact ⟨1, hmem⟩
 
 /- RUN the OSLF algorithm on the authored `metamathCore` GSLT and OUTPUT the
     NTT: the full list of constructor-crossings (the native-type arrows). -/

@@ -167,8 +167,6 @@ def specToCoreLanguage (lang : SpecLanguageDef) : Except String CoreLanguageDef 
       types := coreTypes
       terms := coreTerms
       equations := coreEquations
-      rewrites := coreRewrites
-      congruenceCollections := lang.congruenceCollections.map
-        (fun ct => ({ collectionType := specToCoreCollType ct } : MeTTailCore.MeTTaIL.Syntax.CongruenceCollection)) }
+      rewrites := coreRewrites }
 
 end Mettapedia.OSLF.MeTTaIL.CoreSyntaxBridge

@@ -79,13 +79,22 @@ private def reflRule : RewriteRule := {
   right := .apply "MFor" [.apply "MTermProc" [.fvar "pNext"], .fvar "x", .apply "MZero" []]
 }
 
+/-- Parallel contextual closure is an authored semantic rule.  The bag
+    representation by itself does not grant reduction beneath it. -/
+private def parCongRule : RewriteRule := {
+  name := "ParCong"
+  typeContext := [("p", .base "Proc"), ("pNext", .base "Proc")]
+  premises := [.congruence (.fvar "p") (.fvar "pNext")]
+  left := .collection .hashBag [.fvar "p"] (some "rest")
+  right := .collection .hashBag [.fvar "pNext"] (some "rest")
+}
+
 /-! ## Language definitions -/
 
 /-- Full MeTTa-calculus language (COMM + REFL). -/
 def mettaCalc : LanguageDef := {
   name := "MeTTaCalc"
   types := ["Proc", "Name", "Term"]
-  congruenceCollections := [.hashBag]
   terms := [
     { label := "MZero", category := "Proc", params := [],
       syntaxPattern := [.terminal "0"] },
@@ -122,7 +131,7 @@ def mettaCalc : LanguageDef := {
       left := .apply "MQuote" [.apply "MDrop" [.fvar "n"]],
       right := .fvar "n" }
   ]
-  rewrites := [commSymRule, reflRule]
+  rewrites := [commSymRule, reflRule, parCongRule]
 }
 
 /-- COMM-only fragment (used to define one-step reflection premises without
@@ -130,6 +139,6 @@ self-reference through REFL). -/
 def mettaCalcCommOnly : LanguageDef :=
   { mettaCalc with
       name := "MeTTaCalcCommOnly"
-      rewrites := [commSymRule] }
+      rewrites := [commSymRule, parCongRule] }
 
 end Mettapedia.Languages.ProcessCalculi.MeTTaCalculus

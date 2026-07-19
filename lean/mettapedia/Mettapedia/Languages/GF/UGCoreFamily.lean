@@ -23,6 +23,9 @@ open Mettapedia.OSLF.Framework.TypeSynthesis
 open Mettapedia.OSLF.Formula
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Engine
+open Mettapedia.OSLF.MeTTaIL.Match
+open Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical
+open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open Mettapedia.OSLF.QuantifiedFormula2
 open Mettapedia.PLN.Evidence.EvidenceClass
 open Mettapedia.PLN.WorldModel.PLNWorldModel
@@ -182,16 +185,20 @@ abbrev bareHouseTree : AbstractNode :=
 private theorem english_langReduces_UseN (p : Pattern) :
     langReduces englishGFLanguageDef (.apply "UseN" [p]) p := by
   unfold langReduces langReducesUsing
-  exact .topRule useNElimRewrite
-    (by simp [englishGFLanguageDef, gfLegacySemanticLanguageDef, allIdentityRewrites, allSemanticRewrites])
-    [("x", p)]
-    (by simp [useNElimRewrite, Mettapedia.OSLF.MeTTaIL.Match.matchPattern,
-      Mettapedia.OSLF.MeTTaIL.Match.matchArgs, BEq.beq, List.length,
-      Mettapedia.OSLF.MeTTaIL.Match.mergeBindings, List.filterMap])
-    [("x", p)]
-    (by simp [useNElimRewrite, applyPremisesWithEnv])
-    (by simp [useNElimRewrite, Mettapedia.OSLF.MeTTaIL.Match.applyBindings,
-      List.find?, BEq.beq])
+  let bindings : Bindings := [("x", p)]
+  refine step_of_rule (relEnv := RelationEnv.empty)
+    (lang := englishGFLanguageDef) (rule := useNElimRewrite)
+    (initialBindings := bindings) (finalBindings := bindings)
+    ?_ ?_ (by exact .nil) ?_ ?_
+  · simp [englishGFLanguageDef, gfLegacySemanticLanguageDef,
+      allIdentityRewrites, allSemanticRewrites]
+  · simp [bindings, englishGFLanguageDef, gfLegacySemanticLanguageDef,
+      useNElimRewrite, Mettapedia.OSLF.MeTTaIL.Match.matchPattern,
+      Mettapedia.OSLF.MeTTaIL.Match.matchArgs,
+      Mettapedia.OSLF.MeTTaIL.Match.mergeBindings]
+  · simp [bindings, useNElimRewrite, applyPremisesWithEnv]
+  · simp [bindings, englishGFLanguageDef, gfLegacySemanticLanguageDef,
+      useNElimRewrite, Mettapedia.OSLF.MeTTaIL.Match.applyBindings]
 
 theorem english_useNHouse_dia_is_house :
     sem (langReduces englishGFLanguageDef) (gfAtomSem_isName "house")
@@ -206,17 +213,28 @@ theorem english_bareHouse_not_dia_is_house :
       (.dia (.atom "is_house")) (gfAbstractToPattern bareHouseTree) := by
   intro h
   rcases h with ⟨q, hR, _⟩
-  have hExec := (langReducesUsing_iff_execUsing RelationEnv.empty
-    englishGFLanguageDef (gfAbstractToPattern bareHouseTree) q).1 hR
-  simp [bareHouseTree, langReducesExecUsing,
-    rewriteWithContextWithPremisesUsing, rewriteStepWithPremisesUsing,
-    RelationEnv.empty, englishGFLanguageDef, gfLegacySemanticLanguageDef,
-    allIdentityRewrites, allSemanticRewrites, allTenseRewrites,
-    applyRuleWithPremisesUsing, Mettapedia.OSLF.MeTTaIL.Match.matchPattern,
-    applyPremisesWithEnv, useNElimRewrite, positAElimRewrite,
-    useVElimRewrite, useCompElimRewrite, useN2ElimRewrite, useA2ElimRewrite,
-    activePassiveRewrite, presentTenseRewrite, pastTenseRewrite,
-    futureTenseRewrite] at hExec
+  change Step (engineBasePremises RelationEnv.empty) englishGFLanguageDef
+    (gfAbstractToPattern bareHouseTree) q at hR
+  apply (not_step_of_matchPatternForRule_eq_nil
+    (base := engineBasePremises RelationEnv.empty)
+    (lang := englishGFLanguageDef)
+    (source := gfAbstractToPattern bareHouseTree) (target := q) ?_) hR
+  intro rule ruleMember
+  have ruleCases :
+      rule = useNElimRewrite ∨ rule = positAElimRewrite ∨
+      rule = useCompElimRewrite ∨ rule = useVElimRewrite ∨
+      rule = useN2ElimRewrite ∨ rule = useA2ElimRewrite ∨
+      rule = activePassiveRewrite ∨ rule = presentTenseRewrite ∨
+      rule = pastTenseRewrite ∨ rule = futureTenseRewrite := by
+    simpa [englishGFLanguageDef, gfLegacySemanticLanguageDef,
+      allIdentityRewrites, allSemanticRewrites, allTenseRewrites] using ruleMember
+  rcases ruleCases with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl <;>
+    rw [matchPatternForRule_eq_syntactic_of_no_presentations (by rfl)] <;>
+    simp [bareHouseTree, useNElimRewrite,
+      positAElimRewrite, useCompElimRewrite, useVElimRewrite,
+      useN2ElimRewrite, useA2ElimRewrite, activePassiveRewrite,
+      presentTenseRewrite, pastTenseRewrite, futureTenseRewrite,
+      Mettapedia.OSLF.MeTTaIL.Match.matchPattern]
 
 /-! ### Alternative witness family: active/passive clause contrast -/
 

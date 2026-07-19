@@ -1,5 +1,6 @@
 import Mettapedia.Languages.MM0Lite.LanguageDef
 import Mettapedia.OSLF.MeTTaIL.Engine
+import Mettapedia.OSLF.MeTTaIL.ContextualStep
 
 /-!
 # MM0-Lite Conformance Checks
@@ -13,6 +14,7 @@ namespace Mettapedia.Languages.MM0Lite.Conformance
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Engine
+open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open Mettapedia.Languages.MM0Lite.LanguageDef
 
 private def atomP : Pattern := .apply "AtomP" []
@@ -65,8 +67,8 @@ inductive Derivable (Γ : List Pattern) : Pattern → Prop where
       Derivable Γ (imp a b) → Derivable Γ a → Derivable Γ b
 
 private def runMM0 (prog goal stack out : Pattern) (fuel : Nat := 16) : Pattern :=
-  fullRewriteToNormalFormWithPremisesUsing mm0RelEnv mm0Lite
-    (mkState prog goal stack out) fuel
+  normalizeFirstUsing mm0RelEnv mm0Lite 1 fuel
+    (mkState prog goal stack out)
 
 private def progPushUseMp : Pattern :=
   iCons (iPush atomP) (iCons (iUse thmImpPQ) (iCons iMP iNil))

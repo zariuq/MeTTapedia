@@ -35,6 +35,22 @@ def declarationForRule? (lang : LanguageDef) (rule : RewriteRule) :
   | [declaration] => some declaration
   | _ => none
 
+/-- Declaration lookup depends only on the authored reflective presentations,
+not on any other `LanguageDef` field. -/
+theorem declarationForRule?_eq_of_presentations_eq
+    {lang₁ lang₂ : LanguageDef}
+    (same : lang₁.reflectivePresentations = lang₂.reflectivePresentations)
+    (rule : RewriteRule) :
+    declarationForRule? lang₁ rule = declarationForRule? lang₂ rule := by
+  simp only [declarationForRule?]
+  rw [same]
+
+@[simp] theorem declarationForRule?_eq_none_of_no_presentations
+    {lang : LanguageDef} (empty : lang.reflectivePresentations = [])
+    (rule : RewriteRule) :
+    declarationForRule? lang rule = none := by
+  simp [declarationForRule?, empty]
+
 /-! ## Static quote-drop normalization -/
 
 /-- Apply the declared quote-drop equation after an application's children
@@ -222,11 +238,29 @@ def applyBindingsForRule
   | some declaration => applyBindingsReflective declaration bindings rule.right
   | none => applyBindings bindings rule.right
 
+/-- Rule-aware substitution is unchanged when two languages share the same
+authored reflective presentations. -/
+theorem applyBindingsForRule_eq_of_presentations_eq
+    {lang₁ lang₂ : LanguageDef}
+    (same : lang₁.reflectivePresentations = lang₂.reflectivePresentations)
+    (rule : RewriteRule) (bindings : Bindings) :
+    applyBindingsForRule lang₁ rule bindings =
+      applyBindingsForRule lang₂ rule bindings := by
+  simp only [applyBindingsForRule]
+  rw [declarationForRule?_eq_of_presentations_eq same rule]
+
 theorem applyBindingsForRule_eq_syntactic_of_no_declaration
     {lang : LanguageDef} {rule : RewriteRule}
     (missing : declarationForRule? lang rule = none) (bindings : Bindings) :
     applyBindingsForRule lang rule bindings = applyBindings bindings rule.right := by
   simp [applyBindingsForRule, missing]
+
+@[simp] theorem applyBindingsForRule_eq_syntactic_of_no_presentations
+    {lang : LanguageDef} (empty : lang.reflectivePresentations = [])
+    (rule : RewriteRule) (bindings : Bindings) :
+    applyBindingsForRule lang rule bindings = applyBindings bindings rule.right := by
+  apply applyBindingsForRule_eq_syntactic_of_no_declaration
+  exact declarationForRule?_eq_none_of_no_presentations empty rule
 
 /-! ## Executable boundary examples -/
 

@@ -2,7 +2,7 @@ import GFCore.Check
 import Algorithms.GF.Generated.PaperAmbiguitySig
 import Mettapedia.Languages.GF.GFRealSyntaxBridge
 import Mettapedia.Languages.GF.ConformanceCertificate
-import Mettapedia.OSLF.MeTTaIL.DeclReducesWithPremises
+import Mettapedia.OSLF.MeTTaIL.ContextualStep
 
 /-!
 # GF Generated-Bridge Conformance
@@ -25,6 +25,7 @@ open Mettapedia.Languages.GF.GFCoreOSLFBridge
 open Mettapedia.Languages.GF.ConformanceCertificate
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Engine
+open Mettapedia.OSLF.MeTTaIL.ContextualStep
 
 def paperSig : GrammarSig :=
   Algorithms.GF.Generated.PaperAmbiguitySig.sig
@@ -122,10 +123,13 @@ private def ensureBool (label : String) (b : Bool) : IO Unit :=
 
 #eval do
   ensureBool "syntax lane has no authored reductions"
-    (rewriteWithContextWithPremises paperSyntaxLang presentSentencePattern == [])
+    (rewriteAt (engineBasePremises RelationEnv.empty) paperSyntaxLang 1
+      presentSentencePattern == [])
   ensureBool "no temporal target produced in syntax lane"
-    (temporalPresentPattern ∉ rewriteWithContextWithPremises paperSyntaxLang presentSentencePattern)
+    (temporalPresentPattern ∉ rewriteAt (engineBasePremises RelationEnv.empty)
+      paperSyntaxLang 1 presentSentencePattern)
   ensureBool "UseN(man_N) does not reduce in syntax lane"
-    (manPattern ∉ rewriteWithContextWithPremises paperSyntaxLang useNManPattern)
+    (manPattern ∉ rewriteAt (engineBasePremises RelationEnv.empty)
+      paperSyntaxLang 1 useNManPattern)
 
 end Mettapedia.Languages.GF.GeneratedBridgeConformance

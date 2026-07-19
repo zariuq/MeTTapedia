@@ -2,7 +2,7 @@ import GFCore.Check
 import GFCore.Json
 import GFCore.SigGen
 import Mettapedia.Languages.GF.GFRealSyntaxBridge
-import Mettapedia.OSLF.MeTTaIL.DeclReducesWithPremises
+import Mettapedia.OSLF.MeTTaIL.ContextualStep
 import Mettapedia.OSLF.MeTTaIL.Export
 
 /-!
@@ -29,6 +29,7 @@ open GFCore
 open Mettapedia.Languages.GF.GFCoreOSLFBridge
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Engine
+open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open Mettapedia.OSLF.MeTTaIL
 
 private def engProjectCorePath : System.FilePath :=
@@ -178,11 +179,14 @@ private def runProjectCoreExamples : IO Unit := do
   ensureBool "ProgrVP sentence checks in Cze"
     (checkedPattern? czeSig progressiveHaveRaw == some progressiveHavePattern)
   ensureBool "project-core syntax lane has no reductions for ExistNP"
-    (rewriteWithContextWithPremises engLang existSomethingPattern == [])
+    (rewriteAt (engineBasePremises RelationEnv.empty) engLang 1
+      existSomethingPattern == [])
   ensureBool "project-core syntax lane has no reductions for QuestCl"
-    (rewriteWithContextWithPremises engLang questionExistPattern == [])
+    (rewriteAt (engineBasePremises RelationEnv.empty) engLang 1
+      questionExistPattern == [])
   ensureBool "project-core syntax lane has no reductions for ProgrVP"
-    (rewriteWithContextWithPremises engLang progressiveHavePattern == [])
+    (rewriteAt (engineBasePremises RelationEnv.empty) engLang 1
+      progressiveHavePattern == [])
 
 #eval runProjectCoreSummary
 

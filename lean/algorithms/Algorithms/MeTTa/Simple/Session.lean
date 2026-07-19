@@ -704,7 +704,7 @@ def step (s : Session) (term : Pattern) : List Pattern :=
       []
   let generated :=
     if compat.isEmpty && translated.isEmpty then
-      SpecBundle.rewriteWithContext s.bundle term
+      SpecBundle.contextualReducts s.bundle term
     else
       []
   let intrinsic' := if compat.isEmpty then intrinsic else []
@@ -712,7 +712,7 @@ def step (s : Session) (term : Pattern) : List Pattern :=
 
 -- ─── Step result-shape lemmas ────────────────────────────────────────────────
 
-/-- When translateCall, compatRewriteStep, and rewriteWithContext all return [],
+/-- When translateCall, compatRewriteStep, and contextualReducts all return [],
     `step` reduces to just `intrinsicStepT`. -/
 theorem step_eq_intrinsicStepT_of_no_external_reducts
     (s : Session) (term : Pattern)
@@ -720,7 +720,7 @@ theorem step_eq_intrinsicStepT_of_no_external_reducts
             translatorInterface s s.translatorRuleHeads term = [])
     (hC : Algorithms.MeTTa.Simple.Semantics.Dispatch.compatRewriteStep
             compatRewriteInterface s term = [])
-    (hG : SpecBundle.rewriteWithContext s.bundle term = []) :
+    (hG : SpecBundle.contextualReducts s.bundle term = []) :
     step s term = intrinsicStepT s term := by
   simp only [step, hT, hC, hG, List.isEmpty_nil, Bool.true_and, ite_true,
     List.append_nil]
@@ -775,9 +775,9 @@ def stepCompatRewrite (s : Session) (term : Pattern) : List Pattern :=
   Algorithms.MeTTa.Simple.Semantics.Dispatch.compatRewriteStep
     compatRewriteInterface s term
 
-/-- The `rewriteWithContext` component of `step`, exposed for bridge proofs. -/
+/-- The `contextualReducts` component of `step`, exposed for bridge proofs. -/
 def stepGeneratedRewrite (s : Session) (term : Pattern) : List Pattern :=
-  SpecBundle.rewriteWithContext s.bundle term
+  SpecBundle.contextualReducts s.bundle term
 
 /-- Decomposition of `step` in terms of its public components. -/
 theorem step_eq_components (s : Session) (term : Pattern) :

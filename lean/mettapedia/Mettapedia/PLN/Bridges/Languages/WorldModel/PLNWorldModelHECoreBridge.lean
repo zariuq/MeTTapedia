@@ -11,10 +11,10 @@ This is deliberately a composition result:
 - `HECoreStep` is a smaller runtime fragment
 - `HEJudgmentWMInterface` is unchanged
 - the fragment lands on the existing WM-facing `C*` side by forgetting
-  `HECoreStep` to `DeclReducesRel mettaHE`
+  `HECoreStep` to the authored `HELanguageStep`
 
 Positive example:
-- a core-fragment HE `topRule` yields a `WMConsequenceRuleOn`.
+- a core-fragment HE rule yields a `WMConsequenceRuleOn`.
 
 Negative example:
 - this is not a claim that HE runtime reduces to PureKernel `A` or `B`.
@@ -38,8 +38,8 @@ theorem heCoreStep_to_wmStrengthObligation
     (hW : I.side W)
     (hstep : HECoreStep p q) :
     WMStrengthObligation State Query W (I.encode p) (I.encode q) :=
-  HEJudgmentWMInterface.declReducesRel_to_wmStrengthObligation
-    I hW (toDeclReducesRel hstep)
+  HEJudgmentWMInterface.languageStep_to_wmStrengthObligation
+    I hW (toLanguageStep hstep)
 
 /-- Any star closure in the HE core fragment transports to a WM strength
 obligation once an HE runtime interpretation interface is fixed. -/
@@ -50,8 +50,8 @@ theorem heCoreStepStar_to_wmStrengthObligation
     (hW : I.side W)
     (hstar : HECoreStepStar p q) :
     WMStrengthObligation State Query W (I.encode p) (I.encode q) :=
-  HEJudgmentWMInterface.declReducesRelStar_to_wmStrengthObligation
-    I hW (toDeclReducesRelStar hstar)
+  HEJudgmentWMInterface.languageStepStar_to_wmStrengthObligation
+    I hW (toLanguageStepStar hstar)
 
 /-- Package one HE core step as a WM consequence rule via the existing
 runtime-to-WM bridge. -/
@@ -61,7 +61,7 @@ def wmConsequenceRuleOn_of_heCoreStep
     {p q : Pattern}
     (hstep : HECoreStep p q) :
     WMConsequenceRuleOn State Query :=
-  I.wmConsequenceRuleOn_of_declReducesRel (toDeclReducesRel hstep)
+  I.wmConsequenceRuleOn_of_languageStep (toLanguageStep hstep)
 
 /-- Package HE core star closure as a WM consequence rule via the existing
 runtime-to-WM bridge. -/
@@ -71,6 +71,6 @@ def wmConsequenceRuleOn_of_heCoreStepStar
     {p q : Pattern}
     (hstar : HECoreStepStar p q) :
     WMConsequenceRuleOn State Query :=
-  I.wmConsequenceRuleOn_of_declReducesRelStar (toDeclReducesRelStar hstar)
+  I.wmConsequenceRuleOn_of_languageStepStar (toLanguageStepStar hstar)
 
 end Mettapedia.PLN.Bridges.Languages.WorldModel.PLNWorldModelHECoreBridge

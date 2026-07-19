@@ -102,7 +102,6 @@ def toLanguageDef (cfg : FrozenHEConfig) : LanguageDef := {
   terms := []
   equations := []
   rewrites := mkRulesAux 0 cfg.equations
-  congruenceCollections := []
 }
 
 def toSpecBundle (cfg : FrozenHEConfig) : SpecBundle := {
@@ -111,6 +110,7 @@ def toSpecBundle (cfg : FrozenHEConfig) : SpecBundle := {
   builtins := builtinsOfConfig cfg
   policy := {
     maxFuel := cfg.maxSteps
+    maxContextDepth := cfg.maxSteps
     normalizeToFixedPoint := false
   }
 }

@@ -826,7 +826,8 @@ over one space. The \MORK{}/MM2 formalization covers:
 \begin{itemize}[nosep]
   \item \leanref{fireCorrespondence}
   (\codepath{ExecutionBoundary.lean}) ---
-  \code{DeclReduces} $\to$ \code{fireRule}.
+  bounded authored \code{ContextualStep.StepAt} $\to$ a compiled
+  \code{fireRule} update.
   \item \leanref{schedulerProgress} --- selected exec fact $\Rightarrow$
   step exists.
   \item \leanref{pettaEvalStep\_schedulerFires},
@@ -2211,110 +2212,110 @@ place.
 
 \subsection{AlgorithmicTyping.lean}
 \noindent\codepath{Mettapedia/Languages/MeTTa/PureKernel/AlgorithmicTyping.lean}
-\lstinputlisting{/home/zar/claude/Mettapedia/lean/mettapedia/Mettapedia/Languages/MeTTa/PureKernel/AlgorithmicTyping.lean}
+\lstinputlisting{../lean/mettapedia/Mettapedia/Languages/MeTTa/PureKernel/AlgorithmicTyping.lean}
 
 \subsection{BoolDecl.lean}
 \noindent\codepath{Mettapedia/Languages/MeTTa/PureKernel/BoolDecl.lean}
-\lstinputlisting{/home/zar/claude/Mettapedia/lean/mettapedia/Mettapedia/Languages/MeTTa/PureKernel/BoolDecl.lean}
+\lstinputlisting{../lean/mettapedia/Mettapedia/Languages/MeTTa/PureKernel/BoolDecl.lean}
 
 \subsection{Confluence.lean}
 \noindent\codepath{Mettapedia/Languages/MeTTa/PureKernel/Confluence.lean}
-\lstinputlisting{/home/zar/claude/Mettapedia/lean/mettapedia/Mettapedia/Languages/MeTTa/PureKernel/Confluence.lean}
+\lstinputlisting{../lean/mettapedia/Mettapedia/Languages/MeTTa/PureKernel/Confluence.lean}
 
 \subsection{Context.lean}
 \noindent\codepath{Mettapedia/Languages/MeTTa/PureKernel/Context.lean}
-\lstinputlisting{/home/zar/claude/Mettapedia/lean/mettapedia/Mettapedia/Languages/MeTTa/PureKernel/Context.lean}
+\lstinputlisting{../lean/mettapedia/Mettapedia/Languages/MeTTa/PureKernel/Context.lean}
 
 \subsection{DeclarationEnv.lean}
 \noindent\codepath{Mettapedia/Languages/MeTTa/PureKernel/DeclarationEnv.lean}
-\lstinputlisting{/home/zar/claude/Mettapedia/lean/mettapedia/Mettapedia/Languages/MeTTa/PureKernel/DeclarationEnv.lean}
+\lstinputlisting{../lean/mettapedia/Mettapedia/Languages/MeTTa/PureKernel/DeclarationEnv.lean}
 
 \subsection{DeclarationSemantics.lean}
 \noindent\codepath{Mettapedia/Languages/MeTTa/PureKernel/DeclarationSemantics.lean}
-\lstinputlisting{/home/zar/claude/Mettapedia/lean/mettapedia/Mettapedia/Languages/MeTTa/PureKernel/DeclarationSemantics.lean}
+\lstinputlisting{../lean/mettapedia/Mettapedia/Languages/MeTTa/PureKernel/DeclarationSemantics.lean}
 
 \subsection{DeclarationSpec.lean}
 \noindent\codepath{Mettapedia/Languages/MeTTa/PureKernel/DeclarationSpec.lean}
-\lstinputlisting{/home/zar/claude/Mettapedia/lean/mettapedia/Mettapedia/Languages/MeTTa/PureKernel/DeclarationSpec.lean}
+\lstinputlisting{../lean/mettapedia/Mettapedia/Languages/MeTTa/PureKernel/DeclarationSpec.lean}
 
 \subsection{CoreEmbedding.lean}
 \noindent\codepath{Mettapedia/Languages/MeTTa/PureKernel/CoreEmbedding.lean}
-\lstinputlisting{/home/zar/claude/Mettapedia/lean/mettapedia/Mettapedia/Languages/MeTTa/PureKernel/CoreEmbedding.lean}
+\lstinputlisting{../lean/mettapedia/Mettapedia/Languages/MeTTa/PureKernel/CoreEmbedding.lean}
 
 \subsection{DefEq.lean}
 \noindent\codepath{Mettapedia/Languages/MeTTa/PureKernel/DefEq.lean}
-\lstinputlisting{/home/zar/claude/Mettapedia/lean/mettapedia/Mettapedia/Languages/MeTTa/PureKernel/DefEq.lean}
+\lstinputlisting{../lean/mettapedia/Mettapedia/Languages/MeTTa/PureKernel/DefEq.lean}
 
 \subsection{Inst0BridgeDerived.lean}
 \noindent\codepath{Mettapedia/Languages/MeTTa/PureKernel/Inst0BridgeDerived.lean}
-\lstinputlisting{/home/zar/claude/Mettapedia/lean/mettapedia/Mettapedia/Languages/MeTTa/PureKernel/Inst0BridgeDerived.lean}
+\lstinputlisting{../lean/mettapedia/Mettapedia/Languages/MeTTa/PureKernel/Inst0BridgeDerived.lean}
 
 \subsection{Inst0BridgeProof.lean}
 \noindent\codepath{Mettapedia/Languages/MeTTa/PureKernel/Inst0BridgeProof.lean}
-\lstinputlisting{/home/zar/claude/Mettapedia/lean/mettapedia/Mettapedia/Languages/MeTTa/PureKernel/Inst0BridgeProof.lean}
+\lstinputlisting{../lean/mettapedia/Mettapedia/Languages/MeTTa/PureKernel/Inst0BridgeProof.lean}
 
 \subsection{InductiveDecl.lean}
 \noindent\codepath{Mettapedia/Languages/MeTTa/PureKernel/InductiveDecl.lean}
-\lstinputlisting{/home/zar/claude/Mettapedia/lean/mettapedia/Mettapedia/Languages/MeTTa/PureKernel/InductiveDecl.lean}
+\lstinputlisting{../lean/mettapedia/Mettapedia/Languages/MeTTa/PureKernel/InductiveDecl.lean}
 
 \subsection{NatDecl.lean}
 \noindent\codepath{Mettapedia/Languages/MeTTa/PureKernel/NatDecl.lean}
-\lstinputlisting{/home/zar/claude/Mettapedia/lean/mettapedia/Mettapedia/Languages/MeTTa/PureKernel/NatDecl.lean}
+\lstinputlisting{../lean/mettapedia/Mettapedia/Languages/MeTTa/PureKernel/NatDecl.lean}
 
 \subsection{Parallel.lean}
 \noindent\codepath{Mettapedia/Languages/MeTTa/PureKernel/Parallel.lean}
-\lstinputlisting{/home/zar/claude/Mettapedia/lean/mettapedia/Mettapedia/Languages/MeTTa/PureKernel/Parallel.lean}
+\lstinputlisting{../lean/mettapedia/Mettapedia/Languages/MeTTa/PureKernel/Parallel.lean}
 
 \subsection{PatternBridge.lean}
 \noindent\codepath{Mettapedia/Languages/MeTTa/PureKernel/PatternBridge.lean}
-\lstinputlisting{/home/zar/claude/Mettapedia/lean/mettapedia/Mettapedia/Languages/MeTTa/PureKernel/PatternBridge.lean}
+\lstinputlisting{../lean/mettapedia/Mettapedia/Languages/MeTTa/PureKernel/PatternBridge.lean}
 
 \subsection{PatternBridgeSubst.lean}
 \noindent\codepath{Mettapedia/Languages/MeTTa/PureKernel/PatternBridgeSubst.lean}
-\lstinputlisting{/home/zar/claude/Mettapedia/lean/mettapedia/Mettapedia/Languages/MeTTa/PureKernel/PatternBridgeSubst.lean}
+\lstinputlisting{../lean/mettapedia/Mettapedia/Languages/MeTTa/PureKernel/PatternBridgeSubst.lean}
 
 \subsection{ProfileTheory.lean}
 \noindent\codepath{Mettapedia/Languages/MeTTa/PureKernel/ProfileTheory.lean}
-\lstinputlisting{/home/zar/claude/Mettapedia/lean/mettapedia/Mettapedia/Languages/MeTTa/PureKernel/ProfileTheory.lean}
+\lstinputlisting{../lean/mettapedia/Mettapedia/Languages/MeTTa/PureKernel/ProfileTheory.lean}
 
 \subsection{RecursorDecl.lean}
 \noindent\codepath{Mettapedia/Languages/MeTTa/PureKernel/RecursorDecl.lean}
-\lstinputlisting{/home/zar/claude/Mettapedia/lean/mettapedia/Mettapedia/Languages/MeTTa/PureKernel/RecursorDecl.lean}
+\lstinputlisting{../lean/mettapedia/Mettapedia/Languages/MeTTa/PureKernel/RecursorDecl.lean}
 
 \subsection{Reduction.lean}
 \noindent\codepath{Mettapedia/Languages/MeTTa/PureKernel/Reduction.lean}
-\lstinputlisting{/home/zar/claude/Mettapedia/lean/mettapedia/Mettapedia/Languages/MeTTa/PureKernel/Reduction.lean}
+\lstinputlisting{../lean/mettapedia/Mettapedia/Languages/MeTTa/PureKernel/Reduction.lean}
 
 \subsection{Renaming.lean}
 \noindent\codepath{Mettapedia/Languages/MeTTa/PureKernel/Renaming.lean}
-\lstinputlisting{/home/zar/claude/Mettapedia/lean/mettapedia/Mettapedia/Languages/MeTTa/PureKernel/Renaming.lean}
+\lstinputlisting{../lean/mettapedia/Mettapedia/Languages/MeTTa/PureKernel/Renaming.lean}
 
 \subsection{SubjectReduction.lean}
 \noindent\codepath{Mettapedia/Languages/MeTTa/PureKernel/SubjectReduction.lean}
-\lstinputlisting{/home/zar/claude/Mettapedia/lean/mettapedia/Mettapedia/Languages/MeTTa/PureKernel/SubjectReduction.lean}
+\lstinputlisting{../lean/mettapedia/Mettapedia/Languages/MeTTa/PureKernel/SubjectReduction.lean}
 
 \subsection{Telescope.lean}
 \noindent\codepath{Mettapedia/Languages/MeTTa/PureKernel/Telescope.lean}
-\lstinputlisting{/home/zar/claude/Mettapedia/lean/mettapedia/Mettapedia/Languages/MeTTa/PureKernel/Telescope.lean}
+\lstinputlisting{../lean/mettapedia/Mettapedia/Languages/MeTTa/PureKernel/Telescope.lean}
 
 \subsection{Substitution.lean}
 \noindent\codepath{Mettapedia/Languages/MeTTa/PureKernel/Substitution.lean}
-\lstinputlisting{/home/zar/claude/Mettapedia/lean/mettapedia/Mettapedia/Languages/MeTTa/PureKernel/Substitution.lean}
+\lstinputlisting{../lean/mettapedia/Mettapedia/Languages/MeTTa/PureKernel/Substitution.lean}
 
 \subsection{Syntax.lean}
 \noindent\codepath{Mettapedia/Languages/MeTTa/PureKernel/Syntax.lean}
-\lstinputlisting{/home/zar/claude/Mettapedia/lean/mettapedia/Mettapedia/Languages/MeTTa/PureKernel/Syntax.lean}
+\lstinputlisting{../lean/mettapedia/Mettapedia/Languages/MeTTa/PureKernel/Syntax.lean}
 
 \subsection{UnitDecl.lean}
 \noindent\codepath{Mettapedia/Languages/MeTTa/PureKernel/UnitDecl.lean}
-\lstinputlisting{/home/zar/claude/Mettapedia/lean/mettapedia/Mettapedia/Languages/MeTTa/PureKernel/UnitDecl.lean}
+\lstinputlisting{../lean/mettapedia/Mettapedia/Languages/MeTTa/PureKernel/UnitDecl.lean}
 
 \subsection{TypedLangDef.lean}
 \noindent\codepath{Mettapedia/Languages/MeTTa/PureKernel/TypedLangDef.lean}
-\lstinputlisting{/home/zar/claude/Mettapedia/lean/mettapedia/Mettapedia/Languages/MeTTa/PureKernel/TypedLangDef.lean}
+\lstinputlisting{../lean/mettapedia/Mettapedia/Languages/MeTTa/PureKernel/TypedLangDef.lean}
 
 \subsection{Typing.lean}
 \noindent\codepath{Mettapedia/Languages/MeTTa/PureKernel/Typing.lean}
-\lstinputlisting{/home/zar/claude/Mettapedia/lean/mettapedia/Mettapedia/Languages/MeTTa/PureKernel/Typing.lean}
+\lstinputlisting{../lean/mettapedia/Mettapedia/Languages/MeTTa/PureKernel/Typing.lean}
 
 \end{document}

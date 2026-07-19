@@ -28,9 +28,8 @@ computational power** along the hypercube weakness order.
 namespace Mettapedia.OSLF.Framework.HypercubeGSLTFunctor
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
-open Mettapedia.OSLF.MeTTaIL.Match (Bindings applyBindings)
-open Mettapedia.OSLF.MeTTaIL.DeclReducesPremises
 open Mettapedia.OSLF.MeTTaIL.Engine
+open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open Mettapedia.OSLF.Framework.TypeSynthesis
 open Mettapedia.OSLF.Framework.LangMorphism
 open Mettapedia.OSLF.Framework.VertexRewriteRules
@@ -42,24 +41,18 @@ The key structural lemma: if a term reduces in a weaker vertex's language,
 it also reduces in a stronger vertex's language.  This follows from rule
 monotonicity (`activeRules_subset_of_le`). -/
 
-/-- Declarative one-step reduction is monotone in the rule set
-    (general version: any RelationEnv, no restriction on premises). -/
-theorem declReduces_mono
+/-- Declarative one-step reduction is monotone in the rule set when the two
+languages share the reflective presentation that determines matching and
+right-hand-side substitution.  This is the general version for any
+`RelationEnv`, with no restriction on premises. -/
+theorem contextualStep_mono_rules
     {lang₁ lang₂ : LanguageDef}
     (hrules : ∀ r, r ∈ lang₁.rewrites → r ∈ lang₂.rewrites)
-    (hcong : lang₁.congruenceCollections = lang₂.congruenceCollections)
+    (hreflect : lang₁.reflectivePresentations = lang₂.reflectivePresentations)
     {relEnv : RelationEnv} {p q : Pattern}
-    (hred : DeclReducesWithPremises relEnv lang₁ p q) :
-    DeclReducesWithPremises relEnv lang₂ p q := by
-  induction hred with
-  | topRule r hr bs0 hbs0 bs hprem hq =>
-    exact .topRule r (hrules r hr) bs0 hbs0 bs
-      (applyPremisesWithEnv_mono hrules hcong relEnv r.premises bs0 bs hprem) hq
-  | @congElem _ ct _ hct i hi r hr bs0 hbs0 bs hprem _ hq =>
-    have hct₂ : lang₂.allowsCongruenceIn ct := by
-      simp only [LanguageDef.allowsCongruenceIn] at hct ⊢; rw [← hcong]; exact hct
-    exact .congElem hct₂ i hi r (hrules r hr) bs0 hbs0 bs
-      (applyPremisesWithEnv_mono hrules hcong relEnv r.premises bs0 bs hprem) hq
+    (hred : Step (engineBasePremises relEnv) lang₁ p q) :
+    Step (engineBasePremises relEnv) lang₂ p q :=
+  hred.mono_rules hrules hreflect
 
 /-- Reduction is monotone along the hypercube weakness order. -/
 theorem langReduces_mono_vertex {v w : ProbabilityVertex} (h : v ≤ w)
@@ -67,9 +60,11 @@ theorem langReduces_mono_vertex {v w : ProbabilityVertex} (h : v ≤ w)
     (hred : langReduces (vertexLanguageDef w) p q) :
     langReduces (vertexLanguageDef v) p q := by
   unfold langReduces langReducesUsing at hred ⊢
-  exact declReduces_mono
+  exact contextualStep_mono_rules
+    (lang₁ := vertexLanguageDef w)
+    (lang₂ := vertexLanguageDef v)
     (activeRules_subset_of_le h)
-    (by rfl)  -- congruenceCollections are both default
+    rfl
     hred
 
 /-! ## §2: Multi-Step Reduction Transport

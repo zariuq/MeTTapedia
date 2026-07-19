@@ -14,7 +14,6 @@ private def emptyLanguage : LanguageDef := {
   terms := []
   equations := []
   rewrites := []
-  congruenceCollections := []
 }
 
 private def emptyBundle : SpecBundle := {
@@ -23,6 +22,7 @@ private def emptyBundle : SpecBundle := {
   builtins := coreIntrinsicBuiltins
   policy := {
     maxFuel := 128
+    maxContextDepth := 128
     normalizeToFixedPoint := false
   }
 }

@@ -1,6 +1,7 @@
 import Mettapedia.OSLF.MeTTaIL.Syntax
 import Mettapedia.OSLF.MeTTaIL.Match
 import Mettapedia.OSLF.MeTTaIL.Engine
+import Mettapedia.OSLF.MeTTaIL.ContextualStep
 import Mettapedia.OSLF.Framework.TypeSynthesis
 import Mettapedia.OSLF.Framework.ConstructorCategory
 import Mettapedia.OSLF.Framework.ConstructorFibration
@@ -80,6 +81,7 @@ namespace Mettapedia.OSLF.Framework.TinyMLInstance
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Match
 open Mettapedia.OSLF.MeTTaIL.Engine
+open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open Mettapedia.OSLF.Framework.TypeSynthesis
 open Mettapedia.OSLF.Framework.ConstructorCategory
 open Mettapedia.OSLF.Framework.ConstructorFibration
@@ -182,6 +184,11 @@ def tinyML : LanguageDef := {
       right := .apply "Inject" [.fvar "b"] }
   ]
 }
+
+/-- All root reductions of `tinyML`.  Its six rules have no contextual
+premises, so contextual depth one is exact. -/
+def tinyMLReducts (term : Pattern) : List Pattern :=
+  rewriteAt (engineBasePremises RelationEnv.empty) tinyML 1 term
 
 /-! ## OSLF Pipeline Instantiation -/
 
@@ -360,7 +367,7 @@ private instance : ToString Pattern := ⟨exprToString⟩
 -- Demo 1: β-reduction — (λ.#0) true ~> true
 #eval! do
   let term := app (inject (lam (.bvar 0))) (inject boolT)
-  let reducts := rewriteWithContext tinyML term
+  let reducts := tinyMLReducts term
   IO.println "Demo 1: (λ.#0) true  [identity applied to true]"
   IO.println s!"  reducts ({reducts.length}):"
   for r in reducts do
@@ -370,7 +377,7 @@ private instance : ToString Pattern := ⟨exprToString⟩
 #eval! do
   let e := app (inject boolT) (inject boolF)
   let term := inject (thunk e)
-  let reducts := rewriteWithContext tinyML term
+  let reducts := tinyMLReducts term
   IO.println "Demo 2: inject(thunk(true false))  [force a thunk]"
   IO.println s!"  reducts ({reducts.length}):"
   for r in reducts do
@@ -381,7 +388,7 @@ private instance : ToString Pattern := ⟨exprToString⟩
   let a := inject (lam (.bvar 0))
   let b := inject boolF
   let term := ite (inject boolT) a b
-  let reducts := rewriteWithContext tinyML term
+  let reducts := tinyMLReducts term
   IO.println "Demo 3: if true then (λ.#0) else false"
   IO.println s!"  reducts ({reducts.length}):"
   for r in reducts do
@@ -392,7 +399,7 @@ private instance : ToString Pattern := ⟨exprToString⟩
   let a := inject boolT
   let b := inject boolF
   let term := ite (inject boolF) a b
-  let reducts := rewriteWithContext tinyML term
+  let reducts := tinyMLReducts term
   IO.println "Demo 4: if false then true else false"
   IO.println s!"  reducts ({reducts.length}):"
   for r in reducts do
@@ -401,7 +408,7 @@ private instance : ToString Pattern := ⟨exprToString⟩
 -- Demo 5: Fst projection — fst (a, b) ~> inject(a)
 #eval! do
   let term := fst (inject (pairV boolT boolF))
-  let reducts := rewriteWithContext tinyML term
+  let reducts := tinyMLReducts term
   IO.println "Demo 5: fst (true, false)"
   IO.println s!"  reducts ({reducts.length}):"
   for r in reducts do
@@ -410,7 +417,7 @@ private instance : ToString Pattern := ⟨exprToString⟩
 -- Demo 6: Snd projection — snd (a, b) ~> inject(b)
 #eval! do
   let term := snd (inject (pairV boolT boolF))
-  let reducts := rewriteWithContext tinyML term
+  let reducts := tinyMLReducts term
   IO.println "Demo 6: snd (true, false)"
   IO.println s!"  reducts ({reducts.length}):"
   for r in reducts do
@@ -422,7 +429,7 @@ private instance : ToString Pattern := ⟨exprToString⟩
 #eval! do
   let inner := app (inject (lam (.bvar 0))) (inject boolT)
   let term := inject (thunk inner)
-  let nf := fullRewriteToNormalForm tinyML term 100
+  let nf := normalizeFirst tinyML 1 100 term
   IO.println "Demo 7: inject(thunk((λ.#0) true)) ~>* true  [force then β]"
   IO.println s!"  normal form: {nf}"
 
@@ -432,7 +439,7 @@ private instance : ToString Pattern := ⟨exprToString⟩
 #eval! do
   let thenBranch := app (inject (lam (.bvar 0))) (inject boolF)
   let term := ite (inject boolT) thenBranch (inject boolT)
-  let nf := fullRewriteToNormalForm tinyML term 100
+  let nf := normalizeFirst tinyML 1 100 term
   IO.println "Demo 8: if true then ((λ.#0) false) else true ~>* false  [if then β]"
   IO.println s!"  normal form: {nf}"
 
@@ -443,7 +450,7 @@ private instance : ToString Pattern := ⟨exprToString⟩
 #eval! do
   let body := ite (inject boolT) (fst (inject (pairV boolT boolF))) (inject boolF)
   let term := inject (thunk body)
-  let nf := fullRewriteToNormalForm tinyML term 100
+  let nf := normalizeFirst tinyML 1 100 term
   IO.println "Demo 9: inject(thunk(if true then fst(true,false) else false)) ~>* true"
   IO.println s!"  normal form: {nf}"
 
@@ -451,14 +458,14 @@ private instance : ToString Pattern := ⟨exprToString⟩
 #eval! do
   let term := app (inject (lam (.bvar 0))) (inject boolT)
   let noAtoms : AtomCheck := fun _ _ => false
-  let result := check (rewriteWithContext tinyML) noAtoms 50 term (.dia .top)
+  let result := check (tinyMLReducts) noAtoms 50 term (.dia .top)
   IO.println "Demo 10: Can (λ.#0) true reduce?"
   IO.println s!"  check (◇⊤) = {result}"
 
 -- Demo 11: Normal form can't reduce (◇⊤ should be unsat)
 #eval! do
   let noAtoms : AtomCheck := fun _ _ => false
-  let result := check (rewriteWithContext tinyML) noAtoms 50 (inject boolT) (.dia .top)
+  let result := check (tinyMLReducts) noAtoms 50 (inject boolT) (.dia .top)
   IO.println "Demo 11: Can inject(true) reduce?"
   IO.println s!"  check (◇⊤) = {result}"
 
@@ -471,19 +478,19 @@ set_option maxRecDepth 4096 in
 set_option maxHeartbeats 800000 in
 /-- inject(true) is a normal form: no reductions apply. -/
 theorem inject_boolT_is_nf :
-    rewriteWithContext tinyML (inject boolT) = [] := by decide +kernel
+    tinyMLReducts (inject boolT) = [] := by decide +kernel
 
 set_option maxRecDepth 4096 in
 set_option maxHeartbeats 800000 in
 /-- inject(false) is a normal form. -/
 theorem inject_boolF_is_nf :
-    rewriteWithContext tinyML (inject boolF) = [] := by decide +kernel
+    tinyMLReducts (inject boolF) = [] := by decide +kernel
 
 set_option maxRecDepth 4096 in
 set_option maxHeartbeats 800000 in
 /-- β-reduction fires on `(λ.#0) true`. -/
 theorem beta_fires :
-    (rewriteWithContext tinyML
+    (tinyMLReducts
       (app (inject (lam (.bvar 0))) (inject boolT))).length = 1 := by
   decide +kernel
 
@@ -491,7 +498,7 @@ set_option maxRecDepth 4096 in
 set_option maxHeartbeats 800000 in
 /-- Force fires on `inject(thunk(inject(true)))`. -/
 theorem force_fires :
-    (rewriteWithContext tinyML
+    (tinyMLReducts
       (inject (thunk (inject boolT)))).length = 1 := by
   decide +kernel
 
@@ -499,7 +506,7 @@ set_option maxRecDepth 4096 in
 set_option maxHeartbeats 800000 in
 /-- IfTrue fires when condition is inject(BoolT). -/
 theorem ifTrue_fires :
-    (rewriteWithContext tinyML
+    (tinyMLReducts
       (ite (inject boolT) (inject boolT) (inject boolF))).length = 1 := by
   decide +kernel
 
@@ -507,7 +514,7 @@ set_option maxRecDepth 4096 in
 set_option maxHeartbeats 800000 in
 /-- FstPair fires on fst(inject(pairV(true, false))). -/
 theorem fstPair_fires :
-    (rewriteWithContext tinyML
+    (tinyMLReducts
       (fst (inject (pairV boolT boolF)))).length = 1 := by
   decide +kernel
 

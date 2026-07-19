@@ -3207,17 +3207,6 @@ inductive CoreConsumesEvalPayload :
       CoreConsumesEvalPayload
         (Reduction.Reduces.par_any
           (p := p) (q := q) (before := before) (after := after) hred)
-  | par_set {p q : Pattern} {rest : List Pattern}
-      {hred : Reduction.Reduces p q} :
-      CoreConsumesEvalPayload hred →
-      CoreConsumesEvalPayload
-        (Reduction.Reduces.par_set (p := p) (q := q) (rest := rest) hred)
-  | par_set_any {p q : Pattern} {before after : List Pattern}
-      {hred : Reduction.Reduces p q} :
-      CoreConsumesEvalPayload hred →
-      CoreConsumesEvalPayload
-        (Reduction.Reduces.par_set_any
-          (p := p) (q := q) (before := before) (after := after) hred)
 
 theorem coreConsumesEvalPayload_singleton_shell
     {n body : Pattern} {rest : List Pattern} {payload : Atom} :
@@ -3849,16 +3838,6 @@ inductive RhometaReduces
       RhometaReduces space dispatch
         (.collection .hashBag (before ++ [p] ++ after) none)
         (.collection .hashBag (before ++ [q] ++ after) none)
-  | par_set {p q : Pattern} {rest : List Pattern} :
-      RhometaReduces space dispatch p q →
-      RhometaReduces space dispatch
-        (.collection .hashSet (p :: rest) none)
-        (.collection .hashSet (q :: rest) none)
-  | par_set_any {p q : Pattern} {before after : List Pattern} :
-      RhometaReduces space dispatch p q →
-      RhometaReduces space dispatch
-        (.collection .hashSet (before ++ [p] ++ after) none)
-        (.collection .hashSet (before ++ [q] ++ after) none)
 
 /-- Reflexive-transitive closure of Rhometta reduction. -/
 inductive RhometaReducesStar
@@ -5002,12 +4981,6 @@ private theorem shellWidth_ge_two_of_reduces {p q : Pattern}
   | par_any _ ih =>
       simp [shellWidth, List.map_append, List.sum_append, List.map_cons, List.sum_cons]
       omega
-  | par_set _ ih =>
-      simp [shellWidth, List.map_cons, List.sum_cons]
-      omega
-  | par_set_any _ ih =>
-      simp [shellWidth, List.map_append, List.sum_append, List.map_cons, List.sum_cons]
-      omega
 
 private theorem output_shell_SC_irreducible
     {n payload p q : Pattern}
@@ -5068,26 +5041,6 @@ private theorem coreConsumesEvalPayload_of_outputsDeferred_shellWidth_two
         simp [shellWidth, List.map_append, List.sum_append, List.map_cons, List.sum_cons] at hwidth
         omega
       exact CoreConsumesEvalPayload.par_any (ih hp hpwidth)
-  | @par_set pInner qInner rest hmid ih =>
-      intro hout hwidth
-      have hp : OutputsDeferred pInner := by
-        simpa [OutputsDeferred, OutputsDeferredList] using hout.1
-      have hge : 2 ≤ shellWidth pInner := shellWidth_ge_two_of_reduces hmid
-      have hpwidth : shellWidth pInner = 2 := by
-        simp [shellWidth, List.map_cons, List.sum_cons] at hwidth
-        omega
-      exact CoreConsumesEvalPayload.par_set (ih hp hpwidth)
-  | @par_set_any pInner qInner before after hmid ih =>
-      intro hout hwidth
-      have hlist : OutputsDeferredList (before ++ [pInner] ++ after) := by
-        simpa [OutputsDeferred] using hout
-      have hp : OutputsDeferred pInner :=
-        outputsDeferred_of_outputsDeferredList_middle hlist
-      have hge : 2 ≤ shellWidth pInner := shellWidth_ge_two_of_reduces hmid
-      have hpwidth : shellWidth pInner = 2 := by
-        simp [shellWidth, List.map_append, List.sum_append, List.map_cons, List.sum_cons] at hwidth
-        omega
-      exact CoreConsumesEvalPayload.par_set_any (ih hp hpwidth)
 
 private theorem coreConsumesEvalPayload_of_SC_evalDropSource
     {p q chan : Pattern} {payload : Atom}
@@ -5130,12 +5083,6 @@ private theorem shellWidth_ge_two_of_rhometaReduces
       simp [shellWidth, List.map_cons, List.sum_cons]
       omega
   | par_any _ ih =>
-      simp [shellWidth, List.map_append, List.sum_append, List.map_cons, List.sum_cons]
-      omega
-  | par_set _ ih =>
-      simp [shellWidth, List.map_cons, List.sum_cons]
-      omega
-  | par_set_any _ ih =>
       simp [shellWidth, List.map_append, List.sum_append, List.map_cons, List.sum_cons]
       omega
 
@@ -5214,28 +5161,6 @@ private theorem no_rhometaReduces_par_any_source_eq_evalDropSource
       (p := .apply "PInput" [chan, .lambda none (.apply "PDrop" [.bvar 0])])
       (q := q)
       (StructuralCongruence.refl _) hstep
-
-private theorem no_rhometaReduces_par_set_source_eq_evalDropSource
-    {space : Space} {dispatch : GroundedDispatch}
-    {p q : Pattern} {rest : List Pattern}
-    {chan : Pattern} {payload : Atom}
-    (_hstep : RhometaReduces space dispatch p q)
-    (hsrc : .collection .hashSet (p :: rest) none = evalDropSource chan payload) :
-    False := by
-  unfold evalDropSource evalSource at hsrc
-  cases hsrc
-
-private theorem no_rhometaReduces_par_set_any_source_eq_evalDropSource
-    {space : Space} {dispatch : GroundedDispatch}
-    {p q : Pattern} {before after : List Pattern}
-    {chan : Pattern} {payload : Atom}
-    (_hstep : RhometaReduces space dispatch p q)
-    (hsrc :
-      .collection .hashSet (before ++ [p] ++ after) none =
-        evalDropSource chan payload) :
-    False := by
-  unfold evalDropSource evalSource at hsrc
-  cases hsrc
 
 private theorem struct_output_cong_channel {n n' q : Pattern}
     (hn : StructuralCongruence n n') :
@@ -5479,14 +5404,6 @@ theorem not_evalFree_of_coreConsumesEvalPayload
       have hlist : EvalFreeList (before ++ [p] ++ after) := by
         simpa [EvalFree] using hfree
       exact ih (evalFree_of_evalFreeList_middle hlist)
-  | par_set _ ih =>
-      intro hfree
-      exact ih (by simpa [EvalFree, EvalFreeList] using hfree.1)
-  | @par_set_any p q before after hred _ ih =>
-      intro hfree
-      have hlist : EvalFreeList (before ++ [p] ++ after) := by
-        simpa [EvalFree] using hfree
-      exact ih (evalFree_of_evalFreeList_middle hlist)
 
 theorem rhometa_core_guard_of_evalFree
     {p q : Pattern} (hfree : EvalFree p) (hred : Reduction.Reduces p q) :
@@ -5516,14 +5433,6 @@ theorem nonempty_reduces_of_rhometaReduces_of_evalFree
         simpa [EvalFree] using hfree
       rcases ih (evalFree_of_evalFreeList_middle hlist) with ⟨hcore⟩
       exact ⟨Reduction.Reduces.par_any (before := before) (after := after) hcore⟩
-  | par_set hstep ih =>
-      rcases ih (by simpa [EvalFree, EvalFreeList] using hfree.1) with ⟨hcore⟩
-      exact ⟨Reduction.Reduces.par_set hcore⟩
-  | @par_set_any pInner qInner before after hstep ih =>
-      have hlist : EvalFreeList (before ++ [pInner] ++ after) := by
-        simpa [EvalFree] using hfree
-      rcases ih (evalFree_of_evalFreeList_middle hlist) with ⟨hcore⟩
-      exact ⟨Reduction.Reduces.par_set_any (before := before) (after := after) hcore⟩
 
 theorem rhometaReduces_iff_reduces_of_evalFree
     {space : Space} {dispatch : GroundedDispatch}
@@ -5554,12 +5463,6 @@ theorem ioCount_pos_of_core_reduces {p q : Pattern}
   | par_any _ ih =>
       simp [ioCount, List.map_append, List.sum_append, List.map_cons, List.sum_cons]
       omega
-  | par_set _ ih =>
-      simp [ioCount, List.map_cons, List.sum_cons]
-      omega
-  | par_set_any _ ih =>
-      simp [ioCount, List.map_append, List.sum_append, List.map_cons, List.sum_cons]
-      omega
 
 theorem ioCount_pos_of_rhometa_reduces
     {space : Space} {dispatch : GroundedDispatch} {p q : Pattern}
@@ -5580,12 +5483,6 @@ theorem ioCount_pos_of_rhometa_reduces
       simp [ioCount, List.map_cons, List.sum_cons]
       omega
   | par_any _ ih =>
-      simp [ioCount, List.map_append, List.sum_append, List.map_cons, List.sum_cons]
-      omega
-  | par_set _ ih =>
-      simp [ioCount, List.map_cons, List.sum_cons]
-      omega
-  | par_set_any _ ih =>
       simp [ioCount, List.map_append, List.sum_append, List.map_cons, List.sum_cons]
       omega
 
@@ -9509,19 +9406,6 @@ private theorem dropShellLike_evalComm_scObservedOutcome_classifies_of_structura
   refine ⟨value', hcert', ?_⟩
   simpa [Set.mem_singleton_iff] using hobs'
 
-/-- A drop-shell source over a `hashSet`-free channel is never `hashSet`-headed:
-`SC` cannot relate a `hashSet` to the `hashBag`-headed source. Excludes the
-`par_set`/`par_set_any` first-step cases. -/
-private theorem not_dropShellLike_hashSet
-    {chan : Pattern} {payload : Atom} (hchan : NoHashSet chan)
-    {xs : List Pattern} {g : Option String} :
-    ¬ DropShellLike chan payload (.collection .hashSet xs g) := by
-  intro h
-  have hmem : NoHashSet (.collection .hashSet xs g) :=
-    (noHashSet_iff_of_structuralCongruence h.source_sc).mpr
-      (noHashSet_evalDropSource_of_channel payload hchan)
-  simp [NoHashSet] at hmem
-
 /-- A canonical (`nfBagList`) bag list is never a singleton nested bag: its sole
 element, if any, is non-bag.  Used to make `collapseBag` injective up to multiset. -/
 private theorem nfBagList_singleton_non_bag {A : List Pattern}
@@ -9792,14 +9676,6 @@ private theorem coreConsumesEvalPayload_of_outputsPayload {payload : Atom} :
         (outputsPayloadList_mem (by simpa [OutputsPayload] using hop) (List.mem_cons_self ..))
   | _, _, .par_any hred', hop => by
       refine CoreConsumesEvalPayload.par_any ?_
-      exact coreConsumesEvalPayload_of_outputsPayload hred'
-        (outputsPayloadList_mem (by simpa [OutputsPayload] using hop) (by simp))
-  | _, _, .par_set hred', hop => by
-      refine CoreConsumesEvalPayload.par_set ?_
-      exact coreConsumesEvalPayload_of_outputsPayload hred'
-        (outputsPayloadList_mem (by simpa [OutputsPayload] using hop) (List.mem_cons_self ..))
-  | _, _, .par_set_any hred', hop => by
-      refine CoreConsumesEvalPayload.par_set_any ?_
       exact coreConsumesEvalPayload_of_outputsPayload hred'
         (outputsPayloadList_mem (by simpa [OutputsPayload] using hop) (by simp))
 
@@ -10104,8 +9980,6 @@ private theorem noHashSet_of_rhometaReduces
       refine ⟨h.1.1, ?_⟩
       simp only [NoHashSetList] at h ⊢
       exact ⟨noHashSet_of_rhometaReduces hred h.1.2.1, trivial⟩
-  | _, _, .par_set _, h => by simp only [NoHashSet] at h
-  | _, _, .par_set_any _, h => by simp only [NoHashSet] at h
 
 /-- A drop-shell-headed parallel `bag (p₀ :: rest)` is structurally congruent to
 its head `p₀` once the rest collapses canonically (Lemma 2). -/
@@ -10220,10 +10094,6 @@ private theorem dropShellLike_first_step_classifies
           ← rhometaSCObservedOutcomes_eq_of_source_structuralCongruence hperm_red]
         exact hobs
       exact ih hshape' hobs'
-  | par_set hredmid ih =>
-      exact absurd hshape (not_dropShellLike_hashSet hchan)
-  | par_set_any hredmid ih =>
-      exact absurd hshape (not_dropShellLike_hashSet hchan)
 
 theorem rhometta_scObserved_carrier_faithfulness_gate :
     Function.Injective (fun value : Atom =>

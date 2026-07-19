@@ -39,7 +39,6 @@ def smokeLang : LanguageDef :=
     oracles {
       external evalExpr(Expr, Env) -> Result;
     }
-    congruenceCollections { HashBag }
   }
 
 private def nth? {α : Type} : List α → Nat → Option α
@@ -64,7 +63,6 @@ example : smokeLang.equations.length = 1 := rfl
 example : smokeLang.rewrites.length = 1 := rfl
 example : smokeLang.logic.length = 2 := rfl
 example : smokeLang.oracles.length = 1 := rfl
-example : smokeLang.congruenceCollections = [.hashBag] := rfl
 example : binderNamesAt smokeLang 1 0 = ["x"] := rfl
 example : binderNamesAt smokeLang 2 0 = ["x", "y"] := rfl
 example : rewriteShape smokeLang = (1, 1) := rfl
@@ -88,7 +86,6 @@ def compactBinderLang : LanguageDef :=
     rewrites { }
     logic { }
     oracles { }
-    congruenceCollections { }
   }
 
 example : binderNamesAt compactBinderLang 0 0 = ["x"] := rfl
@@ -133,7 +130,6 @@ def authoredPatternLang : LanguageDef :=
     }
     logic { }
     oracles { }
-    congruenceCollections { HashBag }
   }
 
 private def firstRewrite : RewriteRule :=
@@ -192,7 +188,6 @@ def forAllLang : LanguageDef :=
     }
     logic { }
     oracles { }
-    congruenceCollections { }
   }
 
 example : isError (CoreSyntaxBridge.specToCoreLanguage forAllLang) = true := by
@@ -219,7 +214,6 @@ def syntaxOpsLang : LanguageDef :=
     rewrites { }
     logic { }
     oracles { }
-    congruenceCollections { }
   }
 
 private def firstSyntaxRule : GrammarRule :=
@@ -291,7 +285,6 @@ def rulePatternOpsLang : LanguageDef :=
     }
     logic { }
     oracles { }
-    congruenceCollections { HashBag }
   }
 
 private def extrudeEq : Equation :=
@@ -374,7 +367,6 @@ def ruleSurfaceSugarLang : LanguageDef :=
     }
     logic { }
     oracles { }
-    congruenceCollections { HashBag }
   }
 
 private def sugarEq : Equation :=
@@ -440,16 +432,15 @@ def badValidationLang : LanguageDef :=
     }
     logic { }
     oracles { }
-    congruenceCollections { }
   }
 
 example : hasValidationMessage "duplicate type `Expr`" (LanguageDef.validate badValidationLang) = true := by
   native_decide
 example : hasValidationMessage "unknown syntax parameter `y`" (LanguageDef.validate badValidationLang) = true := by
   native_decide
-example : hasValidationMessage "unknown relation `unknownRel`" (LanguageDef.validate badValidationLang) = true := by
+example : hasValidationMessage "unknown relation `unknownRel/1`" (LanguageDef.validate badValidationLang) = true := by
   native_decide
-example : hasValidationMessage "unknown constructor `Unknown`" (LanguageDef.validate badValidationLang) = true := by
+example : hasValidationMessage "unknown constructor `Unknown/1`" (LanguageDef.validate badValidationLang) = true := by
   native_decide
 
 /-- Validation should recurse through authored syntax operators rather than
@@ -469,7 +460,6 @@ def badNestedSyntaxValidationLang : LanguageDef :=
     rewrites { }
     logic { }
     oracles { }
-    congruenceCollections { }
   }
 
 example :
@@ -507,7 +497,6 @@ def termEvalPolicyLang : LanguageDef :=
     rewrites { }
     logic { }
     oracles { }
-    congruenceCollections { }
   }
 
 private def castIntRule : GrammarRule :=
@@ -622,7 +611,6 @@ def badCarrierLang : LanguageDef :=
     rewrites { }
     logic { }
     oracles { }
-    congruenceCollections { }
   }
 
 /-- error: unsupported congruence collection `Maybe` -/
@@ -640,23 +628,6 @@ def badTypeCollectionLang : LanguageDef :=
     rewrites { }
     logic { }
     oracles { }
-    congruenceCollections { }
-  }
-
-/-- error: unsupported congruence collection `Bag` -/
-#guard_msgs in
-def badCongruenceCollectionLang : LanguageDef :=
-  languageDef! {
-    name : "BadCongruenceCollection"
-    types {
-      Expr
-    }
-    terms { }
-    equations { }
-    rewrites { }
-    logic { }
-    oracles { }
-    congruenceCollections { Bag }
   }
 
 end Mettapedia.OSLF.MeTTaIL.LanguageDefDSLTests

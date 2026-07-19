@@ -1,5 +1,6 @@
 import Mettapedia.OSLF.Framework.PiRhoCanonicalBridge
 import Mettapedia.OSLF.NativeType.Construction
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefAdequacy
 
 /-!
 # Assumption-Necessity Counterexamples
@@ -11,10 +12,13 @@ global assumptions in endpoint wrappers remain explicit.
 namespace Mettapedia.OSLF.Framework.AssumptionNecessity
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
+open Mettapedia.OSLF.MeTTaIL.Match
+open Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution
 open Mettapedia.OSLF.Framework.PiRhoCanonicalBridge
 open Mettapedia.OSLF.Framework.CategoryBridge
 open Mettapedia.OSLF.Framework.ConstructorCategory
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus
+open Mettapedia.Languages.ProcessCalculi.RhoCalculus.CanonicalMatch
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction
 
@@ -189,7 +193,6 @@ section PredFiniteNecessity
 open Mettapedia.OSLF.MeTTaIL.Match
 open Mettapedia.OSLF.MeTTaIL.Substitution (openBVar)
 open Mettapedia.OSLF.MeTTaIL.Engine
-open Mettapedia.OSLF.MeTTaIL.DeclReducesPremises
 open Mettapedia.OSLF.Framework.TypeSynthesis
 
 /-- Generic COMM source parameterized by channel. Body = `.bvar 0` (echo
@@ -228,65 +231,37 @@ theorem commPredSource_injective : Function.Injective commPredSource := by
   simp [commPredExtractChannel_eq] at hch
   exact addRightZeroNest_injective hch
 
-/-- The ρ-calculus COMM rewrite rule (extracted for proof clarity). -/
-private def commRule : RewriteRule where
-  name := "Comm"
-  typeContext := [("n", TypeExpr.name), ("p", TypeExpr.proc), ("q", TypeExpr.proc)]
-  premises := []
-  left := .collection .hashBag [
-    .apply "PInput" [.fvar "n", .lambda none (.fvar "p")],
-    .apply "POutput" [.fvar "n", .fvar "q"]
-  ] (some "rest")
-  right := .collection .hashBag [
-    .subst (.fvar "p") (.apply "NQuote" [.fvar "q"])
-  ] (some "rest")
-
-private theorem commRule_mem : commRule ∈ rhoCalc.rewrites := by
-  simp [commRule, rhoCalc]
-
 /-- Every `commPredSourceGeneric channel` reduces to `commPredTarget` via COMM.
 
-    Proof strategy: construct a `DeclReducesWithPremises.topRule` witness using
-    the COMM rule, explicit matching bindings, and the fact that `applyBindings`
-    evaluates the `.subst` node via `openBVar`. -/
+    The witness uses the single authored `rhoCommRewrite`; no second copy of
+    COMM is introduced for this counterexample. -/
 theorem commPredSourceGeneric_langReduces (channel : Pattern) :
     langReduces rhoCalc (commPredSourceGeneric channel) commPredTarget := by
-  -- langReduces unfolds to DeclReducesWithPremises
-  show DeclReducesWithPremises RelationEnv.empty rhoCalc
-    (commPredSourceGeneric channel) commPredTarget
-  -- The COMM bindings (order from matchBag: q, rest, p, n)
+  show Mettapedia.OSLF.MeTTaIL.ContextualStep.Step
+    (Mettapedia.OSLF.MeTTaIL.ContextualStep.engineBasePremises RelationEnv.empty)
+    rhoCalc (commPredSourceGeneric channel) commPredTarget
   let commBindings : Bindings :=
     [("q", zeroPat), ("rest", .collection .hashBag [] none),
      ("p", .bvar 0), ("n", channel)]
-  apply DeclReducesWithPremises.topRule
-    (r := commRule)
-    (bs0 := commBindings)
-    (bs := commBindings)
-  -- Goal 1: commRule ∈ rhoCalc.rewrites
-  · exact commRule_mem
-  -- Goal 2: commBindings ∈ matchPattern commRule.left (commPredSourceGeneric channel)
-  · -- matchPattern: inline commBindings and simp through bag matching
-    show [("q", zeroPat), ("rest", Pattern.collection .hashBag [] none),
-          ("p", Pattern.bvar 0), ("n", channel)] ∈ matchPattern
-      (.collection .hashBag [
-        .apply "PInput" [.fvar "n", .lambda none (.fvar "p")],
-        .apply "POutput" [.fvar "n", .fvar "q"]
-      ] (some "rest"))
-      (commPredSourceGeneric channel)
+  refine ⟨1, Mettapedia.OSLF.MeTTaIL.ContextualStep.StepAt.rule
+    (rule := rhoCommRewrite) (initialBindings := commBindings)
+    (finalBindings := commBindings) ?_ ?_ (.nil commBindings) ?_⟩
+  · exact Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefAdequacy.rhoCommRewrite_mem
+  · rw [Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefAdequacy.matchPatternForRule_rhoComm]
     simp [commPredSourceGeneric, zeroPat,
-      matchPattern, matchBag, matchArgs, mergeBindings]
-  -- Goal 3: commBindings ∈ applyPremisesWithEnv ... commRule.premises commBindings
-  --   COMM has no premises, so foldl on [] returns [seed]
-  · show commBindings ∈ [commBindings]
-    exact List.Mem.head _
-  -- Goal 4: applyBindings commBindings commRule.right = commPredTarget
-  · show applyBindings
+      rhoCommRewrite, matchPatternWith, matchBagWith, matchArgsWith,
+      mergeBindingsWith, rhoCanonicalEquivalent,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalEquivalent,
+      commBindings]
+  · show applyBindingsForRule rhoCalc rhoCommRewrite
       [("q", zeroPat), ("rest", Pattern.collection .hashBag [] none),
-       ("p", Pattern.bvar 0), ("n", channel)]
-      (.collection .hashBag [
-        .subst (.fvar "p") (.apply "NQuote" [.fvar "q"])
-      ] (some "rest")) = commPredTarget
-    simp [commPredTarget, zeroPat, applyBindings, openBVar]
+       ("p", Pattern.bvar 0), ("n", channel)] = commPredTarget
+    rw [applyBindingsForRule,
+      Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefAdequacy.rhoComm_declaration_selected]
+    simp [rhoCommRewrite, commPredTarget, zeroPat, applyBindingsReflective,
+      applyBindingsReflectiveList, normalizeReflectiveReplacement,
+      substituteReflective, normalizeReflective, normalizeReflectiveList,
+      finishNormalizeReflectiveApply, rhoReflectivePresentation]
 
 theorem commPredSource_langReduces (n : Nat) :
     langReduces rhoCalc (commPredSource n) commPredTarget :=

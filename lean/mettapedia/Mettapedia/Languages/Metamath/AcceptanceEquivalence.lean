@@ -188,10 +188,10 @@ theorem languageDefTraceWitness_iff_specAccepts
   · intro hSpec
     exact specAccepts_to_languageDefTraceWitness bytes label f hSuccess hSpec
 
-/-- Engine-facing trace compatibility: each token has an engine-labeled
-top-level rewrite witness (Simulation layer, line 202 boundary). -/
+/-- Trace compatibility: each token has a labeled authored root-step witness
+in the LanguageDef simulation layer. -/
 def EngineTokenLift (step : String) : Prop :=
-  ∃ p q, EngineLabeledTopStep p q step
+  ∃ p q, LabeledRootStep p q step
 
 def EngineTraceCompatible (proof : Array String) : Prop :=
   ∀ step ∈ proof.toList, EngineTokenLift step
@@ -220,9 +220,8 @@ theorem engineBackedTraceWitness_to_specAccepts
   exact languageDefTraceWitness_to_specAccepts
     bytes label f ⟨proof, prFinal, f', hNoErr, hAuthored, hFold, hSize, hTop, hExpr⟩
 
-/-- Stronger trace witness that pins proof tokens to a concrete
-engine-labeled `DeclReducesWithPremises` path (Simulation layer), not only
-wrapper stepping. -/
+/-- Stronger trace witness that pins proof tokens to a concrete path in the
+least authored LanguageDef reduction relation, not only wrapper stepping. -/
 def RuntimeTokenMatchesEngineLabel (tok engineLabel : String) : Prop :=
   tok = engineLabel
 

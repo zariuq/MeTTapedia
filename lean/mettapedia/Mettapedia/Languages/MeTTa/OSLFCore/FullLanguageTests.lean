@@ -15,6 +15,7 @@ the Lean kernel (no `trustCompiler` axiom, unlike `native_decide`).
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Engine
+open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open Mettapedia.Languages.MeTTa.OSLFCore.FullLanguageDef
 
 namespace Mettapedia.Languages.MeTTa.OSLFCore.FullLanguageTests
@@ -33,12 +34,12 @@ set_option maxHeartbeats 800000 in
     Kernel-checked: `decide +kernel` uses the Lean kernel for reduction
     (no `trustCompiler` axiom), unlike `native_decide` which bypasses kernel checking. -/
 theorem coded_string_concat_normalForm_shape :
-    fullRewriteToNormalFormWithPremisesUsing mettaFullRelEnv mettaFull
+    normalizeFirstUsing mettaFullRelEnv mettaFull 1 8
       (mkState
         (iGrounded2 (.apply "concat" [])
           (gStringCodes ["104", "105", "32"])
           (gStringCodes ["116", "104", "101", "114", "101"]))
-        space0 aFalse) 8
+        space0 aFalse)
     =
       .apply "State"
         [ .apply "Done" []

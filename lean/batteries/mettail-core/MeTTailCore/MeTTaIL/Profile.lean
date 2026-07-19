@@ -1,9 +1,10 @@
-import MeTTailCore.MeTTaIL.Engine
+import MeTTailCore.MeTTaIL.ContextualStep
 
 namespace MeTTailCore.MeTTaIL.Profile
 
 open MeTTailCore.MeTTaIL.Syntax
 open MeTTailCore.MeTTaIL.Engine
+open MeTTailCore.MeTTaIL.ContextualStep
 
 abbrev BuiltinRelation :=
   String → List Pattern → List (List Pattern)
@@ -21,6 +22,7 @@ end BuiltinTable
 
 structure RuntimePolicy where
   maxFuel : Nat := 1000
+  maxContextDepth : Nat := 64
   normalizeToFixedPoint : Bool := true
 deriving Repr, DecidableEq
 
@@ -38,21 +40,23 @@ def effectiveRelationEnv (bundle : SpecBundle) : RelationEnv :=
 def rewriteStep (bundle : SpecBundle) (term : Pattern) : List Pattern :=
   rewriteStepWithPremisesUsing (effectiveRelationEnv bundle) bundle.language term
 
-def rewriteWithContext (bundle : SpecBundle) (term : Pattern) : List Pattern :=
-  rewriteWithContextWithPremisesUsing (effectiveRelationEnv bundle) bundle.language term
+def contextualReducts (bundle : SpecBundle) (term : Pattern) : List Pattern :=
+  reductsUsing (effectiveRelationEnv bundle) bundle.language
+    bundle.policy.maxContextDepth term
 
 def normalize (bundle : SpecBundle) (term : Pattern) : Pattern :=
-  fullRewriteToNormalFormWithPremisesUsing
+  normalizeFirstUsing
     (effectiveRelationEnv bundle)
     bundle.language
-    term
+    bundle.policy.maxContextDepth
     bundle.policy.maxFuel
+    term
 
 def eval (bundle : SpecBundle) (term : Pattern) : List Pattern :=
   if bundle.policy.normalizeToFixedPoint then
     [normalize bundle term]
   else
-    rewriteWithContext bundle term
+    contextualReducts bundle term
 
 end SpecBundle
 

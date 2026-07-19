@@ -1,4 +1,5 @@
 import Mettapedia.OSLF.MeTTaIL.Syntax
+import Mettapedia.OSLF.MeTTaIL.DerivedContexts
 
 /-!
 # Optimization Contract Manifest
@@ -26,6 +27,7 @@ build.rs / CI                      ← Rust consumes at build time
 namespace Mettapedia.OSLF.MeTTaIL.OptManifest
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
+open Mettapedia.OSLF.MeTTaIL.DerivedContexts
 
 /-! ## §1: Manifest Types -/
 
@@ -65,7 +67,7 @@ structure OptContractManifest where
   language : String
   contracts : List OptContract
   specializationPairs : List SpecPair
-  congruencePolicy : List String
+  authoredContextRuleNames : List String
 deriving Repr
 
 /-! ## §2: Universal Contracts
@@ -102,19 +104,19 @@ def universalContracts : List OptContract :=
       name := "Rule Specialization"
       leanTheorem := "Mettapedia.OSLF.Framework.OptimizationTheorems.specialization_preserves_reduction"
       backend := .anyRelEnv
-      precondition := .compileTime "lang₁.rewrites ⊆ lang₂.rewrites ∧ congruenceCollections match"
+      precondition := .compileTime "lang₁.rewrites ⊆ lang₂.rewrites"
       description := "Lift reductions from sub-language to super-language" }
   , { id := "diamond_mono"
       name := "Diamond Monotonicity"
       leanTheorem := "Mettapedia.OSLF.Framework.OptimizationTheorems.diamond_mono_rules"
       backend := .anyRelEnv
-      precondition := .compileTime "lang₁.rewrites ⊆ lang₂.rewrites ∧ congruenceCollections match"
+      precondition := .compileTime "lang₁.rewrites ⊆ lang₂.rewrites"
       description := "Lift ◇-witnesses from weaker to stronger language" }
   , { id := "box_contravariance"
       name := "Box Contravariance"
       leanTheorem := "Mettapedia.OSLF.Framework.OptimizationTheorems.box_contra_rules"
       backend := .anyRelEnv
-      precondition := .compileTime "lang₁.rewrites ⊆ lang₂.rewrites ∧ congruenceCollections match"
+      precondition := .compileTime "lang₁.rewrites ⊆ lang₂.rewrites"
       description := "Weaken □-guarantees when moving to stronger language" }
   , { id := "substitution_reduction_fusion"
       name := "Substitution-Reduction Fusion"
@@ -132,18 +134,14 @@ def universalContracts : List OptContract :=
 
 /-! ## §3: Per-Language Manifest Builder -/
 
-private def renderCollType : CollType → String
-  | .vec => "Vec"
-  | .hashBag => "HashBag"
-  | .hashSet => "HashSet"
-
 /-- Build an optimization manifest for a given language definition. -/
 def manifestFor (lang : LanguageDef)
     (specializationPairs : List SpecPair := []) : OptContractManifest :=
   { language := lang.name
     contracts := universalContracts
     specializationPairs := specializationPairs
-    congruencePolicy := lang.congruenceCollections.map renderCollType }
+    authoredContextRuleNames := lang.rewrites.filterMap fun rule =>
+      if (compileRuleContexts rule).isEmpty then none else some rule.name }
 
 /-! ## §4: JSON Renderer -/
 
@@ -197,12 +195,13 @@ private def jsonArray (items : List String) : String :=
 def renderManifestJSON (m : OptContractManifest) : String :=
   let contractItems := m.contracts.map renderContract
   let specItems := m.specializationPairs.map renderSpecPair
-  let policyItems := m.congruencePolicy.map jsonStr
+  let contextItems := m.authoredContextRuleNames.map jsonStr
   "{\n" ++
   jsonField "  " "language" (jsonStr m.language) ++ ",\n" ++
   jsonField "  " "contracts" (jsonArray contractItems) ++ ",\n" ++
   jsonField "  " "specialization_pairs" (jsonArray specItems) ++ ",\n" ++
-  jsonField "  " "congruence_policy" ("[" ++ String.intercalate ", " policyItems ++ "]") ++ "\n" ++
+  jsonField "  " "authored_context_rule_names"
+    ("[" ++ String.intercalate ", " contextItems ++ "]") ++ "\n" ++
   "}"
 
 end Mettapedia.OSLF.MeTTaIL.OptManifest

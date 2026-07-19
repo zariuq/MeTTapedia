@@ -5,7 +5,7 @@ import Mettapedia.PLN.Bridges.Languages.WorldModel.PLNWorldModelHERuntimeBridge
 
 Provides the first concrete inhabitant of `HEJudgmentWMInterface`:
 given any encoding `encode : Pattern → Query` and any `BinaryWorldModel` instance,
-the bridge holds under the side condition that HE declarative reduction steps
+the bridge holds under the side condition that authored HE language steps
 are strength-monotone.
 
 The side condition `HEStepMonotone` cleanly separates:
@@ -24,8 +24,6 @@ open Mettapedia.Languages.MeTTa.RuntimeSpec
 open Mettapedia.Languages.MeTTa.HE
 open Mettapedia.Languages.MeTTa.HE.LanguageDef
 open Mettapedia.OSLF.MeTTaIL.Syntax
-open Mettapedia.OSLF.MeTTaIL.Match
-open Mettapedia.OSLF.MeTTaIL.MatchSpec
 
 /-! ## Concrete pointwise interpretation
 
@@ -68,47 +66,20 @@ instance : BinaryWorldModel HERuntimeEvidenceState Pattern where
 
 /-! ## Monotonicity Predicates -/
 
-/-- A world model state satisfies step-monotonicity for HE when every
-    `DeclReducesRel mettaHE` step does not decrease query strength.
+/-- A world model state satisfies step-monotonicity for HE when every authored
+    `HELanguageStep` does not decrease query strength.
 
     This is the specification target for future WM-specific verification. -/
 def HEStepMonotone
     (State Query : Type*) [EvidenceType State] [BinaryWorldModel State Query]
     (encode : Pattern → Query) (W : State) : Prop :=
-  ∀ {p q : Pattern}, DeclReducesRel mettaHE p q →
+  ∀ {p q : Pattern}, HELanguageStep p q →
     BinaryWorldModel.queryStrength (State := State) (Query := Query) W (encode p) ≤
       BinaryWorldModel.queryStrength (State := State) (Query := Query) W (encode q)
-
-/-- Sufficient condition restricted to the `topRule` constructor:
-    top-level rule application is strength-monotone. -/
-def HETopRuleMonotone
-    (State Query : Type*) [EvidenceType State] [BinaryWorldModel State Query]
-    (encode : Pattern → Query) (W : State) : Prop :=
-  ∀ (r : RewriteRule) (bs : Mettapedia.OSLF.MeTTaIL.Match.Bindings) (p q : Pattern),
-    r ∈ mettaHE.rewrites → r.premises = [] →
-    MatchRel r.left p bs → applyBindings bs r.right = q →
-    BinaryWorldModel.queryStrength (State := State) (Query := Query) W (encode p) ≤
-      BinaryWorldModel.queryStrength (State := State) (Query := Query) W (encode q)
-
-/-- Sufficient condition for the `congElem` constructor:
-    congruence reduction inside a collection element is strength-monotone. -/
-def HECongElemMonotone
-    (State Query : Type*) [EvidenceType State] [BinaryWorldModel State Query]
-    (encode : Pattern → Query) (W : State) : Prop :=
-  ∀ {elems : List Pattern} {ct : CollType} {rest : Option String}
-    (_hct : LanguageDef.allowsCongruenceIn mettaHE ct)
-    (i : Nat) (hi : i < elems.length)
-    (r : RewriteRule) (bs : Mettapedia.OSLF.MeTTaIL.Match.Bindings) {q' : Pattern},
-    r ∈ mettaHE.rewrites → r.premises = [] →
-    MatchRel r.left elems[i] bs → applyBindings bs r.right = q' →
-    BinaryWorldModel.queryStrength (State := State) (Query := Query) W
-      (encode (.collection ct elems rest)) ≤
-      BinaryWorldModel.queryStrength (State := State) (Query := Query) W
-        (encode (.collection ct (elems.set i q') rest))
 
 /-- Concrete monotonicity side condition for the pointwise HE runtime WM state. -/
 def HEPointwiseStepMonotone (W : HERuntimeEvidenceState) : Prop :=
-  ∀ {p q : Pattern}, DeclReducesRel mettaHE p q →
+  ∀ {p q : Pattern}, HELanguageStep p q →
     BinaryWorldModel.queryStrength (State := HERuntimeEvidenceState) (Query := Pattern) W p ≤
       BinaryWorldModel.queryStrength (State := HERuntimeEvidenceState) (Query := Pattern) W q
 
@@ -124,20 +95,6 @@ theorem flatHEPointwiseStepMonotone (e : BinaryEvidence) :
     HEPointwiseStepMonotone (flatHERuntimeEvidenceState e) := by
   intro p q _hstep
   simp [flatHERuntimeEvidenceState, he_pointwise_queryStrength]
-
-/-- Top-rule and congruence monotonicity together imply full step monotonicity. -/
-theorem topRule_and_cong_implies_stepMonotone
-    {State Query : Type*} [EvidenceType State] [BinaryWorldModel State Query]
-    {encode : Pattern → Query} {W : State}
-    (htop : HETopRuleMonotone State Query encode W)
-    (hcong : HECongElemMonotone State Query encode W) :
-    HEStepMonotone State Query encode W := by
-  intro p q hstep
-  cases hstep with
-  | topRule r hr hprem bs hmatch hq =>
-    exact htop r bs p q hr hprem hmatch hq
-  | congElem hct i hi r hr hprem bs hmatch hq =>
-    exact hcong hct i hi r bs hr hprem hmatch hq
 
 /-! ## Concrete Instance -/
 
@@ -163,7 +120,7 @@ def hePointwiseWMInterface :
 /-- The flat HE runtime WM state yields a concrete star-closure WM obligation. -/
 theorem flatHePointwiseStepStar_wmStrength
     {e : BinaryEvidence} {p q : Pattern}
-    (hstar : Relation.ReflTransGen (DeclReducesRel mettaHE) p q) :
+    (hstar : HELanguageStepStar p q) :
     WMStrengthObligation HERuntimeEvidenceState Pattern
       (flatHERuntimeEvidenceState e) p q :=
   hePointwiseWMInterface.toRuntimeJudgmentWMInterface.stepStar_sound
@@ -189,7 +146,7 @@ theorem heStepStar_wmStrength
     {encode : Pattern → Query}
     {W : State} {p q : Pattern}
     (hW : HEStepMonotone State Query encode W)
-    (hstar : Relation.ReflTransGen (DeclReducesRel mettaHE) p q) :
+    (hstar : HELanguageStepStar p q) :
     WMStrengthObligation State Query W (encode p) (encode q) :=
   (heWMInterface State Query encode).toRuntimeJudgmentWMInterface.stepStar_sound hW hstar
 
@@ -197,7 +154,7 @@ theorem heStepStar_wmStrength
 theorem hePointwiseStepStar_wmStrength
     {W : HERuntimeEvidenceState} {p q : Pattern}
     (hW : HEPointwiseStepMonotone W)
-    (hstar : Relation.ReflTransGen (DeclReducesRel mettaHE) p q) :
+    (hstar : HELanguageStepStar p q) :
     WMStrengthObligation HERuntimeEvidenceState Pattern W p q :=
   hePointwiseWMInterface.toRuntimeJudgmentWMInterface.stepStar_sound hW hstar
 
@@ -205,7 +162,7 @@ theorem hePointwiseStepStar_wmStrength
 def heStep_wmConsequenceRule
     {State Query : Type*} [EvidenceType State] [BinaryWorldModel State Query]
     {encode : Pattern → Query}
-    {p q : Pattern} (hstep : DeclReducesRel mettaHE p q) :
+    {p q : Pattern} (hstep : HELanguageStep p q) :
     WMConsequenceRuleOn State Query :=
   (heWMInterface State Query encode).toRuntimeJudgmentWMInterface.wmConsequenceRuleOn_of_step
     hstep
@@ -213,7 +170,7 @@ def heStep_wmConsequenceRule
 /-- A single HE step yields a WM consequence rule in the concrete pointwise
 interpretation. -/
 noncomputable def hePointwiseStep_wmConsequenceRule
-    {p q : Pattern} (hstep : DeclReducesRel mettaHE p q) :
+    {p q : Pattern} (hstep : HELanguageStep p q) :
     WMConsequenceRuleOn HERuntimeEvidenceState Pattern :=
   hePointwiseWMInterface.toRuntimeJudgmentWMInterface.wmConsequenceRuleOn_of_step hstep
 

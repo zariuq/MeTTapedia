@@ -3,8 +3,7 @@ import Mettapedia.OSLF.MeTTaIL.Semantics
 import Mettapedia.OSLF.MeTTaIL.Substitution
 import Mettapedia.OSLF.MeTTaIL.Match
 import Mettapedia.OSLF.MeTTaIL.Engine
-import Mettapedia.OSLF.MeTTaIL.DeclReduces
-import Mettapedia.OSLF.MeTTaIL.DeclReducesWithPremises
+import Mettapedia.OSLF.MeTTaIL.ContextualStep
 import Mettapedia.OSLF.MeTTaIL.MatchSpec
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Types
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Soundness
@@ -316,7 +315,10 @@ theorem coreMain_piRho_contract_projection_api
       Mettapedia.OSLF.Framework.KSUnificationSketch.OSLFObsEq S.rel I p q →
       Mettapedia.OSLF.Framework.KSUnificationSketch.Bisimilar S.rel p q)
     ∧
-    (∀ (I : Mettapedia.OSLF.Formula.AtomSem)
+    (∀ (_hImageFinite : ∀ p : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern,
+        Set.Finite {q : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern |
+          Mettapedia.OSLF.Framework.PiRhoCanonicalBridge.rhoCoreCanonicalRel p q})
+      (I : Mettapedia.OSLF.Formula.AtomSem)
       {p q : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern},
       Mettapedia.OSLF.Framework.KSUnificationSketch.OSLFObsEq
         Mettapedia.OSLF.Framework.PiRhoCanonicalBridge.rhoCoreCanonicalRel I p q →
@@ -869,12 +871,14 @@ theorem coreMain_theorem1_substitutability_imageFinite
     hImageFinite hPredFinite
 
 /-- CoreMain-facing canonical Theorem-1 equivalence endpoint on the default
-`langReduces` relation:
-the forward image-finite side is discharged concretely; only predecessor
-finiteness remains as an explicit assumption. -/
-theorem coreMain_theorem1_langReduces_imageFinite
+`langReduces` relation, under explicit finiteness of both the forward and
+predecessor images. -/
+theorem coreMain_theorem1_langReduces_of_finite
     (lang : Mettapedia.OSLF.MeTTaIL.Syntax.LanguageDef)
     (I : Mettapedia.OSLF.Formula.AtomSem)
+    (hImageFinite : ∀ p : Mettapedia.OSLF.Framework.Pat,
+      Set.Finite {q : Mettapedia.OSLF.Framework.Pat |
+        Mettapedia.OSLF.Framework.TypeSynthesis.langReduces lang p q})
     (hPredFinite : ∀ p : Mettapedia.OSLF.Framework.Pat,
       Set.Finite {q : Mettapedia.OSLF.Framework.Pat |
         Mettapedia.OSLF.Framework.TypeSynthesis.langReduces lang q p}) :
@@ -883,7 +887,7 @@ theorem coreMain_theorem1_langReduces_imageFinite
   exact coreMain_theorem1_substitutability_imageFinite
     (R := Mettapedia.OSLF.Framework.TypeSynthesis.langReduces lang)
     (I := I)
-    (hImageFinite := Mettapedia.OSLF.Framework.ImageFinite.imageFinite_langReduces lang)
+    hImageFinite
     hPredFinite
 
 /-- CoreMain-facing global-vs-scoped HM endpoint map for canonical π→ρ
@@ -897,6 +901,9 @@ relations.
 structure CoreMainHMEndpointMap : Prop where
   global_core :
     ∀ (I : Mettapedia.OSLF.Formula.AtomSem)
+      (_hImageFinite : ∀ p : Mettapedia.OSLF.Framework.Pat,
+        Set.Finite {q : Mettapedia.OSLF.Framework.Pat |
+          Mettapedia.OSLF.Framework.PiRhoCanonicalBridge.rhoCoreCanonicalRel p q})
       (_hPredFinite : ∀ p : Mettapedia.OSLF.Framework.Pat,
         Set.Finite {q : Mettapedia.OSLF.Framework.Pat |
           Mettapedia.OSLF.Framework.PiRhoCanonicalBridge.rhoCoreCanonicalRel q p})
@@ -908,6 +915,9 @@ structure CoreMainHMEndpointMap : Prop where
         Mettapedia.OSLF.Framework.PiRhoCanonicalBridge.rhoCoreCanonicalRel I p q
   global_derived :
     ∀ (I : Mettapedia.OSLF.Formula.AtomSem)
+      (_hImageFinite : ∀ p : Mettapedia.OSLF.Framework.Pat,
+        Set.Finite {q : Mettapedia.OSLF.Framework.Pat |
+          Mettapedia.OSLF.Framework.PiRhoCanonicalBridge.rhoDerivedCanonicalRel p q})
       (_hPredFinite : ∀ p : Mettapedia.OSLF.Framework.Pat,
         Set.Finite {q : Mettapedia.OSLF.Framework.Pat |
           Mettapedia.OSLF.Framework.PiRhoCanonicalBridge.rhoDerivedCanonicalRel q p})
@@ -946,12 +956,12 @@ the scoped SC-quotiented endpoint family for assumption-free iff theorems. -/
 theorem coreMain_hm_endpoint_recommendation_map :
     CoreMainHMEndpointMap := by
   refine ⟨?_, ?_, ?_, ?_⟩
-  · intro I hPredFinite p q
-    exact Mettapedia.OSLF.Framework.PiRhoCanonicalBridge.hm_iff_fullBisim_rhoCoreCanonicalRel
-      I hPredFinite p q
-  · intro I hPredFinite p q
-    exact Mettapedia.OSLF.Framework.PiRhoCanonicalBridge.hm_iff_fullBisim_rhoDerivedCanonicalRel
-      I hPredFinite p q
+  · intro I hImageFinite hPredFinite p q
+    exact Mettapedia.OSLF.Framework.PiRhoCanonicalBridge.hm_iff_fullBisim_rhoCoreCanonicalRel_of_finite
+      I hImageFinite hPredFinite p q
+  · intro I hImageFinite hPredFinite p q
+    exact Mettapedia.OSLF.Framework.PiRhoCanonicalBridge.hm_iff_fullBisim_rhoDerivedCanonicalRel_of_finite
+      I hImageFinite hPredFinite p q
   · intro I carrier p q
     exact Mettapedia.OSLF.Framework.PiRhoCanonicalBridge.hm_iff_fullBisim_rhoCoreCanonicalSCQuotRelOn
       I carrier p q
@@ -1016,13 +1026,16 @@ theorem coreMain_paper_parity_theorem_package
 relation `langReduces`:
 returns Theorem-1 equivalence on the canonical relation plus the existing
 fragment and TOGL composition endpoint fields. -/
-theorem coreMain_paper_parity_theorem_package_langReduces
+theorem coreMain_paper_parity_theorem_package_langReduces_of_finite
     (lang : Mettapedia.OSLF.MeTTaIL.Syntax.LanguageDef)
     (I : Mettapedia.OSLF.Formula.AtomSem)
     (A : Mettapedia.OSLF.NativeType.ScopedConstructorPred lang)
     (Frag : Mettapedia.OSLF.NativeType.ScopedConstructorPred lang → Prop)
     (hClosed : ∀ {X Y : Mettapedia.OSLF.NativeType.ScopedConstructorPred lang},
       Frag X → Mettapedia.OSLF.NativeType.ScopedReachable X Y → Frag Y)
+    (hImageFinite : ∀ p : Mettapedia.OSLF.Framework.Pat,
+      Set.Finite {q : Mettapedia.OSLF.Framework.Pat |
+        Mettapedia.OSLF.Framework.TypeSynthesis.langReduces lang p q})
     (hPredFinite : ∀ p : Mettapedia.OSLF.Framework.Pat,
       Set.Finite {q : Mettapedia.OSLF.Framework.Pat |
         Mettapedia.OSLF.Framework.TypeSynthesis.langReduces lang q p}) :
@@ -1067,7 +1080,7 @@ theorem coreMain_paper_parity_theorem_package_langReduces
     ⟨hContract, hFrag, hTogl⟩
   refine ⟨?_, hFrag, hTogl⟩
   exact hContract.imageFinite_iff
-    (Mettapedia.OSLF.Framework.ImageFinite.imageFinite_langReduces lang) hPredFinite
+    hImageFinite hPredFinite
 
 /-- Canonical CoreMain paper-parity contract record:
 packages the `langReduces` Theorem-1 endpoint, fragment-parametric full-route
@@ -1077,7 +1090,10 @@ structure CoreMainPaperParityCanonicalPackage
     (I : Mettapedia.OSLF.Formula.AtomSem)
     (A : Mettapedia.OSLF.NativeType.ScopedConstructorPred lang)
     (Frag : Mettapedia.OSLF.NativeType.ScopedConstructorPred lang → Prop) : Prop where
-  theorem1_langReduces_imageFinite :
+  theorem1_langReduces_of_finite :
+    (∀ p : Mettapedia.OSLF.Framework.Pat,
+      Set.Finite {q : Mettapedia.OSLF.Framework.Pat |
+        Mettapedia.OSLF.Framework.TypeSynthesis.langReduces lang p q}) →
     (∀ p : Mettapedia.OSLF.Framework.Pat,
       Set.Finite {q : Mettapedia.OSLF.Framework.Pat |
         Mettapedia.OSLF.Framework.TypeSynthesis.langReduces lang q p}) →
@@ -1127,9 +1143,9 @@ theorem coreMain_paper_parity_canonical_package
       Frag X → Mettapedia.OSLF.NativeType.ScopedReachable X Y → Frag Y) :
     CoreMainPaperParityCanonicalPackage lang I A Frag := by
   refine ⟨?_, ?_, ?_⟩
-  · intro hPredFinite
-    exact coreMain_theorem1_langReduces_imageFinite
-      (lang := lang) (I := I) hPredFinite
+  · intro hImageFinite hPredFinite
+    exact coreMain_theorem1_langReduces_of_finite
+      (lang := lang) (I := I) hImageFinite hPredFinite
   · intro B C hA hAB hBC
     exact Mettapedia.OSLF.NativeType.full_presheaf_comparison_bundle_reachable_fragment
       (Frag := Frag) (hClosed := hClosed) (A := A) (B := B) (C := C) hA hAB hBC
@@ -1204,8 +1220,8 @@ theorem coreMain_paper_parity_full_package
 #check Mettapedia.OSLF.Framework.FULLStatus.strictRemainingCount_eq_zero
 #check Mettapedia.Languages.MeTTa.OSLFCore.FullLanguageDef.mettaFull
 #check Mettapedia.Languages.MeTTa.OSLFCore.FullLanguageDef.mettaFullOSLF
-#check Mettapedia.OSLF.Framework.ImageFinite.imageFinite_langReduces
-#check Mettapedia.OSLF.Framework.ImageFinite.hm_converse_langReduces
+#check Mettapedia.OSLF.Framework.ImageFinite.imageFinite_langReducesAtUsing
+#check Mettapedia.OSLF.Framework.ImageFinite.hm_converse_langReducesAtUsing
 #check @Mettapedia.OSLF.Framework.PiRhoCanonicalBridge.piRho_coreMain_canonical_contract_end_to_end
 #check @coreMain_piRho_canonical_contract
 #check @coreMain_piRho_contract_projection_api
@@ -1268,9 +1284,9 @@ theorem coreMain_paper_parity_full_package
 #check @coreMain_theorem1_canonical_contract
 #check @coreMain_theorem1_substitutability_forward
 #check @coreMain_theorem1_substitutability_imageFinite
-#check @coreMain_theorem1_langReduces_imageFinite
+#check @coreMain_theorem1_langReduces_of_finite
 #check @coreMain_paper_parity_theorem_package
-#check @coreMain_paper_parity_theorem_package_langReduces
+#check @coreMain_paper_parity_theorem_package_langReduces_of_finite
 #check @Mettapedia.OSLF.CoreMainPaperParityCanonicalPackage
 #check @Mettapedia.OSLF.coreMain_paper_parity_canonical_package
 -- Category LambdaTheory (Thm 23 upgrade)

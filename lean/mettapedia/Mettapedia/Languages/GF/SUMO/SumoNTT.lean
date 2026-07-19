@@ -47,6 +47,7 @@ open Mettapedia.Languages.GF.SUMO.SumoAbstract
 open Mettapedia.Languages.GF.SUMO.SumoOSLFBridge
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Engine
+open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open Mettapedia.OSLF.Framework.TypeSynthesis
 
 /-! ## FOET Classes (Strata 0-2)
@@ -130,8 +131,12 @@ def sumoHierarchyLangDef : LanguageDef :=
   , terms := (foetClasses.map liftRule)
            ++ (foetEdgesClosed.map fun ⟨c, p⟩ => coerceRule c p)
   , rewrites := foetEdgesClosed.map fun ⟨c, p⟩ => subclassRewrite c p
-  , equations := []
-  , congruenceCollections := [] }
+  , equations := [] }
+
+/-- Root reducts of the SUMO hierarchy language.  Its authored rules have no
+contextual premises, so one contextual layer is exact. -/
+private def sumoHierarchyRootReducts (term : Pattern) : List Pattern :=
+  rewriteAt (engineBasePremises RelationEnv.empty) sumoHierarchyLangDef 1 term
 
 /-! ## OSLF Pipeline (Automatic)
 
@@ -290,7 +295,7 @@ def canReach (concept target : String) : Bool :=
 
   -- Test 1: CognitiveAgent can reach Entity (long chain)
   let cogAgentTerm := Pattern.apply "lift_CognitiveAgent" [.fvar "alice"]
-  let reducts := rewriteWithContextWithPremises sumoHierarchyLangDef cogAgentTerm
+  let reducts := sumoHierarchyRootReducts cogAgentTerm
   IO.println s!"lift_CognitiveAgent(alice) has {reducts.length} one-step reducts"
   for r in reducts.take 5 do
     IO.println s!"  ⇝ {r}"
@@ -298,7 +303,7 @@ def canReach (concept target : String) : Bool :=
 
   -- Test 2: Process CANNOT reach Attribute (cross-branch)
   let processTerm := Pattern.apply "lift_Process" [.fvar "pain"]
-  let processReducts := rewriteWithContextWithPremises sumoHierarchyLangDef processTerm
+  let processReducts := sumoHierarchyRootReducts processTerm
   -- Use canReach instead of string matching
   IO.println s!"lift_Process(pain) can reach Attribute: {canReach "Process" "Attribute"}"
   IO.println s!"  (Process reducts count: {processReducts.length})"
@@ -308,7 +313,7 @@ def canReach (concept target : String) : Bool :=
 
   -- Test 3: Attribute CAN reach Abstract and Entity
   let attrTerm := Pattern.apply "lift_Attribute" [.fvar "pleasure"]
-  let attrReducts := rewriteWithContextWithPremises sumoHierarchyLangDef attrTerm
+  let attrReducts := sumoHierarchyRootReducts attrTerm
   IO.println s!"lift_Attribute(pleasure) reducts:"
   for r in attrReducts do
     IO.println s!"  ⇝ {r}"

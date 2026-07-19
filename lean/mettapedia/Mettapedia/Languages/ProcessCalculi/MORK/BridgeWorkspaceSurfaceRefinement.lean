@@ -1,6 +1,6 @@
-import Mettapedia.Languages.ProcessCalculi.MORK.CollectionBridge
-import Mettapedia.Languages.ProcessCalculi.MORK.ExecutionBoundary
+import Mettapedia.Languages.ProcessCalculi.MORK.AuthoredContextBridge
 import Mettapedia.Languages.ProcessCalculi.MORK.PathMapBridge
+import Mettapedia.Languages.ProcessCalculi.MORK.WorkQueueExec
 
 /-!
 # Bridge Workspace Surface Refinement
@@ -91,7 +91,7 @@ theorem liveRemoveAtom_eq_pathmap_subtract (s : LiveWorkspace) (a : Atom) :
 theorem liveMatchAtom_ground_mem (s : LiveWorkspace) (a : Atom)
     (hg : isGroundAtom a = true) (ha : a ∈ s) :
     ([], a) ∈ liveMatchAtom s a := by
-  simpa [liveMatchAtom] using matchOneInSpace_ground_mem [] a hg s ha
+  simpa [liveMatchAtom] using groundAtom_matchOneInSpace [] a hg s ha
 
 theorem liveMatchAtom_spec (s : LiveWorkspace) (pat : Atom) (σ' : Subst) (a : Atom)
     (h : (σ', a) ∈ liveMatchAtom s pat) :
@@ -121,7 +121,7 @@ theorem liveMatchPattern_ground_singleton_mem (s : LiveWorkspace) (a : Atom)
   simp only [matchPattern.go, Finset.sdiff_empty]
   rw [List.mem_flatMap]
   refine ⟨([], a), ?_, ?_⟩
-  · simpa [liveMatchAtom] using matchOneInSpace_ground_mem [] a hg s ha
+  · simpa [liveMatchAtom] using groundAtom_matchOneInSpace [] a hg s ha
   · simp
 
 theorem liveStep_eq_workQueueStep (s : LiveWorkspace) :

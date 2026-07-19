@@ -10,7 +10,7 @@ model** of a compiled LP knowledge base, closing the chain:
 ```
 matchPattern_correct (MatchSpec)
   ↓
-lp_complete_topRule (MeTTaILBridge)
+ruleApplication_mem_leastHerbrandModel (LPBridge)
   ↓
 petta_ruleApp_lp_sound (this file)
 ```
@@ -24,7 +24,7 @@ For the `ruleApp` case of `PeTTaEval`, the bridge works as follows:
 2. `matchPattern_correct` (proven in `MatchSpec.lean`) converts the algorithmic
    match evidence `bs ∈ matchPattern r.left p` into the semantic identity
    `applyBindings bs r.left = p`.
-3. `lp_complete_topRule` (proven in `MeTTaILBridge.lean`) then gives membership
+3. `ruleApplication_mem_leastHerbrandModel` (proven in `LPBridge.lean`) gives membership
    of `encodeReduces p q` in `leastHerbrandModel`.
 
 ## Fragment Restriction (`pettaRuleSafe`)
@@ -74,7 +74,6 @@ def pettaSpaceToLangDef (s : PeTTaSpace) : LanguageDef where
   terms                 := []
   equations             := []
   rewrites              := s.rules
-  congruenceCollections := []   -- no congruence descent for flat PeTTa rules
 
 /-- The LP `KnowledgeBase` compiled from a `PeTTaSpace`. -/
 def pettaSpaceToLPKB (s : PeTTaSpace) : KnowledgeBase mettailLPSig :=
@@ -117,7 +116,8 @@ theorem pettaRuleSafe_iff (r : RewriteRule) :
 
     **Proof chain**:
     - `matchPattern_correct hm hmc` (MatchSpec) → `applyBindings bs r.left = p`
-    - `lp_complete_topRule` (MeTTaILBridge) → `encodeReduces p q ∈ leastHerbrandModel`
+    - `ruleApplication_mem_leastHerbrandModel` (LPBridge) →
+      `encodeReduces p q ∈ leastHerbrandModel`
 
     **Preconditions of `PeTTaEval.ruleApp`** (brought in explicitly):
     - `hr`:    `r ∈ s.rules`
@@ -142,7 +142,8 @@ theorem petta_ruleApp_lp_sound (s : PeTTaSpace)
   -- r's clause is in the LP KB (rules are preserved by pettaSpaceToLangDef)
   have hr_mem : r ∈ (pettaSpaceToLangDef s).rewrites := hr
   -- Apply the LP completeness theorem
-  exact lp_complete_topRule r hr_mem hprem hmt_l hmt_r bs hbs_lhs hq
+  exact ruleApplication_mem_leastHerbrandModel
+    r hr_mem hprem hmt_l hmt_r bs hbs_lhs hq
 
 /-! ## PeTTaEval Corollary -/
 
@@ -192,8 +193,9 @@ private theorem T_P_LP_subset_addRule (s : PeTTaSpace) (r : RewriteRule) (I : Se
   · exact Or.inl hdb
   · refine Or.inr ⟨c, g, ?_, hhead, hbody⟩
     simp only [pettaSpaceToLPKB, pettaSpaceToLangDef, languageDefToLPKB,
-               PeTTaSpace.addRule] at hc ⊢
-    exact List.mem_cons_of_mem _ hc
+      PeTTaSpace.addRule, List.mem_map] at hc ⊢
+    obtain ⟨sourceRule, sourceMember, rfl⟩ := hc
+    exact ⟨sourceRule, List.mem_cons_of_mem r sourceMember, rfl⟩
 
 /-- Adding a rule to a space preserves LP model membership (the model only grows). -/
 theorem pettaSpaceToLPKB_addRule_mono (s : PeTTaSpace) (r : RewriteRule)
@@ -214,8 +216,7 @@ theorem pettaSpaceToLPKB_addRule_mono (s : PeTTaSpace) (r : RewriteRule)
 theorem pettaSpaceToLPKB_empty :
     pettaSpaceToLPKB PeTTaSpace.empty =
     { prog := [], db := ∅ } := by
-  simp [pettaSpaceToLPKB, pettaSpaceToLangDef, languageDefToLPKB, PeTTaSpace.empty,
-        congruenceClauses]
+  rfl
 
 /-! ## Summary
 
@@ -246,7 +247,7 @@ theorem pettaSpaceToLPKB_empty :
 ```
 matchPattern_correct (MatchSpec)
   ↓
-lp_complete_topRule (MeTTaILBridge)
+ruleApplication_mem_leastHerbrandModel (LPBridge)
   ↓
 petta_ruleApp_lp_sound (this file)
 ```

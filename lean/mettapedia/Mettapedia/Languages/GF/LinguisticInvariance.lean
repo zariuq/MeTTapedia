@@ -299,39 +299,99 @@ theorem montague_thesis (tree : AbstractNode) (φ : Pattern → Prop) :
 /-! ### OSLF-Level Cross-Lingual Invariance
 
 English and Czech do not share literally identical `LanguageDef` records:
-the `name` field differs. The operational fields used by OSLF (equations,
-rewrites, congruence policy) are the same, so reduction and modal semantics
-coincide extensionally.
+the `name` field differs. Their equations and authored rewrite rules are the
+same, so their derived contexts, reduction, and modal semantics coincide
+extensionally.
 -/
 
 theorem english_czech_operational_fields_eq :
     englishGFLanguageDef.equations = czechGFLanguageDef.equations ∧
-    englishGFLanguageDef.rewrites = czechGFLanguageDef.rewrites ∧
-    englishGFLanguageDef.congruenceCollections =
-      czechGFLanguageDef.congruenceCollections := by
-  simp [englishGFLanguageDef, czechGFLanguageDef, gfLegacySemanticLanguageDef]
+    englishGFLanguageDef.rewrites = czechGFLanguageDef.rewrites := by
+  exact ⟨rfl, rfl⟩
+
+private theorem gf_rule_premises_eq_nil
+    (lang : LanguageDef)
+    (rewritesEq : lang.rewrites = allIdentityRewrites ++ allSemanticRewrites)
+    (rule : RewriteRule) (ruleMember : rule ∈ lang.rewrites) :
+    rule.premises = [] := by
+  rw [rewritesEq] at ruleMember
+  rcases List.mem_append.mp ruleMember with identityMember | semanticMember
+  · simp only [allIdentityRewrites, List.mem_cons, List.not_mem_nil,
+      or_false] at identityMember
+    rcases identityMember with h | h | h | h | h | h <;>
+      subst rule <;>
+      rfl
+  · rw [allSemanticRewrites] at semanticMember
+    rcases List.mem_append.mp semanticMember with activeMember | tenseMember
+    · simp only [List.mem_cons, List.not_mem_nil, or_false] at activeMember
+      subst rule
+      rfl
+    · simp only [allTenseRewrites, List.mem_cons, List.not_mem_nil,
+        or_false] at tenseMember
+      rcases tenseMember with h | h | h <;>
+        subst rule <;>
+        rfl
+
+private theorem gf_rewrites_noncontextual
+    (lang : LanguageDef)
+    (rewritesEq : lang.rewrites = allIdentityRewrites ++ allSemanticRewrites)
+    (rule : RewriteRule) (ruleMember : rule ∈ lang.rewrites) :
+    Mettapedia.OSLF.MeTTaIL.ContextualStep.NoncontextualPremises
+      rule.premises := by
+  rw [gf_rule_premises_eq_nil lang rewritesEq rule ruleMember]
+  exact .nil
 
 theorem english_czech_reduces_iff (p q : Pattern) :
     langReduces englishGFLanguageDef p q ↔
     langReduces czechGFLanguageDef p q := by
-  change langReducesUsing Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv.empty
+  change Mettapedia.OSLF.MeTTaIL.ContextualStep.Step
+      (Mettapedia.OSLF.MeTTaIL.ContextualStep.engineBasePremises
+        Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv.empty)
       englishGFLanguageDef p q ↔
-    langReducesUsing Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv.empty
+    Mettapedia.OSLF.MeTTaIL.ContextualStep.Step
+      (Mettapedia.OSLF.MeTTaIL.ContextualStep.engineBasePremises
+        Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv.empty)
       czechGFLanguageDef p q
-  rw [langReducesUsing_iff_execUsing
-      (relEnv := Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv.empty)
-      (lang := englishGFLanguageDef) (p := p) (q := q)]
-  rw [langReducesUsing_iff_execUsing
-      (relEnv := Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv.empty)
-      (lang := czechGFLanguageDef) (p := p) (q := q)]
-  have hEq :
-      Mettapedia.OSLF.MeTTaIL.Engine.rewriteWithContextWithPremisesUsing
-          Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv.empty englishGFLanguageDef p =
-        Mettapedia.OSLF.MeTTaIL.Engine.rewriteWithContextWithPremisesUsing
-          Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv.empty czechGFLanguageDef p := by
-    rfl
-  exact Iff.of_eq (by
-    simpa [langReducesExecUsing] using congrArg (fun xs => q ∈ xs) hEq)
+  rw [Mettapedia.OSLF.MeTTaIL.ContextualStep.step_iff_rootStep_of_noncontextualRules
+      (rulesNoncontextual := gf_rewrites_noncontextual englishGFLanguageDef rfl),
+    Mettapedia.OSLF.MeTTaIL.ContextualStep.step_iff_rootStep_of_noncontextualRules
+      (rulesNoncontextual := gf_rewrites_noncontextual czechGFLanguageDef rfl)]
+  have samePresentations :
+      englishGFLanguageDef.reflectivePresentations =
+        czechGFLanguageDef.reflectivePresentations := rfl
+  constructor
+  · rintro ⟨rule, ruleMember, initialBindings, matched,
+      finalBindings, premises, targetEq⟩
+    have ruleMember' : rule ∈ czechGFLanguageDef.rewrites := by
+      simpa [englishGFLanguageDef, czechGFLanguageDef,
+        gfLegacySemanticLanguageDef] using ruleMember
+    have premisesNil := gf_rule_premises_eq_nil englishGFLanguageDef rfl
+      rule ruleMember
+    refine ⟨rule, ruleMember', initialBindings, ?_, finalBindings, ?_, ?_⟩
+    · simpa only [
+        Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule_eq_of_presentations_eq
+          samePresentations] using matched
+    · simpa [premisesNil, Mettapedia.OSLF.MeTTaIL.Engine.applyPremisesWithEnv]
+        using premises
+    · simpa only [
+        Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule_eq_of_presentations_eq
+          samePresentations] using targetEq
+  · rintro ⟨rule, ruleMember, initialBindings, matched,
+      finalBindings, premises, targetEq⟩
+    have ruleMember' : rule ∈ englishGFLanguageDef.rewrites := by
+      simpa [englishGFLanguageDef, czechGFLanguageDef,
+        gfLegacySemanticLanguageDef] using ruleMember
+    have premisesNil := gf_rule_premises_eq_nil czechGFLanguageDef rfl
+      rule ruleMember
+    refine ⟨rule, ruleMember', initialBindings, ?_, finalBindings, ?_, ?_⟩
+    · simpa only [
+        Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule_eq_of_presentations_eq
+          samePresentations.symm] using matched
+    · simpa [premisesNil, Mettapedia.OSLF.MeTTaIL.Engine.applyPremisesWithEnv]
+        using premises
+    · simpa only [
+        Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule_eq_of_presentations_eq
+          samePresentations.symm] using targetEq
 
 theorem english_czech_diamond_eq (φ : Pattern → Prop) :
     langDiamond englishGFLanguageDef φ =

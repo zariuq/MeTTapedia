@@ -383,7 +383,6 @@ def metamathCore : LanguageDef :=
     }
     logic { }
     oracles { }
-    congruenceCollections { }
   }
 
 abbrev metamathLanguageDef : LanguageDef := metamathCore

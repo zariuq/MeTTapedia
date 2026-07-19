@@ -123,11 +123,6 @@ theorem pettaOSLF_eq (s : PeTTaSpace) :
 theorem pettaLangDef_name (s : PeTTaSpace) :
     (pettaSpaceToLangDef s).name = "PeTTaSpace" := rfl
 
-/-- The PeTTa language has no congruence collections (flat rules only). -/
-@[simp]
-theorem pettaLangDef_congruenceCollections (s : PeTTaSpace) :
-    (pettaSpaceToLangDef s).congruenceCollections = [] := rfl
-
 /-! ## §6 Summary
 
 **0 sorries. 0 axioms.**

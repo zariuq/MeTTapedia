@@ -34,7 +34,6 @@ namespace Mettapedia.OSLF.Framework.ReversibilityEnvelope
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Match
-open Mettapedia.OSLF.MeTTaIL.DeclReducesPremises
 open Mettapedia.OSLF.Framework.TypeSynthesis
 
 /-! ## Traces and Extended Terms -/

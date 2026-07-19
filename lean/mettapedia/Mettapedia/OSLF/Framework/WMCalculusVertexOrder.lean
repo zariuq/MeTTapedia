@@ -23,7 +23,6 @@ namespace Mettapedia.OSLF.Framework.WMCalculusVertexOrder
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Engine
-open Mettapedia.OSLF.MeTTaIL.DeclReducesPremises
 open Mettapedia.OSLF.Framework.TypeSynthesis
 open Mettapedia.OSLF.Framework.WMCalculusLanguageDef
 open Mettapedia.OSLF.Framework.WMCalculusContextClosure
@@ -145,7 +144,7 @@ theorem wmLangReduces_mono_fullVertex {v w : WMFullVertex} (h : v ≤ w)
     (hred : langReduces (wmFullVertexLanguageDef w) p q) :
     langReduces (wmFullVertexLanguageDef v) p q := by
   unfold langReduces langReducesUsing at hred ⊢
-  exact declReduces_mono (wmFullVertexRules_subset_of_le h) rfl hred
+  exact contextualStep_mono_rules (wmFullVertexRules_subset_of_le h) rfl hred
 
 /-- Multi-step reduction is monotone along the WM full vertex weakness order. -/
 theorem wmLangReducesStar_mono_fullVertex {v w : WMFullVertex} (h : v ≤ w)
@@ -162,7 +161,7 @@ theorem wmLangReduces_mono_extVertex {v w : WMExtVertex} (h : v ≤ w)
     (hred : langReduces (wmExtVertexLanguageDef w) p q) :
     langReduces (wmExtVertexLanguageDef v) p q := by
   unfold langReduces langReducesUsing at hred ⊢
-  exact declReduces_mono (wmExtVertexRules_subset_of_le h) rfl hred
+  exact contextualStep_mono_rules (wmExtVertexRules_subset_of_le h) rfl hred
 
 /-- Multi-step reduction monotonicity for 6-axis vertex. -/
 theorem wmLangReducesStar_mono_extVertex {v w : WMExtVertex} (h : v ≤ w)
@@ -219,18 +218,28 @@ theorem wm_ext_forward_transport {v w : WMExtVertex} (h : v ≤ w)
 
 /-- The maximal full vertex (36 rules) is the bottom of the weakness order. -/
 theorem wmFullVertexMaximal_le (w : WMFullVertex) : wmFullVertexMaximal ≤ w := by
-  simp only [LE.le, wmFullVertexMaximal]
-  refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;> (cases w; rename_i _ o f p fp co con e k ca) <;>
-    first | (cases o <;> trivial) | (cases f <;> trivial) | (cases p <;> trivial) |
-            (cases fp <;> trivial) | (cases co <;> trivial) | (cases con <;> trivial) |
-            (cases e <;> trivial) | (cases k <;> trivial) | (cases ca <;> trivial)
+  refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · cases w.overlap <;> trivial
+  · cases w.forgetting <;> trivial
+  · cases w.provenance <;> trivial
+  · cases w.fixpoint <;> trivial
+  · cases w.cost <;> trivial
+  · cases w.conservation <;> trivial
+  · cases w.experiment <;> trivial
+  · cases w.kripke <;> trivial
+  · cases w.carrier <;> trivial
 
 /-- The minimal full vertex (5 rules, core only) is the top of the weakness order. -/
 theorem wmFullVertex_le_minimal (v : WMFullVertex) : v ≤ wmFullVertexMinimal := by
-  simp only [LE.le, wmFullVertexMinimal]
-  refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩ <;> (cases v; rename_i _ o f p fp co con e k ca) <;>
-    first | (cases o <;> trivial) | (cases f <;> trivial) | (cases p <;> trivial) |
-            (cases fp <;> trivial) | (cases co <;> trivial) | (cases con <;> trivial) |
-            (cases e <;> trivial) | (cases k <;> trivial) | (cases ca <;> trivial)
+  refine ⟨?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_, ?_⟩
+  · cases v.overlap <;> trivial
+  · cases v.forgetting <;> trivial
+  · cases v.provenance <;> trivial
+  · cases v.fixpoint <;> trivial
+  · cases v.cost <;> trivial
+  · cases v.conservation <;> trivial
+  · cases v.experiment <;> trivial
+  · cases v.kripke <;> trivial
+  · cases v.carrier <;> trivial
 
 end Mettapedia.OSLF.Framework.WMCalculusVertexOrder

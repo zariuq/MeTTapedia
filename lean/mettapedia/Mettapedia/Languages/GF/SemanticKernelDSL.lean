@@ -119,7 +119,6 @@ def gfSemanticKernelLanguageDef : LanguageDef :=
     }
     logic { }
     oracles { }
-    congruenceCollections { }
   }
 
 private def equationAt (i : Nat) (h : i < gfSemanticKernelLanguageDef.equations.length) : Equation :=

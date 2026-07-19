@@ -448,7 +448,7 @@ to the left argument via `ruleCombineCongLeft`. -/
 open Mettapedia.OSLF.Framework.WMCalculusContextClosure
 open Mettapedia.OSLF.MeTTaIL.Engine
 open Mettapedia.OSLF.MeTTaIL.Match
-open Mettapedia.OSLF.MeTTaIL.DeclReducesPremises
+open Mettapedia.OSLF.MeTTaIL.ContextualStep
 
 /-- BinaryEvidence-add fires in the cong-extended calculus (lifting raw step). -/
 theorem wmCongLangReduces_evidenceAdd (v : WMExtVertex) (pw₁ pw₂ pq : Pattern) :
@@ -457,32 +457,9 @@ theorem wmCongLangReduces_evidenceAdd (v : WMExtVertex) (pw₁ pw₂ pq : Patter
       (pCombine (pExtract pw₁ pq) (pExtract pw₂ pq)) :=
   congReduces_of_rawReduces_ext v _ _ (wmLangReduces_evidenceAdd v pw₁ pw₂ pq)
 
-/-- BinaryEvidence-add produces a reduct in `rewriteWithContextNoPremises` of the
-    cong-extended calculus. This is the executable witness needed for
-    congruence premise satisfaction.
-
-    Key: `ruleEvidenceAdd` has `premises = []`, so `applyRule` fires and
-    places the result in `rewriteStep ⊆ rewriteWithContextNoPremises`. -/
-theorem evidenceAdd_mem_rewriteContextNoPremises (v : WMExtVertex)
-    (pw₁ pw₂ pq : Pattern) :
-    pCombine (pExtract pw₁ pq) (pExtract pw₂ pq) ∈
-      rewriteWithContextNoPremises (wmExtVertexLanguageDefWithCong v)
-        (pExtract (pRevise pw₁ pw₂) pq) := by
-  unfold rewriteWithContextNoPremises rewriteStepNoPremises rewriteStep
-  rw [List.mem_append]
-  left
-  rw [List.mem_flatMap]
-  refine ⟨ruleEvidenceAdd, ?_, ?_⟩
-  · -- ruleEvidenceAdd ∈ congLang.rewrites
-    exact coreRules_subset_congRules_ext v ruleEvidenceAdd (by simp [coreRules])
-  · -- target ∈ applyRule ruleEvidenceAdd (pExtract (pRevise pw₁ pw₂) pq)
-    simp [applyRule, ruleEvidenceAdd, matchPattern, matchArgs, mergeBindings,
-          pExtract, pRevise, pCombine, applyBindings]
-
 /-- Congruence on left Combine argument using `ruleCombineCongLeft`.
-    Given that evidence-add fires on `Extract(Revise(W₁,W₂), q)` (an
-    empty-premise rule), the congruence premise is satisfied via
-    `rewriteWithContextNoPremises`, and the combined term rewrites. -/
+    The authored contextual premise is discharged by the evidence-add step
+    in the same least contextual relation. -/
 theorem wmLangReduces_combineCongLeft_evidenceAdd (v : WMExtVertex)
     (pw₁ pw₂ pw₃ pq : Pattern) :
     langReduces (wmExtVertexLanguageDefWithCong v)
@@ -493,29 +470,30 @@ theorem wmLangReduces_combineCongLeft_evidenceAdd (v : WMExtVertex)
   let bs : Bindings := [("e1p", pCombine (pExtract pw₁ pq) (pExtract pw₂ pq)),
                          ("e2", pExtract pw₃ pq),
                          ("e1", pExtract (pRevise pw₁ pw₂) pq)]
-  refine DeclReducesWithPremises.topRule
-    (relEnv := RelationEnv.empty)
+  refine step_of_single_congruence_rule
     (lang := wmExtVertexLanguageDefWithCong v)
-    (r := ruleCombineCongLeft) ?hr bs0 ?hmatch bs ?hprem ?happly
+    (rule := ruleCombineCongLeft)
+    (initialBindings := bs0) (finalBindings := bs)
+    (premiseBindings :=
+      [("e1p", pCombine (pExtract pw₁ pq) (pExtract pw₂ pq))])
+    (premiseSource := .fvar "e1") (premiseTarget := .fvar "e1p")
+    (candidate := pCombine (pExtract pw₁ pq) (pExtract pw₂ pq))
+    ?hr ?hmatch rfl ?hrecursive ?hpremiseMatch ?hmerge ?happly
   · -- ruleCombineCongLeft ∈ congLang.rewrites
     simp only [wmExtVertexLanguageDefWithCong, List.mem_append]
     right; simp [coreCongruenceRules]
-  · -- bs0 ∈ matchPattern ruleCombineCongLeft.left (pCombine ...)
-    simp [bs0, ruleCombineCongLeft, pCombine, matchPattern, matchArgs, mergeBindings]
-  · -- bs ∈ applyPremisesWithEnv ∅ congLang [.congruence ...] bs0
-    simp only [bs, bs0, applyPremisesWithEnv, ruleCombineCongLeft,
-               List.foldl, List.flatMap_cons, List.flatMap_nil, List.append_nil]
-    simp only [premiseStepWithEnv]
-    simp only [applyBindings, List.find?, BEq.beq, decide_true]
-    -- After applying bindings to the congruence source, we get pExtract (pRevise pw₁ pw₂) pq
-    -- The candidates come from rewriteWithContextNoPremises
-    -- Now show bs is in the result of the congruence premise evaluation
-    rw [List.mem_flatMap]
-    refine ⟨pCombine (pExtract pw₁ pq) (pExtract pw₂ pq),
-            evidenceAdd_mem_rewriteContextNoPremises v pw₁ pw₂ pq, ?_⟩
-    simp [matchPattern, mergeBindings]
-  · -- applyBindings bs ruleCombineCongLeft.right = target
-    simp [bs, ruleCombineCongLeft, pCombine, applyBindings]
+  · -- bs0 matches the authored contextual rule.
+    simp [bs0, ruleCombineCongLeft, pCombine,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule,
+      matchPattern, matchArgs, mergeBindings]
+  · simpa [bs0, applyBindings, langReduces, langReducesUsing] using
+      (wmCongLangReduces_evidenceAdd v pw₁ pw₂ pq)
+  · simp [matchPattern]
+  · simp [bs, bs0, mergeBindings]
+  · -- Applying the rule contractum yields the contextual target.
+    simp [bs, ruleCombineCongLeft, pCombine,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule,
+      applyBindings]
 
 /-- Fully nested two-step chain:
     `Extract(Revise(Revise(W₁,W₂), W₃), q)` reduces in two steps to
@@ -540,21 +518,6 @@ theorem wmCongFullLangReduces_evidenceAdd (v : WMFullVertex) (pw₁ pw₂ pq : P
       (pCombine (pExtract pw₁ pq) (pExtract pw₂ pq)) :=
   congReduces_of_rawReduces_full v _ _ (wmFullLangReduces_evidenceAdd v pw₁ pw₂ pq)
 
-/-- Full-vertex: evidence-add in `rewriteWithContextNoPremises`. -/
-theorem full_evidenceAdd_mem_rewriteContextNoPremises (v : WMFullVertex)
-    (pw₁ pw₂ pq : Pattern) :
-    pCombine (pExtract pw₁ pq) (pExtract pw₂ pq) ∈
-      rewriteWithContextNoPremises (wmFullVertexLanguageDefWithCong v)
-        (pExtract (pRevise pw₁ pw₂) pq) := by
-  unfold rewriteWithContextNoPremises rewriteStepNoPremises rewriteStep
-  rw [List.mem_append]
-  left
-  rw [List.mem_flatMap]
-  refine ⟨ruleEvidenceAdd, ?_, ?_⟩
-  · exact coreRules_subset_congRules_full v ruleEvidenceAdd (by simp [coreRules])
-  · simp [applyRule, ruleEvidenceAdd, matchPattern, matchArgs, mergeBindings,
-          pExtract, pRevise, pCombine, applyBindings]
-
 /-- Full-vertex: congruence on left Combine via evidence-add. -/
 theorem wmFullLangReduces_combineCongLeft_evidenceAdd (v : WMFullVertex)
     (pw₁ pw₂ pw₃ pq : Pattern) :
@@ -566,22 +529,27 @@ theorem wmFullLangReduces_combineCongLeft_evidenceAdd (v : WMFullVertex)
   let bs : Bindings := [("e1p", pCombine (pExtract pw₁ pq) (pExtract pw₂ pq)),
                          ("e2", pExtract pw₃ pq),
                          ("e1", pExtract (pRevise pw₁ pw₂) pq)]
-  refine DeclReducesWithPremises.topRule
-    (relEnv := RelationEnv.empty)
+  refine step_of_single_congruence_rule
     (lang := wmFullVertexLanguageDefWithCong v)
-    (r := ruleCombineCongLeft) ?hr bs0 ?hmatch bs ?hprem ?happly
+    (rule := ruleCombineCongLeft)
+    (initialBindings := bs0) (finalBindings := bs)
+    (premiseBindings :=
+      [("e1p", pCombine (pExtract pw₁ pq) (pExtract pw₂ pq))])
+    (premiseSource := .fvar "e1") (premiseTarget := .fvar "e1p")
+    (candidate := pCombine (pExtract pw₁ pq) (pExtract pw₂ pq))
+    ?hr ?hmatch rfl ?hrecursive ?hpremiseMatch ?hmerge ?happly
   · simp only [wmFullVertexLanguageDefWithCong, List.mem_append]
     right; simp [allCongruenceRules, coreCongruenceRules]
-  · simp [bs0, ruleCombineCongLeft, pCombine, matchPattern, matchArgs, mergeBindings]
-  · simp only [bs, bs0, applyPremisesWithEnv, ruleCombineCongLeft,
-               List.foldl, List.flatMap_cons, List.flatMap_nil, List.append_nil]
-    simp only [premiseStepWithEnv]
-    simp only [applyBindings, List.find?, BEq.beq, decide_true]
-    rw [List.mem_flatMap]
-    refine ⟨pCombine (pExtract pw₁ pq) (pExtract pw₂ pq),
-            full_evidenceAdd_mem_rewriteContextNoPremises v pw₁ pw₂ pq, ?_⟩
-    simp [matchPattern, mergeBindings]
-  · simp [bs, ruleCombineCongLeft, pCombine, applyBindings]
+  · simp [bs0, ruleCombineCongLeft, pCombine,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule,
+      matchPattern, matchArgs, mergeBindings]
+  · simpa [bs0, applyBindings, langReduces, langReducesUsing] using
+      (wmCongFullLangReduces_evidenceAdd v pw₁ pw₂ pq)
+  · simp [matchPattern]
+  · simp [bs, bs0, mergeBindings]
+  · simp [bs, ruleCombineCongLeft, pCombine,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule,
+      applyBindings]
 
 /-- Full-vertex: fully nested two-step chain via context closure. -/
 theorem full_chain_evidence_add_fully_nested (v : WMFullVertex) (pw₁ pw₂ pw₃ pq : Pattern) :
@@ -601,31 +569,19 @@ theorem wmGuardedCongLangReduces_evidenceAdd (relEnv : RelationEnv)
       (pCombine (pExtract pw₁ pq) (pExtract pw₂ pq)) := by
   unfold langReducesUsing
   let bs : Bindings := [("q", pq), ("W2", pw₂), ("W1", pw₁)]
-  refine DeclReducesWithPremises.topRule
+  refine step_of_rule
     (relEnv := relEnv) (lang := wmExtVertexLanguageDefGuardedWithCong v)
-    (r := ruleEvidenceAdd)
-    ?hr bs ?hmatch bs ?hprem ?happly
+    (rule := ruleEvidenceAdd) (initialBindings := bs) (finalBindings := bs)
+    ?hr ?hmatch (by exact .nil) ?hprem ?happly
   · exact guardedRules_subset_guardedCongRules_ext v _
       (coreRules_subset_wmExtVertexGuarded v _ (by simp [coreRules]))
-  · simp [bs, ruleEvidenceAdd, pExtract, pRevise, matchPattern, matchArgs, mergeBindings]
+  · simp [bs, ruleEvidenceAdd, pExtract, pRevise,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule,
+      matchPattern, matchArgs, mergeBindings]
   · simp [bs, ruleEvidenceAdd, applyPremisesWithEnv]
-  · simp [bs, ruleEvidenceAdd, pExtract, pCombine, applyBindings]
-
-/-- Guarded+cong: evidence-add in `rewriteWithContextNoPremises`. -/
-theorem guardedCong_evidenceAdd_mem_rewriteContextNoPremises (v : WMExtVertex)
-    (pw₁ pw₂ pq : Pattern) :
-    pCombine (pExtract pw₁ pq) (pExtract pw₂ pq) ∈
-      rewriteWithContextNoPremises (wmExtVertexLanguageDefGuardedWithCong v)
-        (pExtract (pRevise pw₁ pw₂) pq) := by
-  unfold rewriteWithContextNoPremises rewriteStepNoPremises rewriteStep
-  rw [List.mem_append]
-  left
-  rw [List.mem_flatMap]
-  refine ⟨ruleEvidenceAdd, ?_, ?_⟩
-  · exact guardedRules_subset_guardedCongRules_ext v _
-      (coreRules_subset_wmExtVertexGuarded v _ (by simp [coreRules]))
-  · simp [applyRule, ruleEvidenceAdd, matchPattern, matchArgs, mergeBindings,
-          pExtract, pRevise, pCombine, applyBindings]
+  · simp [bs, ruleEvidenceAdd, pExtract, pCombine,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule,
+      applyBindings]
 
 /-- Guarded+cong: congruence on left Combine via evidence-add. -/
 theorem wmGuardedCongLangReduces_combineCongLeft_evidenceAdd (relEnv : RelationEnv)
@@ -638,22 +594,27 @@ theorem wmGuardedCongLangReduces_combineCongLeft_evidenceAdd (relEnv : RelationE
   let bs : Bindings := [("e1p", pCombine (pExtract pw₁ pq) (pExtract pw₂ pq)),
                          ("e2", pExtract pw₃ pq),
                          ("e1", pExtract (pRevise pw₁ pw₂) pq)]
-  refine DeclReducesWithPremises.topRule
-    (relEnv := relEnv)
+  refine step_of_single_congruence_rule
     (lang := wmExtVertexLanguageDefGuardedWithCong v)
-    (r := ruleCombineCongLeft) ?hr bs0 ?hmatch bs ?hprem ?happly
+    (rule := ruleCombineCongLeft)
+    (initialBindings := bs0) (finalBindings := bs)
+    (premiseBindings :=
+      [("e1p", pCombine (pExtract pw₁ pq) (pExtract pw₂ pq))])
+    (premiseSource := .fvar "e1") (premiseTarget := .fvar "e1p")
+    (candidate := pCombine (pExtract pw₁ pq) (pExtract pw₂ pq))
+    ?hr ?hmatch rfl ?hrecursive ?hpremiseMatch ?hmerge ?happly
   · simp only [wmExtVertexLanguageDefGuardedWithCong, List.mem_append]
     right; simp [coreCongruenceRules]
-  · simp [bs0, ruleCombineCongLeft, pCombine, matchPattern, matchArgs, mergeBindings]
-  · simp only [bs, bs0, applyPremisesWithEnv, ruleCombineCongLeft,
-               List.foldl, List.flatMap_cons, List.flatMap_nil, List.append_nil]
-    simp only [premiseStepWithEnv]
-    simp only [applyBindings, List.find?, BEq.beq, decide_true]
-    rw [List.mem_flatMap]
-    refine ⟨pCombine (pExtract pw₁ pq) (pExtract pw₂ pq),
-            guardedCong_evidenceAdd_mem_rewriteContextNoPremises v pw₁ pw₂ pq, ?_⟩
-    simp [matchPattern, mergeBindings]
-  · simp [bs, ruleCombineCongLeft, pCombine, applyBindings]
+  · simp [bs0, ruleCombineCongLeft, pCombine,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule,
+      matchPattern, matchArgs, mergeBindings]
+  · simpa [bs0, applyBindings, langReducesUsing] using
+      (wmGuardedCongLangReduces_evidenceAdd relEnv v pw₁ pw₂ pq)
+  · simp [matchPattern]
+  · simp [bs, bs0, mergeBindings]
+  · simp [bs, ruleCombineCongLeft, pCombine,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule,
+      applyBindings]
 
 /-- Guarded+cong: fully nested two-step chain via context closure.
     Both evidence-add (core rule, empty premises) and the congruence premise
@@ -732,7 +693,6 @@ The guarded calculus uses `langReducesUsing relEnv` instead of `langReduces`
 
 open Mettapedia.OSLF.MeTTaIL.Engine
 open Mettapedia.OSLF.MeTTaIL.Match
-open Mettapedia.OSLF.MeTTaIL.DeclReducesPremises
 
 /-- Galois connection for the guarded 6-axis WM calculus. -/
 theorem wmGuardedCalc_galois (relEnv : RelationEnv) (v : WMExtVertex) :
@@ -765,14 +725,18 @@ theorem wmGuardedLangReduces_evidenceAdd (relEnv : RelationEnv)
       (pCombine (pExtract pw₁ pq) (pExtract pw₂ pq)) := by
   unfold langReducesUsing
   let bs : Bindings := [("q", pq), ("W2", pw₂), ("W1", pw₁)]
-  refine DeclReducesWithPremises.topRule
+  refine step_of_rule
     (relEnv := relEnv) (lang := wmExtVertexLanguageDefGuarded v)
-    (r := ruleEvidenceAdd)
-    ?hr bs ?hmatch bs ?hprem ?happly
+    (rule := ruleEvidenceAdd) (initialBindings := bs) (finalBindings := bs)
+    ?hr ?hmatch (by exact .nil) ?hprem ?happly
   · exact coreRules_subset_wmExtVertexGuarded v _ (by simp [coreRules])
-  · simp [bs, ruleEvidenceAdd, pExtract, pRevise, matchPattern, matchArgs, mergeBindings]
+  · simp [bs, ruleEvidenceAdd, pExtract, pRevise,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule,
+      matchPattern, matchArgs, mergeBindings]
   · simp [bs, ruleEvidenceAdd, applyPremisesWithEnv]
-  · simp [bs, ruleEvidenceAdd, pExtract, pCombine, applyBindings]
+  · simp [bs, ruleEvidenceAdd, pExtract, pCombine,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule,
+      applyBindings]
 
 /-- Guarded decomposability adjunction. -/
 theorem wmGuardedCalc_decomposability_safety (relEnv : RelationEnv)

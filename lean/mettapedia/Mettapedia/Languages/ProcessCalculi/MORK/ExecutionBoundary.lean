@@ -25,13 +25,11 @@ The `morkTranslatable` predicate (a decidable `Bool` function) defines the fragm
 1. `applySubst_commutes`: For `morkTranslatable` patterns, substitution commutes
    with the `morkPatternToAtom` translation. This is the key algebraic property.
 
-2. `declReduces_implies_mork_fire_full`: Full `DeclReduces` bridge handling both
-   `topRule` and `congElem`. Direction: MeTTaIL reduction → MORK firing exists.
+2. `stepAt_compiles_to_mork_fire`: every bounded authored contextual step
+   compiles to a MORK rule that performs the same translated update.
 
-3. `congElem_implies_mork_zipper_fire`: Collection congruence bridge. When `congElem`
-   rewrites an element inside a collection, the update factors through `LensRel`
-   (principled zipper-based focus/replacement) and a MORK exec rule fires.
-   Direction: MeTTaIL congElem → LensRel ∧ MORK firing exists.
+3. `authoredContextFrame_lensRel`: authored one-hole contexts translate to exact
+   MORK zipper/lens updates while retaining the authorizing rule witness.
 
 5. The PeTTa/LP soundness chain (`petta_ruleApp_lp_sound` in LPSoundness.lean)
    builds on this boundary via `pettaRuleSafe` = `lpTranslatable`, which requires
@@ -39,11 +37,10 @@ The `morkTranslatable` predicate (a decidable `Bool` function) defines the fragm
 
 ## What is NOT claimed
 
-- No completeness (MORK firing → DeclReduces): MORK's scheduler is more expressive
+- No completeness from arbitrary MORK firing to an authored language step: MORK's scheduler is more expressive
   than the declarative reduction relation
-- For `congElem`: collection congruence is bridged via `congElem_implies_mork_zipper_fire`
-  (zipper/lens factorization) and source-aware bridges use `languageDefToSourceExecRulesWithCongr`
-  which extends the base rule set with `collectionReplaceSourceRule`.
+- Collection shape alone grants no reduction authority; contextual rules are
+  compiled from the authored language before MORK execution.
 - No beta-redex evaluation: `.subst` nodes are translated symbolically, not reduced
 - No rest-variable expansion: `.collection _ _ (some _)` is rejected
 -/
@@ -64,8 +61,8 @@ abbrev fragmentPredicate := @morkTranslatable
 /-- Substitution commutation: the algebraic foundation of the bridge. -/
 abbrev substCommutation := @applySubst_commutes
 
-/-- Fire correspondence: DeclReduces → MORK fireRule (handles both topRule and congElem). -/
-abbrev fireCorrespondence := @declReduces_implies_mork_fire_full
+/-- Bounded authored contextual step → generated MORK rule firing. -/
+abbrev fireCorrespondence := @stepAt_compiles_to_mork_fire
 
 /-- Pattern translation: MeTTaIL Pattern → MORK Atom. -/
 abbrev patternTranslation := @morkPatternToAtom
@@ -208,13 +205,13 @@ abbrev workspaceRepresentsPremises := @WorkspaceRepresentsPremises
 abbrev sourceRuleSetTranslation := @languageDefToSourceExecRules
 
 /-- Per-rule bridge: zero premises, fvar LHS → fireSourceRule. -/
-abbrev noPremiseBridge := @declReducesWithPremises_noPremise_fvar_mork_fireSourceRule
+abbrev noPremiseBridge := @matchedRule_noPremise_fvar_mork_fireSourceRule
 
 /-- Per-rule bridge: single relationQuery premise, fvar LHS → fireSourceRule. -/
-abbrev singlePremiseBridge := @declReducesWithPremises_singlePremise_fvar_mork_fireSourceRule
+abbrev singlePremiseBridge := @matchedRule_singlePremise_fvar_mork_fireSourceRule
 
-/-- Full bridge: DeclReducesWithPremises (single premise) → ∃ source rule fires. -/
-abbrev declReducesWithPremisesBridge := @declReducesWithPremises_single_implies_mork_fireSourceRule
+/-- Whole-language bridge for authored rules with non-contextual premises. -/
+abbrev languageStepBridge := @languageStep_implies_mork_fireSourceRule
 
 /-- PremiseChain: step-by-step premise-witness correspondence. -/
 abbrev premiseChainType := @PremiseChain
@@ -226,10 +223,7 @@ abbrev premiseChainImpliesApply := @premiseChain_implies_applyPremises
 abbrev premiseChainMatchFactors := @premiseChain_matchSourceFactors
 
 /-- Per-rule bridge: N premises via PremiseChain, fvar LHS → fireSourceRule. -/
-abbrev multiPremiseBridge := @declReducesWithPremises_multiPremise_fvar_mork_fireSourceRule
-
-/-- Full bridge: DeclReducesWithPremises (N premises) → ∃ source rule fires. -/
-abbrev declReducesWithPremisesMultiBridge := @declReducesWithPremises_multi_implies_mork_fireSourceRule
+abbrev multiPremiseBridge := @matchedRule_multiPremise_fvar_mork_fireSourceRule
 
 /-! ### Source guards (freshness premises) -/
 
@@ -292,10 +286,7 @@ abbrev mergeBindingsCorrespondence := @mergeBindings_matchAtomList_correspond
 /-! ### Multi-step closure -/
 
 /-- Multi-step reduction closure. -/
-abbrev multiStepClosure := @DeclReducesWithPremisesStar
-
-/-- Per-step MORK source-rule firing (same guarantee as single-step bridge). -/
-abbrev eachStepFires := @declReducesStar_each_step_fires
+abbrev multiStepClosure := @LanguageStepStar
 
 /-! ### Extended bridge (mixed relationQuery + freshness premises) -/
 
@@ -306,23 +297,12 @@ abbrev premiseChainMatchFactorsExt := @premiseChain_matchSourceFactorsExt
 abbrev languageDefSourceRulesExt := @languageDefToSourceExecRulesExt
 
 /-- Per-rule ext bridge: PremiseChain + guards → fireSourceRule (with ext-translatable premises). -/
-abbrev multiPremiseExtBridge := @declReducesWithPremises_multiPremise_fvar_mork_fireSourceRuleExt
+abbrev multiPremiseExtBridge := @matchedRule_multiPremise_fvar_mork_fireSourceRuleExt
 
-/-- Full ext bridge: DeclReducesWithPremises → ∃ source rule fires (with ext-translatable premises). -/
-abbrev fullExtBridge := @declReducesWithPremises_ext_implies_mork_fireSourceRule
+/-- Whole-language guarded bridge for authored non-contextual rules. -/
+abbrev languageStepExtBridge := @languageStep_implies_mork_fireSourceRuleExt
 
-/-! ### Collection congruence via zipper/lens
-
-The canonical congruence surface. `congElem` (sub-collection element rewriting) is
-modeled as focused sub-expression replacement via `AtomZipper` and `LensRel`.
-
-Three theorem levels:
-- **Structural**: `collection_lensRel` — element update satisfies `LensRel`
-- **Semantic**: `congElem_implies_mork_zipper_fire` — LensRel + exec rule fires
-- **Full DeclReduces**: `declReduces_implies_mork_fire_full` — handles both topRule and congElem
-
-Source-aware bridges (`declReducesWithPremises_*`) use `languageDefToSourceExecRulesWithCongr`
-which extends the base rule set with `collectionReplaceSourceRule`. -/
+/-! ### Authored contexts via zipper/lens -/
 
 -- Zipper infrastructure
 
@@ -375,66 +355,35 @@ abbrev zipperCollectionReplace := @replaceAtPath_collection
 /-- Collection element update satisfies LensRel. -/
 abbrev collectionLensRel := @collection_lensRel
 
--- Primary congruence bridge
+/-- MeTTaIL one-hole context → MORK zipper context. -/
+abbrev authoredContextTranslation := @morkAtomContext
 
-/-- **Canonical congruence bridge**: LensRel + fireRule (primary theorem). -/
-abbrev congElemZipperBridge := @congElem_implies_mork_zipper_fire
+/-- Plugging then translating agrees with zipper reconstruction. -/
+abbrev authoredContextRebuild := @rebuild_morkAtomContext
 
-/-- **Full DeclReduces bridge**: handles both topRule and congElem. -/
-abbrev declReducesFullBridge := @declReduces_implies_mork_fire_full
+/-- Structural one-hole context update → MORK lens update. -/
+abbrev contextLensBridge := @oneHoleContext_lensRel
 
--- Operational core (secondary)
+/-- Authored frame witness + exact MORK lens realization. -/
+abbrev authoredContextLensBridge := @authoredContextFrame_lensRel
 
-/-- Translation commutation: `morkPatternToAtomList` is `List.map morkPatternToAtom`. -/
-abbrev atomListEqMap := @morkPatternToAtomList_eq_map
+/-- Executable rules compiled exactly from bounded contextual reducts. -/
+abbrev contextualRuleCompilation := @compiledContextRules
 
-/-- Translation commutation with `List.set`. -/
-abbrev atomListSet := @morkPatternToAtomList_set
+/-- Source-aware rules compiled exactly from bounded contextual reducts. -/
+abbrev contextualSourceRuleCompilation := @compiledContextSourceRules
 
-/-- Collection translation with element replacement. -/
-abbrev collectionSet := @morkPatternToAtom_collection_set
+/-- Bounded contextual step → compiled MORK rule firing. -/
+abbrev contextualStepFires := @stepAt_compiles_to_mork_fire
 
-/-- MORK-side collection element replacement. -/
-abbrev collectionAtomReplace := @replaceElemInCollectionAtom
+/-- Bounded contextual step → compiled source-aware MORK rule firing. -/
+abbrev contextualStepSourceFires := @stepAt_compiles_to_mork_sourceRule
 
-/-- Round-trip: MORK replacement ↔ MeTTaIL `List.set`. -/
-abbrev collectionRoundtrip := @replaceElemInCollectionAtom_roundtrip
+/-- Collection-shaped context update is an exact lens realization. -/
+abbrev collectionContextLensBridge := @collectionContext_lensRel
 
-/-- Ground atoms are identity under `applySubst`. -/
-abbrev groundSubstIdentity := @applySubst_ground
-
-/-- Ground atoms match themselves. -/
-abbrev groundSelfMatch := @matchAtom_ground_self
-
-/-- Ad-hoc exec rule for collection element replacement. -/
-abbrev collectionReplace := @collectionReplaceRule
-
-/-- Firing the collection-replace rule. -/
-abbrev collectionReplaceFires := @fireRule_collectionReplace
-
-/-- Semantic-only congElem bridge (without LensRel factorization). -/
-abbrev congElemBridge := @congElem_implies_mork_fire
-
--- Source-level congruence bridge (Layer G)
-
-/-- Source-level encoding of collection replacement as a SourceExecRule. -/
-abbrev collectionReplaceSource := @collectionReplaceSourceRule
-
-/-- Source-level collection replace rule fires via fireSourceRule. -/
-abbrev collectionReplaceSourceFires := @fireSourceRule_collectionReplaceSource
-
-/-- Extended source-rule set with congruence rules. -/
-abbrev sourceRulesWithCongr := @languageDefToSourceExecRulesWithCongr
-
-/-- **Source-aware bridge**: DeclReduces → fireSourceRule with
-    congruence-extended rule set. Handles both topRule and congElem. -/
-abbrev declReducesSourceBridge := @declReduces_implies_mork_fireSourceRule
-
-/-- Rest-irrelevance for morkPatternToAtom. -/
-abbrev morkPatternToAtom_rest := @morkPatternToAtom_rest_irrelevant
-
-/-- Extended source-rule set (ext) with congruence rules. -/
-abbrev sourceRulesExtWithCongr := @languageDefToSourceExecRulesExtWithCongr
+/-- Authored collection-shaped frame retains rule authority and lens exactness. -/
+abbrev authoredCollectionContextLensBridge := @authoredCollectionContext_lensRel
 
 /-! ### Scheduler lift (Task A)
 
@@ -469,16 +418,13 @@ section Canaries
 
 #check @morkTranslatable
 #check @applySubst_commutes
-#check @declReduces_implies_mork_fire_full
-#check @declReduces_implies_mork_fireSourceRule
+#check @stepAt_compiles_to_mork_fire
+#check @stepAt_compiles_to_mork_sourceRule
 #check @morkPatternToAtom
 #check @morkPatternToAtom_rest_irrelevant
-#check @declReducesWithPremises_single_implies_mork_fireSourceRule
-#check @declReducesWithPremises_multi_implies_mork_fireSourceRule
-#check @declReducesStar_each_step_fires
-#check @declReducesWithPremises_ext_implies_mork_fireSourceRule
-#check @languageDefToSourceExecRulesWithCongr
-#check @languageDefToSourceExecRulesExtWithCongr
+#check @languageStep_implies_mork_fireSourceRule
+#check @languageStep_implies_mork_fireSourceRuleExt
+#check @authoredContextFrame_lensRel
 #check @patternToSpace
 #check @rewriteRuleToExecRule
 #check @languageDefToExecRules
@@ -500,10 +446,9 @@ No custom axioms, no sorry, no native_decide.
 provide kernel-checked conformance via rfl. -/
 
 section AxiomAudit
-#print axioms congElem_implies_mork_zipper_fire
-#print axioms declReduces_implies_mork_fireSourceRule
-#print axioms fireSourceRule_collectionReplaceSource
-#print axioms declReduces_implies_mork_fire_full
+#print axioms authoredContextFrame_lensRel
+#print axioms stepAt_compiles_to_mork_sourceRule
+#print axioms languageStep_implies_mork_fireSourceRule
 #print axioms morkPatternToAtom_rest_irrelevant
 end AxiomAudit
 

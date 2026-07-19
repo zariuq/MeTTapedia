@@ -116,7 +116,6 @@ def lcfHolLanguage : LanguageDef where
   terms := lcfHolTerms
   equations := lcfHolEquations
   rewrites := lcfHolRewrites
-  congruenceCollections := []
 
 def lcfHolCurriculum : CurriculumLanguage where
   name := "LCF/HOL"
@@ -174,7 +173,6 @@ def hotgLanguage : LanguageDef where
   terms := hotgTerms
   equations := lcfHolEquations
   rewrites := hotgRewrites
-  congruenceCollections := []
 
 def hotgCurriculum : CurriculumLanguage where
   name := "Megalodon/HOTG"
@@ -250,7 +248,6 @@ def dttLanguage : LanguageDef where
   terms := dttTerms
   equations := dttEquations
   rewrites := dttRewrites
-  congruenceCollections := []
 
 def dttCurriculum : CurriculumLanguage where
   name := "Coq/Lean DTT"
@@ -315,7 +312,6 @@ def programVerificationLanguage : LanguageDef where
   terms := programVerificationTerms
   equations := programVerificationEquations
   rewrites := programVerificationRewrites
-  congruenceCollections := []
 
 def programVerificationCurriculum : CurriculumLanguage where
   name := "Program verification"

@@ -1,5 +1,6 @@
 import Mettapedia.OSLF.Framework.TypeSynthesis
 import Mettapedia.OSLF.MeTTaIL.LogicSemantics
+import Mettapedia.OSLF.MeTTaIL.ContextualStep
 
 /-!
 # HOL Kernel Profiles
@@ -26,6 +27,7 @@ namespace Mettapedia.GSLT.LanguageDef.HOLKernelProfiles
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Engine
+open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open Mettapedia.OSLF.Framework.TypeSynthesis
 
 private def ty (name : String) : TypeExpr :=
@@ -65,6 +67,12 @@ private def app (name : String) (args : List Pattern := []) : Pattern :=
 
 private def check (name : String) (proof : Pattern) : Pattern :=
   app name [proof]
+
+/-- Root rule results for these kernel profiles.  The profile rules have no
+contextual premises, so contextual depth one is exact. -/
+private def kernelReducts (relEnv : RelationEnv) (lang : LanguageDef)
+    (term : Pattern) : List Pattern :=
+  rewriteAt (engineBasePremises relEnv) lang 1 term
 
 private def ok (name : String) (thm : Pattern) : Pattern :=
   app name [thm]
@@ -514,71 +522,71 @@ def holLightBadSelfImpArticle : ProofArticle :=
     hol4NoLogicRelationEnv.tuples "isBool" [A] == []
 
 #guard
-    rewriteWithContextWithPremisesUsing hol4LogicRelationEnv hol4LcfKernel hol4DischWitness ==
+    kernelReducts hol4LogicRelationEnv hol4LcfKernel hol4DischWitness ==
       [hol4DischResult]
 
 #guard
-    rewriteWithContextWithPremisesUsing hol4NoLogicRelationEnv hol4NoLogic hol4DischWitness ==
+    kernelReducts hol4NoLogicRelationEnv hol4NoLogic hol4DischWitness ==
       []
 
 #guard
-    rewriteWithContextWithPremisesUsing holLightLogicRelationEnv holLightEqKernel hol4DischWitness ==
+    kernelReducts holLightLogicRelationEnv holLightEqKernel hol4DischWitness ==
       []
 
 #guard
-    rewriteWithContextWithPremisesUsing hol4LogicRelationEnv hol4LcfKernel hol4MPWitness ==
+    kernelReducts hol4LogicRelationEnv hol4LcfKernel hol4MPWitness ==
       [hol4MPResult]
 
 #guard
-    rewriteWithContextWithPremisesUsing hol4LogicRelationEnv hol4LcfKernel hol4BadMPWitness ==
+    kernelReducts hol4LogicRelationEnv hol4LcfKernel hol4BadMPWitness ==
       []
 
 #guard
-    rewriteWithContextWithPremisesUsing holLightLogicRelationEnv holLightEqKernel hol4MPWitness ==
+    kernelReducts holLightLogicRelationEnv holLightEqKernel hol4MPWitness ==
       []
 
 #guard
-    rewriteWithContextWithPremisesUsing holLightLogicRelationEnv holLightEqKernel holLightReflWitness ==
+    kernelReducts holLightLogicRelationEnv holLightEqKernel holLightReflWitness ==
       [holLightReflResult]
 
 #guard
-    rewriteWithContextWithPremisesUsing holLightLogicRelationEnv holLightEqKernel holLightBadEqMPWitness ==
+    kernelReducts holLightLogicRelationEnv holLightEqKernel holLightBadEqMPWitness ==
       []
 
 #guard
-    rewriteWithContextWithPremisesUsing holLightLogicRelationEnv holLightEqKernel holLightAssumeAWitness ==
+    kernelReducts holLightLogicRelationEnv holLightEqKernel holLightAssumeAWitness ==
       [holLightAssumeAResult]
 
 #guard
-    rewriteWithContextWithPremisesUsing holLightLogicRelationEnv holLightEqKernel holLightAssumeAndAAWitness ==
+    kernelReducts holLightLogicRelationEnv holLightEqKernel holLightAssumeAndAAWitness ==
       [holLightAssumeAndAAResult]
 
 #guard
-    rewriteWithContextWithPremisesUsing holLightLogicRelationEnv holLightEqKernel holLightConjAAWitness ==
+    kernelReducts holLightLogicRelationEnv holLightEqKernel holLightConjAAWitness ==
       [holLightConjAAResult]
 
 #guard
-    rewriteWithContextWithPremisesUsing holLightLogicRelationEnv holLightEqKernel holLightConjunct1AAWitness ==
+    kernelReducts holLightLogicRelationEnv holLightEqKernel holLightConjunct1AAWitness ==
       [holLightConjunct1AAResult]
 
 #guard
-    (rewriteWithContextWithPremisesUsing holLightLogicRelationEnv holLightEqKernel
+    (kernelReducts holLightLogicRelationEnv holLightEqKernel
       holLightDischAACoreWitness).contains holLightDischAACoreResult
 
 #guard
-    rewriteWithContextWithPremisesUsing holLightLogicRelationEnv holLightEqKernel holLightImpDefAAWitness ==
+    kernelReducts holLightLogicRelationEnv holLightEqKernel holLightImpDefAAWitness ==
       [holLightImpDefAAResult]
 
 #guard
-    (rewriteWithContextWithPremisesUsing holLightLogicRelationEnv holLightEqKernel
+    (kernelReducts holLightLogicRelationEnv holLightEqKernel
       holLightSelfImpWitness).contains holLightSelfImpResult
 
 #guard
-    rewriteWithContextWithPremisesUsing holLightLogicRelationEnv holLightEqKernel
+    kernelReducts holLightLogicRelationEnv holLightEqKernel
       holLightPrimitiveDischShortcutWitness == []
 
 #guard
-    rewriteWithContextWithPremisesUsing holLightLogicRelationEnv holLightEqKernel
+    kernelReducts holLightLogicRelationEnv holLightEqKernel
       holLightBadSelfImpWitness == []
 
 #guard

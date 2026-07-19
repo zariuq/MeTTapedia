@@ -1,83 +1,77 @@
-import Mettapedia.Languages.ProcessCalculi.MORK.CollectionBridge
+import Mettapedia.Languages.ProcessCalculi.MORK.AuthoredContextBridge
 
 /-!
-# Extended MORK ↔ MeTTaIL Bridge
+# MORK bridge for fully applied authored rules
 
-Extends the base `MeTTaILBridge` with theorems for rewrite rules whose RHS
-contains `.subst` nodes or collection rest-variables. These patterns are
-*eliminated* by `applyBindings` (which calls `openBVar` for `.subst` and
-splices rest-variable lookups), so the post-application result is always in
-the `morkTranslatable` fragment — as proven by `morkTranslatable_applyBindings`
-in `MeTTaILBridge.lean`.
-
-The exec-rule and source-rule fire witnesses use the ad-hoc
-`collectionReplaceRule` / `collectionReplaceSourceRule` from
-`CollectionBridge.lean`, which require only groundness of old/new atoms.
+Rules whose source syntax contains substitution nodes or collection rest
+variables need no extra reduction law.  Once the ordinary MeTTaIL rule
+matcher, premise relation, and reflective substitution have produced a
+bounded authored step, the generic contextual compiler emits the MORK rule.
 -/
 
 namespace Mettapedia.Languages.ProcessCalculi.MORK.ExtendedBridge
 
-open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
 open Mettapedia.Languages.ProcessCalculi.MORK
+open Mettapedia.OSLF.MeTTaIL.Syntax
+open Mettapedia.OSLF.MeTTaIL.ContextualStep
 
-private abbrev ILP := Mettapedia.OSLF.MeTTaIL.Syntax.Pattern
-private abbrev ILRRule := Mettapedia.OSLF.MeTTaIL.Syntax.RewriteRule
-private abbrev ILBind := Mettapedia.OSLF.MeTTaIL.Match.Bindings
+/-- A fully evidenced authored rule application compiles to a MORK rule and
+fires on the singleton translation of its source.  This includes rules whose
+surface right-hand sides normalize substitution or rest-variable syntax. -/
+theorem authoredRule_mork_fire
+    {base : BasePremiseEvaluator} {lang : LanguageDef} {fuel : Nat}
+    {source target : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern}
+    {rule : RewriteRule}
+    {initial final : Mettapedia.OSLF.MeTTaIL.Match.Bindings}
+    (ruleMember : rule ∈ lang.rewrites)
+    (matched : initial ∈
+      Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule
+        lang rule source)
+    (premises : PremisesAt base lang fuel initial rule.premises final)
+    (targetEq :
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule
+        lang rule final = target)
+    (sourceGround : isGroundAtom (morkPatternToAtom source) = true)
+    (targetGround : isGroundAtom (morkPatternToAtom target) = true) :
+    ∃ compiledRule ∈ compiledContextRules base lang (fuel + 1) source,
+      patternToSpace target ∈ fireRule (patternToSpace source) compiledRule := by
+  exact stepAt_compiles_to_mork_fire
+    (.rule ruleMember matched premises targetEq) sourceGround targetGround
 
-private abbrev ilApplyBindings : ILBind → ILP → ILP :=
-  Mettapedia.OSLF.MeTTaIL.Match.applyBindings
-private abbrev ilMatchPattern : ILP → ILP → List ILBind :=
-  Mettapedia.OSLF.MeTTaIL.Match.matchPattern
-
-/-- **Extended exec-rule bridge**: a MeTTaIL rewrite step fires via an ad-hoc
-    `collectionReplaceRule`, even when the rule's RHS uses `.subst` or rest-vars.
-
-    Unlike `declReduces_topRule_fvar_mork_fire` (which requires `morkTranslatable r.right`),
-    this theorem has NO translatability requirement on `r.right` — it relies on
-    `applyBindings` normalizing the RHS, combined with the ad-hoc replace rule. -/
-theorem declReduces_extended_mork_fire (p q : ILP) (r : ILRRule)
-    (bs : ILBind) (_hbs : bs ∈ ilMatchPattern r.left p)
-    (_hrhs : ilApplyBindings bs r.right = q)
-    (hground_p : isGroundAtom (morkPatternToAtom p) = true)
-    (hground_q : isGroundAtom (morkPatternToAtom q) = true) :
-    ∃ rule : ExecRule,
-      patternToSpace q ∈ fireRule (patternToSpace p) rule := by
-  refine ⟨collectionReplaceRule (morkPatternToAtom p) (morkPatternToAtom q), ?_⟩
-  simp only [patternToSpace]
-  have := fireRule_collectionReplace {morkPatternToAtom p} _ _
-    (Finset.mem_singleton_self _) hground_p hground_q
-  simp [Finset.erase_eq] at this
-  exact this
-
-/-- **Extended source-rule bridge**: same as above but at the `SourceExecRule` /
-    `fireSourceRule` level. -/
-theorem declReduces_extended_mork_sourceRuleFire (p q : ILP) (r : ILRRule)
-    (bs : ILBind) (_hbs : bs ∈ ilMatchPattern r.left p)
-    (_hrhs : ilApplyBindings bs r.right = q)
-    (hground_p : isGroundAtom (morkPatternToAtom p) = true)
-    (hground_q : isGroundAtom (morkPatternToAtom q) = true)
-    {workspace : Space} (hp_in : morkPatternToAtom p ∈ workspace) :
-    ∃ rule : SourceExecRule,
-      ∃ S ∈ fireSourceRule workspace rule, True :=
-  ⟨collectionReplaceSourceRule (morkPatternToAtom p) (morkPatternToAtom q),
-    workspace.erase (morkPatternToAtom p) ∪ {morkPatternToAtom q},
-    fireSourceRule_collectionReplaceSource workspace _ _ hp_in hground_p hground_q,
-    trivial⟩
-
-/-! ## Canaries -/
+/-- Source-aware form of `authoredRule_mork_fire`, valid in any workspace
+containing the translated source. -/
+theorem authoredRule_mork_sourceRuleFire
+    {base : BasePremiseEvaluator} {lang : LanguageDef} {fuel : Nat}
+    {source target : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern}
+    {rule : RewriteRule}
+    {initial final : Mettapedia.OSLF.MeTTaIL.Match.Bindings}
+    (ruleMember : rule ∈ lang.rewrites)
+    (matched : initial ∈
+      Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule
+        lang rule source)
+    (premises : PremisesAt base lang fuel initial rule.premises final)
+    (targetEq :
+      Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule
+        lang rule final = target)
+    (workspace : Space)
+    (sourceMember : morkPatternToAtom source ∈ workspace)
+    (sourceGround : isGroundAtom (morkPatternToAtom source) = true)
+    (targetGround : isGroundAtom (morkPatternToAtom target) = true) :
+    ∃ compiledRule ∈ compiledContextSourceRules base lang (fuel + 1) source,
+      workspace.erase (morkPatternToAtom source) ∪ {morkPatternToAtom target} ∈
+        fireSourceRule workspace compiledRule := by
+  exact stepAt_compiles_to_mork_sourceRule
+    (.rule ruleMember matched premises targetEq) workspace sourceMember
+      sourceGround targetGround
 
 section Canaries
-#check @declReduces_extended_mork_fire
-#check @declReduces_extended_mork_sourceRuleFire
-#check @fireRule_collectionReplace
-#check @fireSourceRule_collectionReplaceSource
+#check @authoredRule_mork_fire
+#check @authoredRule_mork_sourceRuleFire
 end Canaries
 
-/-! ## Axiom audit -/
-
 section AxiomAudit
-#print axioms declReduces_extended_mork_fire
-#print axioms declReduces_extended_mork_sourceRuleFire
+#print axioms authoredRule_mork_fire
+#print axioms authoredRule_mork_sourceRuleFire
 end AxiomAudit
 
 end Mettapedia.Languages.ProcessCalculi.MORK.ExtendedBridge

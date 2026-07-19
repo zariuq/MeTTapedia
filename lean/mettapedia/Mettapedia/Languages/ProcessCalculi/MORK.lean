@@ -39,7 +39,7 @@ MORK/
   MORKCommBridge.lean  — Bridge: MORK binary fold ↔ MQ-calculus CommReduction
   PathMapBridge.lean   — Bridge: MORK space transitions ↔ PathMap lattice ops
   MatchSpec.lean       — Relational spec of atom matching (sound/complete fragment)
-  MeTTaILBridge.lean   — Bridge: DeclReduces ↔ MORK fireRule; premise→source translation
+  MeTTaILBridge.lean   — Authored-rule and premise-to-source execution bridges
   ExecutionBoundary.lean — Packages the proven morkTranslatable execution boundary
 ```
 
@@ -53,7 +53,7 @@ MORK/
 - `applyBase_eq_lattice_ops`: MORK base step = PathMap psubtract + pjoin
 - `applyFold_eq_lattice_ops`: MORK fold step = PathMap psubtract chain + pjoin
 - `applySubst_commutes`: MORK applySubst commutes with morkPatternToAtom
-- `declReduces_implies_mork_fire`: DeclReduces → MORK fireRule fires (topRule case)
+- `stepAt_compiles_to_mork_fire`: bounded authored contextual step → MORK firing
 - `rewriteRuleToSourceExecRule`: MeTTaIL rule (with premises) → MORK SourceExecRule
 - `premiseToSourceFactor`: MeTTaIL relationQuery → MORK btm source factor
 - `premisesToSourceFactors_length`: translatable premises preserve count

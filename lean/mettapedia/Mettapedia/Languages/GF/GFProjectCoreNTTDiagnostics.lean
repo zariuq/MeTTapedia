@@ -146,13 +146,9 @@ theorem questionExist_satisfies_interrogativeSentenceType :
 
 theorem projectCoreSyntax_no_reduces {p q : Pattern} :
     ¬ langReduces projectCoreSyntaxLangKR p q := by
-  intro h
+  rintro ⟨_, h⟩
   cases h with
-  | topRule r hr bs0 hbs0 bs hprem hq =>
-      have hnil : r ∈ ([] : List RewriteRule) := by
-        simp [projectCoreSyntaxLangKR, gfSyntaxLanguageDefFromList, gfFunsListToLanguageDef] at hr
-      cases hnil
-  | congElem hct i hi r hr bs0 hbs0 bs hprem hq =>
+  | @rule _ _ _ r _ _ hr _ _ _ =>
       have hnil : r ∈ ([] : List RewriteRule) := by
         simp [projectCoreSyntaxLangKR, gfSyntaxLanguageDefFromList, gfFunsListToLanguageDef] at hr
       cases hnil

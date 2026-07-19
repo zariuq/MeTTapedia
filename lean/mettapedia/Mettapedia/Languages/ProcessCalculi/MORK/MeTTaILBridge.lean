@@ -1,7 +1,6 @@
 import Mettapedia.Languages.ProcessCalculi.MORK.ThreePhaseExec
 import Mettapedia.Languages.ProcessCalculi.Common.Star
-import Mettapedia.OSLF.MeTTaIL.DeclReduces
-import Mettapedia.OSLF.MeTTaIL.DeclReducesWithPremises
+import Mettapedia.OSLF.MeTTaIL.ContextualStep
 
 /-!
 # MORK ↔ MeTTaIL Bridge
@@ -16,8 +15,8 @@ This bridge is proved only for rules where:
   2. `morkTranslatable r.right = true`  (RHS has no beta-redex `.subst` nodes and
      no rest-variable `.collection _ _ (some _)` nodes)
   3. `isGroundAtom (morkPatternToAtom q) = true`  (result is ground)
-  4. No `congElem` (collection-element) rewriting — MORK's flat Space does not
-     model sub-collection rewrites
+  4. This theorem concerns a matched root rule. Contextual execution is handled
+     separately by translating authored congruence evidence through a zipper.
 
 ## LLM Notes
 - `revert h_mt` before `induction rhs using Pattern.inductionOn` is REQUIRED so the
@@ -305,7 +304,7 @@ private lemma finset_singleton_erase_self (a : Atom) :
     - `morkTranslatable r.right = true` (applySubst_commutes applies)
     - `isGroundAtom (morkPatternToAtom q) = true` (applySink .add succeeds)
     - `bs ∈ ilMatchPattern r.left p` and `ilApplyBindings bs r.right = q` -/
-theorem declReduces_topRule_fvar_mork_fire
+theorem matchedRule_fvar_mork_fire
     (p q : ILP) (x : String)
     (r : ILRRule)
     (hlhs : r.left = Mettapedia.OSLF.MeTTaIL.Syntax.Pattern.fvar x)
@@ -349,7 +348,7 @@ theorem declReduces_topRule_fvar_mork_fire
     -- Step 4b: add step — add morkPatternToAtom q
     simp only [mkAdd, hrhs_atom, hground, ite_true, Finset.empty_union]
 
-/-! ## Source-aware bridge (DeclReducesWithPremises → SourceExecRule)
+/-! ## Source-aware bridges for matched authored rules
 
 A MeTTaIL `Premise.relationQuery rel args` checks whether an atom matching
 `(rel arg₁ arg₂ ...)` exists in the relation environment. When the relation
@@ -1142,11 +1141,11 @@ theorem premiseChain_matchSourceFactorsExt {relEnv : ILRelEnv} {lang : ILDL}
 /-! ## Per-rule source bridge theorems -/
 
 /-- Bridge for rules with `fvar` LHS and zero premises — connects
-    `DeclReducesWithPremises.topRule` to `fireSourceRule`.
-    This is a strengthening of `declReduces_topRule_fvar_mork_fire`
+    a matched premise-free rule to `fireSourceRule`.
+    This is a strengthening of `matchedRule_fvar_mork_fire`
     that uses `fireSourceRule` instead of `fireRule` and works with
     an arbitrary workspace (not just `patternToSpace p`). -/
-theorem declReducesWithPremises_noPremise_fvar_mork_fireSourceRule
+theorem matchedRule_noPremise_fvar_mork_fireSourceRule
     (p q : ILP) (x : String)
     (r : ILRRule) (_relEnv : ILRelEnv) (_lang : ILDL)
     (hlhs : r.left = Mettapedia.OSLF.MeTTaIL.Syntax.Pattern.fvar x)
@@ -1196,7 +1195,7 @@ theorem declReducesWithPremises_noPremise_fvar_mork_fireSourceRule
     The `WorkspaceRepresentsPremise` hypothesis ensures (2). The `hdisjoint`
     hypothesis ensures the premise atom is distinct from the LHS atom (so it
     won't be filtered out by consumed-atom tracking). -/
-theorem declReducesWithPremises_singlePremise_fvar_mork_fireSourceRule
+theorem matchedRule_singlePremise_fvar_mork_fireSourceRule
     (p q : ILP) (x : String)
     (r : ILRRule) (relEnv : ILRelEnv) (lang : ILDL)
     (rel : String) (args : List ILP)
@@ -1265,8 +1264,8 @@ each step provides a witness atom that MORK's `matchAtom` matches against. -/
     `fireSourceRule` produces the corresponding result.
 
     This is the N-premise generalization of
-    `declReducesWithPremises_singlePremise_fvar_mork_fireSourceRule`. -/
-theorem declReducesWithPremises_multiPremise_fvar_mork_fireSourceRule
+    `matchedRule_singlePremise_fvar_mork_fireSourceRule`. -/
+theorem matchedRule_multiPremise_fvar_mork_fireSourceRule
     (p q : ILP) (x : String) (r : ILRRule) (relEnv : ILRelEnv) (lang : ILDL)
     (hlhs : r.left = Mettapedia.OSLF.MeTTaIL.Syntax.Pattern.fvar x)
     (_htrans_rhs : morkTranslatable r.right = true)
@@ -1313,28 +1312,26 @@ theorem declReducesWithPremises_multiPremise_fvar_mork_fireSourceRule
   · -- Need: (bindingsToSubst bs, c_prem) ∈ go premFactors [(x, morkPatternToAtom p)] {morkPatternToAtom p}
     convert hc_prem using 2 <;> simp [bindingsToSubst]
 
-/-! ## Multi-step closure
+/-! ## Multi-step closure -/
 
-`DeclReducesWithPremisesStar` is the reflexive-transitive closure of
-`DeclReducesWithPremises`, representing multi-step MeTTaIL reductions
-where each step may use `relationQuery` premises. -/
-
-/-- Multi-step reduction using `DeclReducesWithPremises`. -/
-abbrev DeclReducesWithPremisesStar (relEnv : ILRelEnv) (lang : ILDL) :=
+/-- Reflexive-transitive closure of the least authored contextual reduction. -/
+abbrev LanguageStepStar (relEnv : ILRelEnv) (lang : ILDL) :=
   ProcessCalculi.RTClosureProp
-    (Mettapedia.OSLF.MeTTaIL.DeclReducesPremises.DeclReducesWithPremises relEnv lang)
+    (Mettapedia.OSLF.MeTTaIL.ContextualStep.Step
+      (Mettapedia.OSLF.MeTTaIL.ContextualStep.engineBasePremises relEnv) lang)
 
 /-- Single step → multi-step embedding. -/
-theorem declReducesStar_single {relEnv : ILRelEnv} {lang : ILDL} {p q : ILP}
-    (h : Mettapedia.OSLF.MeTTaIL.DeclReducesPremises.DeclReducesWithPremises relEnv lang p q) :
-    DeclReducesWithPremisesStar relEnv lang p q :=
+theorem languageStepStar_single {relEnv : ILRelEnv} {lang : ILDL} {p q : ILP}
+    (h : Mettapedia.OSLF.MeTTaIL.ContextualStep.Step
+      (Mettapedia.OSLF.MeTTaIL.ContextualStep.engineBasePremises relEnv) lang p q) :
+    LanguageStepStar relEnv lang p q :=
   ProcessCalculi.RTClosureProp.single h
 
 /-- Transitivity for multi-step reductions. -/
-theorem declReducesStar_trans {relEnv : ILRelEnv} {lang : ILDL} {p q r : ILP}
-    (h1 : DeclReducesWithPremisesStar relEnv lang p q)
-    (h2 : DeclReducesWithPremisesStar relEnv lang q r) :
-    DeclReducesWithPremisesStar relEnv lang p r :=
+theorem languageStepStar_trans {relEnv : ILRelEnv} {lang : ILDL} {p q r : ILP}
+    (h1 : LanguageStepStar relEnv lang p q)
+    (h2 : LanguageStepStar relEnv lang q r) :
+    LanguageStepStar relEnv lang p r :=
   ProcessCalculi.RTClosureProp.trans h1 h2
 
 /-! ## Extended bridge (mixed relationQuery + freshness premises)
@@ -1359,7 +1356,7 @@ def languageDefToSourceExecRulesExt (lang : ILDL) : List SourceExecRule :=
     MeTTaIL bindings to MORK substitutions through all premises (including
     freshness guards), and the guards pass at the final substitution, then
     `fireSourceRule` produces the corresponding result. -/
-theorem declReducesWithPremises_multiPremise_fvar_mork_fireSourceRuleExt
+theorem matchedRule_multiPremise_fvar_mork_fireSourceRuleExt
     (p q : ILP) (x : String) (r : ILRRule) (relEnv : ILRelEnv) (lang : ILDL)
     (hlhs : r.left = Mettapedia.OSLF.MeTTaIL.Syntax.Pattern.fvar x)
     (_htrans_rhs : morkTranslatable r.right = true)
@@ -1404,6 +1401,103 @@ theorem declReducesWithPremises_multiPremise_fvar_mork_fireSourceRuleExt
   · -- Guards pass
     exact hguards
 
+/-! ## Whole-language bridges for non-contextual authored rules -/
+
+/-- A step of a language whose authored rules have only base premises is
+implemented by one of the source rules compiled from that same language.
+No representation-wide contextual rule is added. -/
+theorem languageStep_implies_mork_fireSourceRule
+    (relEnv : ILRelEnv) (lang : ILDL) (p q : ILP)
+    (step : Mettapedia.OSLF.MeTTaIL.ContextualStep.Step
+      (Mettapedia.OSLF.MeTTaIL.ContextualStep.engineBasePremises relEnv) lang p q)
+    (hplain : lang.reflectivePresentations = [])
+    (noncontextual : ∀ rule, rule ∈ lang.rewrites →
+      Mettapedia.OSLF.MeTTaIL.ContextualStep.NoncontextualPremises rule.premises)
+    (hlhs : ∀ rule ∈ lang.rewrites,
+      ∃ name, rule.left = Mettapedia.OSLF.MeTTaIL.Syntax.Pattern.fvar name)
+    (htrans : ∀ rule ∈ lang.rewrites, morkTranslatable rule.right = true)
+    (htransPremises : ∀ rule ∈ lang.rewrites,
+      allPremisesTranslatable rule.premises = true)
+    (hground : isGroundAtom (morkPatternToAtom q) = true)
+    (workspace : Space) (hp : morkPatternToAtom p ∈ workspace)
+    (hchain : ∀ rule ∈ lang.rewrites,
+      ∀ initial ∈ ilMatchPattern rule.left p,
+      ∀ final ∈ ilApplyPremisesWithEnv relEnv lang rule.premises initial,
+      ∃ witnesses : List Atom,
+        PremiseChain relEnv lang workspace initial rule.premises witnesses final ∧
+        witnesses.Nodup ∧
+        ∀ witness ∈ witnesses, witness ≠ morkPatternToAtom p) :
+    ∃ sourceRule ∈ languageDefToSourceExecRules lang,
+      ∃ substitution : Subst,
+        applySinks workspace substitution sourceRule.tmpl ∈
+          fireSourceRule workspace sourceRule := by
+  have root :=
+    (Mettapedia.OSLF.MeTTaIL.ContextualStep.step_iff_rootStep_of_noncontextualRules
+      noncontextual).mp step
+  obtain ⟨rule, ruleMember, initial, matched, final, premises, targetEq⟩ := root
+  have matched' : initial ∈ ilMatchPattern rule.left p := by
+    simpa [hplain] using matched
+  have targetEq' : ilApplyBindings final rule.right = q := by
+    simpa [hplain] using targetEq
+  obtain ⟨name, leftEq⟩ := hlhs rule ruleMember
+  obtain ⟨witnesses, chain, nodup, disjoint⟩ :=
+    hchain rule ruleMember initial matched' final premises
+  refine ⟨rewriteRuleToSourceExecRule rule, ?_, bindingsToSubst final, ?_⟩
+  · simp only [languageDefToSourceExecRules, List.mem_filterMap]
+    exact ⟨rule, ruleMember, by simp [htransPremises rule ruleMember]⟩
+  · exact matchedRule_multiPremise_fvar_mork_fireSourceRule
+      p q name rule relEnv lang leftEq (htrans rule ruleMember)
+      (htransPremises rule ruleMember) initial matched' final targetEq' hground
+      workspace hp witnesses chain nodup disjoint
+
+/-- Extended source-rule bridge for non-contextual authored rules containing
+both relation-query factors and freshness guards. -/
+theorem languageStep_implies_mork_fireSourceRuleExt
+    (relEnv : ILRelEnv) (lang : ILDL) (p q : ILP)
+    (step : Mettapedia.OSLF.MeTTaIL.ContextualStep.Step
+      (Mettapedia.OSLF.MeTTaIL.ContextualStep.engineBasePremises relEnv) lang p q)
+    (hplain : lang.reflectivePresentations = [])
+    (noncontextual : ∀ rule, rule ∈ lang.rewrites →
+      Mettapedia.OSLF.MeTTaIL.ContextualStep.NoncontextualPremises rule.premises)
+    (hlhs : ∀ rule ∈ lang.rewrites,
+      ∃ name, rule.left = Mettapedia.OSLF.MeTTaIL.Syntax.Pattern.fvar name)
+    (htrans : ∀ rule ∈ lang.rewrites, morkTranslatable rule.right = true)
+    (htransPremises : ∀ rule ∈ lang.rewrites,
+      allPremisesTranslatableExt rule.premises = true)
+    (hground : isGroundAtom (morkPatternToAtom q) = true)
+    (workspace : Space) (hp : morkPatternToAtom p ∈ workspace)
+    (hchain : ∀ rule ∈ lang.rewrites,
+      ∀ initial ∈ ilMatchPattern rule.left p,
+      ∀ final ∈ ilApplyPremisesWithEnv relEnv lang rule.premises initial,
+      ∃ witnesses : List Atom,
+        PremiseChain relEnv lang workspace initial rule.premises witnesses final ∧
+        witnesses.Nodup ∧
+        (∀ witness ∈ witnesses, witness ≠ morkPatternToAtom p) ∧
+        matchSourceGuards (bindingsToSubst final)
+          (premisesToSourceGuards rule.premises) = true) :
+    ∃ sourceRule ∈ languageDefToSourceExecRulesExt lang,
+      ∃ substitution : Subst,
+        applySinks workspace substitution sourceRule.tmpl ∈
+          fireSourceRule workspace sourceRule := by
+  have root :=
+    (Mettapedia.OSLF.MeTTaIL.ContextualStep.step_iff_rootStep_of_noncontextualRules
+      noncontextual).mp step
+  obtain ⟨rule, ruleMember, initial, matched, final, premises, targetEq⟩ := root
+  have matched' : initial ∈ ilMatchPattern rule.left p := by
+    simpa [hplain] using matched
+  have targetEq' : ilApplyBindings final rule.right = q := by
+    simpa [hplain] using targetEq
+  obtain ⟨name, leftEq⟩ := hlhs rule ruleMember
+  obtain ⟨witnesses, chain, nodup, disjoint, guards⟩ :=
+    hchain rule ruleMember initial matched' final premises
+  refine ⟨rewriteRuleToSourceExecRuleExt rule, ?_, bindingsToSubst final, ?_⟩
+  · simp only [languageDefToSourceExecRulesExt, List.mem_filterMap]
+    exact ⟨rule, ruleMember, by simp [htransPremises rule ruleMember]⟩
+  · exact matchedRule_multiPremise_fvar_mork_fireSourceRuleExt
+      p q name rule relEnv lang leftEq (htrans rule ruleMember)
+      (htransPremises rule ruleMember) initial matched' final targetEq' hground
+      workspace hp witnesses chain nodup disjoint guards
+
 /-! ## Canary -/
 
 section Canaries
@@ -1412,7 +1506,7 @@ section Canaries
 #check @patternToSpace
 #check @languageDefToExecRules
 #check @applySubst_commutes
-#check @declReduces_topRule_fvar_mork_fire
+#check @matchedRule_fvar_mork_fire
 #check @rewriteRuleToSourceExecRule
 #check @premisesToSourceFactors_length
 #check @bindingsToSubst
@@ -1421,7 +1515,7 @@ section Canaries
 #check @WorkspaceRepresentsPremise
 #check @WorkspaceRepresentsPremises
 #check @premiseChain_matchSourceFactorsExt
-#check @declReducesWithPremises_multiPremise_fvar_mork_fireSourceRuleExt
+#check @matchedRule_multiPremise_fvar_mork_fireSourceRuleExt
 end Canaries
 
 end Mettapedia.Languages.ProcessCalculi.MORK

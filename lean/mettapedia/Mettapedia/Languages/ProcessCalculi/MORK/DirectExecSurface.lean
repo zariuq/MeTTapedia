@@ -23,7 +23,8 @@ Plus one honest bridge theorem: PeTTa eval/evalc steps fire through this seam.
 - Not a redesign of MM2 or the scheduler
 - Not a claim that all MeTTa runtime semantics are directly executable
 - Not a lift of scheduler metadata upward into RuntimeSpec
-- Not a coverage claim for congElem, beta-reduction, or full runtime control
+- Not a coverage claim for representation-wide collection descent,
+  beta-reduction, or full runtime control
 
 ## Honest blockers for features NOT yet covered
 

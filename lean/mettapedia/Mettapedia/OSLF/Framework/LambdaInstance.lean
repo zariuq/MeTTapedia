@@ -1,6 +1,7 @@
 import Mettapedia.OSLF.MeTTaIL.Syntax
 import Mettapedia.OSLF.MeTTaIL.Match
 import Mettapedia.OSLF.MeTTaIL.Engine
+import Mettapedia.OSLF.MeTTaIL.ContextualStep
 import Mettapedia.OSLF.Framework.TypeSynthesis
 import Mettapedia.OSLF.Formula
 
@@ -31,10 +32,9 @@ lambdaOSLF : OSLFTypeSystem  (with proven Galois connection)
 
 ## Limitations
 
-The generic MeTTaIL engine only provides congruence under collection constructors
-(bag/set/vec), not under `.apply` nodes. This means β-reduction only fires at the
-top level. Multi-step reduction handles terms where the outermost constructor is a
-β-redex, but cannot reduce inner sub-applications without a congruence rule.
+This `LanguageDef` authors no contextual rule, so β-reduction fires only at
+the top level. Inner sub-applications reduce only after the language explicitly
+adds the corresponding evaluation-context schemas.
 
 ## References
 
@@ -47,6 +47,7 @@ namespace Mettapedia.OSLF.Framework.LambdaInstance
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Match
 open Mettapedia.OSLF.MeTTaIL.Engine
+open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open Mettapedia.OSLF.Framework.TypeSynthesis
 open Mettapedia.OSLF.Formula
 
@@ -84,6 +85,11 @@ def lambdaCalc : LanguageDef := {
   ]
 }
 
+/-- All root reductions of `lambdaCalc`.  Its sole rule has no contextual
+premise, so contextual depth one is exact. -/
+def lambdaReducts (term : Pattern) : List Pattern :=
+  rewriteAt (engineBasePremises RelationEnv.empty) lambdaCalc 1 term
+
 /-! ## OSLF Pipeline Instantiation -/
 
 /-- The OSLF type system for lambda calculus.
@@ -120,7 +126,7 @@ private instance : ToString Pattern := ⟨termToString⟩
 #eval! do
   let zero := Pattern.fvar "0"
   let term := app (lam (.bvar 0)) zero
-  let reducts := rewriteWithContext lambdaCalc term
+  let reducts := lambdaReducts term
   IO.println s!"Demo 1: (λ.#0) 0"
   IO.println s!"  reducts ({reducts.length}):"
   for r in reducts do
@@ -130,7 +136,7 @@ private instance : ToString Pattern := ⟨termToString⟩
 #eval! do
   let zero := Pattern.fvar "0"
   let term := app (lam (lam (.bvar 1))) zero
-  let reducts := rewriteWithContext lambdaCalc term
+  let reducts := lambdaReducts term
   IO.println s!"Demo 2: (λ.λ.#1) 0"
   IO.println s!"  reducts ({reducts.length}):"
   for r in reducts do
@@ -141,7 +147,7 @@ private instance : ToString Pattern := ⟨termToString⟩
   let zero := Pattern.fvar "0"
   let inner := app (lam (.bvar 0)) zero
   let term := app (lam (.bvar 0)) inner
-  let nf := fullRewriteToNormalForm lambdaCalc term 100
+  let nf := normalizeFirst lambdaCalc 1 100 term
   IO.println s!"Demo 3: (λ.#0) ((λ.#0) 0)"
   IO.println s!"  normal form: {nf}"
 
@@ -149,7 +155,7 @@ private instance : ToString Pattern := ⟨termToString⟩
 #eval! do
   let a := Pattern.fvar "a"
   let term := app (lam (app (.bvar 0) (.bvar 0))) a
-  let reducts := rewriteWithContext lambdaCalc term
+  let reducts := lambdaReducts term
   IO.println s!"Demo 4: (λ.#0 #0) a"
   IO.println s!"  reducts ({reducts.length}):"
   for r in reducts do
@@ -160,7 +166,7 @@ private instance : ToString Pattern := ⟨termToString⟩
   let zero := Pattern.fvar "0"
   let term := app (lam (.bvar 0)) zero
   let noAtoms : AtomCheck := fun _ _ => false
-  let result := check (rewriteWithContext lambdaCalc) noAtoms 50 term (.dia .top)
+  let result := check (lambdaReducts) noAtoms 50 term (.dia .top)
   IO.println s!"Demo 5: Can (λ.#0) 0 reduce?"
   IO.println s!"  check (◇⊤) = {result}"
 
@@ -168,7 +174,7 @@ private instance : ToString Pattern := ⟨termToString⟩
 #eval! do
   let zero := Pattern.fvar "0"
   let noAtoms : AtomCheck := fun _ _ => false
-  let result := check (rewriteWithContext lambdaCalc) noAtoms 50 zero (.dia .top)
+  let result := check (lambdaReducts) noAtoms 50 zero (.dia .top)
   IO.println s!"Demo 6: Can 0 reduce?"
   IO.println s!"  check (◇⊤) = {result}"
 
@@ -184,7 +190,7 @@ These tests verify that previously-problematic cases now reduce correctly. -/
   let zero := Pattern.fvar "0"
   -- (λ.λ.#1) where #1 is the outer bound var
   let term := app (lam (lam (.bvar 1))) zero
-  let reducts := rewriteWithContext lambdaCalc term
+  let reducts := lambdaReducts term
   IO.println s!"Canary 7: (λ.λ.#1) 0 — formerly-buggy K combinator"
   IO.println s!"  reducts ({reducts.length}): expected 1 (capture impossible in LN)"
   for r in reducts do
@@ -194,7 +200,7 @@ These tests verify that previously-problematic cases now reduce correctly. -/
 #eval! do
   let zero := Pattern.fvar "0"
   let term := app (lam (.bvar 0)) zero
-  let reducts := rewriteWithContext lambdaCalc term
+  let reducts := lambdaReducts term
   IO.println s!"Canary 8: (λ.#0) 0 — identity"
   IO.println s!"  reducts ({reducts.length}): expected 1"
   for r in reducts do

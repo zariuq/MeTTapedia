@@ -914,10 +914,6 @@ structure LanguageDef where
   terms : List GrammarRule
   equations : List Equation
   rewrites : List RewriteRule
-  /-- Collection shapes where one-step congruence descent is permitted.
-      This controls subterm/context rewriting in the generic engine.
-      Default is empty: each language should opt in explicitly. -/
-  congruenceCollections : List CollType := []
   logic : List LogicDecl := []
   oracles : List OracleDecl := []
   /-- Named, validated reflective-semantics declarations.  Rules opt in by
@@ -969,15 +965,6 @@ def addEquation (lang : LanguageDef) (eq : Equation) : LanguageDef :=
 
 def addRewrite (lang : LanguageDef) (rw : RewriteRule) : LanguageDef :=
   { lang with rewrites := lang.rewrites ++ [rw] }
-
-/-- Predicate view for congruence-descent permission. -/
-def allowsCongruenceIn (lang : LanguageDef) (ct : CollType) : Prop :=
-  ct ∈ lang.congruenceCollections
-
-instance (lang : LanguageDef) (ct : CollType) :
-    Decidable (LanguageDef.allowsCongruenceIn lang ct) := by
-  unfold LanguageDef.allowsCongruenceIn
-  infer_instance
 
 /-- Forgetful lowering from the new language surface to legacy core. -/
 def toLegacy (lang : LanguageDef) : LegacyLanguageDef :=
@@ -1676,6 +1663,22 @@ private def isQuoteDropEquation
     | _, _ => false
   forward || reverse
 
+/-- Syntactic fail-closed check that a rewrite explicitly transports a
+`congruence` premise through the selected collection context.  The full
+zipper compiler and its correctness theorem live in `DerivedContexts`; this
+local check keeps `LanguageDef` validation acyclic. -/
+private def explicitlyAuthorsCollectionContext
+    (collectionType : CollType) (rule : RewriteRule) : Bool :=
+  rule.premises.any fun premise =>
+    match premise, rule.left, rule.right with
+    | .congruence (.fvar source) (.fvar target),
+        .collection leftType [.fvar leftSource] leftRest,
+        .collection rightType [.fvar rightTarget] rightRest =>
+      leftType == collectionType && rightType == collectionType &&
+        source == leftSource && target == rightTarget &&
+        leftRest == rightRest
+    | _, _, _ => false
+
 /-- Cross-reference and signature checks for one authored reflective compiler
 declaration.  These checks make the declaration data fail closed before an
 engine may interpret it. -/
@@ -1701,9 +1704,10 @@ def validateReflectivePresentation
   let unitErrors := reflectiveUnitErrors lang context
     declaration.parallelUnitConstructor declaration.processSort
   let collectionErrors :=
-    if declaration.parallelCollection ∈ lang.congruenceCollections then [] else
+    if lang.rewrites.any
+        (explicitlyAuthorsCollectionContext declaration.parallelCollection) then [] else
       [mkValidationError context
-        "parallel collection is not admitted as a congruence context"]
+        "parallel collection has no explicit contextual rewrite rule"]
   let equationErrors :=
     match lang.equations.filter fun equation =>
         equation.name == declaration.quoteDropEquation with
@@ -2045,15 +2049,19 @@ def rhoCommRewrite : RewriteRule where
     .subst (.fvar "p") (.apply "NQuote" [.fvar "q"])
   ] (some "rest")
 
+/-- The authored rho contextual rule.  Parallel closure is semantic rule data,
+not a property of the `hashBag` representation. -/
+def rhoParCongRewrite : RewriteRule where
+  name := "ParCong"
+  typeContext := []
+  premises := [.congruence (.fvar "S") (.fvar "T")]
+  left := .collection .hashBag [.fvar "S"] (some "rest")
+  right := .collection .hashBag [.fvar "T"] (some "rest")
+
 /-- The ρ-calculus language definition -/
 def rhoCalc : LanguageDef := {
   name := "RhoCalc",
   types := ["Proc", "Name"],
-  -- Canonical ρ process contexts are parallel-bag contexts.
-  -- Source: present-moment.pdf states set accumulation is an optional extension
-  -- and "not strictly necessary ... we could simply use parallel composition
-  -- to accumulate the states."
-  congruenceCollections := [.hashBag],
   reflectivePresentations := [rhoReflectivePresentation],
   terms := [
     -- PZero . |- "0" : Proc
@@ -2102,11 +2110,7 @@ def rhoCalc : LanguageDef := {
     rhoCommRewrite,
 
     -- ParCong: | S ~> T |- {S, ...rest} ~> {T, ...rest}
-    { name := "ParCong",
-      typeContext := [],
-      premises := [.congruence (.fvar "S") (.fvar "T")],
-      left := .collection .hashBag [.fvar "S"] (some "rest"),
-      right := .collection .hashBag [.fvar "T"] (some "rest") }
+    rhoParCongRewrite
   ]
 }
 
@@ -2115,7 +2119,7 @@ def rhoCalc : LanguageDef := {
 /-- The authored strict-core rho definition passes every structural and
 reflective cross-reference check. -/
 theorem rhoCalc_validate_eq_nil : rhoCalc.validate = [] := by
-  simp [LanguageDef.validate, rhoCalc, rhoCommRewrite,
+  simp [LanguageDef.validate, rhoCalc, rhoCommRewrite, rhoParCongRewrite,
     rhoReflectivePresentation, LanguageDef.validateReflectivePresentation,
     LanguageDef.duplicateErrors, LanguageDef.duplicateErrorsAux,
     LanguageDef.validateTypeExpr, LanguageDef.validateSyntaxPattern,
@@ -2123,6 +2127,7 @@ theorem rhoCalc_validate_eq_nil : rhoCalc.validate = [] := by
     LanguageDef.validateRewrite,
     LanguageDef.validatePatternConstructors, LanguageDef.validatePremises,
     LanguageDef.validateRulePatterns, LanguageDef.reflectiveConstructorErrors,
+    LanguageDef.explicitlyAuthorsCollectionContext,
     LanguageDef.reflectiveInputErrors, LanguageDef.reflectiveOutputErrors,
     LanguageDef.reflectiveUnitErrors, LanguageDef.isQuoteDropEquation,
     LanguageDef.typeNames, TypeDecl.plain, TypeExpr.baseType, TypeExpr.proc,
@@ -2140,7 +2145,7 @@ theorem rhoCalc_missing_reflective_rule_validate_ne_nil :
     ({ rhoCalc with
         reflectivePresentations :=
           [{ rhoReflectivePresentation with rewriteRule := "MissingComm" }] }).validate ≠ [] := by
-  simp [LanguageDef.validate, rhoCalc, rhoCommRewrite,
+  simp [LanguageDef.validate, rhoCalc, rhoCommRewrite, rhoParCongRewrite,
     rhoReflectivePresentation, LanguageDef.validateReflectivePresentation,
     LanguageDef.duplicateErrors, LanguageDef.duplicateErrorsAux,
     LanguageDef.validateTypeExpr, LanguageDef.validateSyntaxPattern,
@@ -2279,12 +2284,12 @@ def resolveNullaryWith (ls : List String) (lang : LanguageDef) : LanguageDef :=
 
 NAMED THEOREM TARGET (match-semantics correspondence — formulation pinned
 2026-07-09, dual-seat-confirmed, not yet proved): naked inclusion
-`DeclReduces (resolve L) ⊆ DeclReduces L` is FALSE — an RHS-only nullary
+`ContextualStep.Step (resolve L) ⊆ ContextualStep.Step L` is FALSE — an RHS-only nullary
 mention changes the OUTPUT term. The confirmed package, with
 `resolveTerm := Pattern.resolveNullary (nullaryLabels L) []` and `p` called
 SATURATED when `resolveTerm p = p`:
-(backward) for saturated `p`, `DeclReduces (resolve L) p q →
-  ∃ q₀, DeclReduces L p q₀ ∧ resolveTerm q₀ = q`;
+(backward) for saturated `p`, `ContextualStep.Step (resolve L) p q →
+  ∃ q₀, ContextualStep.Step L p q₀ ∧ resolveTerm q₀ = q`;
 (forward, intended instances) an `L`-step whose match and premise solutions
   assign every nullary pseudo-variable its constant maps to a
   `resolve L`-step between the resolved endpoints;

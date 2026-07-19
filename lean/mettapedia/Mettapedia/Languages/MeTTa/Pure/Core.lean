@@ -221,21 +221,21 @@ theorem mettaPure_no_equations : mettaPure.equations = [] := rfl
   let identity := mkLam (.bvar 0)      -- λx. x
   let a := .fvar "a"                   -- free variable a
   let redex := mkApp identity a        -- (λx. x) a
-  let result := rewriteWithContext mettaPure redex
+  let result := Mettapedia.OSLF.MeTTaIL.ContextualStep.reducts mettaPure 1 redex
   (redex, result)
 
 #eval!
   let a := .fvar "a"
   let b := .fvar "b"
   let redex := mkFst (mkPair a b)      -- fst (a, b)
-  let result := rewriteWithContext mettaPure redex
+  let result := Mettapedia.OSLF.MeTTaIL.ContextualStep.reducts mettaPure 1 redex
   (redex, result)
 
 #eval!
   let a := .fvar "a"
   let b := .fvar "b"
   let redex := mkSnd (mkPair a b)      -- snd (a, b)
-  let result := rewriteWithContext mettaPure redex
+  let result := Mettapedia.OSLF.MeTTaIL.ContextualStep.reducts mettaPure 1 redex
   (redex, result)
 
 end Mettapedia.Languages.MeTTa.Pure.Core

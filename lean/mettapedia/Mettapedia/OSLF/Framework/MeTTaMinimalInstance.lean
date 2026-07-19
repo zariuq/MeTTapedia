@@ -1,5 +1,6 @@
 import Mettapedia.OSLF.MeTTaIL.Syntax
 import Mettapedia.OSLF.MeTTaIL.Engine
+import Mettapedia.OSLF.MeTTaIL.ContextualStep
 import Mettapedia.OSLF.Framework.TypeSynthesis
 import Mettapedia.OSLF.Framework.ConstructorCategory
 import Mettapedia.OSLF.Framework.BeckChevalleyOSLF
@@ -26,6 +27,7 @@ namespace Mettapedia.OSLF.Framework.MeTTaMinimalInstance
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Engine
+open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open Mettapedia.OSLF.Framework.TypeSynthesis
 open Mettapedia.OSLF.Framework.ConstructorCategory
 open Mettapedia.OSLF.Formula
@@ -175,14 +177,14 @@ private def mettaMinimalRelEnv : RelationEnv where
 #eval! do
   let a : Pattern := Pattern.apply "ATrue" []
   let s := mkState (iEval a) (Pattern.apply "AFalse" []) a
-  let reducts := rewriteWithContextWithPremises mettaMinimal s
+  let reducts := rewriteAt (engineBasePremises RelationEnv.empty) mettaMinimal 1 s
   IO.println s!"MeTTaMinimal demo (eval): reduct count = {reducts.length}"
 
 -- Smoke check 2: unify(a,a) state has at least one reduct (hit branch).
 #eval! do
   let a : Pattern := Pattern.apply "ATrue" []
   let s := mkState (iUnify a a) (Pattern.apply "AFalse" []) a
-  let reducts := rewriteWithContextWithPremises mettaMinimal s
+  let reducts := rewriteAt (engineBasePremises RelationEnv.empty) mettaMinimal 1 s
   IO.println s!"MeTTaMinimal demo (unify hit): reduct count = {reducts.length}"
 
 -- Smoke check 3: unify(true,false) miss branch via external `neq` relation env.
@@ -190,7 +192,7 @@ private def mettaMinimalRelEnv : RelationEnv where
   let t : Pattern := Pattern.apply "ATrue" []
   let f : Pattern := Pattern.apply "AFalse" []
   let s := mkState (iUnify t f) f t
-  let reducts := rewriteWithContextWithPremisesUsing mettaMinimalRelEnv mettaMinimal s
+  let reducts := rewriteAt (engineBasePremises mettaMinimalRelEnv) mettaMinimal 1 s
   IO.println s!"MeTTaMinimal demo (unify miss via env): reduct count = {reducts.length}"
 
 -- Smoke check 4: chain(src, tmpl) via external chain relation.
@@ -198,21 +200,21 @@ private def mettaMinimalRelEnv : RelationEnv where
   let t : Pattern := Pattern.apply "ATrue" []
   let f : Pattern := Pattern.apply "AFalse" []
   let s := mkState (iChain t f) f t
-  let reducts := rewriteWithContextWithPremisesUsing mettaMinimalRelEnv mettaMinimal s
+  let reducts := rewriteAt (engineBasePremises mettaMinimalRelEnv) mettaMinimal 1 s
   IO.println s!"MeTTaMinimal demo (chain via env): reduct count = {reducts.length}"
 
 -- Smoke check 5: collapse-bind(src) via external collapse relation.
 #eval! do
   let t : Pattern := Pattern.apply "ATrue" []
   let s := mkState (iCollapseBind t) t t
-  let reducts := rewriteWithContextWithPremisesUsing mettaMinimalRelEnv mettaMinimal s
+  let reducts := rewriteAt (engineBasePremises mettaMinimalRelEnv) mettaMinimal 1 s
   IO.println s!"MeTTaMinimal demo (collapse-bind via env): reduct count = {reducts.length}"
 
 -- Smoke check 6: superpose-bind(packed) via external superpose relation.
 #eval! do
   let f : Pattern := Pattern.apply "AFalse" []
   let s := mkState (iSuperposeBind f) f f
-  let reducts := rewriteWithContextWithPremisesUsing mettaMinimalRelEnv mettaMinimal s
+  let reducts := rewriteAt (engineBasePremises mettaMinimalRelEnv) mettaMinimal 1 s
   IO.println s!"MeTTaMinimal demo (superpose-bind via env): reduct count = {reducts.length}"
 
 -- Verify instance and theorem are available.

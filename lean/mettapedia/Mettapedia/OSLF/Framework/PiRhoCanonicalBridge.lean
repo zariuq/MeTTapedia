@@ -188,21 +188,6 @@ abbrev rhoDerivedCanonicalRel : Pattern → Pattern → Prop :=
   Mettapedia.OSLF.Framework.TypeSynthesis.langReduces
     Mettapedia.Languages.ProcessCalculi.RhoCalculus.Extended.rhoCalcSetExt
 
-/-- Concrete image-finiteness for the canonical executable core relation. -/
-theorem imageFinite_rhoCoreCanonicalRel
-    (p : Pattern) : Set.Finite {q : Pattern | rhoCoreCanonicalRel p q} := by
-  simpa [rhoCoreCanonicalRel] using
-    Mettapedia.OSLF.Framework.ImageFinite.imageFinite_langReduces
-      Mettapedia.OSLF.MeTTaIL.Syntax.rhoCalc p
-
-/-- Concrete image-finiteness for the canonical executable derived-facing
-relation. -/
-theorem imageFinite_rhoDerivedCanonicalRel
-    (p : Pattern) : Set.Finite {q : Pattern | rhoDerivedCanonicalRel p q} := by
-  simpa [rhoDerivedCanonicalRel] using
-    Mettapedia.OSLF.Framework.ImageFinite.imageFinite_langReduces
-      Mettapedia.Languages.ProcessCalculi.RhoCalculus.Extended.rhoCalcSetExt p
-
 /-- `◇⊤` over core-star always holds (via reflexivity). -/
 theorem sem_diaTop_coreStar_refl {I : Mettapedia.OSLF.Formula.AtomSem} (p : Pattern) :
     Mettapedia.OSLF.Formula.sem rhoCoreStarRel I
@@ -517,10 +502,11 @@ theorem hm_converse_rhoDerivedStarRel
       (hImageFinite := hImageFinite)
       hobs
 
-/-- HM-ready converse wrapper for the canonical executable core relation, with
-concrete image-finiteness discharged. -/
-theorem hm_converse_rhoCoreCanonicalRel
+/-- HM-ready converse wrapper for the canonical executable core relation under
+explicit forward image-finiteness. -/
+theorem hm_converse_rhoCoreCanonicalRel_of_imageFinite
     (I : Mettapedia.OSLF.Formula.AtomSem)
+    (hImageFinite : ∀ p : Pattern, Set.Finite {q : Pattern | rhoCoreCanonicalRel p q})
     {p q : Pattern}
     (hobs :
       Mettapedia.OSLF.Framework.KSUnificationSketch.OSLFObsEq
@@ -531,13 +517,15 @@ theorem hm_converse_rhoCoreCanonicalRel
     Mettapedia.OSLF.Framework.KSUnificationSketch.hm_converse_schema
       (R := rhoCoreCanonicalRel)
       (I := I)
-      (hImageFinite := imageFinite_rhoCoreCanonicalRel)
+      (hImageFinite := hImageFinite)
       hobs
 
 /-- HM-ready converse wrapper for the canonical executable derived-facing
-relation, with concrete image-finiteness discharged. -/
-theorem hm_converse_rhoDerivedCanonicalRel
+relation under explicit forward image-finiteness. -/
+theorem hm_converse_rhoDerivedCanonicalRel_of_imageFinite
     (I : Mettapedia.OSLF.Formula.AtomSem)
+    (hImageFinite : ∀ p : Pattern,
+      Set.Finite {q : Pattern | rhoDerivedCanonicalRel p q})
     {p q : Pattern}
     (hobs :
       Mettapedia.OSLF.Framework.KSUnificationSketch.OSLFObsEq
@@ -548,14 +536,15 @@ theorem hm_converse_rhoDerivedCanonicalRel
     Mettapedia.OSLF.Framework.KSUnificationSketch.hm_converse_schema
       (R := rhoDerivedCanonicalRel)
       (I := I)
-      (hImageFinite := imageFinite_rhoDerivedCanonicalRel)
+      (hImageFinite := hImageFinite)
       hobs
 
 /-- Full classical HM iff on the canonical executable core relation:
 observer-indistinguishability coincides with full bisimilarity under explicit
-forward/backward image-finiteness (forward is discharged here). -/
-theorem hm_iff_fullBisim_rhoCoreCanonicalRel
+forward/backward image-finiteness. -/
+theorem hm_iff_fullBisim_rhoCoreCanonicalRel_of_finite
     (I : Mettapedia.OSLF.Formula.AtomSem)
+    (hImageFinite : ∀ p : Pattern, Set.Finite {q : Pattern | rhoCoreCanonicalRel p q})
     (hPredFinite : ∀ p : Pattern, Set.Finite {q : Pattern | rhoCoreCanonicalRel q p})
     (p q : Pattern) :
     Mettapedia.OSLF.Framework.DistinctionGraph.indistObs
@@ -567,15 +556,17 @@ theorem hm_iff_fullBisim_rhoCoreCanonicalRel
     Mettapedia.OSLF.Framework.DistinctionGraph.indist_iff_fullBisim_imageFinite
       (R := rhoCoreCanonicalRel)
       (I := I)
-      (hImageFinite := imageFinite_rhoCoreCanonicalRel)
+      (hImageFinite := hImageFinite)
       (hPredFinite := hPredFinite)
       p q
 
 /-- Full classical HM iff on the canonical executable derived-facing relation:
 observer-indistinguishability coincides with full bisimilarity under explicit
-forward/backward image-finiteness (forward is discharged here). -/
-theorem hm_iff_fullBisim_rhoDerivedCanonicalRel
+forward/backward image-finiteness. -/
+theorem hm_iff_fullBisim_rhoDerivedCanonicalRel_of_finite
     (I : Mettapedia.OSLF.Formula.AtomSem)
+    (hImageFinite : ∀ p : Pattern,
+      Set.Finite {q : Pattern | rhoDerivedCanonicalRel p q})
     (hPredFinite : ∀ p : Pattern, Set.Finite {q : Pattern | rhoDerivedCanonicalRel q p})
     (p q : Pattern) :
     Mettapedia.OSLF.Framework.DistinctionGraph.indistObs
@@ -587,7 +578,7 @@ theorem hm_iff_fullBisim_rhoDerivedCanonicalRel
     Mettapedia.OSLF.Framework.DistinctionGraph.indist_iff_fullBisim_imageFinite
       (R := rhoDerivedCanonicalRel)
       (I := I)
-      (hImageFinite := imageFinite_rhoDerivedCanonicalRel)
+      (hImageFinite := hImageFinite)
       (hPredFinite := hPredFinite)
       p q
 
@@ -1841,11 +1832,15 @@ structure PiRhoCoreMainCanonicalContract
       Mettapedia.OSLF.Framework.KSUnificationSketch.OSLFObsEq S.rel I p q →
       Mettapedia.OSLF.Framework.KSUnificationSketch.Bisimilar S.rel p q
   hm_converse_coreCanonical :
-    ∀ (I : Mettapedia.OSLF.Formula.AtomSem) {p q : Pattern},
+    ∀ (_hImageFinite : ∀ p : Pattern,
+        Set.Finite {q : Pattern | rhoCoreCanonicalRel p q})
+      (I : Mettapedia.OSLF.Formula.AtomSem) {p q : Pattern},
       Mettapedia.OSLF.Framework.KSUnificationSketch.OSLFObsEq rhoCoreCanonicalRel I p q →
       Mettapedia.OSLF.Framework.KSUnificationSketch.Bisimilar rhoCoreCanonicalRel p q
   hm_converse_derivedCanonical :
-    ∀ (I : Mettapedia.OSLF.Formula.AtomSem) {p q : Pattern},
+    ∀ (_hImageFinite : ∀ p : Pattern,
+        Set.Finite {q : Pattern | rhoDerivedCanonicalRel p q})
+      (I : Mettapedia.OSLF.Formula.AtomSem) {p q : Pattern},
       Mettapedia.OSLF.Framework.KSUnificationSketch.OSLFObsEq rhoDerivedCanonicalRel I p q →
       Mettapedia.OSLF.Framework.KSUnificationSketch.Bisimilar rhoDerivedCanonicalRel p q
 
@@ -1894,10 +1889,10 @@ def piRho_coreMain_canonical_contract_end_to_end
     exact hm_converse_of_finiteSubrelation (S := S) I hobsEq
   · intro S I p q hobsEq
     exact hm_converse_of_finiteSubrelation (S := S) I hobsEq
-  · intro I p q hobsEq
-    exact hm_converse_rhoCoreCanonicalRel I hobsEq
-  · intro I p q hobsEq
-    exact hm_converse_rhoDerivedCanonicalRel I hobsEq
+  · intro hImageFinite I p q hobsEq
+    exact hm_converse_rhoCoreCanonicalRel_of_imageFinite I hImageFinite hobsEq
+  · intro hImageFinite I p q hobsEq
+    exact hm_converse_rhoDerivedCanonicalRel_of_imageFinite I hImageFinite hobsEq
 
 /-- Concrete nontrivial RF canary using predecessor-domain atoms (not
 `hAtomAll`): atoms are indexed by predecessor reachability to the encoded

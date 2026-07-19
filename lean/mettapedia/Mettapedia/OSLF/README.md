@@ -117,9 +117,10 @@ Fuller worked GSLTs to copy from: `Framework/TinyMLInstance.lean`,
   - `OSLFFormula`
   - `sem`
   - `checkLangUsing`
-- `Mettapedia/OSLF/MeTTaIL/DeclReducesWithPremises.lean`
+- `Mettapedia/OSLF/MeTTaIL/ContextualStep.lean`
 
-- `Mettapedia/OSLF/MeTTaIL/DeclReducesWithPremises.lean` is a soundness-completeness bridge.
+- `Mettapedia/OSLF/MeTTaIL/ContextualStep.lean` derives the least contextual
+  reduction from authored congruence premises and proves its bounded executor exact.
 
 ### Starting points
 
@@ -205,7 +206,7 @@ Executable runtime implementations belong in the separate lightweight project:
 
 ### Positive example
 
-- proving a language-level property (`langGalois` / `DeclReducesWithPremises`) belongs in `OSLF/MeTTaIL`.
+- proving a language-level property (`langGalois` / `ContextualStep.Step`) belongs in `OSLF/MeTTaIL`.
 
 ### Negative example
 
@@ -239,10 +240,11 @@ This is the core "derive a type system from operational semantics" path.
 - `Mettapedia/OSLF/MeTTaIL/Engine.lean`
   - `RelationEnv`
   - `applyRuleWithPremisesUsing`
-  - `rewriteWithContextWithPremisesUsing`
-- `Mettapedia/OSLF/MeTTaIL/DeclReducesWithPremises.lean`
+  - `rewriteStepWithPremisesUsing`
+- `Mettapedia/OSLF/MeTTaIL/ContextualStep.lean`
 
-- `Mettapedia/OSLF/MeTTaIL/DeclReducesWithPremises.lean` is an executable-declarative bridge.
+- `Mettapedia/OSLF/MeTTaIL/ContextualStep.lean` defines the least authored
+  contextual relation and proves the fuel-indexed compiler sound and complete.
 
 ### Formula-layer checker-soundness status
 

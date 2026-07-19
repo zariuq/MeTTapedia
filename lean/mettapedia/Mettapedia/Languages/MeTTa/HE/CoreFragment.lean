@@ -1,7 +1,7 @@
 import Mettapedia.Languages.MeTTa.RuntimeExec
 import Mettapedia.Languages.MeTTa.HE.HELanguageDef
 import Mettapedia.OSLF.MeTTaIL.MatchSpec
-import Mettapedia.OSLF.MeTTaIL.DeclReducesWithPremises
+import Mettapedia.OSLF.MeTTaIL.ContextualStep
 
 /-!
 # HE Core Fragment
@@ -10,7 +10,7 @@ Defines the first explicit HE runtime fragment that lands cleanly on the current
 `R_exec₀` theorem boundary.
 
 The initial fragment is intentionally narrow:
-- only the `topRule` constructor of `DeclReducesRel mettaHE`
+- only direct authored-rule applications in `mettaHE`
 - only no-premise rules
 - only `fvar`-headed LHS rules
 - only MORK-translatable RHS terms
@@ -23,14 +23,14 @@ Positive example:
   RHS lands on `fireSourceRule`.
 
 Negative example:
-- `congElem` is not included here: the current MORK boundary explicitly does not
-  model collection-element congruence.
+- contextual rules are admitted only through explicit premises authored in
+  `mettaHE`; collection representation alone grants no closure.
 - scheduler priority and sink/update phase distinctions remain execution metadata
   below this theorem boundary.
 
 Audit note:
-- The next honest widening is premise-bearing `topRule`, but only through the
-  premise-aware reduction surface `DeclReducesWithPremises` plus a
+- The next honest widening is premise-bearing rule application through the
+  least authored contextual relation plus a
   `PremiseChain` witness. That widening is theoremically valid and still does
   not require scheduler or sink metadata.
 -/
@@ -42,7 +42,7 @@ open Mettapedia.Languages.ProcessCalculi.MORK
 open Mettapedia.Languages.MeTTa.HE.LanguageDef
 open Mettapedia.OSLF.MeTTaIL.Match
 open Mettapedia.OSLF.MeTTaIL.MatchSpec
-open Mettapedia.OSLF.MeTTaIL.DeclReducesPremises
+open Mettapedia.OSLF.MeTTaIL.ContextualStep
 
 private abbrev ILPattern := Mettapedia.OSLF.MeTTaIL.Syntax.Pattern
 private abbrev ILBindings := Mettapedia.OSLF.MeTTaIL.Match.Bindings
@@ -85,7 +85,7 @@ This is the maximal low-risk fragment that already aligns with the current
 does not claim coverage for collection congruence or scheduler-level execution.
 -/
 inductive HECoreStep : ILPattern → ILPattern → Prop where
-  | topRule (r : ILRewriteRule) (bs : ILBindings) (p q : ILPattern)
+  | rule (r : ILRewriteRule) (bs : ILBindings) (p q : ILPattern)
       (hr : r ∈ mettaHE.rewrites)
       (hprem : r.premises = [])
       (hmatch : MatchRel r.left p bs)
@@ -100,18 +100,18 @@ abbrev HECoreStepStar := Relation.ReflTransGen HECoreStep
 
 This fragment still stays at top-level rule application, but it moves from the
 legacy no-premise reduction surface to the honest premise-aware reduction
-surface `DeclReducesWithPremises`.
+surface of the least authored contextual relation.
 
 Positive example:
 - `relationQuery`-driven HE top rules can live here and still lower to the
   current source-rule execution boundary.
 
 Negative example:
-- collection congruence is still not part of this fragment
+- contextual collection descent requires an explicit authored rule
 - freshness is not yet included in the packaged fragment theorem
 -/
 inductive HEPremiseCoreStep (relEnv : ILRelEnv) : ILPattern → ILPattern → Prop where
-  | topRule (r : ILRewriteRule) (bs0 bs : ILBindings) (p q : ILPattern)
+  | rule (r : ILRewriteRule) (bs0 bs : ILBindings) (p q : ILPattern)
       (hr : r ∈ mettaHE.rewrites)
       (hbs0 : bs0 ∈ matchPattern r.left p)
       (hbs : bs ∈ applyPremisesWithEnv relEnv mettaHE r.premises bs0)
@@ -156,6 +156,32 @@ private theorem allPremisesTranslatable_implies_ext (premises : List ILPremise)
   specialize hall prem hprem
   cases prem <;> simp [premiseToSourceFactor, premiseToFactorOrGuard] at hall ⊢
 
+private theorem allPremisesTranslatable_noncontextual
+    (premises : List ILPremise)
+    (accepted : allPremisesTranslatable premises = true) :
+    NoncontextualPremises premises := by
+  induction premises with
+  | nil => exact .nil
+  | cons premise premises ih =>
+      simp only [allPremisesTranslatable, List.all_cons, Bool.and_eq_true] at accepted
+      cases premise with
+      | relationQuery relation arguments =>
+          exact .relationQuery (ih accepted.2)
+      | _ => simp [premiseToSourceFactor] at accepted
+
+private theorem allPremisesTranslatableExt_noncontextual
+    (premises : List ILPremise)
+    (accepted : allPremisesTranslatableExt premises = true) :
+    NoncontextualPremises premises := by
+  induction premises with
+  | nil => exact .nil
+  | cons premise premises ih =>
+      simp only [allPremisesTranslatableExt, List.all_cons, Bool.and_eq_true] at accepted
+      cases premise with
+      | freshness condition => exact .freshness (ih accepted.2)
+      | relationQuery relation arguments => exact .relationQuery (ih accepted.2)
+      | _ => simp [premiseToFactorOrGuard] at accepted
+
 /-- RelationQuery-only HE premise-core rules automatically sit inside the
 future guarded/source-aware bridge as well. This records that the current HE
 premise-core fragment is already compatible with the extended `R_exec₀`
@@ -185,47 +211,68 @@ premise fragment yet. -/
     premisesToSourceFactorsExt_compat, premisesToSourceGuards_compat,
     hePremiseCoreRule_premises h]
 
-/-- Forget the core-fragment restriction back to the full HE runtime-facing
-relation `DeclReducesRel mettaHE`. -/
-theorem toDeclReducesRel {p q : ILPattern} (h : HECoreStep p q) :
-    Mettapedia.OSLF.MeTTaIL.MatchSpec.DeclReducesRel mettaHE p q := by
+/-- Every no-premise HE core step belongs to the least authored contextual
+relation generated by `mettaHE`. -/
+theorem toLanguageStep {p q : ILPattern} (h : HECoreStep p q) :
+    Step (engineBasePremises Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv.empty)
+      mettaHE p q := by
   cases h with
-  | topRule r bs p q hr hprem hmatch hq _ =>
-      exact .topRule r hr hprem bs hmatch hq
+  | rule r bs p q hr hprem hmatch hq _ =>
+      have matched : bs ∈
+          Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule
+            mettaHE r p := by
+        simpa [mettaHE] using matchRel_complete hmatch
+      have premises : bs ∈
+          applyPremisesWithEnv
+            Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv.empty
+            mettaHE r.premises bs := by
+        simp [hprem, Mettapedia.OSLF.MeTTaIL.Engine.applyPremisesWithEnv]
+      have target :
+          Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule
+            mettaHE r bs = q := by
+        simpa [mettaHE] using hq
+      exact step_of_rule hr matched (by rw [hprem]; exact .nil) premises target
 
-/-- Star closure in the core fragment forgets to star closure in the full HE
-runtime-facing relation. -/
-theorem toDeclReducesRelStar {p q : ILPattern} (h : HECoreStepStar p q) :
-    Relation.ReflTransGen (Mettapedia.OSLF.MeTTaIL.MatchSpec.DeclReducesRel mettaHE) p q := by
+/-- Star closure of the no-premise fragment embeds in the authored contextual
+relation's star closure. -/
+theorem toLanguageStepStar {p q : ILPattern} (h : HECoreStepStar p q) :
+    Relation.ReflTransGen
+      (Step (engineBasePremises Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv.empty)
+        mettaHE) p q := by
   induction h with
   | refl =>
       exact Relation.ReflTransGen.refl
   | tail hrest hstep ih =>
-      exact Relation.ReflTransGen.tail ih (toDeclReducesRel hstep)
+      exact Relation.ReflTransGen.tail ih (toLanguageStep hstep)
 
-/-- Forget the premise-bearing HE core fragment back to the full premise-aware
-runtime-facing reduction relation. -/
-theorem toDeclReducesWithPremises {relEnv : ILRelEnv} {p q : ILPattern}
+/-- Every premise-bearing HE core step belongs to the least authored contextual
+relation generated by `mettaHE`. -/
+theorem premiseCoreToLanguageStep {relEnv : ILRelEnv} {p q : ILPattern}
     (h : HEPremiseCoreStep relEnv p q) :
-    DeclReducesWithPremises relEnv mettaHE p q := by
+    Step (engineBasePremises relEnv) mettaHE p q := by
   cases h with
-  | topRule r bs0 bs p q hr hbs0 hbs hq _ =>
-      exact .topRule r hr bs0 hbs0 bs hbs hq
+  | rule r bs0 bs p q hr hbs0 hbs hq hcore =>
+      apply step_of_rule hr
+      · simpa [mettaHE] using hbs0
+      · exact allPremisesTranslatable_noncontextual r.premises
+          (hePremiseCoreRule_premises hcore)
+      · exact hbs
+      · simpa [mettaHE] using hq
 
-/-- Star closure in the premise-bearing core fragment forgets to star closure in
-the full premise-aware HE runtime-facing relation. -/
-theorem toDeclReducesWithPremisesStar {relEnv : ILRelEnv} {p q : ILPattern}
+/-- Star closure of the premise-bearing fragment embeds in the authored
+contextual relation's star closure. -/
+theorem premiseCoreToLanguageStepStar {relEnv : ILRelEnv} {p q : ILPattern}
     (h : HEPremiseCoreStepStar relEnv p q) :
-    Relation.ReflTransGen (DeclReducesWithPremises relEnv mettaHE) p q := by
+    Relation.ReflTransGen (Step (engineBasePremises relEnv) mettaHE) p q := by
   induction h with
   | refl =>
       exact Relation.ReflTransGen.refl
   | tail hrest hstep ih =>
-      exact Relation.ReflTransGen.tail ih (toDeclReducesWithPremises hstep)
+      exact Relation.ReflTransGen.tail ih (premiseCoreToLanguageStep hstep)
 
-/-- A core-fragment HE `topRule` step lands on the current `R_exec₀`
+/-- A core-fragment HE rule step lands on the current `R_exec₀`
 source-rule firing boundary. -/
-theorem topRule_toMorkSourceFire
+theorem rule_toMorkSourceFire
     {r : ILRewriteRule} {bs : ILBindings} {p q : ILPattern}
     (hr : r ∈ mettaHE.rewrites)
     (hprem : r.premises = [])
@@ -258,14 +305,14 @@ MORK source-rule firing boundary, provided the premises are already in the
 translatable fragment and we have a `PremiseChain` witness linking premise
 resolution to workspace atoms.
 
-This theorem is the honest next widening after `HECoreStep`: still `topRule`,
+This theorem is the honest next widening after `HECoreStep`: still one authored rule,
 still no scheduler semantics, but now permitting translatable `relationQuery`
-premises through `DeclReducesWithPremises`.
+premises through the least authored contextual relation.
 
 Freshness is the next plausible extension, but that needs a packaged theorem
 through guarded source rules, not the current relationQuery-only bridge.
 -/
-theorem topRuleWithPremises_toMorkSourceFire
+theorem ruleWithPremises_toMorkSourceFire
     {relEnv : ILRelEnv} {r : ILRewriteRule} {bs0 bs : ILBindings}
     {p q : ILPattern} {workspace : Mettapedia.Languages.ProcessCalculi.MORK.Space}
     {witnesses : List Mettapedia.Languages.MeTTa.OSLFCore.Atom}
@@ -291,7 +338,7 @@ theorem topRuleWithPremises_toMorkSourceFire
       simp only [languageDefToSourceExecRules, List.mem_filterMap]
       exact ⟨r, hr, by simp [htrans_prem]⟩,
     bindingsToSubst bs,
-    declReducesWithPremises_multiPremise_fvar_mork_fireSourceRule
+    matchedRule_multiPremise_fvar_mork_fireSourceRule
       p q x r relEnv mettaHE hlhs htrans_rhs htrans_prem bs0 hbs0 bs hq hground
       workspace hp_in witnesses hchain hnodup hwit_ne_p⟩
 
@@ -303,7 +350,7 @@ packages the next honest extension point above the live relationQuery-only
 fragment and below any larger runtime redesign. The additional hypothesis
 `hguards` is exactly the existing MORK-side final-substitution guard check.
 -/
-theorem topRuleWithExtPremises_toMorkSourceFire
+theorem ruleWithExtPremises_toMorkSourceFire
     {relEnv : ILRelEnv} {r : ILRewriteRule} {bs0 bs : ILBindings}
     {p q : ILPattern} {workspace : Mettapedia.Languages.ProcessCalculi.MORK.Space}
     {witnesses : List Mettapedia.Languages.MeTTa.OSLFCore.Atom}
@@ -331,7 +378,7 @@ theorem topRuleWithExtPremises_toMorkSourceFire
       simp only [languageDefToSourceExecRulesExt, List.mem_filterMap]
       exact ⟨r, hr, by simp [htrans_prem]⟩,
     bindingsToSubst bs,
-    declReducesWithPremises_multiPremise_fvar_mork_fireSourceRuleExt
+    matchedRule_multiPremise_fvar_mork_fireSourceRuleExt
       p q x r relEnv mettaHE hlhs htrans_rhs htrans_prem bs0 hbs0 bs hq hground
       workspace hp_in witnesses hchain hnodup hwit_ne_p hguards⟩
 
@@ -344,7 +391,7 @@ The next honest widening after `HEPremiseCoreStep`: rules whose premises are
 /-- Guarded premise-bearing HE core step. Extends `HEPremiseCoreStep` with
     freshness-premise support and a final-substitution guard check. -/
 inductive HEGuardedPremiseCoreStep (relEnv : ILRelEnv) : ILPattern → ILPattern → Prop where
-  | topRule (r : ILRewriteRule) (bs0 bs : ILBindings) (p q : ILPattern)
+  | rule (r : ILRewriteRule) (bs0 bs : ILBindings) (p q : ILPattern)
       (hr : r ∈ mettaHE.rewrites)
       (hbs0 : bs0 ∈ matchPattern r.left p)
       (hbs : bs ∈ applyPremisesWithEnv relEnv mettaHE r.premises bs0)
@@ -364,29 +411,34 @@ theorem premiseCoreToGuarded {relEnv : ILRelEnv} {p q : ILPattern}
     (h : HEPremiseCoreStep relEnv p q) :
     HEGuardedPremiseCoreStep relEnv p q := by
   cases h with
-  | topRule r bs0 bs p q hr hbs0 hbs hq hcore =>
-    exact .topRule r bs0 bs p q hr hbs0 hbs hq
+  | rule r bs0 bs p q hr hbs0 hbs hq hcore =>
+    exact .rule r bs0 bs p q hr hbs0 hbs hq
       (hePremiseCoreRule_to_guarded hcore)
       (by simp [hePremiseCoreRule_guards_empty hcore, matchSourceGuards, List.all_nil])
 
-/-- Forget the guarded HE core fragment back to the full premise-aware
-    runtime-facing reduction relation. -/
-theorem guardedToDeclReducesWithPremises {relEnv : ILRelEnv} {p q : ILPattern}
+/-- The guarded HE core fragment embeds in the least authored contextual
+relation. -/
+theorem guardedCoreToLanguageStep {relEnv : ILRelEnv} {p q : ILPattern}
     (h : HEGuardedPremiseCoreStep relEnv p q) :
-    DeclReducesWithPremises relEnv mettaHE p q := by
+    Step (engineBasePremises relEnv) mettaHE p q := by
   cases h with
-  | topRule r bs0 bs p q hr hbs0 hbs hq _ _ =>
-    exact .topRule r hr bs0 hbs0 bs hbs hq
+  | rule r bs0 bs p q hr hbs0 hbs hq hcore _ =>
+      apply step_of_rule hr
+      · simpa [mettaHE] using hbs0
+      · exact allPremisesTranslatableExt_noncontextual r.premises
+          (heGuardedPremiseCoreRule_premises hcore)
+      · exact hbs
+      · simpa [mettaHE] using hq
 
-/-- Star closure in the guarded core fragment forgets to star closure in the
-    full premise-aware HE runtime-facing relation. -/
-theorem guardedToDeclReducesWithPremisesStar {relEnv : ILRelEnv} {p q : ILPattern}
+/-- Star closure of guarded core steps embeds in the authored contextual
+relation's star closure. -/
+theorem guardedCoreToLanguageStepStar {relEnv : ILRelEnv} {p q : ILPattern}
     (h : HEGuardedPremiseCoreStepStar relEnv p q) :
-    Relation.ReflTransGen (DeclReducesWithPremises relEnv mettaHE) p q := by
+    Relation.ReflTransGen (Step (engineBasePremises relEnv) mettaHE) p q := by
   induction h with
   | refl => exact .refl
   | tail hrest hstep ih =>
-    exact Relation.ReflTransGen.tail ih (guardedToDeclReducesWithPremises hstep)
+    exact Relation.ReflTransGen.tail ih (guardedCoreToLanguageStep hstep)
 
 /-- Star closure of premise-bearing core forgets to star closure of guarded core. -/
 theorem premiseCoreStarToGuardedStar {relEnv : ILRelEnv} {p q : ILPattern}
@@ -399,7 +451,7 @@ theorem premiseCoreStarToGuardedStar {relEnv : ILRelEnv} {p q : ILPattern}
 
 /-! ## End-to-end chain: HE → computable execution
 
-Composes the spec-level bridge (`topRuleWithPremises_toMorkSourceFire`) with
+Composes the spec-level bridge (`ruleWithPremises_toMorkSourceFire`) with
 the backward completeness theorem (`fireSourceRule_toFinset_complete`) to
 obtain a computable `cfireSourceRule` witness from an HE premise-core step. -/
 
@@ -413,7 +465,7 @@ open Mettapedia.Languages.ProcessCalculi.MORK.Conformance
     computable firing produces a space that agrees with the spec-level firing.
 
     This composes:
-    1. `topRuleWithPremises_toMorkSourceFire` (HE step → spec `fireSourceRule`)
+    1. `ruleWithPremises_toMorkSourceFire` (HE step → spec `fireSourceRule`)
     2. `fireSourceRule_toFinset_complete` (spec → computable `cfireSourceRule`) -/
 theorem hePremiseCoreStep_to_computableFire
     {relEnv : ILRelEnv} {r : ILRewriteRule} {bs0 bs : ILBindings}
@@ -449,7 +501,7 @@ theorem hePremiseCoreStep_to_computableFire
       fireSourceRule workspace.toFinset r_source := by
     rcases heCoreRule_fvar (hePremiseCoreRule_core hcore) with ⟨x, hlhs⟩
     exact ⟨bindingsToSubst bs,
-      declReducesWithPremises_multiPremise_fvar_mork_fireSourceRule
+      matchedRule_multiPremise_fvar_mork_fireSourceRule
         p q x r relEnv mettaHE hlhs
         (heCoreRule_translatable (hePremiseCoreRule_core hcore))
         (hePremiseCoreRule_premises hcore) bs0 hbs0 bs hq hground
