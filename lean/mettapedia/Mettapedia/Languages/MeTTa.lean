@@ -19,6 +19,17 @@ import Mettapedia.Languages.MeTTa.CeTTaSpaceEngineRefinement
 import Mettapedia.Languages.MeTTa.HEPureKernelFragmentBridge
 import Mettapedia.Languages.MeTTa.DTTSeedProofPath
 import Mettapedia.Languages.MeTTa.DTTTutorialStatus
+import Mettapedia.Languages.MeTTa.Prime.UniversalName
+import Mettapedia.Languages.MeTTa.Prime.ListLanes
+import Mettapedia.Languages.MeTTa.Prime.MinimalCheckingPackage
+import Mettapedia.Languages.MeTTa.Prime.PackageIdentityV1
+import Mettapedia.Languages.MeTTa.Prime.FragmentAdequacyV1
+import Mettapedia.Languages.MeTTa.Prime.CertificateBoundaryV1
+import Mettapedia.Languages.MeTTa.Prime.PeTTaChainerDAGReplayV1
+import Mettapedia.Languages.MeTTa.PrimeNeedWorlds
+import Mettapedia.Languages.MeTTa.PrimeScopedIntroduction
+import Mettapedia.OSLF.Framework.PrimeDTTCheckedIntroduction
+import Mettapedia.OSLF.Framework.PrimeDependentWorldModel
 
 /-!
 # MeTTa Language Formalizations

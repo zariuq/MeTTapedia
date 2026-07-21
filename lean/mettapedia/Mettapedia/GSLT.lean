@@ -9,6 +9,34 @@ import Mettapedia.GSLT.GraphTheory.ParallelReduction
 import Mettapedia.GSLT.Topos.Yoneda
 import Mettapedia.GSLT.Topos.SubobjectClassifier
 import Mettapedia.GSLT.Topos.PredicateFibration
+import Mettapedia.GSLT.Parsing.CompilerCorrespondence
+import Mettapedia.GSLT.Parsing.GuardCorrespondence
+import Mettapedia.GSLT.Parsing.HornCertificate
+import Mettapedia.GSLT.Parsing.HornStream
+import Mettapedia.GSLT.Parsing.HornSpecialization
+import Mettapedia.GSLT.Parsing.HornCategoryTable
+import Mettapedia.GSLT.Parsing.HornRootUniverse
+import Mettapedia.GSLT.Parsing.HornChildDiscovery
+import Mettapedia.GSLT.Parsing.HornReachableClosure
+import Mettapedia.GSLT.Parsing.HornProgramChildren
+import Mettapedia.GSLT.Parsing.HornSemanticChildren
+import Mettapedia.GSLT.Parsing.HornSemanticAdequacy
+import Mettapedia.GSLT.Parsing.HornSideAdmission
+import Mettapedia.GSLT.Parsing.PackedForest
+import Mettapedia.GSLT.Parsing.DynamicEnvironment
+import Mettapedia.GSLT.Parsing.BoundedScheduler
+import Mettapedia.GSLT.Parsing.FiniteHornSaturation
+import Mettapedia.GSLT.Parsing.GroundedChart
+import Mettapedia.GSLT.Parsing.BackendCorrespondence
+import Mettapedia.GSLT.Parsing.HornPlan
+import Mettapedia.GSLT.Parsing.HornUnification
+import Mettapedia.GSLT.Parsing.HornHeadEnumeration
+import Mettapedia.GSLT.Parsing.HornSpecializationHead
+import Mettapedia.GSLT.Parsing.HornSpecializationBody
+import Mettapedia.GSLT.Parsing.HornGuardedSpecialization
+import Mettapedia.GSLT.Parsing.HornSemanticEnumeration
+import Mettapedia.GSLT.Parsing.HornRequestDiscovery
+import Mettapedia.GSLT.Parsing.HornSemanticPlan
 
 /-!
 # Graph-Structured Lambda Theories (GSLT)

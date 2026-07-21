@@ -76,33 +76,36 @@ private def renderAll
       String.intercalate "\n\n" references ++
       s!"\n\n!(MMSemanticReferenceV0Summary {references.length})\n"
 
+private def parseInputs : List String → Except String (List (String × String × String))
+  | [] => .ok []
+  | revision :: digest :: sourcePath :: rest => do
+      let inputs ← parseInputs rest
+      pure ((revision, digest, sourcePath) :: inputs)
+  | _ => .error "each semantic source requires REVISION DIGEST SOURCE"
+
 def main (arguments : List String) : IO UInt32 := do
   match arguments with
-  | [outputPath,
-      demo0Revision, demo0Digest, demo0Path,
-      miuRevision, miuDigest, miuPath,
-      peanoRevision, peanoDigest, peanoPath,
-      distinctRevision, distinctDigest, distinctPath,
-      normalRevision, normalDigest, normalPath,
-      compressedRevision, compressedDigest, compressedPath] =>
-      let inputs :=
-        [ (demo0Revision, demo0Digest, demo0Path)
-        , (miuRevision, miuDigest, miuPath)
-        , (peanoRevision, peanoDigest, peanoPath)
-        , (distinctRevision, distinctDigest, distinctPath)
-        , (normalRevision, normalDigest, normalPath)
-        , (compressedRevision, compressedDigest, compressedPath) ]
-      match ← renderAll inputs with
-      | .ok output =>
-          IO.FS.writeFile outputPath output
-          IO.println s!"wrote {output.toUTF8.size} bytes to {outputPath}"
-          pure 0
+  | outputPath :: rawInputs =>
+      match parseInputs rawInputs with
+      | .ok [] =>
+          IO.eprintln
+            "usage: SourceGSLTSemanticMeTTaExport OUTPUT (REVISION DIGEST SOURCE)+"
+          pure 2
+      | .ok inputs =>
+          match ← renderAll inputs with
+          | .ok output =>
+              IO.FS.writeFile outputPath output
+              IO.println s!"wrote {output.toUTF8.size} bytes to {outputPath}"
+              pure 0
+          | .error message =>
+              IO.eprintln message
+              pure 1
       | .error message =>
           IO.eprintln message
-          pure 1
+          pure 2
   | _ =>
       IO.eprintln
-        "usage: SourceGSLTSemanticMeTTaExport OUTPUT (REVISION DIGEST SOURCE) x6"
+        "usage: SourceGSLTSemanticMeTTaExport OUTPUT (REVISION DIGEST SOURCE)+"
       pure 2
 
 end Mettapedia.Languages.Metamath.SourceGSLTSemanticMeTTaExport
