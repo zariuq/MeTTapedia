@@ -11,6 +11,7 @@
 \usepackage[T1]{fontenc}
 \usepackage[utf8]{inputenc}
 \usepackage{lmodern}
+\usepackage{xcolor}
 \usepackage{geometry}
 \geometry{margin=1in}
 \usepackage{hyperref}
@@ -22,6 +23,12 @@
 \usepackage{amssymb}
 \usepackage{amsthm}
 \usepackage{needspace}
+\hypersetup{
+  colorlinks=true,
+  linkcolor=blue!55!black,
+  citecolor=blue!55!black,
+  urlcolor=blue!55!black
+}
 \setlength{\emergencystretch}{3em}
 
 \lstset{
@@ -33,6 +40,10 @@
 
 \newcommand{\code}[1]{\texttt{#1}}
 \newcommand{\sig}{\ensuremath{\sigma}}
+\newcommand{\formalcommit}{26dd10a61a969abea0bbae023e70174491e2a946}
+\newcommand{\formalblob}{https://github.com/zariuq/MeTTapedia/blob/\formalcommit/lean/mettapedia/Mettapedia}
+\newcommand{\leansource}[3]{%
+  \href{\formalblob/#1\#L#2}{\nolinkurl{#3}}}
 \newtheorem{obligation}{Obligation}
 \newtheorem{property}{Property}
 
@@ -62,6 +73,19 @@ $104{,}083$ synthesized programs, distinguish empirical validation of that inter
 from kernel proof, and show how verified properties could safely guide search and
 generate proof obligations.
 \end{abstract}
+
+\paragraph{Open artifacts.}
+The \href{https://github.com/zariuq/MeTTapedia}{formal repository},
+\href{https://github.com/zariuq/MeTTapedia/blob/main/papers/OEIS.tex}{paper source},
+\href{https://github.com/zariuq/MeTTapedia/blob/main/papers/OEIS.pdf}{compiled PDF}, and
+\href{https://github.com/zariuq/neuralnetworks}{neural experiment repository} are public.
+The complete
+\href{https://github.com/zariuq/MeTTapedia/blob/\formalcommit/lean/mettapedia/Mettapedia/GSLT/LanguageDef/Gauthier/Adjudications33.lean}{33-program adjudication module}
+and the
+\href{https://github.com/zariuq/MeTTapedia/tree/\formalcommit/lean/mettapedia/Mettapedia/MachineLearning/SearchGuidance/ProgramDiscovery}{provenance-aware program-discovery development}
+are linked separately. The theorem links below are immutable GitHub source permalinks to
+commit \code{\formalcommit}; they open the complete statement and proof, not a search page
+or a moving branch location.
 
 \section{Introduction}
 
@@ -152,24 +176,31 @@ axiom-clean (each theorem's \code{\#print axioms} footprint lies within
 $\{\text{propext}, \text{Classical.choice}, \text{Quot.sound}\}$):
 \begin{obligation}[Recognizer completeness / mask equivalence]
 The legality predicate \code{maskLegal} on token streams coincides with the executable
-recognizer (\code{recognize\_iff\_maskLegal}), and every well-formed program is recognized
-(\code{recognize\_complete}). Hence a constrained decoder that emits only mask-legal tokens
+recognizer (\leansource{GSLT/LanguageDef/Gauthier/E1.lean}{406-L415}{recognize_iff_maskLegal}),
+and every well-formed program is recognized
+(\leansource{GSLT/LanguageDef/Gauthier/E1.lean}{492-L499}{recognize_complete}).
+Hence a constrained decoder that emits only mask-legal tokens
 can generate exactly the well-formed programs.
 \end{obligation}
 \begin{obligation}[Relabeling invariance]
 Evaluation is invariant under a signature isomorphism
-(\code{eval\_relabel\_signature\_iso}): renaming primitives consistently does not change the
+(\leansource{GSLT/LanguageDef/Gauthier/E1.lean}{1612-L1628}{eval_relabel_signature_iso}):
+renaming primitives consistently does not change the
 computed sequence. Behaviour depends on structure, not on operator names.
 \end{obligation}
 \begin{obligation}[Canonicalization soundness]
 Flag-driven canonicalization preserves semantics; the relevant proofs are
-\code{canonicalize\_sound} and \code{orgCanonicalize\_sound}. Thus, for example, sorting the
+\leansource{GSLT/LanguageDef/Gauthier/E1.lean}{1431-L1437}{canonicalize_sound} and
+\leansource{GSLT/LanguageDef/Gauthier/E1.lean}{1816-L1823}{orgCanonicalize_sound}.
+Thus, for example, sorting the
 children of commutative operators cannot make canonical-form deduplication merge
 behaviourally distinct programs.
 \end{obligation}
 Further obligations include equational-theory soundness and evaluation congruence for the
-modalities. A machine-checked counterexample already settles finite-probe rigidity in the
-negative: two programs can agree on a finite probe while differing extensionally. This is
+modalities. The machine-checked
+\leansource{GSLT/LanguageDef/Gauthier/ProbeRigidity.lean}{73-L79}{finite_probe_rigidity_negative_witness}
+already settles finite-probe rigidity in the negative: two programs can agree on a finite
+probe while differing extensionally. This is
 the formal shadow of the leakage phenomenon in Section~\ref{sec:extensional}. A separate
 small-step account remains future work; the present rewrite layer deliberately uses the
 evaluator as its big-step relation.
@@ -484,7 +515,11 @@ belief, learned retention & 244 & 138 & $3.53\times$ \\
 Three readings, in decreasing order of certainty. First, the yield ordering tracks the
 \emph{decisiveness} ordering exactly---the recurrent vector had the lowest action entropy,
 the highest gold-action probability, and the fewest duplicate proposals---which is the
-mechanism the fit-does-not-imply-guidance theorem predicts under a fixed search budget.
+mechanism the
+\leansource{MachineLearning/SearchGuidance/DecisivenessYield.lean}{242-L248}{equal_crossEntropy_strictly_ordered_expectedYield}
+theorem isolates under a fixed search budget. The broader fixed-budget scope and its
+counterexamples are collected by
+\leansource{MachineLearning/SearchGuidance/BudgetedCoverageCrown.lean}{102-L130}{budgetedSearchYield_crown}.
 Second, $669$ of $984$ sequences were found by exactly one state carrier, with pairwise
 overlaps of $8$--$16\%$: the carriers steer search into substantially different territory,
 so the union is worth far more than the best single arm, yet a fixed-split portfolio
@@ -540,7 +575,13 @@ where $\mathrm{EventuallyEmits}$ requires a fuel threshold beyond which the inte
 the entire declared domain, not a probed window, so this is extensional correctness rather
 than extended testing. Termination is part of the claim: fuel stability is proved, not
 assumed, and a companion theorem establishes that a successful evaluation is unique
-across sufficient fuel. Finally, the verified program is not a manual Lean
+across sufficient fuel
+(\leansource{GSLT/LanguageDef/Gauthier/OEISSequenceSemantics.lean}{61-L71}{eventuallyEmits_unique}).
+The formal definitions are
+\leansource{GSLT/LanguageDef/Gauthier/OEISSequenceSemantics.lean}{42-L44}{EventuallyEmits},
+\leansource{GSLT/LanguageDef/Gauthier/OEISSequenceSemantics.lean}{74-L76}{Realizes}, and
+\leansource{GSLT/LanguageDef/Gauthier/OEISSequenceSemantics.lean}{78-L79}{CandidateRealizes}.
+Finally, the verified program is not a manual Lean
 reimplementation: the frozen token stream is parsed by the same recognizer the synthesizer
 uses, with the parse discharged by kernel computation, so what is verified is the artifact
 the network emitted.
@@ -549,7 +590,10 @@ the network emitted.
 associated with them was proved extensionally correct on its full domain. Each carries an
 axiom audit; all depend only on the standard logical basis. Each record pins the OEIS
 identifier, entry revision, entry digest, offset, token stream and program hash, so a
-reader can reconstruct exactly which published text was translated.
+reader can reconstruct exactly which published text was translated. The registry cardinality
+is itself checked by
+\leansource{MachineLearning/SearchGuidance/ProgramDiscovery/OEISAdjudicationEvidence.lean}{148-L149}{certifiedProofPacket_count},
+and all 33 individual proofs are in the linked adjudication module above.
 
 The OEIS definitions and metadata quoted below are attributed to the OEIS Foundation
 Inc.~\cite{oeis}, from the pinned \code{oeisdata} snapshot at revision
@@ -572,8 +616,10 @@ domain-aware theorem exactly.
 \paragraph{A016779: one cubing step.}
 The discovered GSLT program has the readable semantic normal form
 \[
- p_{28}(n)=\operatorname{Loop}(x\mapsto x^3,1,1+3n)=(3n+1)^3.
+p_{28}(n)=\operatorname{Loop}(x\mapsto x^3,1,1+3n)=(3n+1)^3.
 \]
+\noindent Full machine-checked statement and proof:
+\leansource{GSLT/LanguageDef/Gauthier/Adjudications33.lean}{248-L263}{A016779_candidate28_correct}.
 \begin{lstlisting}[caption={A016779, discovered exclusively by the recurrent-vector arm
 in world 1, generation 8. The proof ranges over the entire domain, not only the 36
 published terms.}]
@@ -610,6 +656,8 @@ Here the network expresses a fourth power as two iterations of squaring:
  p_{29}(n)=\operatorname{Loop}(x\mapsto x^2,2,1+3n)
           =\bigl((3n+1)^2\bigr)^2=(3n+1)^4.
 \]
+\noindent Full machine-checked statement and proof:
+\leansource{GSLT/LanguageDef/Gauthier/Adjudications33.lean}{265-L280}{A016780_candidate29_correct}.
 \begin{lstlisting}[caption={A016780, discovered exclusively by the belief-register arm
 through derived retention in world 1, generation 4. The OEIS entry contains 31 published
 terms; the theorem is universal.}]
@@ -643,8 +691,10 @@ example : forall position : Nat, (0 : Int) <= Int.ofNat position ->
 \paragraph{A016814: one squaring step.}
 The initial expression changes, while the learned loop skeleton is reused:
 \[
- p_{30}(n)=\operatorname{Loop}(x\mapsto x^2,1,1+4n)=(4n+1)^2.
+p_{30}(n)=\operatorname{Loop}(x\mapsto x^2,1,1+4n)=(4n+1)^2.
 \]
+\noindent Full machine-checked statement and proof:
+\leansource{GSLT/LanguageDef/Gauthier/Adjudications33.lean}{282-L297}{A016814_candidate30_correct}.
 \begin{lstlisting}[caption={A016814, discovered exclusively by the belief-register arm
 through derived retention in world 2, generation 1. The proof replaces a 44-term match
 with a full-domain theorem.}]
@@ -681,6 +731,8 @@ The program does not contain the literal $16$; it constructs it by squaring twic
  p_{45}(n)=n^2\bmod\operatorname{Loop}(x\mapsto x^2,2,2)
           =n^2\bmod16.
 \]
+\noindent Full machine-checked statement and proof:
+\leansource{GSLT/LanguageDef/Gauthier/Adjudications33.lean}{175-L195}{A070439_candidate45_correct}.
 \begin{lstlisting}[caption={A070439, discovered exclusively by the recurrent-vector arm
 in world 1, generation 5. The synthesized denominator computes 16 rather than storing it.}]
 -- OEIS %N: a(n) = n^2 mod 16.  %O 0,3  (101 published terms)
@@ -716,6 +768,8 @@ The same learned construction of $16$ is paired with a cubed numerator:
  p_{46}(n)=n^3\bmod\operatorname{Loop}(x\mapsto x^2,2,2)
           =n^3\bmod16.
 \]
+\noindent Full machine-checked statement and proof:
+\leansource{GSLT/LanguageDef/Gauthier/Adjudications33.lean}{197-L221}{A070478_candidate46_correct}.
 \begin{lstlisting}[caption={A070478, discovered exclusively by the recurrent-vector arm
 in world 1, generation 2. Its 96 published terms become a universal stable-evaluation
 claim.}]
@@ -765,7 +819,9 @@ and it is not one a kernel can discharge. We therefore keep two links distinct: 
 $\equiv$ specification is factive; specification $\equiv$ intended sequence is a reviewed
 translation carrying its own provenance. Because the proof depends on the translation, the
 two must not be pooled as independent support---an independent semantic review is a
-genuinely separate source, and only that can move the second link.
+genuinely separate source, and only that can move the second link. This dependence boundary
+is formalized by
+\leansource{MachineLearning/SearchGuidance/ProgramDiscovery/OEISAdjudicationEvidence.lean}{112-L119}{translation_proof_have_no_additiveRevisionLicense}.
 
 \paragraph{Refutation is generative.} A failed adjudication is not a discarded result. A
 formalized definition is a certified generator: it produces additional terms beyond the
@@ -823,9 +879,10 @@ full-domain program claims are explicitly distinguished and independently audita
 \begin{thebibliography}{9}
 \bibitem{gauthier2023} T.~Gauthier and J.~Urban.
   \emph{Learning Program Synthesis for Integer Sequences from Scratch}.
-  AAAI 2023; arXiv:2202.11908.
+  AAAI 2023; \href{https://arxiv.org/abs/2202.11908}{arXiv:2202.11908}.
 \bibitem{gauthier2025} T.~Gauthier and J.~Urban.
-  \emph{Learning Conjecturing from Scratch}. arXiv:2503.01389, 2025.
+  \emph{Learning Conjecturing from Scratch}.
+  \href{https://arxiv.org/abs/2503.01389}{arXiv:2503.01389}, 2025.
 \bibitem{oeis} OEIS Foundation Inc.
   \emph{The On-Line Encyclopedia of Integer Sequences} and the \code{oeisdata}
   repository. \url{https://oeis.org}. Data snapshot:
@@ -834,11 +891,13 @@ full-domain program claims are explicitly distinguished and independently audita
 \bibitem{cousot1977} P.~Cousot and R.~Cousot.
   \emph{Abstract Interpretation: A Unified Lattice Model for Static Analysis of Programs by
   Construction or Approximation of Fixpoints}. POPL 1977.
+  \url{https://doi.org/10.1145/512950.512973}.
 \bibitem{levin1973} L.~A.~Levin.
   \emph{Universal Sequential Search Problems}. Problems of Information Transmission,
-  9(3):265--266, 1973.
+  9(3):265--266, 1973. \url{https://www.mathnet.ru/eng/ppi914}.
 \bibitem{pln2009} B.~Goertzel, M.~Ikl\'e, I.~Goertzel, and A.~Heljakka.
   \emph{Probabilistic Logic Networks}. Springer, 2009.
+  \url{https://doi.org/10.1007/978-0-387-76872-4}.
 \end{thebibliography}
 
 \end{document}
