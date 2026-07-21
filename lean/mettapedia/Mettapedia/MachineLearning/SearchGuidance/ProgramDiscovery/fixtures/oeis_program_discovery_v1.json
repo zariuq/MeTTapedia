@@ -1,0 +1,218 @@
+{
+  "corpus_metadata": {
+    "canonical_program_encoding": "oeis-synthesis-postfix-symbols-v1",
+    "key_space": "oeis-a-number",
+    "schema": "oeis.program_corpus.sqlite.v1"
+  },
+  "exact_repetition": {
+    "authenticated_observation_id": "9735d6adc6dd232d0c958424849c483c76d81c03fd02cedf642f0a5bdc0a3e5f",
+    "distinct_observation_count": 1,
+    "occurrence_count": 2,
+    "occurrences": [
+      "9735d6adc6dd232d0c958424849c483c76d81c03fd02cedf642f0a5bdc0a3e5f",
+      "9735d6adc6dd232d0c958424849c483c76d81c03fd02cedf642f0a5bdc0a3e5f"
+    ]
+  },
+  "family_complementarity": {
+    "ac_plus_tgad_witness_union": 16,
+    "ac_plus_tree_witness_union": 17,
+    "families": [
+      {
+        "name": "ac-nmt-scaled-luong-bilstm",
+        "program_ids": [
+          "10ad2c3561cacc01280a00689f3a665bd19b74278ec0deb1596bc5c0b89f7a8e",
+          "19b48c27b8b84f05ea0d14e2e8be41ad9913d876e641559a6439751ec31cffb0",
+          "29ed8a30a4597c84368af06f3db96bee8484e6278be086f811b77f0266f5e335",
+          "2a6b43080660a569d9f95ef54cabe71c8d48aafd1c0ebc0f1b7705ee12d8f826",
+          "2d9b92a51e84203ede04d15b36685ecdeef17b5448f2abb75cd84e4bc94c03cf",
+          "303c4220792357bd3fa0574695a3dbd3ade6fc37511d9a73204c1ecf5a9b2b3e",
+          "3c5a9f5a443d90c7290d9880918d9c3d99c7ace477b0ef10cf9c52b52eec174a",
+          "4cf9fea554ea16e3dd33a6209597199436424018f6f36b36c4d86bf442e25409",
+          "67b839003ea436520c01283965abd3c54ab94dbbbf66eaf2c5c541d4c9576a1b",
+          "a204aee49f926047048c8bdcfec6bdca37d12ea3541ef07d6aedf1e59bf07c04",
+          "a6e0f43981066bc9c06a2dfe2b1242f265a136d319ae346010b8358cf0f2f05d",
+          "d6bc04e61945162fb61201ff1a086b0d593842577df84b3d17ddef4a0e292fe3",
+          "e06d1e57a0090184dbc70b22f68f35fd2b4b822ce59754c8a2b981d0e79f7c7f",
+          "e67b67c3ebce27194b26ebc35d55d3641e1047d626046d1de6a9ef46a91bb19e"
+        ],
+        "target_coverage": 1
+      },
+      {
+        "name": "tgad",
+        "program_ids": [
+          "a6e0f43981066bc9c06a2dfe2b1242f265a136d319ae346010b8358cf0f2f05d",
+          "bdc9c1d75a6270bc1ee69ce66656436e8481ad923af64b55cbd97a8bf5555368",
+          "f9f4f4455c14502683416bf9b1e679bf6d8c918d643809a9841c7b78476ea194"
+        ],
+        "target_coverage": 1
+      },
+      {
+        "name": "tree-neural-network",
+        "program_ids": [
+          "542d7b750fbd3796033561a149c789894986c56abd3dd2dfbba8dd2cc3cac7a9",
+          "5c6277812d8dde87a52bc8de0bede19f48e8a9065b997fb0641e6bd71daca0db",
+          "870094bcaa98e45c986e3935b9cb1cc548256f1d6ef1d4e0fe866ee136230394",
+          "a6e0f43981066bc9c06a2dfe2b1242f265a136d319ae346010b8358cf0f2f05d"
+        ],
+        "target_coverage": 1
+      }
+    ],
+    "target": 42
+  },
+  "finite_prefix_divergence": {
+    "agreement_length": 4,
+    "left": {
+      "outputs": [
+        0,
+        0,
+        1,
+        1,
+        2,
+        2
+      ],
+      "program_id": "070cb36bbc3b3c1eae4d327b2d16007e95b9ebb01cadde574f66c35f3c276229",
+      "token_count": 3,
+      "tokens": [
+        "K",
+        "C",
+        "G"
+      ]
+    },
+    "right": {
+      "outputs": [
+        0,
+        0,
+        1,
+        1,
+        0,
+        0
+      ],
+      "program_id": "0491610c80689e9d35f410a1767c85b3610957b02ad1f50ca964dc43533f0d61",
+      "token_count": 5,
+      "tokens": [
+        "K",
+        "C",
+        "G",
+        "C",
+        "H"
+      ]
+    }
+  },
+  "one_program_two_targets": {
+    "program": {
+      "program_id": "0720af3f484b690b7aeb61fabdbd20a6ce3caad8898b0b495558ad8b38ade763",
+      "token_count": 44,
+      "tokens": [
+        "C",
+        "B",
+        "D",
+        "K",
+        "F",
+        "K",
+        "B",
+        "J",
+        "C",
+        "E",
+        "K",
+        "B",
+        "J",
+        "C",
+        "F",
+        "B",
+        "D",
+        "C",
+        "D",
+        "K",
+        "F",
+        "B",
+        "C",
+        "J",
+        "C",
+        "F",
+        "B",
+        "E",
+        "K",
+        "D",
+        "C",
+        "C",
+        "J",
+        "B",
+        "E",
+        "K",
+        "F",
+        "K",
+        "C",
+        "H",
+        "D",
+        "K",
+        "B",
+        "J"
+      ]
+    },
+    "targets": [
+      63820,
+      167829
+    ]
+  },
+  "pareto_frontier": {
+    "members": [
+      {
+        "observation_id": "9735d6adc6dd232d0c958424849c483c76d81c03fd02cedf642f0a5bdc0a3e5f",
+        "program_id": "1de3999bf9bf461497dd32e8ce20aeb3000c84b1ee7d4578cfaa0dd6aad31938",
+        "runtime": 918,
+        "token_count": 5
+      },
+      {
+        "observation_id": "7a6b2f703c1b00e9b54b621901ce7a3296691e60760c079f9861b513c5799751",
+        "program_id": "f7851b5b33f565ff133b692abb1c3bb413909503aa54276af2d6557b51a04f5a",
+        "runtime": 610,
+        "token_count": 6
+      }
+    ],
+    "target": 34
+  },
+  "schema": "oeis.program_discovery_conformance.v1",
+  "shortest_fastest_disagreement": {
+    "fastest": {
+      "observation_id": "7a6b2f703c1b00e9b54b621901ce7a3296691e60760c079f9861b513c5799751",
+      "program_id": "f7851b5b33f565ff133b692abb1c3bb413909503aa54276af2d6557b51a04f5a",
+      "runtime": 610,
+      "token_count": 6
+    },
+    "shortest": {
+      "observation_id": "9735d6adc6dd232d0c958424849c483c76d81c03fd02cedf642f0a5bdc0a3e5f",
+      "program_id": "1de3999bf9bf461497dd32e8ce20aeb3000c84b1ee7d4578cfaa0dd6aad31938",
+      "runtime": 918,
+      "token_count": 5
+    },
+    "source_lineage": "ac-nmt-n5-v5/world1/generation-2/feedback",
+    "target": 34
+  },
+  "two_programs_one_target": {
+    "programs": [
+      {
+        "program_id": "1de3999bf9bf461497dd32e8ce20aeb3000c84b1ee7d4578cfaa0dd6aad31938",
+        "token_count": 5,
+        "tokens": [
+          "B",
+          "K",
+          "C",
+          "H",
+          "D"
+        ]
+      },
+      {
+        "program_id": "d062cdc91ddc83846ba02b832497cea7f771534f07f3fbe6822a64e70b5e9cb6",
+        "token_count": 5,
+        "tokens": [
+          "K",
+          "C",
+          "H",
+          "B",
+          "D"
+        ]
+      }
+    ],
+    "target": 34
+  }
+}

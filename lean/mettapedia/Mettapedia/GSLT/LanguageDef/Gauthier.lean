@@ -3,6 +3,8 @@ import Mettapedia.GSLT.LanguageDef.Gauthier.Minimal
 import Mettapedia.GSLT.LanguageDef.Gauthier.Pow
 import Mettapedia.GSLT.LanguageDef.Gauthier.E1
 import Mettapedia.GSLT.LanguageDef.Gauthier.E2
+import Mettapedia.GSLT.LanguageDef.Gauthier.E2Fuel
+import Mettapedia.GSLT.LanguageDef.Gauthier.E2ScalarSemantics
 import Mettapedia.GSLT.LanguageDef.Gauthier.Number
 import Mettapedia.GSLT.LanguageDef.Gauthier.Wrat
 import Mettapedia.GSLT.LanguageDef.Gauthier.CTree
@@ -11,6 +13,9 @@ import Mettapedia.GSLT.LanguageDef.Gauthier.BigStepGSLT
 import Mettapedia.GSLT.LanguageDef.Gauthier.BigStepGSLTE2
 import Mettapedia.GSLT.LanguageDef.Gauthier.Properties
 import Mettapedia.GSLT.LanguageDef.Gauthier.ProbeRigidity
+import Mettapedia.GSLT.LanguageDef.Gauthier.OEISSequenceSemantics
+import Mettapedia.GSLT.LanguageDef.Gauthier.FrozenCandidates49
+import Mettapedia.GSLT.LanguageDef.Gauthier.Adjudications33
 import Mettapedia.GSLT.LanguageDef.Gauthier.QProve
 import Mettapedia.GSLT.LanguageDef.Gauthier.Prnn
 import Mettapedia.GSLT.LanguageDef.Gauthier.Skeleton
