@@ -71,7 +71,9 @@ leakage, while a conservative abstract interpreter proposes totality, sign, and 
 invariants for each program. We report concrete measurements over a corpus of
 $104{,}083$ synthesized programs, distinguish empirical validation of that interpreter
 from kernel proof, and show how verified properties could safely guide search and
-generate proof obligations.
+generate proof obligations. Finally, we give full-domain Lean correctness proofs for
+four previously reported ``alien'' programs: the Hofstadter--Conway sequence and its
+centered transform, the Kolakoski sequence, and a cyclotomic-polynomial sequence.
 \end{abstract}
 
 \paragraph{Open artifacts.}
@@ -82,10 +84,13 @@ The \href{https://github.com/zariuq/MeTTapedia}{formal repository},
 The complete
 \href{https://github.com/zariuq/MeTTapedia/blob/\formalcommit/lean/mettapedia/Mettapedia/GSLT/LanguageDef/Gauthier/Adjudications33.lean}{33-program adjudication module}
 and the
+\href{https://github.com/zariuq/MeTTapedia/blob/main/lean/mettapedia/Mettapedia/GSLT/LanguageDef/Gauthier/ReportedSequencePrograms.lean}{reported-program correctness module},
+as well as the
 \href{https://github.com/zariuq/MeTTapedia/tree/\formalcommit/lean/mettapedia/Mettapedia/MachineLearning/SearchGuidance/ProgramDiscovery}{provenance-aware program-discovery development}
 are linked separately. The theorem links below are immutable GitHub source permalinks to
 commit \code{\formalcommit}; they open the complete statement and proof, not a search page
-or a moving branch location.
+or a moving branch location. Links into the newly added reported-program module follow
+\code{main} until its first tagged formal release.
 
 \section{Introduction}
 
@@ -809,6 +814,170 @@ came from the belief-register architecture, which finished \emph{last} on raw yi
 architecture. The diversity argument of \S\ref{sec:eightgen} was until now a statement
 about counts; here it is a statement about programs that are provably correct.
 
+\subsection{Independent verification of four previously reported programs}
+\label{sec:reported-programs}
+
+Urban's SCML'26 presentation, joint work with Gauthier, Ol\v{s}\'ak, and Hales,
+collects unusual programs produced by the Alien Coding line of work and asks how such
+programs can be explained and proved correct~\cite{gauthier2023,urban2026slides}. We independently
+formalized four of the displayed programs using the exact E2 operator semantics introduced
+above. These programs are historical external examples, not outputs of our neural campaign:
+they are excluded from the $984$ discoveries, all training pools, and every architecture
+comparison. The attribution is therefore both substantive and methodologically clean.
+
+The proof target is again \code{CandidateRealizes}, not agreement on a longer prefix.
+Each theorem quantifies over every position in the sequence domain and establishes stable
+evaluation beyond a fuel threshold. The stored SHA-256 values authenticate our exact
+program transcriptions; because the original run artifacts were not available, we do not
+claim that these hashes authenticate the authors' historical files. Each example below
+has its own listing so that the readable program, frozen token stream, Lean AST, and complete
+top-level theorem statement remain visible together.
+
+\Needspace{31\baselineskip}
+\paragraph{A004001: the Hofstadter--Conway recurrence.}
+The reported program is
+\begin{lstlisting}
+loop(push(loop(pop(x), y-x, pop(x)), x)
+     + loop(pop(x), x-1, x), x-1, 1)
+\end{lstlisting}
+and the verified specification is
+$a(1)=a(2)=1$ and
+$a(n)=a(a(n-1))+a(n-a(n-1))$ for $n\geq 3$.
+\begin{lstlisting}[caption={The reported A004001 artifact and its universal Lean theorem.}]
+def reportedA004001 : FrozenCandidate where
+  programSha256 :=
+    "7520be9f41f5ef978fb00080a0130143616cadef82c39163b08276a081e5f23b"
+  tokens := [10,15,11,10,4,10,15,9,10,14,10,15,10,1,4,
+    10,9,3,10,1,4,1,9]
+  program := P.loop
+    (P.addi
+      (P.push (P.loop (P.pop P.X) (P.diff P.Y P.X) (P.pop P.X)) P.X)
+      (P.loop (P.pop P.X) (P.diff P.X P.o) P.X))
+    (P.diff P.X P.o) P.o
+  recognized := rfl
+
+theorem reportedA004001_correct :
+    CandidateRealizes specA004001 reportedA004001
+\end{lstlisting}
+\noindent Full machine-checked statement and proof:
+\href{https://github.com/zariuq/MeTTapedia/blob/main/lean/mettapedia/Mettapedia/GSLT/LanguageDef/Gauthier/ReportedSequencePrograms.lean\#L371-L386}{\nolinkurl{reportedA004001_correct}}.
+
+\Needspace{34\baselineskip}
+\paragraph{A004074: the Hofstadter--Conway \$10,000 sequence.}
+This program computes the centered transform $2A004001(n)-n$:
+\begin{lstlisting}
+((2 * loop(push(loop(pop(x), x-1, x), x)
+           + loop(pop(x), y-x, pop(x)), x-1, 1)) - 1) - x
+\end{lstlisting}
+The theorem connects that operational program to the recurrence-defined A004001
+formalization, so the transform is not justified by treating the displayed terms as a
+lookup table.
+\begin{lstlisting}[caption={The reported A004074 artifact and its universal Lean theorem.}]
+def reportedA004074 : FrozenCandidate where
+  programSha256 :=
+    "5d0a2d05c698935364899e73b16259ecc7c12a6319bd5a0fbc497ed6f3b90c51"
+  tokens := [2,10,15,10,1,4,10,9,10,14,10,15,11,10,4,
+    10,15,9,3,10,1,4,1,9,5,1,4,10,4]
+  program := P.diff
+    (P.diff
+      (P.mult P.tw
+        (P.loop
+          (P.addi
+            (P.push (P.loop (P.pop P.X) (P.diff P.X P.o) P.X) P.X)
+            (P.loop (P.pop P.X) (P.diff P.Y P.X) (P.pop P.X)))
+          (P.diff P.X P.o) P.o))
+      P.o)
+    P.X
+  recognized := rfl
+
+theorem reportedA004074_correct :
+    CandidateRealizes specA004074 reportedA004074
+\end{lstlisting}
+\noindent Full machine-checked statement and proof:
+\href{https://github.com/zariuq/MeTTapedia/blob/main/lean/mettapedia/Mettapedia/GSLT/LanguageDef/Gauthier/ReportedSequencePrograms.lean\#L388-L415}{\nolinkurl{reportedA004074_correct}}.
+
+\Needspace{35\baselineskip}
+\paragraph{A000002: Kolakoski's self-describing run lengths.}
+The reported program is
+\begin{lstlisting}
+1 + pop(loop(push(loop(pop(x), x div 2, x),
+                  (x + pop(x)) mod 2) + x,
+             x, push(1, 0)))
+\end{lstlisting}
+The specification is intensional: the values lie in $\{1,2\}$ and their successive run
+lengths reproduce the sequence itself. Thus the proof must expose the program's packed
+cursor and show that its state transition maintains the run boundary, not merely identify
+the first several hundred outputs.
+\begin{lstlisting}[caption={The reported Kolakoski artifact and its universal Lean theorem.}]
+def reportedA000002 : FrozenCandidate where
+  programSha256 :=
+    "b6765feccadb491981a6a8a087ac78ebe98071e6b25f002f10364a7576b6ac6c"
+  tokens := [1,10,15,10,2,6,10,9,10,10,15,3,2,7,14,10,
+    3,10,1,0,14,9,15,3]
+  program := P.addi P.o
+    (P.pop
+      (P.loop
+        (P.addi
+          (P.push
+            (P.loop (P.pop P.X) (P.divi P.X P.tw) P.X)
+            (P.modu (P.addi P.X (P.pop P.X)) P.tw))
+          P.X)
+        P.X
+        (P.push P.o P.z)))
+  recognized := rfl
+
+theorem reportedA000002_correct :
+    CandidateRealizes Kolakoski.specA000002 reportedA000002
+\end{lstlisting}
+\noindent Full machine-checked statement and proof:
+\href{https://github.com/zariuq/MeTTapedia/blob/main/lean/mettapedia/Mettapedia/GSLT/LanguageDef/Gauthier/ReportedSequencePrograms.lean\#L639-L675}{\nolinkurl{reportedA000002_correct}}.
+
+\Needspace{43\baselineskip}
+\paragraph{A070526: cyclotomic values.}
+For $n\geq 1$, the OEIS specification is
+$a(n)=\Phi_n(2^n)$. The reported program is
+\begin{lstlisting}
+loop(loop2(if (x mod y) <= 0 then (x div y) else x,
+           pop(y), y,
+           push(loop(1 + (x + x), y, 1), x), x),
+     (2 + x) * x, 1)
+\end{lstlisting}
+Its outer loop constructs Mersenne numbers and repeatedly removes earlier factors. The
+proof requires an order-sensitive all-history sieve theorem: the tempting independent
+claim $k\nmid N\Rightarrow\Phi_k(2)\nmid 2^N-1$ is false at $k=6$, because
+$\Phi_6(2)=\Phi_2(2)=3$. The descending scan nevertheless succeeds because index $6$
+consumes this shared factor before index $2$ is visited. A base-two primitive-divisor
+theorem, the exceptional reassignment, and the identity
+$\Phi_n(2^n)=\Phi_{n^2}(2)$ are all proved internally before the final evaluator theorem.
+\begin{lstlisting}[caption={The reported A070526 artifact and its universal Lean theorem.}]
+def reportedA070526 : FrozenCandidate where
+  programSha256 :=
+    "fee6555f282bf4b068dfdc305e404b04b72698a754aa4daed754ed1aaf7e8717"
+  tokens := [10,11,7,10,11,6,10,8,11,15,11,1,10,10,3,3,
+    11,1,9,10,14,10,13,2,10,3,10,5,1,9]
+  program := P.loop
+    (P.loop2
+      (P.cond (P.modu P.X P.Y) (P.divi P.X P.Y) P.X)
+      (P.pop P.Y) P.Y
+      (P.push (P.loop (P.addi P.o (P.addi P.X P.X)) P.Y P.o) P.X)
+      P.X)
+    (P.mult (P.addi P.tw P.X) P.X) P.o
+  recognized := rfl
+
+theorem reportedA070526_correct :
+    CandidateRealizes CyclotomicSieve.specA070526 reportedA070526
+\end{lstlisting}
+\noindent Full machine-checked statement and proof:
+\href{https://github.com/zariuq/MeTTapedia/blob/main/lean/mettapedia/Mettapedia/GSLT/LanguageDef/Gauthier/ReportedSequencePrograms.lean\#L938-L974}{\nolinkurl{reportedA070526_correct}}.
+
+All four adjudications are positive. This should not be read as an estimated correctness
+rate: they were selected because the programs had already been presented as particularly
+interesting explanatory examples~\cite{urban2026slides}. Their evidential value lies
+elsewhere. They show that stack-using and nested-loop outputs of neural-symbolic synthesis
+can sometimes be connected to recurrence, fixed-point, and algebraic specifications by
+universal kernel proofs, while producing reusable semantics and number theory rather than
+four isolated calculations.
+
 \paragraph{What this does and does not establish.} The cohort was selected for
 formalizability, so $33/33$ is emphatically not an estimate of the correctness rate among
 all $984$ discoveries; the sequences resting on three or four published terms are exactly
@@ -872,7 +1041,10 @@ translations; (ii) adjudicate a cohort selected from the shortest, weakest-evide
 where counterexamples are most likely; (iii) prove the Python abstract interpreter sound
 against the Lean evaluator before using its conclusions for hard pruning; (iv) bind the
 Lean canonical policy to exported operator-table metadata; and (v) retain the fastest and
-smallest program per sequence for provenance-aware equivalence conjectures. The unifying
+smallest program per sequence for provenance-aware equivalence conjectures. Four additional
+programs reported by Urban and Gauthier's collaboration now have full-domain correctness
+proofs, including stack-based recurrence and fixed-point programs and a nested cyclotomic
+sieve~\cite{urban2026slides}. The unifying
 aim is an OEIS synthesis loop whose catalogue coverage, source interpretation, and
 full-domain program claims are explicitly distinguished and independently auditable.
 
@@ -883,6 +1055,11 @@ full-domain program claims are explicitly distinguished and independently audita
 \bibitem{gauthier2025} T.~Gauthier and J.~Urban.
   \emph{Learning Conjecturing from Scratch}.
   \href{https://arxiv.org/abs/2503.01389}{arXiv:2503.01389}, 2025.
+\bibitem{urban2026slides} J.~Urban.
+  \emph{Alien Codes and Their Automated and Human Explanations}.
+  Joint work with T.~Gauthier, M.~Ol\v{s}\'ak, and T.~Hales. Presentation at SCML'26,
+  Linz, July 7, 2026.
+  \url{https://josefurban.eu/slides/scml26oeis.pdf}.
 \bibitem{oeis} OEIS Foundation Inc.
   \emph{The On-Line Encyclopedia of Integer Sequences} and the \code{oeisdata}
   repository. \url{https://oeis.org}. Data snapshot:
