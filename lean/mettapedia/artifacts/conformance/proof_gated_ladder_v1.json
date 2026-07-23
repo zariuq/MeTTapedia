@@ -1,0 +1,765 @@
+{
+  "schema": "proof-gated-experimental-ladder-conformance-v1",
+  "scope": "Design-level admission, matching, opportunity-cost, and staged-elimination logic only.",
+  "stage_dag": [
+    {
+      "gate": "algebraic_linear_oracle",
+      "requires": []
+    },
+    {
+      "gate": "nonlinear_residual_mechanism",
+      "requires": ["algebraic_linear_oracle"]
+    },
+    {
+      "gate": "tied_recurrent_or_workspace_mechanism",
+      "requires": [
+        "algebraic_linear_oracle",
+        "nonlinear_residual_mechanism"
+      ]
+    },
+    {
+      "gate": "relation_aware_transformer_adapter",
+      "requires": [
+        "algebraic_linear_oracle",
+        "nonlinear_residual_mechanism",
+        "tied_recurrent_or_workspace_mechanism"
+      ]
+    },
+    {
+      "gate": "checker_backed_search",
+      "requires": [
+        "algebraic_linear_oracle",
+        "nonlinear_residual_mechanism",
+        "tied_recurrent_or_workspace_mechanism",
+        "relation_aware_transformer_adapter"
+      ]
+    }
+  ],
+  "reporting_schema": {
+    "primary_outcomes": [
+      "independently_checked_union_coverage",
+      "longitudinal_retention",
+      "exclusive_contribution",
+      "marginal_verified_value_within_compute_caps"
+    ],
+    "mechanism_telemetry": [
+      "residuals",
+      "task_certificate",
+      "site_ignition",
+      "finite_settling_error",
+      "bp_relation",
+      "work_span_memory",
+      "wall_clock_energy"
+    ],
+    "resource_vector": [
+      "forward_work",
+      "credit_work",
+      "settling_steps",
+      "optimizer_steps",
+      "search_model_calls",
+      "checker_calls",
+      "peak_memory_bytes",
+      "wall_seconds",
+      "energy_joules"
+    ]
+  },
+  "matching_scenarios": [
+    {
+      "name": "paired_method_byte_identical_fork",
+      "kind": "paired_fork",
+      "left": {
+        "parent_sha256": "parent-a",
+        "ledger_sha256": "ledger-a",
+        "data_pool_sha256": "pool-a",
+        "model_schema_sha256": "schema-a",
+        "trainable_parameter_count": 100,
+        "outer_updates": 10,
+        "batch_size": 2,
+        "search_budget": 50,
+        "checker_snapshot_sha256": "checker-a",
+        "baseline_snapshot_sha256": "baseline-a",
+        "initial_model_state_sha256": "model-state-a",
+        "initial_optimizer_state_sha256": "optimizer-state-a",
+        "training_seed": 101,
+        "search_seed": 201
+      },
+      "right": {
+        "parent_sha256": "parent-a",
+        "ledger_sha256": "ledger-a",
+        "data_pool_sha256": "pool-a",
+        "model_schema_sha256": "schema-a",
+        "trainable_parameter_count": 100,
+        "outer_updates": 10,
+        "batch_size": 2,
+        "search_budget": 50,
+        "checker_snapshot_sha256": "checker-a",
+        "baseline_snapshot_sha256": "baseline-a",
+        "initial_model_state_sha256": "model-state-a",
+        "initial_optimizer_state_sha256": "optimizer-state-a",
+        "training_seed": 101,
+        "search_seed": 201
+      },
+      "expected_valid": true
+    },
+    {
+      "name": "paired_method_parent_mismatch_rejected",
+      "kind": "paired_fork",
+      "left": {
+        "parent_sha256": "parent-a",
+        "ledger_sha256": "ledger-a",
+        "data_pool_sha256": "pool-a",
+        "model_schema_sha256": "schema-a",
+        "trainable_parameter_count": 100,
+        "outer_updates": 10,
+        "batch_size": 2,
+        "search_budget": 50,
+        "checker_snapshot_sha256": "checker-a",
+        "baseline_snapshot_sha256": "baseline-a",
+        "initial_model_state_sha256": "model-state-a",
+        "initial_optimizer_state_sha256": "optimizer-state-a",
+        "training_seed": 101,
+        "search_seed": 201
+      },
+      "right": {
+        "parent_sha256": "parent-b",
+        "ledger_sha256": "ledger-a",
+        "data_pool_sha256": "pool-a",
+        "model_schema_sha256": "schema-a",
+        "trainable_parameter_count": 100,
+        "outer_updates": 10,
+        "batch_size": 2,
+        "search_budget": 50,
+        "checker_snapshot_sha256": "checker-a",
+        "baseline_snapshot_sha256": "baseline-a",
+        "initial_model_state_sha256": "model-state-a",
+        "initial_optimizer_state_sha256": "optimizer-state-a",
+        "training_seed": 101,
+        "search_seed": 201
+      },
+      "expected_valid": false
+    },
+    {
+      "name": "independent_bp_opportunity_draw",
+      "kind": "opportunity_bp",
+      "left": {
+        "parent_sha256": "parent-a",
+        "ledger_sha256": "ledger-a",
+        "data_pool_sha256": "pool-a",
+        "model_schema_sha256": "schema-a",
+        "trainable_parameter_count": 100,
+        "outer_updates": 10,
+        "batch_size": 2,
+        "search_budget": 50,
+        "checker_snapshot_sha256": "checker-a",
+        "baseline_snapshot_sha256": "baseline-a",
+        "initialization_distribution": "registered-zero-adapter-v1",
+        "search_seed_distribution": "registered-uniform-tie-v1",
+        "training_seed": 101,
+        "search_seed": 201,
+        "registered_before_results": true
+      },
+      "right": {
+        "parent_sha256": "parent-a",
+        "ledger_sha256": "ledger-a",
+        "data_pool_sha256": "pool-a",
+        "model_schema_sha256": "schema-a",
+        "trainable_parameter_count": 100,
+        "outer_updates": 10,
+        "batch_size": 2,
+        "search_budget": 50,
+        "checker_snapshot_sha256": "checker-a",
+        "baseline_snapshot_sha256": "baseline-a",
+        "initialization_distribution": "registered-zero-adapter-v1",
+        "search_seed_distribution": "registered-uniform-tie-v1",
+        "training_seed": 102,
+        "search_seed": 202,
+        "registered_before_results": true
+      },
+      "expected_valid": true
+    },
+    {
+      "name": "same_seed_is_not_opportunity_draw",
+      "kind": "opportunity_bp",
+      "left": {
+        "parent_sha256": "parent-a",
+        "ledger_sha256": "ledger-a",
+        "data_pool_sha256": "pool-a",
+        "model_schema_sha256": "schema-a",
+        "trainable_parameter_count": 100,
+        "outer_updates": 10,
+        "batch_size": 2,
+        "search_budget": 50,
+        "checker_snapshot_sha256": "checker-a",
+        "baseline_snapshot_sha256": "baseline-a",
+        "initialization_distribution": "registered-zero-adapter-v1",
+        "search_seed_distribution": "registered-uniform-tie-v1",
+        "training_seed": 101,
+        "search_seed": 201,
+        "registered_before_results": true
+      },
+      "right": {
+        "parent_sha256": "parent-a",
+        "ledger_sha256": "ledger-a",
+        "data_pool_sha256": "pool-a",
+        "model_schema_sha256": "schema-a",
+        "trainable_parameter_count": 100,
+        "outer_updates": 10,
+        "batch_size": 2,
+        "search_budget": 50,
+        "checker_snapshot_sha256": "checker-a",
+        "baseline_snapshot_sha256": "baseline-a",
+        "initialization_distribution": "registered-zero-adapter-v1",
+        "search_seed_distribution": "registered-uniform-tie-v1",
+        "training_seed": 101,
+        "search_seed": 202,
+        "registered_before_results": true
+      },
+      "expected_valid": false
+    }
+  ],
+  "gate_scenarios": [
+    {
+      "name": "strict_prefix_pending",
+      "candidate": {
+        "theory_license": true,
+        "source_frozen": true,
+        "gates": {
+          "algebraic_linear_oracle": "PASS",
+          "nonlinear_residual_mechanism": "PASS",
+          "tied_recurrent_or_workspace_mechanism": "PENDING",
+          "relation_aware_transformer_adapter": "PENDING",
+          "checker_backed_search": "PENDING"
+        }
+      },
+      "expected": {
+        "valid": true,
+        "admitted_to_search": false,
+        "next_gate": "tied_recurrent_or_workspace_mechanism"
+      }
+    },
+    {
+      "name": "all_gates_admit_search",
+      "candidate": {
+        "theory_license": true,
+        "source_frozen": true,
+        "gates": {
+          "algebraic_linear_oracle": "PASS",
+          "nonlinear_residual_mechanism": "PASS",
+          "tied_recurrent_or_workspace_mechanism": "PASS",
+          "relation_aware_transformer_adapter": "PASS",
+          "checker_backed_search": "PASS"
+        }
+      },
+      "expected": {
+        "valid": true,
+        "admitted_to_search": true,
+        "next_gate": null
+      }
+    },
+    {
+      "name": "skipped_predecessor_rejected",
+      "candidate": {
+        "theory_license": true,
+        "source_frozen": true,
+        "gates": {
+          "algebraic_linear_oracle": "PASS",
+          "nonlinear_residual_mechanism": "PENDING",
+          "tied_recurrent_or_workspace_mechanism": "PASS",
+          "relation_aware_transformer_adapter": "PENDING",
+          "checker_backed_search": "PENDING"
+        }
+      },
+      "expected": {
+        "valid": false,
+        "reason": "skipped_predecessor"
+      }
+    },
+    {
+      "name": "unlicensed_execution_rejected",
+      "candidate": {
+        "theory_license": false,
+        "source_frozen": true,
+        "gates": {
+          "algebraic_linear_oracle": "PASS",
+          "nonlinear_residual_mechanism": "PENDING",
+          "tied_recurrent_or_workspace_mechanism": "PENDING",
+          "relation_aware_transformer_adapter": "PENDING",
+          "checker_backed_search": "PENDING"
+        }
+      },
+      "expected": {
+        "valid": false,
+        "reason": "unlicensed_gate_execution"
+      }
+    },
+    {
+      "name": "unlicensed_candidate_remains_withheld",
+      "candidate": {
+        "theory_license": false,
+        "source_frozen": true,
+        "gates": {
+          "algebraic_linear_oracle": "PENDING",
+          "nonlinear_residual_mechanism": "PENDING",
+          "tied_recurrent_or_workspace_mechanism": "PENDING",
+          "relation_aware_transformer_adapter": "PENDING",
+          "checker_backed_search": "PENDING"
+        }
+      },
+      "expected": {
+        "valid": true,
+        "admitted_to_search": false,
+        "next_gate": null
+      }
+    },
+    {
+      "name": "unfrozen_source_rejected",
+      "candidate": {
+        "theory_license": true,
+        "source_frozen": false,
+        "gates": {
+          "algebraic_linear_oracle": "PENDING",
+          "nonlinear_residual_mechanism": "PENDING",
+          "tied_recurrent_or_workspace_mechanism": "PENDING",
+          "relation_aware_transformer_adapter": "PENDING",
+          "checker_backed_search": "PENDING"
+        }
+      },
+      "expected": {
+        "valid": false,
+        "reason": "source_not_frozen"
+      }
+    }
+  ],
+  "advancement_scenarios": [
+    {
+      "name": "candidate_beats_extra_bp_opportunity",
+      "row": {
+        "candidate": {
+          "theory_license": true,
+          "source_frozen": true,
+          "gates": {
+            "algebraic_linear_oracle": "PASS",
+            "nonlinear_residual_mechanism": "PASS",
+            "tied_recurrent_or_workspace_mechanism": "PASS",
+            "relation_aware_transformer_adapter": "PASS",
+            "checker_backed_search": "PASS"
+          }
+        },
+        "hyperparameters_frozen_before_whole_oeis": true,
+        "candidate_resources": {
+          "forward_work": 20,
+          "credit_work": 30,
+          "settling_steps": 8,
+          "optimizer_steps": 10,
+          "search_model_calls": 50,
+          "checker_calls": 50,
+          "peak_memory_bytes": 80,
+          "wall_seconds": 70,
+          "energy_joules": 60
+        },
+        "resource_caps": {
+          "forward_work": 100,
+          "credit_work": 100,
+          "settling_steps": 20,
+          "optimizer_steps": 20,
+          "search_model_calls": 100,
+          "checker_calls": 100,
+          "peak_memory_bytes": 100,
+          "wall_seconds": 100,
+          "energy_joules": 100
+        },
+        "retention_delta": 0,
+        "retention_floor": -1,
+        "exclusive_support_threshold": 2,
+        "bp_primary_discoveries": [1, 2, 3],
+        "bp_opportunity_discoveries": [2, 3, 4, 5],
+        "candidate_discoveries": [1, 6, 7, 8]
+      },
+      "expected": {
+        "decision": "ADVANCE_PRIMARY",
+        "bp_opportunity_marginal": 2,
+        "candidate_marginal": 3,
+        "candidate_exclusive": 3
+      }
+    },
+    {
+      "name": "complementary_candidate_advances",
+      "row": {
+        "candidate": {
+          "theory_license": true,
+          "source_frozen": true,
+          "gates": {
+            "algebraic_linear_oracle": "PASS",
+            "nonlinear_residual_mechanism": "PASS",
+            "tied_recurrent_or_workspace_mechanism": "PASS",
+            "relation_aware_transformer_adapter": "PASS",
+            "checker_backed_search": "PASS"
+          }
+        },
+        "hyperparameters_frozen_before_whole_oeis": true,
+        "candidate_resources": {
+          "forward_work": 20,
+          "credit_work": 30,
+          "settling_steps": 8,
+          "optimizer_steps": 10,
+          "search_model_calls": 50,
+          "checker_calls": 50,
+          "peak_memory_bytes": 80,
+          "wall_seconds": 70,
+          "energy_joules": 60
+        },
+        "resource_caps": {
+          "forward_work": 100,
+          "credit_work": 100,
+          "settling_steps": 20,
+          "optimizer_steps": 20,
+          "search_model_calls": 100,
+          "checker_calls": 100,
+          "peak_memory_bytes": 100,
+          "wall_seconds": 100,
+          "energy_joules": 100
+        },
+        "retention_delta": 0,
+        "retention_floor": -1,
+        "exclusive_support_threshold": 2,
+        "bp_primary_discoveries": [1, 2, 3],
+        "bp_opportunity_discoveries": [2, 3, 4, 5],
+        "candidate_discoveries": [1, 6, 7]
+      },
+      "expected": {
+        "decision": "ADVANCE_EXCLUSIVE",
+        "bp_opportunity_marginal": 2,
+        "candidate_marginal": 2,
+        "candidate_exclusive": 2
+      }
+    },
+    {
+      "name": "redundant_candidate_eliminated",
+      "row": {
+        "candidate": {
+          "theory_license": true,
+          "source_frozen": true,
+          "gates": {
+            "algebraic_linear_oracle": "PASS",
+            "nonlinear_residual_mechanism": "PASS",
+            "tied_recurrent_or_workspace_mechanism": "PASS",
+            "relation_aware_transformer_adapter": "PASS",
+            "checker_backed_search": "PASS"
+          }
+        },
+        "hyperparameters_frozen_before_whole_oeis": true,
+        "candidate_resources": {
+          "forward_work": 20,
+          "credit_work": 30,
+          "settling_steps": 8,
+          "optimizer_steps": 10,
+          "search_model_calls": 50,
+          "checker_calls": 50,
+          "peak_memory_bytes": 80,
+          "wall_seconds": 70,
+          "energy_joules": 60
+        },
+        "resource_caps": {
+          "forward_work": 100,
+          "credit_work": 100,
+          "settling_steps": 20,
+          "optimizer_steps": 20,
+          "search_model_calls": 100,
+          "checker_calls": 100,
+          "peak_memory_bytes": 100,
+          "wall_seconds": 100,
+          "energy_joules": 100
+        },
+        "retention_delta": 0,
+        "retention_floor": -1,
+        "exclusive_support_threshold": 2,
+        "bp_primary_discoveries": [1, 2, 3],
+        "bp_opportunity_discoveries": [2, 3, 4, 5],
+        "candidate_discoveries": [1, 2, 4]
+      },
+      "expected": {
+        "decision": "ELIMINATE",
+        "reason": "opportunity_cost",
+        "bp_opportunity_marginal": 2,
+        "candidate_marginal": 1,
+        "candidate_exclusive": 0
+      }
+    },
+    {
+      "name": "retention_floor_eliminates",
+      "row": {
+        "candidate": {
+          "theory_license": true,
+          "source_frozen": true,
+          "gates": {
+            "algebraic_linear_oracle": "PASS",
+            "nonlinear_residual_mechanism": "PASS",
+            "tied_recurrent_or_workspace_mechanism": "PASS",
+            "relation_aware_transformer_adapter": "PASS",
+            "checker_backed_search": "PASS"
+          }
+        },
+        "hyperparameters_frozen_before_whole_oeis": true,
+        "candidate_resources": {
+          "forward_work": 20,
+          "credit_work": 30,
+          "settling_steps": 8,
+          "optimizer_steps": 10,
+          "search_model_calls": 50,
+          "checker_calls": 50,
+          "peak_memory_bytes": 80,
+          "wall_seconds": 70,
+          "energy_joules": 60
+        },
+        "resource_caps": {
+          "forward_work": 100,
+          "credit_work": 100,
+          "settling_steps": 20,
+          "optimizer_steps": 20,
+          "search_model_calls": 100,
+          "checker_calls": 100,
+          "peak_memory_bytes": 100,
+          "wall_seconds": 100,
+          "energy_joules": 100
+        },
+        "retention_delta": -2,
+        "retention_floor": -1,
+        "exclusive_support_threshold": 2,
+        "bp_primary_discoveries": [1, 2, 3],
+        "bp_opportunity_discoveries": [2, 3, 4, 5],
+        "candidate_discoveries": [1, 6, 7, 8]
+      },
+      "expected": {
+        "decision": "ELIMINATE",
+        "reason": "retention_floor"
+      }
+    },
+    {
+      "name": "whole_oeis_parameter_tuning_invalid",
+      "row": {
+        "candidate": {
+          "theory_license": true,
+          "source_frozen": true,
+          "gates": {
+            "algebraic_linear_oracle": "PASS",
+            "nonlinear_residual_mechanism": "PASS",
+            "tied_recurrent_or_workspace_mechanism": "PASS",
+            "relation_aware_transformer_adapter": "PASS",
+            "checker_backed_search": "PASS"
+          }
+        },
+        "hyperparameters_frozen_before_whole_oeis": false,
+        "candidate_resources": {
+          "forward_work": 20,
+          "credit_work": 30,
+          "settling_steps": 8,
+          "optimizer_steps": 10,
+          "search_model_calls": 50,
+          "checker_calls": 50,
+          "peak_memory_bytes": 80,
+          "wall_seconds": 70,
+          "energy_joules": 60
+        },
+        "resource_caps": {
+          "forward_work": 100,
+          "credit_work": 100,
+          "settling_steps": 20,
+          "optimizer_steps": 20,
+          "search_model_calls": 100,
+          "checker_calls": 100,
+          "peak_memory_bytes": 100,
+          "wall_seconds": 100,
+          "energy_joules": 100
+        },
+        "retention_delta": 0,
+        "retention_floor": -1,
+        "exclusive_support_threshold": 2,
+        "bp_primary_discoveries": [1, 2, 3],
+        "bp_opportunity_discoveries": [2, 3, 4, 5],
+        "candidate_discoveries": [1, 6, 7, 8]
+      },
+      "expected": {
+        "decision": "INVALID",
+        "reason": "outcome_tuning"
+      }
+    },
+    {
+      "name": "resource_cap_violation_invalid",
+      "row": {
+        "candidate": {
+          "theory_license": true,
+          "source_frozen": true,
+          "gates": {
+            "algebraic_linear_oracle": "PASS",
+            "nonlinear_residual_mechanism": "PASS",
+            "tied_recurrent_or_workspace_mechanism": "PASS",
+            "relation_aware_transformer_adapter": "PASS",
+            "checker_backed_search": "PASS"
+          }
+        },
+        "hyperparameters_frozen_before_whole_oeis": true,
+        "candidate_resources": {
+          "forward_work": 20,
+          "credit_work": 30,
+          "settling_steps": 8,
+          "optimizer_steps": 10,
+          "search_model_calls": 50,
+          "checker_calls": 50,
+          "peak_memory_bytes": 101,
+          "wall_seconds": 70,
+          "energy_joules": 60
+        },
+        "resource_caps": {
+          "forward_work": 100,
+          "credit_work": 100,
+          "settling_steps": 20,
+          "optimizer_steps": 20,
+          "search_model_calls": 100,
+          "checker_calls": 100,
+          "peak_memory_bytes": 100,
+          "wall_seconds": 100,
+          "energy_joules": 100
+        },
+        "retention_delta": 0,
+        "retention_floor": -1,
+        "exclusive_support_threshold": 2,
+        "bp_primary_discoveries": [1, 2, 3],
+        "bp_opportunity_discoveries": [2, 3, 4, 5],
+        "candidate_discoveries": [1, 6, 7, 8]
+      },
+      "expected": {
+        "decision": "INVALID",
+        "reason": "resource_cap"
+      }
+    },
+    {
+      "name": "pending_mechanism_gate_invalid",
+      "row": {
+        "candidate": {
+          "theory_license": true,
+          "source_frozen": true,
+          "gates": {
+            "algebraic_linear_oracle": "PASS",
+            "nonlinear_residual_mechanism": "PASS",
+            "tied_recurrent_or_workspace_mechanism": "PASS",
+            "relation_aware_transformer_adapter": "PASS",
+            "checker_backed_search": "PENDING"
+          }
+        },
+        "hyperparameters_frozen_before_whole_oeis": true,
+        "candidate_resources": {
+          "forward_work": 20,
+          "credit_work": 30,
+          "settling_steps": 8,
+          "optimizer_steps": 10,
+          "search_model_calls": 50,
+          "checker_calls": 50,
+          "peak_memory_bytes": 80,
+          "wall_seconds": 70,
+          "energy_joules": 60
+        },
+        "resource_caps": {
+          "forward_work": 100,
+          "credit_work": 100,
+          "settling_steps": 20,
+          "optimizer_steps": 20,
+          "search_model_calls": 100,
+          "checker_calls": 100,
+          "peak_memory_bytes": 100,
+          "wall_seconds": 100,
+          "energy_joules": 100
+        },
+        "retention_delta": 0,
+        "retention_floor": -1,
+        "exclusive_support_threshold": 2,
+        "bp_primary_discoveries": [1, 2, 3],
+        "bp_opportunity_discoveries": [2, 3, 4, 5],
+        "candidate_discoveries": [1, 6, 7, 8]
+      },
+      "expected": {
+        "decision": "INVALID",
+        "reason": "mechanism_gate"
+      }
+    }
+  ],
+  "candidate_registry": [
+    {
+      "id": "bp_primary",
+      "family": "ordinary_bp",
+      "role": "paired_control",
+      "admission": "MANDATORY_CONTROL"
+    },
+    {
+      "id": "bp_opportunity",
+      "family": "ordinary_bp",
+      "role": "opportunity_cost_bp",
+      "admission": "MANDATORY_INDEPENDENT_CONTROL"
+    },
+    {
+      "id": "constrained_bp",
+      "family": "constrained_bp",
+      "role": "strongest_bp_emulation_control",
+      "admission": "PENDING_GATE_LADDER"
+    },
+    {
+      "id": "strongest_sealed_pc",
+      "family": "predictive_coding",
+      "role": "empirically_selected_only_after_authenticated_parent_campaign",
+      "admission": "PENDING_GATE_LADDER"
+    },
+    {
+      "id": "prospective_deep_epc",
+      "family": "prospective_error_coordinate_pc",
+      "role": "joint_when_and_coordinate_axis",
+      "admission": "PENDING_GATE_LADDER"
+    },
+    {
+      "id": "published_pc_alm",
+      "family": "pc_alm",
+      "role": "published_primal_dual_reference",
+      "admission": "PENDING_GATE_LADDER"
+    },
+    {
+      "id": "dual_leak_continuation",
+      "family": "primal_dual_continuation",
+      "role": "rate_leak_separated_axis",
+      "admission": "PENDING_GATE_LADDER"
+    },
+    {
+      "id": "amortized_primal_dual",
+      "family": "primal_dual_warm_start",
+      "role": "settling_cost_reduction",
+      "admission": "PENDING_GATE_LADDER"
+    },
+    {
+      "id": "dfa",
+      "family": "direct_feedback_alignment",
+      "role": "broadcast_credit_reference",
+      "admission": "PENDING_GATE_LADDER"
+    },
+    {
+      "id": "synthetic_gradient",
+      "family": "synthetic_gradient",
+      "role": "learned_boundary_credit",
+      "admission": "PENDING_GATE_LADDER"
+    },
+    {
+      "id": "forward_gradient_local_heads",
+      "family": "forward_gradient",
+      "role": "small_active_dimension_reference",
+      "admission": "PENDING_GATE_LADDER"
+    },
+    {
+      "id": "zeroth_order_adapter",
+      "family": "zeroth_order",
+      "role": "derivative_free_adapter_reference",
+      "admission": "PENDING_GATE_LADDER"
+    },
+    {
+      "id": "third_family_candidate",
+      "family": "unnamed",
+      "role": "novelty_gated",
+      "admission": "WITHHELD_NO_SEPARATION_LICENSE"
+    }
+  ]
+}

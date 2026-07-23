@@ -1,0 +1,90 @@
+{
+  "concrete_carom_adapter": {
+    "allocated_gates_are_strictly_between_zero_and_one": true,
+    "allocated_slots": 2,
+    "final_allocated_workspace_sample": [
+      [
+        -0.052602202264,
+        -0.047870498692,
+        0.258282330086,
+        0.065278624516
+      ],
+      [
+        -0.116700189843,
+        0.123630399974,
+        0.21550909268,
+        -0.042056758114
+      ]
+    ],
+    "first_step_average_omission_max_abs_gap": 0.258054275256,
+    "first_step_simultaneous_vs_sequential_max_abs_gap": 0.036346243748,
+    "manual_diagnostics_max_abs_error": 0.0,
+    "manual_equation_max_abs_error": 0.0,
+    "manual_simultaneous_equation_matches": true,
+    "masked_source_perturbation_is_inert": true,
+    "omitting_operator_average_is_wrong": true,
+    "operator_permutation_preserves_simultaneous_result": true,
+    "operators": 2,
+    "python_scope": "TypedWorkspaceDecoder._settle",
+    "recurrence_depth": 2,
+    "routed_carom_python_class_exists": false,
+    "satisfies_common_policy_decoder_protocol": true,
+    "second_settling_step_changes_allocated_state": true,
+    "sequentialized_write_is_not_simultaneous_write": true,
+    "unallocated_gates_are_zero": true,
+    "unallocated_slot_is_immutable": true,
+    "zero_gates_freeze_workspace": true
+  },
+  "full_relation_aware_encoder": {
+    "active_nodes": 2,
+    "active_output_sample": [
+      [
+        0.850145021683,
+        -1.004771631747,
+        1.458360282112,
+        -0.065818186726
+      ],
+      [
+        1.399565735101,
+        0.579987670122,
+        -0.332158571909,
+        1.213305193856
+      ]
+    ],
+    "active_source_perturbation_changes_active_output": true,
+    "all_attention_sublayers_nonzero": true,
+    "all_ffn_sublayers_nonzero": true,
+    "attention_delta_norms": [
+      0.445347202558,
+      0.428004562796
+    ],
+    "dtype": "float64",
+    "ffn_delta_norms": [
+      0.411779929961,
+      0.450337797589
+    ],
+    "final_mask_zeros_inactive_node": true,
+    "full_stack_is_not_identity_on_active_nodes": true,
+    "heads": 2,
+    "layers": 2,
+    "manual_equation_matches": true,
+    "manual_equation_max_abs_error": 2.8208e-11,
+    "manual_equation_tolerance": 1e-09,
+    "masked_source_perturbation_cannot_change_active_output": true,
+    "typed_edges_change_active_output": true
+  },
+  "schema": "gslt.full-block-carom.conformance.v1",
+  "scope_boundary": {
+    "fixture_does_not_claim_trained_model_efficacy": true,
+    "full_encoder_is_exercised": true,
+    "richer_simplex_routed_carom_remains_lean_only": true,
+    "workspace_decoder_is_a_concrete_carom_equation_instance": true
+  },
+  "source_sha256": {
+    "adapters/oeis_path_graph.py": "0b19467fe6e5669c59b8d9df1f3d81f99afc442f5476f32d9a1d7244e040e47b",
+    "models/common.py": "698bb8a7de68190142523af7b8e8be6c92fdd8f5a0a462517626e472fb713f0c",
+    "models/encoder.py": "898c81df71ba0b680aacb72360d40b83e519d2b3288c0c8c3640832e53b6ed7f",
+    "models/tgad_policy_decoder.py": "e2e1007121e47df9d6d0bd020f5a17d7fa2da91567a1a35be640f1edbed83227",
+    "models/tgad_workspace_decoder.py": "71175f51e9f9a615b8aeb2f2f24ae2cb74c3bcd316fa3e3363e2da6ba12228c8"
+  }
+}

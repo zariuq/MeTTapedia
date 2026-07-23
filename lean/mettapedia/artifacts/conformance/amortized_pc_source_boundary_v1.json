@@ -1,0 +1,87 @@
+{
+  "schema": "amortized-pc-source-boundary-v1",
+  "source_repository": "gslt-synth",
+  "source_files": [
+    {
+      "file": "train/tgad_gen9_update_rules.py",
+      "sha256": "4befe1ebe1d4361c7ed92ab30742c87b8f3903de8585ec6f1896a796f8ad96a5"
+    },
+    {
+      "file": "train/tgad_frozen_pc_adapter.py",
+      "sha256": "12d2946b752ed9f00c210302a430ef98f37687becbcf0093830c17fa4a06367f"
+    },
+    {
+      "file": "models/tgad_gen9_adapter.py",
+      "sha256": "9b9d646edb381c38f8896c8f8cb8d4bec8e22604415d764e2d32f1307af2572f"
+    }
+  ],
+  "campaign_registration": {
+    "schema": "tgad.gen9_pc.continuation.preregistration.v2",
+    "sha256": "3409b14ebffc44815ecdd20fcce8a083ff841c659994d83278d2122cfeb99075",
+    "registered_inference_steps": {
+      "prospective_pc": 8,
+      "incremental_pc": 4,
+      "error_coordinate_pc": 4
+    }
+  },
+  "source_bound": {
+    "prospective_solver_state": "masked residual latent initialized from the detached adapter prediction",
+    "prospective_candidate_map": "one energy-gradient step followed by monotone backtracking acceptance",
+    "prospective_raw_credit": "gradient of the quadratic local adapter objective with the inferred latent detached",
+    "error_coordinate_solver_state": "three masked error tensors initialized to zero",
+    "error_coordinate_storage_space": "three full-shaped stored tensors whose active node-mask coordinates and inactive padding coordinates must be distinguished",
+    "error_coordinate_active_space": "only active node-mask coordinates enter both forward_with_errors and the quadratic precision penalty",
+    "error_coordinate_candidate_map": "simultaneous energy-gradient steps followed by monotone backtracking acceptance",
+    "error_coordinate_raw_credit": "gradient of local hidden energy plus supervised loss after mapping inferred errors to a residual",
+    "parameter_update": "raw local credit is clipped before an AdamW optimizer step",
+    "stopping": "a fixed registered number of inference sweeps"
+  },
+  "measurable_with_new_instrumentation": [
+    "energy gradient at the final accepted solver state",
+    "equation residual on the active masked subspace",
+    "per-sweep solver residual",
+    "the first sweep satisfying a declared credit-error tolerance",
+    "raw local-credit difference from a longer fixed-sweep reference",
+    "work and elapsed time at every candidate stopping depth"
+  ],
+  "absent_or_unproved": [
+    "a declared invariant region for either implemented solver",
+    "a contraction factor on that region",
+    "a Lipschitz bound from solver state to raw local credit",
+    "a sensitivity bound from raw local credit through clipping and AdamW to parameter displacement",
+    "a runtime compaction map from full stored tensors to the active masked coordinate space",
+    "a source-bound curvature interval on the compacted three-site active space",
+    "a source-level adaptive residual stopping rule",
+    "typical early-stop savings",
+    "matched-compute verifier-yield preservation"
+  ],
+  "telemetry_boundary": {
+    "recorded": [
+      "fixed inference-step count",
+      "initial and final energy",
+      "maximum accepted energy increase",
+      "accepted-rate mean",
+      "backtrack count",
+      "outer local-objective or local-energy value",
+      "outer parameter-gradient norm",
+      "outer parameter-displacement norm"
+    ],
+    "not_recorded": [
+      "final solver-state gradient",
+      "final solver equation residual",
+      "contraction factor",
+      "certified solver-state error",
+      "certified raw-credit error",
+      "adaptive stopping depth"
+    ]
+  },
+  "non_claims": [
+    "monotone energy acceptance is not identified with contraction or stationarity",
+    "positive precision is not identified with strong convexity of the full nonlinear energy",
+    "positive precision on masked errors is not strong convexity on the full stored tensor space because inactive padding directions are flat",
+    "finite stopping is not identified with the exact equilibrium",
+    "the raw local gradient is not identified with the clipped AdamW displacement",
+    "the frozen campaign is not modified",
+    "no speed or verifier-efficacy improvement is inferred"
+  ]
+}

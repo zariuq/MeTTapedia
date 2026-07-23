@@ -1,0 +1,454 @@
+{
+  "operator_classes": {
+    "euclidean_gradient": {
+      "convex_quadratic_psd": true,
+      "flow_matrix": [
+        [
+          {
+            "denominator": 1,
+            "numerator": -1
+          },
+          {
+            "denominator": 1,
+            "numerator": 0
+          }
+        ],
+        [
+          {
+            "denominator": 1,
+            "numerator": 0
+          },
+          {
+            "denominator": 1,
+            "numerator": -2
+          }
+        ]
+      ],
+      "negative_jacobian": [
+        [
+          {
+            "denominator": 1,
+            "numerator": 1
+          },
+          {
+            "denominator": 1,
+            "numerator": 0
+          }
+        ],
+        [
+          {
+            "denominator": 1,
+            "numerator": 0
+          },
+          {
+            "denominator": 1,
+            "numerator": 2
+          }
+        ]
+      ],
+      "negative_jacobian_symmetric": true
+    },
+    "preconditioned_gradient": {
+      "flow_is_not_euclidean_integrable": true,
+      "flow_matrix": [
+        [
+          {
+            "denominator": 1,
+            "numerator": -2
+          },
+          {
+            "denominator": 1,
+            "numerator": -2
+          }
+        ],
+        [
+          {
+            "denominator": 1,
+            "numerator": -1
+          },
+          {
+            "denominator": 1,
+            "numerator": -2
+          }
+        ]
+      ],
+      "metric": [
+        [
+          {
+            "denominator": 1,
+            "numerator": 2
+          },
+          {
+            "denominator": 1,
+            "numerator": 1
+          }
+        ],
+        [
+          {
+            "denominator": 1,
+            "numerator": 1
+          },
+          {
+            "denominator": 1,
+            "numerator": 1
+          }
+        ]
+      ],
+      "metric_integrability_recovers_symmetric_quadratic": true,
+      "metric_positive_definite": true,
+      "recovered_quadratic": [
+        [
+          {
+            "denominator": 1,
+            "numerator": 1
+          },
+          {
+            "denominator": 1,
+            "numerator": 0
+          }
+        ],
+        [
+          {
+            "denominator": 1,
+            "numerator": 0
+          },
+          {
+            "denominator": 1,
+            "numerator": 2
+          }
+        ]
+      ]
+    },
+    "primal_dual": {
+      "flow_is_not_euclidean_integrable": true,
+      "flow_matrix": [
+        [
+          {
+            "denominator": 1,
+            "numerator": -1
+          },
+          {
+            "denominator": 1,
+            "numerator": -1
+          }
+        ],
+        [
+          {
+            "denominator": 1,
+            "numerator": 1
+          },
+          {
+            "denominator": 1,
+            "numerator": 0
+          }
+        ]
+      ],
+      "kkt_operator": [
+        [
+          {
+            "denominator": 1,
+            "numerator": 1
+          },
+          {
+            "denominator": 1,
+            "numerator": 1
+          }
+        ],
+        [
+          {
+            "denominator": 1,
+            "numerator": -1
+          },
+          {
+            "denominator": 1,
+            "numerator": 0
+          }
+        ]
+      ],
+      "kkt_operator_monotone": true,
+      "kkt_symmetric_part": [
+        [
+          {
+            "denominator": 1,
+            "numerator": 1
+          },
+          {
+            "denominator": 1,
+            "numerator": 0
+          }
+        ],
+        [
+          {
+            "denominator": 1,
+            "numerator": 0
+          },
+          {
+            "denominator": 1,
+            "numerator": 0
+          }
+        ]
+      ]
+    },
+    "rotation_boundary": {
+      "flow_matrix": [
+        [
+          {
+            "denominator": 1,
+            "numerator": 0
+          },
+          {
+            "denominator": 1,
+            "numerator": -1
+          }
+        ],
+        [
+          {
+            "denominator": 1,
+            "numerator": 1
+          },
+          {
+            "denominator": 1,
+            "numerator": 0
+          }
+        ]
+      ],
+      "nonzero_state_not_contracted": true,
+      "norm_preserved": true,
+      "operator_monotone": true,
+      "operator_symmetric_part": [
+        [
+          {
+            "denominator": 1,
+            "numerator": 0
+          },
+          {
+            "denominator": 1,
+            "numerator": 0
+          }
+        ],
+        [
+          {
+            "denominator": 1,
+            "numerator": 0
+          },
+          {
+            "denominator": 1,
+            "numerator": 0
+          }
+        ]
+      ],
+      "rotated_witness": [
+        {
+          "denominator": 1,
+          "numerator": -4
+        },
+        {
+          "denominator": 1,
+          "numerator": 3
+        }
+      ],
+      "witness": [
+        {
+          "denominator": 1,
+          "numerator": 3
+        },
+        {
+          "denominator": 1,
+          "numerator": 4
+        }
+      ]
+    },
+    "same_fixed_point_different_class": {
+      "euclidean_flow_zero_at_origin": true,
+      "jacobians_differ": true,
+      "one_is_integrable_and_other_is_not": true,
+      "rotation_zero_at_origin": true
+    },
+    "unconstrained_recurrence": {
+      "matrix": [
+        [
+          {
+            "denominator": 1,
+            "numerator": 2
+          },
+          {
+            "denominator": 1,
+            "numerator": 2
+          }
+        ],
+        [
+          {
+            "denominator": 1,
+            "numerator": 0
+          },
+          {
+            "denominator": 1,
+            "numerator": 2
+          }
+        ]
+      ],
+      "matrix_not_symmetric": true,
+      "next_witness": [
+        {
+          "denominator": 1,
+          "numerator": 2
+        },
+        {
+          "denominator": 1,
+          "numerator": 0
+        }
+      ],
+      "operator_not_monotone": true,
+      "operator_symmetric_part": [
+        [
+          {
+            "denominator": 1,
+            "numerator": -2
+          },
+          {
+            "denominator": 1,
+            "numerator": -1
+          }
+        ],
+        [
+          {
+            "denominator": 1,
+            "numerator": -1
+          },
+          {
+            "denominator": 1,
+            "numerator": -2
+          }
+        ]
+      ],
+      "witness": [
+        {
+          "denominator": 1,
+          "numerator": 1
+        },
+        {
+          "denominator": 1,
+          "numerator": 0
+        }
+      ],
+      "witness_expands": true
+    }
+  },
+  "precision": {
+    "dependent_duplicate": {
+      "dependence_aware_mean": {
+        "denominator": 2,
+        "numerator": 1
+      },
+      "dependent_reuse_adds_no_independent_information": true,
+      "naive_duplicate_changes_mean": true,
+      "naively_duplicated_mean": {
+        "denominator": 3,
+        "numerator": 2
+      },
+      "single_packet_mean": {
+        "denominator": 2,
+        "numerator": 1
+      }
+    },
+    "matched_linear_gaussian": {
+      "coincidence": true,
+      "observation": {
+        "denominator": 5,
+        "numerator": 4
+      },
+      "pc_penalty_equilibrium": {
+        "denominator": 25,
+        "numerator": 17
+      },
+      "penalty_precision": {
+        "denominator": 1,
+        "numerator": 4
+      },
+      "prior_mean": {
+        "denominator": 5,
+        "numerator": 1
+      },
+      "prior_precision": {
+        "denominator": 1,
+        "numerator": 1
+      },
+      "statistical_posterior_mean": {
+        "denominator": 25,
+        "numerator": 17
+      },
+      "statistical_precision": {
+        "denominator": 1,
+        "numerator": 4
+      }
+    },
+    "miscalibration": {
+      "different_precisions_change_equilibrium": true,
+      "equilibrium_difference": {
+        "denominator": 101,
+        "numerator": 99
+      },
+      "expected_penalty_mean": true,
+      "expected_statistical_mean": true,
+      "observation": {
+        "denominator": 1,
+        "numerator": 1
+      },
+      "pc_penalty_equilibrium": {
+        "denominator": 101,
+        "numerator": 100
+      },
+      "penalty_precision": {
+        "denominator": 1,
+        "numerator": 100
+      },
+      "prior_mean": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "prior_precision": {
+        "denominator": 1,
+        "numerator": 1
+      },
+      "statistical_posterior_mean": {
+        "denominator": 101,
+        "numerator": 1
+      },
+      "statistical_precision": {
+        "denominator": 100,
+        "numerator": 1
+      }
+    },
+    "signed_message_types": {
+      "forward_penalty_force": {
+        "denominator": 5,
+        "numerator": 6
+      },
+      "natural_parameter": {
+        "denominator": 5,
+        "numerator": 2
+      },
+      "natural_parameter_is_not_precision": true,
+      "observation_minus_prediction": {
+        "denominator": 5,
+        "numerator": -3
+      },
+      "precision": {
+        "denominator": 1,
+        "numerator": 2
+      },
+      "precision_is_nonnegative": true,
+      "precision_is_not_the_signed_force": true,
+      "prediction_minus_observation": {
+        "denominator": 5,
+        "numerator": 3
+      },
+      "residual_orientation_changes_sign": true,
+      "reverse_penalty_force": {
+        "denominator": 5,
+        "numerator": -6
+      }
+    }
+  },
+  "schema": "credit.precision_operator.conformance.v1"
+}

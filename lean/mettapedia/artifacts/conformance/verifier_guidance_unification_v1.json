@@ -1,0 +1,124 @@
+{
+  "schema": "verifier-guidance-unification-conformance-v1",
+  "programs": [0, 1, 2, 3, 4, 5],
+  "checker_accepted": [1, 4],
+  "partial_depths": {
+    "0": 1,
+    "1": 5,
+    "2": 3,
+    "3": 2,
+    "4": 5,
+    "5": 0
+  },
+  "partial_scale": 5,
+  "candidate_action_traces": {
+    "0": [0, 0],
+    "1": [0, 1],
+    "2": [0, 1],
+    "3": [1, 0],
+    "4": [1, 1],
+    "5": [0, 0]
+  },
+  "repair_example": {
+    "before": 0,
+    "after": 2
+  },
+  "evidence_packets": [
+    {
+      "program": 0,
+      "dependence_group": "source-0",
+      "reliability": "1",
+      "positive": false
+    },
+    {
+      "program": 1,
+      "dependence_group": "source-1",
+      "reliability": "1/2",
+      "positive": true
+    },
+    {
+      "program": 2,
+      "dependence_group": "shared-lineage-2",
+      "reliability": "9/10",
+      "positive": true
+    },
+    {
+      "program": 2,
+      "dependence_group": "shared-lineage-2",
+      "reliability": "9/10",
+      "positive": true
+    },
+    {
+      "program": 2,
+      "dependence_group": "shared-lineage-2",
+      "reliability": "9/10",
+      "positive": true
+    },
+    {
+      "program": 4,
+      "dependence_group": "independent-lineage-4a",
+      "reliability": "3/5",
+      "positive": true
+    },
+    {
+      "program": 4,
+      "dependence_group": "independent-lineage-4b",
+      "reliability": "3/5",
+      "positive": true
+    }
+  ],
+  "zo_step": "1/2",
+  "gflow_terminal_reward": {
+    "0": "0",
+    "1": "1",
+    "2": "0",
+    "3": "0",
+    "4": "2",
+    "5": "0"
+  },
+  "baseline_order": [0, 1, 2, 3, 4, 5],
+  "semantic_slots": 2,
+  "horizon": 16,
+  "semantic_only_budget": 1,
+  "expected": {
+    "exact_reward_support": [1, 4],
+    "squared_reward_support": [1, 4],
+    "additive_partial_support": [0, 1, 2, 3, 4],
+    "additive_partial_creates_reward_support": [0, 2, 3],
+    "checker_filter_after_additive_partial": [1, 4],
+    "accepted_root_action_distribution": {
+      "0": "1/2",
+      "1": "1/2"
+    },
+    "rejected_program_shares_supervised_prefix": true,
+    "repair_depth_improves": true,
+    "repair_improvement_is_not_acceptance": true,
+    "naive_evidence_positive": {
+      "0": "0",
+      "1": "1/2",
+      "2": "27/10",
+      "4": "6/5"
+    },
+    "corrected_evidence_positive": {
+      "0": "0",
+      "1": "1/2",
+      "2": "9/10",
+      "4": "6/5"
+    },
+    "naive_priority_order": [2, 4, 1, 0],
+    "corrected_priority_order": [4, 2, 1, 0],
+    "zo_expected_reward_at_zero": "1/3",
+    "zo_two_point_estimator": "1/3",
+    "gflow_terminal_distribution": {
+      "1": "1/3",
+      "4": "2/3"
+    },
+    "gflow_support_is_checker_subset": true,
+    "semantic_order": [4, 1, 2, 3, 0, 5],
+    "fair_schedule": [0, 4, 1, 1, 2, 3, 2, 0, 5, 3, 4, 5],
+    "baseline_submission_times": [0, 3, 6, 9, 12, 15],
+    "accepted_ledger": [1, 4],
+    "accepted_ledger_is_exact": true,
+    "semantic_only_prefix_omits_accepted": [1]
+  }
+}

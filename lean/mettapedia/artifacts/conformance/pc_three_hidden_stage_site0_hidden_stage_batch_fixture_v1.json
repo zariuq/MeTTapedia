@@ -1,0 +1,475 @@
+{
+  "activation_output": {
+    "absolute_sum_numerator_decimal": "407558530302480579142020078021454880267304960",
+    "byte_order": "little",
+    "common_denominator_power_of_two": 149,
+    "dtype": "float32",
+    "entry_count": 2,
+    "finite_word_count": 2,
+    "schema": "ieee754.binary32-entrywise-l1.v1",
+    "shape": [
+      2,
+      1
+    ],
+    "storage_order": "contiguous_row_major",
+    "tensor_sha256": "2699646c1859c19fa4e173515cd7795b58d42f22daa63331b3bb6e25de49e61c",
+    "word_encoding": "unsigned_ieee754_binary32",
+    "words_unsigned": [
+      1052433121,
+      3193117594
+    ]
+  },
+  "affine_silu_batch": {
+    "activation_batch_json_sha256s": [
+      "4be33ec5d4ef217c908c7d177eeadb2f5b2fe4af79afd36fd14c68a6cba87786"
+    ],
+    "activation_batches": [
+      {
+        "activation": "silu",
+        "records": [
+          {
+            "certificate": {
+              "argument": {
+                "denominator_decimal": "16777216",
+                "numerator_decimal": "9581655"
+              },
+              "exp_certificate": {
+                "argument": {
+                  "denominator_decimal": "16777216",
+                  "numerator_decimal": "-9581655"
+                },
+                "halvings": 0,
+                "lower": {
+                  "denominator_decimal": "44994265239251727715174938585552552870621683825918199388438528",
+                  "numerator_decimal": "25417117739229604689465135164393382608496753438291761506251763"
+                },
+                "reduced": {
+                  "argument": {
+                    "denominator_decimal": "16777216",
+                    "numerator_decimal": "-9581655"
+                  },
+                  "lower": {
+                    "denominator_decimal": "44994265239251727715174938585552552870621683825918199388438528",
+                    "numerator_decimal": "25417117739229604689465135164393382608496753438291761506251763"
+                  },
+                  "terms": 8,
+                  "upper": {
+                    "denominator_decimal": "44994265239251727715174938585552552870621683825918199388438528",
+                    "numerator_decimal": "25417146156622187014644815468985213934466945758283516481408013"
+                  }
+                },
+                "scale": 1,
+                "upper": {
+                  "denominator_decimal": "44994265239251727715174938585552552870621683825918199388438528",
+                  "numerator_decimal": "25417146156622187014644815468985213934466945758283516481408013"
+                }
+              },
+              "input_word_unsigned": 1058157655,
+              "local_error": {
+                "denominator_decimal": "2362613962177409331440891839117545895710467023128199166563544530419712",
+                "numerator_decimal": "338532309798055348366664053401422343678237039909305483085490541"
+              },
+              "operation": "silu",
+              "output_lower": {
+                "denominator_decimal": "70411411395873914729819754054537766805088629584201715869846541",
+                "numerator_decimal": "25696726232826859540983708272752317546341217156590714738442240"
+              },
+              "output_upper": {
+                "denominator_decimal": "70411382978481332404640073749945935479118437264209960894690291",
+                "numerator_decimal": "25696726232826859540983708272752317546341217156590714738442240"
+              },
+              "output_word_unsigned": 1052433121,
+              "runtime_value": {
+                "denominator_decimal": "33554432",
+                "numerator_decimal": "12245729"
+              },
+              "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+            },
+            "flat_index": 0
+          },
+          {
+            "certificate": {
+              "argument": {
+                "denominator_decimal": "16777216",
+                "numerator_decimal": "-9581655"
+              },
+              "exp_certificate": {
+                "argument": {
+                  "denominator_decimal": "16777216",
+                  "numerator_decimal": "9581655"
+                },
+                "halvings": 0,
+                "lower": {
+                  "denominator_decimal": "44994265239251727715174938585552552870621683825918199388438528",
+                  "numerator_decimal": "79650302764298607622477668946518912701676537216801041733088243"
+                },
+                "reduced": {
+                  "argument": {
+                    "denominator_decimal": "16777216",
+                    "numerator_decimal": "9581655"
+                  },
+                  "lower": {
+                    "denominator_decimal": "44994265239251727715174938585552552870621683825918199388438528",
+                    "numerator_decimal": "79650302764298607622477668946518912701676537216801041733088243"
+                  },
+                  "terms": 8,
+                  "upper": {
+                    "denominator_decimal": "44994265239251727715174938585552552870621683825918199388438528",
+                    "numerator_decimal": "79650331181691189947657349251110744027646729536792796708244493"
+                  }
+                },
+                "scale": 1,
+                "upper": {
+                  "denominator_decimal": "44994265239251727715174938585552552870621683825918199388438528",
+                  "numerator_decimal": "79650331181691189947657349251110744027646729536792796708244493"
+                }
+              },
+              "input_word_unsigned": 3205641303,
+              "local_error": {
+                "denominator_decimal": "4182377681244505485664461459057579810686021741698891871303873773699072",
+                "numerator_decimal": "157627437293966114789881590631066028919659141678805765645946729"
+              },
+              "operation": "silu",
+              "output_lower": {
+                "denominator_decimal": "124644568003550335337652607532071465572298221042719241121526771",
+                "numerator_decimal": "-25696726232826859540983708272752317546341217156590714738442240"
+              },
+              "output_upper": {
+                "denominator_decimal": "124644596420942917662832287836663296898268413362710996096683021",
+                "numerator_decimal": "-25696726232826859540983708272752317546341217156590714738442240"
+              },
+              "output_word_unsigned": 3193117594,
+              "runtime_value": {
+                "denominator_decimal": "33554432",
+                "numerator_decimal": "-6917581"
+              },
+              "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+            },
+            "flat_index": 1
+          }
+        ],
+        "schema": "tgad.rational-activation-replay-batch.v1",
+        "shape": [
+          2,
+          1
+        ],
+        "site_index": 0,
+        "slice_count": 2,
+        "slice_start": 0,
+        "slice_stop_exclusive": 2,
+        "source_binding": {
+          "backbone": "belief_derived",
+          "generation": 9,
+          "rule": "error_coordinate_pc",
+          "world": 17
+        },
+        "source_entry_count": 2,
+        "source_input_tensor_sha256": "a70d3d053c6cb77e0f079f86318208b0a6ee35fe3c8c554db023d9c6585a5d63",
+        "source_output_tensor_sha256": "2699646c1859c19fa4e173515cd7795b58d42f22daa63331b3bb6e25de49e61c",
+        "source_probe_json_sha256": "68a5a3a1aa70540ec9b2f9f2cbe892b52c7c8e579eb2b8a0adb1aba9db262167"
+      }
+    ],
+    "activation_output_tensor_sha256": "2699646c1859c19fa4e173515cd7795b58d42f22daa63331b3bb6e25de49e61c",
+    "affine_batch": {
+      "bias": {
+        "absolute_sum_numerator_decimal": "0",
+        "byte_order": "little",
+        "common_denominator_power_of_two": 149,
+        "dtype": "float32",
+        "entry_count": 1,
+        "finite_word_count": 1,
+        "schema": "ieee754.binary32-entrywise-l1.v1",
+        "shape": [
+          1
+        ],
+        "storage_order": "contiguous_row_major",
+        "tensor_sha256": "6f18446dfe91df3faa293065bb76ab9557ca2c334996c67cfd4d89da10783166",
+        "word_encoding": "unsigned_ieee754_binary32",
+        "words_unsigned": [
+          0
+        ]
+      },
+      "columns": 1,
+      "input": {
+        "absolute_sum_numerator_decimal": "815117060604961158284040156042909760534609920",
+        "byte_order": "little",
+        "common_denominator_power_of_two": 149,
+        "dtype": "float32",
+        "entry_count": 2,
+        "finite_word_count": 2,
+        "schema": "ieee754.binary32-entrywise-l1.v1",
+        "shape": [
+          2,
+          1
+        ],
+        "storage_order": "contiguous_row_major",
+        "tensor_sha256": "a70d3d053c6cb77e0f079f86318208b0a6ee35fe3c8c554db023d9c6585a5d63",
+        "word_encoding": "unsigned_ieee754_binary32",
+        "words_unsigned": [
+          1058157655,
+          3205641303
+        ]
+      },
+      "invocation_count": 2,
+      "layer_role": "base_hidden_transition",
+      "output": {
+        "absolute_sum_numerator_decimal": "815117060604961158284040156042909760534609920",
+        "byte_order": "little",
+        "common_denominator_power_of_two": 149,
+        "dtype": "float32",
+        "entry_count": 2,
+        "finite_word_count": 2,
+        "schema": "ieee754.binary32-entrywise-l1.v1",
+        "shape": [
+          2,
+          1
+        ],
+        "storage_order": "contiguous_row_major",
+        "tensor_sha256": "a70d3d053c6cb77e0f079f86318208b0a6ee35fe3c8c554db023d9c6585a5d63",
+        "word_encoding": "unsigned_ieee754_binary32",
+        "words_unsigned": [
+          1058157655,
+          3205641303
+        ]
+      },
+      "records": [
+        {
+          "ideal_output": [
+            {
+              "denominator_decimal": "16777216",
+              "numerator_decimal": "9581655"
+            }
+          ],
+          "input_words_unsigned": [
+            1058157655
+          ],
+          "invocation_index": 0,
+          "local_error": {
+            "denominator_decimal": "1",
+            "numerator_decimal": "0"
+          },
+          "output_words_unsigned": [
+            1058157655
+          ]
+        },
+        {
+          "ideal_output": [
+            {
+              "denominator_decimal": "16777216",
+              "numerator_decimal": "-9581655"
+            }
+          ],
+          "input_words_unsigned": [
+            3205641303
+          ],
+          "invocation_index": 1,
+          "local_error": {
+            "denominator_decimal": "1",
+            "numerator_decimal": "0"
+          },
+          "output_words_unsigned": [
+            3205641303
+          ]
+        }
+      ],
+      "rows": 1,
+      "schema": "tgad.binary32-affine-replay-batch.v1",
+      "site_index": 0,
+      "source_binding": {
+        "backbone": "belief_derived",
+        "generation": 9,
+        "rule": "error_coordinate_pc",
+        "world": 17
+      },
+      "source_probe_json_sha256": "68a5a3a1aa70540ec9b2f9f2cbe892b52c7c8e579eb2b8a0adb1aba9db262167",
+      "weight": {
+        "absolute_sum_numerator_decimal": "713623846352979940529142984724747568191373312",
+        "byte_order": "little",
+        "common_denominator_power_of_two": 149,
+        "dtype": "float32",
+        "entry_count": 1,
+        "finite_word_count": 1,
+        "schema": "ieee754.binary32-entrywise-l1.v1",
+        "shape": [
+          1,
+          1
+        ],
+        "storage_order": "contiguous_row_major",
+        "tensor_sha256": "11051f80e28e0dda56b831f3e28c7989dcef53a26a7aa3c0c06bca70f6c94f18",
+        "word_encoding": "unsigned_ieee754_binary32",
+        "words_unsigned": [
+          1065353216
+        ]
+      }
+    },
+    "affine_batch_json_sha256": "1b7aadb646d0c22338b9ee1d50848dd4eb1b109e2e0fd96b741449928a89ae7f",
+    "columns": 1,
+    "invocation_count": 2,
+    "layer_role": "base_hidden_transition",
+    "records": [
+      {
+        "activation_flat_start": 0,
+        "activation_flat_stop_exclusive": 1,
+        "invocation_index": 0,
+        "radius": {
+          "denominator_decimal": "16777216",
+          "numerator_decimal": "9581655"
+        }
+      },
+      {
+        "activation_flat_start": 1,
+        "activation_flat_stop_exclusive": 2,
+        "invocation_index": 1,
+        "radius": {
+          "denominator_decimal": "16777216",
+          "numerator_decimal": "9581655"
+        }
+      }
+    ],
+    "rows": 1,
+    "schema": "tgad.binary32-affine-silu-replay-batch.v1",
+    "site_index": 0,
+    "source_binding": {
+      "backbone": "belief_derived",
+      "generation": 9,
+      "rule": "error_coordinate_pc",
+      "world": 17
+    },
+    "source_probe_json_sha256": "68a5a3a1aa70540ec9b2f9f2cbe892b52c7c8e579eb2b8a0adb1aba9db262167"
+  },
+  "affine_silu_batch_json_sha256": "c43543d3deb21f5392b909055b3a980abe8183ae4adcabcca565f400388be1b2",
+  "center": {
+    "absolute_sum_numerator_decimal": "331800233431291960619238934435968383191089152",
+    "byte_order": "little",
+    "common_denominator_power_of_two": 149,
+    "dtype": "float32",
+    "entry_count": 2,
+    "finite_word_count": 2,
+    "schema": "ieee754.binary32-entrywise-l1.v1",
+    "shape": [
+      2,
+      1
+    ],
+    "storage_order": "contiguous_row_major",
+    "tensor_sha256": "e2297bf56e08e7178dd00a520099937fbe8c8378aea8299bb535e542278d99b9",
+    "word_encoding": "unsigned_ieee754_binary32",
+    "words_unsigned": [
+      1055788564,
+      2147483648
+    ]
+  },
+  "columns": 1,
+  "error_site": {
+    "absolute_sum_numerator_decimal": "142724771397360781361693993591040810086825984",
+    "byte_order": "little",
+    "common_denominator_power_of_two": 149,
+    "dtype": "float32",
+    "entry_count": 2,
+    "finite_word_count": 2,
+    "schema": "ieee754.binary32-entrywise-l1.v1",
+    "shape": [
+      2,
+      1
+    ],
+    "storage_order": "contiguous_row_major",
+    "tensor_sha256": "9027d2f2abdfdc2a52dfd32e5b63fbdf35da147720d5fe75d7f69ca5d46850b1",
+    "word_encoding": "unsigned_ieee754_binary32",
+    "words_unsigned": [
+      1036831949,
+      1036831949
+    ]
+  },
+  "invocation_count": 2,
+  "layer_role": "base_hidden_transition",
+  "node_mask": {
+    "dtype": "bool",
+    "entry_count": 2,
+    "schema": "boolean-coordinate-mask.v1",
+    "shape": [
+      2,
+      1
+    ],
+    "storage_order": "contiguous_row_major",
+    "tensor_sha256": "e7d9eeabeecef5f1425cbb170bd00a2837c17312e735764b56d1292edeffbbf4",
+    "values": [
+      true,
+      false
+    ]
+  },
+  "pre_mask_sum": {
+    "absolute_sum_numerator_decimal": "407558524985568596002356586406226639145926656",
+    "byte_order": "little",
+    "common_denominator_power_of_two": 149,
+    "dtype": "float32",
+    "entry_count": 2,
+    "finite_word_count": 2,
+    "schema": "ieee754.binary32-entrywise-l1.v1",
+    "shape": [
+      2,
+      1
+    ],
+    "storage_order": "contiguous_row_major",
+    "tensor_sha256": "b036a6ea0042445675255e6ad6bdbbda3907a6f7243fbd370e92b6a0d4f4355f",
+    "word_encoding": "unsigned_ieee754_binary32",
+    "words_unsigned": [
+      1055788564,
+      3185142375
+    ]
+  },
+  "records": [
+    {
+      "coordinates": [
+        {
+          "activation_word_unsigned": 1052433121,
+          "addition_local_error": {
+            "denominator_decimal": "134217728",
+            "numerator_decimal": "1"
+          },
+          "center_word_unsigned": 1055788564,
+          "error_word_unsigned": 1036831949,
+          "flat_index": 0,
+          "mask_active": true,
+          "mask_local_error": {
+            "denominator_decimal": "1",
+            "numerator_decimal": "0"
+          },
+          "row_index": 0,
+          "sum_word_unsigned": 1055788564
+        }
+      ],
+      "invocation_index": 0
+    },
+    {
+      "coordinates": [
+        {
+          "activation_word_unsigned": 3193117594,
+          "addition_local_error": {
+            "denominator_decimal": "1",
+            "numerator_decimal": "0"
+          },
+          "center_word_unsigned": 2147483648,
+          "error_word_unsigned": 1036831949,
+          "flat_index": 1,
+          "mask_active": false,
+          "mask_local_error": {
+            "denominator_decimal": "1",
+            "numerator_decimal": "0"
+          },
+          "row_index": 0,
+          "sum_word_unsigned": 3185142375
+        }
+      ],
+      "invocation_index": 1
+    }
+  ],
+  "rows": 1,
+  "schema": "tgad.binary32-hidden-stage-replay-batch.v1",
+  "site_index": 0,
+  "source_binding": {
+    "backbone": "belief_derived",
+    "generation": 9,
+    "rule": "error_coordinate_pc",
+    "world": 17
+  },
+  "source_probe_json_sha256": "68a5a3a1aa70540ec9b2f9f2cbe892b52c7c8e579eb2b8a0adb1aba9db262167"
+}

@@ -1,0 +1,475 @@
+{
+  "activation_output": {
+    "absolute_sum_numerator_decimal": "0",
+    "byte_order": "little",
+    "common_denominator_power_of_two": 149,
+    "dtype": "float32",
+    "entry_count": 2,
+    "finite_word_count": 2,
+    "schema": "ieee754.binary32-entrywise-l1.v1",
+    "shape": [
+      2,
+      1
+    ],
+    "storage_order": "contiguous_row_major",
+    "tensor_sha256": "f9599137ef9d01b4ac4dddadf1604408cf1a4d32846ecab7e34b45cfe3720fb9",
+    "word_encoding": "unsigned_ieee754_binary32",
+    "words_unsigned": [
+      0,
+      0
+    ]
+  },
+  "affine_silu_batch": {
+    "activation_batch_json_sha256s": [
+      "06ae0ef01858f35ea02934381385b866684814d7300c64fc29cabfde8b6e4f5c"
+    ],
+    "activation_batches": [
+      {
+        "activation": "silu",
+        "records": [
+          {
+            "certificate": {
+              "argument": {
+                "denominator_decimal": "1",
+                "numerator_decimal": "0"
+              },
+              "exp_certificate": {
+                "argument": {
+                  "denominator_decimal": "1",
+                  "numerator_decimal": "0"
+                },
+                "halvings": 0,
+                "lower": {
+                  "denominator_decimal": "1",
+                  "numerator_decimal": "1"
+                },
+                "reduced": {
+                  "argument": {
+                    "denominator_decimal": "1",
+                    "numerator_decimal": "0"
+                  },
+                  "lower": {
+                    "denominator_decimal": "1",
+                    "numerator_decimal": "1"
+                  },
+                  "terms": 8,
+                  "upper": {
+                    "denominator_decimal": "1",
+                    "numerator_decimal": "1"
+                  }
+                },
+                "scale": 1,
+                "upper": {
+                  "denominator_decimal": "1",
+                  "numerator_decimal": "1"
+                }
+              },
+              "input_word_unsigned": 0,
+              "local_error": {
+                "denominator_decimal": "1",
+                "numerator_decimal": "0"
+              },
+              "operation": "silu",
+              "output_lower": {
+                "denominator_decimal": "1",
+                "numerator_decimal": "0"
+              },
+              "output_upper": {
+                "denominator_decimal": "1",
+                "numerator_decimal": "0"
+              },
+              "output_word_unsigned": 0,
+              "runtime_value": {
+                "denominator_decimal": "1",
+                "numerator_decimal": "0"
+              },
+              "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+            },
+            "flat_index": 0
+          },
+          {
+            "certificate": {
+              "argument": {
+                "denominator_decimal": "1",
+                "numerator_decimal": "0"
+              },
+              "exp_certificate": {
+                "argument": {
+                  "denominator_decimal": "1",
+                  "numerator_decimal": "0"
+                },
+                "halvings": 0,
+                "lower": {
+                  "denominator_decimal": "1",
+                  "numerator_decimal": "1"
+                },
+                "reduced": {
+                  "argument": {
+                    "denominator_decimal": "1",
+                    "numerator_decimal": "0"
+                  },
+                  "lower": {
+                    "denominator_decimal": "1",
+                    "numerator_decimal": "1"
+                  },
+                  "terms": 8,
+                  "upper": {
+                    "denominator_decimal": "1",
+                    "numerator_decimal": "1"
+                  }
+                },
+                "scale": 1,
+                "upper": {
+                  "denominator_decimal": "1",
+                  "numerator_decimal": "1"
+                }
+              },
+              "input_word_unsigned": 0,
+              "local_error": {
+                "denominator_decimal": "1",
+                "numerator_decimal": "0"
+              },
+              "operation": "silu",
+              "output_lower": {
+                "denominator_decimal": "1",
+                "numerator_decimal": "0"
+              },
+              "output_upper": {
+                "denominator_decimal": "1",
+                "numerator_decimal": "0"
+              },
+              "output_word_unsigned": 0,
+              "runtime_value": {
+                "denominator_decimal": "1",
+                "numerator_decimal": "0"
+              },
+              "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+            },
+            "flat_index": 1
+          }
+        ],
+        "schema": "tgad.rational-activation-replay-batch.v1",
+        "shape": [
+          2,
+          1
+        ],
+        "site_index": 1,
+        "slice_count": 2,
+        "slice_start": 0,
+        "slice_stop_exclusive": 2,
+        "source_binding": {
+          "backbone": "belief_derived",
+          "generation": 9,
+          "rule": "error_coordinate_pc",
+          "world": 17
+        },
+        "source_entry_count": 2,
+        "source_input_tensor_sha256": "f9599137ef9d01b4ac4dddadf1604408cf1a4d32846ecab7e34b45cfe3720fb9",
+        "source_output_tensor_sha256": "f9599137ef9d01b4ac4dddadf1604408cf1a4d32846ecab7e34b45cfe3720fb9",
+        "source_probe_json_sha256": "68a5a3a1aa70540ec9b2f9f2cbe892b52c7c8e579eb2b8a0adb1aba9db262167"
+      }
+    ],
+    "activation_output_tensor_sha256": "f9599137ef9d01b4ac4dddadf1604408cf1a4d32846ecab7e34b45cfe3720fb9",
+    "affine_batch": {
+      "bias": {
+        "absolute_sum_numerator_decimal": "0",
+        "byte_order": "little",
+        "common_denominator_power_of_two": 149,
+        "dtype": "float32",
+        "entry_count": 1,
+        "finite_word_count": 1,
+        "schema": "ieee754.binary32-entrywise-l1.v1",
+        "shape": [
+          1
+        ],
+        "storage_order": "contiguous_row_major",
+        "tensor_sha256": "6f18446dfe91df3faa293065bb76ab9557ca2c334996c67cfd4d89da10783166",
+        "word_encoding": "unsigned_ieee754_binary32",
+        "words_unsigned": [
+          0
+        ]
+      },
+      "columns": 1,
+      "input": {
+        "absolute_sum_numerator_decimal": "331800233431291960619238934435968383191089152",
+        "byte_order": "little",
+        "common_denominator_power_of_two": 149,
+        "dtype": "float32",
+        "entry_count": 2,
+        "finite_word_count": 2,
+        "schema": "ieee754.binary32-entrywise-l1.v1",
+        "shape": [
+          2,
+          1
+        ],
+        "storage_order": "contiguous_row_major",
+        "tensor_sha256": "e2297bf56e08e7178dd00a520099937fbe8c8378aea8299bb535e542278d99b9",
+        "word_encoding": "unsigned_ieee754_binary32",
+        "words_unsigned": [
+          1055788564,
+          2147483648
+        ]
+      },
+      "invocation_count": 2,
+      "layer_role": "error_dependent_hidden_transition",
+      "output": {
+        "absolute_sum_numerator_decimal": "0",
+        "byte_order": "little",
+        "common_denominator_power_of_two": 149,
+        "dtype": "float32",
+        "entry_count": 2,
+        "finite_word_count": 2,
+        "schema": "ieee754.binary32-entrywise-l1.v1",
+        "shape": [
+          2,
+          1
+        ],
+        "storage_order": "contiguous_row_major",
+        "tensor_sha256": "f9599137ef9d01b4ac4dddadf1604408cf1a4d32846ecab7e34b45cfe3720fb9",
+        "word_encoding": "unsigned_ieee754_binary32",
+        "words_unsigned": [
+          0,
+          0
+        ]
+      },
+      "records": [
+        {
+          "ideal_output": [
+            {
+              "denominator_decimal": "1",
+              "numerator_decimal": "0"
+            }
+          ],
+          "input_words_unsigned": [
+            1055788564
+          ],
+          "invocation_index": 0,
+          "local_error": {
+            "denominator_decimal": "1",
+            "numerator_decimal": "0"
+          },
+          "output_words_unsigned": [
+            0
+          ]
+        },
+        {
+          "ideal_output": [
+            {
+              "denominator_decimal": "1",
+              "numerator_decimal": "0"
+            }
+          ],
+          "input_words_unsigned": [
+            2147483648
+          ],
+          "invocation_index": 1,
+          "local_error": {
+            "denominator_decimal": "1",
+            "numerator_decimal": "0"
+          },
+          "output_words_unsigned": [
+            0
+          ]
+        }
+      ],
+      "rows": 1,
+      "schema": "tgad.binary32-affine-replay-batch.v1",
+      "site_index": 1,
+      "source_binding": {
+        "backbone": "belief_derived",
+        "generation": 9,
+        "rule": "error_coordinate_pc",
+        "world": 17
+      },
+      "source_probe_json_sha256": "68a5a3a1aa70540ec9b2f9f2cbe892b52c7c8e579eb2b8a0adb1aba9db262167",
+      "weight": {
+        "absolute_sum_numerator_decimal": "0",
+        "byte_order": "little",
+        "common_denominator_power_of_two": 149,
+        "dtype": "float32",
+        "entry_count": 1,
+        "finite_word_count": 1,
+        "schema": "ieee754.binary32-entrywise-l1.v1",
+        "shape": [
+          1,
+          1
+        ],
+        "storage_order": "contiguous_row_major",
+        "tensor_sha256": "20437ae18381e46ca3bcd361f6c17317790fd94ac7646317db62fa9b23086958",
+        "word_encoding": "unsigned_ieee754_binary32",
+        "words_unsigned": [
+          0
+        ]
+      }
+    },
+    "affine_batch_json_sha256": "555e6e5fee55a463d7d2ce67b043a955372da654b633bfe3db4377c426513398",
+    "columns": 1,
+    "invocation_count": 2,
+    "layer_role": "error_dependent_hidden_transition",
+    "records": [
+      {
+        "activation_flat_start": 0,
+        "activation_flat_stop_exclusive": 1,
+        "invocation_index": 0,
+        "radius": {
+          "denominator_decimal": "1",
+          "numerator_decimal": "0"
+        }
+      },
+      {
+        "activation_flat_start": 1,
+        "activation_flat_stop_exclusive": 2,
+        "invocation_index": 1,
+        "radius": {
+          "denominator_decimal": "1",
+          "numerator_decimal": "0"
+        }
+      }
+    ],
+    "rows": 1,
+    "schema": "tgad.binary32-affine-silu-replay-batch.v1",
+    "site_index": 1,
+    "source_binding": {
+      "backbone": "belief_derived",
+      "generation": 9,
+      "rule": "error_coordinate_pc",
+      "world": 17
+    },
+    "source_probe_json_sha256": "68a5a3a1aa70540ec9b2f9f2cbe892b52c7c8e579eb2b8a0adb1aba9db262167"
+  },
+  "affine_silu_batch_json_sha256": "2f3ad1533b91f42eb267228884c4bc1d700f8b455a030731e702090f59992fde",
+  "center": {
+    "absolute_sum_numerator_decimal": "0",
+    "byte_order": "little",
+    "common_denominator_power_of_two": 149,
+    "dtype": "float32",
+    "entry_count": 2,
+    "finite_word_count": 2,
+    "schema": "ieee754.binary32-entrywise-l1.v1",
+    "shape": [
+      2,
+      1
+    ],
+    "storage_order": "contiguous_row_major",
+    "tensor_sha256": "f9599137ef9d01b4ac4dddadf1604408cf1a4d32846ecab7e34b45cfe3720fb9",
+    "word_encoding": "unsigned_ieee754_binary32",
+    "words_unsigned": [
+      0,
+      0
+    ]
+  },
+  "columns": 1,
+  "error_site": {
+    "absolute_sum_numerator_decimal": "0",
+    "byte_order": "little",
+    "common_denominator_power_of_two": 149,
+    "dtype": "float32",
+    "entry_count": 2,
+    "finite_word_count": 2,
+    "schema": "ieee754.binary32-entrywise-l1.v1",
+    "shape": [
+      2,
+      1
+    ],
+    "storage_order": "contiguous_row_major",
+    "tensor_sha256": "f9599137ef9d01b4ac4dddadf1604408cf1a4d32846ecab7e34b45cfe3720fb9",
+    "word_encoding": "unsigned_ieee754_binary32",
+    "words_unsigned": [
+      0,
+      0
+    ]
+  },
+  "invocation_count": 2,
+  "layer_role": "error_dependent_hidden_transition",
+  "node_mask": {
+    "dtype": "bool",
+    "entry_count": 2,
+    "schema": "boolean-coordinate-mask.v1",
+    "shape": [
+      2,
+      1
+    ],
+    "storage_order": "contiguous_row_major",
+    "tensor_sha256": "e7d9eeabeecef5f1425cbb170bd00a2837c17312e735764b56d1292edeffbbf4",
+    "values": [
+      true,
+      false
+    ]
+  },
+  "pre_mask_sum": {
+    "absolute_sum_numerator_decimal": "0",
+    "byte_order": "little",
+    "common_denominator_power_of_two": 149,
+    "dtype": "float32",
+    "entry_count": 2,
+    "finite_word_count": 2,
+    "schema": "ieee754.binary32-entrywise-l1.v1",
+    "shape": [
+      2,
+      1
+    ],
+    "storage_order": "contiguous_row_major",
+    "tensor_sha256": "f9599137ef9d01b4ac4dddadf1604408cf1a4d32846ecab7e34b45cfe3720fb9",
+    "word_encoding": "unsigned_ieee754_binary32",
+    "words_unsigned": [
+      0,
+      0
+    ]
+  },
+  "records": [
+    {
+      "coordinates": [
+        {
+          "activation_word_unsigned": 0,
+          "addition_local_error": {
+            "denominator_decimal": "1",
+            "numerator_decimal": "0"
+          },
+          "center_word_unsigned": 0,
+          "error_word_unsigned": 0,
+          "flat_index": 0,
+          "mask_active": true,
+          "mask_local_error": {
+            "denominator_decimal": "1",
+            "numerator_decimal": "0"
+          },
+          "row_index": 0,
+          "sum_word_unsigned": 0
+        }
+      ],
+      "invocation_index": 0
+    },
+    {
+      "coordinates": [
+        {
+          "activation_word_unsigned": 0,
+          "addition_local_error": {
+            "denominator_decimal": "1",
+            "numerator_decimal": "0"
+          },
+          "center_word_unsigned": 0,
+          "error_word_unsigned": 0,
+          "flat_index": 1,
+          "mask_active": false,
+          "mask_local_error": {
+            "denominator_decimal": "1",
+            "numerator_decimal": "0"
+          },
+          "row_index": 0,
+          "sum_word_unsigned": 0
+        }
+      ],
+      "invocation_index": 1
+    }
+  ],
+  "rows": 1,
+  "schema": "tgad.binary32-hidden-stage-replay-batch.v1",
+  "site_index": 1,
+  "source_binding": {
+    "backbone": "belief_derived",
+    "generation": 9,
+    "rule": "error_coordinate_pc",
+    "world": 17
+  },
+  "source_probe_json_sha256": "68a5a3a1aa70540ec9b2f9f2cbe892b52c7c8e579eb2b8a0adb1aba9db262167"
+}

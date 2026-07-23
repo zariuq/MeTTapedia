@@ -1,0 +1,365 @@
+{
+  "schema": "carrier-credit-selector-conformance-v1",
+  "semantics": "Each output is a set of premise-licensed regimes. It is not a ranking or a claim of empirical superiority.",
+  "base_profile": {
+    "graph_depth": 1,
+    "shared_state_fanin": 1,
+    "jacobian_spectral_radius": "1",
+    "nonnormal_gain": "1",
+    "measured_contraction": "1",
+    "initializer_relative_error": "2",
+    "state_carrier_reachable": false,
+    "adapter_rank_sufficient": false,
+    "evidence_heteroscedastic": false,
+    "evidence_calibrated": false,
+    "operator_interference": "2",
+    "operators_commute": false,
+    "replay_fraction": "0",
+    "drift_rate": "0",
+    "retention_curvature": "3",
+    "retention_pressure": "0",
+    "retention_probe_available": false,
+    "max_work_multiplier": "0",
+    "max_span_rounds": 0,
+    "max_memory_multiplier": "0",
+    "local_parallel_hardware": false,
+    "checker_feedback_support": "none",
+    "discovery_complementarity": "0",
+    "exact_task_gradient": false,
+    "reverse_mode_available": false,
+    "residual_energy_available": false,
+    "error_coordinates_available": false,
+    "latent_constraint_repair": false,
+    "settling_bound_certified": false,
+    "dual_stability_certified": false,
+    "broadcast_feedback_available": false,
+    "broadcast_rank_sufficient": false,
+    "shared_occurrence_aggregation_certified": false,
+    "synthetic_gradient_error_bound": "2",
+    "synthetic_refresh_rate": "0",
+    "inverse_model_error_bound": "2",
+    "forward_jvp_available": false,
+    "active_parameter_dimension": 128,
+    "perturbation_budget": 0,
+    "smooth_surrogate_available": false,
+    "checker_plateau_detected": false,
+    "free_nudged_phases_available": false,
+    "fast_state_reachable": false,
+    "fast_state_calibrated": false,
+    "slow_weight_reachable": false,
+    "long_horizon_recurring_context": false,
+    "compositional_acyclic_search": false,
+    "fair_baseline_queue": false,
+    "consolidation_period_identified": false
+  },
+  "cases": [
+    {
+      "name": "ordinary_bp_exact_reverse_mode",
+      "overrides": {
+        "graph_depth": 2,
+        "state_carrier_reachable": true,
+        "adapter_rank_sufficient": true,
+        "exact_task_gradient": true,
+        "reverse_mode_available": true,
+        "max_work_multiplier": "2",
+        "max_span_rounds": 2,
+        "max_memory_multiplier": "2"
+      },
+      "expected_licenses": ["ordinary_bp"]
+    },
+    {
+      "name": "constrained_bp_retention_regime",
+      "overrides": {
+        "graph_depth": 2,
+        "state_carrier_reachable": true,
+        "adapter_rank_sufficient": true,
+        "exact_task_gradient": true,
+        "reverse_mode_available": true,
+        "retention_probe_available": true,
+        "retention_pressure": "1",
+        "retention_curvature": "1",
+        "max_work_multiplier": "2",
+        "max_span_rounds": 2,
+        "max_memory_multiplier": "2"
+      },
+      "expected_licenses": ["ordinary_bp", "constrained_bp"]
+    },
+    {
+      "name": "error_coordinate_pc_contractive_parallel",
+      "overrides": {
+        "graph_depth": 4,
+        "jacobian_spectral_radius": "1/2",
+        "nonnormal_gain": "2",
+        "measured_contraction": "1/2",
+        "state_carrier_reachable": true,
+        "residual_energy_available": true,
+        "error_coordinates_available": true,
+        "settling_bound_certified": true,
+        "local_parallel_hardware": true,
+        "max_work_multiplier": "3",
+        "max_span_rounds": 1,
+        "max_memory_multiplier": "2"
+      },
+      "expected_licenses": ["error_coordinate_pc"]
+    },
+    {
+      "name": "prospective_primal_dual_repair",
+      "overrides": {
+        "graph_depth": 4,
+        "jacobian_spectral_radius": "1/2",
+        "nonnormal_gain": "2",
+        "measured_contraction": "1/2",
+        "initializer_relative_error": "1/2",
+        "state_carrier_reachable": true,
+        "residual_energy_available": true,
+        "latent_constraint_repair": true,
+        "settling_bound_certified": true,
+        "dual_stability_certified": true,
+        "local_parallel_hardware": true,
+        "max_work_multiplier": "4",
+        "max_span_rounds": 2,
+        "max_memory_multiplier": "3"
+      },
+      "expected_licenses": ["prospective_primal_dual_pc"]
+    },
+    {
+      "name": "dfa_ranked_broadcast",
+      "overrides": {
+        "graph_depth": 6,
+        "state_carrier_reachable": true,
+        "adapter_rank_sufficient": true,
+        "broadcast_feedback_available": true,
+        "broadcast_rank_sufficient": true,
+        "max_work_multiplier": "1",
+        "max_span_rounds": 1,
+        "max_memory_multiplier": "1"
+      },
+      "expected_licenses": ["dfa_direct_broadcast"]
+    },
+    {
+      "name": "synthetic_gradient_bounded_and_refreshed",
+      "overrides": {
+        "state_carrier_reachable": true,
+        "local_parallel_hardware": true,
+        "synthetic_gradient_error_bound": "1/4",
+        "synthetic_refresh_rate": "1/2",
+        "drift_rate": "1/4",
+        "max_work_multiplier": "2",
+        "max_span_rounds": 1,
+        "max_memory_multiplier": "1"
+      },
+      "expected_licenses": ["synthetic_gradient"]
+    },
+    {
+      "name": "target_propagation_certified_inverse",
+      "overrides": {
+        "jacobian_spectral_radius": "1/2",
+        "state_carrier_reachable": true,
+        "adapter_rank_sufficient": true,
+        "inverse_model_error_bound": "1/4",
+        "max_work_multiplier": "3",
+        "max_span_rounds": 2,
+        "max_memory_multiplier": "2"
+      },
+      "expected_licenses": ["target_propagation"]
+    },
+    {
+      "name": "forward_gradient_low_active_dimension",
+      "overrides": {
+        "adapter_rank_sufficient": true,
+        "forward_jvp_available": true,
+        "active_parameter_dimension": 8,
+        "perturbation_budget": 8,
+        "smooth_surrogate_available": true,
+        "max_work_multiplier": "2",
+        "max_span_rounds": 1,
+        "max_memory_multiplier": "1"
+      },
+      "expected_licenses": ["forward_gradient"]
+    },
+    {
+      "name": "zeroth_order_smooth_small_adapter",
+      "overrides": {
+        "active_parameter_dimension": 8,
+        "perturbation_budget": 16,
+        "smooth_surrogate_available": true,
+        "max_work_multiplier": "2",
+        "max_span_rounds": 1,
+        "max_memory_multiplier": "1"
+      },
+      "expected_licenses": ["zeroth_order_adapter_tuning"]
+    },
+    {
+      "name": "equilibrium_contractive_two_phase",
+      "overrides": {
+        "jacobian_spectral_radius": "1/2",
+        "nonnormal_gain": "2",
+        "measured_contraction": "1/2",
+        "state_carrier_reachable": true,
+        "residual_energy_available": true,
+        "settling_bound_certified": true,
+        "free_nudged_phases_available": true,
+        "max_work_multiplier": "4",
+        "max_span_rounds": 2,
+        "max_memory_multiplier": "2"
+      },
+      "expected_licenses": ["equilibrium_method"]
+    },
+    {
+      "name": "belief_carom_calibrated_drift",
+      "overrides": {
+        "state_carrier_reachable": true,
+        "evidence_heteroscedastic": true,
+        "evidence_calibrated": true,
+        "operator_interference": "1/2",
+        "drift_rate": "1/2",
+        "fast_state_reachable": true,
+        "fast_state_calibrated": true,
+        "max_work_multiplier": "1",
+        "max_span_rounds": 1,
+        "max_memory_multiplier": "2"
+      },
+      "expected_licenses": ["fast_state_belief_carom"]
+    },
+    {
+      "name": "search_flow_checker_complementarity",
+      "overrides": {
+        "checker_feedback_support": "terminal",
+        "discovery_complementarity": "1/2",
+        "compositional_acyclic_search": true,
+        "fair_baseline_queue": true,
+        "max_work_multiplier": "2",
+        "max_span_rounds": 1,
+        "max_memory_multiplier": "1"
+      },
+      "expected_licenses": ["search_level_flow"]
+    },
+    {
+      "name": "periodic_commuting_consolidation",
+      "overrides": {
+        "adapter_rank_sufficient": true,
+        "operators_commute": true,
+        "replay_fraction": "1/2",
+        "fast_state_reachable": true,
+        "slow_weight_reachable": true,
+        "long_horizon_recurring_context": true,
+        "consolidation_period_identified": true,
+        "max_work_multiplier": "2",
+        "max_span_rounds": 1,
+        "max_memory_multiplier": "2"
+      },
+      "expected_licenses": ["periodic_consolidation"]
+    },
+    {
+      "name": "insufficient_evidence_refuses",
+      "overrides": {},
+      "expected_licenses": ["unresolved"]
+    }
+  ],
+  "gate_pairs": [
+    {
+      "name": "bp_requires_reverse_mode",
+      "positive_case": "ordinary_bp_exact_reverse_mode",
+      "negative_overrides": {"reverse_mode_available": false},
+      "method_must_drop": "ordinary_bp"
+    },
+    {
+      "name": "constrained_bp_requires_retention_probe",
+      "positive_case": "constrained_bp_retention_regime",
+      "negative_overrides": {"retention_probe_available": false},
+      "method_must_drop": "constrained_bp"
+    },
+    {
+      "name": "error_coordinate_pc_requires_contraction",
+      "positive_case": "error_coordinate_pc_contractive_parallel",
+      "negative_overrides": {"measured_contraction": "1"},
+      "method_must_drop": "error_coordinate_pc"
+    },
+    {
+      "name": "prospective_pc_requires_dual_stability",
+      "positive_case": "prospective_primal_dual_repair",
+      "negative_overrides": {"dual_stability_certified": false},
+      "method_must_drop": "prospective_primal_dual_pc"
+    },
+    {
+      "name": "dfa_requires_broadcast_rank",
+      "positive_case": "dfa_ranked_broadcast",
+      "negative_overrides": {"broadcast_rank_sufficient": false},
+      "method_must_drop": "dfa_direct_broadcast"
+    },
+    {
+      "name": "synthetic_gradient_must_track_drift",
+      "positive_case": "synthetic_gradient_bounded_and_refreshed",
+      "negative_overrides": {"synthetic_refresh_rate": "1/8"},
+      "method_must_drop": "synthetic_gradient"
+    },
+    {
+      "name": "target_propagation_requires_inverse_accuracy",
+      "positive_case": "target_propagation_certified_inverse",
+      "negative_overrides": {"inverse_model_error_bound": "1/2"},
+      "method_must_drop": "target_propagation"
+    },
+    {
+      "name": "forward_gradient_requires_sample_dimension_budget",
+      "positive_case": "forward_gradient_low_active_dimension",
+      "negative_overrides": {"active_parameter_dimension": 9},
+      "method_must_drop": "forward_gradient"
+    },
+    {
+      "name": "zeroth_order_refuses_checker_plateau",
+      "positive_case": "zeroth_order_smooth_small_adapter",
+      "negative_overrides": {"checker_plateau_detected": true},
+      "method_must_drop": "zeroth_order_adapter_tuning"
+    },
+    {
+      "name": "equilibrium_requires_two_phases",
+      "positive_case": "equilibrium_contractive_two_phase",
+      "negative_overrides": {"free_nudged_phases_available": false},
+      "method_must_drop": "equilibrium_method"
+    },
+    {
+      "name": "belief_carom_requires_calibrated_evidence",
+      "positive_case": "belief_carom_calibrated_drift",
+      "negative_overrides": {"evidence_calibrated": false},
+      "method_must_drop": "fast_state_belief_carom"
+    },
+    {
+      "name": "search_flow_requires_fair_baseline_reachability",
+      "positive_case": "search_flow_checker_complementarity",
+      "negative_overrides": {"fair_baseline_queue": false},
+      "method_must_drop": "search_level_flow"
+    },
+    {
+      "name": "periodic_consolidation_requires_commutation",
+      "positive_case": "periodic_commuting_consolidation",
+      "negative_overrides": {"operators_commute": false},
+      "method_must_drop": "periodic_consolidation"
+    }
+  ],
+  "erasure_witnesses": [
+    {
+      "name": "calibration_is_selector_relevant",
+      "first_case": "belief_carom_calibrated_drift",
+      "second_overrides": {"evidence_calibrated": false},
+      "erased_field": "evidence_calibrated"
+    },
+    {
+      "name": "broadcast_rank_is_selector_relevant",
+      "first_case": "dfa_ranked_broadcast",
+      "second_overrides": {"broadcast_rank_sufficient": false},
+      "erased_field": "broadcast_rank_sufficient"
+    },
+    {
+      "name": "checker_plateau_is_selector_relevant",
+      "first_case": "zeroth_order_smooth_small_adapter",
+      "second_overrides": {"checker_plateau_detected": true},
+      "erased_field": "checker_plateau_detected"
+    },
+    {
+      "name": "commutation_is_selector_relevant",
+      "first_case": "periodic_commuting_consolidation",
+      "second_overrides": {"operators_commute": false},
+      "erased_field": "operators_commute"
+    }
+  ]
+}

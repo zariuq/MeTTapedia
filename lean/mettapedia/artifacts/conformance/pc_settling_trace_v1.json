@@ -1,0 +1,77 @@
+{
+  "schema": "pc.settling.certificate.trace.v1",
+  "proof_binding": {
+    "module": "Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.CertifiedSettlingTrace",
+    "source": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/CertifiedSettlingTrace.lean",
+    "source_sha256": "3d5561aebb145c0b34f16503dae925f24f89b6dab43f5c70ed542121b6920929",
+    "reconstruction_theorem": "CertifiedSettlingTrace.positiveObservation_reconstructible",
+    "alignment_theorem": "CertifiedSettlingTrace.Reconstructible.positiveAlignment",
+    "descent_theorem": "CertifiedSettlingTrace.Reconstructible.strictTaskDescent"
+  },
+  "positive_fixture": {
+    "context": {
+      "contraction_factor": "1/2",
+      "readout_sensitivity": "1",
+      "equilibrium_mismatch": "0",
+      "step": "1/4",
+      "curvature": "1",
+      "fixed_cost": 10,
+      "sweep_cost": 3,
+      "reference_depth": 2
+    },
+    "initial_energy": "2",
+    "sweeps": [
+      {
+        "depth": 1,
+        "state_scalar": "1/2",
+        "state_sha256": "d939926f05444b0f4495fb9629ecbfa80d99a8ec1a20d06800ca5a3d5f4fd276",
+        "energy": "1",
+        "finite_credit_scalar": "5/2",
+        "finite_credit_sha256": "06a89c05b4eae0f2acac44075fe7d5dcde1e2d1a23aeb7270b11556c42a39315",
+        "solver_residual": "1/4",
+        "finite_credit_norm": "5/2",
+        "certified_error_radius": "1/2",
+        "alignment_lower_bound": "5",
+        "task_decrease_lower_bound": "39/32",
+        "cumulative_work": 13,
+        "elapsed_nanoseconds": 100,
+        "reference_credit_scalar": "9/4",
+        "reference_credit_sha256": "aceea65272192df3e9cee56f5c2b5e7bc88abad6a54dc4b3c98254d079fc5242",
+        "reference_credit_gap": "1/4",
+        "stop_licensed": true
+      }
+    ]
+  },
+  "negative_fixtures": [
+    {
+      "name": "understated-error-radius",
+      "mutation": "understate_error",
+      "expected_error": "certified_error_radius_mismatch"
+    },
+    {
+      "name": "increasing-energy",
+      "mutation": "increase_energy",
+      "expected_error": "energy_increase"
+    },
+    {
+      "name": "noncontiguous-depth",
+      "mutation": "skip_depth",
+      "expected_error": "noncontiguous_depth"
+    },
+    {
+      "name": "noncontractive-factor",
+      "mutation": "factor_one",
+      "expected_error": "invalid_contraction_factor"
+    },
+    {
+      "name": "unlicensed-stop",
+      "mutation": "falsify_stop",
+      "expected_error": "stop_license_mismatch"
+    },
+    {
+      "name": "tampered-credit-payload",
+      "mutation": "tamper_credit",
+      "expected_error": "finite_credit_digest_mismatch"
+    }
+  ]
+}

@@ -1,0 +1,820 @@
+{
+  "dfa": {
+    "behavior_effects": [
+      {
+        "denominator": 1,
+        "numerator": 1
+      },
+      {
+        "denominator": 1,
+        "numerator": 0
+      }
+    ],
+    "deduplicating_tied_occurrences_is_wrong": true,
+    "exact_hidden_gradient": [
+      {
+        "denominator": 1,
+        "numerator": 2
+      },
+      {
+        "denominator": 1,
+        "numerator": -1
+      }
+    ],
+    "identity_feedback_credit": [
+      {
+        "denominator": 1,
+        "numerator": 1
+      },
+      {
+        "denominator": 1,
+        "numerator": -2
+      }
+    ],
+    "identity_feedback_detects_nonzero_error": true,
+    "kernel_credit": [
+      {
+        "denominator": 1,
+        "numerator": 0
+      },
+      {
+        "denominator": 1,
+        "numerator": 0
+      }
+    ],
+    "kernel_error": [
+      {
+        "denominator": 1,
+        "numerator": 0
+      },
+      {
+        "denominator": 1,
+        "numerator": 1
+      }
+    ],
+    "nonzero_error_is_annihilated": true,
+    "orthogonal_updates": [
+      [
+        {
+          "denominator": 1,
+          "numerator": 1
+        },
+        {
+          "denominator": 1,
+          "numerator": 0
+        }
+      ],
+      [
+        {
+          "denominator": 1,
+          "numerator": 0
+        },
+        {
+          "denominator": 1,
+          "numerator": 1
+        }
+      ]
+    ],
+    "output_error": [
+      {
+        "denominator": 1,
+        "numerator": 1
+      },
+      {
+        "denominator": 1,
+        "numerator": -2
+      }
+    ],
+    "positive_alignment": {
+      "denominator": 1,
+      "numerator": 4
+    },
+    "rank_deficient_feedback": [
+      [
+        {
+          "denominator": 1,
+          "numerator": 1
+        },
+        {
+          "denominator": 1,
+          "numerator": 0
+        }
+      ],
+      [
+        {
+          "denominator": 1,
+          "numerator": 0
+        },
+        {
+          "denominator": 1,
+          "numerator": 0
+        }
+      ]
+    ],
+    "tied_occurrence_contributions": [
+      {
+        "denominator": 1,
+        "numerator": 2
+      },
+      {
+        "denominator": 1,
+        "numerator": -3
+      }
+    ],
+    "tied_occurrence_sum": {
+      "denominator": 1,
+      "numerator": -1
+    },
+    "update_separation_does_not_force_behavior_effect": true,
+    "updates_are_orthogonal": true
+  },
+  "forward_gradient": {
+    "defective_covariance_loses_second_coordinate": true,
+    "defective_directions": [
+      [
+        {
+          "denominator": 1,
+          "numerator": 1
+        },
+        {
+          "denominator": 1,
+          "numerator": 0
+        }
+      ],
+      [
+        {
+          "denominator": 1,
+          "numerator": -1
+        },
+        {
+          "denominator": 1,
+          "numerator": 0
+        }
+      ]
+    ],
+    "defective_mean": [
+      {
+        "denominator": 1,
+        "numerator": 2
+      },
+      {
+        "denominator": 1,
+        "numerator": 0
+      }
+    ],
+    "dimension_variance_grows": true,
+    "dimension_variances_for_coordinate_gradient": {
+      "1": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "2": {
+        "denominator": 1,
+        "numerator": 1
+      },
+      "4": {
+        "denominator": 1,
+        "numerator": 3
+      }
+    },
+    "directions": [
+      [
+        {
+          "denominator": 1,
+          "numerator": 1
+        },
+        {
+          "denominator": 1,
+          "numerator": 1
+        }
+      ],
+      [
+        {
+          "denominator": 1,
+          "numerator": 1
+        },
+        {
+          "denominator": 1,
+          "numerator": -1
+        }
+      ],
+      [
+        {
+          "denominator": 1,
+          "numerator": -1
+        },
+        {
+          "denominator": 1,
+          "numerator": 1
+        }
+      ],
+      [
+        {
+          "denominator": 1,
+          "numerator": -1
+        },
+        {
+          "denominator": 1,
+          "numerator": -1
+        }
+      ]
+    ],
+    "estimates": [
+      [
+        {
+          "denominator": 1,
+          "numerator": 1
+        },
+        {
+          "denominator": 1,
+          "numerator": 1
+        }
+      ],
+      [
+        {
+          "denominator": 1,
+          "numerator": 3
+        },
+        {
+          "denominator": 1,
+          "numerator": -3
+        }
+      ],
+      [
+        {
+          "denominator": 1,
+          "numerator": 3
+        },
+        {
+          "denominator": 1,
+          "numerator": -3
+        }
+      ],
+      [
+        {
+          "denominator": 1,
+          "numerator": 1
+        },
+        {
+          "denominator": 1,
+          "numerator": 1
+        }
+      ]
+    ],
+    "gradient": [
+      {
+        "denominator": 1,
+        "numerator": 2
+      },
+      {
+        "denominator": 1,
+        "numerator": -1
+      }
+    ],
+    "large_step_estimate": [
+      {
+        "denominator": 1,
+        "numerator": 3
+      },
+      {
+        "denominator": 1,
+        "numerator": -3
+      }
+    ],
+    "large_step_next": [
+      {
+        "denominator": 1,
+        "numerator": -4
+      },
+      {
+        "denominator": 1,
+        "numerator": 5
+      }
+    ],
+    "mean_estimate": [
+      {
+        "denominator": 1,
+        "numerator": 2
+      },
+      {
+        "denominator": 1,
+        "numerator": -1
+      }
+    ],
+    "mean_squared_error": {
+      "denominator": 1,
+      "numerator": 5
+    },
+    "unbiased_ensemble": true,
+    "unbiasedness_does_not_license_arbitrary_step": true
+  },
+  "schema": "credit.alternative_oracles.conformance.v1",
+  "synthetic_gradient": {
+    "descent_margin": {
+      "denominator": 4,
+      "numerator": 3
+    },
+    "descent_margin_positive": true,
+    "error": [
+      {
+        "denominator": 4,
+        "numerator": -1
+      },
+      {
+        "denominator": 4,
+        "numerator": 1
+      }
+    ],
+    "error_norm_squared": {
+      "denominator": 8,
+      "numerator": 1
+    },
+    "loss_after": {
+      "denominator": 16,
+      "numerator": 1
+    },
+    "loss_before": {
+      "denominator": 2,
+      "numerator": 1
+    },
+    "next_theta": [
+      {
+        "denominator": 4,
+        "numerator": 1
+      },
+      {
+        "denominator": 4,
+        "numerator": -1
+      }
+    ],
+    "rate": {
+      "denominator": 1,
+      "numerator": 1
+    },
+    "smooth_bound_holds": true,
+    "smooth_upper_bound": {
+      "denominator": 16,
+      "numerator": 1
+    },
+    "stale_proxy": {
+      "drifted_margin": {
+        "denominator": 1,
+        "numerator": -1
+      },
+      "drifted_margin_negative": true,
+      "drifted_state": [
+        {
+          "denominator": 1,
+          "numerator": -1
+        },
+        {
+          "denominator": 1,
+          "numerator": 0
+        }
+      ],
+      "loss_increases_after_drift": true,
+      "next_state": [
+        {
+          "denominator": 1,
+          "numerator": -2
+        },
+        {
+          "denominator": 1,
+          "numerator": 0
+        }
+      ],
+      "old_proxy_error_zero": true,
+      "old_state": [
+        {
+          "denominator": 1,
+          "numerator": 1
+        },
+        {
+          "denominator": 1,
+          "numerator": 0
+        }
+      ],
+      "proxy": [
+        {
+          "denominator": 1,
+          "numerator": 1
+        },
+        {
+          "denominator": 1,
+          "numerator": 0
+        }
+      ]
+    },
+    "strict_error_bound": true,
+    "strict_task_descent": true,
+    "synthetic_gradient": [
+      {
+        "denominator": 4,
+        "numerator": 3
+      },
+      {
+        "denominator": 4,
+        "numerator": 1
+      }
+    ],
+    "theta": [
+      {
+        "denominator": 1,
+        "numerator": 1
+      },
+      {
+        "denominator": 1,
+        "numerator": 0
+      }
+    ],
+    "true_gradient": [
+      {
+        "denominator": 1,
+        "numerator": 1
+      },
+      {
+        "denominator": 1,
+        "numerator": 0
+      }
+    ],
+    "true_gradient_norm_squared": {
+      "denominator": 1,
+      "numerator": 1
+    }
+  },
+  "target_propagation": {
+    "approximate_inverse_error": [
+      [
+        {
+          "denominator": 4,
+          "numerator": 1
+        },
+        {
+          "denominator": 1,
+          "numerator": 0
+        }
+      ],
+      [
+        {
+          "denominator": 1,
+          "numerator": 0
+        },
+        {
+          "denominator": 1,
+          "numerator": 0
+        }
+      ]
+    ],
+    "error_identity_holds": true,
+    "exact_inverse_realizes_target": true,
+    "exact_target_reduces_output_loss": true,
+    "forward_map": [
+      [
+        {
+          "denominator": 1,
+          "numerator": 2
+        },
+        {
+          "denominator": 1,
+          "numerator": 0
+        }
+      ],
+      [
+        {
+          "denominator": 1,
+          "numerator": 0
+        },
+        {
+          "denominator": 1,
+          "numerator": 1
+        }
+      ]
+    ],
+    "hidden": [
+      {
+        "denominator": 1,
+        "numerator": 1
+      },
+      {
+        "denominator": 1,
+        "numerator": 1
+      }
+    ],
+    "hidden_target": [
+      {
+        "denominator": 2,
+        "numerator": 1
+      },
+      {
+        "denominator": 2,
+        "numerator": 1
+      }
+    ],
+    "inverse_map": [
+      [
+        {
+          "denominator": 2,
+          "numerator": 1
+        },
+        {
+          "denominator": 1,
+          "numerator": 0
+        }
+      ],
+      [
+        {
+          "denominator": 1,
+          "numerator": 0
+        },
+        {
+          "denominator": 1,
+          "numerator": 1
+        }
+      ]
+    ],
+    "noninjective_forward": [
+      [
+        {
+          "denominator": 1,
+          "numerator": 1
+        },
+        {
+          "denominator": 1,
+          "numerator": 0
+        }
+      ],
+      [
+        {
+          "denominator": 1,
+          "numerator": 0
+        },
+        {
+          "denominator": 1,
+          "numerator": 0
+        }
+      ]
+    ],
+    "operator_error_bound": {
+      "denominator": 2,
+      "numerator": 1
+    },
+    "operator_error_bound_holds": true,
+    "output": [
+      {
+        "denominator": 1,
+        "numerator": 2
+      },
+      {
+        "denominator": 1,
+        "numerator": 1
+      }
+    ],
+    "output_loss_after": {
+      "denominator": 8,
+      "numerator": 5
+    },
+    "output_loss_before": {
+      "denominator": 2,
+      "numerator": 5
+    },
+    "output_target": [
+      {
+        "denominator": 1,
+        "numerator": 1
+      },
+      {
+        "denominator": 2,
+        "numerator": 1
+      }
+    ],
+    "predicted_AE_delta_error": [
+      {
+        "denominator": 2,
+        "numerator": -1
+      },
+      {
+        "denominator": 1,
+        "numerator": 0
+      }
+    ],
+    "realized_displacement": [
+      {
+        "denominator": 2,
+        "numerator": -3
+      },
+      {
+        "denominator": 2,
+        "numerator": -1
+      }
+    ],
+    "realized_output": [
+      {
+        "denominator": 1,
+        "numerator": 1
+      },
+      {
+        "denominator": 2,
+        "numerator": 1
+      }
+    ],
+    "sign_reversing_feedback": {
+      "hidden_before": {
+        "denominator": 1,
+        "numerator": 1
+      },
+      "hidden_target": {
+        "denominator": 1,
+        "numerator": 2
+      },
+      "loss_after": {
+        "denominator": 1,
+        "numerator": 2
+      },
+      "loss_before": {
+        "denominator": 2,
+        "numerator": 1
+      },
+      "target_step_increases_loss": true
+    },
+    "target_displacement": [
+      {
+        "denominator": 1,
+        "numerator": -1
+      },
+      {
+        "denominator": 2,
+        "numerator": -1
+      }
+    ],
+    "target_error": [
+      {
+        "denominator": 2,
+        "numerator": -1
+      },
+      {
+        "denominator": 1,
+        "numerator": 0
+      }
+    ],
+    "target_error_infinity_norm": {
+      "denominator": 2,
+      "numerator": 1
+    },
+    "unreachable_second_coordinate": true,
+    "unreachable_target_displacement": [
+      {
+        "denominator": 1,
+        "numerator": 0
+      },
+      {
+        "denominator": 1,
+        "numerator": 1
+      }
+    ]
+  },
+  "zeroth_order": {
+    "checker_plateau": {
+      "center": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "center_is_not_accepted": true,
+      "epsilon": {
+        "denominator": 1,
+        "numerator": 1
+      },
+      "local_estimate_is_zero": true,
+      "reachable_accepted_point": {
+        "denominator": 1,
+        "numerator": 2
+      },
+      "reachable_point_is_accepted": true,
+      "reward_minus": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "reward_plus": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "two_point_estimate": {
+        "denominator": 1,
+        "numerator": 0
+      }
+    },
+    "cubic": {
+      "bias": {
+        "denominator": 12,
+        "numerator": 1
+      },
+      "bias_equals_epsilon_squared_over_three": true,
+      "central_estimate": {
+        "denominator": 12,
+        "numerator": 49
+      },
+      "epsilon": {
+        "denominator": 2,
+        "numerator": 1
+      },
+      "finite_epsilon_is_biased": true,
+      "true_gradient": {
+        "denominator": 1,
+        "numerator": 4
+      },
+      "x": {
+        "denominator": 1,
+        "numerator": 2
+      }
+    },
+    "forward_estimates": [
+      [
+        {
+          "denominator": 1,
+          "numerator": 1
+        },
+        {
+          "denominator": 1,
+          "numerator": 1
+        }
+      ],
+      [
+        {
+          "denominator": 1,
+          "numerator": 3
+        },
+        {
+          "denominator": 1,
+          "numerator": -3
+        }
+      ],
+      [
+        {
+          "denominator": 1,
+          "numerator": 3
+        },
+        {
+          "denominator": 1,
+          "numerator": -3
+        }
+      ],
+      [
+        {
+          "denominator": 1,
+          "numerator": 1
+        },
+        {
+          "denominator": 1,
+          "numerator": 1
+        }
+      ]
+    ],
+    "quadratic_ensemble_unbiased": true,
+    "quadratic_epsilon": {
+      "denominator": 2,
+      "numerator": 1
+    },
+    "quadratic_sample_equivalence": true,
+    "two_point_estimates": [
+      [
+        {
+          "denominator": 1,
+          "numerator": 1
+        },
+        {
+          "denominator": 1,
+          "numerator": 1
+        }
+      ],
+      [
+        {
+          "denominator": 1,
+          "numerator": 3
+        },
+        {
+          "denominator": 1,
+          "numerator": -3
+        }
+      ],
+      [
+        {
+          "denominator": 1,
+          "numerator": 3
+        },
+        {
+          "denominator": 1,
+          "numerator": -3
+        }
+      ],
+      [
+        {
+          "denominator": 1,
+          "numerator": 1
+        },
+        {
+          "denominator": 1,
+          "numerator": 1
+        }
+      ]
+    ]
+  }
+}

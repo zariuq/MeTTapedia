@@ -1,0 +1,295 @@
+{
+  "constraint_only_jury": {
+    "parameters": {
+      "alpha": {
+        "denominator": 1,
+        "numerator": 1
+      },
+      "eta": {
+        "denominator": 2,
+        "numerator": 1
+      },
+      "rho": {
+        "denominator": 1,
+        "numerator": 1
+      },
+      "sigma": {
+        "denominator": 1,
+        "numerator": 1
+      }
+    },
+    "tau_one": {
+      "all_jury_values_positive": true,
+      "determinant": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "jury_values": [
+        {
+          "denominator": 1,
+          "numerator": 1
+        },
+        {
+          "denominator": 1,
+          "numerator": 1
+        },
+        {
+          "denominator": 1,
+          "numerator": 1
+        }
+      ],
+      "matrix": [
+        [
+          {
+            "denominator": 2,
+            "numerator": 1
+          },
+          {
+            "denominator": 2,
+            "numerator": -1
+          }
+        ],
+        [
+          {
+            "denominator": 2,
+            "numerator": 1
+          },
+          {
+            "denominator": 2,
+            "numerator": -1
+          }
+        ]
+      ],
+      "trace": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "two_steps_collapse_linear_error": true
+    },
+    "tau_two": {
+      "determinant": {
+        "denominator": 2,
+        "numerator": -1
+      },
+      "first_two_jury_values_positive": true,
+      "jury_values": [
+        {
+          "denominator": 2,
+          "numerator": 3
+        },
+        {
+          "denominator": 2,
+          "numerator": 3
+        },
+        {
+          "denominator": 2,
+          "numerator": -1
+        }
+      ],
+      "large_leak_is_not_automatically_stable": true,
+      "matrix": [
+        [
+          {
+            "denominator": 2,
+            "numerator": 1
+          },
+          {
+            "denominator": 2,
+            "numerator": -1
+          }
+        ],
+        [
+          {
+            "denominator": 2,
+            "numerator": 1
+          },
+          {
+            "denominator": 2,
+            "numerator": -3
+          }
+        ]
+      ],
+      "third_jury_value_nonpositive": true,
+      "trace": {
+        "denominator": 1,
+        "numerator": -1
+      }
+    },
+    "tau_zero": {
+      "all_jury_values_positive": true,
+      "determinant": {
+        "denominator": 2,
+        "numerator": 1
+      },
+      "jury_values": [
+        {
+          "denominator": 2,
+          "numerator": 1
+        },
+        {
+          "denominator": 2,
+          "numerator": 1
+        },
+        {
+          "denominator": 2,
+          "numerator": 5
+        }
+      ],
+      "matrix": [
+        [
+          {
+            "denominator": 2,
+            "numerator": 1
+          },
+          {
+            "denominator": 2,
+            "numerator": -1
+          }
+        ],
+        [
+          {
+            "denominator": 2,
+            "numerator": 1
+          },
+          {
+            "denominator": 2,
+            "numerator": 1
+          }
+        ]
+      ],
+      "paper_condition_is_below_four": true,
+      "paper_condition_left_side": {
+        "denominator": 2,
+        "numerator": 3
+      },
+      "tau_zero_third_jury_equals_four_minus_paper_side": true,
+      "trace": {
+        "denominator": 1,
+        "numerator": 1
+      }
+    }
+  },
+  "finite_pc_recovery": {
+    "alpha": {
+      "denominator": 1,
+      "numerator": 0
+    },
+    "dual_remains_zero": true,
+    "nonzero_frozen_dual_changes_primal_trace": true,
+    "penalty_pc_trace": [
+      {
+        "denominator": 1,
+        "numerator": 0
+      },
+      {
+        "denominator": 4,
+        "numerator": 1
+      },
+      {
+        "denominator": 8,
+        "numerator": 3
+      },
+      {
+        "denominator": 16,
+        "numerator": 7
+      },
+      {
+        "denominator": 32,
+        "numerator": 15
+      }
+    ],
+    "primal_dual_trace": [
+      [
+        {
+          "denominator": 1,
+          "numerator": 0
+        },
+        {
+          "denominator": 1,
+          "numerator": 0
+        }
+      ],
+      [
+        {
+          "denominator": 4,
+          "numerator": 1
+        },
+        {
+          "denominator": 1,
+          "numerator": 0
+        }
+      ],
+      [
+        {
+          "denominator": 8,
+          "numerator": 3
+        },
+        {
+          "denominator": 1,
+          "numerator": 0
+        }
+      ],
+      [
+        {
+          "denominator": 16,
+          "numerator": 7
+        },
+        {
+          "denominator": 1,
+          "numerator": 0
+        }
+      ],
+      [
+        {
+          "denominator": 32,
+          "numerator": 15
+        },
+        {
+          "denominator": 1,
+          "numerator": 0
+        }
+      ]
+    ],
+    "primal_traces_equal": true,
+    "tau_is_inert_on_zero_dual_trajectory": {
+      "denominator": 3,
+      "numerator": 7
+    },
+    "zero_dual_initialization": {
+      "denominator": 1,
+      "numerator": 0
+    }
+  },
+  "rate_vs_leak": {
+    "dual_stationarity_r_equals_tau_lambda": true,
+    "eliminated_soft_penalty_gradient_zero": true,
+    "positive_alpha_changes_first_dual_increment": true,
+    "positive_tau_changes_endpoint": true,
+    "tau_one_endpoint": [
+      {
+        "denominator": 3,
+        "numerator": 1
+      },
+      {
+        "denominator": 3,
+        "numerator": 1
+      }
+    ],
+    "tau_one_endpoint_fixed_for_alpha_half": true,
+    "tau_one_endpoint_fixed_for_alpha_one": true,
+    "tau_zero_endpoint": [
+      {
+        "denominator": 1,
+        "numerator": 0
+      },
+      {
+        "denominator": 1,
+        "numerator": 1
+      }
+    ],
+    "tau_zero_endpoint_fixed_for_alpha_half": true,
+    "tau_zero_endpoint_fixed_for_alpha_one": true
+  },
+  "saddle_convention": "task + multiplier*residual + rho/2*residual^2 - tau/2*multiplier^2",
+  "schema": "credit.primal_dual.phase.conformance.v1"
+}

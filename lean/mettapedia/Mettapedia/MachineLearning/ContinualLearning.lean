@@ -1,2 +1,5 @@
 import Mettapedia.MachineLearning.ContinualLearning.QuadraticTwoTask
 import Mettapedia.MachineLearning.ContinualLearning.EvidenceLedger
+import Mettapedia.MachineLearning.ContinualLearning.RetentionSafeUpdate
+import Mettapedia.MachineLearning.ContinualLearning.MinimumChangeUpdate
+import Mettapedia.MachineLearning.ContinualLearning.FisherRetentionBridge

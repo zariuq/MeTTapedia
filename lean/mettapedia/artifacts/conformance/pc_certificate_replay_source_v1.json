@@ -1,0 +1,60 @@
+{
+  "schema": "pc-certificate-replay-source-v1",
+  "source_repository": "gslt-synth",
+  "source_files": [
+    {
+      "file": "eval/tgad_pc_certificate_replay.py",
+      "sha256": "2a523bced26676dace8dca9ef57b3614330c55e3f24d8a4a0c71aab242597442"
+    },
+    {
+      "file": "tests/test_tgad_pc_certificate_replay.py",
+      "sha256": "199c7ce0f6a76a1a547efdb0786feeeed5e8c90fb37bd47d332ffcf58d18ddc6"
+    },
+    {
+      "file": "train/tgad_gen9_update_rules.py",
+      "sha256": "4befe1ebe1d4361c7ed92ab30742c87b8f3903de8585ec6f1896a796f8ad96a5"
+    },
+    {
+      "file": "models/tgad_gen9_adapter.py",
+      "sha256": "9b9d646edb381c38f8896c8f8cb8d4bec8e22604415d764e2d32f1307af2572f"
+    },
+    {
+      "file": "eval/tgad_gen9_pc_campaign_v2.py",
+      "sha256": "fb721a585358444b68292bcc69eea8430ed89e845e24c390b326f13b146b6f63"
+    }
+  ],
+  "campaign_registration": {
+    "schema": "tgad.gen9_pc.continuation.preregistration.v2",
+    "sha256": "3409b14ebffc44815ecdd20fcce8a083ff841c659994d83278d2122cfeb99075",
+    "registered_inference_steps": {
+      "prospective_pc": 8,
+      "error_coordinate_pc": 4
+    }
+  },
+  "replay_contract": {
+    "execution": "read-only fixed-checkpoint probe over one batch from the registered ledger",
+    "depths": "positive unique increasing depths with the longest depth used only as a finite reference",
+    "prospective_final_residual": "active-subspace final energy-gradient norm divided by positive precision",
+    "deep_epc_final_residual": "active-product error-coordinate final energy-gradient norm divided by positive precision",
+    "optimizer_transport": "raw optional gradients, exact clipping, AdamW step, displacement divided by each parameter learning rate, then exact state restoration",
+    "bp_alignment_trace": "the same replay transports both PC credit and the counterfactual BP task gradient through the identical clipping and AdamW state, then records complete tuple hashes and mathematical dot/cosine/norm-ratio relations at the raw, clipped, and optimizer-subtracted layers, with an explicit zero-norm refusal; it separately retains the trainer-compatible clamped raw relation and nominal plus accepted relaxation time at every requested settling depth",
+    "state_integrity": "model and optimizer hashes, module modes, and dropout rates are restored after the probe",
+    "output": "exclusive-write JSON bound to checkpoint, ledger, registration, replay, trainer, and campaign hashes"
+  },
+  "test_contract": {
+    "prospective": "the replayed displacement and learning-rate-normalized AdamW direction hashes equal the real update-function vectors after nonempty AdamW moments, and clipped/transported hashes bind the corresponding BP relations",
+    "deep_epc": "the replayed displacement and learning-rate-normalized AdamW direction hashes equal the real error-coordinate update-function vectors, and clipped/transported hashes bind the corresponding BP relations",
+    "relation": "the replayed vector-bound trainer-compatible BP relation exactly equals the production diagnostic at the registered depth for prospective and deep error-coordinate PC",
+    "negative": "empty, nonpositive, duplicate, and decreasing depth schedules are rejected; zero BP norm refuses mathematical cosine and norm ratio rather than silently classifying the update"
+  },
+  "non_claims": [
+    "the longest finite replay depth is not identified with the exact equilibrium",
+    "an observed energy trajectory is not identified with uniform contraction",
+    "a measured finite-reference credit gap is not identified with a certified exact-credit error",
+    "a deep error-coordinate algebraic resolver residual is not identified with distance to equilibrium without a declared negative-curvature bound strictly below precision",
+    "raw, clipped, and optimizer-transported BP cosines are mechanism telemetry, not task-descent or safety certificates",
+    "settling-depth relaxation time is not identified with dual leak, PC-ALM multiplier rate, or CAROM itinerary time",
+    "no live campaign update rule or artifact is modified",
+    "no adaptive stop, speed improvement, or verifier-yield claim is licensed"
+  ]
+}

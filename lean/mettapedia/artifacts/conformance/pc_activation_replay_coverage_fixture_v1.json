@@ -1,0 +1,27 @@
+{
+  "batch_count": 1,
+  "batches": [
+    {
+      "batch_json_sha256": "8008135da98aa9305fd073a9cb62e6661c19c6b6938bed0e9e4d560363edcae7",
+      "ordinal": 0,
+      "slice_count": 2,
+      "slice_start": 0,
+      "slice_stop_exclusive": 2
+    }
+  ],
+  "covered_entry_count": 2,
+  "schema": "tgad.rational-activation-replay-coverage.v1",
+  "source": {
+    "activation": "silu",
+    "shape": [
+      1,
+      2
+    ],
+    "site_index": 0,
+    "source_binding": {},
+    "source_entry_count": 2,
+    "source_input_tensor_sha256": "d98f4542536b9e11e72482b660478ae6caa336a152761681faef323848cf5cb1",
+    "source_output_tensor_sha256": "dc015558415867bcafc9f1b3aad65fe42a87e0d1b770e39dc20870443d01f960",
+    "source_probe_json_sha256": "4204368886c7ec8750b0d4f2b8163df18868e02470da9dcbc788810d0dfd2124"
+  }
+}

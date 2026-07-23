@@ -1,0 +1,588 @@
+{
+  "nonlinear_invariant_neighborhood": {
+    "boundary_maps_strictly_inside": true,
+    "c": {
+      "denominator": 4,
+      "numerator": 1
+    },
+    "derivative_absolute_bound": {
+      "denominator": 4,
+      "numerator": 3
+    },
+    "derivative_bound_is_contracting": true,
+    "excessive_adversarial_target_drift": {
+      "denominator": 4,
+      "numerator": 3
+    },
+    "excessive_drift_leaves_neighborhood": true,
+    "excessive_tracking_witness": {
+      "denominator": 4,
+      "numerator": 5
+    },
+    "invariant_image_bound": {
+      "denominator": 2,
+      "numerator": 1
+    },
+    "local_contraction_does_not_imply_global_contraction": true,
+    "map": "q*error + c*error^2",
+    "outside_error": {
+      "denominator": 1,
+      "numerator": 4
+    },
+    "outside_next_error": {
+      "denominator": 1,
+      "numerator": 5
+    },
+    "outside_point_expands": true,
+    "q": {
+      "denominator": 4,
+      "numerator": 1
+    },
+    "radius": {
+      "denominator": 1,
+      "numerator": 1
+    },
+    "safe_adversarial_target_drift": {
+      "denominator": 4,
+      "numerator": 1
+    },
+    "safe_drift_preserves_neighborhood": true,
+    "safe_tracking_bound": {
+      "denominator": 4,
+      "numerator": 3
+    }
+  },
+  "schema": "credit.primal_dual.supervised-stability.conformance.v1",
+  "stable_nonnormal_transient": {
+    "all_jury_values_positive": true,
+    "determinant": {
+      "denominator": 32,
+      "numerator": 31
+    },
+    "determinant_factorization_holds": true,
+    "discriminant": {
+      "denominator": 256,
+      "numerator": -31
+    },
+    "input_squared_norm": {
+      "denominator": 1,
+      "numerator": 2
+    },
+    "jury_classification": "strict_schur",
+    "jury_values": [
+      {
+        "denominator": 32,
+        "numerator": 1
+      },
+      {
+        "denominator": 32,
+        "numerator": 1
+      },
+      {
+        "denominator": 32,
+        "numerator": 125
+      }
+    ],
+    "matrix": [
+      [
+        {
+          "denominator": 32,
+          "numerator": 31
+        },
+        {
+          "denominator": 8,
+          "numerator": -1
+        }
+      ],
+      [
+        {
+          "denominator": 128,
+          "numerator": 31
+        },
+        {
+          "denominator": 32,
+          "numerator": 31
+        }
+      ]
+    ],
+    "matrix_matches_direct_primal_then_dual_step": true,
+    "one_step_euclidean_amplification": true,
+    "output_squared_norm": {
+      "denominator": 16384,
+      "numerator": 35689
+    },
+    "parameters": {
+      "alpha": {
+        "denominator": 4,
+        "numerator": 1
+      },
+      "eta": {
+        "denominator": 8,
+        "numerator": 1
+      },
+      "rho": {
+        "denominator": 8,
+        "numerator": 1
+      },
+      "sigma": {
+        "denominator": 1,
+        "numerator": 1
+      },
+      "task_curvature": {
+        "denominator": 8,
+        "numerator": 1
+      },
+      "tau": {
+        "denominator": 1,
+        "numerator": 0
+      }
+    },
+    "schur_stability_does_not_imply_one_step_norm_contraction": true,
+    "second_jury_identity_holds": true,
+    "trace": {
+      "denominator": 16,
+      "numerator": 31
+    },
+    "transient_input": [
+      {
+        "denominator": 1,
+        "numerator": 1
+      },
+      {
+        "denominator": 1,
+        "numerator": 1
+      }
+    ],
+    "transient_output": [
+      {
+        "denominator": 32,
+        "numerator": 27
+      },
+      {
+        "denominator": 128,
+        "numerator": 155
+      }
+    ],
+    "transpose_product_differs_from_reverse": true
+  },
+  "stable_oscillatory_mode": {
+    "all_jury_values_positive": true,
+    "complex_pair_discriminant_negative": true,
+    "determinant": {
+      "denominator": 2,
+      "numerator": 1
+    },
+    "determinant_factorization_holds": true,
+    "discriminant": {
+      "denominator": 64,
+      "numerator": -7
+    },
+    "jury_classification": "strict_schur",
+    "jury_values": [
+      {
+        "denominator": 2,
+        "numerator": 1
+      },
+      {
+        "denominator": 8,
+        "numerator": 1
+      },
+      {
+        "denominator": 8,
+        "numerator": 23
+      }
+    ],
+    "matrix": [
+      [
+        {
+          "denominator": 2,
+          "numerator": 1
+        },
+        {
+          "denominator": 4,
+          "numerator": -1
+        }
+      ],
+      [
+        {
+          "denominator": 4,
+          "numerator": 1
+        },
+        {
+          "denominator": 8,
+          "numerator": 7
+        }
+      ]
+    ],
+    "matrix_matches_direct_primal_then_dual_step": true,
+    "parameters": {
+      "alpha": {
+        "denominator": 2,
+        "numerator": 1
+      },
+      "eta": {
+        "denominator": 4,
+        "numerator": 1
+      },
+      "rho": {
+        "denominator": 1,
+        "numerator": 1
+      },
+      "sigma": {
+        "denominator": 1,
+        "numerator": 1
+      },
+      "task_curvature": {
+        "denominator": 1,
+        "numerator": 1
+      },
+      "tau": {
+        "denominator": 1,
+        "numerator": 0
+      }
+    },
+    "second_jury_identity_holds": true,
+    "trace": {
+      "denominator": 8,
+      "numerator": 11
+    }
+  },
+  "stable_real_mode": {
+    "all_jury_values_positive": true,
+    "determinant": {
+      "denominator": 2,
+      "numerator": 1
+    },
+    "determinant_factorization_holds": true,
+    "discriminant": {
+      "denominator": 1024,
+      "numerator": 161
+    },
+    "jury_classification": "strict_schur",
+    "jury_values": [
+      {
+        "denominator": 2,
+        "numerator": 1
+      },
+      {
+        "denominator": 32,
+        "numerator": 1
+      },
+      {
+        "denominator": 32,
+        "numerator": 95
+      }
+    ],
+    "matrix": [
+      [
+        {
+          "denominator": 2,
+          "numerator": 1
+        },
+        {
+          "denominator": 4,
+          "numerator": -1
+        }
+      ],
+      [
+        {
+          "denominator": 16,
+          "numerator": 1
+        },
+        {
+          "denominator": 32,
+          "numerator": 31
+        }
+      ]
+    ],
+    "matrix_matches_direct_primal_then_dual_step": true,
+    "parameters": {
+      "alpha": {
+        "denominator": 8,
+        "numerator": 1
+      },
+      "eta": {
+        "denominator": 4,
+        "numerator": 1
+      },
+      "rho": {
+        "denominator": 1,
+        "numerator": 1
+      },
+      "sigma": {
+        "denominator": 1,
+        "numerator": 1
+      },
+      "task_curvature": {
+        "denominator": 1,
+        "numerator": 1
+      },
+      "tau": {
+        "denominator": 1,
+        "numerator": 0
+      }
+    },
+    "real_eigenvalue_discriminant_positive": true,
+    "second_jury_identity_holds": true,
+    "trace": {
+      "denominator": 32,
+      "numerator": 47
+    },
+    "trace_and_determinant_positive": true
+  },
+  "supervised_curvature_boundary": {
+    "constraint_only": {
+      "determinant": {
+        "denominator": 2,
+        "numerator": 1
+      },
+      "determinant_factorization_holds": true,
+      "discriminant": {
+        "denominator": 1,
+        "numerator": -1
+      },
+      "jury_classification": "strict_schur",
+      "jury_values": [
+        {
+          "denominator": 2,
+          "numerator": 1
+        },
+        {
+          "denominator": 2,
+          "numerator": 1
+        },
+        {
+          "denominator": 2,
+          "numerator": 5
+        }
+      ],
+      "matrix": [
+        [
+          {
+            "denominator": 2,
+            "numerator": 1
+          },
+          {
+            "denominator": 2,
+            "numerator": -1
+          }
+        ],
+        [
+          {
+            "denominator": 2,
+            "numerator": 1
+          },
+          {
+            "denominator": 2,
+            "numerator": 1
+          }
+        ]
+      ],
+      "matrix_matches_direct_primal_then_dual_step": true,
+      "parameters": {
+        "alpha": {
+          "denominator": 1,
+          "numerator": 1
+        },
+        "eta": {
+          "denominator": 2,
+          "numerator": 1
+        },
+        "rho": {
+          "denominator": 1,
+          "numerator": 1
+        },
+        "sigma": {
+          "denominator": 1,
+          "numerator": 1
+        },
+        "task_curvature": {
+          "denominator": 1,
+          "numerator": 0
+        },
+        "tau": {
+          "denominator": 1,
+          "numerator": 0
+        }
+      },
+      "second_jury_identity_holds": true,
+      "trace": {
+        "denominator": 1,
+        "numerator": 1
+      }
+    },
+    "constraint_only_is_strictly_schur_stable": true,
+    "constraint_only_stability_does_not_license_supervised_stability": true,
+    "task_curvature_breaks_third_jury_condition": true,
+    "with_task_curvature": {
+      "determinant": {
+        "denominator": 1,
+        "numerator": -1
+      },
+      "determinant_factorization_holds": true,
+      "discriminant": {
+        "denominator": 4,
+        "numerator": 17
+      },
+      "jury_classification": "not_strict_schur",
+      "jury_values": [
+        {
+          "denominator": 1,
+          "numerator": 2
+        },
+        {
+          "denominator": 2,
+          "numerator": 1
+        },
+        {
+          "denominator": 2,
+          "numerator": -1
+        }
+      ],
+      "matrix": [
+        [
+          {
+            "denominator": 1,
+            "numerator": -1
+          },
+          {
+            "denominator": 2,
+            "numerator": -1
+          }
+        ],
+        [
+          {
+            "denominator": 1,
+            "numerator": -1
+          },
+          {
+            "denominator": 2,
+            "numerator": 1
+          }
+        ]
+      ],
+      "matrix_matches_direct_primal_then_dual_step": true,
+      "parameters": {
+        "alpha": {
+          "denominator": 1,
+          "numerator": 1
+        },
+        "eta": {
+          "denominator": 2,
+          "numerator": 1
+        },
+        "rho": {
+          "denominator": 1,
+          "numerator": 1
+        },
+        "sigma": {
+          "denominator": 1,
+          "numerator": 1
+        },
+        "task_curvature": {
+          "denominator": 1,
+          "numerator": 3
+        },
+        "tau": {
+          "denominator": 1,
+          "numerator": 0
+        }
+      },
+      "second_jury_identity_holds": true,
+      "trace": {
+        "denominator": 2,
+        "numerator": -1
+      }
+    }
+  },
+  "supervised_mode_formula": {
+    "all_case_factorizations_hold": true,
+    "determinant": "primal_factor*(1-alpha*tau)",
+    "primal_factor": "1 - eta*(task_curvature + rho*sigma^2)",
+    "second_jury": "alpha*eta*(sigma^2 + tau*(task_curvature + rho*sigma^2))",
+    "update_order": "primal_then_dual"
+  },
+  "zero_dual_rate_boundary": {
+    "determinant": {
+      "denominator": 2,
+      "numerator": 1
+    },
+    "determinant_factorization_holds": true,
+    "discriminant": {
+      "denominator": 4,
+      "numerator": 1
+    },
+    "joint_state_has_unit_multiplier_eigenvalue": true,
+    "jury_classification": "not_strict_schur",
+    "jury_values": [
+      {
+        "denominator": 2,
+        "numerator": 1
+      },
+      {
+        "denominator": 1,
+        "numerator": 0
+      },
+      {
+        "denominator": 1,
+        "numerator": 3
+      }
+    ],
+    "matrix": [
+      [
+        {
+          "denominator": 2,
+          "numerator": 1
+        },
+        {
+          "denominator": 4,
+          "numerator": -1
+        }
+      ],
+      [
+        {
+          "denominator": 1,
+          "numerator": 0
+        },
+        {
+          "denominator": 1,
+          "numerator": 1
+        }
+      ]
+    ],
+    "matrix_matches_direct_primal_then_dual_step": true,
+    "parameters": {
+      "alpha": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "eta": {
+        "denominator": 4,
+        "numerator": 1
+      },
+      "rho": {
+        "denominator": 1,
+        "numerator": 1
+      },
+      "sigma": {
+        "denominator": 1,
+        "numerator": 1
+      },
+      "task_curvature": {
+        "denominator": 1,
+        "numerator": 1
+      },
+      "tau": {
+        "denominator": 1,
+        "numerator": 1
+      }
+    },
+    "primal_factor_strictly_contracts": true,
+    "second_jury_identity_holds": true,
+    "second_jury_is_zero_not_strict": true,
+    "trace": {
+      "denominator": 2,
+      "numerator": 3
+    }
+  }
+}

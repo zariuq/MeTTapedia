@@ -1,0 +1,215 @@
+{
+  "invalid_converse_fixtures": {
+    "distinct_update_directions_same_behavior": {
+      "difference_is_in_policy_nullspace": true,
+      "directions_are_distinct": true,
+      "downstream_behavior_equal": true,
+      "update_a": [
+        {
+          "denominator": 1,
+          "numerator": 1
+        },
+        {
+          "denominator": 1,
+          "numerator": 0
+        }
+      ],
+      "update_b": [
+        {
+          "denominator": 1,
+          "numerator": 0
+        },
+        {
+          "denominator": 1,
+          "numerator": 1
+        }
+      ]
+    },
+    "equal_expected_loss_disjoint_program_support": {
+      "expected_losses_equal": true,
+      "left_support": [
+        "left_program"
+      ],
+      "right_support": [
+        "right_program"
+      ],
+      "supports_are_disjoint": true
+    },
+    "equal_expected_update_different_support": {
+      "both_are_probability_distributions": true,
+      "deterministic_zero": {
+        "0": {
+          "denominator": 1,
+          "numerator": 1
+        }
+      },
+      "expectations_equal": true,
+      "supports_differ": true,
+      "symmetric_nonzero": {
+        "-1": {
+          "denominator": 2,
+          "numerator": 1
+        },
+        "1": {
+          "denominator": 2,
+          "numerator": 1
+        }
+      }
+    },
+    "equal_scalar_work_different_system_cost": {
+      "memory_differs": true,
+      "method_a": {
+        "bytes_communicated": 0,
+        "checker_evaluations": 0,
+        "critical_path_span": 100,
+        "exact_reverse_calls": 1,
+        "function_evaluations": 0,
+        "local_derivative_calls": 0,
+        "peak_temporary_memory": 8,
+        "persistent_memory": 8,
+        "scalar_work": 100,
+        "synchronization_rounds": 0
+      },
+      "method_b": {
+        "bytes_communicated": 4096,
+        "checker_evaluations": 0,
+        "critical_path_span": 10,
+        "exact_reverse_calls": 0,
+        "function_evaluations": 0,
+        "local_derivative_calls": 100,
+        "peak_temporary_memory": 80,
+        "persistent_memory": 40,
+        "scalar_work": 100,
+        "synchronization_rounds": 10
+      },
+      "resource_vectors_differ": true,
+      "scalar_work_equal": true,
+      "span_differs": true
+    },
+    "local_name_hides_global_reverse_dependency": {
+      "advertised_classification_is_refuted": true,
+      "advertised_locality": "strictly_site_local",
+      "audit_classification": "global_reverse",
+      "consumed_dependencies": [
+        "active_site",
+        "global_reverse_tape",
+        "terminal_loss"
+      ]
+    },
+    "same_horizon_update_different_intermediate_trace": {
+      "final_update_a": {
+        "denominator": 1,
+        "numerator": -1
+      },
+      "final_update_b": {
+        "denominator": 1,
+        "numerator": -1
+      },
+      "intermediate_signals_differ": true,
+      "updates_equal": true
+    },
+    "same_objective_and_equilibrium_different_trajectory": {
+      "both_multipliers_strict_contractions": true,
+      "common_unique_fixed_point": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "first_steps_differ": true,
+      "objective_values_at_initial": [
+        {
+          "denominator": 1,
+          "numerator": 8
+        },
+        {
+          "denominator": 1,
+          "numerator": 8
+        }
+      ],
+      "oscillating_trace": [
+        {
+          "denominator": 1,
+          "numerator": 4
+        },
+        {
+          "denominator": 1,
+          "numerator": -2
+        },
+        {
+          "denominator": 1,
+          "numerator": 1
+        }
+      ],
+      "positive_trace": [
+        {
+          "denominator": 1,
+          "numerator": 4
+        },
+        {
+          "denominator": 1,
+          "numerator": 2
+        },
+        {
+          "denominator": 1,
+          "numerator": 1
+        }
+      ],
+      "two_step_readouts_equal": true
+    }
+  },
+  "positive_implication_fixture": {
+    "base_signal_trace": [
+      {
+        "denominator": 1,
+        "numerator": 8
+      },
+      {
+        "denominator": 1,
+        "numerator": 6
+      },
+      {
+        "denominator": 2,
+        "numerator": 9
+      },
+      {
+        "denominator": 8,
+        "numerator": 27
+      }
+    ],
+    "common_downstream_behavior_equal": true,
+    "common_optimizer_parameters_equal": true,
+    "final_updates_equal": true,
+    "internal_states_are_not_identical": true,
+    "relation_preserves_signal_trace": true,
+    "wrapped_internal_trace": [
+      [
+        {
+          "denominator": 1,
+          "numerator": 8
+        },
+        false
+      ],
+      [
+        {
+          "denominator": 1,
+          "numerator": 6
+        },
+        true
+      ],
+      [
+        {
+          "denominator": 2,
+          "numerator": 9
+        },
+        false
+      ],
+      [
+        {
+          "denominator": 8,
+          "numerator": 27
+        },
+        true
+      ]
+    ]
+  },
+  "schema": "credit.transport.conformance.v1"
+}

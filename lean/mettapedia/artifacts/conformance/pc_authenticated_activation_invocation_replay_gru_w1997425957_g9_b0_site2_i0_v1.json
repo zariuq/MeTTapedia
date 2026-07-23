@@ -1,0 +1,4127 @@
+{
+  "activation": "silu",
+  "input": {
+    "absolute_sum_numerator_decimal": "21063407506375784053961873551557099173399494656",
+    "byte_order": "little",
+    "common_denominator_power_of_two": 149,
+    "dtype": "float32",
+    "entry_count": 64,
+    "finite_word_count": 64,
+    "schema": "ieee754.binary32-entrywise-l1.v1",
+    "shape": [
+      1,
+      64
+    ],
+    "storage_order": "contiguous_row_major",
+    "tensor_sha256": "8cd746f2fd27b871c865181344b18ac69966d405bc4d4292636079353dbad526",
+    "word_encoding": "unsigned_ieee754_binary32",
+    "words_unsigned": [
+      3192599260,
+      3197859382,
+      3187811400,
+      1040091826,
+      3190018492,
+      3205201534,
+      1053688881,
+      1045368081,
+      3213630184,
+      3204696398,
+      3207236749,
+      3210554837,
+      1042622167,
+      3196597062,
+      1062852704,
+      3198308658,
+      1058339215,
+      3201694660,
+      3216970855,
+      3199735111,
+      3215105972,
+      1043601866,
+      3201017622,
+      1041585693,
+      1059249248,
+      3205230614,
+      3202873502,
+      3195274952,
+      1028709440,
+      1059267942,
+      3208754590,
+      3190387162,
+      3188744478,
+      1015584720,
+      1069769258,
+      3202486715,
+      1035296228,
+      3199771543,
+      1066238996,
+      1056188274,
+      1031999025,
+      3207730848,
+      1054883028,
+      1066801338,
+      1052549133,
+      3193326154,
+      3184846170,
+      3192516116,
+      1021865473,
+      3190561920,
+      1065915192,
+      1002499856,
+      3199029592,
+      3207369329,
+      3201472466,
+      1058688988,
+      3196269862,
+      3196179071,
+      3205515658,
+      1043942554,
+      3213106010,
+      1062537090,
+      1023947266,
+      1057590361
+    ]
+  },
+  "invocation_width": 64,
+  "output": {
+    "absolute_sum_numerator_decimal": "10220143237630866865540425378435874825739173888",
+    "byte_order": "little",
+    "common_denominator_power_of_two": 149,
+    "dtype": "float32",
+    "entry_count": 64,
+    "finite_word_count": 64,
+    "schema": "ieee754.binary32-entrywise-l1.v1",
+    "shape": [
+      1,
+      64
+    ],
+    "storage_order": "contiguous_row_major",
+    "tensor_sha256": "63fa8a1b231d45bbdb1592684f61eaa375b4bbea442c1724f76f825f9f3dd4df",
+    "word_encoding": "unsigned_ieee754_binary32",
+    "words_unsigned": [
+      3182893700,
+      3187935774,
+      3178480649,
+      1032268667,
+      3180772934,
+      3192704503,
+      1047980543,
+      1038346663,
+      3196880825,
+      3192205470,
+      3194454078,
+      3196266929,
+      1035104475,
+      3186385306,
+      1058580658,
+      3188247833,
+      1052713832,
+      3190417485,
+      3196862643,
+      3189200826,
+      3197014527,
+      1036248552,
+      3190009103,
+      1033909466,
+      1054145617,
+      3192732428,
+      3191098740,
+      3184989746,
+      1020669738,
+      1054175455,
+      3195499867,
+      3181081876,
+      3179689920,
+      1007270741,
+      1067483421,
+      3190879364,
+      1027433579,
+      3189224417,
+      1062511819,
+      1050060047,
+      1023885132,
+      3194817998,
+      1049119014,
+      1063599048,
+      1046412201,
+      3183473435,
+      3175733020,
+      3182826897,
+      1013692945,
+      3181227624,
+      1061894909,
+      994148471,
+      3188736635,
+      3194553997,
+      3190284845,
+      1053259285,
+      3185899873,
+      3185764081,
+      3193001581,
+      1036649703,
+      3196767920,
+      1058304206,
+      1015707038,
+      1051566826
+    ]
+  },
+  "records": [
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "16777216",
+          "numerator_decimal": "-3329207"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "16777216",
+            "numerator_decimal": "3329207"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "32138760885179805510839241846823252050444059875655856706027520",
+            "numerator_decimal": "39193033196170882142841059285999314169186917912718682311282057"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "16777216",
+              "numerator_decimal": "3329207"
+            },
+            "lower": {
+              "denominator_decimal": "32138760885179805510839241846823252050444059875655856706027520",
+              "numerator_decimal": "39193033196170882142841059285999314169186917912718682311282057"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "32138760885179805510839241846823252050444059875655856706027520",
+              "numerator_decimal": "39193033200482679564986190192031543524227590940084961588621943"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "32138760885179805510839241846823252050444059875655856706027520",
+            "numerator_decimal": "39193033200482679564986190192031543524227590940084961588621943"
+          }
+        },
+        "input_word_unsigned": 3192599260,
+        "local_error": {
+          "denominator_decimal": "2393497833940684117028655214100817766282104709293523859987661024395264",
+          "numerator_decimal": "4462098068440925520353141215818865309688093038032188329150167"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "71331794081350687653680301132822566219630977788374539017309577",
+          "numerator_decimal": "-6377493602649379060585771789022499232834739520934379561943040"
+        },
+        "output_upper": {
+          "denominator_decimal": "71331794085662485075825432038854795574671650815740818294649463",
+          "numerator_decimal": "-6377493602649379060585771789022499232834739520934379561943040"
+        },
+        "output_word_unsigned": 3182893700,
+        "runtime_value": {
+          "denominator_decimal": "33554432",
+          "numerator_decimal": "-2999969"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 0,
+      "source_flat_index": 0
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "16777216",
+          "numerator_decimal": "-5094171"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "16777216",
+            "numerator_decimal": "5094171"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "224971326196258638575874692927762764353108419129590996942192640",
+            "numerator_decimal": "304785790910790753900903371728461729392275956324282445098204959"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "16777216",
+              "numerator_decimal": "5094171"
+            },
+            "lower": {
+              "denominator_decimal": "224971326196258638575874692927762764353108419129590996942192640",
+              "numerator_decimal": "304785790910790753900903371728461729392275956324282445098204959"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "224971326196258638575874692927762764353108419129590996942192640",
+              "numerator_decimal": "304785791817813438844278393684034232318238550799003933226746081"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "224971326196258638575874692927762764353108419129590996942192640",
+            "numerator_decimal": "304785791817813438844278393684034232318238550799003933226746081"
+          }
+        },
+        "input_word_unsigned": 3197859382,
+        "local_error": {
+          "denominator_decimal": "17775699162484525560503361149598888152113925340029465547550462488608768",
+          "numerator_decimal": "55850367628268510494908816851517041376042229337621643726139951"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "529757117107049392476778064656224493745384375453873442040397599",
+          "numerator_decimal": "-68309450491697851725381741544396529736962239061940175204515840"
+        },
+        "output_upper": {
+          "denominator_decimal": "529757118014072077420153086611796996671346969928594930168938721",
+          "numerator_decimal": "-68309450491697851725381741544396529736962239061940175204515840"
+        },
+        "output_word_unsigned": 3187935774,
+        "runtime_value": {
+          "denominator_decimal": "33554432",
+          "numerator_decimal": "-4326671"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 1,
+      "source_flat_index": 1
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "8388608",
+          "numerator_decimal": "-1066121"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "8388608",
+            "numerator_decimal": "1066121"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "1129878312369602537490442096177379954898423980003526212321280",
+            "numerator_decimal": "1283000487675394487991778872025238136646183217334573152097233"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "8388608",
+              "numerator_decimal": "1066121"
+            },
+            "lower": {
+              "denominator_decimal": "1129878312369602537490442096177379954898423980003526212321280",
+              "numerator_decimal": "1283000487675394487991778872025238136646183217334573152097233"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "1129878312369602537490442096177379954898423980003526212321280",
+              "numerator_decimal": "1283000487679686159263053699122493983842829689459613162777647"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "1129878312369602537490442096177379954898423980003526212321280",
+            "numerator_decimal": "1283000487679686159263053699122493983842829689459613162777647"
+          }
+        },
+        "input_word_unsigned": 3187811400,
+        "local_error": {
+          "denominator_decimal": "647702220962811597053963605492231287797626377358334689060993711996928",
+          "numerator_decimal": "273138129894108610007883128090621666711138275064587072965031"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "2412878800044997025482220968202618091544607197338099364418513",
+          "numerator_decimal": "-143597960026477936133366539242115556585343202589194699407360"
+        },
+        "output_upper": {
+          "denominator_decimal": "2412878800049288696753495795299873938741253669463139375098927",
+          "numerator_decimal": "-143597960026477936133366539242115556585343202589194699407360"
+        },
+        "output_word_unsigned": 3178480649,
+        "runtime_value": {
+          "denominator_decimal": "268435456",
+          "numerator_decimal": "-15975433"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 2,
+      "source_flat_index": 2
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "67108864",
+          "numerator_decimal": "8340825"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "67108864",
+            "numerator_decimal": "-8340825"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "2948744166719601227541704775142772104929062671215375115120707371008",
+            "numerator_decimal": "2604111118571386284218579072055451557626129363968521380763018298483"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "67108864",
+              "numerator_decimal": "-8340825"
+            },
+            "lower": {
+              "denominator_decimal": "2948744166719601227541704775142772104929062671215375115120707371008",
+              "numerator_decimal": "2604111118571386284218579072055451557626129363968521380763018298483"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "2948744166719601227541704775142772104929062671215375115120707371008",
+              "numerator_decimal": "2604111118580756121862661737963844780264355777573035287074053454733"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "2948744166719601227541704775142772104929062671215375115120707371008",
+            "numerator_decimal": "2604111118580756121862661737963844780264355777573035287074053454733"
+          }
+        },
+        "input_word_unsigned": 1040091826,
+        "local_error": {
+          "denominator_decimal": "745291620305805761025156226668452340097097464749664796914147011534360936448",
+          "numerator_decimal": "440377612059061356654795923433744032278546132162995320906403613631"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "5552855285300357349404366513106616885193418448788410402194760825741",
+          "numerator_decimal": "366493449574396281074144538210782589645608501950502114662180454400"
+        },
+        "output_upper": {
+          "denominator_decimal": "5552855285290987511760283847198223662555192035183896495883725669491",
+          "numerator_decimal": "366493449574396281074144538210782589645608501950502114662180454400"
+        },
+        "output_word_unsigned": 1032268667,
+        "runtime_value": {
+          "denominator_decimal": "134217728",
+          "numerator_decimal": "8858491"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 3,
+      "source_flat_index": 3
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "16777216",
+          "numerator_decimal": "-2684015"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "16777216",
+            "numerator_decimal": "2684015"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "44994265239251727715174938585552552870621683825918199388438528",
+            "numerator_decimal": "52800190737002023978568260482719071819775638799846531283743923"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "16777216",
+              "numerator_decimal": "2684015"
+            },
+            "lower": {
+              "denominator_decimal": "44994265239251727715174938585552552870621683825918199388438528",
+              "numerator_decimal": "52800190737002023978568260482719071819775638799846531283743923"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "44994265239251727715174938585552552870621683825918199388438528",
+              "numerator_decimal": "52800190738079331024526753559343258589817458576283209308900173"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "44994265239251727715174938585552552870621683825918199388438528",
+            "numerator_decimal": "52800190738079331024526753559343258589817458576283209308900173"
+          }
+        },
+        "input_word_unsigned": 3190018492,
+        "local_error": {
+          "denominator_decimal": "6562874846064400251905181997197567176406916030056568206676120687345664",
+          "numerator_decimal": "37274736803406193363477130895674591087893378039510807156170375"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "97794455976253751693743199068271624690397322625764730672182451",
+          "numerator_decimal": "-7198171783455027697291687893134464931073287648798336740229120"
+        },
+        "output_upper": {
+          "denominator_decimal": "97794455977331058739701692144895811460439142402201408697338701",
+          "numerator_decimal": "-7198171783455027697291687893134464931073287648798336740229120"
+        },
+        "output_word_unsigned": 3180772934,
+        "runtime_value": {
+          "denominator_decimal": "67108864",
+          "numerator_decimal": "-4939555"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 4,
+      "source_flat_index": 4
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "8388608",
+          "numerator_decimal": "-4570943"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "8388608",
+            "numerator_decimal": "4570943"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "7909148186587217762433094673241659684288967860024683486248960",
+            "numerator_decimal": "13638800528203311269882629221501554299923151394505079741483511"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "8388608",
+              "numerator_decimal": "4570943"
+            },
+            "lower": {
+              "denominator_decimal": "7909148186587217762433094673241659684288967860024683486248960",
+              "numerator_decimal": "13638800528203311269882629221501554299923151394505079741483511"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "7909148186587217762433094673241659684288967860024683486248960",
+              "numerator_decimal": "13638803958399422243271827720161456445188724428168206436267529"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "7909148186587217762433094673241659684288967860024683486248960",
+            "numerator_decimal": "13638803958399422243271827720161456445188724428168206436267529"
+          }
+        },
+        "input_word_unsigned": 3205201534,
+        "local_error": {
+          "denominator_decimal": "1446058359779852401317727519913872662189389258204019264402099424722944",
+          "numerator_decimal": "26761271064566050795988290068273974997241272900813667844986799"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "21547948714790529032315723894743213984212119254529763227732471",
+          "numerator_decimal": "-4309685890608255496104862340091616111073835804105378008924160"
+        },
+        "output_upper": {
+          "denominator_decimal": "21547952144986640005704922393403116129477692288192889922516489",
+          "numerator_decimal": "-4309685890608255496104862340091616111073835804105378008924160"
+        },
+        "output_word_unsigned": 3192704503,
+        "runtime_value": {
+          "denominator_decimal": "67108864",
+          "numerator_decimal": "-13422071"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 5,
+      "source_flat_index": 5
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "33554432",
+          "numerator_decimal": "13501489"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "33554432",
+            "numerator_decimal": "-13501489"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "103666787111235980655763058501113081813912359534915531390962368512",
+            "numerator_decimal": "69325028624376090282800000515215691140143108869111337323828654411"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "33554432",
+              "numerator_decimal": "-13501489"
+            },
+            "lower": {
+              "denominator_decimal": "103666787111235980655763058501113081813912359534915531390962368512",
+              "numerator_decimal": "69325028624376090282800000515215691140143108869111337323828654411"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "74047705079454271896973613215080772724223113953511093850687406080",
+              "numerator_decimal": "49517880428248057168700027234858973330061564002513619240503256559"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "74047705079454271896973613215080772724223113953511093850687406080",
+            "numerator_decimal": "49517880428248057168700027234858973330061564002513619240503256559"
+          }
+        },
+        "input_word_unsigned": 1053688881,
+        "local_error": {
+          "denominator_decimal": "11609284235314250425374380682950781403460586677582136184926765545760489472",
+          "numerator_decimal": "100489306489037264214613260255025031876103336906941078167453967179"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "123565585507702329065673640449939746054284677956024713091190662639",
+          "numerator_decimal": "29794999230071782410740803841163745136487436490925447493881692160"
+        },
+        "output_upper": {
+          "denominator_decimal": "172991815735612070938563059016328772954055468404026868714791022923",
+          "numerator_decimal": "41712998922100495375037125377629243191082411087295626491434369024"
+        },
+        "output_word_unsigned": 1047980543,
+        "runtime_value": {
+          "denominator_decimal": "67108864",
+          "numerator_decimal": "16181759"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 6,
+      "source_flat_index": 6
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "67108864",
+          "numerator_decimal": "13569297"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "67108864",
+            "numerator_decimal": "-13569297"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "2106245833371143733958360553673408646377901908010982225086219550720",
+            "numerator_decimal": "1720661577293684493798823378259530140113034491027141397007271615177"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "67108864",
+              "numerator_decimal": "-13569297"
+            },
+            "lower": {
+              "denominator_decimal": "2106245833371143733958360553673408646377901908010982225086219550720",
+              "numerator_decimal": "1720661577293684493798823378259530140113034491027141397007271615177"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "2106245833371143733958360553673408646377901908010982225086219550720",
+              "numerator_decimal": "1720661577622075112324800686992537482950947762188584257023146304823"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "2106245833371143733958360553673408646377901908010982225086219550720",
+            "numerator_decimal": "1720661577622075112324800686992537482950947762188584257023146304823"
+          }
+        },
+        "input_word_unsigned": 1045368081,
+        "local_error": {
+          "denominator_decimal": "513638817969872056954907146379844496448912367587735119813671732651757666304",
+          "numerator_decimal": "2258452749274123476218352929853281231370554718017830748297709409761"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "3826907410993218846283161240665946129328849670199566482109365855543",
+          "numerator_decimal": "425879288733386405643373429564817591385092217127497450618680770560"
+        },
+        "output_upper": {
+          "denominator_decimal": "3826907410664828227757183931932938786490936399038123622093491165897",
+          "numerator_decimal": "425879288733386405643373429564817591385092217127497450618680770560"
+        },
+        "output_word_unsigned": 1038346663,
+        "runtime_value": {
+          "denominator_decimal": "134217728",
+          "numerator_decimal": "14936487"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 7,
+      "source_flat_index": 7
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "1048576",
+          "numerator_decimal": "-1147741"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "1048576",
+            "numerator_decimal": "1147741"
+          },
+          "halvings": 1,
+          "lower": {
+            "denominator_decimal": "1321055202810281190687832835694002077898821433760929927272851171486867576626967249448330686591432395455463424",
+            "numerator_decimal": "3947180084327164731323166524346987716617801323504033711361036977023634051349345811539413150887613461811345025"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "2097152",
+              "numerator_decimal": "1147741"
+            },
+            "lower": {
+              "denominator_decimal": "1149371655649416643768760270362731887714054341637701632",
+              "numerator_decimal": "1986751137995688863001206932854608324407959116506328255"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "5746858278247083218843801351813659438570271708188508160",
+              "numerator_decimal": "9933758271075752267190785823346134266089567877242445893"
+            }
+          },
+          "scale": 2,
+          "upper": {
+            "denominator_decimal": "33026380070257029767195820892350051947470535844023248181821279287171689415674181236208267164785809886386585600",
+            "numerator_decimal": "98679553388165918862512679621292956529583781077821313457989055304548668661358956509070256932905538333032567449"
+          }
+        },
+        "input_word_unsigned": 3213630184,
+        "local_error": {
+          "denominator_decimal": "176772642702253903843795381278538909272801991178299728395013372774801528161820494215625103428109695642540829958995968",
+          "numerator_decimal": "20700968455819751734552397521249777204238081008076422419683402493900681356186781439959635436337190376011732423"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "5268235287137445922010999360040989794516622757264963638633888148510501627976313060987743837479045857266808449",
+          "numerator_decimal": "-1445988864449191040116542765304822577371283732610896564157552219785221938386356370781971464690339287750672384"
+        },
+        "output_upper": {
+          "denominator_decimal": "131705933458422948629708500513643008477054316921844561639810334591720358077033137745278524097691348219419153049",
+          "numerator_decimal": "-36149721611229776002913569132620564434282093315272414103938805494630548459658909269549286617258482193766809600"
+        },
+        "output_word_unsigned": 3196880825,
+        "runtime_value": {
+          "denominator_decimal": "33554432",
+          "numerator_decimal": "-9209785"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 8,
+      "source_flat_index": 8
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "8388608",
+          "numerator_decimal": "-4318375"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "8388608",
+            "numerator_decimal": "4318375"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "175758848590827061387402103849814659650865952444992966361088",
+            "numerator_decimal": "294095084886168212733506088784059670740060899852949859406963"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "8388608",
+              "numerator_decimal": "4318375"
+            },
+            "lower": {
+              "denominator_decimal": "175758848590827061387402103849814659650865952444992966361088",
+              "numerator_decimal": "294095084886168212733506088784059670740060899852949859406963"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "25108406941546723055343157692830665664409421777856138051584",
+              "numerator_decimal": "42013590465910408831281668040448407614867908358465842080459"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "25108406941546723055343157692830665664409421777856138051584",
+            "numerator_decimal": "42013590465910408831281668040448407614867908358465842080459"
+          }
+        },
+        "input_word_unsigned": 3204696398,
+        "local_error": {
+          "denominator_decimal": "15765681860786361489811373727976237115647888482405366287121915052032",
+          "numerator_decimal": "352747310218232833656890334494045981745825234774824302438531"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "469853933476995274120908192633874330390926852297942825768051",
+          "numerator_decimal": "-90478970740248299982407398249202177628255874799447834624000"
+        },
+        "output_upper": {
+          "denominator_decimal": "67121997407457131886624825733279073279277330136321980132043",
+          "numerator_decimal": "-12925567248606899997486771178457453946893696399921119232000"
+        },
+        "output_word_unsigned": 3192205470,
+        "runtime_value": {
+          "denominator_decimal": "33554432",
+          "numerator_decimal": "-6461519"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 9,
+      "source_flat_index": 9
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "16777216",
+          "numerator_decimal": "-11177101"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "16777216",
+            "numerator_decimal": "11177101"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "2024741935766327747182872236349864879177975772166318972479733760",
+            "numerator_decimal": "3941842676533572478412356535174654550901473956593529730360040151"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "16777216",
+              "numerator_decimal": "11177101"
+            },
+            "lower": {
+              "denominator_decimal": "2024741935766327747182872236349864879177975772166318972479733760",
+              "numerator_decimal": "3941842676533572478412356535174654550901473956593529730360040151"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "2024741935766327747182872236349864879177975772166318972479733760",
+              "numerator_decimal": "3941847060890556481731636529966618758850347123563320257520182569"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "2024741935766327747182872236349864879177975772166318972479733760",
+            "numerator_decimal": "3941847060890556481731636529966618758850347123563320257520182569"
+          }
+        },
+        "input_word_unsigned": 3207236749,
+        "local_error": {
+          "denominator_decimal": "200205357645663365726519763338563023549279650521090787629725400592023552",
+          "numerator_decimal": "35446560849229705381806264177625206482782341650140722287128395767"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "5966584612299900225595228771524519430079449728759848702839773911",
+          "numerator_decimal": "-1348897523581728793940867689596313899214567672077175137616527360"
+        },
+        "output_upper": {
+          "denominator_decimal": "5966588996656884228914508766316483638028322895729639229999916329",
+          "numerator_decimal": "-1348897523581728793940867689596313899214567672077175137616527360"
+        },
+        "output_word_unsigned": 3194454078,
+        "runtime_value": {
+          "denominator_decimal": "33554432",
+          "numerator_decimal": "-7585823"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 10,
+      "source_flat_index": 10
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "16777216",
+          "numerator_decimal": "-14495189"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "16777216",
+            "numerator_decimal": "14495189"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "674913978588775915727624078783288293059325257388772990826577920",
+            "numerator_decimal": "1601280014288295805184495422753519976473652457963939206253462749"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "16777216",
+              "numerator_decimal": "14495189"
+            },
+            "lower": {
+              "denominator_decimal": "674913978588775915727624078783288293059325257388772990826577920",
+              "numerator_decimal": "1601280014288295805184495422753519976473652457963939206253462749"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "134982795717755183145524815756657658611865051477754598165315584",
+              "numerator_decimal": "320258341545756499800530052147159102323279684497940929974746887"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "134982795717755183145524815756657658611865051477754598165315584",
+            "numerator_decimal": "320258341545756499800530052147159102323279684497940929974746887"
+          }
+        },
+        "input_word_unsigned": 3210554837,
+        "local_error": {
+          "denominator_decimal": "76376396552802187418468691790190728577081972507317937432492823185195008",
+          "numerator_decimal": "100451534421196240409095883574399577057356002312065206872641044019"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "2276193992877071720912119501536808269532977715352712197080040669",
+          "numerator_decimal": "-583112578295842419691084834510961404405969847340816913850695680"
+        },
+        "output_upper": {
+          "denominator_decimal": "455241137263511682946054867903816760935144735975695528140062471",
+          "numerator_decimal": "-116622515659168483938216966902192280881193969468163382770139136"
+        },
+        "output_word_unsigned": 3196266929,
+        "runtime_value": {
+          "denominator_decimal": "33554432",
+          "numerator_decimal": "-8595889"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 11,
+      "source_flat_index": 11
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "67108864",
+          "numerator_decimal": "10823383"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "67108864",
+            "numerator_decimal": "-10823383"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "8846232500158803682625114325428316314787188013646125345362122113024",
+            "numerator_decimal": "7528611939310581964534786760328986578927742590481262374886098339801"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "67108864",
+              "numerator_decimal": "-10823383"
+            },
+            "lower": {
+              "denominator_decimal": "8846232500158803682625114325428316314787188013646125345362122113024",
+              "numerator_decimal": "7528611939310581964534786760328986578927742590481262374886098339801"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "44231162500794018413125571627141581573935940068230626726810610565120",
+              "numerator_decimal": "37643059697682850035793235538582777105223538992982828598531053050051"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "44231162500794018413125571627141581573935940068230626726810610565120",
+            "numerator_decimal": "37643059697682850035793235538582777105223538992982828598531053050051"
+          }
+        },
+        "input_word_unsigned": 1042622167,
+        "local_error": {
+          "denominator_decimal": "10988972085246730343768766354253642896173866229259642896796858914168517951488",
+          "numerator_decimal": "10218762913436702180090350136776433023179057038609072478252950208209"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "81874222198476868448918807165724358679159479061213455325341663615171",
+          "numerator_decimal": "7133645002265743395601366293646194526559881818644794902120643952640"
+        },
+        "output_upper": {
+          "denominator_decimal": "16374844439469385647159901085757302893714930604127387720248220452825",
+          "numerator_decimal": "1426729000453148679120273258729238905311976363728958980424128790528"
+        },
+        "output_word_unsigned": 1035104475,
+        "runtime_value": {
+          "denominator_decimal": "134217728",
+          "numerator_decimal": "11694299"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 12,
+      "source_flat_index": 12
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "16777216",
+          "numerator_decimal": "-4463011"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "16777216",
+            "numerator_decimal": "4463011"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "289248847966618249597553176621409268453996538880902710354247680",
+            "numerator_decimal": "377399220503127407384152287758649128090903234770279658625259313"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "16777216",
+              "numerator_decimal": "4463011"
+            },
+            "lower": {
+              "denominator_decimal": "289248847966618249597553176621409268453996538880902710354247680",
+              "numerator_decimal": "377399220503127407384152287758649128090903234770279658625259313"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "289248847966618249597553176621409268453996538880902710354247680",
+              "numerator_decimal": "377399220907887906788928689963022319940750063492847838561741007"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "289248847966618249597553176621409268453996538880902710354247680",
+            "numerator_decimal": "377399220907887906788928689963022319940750063492847838561741007"
+          }
+        },
+        "input_word_unsigned": 3196597062,
+        "local_error": {
+          "denominator_decimal": "44737994589961866716103143023080763982887028053162102757128432221421568",
+          "numerator_decimal": "118802706667256682838374392113475754754667471005547793958174147"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "666648068469745656981705464380058396544899773651182368979506993",
+          "numerator_decimal": "-76944875133773379370845878144877696073778840719902305975009280"
+        },
+        "output_upper": {
+          "denominator_decimal": "666648068874506156386481866584431588394746602373750548915988687",
+          "numerator_decimal": "-76944875133773379370845878144877696073778840719902305975009280"
+        },
+        "output_word_unsigned": 3186385306,
+        "runtime_value": {
+          "denominator_decimal": "67108864",
+          "numerator_decimal": "-7745741"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 13,
+      "source_flat_index": 13
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "524288",
+          "numerator_decimal": "446147"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "524288",
+            "numerator_decimal": "-446147"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "613830687678979225645547629740838868255491668049920",
+            "numerator_decimal": "262100684062282473340819273494089068873489548066077"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "524288",
+              "numerator_decimal": "-446147"
+            },
+            "lower": {
+              "denominator_decimal": "613830687678979225645547629740838868255491668049920",
+              "numerator_decimal": "262100684062282473340819273494089068873489548066077"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "613830687678979225645547629740838868255491668049920",
+              "numerator_decimal": "262110102417513086387937265616260094446187997283043"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "613830687678979225645547629740838868255491668049920",
+            "numerator_decimal": "262110102417513086387937265616260094446187997283043"
+          }
+        },
+        "input_word_unsigned": 1062852704,
+        "local_error": {
+          "denominator_decimal": "7347844912439721818210629295411742372823668861360381362176",
+          "numerator_decimal": "42614183522819916572449163502784078845981775163374827"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "875940790096492312033484895357098962701679665332963",
+          "numerator_decimal": "522344054824664200943153645259830548392453844500480"
+        },
+        "output_upper": {
+          "denominator_decimal": "875931371741261698986366903234927937128981216115997",
+          "numerator_decimal": "522344054824664200943153645259830548392453844500480"
+        },
+        "output_word_unsigned": 1058580658,
+        "runtime_value": {
+          "denominator_decimal": "8388608",
+          "numerator_decimal": "5002329"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 14,
+      "source_flat_index": 14
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "16777216",
+          "numerator_decimal": "-5318809"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "16777216",
+            "numerator_decimal": "5318809"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "2024741935766327747182872236349864879177975772166318972479733760",
+            "numerator_decimal": "2780047379100406487858630535366889481436839608831034031930936887"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "16777216",
+              "numerator_decimal": "5318809"
+            },
+            "lower": {
+              "denominator_decimal": "2024741935766327747182872236349864879177975772166318972479733760",
+              "numerator_decimal": "2780047379100406487858630535366889481436839608831034031930936887"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "404948387153265549436574447269972975835595154433263794495946752",
+              "numerator_decimal": "556009478125860196280120324552037250221756636157930417598482933"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "404948387153265549436574447269972975835595154433263794495946752",
+            "numerator_decimal": "556009478125860196280120324552037250221756636157930417598482933"
+          }
+        },
+        "input_word_unsigned": 3198308658,
+        "local_error": {
+          "denominator_decimal": "64488790690747171708200251971714316467092077514940931977032236888227840",
+          "numerator_decimal": "101826246504841412626749591528180223689693949702148843800095213"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "4804789314866734235041502771716754360614815380997353004410670647",
+          "numerator_decimal": "-641895272173366899410842984709011821040852674173126628857610240"
+        },
+        "output_upper": {
+          "denominator_decimal": "960957865279125745716694771822010226057351790591194212094429685",
+          "numerator_decimal": "-128379054434673379882168596941802364208170534834625325771522048"
+        },
+        "output_word_unsigned": 3188247833,
+        "runtime_value": {
+          "denominator_decimal": "67108864",
+          "numerator_decimal": "-8965401"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 15,
+      "source_flat_index": 15
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "16777216",
+          "numerator_decimal": "9763215"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "16777216",
+            "numerator_decimal": "-9763215"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "6427752177035961102167848369364650410088811975131171341205504",
+            "numerator_decimal": "3591933822923603086496826424858896760082812472639172137018869"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "16777216",
+              "numerator_decimal": "-9763215"
+            },
+            "lower": {
+              "denominator_decimal": "6427752177035961102167848369364650410088811975131171341205504",
+              "numerator_decimal": "3591933822923603086496826424858896760082812472639172137018869"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "6427752177035961102167848369364650410088811975131171341205504",
+              "numerator_decimal": "3591938540346133928590781888936163333140039547237011940612619"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "6427752177035961102167848369364650410088811975131171341205504",
+            "numerator_decimal": "3591938540346133928590781888936163333140039547237011940612619"
+          }
+        },
+        "input_word_unsigned": 1058339215,
+        "local_error": {
+          "denominator_decimal": "42025609068374399914773000148111000790039525107780942732090400571392",
+          "numerator_decimal": "7180613352338593326313207422561593229683504027081585809318575"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "10019690717382095030758630258300813743228851522368183281818123",
+          "numerator_decimal": "3740520863003739772564272267669826469036057019697444379688960"
+        },
+        "output_upper": {
+          "denominator_decimal": "10019685999959564188664674794223547170171624447770343478224373",
+          "numerator_decimal": "3740520863003739772564272267669826469036057019697444379688960"
+        },
+        "output_word_unsigned": 1052713832,
+        "runtime_value": {
+          "denominator_decimal": "4194304",
+          "numerator_decimal": "1565805"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 16,
+      "source_flat_index": 16
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "8388608",
+          "numerator_decimal": "-3505905"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "8388608",
+            "numerator_decimal": "3505905"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "175758848590827061387402103849814659650865952444992966361088",
+            "numerator_decimal": "266946773481110941436671086371230830580105482250198109099443"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "8388608",
+              "numerator_decimal": "3505905"
+            },
+            "lower": {
+              "denominator_decimal": "175758848590827061387402103849814659650865952444992966361088",
+              "numerator_decimal": "266946773481110941436671086371230830580105482250198109099443"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "175758848590827061387402103849814659650865952444992966361088",
+              "numerator_decimal": "266946782610908370375301765076178288460024937594946334255693"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "175758848590827061387402103849814659650865952444992966361088",
+            "numerator_decimal": "266946782610908370375301765076178288460024937594946334255693"
+          }
+        },
+        "input_word_unsigned": 3201694660,
+        "local_error": {
+          "denominator_decimal": "29709471996351419654144574212028286819732833658529241093346672246784",
+          "numerator_decimal": "58279189335428391220615308840094866361758591703309427327273"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "442705622071938002824073190221045490230971434695191075460531",
+          "numerator_decimal": "-73456028231242126065897938358495767634304666162331469742080"
+        },
+        "output_upper": {
+          "denominator_decimal": "442705631201735431762703868925992948110890890039939300616781",
+          "numerator_decimal": "-73456028231242126065897938358495767634304666162331469742080"
+        },
+        "output_word_unsigned": 3190417485,
+        "runtime_value": {
+          "denominator_decimal": "67108864",
+          "numerator_decimal": "-11135053"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 17,
+      "source_flat_index": 17
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "8388608",
+          "numerator_decimal": "-12522599"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "8388608",
+            "numerator_decimal": "12522599"
+          },
+          "halvings": 1,
+          "lower": {
+            "denominator_decimal": "50612097610503408357256015771259032736862233539452780851480923388196693391530087414741048924290701496143702170665850870169600",
+            "numerator_decimal": "225201542144935606835126621671439874865793264963330022978901999811263869420311268121472089589534423246676761547087001590327169"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "16777216",
+              "numerator_decimal": "12522599"
+            },
+            "lower": {
+              "denominator_decimal": "224971326196258638575874692927762764353108419129590996942192640",
+              "numerator_decimal": "474554045546906708524652522814520148487792130451053571317683263"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "44994265239251727715174938585552552870621683825918199388438528",
+              "numerator_decimal": "94911050998193350391748938607926463814889545389750829601576333"
+            }
+          },
+          "scale": 2,
+          "upper": {
+            "denominator_decimal": "2024483904420136334290240630850361309474489341578111234059236935527867735661203496589641956971628059845748086826634034806784",
+            "numerator_decimal": "9008107601581658973787570965632548936364482612441508869589656764864165191027410924887484237108205737393960348954198425726889"
+          }
+        },
+        "input_word_unsigned": 3216970855,
+        "local_error": {
+          "denominator_decimal": "9254770019846375065419770126051694391627586943937727401895923330457521891551659559127687293768726208074486738025805280691771521630208",
+          "numerator_decimal": "10533083756965605313475898386761149101987430997488116137470931502790349315685448272085470004698998147711865223781829280367730893"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "275813639755439015192382637442698907602655498502782803830382923199460562811841355536213138513825124742820463717752852460496769",
+          "numerator_decimal": "-75554252019547506688972213964599679957818778617253047709223527877343717154035720959871869625839449675668195326170684509388800"
+        },
+        "output_upper": {
+          "denominator_decimal": "11032591506001795308077811596482910245838971954019620103648893700392032926688614421477126194079833797239708435780832460533673",
+          "numerator_decimal": "-3022170080781900267558888558583987198312751144690121908368941115093748686161428838394874785033577987026727813046827380375552"
+        },
+        "output_word_unsigned": 3196862643,
+        "runtime_value": {
+          "denominator_decimal": "33554432",
+          "numerator_decimal": "-9191603"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 18,
+      "source_flat_index": 18
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "33554432",
+          "numerator_decimal": "-12064071"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "33554432",
+            "numerator_decimal": "12064071"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "11518531901248442295084784277901453534879151059435059043440263168",
+            "numerator_decimal": "16502213621667032571119232500603163634444432897864637784685546867"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "33554432",
+              "numerator_decimal": "12064071"
+            },
+            "lower": {
+              "denominator_decimal": "11518531901248442295084784277901453534879151059435059043440263168",
+              "numerator_decimal": "16502213621667032571119232500603163634444432897864637784685546867"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "57592659506242211475423921389507267674395755297175295217201315840",
+              "numerator_decimal": "82511069005724843952971591789004045924261924967594800211050609857"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "57592659506242211475423921389507267674395755297175295217201315840",
+            "numerator_decimal": "82511069005724843952971591789004045924261924967594800211050609857"
+          }
+        },
+        "input_word_unsigned": 3199735111,
+        "local_error": {
+          "denominator_decimal": "4701101031301259747612328116053461733376834423721970162680790119669039104",
+          "numerator_decimal": "56763230502942803801026899438624607097992258201991223569573600669"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "28020745522915474866204016778504617169323583957299696828125810035",
+          "numerator_decimal": "-4141342242730444565037065403112377716540785276912145977892143104"
+        },
+        "output_upper": {
+          "denominator_decimal": "140103728511967055428395513178511313598657680264770095428251925697",
+          "numerator_decimal": "-20706711213652222825185327015561888582703926384560729889460715520"
+        },
+        "output_word_unsigned": 3189200826,
+        "runtime_value": {
+          "denominator_decimal": "33554432",
+          "numerator_decimal": "-4959197"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 19,
+      "source_flat_index": 19
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "2097152",
+          "numerator_decimal": "-2664429"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "2097152",
+            "numerator_decimal": "2664429"
+          },
+          "halvings": 1,
+          "lower": {
+            "denominator_decimal": "11784047263325985604258257842450177468560224757402385783260903178760012004415059325923456094295415444333036935577600",
+            "numerator_decimal": "41982124019817748003427569925460459972922619506784527071442389057361268748209569523709633844600438442121638059014721"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "4194304",
+              "numerator_decimal": "2664429"
+            },
+            "lower": {
+              "denominator_decimal": "3432790011539591042722697340816692571305975633691268874240",
+              "numerator_decimal": "6479361389814411949585137047048063347786140765258096649439"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "3432790011539591042722697340816692571305975633691268874240",
+              "numerator_decimal": "6479366469808549539307429762061119870596273682538088028961"
+            }
+          },
+          "scale": 2,
+          "upper": {
+            "denominator_decimal": "11784047263325985604258257842450177468560224757402385783260903178760012004415059325923456094295415444333036935577600",
+            "numerator_decimal": "41982189850079305508681668123257193742135538850958547041253917540134471555592899399808837694966934935715133974739521"
+          }
+        },
+        "input_word_unsigned": 3215105972,
+        "local_error": {
+          "denominator_decimal": "1804093338220599155565208785202069266106890077029249802673067499513059458766851930260251741304565084314979113188148402716672",
+          "numerator_decimal": "593828595485866215979124714884341847001336799115773675940065485643263087358139002800551974826488872536406387005483073"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "53766171283143733607685827767910637441482844264186912854703292236121280752624628849633089938895853886454674994592321",
+          "numerator_decimal": "-14971617348564335106643784372759668303670144600935402560285599229660205852943235447268919085439414728607573160755200"
+        },
+        "output_upper": {
+          "denominator_decimal": "53766237113405291112939925965707371210695763608360932824514820718894483560007958725732293789262350380048170910317121",
+          "numerator_decimal": "-14971617348564335106643784372759668303670144600935402560285599229660205852943235447268919085439414728607573160755200"
+        },
+        "output_word_unsigned": 3197014527,
+        "runtime_value": {
+          "denominator_decimal": "33554432",
+          "numerator_decimal": "-9343487"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 20,
+      "source_flat_index": 20
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "33554432",
+          "numerator_decimal": "5901541"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "33554432",
+            "numerator_decimal": "-5901541"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "518333935556179903278815292505565409069561797674577656954811842560",
+            "numerator_decimal": "434736486889528564100771309557714585642389638964456395731779975191"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "33554432",
+              "numerator_decimal": "-5901541"
+            },
+            "lower": {
+              "denominator_decimal": "518333935556179903278815292505565409069561797674577656954811842560",
+              "numerator_decimal": "434736486889528564100771309557714585642389638964456395731779975191"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "518333935556179903278815292505565409069561797674577656954811842560",
+              "numerator_decimal": "434736486916013317551154695257701081631444382590754388786983995369"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "518333935556179903278815292505565409069561797674577656954811842560",
+            "numerator_decimal": "434736486916013317551154695257701081631444382590754388786983995369"
+          }
+        },
+        "input_word_unsigned": 1043601866,
+        "local_error": {
+          "denominator_decimal": "15989868341027239659600105758221678780052772103646413043131989000835825664",
+          "numerator_decimal": "68584031512920291906378233279574607214566151720908918117244252933"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "953070422472193220829969987763266490701006180265332045741795837929",
+          "numerator_decimal": "91164379488711163478373374943393081122809374362535020715080417280"
+        },
+        "output_upper": {
+          "denominator_decimal": "953070422445708467379586602063279994711951436639034052686591817751",
+          "numerator_decimal": "91164379488711163478373374943393081122809374362535020715080417280"
+        },
+        "output_word_unsigned": 1036248552,
+        "runtime_value": {
+          "denominator_decimal": "16777216",
+          "numerator_decimal": "1604797"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 21,
+      "source_flat_index": 21
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "16777216",
+          "numerator_decimal": "-6673291"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "16777216",
+            "numerator_decimal": "6673291"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "2024741935766327747182872236349864879177975772166318972479733760",
+            "numerator_decimal": "3013798882424052810555566712678965597749999534438128310136853911"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "16777216",
+              "numerator_decimal": "6673291"
+            },
+            "lower": {
+              "denominator_decimal": "2024741935766327747182872236349864879177975772166318972479733760",
+              "numerator_decimal": "3013798882424052810555566712678965597749999534438128310136853911"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "2024741935766327747182872236349864879177975772166318972479733760",
+              "numerator_decimal": "3013798953217492189854453408341122361208449576536756714098666089"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "2024741935766327747182872236349864879177975772166318972479733760",
+            "numerator_decimal": "3013798953217492189854453408341122361208449576536756714098666089"
+          }
+        },
+        "input_word_unsigned": 3201017622,
+        "local_error": {
+          "denominator_decimal": "338130755277254270355126449613279784740827926172267282632296460804161536",
+          "numerator_decimal": "1887088908554537160314529412195085205107135981969312590954656039"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "5038540818190380557738438949028830476927975306604447282616587671",
+          "numerator_decimal": "-805359610156536880631788769303764471377996988213988953958645760"
+        },
+        "output_upper": {
+          "denominator_decimal": "5038540888983819937037325644690987240386425348703075686578399849",
+          "numerator_decimal": "-805359610156536880631788769303764471377996988213988953958645760"
+        },
+        "output_word_unsigned": 3190009103,
+        "runtime_value": {
+          "denominator_decimal": "67108864",
+          "numerator_decimal": "-10726671"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 22,
+      "source_flat_index": 22
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "67108864",
+          "numerator_decimal": "9786909"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "67108864",
+            "numerator_decimal": "-9786909"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "14743720833598006137708523875713860524645313356076875575603536855040",
+            "numerator_decimal": "12742985678270547517425549132368919388114074272266468006530043154783"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "67108864",
+              "numerator_decimal": "-9786909"
+            },
+            "lower": {
+              "denominator_decimal": "14743720833598006137708523875713860524645313356076875575603536855040",
+              "numerator_decimal": "12742985678270547517425549132368919388114074272266468006530043154783"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "2948744166719601227541704775142772104929062671215375115120707371008",
+              "numerator_decimal": "2548597135687778051928786804264469503014859669918831475891966141165"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "2948744166719601227541704775142772104929062671215375115120707371008",
+            "numerator_decimal": "2548597135687778051928786804264469503014859669918831475891966141165"
+          }
+        },
+        "input_word_unsigned": 1041585693,
+        "local_error": {
+          "denominator_decimal": "1844601649112901153119095407265498177907301609073775989758675250712330371072",
+          "numerator_decimal": "2713329635298288480999422137838278183626214486343524797647755408525"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "5497341302407379279470491579407241607943922341134206591012673512173",
+          "numerator_decimal": "430033964275800671133979534196671435217249211944368416854007349248"
+        },
+        "output_upper": {
+          "denominator_decimal": "27486706511868553655134073008082779912759387628343343582133580009823",
+          "numerator_decimal": "2150169821379003355669897670983357176086246059721842084270036746240"
+        },
+        "output_word_unsigned": 1033909466,
+        "runtime_value": {
+          "denominator_decimal": "67108864",
+          "numerator_decimal": "5249645"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 23,
+      "source_flat_index": 23
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "524288",
+          "numerator_decimal": "333539"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "524288",
+            "numerator_decimal": "-333539"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "613830687678979225645547629740838868255491668049920",
+            "numerator_decimal": "324907781757624041566594534076611571846534716443677"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "524288",
+              "numerator_decimal": "-333539"
+            },
+            "lower": {
+              "denominator_decimal": "613830687678979225645547629740838868255491668049920",
+              "numerator_decimal": "324907781757624041566594534076611571846534716443677"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "613830687678979225645547629740838868255491668049920",
+              "numerator_decimal": "324908700776071646245172488848117547281281907438563"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "613830687678979225645547629740838868255491668049920",
+            "numerator_decimal": "324908700776071646245172488848117547281281907438563"
+          }
+        },
+        "input_word_unsigned": 1059249248,
+        "local_error": {
+          "denominator_decimal": "31498836138494582640647653810145501205773517380696254971904",
+          "numerator_decimal": "11546664847684843576841521465768567272639362807094995"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "938739388455050871890720118588956415536773575488483",
+          "numerator_decimal": "390503833270567039380245801689395247038018103541760"
+        },
+        "output_upper": {
+          "denominator_decimal": "938738469436603267212142163817450440102026384493597",
+          "numerator_decimal": "390503833270567039380245801689395247038018103541760"
+        },
+        "output_word_unsigned": 1054145617,
+        "runtime_value": {
+          "denominator_decimal": "33554432",
+          "numerator_decimal": "13958225"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 24,
+      "source_flat_index": 24
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "8388608",
+          "numerator_decimal": "-4585483"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "8388608",
+            "numerator_decimal": "4585483"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "376626104123200845830147365392459984966141326667842070773760",
+            "numerator_decimal": "650593386773506732837426060927539585456059949997594179887611"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "8388608",
+              "numerator_decimal": "4585483"
+            },
+            "lower": {
+              "denominator_decimal": "376626104123200845830147365392459984966141326667842070773760",
+              "numerator_decimal": "650593386773506732837426060927539585456059949997594179887611"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "376626104123200845830147365392459984966141326667842070773760",
+              "numerator_decimal": "650593554319448114532398394465219644651677096564156178537989"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "376626104123200845830147365392459984966141326667842070773760",
+            "numerator_decimal": "650593554319448114532398394465219644651677096564156178537989"
+          }
+        },
+        "input_word_unsigned": 3205230614,
+        "local_error": {
+          "denominator_decimal": "17233883278184096736142871569230717912880482014091783711575964123136",
+          "numerator_decimal": "684705646431717386284576254942939911887479420197023137326031"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "1027219490896707578667573426319999570422201276665436250661371",
+          "numerator_decimal": "-205875944830556796090574459016551207213699415806870038773760"
+        },
+        "output_upper": {
+          "denominator_decimal": "1027219658442648960362545759857679629617818423231998249311749",
+          "numerator_decimal": "-205875944830556796090574459016551207213699415806870038773760"
+        },
+        "output_word_unsigned": 3192732428,
+        "runtime_value": {
+          "denominator_decimal": "16777216",
+          "numerator_decimal": "-3362499"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 25,
+      "source_flat_index": 25
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "16777216",
+          "numerator_decimal": "-7601231"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "16777216",
+            "numerator_decimal": "7601231"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "674913978588775915727624078783288293059325257388772990826577920",
+            "numerator_decimal": "1061728857671258239635449352684125167789841088873275106522559357"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "16777216",
+              "numerator_decimal": "7601231"
+            },
+            "lower": {
+              "denominator_decimal": "674913978588775915727624078783288293059325257388772990826577920",
+              "numerator_decimal": "1061728857671258239635449352684125167789841088873275106522559357"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "674913978588775915727624078783288293059325257388772990826577920",
+              "numerator_decimal": "1061728924539930086187727826169827162327218514408433238369897603"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "674913978588775915727624078783288293059325257388772990826577920",
+            "numerator_decimal": "1061728924539930086187727826169827162327218514408433238369897603"
+          }
+        },
+        "input_word_unsigned": 3202873502,
+        "local_error": {
+          "denominator_decimal": "29136031978787225191903841383589992593974007211169173531615503509880832",
+          "numerator_decimal": "396571806825109721830785010900954705212879768052560852309591191"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "1736642836260034155363073431467413460849166346262048097349137277",
+          "numerator_decimal": "-305782381080528482358587008952735260435320614906938094486814720"
+        },
+        "output_upper": {
+          "denominator_decimal": "1736642903128706001915351904953115455386543771797206229196475523",
+          "numerator_decimal": "-305782381080528482358587008952735260435320614906938094486814720"
+        },
+        "output_word_unsigned": 3191098740,
+        "runtime_value": {
+          "denominator_decimal": "16777216",
+          "numerator_decimal": "-2954077"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 26,
+      "source_flat_index": 26
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "8388608",
+          "numerator_decimal": "-1999065"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "8388608",
+            "numerator_decimal": "1999065"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "175758848590827061387402103849814659650865952444992966361088",
+            "numerator_decimal": "223055360720575555778607656628317672466410691668463942924403"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "8388608",
+              "numerator_decimal": "1999065"
+            },
+            "lower": {
+              "denominator_decimal": "175758848590827061387402103849814659650865952444992966361088",
+              "numerator_decimal": "223055360720575555778607656628317672466410691668463942924403"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "25108406941546723055343157692830665664409421777856138051584",
+              "numerator_decimal": "31865051546084743691073904638924037388965102249838231154379"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "25108406941546723055343157692830665664409421777856138051584",
+            "numerator_decimal": "31865051546084743691073904638924037388965102249838231154379"
+          }
+        },
+        "input_word_unsigned": 3195274952,
+        "local_error": {
+          "denominator_decimal": "3823424077256105784005825123301249248569295674039273656608758956032",
+          "numerator_decimal": "13275120760604507788783027931435383597769952989170510039763"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "398814209311402617166009760478132332117276644113456909285491",
+          "numerator_decimal": "-41884584743764603075075982419553964447374146607452614819840"
+        },
+        "output_upper": {
+          "denominator_decimal": "56973458487631466746417062331754703053374524027694369205963",
+          "numerator_decimal": "-5983512106252086153582283202793423492482020943921802117120"
+        },
+        "output_word_unsigned": 3184989746,
+        "runtime_value": {
+          "denominator_decimal": "67108864",
+          "numerator_decimal": "-7047961"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 27,
+      "source_flat_index": 27
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "4194304",
+          "numerator_decimal": "213873"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "4194304",
+            "numerator_decimal": "-213873"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "686558002307918208544539468163338514261195126738253774848",
+            "numerator_decimal": "652427103876181544597673002503918355552907297490037014963"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "4194304",
+              "numerator_decimal": "-213873"
+            },
+            "lower": {
+              "denominator_decimal": "686558002307918208544539468163338514261195126738253774848",
+              "numerator_decimal": "652427103876181544597673002503918355552907297490037014963"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "3432790011539591042722697340816692571305975633691268874240",
+              "numerator_decimal": "3262135519380916478422520693650202977850217081272848840577"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "3432790011539591042722697340816692571305975633691268874240",
+            "numerator_decimal": "3262135519380916478422520693650202977850217081272848840577"
+          }
+        },
+        "input_word_unsigned": 1028709440,
+        "local_error": {
+          "denominator_decimal": "1797155387778688536190046245301544823642113006665270962414579351552",
+          "numerator_decimal": "1421199204735688052959864817206959714923499323296195552533"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "6694925530920507521145218034466895549156192714964117714817",
+          "numerator_decimal": "175042414221288431901986944287416575027209026027787386880"
+        },
+        "output_upper": {
+          "denominator_decimal": "1338985106184099753142212470667256869814102424228290789811",
+          "numerator_decimal": "35008482844257686380397388857483315005441805205557477376"
+        },
+        "output_word_unsigned": 1020669738,
+        "runtime_value": {
+          "denominator_decimal": "268435456",
+          "numerator_decimal": "7018389"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 28,
+      "source_flat_index": 28
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "8388608",
+          "numerator_decimal": "5345971"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "8388608",
+            "numerator_decimal": "-5345971"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "1581829637317443552486618934648331936857793572004936697249792",
+            "numerator_decimal": "836348525161065879958154927630323136880180556646817406639147"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "8388608",
+              "numerator_decimal": "-5345971"
+            },
+            "lower": {
+              "denominator_decimal": "1581829637317443552486618934648331936857793572004936697249792",
+              "numerator_decimal": "836348525161065879958154927630323136880180556646817406639147"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "7909148186587217762433094673241659684288967860024683486248960",
+              "numerator_decimal": "4181754634209408815391387891418042573858525665528845113013033"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "7909148186587217762433094673241659684288967860024683486248960",
+            "numerator_decimal": "4181754634209408815391387891418042573858525665528845113013033"
+          }
+        },
+        "input_word_unsigned": 1059267942,
+        "local_error": {
+          "denominator_decimal": "81140594716770096212326758317206496723195838717604534759662339227648",
+          "numerator_decimal": "32990184658015790030044416360204545954635748372295625647416971"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "12090902820796626577824482564659702258147493525553528599261993",
+          "numerator_decimal": "5040416340851528063851858802247570593843219017937662267883520"
+        },
+        "output_upper": {
+          "denominator_decimal": "2418178162478509432444773862278655073737974128651754103888939",
+          "numerator_decimal": "1008083268170305612770371760449514118768643803587532453576704"
+        },
+        "output_word_unsigned": 1054175455,
+        "runtime_value": {
+          "denominator_decimal": "33554432",
+          "numerator_decimal": "13988063"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 29,
+      "source_flat_index": 29
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "8388608",
+          "numerator_decimal": "-6347471"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "8388608",
+            "numerator_decimal": "6347471"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "7909148186587217762433094673241659684288967860024683486248960",
+            "numerator_decimal": "16855800228596502158993647483491675873342689903166460373479031"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "8388608",
+              "numerator_decimal": "6347471"
+            },
+            "lower": {
+              "denominator_decimal": "7909148186587217762433094673241659684288967860024683486248960",
+              "numerator_decimal": "16855800228596502158993647483491675873342689903166460373479031"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "7909148186587217762433094673241659684288967860024683486248960",
+              "numerator_decimal": "16855847661346901029505202723108055410432705280945182480552329"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "7909148186587217762433094673241659684288967860024683486248960",
+            "numerator_decimal": "16855847661346901029505202723108055410432705280945182480552329"
+          }
+        },
+        "input_word_unsigned": 3208754590,
+        "local_error": {
+          "denominator_decimal": "1661947555161579795221117925359284100203467082924538679286920825012224",
+          "numerator_decimal": "768790924638857888364840664604964066869174712133584365567318195"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "24764948415183719921426742156733335557631657763191143859727991",
+          "numerator_decimal": "-5984674543030852522579307303268421988236114872865526403563520"
+        },
+        "output_upper": {
+          "denominator_decimal": "24764995847934118791938297396349715094721673140969865966801289",
+          "numerator_decimal": "-5984674543030852522579307303268421988236114872865526403563520"
+        },
+        "output_word_unsigned": 3195499867,
+        "runtime_value": {
+          "denominator_decimal": "67108864",
+          "numerator_decimal": "-16217435"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 30,
+      "source_flat_index": 30
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "33554432",
+          "numerator_decimal": "-5552365"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "33554432",
+            "numerator_decimal": "5552365"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "4936513671963618126464907547672051514948207596900739590045827072",
+            "numerator_decimal": "5824846920422050829190154805550730162276729341473455932013197887"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "33554432",
+              "numerator_decimal": "5552365"
+            },
+            "lower": {
+              "denominator_decimal": "4936513671963618126464907547672051514948207596900739590045827072",
+              "numerator_decimal": "5824846920422050829190154805550730162276729341473455932013197887"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "4936513671963618126464907547672051514948207596900739590045827072",
+              "numerator_decimal": "5824846920576899424286675110914569503742380575271133415348979137"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "4936513671963618126464907547672051514948207596900739590045827072",
+            "numerator_decimal": "5824846920576899424286675110914569503742380575271133415348979137"
+          }
+        },
+        "input_word_unsigned": 3190387162,
+        "local_error": {
+          "denominator_decimal": "361091342224684646747038805186973808639290095202965134199634052973068288",
+          "numerator_decimal": "407738274714999459066461113481741686367546500114658675292727813"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "10761360592385668955655062353222781677224936938374195522059024959",
+          "numerator_decimal": "-816861561960943775139728975174728939229113002829723804410839040"
+        },
+        "output_upper": {
+          "denominator_decimal": "10761360592540517550751582658586621018690588172171873005394806209",
+          "numerator_decimal": "-816861561960943775139728975174728939229113002829723804410839040"
+        },
+        "output_word_unsigned": 3181081876,
+        "runtime_value": {
+          "denominator_decimal": "33554432",
+          "numerator_decimal": "-2547013"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 31,
+      "source_flat_index": 31
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "33554432",
+          "numerator_decimal": "-4731023"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "33554432",
+            "numerator_decimal": "4731023"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "518333935556179903278815292505565409069561797674577656954811842560",
+            "numerator_decimal": "596819767275631631770128593832640663978032940283650265900255505527"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "33554432",
+              "numerator_decimal": "4731023"
+            },
+            "lower": {
+              "denominator_decimal": "518333935556179903278815292505565409069561797674577656954811842560",
+              "numerator_decimal": "596819767275631631770128593832640663978032940283650265900255505527"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "103666787111235980655763058501113081813912359534915531390962368512",
+              "numerator_decimal": "119363953456029857183739801675961531352319705868120949079478849717"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "103666787111235980655763058501113081813912359534915531390962368512",
+            "numerator_decimal": "119363953456029857183739801675961531352319705868120949079478849717"
+          }
+        },
+        "input_word_unsigned": 3188744478,
+        "local_error": {
+          "denominator_decimal": "2338646818201139224350962769121941542503909399898573604871350199175348224",
+          "numerator_decimal": "911298961593773861305285644170943218354744950656930197985254487"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "1115153702831811535048943886338206073047594737958227922855067348087",
+          "numerator_decimal": "-73082738244438317851717786836491751024499698421948355744460963840"
+        },
+        "output_upper": {
+          "denominator_decimal": "223030740567265837839502860177074613166232065403036480470441218229",
+          "numerator_decimal": "-14616547648887663570343557367298350204899939684389671148892192768"
+        },
+        "output_word_unsigned": 3179689920,
+        "runtime_value": {
+          "denominator_decimal": "2097152",
+          "numerator_decimal": "-137439"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 32,
+      "source_flat_index": 32
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "33554432",
+          "numerator_decimal": "559485"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "33554432",
+            "numerator_decimal": "-559485"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "11518531901248442295084784277901453534879151059435059043440263168",
+            "numerator_decimal": "11328064781919100844391019228417129627425033897911369266965226003"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "33554432",
+              "numerator_decimal": "-559485"
+            },
+            "lower": {
+              "denominator_decimal": "11518531901248442295084784277901453534879151059435059043440263168",
+              "numerator_decimal": "11328064781919100844391019228417129627425033897911369266965226003"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "11518531901248442295084784277901453534879151059435059043440263168",
+              "numerator_decimal": "11328064781919100848231340613693416957095185888475193255115382253"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "11518531901248442295084784277901453534879151059435059043440263168",
+            "numerator_decimal": "11328064781919100848231340613693416957095185888475193255115382253"
+          }
+        },
+        "input_word_unsigned": 1015584720,
+        "local_error": {
+          "denominator_decimal": "24531346394776667872302949349712878511096301915639747291351331279841787904",
+          "numerator_decimal": "2723740484986957756229023900074402164733293906049493773282463409"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "22846596683167543143316124891594870491974336947910252298555645421",
+          "numerator_decimal": "192059451960622809453770832172682724325712377741575956610416640"
+        },
+        "output_upper": {
+          "denominator_decimal": "22846596683167543139475803506318583162304184957346428310405489171",
+          "numerator_decimal": "192059451960622809453770832172682724325712377741575956610416640"
+        },
+        "output_word_unsigned": 1007270741,
+        "runtime_value": {
+          "denominator_decimal": "1073741824",
+          "numerator_decimal": "9026389"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 33,
+      "source_flat_index": 33
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "4194304",
+          "numerator_decimal": "6402325"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "4194304",
+            "numerator_decimal": "-6402325"
+          },
+          "halvings": 1,
+          "lower": {
+            "denominator_decimal": "2502185001495835007896568162519520051077783762631637725201388424343220315377158862667251564250211682853784103896444043264",
+            "numerator_decimal": "543734639403510281399186062656045202402411005419608789815006939218377686279260281041246812743454384536942078861153781689"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "8388608",
+              "numerator_decimal": "-6402325"
+            },
+            "lower": {
+              "denominator_decimal": "1581829637317443552486618934648331936857793572004936697249792",
+              "numerator_decimal": "737383644654199176250788592517814814176165571264868575045867"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "1581829637317443552486618934648331936857793572004936697249792",
+              "numerator_decimal": "737393807240151765757343607284756680586204076978308516452117"
+            }
+          },
+          "scale": 2,
+          "upper": {
+            "denominator_decimal": "2502185001495835007896568162519520051077783762631637725201388424343220315377158862667251564250211682853784103896444043264",
+            "numerator_decimal": "543749626956126098676832552162009357107659720375635986473462396892041990159590613319289088599695641820526078861153781689"
+          }
+        },
+        "input_word_unsigned": 1069769258,
+        "local_error": {
+          "denominator_decimal": "25551025867005375088548678259341548089865989672832830925838654277935729489479050880266259153236083122242384782489847175183335424",
+          "numerator_decimal": "144063756278813329851133623909351377375887471763489640803524394952650696574008562401803776597477525259975326606368693036811"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "3045934628451961106573400714681529408185443483007273711674850821235262305536749475986540652849907324674310182757597824953",
+          "numerator_decimal": "3819418332505660502179001751208969643358366949103021621465678010912706376468436387878921358844813469034875229115200307200"
+        },
+        "output_upper": {
+          "denominator_decimal": "3045919640899345289295754225175565253480194768051246515016395363561598001656419143708498376993666067390726182757597824953",
+          "numerator_decimal": "3819418332505660502179001751208969643358366949103021621465678010912706376468436387878921358844813469034875229115200307200"
+        },
+        "output_word_unsigned": 1067483421,
+        "runtime_value": {
+          "denominator_decimal": "8388608",
+          "numerator_decimal": "10518813"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 34,
+      "source_flat_index": 34
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "33554432",
+          "numerator_decimal": "-14815675"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "33554432",
+            "numerator_decimal": "14815675"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "4936513671963618126464907547672051514948207596900739590045827072",
+            "numerator_decimal": "7676784850359064084700528607176180852231183999927688263602341247"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "33554432",
+              "numerator_decimal": "14815675"
+            },
+            "lower": {
+              "denominator_decimal": "4936513671963618126464907547672051514948207596900739590045827072",
+              "numerator_decimal": "7676784850359064084700528607176180852231183999927688263602341247"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "4936513671963618126464907547672051514948207596900739590045827072",
+              "numerator_decimal": "7676785248333107305356790891629025608320937397848278412528122497"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "4936513671963618126464907547672051514948207596900739590045827072",
+            "numerator_decimal": "7676785248333107305356790891629025608320937397848278412528122497"
+          }
+        },
+        "input_word_unsigned": 3202486715,
+        "local_error": {
+          "denominator_decimal": "211616040458384946662365908203017059929745071712223140817071707892219904",
+          "numerator_decimal": "1370153847170970233665592118816961830256454997197780375028303777"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "12613298522322682211165436154848232367179391596828427853648168319",
+          "numerator_decimal": "-2179675763752149879509597096781615073345014023429523856215244800"
+        },
+        "output_upper": {
+          "denominator_decimal": "12613298920296725431821698439301077123269144994749018002573949569",
+          "numerator_decimal": "-2179675763752149879509597096781615073345014023429523856215244800"
+        },
+        "output_word_unsigned": 3190879364,
+        "runtime_value": {
+          "denominator_decimal": "16777216",
+          "numerator_decimal": "-2899233"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 35,
+      "source_flat_index": 35
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "33554432",
+          "numerator_decimal": "2971513"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "33554432",
+            "numerator_decimal": "-2971513"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "74047705079454271896973613215080772724223113953511093850687406080",
+            "numerator_decimal": "67772164688373012001381789679460453490479660548194433807981626193"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "33554432",
+              "numerator_decimal": "-2971513"
+            },
+            "lower": {
+              "denominator_decimal": "74047705079454271896973613215080772724223113953511093850687406080",
+              "numerator_decimal": "67772164688373012001381789679460453490479660548194433807981626193"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "518333935556179903278815292505565409069561797674577656954811842560",
+              "numerator_decimal": "474405152818720503221408991816018605853918963849134995337550768329"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "518333935556179903278815292505565409069561797674577656954811842560",
+            "numerator_decimal": "474405152818720503221408991816018605853918963849134995337550768329"
+          }
+        },
+        "input_word_unsigned": 1035296228,
+        "local_error": {
+          "denominator_decimal": "266486369876940689573473069864138055688295363326845060631069802771339280384",
+          "numerator_decimal": "262268429465931317189233906847450241081573679983885869520575041539"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "992739088374900406500224284321584014923480761523712652292362610889",
+          "numerator_decimal": "45902610655020201591603227444860046666876101079385795508347863040"
+        },
+        "output_upper": {
+          "denominator_decimal": "141819869767827283898355402894541226214702774501705527658669032273",
+          "numerator_decimal": "6557515807860028798800461063551435238125157297055113644049694720"
+        },
+        "output_word_unsigned": 1027433579,
+        "runtime_value": {
+          "denominator_decimal": "268435456",
+          "numerator_decimal": "12412011"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 36,
+      "source_flat_index": 36
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "33554432",
+          "numerator_decimal": "-12100503"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "33554432",
+            "numerator_decimal": "12100503"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "57592659506242211475423921389507267674395755297175295217201315840",
+            "numerator_decimal": "82600703810229654100030890450308049692643583311475742571497778623"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "33554432",
+              "numerator_decimal": "12100503"
+            },
+            "lower": {
+              "denominator_decimal": "57592659506242211475423921389507267674395755297175295217201315840",
+              "numerator_decimal": "82600703810229654100030890450308049692643583311475742571497778623"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "11518531901248442295084784277901453534879151059435059043440263168",
+              "numerator_decimal": "16520140945905983701614819783413599889991170992319063233504897549"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "11518531901248442295084784277901453534879151059435059043440263168",
+            "numerator_decimal": "16520140945905983701614819783413599889991170992319063233504897549"
+          }
+        },
+        "input_word_unsigned": 3199771543,
+        "local_error": {
+          "denominator_decimal": "1881643482840179161210578177804639581442356660207368353322883126015295488",
+          "numerator_decimal": "5213011636468796878265334597017927824719414486844902564100656237"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "140193363316471865575454811839815317367039338608651037788699094463",
+          "numerator_decimal": "-20769242916502428015619563670322205454582836036704050043273871360"
+        },
+        "output_upper": {
+          "denominator_decimal": "28038672847154425996699604061315053424870322051754122276945160717",
+          "numerator_decimal": "-4153848583300485603123912734064441090916567207340810008654774272"
+        },
+        "output_word_unsigned": 3189224417,
+        "runtime_value": {
+          "denominator_decimal": "67108864",
+          "numerator_decimal": "-9941985"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 37,
+      "source_flat_index": 37
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "2097152",
+          "numerator_decimal": "2318597"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "2097152",
+            "numerator_decimal": "-2318597"
+          },
+          "halvings": 1,
+          "lower": {
+            "denominator_decimal": "954507828329404833944918885238464374953378205349593248444133157479560972357619805399799943637928650990975991781785600",
+            "numerator_decimal": "315955406917478333367806890645272061636187982976243007581489291161553737460590836993634905910149271873613791830027281"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "4194304",
+              "numerator_decimal": "-2318597"
+            },
+            "lower": {
+              "denominator_decimal": "30895110103856319384504276067350233141753780703221419868160",
+              "numerator_decimal": "17775134511937689788656689296924134961234651998515649229591"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "4413587157693759912072039438192890448821968671888774266880",
+              "numerator_decimal": "2539307077991672220373267435648986932191901861937370378127"
+            }
+          },
+          "scale": 2,
+          "upper": {
+            "denominator_decimal": "19479751598559282325406507862009477039864861333665168335594554234276754537910608273465304972202625530428081464934400",
+            "numerator_decimal": "6448080436338604504499696954574275502857635642325519235272009686946912032541360268801672834624353214483954960028129"
+          }
+        },
+        "input_word_unsigned": 1066238996,
+        "local_error": {
+          "denominator_decimal": "21314836117795772224769739890769037083733455287839233247973169355300887967397440680933413452795605696730561551048644856119296",
+          "numerator_decimal": "6205373600344344633931107666250973051085282839768891840645661730500339575247255844747758317920276906959274791402941061"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "25927832034897886829906204816583752542722496975990687570866563921223666570451968542266977806826978744912036424962529",
+          "numerator_decimal": "21536680992681863938255573706308168142413877436471966890051139194455804939907037072673719269101186250197390747238400"
+        },
+        "output_upper": {
+          "denominator_decimal": "1270463235246883167312725775883736436589566188325836256025622448641114709818210642393434849548077922864589783611812881",
+          "numerator_decimal": "1055297368641411332974523111609100238978279994387126377612505820528334442055444816561012244185958126259672146614681600"
+        },
+        "output_word_unsigned": 1062511819,
+        "runtime_value": {
+          "denominator_decimal": "16777216",
+          "numerator_decimal": "13935819"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 38,
+      "source_flat_index": 38
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "16777216",
+          "numerator_decimal": "8000441"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "16777216",
+            "numerator_decimal": "-8000441"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "2024741935766327747182872236349864879177975772166318972479733760",
+            "numerator_decimal": "1256812291397792457348479983568174735653683165104249534507160887"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "16777216",
+              "numerator_decimal": "-8000441"
+            },
+            "lower": {
+              "denominator_decimal": "2024741935766327747182872236349864879177975772166318972479733760",
+              "numerator_decimal": "1256812291397792457348479983568174735653683165104249534507160887"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "404948387153265549436574447269972975835595154433263794495946752",
+              "numerator_decimal": "251362518704176739146256715478500721769707052219509578151014133"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "404948387153265549436574447269972975835595154433263794495946752",
+            "numerator_decimal": "251362518704176739146256715478500721769707052219509578151014133"
+          }
+        },
+        "input_word_unsigned": 1056188274,
+        "local_error": {
+          "denominator_decimal": "110110688169691024242773349931288905829175091257837556569033281323925504",
+          "numerator_decimal": "4046065602698131493924175365254105195563953189729662766913998535"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "656310905857442288582831162748473697605302206652773372646960885",
+          "numerator_decimal": "193105082480004965400689667909802786395973249252391780930813952"
+        },
+        "output_upper": {
+          "denominator_decimal": "3281554227164120204531352219918039614831658937270568506986894647",
+          "numerator_decimal": "965525412400024827003448339549013931979866246261958904654069760"
+        },
+        "output_word_unsigned": 1050060047,
+        "runtime_value": {
+          "denominator_decimal": "33554432",
+          "numerator_decimal": "9872655"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 39,
+      "source_flat_index": 39
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "134217728",
+          "numerator_decimal": "8588849"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "134217728",
+            "numerator_decimal": "-8588849"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "1617596800029038387680020905221177840418228665352434348866216614952960",
+            "numerator_decimal": "1517326158177532806352975855370994298234933037028192378831943292281691"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "134217728",
+              "numerator_decimal": "-8588849"
+            },
+            "lower": {
+              "denominator_decimal": "1617596800029038387680020905221177840418228665352434348866216614952960",
+              "numerator_decimal": "1517326158177532806352975855370994298234933037028192378831943292281691"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "11323177600203268713760146336548244882927600657467040442063516304670720",
+              "numerator_decimal": "10621283107242907321379883808297114489175713558574040738217355918887043"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "11323177600203268713760146336548244882927600657467040442063516304670720",
+            "numerator_decimal": "10621283107242907321379883808297114489175713558574040738217355918887043"
+          }
+        },
+        "input_word_unsigned": 1031999025,
+        "local_error": {
+          "denominator_decimal": "1472667829169349214862271503946327523133606707673567535340428535852115513311232",
+          "numerator_decimal": "1677319492316227416986433499967165465051854921000765367257404230611193"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "21944460707446176035140030144845359372103314216041081180280872223557763",
+          "numerator_decimal": "724591781261028679377661042679220859069286584699788189185982867701760"
+        },
+        "output_upper": {
+          "denominator_decimal": "3134922958206571194032996760592172138653161702380626727698159907234651",
+          "numerator_decimal": "103513111608718382768237291811317265581326654957112598455140409671680"
+        },
+        "output_word_unsigned": 1023885132,
+        "runtime_value": {
+          "denominator_decimal": "67108864",
+          "numerator_decimal": "2215891"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 40,
+      "source_flat_index": 40
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "524288",
+          "numerator_decimal": "-364725"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "524288",
+            "numerator_decimal": "364725"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "40922045845265281709703175316055924550366111203328",
+            "numerator_decimal": "82049700563655546992790480669086742213456227774803"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "524288",
+              "numerator_decimal": "364725"
+            },
+            "lower": {
+              "denominator_decimal": "40922045845265281709703175316055924550366111203328",
+              "numerator_decimal": "82049700563655546992790480669086742213456227774803"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "40922045845265281709703175316055924550366111203328",
+              "numerator_decimal": "82049825815536056057840825354517288238907887931053"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "40922045845265281709703175316055924550366111203328",
+            "numerator_decimal": "82049825815536056057840825354517288238907887931053"
+          }
+        },
+        "input_word_unsigned": 3207730848,
+        "local_error": {
+          "denominator_decimal": "4126247102799378140081471610184862622225336733322646126592",
+          "numerator_decimal": "921702994050239433120928264353761781734418000153627"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "122971746408920828702493655985142666763822338978131",
+          "numerator_decimal": "-28467737523869285338538151964470857775940475289600"
+        },
+        "output_upper": {
+          "denominator_decimal": "122971871660801337767544000670573212789273999134381",
+          "numerator_decimal": "-28467737523869285338538151964470857775940475289600"
+        },
+        "output_word_unsigned": 3194817998,
+        "runtime_value": {
+          "denominator_decimal": "33554432",
+          "numerator_decimal": "-7767783"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 41,
+      "source_flat_index": 41
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "8388608",
+          "numerator_decimal": "3673909"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "8388608",
+            "numerator_decimal": "-3673909"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "7909148186587217762433094673241659684288967860024683486248960",
+            "numerator_decimal": "5104160022515725441853399885630131303263700013586316780169111"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "8388608",
+              "numerator_decimal": "-3673909"
+            },
+            "lower": {
+              "denominator_decimal": "7909148186587217762433094673241659684288967860024683486248960",
+              "numerator_decimal": "5104160022515725441853399885630131303263700013586316780169111"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "7909148186587217762433094673241659684288967860024683486248960",
+              "numerator_decimal": "5104160619963110618940790856466909462738192101678052914960489"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "7909148186587217762433094673241659684288967860024683486248960",
+            "numerator_decimal": "5104160619963110618940790856466909462738192101678052914960489"
+          }
+        },
+        "input_word_unsigned": 1054883028,
+        "local_error": {
+          "denominator_decimal": "218327082698693244374046645097016753705024420291832451445753523470336",
+          "numerator_decimal": "6463470693350647742283299393596179227973992235053790108698699"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "13013308806550328381373885529708569147027159961702736401209449",
+          "numerator_decimal": "3463922823075826003833151867136310659533309653002670393262080"
+        },
+        "output_upper": {
+          "denominator_decimal": "13013308209102943204286494558871790987552667873611000266418071",
+          "numerator_decimal": "3463922823075826003833151867136310659533309653002670393262080"
+        },
+        "output_word_unsigned": 1049119014,
+        "runtime_value": {
+          "denominator_decimal": "16777216",
+          "numerator_decimal": "4465811"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 42,
+      "source_flat_index": 42
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "4194304",
+          "numerator_decimal": "4918365"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "4194304",
+            "numerator_decimal": "-4918365"
+          },
+          "halvings": 1,
+          "lower": {
+            "denominator_decimal": "30891172857973271702426767438512593223182515588044910187671462028928645868853813119348784743829773862392396344400543744",
+            "numerator_decimal": "9562395883657940987700700215877982290387347169109447918227954356823720437973898038412732281439259934583674504074797929"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "8388608",
+              "numerator_decimal": "-4918365"
+            },
+            "lower": {
+              "denominator_decimal": "175758848590827061387402103849814659650865952444992966361088",
+              "numerator_decimal": "97787503719329807768306180555043212162602141128716037851923"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "175758848590827061387402103849814659650865952444992966361088",
+              "numerator_decimal": "97787640689512116179821998850472161282272041834135988008173"
+            }
+          },
+          "scale": 2,
+          "upper": {
+            "denominator_decimal": "30891172857973271702426767438512593223182515588044910187671462028928645868853813119348784743829773862392396344400543744",
+            "numerator_decimal": "9562422671621125660688176134117120968798719938127408411782027210418764879600998558882171252725881272556930859914797929"
+          }
+        },
+        "input_word_unsigned": 1066801338,
+        "local_error": {
+          "denominator_decimal": "84837282593649380955526199046340504219434064820891776410503172872213346505096348109921880952577004765395960932021759740215296",
+          "numerator_decimal": "43574699691920603854930065366948070949195829469193328873229062780276750663224724587485363924405653568322208067069494367"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "40453595529594397363114943572629714191981235526172318599453489239347410748454811678230955996555655134949327204315341673",
+          "numerator_decimal": "36223903511430194491554791458301541940722006149338365720555007539251241526309295788465949458262044363666910754782576640"
+        },
+        "output_upper": {
+          "denominator_decimal": "40453568741631212690127467654390575513569862757154358105899416385752366306827711157761517025269033796976070848475341673",
+          "numerator_decimal": "36223903511430194491554791458301541940722006149338365720555007539251241526309295788465949458262044363666910754782576640"
+        },
+        "output_word_unsigned": 1063599048,
+        "runtime_value": {
+          "denominator_decimal": "2097152",
+          "numerator_decimal": "1877881"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 43,
+      "source_flat_index": 43
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "33554432",
+          "numerator_decimal": "12361741"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "33554432",
+            "numerator_decimal": "-12361741"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "74047705079454271896973613215080772724223113953511093850687406080",
+            "numerator_decimal": "51228751788933687450252438100675524045620590799163485339826177713"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "33554432",
+              "numerator_decimal": "-12361741"
+            },
+            "lower": {
+              "denominator_decimal": "74047705079454271896973613215080772724223113953511093850687406080",
+              "numerator_decimal": "51228751788933687450252438100675524045620590799163485339826177713"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "74047705079454271896973613215080772724223113953511093850687406080",
+              "numerator_decimal": "51228753191138928638941085926394738385541115406278141312221919567"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "74047705079454271896973613215080772724223113953511093850687406080",
+            "numerator_decimal": "51228753191138928638941085926394738385541115406278141312221919567"
+          }
+        },
+        "input_word_unsigned": 1052549133,
+        "local_error": {
+          "denominator_decimal": "8407160800482914294089426660286196834395656740170902851211699779176235008",
+          "numerator_decimal": "21318081015728011994185912026141696333504662759928876137022835239"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "125276458270593200535914699141475511109764229359789235162909325647",
+          "numerator_decimal": "27279810662168208674608662438363009884855465916001504147317719040"
+        },
+        "output_upper": {
+          "denominator_decimal": "125276456868387959347226051315756296769843704752674579190513583793",
+          "numerator_decimal": "27279810662168208674608662438363009884855465916001504147317719040"
+        },
+        "output_word_unsigned": 1046412201,
+        "runtime_value": {
+          "denominator_decimal": "67108864",
+          "numerator_decimal": "14613417"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 44,
+      "source_flat_index": 44
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "33554432",
+          "numerator_decimal": "-7021861"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "33554432",
+            "numerator_decimal": "7021861"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "1645504557321206042154969182557350504982735865633579863348609024",
+            "numerator_decimal": "2028536960466507788609808213359337560906294622097350207947905237"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "33554432",
+              "numerator_decimal": "7021861"
+            },
+            "lower": {
+              "denominator_decimal": "1645504557321206042154969182557350504982735865633579863348609024",
+              "numerator_decimal": "2028536960466507788609808213359337560906294622097350207947905237"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "8227522786606030210774845912786752524913679328167899316743045120",
+              "numerator_decimal": "10142684804021228358893542746174662720897355733989545064964948951"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "8227522786606030210774845912786752524913679328167899316743045120",
+            "numerator_decimal": "10142684804021228358893542746174662720897355733989545064964948951"
+          }
+        },
+        "input_word_unsigned": 3193326154,
+        "local_error": {
+          "denominator_decimal": "493121505095138536679424924505694349488339972185977309496296158431019008",
+          "numerator_decimal": "4013885144151148604094580434819847941889979325966219293380162185"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "3674041517787713830764777395916688065889030487730930071296514261",
+          "numerator_decimal": "-344351061474562918554912032461206310220616419559528670693425152"
+        },
+        "output_upper": {
+          "denominator_decimal": "18370207590627258569668388658961415245811035062157444381707994071",
+          "numerator_decimal": "-1721755307372814592774560162306031551103082097797643353467125760"
+        },
+        "output_word_unsigned": 3183473435,
+        "runtime_value": {
+          "denominator_decimal": "134217728",
+          "numerator_decimal": "-12579611"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 45,
+      "source_flat_index": 45
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "67108864",
+          "numerator_decimal": "-6976173"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "67108864",
+            "numerator_decimal": "6976173"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "14743720833598006137708523875713860524645313356076875575603536855040",
+            "numerator_decimal": "16358871741476102110301859763845493594637022188395169156943529555679"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "67108864",
+              "numerator_decimal": "6976173"
+            },
+            "lower": {
+              "denominator_decimal": "14743720833598006137708523875713860524645313356076875575603536855040",
+              "numerator_decimal": "16358871741476102110301859763845493594637022188395169156943529555679"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "14743720833598006137708523875713860524645313356076875575603536855040",
+              "numerator_decimal": "16358871741487321466375253819415747604110664862518707734954393291041"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "14743720833598006137708523875713860524645313356076875575603536855040",
+            "numerator_decimal": "16358871741487321466375253819415747604110664862518707734954393291041"
+          }
+        },
+        "input_word_unsigned": 3184846170,
+        "local_error": {
+          "denominator_decimal": "2087259655168811038577904081948686334285979431458693271388901898294849961984",
+          "numerator_decimal": "2419887095933935966601076163213201241314759997509548005141877747111"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "31102592575074108248010383639559354119282335544472044732547066410719",
+          "numerator_decimal": "-1532655167563019741650171371275341354575700605082554896397662945280"
+        },
+        "output_upper": {
+          "denominator_decimal": "31102592575085327604083777695129608128755978218595583310557930146081",
+          "numerator_decimal": "-1532655167563019741650171371275341354575700605082554896397662945280"
+        },
+        "output_word_unsigned": 3175733020,
+        "runtime_value": {
+          "denominator_decimal": "67108864",
+          "numerator_decimal": "-3306951"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 46,
+      "source_flat_index": 46
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "16777216",
+          "numerator_decimal": "-3308421"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "16777216",
+            "numerator_decimal": "3308421"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "32138760885179805510839241846823252050444059875655856706027520",
+            "numerator_decimal": "39144505363495180522711853338352829911049960720559645483236137"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "16777216",
+              "numerator_decimal": "3308421"
+            },
+            "lower": {
+              "denominator_decimal": "32138760885179805510839241846823252050444059875655856706027520",
+              "numerator_decimal": "39144505363495180522711853338352829911049960720559645483236137"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "224971326196258638575874692927762764353108419129590996942192640",
+              "numerator_decimal": "274011537573173814737321639678333962806700715378965628255642081"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "224971326196258638575874692927762764353108419129590996942192640",
+            "numerator_decimal": "274011537573173814737321639678333962806700715378965628255642081"
+          }
+        },
+        "input_word_unsigned": 3192516116,
+        "local_error": {
+          "denominator_decimal": "66972346286066739733163284180322621667625474947384866793400926772133888",
+          "numerator_decimal": "59225275023588792280714737989428082595156300727563513837856113"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "71283266248674986033551095185176081961494020596215502189263657",
+          "numerator_decimal": "-6337675537258831103323476037389566324471365631692244118405120"
+        },
+        "output_upper": {
+          "denominator_decimal": "498982863769432453313196332606096727159809134508556625197834721",
+          "numerator_decimal": "-44363728760811817723264332261726964271299559421845708828835840"
+        },
+        "output_word_unsigned": 3182826897,
+        "runtime_value": {
+          "denominator_decimal": "134217728",
+          "numerator_decimal": "-11933073"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 47,
+      "source_flat_index": 47
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "536870912",
+          "numerator_decimal": "15232513"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "536870912",
+            "numerator_decimal": "-15232513"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "2226227301620764255274954850936077329942629710063279887233223813628700917760",
+            "numerator_decimal": "2163950731354774968337058425283953708560967839695449054687015982184596049911"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "536870912",
+              "numerator_decimal": "-15232513"
+            },
+            "lower": {
+              "denominator_decimal": "2226227301620764255274954850936077329942629710063279887233223813628700917760",
+              "numerator_decimal": "2163950731354774968337058425283953708560967839695449054687015982184596049911"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "318032471660109179324993550133725332848947101437611412461889116232671559680",
+              "numerator_decimal": "309135818764967860072850984382551772288526129381704461833593540956499766127"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "318032471660109179324993550133725332848947101437611412461889116232671559680",
+            "numerator_decimal": "309135818764967860072850984382551772288526129381704461833593540956499766127"
+          }
+        },
+        "input_word_unsigned": 1021865473,
+        "local_error": {
+          "denominator_decimal": "673416824115983955623561452159938336559750277611105241298186263290667532420506451968",
+          "numerator_decimal": "143313322864327674336360171130385205473401198421881897374328670704550987871"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "627168290425077039397844534516277105137473230819315874295482657189171325807",
+          "numerator_decimal": "9023461041943625836609481791645517332574191985578713061798527776399032320"
+        },
+        "output_upper": {
+          "denominator_decimal": "4390178032975539223612013276220031038503597549758728941920239795813296967671",
+          "numerator_decimal": "63164227293605380856266372541518621328019343899050991432589694434793226240"
+        },
+        "output_word_unsigned": 1013692945,
+        "runtime_value": {
+          "denominator_decimal": "1073741824",
+          "numerator_decimal": "15448593"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 48,
+      "source_flat_index": 48
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "524288",
+          "numerator_decimal": "-88121"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "524288",
+            "numerator_decimal": "88121"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "1841492063036937676936642889222516604766475004149760",
+            "numerator_decimal": "2178537141799540996305497926941360338201500760617271"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "524288",
+              "numerator_decimal": "88121"
+            },
+            "lower": {
+              "denominator_decimal": "1841492063036937676936642889222516604766475004149760",
+              "numerator_decimal": "2178537141799540996305497926941360338201500760617271"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "1841492063036937676936642889222516604766475004149760",
+              "numerator_decimal": "2178537141864990723437187142004226617622202830868169"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "1841492063036937676936642889222516604766475004149760",
+            "numerator_decimal": "2178537141864990723437187142004226617622202830868169"
+          }
+        },
+        "input_word_unsigned": 3190561920,
+        "local_error": {
+          "denominator_decimal": "67444898296947911589606227181177816018550883992508158705664",
+          "numerator_decimal": "317921847942034200539768688545623965473536742306805"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "4020029204836478673242140816163876942967975764767031",
+          "numerator_decimal": "-309513324903255434092204872209887286622288787537920"
+        },
+        "output_upper": {
+          "denominator_decimal": "4020029204901928400373830031226743222388677835017929",
+          "numerator_decimal": "-309513324903255434092204872209887286622288787537920"
+        },
+        "output_word_unsigned": 3181227624,
+        "runtime_value": {
+          "denominator_decimal": "16777216",
+          "numerator_decimal": "-1291725"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 49,
+      "source_flat_index": 49
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "1048576",
+          "numerator_decimal": "1118823"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "1048576",
+            "numerator_decimal": "-1118823"
+          },
+          "halvings": 1,
+          "lower": {
+            "denominator_decimal": "179810291493621606510288358191683616158450695150793240101026965007934753485337208952689454563833853825882521600",
+            "numerator_decimal": "61862145586300441696601819023166097283971463271926587551318367047788758286192322778469682079603901950520690561"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "2097152",
+              "numerator_decimal": "-1118823"
+            },
+            "lower": {
+              "denominator_decimal": "13409335982576527510635536487565205356663967319106519040",
+              "numerator_decimal": "7865249238663733642521938137909435777078447091364217919"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "13409335982576527510635536487565205356663967319106519040",
+              "numerator_decimal": "7865254149111338605307344581954638977118770751196806081"
+            }
+          },
+          "scale": 2,
+          "upper": {
+            "denominator_decimal": "179810291493621606510288358191683616158450695150793240101026965007934753485337208952689454563833853825882521600",
+            "numerator_decimal": "61862222830113127055687327071814574148273791479299984992542479021185762142860581579006291887122206295518578561"
+          }
+        },
+        "input_word_unsigned": 1065915192,
+        "local_error": {
+          "denominator_decimal": "4054590678136261465929409191411812049961620115044189856006170542490597393269493604232510765840470211215964393518923776",
+          "numerator_decimal": "1038880583819409382185115047833684243045995346207315549558912196972734176290173276972503043625074427037345176451"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "241672514323734733565975685263498190306724486630093225093569444029120515628197790531695746450956060121401100161",
+          "numerator_decimal": "191856279144066054020557739045232809525724680042930550832320491858551583002782280094218133567306789244685516800"
+        },
+        "output_upper": {
+          "denominator_decimal": "241672437079922048206890177214849713442422158422719827652345332055723511771529531731159136643437755776403212161",
+          "numerator_decimal": "191856279144066054020557739045232809525724680042930550832320491858551583002782280094218133567306789244685516800"
+        },
+        "output_word_unsigned": 1061894909,
+        "runtime_value": {
+          "denominator_decimal": "16777216",
+          "numerator_decimal": "13318909"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 50,
+      "source_flat_index": 50
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "134217728",
+          "numerator_decimal": "790257"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "134217728",
+            "numerator_decimal": "-790257"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "3774392533401089571253382112182748294309200219155680147354505434890240",
+            "numerator_decimal": "3752234683057205541556188321136649964730490589409400616840692185787519"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "134217728",
+              "numerator_decimal": "-790257"
+            },
+            "lower": {
+              "denominator_decimal": "3774392533401089571253382112182748294309200219155680147354505434890240",
+              "numerator_decimal": "3752234683057205541556188321136649964730490589409400616840692185787519"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "3774392533401089571253382112182748294309200219155680147354505434890240",
+              "numerator_decimal": "3752234683057205541556492533463072289256186531863094869517417251509121"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "3774392533401089571253382112182748294309200219155680147354505434890240",
+            "numerator_decimal": "3752234683057205541556492533463072289256186531863094869517417251509121"
+          }
+        },
+        "input_word_unsigned": 1002499856,
+        "local_error": {
+          "denominator_decimal": "32326617743871890457433735686915364244974808388738818569817061541067988259569664",
+          "numerator_decimal": "2696549081067518533739452016480809882963023271965838434427704215605495"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "7526627216458295112809874645645820583565386751018775016871922686399361",
+          "numerator_decimal": "22223145665734595368131875901126877358674299997011649058818291138560"
+        },
+        "output_upper": {
+          "denominator_decimal": "7526627216458295112809570433319398259039690808565080764195197620677759",
+          "numerator_decimal": "22223145665734595368131875901126877358674299997011649058818291138560"
+        },
+        "output_word_unsigned": 994148471,
+        "runtime_value": {
+          "denominator_decimal": "4294967296",
+          "numerator_decimal": "12681335"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 51,
+      "source_flat_index": 51
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "4194304",
+          "numerator_decimal": "-1419819"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "4194304",
+            "numerator_decimal": "1419819"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "3432790011539591042722697340816692571305975633691268874240",
+            "numerator_decimal": "4815715185064403177400412651328073930209345893538098807199"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "4194304",
+              "numerator_decimal": "1419819"
+            },
+            "lower": {
+              "denominator_decimal": "3432790011539591042722697340816692571305975633691268874240",
+              "numerator_decimal": "4815715185064403177400412651328073930209345893538098807199"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "3432790011539591042722697340816692571305975633691268874240",
+              "numerator_decimal": "4815715218093284495286018587784593703534545908022407888481"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "3432790011539591042722697340816692571305975633691268874240",
+            "numerator_decimal": "4815715218093284495286018587784593703534545908022407888481"
+          }
+        },
+        "input_word_unsigned": 3199029592,
+        "local_error": {
+          "denominator_decimal": "553547813442190709975027851719884203461947506287107932539685175296",
+          "numerator_decimal": "5127057017867129391794791222185459606963333989286109362843"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "8248505196603994220123109992144766501515321527229367681439",
+          "numerator_decimal": "-1162037964199574140235781053481344134783525232851959152640"
+        },
+        "output_upper": {
+          "denominator_decimal": "8248505229632875538008715928601286274840521541713676762721",
+          "numerator_decimal": "-1162037964199574140235781053481344134783525232851959152640"
+        },
+        "output_word_unsigned": 3188736635,
+        "runtime_value": {
+          "denominator_decimal": "67108864",
+          "numerator_decimal": "-9454203"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 52,
+      "source_flat_index": 52
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "16777216",
+          "numerator_decimal": "-11309681"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "16777216",
+            "numerator_decimal": "11309681"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "674913978588775915727624078783288293059325257388772990826577920",
+            "numerator_decimal": "1324371880516923619644504366320777919804900870376626640007704957"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "16777216",
+              "numerator_decimal": "11309681"
+            },
+            "lower": {
+              "denominator_decimal": "674913978588775915727624078783288293059325257388772990826577920",
+              "numerator_decimal": "1324371880516923619644504366320777919804900870376626640007704957"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "674913978588775915727624078783288293059325257388772990826577920",
+              "numerator_decimal": "1324373486548551810102408274092456304664210061960825259554524803"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "674913978588775915727624078783288293059325257388772990826577920",
+            "numerator_decimal": "1324373486548551810102408274092456304664210061960825259554524803"
+          }
+        },
+        "input_word_unsigned": 3207369329,
+        "local_error": {
+          "denominator_decimal": "134169802815847551744151357213020245326100401673454827731308096130121728",
+          "numerator_decimal": "23250206010824543986138075755968082065460372056817396335202881575"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "1999285859105699535372128445104066212864226127765399630834282877",
+          "numerator_decimal": "-454965937154286252699036074814668817850082083720559806088478720"
+        },
+        "output_upper": {
+          "denominator_decimal": "1999287465137327725830032352875744597723535319349598250381102723",
+          "numerator_decimal": "-454965937154286252699036074814668817850082083720559806088478720"
+        },
+        "output_word_unsigned": 3194553997,
+        "runtime_value": {
+          "denominator_decimal": "67108864",
+          "numerator_decimal": "-15271565"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 53,
+      "source_flat_index": 53
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "16777216",
+          "numerator_decimal": "-6900713"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "16777216",
+            "numerator_decimal": "6900713"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "44994265239251727715174938585552552870621683825918199388438528",
+            "numerator_decimal": "67887339579678103544596026699338453655525717357679914655230451"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "16777216",
+              "numerator_decimal": "6900713"
+            },
+            "lower": {
+              "denominator_decimal": "44994265239251727715174938585552552870621683825918199388438528",
+              "numerator_decimal": "67887339579678103544596026699338453655525717357679914655230451"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "224971326196258638575874692927762764353108419129590996942192640",
+              "numerator_decimal": "339436708182855879007299025648194142167517811881036412134764097"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "224971326196258638575874692927762764353108419129590996942192640",
+            "numerator_decimal": "339436708182855879007299025648194142167517811881036412134764097"
+          }
+        },
+        "input_word_unsigned": 3201472466,
+        "local_error": {
+          "denominator_decimal": "37876782019655320600914813768288165709553418931724777350417855197216768",
+          "numerator_decimal": "73518166342414479183087967480192595379024261034656830806197101"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "112881604818929831259770965284891006526147401183598114043668979",
+          "numerator_decimal": "-18506795827266723377500056980343110190480135182106700864815104"
+        },
+        "output_upper": {
+          "denominator_decimal": "564408034379114517583173718575956906520626231010627409076956737",
+          "numerator_decimal": "-92533979136333616887500284901715550952400675910533504324075520"
+        },
+        "output_word_unsigned": 3190284845,
+        "runtime_value": {
+          "denominator_decimal": "67108864",
+          "numerator_decimal": "-11002413"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 54,
+      "source_flat_index": 54
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "4194304",
+          "numerator_decimal": "2528247"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "4194304",
+            "numerator_decimal": "-2528247"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "3432790011539591042722697340816692571305975633691268874240",
+            "numerator_decimal": "1878719934597080880223176586596122864147751216170564241599"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "4194304",
+              "numerator_decimal": "-2528247"
+            },
+            "lower": {
+              "denominator_decimal": "3432790011539591042722697340816692571305975633691268874240",
+              "numerator_decimal": "1878719934597080880223176586596122864147751216170564241599"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "490398573077084434674671048688098938757996519098752696320",
+              "numerator_decimal": "268389039051888538023849484546900311978274926324974890103"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "490398573077084434674671048688098938757996519098752696320",
+            "numerator_decimal": "268389039051888538023849484546900311978274926324974890103"
+          }
+        },
+        "input_word_unsigned": 1058688988,
+        "local_error": {
+          "denominator_decimal": "178224699304966620744796566377946251457482466730263088680767848448",
+          "numerator_decimal": "38702105152727071542299992154145613427991003448385821245013"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "758787612128972972698520533234999250736271445423727586423",
+          "numerator_decimal": "295602970406155464819176925380835551647684198718515445760"
+        },
+        "output_upper": {
+          "denominator_decimal": "5311509946136671922945873927412815435453726849861833115839",
+          "numerator_decimal": "2069220792843088253734238477665848861533789391029608120320"
+        },
+        "output_word_unsigned": 1053259285,
+        "runtime_value": {
+          "denominator_decimal": "33554432",
+          "numerator_decimal": "13071893"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 55,
+      "source_flat_index": 55
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "16777216",
+          "numerator_decimal": "-4299411"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "16777216",
+            "numerator_decimal": "4299411"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "32138760885179805510839241846823252050444059875655856706027520",
+            "numerator_decimal": "41526329445412191057518170889426537020832728144325738110372457"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "16777216",
+              "numerator_decimal": "4299411"
+            },
+            "lower": {
+              "denominator_decimal": "32138760885179805510839241846823252050444059875655856706027520",
+              "numerator_decimal": "41526329445412191057518170889426537020832728144325738110372457"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "224971326196258638575874692927762764353108419129590996942192640",
+              "numerator_decimal": "290684306351393303870662888877385181739317960157337951807043361"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "224971326196258638575874692927762764353108419129590996942192640",
+            "numerator_decimal": "290684306351393303870662888877385181739317960157337951807043361"
+          }
+        },
+        "input_word_unsigned": 3196269862,
+        "local_error": {
+          "denominator_decimal": "69210127430948695449961035696501096028391946635157863598550897790025728",
+          "numerator_decimal": "132873799486992802917747595055711011005285249202415688939289729"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "73665090330591996568357412736249789071276788019981594816399977",
+          "numerator_decimal": "-8236035232312190103004148937934172446814283485058154018897920"
+        },
+        "output_upper": {
+          "denominator_decimal": "515655632547651942446537581805147946092426379286928948749236001",
+          "numerator_decimal": "-57652246626185330721029042565539207127699984395407078132285440"
+        },
+        "output_word_unsigned": 3185899873,
+        "runtime_value": {
+          "denominator_decimal": "134217728",
+          "numerator_decimal": "-15006049"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 56,
+      "source_flat_index": 56
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "33554432",
+          "numerator_decimal": "-8508031"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "33554432",
+            "numerator_decimal": "8508031"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "1645504557321206042154969182557350504982735865633579863348609024",
+            "numerator_decimal": "2120402949203486421188535937083807509168740151585697315887295605"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "33554432",
+              "numerator_decimal": "8508031"
+            },
+            "lower": {
+              "denominator_decimal": "1645504557321206042154969182557350504982735865633579863348609024",
+              "numerator_decimal": "2120402949203486421188535937083807509168740151585697315887295605"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "8227522786606030210774845912786752524913679328167899316743045120",
+              "numerator_decimal": "10602014753861917608822012327050120752124737213922782504034804151"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "8227522786606030210774845912786752524913679328167899316743045120",
+            "numerator_decimal": "10602014753861917608822012327050120752124737213922782504034804151"
+          }
+        },
+        "input_word_unsigned": 3196179071,
+        "local_error": {
+          "denominator_decimal": "505451549383889398328688540714604403948402958877660260799291895329062912",
+          "numerator_decimal": "2677069038080286138027090622048992999533102251463909952071567323"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "3765907506524692463343505119641158014151476017219277179235904629",
+          "numerator_decimal": "-417232626209559975982957619704085510202013588238428000162414592"
+        },
+        "output_upper": {
+          "denominator_decimal": "18829537540467947819596858239836873277038416542090681820777849271",
+          "numerator_decimal": "-2086163131047799879914788098520427551010067941192140000812072960"
+        },
+        "output_word_unsigned": 3185764081,
+        "runtime_value": {
+          "denominator_decimal": "134217728",
+          "numerator_decimal": "-14870257"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 57,
+      "source_flat_index": 57
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "8388608",
+          "numerator_decimal": "-4728005"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "8388608",
+            "numerator_decimal": "4728005"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "225975662473920507498088419235475990979684796000705242464256",
+            "numerator_decimal": "397044794709461008864486713365045587020813896555497336841341"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "8388608",
+              "numerator_decimal": "4728005"
+            },
+            "lower": {
+              "denominator_decimal": "225975662473920507498088419235475990979684796000705242464256",
+              "numerator_decimal": "397044794709461008864486713365045587020813896555497336841341"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "1581829637317443552486618934648331936857793572004936697249792",
+              "numerator_decimal": "2779314461896317311335922854098600289526637305183919359295637"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "1581829637317443552486618934648331936857793572004936697249792",
+            "numerator_decimal": "2779314461896317311335922854098600289526637305183919359295637"
+          }
+        },
+        "input_word_unsigned": 3205515658,
+        "local_error": {
+          "denominator_decimal": "41810195130337373241689829263470368907100858690932011251068523511808",
+          "numerator_decimal": "2014293136885603890024858100295551273273838781059499915737287"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "623020457183381516362575132600521578000498692556202579305597",
+          "numerator_decimal": "-127364881283641878253638689111164410439956738223470972764160"
+        },
+        "output_upper": {
+          "denominator_decimal": "4361144099213760863822541788746932226384430877188856056545429",
+          "numerator_decimal": "-891554168985493147775470823778150873079697167564296809349120"
+        },
+        "output_word_unsigned": 3193001581,
+        "runtime_value": {
+          "denominator_decimal": "67108864",
+          "numerator_decimal": "-13719149"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 58,
+      "source_flat_index": 58
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "33554432",
+          "numerator_decimal": "6071885"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "33554432",
+            "numerator_decimal": "-6071885"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "34555595703745326885254352833704360604637453178305177130320789504",
+            "numerator_decimal": "28835671727128633475633205597881252679019556969444356333903169209"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "33554432",
+              "numerator_decimal": "-6071885"
+            },
+            "lower": {
+              "denominator_decimal": "34555595703745326885254352833704360604637453178305177130320789504",
+              "numerator_decimal": "28835671727128633475633205597881252679019556969444356333903169209"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "4936513671963618126464907547672051514948207596900739590045827072",
+              "numerator_decimal": "4119381675620807592247610808546232372680165080268348767179091137"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "4936513671963618126464907547672051514948207596900739590045827072",
+            "numerator_decimal": "4119381675620807592247610808546232372680165080268348767179091137"
+          }
+        },
+        "input_word_unsigned": 1043942554,
+        "local_error": {
+          "denominator_decimal": "8508231889612300014000388156154664452419063433303886694628109021624664064",
+          "numerator_decimal": "16163266344743789930803652626479020684975810184222754752482331409"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "9055895347584425718712518356218283887628372677169088357224918209",
+          "numerator_decimal": "893293121966445846790384506139061287428179308310379004648488960"
+        },
+        "output_upper": {
+          "denominator_decimal": "63391267430873960360887558431585613283657010147749533464223958713",
+          "numerator_decimal": "6253051853765120927532691542973429011997255158172653032539422720"
+        },
+        "output_word_unsigned": 1036649703,
+        "runtime_value": {
+          "denominator_decimal": "134217728",
+          "numerator_decimal": "13239527"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 59,
+      "source_flat_index": 59
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "4194304",
+          "numerator_decimal": "-4328877"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "4194304",
+            "numerator_decimal": "4328877"
+          },
+          "halvings": 1,
+          "lower": {
+            "denominator_decimal": "15760802478557791684911616040057445522031895708186178667179317361698288708598884244565706501953966256322651196122726400",
+            "numerator_decimal": "44239160450234496679984944270386123903188880714215308586232875441355503829092825935590540355869330975529404148297937681"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "8388608",
+              "numerator_decimal": "4328877"
+            },
+            "lower": {
+              "denominator_decimal": "125542034707733615276715788464153328322047108889280690257920",
+              "numerator_decimal": "210331073430043846861959464369189237325296570555319511983209"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "25108406941546723055343157692830665664409421777856138051584",
+              "numerator_decimal": "42066221732354034590113144397120320143053798087832271891435"
+            }
+          },
+          "scale": 2,
+          "upper": {
+            "denominator_decimal": "630432099142311667396464641602297820881275828327447146687172694467931548343955369782628260078158650252906047844909056",
+            "numerator_decimal": "1769567010835574874961119874844990281001557441034649227437848476449784986790138030341629088191348825870962792426359225"
+          }
+        },
+        "input_word_unsigned": 3213106010,
+        "local_error": {
+          "denominator_decimal": "125829042256042605129019551248167352507240601715792123796467886961309867128005245387735033410377843436373001569662484518797312",
+          "numerator_decimal": "8752506409286498807007013633684982034759944452689757831622237952448739395834502696000279765035229969344611989078553445"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "59999962928792288364896560310443569425220776422401487253412192803053792537691710180156246857823297231852055344420664081",
+          "numerator_decimal": "-16266483152144388579274449755820215844887940072432961595116424990357495052817681367865291086449379822199637732963123200"
+        },
+        "output_upper": {
+          "denominator_decimal": "2399999109977886542357584516447288101882833269362096374125021170917716535134093400124257348269507476123868840271268281",
+          "numerator_decimal": "-650659326085775543170977990232808633795517602897318463804656999614299802112707254714611643457975192887985509318524928"
+        },
+        "output_word_unsigned": 3196767920,
+        "runtime_value": {
+          "denominator_decimal": "2097152",
+          "numerator_decimal": "-568555"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 60,
+      "source_flat_index": 60
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "8388608",
+          "numerator_decimal": "6980545"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "8388608",
+            "numerator_decimal": "-6980545"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "225975662473920507498088419235475990979684796000705242464256",
+            "numerator_decimal": "98322683909862959958320908565290871430999427229247331891741"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "8388608",
+              "numerator_decimal": "-6980545"
+            },
+            "lower": {
+              "denominator_decimal": "225975662473920507498088419235475990979684796000705242464256",
+              "numerator_decimal": "98322683909862959958320908565290871430999427229247331891741"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "1581829637317443552486618934648331936857793572004936697249792",
+              "numerator_decimal": "688279083681943398520875150048376340274179809195144649648437"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "1581829637317443552486618934648331936857793572004936697249792",
+            "numerator_decimal": "688279083681943398520875150048376340274179809195144649648437"
+          }
+        },
+        "input_word_unsigned": 1062537090,
+        "local_error": {
+          "denominator_decimal": "2720411702861777065372574938464135308153164960460566004863311282176",
+          "numerator_decimal": "12721263613113608120643868412253700887442033260969974921823829"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "2270108720999386951007494084696708277131973381200081346898229",
+          "numerator_decimal": "1316312905028831243883693858523933918496726349603080849326080"
+        },
+        "output_upper": {
+          "denominator_decimal": "324298346383783467456409327800766862410684223229952574355997",
+          "numerator_decimal": "188044700718404463411956265503419131213818049943297264189440"
+        },
+        "output_word_unsigned": 1058304206,
+        "runtime_value": {
+          "denominator_decimal": "8388608",
+          "numerator_decimal": "4864103"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 61,
+      "source_flat_index": 61
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "134217728",
+          "numerator_decimal": "4462849"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "134217728",
+            "numerator_decimal": "-4462849"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "33969532800609806141280439009644734648782801972401121326190548914012160",
+            "numerator_decimal": "32858590336520014878917184562636726824065848331686112950910205533419511"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "134217728",
+              "numerator_decimal": "-4462849"
+            },
+            "lower": {
+              "denominator_decimal": "33969532800609806141280439009644734648782801972401121326190548914012160",
+              "numerator_decimal": "32858590336520014878917184562636726824065848331686112950910205533419511"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "33969532800609806141280439009644734648782801972401121326190548914012160",
+              "numerator_decimal": "32858590336520017711418024843686696137450388693330175065491584229509129"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "33969532800609806141280439009644734648782801972401121326190548914012160",
+            "numerator_decimal": "32858590336520017711418024843686696137450388693330175065491584229509129"
+          }
+        },
+        "input_word_unsigned": 1023947266,
+        "local_error": {
+          "denominator_decimal": "17939037707939594797098788974968539742234945058690524120372348017433850658422784",
+          "numerator_decimal": "9990623013427208653835146992637769291145402111430684783614648177035591"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "66828123137129823852698463853331430786233190665731296391682133143521289",
+          "numerator_decimal": "1129514690411602502523416772140219765771818749604585557501525916385280"
+        },
+        "output_upper": {
+          "denominator_decimal": "66828123137129821020197623572281461472848650304087234277100754447431671",
+          "numerator_decimal": "1129514690411602502523416772140219765771818749604585557501525916385280"
+        },
+        "output_word_unsigned": 1015707038,
+        "runtime_value": {
+          "denominator_decimal": "268435456",
+          "numerator_decimal": "4537039"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 62,
+      "source_flat_index": 62
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "16777216",
+          "numerator_decimal": "9014361"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "16777216",
+            "numerator_decimal": "-9014361"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "224971326196258638575874692927762764353108419129590996942192640",
+            "numerator_decimal": "131456310897785242540014743165140226070685253088746607630917183"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "16777216",
+              "numerator_decimal": "-9014361"
+            },
+            "lower": {
+              "denominator_decimal": "224971326196258638575874692927762764353108419129590996942192640",
+              "numerator_decimal": "131456310897785242540014743165140226070685253088746607630917183"
+            },
+            "terms": 8,
+            "upper": {
+              "denominator_decimal": "44994265239251727715174938585552552870621683825918199388438528",
+              "numerator_decimal": "26291279619279230066210498442142476849001136608552873095271309"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "44994265239251727715174938585552552870621683825918199388438528",
+            "numerator_decimal": "26291279619279230066210498442142476849001136608552873095271309"
+          }
+        },
+        "input_word_unsigned": 1057590361,
+        "local_error": {
+          "denominator_decimal": "5979863455896386506959598101448829537385917978240249152845651292192768",
+          "numerator_decimal": "362938020148360405278156796756271754700860335848307919885712949"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "71285544858530957781385437027695029719622820434471072483709837",
+          "numerator_decimal": "24175319063446905821460013065516954424820551421325672015986688"
+        },
+        "output_upper": {
+          "denominator_decimal": "356427637094043881115889436092902990423793672218337604573109823",
+          "numerator_decimal": "120876595317234529107300065327584772124102757106628360079933440"
+        },
+        "output_word_unsigned": 1051566826,
+        "runtime_value": {
+          "denominator_decimal": "16777216",
+          "numerator_decimal": "5689717"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 63,
+      "source_flat_index": 63
+    }
+  ],
+  "schema": "tgad.rational-activation-invocation-replay-batch.v1",
+  "shape": [
+    1,
+    64
+  ],
+  "site_index": 2,
+  "slice_count": 64,
+  "slice_start": 0,
+  "slice_stop_exclusive": 64,
+  "source_binding": {
+    "artifact_lineage": {
+      "artifact_origin": "imported_generation9_legacy_campaign",
+      "artifact_preregistration_sha256": "48a080735e4e393dc3281eb043dba8627f599a52faabd2008e507c82c9addb2b",
+      "campaign_preregistration_sha256": "3409b14ebffc44815ecdd20fcce8a083ff841c659994d83278d2122cfeb99075",
+      "checkpoint_manifest_key": "world_1997425957_gru_error_coordinate_pc_checkpoint",
+      "checkpoint_sha256": "bbad026d7d880d1463bf7bae53fed6926dce2e418fb2a9090af15c265e4ced6f",
+      "generation9_import_manifest_sha256": "04f6cc0ed35098bcd9ba515dc11f9db82da14e81fbc3e8e14ce947c0b049c78f",
+      "ledger_manifest_key": "world_1997425957_resolved_ledger",
+      "resolved_ledger_sha256": "25464110fb5674ea8ee086964887412e4a6ca7b7c7b67336c320efa8667f1007"
+    },
+    "backbone": "gru",
+    "batch_index": 0,
+    "campaign_preregistration_sha256": "3409b14ebffc44815ecdd20fcce8a083ff841c659994d83278d2122cfeb99075",
+    "checkpoint_model_sha256": "8a84dc03596f2682aeec741e52cc618059341118622dc9290fdee1e5d9aeca1f",
+    "checkpoint_sha256": "bbad026d7d880d1463bf7bae53fed6926dce2e418fb2a9090af15c265e4ced6f",
+    "generation": 9,
+    "preregistration_sha256": "48a080735e4e393dc3281eb043dba8627f599a52faabd2008e507c82c9addb2b",
+    "resolved_ledger_sha256": "25464110fb5674ea8ee086964887412e4a6ca7b7c7b67336c320efa8667f1007",
+    "rule": "error_coordinate_pc",
+    "world": 1997425957
+  },
+  "source_endpoint_binding": {
+    "input_shape": [
+      16,
+      46,
+      64
+    ],
+    "input_tensor_sha256": "05d56154cf42bb4add3e423b505c24690df713cf109ecbb7d13a23474915794b",
+    "output_shape": [
+      16,
+      46,
+      64
+    ],
+    "output_tensor_sha256": "d1a5e90d65edba7c1788cd2168689c2823415bff4d30c4ade388688630c7c158"
+  },
+  "source_entry_count": 64,
+  "source_input_tensor_sha256": "8cd746f2fd27b871c865181344b18ac69966d405bc4d4292636079353dbad526",
+  "source_invocation_count": 736,
+  "source_invocation_indices": [
+    0
+  ],
+  "source_output_tensor_sha256": "63fa8a1b231d45bbdb1592684f61eaa375b4bbea442c1724f76f825f9f3dd4df",
+  "source_probe_json_sha256": "beb12bfe26f0d944d8a2c55afb8bbb3b1937978f40a171bdae2875ae190c117b"
+}

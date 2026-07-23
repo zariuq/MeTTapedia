@@ -1,0 +1,192 @@
+{
+  "schema": "pc-authenticated-hidden-stage-replay-source-v1",
+  "source_repository": "gslt-synth",
+  "theorem_repository": "Mettapedia",
+  "source_files": [
+    {
+      "file": "eval/tgad_pc_active_curvature_probe.py",
+      "sha256": "4035d770e8e04742127685b1386a90f4c8238d700b45349c192e69f8f77294d1"
+    },
+    {
+      "file": "eval/tgad_float32_word_reports.py",
+      "sha256": "1ea19f6d4fcea2534e5bea39dc681b80c078cbe97d1e2bf6a0fe77d3032d6cdb"
+    },
+    {
+      "file": "eval/tgad_emit_affine_replay_batch.py",
+      "sha256": "236ae5b941a5e5b73398df39f17e034cb0a9329d5d596a8d083224ed4f377571"
+    },
+    {
+      "file": "eval/tgad_emit_activation_replay_batch.py",
+      "sha256": "6fc644551168fbbca6fa13f14234883d6ede8dab6c2981de0d0563ee2b695945"
+    },
+    {
+      "file": "eval/tgad_assemble_affine_silu_replay.py",
+      "sha256": "cd6e0cecc587dab1a6849e7cf470ee16a8dc6789046e410f410d7202418a0b0e"
+    },
+    {
+      "file": "eval/tgad_assemble_hidden_stage_replay.py",
+      "sha256": "61a8b1784c73ea734ac92c57a473167af3e900fbc61f26345b4c2a2a4204d74b"
+    },
+    {
+      "file": "eval/verify_tgad_authenticated_affine_replay.py",
+      "sha256": "426c9f1d1783f3ea0f160c7fc16b182d5bf38b3940ddc86c0ab205d52ebcb954"
+    },
+    {
+      "file": "eval/verify_tgad_authenticated_hidden_stage_replay.py",
+      "sha256": "fb3d295076db9433ccf1808145eab9614391d53d48b06e8a76c8efde77d92f73"
+    },
+    {
+      "file": "tests/test_tgad_pc_active_curvature_probe.py",
+      "sha256": "9d82dfe3a276359009c07f188a1a74a34ccc8a844d5ec6318c5e8e44b4922779"
+    },
+    {
+      "file": "tests/test_tgad_emit_affine_replay_batch.py",
+      "sha256": "eb07c4bfa592b1e9d5787524d7a20a491f20ad4b47ea91f2bd7f6aac164fc77f"
+    },
+    {
+      "file": "tests/test_tgad_emit_activation_replay_batch.py",
+      "sha256": "fcaf5e5e445c0b38c054c22945624ca3c13184f03696bac7dc7f62d9d7dbc9c9"
+    },
+    {
+      "file": "tests/test_tgad_assemble_affine_silu_replay.py",
+      "sha256": "2ed89a0a567159c52c54ff7130292342ef46513f800d13ec26362367cf1c7c08"
+    },
+    {
+      "file": "tests/test_tgad_assemble_hidden_stage_replay.py",
+      "sha256": "4e80117e44d12d19fd5b70a7f0dbcd503bc31f220dac33477969cf048cc0a538"
+    },
+    {
+      "file": "tests/test_verify_tgad_authenticated_affine_replay.py",
+      "sha256": "141dee0733b7d23611e1ddb0591252e0301bb2bb2c94a30470f466184cf88d4b"
+    },
+    {
+      "file": "tests/test_verify_tgad_authenticated_hidden_stage_replay.py",
+      "sha256": "ee2d7dd6b46e92dae4ba55ec86eef990a57d978d5deea0b3ab7a5b741215c2e4"
+    }
+  ],
+  "theorem_files": [
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32CheckpointMatrix.lean",
+      "sha256": "1ffebf16c8345b12dc46ebb5952ae9205b7f753254aedbfa99d8b9a12c558d22"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AffineReplayCertificate.lean",
+      "sha256": "b1c91a4c9cf6678ac44d8c4a59f9d5cf99403725b6958f8ad0f8d67b34170aca"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32ActivationReplayCertificate.lean",
+      "sha256": "8e158fa19e60cd1af1932e90bd0203ec400707fafdc5b8ec66c2cb6e0b054679"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AffineSiLUReplayCertificate.lean",
+      "sha256": "a4ca6a4534943fa0af00fa52cd56b7afcd7b834c6e705412ed974a6bd37600e8"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AddMaskReplayCertificate.lean",
+      "sha256": "331bbd3158f5912ff4c5508ae5275508f8028440bd14f6afa49d1a888bf83d37"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32HiddenStageReplayCertificate.lean",
+      "sha256": "1411d9ae2b067659abf81406ef215880cdff80cc6322763f589f51da6a83d00b"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedAffineReplayChunkedGeneratedFixture.lean",
+      "sha256": "ec615fff159eeb29ea65cad7496cacfaa336f3581fb1795893d443598c9af9bc"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedActivationReplaySite1Invocation0GeneratedFixture.lean",
+      "sha256": "7e67312d7a1abbaae1f662de97779f3073310276c67c38b8a67a5ef85190280e"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedAffineSiLUReplaySite1Invocation0GeneratedFixture.lean",
+      "sha256": "4f4199a596a92ab7da326cf0881dfcdebc104d201a86a781e9895f0d0478dcf5"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedHiddenStageReplaySite1Invocation0GeneratedFixture.lean",
+      "sha256": "613226cba854a9870bdf95714bb89036ada2434db1f7ffc75f66af8beb45474c"
+    }
+  ],
+  "artifacts": [
+    {
+      "file": "artifacts/conformance/pc_authenticated_active_curvature_gru_w1997425957_g9_b0_v2.json",
+      "role": "full authenticated active-curvature probe",
+      "sha256": "beb12bfe26f0d944d8a2c55afb8bbb3b1937978f40a171bdae2875ae190c117b"
+    },
+    {
+      "file": "artifacts/conformance/pc_authenticated_affine_invocation_replay_gru_w1997425957_g9_b0_site1_i0_v1.json",
+      "role": "selected affine sidecar",
+      "sha256": "dee3acd8a3271178ab567b7ab0a7b8684938a61e22a2f077e19d986ab973fd00"
+    },
+    {
+      "file": "artifacts/conformance/pc_authenticated_activation_invocation_replay_gru_w1997425957_g9_b0_site1_i0_v1.json",
+      "role": "selected SiLU sidecar",
+      "sha256": "7dc7e1d6a5d843a506edb7fa93e02afad72fb0b7a5b5775216a6c79483e19254"
+    },
+    {
+      "file": "artifacts/conformance/pc_authenticated_affine_silu_invocation_replay_gru_w1997425957_g9_b0_site1_i0_v1.json",
+      "role": "selected affine-SiLU composition sidecar",
+      "sha256": "81f257339a7fd2b3946233a65f1406c5d1d7d26f735c3c8d5fbb50ba31fa8c8c"
+    },
+    {
+      "file": "artifacts/conformance/pc_authenticated_hidden_stage_invocation_replay_gru_w1997425957_g9_b0_site1_i0_v1.json",
+      "role": "selected hidden-stage sidecar",
+      "sha256": "2dba4fb30f92292ef9bd2920a10abb5454146e1fec9f386a4c659f993c03ce3f"
+    }
+  ],
+  "expected_verification": {
+    "schema": "tgad.authenticated-hidden-stage-kernel-replay-verification.v1",
+    "status": "PASS",
+    "world": 1997425957,
+    "generation": 9,
+    "backbone": "gru",
+    "rule": "error_coordinate_pc",
+    "batch_index": 0,
+    "site_index": 1,
+    "selected_invocation_indices": [
+      0
+    ],
+    "source_invocation_count": 736,
+    "rows": 64,
+    "columns": 64,
+    "local_error": {
+      "numerator_decimal": "141535723881995",
+      "denominator_decimal": "36893488147419103232"
+    },
+    "nonzero_mantissas": {
+      "weight": 4096,
+      "bias": 64,
+      "input": 64,
+      "output": 64
+    },
+    "activation_coordinate_count": 64,
+    "activation_error_vector_sha256": "087940c065e7193c9419c0e6dfb1f2d197c23f6a08e22f4220f26b77da090280",
+    "activation_max_local_error": {
+      "numerator_decimal": "146777080664632914361618059061507765899391007022537",
+      "denominator_decimal": "7943800758393751573986210482203238810568780696950669312"
+    },
+    "addition_nonzero_error_count": 64,
+    "addition_total_local_error": {
+      "numerator_decimal": "57665194685",
+      "denominator_decimal": "144115188075855872"
+    },
+    "mask_active_count": 64,
+    "mask_inactive_count": 0,
+    "activation_sidecar_sha256": "7dc7e1d6a5d843a506edb7fa93e02afad72fb0b7a5b5775216a6c79483e19254",
+    "affine_silu_sidecar_sha256": "81f257339a7fd2b3946233a65f1406c5d1d7d26f735c3c8d5fbb50ba31fa8c8c",
+    "hidden_sidecar_sha256": "2dba4fb30f92292ef9bd2920a10abb5454146e1fec9f386a4c659f993c03ce3f",
+    "activation_lean_source_sha256": "7e67312d7a1abbaae1f662de97779f3073310276c67c38b8a67a5ef85190280e",
+    "affine_silu_lean_source_sha256": "4f4199a596a92ab7da326cf0881dfcdebc104d201a86a781e9895f0d0478dcf5",
+    "hidden_lean_source_sha256": "613226cba854a9870bdf95714bb89036ada2434db1f7ffc75f66af8beb45474c"
+  },
+  "trust_boundary": {
+    "kernel": "exact arithmetic and interior word connections for the supplied finite binary32 affine, SiLU, addition, and mask records",
+    "external_verifier": "checkpoint, ledger, source, selected endpoints, sidecar bytes, and deterministic Lean-rendering identity"
+  },
+  "non_claims": [
+    "one selected invocation is not a uniform regional floating-point error bound",
+    "the kernel does not check SHA-256 or checkpoint identity",
+    "decoded-real replay does not identify the runtime accumulation order or backend rounding schedule",
+    "this selected invocation has only active mask coordinates; inactive-mask rejection is established separately by the generic negative fixture",
+    "a pointwise hidden-stage certificate does not establish solver contraction, adaptive stopping, speed, retention, or verifier efficacy"
+  ]
+}

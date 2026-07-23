@@ -1,0 +1,129 @@
+{
+  "schema": "adaptive-dependent-portfolio-conformance-v1",
+  "arms": ["bp_primary", "bp_opportunity", "pc", "dfa"],
+  "arm_budget": 2,
+  "bp_primary": "bp_primary",
+  "bp_opportunity": "bp_opportunity",
+  "comparison_candidate": "pc",
+  "mandatory_arm": "bp_primary",
+  "exploration_order": ["pc", "dfa", "bp_opportunity"],
+  "generations": {
+    "generation_1": {
+      "bp_primary": [1, 2, 3],
+      "bp_opportunity": [1, 2, 3, 4],
+      "pc": [5, 6],
+      "dfa": [1, 7]
+    },
+    "generation_2": {
+      "bp_primary": [8, 9],
+      "bp_opportunity": [8, 9, 10],
+      "pc": [5],
+      "dfa": [11, 12, 13]
+    },
+    "generation_3": {
+      "bp_primary": [14, 15],
+      "bp_opportunity": [14, 15, 16],
+      "pc": [17, 18],
+      "dfa": [14]
+    }
+  },
+  "stationary_counterexample": {
+    "bp_primary": [1, 2, 3],
+    "bp_opportunity": [1, 2, 3, 4],
+    "pc": [5, 6],
+    "dfa": [1, 7]
+  },
+  "stationary_fixed_companion": "pc",
+  "lineage_packets": [
+    {
+      "id": "primary",
+      "arm": "bp_primary",
+      "program": 1,
+      "source": "world-1-bp",
+      "ancestors": []
+    },
+    {
+      "id": "pc_descendant",
+      "arm": "pc",
+      "program": 5,
+      "source": "world-1-pc",
+      "ancestors": ["world-1-bp"]
+    },
+    {
+      "id": "world_2",
+      "arm": "pc",
+      "program": 5,
+      "source": "world-2-pc",
+      "ancestors": []
+    }
+  ],
+  "lineage_relabelled_packets": [
+    {
+      "id": "primary",
+      "arm": "bp_primary",
+      "program": 1,
+      "source": "world-1-bp",
+      "ancestors": []
+    },
+    {
+      "id": "pc_descendant",
+      "arm": "pc",
+      "program": 5,
+      "source": "independent-pc",
+      "ancestors": []
+    },
+    {
+      "id": "world_2",
+      "arm": "pc",
+      "program": 5,
+      "source": "world-2-pc",
+      "ancestors": []
+    }
+  ],
+  "lineage_pairs": [
+    ["primary", "pc_descendant"],
+    ["primary", "world_2"],
+    ["pc_descendant", "world_2"]
+  ],
+  "expected": {
+    "standalone_top_generation_1": ["bp_opportunity", "bp_primary"],
+    "standalone_sum_generation_1": 7,
+    "standalone_union_generation_1": 4,
+    "standalone_duplicate_mass_generation_1": 3,
+    "marginal_greedy_generation_1": ["bp_opportunity", "pc"],
+    "marginal_greedy_union_generation_1": 6,
+    "optimal_union_generation_1": 6,
+    "optimal_portfolios_generation_1": [["bp_opportunity", "pc"]],
+    "bp_opportunity_marginal_generation_1": 1,
+    "candidate_marginal_generation_1": 2,
+    "historical_generation_1_choice_union_on_generation_2": 4,
+    "marginal_greedy_generation_2": ["bp_opportunity", "dfa"],
+    "marginal_greedy_union_generation_2": 6,
+    "optimal_union_generation_2": 6,
+    "optimal_portfolios_generation_2": [["bp_opportunity", "dfa"]],
+    "generation_1_optimizer_not_generation_2_optimizer": true,
+    "exploration_schedule": [
+      ["bp_primary", "pc"],
+      ["bp_primary", "dfa"],
+      ["bp_primary", "bp_opportunity"]
+    ],
+    "exploration_union_by_generation": [5, 5, 3],
+    "exploration_visits_all_arms_in_cycle": true,
+    "exploration_respects_arm_budget": true,
+    "stationary_fixed_total": 15,
+    "stationary_exploration_total": 13,
+    "exploration_can_reduce_stationary_yield": true,
+    "lineage_source_disjoint": {
+      "primary:pc_descendant": false,
+      "primary:world_2": true,
+      "pc_descendant:world_2": true
+    },
+    "lineage_relabelled_source_disjoint": {
+      "primary:pc_descendant": true,
+      "primary:world_2": true,
+      "pc_descendant:world_2": true
+    },
+    "coverage_invariant_under_lineage_relabeling": true,
+    "evidence_license_changes_under_lineage_relabeling": true
+  }
+}

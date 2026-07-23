@@ -1,0 +1,132 @@
+{
+  "bias": {
+    "absolute_sum_numerator_decimal": "0",
+    "byte_order": "little",
+    "common_denominator_power_of_two": 149,
+    "dtype": "float32",
+    "entry_count": 1,
+    "finite_word_count": 1,
+    "schema": "ieee754.binary32-entrywise-l1.v1",
+    "shape": [
+      1
+    ],
+    "storage_order": "contiguous_row_major",
+    "tensor_sha256": "6f18446dfe91df3faa293065bb76ab9557ca2c334996c67cfd4d89da10783166",
+    "word_encoding": "unsigned_ieee754_binary32",
+    "words_unsigned": [
+      0
+    ]
+  },
+  "columns": 1,
+  "input": {
+    "absolute_sum_numerator_decimal": "815117060604961158284040156042909760534609920",
+    "byte_order": "little",
+    "common_denominator_power_of_two": 149,
+    "dtype": "float32",
+    "entry_count": 2,
+    "finite_word_count": 2,
+    "schema": "ieee754.binary32-entrywise-l1.v1",
+    "shape": [
+      2,
+      1
+    ],
+    "storage_order": "contiguous_row_major",
+    "tensor_sha256": "a70d3d053c6cb77e0f079f86318208b0a6ee35fe3c8c554db023d9c6585a5d63",
+    "word_encoding": "unsigned_ieee754_binary32",
+    "words_unsigned": [
+      1058157655,
+      3205641303
+    ]
+  },
+  "invocation_count": 2,
+  "layer_role": "base_hidden_transition",
+  "output": {
+    "absolute_sum_numerator_decimal": "815117060604961158284040156042909760534609920",
+    "byte_order": "little",
+    "common_denominator_power_of_two": 149,
+    "dtype": "float32",
+    "entry_count": 2,
+    "finite_word_count": 2,
+    "schema": "ieee754.binary32-entrywise-l1.v1",
+    "shape": [
+      2,
+      1
+    ],
+    "storage_order": "contiguous_row_major",
+    "tensor_sha256": "a70d3d053c6cb77e0f079f86318208b0a6ee35fe3c8c554db023d9c6585a5d63",
+    "word_encoding": "unsigned_ieee754_binary32",
+    "words_unsigned": [
+      1058157655,
+      3205641303
+    ]
+  },
+  "records": [
+    {
+      "ideal_output": [
+        {
+          "denominator_decimal": "16777216",
+          "numerator_decimal": "9581655"
+        }
+      ],
+      "input_words_unsigned": [
+        1058157655
+      ],
+      "invocation_index": 0,
+      "local_error": {
+        "denominator_decimal": "1",
+        "numerator_decimal": "0"
+      },
+      "output_words_unsigned": [
+        1058157655
+      ]
+    },
+    {
+      "ideal_output": [
+        {
+          "denominator_decimal": "16777216",
+          "numerator_decimal": "-9581655"
+        }
+      ],
+      "input_words_unsigned": [
+        3205641303
+      ],
+      "invocation_index": 1,
+      "local_error": {
+        "denominator_decimal": "1",
+        "numerator_decimal": "0"
+      },
+      "output_words_unsigned": [
+        3205641303
+      ]
+    }
+  ],
+  "rows": 1,
+  "schema": "tgad.binary32-affine-replay-batch.v1",
+  "site_index": 0,
+  "source_binding": {
+    "backbone": "belief_derived",
+    "generation": 9,
+    "rule": "error_coordinate_pc",
+    "world": 17
+  },
+  "source_probe_json_sha256": "68a5a3a1aa70540ec9b2f9f2cbe892b52c7c8e579eb2b8a0adb1aba9db262167",
+  "weight": {
+    "absolute_sum_numerator_decimal": "713623846352979940529142984724747568191373312",
+    "byte_order": "little",
+    "common_denominator_power_of_two": 149,
+    "dtype": "float32",
+    "entry_count": 1,
+    "finite_word_count": 1,
+    "schema": "ieee754.binary32-entrywise-l1.v1",
+    "shape": [
+      1,
+      1
+    ],
+    "storage_order": "contiguous_row_major",
+    "tensor_sha256": "11051f80e28e0dda56b831f3e28c7989dcef53a26a7aa3c0c06bca70f6c94f18",
+    "word_encoding": "unsigned_ieee754_binary32",
+    "words_unsigned": [
+      1065353216
+    ]
+  }
+}

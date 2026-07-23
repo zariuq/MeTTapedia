@@ -1,0 +1,151 @@
+{
+  "duplicate_relation_counterexample": {
+    "bias_max_abs_difference": 0.285695587788031,
+    "conflicting_pair": [
+      0,
+      1
+    ],
+    "edge_reversal_changes_bias": true,
+    "edge_reversal_changes_encoder_output": true,
+    "encoder_output_max_abs_difference": 0.006040262955723,
+    "forward_last_role": 1,
+    "relation_functional": false,
+    "reverse_last_role": 0
+  },
+  "functional_relation_graph": {
+    "edge_count": 6,
+    "even_head_rope_case": {
+      "arbitrary_relabel_breaks_equivariance": true,
+      "d_model": 4,
+      "edge_enumeration_is_exact_for_functional_relations": true,
+      "head_dim": 2,
+      "heads": 2,
+      "identity_relabel_is_exact": true,
+      "identity_relabel_max_abs_error": 0.0,
+      "layers": 2,
+      "node_relabel_equivariance_max_abs_error": 0.007178757208237,
+      "relation_functional": true,
+      "reversed_edge_enumeration_max_abs_error": 0.0,
+      "rope_is_active": true,
+      "rope_permutation_commutation_max_abs_error": 1.416146844625473,
+      "rope_relative_kernel_max_abs_error": 1.750768403331495
+    },
+    "odd_head_no_rope_case": {
+      "arbitrary_relabel_is_equivariant": true,
+      "d_model": 6,
+      "edge_enumeration_is_exact_for_functional_relations": true,
+      "head_dim": 3,
+      "heads": 2,
+      "identity_relabel_is_exact": true,
+      "identity_relabel_max_abs_error": 0.0,
+      "layers": 2,
+      "node_relabel_equivariance_max_abs_error": 0.0,
+      "relation_functional": true,
+      "reversed_edge_enumeration_max_abs_error": 0.0,
+      "rope_is_active": false,
+      "rope_permutation_commutation_max_abs_error": 0.0,
+      "rope_relative_kernel_max_abs_error": 0.0
+    },
+    "relation_functional": true
+  },
+  "oeis_adapter_compiler_domain": {
+    "all_indices_in_range": true,
+    "all_relation_functional": true,
+    "all_roles_in_range": true,
+    "cases": [
+      {
+        "edge_count": 2,
+        "indices_in_range": true,
+        "node_count": 2,
+        "prefix_length": 1,
+        "relation_functional": true,
+        "roles_in_range": true
+      },
+      {
+        "edge_count": 10,
+        "indices_in_range": true,
+        "node_count": 4,
+        "prefix_length": 2,
+        "relation_functional": true,
+        "roles_in_range": true
+      },
+      {
+        "edge_count": 24,
+        "indices_in_range": true,
+        "node_count": 7,
+        "prefix_length": 3,
+        "relation_functional": true,
+        "roles_in_range": true
+      },
+      {
+        "edge_count": 38,
+        "indices_in_range": true,
+        "node_count": 10,
+        "prefix_length": 4,
+        "relation_functional": true,
+        "roles_in_range": true
+      },
+      {
+        "edge_count": 52,
+        "indices_in_range": true,
+        "node_count": 13,
+        "prefix_length": 5,
+        "relation_functional": true,
+        "roles_in_range": true
+      },
+      {
+        "edge_count": 66,
+        "indices_in_range": true,
+        "node_count": 16,
+        "prefix_length": 6,
+        "relation_functional": true,
+        "roles_in_range": true
+      },
+      {
+        "edge_count": 80,
+        "indices_in_range": true,
+        "node_count": 19,
+        "prefix_length": 7,
+        "relation_functional": true,
+        "roles_in_range": true
+      },
+      {
+        "edge_count": 94,
+        "indices_in_range": true,
+        "node_count": 22,
+        "prefix_length": 8,
+        "relation_functional": true,
+        "roles_in_range": true
+      }
+    ],
+    "checked_prefix_lengths": [
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8
+    ]
+  },
+  "permutation_new_row_to_old_row": [
+    2,
+    0,
+    1,
+    3
+  ],
+  "schema": "gslt.graph-symmetry.conformance.v1",
+  "source_sha256": {
+    "adapters/oeis_path_graph.py": "0b19467fe6e5669c59b8d9df1f3d81f99afc442f5476f32d9a1d7244e040e47b",
+    "models/common.py": "698bb8a7de68190142523af7b8e8be6c92fdd8f5a0a462517626e472fb713f0c",
+    "models/encoder.py": "898c81df71ba0b680aacb72360d40b83e519d2b3288c0c8c3640832e53b6ed7f"
+  },
+  "theorem_scope": {
+    "compiler_obligation": "a compiler targeting this encoder must assign canonical tensor positions and either guarantee relation functionality or declare an order-independent relation reducer",
+    "licensed_edge_order_invariance": "attention-bias construction is edge-enumeration invariant when each ordered node pair carries at most one relation",
+    "licensed_node_relabeling": "full-block equivariance for all query and key contents is licensed when the relabeling preserves every pairwise positional kernel R_i^T R_j, in addition to remapping node features, masks, and relation-functional edges; commuting with each absolute positional action is a stronger sufficient condition",
+    "not_established": "these fixtures do not establish a compiler from every GSLT LanguageDef; the executable compiler instance checked here is the OEIS path-graph adapter"
+  },
+  "tolerance": 1e-12
+}

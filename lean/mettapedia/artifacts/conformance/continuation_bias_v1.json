@@ -1,0 +1,434 @@
+{
+  "global_repair": {
+    "constrained_solution": [
+      {
+        "denominator": 2,
+        "numerator": 1
+      },
+      {
+        "denominator": 1,
+        "numerator": 0
+      }
+    ],
+    "constrained_task": {
+      "denominator": 4,
+      "numerator": 1
+    },
+    "effective_penalty": {
+      "denominator": 1,
+      "numerator": 2
+    },
+    "penalized_soft_value": {
+      "denominator": 5,
+      "numerator": 1
+    },
+    "penalized_value_below_feasible_comparator": true,
+    "raw_infeasible_task_is_lower": true,
+    "repair_distance": {
+      "denominator": 5,
+      "numerator": 1
+    },
+    "repair_distance_equals_residual": true,
+    "repair_task_increase": {
+      "denominator": 10,
+      "numerator": 1
+    },
+    "repair_task_increase_bound": {
+      "denominator": 25,
+      "numerator": 3
+    },
+    "repair_task_increase_bound_holds": true,
+    "repaired_constrained_gap": {
+      "denominator": 100,
+      "numerator": 1
+    },
+    "repaired_endpoint": [
+      {
+        "denominator": 5,
+        "numerator": 2
+      },
+      {
+        "denominator": 1,
+        "numerator": 0
+      }
+    ],
+    "repaired_gap_actual_residual_bound_holds": true,
+    "repaired_gap_is_nonnegative": true,
+    "repaired_task": {
+      "denominator": 50,
+      "numerator": 13
+    },
+    "residual_bound_holds": true,
+    "residual_squared": {
+      "denominator": 25,
+      "numerator": 1
+    },
+    "residual_squared_bound": {
+      "denominator": 4,
+      "numerator": 1
+    },
+    "rho": {
+      "denominator": 1,
+      "numerator": 1
+    },
+    "soft_endpoint": [
+      {
+        "denominator": 5,
+        "numerator": 2
+      },
+      {
+        "denominator": 5,
+        "numerator": 1
+      }
+    ],
+    "soft_multiplier": {
+      "denominator": 5,
+      "numerator": 1
+    },
+    "soft_stationarity": [
+      {
+        "denominator": 1,
+        "numerator": 0
+      },
+      {
+        "denominator": 1,
+        "numerator": 0
+      }
+    ],
+    "soft_task": {
+      "denominator": 25,
+      "numerator": 4
+    },
+    "task_lipschitz_on_repair_segment": {
+      "denominator": 5,
+      "numerator": 3
+    },
+    "tau": {
+      "denominator": 1,
+      "numerator": 1
+    }
+  },
+  "local_kkt_path": {
+    "all_kkt_equations_exact": true,
+    "constraint_equals_tau_times_multiplier": true,
+    "derivative_at_zero": [
+      {
+        "denominator": 4,
+        "numerator": -1
+      },
+      {
+        "denominator": 2,
+        "numerator": 1
+      },
+      {
+        "denominator": 4,
+        "numerator": -3
+      }
+    ],
+    "equation_residuals": [
+      [
+        {
+          "denominator": 1,
+          "numerator": 0
+        },
+        {
+          "denominator": 1,
+          "numerator": 0
+        },
+        {
+          "denominator": 1,
+          "numerator": 0
+        }
+      ],
+      [
+        {
+          "denominator": 1,
+          "numerator": 0
+        },
+        {
+          "denominator": 1,
+          "numerator": 0
+        },
+        {
+          "denominator": 1,
+          "numerator": 0
+        }
+      ],
+      [
+        {
+          "denominator": 1,
+          "numerator": 0
+        },
+        {
+          "denominator": 1,
+          "numerator": 0
+        },
+        {
+          "denominator": 1,
+          "numerator": 0
+        }
+      ]
+    ],
+    "states": [
+      [
+        {
+          "denominator": 2,
+          "numerator": 1
+        },
+        {
+          "denominator": 1,
+          "numerator": 0
+        },
+        {
+          "denominator": 2,
+          "numerator": 1
+        }
+      ],
+      [
+        {
+          "denominator": 9,
+          "numerator": 4
+        },
+        {
+          "denominator": 9,
+          "numerator": 1
+        },
+        {
+          "denominator": 3,
+          "numerator": 1
+        }
+      ],
+      [
+        {
+          "denominator": 5,
+          "numerator": 2
+        },
+        {
+          "denominator": 5,
+          "numerator": 1
+        },
+        {
+          "denominator": 5,
+          "numerator": 1
+        }
+      ]
+    ],
+    "tau_one_is_soft_endpoint": true,
+    "tau_zero_is_hard_endpoint": true,
+    "taus": [
+      {
+        "denominator": 1,
+        "numerator": 0
+      },
+      {
+        "denominator": 3,
+        "numerator": 1
+      },
+      {
+        "denominator": 1,
+        "numerator": 1
+      }
+    ]
+  },
+  "schema": "credit.continuation_bias.conformance.v1",
+  "scope_counterexamples": {
+    "repair_regular_constant_is_necessary": {
+      "epsilon_state_pairs": [
+        [
+          {
+            "denominator": 10,
+            "numerator": 1
+          },
+          {
+            "denominator": 1,
+            "numerator": 10
+          }
+        ],
+        [
+          {
+            "denominator": 100,
+            "numerator": 1
+          },
+          {
+            "denominator": 1,
+            "numerator": 100
+          }
+        ]
+      ],
+      "equal_residuals": true,
+      "repair_distance_grows": true,
+      "repair_distances": [
+        {
+          "denominator": 1,
+          "numerator": 10
+        },
+        {
+          "denominator": 1,
+          "numerator": 100
+        }
+      ],
+      "residuals": [
+        {
+          "denominator": 1,
+          "numerator": 1
+        },
+        {
+          "denominator": 1,
+          "numerator": 1
+        }
+      ]
+    },
+    "soft_energy_descent_task_ascent": {
+      "after": {
+        "denominator": 8,
+        "numerator": 3
+      },
+      "before": {
+        "denominator": 2,
+        "numerator": 1
+      },
+      "released_gradient": {
+        "denominator": 2,
+        "numerator": 1
+      },
+      "soft_energy_after": {
+        "denominator": 128,
+        "numerator": 43
+      },
+      "soft_energy_before": {
+        "denominator": 8,
+        "numerator": 3
+      },
+      "soft_energy_decreases": true,
+      "step_rate": {
+        "denominator": 4,
+        "numerator": 1
+      },
+      "task_after": {
+        "denominator": 128,
+        "numerator": 25
+      },
+      "task_before": {
+        "denominator": 8,
+        "numerator": 1
+      },
+      "task_loss_increases": true
+    },
+    "task_lower_bound_is_necessary": {
+      "arbitrary_minimizers": [
+        {
+          "denominator": 1,
+          "numerator": 1
+        },
+        {
+          "denominator": 1,
+          "numerator": 100
+        }
+      ],
+      "penalized_objective_is_constant": true,
+      "penalized_values": [
+        {
+          "denominator": 1,
+          "numerator": 0
+        },
+        {
+          "denominator": 1,
+          "numerator": 0
+        }
+      ],
+      "penalty": {
+        "denominator": 1,
+        "numerator": 2
+      },
+      "residuals_differ": true
+    }
+  },
+  "tracking": {
+    "contraction": {
+      "denominator": 2,
+      "numerator": 1
+    },
+    "errors": [
+      {
+        "denominator": 1,
+        "numerator": 0
+      },
+      {
+        "denominator": 36,
+        "numerator": 1
+      },
+      {
+        "denominator": 360,
+        "numerator": 13
+      }
+    ],
+    "fixed_point_drifts": [
+      {
+        "denominator": 18,
+        "numerator": 1
+      },
+      {
+        "denominator": 45,
+        "numerator": 2
+      }
+    ],
+    "fixed_points": [
+      {
+        "denominator": 2,
+        "numerator": 1
+      },
+      {
+        "denominator": 9,
+        "numerator": 4
+      },
+      {
+        "denominator": 5,
+        "numerator": 2
+      }
+    ],
+    "iterates": [
+      {
+        "denominator": 2,
+        "numerator": 1
+      },
+      {
+        "denominator": 36,
+        "numerator": 17
+      },
+      {
+        "denominator": 360,
+        "numerator": 157
+      }
+    ],
+    "one_step_bounds": [
+      {
+        "denominator": 36,
+        "numerator": 1
+      },
+      {
+        "denominator": 360,
+        "numerator": 13
+      }
+    ],
+    "one_step_recurrences_hold": true,
+    "schedule": [
+      {
+        "denominator": 1,
+        "numerator": 0
+      },
+      {
+        "denominator": 3,
+        "numerator": 1
+      },
+      {
+        "denominator": 1,
+        "numerator": 1
+      }
+    ],
+    "unrolled_bound_holds": true,
+    "unrolled_final_bound": {
+      "denominator": 360,
+      "numerator": 13
+    }
+  }
+}

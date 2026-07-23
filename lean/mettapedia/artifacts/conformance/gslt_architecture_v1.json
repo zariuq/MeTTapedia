@@ -1,0 +1,554 @@
+{
+  "attention_boundaries": {
+    "duplicate_pair_last_role_wins": [
+      1.0,
+      101.0
+    ],
+    "even_head_width_is_position_sensitive": true,
+    "explicit_empty_edges_are_zero_bias": true,
+    "final_mask_zeros_inactive_output": true,
+    "fully_masked_query_rows": [],
+    "fused_qkv_zero_qk_reads_dense_uniform_mean": true,
+    "key_mask_excludes_only_masked_value": true,
+    "masked_key_columns": [
+      1
+    ],
+    "no_edges_and_no_mask_returns_none": true,
+    "odd_head_width_skips_rope": true,
+    "row_swap_commutes_when_odd_width_skips_rope": true,
+    "row_swap_does_not_commute_with_even_rope": true,
+    "typed_bias_changes_only_addressed_query": true,
+    "typed_bias_moves_read_toward_target_value": true,
+    "zero_sublayers_preserve_active_residual": true
+  },
+  "program_dag_case": {
+    "edge_input_order_is_preserved": true,
+    "node_input_order_is_normalized": true,
+    "op_ids": [
+      0,
+      3,
+      5
+    ],
+    "ordered_edges": [
+      [
+        1,
+        0,
+        0
+      ],
+      [
+        0,
+        1,
+        5
+      ],
+      [
+        2,
+        0,
+        0
+      ],
+      [
+        0,
+        2,
+        5
+      ],
+      [
+        2,
+        1,
+        1
+      ],
+      [
+        1,
+        2,
+        6
+      ],
+      [
+        1,
+        2,
+        10
+      ],
+      [
+        2,
+        1,
+        10
+      ]
+    ],
+    "raw_graph": {
+      "edges": [
+        {
+          "arg_index": 0,
+          "child": 0,
+          "parent": 1
+        },
+        {
+          "arg_index": 0,
+          "child": 0,
+          "parent": 2
+        },
+        {
+          "arg_index": 1,
+          "child": 1,
+          "parent": 2
+        }
+      ],
+      "nodes": [
+        {
+          "arity": 0,
+          "id": 0,
+          "op_id": 0
+        },
+        {
+          "arity": 2,
+          "id": 1,
+          "op_id": 3
+        },
+        {
+          "arity": 2,
+          "id": 2,
+          "op_id": 5
+        }
+      ],
+      "root": 2
+    },
+    "root": 2
+  },
+  "relation_families": {
+    "overlapping_zero_id": {
+      "program_dag_name": "child_0",
+      "same_zero_id_has_distinct_meaning": true,
+      "source_graph_name": "next"
+    },
+    "program_dag": {
+      "consumer": "ProgramDAGGNN.edge_messages",
+      "role_count": 11,
+      "roles": [
+        {
+          "id": 0,
+          "name": "child_0"
+        },
+        {
+          "id": 1,
+          "name": "child_1"
+        },
+        {
+          "id": 2,
+          "name": "child_2"
+        },
+        {
+          "id": 3,
+          "name": "child_3"
+        },
+        {
+          "id": 4,
+          "name": "child_4"
+        },
+        {
+          "id": 5,
+          "name": "parent_0"
+        },
+        {
+          "id": 6,
+          "name": "parent_1"
+        },
+        {
+          "id": 7,
+          "name": "parent_2"
+        },
+        {
+          "id": 8,
+          "name": "parent_3"
+        },
+        {
+          "id": 9,
+          "name": "parent_4"
+        },
+        {
+          "id": 10,
+          "name": "sharing"
+        }
+      ]
+    },
+    "source_graph": {
+      "consumer": "GSLTEncoder.edge_type_bias",
+      "emitted_role_names": [
+        "next",
+        "next2",
+        "derived_of",
+        "global"
+      ],
+      "roles": [
+        {
+          "id": 0,
+          "name": "next"
+        },
+        {
+          "id": 1,
+          "name": "next2"
+        },
+        {
+          "id": 2,
+          "name": "derived_of"
+        },
+        {
+          "id": 3,
+          "name": "global"
+        },
+        {
+          "id": 4,
+          "name": "child_0"
+        },
+        {
+          "id": 5,
+          "name": "child_1"
+        },
+        {
+          "id": 6,
+          "name": "child_2"
+        },
+        {
+          "id": 7,
+          "name": "child_3"
+        },
+        {
+          "id": 8,
+          "name": "child_4"
+        },
+        {
+          "id": 9,
+          "name": "binder"
+        },
+        {
+          "id": 10,
+          "name": "scope"
+        },
+        {
+          "id": 11,
+          "name": "sharing"
+        }
+      ]
+    }
+  },
+  "schema": "gslt.architecture.conformance.v1",
+  "source_graph_case": {
+    "featurizer_calls": [
+      {
+        "positions": [
+          0,
+          1,
+          2
+        ],
+        "values": [
+          1,
+          2,
+          4
+        ]
+      },
+      {
+        "positions": [
+          0,
+          1,
+          0
+        ],
+        "values": [
+          1,
+          2,
+          1
+        ]
+      }
+    ],
+    "global_index": 6,
+    "list_and_tuple_compile_identically": true,
+    "node_count": 7,
+    "ordered_edges": [
+      [
+        0,
+        1,
+        0
+      ],
+      [
+        1,
+        0,
+        0
+      ],
+      [
+        1,
+        2,
+        0
+      ],
+      [
+        2,
+        1,
+        0
+      ],
+      [
+        0,
+        2,
+        1
+      ],
+      [
+        2,
+        0,
+        1
+      ],
+      [
+        0,
+        3,
+        2
+      ],
+      [
+        3,
+        0,
+        2
+      ],
+      [
+        1,
+        4,
+        2
+      ],
+      [
+        4,
+        1,
+        2
+      ],
+      [
+        0,
+        5,
+        2
+      ],
+      [
+        5,
+        0,
+        2
+      ],
+      [
+        6,
+        0,
+        3
+      ],
+      [
+        0,
+        6,
+        3
+      ],
+      [
+        6,
+        1,
+        3
+      ],
+      [
+        1,
+        6,
+        3
+      ],
+      [
+        6,
+        2,
+        3
+      ],
+      [
+        2,
+        6,
+        3
+      ],
+      [
+        6,
+        3,
+        3
+      ],
+      [
+        3,
+        6,
+        3
+      ],
+      [
+        6,
+        4,
+        3
+      ],
+      [
+        4,
+        6,
+        3
+      ],
+      [
+        6,
+        5,
+        3
+      ],
+      [
+        5,
+        6,
+        3
+      ]
+    ],
+    "prefix": [
+      1,
+      2,
+      4
+    ],
+    "term_count": 3
+  },
+  "source_sha256": {
+    "adapters/oeis_path_graph.py": "0b19467fe6e5669c59b8d9df1f3d81f99afc442f5476f32d9a1d7244e040e47b",
+    "adapters/tgad_o2.py": "c6c6039d7510ad4a8d26b7a4c0b8cb491de481658b22d3e5ac0042465e8275be",
+    "data/program_dag.py": "c77460ddac0895be7e31c388561788ff2120e3d383c23d5154632a354f04c93d",
+    "models/common.py": "698bb8a7de68190142523af7b8e8be6c92fdd8f5a0a462517626e472fb713f0c",
+    "models/encoder.py": "898c81df71ba0b680aacb72360d40b83e519d2b3288c0c8c3640832e53b6ed7f",
+    "models/tgad_belief_decoder.py": "68b527a1d81a7b5bda435a4c0eccad3e40af4b135a103763341f6557a805f13c",
+    "models/tgad_o2.py": "d577a69bf64416478da9f962aa294cc869f1ee5f99c01923d834bf363628f9b2",
+    "models/tgad_policy_decoder.py": "e2e1007121e47df9d6d0bd020f5a17d7fa2da91567a1a35be640f1edbed83227",
+    "models/tgad_workspace_decoder.py": "71175f51e9f9a615b8aeb2f2f24ae2cb74c3bcd316fa3e3363e2da6ba12228c8"
+  },
+  "state_carrier_steps": {
+    "belief_algebra": {
+      "duplicate_packet_is_not_idempotent": true,
+      "fade_then_fuse_matches_precision_interpolation": true,
+      "unit_retention_is_additive": true
+    },
+    "belief_derived": {
+      "actual_retention_equals_derived": true,
+      "diagnostic_names": [
+        "belief_source_read_entropy",
+        "belief_workspace_read_entropy",
+        "mean_actual_retention",
+        "mean_belief_confidence",
+        "mean_belief_settling_delta",
+        "mean_belief_strength",
+        "mean_derived_retention",
+        "mean_effective_evidence",
+        "mean_precision_gain"
+      ],
+      "diagnostics_are_finite": true,
+      "evidence_is_finite_nonnegative": true,
+      "finite_logit_support_equals_legal_actions": true,
+      "frontier": [
+        1,
+        2
+      ],
+      "frontier_addresses_are_distinct": true,
+      "frontier_length": 2,
+      "inconsistent_frontier_is_rejected": true,
+      "initial_and_transition_states_finite": true,
+      "name": "selective_belief_derived",
+      "next_free": 3,
+      "packed_state_shape": [
+        1,
+        38
+      ],
+      "packed_state_width": 38
+    },
+    "belief_learned": {
+      "actual_retention_equals_derived": false,
+      "diagnostic_names": [
+        "belief_source_read_entropy",
+        "belief_workspace_read_entropy",
+        "mean_actual_retention",
+        "mean_belief_confidence",
+        "mean_belief_settling_delta",
+        "mean_belief_strength",
+        "mean_derived_retention",
+        "mean_effective_evidence",
+        "mean_precision_gain"
+      ],
+      "diagnostics_are_finite": true,
+      "evidence_is_finite_nonnegative": true,
+      "finite_logit_support_equals_legal_actions": true,
+      "frontier": [
+        1,
+        2
+      ],
+      "frontier_addresses_are_distinct": true,
+      "frontier_length": 2,
+      "inconsistent_frontier_is_rejected": true,
+      "initial_and_transition_states_finite": true,
+      "name": "selective_belief_learned",
+      "next_free": 3,
+      "packed_state_shape": [
+        1,
+        38
+      ],
+      "packed_state_width": 38
+    },
+    "workspace": {
+      "damped_interpolation_matches_equation": true,
+      "diagnostic_names": [
+        "mean_settling_delta",
+        "mean_write_gate",
+        "source_read_entropy",
+        "workspace_read_entropy"
+      ],
+      "diagnostics_are_finite": true,
+      "finite_logit_support_equals_legal_actions": true,
+      "frontier": [
+        1,
+        2
+      ],
+      "frontier_addresses_are_distinct": true,
+      "frontier_length": 2,
+      "inconsistent_frontier_is_rejected": true,
+      "initial_and_transition_states_finite": true,
+      "name": "typed_workspace",
+      "next_free": 3,
+      "packed_state_shape": [
+        1,
+        22
+      ],
+      "packed_state_width": 22
+    }
+  },
+  "typed_action_waist": {
+    "binary_action_updates_state": {
+      "action_count": 1,
+      "actions": [
+        3
+      ],
+      "hole_paths": [
+        [
+          0
+        ],
+        [
+          1
+        ]
+      ],
+      "hole_roles": [
+        "value",
+        "value"
+      ],
+      "open_holes": 2
+    },
+    "finite_logit_support_equals_legal_actions": true,
+    "illegal_actions": [
+      13
+    ],
+    "illegal_advance_is_rejected": true,
+    "initial_hole": {
+      "argument_index": 0,
+      "depth": 0,
+      "parent_op": -1,
+      "path": [],
+      "role": "root"
+    },
+    "language": "org",
+    "legal_actions": [
+      0,
+      1,
+      2,
+      3,
+      4,
+      5,
+      6,
+      7,
+      8,
+      9,
+      10,
+      11,
+      12,
+      14,
+      15
+    ],
+    "max_actions": 4,
+    "operator_count": 16,
+    "policy_port_is_parameter_free": true,
+    "policy_port_matches_legacy_logits": true,
+    "policy_port_matches_legacy_recurrent_state": true,
+    "released_mask_adds_exactly_released_action": true
+  }
+}

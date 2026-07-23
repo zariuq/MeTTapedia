@@ -1,0 +1,73 @@
+{
+  "schema": "pc-active-frontier-source-v1",
+  "source_repository": "gslt-synth",
+  "source_files": [
+    {
+      "file": "eval/tgad_pc_active_frontier_probe.py",
+      "sha256": "808b8cadb42b35bf464c0c40106591a9a0a6ad64fe0fb9de0a52b70e7634f7c0"
+    },
+    {
+      "file": "tests/test_tgad_pc_active_frontier_probe.py",
+      "sha256": "491f1341a2bc23823253eb50012e67c665202a28e2f85fcaf87158f9a53450eb"
+    },
+    {
+      "file": "eval/tgad_pc_active_curvature_probe.py",
+      "sha256": "4035d770e8e04742127685b1386a90f4c8238d700b45349c192e69f8f77294d1"
+    },
+    {
+      "file": "train/tgad_gen9_update_rules.py",
+      "sha256": "4befe1ebe1d4361c7ed92ab30742c87b8f3903de8585ec6f1896a796f8ad96a5"
+    },
+    {
+      "file": "models/tgad_gen9_adapter.py",
+      "sha256": "9b9d646edb381c38f8896c8f8cb8d4bec8e22604415d764e2d32f1307af2572f"
+    },
+    {
+      "file": "eval/tgad_gen9_pc_campaign_v2.py",
+      "sha256": "fb721a585358444b68292bcc69eea8430ed89e845e24c390b326f13b146b6f63"
+    }
+  ],
+  "campaign_registration": {
+    "schema": "tgad.gen9_pc.continuation.preregistration.v2",
+    "sha256": "3409b14ebffc44815ecdd20fcce8a083ff841c659994d83278d2122cfeb99075",
+    "registered_rule": "error_coordinate_pc",
+    "registered_inference_steps": 4
+  },
+  "selection_contract": {
+    "coordinate_space": "three masked deep-error sites compacted in site-major and flattened-storage order",
+    "selection_point": "after the complete current energy gradient has been produced",
+    "ranking": "descending exact binary32 squared magnitude with ascending storage index as the tie break",
+    "work_budget": "ceil(direction_dimension * coordinate_fraction_numerator / coordinate_fraction_denominator)",
+    "mass_arithmetic": "exact nonnegative integer numerators over the common dyadic denominator 2^298",
+    "zero_boundary": "a zero direction retains a deterministic budget but exposes no relative captured-mass certificate",
+    "changing_frontier": "the previous selected indices are re-evaluated against the complete current gradient and never assumed valid at the next sweep"
+  },
+  "safeguard_contract": {
+    "proposal": "one sparse projected-gradient endpoint using the registered rate and backtracking schedule",
+    "acceptance": "energy no larger than the current energy plus the registered monotone tolerance",
+    "fallback": "the registered full-gradient endpoint under the same backtracking schedule",
+    "failure": "the read-only probe rejects the row if neither sparse nor baseline endpoint passes",
+    "state_integrity": "model parameters, module modes, and dropout rates are restored exactly"
+  },
+  "theorem_bridge": {
+    "fixed_split": "ActiveFrontierSettling.SquaredMassCapture",
+    "dyadic_runtime_report": "ActiveFrontierSettling.DyadicSquaredMassReport",
+    "tail": "ActiveFrontierSettling.DyadicSquaredMassReport.tail_mass",
+    "finite_descent": "ActiveFrontierSettling.strictTaskDescent_of_tail_bound",
+    "endpoint_safeguard": "SafeguardedCompositeBlock.safeguardedBlock_energy_le"
+  },
+  "test_contract": {
+    "positive": "a tied 1,-2,2,0 direction chooses indices 1 then 2 and captures exactly 8/9 of squared mass",
+    "zero": "a zero direction refuses a relative mass fraction",
+    "changing_frontier_negative": "a one-coordinate frontier that captures all of direction 1,0 captures zero of the next direction 0,1",
+    "runtime": "a two-sweep model probe is read-only, endpoint-monotone, satisfies exact selected-plus-tail mass accounting at every sweep, and records the final sparse-to-full-reference state relation",
+    "invalid": "wrong dtype, invalid coordinate fraction, and duplicate declared indices are rejected"
+  },
+  "non_claims": [
+    "pointwise captured mass is not a uniform curvature or convergence certificate",
+    "top-k magnitude selection is not claimed to be optimal for future sweeps",
+    "the counterfactual sparse trajectory does not modify the registered trainer",
+    "the finite full-gradient trajectory is not identified with an exact equilibrium",
+    "no speed, verifier-yield, or efficacy improvement is inferred"
+  ]
+}

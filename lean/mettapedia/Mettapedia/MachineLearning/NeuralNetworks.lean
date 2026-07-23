@@ -1,3 +1,6 @@
 import Mettapedia.MachineLearning.NeuralNetworks.PredictiveCoding
 import Mettapedia.MachineLearning.NeuralNetworks.ForgettingGeometry
 import Mettapedia.MachineLearning.NeuralNetworks.WorkspaceDecoder
+import Mettapedia.MachineLearning.NeuralNetworks.UtilizationAtlas
+import Mettapedia.MachineLearning.NeuralNetworks.TwoTimescaleAdaptation
+import Mettapedia.MachineLearning.NeuralNetworks.Architecture

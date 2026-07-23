@@ -1,0 +1,75 @@
+{
+  "schema": "pc.conditional.acceleration.v1",
+  "proof_binding": {
+    "module": "Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.ConditionalAcceleration",
+    "source": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/ConditionalAcceleration.lean",
+    "source_sha256": "53d27a29009f5bee9bc6adf2b05650a8b15b8488295e113028cf568281a03c8e",
+    "curvature_theorem": "ConditionalAcceleration.strongConvexOn_add_precision",
+    "reduction_theorem": "ConditionalAcceleration.momentumQuadraticStep_zero_current",
+    "recurrence_theorem": "ConditionalAcceleration.acceleratedSlowResidual_is_momentum_step",
+    "closed_form_theorem": "ConditionalAcceleration.acceleratedSlowResidual_closedForm",
+    "comparison_theorem": "ConditionalAcceleration.acceleratedSlowResidual_four_lt_plain",
+    "oracle_accumulation_theorem": "ConditionalAcceleration.constantOracleDrift_closedForm"
+  },
+  "positive_fixture": {
+    "curvature": {
+      "task_negative_curvature_bound": "1",
+      "penalty_precision": "2",
+      "combined_strong_convexity": "1"
+    },
+    "quadratic_mode": {
+      "lower_eigenvalue": "1",
+      "upper_eigenvalue": "9",
+      "rate": "1/9",
+      "momentum": "1/2",
+      "initial_previous": "1",
+      "initial_current": "1",
+      "plain_residuals": ["1", "8/9", "64/81", "512/729", "4096/6561"],
+      "accelerated_residuals": ["1", "8/9", "20/27", "16/27", "112/243"],
+      "comparison_depth": 4,
+      "accelerated_is_smaller": true,
+      "high_mode_next": "0",
+      "zero_momentum_next": "8/9"
+    },
+    "inexact_oracle": {
+      "oracle_error": "1/10",
+      "state_previous": "0",
+      "state_current": "0",
+      "reported_next": "1/10",
+      "moves_exact_optimum": true,
+      "accumulated_drift": ["0", "0", "1/10", "7/30", "11/30"]
+    }
+  },
+  "negative_fixtures": [
+    {
+      "name": "precision-does-not-dominate",
+      "mutation": "remove_curvature_dominance",
+      "expected_error": "precision_not_dominant"
+    },
+    {
+      "name": "tampered-accelerated-recurrence",
+      "mutation": "tamper_accelerated_residual",
+      "expected_error": "accelerated_recurrence_mismatch"
+    },
+    {
+      "name": "false-four-sweep-comparison",
+      "mutation": "reverse_comparison",
+      "expected_error": "comparison_claim_mismatch"
+    },
+    {
+      "name": "false-zero-momentum-reduction",
+      "mutation": "tamper_zero_momentum",
+      "expected_error": "zero_momentum_reduction_mismatch"
+    },
+    {
+      "name": "hidden-oracle-error-floor",
+      "mutation": "erase_oracle_effect",
+      "expected_error": "oracle_step_mismatch"
+    },
+    {
+      "name": "tampered-oracle-accumulation",
+      "mutation": "tamper_oracle_accumulation",
+      "expected_error": "oracle_accumulation_mismatch"
+    }
+  ]
+}

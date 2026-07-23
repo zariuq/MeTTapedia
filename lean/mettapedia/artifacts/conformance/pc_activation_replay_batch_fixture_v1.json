@@ -1,0 +1,139 @@
+{
+  "activation": "silu",
+  "records": [
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "2",
+          "numerator_decimal": "1"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "2",
+            "numerator_decimal": "-1"
+          },
+          "halvings": 0,
+          "lower": {
+            "denominator_decimal": "4800",
+            "numerator_decimal": "2911"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "2",
+              "numerator_decimal": "-1"
+            },
+            "lower": {
+              "denominator_decimal": "4800",
+              "numerator_decimal": "2911"
+            },
+            "terms": 5,
+            "upper": {
+              "denominator_decimal": "2400",
+              "numerator_decimal": "1457"
+            }
+          },
+          "scale": 1,
+          "upper": {
+            "denominator_decimal": "2400",
+            "numerator_decimal": "1457"
+          }
+        },
+        "input_word_unsigned": 1056964608,
+        "local_error": {
+          "denominator_decimal": "61712",
+          "numerator_decimal": "85"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "3857",
+          "numerator_decimal": "1200"
+        },
+        "output_upper": {
+          "denominator_decimal": "7711",
+          "numerator_decimal": "2400"
+        },
+        "output_word_unsigned": 1050673152,
+        "runtime_value": {
+          "denominator_decimal": "16",
+          "numerator_decimal": "5"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 0
+    },
+    {
+      "certificate": {
+        "argument": {
+          "denominator_decimal": "1",
+          "numerator_decimal": "2"
+        },
+        "exp_certificate": {
+          "argument": {
+            "denominator_decimal": "1",
+            "numerator_decimal": "-2"
+          },
+          "halvings": 1,
+          "lower": {
+            "denominator_decimal": "40000",
+            "numerator_decimal": "5329"
+          },
+          "reduced": {
+            "argument": {
+              "denominator_decimal": "1",
+              "numerator_decimal": "-1"
+            },
+            "lower": {
+              "denominator_decimal": "200",
+              "numerator_decimal": "73"
+            },
+            "terms": 5,
+            "upper": {
+              "denominator_decimal": "200",
+              "numerator_decimal": "77"
+            }
+          },
+          "scale": 2,
+          "upper": {
+            "denominator_decimal": "40000",
+            "numerator_decimal": "5929"
+          }
+        },
+        "input_word_unsigned": 1073741824,
+        "local_error": {
+          "denominator_decimal": "181316",
+          "numerator_decimal": "2697"
+        },
+        "operation": "silu",
+        "output_lower": {
+          "denominator_decimal": "45929",
+          "numerator_decimal": "80000"
+        },
+        "output_upper": {
+          "denominator_decimal": "45329",
+          "numerator_decimal": "80000"
+        },
+        "output_word_unsigned": 1071644672,
+        "runtime_value": {
+          "denominator_decimal": "4",
+          "numerator_decimal": "7"
+        },
+        "schema": "tgad.rational-range-reduced-activation-enclosure.v1"
+      },
+      "flat_index": 1
+    }
+  ],
+  "schema": "tgad.rational-activation-replay-batch.v1",
+  "shape": [
+    1,
+    2
+  ],
+  "site_index": 0,
+  "slice_count": 2,
+  "slice_start": 0,
+  "slice_stop_exclusive": 2,
+  "source_binding": {},
+  "source_entry_count": 2,
+  "source_input_tensor_sha256": "d98f4542536b9e11e72482b660478ae6caa336a152761681faef323848cf5cb1",
+  "source_output_tensor_sha256": "dc015558415867bcafc9f1b3aad65fe42a87e0d1b770e39dc20870443d01f960",
+  "source_probe_json_sha256": "4204368886c7ec8750b0d4f2b8163df18868e02470da9dcbc788810d0dfd2124"
+}

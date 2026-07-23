@@ -1,0 +1,32 @@
+import Mettapedia.MachineLearning.NeuralNetworks.Architecture.TypedRelationGraph
+import Mettapedia.MachineLearning.NeuralNetworks.Architecture.RowIndexedRotary
+import Mettapedia.MachineLearning.NeuralNetworks.Architecture.EncoderEquivariance
+import Mettapedia.MachineLearning.NeuralNetworks.Architecture.GSLTGraphCompiler
+import Mettapedia.MachineLearning.NeuralNetworks.Architecture.StateCarrier
+import Mettapedia.MachineLearning.NeuralNetworks.Architecture.ObservationalEquivalence
+import Mettapedia.MachineLearning.NeuralNetworks.Architecture.AcceptedBehavior
+import Mettapedia.MachineLearning.NeuralNetworks.Architecture.EquilibriumObservation
+import Mettapedia.MachineLearning.NeuralNetworks.Architecture.RoutingExpansion
+import Mettapedia.MachineLearning.NeuralNetworks.Architecture.ExecutionSemantics
+import Mettapedia.MachineLearning.NeuralNetworks.Architecture.AutonomousExecution
+import Mettapedia.MachineLearning.NeuralNetworks.Architecture.FiniteDirectionality
+import Mettapedia.MachineLearning.NeuralNetworks.Architecture.PhaseHandoffTracking
+import Mettapedia.MachineLearning.NeuralNetworks.Architecture.CarrierInstances.Recurrent
+import Mettapedia.MachineLearning.NeuralNetworks.Architecture.CarrierInstances.RecurrentPolicy
+import Mettapedia.MachineLearning.NeuralNetworks.Architecture.CarrierInstances.RecurrentPolicyProvenance
+import Mettapedia.MachineLearning.NeuralNetworks.Architecture.CarrierInstances.Workspace
+import Mettapedia.MachineLearning.NeuralNetworks.Architecture.CarrierInstances.Belief
+import Mettapedia.MachineLearning.NeuralNetworks.Architecture.CarrierInstances.Carom
+import Mettapedia.MachineLearning.NeuralNetworks.Architecture.TrainingSelector
+import Mettapedia.MachineLearning.NeuralNetworks.Architecture.TrainingSelectorFixtures
+
+/-!
+# Neural-network state-carrier architecture
+
+This import surface collects typed relation-graph compilation, the abstract
+state-carrier calculus, observational-equivalence, execution-semantics, and
+routing-expansion boundaries, observable equilibrium, checker-mediated
+accepted behavior, and the recurrent, workspace, belief, and routed CAROM
+instances. The recurrent instance includes its typed state-input, source-summary,
+teacher-forced scan, incremental-step, and shared legal-policy-port semantics.
+-/

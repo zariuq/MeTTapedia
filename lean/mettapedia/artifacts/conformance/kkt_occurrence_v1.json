@@ -1,0 +1,302 @@
+{
+  "active_branch_case": {
+    "forward": {
+      "all_active_residuals_zero": true,
+      "output_error": {
+        "denominator": 1,
+        "numerator": 15
+      },
+      "residuals": {
+        "r1": {
+          "denominator": 1,
+          "numerator": 0
+        },
+        "r2": {
+          "denominator": 1,
+          "numerator": 0
+        },
+        "r3": {
+          "denominator": 1,
+          "numerator": 0
+        }
+      },
+      "x1": {
+        "denominator": 1,
+        "numerator": 6
+      },
+      "x2": {
+        "denominator": 1,
+        "numerator": 7
+      },
+      "x3": {
+        "denominator": 1,
+        "numerator": 20
+      }
+    },
+    "inputs": {
+      "mask": 1,
+      "offset": {
+        "denominator": 1,
+        "numerator": 1
+      },
+      "target": {
+        "denominator": 1,
+        "numerator": 5
+      },
+      "theta": {
+        "denominator": 1,
+        "numerator": 3
+      },
+      "x0": {
+        "denominator": 1,
+        "numerator": 2
+      }
+    },
+    "reverse": {
+      "a1": {
+        "denominator": 1,
+        "numerator": 15
+      },
+      "a2": {
+        "denominator": 1,
+        "numerator": 30
+      },
+      "a3": {
+        "denominator": 1,
+        "numerator": 15
+      },
+      "input_covector": {
+        "denominator": 1,
+        "numerator": 135
+      },
+      "minus_lagrangian_is_stationary": true,
+      "plus_lagrangian_same_orientation_is_not_stationary": true,
+      "state_occurrence_contributions_into_x0": [
+        {
+          "denominator": 1,
+          "numerator": 45
+        },
+        {
+          "denominator": 1,
+          "numerator": 90
+        }
+      ],
+      "state_stationarity_residuals": {
+        "x1": {
+          "denominator": 1,
+          "numerator": 0
+        },
+        "x2": {
+          "denominator": 1,
+          "numerator": 0
+        },
+        "x3": {
+          "denominator": 1,
+          "numerator": 0
+        }
+      }
+    },
+    "tied_parameter": {
+      "direct_output_derivative": {
+        "denominator": 1,
+        "numerator": 6
+      },
+      "direct_task_derivative": {
+        "denominator": 1,
+        "numerator": 90
+      },
+      "occurrence_contributions": [
+        {
+          "denominator": 1,
+          "numerator": 30
+        },
+        {
+          "denominator": 1,
+          "numerator": 60
+        }
+      ],
+      "occurrence_sum": {
+        "denominator": 1,
+        "numerator": 90
+      },
+      "occurrence_sum_equals_direct_task_derivative": true
+    }
+  },
+  "graph": {
+    "nodes": [
+      "x0",
+      "x1",
+      "x2",
+      "x3"
+    ],
+    "parameter_occurrences": [
+      [
+        "theta",
+        "x1",
+        "first_tied_use"
+      ],
+      [
+        "theta",
+        "x2",
+        "second_tied_use"
+      ]
+    ],
+    "parent_occurrences": [
+      [
+        "x0",
+        "x1",
+        "theta_times_x0"
+      ],
+      [
+        "x0",
+        "x2",
+        "theta_times_x0"
+      ],
+      [
+        "x1",
+        "x3",
+        "unit_merge"
+      ],
+      [
+        "x2",
+        "x3",
+        "masked_double_merge"
+      ]
+    ],
+    "shared_source_has_two_occurrences": true,
+    "tied_parameter_has_two_occurrences": true
+  },
+  "masked_branch_case": {
+    "forward": {
+      "all_active_residuals_zero": true,
+      "output_error": {
+        "denominator": 1,
+        "numerator": 1
+      },
+      "residuals": {
+        "r1": {
+          "denominator": 1,
+          "numerator": 0
+        },
+        "r2": {
+          "denominator": 1,
+          "numerator": 0
+        },
+        "r3": {
+          "denominator": 1,
+          "numerator": 0
+        }
+      },
+      "x1": {
+        "denominator": 1,
+        "numerator": 6
+      },
+      "x2": {
+        "denominator": 1,
+        "numerator": 7
+      },
+      "x3": {
+        "denominator": 1,
+        "numerator": 6
+      }
+    },
+    "inputs": {
+      "mask": 0,
+      "offset": {
+        "denominator": 1,
+        "numerator": 1
+      },
+      "target": {
+        "denominator": 1,
+        "numerator": 5
+      },
+      "theta": {
+        "denominator": 1,
+        "numerator": 3
+      },
+      "x0": {
+        "denominator": 1,
+        "numerator": 2
+      }
+    },
+    "reverse": {
+      "a1": {
+        "denominator": 1,
+        "numerator": 1
+      },
+      "a2": {
+        "denominator": 1,
+        "numerator": 0
+      },
+      "a3": {
+        "denominator": 1,
+        "numerator": 1
+      },
+      "input_covector": {
+        "denominator": 1,
+        "numerator": 3
+      },
+      "minus_lagrangian_is_stationary": true,
+      "plus_lagrangian_same_orientation_is_not_stationary": true,
+      "state_occurrence_contributions_into_x0": [
+        {
+          "denominator": 1,
+          "numerator": 3
+        },
+        {
+          "denominator": 1,
+          "numerator": 0
+        }
+      ],
+      "state_stationarity_residuals": {
+        "x1": {
+          "denominator": 1,
+          "numerator": 0
+        },
+        "x2": {
+          "denominator": 1,
+          "numerator": 0
+        },
+        "x3": {
+          "denominator": 1,
+          "numerator": 0
+        }
+      }
+    },
+    "tied_parameter": {
+      "direct_output_derivative": {
+        "denominator": 1,
+        "numerator": 2
+      },
+      "direct_task_derivative": {
+        "denominator": 1,
+        "numerator": 2
+      },
+      "occurrence_contributions": [
+        {
+          "denominator": 1,
+          "numerator": 2
+        },
+        {
+          "denominator": 1,
+          "numerator": 0
+        }
+      ],
+      "occurrence_sum": {
+        "denominator": 1,
+        "numerator": 2
+      },
+      "occurrence_sum_equals_direct_task_derivative": true
+    }
+  },
+  "negative_boundaries": {
+    "endpoint_deduplication_loses_occurrence_multiplicity": true,
+    "including_masked_branch_would_be_spurious": true,
+    "masked_second_parameter_occurrence_is_zero": true,
+    "parameter_id_deduplication_loses_occurrence_multiplicity": true,
+    "single_child_term_loses_shared_credit": true,
+    "single_parameter_term_loses_tied_gradient": true
+  },
+  "schema": "credit.kkt.occurrence.conformance.v1",
+  "sign_convention": "objective - sum(adjoint * residual)"
+}

@@ -1,4 +1,5 @@
 import Mettapedia.MachineLearning.NeuralNetworks.WorkspaceDecoder.Carom
+import Mettapedia.MachineLearning.NeuralNetworks.WorkspaceDecoder.FiniteDampedSettling
 
 /-!
 # Content accounting for the CAROM formalization
@@ -40,6 +41,9 @@ def contributions : ProvenanceRung → List Contribution
       [ ⟨.directLift, "gated workspace dynamics", "Dynamics"⟩
       , ⟨.newContent, "read-transform-gate mechanism adapter", "Carom"⟩
       , ⟨.exactRestatement, "simultaneous recurrent-write equation", "Carom"⟩
+      , ⟨.exactRestatement,
+          "captured broadcast sweep equals the gated-family step",
+          "FiniteDampedSettling"⟩
       , ⟨.newContent, "gain-weighted target collapse", "Carom"⟩
       , ⟨.scopeBoundary, "zero-gate and nondegenerate scalar fixtures", "Carom"⟩ ]
   | .settlingAndSafety =>
@@ -47,6 +51,12 @@ def contributions : ProvenanceRung → List Contribution
       , ⟨.directLift, "geometric residual envelope", "LinearSettling"⟩
       , ⟨.directLift, "legal-action soundness and recall", "TypedRegisters"⟩
       , ⟨.newContent, "exact affine linearization certificate", "Carom"⟩
+      , ⟨.newContent,
+          "positive configured-depth finite trace and iteration equivalence",
+          "FiniteDampedSettling"⟩
+      , ⟨.scopeBoundary,
+          "off-by-one and sequential-write alternatives are observably different",
+          "FiniteDampedSettling"⟩
       , ⟨.scopeBoundary, "contraction has no finite optimum in general", "Carom"⟩ ]
   | .selectionMetrics =>
       [ ⟨.directLift, "finite target-mismatch optimum", "LinearSettling"⟩
@@ -78,11 +88,11 @@ theorem contributionCounts :
     (contributionCount .recurrentWrite .directLift,
       contributionCount .recurrentWrite .newContent,
       contributionCount .recurrentWrite .exactRestatement,
-      contributionCount .recurrentWrite .scopeBoundary) = (1, 2, 1, 1) ∧
+      contributionCount .recurrentWrite .scopeBoundary) = (1, 2, 2, 1) ∧
     (contributionCount .settlingAndSafety .directLift,
       contributionCount .settlingAndSafety .newContent,
       contributionCount .settlingAndSafety .exactRestatement,
-      contributionCount .settlingAndSafety .scopeBoundary) = (3, 1, 0, 1) ∧
+      contributionCount .settlingAndSafety .scopeBoundary) = (3, 2, 0, 2) ∧
     (contributionCount .selectionMetrics .directLift,
       contributionCount .selectionMetrics .newContent,
       contributionCount .selectionMetrics .exactRestatement,

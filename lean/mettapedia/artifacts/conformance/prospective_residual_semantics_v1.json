@@ -1,0 +1,57 @@
+{
+  "schema": "prospective-residual-semantics-v1",
+  "source_repository": "gslt-synth",
+  "source_files": [
+    {
+      "file": "train/tgad_gen9_update_rules.py",
+      "sha256": "4befe1ebe1d4361c7ed92ab30742c87b8f3903de8585ec6f1896a796f8ad96a5"
+    },
+    {
+      "file": "train/tgad_frozen_pc_adapter.py",
+      "sha256": "12d2946b752ed9f00c210302a430ef98f37687becbcf0093830c17fa4a06367f"
+    },
+    {
+      "file": "models/tgad_gen9_adapter.py",
+      "sha256": "9b9d646edb381c38f8896c8f8cb8d4bec8e22604415d764e2d32f1307af2572f"
+    }
+  ],
+  "source_contract": {
+    "settled_variable": "masked residual-adapter latent",
+    "frozen_during_inference": "all model parameters",
+    "energy": "task(latent) + 0.5 * precision * norm(mask * (latent - prediction))^2",
+    "candidate_step": "latent - accepted_rate * gradient(energy, latent)",
+    "acceptance": "candidate_energy <= current_energy + monotone_tolerance",
+    "outer_update": "fit predicted residual to detached inferred residual with the same quadratic precision",
+    "active_subspace": "prediction, task application, and penalty are masked; inactive latent coordinates remain zero from their initialized trajectory"
+  },
+  "theory_correspondence": {
+    "state_space": "active masked latent subspace",
+    "task_gradient": "gradient of the frozen-model task loss with respect to the active latent",
+    "implicit_operator": "inverse_precision * task_gradient",
+    "resolvent_input": "predicted residual",
+    "equation_residual": "inverse_precision * final energy gradient",
+    "licensing_premise": "task gradient is monotone on the declared invariant region",
+    "distance_certificate": "distance to exact prospective equilibrium <= final energy-gradient norm / precision"
+  },
+  "telemetry_boundary": {
+    "recorded": [
+      "initial and final energy",
+      "maximum accepted energy increase",
+      "accepted rates",
+      "backtrack count",
+      "settled displacement norm"
+    ],
+    "not_recorded": [
+      "energy gradient at the final accepted latent",
+      "resolvent-equation residual at the final accepted latent",
+      "local monotonicity or contraction certificate"
+    ],
+    "conclusion": "existing campaign artifacts cannot retroactively instantiate the final-gradient distance certificate"
+  },
+  "non_claims": [
+    "global task-gradient monotonicity is not inferred from energy descent",
+    "backtracking acceptance is not identified with stationarity",
+    "the active campaign is not modified",
+    "no runtime or efficacy improvement is claimed"
+  ]
+}

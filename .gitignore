@@ -82,7 +82,16 @@ lean/dev-package-overrides.json
 # Experimental results, data, and scripts (regenerable)
 lean/mettapedia/results/
 lean/mettapedia/data/
-lean/mettapedia/scripts/
+!lean/mettapedia/scripts/
+lean/mettapedia/scripts/*
+!lean/mettapedia/scripts/oeis_program_discovery_fixture.py
+!lean/mettapedia/scripts/test_oeis_program_discovery_fixture.py
+!lean/mettapedia/scripts/conformance/
+lean/mettapedia/scripts/conformance/*
+!lean/mettapedia/scripts/conformance/check_pc_authenticated_affine_replay.py
+!lean/mettapedia/scripts/conformance/check_pc_authenticated_hidden_stage_replay.py
+!lean/mettapedia/scripts/conformance/check_pc_authenticated_full_residual_replay.py
+!lean/mettapedia/scripts/conformance/check_tgad_unified_carrier_source_conformance.py
 lean/algorithms/lean-toolchain
 lean/mettapedia/Mettapedia/CategoricalLogic/lakefile.lean
 lean/mettapedia/Mettapedia/CategoricalLogic/lean-toolchain

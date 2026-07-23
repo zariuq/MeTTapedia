@@ -1,0 +1,547 @@
+{
+  "artifacts": [
+    {
+      "file": "artifacts/conformance/pc_authenticated_active_curvature_gru_w1997425957_g9_b0_v2.json",
+      "role": "authenticated full source probe",
+      "sha256": "beb12bfe26f0d944d8a2c55afb8bbb3b1937978f40a171bdae2875ae190c117b"
+    },
+    {
+      "file": "artifacts/conformance/pc_active_curvature_source_v1.json",
+      "role": "upstream authenticated-probe source manifest",
+      "sha256": "fa1f6b3123721d361d2ca98119ccf1d0d0372e796b3564dbd9470bb3b649e6d2"
+    },
+    {
+      "file": "artifacts/conformance/pc_authenticated_activation_invocation_replay_gru_w1997425957_g9_b0_site0_i0_v1.json",
+      "role": "authenticated replay sidecar",
+      "sha256": "b943cbb5baf5e01c8d48951fe8d02095713036297e5e35d77cff429ae84481b6"
+    },
+    {
+      "file": "artifacts/conformance/pc_authenticated_activation_invocation_replay_gru_w1997425957_g9_b0_site1_i0_v1.json",
+      "role": "authenticated replay sidecar",
+      "sha256": "7dc7e1d6a5d843a506edb7fa93e02afad72fb0b7a5b5775216a6c79483e19254"
+    },
+    {
+      "file": "artifacts/conformance/pc_authenticated_activation_invocation_replay_gru_w1997425957_g9_b0_site2_i0_v1.json",
+      "role": "authenticated replay sidecar",
+      "sha256": "cbe8ea1d8878c416ec5c6b500e844504a462c2672e19bd65964a0fefdc3599df"
+    },
+    {
+      "file": "artifacts/conformance/pc_authenticated_affine_invocation_replay_gru_w1997425957_g9_b0_readout_i0_v1.json",
+      "role": "authenticated replay sidecar",
+      "sha256": "b40d897265f709dc98d7538f83a10f07de8a0106216ba132899bdf35291f4908"
+    },
+    {
+      "file": "artifacts/conformance/pc_authenticated_affine_invocation_replay_gru_w1997425957_g9_b0_site0_i0_v1.json",
+      "role": "authenticated replay sidecar",
+      "sha256": "d0c360d853c9a00f1ce66ddd0f99fcb5fdcc569fa818ba195c7363bd1479f988"
+    },
+    {
+      "file": "artifacts/conformance/pc_authenticated_affine_invocation_replay_gru_w1997425957_g9_b0_site1_i0_v1.json",
+      "role": "authenticated replay sidecar",
+      "sha256": "dee3acd8a3271178ab567b7ab0a7b8684938a61e22a2f077e19d986ab973fd00"
+    },
+    {
+      "file": "artifacts/conformance/pc_authenticated_affine_invocation_replay_gru_w1997425957_g9_b0_site2_i0_v1.json",
+      "role": "authenticated replay sidecar",
+      "sha256": "6b62357c704c2ee8a079577f93ad9baf72b647c73db6cc36e47e378174234de4"
+    },
+    {
+      "file": "artifacts/conformance/pc_authenticated_affine_mask_invocation_replay_gru_w1997425957_g9_b0_readout_i0_v1.json",
+      "role": "authenticated replay sidecar",
+      "sha256": "80e6ba561ec4636b7240e707f0bd44ab3a5204c0a172fd4e6dd75ef6b9043471"
+    },
+    {
+      "file": "artifacts/conformance/pc_authenticated_affine_silu_invocation_replay_gru_w1997425957_g9_b0_site0_i0_v1.json",
+      "role": "authenticated replay sidecar",
+      "sha256": "11660564ae150fe65b3a6a6ee024cd8c110b47d00227691df77e93b141392e72"
+    },
+    {
+      "file": "artifacts/conformance/pc_authenticated_affine_silu_invocation_replay_gru_w1997425957_g9_b0_site1_i0_v1.json",
+      "role": "authenticated replay sidecar",
+      "sha256": "81f257339a7fd2b3946233a65f1406c5d1d7d26f735c3c8d5fbb50ba31fa8c8c"
+    },
+    {
+      "file": "artifacts/conformance/pc_authenticated_affine_silu_invocation_replay_gru_w1997425957_g9_b0_site2_i0_v1.json",
+      "role": "authenticated replay sidecar",
+      "sha256": "94243a35da111b44c8e7791a9a73e64809fe4e131cf6f01cf18ebd1af3139083"
+    },
+    {
+      "file": "artifacts/conformance/pc_authenticated_hidden_stage_invocation_replay_gru_w1997425957_g9_b0_site0_i0_v1.json",
+      "role": "authenticated replay sidecar",
+      "sha256": "98b0bc99d20b07dadd2edbc6386295c3ab1caa31d4c9bc2addb6f1824b98ab56"
+    },
+    {
+      "file": "artifacts/conformance/pc_authenticated_hidden_stage_invocation_replay_gru_w1997425957_g9_b0_site1_i0_v1.json",
+      "role": "authenticated replay sidecar",
+      "sha256": "2dba4fb30f92292ef9bd2920a10abb5454146e1fec9f386a4c659f993c03ce3f"
+    },
+    {
+      "file": "artifacts/conformance/pc_authenticated_hidden_stage_invocation_replay_gru_w1997425957_g9_b0_site2_i0_v1.json",
+      "role": "authenticated replay sidecar",
+      "sha256": "bb662de350692d9b755f7b9304650fa9144544ef7cd138fe67fbed8682580fbb"
+    },
+    {
+      "file": "artifacts/conformance/pc_authenticated_three_hidden_stage_residual_invocation_replay_gru_w1997425957_g9_b0_i0_v1.json",
+      "role": "authenticated replay sidecar",
+      "sha256": "21893011be66cb34f69e5dca59fb1bd8649af7b4c240c522032ecd9705f558f3"
+    }
+  ],
+  "expected_verification": {
+    "affine_local_errors": {
+      "final_readout": {
+        "denominator_decimal": "295147905179352825856",
+        "numerator_decimal": "785438234706685"
+      },
+      "hidden_site_0": {
+        "denominator_decimal": "1180591620717411303424",
+        "numerator_decimal": "4830463782067867"
+      },
+      "hidden_site_1": {
+        "denominator_decimal": "36893488147419103232",
+        "numerator_decimal": "141535723881995"
+      },
+      "hidden_site_2": {
+        "denominator_decimal": "18446744073709551616",
+        "numerator_decimal": "55811213996783"
+      }
+    },
+    "backbone": "gru",
+    "batch_index": 0,
+    "generated_lean_sha256s": {
+      "Float32AuthenticatedActivationReplaySite0Invocation0GeneratedFixture.lean": "51698575010cb44e42efce76fe89bcdec671acf68a94808a45567e8d28873c81",
+      "Float32AuthenticatedActivationReplaySite1Invocation0GeneratedFixture.lean": "7e67312d7a1abbaae1f662de97779f3073310276c67c38b8a67a5ef85190280e",
+      "Float32AuthenticatedActivationReplaySite2Invocation0GeneratedFixture.lean": "d3f27fd560a0943189da2da75bff936dda331c713f8307350087e22132bc34a0",
+      "Float32AuthenticatedAffineMaskReplayReadoutInvocation0GeneratedFixture.lean": "2e6708ff5f99da08db1b503a892141cd7d11a8f6b80a556f2182ae27c0c91fc2",
+      "Float32AuthenticatedAffineReplayChunkedGeneratedFixture.lean": "ec615fff159eeb29ea65cad7496cacfaa336f3581fb1795893d443598c9af9bc",
+      "Float32AuthenticatedAffineReplayReadoutInvocation0GeneratedFixture.lean": "2a1656c6db5802d81cbe53aaffff8c5ec370405ad20d5c95813ad5f2f261b1f7",
+      "Float32AuthenticatedAffineReplayReadoutInvocation0GeneratedFixtureBlock00.lean": "c9f18fe479ff593a2b7069093679af12d9855cc6d7b7ced3e56fdbeab9e5c47d",
+      "Float32AuthenticatedAffineReplayReadoutInvocation0GeneratedFixtureBlock01.lean": "e148ce7d1b2755c08b5d7b4abb9d63a3b31d08ccd46093745ea1a0b38fa34e75",
+      "Float32AuthenticatedAffineReplayReadoutInvocation0GeneratedFixtureBlock02.lean": "4281af30beec94ba3e70214cafc42438349717863b0fa1245c8ef225ce9d43a8",
+      "Float32AuthenticatedAffineReplayReadoutInvocation0GeneratedFixtureBlock03.lean": "6c79294c468602490a6da1c805d00e724add23b8625c3acf1cc0ffc29455a3e5",
+      "Float32AuthenticatedAffineReplayReadoutInvocation0GeneratedFixtureBlock04.lean": "495b043053d0db76188c13b1d3712582b6943827c6c24179d13479fbb928dc56",
+      "Float32AuthenticatedAffineReplayReadoutInvocation0GeneratedFixtureBlock05.lean": "1b06e946e454b55ae01c5cfe68f5d819eb66c3e14e6d05236bd22e83e99fca86",
+      "Float32AuthenticatedAffineReplayReadoutInvocation0GeneratedFixtureBlock06.lean": "764f0faa7e07503a12c70dbe9f469975a3c31740886327933f709e431de5a047",
+      "Float32AuthenticatedAffineReplayReadoutInvocation0GeneratedFixtureBlock07.lean": "8d33b2700a3488831d076caf22cc0d7c702ae76b9de04634130e7ecd6cf4eccf",
+      "Float32AuthenticatedAffineReplayReadoutInvocation0GeneratedFixtureBlock08.lean": "229e5b3a82e71b007797568f7a27cfaaa7d6a8ef43b3280d036e3414c1fb6841",
+      "Float32AuthenticatedAffineReplayReadoutInvocation0GeneratedFixtureBlock09.lean": "79a42169778454e588d3e7c4bb5c79b8a91bbf4345023614cb0b076fbfa46fe6",
+      "Float32AuthenticatedAffineReplayReadoutInvocation0GeneratedFixtureBlock10.lean": "fd584104fc0b84d36551b329161690b2c5c60dd656ce75396b308483f5d805b0",
+      "Float32AuthenticatedAffineReplayReadoutInvocation0GeneratedFixtureBlock11.lean": "908e869579bd3f78e459a425b13c97a082e34e6187bd5955f79b17c18d24f06c",
+      "Float32AuthenticatedAffineReplayReadoutInvocation0GeneratedFixtureBlock12.lean": "1cfb8ed3045f6da7d7a167f6f44904aa7f4b63c2764d97b81aac85d6e9cbb2c2",
+      "Float32AuthenticatedAffineReplayReadoutInvocation0GeneratedFixtureBlock13.lean": "90077706a50df143c15534ed50060f6ea8dcf3a9ac2ecc71134141e002c2f342",
+      "Float32AuthenticatedAffineReplayReadoutInvocation0GeneratedFixtureBlock14.lean": "629d0f312fe0ebfd6c5be9fb60efaaac04cffa35d2249cc9ff9d4eeb48e73e74",
+      "Float32AuthenticatedAffineReplayReadoutInvocation0GeneratedFixtureBlock15.lean": "f8a69e737f3d7b303acf775c1be0a48db2399814c3a7361ac7d226e267e75d50",
+      "Float32AuthenticatedAffineReplayReadoutInvocation0GeneratedFixtureCommon.lean": "37a81c0c27cebc2ff32e6130cbe30465eae77b5ce8f2fdc5f44022d82acdda45",
+      "Float32AuthenticatedAffineReplaySite0Invocation0GeneratedFixture.lean": "b4b7de4724b93e7dd4c33851bef105fbe082cc4a4f3ad154fa883030a2ea1217",
+      "Float32AuthenticatedAffineReplaySite0Invocation0GeneratedFixtureBlock00.lean": "c37dbdf9add0b50a21936474249e2a30f4d86a8c93fd374dc1fa76bae0ab905c",
+      "Float32AuthenticatedAffineReplaySite0Invocation0GeneratedFixtureBlock01.lean": "268d36859a8cea5074b23ebe613286a0bfd6c225b0f2ebec939d7d2ee83e0bb4",
+      "Float32AuthenticatedAffineReplaySite0Invocation0GeneratedFixtureBlock02.lean": "020d8d7b9d1b52051ffc614b1e78cf9a8ab49125eee15bd4f25a8af639328d9f",
+      "Float32AuthenticatedAffineReplaySite0Invocation0GeneratedFixtureBlock03.lean": "1bfb459da04998eb7f659f39796d1798e875a642501c06d1d195f445a9d65903",
+      "Float32AuthenticatedAffineReplaySite0Invocation0GeneratedFixtureBlock04.lean": "a96fdc34c3fe0a8035b0b6c129e4f0fbd338f6fba1ef7d4bb6c075a522f52340",
+      "Float32AuthenticatedAffineReplaySite0Invocation0GeneratedFixtureBlock05.lean": "440878a47711930db0eb1ccdaff21fd98b14c0e39a588757ad686a713e773de3",
+      "Float32AuthenticatedAffineReplaySite0Invocation0GeneratedFixtureBlock06.lean": "52bf36dd104f5fc65260f3e68139cb325eb092806d6d2089194b59046db229a5",
+      "Float32AuthenticatedAffineReplaySite0Invocation0GeneratedFixtureBlock07.lean": "0c5c91f697f845c1949ba9ed0433b37ff49b8d7929266583c4848177c72f26ae",
+      "Float32AuthenticatedAffineReplaySite0Invocation0GeneratedFixtureBlock08.lean": "15345ddd4f36d5da24f52315ee80d2a482198f99586aa4bd938b2dc0ff2b3908",
+      "Float32AuthenticatedAffineReplaySite0Invocation0GeneratedFixtureBlock09.lean": "25f6813e0ac8b05298b75d1e5ab15b4836b441ab588030537ad8fa7d9947d3d3",
+      "Float32AuthenticatedAffineReplaySite0Invocation0GeneratedFixtureBlock10.lean": "4e24e69434dad48010e7b930deae4c8ec1675beff8ee34dfee1c14b31acdff66",
+      "Float32AuthenticatedAffineReplaySite0Invocation0GeneratedFixtureBlock11.lean": "1dc6e1de8dee272c0af2709e8899184db0bee4ed4635cca90f20a90681868127",
+      "Float32AuthenticatedAffineReplaySite0Invocation0GeneratedFixtureBlock12.lean": "6b13405feb7db455ef31ab5a0f23791563c882fb60569bff5da237b84bdaaf34",
+      "Float32AuthenticatedAffineReplaySite0Invocation0GeneratedFixtureBlock13.lean": "d7c596e2411cf9cd2a7c5b0277fa00b4ec9e8e98698ab84272d96d5fef0b4136",
+      "Float32AuthenticatedAffineReplaySite0Invocation0GeneratedFixtureBlock14.lean": "43950ddbf748fe0b295090f08cc340806ba082ea22d1fc42c0afd0027265454a",
+      "Float32AuthenticatedAffineReplaySite0Invocation0GeneratedFixtureBlock15.lean": "3334e2a9535a1b628b404f035975442f55674efde85c7f1341ddfe6778fc1819",
+      "Float32AuthenticatedAffineReplaySite0Invocation0GeneratedFixtureCommon.lean": "9b78283e2e6908049fcef14ac3a0b23daaafee579f287e28ced0e6ee2d175397",
+      "Float32AuthenticatedAffineReplaySite2Invocation0GeneratedFixture.lean": "e6226c931a462e3cccca3a235bdd289476bc47c35d00acc5fd63e3a211ef1bff",
+      "Float32AuthenticatedAffineSiLUReplaySite0Invocation0GeneratedFixture.lean": "36b37d0a7ae3765bc051faa68e4acc836e9285cb9d5fb3b8a0a3f4b435b29da5",
+      "Float32AuthenticatedAffineSiLUReplaySite1Invocation0GeneratedFixture.lean": "4f4199a596a92ab7da326cf0881dfcdebc104d201a86a781e9895f0d0478dcf5",
+      "Float32AuthenticatedAffineSiLUReplaySite2Invocation0GeneratedFixture.lean": "400d01a9c0dfa86cdc13ad89edb0e34d88d9f19f633038fd8c4508b729051807",
+      "Float32AuthenticatedHiddenStageReplaySite0Invocation0GeneratedFixture.lean": "041abbc3e2a673b042363e286072ef7af2aa15bf13822510cd0e1165b529a62f",
+      "Float32AuthenticatedHiddenStageReplaySite1Invocation0GeneratedFixture.lean": "613226cba854a9870bdf95714bb89036ada2434db1f7ffc75f66af8beb45474c",
+      "Float32AuthenticatedHiddenStageReplaySite2Invocation0GeneratedFixture.lean": "8d5d933889ec8f3a19a9bf6bcddbeb42f92c2e269c02729730e603105981453b",
+      "Float32AuthenticatedThreeHiddenStageResidualReplayInvocation0GeneratedFixture.lean": "0f52178ffb88d420f3fed6594daeb045f88a3b51873c4e7141042503efed2f89"
+    },
+    "generation": 9,
+    "hidden_stage_count": 3,
+    "hidden_width": 64,
+    "input_width": 256,
+    "inter_stage_word_connection_count": 192,
+    "mask_active_count": 256,
+    "mask_inactive_count": 0,
+    "maximum_affine_local_error": {
+      "denominator_decimal": "1180591620717411303424",
+      "numerator_decimal": "4830463782067867"
+    },
+    "non_claims": [
+      "The certificate is pointwise for one authenticated invocation.",
+      "It does not identify the backend accumulation schedule.",
+      "It does not establish a uniform regional floating-point bound.",
+      "Source hashes and comments are not kernel evidence."
+    ],
+    "output_width": 256,
+    "partition_module_count": 36,
+    "probe_sha256": "beb12bfe26f0d944d8a2c55afb8bbb3b1937978f40a171bdae2875ae190c117b",
+    "rule": "error_coordinate_pc",
+    "schema": "tgad.authenticated-full-residual-kernel-replay-verification.v1",
+    "sidecar_sha256s": {
+      "pc_authenticated_activation_invocation_replay_gru_w1997425957_g9_b0_site0_i0_v1.json": "b943cbb5baf5e01c8d48951fe8d02095713036297e5e35d77cff429ae84481b6",
+      "pc_authenticated_activation_invocation_replay_gru_w1997425957_g9_b0_site1_i0_v1.json": "7dc7e1d6a5d843a506edb7fa93e02afad72fb0b7a5b5775216a6c79483e19254",
+      "pc_authenticated_activation_invocation_replay_gru_w1997425957_g9_b0_site2_i0_v1.json": "cbe8ea1d8878c416ec5c6b500e844504a462c2672e19bd65964a0fefdc3599df",
+      "pc_authenticated_affine_invocation_replay_gru_w1997425957_g9_b0_readout_i0_v1.json": "b40d897265f709dc98d7538f83a10f07de8a0106216ba132899bdf35291f4908",
+      "pc_authenticated_affine_invocation_replay_gru_w1997425957_g9_b0_site0_i0_v1.json": "d0c360d853c9a00f1ce66ddd0f99fcb5fdcc569fa818ba195c7363bd1479f988",
+      "pc_authenticated_affine_invocation_replay_gru_w1997425957_g9_b0_site1_i0_v1.json": "dee3acd8a3271178ab567b7ab0a7b8684938a61e22a2f077e19d986ab973fd00",
+      "pc_authenticated_affine_invocation_replay_gru_w1997425957_g9_b0_site2_i0_v1.json": "6b62357c704c2ee8a079577f93ad9baf72b647c73db6cc36e47e378174234de4",
+      "pc_authenticated_affine_mask_invocation_replay_gru_w1997425957_g9_b0_readout_i0_v1.json": "80e6ba561ec4636b7240e707f0bd44ab3a5204c0a172fd4e6dd75ef6b9043471",
+      "pc_authenticated_affine_silu_invocation_replay_gru_w1997425957_g9_b0_site0_i0_v1.json": "11660564ae150fe65b3a6a6ee024cd8c110b47d00227691df77e93b141392e72",
+      "pc_authenticated_affine_silu_invocation_replay_gru_w1997425957_g9_b0_site1_i0_v1.json": "81f257339a7fd2b3946233a65f1406c5d1d7d26f735c3c8d5fbb50ba31fa8c8c",
+      "pc_authenticated_affine_silu_invocation_replay_gru_w1997425957_g9_b0_site2_i0_v1.json": "94243a35da111b44c8e7791a9a73e64809fe4e131cf6f01cf18ebd1af3139083",
+      "pc_authenticated_hidden_stage_invocation_replay_gru_w1997425957_g9_b0_site0_i0_v1.json": "98b0bc99d20b07dadd2edbc6386295c3ab1caa31d4c9bc2addb6f1824b98ab56",
+      "pc_authenticated_hidden_stage_invocation_replay_gru_w1997425957_g9_b0_site1_i0_v1.json": "2dba4fb30f92292ef9bd2920a10abb5454146e1fec9f386a4c659f993c03ce3f",
+      "pc_authenticated_hidden_stage_invocation_replay_gru_w1997425957_g9_b0_site2_i0_v1.json": "bb662de350692d9b755f7b9304650fa9144544ef7cd138fe67fbed8682580fbb",
+      "pc_authenticated_three_hidden_stage_residual_invocation_replay_gru_w1997425957_g9_b0_i0_v1.json": "21893011be66cb34f69e5dca59fb1bd8649af7b4c240c522032ecd9705f558f3"
+    },
+    "source_invocation_indices": [
+      0
+    ],
+    "status": "PASS",
+    "trust_boundary": {
+      "external_verifier": "checkpoint lineage, source endpoints, canonical sidecar bytes, partition completeness, and deterministic Lean source",
+      "kernel": "exact arithmetic and interior word equality for the supplied finite binary32 hidden stages and masked affine readout"
+    },
+    "world": 1997425957
+  },
+  "non_claims": [
+    "The certificate is pointwise for one authenticated invocation.",
+    "It does not identify the backend accumulation schedule.",
+    "It does not establish a uniform regional floating-point bound.",
+    "Source hashes and comments are not kernel evidence."
+  ],
+  "schema": "pc-authenticated-full-residual-replay-source-v1",
+  "source_files": [
+    {
+      "file": "eval/tgad_pc_active_curvature_probe.py",
+      "sha256": "4035d770e8e04742127685b1386a90f4c8238d700b45349c192e69f8f77294d1"
+    },
+    {
+      "file": "eval/tgad_float32_word_reports.py",
+      "sha256": "1ea19f6d4fcea2534e5bea39dc681b80c078cbe97d1e2bf6a0fe77d3032d6cdb"
+    },
+    {
+      "file": "eval/tgad_emit_affine_replay_batch.py",
+      "sha256": "236ae5b941a5e5b73398df39f17e034cb0a9329d5d596a8d083224ed4f377571"
+    },
+    {
+      "file": "eval/tgad_emit_activation_replay_batch.py",
+      "sha256": "6fc644551168fbbca6fa13f14234883d6ede8dab6c2981de0d0563ee2b695945"
+    },
+    {
+      "file": "eval/tgad_assemble_affine_silu_replay.py",
+      "sha256": "c48bcaaf37e831c17f32208a4c063e3ff8fe6cca61e3ac911f27e7da78251489"
+    },
+    {
+      "file": "eval/tgad_assemble_hidden_stage_replay.py",
+      "sha256": "61a8b1784c73ea734ac92c57a473167af3e900fbc61f26345b4c2a2a4204d74b"
+    },
+    {
+      "file": "eval/tgad_assemble_affine_mask_replay.py",
+      "sha256": "16d506caf8536134089774c4cb6d22c7ccf032bc430ebd43fe11d8733e35877a"
+    },
+    {
+      "file": "eval/tgad_assemble_three_hidden_stage_residual_replay.py",
+      "sha256": "b5e1c7b61fb76d5dc19ee6a59e42590d6ebc7a1b23603c65eb217a9c4b4e7a44"
+    },
+    {
+      "file": "eval/tgad_partition_affine_replay_lean.py",
+      "sha256": "8e029fcc05cee74900e67dad4fcd9a5b2c42b9ce12358106b5a4355c74558bc4"
+    },
+    {
+      "file": "eval/verify_tgad_authenticated_three_hidden_stage_residual_replay.py",
+      "sha256": "a6bf1f5dd9a07c1b40f87cd82d816cef6901c0bb3104fca8af4e0c22f3759f76"
+    },
+    {
+      "file": "eval/tgad_emit_authenticated_full_residual_replay_manifest.py",
+      "sha256": "db0a35fd9e3b186ff8283f6254d937e3981c377ea46286e7851968d55d2eaf0d"
+    },
+    {
+      "file": "tests/test_tgad_emit_affine_replay_batch.py",
+      "sha256": "eb07c4bfa592b1e9d5787524d7a20a491f20ad4b47ea91f2bd7f6aac164fc77f"
+    },
+    {
+      "file": "tests/test_tgad_emit_activation_replay_batch.py",
+      "sha256": "fcaf5e5e445c0b38c054c22945624ca3c13184f03696bac7dc7f62d9d7dbc9c9"
+    },
+    {
+      "file": "tests/test_tgad_assemble_affine_silu_replay.py",
+      "sha256": "b90719eb7fd2575447ba1ea6528290416645a77f6b04c5a969b930ca115c7c03"
+    },
+    {
+      "file": "tests/test_tgad_assemble_hidden_stage_replay.py",
+      "sha256": "4e80117e44d12d19fd5b70a7f0dbcd503bc31f220dac33477969cf048cc0a538"
+    },
+    {
+      "file": "tests/test_tgad_assemble_affine_mask_replay.py",
+      "sha256": "de7430300cdfebb88e2e99c165aad152c10f4eb5a95fb609d0e9a343702c6f8f"
+    },
+    {
+      "file": "tests/test_tgad_assemble_three_hidden_stage_residual_replay.py",
+      "sha256": "c4a953ee81b0ccc819e7242d16d4ea10023d68b0131151dc8cb1b42c521d9850"
+    },
+    {
+      "file": "tests/test_tgad_partition_affine_replay_lean.py",
+      "sha256": "9bd38c346f1787d1a12e80fd103eaefe8296e9f1a757e9cd157ba3f3f12fed06"
+    },
+    {
+      "file": "tests/test_verify_tgad_authenticated_three_hidden_stage_residual_replay.py",
+      "sha256": "205c54d6fb440b89e4d3135b1b9901ca80c8d455c020aaa5c855dbb60ffff3ee"
+    },
+    {
+      "file": "tests/test_tgad_emit_authenticated_full_residual_replay_manifest.py",
+      "sha256": "549aa07e51f08b0c14afadd52821da279db586df7a2d77a6aa974c551f4f64de"
+    }
+  ],
+  "source_repository": "gslt-synth",
+  "theorem_files": [
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32CheckpointMatrix.lean",
+      "sha256": "1ffebf16c8345b12dc46ebb5952ae9205b7f753254aedbfa99d8b9a12c558d22"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AffineReplayCertificate.lean",
+      "sha256": "b1c91a4c9cf6678ac44d8c4a59f9d5cf99403725b6958f8ad0f8d67b34170aca"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32ActivationReplayCertificate.lean",
+      "sha256": "8e158fa19e60cd1af1932e90bd0203ec400707fafdc5b8ec66c2cb6e0b054679"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AffineSiLUReplayCertificate.lean",
+      "sha256": "a4ca6a4534943fa0af00fa52cd56b7afcd7b834c6e705412ed974a6bd37600e8"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AddMaskReplayCertificate.lean",
+      "sha256": "331bbd3158f5912ff4c5508ae5275508f8028440bd14f6afa49d1a888bf83d37"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32HiddenStageReplayCertificate.lean",
+      "sha256": "1411d9ae2b067659abf81406ef215880cdff80cc6322763f589f51da6a83d00b"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32ThreeHiddenStageReplayCertificate.lean",
+      "sha256": "2b0323b29683d711d47dc32e69ec1beb11ea53e97ef9a623b6a8deb2826b319a"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AffineMaskReplayCertificate.lean",
+      "sha256": "78261940d92f87de1996bfe493d03a02172f41c355bc8a5aab4d947de0e267c0"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32ThreeHiddenStageResidualReplayCertificate.lean",
+      "sha256": "809af0f474617b88a8905c2c27b439292a914cc83971fbd8175f0d0c2910b382"
+    },
+    {
+      "file": "scripts/conformance/check_pc_active_curvature_source.py",
+      "sha256": "bcb1f61397c0f9f9f7ce87cfdcfa3f7845c93fa17b9e74c3be1c0515fa7147fd"
+    },
+    {
+      "file": "scripts/conformance/check_pc_authenticated_full_residual_replay.py",
+      "sha256": "0f519f57158f0eb3db00bfc60815c8b594cd672800f0f7533b7d8ece81e8c5fa"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedActivationReplaySite0Invocation0GeneratedFixture.lean",
+      "sha256": "51698575010cb44e42efce76fe89bcdec671acf68a94808a45567e8d28873c81"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedActivationReplaySite1Invocation0GeneratedFixture.lean",
+      "sha256": "7e67312d7a1abbaae1f662de97779f3073310276c67c38b8a67a5ef85190280e"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedActivationReplaySite2Invocation0GeneratedFixture.lean",
+      "sha256": "d3f27fd560a0943189da2da75bff936dda331c713f8307350087e22132bc34a0"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedAffineMaskReplayReadoutInvocation0GeneratedFixture.lean",
+      "sha256": "2e6708ff5f99da08db1b503a892141cd7d11a8f6b80a556f2182ae27c0c91fc2"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedAffineReplayChunkedGeneratedFixture.lean",
+      "sha256": "ec615fff159eeb29ea65cad7496cacfaa336f3581fb1795893d443598c9af9bc"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedAffineReplayReadoutInvocation0GeneratedFixture.lean",
+      "sha256": "2a1656c6db5802d81cbe53aaffff8c5ec370405ad20d5c95813ad5f2f261b1f7"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedAffineReplayReadoutInvocation0GeneratedFixtureBlock00.lean",
+      "sha256": "c9f18fe479ff593a2b7069093679af12d9855cc6d7b7ced3e56fdbeab9e5c47d"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedAffineReplayReadoutInvocation0GeneratedFixtureBlock01.lean",
+      "sha256": "e148ce7d1b2755c08b5d7b4abb9d63a3b31d08ccd46093745ea1a0b38fa34e75"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedAffineReplayReadoutInvocation0GeneratedFixtureBlock02.lean",
+      "sha256": "4281af30beec94ba3e70214cafc42438349717863b0fa1245c8ef225ce9d43a8"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedAffineReplayReadoutInvocation0GeneratedFixtureBlock03.lean",
+      "sha256": "6c79294c468602490a6da1c805d00e724add23b8625c3acf1cc0ffc29455a3e5"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedAffineReplayReadoutInvocation0GeneratedFixtureBlock04.lean",
+      "sha256": "495b043053d0db76188c13b1d3712582b6943827c6c24179d13479fbb928dc56"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedAffineReplayReadoutInvocation0GeneratedFixtureBlock05.lean",
+      "sha256": "1b06e946e454b55ae01c5cfe68f5d819eb66c3e14e6d05236bd22e83e99fca86"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedAffineReplayReadoutInvocation0GeneratedFixtureBlock06.lean",
+      "sha256": "764f0faa7e07503a12c70dbe9f469975a3c31740886327933f709e431de5a047"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedAffineReplayReadoutInvocation0GeneratedFixtureBlock07.lean",
+      "sha256": "8d33b2700a3488831d076caf22cc0d7c702ae76b9de04634130e7ecd6cf4eccf"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedAffineReplayReadoutInvocation0GeneratedFixtureBlock08.lean",
+      "sha256": "229e5b3a82e71b007797568f7a27cfaaa7d6a8ef43b3280d036e3414c1fb6841"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedAffineReplayReadoutInvocation0GeneratedFixtureBlock09.lean",
+      "sha256": "79a42169778454e588d3e7c4bb5c79b8a91bbf4345023614cb0b076fbfa46fe6"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedAffineReplayReadoutInvocation0GeneratedFixtureBlock10.lean",
+      "sha256": "fd584104fc0b84d36551b329161690b2c5c60dd656ce75396b308483f5d805b0"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedAffineReplayReadoutInvocation0GeneratedFixtureBlock11.lean",
+      "sha256": "908e869579bd3f78e459a425b13c97a082e34e6187bd5955f79b17c18d24f06c"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedAffineReplayReadoutInvocation0GeneratedFixtureBlock12.lean",
+      "sha256": "1cfb8ed3045f6da7d7a167f6f44904aa7f4b63c2764d97b81aac85d6e9cbb2c2"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedAffineReplayReadoutInvocation0GeneratedFixtureBlock13.lean",
+      "sha256": "90077706a50df143c15534ed50060f6ea8dcf3a9ac2ecc71134141e002c2f342"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedAffineReplayReadoutInvocation0GeneratedFixtureBlock14.lean",
+      "sha256": "629d0f312fe0ebfd6c5be9fb60efaaac04cffa35d2249cc9ff9d4eeb48e73e74"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedAffineReplayReadoutInvocation0GeneratedFixtureBlock15.lean",
+      "sha256": "f8a69e737f3d7b303acf775c1be0a48db2399814c3a7361ac7d226e267e75d50"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedAffineReplayReadoutInvocation0GeneratedFixtureCommon.lean",
+      "sha256": "37a81c0c27cebc2ff32e6130cbe30465eae77b5ce8f2fdc5f44022d82acdda45"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedAffineReplaySite0Invocation0GeneratedFixture.lean",
+      "sha256": "b4b7de4724b93e7dd4c33851bef105fbe082cc4a4f3ad154fa883030a2ea1217"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedAffineReplaySite0Invocation0GeneratedFixtureBlock00.lean",
+      "sha256": "c37dbdf9add0b50a21936474249e2a30f4d86a8c93fd374dc1fa76bae0ab905c"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedAffineReplaySite0Invocation0GeneratedFixtureBlock01.lean",
+      "sha256": "268d36859a8cea5074b23ebe613286a0bfd6c225b0f2ebec939d7d2ee83e0bb4"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedAffineReplaySite0Invocation0GeneratedFixtureBlock02.lean",
+      "sha256": "020d8d7b9d1b52051ffc614b1e78cf9a8ab49125eee15bd4f25a8af639328d9f"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedAffineReplaySite0Invocation0GeneratedFixtureBlock03.lean",
+      "sha256": "1bfb459da04998eb7f659f39796d1798e875a642501c06d1d195f445a9d65903"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedAffineReplaySite0Invocation0GeneratedFixtureBlock04.lean",
+      "sha256": "a96fdc34c3fe0a8035b0b6c129e4f0fbd338f6fba1ef7d4bb6c075a522f52340"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedAffineReplaySite0Invocation0GeneratedFixtureBlock05.lean",
+      "sha256": "440878a47711930db0eb1ccdaff21fd98b14c0e39a588757ad686a713e773de3"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedAffineReplaySite0Invocation0GeneratedFixtureBlock06.lean",
+      "sha256": "52bf36dd104f5fc65260f3e68139cb325eb092806d6d2089194b59046db229a5"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedAffineReplaySite0Invocation0GeneratedFixtureBlock07.lean",
+      "sha256": "0c5c91f697f845c1949ba9ed0433b37ff49b8d7929266583c4848177c72f26ae"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedAffineReplaySite0Invocation0GeneratedFixtureBlock08.lean",
+      "sha256": "15345ddd4f36d5da24f52315ee80d2a482198f99586aa4bd938b2dc0ff2b3908"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedAffineReplaySite0Invocation0GeneratedFixtureBlock09.lean",
+      "sha256": "25f6813e0ac8b05298b75d1e5ab15b4836b441ab588030537ad8fa7d9947d3d3"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedAffineReplaySite0Invocation0GeneratedFixtureBlock10.lean",
+      "sha256": "4e24e69434dad48010e7b930deae4c8ec1675beff8ee34dfee1c14b31acdff66"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedAffineReplaySite0Invocation0GeneratedFixtureBlock11.lean",
+      "sha256": "1dc6e1de8dee272c0af2709e8899184db0bee4ed4635cca90f20a90681868127"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedAffineReplaySite0Invocation0GeneratedFixtureBlock12.lean",
+      "sha256": "6b13405feb7db455ef31ab5a0f23791563c882fb60569bff5da237b84bdaaf34"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedAffineReplaySite0Invocation0GeneratedFixtureBlock13.lean",
+      "sha256": "d7c596e2411cf9cd2a7c5b0277fa00b4ec9e8e98698ab84272d96d5fef0b4136"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedAffineReplaySite0Invocation0GeneratedFixtureBlock14.lean",
+      "sha256": "43950ddbf748fe0b295090f08cc340806ba082ea22d1fc42c0afd0027265454a"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedAffineReplaySite0Invocation0GeneratedFixtureBlock15.lean",
+      "sha256": "3334e2a9535a1b628b404f035975442f55674efde85c7f1341ddfe6778fc1819"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedAffineReplaySite0Invocation0GeneratedFixtureCommon.lean",
+      "sha256": "9b78283e2e6908049fcef14ac3a0b23daaafee579f287e28ced0e6ee2d175397"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedAffineReplaySite2Invocation0GeneratedFixture.lean",
+      "sha256": "e6226c931a462e3cccca3a235bdd289476bc47c35d00acc5fd63e3a211ef1bff"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedAffineSiLUReplaySite0Invocation0GeneratedFixture.lean",
+      "sha256": "36b37d0a7ae3765bc051faa68e4acc836e9285cb9d5fb3b8a0a3f4b435b29da5"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedAffineSiLUReplaySite1Invocation0GeneratedFixture.lean",
+      "sha256": "4f4199a596a92ab7da326cf0881dfcdebc104d201a86a781e9895f0d0478dcf5"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedAffineSiLUReplaySite2Invocation0GeneratedFixture.lean",
+      "sha256": "400d01a9c0dfa86cdc13ad89edb0e34d88d9f19f633038fd8c4508b729051807"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedHiddenStageReplaySite0Invocation0GeneratedFixture.lean",
+      "sha256": "041abbc3e2a673b042363e286072ef7af2aa15bf13822510cd0e1165b529a62f"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedHiddenStageReplaySite1Invocation0GeneratedFixture.lean",
+      "sha256": "613226cba854a9870bdf95714bb89036ada2434db1f7ffc75f66af8beb45474c"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedHiddenStageReplaySite2Invocation0GeneratedFixture.lean",
+      "sha256": "8d5d933889ec8f3a19a9bf6bcddbeb42f92c2e269c02729730e603105981453b"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedThreeHiddenStageResidualReplayInvocation0GeneratedFixture.lean",
+      "sha256": "0f52178ffb88d420f3fed6594daeb045f88a3b51873c4e7141042503efed2f89"
+    }
+  ],
+  "theorem_repository": "Mettapedia",
+  "trust_boundary": {
+    "external_verifier": "checkpoint lineage, source endpoints, canonical sidecar bytes, partition completeness, and deterministic Lean source",
+    "kernel": "exact arithmetic and interior word equality for the supplied finite binary32 hidden stages and masked affine readout"
+  }
+}

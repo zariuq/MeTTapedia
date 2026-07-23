@@ -1,0 +1,93 @@
+{
+  "schema": "pc-authenticated-affine-replay-source-v1",
+  "source_repository": "gslt-synth",
+  "theorem_repository": "Mettapedia",
+  "source_files": [
+    {
+      "file": "eval/tgad_pc_active_curvature_probe.py",
+      "sha256": "4035d770e8e04742127685b1386a90f4c8238d700b45349c192e69f8f77294d1"
+    },
+    {
+      "file": "eval/tgad_emit_affine_replay_batch.py",
+      "sha256": "236ae5b941a5e5b73398df39f17e034cb0a9329d5d596a8d083224ed4f377571"
+    },
+    {
+      "file": "eval/verify_tgad_authenticated_affine_replay.py",
+      "sha256": "426c9f1d1783f3ea0f160c7fc16b182d5bf38b3940ddc86c0ab205d52ebcb954"
+    },
+    {
+      "file": "tests/test_tgad_emit_affine_replay_batch.py",
+      "sha256": "eb07c4bfa592b1e9d5787524d7a20a491f20ad4b47ea91f2bd7f6aac164fc77f"
+    },
+    {
+      "file": "tests/test_verify_tgad_authenticated_affine_replay.py",
+      "sha256": "141dee0733b7d23611e1ddb0591252e0301bb2bb2c94a30470f466184cf88d4b"
+    },
+    {
+      "file": "tests/test_tgad_pc_active_curvature_probe.py",
+      "sha256": "9d82dfe3a276359009c07f188a1a74a34ccc8a844d5ec6318c5e8e44b4922779"
+    }
+  ],
+  "theorem_files": [
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32CheckpointMatrix.lean",
+      "sha256": "1ffebf16c8345b12dc46ebb5952ae9205b7f753254aedbfa99d8b9a12c558d22"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AffineReplayCertificate.lean",
+      "sha256": "b1c91a4c9cf6678ac44d8c4a59f9d5cf99403725b6958f8ad0f8d67b34170aca"
+    },
+    {
+      "file": "Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedAffineReplayChunkedGeneratedFixture.lean",
+      "sha256": "ec615fff159eeb29ea65cad7496cacfaa336f3581fb1795893d443598c9af9bc"
+    }
+  ],
+  "artifacts": [
+    {
+      "file": "artifacts/conformance/pc_authenticated_active_curvature_gru_w1997425957_g9_b0_v2.json",
+      "role": "full authenticated active-curvature probe",
+      "sha256": "beb12bfe26f0d944d8a2c55afb8bbb3b1937978f40a171bdae2875ae190c117b"
+    },
+    {
+      "file": "artifacts/conformance/pc_authenticated_affine_invocation_replay_gru_w1997425957_g9_b0_site1_i0_v1.json",
+      "role": "canonical selected-invocation sidecar",
+      "sha256": "dee3acd8a3271178ab567b7ab0a7b8684938a61e22a2f077e19d986ab973fd00"
+    }
+  ],
+  "expected_verification": {
+    "schema": "tgad.authenticated-affine-kernel-replay-verification.v1",
+    "status": "PASS",
+    "world": 1997425957,
+    "generation": 9,
+    "backbone": "gru",
+    "rule": "error_coordinate_pc",
+    "batch_index": 0,
+    "site_index": 1,
+    "selected_invocation_indices": [
+      0
+    ],
+    "source_invocation_count": 736,
+    "rows": 64,
+    "columns": 64,
+    "local_error": {
+      "numerator_decimal": "141535723881995",
+      "denominator_decimal": "36893488147419103232"
+    },
+    "nonzero_mantissas": {
+      "weight": 4096,
+      "bias": 64,
+      "input": 64,
+      "output": 64
+    }
+  },
+  "trust_boundary": {
+    "kernel": "exact decoded-real affine arithmetic and the certified pointwise error bound among supplied finite binary32 words",
+    "external_verifier": "checkpoint, ledger, source, invocation, endpoint, sidecar, and deterministic Lean-rendering identity"
+  },
+  "non_claims": [
+    "one invocation is not a uniform regional floating-point error bound",
+    "exact decoded-real replay does not identify the runtime accumulation order or backend rounding schedule",
+    "the affine replay is not a full hidden-stage or full-network replay",
+    "the pointwise certificate does not establish solver contraction, adaptive stopping, speed, or verifier efficacy"
+  ]
+}

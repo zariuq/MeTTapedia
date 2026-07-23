@@ -1,0 +1,60 @@
+{
+  "checks": {
+    "bayes_gain_multiplies_learned_write_gate": true,
+    "checker_owned_legal_policy_readout": true,
+    "collision_free_mixed_radix_type_source": true,
+    "exact_workspace_endpoint_switches_and_parameter_map": true,
+    "finite_positive_configuration_boundaries": true,
+    "fixed_address_typed_allocation": true,
+    "innovation_accumulates_fresh_packets_only": true,
+    "innovation_coordinates_zero_on_fresh_slots": true,
+    "legacy_recurrent_parameters_removed_by_factory": true,
+    "ordered_single_episode_persistence": true,
+    "packed_product_state_order": true,
+    "posterior_fade_then_fuse": true,
+    "precision_biased_allocated_only_reads": true,
+    "prior_decays_once_then_receives_innovations_only": true,
+    "recurrent_control_and_evidence_residuals": true,
+    "shared_host_workspace_belief_policy_sources_bound": true,
+    "shared_routed_slot_transition": true
+  },
+  "classification": {
+    "excluded": [
+      "floating-point tensor evaluation",
+      "Python-to-Lean semantic equivalence beyond the checked equations",
+      "whole-decoder binary32 replay",
+      "probabilistic calibration",
+      "training efficacy"
+    ],
+    "sealed": "source shape for the unified carrier equations and failure boundaries"
+  },
+  "generated_on": "2026-07-23",
+  "schema": "tgad.unified_carrier_source_conformance.v1",
+  "sources": {
+    "belief": {
+      "file": "models/tgad_belief_decoder.py",
+      "sha256": "68b527a1d81a7b5bda435a4c0eccad3e40af4b135a103763341f6557a805f13c"
+    },
+    "policy": {
+      "file": "models/tgad_o2.py",
+      "sha256": "d577a69bf64416478da9f962aa294cc869f1ee5f99c01923d834bf363628f9b2"
+    },
+    "policy_model": {
+      "file": "models/tgad_policy_model.py",
+      "sha256": "c9b5a6ce4092fdf869cca68438abd01d6f277f2ce679429bbaf1c39629bcade1"
+    },
+    "unified": {
+      "file": "models/tgad_unified_carrier.py",
+      "sha256": "7fc6fdea5eed409f5a8970f9f9731188937d86e6a67fed7fca6f07d52d2f3241"
+    },
+    "workspace": {
+      "file": "models/tgad_workspace_decoder.py",
+      "sha256": "71175f51e9f9a615b8aeb2f2f24ae2cb74c3bcd316fa3e3363e2da6ba12228c8"
+    }
+  },
+  "status": "PASS",
+  "verifier": {
+    "file": "eval/verify_tgad_unified_carrier_source.py",
+    "sha256": "1cb36adaf74304005020fc1afbb2f303c3ecc184497a7f2e33cb5b154513b1f0"
+  }
+}

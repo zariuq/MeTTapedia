@@ -1,5 +1,6 @@
 import Mettapedia.MachineLearning.NeuralNetworks.PredictiveCoding.Frontier.HybridRefinement
 import Mettapedia.MachineLearning.NeuralNetworks.PredictiveCoding.Frontier.ResidualMomentBound
+import Mettapedia.MachineLearning.NeuralNetworks.PredictiveCoding.Frontier.PCBPCompute
 
 /-!
 # Predictive-coding frontier provenance
@@ -22,6 +23,7 @@ inductive FrontierRung
   | residualMomentBound
   | prospectiveInterference
   | hybridRefinement
+  | depthScalingRepair
   deriving DecidableEq, Repr
 
 inductive ContributionKind
@@ -145,6 +147,57 @@ def frontierContributions : FrontierRung → List FrontierContribution
           "Frontier.HybridRefinement"⟩
       , ⟨.scopeBoundary, "safe fraction two need not contract strictly",
           "Frontier.HybridRefinement"⟩ ]
+  | .depthScalingRepair =>
+      [ ⟨.directLift, "state-coordinate first-arrival wavefront",
+          "ErrorStateReparameterization"⟩
+      , ⟨.directLift, "arbitrary nonlinear finite-speed lower bound",
+          "LocalityCeiling"⟩
+      , ⟨.directLift, "plain versus residual depth recurrence",
+          "Frontier.ResidualBoundary"⟩
+      , ⟨.directLift, "full-matrix Gaussian precision substrate",
+          "MatrixGaussianChain"⟩
+      , ⟨.newContent, "arbitrary-depth scalar Gaussian chain energy",
+          "Frontier.DepthScalingRepair"⟩
+      , ⟨.newContent, "finite-increment activity and weight gradients",
+          "Frontier.DepthScalingRepair"⟩
+      , ⟨.newContent, "geometric first-arrival energy imbalance",
+          "Frontier.DepthScalingRepair"⟩
+      , ⟨.newContent, "spiking-covariance equalization and passive fixtures",
+          "Frontier.DepthScalingRepair"⟩
+      , ⟨.newContent, "forward-reference accumulated-drift partition",
+          "Frontier.DepthScalingRepair"⟩
+      , ⟨.newContent, "residual timing and auxiliary-buffer synchronization",
+          "Frontier.DepthScalingRepair"⟩
+      , ⟨.newContent, "frozen versus live batch-statistic fixed points",
+          "Frontier.DepthScalingRepair"⟩
+      , ⟨.newContent, "integrated depth-repair certificate",
+          "Frontier.DepthScalingRepair"⟩
+      , ⟨.newContent, "executable precision/covariance equality and mechanism fixtures",
+          "Frontier.DepthScalingImplementation"⟩
+      , ⟨.newContent, "implementation-correspondence certificate",
+          "Frontier.DepthScalingImplementation"⟩
+      , ⟨.newContent, "full-covariance vector activity finite increments",
+          "Frontier.DepthScalingVector"⟩
+      , ⟨.newContent, "full-covariance matrix-weight finite increments",
+          "Frontier.DepthScalingVector"⟩
+      , ⟨.newContent, "nonlinear Jacobian remainder and exact increment",
+          "Frontier.DepthScalingVector"⟩
+      , ⟨.newContent, "vector precision spike, forward error, and residual timing",
+          "Frontier.DepthScalingVector"⟩
+      , ⟨.newContent, "equal-compute PC-versus-BP work algebra",
+          "Frontier.PCBPCompute"⟩
+      , ⟨.newContent, "finite-speed PC work lower bound against one BP pass",
+          "Frontier.PCBPCompute"⟩
+      , ⟨.exactRestatement, "pinned official executable artifacts",
+          "changqi97/DeepPCNs@99472b0; changqi97/pcx@b68e746"⟩
+      , ⟨.scopeBoundary, "displayed update signs under error equals activity minus prediction",
+          "arXiv:2506.23800v3 Equations 2 and 3"⟩
+      , ⟨.scopeBoundary, "matrix and nonlinear local identities do not imply trained-network accuracy",
+          "Frontier.DepthScalingVector"⟩
+      , ⟨.reproductionTarget, "deep nonlinear network accuracy and energy profiles",
+          "arXiv:2506.23800v3 experiments"⟩
+      , ⟨.reproductionTarget, "universal repair and passive-schedule comparisons",
+          "Frontier.DepthScalingRepair"⟩ ]
 
 def contributionCount (rung : FrontierRung) (kind : ContributionKind) : ℕ :=
   (frontierContributions rung).countP fun contribution => contribution.kind = kind
@@ -196,7 +249,14 @@ theorem frontierContributionCounts_exact :
       contributionCount .hybridRefinement .newContent,
       contributionCount .hybridRefinement .exactRestatement,
       contributionCount .hybridRefinement .scopeBoundary,
-      contributionCount .hybridRefinement .reproductionTarget) = (2, 4, 0, 1, 0) := by
+      contributionCount .hybridRefinement .reproductionTarget) = (2, 4, 0, 1, 0) ∧
+    (contributionCount .depthScalingRepair .directLift,
+      contributionCount .depthScalingRepair .newContent,
+      contributionCount .depthScalingRepair .exactRestatement,
+      contributionCount .depthScalingRepair .scopeBoundary,
+      contributionCount .depthScalingRepair .reproductionTarget) = (4, 16, 1, 2, 2) := by
+  constructor
+  · decide
   constructor
   · decide
   constructor
