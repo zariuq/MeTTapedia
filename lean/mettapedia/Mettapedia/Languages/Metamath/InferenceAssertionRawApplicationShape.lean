@@ -175,12 +175,14 @@ private theorem assertionRuleFormalNames_nodup_of_lookup
     ((assertionRule callerFrame assertion).metavariables.map Prod.fst).Nodup := by
   have hvalidIn := rule_isValidIn_of_lookup target hlookup
   have hvalidV1 :
-      (assertionRule callerFrame assertion).isValidV1 = true := by
+      RuleSchema.isValidV1 (assertionRule callerFrame assertion) = true := by
     simp only [RuleSchema.isValidIn, Bool.and_eq_true] at hvalidIn
     exact hvalidIn.1
   have hunique :
-      ((assertionRule callerFrame assertion).metavariableNames.eraseDups).length =
-        (assertionRule callerFrame assertion).metavariableNames.length := by
+      ((RuleSchema.metavariableNames
+          (assertionRule callerFrame assertion)).eraseDups).length =
+        (RuleSchema.metavariableNames
+          (assertionRule callerFrame assertion)).length := by
     simp only [RuleSchema.isValidV1, Bool.and_eq_true, beq_iff_eq] at hvalidV1
     exact hvalidV1.1.1.1.1.1.2
   exact nodup_of_eraseDups_length_eq _ (by

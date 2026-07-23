@@ -111,7 +111,7 @@ private theorem lookupRule?_eq_some_of_mem
   have hunique :
       (presentation.1.rules.map RuleSchema.id).eraseDups.length =
         presentation.1.rules.length := by
-    simpa [Presentation.ruleIds] using hvalid.1.1.2
+    simpa [Presentation.ruleIds] using hvalid.1.1.1.2
   simpa [Presentation.lookupRule?] using
     find?_eq_some_of_mem_of_map_eraseDups_length_eq
       RuleSchema.id presentation.1.rules rule hunique hmem

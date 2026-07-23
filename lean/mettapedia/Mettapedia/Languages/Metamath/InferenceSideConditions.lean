@@ -370,9 +370,10 @@ def sourceRuleIdsDisjoint (sourceIds : List RuleId) : Bool :=
   sourceIds.all fun id => !(id.value.startsWith reservedRulePrefix)
 
 def sidePresentation : Presentation :=
-  { language := dataLanguage
-    judgments := judgmentDecls
-    rules := sideRules }
+  { language :=
+      { dataLanguage with
+        judgments := judgmentDecls
+        inferenceRules := sideRules } }
 
 theorem dataLanguage_validate : dataLanguage.validate = [] := by
   apply LanguageDef.validate_eq_nil_of_constructorOnly dataLanguage <;>
@@ -384,7 +385,13 @@ theorem dataLanguage_validate : dataLanguage.validate = [] := by
 theorem sidePresentation_valid : sidePresentation.isValidV2 = true := by
   unfold Presentation.isValidV2 Presentation.isValidV1
   simp only [sidePresentation]
-  rw [dataLanguage_validate]
+  have hbase :
+      ({ dataLanguage with
+          judgments := judgmentDecls
+          inferenceRules := sideRules } : LanguageDef).validate =
+        dataLanguage.validate := by
+    rfl
+  rw [hbase, dataLanguage_validate]
   simp [sideRules, judgmentDecls, dataLanguage, dataConstructor, dataTypeName,
     stringHead, nilHead, consHead, constSymHead, varSymHead, formulaHead,
     dvPairHead, frameHead, bindingHead, substitutionHead,

@@ -2980,6 +2980,7 @@ private theorem zeroEncodedLanguage_validate :
   · rfl
   · rfl
   · rfl
+  · rfl
   · simp [encodedLanguage, exprLanguage, exprType, dataTypeName,
       reservedPrefix, LanguageDef.typeNames, TypeDecl.plain]
   · simp only [encodedLanguage, List.map_append, List.map_map]

@@ -154,7 +154,7 @@ theorem activeHypothesisDerivation_rootView
       (activeHypothesisRuleInstance hypothesis) []
       (encodeFormula hypothesis.formula) := by
     cases application with
-    | intro rule hlookup harguments hpremises hconclusion =>
+    | intro rule hlookup harguments _hsideConditions hpremises hconclusion =>
         have hcanonicalLookup := lookup_activeHypothesisRule_of_projection
           projection target hprojection hmember
         have hrule : rule = activeHypothesisRule hypothesis :=

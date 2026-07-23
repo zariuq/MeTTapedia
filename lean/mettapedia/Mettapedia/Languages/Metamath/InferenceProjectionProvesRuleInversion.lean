@@ -78,7 +78,7 @@ theorem ActiveHypothesisApplicationView.toRuleApplication
   rcases view with
     ⟨hypothesis, _hmember, hlookup, harguments, hpremises, hconclusion⟩
   exact RuleApplication.intro (activeHypothesisRule hypothesis) hlookup
-    harguments hpremises hconclusion
+    harguments rfl hpremises hconclusion
 
 /-- A reflected assertion view reconstructs the exact generic local
 application without strengthening any raw argument into a decoded formula. -/
@@ -93,7 +93,7 @@ theorem AssertionApplicationView.toRuleApplication
     ⟨assertion, _hmember, hlookup, harguments, hpremises, hconclusion⟩
   exact RuleApplication.intro
     (assertionRule projection.callerFrame assertion) hlookup
-      harguments hpremises hconclusion
+      harguments rfl hpremises hconclusion
 
 /-! ## Excluding the side calculus -/
 
@@ -108,7 +108,7 @@ theorem sideRule_conclusion_isSideJudgment
   simp only [RuleSchema.isValidIn, Bool.and_eq_true] at hvalid
   have hconclusionValid :
       sidePresentation.judgmentSchemaValid rule.conclusion = true :=
-    (List.all_eq_true.mp hvalid.2) rule.conclusion (by
+    (List.all_eq_true.mp hvalid.2.1) rule.conclusion (by
       simp [RuleSchema.patterns])
   exact isSideJudgment_of_sidePresentation_hasJudgmentShape
     (Presentation.hasJudgmentShape_of_judgmentSchemaValid hconclusionValid)
@@ -143,7 +143,7 @@ theorem ruleApplication_proves_cases
       AssertionApplicationView projection target ruleInstance premises
         formulaPattern := by
   cases application with
-  | intro rule hlookup harguments hpremises hconclusion =>
+  | intro rule hlookup harguments _hsideConditions hpremises hconclusion =>
       have hmember : rule ∈ target.1.rules :=
         List.mem_of_find?_eq_some hlookup
       rw [rules_eq_of_presentationOfProjection?_eq_some

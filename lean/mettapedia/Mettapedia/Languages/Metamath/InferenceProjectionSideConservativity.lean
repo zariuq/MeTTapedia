@@ -67,7 +67,7 @@ theorem isSideJudgment_of_sidePresentation_hasJudgmentShape
   cases judgment with
   | apply head arguments =>
       unfold Presentation.hasJudgmentShape Presentation.lookupJudgment? at hshape
-      cases hfound : (sidePresentation.judgments.filter fun declaration =>
+      cases hfound : (sidePresentation.language.judgments.filter fun declaration =>
           declaration.head == head &&
             declaration.arity == arguments.length) with
       | nil => simp [hfound] at hshape
@@ -75,7 +75,7 @@ theorem isSideJudgment_of_sidePresentation_hasJudgmentShape
           cases rest with
           | nil =>
               have hmemFilter : declaration ∈
-                  (sidePresentation.judgments.filter fun candidate =>
+                  (sidePresentation.language.judgments.filter fun candidate =>
                     candidate.head == head &&
                       candidate.arity == arguments.length) := by
                 rw [hfound]
@@ -111,7 +111,7 @@ theorem sideRule_premises_all_isSideJudgment
   simp only [RuleSchema.isValidIn, Bool.and_eq_true] at hvalid
   have hpremiseValid :
       sidePresentation.judgmentSchemaValid premise = true :=
-    (List.all_eq_true.mp hvalid.2) premise (by
+    (List.all_eq_true.mp hvalid.2.1) premise (by
       simp [RuleSchema.patterns, hpremise])
   exact isSideJudgment_of_sidePresentation_hasJudgmentShape
     (Presentation.hasJudgmentShape_of_judgmentSchemaValid hpremiseValid)
@@ -211,7 +211,7 @@ theorem sideApplicationReflects_of_generated_rules
     SideApplicationReflects validatedSidePresentation target := by
   intro ruleInstance premises conclusion hside happlication
   cases happlication with
-  | intro rule hlookup harguments hpremises hconclusion =>
+  | intro rule hlookup harguments hsideConditions hpremises hconclusion =>
       have hmem :
           rule ∈ sideRules ++ generatedSourceRules projection := by
         rw [← hrules]
@@ -222,7 +222,7 @@ theorem sideApplicationReflects_of_generated_rules
             projection target hrules hlookup hsideRule
         exact
           ⟨RuleApplication.intro rule hstandalone harguments
-              hpremises hconclusion,
+              hsideConditions hpremises hconclusion,
             all_isSideJudgment_of_instantiatesListAt
               (sideRule_premises_all_isSideJudgment hsideRule)
               hpremises⟩

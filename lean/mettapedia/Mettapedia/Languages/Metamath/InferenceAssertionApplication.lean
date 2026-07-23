@@ -246,7 +246,7 @@ private theorem lookupRule?_eq_some_of_mem
   have hunique :
       (presentation.1.rules.map RuleSchema.id).eraseDups.length =
         presentation.1.rules.length := by
-    simpa [Presentation.ruleIds] using hvalid.1.1.2
+    simpa [Presentation.ruleIds] using hvalid.1.1.1.2
   simpa [Presentation.lookupRule?] using
     find?_eq_some_of_mem_of_map_eraseDups_length_eq
       RuleSchema.id presentation.1.rules rule hunique hmem
@@ -283,16 +283,20 @@ private theorem assertionRuleFormalNames_nodup_of_lookup
         some (assertionRule callerFrame assertion)) :
     ((assertionRule callerFrame assertion).metavariables.map Prod.fst).Nodup := by
   have hvalidIn := rule_isValidIn_of_lookup target hlookup
-  have hvalidV1 : (assertionRule callerFrame assertion).isValidV1 = true := by
+  have hvalidV1 :
+      RuleSchema.isValidV1 (assertionRule callerFrame assertion) = true := by
     simp only [RuleSchema.isValidIn, Bool.and_eq_true] at hvalidIn
     exact hvalidIn.1
   have hunique :
-      ((assertionRule callerFrame assertion).metavariableNames.eraseDups).length =
-        (assertionRule callerFrame assertion).metavariableNames.length := by
+      ((RuleSchema.metavariableNames
+          (assertionRule callerFrame assertion)).eraseDups).length =
+        (RuleSchema.metavariableNames
+          (assertionRule callerFrame assertion)).length := by
     simp only [RuleSchema.isValidV1, Bool.and_eq_true, beq_iff_eq] at hvalidV1
     exact hvalidV1.1.1.1.1.1.2
   have hnames :
-      (assertionRule callerFrame assertion).metavariableNames.Nodup :=
+      (RuleSchema.metavariableNames
+        (assertionRule callerFrame assertion)).Nodup :=
     nodup_of_eraseDups_length_eq _ hunique
   simpa [RuleSchema.metavariableNames] using hnames
 
@@ -1365,6 +1369,7 @@ theorem assertionRuleApplication_of_instances
     (by
       rw [hmetavariables]
       simpa [assertionRuleInstance, assertionRuleArguments] using harguments)
+    rfl
     (by
       rw [hmetavariables, hpremiseSchemas]
       simpa [assertionRuleInstance, assertionRuleArguments,

@@ -39,6 +39,17 @@
    (Cons (metamath-ledger:lexical-value $symbol)
      (metamath-ledger:symbols $rest)))
 
+(= (metamath-ledger:disjoint-symbols
+      (NodeC disjoint_symbols_two disjoint_symbol_list $left $right
+        (Cons $first (Cons $second Nil))))
+   (Cons (metamath-ledger:lexical-value $first)
+     (Cons (metamath-ledger:lexical-value $second) Nil)))
+(= (metamath-ledger:disjoint-symbols
+      (NodeC disjoint_symbols_more disjoint_symbol_list $left $right
+        (Cons $first (Cons $rest Nil))))
+   (Cons (metamath-ledger:lexical-value $first)
+     (metamath-ledger:disjoint-symbols $rest)))
+
 (= (metamath-ledger:proof-labels
       (NodeC proof_one proof_list $left $right
         (Cons $label Nil)))
@@ -48,6 +59,14 @@
         (Cons $label (Cons $rest Nil))))
    (Cons (metamath-ledger:proof-label-value $label)
      (metamath-ledger:proof-labels $rest)))
+(= (metamath-ledger:proof-labels
+      (NodeC proof_unknown_one proof_list $left $right
+        (Cons (TokC MM_UNKNOWN $unknown) Nil)))
+   (Cons "?" Nil))
+(= (metamath-ledger:proof-labels
+      (NodeC proof_unknown_more proof_list $left $right
+        (Cons (TokC MM_UNKNOWN $unknown) (Cons $rest Nil))))
+   (Cons "?" (metamath-ledger:proof-labels $rest)))
 
 (= (metamath-ledger:proof-header
       (NodeC header_empty proof_header_list $left $right
@@ -70,7 +89,7 @@
      (metamath-ledger:compressed-words $rest)))
 
 (= (metamath-ledger:statement
-      (NodeC statement_const statement $left $right
+      (NodeC statement_const outer_statement $left $right
         (Cons (TokC MM_C $left)
           (Cons $symbols (Cons (TokC MM_DOT $dot) Nil)))))
    (MMStatementConst
@@ -91,7 +110,7 @@
           (Cons $symbols (Cons (TokC MM_DOT $dot) Nil)))))
    (MMStatementDisjoint
      (metamath-ledger:span $left $right)
-     (metamath-ledger:symbols $symbols)))
+     (metamath-ledger:disjoint-symbols $symbols)))
 
 (= (metamath-ledger:statement
       (NodeC statement_float statement $left $right
@@ -157,48 +176,60 @@
        (metamath-ledger:compressed-words $body))))
 
 (= (metamath-ledger:statement
-      (NodeC statement_include statement $left $right
+      (NodeC statement_include outer_statement $left $right
         (Cons (TokC MM_INCLUDE_OPEN $open)
           (Cons $path (Cons (TokC MM_INCLUDE_CLOSE $close) Nil)))))
    (MMStatementInclude
      (metamath-ledger:span $left $right)
      (metamath-ledger:include-value $path)))
 
-(= (metamath-ledger:database
-      (NodeC database_one database $left $right
-        (Cons $statement Nil)))
-   (Cons (metamath-ledger:statement $statement) Nil))
+; Inner statements either contribute one ordinary ledger entry or flatten a
+; scoped block into explicit open/body/close entries.  The block itself is a
+; statement in the authored grammar, so scope placement is no longer encoded
+; by a second database grammar.
+(= (metamath-ledger:inner-statement-entries $statement)
+   (case $statement
+     (((NodeC statement_block statement $left $right
+         (Cons (TokC MM_SCOPE_OPEN $open)
+           (Cons $inside (Cons (TokC MM_SCOPE_CLOSE $close) Nil))))
+       (Cons
+         (MMStatementScopeOpen (metamath-ledger:span $open (+ $open 1)))
+         (metamath-ledger:append
+           (metamath-ledger:database $inside)
+           (Cons
+             (MMStatementScopeClose
+               (metamath-ledger:span $close (+ $close 1)))
+             Nil))))
+      ($ordinary (Cons (metamath-ledger:statement $ordinary) Nil)))))
 
+(= (metamath-ledger:outer-statement-entries $statement)
+   (case $statement
+     (((NodeC outer_statement_inner outer_statement $left $right
+         (Cons $inner Nil))
+       (metamath-ledger:inner-statement-entries $inner))
+      ($outer (Cons (metamath-ledger:statement $outer) Nil)))))
+
+(= (metamath-ledger:database
+      (NodeC database_empty database $left $right
+        (Cons (EpsC) Nil)))
+   Nil)
 (= (metamath-ledger:database
       (NodeC database_more database $left $right
         (Cons $statement (Cons $rest Nil))))
-   (Cons (metamath-ledger:statement $statement)
+   (metamath-ledger:append
+     (metamath-ledger:inner-statement-entries $statement)
      (metamath-ledger:database $rest)))
 
-(= (metamath-ledger:database
-      (NodeC database_block database $left $right
-        (Cons (TokC MM_SCOPE_OPEN $open)
-          (Cons $inside (Cons (TokC MM_SCOPE_CLOSE $close) Nil)))))
-   (Cons
-     (MMStatementScopeOpen (metamath-ledger:span $open (+ $open 1)))
-     (metamath-ledger:append
-       (metamath-ledger:database $inside)
-       (Cons
-         (MMStatementScopeClose (metamath-ledger:span $close (+ $close 1)))
-         Nil))))
-
-(= (metamath-ledger:database
-      (NodeC database_block_more database $left $right
-        (Cons (TokC MM_SCOPE_OPEN $open)
-          (Cons $inside
-            (Cons (TokC MM_SCOPE_CLOSE $close) (Cons $rest Nil))))))
-   (Cons
-     (MMStatementScopeOpen (metamath-ledger:span $open (+ $open 1)))
-     (metamath-ledger:append
-       (metamath-ledger:database $inside)
-       (Cons
-         (MMStatementScopeClose (metamath-ledger:span $close (+ $close 1)))
-         (metamath-ledger:database $rest)))))
+(= (metamath-ledger:outer-database
+      (NodeC outer_database_empty outer_database $left $right
+        (Cons (EpsC) Nil)))
+   Nil)
+(= (metamath-ledger:outer-database
+      (NodeC outer_database_more outer_database $left $right
+        (Cons $statement (Cons $rest Nil))))
+   (metamath-ledger:append
+     (metamath-ledger:outer-statement-entries $statement)
+     (metamath-ledger:outer-database $rest)))
 
 (= (metamath-ledger:contains-include Nil) False)
 (= (metamath-ledger:contains-include (Cons $statement $rest))
@@ -348,7 +379,7 @@
                $space (lib_parse:mm-database-grammar) $root)
          (((MMTreeOK $checked-tree)
            (if (== $checked-tree $parser-tree)
-             (let $entries (metamath-ledger:database $checked-tree)
+             (let $entries (metamath-ledger:outer-database $checked-tree)
                (if (metamath-ledger:contains-include $entries)
                  (MMIncludeResolutionRequired
                    (MMSourceIdentityV0 $revision $digest)
@@ -372,7 +403,7 @@
           (GPresentation $constructors $judgments $rules))
        (case (gparse:inference-dag-proof
                (lib_parse:mm-database-grammar)
-               $digest database $tokens $tree)
+               $digest outer_database $tokens $tree)
          (((LPInferenceDagBlocks $goal $root $blocks $node-count)
            ; Operationally destructure the one source package in place.  Deep
            ; generated presentations are not rewrapped or recopied between
@@ -402,6 +433,18 @@
                    (MMStatementLedgerError source-metadata-rejected))))))
           ($error $error))))
       ($error $error))))
+
+; The scannerless parser is an untrusted certificate producer.  Its source
+; digest must agree with the caller's identity, and the existing generic DAG
+; checker above independently replays the complete token ledger and tree.
+; ABI and forest digests remain attached to the certificate as provenance;
+; neither is treated as proof of correctness.
+(= (metamath-ledger:checked-gslt2parse-certificate
+      (MMSourceIdentityV0 $revision $digest)
+      (GSLT2ParseSourceCertificateV1
+        $digest $source-bytes $abi-digest $forest-digest $tokens $tree))
+   (metamath-ledger:checked-lower
+     (MMSourceIdentityV0 $revision $digest) $tokens $tree))
 
 (= (metamath-ledger:parse-source $grammar-path $identity $text)
    (case (lib_parse:mm-lex-string $text)

@@ -24,6 +24,7 @@ import Mettapedia.Languages.Metamath.InferenceNormalByteLedger
 import Mettapedia.Languages.Metamath.InferenceNormalByteReflection
 import Mettapedia.Languages.Metamath.InferenceNormalProvabilitySoundness
 import Mettapedia.Languages.Metamath.InferenceSourceAdmission
+import Mettapedia.Languages.Metamath.SourceInferenceDeclarativeAdequacy
 
 /-!
 # Metamath Bridge Surface
@@ -94,6 +95,13 @@ Positive example:
   native `Proves` type executes an exact reflected normal-label fold and implies
   upstream `Metamath.Spec.Provable` in the exact operational image of the same
   runtime database and its ambient frame
+- a validated source prefix now owns its operational assertion database,
+  caller frame, and proof-occurrence trees directly; those trees are equivalent
+  in both directions to source-derived operational provability and to the
+  derivation-locally supported declarative semantics, with frame scope,
+  declaration separation, floating uniqueness, and DV well-formedness all
+  derived from source validation; existential exact-label acceptance by the
+  verified `stepNormal` fold is equivalent to that same declarative relation
 - canonical source admission takes exact bytes and an optional target rather
   than a caller-supplied rule table; database requests project the accepted
   reader database, theorem requests retain a target-absent proof-ingress
@@ -120,10 +128,10 @@ Negative example:
 - reverse formula substitution explicitly requires surviving source constants
   not to be caller-active names; the generic theorem does not silently derive
   that caller/callee classification boundary from unrelated local premises
-- the operational-provability endpoint is forward-only and forgets the exact
-  reflected tree and labels; it does not recover native evidence from arbitrary
-  operational provability or certify source chronology, target freshness, or
-  source-token identity
+- unrestricted declarative `Provable.var` admits semantic variables without a
+  caller-frame witness; exact reflection therefore targets the supported
+  declarative relation, and the stronger global-support premise used by the
+  unrestricted biconditional is formally impossible for a finite frame
 - these remaining source-spec, parser, and compressed-proof boundaries prevent
   a claim of whole-source adequacy
 -/

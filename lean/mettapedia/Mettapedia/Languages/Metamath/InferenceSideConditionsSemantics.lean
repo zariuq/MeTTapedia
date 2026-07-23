@@ -193,7 +193,7 @@ private theorem appendApplication_decompose
       Instantiates rule.metavariables ruleInstance.arguments rule.conclusion
         (append leftPattern rightPattern resultPattern) := by
   cases application with
-  | intro rule hlookup harguments hpremises hconclusion =>
+  | intro rule hlookup harguments _hsideConditions hpremises hconclusion =>
       have hvalid := rule_isValidIn_of_lookup validatedSidePresentation hlookup
       have hshape := RuleSchema.conclusion_hasJudgmentShape_of_validIn hvalid
       have hmem : rule ∈ sideRules := by
@@ -706,7 +706,7 @@ private theorem lookupApplication_decompose
       Instantiates rule.metavariables ruleInstance.arguments rule.conclusion
         (lookup substitutionPattern variablePattern typecodePattern bodyPattern) := by
   cases application with
-  | intro rule hlookup harguments hpremises hconclusion =>
+  | intro rule hlookup harguments _hsideConditions hpremises hconclusion =>
       have hvalid := rule_isValidIn_of_lookup validatedSidePresentation hlookup
       have hshape := RuleSchema.conclusion_hasJudgmentShape_of_validIn hvalid
       have hmem : rule ∈ sideRules := by
@@ -1347,7 +1347,7 @@ private theorem varsApplication_decompose
       Instantiates rule.metavariables ruleInstance.arguments rule.conclusion
         (vars bodyPattern resultPattern) := by
   cases application with
-  | intro rule hlookup harguments hpremises hconclusion =>
+  | intro rule hlookup harguments _hsideConditions hpremises hconclusion =>
       have hvalid := rule_isValidIn_of_lookup validatedSidePresentation hlookup
       have hshape := RuleSchema.conclusion_hasJudgmentShape_of_validIn hvalid
       have hmem : rule ∈ sideRules := by
@@ -2138,7 +2138,7 @@ private theorem substBodyApplication_decompose
       Instantiates rule.metavariables ruleInstance.arguments rule.conclusion
         (substBody substitutionPattern sourcePattern resultPattern) := by
   cases application with
-  | intro rule hlookup harguments hpremises hconclusion =>
+  | intro rule hlookup harguments _hsideConditions hpremises hconclusion =>
       have hvalid := rule_isValidIn_of_lookup validatedSidePresentation hlookup
       have hshape := RuleSchema.conclusion_hasJudgmentShape_of_validIn hvalid
       have hmem : rule ∈ sideRules := by
@@ -2561,7 +2561,7 @@ private theorem applySubstApplication_decompose
       Instantiates rule.metavariables ruleInstance.arguments rule.conclusion
         (applySubst substitutionPattern sourcePattern resultPattern) := by
   cases application with
-  | intro rule hlookup harguments hpremises hconclusion =>
+  | intro rule hlookup harguments _hsideConditions hpremises hconclusion =>
       have hvalid := rule_isValidIn_of_lookup validatedSidePresentation hlookup
       have hshape := RuleSchema.conclusion_hasJudgmentShape_of_validIn hvalid
       have hmem : rule ∈ sideRules := by
@@ -3289,7 +3289,7 @@ private theorem memberApplication_decompose
       Instantiates rule.metavariables ruleInstance.arguments rule.conclusion
         (member valuePattern valuesPattern) := by
   cases application with
-  | intro rule hlookup harguments hpremises hconclusion =>
+  | intro rule hlookup harguments _hsideConditions hpremises hconclusion =>
       have hvalid := rule_isValidIn_of_lookup validatedSidePresentation hlookup
       have hshape := RuleSchema.conclusion_hasJudgmentShape_of_validIn hvalid
       have hmem : rule ∈ sideRules := by
@@ -3515,7 +3515,7 @@ private theorem dvRelApplication_decompose
       Instantiates rule.metavariables ruleInstance.arguments rule.conclusion
         (dvRel pairsPattern leftPattern rightPattern) := by
   cases application with
-  | intro rule hlookup harguments hpremises hconclusion =>
+  | intro rule hlookup harguments _hsideConditions hpremises hconclusion =>
       have hvalid := rule_isValidIn_of_lookup validatedSidePresentation hlookup
       have hshape := RuleSchema.conclusion_hasJudgmentShape_of_validIn hvalid
       have hmem : rule ∈ sideRules := by
@@ -3722,7 +3722,7 @@ private theorem allWithApplication_decompose
       Instantiates rule.metavariables ruleInstance.arguments rule.conclusion
         (allWith pairsPattern leftPattern rightsPattern) := by
   cases application with
-  | intro rule hlookup harguments hpremises hconclusion =>
+  | intro rule hlookup harguments _hsideConditions hpremises hconclusion =>
       have hvalid := rule_isValidIn_of_lookup validatedSidePresentation hlookup
       have hshape := RuleSchema.conclusion_hasJudgmentShape_of_validIn hvalid
       have hmem : rule ∈ sideRules := by
@@ -3959,7 +3959,7 @@ private theorem allPairsApplication_decompose
       Instantiates rule.metavariables ruleInstance.arguments rule.conclusion
         (allPairs pairsPattern leftsPattern rightsPattern) := by
   cases application with
-  | intro rule hlookup harguments hpremises hconclusion =>
+  | intro rule hlookup harguments _hsideConditions hpremises hconclusion =>
       have hvalid := rule_isValidIn_of_lookup validatedSidePresentation hlookup
       have hshape := RuleSchema.conclusion_hasJudgmentShape_of_validIn hvalid
       have hmem : rule ∈ sideRules := by
@@ -4288,7 +4288,7 @@ private theorem dvListsApplication_decompose
       Instantiates rule.metavariables ruleInstance.arguments rule.conclusion
         (dvLists substitutionPattern callerPattern calleePattern) := by
   cases application with
-  | intro rule hlookup harguments hpremises hconclusion =>
+  | intro rule hlookup harguments _hsideConditions hpremises hconclusion =>
       have hvalid := rule_isValidIn_of_lookup validatedSidePresentation hlookup
       have hshape := RuleSchema.conclusion_hasJudgmentShape_of_validIn hvalid
       have hmem : rule ∈ sideRules := by
@@ -4556,7 +4556,7 @@ private theorem dvOKApplication_decompose
       Instantiates rule.metavariables ruleInstance.arguments rule.conclusion
         (dvOK substitutionPattern callerPattern calleePattern) := by
   cases application with
-  | intro rule hlookup harguments hpremises hconclusion =>
+  | intro rule hlookup harguments _hsideConditions hpremises hconclusion =>
       have hvalid := rule_isValidIn_of_lookup validatedSidePresentation hlookup
       have hshape := RuleSchema.conclusion_hasJudgmentShape_of_validIn hvalid
       have hmem : rule ∈ sideRules := by

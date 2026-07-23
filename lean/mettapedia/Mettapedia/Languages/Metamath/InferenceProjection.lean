@@ -517,9 +517,10 @@ def presentationOfProjection? (projection : PrefixProjection) :
   let sourceRules := generatedSourceRules projection
   guard (sourceRuleIdsDisjoint (sourceRules.map RuleSchema.id))
   some
-    { language := languageWithSourceVocabulary vocabulary
-      judgments := judgmentDecls ++ [provesDecl]
-      rules := sideRules ++ sourceRules }
+    { language :=
+        { languageWithSourceVocabulary vocabulary with
+          judgments := judgmentDecls ++ [provesDecl]
+          inferenceRules := sideRules ++ sourceRules } }
 
 /-- A successful presentation projection exposes exactly the side calculus
 followed by the generated source rules. -/
