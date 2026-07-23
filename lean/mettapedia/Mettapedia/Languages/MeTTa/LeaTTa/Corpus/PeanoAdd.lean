@@ -307,10 +307,11 @@ private theorem selectFunctionType_add_untypedTuple (w : World) (args : List Met
   simp [selectFunctionType, hstatic.2.1, scanFunctionTypeCandidates,
     FunctionTypeScanOutcome.markTupleEligible]
 
-private theorem exactApplicationPolicy_add (w : World) (args : List Metta.Atom)
+private def recursionNeutralApplicationPolicy_add (w : World) (args : List Metta.Atom)
     (hstatic : StaticPeanoEvalWorld w) :
-    ExactApplicationPolicy addEnv w "add" args (List.replicate args.length true) false :=
-  .untypedTuple (selectFunctionType_add_untypedTuple w args hstatic)
+    RecursionNeutralApplicationPolicy addEnv w "add" args
+      (List.replicate args.length true) false :=
+  .ofUntypedTuple (selectFunctionType_add_untypedTuple w args hstatic)
 
 private theorem addEnv_Z_candidates : addEnv.candidates (mSym "Z") = [] := by
   simp [addEnv, addRules, mE, mSym, mVar, MinEnv.candidates, extractRules, headKey,
@@ -322,10 +323,11 @@ private theorem selectFunctionType_S_untypedTuple (w : World) (args : List Metta
   simp [selectFunctionType, hstatic.2.2, scanFunctionTypeCandidates,
     FunctionTypeScanOutcome.markTupleEligible]
 
-private theorem exactApplicationPolicy_S (w : World) (args : List Metta.Atom)
+private def recursionNeutralApplicationPolicy_S (w : World) (args : List Metta.Atom)
     (hstatic : StaticPeanoEvalWorld w) :
-    ExactApplicationPolicy addEnv w "S" args (List.replicate args.length true) false :=
-  .untypedTuple (selectFunctionType_S_untypedTuple w args hstatic)
+    RecursionNeutralApplicationPolicy addEnv w "S" args
+      (List.replicate args.length true) false :=
+  .ofUntypedTuple (selectFunctionType_S_untypedTuple w args hstatic)
 
 private theorem addEnv_S_candidates (a : Metta.Atom) :
     addEnv.candidates (mE "S" [a]) = [] := by
@@ -1563,16 +1565,16 @@ private theorem mettaEvalAddClosed_eq_of_arg_singletons_and_root_eval
     (hRootNotSelf : (root == mE "add" [x', y']) = false)
     (hFinal : mettaEval addEnv fuel stRoot [] root = ([(final, [])], stOut)) :
     mettaEval addEnv (fuel + 1) st [] (mE "add" [x, y]) = ([(final, [])], stOut) := by
-  have hPolicy : ExactApplicationPolicy addEnv st.world "add" [x, y]
+  have hPolicy : RecursionNeutralApplicationPolicy addEnv st.world "add" [x, y]
       [true, true] false := by
-    simpa using exactApplicationPolicy_add st.world [x, y] hstatic
+    simpa using recursionNeutralApplicationPolicy_add st.world [x, y] hstatic
   exact
     mettaEval_binary_expr_eq_of_arg_singletons_and_root_eval_of_exactPolicy
       (env := addEnv) (fuel := fuel) (st := st) (st₁ := st₁) (st₂ := st₂)
       (stRoot := stRoot) (stOut := stOut) (op := "add") (x := x) (y := y)
       (x' := x') (y' := y') (root := root) (final := final) (rootBnd := rootBnd)
       (mask := [true, true]) (returnAtom := false)
-      hxClosed hyClosed hx hy hPolicy rfl
+      hxClosed hyClosed hx hy hPolicy (by simp [Metta.Atom.isError]) rfl
       hNoErr (by simpa [mE] using hRoot) hRootNotNotReducible (by simpa [mE] using hRootNotSelf)
       rfl hFinal
 
@@ -1644,16 +1646,19 @@ it is deliberately generic in `arg` and does not inspect one Peano layer at a ti
 theorem mettaEvalS_keeps_of_arg_singleton_static
     (fuel : Nat) (arg out : Metta.Atom) (stArg : St)
     (hArg : mettaEval addEnv fuel St.init [] arg = ([(out, [])], stArg))
-    (hNotError : out.isError = false)
+    (hNotError : (out == emptyA || out.isError) = false)
     (hstatic : StaticWorld stArg.world) :
     (mE "S" [out], restrictBnd arg.vars ((Bindings.merge [] []).head?.getD [])) ∈
       (mettaEval addEnv (fuel + 1) St.init [] (mE "S" [arg])).1 := by
   have hroot := mettaEvalS_root_notReducible_static fuel out stArg hstatic
-  have hPolicy : ExactApplicationPolicy addEnv St.init.world "S" [arg] [true] false := by
-    simpa using exactApplicationPolicy_S St.init.world [arg] staticPeanoEvalWorld_init
+  have hPolicy : RecursionNeutralApplicationPolicy addEnv St.init.world "S" [arg]
+      [true] false := by
+    simpa using
+      recursionNeutralApplicationPolicy_S St.init.world [arg] staticPeanoEvalWorld_init
   simpa [mE] using
     mettaEval_unary_expr_keeps_of_arg_singleton_and_notReducible_readout_of_exactPolicy
-      addEnv fuel St.init stArg "S" arg out [true] false hArg hPolicy rfl hNotError hroot
+      addEnv fuel St.init stArg "S" (by decide) arg out [true] false
+      hArg hPolicy rfl hNotError hroot
 
 /-- State-parametric `S` constructor congruence for the full evaluator.
 
@@ -1662,34 +1667,38 @@ long as the world remains static, the constructor proof does not depend on the c
 theorem mettaEvalS_keeps_of_arg_singleton_static_from
     (fuel : Nat) (st stArg : St) (arg out : Metta.Atom)
     (hArg : mettaEval addEnv fuel st [] arg = ([(out, [])], stArg))
-    (hNotError : out.isError = false)
+    (hNotError : (out == emptyA || out.isError) = false)
     (hEvalStatic : StaticPeanoEvalWorld st.world)
     (hstatic : StaticWorld stArg.world) :
     (mE "S" [out], restrictBnd arg.vars ((Bindings.merge [] []).head?.getD [])) ∈
       (mettaEval addEnv (fuel + 1) st [] (mE "S" [arg])).1 := by
   have hroot := mettaEvalS_root_notReducible_static fuel out stArg hstatic
-  have hPolicy : ExactApplicationPolicy addEnv st.world "S" [arg] [true] false := by
-    simpa using exactApplicationPolicy_S st.world [arg] hEvalStatic
+  have hPolicy : RecursionNeutralApplicationPolicy addEnv st.world "S" [arg]
+      [true] false := by
+    simpa using recursionNeutralApplicationPolicy_S st.world [arg] hEvalStatic
   simpa [mE] using
     mettaEval_unary_expr_keeps_of_arg_singleton_and_notReducible_readout_of_exactPolicy
-      addEnv fuel st stArg "S" arg out [true] false hArg hPolicy rfl hNotError hroot
+      addEnv fuel st stArg "S" (by decide) arg out [true] false
+      hArg hPolicy rfl hNotError hroot
 
 /-- State-parametric exact `S` constructor congruence. -/
 theorem mettaEvalS_eq_of_arg_singleton_static_from
     (fuel : Nat) (st stArg : St) (arg out : Metta.Atom)
     (hArg : mettaEval addEnv fuel st [] arg = ([(out, [])], stArg))
-    (hNotError : out.isError = false)
+    (hNotError : (out == emptyA || out.isError) = false)
     (hEvalStatic : StaticPeanoEvalWorld st.world)
     (hstatic : StaticWorld stArg.world) :
     mettaEval addEnv (fuel + 1) st [] (mE "S" [arg]) =
       ([(mE "S" [out], restrictBnd arg.vars ((Bindings.merge [] []).head?.getD []))],
         stArg) := by
   have hroot := mettaEvalS_root_notReducible_static_eq fuel out stArg hstatic
-  have hPolicy : ExactApplicationPolicy addEnv st.world "S" [arg] [true] false := by
-    simpa using exactApplicationPolicy_S st.world [arg] hEvalStatic
+  have hPolicy : RecursionNeutralApplicationPolicy addEnv st.world "S" [arg]
+      [true] false := by
+    simpa using recursionNeutralApplicationPolicy_S st.world [arg] hEvalStatic
   simpa [mE] using
     mettaEval_unary_expr_eq_of_arg_singleton_and_notReducible_eq_of_exactPolicy
-      addEnv fuel st stArg stArg "S" arg out [true] false hArg hPolicy rfl hNotError hroot
+      addEnv fuel st stArg stArg "S" (by decide) arg out [true] false
+      hArg hPolicy rfl hNotError hroot
 
 /-- Peano zero self-evaluates from any static evaluator state and preserves that state. -/
 theorem mettaEvalZ_sufficient_static (fuel : Nat) (st : St)
@@ -1752,7 +1761,7 @@ theorem mettaEvalS_readout_sound_of_arg_singleton_static_from
     (hArg : mettaEval addEnv fuel st [] arg = ([(out, [])], stArg))
     (hArgSound : Relation.ReflTransGen (ExprCtxKernelStep addRules stdGroundings) arg out)
     (hArgClosed : arg.vars = [])
-    (hNotError : out.isError = false)
+    (hNotError : (out == emptyA || out.isError) = false)
     (hEvalStatic : StaticPeanoEvalWorld st.world)
     (hstatic : StaticWorld stArg.world) :
     (mE "S" [out], []) ∈ (mettaEval addEnv (fuel + 1) st [] (mE "S" [arg])).1 ∧
@@ -1775,9 +1784,11 @@ theorem mettaEvalS_readout_sound_of_arg_singleton_static_from
     simpa [mE, mSym] using hctx
   have hsound :=
     mettaEval_unary_expr_readout_sound_of_arg_singleton_and_notReducible_readout_of_exactPolicy
-      addEnv fuel st stArg "S" arg out [true] false
+      addEnv fuel st stArg "S" (by decide) arg out [true] false
       (ExprCtxKernelStep addRules stdGroundings)
-      hArg (by simpa using exactApplicationPolicy_S st.world [arg] hEvalStatic) rfl hNotError
+      hArg
+      (by simpa using recursionNeutralApplicationPolicy_S st.world [arg] hEvalStatic)
+      rfl hNotError
       (mettaEvalS_root_notReducible_static fuel out stArg hstatic) hReach
   constructor
   · simpa [mE, mSym, hrestrict] using hsound.1
@@ -1817,7 +1828,7 @@ theorem mettaEvalS_readout_sound_of_arg_member_static_from
     (hmemArg : (out, []) ∈ argPairs)
     (hArgSound : Relation.ReflTransGen (ExprCtxKernelStep addRules stdGroundings) arg out)
     (hArgClosed : arg.vars = [])
-    (hNotError : out.isError = false)
+    (hNotError : (out == emptyA || out.isError) = false)
     (hEvalStatic : StaticPeanoEvalWorld st.world)
     (hstatic : StaticWorld stArg.world) :
     (mE "S" [out], []) ∈ (mettaEval addEnv (fuel + 1) st [] (mE "S" [arg])).1 ∧
@@ -1865,9 +1876,10 @@ theorem mettaEvalS_readout_sound_of_arg_member_static_from
     simpa [mE, mSym] using hctx
   have hsound :=
     mettaEval_unary_expr_readout_sound_of_arg_member_and_notReducible_state_pred_of_exactPolicy
-      addEnv fuel st stArg "S" arg out argPairs [true] false P
+      addEnv fuel st stArg "S" (by decide) arg out argPairs [true] false P
       (ExprCtxKernelStep addRules stdGroundings)
-      hArg hmemArg (by simpa using exactApplicationPolicy_S st.world [arg] hEvalStatic)
+      hArg hmemArg
+      (by simpa using recursionNeutralApplicationPolicy_S st.world [arg] hEvalStatic)
       rfl hNotError
       hstatic hstep hroot hReach
   have hrestrict :
@@ -1934,11 +1946,13 @@ theorem mettaEvalAddSucc_readout_sound_of_recursive_member_static_from
       rootBnd [true, true] false (ExprCtxKernelStep addRules stdGroundings)
       (peano_vars_nil (m + 1)) (peano_vars_nil n)
       hLeft hRight
-      (by simpa using exactApplicationPolicy_add st.world [peano (m + 1), peano n] hstatic)
-      rfl (addArgs_errorGuard_none (m + 1) n)
+      (by
+        simpa using
+          recursionNeutralApplicationPolicy_add st.world [peano (m + 1), peano n] hstatic)
+      (by simp [Metta.Atom.isError]) rfl (addArgs_errorGuard_none (m + 1) n)
       (by simpa [addQuery, mE] using hRoot)
       (by rfl) (by rfl) rfl
-      hRootReach hFinal.1 hFinal.2
+      hRootReach hFinal.1 (by simp [mE, Metta.Atom.isError]) hFinal.2
   simpa [addQuery, mE] using hBin
 
 /-- Private sufficient-fuel induction for executable Peano addition.

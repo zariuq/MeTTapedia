@@ -4,6 +4,8 @@ import Mettapedia.Languages.MeTTa.HE.Matching
 import Mettapedia.Languages.MeTTa.HE.TypeCheck
 import Mettapedia.Languages.MeTTa.HE.EvalSpec
 import Mettapedia.Languages.MeTTa.HE.MinimalMeTTa
+import Mettapedia.Languages.MeTTa.HE.Spec.Eval
+import Mettapedia.Languages.MeTTa.HE.Spec.Eval.Minimal
 import Mettapedia.Languages.MeTTa.HE.SyntaxSpec
 import Mettapedia.Languages.MeTTa.HE.Conformance
 import Mettapedia.Languages.MeTTa.HE.Properties
@@ -44,7 +46,9 @@ Authoritative Lean 4 formalization of the HE MeTTa evaluation specification.
 - `EvalSpec` — **Declarative spec**: mutual inductive relations for
                metta, interpretExpression, interpretFunction,
                interpretArgs, interpretTuple, mettaCall
-- `MinimalMeTTa` — Stateful minimal instruction spec (match, add-atom, chain, etc.)
+- `Spec.Eval` — Executable-independent relational evaluator semantics
+- `Spec.Eval.Minimal` — Minimal-instruction semantics with opaque host services
+- `MinimalMeTTa` — Legacy structural validation relation for older small-step proofs
 - `SyntaxSpec` — Authoritative HE syntax profiles
 - `Conformance` — Derivation-tree conformance witnesses
 - `Properties` — Universal theorems by induction on derivations

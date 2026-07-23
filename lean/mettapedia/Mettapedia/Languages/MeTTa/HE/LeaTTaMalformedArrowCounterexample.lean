@@ -1,4 +1,4 @@
-import Mettapedia.Languages.MeTTa.HE.HumanTypePresentationExact
+import Mettapedia.Languages.MeTTa.HE.Spec.Type.Presentation.Exact
 import MettaHyperonFull.Minimal.Interpreter
 import MettaHyperonFull.Proofs.Substitution
 import Std.Data.HashMap.Lemmas
@@ -12,7 +12,7 @@ That behavior is masked when it is the only candidate, because the outer
 fallback emits the same singleton.  It becomes observable beside a valid
 candidate: the malformed annotation contributes an extra leading result.
 
-The executable-independent human scan rejects the bare arrow because it has
+The executable-independent spec scan rejects the bare arrow because it has
 no return component, while preserving the later valid nullary candidate.
 These canaries pin both the old defect and the intended ordered result.
 -/
@@ -21,8 +21,8 @@ namespace Mettapedia.Languages.MeTTa.HE.LeaTTaMalformedArrowCounterexample
 
 open Mettapedia.Languages.MeTTa.HE
 open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
-open HumanTypePresentation
-open HumanTypePresentationExact
+open Spec.Type.Presentation
+open Spec.Type.Presentation.Exact
 
 private def bareArrow : Metta.Atom :=
   .expr [.sym "->"]
@@ -81,9 +81,9 @@ private theorem validNullaryArrowSuccess :
         (substitution := []) rfl
         (PresentationArgumentListMatchRel.nil []))
 
-/-- Positive human boundary: the malformed candidate is skipped and the
+/-- Positive spec boundary: the malformed candidate is skipped and the
 later valid nullary arrow contributes exactly `R`. -/
-theorem human_mixed_arrow_scan_emits_only_valid_return :
+theorem spec_mixed_arrow_scan_emits_only_valid_return :
     ApplicationPackageScanRel []
       [malformedNativeArrow, validNativeNullaryArrow]
       [publishedPackage (.symbol "R")] := by

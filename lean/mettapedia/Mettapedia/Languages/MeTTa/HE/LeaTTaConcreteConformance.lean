@@ -5,7 +5,7 @@ import Mettapedia.Languages.MeTTa.HE.LeaTTaQueryObservationalAnchor
 
 This downstream module keeps executable boundary fixtures and regression
 readouts separate from the reusable LeaTTa bridge and the universal
-human-spec soundness/completeness seal.  The exact counter-sensitive
+specification soundness/completeness seal.  The exact counter-sensitive
 canaries remain explicit because they pin runtime behavior that a semantic
 solution-theory theorem intentionally abstracts away.
 -/

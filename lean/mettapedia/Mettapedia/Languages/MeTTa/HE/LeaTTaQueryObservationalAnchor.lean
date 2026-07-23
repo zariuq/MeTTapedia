@@ -9,11 +9,11 @@ surviving merged bindings are applied to the rule's right-hand side
 (`instantiate merged rhs`).
 
 This file anchors that observable pipeline to the executable-independent
-human specification:
+spec specification:
 
 * `queryOp_hit_observational_anchor` — every match+merge hit of the pipeline
-  (with satisfiable merged output) has a human `MatchRel` derivation for the
-  match step and a human `MergeRel` derivation for the merge step whose
+  (with satisfiable merged output) has a spec `MatchRel` derivation for the
+  match step and a spec `MergeRel` derivation for the merge step whose
   result presents the same complete binding solution theory as the
   executable merged bindings.  The satisfiability premise is the matcher
   soundness input; it is discharged by the matcher-output satisfiability
@@ -28,8 +28,8 @@ human specification:
   `queryOp`, and the seal's equivalence is derived from that observation
   rather than chosen for convenience.
 -/
-import Mettapedia.Languages.MeTTa.HE.LeaTTaHumanSoundness
-import Mettapedia.Languages.MeTTa.HE.HumanEquationQueryStep
+import Mettapedia.Languages.MeTTa.HE.LeaTTaSpecSoundness
+import Mettapedia.Languages.MeTTa.HE.Spec.Eval.EquationQueryStep
 import MettaHyperonFull.Proofs.CaptureAvoidingFreshening
 
 namespace Mettapedia.Languages.MeTTa.HE.LeaTTaBridge
@@ -330,35 +330,35 @@ theorem instantiate_semantically_inert
 
 /-- **QueryOp observational anchor.**  One `queryOp` pipeline hit — a
 repaired-LeaTTa match of a translated rule pattern against a translated
-query atom, merged with the incoming bindings — is anchored to the human
-specification: the match step has a human `MatchRel` derivation, the merge
-step has a human `MergeRel` derivation from the incoming record and that
-match derivation's output, and the human merge result presents the same
+query atom, merged with the incoming bindings — is anchored to the spec
+specification: the match step has a spec `MatchRel` derivation, the merge
+step has a spec `MergeRel` derivation from the incoming record and that
+match derivation's output, and the spec merge result presents the same
 complete binding solution theory as the executable merged bindings.
 
 The satisfiability premise is the matcher/merge soundness input (discharged
 by matcher-output satisfiability for loop-free outputs); everything else is
 observational. -/
 theorem queryOp_hit_observational_anchor
-    {pattern query : OSLFCore.Atom} {humanIncoming : Bindings}
+    {pattern query : OSLFCore.Atom} {specIncoming : Bindings}
     {incoming matched merged : Metta.Bindings}
-    (hincomingEquiv : LeaBindingSolutionTheoryEquiv humanIncoming incoming)
-    (hincomingNonvariable : HEAssignmentsNonVariable humanIncoming)
+    (hincomingEquiv : LeaBindingSolutionTheoryEquiv specIncoming incoming)
+    (hincomingNonvariable : HEAssignmentsNonVariable specIncoming)
     (hincomingNoFloat : LeaBindingsNoFloat incoming)
     (hmatch : matched ∈ Metta.matchAtoms
       (toLeaTTaAtom pattern) (toLeaTTaAtom query))
     (hmerge : merged ∈ Metta.Bindings.merge incoming matched)
     (hsat : ∃ valuation : String → Metta.Atom,
       LeaBindingSatisfied valuation merged) :
-    ∃ humanMatched humanMerged,
-      HumanMatchMergeSpec.MatchRel
-          HumanMatchMergeSpec.equalityGroundedSemantic
-          query pattern humanMatched ∧
-        HumanMatchMergeSpec.MergeRel
-          HumanMatchMergeSpec.equalityGroundedSemantic
-          humanIncoming humanMatched humanMerged ∧
-        LeaBindingSolutionTheoryEquiv humanMerged merged ∧
-        HEAssignmentsNonVariable humanMerged := by
+    ∃ specMatched specMerged,
+      Spec.Match.Merge.MatchRel
+          Spec.Match.Merge.equalityGroundedSemantic
+          query pattern specMatched ∧
+        Spec.Match.Merge.MergeRel
+          Spec.Match.Merge.equalityGroundedSemantic
+          specIncoming specMatched specMerged ∧
+        LeaBindingSolutionTheoryEquiv specMerged merged ∧
+        HEAssignmentsNonVariable specMerged := by
   obtain ⟨valuation, hmerged⟩ := hsat
   have hmatchedNoFloat : LeaBindingsNoFloat matched :=
     leaMatchAtoms_result_noFloat
@@ -372,68 +372,68 @@ theorem queryOp_hit_observational_anchor
     (leaMatchAtoms_solution_iff valuation
       (toLeaTTaAtom_noFloat pattern)
       (toLeaTTaAtom_noFloat query) hmatch).mp hmatchedSat
-  have hhumanEquation : HEAtomEquationSatisfied valuation query pattern :=
+  have hspecEquation : HEAtomEquationSatisfied valuation query pattern :=
     hmettaEquation.symm
-  obtain ⟨humanMatched, hhumanMatch, hhumanMatchedSat⟩ :=
-    HumanMatchCompleteness.exists_humanMatch_of_solution hhumanEquation
-  have hmatchedEquiv : LeaBindingSolutionTheoryEquiv humanMatched matched :=
-    HumanMatchSolutionTheory.humanMatch_leaMatch_solutionTheoryEquiv
-      hhumanMatch hmatch
-  have hhumanIncomingSat : HEBindingSatisfied valuation humanIncoming :=
+  obtain ⟨specMatched, hspecMatch, hspecMatchedSat⟩ :=
+    Spec.Match.Completeness.exists_specMatch_of_solution hspecEquation
+  have hmatchedEquiv : LeaBindingSolutionTheoryEquiv specMatched matched :=
+    Spec.Match.SolutionTheory.specMatch_leaMatch_solutionTheoryEquiv
+      hspecMatch hmatch
+  have hspecIncomingSat : HEBindingSatisfied valuation specIncoming :=
     (hincomingEquiv valuation).mpr hincomingSat
-  have hhumanMatchedNonvariable : HEAssignmentsNonVariable humanMatched :=
-    LeaTTaHumanConformance.humanMatch_assignmentsNonVariable hhumanMatch
-  obtain ⟨humanMerged, hhumanMerge, _, hhumanMergedNonvariable⟩ :=
-    HumanMatchCompleteness.exists_humanMerge_of_solution
-      hhumanIncomingSat hincomingNonvariable
-      hhumanMatchedSat hhumanMatchedNonvariable
-  refine ⟨humanMatched, humanMerged, hhumanMatch, hhumanMerge, ?_,
-    hhumanMergedNonvariable⟩
+  have hspecMatchedNonvariable : HEAssignmentsNonVariable specMatched :=
+    LeaTTaSpecConformance.specMatch_assignmentsNonVariable hspecMatch
+  obtain ⟨specMerged, hspecMerge, _, hspecMergedNonvariable⟩ :=
+    Spec.Match.Completeness.exists_specMerge_of_solution
+      hspecIncomingSat hincomingNonvariable
+      hspecMatchedSat hspecMatchedNonvariable
+  refine ⟨specMatched, specMerged, hspecMatch, hspecMerge, ?_,
+    hspecMergedNonvariable⟩
   intro observer
-  rw [HumanMatchSolutionTheory.mergeRel_solution_iff hhumanMerge observer,
+  rw [Spec.Match.SolutionTheory.mergeRel_solution_iff hspecMerge observer,
     leaMerge_solution_iff observer hincomingNoFloat hmatchedNoFloat hmerge,
     hincomingEquiv observer, hmatchedEquiv observer]
 
-/-- **QueryOp hit existence (completeness twin).**  Every human-specified
+/-- **QueryOp hit existence (completeness twin).**  Every spec-specified
 match+merge derivation with a satisfiable result is realized by the
 executable pipeline: repaired LeaTTa produces a raw match output and a merge
 with the incoming bindings that survives the `queryOp` loop filter and
-presents the same complete binding solution theory as the human merge
+presents the same complete binding solution theory as the spec merge
 result.  The variable-disjointness premise is exactly what `queryOp`'s rule
 freshening establishes before matching. -/
-theorem queryOp_hit_exists_of_human
+theorem queryOp_hit_exists_of_spec
     {pattern query : OSLFCore.Atom}
-    {humanIncoming humanMatched humanMerged : Bindings}
+    {specIncoming specMatched specMerged : Bindings}
     {incoming : Metta.Bindings}
-    (hincomingEquiv : LeaBindingSolutionTheoryEquiv humanIncoming incoming)
+    (hincomingEquiv : LeaBindingSolutionTheoryEquiv specIncoming incoming)
     (hincomingNoFloat : LeaBindingsNoFloat incoming)
     (hincomingNonvariable : LeaAssignmentsNonVariable incoming)
     (hincomingIrreflexive : LeaEqualitiesIrreflexive incoming)
     (hdisjoint : VarsDisjoint query pattern)
-    (hhumanMatch : HumanMatchMergeSpec.MatchRel
-      HumanMatchMergeSpec.equalityGroundedSemantic
-      query pattern humanMatched)
-    (hhumanMerge : HumanMatchMergeSpec.MergeRel
-      HumanMatchMergeSpec.equalityGroundedSemantic
-      humanIncoming humanMatched humanMerged)
+    (hspecMatch : Spec.Match.Merge.MatchRel
+      Spec.Match.Merge.equalityGroundedSemantic
+      query pattern specMatched)
+    (hspecMerge : Spec.Match.Merge.MergeRel
+      Spec.Match.Merge.equalityGroundedSemantic
+      specIncoming specMatched specMerged)
     (hsat : ∃ valuation : String → Metta.Atom,
-      HEBindingSatisfied valuation humanMerged) :
+      HEBindingSatisfied valuation specMerged) :
     ∃ matched merged,
       matched ∈ Metta.matchAtoms
           (toLeaTTaAtom pattern) (toLeaTTaAtom query) ∧
         merged ∈ Metta.Bindings.merge incoming matched ∧
         merged.hasLoop = false ∧
-        LeaBindingSolutionTheoryEquiv humanMerged merged := by
+        LeaBindingSolutionTheoryEquiv specMerged merged := by
   obtain ⟨valuation, hmergedSatHE⟩ := hsat
-  have hpair := (HumanMatchSolutionTheory.mergeRel_solution_iff
-    hhumanMerge valuation).mp hmergedSatHE
+  have hpair := (Spec.Match.SolutionTheory.mergeRel_solution_iff
+    hspecMerge valuation).mp hmergedSatHE
   have hequation : MettaEquationSatisfied valuation
       (toLeaTTaAtom query, toLeaTTaAtom pattern) :=
-    (HumanMatchSolutionTheory.matchRel_solution_iff
-      hhumanMatch valuation).mp hpair.2
+    (Spec.Match.SolutionTheory.matchRel_solution_iff
+      hspecMatch valuation).mp hpair.2
   obtain ⟨matched, hmatched, hmatchedEquiv⟩ :=
-    LeaTTaHumanConformance.humanMatch_observational_complete_of_satisfiable
-      hhumanMatch hdisjoint ⟨valuation, hequation⟩
+    LeaTTaSpecConformance.specMatch_observational_complete_of_satisfiable
+      hspecMatch hdisjoint ⟨valuation, hequation⟩
   have hincomingSat : LeaBindingSatisfied valuation incoming :=
     (hincomingEquiv valuation).mp hpair.1
   have hmatchedSat : LeaBindingSatisfied valuation matched :=
@@ -449,82 +449,82 @@ theorem queryOp_hit_exists_of_human
       (leaMerge_result_assignmentsNonVariable hincomingNonvariable hmerged)
       (leaMerge_result_equalitiesIrreflexive hincomingIrreflexive hmerged)
   · intro observer
-    rw [HumanMatchSolutionTheory.mergeRel_solution_iff hhumanMerge observer,
+    rw [Spec.Match.SolutionTheory.mergeRel_solution_iff hspecMerge observer,
       leaMerge_solution_iff observer hincomingNoFloat hmatchedNoFloat
         hmerged,
       hincomingEquiv observer, hmatchedEquiv observer]
 
 /-- The anchored observable: under the anchor's solution-theory equivalence,
-every model of the human merge result identifies the emitted `queryOp`
+every model of the spec merge result identifies the emitted `queryOp`
 observable `instantiate merged rhs` with the raw rule right-hand side.  The
 `queryOp` observation therefore factors through the binding solution theory,
 which derives the seal's equivalence from the observation itself. -/
 theorem anchored_observable_inert
-    {humanMerged : Bindings} {merged : Metta.Bindings}
-    (hequiv : LeaBindingSolutionTheoryEquiv humanMerged merged)
+    {specMerged : Bindings} {merged : Metta.Bindings}
+    (hequiv : LeaBindingSolutionTheoryEquiv specMerged merged)
     {valuation : String → Metta.Atom}
-    (hvaluation : HEBindingSatisfied valuation humanMerged)
+    (hvaluation : HEBindingSatisfied valuation specMerged)
     (rhs : Metta.Atom) :
     applyClassSolution valuation (Metta.instantiate merged rhs) =
       applyClassSolution valuation rhs :=
   instantiate_semantically_inert ((hequiv valuation).mp hvaluation) rhs
 
-/-- One satisfiable executable query hit has both a declarative human
+/-- One satisfiable executable query hit has both a declarative spec
 match-and-merge witness and an observable that factors through the witness's
 complete solution theory.  This packages the two independent parts of the
 query boundary into the premise shape used by the final soundness seal. -/
 theorem queryOp_hit_observational_sound_of_satisfiable
-    {pattern query : OSLFCore.Atom} {humanIncoming : Bindings}
+    {pattern query : OSLFCore.Atom} {specIncoming : Bindings}
     {incoming matched merged : Metta.Bindings} {rhs : Metta.Atom}
-    (hincomingEquiv : LeaBindingSolutionTheoryEquiv humanIncoming incoming)
-    (hincomingNonvariable : HEAssignmentsNonVariable humanIncoming)
+    (hincomingEquiv : LeaBindingSolutionTheoryEquiv specIncoming incoming)
+    (hincomingNonvariable : HEAssignmentsNonVariable specIncoming)
     (hincomingNoFloat : LeaBindingsNoFloat incoming)
     (hmatch : matched ∈ Metta.matchAtoms
       (toLeaTTaAtom pattern) (toLeaTTaAtom query))
     (hmerge : merged ∈ Metta.Bindings.merge incoming matched)
     (hsat : ∃ valuation : String → Metta.Atom,
       LeaBindingSatisfied valuation merged) :
-    ∃ humanMatched humanMerged,
-      HumanMatchMergeSpec.MatchRel
-          HumanMatchMergeSpec.equalityGroundedSemantic
-          query pattern humanMatched ∧
-        HumanMatchMergeSpec.MergeRel
-          HumanMatchMergeSpec.equalityGroundedSemantic
-          humanIncoming humanMatched humanMerged ∧
-        LeaBindingSolutionTheoryEquiv humanMerged merged ∧
+    ∃ specMatched specMerged,
+      Spec.Match.Merge.MatchRel
+          Spec.Match.Merge.equalityGroundedSemantic
+          query pattern specMatched ∧
+        Spec.Match.Merge.MergeRel
+          Spec.Match.Merge.equalityGroundedSemantic
+          specIncoming specMatched specMerged ∧
+        LeaBindingSolutionTheoryEquiv specMerged merged ∧
         ∀ valuation : String → Metta.Atom,
-          HEBindingSatisfied valuation humanMerged →
+          HEBindingSatisfied valuation specMerged →
             applyClassSolution valuation (Metta.instantiate merged rhs) =
               applyClassSolution valuation rhs := by
-  obtain ⟨humanMatched, humanMerged, hhumanMatch, hhumanMerge, hequiv,
-      _hhumanMergedNonvariable⟩ :=
+  obtain ⟨specMatched, specMerged, hspecMatch, hspecMerge, hequiv,
+      _hspecMergedNonvariable⟩ :=
     queryOp_hit_observational_anchor
       hincomingEquiv hincomingNonvariable hincomingNoFloat
       hmatch hmerge hsat
-  refine ⟨humanMatched, humanMerged, hhumanMatch, hhumanMerge, hequiv, ?_⟩
+  refine ⟨specMatched, specMerged, hspecMatch, hspecMerge, hequiv, ?_⟩
   intro valuation hvaluation
   exact anchored_observable_inert hequiv hvaluation rhs
 
 /-! ## Reachable query binding states -/
 
 /-- The paired invariant at the executable/declarative query boundary.  The
-human and Lea records present the same complete solution theory, the human
+spec and Lea records present the same complete solution theory, the spec
 record remains normalized for the next declarative merge, and the Lea record
 carries the canonical runtime invariant preserved by every loop-filtered
 matcher merge. -/
 structure LeaQueryOpBindingInvariant
-    (human : Bindings) (lea : Metta.Bindings) : Prop where
-  solutionTheory : LeaBindingSolutionTheoryEquiv human lea
-  humanAssignmentsNonVariable : HEAssignmentsNonVariable human
+    (spec : Bindings) (lea : Metta.Bindings) : Prop where
+  solutionTheory : LeaBindingSolutionTheoryEquiv spec lea
+  specAssignmentsNonVariable : HEAssignmentsNonVariable spec
   runtime :
-    LeaTTaHumanConformance.LeaRuntimeBindingInvariant lea
+    LeaTTaSpecConformance.LeaRuntimeBindingInvariant lea
 
-/-- Empty human and executable bindings initialize the paired query-state
+/-- Empty spec and executable bindings initialize the paired query-state
 invariant. -/
 theorem leaQueryOpBindingInvariant_empty :
     LeaQueryOpBindingInvariant Bindings.empty Metta.Bindings.empty := by
   refine ⟨?_, ?_,
-    LeaTTaHumanConformance.leaRuntimeBindingInvariant_empty⟩
+    LeaTTaSpecConformance.leaRuntimeBindingInvariant_empty⟩
   · intro valuation
     simp [HEBindingSatisfied, LeaBindingSatisfied,
       Bindings.empty, Metta.Bindings.empty]
@@ -533,72 +533,72 @@ theorem leaQueryOpBindingInvariant_empty :
 
 /-- **Unconditional reachable-state query hit soundness.**  A repaired
 `queryOp` match+merge hit starting from the paired runtime invariant produces
-a new paired invariant, an executable-independent human match and merge, and
+a new paired invariant, an executable-independent spec match and merge, and
 an observable that factors through their shared solution theory.  The
 canonical runtime model discharges satisfiability; no joint-model assumption
 is exposed at the theorem boundary. -/
 theorem queryOp_hit_observational_sound
-    {pattern query : OSLFCore.Atom} {humanIncoming : Bindings}
+    {pattern query : OSLFCore.Atom} {specIncoming : Bindings}
     {incoming matched merged : Metta.Bindings} {rhs : Metta.Atom}
-    (hinvariant : LeaQueryOpBindingInvariant humanIncoming incoming)
+    (hinvariant : LeaQueryOpBindingInvariant specIncoming incoming)
     (hmatch : matched ∈ Metta.matchAtoms
       (toLeaTTaAtom pattern) (toLeaTTaAtom query))
     (hmerge : merged ∈ Metta.Bindings.merge incoming matched)
     (hloop : merged.hasLoop = false) :
-    ∃ humanMatched humanMerged,
-      HumanMatchMergeSpec.MatchRel
-          HumanMatchMergeSpec.equalityGroundedSemantic
-          query pattern humanMatched ∧
-        HumanMatchMergeSpec.MergeRel
-          HumanMatchMergeSpec.equalityGroundedSemantic
-          humanIncoming humanMatched humanMerged ∧
-        LeaQueryOpBindingInvariant humanMerged merged ∧
+    ∃ specMatched specMerged,
+      Spec.Match.Merge.MatchRel
+          Spec.Match.Merge.equalityGroundedSemantic
+          query pattern specMatched ∧
+        Spec.Match.Merge.MergeRel
+          Spec.Match.Merge.equalityGroundedSemantic
+          specIncoming specMatched specMerged ∧
+        LeaQueryOpBindingInvariant specMerged merged ∧
         ∀ valuation : String → Metta.Atom,
-          HEBindingSatisfied valuation humanMerged →
+          HEBindingSatisfied valuation specMerged →
             applyClassSolution valuation (Metta.instantiate merged rhs) =
               applyClassSolution valuation rhs := by
   have hmergedInvariant :
-      LeaTTaHumanConformance.LeaRuntimeBindingInvariant merged :=
-    LeaTTaHumanConformance.LeaRuntimeBindingInvariant.merge_matchOutput
+      LeaTTaSpecConformance.LeaRuntimeBindingInvariant merged :=
+    LeaTTaSpecConformance.LeaRuntimeBindingInvariant.merge_matchOutput
       hinvariant.runtime
       (toLeaTTaAtom_noFloat pattern)
       (toLeaTTaAtom_noFloat query)
       hmatch hmerge hloop
-  obtain ⟨humanMatched, humanMerged, hhumanMatch, hhumanMerge,
-      hequiv, hhumanMergedNonvariable⟩ :=
+  obtain ⟨specMatched, specMerged, hspecMatch, hspecMerge,
+      hequiv, hspecMergedNonvariable⟩ :=
     queryOp_hit_observational_anchor
       hinvariant.solutionTheory
-      hinvariant.humanAssignmentsNonVariable
+      hinvariant.specAssignmentsNonVariable
       hinvariant.runtime.noFloat hmatch hmerge
       ⟨leaClassSolution merged, hmergedInvariant.canonical.1⟩
-  refine ⟨humanMatched, humanMerged, hhumanMatch, hhumanMerge,
-    ⟨hequiv, hhumanMergedNonvariable, hmergedInvariant⟩, ?_⟩
+  refine ⟨specMatched, specMerged, hspecMatch, hspecMerge,
+    ⟨hequiv, hspecMergedNonvariable, hmergedInvariant⟩, ?_⟩
   intro valuation hvaluation
   exact anchored_observable_inert hequiv hvaluation rhs
 
 /-- **Executable-independent equation-query-step soundness.**  One reachable,
-loop-filtered LeaTTa match-and-merge hit realizes a human equation-query step
+loop-filtered LeaTTa match-and-merge hit realizes a spec equation-query step
 at exactly the work-item boundary.  The theorem neither assumes nor concludes
 recursive evaluation of the emitted atom. -/
-theorem queryOp_hit_humanEquationQueryStep_sound
-    {pattern query : OSLFCore.Atom} {humanIncoming : Bindings}
+theorem queryOp_hit_specEquationQueryStep_sound
+    {pattern query : OSLFCore.Atom} {specIncoming : Bindings}
     {incoming matched merged : Metta.Bindings} {freshRhs : Metta.Atom}
-    (hinvariant : LeaQueryOpBindingInvariant humanIncoming incoming)
+    (hinvariant : LeaQueryOpBindingInvariant specIncoming incoming)
     (hdisjoint : VarsDisjoint query pattern)
     (hmatch : matched ∈ Metta.matchAtoms
       (toLeaTTaAtom pattern) (toLeaTTaAtom query))
     (hmerge : merged ∈ Metta.Bindings.merge incoming matched)
     (hloop : merged.hasLoop = false) :
-    ∃ humanMerged,
-      HumanEquationQueryStep query pattern humanIncoming humanMerged
+    ∃ specMerged,
+      Spec.Eval.EquationQueryStep query pattern specIncoming specMerged
           freshRhs (Metta.instantiate merged freshRhs) ∧
-        LeaQueryOpBindingInvariant humanMerged merged := by
-  obtain ⟨humanMatched, humanMerged, hhumanMatch, hhumanMerge,
+        LeaQueryOpBindingInvariant specMerged merged := by
+  obtain ⟨specMatched, specMerged, hspecMatch, hspecMerge,
       hnextInvariant, hobservable⟩ :=
     queryOp_hit_observational_sound
       (rhs := freshRhs) hinvariant hmatch hmerge hloop
-  refine ⟨humanMerged, ?_, hnextInvariant⟩
-  refine ⟨humanMatched, hdisjoint, hhumanMatch, hhumanMerge, ?_, hobservable⟩
+  refine ⟨specMerged, ?_, hnextInvariant⟩
+  refine ⟨specMatched, hdisjoint, hspecMatch, hspecMerge, ?_, hobservable⟩
   exact ⟨leaClassSolution merged,
     (hnextInvariant.solutionTheory (leaClassSolution merged)).mpr
       hnextInvariant.runtime.canonical.1⟩
@@ -607,35 +607,35 @@ theorem queryOp_hit_humanEquationQueryStep_sound
 membership in `queryOpItemsOfRule` is decomposed into its repaired freshening,
 matcher, merge, loop-filter, and instantiation witnesses; a representation
 equation for the freshened pattern then connects that concrete item to the
-human matcher without tracing any HE executable matcher. -/
+spec matcher without tracing any HE executable matcher. -/
 theorem queryOpItemsOfRule_observational_sound
-    {pattern query : OSLFCore.Atom} {humanIncoming : Bindings}
+    {pattern query : OSLFCore.Atom} {specIncoming : Bindings}
     {incoming : Metta.Bindings} {prev : Metta.Minimal.Stack}
     {counter : Nat} {rawLhs rawRhs : Metta.Atom}
     {item : Metta.Minimal.Item}
-    (hinvariant : LeaQueryOpBindingInvariant humanIncoming incoming)
+    (hinvariant : LeaQueryOpBindingInvariant specIncoming incoming)
     (hfreshPattern :
       (Metta.Minimal.freshenRuleAvoiding counter
         (Metta.Minimal.queryOpAvoid prev (toLeaTTaAtom query) incoming)
         rawLhs rawRhs).1.1 = toLeaTTaAtom pattern)
     (hitem : item ∈ Metta.Minimal.queryOpItemsOfRule
       prev (toLeaTTaAtom query) incoming counter (rawLhs, rawRhs)) :
-    ∃ merged humanMatched humanMerged,
+    ∃ merged specMatched specMerged,
       item = Metta.Minimal.evalResult prev
           (Metta.instantiate merged
             (Metta.Minimal.freshenRuleAvoiding counter
               (Metta.Minimal.queryOpAvoid prev
                 (toLeaTTaAtom query) incoming)
               rawLhs rawRhs).1.2) merged ∧
-        HumanMatchMergeSpec.MatchRel
-          HumanMatchMergeSpec.equalityGroundedSemantic
-          query pattern humanMatched ∧
-        HumanMatchMergeSpec.MergeRel
-          HumanMatchMergeSpec.equalityGroundedSemantic
-          humanIncoming humanMatched humanMerged ∧
-        LeaQueryOpBindingInvariant humanMerged merged ∧
+        Spec.Match.Merge.MatchRel
+          Spec.Match.Merge.equalityGroundedSemantic
+          query pattern specMatched ∧
+        Spec.Match.Merge.MergeRel
+          Spec.Match.Merge.equalityGroundedSemantic
+          specIncoming specMatched specMerged ∧
+        LeaQueryOpBindingInvariant specMerged merged ∧
         ∀ valuation : String → Metta.Atom,
-          HEBindingSatisfied valuation humanMerged →
+          HEBindingSatisfied valuation specMerged →
             applyClassSolution valuation
                 (Metta.instantiate merged
                   (Metta.Minimal.freshenRuleAvoiding counter
@@ -652,7 +652,7 @@ theorem queryOpItemsOfRule_observational_sound
   rw [mem_queryOpItemsOfRule_iff] at hitem'
   obtain ⟨matched, hmatch, merged, hmerge, hloop, hitemEq⟩ := hitem'
   rw [hfreshPattern] at hmatch
-  obtain ⟨humanMatched, humanMerged, hhumanMatch, hhumanMerge,
+  obtain ⟨specMatched, specMerged, hspecMatch, hspecMerge,
       hnextInvariant, hobservable⟩ :=
     queryOp_hit_observational_sound
       (rhs :=
@@ -660,8 +660,8 @@ theorem queryOpItemsOfRule_observational_sound
           (Metta.Minimal.queryOpAvoid prev (toLeaTTaAtom query) incoming)
           rawLhs rawRhs).1.2)
       hinvariant hmatch hmerge hloop
-  exact ⟨merged, humanMatched, humanMerged, hitemEq,
-    hhumanMatch, hhumanMerge, hnextInvariant, hobservable⟩
+  exact ⟨merged, specMatched, specMerged, hitemEq,
+    hspecMatch, hspecMerge, hnextInvariant, hobservable⟩
 
 /-- Capture-avoiding freshening makes the selected rule pattern disjoint from
 the query variables visible at this work-item step. -/
@@ -698,24 +698,24 @@ theorem varsDisjoint_of_freshenRuleAvoiding_pattern
 
 /-- Public one-candidate equation-query seal.  Membership in the repaired
 LeaTTa work-item generator supplies the hygienically freshened pattern and RHS,
-the exact emitted `evalResult`, a human equation-query-step derivation, and the
+the exact emitted `evalResult`, a spec equation-query-step derivation, and the
 paired invariant required by the next reachable query step.
 
 This theorem seals matcher, merge, and equation-query-step soundness only.  It
 does not claim the separately scoped recursive evaluator/call layer. -/
-theorem queryOpItemsOfRule_humanEquationQueryStep_sound
-    {pattern query : OSLFCore.Atom} {humanIncoming : Bindings}
+theorem queryOpItemsOfRule_specEquationQueryStep_sound
+    {pattern query : OSLFCore.Atom} {specIncoming : Bindings}
     {incoming : Metta.Bindings} {prev : Metta.Minimal.Stack}
     {counter : Nat} {rawLhs rawRhs : Metta.Atom}
     {item : Metta.Minimal.Item}
-    (hinvariant : LeaQueryOpBindingInvariant humanIncoming incoming)
+    (hinvariant : LeaQueryOpBindingInvariant specIncoming incoming)
     (hfreshPattern :
       (Metta.Minimal.freshenRuleAvoiding counter
         (Metta.Minimal.queryOpAvoid prev (toLeaTTaAtom query) incoming)
         rawLhs rawRhs).1.1 = toLeaTTaAtom pattern)
     (hitem : item ∈ Metta.Minimal.queryOpItemsOfRule
       prev (toLeaTTaAtom query) incoming counter (rawLhs, rawRhs)) :
-    ∃ merged humanMerged freshRhs,
+    ∃ merged specMerged freshRhs,
       freshRhs =
           (Metta.Minimal.freshenRuleAvoiding counter
             (Metta.Minimal.queryOpAvoid prev
@@ -723,22 +723,22 @@ theorem queryOpItemsOfRule_humanEquationQueryStep_sound
             rawLhs rawRhs).1.2 ∧
         item = Metta.Minimal.evalResult prev
           (Metta.instantiate merged freshRhs) merged ∧
-        HumanEquationQueryStep query pattern humanIncoming humanMerged
+        Spec.Eval.EquationQueryStep query pattern specIncoming specMerged
           freshRhs (Metta.instantiate merged freshRhs) ∧
-        LeaQueryOpBindingInvariant humanMerged merged := by
-  obtain ⟨merged, humanMatched, humanMerged, hitemEq,
-      hhumanMatch, hhumanMerge, hnextInvariant, hobservable⟩ :=
+        LeaQueryOpBindingInvariant specMerged merged := by
+  obtain ⟨merged, specMatched, specMerged, hitemEq,
+      hspecMatch, hspecMerge, hnextInvariant, hobservable⟩ :=
     queryOpItemsOfRule_observational_sound
       hinvariant hfreshPattern hitem
   let freshRhs :=
     (Metta.Minimal.freshenRuleAvoiding counter
       (Metta.Minimal.queryOpAvoid prev (toLeaTTaAtom query) incoming)
       rawLhs rawRhs).1.2
-  refine ⟨merged, humanMerged, freshRhs, rfl, ?_, ?_, hnextInvariant⟩
+  refine ⟨merged, specMerged, freshRhs, rfl, ?_, ?_, hnextInvariant⟩
   · exact hitemEq
-  · refine ⟨humanMatched,
+  · refine ⟨specMatched,
       varsDisjoint_of_freshenRuleAvoiding_pattern hfreshPattern,
-      hhumanMatch, hhumanMerge, ?_, hobservable⟩
+      hspecMatch, hspecMerge, ?_, hobservable⟩
     exact ⟨leaClassSolution merged,
       (hnextInvariant.solutionTheory (leaClassSolution merged)).mpr
         hnextInvariant.runtime.canonical.1⟩
@@ -754,20 +754,20 @@ theorem queryOp_hit_observational_sound_empty_incoming
       (toLeaTTaAtom pattern) (toLeaTTaAtom query))
     (hmerge : merged ∈
       Metta.Bindings.merge Metta.Bindings.empty matched) :
-    ∃ humanMatched humanMerged,
-      HumanMatchMergeSpec.MatchRel
-          HumanMatchMergeSpec.equalityGroundedSemantic
-          query pattern humanMatched ∧
-        HumanMatchMergeSpec.MergeRel
-          HumanMatchMergeSpec.equalityGroundedSemantic
-          Bindings.empty humanMatched humanMerged ∧
-        LeaBindingSolutionTheoryEquiv humanMerged merged ∧
+    ∃ specMatched specMerged,
+      Spec.Match.Merge.MatchRel
+          Spec.Match.Merge.equalityGroundedSemantic
+          query pattern specMatched ∧
+        Spec.Match.Merge.MergeRel
+          Spec.Match.Merge.equalityGroundedSemantic
+          Bindings.empty specMatched specMerged ∧
+        LeaBindingSolutionTheoryEquiv specMerged merged ∧
         ∀ valuation : String → Metta.Atom,
-          HEBindingSatisfied valuation humanMerged →
+          HEBindingSatisfied valuation specMerged →
             applyClassSolution valuation (Metta.instantiate merged rhs) =
               applyClassSolution valuation rhs := by
   obtain ⟨valuation, hmatchedSatisfied⟩ :=
-    LeaTTaHumanConformance.leaMatchAtoms_output_satisfiable
+    LeaTTaSpecConformance.leaMatchAtoms_output_satisfiable
       (toLeaTTaAtom_noFloat pattern)
       (toLeaTTaAtom_noFloat query) hmatch
   have hmatchedNoFloat : LeaBindingsNoFloat matched :=

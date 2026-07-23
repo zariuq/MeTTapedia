@@ -1,6 +1,6 @@
 import Mettapedia.Languages.MeTTa.HE.LeaTTaTypePresentationFoldConformance
 import Mettapedia.Languages.MeTTa.HE.LeaTTaMergeExistence
-import Mettapedia.Languages.MeTTa.HE.HumanTypePresentationExactNormal
+import Mettapedia.Languages.MeTTa.HE.Spec.Type.Presentation.ExactNormal
 
 /-!
 # Completeness of repaired LeaTTa for finite type presentations
@@ -10,7 +10,7 @@ This module proves the converse of presentation soundness: every satisfiable
 finite presentation derivation on disjoint fresh type scopes is realized by
 LeaTTa's repaired deterministic type matcher.
 
-The proof follows the raw wildcard/expression structure of the human
+The proof follows the raw wildcard/expression structure of the spec
 presentation.  At ordinary leaves it assembles the clean matcher completeness
 seal with semantic LeaTTa merge existence.  A satisfying valuation is
 threaded through the recursion, so every constructed candidate survives the
@@ -22,13 +22,13 @@ namespace Mettapedia.Languages.MeTTa.HE.LeaTTaTypePresentationCompleteness
 
 open Mettapedia.Languages.MeTTa.HE
 open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
-open HumanTypePresentation
-open HumanTypePresentationTheory
-open HumanTypePresentationMatchSolutionTheory
-open HumanTypePresentationExact
-open HumanTypeRuntimeRefinement
+open Spec.Type.Presentation
+open Spec.Type.Presentation.Theory
+open Spec.Type.Presentation.MatchSolutionTheory
+open Spec.Type.Presentation.Exact
+open Spec.Type.RuntimeRefinement
 open LeaTTaBridge
-open LeaTTaHumanConformance
+open LeaTTaSpecConformance
 open LeaTTaTypeConformance
 open LeaTTaMergeExistence
 
@@ -100,17 +100,17 @@ private theorem matchReduced_leaf_exists
   have mettaEquation : MettaEquationSatisfied leaValuation
       (toLeaTTaAtom left, toLeaTTaAtom right) :=
     mettaEquationSatisfied_of_native valuation equation
-  have humanEquation : HEAtomEquationSatisfied leaValuation right left := by
+  have specEquation : HEAtomEquationSatisfied leaValuation right left := by
     simpa [HEAtomEquationSatisfied, MettaEquationSatisfied, eq_comm] using
       mettaEquation
-  obtain ⟨humanMatched, humanMatch, humanMatchedSatisfied⟩ :=
-    HumanMatchCompleteness.exists_humanMatch_of_solution humanEquation
+  obtain ⟨specMatched, specMatch, specMatchedSatisfied⟩ :=
+    Spec.Match.Completeness.exists_specMatch_of_solution specEquation
   obtain ⟨matched, matchedMember, matchedTheory⟩ :=
-    humanMatch_observational_complete_of_satisfiable
-      humanMatch disjoint.symm ⟨leaValuation, by
+    specMatch_observational_complete_of_satisfiable
+      specMatch disjoint.symm ⟨leaValuation, by
         simpa [MettaEquationSatisfied, eq_comm] using mettaEquation⟩
   have matchedSatisfied : LeaBindingSatisfied leaValuation matched :=
-    (matchedTheory leaValuation).mp humanMatchedSatisfied
+    (matchedTheory leaValuation).mp specMatchedSatisfied
   obtain ⟨merged, mergedMember, mergedSatisfied, mergedNoFloat⟩ :=
     merge_exists_of_satisfied state.runtime.noFloat
       (leaMatchAtoms_result_noFloat
@@ -371,7 +371,7 @@ theorem PresentationArgumentListMatchRel.solutions
   | @cons expected actual expecteds actuals incoming next output head tail ih =>
       have nextNormal := head.output_normal normal
       rw [ih nextNormal,
-        HumanTypePresentationMatchSolutionTheory.CorePlusR2TypePresentationMatchRel.solutions
+        Spec.Type.Presentation.MatchSolutionTheory.CorePlusR2TypePresentationMatchRel.solutions
           head normal valuation]
       constructor
       · rintro ⟨⟨incomingSatisfied, headConsistent⟩, tailConsistent⟩
@@ -395,7 +395,7 @@ theorem matchApplicationTypeArguments_complete
         (toLeaTTaAtoms expected) (toLeaTTaAtoms actual) = some output := by
   let valuation := presentedValuation outputPresentation
   have outputNormal : outputPresentation.Normal :=
-    HumanTypePresentationExactNormal.PresentationArgumentListMatchRel.output_normal
+    Spec.Type.Presentation.ExactNormal.PresentationArgumentListMatchRel.output_normal
       derivation TypeSubst.normal_empty
   have outputSatisfied : TypeSubstSatisfied valuation outputPresentation :=
     normal_presentedValuation_satisfied outputNormal

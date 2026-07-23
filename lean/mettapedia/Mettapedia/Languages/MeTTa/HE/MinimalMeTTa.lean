@@ -1,11 +1,16 @@
 import Mettapedia.Languages.MeTTa.HE.EvalSpec
 
 /-!
-# HE MeTTa Minimal Instructions (Stateful Operations)
+# Legacy structural model of minimal instructions
 
-Declarative specification of the minimal MeTTa instructions that involve
-space mutation or control flow. These are the "assembly language" of MeTTa
-(spec lines 84-91).
+This pre-`HE.Spec` relation remains as a validation model for the older
+small-step development.  It is excluded from the current evaluator seal.
+In particular, its collapse/superpose constructors use a visible structural
+serialization because the old atom carrier had no opaque binding value.
+
+The active executable-independent semantics is
+`Spec.Eval.Minimal.MinimalStepRel`; it uses abstract opaque grounded carriers
+and models continuation-time binding merge exactly.
 
 ## Source of Truth
 - `https://trueagi-io.github.io/hyperon-experimental/metta/` lines 84-91
@@ -143,10 +148,8 @@ inductive MinimalStep (dispatch : GroundedDispatch) :
       alternative evaluations in a form `(<atom> <bindings>)`. `<bindings>`
       are represented in a form of a grounded atom."
 
-      Each result pair `(atom, bindings)` is encoded as `(<atom> <bindings.toAtom>)`
-      in the output expression, faithfully modeling the spec's grounded-atom
-      encoding. The round-trip property `Bindings.ofAtom_toAtom` guarantees
-      `superpose-bind` can restore the exact `(atom, bindings)` pairs.
+      This legacy constructor uses the visible structural serialization.  It
+      is not the active specification of the opaque grounded carrier.
 
       Hypercube: this is the □ (necessity) modality — collect ALL reducts
       with their full contexts (bindings). -/
@@ -157,7 +160,8 @@ inductive MinimalStep (dispatch : GroundedDispatch) :
         EvalAtom s dispatch a Atom.undefinedType ib r → r ∈ results) :
       MinimalStep dispatch s
         (.expression [.symbol "collapse-bind", a]) ib
-        s (.expression (results.map fun (a, b) => .expression [a, b.toAtom]), ib)
+        s (.expression (results.map fun (a, b) =>
+          .expression [a, b.toLegacyStructuralAtom]), ib)
 
   /-- `(superpose-bind ((<atom> <bindings>) ...))` — Distribute results as
       nondeterministic outcomes.
@@ -172,7 +176,8 @@ inductive MinimalStep (dispatch : GroundedDispatch) :
       (ib : Bindings) (h_mem : r ∈ results) :
       MinimalStep dispatch s
         (.expression [.symbol "superpose-bind",
-          .expression (results.map fun (a, b) => .expression [a, b.toAtom])]) ib
+          .expression (results.map fun (a, b) =>
+            .expression [a, b.toLegacyStructuralAtom])]) ib
         s r
 
   /-- `(function <body>)` / `(return <atom>)` — Evaluate body until return.

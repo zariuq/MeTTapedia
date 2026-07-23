@@ -27,6 +27,15 @@ import Mettapedia.Languages.MeTTa.Prime.FragmentAdequacyV1
 import Mettapedia.Languages.MeTTa.Prime.CertificateBoundaryV1
 import Mettapedia.Languages.MeTTa.Prime.PeTTaChainerDAGReplayV1
 import Mettapedia.Languages.MeTTa.PrimeNeedWorlds
+import Mettapedia.Languages.MeTTa.PrimeDemandBoundary
+import Mettapedia.Languages.MeTTa.PrimeCallSharingTournament
+import Mettapedia.Languages.MeTTa.PrimeEquationCallSemantics
+import Mettapedia.Languages.MeTTa.PrimeCellCausalSemantics
+import Mettapedia.Languages.MeTTa.PrimeCellCausalFrontier
+import Mettapedia.Languages.MeTTa.PrimeCellCausalControl
+import Mettapedia.Languages.MeTTa.PrimeNativeReceiptCorrespondence
+import Mettapedia.Languages.MeTTa.PrimeCellCausalNativeRefinement
+import Mettapedia.Languages.MeTTa.PrimeNativeContextRefinement
 import Mettapedia.Languages.MeTTa.PrimeScopedIntroduction
 import Mettapedia.OSLF.Framework.PrimeDTTCheckedIntroduction
 import Mettapedia.OSLF.Framework.PrimeDependentWorldModel

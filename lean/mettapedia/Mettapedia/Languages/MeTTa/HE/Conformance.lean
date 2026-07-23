@@ -3,20 +3,20 @@ import Mettapedia.Languages.MeTTa.HE.Eval
 import Mettapedia.Languages.MeTTa.HE.Certification
 import Mettapedia.Languages.MeTTa.HE.CoreFragment
 import Mettapedia.Languages.MeTTa.HE.DeclMatchSpec
-import Mettapedia.Languages.MeTTa.HE.HumanMatchMergeSpec
-import Mettapedia.Languages.MeTTa.HE.HumanMatchSolutionTheory
+import Mettapedia.Languages.MeTTa.HE.Spec.Match.Merge
+import Mettapedia.Languages.MeTTa.HE.Spec.Match.SolutionTheory
 import Mettapedia.Languages.MeTTa.HE.LeaTTaBridge
 import Mettapedia.Languages.MeTTa.HE.LeaTTaBindingTransport
 import Mettapedia.Languages.MeTTa.HE.MatchSolutionTheory
 import Mettapedia.Languages.MeTTa.HE.LeaTTaMatcherCongruence
 import Mettapedia.Languages.MeTTa.HE.LeaTTaMergeExistence
-import Mettapedia.Languages.MeTTa.HE.LeaTTaHumanConformance
-import Mettapedia.Languages.MeTTa.HE.HumanMatchLPBridge
-import Mettapedia.Languages.MeTTa.HE.HumanMatchStructuralModel
-import Mettapedia.Languages.MeTTa.HE.HumanMatchCompleteness
-import Mettapedia.Languages.MeTTa.HE.LeaTTaHumanSoundness
+import Mettapedia.Languages.MeTTa.HE.LeaTTaSpecConformance
+import Mettapedia.Languages.MeTTa.HE.Spec.Match.LPBridge
+import Mettapedia.Languages.MeTTa.HE.Spec.Match.StructuralModel
+import Mettapedia.Languages.MeTTa.HE.Spec.Match.Completeness
+import Mettapedia.Languages.MeTTa.HE.LeaTTaSpecSoundness
 import Mettapedia.Languages.MeTTa.HE.LeaTTaQueryObservationalAnchor
-import Mettapedia.Languages.MeTTa.HE.LeaTTaHumanSeal
+import Mettapedia.Languages.MeTTa.HE.LeaTTaSpecSeal
 import Mettapedia.Languages.MeTTa.HE.LeaTTaConcreteConformance
 import Mettapedia.Languages.MeTTa.HE.MatcherMergeCompleteness
 import Mettapedia.Languages.MeTTa.LeaTTa.Corpus.SelfInterp
@@ -303,66 +303,14 @@ private theorem empty_minimal_error_passthrough_candidates :
 
 theorem leatta_minimal_error_passthrough_mettaEval :
     Metta.Minimal.mettaEval (Metta.Minimal.MinEnv.ofAtomsGT [] []) 4
-      Metta.Minimal.St.init [] leattaErrorPassthroughAtom =
+    Metta.Minimal.St.init [] leattaErrorPassthroughAtom =
     ([(leattaErrorPassthroughAtom, [])], Metta.Minimal.St.init) := by
-  let env : Metta.Minimal.MinEnv := Metta.Minimal.MinEnv.ofAtomsGT [] []
-  have hx :
-      Metta.Minimal.mettaEval env 3 Metta.Minimal.St.init []
-        (Metta.Atom.sym "x") =
-      ([(Metta.Atom.sym "x", [])], Metta.Minimal.St.init) := by
-    exact mettaEval_symbol_eq_of_notReducible_eq
-      env 2 Metta.Minimal.St.init [] "x"
-      (by
-        simpa [env, atomToStack_eval] using
-          (interpretFuel_eval_symbol_notReducible_of_no_candidates_eq
-            env Metta.Minimal.St.init 2 (Metta.Atom.sym "x") [] "x"
-            (by simp [Metta.instantiate]) rfl
-            (by simpa [env] using empty_minimal_symbol_candidates "x")))
-  have he :
-      Metta.Minimal.mettaEval env 3 Metta.Minimal.St.init []
-        (Metta.Atom.sym "e") =
-      ([(Metta.Atom.sym "e", [])], Metta.Minimal.St.init) := by
-    exact mettaEval_symbol_eq_of_notReducible_eq
-      env 2 Metta.Minimal.St.init [] "e"
-      (by
-        simpa [env, atomToStack_eval] using
-          (interpretFuel_eval_symbol_notReducible_of_no_candidates_eq
-            env Metta.Minimal.St.init 2 (Metta.Atom.sym "e") [] "e"
-            (by simp [Metta.instantiate]) rfl
-            (by simpa [env] using empty_minimal_symbol_candidates "e")))
-  have hRoot :
-      Metta.Minimal.interpretFuel env 4 Metta.Minimal.St.init
-        [evalItemNil leattaErrorPassthroughAtom] [] =
-      ([(Metta.Minimal.notReducibleA, [])], Metta.Minimal.St.init) := by
-    simpa [env, leattaErrorPassthroughAtom, evalItemNil, atomToStack_eval] using
-      (interpretFuel_eval_notReducible_of_no_candidates_eq
-        env Metta.Minimal.St.init 3 leattaErrorPassthroughAtom [] "Error"
-        [Metta.Atom.sym "x", Metta.Atom.sym "e"]
-        (by simp [leattaErrorPassthroughAtom, Metta.instantiate])
-        rfl rfl rfl
-        (by
-          simpa [env, leattaErrorPassthroughAtom] using
-            empty_minimal_error_passthrough_candidates))
-  simpa [env, leattaErrorPassthroughAtom] using
-    (mettaEval_binary_expr_eq_of_tuple_fallback_and_root_notReducible
-      env 3 Metta.Minimal.St.init Metta.Minimal.St.init Metta.Minimal.St.init
-      Metta.Minimal.St.init "Error" (Metta.Atom.sym "x") (Metta.Atom.sym "e")
-      (Metta.Atom.sym "x") (Metta.Atom.sym "e") ([] : Metta.Bindings)
-      (by simp [Metta.Atom.vars]) (by simp [Metta.Atom.vars]) hx he
-      (by
-        have hprep : Metta.Minimal.typePrep Metta.Minimal.St.init.world
-            (.sym "Error") = .sym "Error" := by
-          simp [Metta.Minimal.typePrep, Metta.Minimal.subTokens.eq_1,
-            Metta.Minimal.wrapStates.eq_3, Metta.Minimal.St.init,
-            Metta.Minimal.World.empty]
-        have htypes : Metta.Minimal.getTypes env (.sym "Error") =
-            [.sym "%Undefined%"] := by
-          rw [Metta.Minimal.getTypes.eq_8]
-          simp [env, Metta.Minimal.MinEnv.ofAtomsGT,
-            Std.HashMap.getD_emptyWithCapacity]
-        rw [Metta.Minimal.selectFunctionType, hprep, htypes]
-        rfl)
-      rfl hRoot)
+  have hsource : Metta.instantiate [] leattaErrorPassthroughAtom =
+      leattaErrorPassthroughAtom := by
+    simp [Metta.instantiate, leattaErrorPassthroughAtom]
+  have herror : leattaErrorPassthroughAtom.isError = true := rfl
+  rw [Metta.Minimal.mettaEval]
+  simp only [hsource, herror, Bool.or_true, if_true]
 
 theorem leatta_minimal_error_passthrough_matches_HE_mettaCall_surface :
     LeaTTaBridge.toLeaTTaAtom (Atom.error (.symbol "x") (.symbol "e")) =

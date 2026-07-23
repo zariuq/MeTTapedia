@@ -88,8 +88,8 @@ theorem decomposeEq_isSome_of_satisfied
         subst hgo
         have hequivRefl : Metta.Ground.equiv g g = true := by
           cases g <;>
-            simp_all [Metta.Ground.equiv, MettaAtomNoFloat, BEq.beq,
-              Metta.instBEqGround.beq]
+            simp_all [Metta.Ground.equiv, Metta.Ground.beq,
+              MettaAtomNoFloat, storedBindings_beq_self_noFloat]
         exact ⟨[], by simp [Metta.Unify.decomposeEq, hequivRefl]⟩
     | expr atoms =>
         exact absurd hsat (by simp [MettaEquationSatisfied, applyClassSolution])

@@ -1,5 +1,5 @@
-import Mettapedia.Languages.MeTTa.HE.HumanTypeConformance
-import Mettapedia.Languages.MeTTa.HE.HumanTypeRuntimeRefinement
+import Mettapedia.Languages.MeTTa.HE.Spec.Type.Conformance
+import Mettapedia.Languages.MeTTa.HE.Spec.Type.RuntimeRefinement
 import MettaHyperonFull.Minimal.Interpreter
 import Std.Data.HashMap.Lemmas
 
@@ -21,9 +21,9 @@ namespace Mettapedia.Languages.MeTTa.HE.LeaTTaStateValueRefinement
 
 open Mettapedia.Languages.MeTTa.HE
 open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
-open HumanTypeSpec
-open HumanTypeConformance
-open HumanTypeRuntimeRefinement
+open Spec.Type
+open Spec.Type.Conformance
+open Spec.Type.RuntimeRefinement
 
 private def forgedStateValue : Atom :=
   .expression [.symbol "StateValue", .grounded (.int 1)]
@@ -117,9 +117,9 @@ private theorem number_undefined_runtime_match :
       Bindings.empty Bindings.empty := by
   constructor
   · exact ⟨fun name => .var name, by
-      simp [HumanTypeBindingSatisfied, Bindings.empty]⟩
+      simp [TypeBindingSatisfied, Bindings.empty]⟩
   · intro valuation
-    simp [HumanTypeBindingSatisfied, Bindings.empty,
+    simp [TypeBindingSatisfied, Bindings.empty,
       CorePlusR2TypeConsistent, Atom.undefinedType]
 
 private theorem R_R_runtime_match :
@@ -127,9 +127,9 @@ private theorem R_R_runtime_match :
       Bindings.empty Bindings.empty := by
   constructor
   · exact ⟨fun name => .var name, by
-      simp [HumanTypeBindingSatisfied, Bindings.empty]⟩
+      simp [TypeBindingSatisfied, Bindings.empty]⟩
   · intro valuation
-    simp [HumanTypeBindingSatisfied, Bindings.empty,
+    simp [TypeBindingSatisfied, Bindings.empty,
       CorePlusR2TypeConsistent, ReducedTypeConsistent,
       Atom.undefinedType, Atom.atomType]
 

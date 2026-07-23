@@ -508,11 +508,13 @@ def fromCore (cb : Mettapedia.Languages.MeTTa.OSLFCore.Bindings) (vars : List St
     | none => none
   ⟨assignments, []⟩
 
-/-! ### Bindings ↔ Atom Encoding
+/-! ### Legacy structural binding serialization
 
-The minimal-metta spec says collapse-bind returns results as `(<atom> <bindings>)`
-pairs where bindings are "represented in a form of a grounded atom." We use
-structural encoding as nested expressions for a provable round-trip.
+The published minimal semantics requires the second component of a collapsed
+pair to be an opaque grounded binding object.  The expression serialization
+below predates that exact carrier and is retained only for validation artifacts
+that inspect binding records structurally.  The active evaluator specification
+uses `Spec.Eval.Minimal.Services.bindingPayload`; it does not use this encoding.
 
 Hypercube connection (Stay–Meredith–Wells, Section 5.12): this is the reflection
 operator — bindings become first-class citizens in the term language. The
@@ -533,14 +535,14 @@ private def decodeEquality? : Atom → Option (String × String)
   | .expression [.symbol a, .symbol c] => some (a, c)
   | _ => none
 
-/-- Encode bindings as an Atom expression for collapse-bind/superpose-bind. -/
-def toAtom (b : Bindings) : Atom :=
+/-- Serialize bindings as an ordinary expression for legacy validation tools. -/
+def toLegacyStructuralAtom (b : Bindings) : Atom :=
   .expression [.symbol "Bindings",
     .expression (b.assignments.map encodeAssignment),
     .expression (b.equalities.map encodeEquality)]
 
-/-- Decode bindings from an Atom expression. Inverse of `toAtom`. -/
-def ofAtom? : Atom → Option Bindings
+/-- Decode the legacy structural serialization. -/
+def ofLegacyStructuralAtom? : Atom → Option Bindings
   | .expression [.symbol "Bindings", .expression assigns, .expression eqs] =>
     let assignments := assigns.filterMap decodeAssignment?
     let equalities := eqs.filterMap decodeEquality?
@@ -561,8 +563,9 @@ private theorem filterMap_decode_encode_equalities (xs : List (String × String)
   | nil => rfl
   | cons x xs ih => cases x; simp [encodeEquality, decodeEquality?]
 
-theorem ofAtom_toAtom (b : Bindings) : ofAtom? (toAtom b) = some b := by
-  simp only [toAtom, ofAtom?]
+theorem ofLegacyStructuralAtom_toLegacyStructuralAtom (b : Bindings) :
+    ofLegacyStructuralAtom? (toLegacyStructuralAtom b) = some b := by
+  simp only [toLegacyStructuralAtom, ofLegacyStructuralAtom?]
   rw [filterMap_decode_encode_assignments, filterMap_decode_encode_equalities]
   simp [List.length_map]
 

@@ -1,14 +1,14 @@
-import Mettapedia.Languages.MeTTa.HE.HumanTypePresentationExact
+import Mettapedia.Languages.MeTTa.HE.Spec.Type.Presentation.Exact
 import Mettapedia.Languages.MeTTa.HE.LeaTTaTypeConformance
 import MettaHyperonFull.Proofs.TypeInferenceFreshening
 
 /-!
 # Exact type-presentation conformance
 
-The exact human type boundary describes fresh inference scopes relationally.
+The exact spec type boundary describes fresh inference scopes relationally.
 This file connects the repaired runtime's deterministic finite freshener to
 that relation.  The correspondence is structural: translation commutes with
-whole-type renaming, and the runtime's growing avoid list is exactly the human
+whole-type renaming, and the runtime's growing avoid list is exactly the spec
 type-variable list at every fold step.
 
 The recursive `getTypes` characterization is built above these lemmas; no
@@ -20,9 +20,9 @@ namespace Mettapedia.Languages.MeTTa.HE.LeaTTaTypePresentationExactConformance
 
 open Mettapedia.Languages.MeTTa.HE
 open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
-open Mettapedia.Languages.MeTTa.HE.HumanTypePresentation
-open Mettapedia.Languages.MeTTa.HE.HumanTypeRuntimeRefinement
-open Mettapedia.Languages.MeTTa.HE.HumanTypePresentationExact
+open Mettapedia.Languages.MeTTa.HE.Spec.Type.Presentation
+open Mettapedia.Languages.MeTTa.HE.Spec.Type.RuntimeRefinement
+open Mettapedia.Languages.MeTTa.HE.Spec.Type.Presentation.Exact
 open Mettapedia.Languages.MeTTa.HE.LeaTTaBridge
 open Mettapedia.Languages.MeTTa.HE.LeaTTaTypeConformance
 
@@ -31,39 +31,39 @@ open Mettapedia.Languages.MeTTa.HE.LeaTTaTypeConformance
 mutual
 
 /-- Translation commutes with whole-type variable renaming. -/
-theorem toLeaTTaAtom_renameHumanTypeVars
+theorem toLeaTTaAtom_renameTypeVars
     (rename : String → String) (atom : Atom) :
-    toLeaTTaAtom (renameHumanTypeVars rename atom) =
+    toLeaTTaAtom (renameTypeVars rename atom) =
       Metta.Minimal.renameAllVars rename (toLeaTTaAtom atom) := by
   cases atom with
   | symbol name =>
-      simp [renameHumanTypeVars, toLeaTTaAtom,
+      simp [renameTypeVars, toLeaTTaAtom,
         Metta.Minimal.renameAllVars]
   | var name =>
-      simp [renameHumanTypeVars, toLeaTTaAtom,
+      simp [renameTypeVars, toLeaTTaAtom,
         Metta.Minimal.renameAllVars]
   | grounded value =>
-      simp [renameHumanTypeVars, toLeaTTaAtom,
+      simp [renameTypeVars, toLeaTTaAtom,
         Metta.Minimal.renameAllVars]
   | expression atoms =>
-      simp only [renameHumanTypeVars, toLeaTTaAtom,
+      simp only [renameTypeVars, toLeaTTaAtom,
         Metta.Minimal.renameAllVars]
       exact congrArg Metta.Atom.expr
-        (toLeaTTaAtoms_renameHumanTypeVars rename atoms)
+        (toLeaTTaAtoms_renameTypeVars rename atoms)
 termination_by 2 * sizeOf atom
 
-/-- List companion of `toLeaTTaAtom_renameHumanTypeVars`. -/
-theorem toLeaTTaAtoms_renameHumanTypeVars
+/-- List companion of `toLeaTTaAtom_renameTypeVars`. -/
+theorem toLeaTTaAtoms_renameTypeVars
     (rename : String → String) (atoms : List Atom) :
-    toLeaTTaAtoms (atoms.map (renameHumanTypeVars rename)) =
+    toLeaTTaAtoms (atoms.map (renameTypeVars rename)) =
       (toLeaTTaAtoms atoms).map
         (Metta.Minimal.renameAllVars rename) := by
   cases atoms with
   | nil => rfl
   | cons atom atoms =>
       exact congrArg₂ List.cons
-        (toLeaTTaAtom_renameHumanTypeVars rename atom)
-        (toLeaTTaAtoms_renameHumanTypeVars rename atoms)
+        (toLeaTTaAtom_renameTypeVars rename atom)
+        (toLeaTTaAtoms_renameTypeVars rename atoms)
 termination_by 2 * sizeOf atoms + 1
 decreasing_by
   all_goals simp_wf
@@ -108,7 +108,7 @@ end
 
 /-! ## Runtime freshening realizes the relational alpha scopes -/
 
-/-- One deterministic repaired-runtime candidate is a lawful human
+/-- One deterministic repaired-runtime candidate is a lawful spec
 alpha-variant satisfying the same finite avoidance contract. -/
 theorem freshenTypeCandidate_alphaVariant
     (avoid : List String) (position : Nat) (source : Atom) :
@@ -119,12 +119,12 @@ theorem freshenTypeCandidate_alphaVariant
   refine ⟨Metta.Minimal.captureAvoidingName avoid position,
     Metta.Minimal.captureAvoidingName_injective avoid position, ?_, ?_⟩
   · simp only [Metta.Minimal.freshenTypeCandidate]
-    rw [← toLeaTTaAtom_renameHumanTypeVars,
+    rw [← toLeaTTaAtom_renameTypeVars,
       fromLeaTTaAtom_toLeaTTaAtom]
   · intro name _
     exact Metta.Minimal.captureAvoidingName_not_mem avoid position name
 
-/-- The deterministic argument freshening fold realizes the human growing
+/-- The deterministic argument freshening fold realizes the spec growing
 avoid-set relation at every starting position. -/
 theorem freshenArgumentTypes_alphaVariants
     (avoid : List String) (position : Nat) : ∀ sources : List Atom,
@@ -142,16 +142,16 @@ theorem freshenArgumentTypes_alphaVariants
       have hvariant : TypeCandidateAlphaVariantRel avoid source target := by
         simpa [freshLea, target] using
           freshenTypeCandidate_alphaVariant avoid position source
-      have htarget : target = renameHumanTypeVars
+      have htarget : target = renameTypeVars
           (Metta.Minimal.captureAvoidingName avoid position) source := by
         dsimp [target, freshLea]
         simp only [Metta.Minimal.freshenTypeCandidate]
-        rw [← toLeaTTaAtom_renameHumanTypeVars,
+        rw [← toLeaTTaAtom_renameTypeVars,
           fromLeaTTaAtom_toLeaTTaAtom]
       have hfreshImage : freshLea = toLeaTTaAtom target := by
         rw [htarget]
         simpa [freshLea, Metta.Minimal.freshenTypeCandidate] using
-          (toLeaTTaAtom_renameHumanTypeVars
+          (toLeaTTaAtom_renameTypeVars
             (Metta.Minimal.captureAvoidingName avoid position) source).symm
       have hvars : freshLea.vars = TypeSubst.typeVars target := by
         rw [hfreshImage, toLeaTTaAtom_vars_eq_typeVars]
@@ -161,7 +161,7 @@ theorem freshenArgumentTypes_alphaVariants
       simpa [freshLea, target, hvars] using
         ih (avoid ++ TypeSubst.typeVars target) (position + 1)
 
-/-- Pointwise deterministic operator freshening realizes the human operator
+/-- Pointwise deterministic operator freshening realizes the spec operator
 candidate relation. -/
 theorem freshenOperatorTypes_alphaVariants
     (avoid : List String) (position : Nat) : ∀ sources : List Atom,
@@ -183,23 +183,23 @@ mutual
 
 /-- Whole-type renaming maps the native variable-occurrence list
 pointwise. -/
-theorem typeVars_renameHumanTypeVars
+theorem typeVars_renameTypeVars
     (rename : String → String) (atom : Atom) :
-    TypeSubst.typeVars (renameHumanTypeVars rename atom) =
+    TypeSubst.typeVars (renameTypeVars rename atom) =
       (TypeSubst.typeVars atom).map rename := by
   cases atom with
-  | symbol name => simp [renameHumanTypeVars, TypeSubst.typeVars]
-  | var name => simp [renameHumanTypeVars, TypeSubst.typeVars]
-  | grounded value => simp [renameHumanTypeVars, TypeSubst.typeVars]
+  | symbol name => simp [renameTypeVars, TypeSubst.typeVars]
+  | var name => simp [renameTypeVars, TypeSubst.typeVars]
+  | grounded value => simp [renameTypeVars, TypeSubst.typeVars]
   | expression atoms =>
-      simpa [renameHumanTypeVars, TypeSubst.typeVars] using
-        typeVarsList_renameHumanTypeVars rename atoms
+      simpa [renameTypeVars, TypeSubst.typeVars] using
+        typeVarsList_renameTypeVars rename atoms
 
-/-- List companion of `typeVars_renameHumanTypeVars`. -/
-theorem typeVarsList_renameHumanTypeVars
+/-- List companion of `typeVars_renameTypeVars`. -/
+theorem typeVarsList_renameTypeVars
     (rename : String → String) (atoms : List Atom) :
     TypeSubst.typeVarsList
-        (atoms.map (renameHumanTypeVars rename)) =
+        (atoms.map (renameTypeVars rename)) =
       (TypeSubst.typeVarsList atoms).map rename := by
   cases atoms with
   | nil => rfl
@@ -207,12 +207,12 @@ theorem typeVarsList_renameHumanTypeVars
       simp only [List.map_cons, TypeSubst.typeVarsList,
         List.map_append]
       exact congrArg₂ List.append
-        (typeVars_renameHumanTypeVars rename atom)
-        (typeVarsList_renameHumanTypeVars rename atoms)
+        (typeVars_renameTypeVars rename atom)
+        (typeVarsList_renameTypeVars rename atoms)
 
 end
 
-/-- Every variable in the target of a lawful human alpha variant lies
+/-- Every variable in the target of a lawful spec alpha variant lies
 outside the variant's declared avoid set. -/
 theorem TypeCandidateAlphaVariantRel.target_vars_fresh
     {avoid : List String} {source target : Atom}
@@ -220,7 +220,7 @@ theorem TypeCandidateAlphaVariantRel.target_vars_fresh
     ∀ name ∈ TypeSubst.typeVars target, name ∉ avoid := by
   rcases variant with ⟨rename, _injective, rfl, fresh⟩
   intro name member
-  rw [typeVars_renameHumanTypeVars] at member
+  rw [typeVars_renameTypeVars] at member
   obtain ⟨original, sourceMember, rfl⟩ := List.mem_map.mp member
   exact fresh original sourceMember
 

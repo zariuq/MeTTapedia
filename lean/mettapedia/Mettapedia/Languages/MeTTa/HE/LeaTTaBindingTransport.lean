@@ -310,14 +310,233 @@ theorem eqClass_mem_iff_of_equalityTheoryEquiv
       equalitySatisfied_eq_of_reachable hleaEdgesSatisfied hlea
     simp [valuation, equalityComponentIndicator, hnot] at heq
 
-/-- Host-float-free atoms are the semantic domain reachable by translating HE
-atoms.  LeaTTa additionally supports host floats with cross-constructor numeric
-equivalence; excluding that extra surface keeps the unification theorem graded
-against the HE reference language. -/
+/- Recursive float-freedom for the opaque carrier used by `collapse-bind`.
+The carrier is semantically opaque, but its structural Boolean equality still
+visits every stored value, so a nested host float must remain outside the
+lawful-equality fragment. -/
+mutual
+  /-- A stored grounded payload contains no host float. -/
+  def StoredGroundNoFloat : Metta.StoredGround → Prop
+    | .float _ => False
+    | .bindings relations => StoredBindingsNoFloat relations
+    | _ => True
+
+  /-- A stored atom contains no host float. -/
+  def StoredAtomNoFloat : Metta.StoredAtom → Prop
+    | .gnd value => StoredGroundNoFloat value
+    | .expr atoms => StoredAtomsNoFloat atoms
+    | _ => True
+
+  /-- A stored binding relation contains no host float. -/
+  def StoredBindingNoFloat : Metta.StoredBinding → Prop
+    | .val _ value => StoredAtomNoFloat value
+    | .eq _ _ => True
+
+  /-- Every relation in an opaque binding payload is float-free. -/
+  def StoredBindingsNoFloat : List Metta.StoredBinding → Prop
+    | [] => True
+    | relation :: relations =>
+        StoredBindingNoFloat relation ∧ StoredBindingsNoFloat relations
+
+  /-- Every member of a stored expression is float-free. -/
+  def StoredAtomsNoFloat : List Metta.StoredAtom → Prop
+    | [] => True
+    | atom :: atoms => StoredAtomNoFloat atom ∧ StoredAtomsNoFloat atoms
+end
+
+/-- Host-float-free atoms form the lawful structural-equality domain needed by
+the matcher and unifier.  Opaque binding payloads remain in the domain exactly
+when their recursively stored atoms are float-free; rejecting every payload
+would incorrectly exclude reachable `collapse-bind` evaluator results. -/
 def MettaAtomNoFloat : Metta.Atom → Prop
   | .gnd (.float _) => False
+  | .gnd (.bindings relations) =>
+      StoredBindingsNoFloat relations
   | .expr atoms => ∀ atom ∈ atoms, MettaAtomNoFloat atom
   | _ => True
+
+mutual
+
+/-- Boolean equality is sound on recursively float-free stored grounds. -/
+theorem storedGround_eq_of_beq_true_noFloat
+    {left right : Metta.StoredGround} :
+    StoredGroundNoFloat left → StoredGroundNoFloat right →
+      (left == right) = true → left = right := by
+  intro leftSafe rightSafe equal
+  cases left <;> cases right <;>
+    simp_all [StoredGroundNoFloat, BEq.beq, Metta.StoredGround.beq]
+  exact storedBindings_eq_of_beq_true_noFloat leftSafe rightSafe equal
+
+/-- Boolean equality is sound on recursively float-free stored atoms. -/
+theorem storedAtom_eq_of_beq_true_noFloat
+    {left right : Metta.StoredAtom} :
+    StoredAtomNoFloat left → StoredAtomNoFloat right →
+      (left == right) = true → left = right := by
+  intro leftSafe rightSafe equal
+  cases left with
+  | sym name =>
+      cases right <;>
+        simp_all [BEq.beq, Metta.StoredAtom.beq]
+  | var name =>
+      cases right <;>
+        simp_all [BEq.beq, Metta.StoredAtom.beq]
+  | gnd ground =>
+      cases right with
+      | sym | var | expr =>
+          simp_all [BEq.beq, Metta.StoredAtom.beq]
+      | gnd other =>
+          apply congrArg Metta.StoredAtom.gnd
+          apply storedGround_eq_of_beq_true_noFloat leftSafe rightSafe
+          simpa [BEq.beq, Metta.StoredAtom.beq] using equal
+  | expr atoms =>
+      cases right with
+      | sym | var | gnd =>
+          simp_all [BEq.beq, Metta.StoredAtom.beq]
+      | expr others =>
+          apply congrArg Metta.StoredAtom.expr
+          apply storedAtoms_eq_of_beq_true_noFloat leftSafe rightSafe
+          simpa [BEq.beq, Metta.StoredAtom.beq] using equal
+
+/-- Boolean equality is sound on recursively float-free stored relations. -/
+theorem storedBinding_eq_of_beq_true_noFloat
+    {left right : Metta.StoredBinding} :
+    StoredBindingNoFloat left → StoredBindingNoFloat right →
+      (left == right) = true → left = right := by
+  intro leftSafe rightSafe equal
+  cases left with
+  | val name value =>
+      cases right with
+      | eq => simp_all [BEq.beq, Metta.StoredBinding.beq]
+      | val otherName otherValue =>
+          have parts : (name == otherName) = true ∧
+              (value == otherValue) = true := by
+            simpa [BEq.beq, Metta.StoredBinding.beq,
+              Bool.and_eq_true] using equal
+          have nameEquation : name = otherName := beq_iff_eq.mp parts.1
+          have valueEquation : value = otherValue :=
+            storedAtom_eq_of_beq_true_noFloat leftSafe rightSafe parts.2
+          simp [nameEquation, valueEquation]
+  | eq leftName rightName =>
+      cases right with
+      | val => simp_all [BEq.beq, Metta.StoredBinding.beq]
+      | eq otherLeft otherRight =>
+          have parts : (leftName == otherLeft) = true ∧
+              (rightName == otherRight) = true := by
+            simpa [BEq.beq, Metta.StoredBinding.beq,
+              Bool.and_eq_true] using equal
+          simp [beq_iff_eq.mp parts.1, beq_iff_eq.mp parts.2]
+
+/-- List Boolean equality is sound on recursively float-free stored
+relations. -/
+theorem storedBindings_eq_of_beq_true_noFloat :
+    ∀ {left right : List Metta.StoredBinding},
+      StoredBindingsNoFloat left → StoredBindingsNoFloat right →
+        Metta.StoredBinding.beqList left right = true → left = right
+  | [], [], _, _, _ => rfl
+  | [], _ :: _, _, _, equal => by
+      simp [Metta.StoredBinding.beqList] at equal
+  | _ :: _, [], _, _, equal => by
+      simp [Metta.StoredBinding.beqList] at equal
+  | left :: lefts, right :: rights, leftSafe, rightSafe, equal => by
+      have parts : Metta.StoredBinding.beq left right = true ∧
+          Metta.StoredBinding.beqList lefts rights = true := by
+        simpa [Metta.StoredBinding.beqList, Bool.and_eq_true] using equal
+      have headEquation : left = right :=
+        storedBinding_eq_of_beq_true_noFloat leftSafe.1 rightSafe.1
+          (by simpa [BEq.beq] using parts.1)
+      have tailEquation : lefts = rights :=
+        storedBindings_eq_of_beq_true_noFloat leftSafe.2 rightSafe.2 parts.2
+      simp [headEquation, tailEquation]
+
+/-- List Boolean equality is sound on recursively float-free stored atoms. -/
+theorem storedAtoms_eq_of_beq_true_noFloat :
+    ∀ {left right : List Metta.StoredAtom},
+      StoredAtomsNoFloat left → StoredAtomsNoFloat right →
+        Metta.StoredAtom.beqList left right = true → left = right
+  | [], [], _, _, _ => rfl
+  | [], _ :: _, _, _, equal => by
+      simp [Metta.StoredAtom.beqList] at equal
+  | _ :: _, [], _, _, equal => by
+      simp [Metta.StoredAtom.beqList] at equal
+  | left :: lefts, right :: rights, leftSafe, rightSafe, equal => by
+      have parts : Metta.StoredAtom.beq left right = true ∧
+          Metta.StoredAtom.beqList lefts rights = true := by
+        simpa [Metta.StoredAtom.beqList, Bool.and_eq_true] using equal
+      have headEquation : left = right :=
+        storedAtom_eq_of_beq_true_noFloat leftSafe.1 rightSafe.1
+          (by simpa [BEq.beq] using parts.1)
+      have tailEquation : lefts = rights :=
+        storedAtoms_eq_of_beq_true_noFloat leftSafe.2 rightSafe.2 parts.2
+      simp [headEquation, tailEquation]
+
+end
+
+mutual
+
+/-- Boolean equality is reflexive on recursively float-free stored
+grounds. -/
+theorem storedGround_beq_self_noFloat :
+    ∀ ground : Metta.StoredGround,
+      StoredGroundNoFloat ground →
+        Metta.StoredGround.beq ground ground = true
+  | .float _, safe => by simp [StoredGroundNoFloat] at safe
+  | .bindings relations, safe => by
+      simpa [Metta.StoredGround.beq] using
+        storedBindings_beq_self_noFloat relations safe
+  | .int _, _ => by simp [Metta.StoredGround.beq]
+  | .str _, _ => by simp [Metta.StoredGround.beq]
+  | .bool _, _ => by simp [Metta.StoredGround.beq]
+  | .unit, _ => by simp [Metta.StoredGround.beq]
+  | .error _, _ => by simp [Metta.StoredGround.beq]
+  | .external _ _, _ => by simp [Metta.StoredGround.beq]
+
+/-- Boolean equality is reflexive on recursively float-free stored atoms. -/
+theorem storedAtom_beq_self_noFloat :
+    ∀ atom : Metta.StoredAtom,
+      StoredAtomNoFloat atom → Metta.StoredAtom.beq atom atom = true
+  | .sym _, _ => by simp [Metta.StoredAtom.beq]
+  | .var _, _ => by simp [Metta.StoredAtom.beq]
+  | .gnd ground, safe => by
+      simpa [Metta.StoredAtom.beq] using
+        storedGround_beq_self_noFloat ground safe
+  | .expr atoms, safe => by
+      simpa [Metta.StoredAtom.beq] using
+        storedAtoms_beq_self_noFloat atoms safe
+
+/-- Boolean equality is reflexive on recursively float-free stored binding
+relations. -/
+theorem storedBinding_beq_self_noFloat :
+    ∀ relation : Metta.StoredBinding,
+      StoredBindingNoFloat relation →
+        Metta.StoredBinding.beq relation relation = true
+  | .val _ value, safe => by
+      simp [Metta.StoredBinding.beq,
+        storedAtom_beq_self_noFloat value safe]
+  | .eq _ _, _ => by simp [Metta.StoredBinding.beq]
+
+/-- Boolean equality is reflexive on float-free stored binding lists. -/
+theorem storedBindings_beq_self_noFloat :
+    ∀ relations : List Metta.StoredBinding,
+      StoredBindingsNoFloat relations →
+        Metta.StoredBinding.beqList relations relations = true
+  | [], _ => by simp [Metta.StoredBinding.beqList]
+  | relation :: relations, safe => by
+      simp [Metta.StoredBinding.beqList,
+        storedBinding_beq_self_noFloat relation safe.1,
+        storedBindings_beq_self_noFloat relations safe.2]
+
+/-- Boolean equality is reflexive on float-free stored atom lists. -/
+theorem storedAtoms_beq_self_noFloat :
+    ∀ atoms : List Metta.StoredAtom,
+      StoredAtomsNoFloat atoms →
+        Metta.StoredAtom.beqList atoms atoms = true
+  | [], _ => by simp [Metta.StoredAtom.beqList]
+  | atom :: atoms, safe => by
+      simp [Metta.StoredAtom.beqList,
+        storedAtom_beq_self_noFloat atom safe.1,
+        storedAtoms_beq_self_noFloat atoms safe.2]
+
+end
 
 /-- Every target stored in a unifier substitution remains in the
 HE-translatable host-float-free fragment. -/
@@ -361,11 +580,12 @@ theorem mettaAtom_eq_of_beq_true_noFloat :
       intro right hleft hright h
       cases right with
       | gnd other =>
-          change (ground == other) = true at h
+          change Metta.Ground.beq ground other = true at h
           cases ground <;> cases other <;>
             simp [MettaAtomNoFloat] at hleft hright <;>
-            simp [BEq.beq, Metta.instBEqGround.beq] at h <;>
+            simp [BEq.beq, Metta.Ground.beq] at h <;>
             simp_all
+          exact storedBindings_eq_of_beq_true_noFloat hleft hright h
       | sym | var | expr => contradiction
   | expr atoms ih =>
       intro right hleft hright h
@@ -420,6 +640,55 @@ theorem mettaAtom_eq_of_beq_true_noFloat :
           exact congrArg Metta.Atom.expr hlists
       | sym | var | gnd => contradiction
 
+/-- Structural Boolean equality is reflexive on the host-float-free atom
+fragment.  This is the converse companion to
+`mettaAtom_eq_of_beq_true_noFloat`; together they provide the lawful equality
+surface used by semantic projection proofs without asserting `LawfulBEq` for
+the larger runtime atom type. -/
+theorem mettaAtom_beq_self_noFloat :
+    ∀ atom : Metta.Atom, MettaAtomNoFloat atom → (atom == atom) = true := by
+  intro atom
+  induction atom using Metta.Atom.recAux with
+  | sym symbol =>
+      intro _
+      change (symbol == symbol) = true
+      simp
+  | var name =>
+      intro _
+      change (name == name) = true
+      simp
+  | gnd ground =>
+      intro groundNoFloat
+      change Metta.Ground.beq ground ground = true
+      cases ground <;>
+        simp_all [MettaAtomNoFloat, BEq.beq, Metta.Ground.beq]
+      exact storedBindings_beq_self_noFloat _ groundNoFloat
+  | expr atoms inductionHypothesis =>
+      intro atomsNoFloat
+      change Metta.Atom.beqList atoms atoms = true
+      have childrenNoFloat : ∀ child ∈ atoms,
+          MettaAtomNoFloat child := by
+        simpa [MettaAtomNoFloat] using atomsNoFloat
+      have listSelf : ∀ items : List Metta.Atom,
+          (∀ child ∈ items, child ∈ atoms) →
+          (∀ child ∈ items, MettaAtomNoFloat child) →
+          Metta.Atom.beqList items items = true := by
+        intro items
+        induction items with
+        | nil => simp [Metta.Atom.beqList]
+        | cons head tail tailHypothesis =>
+            intro itemsSubset itemsNoFloat
+            simp only [Metta.Atom.beqList, Bool.and_eq_true]
+            exact ⟨inductionHypothesis head
+                (itemsSubset head (by simp))
+                (itemsNoFloat head (by simp)),
+              tailHypothesis
+                (fun child member =>
+                  itemsSubset child (by simp [member]))
+                (fun child member =>
+                  itemsNoFloat child (by simp [member]))⟩
+      exact listSelf atoms (fun _ member => member) childrenNoFloat
+
 theorem MettaSubstNoFloat.extend
     {subst : Metta.Subst} {x : String} {term : Metta.Atom}
     (hsubst : MettaSubstNoFloat subst)
@@ -468,9 +737,9 @@ private theorem ground_eq_of_equiv_of_noFloat
     left = right := by
   cases left <;> cases right <;>
     simp [MettaAtomNoFloat] at hleft hright <;>
-    simp [Metta.Ground.equiv, BEq.beq,
-      Metta.instBEqGround.beq] at hequiv <;>
+    simp [Metta.Ground.equiv, BEq.beq, Metta.Ground.beq] at hequiv <;>
     simp_all
+  exact storedBindings_eq_of_beq_true_noFloat hleft hright hequiv
 
 /-- Satisfaction of one syntactic atom equation by a valuation. -/
 def MettaEquationSatisfied

@@ -1916,6 +1916,196 @@ theorem addVarBinding_closed_mem {b out : Bindings} {x : VarName} {a : Atom}
           subst out
           exact hb
 
+/-- Membership in `bindingValueKeys` is exactly membership of a direct value
+relation with that key. -/
+theorem mem_bindingValueKeys_iff {b : Bindings} {x : VarName} :
+    x ∈ bindingValueKeys b ↔ ∃ a, BindingRel.val x a ∈ b := by
+  induction b with
+  | nil => simp [bindingValueKeys]
+  | cons relation rest ih =>
+      cases relation with
+      | val key value =>
+          constructor
+          · intro hx
+            simp [bindingValueKeys] at hx
+            rcases hx with hkey | hrest
+            · subst x
+              exact ⟨value, by simp⟩
+            · rcases ih.mp hrest with ⟨atom, hatom⟩
+              exact ⟨atom, by simp [hatom]⟩
+          · rintro ⟨atom, hatom⟩
+            simp [bindingValueKeys] at hatom ⊢
+            rcases hatom with hatom | hatom
+            · exact Or.inl hatom.1
+            · exact Or.inr (ih.mpr ⟨atom, hatom⟩)
+      | eq left right =>
+          constructor
+          · intro hx
+            simp [bindingValueKeys] at hx
+            rcases ih.mp hx with ⟨atom, hatom⟩
+            exact ⟨atom, by simp [hatom]⟩
+          · rintro ⟨atom, hatom⟩
+            simp [bindingValueKeys] at hatom ⊢
+            exact ih.mpr ⟨atom, hatom⟩
+
+/-- Every direct value-binding key occurs in the complete variable surface of
+the binding set. -/
+theorem bindingValueKey_mem_vars {b : Bindings} {x : VarName}
+    (hx : x ∈ bindingValueKeys b) : x ∈ Bindings.vars b := by
+  rcases mem_bindingValueKeys_iff.mp hx with ⟨value, hvalue⟩
+  unfold Bindings.vars
+  rw [List.mem_eraseDups]
+  exact List.mem_flatMap.mpr ⟨BindingRel.val x value, hvalue, by simp⟩
+
+/-- Removing a direct value cannot introduce a value-binding key. -/
+theorem bindingValueKeys_removeVal_subset (b : Bindings) (removed : VarName) :
+    ∀ {x}, x ∈ bindingValueKeys (Bindings.removeVal b removed) →
+      x ∈ bindingValueKeys b := by
+  intro x hx
+  rcases mem_bindingValueKeys_iff.mp hx with ⟨value, hvalue⟩
+  unfold Bindings.removeVal at hvalue
+  rw [List.mem_filter] at hvalue
+  exact mem_bindingValueKeys_iff.mpr ⟨value, hvalue.1⟩
+
+/-- Inserting a direct value can add only the inserted key. -/
+theorem bindingValueKeys_addValRaw_subset (b : Bindings) (key : VarName)
+    (value : Atom) :
+    ∀ {x}, x ∈ bindingValueKeys (Bindings.addValRaw b key value) →
+      x = key ∨ x ∈ bindingValueKeys b := by
+  intro x hx
+  simp only [Bindings.addValRaw, bindingValueKeys, List.mem_cons] at hx
+  rcases hx with rfl | hx
+  · exact Or.inl rfl
+  · exact Or.inr (bindingValueKeys_removeVal_subset b key hx)
+
+/-- Consistency-checked insertion of a closed value can add only the requested
+key. Reconciliation of closed atoms yields no variable assignments. -/
+theorem addVarBinding_closed_valueKeys_subset
+    {b out : Bindings} {key : VarName} {value : Atom}
+    (hvalueClosed : value.vars = []) (hb : ClosedValueBindings b)
+    (hout : out ∈ Bindings.addVarBinding b key value) :
+    ∀ {x}, x ∈ bindingValueKeys out →
+      x = key ∨ x ∈ bindingValueKeys b := by
+  have hnotvar : ∀ y, value ≠ Atom.var y := by
+    intro y h
+    subst value
+    simp [Atom.vars] at hvalueClosed
+  cases hvalues : Bindings.classValues b key with
+  | nil =>
+      have hadd := Bindings.addVarBinding_fresh hvalues hnotvar
+      rw [hadd] at hout
+      simp at hout
+      subst out
+      intro x hx
+      exact bindingValueKeys_addValRaw_subset b key value hx
+  | cons first rest =>
+      cases hunify : Bindings.unifyValues ((first :: rest) ++ [value]) with
+      | none =>
+          have hadd := Bindings.addVarBinding_conflict hnotvar hvalues (by simp) hunify
+          rw [hadd] at hout
+          cases hout
+      | some sigma =>
+          have hclosedValues :
+              ∀ atom ∈ (first :: rest) ++ [value], atom.vars = [] := by
+            intro atom hmem
+            rw [List.mem_append] at hmem
+            rcases hmem with hmemClass | hmemLast
+            · exact ClosedValueBindings.classValues_closed hb key atom (by
+                rw [hvalues]
+                exact hmemClass)
+            · simp at hmemLast
+              subst atom
+              exact hvalueClosed
+          have hsigma :=
+            Bindings.unifyValues_some_eq_empty_of_closed hclosedValues hunify
+          subst sigma
+          have hadd :=
+            Bindings.addVarBinding_nochange hnotvar hvalues (by simp) hunify
+          rw [hadd] at hout
+          simp at hout
+          subst out
+          intro x hx
+          exact Or.inr hx
+
+/-- One closed value-relation merge step preserves a declared key support. -/
+theorem mergeOne_closed_valueKeys_subset
+    {accs : List Bindings} {key : VarName} {value : Atom} {allowed : List VarName}
+    {out : Bindings}
+    (hvalueClosed : value.vars = [])
+    (haccClosed : ∀ b ∈ accs, ClosedValueBindings b)
+    (haccKeys : ∀ b ∈ accs, ∀ x ∈ bindingValueKeys b, x ∈ allowed)
+    (hkey : key ∈ allowed)
+    (hout : out ∈ Bindings.mergeOne accs (BindingRel.val key value)) :
+    ∀ x ∈ bindingValueKeys out, x ∈ allowed := by
+  unfold Bindings.mergeOne at hout
+  rw [List.mem_flatMap] at hout
+  rcases hout with ⟨b, hb, hout⟩
+  intro x hx
+  rcases addVarBinding_closed_valueKeys_subset hvalueClosed
+      (haccClosed b hb) hout hx with rfl | hx
+  · exact hkey
+  · exact haccKeys b hb x hx
+
+/-- Folding a closed value-only right input through merge cannot introduce a
+value-binding key outside a support containing both the accumulators and the
+right input. -/
+theorem merge_closed_right_valueKeys_subset :
+    ∀ {right : Bindings}, ClosedValueBindings right →
+      ∀ {accs : List Bindings} {allowed : List VarName} {out : Bindings},
+        (∀ b ∈ accs, ClosedValueBindings b) →
+        (∀ b ∈ accs, ∀ x ∈ bindingValueKeys b, x ∈ allowed) →
+        (∀ x ∈ bindingValueKeys right, x ∈ allowed) →
+        out ∈ right.foldl Bindings.mergeOne accs →
+        ∀ x ∈ bindingValueKeys out, x ∈ allowed
+  | [], ClosedValueBindings.nil, accs, allowed, out,
+      _haccClosed, haccKeys, _hrightKeys, hout =>
+      haccKeys out hout
+  | BindingRel.val key value :: rest,
+      ClosedValueBindings.val hvalueClosed hrest,
+      accs, allowed, out, haccClosed, haccKeys, hrightKeys, hout => by
+      simp only [List.foldl_cons] at hout
+      apply merge_closed_right_valueKeys_subset hrest
+          (accs := Bindings.mergeOne accs (BindingRel.val key value))
+          (allowed := allowed) (out := out)
+      · intro b hb
+        unfold Bindings.mergeOne at hb
+        rw [List.mem_flatMap] at hb
+        rcases hb with ⟨acc, hacc, hb⟩
+        exact addVarBinding_closed_mem hvalueClosed (haccClosed acc hacc) hb
+      · intro b hb x hx
+        exact mergeOne_closed_valueKeys_subset hvalueClosed haccClosed haccKeys
+          (hrightKeys key (by simp [bindingValueKeys])) hb x hx
+      · intro x hx
+        exact hrightKeys x (by simp [bindingValueKeys, hx])
+      · exact hout
+
+/-- A merge of closed value-only binding sets has no value-binding keys beyond
+those already present on either side. -/
+theorem merge_closed_closed_valueKeys_subset
+    {left right out : Bindings}
+    (hleft : ClosedValueBindings left) (hright : ClosedValueBindings right)
+    (hout : out ∈ Bindings.merge left right) :
+    ∀ x ∈ bindingValueKeys out,
+      x ∈ bindingValueKeys left ∨ x ∈ bindingValueKeys right := by
+  intro x hx
+  have hsupported : x ∈ bindingValueKeys left ++ bindingValueKeys right := by
+    apply merge_closed_right_valueKeys_subset hright
+        (accs := [left]) (allowed := bindingValueKeys left ++ bindingValueKeys right)
+        (out := out)
+    · intro b hb
+      simp at hb
+      subst b
+      exact hleft
+    · intro b hb y hy
+      simp at hb
+      subst b
+      exact List.mem_append_left _ hy
+    · intro y hy
+      exact List.mem_append_right _ hy
+    · exact hout
+    · exact hx
+  exact List.mem_append.mp hsupported
+
 /-- One value-binding merge step preserves closed-value bindings. -/
 theorem mergeOne_val_closed_mem {accs : List Bindings} {x : VarName} {a : Atom}
     {out : Bindings}
@@ -1952,6 +2142,36 @@ theorem merge_closed_closed_mem {left right out : Bindings}
       cases hb with
       | head => exact hleft
       | tail _ htail => cases htail) hout
+
+/-- Selecting the first successful merge result, with the runtime's right-hand
+fallback, preserves the closed-value shape on both inputs. -/
+theorem ClosedValueBindings.mergeHeadGetD
+    {left right : Bindings}
+    (hleft : ClosedValueBindings left) (hright : ClosedValueBindings right) :
+    ClosedValueBindings ((Bindings.merge left right).head?.getD right) := by
+  cases hmerge : Bindings.merge left right with
+  | nil => simpa [hmerge] using hright
+  | cons out outs =>
+      have hout : out ∈ Bindings.merge left right := by
+        rw [hmerge]
+        simp
+      simpa [hmerge] using merge_closed_closed_mem hleft hright hout
+
+/-- Replaying closed bindings through the canonical empty accumulator, with
+the runtime's total fallback, preserves the closed-value shape. -/
+theorem ClosedValueBindings.mergeEmptyHeadGetD
+    {b : Bindings} (hclosed : ClosedValueBindings b) :
+    ClosedValueBindings ((Bindings.merge [] b).head?.getD b) := by
+  cases hmerge : Bindings.merge [] b with
+  | nil =>
+      simpa [hmerge] using hclosed
+  | cons out outs =>
+      have hout : out ∈ Bindings.merge [] b := by
+        rw [hmerge]
+        simp
+      have houtClosed : ClosedValueBindings out :=
+        merge_closed_closed_mem ClosedValueBindings.nil hclosed hout
+      simpa [hmerge] using houtClosed
 
 /-- Removing a value binding preserves the value-only shape. -/
 theorem removeVal_value : ∀ {b : Bindings} {x : VarName},

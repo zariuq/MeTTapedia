@@ -1,4 +1,4 @@
-import Mettapedia.Languages.MeTTa.HE.HumanTypeInstantiation
+import Mettapedia.Languages.MeTTa.HE.Spec.Type.Instantiation
 import Mettapedia.Languages.MeTTa.HE.LeaTTaTypeConformance
 
 /-!
@@ -18,9 +18,9 @@ namespace Mettapedia.Languages.MeTTa.HE.LeaTTaTypeCanonicalSubst
 
 open Mettapedia.Languages.MeTTa.HE
 open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
-open HumanTypePresentation
-open HumanTypeInstantiation
-open HumanTypeRuntimeRefinement
+open Spec.Type.Presentation
+open Spec.Type.Instantiation
+open Spec.Type.RuntimeRefinement
 open LeaTTaBridge
 open LeaTTaTypeConformance
 

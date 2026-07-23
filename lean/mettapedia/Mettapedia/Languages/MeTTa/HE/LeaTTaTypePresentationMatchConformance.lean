@@ -1,5 +1,5 @@
-import Mettapedia.Languages.MeTTa.HE.HumanTypePresentationExact
-import Mettapedia.Languages.MeTTa.HE.HumanTypePresentationNormal
+import Mettapedia.Languages.MeTTa.HE.Spec.Type.Presentation.Exact
+import Mettapedia.Languages.MeTTa.HE.Spec.Type.Presentation.Normal
 import Mettapedia.Languages.MeTTa.HE.LeaTTaTypeCanonicalSubst
 
 /-!
@@ -8,7 +8,7 @@ import Mettapedia.Languages.MeTTa.HE.LeaTTaTypeCanonicalSubst
 The semantic type-binding invariant proves solution-theory soundness.  Exact
 ordered evaluator candidates additionally require the concrete return-type
 presentation.  `TypePresentationState` is the small simulation invariant for
-that purpose: a human finite substitution and a repaired LeaTTa binding state
+that purpose: a spec finite substitution and a repaired LeaTTa binding state
 agree on every atom in one explicit finite observation scope.
 
 The four published gradual-wildcard branches preserve this state without
@@ -21,34 +21,34 @@ namespace Mettapedia.Languages.MeTTa.HE.LeaTTaTypePresentationMatchConformance
 
 open Mettapedia.Languages.MeTTa.HE
 open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
-open HumanTypeSpec
-open HumanTypePresentation
-open HumanTypePresentationExact
+open Spec.Type
+open Spec.Type.Presentation
+open Spec.Type.Presentation.Exact
 open LeaTTaBridge
-open LeaTTaHumanConformance
+open LeaTTaSpecConformance
 open LeaTTaTypeConformance
 open LeaTTaTypeCanonicalSubst
 
-/-- Exact agreement of the human finite presentation and LeaTTa's canonical
+/-- Exact agreement of the spec finite presentation and LeaTTa's canonical
 binding resolver on a declared finite observation scope.  The runtime field
 threads the repaired loop/saturation invariants needed by the next reduced
 match. -/
 structure TypePresentationState
-    (scope : List String) (human : TypeSubst)
+    (scope : List String) (spec : TypeSubst)
     (lea : Metta.Bindings) : Prop where
   observation : ∀ atom : Atom,
     (∀ name, name ∈ TypeSubst.typeVars atom → name ∈ scope) →
-      human.apply atom =
+      spec.apply atom =
         fromLeaTTaAtom (Metta.instantiate lea (toLeaTTaAtom atom))
   runtime : LeaRuntimeBindingInvariant lea
 
 /-- The reachable presentation lane additionally carries the normal form
 that makes one-pass `bind` genuine substitution composition. -/
 structure NormalTypePresentationState
-    (scope : List String) (human : TypeSubst)
+    (scope : List String) (spec : TypeSubst)
     (lea : Metta.Bindings) : Prop
-    extends TypePresentationState scope human lea where
-  normal : human.Normal
+    extends TypePresentationState scope spec lea where
+  normal : spec.Normal
 
 /-- Every repaired runtime state has a canonical finite presentation on any
 chosen finite scope. -/
@@ -64,18 +64,18 @@ theorem TypePresentationState.canonical
   · exact runtime
 
 /-- A declared return whose variables are in scope has exactly the same
-human presentation as the atom emitted by LeaTTa instantiation. -/
+spec presentation as the atom emitted by LeaTTa instantiation. -/
 theorem TypePresentationState.return_eq
-    {scope : List String} {human : TypeSubst}
+    {scope : List String} {spec : TypeSubst}
     {lea : Metta.Bindings}
-    (state : TypePresentationState scope human lea)
+    (state : TypePresentationState scope spec lea)
     (declared : Atom)
     (hscope : ∀ name, name ∈ TypeSubst.typeVars declared → name ∈ scope) :
-    human.apply declared =
+    spec.apply declared =
       fromLeaTTaAtom (Metta.instantiate lea (toLeaTTaAtom declared)) :=
   state.observation declared hscope
 
-/-- Empty human and LeaTTa presentations agree on every finite scope. -/
+/-- Empty spec and LeaTTa presentations agree on every finite scope. -/
 theorem typePresentationState_empty (scope : List String) :
     TypePresentationState scope [] Metta.Bindings.empty := by
   constructor
@@ -83,7 +83,7 @@ theorem typePresentationState_empty (scope : List String) :
     simp [Metta.Bindings.empty, Metta.instantiate]
   · exact leaRuntimeBindingInvariant_empty
 
-/-- Empty human and LeaTTa presentations establish the reachable normal
+/-- Empty spec and LeaTTa presentations establish the reachable normal
 simulation state. -/
 theorem normalTypePresentationState_empty (scope : List String) :
     NormalTypePresentationState scope [] Metta.Bindings.empty := by
@@ -92,17 +92,17 @@ theorem normalTypePresentationState_empty (scope : List String) :
 /-- The four top-level gradual wildcards return their incoming bindings
 unchanged in both presentations. -/
 theorem matchType_wildcard_presentation_sound
-    {scope : List String} {humanIncoming : TypeSubst}
+    {scope : List String} {specIncoming : TypeSubst}
     {leaIncoming leaOutput : Metta.Bindings} {left right : Atom}
-    (state : TypePresentationState scope humanIncoming leaIncoming)
+    (state : TypePresentationState scope specIncoming leaIncoming)
     (wildcard :
       left = Atom.undefinedType ∨ right = Atom.undefinedType ∨
         left = Atom.atomType ∨ right = Atom.atomType)
     (success : Metta.Minimal.matchType leaIncoming
       (toLeaTTaAtom left) (toLeaTTaAtom right) = some leaOutput) :
     CorePlusR2TypePresentationMatchRel
-        humanIncoming left right humanIncoming ∧
-      TypePresentationState scope humanIncoming leaOutput := by
+        specIncoming left right specIncoming ∧
+      TypePresentationState scope specIncoming leaOutput := by
   rcases wildcard with hleftUndefined | hrightUndefined |
       hleftAtom | hrightAtom
   · subst left
@@ -113,7 +113,7 @@ theorem matchType_wildcard_presentation_sound
       simpa [Metta.Minimal.matchType, toLeaTTaAtom,
         Atom.undefinedType, hundefinedBeq] using success
     subst leaOutput
-    exact ⟨.undefinedLeft humanIncoming right, state⟩
+    exact ⟨.undefinedLeft specIncoming right, state⟩
   · subst right
     have hundefinedBeq :
         (Metta.Atom.sym "%Undefined%" ==
@@ -122,7 +122,7 @@ theorem matchType_wildcard_presentation_sound
       simpa [Metta.Minimal.matchType, toLeaTTaAtom,
         Atom.undefinedType, hundefinedBeq] using success
     subst leaOutput
-    exact ⟨.undefinedRight humanIncoming left, state⟩
+    exact ⟨.undefinedRight specIncoming left, state⟩
   · subst left
     have hatomBeq :
         (Metta.Atom.sym "Atom" == Metta.Atom.sym "Atom") = true := by
@@ -131,7 +131,7 @@ theorem matchType_wildcard_presentation_sound
       simpa [Metta.Minimal.matchType, toLeaTTaAtom,
         Atom.atomType, hatomBeq] using success
     subst leaOutput
-    exact ⟨.atomLeft humanIncoming right, state⟩
+    exact ⟨.atomLeft specIncoming right, state⟩
   · subst right
     have hatomBeq :
         (Metta.Atom.sym "Atom" == Metta.Atom.sym "Atom") = true := by
@@ -140,23 +140,23 @@ theorem matchType_wildcard_presentation_sound
       simpa [Metta.Minimal.matchType, toLeaTTaAtom,
         Atom.atomType, hatomBeq] using success
     subst leaOutput
-    exact ⟨.atomRight humanIncoming left, state⟩
+    exact ⟨.atomRight specIncoming left, state⟩
 
 /-- An ordinary non-expression type matches itself without changing either
 presentation.  This is the base case of the remaining reduced-type
 simulation. -/
 theorem matchType_identical_leaf_presentation_sound
-    {scope : List String} {humanIncoming : TypeSubst}
+    {scope : List String} {specIncoming : TypeSubst}
     {leaIncoming leaOutput : Metta.Bindings} {type : Atom}
-    (state : TypePresentationState scope humanIncoming leaIncoming)
+    (state : TypePresentationState scope specIncoming leaIncoming)
     (notExpression : ∀ atoms, type ≠ .expression atoms)
     (notUndefined : type ≠ Atom.undefinedType)
     (notAtom : type ≠ Atom.atomType)
     (success : Metta.Minimal.matchType leaIncoming
       (toLeaTTaAtom type) (toLeaTTaAtom type) = some leaOutput) :
     CorePlusR2TypePresentationMatchRel
-        humanIncoming type type humanIncoming ∧
-      TypePresentationState scope humanIncoming leaOutput := by
+        specIncoming type type specIncoming ∧
+      TypePresentationState scope specIncoming leaOutput := by
   have hundefined :
       (toLeaTTaAtom type == Metta.Atom.sym "%Undefined%") = false := by
     cases hbeq : (toLeaTTaAtom type ==
@@ -192,17 +192,11 @@ theorem matchType_identical_leaf_presentation_sound
           Metta.matchAtomsWith, Metta.Bindings.merge,
           state.runtime.loopFree, toLeaTTaAtom, hundefined] using success
     | grounded value =>
-        have hgroundBeq :
-            (toLeaTTaGround value == toLeaTTaGround value) = true := by
-          have hatomSelf :=
-            (toLeaTTaAtom_beq_eq_true_iff
-              (.grounded value) (.grounded value)).mpr rfl
-          simpa [toLeaTTaAtom, Metta.Atom.beq] using hatomSelf
         have hgroundEquiv :
             Metta.Ground.equiv (toLeaTTaGround value)
               (toLeaTTaGround value) = true := by
-          cases value <;>
-            simpa [Metta.Ground.equiv, toLeaTTaGround] using hgroundBeq
+          simpa [toLeaTTaAtom, Metta.Atom.equiv] using
+            toLeaTTaAtom_grounded_equiv_self value
         simpa [Metta.Minimal.matchReduced, Metta.matchAtoms,
           Metta.matchAtomsWith, Metta.Bindings.merge,
           state.runtime.loopFree, toLeaTTaAtom, hundefined,
@@ -235,7 +229,7 @@ theorem undefined_preserves_empty_presentation (actual : Atom) :
   · exact .undefinedLeft [] actual
   · exact typePresentationState_empty _
 
-private def initialVariableSymbolHuman : TypeSubst :=
+private def initialVariableSymbolSpec : TypeSubst :=
   [("t", .symbol "A")]
 
 private def initialVariableSymbolLea : Metta.Bindings :=
@@ -245,8 +239,8 @@ private def initialVariableSymbolLea : Metta.Bindings :=
 the same finite presentation as the repaired runtime binding. -/
 theorem initial_variable_symbol_presentation :
     CorePlusR2TypePresentationMatchRel []
-        (.var "t") (.symbol "A") initialVariableSymbolHuman ∧
-      TypePresentationState ["t"] initialVariableSymbolHuman
+        (.var "t") (.symbol "A") initialVariableSymbolSpec ∧
+      TypePresentationState ["t"] initialVariableSymbolSpec
         initialVariableSymbolLea := by
   have hloop : initialVariableSymbolLea.hasLoop = false := by
     simpa [initialVariableSymbolLea] using
@@ -284,7 +278,7 @@ theorem initial_variable_symbol_presentation :
     · simp [ReducedTypeLeafShape]
     · exact TypeSubst.apply_empty (.var "t")
     · exact TypeSubst.apply_empty (.symbol "A")
-    · simpa [initialVariableSymbolHuman, TypeSubst.bind,
+    · simpa [initialVariableSymbolSpec, TypeSubst.bind,
         TypeSubst.apply, TypeSubst.lookup, TypeSubst.erase] using
         (AppliedReducedTypeMatchRel.bindLeft
           (substitution := []) (name := "t") (right := .symbol "A")
@@ -302,9 +296,9 @@ theorem initial_variable_symbol_presentation :
         Metta.Bindings.relationResolutionFuel, Metta.Atom.size]
     have hsubst :
         leaCanonicalTypeSubstOn initialVariableSymbolLea ["t"] =
-          initialVariableSymbolHuman := by
+          initialVariableSymbolSpec := by
       have herase : ["t"].eraseDups = ["t"] := by decide
-      simp [leaCanonicalTypeSubstOn, initialVariableSymbolHuman,
+      simp [leaCanonicalTypeSubstOn, initialVariableSymbolSpec,
         hsolution, fromLeaTTaAtom, herase]
     rw [hsubst] at canonical
     exact canonical
@@ -312,11 +306,11 @@ theorem initial_variable_symbol_presentation :
 /-- The first concrete variable binding also establishes the normal form
 needed by every later presentation-composition step. -/
 theorem initial_variable_symbol_normal_state :
-    NormalTypePresentationState ["t"] initialVariableSymbolHuman
+    NormalTypePresentationState ["t"] initialVariableSymbolSpec
       initialVariableSymbolLea := by
   refine ⟨initial_variable_symbol_presentation.2, ?_⟩
   simp [TypeSubst.Normal, TypeSubst.keys,
-    TypeSubst.typeVars, initialVariableSymbolHuman]
+    TypeSubst.typeVars, initialVariableSymbolSpec]
 
 /-- Negative: two distinct ordinary symbols do not enter any gradual
 wildcard branch. -/

@@ -1,4 +1,4 @@
-import Mettapedia.Languages.MeTTa.HE.HumanTypeConformance
+import Mettapedia.Languages.MeTTa.HE.Spec.Type.Conformance
 import Mettapedia.Languages.MeTTa.HE.LeaTTaBridge
 import MettaHyperonFull.Minimal.Interpreter
 
@@ -8,7 +8,7 @@ import MettaHyperonFull.Minimal.Interpreter
 Native custom grounded values carry their intrinsic type name.  The structural
 LeaTTa translation preserves that name as the first component of
 `Ground.external`.  The pre-repair minimal type service discarded it and
-reported the generic meta-type `Grounded`, diverging from both the human type
+reported the generic meta-type `Grounded`, diverging from both the spec type
 relation and Hyperon's grounded `type_()` contract.
 -/
 
@@ -16,8 +16,8 @@ namespace Mettapedia.Languages.MeTTa.HE.LeaTTaGroundTypeCounterexample
 
 open Mettapedia.Languages.MeTTa.HE
 open Mettapedia.Languages.MeTTa.OSLFCore (Atom GroundedValue)
-open Mettapedia.Languages.MeTTa.HE.HumanTypeSpec
-open Mettapedia.Languages.MeTTa.HE.HumanTypeConformance
+open Mettapedia.Languages.MeTTa.HE.Spec.Type
+open Mettapedia.Languages.MeTTa.HE.Spec.Type.Conformance
 open Mettapedia.Languages.MeTTa.HE.LeaTTaBridge
 
 /-- Translation-tag contract: the first external component is exactly the
@@ -47,9 +47,9 @@ theorem legacy_external_type_discards_tag :
       [.sym "Grounded"] := by
   rfl
 
-/-- The independent human type relation reads the source custom value's
+/-- The independent spec type relation reads the source custom value's
 intrinsic type rather than its grounded meta-type. -/
-theorem human_custom_ground_has_carried_type :
+theorem spec_custom_ground_has_carried_type :
     TypeOfRel Space.empty customNative (.symbol "T") := by
   refine ⟨[.symbol "T"], ?_, by simp⟩
   exact TypesOfRel.groundedKnown

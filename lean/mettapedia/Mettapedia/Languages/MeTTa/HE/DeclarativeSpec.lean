@@ -1,5 +1,6 @@
 import Mettapedia.Languages.MeTTa.HE.EvalSpec
 import Mettapedia.Languages.MeTTa.HE.MinimalMeTTa
+import Mettapedia.Languages.MeTTa.HE.Spec.Eval.Minimal
 import Mettapedia.Languages.MeTTa.HE.Properties
 
 /-!
@@ -27,10 +28,14 @@ mirroring the style of `PeTTa/DeclarativeSpec.lean`. It is simultaneously:
    `EvalAtomStablyReaches` and `EvalAtomCertified`, which sharpen the
    top-level evaluator story without replacing the coarse declarative spec.
 
-3. **Stateful instruction layer** (`MinimalMeTTa.lean`):
-   `MinimalStep` relation for `eval`, `evalc`, `chain`, `unify`,
+3. **Minimal-instruction layer** (`Spec/Eval/Minimal.lean`):
+   `Spec.Eval.Minimal.MinimalStepRel` for `eval`, `evalc`, `chain`, `unify`,
    `cons-atom`, `decons-atom`, `collapse-bind`, `superpose-bind`,
-   `function`/`return`, `metta`, `context-space`, `call-native`.
+   `function`/`return`, `metta`, `context-space`, `call-native`.  Host context
+   spaces and collapsed binding snapshots have abstract opaque carriers.
+
+   `MinimalMeTTa.lean` is retained only as the legacy structural validation
+   relation used by the older small-step development.
 
 4. **Properties & Conformance** (`Properties.lean`, `Conformance.lean`):
    Universal theorems by induction and derivation-tree witnesses.
@@ -51,7 +56,7 @@ mirroring the style of `PeTTa/DeclarativeSpec.lean`. It is simultaneously:
 | 348-389    | metta_call                           | EvalSpec.lean   |
 | 390-435    | match_atoms                          | Matching.lean   |
 | 436-492    | merge/add_var_binding/equality       | Matching.lean   |
-| 84-91      | minimal instructions                 | MinimalMeTTa.lean |
+| 84-91      | minimal instructions                 | Spec/Eval/Minimal.lean |
 
 ## Bridge Theorem Index
 
@@ -208,19 +213,26 @@ Note: `add-atom`, `remove-atom`, and `match` are NOT minimal instructions.
 They are higher-level MeTTa built-ins handled by the interpreter layer.
 -/
 
-/-- Clause: cons-atom constructs expression from head and tail. -/
-def consAtomClause (dispatch : GroundedDispatch) (s : Space)
+/-- Active clause: `cons-atom` constructs an expression from its head and
+tail. -/
+def consAtomClause (services : Spec.Eval.Minimal.Services)
+    (dispatch : Spec.Eval.GroundedDispatch) (live : List Atom) (s : Space)
+    (typing : Spec.Eval.EvalTypeService)
+    (enumeration : Spec.Eval.Minimal.EvalEnumeration dispatch live typing)
     (hd : Atom) (tl : List Atom) (ib : Bindings) : Prop :=
-  MinimalStep dispatch s
+  Spec.Eval.Minimal.MinimalStepRel services dispatch live typing enumeration s
     (.expression [.symbol "cons-atom", hd, .expression tl]) ib
-    s (.expression (hd :: tl), ib)
+    (.expression (hd :: tl), ib)
 
-/-- Clause: decons-atom splits expression into head and tail. -/
-def deconsAtomClause (dispatch : GroundedDispatch) (s : Space)
+/-- Active clause: `decons-atom` splits an expression into head and tail. -/
+def deconsAtomClause (services : Spec.Eval.Minimal.Services)
+    (dispatch : Spec.Eval.GroundedDispatch) (live : List Atom) (s : Space)
+    (typing : Spec.Eval.EvalTypeService)
+    (enumeration : Spec.Eval.Minimal.EvalEnumeration dispatch live typing)
     (hd : Atom) (tl : List Atom) (ib : Bindings) : Prop :=
-  MinimalStep dispatch s
+  Spec.Eval.Minimal.MinimalStepRel services dispatch live typing enumeration s
     (.expression [.symbol "decons-atom", .expression (hd :: tl)]) ib
-    s (.expression [hd, .expression tl], ib)
+    (.expression [hd, .expression tl], ib)
 
 /-! ## Clause Introduction Theorems -/
 
@@ -243,15 +255,21 @@ theorem mettaCallErrorPassthrough_intro (space : Space) (dispatch : GroundedDisp
     mettaCallErrorPassthrough space dispatch atom type_ b :=
   ⟨h, .error_passthrough _ _ _ h⟩
 
-theorem consAtomClause_intro (dispatch : GroundedDispatch) (s : Space)
+theorem consAtomClause_intro (services : Spec.Eval.Minimal.Services)
+    (dispatch : Spec.Eval.GroundedDispatch) (live : List Atom) (s : Space)
+    (typing : Spec.Eval.EvalTypeService)
+    (enumeration : Spec.Eval.Minimal.EvalEnumeration dispatch live typing)
     (hd : Atom) (tl : List Atom) (ib : Bindings) :
-    consAtomClause dispatch s hd tl ib :=
-  .cons_atom _ _ _ _
+    consAtomClause services dispatch live s typing enumeration hd tl ib :=
+  .consAtom _ _ _ _
 
-theorem deconsAtomClause_intro (dispatch : GroundedDispatch) (s : Space)
+theorem deconsAtomClause_intro (services : Spec.Eval.Minimal.Services)
+    (dispatch : Spec.Eval.GroundedDispatch) (live : List Atom) (s : Space)
+    (typing : Spec.Eval.EvalTypeService)
+    (enumeration : Spec.Eval.Minimal.EvalEnumeration dispatch live typing)
     (hd : Atom) (tl : List Atom) (ib : Bindings) :
-    deconsAtomClause dispatch s hd tl ib :=
-  .decons_atom _ _ _ _
+    deconsAtomClause services dispatch live s typing enumeration hd tl ib :=
+  .deconsAtom _ _ _ _
 
 /-! ## Positive Examples
 
@@ -261,6 +279,10 @@ derivations. Cf. `Conformance.lean` for the full 36-test conformance suite. -/
 private def emptySpace : Space := Space.empty
 private def emptyB : Bindings := Bindings.empty
 private def noDispatch : GroundedDispatch := .none
+
+private def noSpecDispatch : Spec.Eval.GroundedDispatch where
+  executable := fun _ => False
+  outcome := fun _ _ _ => False
 
 /-- Positive: Empty passes through EvalAtom.
     `!(metta Empty %Undefined% &self {})` → `[(Empty, {})]` -/
@@ -333,19 +355,25 @@ example : MettaCall emptySpace noDispatch
 
 /-- Positive: cons-atom builds expression.
     `(cons-atom a (b))` → `(a b)` -/
-example : MinimalStep noDispatch emptySpace
+example (services : Spec.Eval.Minimal.Services)
+    (enumeration : Spec.Eval.Minimal.EvalEnumeration noSpecDispatch []
+      Spec.Eval.publishedTypeService) :
+    Spec.Eval.Minimal.MinimalStepRel services noSpecDispatch []
+      Spec.Eval.publishedTypeService enumeration emptySpace
     (.expression [.symbol "cons-atom", .symbol "a", .expression [.symbol "b"]]) emptyB
-    emptySpace
     (.expression [.symbol "a", .symbol "b"], emptyB) :=
-  .cons_atom _ _ _ _
+  .consAtom _ _ _ _
 
 /-- Positive: decons-atom splits expression.
     `(decons-atom (a b))` → `(a (b))` -/
-example : MinimalStep noDispatch emptySpace
+example (services : Spec.Eval.Minimal.Services)
+    (enumeration : Spec.Eval.Minimal.EvalEnumeration noSpecDispatch []
+      Spec.Eval.publishedTypeService) :
+    Spec.Eval.Minimal.MinimalStepRel services noSpecDispatch []
+      Spec.Eval.publishedTypeService enumeration emptySpace
     (.expression [.symbol "decons-atom", .expression [.symbol "a", .symbol "b"]]) emptyB
-    emptySpace
     (.expression [.symbol "a", .expression [.symbol "b"]], emptyB) :=
-  .decons_atom _ _ _ _
+  .deconsAtom _ _ _ _
 
 /-! ## Negative Examples
 
@@ -421,12 +449,15 @@ theorem matchAtoms_refl_symbol (s : String) (fuel : Nat) (h : fuel > 0) :
   Properties.matchAtoms_refl_symbol s fuel h
 
 /-- ∀ expressions: cons-atom followed by decons-atom is the identity. -/
-theorem cons_decons_roundtrip (dispatch : GroundedDispatch) (s : Space)
+theorem cons_decons_roundtrip (services : Spec.Eval.Minimal.Services)
+    (dispatch : Spec.Eval.GroundedDispatch) (live : List Atom) (s : Space)
+    (typing : Spec.Eval.EvalTypeService)
+    (enumeration : Spec.Eval.Minimal.EvalEnumeration dispatch live typing)
     (hd : Atom) (tl : List Atom) (ib : Bindings) :
-    MinimalStep dispatch s
+    Spec.Eval.Minimal.MinimalStepRel services dispatch live typing enumeration s
       (.expression [.symbol "cons-atom", hd, .expression tl]) ib
-      s (.expression (hd :: tl), ib) :=
-  Properties.cons_decons_roundtrip dispatch s hd tl ib
+      (.expression (hd :: tl), ib) :=
+  .consAtom s hd tl ib
 
 /-! ## Operator-to-Clause Audit Index
 
@@ -482,24 +513,23 @@ theorem cons_decons_roundtrip (dispatch : GroundedDispatch) (s : Space)
 | `empty_results`          | 386-387   | all paths empty (non-grounded) |
 | `grounded_empty_results` | 386-387   | grounded dispatch returns empty list |
 
-### MinimalStep constructors (spec lines 84-91)
+### MinimalStepRel constructors (spec lines 84-91)
 | Constructor         | Description                          |
 |--------------------|--------------------------------------|
 | `eval`              | `(eval <atom>)` — one step            |
 | `evalc`             | `(evalc <atom> <space>)` — in context |
-| `metta_instr`       | `(metta <atom> <type> <space>)`       |
+| `metta`             | `(metta <atom> <type> <space>)`       |
 | `chain`             | `(chain <atom> <var> <tmpl>)`         |
-| `chain_empty`       | chain with Empty result               |
-| `unify_match`       | `(unify ...)` — match succeeds        |
-| `unify_no_match`    | `(unify ...)` — match fails           |
-| `cons_atom`         | `(cons-atom <hd> <tl>)`              |
-| `decons_atom`       | `(decons-atom <expr>)`               |
-| `collapse_bind`     | `(collapse-bind <atom>)`             |
-| `superpose_bind`    | `(superpose-bind <tuple>)`           |
-| `function_return`   | `(function ...)` with `(return ...)`  |
-| `function_no_return`| `(function ...)` with no return       |
-| `context_space`     | `(context-space)` — return space      |
-| `call_native`       | `(call-native <op> <args>)`           |
+| `chainEmpty`        | chain with Empty result               |
+| `unify`             | `(unify ...)` — branch by match       |
+| `consAtom`          | `(cons-atom <hd> <tl>)`              |
+| `deconsAtom`        | `(decons-atom <expr>)`               |
+| `collapseBind`      | `(collapse-bind <atom>)`             |
+| `superposeBind`     | `(superpose-bind <opaque tuples>)`   |
+| `functionReturn`    | `(function ...)` with `(return ...)`  |
+| `functionNoReturn` | `(function ...)` with no return       |
+| `contextSpace`      | `(context-space)` — return space      |
+| `callNative`        | `(call-native <op> <args>)`           |
 
 ### Computable leaf operations (not in mutual inductive)
 | Function                           | Spec Lines | File          |

@@ -1,6 +1,6 @@
 import Mettapedia.Languages.MeTTa.HE.LeaTTaTypePresentationFoldConformance
 import Mettapedia.Languages.MeTTa.HE.LeaTTaTypePresentationCompleteness
-import Mettapedia.Languages.MeTTa.HE.HumanTypePresentationApplicationEquivariance
+import Mettapedia.Languages.MeTTa.HE.Spec.Type.Presentation.ApplicationEquivariance
 import Mathlib.Logic.Equiv.Fintype
 
 /-!
@@ -9,7 +9,7 @@ import Mathlib.Logic.Equiv.Fintype
 This module seals one freshened arrow candidate in both directions.  A
 successful repaired-LeaTTa argument fold yields an executable-independent
 finite presentation whose emitted return is alpha-exactly the runtime
-instantiation.  Conversely, every human presentation over disjoint fresh
+instantiation.  Conversely, every spec presentation over disjoint fresh
 type scopes is realized by the runtime, and its own return presentation is
 alpha-exactly the selected runtime result.
 
@@ -22,87 +22,87 @@ namespace Mettapedia.Languages.MeTTa.HE.LeaTTaTypePresentationApplicationExact
 
 open Mettapedia.Languages.MeTTa.HE
 open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
-open HumanTypePresentation
-open HumanTypePresentationTheory
-open HumanTypePresentationMatchSolutionTheory
-open HumanTypePresentationAlpha
-open HumanTypePresentationExact
-open HumanTypePresentationExactNormal
-open HumanTypeRuntimeRefinement
+open Spec.Type.Presentation
+open Spec.Type.Presentation.Theory
+open Spec.Type.Presentation.MatchSolutionTheory
+open Spec.Type.Presentation.Alpha
+open Spec.Type.Presentation.Exact
+open Spec.Type.Presentation.ExactNormal
+open Spec.Type.RuntimeRefinement
 open LeaTTaBridge
-open LeaTTaHumanConformance
+open LeaTTaSpecConformance
 open LeaTTaTypeConformance
 open LeaTTaTypePresentationFoldConformance
 open LeaTTaTypePresentationCompleteness
 open LeaTTaTypePresentationExactConformance
-open HumanTypePresentationApplicationEquivariance
+open Spec.Type.Presentation.ApplicationEquivariance
 
 /-! ## Alpha transport at a freshening boundary -/
 
 mutual
 
-private theorem renameHumanTypeVars_comp
+private theorem renameTypeVars_comp
     (outer inner : String → String) (atom : Atom) :
-    renameHumanTypeVars outer (renameHumanTypeVars inner atom) =
-      renameHumanTypeVars (outer ∘ inner) atom := by
+    renameTypeVars outer (renameTypeVars inner atom) =
+      renameTypeVars (outer ∘ inner) atom := by
   cases atom with
-  | symbol name => simp [renameHumanTypeVars]
-  | var name => simp [renameHumanTypeVars, Function.comp_apply]
-  | grounded value => simp [renameHumanTypeVars]
+  | symbol name => simp [renameTypeVars]
+  | var name => simp [renameTypeVars, Function.comp_apply]
+  | grounded value => simp [renameTypeVars]
   | expression atoms =>
-      simp only [renameHumanTypeVars, Atom.expression.injEq]
-      exact renameHumanTypeVarsList_comp outer inner atoms
+      simp only [renameTypeVars, Atom.expression.injEq]
+      exact renameTypeVarsList_comp outer inner atoms
 
-private theorem renameHumanTypeVarsList_comp
+private theorem renameTypeVarsList_comp
     (outer inner : String → String) (atoms : List Atom) :
-    (atoms.map (renameHumanTypeVars inner)).map
-        (renameHumanTypeVars outer) =
-      atoms.map (renameHumanTypeVars (outer ∘ inner)) := by
+    (atoms.map (renameTypeVars inner)).map
+        (renameTypeVars outer) =
+      atoms.map (renameTypeVars (outer ∘ inner)) := by
   cases atoms with
   | nil => rfl
   | cons atom atoms =>
       simp only [List.map_cons, List.cons.injEq]
-      exact ⟨renameHumanTypeVars_comp outer inner atom,
-        renameHumanTypeVarsList_comp outer inner atoms⟩
+      exact ⟨renameTypeVars_comp outer inner atom,
+        renameTypeVarsList_comp outer inner atoms⟩
 
 end
 
 mutual
 
-private theorem renameHumanTypeVars_congr_of_typeVars
+private theorem renameTypeVars_congr_of_typeVars
     {left right : String → String} (atom : Atom)
     (agrees : ∀ name, name ∈ TypeSubst.typeVars atom →
       left name = right name) :
-    renameHumanTypeVars left atom = renameHumanTypeVars right atom := by
+    renameTypeVars left atom = renameTypeVars right atom := by
   cases atom with
-  | symbol name => simp [renameHumanTypeVars]
+  | symbol name => simp [renameTypeVars]
   | var name =>
-      simp only [renameHumanTypeVars, Atom.var.injEq]
+      simp only [renameTypeVars, Atom.var.injEq]
       exact agrees name (by simp [TypeSubst.typeVars])
-  | grounded value => simp [renameHumanTypeVars]
+  | grounded value => simp [renameTypeVars]
   | expression atoms =>
-      simp only [renameHumanTypeVars, Atom.expression.injEq]
-      apply renameHumanTypeVarsList_congr_of_typeVars
+      simp only [renameTypeVars, Atom.expression.injEq]
+      apply renameTypeVarsList_congr_of_typeVars
       intro name member
       exact agrees name (by simpa [TypeSubst.typeVars] using member)
 
-private theorem renameHumanTypeVarsList_congr_of_typeVars
+private theorem renameTypeVarsList_congr_of_typeVars
     {left right : String → String} (atoms : List Atom)
     (agrees : ∀ name, name ∈ TypeSubst.typeVarsList atoms →
       left name = right name) :
-    atoms.map (renameHumanTypeVars left) =
-      atoms.map (renameHumanTypeVars right) := by
+    atoms.map (renameTypeVars left) =
+      atoms.map (renameTypeVars right) := by
   cases atoms with
   | nil => rfl
   | cons atom atoms =>
       simp only [List.map_cons, List.cons.injEq]
       constructor
-      · apply renameHumanTypeVars_congr_of_typeVars atom
+      · apply renameTypeVars_congr_of_typeVars atom
         intro name member
         exact agrees name (by
           simp only [TypeSubst.typeVarsList, List.mem_append]
           exact Or.inl member)
-      · apply renameHumanTypeVarsList_congr_of_typeVars atoms
+      · apply renameTypeVarsList_congr_of_typeVars atoms
         intro name member
         exact agrees name (by
           simp only [TypeSubst.typeVarsList, List.mem_append]
@@ -146,16 +146,16 @@ theorem ObservedTypeAlphaRel.transport_variant
     Equiv.Perm.exists_extending_pair
       leftImage targetImage leftImageInjective targetImageInjective
   have presentation :
-      target = renameHumanTypeVars permutation left := by
+      target = renameTypeVars permutation left := by
     rw [leftEquation, targetEquation, rightEquation,
-      renameHumanTypeVars_comp, renameHumanTypeVars_comp]
-    apply renameHumanTypeVars_congr_of_typeVars source
+      renameTypeVars_comp, renameTypeVars_comp]
+    apply renameTypeVars_congr_of_typeVars source
     intro name member
     exact (extensionLaw ⟨name, member⟩).symm
   refine ⟨permutation, permutation.injective, presentation, ?_⟩
   intro name member
   have targetMember : permutation name ∈ TypeSubst.typeVars target := by
-    rw [presentation, typeVars_renameHumanTypeVars]
+    rw [presentation, typeVars_renameTypeVars]
     exact List.mem_map.mpr ⟨name, member, rfl⟩
   exact targetVarsFresh (permutation name) targetMember
 
@@ -177,6 +177,36 @@ theorem ArgumentAlphaVariantsRel.transport_left
             (Mettapedia.Languages.MeTTa.HE.LeaTTaTypePresentationApplicationExact.ObservedTypeAlphaRel.transport_variant
               headAlpha headVariant)
             (ih tailVariants)
+
+/-- Forget left-to-right scope growth while retaining the pointwise alpha
+variant evidence at any common root scope.  Later candidates avoid strictly
+more names, so every tail witness restricts to the root by monotonicity. -/
+theorem argumentAlphaVariantsRel_toForall₂At
+    {root avoid : List String} {sources targets : List Atom}
+    (variants : ArgumentAlphaVariantsRel avoid sources targets)
+    (subset : ∀ name, name ∈ root → name ∈ avoid) :
+    List.Forall₂ (TypeCandidateAlphaVariantRel root)
+      sources targets := by
+  induction variants with
+  | nil => exact .nil
+  | @cons avoid source target sources targets head tail inductionHypothesis =>
+      apply List.Forall₂.cons
+      · rcases head with ⟨rename, injective, equation, fresh⟩
+        exact ⟨rename, injective, equation,
+          fun name member rootMember =>
+            fresh name member (subset (rename name) rootMember)⟩
+      · exact inductionHypothesis (fun name member =>
+          List.mem_append_left _ (subset name member))
+
+/-- Pointwise view of a left-to-right alpha presentation at its initial
+avoid scope. -/
+theorem argumentAlphaVariantsRel_toForall₂
+    {avoid : List String} {sources targets : List Atom}
+    (variants : ArgumentAlphaVariantsRel avoid sources targets) :
+    List.Forall₂ (TypeCandidateAlphaVariantRel avoid)
+      sources targets :=
+  argumentAlphaVariantsRel_toForall₂At variants
+    (fun _ member => member)
 
 /-- Operator candidates have independent scopes, so pointwise alpha
 transport preserves their shared avoid boundary directly. -/
@@ -325,9 +355,9 @@ theorem application_scopes_exist_permutation
       (rightAvoid ++ TypeSubst.typeVarsList rightArguments)
       rawOperator rightOperator) :
     ∃ permutation : Equiv.Perm String,
-      rightOperator = renameHumanTypeVars permutation leftOperator ∧
+      rightOperator = renameTypeVars permutation leftOperator ∧
         rightArguments =
-          leftArguments.map (renameHumanTypeVars permutation) := by
+          leftArguments.map (renameTypeVars permutation) := by
   have scopedArguments :=
     ArgumentAlphaVariantsRel.common_source_scoped_alpha
       leftArgumentsVariant rightArgumentsVariant
@@ -387,22 +417,22 @@ theorem applicationPackageSuccess_transport_common_scopes
           rightOperator =
             .expression
               (.symbol "->" ::
-                (expectedTypes.map (renameHumanTypeVars permutation) ++
-                  [renameHumanTypeVars permutation returnType])) := by
+                (expectedTypes.map (renameTypeVars permutation) ++
+                  [renameTypeVars permutation returnType])) := by
         rw [operatorEquation, shape]
-        simp [renameHumanTypeVars, List.map_append]
+        simp [renameTypeVars, List.map_append]
       obtain ⟨rightSubstitution, rightFold⟩ :=
         (presentationArgumentList_success_perm_iff
           permutation expectedTypes leftArguments).mpr
             ⟨substitution, fold⟩
       have rightFoldAtArguments :
           PresentationArgumentListMatchRel
-            (expectedTypes.map (renameHumanTypeVars permutation))
+            (expectedTypes.map (renameTypeVars permutation))
             rightArguments [] rightSubstitution := by
         rw [argumentsEquation]
         exact rightFold
       refine ⟨inferredPackage rightSubstitution
-          (renameHumanTypeVars permutation returnType), ?_, ?_⟩
+          (renameTypeVars permutation returnType), ?_, ?_⟩
       · exact ApplicationPackageSuccessRel.mk
           renamedShape rightFoldAtArguments
       · simpa [inferredPackage] using
@@ -444,6 +474,203 @@ theorem applicationPackageSuccess_exists_iff_common_scopes
         rightArgumentsVariant leftArgumentsVariant
         rightOperatorVariant leftOperatorVariant rightSuccess
     exact ⟨leftResult, leftSuccess⟩
+
+/-! ## Transport with explicitly separated scope families -/
+
+/-- Independently chosen argument and operator presentations combine into
+one permutation when their cross-family separation is stated explicitly.
+Unlike `application_scopes_exist_permutation`, this theorem does not encode
+separation indirectly in either alpha variant's avoid list. -/
+theorem application_scopes_exist_permutation_of_separated
+    {leftArgumentAvoid rightArgumentAvoid : List String}
+    {leftOperatorAvoid rightOperatorAvoid : List String}
+    {rawArguments leftArguments rightArguments : List Atom}
+    {rawOperator leftOperator rightOperator : Atom}
+    (leftArgumentsVariant : ArgumentAlphaVariantsRel
+      leftArgumentAvoid rawArguments leftArguments)
+    (rightArgumentsVariant : ArgumentAlphaVariantsRel
+      rightArgumentAvoid rawArguments rightArguments)
+    (leftOperatorVariant : TypeCandidateAlphaVariantRel
+      leftOperatorAvoid rawOperator leftOperator)
+    (rightOperatorVariant : TypeCandidateAlphaVariantRel
+      rightOperatorAvoid rawOperator rightOperator)
+    (leftSeparated : AtomVarsFreshFromAtoms
+      leftOperator leftArguments)
+    (rightSeparated : AtomVarsFreshFromAtoms
+      rightOperator rightArguments) :
+    ∃ permutation : Equiv.Perm String,
+      rightOperator = renameTypeVars permutation leftOperator ∧
+      rightArguments =
+        leftArguments.map (renameTypeVars permutation) := by
+  have scopedArguments :=
+    ArgumentAlphaVariantsRel.common_source_scoped_alpha
+      leftArgumentsVariant rightArgumentsVariant
+  have scopedAll : ScopedObservedTypeListAlphaRel
+      (leftOperator :: leftArguments)
+      (rightOperator :: rightArguments) := by
+    exact ScopedObservedTypeListAlphaRel.cons
+      (TypeCandidateAlphaVariantRel.common_source_alpha
+        leftOperatorVariant rightOperatorVariant)
+      leftSeparated rightSeparated scopedArguments
+  obtain ⟨permutation, equation⟩ :=
+    scopedAll.exists_permutation
+  have parts := List.cons.inj equation
+  exact ⟨permutation, parts.1, parts.2⟩
+
+/-- Candidate success transports across alpha presentations whose argument
+and operator families are explicitly separated. -/
+theorem applicationPackageSuccess_transport_separated_scopes
+    {leftArgumentAvoid rightArgumentAvoid : List String}
+    {leftOperatorAvoid rightOperatorAvoid : List String}
+    {rawArguments leftArguments rightArguments : List Atom}
+    {rawOperator leftOperator rightOperator : Atom}
+    {leftResult : TypePackage}
+    (leftArgumentsVariant : ArgumentAlphaVariantsRel
+      leftArgumentAvoid rawArguments leftArguments)
+    (rightArgumentsVariant : ArgumentAlphaVariantsRel
+      rightArgumentAvoid rawArguments rightArguments)
+    (leftOperatorVariant : TypeCandidateAlphaVariantRel
+      leftOperatorAvoid rawOperator leftOperator)
+    (rightOperatorVariant : TypeCandidateAlphaVariantRel
+      rightOperatorAvoid rawOperator rightOperator)
+    (leftSeparated : AtomVarsFreshFromAtoms
+      leftOperator leftArguments)
+    (rightSeparated : AtomVarsFreshFromAtoms
+      rightOperator rightArguments)
+    (leftSuccess : ApplicationPackageSuccessRel
+      leftArguments leftOperator leftResult) :
+    ∃ rightResult,
+      ApplicationPackageSuccessRel
+          rightArguments rightOperator rightResult ∧
+        ObservedTypeAlphaRel leftResult.observed rightResult.observed := by
+  obtain ⟨permutation, operatorEquation, argumentsEquation⟩ :=
+    application_scopes_exist_permutation_of_separated
+      leftArgumentsVariant rightArgumentsVariant
+      leftOperatorVariant rightOperatorVariant
+      leftSeparated rightSeparated
+  cases leftSuccess with
+  | @mk _ returnType expectedTypes _ substitution shape fold =>
+      have renamedShape :
+          rightOperator =
+            .expression
+              (.symbol "->" ::
+                (expectedTypes.map (renameTypeVars permutation) ++
+                  [renameTypeVars permutation returnType])) := by
+        rw [operatorEquation, shape]
+        simp [renameTypeVars, List.map_append]
+      obtain ⟨rightSubstitution, rightFold⟩ :=
+        (presentationArgumentList_success_perm_iff
+          permutation expectedTypes leftArguments).mpr
+            ⟨substitution, fold⟩
+      have rightFoldAtArguments :
+          PresentationArgumentListMatchRel
+            (expectedTypes.map (renameTypeVars permutation))
+            rightArguments [] rightSubstitution := by
+        rw [argumentsEquation]
+        exact rightFold
+      refine ⟨inferredPackage rightSubstitution
+          (renameTypeVars permutation returnType), ?_, ?_⟩
+      · exact ApplicationPackageSuccessRel.mk
+          renamedShape rightFoldAtArguments
+      · simpa [inferredPackage] using
+          (PresentationArgumentListMatchRel.output_alpha_of_perm
+            permutation fold rightFold returnType)
+
+/-- Success existence is invariant under explicitly separated alpha scope
+families. -/
+theorem applicationPackageSuccess_exists_iff_separated_scopes
+    {leftArgumentAvoid rightArgumentAvoid : List String}
+    {leftOperatorAvoid rightOperatorAvoid : List String}
+    {rawArguments leftArguments rightArguments : List Atom}
+    {rawOperator leftOperator rightOperator : Atom}
+    (leftArgumentsVariant : ArgumentAlphaVariantsRel
+      leftArgumentAvoid rawArguments leftArguments)
+    (rightArgumentsVariant : ArgumentAlphaVariantsRel
+      rightArgumentAvoid rawArguments rightArguments)
+    (leftOperatorVariant : TypeCandidateAlphaVariantRel
+      leftOperatorAvoid rawOperator leftOperator)
+    (rightOperatorVariant : TypeCandidateAlphaVariantRel
+      rightOperatorAvoid rawOperator rightOperator)
+    (leftSeparated : AtomVarsFreshFromAtoms
+      leftOperator leftArguments)
+    (rightSeparated : AtomVarsFreshFromAtoms
+      rightOperator rightArguments) :
+    (∃ result,
+      ApplicationPackageSuccessRel
+        leftArguments leftOperator result) ↔
+      ∃ result,
+        ApplicationPackageSuccessRel
+          rightArguments rightOperator result := by
+  constructor
+  · rintro ⟨leftResult, leftSuccess⟩
+    obtain ⟨rightResult, rightSuccess, _⟩ :=
+      applicationPackageSuccess_transport_separated_scopes
+        leftArgumentsVariant rightArgumentsVariant
+        leftOperatorVariant rightOperatorVariant
+        leftSeparated rightSeparated leftSuccess
+    exact ⟨rightResult, rightSuccess⟩
+  · rintro ⟨rightResult, rightSuccess⟩
+    obtain ⟨leftResult, leftSuccess, _⟩ :=
+      applicationPackageSuccess_transport_separated_scopes
+        rightArgumentsVariant leftArgumentsVariant
+        rightOperatorVariant leftOperatorVariant
+        rightSeparated leftSeparated rightSuccess
+    exact ⟨leftResult, leftSuccess⟩
+
+/-- Option-level alpha agreement for one application matrix cell. -/
+def ApplicationPackageOutcomeAlphaRel :
+    Option TypePackage → Option TypePackage → Prop
+  | none, none => True
+  | some left, some right =>
+      ObservedTypeAlphaRel left.observed right.observed
+  | _, _ => False
+
+/-- A complete positive-or-negative matrix cell transports across explicitly
+separated alpha scope families. -/
+theorem applicationPackageOutcome_transport_separated_scopes
+    {leftArgumentAvoid rightArgumentAvoid : List String}
+    {leftOperatorAvoid rightOperatorAvoid : List String}
+    {rawArguments leftArguments rightArguments : List Atom}
+    {rawOperator leftOperator rightOperator : Atom}
+    {leftOutcome : Option TypePackage}
+    (leftArgumentsVariant : ArgumentAlphaVariantsRel
+      leftArgumentAvoid rawArguments leftArguments)
+    (rightArgumentsVariant : ArgumentAlphaVariantsRel
+      rightArgumentAvoid rawArguments rightArguments)
+    (leftOperatorVariant : TypeCandidateAlphaVariantRel
+      leftOperatorAvoid rawOperator leftOperator)
+    (rightOperatorVariant : TypeCandidateAlphaVariantRel
+      rightOperatorAvoid rawOperator rightOperator)
+    (leftSeparated : AtomVarsFreshFromAtoms
+      leftOperator leftArguments)
+    (rightSeparated : AtomVarsFreshFromAtoms
+      rightOperator rightArguments)
+    (leftRel : ApplicationPackageOutcomeRel
+      leftArguments leftOperator leftOutcome) :
+    ∃ rightOutcome,
+      ApplicationPackageOutcomeRel
+          rightArguments rightOperator rightOutcome ∧
+        ApplicationPackageOutcomeAlphaRel
+          leftOutcome rightOutcome := by
+  cases leftRel with
+  | failure noLeftSuccess =>
+      refine ⟨none, ApplicationPackageOutcomeRel.failure ?_, trivial⟩
+      intro rightResult rightSuccess
+      obtain ⟨leftResult, leftSuccess⟩ :=
+        (applicationPackageSuccess_exists_iff_separated_scopes
+          leftArgumentsVariant rightArgumentsVariant
+          leftOperatorVariant rightOperatorVariant
+          leftSeparated rightSeparated).mpr
+            ⟨rightResult, rightSuccess⟩
+      exact noLeftSuccess leftResult leftSuccess
+  | success leftSuccess =>
+      obtain ⟨rightResult, rightSuccess, alpha⟩ :=
+        applicationPackageSuccess_transport_separated_scopes
+          leftArgumentsVariant rightArgumentsVariant
+          leftOperatorVariant rightOperatorVariant
+          leftSeparated rightSeparated leftSuccess
+      exact ⟨some rightResult,
+        ApplicationPackageOutcomeRel.success rightSuccess, alpha⟩
 
 /-- The complete ordered filter-map scan transports across two lawful
 freshenings of the same raw operator and argument lists, preserving order,
@@ -519,7 +746,7 @@ theorem ApplicationPackageScanRel.transport_common_scopes
                       simpa [observedTypes] using
                         List.Forall₂.cons headAlpha tailAlpha⟩
 
-/-- One successful repaired runtime arrow candidate has a finite human
+/-- One successful repaired runtime arrow candidate has a finite spec
 presentation with an alpha-exact return observation. -/
 theorem applicationCandidate_sound
     {expectedTypes actualTypes : List Atom} {returnType : Atom}
@@ -534,18 +761,18 @@ theorem applicationCandidate_sound
         ObservedTypeAlphaRel result.observed
           (fromLeaTTaAtom
             (Metta.instantiate leaOutput (toLeaTTaAtom returnType))) := by
-  obtain ⟨presentation, humanOutput, fold, state, alpha⟩ :=
+  obtain ⟨presentation, specOutput, fold, state, alpha⟩ :=
     matchApplicationTypeArguments_exact_return success
   refine ⟨inferredPackage presentation returnType, ?_, ?_⟩
   · exact ApplicationPackageSuccessRel.mk rfl fold
   · simpa [inferredPackage] using alpha
 
-/-- A human arrow-candidate presentation over fresh disjoint scopes is
-realized by repaired LeaTTa, with the human and runtime returns alpha-exact. -/
+/-- A spec arrow-candidate presentation over fresh disjoint scopes is
+realized by repaired LeaTTa, with the spec and runtime returns alpha-exact. -/
 theorem applicationCandidate_complete
     {expectedTypes actualTypes : List Atom} {returnType : Atom}
     {result : TypePackage}
-    (humanSuccess : ApplicationPackageSuccessRel actualTypes
+    (specSuccess : ApplicationPackageSuccessRel actualTypes
       (.expression
         (.symbol "->" :: (expectedTypes ++ [returnType]))) result)
     (disjoint : AtomListsVarsDisjoint expectedTypes actualTypes) :
@@ -556,7 +783,7 @@ theorem applicationCandidate_complete
       ObservedTypeAlphaRel result.observed
         (fromLeaTTaAtom
           (Metta.instantiate leaOutput (toLeaTTaAtom returnType))) := by
-  cases humanSuccess with
+  cases specSuccess with
   | @mk operatorType declaredReturn expected actual substitution shape fold =>
       have shapeParts :
           expectedTypes = expected ∧ returnType = declaredReturn := by
@@ -567,17 +794,17 @@ theorem applicationCandidate_complete
       rcases shapeParts with ⟨rfl, rfl⟩
       obtain ⟨leaOutput, runtimeSuccess⟩ :=
         matchApplicationTypeArguments_complete fold disjoint
-      obtain ⟨runtimePresentation, humanOutput, runtimeFold,
+      obtain ⟨runtimePresentation, specOutput, runtimeFold,
           runtimeState⟩ :=
         matchApplicationTypeArguments_presentation_sound
           expectedTypes actualTypes typePresentationSimulationState_empty
             runtimeSuccess
-      have humanNormal : substitution.Normal :=
+      have specNormal : substitution.Normal :=
         PresentationArgumentListMatchRel.output_normal
           fold TypeSubst.normal_empty
-      have humanSolutions : ∀ valuation,
+      have specSolutions : ∀ valuation,
           TypeSubstSatisfied valuation substitution ↔
-            HumanTypeBindingSatisfied valuation humanOutput := by
+            TypeBindingSatisfied valuation specOutput := by
         intro valuation
         calc
           TypeSubstSatisfied valuation substitution ↔
@@ -589,19 +816,19 @@ theorem applicationCandidate_complete
           _ ↔ TypeSubstSatisfied valuation runtimePresentation :=
             (PresentationArgumentListMatchRel.solutions
               runtimeFold TypeSubst.normal_empty valuation).symm
-          _ ↔ HumanTypeBindingSatisfied valuation humanOutput :=
-            runtimeState.humanSolutions valuation
-      let humanState : TypePresentationSimulationState
-          substitution humanOutput leaOutput :=
-        ⟨humanNormal, humanSolutions, runtimeState.semantic⟩
+          _ ↔ TypeBindingSatisfied valuation specOutput :=
+            runtimeState.specSolutions valuation
+      let specState : TypePresentationSimulationState
+          substitution specOutput leaOutput :=
+        ⟨specNormal, specSolutions, runtimeState.semantic⟩
       refine ⟨leaOutput, runtimeSuccess, ?_⟩
       simpa [inferredPackage] using
-        (humanState.returnAlpha returnType)
+        (specState.returnAlpha returnType)
 
 /-! ## Exact one-candidate outcome -/
 
 /-- Native presentation of the repaired runtime's one-candidate application
-filter.  It is used only in the conformance layer; the human relation remains
+filter.  It is used only in the conformance layer; the spec relation remains
 independent of executable definitions. -/
 def runtimeApplicationCandidate
     (actualTypes : List Atom) (operatorType : Atom) : Option Metta.Atom :=
@@ -636,7 +863,7 @@ private theorem arrowExpected_disjoint
   exact allDisjoint name
     (by simp [toLeaTTaAtoms_eq_map, expectedIn]) actualMember
 
-/-- A successful concrete candidate produces a human success outcome with
+/-- A successful concrete candidate produces a spec success outcome with
 an alpha-exact observed return. -/
 theorem runtimeApplicationCandidate_sound
     {actualTypes : List Atom} {operatorType : Atom}
@@ -696,26 +923,26 @@ theorem runtimeApplicationCandidate_sound
                                 (toLeaTTaAtom returnType) = leaResult := by
                           rw [foldEquation] at runtimeSuccess
                           exact Option.some.inj runtimeSuccess
-                        obtain ⟨result, humanSuccess, alpha⟩ :=
+                        obtain ⟨result, specSuccess, alpha⟩ :=
                           applicationCandidate_sound foldEquation
                         subst leaResult
                         refine ⟨result,
                           ApplicationPackageOutcomeRel.success ?_, alpha⟩
-                        simpa [splitTypes] using humanSuccess
+                        simpa [splitTypes] using specSuccess
               · simp [runtimeApplicationCandidate, arrow] at runtimeSuccess
 
-/-- Every human success over disjoint scopes is emitted by the concrete
+/-- Every spec success over disjoint scopes is emitted by the concrete
 candidate filter, with the same observed return up to private alpha names. -/
 theorem runtimeApplicationCandidate_complete
     {actualTypes : List Atom} {operatorType : Atom} {result : TypePackage}
-    (humanSuccess : ApplicationPackageSuccessRel
+    (specSuccess : ApplicationPackageSuccessRel
       actualTypes operatorType result)
     (disjoint : VarsDisjoint operatorType (.expression actualTypes)) :
     ∃ leaResult,
       runtimeApplicationCandidate actualTypes operatorType = some leaResult ∧
         ObservedTypeAlphaRel result.observed
           (fromLeaTTaAtom leaResult) := by
-  cases humanSuccess with
+  cases specSuccess with
   | @mk _ returnType expectedTypes _ substitution shape fold =>
       subst operatorType
       have scopeDisjoint := arrowExpected_disjoint disjoint
@@ -738,7 +965,7 @@ theorem runtimeApplicationCandidate_complete
       rw [runtimeFold]
 
 /-- Candidate failure is exact once the operator and actual scopes are
-disjoint: the runtime returns `none` exactly when no human success package
+disjoint: the runtime returns `none` exactly when no spec success package
 exists. -/
 theorem runtimeApplicationCandidate_none_iff
     {actualTypes : List Atom} {operatorType : Atom}
@@ -747,28 +974,28 @@ theorem runtimeApplicationCandidate_none_iff
       ∀ result, ¬ApplicationPackageSuccessRel
         actualTypes operatorType result := by
   constructor
-  · intro runtimeNone result humanSuccess
+  · intro runtimeNone result specSuccess
     obtain ⟨leaResult, runtimeSome, _alpha⟩ :=
-      runtimeApplicationCandidate_complete humanSuccess disjoint
+      runtimeApplicationCandidate_complete specSuccess disjoint
     rw [runtimeNone] at runtimeSome
     contradiction
-  · intro noHuman
+  · intro noSpec
     cases runtimeSome : runtimeApplicationCandidate actualTypes operatorType with
     | none => rfl
     | some leaResult =>
-        obtain ⟨result, humanOutcome, _alpha⟩ :=
+        obtain ⟨result, specOutcome, _alpha⟩ :=
           runtimeApplicationCandidate_sound runtimeSome
-        cases humanOutcome with
-        | success humanSuccess => exact (noHuman result humanSuccess).elim
+        cases specOutcome with
+        | success specSuccess => exact (noSpec result specSuccess).elim
 
 /-- Complete exact outcome for one candidate, including the negative branch
 used by ordered scans. -/
 theorem runtimeApplicationCandidate_outcome
     {actualTypes : List Atom} {operatorType : Atom}
     (disjoint : VarsDisjoint operatorType (.expression actualTypes)) :
-    ∃ humanResult,
-      ApplicationPackageOutcomeRel actualTypes operatorType humanResult ∧
-        match humanResult, runtimeApplicationCandidate actualTypes operatorType with
+    ∃ specResult,
+      ApplicationPackageOutcomeRel actualTypes operatorType specResult ∧
+        match specResult, runtimeApplicationCandidate actualTypes operatorType with
         | none, none => True
         | some package, some leaResult =>
             ObservedTypeAlphaRel package.observed (fromLeaTTaAtom leaResult)
@@ -784,14 +1011,14 @@ theorem runtimeApplicationCandidate_outcome
 
 /-! ## Exact ordered candidate scan -/
 
-/-- Concrete ordered `filterMap` corresponding to the human application
+/-- Concrete ordered `filterMap` corresponding to the spec application
 package scan.  Inputs are native atoms so alpha-scope reasoning remains on
 the independent side of the bridge; outputs are concrete LeaTTa atoms. -/
 def runtimeApplicationCandidates
     (actualTypes operatorTypes : List Atom) : List Metta.Atom :=
   operatorTypes.filterMap (runtimeApplicationCandidate actualTypes)
 
-/-- Every concrete ordered candidate scan has a human package scan with the
+/-- Every concrete ordered candidate scan has a spec package scan with the
 same order, multiplicity, and alpha-exact observations. -/
 theorem runtimeApplicationCandidates_sound
     {actualTypes operatorTypes : List Atom}
@@ -815,12 +1042,12 @@ theorem runtimeApplicationCandidates_sound
       cases runtimeEquation :
           runtimeApplicationCandidate actualTypes operatorType with
       | none =>
-          have noHuman :=
+          have noSpec :=
             (runtimeApplicationCandidate_none_iff headDisjoint).mp
               runtimeEquation
           refine ⟨tailResults,
             ApplicationPackageScanRel.skip
-              (ApplicationPackageOutcomeRel.failure noHuman) tailScan, ?_⟩
+              (ApplicationPackageOutcomeRel.failure noSpec) tailScan, ?_⟩
           simpa [runtimeApplicationCandidates, runtimeEquation,
             observedTypes] using tailAlpha
       | some leaResult =>
@@ -831,7 +1058,7 @@ theorem runtimeApplicationCandidates_sound
           simpa [runtimeApplicationCandidates, runtimeEquation,
             observedTypes] using List.Forall₂.cons alpha tailAlpha
 
-/-- Conversely, every human ordered scan over disjoint scopes is realized
+/-- Conversely, every spec ordered scan over disjoint scopes is realized
 pointwise by the concrete filter.  Thus negative scan premises quantify over
 the exact candidate list rather than a permissive over-approximation. -/
 theorem runtimeApplicationCandidates_complete
@@ -846,10 +1073,10 @@ theorem runtimeApplicationCandidates_complete
   | nil => exact List.Forall₂.nil
   | @skip operatorType operatorTypes results outcome tailScan ih =>
       cases outcome with
-      | failure noHuman =>
+      | failure noSpec =>
           have headDisjoint := disjoint operatorType (by simp)
           have runtimeNone :=
-            (runtimeApplicationCandidate_none_iff headDisjoint).mpr noHuman
+            (runtimeApplicationCandidate_none_iff headDisjoint).mpr noSpec
           have tailDisjoint : ∀ candidate ∈ operatorTypes,
               VarsDisjoint candidate (.expression actualTypes) := by
             intro candidate member
@@ -858,10 +1085,10 @@ theorem runtimeApplicationCandidates_complete
             observedTypes] using ih tailDisjoint
   | @emit operatorType operatorTypes result results outcome tailScan ih =>
       cases outcome with
-      | success humanSuccess =>
+      | success specSuccess =>
           have headDisjoint := disjoint operatorType (by simp)
           obtain ⟨leaResult, runtimeSome, alpha⟩ :=
-            runtimeApplicationCandidate_complete humanSuccess headDisjoint
+            runtimeApplicationCandidate_complete specSuccess headDisjoint
           have tailDisjoint : ∀ candidate ∈ operatorTypes,
               VarsDisjoint candidate (.expression actualTypes) := by
             intro candidate member
@@ -880,7 +1107,7 @@ theorem private_sibling_variant_transport :
   apply ObservedTypeAlphaRel.transport_variant
       private_variables_alpha_siblings
   exact ⟨id, Function.injective_id,
-    by simp [renameHumanTypeVars], by simp⟩
+    by simp [renameTypeVars], by simp⟩
 
 /-- Negative: alpha transport never permits a target variable that violates
 the declared finite avoid set. -/
@@ -916,7 +1143,7 @@ theorem closed_nullary_candidate_complete :
     (by simp [AtomListsVarsDisjoint, toLeaTTaAtoms])
   simpa [inferredPackage, toLeaTTaAtom, toLeaTTaAtoms] using realized
 
-/-- Negative: unequal arities have no human success package. -/
+/-- Negative: unequal arities have no spec success package. -/
 theorem unequal_arity_has_no_success (expected returnType : Atom) :
     ¬∃ result,
       ApplicationPackageSuccessRel []

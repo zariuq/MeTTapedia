@@ -1,4 +1,4 @@
-import Mettapedia.Languages.MeTTa.HE.HumanEvalOutcome
+import Mettapedia.Languages.MeTTa.HE.Spec.Eval.Outcome
 import MettaHyperonFull.Minimal.Interpreter
 import MettaHyperonFull.Proofs.Substitution
 
@@ -7,7 +7,7 @@ import MettaHyperonFull.Proofs.Substitution
 
 The minimal LeaTTa evaluator exposes fuel exhaustion as a language-level
 `StackOverflow` atom.  Even the inert symbol `a` produces that atom at fuel
-zero but evaluates normally at fuel one.  The fuel-free human evaluator has no
+zero but evaluates normally at fuel one.  The fuel-free spec evaluator has no
 corresponding derivation from `a`, so unrestricted arbitrary-fuel soundness is
 false for the current executable.
 
@@ -19,9 +19,9 @@ namespace Mettapedia.Languages.MeTTa.HE.LeaTTaFuelObservability
 
 open Mettapedia.Languages.MeTTa.HE
 open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
-open HumanEvalSpec
-open HumanEvalOutcome
-open HumanTypeSpec
+open Spec.Eval
+open Spec.Eval.Outcome
+open Spec.Type
 
 private def q4LeaEnv : Metta.Minimal.MinEnv :=
   Metta.Minimal.MinEnv.ofAtomsGT [] []
@@ -32,7 +32,7 @@ private def q4LeaStackOverflow : Metta.Atom :=
 private def q4HEStackOverflow : Atom :=
   .expression [.symbol "Error", .symbol "a", .symbol "StackOverflow"]
 
-private def q4NoHost : HumanGroundedDispatch where
+private def q4NoHost : GroundedDispatch where
   executable := fun _ => False
   outcome := fun _ _ _ => False
 
@@ -96,11 +96,11 @@ private theorem stackOverflow_not_typeCast :
   intro h
   cases h
 
-/-- The fuel-zero result is not merely another permitted human outcome: the
+/-- The fuel-zero result is not merely another permitted spec outcome: the
 fuel-free evaluator has no derivation from the inert symbol to `StackOverflow`.
 -/
-theorem fuelZero_symbol_not_humanEval :
-    ¬HumanEval Space.empty q4NoHost []
+theorem fuelZero_symbol_not_specEval :
+    ¬EvalRel Space.empty q4NoHost []
       (.symbol "a") Atom.undefinedType Bindings.empty
       (q4HEStackOverflow, Bindings.empty) := by
   rintro ⟨hraw, _⟩

@@ -1,6 +1,6 @@
-import Mettapedia.Languages.MeTTa.HE.HumanTypeRuntimeRefinement
-import Mettapedia.Languages.MeTTa.HE.HumanTypeConformance
-import Mettapedia.Languages.MeTTa.HE.LeaTTaHumanSoundness
+import Mettapedia.Languages.MeTTa.HE.Spec.Type.RuntimeRefinement
+import Mettapedia.Languages.MeTTa.HE.Spec.Type.Conformance
+import Mettapedia.Languages.MeTTa.HE.LeaTTaSpecSoundness
 import Mettapedia.Languages.MeTTa.HE.LeaTTaQueryObservationalAnchor
 import Mettapedia.Languages.MeTTa.HE.LeaTTaTypeImage
 import MettaHyperonFull.Minimal.Interpreter
@@ -8,9 +8,9 @@ import MettaHyperonFull.Proofs.TypeSoundness
 import Std.Data.HashMap.Lemmas
 
 /-!
-# LeaTTa conformance to the named human type refinements
+# LeaTTa conformance to the named spec type refinements
 
-The published human type layer and its named R1/R2 refinements use native HE
+The published spec type layer and its named R1/R2 refinements use native HE
 atoms throughout.  Existing matcher and merge seals state their observational
 theory using LeaTTa-valued valuations.  This downstream module first connects
 those two model languages, then uses the connection to state the reachable
@@ -26,15 +26,15 @@ namespace Mettapedia.Languages.MeTTa.HE.LeaTTaTypeConformance
 open Mettapedia.Languages.MeTTa.HE
 open Mettapedia.Languages.MeTTa.OSLFCore (Atom GroundedValue)
 open LeaTTaBridge
-open LeaTTaHumanConformance
-open HumanTypeSpec
-open HumanTypeConformance
-open HumanTypeRuntimeRefinement
+open LeaTTaSpecConformance
+open Spec.Type
+open Spec.Type.Conformance
+open Spec.Type.RuntimeRefinement
 
 /-! ## Native/LeaTTa model-language bridge -/
 
-/-- Total decoding of LeaTTa grounded payloads into the human atom language.
-The three runtime-only constructors are retained as explicitly tagged custom
+/-- Total decoding of LeaTTa grounded payloads into the spec atom language.
+Runtime-only constructors are retained as explicitly tagged custom
 payloads; no conformance claim is made for their operational behavior. -/
 def fromLeaTTaGround : Metta.Ground → GroundedValue
   | .int value => .int value
@@ -44,6 +44,7 @@ def fromLeaTTaGround : Metta.Ground → GroundedValue
   | .unit => .custom "%LeaUnit%" ""
   | .error message => .custom "%LeaError%" message
   | .external typeName payload => .custom typeName payload
+  | .bindings relations => .custom "%LeaBindings%" (reprStr relations)
 
 mutual
 
@@ -162,16 +163,8 @@ theorem toLeaTTaAtom_beq_eq_true_iff (left right : Atom) :
       | grounded rightValue =>
           simp only [toLeaTTaAtom, Metta.Atom.beq,
             Atom.grounded.injEq]
-          change Metta.instBEqGround.beq
-              (toLeaTTaGround leftValue) (toLeaTTaGround rightValue) = true ↔
-            leftValue = rightValue
           cases leftValue <;> cases rightValue <;>
-            simp [toLeaTTaGround,
-              Metta.instBEqGround.beq.eq_1,
-              Metta.instBEqGround.beq.eq_3,
-              Metta.instBEqGround.beq.eq_4,
-              Metta.instBEqGround.beq.eq_7,
-              Metta.instBEqGround.beq.eq_8]
+            simp [toLeaTTaGround, Metta.Ground.beq]
   | expression leftAtoms =>
       cases right with
       | symbol | var | grounded =>
@@ -308,9 +301,9 @@ end
 
 /-- Native satisfaction maps into the established LeaTTa-valued observation
 language by translating a valuation pointwise. -/
-theorem heBindingSatisfied_of_humanTypeBindingSatisfied
+theorem heBindingSatisfied_of_specTypeBindingSatisfied
     {valuation : String → Atom} {bindings : Bindings}
-    (hsatisfied : HumanTypeBindingSatisfied valuation bindings) :
+    (hsatisfied : TypeBindingSatisfied valuation bindings) :
     HEBindingSatisfied (fun name => toLeaTTaAtom (valuation name))
       bindings := by
   constructor
@@ -322,11 +315,11 @@ theorem heBindingSatisfied_of_humanTypeBindingSatisfied
     exact congrArg toLeaTTaAtom (hsatisfied.2 left right hmem)
 
 /-- Every model in the established LeaTTa-valued observation language
-decodes to an honest native model of the same human binding record. -/
-theorem humanTypeBindingSatisfied_of_heBindingSatisfied
+decodes to an honest native model of the same spec binding record. -/
+theorem specTypeBindingSatisfied_of_heBindingSatisfied
     {valuation : String → Metta.Atom} {bindings : Bindings}
     (hsatisfied : HEBindingSatisfied valuation bindings) :
-    HumanTypeBindingSatisfied
+    TypeBindingSatisfied
       (fun name => fromLeaTTaAtom (valuation name)) bindings := by
   constructor
   · intro name value hmem
@@ -338,13 +331,13 @@ theorem humanTypeBindingSatisfied_of_heBindingSatisfied
 
 /-- For a pointwise translated native valuation, the established observation
 language and native type-binding satisfaction coincide exactly. -/
-theorem humanTypeBindingSatisfied_iff_heBindingSatisfied_translated
+theorem specTypeBindingSatisfied_iff_heBindingSatisfied_translated
     (valuation : String → Atom) (bindings : Bindings) :
-    HumanTypeBindingSatisfied valuation bindings ↔
+    TypeBindingSatisfied valuation bindings ↔
       HEBindingSatisfied
         (fun name => toLeaTTaAtom (valuation name)) bindings := by
   constructor
-  · exact heBindingSatisfied_of_humanTypeBindingSatisfied
+  · exact heBindingSatisfied_of_specTypeBindingSatisfied
   · intro hsatisfied
     constructor
     · intro name value hmem
@@ -374,7 +367,7 @@ theorem reducedTypeConsistent_iff_applyTypeValuation_eq_of_leaf
 
 /-! ## Reachable type-binding bridge -/
 
-/-- The direct symbol annotation selected by the published human lookup. -/
+/-- The direct symbol annotation selected by the published spec lookup. -/
 private def directSymbolAnnotationType? (name : String) : Atom → Option Atom
   | .expression [.symbol ":", annotated, type] =>
       if annotated == .symbol name then some type else none
@@ -471,7 +464,7 @@ private theorem getAnnotatedTypes_expression_eq_filterMap
   rfl
 
 /-- Querying LeaTTa's translated expression index is exactly ordered direct
-annotation lookup in the published human space. -/
+annotation lookup in the published spec space. -/
 private theorem leaExpressionTypeIndexQuery
     (atoms : List Atom) (head : Atom) (tail : List Atom) :
     (((toLeaTTaAtoms atoms).filterMap leaExpressionAnnotation?).filter
@@ -584,7 +577,7 @@ private theorem leaExpressionTypeIndexQuery
               directExpressionAnnotationType?, toLeaTTaAtom] using ih
 
 /-- The two type indexes observed by `getTypes` contain exactly the direct
-published annotations of the corresponding human space.  This relation keeps
+published annotations of the corresponding spec space.  This relation keeps
 index construction separate from recursive type inference; a later theorem
 establishes it for `MinEnv.ofAtomsGT`. -/
 structure TypeEnvironmentRel
@@ -628,7 +621,7 @@ private theorem unattach_filter_attach
   exact unattach_filter_attachWith entries (fun _ h => h) predicate
 
 /-- Building LeaTTa's minimal environment from the structural translation of
-a human space establishes the exact ordered annotation-index relation. -/
+a spec space establishes the exact ordered annotation-index relation. -/
 theorem typeEnvironmentRel_ofAtomsGT
     (space : Space) (groundingTable : Metta.GroundingTable) :
     TypeEnvironmentRel space
@@ -663,7 +656,7 @@ theorem typeEnvironmentRel_ofAtomsGT
 /-! ## Runtime type lookup, nonrecursive branches -/
 
 /-- Repaired LeaTTa's intrinsic grounded lookup agrees with the published
-human grounded-type relation, including custom values' carried type tag. -/
+spec grounded-type relation, including custom values' carried type tag. -/
 theorem getTypes_grounded_runtimeEvidence
     (space : Space) (env : Metta.Minimal.MinEnv) (value : GroundedValue)
     {leaType : Metta.Atom}
@@ -1012,13 +1005,82 @@ theorem getTypes_directExpression_runtimeEvidence
     (toLeaTTaAtom head) (toLeaTTaAtoms tail) hnotState] at hmem
   simpa [hquery'] using hmem
 
-/-- A reachable type-binding state pairs one native human presentation with
+/-- Homomorphic valuation of a runtime atom depends only on its finite
+variable support. -/
+theorem applyClassSolution_congr_on_atom_vars
+    {left right : String → Metta.Atom} (atom : Metta.Atom)
+    (agrees : ∀ name, name ∈ atom.vars → left name = right name) :
+    applyClassSolution left atom = applyClassSolution right atom := by
+  induction atom with
+  | sym name => simp [applyClassSolution]
+  | var name =>
+      simpa [applyClassSolution] using
+        agrees name (by simp [Metta.Atom.vars])
+  | gnd value => simp [applyClassSolution]
+  | expr atoms inductionHypothesis =>
+      simp only [applyClassSolution, Metta.Atom.expr.injEq]
+      apply List.map_congr_left
+      intro child childMember
+      exact inductionHypothesis child childMember fun name member =>
+        agrees name (by
+          simp only [Metta.Atom.vars, List.mem_flatten, List.mem_map]
+          exact ⟨child.vars, ⟨child, childMember, rfl⟩, member⟩)
+
+/-- Satisfaction of a runtime binding theory depends only on the names that
+occur in its binding list. -/
+theorem leaBindingSatisfied_congr_on_binding_vars
+    {left right : String → Metta.Atom} {bindings : Metta.Bindings}
+    (agrees : ∀ name, name ∈ bindings.vars → left name = right name) :
+    LeaBindingSatisfied left bindings ↔
+      LeaBindingSatisfied right bindings := by
+  have forward : ∀ {first second : String → Metta.Atom},
+      (∀ name, name ∈ bindings.vars → first name = second name) →
+      LeaBindingSatisfied first bindings →
+        LeaBindingSatisfied second bindings := by
+    intro first second pointwise satisfied
+    constructor
+    · intro name value member
+      have nameMember : name ∈ bindings.vars := by
+        simp only [Metta.Bindings.vars, List.mem_eraseDups,
+          List.mem_flatMap]
+        exact ⟨.val name value, member, by simp⟩
+      have valueAgreement :
+          applyClassSolution first value = applyClassSolution second value :=
+        applyClassSolution_congr_on_atom_vars value fun candidate
+            candidateMember =>
+          pointwise candidate (by
+            simp only [Metta.Bindings.vars, List.mem_eraseDups,
+              List.mem_flatMap]
+            exact ⟨.val name value, member, by simp [candidateMember]⟩)
+      calc
+        second name = first name := (pointwise name nameMember).symm
+        _ = applyClassSolution first value := satisfied.1 name value member
+        _ = applyClassSolution second value := valueAgreement
+    · intro firstName secondName member
+      have firstMember : firstName ∈ bindings.vars := by
+        simp only [Metta.Bindings.vars, List.mem_eraseDups,
+          List.mem_flatMap]
+        exact ⟨.eq firstName secondName, member, by simp⟩
+      have secondMember : secondName ∈ bindings.vars := by
+        simp only [Metta.Bindings.vars, List.mem_eraseDups,
+          List.mem_flatMap]
+        exact ⟨.eq firstName secondName, member, by simp⟩
+      calc
+        second firstName = first firstName :=
+          (pointwise firstName firstMember).symm
+        _ = first secondName := satisfied.2 firstName secondName member
+        _ = second secondName := pointwise secondName secondMember
+  constructor
+  · exact forward agrees
+  · exact forward (fun name member => (agrees name member).symm)
+
+/-- A reachable type-binding state pairs one native spec presentation with
 one repaired-LeaTTa presentation of the same complete solution theory.  The
 LeaTTa runtime invariant supplies the inhabited canonical model needed by the
 next type match. -/
-structure TypeBindingState (human : Bindings) (lea : Metta.Bindings) : Prop where
-  theory : LeaBindingSolutionTheoryEquiv human lea
-  humanAssignmentsNonVariable : HEAssignmentsNonVariable human
+structure TypeBindingState (spec : Bindings) (lea : Metta.Bindings) : Prop where
+  theory : LeaBindingSolutionTheoryEquiv spec lea
+  specAssignmentsNonVariable : HEAssignmentsNonVariable spec
   runtime : LeaRuntimeBindingInvariant lea
 
 /-- List companion used internally by the reduced-type conformance induction.
@@ -1026,42 +1088,73 @@ It carries exactly the conjunction of incoming binding theory and pointwise R2
 consistency. -/
 private structure R2ReducedTypeListMatchRel
     (left right : List Atom) (incoming output : Bindings) : Prop where
-  satisfiable : ∃ valuation, HumanTypeBindingSatisfied valuation output
+  satisfiable : ∃ valuation, TypeBindingSatisfied valuation output
   solutions : ∀ valuation,
-    HumanTypeBindingSatisfied valuation output ↔
-      HumanTypeBindingSatisfied valuation incoming ∧
+    TypeBindingSatisfied valuation output ↔
+      TypeBindingSatisfied valuation incoming ∧
         ReducedTypeListConsistent valuation left right
 
-/-- Every reachable type-binding state has a native human model. -/
-theorem TypeBindingState.humanSatisfiable
-    {human : Bindings} {lea : Metta.Bindings}
-    (state : TypeBindingState human lea) :
-    ∃ valuation, HumanTypeBindingSatisfied valuation human := by
+/-- Every reachable type-binding state has a native spec model. -/
+theorem TypeBindingState.specSatisfiable
+    {spec : Bindings} {lea : Metta.Bindings}
+    (state : TypeBindingState spec lea) :
+    ∃ valuation, TypeBindingSatisfied valuation spec := by
   let leaValuation := leaClassSolution lea
   have hlea : LeaBindingSatisfied leaValuation lea :=
     state.runtime.canonical.1
-  have hhuman : HEBindingSatisfied leaValuation human :=
+  have hspec : HEBindingSatisfied leaValuation spec :=
     (state.theory leaValuation).mpr hlea
   exact ⟨fun name => fromLeaTTaAtom (leaValuation name),
-    humanTypeBindingSatisfied_of_heBindingSatisfied hhuman⟩
+    specTypeBindingSatisfied_of_heBindingSatisfied hspec⟩
+
+/-- The native side of a reachable type-binding state has the runtime
+binding list as a semantic support: changing a valuation away from
+`lea.vars` cannot change satisfaction of the native binding theory. -/
+theorem TypeBindingState.specSatisfied_congr_on_runtimeVars
+    {spec : Bindings} {lea : Metta.Bindings}
+    (state : TypeBindingState spec lea)
+    {left right : String → Atom}
+    (agrees : ∀ name, name ∈ lea.vars → left name = right name) :
+    TypeBindingSatisfied left spec ↔
+      TypeBindingSatisfied right spec := by
+  let leftRuntime : String → Metta.Atom :=
+    fun name => toLeaTTaAtom (left name)
+  let rightRuntime : String → Metta.Atom :=
+    fun name => toLeaTTaAtom (right name)
+  have runtimeAgrees : ∀ name, name ∈ lea.vars →
+      leftRuntime name = rightRuntime name := by
+    intro name member
+    exact congrArg toLeaTTaAtom (agrees name member)
+  calc
+    TypeBindingSatisfied left spec ↔
+        HEBindingSatisfied leftRuntime spec :=
+      specTypeBindingSatisfied_iff_heBindingSatisfied_translated left spec
+    _ ↔ LeaBindingSatisfied leftRuntime lea := state.theory leftRuntime
+    _ ↔ LeaBindingSatisfied rightRuntime lea :=
+      leaBindingSatisfied_congr_on_binding_vars runtimeAgrees
+    _ ↔ HEBindingSatisfied rightRuntime spec :=
+      (state.theory rightRuntime).symm
+    _ ↔ TypeBindingSatisfied right spec :=
+      (specTypeBindingSatisfied_iff_heBindingSatisfied_translated
+        right spec).symm
 
 /-- Instantiating a declared return type with a reachable LeaTTa binding
 presentation produces exactly the observational return-type witness required
 by R1.  The comparison quantifies over every model of the shared binding
 theory; it does not identify binding presentations. -/
 theorem TypeBindingState.returnObserved
-    {human : Bindings} {lea : Metta.Bindings}
-    (state : TypeBindingState human lea) (declared : Atom) :
-    R1ReturnTypeObserved human declared
+    {spec : Bindings} {lea : Metta.Bindings}
+    (state : TypeBindingState spec lea) (declared : Atom) :
+    R1ReturnTypeObserved spec declared
       (fromLeaTTaAtom (Metta.instantiate lea (toLeaTTaAtom declared))) := by
   constructor
-  · exact state.humanSatisfiable
-  · intro valuation hhuman
+  · exact state.specSatisfiable
+  · intro valuation hspec
     let leaValuation : String → Metta.Atom :=
       fun name => toLeaTTaAtom (valuation name)
-    have hhe : HEBindingSatisfied leaValuation human :=
-      (humanTypeBindingSatisfied_iff_heBindingSatisfied_translated
-        valuation human).mp hhuman
+    have hhe : HEBindingSatisfied leaValuation spec :=
+      (specTypeBindingSatisfied_iff_heBindingSatisfied_translated
+        valuation spec).mp hspec
     have hlea : LeaBindingSatisfied leaValuation lea :=
       (state.theory leaValuation).mp hhe
     have hinert := instantiate_semantically_inert hlea
@@ -1071,7 +1164,7 @@ theorem TypeBindingState.returnObserved
       fromLeaTTaAtom_applyClassSolution_any] at hdecoded
     simpa [leaValuation] using hdecoded.symm
 
-/-- Empty human and LeaTTa binding presentations establish the base state. -/
+/-- Empty spec and LeaTTa binding presentations establish the base state. -/
 theorem typeBindingState_empty :
     TypeBindingState Bindings.empty Metta.Bindings.empty := by
   constructor
@@ -1082,27 +1175,27 @@ theorem typeBindingState_empty :
   · exact leaRuntimeBindingInvariant_empty
 
 /-- Extend one reachable type-binding state by one repaired matcher output and
-one successful, loop-filtered LeaTTa merge.  The corresponding human match and
+one successful, loop-filtered LeaTTa merge.  The corresponding spec match and
 merge are reconstructed from the shared solution theory; no executable HE
 matcher or merger participates. -/
 theorem TypeBindingState.mergeMatchOutput
-    {humanIncoming : Bindings}
+    {specIncoming : Bindings}
     {leaIncoming matched leaOutput : Metta.Bindings}
     {expected actual : Atom}
-    (state : TypeBindingState humanIncoming leaIncoming)
+    (state : TypeBindingState specIncoming leaIncoming)
     (hmatch : matched ∈ Metta.matchAtoms
       (toLeaTTaAtom expected) (toLeaTTaAtom actual))
     (hmerge : leaOutput ∈ Metta.Bindings.merge leaIncoming matched)
     (hloop : leaOutput.hasLoop = false) :
-    ∃ humanMatched humanOutput,
-      HumanMatchMergeSpec.MatchRel
-          HumanMatchMergeSpec.equalityGroundedSemantic
-          actual expected humanMatched ∧
-        HumanMatchMergeSpec.MergeRel
-          HumanMatchMergeSpec.equalityGroundedSemantic
-          humanIncoming humanMatched humanOutput ∧
-        TypeBindingState humanOutput leaOutput := by
-  obtain ⟨humanMatched, hhumanMatch, hmatchedTheory⟩ :=
+    ∃ specMatched specOutput,
+      Spec.Match.Merge.MatchRel
+          Spec.Match.Merge.equalityGroundedSemantic
+          actual expected specMatched ∧
+        Spec.Match.Merge.MergeRel
+          Spec.Match.Merge.equalityGroundedSemantic
+          specIncoming specMatched specOutput ∧
+        TypeBindingState specOutput leaOutput := by
+  obtain ⟨specMatched, hspecMatch, hmatchedTheory⟩ :=
     leaMatch_observational_sound hmatch
   have hmatchedNoFloat : LeaBindingsNoFloat matched :=
     leaMatchAtoms_result_noFloat
@@ -1120,20 +1213,20 @@ theorem TypeBindingState.mergeMatchOutput
         LeaBindingSatisfied valuation matched :=
     (leaMerge_solution_iff valuation state.runtime.noFloat
       hmatchedNoFloat hmerge).mp houtputSatisfied
-  have hhumanIncoming : HEBindingSatisfied valuation humanIncoming :=
+  have hspecIncoming : HEBindingSatisfied valuation specIncoming :=
     (state.theory valuation).mpr hinputsSatisfied.1
-  have hhumanMatched : HEBindingSatisfied valuation humanMatched :=
+  have hspecMatched : HEBindingSatisfied valuation specMatched :=
     (hmatchedTheory valuation).mpr hinputsSatisfied.2
-  obtain ⟨humanOutput, hhumanMerge, _hhumanOutput,
-      hhumanOutputNonVariable⟩ :=
-    HumanMatchCompleteness.exists_humanMerge_of_solution
-      hhumanIncoming state.humanAssignmentsNonVariable
-      hhumanMatched
-      (LeaTTaHumanConformance.humanMatch_assignmentsNonVariable hhumanMatch)
-  refine ⟨humanMatched, humanOutput, hhumanMatch, hhumanMerge, ?_⟩
-  refine ⟨?_, hhumanOutputNonVariable, houtputRuntime⟩
+  obtain ⟨specOutput, hspecMerge, _hspecOutput,
+      hspecOutputNonVariable⟩ :=
+    Spec.Match.Completeness.exists_specMerge_of_solution
+      hspecIncoming state.specAssignmentsNonVariable
+      hspecMatched
+      (LeaTTaSpecConformance.specMatch_assignmentsNonVariable hspecMatch)
+  refine ⟨specMatched, specOutput, hspecMatch, hspecMerge, ?_⟩
+  refine ⟨?_, hspecOutputNonVariable, houtputRuntime⟩
   intro otherValuation
-  rw [HumanMatchSolutionTheory.mergeRel_solution_iff hhumanMerge,
+  rw [Spec.Match.SolutionTheory.mergeRel_solution_iff hspecMerge,
     state.theory otherValuation, hmatchedTheory otherValuation,
     leaMerge_solution_iff otherValuation state.runtime.noFloat
       hmatchedNoFloat hmerge]
@@ -1162,7 +1255,7 @@ private theorem toLeaTTaAtom_beq_atomType_eq_false
 
 /-- Operational decomposition of one successful repaired reduced-type leaf.
 The repair's pre-selection filter exposes loop-freedom together with the
-matcher and merge witnesses used to reconstruct the human step. -/
+matcher and merge witnesses used to reconstruct the spec step. -/
 private theorem matchReduced_leaf_success
     {left right : Atom} {leaIncoming leaOutput : Metta.Bindings}
     (hnotBothExpressions : ∀ lefts rights,
@@ -1201,42 +1294,42 @@ private theorem matchReduced_leaf_success
 R2 relation and preserves the complete reachable binding-state invariant. -/
 private theorem matchReduced_leaf_r2_sound
     {left right : Atom}
-    {humanIncoming : Bindings} {leaIncoming leaOutput : Metta.Bindings}
-    (state : TypeBindingState humanIncoming leaIncoming)
+    {specIncoming : Bindings} {leaIncoming leaOutput : Metta.Bindings}
+    (state : TypeBindingState specIncoming leaIncoming)
     (hnotBothExpressions : ∀ lefts rights,
       left = .expression lefts → right = .expression rights → False)
     (hleftUndefined : left ≠ Atom.undefinedType)
     (hrightUndefined : right ≠ Atom.undefinedType)
     (hsuccess : Metta.Minimal.matchReduced leaIncoming
       (toLeaTTaAtom left) (toLeaTTaAtom right) = some leaOutput) :
-    ∃ humanOutput,
-      R2ReducedTypeMatchRel left right humanIncoming humanOutput ∧
-        TypeBindingState humanOutput leaOutput := by
+    ∃ specOutput,
+      R2ReducedTypeMatchRel left right specIncoming specOutput ∧
+        TypeBindingState specOutput leaOutput := by
   obtain ⟨matched, hmatch, hmerge, hloop⟩ :=
     matchReduced_leaf_success hnotBothExpressions hleftUndefined
       hrightUndefined hsuccess
-  obtain ⟨humanMatched, humanOutput, hhumanMatch, hhumanMerge,
+  obtain ⟨specMatched, specOutput, hspecMatch, hspecMerge,
       outputState⟩ := state.mergeMatchOutput hmatch hmerge hloop
-  refine ⟨humanOutput, ?_, outputState⟩
+  refine ⟨specOutput, ?_, outputState⟩
   constructor
-  · exact outputState.humanSatisfiable
+  · exact outputState.specSatisfiable
   · intro valuation
     let translated : String → Metta.Atom :=
       fun name => toLeaTTaAtom (valuation name)
     constructor
     · intro houtput
-      have houtputHE : HEBindingSatisfied translated humanOutput :=
-        (humanTypeBindingSatisfied_iff_heBindingSatisfied_translated
-          valuation humanOutput).mp houtput
+      have houtputHE : HEBindingSatisfied translated specOutput :=
+        (specTypeBindingSatisfied_iff_heBindingSatisfied_translated
+          valuation specOutput).mp houtput
       have hparts :=
-        (HumanMatchSolutionTheory.mergeRel_solution_iff
-          hhumanMerge translated).mp houtputHE
-      have hincoming : HumanTypeBindingSatisfied valuation humanIncoming :=
-        (humanTypeBindingSatisfied_iff_heBindingSatisfied_translated
-          valuation humanIncoming).mpr hparts.1
+        (Spec.Match.SolutionTheory.mergeRel_solution_iff
+          hspecMerge translated).mp houtputHE
+      have hincoming : TypeBindingSatisfied valuation specIncoming :=
+        (specTypeBindingSatisfied_iff_heBindingSatisfied_translated
+          valuation specIncoming).mpr hparts.1
       have hequation :=
-        (HumanMatchSolutionTheory.matchRel_solution_iff
-          hhumanMatch translated).mp hparts.2
+        (Spec.Match.SolutionTheory.matchRel_solution_iff
+          hspecMatch translated).mp hparts.2
       have hequationNative :
           applyTypeValuation valuation right =
             applyTypeValuation valuation left := by
@@ -1249,9 +1342,9 @@ private theorem matchReduced_leaf_r2_sound
           valuation left right hnotBothExpressions hleftUndefined
           hrightUndefined).mpr hequationNative.symm⟩
     · rintro ⟨hincoming, hconsistent⟩
-      have hincomingHE : HEBindingSatisfied translated humanIncoming :=
-        (humanTypeBindingSatisfied_iff_heBindingSatisfied_translated
-          valuation humanIncoming).mp hincoming
+      have hincomingHE : HEBindingSatisfied translated specIncoming :=
+        (specTypeBindingSatisfied_iff_heBindingSatisfied_translated
+          valuation specIncoming).mp hincoming
       have hequationNative :
           applyTypeValuation valuation left =
             applyTypeValuation valuation right :=
@@ -1264,15 +1357,15 @@ private theorem matchReduced_leaf_r2_sound
         rw [← toLeaTTaAtom_applyTypeValuation,
           ← toLeaTTaAtom_applyTypeValuation]
         exact congrArg toLeaTTaAtom hequationNative.symm
-      have hmatchedHE : HEBindingSatisfied translated humanMatched :=
-        (HumanMatchSolutionTheory.matchRel_solution_iff
-          hhumanMatch translated).mpr hequation
-      have houtputHE : HEBindingSatisfied translated humanOutput :=
-        (HumanMatchSolutionTheory.mergeRel_solution_iff
-          hhumanMerge translated).mpr ⟨hincomingHE, hmatchedHE⟩
+      have hmatchedHE : HEBindingSatisfied translated specMatched :=
+        (Spec.Match.SolutionTheory.matchRel_solution_iff
+          hspecMatch translated).mpr hequation
+      have houtputHE : HEBindingSatisfied translated specOutput :=
+        (Spec.Match.SolutionTheory.mergeRel_solution_iff
+          hspecMerge translated).mpr ⟨hincomingHE, hmatchedHE⟩
       exact
-        (humanTypeBindingSatisfied_iff_heBindingSatisfied_translated
-          valuation humanOutput).mpr houtputHE
+        (specTypeBindingSatisfied_iff_heBindingSatisfied_translated
+          valuation specOutput).mpr houtputHE
 
 private theorem reducedTypeConsistent_right_undefined
     (valuation : String → Atom) (left : Atom) :
@@ -1290,16 +1383,16 @@ private theorem reducedTypeConsistent_right_undefined
 mutual
 
 /-- Every successful repaired LeaTTa reduced-type match realizes the named R2
-human relation and preserves the complete reachable binding-state invariant. -/
+spec relation and preserves the complete reachable binding-state invariant. -/
 theorem matchReduced_r2_sound
     {left right : Atom}
-    {humanIncoming : Bindings} {leaIncoming leaOutput : Metta.Bindings}
-    (state : TypeBindingState humanIncoming leaIncoming)
+    {specIncoming : Bindings} {leaIncoming leaOutput : Metta.Bindings}
+    (state : TypeBindingState specIncoming leaIncoming)
     (hsuccess : Metta.Minimal.matchReduced leaIncoming
       (toLeaTTaAtom left) (toLeaTTaAtom right) = some leaOutput) :
-    ∃ humanOutput,
-      R2ReducedTypeMatchRel left right humanIncoming humanOutput ∧
-        TypeBindingState humanOutput leaOutput := by
+    ∃ specOutput,
+      R2ReducedTypeMatchRel left right specIncoming specOutput ∧
+        TypeBindingState specOutput leaOutput := by
   by_cases hleftUndefined : left = Atom.undefinedType
   · subst left
     have hundefinedBeq :
@@ -1309,12 +1402,12 @@ theorem matchReduced_r2_sound
       simpa [Metta.Minimal.matchReduced, toLeaTTaAtom,
         Atom.undefinedType, hundefinedBeq] using hsuccess
     subst leaOutput
-    refine ⟨humanIncoming, ?_, state⟩
+    refine ⟨specIncoming, ?_, state⟩
     constructor
-    · exact state.humanSatisfiable
+    · exact state.specSatisfiable
     · intro valuation
-      change HumanTypeBindingSatisfied valuation humanIncoming ↔
-        HumanTypeBindingSatisfied valuation humanIncoming ∧ True
+      change TypeBindingSatisfied valuation specIncoming ↔
+        TypeBindingSatisfied valuation specIncoming ∧ True
       tauto
   by_cases hrightUndefined : right = Atom.undefinedType
   · subst right
@@ -1325,9 +1418,9 @@ theorem matchReduced_r2_sound
       simpa [Metta.Minimal.matchReduced, toLeaTTaAtom,
         Atom.undefinedType, hundefinedBeq] using hsuccess
     subst leaOutput
-    refine ⟨humanIncoming, ?_, state⟩
+    refine ⟨specIncoming, ?_, state⟩
     constructor
-    · exact state.humanSatisfiable
+    · exact state.specSatisfiable
     · intro valuation
       have hconsistent :
           ReducedTypeConsistent valuation left Atom.undefinedType :=
@@ -1352,9 +1445,9 @@ theorem matchReduced_r2_sound
       simp only [toLeaTTaAtom] at hsuccess
       rw [Metta.Minimal.matchReduced.eq_1, hleftBeq, hrightBeq] at hsuccess
       exact hsuccess
-    obtain ⟨humanOutput, hlistRel, outputState⟩ :=
+    obtain ⟨specOutput, hlistRel, outputState⟩ :=
       matchReducedList_r2_sound state hlistSuccess
-    refine ⟨humanOutput, ?_, outputState⟩
+    refine ⟨specOutput, ?_, outputState⟩
     constructor
     · exact hlistRel.satisfiable
     · intro valuation
@@ -1371,13 +1464,13 @@ termination_by 2 * (sizeOf left + sizeOf right)
 extends the state consumed by the next child. -/
 private theorem matchReducedList_r2_sound
     {left right : List Atom}
-    {humanIncoming : Bindings} {leaIncoming leaOutput : Metta.Bindings}
-    (state : TypeBindingState humanIncoming leaIncoming)
+    {specIncoming : Bindings} {leaIncoming leaOutput : Metta.Bindings}
+    (state : TypeBindingState specIncoming leaIncoming)
     (hsuccess : Metta.Minimal.matchReducedList leaIncoming
       (toLeaTTaAtoms left) (toLeaTTaAtoms right) = some leaOutput) :
-    ∃ humanOutput,
-      R2ReducedTypeListMatchRel left right humanIncoming humanOutput ∧
-        TypeBindingState humanOutput leaOutput := by
+    ∃ specOutput,
+      R2ReducedTypeListMatchRel left right specIncoming specOutput ∧
+        TypeBindingState specOutput leaOutput := by
   cases left with
   | nil =>
       cases right with
@@ -1385,9 +1478,9 @@ private theorem matchReducedList_r2_sound
           have hsame : leaIncoming = leaOutput := by
             simpa [Metta.Minimal.matchReducedList] using hsuccess
           subst leaOutput
-          refine ⟨humanIncoming, ?_, state⟩
+          refine ⟨specIncoming, ?_, state⟩
           constructor
-          · exact state.humanSatisfiable
+          · exact state.specSatisfiable
           · intro valuation
             simp [ReducedTypeListConsistent]
       | cons rightHead rightTail =>
@@ -1409,11 +1502,11 @@ private theorem matchReducedList_r2_sound
                     some leaOutput := by
                 simpa [toLeaTTaAtoms, Metta.Minimal.matchReducedList,
                   hnext] using hsuccess
-              obtain ⟨humanNext, hheadRel, nextState⟩ :=
+              obtain ⟨specNext, hheadRel, nextState⟩ :=
                 matchReduced_r2_sound state hnext
-              obtain ⟨humanOutput, htailRel, outputState⟩ :=
+              obtain ⟨specOutput, htailRel, outputState⟩ :=
                 matchReducedList_r2_sound nextState htailSuccess
-              refine ⟨humanOutput, ?_, outputState⟩
+              refine ⟨specOutput, ?_, outputState⟩
               constructor
               · exact htailRel.satisfiable
               · intro valuation
@@ -1434,13 +1527,13 @@ end
 the explicitly named core-plus-R2 relation and preserve the reachable state. -/
 theorem matchType_corePlusR2_sound
     {left right : Atom}
-    {humanIncoming : Bindings} {leaIncoming leaOutput : Metta.Bindings}
-    (state : TypeBindingState humanIncoming leaIncoming)
+    {specIncoming : Bindings} {leaIncoming leaOutput : Metta.Bindings}
+    (state : TypeBindingState specIncoming leaIncoming)
     (hsuccess : Metta.Minimal.matchType leaIncoming
       (toLeaTTaAtom left) (toLeaTTaAtom right) = some leaOutput) :
-    ∃ humanOutput,
-      CorePlusR2TypeMatchRel left right humanIncoming humanOutput ∧
-        TypeBindingState humanOutput leaOutput := by
+    ∃ specOutput,
+      CorePlusR2TypeMatchRel left right specIncoming specOutput ∧
+        TypeBindingState specOutput leaOutput := by
   by_cases hleftUndefined : left = Atom.undefinedType
   · subst left
     have hundefinedBeq :
@@ -1450,9 +1543,9 @@ theorem matchType_corePlusR2_sound
       simpa [Metta.Minimal.matchType, toLeaTTaAtom,
         Atom.undefinedType, hundefinedBeq] using hsuccess
     subst leaOutput
-    refine ⟨humanIncoming, ?_, state⟩
+    refine ⟨specIncoming, ?_, state⟩
     constructor
-    · exact state.humanSatisfiable
+    · exact state.specSatisfiable
     · intro valuation
       have hconsistent :
           CorePlusR2TypeConsistent valuation Atom.undefinedType right := by
@@ -1467,9 +1560,9 @@ theorem matchType_corePlusR2_sound
       simpa [Metta.Minimal.matchType, toLeaTTaAtom,
         Atom.undefinedType, hundefinedBeq] using hsuccess
     subst leaOutput
-    refine ⟨humanIncoming, ?_, state⟩
+    refine ⟨specIncoming, ?_, state⟩
     constructor
-    · exact state.humanSatisfiable
+    · exact state.specSatisfiable
     · intro valuation
       have hconsistent :
           CorePlusR2TypeConsistent valuation left Atom.undefinedType := by
@@ -1484,9 +1577,9 @@ theorem matchType_corePlusR2_sound
       simpa [Metta.Minimal.matchType, toLeaTTaAtom,
         Atom.atomType, hatomBeq] using hsuccess
     subst leaOutput
-    refine ⟨humanIncoming, ?_, state⟩
+    refine ⟨specIncoming, ?_, state⟩
     constructor
-    · exact state.humanSatisfiable
+    · exact state.specSatisfiable
     · intro valuation
       have hconsistent :
           CorePlusR2TypeConsistent valuation Atom.atomType right := by
@@ -1501,9 +1594,9 @@ theorem matchType_corePlusR2_sound
       simpa [Metta.Minimal.matchType, toLeaTTaAtom,
         Atom.atomType, hatomBeq] using hsuccess
     subst leaOutput
-    refine ⟨humanIncoming, ?_, state⟩
+    refine ⟨specIncoming, ?_, state⟩
     constructor
-    · exact state.humanSatisfiable
+    · exact state.specSatisfiable
     · intro valuation
       have hconsistent :
           CorePlusR2TypeConsistent valuation left Atom.atomType := by
@@ -1522,9 +1615,9 @@ theorem matchType_corePlusR2_sound
     rw [Metta.Minimal.matchType, hleftUndefinedBeq,
       hrightUndefinedBeq, hleftAtomBeq, hrightAtomBeq] at hsuccess
     exact hsuccess
-  obtain ⟨humanOutput, hr2, outputState⟩ :=
+  obtain ⟨specOutput, hr2, outputState⟩ :=
     matchReduced_r2_sound state hreduced
-  refine ⟨humanOutput, ?_, outputState⟩
+  refine ⟨specOutput, ?_, outputState⟩
   constructor
   · exact hr2.satisfiable
   · intro valuation
@@ -1544,31 +1637,31 @@ private theorem matchApplicationTypeArguments_r1_alpha_sound
           TypeVariableRenamingOf actualBase actualType)
       arguments actualTypes) :
     ∀ {expectedTypes : List Atom}
-      {humanIncoming : Bindings}
+      {specIncoming : Bindings}
       {leaIncoming leaOutput : Metta.Bindings},
-      TypeBindingState humanIncoming leaIncoming →
+      TypeBindingState specIncoming leaIncoming →
       Metta.Minimal.matchApplicationTypeArguments leaIncoming
         (toLeaTTaAtoms expectedTypes) (toLeaTTaAtoms actualTypes) =
           some leaOutput →
-      ∃ humanOutput,
+      ∃ specOutput,
         RuntimeArgumentsApplicableRel space arguments expectedTypes
-            humanIncoming humanOutput ∧
-          TypeBindingState humanOutput leaOutput := by
+            specIncoming specOutput ∧
+          TypeBindingState specOutput leaOutput := by
   induction evidence with
   | nil =>
-      intro expectedTypes humanIncoming leaIncoming leaOutput state hsuccess
+      intro expectedTypes specIncoming leaIncoming leaOutput state hsuccess
       cases expectedTypes with
       | nil =>
           have hsame : leaIncoming = leaOutput := by
             simpa [toLeaTTaAtoms,
               Metta.Minimal.matchApplicationTypeArguments] using hsuccess
           subst leaOutput
-          exact ⟨humanIncoming, .nil humanIncoming, state⟩
+          exact ⟨specIncoming, .nil specIncoming, state⟩
       | cons expected expectedTypes =>
           simp [toLeaTTaAtoms,
             Metta.Minimal.matchApplicationTypeArguments] at hsuccess
   | @cons argument actualType arguments actualTypes hactual htail ih =>
-      intro expectedTypes humanIncoming leaIncoming leaOutput state hsuccess
+      intro expectedTypes specIncoming leaIncoming leaOutput state hsuccess
       cases expectedTypes with
       | nil =>
           simp [toLeaTTaAtoms,
@@ -1582,14 +1675,14 @@ private theorem matchApplicationTypeArguments_r1_alpha_sound
           | none => simp at hsuccess
           | some leaNext =>
               obtain ⟨actualBase, hbase, hrenaming⟩ := hactual
-              obtain ⟨humanNext, hmatch, nextState⟩ :=
+              obtain ⟨specNext, hmatch, nextState⟩ :=
                 matchType_corePlusR2_sound state hnext
-              obtain ⟨humanOutput, hrest, outputState⟩ :=
+              obtain ⟨specOutput, hrest, outputState⟩ :=
                 ih nextState hsuccess
-              exact ⟨humanOutput,
+              exact ⟨specOutput,
                 .cons hbase hrenaming hmatch hrest, outputState⟩
 
-/-- Repaired LeaTTa's application-argument fold realizes the human R1 fold:
+/-- Repaired LeaTTa's application-argument fold realizes the spec R1 fold:
 each runtime type choice is justified independently, and every successful
 core-plus-R2 match extends the shared reachable binding state. -/
 theorem matchApplicationTypeArguments_r1_sound
@@ -1597,16 +1690,16 @@ theorem matchApplicationTypeArguments_r1_sound
     (evidence : List.Forall₂
       (RuntimeTypeEvidenceRel space) arguments actualTypes) :
     ∀ {expectedTypes : List Atom}
-      {humanIncoming : Bindings}
+      {specIncoming : Bindings}
       {leaIncoming leaOutput : Metta.Bindings},
-      TypeBindingState humanIncoming leaIncoming →
+      TypeBindingState specIncoming leaIncoming →
       Metta.Minimal.matchApplicationTypeArguments leaIncoming
         (toLeaTTaAtoms expectedTypes) (toLeaTTaAtoms actualTypes) =
           some leaOutput →
-      ∃ humanOutput,
+      ∃ specOutput,
         RuntimeArgumentsApplicableRel space arguments expectedTypes
-            humanIncoming humanOutput ∧
-          TypeBindingState humanOutput leaOutput :=
+            specIncoming specOutput ∧
+          TypeBindingState specOutput leaOutput :=
   matchApplicationTypeArguments_r1_alpha_sound
     (evidence.imp fun _ _ hactual =>
       ⟨_, hactual, TypeVariableRenamingOf.refl _⟩)
@@ -1646,30 +1739,36 @@ private theorem getLastD_heImage
       apply image
       exact List.getLast_mem (by simp)
 
-/-- Every successful R1 candidate assembled from image-valued function-type
-and actual-type lists remains in the exact native image.  The lists are
-abstract, so the lemma applies verbatim to the capture-avoiding freshened
-candidates consumed by the runtime. -/
+/-- Every successful R1 candidate assembled from image-valued function types
+and an ordered Cartesian family of actual-type choices remains in the exact
+native image.  The candidate lists are abstract, so this theorem is the
+stable membership boundary for the runtime's expression-type inference. -/
 private theorem inferredType_member_heImage
-    {functionTypes actualTypes : List Metta.Atom} {leaType : Metta.Atom}
+    {functionTypes : List Metta.Atom}
+    {actualTypeChoices : List (List Metta.Atom)} {leaType : Metta.Atom}
+    (prepareActuals : List Metta.Atom → List Metta.Atom)
     (functionsImage : ∀ type ∈ functionTypes, LeaAtomHEImage type)
-    (actualsImage : ∀ type ∈ actualTypes, LeaAtomHEImage type)
+    (actualsImage : ∀ actualTypes ∈ actualTypeChoices,
+      ∀ type ∈ prepareActuals actualTypes, LeaAtomHEImage type)
     (hmem : leaType ∈
-      functionTypes.filterMap (fun type =>
-        match type with
-        | .expr (.sym "->" :: types) =>
-            match types.getLast? with
-            | none => none
-            | some returnType =>
-                match Metta.Minimal.matchApplicationTypeArguments []
-                    types.dropLast actualTypes with
-                | some bindings =>
-                    some (Metta.instantiate bindings returnType)
-                | none => none
-        | _ => none)) :
+      functionTypes.flatMap (fun type =>
+        actualTypeChoices.filterMap (fun actualTypes =>
+          match type with
+          | .expr (.sym "->" :: types) =>
+              match types.getLast? with
+              | none => none
+              | some returnType =>
+                  match Metta.Minimal.matchApplicationTypeArguments []
+                      types.dropLast (prepareActuals actualTypes) with
+                  | some bindings =>
+                      some (Metta.instantiate bindings returnType)
+                  | none => none
+          | _ => none))) :
     LeaAtomHEImage leaType := by
-  obtain ⟨functionType, hfunctionMem, hresult⟩ :=
-    List.mem_filterMap.mp hmem
+  obtain ⟨functionType, hfunctionMem, functionResult⟩ :=
+    List.mem_flatMap.mp hmem
+  obtain ⟨actualTypes, hactualTypesMem, hresult⟩ :=
+    List.mem_filterMap.mp functionResult
   cases functionType with
   | sym name => simp at hresult
   | var name => simp at hresult
@@ -1690,7 +1789,8 @@ private theorem inferredType_member_heImage
                 | some returnType =>
                     generalize hmatch :
                       Metta.Minimal.matchApplicationTypeArguments []
-                        types.dropLast actualTypes = matched at hresult
+                        types.dropLast (prepareActuals actualTypes) = matched
+                          at hresult
                     cases matched with
                     | none => simp [hlast, hmatch] at hresult
                     | some bindings =>
@@ -1709,7 +1809,7 @@ private theorem inferredType_member_heImage
                             leaBindingsHEImage_empty
                             (fun type htype => htypesImage type
                               (List.mem_of_mem_dropLast htype))
-                            actualsImage hmatch
+                            (actualsImage actualTypes hactualTypesMem) hmatch
                         rw [← houtput]
                         exact instantiate_heImage hbindingsImage returnType
                           (htypesImage returnType
@@ -1751,20 +1851,20 @@ mutual
 private theorem fromLeaTTaAtom_renameAllVars
     (rename : Metta.VarName → Metta.VarName) (atom : Metta.Atom) :
     fromLeaTTaAtom (Metta.Minimal.renameAllVars rename atom) =
-      renameHumanTypeVars rename (fromLeaTTaAtom atom) := by
+      renameTypeVars rename (fromLeaTTaAtom atom) := by
   cases atom with
   | sym name =>
       simp [Metta.Minimal.renameAllVars, fromLeaTTaAtom,
-        renameHumanTypeVars]
+        renameTypeVars]
   | var name =>
       simp [Metta.Minimal.renameAllVars, fromLeaTTaAtom,
-        renameHumanTypeVars]
+        renameTypeVars]
   | gnd value =>
       simp [Metta.Minimal.renameAllVars, fromLeaTTaAtom,
-        renameHumanTypeVars]
+        renameTypeVars]
   | expr atoms =>
       simp only [Metta.Minimal.renameAllVars, fromLeaTTaAtom,
-        renameHumanTypeVars]
+        renameTypeVars]
       exact congrArg Atom.expression
         (fromLeaTTaAtoms_renameAllVars rename atoms)
 termination_by 2 * sizeOf atom
@@ -1773,7 +1873,7 @@ termination_by 2 * sizeOf atom
 private theorem fromLeaTTaAtoms_renameAllVars
     (rename : Metta.VarName → Metta.VarName) (atoms : List Metta.Atom) :
     fromLeaTTaAtoms (atoms.map (Metta.Minimal.renameAllVars rename)) =
-      (fromLeaTTaAtoms atoms).map (renameHumanTypeVars rename) := by
+      (fromLeaTTaAtoms atoms).map (renameTypeVars rename) := by
   cases atoms with
   | nil => rfl
   | cons atom atoms =>
@@ -1790,38 +1890,38 @@ end
 mutual
 
 /-- Encoding commutes with total variable renaming. -/
-private theorem toLeaTTaAtom_renameHumanTypeVars
+private theorem toLeaTTaAtom_renameTypeVars
     (rename : String → String) (atom : Atom) :
-    toLeaTTaAtom (renameHumanTypeVars rename atom) =
+    toLeaTTaAtom (renameTypeVars rename atom) =
       Metta.Minimal.renameAllVars rename (toLeaTTaAtom atom) := by
   cases atom with
   | symbol name =>
-      simp [renameHumanTypeVars, toLeaTTaAtom,
+      simp [renameTypeVars, toLeaTTaAtom,
         Metta.Minimal.renameAllVars]
   | var name =>
-      simp [renameHumanTypeVars, toLeaTTaAtom,
+      simp [renameTypeVars, toLeaTTaAtom,
         Metta.Minimal.renameAllVars]
   | grounded value =>
-      simp [renameHumanTypeVars, toLeaTTaAtom,
+      simp [renameTypeVars, toLeaTTaAtom,
         Metta.Minimal.renameAllVars]
   | expression atoms =>
-      simp only [renameHumanTypeVars, toLeaTTaAtom,
+      simp only [renameTypeVars, toLeaTTaAtom,
         Metta.Minimal.renameAllVars]
       exact congrArg Metta.Atom.expr
-        (toLeaTTaAtoms_renameHumanTypeVars rename atoms)
+        (toLeaTTaAtoms_renameTypeVars rename atoms)
 termination_by 2 * sizeOf atom
 
-/-- List companion of `toLeaTTaAtom_renameHumanTypeVars`. -/
-private theorem toLeaTTaAtoms_renameHumanTypeVars
+/-- List companion of `toLeaTTaAtom_renameTypeVars`. -/
+private theorem toLeaTTaAtoms_renameTypeVars
     (rename : String → String) (atoms : List Atom) :
-    toLeaTTaAtoms (atoms.map (renameHumanTypeVars rename)) =
+    toLeaTTaAtoms (atoms.map (renameTypeVars rename)) =
       (toLeaTTaAtoms atoms).map (Metta.Minimal.renameAllVars rename) := by
   cases atoms with
   | nil => rfl
   | cons atom atoms =>
       exact congrArg₂ List.cons
-        (toLeaTTaAtom_renameHumanTypeVars rename atom)
-        (toLeaTTaAtoms_renameHumanTypeVars rename atoms)
+        (toLeaTTaAtom_renameTypeVars rename atom)
+        (toLeaTTaAtoms_renameTypeVars rename atoms)
 termination_by 2 * sizeOf atoms + 1
 decreasing_by
   all_goals simp_wf
@@ -1850,7 +1950,7 @@ private theorem roundtrip_freshenTypeCandidate
       (Metta.Minimal.freshenTypeCandidate avoid position atom)) =
       Metta.Minimal.freshenTypeCandidate avoid position atom := by
   simp only [Metta.Minimal.freshenTypeCandidate]
-  rw [fromLeaTTaAtom_renameAllVars, toLeaTTaAtom_renameHumanTypeVars,
+  rw [fromLeaTTaAtom_renameAllVars, toLeaTTaAtom_renameTypeVars,
     roundtrip]
 
 /-- Exact image provenance transports across capture-avoiding freshening. -/
@@ -1860,9 +1960,9 @@ private theorem leaAtomHEImage_freshenTypeCandidate
     LeaAtomHEImage
       (Metta.Minimal.freshenTypeCandidate avoid position atom) := by
   obtain ⟨native, rfl⟩ := himage
-  exact ⟨renameHumanTypeVars
+  exact ⟨renameTypeVars
       (Metta.Minimal.captureAvoidingName avoid position) native,
-    toLeaTTaAtom_renameHumanTypeVars
+    toLeaTTaAtom_renameTypeVars
       (Metta.Minimal.captureAvoidingName avoid position) native⟩
 
 /-- Every freshened argument type is a capture-avoiding freshening of some
@@ -1883,6 +1983,57 @@ private theorem mem_freshenArgumentTypes
       · obtain ⟨raw', hraw', avoid', position', rfl⟩ := ih htail
         exact ⟨raw', List.mem_cons_of_mem _ hraw', avoid', position', rfl⟩
 
+/-- Every member on the right of an aligned list relation has a related
+member on the left. -/
+private theorem forall₂_exists_left_of_mem_right
+    {α β : Type*} {relation : α → β → Prop} {left : List α} {right : List β}
+    (aligned : List.Forall₂ relation left right) :
+    ∀ item ∈ right, ∃ source ∈ left, relation source item := by
+  induction aligned with
+  | nil => simp
+  | @cons source item left right head tail inductionHypothesis =>
+      intro target member
+      rcases List.mem_cons.mp member with rfl | member
+      · exact ⟨source, by simp, head⟩
+      · obtain ⟨source', sourceMember, related⟩ :=
+          inductionHypothesis target member
+        exact ⟨source', by simp [sourceMember], related⟩
+
+/-- Every member on the left of an aligned list relation has a related member
+on the right. -/
+private theorem forall₂_exists_right_of_mem_left
+    {α β : Type*} {relation : α → β → Prop} {left : List α} {right : List β}
+    (aligned : List.Forall₂ relation left right) :
+    ∀ item ∈ left, ∃ target ∈ right, relation item target := by
+  induction aligned with
+  | nil => simp
+  | @cons source target left right head tail inductionHypothesis =>
+      intro item member
+      rcases List.mem_cons.mp member with rfl | member
+      · exact ⟨target, by simp, head⟩
+      · obtain ⟨target', targetMember, related⟩ :=
+          inductionHypothesis item member
+        exact ⟨target', by simp [targetMember], related⟩
+
+/-- Freshening any member of one Cartesian choice preserves exact native
+image provenance, provided every input candidate list is image-valued. -/
+private theorem freshened_cartesian_choice_heImage
+    {candidateLists : List (List Metta.Atom)} {rawTypes : List Metta.Atom}
+    (rawMember : rawTypes ∈ Metta.Minimal.cartesian candidateLists)
+    (candidateImages : ∀ candidates ∈ candidateLists,
+      ∀ type ∈ candidates, LeaAtomHEImage type)
+    (avoid : List Metta.VarName) (position : Nat) :
+    ∀ fresh ∈ Metta.Minimal.freshenArgumentTypes avoid position rawTypes,
+      LeaAtomHEImage fresh := by
+  have aligned := Metta.mem_cartesian_iff_forall₂.mp rawMember
+  intro fresh freshMember
+  obtain ⟨raw, rawMember, avoid', position', rfl⟩ :=
+    mem_freshenArgumentTypes freshMember
+  obtain ⟨candidates, candidatesMember, rawInCandidates⟩ :=
+    forall₂_exists_right_of_mem_left aligned raw rawMember
+  exact leaAtomHEImage_freshenTypeCandidate _ _
+    (candidateImages candidates candidatesMember raw rawInCandidates)
+
 /-- An application-argument fold with no declared parameter types succeeds
 exactly on the empty actual list and returns its incoming bindings. -/
 private theorem matchApplicationTypeArguments_nil_expected
@@ -1899,69 +2050,81 @@ private theorem matchApplicationTypeArguments_nil_expected
   | cons actual actuals =>
       simp [Metta.Minimal.matchApplicationTypeArguments] at hsuccess
 
-/-- Pointwise recursive soundness supplies α-closed R1 evidence for the
-capture-avoiding freshening of the selected argument head types: the base is
-the decoded raw head type, and the renaming maps it onto the decoded
-freshened actual consumed by the runtime fold. -/
+/-- Pointwise recursive soundness supplies α-closed R1 evidence for any one
+ordered Cartesian choice of argument types.  This is deliberately
+membership-based: no proof depends on how the Cartesian product enumerates
+its choices. -/
 private theorem freshened_argument_evidence
     {space : Space} {env : Metta.Minimal.MinEnv} (tail : List Atom)
     (tailEvidence : ∀ argument ∈ tail, ∀ {leaType},
       leaType ∈ Metta.Minimal.getTypes env (toLeaTTaAtom argument) →
         RuntimeTypeEvidenceRel space argument
           (fromLeaTTaAtom leaType))
+    (rawTypes : List Metta.Atom)
+    (rawMember : rawTypes ∈ Metta.Minimal.cartesian
+      (tail.map (fun argument =>
+        Metta.Minimal.getTypes env (toLeaTTaAtom argument))))
     (avoid : List Metta.VarName) (position : Nat) :
     List.Forall₂ (fun argument actualType => ∃ actualBase,
         RuntimeTypeEvidenceRel space argument actualBase ∧
           TypeVariableRenamingOf actualBase actualType)
       tail
       (fromLeaTTaAtoms (Metta.Minimal.freshenArgumentTypes avoid position
-        (tail.map (fun argument =>
-          ((Metta.Minimal.getTypes env (toLeaTTaAtom argument)).head?).getD
-            (.sym "%Undefined%"))))) := by
-  induction tail generalizing avoid position with
-  | nil => exact .nil
-  | cons argument tail ih =>
-      simp only [List.map_cons, Metta.Minimal.freshenArgumentTypes,
+        rawTypes)) := by
+  induction tail generalizing rawTypes avoid position with
+  | nil =>
+      simp [Metta.Minimal.cartesian] at rawMember
+      subst rawTypes
+      exact .nil
+  | cons argument tail inductionHypothesis =>
+      simp only [List.map_cons, Metta.Minimal.cartesian,
+        List.mem_flatMap, List.mem_map] at rawMember
+      obtain ⟨rawType, rawTypeMember, rawTail, rawTailMember, rfl⟩ :=
+        rawMember
+      simp only [Metta.Minimal.freshenArgumentTypes,
         fromLeaTTaAtoms]
       apply List.Forall₂.cons
-      · refine ⟨fromLeaTTaAtom
-          (((Metta.Minimal.getTypes env
-            (toLeaTTaAtom argument)).head?).getD (.sym "%Undefined%")),
-          ?_, ?_⟩
-        · apply getTypes_head_runtimeEvidence
-          intro leaType hmem
-          exact tailEvidence argument (by simp) hmem
+      · refine ⟨fromLeaTTaAtom rawType, ?_, ?_⟩
+        · exact tailEvidence argument (by simp) rawTypeMember
         · exact typeVariableRenamingOf_freshenTypeCandidate avoid position _
-      · apply ih
+      · apply inductionHypothesis
         intro child hchild leaType hmem
         exact tailEvidence child (by simp [hchild]) hmem
+        exact rawTailMember
 
-/-- List round trips transport across argument-type freshening: every
-freshened selected argument type decodes and re-encodes exactly. -/
+/-- List round trips transport across freshening of any one ordered Cartesian
+argument-type choice. -/
 private theorem freshened_argument_roundtrip
     {env : Metta.Minimal.MinEnv} (tail : List Atom)
     (tailRoundtrip : ∀ argument ∈ tail, ∀ {leaType},
       leaType ∈ Metta.Minimal.getTypes env (toLeaTTaAtom argument) →
         toLeaTTaAtom (fromLeaTTaAtom leaType) = leaType)
+    (rawTypes : List Metta.Atom)
+    (rawMember : rawTypes ∈ Metta.Minimal.cartesian
+      (tail.map (fun argument =>
+        Metta.Minimal.getTypes env (toLeaTTaAtom argument))))
     (avoid : List Metta.VarName) (position : Nat) :
     toLeaTTaAtoms (fromLeaTTaAtoms
-      (Metta.Minimal.freshenArgumentTypes avoid position
-        (tail.map (fun argument =>
-          ((Metta.Minimal.getTypes env (toLeaTTaAtom argument)).head?).getD
-            (.sym "%Undefined%"))))) =
-    Metta.Minimal.freshenArgumentTypes avoid position
-      (tail.map (fun argument =>
-        ((Metta.Minimal.getTypes env (toLeaTTaAtom argument)).head?).getD
-          (.sym "%Undefined%"))) := by
-  apply toLeaTTaAtoms_fromLeaTTaAtoms_of_heImage
-  apply leaAtomsHEImage_of_forall
-  intro fresh hfresh
-  obtain ⟨raw, hrawArg, avoid', position', rfl⟩ :=
-    mem_freshenArgumentTypes hfresh
-  apply leaAtomHEImage_freshenTypeCandidate
-  obtain ⟨argument, hargument, rfl⟩ := List.mem_map.mp hrawArg
-  exact ⟨_, getTypes_head_roundtrip
-    (fun {leaType} hmem => tailRoundtrip argument hargument hmem)⟩
+      (Metta.Minimal.freshenArgumentTypes avoid position rawTypes)) =
+    Metta.Minimal.freshenArgumentTypes avoid position rawTypes := by
+  induction tail generalizing rawTypes avoid position with
+  | nil =>
+      simp [Metta.Minimal.cartesian] at rawMember
+      subst rawTypes
+      rfl
+  | cons argument tail inductionHypothesis =>
+      simp only [List.map_cons, Metta.Minimal.cartesian,
+        List.mem_flatMap, List.mem_map] at rawMember
+      obtain ⟨rawType, rawTypeMember, rawTail, rawTailMember, rfl⟩ :=
+        rawMember
+      simp only [Metta.Minimal.freshenArgumentTypes, fromLeaTTaAtoms,
+        toLeaTTaAtoms]
+      rw [roundtrip_freshenTypeCandidate
+        (tailRoundtrip argument (by simp) rawTypeMember),
+        inductionHypothesis]
+      intro child hchild leaType hmem
+      exact tailRoundtrip child (by simp [hchild]) hmem
+      exact rawTailMember
 
 /-- The recursive application branch of `getTypes` realizes named refinement
 R1.  Representation preservation is exposed only as pointwise round-trip
@@ -2012,16 +2175,10 @@ theorem getTypes_inferredExpression_runtimeEvidence
       simpa [fromLeaTTaAtom, Atom.undefinedType] using
         undefined_expression_runtimeEvidence index head tail hdirect
   next hinferred =>
-      have hrawList :
-          (toLeaTTaAtoms tail).map (fun argument =>
-            ((Metta.Minimal.getTypes env argument).head?).getD
-              (.sym "%Undefined%")) =
-          tail.map (fun argument =>
-            ((Metta.Minimal.getTypes env
-              (toLeaTTaAtom argument)).head?).getD (.sym "%Undefined%")) := by
-        simp [toLeaTTaAtoms_eq_map, List.map_map, Function.comp_def]
-      obtain ⟨functionFresh, hfreshMem, hfunctionResult⟩ :=
-        List.mem_filterMap.mp hmem
+      obtain ⟨functionFresh, hfreshMem, functionResults⟩ :=
+        List.mem_flatMap.mp hmem
+      obtain ⟨rawArgTypes, hrawArgTypes, hfunctionResult⟩ :=
+        List.mem_filterMap.mp functionResults
       obtain ⟨functionRaw, hrawMem, hfreshEq⟩ := List.mem_map.mp hfreshMem
       cases functionFresh with
       | sym name => simp at hfunctionResult
@@ -2049,7 +2206,6 @@ theorem getTypes_inferredExpression_runtimeEvidence
                       split at hfunctionResult
                       next leaBindings hmatch =>
                         obtain rfl := Option.some.inj hfunctionResult
-                        rw [hrawList] at hmatch
                         have hfreshRoundtrip :
                             toLeaTTaAtom (fromLeaTTaAtom
                               (Metta.Atom.expr
@@ -2073,11 +2229,17 @@ theorem getTypes_inferredExpression_runtimeEvidence
                             fromLeaTTaAtoms_eq_map] using hdrop
                         rw [← hexpectedRoundtrip,
                           ← freshened_argument_roundtrip tail
-                            tailRoundtrip _ 0] at hmatch
-                        obtain ⟨humanBindings, harguments, outputState⟩ :=
+                            tailRoundtrip rawArgTypes
+                            (by simpa [toLeaTTaAtoms_eq_map,
+                              List.map_map, Function.comp_def] using
+                                hrawArgTypes) _ 0] at hmatch
+                        obtain ⟨specBindings, harguments, outputState⟩ :=
                           matchApplicationTypeArguments_r1_alpha_sound
                             (freshened_argument_evidence tail
-                              tailEvidence _ 0)
+                              tailEvidence rawArgTypes
+                              (by simpa [toLeaTTaAtoms_eq_map,
+                                List.map_map, Function.comp_def] using
+                                  hrawArgTypes) _ 0)
                             typeBindingState_empty hmatch
                         have hsplit :
                             types.dropLast ++
@@ -2130,7 +2292,7 @@ theorem getTypes_inferredExpression_runtimeEvidence
                             (fromLeaTTaAtom
                               ((types.getLast?).getD (.sym "%Undefined%")))
                         rw [hreturnRoundtrip] at hreturn
-                        have hreturn' : R1ReturnTypeObserved humanBindings
+                        have hreturn' : R1ReturnTypeObserved specBindings
                             (fromLeaTTaAtom
                               ((types.getLast?).getD (.sym "%Undefined%")))
                             (fromLeaTTaAtom
@@ -2225,8 +2387,9 @@ theorem getTypes_result_heImage
             toLeaTTaAtoms (fromLeaTTaAtoms arguments)))).map (·.2)
     rw [parts.1, parts.2]
     exact hindexed
-  case case12 head arguments hnotState hquery _rawArgTs _rawFunctionTypes
-      _avoid _argTs _functionAvoid _functionTypes _ ihArguments ihHead =>
+  case case12 head arguments hnotState hquery _rawArgTypeLists
+      _rawArgTypeChoices _allRawArgTypes _rawFunctionTypes _avoid
+      _functionAvoid _functionTypes _inferred ihArguments ihHead =>
     have hquery' :
         env.exprTypes.filter (fun entry =>
           entry.1 == .expr (head :: arguments)) = [] := by
@@ -2250,22 +2413,23 @@ theorem getTypes_result_heImage
         intro argument hargument
         exact leaAtomHEImage_children inputImage argument
           (List.mem_cons_of_mem _ hargument)
-      refine inferredType_member_heImage ?_ ?_ hget
+      refine inferredType_member_heImage
+        (fun rawTypes =>
+          Metta.Minimal.freshenArgumentTypes _ 0 rawTypes) ?_ ?_ hget
       · intro type htype
         obtain ⟨raw, hraw, rfl⟩ := List.mem_map.mp htype
         exact leaAtomHEImage_freshenTypeCandidate _ _
           (ihHead raw headImage hraw)
-      · intro type htype
-        obtain ⟨raw, hraw, avoid', position', rfl⟩ :=
-          mem_freshenArgumentTypes htype
-        obtain ⟨argument, hargument, rfl⟩ := List.mem_map.mp hraw
-        apply leaAtomHEImage_freshenTypeCandidate
-        apply getTypes_head_heImage
-        intro leaType' hmem'
-        exact ihArguments argument hargument leaType'
-          (argumentsImage argument hargument) hmem'
-  case case13 head arguments hnotState hquery _rawArgTs _rawFunctionTypes
-      _avoid _argTs _functionAvoid _functionTypes _ ihArguments ihHead =>
+      · intro rawTypes rawMember
+        apply freshened_cartesian_choice_heImage rawMember
+        intro candidates candidatesMember type typeMember
+        obtain ⟨argument, argumentMember, rfl⟩ :=
+          List.mem_map.mp candidatesMember
+        exact ihArguments argument argumentMember type
+          (argumentsImage argument argumentMember) typeMember
+  case case13 head arguments hnotState hquery _rawArgTypeLists
+      _rawArgTypeChoices _allRawArgTypes _rawFunctionTypes _avoid
+      _functionAvoid _functionTypes _inferred ihArguments ihHead =>
     have hquery' :
         env.exprTypes.filter (fun entry =>
           entry.1 == .expr (head :: arguments)) = [] := by
@@ -2289,27 +2453,27 @@ theorem getTypes_result_heImage
         intro argument hargument
         exact leaAtomHEImage_children inputImage argument
           (List.mem_cons_of_mem _ hargument)
-      refine inferredType_member_heImage ?_ ?_ hget
+      refine inferredType_member_heImage
+        (fun rawTypes =>
+          Metta.Minimal.freshenArgumentTypes _ 0 rawTypes) ?_ ?_ hget
       · intro type htype
         obtain ⟨raw, hraw, rfl⟩ := List.mem_map.mp htype
         exact leaAtomHEImage_freshenTypeCandidate _ _
           (ihHead raw headImage hraw)
-      · intro type htype
-        obtain ⟨raw, hraw, avoid', position', rfl⟩ :=
-          mem_freshenArgumentTypes htype
-        obtain ⟨argument, hargument, rfl⟩ := List.mem_map.mp hraw
-        apply leaAtomHEImage_freshenTypeCandidate
-        apply getTypes_head_heImage
-        intro leaType' hmem'
-        exact ihArguments argument hargument leaType'
-          (argumentsImage argument hargument) hmem'
+      · intro rawTypes rawMember
+        apply freshened_cartesian_choice_heImage rawMember
+        intro candidates candidatesMember type typeMember
+        obtain ⟨argument, argumentMember, rfl⟩ :=
+          List.mem_map.mp candidatesMember
+        exact ihArguments argument argumentMember type
+          (argumentsImage argument argumentMember) typeMember
   case case14 =>
     simp at hmem
     subst leaType
     exact leaAtomHEImage_sym "%Undefined%"
 
 /-- Repaired LeaTTa's complete recursive type lookup is sound for the
-published human core plus the explicitly named R1/R2/R3 runtime refinements.
+published spec core plus the explicitly named R1/R2/R3 runtime refinements.
 The input and every output retain exact native-image provenance separately. -/
 theorem getTypes_runtimeEvidence_of_heImage
     {space : Space} {env : Metta.Minimal.MinEnv}
@@ -2444,8 +2608,9 @@ theorem getTypes_runtimeEvidence_of_heImage
       hnotState' hdirect
     rw [translatedInput]
     simpa [Metta.Minimal.getTypes] using hmem
-  case case12 head arguments hnotState hquery _rawArgTs _rawFunctionTypes
-      _avoid _argTs _functionAvoid _functionTypes _ ihArguments ihHead =>
+  case case12 head arguments hnotState hquery _rawArgTypeLists
+      _rawArgTypeChoices _allRawArgTypes _rawFunctionTypes _avoid
+      _functionAvoid _functionTypes _inferred ihArguments ihHead =>
     have parts := heImage_expression_roundtrip_parts inputImage
     have inputRoundtrip :=
       toLeaTTaAtom_fromLeaTTaAtom_of_heImage inputImage
@@ -2518,8 +2683,9 @@ theorem getTypes_runtimeEvidence_of_heImage
       exact htype
     · rw [translatedInput]
       simpa [Metta.Minimal.getTypes] using hmem
-  case case13 head arguments hnotState hquery _rawArgTs _rawFunctionTypes
-      _avoid _argTs _functionAvoid _functionTypes _ ihArguments ihHead =>
+  case case13 head arguments hnotState hquery _rawArgTypeLists
+      _rawArgTypeChoices _allRawArgTypes _rawFunctionTypes _avoid
+      _functionAvoid _functionTypes _inferred ihArguments ihHead =>
     have parts := heImage_expression_roundtrip_parts inputImage
     have inputRoundtrip :=
       toLeaTTaAtom_fromLeaTTaAtom_of_heImage inputImage

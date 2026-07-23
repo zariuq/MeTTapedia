@@ -1,4 +1,4 @@
-import Mettapedia.Languages.MeTTa.HE.HumanTypeRuntimeRefinement
+import Mettapedia.Languages.MeTTa.HE.Spec.Type.RuntimeRefinement
 import MettaHyperonFull.Proofs.BindingLaws
 
 /-!
@@ -7,7 +7,7 @@ import MettaHyperonFull.Proofs.BindingLaws
 Each leaf match below is individually loop-free.  Threading the two matches
 through `matchReducedList`, however, constructs a mutually recursive type
 binding and returns it without applying the public matcher's whole-result loop
-filter.  The named human R2 relation rejects the same constraint system because
+filter.  The named spec R2 relation rejects the same constraint system because
 it has no finite-tree model.
 -/
 
@@ -15,7 +15,7 @@ namespace Mettapedia.Languages.MeTTa.HE.LeaTTaTypeLoopCounterexample
 
 open Mettapedia.Languages.MeTTa.HE
 open Mettapedia.Languages.MeTTa.OSLFCore
-open HumanTypeRuntimeRefinement
+open Spec.Type.RuntimeRefinement
 
 private def firstTypeBinding : Metta.Bindings :=
   [.val "x" (.expr [.sym "f", .var "y"])]
@@ -193,26 +193,26 @@ theorem repaired_matchReducedList_rejects_cyclic_type_binding :
   simp [cyclicTypeExpected, cyclicTypeActual,
     Metta.Minimal.matchReducedList, hfirst, hsecond]
 
-/-- Human counterpart of `cyclicTypeExpected`. -/
-def humanCyclicTypeExpected : Atom :=
+/-- specification counterpart of `cyclicTypeExpected`. -/
+def specCyclicTypeExpected : Atom :=
   .expression [.var "x", .var "y"]
 
-/-- Human counterpart of `cyclicTypeActual`. -/
-def humanCyclicTypeActual : Atom :=
+/-- specification counterpart of `cyclicTypeActual`. -/
+def specCyclicTypeActual : Atom :=
   .expression [
     .expression [.symbol "f", .var "y"],
     .expression [.symbol "f", .var "x"]]
 
 /-- Semantic witness: no output binding can present the R2 solution theory of
 the cyclic equations, because finite HE atoms cannot contain themselves. -/
-theorem no_human_r2_model_for_cyclic_type_constraints :
+theorem no_spec_r2_model_for_cyclic_type_constraints :
     ¬∃ output,
-      R2ReducedTypeMatchRel humanCyclicTypeExpected humanCyclicTypeActual
+      R2ReducedTypeMatchRel specCyclicTypeExpected specCyclicTypeActual
         Bindings.empty output := by
   rintro ⟨output, hmatch⟩
   obtain ⟨valuation, hmodel⟩ := hmatch.satisfiable
   have hconsistent := (hmatch.solutions valuation).mp hmodel |>.2
-  simp only [humanCyclicTypeExpected, humanCyclicTypeActual,
+  simp only [specCyclicTypeExpected, specCyclicTypeActual,
     ReducedTypeConsistent, ReducedTypeListConsistent] at hconsistent
   rcases hconsistent with ⟨hx, hy, _⟩
   simp [applyTypeValuation] at hx hy

@@ -1,5 +1,5 @@
-import Mettapedia.Languages.MeTTa.HE.HumanTypeConformance
-import Mettapedia.Languages.MeTTa.HE.HumanTypeRuntimeRefinement
+import Mettapedia.Languages.MeTTa.HE.Spec.Type.Conformance
+import Mettapedia.Languages.MeTTa.HE.Spec.Type.RuntimeRefinement
 import Mettapedia.Languages.MeTTa.HE.LeaTTaTypeLoopCounterexample
 import MettaHyperonFull.Minimal.Interpreter
 import Std.Data.HashMap.Lemmas
@@ -9,7 +9,7 @@ import Std.Data.HashMap.Lemmas
 
 The pre-repair minimal type service retained its incoming type bindings when
 an argument match failed, then emitted the declared return type anyway.  The
-human R1 relation rejects the same application because its argument types are
+spec R1 relation rejects the same application because its argument types are
 inconsistent.  These two facts pin the semantic capability change required at
 the application-type boundary.  This failure-swallowing defect is distinct
 from the reduced-type loop-filter defect: routing the repaired argument fold
@@ -27,9 +27,9 @@ namespace Mettapedia.Languages.MeTTa.HE.LeaTTaApplicationTypeCounterexample
 
 open Mettapedia.Languages.MeTTa.HE
 open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
-open HumanTypeSpec
-open HumanTypeConformance
-open HumanTypeRuntimeRefinement
+open Spec.Type
+open Spec.Type.Conformance
+open Spec.Type.RuntimeRefinement
 
 private def badApplicationSpace : Space :=
   Space.ofList [
@@ -480,7 +480,7 @@ private theorem symbol_runtime_evidence_b
 
 /-- Semantic counterpart: the named R1 relation has no derivation for this
 ill-typed application and return type. -/
-theorem no_human_r1_result_after_failed_argument_match :
+theorem no_spec_r1_result_after_failed_argument_match :
     ¬R1ApplicationResultRel badApplicationSpace badApplication
       (.symbol "R") := by
   intro hinfer
@@ -493,10 +493,10 @@ theorem no_human_r1_result_after_failed_argument_match :
       have hfunctionBase := symbol_runtime_evidence_g hoperator
       subst hfunctionBase
       obtain ⟨ρ, _, rfl⟩ := hrenaming
-      have hground : renameHumanTypeVars ρ
+      have hground : renameTypeVars ρ
           (.expression [.symbol "->", .symbol "A", .symbol "R"]) =
           .expression [.symbol "->", .symbol "A", .symbol "R"] := by
-        simp [renameHumanTypeVars]
+        simp [renameTypeVars]
       rw [hground] at hfunction
       have hparts := functionTypeRel_getFunctionParts hfunction
       have hargumentTypes : argumentTypes = [.symbol "A"] := by
@@ -510,9 +510,9 @@ theorem no_human_r1_result_after_failed_argument_match :
           have hactualBase := symbol_runtime_evidence_b hactual
           subst hactualBase
           obtain ⟨ρ', _, rfl⟩ := hactualRenaming
-          have hgroundB : renameHumanTypeVars ρ' (.symbol "B") =
+          have hgroundB : renameTypeVars ρ' (.symbol "B") =
               .symbol "B" := by
-            simp [renameHumanTypeVars]
+            simp [renameTypeVars]
           rw [hgroundB] at hmatch
           obtain ⟨valuation, hmodel⟩ := hmatch.satisfiable
           have hconsistent := (hmatch.solutions valuation).mp hmodel |>.2

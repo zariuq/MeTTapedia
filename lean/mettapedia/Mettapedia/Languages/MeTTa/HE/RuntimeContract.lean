@@ -1,11 +1,11 @@
-import Mettapedia.Languages.MeTTa.HE.MinimalMeTTa
+import Mettapedia.Languages.MeTTa.HE.Spec.Eval.Minimal
 import MeTTailCore.Crypto.SHA256
 
 /-!
 # HE Runtime Contract
 
 Rust-facing behavioral contract for HE MeTTa operations, derived from the
-computable spec (MinimalMeTTa.lean + EvalSpec.lean).
+executable-independent `HE.Spec` relations.
 
 ## What This Is
 
@@ -24,13 +24,13 @@ For each HE op that Rust may execute, this artifact exports:
 
 ## Source of Truth
 
-- `MinimalMeTTa.lean` — 13 minimal instructions (bug-fixed)
+- `Spec/Eval/Minimal.lean` — state-free minimal-instruction semantics
 - `Space.lean` — queryEquations, getAtomTypes, simpleMatch
 - `Matching.lean` — matchAtoms, mergeBindings
 - `TypeCheck.lean` — typeCast, checkIfFunctionTypeIsApplicable
 - `HELanguageDef.lean` — explicit MettaCall rewrites for surface ops like `match`
 - `HEPremises.lean` — computable premise relations for rewrite-lane surface ops
-- `Types.lean` — Bindings, ResultSet, Bindings.toAtom round-trip
+- `Types.lean` — Bindings, ResultSet, legacy structural serialization
 -/
 
 namespace Mettapedia.Languages.MeTTa.HE.RuntimeContract
@@ -57,13 +57,13 @@ inductive BindingsFlow where
   | assignVariable
   /-- Output bindings come from each collected result (restored by superpose-bind). -/
   | restoreFromCollapse
-  /-- No binding change, but the collected expression encodes bindings via toAtom. -/
+  /-- No binding change, but the collected expression carries opaque bindings. -/
   | encodeBindings
 deriving Repr, DecidableEq
 
 /-- A single conformance fixture: concrete input → expected output. -/
 structure ConformanceFixture where
-  /-- Human-readable label. -/
+  /-- specification-readable label. -/
   label : String
   /-- Whether this is a positive (expected behavior) or negative (error/edge) case. -/
   positive : Bool
@@ -162,8 +162,7 @@ def unifyContract : OpRuntimeContract where
   arity := 4
   argRoles := ["target-atom", "pattern", "success-body", "failure-body"]
   specConstructors :=
-    [ "MinimalStep.unify_match"
-    , "MinimalStep.unify_no_match"
+    [ "Spec.Eval.Minimal.MinimalStepRel.unify"
     ]
   semanticAuthority :=
     [ "Matching.matchAtoms"
@@ -210,8 +209,8 @@ def chainContract : OpRuntimeContract where
   arity := 3
   argRoles := ["atom-to-eval", "variable", "template"]
   specConstructors :=
-    [ "MinimalStep.chain"
-    , "MinimalStep.chain_empty"
+    [ "Spec.Eval.Minimal.MinimalStepRel.chain"
+    , "Spec.Eval.Minimal.MinimalStepRel.chainEmpty"
     ]
   semanticAuthority :=
     [ "EvalAtom"           -- evaluates the atom
@@ -344,25 +343,28 @@ def caseContract : OpRuntimeContract where
     ]
 
 /-- `collapse-bind` — □ modality: collect ALL evaluation results with bindings.
-    Evaluates atom, returns one expression containing all `(<result> <bindings.toAtom>)`
-    pairs. The encoded bindings can be restored by superpose-bind via `Bindings.ofAtom?`.
-    Round-trip guaranteed by `Bindings.ofAtom_toAtom`. -/
+    Evaluates atom, returns one expression containing all
+    `(<result> <opaque-bindings>)` pairs.  The exact order and multiplicity
+    come from the selected evaluation-enumeration profile; they are not
+    reconstructed from the individual-result relation. -/
 def collapseBindContract : OpRuntimeContract where
   head := "collapse-bind"
   arity := 1
   argRoles := ["atom (to evaluate and collect all results)"]
   specConstructors :=
-    [ "MinimalStep.collapse_bind"
+    [ "Spec.Eval.Minimal.MinimalStepRel.collapseBind"
     ]
   semanticAuthority :=
-    [ "EvalAtom"                -- evaluates the atom (all derivations)
-    , "Bindings.toAtom"         -- encodes bindings into the result expression
-    , "Bindings.ofAtom_toAtom"  -- round-trip proof (kernel-checked)
+    [ "Spec.Eval.EvalRel"
+    , "Spec.Eval.Minimal.EvalEnumeration"
+    , "Spec.Eval.Minimal.EvalEnumerationLaws"
+    , "Spec.Eval.Minimal.encodeResults"
+    , "Spec.Eval.Minimal.Services.bindingPayload"
     ]
   determinism := .deterministic
   bindingsFlow := .encodeBindings
   resultCases :=
-    [ "one or more results: expression of (<atom> <bindings.toAtom>) pairs"
+    [ "one or more results: expression of (<atom> <opaque-bindings>) pairs"
     , "no results: empty expression ()"
     ]
   errorCases := []
@@ -372,7 +374,7 @@ def collapseBindContract : OpRuntimeContract where
         positive := true
         instructionAtom := "(collapse-bind x)"
         inputBindings := []
-        expectedResults := ["((x (Bindings () ())))"]
+        expectedResults := ["((x {  }))"]
         expectedBindings := some []
       }
     , { label := "collapse-bind: empty eval → empty expression"
@@ -386,7 +388,7 @@ def collapseBindContract : OpRuntimeContract where
         positive := true
         instructionAtom := "(collapse-bind (superpose (a Empty b)))"
         inputBindings := []
-        expectedResults := ["((a (Bindings () ())) (b (Bindings () ())))"]
+        expectedResults := ["((b {  }) (a {  }))"]
         expectedBindings := some []
       }
     ]
@@ -400,11 +402,11 @@ def superposeBindContract : OpRuntimeContract where
   arity := 1
   argRoles := ["encoded-pairs (from collapse-bind output)"]
   specConstructors :=
-    [ "MinimalStep.superpose_bind"
+    [ "Spec.Eval.Minimal.MinimalStepRel.superposeBind"
     ]
   semanticAuthority :=
-    [ "Bindings.ofAtom?"        -- decodes bindings from encoded form
-    , "Bindings.ofAtom_toAtom"  -- round-trip proof (kernel-checked)
+    [ "Spec.Eval.Minimal.encodeResults"
+    , "Spec.Match.Merge.MergeRel"
     ]
   determinism := .nondeterministic
   bindingsFlow := .restoreFromCollapse
@@ -415,18 +417,20 @@ def superposeBindContract : OpRuntimeContract where
   errorCases := []
   mutatesSpace := false
   fixtures :=
-    [ { label := "superpose-bind: restores single pair"
+    [ { label := "superpose-bind: restores one collapsed alternative"
         positive := true
-        instructionAtom := "(superpose-bind ((x (Bindings () ()))))"
+        instructionAtom :=
+          "(chain (collapse-bind x) $collapsed (superpose-bind $collapsed))"
         inputBindings := []
         expectedResults := ["x"]
         expectedBindings := some []
       }
-    , { label := "superpose-bind: restores multiple pairs nondeterministically"
+    , { label := "superpose-bind: restores multiple collapsed alternatives"
         positive := true
-        instructionAtom := "(superpose-bind ((a (Bindings () ())) (b (Bindings ((v a)) ()))))"
+        instructionAtom :=
+          "(chain (collapse-bind (superpose (a b))) $collapsed (superpose-bind $collapsed))"
         inputBindings := []
-        expectedResults := ["a", "b"]
+        expectedResults := ["b", "a"]
         expectedBindings := none
       }
     , { label := "superpose-bind: empty input → no results"
@@ -491,12 +495,12 @@ def assertContract : OpRuntimeContract where
     ]
 
 /-- `eval` — one step of evaluation in current space.
-    Ref: MinimalMeTTa.lean eval constructor, metta.md "makes one step of the evaluation". -/
+    Ref: `Spec.Eval.Minimal.MinimalStepRel.eval`, metta.md "makes one step of the evaluation". -/
 def evalContract : OpRuntimeContract where
   head := "eval"
   arity := 1
   argRoles := ["atom (to evaluate one step)"]
-  specConstructors := ["MinimalStep.eval"]
+  specConstructors := ["Spec.Eval.Minimal.MinimalStepRel.eval"]
   semanticAuthority :=
     [ "EvalAtom"  -- the 6-function evaluation loop
     ]
@@ -533,7 +537,7 @@ def consAtomContract : OpRuntimeContract where
   head := "cons-atom"
   arity := 2
   argRoles := ["head (atom)", "tail (expression)"]
-  specConstructors := ["MinimalStep.cons_atom"]
+  specConstructors := ["Spec.Eval.Minimal.MinimalStepRel.consAtom"]
   semanticAuthority := []
   determinism := .deterministic
   bindingsFlow := .passthrough
@@ -565,7 +569,7 @@ def deconsAtomContract : OpRuntimeContract where
   head := "decons-atom"
   arity := 1
   argRoles := ["expression (non-empty, to deconstruct)"]
-  specConstructors := ["MinimalStep.decons_atom"]
+  specConstructors := ["Spec.Eval.Minimal.MinimalStepRel.deconsAtom"]
   semanticAuthority := []
   determinism := .deterministic
   bindingsFlow := .passthrough
@@ -601,8 +605,8 @@ def functionContract : OpRuntimeContract where
   arity := 1
   argRoles := ["body (to evaluate until return)"]
   specConstructors :=
-    [ "MinimalStep.function_return"
-    , "MinimalStep.function_no_return"
+    [ "Spec.Eval.Minimal.MinimalStepRel.functionReturn"
+    , "Spec.Eval.Minimal.MinimalStepRel.functionNoReturn"
     ]
   semanticAuthority :=
     [ "EvalAtom"  -- evaluates body
@@ -671,18 +675,18 @@ def superposeContract : OpRuntimeContract where
       }
     ]
 
-/-- `context-space` — return the current atomspace as an expression.
+/-- `context-space` — return an opaque grounded handle for the current atomspace.
     No arguments, no side effects. -/
 def contextSpaceContract : OpRuntimeContract where
   head := "context-space"
   arity := 0
   argRoles := []
-  specConstructors := ["MinimalStep.context_space"]
-  semanticAuthority := ["Space.atoms"]
+  specConstructors := ["Spec.Eval.Minimal.MinimalStepRel.contextSpace"]
+  semanticAuthority := ["Spec.Eval.Minimal.Services.contextPayload"]
   determinism := .deterministic
   bindingsFlow := .passthrough
   resultCases :=
-    [ "always succeeds: expression containing all atoms in the current space"
+    [ "always succeeds: opaque grounded handle for the current space"
     ]
   errorCases := []
   mutatesSpace := false
@@ -691,7 +695,7 @@ def contextSpaceContract : OpRuntimeContract where
         positive := true
         instructionAtom := "(context-space)"
         inputBindings := []
-        expectedResults := ["()"]
+        expectedResults := ["&self"]
         expectedBindings := some []
       }
     ]
@@ -702,9 +706,9 @@ def contextSpaceContract : OpRuntimeContract where
     The native function is dispatched via GroundedDispatch.execute. -/
 def callNativeContract : OpRuntimeContract where
   head := "call-native"
-  arity := 2
+  arity := 3
   argRoles := ["op (executable grounded atom)", "args (expression of arguments)"]
-  specConstructors := ["MinimalStep.call_native"]
+  specConstructors := ["Spec.Eval.Minimal.MinimalStepRel.callNative"]
   semanticAuthority :=
     [ "GroundedDispatch.isExecutable"
     , "GroundedDispatch.execute"

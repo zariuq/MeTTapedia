@@ -1,4 +1,4 @@
-import Mettapedia.Languages.MeTTa.HE.HumanTypeRuntimeRefinement
+import Mettapedia.Languages.MeTTa.HE.Spec.Type.RuntimeRefinement
 import MettaHyperonFull.Minimal.Interpreter
 import MettaHyperonFull.Proofs.BindingLaws
 import MettaHyperonFull.Proofs.CaptureAvoidingFreshening
@@ -99,13 +99,13 @@ raw variable admits an arrow-shaped valuation.  This is why satisfiability
 alone cannot characterize the runtime candidate presentation. -/
 theorem empty_theory_variable_has_arrow_valuation :
     ∃ valuation : String → Mettapedia.Languages.MeTTa.OSLFCore.Atom,
-      HumanTypeRuntimeRefinement.RuntimeTypeTheory.empty.Holds valuation ∧
-        HumanTypeRuntimeRefinement.applyTypeValuation valuation (.var "t") =
+      Spec.Type.RuntimeRefinement.RuntimeTypeTheory.empty.Holds valuation ∧
+        Spec.Type.RuntimeRefinement.applyTypeValuation valuation (.var "t") =
           .expression [.symbol "->", .symbol "A", .symbol "B"] := by
   refine ⟨fun name => if name = "t" then
       .expression [.symbol "->", .symbol "A", .symbol "B"]
     else .var name, trivial, ?_⟩
-  simp [HumanTypeRuntimeRefinement.applyTypeValuation]
+  simp [Spec.Type.RuntimeRefinement.applyTypeValuation]
 
 private def collisionEnv : Metta.Minimal.MinEnv :=
   Metta.Minimal.MinEnv.ofAtomsGT [

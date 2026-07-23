@@ -1,4 +1,4 @@
-import Mettapedia.Languages.MeTTa.HE.HumanTypeConformance
+import Mettapedia.Languages.MeTTa.HE.Spec.Type.Conformance
 import MettaHyperonFull.Proofs.MultipleSignatureSelection
 import Std.Data.HashMap.Lemmas
 
@@ -15,9 +15,9 @@ namespace Mettapedia.Languages.MeTTa.HE.LeaTTaMultipleSignatureCounterexample
 
 open Mettapedia.Languages.MeTTa.HE
 open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
-open HumanMatchMergeSpec
-open HumanTypeSpec
-open HumanEvalSpec
+open Spec.Match.Merge
+open Spec.Type
+open Spec.Eval
 
 private def arrowA : Atom :=
   .expression [.symbol "->", .symbol "A", .symbol "RA"]
@@ -49,7 +49,7 @@ private def multiSignatureEnv : Metta.Minimal.MinEnv :=
     .expr [.sym ":", .sym "f", leaArrowB],
     .expr [.sym ":", .sym "a", .sym "A"]] []
 
-private def noHostDispatch : HumanGroundedDispatch where
+private def noHostDispatch : GroundedDispatch where
   executable := fun _ => False
   outcome := fun _ _ _ => False
 
@@ -140,14 +140,18 @@ private theorem firstSignatureApplicable :
   · exact RATypeMatch
 
 private theorem firstSignatureSelected :
-    FunctionCandidateScanRel ApplicabilityRel multiSignatureSpace
+    FunctionCandidateScanRel PublishedCandidateApplicabilityRel
+      multiSignatureSpace
       application (.symbol "RA") Bindings.empty [arrowA, arrowB]
-      (.success arrowA (.symbol "RA") Bindings.empty) := by
+      (.success ⟨arrowA, [.symbol "A"], .symbol "RA", rfl⟩
+        Bindings.empty) := by
   apply FunctionCandidateScanRel.functionSuccess
       (argumentTypes := [.symbol "A"])
       (returnType := .symbol "RA")
   · rfl
-  · exact firstSignatureApplicable
+  · exact PublishedCandidateApplicabilityRel.success
+        (argumentTypes := [.symbol "A"]) (returnType := .symbol "RA")
+        rfl firstSignatureApplicable
 
 private theorem fCastToFirstSignature :
     TypeCastRel multiSignatureSpace (.symbol "f") arrowA Bindings.empty
@@ -172,10 +176,10 @@ private theorem aCastToA :
   · exact ATypeMatch
 
 private theorem fRaw :
-    HumanEvalAtomRaw multiSignatureSpace noHostDispatch []
+    EvalAtomRawRel multiSignatureSpace noHostDispatch []
       (.symbol "f") arrowA Bindings.empty
       (.symbol "f", Bindings.empty) := by
-  apply HumanEvalAtomRaw.cast
+  apply EvalAtomRawRel.cast
       (.symbol "f") arrowA Atom.symbolType Bindings.empty
       (.symbol "f", Bindings.empty)
   · simp [IsEmptyOrErrorRel, IsErrorRel, Atom.empty]
@@ -185,10 +189,10 @@ private theorem fRaw :
   · exact fCastToFirstSignature
 
 private theorem aRaw :
-    HumanEvalAtomRaw multiSignatureSpace noHostDispatch []
+    EvalAtomRawRel multiSignatureSpace noHostDispatch []
       (.symbol "a") (.symbol "A") Bindings.empty
       (.symbol "a", Bindings.empty) := by
-  apply HumanEvalAtomRaw.cast
+  apply EvalAtomRawRel.cast
       (.symbol "a") (.symbol "A") Atom.symbolType Bindings.empty
       (.symbol "a", Bindings.empty)
   · simp [IsEmptyOrErrorRel, IsErrorRel, Atom.empty]
@@ -198,23 +202,24 @@ private theorem aRaw :
   · exact aCastToA
 
 private theorem interpretedArguments :
-    HumanInterpretArgs multiSignatureSpace noHostDispatch []
+    InterpretArgsRel multiSignatureSpace noHostDispatch []
       [.symbol "a"] [.symbol "A"] Bindings.empty
       (.expression [.symbol "a"], Bindings.empty) := by
-  apply HumanInterpretArgs.success
+  apply InterpretArgsRel.success
       (.symbol "a") [] (.symbol "A") [] Bindings.empty
       (.symbol "a", Bindings.empty) (Atom.unit, Bindings.empty)
   · exact aRaw
   · exact Or.inr rfl
-  · exact HumanInterpretArgs.nil Bindings.empty
+  · exact InterpretArgsRel.nil Bindings.empty
   · simp [IsEmptyOrErrorRel, IsErrorRel, Atom.empty, Atom.unit]
 
 private theorem interpretedFunction :
-    HumanInterpretFunction multiSignatureSpace noHostDispatch []
+    InterpretFunctionRel multiSignatureSpace noHostDispatch []
       application arrowA (.symbol "RA") Bindings.empty
       (application, Bindings.empty) := by
-  apply HumanInterpretFunction.success
+  apply InterpretFunctionRel.success
       application arrowA (.symbol "RA") (.symbol "f")
+      (.symbol "RA")
       [.symbol "a"] [.symbol "A"] Bindings.empty
       (.symbol "f", Bindings.empty)
       (.expression [.symbol "a"], Bindings.empty)
@@ -226,10 +231,10 @@ private theorem interpretedFunction :
   · simp [IsEmptyOrErrorRel, IsErrorRel, Atom.empty]
 
 private theorem applicationNoEquation :
-    HumanCall multiSignatureSpace noHostDispatch []
+    CallRel multiSignatureSpace noHostDispatch []
       application (.symbol "RA") Bindings.empty
       (application, Bindings.empty) := by
-  apply HumanCall.noEquation
+  apply CallRel.noEquation
   · simp [application, IsErrorRel]
   · simp [application, noHostDispatch, NonGroundedCallRel]
   · intro freshPattern freshRhs matched ruleMatch
@@ -237,12 +242,13 @@ private theorem applicationNoEquation :
     simp [multiSignatureSpace, Space.ofList] at ruleMember
 
 private theorem interpretedExpression :
-    HumanInterpretExpression multiSignatureSpace noHostDispatch []
+    InterpretExpressionRel multiSignatureSpace noHostDispatch []
       application (.symbol "RA") Bindings.empty
       (application, Bindings.empty) := by
-  apply HumanInterpretExpression.functionPath
+  apply InterpretExpressionRel.functionPath
       application (.symbol "RA") (.symbol "f") [.symbol "a"]
-      [arrowA, arrowB] arrowA (.symbol "RA") (.symbol "RA")
+      [arrowA, arrowB]
+      ⟨arrowA, [.symbol "A"], .symbol "RA", rfl⟩ (.symbol "RA")
       Bindings.empty Bindings.empty
       (application, Bindings.empty) (application, Bindings.empty)
   · rfl
@@ -252,14 +258,14 @@ private theorem interpretedExpression :
   · exact interpretedFunction
   · exact applicationNoEquation
 
-/-- Independent human result: the earlier applicable declaration wins, so
+/-- Independent spec result: the earlier applicable declaration wins, so
 the application is a non-error normal form. -/
-theorem human_ordered_scan_accepts_earlier_signature :
-    HumanEval multiSignatureSpace noHostDispatch []
+theorem spec_ordered_scan_accepts_earlier_signature :
+    EvalRel multiSignatureSpace noHostDispatch []
       application (.symbol "RA") Bindings.empty
       (application, Bindings.empty) := by
   constructor
-  · apply HumanEvalAtomRaw.interpretSuccess
+  · apply EvalAtomRawRel.interpretSuccess
         application (.symbol "RA") Atom.expressionType Bindings.empty
         (application, Bindings.empty)
     · simp [application, IsEmptyOrErrorRel, IsErrorRel, Atom.empty]

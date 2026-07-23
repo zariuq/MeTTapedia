@@ -1,4 +1,4 @@
-import Mettapedia.Languages.MeTTa.HE.HumanEvalSpec
+import Mettapedia.Languages.MeTTa.HE.Spec.Eval
 import MettaHyperonFull.Minimal.Interpreter
 
 /-!
@@ -8,7 +8,7 @@ The published evaluator gives the `metta` operation semantic control over an
 expected result type and a selected atomspace.  Before repair #8, minimal
 LeaTTa accepted both arguments syntactically but discarded them before
 entering its recursive evaluator.  This file retains that old boundary as a
-private executable witness, pins the conflicting human-spec outcome, and
+private executable witness, pins the conflicting specification outcome, and
 checks the repaired type-selection primitive.
 
 The user-level stdlib function named `type-cast` is a separate wrapper and is
@@ -20,9 +20,9 @@ namespace Mettapedia.Languages.MeTTa.HE.LeaTTaMettaBoundaryCounterexample
 
 open Mettapedia.Languages.MeTTa.HE
 open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
-open HumanMatchMergeSpec
-open HumanTypeSpec
-open HumanEvalSpec
+open Spec.Match.Merge
+open Spec.Type
+open Spec.Eval
 
 private def mettaItem
     (atom expectedType space : Metta.Atom) (bindings : Metta.Bindings) :
@@ -76,7 +76,7 @@ private def typedASpace : Space :=
   Space.ofList [
     .expression [.symbol ":", .symbol "a", .symbol "A"]]
 
-private def noHostDispatch : HumanGroundedDispatch where
+private def noHostDispatch : GroundedDispatch where
   executable := fun _ => False
   outcome := fun _ _ _ => False
 
@@ -86,17 +86,17 @@ private theorem aHasTypeA :
   exact TypesOfRel.symbolKnown
     (AnnotationTypesRel.hit AnnotationTypesRel.nil) (by simp)
 
-private theorem aDoesNotMatchB (candidate : Bindings) :
-    ¬TypeMatchRel (.symbol "A") (.symbol "B")
+private theorem expectedBDoesNotMatchActualA (candidate : Bindings) :
+    ¬TypeMatchRel (.symbol "B") (.symbol "A")
       Bindings.empty candidate := by
   intro hmatch
-  obtain ⟨matched, hhuman, _⟩ := hmatch.structural_of_nonWildcard
+  obtain ⟨matched, hspec, _⟩ := hmatch.structural_of_nonWildcard
     (by decide) (by decide) (by decide) (by decide)
-  exact symbol_mismatch_not_match (by decide) matched hhuman
+  exact symbol_mismatch_not_match (by decide) matched hspec
 
 /-- The published internal type cast produces the structured error required
 by the official evaluator pseudocode for `a : A` at expected type `B`. -/
-theorem human_type_cast_rejects_A_as_B :
+theorem spec_type_cast_rejects_A_as_B :
     TypeCastRel typedASpace (.symbol "a") (.symbol "B") Bindings.empty
       (mkError (.symbol "a") (.badType (.symbol "B") (.symbol "A")),
         Bindings.empty) := by
@@ -108,22 +108,22 @@ theorem human_type_cast_rejects_A_as_B :
   · intro candidateType hmem candidate
     simp only [List.mem_singleton] at hmem
     subst candidateType
-    exact aDoesNotMatchB candidate
+    exact expectedBDoesNotMatchActualA candidate
 
 /-- Evaluator-level form of the counterexample: the executable-independent
-human relation must expose the structured `BadType B A` result. -/
-theorem human_eval_atom_rejects_A_as_B :
-    HumanEvalAtomRaw typedASpace noHostDispatch []
+spec relation must expose the structured `BadType B A` result. -/
+theorem spec_eval_atom_rejects_A_as_B :
+    EvalAtomRawRel typedASpace noHostDispatch []
       (.symbol "a") (.symbol "B") Bindings.empty
       (mkError (.symbol "a") (.badType (.symbol "B") (.symbol "A")),
         Bindings.empty) := by
-  apply HumanEvalAtomRaw.cast
+  apply EvalAtomRawRel.cast
       (.symbol "a") (.symbol "B") Atom.symbolType Bindings.empty
   · simp [IsEmptyOrErrorRel, IsErrorRel, Atom.empty]
   · exact MetaTypeRel.symbol "a"
   · simp [Atom.atomType, Atom.symbolType, Atom.variableType]
   · exact Or.inl ⟨"a", rfl⟩
-  · exact human_type_cast_rejects_A_as_B
+  · exact spec_type_cast_rejects_A_as_B
 
 /-- The spec-required error is observably different from the unchanged atom
 currently produced when the expected type is discarded. -/

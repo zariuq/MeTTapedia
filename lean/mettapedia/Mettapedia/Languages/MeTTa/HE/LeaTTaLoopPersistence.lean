@@ -24,7 +24,7 @@ The engine is two general facts about the bounded resolver:
   each stored value pays for its own descent: failure at the canonical
   budget is always a genuine cycle, never budget shortfall.
 -/
-import Mettapedia.Languages.MeTTa.HE.HumanMatchCompleteness
+import Mettapedia.Languages.MeTTa.HE.Spec.Match.Completeness
 
 namespace Mettapedia.Languages.MeTTa.HE.LeaTTaBridge
 

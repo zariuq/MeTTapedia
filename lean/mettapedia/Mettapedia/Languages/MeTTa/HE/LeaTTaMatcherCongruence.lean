@@ -325,9 +325,9 @@ theorem exists_matchRel_of_leaMatchAtoms_leaf
             all_goals
               simp only [toLeaTTaGround, Metta.Ground.equiv] at hequiv
             all_goals
-              change Metta.instBEqGround.beq _ _ = true at hequiv
+              change Metta.Ground.beq _ _ = true at hequiv
             all_goals
-              simp_all [Metta.instBEqGround.beq]
+              simp_all [Metta.Ground.beq]
           subst patternGround
           exact ⟨⟨[], []⟩, .grounded queryGround⟩
       | expression atoms =>

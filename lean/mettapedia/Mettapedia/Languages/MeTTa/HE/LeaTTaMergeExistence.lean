@@ -4,7 +4,7 @@ import Mettapedia.Languages.MeTTa.HE.UnificationCompleteness
 # Semantic existence of repaired-LeaTTa binding merges
 
 This module proves a LeaTTa-intrinsic completeness fact used by direct
-conformance to the human match/merge relation: two host-float-free binding
+conformance to the spec match/merge relation: two host-float-free binding
 sets that share a satisfying valuation have a successful merge.  The proof
 uses Robinson completeness, not the executable HE matcher or merger.
 -/

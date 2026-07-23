@@ -1,5 +1,5 @@
-import Mettapedia.Languages.MeTTa.HE.HumanTypeConformance
-import Mettapedia.Languages.MeTTa.HE.HumanTypeRuntimeRefinement
+import Mettapedia.Languages.MeTTa.HE.Spec.Type.Conformance
+import Mettapedia.Languages.MeTTa.HE.Spec.Type.RuntimeRefinement
 import MettaHyperonFull.Minimal.Interpreter
 import Std.Data.HashMap.Lemmas
 
@@ -7,13 +7,13 @@ import Std.Data.HashMap.Lemmas
 # LeaTTa type-lookup refinement boundary
 
 The published evaluator pseudocode requests the types of an atom from the
-space but does not state an application-result inference rule.  The human type
+space but does not state an application-result inference rule.  The spec type
 relation therefore exposes only direct annotations, intrinsic grounded types,
 and the gradual `%Undefined%` fallback.
 
 LeaTTa, following Hyperon's runtime type service, additionally infers the
 return type of a well-typed application.  The theorem below pins one strict
-extension witness.  It is deliberately downstream of the human semantics so
+extension witness.  It is deliberately downstream of the spec semantics so
 the extra executable behavior cannot be absorbed silently into the target
 relation.
 -/
@@ -22,10 +22,10 @@ namespace Mettapedia.Languages.MeTTa.HE.LeaTTaTypeRefinement
 
 open Mettapedia.Languages.MeTTa.HE
 open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
-open HumanTypeSpec
-open HumanTypeConformance
-open HumanTypeRuntimeRefinement
-open HumanMatchMergeSpec
+open Spec.Type
+open Spec.Type.Conformance
+open Spec.Type.RuntimeRefinement
+open Spec.Match.Merge
 
 private def applicationSpace : Space :=
   Space.ofList [

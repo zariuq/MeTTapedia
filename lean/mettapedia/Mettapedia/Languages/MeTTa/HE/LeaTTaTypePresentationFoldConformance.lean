@@ -4,9 +4,9 @@ import Mettapedia.Languages.MeTTa.HE.LeaTTaTypePresentationPrincipalAlpha
 /-!
 # Exact finite-presentation simulation of the application type fold
 
-The repaired runtime carries equality-class bindings, while exact human type
+The repaired runtime carries equality-class bindings, while exact spec type
 packages carry a normal finite substitution.  The simulation state relates
-the finite presentation to the already-sealed native human binding theory,
+the finite presentation to the already-sealed native spec binding theory,
 and relates that theory to LeaTTa independently through `TypeBindingState`.
 
 Each successful runtime type match is reconstructed as one presentation
@@ -19,80 +19,153 @@ namespace Mettapedia.Languages.MeTTa.HE.LeaTTaTypePresentationFoldConformance
 
 open Mettapedia.Languages.MeTTa.HE
 open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
-open HumanTypePresentation
-open HumanTypePresentationTheory
-open HumanTypePresentationMatchSolutionTheory
-open HumanTypePresentationCompleteness
-open HumanTypePresentationAlpha
-open HumanTypePresentationPrincipalAlpha
-open HumanTypePresentationExact
-open HumanTypeRuntimeRefinement
+open Spec.Type.Presentation
+open Spec.Type.Presentation.Theory
+open Spec.Type.Presentation.MatchSolutionTheory
+open Spec.Type.Presentation.Completeness
+open Spec.Type.Presentation.Alpha
+open Spec.Type.Presentation.PrincipalAlpha
+open Spec.Type.Presentation.Exact
+open Spec.Type.RuntimeRefinement
 open LeaTTaBridge
-open LeaTTaHumanConformance
+open LeaTTaSpecConformance
 open LeaTTaTypeConformance
 
-/-- The exact presentation carried alongside the semantic human/LeaTTa
-binding state.  `humanSolutions` is representation-independent equality of
+/-- The exact presentation carried alongside the semantic spec/LeaTTa
+binding state.  `specSolutions` is representation-independent equality of
 native solution sets; it does not identify the finite substitution with the
-human binding record. -/
+spec binding record. -/
 structure TypePresentationSimulationState
-    (presentation : TypeSubst) (human : Bindings)
+    (presentation : TypeSubst) (spec : Bindings)
     (lea : Metta.Bindings) : Prop where
   normal : presentation.Normal
-  humanSolutions : ∀ valuation,
+  specSolutions : ∀ valuation,
     TypeSubstSatisfied valuation presentation ↔
-      HumanTypeBindingSatisfied valuation human
-  semantic : TypeBindingState human lea
+      TypeBindingSatisfied valuation spec
+  semantic : TypeBindingState spec lea
 
-/-- Empty finite, human, and runtime presentations establish the simulation
+/-- Empty finite, spec, and runtime presentations establish the simulation
 state used at every application-inference boundary. -/
 theorem typePresentationSimulationState_empty :
     TypePresentationSimulationState [] Bindings.empty
       Metta.Bindings.empty := by
   refine ⟨TypeSubst.normal_empty, ?_, typeBindingState_empty⟩
   intro valuation
-  simp [TypeSubstSatisfied, HumanTypeBindingSatisfied, Bindings.empty]
+  simp [TypeSubstSatisfied, TypeBindingSatisfied, Bindings.empty]
 
-/-- One successful repaired runtime type match has a normal finite
-presentation with exactly the same native human solution theory. -/
-theorem TypePresentationSimulationState.matchType
-    {presentation : TypeSubst} {human : Bindings}
+/-- A finite presentation paired with a reachable runtime binding theory is
+semantically supported by the variables occurring in that runtime theory.
+The presentation may use different private spellings syntactically; only
+its complete solution theory is asserted to be insensitive away from the
+runtime support. -/
+theorem TypePresentationSimulationState.satisfied_congr_on_runtimeVars
+    {presentation : TypeSubst} {spec : Bindings}
+    {runtime : Metta.Bindings}
+    (state : TypePresentationSimulationState presentation spec runtime)
+    {left right : String → Atom}
+    (agrees : ∀ name, name ∈ runtime.vars → left name = right name) :
+    TypeSubstSatisfied left presentation ↔
+      TypeSubstSatisfied right presentation := by
+  rw [state.specSolutions left, state.specSolutions right]
+  exact state.semantic.specSatisfied_congr_on_runtimeVars agrees
+
+/-- Full one-step presentation simulation.  Besides the finite-presentation
+derivation, retain the native core-plus-R2 match consumed by type-service
+relations; projecting it away would force later boundaries to reconstruct the
+same match from solution semantics.  The resulting normal finite presentation
+has exactly the same native specification solution theory. -/
+theorem TypePresentationSimulationState.matchTypeFull
+    {presentation : TypeSubst} {spec : Bindings}
     {lea leaOutput : Metta.Bindings}
-    (state : TypePresentationSimulationState presentation human lea)
+    (state : TypePresentationSimulationState presentation spec lea)
     (expected actual : Atom)
     (success : Metta.Minimal.matchType lea
       (toLeaTTaAtom expected) (toLeaTTaAtom actual) = some leaOutput) :
-    ∃ presentationOutput humanOutput,
+    ∃ presentationOutput specOutput,
       CorePlusR2TypePresentationMatchRel
           presentation expected actual presentationOutput ∧
+        CorePlusR2TypeMatchRel expected actual spec specOutput ∧
         TypePresentationSimulationState
-          presentationOutput humanOutput leaOutput := by
-  obtain ⟨humanOutput, humanMatch, semanticOutput⟩ :=
+          presentationOutput specOutput leaOutput := by
+  obtain ⟨specOutput, specMatch, semanticOutput⟩ :=
     matchType_corePlusR2_sound state.semantic success
   obtain ⟨valuation, outputSatisfied⟩ :=
-    semanticOutput.humanSatisfiable
-  have parts := (humanMatch.solutions valuation).mp outputSatisfied
+    semanticOutput.specSatisfiable
+  have parts := (specMatch.solutions valuation).mp outputSatisfied
   have presentationSatisfied :
       TypeSubstSatisfied valuation presentation :=
-    (state.humanSolutions valuation).mpr parts.1
+    (state.specSolutions valuation).mpr parts.1
   obtain ⟨presentationOutput, presentationMatch,
       outputNormal, _outputSatisfied⟩ :=
     CorePlusR2TypePresentationMatchRel.exists_of_satisfied
       state.normal presentationSatisfied expected actual parts.2
-  refine ⟨presentationOutput, humanOutput, presentationMatch,
+  refine ⟨presentationOutput, specOutput, presentationMatch, specMatch,
     ⟨outputNormal, ?_, semanticOutput⟩⟩
   intro otherValuation
-  rw [HumanTypePresentationMatchSolutionTheory.CorePlusR2TypePresentationMatchRel.solutions
+  rw [Spec.Type.Presentation.MatchSolutionTheory.CorePlusR2TypePresentationMatchRel.solutions
         presentationMatch state.normal otherValuation,
-    state.humanSolutions otherValuation,
-    ← humanMatch.solutions otherValuation]
+    state.specSolutions otherValuation,
+    ← specMatch.solutions otherValuation]
+
+/-- Present any satisfiable native core-plus-R2 match as one exact normal
+finite substitution extending the incoming presentation.  Unlike
+`matchTypeFull`, this theorem is executable-independent: it starts from the
+specification match relation itself and retains exactly the finite evidence
+needed by alpha-transport and evaluator completeness. -/
+theorem TypePresentationSimulationState.presentCorePlusR2
+    {presentation : TypeSubst} {spec specOutput : Bindings}
+    {runtime : Metta.Bindings} {expected actual : Atom}
+    (state : TypePresentationSimulationState presentation spec runtime)
+    (derivation : CorePlusR2TypeMatchRel expected actual spec specOutput) :
+    ∃ presentationOutput,
+      CorePlusR2TypePresentationMatchRel
+          presentation expected actual presentationOutput ∧
+        presentationOutput.Normal ∧
+        ∀ valuation,
+          TypeSubstSatisfied valuation presentationOutput ↔
+            TypeBindingSatisfied valuation specOutput := by
+  obtain ⟨valuation, outputSatisfied⟩ := derivation.satisfiable
+  obtain ⟨incomingSatisfied, consistent⟩ :=
+    (derivation.solutions valuation).mp outputSatisfied
+  have presentationSatisfied :
+      TypeSubstSatisfied valuation presentation :=
+    (state.specSolutions valuation).mpr incomingSatisfied
+  obtain ⟨presentationOutput, presentationMatch,
+      outputNormal, _outputSatisfied⟩ :=
+    CorePlusR2TypePresentationMatchRel.exists_of_satisfied
+      state.normal presentationSatisfied expected actual consistent
+  refine ⟨presentationOutput, presentationMatch, outputNormal, ?_⟩
+  intro otherValuation
+  rw [Spec.Type.Presentation.MatchSolutionTheory.CorePlusR2TypePresentationMatchRel.solutions
+        presentationMatch state.normal otherValuation,
+    state.specSolutions otherValuation,
+    ← derivation.solutions otherValuation]
+
+/-- Compatibility projection for consumers that need only the finite
+presentation derivation and the resulting simulation state. -/
+theorem TypePresentationSimulationState.matchType
+    {presentation : TypeSubst} {spec : Bindings}
+    {lea leaOutput : Metta.Bindings}
+    (state : TypePresentationSimulationState presentation spec lea)
+    (expected actual : Atom)
+    (success : Metta.Minimal.matchType lea
+      (toLeaTTaAtom expected) (toLeaTTaAtom actual) = some leaOutput) :
+    ∃ presentationOutput specOutput,
+      CorePlusR2TypePresentationMatchRel
+          presentation expected actual presentationOutput ∧
+        TypePresentationSimulationState
+          presentationOutput specOutput leaOutput := by
+  obtain ⟨presentationOutput, specOutput, presentationMatch,
+      _specMatch, outputState⟩ :=
+    state.matchTypeFull expected actual success
+  exact ⟨presentationOutput, specOutput, presentationMatch, outputState⟩
 
 /-- The finite presentation and LeaTTa's canonical runtime resolver observe
 any declared type up to alpha-renaming. -/
 theorem TypePresentationSimulationState.returnAlpha
-    {presentation : TypeSubst} {human : Bindings}
+    {presentation : TypeSubst} {spec : Bindings}
     {lea : Metta.Bindings}
-    (state : TypePresentationSimulationState presentation human lea)
+    (state : TypePresentationSimulationState presentation spec lea)
     (declared : Atom) :
     ObservedTypeAlphaRel
       (presentation.apply declared)
@@ -103,11 +176,11 @@ theorem TypePresentationSimulationState.returnAlpha
     fun name => fromLeaTTaAtom (leaModel name)
   have nativeModelSatisfied :
       TypeSubstSatisfied nativeModel presentation := by
-    have humanModel : HEBindingSatisfied leaModel human :=
+    have specModel : HEBindingSatisfied leaModel spec :=
       (state.semantic.theory leaModel).mpr state.semantic.runtime.canonical.1
-    have nativeHumanModel :=
-      humanTypeBindingSatisfied_of_heBindingSatisfied humanModel
-    exact (state.humanSolutions nativeModel).mpr nativeHumanModel
+    have nativeSpecModel :=
+      specTypeBindingSatisfied_of_heBindingSatisfied specModel
+    exact (state.specSolutions nativeModel).mpr nativeSpecModel
   have presentationRefinesModel :
       ∃ post : String → Atom, ∀ name,
         presentedValuation presentation name =
@@ -118,13 +191,13 @@ theorem TypePresentationSimulationState.returnAlpha
     have presentationSatisfied :
         TypeSubstSatisfied presentationModel presentation :=
       normal_presentedValuation_satisfied state.normal
-    have humanPresentationSatisfied :
-        HumanTypeBindingSatisfied presentationModel human :=
-      (state.humanSolutions presentationModel).mp presentationSatisfied
+    have specPresentationSatisfied :
+        TypeBindingSatisfied presentationModel spec :=
+      (state.specSolutions presentationModel).mp presentationSatisfied
     have heaPresentationSatisfied :
-        HEBindingSatisfied leaPresentationModel human :=
-      heBindingSatisfied_of_humanTypeBindingSatisfied
-        humanPresentationSatisfied
+        HEBindingSatisfied leaPresentationModel spec :=
+      heBindingSatisfied_of_specTypeBindingSatisfied
+        specPresentationSatisfied
     have leaPresentationSatisfied :
         LeaBindingSatisfied leaPresentationModel lea :=
       (state.semantic.theory leaPresentationModel).mp
@@ -148,34 +221,34 @@ executable-independent finite-presentation fold, preserving the complete
 simulation state. -/
 theorem matchApplicationTypeArguments_presentation_sound :
     ∀ (expectedTypes actualTypes : List Atom)
-      {presentation : TypeSubst} {human : Bindings}
+      {presentation : TypeSubst} {spec : Bindings}
       {lea leaOutput : Metta.Bindings},
-      TypePresentationSimulationState presentation human lea →
+      TypePresentationSimulationState presentation spec lea →
       Metta.Minimal.matchApplicationTypeArguments lea
         (toLeaTTaAtoms expectedTypes) (toLeaTTaAtoms actualTypes) =
           some leaOutput →
-      ∃ presentationOutput humanOutput,
+      ∃ presentationOutput specOutput,
         PresentationArgumentListMatchRel expectedTypes actualTypes
             presentation presentationOutput ∧
           TypePresentationSimulationState
-            presentationOutput humanOutput leaOutput := by
+            presentationOutput specOutput leaOutput := by
   intro expectedTypes
   induction expectedTypes with
   | nil =>
-      intro actualTypes presentation human lea leaOutput state success
+      intro actualTypes presentation spec lea leaOutput state success
       cases actualTypes with
       | nil =>
           have same : lea = leaOutput := by
             simpa [toLeaTTaAtoms,
               Metta.Minimal.matchApplicationTypeArguments] using success
           subst leaOutput
-          exact ⟨presentation, human,
+          exact ⟨presentation, spec,
             PresentationArgumentListMatchRel.nil presentation, state⟩
       | cons actual actualTypes =>
           simp [toLeaTTaAtoms,
             Metta.Minimal.matchApplicationTypeArguments] at success
   | cons expected expectedTypes inductionHypothesis =>
-      intro actualTypes presentation human lea leaOutput state success
+      intro actualTypes presentation spec lea leaOutput state success
       cases actualTypes with
       | nil =>
           simp [toLeaTTaAtoms,
@@ -188,17 +261,17 @@ theorem matchApplicationTypeArguments_presentation_sound :
           cases next with
           | none => simp at success
           | some leaNext =>
-              obtain ⟨presentationNext, humanNext,
+              obtain ⟨presentationNext, specNext,
                   headMatch, nextState⟩ :=
                 state.matchType expected actual nextEquation
-              obtain ⟨presentationOutput, humanOutput,
+              obtain ⟨presentationOutput, specOutput,
                   tailMatch, outputState⟩ :=
                 inductionHypothesis actualTypes nextState success
-              exact ⟨presentationOutput, humanOutput,
+              exact ⟨presentationOutput, specOutput,
                 PresentationArgumentListMatchRel.cons headMatch tailMatch,
                 outputState⟩
 
-/-- End-to-end fold boundary from empty input: the exact human argument
+/-- End-to-end fold boundary from empty input: the exact spec argument
 presentation exists, and its emitted return is alpha-exactly LeaTTa's
 instantiated return. -/
 theorem matchApplicationTypeArguments_exact_return
@@ -207,19 +280,19 @@ theorem matchApplicationTypeArguments_exact_return
     (success : Metta.Minimal.matchApplicationTypeArguments
       Metta.Bindings.empty (toLeaTTaAtoms expectedTypes)
         (toLeaTTaAtoms actualTypes) = some leaOutput) :
-    ∃ presentation humanOutput,
+    ∃ presentation specOutput,
       PresentationArgumentListMatchRel
           expectedTypes actualTypes [] presentation ∧
         TypePresentationSimulationState
-          presentation humanOutput leaOutput ∧
+          presentation specOutput leaOutput ∧
         ObservedTypeAlphaRel
           (presentation.apply returnType)
           (fromLeaTTaAtom
             (Metta.instantiate leaOutput (toLeaTTaAtom returnType))) := by
-  obtain ⟨presentation, humanOutput, fold, state⟩ :=
+  obtain ⟨presentation, specOutput, fold, state⟩ :=
     matchApplicationTypeArguments_presentation_sound
       expectedTypes actualTypes typePresentationSimulationState_empty success
-  exact ⟨presentation, humanOutput, fold, state,
+  exact ⟨presentation, specOutput, fold, state,
     state.returnAlpha returnType⟩
 
 /-! ## Boundary examples -/
@@ -227,9 +300,9 @@ theorem matchApplicationTypeArguments_exact_return
 /-- Positive: the empty application fold produces the empty exact
 presentation and preserves its simulation state. -/
 theorem empty_application_fold_exact :
-    ∃ presentation humanOutput,
+    ∃ presentation specOutput,
       PresentationArgumentListMatchRel [] [] [] presentation ∧
-        TypePresentationSimulationState presentation humanOutput
+        TypePresentationSimulationState presentation specOutput
           Metta.Bindings.empty := by
   exact ⟨[], Bindings.empty,
     PresentationArgumentListMatchRel.nil [],
