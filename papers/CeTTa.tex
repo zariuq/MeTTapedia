@@ -2304,7 +2304,37 @@ and a parser is that syntax-GSLT's evaluator.  One authored
 the parser, and (through the Cost construction of
 Section~\ref{sec:rho-cost}) the resource semantics are all mechanically
 derived --- three semantic artifacts, one authority, no hand-maintained
-agreement obligations between them.  The formal side lives in the
+agreement obligations between them:
+
+\begin{center}
+\begin{tikzpicture}[
+  box/.style={draw, rounded corners, align=center, inner sep=4pt,
+    font=\small}]
+\node[box] (root) {authored \code{LanguageDef}\\
+  {\scriptsize grammar $+$ lexical classes $+$ projection profile}\\
+  {\scriptsize (the only artifact a human writes)}};
+\node[box, below left=8mm and 8mm of root] (parser)
+  {\textbf{parser}\\{\scriptsize the syntax-GSLT's evaluator}};
+\node[box, below=10mm of root] (eval)
+  {\textbf{evaluator}\\{\scriptsize the term-GSLT's stepper}};
+\node[box, below right=8mm and 8mm of root] (cost)
+  {\textbf{cost semantics}\\{\scriptsize the ledger on the same
+    transitions}};
+\draw[-{Stealth}] (root) -- (parser)
+  node[midway, above left, font=\scriptsize]{compile\;};
+\draw[-{Stealth}] (root) -- (eval);
+\draw[-{Stealth}] (root) -- (cost)
+  node[midway, above right, font=\scriptsize]{\;$\mathrm{Cost}(-)$};
+\node[below=2.5mm of eval, font=\scriptsize, align=center]
+  {pairwise agreement \emph{by theorem} --- never by hand-maintained
+   synchronization};
+\end{tikzpicture}
+\end{center}
+
+\noindent
+The compositional discipline is enforced starvation: no derived component
+has any information channel back to the language except the proved
+interfaces, so there is nothing left \emph{to} drift.  The formal side lives in the
 Mettapedia Lean development and is sorry- and axiom-clean across the
 roughly fifteen-thousand-line module family; the axiom reports below were
 re-checked against the kernel at the time of writing.  The pipeline, for
@@ -2339,7 +2369,33 @@ the Metamath instance:
 
 \noindent
 Parsing and checking remain separate judgments at every stage; the
-composition modules join them by theorem.
+composition modules join them by theorem.  Generically, the same chain
+reads as a sequence of seams, each crossed only inside a certificate:
+
+\begin{center}
+\begin{tikzpicture}[node distance=8mm,
+  st/.style={draw, rounded corners, inner sep=3pt, font=\small}]
+\node[st] (b) {bytes};
+\node[st, right=of b] (t) {tokens};
+\node[st, right=of t] (d) {derivation};
+\node[st, right=of d] (c) {checker run};
+\node[st, right=of c] (p) {provable};
+\draw[-{Stealth}] (b) -- (t)
+  node[midway, below, font=\scriptsize, align=center]{lexical\\ validity};
+\draw[-{Stealth}] (t) -- (d)
+  node[midway, below, font=\scriptsize, align=center]{checked DAG,\\
+    ordered ledger};
+\draw[-{Stealth}] (d) -- (c)
+  node[midway, below, font=\scriptsize, align=center]{typed replay,\\
+    nothing dropped};
+\draw[-{Stealth}] (c) -- (p)
+  node[midway, below, font=\scriptsize, align=center]{adequacy\\
+    \emph{theorem}};
+\node[below=9mm of d, font=\scriptsize, align=center]
+  {every seam a separate judgment with its own checkable certificate;\\
+   the final equivalence is a theorem, never a trust relationship};
+\end{tikzpicture}
+\end{center}
 
 \paragraph{The generic compiler and its two-sided correspondence.}  A
 generic, language-agnostic compiler turns the grammar fragment of any
@@ -2370,6 +2426,29 @@ proves them with \emph{no axioms at all}.  Parsing and checking remain
 separate judgments throughout: the composition joins them by theorem, and
 neither the parser nor its certificate is ever allowed to authorize a
 theorem.
+
+\begin{center}
+\begin{tikzpicture}[
+  box/.style={draw, rounded corners, align=center, inner sep=5pt,
+    font=\small}]
+\node[box] (socket) {\textbf{the \code{CheckedLanguage} socket}\\[2pt]
+  plug in:\; syntax-only root $S$ \;$\cdot$\; lexical relation $L$
+  \;$\cdot$\; lowering $\downarrow$ \;$\cdot$\; judgment $\vdash$\\[1pt]
+  prove exactly two laws:\; (1) the lowering is exact
+  \;\;(2) the checker is adequate};
+\node[box, below=6mm of socket] (crown)
+  {generic crowns, proved once, with no axioms:\\
+   pipeline accepts $\iff$ parser accepts $\wedge$ declarative $\vdash$};
+\draw[-{Stealth}] (socket) -- (crown)
+  node[midway, right, font=\scriptsize]
+  {\;derived once, reused by every plugged-in language};
+\end{tikzpicture}
+\end{center}
+
+\noindent
+The expensive theorem is proved once, about the socket; each further
+language pays only its own two laws.  That, rather than any property of
+Metamath itself, is why the Metamath instance below is a template.
 
 \paragraph{The Metamath vertical slice: a parser-to-provability crown.}
 The first full instance runs from raw Metamath bytes to formal
@@ -2416,6 +2495,41 @@ killed mutations across labels, disjoint-variable conditions, compressed
 proofs, declaration order, AST, lexer, and semantic references; and
 byte-identical regeneration of both generated Metamath artifacts from the
 Lean root.
+
+\paragraph{From parser-GSLT to checker-GSLT: source-owned inference.}
+Since the vertical slice above was sealed, the same authored root has
+grown a second semantic derivation: Metamath \emph{checking} itself as a
+source-owned GSLT.
+\href{https://github.com/zariuq/MeTTapedia/blob/main/lean/mettapedia/Mettapedia/Languages/Metamath/SourceGSLTOperations.lean}{\code{SourceGSLTOperations.lean}}
+is the single authored bridge from the source grammar to the streaming
+fold and indexed-checker operations: node contracts are \emph{computed}
+from the parameter sorts of the source productions, and lexical references
+resolve through the same literal tables that generate the parser.
+\href{https://github.com/zariuq/MeTTapedia/blob/main/lean/mettapedia/Mettapedia/Languages/Metamath/SourceGSLTState.lean}{\code{SourceGSLTState.lean}}
+gives those operations their scoped-state semantics (frames, scope
+closing, global object identities) with no reference to the
+\code{mm-lean4} runtime database, and
+\href{https://github.com/zariuq/MeTTapedia/blob/main/lean/mettapedia/Mettapedia/Languages/Metamath/SourceGSLTNormalTheorem.lean}{\code{SourceGSLTNormalTheorem.lean}}
+admits a normal-theorem transition only through an exact source-owned
+proof-occurrence tree over the pre-insertion database prefix ---
+independent of the \code{mm-lean4} execution function.  Operational and
+declarative adequacy
+(\code{SourceInferenceOperationalAdequacy},
+\href{https://github.com/zariuq/MeTTapedia/blob/main/lean/mettapedia/Mettapedia/Languages/Metamath/SourceInferenceDeclarativeAdequacy.lean}{\code{SourceInferenceDeclarativeAdequacy.lean}})
+connect this source-derived checker semantics to Metamath's declarative
+semantics with every database, frame, declaration, and disjointness
+premise derived from the same validated source prefix; the crown
+(\code{NormalTheoremStep.toSemanticProvable}) was re-verified for this
+section at kernel axioms exactly \code{propext}, \code{Classical.choice},
+\code{Quot.sound}, with the module family sorry-free.  Export modules
+(\code{SourceGSLTParserExport}, \code{SourceGSLTOperationsMeTTaExport})
+regenerate both engine-facing artifacts from the root, and a native
+inference-staging consumer (\code{lib\_parse\_inference\_native}, with its
+benchmark harness) carries the operations export into the engine.  The
+Metamath instance is thereby the template the programme intends to
+replicate: \emph{one} authored root from which the parser, the checker
+operations, and their adequacy theorems are all derived, ready to be
+instantiated across a curriculum of further language definitions.
 
 \paragraph{Second consumers and the engine loop.}  Megalodon has an honest
 second-consumer skeleton that reuses the generic signatures and crown ---

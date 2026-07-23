@@ -25,6 +25,7 @@
   columns=fullflexible
 }
 \newcommand{\leanfile}[2]{\href{https://github.com/zariuq/MeTTapedia/blob/main/lean/mettapedia/Mettapedia/#1}{\code{#2}}}
+\newcommand{\cettafile}[2]{\href{https://github.com/zariuq/CeTTa/blob/main/#1}{\code{#2}}}
 
 \newcommand{\code}[1]{\texttt{#1}}
 \newcommand{\formalized}{\textbf{[formalized]}}
@@ -71,7 +72,10 @@ both the cost grammar and whole-object binder scope, including purse
 locations.  On that admitted fragment, the budgeted Lean executor refines a
 declarative funded trace and erases to a path of the pure-rho GSLT
 mechanically derived from the authored language definition, with exactly one
-COMM step per funded event.  Claims are marked as formalized or open;
+COMM step per funded event.  The CeTTa runtime realization of the funded
+semantics --- located purses, causal receipts, honest budgets, and
+occurrence-claiming parallel waves --- is presented with runnable,
+regression-tested showcases.  Claims are marked as formalized or open;
 nothing here is asserted beyond its marker.
 \end{abstract}
 
@@ -110,7 +114,18 @@ the runtime cost profile import none of them.  Full equivalence between the
 complete derived contextual relation and the independently established
 relation is a separate theorem obligation, not assumed here.
 
+Rho, for us, is not a formalization exercise.  It is a system with three
+living parts --- a running concurrent engine, a mathematical theory with
+corrected hypotheses, and a machine-checked formalization tying the two
+together --- and the paper is ordered accordingly: the calculus
+(Section~\ref{sec:pure}) and the engine running it
+(Section~\ref{sec:engine}) come first, so that the mathematics of funding
+(Section~\ref{sec:cost} onward) and the formal agreement theorems
+(Sections~\ref{sec:authored}--\ref{sec:scoped-refinement}) arrive after
+the phenomena they explain.
+
 \section{The pure calculus}
+\label{sec:pure}
 
 \paragraph{Syntax.} Processes $P$ and names $x$ are mutually defined:
 \[
@@ -183,6 +198,145 @@ honestly. Nothing about expressivity forces an execution primitive into
 the calculus; adding one changes the step relation, the stuck states,
 and every cost ledger, in exchange for saving a single COMM.
 
+\section{The running engine: funded rho in CeTTa}
+\label{sec:engine}
+
+So much for the rules on paper --- now press enter.  Rho is not a
+formalization exercise: it is a running concurrent engine, and this
+section shows it running before any more theory is stated.  The CeTTa
+runtime (\cettafile{src/rhocalc_core.c}{src/rhocalc\_core.c}) implements
+exactly the calculus of Section~\ref{sec:pure} under
+\code{--lang rhocalc} --- six constructors, \textsc{comm} the only
+reduction, the free drop honestly inert --- and, under
+\code{--profile cost}, a funded semantics whose mathematical laws are
+the subject of Section~\ref{sec:cost} onward.  The showcase programs
+below ship with the engine in \cettafile{examples/rho}{examples/rho/}
+and run as regression tests; every output shown is the engine's actual
+output.
+
+\subsection{A vending machine that cannot be talked into anything}
+
+Watch a funded reaction refuse to fire.  In the surface syntax,
+\code{\{P\}s} is a process signed by \code{s}, and
+\code{purse c \{s : ()\}} is a store on channel \code{c} holding one
+token signed \code{s}.  A sale is a handshake between a machine receive
+and a customer send, and the rule is \emph{located}: the sale consumes
+one token per endpoint signature, drawn only from purses sitting on the
+\code{vend} channel itself.  No ambient bank account exists anywhere.
+
+\begin{lstlisting}
+{for ($order <- vend) {{0}served}}machine
+| {for ($order <- vend) {{0}served}}machine
+| {vend!({0}coin)}alice
+| {vend!({0}coin)}bob
+| purse vend {machine : machine : ()}
+| purse vend {alice : ()}
+\end{lstlisting}
+
+\noindent
+The till holds two \code{machine} tokens; alice has a coin in the
+channel purse; bob has none.  Run it:
+
+\begin{lstlisting}
+purse vend {()} | purse vend {machine : ()} | {0}served
+| {for ($order <- vend) {{0}served}}machine | {vend!({0}coin)}bob
+\end{lstlisting}
+
+\noindent
+Now look at what the machine did \emph{not} do.  Bob's order and a
+willing machine endpoint stand facing each other, forever.  The reaction
+is enabled in the pure calculus; in the cost profile it is not slowed,
+not queued, not retried --- it is \emph{disabled}, because bob's share of
+the demand has no cover.  That is the first thing to internalize about
+funded rho: cost is not a meter bolted onto the side of an evaluator.
+An unfunded reaction cannot fire, in the same way an ill-typed program
+cannot compile.  And because names are quoted processes, a purse's
+location follows name equivalence, not spelling: a purse on
+\code{@\{*pay\}} funds reactions on \code{pay} --- aliases of a channel
+are the same account.
+
+\subsection{Receipts: the run tells you its own causal history}
+
+What does a run return?  Not a number.  Here is a three-stage supply
+chain --- farm ships, roaster roasts, caf\'e brews --- on one channel
+with one purse holding one token per stage, run through the accounted
+trace surface (\cettafile{lib/lts/rho/cost.metta}{lts:rho:cost}):
+
+\begin{lstlisting}
+(lts:rho:cost:receipt
+  ((lts:rho:cost:event 0 ()    ((lts:rho:cost:funding market farm))    farm)
+   (lts:rho:cost:event 1 (0 0) ((lts:rho:cost:funding market roaster)) roaster)
+   (lts:rho:cost:event 2 (1 1) ((lts:rho:cost:funding market cafe))    cafe))
+  (rho:cost:par (rho:cost:purse market rho:cost:stack-empty)
+                (rho:cost:signed rho:nil espresso)))
+\end{lstlisting}
+
+\noindent
+Each event carries a fresh identifier, a \emph{cause list}, one funding
+record per token spent, and the consumed signature.  Read event 1's
+cause list: \code{(0 0)} --- zero, twice.  Why twice?  Because event 1
+consumed two distinct occurrences that event 0 produced --- the
+roaster's continuation \emph{and} the purse tail left after the farm's
+spend --- and the receipt keeps one arc per consumed occurrence,
+repetitions included.  Two independent settlements on separate channels
+get empty cause lists even though one event number is emitted first:
+emission order is bookkeeping, causality is consumption.  A receipt is a
+located, measured pomset of spend events; the printed sequence is one
+linearization of it.  And deliberately, nowhere in it is ``the cost'':
+totals, prices, and critical-path depths are monoid homomorphisms
+computed \emph{from} the receipt afterward, in exactly the
+authority-then-observation order that Section~\ref{sec:cost} below makes
+into a theorem.
+
+\subsection{Budgets that never lie}
+
+The exhaustive surfaces never truncate silently --- and that is a
+promise with teeth, because funding search is genuine exact cover: a
+demand of ten unit coins over twenty unit purses admits
+$\binom{20}{10} = 184{,}756$ distinct covers, and the unlimited frontier
+will enumerate every one if asked.  Bounded execution is strictly
+opt-in, takes \emph{two} separate allowances --- reaction fuel and
+cover-search work --- and returns a status that never lies:
+\code{quiescent} only after exhaustive search \emph{proves} no funded
+successor exists; \code{fuel-exhausted} when the firing allowance ends
+first (at fuel zero the machine does not even search);
+\code{search-exhausted} when cover search stops while further search
+remains semantically relevant.  An out-of-fuel machine says ``I ran
+out.''  It never says ``there was nothing there.''  The three verdicts,
+and a two-cover spend showing why search deserves its own meter, are
+runnable in
+\cettafile{examples/rho/cost/budget_meter.metta}{budget\_meter.metta}.
+
+\subsection{Parallel waves, and receipts as a free observer}
+
+With \code{--num-threads N}, compatible firings execute in OS-thread
+waves.  Before a worker fires, it atomically claims the \emph{exact
+occurrences} its plan touches --- both endpoints and every funding token
+--- in a fixed sorted order; a wave admits only pairwise-disjoint
+claims, and each committed wave is re-validated against occurrence
+accounting.  The sequential semantics stays the reference: a threaded
+run is a legal parallel refinement, not a new relation, and because
+residuals are kept canonical, the eight-settlement showcase
+(\cettafile{examples/rho/cost/parallel_settlement.mrho}{parallel\_settlement.mrho})
+produces byte-identical output sequentially and at every tested thread
+count.  Receipts are an \emph{optional observer} on this path: a
+state-only run and a receipt-observed run consume identical resources
+and reach the same residual, checked by a scripted transparency gate.
+
+\subsection{How much of this is proved?}
+
+The engine and the formalization meet at a differential boundary, and we
+keep its status exact.  On the Lean side, the budgeted executor's runs
+refine declarative funded traces and erase to derived pure-GSLT paths
+(Section~\ref{sec:scoped-refinement} below), with the axiom-audited
+theorems of this paper.  Across the boundary: 146 sequential/threaded prefix
+cases agree; 308 compiled-C receipts replay as Lean derivations while
+tampered receipts are rejected; the full runtime suite passes under
+thread and address/undefined-behaviour sanitizers; and a commit-audit
+build re-derives every committed parallel firing inside the wave commit.
+This is bounded adversarial evidence about the compiled engine ---
+deliberately never presented as a universal theorem about C.
+
 \section{Extensions as named deltas}
 \label{sec:ext}
 
@@ -224,10 +378,9 @@ delta turns ``the paper and the code disagree'' from folklore into data.
 The cost construction wraps terms and gates reduction by funding: a
 wrapped redex fires only when the wrapper supplies a token drawn from a
 commutative monoid $(S, *, e)$ of \emph{signatures}, and each reduction
-consumes its funding and emits a receipt. Runtime aspects --- receipts,
-budgets, parallel execution --- are treated in the companion engine
-paper; here we state the mathematical hypotheses, two of which require
-correction.
+consumes its funding and emits a receipt. The running engine of
+Section~\ref{sec:engine} realizes this semantics; here we state the
+mathematical hypotheses, two of which require correction.
 
 \subsection{The quote-faithfulness obstruction}
 
@@ -305,7 +458,22 @@ be composed with one beginning at a different resource state; invalid funding
 composition is therefore untypeable.  Empty execution supplies
 $\operatorname{pure}$, path concatenation supplies bind, and the two unit laws
 and associativity are proved from the corresponding path laws.
-\formalized{}
+\formalized
+
+To feel what the index buys, watch a purse with two coins.  Run $A$
+spends one: its type is $T(2,1,\_)$.  Run $B$ spends one more:
+$T(1,0,\_)$.  They compose, and the composite says $T(2,0,\_)$ --- two
+coins in, none out.  Now try to follow $A$ with a run that spends
+\emph{two} coins.  That run's type begins at $2$; but after $A$ the world
+is at $1$, and bind demands the middle indices meet.  There is no term to
+write.  The overdraft is not caught at run time --- it is
+\emph{unsayable}, the way ``three meters plus four seconds'' is unsayable
+in dimensional analysis.  And the unit is honest for the same reason:
+$\operatorname{pure}$ has type $T(i,i,X)$, an execution that provably
+spends nothing, where the withdrawn argument needed a unit token
+available for free.  What the impossibility theorem says a single
+flattened object must forget, the pair of indices simply refuses to
+forget.{}
 
 This is an Atkey-style parameterized monad~\cite{atkey}.  It is also the
 pre/post-state specialization of the broader graded and parametric-effect
@@ -349,10 +517,23 @@ The corrected hypotheses of Section~\ref{sec:cost} are stated for one
 calculus.  The deeper architectural claim --- Meredith's ``wrapping by
 construction'' --- is that Cost is a \emph{construction on languages}: it
 should consume a language equipped with one interaction and return another
-such language, so that wrapping composes.  Making that precise forced a
-new compositional object, and we consider the result one of the genuinely
-novel architectures of this development.  This section states it exactly
-as formalized.  The staging is a strict tower --- each stage adds one kind
+such language, so that wrapping composes.
+
+Here is the question in plain terms.  You wrapped rho once and got a new
+language: new constructors (signed terms, purses, token stacks), new
+equations, exactly one new rule.  Can you wrap \emph{that}?  If Cost is a
+real construction and not a one-off trick, the answer must be yes ---
+mechanically, with no human editing the generated language first.  But
+``wrap it again'' only makes sense if the generated language arrives
+carrying the same \emph{kind} of equipment the original did: which
+constructor is the handshake, where the continuations sit, how to
+canonicalize.  So the right object is not a language; it is a language
+\emph{with sockets} --- and Cost is the factory that consumes a socketed
+language and manufactures another socketed language, sockets included.
+Making that precise forced a new compositional object, and we consider
+the result one of the genuinely novel architectures of this development.
+This section states it exactly as formalized.  The staging is a strict
+tower --- each stage adds one kind
 of structure and forgets none:
 
 \begin{center}
@@ -529,11 +710,75 @@ proof-relevant rewriting over generated languages.
 \paragraph{The refutation.} The earlier normalization laws demanded a
 global \emph{raw fiber stability}: that every raw equation-equivalence
 between patterns in a typed fiber restricts to that fiber.  For the rho
-instance this is \emph{false}, and the falsity is witnessed by a
-compiled counterexample: a mixed-colour reflective generator whose left
-endpoint is typed while its canonical right endpoint is ill-typed.
-\refuted{} A raw equivalence endpoint is simply too weak a datum: raw
-syntax cannot remember the binder slice that typing carries.
+instance this is \emph{false}, and the witness is compact enough to show
+in full
+(\leanfile{Languages/ProcessCalculi/RhoCalculus/CostCanonicalLaws.lean}{CostCanonicalLaws.lean},
+theorem \code{rho\_costOpenEquationFiberStable\_not}; both endpoint
+typing verdicts are kernel-decided).  The generated Cost language has two
+\emph{colours} of every rho constructor --- a base copy and a wrapped
+copy --- but the raw \emph{parallel collection} representation is
+deliberately shared between them, while the two process sorts and their
+unit constructors are distinct.  Now take the mixed-colour term
+\[
+  \mathsf{PDrop}_{\mathrm{w}}\bigl(\,
+    \mathsf{NQuote}_{\mathrm{b}}(\;\{\!|\,|\!\}\;)\,\bigr)
+  \qquad\text{--- a \emph{wrapped} drop of a \emph{base} quotation of the
+  empty parallel.}
+\]
+This term is well-typed at the wrapped sort: the empty bag is a valid
+(base) parallel body, so the base quotation is a valid name.  The
+\emph{wrapped} reflective canonicalizer, however, normalizes the empty
+parallel to \emph{its own} colour's unit, producing
+\[
+  \mathsf{PDrop}_{\mathrm{w}}\bigl(\,
+    \mathsf{NQuote}_{\mathrm{b}}(\,\mathsf{PZero}_{\mathrm{w}}\,)\,\bigr)
+  \qquad\text{--- a \emph{wrapped} zero inside a \emph{base}
+  quotation.}
+\]
+The base quote constructor demands a base-sorted process argument, so the
+canonical endpoint is ill-typed --- yet the two terms are related by a
+single authored reflective generator step at the hole context, so the raw
+equational relation connects a typed term to an untypeable one
+(Figure~\ref{fig:mixedcolour}). \refuted{} A raw equivalence endpoint is
+simply too weak a datum: the empty bag does not remember \emph{which
+colour's} unit it is the degenerate case of, exactly as raw syntax cannot
+remember the binder slice that typing carries.
+
+\begin{figure}[h]\centering
+\begin{tikzpicture}[>={Stealth[length=2mm]}, line width=0.9pt,
+  node distance=2.5mm and 4mm,
+  bs/.style={rounded corners,draw,fill=blue!10,inner sep=3pt,
+    font=\scriptsize\ttfamily,align=center},
+  ws/.style={rounded corners,draw,fill=red!10,inner sep=3pt,
+    font=\scriptsize\ttfamily,align=center},
+  sh/.style={rounded corners,draw,fill=black!8,inner sep=3pt,
+    font=\scriptsize\ttfamily,align=center}]
+\node[ws] (d1) {PDrop\textsubscript{w}};
+\node[bs, below=of d1] (q1) {NQuote\textsubscript{b}};
+\node[sh, below=of q1] (p1) {\{|\,|\}};
+\draw (d1) -- (q1); \draw (q1) -- (p1);
+\node[font=\scriptsize, below=1.5mm of p1, align=center]
+  {well-typed\\at wrapped sort};
+\node[ws, right=34mm of d1] (d2) {PDrop\textsubscript{w}};
+\node[bs, below=of d2] (q2) {NQuote\textsubscript{b}};
+\node[ws, below=of q2, thick, draw=red!60!black] (p2)
+  {PZero\textsubscript{w}};
+\draw (d2) -- (q2); \draw (q2) -- (p2);
+\node[font=\scriptsize, below=1.5mm of p2, align=center]
+  {ill-typed: base quote\\cannot host a wrapped process};
+\draw[->, dashed] ([xshift=2mm]d1.east) --
+  node[above, font=\scriptsize, align=center]
+  {wrapped canonicalizer:\\ $\{|\,|\}\mapsto\mathsf{PZero}_{\mathrm{w}}$}
+  ([xshift=-2mm]d2.west);
+\end{tikzpicture}
+\caption{The compiled fiber-stability counterexample.  Blue boxes are
+base-colour constructors, red are wrapped-colour, gray is the
+colour-shared raw parallel collection.  One authored reflective generator
+step relates the two terms, and the right endpoint is untypeable: the
+wrapped canonicalizer collapsed the shared empty parallel to its own
+colour's unit inside a base quotation.}
+\label{fig:mixedcolour}
+\end{figure}
 
 \paragraph{The repair: typed equation carriers.} The equational theory
 is now carried at the typed level.  Open patterns in a declaration-derived
@@ -600,19 +845,37 @@ is now largely discharged:
   Section~\ref{sec:continued}. \formalized
 \end{itemize}
 
-The remaining obligations --- sorted base and wrapped images of the
-generated equations, sortedness of the twice-retyped redex and
+Every remaining object obligation --- sorted base and wrapped images of
+the generated equations, sortedness of the twice-retyped redex and
 contractum, reflective-presentation survival, canonical preservation of
 the next non-principal fragment, and the contextual strengthening of the
-typed canonical section --- are active work; each has an identified
-proof route through the theorems above, and none requires new global
-hypotheses.  \open{} Two structural facts already shape the endgame:
-closure lands on the exact full subcategory (the laws of
-Section~\ref{sec:typednorm} must themselves be closed), and the uniform
-shortcut is provably unavailable --- the twice-retyped redex cannot be
-transported by any single signature morphism, because the declared
-cut-aware principal copies disagree with the uniform image at exactly
-the two continuation parameters.
+typed canonical section --- has since been discharged: one application
+of Cost is now a fully constructed continued object, every field either
+derived from the generated declaration or supplied by an explicit
+object law. \formalized
+
+What remains open is subtler: closure of the exact \emph{laws}
+themselves.  A recorded cross-colour counterexample shows that the
+compact exact carrier is not preserved as currently generated: at the
+second layer, the wrapped colour's sort action moves only the
+interacting sort, so the two colour-owned parallel units become typed
+in \emph{one} shared fiber, where the colour-blind collapse of the
+shared empty parallel relates both to one term --- one typed equation
+class then contains two colour-distinct normal forms, and no
+colour-local normalizer can be invariant on it.  (The first layer
+escapes precisely because its two units are sort-separated --- the same
+mechanism as the counterexample of Section~\ref{sec:typednorm}.)  The
+repair is a genuine fork, currently under decision: either the
+proof-relevant elaborated relation becomes the endofunctor's primary
+carrier, with compact exactness a property of faithful objects only, or
+the wrapped colour's sort action is made hereditarily injective on
+\emph{all} sorts, restoring colour-disjoint fibers at every layer.
+\open{} Two structural facts shape the endgame either way: closure
+lands on the exact full subcategory, and the uniform shortcut is
+provably unavailable --- the twice-retyped redex cannot be transported
+by any single signature morphism, because the declared cut-aware
+principal copies disagree with the uniform image at exactly the two
+continuation parameters.
 
 \section{Canonical forms and the computable section}
 \label{sec:canon}
@@ -661,6 +924,7 @@ the Cost-side section is part of the open endofunctor obligations of
 Section~\ref{sec:endofunctor}.
 
 \section{One authored presentation and semantic agreement}
+\label{sec:authored}
 
 The pure syntax, equations, reflective constructors, and COMM rule are authored
 once in the rho language definition.  The derived well-sorted judgments supply
@@ -751,37 +1015,54 @@ comparison history.
 \toprule
 Item & Section & Status \\
 \midrule
-COMM-only concrete one-step relation & \S2 & formalized \\
-Free drop inert in pure rho (negative theorem) & \S2, \S4 & formalized \\
-Runner idiom (one-COMM execution) & \S3 & stated; example-level \\
-Execution delta with positive/negative theorems & \S4 & formalized \\
-Fixed-element cancellation boundary & \S5(a) & formalized \\
-$\mu$ joint-injectivity impossibility & \S5(b) & formalized \\
-Parameterized monad laws on funded execution & \S5 & formalized \\
-Exact receipt / lossy aggregate factorization & \S5 & formalized \\
-Continued category (objects, morphisms, ordered keys) & \S6 & formalized \\
-Generated funded language: whole-redex rule, positive shape & \S6 &
+COMM-only concrete one-step relation & \S\ref{sec:pure} & formalized \\
+Free drop inert in pure rho (negative theorem) &
+  \S\ref{sec:pure}, \S\ref{sec:ext} & formalized \\
+Runner idiom (one-COMM execution) & \S\ref{sec:runner} &
+  stated; example-level \\
+Engine: located funding, receipts, budgets, waves & \S\ref{sec:engine} &
+  implemented; gates green \\
+Engine/Lean boundary: prefix agreement, receipt replay &
+  \S\ref{sec:engine} & differential evidence \\
+Execution delta with positive/negative theorems & \S\ref{sec:ext} &
   formalized \\
-Generic typed transport over (theory, cut, plan) & \S6 & formalized \\
-Raw fiber stability for rho & \S7 & counterexample recorded \\
-Typed equation carriers; edge-wise raw-to-typed lifting & \S7 & formalized \\
-Proof-relevant elaboration; typed normalization soundness & \S7 &
+Fixed-element cancellation boundary & \S\ref{sec:cost}(a) & formalized \\
+$\mu$ joint-injectivity impossibility & \S\ref{sec:cost}(b) & formalized \\
+Parameterized monad laws on funded execution & \S\ref{sec:cost} &
   formalized \\
-Exact canonical laws; \code{CostOneObjects} subcategory & \S7 & formalized \\
-Endofunctor closure: bare-collection, envelope, closure typing & \S8 &
+Exact receipt / lossy aggregate factorization & \S\ref{sec:cost} &
   formalized \\
-Endofunctor closure: remaining object laws & \S8 & open \\
-Computable pure canonical form + section & \S9 & formalized \\
-Authored COMM compiler agreement with established semantics & \S10 &
+Continued category (objects, morphisms, ordered keys) &
+  \S\ref{sec:continued} & formalized \\
+Generated funded language: whole-redex rule, positive shape &
+  \S\ref{sec:continued} & formalized \\
+Generic typed transport over (theory, cut, plan) & \S\ref{sec:continued} &
   formalized \\
-Binder-safe initialization and preservation & \S11 & formalized \\
-Funded-step erasure to the LanguageDef-derived pure GSLT & \S11 &
+Raw fiber stability for rho & \S\ref{sec:typednorm} &
+  counterexample recorded \\
+Typed equation carriers; edge-wise raw-to-typed lifting &
+  \S\ref{sec:typednorm} & formalized \\
+Proof-relevant elaboration; typed normalization soundness &
+  \S\ref{sec:typednorm} & formalized \\
+Exact canonical laws; \code{CostOneObjects} subcategory &
+  \S\ref{sec:typednorm} & formalized \\
+Endofunctor: one Cost application as a continued object &
+  \S\ref{sec:endofunctor} & formalized \\
+Endofunctor: closure of the exact laws themselves &
+  \S\ref{sec:endofunctor} & open; cross-colour counterexample recorded \\
+Computable pure canonical form + section & \S\ref{sec:canon} &
   formalized \\
-Runtime and declarative paths to derived pure paths, exact length & \S11 &
-  formalized \\
-Occurrence-disjoint modeled runtime waves to fixed cost matchings & \S11 &
-  formalized \\
-Pure/extended and cost-profile execution boundary & \S4 &
+Authored COMM compiler agreement with established semantics &
+  \S\ref{sec:authored} & formalized \\
+Binder-safe initialization and preservation &
+  \S\ref{sec:scoped-refinement} & formalized \\
+Funded-step erasure to the LanguageDef-derived pure GSLT &
+  \S\ref{sec:scoped-refinement} & formalized \\
+Runtime and declarative paths to derived pure paths, exact length &
+  \S\ref{sec:scoped-refinement} & formalized \\
+Occurrence-disjoint modeled runtime waves to fixed cost matchings &
+  \S\ref{sec:scoped-refinement} & formalized \\
+Pure/extended and cost-profile execution boundary & \S\ref{sec:ext} &
   Lean theorems; C differential gate \\
 \bottomrule
 \end{tabularx}
