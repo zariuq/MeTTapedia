@@ -20,6 +20,7 @@
 \usepackage{amsthm}
 \usepackage{float}
 \usepackage{array}
+\usepackage{graphicx}
 \usepackage{needspace}
 \usepackage{newunicodechar}
 \setlength{\emergencystretch}{3em}
@@ -39,6 +40,9 @@
 \newcommand{\leanname}[1]{{\scriptsize\ttfamily
   \def\_{\textunderscore\allowbreak}#1}}
 \newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\formalcommit}{84ec10fdac3c576b725133a70b6e41f45d1874f4}
+\newcommand{\leansource}[3]{%
+  \href{https://github.com/zariuq/MeTTapedia/blob/\formalcommit/#1\#L#2}{\leanname{#3}}}
 
 \title{When Does a Neural Architecture\\ Earn Its Cost?}
 \author{Oru\v{z}i \and Zarathustra Goertzel}
@@ -72,8 +76,19 @@ optimal consolidation at that deadline, refuting the interior optimum a posited 
 had suggested. We are
 explicit throughout about which results are theorems about a declared model and which
 quantities remain empirical; a closing section states what is assumed rather than proved,
-and what would discharge it.
+and what would discharge it. The axes are then assembled, without identifying them, in a
+\emph{unified carrier}: recurrent control, typed workspace contents, belief metadata and
+routed operators inhabit one product state whose workspace endpoint and strict
+non-workspace witnesses are both machine-checked.
 \end{abstract}
+
+\paragraph{Open artifacts.}
+The \href{https://github.com/zariuq/MeTTapedia}{formal repository},
+\href{https://github.com/zariuq/MeTTapedia/blob/main/papers/neural_networks.tex}{paper
+source}, and
+\href{https://github.com/zariuq/MeTTapedia/blob/main/papers/neural_networks.pdf}{compiled
+PDF} are public. The source links below are immutable permalinks to commit
+\code{\formalcommit}.
 
 \section{Introduction}
 \label{sec:intro}
@@ -98,6 +113,10 @@ fusion---is a category error. These are independent axes that compose. A system 
 separately: how accumulated belief is represented, where state lives and how it is
 addressed, how a coupled constraint is solved at inference time, and how parameters are
 updated. Asking which axis ``wins'' has no answer; asking when each earns its cost does.
+No processor designer asks whether registers beat RAM, or whether the cache-coherence
+protocol beats the arithmetic unit; each component answers a different question, and the
+architecture is the discipline of their composition. The results below are the analogous
+discipline for learned machines: not a tournament, but a datasheet of conditions.
 
 \section{Four axes, not four contestants}
 \label{sec:axes}
@@ -110,7 +129,7 @@ We fix the decomposition used throughout:
 axis & the decision \\
 \midrule
 belief coordinates & point estimate, natural coordinates, or a mixture \\
-state carrier & one recurrent vector, typed slots, or a routed workspace \\
+state carrier & recurrent control, typed slots, routed operators, or their product \\
 inference solver & direct evaluation, or an iterative relaxation to equilibrium \\
 plasticity rule & backpropagation, or a local energy-based update \\
 \bottomrule
@@ -212,6 +231,7 @@ the state carriers, the action scorer---and what varies across the axis is only 
 \emph{write}:
 
 \begin{center}
+\resizebox{\textwidth}{!}{%
 \begin{tabular}{@{}llll@{}}
 \toprule
 mechanism & transformer & CAROM & this work \\
@@ -225,6 +245,7 @@ recurrence & weight-tied loop & $T$ recurrent updates & settling, interior-optim
 no-weight adaptation & in-context learning & workspace contents & evidence registers, exact \\
 \bottomrule
 \end{tabular}
+}
 \end{center}
 
 The last column's entries are not analogies but theorems: routing stays in the
@@ -233,6 +254,124 @@ coordinates, the recurrence depth has a proved interior optimum, and the evidenc
 registers are an exact instance of the fast-state model of
 \S\ref{sec:twotimescale}---the one member of the test-time-adaptation family whose
 calibration is provable rather than empirical.
+
+\section{The unified carrier: one machine, not four rivals}
+\label{sec:unified}
+
+The axis decomposition is not an instruction to keep four separate decoders forever.
+Ask what each component actually is, in the vocabulary of a machine. The recurrent
+vector is a control register: cheap, sequential, decisive. The typed workspace is
+addressed memory: contents at fixed, elaborator-owned locations. The belief registers
+are the memory's \emph{metadata}: how much evidence stands behind each cell, and
+therefore how fast it should be overwritten --- the role error-correction bits and
+replacement policies play in hardware. The routed operators are a small shared
+arithmetic unit. A hardware designer would never run a tournament among these; the
+interesting object is the machine that has all of them, each doing its own job. The
+unified carrier places them in one product state.
+
+For each typed slot $i$, let
+\[
+ (w_i,n_i^+,n_i^-,u_i^+,u_i^-,t_i)
+\]
+denote content, posterior evidence, episode-local innovations and an
+elaborator-owned type signature. A compact recurrent state $h$ carries chronology.
+Writing the featurewise precision vector
+$\Lambda_i=n_i^++n_i^-$ and denoting its feature mean by an overbar, the
+derived retention vector and scalar content gain are
+\[
+ r_i=\frac{1}{1+\sigma_{\rm jump}^{2}\Lambda_i},
+ \qquad
+ \gamma_i=\frac{\bar\Lambda_i^{\rm fresh}}
+ {\overline{r_i\odot\Lambda_i}+\bar\Lambda_i^{\rm fresh}}.
+\]
+Operator $k$ proposes a candidate $c_{ki}$, learned gate $g_{ki}$ and nonnegative fresh
+evidence packet. One settle step is
+\[
+\begin{aligned}
+n_i^\pm&\leftarrow r_i n_i^\pm+\mathrm{fresh}_i^\pm,&
+u_i^\pm&\leftarrow u_i^\pm+\mathrm{fresh}_i^\pm,\\
+w_i&\leftarrow w_i+
+\frac{1}{K}\sum_k\gamma_i g_{ki}(c_{ki}-w_i),&
+h&\leftarrow\operatorname{GRU}(x_{\rm carrier},h).
+\end{aligned}
+\]
+Thus the learned workspace gate chooses \emph{what} to write while the precision ratio
+prices how much the current evidence licenses it. When old precision is zero and fresh
+precision is positive, $\gamma_i=1$ and the content update is exactly the workspace
+write
+(\leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/UnifiedCarrier/Core.lean}{114-L131}{contentStep\_zeroOld\_eq\_workspace}).
+When both are zero, the implementation-defined gain is zero; this boundary prevents a
+division-by-zero ``workspace collapse'' from being asserted without evidence.
+
+\paragraph{Precision-routed reads.}
+For operator $k$, slot $j$ receives
+\[
+ \ell_{kj}=\frac{\langle q_k,k_j\rangle}{\sqrt d}
+           +\beta_k\log(1+\bar\Lambda_j),
+ \qquad \beta_k=b_k^2\geq0 .
+\]
+The exact identity
+\[
+ e^{\ell_{kj}}
+ =e^{\langle q_k,k_j\rangle/\sqrt d}(1+\bar\Lambda_j)^{\beta_k}
+\]
+is proved in
+\leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/UnifiedCarrier/Core.lean}{234-L257}{exp\_precisionBiasedLogit};
+positive $\beta_k$ makes pairwise odds strictly increase with precision, while
+$\beta_k=0$ recovers the workspace read. This is an algebraic reliability bias. It is
+not called a posterior-predictive distribution without separately declaring a
+probabilistic model.
+
+\paragraph{Persistent evidence without double counting.}
+A fresh hole may initialize its evidence from a persistent table keyed by the injective
+tuple (role, parent operator, argument). At an episode boundary the table decays once and
+adds only the innovations $u^\pm$ produced during that episode. Reabsorbing the posterior
+$n^\pm$ would import the prior a second time; the development proves that error on a
+concrete fixture
+(\leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/UnifiedCarrier/Core.lean}{226-L231}{posterior\_reabsorption\_doubleCounts\_fixture}).
+Batch absorption is intentionally outside the causal interface because episode order
+changes the decay. The persistent feature is disabled by default until an experiment
+declares how episodes are ordered.
+
+\paragraph{Refinement is exact and nontrivial.}
+Under an explicit mode, parameter relation and state projection, the unified carrier
+simulates the typed workspace for every finite policy trajectory
+(\leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/UnifiedCarrier/StateCarrier.lean}{246-L278}{workspaceEndpoint\_policyTrajectories\_eq}).
+This is not validation by definition: positive old precision separates the full carrier
+from that endpoint
+(\leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/UnifiedCarrier/StateCarrier.lean}{283-L292}{positivePrecision\_fullCarrier\_separates\_workspace}),
+and two equal workspace/evidence snapshots with different recurrent histories can produce
+different policies
+(\leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/UnifiedCarrier/StateCarrier.lean}{295-L303}{recurrentHistory\_fullPolicy\_separates}).
+The common masked source policy remains supported exactly at legal operators, with an
+illegal-operator fixture
+(\leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/UnifiedCarrier/StateCarrier.lean}{332-L339}{illegalOperator\_stays\_absent\_after\_unifiedStep}).
+The carrier may reorder legal actions; it cannot widen the language.
+
+\paragraph{When does the metadata plane earn its cost?}
+In the scalar linear-Gaussian jump model, the exact one-revision risk reduction is
+$R^2/(P+Q+R)$ and decreases strictly with jump variance. Including a one-time activation
+cost and recurring metadata cost yields a decidable revision-count threshold
+(\leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/UnifiedCarrier/RetentionEconomics.lean}{124-L143}{retentionNetAdvantage\_pos\_iff\_revisionThreshold}).
+The same file proves a low-drift positive fixture and a high-drift negative fixture.
+This says what the architecture experiment must measure---revision count, drift and work
+in common cost units---rather than predicting that persistent belief will win.
+
+\paragraph{Executable boundary.}
+The exact-real transition has a recorded addressed-packet witness whose child order,
+type indices, binary32 words and nonzero fresh packet are checked together
+(\leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/UnifiedCarrier/AddressedPacketFixture.lean}{119-L141}{productionInvocation\_certificate}).
+A separate decision-site fixture decodes real binary32 weights and observations and
+proves all coordinate errors within their budgets
+(\leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/UnifiedCarrier/DecisionSiteFloat32Fixture.lean}{263-L291}{certificateBatch\_total\_error\_is\_bounded}).
+These are authenticated pointwise witnesses, not a claim that every tensor operation in
+a training run has been reconstructed in the kernel.
+
+The unified carrier is therefore an architecture specification and a verified refinement,
+not an efficacy result. Its decisive experiments remain single-variable: recurrent
+control on/off; precision-read bias on/off; Bayes gate versus unit gain; persistent prior
+on/off; and the carrier crossed with a mechanism-distinct credit rule. All share the
+unchanged typed-action waist and external checker.
 
 \section{The plasticity axis: what of predictive coding is a backprop trick}
 \label{sec:plasticity}
@@ -404,8 +543,10 @@ underperformed its own best member. Each is now a theorem about the draw model r
 than an anecdote.
 
 Expected \emph{distinct} coverage under $n$ independent draws is
-$\sum_t (1-(1-p_t)^n)$ (\leanname{iidExpectedDistinctCoverage\_eq\_sum\_one\_sub\_pow}),
-and the duplicate burden is exactly expected hits minus expected distinct coverage
+$\sum_t (1-(1-p_t)^n)$.
+The exact identity is
+\leanname{iidExpectedDistinctCoverage\_eq\_sum\_one\_sub\_pow}; the duplicate burden is
+exactly expected hits minus expected distinct coverage
 (\leanname{iidExpectedDuplicateBurden\_eq\_hits\_sub\_distinct}); the two-draw collision
 probability is the prior's collision mass
 (\leanname{twoDrawCollisionProbability\_eq\_collisionMass}), which is what a
@@ -517,10 +658,13 @@ its honest derivation, exactly as anticipated.
 \section*{Provenance}
 
 The development is a Lean~4 library. Definitions, theorem statements and complete proofs
-are available under the machine-learning tree of the Mettapedia formalization; the
-predictive-coding portion is pinned in the companion note, and the modules covering the
-utilization boundaries, the subsumption partition and the two-timescale theory are recent
-and not yet released. Crown theorems depend only on the standard logical basis
+are available under the
+\href{https://github.com/zariuq/MeTTapedia/tree/\formalcommit/lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks}{machine-learning tree}
+of the immutable formal snapshot. The
+\href{https://github.com/zariuq/MeTTapedia/tree/\formalcommit/lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/UnifiedCarrier}{unified-carrier development},
+\href{https://github.com/zariuq/MeTTapedia/tree/\formalcommit/lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/CreditTransport}{credit-transport development},
+utilization boundaries, subsumption partition and two-timescale theory are included in
+that snapshot. Crown theorems depend only on the standard logical basis
 (\code{propext}, \code{Classical.choice}, \code{Quot.sound}); the development contains no
 declared axioms and no unproved placeholders.
 

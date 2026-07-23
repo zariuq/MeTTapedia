@@ -40,7 +40,7 @@
 
 \newcommand{\code}[1]{\texttt{#1}}
 \newcommand{\sig}{\ensuremath{\sigma}}
-\newcommand{\formalcommit}{3ad9467933fc88d1c60fc36885c1e487bd81fbf8}
+\newcommand{\formalcommit}{84ec10fdac3c576b725133a70b6e41f45d1874f4}
 \newcommand{\formalblob}{https://github.com/zariuq/MeTTapedia/blob/\formalcommit/lean/mettapedia/Mettapedia}
 \newcommand{\leansource}[3]{%
   \href{\formalblob/#1\#L#2}{\nolinkurl{#3}}}
@@ -72,8 +72,9 @@ invariants for each program. We report concrete measurements over a corpus of
 $104{,}083$ synthesized programs, distinguish empirical validation of that interpreter
 from kernel proof, and show how verified properties could safely guide search and
 generate proof obligations. Finally, we give full-domain Lean correctness proofs for
-four previously reported ``alien'' programs: the Hofstadter--Conway sequence and its
-centered transform, the Kolakoski sequence, and a cyclotomic-polynomial sequence.
+thirty-three frozen discoveries from our campaign and four previously reported programs:
+the Hofstadter--Conway sequence and its centered transform, the Kolakoski sequence, and a
+cyclotomic-polynomial sequence.
 \end{abstract}
 
 \paragraph{Open artifacts.}
@@ -92,6 +93,25 @@ commit \code{\formalcommit}; they open the complete statement and proof, not a s
 or a moving branch location.
 
 \section{Introduction}
+
+Begin with a single moment from the campaign this paper measures. A neural search,
+ranking one construction action at a time, assembles fourteen tokens into the program
+\begin{center}
+\code{loop (mult (mult X X) X)} $\circ$ (\code{addi} $\circ$ \code{addi (addi X X) X})
+\end{center}
+and submits it against entry A016779 of the OEIS, whose definition reads
+$a(n)=(3n+1)^3$. The encyclopedia prints thirty-six terms; the program reproduces all
+thirty-six. What,
+exactly, do we know at that moment? We know the program agrees with a finite window ---
+nothing more. Whether it computes $(3n+1)^3$ at $n=100$, or at every $n$, is a different
+kind of question, and answering it needs a different kind of instrument: a semantics
+precise enough that ``this program realizes this sequence on its whole domain'' can be
+\emph{proved}, and a graded notion of evidence for the vastly more numerous cases where
+proof has not yet been attempted. Keeping those two instruments separate --- and honest
+about which one is speaking --- is the discipline this paper builds. (For this
+particular program the strong instrument has since spoken: by
+Section~\ref{sec:adjudication} its claim is a kernel-checked theorem over the entire
+domain, not merely the printed window.)
 
 The OEIS~\cite{oeis} is a natural benchmark for program synthesis: each entry is an integer sequence,
 and a solution is a program that reproduces its terms. Recent self-learning systems
@@ -990,6 +1010,17 @@ two must not be pooled as independent support---an independent semantic review i
 genuinely separate source, and only that can move the second link. This dependence boundary
 is formalized by
 \leansource{MachineLearning/SearchGuidance/ProgramDiscovery/OEISAdjudicationEvidence.lean}{112-L119}{translation_proof_have_no_additiveRevisionLicense}.
+
+\paragraph{The adversarial frontier.}
+The positive cohort does not settle the weakest-evidence part of the catalogue. A
+candidate-blind registry now locks thirty-three definitions selected from that frontier,
+with distinct names checked in the kernel
+(\leansource{Sequences/OEIS/Adversarial33Specifications.lean}{18-L28}{registry\_names\_nodup}).
+It deliberately contains no candidate-realization claims: programs remain hidden from
+the specification phase. At this snapshot no neural discovery has yet been
+kernel-refuted. The real adversarial result must therefore be reported later as a
+three-way outcome---proof, checked counterexample, or unresolved proof obligation---and
+not inferred from the existence of the registry.
 
 \paragraph{Refutation is generative.} A failed adjudication is not a discarded result. A
 formalized definition is a certified generator: it produces additional terms beyond the

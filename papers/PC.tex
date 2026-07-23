@@ -47,7 +47,8 @@
 \newtheorem{corollary}[theorem]{Corollary}
 \newcommand{\leanname}[1]{{\scriptsize\ttfamily
   \def\_{\textunderscore\allowbreak}#1}}
-\newcommand{\leancommit}{647168959fc57cfe97526d9525d33e63681b8e2f}
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\leancommit}{84ec10fdac3c576b725133a70b6e41f45d1874f4}
 \newcommand{\leansource}[3]{%
   \href{https://github.com/zariuq/MeTTapedia/blob/\leancommit/#1\#L#2}{\leanname{#3}}}
 \newcommand{\leansignaturelink}[2]{%
@@ -59,8 +60,7 @@
   frame=single,framesep=1.5mm,xleftmargin=0.5em,xrightmargin=0.5em}
 
 \title{Predictive Coding: What Is Exact,\\ What Is Not, and What It Costs}
-\author{Oru\v{z}i\thanks{Oru\v{z}i names the AI research collaborators who carried out
-this work: Anthropic Claude (Opus~4 and Fable~5) and OpenAI Codex (GPT-5.6-Sol) ---
+\author{Oru\v{z}i\thanks{Oru\v{z}i names the AI research collaboration responsible for
 formalization, implementation, experiments, and drafting.} \and Zarathustra Goertzel}
 \date{July 2026 --- working note}
 
@@ -101,11 +101,20 @@ over their own structural coefficient, the true orientation has strictly lower e
 if and only if that covariance is nonzero.
 Finally, two priors with \emph{equal}
 cross-entropy can have strictly ordered expected search yields: fit does not imply
-guidance. All statements are machine-checked in Lean~4. Experimentally, PC never
-overtook backpropagation in any regime we measured: every from-scratch arm failed its
-registered bar, and the one ignition that reproduced across seeds had to start from a
-backprop-equivalent anchor.
+guidance. All statements are machine-checked in Lean~4. In the completed experiments
+reported here, PC did not overtake backpropagation: every from-scratch arm failed its
+registered bar, and the one ignition that reproduced across seeds started from a
+backprop-equivalent anchor. A later typed-GSLT factorial is still running and is excluded
+from that verdict until its registered cells and independent checks are sealed.
 \end{abstract}
+
+\paragraph{Open artifacts.}
+The \href{https://github.com/zariuq/MeTTapedia}{formal repository},
+\href{https://github.com/zariuq/MeTTapedia/blob/main/papers/PC.tex}{paper source}, and
+\href{https://github.com/zariuq/MeTTapedia/blob/main/papers/PC.pdf}{compiled PDF} are
+public. Every Lean link in this note is pinned to immutable commit
+\code{\leancommit}; it opens the declaration in the source file rather than a search
+result or a moving branch.
 
 \section{Introduction}
 
@@ -115,6 +124,18 @@ errors, then applying purely local weight updates. The hope is a biologically pl
 supplies equivalence results in the settling limit together with a growing engineering
 effort to make deep PC trainable at all
 \cite{whittington2017,song2020,millidge2020,salvatori2022,goemaere2025}.
+
+Here is the picture to keep. Imagine a line of workers, each holding a guess about what
+the next worker should be seeing, with a meter between every pair showing the mismatch.
+Nobody sees the far end of the line. Learning happens in two phases: first the guesses
+jostle until the meters quiet down (settling), then each worker adjusts its habits using
+only its own adjacent meters (the local update). Backpropagation, by contrast, is a
+single messenger walking the whole line, telling each worker exactly how the final
+outcome would change if that worker alone shifted. The classical claim is that in the
+limit of patient settling, the jostling line and the messenger deliver the same
+instruction. Everything in this paper is about the fine print of that claim: which meter
+reading matches the messenger, under what timetable, how the required patience grows
+with the length of the line, and what all that jostling costs.
 
 Those equivalence results are stated informally, and they are sloppiest exactly where
 the hypotheses matter: \emph{which} quantity matches backpropagation, \emph{under what
@@ -1083,17 +1104,94 @@ Two scope limits are registered with it and remain: the schedule begins from a
 BP-equivalent anchor, so this is not learning from random initialization; and it is
 overfit-32 scale, not full-scale NMT performance.
 
+\section{Certified finite settling and authenticated checkpoint geometry}
+\label{sec:finite-settling}
+
+The cost result above names the problem but does not force a fixed settling depth.
+The newer development separates three objects that an implementation can actually
+measure: a finite credit direction $g_T$, its certified error radius $\varepsilon_T$
+around the exact task credit $g_\star$, and the work required to obtain it.
+
+\begin{theorem}[Observable finite-credit gate]
+If $\lVert g_T-g_\star\rVert\leq\varepsilon_T<\lVert g_T\rVert$, then
+$\langle g_\star,g_T\rangle>0$. With a directional quadratic upper model, the stronger
+inequality
+\[
+  \frac{\alpha C}{2}
+  < \lVert g_T\rVert(\lVert g_T\rVert-\varepsilon_T)
+\]
+certifies strict task descent for the step $-\alpha g_T$.
+\end{theorem}
+
+The corresponding proof terms are
+\begin{itemize}
+\item alignment:
+\leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/WorkNormalizedTruncation.lean}{51}{finiteCredit\_positiveAlignment};
+\item task-loss composition:
+\leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/WorkNormalizedTruncation.lean}{68}{finiteCredit\_strictTaskDescent}.
+\end{itemize}
+For a contraction solver, the observable residual supplies
+\[
+\varepsilon_T\;\leq\;
+K\,\frac{\lVert z_T-S(z_T)\rVert}{1-q}
+ + \lVert R(z_\star)-g_\star\rVert ,
+\]
+so early stopping remains explicitly approximate and retains the separate equilibrium
+mismatch. This is not the claim that a stopped iterate \emph{is} the fixed point.
+
+Work normalization is equally explicit. One update costs
+$c_0+c_{\mathrm{sweep}}T$; a budget determines the number of complete rounds, and
+\leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/WorkNormalizedTruncation.lean}{226}{cumulativeDecreaseLower\_gt\_iff}
+gives the exact crossover at which more cheap, lower-margin rounds have the stronger
+cumulative guarantee. Both boundaries are executable: negligible fixed overhead can
+favour eight one-sweep rounds over two four-sweep rounds
+(\leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/WorkNormalizedTruncation.lean}{241}{lowOverhead\_truncation\_has\_stronger\_guarantee}),
+while large fixed overhead reverses the comparison. These are guarantees about a declared
+loss model, not claims about verified OEIS yield; the latter still requires matched
+GPU-time experiments.
+
+\paragraph{From source tensors to exact-real geometry.}
+The finite-credit theorem is useful only if its constants can be tied to the program that
+ran. The checkpoint-replay tranche decodes finite IEEE-754 binary32 words inside Lean,
+reconstructs the row-major affine maps of one authenticated
+$256\!\to\!64\!\to\!64\!\to\!64\!\to\!256$ residual adapter invocation, and composes
+the three hidden affine--SiLU replay errors into an exact-real mismatch radius. The
+bridge theorem
+\leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32ReplayGeometryBridge.lean}{206}{threeStageOutputMismatch\_le\_from\_geometry}
+uses the decoded checkpoint matrices rather than Python-computed ideal values. A shared
+block-diagonal layer inherits the single-node operator bound without a node-count factor
+(\leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32CheckpointGeometry.lean}{390}{decodedSharedLinear\_norm\_le\_singleNodeWeightL1}),
+and a cross-node-coupling fixture proves why this does not extend to arbitrary coupled
+layers.
+
+The authenticated invocation theorem is
+\leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedCheckpointGeometry.lean}{197}{invocation0\_full\_geometry\_mismatch\_le}.
+Its scope is pointwise: it binds exact words, one invocation, and an exact-real regional
+calculation. It does not identify a BLAS accumulation schedule, prove a uniform
+floating-point model, bind the entire frozen parent, or establish efficacy. Those are
+separate endpoints of the certificate chain.
+
+\paragraph{Naming gate.}
+Acceleration that preserves a fixed point is a solver result, not automatically a new
+learning rule. Conversely, a rule that changes the mechanism must separate from the
+registered BP, PC, PC--ALM, and prior-art families under matched compute before it earns a
+new name. The present registry is intentionally closed:
+\leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/ThirdFamilyGate.lean}{197}{no\_registered\_candidate\_is\_namingLicensed}.
+Equivalence and collapse are evidence, not failures to be hidden.
+
 \section{Verdict}
 \label{sec:verdict}
 
-\textbf{Dead, on the evidence:} predictive coding as a drop-in replacement for
-backpropagation on synchronous digital hardware, for training program-synthesis models
-from scratch. At small scale it is dominated at equal epochs and vastly dominated at
+\textbf{Not competitive in the completed drop-in experiments reported here:}
+predictive coding as a from-scratch replacement for backpropagation on synchronous
+digital hardware. At small scale it is dominated at equal epochs and vastly dominated at
 equal wall-clock --- consistent with the measured $1.6$--$15\times$ per-step cost of
 settled inference over backprop \cite{rosenbaum2022}; at medium multi-generation scale it
 holds a stable two-thirds frontier deficit with erratic self-training dynamics; on the recurrent architecture, seven
 registered arms produced exactly one passing design, and it is staged from a
-BP-equivalent anchor rather than trained from random initialization.
+BP-equivalent anchor rather than trained from random initialization. This is a scoped
+experimental verdict, not a theorem about every carrier, schedule, or hardware model; the
+new typed-GSLT factorial is not folded into it while that campaign remains live.
 
 \textbf{Surviving, with formal or measured support:}
 \begin{enumerate}
@@ -1657,6 +1755,7 @@ program-synthesis substrate is Gauthier's OEIS self-learning system and its NMT 
 methodology, the full campaign, and the reference numbers.
 
 \begin{thebibliography}{99}
+\raggedright
 
 \bibitem{whittington2017} J.~Whittington and R.~Bogacz.
 An approximation of the error backpropagation algorithm in a predictive coding network

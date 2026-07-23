@@ -2,11 +2,13 @@
 \usepackage[margin=1.1in]{geometry}
 \usepackage{amsmath,amssymb,amsthm}
 \usepackage{booktabs}
+\usepackage{array}
 \usepackage{microtype}
 \usepackage{xcolor}
 \usepackage{tikz}
 \usetikzlibrary{positioning,arrows.meta,calc,fit,backgrounds,shapes.geometric,decorations.pathreplacing}
 \usepackage[colorlinks=true,linkcolor=blue!50!black,citecolor=blue!50!black,urlcolor=blue!50!black]{hyperref}
+\usepackage{xurl}
 \emergencystretch=2em
 % float placement: this paper is figure-dense; let them settle near their text
 \setcounter{topnumber}{3}
@@ -17,6 +19,12 @@
 \renewcommand{\textfraction}{0.07}
 \renewcommand{\floatpagefraction}{0.7}
 \newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\leanname}[1]{{\scriptsize\ttfamily
+  \def\_{\textunderscore\allowbreak}#1}}
+\newcommand{\formalcommit}{84ec10fdac3c576b725133a70b6e41f45d1874f4}
+\newcommand{\formalshort}{84ec10fdac3c}
+\newcommand{\leansource}[3]{%
+  \href{https://github.com/zariuq/MeTTapedia/blob/\formalcommit/#1\#L#2}{\leanname{#3}}}
 \newtheorem{theorem}{Theorem}
 \newtheorem{principle}{Principle}
 
@@ -41,7 +49,7 @@
 }
 
 \title{GSLT2GSLT: Typed Action Decoding over Verified Interfaces\\
-\large A machine-checked waist for neural program synthesis, and the belief-state
+\large A machine-checked waist for neural program synthesis, and the unified-carrier
 architecture it licenses}
 \author{Oru\v{z}i \and Zarathustra Goertzel}
 \date{July 2026 --- working draft}
@@ -70,10 +78,18 @@ increment exactly verified; a twelve-cell factorial disentangles decoder archite
 from auxiliary supervision; and the same interface, pointed at an external dependent-type
 benchmark, \emph{measured} the benchmark's definitional-equality demands
 ($\beta\eta$) through a graded ladder of verified roots. We state the open comparison
-the theory sharpens: whether building Bayesian fusion into the decoder beats learning
-Bayes-shaped mixing, and where---by theorem---learning is necessary because the world
-does not hold still.
+the theory sharpens, and assemble its previous alternatives into one unified carrier:
+a recurrent controller, typed workspace, evidence metadata and routed operator bank
+share a product state while the checked waist remains unchanged.
 \end{abstract}
+
+\paragraph{Open artifacts.}
+The \href{https://github.com/zariuq/MeTTapedia}{formal repository},
+\href{https://github.com/zariuq/MeTTapedia/blob/main/papers/gslt2gslt.tex}{paper source},
+and
+\href{https://github.com/zariuq/MeTTapedia/blob/main/papers/gslt2gslt.pdf}{compiled PDF}
+are public. Formal links below are immutable source permalinks to commit
+\code{\formalshort}.
 
 \section{Introduction}
 \label{sec:intro}
@@ -82,7 +98,11 @@ Neural program synthesis systems typically trust a language model to emit well-f
 programs and filter failures afterwards. We invert the trust: the target language---a
 GSLT, given as data---induces an exact elaboration state with typed holes; the network
 only \emph{ranks legal refinements}; the checker computes what each refinement entails
-and decides acceptance. The scientific benefit is attributability. When the interface
+and decides acceptance. The comparison to keep in mind is a chess interface on which an
+illegal move cannot be entered---not because the player was trained to avoid illegal
+moves, but because the board owns the rules and the move is simply not among the
+buttons. Here, wrong arity, an out-of-scope variable, or an ill-typed argument is not a
+low-probability output to be filtered; it is not an action at all. The scientific benefit is attributability. When the interface
 between proposer and checker is itself proved correct, a discovery cannot be an artifact
 of a malformed candidate, and a failure cannot hide an interface bug: three times in the
 development reported here, an apparent neural failure was traced by the formal layer to
@@ -340,7 +360,7 @@ safe side by construction.
 \node[thm, below=1mm of ws.south] (caromlbl) {= a CAROM operator, verbatim};
 \node[thm, below=1mm of bel.south] {= Kalman / PLN revision};
 \node[lbl, left=2mm of gru.west, text width=24mm, align=right]
-  {\textbf{attention \#2}\\reads the state;\\only the \emph{write}\\differs across arms};
+  {\textbf{attention \#2}\\reads state;\\the \emph{write law}\\varies by arm};
 
 \node[learned, text width=118mm, below=11mm of ws] (score)
   {\textbf{action scorer} --- dot-product query over the legal $(\text{hole},\text{head})$ pairs};
@@ -516,6 +536,116 @@ defined on that interface alone, so changing the language changes the graph, nev
 network; legality and typing live in the checker's mask, outside the learned stack.}
 \label{fig:graphinterface}
 \end{figure}
+
+\subsection{One machine above the waist: the unified carrier}
+\label{sec:unified}
+
+The four state carriers in the completed factorial are informative as interventions, but
+they are not four mutually exclusive machine designs. A recurrent vector is a controller;
+typed slots are memory; belief coordinates are metadata; routed operators are reusable
+transformations. The unified carrier gives each role its own field while preserving the
+same GSLT2GSLT interface.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[node distance=5mm]
+\node[datum, text width=44mm] (src) {GSLT graph memory\\{\scriptsize nodes, typed edges, source features}};
+\node[learned, text width=44mm, right=14mm of src] (ctl)
+  {recurrent controller $h$\\{\scriptsize chronology and program counter}};
+\node[learned, text width=70mm, below=8mm of $(src)!0.5!(ctl)$] (slots)
+  {typed slot $i$\\
+   {\scriptsize address $t_i$ (elaborator-owned) \quad content $w_i$ \quad
+   posterior $(n_i^+,n_i^-)$ \quad innovations $(u_i^+,u_i^-)$}};
+\node[learned, text width=32mm, below left=8mm and 4mm of slots] (ops)
+  {operator bank\\{\scriptsize read $\to$ transform\\$\to$ learned gate}};
+\node[proved, text width=32mm, below right=8mm and 4mm of slots] (bayes)
+  {evidence law\\{\scriptsize fade, fuse,\\precision gain}};
+\node[learned, text width=70mm, below=12mm of slots] (decision)
+  {decision state and action scores\\{\scriptsize precision-biased slot read $+$ recurrent residual}};
+\node[waist, text width=70mm, below=6mm of decision] (waist2)
+  {\code{Refine(hole, head)} over the checker's legal mask};
+
+\draw[flow] (src) -- (slots);
+\draw[flow] (src) -- (ctl);
+\draw[flow] (ctl) -- (slots);
+\draw[flow] (slots) -- (ops);
+\draw[flow, provedc] (slots) -- (bayes);
+\draw[flow] (ops) -- (decision);
+\draw[flow, provedc] (bayes) -- (decision);
+\draw[flow] (ctl) |- (decision);
+\draw[flow] (decision) -- (waist2);
+\draw[flow, provedc] (waist2.west) -- ++(-18mm,0) |- (slots.west)
+  node[thm, pos=0.23, left] {typed frontier};
+\end{tikzpicture}
+\caption{The unified carrier. The address/frontier plane remains checker-owned; all
+learned recurrence, storage, evidence and routing remains above the same typed-action
+waist. The architecture composes roles that the factorial separated for attribution.}
+\label{fig:unified}
+\end{figure}
+
+Each allocated slot carries
+\[
+(w_i,n_i^+,n_i^-,u_i^+,u_i^-,t_i),
+\]
+where $t_i$ is the injective (role, parent, argument) signature and $u_i^\pm$ records
+only evidence created in the current episode. Let
+$\Lambda_i=n_i^++n_i^-$ be the featurewise precision vector and write an overbar for
+its feature mean. A routed operator proposes $c_{ki}$, learned write gate $g_{ki}$ and
+fresh evidence. The derived update is
+\[
+\begin{aligned}
+r_i&=(1+\sigma_{\rm jump}^{2}\Lambda_i)^{-1},&
+\gamma_i&=\frac{\bar\Lambda_i^{\rm fresh}}
+  {\overline{r_i\odot\Lambda_i}+\bar\Lambda_i^{\rm fresh}},\\
+n_i^\pm&\leftarrow r_i n_i^\pm+\mathrm{fresh}_i^\pm,&
+u_i^\pm&\leftarrow u_i^\pm+\mathrm{fresh}_i^\pm,\\
+w_i&\leftarrow w_i+\frac1K\sum_k
+   \gamma_i g_{ki}(c_{ki}-w_i),&
+h&\leftarrow\operatorname{GRU}(x_{\rm carrier},h).
+\end{aligned}
+\]
+The operator chooses the candidate and its learned gate; the evidence chart supplies a
+Bayes-structured damping factor. At zero old precision and positive fresh precision,
+$\gamma_i=1$ and the content step is exactly the typed-workspace update
+(\leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/UnifiedCarrier/Core.lean}{114-L131}{contentStep\_zeroOld\_eq\_workspace}).
+
+The read path is coupled without changing the action interface. Slot $j$ receives
+\[
+ \ell_{kj}=\langle q_k,k_j\rangle/\sqrt d+
+ b_k^2\log(1+\bar\Lambda_j),
+\]
+so its unnormalized attention weight is the ordinary content weight multiplied by
+$(1+\bar\Lambda_j)^{b_k^2}$. The identity and its strict monotonicity boundary are
+machine-checked
+(\leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/UnifiedCarrier/Core.lean}{234-L270}{precisionBiasedLogit\_strictMono\_precision}).
+Setting $b_k=0$ recovers the workspace read exactly.
+
+Persistent evidence is an ordered, optional outer loop. A fresh hole may read a
+type-indexed prior; at episode completion that table decays once and absorbs only the
+innovations $u^\pm$. It never reabsorbs the posterior $n^\pm$, which already contains
+the imported prior. The double-counting alternative is refuted by an executable fixture
+(\leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/UnifiedCarrier/Core.lean}{226-L231}{posterior\_reabsorption\_doubleCounts\_fixture}).
+Batch absorption is rejected because it would make the order of decay implicit.
+
+This is a refinement, not a relabeling. Under an explicit mode, parameter relation and
+state projection, every finite policy trajectory equals the typed-workspace trajectory
+(\leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/UnifiedCarrier/StateCarrier.lean}{246-L278}{workspaceEndpoint\_policyTrajectories\_eq}).
+Positive old precision and distinct recurrent histories each supply a strict separating
+witness, so the full carrier is not definitionally the workspace
+(\leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/UnifiedCarrier/StateCarrier.lean}{283-L303}{recurrentHistory\_fullPolicy\_separates}).
+Most importantly for GSLT2GSLT, the common masked policy contains legal operators and an
+illegal operator remains absent after a unified step
+(\leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/UnifiedCarrier/StateCarrier.lean}{306-L339}{illegalOperator\_stays\_absent\_after\_unifiedStep}).
+No carrier state can manufacture a new refinement action.
+
+The reference instance keeps the existing graph encoder, language table, typed frontier,
+masked scorer and external checker unchanged. Its packed state has
+$S W_c+4S W_e+2S+W_h+2$ scalars; the factor four is posterior plus innovation evidence.
+The exact-real design, an addressed production packet, and one binary32 decision-site
+replay are in the public formal snapshot. The architecture has not entered the running
+campaign, so none of the coverage results below are evidence for it. Its first tests must
+separate recurrent control, precision-read bias, Bayes gating and cross-episode persistence
+one variable at a time.
 
 \subsection{Fusion is addition; charts are shadows}
 \label{sec:fusion}
@@ -698,22 +828,23 @@ routes, not names.
 \emph{Compositionality is commutation.} When are two command phases order-independent,
 so that a schedule is a \emph{set} of edits rather than a brittle sequence? For affine
 phases the answer is exact: swapping the order shifts the state by
-$[B,A]\,x + (Ba + b - Ab - a)$ (\code{affineCompositionDiscrepancy\_exact}), and
+$[B,A]\,x + (Ba + b - Ab - a)$
+(\leanname{affineCompositionDiscrepancy\_exact}), and
 order-independence holds iff the linear parts commute \emph{and} the affine obstruction
-vanishes (\code{affinePhases\_orderIndependent\_iff}); commuting linear parts alone are
+vanishes (\leanname{affinePhases\_orderIndependent\_iff}); commuting linear parts alone are
 not enough---a one-dimensional bias counterexample closes that loophole. Equivalently,
 the pairwise interference energy $\lVert[A,B]\rVert_F^{2}$ must vanish
-(\code{linearPhases\_orderIndependent\_iff\_interferenceEnergy\_zero})---a Gram
+(\leanname{linearPhases\_orderIndependent\_iff\_interferenceEnergy\_zero})---a Gram
 diagnostic computable from any trained operator pair. Compositionality thereby stops
 being an emergent hope and becomes a measured certificate.
 
 \emph{Stability does not compose.} Two commands, each individually
 extinguishing---either alone reaches rest in two steps---alternate to $4^{n}$ growth
-(\code{individuallyStable\_switchingDiverges}). Per-command guarantees are therefore
+(\leanname{individuallyStable\_switchingDiverges}). Per-command guarantees are therefore
 worthless for command \emph{programs}; the honest certificate is schedule-uniform. A
 common quadratic Lyapunov function bounds every schedule at one geometric rate, and
 commuting stable generators always admit one
-(\code{commutingCommonQuadraticLyapunov\_crown}). A command-driven decoder should ship
+(\leanname{commutingCommonQuadraticLyapunov\_crown}). A command-driven decoder should ship
 with a switching certificate, not a per-command one.
 
 \emph{Safety is indifferent to all of it.} The trust boundary extends verbatim: for
@@ -817,15 +948,33 @@ typed-action decoder led pooled ($188$ vs.\ $119$, positive in $2/3$ seeds) with
 supervision interaction inconsistent---no interaction claim survives. One-seed
 architecture stories, in this regime, are noise until replicated.
 
-The registered comparison the state theory now sharpens is three-lineage: the gated
-recurrent incumbent, the typed workspace (learned mixing, CAROM-style), and the
-belief-state cell (hardwired fusion)---matched capacity, identical trunks warm-started
-and decoder-specific parameters reinitialized, two further cumulative generations,
-per-slot evidence trajectories logged in a pinned schema, and the interpretation bins
-written before launch. A parallel $2\times2$ tests a shallow predictive-coding residual
-adapter over \emph{both} backbone architectures; the interaction contrast is the
-estimand, and the settling theory predicts the workspace backbone is where a local
-settling rule has its best chance.
+\paragraph{The completed carrier campaign.}
+The comparison was subsequently run to its registered eight-generation endpoint in two
+independently initialized worlds, with four matched-capacity carriers over the same
+waist. All $64$ cells passed independent verification. Their union contained $984$
+distinct new sequences:
+
+\begin{center}\small
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+carrier & distinct & exclusive & relative training cost \\
+\midrule
+recurrent vector (GRU) & 435 & 241 & $1.00\times$ \\
+typed workspace & 383 & 171 & $2.85\times$ \\
+belief, derived retention & 294 & 119 & $7.94\times$ \\
+belief, learned retention & 244 & 138 & $3.53\times$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The result argues for composition rather than a winner-take-all carrier choice: $669$ of
+$984$ sequences were found by exactly one carrier, with pairwise overlaps only
+$8$--$16\%$. Yet a fixed-split portfolio reached $399$ sequences against the recurrent
+arm's $435$, so complementarity alone does not license naive allocation. A later
+generation-9/10 carrier--credit factorial is still running; no partial cell, preliminary
+coverage count or mechanism trace from it is included in this paper's empirical totals.
+The unified carrier of Section~\ref{sec:unified} is a post-campaign design and likewise
+has no efficacy result here.
 
 \section{The same waist, pointed outward}
 \label{sec:ladder-out}
@@ -926,13 +1075,15 @@ concat $\to$ Linear & $219\to256$ & $187$ scalar $+16$ digit $+16$ position \\
 \end{tabular}
 \end{center}
 
-\paragraph{State carriers.} The four carriers differ only in write semantics; the read
-(attention over encoder memory) and the checker interface are shared. A capacity test holds
-all four within two percent of the recurrent baseline, so a carrier swap is a
-single-variable change.
+\paragraph{State carriers.} The four experimental carriers differ only in write
+semantics; the read over encoder memory and the checker interface are shared. A capacity
+test holds all four within two percent of the recurrent baseline. The unified carrier is
+a fifth, post-campaign design that composes the roles rather than entering the historical
+comparison.
 
 \begin{center}\footnotesize
-\begin{tabular}{@{}lllp{46mm}@{}}
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}lll>{\raggedright\arraybackslash}p{46mm}@{}}
 \toprule
 Carrier & State & Write update & Configuration \\
 \midrule
@@ -940,13 +1091,19 @@ recurrent (GRU) & $h$ & $h\leftarrow(1-z)h+z\tilde h$ & \code{GRU(256,256)}, one
 typed workspace & slots $w_i$ & $w_i\leftarrow w_i+\overline{g_{ki}(c_{ki}-w_i)}$ & 60 slots $\times$ width 112, 4 operators, depth 1 \\
 belief (derived) & $(n^+,n^-)$ & $n^+\!\leftarrow r\,n^++\mathrm{fresh}^+$ & 60 slots $\times$ 96 features; $r=1/(1+0.1\,\mathrm{prec})$ \\
 belief (learned) & $(n^+,n^-)$ & $n^+\!\leftarrow r\,n^++\mathrm{fresh}^+$ & same, $r=\sigma(\mathrm{head}(\mathrm{chart},\mathrm{control}))$ \\
+unified (post-campaign) & $(w,n^\pm,u^\pm,h)$ &
+content gate $\times$ precision gain; innovations add &
+60 slots $\times$ content 108 $\times$ evidence 16; control 64; 4 operators \\
 \bottomrule
 \end{tabular}
+}
 \end{center}
 
 The workspace carrier uses fixed pre-order slot addresses that are never reused and
 per-operator (untied) transforms; the derived-belief update is fade-then-fuse, which equals
-precision interpolation in natural coordinates.
+precision interpolation in natural coordinates. The unified reference instance has
+$5{,}323{,}264$ parameters against the recurrent baseline's $5{,}238{,}392$, a ratio
+$1.0162$; this is a capacity check, not a performance result.
 
 \paragraph{Typed-action decoder.} The action set is the sixteen-operator DSL. The scorer forms
 $\mathrm{logits}=\mathrm{readout}([\,\text{hidden},\text{context}\,])\cdot\text{op-embeddings}+\text{bias}$,
@@ -1002,7 +1159,10 @@ trust boundary, and decoder-state theory proved in Lean~4 with kernel-checked ax
 confined to \{\code{propext}, \code{Classical.choice}, \code{Quot.sound}\}, fixtures
 generated from the proofs, and the learned system bound to them by hash-pinned parity
 --- so that architecture comparisons are attributable, and failures indict the
-component that actually failed.
+component that actually failed. Complete formal sources are in the immutable
+\href{https://github.com/zariuq/MeTTapedia/tree/\formalcommit/lean/mettapedia/Mettapedia/GSLT}{GSLT tree},
+\href{https://github.com/zariuq/MeTTapedia/tree/\formalcommit/lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/WorkspaceDecoder}{workspace tree}, and
+\href{https://github.com/zariuq/MeTTapedia/tree/\formalcommit/lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/UnifiedCarrier}{unified-carrier tree}.
 
 \section*{Status}
 
@@ -1013,10 +1173,15 @@ bridge); the sequential and matrix belief theory; the counts-primal unification;
 selective belief-decoder contract and its pinned schema; and the fusion boundary theory
 of Section~\ref{sec:openworld} (expressivity nesting, overlap calibration,
 nonstationary fading, distortion factorization---four lifts, fifteen new theorem
-families, five explicit scope boundaries, kernel-computed accounting). Registered and
-running or queued: generation-four portfolio cells; the predictive-coding adapter gate;
-workspace depth calibration; the three-lineage comparison. All coverage numbers above are exact whole-corpus
-verifications from immutable, independently recomputed ledgers.
+families, five explicit scope boundaries, kernel-computed accounting). Also sealed are
+the unified carrier's exact-real workspace refinement, strict separation fixtures,
+retention-economics threshold, addressed-packet witness and binary32 decision-site
+certificate. The eight-generation, four-carrier comparison is complete; its $64$ cells
+and the $984$-sequence union are independently checked. The generation-9/10 credit-rule
+extension is running and is not a result of this snapshot. The unified carrier is
+implemented and tested but has not entered a registered efficacy campaign. All coverage
+numbers above are exact whole-corpus verifications from immutable, independently
+recomputed ledgers.
 
 \begin{thebibliography}{99}
 \bibitem{gauthier2023} T.~Gauthier and J.~Urban.
