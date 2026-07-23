@@ -359,6 +359,9 @@ theorem english_czech_reduces_iff (p q : Pattern) :
   have samePresentations :
       englishGFLanguageDef.reflectivePresentations =
         czechGFLanguageDef.reflectivePresentations := rfl
+  have sameReflectiveRules :
+      englishGFLanguageDef.reflectiveRules =
+        czechGFLanguageDef.reflectiveRules := rfl
   constructor
   · rintro ⟨rule, ruleMember, initialBindings, matched,
       finalBindings, premises, targetEq⟩
@@ -369,13 +372,13 @@ theorem english_czech_reduces_iff (p q : Pattern) :
       rule ruleMember
     refine ⟨rule, ruleMember', initialBindings, ?_, finalBindings, ?_, ?_⟩
     · simpa only [
-        Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule_eq_of_presentations_eq
-          samePresentations] using matched
+        Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule_eq_of_reflectiveData_eq
+          samePresentations sameReflectiveRules] using matched
     · simpa [premisesNil, Mettapedia.OSLF.MeTTaIL.Engine.applyPremisesWithEnv]
         using premises
     · simpa only [
-        Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule_eq_of_presentations_eq
-          samePresentations] using targetEq
+        Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule_eq_of_reflectiveData_eq
+          samePresentations sameReflectiveRules] using targetEq
   · rintro ⟨rule, ruleMember, initialBindings, matched,
       finalBindings, premises, targetEq⟩
     have ruleMember' : rule ∈ englishGFLanguageDef.rewrites := by
@@ -385,13 +388,13 @@ theorem english_czech_reduces_iff (p q : Pattern) :
       rule ruleMember
     refine ⟨rule, ruleMember', initialBindings, ?_, finalBindings, ?_, ?_⟩
     · simpa only [
-        Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule_eq_of_presentations_eq
-          samePresentations.symm] using matched
+        Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule_eq_of_reflectiveData_eq
+          samePresentations.symm sameReflectiveRules.symm] using matched
     · simpa [premisesNil, Mettapedia.OSLF.MeTTaIL.Engine.applyPremisesWithEnv]
         using premises
     · simpa only [
-        Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule_eq_of_presentations_eq
-          samePresentations.symm] using targetEq
+        Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule_eq_of_reflectiveData_eq
+          samePresentations.symm sameReflectiveRules.symm] using targetEq
 
 theorem english_czech_diamond_eq (φ : Pattern → Prop) :
     langDiamond englishGFLanguageDef φ =

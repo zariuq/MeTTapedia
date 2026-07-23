@@ -15,6 +15,10 @@ import Mettapedia.OSLF.PathMap.Trie.TrieRefinement
 import Mettapedia.OSLF.PathMap.Trie.TriePathMapInstance
 import Mettapedia.OSLF.PathMap.Trie.TrieZipper
 import Mettapedia.OSLF.PathMap.Trie.ZamContracts
+import Mettapedia.OSLF.PathMap.PathAlgebra.FreeMonoidBoundary
+import Mettapedia.OSLF.PathMap.PathAlgebra.FinLanguage
+import Mettapedia.OSLF.PathMap.PathAlgebra.ZippyLaws
+import Mettapedia.OSLF.PathMap.PathAlgebra.PathSpaceOps
 
 /-!
 # PathMap Formalization

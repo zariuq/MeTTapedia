@@ -118,10 +118,9 @@ private theorem normalizeParallelElements_agreement (patterns : List Pattern) :
   simp only [rhoReflectivePresentation]
   rw [show patterns.flatMap
         (ReflectiveCanonical.parallelSplice
-          { name := "RhoCommSubstitution", rewriteRule := "Comm",
+          { name := "RhoCommSubstitution",
             processSort := "Proc", nameSort := "Name",
             quoteConstructor := "NQuote", dropConstructor := "PDrop",
-            inputConstructor := "PInput", outputConstructor := "POutput",
             parallelCollection := .hashBag,
             parallelUnitConstructor := "PZero",
             quoteDropEquation := "QuoteDrop" }) =

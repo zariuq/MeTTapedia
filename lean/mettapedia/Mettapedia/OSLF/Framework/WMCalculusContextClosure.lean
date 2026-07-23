@@ -267,7 +267,7 @@ theorem congReduces_of_rawReduces_ext (v : WMExtVertex) (p q : Pattern) :
     langReduces (wmExtVertexLanguageDefWithCong v) p q := by
   intro h
   unfold langReduces langReducesUsing at h ⊢
-  exact Step.mono_rules (rawRules_subset_congRules_ext v) rfl h
+  exact Step.mono_rules (rawRules_subset_congRules_ext v) rfl rfl h
 
 /-- Any raw reduction is also a congruence-extended reduction (full vertex). -/
 theorem congReduces_of_rawReduces_full (v : WMFullVertex) (p q : Pattern) :
@@ -275,7 +275,7 @@ theorem congReduces_of_rawReduces_full (v : WMFullVertex) (p q : Pattern) :
     langReduces (wmFullVertexLanguageDefWithCong v) p q := by
   intro h
   unfold langReduces langReducesUsing at h ⊢
-  exact Step.mono_rules (rawRules_subset_congRules_full v) rfl h
+  exact Step.mono_rules (rawRules_subset_congRules_full v) rfl rfl h
 
 /-! ## Guarded LanguageDefs with Congruence (completing the 2×2 square) -/
 
@@ -333,7 +333,7 @@ theorem guardedCongReduces_of_guardedReduces_ext (v : WMExtVertex) (p q : Patter
     langReducesUsing relEnv (wmExtVertexLanguageDefGuardedWithCong v) p q := by
   intro h
   unfold langReducesUsing at h ⊢
-  exact Step.mono_rules (guardedRules_subset_guardedCongRules_ext v) rfl h
+  exact Step.mono_rules (guardedRules_subset_guardedCongRules_ext v) rfl rfl h
 
 /-- Any guarded reduction is also a guarded+cong reduction (full).
     Horizontal arrow in the 2×2 square. -/
@@ -342,7 +342,7 @@ theorem guardedCongReduces_of_guardedReduces_full (v : WMFullVertex) (p q : Patt
     langReducesUsing relEnv (wmFullVertexLanguageDefGuardedWithCong v) p q := by
   intro h
   unfold langReducesUsing at h ⊢
-  exact Step.mono_rules (guardedRules_subset_guardedCongRules_full v) rfl h
+  exact Step.mono_rules (guardedRules_subset_guardedCongRules_full v) rfl rfl h
 
 /-! ## OSLF Per Vertex (With Congruence) -/
 

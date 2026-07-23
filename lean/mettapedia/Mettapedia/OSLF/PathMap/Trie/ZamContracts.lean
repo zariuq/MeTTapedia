@@ -113,10 +113,11 @@ theorem zam_specialization_preserves_reduction
     {lang₁ lang₂ : LanguageDef}
     (hrules : ∀ r, r ∈ lang₁.rewrites → r ∈ lang₂.rewrites)
     (hreflect : lang₁.reflectivePresentations = lang₂.reflectivePresentations)
+    (hreflectRules : lang₁.reflectiveRules = lang₂.reflectiveRules)
     {p q : Pattern}
     (hred : langReducesUsing relEnv lang₁ p q) :
     langReducesUsing relEnv lang₂ p q :=
-  specialization_preserves_reduction hrules hreflect hred
+  specialization_preserves_reduction hrules hreflect hreflectRules hred
 
 /-- Diamond is monotone across sub-languages (any backend). -/
 theorem zam_diamond_mono
@@ -124,10 +125,11 @@ theorem zam_diamond_mono
     {lang₁ lang₂ : LanguageDef}
     (hrules : ∀ r, r ∈ lang₁.rewrites → r ∈ lang₂.rewrites)
     (hreflect : lang₁.reflectivePresentations = lang₂.reflectivePresentations)
+    (hreflectRules : lang₁.reflectiveRules = lang₂.reflectiveRules)
     (φ : Pattern → Prop) (p : Pattern)
     (h : langDiamondUsing relEnv lang₁ φ p) :
     langDiamondUsing relEnv lang₂ φ p :=
-  diamond_mono_rules hrules hreflect φ p h
+  diamond_mono_rules hrules hreflect hreflectRules φ p h
 
 /-- Box is contravariant across sub-languages (any backend). -/
 theorem zam_box_contra
@@ -135,10 +137,11 @@ theorem zam_box_contra
     {lang₁ lang₂ : LanguageDef}
     (hrules : ∀ r, r ∈ lang₁.rewrites → r ∈ lang₂.rewrites)
     (hreflect : lang₁.reflectivePresentations = lang₂.reflectivePresentations)
+    (hreflectRules : lang₁.reflectiveRules = lang₂.reflectiveRules)
     (φ : Pattern → Prop) (p : Pattern)
     (h : langBoxUsing relEnv lang₂ φ p) :
     langBoxUsing relEnv lang₁ φ p :=
-  box_contra_rules hrules hreflect φ p h
+  box_contra_rules hrules hreflect hreflectRules φ p h
 
 /-! ## §6: Substitution-Reduction Fusion on Trie Backend
 

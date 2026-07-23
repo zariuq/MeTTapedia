@@ -289,12 +289,13 @@ theorem mem_rewriteAt_iff_stepAt
 /-! ## Monotonicity -/
 
 /-- Rule-set inclusion preserves a bounded contextual derivation when the two
-languages share their reflective presentation. -/
+languages share both reflective data tables. -/
 theorem StepAt.mono_rules
     {lang₁ lang₂ : LanguageDef}
     (rulesMono : ∀ rule, rule ∈ lang₁.rewrites → rule ∈ lang₂.rewrites)
     (presentationsEq :
       lang₁.reflectivePresentations = lang₂.reflectivePresentations)
+    (reflectiveRulesEq : lang₁.reflectiveRules = lang₂.reflectiveRules)
     {relEnv : RelationEnv} {fuel : Nat} {source target : Pattern}
     (evidence : StepAt (engineBasePremises relEnv) lang₁ fuel source target) :
     StepAt (engineBasePremises relEnv) lang₂ fuel source target := by
@@ -344,24 +345,27 @@ theorem StepAt.mono_rules
       cases evidence with
       | rule ruleMember matched premises targetEq =>
           have matched₂ := matched
-          rw [matchPatternForRule_eq_of_presentations_eq presentationsEq] at matched₂
+          rw [matchPatternForRule_eq_of_reflectiveData_eq
+            presentationsEq reflectiveRulesEq] at matched₂
           have targetEq₂ := targetEq
-          rw [applyBindingsForRule_eq_of_presentations_eq presentationsEq] at targetEq₂
+          rw [applyBindingsForRule_eq_of_reflectiveData_eq
+            presentationsEq reflectiveRulesEq] at targetEq₂
           exact .rule (rulesMono _ ruleMember) matched₂
             (premisesMono premises) targetEq₂
 
 /-- Rule-set inclusion preserves the least contextual relation when the two
-languages share their reflective presentation. -/
+languages share both reflective data tables. -/
 theorem Step.mono_rules
     {lang₁ lang₂ : LanguageDef}
     (rulesMono : ∀ rule, rule ∈ lang₁.rewrites → rule ∈ lang₂.rewrites)
     (presentationsEq :
       lang₁.reflectivePresentations = lang₂.reflectivePresentations)
+    (reflectiveRulesEq : lang₁.reflectiveRules = lang₂.reflectiveRules)
     {relEnv : RelationEnv} {source target : Pattern}
     (evidence : Step (engineBasePremises relEnv) lang₁ source target) :
     Step (engineBasePremises relEnv) lang₂ source target := by
   obtain ⟨fuel, bounded⟩ := evidence
-  exact ⟨fuel, bounded.mono_rules rulesMono presentationsEq⟩
+  exact ⟨fuel, bounded.mono_rules rulesMono presentationsEq reflectiveRulesEq⟩
 
 /-- Enlarging a relation environment preserves a bounded contextual
 derivation. -/

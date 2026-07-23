@@ -36,6 +36,22 @@ def collectionCode : CollType → Nat
   | .hashBag => 1
   | .hashSet => 2
 
+/-- Collision-free structural code for an authored type expression. -/
+def typeExprCode : TypeExpr → Nat
+  | .base name => Nat.pair 0 (stringCode name)
+  | .arrow domain codomain =>
+      Nat.pair 1 (Nat.pair (typeExprCode domain) (typeExprCode codomain))
+  | .multiBinder body => Nat.pair 2 (typeExprCode body)
+  | .collection collectionType element =>
+      Nat.pair 3
+        (Nat.pair (collectionCode collectionType) (typeExprCode element))
+
+/-- Collision-free code for an ordered binder context. -/
+def typeExprListCode : List TypeExpr → Nat
+  | [] => 0
+  | type :: types =>
+      Nat.succ (Nat.pair (typeExprCode type) (typeExprListCode types))
+
 mutual
   /-- Structural Gödel numbering for the shared `Pattern` carrier. -/
   def patternCode : Pattern → Nat
@@ -111,6 +127,72 @@ theorem optionStringCode_injective : Function.Injective optionStringCode := by
 theorem collectionCode_injective : Function.Injective collectionCode := by
   intro left right equality
   cases left <;> cases right <;> simp_all [collectionCode]
+
+/-- `typeExprCode` distinguishes every authored type expression. -/
+theorem typeExprCode_injective : Function.Injective typeExprCode := by
+  intro left
+  induction left with
+  | base name =>
+      intro right equality
+      cases right with
+      | base otherName =>
+          simp only [typeExprCode, Nat.pair_eq_pair] at equality
+          exact congrArg TypeExpr.base (stringCode_injective equality.2)
+      | arrow _ _ => simp [typeExprCode, Nat.pair_eq_pair] at equality
+      | multiBinder _ => simp [typeExprCode, Nat.pair_eq_pair] at equality
+      | collection _ _ => simp [typeExprCode, Nat.pair_eq_pair] at equality
+  | arrow domain codomain domainInduction codomainInduction =>
+      intro right equality
+      cases right with
+      | base _ => simp [typeExprCode, Nat.pair_eq_pair] at equality
+      | arrow otherDomain otherCodomain =>
+          simp only [typeExprCode, Nat.pair_eq_pair] at equality
+          exact congrArg₂ TypeExpr.arrow
+            (domainInduction equality.2.1)
+            (codomainInduction equality.2.2)
+      | multiBinder _ => simp [typeExprCode, Nat.pair_eq_pair] at equality
+      | collection _ _ => simp [typeExprCode, Nat.pair_eq_pair] at equality
+  | multiBinder body inductionHypothesis =>
+      intro right equality
+      cases right with
+      | base _ => simp [typeExprCode, Nat.pair_eq_pair] at equality
+      | arrow _ _ => simp [typeExprCode, Nat.pair_eq_pair] at equality
+      | multiBinder otherBody =>
+          simp only [typeExprCode, Nat.pair_eq_pair] at equality
+          exact congrArg TypeExpr.multiBinder
+            (inductionHypothesis equality.2)
+      | collection _ _ => simp [typeExprCode, Nat.pair_eq_pair] at equality
+  | collection collectionType element inductionHypothesis =>
+      intro right equality
+      cases right with
+      | base _ => simp [typeExprCode, Nat.pair_eq_pair] at equality
+      | arrow _ _ => simp [typeExprCode, Nat.pair_eq_pair] at equality
+      | multiBinder _ => simp [typeExprCode, Nat.pair_eq_pair] at equality
+      | collection otherCollectionType otherElement =>
+          simp only [typeExprCode, Nat.pair_eq_pair] at equality
+          exact congrArg₂ TypeExpr.collection
+            (collectionCode_injective equality.2.1)
+            (inductionHypothesis equality.2.2)
+
+/-- `typeExprListCode` distinguishes ordered binder contexts. -/
+theorem typeExprListCode_injective : Function.Injective typeExprListCode := by
+  intro left
+  induction left with
+  | nil =>
+      intro right equality
+      cases right with
+      | nil => rfl
+      | cons head tail => simp [typeExprListCode] at equality
+  | cons head tail inductionHypothesis =>
+      intro right equality
+      cases right with
+      | nil => simp [typeExprListCode] at equality
+      | cons otherHead otherTail =>
+          simp only [typeExprListCode, Nat.succ.injEq, Nat.pair_eq_pair]
+            at equality
+          exact congrArg₂ List.cons
+            (typeExprCode_injective equality.1)
+            (inductionHypothesis equality.2)
 
 private theorem patternListCode_eq_imp
     {left right : List Pattern}

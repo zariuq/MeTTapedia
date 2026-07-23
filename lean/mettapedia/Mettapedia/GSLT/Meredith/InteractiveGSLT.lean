@@ -10,12 +10,12 @@ import Mathlib.Data.Multiset.Basic
 import Mathlib.Tactic
 
 /-!
-# Symmetric Cut Presentations
+# Interaction-Cut Presentations
 
 This file isolates the smallest honest interaction layer beneath continued
 interactive GSLTs:
 
-- a `SymmetricCutPresentation S` over an existing `GSLT` `S`
+- a `InteractionCutPresentation S` over an existing `GSLT` `S`
 - an abstract contact constructor together with left/right introductions
 - a one-step contraction kernel
 - a computable section on an explicitly embedded interaction carrier
@@ -32,7 +32,7 @@ open Mettapedia.Languages.ProcessCalculi.RhoCalculus
 
 variable {S : GSLT}
 
-/-- A symmetric cut presentation for a fixed GSLT.
+/-- An ordered interaction-cut presentation for a fixed GSLT.
 
 The intended reading is:
 - `contact` is where two co-introductions meet
@@ -42,7 +42,7 @@ The intended reading is:
 This is the interaction core we can state cleanly before adding wrapped terms
 and graded cost accounting.
 -/
-structure SymmetricCutPresentation (S : GSLT) where
+structure InteractionCutPresentation (S : GSLT) where
   contact : S.Term → S.Term → S.Term
   leftIntro : S.Term → S.Term → S.Term
   rightIntro : S.Term → S.Term → S.Term
@@ -59,13 +59,13 @@ structure AccountedCutStep (α γ σ : Type) where
   right : WrappedTerm α γ
   spent : σ
 
-/-- A first honest continued layer over a symmetric cut presentation.
+/-- A first honest continued layer over an interaction-cut presentation.
 
 This stays abstract about the accounting grade while requiring wrapped
 contraction to erase back to the underlying cut contraction.
 -/
 structure ContinuedCutPresentation (S : GSLT) where
-  symmetricCut : SymmetricCutPresentation S
+  interactionCut : InteractionCutPresentation S
   Grade : Type
   Spent : Type
   /-- Terms on which this continued presentation claims a computable
@@ -90,11 +90,11 @@ structure ContinuedCutPresentation (S : GSLT) where
   contractWrapped_fst_term :
     ∀ chan nm body payload,
       (contractWrapped chan nm body payload).left.term =
-        (symmetricCut.contract chan nm body.term payload.term).1
+        (interactionCut.contract chan nm body.term payload.term).1
   contractWrapped_snd_term :
     ∀ chan nm body payload,
       (contractWrapped chan nm body payload).right.term =
-        (symmetricCut.contract chan nm body.term payload.term).2
+        (interactionCut.contract chan nm body.term payload.term).2
 
 namespace ContinuedCutPresentation
 
@@ -122,7 +122,7 @@ theorem contractWrapped_erases (C : ContinuedCutPresentation S)
     (body payload : WrappedTerm S.Term C.Grade) :
     ((C.contractWrapped chan nm body payload).left.term,
       (C.contractWrapped chan nm body payload).right.term) =
-      C.symmetricCut.contract chan nm body.term payload.term := by
+      C.interactionCut.contract chan nm body.term payload.term := by
   cases body
   cases payload
   simp [C.contractWrapped_fst_term, C.contractWrapped_snd_term]
@@ -1309,14 +1309,14 @@ private def rhoIntroE (chan payload : Pattern) : Pattern :=
 private def rhoNil : Pattern :=
   .apply "PZero" []
 
-/-- The ρ-calculus symmetric cut presentation:
+/-- The ρ-calculus interaction-cut presentation:
 
 - contact site: parallel composition
 - left introduction: input
 - right introduction: output
 - contraction kernel: semantic COMM substitution, with inert sender residual
 -/
-def rhoSymmetricCutPresentation : SymmetricCutPresentation rhoGSLT where
+def rhoInteractionCutPresentation : InteractionCutPresentation rhoGSLT where
   contact := rhoContact
   leftIntro := rhoIntroP
   rightIntro := rhoIntroE
@@ -1324,19 +1324,19 @@ def rhoSymmetricCutPresentation : SymmetricCutPresentation rhoGSLT where
     (semanticCommSubst body payload, rhoNil)
 
 /-- In the rho instance, contraction exposes semantic COMM substitution directly. -/
-theorem rhoSymmetricCutPresentation_contract_fst (chan nm body payload : Pattern) :
-    (rhoSymmetricCutPresentation.contract chan nm body payload).1 =
+theorem rhoInteractionCutPresentation_contract_fst (chan nm body payload : Pattern) :
+    (rhoInteractionCutPresentation.contract chan nm body payload).1 =
       semanticCommSubst body payload := by
   rfl
 
 /-- In the rho instance, the sender residual is inert. -/
-theorem rhoSymmetricCutPresentation_contract_snd (chan nm body payload : Pattern) :
-    (rhoSymmetricCutPresentation.contract chan nm body payload).2 = rhoNil := by
+theorem rhoInteractionCutPresentation_contract_snd (chan nm body payload : Pattern) :
+    (rhoInteractionCutPresentation.contract chan nm body payload).2 = rhoNil := by
   rfl
 
 /-- The rho contact constructor is parallel composition. -/
-theorem rhoSymmetricCutPresentation_contact (p q : Pattern) :
-    rhoSymmetricCutPresentation.contact p q = .collection .hashBag [p, q] none := by
+theorem rhoInteractionCutPresentation_contact (p q : Pattern) :
+    rhoInteractionCutPresentation.contact p q = .collection .hashBag [p, q] none := by
   rfl
 
 /-- Intrinsic step-account carried by a rho reduction derivation.
@@ -2738,7 +2738,7 @@ This keeps the continued layer honest while the explicit cost-accounted term
 grammar is still being formalized separately.
 -/
 def rhoContinuedCutPresentation : ContinuedCutPresentation rhoGSLT where
-  symmetricCut := rhoSymmetricCutPresentation
+  interactionCut := rhoInteractionCutPresentation
   Grade := RhoLedger
   Spent := RhoLedger
   SectionCarrier := PureCanonicalSection.PurePattern
@@ -2915,24 +2915,24 @@ theorem rhoContinuedCutPresentation_preserves_wrapped_structure
 private def rhoContinuedCutPresentation_contactStepWitness
     (chan nm : Pattern) (body payload : WrappedTerm Pattern RhoLedger) :
     rhoGSLT.Step
-      (rhoSymmetricCutPresentation.contact
-        (rhoSymmetricCutPresentation.rightIntro chan payload.term)
-        (rhoSymmetricCutPresentation.leftIntro chan body.term))
-      (rhoSymmetricCutPresentation.contact
+      (rhoInteractionCutPresentation.contact
+        (rhoInteractionCutPresentation.rightIntro chan payload.term)
+        (rhoInteractionCutPresentation.leftIntro chan body.term))
+      (rhoInteractionCutPresentation.contact
         (rhoContinuedCutPresentation.contractWrapped chan nm body payload).left.term
         (rhoContinuedCutPresentation.contractWrapped chan nm body payload).right.term) := by
   let source :=
-    rhoSymmetricCutPresentation.contact
-      (rhoSymmetricCutPresentation.rightIntro chan payload.term)
-      (rhoSymmetricCutPresentation.leftIntro chan body.term)
+    rhoInteractionCutPresentation.contact
+      (rhoInteractionCutPresentation.rightIntro chan payload.term)
+      (rhoInteractionCutPresentation.leftIntro chan body.term)
   let mid :=
     (.collection .hashBag [semanticCommSubst body.term payload.term] none : Pattern)
   let target :=
-    rhoSymmetricCutPresentation.contact
+    rhoInteractionCutPresentation.contact
       (rhoContinuedCutPresentation.contractWrapped chan nm body payload).left.term
       (rhoContinuedCutPresentation.contractWrapped chan nm body payload).right.term
   refine ⟨@Reduces.equiv source source target mid (StructuralCongruence.refl _) ?_ ?_⟩
-  · simpa [source, mid, rhoSymmetricCutPresentation, rhoContact, rhoIntroP, rhoIntroE] using
+  · simpa [source, mid, rhoInteractionCutPresentation, rhoContact, rhoIntroP, rhoIntroE] using
       (@Reduces.comm chan payload.term body.term [])
   ·
     have hsingleton : StructuralCongruence mid (semanticCommSubst body.term payload.term) := by
@@ -2943,7 +2943,7 @@ private def rhoContinuedCutPresentation_contactStepWitness
           (.collection .hashBag
             [semanticCommSubst body.term payload.term, rhoNil] none) := by
       exact StructuralCongruence.symm _ _ (StructuralCongruence.par_nil_right _)
-    simpa [mid, target, rhoSymmetricCutPresentation, rhoContact, rhoContinuedCutPresentation, rhoNil] using
+    simpa [mid, target, rhoInteractionCutPresentation, rhoContact, rhoContinuedCutPresentation, rhoNil] using
       StructuralCongruence.trans _ _ _ hsingleton hnil
 
 /-- A wrapped rho communication step erases to a real `rhoGSLT.Step` at the
@@ -2954,10 +2954,10 @@ the underlying rho reduction graph. -/
 theorem rhoContinuedCutPresentation_contact_step
     (chan nm : Pattern) (body payload : WrappedTerm Pattern RhoLedger) :
     rhoGSLT.Step
-      (rhoSymmetricCutPresentation.contact
-        (rhoSymmetricCutPresentation.rightIntro chan payload.term)
-        (rhoSymmetricCutPresentation.leftIntro chan body.term))
-      (rhoSymmetricCutPresentation.contact
+      (rhoInteractionCutPresentation.contact
+        (rhoInteractionCutPresentation.rightIntro chan payload.term)
+        (rhoInteractionCutPresentation.leftIntro chan body.term))
+      (rhoInteractionCutPresentation.contact
       (rhoContinuedCutPresentation.contractWrapped chan nm body payload).left.term
       (rhoContinuedCutPresentation.contractWrapped chan nm body payload).right.term) := by
   exact rhoContinuedCutPresentation_contactStepWitness chan nm body payload
@@ -2967,7 +2967,7 @@ theorem rhoContinuedCutPresentation_contract_erases
     (chan nm : Pattern) (body payload : WrappedTerm Pattern RhoLedger) :
     ((rhoContinuedCutPresentation.contractWrapped chan nm body payload).left.term,
       (rhoContinuedCutPresentation.contractWrapped chan nm body payload).right.term) =
-      rhoSymmetricCutPresentation.contract chan nm body.term payload.term := by
+      rhoInteractionCutPresentation.contract chan nm body.term payload.term := by
   exact contractWrapped_erases rhoContinuedCutPresentation chan nm body payload
 
 /-- The first wrapped rho residual transports to the representative residual. -/

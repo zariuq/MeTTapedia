@@ -3,9 +3,10 @@ import Mettapedia.OSLF.MeTTaIL.Match
 /-!
 # Compiling declarative reflective substitution
 
-This module interprets `ReflectivePresentationDecl` as data.  It does not
-attach a Lean callback to a language definition.  Languages without a matching
-declaration retain the ordinary syntactic `applyBindings` behavior.
+This module interprets `ReflectivePresentationDecl` and `ReflectiveRuleDecl`
+as data.  It does not attach a Lean callback to a language definition.
+Languages without a uniquely selected substitution presentation retain the
+ordinary syntactic `applyBindings` behavior.
 
 The compiled operation has the two boundaries required by reflective COMM:
 
@@ -23,33 +24,90 @@ namespace Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Match
 
-/-! ## Declaration lookup -/
+/-! ## Rule and presentation lookup -/
 
-/-- Fail-closed lookup by rewrite name.  Missing and duplicate declarations
-both select ordinary syntactic behavior; `LanguageDef.validate` distinguishes
-and reports malformed authored data. -/
-def declarationForRule? (lang : LanguageDef) (rule : RewriteRule) :
-    Option ReflectivePresentationDecl :=
-  match lang.reflectivePresentations.filter fun declaration =>
+/-- Fail-closed lookup of a rule-local reflective selection. -/
+def reflectiveRuleForRule? (lang : LanguageDef) (rule : RewriteRule) :
+    Option ReflectiveRuleDecl :=
+  match lang.reflectiveRules.filter fun declaration =>
       declaration.rewriteRule == rule.name with
   | [declaration] => some declaration
   | _ => none
 
-/-- Declaration lookup depends only on the authored reflective presentations,
-not on any other `LanguageDef` field. -/
-theorem declarationForRule?_eq_of_presentations_eq
-    {lang₁ lang₂ : LanguageDef}
-    (same : lang₁.reflectivePresentations = lang₂.reflectivePresentations)
-    (rule : RewriteRule) :
-    declarationForRule? lang₁ rule = declarationForRule? lang₂ rule := by
-  simp only [declarationForRule?]
-  rw [same]
+/-- Fail-closed lookup of a reusable reflective presentation by name. -/
+def presentationNamed? (lang : LanguageDef) (name : String) :
+    Option ReflectivePresentationDecl :=
+  match lang.reflectivePresentations.filter fun declaration =>
+      declaration.name == name with
+  | [declaration] => some declaration
+  | _ => none
 
-@[simp] theorem declarationForRule?_eq_none_of_no_presentations
+/-- Presentation used to compare repeated metavariable occurrences. -/
+def matchingPresentationForRule?
+    (lang : LanguageDef) (rule : RewriteRule) :
+    Option ReflectivePresentationDecl :=
+  match reflectiveRuleForRule? lang rule with
+  | some selection => presentationNamed? lang selection.matchingPresentation
+  | none => none
+
+/-- Presentation used to interpret explicit substitution in a contractum. -/
+def substitutionPresentationForRule?
+    (lang : LanguageDef) (rule : RewriteRule) :
+    Option ReflectivePresentationDecl :=
+  match reflectiveRuleForRule? lang rule with
+  | some selection => presentationNamed? lang selection.substitutionPresentation
+  | none => none
+
+/-- Rule-local lookup depends only on the two reflective data tables. -/
+theorem matchingPresentationForRule?_eq_of_reflectiveData_eq
+    {lang₁ lang₂ : LanguageDef}
+    (samePresentations :
+      lang₁.reflectivePresentations = lang₂.reflectivePresentations)
+    (sameRules : lang₁.reflectiveRules = lang₂.reflectiveRules)
+    (rule : RewriteRule) :
+    matchingPresentationForRule? lang₁ rule =
+      matchingPresentationForRule? lang₂ rule := by
+  simp [matchingPresentationForRule?, reflectiveRuleForRule?,
+    presentationNamed?, samePresentations, sameRules]
+
+theorem substitutionPresentationForRule?_eq_of_reflectiveData_eq
+    {lang₁ lang₂ : LanguageDef}
+    (samePresentations :
+      lang₁.reflectivePresentations = lang₂.reflectivePresentations)
+    (sameRules : lang₁.reflectiveRules = lang₂.reflectiveRules)
+    (rule : RewriteRule) :
+    substitutionPresentationForRule? lang₁ rule =
+      substitutionPresentationForRule? lang₂ rule := by
+  simp [substitutionPresentationForRule?, reflectiveRuleForRule?,
+    presentationNamed?, samePresentations, sameRules]
+
+@[simp] theorem matchingPresentationForRule?_eq_none_of_no_presentations
     {lang : LanguageDef} (empty : lang.reflectivePresentations = [])
     (rule : RewriteRule) :
-    declarationForRule? lang rule = none := by
-  simp [declarationForRule?, empty]
+    matchingPresentationForRule? lang rule = none := by
+  unfold matchingPresentationForRule?
+  cases reflectiveRuleForRule? lang rule <;>
+    simp [presentationNamed?, empty]
+
+@[simp] theorem matchingPresentationForRule?_eq_none_of_no_rules
+    {lang : LanguageDef} (empty : lang.reflectiveRules = [])
+    (rule : RewriteRule) :
+    matchingPresentationForRule? lang rule = none := by
+  simp [matchingPresentationForRule?, reflectiveRuleForRule?, empty]
+
+@[simp] theorem substitutionPresentationForRule?_eq_none_of_no_presentations
+    {lang : LanguageDef} (empty : lang.reflectivePresentations = [])
+    (rule : RewriteRule) :
+    substitutionPresentationForRule? lang rule = none := by
+  unfold substitutionPresentationForRule?
+  cases reflectiveRuleForRule? lang rule <;>
+    simp [presentationNamed?, empty]
+
+@[simp] theorem substitutionPresentationForRule?_eq_none_of_no_rules
+    {lang : LanguageDef} (empty : lang.reflectiveRules = [])
+    (rule : RewriteRule) :
+    substitutionPresentationForRule? lang rule = none := by
+  simp [substitutionPresentationForRule?, reflectiveRuleForRule?, empty]
 
 /-! ## Static quote-drop normalization -/
 
@@ -234,24 +292,28 @@ end
 The absence of a unique declaration is definitionally backward compatible. -/
 def applyBindingsForRule
     (lang : LanguageDef) (rule : RewriteRule) (bindings : Bindings) : Pattern :=
-  match declarationForRule? lang rule with
+  match substitutionPresentationForRule? lang rule with
   | some declaration => applyBindingsReflective declaration bindings rule.right
   | none => applyBindings bindings rule.right
 
-/-- Rule-aware substitution is unchanged when two languages share the same
-authored reflective presentations. -/
-theorem applyBindingsForRule_eq_of_presentations_eq
+/-- Rule-aware substitution is unchanged when two languages share both
+reflective data tables. -/
+theorem applyBindingsForRule_eq_of_reflectiveData_eq
     {lang₁ lang₂ : LanguageDef}
-    (same : lang₁.reflectivePresentations = lang₂.reflectivePresentations)
+    (samePresentations :
+      lang₁.reflectivePresentations = lang₂.reflectivePresentations)
+    (sameRules : lang₁.reflectiveRules = lang₂.reflectiveRules)
     (rule : RewriteRule) (bindings : Bindings) :
     applyBindingsForRule lang₁ rule bindings =
       applyBindingsForRule lang₂ rule bindings := by
   simp only [applyBindingsForRule]
-  rw [declarationForRule?_eq_of_presentations_eq same rule]
+  rw [substitutionPresentationForRule?_eq_of_reflectiveData_eq
+    samePresentations sameRules rule]
 
-theorem applyBindingsForRule_eq_syntactic_of_no_declaration
+theorem applyBindingsForRule_eq_syntactic_of_no_presentation
     {lang : LanguageDef} {rule : RewriteRule}
-    (missing : declarationForRule? lang rule = none) (bindings : Bindings) :
+    (missing : substitutionPresentationForRule? lang rule = none)
+    (bindings : Bindings) :
     applyBindingsForRule lang rule bindings = applyBindings bindings rule.right := by
   simp [applyBindingsForRule, missing]
 
@@ -259,20 +321,24 @@ theorem applyBindingsForRule_eq_syntactic_of_no_declaration
     {lang : LanguageDef} (empty : lang.reflectivePresentations = [])
     (rule : RewriteRule) (bindings : Bindings) :
     applyBindingsForRule lang rule bindings = applyBindings bindings rule.right := by
-  apply applyBindingsForRule_eq_syntactic_of_no_declaration
-  exact declarationForRule?_eq_none_of_no_presentations empty rule
+  apply applyBindingsForRule_eq_syntactic_of_no_presentation
+  exact substitutionPresentationForRule?_eq_none_of_no_presentations empty rule
+
+@[simp] theorem applyBindingsForRule_eq_syntactic_of_no_reflectiveRules
+    {lang : LanguageDef} (empty : lang.reflectiveRules = [])
+    (rule : RewriteRule) (bindings : Bindings) :
+    applyBindingsForRule lang rule bindings = applyBindings bindings rule.right := by
+  apply applyBindingsForRule_eq_syntactic_of_no_presentation
+  exact substitutionPresentationForRule?_eq_none_of_no_rules empty rule
 
 /-! ## Executable boundary examples -/
 
 private def fixtureDeclaration : ReflectivePresentationDecl where
   name := "fixture"
-  rewriteRule := "Comm"
   processSort := "Proc"
   nameSort := "Name"
   quoteConstructor := "NQuote"
   dropConstructor := "PDrop"
-  inputConstructor := "PInput"
-  outputConstructor := "POutput"
   parallelCollection := .hashBag
   parallelUnitConstructor := "PZero"
   quoteDropEquation := "QuoteDrop"

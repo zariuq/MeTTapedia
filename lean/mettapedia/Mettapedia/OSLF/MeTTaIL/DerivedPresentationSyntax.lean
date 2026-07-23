@@ -3,11 +3,11 @@ import Mettapedia.OSLF.MeTTaIL.Syntax
 /-!
 # Syntax derived from a reflective presentation
 
-A `ReflectivePresentationDecl` names the constructors and sorts of a
+A `ReflectiveProcessSignature` names the constructors and sorts of a
 reflective process calculus inside its authored `LanguageDef`.  The judgments
 below provide the corresponding induction principle on the shared `Pattern`
-carrier.  They are indexed by the declaration data; they are not a second term
-syntax and contain no hard-coded rho constructor names.
+carrier.  They are indexed by the proof-oriented signature data; they are not
+a second term syntax and contain no hard-coded rho constructor names.
 -/
 
 namespace Mettapedia.OSLF.MeTTaIL.DerivedPresentationSyntax
@@ -23,7 +23,7 @@ def FreeSortContext.empty : FreeSortContext := fun _ => none
 mutual
   /-- Well-sorted names derived from a reflective presentation. -/
   inductive NameWellSorted
-      (presentation : ReflectivePresentationDecl)
+      (presentation : ReflectiveProcessSignature)
       (free : FreeSortContext) : List String → Pattern → Prop where
     | bvar {bound : List String} {index : Nat} :
         bound[index]? = some presentation.nameSort →
@@ -38,7 +38,7 @@ mutual
 
   /-- Well-sorted processes derived from a reflective presentation. -/
   inductive ProcWellSorted
-      (presentation : ReflectivePresentationDecl)
+      (presentation : ReflectiveProcessSignature)
       (free : FreeSortContext) : List String → Pattern → Prop where
     | bvar {bound : List String} {index : Nat} :
         bound[index]? = some presentation.processSort →
@@ -70,7 +70,7 @@ mutual
 
   /-- List form used by the presentation's parallel collection. -/
   inductive ProcListWellSorted
-      (presentation : ReflectivePresentationDecl)
+      (presentation : ReflectiveProcessSignature)
       (free : FreeSortContext) : List String → List Pattern → Prop where
     | nil {bound : List String} : ProcListWellSorted presentation free bound []
     | cons {bound : List String} {process : Pattern} {processes : List Pattern} :
@@ -86,7 +86,7 @@ mutual
   derived name judgment.  Existing indices retain their meanings because the
   new binders are appended outside them. -/
   theorem NameWellSorted.weakenBoundRight
-      {presentation : ReflectivePresentationDecl} {free : FreeSortContext}
+      {presentation : ReflectiveProcessSignature} {free : FreeSortContext}
       {bound : List String} {name : Pattern}
       (typed : NameWellSorted presentation free bound name)
       (extension : List String) :
@@ -102,7 +102,7 @@ mutual
 
   /-- Process form of outer-context weakening. -/
   theorem ProcWellSorted.weakenBoundRight
-      {presentation : ReflectivePresentationDecl} {free : FreeSortContext}
+      {presentation : ReflectiveProcessSignature} {free : FreeSortContext}
       {bound : List String} {process : Pattern}
       (typed : ProcWellSorted presentation free bound process)
       (extension : List String) :
@@ -127,7 +127,7 @@ mutual
 
   /-- List form of outer-context weakening. -/
   theorem ProcListWellSorted.weakenBoundRight
-      {presentation : ReflectivePresentationDecl} {free : FreeSortContext}
+      {presentation : ReflectiveProcessSignature} {free : FreeSortContext}
       {bound : List String} {processes : List Pattern}
       (typed : ProcListWellSorted presentation free bound processes)
       (extension : List String) :
@@ -143,7 +143,7 @@ end
 
 /-- Every selected component of a well-sorted process list is well-sorted. -/
 theorem ProcListWellSorted.getElem
-    {presentation : ReflectivePresentationDecl} {free : FreeSortContext}
+    {presentation : ReflectiveProcessSignature} {free : FreeSortContext}
     {bound : List String} {processes : List Pattern}
     (typed : ProcListWellSorted presentation free bound processes)
     (index : Nat) (indexBound : index < processes.length) :
@@ -161,7 +161,7 @@ theorem ProcListWellSorted.getElem
 /-- Removing a component preserves well-sortedness of the remaining process
 list. -/
 theorem ProcListWellSorted.eraseIdx
-    {presentation : ReflectivePresentationDecl} {free : FreeSortContext}
+    {presentation : ReflectiveProcessSignature} {free : FreeSortContext}
     {bound : List String} {processes : List Pattern}
     (typed : ProcListWellSorted presentation free bound processes)
     (index : Nat) :
@@ -179,7 +179,7 @@ theorem ProcListWellSorted.eraseIdx
 
 section Examples
 
-variable (presentation : ReflectivePresentationDecl)
+variable (presentation : ReflectiveProcessSignature)
 
 /-- Positive: the presentation's unit is a process without any context. -/
 example : ProcWellSorted presentation FreeSortContext.empty []

@@ -112,10 +112,11 @@ theorem specialization_preserves_reduction
     {lang₁ lang₂ : LanguageDef}
     (hrules : ∀ r, r ∈ lang₁.rewrites → r ∈ lang₂.rewrites)
     (hreflect : lang₁.reflectivePresentations = lang₂.reflectivePresentations)
+    (hreflectRules : lang₁.reflectiveRules = lang₂.reflectiveRules)
     {relEnv : RelationEnv} {p q : Pattern}
     (hred : langReducesUsing relEnv lang₁ p q) :
     langReducesUsing relEnv lang₂ p q :=
-  contextualStep_mono_rules hrules hreflect hred
+  contextualStep_mono_rules hrules hreflect hreflectRules hred
 
 /-- Diamond is monotone in the rule set: if `lang₁ ⊆ lang₂`, then
     `◇₁φ ≤ ◇₂φ`.
@@ -126,13 +127,16 @@ theorem diamond_mono_rules
     {lang₁ lang₂ : LanguageDef}
     (hrules : ∀ r, r ∈ lang₁.rewrites → r ∈ lang₂.rewrites)
     (hreflect : lang₁.reflectivePresentations = lang₂.reflectivePresentations)
+    (hreflectRules : lang₁.reflectiveRules = lang₂.reflectiveRules)
     {relEnv : RelationEnv}
     (φ : Pattern → Prop) (p : Pattern)
     (h : langDiamondUsing relEnv lang₁ φ p) :
     langDiamondUsing relEnv lang₂ φ p := by
   rw [langDiamondUsing_spec] at h ⊢
   obtain ⟨q, hred, hφ⟩ := h
-  exact ⟨q, specialization_preserves_reduction hrules hreflect hred, hφ⟩
+  exact ⟨q,
+    specialization_preserves_reduction hrules hreflect hreflectRules hred,
+    hφ⟩
 
 /-- Box is contravariant in the rule set: `◇₁ ≤ ◇₂` implies `□₂ ≤ □₁`.
 
@@ -144,13 +148,15 @@ theorem box_contra_rules
     {lang₁ lang₂ : LanguageDef}
     (hrules : ∀ r, r ∈ lang₁.rewrites → r ∈ lang₂.rewrites)
     (hreflect : lang₁.reflectivePresentations = lang₂.reflectivePresentations)
+    (hreflectRules : lang₁.reflectiveRules = lang₂.reflectiveRules)
     {relEnv : RelationEnv}
     (φ : Pattern → Prop) (p : Pattern)
     (h : langBoxUsing relEnv lang₂ φ p) :
     langBoxUsing relEnv lang₁ φ p := by
   rw [langBoxUsing_spec] at h ⊢
   intro q hred
-  exact h q (specialization_preserves_reduction hrules hreflect hred)
+  exact h q
+    (specialization_preserves_reduction hrules hreflect hreflectRules hred)
 
 /-! ## §5: Substitution-Reduction Fusion (Beck-Chevalley)
 

@@ -140,6 +140,41 @@ theorem bisimilar_trans {t u v : S.Term}
     obtain ⟨a', hstep'', hab'⟩ := hbwd1 hab hstep'
     exact ⟨a', hstep'', b', hab', hbc'⟩
 
+/-- An equivalence of term carriers that preserves and reflects one-step
+reduction transports strong bisimilarity. -/
+theorem bisimilar_map_of_step_iff
+    {source target : GSLT} (carrier : source.Term ≃ target.Term)
+    (steps : ∀ left right : source.Term,
+      source.Step left right ↔ target.Step (carrier left) (carrier right))
+    {left right : source.Term}
+    (equivalent : source.Bisimilar left right) :
+    target.Bisimilar (carrier left) (carrier right) := by
+  obtain ⟨relation, ⟨forward, backward⟩, related⟩ := equivalent
+  let transported : target.Term → target.Term → Prop :=
+    fun first second => relation (carrier.symm first) (carrier.symm second)
+  refine ⟨transported, ⟨?_, ?_⟩, ?_⟩
+  · intro first second firstRelated next firstStep
+    have sourceStep : source.Step (carrier.symm first) (carrier.symm next) := by
+      apply (steps _ _).mpr
+      simpa using firstStep
+    obtain ⟨sourceNext, secondStep, nextRelated⟩ :=
+      forward firstRelated sourceStep
+    refine ⟨carrier sourceNext, ?_, ?_⟩
+    · have mapped := (steps _ _).mp secondStep
+      simpa using mapped
+    · simpa [transported] using nextRelated
+  · intro first second firstRelated next secondStep
+    have sourceStep : source.Step (carrier.symm second) (carrier.symm next) := by
+      apply (steps _ _).mpr
+      simpa using secondStep
+    obtain ⟨sourceNext, firstStep, nextRelated⟩ :=
+      backward firstRelated sourceStep
+    refine ⟨carrier sourceNext, ?_, ?_⟩
+    · have mapped := (steps _ _).mp firstStep
+      simpa using mapped
+    · simpa [transported] using nextRelated
+  · simpa [transported] using related
+
 /-- Bisimilarity forms a setoid -/
 def bisimSetoid : Setoid S.Term where
   r := S.Bisimilar
@@ -166,6 +201,16 @@ structure GSLT.Morphism (S S' : GSLT) where
 
 namespace GSLT.Morphism
 
+/-- Behavioral GSLT morphisms are equal when their term maps are equal; the
+bisimilarity-preservation field is proof-irrelevant. -/
+@[ext]
+theorem ext {S S' : GSLT} {first second : Morphism S S'}
+    (toFun : first.toFun = second.toFun) : first = second := by
+  cases first
+  cases second
+  cases toFun
+  rfl
+
 /-- Identity morphism -/
 def id (S : GSLT) : Morphism S S where
   toFun := _root_.id
@@ -188,6 +233,22 @@ theorem comp_id {S S' : GSLT} (f : Morphism S S') :
   rfl
 
 end GSLT.Morphism
+
+/-! ## The behavioral category
+
+The abstract behavioral GSLTs and their bisimilarity-preserving maps form a
+Mathlib category.  This packages the identity and composition already defined
+above; it does not identify these behavioral maps with structural maps between
+authored language presentations.
+-/
+
+instance : CategoryTheory.Category GSLT where
+  Hom := GSLT.Morphism
+  id := GSLT.Morphism.id
+  comp f g := GSLT.Morphism.comp g f
+  id_comp _ := rfl
+  comp_id _ := rfl
+  assoc _ _ _ := rfl
 
 /-! ## Summary
 

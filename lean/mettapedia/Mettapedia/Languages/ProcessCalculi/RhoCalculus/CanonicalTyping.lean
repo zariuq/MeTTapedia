@@ -24,7 +24,7 @@ open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Canonical
 /-- The derived list judgment is equivalent to pointwise membership in the
 derived process judgment. -/
 theorem procListWellSorted_iff_forall_mem
-    {presentation : ReflectivePresentationDecl} {free : FreeSortContext}
+    {presentation : ReflectiveProcessSignature} {free : FreeSortContext}
     {bound : List String} {processes : List Pattern} :
     ProcListWellSorted presentation free bound processes ↔
       ∀ process ∈ processes, ProcWellSorted presentation free bound process := by
@@ -49,7 +49,7 @@ theorem procListWellSorted_iff_forall_mem
 
 /-- Splicing a well-sorted parallel component yields a well-sorted list. -/
 theorem bagSplice_procListWellSorted
-    {presentation : ReflectivePresentationDecl} {free : FreeSortContext}
+    {presentation : ReflectiveProcessSignature} {free : FreeSortContext}
     {bound : List String} {process : Pattern}
     (typed : ProcWellSorted presentation free bound process)
     (parallelCollection : presentation.parallelCollection = .hashBag) :
@@ -72,7 +72,7 @@ theorem bagSplice_procListWellSorted
 
 /-- Flattening well-sorted parallel components preserves list sorting. -/
 theorem flatMap_bagSplice_procListWellSorted
-    {presentation : ReflectivePresentationDecl} {free : FreeSortContext}
+    {presentation : ReflectiveProcessSignature} {free : FreeSortContext}
     {bound : List String} {processes : List Pattern}
     (typed : ProcListWellSorted presentation free bound processes)
     (parallelCollection : presentation.parallelCollection = .hashBag) :
@@ -89,7 +89,7 @@ theorem flatMap_bagSplice_procListWellSorted
 
 /-- Filtering a well-sorted process list preserves its judgment. -/
 theorem filter_procListWellSorted
-    {presentation : ReflectivePresentationDecl} {free : FreeSortContext}
+    {presentation : ReflectiveProcessSignature} {free : FreeSortContext}
     {bound : List String} {processes : List Pattern} (keep : Pattern → Bool)
     (typed : ProcListWellSorted presentation free bound processes) :
     ProcListWellSorted presentation free bound (processes.filter keep) := by
@@ -100,7 +100,7 @@ theorem filter_procListWellSorted
 /-- Sorting a well-sorted process list by the canonical structural order
 preserves its judgment. -/
 theorem sortPatterns_procListWellSorted
-    {presentation : ReflectivePresentationDecl} {free : FreeSortContext}
+    {presentation : ReflectiveProcessSignature} {free : FreeSortContext}
     {bound : List String} {processes : List Pattern}
     (typed : ProcListWellSorted presentation free bound processes) :
     ProcListWellSorted presentation free bound (sortPatterns processes) := by
@@ -110,7 +110,7 @@ theorem sortPatterns_procListWellSorted
 
 /-- Parallel normalization preserves the derived process-list judgment. -/
 theorem normalizeBagElements_procListWellSorted
-    {presentation : ReflectivePresentationDecl} {free : FreeSortContext}
+    {presentation : ReflectiveProcessSignature} {free : FreeSortContext}
     {bound : List String} {processes : List Pattern}
     (typed : ProcListWellSorted presentation free bound processes)
     (parallelCollection : presentation.parallelCollection = .hashBag) :
@@ -123,7 +123,7 @@ theorem normalizeBagElements_procListWellSorted
 /-- Removing the representation-only empty/singleton parallel wrapper
 preserves process sorting. -/
 theorem collapseBag_procWellSorted
-    {presentation : ReflectivePresentationDecl} {free : FreeSortContext}
+    {presentation : ReflectiveProcessSignature} {free : FreeSortContext}
     {bound : List String} {processes : List Pattern}
     (typed : ProcListWellSorted presentation free bound processes)
     (parallelCollection : presentation.parallelCollection = .hashBag)
@@ -237,7 +237,7 @@ theorem normalizeQuote_binderSafeAt
 
 /-- Orienting quote/drop cancellation preserves the name sort. -/
 theorem normalizeQuote_nameWellSorted
-    {presentation : ReflectivePresentationDecl} {free : FreeSortContext}
+    {presentation : ReflectiveProcessSignature} {free : FreeSortContext}
     {bound : List String} {process : Pattern}
     (typed : ProcWellSorted presentation free bound process)
     (quoteConstructor : presentation.quoteConstructor = "NQuote")

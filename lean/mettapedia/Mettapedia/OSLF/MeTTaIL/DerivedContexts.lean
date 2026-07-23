@@ -396,7 +396,7 @@ inductive SignatureContext (lang : LanguageDef) :
     String → String → OneHoleContext → Prop where
   | hole (sort : String) : SignatureContext lang sort sort .hole
   | simpleArg
-      {source parameter result : String} {rule : GrammarRule}
+      {source parameter : String} {rule : GrammarRule}
       {parameterName : String} {beforeParams afterParams : List TermParam}
       {before after : List Pattern} {inner : OneHoleContext} :
       rule ∈ lang.terms →
@@ -409,18 +409,18 @@ inductive SignatureContext (lang : LanguageDef) :
         (.apply rule.label before inner after)
   | abstractionArg
       {source binderSort bodySort : String} {rule : GrammarRule}
-      {binderName : Option String} {bodyName : String}
+      {declaredBinderName actualBinderName : Option String} {bodyName : String}
       {beforeParams afterParams : List TermParam}
       {before after : List Pattern} {inner : OneHoleContext} :
       rule ∈ lang.terms →
       rule.params = beforeParams ++
-        .abstractionNamed binderName bodyName
+        .abstractionNamed declaredBinderName bodyName
           (.arrow (.base binderSort) (.base bodySort)) :: afterParams →
       before.length = beforeParams.length →
       after.length = afterParams.length →
       SignatureContext lang source bodySort inner →
       SignatureContext lang source rule.category
-        (.apply rule.label before (.lambda binderName inner) after)
+        (.apply rule.label before (.lambda actualBinderName inner) after)
   | collectionElement
       {source elementSort : String} {rule : GrammarRule}
       {parameterName : String} {collectionType : CollType}
@@ -432,6 +432,57 @@ inductive SignatureContext (lang : LanguageDef) :
       SignatureContext lang source elementSort inner →
       SignatureContext lang source rule.category
         (.collection collectionType before inner after rest)
+
+/-- Enlarging a language's constructor signature preserves every context
+already derived from the smaller signature. -/
+theorem SignatureContext.mono
+    {sourceLanguage targetLanguage : LanguageDef}
+    (includeTerms : ∀ rule ∈ sourceLanguage.terms,
+      rule ∈ targetLanguage.terms)
+    {sourceSort targetSort : String} {context : OneHoleContext}
+    (derived : SignatureContext sourceLanguage sourceSort targetSort context) :
+    SignatureContext targetLanguage sourceSort targetSort context := by
+  induction derived with
+  | hole => exact .hole _
+  | simpleArg ruleMembership parameters beforeLength afterLength
+      innerDerived inductionHypothesis =>
+      exact .simpleArg (includeTerms _ ruleMembership) parameters
+        beforeLength afterLength inductionHypothesis
+  | abstractionArg ruleMembership parameters beforeLength afterLength
+      innerDerived inductionHypothesis =>
+      exact .abstractionArg (includeTerms _ ruleMembership) parameters
+        beforeLength afterLength inductionHypothesis
+  | collectionElement ruleMembership parameters innerDerived
+      inductionHypothesis =>
+      exact .collectionElement (includeTerms _ ruleMembership) parameters
+        inductionHypothesis
+
+/-- Signature-derived contexts compose by plugging the inner context into the
+outer hole. -/
+theorem SignatureContext.comp
+    {language : LanguageDef} {sourceSort middleSort targetSort : String}
+    {outerContext innerContext : OneHoleContext}
+    (outer : SignatureContext language middleSort targetSort outerContext)
+    (inner : SignatureContext language sourceSort middleSort innerContext) :
+    SignatureContext language sourceSort targetSort
+      (outerContext.comp innerContext) := by
+  induction outer generalizing sourceSort innerContext with
+  | hole => simpa [OneHoleContext.comp] using inner
+  | simpleArg ruleMembership parameters beforeLength afterLength
+      frameDerived inductionHypothesis =>
+      simpa [OneHoleContext.comp] using
+        (SignatureContext.simpleArg ruleMembership parameters beforeLength
+          afterLength (inductionHypothesis inner))
+  | abstractionArg ruleMembership parameters beforeLength afterLength
+      frameDerived inductionHypothesis =>
+      simpa [OneHoleContext.comp] using
+        (SignatureContext.abstractionArg ruleMembership parameters beforeLength
+          afterLength (inductionHypothesis inner))
+  | collectionElement ruleMembership parameters frameDerived
+      inductionHypothesis =>
+      simpa [OneHoleContext.comp] using
+        (SignatureContext.collectionElement ruleMembership parameters
+          (inductionHypothesis inner))
 
 /-! ## Reduction authority derived from contextual rewrite rules -/
 

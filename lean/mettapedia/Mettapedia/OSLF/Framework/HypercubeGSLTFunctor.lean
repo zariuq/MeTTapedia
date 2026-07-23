@@ -49,10 +49,11 @@ theorem contextualStep_mono_rules
     {lang₁ lang₂ : LanguageDef}
     (hrules : ∀ r, r ∈ lang₁.rewrites → r ∈ lang₂.rewrites)
     (hreflect : lang₁.reflectivePresentations = lang₂.reflectivePresentations)
+    (hreflectRules : lang₁.reflectiveRules = lang₂.reflectiveRules)
     {relEnv : RelationEnv} {p q : Pattern}
     (hred : Step (engineBasePremises relEnv) lang₁ p q) :
     Step (engineBasePremises relEnv) lang₂ p q :=
-  hred.mono_rules hrules hreflect
+  hred.mono_rules hrules hreflect hreflectRules
 
 /-- Reduction is monotone along the hypercube weakness order. -/
 theorem langReduces_mono_vertex {v w : ProbabilityVertex} (h : v ≤ w)
@@ -64,6 +65,7 @@ theorem langReduces_mono_vertex {v w : ProbabilityVertex} (h : v ≤ w)
     (lang₁ := vertexLanguageDef w)
     (lang₂ := vertexLanguageDef v)
     (activeRules_subset_of_le h)
+    rfl
     rfl
     hred
 

@@ -1,0 +1,18250 @@
+import Mathlib.CategoryTheory.ObjectProperty.FullSubcategory
+import Mettapedia.GSLT.LanguageDef.CostCanonicalSection
+import Mettapedia.GSLT.LanguageDef.WellSortedChecker
+
+/-!
+# Typed alternating regions for Cost canonicalization
+
+The static equations of `Cost(L)` occur in two disjoint generated copies of
+the source presentation.  A normalization node records one maximal region in
+one copy, the exact typed open source skeleton obtained by abstracting its
+foreign subregions, and the finite occurrence-sensitive table used to restore
+those subregions.
+
+This file keeps decomposition proof-relevant.  A raw pattern and a table of
+strings are not a region: the source and target typing fibers, reflective
+binder support, and the agreement between each selected occurrence and its
+stored content are part of the node.  The first results below establish the
+decomposition/recomposition round trip and a typed one-stratum normalizer.
+-/
+
+namespace Mettapedia.GSLT.LanguageDef
+
+open Mettapedia.OSLF.Framework.ConstructorCategory
+open Mettapedia.OSLF.MeTTaIL.Syntax
+open Mettapedia.OSLF.MeTTaIL.DerivedContexts
+open Mettapedia.OSLF.MeTTaIL.ScopedPattern
+open Mettapedia.OSLF.MeTTaIL.Substitution
+open StructuralMorphism
+open WellSorted
+
+/-- Decode exactly the constructors that belong to one equation-bearing Cost
+static fiber.  A wire prefix alone is insufficient: the two interaction
+principals also inhabit the base namespace, but are equation-neutral
+structural frames rather than members of a base static region. -/
+def decodeDeclaredCostStaticConstructor (source : CIGSLT)
+    (color : CostStaticColor) (name : String) : Option String :=
+  match source.decodeDeclaredCostConstructor name with
+  | none => none
+  | some constructor =>
+      if source.declaredCostConstructorRole constructor = .static color then
+        decodeCostStaticConstructor color name
+      else
+        none
+
+/-- Any intrinsic constructor outside the selected static role is rejected,
+including both interaction principals and every apparatus constructor. -/
+@[simp]
+theorem decodeDeclaredCostStaticConstructor_render_of_role_ne
+    (source : CIGSLT) (constructor : source.DeclaredCostConstructor)
+    (color : CostStaticColor)
+    (roleNe : source.declaredCostConstructorRole constructor ≠ .static color) :
+    decodeDeclaredCostStaticConstructor source color
+        (source.renderDeclaredCostConstructor constructor) = none := by
+  simp [decodeDeclaredCostStaticConstructor,
+    source.decodeDeclaredCostConstructor_render, roleNe]
+
+/-- Declaration-aware decoding refines the raw namespace decoder. -/
+theorem decodeCostStaticConstructor_eq_some_of_declared
+    (source : CIGSLT) (color : CostStaticColor) (name sourceName : String)
+    (decoded : decodeDeclaredCostStaticConstructor source color name =
+      some sourceName) :
+    decodeCostStaticConstructor color name = some sourceName := by
+  unfold decodeDeclaredCostStaticConstructor at decoded
+  split at decoded <;> simp_all
+
+/-- A declaration in the hereditary non-principal source fragment maps to an
+exact constructor of either generated static color.  The declaration-aware
+decoder therefore recovers its authored label, not merely its wire prefix. -/
+@[simp]
+theorem decodeDeclaredCostStaticConstructor_symbols_of_wrapped
+    (source : CIGSLT) (color : CostStaticColor) (rule : GrammarRule)
+    (membership : rule ∈ source.theory.presentation.presentation.language.terms)
+    (wrapped : rule.label ∈ source.continuationRetyping.wrappedLabels) :
+    decodeDeclaredCostStaticConstructor source color
+        ((color.symbols source).constructor rule.label) = some rule.label := by
+  let authored : AuthoredConstructor
+      source.theory.presentation.presentation := ⟨rule, membership⟩
+  have wrappedConstructor : authored ∈
+      source.continuationRetyping.wrappedConstructors :=
+    (source.continuationRetyping.mem_wrappedLabels_iff authored).mp wrapped
+  cases color with
+  | base =>
+      have inequalities :=
+        (source.continuationRetyping.mem_wrappedConstructors_iff authored).mp
+          wrappedConstructor
+      let generated : source.DeclaredCostConstructor :=
+        ⟨.base authored, True.intro⟩
+      have role : source.declaredCostConstructorRole generated = .static .base :=
+        source.declaredCostConstructorRole_base_of_nonprincipal authored
+          inequalities.1 inequalities.2
+      change decodeDeclaredCostStaticConstructor source .base
+          (source.renderDeclaredCostConstructor generated) = some rule.label
+      simp only [decodeDeclaredCostStaticConstructor,
+        source.decodeDeclaredCostConstructor_render, role, if_pos]
+      rw [show source.renderDeclaredCostConstructor generated =
+          ((CostStaticColor.base.symbols source).constructor rule.label) by rfl]
+      exact decodeCostStaticConstructor_symbols source .base rule.label
+  | wrapped =>
+      let generated : source.DeclaredCostConstructor :=
+        ⟨.wrapped authored, wrappedConstructor⟩
+      have role : source.declaredCostConstructorRole generated =
+          .static .wrapped := by
+        exact source.declaredCostConstructorRole_wrapped authored
+          wrappedConstructor
+      change decodeDeclaredCostStaticConstructor source .wrapped
+          (source.renderDeclaredCostConstructor generated) = some rule.label
+      simp only [decodeDeclaredCostStaticConstructor,
+        source.decodeDeclaredCostConstructor_render, role, if_pos]
+      rw [show source.renderDeclaredCostConstructor generated =
+          ((CostStaticColor.wrapped.symbols source).constructor rule.label) by rfl]
+      exact decodeCostStaticConstructor_symbols source .wrapped rule.label
+
+/- Maximal foreign occurrences for one declaration-classified static
+stratum.  Unlike the older wire-prefix collector, this traversal stops at
+interaction principals and apparatus nodes even when their labels happen to
+share the base prefix. -/
+mutual
+  def collectDeclaredCostStaticBoundaryOccurrencesAt (source : CIGSLT)
+      (color : CostStaticColor) (outer : OneHoleContext) :
+      Pattern → List CostRegionOccurrence
+    | .bvar _ | .fvar _ => []
+    | pattern@(.apply constructor arguments) =>
+        match decodeDeclaredCostStaticConstructor source color constructor with
+        | some _ =>
+            collectDeclaredCostStaticApplyBoundaryOccurrences source color
+              outer constructor [] arguments
+        | none => [{ context := outer, content := pattern }]
+    | .lambda binderName body =>
+        collectDeclaredCostStaticBoundaryOccurrencesAt source color
+          (outer.comp (.lambda binderName .hole)) body
+    | .multiLambda arity binderNames body =>
+        collectDeclaredCostStaticBoundaryOccurrencesAt source color
+          (outer.comp (.multiLambda arity binderNames .hole)) body
+    | .subst body replacement =>
+        collectDeclaredCostStaticBoundaryOccurrencesAt source color
+            (outer.comp (.substBody .hole replacement)) body ++
+          collectDeclaredCostStaticBoundaryOccurrencesAt source color
+            (outer.comp (.substReplacement body .hole)) replacement
+    | .collection collectionType elements rest =>
+        collectDeclaredCostStaticCollectionBoundaryOccurrences source color
+          outer collectionType [] elements rest
+
+  def collectDeclaredCostStaticApplyBoundaryOccurrences (source : CIGSLT)
+      (color : CostStaticColor) (outer : OneHoleContext)
+      (constructor : String) (before : List Pattern) :
+      List Pattern → List CostRegionOccurrence
+    | [] => []
+    | argument :: after =>
+        collectDeclaredCostStaticBoundaryOccurrencesAt source color
+            (outer.comp (.apply constructor before .hole after)) argument ++
+          collectDeclaredCostStaticApplyBoundaryOccurrences source color outer
+            constructor (before ++ [argument]) after
+
+  def collectDeclaredCostStaticCollectionBoundaryOccurrences
+      (source : CIGSLT) (color : CostStaticColor) (outer : OneHoleContext)
+      (collectionType : CollType) (before : List Pattern) :
+      List Pattern → Option String → List CostRegionOccurrence
+    | [], _ => []
+    | element :: after, rest =>
+        collectDeclaredCostStaticBoundaryOccurrencesAt source color
+            (outer.comp
+              (.collection collectionType before .hole after rest)) element ++
+          collectDeclaredCostStaticCollectionBoundaryOccurrences source color
+            outer collectionType (before ++ [element]) after rest
+end
+
+/-- Ordered constructor typing is stable under appending unused outer
+binders, pointwise through the exact authored parameter spine. -/
+theorem WellSorted.ArgumentsHaveTypes.extendOuter
+    {language : LanguageDef} {free : WellSorted.FreeTypeContext}
+    {bound : List TypeExpr} {arguments : List Pattern}
+    {parameters : List TermParam}
+    (typed : WellSorted.ArgumentsHaveTypes language free bound arguments
+      parameters) (outer : List TypeExpr) :
+    WellSorted.ArgumentsHaveTypes language free (bound ++ outer) arguments
+      parameters := by
+  induction arguments generalizing parameters with
+  | nil =>
+      cases typed
+      exact .nil
+  | cons argument arguments inductionHypothesis =>
+      cases typed with
+      | cons representation parameterType argumentTyped argumentsTyped =>
+          exact .cons representation parameterType
+            (argumentTyped.extendOuter outer)
+            (inductionHypothesis argumentsTyped)
+
+/-- Homogeneous collection typing is stable under appending unused outer
+binders. -/
+theorem WellSorted.ElementsHaveType.extendOuter
+    {language : LanguageDef} {free : WellSorted.FreeTypeContext}
+    {bound : List TypeExpr} {elements : List Pattern} {elementType : TypeExpr}
+    (typed : WellSorted.ElementsHaveType language free bound elements
+      elementType) (outer : List TypeExpr) :
+    WellSorted.ElementsHaveType language free (bound ++ outer) elements
+      elementType := by
+  induction elements with
+  | nil =>
+      exact .nil _ _
+  | cons element elements inductionHypothesis =>
+      cases typed with
+      | cons elementTyped elementsTyped =>
+          exact .cons (elementTyped.extendOuter outer)
+            (inductionHypothesis elementsTyped)
+
+/-- Mapping a declaration's type and constructor names cannot change whether
+an already-concrete argument uses the required binder representation. -/
+theorem WellSorted.matchesParameterRepresentation_mapTermParam_iff
+    (symbols : PresentationSymbols) (parameter : TermParam)
+    (argument : Pattern) :
+    WellSorted.MatchesParameterRepresentation
+        (mapTermParam symbols parameter) argument ↔
+      WellSorted.MatchesParameterRepresentation parameter argument := by
+  cases parameter with
+  | simple parameterName parameterType =>
+      cases argument <;> rfl
+  | abstractionNamed binderName bodyName parameterType =>
+      cases argument <;> try rfl
+      case lambda binder body => cases binder <;> rfl
+  | multiAbstractionNamed binderNames bodyName parameterType =>
+      cases argument <;> try rfl
+      case multiLambda arity binders body => cases binders <;> rfl
+
+
+/-- Declaration-classified maximal foreign occurrences of a complete Cost
+static stratum. -/
+def collectDeclaredCostStaticBoundaryOccurrences (source : CIGSLT)
+    (color : CostStaticColor) (pattern : Pattern) :
+    List CostRegionOccurrence :=
+  collectDeclaredCostStaticBoundaryOccurrencesAt source color .hole pattern
+
+mutual
+  /-- A declaration-certified source term mapped into one static Cost color is
+  wholly monochromatic: the declaration-aware collector finds no foreign
+  boundary occurrence, independently of the surrounding one-hole context. -/
+  theorem WellSorted.HasTypeWithConstructors.collectDeclaredCostStaticBoundaryOccurrencesAt_mapCostStatic_eq_nil
+      {source : CIGSLT} {free : WellSorted.FreeTypeContext}
+      {bound : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
+      (typed : WellSorted.HasTypeWithConstructors
+        source.theory.presentation.presentation.language
+        (· ∈ source.continuationRetyping.wrappedLabels)
+        free bound pattern type)
+      (color : CostStaticColor) (outer : OneHoleContext) :
+      collectDeclaredCostStaticBoundaryOccurrencesAt source color outer
+          (mapPattern (color.symbols source) pattern) = [] := by
+    cases typed with
+    | bvar lookup => simp [mapPattern,
+        collectDeclaredCostStaticBoundaryOccurrencesAt]
+    | fvar lookup => simp [mapPattern,
+        collectDeclaredCostStaticBoundaryOccurrencesAt]
+    | constructor wrapped membership notBare argumentsTyped =>
+        simp only [mapPattern,
+          collectDeclaredCostStaticBoundaryOccurrencesAt,
+          decodeDeclaredCostStaticConstructor_symbols_of_wrapped source color
+            _ membership wrapped]
+        exact WellSorted.ArgumentsHaveTypesWithConstructors.collectDeclaredCostStaticApplyBoundaryOccurrences_mapCostStatic_eq_nil
+            argumentsTyped color outer _ []
+    | lambda bodyTyped =>
+        simpa only [mapPattern,
+          collectDeclaredCostStaticBoundaryOccurrencesAt] using
+          WellSorted.HasTypeWithConstructors.collectDeclaredCostStaticBoundaryOccurrencesAt_mapCostStatic_eq_nil
+              bodyTyped color (outer.comp (.lambda _ .hole))
+    | multiLambda bodyTyped =>
+        simpa only [mapPattern,
+          collectDeclaredCostStaticBoundaryOccurrencesAt] using
+          WellSorted.HasTypeWithConstructors.collectDeclaredCostStaticBoundaryOccurrencesAt_mapCostStatic_eq_nil
+              bodyTyped color (outer.comp (.multiLambda _ _ .hole))
+    | subst bodyTyped replacementTyped =>
+        simp only [mapPattern,
+          collectDeclaredCostStaticBoundaryOccurrencesAt]
+        rw [WellSorted.HasTypeWithConstructors.collectDeclaredCostStaticBoundaryOccurrencesAt_mapCostStatic_eq_nil
+            bodyTyped]
+        exact WellSorted.HasTypeWithConstructors.collectDeclaredCostStaticBoundaryOccurrencesAt_mapCostStatic_eq_nil
+            replacementTyped color _
+    | collection elementsTyped =>
+        simp only [mapPattern,
+          collectDeclaredCostStaticBoundaryOccurrencesAt]
+        exact WellSorted.ElementsHaveTypeWithConstructors.collectDeclaredCostStaticCollectionBoundaryOccurrences_mapCostStatic_eq_nil
+            elementsTyped color outer _ [] _
+    | collectionConstructor wrapped membership parameterShape elementsTyped =>
+        simp only [mapPattern,
+          collectDeclaredCostStaticBoundaryOccurrencesAt]
+        exact WellSorted.ElementsHaveTypeWithConstructors.collectDeclaredCostStaticCollectionBoundaryOccurrences_mapCostStatic_eq_nil
+            elementsTyped color outer _ [] _
+
+  /-- Ordered constructor-argument companion to monochromatic collection. -/
+  theorem WellSorted.ArgumentsHaveTypesWithConstructors.collectDeclaredCostStaticApplyBoundaryOccurrences_mapCostStatic_eq_nil
+      {source : CIGSLT} {free : WellSorted.FreeTypeContext}
+      {bound : List TypeExpr} {arguments : List Pattern}
+      {parameters : List TermParam}
+      (typed : WellSorted.ArgumentsHaveTypesWithConstructors
+        source.theory.presentation.presentation.language
+        (· ∈ source.continuationRetyping.wrappedLabels)
+        free bound arguments parameters)
+      (color : CostStaticColor) (outer : OneHoleContext)
+      (constructor : String) (before : List Pattern) :
+      collectDeclaredCostStaticApplyBoundaryOccurrences source color outer
+          ((color.symbols source).constructor constructor) before
+          (mapPatternList (color.symbols source) arguments) = [] := by
+    cases typed with
+    | nil => rfl
+    | cons representation parameterType head tail =>
+        simp only [mapPatternList,
+          collectDeclaredCostStaticApplyBoundaryOccurrences]
+        rw [WellSorted.HasTypeWithConstructors.collectDeclaredCostStaticBoundaryOccurrencesAt_mapCostStatic_eq_nil
+            head]
+        exact WellSorted.ArgumentsHaveTypesWithConstructors.collectDeclaredCostStaticApplyBoundaryOccurrences_mapCostStatic_eq_nil
+            tail color outer constructor
+              (before ++ [mapPattern (color.symbols source) _])
+
+  /-- Homogeneous-collection companion to monochromatic collection. -/
+  theorem WellSorted.ElementsHaveTypeWithConstructors.collectDeclaredCostStaticCollectionBoundaryOccurrences_mapCostStatic_eq_nil
+      {source : CIGSLT} {free : WellSorted.FreeTypeContext}
+      {bound : List TypeExpr} {elements : List Pattern}
+      {elementType : TypeExpr}
+      (typed : WellSorted.ElementsHaveTypeWithConstructors
+        source.theory.presentation.presentation.language
+        (· ∈ source.continuationRetyping.wrappedLabels)
+        free bound elements elementType)
+      (color : CostStaticColor) (outer : OneHoleContext)
+      (collectionType : CollType) (before : List Pattern)
+      (rest : Option String) :
+      collectDeclaredCostStaticCollectionBoundaryOccurrences source color outer
+          collectionType before
+          (mapPatternList (color.symbols source) elements) rest = [] := by
+    cases typed with
+    | nil => rfl
+    | cons head tail =>
+        simp only [mapPatternList,
+          collectDeclaredCostStaticCollectionBoundaryOccurrences]
+        rw [WellSorted.HasTypeWithConstructors.collectDeclaredCostStaticBoundaryOccurrencesAt_mapCostStatic_eq_nil
+            head]
+        exact WellSorted.ElementsHaveTypeWithConstructors.collectDeclaredCostStaticCollectionBoundaryOccurrences_mapCostStatic_eq_nil
+            tail color outer collectionType
+              (before ++ [mapPattern (color.symbols source) _]) rest
+end
+
+/-- Complete monochromatic specialization of the declaration-aware
+collector. -/
+theorem WellSorted.HasTypeWithConstructors.collectDeclaredCostStaticBoundaryOccurrences_mapCostStatic_eq_nil
+    {source : CIGSLT} {free : WellSorted.FreeTypeContext}
+    {bound : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
+    (typed : WellSorted.HasTypeWithConstructors
+      source.theory.presentation.presentation.language
+      (· ∈ source.continuationRetyping.wrappedLabels)
+      free bound pattern type)
+    (color : CostStaticColor) :
+    collectDeclaredCostStaticBoundaryOccurrences source color
+        (mapPattern (color.symbols source) pattern) = [] :=
+  WellSorted.HasTypeWithConstructors.collectDeclaredCostStaticBoundaryOccurrencesAt_mapCostStatic_eq_nil
+      typed color .hole
+
+mutual
+  /-- Every declaration-classified static boundary is an application whose
+  constructor is outside the selected static role. -/
+  theorem exists_apply_of_mem_collectDeclaredCostStaticBoundaryOccurrencesAt
+      (source : CIGSLT) (color : CostStaticColor)
+      (outer : OneHoleContext) (pattern : Pattern)
+      (occurrence : CostRegionOccurrence)
+      (membership : occurrence ∈
+        collectDeclaredCostStaticBoundaryOccurrencesAt source color outer
+          pattern) :
+      ∃ constructor arguments,
+        occurrence.content = .apply constructor arguments ∧
+        decodeDeclaredCostStaticConstructor source color constructor = none := by
+    cases pattern with
+    | bvar index => cases membership
+    | fvar name => cases membership
+    | apply constructor arguments =>
+        cases decoded : decodeDeclaredCostStaticConstructor source color
+            constructor with
+        | none =>
+            simp [collectDeclaredCostStaticBoundaryOccurrencesAt, decoded] at membership
+            subst occurrence
+            exact ⟨constructor, arguments, rfl, decoded⟩
+        | some sourceConstructor =>
+            exact
+              exists_apply_of_mem_collectDeclaredCostStaticApplyBoundaryOccurrences
+                source color outer constructor [] arguments occurrence
+                (by simpa [collectDeclaredCostStaticBoundaryOccurrencesAt,
+                    decoded] using membership)
+    | lambda binderName body =>
+        exact
+          exists_apply_of_mem_collectDeclaredCostStaticBoundaryOccurrencesAt
+            source color (outer.comp (.lambda binderName .hole)) body
+            occurrence
+            (by simpa [collectDeclaredCostStaticBoundaryOccurrencesAt] using
+              membership)
+    | multiLambda arity binderNames body =>
+        exact
+          exists_apply_of_mem_collectDeclaredCostStaticBoundaryOccurrencesAt
+            source color
+            (outer.comp (.multiLambda arity binderNames .hole)) body occurrence
+            (by simpa [collectDeclaredCostStaticBoundaryOccurrencesAt] using
+              membership)
+    | subst body replacement =>
+        simp only [collectDeclaredCostStaticBoundaryOccurrencesAt,
+          List.mem_append] at membership
+        rcases membership with bodyMembership | replacementMembership
+        · exact
+            exists_apply_of_mem_collectDeclaredCostStaticBoundaryOccurrencesAt
+              source color (outer.comp (.substBody .hole replacement)) body
+              occurrence bodyMembership
+        · exact
+            exists_apply_of_mem_collectDeclaredCostStaticBoundaryOccurrencesAt
+              source color (outer.comp (.substReplacement body .hole))
+              replacement occurrence replacementMembership
+    | collection collectionType elements rest =>
+        exact
+          exists_apply_of_mem_collectDeclaredCostStaticCollectionBoundaryOccurrences
+            source color outer collectionType [] elements rest occurrence
+            (by simpa [collectDeclaredCostStaticBoundaryOccurrencesAt] using
+              membership)
+
+  /-- Application-spine companion to the boundary-shape invariant. -/
+  theorem exists_apply_of_mem_collectDeclaredCostStaticApplyBoundaryOccurrences
+      (source : CIGSLT) (color : CostStaticColor)
+      (outer : OneHoleContext) (constructor : String)
+      (before arguments : List Pattern) (occurrence : CostRegionOccurrence)
+      (membership : occurrence ∈
+        collectDeclaredCostStaticApplyBoundaryOccurrences source color outer
+          constructor before arguments) :
+      ∃ boundaryConstructor boundaryArguments,
+        occurrence.content =
+            .apply boundaryConstructor boundaryArguments ∧
+        decodeDeclaredCostStaticConstructor source color
+          boundaryConstructor = none := by
+    cases arguments with
+    | nil => cases membership
+    | cons argument after =>
+        simp only [collectDeclaredCostStaticApplyBoundaryOccurrences,
+          List.mem_append] at membership
+        rcases membership with argumentMembership | afterMembership
+        · exact
+            exists_apply_of_mem_collectDeclaredCostStaticBoundaryOccurrencesAt
+              source color
+              (outer.comp (.apply constructor before .hole after)) argument
+              occurrence argumentMembership
+        · exact
+            exists_apply_of_mem_collectDeclaredCostStaticApplyBoundaryOccurrences
+              source color outer constructor (before ++ [argument]) after
+              occurrence afterMembership
+
+  /-- Collection-spine companion to the boundary-shape invariant. -/
+  theorem exists_apply_of_mem_collectDeclaredCostStaticCollectionBoundaryOccurrences
+      (source : CIGSLT) (color : CostStaticColor)
+      (outer : OneHoleContext) (collectionType : CollType)
+      (before elements : List Pattern) (rest : Option String)
+      (occurrence : CostRegionOccurrence)
+      (membership : occurrence ∈
+        collectDeclaredCostStaticCollectionBoundaryOccurrences source color
+          outer collectionType before elements rest) :
+      ∃ constructor arguments,
+        occurrence.content = .apply constructor arguments ∧
+        decodeDeclaredCostStaticConstructor source color constructor = none := by
+    cases elements with
+    | nil => cases membership
+    | cons element after =>
+        simp only [collectDeclaredCostStaticCollectionBoundaryOccurrences,
+          List.mem_append] at membership
+        rcases membership with elementMembership | afterMembership
+        · exact
+            exists_apply_of_mem_collectDeclaredCostStaticBoundaryOccurrencesAt
+              source color
+              (outer.comp
+                (.collection collectionType before .hole after rest)) element
+              occurrence elementMembership
+        · exact
+            exists_apply_of_mem_collectDeclaredCostStaticCollectionBoundaryOccurrences
+              source color outer collectionType (before ++ [element]) after
+              rest occurrence afterMembership
+end
+
+/-- Public inversion for declaration-classified static boundaries. -/
+theorem exists_apply_of_mem_collectDeclaredCostStaticBoundaryOccurrences
+    (source : CIGSLT) (color : CostStaticColor) (pattern : Pattern)
+    (occurrence : CostRegionOccurrence)
+    (membership : occurrence ∈
+      collectDeclaredCostStaticBoundaryOccurrences source color pattern) :
+    ∃ constructor arguments,
+      occurrence.content = .apply constructor arguments ∧
+      decodeDeclaredCostStaticConstructor source color constructor = none :=
+  exists_apply_of_mem_collectDeclaredCostStaticBoundaryOccurrencesAt source
+    color .hole pattern occurrence membership
+
+
+mutual
+  /-- A typing derivation can discard an unused outer binder suffix.  The
+  scope premise is the exact certificate that every de Bruijn lookup remains
+  in the retained inner prefix. -/
+  theorem WellSorted.HasType.restrictOuterOfScoped
+      {language : LanguageDef} {free : WellSorted.FreeTypeContext}
+      {inner outer : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
+      (typed : WellSorted.HasType language free (inner ++ outer) pattern type)
+      (scopeSafe : pattern.isWellScopedAt inner.length = true) :
+      WellSorted.HasType language free inner pattern type := by
+    cases typed with
+    | @bvar bound index type lookup =>
+        simp only [Pattern.isWellScopedAt, decide_eq_true_eq] at scopeSafe
+        exact .bvar (by
+          simpa [List.getElem?_append_left scopeSafe] using lookup)
+    | fvar lookup => exact .fvar lookup
+    | constructor membership notBare argumentsTyped =>
+        exact .constructor membership notBare
+          (argumentsTyped.restrictOuterOfScoped (by
+            simpa [Pattern.isWellScopedAt] using scopeSafe))
+    | @lambda bound binder body domain codomain bodyTyped =>
+        apply WellSorted.HasType.lambda
+        apply WellSorted.HasType.restrictOuterOfScoped
+          (inner := domain :: inner) (outer := outer)
+        · simpa only [List.cons_append] using bodyTyped
+        · simpa [Pattern.isWellScopedAt, Nat.add_comm] using scopeSafe
+    | @multiLambda bound arity binders body domain codomain bodyTyped =>
+        apply WellSorted.HasType.multiLambda
+        apply WellSorted.HasType.restrictOuterOfScoped
+          (inner := List.replicate arity domain ++ inner) (outer := outer)
+        · simpa only [List.append_assoc] using bodyTyped
+        · simpa [Pattern.isWellScopedAt, List.length_append,
+            List.length_replicate, Nat.add_comm, Nat.add_left_comm,
+            Nat.add_assoc] using scopeSafe
+    | @subst bound body replacement domain codomain bodyTyped replacementTyped =>
+        simp only [Pattern.isWellScopedAt, Bool.and_eq_true] at scopeSafe
+        exact .subst
+          (bodyTyped.restrictOuterOfScoped
+            (inner := domain :: inner) (outer := outer) (by
+              simpa [Nat.add_comm] using scopeSafe.1))
+          (replacementTyped.restrictOuterOfScoped scopeSafe.2)
+    | collection elementsTyped =>
+        exact .collection
+          (elementsTyped.restrictOuterOfScoped (by
+            simpa [Pattern.isWellScopedAt] using scopeSafe))
+    | collectionConstructor membership parameterShape elementsTyped =>
+        exact .collectionConstructor membership parameterShape
+          (elementsTyped.restrictOuterOfScoped (by
+            simpa [Pattern.isWellScopedAt] using scopeSafe))
+
+  /-- Argument-spine companion to outer-context restriction. -/
+  theorem WellSorted.ArgumentsHaveTypes.restrictOuterOfScoped
+      {language : LanguageDef} {free : WellSorted.FreeTypeContext}
+      {inner outer : List TypeExpr} {arguments : List Pattern}
+      {parameters : List TermParam}
+      (typed : WellSorted.ArgumentsHaveTypes language free (inner ++ outer)
+        arguments parameters)
+      (scopeSafe : Pattern.isWellScopedListAt inner.length arguments = true) :
+      WellSorted.ArgumentsHaveTypes language free inner arguments parameters := by
+    cases typed with
+    | nil => exact .nil
+    | cons representation parameterType argumentTyped argumentsTyped =>
+        simp only [Pattern.isWellScopedListAt, Bool.and_eq_true] at scopeSafe
+        exact .cons representation parameterType
+          (argumentTyped.restrictOuterOfScoped scopeSafe.1)
+          (argumentsTyped.restrictOuterOfScoped scopeSafe.2)
+
+  /-- Collection-spine companion to outer-context restriction. -/
+  theorem WellSorted.ElementsHaveType.restrictOuterOfScoped
+      {language : LanguageDef} {free : WellSorted.FreeTypeContext}
+      {inner outer : List TypeExpr} {elements : List Pattern}
+      {elementType : TypeExpr}
+      (typed : WellSorted.ElementsHaveType language free (inner ++ outer)
+        elements elementType)
+      (scopeSafe : Pattern.isWellScopedListAt inner.length elements = true) :
+      WellSorted.ElementsHaveType language free inner elements elementType := by
+    cases typed with
+    | nil => exact .nil _ _
+    | cons elementTyped elementsTyped =>
+        simp only [Pattern.isWellScopedListAt, Bool.and_eq_true] at scopeSafe
+        exact .cons (elementTyped.restrictOuterOfScoped scopeSafe.1)
+          (elementsTyped.restrictOuterOfScoped scopeSafe.2)
+end
+
+/-- Open-object admission can discard an unused outer binder suffix.  The
+ordinary scope certificate identifies the retained prefix; reflective scope
+is lowered through the same prefix without changing the authored quotation
+boundary. -/
+theorem WellSorted.OpenPatternWellSorted.restrictOuterOfScoped
+    {language : LanguageDef} {free : WellSorted.FreeTypeContext}
+    {inner outer : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
+    (wellSorted : WellSorted.OpenPatternWellSorted language free
+      (inner ++ outer) type pattern)
+    (scopeSafe : pattern.isWellScopedAt inner.length = true) :
+    WellSorted.OpenPatternWellSorted language free inner type pattern := by
+  refine ⟨wellSorted.1.restrictOuterOfScoped scopeSafe,
+    wellSorted.2.1, wellSorted.2.2.1, ?_⟩
+  intro presentation membership
+  exact binderSafeAt_of_isWellScopedAt_of_binderSafeAt
+    presentation.quoteConstructor scopeSafe
+      (wellSorted.2.2.2 presentation membership) (by simp)
+
+
+/-- Reflective-support safety depends on the typing judgment, not on the
+particular proof term witnessing that judgment. -/
+theorem WellSorted.HasType.ReflectiveSupportSafeAt.reindex
+    {language : LanguageDef} {free : WellSorted.FreeTypeContext}
+    {bound : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
+    {typed typed' : WellSorted.HasType language free bound pattern type}
+    {support : ContextSupport.Support} {available : List TypeExpr}
+    {binderImage : TypeExpr → TypeExpr}
+    (safe : typed.ReflectiveSupportSafeAt support available binderImage) :
+    typed'.ReflectiveSupportSafeAt support available binderImage := by
+  have proofEquality : typed = typed' := Subsingleton.elim _ _
+  cases proofEquality
+  exact safe
+
+/-- Transport reflective-support safety across an extensional equality of
+the indexed raw pattern. -/
+theorem WellSorted.HasType.ReflectiveSupportSafeAt.transportPattern
+    {language : LanguageDef} {free : WellSorted.FreeTypeContext}
+    {bound : List TypeExpr} {sourcePattern targetPattern : Pattern}
+    {type : TypeExpr}
+    {sourceTyped : WellSorted.HasType language free bound sourcePattern type}
+    {targetTyped : WellSorted.HasType language free bound targetPattern type}
+    {support : ContextSupport.Support} {available : List TypeExpr}
+    {binderImage : TypeExpr → TypeExpr}
+    (patternEquality : sourcePattern = targetPattern)
+    (safe : targetTyped.ReflectiveSupportSafeAt support available binderImage) :
+    sourceTyped.ReflectiveSupportSafeAt support available binderImage := by
+  subst targetPattern
+  exact safe.reindex
+
+/-- Transport a typing derivation along equality of its raw pattern index. -/
+def WellSorted.HasType.transportPattern
+    {language : LanguageDef} {free : WellSorted.FreeTypeContext}
+    {bound : List TypeExpr} {sourcePattern targetPattern : Pattern}
+    {type : TypeExpr}
+    (patternEquality : sourcePattern = targetPattern)
+    (typed : WellSorted.HasType language free bound sourcePattern type) :
+    WellSorted.HasType language free bound targetPattern type :=
+  patternEquality ▸ typed
+
+/-- Transport an argument-spine typing derivation along equality of its
+ordered raw argument list. -/
+def WellSorted.ArgumentsHaveTypes.transportArguments
+    {language : LanguageDef} {free : WellSorted.FreeTypeContext}
+    {bound : List TypeExpr} {sourceArguments targetArguments : List Pattern}
+    {parameters : List TermParam}
+    (argumentsEquality : sourceArguments = targetArguments)
+    (typed : WellSorted.ArgumentsHaveTypes language free bound sourceArguments
+      parameters) :
+    WellSorted.ArgumentsHaveTypes language free bound targetArguments
+      parameters :=
+  argumentsEquality ▸ typed
+
+/-- Transport a homogeneous collection-spine derivation along equality of
+its ordered element list. -/
+def WellSorted.ElementsHaveType.transportElements
+    {language : LanguageDef} {free : WellSorted.FreeTypeContext}
+    {bound : List TypeExpr} {sourceElements targetElements : List Pattern}
+    {elementType : TypeExpr}
+    (elementsEquality : sourceElements = targetElements)
+    (typed : WellSorted.ElementsHaveType language free bound sourceElements
+      elementType) :
+    WellSorted.ElementsHaveType language free bound targetElements
+      elementType :=
+  elementsEquality ▸ typed
+
+/-- Argument-spine reflective safety is independent of the particular proof
+term of the same typing judgment. -/
+theorem WellSorted.ArgumentsHaveTypes.ReflectiveSupportSafeAt.reindex
+    {language : LanguageDef} {free : WellSorted.FreeTypeContext}
+    {bound : List TypeExpr} {arguments : List Pattern}
+    {parameters : List TermParam}
+    {typed typed' : WellSorted.ArgumentsHaveTypes language free bound arguments
+      parameters}
+    {support : ContextSupport.Support} {available : List TypeExpr}
+    (safe : typed.ReflectiveSupportSafeAt support available) :
+    typed'.ReflectiveSupportSafeAt support available := by
+  have proofEquality : typed = typed' := Subsingleton.elim _ _
+  cases proofEquality
+  exact safe
+
+/-- Collection-spine reflective safety is independent of the particular
+proof term of the same typing judgment. -/
+theorem WellSorted.ElementsHaveType.ReflectiveSupportSafeAt.reindex
+    {language : LanguageDef} {free : WellSorted.FreeTypeContext}
+    {bound : List TypeExpr} {elements : List Pattern}
+    {elementType : TypeExpr}
+    {typed typed' : WellSorted.ElementsHaveType language free bound elements
+      elementType}
+    {support : ContextSupport.Support} {available : List TypeExpr}
+    (safe : typed.ReflectiveSupportSafeAt support available) :
+    typed'.ReflectiveSupportSafeAt support available := by
+  have proofEquality : typed = typed' := Subsingleton.elim _ _
+  cases proofEquality
+  exact safe
+
+/-- View a typed Cost boundary as the generic arbitrary-type open object
+carrier used by recursive decomposition. -/
+def TypedCostRegionBoundary.openPattern {source : CIGSLT}
+    {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    (boundary : TypedCostRegionBoundary source color targetFree) :
+    WellSorted.OpenPattern source.costWholeLanguage targetFree
+      boundary.boundary.targetSupport boundary.boundary.targetType :=
+  ⟨boundary.boundary.content,
+    boundary.contentTyped,
+    boundary.contentCanonicalBinderMetadata,
+    boundary.contentObjectPattern,
+    boundary.contentReflectiveScopeSafe⟩
+
+/-! ### Executable certification of one finite boundary -/
+
+/-- Decode a complete binder-support fiber.  Failure of any component rejects
+the boundary; there is no default source type for a generated Cost type that
+does not lie in the selected static image. -/
+def decodeCostStaticTypeExprList (source : CIGSLT)
+    (color : CostStaticColor) : List TypeExpr → Option (List TypeExpr)
+  | [] => some []
+  | type :: types => do
+      let sourceType ← decodeCostStaticTypeExpr source color type
+      let sourceTypes ← decodeCostStaticTypeExprList source color types
+      pure (sourceType :: sourceTypes)
+
+/-- Decoding a uniformly mapped support is exact. -/
+@[simp]
+theorem decodeCostStaticTypeExprList_map (source : CIGSLT)
+    (color : CostStaticColor) (types : List TypeExpr) :
+    decodeCostStaticTypeExprList source color
+        (types.map (mapTypeExpr (color.symbols source))) = some types := by
+  induction types with
+  | nil => rfl
+  | cons type types inductionHypothesis =>
+      simp [decodeCostStaticTypeExprList, inductionHypothesis]
+
+/-- Successful support decoding witnesses membership in the exact selected
+static fiber. -/
+theorem map_decodeCostStaticTypeExprList (source : CIGSLT)
+    (color : CostStaticColor) {target sourceTypes : List TypeExpr}
+    (decoded : decodeCostStaticTypeExprList source color target =
+      some sourceTypes) :
+    sourceTypes.map (mapTypeExpr (color.symbols source)) = target := by
+  induction target generalizing sourceTypes with
+  | nil =>
+      simp [decodeCostStaticTypeExprList] at decoded
+      subst sourceTypes
+      rfl
+  | cons target targets inductionHypothesis =>
+      simp only [decodeCostStaticTypeExprList] at decoded
+      cases typeDecoded : decodeCostStaticTypeExpr source color target with
+      | none => simp [typeDecoded] at decoded
+      | some sourceType =>
+          cases typesDecoded : decodeCostStaticTypeExprList source color targets with
+          | none => simp [typeDecoded, typesDecoded] at decoded
+          | some sourceTail =>
+              simp [typeDecoded, typesDecoded] at decoded
+              subst sourceTypes
+              simp [mapTypeExpr_decodeCostStaticTypeExpr source color typeDecoded,
+                inductionHypothesis typesDecoded]
+
+/-! ### Binder-context thinning for maximal static regions -/
+
+/-- An order-preserving decomposition of a target binder context into the
+entries belonging to one static Cost type image and the entries foreign to
+that image.  The source list contains exactly the decoded image entries;
+foreign entries remain in the target list as explicit skipped positions. -/
+inductive CostStaticBinderThinning (source : CIGSLT)
+    (color : CostStaticColor) : List TypeExpr → List TypeExpr → Type where
+  | nil : CostStaticBinderThinning source color [] []
+  | mapped {sourceBound targetBound : List TypeExpr}
+      (sourceType : TypeExpr)
+      (tail : CostStaticBinderThinning source color sourceBound targetBound) :
+      CostStaticBinderThinning source color (sourceType :: sourceBound)
+        (mapTypeExpr (color.symbols source) sourceType :: targetBound)
+  | foreign {sourceBound targetBound : List TypeExpr}
+      (targetType : TypeExpr)
+      (rejected : decodeCostStaticTypeExpr source color targetType = none)
+      (tail : CostStaticBinderThinning source color sourceBound targetBound) :
+      CostStaticBinderThinning source color sourceBound
+        (targetType :: targetBound)
+
+namespace CostStaticBinderThinning
+
+/-- The source binder context obtained by filtering a target context through
+one exact static Cost image.  Foreign entries are omitted but remain recorded
+in `ofTargetThinning`; this computation alone is never used as evidence. -/
+def sourceContextOfTarget (source : CIGSLT) (color : CostStaticColor)
+    (targetBound : List TypeExpr) : List TypeExpr :=
+  match targetBound with
+  | [] => []
+  | targetType :: targetBound =>
+      match decodeCostStaticTypeExpr source color targetType with
+      | none => sourceContextOfTarget source color targetBound
+      | some sourceType =>
+          sourceType :: sourceContextOfTarget source color targetBound
+termination_by targetBound.length
+
+/-- Proof-relevant companion to `sourceContextOfTarget`.  It records every
+retained and skipped target position in the same left-to-right traversal. -/
+def ofTargetThinning (source : CIGSLT) (color : CostStaticColor)
+    (targetBound : List TypeExpr) :
+    CostStaticBinderThinning source color
+      (sourceContextOfTarget source color targetBound) targetBound := by
+  match targetBound with
+  | [] => simpa [sourceContextOfTarget] using
+      (CostStaticBinderThinning.nil (source := source) (color := color))
+  | targetType :: targetBound =>
+      cases decoded : decodeCostStaticTypeExpr source color targetType with
+      | none =>
+          simpa [sourceContextOfTarget, decoded] using
+            CostStaticBinderThinning.foreign targetType decoded
+              (ofTargetThinning source color targetBound)
+      | some sourceType =>
+          have mapped :
+              mapTypeExpr (color.symbols source) sourceType = targetType :=
+            mapTypeExpr_decodeCostStaticTypeExpr source color decoded
+          subst targetType
+          simpa [sourceContextOfTarget] using
+            CostStaticBinderThinning.mapped sourceType
+              (ofTargetThinning source color targetBound)
+termination_by targetBound.length
+
+/-- Extend a static binder thinning by an ordered block of freshly introduced
+source binders and their exact target images.  This is the intrinsic context
+action used by multi-binder region plans. -/
+def prependMapped {source : CIGSLT} {color : CostStaticColor}
+    {sourceBound targetBound : List TypeExpr} :
+    (arity : Nat) → (sourceType : TypeExpr) →
+    (tail : CostStaticBinderThinning source color sourceBound targetBound) →
+    CostStaticBinderThinning source color
+      (List.replicate arity sourceType ++ sourceBound)
+      (List.replicate arity (mapTypeExpr (color.symbols source) sourceType) ++
+        targetBound)
+  | 0, _sourceType, tail => tail
+  | Nat.succ arity, sourceType, tail =>
+      CostStaticBinderThinning.mapped sourceType
+        (prependMapped arity sourceType tail)
+
+/-- Filtering a context already wholly in the selected static image recovers
+the authored source context exactly. -/
+@[simp]
+theorem sourceContextOfTarget_map (source : CIGSLT)
+    (color : CostStaticColor) (sourceBound : List TypeExpr) :
+    sourceContextOfTarget source color
+      (sourceBound.map (mapTypeExpr (color.symbols source))) = sourceBound := by
+  induction sourceBound with
+  | nil => simp [sourceContextOfTarget]
+  | cons sourceType sourceBound inductionHypothesis =>
+      simp [sourceContextOfTarget, inductionHypothesis]
+
+/-- The proof-relevant thinning computes exactly the same selected-colour
+source context as the executable target-context filter. -/
+@[simp]
+theorem sourceContextOfTarget_eq_of_thinning
+    {source : CIGSLT} {color : CostStaticColor}
+    {sourceBound targetBound : List TypeExpr}
+    (thinning : CostStaticBinderThinning source color sourceBound targetBound) :
+    sourceContextOfTarget source color targetBound = sourceBound := by
+  induction thinning with
+  | nil => simp [sourceContextOfTarget]
+  | mapped sourceType tail inductionHypothesis =>
+      simp [sourceContextOfTarget, inductionHypothesis]
+  | foreign targetType rejected tail inductionHypothesis =>
+      simp [sourceContextOfTarget, rejected, inductionHypothesis]
+
+/-- The proof-relevant thinning of a fixed target context into one static
+colour is unique.  Decoding decides whether each target binder is retained or
+foreign; the constructors retain the resulting evidence rather than adding a
+second choice. -/
+theorem all_eq {source : CIGSLT} {color : CostStaticColor}
+    {sourceBound targetBound : List TypeExpr}
+    (left right : CostStaticBinderThinning source color sourceBound
+      targetBound) :
+    left = right := by
+  induction left with
+  | nil =>
+      cases right
+      rfl
+  | mapped sourceType tail inductionHypothesis =>
+      cases right with
+      | mapped sourceType' tail' =>
+          congr
+          exact inductionHypothesis tail'
+      | foreign targetType rejected tail' =>
+          simp [decodeCostStaticTypeExpr_mapTypeExpr] at rejected
+  | foreign targetType rejected tail inductionHypothesis =>
+      cases right with
+      | mapped sourceType tail' =>
+          simp [decodeCostStaticTypeExpr_mapTypeExpr] at rejected
+      | foreign targetType' rejected' tail' =>
+          congr
+          exact inductionHypothesis tail'
+
+instance {source : CIGSLT} {color : CostStaticColor}
+    {sourceBound targetBound : List TypeExpr} :
+    Subsingleton (CostStaticBinderThinning source color sourceBound
+      targetBound) :=
+  ⟨all_eq⟩
+
+/-- A source context together with its exact proof-relevant thinning into one
+fixed target context.  Packaging the dependent pair lets callers transport
+the context and its witness atomically. -/
+abbrev Slice (source : CIGSLT) (color : CostStaticColor)
+    (targetBound : List TypeExpr) :=
+  Σ sourceBound,
+    CostStaticBinderThinning source color sourceBound targetBound
+
+/-- The decoded slice of a fixed target context is unique as a dependent
+pair.  This is the safe transport principle for binder-introducing planner
+branches: the selected source context and its witness never drift apart. -/
+theorem slice_all_eq {source : CIGSLT} {color : CostStaticColor}
+    {targetBound : List TypeExpr}
+    (left right : Slice source color targetBound) :
+    left = right := by
+  rcases left with ⟨leftBound, leftThinning⟩
+  rcases right with ⟨rightBound, rightThinning⟩
+  have boundEquality : leftBound = rightBound :=
+    (sourceContextOfTarget_eq_of_thinning leftThinning).symm.trans
+      (sourceContextOfTarget_eq_of_thinning rightThinning)
+  subst rightBound
+  have thinningEquality : leftThinning = rightThinning := all_eq _ _
+  subst rightThinning
+  rfl
+
+/-- Both sides of a binder-context decomposition packaged together.  This is
+the transport carrier needed when list associativity changes the spelling of
+the target context at a multi-binder boundary. -/
+abbrev ContextSlice (source : CIGSLT) (color : CostStaticColor) :=
+  Σ targetBound, Slice source color targetBound
+
+/-- Context slices with propositionally equal target contexts are equal.  The
+source slice is then forced by deterministic decoding. -/
+theorem contextSlice_eq_of_target_eq {source : CIGSLT}
+    {color : CostStaticColor}
+    (left right : ContextSlice source color)
+    (targetEquality : left.1 = right.1) :
+    left = right := by
+  rcases left with ⟨leftTarget, leftSlice⟩
+  rcases right with ⟨rightTarget, rightSlice⟩
+  simp only at targetEquality
+  subst rightTarget
+  have sliceEquality : leftSlice = rightSlice := slice_all_eq _ _
+  subst rightSlice
+  rfl
+
+/-- Canonical thinning for a context already wholly in one static image. -/
+def mappedContext (source : CIGSLT) (color : CostStaticColor)
+    (sourceBound : List TypeExpr) :
+    CostStaticBinderThinning source color sourceBound
+      (sourceBound.map (mapTypeExpr (color.symbols source))) := by
+  simpa using ofTargetThinning source color
+    (sourceBound.map (mapTypeExpr (color.symbols source)))
+
+/-- Filtering an exact mapped prefix commutes with appending an arbitrary
+target suffix. -/
+@[simp]
+theorem sourceContextOfTarget_map_append (source : CIGSLT)
+    (color : CostStaticColor) (sourcePrefix targetBound : List TypeExpr) :
+    sourceContextOfTarget source color
+        (sourcePrefix.map (mapTypeExpr (color.symbols source)) ++ targetBound) =
+      sourcePrefix ++ sourceContextOfTarget source color targetBound := by
+  induction sourcePrefix with
+  | nil => rfl
+  | cons sourceType sourcePrefix inductionHypothesis =>
+      simp [sourceContextOfTarget, inductionHypothesis]
+
+/-- Filtering through one static colour distributes over arbitrary context
+concatenation.  This exposes the exact decoded prefix used by reflective
+availability checks. -/
+@[simp]
+theorem sourceContextOfTarget_append (source : CIGSLT)
+    (color : CostStaticColor) (left right : List TypeExpr) :
+    sourceContextOfTarget source color (left ++ right) =
+      sourceContextOfTarget source color left ++
+        sourceContextOfTarget source color right := by
+  induction left with
+  | nil => simp [sourceContextOfTarget]
+  | cons targetType left inductionHypothesis =>
+      cases decoded : decodeCostStaticTypeExpr source color targetType with
+      | none =>
+          simp [sourceContextOfTarget, decoded, inductionHypothesis]
+      | some sourceType =>
+          simp [sourceContextOfTarget, decoded, inductionHypothesis]
+
+/-- Embed a decoded source-context index into its original target position.
+The function is total on naturals, while the lookup theorems below give its
+meaning precisely on in-range source indices. -/
+def toTargetIndex {source : CIGSLT} {color : CostStaticColor} :
+    {sourceBound targetBound : List TypeExpr} →
+      CostStaticBinderThinning source color sourceBound targetBound → Nat → Nat
+  | [], [], .nil, index => index
+  | _ :: _, _ :: _, .mapped _ _, 0 => 0
+  | _ :: _, _ :: _, .mapped _ tail, index + 1 =>
+      tail.toTargetIndex index + 1
+  | _, _ :: _, .foreign _ _ tail, index =>
+      tail.toTargetIndex index + 1
+
+/-- Partially contract a target-context index to the decoded source context.
+Foreign binder positions return `none`; no neighboring image entry is used as
+a fallback. -/
+def toSourceIndex? {source : CIGSLT} {color : CostStaticColor} :
+    {sourceBound targetBound : List TypeExpr} →
+      CostStaticBinderThinning source color sourceBound targetBound →
+      Nat → Option Nat
+  | [], [], .nil, _ => none
+  | _ :: _, _ :: _, .mapped _ _, 0 => some 0
+  | _ :: _, _ :: _, .mapped _ tail, index + 1 =>
+      (tail.toSourceIndex? index).map Nat.succ
+  | _, _ :: _, .foreign _ _ _, 0 => none
+  | _, _ :: _, .foreign _ _ tail, index + 1 =>
+      tail.toSourceIndex? index
+
+/-- Erased computation of the source index selected by one target binder
+position.  Unlike `CostStaticBinderThinning`, this function depends only on
+the target context; the theorem below proves that every intrinsic thinning
+witness computes this same result. -/
+def targetToSourceIndex? (source : CIGSLT) (color : CostStaticColor) :
+    List TypeExpr → Nat → Option Nat
+  | [], _ => none
+  | targetType :: _targetBound, 0 =>
+      match decodeCostStaticTypeExpr source color targetType with
+      | none => none
+      | some _ => some 0
+  | targetType :: targetBound, index + 1 =>
+      match decodeCostStaticTypeExpr source color targetType with
+      | none => targetToSourceIndex? source color targetBound index
+      | some _ =>
+          (targetToSourceIndex? source color targetBound index).map Nat.succ
+
+/-- Intrinsic binder thinning erases to the unique target-context filter. -/
+theorem toSourceIndex?_eq_targetToSourceIndex?
+    {source : CIGSLT} {color : CostStaticColor}
+    {sourceBound targetBound : List TypeExpr}
+    (thinning : CostStaticBinderThinning source color sourceBound targetBound)
+    (index : Nat) :
+    thinning.toSourceIndex? index =
+      targetToSourceIndex? source color targetBound index := by
+  induction thinning generalizing index with
+  | nil => cases index <;> rfl
+  | mapped sourceType tail inductionHypothesis =>
+      cases index <;>
+        simp [toSourceIndex?, targetToSourceIndex?, inductionHypothesis,
+          decodeCostStaticTypeExpr_mapTypeExpr]
+  | foreign targetType rejected tail inductionHypothesis =>
+      cases index <;>
+        simp [toSourceIndex?, targetToSourceIndex?, inductionHypothesis,
+          rejected]
+
+/-- Every in-range decoded source entry embeds at an equal mapped target
+type. -/
+theorem lookup_toTargetIndex {source : CIGSLT} {color : CostStaticColor}
+    {sourceBound targetBound : List TypeExpr}
+    (thinning : CostStaticBinderThinning source color sourceBound targetBound)
+    {index : Nat} {sourceType : TypeExpr}
+    (lookup : sourceBound[index]? = some sourceType) :
+    targetBound[thinning.toTargetIndex index]? =
+      some (mapTypeExpr (color.symbols source) sourceType) := by
+  induction thinning generalizing index sourceType with
+  | nil => simp at lookup
+  | mapped head tail inductionHypothesis =>
+      cases index with
+      | zero =>
+          simp at lookup
+          subst sourceType
+          rfl
+      | succ index =>
+          simp only [List.getElem?_cons_succ] at lookup
+          simpa [toTargetIndex] using inductionHypothesis lookup
+  | foreign targetType rejected tail inductionHypothesis =>
+      simpa [toTargetIndex] using inductionHypothesis lookup
+
+/-- Contracting an embedded in-range source index recovers that exact source
+index. -/
+theorem toSourceIndex?_toTargetIndex {source : CIGSLT}
+    {color : CostStaticColor} {sourceBound targetBound : List TypeExpr}
+    (thinning : CostStaticBinderThinning source color sourceBound targetBound)
+    {index : Nat} {sourceType : TypeExpr}
+    (lookup : sourceBound[index]? = some sourceType) :
+    thinning.toSourceIndex? (thinning.toTargetIndex index) = some index := by
+  induction thinning generalizing index sourceType with
+  | nil => simp at lookup
+  | mapped head tail inductionHypothesis =>
+      cases index with
+      | zero => simp [toTargetIndex, toSourceIndex?]
+      | succ index =>
+          simp only [List.getElem?_cons_succ] at lookup
+          simp [toTargetIndex, toSourceIndex?, inductionHypothesis lookup]
+  | foreign targetType rejected tail inductionHypothesis =>
+      simp [toTargetIndex, toSourceIndex?, inductionHypothesis lookup]
+
+/-- Every target index accepted by contraction is the exact image of the
+reported source index. -/
+theorem toTargetIndex_of_toSourceIndex?_eq_some {source : CIGSLT}
+    {color : CostStaticColor} {sourceBound targetBound : List TypeExpr}
+    (thinning : CostStaticBinderThinning source color sourceBound targetBound)
+    {targetIndex sourceIndex : Nat}
+    (contracted : thinning.toSourceIndex? targetIndex = some sourceIndex) :
+    thinning.toTargetIndex sourceIndex = targetIndex := by
+  induction thinning generalizing targetIndex sourceIndex with
+  | nil => simp [toSourceIndex?] at contracted
+  | mapped head tail inductionHypothesis =>
+      cases targetIndex with
+      | zero =>
+          simp [toSourceIndex?] at contracted
+          subst sourceIndex
+          rfl
+      | succ targetIndex =>
+          simp only [toSourceIndex?] at contracted
+          cases sourceIndex with
+          | zero => simp at contracted
+          | succ sourceIndex =>
+              simp only [Option.map_eq_some_iff] at contracted
+              obtain ⟨contractedIndex, contracted, equality⟩ := contracted
+              have contractedIndex_eq : contractedIndex = sourceIndex := by
+                omega
+              subst contractedIndex
+              simp [toTargetIndex, inductionHypothesis contracted]
+  | foreign targetType rejected tail inductionHypothesis =>
+      cases targetIndex with
+      | zero => simp [toSourceIndex?] at contracted
+      | succ targetIndex =>
+          have contractedTail :
+              tail.toSourceIndex? targetIndex = some sourceIndex := by
+            simpa [toSourceIndex?] using contracted
+          simp [toTargetIndex,
+            inductionHypothesis contractedTail]
+
+/-- A target binder whose type lies in the selected static image is retained
+by the proof-relevant context filter.  The result exposes both the contracted
+index and its exact decoded source lookup; foreign entries cannot masquerade
+as mapped entries because their decoder result is `none`. -/
+theorem exists_toSourceIndex?_of_lookup_map
+    {source : CIGSLT} {color : CostStaticColor}
+    {sourceBound targetBound : List TypeExpr}
+    (thinning : CostStaticBinderThinning source color sourceBound targetBound)
+    {targetIndex : Nat} {sourceType : TypeExpr}
+    (lookup : targetBound[targetIndex]? =
+      some (mapTypeExpr (color.symbols source) sourceType)) :
+    ∃ sourceIndex,
+      thinning.toSourceIndex? targetIndex = some sourceIndex ∧
+        sourceBound[sourceIndex]? = some sourceType := by
+  induction thinning generalizing targetIndex sourceType with
+  | nil =>
+      simp at lookup
+  | mapped head tail inductionHypothesis =>
+      cases targetIndex with
+      | zero =>
+          simp only [List.getElem?_cons_zero, Option.some.injEq] at lookup
+          have sourceTypeEquality : head = sourceType :=
+            mapTypeExpr_costStatic_injective source color lookup
+          subst sourceType
+          exact ⟨0, by simp [toSourceIndex?]⟩
+      | succ targetIndex =>
+          simp only [List.getElem?_cons_succ] at lookup
+          obtain ⟨sourceIndex, contracted, sourceLookup⟩ :=
+            inductionHypothesis lookup
+          exact ⟨sourceIndex + 1, by
+            simp [toSourceIndex?, contracted, sourceLookup]⟩
+  | foreign targetType rejected tail inductionHypothesis =>
+      cases targetIndex with
+      | zero =>
+          simp only [List.getElem?_cons_zero, Option.some.injEq] at lookup
+          subst targetType
+          simp at rejected
+      | succ targetIndex =>
+          simp only [List.getElem?_cons_succ] at lookup
+          obtain ⟨sourceIndex, contracted, sourceLookup⟩ :=
+            inductionHypothesis lookup
+          exact ⟨sourceIndex, by
+            simp [toSourceIndex?, contracted, sourceLookup]⟩
+
+/-- If a mapped target binder lies inside an explicitly available prefix,
+canonical thinning contracts it to an in-range binder of the decoded source
+prefix.  This is the exact executable fact required by static planning below
+ordinary and reflective constructors. -/
+theorem exists_toSourceIndex?_of_lookup_map_of_lt_prefix
+    {source : CIGSLT} {color : CostStaticColor}
+    (available sealed : List TypeExpr)
+    {targetIndex : Nat} {sourceType : TypeExpr}
+    (lookup : (available ++ sealed)[targetIndex]? =
+      some (mapTypeExpr (color.symbols source) sourceType))
+    (inside : targetIndex < available.length) :
+    ∃ sourceIndex,
+      (ofTargetThinning source color (available ++ sealed)).toSourceIndex?
+          targetIndex = some sourceIndex ∧
+        (sourceContextOfTarget source color (available ++ sealed))[sourceIndex]? =
+          some sourceType ∧
+        sourceIndex < (sourceContextOfTarget source color available).length := by
+  induction available generalizing targetIndex sourceType with
+  | nil => simp at inside
+  | cons targetType available inductionHypothesis =>
+      cases decoded : decodeCostStaticTypeExpr source color targetType with
+      | none =>
+          cases targetIndex with
+          | zero =>
+              simp only [List.cons_append, List.getElem?_cons_zero,
+                Option.some.injEq] at lookup
+              subst targetType
+              simp at decoded
+          | succ targetIndex =>
+              simp only [List.length_cons, Nat.succ_lt_succ_iff] at inside
+              simp only [List.cons_append, List.getElem?_cons_succ] at lookup
+              obtain ⟨sourceIndex, contracted, sourceLookup, sourceInside⟩ :=
+                inductionHypothesis lookup inside
+              refine ⟨sourceIndex, ?_, ?_, ?_⟩
+              · change
+                  (ofTargetThinning source color
+                    (targetType :: (available ++ sealed))).toSourceIndex?
+                      (targetIndex + 1) = some sourceIndex
+                calc
+                  _ = targetToSourceIndex? source color
+                        (targetType :: (available ++ sealed))
+                        (targetIndex + 1) :=
+                    toSourceIndex?_eq_targetToSourceIndex? _ _
+                  _ = targetToSourceIndex? source color
+                        (available ++ sealed) targetIndex := by
+                    simp [targetToSourceIndex?, decoded]
+                  _ = (ofTargetThinning source color
+                        (available ++ sealed)).toSourceIndex? targetIndex :=
+                    (toSourceIndex?_eq_targetToSourceIndex? _ _).symm
+                  _ = some sourceIndex := contracted
+              · simpa [sourceContextOfTarget, decoded] using sourceLookup
+              · simpa [sourceContextOfTarget, decoded] using sourceInside
+      | some decodedType =>
+          have targetTypeMap :
+              mapTypeExpr (color.symbols source) decodedType = targetType :=
+            mapTypeExpr_decodeCostStaticTypeExpr source color decoded
+          subst targetType
+          cases targetIndex with
+          | zero =>
+              simp only [List.cons_append, List.getElem?_cons_zero,
+                Option.some.injEq] at lookup
+              have decodedTypeEquality : decodedType = sourceType :=
+                mapTypeExpr_costStatic_injective source color lookup
+              subst sourceType
+              refine ⟨0, ?_, ?_, ?_⟩
+              · change
+                  (ofTargetThinning source color
+                    (mapTypeExpr (color.symbols source) decodedType ::
+                      (available ++ sealed))).toSourceIndex? 0 = some 0
+                calc
+                  _ = targetToSourceIndex? source color
+                        (mapTypeExpr (color.symbols source) decodedType ::
+                          (available ++ sealed)) 0 :=
+                    toSourceIndex?_eq_targetToSourceIndex? _ _
+                  _ = some 0 := by
+                    simp [targetToSourceIndex?]
+              · simp [sourceContextOfTarget]
+              · simp [sourceContextOfTarget]
+          | succ targetIndex =>
+              simp only [List.length_cons, Nat.succ_lt_succ_iff] at inside
+              simp only [List.cons_append, List.getElem?_cons_succ] at lookup
+              obtain ⟨sourceIndex, contracted, sourceLookup, sourceInside⟩ :=
+                inductionHypothesis lookup inside
+              refine ⟨sourceIndex + 1, ?_, ?_, ?_⟩
+              · change
+                  (ofTargetThinning source color
+                    (mapTypeExpr (color.symbols source) decodedType ::
+                      (available ++ sealed))).toSourceIndex?
+                        (targetIndex + 1) = some (sourceIndex + 1)
+                calc
+                  _ = targetToSourceIndex? source color
+                        (mapTypeExpr (color.symbols source) decodedType ::
+                          (available ++ sealed)) (targetIndex + 1) :=
+                    toSourceIndex?_eq_targetToSourceIndex? _ _
+                  _ = (targetToSourceIndex? source color
+                        (available ++ sealed) targetIndex).map Nat.succ := by
+                    simp [targetToSourceIndex?]
+                  _ = ((ofTargetThinning source color
+                        (available ++ sealed)).toSourceIndex?
+                          targetIndex).map Nat.succ := by
+                    rw [toSourceIndex?_eq_targetToSourceIndex?]
+                  _ = some (sourceIndex + 1) := by
+                    rw [contracted]
+                    rfl
+              · simpa [sourceContextOfTarget] using sourceLookup
+              · simpa [sourceContextOfTarget] using sourceInside
+
+/-- Contract one ambient target index while leaving indices introduced by
+binders inside the traversed pattern fixed. -/
+def contractIndexAt? {source : CIGSLT} {color : CostStaticColor}
+    {sourceBound targetBound : List TypeExpr}
+    (thinning : CostStaticBinderThinning source color sourceBound targetBound)
+    (depth index : Nat) : Option Nat :=
+  if index < depth then
+    some index
+  else
+    (thinning.toSourceIndex? (index - depth)).map (depth + ·)
+
+/-- Embed one contracted ambient index back into its original target context,
+again fixing every binder introduced inside the traversed pattern. -/
+def embedIndexAt {source : CIGSLT} {color : CostStaticColor}
+    {sourceBound targetBound : List TypeExpr}
+    (thinning : CostStaticBinderThinning source color sourceBound targetBound)
+    (depth index : Nat) : Nat :=
+  if index < depth then
+    index
+  else
+    depth + thinning.toTargetIndex (index - depth)
+
+/-- A proof-relevant static thinning preserves the order of every source
+binder position.  Foreign target binders only insert positions; they cannot
+reorder or collapse the retained source context. -/
+theorem toTargetIndex_strictMono {source : CIGSLT}
+    {color : CostStaticColor} {sourceBound targetBound : List TypeExpr}
+    (thinning : CostStaticBinderThinning source color sourceBound targetBound) :
+    StrictMono thinning.toTargetIndex := by
+  intro left right less
+  induction thinning generalizing left right with
+  | nil => exact less
+  | mapped sourceType tail inductionHypothesis =>
+      cases left with
+      | zero =>
+          cases right with
+          | zero => omega
+          | succ right => simp [toTargetIndex]
+      | succ left =>
+          cases right with
+          | zero => omega
+          | succ right =>
+              simp only [toTargetIndex]
+              simpa [Nat.add_comm] using Nat.add_lt_add_left
+                (inductionHypothesis (by omega)) 1
+  | foreign targetType rejected tail inductionHypothesis =>
+      simp only [toTargetIndex]
+      simpa [Nat.add_comm] using
+        Nat.add_lt_add_left (inductionHypothesis less) 1
+
+/-- A static thinning therefore never identifies two source binder
+positions. -/
+theorem toTargetIndex_injective {source : CIGSLT}
+    {color : CostStaticColor} {sourceBound targetBound : List TypeExpr}
+    (thinning : CostStaticBinderThinning source color sourceBound targetBound) :
+    Function.Injective thinning.toTargetIndex :=
+  thinning.toTargetIndex_strictMono.injective
+
+/-- Ambient embedding is injective at every local binder depth.  In
+particular, locally introduced indices remain distinct from every reinserted
+ambient index.  This is the exact occurrence-preservation fact needed before
+transporting authored equations through binder thinning. -/
+theorem embedIndexAt_injective {source : CIGSLT}
+    {color : CostStaticColor} {sourceBound targetBound : List TypeExpr}
+    (thinning : CostStaticBinderThinning source color sourceBound targetBound)
+    (depth : Nat) : Function.Injective (thinning.embedIndexAt depth) := by
+  intro left right equality
+  by_cases leftInside : left < depth
+  · by_cases rightInside : right < depth
+    · simpa [embedIndexAt, leftInside, rightInside] using equality
+    · have rightLe : depth ≤ right := Nat.le_of_not_gt rightInside
+      simp only [embedIndexAt, if_pos leftInside, if_neg rightInside] at equality
+      omega
+  · have leftLe : depth ≤ left := Nat.le_of_not_gt leftInside
+    by_cases rightInside : right < depth
+    · simp only [embedIndexAt, if_neg leftInside, if_pos rightInside] at equality
+      omega
+    · have rightLe : depth ≤ right := Nat.le_of_not_gt rightInside
+      simp only [embedIndexAt, if_neg leftInside, if_neg rightInside] at equality
+      have mappedEquality :
+          thinning.toTargetIndex (left - depth) =
+            thinning.toTargetIndex (right - depth) :=
+        Nat.add_left_cancel equality
+      have differences : left - depth = right - depth :=
+        thinning.toTargetIndex_injective mappedEquality
+      omega
+
+/-- Embedding a de Bruijn index preserves its lookup when a decoded static
+context is placed back into the full target context.  The explicit `inner`
+prefix represents binders introduced inside the traversed pattern; those
+indices are fixed, while ambient indices pass through the thinning. -/
+theorem lookup_embedIndexAt {source : CIGSLT} {color : CostStaticColor}
+    {sourceBound targetBound : List TypeExpr}
+    (thinning : CostStaticBinderThinning source color sourceBound targetBound)
+    (inner : List TypeExpr) {index : Nat} {type : TypeExpr}
+    (lookup :
+      (inner ++ sourceBound.map (mapTypeExpr (color.symbols source)))[index]? =
+        some type) :
+    (inner ++ targetBound)[thinning.embedIndexAt inner.length index]? =
+      some type := by
+  by_cases inside : index < inner.length
+  · rw [embedIndexAt, if_pos inside]
+    rw [List.getElem?_append_left inside] at lookup ⊢
+    exact lookup
+  · have afterInner : inner.length ≤ index := Nat.le_of_not_gt inside
+    rw [List.getElem?_append_right afterInner, List.getElem?_map] at lookup
+    simp only [Option.map_eq_some_iff] at lookup
+    obtain ⟨sourceType, sourceLookup, mappedType⟩ := lookup
+    subst type
+    rw [embedIndexAt, if_neg inside]
+    rw [List.getElem?_append_right (by omega), Nat.add_sub_cancel_left]
+    exact thinning.lookup_toTargetIndex sourceLookup
+
+/-- Index contraction followed by embedding is exact on every accepted
+target index. -/
+theorem embedIndexAt_of_contractIndexAt?_eq_some {source : CIGSLT}
+    {color : CostStaticColor} {sourceBound targetBound : List TypeExpr}
+    (thinning : CostStaticBinderThinning source color sourceBound targetBound)
+    {depth targetIndex sourceIndex : Nat}
+    (contracted : thinning.contractIndexAt? depth targetIndex =
+      some sourceIndex) :
+    thinning.embedIndexAt depth sourceIndex = targetIndex := by
+  unfold contractIndexAt? at contracted
+  split at contracted
+  · rename_i inside
+    simp only [Option.some.injEq] at contracted
+    subst sourceIndex
+    simp [embedIndexAt, inside]
+  · rename_i outside
+    simp only [Option.map_eq_some_iff] at contracted
+    obtain ⟨contractedIndex, contractedIndexEquality,
+      sourceIndexEquality⟩ := contracted
+    subst sourceIndex
+    have depthLe : depth ≤ targetIndex := Nat.le_of_not_gt outside
+    have embedded := thinning.toTargetIndex_of_toSourceIndex?_eq_some
+      contractedIndexEquality
+    simp only [embedIndexAt]
+    have notInside : ¬ depth + contractedIndex < depth := by omega
+    rw [if_neg notInside, Nat.add_sub_cancel_left, embedded,
+      Nat.add_sub_of_le depthLe]
+
+/-- Partially remove foreign ambient binder positions from a raw pattern.
+Locally introduced binders are fixed.  Failure exposes an actual reference to
+a foreign position; it is never redirected to a neighboring binder. -/
+def thinAmbientBVars? {source : CIGSLT} {color : CostStaticColor}
+    {sourceBound targetBound : List TypeExpr}
+    (thinning : CostStaticBinderThinning source color sourceBound targetBound)
+    (depth : Nat) : Pattern → Option Pattern
+  | .bvar index =>
+      (thinning.contractIndexAt? depth index).map Pattern.bvar
+  | .fvar name => some (.fvar name)
+  | .apply constructor arguments => do
+      let arguments ← arguments.mapM (thinAmbientBVars? thinning depth)
+      pure (.apply constructor arguments)
+  | .lambda binder body => do
+      let body ← thinAmbientBVars? thinning (depth + 1) body
+      pure (.lambda binder body)
+  | .multiLambda arity binders body => do
+      let body ← thinAmbientBVars? thinning (depth + arity) body
+      pure (.multiLambda arity binders body)
+  | .subst body replacement => do
+      let body ← thinAmbientBVars? thinning (depth + 1) body
+      let replacement ← thinAmbientBVars? thinning depth replacement
+      pure (.subst body replacement)
+  | .collection collectionType elements rest => do
+      let elements ← elements.mapM (thinAmbientBVars? thinning depth)
+      pure (.collection collectionType elements rest)
+termination_by pattern => sizeOf pattern
+
+/-- Restore contracted ambient binder indices to their original target
+positions. -/
+def thickenAmbientBVars {source : CIGSLT} {color : CostStaticColor}
+    {sourceBound targetBound : List TypeExpr}
+    (thinning : CostStaticBinderThinning source color sourceBound targetBound)
+    (depth : Nat) : Pattern → Pattern
+  | .bvar index => .bvar (thinning.embedIndexAt depth index)
+  | .fvar name => .fvar name
+  | .apply constructor arguments =>
+      .apply constructor (arguments.map (thickenAmbientBVars thinning depth))
+  | .lambda binder body =>
+      .lambda binder (thickenAmbientBVars thinning (depth + 1) body)
+  | .multiLambda arity binders body =>
+      .multiLambda arity binders
+        (thickenAmbientBVars thinning (depth + arity) body)
+  | .subst body replacement =>
+      .subst (thickenAmbientBVars thinning (depth + 1) body)
+        (thickenAmbientBVars thinning depth replacement)
+  | .collection collectionType elements rest =>
+      .collection collectionType
+        (elements.map (thickenAmbientBVars thinning depth)) rest
+termination_by pattern => sizeOf pattern
+
+/-- Moving one retained binder from the thinning into the local prefix gives
+the same embedded index. -/
+theorem embedIndexAt_mapped {source : CIGSLT}
+    {color : CostStaticColor} {sourceBound targetBound : List TypeExpr}
+    (sourceType : TypeExpr)
+    (tail : CostStaticBinderThinning source color sourceBound targetBound)
+    (depth index : Nat) :
+    (CostStaticBinderThinning.mapped sourceType tail).embedIndexAt depth index =
+      tail.embedIndexAt (depth + 1) index := by
+  unfold embedIndexAt
+  by_cases before : index < depth
+  · have beforeNext : index < depth + 1 := by omega
+    rw [if_pos before, if_pos beforeNext]
+  · rw [if_neg before]
+    by_cases atBinder : index = depth
+    · subst index
+      rw [if_pos (by omega)]
+      simp [toTargetIndex]
+    · have afterNext : ¬ index < depth + 1 := by omega
+      rw [if_neg afterNext]
+      have difference : index - depth = index - (depth + 1) + 1 := by omega
+      rw [difference]
+      simp only [toTargetIndex]
+      omega
+
+/-- Moving one exact mapped binder from the thinning into the structural
+depth leaves the raw ambient embedding unchanged. -/
+theorem thickenAmbientBVars_mapped {source : CIGSLT}
+    {color : CostStaticColor} {sourceBound targetBound : List TypeExpr}
+    (sourceType : TypeExpr)
+    (tail : CostStaticBinderThinning source color sourceBound targetBound)
+    (depth : Nat) (pattern : Pattern) :
+    (CostStaticBinderThinning.mapped sourceType tail).thickenAmbientBVars
+        depth pattern =
+      tail.thickenAmbientBVars (depth + 1) pattern := by
+  induction pattern using Pattern.inductionOn generalizing depth with
+  | hbvar index =>
+      simpa only [thickenAmbientBVars, Pattern.bvar.injEq] using
+        embedIndexAt_mapped sourceType tail depth index
+  | hfvar name => simp [thickenAmbientBVars]
+  | happly constructor arguments inductionHypothesis =>
+      simp only [thickenAmbientBVars, Pattern.apply.injEq, true_and]
+      apply List.map_congr_left
+      intro argument membership
+      exact inductionHypothesis argument membership depth
+  | hlambda binder body inductionHypothesis =>
+      simp only [thickenAmbientBVars, Pattern.lambda.injEq, true_and]
+      simpa [Nat.add_assoc] using inductionHypothesis (depth + 1)
+  | hmultiLambda arity binders body inductionHypothesis =>
+      simp only [thickenAmbientBVars, Pattern.multiLambda.injEq, true_and]
+      simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
+        inductionHypothesis (depth + arity)
+  | hsubst body replacement bodyInduction replacementInduction =>
+      simp only [thickenAmbientBVars, Pattern.subst.injEq]
+      exact ⟨by
+        simpa [Nat.add_assoc] using bodyInduction (depth + 1),
+        replacementInduction depth⟩
+  | hcollection collectionType elements rest inductionHypothesis =>
+      simp only [thickenAmbientBVars, Pattern.collection.injEq, true_and]
+      constructor
+      · apply List.map_congr_left
+        intro element membership
+        exact inductionHypothesis element membership depth
+      · trivial
+
+/-- Moving an ordered block of exact mapped binders from a thinning into the
+local structural depth preserves every embedded index. -/
+theorem embedIndexAt_prependMapped {source : CIGSLT}
+    {color : CostStaticColor} {sourceBound targetBound : List TypeExpr}
+    (arity : Nat) (sourceType : TypeExpr)
+    (tail : CostStaticBinderThinning source color sourceBound targetBound)
+    (depth index : Nat) :
+    (prependMapped arity sourceType tail).embedIndexAt depth index =
+      tail.embedIndexAt (depth + arity) index := by
+  induction arity generalizing depth with
+  | zero => simp [prependMapped]
+  | succ arity inductionHypothesis =>
+      calc
+        (prependMapped (Nat.succ arity) sourceType tail).embedIndexAt
+            depth index =
+            (prependMapped arity sourceType tail).embedIndexAt
+              (depth + 1) index := by
+                simpa [prependMapped, List.replicate_succ] using
+                  embedIndexAt_mapped sourceType
+                    (prependMapped arity sourceType tail) depth index
+        _ = tail.embedIndexAt ((depth + 1) + arity) index :=
+          inductionHypothesis (depth + 1)
+        _ = tail.embedIndexAt (depth + Nat.succ arity) index := by
+          congr 1
+          omega
+
+/-- The corresponding raw-pattern action for an ordered block of mapped
+binders.  This is the multi-binder companion to `thickenAmbientBVars_mapped`.
+-/
+theorem thickenAmbientBVars_prependMapped {source : CIGSLT}
+    {color : CostStaticColor} {sourceBound targetBound : List TypeExpr}
+    (arity : Nat) (sourceType : TypeExpr)
+    (tail : CostStaticBinderThinning source color sourceBound targetBound)
+    (depth : Nat) (pattern : Pattern) :
+    (prependMapped arity sourceType tail).thickenAmbientBVars depth pattern =
+      tail.thickenAmbientBVars (depth + arity) pattern := by
+  induction pattern using Pattern.inductionOn generalizing depth with
+  | hbvar index =>
+      simpa only [thickenAmbientBVars, Pattern.bvar.injEq] using
+        embedIndexAt_prependMapped arity sourceType tail depth index
+  | hfvar name => simp [thickenAmbientBVars]
+  | happly constructor arguments inductionHypothesis =>
+      simp only [thickenAmbientBVars, Pattern.apply.injEq, true_and]
+      apply List.map_congr_left
+      intro argument membership
+      exact inductionHypothesis argument membership depth
+  | hlambda binder body inductionHypothesis =>
+      simp only [thickenAmbientBVars, Pattern.lambda.injEq, true_and]
+      simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
+        inductionHypothesis (depth + 1)
+  | hmultiLambda innerArity binders body inductionHypothesis =>
+      simp only [thickenAmbientBVars, Pattern.multiLambda.injEq, true_and]
+      simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
+        inductionHypothesis (depth + innerArity)
+  | hsubst body replacement bodyInduction replacementInduction =>
+      simp only [thickenAmbientBVars, Pattern.subst.injEq]
+      exact ⟨by
+        simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using
+          bodyInduction (depth + 1),
+        replacementInduction depth⟩
+  | hcollection collectionType elements rest inductionHypothesis =>
+      simp only [thickenAmbientBVars, Pattern.collection.injEq, true_and]
+      constructor
+      · apply List.map_congr_left
+        intro element membership
+        exact inductionHypothesis element membership depth
+      · trivial
+
+/-- Cost binder reinsertion is an instance of the generic ambient-context
+action.  Keeping this bridge explicit lets the equation semantics prove one
+renaming theorem and reuse it for both ordinary weakening and finite Cost
+region recomposition. -/
+theorem thickenAmbientBVars_eq_renameAmbientBVarsAt {source : CIGSLT}
+    {color : CostStaticColor} {sourceBound targetBound : List TypeExpr}
+    (thinning : CostStaticBinderThinning source color sourceBound targetBound)
+    (depth : Nat) (pattern : Pattern) :
+    thinning.thickenAmbientBVars depth pattern =
+      ContextSubstitution.renameAmbientBVarsAt thinning.toTargetIndex depth
+        pattern := by
+  induction pattern using Pattern.inductionOn generalizing depth with
+  | hbvar index =>
+      by_cases inside : index < depth <;>
+        simp [thickenAmbientBVars, embedIndexAt,
+          ContextSubstitution.renameAmbientBVarsAt, inside]
+  | hfvar name =>
+      simp [thickenAmbientBVars, ContextSubstitution.renameAmbientBVarsAt]
+  | happly constructor arguments inductionHypothesis =>
+      simp only [thickenAmbientBVars,
+        ContextSubstitution.renameAmbientBVarsAt, Pattern.apply.injEq, true_and]
+      apply List.map_congr_left
+      intro argument membership
+      exact inductionHypothesis argument membership depth
+  | hlambda binderName body inductionHypothesis =>
+      simp [thickenAmbientBVars, ContextSubstitution.renameAmbientBVarsAt,
+        inductionHypothesis]
+  | hmultiLambda arity binderNames body inductionHypothesis =>
+      simp [thickenAmbientBVars, ContextSubstitution.renameAmbientBVarsAt,
+        inductionHypothesis]
+  | hsubst body replacement bodyInduction replacementInduction =>
+      simp [thickenAmbientBVars, ContextSubstitution.renameAmbientBVarsAt,
+        bodyInduction, replacementInduction]
+  | hcollection collectionType elements rest inductionHypothesis =>
+      simp only [thickenAmbientBVars,
+        ContextSubstitution.renameAmbientBVarsAt, Pattern.collection.injEq,
+        true_and]
+      constructor
+      · apply List.map_congr_left
+        intro element membership
+        exact inductionHypothesis element membership depth
+      · trivial
+
+/-- Every decoded source position embeds inside the finite target context.
+This is the order-theoretic fact behind scope preservation for ambient
+binder insertion. -/
+theorem toTargetIndex_lt_length {source : CIGSLT} {color : CostStaticColor}
+    {sourceBound targetBound : List TypeExpr}
+    (thinning : CostStaticBinderThinning source color sourceBound targetBound)
+    {index : Nat} (inRange : index < sourceBound.length) :
+    thinning.toTargetIndex index < targetBound.length := by
+  induction thinning generalizing index with
+  | nil => simp at inRange
+  | mapped sourceType tail inductionHypothesis =>
+      cases index with
+      | zero => simp [toTargetIndex]
+      | succ index =>
+          simp only [List.length_cons, Nat.succ_lt_succ_iff] at inRange
+          simpa [toTargetIndex] using
+            Nat.succ_lt_succ (inductionHypothesis inRange)
+  | foreign targetType rejected tail inductionHypothesis =>
+      simpa [toTargetIndex] using
+        Nat.succ_lt_succ (inductionHypothesis inRange)
+
+/-- Embedding one source-scoped index preserves its finite scope bound after
+target-only ambient binders are inserted. -/
+theorem embedIndexAt_lt {source : CIGSLT} {color : CostStaticColor}
+    {sourceBound targetBound : List TypeExpr}
+    (thinning : CostStaticBinderThinning source color sourceBound targetBound)
+    {depth index : Nat}
+    (inRange : index < depth + sourceBound.length) :
+    thinning.embedIndexAt depth index < depth + targetBound.length := by
+  by_cases inside : index < depth
+  · simp [embedIndexAt, inside]
+    omega
+  · have ambientRange : index - depth < sourceBound.length := by omega
+    have targetRange := thinning.toTargetIndex_lt_length ambientRange
+    simp only [embedIndexAt, if_neg inside]
+    omega
+
+private theorem list_map_eq_self_of_mem {α : Type*} (function : α → α)
+    (values : List α) (fixed : ∀ value ∈ values, function value = value) :
+    values.map function = values := by
+  induction values with
+  | nil => rfl
+  | cons head tail inductionHypothesis =>
+      simp only [List.map]
+      rw [fixed head (by simp), inductionHypothesis]
+      intro value membership
+      exact fixed value (by simp [membership])
+
+/-- A pattern already safe using only locally introduced binders is unchanged
+when a deeper ambient context is embedded.  This is the quotation case of
+mixed-context scope preservation: quotation resets safety to zero, so no
+ambient index is available to move. -/
+private theorem thickenAmbientBVars_eq_self_of_binderSafeAt_le
+    {source : CIGSLT} {color : CostStaticColor}
+    {sourceBound targetBound : List TypeExpr}
+    (thinning : CostStaticBinderThinning source color sourceBound targetBound)
+    (quoteConstructor : String) {safeDepth transformDepth : Nat}
+    {pattern : Pattern}
+    (safe : binderSafeAt quoteConstructor safeDepth pattern = true)
+    (depthOrder : safeDepth ≤ transformDepth) :
+    thinning.thickenAmbientBVars transformDepth pattern = pattern := by
+  induction pattern using Pattern.inductionOn generalizing safeDepth
+      transformDepth with
+  | hbvar index =>
+      simp only [binderSafeAt, decide_eq_true_eq] at safe
+      simp [thickenAmbientBVars, embedIndexAt,
+        if_pos (lt_of_lt_of_le safe depthOrder)]
+  | hfvar name => simp [thickenAmbientBVars]
+  | happly constructor arguments inductionHypothesis =>
+      cases arguments with
+      | nil => simp [thickenAmbientBVars]
+      | cons argument arguments =>
+          cases arguments with
+          | nil =>
+              by_cases quoted : constructor = quoteConstructor
+              · subst constructor
+                have argumentSafe :
+                    binderSafeAt quoteConstructor 0 argument = true := by
+                  simpa [binderSafeAt] using safe
+                have fixed := inductionHypothesis argument (by simp)
+                  argumentSafe (Nat.zero_le transformDepth)
+                simp [thickenAmbientBVars, fixed]
+              · have argumentSafe :
+                    binderSafeAt quoteConstructor safeDepth argument = true := by
+                  simpa [binderSafeAt, binderSafeListAt, quoted] using safe
+                have fixed := inductionHypothesis argument (by simp)
+                  argumentSafe depthOrder
+                simp [thickenAmbientBVars, fixed]
+          | cons second remainder =>
+              have argumentsSafe : ∀ member ∈
+                  argument :: second :: remainder,
+                  binderSafeAt quoteConstructor safeDepth member = true := by
+                rw [← binderSafeListAt_eq_true_iff]
+                simpa [binderSafeAt] using safe
+              have fixed := list_map_eq_self_of_mem
+                (thickenAmbientBVars thinning transformDepth)
+                (argument :: second :: remainder) (by
+                  intro member membership
+                  exact inductionHypothesis member membership
+                    (argumentsSafe member membership) depthOrder)
+              simp [thickenAmbientBVars, fixed]
+  | hlambda binder body inductionHypothesis =>
+      have bodySafe :
+          binderSafeAt quoteConstructor (safeDepth + 1) body = true := by
+        simpa [binderSafeAt] using safe
+      have fixed := inductionHypothesis bodySafe
+        (Nat.add_le_add_right depthOrder 1)
+      simp [thickenAmbientBVars, fixed]
+  | hmultiLambda arity binders body inductionHypothesis =>
+      have bodySafe :
+          binderSafeAt quoteConstructor (safeDepth + arity) body = true := by
+        simpa [binderSafeAt] using safe
+      have fixed := inductionHypothesis bodySafe
+        (Nat.add_le_add_right depthOrder arity)
+      simp [thickenAmbientBVars, fixed]
+  | hsubst body replacement bodyHypothesis replacementHypothesis =>
+      simp only [binderSafeAt, Bool.and_eq_true] at safe
+      have bodyFixed := bodyHypothesis safe.1
+        (Nat.add_le_add_right depthOrder 1)
+      have replacementFixed := replacementHypothesis safe.2 depthOrder
+      simp [thickenAmbientBVars, bodyFixed, replacementFixed]
+  | hcollection collectionType elements rest inductionHypothesis =>
+      have elementsSafe : ∀ element ∈ elements,
+          binderSafeAt quoteConstructor safeDepth element = true := by
+        rw [← binderSafeListAt_eq_true_iff]
+        simpa [binderSafeAt] using safe
+      have fixed := list_map_eq_self_of_mem
+        (thickenAmbientBVars thinning transformDepth) elements (by
+          intro element membership
+          exact inductionHypothesis element membership
+            (elementsSafe element membership) depthOrder)
+      simp [thickenAmbientBVars, fixed]
+
+/-- Quote-aware binder scope survives insertion of target-only ambient
+binders.  Internal quotation bodies remain sealed rather than merely being
+weakened to the larger ambient depth. -/
+theorem binderSafeAt_thickenAmbientBVars
+    {source : CIGSLT} {color : CostStaticColor}
+    {sourceBound targetBound : List TypeExpr}
+    (thinning : CostStaticBinderThinning source color sourceBound targetBound)
+    (quoteConstructor : String) (depth : Nat) (pattern : Pattern)
+    (safe : binderSafeAt quoteConstructor
+      (depth + sourceBound.length) pattern = true) :
+    binderSafeAt quoteConstructor (depth + targetBound.length)
+      (thinning.thickenAmbientBVars depth pattern) = true := by
+  induction pattern using Pattern.inductionOn generalizing depth with
+  | hbvar index =>
+      simp only [binderSafeAt, thickenAmbientBVars,
+        decide_eq_true_eq] at safe ⊢
+      exact thinning.embedIndexAt_lt safe
+  | hfvar name => simp [thickenAmbientBVars, binderSafeAt]
+  | happly constructor arguments inductionHypothesis =>
+      cases arguments with
+      | nil => simp [thickenAmbientBVars, binderSafeAt, binderSafeListAt]
+      | cons argument arguments =>
+          cases arguments with
+          | nil =>
+              by_cases quoted : constructor = quoteConstructor
+              · subst constructor
+                have argumentSafe :
+                    binderSafeAt quoteConstructor 0 argument = true := by
+                  simpa [binderSafeAt] using safe
+                have fixed :=
+                  thickenAmbientBVars_eq_self_of_binderSafeAt_le thinning
+                    quoteConstructor argumentSafe (Nat.zero_le depth)
+                simpa [thickenAmbientBVars, binderSafeAt, fixed] using
+                  argumentSafe
+              · have argumentSafe : binderSafeAt quoteConstructor
+                    (depth + sourceBound.length) argument = true := by
+                  simpa [binderSafeAt, binderSafeListAt, quoted] using safe
+                have mappedSafe := inductionHypothesis argument (by simp)
+                  depth argumentSafe
+                simpa [thickenAmbientBVars, binderSafeAt, binderSafeListAt,
+                  quoted] using
+                  mappedSafe
+          | cons second remainder =>
+              have argumentsSafe : ∀ member ∈
+                  argument :: second :: remainder,
+                  binderSafeAt quoteConstructor
+                    (depth + sourceBound.length) member = true := by
+                rw [← binderSafeListAt_eq_true_iff]
+                simpa [binderSafeAt] using safe
+              simp only [thickenAmbientBVars]
+              change binderSafeListAt quoteConstructor
+                (depth + targetBound.length)
+                ((argument :: second :: remainder).map
+                  (thinning.thickenAmbientBVars depth)) = true
+              rw [binderSafeListAt_eq_true_iff]
+              intro mapped membership
+              rw [List.mem_map] at membership
+              obtain ⟨member, memberIn, rfl⟩ := membership
+              exact inductionHypothesis member memberIn depth
+                (argumentsSafe member memberIn)
+  | hlambda binder body inductionHypothesis =>
+      have bodySafe : binderSafeAt quoteConstructor
+          ((depth + 1) + sourceBound.length) body = true := by
+        simpa [binderSafeAt, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm]
+          using safe
+      simpa [thickenAmbientBVars, binderSafeAt, Nat.add_assoc, Nat.add_comm,
+        Nat.add_left_comm] using inductionHypothesis (depth + 1) bodySafe
+  | hmultiLambda arity binders body inductionHypothesis =>
+      have bodySafe : binderSafeAt quoteConstructor
+          ((depth + arity) + sourceBound.length) body = true := by
+        simpa [binderSafeAt, Nat.add_assoc, Nat.add_comm, Nat.add_left_comm]
+          using safe
+      simpa [thickenAmbientBVars, binderSafeAt, Nat.add_assoc, Nat.add_comm,
+        Nat.add_left_comm] using inductionHypothesis (depth + arity) bodySafe
+  | hsubst body replacement bodyHypothesis replacementHypothesis =>
+      simp only [thickenAmbientBVars, binderSafeAt,
+        Bool.and_eq_true] at safe ⊢
+      have bodySafe : binderSafeAt quoteConstructor
+          ((depth + 1) + sourceBound.length) body = true := by
+        simpa [Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using safe.1
+      exact ⟨by
+          simpa [thickenAmbientBVars, Nat.add_assoc, Nat.add_comm,
+            Nat.add_left_comm] using bodyHypothesis (depth + 1) bodySafe,
+        replacementHypothesis depth safe.2⟩
+  | hcollection collectionType elements rest inductionHypothesis =>
+      have elementsSafe : ∀ element ∈ elements,
+          binderSafeAt quoteConstructor
+            (depth + sourceBound.length) element = true := by
+        rw [← binderSafeListAt_eq_true_iff]
+        simpa [binderSafeAt] using safe
+      simp only [thickenAmbientBVars, binderSafeAt]
+      rw [binderSafeListAt_eq_true_iff]
+      intro mapped membership
+      rw [List.mem_map] at membership
+      obtain ⟨element, elementIn, rfl⟩ := membership
+      exact inductionHypothesis element elementIn depth
+        (elementsSafe element elementIn)
+
+private theorem canonicalBinderMetadataList_thickenAmbientBVars
+    {source : CIGSLT} {color : CostStaticColor}
+    {sourceBound targetBound : List TypeExpr}
+    (thinning : CostStaticBinderThinning source color sourceBound targetBound)
+    (depth : Nat) (patterns : List Pattern)
+    (pointwise : ∀ pattern ∈ patterns,
+      (thinning.thickenAmbientBVars depth pattern).hasCanonicalBinderMetadata =
+        pattern.hasCanonicalBinderMetadata) :
+    Pattern.hasCanonicalBinderMetadataList
+        (patterns.map (thinning.thickenAmbientBVars depth)) =
+      Pattern.hasCanonicalBinderMetadataList patterns := by
+  induction patterns with
+  | nil => rfl
+  | cons pattern patterns inductionHypothesis =>
+      simp only [List.map, Pattern.hasCanonicalBinderMetadataList]
+      rw [pointwise pattern (by simp), inductionHypothesis]
+      intro member membership
+      exact pointwise member (by simp [membership])
+
+/-- Ambient binder insertion changes indices only; locally nameless display
+metadata and its canonicality are invariant. -/
+@[simp]
+theorem hasCanonicalBinderMetadata_thickenAmbientBVars
+    {source : CIGSLT} {color : CostStaticColor}
+    {sourceBound targetBound : List TypeExpr}
+    (thinning : CostStaticBinderThinning source color sourceBound targetBound)
+    (depth : Nat) (pattern : Pattern) :
+    (thinning.thickenAmbientBVars depth pattern).hasCanonicalBinderMetadata =
+      pattern.hasCanonicalBinderMetadata := by
+  induction pattern using Pattern.inductionOn generalizing depth with
+  | hbvar index => simp [thickenAmbientBVars,
+      Pattern.hasCanonicalBinderMetadata]
+  | hfvar name => simp [thickenAmbientBVars,
+      Pattern.hasCanonicalBinderMetadata]
+  | happly constructor arguments inductionHypothesis =>
+      simp only [thickenAmbientBVars, Pattern.hasCanonicalBinderMetadata]
+      exact canonicalBinderMetadataList_thickenAmbientBVars thinning depth
+        arguments (fun member membership =>
+          inductionHypothesis member membership depth)
+  | hlambda binder body inductionHypothesis =>
+      simp only [thickenAmbientBVars, Pattern.hasCanonicalBinderMetadata]
+      rw [inductionHypothesis (depth + 1)]
+  | hmultiLambda arity binders body inductionHypothesis =>
+      simp only [thickenAmbientBVars, Pattern.hasCanonicalBinderMetadata]
+      rw [inductionHypothesis (depth + arity)]
+  | hsubst body replacement bodyHypothesis replacementHypothesis =>
+      simp [thickenAmbientBVars, Pattern.hasCanonicalBinderMetadata,
+        bodyHypothesis, replacementHypothesis]
+  | hcollection collectionType elements rest inductionHypothesis =>
+      simp only [thickenAmbientBVars, Pattern.hasCanonicalBinderMetadata]
+      exact canonicalBinderMetadataList_thickenAmbientBVars thinning depth
+        elements (fun member membership =>
+          inductionHypothesis member membership depth)
+
+private theorem objectPatternList_thickenAmbientBVars
+    {source : CIGSLT} {color : CostStaticColor}
+    {sourceBound targetBound : List TypeExpr}
+    (thinning : CostStaticBinderThinning source color sourceBound targetBound)
+    (depth : Nat) (patterns : List Pattern)
+    (pointwise : ∀ pattern ∈ patterns,
+      WellSorted.isObjectPattern (thinning.thickenAmbientBVars depth pattern) =
+        WellSorted.isObjectPattern pattern) :
+    WellSorted.isObjectPatternList
+        (patterns.map (thinning.thickenAmbientBVars depth)) =
+      WellSorted.isObjectPatternList patterns := by
+  induction patterns with
+  | nil => rfl
+  | cons pattern patterns inductionHypothesis =>
+      simp only [List.map, WellSorted.isObjectPatternList]
+      rw [pointwise pattern (by simp), inductionHypothesis]
+      intro member membership
+      exact pointwise member (by simp [membership])
+
+/-- Ambient binder insertion preserves the object/schema boundary. -/
+@[simp]
+theorem isObjectPattern_thickenAmbientBVars
+    {source : CIGSLT} {color : CostStaticColor}
+    {sourceBound targetBound : List TypeExpr}
+    (thinning : CostStaticBinderThinning source color sourceBound targetBound)
+    (depth : Nat) (pattern : Pattern) :
+    WellSorted.isObjectPattern (thinning.thickenAmbientBVars depth pattern) =
+      WellSorted.isObjectPattern pattern := by
+  induction pattern using Pattern.inductionOn generalizing depth with
+  | hbvar index => simp [thickenAmbientBVars, WellSorted.isObjectPattern]
+  | hfvar name => simp [thickenAmbientBVars, WellSorted.isObjectPattern]
+  | happly constructor arguments inductionHypothesis =>
+      simp only [thickenAmbientBVars, WellSorted.isObjectPattern]
+      exact objectPatternList_thickenAmbientBVars thinning depth arguments
+        (fun member membership => inductionHypothesis member membership depth)
+  | hlambda binder body inductionHypothesis =>
+      simpa [thickenAmbientBVars, WellSorted.isObjectPattern] using
+        inductionHypothesis (depth + 1)
+  | hmultiLambda arity binders body inductionHypothesis =>
+      simpa [thickenAmbientBVars, WellSorted.isObjectPattern] using
+        inductionHypothesis (depth + arity)
+  | hsubst body replacement bodyHypothesis replacementHypothesis =>
+      simp [thickenAmbientBVars, WellSorted.isObjectPattern]
+  | hcollection collectionType elements rest inductionHypothesis =>
+      simp only [thickenAmbientBVars, WellSorted.isObjectPattern]
+      rw [objectPatternList_thickenAmbientBVars thinning depth elements
+        (fun member membership => inductionHypothesis member membership depth)]
+
+/-- Pointwise contraction/embedding round trips lift to an ordered pattern
+spine without changing order or multiplicity. -/
+private theorem thickenAmbientBVarList_of_mapM_eq_some
+    {source : CIGSLT} {color : CostStaticColor}
+    {sourceBound targetBound : List TypeExpr}
+    (thinning : CostStaticBinderThinning source color sourceBound targetBound)
+    (depth : Nat) (patterns thinnedPatterns : List Pattern)
+    (pointwise : ∀ pattern ∈ patterns, ∀ thinned,
+      thinning.thinAmbientBVars? depth pattern = some thinned →
+        thinning.thickenAmbientBVars depth thinned = pattern)
+    (contracted :
+      patterns.mapM (thinAmbientBVars? thinning depth) = some thinnedPatterns) :
+    thinnedPatterns.map (thickenAmbientBVars thinning depth) = patterns := by
+  induction patterns generalizing thinnedPatterns with
+  | nil =>
+      simp only [List.mapM_nil, Option.pure_def, Option.some.injEq] at contracted
+      subst thinnedPatterns
+      rfl
+  | cons head tail inductionHypothesis =>
+      simp only [List.mapM_cons] at contracted
+      cases headResult : thinAmbientBVars? thinning depth head with
+      | none => simp [headResult] at contracted
+      | some thinnedHead =>
+          cases tailResult :
+              tail.mapM (thinAmbientBVars? thinning depth) with
+          | none => simp [headResult, tailResult] at contracted
+          | some thinnedTail =>
+              simp [headResult, tailResult] at contracted
+              subst thinnedPatterns
+              simp only [List.map_cons, List.cons.injEq]
+              refine ⟨pointwise head (by simp) thinnedHead headResult, ?_⟩
+              exact inductionHypothesis thinnedTail
+                (fun pattern membership => pointwise pattern (by simp [membership]))
+                tailResult
+
+/-- Successful contraction and subsequent embedding is an exact raw-pattern
+round trip, including beneath binders and through ordered argument and
+collection spines. -/
+theorem thickenAmbientBVars_of_thinAmbientBVars?_eq_some
+    {source : CIGSLT} {color : CostStaticColor}
+    {sourceBound targetBound : List TypeExpr}
+    (thinning : CostStaticBinderThinning source color sourceBound targetBound)
+    {depth : Nat} {pattern thinned : Pattern}
+    (contracted : thinning.thinAmbientBVars? depth pattern = some thinned) :
+    thinning.thickenAmbientBVars depth thinned = pattern := by
+  induction pattern using Pattern.inductionOn generalizing depth thinned with
+  | hbvar index =>
+      simp only [thinAmbientBVars?, Option.map_eq_some_iff] at contracted
+      obtain ⟨sourceIndex, contractedIndex, rfl⟩ := contracted
+      simp only [thickenAmbientBVars]
+      rw [thinning.embedIndexAt_of_contractIndexAt?_eq_some contractedIndex]
+  | hfvar name =>
+      simp only [thinAmbientBVars?, Option.some.injEq] at contracted
+      subst thinned
+      simp [thickenAmbientBVars]
+  | happly constructor arguments argumentsIH =>
+      simp only [thinAmbientBVars?] at contracted
+      cases argumentsResult :
+          arguments.mapM (thinAmbientBVars? thinning depth) with
+      | none => simp [argumentsResult] at contracted
+      | some thinnedArguments =>
+          simp [argumentsResult] at contracted
+          subst thinned
+          simp only [thickenAmbientBVars, Pattern.apply.injEq]
+          exact ⟨True.intro,
+            thickenAmbientBVarList_of_mapM_eq_some thinning depth
+              arguments thinnedArguments
+              (fun pattern membership _ contractedPattern =>
+                argumentsIH pattern membership contractedPattern)
+              argumentsResult⟩
+  | hlambda binder body bodyIH =>
+      simp only [thinAmbientBVars?] at contracted
+      cases bodyResult : thinAmbientBVars? thinning (depth + 1) body with
+      | none => simp [bodyResult] at contracted
+      | some thinnedBody =>
+          simp [bodyResult] at contracted
+          subst thinned
+          simp only [thickenAmbientBVars, Pattern.lambda.injEq]
+          exact ⟨True.intro, bodyIH bodyResult⟩
+  | hmultiLambda arity binders body bodyIH =>
+      simp only [thinAmbientBVars?] at contracted
+      cases bodyResult : thinAmbientBVars? thinning (depth + arity) body with
+      | none => simp [bodyResult] at contracted
+      | some thinnedBody =>
+          simp [bodyResult] at contracted
+          subst thinned
+          simp only [thickenAmbientBVars, Pattern.multiLambda.injEq]
+          exact ⟨True.intro, True.intro, bodyIH bodyResult⟩
+  | hsubst body replacement bodyIH replacementIH =>
+      simp only [thinAmbientBVars?] at contracted
+      cases bodyResult : thinAmbientBVars? thinning (depth + 1) body with
+      | none => simp [bodyResult] at contracted
+      | some thinnedBody =>
+          cases replacementResult :
+              thinAmbientBVars? thinning depth replacement with
+          | none => simp [bodyResult, replacementResult] at contracted
+          | some thinnedReplacement =>
+              simp [bodyResult, replacementResult] at contracted
+              subst thinned
+              simp only [thickenAmbientBVars, Pattern.subst.injEq]
+              exact ⟨bodyIH bodyResult, replacementIH replacementResult⟩
+  | hcollection collectionType elements rest elementsIH =>
+      simp only [thinAmbientBVars?] at contracted
+      cases elementsResult :
+          elements.mapM (thinAmbientBVars? thinning depth) with
+      | none => simp [elementsResult] at contracted
+      | some thinnedElements =>
+          simp [elementsResult] at contracted
+          subst thinned
+          simp only [thickenAmbientBVars, Pattern.collection.injEq, true_and]
+          exact ⟨thickenAmbientBVarList_of_mapM_eq_some thinning depth
+              elements thinnedElements
+              (fun pattern membership _ contractedPattern =>
+                elementsIH pattern membership contractedPattern)
+              elementsResult,
+            True.intro⟩
+
+/-- Ambient binder embedding preserves the surface representation required
+by an authored constructor parameter. -/
+private theorem matchesParameterRepresentation_thickenAmbientBVars
+    {source : CIGSLT} {color : CostStaticColor}
+    {sourceBound targetBound : List TypeExpr}
+    (thinning : CostStaticBinderThinning source color sourceBound targetBound)
+    (depth : Nat) (parameter : TermParam) (pattern : Pattern) :
+    WellSorted.MatchesParameterRepresentation parameter pattern →
+      WellSorted.MatchesParameterRepresentation parameter
+        (thinning.thickenAmbientBVars depth pattern) := by
+  cases parameter with
+  | simple => exact fun _ => trivial
+  | abstractionNamed binderName bodyName type =>
+      cases pattern <;>
+        simp [WellSorted.MatchesParameterRepresentation,
+          CostStaticBinderThinning.thickenAmbientBVars]
+      case lambda binder body => cases binder <;> simp
+  | multiAbstractionNamed binderNames bodyName type =>
+      cases pattern <;>
+        simp [WellSorted.MatchesParameterRepresentation,
+          CostStaticBinderThinning.thickenAmbientBVars]
+      case multiLambda arity binders body => cases binders <;> simp
+
+end CostStaticBinderThinning
+
+mutual
+  /-- Binder thinning is semantic weakening: inserting target-only ambient
+  binders and embedding the affected de Bruijn indices preserves typing.
+  The `inner` prefix is shared verbatim and accounts for binders introduced
+  inside the traversed pattern. -/
+  theorem WellSorted.HasType.thickenAmbientBVars
+      {source : CIGSLT} {color : CostStaticColor}
+      {language : LanguageDef} {free : WellSorted.FreeTypeContext}
+      {sourceBound targetBound inner : List TypeExpr}
+      {pattern : Pattern} {type : TypeExpr}
+      (typed : WellSorted.HasType language free
+        (inner ++ sourceBound.map (mapTypeExpr (color.symbols source)))
+        pattern type)
+      (thinning : CostStaticBinderThinning source color sourceBound
+        targetBound) :
+      WellSorted.HasType language free (inner ++ targetBound)
+        (thinning.thickenAmbientBVars inner.length pattern) type := by
+    cases typed with
+    | bvar lookup =>
+        simpa [CostStaticBinderThinning.thickenAmbientBVars] using
+          (WellSorted.HasType.bvar
+            (thinning.lookup_embedIndexAt inner lookup))
+    | fvar lookup =>
+        simpa [CostStaticBinderThinning.thickenAmbientBVars] using
+          (WellSorted.HasType.fvar (bound := inner ++ targetBound) lookup)
+    | constructor membership notBare argumentsTyped =>
+        simpa [CostStaticBinderThinning.thickenAmbientBVars] using
+          (WellSorted.HasType.constructor membership notBare
+            (WellSorted.ArgumentsHaveTypes.thickenAmbientBVars
+              (inner := inner) argumentsTyped thinning))
+    | @lambda _ binder body domain codomain bodyTyped =>
+        have thickenedBody := WellSorted.HasType.thickenAmbientBVars
+          (inner := domain :: inner) bodyTyped thinning
+        simpa [CostStaticBinderThinning.thickenAmbientBVars] using
+          (WellSorted.HasType.lambda (binder := binder) thickenedBody)
+    | @multiLambda _ arity binders body domain codomain bodyTyped =>
+        have bodyTyped' : WellSorted.HasType language free
+            ((List.replicate arity domain ++ inner) ++
+              sourceBound.map (mapTypeExpr (color.symbols source)))
+            body codomain := by
+          simpa only [List.append_assoc] using bodyTyped
+        have thickenedBody := WellSorted.HasType.thickenAmbientBVars
+          (inner := List.replicate arity domain ++ inner) bodyTyped' thinning
+        have thickenedBody' : WellSorted.HasType language free
+            (List.replicate arity domain ++ (inner ++ targetBound))
+            (thinning.thickenAmbientBVars (inner.length + arity) body)
+            codomain := by
+          simpa [List.append_assoc, List.length_append,
+            List.length_replicate, Nat.add_comm] using thickenedBody
+        simpa [CostStaticBinderThinning.thickenAmbientBVars,
+          List.append_assoc, List.length_append, List.length_replicate,
+          Nat.add_comm] using
+            (WellSorted.HasType.multiLambda (binders := binders)
+              thickenedBody')
+    | @subst _ body replacement domain codomain bodyTyped replacementTyped =>
+        have thickenedBody := WellSorted.HasType.thickenAmbientBVars
+          (inner := domain :: inner) bodyTyped thinning
+        have thickenedReplacement :=
+          WellSorted.HasType.thickenAmbientBVars (inner := inner)
+            replacementTyped thinning
+        simpa [CostStaticBinderThinning.thickenAmbientBVars] using
+          (WellSorted.HasType.subst thickenedBody thickenedReplacement)
+    | collection elementsTyped =>
+        simpa [CostStaticBinderThinning.thickenAmbientBVars] using
+          (WellSorted.HasType.collection
+            (WellSorted.ElementsHaveType.thickenAmbientBVars (inner := inner)
+              elementsTyped thinning))
+    | collectionConstructor membership parameterShape elementsTyped =>
+        simpa [CostStaticBinderThinning.thickenAmbientBVars] using
+          (WellSorted.HasType.collectionConstructor membership parameterShape
+            (WellSorted.ElementsHaveType.thickenAmbientBVars (inner := inner)
+              elementsTyped thinning))
+
+  /-- Ordered constructor arguments inherit binder-thinning preservation
+  pointwise, without changing arity or parameter representation. -/
+  theorem WellSorted.ArgumentsHaveTypes.thickenAmbientBVars
+      {source : CIGSLT} {color : CostStaticColor}
+      {language : LanguageDef} {free : WellSorted.FreeTypeContext}
+      {sourceBound targetBound inner : List TypeExpr}
+      {arguments : List Pattern} {parameters : List TermParam}
+      (typed : WellSorted.ArgumentsHaveTypes language free
+        (inner ++ sourceBound.map (mapTypeExpr (color.symbols source)))
+        arguments parameters)
+      (thinning : CostStaticBinderThinning source color sourceBound
+        targetBound) :
+      WellSorted.ArgumentsHaveTypes language free (inner ++ targetBound)
+        (arguments.map (thinning.thickenAmbientBVars inner.length))
+        parameters := by
+    cases typed with
+    | nil => exact .nil
+    | cons representation parameterType argumentTyped argumentsTyped =>
+        exact .cons
+          (CostStaticBinderThinning.matchesParameterRepresentation_thickenAmbientBVars thinning
+            inner.length _ _ representation)
+          parameterType
+          (WellSorted.HasType.thickenAmbientBVars (inner := inner)
+            argumentTyped thinning)
+          (WellSorted.ArgumentsHaveTypes.thickenAmbientBVars (inner := inner)
+            argumentsTyped thinning)
+
+  /-- Homogeneous collection elements inherit binder-thinning preservation
+  pointwise. -/
+  theorem WellSorted.ElementsHaveType.thickenAmbientBVars
+      {source : CIGSLT} {color : CostStaticColor}
+      {language : LanguageDef} {free : WellSorted.FreeTypeContext}
+      {sourceBound targetBound inner : List TypeExpr}
+      {elements : List Pattern} {elementType : TypeExpr}
+      (typed : WellSorted.ElementsHaveType language free
+        (inner ++ sourceBound.map (mapTypeExpr (color.symbols source)))
+        elements elementType)
+      (thinning : CostStaticBinderThinning source color sourceBound
+        targetBound) :
+      WellSorted.ElementsHaveType language free (inner ++ targetBound)
+        (elements.map (thinning.thickenAmbientBVars inner.length))
+        elementType := by
+    cases typed with
+    | nil => exact .nil _ _
+    | cons elementTyped elementsTyped =>
+        exact .cons
+          (WellSorted.HasType.thickenAmbientBVars (inner := inner)
+            elementTyped thinning)
+          (WellSorted.ElementsHaveType.thickenAmbientBVars (inner := inner)
+            elementsTyped thinning)
+end
+
+mutual
+  /-- Inserting target-only ambient binders preserves reflective support:
+  support suffixes remain in the exact target fibre, while only the typed
+  skeleton indices are embedded. -/
+  theorem WellSorted.HasType.ReflectiveSupportSafeAt.thickenAmbientBVars
+      {source : CIGSLT} {color : CostStaticColor}
+      {language : LanguageDef} {free : WellSorted.FreeTypeContext}
+      {sourceBound targetBound inner : List TypeExpr}
+      {pattern : Pattern} {type : TypeExpr}
+      {typed : WellSorted.HasType language free
+        (inner ++ sourceBound.map (mapTypeExpr (color.symbols source)))
+        pattern type}
+      {support : ContextSupport.Support} {available : List TypeExpr}
+      (safe : typed.ReflectiveSupportSafeAt support available id)
+      (thinning : CostStaticBinderThinning source color sourceBound
+        targetBound) :
+      (typed.thickenAmbientBVars (inner := inner) thinning).ReflectiveSupportSafeAt
+        support available id := by
+    cases safe with
+    | bvar lookup available =>
+        simpa [WellSorted.HasType.thickenAmbientBVars,
+          CostStaticBinderThinning.thickenAmbientBVars] using
+          (WellSorted.HasType.ReflectiveSupportSafeAt.bvar
+          (support := support)
+          (binderImage := id)
+          (thinning.lookup_embedIndexAt inner lookup) available)
+    | fvar lookup available shape =>
+        simpa [WellSorted.HasType.thickenAmbientBVars,
+          CostStaticBinderThinning.thickenAmbientBVars] using
+          (WellSorted.HasType.ReflectiveSupportSafeAt.fvar
+          (support := support)
+          (binderImage := id)
+          lookup available shape)
+    | @constructorQuote _ _ _ membership notBare _ _ _ quoted argumentsSafe =>
+        have thickenedArguments :=
+          WellSorted.ArgumentsHaveTypes.ReflectiveSupportSafeAt.thickenAmbientBVars
+            (source := source) (color := color)
+            (inner := inner) argumentsSafe thinning
+        simpa [WellSorted.HasType.thickenAmbientBVars,
+          CostStaticBinderThinning.thickenAmbientBVars] using
+          (WellSorted.HasType.ReflectiveSupportSafeAt.constructorQuote
+            (support := support) (membership := membership)
+            (notBare := notBare) quoted thickenedArguments)
+    | @constructorOrdinary _ _ _ membership notBare _ _ _ ordinary
+        argumentsSafe =>
+        have thickenedArguments :=
+          WellSorted.ArgumentsHaveTypes.ReflectiveSupportSafeAt.thickenAmbientBVars
+            (source := source) (color := color)
+            (inner := inner) argumentsSafe thinning
+        simpa [WellSorted.HasType.thickenAmbientBVars,
+          CostStaticBinderThinning.thickenAmbientBVars] using
+          (WellSorted.HasType.ReflectiveSupportSafeAt.constructorOrdinary
+            (support := support) (membership := membership)
+            (notBare := notBare) ordinary thickenedArguments)
+    | @lambda _ binder _ domain _ _ _ _ bodySafe =>
+        have thickenedBody :=
+          WellSorted.HasType.ReflectiveSupportSafeAt.thickenAmbientBVars
+            (source := source) (color := color) (sourceBound := sourceBound)
+            (targetBound := targetBound) (inner := domain :: inner)
+            (support := support)
+            (available := domain :: available)
+            bodySafe thinning
+        have constructed :=
+          WellSorted.HasType.ReflectiveSupportSafeAt.lambda
+            (support := support) (binder := binder) (binderImage := id)
+            thickenedBody
+        simpa [WellSorted.HasType.thickenAmbientBVars,
+          CostStaticBinderThinning.thickenAmbientBVars] using
+          constructed
+    | @multiLambda _ arity binders body domain codomain bodyTyped _ _
+        bodySafe =>
+        have contextEquality :
+            List.replicate arity domain ++
+                (inner ++ sourceBound.map
+                  (mapTypeExpr (color.symbols source))) =
+              (List.replicate arity domain ++ inner) ++
+                sourceBound.map (mapTypeExpr (color.symbols source)) := by
+          simp only [List.append_assoc]
+        change bodyTyped.ReflectiveSupportSafeAt support
+          (List.replicate arity domain ++ available) id at bodySafe
+        have bodyTypedSafe :
+            ∃ bodyTyped' : WellSorted.HasType language free
+                ((List.replicate arity domain ++ inner) ++
+                  sourceBound.map (mapTypeExpr (color.symbols source)))
+                body codomain,
+              bodyTyped'.ReflectiveSupportSafeAt support
+                (List.replicate arity domain ++ available) id := by
+          rw [← contextEquality]
+          exact ⟨bodyTyped, by simpa only using bodySafe⟩
+        obtain ⟨bodyTyped', bodySafe'⟩ := bodyTypedSafe
+        have thickenedBody :=
+          WellSorted.HasType.ReflectiveSupportSafeAt.thickenAmbientBVars
+            (source := source) (color := color) (sourceBound := sourceBound)
+            (targetBound := targetBound)
+            (inner := List.replicate arity domain ++ inner)
+            (support := support)
+            (available := List.replicate arity domain ++ available)
+            bodySafe' thinning
+        have thickenedBodyTyped : WellSorted.HasType language free
+            (List.replicate arity domain ++ (inner ++ targetBound))
+            (thinning.thickenAmbientBVars (inner.length + arity) body)
+            codomain := by
+          simpa [List.append_assoc, List.length_append,
+            List.length_replicate, Nat.add_comm] using
+              bodyTyped'.thickenAmbientBVars
+                (inner := List.replicate arity domain ++ inner) thinning
+        have thickenedBodySafe :
+            thickenedBodyTyped.ReflectiveSupportSafeAt support
+              (List.replicate arity domain ++ available) id := by
+          simpa [List.append_assoc, List.length_append,
+            List.length_replicate, Nat.add_comm] using thickenedBody
+        have constructed :=
+          WellSorted.HasType.ReflectiveSupportSafeAt.multiLambda
+            (support := support) (arity := arity) (binders := binders)
+            (domain := domain) (bodyTyped := thickenedBodyTyped)
+            (binderImage := id)
+            thickenedBodySafe
+        simpa [WellSorted.HasType.thickenAmbientBVars,
+          CostStaticBinderThinning.thickenAmbientBVars,
+          List.append_assoc, List.length_append, List.length_replicate,
+          Nat.add_comm] using constructed
+    | @subst _ _ _ domain _ _ _ _ _ bodySafe replacementSafe =>
+        have thickenedBody :=
+          WellSorted.HasType.ReflectiveSupportSafeAt.thickenAmbientBVars
+            (source := source) (color := color) (sourceBound := sourceBound)
+            (targetBound := targetBound) (inner := domain :: inner)
+            (support := support)
+            (available := domain :: available)
+            bodySafe thinning
+        have thickenedReplacement :=
+          WellSorted.HasType.ReflectiveSupportSafeAt.thickenAmbientBVars
+            (source := source) (color := color) (sourceBound := sourceBound)
+            (targetBound := targetBound) (inner := inner)
+            (support := support) (available := available)
+            replacementSafe thinning
+        have constructed :=
+          WellSorted.HasType.ReflectiveSupportSafeAt.subst (support := support)
+            thickenedBody thickenedReplacement
+        simpa [WellSorted.HasType.thickenAmbientBVars,
+          CostStaticBinderThinning.thickenAmbientBVars] using
+          constructed
+    | @collection _ _ _ _ _ elementsTyped _ _ elementsSafe =>
+        have thickenedElements :=
+          WellSorted.ElementsHaveType.ReflectiveSupportSafeAt.thickenAmbientBVars
+            (source := source) (color := color)
+            (inner := inner) elementsSafe thinning
+        simpa [WellSorted.HasType.thickenAmbientBVars,
+          CostStaticBinderThinning.thickenAmbientBVars] using
+          (WellSorted.HasType.ReflectiveSupportSafeAt.collection
+            (support := support) thickenedElements)
+    | @collectionConstructor _ _ parameterName _ _ _ _ membership parameterShape
+        elementsTyped _ _ elementsSafe =>
+        have thickenedElements :=
+          WellSorted.ElementsHaveType.ReflectiveSupportSafeAt.thickenAmbientBVars
+            (source := source) (color := color)
+            (inner := inner) elementsSafe thinning
+        simpa [WellSorted.HasType.thickenAmbientBVars,
+          CostStaticBinderThinning.thickenAmbientBVars] using
+          (WellSorted.HasType.ReflectiveSupportSafeAt.collectionConstructor
+            (support := support) (parameterName := parameterName)
+            (membership := membership) (parameterShape := parameterShape)
+            thickenedElements)
+
+  /-- Argument-spine companion to reflective-support-preserving ambient
+  binder insertion. -/
+  theorem WellSorted.ArgumentsHaveTypes.ReflectiveSupportSafeAt.thickenAmbientBVars
+      {source : CIGSLT} {color : CostStaticColor}
+      {language : LanguageDef} {free : WellSorted.FreeTypeContext}
+      {sourceBound targetBound inner : List TypeExpr}
+      {arguments : List Pattern} {parameters : List TermParam}
+      {typed : WellSorted.ArgumentsHaveTypes language free
+        (inner ++ sourceBound.map (mapTypeExpr (color.symbols source)))
+        arguments parameters}
+      {support : ContextSupport.Support} {available : List TypeExpr}
+      (safe : typed.ReflectiveSupportSafeAt support available id)
+      (thinning : CostStaticBinderThinning source color sourceBound
+        targetBound) :
+      (typed.thickenAmbientBVars (inner := inner) thinning).ReflectiveSupportSafeAt
+        support available id := by
+    cases safe with
+    | nil bound available =>
+        simpa [WellSorted.ArgumentsHaveTypes.thickenAmbientBVars] using
+          (WellSorted.ArgumentsHaveTypes.ReflectiveSupportSafeAt.nil
+            (support := support)
+            (binderImage := id)
+            (inner ++ targetBound) available)
+    | @cons _ _ _ _ _ _ representation parameterType argumentTyped
+        argumentsTyped _ _ argumentSafe argumentsSafe =>
+        have thickenedArgument :=
+          WellSorted.HasType.ReflectiveSupportSafeAt.thickenAmbientBVars
+            (source := source) (color := color) (inner := inner)
+            argumentSafe thinning
+        have thickenedArguments :=
+          WellSorted.ArgumentsHaveTypes.ReflectiveSupportSafeAt.thickenAmbientBVars
+            (source := source) (color := color)
+            (inner := inner) argumentsSafe thinning
+        have transformedRepresentation :=
+          CostStaticBinderThinning.matchesParameterRepresentation_thickenAmbientBVars
+            thinning inner.length _ _ representation
+        simpa [WellSorted.ArgumentsHaveTypes.thickenAmbientBVars] using
+          (WellSorted.ArgumentsHaveTypes.ReflectiveSupportSafeAt.cons
+            (support := support) (representation := transformedRepresentation)
+            (parameterType := parameterType)
+            (argumentTyped := argumentTyped.thickenAmbientBVars
+              (inner := inner) thinning)
+            (argumentsTyped := argumentsTyped.thickenAmbientBVars
+              (inner := inner) thinning)
+            thickenedArgument thickenedArguments)
+
+  /-- Collection-spine companion to reflective-support-preserving ambient
+  binder insertion. -/
+  theorem WellSorted.ElementsHaveType.ReflectiveSupportSafeAt.thickenAmbientBVars
+      {source : CIGSLT} {color : CostStaticColor}
+      {language : LanguageDef} {free : WellSorted.FreeTypeContext}
+      {sourceBound targetBound inner : List TypeExpr}
+      {elements : List Pattern} {elementType : TypeExpr}
+      {typed : WellSorted.ElementsHaveType language free
+        (inner ++ sourceBound.map (mapTypeExpr (color.symbols source)))
+        elements elementType}
+      {support : ContextSupport.Support} {available : List TypeExpr}
+      (safe : typed.ReflectiveSupportSafeAt support available id)
+      (thinning : CostStaticBinderThinning source color sourceBound
+        targetBound) :
+      (typed.thickenAmbientBVars (inner := inner) thinning).ReflectiveSupportSafeAt
+        support available id := by
+    cases safe with
+    | nil bound elementType available =>
+        simpa [WellSorted.ElementsHaveType.thickenAmbientBVars] using
+          (WellSorted.ElementsHaveType.ReflectiveSupportSafeAt.nil
+            (support := support)
+            (binderImage := id)
+            (inner ++ targetBound) elementType available)
+    | @cons _ _ _ _ elementTyped elementsTyped _ _ elementSafe
+        elementsSafe =>
+        have thickenedElement :=
+          WellSorted.HasType.ReflectiveSupportSafeAt.thickenAmbientBVars
+            (source := source) (color := color) (inner := inner)
+            elementSafe thinning
+        have thickenedElements :=
+          WellSorted.ElementsHaveType.ReflectiveSupportSafeAt.thickenAmbientBVars
+            (source := source) (color := color)
+            (inner := inner) elementsSafe thinning
+        simpa [WellSorted.ElementsHaveType.thickenAmbientBVars] using
+          (WellSorted.ElementsHaveType.ReflectiveSupportSafeAt.cons
+            (support := support)
+            (elementTyped := elementTyped.thickenAmbientBVars
+              (inner := inner) thinning)
+            (elementsTyped := elementsTyped.thickenAmbientBVars
+              (inner := inner) thinning)
+            thickenedElement.castTyping thickenedElements.castTyping)
+end
+
+namespace CostStaticBinderThinning
+
+/-- The characteristic mixed-context witness contracts a reference through
+one foreign binder to the retained static-image binder. -/
+theorem thinAmbientBVars?_foreign_then_mapped
+    (source : CIGSLT) (color : CostStaticColor)
+    (foreignType sourceType : TypeExpr)
+    (foreign : decodeCostStaticTypeExpr source color foreignType = none) :
+    let thinning : CostStaticBinderThinning source color [sourceType]
+        [foreignType, mapTypeExpr (color.symbols source) sourceType] :=
+      .foreign foreignType foreign (.mapped sourceType .nil)
+    thinning.thinAmbientBVars? 0 (.bvar 1) = some (.bvar 0) := by
+  simp [thinAmbientBVars?, contractIndexAt?, toSourceIndex?]
+
+/-- A direct reference to the skipped foreign binder is rejected rather than
+silently redirected to the retained neighboring binder. -/
+theorem thinAmbientBVars?_rejects_foreign
+    (source : CIGSLT) (color : CostStaticColor)
+    (foreignType sourceType : TypeExpr)
+    (foreign : decodeCostStaticTypeExpr source color foreignType = none) :
+    let thinning : CostStaticBinderThinning source color [sourceType]
+        [foreignType, mapTypeExpr (color.symbols source) sourceType] :=
+      .foreign foreignType foreign (.mapped sourceType .nil)
+    thinning.thinAmbientBVars? 0 (.bvar 0) = none := by
+  simp [thinAmbientBVars?, contractIndexAt?, toSourceIndex?]
+
+end CostStaticBinderThinning
+
+/-- Raw boundary data decoded from its exact generated typing fiber.  The
+source type must lie in the selected static image.  The source binder context
+is the proof-relevant filtering of that exact target context: opposite-color
+binders remain present in `targetSupport` and are never mistaken for source
+binders. -/
+def decodeCostRegionBoundary? (source : CIGSLT) (color : CostStaticColor)
+    (targetSupport : List TypeExpr) (targetType : TypeExpr)
+    (content : Pattern) : Option CostRegionBoundary :=
+  match decodeCostStaticTypeExpr source color targetType with
+  | none => none
+  | some sourceType =>
+      some
+        { type := sourceType
+          support := CostStaticBinderThinning.sourceContextOfTarget source color
+            targetSupport
+          targetType := targetType
+          targetSupport := targetSupport
+          content := content }
+
+/-- A successfully decoded boundary type maps back to the observed target
+type. -/
+theorem decodeCostRegionBoundary_typeMap {source : CIGSLT}
+    {color : CostStaticColor} {targetSupport : List TypeExpr}
+    {targetType : TypeExpr} {content : Pattern}
+    {boundary : CostRegionBoundary}
+    (decoded : decodeCostRegionBoundary? source color targetSupport targetType
+      content = some boundary) :
+    mapTypeExpr (color.symbols source) boundary.type = boundary.targetType := by
+  cases typeDecoded : decodeCostStaticTypeExpr source color targetType with
+  | none => simp [decodeCostRegionBoundary?, typeDecoded] at decoded
+  | some sourceType =>
+      simp [decodeCostRegionBoundary?, typeDecoded] at decoded
+      subst boundary
+      exact mapTypeExpr_decodeCostStaticTypeExpr source color typeDecoded
+
+/-- Successful boundary decoding records exactly the selected-color
+subcontext of the observed target binder support. -/
+theorem decodeCostRegionBoundary_sourceSupport {source : CIGSLT}
+    {color : CostStaticColor} {targetSupport : List TypeExpr}
+    {targetType : TypeExpr} {content : Pattern}
+    {boundary : CostRegionBoundary}
+    (decoded : decodeCostRegionBoundary? source color targetSupport targetType
+      content = some boundary) :
+    boundary.support =
+      CostStaticBinderThinning.sourceContextOfTarget source color
+        targetSupport := by
+  cases typeDecoded : decodeCostStaticTypeExpr source color targetType with
+  | none => simp [decodeCostRegionBoundary?, typeDecoded] at decoded
+  | some sourceType =>
+      simp [decodeCostRegionBoundary?, typeDecoded] at decoded
+      subst boundary
+      rfl
+
+/-- A typed boundary indexed by the exact observed target fiber and content.
+The extra equalities are produced by decoding and admission, so finite-table
+construction never has to recover them from an opaque `Option` result. -/
+structure CertifiedCostRegionBoundary (source : CIGSLT)
+    (color : CostStaticColor) (targetFree : WellSorted.FreeTypeContext)
+    (targetSupport : List TypeExpr) (targetType : TypeExpr)
+    (content : Pattern) where
+  typed : TypedCostRegionBoundary source color targetFree
+  content_eq : typed.boundary.content = content
+  targetSupport_eq : typed.boundary.targetSupport = targetSupport
+  targetType_eq : typed.boundary.targetType = targetType
+
+/-- Certify one observed Cost boundary by executable checks against the sole
+authored generated language.  Static-fiber decoding determines its source
+type/support, while successful open-carrier admission supplies the proof
+layer. -/
+def certifyCostRegionBoundary? (source : CIGSLT) (color : CostStaticColor)
+    (targetFree : WellSorted.FreeTypeContext)
+    (targetSupport : List TypeExpr) (targetType : TypeExpr)
+    (content : Pattern) :
+    Option (CertifiedCostRegionBoundary source color targetFree
+      targetSupport targetType content) :=
+  match decodeCostStaticTypeExpr source color targetType with
+  | none => none
+  | some sourceType =>
+      if checked : WellSorted.checkOpenPatternWellSorted
+          source.costWholeLanguage targetFree targetSupport targetType
+            content = true then
+        let admitted := WellSorted.checkOpenPatternWellSorted_sound checked
+        some
+          { typed :=
+              { boundary :=
+                  { type := sourceType
+                    support :=
+                      CostStaticBinderThinning.sourceContextOfTarget source color
+                        targetSupport
+                    targetType := targetType
+                    targetSupport := targetSupport
+                    content := content }
+                contentTyped := admitted.1
+                contentCanonicalBinderMetadata := admitted.2.1
+                contentObjectPattern := admitted.2.2.1
+                contentReflectiveScopeSafe := admitted.2.2.2 }
+            content_eq := rfl
+            targetSupport_eq := rfl
+            targetType_eq := rfl }
+      else
+        none
+
+/-- The indexed certification witness exposes the observed content and target
+fiber, and its decoded source fiber maps back exactly. -/
+theorem CertifiedCostRegionBoundary.fields {source : CIGSLT}
+    {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+    {targetSupport : List TypeExpr} {targetType : TypeExpr}
+    {content : Pattern}
+    (boundary : CertifiedCostRegionBoundary source color targetFree
+      targetSupport targetType content) :
+    boundary.typed.boundary.content = content ∧
+      boundary.typed.boundary.targetSupport = targetSupport ∧
+      boundary.typed.boundary.targetType = targetType :=
+  ⟨boundary.content_eq, boundary.targetSupport_eq, boundary.targetType_eq⟩
+
+/-- Successful certification proves that the computed source type maps back
+to the observed target type. -/
+theorem certifyCostRegionBoundary?_typeMap {source : CIGSLT}
+    {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+    {targetSupport : List TypeExpr} {targetType : TypeExpr}
+    {content : Pattern}
+    {boundary : CertifiedCostRegionBoundary source color targetFree
+      targetSupport targetType content}
+    (certified : certifyCostRegionBoundary? source color targetFree
+      targetSupport targetType content = some boundary) :
+    mapTypeExpr (color.symbols source) boundary.typed.boundary.type =
+      targetType := by
+  cases typeDecoded : decodeCostStaticTypeExpr source color targetType with
+  | none =>
+      simp [certifyCostRegionBoundary?, typeDecoded] at certified
+  | some sourceType =>
+      by_cases checked : WellSorted.checkOpenPatternWellSorted
+          source.costWholeLanguage targetFree targetSupport targetType
+            content = true
+      · simp [certifyCostRegionBoundary?, typeDecoded, checked] at certified
+        subst boundary
+        exact mapTypeExpr_decodeCostStaticTypeExpr source color typeDecoded
+      · simp [certifyCostRegionBoundary?, typeDecoded, checked] at certified
+
+/-- Successful certification records exactly the selected-color subcontext
+of the observed target binder support. -/
+theorem certifyCostRegionBoundary?_sourceSupport {source : CIGSLT}
+    {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+    {targetSupport : List TypeExpr} {targetType : TypeExpr}
+    {content : Pattern}
+    {boundary : CertifiedCostRegionBoundary source color targetFree
+      targetSupport targetType content}
+    (certified : certifyCostRegionBoundary? source color targetFree
+      targetSupport targetType content = some boundary) :
+    boundary.typed.boundary.support =
+      CostStaticBinderThinning.sourceContextOfTarget source color
+        targetSupport := by
+  cases typeDecoded : decodeCostStaticTypeExpr source color targetType with
+  | none =>
+      simp [certifyCostRegionBoundary?, typeDecoded] at certified
+  | some sourceType =>
+      by_cases checked : WellSorted.checkOpenPatternWellSorted
+          source.costWholeLanguage targetFree targetSupport targetType
+            content = true
+      · simp [certifyCostRegionBoundary?, typeDecoded, checked] at certified
+        subst boundary
+        rfl
+      · simp [certifyCostRegionBoundary?, typeDecoded, checked] at certified
+
+/-- When the observed target support is the selected static image of a
+source binder context, successful certification recovers that source context
+exactly.  This is the boundary-leaf fact used by reflective-support safety;
+it is stronger than merely mapping the decoded support back to the target. -/
+theorem certifyCostRegionBoundary?_sourceSupport_eq {source : CIGSLT}
+    {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+    {availableSource : List TypeExpr} {targetType : TypeExpr}
+    {content : Pattern}
+    {boundary : CertifiedCostRegionBoundary source color targetFree
+      (availableSource.map (mapTypeExpr (color.symbols source))) targetType
+        content}
+    (certified : certifyCostRegionBoundary? source color targetFree
+      (availableSource.map (mapTypeExpr (color.symbols source))) targetType
+        content = some boundary) :
+    boundary.typed.boundary.support = availableSource := by
+  rw [certifyCostRegionBoundary?_sourceSupport certified]
+  exact CostStaticBinderThinning.sourceContextOfTarget_map source color
+    availableSource
+
+/-- When the observed target type is the selected static image of a source
+type, successful certification recovers that source type exactly.  This is
+the type-facing companion to `certifyCostRegionBoundary?_sourceSupport_eq`;
+both facts are needed at a rigid boundary leaf. -/
+theorem certifyCostRegionBoundary?_sourceType_eq {source : CIGSLT}
+    {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+    {targetSupport : List TypeExpr} {sourceType : TypeExpr}
+    {content : Pattern}
+    {boundary : CertifiedCostRegionBoundary source color targetFree
+      targetSupport (mapTypeExpr (color.symbols source) sourceType) content}
+    (certified : certifyCostRegionBoundary? source color targetFree
+      targetSupport (mapTypeExpr (color.symbols source) sourceType) content =
+        some boundary) :
+    boundary.typed.boundary.type = sourceType := by
+  by_cases checked : WellSorted.checkOpenPatternWellSorted
+      source.costWholeLanguage targetFree targetSupport
+        (mapTypeExpr (color.symbols source) sourceType) content = true
+  · simp [certifyCostRegionBoundary?, decodeCostStaticTypeExpr_mapTypeExpr,
+      checked] at certified
+    subst boundary
+    rfl
+  · simp [certifyCostRegionBoundary?, decodeCostStaticTypeExpr_mapTypeExpr,
+      checked] at certified
+
+/-- Every genuine open object in a decodable static fiber is accepted by the
+boundary certifier. -/
+theorem exists_certifyCostRegionBoundary?_eq_some {source : CIGSLT}
+    {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+    {targetSupport : List TypeExpr} {targetType : TypeExpr}
+    {content : Pattern}
+    (typeInFiber : ∃ sourceType,
+      decodeCostStaticTypeExpr source color targetType = some sourceType)
+    (wellSorted : WellSorted.OpenPatternWellSorted source.costWholeLanguage
+      targetFree targetSupport targetType content) :
+    ∃ boundary, certifyCostRegionBoundary? source color targetFree
+      targetSupport targetType content = some boundary := by
+  rcases typeInFiber with ⟨sourceType, typeDecoded⟩
+  have checked := WellSorted.checkOpenPatternWellSorted_complete wellSorted
+  apply Option.isSome_iff_exists.mp
+  simp [certifyCostRegionBoundary?, typeDecoded, checked]
+
+/-- Target typing fibers aligned one-for-one with a structurally collected
+boundary list.  This is finite syntax-derived data, not a function on every
+possible occurrence; duplicate contents at different positions remain
+distinct entries. -/
+inductive CostRegionBoundaryFibers :
+    List CostRegionOccurrence → Type where
+  | nil : CostRegionBoundaryFibers []
+  | cons {occurrence : CostRegionOccurrence}
+      {occurrences : List CostRegionOccurrence}
+      (targetSupport : List TypeExpr) (targetType : TypeExpr)
+      (tail : CostRegionBoundaryFibers occurrences) :
+      CostRegionBoundaryFibers (occurrence :: occurrences)
+
+namespace CostRegionBoundaryFibers
+
+/-- Reindex a finite fiber plan along equality of its exact occurrence list. -/
+def cast {source target : List CostRegionOccurrence}
+    (equality : source = target) (fibers : CostRegionBoundaryFibers source) :
+    CostRegionBoundaryFibers target :=
+  equality ▸ fibers
+
+/-- Concatenate two occurrence-aligned fiber plans without losing or
+reordering either finite occurrence list. -/
+def append : {left right : List CostRegionOccurrence} →
+    CostRegionBoundaryFibers left → CostRegionBoundaryFibers right →
+      CostRegionBoundaryFibers (left ++ right)
+  | [], _, .nil, right => right
+  | _ :: _, _, .cons targetSupport targetType tail, right =>
+      .cons targetSupport targetType (append tail right)
+
+end CostRegionBoundaryFibers
+
+/-! ### Syntax-derived target fibers for maximal static boundaries -/
+
+/-- The exact authored declaration choice made while typing a collection
+inside one static Cost color.  The stored element type is a source type; its
+target fiber is derived using the selected color.  Retaining the selected
+bare rule is essential: validated constructor labels are unique, but distinct
+bare declarations may share a result sort and accept the same polymorphically
+typed element spine. -/
+inductive CostCollectionTypingChoice where
+  | direct (sourceElementType : TypeExpr)
+  | bare (sourceRule : GrammarRule) (sourceElementType : TypeExpr)
+deriving DecidableEq, Repr
+
+namespace CostCollectionTypingChoice
+
+/-- Source homogeneous element type selected by either representation. -/
+def sourceElementType : CostCollectionTypingChoice → TypeExpr
+  | .direct elementType | .bare _ elementType => elementType
+
+/-- Exact generated element fiber determined by the current static color. -/
+def targetElementType (source : CIGSLT) (color : CostStaticColor) :
+    CostCollectionTypingChoice → TypeExpr :=
+  fun choice =>
+    mapTypeExpr (color.symbols source) choice.sourceElementType
+
+/-- Source result fibre represented by one collection candidate.  Bare
+declarations return their authored category; direct collections retain the
+homogeneous collection type itself. -/
+def sourceResultType (collectionType : CollType) :
+    CostCollectionTypingChoice → TypeExpr
+  | .direct elementType => .collection collectionType elementType
+  | .bare rule _ => .base rule.category
+
+end CostCollectionTypingChoice
+
+/-! ### Finite candidate uniqueness
+
+Executable searches retain every proof-relevant candidate.  Exact canonical
+objects will later require these finite families to contain at most one
+member at every relevant typing fiber; that pointwise condition is decidable
+without requiring equality on the dependent candidate records themselves. -/
+
+/-- A finite executable candidate family contains at most one witness. -/
+def CostCandidateFamilyUnambiguous {Candidate : Type}
+    (candidates : List Candidate) : Prop :=
+  candidates.length <= 1
+
+instance costCandidateFamilyUnambiguousDecidable {Candidate : Type}
+    (candidates : List Candidate) :
+    Decidable (CostCandidateFamilyUnambiguous candidates) :=
+  by
+    unfold CostCandidateFamilyUnambiguous
+    infer_instance
+
+/-- Any two members of an unambiguous finite candidate family coincide. -/
+theorem eq_of_mem_of_mem_of_costCandidateFamilyUnambiguous
+    {Candidate : Type} {candidates : List Candidate}
+    (unambiguous : CostCandidateFamilyUnambiguous candidates)
+    {first second : Candidate}
+    (firstMembership : first ∈ candidates)
+    (secondMembership : second ∈ candidates) :
+    first = second := by
+  cases candidates with
+  | nil => simp at firstMembership
+  | cons head tail =>
+      cases tail with
+      | nil =>
+          simp only [List.mem_singleton] at firstMembership secondMembership
+          exact firstMembership.trans secondMembership.symm
+      | cons next rest =>
+          simp [CostCandidateFamilyUnambiguous] at unambiguous
+
+@[simp]
+theorem costCandidateFamilyUnambiguous_nil {Candidate : Type} :
+    CostCandidateFamilyUnambiguous ([] : List Candidate) := by
+  simp [CostCandidateFamilyUnambiguous]
+
+@[simp]
+theorem costCandidateFamilyUnambiguous_singleton {Candidate : Type}
+    (candidate : Candidate) :
+    CostCandidateFamilyUnambiguous [candidate] := by
+  simp [CostCandidateFamilyUnambiguous]
+
+/-- Negative canary: retaining two candidate occurrences is observably
+ambiguous, even when their values happen to be equal. -/
+theorem not_costCandidateFamilyUnambiguous_cons_cons {Candidate : Type}
+    (first second : Candidate) (rest : List Candidate) :
+    ¬ CostCandidateFamilyUnambiguous (first :: second :: rest) := by
+  simp [CostCandidateFamilyUnambiguous]
+
+/-- A duplicate-free finite family is unambiguous once membership itself
+determines the candidate.  The duplicate-free premise is load-bearing:
+proof-relevant enumeration counts two equal occurrences as two candidates. -/
+theorem costCandidateFamilyUnambiguous_of_nodup_of_mem_eq
+    {Candidate : Type} {candidates : List Candidate}
+    (nodup : candidates.Nodup)
+    (membershipDetermines : ∀ {first second : Candidate},
+      first ∈ candidates → second ∈ candidates → first = second) :
+    CostCandidateFamilyUnambiguous candidates := by
+  cases candidates with
+  | nil => simp [CostCandidateFamilyUnambiguous]
+  | cons first tail =>
+      cases tail with
+      | nil => simp [CostCandidateFamilyUnambiguous]
+      | cons second rest =>
+          have equality : first = second :=
+            membershipDetermines (by simp) (by simp)
+          subst second
+          have absent := (List.nodup_cons.mp nodup).1
+          exact (absent (by simp)).elim
+
+/-- Complete finite family of authored bare-collection declarations whose
+exact selected-colour images accept the concrete target element spine.
+
+The result preserves authored declaration identity and order for executable
+enumeration, but no semantic theorem below treats its head as authoritative.
+Searching the generated Cost signature would be colour-blind: base and
+wrapped copies may share a result sort while assigning different element
+fibres. -/
+def bareCostStaticCollectionTypingChoices (source : CIGSLT)
+    (color : CostStaticColor) (targetFree : WellSorted.FreeTypeContext)
+    (targetBound : List TypeExpr)
+    (collectionType : CollType) (elements : List Pattern)
+    (sourceExpected : TypeExpr) :
+    List GrammarRule → List CostCollectionTypingChoice :=
+  List.filterMap fun rule =>
+      if rule.label ∈ source.continuationRetyping.wrappedLabels then
+        match WellSorted.bareCollectionElementType? rule collectionType
+            sourceExpected with
+        | some sourceElementType =>
+            if WellSorted.checkElementsHaveType source.costWholeLanguage
+                targetFree targetBound elements
+                (mapTypeExpr (color.symbols source) sourceElementType) then
+              some (.bare rule sourceElementType)
+            else none
+        | none => none
+      else none
+
+/-- Membership in the bare candidate enumeration is exactly successful
+checking of one declaration in the supplied authored segment. -/
+theorem mem_bareCostStaticCollectionTypingChoices_iff
+    (source : CIGSLT) (color : CostStaticColor)
+    (targetFree : WellSorted.FreeTypeContext) (targetBound : List TypeExpr)
+    (collectionType : CollType) (elements : List Pattern)
+    (sourceExpected : TypeExpr) (rules : List GrammarRule)
+    (choice : CostCollectionTypingChoice) :
+    choice ∈ bareCostStaticCollectionTypingChoices source color targetFree
+        targetBound collectionType elements sourceExpected rules ↔
+      ∃ rule sourceElementType,
+        choice = .bare rule sourceElementType ∧
+          rule ∈ rules ∧
+          rule.label ∈ source.continuationRetyping.wrappedLabels ∧
+          WellSorted.bareCollectionElementType? rule collectionType
+              sourceExpected = some sourceElementType ∧
+          WellSorted.checkElementsHaveType source.costWholeLanguage targetFree
+            targetBound elements
+              (mapTypeExpr (color.symbols source) sourceElementType) = true := by
+  unfold bareCostStaticCollectionTypingChoices
+  rw [List.mem_filterMap]
+  constructor
+  · rintro ⟨rule, membership, produced⟩
+    by_cases wrapped :
+        rule.label ∈ source.continuationRetyping.wrappedLabels
+    · cases elementTypeResult : WellSorted.bareCollectionElementType? rule
+          collectionType sourceExpected with
+      | none => simp [wrapped, elementTypeResult] at produced
+      | some sourceElementType =>
+          by_cases elementsChecked : WellSorted.checkElementsHaveType
+              source.costWholeLanguage targetFree targetBound elements
+                (mapTypeExpr (color.symbols source) sourceElementType) = true
+          · simp [wrapped, elementTypeResult, elementsChecked] at produced
+            subst choice
+            exact ⟨rule, sourceElementType, rfl, membership, wrapped,
+              elementTypeResult, elementsChecked⟩
+          · simp [wrapped, elementTypeResult, elementsChecked] at produced
+    · simp [wrapped] at produced
+  · rintro ⟨rule, sourceElementType, rfl, membership, wrapped,
+      elementTypeResult, elementsChecked⟩
+    exact ⟨rule, membership, by
+      simp [wrapped, elementTypeResult, elementsChecked]⟩
+
+/-- Positive canary: every authored static bare rule that passes the exact
+selected-colour element check is retained as its own proof-relevant choice. -/
+theorem bareCostStaticCollectionTypingChoice_mem_of_checked
+    (source : CIGSLT) (color : CostStaticColor)
+    (targetFree : WellSorted.FreeTypeContext) (targetBound : List TypeExpr)
+    (collectionType : CollType) (elements : List Pattern)
+    (sourceExpected sourceElementType : TypeExpr) (rules : List GrammarRule)
+    (rule : GrammarRule)
+    (membership : rule ∈ rules)
+    (wrapped : rule.label ∈ source.continuationRetyping.wrappedLabels)
+    (elementTypeResult : WellSorted.bareCollectionElementType? rule
+      collectionType sourceExpected = some sourceElementType)
+    (elementsChecked : WellSorted.checkElementsHaveType
+      source.costWholeLanguage targetFree targetBound elements
+        (mapTypeExpr (color.symbols source) sourceElementType) = true) :
+    .bare rule sourceElementType ∈
+      bareCostStaticCollectionTypingChoices source color targetFree targetBound
+        collectionType elements sourceExpected rules := by
+  rw [mem_bareCostStaticCollectionTypingChoices_iff]
+  exact ⟨rule, sourceElementType, rfl, membership, wrapped,
+    elementTypeResult, elementsChecked⟩
+
+/-- Negative canary: a non-static declaration can never enter the static
+bare-collection candidate family, even when its remaining shape would fit. -/
+theorem bareCostStaticCollectionTypingChoice_not_mem_of_not_wrapped
+    (source : CIGSLT) (color : CostStaticColor)
+    (targetFree : WellSorted.FreeTypeContext) (targetBound : List TypeExpr)
+    (collectionType : CollType) (elements : List Pattern)
+    (sourceExpected sourceElementType : TypeExpr) (rules : List GrammarRule)
+    (rule : GrammarRule)
+    (notWrapped : rule.label ∉ source.continuationRetyping.wrappedLabels) :
+    .bare rule sourceElementType ∉
+      bareCostStaticCollectionTypingChoices source color targetFree targetBound
+        collectionType elements sourceExpected rules := by
+  intro membership
+  rw [mem_bareCostStaticCollectionTypingChoices_iff] at membership
+  rcases membership with
+    ⟨candidateRule, candidateElementType, equality, _, wrapped, _, _⟩
+  cases equality
+  exact notWrapped wrapped
+
+/-- Reordering authored declarations only permutes the complete candidate
+enumeration; it cannot add or remove a collection typing witness. -/
+theorem bareCostStaticCollectionTypingChoices_perm
+    (source : CIGSLT) (color : CostStaticColor)
+    (targetFree : WellSorted.FreeTypeContext) (targetBound : List TypeExpr)
+    (collectionType : CollType) (elements : List Pattern)
+    (sourceExpected : TypeExpr) {first second : List GrammarRule}
+    (permutation : first.Perm second) :
+    (bareCostStaticCollectionTypingChoices source color targetFree targetBound
+      collectionType elements sourceExpected first).Perm
+    (bareCostStaticCollectionTypingChoices source color targetFree targetBound
+      collectionType elements sourceExpected second) := by
+  unfold bareCostStaticCollectionTypingChoices
+  exact permutation.filterMap _
+
+/-- Candidate membership is invariant under any permutation of the authored
+declaration list. -/
+theorem mem_bareCostStaticCollectionTypingChoices_iff_of_perm
+    (source : CIGSLT) (color : CostStaticColor)
+    (targetFree : WellSorted.FreeTypeContext) (targetBound : List TypeExpr)
+    (collectionType : CollType) (elements : List Pattern)
+    (sourceExpected : TypeExpr) {first second : List GrammarRule}
+    (permutation : first.Perm second) (choice : CostCollectionTypingChoice) :
+    choice ∈ bareCostStaticCollectionTypingChoices source color targetFree
+        targetBound collectionType elements sourceExpected first ↔
+      choice ∈ bareCostStaticCollectionTypingChoices source color targetFree
+        targetBound collectionType elements sourceExpected second := by
+  exact (bareCostStaticCollectionTypingChoices_perm source color targetFree
+    targetBound collectionType elements sourceExpected permutation).mem_iff
+
+/-- Complete candidate enumeration for one exact static colour.  A direct
+homogeneous collection contributes its unique decoded fibre; every accepted
+bare declaration contributes a proof-relevant candidate.  Collections that
+belong only to the opposite colour yield an empty current list and are handled
+by the colour-transition boundary layer. -/
+def costStaticCollectionTypingChoices (source : CIGSLT)
+    (color : CostStaticColor) (targetFree : WellSorted.FreeTypeContext)
+    (targetBound : List TypeExpr)
+    (collectionType : CollType) (elements : List Pattern)
+    (expected : TypeExpr) : List CostCollectionTypingChoice :=
+  match decodeCostStaticTypeExpr source color expected with
+  | none => []
+  | some sourceExpected =>
+      let bare := bareCostStaticCollectionTypingChoices source color targetFree
+        targetBound collectionType elements sourceExpected
+        source.theory.presentation.presentation.language.terms
+      match sourceExpected with
+      | .collection actual sourceElementType =>
+          if actual = collectionType &&
+              WellSorted.checkElementsHaveType source.costWholeLanguage
+                targetFree targetBound elements
+                (mapTypeExpr (color.symbols source) sourceElementType) then
+            .direct sourceElementType :: bare
+          else bare
+      | _ => bare
+
+/-- Pointwise structural unambiguity of one expected-keyed collection
+candidate family.  The predicate is decidable because the complete family is
+finite; it neither chooses its head nor identifies distinct declarations. -/
+def CostStaticCollectionUnambiguousAt (source : CIGSLT)
+    (color : CostStaticColor) (targetFree : WellSorted.FreeTypeContext)
+    (targetBound : List TypeExpr)
+    (collectionType : CollType) (elements : List Pattern)
+    (expected : TypeExpr) : Prop :=
+  CostCandidateFamilyUnambiguous
+    (costStaticCollectionTypingChoices source color targetFree targetBound
+      collectionType elements expected)
+
+instance costStaticCollectionUnambiguousAtDecidable (source : CIGSLT)
+    (color : CostStaticColor) (targetFree : WellSorted.FreeTypeContext)
+    (targetBound : List TypeExpr)
+    (collectionType : CollType) (elements : List Pattern)
+    (expected : TypeExpr) :
+    Decidable (CostStaticCollectionUnambiguousAt source color targetFree
+      targetBound collectionType elements expected) :=
+  by
+    unfold CostStaticCollectionUnambiguousAt
+    infer_instance
+
+/-- Under pointwise collection unambiguity, two successful proof-relevant
+declaration choices are the same choice, not merely result-sort compatible. -/
+theorem CostStaticCollectionUnambiguousAt.choice_eq
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {targetBound : List TypeExpr}
+    {collectionType : CollType} {elements : List Pattern}
+    {expected : TypeExpr}
+    (unambiguous : CostStaticCollectionUnambiguousAt source color targetFree
+      targetBound collectionType elements expected)
+    {first second : CostCollectionTypingChoice}
+    (firstMembership : first ∈ costStaticCollectionTypingChoices source color
+      targetFree targetBound collectionType elements expected)
+    (secondMembership : second ∈ costStaticCollectionTypingChoices source
+      color targetFree targetBound collectionType elements expected) :
+    first = second :=
+  eq_of_mem_of_mem_of_costCandidateFamilyUnambiguous unambiguous
+    firstMembership secondMembership
+
+/-- Every enumerated candidate carries an exact source declaration or direct
+collection fibre and a successful element-spine check in the selected colour. -/
+theorem mem_costStaticCollectionTypingChoices_sound
+    (source : CIGSLT) (color : CostStaticColor)
+    (targetFree : WellSorted.FreeTypeContext) (targetBound : List TypeExpr)
+    (collectionType : CollType) (elements : List Pattern)
+    (expected : TypeExpr) (choice : CostCollectionTypingChoice)
+    (membership : choice ∈ costStaticCollectionTypingChoices source color
+      targetFree targetBound collectionType elements expected) :
+    (∃ sourceElementType,
+        choice = .direct sourceElementType ∧
+          expected = mapTypeExpr (color.symbols source)
+            (.collection collectionType sourceElementType) ∧
+          WellSorted.checkElementsHaveType source.costWholeLanguage targetFree
+            targetBound elements
+              (mapTypeExpr (color.symbols source) sourceElementType) = true) ∨
+      (∃ rule sourceElementType,
+        choice = .bare rule sourceElementType ∧
+          rule ∈ source.theory.presentation.presentation.language.terms ∧
+          rule.label ∈ source.continuationRetyping.wrappedLabels ∧
+          expected = mapTypeExpr (color.symbols source) (.base rule.category) ∧
+          ∃ parameterName,
+            rule.params = [.simple parameterName
+              (.collection collectionType sourceElementType)] ∧
+            WellSorted.checkElementsHaveType source.costWholeLanguage targetFree
+              targetBound elements
+                (mapTypeExpr (color.symbols source) sourceElementType) = true) := by
+  cases decoded : decodeCostStaticTypeExpr source color expected with
+  | none =>
+      simp [costStaticCollectionTypingChoices, decoded] at membership
+  | some sourceExpected =>
+      have expectedMap := mapTypeExpr_decodeCostStaticTypeExpr source color decoded
+      cases sourceExpected with
+      | collection actual sourceElementType =>
+          by_cases sameCollection : actual = collectionType
+          · subst actual
+            by_cases elementsChecked : WellSorted.checkElementsHaveType
+                source.costWholeLanguage targetFree targetBound elements
+                  (mapTypeExpr (color.symbols source) sourceElementType) = true
+            · have candidates : choice = .direct sourceElementType ∨
+                  choice ∈ bareCostStaticCollectionTypingChoices source color
+                    targetFree targetBound collectionType elements
+                    (.collection collectionType sourceElementType)
+                    source.theory.presentation.presentation.language.terms := by
+                simpa [costStaticCollectionTypingChoices, decoded,
+                  elementsChecked] using membership
+              rcases candidates with rfl | bareMembership
+              · exact Or.inl ⟨sourceElementType, rfl, expectedMap.symm,
+                  elementsChecked⟩
+              · rw [mem_bareCostStaticCollectionTypingChoices_iff]
+                  at bareMembership
+                rcases bareMembership with
+                  ⟨rule, chosenElementType, choiceShape, _, _,
+                    declarationShape, _⟩
+                rw [WellSorted.bareCollectionElementType?_eq_some_iff]
+                  at declarationShape
+                rcases declarationShape with ⟨sourceExpectedShape, _, _⟩
+                cases sourceExpectedShape
+            · have bareMembership :
+                  choice ∈ bareCostStaticCollectionTypingChoices source color
+                    targetFree targetBound collectionType elements
+                    (.collection collectionType sourceElementType)
+                    source.theory.presentation.presentation.language.terms := by
+                simpa [costStaticCollectionTypingChoices, decoded,
+                  elementsChecked] using membership
+              rw [mem_bareCostStaticCollectionTypingChoices_iff]
+                at bareMembership
+              rcases bareMembership with
+                ⟨rule, chosenElementType, choiceShape, _, _,
+                  declarationShape, _⟩
+              rw [WellSorted.bareCollectionElementType?_eq_some_iff]
+                at declarationShape
+              rcases declarationShape with ⟨sourceExpectedShape, _, _⟩
+              cases sourceExpectedShape
+          · have bareMembership :
+                choice ∈ bareCostStaticCollectionTypingChoices source color
+                  targetFree targetBound collectionType elements
+                  (.collection actual sourceElementType)
+                  source.theory.presentation.presentation.language.terms := by
+              simpa [costStaticCollectionTypingChoices, decoded,
+                sameCollection] using membership
+            rw [mem_bareCostStaticCollectionTypingChoices_iff]
+              at bareMembership
+            rcases bareMembership with
+              ⟨rule, chosenElementType, choiceShape, _, _,
+                declarationShape, _⟩
+            rw [WellSorted.bareCollectionElementType?_eq_some_iff]
+              at declarationShape
+            rcases declarationShape with ⟨sourceExpectedShape, _, _⟩
+            cases sourceExpectedShape
+      | base category =>
+          have bareMembership :
+              choice ∈ bareCostStaticCollectionTypingChoices source color
+                targetFree targetBound collectionType elements (.base category)
+                source.theory.presentation.presentation.language.terms := by
+            simpa [costStaticCollectionTypingChoices, decoded] using membership
+          rw [mem_bareCostStaticCollectionTypingChoices_iff]
+            at bareMembership
+          rcases bareMembership with
+            ⟨rule, sourceElementType, choiceShape, ruleMembership,
+              wrappedMembership, declarationShape, elementsChecked⟩
+          rw [WellSorted.bareCollectionElementType?_eq_some_iff]
+            at declarationShape
+          rcases declarationShape with
+            ⟨sourceExpectedShape, parameterName, parameterShape⟩
+          cases sourceExpectedShape
+          exact Or.inr ⟨rule, sourceElementType, choiceShape, ruleMembership,
+            wrappedMembership, expectedMap.symm, parameterName,
+            parameterShape, elementsChecked⟩
+      | arrow domain codomain =>
+          have bareMembership :
+              choice ∈ bareCostStaticCollectionTypingChoices source color
+                targetFree targetBound collectionType elements
+                (.arrow domain codomain)
+                source.theory.presentation.presentation.language.terms := by
+            simpa [costStaticCollectionTypingChoices, decoded] using membership
+          rw [mem_bareCostStaticCollectionTypingChoices_iff]
+            at bareMembership
+          rcases bareMembership with
+            ⟨rule, sourceElementType, choiceShape, _, _, declarationShape, _⟩
+          rw [WellSorted.bareCollectionElementType?_eq_some_iff]
+            at declarationShape
+          rcases declarationShape with ⟨sourceExpectedShape, _, _⟩
+          cases sourceExpectedShape
+      | multiBinder domain =>
+          have bareMembership :
+              choice ∈ bareCostStaticCollectionTypingChoices source color
+                targetFree targetBound collectionType elements
+                (.multiBinder domain)
+                source.theory.presentation.presentation.language.terms := by
+            simpa [costStaticCollectionTypingChoices, decoded] using membership
+          rw [mem_bareCostStaticCollectionTypingChoices_iff]
+            at bareMembership
+          rcases bareMembership with
+            ⟨rule, sourceElementType, choiceShape, _, _, declarationShape, _⟩
+          rw [WellSorted.bareCollectionElementType?_eq_some_iff]
+            at declarationShape
+          rcases declarationShape with ⟨sourceExpectedShape, _, _⟩
+          cases sourceExpectedShape
+
+/-- Every direct or authored bare witness satisfying the selected-colour
+typing checks occurs in the complete finite candidate enumeration. -/
+theorem mem_costStaticCollectionTypingChoices_complete
+    (source : CIGSLT) (color : CostStaticColor)
+    (targetFree : WellSorted.FreeTypeContext) (targetBound : List TypeExpr)
+    (collectionType : CollType) (elements : List Pattern)
+    (expected : TypeExpr) (choice : CostCollectionTypingChoice)
+    (valid :
+      (∃ sourceElementType,
+          choice = .direct sourceElementType ∧
+            expected = mapTypeExpr (color.symbols source)
+              (.collection collectionType sourceElementType) ∧
+            WellSorted.checkElementsHaveType source.costWholeLanguage
+              targetFree targetBound elements
+                (mapTypeExpr (color.symbols source) sourceElementType) = true) ∨
+        (∃ rule sourceElementType,
+          choice = .bare rule sourceElementType ∧
+            rule ∈ source.theory.presentation.presentation.language.terms ∧
+            rule.label ∈ source.continuationRetyping.wrappedLabels ∧
+            expected = mapTypeExpr (color.symbols source)
+              (.base rule.category) ∧
+            ∃ parameterName,
+              rule.params = [.simple parameterName
+                (.collection collectionType sourceElementType)] ∧
+              WellSorted.checkElementsHaveType source.costWholeLanguage
+                targetFree targetBound elements
+                  (mapTypeExpr (color.symbols source) sourceElementType) = true)) :
+    choice ∈ costStaticCollectionTypingChoices source color targetFree
+      targetBound collectionType elements expected := by
+  rcases valid with direct | bare
+  · rcases direct with
+      ⟨sourceElementType, rfl, expectedEquality, elementsChecked⟩
+    rw [expectedEquality]
+    simp [costStaticCollectionTypingChoices,
+      decodeCostStaticTypeExpr_mapTypeExpr, elementsChecked]
+  · rcases bare with
+      ⟨rule, sourceElementType, rfl, ruleMembership, wrappedMembership,
+        expectedEquality, parameterName, parameterShape, elementsChecked⟩
+    rw [expectedEquality]
+    simp only [costStaticCollectionTypingChoices,
+      decodeCostStaticTypeExpr_mapTypeExpr]
+    rw [mem_bareCostStaticCollectionTypingChoices_iff]
+    exact ⟨rule, sourceElementType, rfl, ruleMembership, wrappedMembership,
+      (WellSorted.bareCollectionElementType?_eq_some_iff rule collectionType
+        (.base rule.category) sourceElementType).2
+          ⟨rfl, parameterName, parameterShape⟩,
+      elementsChecked⟩
+
+/-- Exact candidate characterization, combining executable completeness with
+the proof-relevant source-declaration specification. -/
+theorem mem_costStaticCollectionTypingChoices_iff
+    (source : CIGSLT) (color : CostStaticColor)
+    (targetFree : WellSorted.FreeTypeContext) (targetBound : List TypeExpr)
+    (collectionType : CollType) (elements : List Pattern)
+    (expected : TypeExpr) (choice : CostCollectionTypingChoice) :
+    choice ∈ costStaticCollectionTypingChoices source color targetFree
+        targetBound collectionType elements expected ↔
+      (∃ sourceElementType,
+          choice = .direct sourceElementType ∧
+            expected = mapTypeExpr (color.symbols source)
+              (.collection collectionType sourceElementType) ∧
+            WellSorted.checkElementsHaveType source.costWholeLanguage
+              targetFree targetBound elements
+                (mapTypeExpr (color.symbols source) sourceElementType) = true) ∨
+        (∃ rule sourceElementType,
+          choice = .bare rule sourceElementType ∧
+            rule ∈ source.theory.presentation.presentation.language.terms ∧
+            rule.label ∈ source.continuationRetyping.wrappedLabels ∧
+            expected = mapTypeExpr (color.symbols source)
+              (.base rule.category) ∧
+            ∃ parameterName,
+              rule.params = [.simple parameterName
+                (.collection collectionType sourceElementType)] ∧
+              WellSorted.checkElementsHaveType source.costWholeLanguage
+                targetFree targetBound elements
+                  (mapTypeExpr (color.symbols source) sourceElementType) = true) :=
+  ⟨mem_costStaticCollectionTypingChoices_sound source color targetFree
+      targetBound collectionType elements expected choice,
+    mem_costStaticCollectionTypingChoices_complete source color targetFree
+      targetBound collectionType elements expected choice⟩
+
+/-- Empty collections still enumerate every declaration whose result fibre
+matches the selected colour.  Homogeneous element checking is vacuous, but
+declaration identity and the direct/bare distinction are retained. -/
+theorem mem_costStaticCollectionTypingChoices_empty_iff
+    (source : CIGSLT) (color : CostStaticColor)
+    (targetFree : WellSorted.FreeTypeContext) (targetBound : List TypeExpr)
+    (collectionType : CollType) (expected : TypeExpr)
+    (choice : CostCollectionTypingChoice) :
+    choice ∈ costStaticCollectionTypingChoices source color targetFree
+        targetBound collectionType [] expected ↔
+      (∃ sourceElementType,
+          choice = .direct sourceElementType ∧
+            expected = mapTypeExpr (color.symbols source)
+              (.collection collectionType sourceElementType)) ∨
+        (∃ rule sourceElementType,
+          choice = .bare rule sourceElementType ∧
+            rule ∈ source.theory.presentation.presentation.language.terms ∧
+            rule.label ∈ source.continuationRetyping.wrappedLabels ∧
+            expected = mapTypeExpr (color.symbols source)
+              (.base rule.category) ∧
+            ∃ parameterName,
+              rule.params = [.simple parameterName
+                (.collection collectionType sourceElementType)]) := by
+  rw [mem_costStaticCollectionTypingChoices_iff]
+  simp [WellSorted.checkElementsHaveType]
+
+/-- Every complete candidate has exactly the requested target result type.
+This is stronger than sharing a raw result sort: it retains the direct/bare
+source fibre and uses injectivity of the selected static colour map. -/
+theorem map_sourceResultType_eq_of_mem_costStaticCollectionTypingChoices
+    (source : CIGSLT) (color : CostStaticColor)
+    (targetFree : WellSorted.FreeTypeContext) (targetBound : List TypeExpr)
+    (collectionType : CollType) (elements : List Pattern)
+    (expected : TypeExpr) (choice : CostCollectionTypingChoice)
+    (membership : choice ∈ costStaticCollectionTypingChoices source color
+      targetFree targetBound collectionType elements expected) :
+    mapTypeExpr (color.symbols source)
+        (choice.sourceResultType collectionType) = expected := by
+  rcases mem_costStaticCollectionTypingChoices_sound source color targetFree
+      targetBound collectionType elements expected choice membership with
+    direct | bare
+  · rcases direct with ⟨sourceElementType, rfl, expectedEquality, _⟩
+    exact expectedEquality.symm
+  · rcases bare with
+      ⟨rule, sourceElementType, rfl, _, _, expectedEquality, _⟩
+    exact expectedEquality.symm
+
+/-- Same-colour overlap coherence at the source result fibre: any two
+enumerated candidates for the same concrete collection and expected type have
+the same declaration-derived result type.  Their element fibres may still be
+different; chooser irrelevance for normalization is the later unary RegionTree
+theorem, not an unproved equality inserted here. -/
+theorem sourceResultType_eq_of_mem_costStaticCollectionTypingChoices
+    (source : CIGSLT) (color : CostStaticColor)
+    (targetFree : WellSorted.FreeTypeContext) (targetBound : List TypeExpr)
+    (collectionType : CollType) (elements : List Pattern)
+    (expected : TypeExpr) (first second : CostCollectionTypingChoice)
+    (firstMembership : first ∈ costStaticCollectionTypingChoices source color
+      targetFree targetBound collectionType elements expected)
+    (secondMembership : second ∈ costStaticCollectionTypingChoices source
+      color targetFree targetBound collectionType elements expected) :
+    first.sourceResultType collectionType =
+      second.sourceResultType collectionType := by
+  apply mapTypeExpr_costStatic_injective source color
+  exact (map_sourceResultType_eq_of_mem_costStaticCollectionTypingChoices
+    source color targetFree targetBound collectionType elements expected first
+    firstMembership).trans
+      (map_sourceResultType_eq_of_mem_costStaticCollectionTypingChoices
+        source color targetFree targetBound collectionType elements expected
+        second secondMembership).symm
+
+/-- Executable compatibility projection of the complete candidate family.
+Only the finite search procedure and its compatibility plan observe this
+head; semantic candidate and coherence theorems quantify over membership in
+the complete list. -/
+def costStaticCollectionTypingChoice? (source : CIGSLT)
+    (color : CostStaticColor) (targetFree : WellSorted.FreeTypeContext)
+    (targetBound : List TypeExpr)
+    (collectionType : CollType) (elements : List Pattern)
+    (expected : TypeExpr) : Option CostCollectionTypingChoice :=
+  (costStaticCollectionTypingChoices source color targetFree targetBound
+    collectionType elements expected).head?
+
+/-- The executable projection rejects exactly when the complete candidate
+family is empty.  Thus opposite-colour boundary detection is based on absence
+of all current-colour witnesses, not failure of an arbitrary first match. -/
+theorem costStaticCollectionTypingChoice?_eq_none_iff
+    (source : CIGSLT) (color : CostStaticColor)
+    (targetFree : WellSorted.FreeTypeContext) (targetBound : List TypeExpr)
+    (collectionType : CollType) (elements : List Pattern)
+    (expected : TypeExpr) :
+    costStaticCollectionTypingChoice? source color targetFree targetBound
+        collectionType elements expected = none ↔
+      costStaticCollectionTypingChoices source color targetFree targetBound
+        collectionType elements expected = [] := by
+  simp [costStaticCollectionTypingChoice?]
+
+/-- A successful executable projection is one member of the complete
+candidate family and therefore exposes the same proof-relevant specification. -/
+theorem costStaticCollectionTypingChoice?_eq_some
+    (source : CIGSLT) (color : CostStaticColor)
+    (targetFree : WellSorted.FreeTypeContext) (targetBound : List TypeExpr)
+    (collectionType : CollType)
+    (elements : List Pattern) (expected : TypeExpr)
+    (choice : CostCollectionTypingChoice)
+    (selected : costStaticCollectionTypingChoice? source color targetFree
+      targetBound collectionType elements expected = some choice) :
+    (∃ sourceElementType,
+        choice = .direct sourceElementType ∧
+          expected = mapTypeExpr (color.symbols source)
+            (.collection collectionType sourceElementType) ∧
+          WellSorted.checkElementsHaveType source.costWholeLanguage targetFree
+            targetBound elements
+              (mapTypeExpr (color.symbols source) sourceElementType) = true) ∨
+      (∃ rule sourceElementType,
+        choice = .bare rule sourceElementType ∧
+          rule ∈ source.theory.presentation.presentation.language.terms ∧
+          rule.label ∈ source.continuationRetyping.wrappedLabels ∧
+          expected = mapTypeExpr (color.symbols source) (.base rule.category) ∧
+          ∃ parameterName,
+            rule.params = [.simple parameterName
+              (.collection collectionType sourceElementType)] ∧
+            WellSorted.checkElementsHaveType source.costWholeLanguage targetFree
+              targetBound elements
+                (mapTypeExpr (color.symbols source) sourceElementType) = true) := by
+  exact mem_costStaticCollectionTypingChoices_sound source color targetFree
+    targetBound collectionType elements expected choice
+      (List.mem_of_head? selected)
+
+mutual
+  /-- Compute the exact target type/support fiber of each maximal foreign
+  occurrence in one static stratum.  The traversal follows raw syntax and
+  authored constructor profiles; it never eliminates a typing proof into
+  data. -/
+  def collectCostStaticBoundaryFibersAt (source : CIGSLT)
+      (color : CostStaticColor) (targetFree : WellSorted.FreeTypeContext)
+      (available : List TypeExpr)
+      (outer : OneHoleContext) :
+      (pattern : Pattern) → (expected : TypeExpr) →
+        Option (CostRegionBoundaryFibers
+          (collectDeclaredCostStaticBoundaryOccurrencesAt source color outer
+            pattern))
+    | .bvar _, _ => some .nil
+    | .fvar _, _ => some .nil
+    | .apply constructor arguments, expected =>
+        match decoded :
+            decodeDeclaredCostStaticConstructor source color constructor with
+        | none =>
+            some (CostRegionBoundaryFibers.cast (by
+              simp [collectDeclaredCostStaticBoundaryOccurrencesAt, decoded])
+              (.cons (occurrence :=
+                { context := outer
+                  content := .apply constructor arguments })
+                available expected .nil))
+        | some _ =>
+            match source.decodeDeclaredCostConstructor constructor with
+            | none => none
+            | some intrinsic =>
+                let childAvailable :=
+                  if ReflectiveContextSupport.isQuoteConstructor
+                      source.costWholeLanguage constructor then [] else available
+                (collectCostStaticApplyBoundaryFibers source color targetFree
+                    childAvailable outer constructor [] arguments
+                      (source.materializeDeclaredCostConstructor intrinsic).params).map
+                  (CostRegionBoundaryFibers.cast (by
+                    simp [collectDeclaredCostStaticBoundaryOccurrencesAt,
+                      decoded]))
+    | .lambda binder body, expected =>
+        match expected with
+        | .arrow domain codomain =>
+            collectCostStaticBoundaryFibersAt source color targetFree
+              (domain :: available) (outer.comp (.lambda binder .hole)) body
+                codomain
+        | _ => none
+    | .multiLambda arity binders body, expected =>
+        match expected with
+        | .arrow (.multiBinder domain) codomain =>
+            collectCostStaticBoundaryFibersAt source color targetFree
+              (List.replicate arity domain ++ available)
+              (outer.comp (.multiLambda arity binders .hole)) body codomain
+        | _ => none
+    | .subst _ _, _ => none
+    | .collection collectionType elements rest, expected =>
+        match costStaticCollectionTypingChoice? source color targetFree
+            available collectionType elements expected with
+        | none => none
+        | some choice =>
+            collectCostStaticCollectionBoundaryFibers source color targetFree
+              available outer collectionType [] elements rest
+                (choice.targetElementType source color)
+
+  /-- Constructor-argument companion to the syntax-derived boundary-fiber
+  traversal. -/
+  def collectCostStaticApplyBoundaryFibers (source : CIGSLT)
+      (color : CostStaticColor) (targetFree : WellSorted.FreeTypeContext)
+      (available : List TypeExpr)
+      (outer : OneHoleContext) (constructor : String)
+      (before : List Pattern) :
+      (arguments : List Pattern) → (parameters : List TermParam) →
+        Option (CostRegionBoundaryFibers
+          (collectDeclaredCostStaticApplyBoundaryOccurrences source color outer
+            constructor before arguments))
+    | [], [] => some .nil
+    | argument :: after, parameter :: parameters =>
+        match WellSorted.parameterType? parameter with
+        | none => none
+        | some expected =>
+            if WellSorted.matchesParameterRepresentation? parameter argument then
+              match collectCostStaticBoundaryFibersAt source color targetFree
+                  available (outer.comp
+                    (.apply constructor before .hole after)) argument expected with
+              | none => none
+              | some head =>
+                  match collectCostStaticApplyBoundaryFibers source color
+                      targetFree available outer constructor
+                        (before ++ [argument]) after parameters with
+                  | none => none
+                  | some tail => some (head.append tail)
+            else
+              none
+    | _, _ => none
+
+  /-- Homogeneous-collection companion to the syntax-derived boundary-fiber
+  traversal. -/
+  def collectCostStaticCollectionBoundaryFibers (source : CIGSLT)
+      (color : CostStaticColor) (targetFree : WellSorted.FreeTypeContext)
+      (available : List TypeExpr)
+      (outer : OneHoleContext) (collectionType : CollType)
+      (before : List Pattern) :
+      (elements : List Pattern) → (rest : Option String) →
+        (elementType : TypeExpr) →
+        Option (CostRegionBoundaryFibers
+          (collectDeclaredCostStaticCollectionBoundaryOccurrences source color
+            outer collectionType before elements rest))
+    | [], _, _ => some .nil
+    | element :: after, rest, elementType =>
+        match collectCostStaticBoundaryFibersAt source color targetFree available
+            (outer.comp
+              (.collection collectionType before .hole after rest)) element
+              elementType with
+        | none => none
+        | some head =>
+            match collectCostStaticCollectionBoundaryFibers source color
+                targetFree available outer collectionType
+                  (before ++ [element]) after rest elementType with
+            | none => none
+            | some tail => some (head.append tail)
+end
+
+/-- Public syntax-driven target-fiber collector for a complete static
+stratum. -/
+def collectCostStaticBoundaryFibers (source : CIGSLT)
+    (color : CostStaticColor) (targetFree : WellSorted.FreeTypeContext)
+    (available : List TypeExpr)
+    (pattern : Pattern) (expected : TypeExpr) :
+    Option (CostRegionBoundaryFibers
+      (collectDeclaredCostStaticBoundaryOccurrences source color pattern)) :=
+  collectCostStaticBoundaryFibersAt source color targetFree available .hole
+    pattern expected
+
+/-- A finite, occurrence-indexed table of typed region boundaries.  The list
+index is the exact collector output, so there is no value to invent for an
+uncollected occurrence and no total-function fallback. -/
+inductive TypedCostRegionBoundaryTable (source : CIGSLT)
+    (color : CostStaticColor)
+    (targetFree : WellSorted.FreeTypeContext) :
+    List CostRegionOccurrence → Type where
+  | nil : TypedCostRegionBoundaryTable source color targetFree []
+  | cons {occurrence : CostRegionOccurrence}
+      {occurrences : List CostRegionOccurrence}
+      (boundary : TypedCostRegionBoundary source color targetFree)
+      (content : boundary.boundary.content = occurrence.content)
+      (tail : TypedCostRegionBoundaryTable source color targetFree occurrences) :
+      TypedCostRegionBoundaryTable source color targetFree
+        (occurrence :: occurrences)
+
+namespace TypedCostRegionBoundaryTable
+
+/-- A table indexed by the empty occurrence list contains no invented entry.
+This is the dependent eliminator that exposes its unique constructor to
+table-native computations. -/
+theorem eq_nil {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    (table : TypedCostRegionBoundaryTable source color targetFree []) :
+    table = .nil := by
+  cases table
+  rfl
+
+/-- Reindex a finite table along an equality of its exact collector output. -/
+def cast {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {sourceOccurrences targetOccurrences : List CostRegionOccurrence}
+    (equality : sourceOccurrences = targetOccurrences)
+    (table : TypedCostRegionBoundaryTable source color targetFree
+      sourceOccurrences) :
+    TypedCostRegionBoundaryTable source color targetFree targetOccurrences :=
+  equality ▸ table
+
+@[simp]
+theorem cast_rfl {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    (table : TypedCostRegionBoundaryTable source color targetFree occurrences) :
+    cast rfl table = table :=
+  rfl
+
+/-- Reindexing along any proof of a reflexive occurrence equality is
+computationally inert; proof irrelevance prevents equality witnesses from
+becoming observable table data. -/
+@[simp]
+theorem cast_self {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    (equality : occurrences = occurrences)
+    (table : TypedCostRegionBoundaryTable source color targetFree occurrences) :
+    cast equality table = table := by
+  rw [Subsingleton.elim equality rfl]
+  rfl
+
+/-- Concatenate two finite boundary tables.  The occurrence index records
+that no entry is lost, invented, or reordered. -/
+def append {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext} :
+    {left right : List CostRegionOccurrence} →
+      TypedCostRegionBoundaryTable source color targetFree left →
+      TypedCostRegionBoundaryTable source color targetFree right →
+      TypedCostRegionBoundaryTable source color targetFree (left ++ right)
+  | [], _, .nil, rightTable => rightTable
+  | _ :: _, _, .cons boundary content tail, rightTable =>
+      .cons boundary content (append tail rightTable)
+
+/-- Split a table along the same list boundary used by the structural
+collector.  Unlike lookup by a raw occurrence value, this preserves the
+identity and order of repeated occurrences. -/
+def split {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext} :
+    (left right : List CostRegionOccurrence) →
+      TypedCostRegionBoundaryTable source color targetFree (left ++ right) →
+      TypedCostRegionBoundaryTable source color targetFree left ×
+        TypedCostRegionBoundaryTable source color targetFree right
+  | [], _, table => (.nil, table)
+  | _ :: left, right, .cons boundary content tail =>
+      let divided := split left right tail
+      (.cons boundary content divided.1, divided.2)
+
+/-- Splitting a table assembled by `append` recovers both original tables. -/
+@[simp]
+theorem split_append {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {left right : List CostRegionOccurrence}
+    (leftTable : TypedCostRegionBoundaryTable source color targetFree left)
+    (rightTable : TypedCostRegionBoundaryTable source color targetFree right) :
+    split left right (append leftTable rightTable) =
+      (leftTable, rightTable) := by
+  induction leftTable with
+  | nil => rfl
+  | cons boundary content tail inductionHypothesis =>
+      simp [append, split, inductionHypothesis]
+
+/-- Recombining the two structural pieces of a table is exact. -/
+@[simp]
+theorem append_split {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    (left right : List CostRegionOccurrence)
+    (table : TypedCostRegionBoundaryTable source color targetFree
+      (left ++ right)) :
+    append (split left right table).1 (split left right table).2 = table := by
+  induction left with
+  | nil => rfl
+  | cons occurrence left inductionHypothesis =>
+      cases table with
+      | cons boundary content tail =>
+          simp only [split, append]
+          rw [inductionHypothesis]
+
+/-- Forget the occurrence index while retaining the finite ordered boundary
+entries. -/
+def entries {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext} :
+    {occurrences : List CostRegionOccurrence} →
+      TypedCostRegionBoundaryTable source color targetFree occurrences →
+      List (TypedCostRegionBoundary source color targetFree)
+  | [], .nil => []
+  | _ :: _, .cons boundary _ tail => boundary :: tail.entries
+
+/-- Reindexing changes only the type-level collector expression, never the
+finite entries. -/
+@[simp]
+theorem entries_cast {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {sourceOccurrences targetOccurrences : List CostRegionOccurrence}
+    (equality : sourceOccurrences = targetOccurrences)
+    (table : TypedCostRegionBoundaryTable source color targetFree
+      sourceOccurrences) :
+    (cast equality table).entries = table.entries := by
+  cases equality
+  rfl
+
+/-- The finite table contains one entry for each collected occurrence. -/
+@[simp]
+theorem entries_length {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    (table : TypedCostRegionBoundaryTable source color targetFree occurrences) :
+    table.entries.length = occurrences.length := by
+  induction table with
+  | nil => rfl
+  | cons boundary content tail inductionHypothesis =>
+      simp [entries, inductionHypothesis]
+
+/-- Boundary payloads agree pointwise with the exact occurrence list. -/
+theorem entries_content {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    (table : TypedCostRegionBoundaryTable source color targetFree occurrences) :
+    table.entries.map (fun boundary => boundary.boundary.content) =
+      occurrences.map CostRegionOccurrence.content := by
+  induction table with
+  | nil => rfl
+  | cons boundary content tail inductionHypothesis =>
+      simp [entries, content, inductionHypothesis]
+
+/-- Every finite typed entry is aligned with an actual collected occurrence.
+The witness retains occurrence identity; equal raw contents alone never
+manufacture a table entry. -/
+theorem exists_occurrence_of_mem_entries {source : CIGSLT}
+    {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    (table : TypedCostRegionBoundaryTable source color targetFree occurrences)
+    (boundary : TypedCostRegionBoundary source color targetFree)
+    (membership : boundary ∈ table.entries) :
+    ∃ occurrence, occurrence ∈ occurrences ∧
+      boundary.boundary.content = occurrence.content := by
+  have contentMembership : boundary.boundary.content ∈
+      table.entries.map (fun entry => entry.boundary.content) :=
+    List.mem_map.mpr ⟨boundary, membership, rfl⟩
+  rw [table.entries_content] at contentMembership
+  rcases List.mem_map.mp contentMembership with
+    ⟨occurrence, occurrenceMembership, contentEquality⟩
+  exact ⟨occurrence, occurrenceMembership, contentEquality.symm⟩
+
+/-- Forgetting indices sends table concatenation to ordinary list
+concatenation. -/
+@[simp]
+theorem entries_append {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {left right : List CostRegionOccurrence}
+    (leftTable : TypedCostRegionBoundaryTable source color targetFree left)
+    (rightTable : TypedCostRegionBoundaryTable source color targetFree right) :
+    (append leftTable rightTable).entries =
+      leftTable.entries ++ rightTable.entries := by
+  induction leftTable with
+  | nil => rfl
+  | cons boundary content tail inductionHypothesis =>
+      simp [append, entries, inductionHypothesis]
+
+/-- Splitting a table partitions its entries without changing their order. -/
+theorem entries_split {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    (left right : List CostRegionOccurrence)
+    (table : TypedCostRegionBoundaryTable source color targetFree
+      (left ++ right)) :
+    (split left right table).1.entries ++
+        (split left right table).2.entries = table.entries := by
+  rw [← entries_append]
+  rw [append_split]
+
+/-- The left structural segment contributes only entries of the original
+finite table. -/
+theorem entries_split_left_subset {source : CIGSLT}
+    {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+    (left right : List CostRegionOccurrence)
+    (table : TypedCostRegionBoundaryTable source color targetFree
+      (left ++ right)) :
+    (split left right table).1.entries ⊆ table.entries := by
+  intro boundary membership
+  rw [← entries_split left right table]
+  exact List.mem_append_left _ membership
+
+/-- The right structural segment contributes only entries of the original
+finite table. -/
+theorem entries_split_right_subset {source : CIGSLT}
+    {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+    (left right : List CostRegionOccurrence)
+    (table : TypedCostRegionBoundaryTable source color targetFree
+      (left ++ right)) :
+    (split left right table).2.entries ⊆ table.entries := by
+  intro boundary membership
+  rw [← entries_split left right table]
+  exact List.mem_append_right _ membership
+
+/-- Finite lookup by the collision-free boundary variable name.  Failure is
+represented by `none`; no arbitrary boundary is manufactured. -/
+def resolve {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext} :
+    {occurrences : List CostRegionOccurrence} →
+      TypedCostRegionBoundaryTable source color targetFree occurrences →
+      String → Option (TypedCostRegionBoundary source color targetFree)
+  | [], .nil, _ => none
+  | _ :: _, .cons boundary _ tail, name =>
+      if name = costRegionBoundaryVariableName boundary.boundary then
+        some boundary
+      else
+        tail.resolve name
+
+/-- Successful finite lookup always returns an actual table entry. -/
+theorem mem_entries_of_resolve_eq_some {source : CIGSLT}
+    {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    (table : TypedCostRegionBoundaryTable source color targetFree occurrences)
+    {name : String}
+    {boundary : TypedCostRegionBoundary source color targetFree}
+    (resolved : table.resolve name = some boundary) :
+    boundary ∈ table.entries := by
+  induction table with
+  | nil => simp [resolve] at resolved
+  | cons head content tail inductionHypothesis =>
+      simp only [resolve] at resolved
+      split at resolved
+      · have equality : head = boundary := Option.some.inj resolved
+        subst boundary
+        simp [entries]
+      · simp [entries, inductionHypothesis resolved]
+
+/-- Every finite entry is recovered exactly by its collision-free key.  If
+the same key occurs earlier, proof-relevant boundary extensionality shows
+that the entries are equal rather than selecting an arbitrary value. -/
+theorem resolve_of_mem_entries {source : CIGSLT}
+    {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    (table : TypedCostRegionBoundaryTable source color targetFree occurrences)
+    (boundary : TypedCostRegionBoundary source color targetFree)
+    (membership : boundary ∈ table.entries) :
+    table.resolve (costRegionBoundaryVariableName boundary.boundary) =
+      some boundary := by
+  induction table with
+  | nil => cases membership
+  | cons head content tail inductionHypothesis =>
+      simp only [entries, List.mem_cons] at membership
+      rcases membership with equality | tailMembership
+      · subst head
+        simp [resolve]
+      · simp only [resolve]
+        split
+        · rename_i keyEquality
+          have rawEquality : boundary.boundary = head.boundary :=
+            costRegionBoundaryVariableName_injective keyEquality
+          have typedEquality : boundary = head :=
+            TypedCostRegionBoundary.ext rawEquality
+          subst head
+          rfl
+        · exact inductionHypothesis tailMembership
+
+/-- A successful lookup exposes the exact collision-free key that selected
+its proof-relevant boundary. -/
+theorem name_eq_boundaryVariable_of_resolve_eq_some
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    (table : TypedCostRegionBoundaryTable source color targetFree occurrences)
+    {name : String}
+    {boundary : TypedCostRegionBoundary source color targetFree}
+    (resolved : table.resolve name = some boundary) :
+    name = costRegionBoundaryVariableName boundary.boundary := by
+  induction table with
+  | nil => simp [resolve] at resolved
+  | cons head content tail inductionHypothesis =>
+      simp only [resolve] at resolved
+      split at resolved
+      · rename_i keyEquality
+        have boundaryEquality : head = boundary := Option.some.inj resolved
+        subst boundary
+        exact keyEquality
+      · exact inductionHypothesis resolved
+
+/-- Extending a finite table cannot change a lookup already defined by the
+smaller table.  Collision-free keys ensure that an earlier equal key denotes
+the same typed boundary, regardless of occurrence multiplicity. -/
+theorem resolve_eq_of_entries_subset
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {smallOccurrences largeOccurrences : List CostRegionOccurrence}
+    (small : TypedCostRegionBoundaryTable source color targetFree
+      smallOccurrences)
+    (large : TypedCostRegionBoundaryTable source color targetFree
+      largeOccurrences)
+    (entriesSubset : small.entries ⊆ large.entries)
+    (name : String) (defined : small.resolve name ≠ none) :
+    large.resolve name = small.resolve name := by
+  cases resolved : small.resolve name with
+  | none => exact (defined resolved).elim
+  | some boundary =>
+      have membership := small.mem_entries_of_resolve_eq_some resolved
+      have keyEquality :=
+        small.name_eq_boundaryVariable_of_resolve_eq_some resolved
+      rw [keyEquality]
+      exact large.resolve_of_mem_entries boundary (entriesSubset membership)
+
+/-- Restrict the legacy total assignment to exactly the finite occurrences
+it is permitted to serve.  This is the agreement bridge used while the old
+executor-facing API remains available; the resulting table itself has no
+out-of-domain branch. -/
+def ofAssignment {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    (boundary : TypedCostRegionBoundaryAssignment source color targetFree) :
+    (occurrences : List CostRegionOccurrence) →
+    (∀ occurrence, occurrence ∈ occurrences →
+      (boundary occurrence).boundary.content = occurrence.content) →
+    TypedCostRegionBoundaryTable source color targetFree occurrences
+  | [], _ => .nil
+  | occurrence :: occurrences, content =>
+      .cons (boundary occurrence) (content occurrence (by simp))
+        (ofAssignment boundary occurrences fun other membership =>
+          content other (by simp [membership]))
+
+/-- On the exact finite collector output, table-native lookup agrees with the
+legacy occurrence-aware resolver.  This is the extensional bridge required
+before callers of the total assignment API are migrated. -/
+theorem resolve_ofAssignment {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    (boundary : TypedCostRegionBoundaryAssignment source color targetFree)
+    (occurrences : List CostRegionOccurrence)
+    (content : ∀ occurrence, occurrence ∈ occurrences →
+      (boundary occurrence).boundary.content = occurrence.content)
+    (name : String) :
+    (ofAssignment boundary occurrences content).resolve name =
+      resolveTypedCostRegionBoundaryData boundary occurrences name := by
+  induction occurrences with
+  | nil => rfl
+  | cons occurrence occurrences inductionHypothesis =>
+      simp only [ofAssignment, resolve,
+        resolveTypedCostRegionBoundaryData]
+      split
+      · rfl
+      · apply inductionHypothesis
+
+/-- Project finite typed lookup to the raw content used by immediate
+recomposition. -/
+def resolveContent {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    (table : TypedCostRegionBoundaryTable source color targetFree occurrences)
+    (name : String) : Option Pattern :=
+  (table.resolve name).map (fun boundary => boundary.boundary.content)
+
+/-- Content projection of exact finite lookup. -/
+theorem resolveContent_of_mem_entries {source : CIGSLT}
+    {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    (table : TypedCostRegionBoundaryTable source color targetFree occurrences)
+    (boundary : TypedCostRegionBoundary source color targetFree)
+    (membership : boundary ∈ table.entries) :
+    table.resolveContent
+        (costRegionBoundaryVariableName boundary.boundary) =
+      some boundary.boundary.content := by
+  simp [resolveContent, table.resolve_of_mem_entries boundary membership]
+
+/-- Replacement values aligned one-for-one with a finite boundary table.
+The table retains stable boundary identity and source/target fibers; this
+second dependent list supplies the current open value for each entry.  It is
+therefore suitable for child-first normalization without changing boundary
+keys or reintroducing a total occurrence assignment. -/
+inductive Values (source : CIGSLT) (color : CostStaticColor)
+    (targetFree : WellSorted.FreeTypeContext) :
+    {occurrences : List CostRegionOccurrence} →
+      TypedCostRegionBoundaryTable source color targetFree occurrences → Type where
+  | nil : Values source color targetFree .nil
+  | cons {occurrence : CostRegionOccurrence}
+      {occurrences : List CostRegionOccurrence}
+      {boundary : TypedCostRegionBoundary source color targetFree}
+      {content : boundary.boundary.content = occurrence.content}
+      {tail : TypedCostRegionBoundaryTable source color targetFree occurrences}
+      (value : WellSorted.OpenPattern source.costWholeLanguage targetFree
+        boundary.boundary.targetSupport boundary.boundary.targetType)
+      (values : Values source color targetFree tail) :
+      Values source color targetFree (.cons boundary content tail)
+
+namespace Values
+
+/-- A successful finite value lookup retains the boundary whose stable key
+selected the value, so its typing and support indices remain available. -/
+abbrev Resolved (source : CIGSLT) (color : CostStaticColor)
+    (targetFree : WellSorted.FreeTypeContext) :=
+  Σ boundary : TypedCostRegionBoundary source color targetFree,
+    WellSorted.OpenPattern source.costWholeLanguage targetFree
+      boundary.boundary.targetSupport boundary.boundary.targetType
+
+/-- Lookup a replacement value by the stable key in the corresponding table.
+The table and values are traversed in lockstep, preserving occurrence order
+and duplicate multiplicity. -/
+def resolve {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext} :
+    {occurrences : List CostRegionOccurrence} →
+      (table : TypedCostRegionBoundaryTable source color targetFree occurrences) →
+      Values source color targetFree table → String →
+        Option (Resolved source color targetFree)
+  | [], .nil, .nil, _ => none
+  | _ :: _, .cons boundary _ tail, .cons value values, name =>
+      if name = costRegionBoundaryVariableName boundary.boundary then
+        some ⟨boundary, value⟩
+      else
+        resolve tail values name
+
+/-- Value lookup and table lookup select the same proof-relevant boundary.
+Only the replacement value varies during recursive normalization. -/
+theorem resolve_boundary {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    (table : TypedCostRegionBoundaryTable source color targetFree occurrences)
+    (values : Values source color targetFree table) (name : String) :
+    (values.resolve table name).map (fun resolved => resolved.1) =
+      table.resolve name := by
+  induction values with
+  | nil => rfl
+  | @cons occurrence occurrences boundary content tail value values
+      inductionHypothesis =>
+      simp only [resolve, TypedCostRegionBoundaryTable.resolve]
+      split <;> simp_all
+
+/-- A larger finite replacement environment extends a smaller one when every
+lookup defined by the smaller table returns the identical proof-relevant
+boundary and value.  No condition is imposed on genuinely unused entries. -/
+def Extends {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {smallOccurrences largeOccurrences : List CostRegionOccurrence}
+    (smallTable : TypedCostRegionBoundaryTable source color targetFree
+      smallOccurrences)
+    (smallValues : Values source color targetFree smallTable)
+    (largeTable : TypedCostRegionBoundaryTable source color targetFree
+      largeOccurrences)
+    (largeValues : Values source color targetFree largeTable) : Prop :=
+  ∀ name, smallTable.resolve name ≠ none →
+    largeValues.resolve largeTable name =
+      smallValues.resolve smallTable name
+
+namespace Extends
+
+theorem refl {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    (table : TypedCostRegionBoundaryTable source color targetFree occurrences)
+    (values : Values source color targetFree table) :
+    Extends table values table values := by
+  intro name defined
+  rfl
+
+theorem trans {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {firstOccurrences secondOccurrences thirdOccurrences :
+      List CostRegionOccurrence}
+    {firstTable : TypedCostRegionBoundaryTable source color targetFree
+      firstOccurrences}
+    {secondTable : TypedCostRegionBoundaryTable source color targetFree
+      secondOccurrences}
+    {thirdTable : TypedCostRegionBoundaryTable source color targetFree
+      thirdOccurrences}
+    {firstValues : Values source color targetFree firstTable}
+    {secondValues : Values source color targetFree secondTable}
+    {thirdValues : Values source color targetFree thirdTable}
+    (firstSecond : Extends firstTable firstValues secondTable secondValues)
+    (secondThird : Extends secondTable secondValues thirdTable thirdValues)
+    (tableExtension : ∀ name, firstTable.resolve name ≠ none →
+      secondTable.resolve name ≠ none) :
+    Extends firstTable firstValues thirdTable thirdValues := by
+  intro name defined
+  exact (secondThird name (tableExtension name defined)).trans
+    (firstSecond name defined)
+
+end Extends
+
+/-- The original table contents form the identity replacement vector. -/
+def original {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext} :
+    {occurrences : List CostRegionOccurrence} →
+      (table : TypedCostRegionBoundaryTable source color targetFree occurrences) →
+      Values source color targetFree table
+  | [], .nil => .nil
+  | _ :: _, .cons boundary _ tail =>
+      .cons
+        ⟨boundary.boundary.content, boundary.contentTyped,
+          boundary.contentCanonicalBinderMetadata,
+          boundary.contentObjectPattern,
+          boundary.contentReflectiveScopeSafe⟩
+        (original tail)
+
+/-- Concatenate value vectors in exactly the same occurrence order as their
+finite boundary tables. -/
+def append {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {leftOccurrences rightOccurrences : List CostRegionOccurrence}
+    {leftTable : TypedCostRegionBoundaryTable source color targetFree
+      leftOccurrences}
+    {rightTable : TypedCostRegionBoundaryTable source color targetFree
+      rightOccurrences} :
+    Values source color targetFree leftTable →
+      Values source color targetFree rightTable →
+      Values source color targetFree
+        (TypedCostRegionBoundaryTable.append leftTable rightTable)
+  | .nil, right => right
+  | .cons value values, right => .cons value (append values right)
+
+end Values
+
+/-! ### Supported restoration from the finite resolver
+
+The semantic restoration interface depends only on finite typed lookup.  The
+older total occurrence assignment is neither needed nor observable here. -/
+
+/-- Source-side free context presented to the authored canonical section.
+Retagged source variables are decoded through the selected static fiber;
+rigid variables obtain their source types from the finite typed table. -/
+def sourceFreeContext {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    (table : TypedCostRegionBoundaryTable source color targetFree occurrences) :
+    WellSorted.FreeTypeContext :=
+  fun name =>
+    match decodeCostRegionSourceVariableName name with
+    | some sourceName =>
+        (targetFree sourceName).bind (decodeCostStaticTypeExpr source color)
+    | none =>
+        (table.resolve name).map (fun typedBoundary =>
+          typedBoundary.boundary.type)
+
+/-- A retagged authored free variable decodes through the selected static
+fiber independently of every finite boundary entry. -/
+@[simp]
+theorem sourceFreeContext_sourceVariable {source : CIGSLT}
+    {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    (table : TypedCostRegionBoundaryTable source color targetFree occurrences)
+    (name : String) :
+    table.sourceFreeContext (costRegionSourceVariableName name) =
+      (targetFree name).bind (decodeCostStaticTypeExpr source color) := by
+  simp [sourceFreeContext, decodeCostRegionSourceVariableName_encode]
+
+/-- Generated Cost free context after transporting a source skeleton back
+through the selected static fiber.  Continuation-retyped boundaries retain
+their independently certified target types. -/
+def mappedFreeContext {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    (table : TypedCostRegionBoundaryTable source color targetFree occurrences) :
+    WellSorted.FreeTypeContext :=
+  fun name =>
+    match decodeCostRegionSourceVariableName name with
+    | some sourceName =>
+        ((targetFree sourceName).bind
+          (decodeCostStaticTypeExpr source color)).map
+            (mapTypeExpr (color.symbols source))
+    | none =>
+        (table.resolve name).map (fun typedBoundary =>
+          typedBoundary.boundary.targetType)
+
+/-- Exact generated binder support used when restoring a finite boundary.
+Names outside the two reserved namespaces receive no authority and no
+support. -/
+def restorationSupport {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    (table : TypedCostRegionBoundaryTable source color targetFree occurrences) :
+    ContextSupport.Support :=
+  fun name =>
+    match decodeCostRegionSourceVariableName name with
+    | some _ => []
+    | none =>
+        match table.resolve name with
+        | some typedBoundary => typedBoundary.boundary.targetSupport
+        | none => []
+
+/-- Support presented to the authored canonical section.  Source variables
+are maximally mobile; a rigid boundary variable retains the exact target
+binder suffix in which its content was observed.  This deliberate codomain
+support is interpreted using the selected static binder image, so foreign
+binders remain visible without entering the source typing context. -/
+def sourceSupport {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    (table : TypedCostRegionBoundaryTable source color targetFree occurrences) :
+    ContextSupport.Support :=
+  fun name =>
+    match decodeCostRegionSourceVariableName name with
+    | some _ => []
+    | none =>
+        match table.resolve name with
+        | some typedBoundary => typedBoundary.boundary.targetSupport
+        | none => []
+
+/-- Hygienically retagged source variables require no surrounding target
+binder support during finite restoration. -/
+@[simp]
+theorem restorationSupport_sourceVariable {source : CIGSLT}
+    {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    (table : TypedCostRegionBoundaryTable source color targetFree occurrences)
+    (name : String) :
+    table.restorationSupport (costRegionSourceVariableName name) = [] := by
+  simp [restorationSupport, decodeCostRegionSourceVariableName_encode]
+
+/-- Every finite boundary key restores at precisely its certified target
+binder suffix. -/
+@[simp]
+theorem restorationSupport_boundaryVariable {source : CIGSLT}
+    {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    (table : TypedCostRegionBoundaryTable source color targetFree occurrences)
+    (boundary : TypedCostRegionBoundary source color targetFree)
+    (membership : boundary ∈ table.entries) :
+    table.restorationSupport
+        (costRegionBoundaryVariableName boundary.boundary) =
+      boundary.boundary.targetSupport := by
+  simp [restorationSupport, decodeCostRegionSourceVariableName_boundary,
+    table.resolve_of_mem_entries boundary membership]
+
+/-- Hygienically retagged source variables are independent of every
+surrounding reflective binder. -/
+@[simp]
+theorem sourceSupport_sourceVariable {source : CIGSLT}
+    {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    (table : TypedCostRegionBoundaryTable source color targetFree occurrences)
+    (name : String) :
+    table.sourceSupport (costRegionSourceVariableName name) = [] := by
+  simp [sourceSupport, decodeCostRegionSourceVariableName_encode]
+
+/-- Every finite boundary entry is assigned its exact observed target binder
+support.  Collision-free boundary keys make the lookup independent of equal
+raw contents at other occurrences. -/
+@[simp]
+theorem sourceSupport_boundaryVariable {source : CIGSLT}
+    {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    (table : TypedCostRegionBoundaryTable source color targetFree occurrences)
+    (boundary : TypedCostRegionBoundary source color targetFree)
+    (membership : boundary ∈ table.entries) :
+    table.sourceSupport
+        (costRegionBoundaryVariableName boundary.boundary) =
+      boundary.boundary.targetSupport := by
+  simp [sourceSupport, decodeCostRegionSourceVariableName_boundary,
+    table.resolve_of_mem_entries boundary membership]
+
+/-- A rigid boundary variable is reflectively safe whenever its stored
+source support is the current binder context. -/
+theorem boundaryFvar_reflectiveSupportSafeAt
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {globalOccurrences : List CostRegionOccurrence}
+    (globalTable : TypedCostRegionBoundaryTable source color targetFree
+      globalOccurrences)
+    (boundary : TypedCostRegionBoundary source color targetFree)
+    (membership : boundary ∈ globalTable.entries)
+    {availableSource : List TypeExpr}
+    (supportEquality : boundary.boundary.targetSupport = availableSource)
+    {bound : List TypeExpr} {type : TypeExpr}
+    {binderImage : TypeExpr → TypeExpr}
+    (typed : WellSorted.HasType
+      source.theory.presentation.presentation.language
+      globalTable.sourceFreeContext bound
+      (.fvar (costRegionBoundaryVariableName boundary.boundary)) type) :
+    typed.ReflectiveSupportSafeAt globalTable.sourceSupport availableSource
+      binderImage := by
+  cases typed with
+  | fvar lookup =>
+      refine .fvar lookup availableSource ⟨[], ?_⟩
+      simp [globalTable.sourceSupport_boundaryVariable boundary membership,
+        supportEquality]
+
+/-- A boundary certified in the static image is reflectively safe at the
+exact source binder context from which it was collected.  The support
+assignment remains that of the fixed global table; a local table segment is
+used only to establish finite membership. -/
+theorem certifiedBoundaryFvar_reflectiveSupportSafeAt
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {targetAvailable : List TypeExpr} {targetType : TypeExpr}
+    {content : Pattern}
+    {boundary : CertifiedCostRegionBoundary source color targetFree
+      targetAvailable targetType content}
+    {globalOccurrences : List CostRegionOccurrence}
+    (globalTable : TypedCostRegionBoundaryTable source color targetFree
+      globalOccurrences)
+    (membership : boundary.typed ∈ globalTable.entries)
+    {bound : List TypeExpr} {type : TypeExpr}
+    {binderImage : TypeExpr → TypeExpr}
+    (typed : WellSorted.HasType
+      source.theory.presentation.presentation.language
+      globalTable.sourceFreeContext bound
+      (.fvar (costRegionBoundaryVariableName boundary.typed.boundary)) type) :
+    typed.ReflectiveSupportSafeAt globalTable.sourceSupport targetAvailable
+      binderImage := by
+  exact globalTable.boundaryFvar_reflectiveSupportSafeAt boundary.typed
+    membership boundary.targetSupport_eq typed
+
+/-- If a finite boundary table has no entries, every lookup fails.  This is
+the precise finite-domain replacement for the old total-assignment fallback. -/
+theorem resolve_eq_none_of_entries_eq_nil {source : CIGSLT}
+    {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    (table : TypedCostRegionBoundaryTable source color targetFree occurrences)
+    (empty : table.entries = []) (name : String) :
+    table.resolve name = none := by
+  cases resolved : table.resolve name with
+  | none => rfl
+  | some boundary =>
+      have membership := table.mem_entries_of_resolve_eq_some resolved
+      rw [empty] at membership
+      cases membership
+
+/-- With no foreign boundaries, the source context reconstructed from a
+mapped Cost fiber is exactly the hygienically retagged authored context. -/
+theorem sourceFreeContext_eq_retag_of_entries_eq_nil {source : CIGSLT}
+    {color : CostStaticColor} {free : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    (table : TypedCostRegionBoundaryTable source color
+      (free.map (color.symbols source)) occurrences)
+    (empty : table.entries = []) :
+    table.sourceFreeContext = retagCostRegionFreeContext free := by
+  funext name
+  cases decoded : decodeCostRegionSourceVariableName name with
+  | none =>
+      have unresolved := table.resolve_eq_none_of_entries_eq_nil empty name
+      simp [sourceFreeContext, retagCostRegionFreeContext, decoded, unresolved]
+  | some sourceName =>
+      cases lookup : free sourceName with
+      | none =>
+          simp [sourceFreeContext, retagCostRegionFreeContext,
+            WellSorted.FreeTypeContext.map, decoded, lookup]
+      | some type =>
+          simp [sourceFreeContext, retagCostRegionFreeContext,
+            WellSorted.FreeTypeContext.map, decoded, lookup,
+            decodeCostStaticTypeExpr_mapTypeExpr]
+
+/-- Every finite boundary entry is assigned exactly its decoded source type
+in the source context used to type the static skeleton. -/
+@[simp]
+theorem sourceFreeContext_boundaryVariable {source : CIGSLT}
+    {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    (table : TypedCostRegionBoundaryTable source color targetFree occurrences)
+    (boundary : TypedCostRegionBoundary source color targetFree)
+    (membership : boundary ∈ table.entries) :
+    table.sourceFreeContext
+        (costRegionBoundaryVariableName boundary.boundary) =
+      some boundary.boundary.type := by
+  simp [sourceFreeContext, decodeCostRegionSourceVariableName_boundary,
+    table.resolve_of_mem_entries boundary membership]
+
+/-- With no foreign boundaries, the authored canonical section receives no
+binder-support authority beyond ordinary typing. -/
+theorem sourceSupport_eq_empty_of_entries_eq_nil {source : CIGSLT}
+    {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    (table : TypedCostRegionBoundaryTable source color targetFree occurrences)
+    (empty : table.entries = []) :
+    table.sourceSupport = fun _ => [] := by
+  funext name
+  cases decoded : decodeCostRegionSourceVariableName name with
+  | some sourceName => simp [sourceSupport, decoded]
+  | none =>
+      have unresolved := table.resolve_eq_none_of_entries_eq_nil empty name
+      simp [sourceSupport, decoded, unresolved]
+
+/-- Per-entry coherence needed to transport an authored static skeleton back
+to its exact generated typing fiber.  The source and target types may be
+stored separately for stable boundary identity, but a genuine static-region
+entry proves that its type is in the selected-color image.  Binder support is
+kept in the exact target fiber and interpreted by binder-image support, so it
+is intentionally not required to be monochromatic. -/
+structure FiberCoherent {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    (table : TypedCostRegionBoundaryTable source color targetFree occurrences) :
+    Prop where
+  typeMap : ∀ boundary, boundary ∈ table.entries →
+    mapTypeExpr (color.symbols source) boundary.boundary.type =
+      boundary.boundary.targetType
+
+/-- Empty finite tables are fiber-coherent vacuously. -/
+theorem fiberCoherent_of_entries_eq_nil {source : CIGSLT}
+    {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    (table : TypedCostRegionBoundaryTable source color targetFree occurrences)
+    (empty : table.entries = []) : table.FiberCoherent := by
+  constructor
+  intro boundary membership
+  rw [empty] at membership
+  cases membership
+
+/-- Pointwise fiber coherence composes exactly along the same ordered table
+concatenation used by the structural collector.  This permits the complete
+finite table to be assembled before any free context, support assignment, or
+transport equation is derived from its resolver. -/
+theorem fiberCoherent_append_iff {source : CIGSLT}
+    {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {left right : List CostRegionOccurrence}
+    (leftTable : TypedCostRegionBoundaryTable source color targetFree left)
+    (rightTable : TypedCostRegionBoundaryTable source color targetFree right) :
+    (append leftTable rightTable).FiberCoherent ↔
+      leftTable.FiberCoherent ∧ rightTable.FiberCoherent := by
+  constructor
+  · intro coherent
+    constructor
+    · constructor
+      intro boundary membership
+      apply coherent.typeMap boundary
+      rw [entries_append]
+      exact List.mem_append_left _ membership
+    · constructor
+      intro boundary membership
+      apply coherent.typeMap boundary
+      rw [entries_append]
+      exact List.mem_append_right _ membership
+  · rintro ⟨leftCoherent, rightCoherent⟩
+    constructor
+    intro boundary membership
+    rw [entries_append] at membership
+    rcases List.mem_append.mp membership with
+      leftMembership | rightMembership
+    · exact leftCoherent.typeMap boundary leftMembership
+    · exact rightCoherent.typeMap boundary rightMembership
+
+/-- Certify exactly the finite list of collected occurrences in their
+syntax-derived target fibers.  Failure is explicit; the operation never asks
+for or invents a boundary outside the indexed list. -/
+def certify? {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext} :
+    {occurrences : List CostRegionOccurrence} →
+      CostRegionBoundaryFibers occurrences →
+      Option (TypedCostRegionBoundaryTable source color targetFree occurrences)
+  | [], .nil => some .nil
+  | occurrence :: _occurrences,
+      .cons targetSupport targetType tail =>
+      match certifyCostRegionBoundary? source color targetFree
+          targetSupport targetType occurrence.content with
+      | none => none
+      | some boundary =>
+          match certify? tail with
+          | none => none
+          | some table =>
+              some (.cons boundary.typed boundary.content_eq table)
+
+/-- Certification commutes with a proof-only reindexing of the exact
+occurrence list. -/
+theorem certify?_cast {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {sourceOccurrences targetOccurrences : List CostRegionOccurrence}
+    (occurrenceEquality : sourceOccurrences = targetOccurrences)
+    (fibers : CostRegionBoundaryFibers sourceOccurrences) :
+    certify? (source := source) (color := color) (targetFree := targetFree)
+        (CostRegionBoundaryFibers.cast occurrenceEquality fibers) =
+      (certify? (source := source) (color := color) (targetFree := targetFree)
+        fibers).map (TypedCostRegionBoundaryTable.cast occurrenceEquality) := by
+  cases occurrenceEquality
+  cases result : certify? (source := source) (color := color)
+      (targetFree := targetFree) fibers <;>
+    simp [CostRegionBoundaryFibers.cast, TypedCostRegionBoundaryTable.cast,
+      result]
+
+/-- Certification distributes over the collector's ordered concatenation.
+This is the dependent split principle used when a syntax spine hands its two
+subtrees the corresponding finite table segments. -/
+theorem certify?_append {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {left right : List CostRegionOccurrence}
+    (leftFibers : CostRegionBoundaryFibers left)
+    (rightFibers : CostRegionBoundaryFibers right) :
+    certify? (source := source) (color := color) (targetFree := targetFree)
+        (leftFibers.append rightFibers) =
+      match certify? (source := source) (color := color)
+          (targetFree := targetFree) leftFibers with
+      | none => none
+      | some leftTable =>
+          match certify? (source := source) (color := color)
+              (targetFree := targetFree) rightFibers with
+          | none => none
+          | some rightTable => some (append leftTable rightTable) := by
+  induction leftFibers with
+  | nil =>
+      cases rightResult : certify? (source := source) (color := color)
+          (targetFree := targetFree) rightFibers <;>
+        simp [CostRegionBoundaryFibers.append, certify?, append, rightResult]
+  | @cons occurrence occurrences targetSupport targetType tail
+      inductionHypothesis =>
+      cases headResult : certifyCostRegionBoundary? source color targetFree
+          targetSupport targetType occurrence.content with
+      | none =>
+          simp [CostRegionBoundaryFibers.append, certify?, headResult]
+      | some boundary =>
+          cases tailResult : certify? (source := source) (color := color)
+              (targetFree := targetFree) tail with
+          | none =>
+              simp [CostRegionBoundaryFibers.append, certify?, headResult,
+                tailResult, inductionHypothesis]
+          | some tailTable =>
+              cases rightResult : certify? (source := source) (color := color)
+                  (targetFree := targetFree) rightFibers with
+              | none =>
+                  simp [CostRegionBoundaryFibers.append, certify?, headResult,
+                    tailResult, rightResult, inductionHypothesis]
+              | some rightTable =>
+                  simp [CostRegionBoundaryFibers.append, certify?, headResult,
+                    tailResult, rightResult, inductionHypothesis, append]
+
+/-- If certification of an appended fiber plan succeeds, the structural
+split of the resulting table is exactly the pair of independently certified
+subplans. -/
+theorem certify?_split_of_append_eq_some {source : CIGSLT}
+    {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+    {left right : List CostRegionOccurrence}
+    (leftFibers : CostRegionBoundaryFibers left)
+    (rightFibers : CostRegionBoundaryFibers right)
+    {table : TypedCostRegionBoundaryTable source color targetFree
+      (left ++ right)}
+    (certified : certify? (source := source) (color := color)
+      (targetFree := targetFree) (leftFibers.append rightFibers) =
+        some table) :
+    certify? (source := source) (color := color) (targetFree := targetFree)
+        leftFibers = some (split left right table).1 ∧
+      certify? (source := source) (color := color) (targetFree := targetFree)
+        rightFibers = some (split left right table).2 := by
+  cases leftResult : certify? (source := source) (color := color)
+      (targetFree := targetFree) leftFibers with
+  | none =>
+      rw [certify?_append, leftResult] at certified
+      simp at certified
+  | some leftTable =>
+      cases rightResult : certify? (source := source) (color := color)
+          (targetFree := targetFree) rightFibers with
+      | none =>
+          rw [certify?_append, leftResult, rightResult] at certified
+          simp at certified
+      | some rightTable =>
+          rw [certify?_append, leftResult, rightResult] at certified
+          simp at certified
+          subst table
+          simp
+
+/-- Every entry of a successfully certified singleton fiber recovers the
+exact source binder context whose static image was observed. -/
+theorem certify?_singleton_sourceSupport_eq {source : CIGSLT}
+    {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+    {occurrence : CostRegionOccurrence}
+    {availableSource : List TypeExpr} {targetType : TypeExpr}
+    {table : TypedCostRegionBoundaryTable source color targetFree [occurrence]}
+    (certified : certify? (source := source) (color := color)
+      (targetFree := targetFree)
+      (.cons
+        (availableSource.map (mapTypeExpr (color.symbols source))) targetType
+        .nil) = some table)
+    (boundary : TypedCostRegionBoundary source color targetFree)
+    (membership : boundary ∈ table.entries) :
+    boundary.boundary.support = availableSource := by
+  cases headResult : certifyCostRegionBoundary? source color targetFree
+      (availableSource.map (mapTypeExpr (color.symbols source))) targetType
+        occurrence.content with
+  | none =>
+      simp [certify?, headResult] at certified
+  | some head =>
+      simp [certify?, headResult] at certified
+      cases certified
+      simp only [entries, List.mem_cons, List.not_mem_nil, or_false] at membership
+      subst boundary
+      exact certifyCostRegionBoundary?_sourceSupport_eq headResult
+
+/-- Every entry of a successfully certified singleton retains the exact
+observed target binder context, including positions outside the selected
+static color. -/
+theorem certify?_singleton_targetSupport_eq {source : CIGSLT}
+    {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+    {occurrence : CostRegionOccurrence}
+    {targetSupport : List TypeExpr} {targetType : TypeExpr}
+    {table : TypedCostRegionBoundaryTable source color targetFree [occurrence]}
+    (certified : certify? (source := source) (color := color)
+      (targetFree := targetFree)
+      (.cons targetSupport targetType .nil) = some table)
+    (boundary : TypedCostRegionBoundary source color targetFree)
+    (membership : boundary ∈ table.entries) :
+    boundary.boundary.targetSupport = targetSupport := by
+  cases headResult : certifyCostRegionBoundary? source color targetFree
+      targetSupport targetType occurrence.content with
+  | none =>
+      simp [certify?, headResult] at certified
+  | some head =>
+      simp [certify?, headResult] at certified
+      cases certified
+      simp only [entries, List.mem_cons, List.not_mem_nil, or_false] at membership
+      subst boundary
+      exact head.targetSupport_eq
+
+/-- Every entry of a successfully certified singleton fiber at a mapped
+target type recovers the exact source type. -/
+theorem certify?_singleton_sourceType_eq {source : CIGSLT}
+    {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+    {occurrence : CostRegionOccurrence}
+    {targetSupport : List TypeExpr} {sourceType : TypeExpr}
+    {table : TypedCostRegionBoundaryTable source color targetFree [occurrence]}
+    (certified : certify? (source := source) (color := color)
+      (targetFree := targetFree)
+      (.cons targetSupport
+        (mapTypeExpr (color.symbols source) sourceType) .nil) = some table)
+    (boundary : TypedCostRegionBoundary source color targetFree)
+    (membership : boundary ∈ table.entries) :
+    boundary.boundary.type = sourceType := by
+  cases headResult : certifyCostRegionBoundary? source color targetFree
+      targetSupport (mapTypeExpr (color.symbols source) sourceType)
+        occurrence.content with
+  | none =>
+      simp [certify?, headResult] at certified
+  | some head =>
+      simp [certify?, headResult] at certified
+      cases certified
+      simp only [entries, List.mem_cons, List.not_mem_nil, or_false] at membership
+      subst boundary
+      exact certifyCostRegionBoundary?_sourceType_eq headResult
+
+/-- Every successful finite certification table is coherently contained in
+the selected static type and binder-support fiber. -/
+theorem certify?_fiberCoherent {source : CIGSLT}
+    {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    (fibers : CostRegionBoundaryFibers occurrences)
+    {table : TypedCostRegionBoundaryTable source color targetFree occurrences}
+    (certified : certify? (source := source) (color := color)
+      (targetFree := targetFree) fibers = some table) :
+    table.FiberCoherent := by
+  induction fibers with
+  | nil =>
+      simp [certify?] at certified
+      subst table
+      exact fiberCoherent_of_entries_eq_nil .nil rfl
+  | @cons occurrence occurrences targetSupport targetType tail
+      inductionHypothesis =>
+      cases headResult : certifyCostRegionBoundary? source color targetFree
+          targetSupport targetType occurrence.content with
+      | none =>
+          simp [certify?, headResult] at certified
+      | some boundary =>
+          cases tailResult : certify? (source := source) (color := color)
+              (targetFree := targetFree) tail with
+          | none =>
+              simp [certify?, headResult, tailResult] at certified
+          | some tailTable =>
+              simp [certify?, headResult, tailResult] at certified
+              subst table
+              have tailCoherent := inductionHypothesis tailResult
+              constructor
+              intro entry membership
+              simp only [entries, List.mem_cons] at membership
+              rcases membership with rfl | membership
+              · exact (certifyCostRegionBoundary?_typeMap headResult).trans
+                  boundary.targetType_eq.symm
+              · exact tailCoherent.typeMap entry membership
+
+/-- Collect and certify one static stratum below an explicit one-hole
+context.  Keeping the context in the index lets structural proofs split the
+same occurrence list used by abstraction; it does not add a second source of
+boundary authority. -/
+def certifyCollectedCostStaticBoundariesAt? (source : CIGSLT)
+    (color : CostStaticColor) (targetFree : WellSorted.FreeTypeContext)
+    (available : List TypeExpr) (outer : OneHoleContext)
+    (pattern : Pattern) (expected : TypeExpr) :
+    Option (TypedCostRegionBoundaryTable source color targetFree
+      (collectDeclaredCostStaticBoundaryOccurrencesAt source color outer
+        pattern)) :=
+  match collectCostStaticBoundaryFibersAt source color targetFree available
+      outer pattern expected with
+  | none => none
+  | some fibers => certify? fibers
+
+/-- Collect the exact finite boundary fibers of one complete static stratum
+and certify precisely those occurrences against the generated Cost language.
+Both phases may reject malformed raw syntax; successful output contains no
+entry outside the structural collector's occurrence list. -/
+def certifyCollectedCostStaticBoundaries? (source : CIGSLT)
+    (color : CostStaticColor) (targetFree : WellSorted.FreeTypeContext)
+    (available : List TypeExpr) (pattern : Pattern) (expected : TypeExpr) :
+    Option (TypedCostRegionBoundaryTable source color targetFree
+      (collectDeclaredCostStaticBoundaryOccurrences source color pattern)) :=
+  certifyCollectedCostStaticBoundariesAt? source color targetFree available
+    .hole pattern expected
+
+/-- Every table returned by the context-indexed certification pipeline is
+pointwise coherent with the selected generated static fiber. -/
+theorem certifyCollectedCostStaticBoundariesAt?_fiberCoherent
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext} {available : List TypeExpr}
+    {outer : OneHoleContext} {pattern : Pattern} {expected : TypeExpr}
+    {table : TypedCostRegionBoundaryTable source color targetFree
+      (collectDeclaredCostStaticBoundaryOccurrencesAt source color outer
+        pattern)}
+    (certified : certifyCollectedCostStaticBoundariesAt? source color targetFree
+      available outer pattern expected = some table) :
+    table.FiberCoherent := by
+  cases collected : collectCostStaticBoundaryFibersAt source color targetFree
+      available outer pattern expected with
+  | none =>
+      simp [certifyCollectedCostStaticBoundariesAt?, collected] at certified
+  | some fibers =>
+      have fibersCertified : certify? (source := source) (color := color)
+          (targetFree := targetFree) fibers = some table := by
+        unfold certifyCollectedCostStaticBoundariesAt? at certified
+        rw [collected] at certified
+        exact certified
+      exact certify?_fiberCoherent fibers fibersCertified
+
+/-- Every table returned by the complete syntax-driven certification
+pipeline is pointwise coherent with its selected generated static fiber. -/
+theorem certifyCollectedCostStaticBoundaries?_fiberCoherent
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext} {available : List TypeExpr}
+    {pattern : Pattern} {expected : TypeExpr}
+    {table : TypedCostRegionBoundaryTable source color targetFree
+      (collectDeclaredCostStaticBoundaryOccurrences source color pattern)}
+    (certified : certifyCollectedCostStaticBoundaries? source color targetFree
+      available pattern expected = some table) :
+    table.FiberCoherent := by
+  cases collected : collectCostStaticBoundaryFibers source color targetFree
+      available pattern expected with
+  | none =>
+      have collectedAt : collectCostStaticBoundaryFibersAt source color
+          targetFree available .hole pattern expected = none :=
+        collected
+      simp [certifyCollectedCostStaticBoundaries?,
+        certifyCollectedCostStaticBoundariesAt?, collectedAt] at certified
+  | some fibers =>
+      have collectedAt : collectCostStaticBoundaryFibersAt source color
+          targetFree available .hole pattern expected = some fibers :=
+        collected
+      have fibersCertified : certify? (source := source) (color := color)
+          (targetFree := targetFree) fibers = some table := by
+        unfold certifyCollectedCostStaticBoundaries? at certified
+        unfold certifyCollectedCostStaticBoundariesAt? at certified
+        rw [collectedAt] at certified
+        exact certified
+      exact certify?_fiberCoherent fibers fibersCertified
+
+/-- Exact agreement between one source abstraction fiber and the generated
+fiber restored from a finite table. -/
+structure Transport {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    (sourceFree : WellSorted.FreeTypeContext)
+    (sourceSupport : ContextSupport.Support)
+    (table : TypedCostRegionBoundaryTable source color targetFree occurrences) :
+    Prop where
+  freeContext : sourceFree.map (color.symbols source) = table.mappedFreeContext
+  reflectiveSupport : sourceSupport = table.restorationSupport
+
+/-- Pointwise finite coherence assembles the exact transport equations.  No
+total boundary assignment or out-of-domain default participates in the
+proof. -/
+theorem transport_of_fiberCoherent {source : CIGSLT}
+    {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    (table : TypedCostRegionBoundaryTable source color targetFree occurrences)
+    (coherent : table.FiberCoherent) :
+    table.Transport table.sourceFreeContext table.sourceSupport := by
+  constructor
+  · funext name
+    cases decoded : decodeCostRegionSourceVariableName name with
+    | some sourceName =>
+        simp [WellSorted.FreeTypeContext.map, sourceFreeContext,
+          mappedFreeContext, decoded]
+    | none =>
+        cases resolved : table.resolve name with
+        | none =>
+            simp [WellSorted.FreeTypeContext.map, sourceFreeContext,
+              mappedFreeContext, decoded, resolved]
+        | some boundary =>
+            have membership := table.mem_entries_of_resolve_eq_some resolved
+            simp [WellSorted.FreeTypeContext.map, sourceFreeContext,
+              mappedFreeContext, decoded, resolved,
+              coherent.typeMap boundary membership]
+  · funext name
+    cases decoded : decodeCostRegionSourceVariableName name with
+    | some sourceName =>
+        simp [sourceSupport, restorationSupport, decoded]
+    | none =>
+        cases resolved : table.resolve name with
+        | none =>
+            simp [sourceSupport, restorationSupport, decoded, resolved]
+        | some boundary =>
+            simp [sourceSupport, restorationSupport, decoded, resolved]
+
+/-- Structural assignment induced by the finite resolver.  The raw fallback
+is unreachable for any name admitted by `mappedFreeContext`; it merely keeps
+the underlying syntax action total. -/
+def restorationAssignment {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    (table : TypedCostRegionBoundaryTable source color targetFree occurrences) :
+    ContextSupport.Assignment :=
+  fun name =>
+    match decodeCostRegionSourceVariableName name with
+    | some sourceName => .fvar sourceName
+    | none =>
+        match table.resolve name with
+        | some typedBoundary => typedBoundary.boundary.content
+        | none => .fvar name
+
+/-- Retagged source variables are restored to their original free names,
+independently of the finite boundary table. -/
+@[simp]
+theorem restorationAssignment_sourceVariable {source : CIGSLT}
+    {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    (table : TypedCostRegionBoundaryTable source color targetFree occurrences)
+    (name : String) :
+    table.restorationAssignment (costRegionSourceVariableName name) =
+      .fvar name := by
+  simp [restorationAssignment, decodeCostRegionSourceVariableName_encode]
+
+/-- Every actual finite boundary key restores its exact stored content. -/
+@[simp]
+theorem restorationAssignment_boundaryVariable {source : CIGSLT}
+    {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    (table : TypedCostRegionBoundaryTable source color targetFree occurrences)
+    (boundary : TypedCostRegionBoundary source color targetFree)
+    (membership : boundary ∈ table.entries) :
+    table.restorationAssignment
+        (costRegionBoundaryVariableName boundary.boundary) =
+      boundary.boundary.content := by
+  simp [restorationAssignment, decodeCostRegionSourceVariableName_boundary,
+    table.resolve_of_mem_entries boundary membership]
+
+/-- The finite resolver is a typed supported assignment in the generated
+Cost language.  Every accepted boundary obtains its proof from the table
+entry itself, never from decoding a serialized key. -/
+def supportedAssignment {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    (table : TypedCostRegionBoundaryTable source color targetFree occurrences) :
+    WellSorted.SupportedAssignment source.costWholeLanguage
+      table.mappedFreeContext targetFree table.restorationSupport where
+  assignment := table.restorationAssignment
+  typed := by
+    intro name type lookup
+    cases decodedName : decodeCostRegionSourceVariableName name with
+    | some sourceName =>
+        cases targetLookup : targetFree sourceName with
+        | none =>
+            simp [mappedFreeContext, decodedName, targetLookup] at lookup
+        | some targetType =>
+            cases decodedType :
+                decodeCostStaticTypeExpr source color targetType with
+            | none =>
+                simp [mappedFreeContext, decodedName, targetLookup,
+                  decodedType] at lookup
+            | some sourceType =>
+                have encodedType :
+                    mapTypeExpr (color.symbols source) sourceType = targetType :=
+                  mapTypeExpr_decodeCostStaticTypeExpr source color decodedType
+                have mappedType :
+                    mapTypeExpr (color.symbols source) sourceType = type := by
+                  simpa [mappedFreeContext, decodedName, targetLookup,
+                    decodedType] using lookup
+                have targetTypeEquality : targetType = type :=
+                  encodedType.symm.trans mappedType
+                have targetLookup' : targetFree sourceName = some type := by
+                  simpa [targetTypeEquality] using targetLookup
+                simpa [restorationSupport, restorationAssignment,
+                  decodedName] using
+                    (WellSorted.HasType.fvar (bound := []) targetLookup')
+    | none =>
+        cases resolved : table.resolve name with
+        | none =>
+            simp [mappedFreeContext, decodedName, resolved] at lookup
+        | some typedBoundary =>
+            have targetType : typedBoundary.boundary.targetType = type := by
+              simpa [mappedFreeContext, decodedName, resolved] using lookup
+            simpa [restorationSupport, restorationAssignment, decodedName,
+              resolved, targetType] using typedBoundary.contentTyped
+
+/-- The finite resolver maps every admitted name to a complete open object,
+including locally nameless metadata and reflective quotation safety. -/
+def supportedOpenAssignment {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    (table : TypedCostRegionBoundaryTable source color targetFree occurrences) :
+    WellSorted.SupportedOpenAssignment source.costWholeLanguage
+      table.mappedFreeContext targetFree table.restorationSupport where
+  toSupportedAssignment := table.supportedAssignment
+  canonicalBinderMetadata := by
+    intro name type lookup
+    change (table.restorationAssignment name).hasCanonicalBinderMetadata = true
+    cases decodedName : decodeCostRegionSourceVariableName name with
+    | some sourceName =>
+        simp only [restorationAssignment, decodedName]
+        rfl
+    | none =>
+        cases resolved : table.resolve name with
+        | none =>
+            simp [mappedFreeContext, decodedName, resolved] at lookup
+        | some typedBoundary =>
+            simpa [restorationAssignment, decodedName, resolved] using
+              typedBoundary.contentCanonicalBinderMetadata
+  objectPattern := by
+    intro name type lookup
+    change WellSorted.isObjectPattern (table.restorationAssignment name) = true
+    cases decodedName : decodeCostRegionSourceVariableName name with
+    | some sourceName =>
+        simp only [restorationAssignment, decodedName]
+        rfl
+    | none =>
+        cases resolved : table.resolve name with
+        | none =>
+            simp [mappedFreeContext, decodedName, resolved] at lookup
+        | some typedBoundary =>
+            simpa [restorationAssignment, decodedName, resolved] using
+              typedBoundary.contentObjectPattern
+  reflectiveScopeSafe := by
+    intro name type lookup
+    change WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
+      (table.restorationSupport name).length
+      (table.restorationAssignment name)
+    cases decodedName : decodeCostRegionSourceVariableName name with
+    | some sourceName =>
+        intro presentation membership
+        simp only [restorationSupport, restorationAssignment, decodedName,
+          List.length_nil]
+        rfl
+    | none =>
+        cases resolved : table.resolve name with
+        | none =>
+            simp [mappedFreeContext, decodedName, resolved] at lookup
+        | some typedBoundary =>
+            simpa [restorationSupport, restorationAssignment, decodedName,
+              resolved] using typedBoundary.contentReflectiveScopeSafe
+
+namespace Values
+
+/-- Structural substitution induced by a finite replacement vector.  Stable
+keys and typing fibers still come from `table`; only the restored open values
+come from `values`. -/
+def assignment {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    (table : TypedCostRegionBoundaryTable source color targetFree occurrences)
+    (values : Values source color targetFree table) :
+    ContextSupport.Assignment :=
+  fun name =>
+    match decodeCostRegionSourceVariableName name with
+    | some sourceName => .fvar sourceName
+    | none =>
+        match values.resolve table name with
+        | some resolved => resolved.2.1
+        | none => .fvar name
+
+/-- Finite replacement values form a supported assignment in exactly the
+same domain and support map as their stable boundary table. -/
+def supportedAssignment {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    (table : TypedCostRegionBoundaryTable source color targetFree occurrences)
+    (values : Values source color targetFree table) :
+    WellSorted.SupportedAssignment source.costWholeLanguage
+      table.mappedFreeContext targetFree table.restorationSupport where
+  assignment := values.assignment table
+  typed := by
+    intro name type lookup
+    cases decodedName : decodeCostRegionSourceVariableName name with
+    | some sourceName =>
+        cases targetLookup : targetFree sourceName with
+        | none =>
+            simp [mappedFreeContext, decodedName, targetLookup] at lookup
+        | some targetType =>
+            cases decodedType :
+                decodeCostStaticTypeExpr source color targetType with
+            | none =>
+                simp [mappedFreeContext, decodedName, targetLookup,
+                  decodedType] at lookup
+            | some sourceType =>
+                have encodedType :
+                    mapTypeExpr (color.symbols source) sourceType = targetType :=
+                  mapTypeExpr_decodeCostStaticTypeExpr source color decodedType
+                have mappedType :
+                    mapTypeExpr (color.symbols source) sourceType = type := by
+                  simpa [mappedFreeContext, decodedName, targetLookup,
+                    decodedType] using lookup
+                have targetTypeEquality : targetType = type :=
+                  encodedType.symm.trans mappedType
+                have targetLookup' : targetFree sourceName = some type := by
+                  simpa [targetTypeEquality] using targetLookup
+                simpa [assignment, restorationSupport, decodedName] using
+                  (WellSorted.HasType.fvar (bound := []) targetLookup')
+    | none =>
+        cases valueResolved : values.resolve table name with
+        | none =>
+            have tableResolved : table.resolve name = none := by
+              have agrees := values.resolve_boundary table name
+              rw [valueResolved] at agrees
+              simpa using agrees.symm
+            simp [mappedFreeContext, decodedName, tableResolved] at lookup
+        | some resolved =>
+            have tableResolved : table.resolve name = some resolved.1 := by
+              have agrees := values.resolve_boundary table name
+              rw [valueResolved] at agrees
+              simpa using agrees.symm
+            have targetType : resolved.1.boundary.targetType = type := by
+              simpa [mappedFreeContext, decodedName, tableResolved] using lookup
+            simpa [assignment, restorationSupport, decodedName, valueResolved,
+              tableResolved, targetType] using resolved.2.2.1
+
+/-- The finite replacement vector contains complete open values, so its
+supported assignment also preserves object syntax, binder metadata, and
+reflective quotation scope. -/
+def supportedOpenAssignment {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    (table : TypedCostRegionBoundaryTable source color targetFree occurrences)
+    (values : Values source color targetFree table) :
+    WellSorted.SupportedOpenAssignment source.costWholeLanguage
+      table.mappedFreeContext targetFree table.restorationSupport where
+  toSupportedAssignment := values.supportedAssignment table
+  canonicalBinderMetadata := by
+    intro name type lookup
+    change (values.assignment table name).hasCanonicalBinderMetadata = true
+    cases decodedName : decodeCostRegionSourceVariableName name with
+    | some sourceName =>
+        simp only [assignment, decodedName]
+        rfl
+    | none =>
+        cases valueResolved : values.resolve table name with
+        | none =>
+            have tableResolved : table.resolve name = none := by
+              have agrees := values.resolve_boundary table name
+              rw [valueResolved] at agrees
+              simpa using agrees.symm
+            simp [mappedFreeContext, decodedName, tableResolved] at lookup
+        | some resolved =>
+            simpa [assignment, decodedName, valueResolved] using
+              resolved.2.2.2.1
+  objectPattern := by
+    intro name type lookup
+    change WellSorted.isObjectPattern (values.assignment table name) = true
+    cases decodedName : decodeCostRegionSourceVariableName name with
+    | some sourceName =>
+        simp only [assignment, decodedName]
+        rfl
+    | none =>
+        cases valueResolved : values.resolve table name with
+        | none =>
+            have tableResolved : table.resolve name = none := by
+              have agrees := values.resolve_boundary table name
+              rw [valueResolved] at agrees
+              simpa using agrees.symm
+            simp [mappedFreeContext, decodedName, tableResolved] at lookup
+        | some resolved =>
+            simpa [assignment, decodedName, valueResolved] using
+              resolved.2.2.2.2.1
+  reflectiveScopeSafe := by
+    intro name type lookup
+    change WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
+      (table.restorationSupport name).length (values.assignment table name)
+    cases decodedName : decodeCostRegionSourceVariableName name with
+    | some sourceName =>
+        intro presentation membership
+        simp only [restorationSupport, assignment, decodedName, List.length_nil]
+        rfl
+    | none =>
+        cases valueResolved : values.resolve table name with
+        | none =>
+            have tableResolved : table.resolve name = none := by
+              have agrees := values.resolve_boundary table name
+              rw [valueResolved] at agrees
+              simpa using agrees.symm
+            simp [mappedFreeContext, decodedName, tableResolved] at lookup
+        | some resolved =>
+            have tableResolved : table.resolve name = some resolved.1 := by
+              have agrees := values.resolve_boundary table name
+              rw [valueResolved] at agrees
+              simpa using agrees.symm
+            simpa [restorationSupport, assignment, decodedName, valueResolved,
+              tableResolved] using resolved.2.2.2.2.2
+
+/-- Semantic agreement of a replacement-vector head and the corresponding
+original boundary value extends pointwise agreement of the tail to the whole
+finite supported assignment.  The proof treats genuine source variables and
+collision-free boundary keys separately; it never compares values outside the
+finite table.  Quantification over every weakening is retained in
+`SupportedOpenAssignment.Equivalent`, so the result remains usable beneath
+binders. -/
+theorem supportedOpenAssignment_cons_equivalent
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrence : CostRegionOccurrence}
+    {occurrences : List CostRegionOccurrence}
+    {boundary : TypedCostRegionBoundary source color targetFree}
+    {content : boundary.boundary.content = occurrence.content}
+    {tail : TypedCostRegionBoundaryTable source color targetFree occurrences}
+    (value : WellSorted.OpenPattern source.costWholeLanguage targetFree
+      boundary.boundary.targetSupport boundary.boundary.targetType)
+    (values : Values source color targetFree tail)
+    (headEquivalent : ∀ shift,
+      EquationSemantics.EquationEquiv defaultBasePremises
+        source.costWholeLanguage
+        (liftBVars 0 shift value.1)
+        (liftBVars 0 shift boundary.boundary.content))
+    (tailEquivalent :
+      (values.supportedOpenAssignment tail).Equivalent
+        ((Values.original tail).supportedOpenAssignment tail)) :
+    ((Values.cons value values).supportedOpenAssignment
+      (.cons boundary content tail)).Equivalent
+    ((Values.original (.cons boundary content tail)).supportedOpenAssignment
+      (.cons boundary content tail)) := by
+  intro name type lookup shift
+  change EquationSemantics.EquationEquiv defaultBasePremises
+    source.costWholeLanguage
+    (liftBVars 0 shift
+      ((Values.cons value values).assignment
+        (.cons boundary content tail) name))
+    (liftBVars 0 shift
+      ((Values.original (.cons boundary content tail)).assignment
+        (.cons boundary content tail) name))
+  cases decodedName : decodeCostRegionSourceVariableName name with
+  | some sourceName =>
+      simp [assignment, decodedName]
+      exact Relation.EqvGen.refl _
+  | none =>
+      by_cases keyEquality :
+          name = costRegionBoundaryVariableName boundary.boundary
+      · subst name
+        simpa [assignment, resolve, original,
+          decodeCostRegionSourceVariableName_boundary] using
+          headEquivalent shift
+      · simp only [assignment, decodedName, resolve, keyEquality, if_false,
+          original]
+        have tailLookup : tail.mappedFreeContext name = some type := by
+          simpa [TypedCostRegionBoundaryTable.mappedFreeContext,
+            TypedCostRegionBoundaryTable.resolve, decodedName, keyEquality]
+            using lookup
+        have tailStep := tailEquivalent tailLookup shift
+        change EquationSemantics.EquationEquiv defaultBasePremises
+          source.costWholeLanguage
+          (liftBVars 0 shift (values.assignment tail name))
+          (liftBVars 0 shift
+            ((Values.original tail).assignment tail name)) at tailStep
+        simpa [assignment, decodedName] using tailStep
+
+/-- Reflective supported restoration with independently supplied, finitely
+aligned boundary values. -/
+def restoreSupportedSkeleton {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    (table : TypedCostRegionBoundaryTable source color targetFree occurrences)
+    (values : Values source color targetFree table)
+    (bound : List TypeExpr) (pattern : Pattern) : Pattern :=
+  ReflectiveContextSupport.substitute source.costWholeLanguage
+    table.restorationSupport (values.assignment table) bound pattern
+
+/-- Extending a finite boundary environment without changing any lookup used
+by a typed object skeleton leaves reflective restoration exactly unchanged.
+The larger table may contain additional occurrences and values; only the
+finite free-name support of `pattern` is observed. -/
+theorem restoreSupportedSkeleton_eq_of_extends
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {smallOccurrences largeOccurrences : List CostRegionOccurrence}
+    (smallTable : TypedCostRegionBoundaryTable source color targetFree
+      smallOccurrences)
+    (smallValues : Values source color targetFree smallTable)
+    (largeTable : TypedCostRegionBoundaryTable source color targetFree
+      largeOccurrences)
+    (largeValues : Values source color targetFree largeTable)
+    (entriesSubset : smallTable.entries ⊆ largeTable.entries)
+    (extension : Extends smallTable smallValues largeTable largeValues)
+    {bound : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
+    (typed : WellSorted.HasType source.costWholeLanguage
+      smallTable.mappedFreeContext bound pattern type)
+    (object : WellSorted.isObjectPattern pattern = true) :
+    smallValues.restoreSupportedSkeleton smallTable bound pattern =
+      largeValues.restoreSupportedSkeleton largeTable bound pattern := by
+  apply ReflectiveContextSupport.substitute_eq_of_inputsAgreeOn
+  intro name membership
+  obtain ⟨freeType, lookup⟩ :=
+    typed.freeType_of_mem_freeFvarNames_of_isObjectPattern object membership
+  cases decodedName : decodeCostRegionSourceVariableName name with
+  | some sourceName =>
+      constructor <;>
+        simp [TypedCostRegionBoundaryTable.restorationSupport, assignment,
+          decodedName]
+  | none =>
+      cases smallResolved : smallTable.resolve name with
+      | none =>
+          simp [TypedCostRegionBoundaryTable.mappedFreeContext, decodedName,
+            smallResolved] at lookup
+      | some boundary =>
+          have defined : smallTable.resolve name ≠ none := by
+            simp [smallResolved]
+          have tableResolution :=
+            smallTable.resolve_eq_of_entries_subset largeTable entriesSubset
+              name defined
+          have largeResolved : largeTable.resolve name = some boundary := by
+            simpa [smallResolved] using tableResolution
+          have valuesResolution := extension name defined
+          constructor
+          · simp [TypedCostRegionBoundaryTable.restorationSupport,
+              decodedName, smallResolved, largeResolved]
+          · simp [assignment, decodedName, valuesResolution]
+
+/-- Restoration through an aligned finite value vector preserves the complete
+arbitrary-type open carrier. -/
+theorem restoreSupportedSkeleton_openPatternWellSorted
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    (table : TypedCostRegionBoundaryTable source color targetFree occurrences)
+    (values : Values source color targetFree table)
+    {bound : List TypeExpr} {type : TypeExpr}
+    (openPattern : WellSorted.OpenPattern source.costWholeLanguage
+      table.mappedFreeContext bound type)
+    (safe : openPattern.2.1.ReflectiveSupportSafeAt
+      table.restorationSupport bound) :
+    WellSorted.OpenPatternWellSorted source.costWholeLanguage targetFree bound
+      type (values.restoreSupportedSkeleton table bound openPattern.1) := by
+  exact ⟨safe.substituteRoot (values.supportedAssignment table),
+    safe.substituteCanonicalBinderMetadata
+      (values.supportedOpenAssignment table) openPattern.2.2.1,
+    safe.substituteObjectPattern
+      (values.supportedOpenAssignment table) openPattern.2.2.2.1,
+    safe.substituteReflectiveScopeSafe
+      (values.supportedOpenAssignment table) openPattern.2.2.2.2⟩
+
+/-- Supplying each boundary's original content gives exactly the established
+finite-table assignment.  This is the extensional agreement bridge required
+before recursive normalization varies those values. -/
+theorem original_assignment {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    (table : TypedCostRegionBoundaryTable source color targetFree occurrences) :
+    (Values.original table).assignment table = table.restorationAssignment := by
+  funext name
+  cases decodedName : decodeCostRegionSourceVariableName name with
+  | some sourceName =>
+      simp [assignment, TypedCostRegionBoundaryTable.restorationAssignment,
+        decodedName]
+  | none =>
+      induction table with
+      | nil =>
+          simp [assignment, original, resolve,
+            TypedCostRegionBoundaryTable.restorationAssignment,
+            TypedCostRegionBoundaryTable.resolve, decodedName]
+      | @cons occurrence occurrences boundary content tail
+          inductionHypothesis =>
+          by_cases keyEquality :
+              name = costRegionBoundaryVariableName boundary.boundary
+          · simp [assignment,
+              TypedCostRegionBoundaryTable.restorationAssignment,
+              original, resolve, TypedCostRegionBoundaryTable.resolve,
+              keyEquality, content]
+          · simp only [assignment,
+              TypedCostRegionBoundaryTable.restorationAssignment, decodedName,
+              original, resolve, TypedCostRegionBoundaryTable.resolve,
+              keyEquality, if_false]
+            simpa [assignment,
+              TypedCostRegionBoundaryTable.restorationAssignment,
+              decodedName] using inductionHypothesis
+
+end Values
+
+/-- Reflective supported restoration driven solely by the finite table. -/
+def restoreSupportedSkeleton {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    (table : TypedCostRegionBoundaryTable source color targetFree occurrences)
+    (bound : List TypeExpr) (pattern : Pattern) : Pattern :=
+  ReflectiveContextSupport.substitute source.costWholeLanguage
+    table.restorationSupport table.restorationAssignment bound pattern
+
+/-- The generalized finite-value restorer agrees definitionally on every
+currently intended identity use of the established table restorer. -/
+theorem Values.restoreSupportedSkeleton_original
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    (table : TypedCostRegionBoundaryTable source color targetFree occurrences)
+    (bound : List TypeExpr) (pattern : Pattern) :
+    (Values.original table).restoreSupportedSkeleton table bound pattern =
+      table.restoreSupportedSkeleton bound pattern := by
+  change ReflectiveContextSupport.substitute source.costWholeLanguage
+      table.restorationSupport
+        ((Values.original table).assignment table) bound pattern =
+    ReflectiveContextSupport.substitute source.costWholeLanguage
+      table.restorationSupport table.restorationAssignment bound pattern
+  rw [Values.original_assignment table]
+
+/-- Finite supported restoration preserves the complete arbitrary-type open
+carrier.  This is the proof-relevant boundary used by recursive region
+normalization; no serialized receipt or boundary key contributes proof
+authority. -/
+theorem restoreSupportedSkeleton_openPatternWellSorted
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    (table : TypedCostRegionBoundaryTable source color targetFree occurrences)
+    {bound : List TypeExpr} {type : TypeExpr}
+    (openPattern : WellSorted.OpenPattern source.costWholeLanguage
+      table.mappedFreeContext bound type)
+    (safe : openPattern.2.1.ReflectiveSupportSafeAt
+      table.restorationSupport bound) :
+    WellSorted.OpenPatternWellSorted source.costWholeLanguage targetFree bound
+      type (table.restoreSupportedSkeleton bound openPattern.1) := by
+  exact ⟨safe.substituteRoot table.supportedAssignment,
+    safe.substituteCanonicalBinderMetadata table.supportedOpenAssignment
+      openPattern.2.2.1,
+    safe.substituteObjectPattern table.supportedOpenAssignment
+      openPattern.2.2.2.1,
+    safe.substituteReflectiveScopeSafe table.supportedOpenAssignment
+      openPattern.2.2.2.2⟩
+
+end TypedCostRegionBoundaryTable
+
+/-! ### Canonical tables for monochromatic generated regions -/
+
+/-- A declaration-certified source term mapped wholly into one static Cost
+color has the unique empty finite boundary table.  The collector theorem
+supplies only the dependent index transport; no typing proof is eliminated
+into computational data. -/
+def WellSorted.HasTypeWithConstructors.monochromaticCostBoundaryTable
+    {source : CIGSLT} {free targetFree : WellSorted.FreeTypeContext}
+    {bound : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
+    (typed : WellSorted.HasTypeWithConstructors
+      source.theory.presentation.presentation.language
+      (· ∈ source.continuationRetyping.wrappedLabels)
+      free bound pattern type)
+    (color : CostStaticColor) :
+    TypedCostRegionBoundaryTable source color targetFree
+      (collectDeclaredCostStaticBoundaryOccurrences source color
+        (mapPattern (color.symbols source) pattern)) :=
+  TypedCostRegionBoundaryTable.cast
+    (typed.collectDeclaredCostStaticBoundaryOccurrences_mapCostStatic_eq_nil
+      color).symm
+    .nil
+
+/-- Empty finite table for a declaration-certified mapped constructor
+argument spine. -/
+def WellSorted.ArgumentsHaveTypesWithConstructors.monochromaticCostApplyBoundaryTable
+    {source : CIGSLT} {free targetFree : WellSorted.FreeTypeContext}
+    {bound : List TypeExpr} {arguments : List Pattern}
+    {parameters : List TermParam}
+    (typed : WellSorted.ArgumentsHaveTypesWithConstructors
+      source.theory.presentation.presentation.language
+      (· ∈ source.continuationRetyping.wrappedLabels)
+      free bound arguments parameters)
+    (color : CostStaticColor) (outer : OneHoleContext)
+    (constructor : String) (before : List Pattern) :
+    TypedCostRegionBoundaryTable source color targetFree
+      (collectDeclaredCostStaticApplyBoundaryOccurrences source color outer
+        ((color.symbols source).constructor constructor) before
+        (mapPatternList (color.symbols source) arguments)) :=
+  TypedCostRegionBoundaryTable.cast
+    (typed.collectDeclaredCostStaticApplyBoundaryOccurrences_mapCostStatic_eq_nil
+      color outer constructor before).symm
+    .nil
+
+/-- Empty finite table for a declaration-certified mapped collection spine. -/
+def WellSorted.ElementsHaveTypeWithConstructors.monochromaticCostCollectionBoundaryTable
+    {source : CIGSLT} {free targetFree : WellSorted.FreeTypeContext}
+    {bound : List TypeExpr} {elements : List Pattern}
+    {elementType : TypeExpr}
+    (typed : WellSorted.ElementsHaveTypeWithConstructors
+      source.theory.presentation.presentation.language
+      (· ∈ source.continuationRetyping.wrappedLabels)
+      free bound elements elementType)
+    (color : CostStaticColor) (outer : OneHoleContext)
+    (collectionType : CollType) (before : List Pattern)
+    (rest : Option String) :
+    TypedCostRegionBoundaryTable source color targetFree
+      (collectDeclaredCostStaticCollectionBoundaryOccurrences source color
+        outer collectionType before
+        (mapPatternList (color.symbols source) elements) rest) :=
+  TypedCostRegionBoundaryTable.cast
+    (typed.collectDeclaredCostStaticCollectionBoundaryOccurrences_mapCostStatic_eq_nil
+      color outer collectionType before rest).symm
+    .nil
+
+/-- The canonical table for a monochromatic mapped term contains no foreign
+boundary entries. -/
+@[simp]
+theorem WellSorted.HasTypeWithConstructors.monochromaticCostBoundaryTable_entries
+    {source : CIGSLT} {free targetFree : WellSorted.FreeTypeContext}
+    {bound : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
+    (typed : WellSorted.HasTypeWithConstructors
+      source.theory.presentation.presentation.language
+      (· ∈ source.continuationRetyping.wrappedLabels)
+      free bound pattern type)
+    (color : CostStaticColor) :
+    (typed.monochromaticCostBoundaryTable
+      (targetFree := targetFree) color).entries = [] := by
+  simp [WellSorted.HasTypeWithConstructors.monochromaticCostBoundaryTable,
+    TypedCostRegionBoundaryTable.entries]
+
+/-- The empty monochromatic table recovers exactly the hygienically retagged
+authored free context from the mapped Cost fiber. -/
+theorem WellSorted.HasTypeWithConstructors.monochromaticCostBoundaryTable_sourceFreeContext
+    {source : CIGSLT} {free : WellSorted.FreeTypeContext}
+    {bound : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
+    (typed : WellSorted.HasTypeWithConstructors
+      source.theory.presentation.presentation.language
+      (· ∈ source.continuationRetyping.wrappedLabels)
+      free bound pattern type)
+    (color : CostStaticColor) :
+    (typed.monochromaticCostBoundaryTable
+      (targetFree := free.map (color.symbols source)) color).sourceFreeContext =
+      retagCostRegionFreeContext free :=
+  TypedCostRegionBoundaryTable.sourceFreeContext_eq_retag_of_entries_eq_nil _
+    (typed.monochromaticCostBoundaryTable_entries color)
+
+/-- The empty monochromatic table grants no reflective binder support. -/
+theorem WellSorted.HasTypeWithConstructors.monochromaticCostBoundaryTable_sourceSupport
+    {source : CIGSLT} {free targetFree : WellSorted.FreeTypeContext}
+    {bound : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
+    (typed : WellSorted.HasTypeWithConstructors
+      source.theory.presentation.presentation.language
+      (· ∈ source.continuationRetyping.wrappedLabels)
+      free bound pattern type)
+    (color : CostStaticColor) :
+    (typed.monochromaticCostBoundaryTable
+      (targetFree := targetFree) color).sourceSupport = fun _ => [] :=
+  TypedCostRegionBoundaryTable.sourceSupport_eq_empty_of_entries_eq_nil _
+    (typed.monochromaticCostBoundaryTable_entries color)
+
+/-- The empty monochromatic table is coherently contained in its selected
+static type and binder fiber. -/
+theorem WellSorted.HasTypeWithConstructors.monochromaticCostBoundaryTable_fiberCoherent
+    {source : CIGSLT} {free targetFree : WellSorted.FreeTypeContext}
+    {bound : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
+    (typed : WellSorted.HasTypeWithConstructors
+      source.theory.presentation.presentation.language
+      (· ∈ source.continuationRetyping.wrappedLabels)
+      free bound pattern type)
+    (color : CostStaticColor) :
+    (typed.monochromaticCostBoundaryTable
+      (targetFree := targetFree) color).FiberCoherent :=
+  TypedCostRegionBoundaryTable.fiberCoherent_of_entries_eq_nil _
+    (typed.monochromaticCostBoundaryTable_entries color)
+
+/-! ## Table-native finite abstraction
+
+The legacy abstraction accepts a total function on all possible occurrence
+records.  The following structurally recursive version instead consumes the
+finite table indexed by the collector output.  Concatenating collector
+outputs splits the table at the same structural boundary; a foreign
+application consumes exactly one entry. -/
+
+/-- Collector output for one application after its selected-color decoder has
+been evaluated.  Naming this dependent branch keeps abstraction and its
+round-trip proof definitionally aligned. -/
+def costStaticApplicationBoundaryOccurrences (source : CIGSLT)
+    (color : CostStaticColor)
+    (outer : OneHoleContext) (constructor : String)
+    (arguments : List Pattern) : Option String → List CostRegionOccurrence
+  | none =>
+      [{ context := outer, content := .apply constructor arguments }]
+  | some _sourceConstructor =>
+      collectDeclaredCostStaticApplyBoundaryOccurrences source color outer
+        constructor [] arguments
+
+/-- The application branch of the public collector is exactly the named
+decoder-indexed family above. -/
+theorem collectDeclaredCostStaticBoundaryOccurrencesAt_apply
+    (source : CIGSLT) (color : CostStaticColor) (outer : OneHoleContext)
+    (constructor : String) (arguments : List Pattern) :
+    collectDeclaredCostStaticBoundaryOccurrencesAt source color outer
+        (.apply constructor arguments) =
+      costStaticApplicationBoundaryOccurrences source color outer constructor
+        arguments
+          (decodeDeclaredCostStaticConstructor source color constructor) := by
+  cases decoded : decodeDeclaredCostStaticConstructor source color constructor <;>
+    simp [collectDeclaredCostStaticBoundaryOccurrencesAt,
+      costStaticApplicationBoundaryOccurrences, decoded]
+
+mutual
+  /-- Abstract one selected-color region using only its finite collected
+  boundary table. -/
+  def abstractCostStaticRegionFromTableAt (source : CIGSLT)
+      (color : CostStaticColor)
+      {targetFree : WellSorted.FreeTypeContext} (outer : OneHoleContext) :
+      (pattern : Pattern) →
+      TypedCostRegionBoundaryTable source color targetFree
+        (collectDeclaredCostStaticBoundaryOccurrencesAt source color outer
+          pattern) →
+      Pattern
+    | .bvar index, .nil => .bvar index
+    | .fvar name, .nil => .fvar (costRegionSourceVariableName name)
+    | .apply constructor arguments, table =>
+        let applicationTable := TypedCostRegionBoundaryTable.cast
+          (collectDeclaredCostStaticBoundaryOccurrencesAt_apply source color
+            outer constructor arguments) table
+        abstractCostStaticApplicationFromTable source color outer constructor
+          arguments
+            (decodeDeclaredCostStaticConstructor source color constructor)
+            applicationTable
+    | .lambda binderName body, table =>
+        .lambda binderName
+          (abstractCostStaticRegionFromTableAt source color
+            (outer.comp (.lambda binderName .hole)) body table)
+    | .multiLambda arity binderNames body, table =>
+        .multiLambda arity binderNames
+          (abstractCostStaticRegionFromTableAt source color
+            (outer.comp (.multiLambda arity binderNames .hole)) body table)
+    | .subst body replacement, table =>
+        let bodyOccurrences :=
+          collectDeclaredCostStaticBoundaryOccurrencesAt source color
+            (outer.comp (.substBody .hole replacement)) body
+        let replacementOccurrences :=
+          collectDeclaredCostStaticBoundaryOccurrencesAt source color
+            (outer.comp (.substReplacement body .hole)) replacement
+        let divided := TypedCostRegionBoundaryTable.split bodyOccurrences
+          replacementOccurrences table
+        .subst
+          (abstractCostStaticRegionFromTableAt source color
+            (outer.comp (.substBody .hole replacement)) body divided.1)
+          (abstractCostStaticRegionFromTableAt source color
+            (outer.comp (.substReplacement body .hole)) replacement divided.2)
+    | .collection collectionType elements rest, table =>
+        .collection collectionType
+          (abstractCostStaticCollectionRegionFromTable source color outer
+            collectionType [] elements rest table)
+          (rest.map costRegionSourceVariableName)
+  termination_by pattern _table => 2 * sizeOf pattern + 1
+  decreasing_by
+    all_goals simp_wf
+    all_goals omega
+
+  /-- Evaluate the constructor-color decision before consuming its dependent
+  finite table.  The foreign case consumes exactly one entry; the static case
+  traverses the authored argument spine. -/
+  def abstractCostStaticApplicationFromTable (source : CIGSLT)
+      (color : CostStaticColor)
+      {targetFree : WellSorted.FreeTypeContext} (outer : OneHoleContext)
+      (constructor : String) :
+      (arguments : List Pattern) → (decoded : Option String) →
+      TypedCostRegionBoundaryTable source color targetFree
+        (costStaticApplicationBoundaryOccurrences source color outer constructor
+          arguments decoded) →
+      Pattern
+    | _arguments, none, .cons boundary _content .nil =>
+        .fvar (costRegionBoundaryVariableName boundary.boundary)
+    | arguments, some sourceConstructor, table =>
+        .apply sourceConstructor
+          (abstractCostStaticApplyRegionFromTable source color outer constructor
+            [] arguments table)
+  termination_by arguments _decoded _table =>
+    2 * sizeOf (Pattern.apply constructor arguments)
+  decreasing_by
+    all_goals simp_wf
+
+  /-- Ordered argument companion to finite table-native abstraction. -/
+  def abstractCostStaticApplyRegionFromTable (source : CIGSLT)
+      (color : CostStaticColor)
+      {targetFree : WellSorted.FreeTypeContext} (outer : OneHoleContext)
+      (constructor : String) (before : List Pattern) :
+      (arguments : List Pattern) →
+      TypedCostRegionBoundaryTable source color targetFree
+        (collectDeclaredCostStaticApplyBoundaryOccurrences source color outer
+          constructor before arguments) →
+      List Pattern
+    | [], .nil => []
+    | argument :: after, table =>
+        let argumentOccurrences :=
+          collectDeclaredCostStaticBoundaryOccurrencesAt source color
+            (outer.comp (.apply constructor before .hole after)) argument
+        let afterOccurrences :=
+          collectDeclaredCostStaticApplyBoundaryOccurrences source color outer
+            constructor (before ++ [argument]) after
+        let divided := TypedCostRegionBoundaryTable.split argumentOccurrences
+          afterOccurrences table
+        abstractCostStaticRegionFromTableAt source color
+            (outer.comp (.apply constructor before .hole after)) argument
+            divided.1 ::
+          abstractCostStaticApplyRegionFromTable source color outer constructor
+            (before ++ [argument]) after divided.2
+  termination_by arguments _table => 2 * sizeOf arguments
+  decreasing_by
+    all_goals simp_wf
+    all_goals omega
+
+  /-- Ordered collection companion to finite table-native abstraction. -/
+  def abstractCostStaticCollectionRegionFromTable (source : CIGSLT)
+      (color : CostStaticColor)
+      {targetFree : WellSorted.FreeTypeContext} (outer : OneHoleContext)
+      (collectionType : CollType) (before : List Pattern) :
+      (elements : List Pattern) → (rest : Option String) →
+      TypedCostRegionBoundaryTable source color targetFree
+        (collectDeclaredCostStaticCollectionBoundaryOccurrences source color
+          outer collectionType before elements rest) →
+      List Pattern
+    | [], _rest, .nil => []
+    | element :: after, rest, table =>
+        let elementOccurrences :=
+          collectDeclaredCostStaticBoundaryOccurrencesAt source color
+            (outer.comp
+              (.collection collectionType before .hole after rest)) element
+        let afterOccurrences :=
+          collectDeclaredCostStaticCollectionBoundaryOccurrences source color
+            outer collectionType (before ++ [element]) after rest
+        let divided := TypedCostRegionBoundaryTable.split elementOccurrences
+          afterOccurrences table
+        abstractCostStaticRegionFromTableAt source color
+            (outer.comp
+              (.collection collectionType before .hole after rest)) element
+            divided.1 ::
+          abstractCostStaticCollectionRegionFromTable source color outer
+            collectionType (before ++ [element]) after rest divided.2
+  termination_by elements _rest _table => 2 * sizeOf elements
+  decreasing_by
+    all_goals simp_wf
+    all_goals omega
+end
+
+/-- Reindexing the decoded-constructor decision transports the finite table
+and the corresponding application abstraction together. -/
+theorem abstractCostStaticApplicationFromTable_cast_decoded
+    (source : CIGSLT) (color : CostStaticColor)
+    {targetFree : WellSorted.FreeTypeContext} (outer : OneHoleContext)
+    (constructor : String) (arguments : List Pattern)
+    {sourceDecoded targetDecoded : Option String}
+    (decodedEquality : sourceDecoded = targetDecoded)
+    (table : TypedCostRegionBoundaryTable source color targetFree
+      (costStaticApplicationBoundaryOccurrences source color outer constructor
+        arguments sourceDecoded)) :
+    abstractCostStaticApplicationFromTable source color outer constructor
+        arguments sourceDecoded table =
+      abstractCostStaticApplicationFromTable source color outer constructor
+        arguments targetDecoded
+        (TypedCostRegionBoundaryTable.cast
+          (congrArg
+            (costStaticApplicationBoundaryOccurrences source color outer
+              constructor arguments) decodedEquality) table) := by
+  cases decodedEquality
+  rfl
+
+/-- Public table-native abstraction of one complete static stratum. -/
+def abstractCostStaticRegionFromTable (source : CIGSLT)
+    (color : CostStaticColor)
+    {targetFree : WellSorted.FreeTypeContext} (pattern : Pattern)
+    (table : TypedCostRegionBoundaryTable source color targetFree
+    (collectDeclaredCostStaticBoundaryOccurrences source color pattern)) :
+    Pattern :=
+  abstractCostStaticRegionFromTableAt source color .hole pattern table
+
+/-- The foreign application branch consumes the unique singleton entry and
+exposes its collision-free boundary variable. -/
+theorem abstractCostStaticApplicationFromTable_none_shape
+    (source : CIGSLT) (color : CostStaticColor)
+    {targetFree : WellSorted.FreeTypeContext}
+    (outer : OneHoleContext) (constructor : String)
+    (arguments : List Pattern)
+    (table : TypedCostRegionBoundaryTable source color targetFree
+      (costStaticApplicationBoundaryOccurrences source color outer constructor
+        arguments none)) :
+    ∃ boundary : TypedCostRegionBoundary source color targetFree,
+      boundary ∈ table.entries ∧
+        abstractCostStaticApplicationFromTable source color outer constructor
+            arguments none table =
+          .fvar (costRegionBoundaryVariableName boundary.boundary) := by
+  simp only [costStaticApplicationBoundaryOccurrences] at table ⊢
+  cases table with
+  | cons boundary content tail =>
+      cases tail
+      refine ⟨boundary, by simp [TypedCostRegionBoundaryTable.entries], ?_⟩
+      rw [abstractCostStaticApplicationFromTable.eq_1]
+
+/-- The singleton foreign application branch is reflectively safe under the
+fixed global support assignment. -/
+theorem abstractCostStaticApplicationFromTable_none_reflectiveSupportSafeAt
+    (source : CIGSLT) (color : CostStaticColor)
+    {targetFree : WellSorted.FreeTypeContext}
+    (outer : OneHoleContext) (constructor : String)
+    (arguments : List Pattern)
+    {availableSource : List TypeExpr} {targetType : TypeExpr}
+    (table : TypedCostRegionBoundaryTable source color targetFree
+      (costStaticApplicationBoundaryOccurrences source color outer constructor
+        arguments none))
+    (certified : TypedCostRegionBoundaryTable.certify?
+      (source := source) (color := color) (targetFree := targetFree)
+      (.cons
+        (availableSource.map (mapTypeExpr (color.symbols source))) targetType
+        .nil) = some table)
+    {globalOccurrences : List CostRegionOccurrence}
+    (globalTable : TypedCostRegionBoundaryTable source color targetFree
+      globalOccurrences)
+    (entriesSubset : table.entries ⊆ globalTable.entries)
+    {bound : List TypeExpr} {type : TypeExpr}
+    (typed : WellSorted.HasType
+      source.theory.presentation.presentation.language
+      globalTable.sourceFreeContext bound
+      (abstractCostStaticApplicationFromTable source color outer constructor
+        arguments none table) type) :
+    typed.ReflectiveSupportSafeAt globalTable.sourceSupport
+      (availableSource.map (mapTypeExpr (color.symbols source)))
+      (mapTypeExpr (color.symbols source)) := by
+  rcases abstractCostStaticApplicationFromTable_none_shape source color outer
+      constructor arguments table with
+    ⟨boundary, localMembership, abstractionShape⟩
+  have supportEquality : boundary.boundary.targetSupport =
+      availableSource.map (mapTypeExpr (color.symbols source)) :=
+    TypedCostRegionBoundaryTable.certify?_singleton_targetSupport_eq certified
+      boundary localMembership
+  have globalMembership : boundary ∈ globalTable.entries :=
+    entriesSubset localMembership
+  have boundaryTyped : WellSorted.HasType
+      source.theory.presentation.presentation.language
+      globalTable.sourceFreeContext bound
+      (.fvar (costRegionBoundaryVariableName boundary.boundary)) type := by
+    rw [← abstractionShape]
+    exact typed
+  have boundarySafe := globalTable.boundaryFvar_reflectiveSupportSafeAt
+    (binderImage := mapTypeExpr (color.symbols source))
+    boundary globalMembership supportEquality boundaryTyped
+  exact boundarySafe.transportPattern abstractionShape
+
+/-- A certified foreign boundary constructs its own authored source typing
+and reflective-support proof.  The source type and binder support are both
+recovered from the exact mapped singleton fiber; no independently chosen
+typing derivation can disagree with the collector. -/
+theorem abstractCostStaticApplicationFromTable_none_supportedSafe
+    (source : CIGSLT) (color : CostStaticColor)
+    {targetFree : WellSorted.FreeTypeContext}
+    (outer : OneHoleContext) (constructor : String)
+    (arguments : List Pattern)
+    {availableSource : List TypeExpr} {sourceType : TypeExpr}
+    (table : TypedCostRegionBoundaryTable source color targetFree
+      (costStaticApplicationBoundaryOccurrences source color outer constructor
+        arguments none))
+    (certified : TypedCostRegionBoundaryTable.certify?
+      (source := source) (color := color) (targetFree := targetFree)
+      (.cons
+        (availableSource.map (mapTypeExpr (color.symbols source)))
+        (mapTypeExpr (color.symbols source) sourceType) .nil) = some table)
+    {globalOccurrences : List CostRegionOccurrence}
+    (globalTable : TypedCostRegionBoundaryTable source color targetFree
+      globalOccurrences)
+    (entriesSubset : table.entries ⊆ globalTable.entries)
+    (bound : List TypeExpr) :
+    ∃ typed : WellSorted.HasTypeWithConstructors
+        source.theory.presentation.presentation.language
+        (· ∈ source.continuationRetyping.wrappedLabels)
+        globalTable.sourceFreeContext bound
+        (abstractCostStaticApplicationFromTable source color outer constructor
+          arguments none table) sourceType,
+      typed.toHasType.ReflectiveSupportSafeAt globalTable.sourceSupport
+        (availableSource.map (mapTypeExpr (color.symbols source))) := by
+  rcases abstractCostStaticApplicationFromTable_none_shape source color outer
+      constructor arguments table with
+    ⟨boundary, localMembership, abstractionShape⟩
+  have sourceTypeEquality : boundary.boundary.type = sourceType :=
+    TypedCostRegionBoundaryTable.certify?_singleton_sourceType_eq certified
+      boundary localMembership
+  have sourceSupportEquality : boundary.boundary.targetSupport =
+      availableSource.map (mapTypeExpr (color.symbols source)) :=
+    TypedCostRegionBoundaryTable.certify?_singleton_targetSupport_eq certified
+      boundary localMembership
+  have globalMembership : boundary ∈ globalTable.entries :=
+    entriesSubset localMembership
+  have lookup : globalTable.sourceFreeContext
+        (costRegionBoundaryVariableName boundary.boundary) = some sourceType := by
+    rw [globalTable.sourceFreeContext_boundaryVariable boundary globalMembership,
+      sourceTypeEquality]
+  rw [abstractionShape]
+  let typed : WellSorted.HasTypeWithConstructors
+      source.theory.presentation.presentation.language
+      (· ∈ source.continuationRetyping.wrappedLabels)
+      globalTable.sourceFreeContext bound
+      (.fvar (costRegionBoundaryVariableName boundary.boundary)) sourceType :=
+    .fvar lookup
+  refine ⟨typed, ?_⟩
+  exact globalTable.boundaryFvar_reflectiveSupportSafeAt boundary
+    globalMembership sourceSupportEquality typed.toHasType
+
+mutual
+  /-- Table-native abstraction of a declaration-certified monochromatic image
+  is exactly hygienic source-variable retagging, under every surrounding
+  one-hole context. -/
+  theorem WellSorted.HasTypeWithConstructors.abstractCostStaticRegionFromTableAt_mapCostStatic
+      (source : CIGSLT) (color : CostStaticColor)
+      {free targetFree : WellSorted.FreeTypeContext}
+      {bound : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
+      (typed : WellSorted.HasTypeWithConstructors
+        source.theory.presentation.presentation.language
+        (· ∈ source.continuationRetyping.wrappedLabels)
+        free bound pattern type)
+      (outer : OneHoleContext)
+      (table : TypedCostRegionBoundaryTable source color targetFree
+        (collectDeclaredCostStaticBoundaryOccurrencesAt source color outer
+          (mapPattern (color.symbols source) pattern))) :
+      abstractCostStaticRegionFromTableAt source color outer
+          (mapPattern (color.symbols source) pattern) table =
+        Mettapedia.GSLT.LanguageDef.retagCostRegionFreeVariables pattern := by
+    revert table
+    cases typed with
+    | @bvar bound index type lookup =>
+        intro table
+        cases table
+        change abstractCostStaticRegionFromTableAt source color outer
+            (.bvar index) .nil = .bvar index
+        rw [abstractCostStaticRegionFromTableAt.eq_1]
+    | @fvar bound name type lookup =>
+        intro table
+        cases table
+        change abstractCostStaticRegionFromTableAt source color outer
+            (.fvar name) .nil = .fvar (costRegionSourceVariableName name)
+        rw [abstractCostStaticRegionFromTableAt.eq_2]
+    | @constructor bound rule arguments wrapped membership notBare
+        argumentsTyped =>
+        intro table
+        change abstractCostStaticRegionFromTableAt source color outer
+            (.apply ((color.symbols source).constructor rule.label)
+              (mapPatternList (color.symbols source) arguments)) table =
+          .apply rule.label (retagCostRegionFreeVariableList arguments)
+        have decodes :
+            decodeDeclaredCostStaticConstructor source color
+                ((color.symbols source).constructor rule.label) =
+              some rule.label :=
+          decodeDeclaredCostStaticConstructor_symbols_of_wrapped source color
+            rule membership wrapped
+        let applicationTable := TypedCostRegionBoundaryTable.cast
+          (collectDeclaredCostStaticBoundaryOccurrencesAt_apply source color
+            outer ((color.symbols source).constructor rule.label)
+              (mapPatternList (color.symbols source) arguments)) table
+        rw [abstractCostStaticRegionFromTableAt.eq_3]
+        change abstractCostStaticApplicationFromTable source color outer
+            ((color.symbols source).constructor rule.label)
+            (mapPatternList (color.symbols source) arguments)
+            (decodeDeclaredCostStaticConstructor source color
+              ((color.symbols source).constructor rule.label))
+            applicationTable =
+          .apply rule.label (retagCostRegionFreeVariableList arguments)
+        have occurrenceEquality :
+            costStaticApplicationBoundaryOccurrences source color outer
+                ((color.symbols source).constructor rule.label)
+                (mapPatternList (color.symbols source) arguments)
+                (decodeDeclaredCostStaticConstructor source color
+                  ((color.symbols source).constructor rule.label)) =
+              costStaticApplicationBoundaryOccurrences source color outer
+                ((color.symbols source).constructor rule.label)
+                (mapPatternList (color.symbols source) arguments)
+                (some rule.label) :=
+          congrArg
+            (costStaticApplicationBoundaryOccurrences source color outer
+              ((color.symbols source).constructor rule.label)
+              (mapPatternList (color.symbols source) arguments)) decodes
+        let staticTable := TypedCostRegionBoundaryTable.cast occurrenceEquality
+          applicationTable
+        have transport :
+            abstractCostStaticApplicationFromTable source color outer
+                ((color.symbols source).constructor rule.label)
+                (mapPatternList (color.symbols source) arguments)
+                (decodeDeclaredCostStaticConstructor source color
+                  ((color.symbols source).constructor rule.label))
+                applicationTable =
+              abstractCostStaticApplicationFromTable source color outer
+                ((color.symbols source).constructor rule.label)
+                (mapPatternList (color.symbols source) arguments)
+                (some rule.label) staticTable := by
+          exact abstractCostStaticApplicationFromTable_cast_decoded source color
+            outer ((color.symbols source).constructor rule.label)
+              (mapPatternList (color.symbols source) arguments) decodes
+              applicationTable
+        rw [transport, abstractCostStaticApplicationFromTable.eq_2]
+        exact congrArg (Pattern.apply rule.label)
+          (argumentsTyped.abstractCostStaticApplyRegionFromTable_mapCostStatic
+            source color outer rule.label [] staticTable)
+    | @lambda bound binder body domain codomain bodyTyped =>
+        intro table
+        change abstractCostStaticRegionFromTableAt source color outer
+            (.lambda binder (mapPattern (color.symbols source) body)) table =
+          .lambda binder (retagCostRegionFreeVariables body)
+        rw [abstractCostStaticRegionFromTableAt.eq_4]
+        exact congrArg (Pattern.lambda binder)
+          (bodyTyped.abstractCostStaticRegionFromTableAt_mapCostStatic source color
+            (outer.comp (.lambda binder .hole)) table)
+    | @multiLambda bound arity binders body domain codomain bodyTyped =>
+        intro table
+        change abstractCostStaticRegionFromTableAt source color outer
+            (.multiLambda arity binders
+              (mapPattern (color.symbols source) body)) table =
+          .multiLambda arity binders (retagCostRegionFreeVariables body)
+        rw [abstractCostStaticRegionFromTableAt.eq_5]
+        exact congrArg (Pattern.multiLambda arity binders)
+          (bodyTyped.abstractCostStaticRegionFromTableAt_mapCostStatic source color
+            (outer.comp (.multiLambda arity binders .hole)) table)
+    | @subst bound body replacement domain codomain bodyTyped
+        replacementTyped =>
+        intro table
+        change abstractCostStaticRegionFromTableAt source color outer
+            (.subst (mapPattern (color.symbols source) body)
+              (mapPattern (color.symbols source) replacement)) table =
+          .subst (retagCostRegionFreeVariables body)
+            (retagCostRegionFreeVariables replacement)
+        let bodyOccurrences :=
+          collectDeclaredCostStaticBoundaryOccurrencesAt source color
+            (outer.comp (.substBody .hole
+              (mapPattern (color.symbols source) replacement)))
+            (mapPattern (color.symbols source) body)
+        let replacementOccurrences :=
+          collectDeclaredCostStaticBoundaryOccurrencesAt source color
+            (outer.comp (.substReplacement
+              (mapPattern (color.symbols source) body) .hole))
+            (mapPattern (color.symbols source) replacement)
+        let divided := TypedCostRegionBoundaryTable.split bodyOccurrences
+          replacementOccurrences table
+        rw [abstractCostStaticRegionFromTableAt.eq_6]
+        exact congrArg₂ Pattern.subst
+          (bodyTyped.abstractCostStaticRegionFromTableAt_mapCostStatic source color
+            (outer.comp (.substBody .hole
+              (mapPattern (color.symbols source) replacement))) divided.1)
+          (replacementTyped.abstractCostStaticRegionFromTableAt_mapCostStatic
+            source color
+            (outer.comp (.substReplacement
+              (mapPattern (color.symbols source) body) .hole)) divided.2)
+    | @collection bound collectionType elements rest elementType
+        elementsTyped =>
+        intro table
+        change abstractCostStaticRegionFromTableAt source color outer
+            (.collection collectionType
+              (mapPatternList (color.symbols source) elements) rest) table =
+          .collection collectionType (retagCostRegionFreeVariableList elements)
+            (rest.map costRegionSourceVariableName)
+        rw [abstractCostStaticRegionFromTableAt.eq_7]
+        exact congrArg
+          (fun mappedElements =>
+            Pattern.collection collectionType mappedElements
+              (rest.map costRegionSourceVariableName))
+          (elementsTyped.abstractCostStaticCollectionRegionFromTable_mapCostStatic
+            source color outer collectionType [] rest table)
+    | @collectionConstructor bound rule parameterName collectionType elements
+        rest elementType wrapped membership parameterShape elementsTyped =>
+        intro table
+        change abstractCostStaticRegionFromTableAt source color outer
+            (.collection collectionType
+              (mapPatternList (color.symbols source) elements) rest) table =
+          .collection collectionType (retagCostRegionFreeVariableList elements)
+            (rest.map costRegionSourceVariableName)
+        rw [abstractCostStaticRegionFromTableAt.eq_7]
+        exact congrArg
+          (fun mappedElements =>
+            Pattern.collection collectionType mappedElements
+              (rest.map costRegionSourceVariableName))
+          (elementsTyped.abstractCostStaticCollectionRegionFromTable_mapCostStatic
+            source color outer collectionType [] rest table)
+
+  /-- Ordered constructor-argument companion to monochromatic table-native
+  abstraction. -/
+  theorem WellSorted.ArgumentsHaveTypesWithConstructors.abstractCostStaticApplyRegionFromTable_mapCostStatic
+      (source : CIGSLT) (color : CostStaticColor)
+      {free targetFree : WellSorted.FreeTypeContext}
+      {bound : List TypeExpr} {arguments : List Pattern}
+      {parameters : List TermParam}
+      (typed : WellSorted.ArgumentsHaveTypesWithConstructors
+        source.theory.presentation.presentation.language
+        (· ∈ source.continuationRetyping.wrappedLabels)
+        free bound arguments parameters)
+      (outer : OneHoleContext)
+      (constructor : String) (before : List Pattern)
+      (table : TypedCostRegionBoundaryTable source color targetFree
+        (collectDeclaredCostStaticApplyBoundaryOccurrences source color outer
+          ((color.symbols source).constructor constructor) before
+          (mapPatternList (color.symbols source) arguments))) :
+      abstractCostStaticApplyRegionFromTable source color outer
+          ((color.symbols source).constructor constructor) before
+          (mapPatternList (color.symbols source) arguments) table =
+        retagCostRegionFreeVariableList arguments := by
+    revert table
+    cases arguments with
+    | nil =>
+      cases typed with
+      | nil =>
+        simp only [mapPatternList,
+          retagCostRegionFreeVariableList.eq_1]
+        intro table
+        cases table
+        rw [abstractCostStaticApplyRegionFromTable.eq_1]
+    | cons argument arguments =>
+      cases typed with
+      | cons representation parameterType head tail =>
+        simp only [mapPatternList]
+        intro table
+        let headOccurrences :=
+          collectDeclaredCostStaticBoundaryOccurrencesAt source color
+            (outer.comp
+              (.apply ((color.symbols source).constructor constructor) before
+                .hole
+                (mapPatternList (color.symbols source) arguments)))
+            (mapPattern (color.symbols source) argument)
+        let tailOccurrences :=
+          collectDeclaredCostStaticApplyBoundaryOccurrences source color outer
+            ((color.symbols source).constructor constructor)
+            (before ++ [mapPattern (color.symbols source) argument])
+            (mapPatternList (color.symbols source) arguments)
+        let divided := TypedCostRegionBoundaryTable.split headOccurrences
+          tailOccurrences table
+        simp only [abstractCostStaticApplyRegionFromTable.eq_2,
+          retagCostRegionFreeVariableList.eq_2]
+        exact congrArg₂ List.cons
+          (head.abstractCostStaticRegionFromTableAt_mapCostStatic source color
+            (outer.comp
+              (.apply ((color.symbols source).constructor constructor) before
+                .hole
+                (mapPatternList (color.symbols source) arguments))) divided.1)
+          (tail.abstractCostStaticApplyRegionFromTable_mapCostStatic source color
+            outer constructor
+            (before ++ [mapPattern (color.symbols source) argument]) divided.2)
+
+  /-- Homogeneous-collection companion to monochromatic table-native
+  abstraction. -/
+  theorem WellSorted.ElementsHaveTypeWithConstructors.abstractCostStaticCollectionRegionFromTable_mapCostStatic
+      (source : CIGSLT) (color : CostStaticColor)
+      {free targetFree : WellSorted.FreeTypeContext}
+      {bound : List TypeExpr} {elements : List Pattern}
+      {elementType : TypeExpr}
+      (typed : WellSorted.ElementsHaveTypeWithConstructors
+        source.theory.presentation.presentation.language
+        (· ∈ source.continuationRetyping.wrappedLabels)
+        free bound elements elementType)
+      (outer : OneHoleContext)
+      (collectionType : CollType) (before : List Pattern)
+      (rest : Option String)
+      (table : TypedCostRegionBoundaryTable source color targetFree
+        (collectDeclaredCostStaticCollectionBoundaryOccurrences source color
+          outer collectionType before
+          (mapPatternList (color.symbols source) elements) rest)) :
+      abstractCostStaticCollectionRegionFromTable source color outer
+          collectionType before
+          (mapPatternList (color.symbols source) elements) rest table =
+        retagCostRegionFreeVariableList elements := by
+    revert table
+    cases elements with
+    | nil =>
+      cases typed with
+      | nil =>
+        simp only [mapPatternList,
+          retagCostRegionFreeVariableList.eq_1]
+        intro table
+        cases table
+        rw [abstractCostStaticCollectionRegionFromTable.eq_1]
+    | cons element elements =>
+      cases typed with
+      | cons head tail =>
+        simp only [mapPatternList]
+        intro table
+        let headOccurrences :=
+          collectDeclaredCostStaticBoundaryOccurrencesAt source color
+            (outer.comp
+              (.collection collectionType before .hole
+                (mapPatternList (color.symbols source) elements) rest))
+            (mapPattern (color.symbols source) element)
+        let tailOccurrences :=
+          collectDeclaredCostStaticCollectionBoundaryOccurrences source color
+            outer collectionType
+            (before ++ [mapPattern (color.symbols source) element])
+            (mapPatternList (color.symbols source) elements) rest
+        let divided := TypedCostRegionBoundaryTable.split headOccurrences
+          tailOccurrences table
+        simp only [abstractCostStaticCollectionRegionFromTable.eq_2,
+          retagCostRegionFreeVariableList.eq_2]
+        exact congrArg₂ List.cons
+          (head.abstractCostStaticRegionFromTableAt_mapCostStatic source color
+            (outer.comp
+              (.collection collectionType before .hole
+                (mapPatternList (color.symbols source) elements) rest))
+            divided.1)
+          (tail.abstractCostStaticCollectionRegionFromTable_mapCostStatic source
+            color outer collectionType
+            (before ++ [mapPattern (color.symbols source) element]) rest
+            divided.2)
+end
+
+/-- Public monochromatic specialization of finite table-native abstraction. -/
+theorem WellSorted.HasTypeWithConstructors.abstractCostStaticRegionFromTable_mapCostStatic
+    {source : CIGSLT} {free targetFree : WellSorted.FreeTypeContext}
+    {bound : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
+    (typed : WellSorted.HasTypeWithConstructors
+      source.theory.presentation.presentation.language
+      (· ∈ source.continuationRetyping.wrappedLabels)
+      free bound pattern type)
+    (color : CostStaticColor) :
+    abstractCostStaticRegionFromTable (targetFree := targetFree) source color
+        (mapPattern (color.symbols source) pattern)
+        (typed.monochromaticCostBoundaryTable (targetFree := targetFree) color) =
+      Mettapedia.GSLT.LanguageDef.retagCostRegionFreeVariables pattern := by
+  exact typed.abstractCostStaticRegionFromTableAt_mapCostStatic source color
+    .hole _
+
+mutual
+  /-- Finite abstraction followed by any resolver covering exactly the table
+  entries reconstructs the original pattern.  The proof is structural and
+  precedes normalization. -/
+  theorem restore_abstractCostStaticRegionFromTableAt_of_resolves
+      (source : CIGSLT) (color : CostStaticColor)
+      {targetFree : WellSorted.FreeTypeContext} (outer : OneHoleContext)
+      (pattern : Pattern)
+      (table : TypedCostRegionBoundaryTable source color targetFree
+        (collectDeclaredCostStaticBoundaryOccurrencesAt source color outer
+          pattern))
+      (resolveBoundary : String → Option Pattern)
+      (resolves : ∀ boundary, boundary ∈ table.entries →
+        resolveBoundary
+            (costRegionBoundaryVariableName boundary.boundary) =
+          some boundary.boundary.content) :
+      restoreCostStaticSkeleton color resolveBoundary
+          (abstractCostStaticRegionFromTableAt source color outer pattern table) =
+        pattern := by
+    cases pattern with
+    | bvar index =>
+        cases table
+        simp [abstractCostStaticRegionFromTableAt,
+          restoreCostStaticSkeleton]
+    | fvar name =>
+        cases table
+        simp only [abstractCostStaticRegionFromTableAt,
+          restoreCostStaticSkeleton,
+          decodeCostRegionSourceVariableName_encode]
+    | apply constructor arguments =>
+        simp only [abstractCostStaticRegionFromTableAt]
+        let applicationTable := TypedCostRegionBoundaryTable.cast
+          (collectDeclaredCostStaticBoundaryOccurrencesAt_apply source color
+            outer constructor arguments) table
+        have applicationResolves : ∀ boundary,
+            boundary ∈ applicationTable.entries →
+              resolveBoundary
+                  (costRegionBoundaryVariableName boundary.boundary) =
+                some boundary.boundary.content := by
+          intro boundary membership
+          apply resolves boundary
+          simpa [applicationTable] using membership
+        exact restore_abstractCostStaticApplicationFromTable_of_resolves
+          source color outer constructor arguments
+          (decodeDeclaredCostStaticConstructor source color constructor)
+          applicationTable resolveBoundary applicationResolves rfl
+    | lambda binderName body =>
+        have bodyResult :=
+          restore_abstractCostStaticRegionFromTableAt_of_resolves source color
+            (outer.comp (.lambda binderName .hole)) body table resolveBoundary
+            resolves
+        simpa [abstractCostStaticRegionFromTableAt,
+          restoreCostStaticSkeleton] using bodyResult
+    | multiLambda arity binderNames body =>
+        have bodyResult :=
+          restore_abstractCostStaticRegionFromTableAt_of_resolves source color
+            (outer.comp (.multiLambda arity binderNames .hole)) body table
+            resolveBoundary resolves
+        simpa [abstractCostStaticRegionFromTableAt,
+          restoreCostStaticSkeleton] using bodyResult
+    | subst body replacement =>
+        let bodyOccurrences :=
+          collectDeclaredCostStaticBoundaryOccurrencesAt source color
+            (outer.comp (.substBody .hole replacement)) body
+        let replacementOccurrences :=
+          collectDeclaredCostStaticBoundaryOccurrencesAt source color
+            (outer.comp (.substReplacement body .hole)) replacement
+        let divided := TypedCostRegionBoundaryTable.split bodyOccurrences
+          replacementOccurrences table
+        have entriesPartition : divided.1.entries ++ divided.2.entries =
+            table.entries := by
+          exact TypedCostRegionBoundaryTable.entries_split bodyOccurrences
+            replacementOccurrences table
+        have bodyResolves : ∀ boundary, boundary ∈ divided.1.entries →
+            resolveBoundary
+                (costRegionBoundaryVariableName boundary.boundary) =
+              some boundary.boundary.content := by
+          intro boundary membership
+          apply resolves boundary
+          rw [← entriesPartition]
+          exact List.mem_append_left _ membership
+        have replacementResolves : ∀ boundary,
+            boundary ∈ divided.2.entries →
+              resolveBoundary
+                  (costRegionBoundaryVariableName boundary.boundary) =
+                some boundary.boundary.content := by
+          intro boundary membership
+          apply resolves boundary
+          rw [← entriesPartition]
+          exact List.mem_append_right _ membership
+        have bodyResult :=
+          restore_abstractCostStaticRegionFromTableAt_of_resolves source color
+            (outer.comp (.substBody .hole replacement)) body divided.1
+            resolveBoundary bodyResolves
+        have replacementResult :=
+          restore_abstractCostStaticRegionFromTableAt_of_resolves source color
+            (outer.comp (.substReplacement body .hole)) replacement divided.2
+            resolveBoundary replacementResolves
+        simpa [abstractCostStaticRegionFromTableAt,
+          restoreCostStaticSkeleton, bodyOccurrences, replacementOccurrences,
+          divided] using congrArg₂ Pattern.subst bodyResult replacementResult
+    | collection collectionType elements rest =>
+        have elementsResult :=
+          restore_abstractCostStaticCollectionRegionFromTable_of_resolves
+            source color outer collectionType [] elements rest table
+            resolveBoundary resolves
+        cases rest with
+        | none =>
+            simpa [abstractCostStaticRegionFromTableAt,
+              restoreCostStaticSkeleton] using elementsResult
+        | some restName =>
+            simpa [abstractCostStaticRegionFromTableAt,
+              restoreCostStaticSkeleton] using elementsResult
+  termination_by 2 * sizeOf pattern + 1
+  decreasing_by
+    all_goals subst_vars
+    all_goals simp_wf
+    all_goals omega
+
+  /-- The decoder-indexed application helper reconstructs its authored
+  application whenever its index agrees with the selected-color decoder.
+  Keeping that equality explicit avoids transporting a finite table through
+  an ill-typed dependent rewrite. -/
+  theorem restore_abstractCostStaticApplicationFromTable_of_resolves
+      (source : CIGSLT) (color : CostStaticColor)
+      {targetFree : WellSorted.FreeTypeContext} (outer : OneHoleContext)
+      (constructor : String) (arguments : List Pattern)
+      (decoded : Option String)
+      (table : TypedCostRegionBoundaryTable source color targetFree
+        (costStaticApplicationBoundaryOccurrences source color outer
+          constructor arguments decoded))
+      (resolveBoundary : String → Option Pattern)
+      (resolves : ∀ boundary, boundary ∈ table.entries →
+        resolveBoundary
+            (costRegionBoundaryVariableName boundary.boundary) =
+          some boundary.boundary.content)
+      (decoderAgrees : decodeDeclaredCostStaticConstructor source color
+        constructor = decoded) :
+      restoreCostStaticSkeleton color resolveBoundary
+          (abstractCostStaticApplicationFromTable source color outer constructor
+            arguments decoded table) =
+        .apply constructor arguments := by
+    cases decoded with
+    | none =>
+        simp only [costStaticApplicationBoundaryOccurrences] at table resolves
+        cases table with
+        | cons boundary content tail =>
+            cases tail
+            have resolved : resolveBoundary
+                (costRegionBoundaryVariableName boundary.boundary) =
+                  some boundary.boundary.content :=
+              resolves boundary (by
+                simp [TypedCostRegionBoundaryTable.entries])
+            simp only [abstractCostStaticApplicationFromTable]
+            change restoreCostStaticSkeleton color resolveBoundary
+                (.fvar (costRegionBoundaryVariableName boundary.boundary)) =
+              .apply constructor arguments
+            simp [restoreCostStaticSkeleton,
+              decodeCostRegionSourceVariableName_boundary, resolved]
+            exact content
+    | some sourceConstructor =>
+        simp only [costStaticApplicationBoundaryOccurrences] at table resolves
+        have argumentsResult :=
+          restore_abstractCostStaticApplyRegionFromTable_of_resolves source color
+            outer constructor [] arguments table resolveBoundary resolves
+        have constructorShape :
+            constructor = color.constructorTag ++ sourceConstructor :=
+          (decodeCostStaticConstructor_eq_some_iff color constructor
+            sourceConstructor).mp
+              (decodeCostStaticConstructor_eq_some_of_declared source color
+                constructor sourceConstructor decoderAgrees)
+        simp only [abstractCostStaticApplicationFromTable]
+        change Pattern.apply (color.constructorTag ++ sourceConstructor)
+            (restoreCostStaticSkeletonList color resolveBoundary
+              (abstractCostStaticApplyRegionFromTable source color outer
+                constructor [] arguments table)) =
+          .apply constructor arguments
+        rw [argumentsResult, constructorShape]
+  termination_by 2 * sizeOf (Pattern.apply constructor arguments)
+  decreasing_by
+    all_goals subst_vars
+    all_goals simp_wf
+
+  /-- Ordered application companion to the finite structural round trip. -/
+  theorem restore_abstractCostStaticApplyRegionFromTable_of_resolves
+      (source : CIGSLT) (color : CostStaticColor)
+      {targetFree : WellSorted.FreeTypeContext} (outer : OneHoleContext)
+      (constructor : String) (before arguments : List Pattern)
+      (table : TypedCostRegionBoundaryTable source color targetFree
+        (collectDeclaredCostStaticApplyBoundaryOccurrences source color outer
+          constructor before arguments))
+      (resolveBoundary : String → Option Pattern)
+      (resolves : ∀ boundary, boundary ∈ table.entries →
+        resolveBoundary
+            (costRegionBoundaryVariableName boundary.boundary) =
+          some boundary.boundary.content) :
+      restoreCostStaticSkeletonList color resolveBoundary
+          (abstractCostStaticApplyRegionFromTable source color outer constructor
+            before arguments table) = arguments := by
+    cases arguments with
+    | nil =>
+        cases table
+        simp [abstractCostStaticApplyRegionFromTable,
+          restoreCostStaticSkeletonList]
+    | cons argument after =>
+        let argumentOccurrences :=
+          collectDeclaredCostStaticBoundaryOccurrencesAt source color
+            (outer.comp (.apply constructor before .hole after)) argument
+        let afterOccurrences :=
+          collectDeclaredCostStaticApplyBoundaryOccurrences source color outer
+            constructor (before ++ [argument]) after
+        let divided := TypedCostRegionBoundaryTable.split argumentOccurrences
+          afterOccurrences table
+        have entriesPartition : divided.1.entries ++ divided.2.entries =
+            table.entries := by
+          exact TypedCostRegionBoundaryTable.entries_split argumentOccurrences
+            afterOccurrences table
+        have argumentResolves : ∀ boundary,
+            boundary ∈ divided.1.entries →
+              resolveBoundary
+                  (costRegionBoundaryVariableName boundary.boundary) =
+                some boundary.boundary.content := by
+          intro boundary membership
+          apply resolves boundary
+          rw [← entriesPartition]
+          exact List.mem_append_left _ membership
+        have afterResolves : ∀ boundary, boundary ∈ divided.2.entries →
+            resolveBoundary
+                (costRegionBoundaryVariableName boundary.boundary) =
+              some boundary.boundary.content := by
+          intro boundary membership
+          apply resolves boundary
+          rw [← entriesPartition]
+          exact List.mem_append_right _ membership
+        have argumentResult :=
+          restore_abstractCostStaticRegionFromTableAt_of_resolves source color
+            (outer.comp (.apply constructor before .hole after)) argument
+            divided.1 resolveBoundary argumentResolves
+        have afterResult :=
+          restore_abstractCostStaticApplyRegionFromTable_of_resolves source color
+            outer constructor (before ++ [argument]) after divided.2
+            resolveBoundary afterResolves
+        simp [abstractCostStaticApplyRegionFromTable,
+          restoreCostStaticSkeletonList, argumentOccurrences, afterOccurrences,
+          divided, argumentResult, afterResult]
+  termination_by 2 * sizeOf arguments
+  decreasing_by
+    all_goals subst_vars
+    all_goals simp_wf
+    all_goals omega
+
+  /-- Ordered collection companion to the finite structural round trip. -/
+  theorem restore_abstractCostStaticCollectionRegionFromTable_of_resolves
+      (source : CIGSLT) (color : CostStaticColor)
+      {targetFree : WellSorted.FreeTypeContext} (outer : OneHoleContext)
+      (collectionType : CollType) (before elements : List Pattern)
+      (rest : Option String)
+      (table : TypedCostRegionBoundaryTable source color targetFree
+        (collectDeclaredCostStaticCollectionBoundaryOccurrences source color
+          outer collectionType before elements rest))
+      (resolveBoundary : String → Option Pattern)
+      (resolves : ∀ boundary, boundary ∈ table.entries →
+        resolveBoundary
+            (costRegionBoundaryVariableName boundary.boundary) =
+          some boundary.boundary.content) :
+      restoreCostStaticSkeletonList color resolveBoundary
+          (abstractCostStaticCollectionRegionFromTable source color outer
+            collectionType before elements rest table) = elements := by
+    cases elements with
+    | nil =>
+        cases table
+        simp [abstractCostStaticCollectionRegionFromTable,
+          restoreCostStaticSkeletonList]
+    | cons element after =>
+        let elementOccurrences :=
+          collectDeclaredCostStaticBoundaryOccurrencesAt source color
+            (outer.comp
+              (.collection collectionType before .hole after rest)) element
+        let afterOccurrences :=
+          collectDeclaredCostStaticCollectionBoundaryOccurrences source color
+            outer collectionType (before ++ [element]) after rest
+        let divided := TypedCostRegionBoundaryTable.split elementOccurrences
+          afterOccurrences table
+        have entriesPartition : divided.1.entries ++ divided.2.entries =
+            table.entries := by
+          exact TypedCostRegionBoundaryTable.entries_split elementOccurrences
+            afterOccurrences table
+        have elementResolves : ∀ boundary,
+            boundary ∈ divided.1.entries →
+              resolveBoundary
+                  (costRegionBoundaryVariableName boundary.boundary) =
+                some boundary.boundary.content := by
+          intro boundary membership
+          apply resolves boundary
+          rw [← entriesPartition]
+          exact List.mem_append_left _ membership
+        have afterResolves : ∀ boundary, boundary ∈ divided.2.entries →
+            resolveBoundary
+                (costRegionBoundaryVariableName boundary.boundary) =
+              some boundary.boundary.content := by
+          intro boundary membership
+          apply resolves boundary
+          rw [← entriesPartition]
+          exact List.mem_append_right _ membership
+        have elementResult :=
+          restore_abstractCostStaticRegionFromTableAt_of_resolves source color
+            (outer.comp
+              (.collection collectionType before .hole after rest)) element
+            divided.1 resolveBoundary elementResolves
+        have afterResult :=
+          restore_abstractCostStaticCollectionRegionFromTable_of_resolves
+            source color outer collectionType (before ++ [element]) after rest
+            divided.2 resolveBoundary afterResolves
+        simp [abstractCostStaticCollectionRegionFromTable,
+          restoreCostStaticSkeletonList, elementOccurrences, afterOccurrences,
+          divided, elementResult, afterResult]
+  termination_by 2 * sizeOf elements
+  decreasing_by
+    all_goals subst_vars
+    all_goals simp_wf
+    all_goals omega
+end
+
+/-- The table's own collision-free resolver discharges the coverage premise,
+so finite abstraction and immediate recomposition are exact. -/
+theorem restore_abstractCostStaticRegionFromTable (source : CIGSLT)
+    (color : CostStaticColor)
+    {targetFree : WellSorted.FreeTypeContext} (pattern : Pattern)
+    (table : TypedCostRegionBoundaryTable source color targetFree
+      (collectDeclaredCostStaticBoundaryOccurrences source color pattern)) :
+    restoreCostStaticSkeleton color table.resolveContent
+        (abstractCostStaticRegionFromTable source color pattern table) =
+      pattern := by
+  apply restore_abstractCostStaticRegionFromTableAt_of_resolves source color
+    .hole pattern table table.resolveContent
+  intro boundary membership
+  exact table.resolveContent_of_mem_entries boundary membership
+
+namespace TypedCostRegionBoundaryTable
+
+/-- Normalize one authored source stratum and restore it through the finite
+typed boundary resolver. -/
+def restoreNormalizedStaticStratum {source : CIGSLT}
+    {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    (table : TypedCostRegionBoundaryTable source color targetFree occurrences)
+    {sourceFree : WellSorted.FreeTypeContext} {bound : List TypeExpr}
+    {sort : LangSort source.theory.presentation.presentation.language}
+    (skeleton : WellSorted.OpenTerm
+      source.theory.presentation.presentation.language sourceFree bound sort) :
+    Pattern :=
+  table.restoreSupportedSkeleton
+    (bound.map (mapTypeExpr (color.symbols source)))
+    (normalizeCostStaticStratum source color skeleton)
+
+/-- Finite normalized restoration inhabits the complete target open carrier.
+All target typing and reflective support come from proof-relevant table
+entries and the explicit transport equality. -/
+theorem restoreNormalizedStaticStratum_openTermWellSorted
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    (table : TypedCostRegionBoundaryTable source color targetFree occurrences)
+    {sourceFree : WellSorted.FreeTypeContext} {bound : List TypeExpr}
+    {sort : LangSort source.theory.presentation.presentation.language}
+    (skeleton : WellSorted.OpenTerm
+      source.theory.presentation.presentation.language sourceFree bound sort)
+    (sourceSupport : ContextSupport.Support)
+    (supported : WellSorted.HasTypeWithConstructors
+      source.theory.presentation.presentation.language
+      (· ∈ source.continuationRetyping.wrappedLabels)
+      sourceFree bound skeleton.1 (.base sort.1))
+    (safe : skeleton.2.1.ReflectiveSupportSafeAt sourceSupport
+      (bound.map (mapTypeExpr (color.symbols source)))
+      (mapTypeExpr (color.symbols source)))
+    (transport : Transport sourceFree sourceSupport table) :
+    WellSorted.OpenTermWellSorted source.costWholeLanguage targetFree
+      (bound.map (mapTypeExpr (color.symbols source)))
+      (color.mapLangSort source sort)
+      (table.restoreNormalizedStaticStratum skeleton) := by
+  have mappedWellSorted :=
+    normalizeCostStaticStratum_openTermWellSorted_targetSupport source color
+      skeleton sourceSupport
+      (bound.map (mapTypeExpr (color.symbols source))) supported safe
+  rw [transport.freeContext] at mappedWellSorted
+  let mappedSkeleton : WellSorted.OpenTerm source.costWholeLanguage
+      table.mappedFreeContext
+      (bound.map (mapTypeExpr (color.symbols source)))
+      (color.mapLangSort source sort) :=
+    ⟨normalizeCostStaticStratum source color skeleton, mappedWellSorted⟩
+  have mappedPair := normalizeCostStaticStratum_typedTargetReflectiveSupport
+    source color skeleton sourceSupport
+      (bound.map (mapTypeExpr (color.symbols source))) supported safe
+  rw [transport.freeContext, transport.reflectiveSupport] at mappedPair
+  obtain ⟨_mappedTyped, mappedSafe⟩ := mappedPair
+  have mappedSkeletonSafe : mappedSkeleton.2.1.ReflectiveSupportSafeAt
+      table.restorationSupport
+      (bound.map (mapTypeExpr (color.symbols source))) :=
+    mappedSafe.castTyping
+  change WellSorted.OpenPatternWellSorted source.costWholeLanguage targetFree
+    (bound.map (mapTypeExpr (color.symbols source)))
+    (.base (color.mapLangSort source sort).1)
+    (table.restoreNormalizedStaticStratum skeleton)
+  simpa only [restoreNormalizedStaticStratum, mappedSkeleton] using
+    table.restoreSupportedSkeleton_openPatternWellSorted mappedSkeleton
+      mappedSkeletonSafe
+
+/-- Normalize one authored source stratum and restore independently supplied
+finite boundary values through the stable table. -/
+def Values.restoreNormalizedStaticStratum {source : CIGSLT}
+    {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    (table : TypedCostRegionBoundaryTable source color targetFree occurrences)
+    (values : Values source color targetFree table)
+    {sourceFree : WellSorted.FreeTypeContext} {bound : List TypeExpr}
+    {sort : LangSort source.theory.presentation.presentation.language}
+    (skeleton : WellSorted.OpenTerm
+      source.theory.presentation.presentation.language sourceFree bound sort) :
+    Pattern :=
+  values.restoreSupportedSkeleton table
+    (bound.map (mapTypeExpr (color.symbols source)))
+    (normalizeCostStaticStratum source color skeleton)
+
+/-- Finite child-value restoration inhabits the same complete target open
+carrier as identity restoration. -/
+theorem Values.restoreNormalizedStaticStratum_openTermWellSorted
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    (table : TypedCostRegionBoundaryTable source color targetFree occurrences)
+    (values : Values source color targetFree table)
+    {sourceFree : WellSorted.FreeTypeContext} {bound : List TypeExpr}
+    {sort : LangSort source.theory.presentation.presentation.language}
+    (skeleton : WellSorted.OpenTerm
+      source.theory.presentation.presentation.language sourceFree bound sort)
+    (sourceSupport : ContextSupport.Support)
+    (supported : WellSorted.HasTypeWithConstructors
+      source.theory.presentation.presentation.language
+      (· ∈ source.continuationRetyping.wrappedLabels)
+      sourceFree bound skeleton.1 (.base sort.1))
+    (safe : skeleton.2.1.ReflectiveSupportSafeAt sourceSupport
+      (bound.map (mapTypeExpr (color.symbols source)))
+      (mapTypeExpr (color.symbols source)))
+    (transport : Transport sourceFree sourceSupport table) :
+    WellSorted.OpenTermWellSorted source.costWholeLanguage targetFree
+      (bound.map (mapTypeExpr (color.symbols source)))
+      (color.mapLangSort source sort)
+      (values.restoreNormalizedStaticStratum table skeleton) := by
+  have mappedWellSorted :=
+    normalizeCostStaticStratum_openTermWellSorted_targetSupport source color
+      skeleton sourceSupport
+      (bound.map (mapTypeExpr (color.symbols source))) supported safe
+  rw [transport.freeContext] at mappedWellSorted
+  let mappedSkeleton : WellSorted.OpenTerm source.costWholeLanguage
+      table.mappedFreeContext
+      (bound.map (mapTypeExpr (color.symbols source)))
+      (color.mapLangSort source sort) :=
+    ⟨normalizeCostStaticStratum source color skeleton, mappedWellSorted⟩
+  have mappedPair := normalizeCostStaticStratum_typedTargetReflectiveSupport
+    source color skeleton sourceSupport
+      (bound.map (mapTypeExpr (color.symbols source))) supported safe
+  rw [transport.freeContext, transport.reflectiveSupport] at mappedPair
+  obtain ⟨_mappedTyped, mappedSafe⟩ := mappedPair
+  have mappedSkeletonSafe : mappedSkeleton.2.1.ReflectiveSupportSafeAt
+      table.restorationSupport
+      (bound.map (mapTypeExpr (color.symbols source))) :=
+    mappedSafe.castTyping
+  change WellSorted.OpenPatternWellSorted source.costWholeLanguage targetFree
+    (bound.map (mapTypeExpr (color.symbols source)))
+    (.base (color.mapLangSort source sort).1)
+    (values.restoreNormalizedStaticStratum table skeleton)
+  simpa only [Values.restoreNormalizedStaticStratum, mappedSkeleton] using
+    values.restoreSupportedSkeleton_openPatternWellSorted table mappedSkeleton
+      mappedSkeletonSafe
+
+/-- Identity boundary values recover the established one-stratum normalizer
+exactly, not merely up to typing or equivalence. -/
+theorem Values.restoreNormalizedStaticStratum_original
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    (table : TypedCostRegionBoundaryTable source color targetFree occurrences)
+    {sourceFree : WellSorted.FreeTypeContext} {bound : List TypeExpr}
+    {sort : LangSort source.theory.presentation.presentation.language}
+    (skeleton : WellSorted.OpenTerm
+      source.theory.presentation.presentation.language sourceFree bound sort) :
+    (Values.original table).restoreNormalizedStaticStratum table skeleton =
+      table.restoreNormalizedStaticStratum skeleton := by
+  change (Values.original table).restoreSupportedSkeleton table
+      (bound.map (mapTypeExpr (color.symbols source)))
+        (normalizeCostStaticStratum source color skeleton) =
+    table.restoreSupportedSkeleton
+      (bound.map (mapTypeExpr (color.symbols source)))
+        (normalizeCostStaticStratum source color skeleton)
+  exact Values.restoreSupportedSkeleton_original table _ _
+
+end TypedCostRegionBoundaryTable
+
+/-- Map one declaration-certified authored open term into a selected static
+Cost fiber.  This is a carrier construction, not a second presentation:
+typing comes from the authored constructor certificate and all other object
+invariants are transported by the structural symbol action. -/
+def WellSorted.OpenTerm.mapCostStatic
+    {source : CIGSLT} {free : WellSorted.FreeTypeContext}
+    {bound : List TypeExpr}
+    {sort : LangSort source.theory.presentation.presentation.language}
+    (term : WellSorted.OpenTerm
+      source.theory.presentation.presentation.language free bound sort)
+    (supported : WellSorted.HasTypeWithConstructors
+      source.theory.presentation.presentation.language
+      (· ∈ source.continuationRetyping.wrappedLabels)
+      free bound term.1 (.base sort.1))
+    (color : CostStaticColor) :
+    WellSorted.OpenTerm source.costWholeLanguage
+      (free.map (color.symbols source))
+      (bound.map (mapTypeExpr (color.symbols source)))
+      (color.mapLangSort source sort) := by
+  let mappedTyped := supported.mapCostStatic source color
+  refine ⟨mapPattern (color.symbols source) term.1, ?_, ?_, ?_, ?_⟩
+  · simpa [mapTypeExpr] using mappedTyped
+  · simpa using term.2.2.1
+  · simpa using term.2.2.2.1
+  · have mappedOrdinaryScope :
+        (mapPattern (color.symbols source) term.1).isWellScopedAt
+            bound.length = true := by
+      simpa only [List.length_map] using mappedTyped.isWellScopedAt
+    have mappedReflectiveScope := reflectiveScopeSafeAt_mapCostStatic
+      source color term.2.2.2.2 mappedOrdinaryScope
+    simpa only [List.length_map] using mappedReflectiveScope
+
+@[simp]
+theorem WellSorted.OpenTerm.mapCostStatic_pattern
+    {source : CIGSLT} {free : WellSorted.FreeTypeContext}
+    {bound : List TypeExpr}
+    {sort : LangSort source.theory.presentation.presentation.language}
+    (term : WellSorted.OpenTerm
+      source.theory.presentation.presentation.language free bound sort)
+    (supported : WellSorted.HasTypeWithConstructors
+      source.theory.presentation.presentation.language
+      (· ∈ source.continuationRetyping.wrappedLabels)
+      free bound term.1 (.base sort.1))
+    (color : CostStaticColor) :
+    (term.mapCostStatic supported color).1 =
+      mapPattern (color.symbols source) term.1 :=
+  rfl
+
+/-- A constructor intrinsically classified as static decodes in exactly its
+declared color.  Interaction principals and apparatus constructors cannot
+inhabit this theorem. -/
+theorem decode_renderDeclaredCostConstructor_of_static
+    (source : CIGSLT) (constructor : source.DeclaredCostConstructor)
+    (color : CostStaticColor)
+    (role : source.declaredCostConstructorRole constructor = .static color) :
+    ∃ sourceName,
+      decodeCostStaticConstructor color
+        (source.renderDeclaredCostConstructor constructor) = some sourceName := by
+  rcases constructor with ⟨constructor, declared⟩
+  cases constructor with
+  | base sourceConstructor =>
+      cases color with
+      | base =>
+          exact ⟨sourceConstructor.1.label, by
+            simpa [CIGSLT.renderDeclaredCostConstructor,
+              CIGSLT.renderGeneratedCostConstructor,
+              CostConstructor.render, CostStaticColor.constructorTag,
+              costBaseConstructorName] using
+                decodeCostStaticConstructor_append .base
+                  sourceConstructor.1.label⟩
+      | wrapped =>
+          simp only [CIGSLT.declaredCostConstructorRole] at role
+          split at role <;> cases role
+  | wrapped sourceConstructor =>
+      cases color with
+      | base => cases role
+      | wrapped =>
+          exact ⟨sourceConstructor.1.label, by
+            simpa [CIGSLT.renderDeclaredCostConstructor,
+              CIGSLT.renderGeneratedCostConstructor,
+              CostConstructor.render, CostStaticColor.constructorTag,
+              costWrappedConstructorName] using
+                decodeCostStaticConstructor_append .wrapped
+                  sourceConstructor.1.label⟩
+  | apparatus kind =>
+      cases role
+
+/-- Every intrinsic constructor in the selected static role is accepted by
+the declaration-classified decoder. -/
+theorem exists_decodeDeclaredCostStaticConstructor_of_static
+    (source : CIGSLT) (constructor : source.DeclaredCostConstructor)
+    (color : CostStaticColor)
+    (role : source.declaredCostConstructorRole constructor = .static color) :
+    ∃ sourceName,
+      decodeDeclaredCostStaticConstructor source color
+        (source.renderDeclaredCostConstructor constructor) = some sourceName := by
+  obtain ⟨sourceName, decoded⟩ :=
+    decode_renderDeclaredCostConstructor_of_static source constructor color role
+  refine ⟨sourceName, ?_⟩
+  simp [decodeDeclaredCostStaticConstructor,
+    source.decodeDeclaredCostConstructor_render, role, decoded]
+
+/-- Exact authored preimage of one constructor in a selected static Cost
+fiber.  The parameter profile is retained as a `TermParam` map, so binder and
+collection representation are not erased to result types during inversion. -/
+structure CostStaticConstructorPreimage (source : CIGSLT)
+    (color : CostStaticColor)
+    (constructor : source.DeclaredCostConstructor) where
+  sourceConstructor : AuthoredConstructor
+    source.theory.presentation.presentation
+  wrapped : sourceConstructor ∈
+    source.continuationRetyping.wrappedConstructors
+  labelMap :
+    (source.materializeDeclaredCostConstructor constructor).label =
+      (color.symbols source).constructor sourceConstructor.1.label
+  categoryMap :
+    (source.materializeDeclaredCostConstructor constructor).category =
+      (color.symbols source).sort sourceConstructor.1.category
+  parametersMap :
+    (source.materializeDeclaredCostConstructor constructor).params =
+      sourceConstructor.1.params.map (mapTermParam (color.symbols source))
+
+/-- The intrinsic generated constructor determines its authored static
+preimage uniquely.  The proof uses validated source-label uniqueness and the
+injectivity of the selected Cost namespace; no second constructor table is
+consulted. -/
+theorem CostStaticConstructorPreimage.eq
+    {source : CIGSLT} {color : CostStaticColor}
+    {constructor : source.DeclaredCostConstructor}
+    (left right : CostStaticConstructorPreimage source color constructor) :
+    left = right := by
+  have sourceConstructorEquality :
+      left.sourceConstructor = right.sourceConstructor := by
+    apply ContinuationRetypingPlan.authoredConstructorLabel_injective
+      source.theory.presentation.presentation
+    have mappedLabelEquality :
+        (color.symbols source).constructor left.sourceConstructor.1.label =
+          (color.symbols source).constructor right.sourceConstructor.1.label :=
+      left.labelMap.symm.trans right.labelMap
+    cases color with
+    | base =>
+        exact costBaseConstructorName_injective mappedLabelEquality
+    | wrapped =>
+        exact costWrappedConstructorName_injective mappedLabelEquality
+  cases left
+  cases right
+  cases sourceConstructorEquality
+  rfl
+
+instance {source : CIGSLT} {color : CostStaticColor}
+    {constructor : source.DeclaredCostConstructor} :
+    Subsingleton (CostStaticConstructorPreimage source color constructor) :=
+  ⟨CostStaticConstructorPreimage.eq⟩
+
+/-- Static role classification computes the complete authored constructor
+preimage.  Base principals and apparatus constructors cannot enter this
+result; the base proof uses the exact hereditary non-principal membership. -/
+def costStaticConstructorPreimage (source : CIGSLT)
+    (color : CostStaticColor)
+    (constructor : source.DeclaredCostConstructor)
+    (role : source.declaredCostConstructorRole constructor = .static color) :
+    CostStaticConstructorPreimage source color constructor := by
+  rcases constructor with ⟨generated, declared⟩
+  cases generated with
+  | base sourceConstructor =>
+      cases color with
+      | base =>
+          have wrapped := source.mem_wrappedConstructors_of_base_static
+            sourceConstructor role
+          have wrappedLabel : sourceConstructor.1.label ∈
+              source.continuationRetyping.wrappedLabels :=
+            (source.continuationRetyping.mem_wrappedLabels_iff
+              sourceConstructor).2 wrapped
+          refine
+            { sourceConstructor := sourceConstructor
+              wrapped := wrapped
+              labelMap := rfl
+              categoryMap := rfl
+              parametersMap := ?_ }
+          exact costBaseConstructor_params_eq_map_of_mem_wrappedLabels source
+            sourceConstructor.1 sourceConstructor.2 wrappedLabel
+      | wrapped =>
+          simp only [CIGSLT.declaredCostConstructorRole] at role
+          split at role <;> cases role
+  | wrapped sourceConstructor =>
+      cases color with
+      | base => cases role
+      | wrapped =>
+          refine
+            { sourceConstructor := sourceConstructor
+              wrapped := declared
+              labelMap := rfl
+              categoryMap := ?_
+              parametersMap := ?_ }
+          · simp [CIGSLT.materializeDeclaredCostConstructor,
+              costWrappedConstructor, CostStaticColor.symbols,
+              costWrappedStaticSymbols]
+          · simp [CIGSLT.materializeDeclaredCostConstructor,
+              costWrappedConstructor, CostStaticColor.symbols]
+  | apparatus kind => cases role
+
+/-- Static decoding reflects the bare-collection representation back to the
+exact authored declaration.  This keeps collection typing choices rooted in
+the source `LanguageDef`, even though the compact target syntax omits the
+constructor label. -/
+theorem CostStaticConstructorPreimage.source_usesBareCollection
+    {source : CIGSLT} {color : CostStaticColor}
+    {constructor : source.DeclaredCostConstructor}
+    (preimage : CostStaticConstructorPreimage source color constructor)
+    (role : source.declaredCostConstructorRole constructor = .static color)
+    (bare : WellSorted.UsesBareCollection
+      (source.materializeDeclaredCostConstructor constructor)) :
+    WellSorted.UsesBareCollection preimage.sourceConstructor.1 := by
+  have preimageEquality : preimage =
+      costStaticConstructorPreimage source color constructor role :=
+    Subsingleton.elim _ _
+  subst preimage
+  rcases constructor with ⟨generated, declared⟩
+  cases generated with
+  | base authored =>
+      cases color with
+      | base =>
+          simpa [costStaticConstructorPreimage] using
+            (usesBareCollection_costBaseConstructor_iff source.cut
+              authored.1).mp bare
+      | wrapped =>
+          simp only [CIGSLT.declaredCostConstructorRole] at role
+          split at role <;> cases role
+  | wrapped authored =>
+      cases color with
+      | base => cases role
+      | wrapped =>
+          simpa [costStaticConstructorPreimage] using
+            (usesBareCollection_costWrappedConstructor_iff authored.1).mp bare
+  | apparatus kind =>
+      simp [CIGSLT.declaredCostConstructorRole] at role
+
+/-- Mapping an authored static declaration preserves the bare-collection
+representation in the forward direction as well. -/
+theorem CostStaticConstructorPreimage.target_usesBareCollection
+    {source : CIGSLT} {color : CostStaticColor}
+    {constructor : source.DeclaredCostConstructor}
+    (preimage : CostStaticConstructorPreimage source color constructor)
+    (bare : WellSorted.UsesBareCollection preimage.sourceConstructor.1) :
+    WellSorted.UsesBareCollection
+      (source.materializeDeclaredCostConstructor constructor) := by
+  rcases bare with ⟨parameterName, collectionType, sourceElementType,
+    sourceShape⟩
+  refine ⟨parameterName, collectionType,
+    mapTypeExpr (color.symbols source) sourceElementType, ?_⟩
+  rw [preimage.parametersMap, sourceShape]
+  simp [mapTermParam, mapTypeExpr]
+
+/-- A declaration accepted by the static decoder has the exact authored
+preimage computed by the intrinsic Cost constructor classification.  This is
+the inverse-facing companion to `HasTypeWithConstructors.mapCostStatic`: it
+recovers the source parameter profile from the sole validated generated
+signature, rather than comparing wire prefixes or re-authoring a second
+typing table. -/
+theorem exists_costStaticConstructorPreimage_of_decode
+    (source : CIGSLT) (color : CostStaticColor) (rule : GrammarRule)
+    (membership : rule ∈ source.costWholeLanguage.terms)
+    {sourceName : String}
+    (decoded : decodeDeclaredCostStaticConstructor source color rule.label =
+      some sourceName) :
+    ∃ constructor : source.DeclaredCostConstructor,
+      ∃ preimage : CostStaticConstructorPreimage source color constructor,
+        source.materializeDeclaredCostConstructor constructor = rule ∧
+          sourceName = preimage.sourceConstructor.1.label := by
+  have coreMembership : rule ∈ source.costCoreLanguage.terms := by
+    simpa only [source.costWholeLanguage_terms] using membership
+  rcases source.exists_declaredCostConstructor_of_mem rule coreMembership with
+    ⟨constructor, materializes⟩
+  have decodedConstructor :
+      source.decodeDeclaredCostConstructor rule.label = some constructor := by
+    rw [← materializes,
+      source.materializeDeclaredCostConstructor_label constructor]
+    exact source.decodeDeclaredCostConstructor_render constructor
+  have decodedPair :
+      source.declaredCostConstructorRole constructor = .static color ∧
+        decodeCostStaticConstructor color rule.label = some sourceName := by
+    simpa [decodeDeclaredCostStaticConstructor, decodedConstructor] using decoded
+  let preimage := costStaticConstructorPreimage source color constructor
+    decodedPair.1
+  have ruleLabel :
+      rule.label =
+        (color.symbols source).constructor
+          preimage.sourceConstructor.1.label := by
+    rw [← materializes]
+    exact preimage.labelMap
+  have expectedDecode := decodeCostStaticConstructor_symbols source color
+    preimage.sourceConstructor.1.label
+  rw [ruleLabel, expectedDecode] at decodedPair
+  exact ⟨constructor, preimage, materializes,
+    Option.some.inj decodedPair.2.symm⟩
+
+/-- Exact role of a constructor boundary relative to one static parent.
+`static` means the opposite color; the remaining constructors are
+equation-neutral frames and therefore carry no color. -/
+inductive CostRegionBoundaryRole (parentColor : CostStaticColor) where
+  | static
+  | interactionPrincipal
+  | apparatus (kind : CostApparatusConstructor)
+deriving DecidableEq, Repr
+
+namespace CostRegionBoundaryRole
+
+/-- Interpret a relative boundary role in the intrinsic generated
+constructor classification. -/
+def generatedRole {parentColor : CostStaticColor} :
+    CostRegionBoundaryRole parentColor → CIGSLT.GeneratedCostConstructorRole
+  | .static => .static parentColor.flip
+  | .interactionPrincipal => .interactionPrincipal
+  | .apparatus kind => .apparatus kind
+
+end CostRegionBoundaryRole
+
+/-! ## A single typed plan for one static stratum
+
+The older collector first produced an untyped list of application boundaries
+and only later tried to reconstruct typing fibers for that list.  Bare
+collections show why that order is insufficient: two generated static copies
+can share a result sort while assigning different element fibers.  The plan
+below makes the executable typing choice at the same structural step that
+decides whether a node belongs to the current region.
+
+Ordinary typing depth and reflective available support are separate indices.
+A quotation keeps the former and resets the latter.  Every emitted boundary
+already carries its certified source/target fiber, so later projections cannot
+invent a type, support, occurrence, or boundary value. -/
+
+/-- Successful intrinsic decoding also recovers the exact rendered wire name.
+This is the right-inverse companion to
+`decodeDeclaredCostConstructor_render`. -/
+theorem CIGSLT.renderDeclaredCostConstructor_eq_of_decode
+    (source : CIGSLT) (wireName : String)
+    (constructor : source.DeclaredCostConstructor)
+    (decoded : source.decodeDeclaredCostConstructor wireName =
+      some constructor) :
+    source.renderDeclaredCostConstructor constructor = wireName := by
+  unfold CIGSLT.decodeDeclaredCostConstructor at decoded
+  generalize source.declaredCostConstructors = constructors at decoded
+  induction constructors with
+  | nil => simp [CIGSLT.resolveDeclaredCostConstructor] at decoded
+  | cons head tail inductionHypothesis =>
+      simp only [CIGSLT.resolveDeclaredCostConstructor] at decoded
+      split at decoded
+      · rename_i rendered
+        cases Option.some.inj decoded
+        exact rendered
+      · exact inductionHypothesis decoded
+
+/-- A generated declaration is determined by its validated wire label.
+This is the proof-facing inverse to intrinsic constructor decoding: later
+typing inversions can retain the exact authored declaration instead of
+reconstructing an argument profile from a string. -/
+theorem CIGSLT.materializeDeclaredCostConstructor_eq_of_mem_of_label
+    (source : CIGSLT) (rule : GrammarRule)
+    (membership : rule ∈ source.costWholeLanguage.terms)
+    (constructor : source.DeclaredCostConstructor)
+    (labelEquality :
+      (source.materializeDeclaredCostConstructor constructor).label =
+        rule.label) :
+    source.materializeDeclaredCostConstructor constructor = rule := by
+  apply List.inj_on_of_nodup_map
+    (LanguageDef.constructorLabels_nodup_of_validate_eq_nil
+      source.costWholeLanguage source.costWholeLanguage_validate)
+  · simpa only [source.costWholeLanguage_terms] using
+      source.materializeDeclaredCostConstructor_mem constructor
+  · exact membership
+  · exact labelEquality
+
+/-- A generated bare-collection declaration necessarily belongs to one of
+the two static images.  Interaction principals are excluded by the continued
+theory's hereditary-collection law, while the administrative constructors
+have visibly non-bare parameter profiles. -/
+theorem CIGSLT.exists_static_role_of_materialize_usesBareCollection
+    (source : CIGSLT) (constructor : source.DeclaredCostConstructor)
+    (bare : WellSorted.UsesBareCollection
+      (source.materializeDeclaredCostConstructor constructor)) :
+    ∃ color, source.declaredCostConstructorRole constructor = .static color := by
+  rcases constructor with ⟨generated, declared⟩
+  cases generated with
+  | base authored =>
+      have sourceBare : WellSorted.UsesBareCollection authored.1 :=
+        (usesBareCollection_costBaseConstructor_iff source.cut authored.1).mp
+          bare
+      have wrappedLabel : authored.1.label ∈
+          source.continuationRetyping.wrappedLabels :=
+        source.bareCollectionConstructorsWrapped authored.1 authored.2
+          sourceBare
+      have wrapped : authored ∈
+          source.continuationRetyping.wrappedConstructors :=
+        (source.continuationRetyping.mem_wrappedLabels_iff authored).mp
+          wrappedLabel
+      have nonprincipal :=
+        (source.continuationRetyping.mem_wrappedConstructors_iff authored).mp
+          wrapped
+      exact ⟨.base,
+        source.declaredCostConstructorRole_base_of_nonprincipal authored
+          nonprincipal.1 nonprincipal.2⟩
+  | wrapped authored =>
+      exact ⟨.wrapped,
+        source.declaredCostConstructorRole_wrapped authored declared⟩
+  | apparatus kind =>
+      rcases bare with ⟨parameterName, collectionType, elementType, shape⟩
+      cases kind <;>
+        simp [CIGSLT.materializeDeclaredCostConstructor,
+          CostApparatusConstructor.grammarRule,
+          costSignatureUnitConstructor, costSignatureProductConstructor,
+          costSignedConstructor, costTokenStackEmptyConstructor,
+          costTokenStackConsConstructor, costFundingConstructor,
+          costContactConstructor] at shape
+
+/-- Every typed bare collection in the generated Cost language contributes a
+candidate in the exact static colour of its intrinsic declaration.  The
+proof recovers the authored collection fibre from materialization and never
+searches the colour-blind generated declaration list. -/
+theorem exists_costStaticCollectionTypingChoice?_of_typed_bare
+    (source : CIGSLT) (targetFree : WellSorted.FreeTypeContext)
+    (available sealed : List TypeExpr) (collectionType : CollType)
+    (elements : List Pattern) (_rest : Option String)
+    (rule : GrammarRule) (parameterName : String)
+    (targetElementType : TypeExpr)
+    (membership : rule ∈ source.costWholeLanguage.terms)
+    (parameterShape : rule.params =
+      [.simple parameterName
+        (.collection collectionType targetElementType)])
+    (elementsTyped : WellSorted.ElementsHaveType source.costWholeLanguage
+      targetFree available elements targetElementType)
+    (objects : WellSorted.isObjectPatternList elements = true) :
+    ∃ color choice,
+      costStaticCollectionTypingChoice? source color targetFree
+        (available ++ sealed) collectionType elements (.base rule.category) =
+          some choice := by
+  have coreMembership : rule ∈ source.costCoreLanguage.terms := by
+    simpa only [source.costWholeLanguage_terms] using membership
+  obtain ⟨constructor, materializes⟩ :=
+    source.exists_declaredCostConstructor_of_mem rule coreMembership
+  have targetBare : WellSorted.UsesBareCollection
+      (source.materializeDeclaredCostConstructor constructor) := by
+    rw [materializes]
+    exact ⟨parameterName, collectionType, targetElementType, parameterShape⟩
+  obtain ⟨color, role⟩ :=
+    source.exists_static_role_of_materialize_usesBareCollection constructor
+      targetBare
+  let preimage := costStaticConstructorPreimage source color constructor role
+  have sourceBare : WellSorted.UsesBareCollection
+      preimage.sourceConstructor.1 :=
+    preimage.source_usesBareCollection role targetBare
+  rcases sourceBare with
+    ⟨sourceParameterName, sourceCollectionType, sourceElementType,
+      sourceShape⟩
+  have mappedShape := preimage.parametersMap
+  rw [materializes, parameterShape, sourceShape] at mappedShape
+  have shape : sourceParameterName = parameterName ∧
+      sourceCollectionType = collectionType ∧
+      mapTypeExpr (color.symbols source) sourceElementType = targetElementType := by
+    simpa [mapTermParam, mapTypeExpr] using mappedShape.symm
+  rcases shape with ⟨parameterNameEquality, collectionTypeEquality,
+    elementTypeEquality⟩
+  subst sourceParameterName
+  subst sourceCollectionType
+  have checked : WellSorted.checkElementsHaveType source.costWholeLanguage
+      targetFree (available ++ sealed) elements
+        (mapTypeExpr (color.symbols source) sourceElementType) = true := by
+    rw [elementTypeEquality]
+    exact WellSorted.checkElementsHaveType_complete_of_objects
+      (elementsTyped.extendOuter sealed) objects
+  have categoryEquality : (.base rule.category : TypeExpr) =
+      mapTypeExpr (color.symbols source)
+        (.base preimage.sourceConstructor.1.category) := by
+    rw [← materializes]
+    simpa [mapTypeExpr] using congrArg TypeExpr.base preimage.categoryMap
+  let candidate : CostCollectionTypingChoice :=
+    .bare preimage.sourceConstructor.1 sourceElementType
+  have candidateMembership : candidate ∈
+      costStaticCollectionTypingChoices source color targetFree
+        (available ++ sealed) collectionType elements (.base rule.category) := by
+    apply mem_costStaticCollectionTypingChoices_complete
+    exact Or.inr ⟨preimage.sourceConstructor.1, sourceElementType, rfl,
+      preimage.sourceConstructor.2,
+      (source.continuationRetyping.mem_wrappedLabels_iff
+        preimage.sourceConstructor).2 preimage.wrapped,
+      categoryEquality, parameterName, sourceShape, checked⟩
+  cases candidatesEquation : costStaticCollectionTypingChoices source color
+      targetFree (available ++ sealed) collectionType elements
+        (.base rule.category) with
+  | nil =>
+      rw [candidatesEquation] at candidateMembership
+      cases candidateMembership
+  | cons choice choices =>
+      exact ⟨color, choice, by
+        simp [costStaticCollectionTypingChoice?, candidatesEquation]⟩
+
+/-- Direct homogeneous collection typing always contributes a candidate in
+the requested static colour.  This is the positive companion to the
+opposite-colour bare boundary case. -/
+theorem exists_costStaticCollectionTypingChoice?_of_typed_direct
+    (source : CIGSLT) (color : CostStaticColor)
+    (targetFree : WellSorted.FreeTypeContext)
+    (available sealed : List TypeExpr) (collectionType : CollType)
+    (elements : List Pattern) (sourceElementType : TypeExpr)
+    (elementsTyped : WellSorted.ElementsHaveType source.costWholeLanguage
+      targetFree available elements
+        (mapTypeExpr (color.symbols source) sourceElementType))
+    (objects : WellSorted.isObjectPatternList elements = true) :
+    ∃ choice,
+      costStaticCollectionTypingChoice? source color targetFree
+        (available ++ sealed) collectionType elements
+          (mapTypeExpr (color.symbols source)
+            (.collection collectionType sourceElementType)) = some choice := by
+  have checked : WellSorted.checkElementsHaveType source.costWholeLanguage
+      targetFree (available ++ sealed) elements
+        (mapTypeExpr (color.symbols source) sourceElementType) = true :=
+    WellSorted.checkElementsHaveType_complete_of_objects
+      (elementsTyped.extendOuter sealed) objects
+  let candidate : CostCollectionTypingChoice := .direct sourceElementType
+  have candidateMembership : candidate ∈
+      costStaticCollectionTypingChoices source color targetFree
+        (available ++ sealed) collectionType elements
+          (mapTypeExpr (color.symbols source)
+            (.collection collectionType sourceElementType)) := by
+    apply mem_costStaticCollectionTypingChoices_complete
+    exact Or.inl ⟨sourceElementType, rfl, rfl, checked⟩
+  cases candidatesEquation : costStaticCollectionTypingChoices source color
+      targetFree (available ++ sealed) collectionType elements
+        (mapTypeExpr (color.symbols source)
+          (.collection collectionType sourceElementType)) with
+  | nil =>
+      rw [candidatesEquation] at candidateMembership
+      cases candidateMembership
+  | cons choice choices =>
+      exact ⟨choice, by
+        simp [costStaticCollectionTypingChoice?, candidatesEquation]⟩
+
+/-- Proof-relevant inversion of raw collection typing.  The two alternatives
+remain distinct: a direct homogeneous collection returns its structural type,
+whereas an authored bare-collection declaration returns a base sort and its
+exact selected element fiber. -/
+theorem WellSorted.HasType.collectionData
+    {language : LanguageDef} {free : WellSorted.FreeTypeContext}
+    {bound : List TypeExpr} {collectionType : CollType}
+    {elements : List Pattern} {rest : Option String} {type : TypeExpr}
+    (typed : WellSorted.HasType language free bound
+      (.collection collectionType elements rest) type) :
+    (∃ elementType,
+        WellSorted.ElementsHaveType language free bound elements elementType ∧
+          type = .collection collectionType elementType) ∨
+      (∃ rule parameterName elementType,
+        rule ∈ language.terms ∧
+          rule.params = [.simple parameterName
+            (.collection collectionType elementType)] ∧
+          WellSorted.ElementsHaveType language free bound elements elementType ∧
+          type = .base rule.category) := by
+  cases typed with
+  | collection elementsTyped =>
+      exact Or.inl ⟨_, elementsTyped, rfl⟩
+  | collectionConstructor membership parameterShape elementsTyped =>
+      exact Or.inr ⟨_, _, _, membership, parameterShape, elementsTyped, rfl⟩
+
+/-- Every admitted raw collection has an executable typing candidate in at
+least one static color.  The witness is current-color for direct structural
+collections and the intrinsic declaration color for authored bare
+collections; no scan order is used to guess that color. -/
+theorem exists_costStaticCollectionTypingChoice?_of_wellSorted
+    (source : CIGSLT) (color : CostStaticColor)
+    (targetFree : WellSorted.FreeTypeContext)
+    (available sealed : List TypeExpr) (collectionType : CollType)
+    (elements : List Pattern) (rest : Option String) (sourceType : TypeExpr)
+    (wellSorted : WellSorted.OpenPatternWellSorted source.costWholeLanguage
+      targetFree available (mapTypeExpr (color.symbols source) sourceType)
+        (.collection collectionType elements rest)) :
+    ∃ typingColor choice,
+      costStaticCollectionTypingChoice? source typingColor targetFree
+        (available ++ sealed) collectionType elements
+          (mapTypeExpr (color.symbols source) sourceType) = some choice := by
+  rcases wellSorted with ⟨typed, _canonical, object, _reflective⟩
+  have objects : WellSorted.isObjectPatternList elements = true := by
+    have parts : rest.isNone = true ∧
+        WellSorted.isObjectPatternList elements = true := by
+      simpa [WellSorted.isObjectPattern] using object
+    exact parts.2
+  rcases typed.collectionData with
+      ⟨targetElementType, elementsTyped, typeEquality⟩ |
+      ⟨rule, parameterName, targetElementType, membership, parameterShape,
+        elementsTyped, typeEquality⟩
+  · cases sourceType with
+    | base sourceCategory => simp [mapTypeExpr] at typeEquality
+    | collection sourceCollectionType sourceElementType =>
+        have collectionTypeEquality : sourceCollectionType = collectionType :=
+          TypeExpr.collection.inj typeEquality |>.1
+        have elementTypeEquality :
+            mapTypeExpr (color.symbols source) sourceElementType =
+              targetElementType :=
+          TypeExpr.collection.inj typeEquality |>.2
+        subst sourceCollectionType
+        rw [← elementTypeEquality] at elementsTyped
+        obtain ⟨choice, selected⟩ :=
+          exists_costStaticCollectionTypingChoice?_of_typed_direct source color
+            targetFree available sealed collectionType elements
+              sourceElementType elementsTyped objects
+        exact ⟨color, choice, selected⟩
+    | arrow domain codomain => simp [mapTypeExpr] at typeEquality
+    | multiBinder domain => simp [mapTypeExpr] at typeEquality
+  · obtain ⟨typingColor, choice, selected⟩ :=
+      exists_costStaticCollectionTypingChoice?_of_typed_bare source targetFree
+        available sealed collectionType elements rest rule parameterName
+          targetElementType membership parameterShape elementsTyped objects
+    rw [typeEquality]
+    exact ⟨typingColor, choice, selected⟩
+
+mutual
+  /-- Executable proof-relevant plan for one maximal static region.  The
+  indexed `sourceType` and `sourceBound` are mapped to the target Cost fiber;
+  `targetAvailable` is the exact target reflective-support suffix.  It is
+  intentionally not decoded: foreign-color binders remain visible to the
+  source canonicalizer through the static binder image. -/
+  inductive CostStaticRegionPlan (source : CIGSLT)
+      (color : CostStaticColor)
+      (targetFree : WellSorted.FreeTypeContext) :
+      (sourceBound targetBound : List TypeExpr) →
+      (thinning : CostStaticBinderThinning source color sourceBound
+        targetBound) →
+      (targetAvailable : List TypeExpr) →
+      (outer : OneHoleContext) → (pattern : Pattern) →
+      (sourceType : TypeExpr) → Type where
+    | bvar {sourceBound targetBound targetAvailable : List TypeExpr}
+        {thinning : CostStaticBinderThinning source color sourceBound
+          targetBound}
+        {outer : OneHoleContext} {targetIndex : Nat}
+        {sourceType : TypeExpr}
+        (sourceIndex : Nat)
+        (lookup : sourceBound[sourceIndex]? = some sourceType)
+        (correspondence : thinning.toSourceIndex? targetIndex =
+          some sourceIndex)
+        (availableScope : sourceIndex <
+          (CostStaticBinderThinning.sourceContextOfTarget source color
+            targetAvailable).length) :
+        CostStaticRegionPlan source color targetFree sourceBound targetBound
+          thinning targetAvailable outer (.bvar targetIndex) sourceType
+    | fvar {sourceBound targetBound sourceAvailable : List TypeExpr}
+        {thinning : CostStaticBinderThinning source color sourceBound
+          targetBound}
+        {outer : OneHoleContext} {name : String} {sourceType : TypeExpr}
+        (lookup : targetFree name =
+          some (mapTypeExpr (color.symbols source) sourceType)) :
+        CostStaticRegionPlan source color targetFree sourceBound targetBound
+          thinning sourceAvailable outer (.fvar name) sourceType
+    | boundaryApplication
+        {sourceBound targetBound sourceAvailable : List TypeExpr}
+        {thinning : CostStaticBinderThinning source color sourceBound
+          targetBound}
+        {outer : OneHoleContext} {wireName : String}
+        {arguments : List Pattern} {sourceType : TypeExpr}
+        (constructor : source.DeclaredCostConstructor)
+        (rendered : source.renderDeclaredCostConstructor constructor = wireName)
+        (outsideCurrent : source.declaredCostConstructorRole constructor ≠
+          .static color)
+        (certified : CertifiedCostRegionBoundary source color targetFree
+          sourceAvailable
+          (mapTypeExpr (color.symbols source) sourceType)
+          (.apply wireName arguments))
+        (certifies : certifyCostRegionBoundary? source color targetFree
+          sourceAvailable
+          (mapTypeExpr (color.symbols source) sourceType)
+          (.apply wireName arguments) = some certified) :
+        CostStaticRegionPlan source color targetFree sourceBound targetBound
+          thinning sourceAvailable outer (.apply wireName arguments) sourceType
+    | application
+        {sourceBound targetBound sourceAvailable : List TypeExpr}
+        {thinning : CostStaticBinderThinning source color sourceBound
+          targetBound}
+        {outer : OneHoleContext} {wireName : String}
+        {arguments : List Pattern}
+        (constructor : source.DeclaredCostConstructor)
+        (rendered : source.renderDeclaredCostConstructor constructor = wireName)
+        (current : source.declaredCostConstructorRole constructor =
+          .static color)
+        (preimage : CostStaticConstructorPreimage source color constructor)
+        (notBare : ¬ WellSorted.UsesBareCollection
+          preimage.sourceConstructor.1)
+        (children : CostStaticArgumentPlan source color targetFree sourceBound
+          targetBound thinning
+          (if ReflectiveContextSupport.isQuoteConstructor
+              source.theory.presentation.presentation.language
+              preimage.sourceConstructor.1.label then [] else sourceAvailable)
+          outer wireName [] arguments preimage.sourceConstructor.1.params) :
+        CostStaticRegionPlan source color targetFree sourceBound targetBound
+          thinning sourceAvailable outer (.apply wireName arguments)
+          (.base preimage.sourceConstructor.1.category)
+    | lambda {sourceBound targetBound sourceAvailable : List TypeExpr}
+        {thinning : CostStaticBinderThinning source color sourceBound
+          targetBound}
+        {outer : OneHoleContext} {binder : Option String} {body : Pattern}
+        {domain codomain : TypeExpr}
+        (bodyPlan : CostStaticRegionPlan source color targetFree
+          (domain :: sourceBound)
+          (mapTypeExpr (color.symbols source) domain :: targetBound)
+          (.mapped domain thinning)
+          (mapTypeExpr (color.symbols source) domain :: sourceAvailable)
+          (outer.comp (.lambda binder .hole)) body codomain) :
+        CostStaticRegionPlan source color targetFree sourceBound targetBound
+          thinning sourceAvailable outer (.lambda binder body)
+          (.arrow domain codomain)
+    | multiLambda {sourceBound targetBound sourceAvailable : List TypeExpr}
+        {thinning : CostStaticBinderThinning source color sourceBound
+          targetBound}
+        {outer : OneHoleContext} {arity : Nat} {binders : List String}
+        {body : Pattern} {domain codomain : TypeExpr}
+        (bodyPlan : CostStaticRegionPlan source color targetFree
+          (List.replicate arity domain ++ sourceBound)
+          (List.replicate arity
+              (mapTypeExpr (color.symbols source) domain) ++ targetBound)
+          (CostStaticBinderThinning.prependMapped arity domain thinning)
+          (List.replicate arity
+              (mapTypeExpr (color.symbols source) domain) ++ sourceAvailable)
+          (outer.comp (.multiLambda arity binders .hole)) body codomain) :
+        CostStaticRegionPlan source color targetFree sourceBound targetBound
+          thinning sourceAvailable outer (.multiLambda arity binders body)
+          (.arrow (.multiBinder domain) codomain)
+    | collection
+        {sourceBound targetBound sourceAvailable : List TypeExpr}
+        {thinning : CostStaticBinderThinning source color sourceBound
+          targetBound}
+        {outer : OneHoleContext} {collectionType : CollType}
+        {elements : List Pattern} {rest : Option String}
+        {sourceType : TypeExpr}
+        (choice : CostCollectionTypingChoice)
+        (selected : costStaticCollectionTypingChoice? source color targetFree
+          targetBound
+          collectionType elements
+          (mapTypeExpr (color.symbols source) sourceType) = some choice)
+        (children : CostStaticElementPlan source color targetFree sourceBound
+          targetBound thinning
+          sourceAvailable outer collectionType [] elements rest
+          choice.sourceElementType) :
+        CostStaticRegionPlan source color targetFree sourceBound targetBound
+          thinning sourceAvailable outer
+          (.collection collectionType elements rest) sourceType
+    | boundaryCollection
+        {sourceBound targetBound sourceAvailable : List TypeExpr}
+        {thinning : CostStaticBinderThinning source color sourceBound
+          targetBound}
+        {outer : OneHoleContext} {collectionType : CollType}
+        {elements : List Pattern} {rest : Option String}
+        {sourceType : TypeExpr}
+        (currentRejected : costStaticCollectionTypingChoice? source color
+          targetFree targetBound
+          collectionType elements
+          (mapTypeExpr (color.symbols source) sourceType) = none)
+        (oppositeChoice : CostCollectionTypingChoice)
+        (oppositeSelected : costStaticCollectionTypingChoice? source color.flip
+          targetFree targetBound
+          collectionType elements
+          (mapTypeExpr (color.symbols source) sourceType) =
+            some oppositeChoice)
+        (certified : CertifiedCostRegionBoundary source color targetFree
+          sourceAvailable
+          (mapTypeExpr (color.symbols source) sourceType)
+          (.collection collectionType elements rest))
+        (certifies : certifyCostRegionBoundary? source color targetFree
+          sourceAvailable
+          (mapTypeExpr (color.symbols source) sourceType)
+          (.collection collectionType elements rest) = some certified) :
+        CostStaticRegionPlan source color targetFree sourceBound targetBound
+          thinning sourceAvailable outer
+          (.collection collectionType elements rest) sourceType
+
+  /-- Ordered constructor-argument plans.  The target argument spine keeps
+  its concrete wire constructor in the occurrence contexts, while the
+  expected source types come only from the authored parameter list. -/
+  inductive CostStaticArgumentPlan (source : CIGSLT)
+      (color : CostStaticColor)
+      (targetFree : WellSorted.FreeTypeContext) :
+      (sourceBound targetBound : List TypeExpr) →
+      (thinning : CostStaticBinderThinning source color sourceBound
+        targetBound) →
+      (sourceAvailable : List TypeExpr) →
+      (outer : OneHoleContext) → (wireName : String) →
+      (before arguments : List Pattern) → (parameters : List TermParam) → Type where
+    | nil {sourceBound targetBound sourceAvailable : List TypeExpr}
+        {thinning : CostStaticBinderThinning source color sourceBound
+          targetBound}
+        {outer : OneHoleContext} {wireName : String}
+        {before : List Pattern} :
+        CostStaticArgumentPlan source color targetFree sourceBound
+          targetBound thinning sourceAvailable outer wireName before [] []
+    | cons {sourceBound targetBound sourceAvailable : List TypeExpr}
+        {thinning : CostStaticBinderThinning source color sourceBound
+          targetBound}
+        {outer : OneHoleContext} {wireName : String}
+        {before : List Pattern} {argument : Pattern}
+        {arguments : List Pattern} {parameter : TermParam}
+        {parameters : List TermParam} {sourceExpected : TypeExpr}
+        (representation : WellSorted.MatchesParameterRepresentation
+          parameter argument)
+        (parameterType : WellSorted.parameterType? parameter =
+          some sourceExpected)
+        (head : CostStaticRegionPlan source color targetFree sourceBound
+          targetBound thinning sourceAvailable
+          (outer.comp (.apply wireName before .hole arguments))
+          argument sourceExpected)
+        (tail : CostStaticArgumentPlan source color targetFree sourceBound
+          targetBound thinning sourceAvailable outer wireName
+          (before ++ [argument]) arguments parameters) :
+        CostStaticArgumentPlan source color targetFree sourceBound
+          targetBound thinning sourceAvailable outer wireName before
+          (argument :: arguments) (parameter :: parameters)
+
+  /-- Ordered homogeneous-collection element plans. -/
+  inductive CostStaticElementPlan (source : CIGSLT)
+      (color : CostStaticColor)
+      (targetFree : WellSorted.FreeTypeContext) :
+      (sourceBound targetBound : List TypeExpr) →
+      (thinning : CostStaticBinderThinning source color sourceBound
+        targetBound) →
+      (sourceAvailable : List TypeExpr) →
+      (outer : OneHoleContext) → (collectionType : CollType) →
+      (before elements : List Pattern) → (rest : Option String) →
+      (sourceElementType : TypeExpr) → Type where
+    | nil {sourceBound targetBound sourceAvailable : List TypeExpr}
+        {thinning : CostStaticBinderThinning source color sourceBound
+          targetBound}
+        {outer : OneHoleContext} {collectionType : CollType}
+        {before : List Pattern} {rest : Option String}
+        {sourceElementType : TypeExpr} :
+        CostStaticElementPlan source color targetFree sourceBound
+          targetBound thinning sourceAvailable outer collectionType before []
+          rest sourceElementType
+    | cons {sourceBound targetBound sourceAvailable : List TypeExpr}
+        {thinning : CostStaticBinderThinning source color sourceBound
+          targetBound}
+        {outer : OneHoleContext} {collectionType : CollType}
+        {before : List Pattern} {element : Pattern}
+        {elements : List Pattern} {rest : Option String}
+        {sourceElementType : TypeExpr}
+        (head : CostStaticRegionPlan source color targetFree sourceBound
+          targetBound thinning sourceAvailable
+          (outer.comp
+            (.collection collectionType before .hole elements rest))
+          element sourceElementType)
+        (tail : CostStaticElementPlan source color targetFree sourceBound
+          targetBound thinning sourceAvailable outer collectionType
+          (before ++ [element]) elements rest sourceElementType) :
+        CostStaticElementPlan source color targetFree sourceBound
+          targetBound thinning sourceAvailable outer collectionType before
+          (element :: elements) rest sourceElementType
+end
+
+/- `Option` results whose branch equality is part of the proof-relevant plan
+are inspected through a fixed-index witness.  Matches on this witness have a
+constant motive, so compiler-generated dependent `Option.rec` terms do not
+leak into downstream agreement proofs. -/
+private inductive OptionWitness {α : Type} (result : Option α) : Type where
+  | rejected (rejects : result = none) : OptionWitness result
+  | accepted (value : α) (produces : result = some value) : OptionWitness result
+
+private def inspectOption {α : Type} :
+    (result : Option α) → OptionWitness result
+  | none => .rejected rfl
+  | some value => .accepted value rfl
+
+@[simp] private theorem inspectOption_eq_accepted {α : Type}
+    {result : Option α} {value : α} (produces : result = some value) :
+    inspectOption result = .accepted value produces := by
+  subst result
+  rfl
+
+@[simp] private theorem inspectOption_eq_rejected {α : Type}
+    {result : Option α} (rejects : result = none) :
+    inspectOption result = .rejected rejects := by
+  subst result
+  rfl
+
+/- Build the unique typed structural plan selected by the authored
+presentation and exact generated constructor identities.  Failure is
+explicit; no default type, rule, color, or boundary is fabricated. -/
+mutual
+  def buildCostStaticRegionPlan? (source : CIGSLT)
+      (color : CostStaticColor)
+      (targetFree : WellSorted.FreeTypeContext)
+      (sourceBound targetBound : List TypeExpr)
+      (thinning : CostStaticBinderThinning source color sourceBound targetBound)
+      (sourceAvailable : List TypeExpr)
+      (outer : OneHoleContext) :
+      (pattern : Pattern) → (sourceType : TypeExpr) →
+      Option (CostStaticRegionPlan source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer pattern sourceType)
+    | .bvar targetIndex, sourceType =>
+        match inspectOption (thinning.toSourceIndex? targetIndex) with
+        | .rejected _ => none
+        | .accepted sourceIndex correspondence =>
+            if lookup : sourceBound[sourceIndex]? = some sourceType then
+              if availableScope : sourceIndex <
+                  (CostStaticBinderThinning.sourceContextOfTarget source color
+                    sourceAvailable).length then
+                some (.bvar sourceIndex lookup correspondence availableScope)
+              else
+                none
+            else
+              none
+    | .fvar name, sourceType =>
+        if lookup : targetFree name =
+            some (mapTypeExpr (color.symbols source) sourceType) then
+          some (.fvar lookup)
+        else
+          none
+    | .apply wireName arguments, sourceType =>
+        match inspectOption
+            (source.decodeDeclaredCostConstructor wireName) with
+        | .rejected _ => none
+        | .accepted constructor decoded =>
+            let rendered :=
+              source.renderDeclaredCostConstructor_eq_of_decode wireName
+                constructor decoded
+            if current : source.declaredCostConstructorRole constructor =
+                .static color then
+              let preimage := costStaticConstructorPreimage source color
+                constructor current
+              match sourceType with
+              | .base sourceCategory =>
+                  if categoryEquality :
+                      sourceCategory = preimage.sourceConstructor.1.category then
+                    categoryEquality ▸
+                      if bareChecked :
+                          WellSorted.usesBareCollection?
+                              preimage.sourceConstructor.1 = true then
+                        none
+                      else
+                        let notBare : ¬ WellSorted.UsesBareCollection
+                            preimage.sourceConstructor.1 := fun bare =>
+                          bareChecked
+                            ((WellSorted.usesBareCollection?_eq_true_iff
+                              preimage.sourceConstructor.1).2 bare)
+                        let childAvailable :=
+                          if ReflectiveContextSupport.isQuoteConstructor
+                              source.theory.presentation.presentation.language
+                              preimage.sourceConstructor.1.label then
+                            []
+                          else
+                            sourceAvailable
+                        match buildCostStaticArgumentPlan? source color
+                            targetFree sourceBound targetBound thinning
+                            childAvailable outer wireName [] arguments
+                            preimage.sourceConstructor.1.params with
+                        | none => none
+                        | some children =>
+                            some (.application constructor rendered current
+                              preimage notBare children)
+                  else
+                    none
+              | .collection _ _ => none
+              | .arrow _ _ => none
+              | .multiBinder _ => none
+            else
+              match inspectOption
+                  (certifyCostRegionBoundary? source color targetFree
+                    sourceAvailable
+                    (mapTypeExpr (color.symbols source) sourceType)
+                    (.apply wireName arguments)) with
+              | .rejected _ => none
+              | .accepted certified certifies =>
+                  some (.boundaryApplication constructor rendered current
+                    certified certifies)
+    | .lambda binder body, sourceType => by
+        cases sourceType with
+        | arrow domain codomain =>
+            exact (buildCostStaticRegionPlan? source color targetFree
+              (domain :: sourceBound)
+              (mapTypeExpr (color.symbols source) domain :: targetBound)
+              (.mapped domain thinning)
+              (mapTypeExpr (color.symbols source) domain :: sourceAvailable)
+              (outer.comp (.lambda binder .hole)) body codomain).map
+                CostStaticRegionPlan.lambda
+        | base category => exact none
+        | collection collectionType elementType => exact none
+        | multiBinder domain => exact none
+    | .multiLambda arity binders body, sourceType => by
+        cases sourceType with
+        | arrow domain codomain =>
+            cases domain with
+            | multiBinder sourceDomain =>
+                exact (buildCostStaticRegionPlan? source color targetFree
+                  (List.replicate arity sourceDomain ++ sourceBound)
+                  (List.replicate arity
+                      (mapTypeExpr (color.symbols source) sourceDomain) ++
+                    targetBound)
+                  (CostStaticBinderThinning.prependMapped arity sourceDomain
+                    thinning)
+                  (List.replicate arity
+                      (mapTypeExpr (color.symbols source) sourceDomain) ++
+                    sourceAvailable)
+                  (outer.comp (.multiLambda arity binders .hole)) body
+                  codomain).map CostStaticRegionPlan.multiLambda
+            | base category => exact none
+            | collection collectionType elementType => exact none
+            | arrow first second => exact none
+        | base category => exact none
+        | collection collectionType elementType => exact none
+        | multiBinder domain => exact none
+    | .subst _body _replacement, _sourceType => none
+    | .collection collectionType elements rest, sourceType =>
+        match inspectOption
+            (costStaticCollectionTypingChoice? source color targetFree
+              targetBound collectionType elements
+              (mapTypeExpr (color.symbols source) sourceType)) with
+        | .accepted choice selected =>
+            match buildCostStaticElementPlan? source color targetFree
+                sourceBound targetBound thinning sourceAvailable outer
+                collectionType [] elements rest choice.sourceElementType with
+            | none => none
+            | some children => some (.collection choice selected children)
+        | .rejected selected =>
+            match inspectOption
+                (costStaticCollectionTypingChoice? source color.flip targetFree
+                  targetBound collectionType elements
+                  (mapTypeExpr (color.symbols source) sourceType)) with
+            | .rejected _ => none
+            | .accepted oppositeChoice oppositeSelected =>
+                match inspectOption
+                    (certifyCostRegionBoundary? source color targetFree
+                      sourceAvailable
+                      (mapTypeExpr (color.symbols source) sourceType)
+                      (.collection collectionType elements rest)) with
+                | .rejected _ => none
+                | .accepted certified certifies =>
+                    some (.boundaryCollection selected oppositeChoice
+                      oppositeSelected certified certifies)
+
+  /-- Executable ordered companion for authored constructor arguments. -/
+  def buildCostStaticArgumentPlan? (source : CIGSLT)
+      (color : CostStaticColor)
+      (targetFree : WellSorted.FreeTypeContext)
+      (sourceBound targetBound : List TypeExpr)
+      (thinning : CostStaticBinderThinning source color sourceBound targetBound)
+      (sourceAvailable : List TypeExpr)
+      (outer : OneHoleContext) (wireName : String) (before : List Pattern) :
+      (arguments : List Pattern) → (parameters : List TermParam) →
+      Option (CostStaticArgumentPlan source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer wireName before arguments
+        parameters)
+    | [], [] => some .nil
+    | argument :: arguments, parameter :: parameters =>
+        match inspectOption (WellSorted.parameterType? parameter) with
+        | .rejected _ => none
+        | .accepted sourceExpected parameterTypeResult =>
+            if representationChecked :
+                WellSorted.matchesParameterRepresentation? parameter argument =
+                  true then
+              let representation :
+                  WellSorted.MatchesParameterRepresentation parameter argument :=
+                (WellSorted.matchesParameterRepresentation?_eq_true_iff
+                  parameter argument).mp representationChecked
+              match buildCostStaticRegionPlan? source color targetFree
+                  sourceBound targetBound thinning sourceAvailable
+                  (outer.comp (.apply wireName before .hole arguments)) argument
+                  sourceExpected with
+              | none => none
+              | some head =>
+                  match buildCostStaticArgumentPlan? source color targetFree
+                      sourceBound targetBound thinning sourceAvailable outer
+                      wireName (before ++ [argument]) arguments parameters with
+                  | none => none
+                  | some tail =>
+                      some (.cons representation parameterTypeResult head tail)
+            else
+              none
+    | [], _ :: _ => none
+    | _ :: _, [] => none
+
+  /-- Executable ordered companion for homogeneous collection elements. -/
+  def buildCostStaticElementPlan? (source : CIGSLT)
+      (color : CostStaticColor)
+      (targetFree : WellSorted.FreeTypeContext)
+      (sourceBound targetBound : List TypeExpr)
+      (thinning : CostStaticBinderThinning source color sourceBound targetBound)
+      (sourceAvailable : List TypeExpr)
+      (outer : OneHoleContext) (collectionType : CollType)
+      (before : List Pattern) :
+      (elements : List Pattern) → (rest : Option String) →
+      (sourceElementType : TypeExpr) →
+      Option (CostStaticElementPlan source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer collectionType before
+        elements rest
+        sourceElementType)
+    | [], _rest, _sourceElementType => some .nil
+    | element :: elements, rest, sourceElementType =>
+        match buildCostStaticRegionPlan? source color targetFree sourceBound
+            targetBound thinning sourceAvailable
+            (outer.comp
+              (.collection collectionType before .hole elements rest))
+            element sourceElementType with
+        | none => none
+        | some head =>
+            match buildCostStaticElementPlan? source color targetFree
+                sourceBound targetBound thinning sourceAvailable outer
+                collectionType (before ++ [element]) elements rest
+                sourceElementType with
+            | none => none
+            | some tail => some (.cons head tail)
+end
+
+/-- The application branch of the executable planner accepts any exact
+proof-relevant constructor plan whose ordered child plan has already been
+compiled.  Stating this immediately after the mutually recursive compiler
+keeps later totality proofs independent of proof terms generated by nested
+dependent conditionals. -/
+theorem exists_buildCostStaticRegionPlan?_application
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {sourceBound targetBound sourceAvailable : List TypeExpr}
+    {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+    {outer : OneHoleContext} {wireName : String} {arguments : List Pattern}
+    (constructor : source.DeclaredCostConstructor)
+    (rendered : source.renderDeclaredCostConstructor constructor = wireName)
+    (current : source.declaredCostConstructorRole constructor = .static color)
+    (preimage : CostStaticConstructorPreimage source color constructor)
+    (notBare : ¬ WellSorted.UsesBareCollection preimage.sourceConstructor.1)
+    (childrenBuilds : (buildCostStaticArgumentPlan? source color targetFree
+      sourceBound targetBound thinning
+      (if ReflectiveContextSupport.isQuoteConstructor
+          source.theory.presentation.presentation.language
+          preimage.sourceConstructor.1.label then [] else sourceAvailable)
+      outer wireName [] arguments
+        preimage.sourceConstructor.1.params).isSome) :
+    ∃ plan,
+      buildCostStaticRegionPlan? source color targetFree sourceBound
+          targetBound thinning sourceAvailable outer
+          (.apply wireName arguments)
+          (.base preimage.sourceConstructor.1.category) = some plan := by
+  have decoded : source.decodeDeclaredCostConstructor wireName =
+      some constructor := by
+    rw [← rendered]
+    exact source.decodeDeclaredCostConstructor_render constructor
+  have preimageEquality :
+      costStaticConstructorPreimage source color constructor current =
+        preimage :=
+    Subsingleton.elim _ _
+  cases preimageEquality
+  have bareRejected : WellSorted.usesBareCollection?
+      (costStaticConstructorPreimage source color constructor
+        current).sourceConstructor.1 ≠ true := by
+    intro checked
+    exact notBare
+      ((WellSorted.usesBareCollection?_eq_true_iff
+        (costStaticConstructorPreimage source color constructor
+          current).sourceConstructor.1).mp checked)
+  apply Option.isSome_iff_exists.mp
+  cases childrenEquation : buildCostStaticArgumentPlan? source color targetFree
+      sourceBound targetBound thinning
+      (if ReflectiveContextSupport.isQuoteConstructor
+          source.theory.presentation.presentation.language
+          (costStaticConstructorPreimage source color constructor
+            current).sourceConstructor.1.label then [] else sourceAvailable)
+      outer wireName [] arguments
+        (costStaticConstructorPreimage source color constructor
+          current).sourceConstructor.1.params with
+  | none => simp [childrenEquation] at childrenBuilds
+  | some children =>
+      simp [buildCostStaticRegionPlan?, decoded, current, bareRejected,
+        childrenEquation]
+
+/-- The current-color collection branch succeeds once the complete candidate
+projection and its ordered homogeneous child plan both succeed. -/
+theorem exists_buildCostStaticRegionPlan?_collection
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {sourceBound targetBound sourceAvailable : List TypeExpr}
+    {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+    {outer : OneHoleContext} {collectionType : CollType}
+    {elements : List Pattern} {rest : Option String} {sourceType : TypeExpr}
+    (choice : CostCollectionTypingChoice)
+    (selected : costStaticCollectionTypingChoice? source color targetFree
+      targetBound collectionType elements
+        (mapTypeExpr (color.symbols source) sourceType) = some choice)
+    (childrenBuilds : (buildCostStaticElementPlan? source color targetFree
+      sourceBound targetBound thinning sourceAvailable outer collectionType []
+        elements rest choice.sourceElementType).isSome) :
+    ∃ plan,
+      buildCostStaticRegionPlan? source color targetFree sourceBound
+          targetBound thinning sourceAvailable outer
+          (.collection collectionType elements rest) sourceType = some plan := by
+  apply Option.isSome_iff_exists.mp
+  cases childrenEquation : buildCostStaticElementPlan? source color targetFree
+      sourceBound targetBound thinning sourceAvailable outer collectionType []
+        elements rest choice.sourceElementType with
+  | none => simp [childrenEquation] at childrenBuilds
+  | some children =>
+      simp [buildCostStaticRegionPlan?, selected, childrenEquation]
+
+/-- An opposite-color collection candidate is accepted as one certified
+boundary exactly when the complete current-color candidate family is empty. -/
+theorem exists_buildCostStaticRegionPlan?_boundaryCollection
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {sourceBound targetBound sourceAvailable : List TypeExpr}
+    {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+    (outer : OneHoleContext) {collectionType : CollType}
+    {elements : List Pattern} {rest : Option String} {sourceType : TypeExpr}
+    (currentRejected : costStaticCollectionTypingChoice? source color
+      targetFree targetBound collectionType elements
+        (mapTypeExpr (color.symbols source) sourceType) = none)
+    (oppositeChoice : CostCollectionTypingChoice)
+    (oppositeSelected : costStaticCollectionTypingChoice? source color.flip
+      targetFree targetBound collectionType elements
+        (mapTypeExpr (color.symbols source) sourceType) = some oppositeChoice)
+    (wellSorted : WellSorted.OpenPatternWellSorted source.costWholeLanguage
+      targetFree sourceAvailable
+        (mapTypeExpr (color.symbols source) sourceType)
+        (.collection collectionType elements rest)) :
+    ∃ plan,
+      buildCostStaticRegionPlan? source color targetFree sourceBound
+          targetBound thinning sourceAvailable outer
+          (.collection collectionType elements rest) sourceType = some plan := by
+  obtain ⟨certified, certifies⟩ :=
+    exists_certifyCostRegionBoundary?_eq_some
+      (source := source) (color := color) (targetFree := targetFree)
+      (targetSupport := sourceAvailable)
+      (targetType := mapTypeExpr (color.symbols source) sourceType)
+      (content := .collection collectionType elements rest)
+      ⟨sourceType, decodeCostStaticTypeExpr_mapTypeExpr source color sourceType⟩
+      wellSorted
+  apply Option.isSome_iff_exists.mp
+  simp [buildCostStaticRegionPlan?, currentRejected, oppositeSelected,
+    certifies]
+
+/-- A well-typed bound variable inside the current reflective availability
+prefix is accepted by the canonical static planner. -/
+theorem exists_buildCostStaticRegionPlan?_bvar
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    (available sealed : List TypeExpr) (outer : OneHoleContext)
+    {targetIndex : Nat} {sourceType : TypeExpr}
+    (lookup : (available ++ sealed)[targetIndex]? =
+      some (mapTypeExpr (color.symbols source) sourceType))
+    (inside : targetIndex < available.length) :
+    ∃ plan,
+      buildCostStaticRegionPlan? source color targetFree
+          (CostStaticBinderThinning.sourceContextOfTarget source color
+            (available ++ sealed))
+          (available ++ sealed)
+          (CostStaticBinderThinning.ofTargetThinning source color
+            (available ++ sealed))
+          available outer (.bvar targetIndex) sourceType = some plan := by
+  obtain ⟨sourceIndex, contracted, sourceLookup, sourceInside⟩ :=
+    CostStaticBinderThinning.exists_toSourceIndex?_of_lookup_map_of_lt_prefix
+      available sealed lookup inside
+  rw [CostStaticBinderThinning.sourceContextOfTarget_append] at sourceLookup
+  apply Option.isSome_iff_exists.mp
+  simp [buildCostStaticRegionPlan?, contracted, sourceLookup, sourceInside]
+
+/-- A free variable whose declared target type is the selected static image
+is accepted without inspecting any unrelated free-context entry. -/
+theorem exists_buildCostStaticRegionPlan?_fvar
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {targetBound available : List TypeExpr} (outer : OneHoleContext)
+    {name : String} {sourceType : TypeExpr}
+    (lookup : targetFree name =
+      some (mapTypeExpr (color.symbols source) sourceType)) :
+    ∃ plan,
+      buildCostStaticRegionPlan? source color targetFree
+          (CostStaticBinderThinning.sourceContextOfTarget source color
+            targetBound)
+          targetBound
+          (CostStaticBinderThinning.ofTargetThinning source color targetBound)
+          available outer (.fvar name) sourceType = some plan := by
+  apply Option.isSome_iff_exists.mp
+  simp [buildCostStaticRegionPlan?, lookup]
+
+/-- Any well-sorted generated application outside the current static colour
+is accepted as one proof-relevant boundary.  Certification is performed on
+the exact observed support and target type; no argument typing is guessed. -/
+theorem exists_buildCostStaticRegionPlan?_boundaryApplication
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {sourceBound targetBound available : List TypeExpr}
+    {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+    (outer : OneHoleContext) {wireName : String} {arguments : List Pattern}
+    {sourceType : TypeExpr}
+    (constructor : source.DeclaredCostConstructor)
+    (decoded : source.decodeDeclaredCostConstructor wireName = some constructor)
+    (outsideCurrent : source.declaredCostConstructorRole constructor ≠
+      .static color)
+    (wellSorted : WellSorted.OpenPatternWellSorted source.costWholeLanguage
+      targetFree available (mapTypeExpr (color.symbols source) sourceType)
+        (.apply wireName arguments)) :
+    ∃ plan,
+      buildCostStaticRegionPlan? source color targetFree sourceBound targetBound
+          thinning available outer (.apply wireName arguments) sourceType =
+        some plan := by
+  obtain ⟨certified, certifies⟩ :=
+    exists_certifyCostRegionBoundary?_eq_some
+      (source := source) (color := color) (targetFree := targetFree)
+      (targetSupport := available)
+      (targetType := mapTypeExpr (color.symbols source) sourceType)
+      (content := .apply wireName arguments)
+      ⟨sourceType, decodeCostStaticTypeExpr_mapTypeExpr source color sourceType⟩
+      wellSorted
+  apply Option.isSome_iff_exists.mp
+  simp [buildCostStaticRegionPlan?, decoded, outsideCurrent, certifies]
+
+/-- If every immediate argument admits a canonical static plan in the exact
+available binder prefix, then the executable argument-spine planner succeeds
+on the entire authored parameter list.  The target parameter profile is the
+structural image of the sole source declaration; no target-side profile is
+re-authored. -/
+theorem exists_buildCostStaticArgumentPlan?_of_typed
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    (available sealed : List TypeExpr) (outer : OneHoleContext)
+    (wireName : String) (before arguments : List Pattern)
+    (parameters : List TermParam)
+    (children : ∀ (argument : Pattern), argument ∈ arguments →
+      ∀ (localOuter : OneHoleContext) {sourceExpected : TypeExpr},
+        WellSorted.OpenPatternWellSorted source.costWholeLanguage targetFree
+            available (mapTypeExpr (color.symbols source) sourceExpected)
+              argument →
+          ∃ plan,
+            buildCostStaticRegionPlan? source color targetFree
+                (CostStaticBinderThinning.sourceContextOfTarget source color
+                  (available ++ sealed))
+                (available ++ sealed)
+                (CostStaticBinderThinning.ofTargetThinning source color
+                  (available ++ sealed))
+                available localOuter argument sourceExpected = some plan)
+    (typed : WellSorted.ArgumentsHaveTypes source.costWholeLanguage targetFree
+      available arguments (parameters.map (mapTermParam (color.symbols source))))
+    (canonical : Pattern.hasCanonicalBinderMetadataList arguments = true)
+    (objects : WellSorted.isObjectPatternList arguments = true)
+    (reflective : ∀ presentation ∈
+        source.costWholeLanguage.reflectivePresentations,
+      binderSafeListAt presentation.quoteConstructor available.length
+        arguments = true) :
+    ∃ plan,
+      buildCostStaticArgumentPlan? source color targetFree
+          (CostStaticBinderThinning.sourceContextOfTarget source color
+            (available ++ sealed))
+          (available ++ sealed)
+          (CostStaticBinderThinning.ofTargetThinning source color
+            (available ++ sealed))
+          available outer wireName before arguments parameters = some plan := by
+  induction parameters generalizing arguments before with
+  | nil =>
+      have empty : arguments = [] := by
+        apply List.eq_nil_of_length_eq_zero
+        simpa using typed.length_eq
+      subst arguments
+      exact ⟨CostStaticArgumentPlan.nil, rfl⟩
+  | cons parameter parameters inductionHypothesis =>
+      cases arguments with
+      | nil =>
+          have impossible := typed.length_eq
+          simp at impossible
+      | cons argument arguments =>
+          cases typed with
+          | @cons _ _ _ _ _ targetExpected representation parameterType
+              argumentTyped argumentsTyped =>
+              cases sourceParameterType : WellSorted.parameterType? parameter with
+              | none =>
+                  simp [WellSorted.parameterType?_mapTermParam,
+                    sourceParameterType] at parameterType
+              | some sourceExpected =>
+                  have targetExpectedEquality : targetExpected =
+                      mapTypeExpr (color.symbols source) sourceExpected := by
+                    simpa [WellSorted.parameterType?_mapTermParam,
+                      sourceParameterType] using parameterType.symm
+                  subst targetExpected
+                  have sourceRepresentation :
+                      WellSorted.MatchesParameterRepresentation parameter
+                        argument :=
+                    (WellSorted.matchesParameterRepresentation_mapTermParam_iff
+                      (color.symbols source) parameter argument).mp
+                        representation
+                  have canonicalParts :
+                      argument.hasCanonicalBinderMetadata = true ∧
+                        Pattern.hasCanonicalBinderMetadataList arguments = true := by
+                    simpa [Pattern.hasCanonicalBinderMetadataList] using canonical
+                  have objectParts :
+                      WellSorted.isObjectPattern argument = true ∧
+                        WellSorted.isObjectPatternList arguments = true := by
+                    simpa [WellSorted.isObjectPatternList] using objects
+                  have argumentReflective :
+                      WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
+                        available.length argument := by
+                    intro presentation membership
+                    have spine := reflective presentation membership
+                    simp only [binderSafeListAt, Bool.and_eq_true] at spine
+                    exact spine.1
+                  have tailReflective : ∀ presentation ∈
+                        source.costWholeLanguage.reflectivePresentations,
+                      binderSafeListAt presentation.quoteConstructor
+                        available.length arguments = true := by
+                    intro presentation membership
+                    have spine := reflective presentation membership
+                    simp only [binderSafeListAt, Bool.and_eq_true] at spine
+                    exact spine.2
+                  have argumentWellSorted :
+                      WellSorted.OpenPatternWellSorted
+                        source.costWholeLanguage targetFree available
+                        (mapTypeExpr (color.symbols source) sourceExpected)
+                        argument :=
+                    ⟨argumentTyped, canonicalParts.1, objectParts.1,
+                      argumentReflective⟩
+                  obtain ⟨head, headBuilt⟩ := children argument (by simp)
+                    (outer.comp (.apply wireName before .hole arguments))
+                    argumentWellSorted
+                  obtain ⟨tail, tailBuilt⟩ := inductionHypothesis
+                    (before ++ [argument]) arguments
+                    (fun member membership localOuter
+                        sourceExpected memberWellSorted =>
+                      children member
+                        (List.mem_cons_of_mem argument membership) localOuter
+                        memberWellSorted)
+                    argumentsTyped canonicalParts.2 objectParts.2 tailReflective
+                  have representationChecked :
+                      WellSorted.matchesParameterRepresentation? parameter
+                        argument = true :=
+                    (WellSorted.matchesParameterRepresentation?_eq_true_iff
+                      parameter argument).mpr sourceRepresentation
+                  refine ⟨CostStaticArgumentPlan.cons sourceRepresentation
+                    sourceParameterType head tail, ?_⟩
+                  simp [buildCostStaticArgumentPlan?, sourceParameterType,
+                    representationChecked, headBuilt, tailBuilt]
+
+/-- Proof-relevant inversion of application typing.  Keeping the result type
+as an explicit equality avoids dependent elimination through a mapped static
+fiber while retaining the exact authored argument derivation. -/
+theorem WellSorted.HasType.applicationData
+    {language : LanguageDef} {free : WellSorted.FreeTypeContext}
+    {bound : List TypeExpr} {wireName : String} {arguments : List Pattern}
+    {type : TypeExpr}
+    (typed : WellSorted.HasType language free bound
+      (.apply wireName arguments) type) :
+    ∃ rule : GrammarRule,
+      rule ∈ language.terms ∧
+        rule.label = wireName ∧
+        ¬ WellSorted.UsesBareCollection rule ∧
+        WellSorted.ArgumentsHaveTypes language free bound arguments
+          rule.params ∧
+        type = .base rule.category := by
+  cases typed with
+  | constructor membership notBare argumentsTyped =>
+      exact ⟨_, membership, rfl, notBare, argumentsTyped, rfl⟩
+
+/-- A well-sorted generated application is accepted by the static planner.
+Intrinsic declaration identity decides whether the root is part of the
+selected static stratum or one certified boundary; the former case delegates
+only the exact authored parameter spine to the structural child induction. -/
+theorem exists_buildCostStaticRegionPlan?_application_of_wellSorted
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    (available sealed : List TypeExpr) (outer : OneHoleContext)
+    (wireName : String) (arguments : List Pattern) (sourceType : TypeExpr)
+    (children : ∀ argument ∈ arguments,
+      ∀ (childAvailable childSealed : List TypeExpr)
+        (localOuter : OneHoleContext) {sourceExpected : TypeExpr},
+        WellSorted.OpenPatternWellSorted source.costWholeLanguage targetFree
+            childAvailable
+              (mapTypeExpr (color.symbols source) sourceExpected) argument →
+          ∃ plan,
+            buildCostStaticRegionPlan? source color targetFree
+                (CostStaticBinderThinning.sourceContextOfTarget source color
+                  (childAvailable ++ childSealed))
+                (childAvailable ++ childSealed)
+                (CostStaticBinderThinning.ofTargetThinning source color
+                  (childAvailable ++ childSealed))
+                childAvailable localOuter argument sourceExpected = some plan)
+    (wellSorted : WellSorted.OpenPatternWellSorted source.costWholeLanguage
+      targetFree available (mapTypeExpr (color.symbols source) sourceType)
+        (.apply wireName arguments)) :
+    ∃ plan,
+      buildCostStaticRegionPlan? source color targetFree
+          (CostStaticBinderThinning.sourceContextOfTarget source color
+            (available ++ sealed))
+          (available ++ sealed)
+          (CostStaticBinderThinning.ofTargetThinning source color
+            (available ++ sealed))
+          available outer (.apply wireName arguments) sourceType = some plan := by
+  have admission := wellSorted
+  rcases wellSorted with ⟨typed, canonical, object, reflective⟩
+  obtain ⟨rule, membership, ruleLabel, targetNotBare, argumentsTyped,
+      typeEquality⟩ :=
+    typed.applicationData
+  subst wireName
+  cases sourceType with
+  | base sourceCategory =>
+      have targetCategoryEquality :
+          (color.symbols source).sort sourceCategory = rule.category :=
+        TypeExpr.base.inj typeEquality
+      have coreMembership : rule ∈ source.costCoreLanguage.terms := by
+        simpa only [source.costWholeLanguage_terms] using membership
+      obtain ⟨constructor, materializes⟩ :=
+        source.exists_declaredCostConstructor_of_mem rule coreMembership
+      have rendered :
+          source.renderDeclaredCostConstructor constructor = rule.label := by
+        rw [← source.materializeDeclaredCostConstructor_label constructor,
+          materializes]
+      have decoded : source.decodeDeclaredCostConstructor rule.label =
+          some constructor := by
+        rw [← rendered]
+        exact source.decodeDeclaredCostConstructor_render constructor
+      by_cases current : source.declaredCostConstructorRole constructor =
+          .static color
+      · let preimage := costStaticConstructorPreimage source color
+            constructor current
+        have mappedCategoryEquality :
+            (color.symbols source).sort sourceCategory =
+              (color.symbols source).sort
+                preimage.sourceConstructor.1.category := by
+          calc
+            (color.symbols source).sort sourceCategory = rule.category :=
+              targetCategoryEquality
+            _ = (source.materializeDeclaredCostConstructor
+                constructor).category := by rw [materializes]
+            _ = (color.symbols source).sort
+                preimage.sourceConstructor.1.category :=
+                  preimage.categoryMap
+        have categoryEquality : sourceCategory =
+            preimage.sourceConstructor.1.category := by
+          exact TypeExpr.base.inj
+            (mapTypeExpr_costStatic_injective source color
+              (congrArg TypeExpr.base mappedCategoryEquality))
+        subst sourceCategory
+        have sourceNotBare : ¬ WellSorted.UsesBareCollection
+            preimage.sourceConstructor.1 := by
+          intro sourceBare
+          apply targetNotBare
+          rw [← materializes]
+          exact preimage.target_usesBareCollection sourceBare
+        have parametersEquality : rule.params =
+            preimage.sourceConstructor.1.params.map
+              (mapTermParam (color.symbols source)) := by
+          rw [← materializes]
+          exact preimage.parametersMap
+        have argumentsTypedRule := argumentsTyped
+        rw [parametersEquality] at argumentsTyped
+        have canonicalArguments :
+            Pattern.hasCanonicalBinderMetadataList arguments = true := by
+          simpa [Pattern.hasCanonicalBinderMetadata] using canonical
+        have objectArguments :
+            WellSorted.isObjectPatternList arguments = true := by
+          simpa [WellSorted.isObjectPattern] using object
+        by_cases quoted : ReflectiveContextSupport.isQuoteConstructor
+            source.theory.presentation.presentation.language
+            preimage.sourceConstructor.1.label = true
+        · have targetQuoted :
+              ReflectiveContextSupport.isQuoteConstructor
+                source.costWholeLanguage rule.label = true := by
+            rw [← materializes, preimage.labelMap]
+            simpa only [reflectiveIsQuoteConstructor_mapCostStatic] using
+              quoted
+          have zeroScope :=
+            WellSorted.isWellScopedListAt_zero_of_typed_quote
+              source.costWholeLanguage_validate membership argumentsTypedRule
+                targetQuoted reflective
+          have argumentsTypedAtZero : WellSorted.ArgumentsHaveTypes
+              source.costWholeLanguage targetFree [] arguments
+              (preimage.sourceConstructor.1.params.map
+                (mapTermParam (color.symbols source))) := by
+            simpa using argumentsTyped.restrictOuterOfScoped
+              (inner := []) (outer := available) zeroScope
+          have reflectiveAtZero :=
+            WellSorted.reflectiveScopeSafeListAt_zero_of_typed_quote
+              source.costWholeLanguage_validate membership argumentsTypedRule
+                targetQuoted reflective
+          obtain ⟨argumentPlan, _argumentPlanBuilt⟩ :=
+            exists_buildCostStaticArgumentPlan?_of_typed
+              (source := source) (color := color)
+              (targetFree := targetFree) [] (available ++ sealed) outer
+              rule.label [] arguments preimage.sourceConstructor.1.params
+              (fun argument membership localOuter sourceExpected
+                  argumentWellSorted => by
+                simpa only [List.nil_append] using
+                  children argument membership [] (available ++ sealed)
+                    localOuter argumentWellSorted)
+              argumentsTypedAtZero canonicalArguments objectArguments
+              reflectiveAtZero
+          have argumentPlanBuilt :
+              buildCostStaticArgumentPlan? source color targetFree
+                  (CostStaticBinderThinning.sourceContextOfTarget source color
+                    (available ++ sealed))
+                  (available ++ sealed)
+                  (CostStaticBinderThinning.ofTargetThinning source color
+                    (available ++ sealed))
+                  [] outer rule.label [] arguments
+                    preimage.sourceConstructor.1.params = some argumentPlan := by
+            simpa using _argumentPlanBuilt
+          apply exists_buildCostStaticRegionPlan?_application constructor
+            rendered current preimage sourceNotBare
+          rw [if_pos quoted]
+          exact Option.isSome_iff_exists.mpr
+            ⟨argumentPlan, argumentPlanBuilt⟩
+        · have sourceOrdinary : ReflectiveContextSupport.isQuoteConstructor
+              source.theory.presentation.presentation.language
+                preimage.sourceConstructor.1.label = false :=
+            Bool.eq_false_of_not_eq_true quoted
+          have targetOrdinary :
+              ReflectiveContextSupport.isQuoteConstructor
+                source.costWholeLanguage rule.label = false := by
+            rw [← materializes, preimage.labelMap]
+            simpa only [reflectiveIsQuoteConstructor_mapCostStatic] using
+              sourceOrdinary
+          have reflectiveArguments :=
+            WellSorted.reflectiveScopeSafeListAt_of_nonquote targetOrdinary
+              reflective
+          obtain ⟨argumentPlan, _argumentPlanBuilt⟩ :=
+            exists_buildCostStaticArgumentPlan?_of_typed
+              (source := source) (color := color)
+              (targetFree := targetFree) available sealed outer rule.label []
+              arguments preimage.sourceConstructor.1.params
+              (fun argument membership localOuter sourceExpected
+                  argumentWellSorted =>
+                children argument membership available sealed localOuter
+                  argumentWellSorted)
+              argumentsTyped canonicalArguments objectArguments
+              reflectiveArguments
+          apply exists_buildCostStaticRegionPlan?_application constructor
+            rendered current preimage sourceNotBare
+          rw [if_neg quoted]
+          exact Option.isSome_iff_exists.mpr
+            ⟨argumentPlan, _argumentPlanBuilt⟩
+      · exact exists_buildCostStaticRegionPlan?_boundaryApplication
+              (source := source) (color := color) (targetFree := targetFree)
+              outer constructor decoded current
+              admission
+  | collection collectionType elementType =>
+      simp [mapTypeExpr] at typeEquality
+  | arrow domain codomain =>
+      simp [mapTypeExpr] at typeEquality
+  | multiBinder domain =>
+      simp [mapTypeExpr] at typeEquality
+
+/-- Homogeneous collection planning is complete whenever every immediate
+element admits a canonical static plan in the same available binder prefix.
+The element fiber is the proof-relevant source fiber chosen by the complete
+collection-candidate enumeration. -/
+theorem exists_buildCostStaticElementPlan?_of_typed
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    (available sealed : List TypeExpr) (outer : OneHoleContext)
+    (collectionType : CollType) (before elements : List Pattern)
+    (rest : Option String) (sourceElementType : TypeExpr)
+    (children : ∀ (element : Pattern), element ∈ elements →
+      ∀ (localOuter : OneHoleContext),
+        WellSorted.OpenPatternWellSorted source.costWholeLanguage targetFree
+            available
+              (mapTypeExpr (color.symbols source) sourceElementType) element →
+          ∃ plan,
+            buildCostStaticRegionPlan? source color targetFree
+                (CostStaticBinderThinning.sourceContextOfTarget source color
+                  (available ++ sealed))
+                (available ++ sealed)
+                (CostStaticBinderThinning.ofTargetThinning source color
+                  (available ++ sealed))
+                available localOuter element sourceElementType = some plan)
+    (typed : WellSorted.ElementsHaveType source.costWholeLanguage targetFree
+      available elements
+        (mapTypeExpr (color.symbols source) sourceElementType))
+    (canonical : Pattern.hasCanonicalBinderMetadataList elements = true)
+    (objects : WellSorted.isObjectPatternList elements = true)
+    (reflective : ∀ presentation ∈
+        source.costWholeLanguage.reflectivePresentations,
+      binderSafeListAt presentation.quoteConstructor available.length
+        elements = true) :
+    ∃ plan,
+      buildCostStaticElementPlan? source color targetFree
+          (CostStaticBinderThinning.sourceContextOfTarget source color
+            (available ++ sealed))
+          (available ++ sealed)
+          (CostStaticBinderThinning.ofTargetThinning source color
+            (available ++ sealed))
+          available outer collectionType before elements rest
+            sourceElementType = some plan := by
+  induction elements generalizing before with
+  | nil =>
+      exact ⟨CostStaticElementPlan.nil, rfl⟩
+  | cons element elements inductionHypothesis =>
+      cases typed with
+      | cons elementTyped elementsTyped =>
+          have canonicalParts :
+              element.hasCanonicalBinderMetadata = true ∧
+                Pattern.hasCanonicalBinderMetadataList elements = true := by
+            simpa [Pattern.hasCanonicalBinderMetadataList] using canonical
+          have objectParts :
+              WellSorted.isObjectPattern element = true ∧
+                WellSorted.isObjectPatternList elements = true := by
+            simpa [WellSorted.isObjectPatternList] using objects
+          have elementReflective :
+              WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
+                available.length element := by
+            intro presentation membership
+            have spine := reflective presentation membership
+            simp only [binderSafeListAt, Bool.and_eq_true] at spine
+            exact spine.1
+          have tailReflective : ∀ presentation ∈
+                source.costWholeLanguage.reflectivePresentations,
+              binderSafeListAt presentation.quoteConstructor available.length
+                elements = true := by
+            intro presentation membership
+            have spine := reflective presentation membership
+            simp only [binderSafeListAt, Bool.and_eq_true] at spine
+            exact spine.2
+          have elementWellSorted :
+              WellSorted.OpenPatternWellSorted source.costWholeLanguage
+                targetFree available
+                (mapTypeExpr (color.symbols source) sourceElementType)
+                element :=
+            ⟨elementTyped, canonicalParts.1, objectParts.1,
+              elementReflective⟩
+          obtain ⟨head, headBuilt⟩ := children element (by simp)
+            (outer.comp
+              (.collection collectionType before .hole elements rest))
+            elementWellSorted
+          obtain ⟨tail, tailBuilt⟩ := inductionHypothesis
+            (before ++ [element])
+            (fun member membership localOuter memberWellSorted =>
+              children member (List.mem_cons_of_mem element membership) localOuter
+                memberWellSorted)
+            elementsTyped canonicalParts.2 objectParts.2 tailReflective
+          refine ⟨CostStaticElementPlan.cons head tail, ?_⟩
+          simp [buildCostStaticElementPlan?, headBuilt, tailBuilt]
+
+/-- A selected current-color collection candidate is sufficient for a full
+static-region plan.  Its executable checker result is restricted from the
+whole target binder context to the exact reflective availability prefix
+before the structural child induction is invoked. -/
+theorem exists_buildCostStaticRegionPlan?_collection_of_selected
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    (available sealed : List TypeExpr) (outer : OneHoleContext)
+    (collectionType : CollType) (elements : List Pattern)
+    (rest : Option String) (sourceType : TypeExpr)
+    (choice : CostCollectionTypingChoice)
+    (selected : costStaticCollectionTypingChoice? source color targetFree
+      (available ++ sealed) collectionType elements
+        (mapTypeExpr (color.symbols source) sourceType) = some choice)
+    (sourceElementType : TypeExpr)
+    (choiceFiber : choice.sourceElementType = sourceElementType)
+    (checked : WellSorted.checkElementsHaveType source.costWholeLanguage
+      targetFree (available ++ sealed) elements
+        (mapTypeExpr (color.symbols source) sourceElementType) = true)
+    (children : ∀ element ∈ elements,
+      ∀ (childAvailable childSealed : List TypeExpr)
+        (localOuter : OneHoleContext) {sourceExpected : TypeExpr},
+        WellSorted.OpenPatternWellSorted source.costWholeLanguage targetFree
+            childAvailable
+              (mapTypeExpr (color.symbols source) sourceExpected) element →
+          ∃ plan,
+            buildCostStaticRegionPlan? source color targetFree
+                (CostStaticBinderThinning.sourceContextOfTarget source color
+                  (childAvailable ++ childSealed))
+                (childAvailable ++ childSealed)
+                (CostStaticBinderThinning.ofTargetThinning source color
+                  (childAvailable ++ childSealed))
+                childAvailable localOuter element sourceExpected = some plan)
+    (wellSorted : WellSorted.OpenPatternWellSorted source.costWholeLanguage
+      targetFree available (mapTypeExpr (color.symbols source) sourceType)
+        (.collection collectionType elements rest)) :
+    ∃ plan,
+      buildCostStaticRegionPlan? source color targetFree
+          (CostStaticBinderThinning.sourceContextOfTarget source color
+            (available ++ sealed))
+          (available ++ sealed)
+          (CostStaticBinderThinning.ofTargetThinning source color
+            (available ++ sealed))
+          available outer (.collection collectionType elements rest)
+            sourceType = some plan := by
+  have elementScope : Pattern.isWellScopedListAt available.length elements =
+      true := by
+    have parentScope := wellSorted.1.isWellScopedAt
+    simpa [Pattern.isWellScopedAt] using parentScope
+  have elementsTypedAtFull := WellSorted.checkElementsHaveType_sound checked
+  have elementsTyped : WellSorted.ElementsHaveType source.costWholeLanguage
+      targetFree available elements
+        (mapTypeExpr (color.symbols source) sourceElementType) :=
+    elementsTypedAtFull.restrictOuterOfScoped elementScope
+  have canonical : Pattern.hasCanonicalBinderMetadataList elements = true := by
+    simpa [Pattern.hasCanonicalBinderMetadata] using wellSorted.2.1
+  have objects : WellSorted.isObjectPatternList elements = true := by
+    have parts : rest.isNone = true ∧
+        WellSorted.isObjectPatternList elements = true := by
+      simpa [WellSorted.isObjectPattern] using wellSorted.2.2.1
+    exact parts.2
+  have reflective : ∀ presentation ∈
+        source.costWholeLanguage.reflectivePresentations,
+      binderSafeListAt presentation.quoteConstructor available.length
+        elements = true := by
+    intro presentation membership
+    simpa [binderSafeAt] using wellSorted.2.2.2 presentation membership
+  obtain ⟨elementPlan, elementPlanBuilt⟩ :=
+    exists_buildCostStaticElementPlan?_of_typed
+      (source := source) (color := color) (targetFree := targetFree)
+      available sealed outer collectionType [] elements rest sourceElementType
+      (fun element membership localOuter elementWellSorted =>
+        children element membership available sealed localOuter
+          elementWellSorted)
+      elementsTyped canonical objects reflective
+  apply exists_buildCostStaticRegionPlan?_collection choice selected
+  rw [choiceFiber]
+  exact Option.isSome_iff_exists.mpr ⟨elementPlan, elementPlanBuilt⟩
+
+/-- Totality of the collection branch on the admitted open-object carrier.
+Complete candidate enumeration either supplies a current-color homogeneous
+plan or proves that the sole available witness has the opposite color, in
+which case the whole collection is one certified transition boundary. -/
+theorem exists_buildCostStaticRegionPlan?_collection_of_wellSorted
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    (available sealed : List TypeExpr) (outer : OneHoleContext)
+    (collectionType : CollType) (elements : List Pattern)
+    (rest : Option String) (sourceType : TypeExpr)
+    (children : ∀ element ∈ elements,
+      ∀ (childAvailable childSealed : List TypeExpr)
+        (localOuter : OneHoleContext) {sourceExpected : TypeExpr},
+        WellSorted.OpenPatternWellSorted source.costWholeLanguage targetFree
+            childAvailable
+              (mapTypeExpr (color.symbols source) sourceExpected) element →
+          ∃ plan,
+            buildCostStaticRegionPlan? source color targetFree
+                (CostStaticBinderThinning.sourceContextOfTarget source color
+                  (childAvailable ++ childSealed))
+                (childAvailable ++ childSealed)
+                (CostStaticBinderThinning.ofTargetThinning source color
+                  (childAvailable ++ childSealed))
+                childAvailable localOuter element sourceExpected = some plan)
+    (wellSorted : WellSorted.OpenPatternWellSorted source.costWholeLanguage
+      targetFree available (mapTypeExpr (color.symbols source) sourceType)
+        (.collection collectionType elements rest)) :
+    ∃ plan,
+      buildCostStaticRegionPlan? source color targetFree
+          (CostStaticBinderThinning.sourceContextOfTarget source color
+            (available ++ sealed))
+          (available ++ sealed)
+          (CostStaticBinderThinning.ofTargetThinning source color
+            (available ++ sealed))
+          available outer (.collection collectionType elements rest)
+            sourceType = some plan := by
+  obtain ⟨typingColor, typingChoice, typingSelected⟩ :=
+    exists_costStaticCollectionTypingChoice?_of_wellSorted source color
+      targetFree available sealed collectionType elements rest sourceType
+        wellSorted
+  cases currentEquation : costStaticCollectionTypingChoice? source color
+      targetFree (available ++ sealed) collectionType elements
+        (mapTypeExpr (color.symbols source) sourceType) with
+  | none =>
+      have typingColorEquality : typingColor = color.flip := by
+        cases color <;> cases typingColor <;> simp_all
+      subst typingColor
+      exact exists_buildCostStaticRegionPlan?_boundaryCollection
+        (source := source) (color := color) (targetFree := targetFree)
+        outer currentEquation typingChoice typingSelected wellSorted
+  | some currentChoice =>
+      have selectionSound := costStaticCollectionTypingChoice?_eq_some
+        source color targetFree (available ++ sealed) collectionType elements
+          (mapTypeExpr (color.symbols source) sourceType) currentChoice
+          currentEquation
+      rcases selectionSound with
+          ⟨sourceElementType, choiceEquality, _expectedEquality, checked⟩ |
+          ⟨rule, sourceElementType, choiceEquality, _membership,
+            _wrapped, _expectedEquality, parameterName, _parameterShape,
+            checked⟩
+      · subst currentChoice
+        exact exists_buildCostStaticRegionPlan?_collection_of_selected
+          available sealed outer collectionType elements rest sourceType
+          (.direct sourceElementType) currentEquation sourceElementType rfl
+          checked children wellSorted
+      · subst currentChoice
+        exact exists_buildCostStaticRegionPlan?_collection_of_selected
+          available sealed outer collectionType elements rest sourceType
+          (.bare rule sourceElementType) currentEquation sourceElementType rfl
+          checked children wellSorted
+
+/-- The canonical static-region planner is total on every admitted open
+object in an exact static type fiber.  The induction follows raw finite syntax;
+typing, canonical binder metadata, objecthood, and reflective scope are
+re-established for each structural child before invoking its induction
+hypothesis. -/
+theorem exists_buildCostStaticRegionPlan?_of_wellSorted
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    (available sealed : List TypeExpr) (outer : OneHoleContext)
+    (pattern : Pattern) (sourceType : TypeExpr)
+    (wellSorted : WellSorted.OpenPatternWellSorted source.costWholeLanguage
+      targetFree available (mapTypeExpr (color.symbols source) sourceType)
+        pattern) :
+    ∃ plan,
+      buildCostStaticRegionPlan? source color targetFree
+          (CostStaticBinderThinning.sourceContextOfTarget source color
+            (available ++ sealed))
+          (available ++ sealed)
+          (CostStaticBinderThinning.ofTargetThinning source color
+            (available ++ sealed))
+          available outer pattern sourceType = some plan := by
+  induction pattern using Pattern.inductionOn generalizing available sealed
+      outer sourceType with
+  | hbvar targetIndex =>
+      cases wellSorted.1 with
+      | bvar lookup =>
+          have inside : targetIndex < available.length :=
+            (List.getElem?_eq_some_iff.mp lookup).1
+          have extendedLookup :
+              (available ++ sealed)[targetIndex]? =
+                some (mapTypeExpr (color.symbols source) sourceType) := by
+            simpa [List.getElem?_append_left inside] using lookup
+          exact exists_buildCostStaticRegionPlan?_bvar available sealed outer
+            extendedLookup inside
+  | hfvar name =>
+      cases wellSorted.1 with
+      | fvar lookup =>
+          exact exists_buildCostStaticRegionPlan?_fvar outer lookup
+  | happly wireName arguments inductionHypothesis =>
+      exact exists_buildCostStaticRegionPlan?_application_of_wellSorted
+        available sealed outer wireName arguments sourceType
+        (fun argument membership childAvailable childSealed localOuter
+            sourceExpected argumentWellSorted =>
+          inductionHypothesis argument membership childAvailable childSealed
+            localOuter sourceExpected argumentWellSorted)
+        wellSorted
+  | hlambda binder body inductionHypothesis =>
+      cases sourceType with
+      | arrow domain codomain =>
+          cases wellSorted.1 with
+          | lambda bodyTyped =>
+              have bodyCanonical :
+                  body.hasCanonicalBinderMetadata = true := by
+                have parts : binder.isNone = true ∧
+                    body.hasCanonicalBinderMetadata = true := by
+                  simpa [Pattern.hasCanonicalBinderMetadata] using
+                    wellSorted.2.1
+                exact parts.2
+              have bodyObject : WellSorted.isObjectPattern body = true := by
+                simpa [WellSorted.isObjectPattern] using wellSorted.2.2.1
+              have bodyReflective : WellSorted.ReflectiveScopeSafeAt
+                  source.costWholeLanguage
+                  (mapTypeExpr (color.symbols source) domain ::
+                    available).length body := by
+                intro presentation membership
+                have parent := wellSorted.2.2.2 presentation membership
+                simpa [binderSafeAt, Nat.add_comm] using parent
+              have bodyWellSorted : WellSorted.OpenPatternWellSorted
+                  source.costWholeLanguage targetFree
+                  (mapTypeExpr (color.symbols source) domain :: available)
+                  (mapTypeExpr (color.symbols source) codomain) body :=
+                ⟨bodyTyped, bodyCanonical, bodyObject, bodyReflective⟩
+              obtain ⟨bodyPlan, bodyBuilt⟩ := inductionHypothesis
+                (mapTypeExpr (color.symbols source) domain :: available) sealed
+                (outer.comp (.lambda binder .hole)) codomain bodyWellSorted
+              have bodyIsSome :
+                  (buildCostStaticRegionPlan? source color targetFree
+                    (CostStaticBinderThinning.sourceContextOfTarget source color
+                      ((mapTypeExpr (color.symbols source) domain :: available) ++
+                        sealed))
+                    ((mapTypeExpr (color.symbols source) domain :: available) ++
+                      sealed)
+                    (CostStaticBinderThinning.ofTargetThinning source color
+                      ((mapTypeExpr (color.symbols source) domain :: available) ++
+                        sealed))
+                    (mapTypeExpr (color.symbols source) domain :: available)
+                    (outer.comp (.lambda binder .hole)) body codomain).isSome =
+                      true := by
+                rw [bodyBuilt]
+                rfl
+              have normalizedBodyIsSome :
+                  (buildCostStaticRegionPlan? source color targetFree
+                    (domain ::
+                      CostStaticBinderThinning.sourceContextOfTarget source color
+                        (available ++ sealed))
+                    (mapTypeExpr (color.symbols source) domain ::
+                      (available ++ sealed))
+                    (.mapped domain
+                      (CostStaticBinderThinning.ofTargetThinning source color
+                        (available ++ sealed)))
+                    (mapTypeExpr (color.symbols source) domain :: available)
+                    (outer.comp (.lambda binder .hole)) body codomain).isSome =
+                      true := by
+                let targetContext :=
+                  mapTypeExpr (color.symbols source) domain ::
+                    (available ++ sealed)
+                let canonicalSlice : CostStaticBinderThinning.Slice source
+                    color targetContext :=
+                  ⟨CostStaticBinderThinning.sourceContextOfTarget source color
+                      targetContext,
+                    CostStaticBinderThinning.ofTargetThinning source color
+                      targetContext⟩
+                let extendedSlice : CostStaticBinderThinning.Slice source
+                    color targetContext :=
+                  ⟨domain ::
+                      CostStaticBinderThinning.sourceContextOfTarget source
+                        color (available ++ sealed),
+                    .mapped domain
+                      (CostStaticBinderThinning.ofTargetThinning source color
+                        (available ++ sealed))⟩
+                let succeeds : CostStaticBinderThinning.Slice source color
+                    targetContext → Prop := fun slice =>
+                  (buildCostStaticRegionPlan? source color targetFree
+                    slice.1 targetContext slice.2
+                    (mapTypeExpr (color.symbols source) domain :: available)
+                    (outer.comp (.lambda binder .hole)) body codomain).isSome =
+                      true
+                have canonicalSucceeds : succeeds canonicalSlice := by
+                  simpa [succeeds, canonicalSlice, targetContext] using
+                    bodyIsSome
+                have sliceEquality : canonicalSlice = extendedSlice :=
+                  CostStaticBinderThinning.slice_all_eq _ _
+                have extendedSucceeds : succeeds extendedSlice :=
+                  Eq.mp (congrArg succeeds sliceEquality) canonicalSucceeds
+                simpa [succeeds, extendedSlice, targetContext] using
+                  extendedSucceeds
+              apply Option.isSome_iff_exists.mp
+              simpa [buildCostStaticRegionPlan?] using normalizedBodyIsSome
+      | base category => cases wellSorted.1
+      | collection collectionType elementType => cases wellSorted.1
+      | multiBinder domain => cases wellSorted.1
+  | hmultiLambda arity binders body inductionHypothesis =>
+      cases sourceType with
+      | arrow domain codomain =>
+          cases domain with
+          | multiBinder sourceDomain =>
+              cases wellSorted.1 with
+              | multiLambda bodyTyped =>
+                  have bodyCanonical :
+                      body.hasCanonicalBinderMetadata = true := by
+                    have parts : binders.isEmpty = true ∧
+                        body.hasCanonicalBinderMetadata = true := by
+                      simpa [Pattern.hasCanonicalBinderMetadata] using
+                        wellSorted.2.1
+                    exact parts.2
+                  have bodyObject : WellSorted.isObjectPattern body = true := by
+                    simpa [WellSorted.isObjectPattern] using
+                      wellSorted.2.2.1
+                  have bodyReflective : WellSorted.ReflectiveScopeSafeAt
+                      source.costWholeLanguage
+                      (List.replicate arity
+                          (mapTypeExpr (color.symbols source) sourceDomain) ++
+                        available).length body := by
+                    intro presentation membership
+                    have parent := wellSorted.2.2.2 presentation membership
+                    simpa [binderSafeAt, List.length_append,
+                      List.length_replicate, Nat.add_comm, Nat.add_left_comm,
+                      Nat.add_assoc] using parent
+                  have bodyWellSorted : WellSorted.OpenPatternWellSorted
+                      source.costWholeLanguage targetFree
+                      (List.replicate arity
+                          (mapTypeExpr (color.symbols source) sourceDomain) ++
+                        available)
+                      (mapTypeExpr (color.symbols source) codomain) body :=
+                    ⟨bodyTyped, bodyCanonical, bodyObject, bodyReflective⟩
+                  obtain ⟨bodyPlan, bodyBuilt⟩ := inductionHypothesis
+                    (List.replicate arity
+                        (mapTypeExpr (color.symbols source) sourceDomain) ++
+                      available)
+                    sealed (outer.comp (.multiLambda arity binders .hole))
+                    codomain bodyWellSorted
+                  have bodyIsSome :
+                      (buildCostStaticRegionPlan? source color targetFree
+                        (CostStaticBinderThinning.sourceContextOfTarget source
+                          color
+                          ((List.replicate arity
+                              (mapTypeExpr (color.symbols source) sourceDomain) ++
+                            available) ++ sealed))
+                        ((List.replicate arity
+                            (mapTypeExpr (color.symbols source) sourceDomain) ++
+                          available) ++ sealed)
+                        (CostStaticBinderThinning.ofTargetThinning source color
+                          ((List.replicate arity
+                              (mapTypeExpr (color.symbols source) sourceDomain) ++
+                            available) ++ sealed))
+                        (List.replicate arity
+                            (mapTypeExpr (color.symbols source) sourceDomain) ++
+                          available)
+                        (outer.comp (.multiLambda arity binders .hole)) body
+                        codomain).isSome = true := by
+                    rw [bodyBuilt]
+                    rfl
+                  have normalizedBodyIsSome :
+                      (buildCostStaticRegionPlan? source color targetFree
+                        (List.replicate arity sourceDomain ++
+                          CostStaticBinderThinning.sourceContextOfTarget source
+                            color (available ++ sealed))
+                        (List.replicate arity
+                            (mapTypeExpr (color.symbols source) sourceDomain) ++
+                          (available ++ sealed))
+                        (CostStaticBinderThinning.prependMapped arity sourceDomain
+                          (CostStaticBinderThinning.ofTargetThinning source color
+                            (available ++ sealed)))
+                        (List.replicate arity
+                            (mapTypeExpr (color.symbols source) sourceDomain) ++
+                          available)
+                        (outer.comp (.multiLambda arity binders .hole)) body
+                        codomain).isSome = true := by
+                    let canonicalContext : List TypeExpr :=
+                      (List.replicate arity
+                          (mapTypeExpr (color.symbols source) sourceDomain) ++
+                        available) ++ sealed
+                    let extendedContext : List TypeExpr :=
+                      List.replicate arity
+                          (mapTypeExpr (color.symbols source) sourceDomain) ++
+                        (available ++ sealed)
+                    let canonicalBundle :
+                        CostStaticBinderThinning.ContextSlice source color :=
+                      ⟨canonicalContext,
+                        ⟨CostStaticBinderThinning.sourceContextOfTarget source
+                            color canonicalContext,
+                          CostStaticBinderThinning.ofTargetThinning source color
+                            canonicalContext⟩⟩
+                    let extendedBundle :
+                        CostStaticBinderThinning.ContextSlice source color :=
+                      ⟨extendedContext,
+                        ⟨List.replicate arity sourceDomain ++
+                            CostStaticBinderThinning.sourceContextOfTarget source
+                              color (available ++ sealed),
+                          CostStaticBinderThinning.prependMapped arity
+                            sourceDomain
+                            (CostStaticBinderThinning.ofTargetThinning source
+                              color (available ++ sealed))⟩⟩
+                    let succeeds : CostStaticBinderThinning.ContextSlice source
+                        color → Prop := fun bundle =>
+                      (buildCostStaticRegionPlan? source color targetFree
+                        bundle.2.1 bundle.1 bundle.2.2
+                        (List.replicate arity
+                            (mapTypeExpr (color.symbols source) sourceDomain) ++
+                          available)
+                        (outer.comp (.multiLambda arity binders .hole)) body
+                        codomain).isSome = true
+                    have canonicalSucceeds : succeeds canonicalBundle := by
+                      simpa [succeeds, canonicalBundle, canonicalContext] using
+                        bodyIsSome
+                    have targetEquality : canonicalBundle.1 =
+                        extendedBundle.1 := by
+                      simp [canonicalBundle, extendedBundle, canonicalContext,
+                        extendedContext, List.append_assoc]
+                    have bundleEquality : canonicalBundle = extendedBundle :=
+                      CostStaticBinderThinning.contextSlice_eq_of_target_eq
+                        canonicalBundle extendedBundle targetEquality
+                    have extendedSucceeds : succeeds extendedBundle :=
+                      Eq.mp (congrArg succeeds bundleEquality) canonicalSucceeds
+                    simpa [succeeds, extendedBundle, extendedContext] using
+                      extendedSucceeds
+                  apply Option.isSome_iff_exists.mp
+                  simpa [buildCostStaticRegionPlan?] using normalizedBodyIsSome
+          | base category => cases wellSorted.1
+          | collection collectionType elementType => cases wellSorted.1
+          | arrow first second => cases wellSorted.1
+      | base category => cases wellSorted.1
+      | collection collectionType elementType => cases wellSorted.1
+      | multiBinder domain => cases wellSorted.1
+  | hsubst body replacement bodyInduction replacementInduction =>
+      have impossible :
+          WellSorted.isObjectPattern (.subst body replacement) = true :=
+        wellSorted.2.2.1
+      simp [WellSorted.isObjectPattern] at impossible
+  | hcollection collectionType elements rest inductionHypothesis =>
+      exact exists_buildCostStaticRegionPlan?_collection_of_wellSorted
+        available sealed outer collectionType elements rest sourceType
+        (fun element membership childAvailable childSealed localOuter
+            sourceExpected elementWellSorted =>
+          inductionHypothesis element membership childAvailable childSealed
+            localOuter sourceExpected elementWellSorted)
+        wellSorted
+
+/-- Root specialization of planner totality.  It removes the empty sealed
+suffix while preserving the dependent context/thinning pair. -/
+theorem exists_buildCostStaticRegionPlan?_root_of_wellSorted
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    (available : List TypeExpr) (pattern : Pattern) (sourceType : TypeExpr)
+    (wellSorted : WellSorted.OpenPatternWellSorted source.costWholeLanguage
+      targetFree available (mapTypeExpr (color.symbols source) sourceType)
+        pattern) :
+    ∃ plan,
+      buildCostStaticRegionPlan? source color targetFree
+          (CostStaticBinderThinning.sourceContextOfTarget source color available)
+          available
+          (CostStaticBinderThinning.ofTargetThinning source color available)
+          available .hole pattern sourceType = some plan := by
+  obtain ⟨plan, built⟩ :=
+    exists_buildCostStaticRegionPlan?_of_wellSorted
+      (source := source) (color := color) (targetFree := targetFree)
+      available [] .hole pattern sourceType wellSorted
+  let appendedBundle : CostStaticBinderThinning.ContextSlice source color :=
+    ⟨available ++ [],
+      ⟨CostStaticBinderThinning.sourceContextOfTarget source color
+          (available ++ []),
+        CostStaticBinderThinning.ofTargetThinning source color
+          (available ++ [])⟩⟩
+  let rootBundle : CostStaticBinderThinning.ContextSlice source color :=
+    ⟨available,
+      ⟨CostStaticBinderThinning.sourceContextOfTarget source color available,
+        CostStaticBinderThinning.ofTargetThinning source color available⟩⟩
+  let succeeds : CostStaticBinderThinning.ContextSlice source color → Prop :=
+    fun bundle =>
+      (buildCostStaticRegionPlan? source color targetFree
+        bundle.2.1 bundle.1 bundle.2.2 available .hole pattern sourceType).isSome =
+          true
+  have appendedSucceeds : succeeds appendedBundle := by
+    simp only [succeeds, appendedBundle]
+    rw [built]
+    rfl
+  have targetEquality : appendedBundle.1 = rootBundle.1 := by
+    simp [appendedBundle, rootBundle]
+  have bundleEquality : appendedBundle = rootBundle :=
+    CostStaticBinderThinning.contextSlice_eq_of_target_eq
+      appendedBundle rootBundle targetEquality
+  have rootSucceeds : succeeds rootBundle :=
+    Eq.mp (congrArg succeeds bundleEquality) appendedSucceeds
+  apply Option.isSome_iff_exists.mp
+  simpa [succeeds, rootBundle] using rootSucceeds
+
+/-! The executable planner replays a proof-relevant structural plan exactly.
+Proof irrelevance identifies the branch certificates, while all constructor,
+collection-choice, occurrence-order, and recursive-plan data remain visible. -/
+
+mutual
+  theorem CostStaticRegionPlan.build_eq_self
+      {source : CIGSLT} {color : CostStaticColor}
+      {targetFree : WellSorted.FreeTypeContext}
+      {sourceBound targetBound : List TypeExpr}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+      {sourceAvailable : List TypeExpr} {outer : OneHoleContext}
+      {pattern : Pattern} {sourceType : TypeExpr}
+      (plan : CostStaticRegionPlan source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer pattern sourceType) :
+      buildCostStaticRegionPlan? source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer pattern sourceType =
+          some plan := by
+    cases plan with
+    | bvar sourceIndex lookup correspondence availableScope =>
+        simp [buildCostStaticRegionPlan?, correspondence, lookup,
+          availableScope]
+    | fvar lookup =>
+        simp [buildCostStaticRegionPlan?, lookup]
+    | boundaryApplication constructor rendered outsideCurrent certified
+        certifies =>
+        have decoded : source.decodeDeclaredCostConstructor
+            (source.renderDeclaredCostConstructor constructor) =
+              some constructor :=
+          source.decodeDeclaredCostConstructor_render constructor
+        rw [rendered] at decoded
+        simp [buildCostStaticRegionPlan?, decoded, outsideCurrent, certifies]
+    | application constructor rendered current preimage notBare children =>
+        have decoded : source.decodeDeclaredCostConstructor
+            (source.renderDeclaredCostConstructor constructor) =
+              some constructor :=
+          source.decodeDeclaredCostConstructor_render constructor
+        rw [rendered] at decoded
+        have preimageEquality :
+            costStaticConstructorPreimage source color constructor current =
+              preimage :=
+          Subsingleton.elim _ _
+        cases preimageEquality
+        have bareRejected : WellSorted.usesBareCollection?
+            (costStaticConstructorPreimage source color constructor
+              current).sourceConstructor.1 ≠ true := by
+          intro checked
+          exact notBare
+            ((WellSorted.usesBareCollection?_eq_true_iff
+              (costStaticConstructorPreimage source color constructor
+                current).sourceConstructor.1).mp checked)
+        simp [buildCostStaticRegionPlan?, decoded, current, bareRejected,
+          children.build_eq_self]
+    | lambda bodyPlan =>
+        simp [buildCostStaticRegionPlan?, bodyPlan.build_eq_self]
+    | multiLambda bodyPlan =>
+        simp [buildCostStaticRegionPlan?, bodyPlan.build_eq_self]
+    | collection choice selected children =>
+        simp [buildCostStaticRegionPlan?, selected, children.build_eq_self]
+    | boundaryCollection currentRejected oppositeChoice oppositeSelected
+        certified certifies =>
+        simp [buildCostStaticRegionPlan?, currentRejected, oppositeSelected,
+          certifies]
+
+  theorem CostStaticArgumentPlan.build_eq_self
+      {source : CIGSLT} {color : CostStaticColor}
+      {targetFree : WellSorted.FreeTypeContext}
+      {sourceBound targetBound : List TypeExpr}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+      {sourceAvailable : List TypeExpr} {outer : OneHoleContext}
+      {wireName : String} {before arguments : List Pattern}
+      {parameters : List TermParam}
+      (plan : CostStaticArgumentPlan source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer wireName before arguments
+        parameters) :
+      buildCostStaticArgumentPlan? source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer wireName before arguments
+        parameters = some plan := by
+    cases plan with
+    | nil =>
+        simp [buildCostStaticArgumentPlan?]
+    | cons representation parameterType head tail =>
+        have representationChecked :
+            WellSorted.matchesParameterRepresentation? _ _ = true :=
+          (WellSorted.matchesParameterRepresentation?_eq_true_iff _ _).mpr
+            representation
+        simp [buildCostStaticArgumentPlan?, parameterType,
+          representationChecked, head.build_eq_self, tail.build_eq_self]
+
+  theorem CostStaticElementPlan.build_eq_self
+      {source : CIGSLT} {color : CostStaticColor}
+      {targetFree : WellSorted.FreeTypeContext}
+      {sourceBound targetBound : List TypeExpr}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+      {sourceAvailable : List TypeExpr} {outer : OneHoleContext}
+      {collectionType : CollType} {before elements : List Pattern}
+      {rest : Option String} {sourceElementType : TypeExpr}
+      (plan : CostStaticElementPlan source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer collectionType before
+        elements rest sourceElementType) :
+      buildCostStaticElementPlan? source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer collectionType before
+        elements rest sourceElementType = some plan := by
+    cases plan with
+    | nil =>
+        simp [buildCostStaticElementPlan?]
+    | cons head tail =>
+        simp [buildCostStaticElementPlan?, head.build_eq_self,
+          tail.build_eq_self]
+end
+
+theorem CostStaticRegionPlan.build_isSome
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {sourceBound targetBound : List TypeExpr}
+    {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+    {sourceAvailable : List TypeExpr} {outer : OneHoleContext}
+    {pattern : Pattern} {sourceType : TypeExpr}
+    (plan : CostStaticRegionPlan source color targetFree sourceBound
+      targetBound thinning sourceAvailable outer pattern sourceType) :
+    (buildCostStaticRegionPlan? source color targetFree sourceBound
+      targetBound thinning sourceAvailable outer pattern sourceType).isSome := by
+  rw [plan.build_eq_self]
+  rfl
+
+theorem CostStaticRegionPlan.exists_build_eq_some
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {sourceBound targetBound : List TypeExpr}
+    {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+    {sourceAvailable : List TypeExpr} {outer : OneHoleContext}
+    {pattern : Pattern} {sourceType : TypeExpr}
+    (plan : CostStaticRegionPlan source color targetFree sourceBound
+      targetBound thinning sourceAvailable outer pattern sourceType) :
+    ∃ compiled,
+      buildCostStaticRegionPlan? source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer pattern sourceType =
+          some compiled :=
+  ⟨plan, plan.build_eq_self⟩
+
+theorem CostStaticArgumentPlan.exists_build_eq_some
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {sourceBound targetBound : List TypeExpr}
+    {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+    {sourceAvailable : List TypeExpr} {outer : OneHoleContext}
+    {wireName : String} {before arguments : List Pattern}
+    {parameters : List TermParam}
+    (plan : CostStaticArgumentPlan source color targetFree sourceBound
+      targetBound thinning sourceAvailable outer wireName before arguments
+      parameters) :
+    ∃ compiled,
+      buildCostStaticArgumentPlan? source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer wireName before arguments
+        parameters = some compiled :=
+  ⟨plan, plan.build_eq_self⟩
+
+theorem CostStaticElementPlan.exists_build_eq_some
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {sourceBound targetBound : List TypeExpr}
+    {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+    {sourceAvailable : List TypeExpr} {outer : OneHoleContext}
+    {collectionType : CollType} {before elements : List Pattern}
+    {rest : Option String} {sourceElementType : TypeExpr}
+    (plan : CostStaticElementPlan source color targetFree sourceBound
+      targetBound thinning sourceAvailable outer collectionType before
+      elements rest sourceElementType) :
+    ∃ compiled,
+      buildCostStaticElementPlan? source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer collectionType before
+        elements rest sourceElementType = some compiled :=
+  ⟨plan, plan.build_eq_self⟩
+
+mutual
+  /-- Ordered finite occurrences projected from the one authoritative plan. -/
+  def CostStaticRegionPlan.occurrences {source : CIGSLT}
+      {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+      {sourceBound targetBound : List TypeExpr}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+      {sourceAvailable : List TypeExpr}
+      {outer : OneHoleContext} {pattern : Pattern} {sourceType : TypeExpr} :
+      CostStaticRegionPlan source color targetFree sourceBound targetBound
+        thinning sourceAvailable outer pattern sourceType →
+      List CostRegionOccurrence
+    | .bvar _ _ _ _ | .fvar _ => []
+    | .boundaryApplication _ _ _ _ _ =>
+        [{ context := outer, content := pattern }]
+    | .application _ _ _ _ _ children => children.occurrences
+    | .lambda bodyPlan => bodyPlan.occurrences
+    | .multiLambda bodyPlan => bodyPlan.occurrences
+    | .collection _ _ children => children.occurrences
+    | .boundaryCollection _ _ _ _ _ =>
+        [{ context := outer, content := pattern }]
+
+  /-- Ordered argument-spine occurrence projection. -/
+  def CostStaticArgumentPlan.occurrences {source : CIGSLT}
+      {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+      {sourceBound targetBound : List TypeExpr}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+      {sourceAvailable : List TypeExpr}
+      {outer : OneHoleContext} {wireName : String}
+      {before arguments : List Pattern} {parameters : List TermParam} :
+      CostStaticArgumentPlan source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer wireName before arguments
+        parameters →
+      List CostRegionOccurrence
+    | .nil => []
+    | .cons _ _ head tail => head.occurrences ++ tail.occurrences
+
+  /-- Ordered collection-spine occurrence projection. -/
+  def CostStaticElementPlan.occurrences {source : CIGSLT}
+      {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+      {sourceBound targetBound : List TypeExpr}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+      {sourceAvailable : List TypeExpr}
+      {outer : OneHoleContext} {collectionType : CollType}
+      {before elements : List Pattern} {rest : Option String}
+      {sourceElementType : TypeExpr} :
+      CostStaticElementPlan source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer collectionType before
+        elements rest
+        sourceElementType →
+      List CostRegionOccurrence
+    | .nil => []
+    | .cons head tail => head.occurrences ++ tail.occurrences
+end
+
+mutual
+  /-- The exact finite typed table projected from the plan.  Boundary entries
+  are the successful certification outputs already stored at their structural
+  occurrence; composition is ordered list append. -/
+  def CostStaticRegionPlan.boundaryTable {source : CIGSLT}
+      {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+      {sourceBound targetBound : List TypeExpr}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+      {sourceAvailable : List TypeExpr}
+      {outer : OneHoleContext} {pattern : Pattern} {sourceType : TypeExpr}
+      (plan : CostStaticRegionPlan source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer pattern sourceType) :
+      TypedCostRegionBoundaryTable source color targetFree plan.occurrences :=
+    match plan with
+    | .bvar _ _ _ _ | .fvar _ => .nil
+    | .boundaryApplication _ _ _ certified _ =>
+        .cons certified.typed certified.content_eq .nil
+    | .application _ _ _ _ _ children => children.boundaryTable
+    | .lambda bodyPlan => bodyPlan.boundaryTable
+    | .multiLambda bodyPlan => bodyPlan.boundaryTable
+    | .collection _ _ children => children.boundaryTable
+    | .boundaryCollection _ _ _ certified _ =>
+        .cons certified.typed certified.content_eq .nil
+
+  /-- Finite table projection for constructor arguments. -/
+  def CostStaticArgumentPlan.boundaryTable {source : CIGSLT}
+      {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+      {sourceBound targetBound : List TypeExpr}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+      {sourceAvailable : List TypeExpr}
+      {outer : OneHoleContext} {wireName : String}
+      {before arguments : List Pattern} {parameters : List TermParam}
+      (plan : CostStaticArgumentPlan source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer wireName before arguments
+        parameters) :
+      TypedCostRegionBoundaryTable source color targetFree plan.occurrences :=
+    match plan with
+    | .nil => .nil
+    | .cons _ _ head tail =>
+        TypedCostRegionBoundaryTable.append head.boundaryTable
+          tail.boundaryTable
+
+  /-- Finite table projection for collection elements. -/
+  def CostStaticElementPlan.boundaryTable {source : CIGSLT}
+      {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+      {sourceBound targetBound : List TypeExpr}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+      {sourceAvailable : List TypeExpr}
+      {outer : OneHoleContext} {collectionType : CollType}
+      {before elements : List Pattern} {rest : Option String}
+      {sourceElementType : TypeExpr}
+      (plan : CostStaticElementPlan source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer collectionType before
+        elements rest
+        sourceElementType) :
+      TypedCostRegionBoundaryTable source color targetFree plan.occurrences :=
+    match plan with
+    | .nil => .nil
+    | .cons head tail =>
+        TypedCostRegionBoundaryTable.append head.boundaryTable
+          tail.boundaryTable
+end
+
+mutual
+  /-- Source-language skeleton obtained by replacing every finite boundary
+  with its typed rigid variable and retagging genuine source free names. -/
+  def CostStaticRegionPlan.abstractPattern {source : CIGSLT}
+      {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+      {sourceBound targetBound : List TypeExpr}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+      {sourceAvailable : List TypeExpr}
+      {outer : OneHoleContext} {pattern : Pattern} {sourceType : TypeExpr} :
+      CostStaticRegionPlan source color targetFree sourceBound targetBound
+        thinning sourceAvailable outer pattern sourceType → Pattern
+    | .bvar sourceIndex _ _ _ => .bvar sourceIndex
+    | @CostStaticRegionPlan.fvar _ _ _ _ _ _ _ _ name _ _ =>
+        .fvar (costRegionSourceVariableName name)
+    | .boundaryApplication _ _ _ certified _ =>
+        .fvar (costRegionBoundaryVariableName certified.typed.boundary)
+    | .application _ _ _ preimage _ children =>
+        .apply preimage.sourceConstructor.1.label children.abstractPatterns
+    | @CostStaticRegionPlan.lambda _ _ _ _ _ _ _ _ binder _ _ _ bodyPlan =>
+        .lambda binder bodyPlan.abstractPattern
+    | @CostStaticRegionPlan.multiLambda _ _ _ _ _ _ _ _ arity binders _ _ _
+        bodyPlan =>
+        .multiLambda arity binders bodyPlan.abstractPattern
+    | @CostStaticRegionPlan.collection _ _ _ _ _ _ _ _ collectionType _
+        rest _ _ _ children =>
+        .collection collectionType children.abstractPatterns
+          (rest.map costRegionSourceVariableName)
+    | .boundaryCollection _ _ _ certified _ =>
+        .fvar (costRegionBoundaryVariableName certified.typed.boundary)
+
+  /-- Source skeleton arguments. -/
+  def CostStaticArgumentPlan.abstractPatterns {source : CIGSLT}
+      {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+      {sourceBound targetBound : List TypeExpr}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+      {sourceAvailable : List TypeExpr}
+      {outer : OneHoleContext} {wireName : String}
+      {before arguments : List Pattern} {parameters : List TermParam} :
+      CostStaticArgumentPlan source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer wireName before arguments
+        parameters →
+      List Pattern
+    | .nil => []
+    | .cons _ _ head tail =>
+        head.abstractPattern :: tail.abstractPatterns
+
+  /-- Source skeleton collection elements. -/
+  def CostStaticElementPlan.abstractPatterns {source : CIGSLT}
+      {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+      {sourceBound targetBound : List TypeExpr}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+      {sourceAvailable : List TypeExpr}
+      {outer : OneHoleContext} {collectionType : CollType}
+      {before elements : List Pattern} {rest : Option String}
+      {sourceElementType : TypeExpr} :
+      CostStaticElementPlan source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer collectionType before
+        elements rest
+        sourceElementType → List Pattern
+    | .nil => []
+    | .cons head tail => head.abstractPattern :: tail.abstractPatterns
+end
+
+private theorem matchesParameterRepresentation_lambda_body_iff
+    (parameter : TermParam) (binder : Option String) (body replacement : Pattern)
+    : WellSorted.MatchesParameterRepresentation parameter
+        (.lambda binder body) ↔
+      WellSorted.MatchesParameterRepresentation parameter
+        (.lambda binder replacement) := by
+  cases parameter <;> cases binder <;>
+    simp [WellSorted.MatchesParameterRepresentation]
+
+private theorem matchesParameterRepresentation_multiLambda_body_iff
+    (parameter : TermParam) (arity : Nat) (binders : List String)
+    (body replacement : Pattern) :
+    WellSorted.MatchesParameterRepresentation parameter
+        (.multiLambda arity binders body) ↔
+      WellSorted.MatchesParameterRepresentation parameter
+        (.multiLambda arity binders replacement) := by
+  cases parameter <;> cases binders <;>
+    simp [WellSorted.MatchesParameterRepresentation]
+
+/-- Region abstraction preserves the outer representation required by an
+authored constructor parameter.  Simple parameters impose no shape; binder
+parameters remain binder nodes because boundaries occur only strictly below
+those nodes. -/
+theorem CostStaticRegionPlan.matchesParameterRepresentation
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {sourceBound targetBound : List TypeExpr}
+    {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+    {sourceAvailable : List TypeExpr}
+    {outer : OneHoleContext} {pattern : Pattern} {sourceType : TypeExpr}
+    (plan : CostStaticRegionPlan source color targetFree sourceBound
+      targetBound thinning sourceAvailable outer pattern sourceType)
+    (parameter : TermParam)
+    (representation :
+      WellSorted.MatchesParameterRepresentation parameter pattern) :
+      WellSorted.MatchesParameterRepresentation parameter
+      plan.abstractPattern := by
+  cases plan with
+  | bvar sourceIndex lookup correspondence availableScope =>
+      cases parameter <;>
+        simp_all [WellSorted.MatchesParameterRepresentation]
+  | fvar lookup =>
+      cases parameter <;>
+        simp_all [WellSorted.MatchesParameterRepresentation]
+  | boundaryApplication constructor rendered outsideCurrent certified certifies =>
+      cases parameter <;>
+        simp_all [WellSorted.MatchesParameterRepresentation]
+  | application constructor rendered current preimage notBare children =>
+      cases parameter <;>
+        simp_all [WellSorted.MatchesParameterRepresentation]
+  | lambda bodyPlan =>
+      exact (matchesParameterRepresentation_lambda_body_iff parameter _ _ _).mp
+        representation
+  | multiLambda bodyPlan =>
+      exact (matchesParameterRepresentation_multiLambda_body_iff parameter
+        _ _ _ _).mp representation
+  | collection choice selected children =>
+      cases parameter <;>
+        simp_all [WellSorted.MatchesParameterRepresentation]
+  | boundaryCollection currentRejected oppositeChoice oppositeSelected
+      certified certifies =>
+      cases parameter <;>
+        simp_all [WellSorted.MatchesParameterRepresentation]
+
+/-- Pointwise scope monotonicity for an ordered pattern spine. -/
+theorem binderSafeListAt_mono (quoteConstructor : String)
+    {small large : Nat} {patterns : List Pattern}
+    (safe : binderSafeListAt quoteConstructor small patterns = true)
+    (scope : small ≤ large) :
+    binderSafeListAt quoteConstructor large patterns = true := by
+  rw [binderSafeListAt_eq_true_iff] at safe ⊢
+  intro pattern membership
+  exact binderSafeAt_mono quoteConstructor (safe pattern membership) scope
+
+/-- An application is reflectively safe when its ordinary argument spine is
+safe and its singleton quote case is safe at the reset depth. -/
+theorem binderSafeAt_apply_of_spines (quoteConstructor constructor : String)
+    (depth : Nat) (arguments : List Pattern)
+    (resetSafe : constructor = quoteConstructor →
+      binderSafeListAt quoteConstructor 0 arguments = true)
+    (ordinarySafe : binderSafeListAt quoteConstructor depth arguments =
+      true) :
+    binderSafeAt quoteConstructor depth
+      (.apply constructor arguments) = true := by
+  cases arguments with
+  | nil => simp [binderSafeAt, binderSafeListAt]
+  | cons argument arguments =>
+      cases arguments with
+      | nil =>
+          by_cases quoted : constructor = quoteConstructor
+          · have reset := resetSafe quoted
+            simpa [binderSafeAt, binderSafeListAt, quoted] using
+              reset
+          · simpa [binderSafeAt, binderSafeListAt, quoted]
+              using ordinarySafe
+      | cons second remainder =>
+          simpa [binderSafeAt] using ordinarySafe
+
+/-- Away from the distinguished quotation constructor, application scope is
+exactly pointwise scope of its argument spine. -/
+theorem binderSafeListAt_of_binderSafeAt_apply_of_ne
+    (quoteConstructor constructor : String) (depth : Nat)
+    (arguments : List Pattern) (different : constructor ≠ quoteConstructor)
+    (safe : binderSafeAt quoteConstructor depth
+      (.apply constructor arguments) = true) :
+    binderSafeListAt quoteConstructor depth arguments = true := by
+  cases arguments with
+  | nil => simp [binderSafeListAt]
+  | cons argument remainder =>
+      cases remainder with
+      | nil => simpa [binderSafeAt, different] using safe
+      | cons second remainder => simpa [binderSafeAt] using safe
+
+/-- Replacing an application spine by a length-preserving, pointwise
+scope-safe spine preserves the quotation boundary of the application.  The
+singleton quotation case is checked at depth zero; every other application
+shape is checked at the ambient depth. -/
+theorem binderSafeAt_apply_of_length_eq_of_list_preserving
+    (quoteConstructor constructor : String) (depth : Nat)
+    {source target : List Pattern}
+    (length_eq : target.length = source.length)
+    (preserves : ∀ localDepth,
+      binderSafeListAt quoteConstructor localDepth source = true →
+        binderSafeListAt quoteConstructor localDepth target = true)
+    (safe : binderSafeAt quoteConstructor depth
+      (.apply constructor source) = true) :
+    binderSafeAt quoteConstructor depth (.apply constructor target) = true := by
+  cases source with
+  | nil =>
+      have targetEmpty : target = [] :=
+        List.eq_nil_of_length_eq_zero (by simpa using length_eq)
+      simp [targetEmpty, binderSafeAt, binderSafeListAt]
+  | cons argument remainder =>
+      cases remainder with
+      | nil =>
+          obtain ⟨targetArgument, targetShape⟩ :=
+            List.length_eq_one_iff.mp (by simpa using length_eq)
+          by_cases quoted : constructor = quoteConstructor
+          · have inputHead : binderSafeAt quoteConstructor 0 argument = true := by
+              simpa [binderSafeAt, quoted] using safe
+            have outputList := preserves 0 (by
+              simpa [binderSafeListAt] using inputHead)
+            have outputHead :
+                binderSafeAt quoteConstructor 0 targetArgument = true := by
+              simpa [targetShape, binderSafeListAt] using outputList
+            simpa [targetShape, binderSafeAt, quoted] using outputHead
+          · have inputList : binderSafeListAt quoteConstructor depth
+                [argument] = true := by
+              simpa [binderSafeAt, quoted] using safe
+            have outputList := preserves depth inputList
+            simpa [targetShape, binderSafeAt, quoted] using outputList
+      | cons second remainder =>
+          have targetAtLeastTwo : 2 ≤ target.length := by
+            rw [length_eq]
+            simp
+          obtain ⟨targetFirst, targetSecond, targetRemainder, targetShape⟩ :
+              ∃ first second rest, target = first :: second :: rest := by
+            cases target with
+            | nil => simp at targetAtLeastTwo
+            | cons first rest =>
+                cases rest with
+                | nil => simp at targetAtLeastTwo
+                | cons second tail => exact ⟨first, second, tail, rfl⟩
+          have inputList : binderSafeListAt quoteConstructor depth
+              (argument :: second :: remainder) = true := by
+            simpa [binderSafeAt] using safe
+          have outputList := preserves depth inputList
+          simpa [targetShape, binderSafeAt] using outputList
+
+mutual
+  /-- Structural abstraction can only improve canonical binder metadata:
+  rigid boundaries become free variables, while every retained binder keeps
+  the exact metadata of the indexed source pattern. -/
+  theorem CostStaticRegionPlan.abstractPattern_canonicalBinderMetadata
+      {source : CIGSLT} {color : CostStaticColor}
+      {targetFree : WellSorted.FreeTypeContext}
+      {sourceBound targetBound : List TypeExpr}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+      {sourceAvailable : List TypeExpr}
+      {outer : OneHoleContext} {pattern : Pattern} {sourceType : TypeExpr}
+      (plan : CostStaticRegionPlan source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer pattern sourceType)
+      (canonical : pattern.hasCanonicalBinderMetadata = true) :
+      plan.abstractPattern.hasCanonicalBinderMetadata = true := by
+    cases plan with
+    | bvar sourceIndex lookup correspondence availableScope =>
+        simp [CostStaticRegionPlan.abstractPattern,
+          Pattern.hasCanonicalBinderMetadata]
+    | fvar lookup =>
+        simp [CostStaticRegionPlan.abstractPattern,
+          Pattern.hasCanonicalBinderMetadata]
+    | boundaryApplication constructor rendered outsideCurrent certified
+        certifies =>
+        simp [CostStaticRegionPlan.abstractPattern,
+          Pattern.hasCanonicalBinderMetadata]
+    | boundaryCollection currentRejected oppositeChoice oppositeSelected
+        certified certifies =>
+        simp [CostStaticRegionPlan.abstractPattern,
+          Pattern.hasCanonicalBinderMetadata]
+    | application constructor rendered current preimage notBare children =>
+        simpa only [CostStaticRegionPlan.abstractPattern,
+          Pattern.hasCanonicalBinderMetadata] using
+            children.abstractPatterns_canonicalBinderMetadata canonical
+    | lambda bodyPlan =>
+        simp only [CostStaticRegionPlan.abstractPattern,
+          Pattern.hasCanonicalBinderMetadata, Bool.and_eq_true] at canonical ⊢
+        exact ⟨canonical.1,
+          bodyPlan.abstractPattern_canonicalBinderMetadata canonical.2⟩
+    | @multiLambda sourceBound targetBound sourceAvailable thinning outer arity
+        binders body domain codomain bodyPlan =>
+        simp only [CostStaticRegionPlan.abstractPattern,
+          Pattern.hasCanonicalBinderMetadata, Bool.and_eq_true] at canonical ⊢
+        exact ⟨canonical.1,
+          bodyPlan.abstractPattern_canonicalBinderMetadata canonical.2⟩
+    | collection choice selected children =>
+        simpa only [CostStaticRegionPlan.abstractPattern,
+          Pattern.hasCanonicalBinderMetadata] using
+            children.abstractPatterns_canonicalBinderMetadata canonical
+
+  theorem CostStaticArgumentPlan.abstractPatterns_canonicalBinderMetadata
+      {source : CIGSLT} {color : CostStaticColor}
+      {targetFree : WellSorted.FreeTypeContext}
+      {sourceBound targetBound : List TypeExpr}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+      {sourceAvailable : List TypeExpr}
+      {outer : OneHoleContext} {wireName : String}
+      {before arguments : List Pattern} {parameters : List TermParam}
+      (plan : CostStaticArgumentPlan source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer wireName before arguments
+        parameters)
+      (canonical : Pattern.hasCanonicalBinderMetadataList arguments = true) :
+      Pattern.hasCanonicalBinderMetadataList plan.abstractPatterns = true := by
+    cases plan with
+    | nil => rfl
+    | cons representation parameterType head tail =>
+        simp only [CostStaticArgumentPlan.abstractPatterns,
+          Pattern.hasCanonicalBinderMetadataList, Bool.and_eq_true] at canonical ⊢
+        exact ⟨head.abstractPattern_canonicalBinderMetadata canonical.1,
+          tail.abstractPatterns_canonicalBinderMetadata canonical.2⟩
+
+  theorem CostStaticElementPlan.abstractPatterns_canonicalBinderMetadata
+      {source : CIGSLT} {color : CostStaticColor}
+      {targetFree : WellSorted.FreeTypeContext}
+      {sourceBound targetBound : List TypeExpr}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+      {sourceAvailable : List TypeExpr}
+      {outer : OneHoleContext} {collectionType : CollType}
+      {before elements : List Pattern} {rest : Option String}
+      {sourceElementType : TypeExpr}
+      (plan : CostStaticElementPlan source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer collectionType before elements rest
+        sourceElementType)
+      (canonical : Pattern.hasCanonicalBinderMetadataList elements = true) :
+      Pattern.hasCanonicalBinderMetadataList plan.abstractPatterns = true := by
+    cases plan with
+    | nil => rfl
+    | cons head tail =>
+        simp only [CostStaticElementPlan.abstractPatterns,
+          Pattern.hasCanonicalBinderMetadataList, Bool.and_eq_true] at canonical ⊢
+        exact ⟨head.abstractPattern_canonicalBinderMetadata canonical.1,
+          tail.abstractPatterns_canonicalBinderMetadata canonical.2⟩
+end
+
+mutual
+  /-- Structural abstraction preserves the object-language boundary.  In
+  particular it cannot introduce substitutions or open collection tails. -/
+  theorem CostStaticRegionPlan.abstractPattern_object
+      {source : CIGSLT} {color : CostStaticColor}
+      {targetFree : WellSorted.FreeTypeContext}
+      {sourceBound targetBound : List TypeExpr}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+      {sourceAvailable : List TypeExpr}
+      {outer : OneHoleContext} {pattern : Pattern} {sourceType : TypeExpr}
+      (plan : CostStaticRegionPlan source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer pattern sourceType)
+      (object : WellSorted.isObjectPattern pattern = true) :
+      WellSorted.isObjectPattern plan.abstractPattern = true := by
+    cases plan with
+    | bvar sourceIndex lookup correspondence availableScope =>
+        simp [CostStaticRegionPlan.abstractPattern, WellSorted.isObjectPattern]
+    | fvar lookup =>
+        simp [CostStaticRegionPlan.abstractPattern, WellSorted.isObjectPattern]
+    | boundaryApplication constructor rendered outsideCurrent certified
+        certifies =>
+        simp [CostStaticRegionPlan.abstractPattern, WellSorted.isObjectPattern]
+    | boundaryCollection currentRejected oppositeChoice oppositeSelected
+        certified certifies =>
+        simp [CostStaticRegionPlan.abstractPattern, WellSorted.isObjectPattern]
+    | application constructor rendered current preimage notBare children =>
+        simpa only [CostStaticRegionPlan.abstractPattern,
+          WellSorted.isObjectPattern] using
+            children.abstractPatterns_object object
+    | lambda bodyPlan =>
+        simpa only [CostStaticRegionPlan.abstractPattern,
+          WellSorted.isObjectPattern] using
+            bodyPlan.abstractPattern_object object
+    | multiLambda bodyPlan =>
+        simpa only [CostStaticRegionPlan.abstractPattern,
+          WellSorted.isObjectPattern] using
+            bodyPlan.abstractPattern_object object
+    | collection choice selected children =>
+        simp only [WellSorted.isObjectPattern, Bool.and_eq_true] at object
+        simp only [CostStaticRegionPlan.abstractPattern,
+          WellSorted.isObjectPattern, Bool.and_eq_true]
+        exact ⟨by simpa using object.1,
+          children.abstractPatterns_object object.2⟩
+
+  theorem CostStaticArgumentPlan.abstractPatterns_object
+      {source : CIGSLT} {color : CostStaticColor}
+      {targetFree : WellSorted.FreeTypeContext}
+      {sourceBound targetBound : List TypeExpr}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+      {sourceAvailable : List TypeExpr}
+      {outer : OneHoleContext} {wireName : String}
+      {before arguments : List Pattern} {parameters : List TermParam}
+      (plan : CostStaticArgumentPlan source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer wireName before arguments
+        parameters)
+      (object : WellSorted.isObjectPatternList arguments = true) :
+      WellSorted.isObjectPatternList plan.abstractPatterns = true := by
+    cases plan with
+    | nil => rfl
+    | cons representation parameterType head tail =>
+        simp only [CostStaticArgumentPlan.abstractPatterns,
+          WellSorted.isObjectPatternList, Bool.and_eq_true] at object ⊢
+        exact ⟨head.abstractPattern_object object.1,
+          tail.abstractPatterns_object object.2⟩
+
+  theorem CostStaticElementPlan.abstractPatterns_object
+      {source : CIGSLT} {color : CostStaticColor}
+      {targetFree : WellSorted.FreeTypeContext}
+      {sourceBound targetBound : List TypeExpr}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+      {sourceAvailable : List TypeExpr}
+      {outer : OneHoleContext} {collectionType : CollType}
+      {before elements : List Pattern} {rest : Option String}
+      {sourceElementType : TypeExpr}
+      (plan : CostStaticElementPlan source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer collectionType before elements rest
+        sourceElementType)
+      (object : WellSorted.isObjectPatternList elements = true) :
+      WellSorted.isObjectPatternList plan.abstractPatterns = true := by
+    cases plan with
+    | nil => rfl
+    | cons head tail =>
+        simp only [CostStaticElementPlan.abstractPatterns,
+          WellSorted.isObjectPatternList, Bool.and_eq_true] at object ⊢
+        exact ⟨head.abstractPattern_object object.1,
+          tail.abstractPatterns_object object.2⟩
+end
+
+mutual
+  /-- The independently indexed reflective availability depth is sufficient
+  to establish source quotation safety without reusing ordinary typing depth. -/
+  theorem CostStaticRegionPlan.abstractPattern_reflectiveScopeSafeAt
+      {source : CIGSLT} {color : CostStaticColor}
+      {targetFree : WellSorted.FreeTypeContext}
+      {sourceBound targetBound : List TypeExpr}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+      {sourceAvailable : List TypeExpr}
+      {outer : OneHoleContext} {pattern : Pattern} {sourceType : TypeExpr}
+      (plan : CostStaticRegionPlan source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer pattern sourceType) :
+      WellSorted.ReflectiveScopeSafeAt
+        source.theory.presentation.presentation.language
+        (CostStaticBinderThinning.sourceContextOfTarget source color
+          sourceAvailable).length plan.abstractPattern := by
+    intro presentation membership
+    cases plan with
+    | bvar sourceIndex lookup correspondence availableScope =>
+        simpa [CostStaticRegionPlan.abstractPattern, binderSafeAt] using
+          availableScope
+    | fvar lookup =>
+        simp [CostStaticRegionPlan.abstractPattern, binderSafeAt]
+    | boundaryApplication constructor rendered outsideCurrent certified
+        certifies =>
+        simp [CostStaticRegionPlan.abstractPattern, binderSafeAt]
+    | boundaryCollection currentRejected oppositeChoice oppositeSelected
+        certified certifies =>
+        simp [CostStaticRegionPlan.abstractPattern, binderSafeAt]
+    | application constructor rendered current preimage notBare children =>
+        have childSafe := children.abstractPatterns_binderSafeListAt
+          presentation membership
+        by_cases globallyQuoted :
+            ReflectiveContextSupport.isQuoteConstructor
+                source.theory.presentation.presentation.language
+                preimage.sourceConstructor.1.label = true
+        · have resetSafe : binderSafeListAt
+              presentation.quoteConstructor 0 children.abstractPatterns =
+                true := by
+            simpa [globallyQuoted,
+              CostStaticBinderThinning.sourceContextOfTarget] using childSafe
+          have ordinarySafe : binderSafeListAt
+              presentation.quoteConstructor
+                (CostStaticBinderThinning.sourceContextOfTarget source color
+                  sourceAvailable).length
+                children.abstractPatterns = true :=
+            binderSafeListAt_mono presentation.quoteConstructor resetSafe
+              (Nat.zero_le _)
+          exact binderSafeAt_apply_of_spines presentation.quoteConstructor
+            preimage.sourceConstructor.1.label
+            (CostStaticBinderThinning.sourceContextOfTarget source color
+              sourceAvailable).length
+            children.abstractPatterns (fun _ => resetSafe) ordinarySafe
+        · have ordinarySafe : binderSafeListAt
+              presentation.quoteConstructor
+                (CostStaticBinderThinning.sourceContextOfTarget source color
+                  sourceAvailable).length
+                children.abstractPatterns = true := by
+            simpa [globallyQuoted] using childSafe
+          apply binderSafeAt_apply_of_spines presentation.quoteConstructor
+            preimage.sourceConstructor.1.label
+            (CostStaticBinderThinning.sourceContextOfTarget source color
+              sourceAvailable).length
+            children.abstractPatterns
+          · intro labelEquality
+            have quoteDetected : ReflectiveContextSupport.isQuoteConstructor
+                source.theory.presentation.presentation.language
+                preimage.sourceConstructor.1.label = true := by
+              unfold ReflectiveContextSupport.isQuoteConstructor
+              rw [List.any_eq_true]
+              exact ⟨presentation, membership, by simp [labelEquality]⟩
+            exact (globallyQuoted quoteDetected).elim
+          · exact ordinarySafe
+    | lambda bodyPlan =>
+        simpa [CostStaticRegionPlan.abstractPattern, binderSafeAt,
+          CostStaticBinderThinning.sourceContextOfTarget,
+          Nat.add_comm] using
+          bodyPlan.abstractPattern_reflectiveScopeSafeAt presentation membership
+    | @multiLambda sourceBound targetBound sourceAvailable thinning outer arity
+        binders body domain codomain bodyPlan =>
+        have sourceContextEquality :
+            CostStaticBinderThinning.sourceContextOfTarget source color
+                (List.replicate arity
+                    (mapTypeExpr (color.symbols source) domain) ++
+                  sourceAvailable) =
+              List.replicate arity domain ++
+                CostStaticBinderThinning.sourceContextOfTarget source color
+                  sourceAvailable := by
+          simpa only [List.map_replicate] using
+            CostStaticBinderThinning.sourceContextOfTarget_map_append
+              source color (List.replicate arity domain) sourceAvailable
+        have depthEquality :
+            (CostStaticBinderThinning.sourceContextOfTarget source color
+                (List.replicate arity
+                    (mapTypeExpr (color.symbols source) domain) ++
+                  sourceAvailable)).length =
+              arity +
+                (CostStaticBinderThinning.sourceContextOfTarget source color
+                  sourceAvailable).length := by
+          rw [sourceContextEquality]
+          simp
+        have bodySafe :=
+          bodyPlan.abstractPattern_reflectiveScopeSafeAt presentation membership
+        rw [depthEquality] at bodySafe
+        simpa only [CostStaticRegionPlan.abstractPattern, binderSafeAt,
+          Nat.add_comm] using
+          bodySafe
+    | collection choice selected children =>
+        simpa only [CostStaticRegionPlan.abstractPattern,
+          binderSafeAt] using
+            children.abstractPatterns_binderSafeListAt presentation membership
+
+  theorem CostStaticArgumentPlan.abstractPatterns_binderSafeListAt
+      {source : CIGSLT} {color : CostStaticColor}
+      {targetFree : WellSorted.FreeTypeContext}
+      {sourceBound targetBound : List TypeExpr}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+      {sourceAvailable : List TypeExpr}
+      {outer : OneHoleContext} {wireName : String}
+      {before arguments : List Pattern} {parameters : List TermParam}
+      (plan : CostStaticArgumentPlan source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer wireName before arguments
+        parameters)
+      (presentation : ReflectivePresentationDecl)
+      (membership : presentation ∈
+        source.theory.presentation.presentation.language.reflectivePresentations) :
+      binderSafeListAt presentation.quoteConstructor
+        (CostStaticBinderThinning.sourceContextOfTarget source color
+          sourceAvailable).length plan.abstractPatterns = true := by
+    cases plan with
+    | nil => rfl
+    | cons representation parameterType head tail =>
+        simp only [CostStaticArgumentPlan.abstractPatterns, binderSafeListAt,
+          Bool.and_eq_true]
+        exact ⟨head.abstractPattern_reflectiveScopeSafeAt presentation
+            membership,
+          tail.abstractPatterns_binderSafeListAt presentation membership⟩
+
+  theorem CostStaticElementPlan.abstractPatterns_binderSafeListAt
+      {source : CIGSLT} {color : CostStaticColor}
+      {targetFree : WellSorted.FreeTypeContext}
+      {sourceBound targetBound : List TypeExpr}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+      {sourceAvailable : List TypeExpr}
+      {outer : OneHoleContext} {collectionType : CollType}
+      {before elements : List Pattern} {rest : Option String}
+      {sourceElementType : TypeExpr}
+      (plan : CostStaticElementPlan source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer collectionType before elements rest
+        sourceElementType)
+      (presentation : ReflectivePresentationDecl)
+      (membership : presentation ∈
+        source.theory.presentation.presentation.language.reflectivePresentations) :
+      binderSafeListAt presentation.quoteConstructor
+        (CostStaticBinderThinning.sourceContextOfTarget source color
+          sourceAvailable).length plan.abstractPatterns = true := by
+    cases plan with
+    | nil => rfl
+    | cons head tail =>
+        simp only [CostStaticElementPlan.abstractPatterns, binderSafeListAt,
+          Bool.and_eq_true]
+        exact ⟨head.abstractPattern_reflectiveScopeSafeAt presentation
+            membership,
+          tail.abstractPatterns_binderSafeListAt presentation membership⟩
+end
+
+mutual
+  /-- Recompose the target pattern directly from the structural plan.  This
+  projection is independent of normalization and is used to establish the
+  decomposition round trip first. -/
+  def CostStaticRegionPlan.recomposePattern {source : CIGSLT}
+      {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+      {sourceBound targetBound : List TypeExpr}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+      {sourceAvailable : List TypeExpr}
+      {outer : OneHoleContext} {pattern : Pattern} {sourceType : TypeExpr} :
+      CostStaticRegionPlan source color targetFree sourceBound targetBound
+        thinning sourceAvailable outer pattern sourceType → Pattern
+    | @CostStaticRegionPlan.bvar _ _ _ _ _ _ _ _ targetIndex _ _ _ _ _ =>
+        .bvar targetIndex
+    | @CostStaticRegionPlan.fvar _ _ _ _ _ _ _ _ name _ _ => .fvar name
+    | @CostStaticRegionPlan.boundaryApplication _ _ _ _ _ _ _ _ wireName
+        arguments _ _ _ _ certified _ => certified.typed.boundary.content
+    | @CostStaticRegionPlan.application _ _ _ _ _ _ _ _ wireName _ _ _ _ _ _
+        children =>
+        .apply wireName children.recomposePatterns
+    | @CostStaticRegionPlan.lambda _ _ _ _ _ _ _ _ binder _ _ _ bodyPlan =>
+        .lambda binder bodyPlan.recomposePattern
+    | @CostStaticRegionPlan.multiLambda _ _ _ _ _ _ _ _ arity binders _ _ _
+        bodyPlan =>
+        .multiLambda arity binders bodyPlan.recomposePattern
+    | @CostStaticRegionPlan.collection _ _ _ _ _ _ _ _ collectionType _ rest _
+        _ _ children =>
+        .collection collectionType children.recomposePatterns rest
+    | @CostStaticRegionPlan.boundaryCollection _ _ _ _ _ _ _ _ collectionType
+        elements rest _ _ _ _ certified _ =>
+        certified.typed.boundary.content
+
+  /-- Target argument recomposition. -/
+  def CostStaticArgumentPlan.recomposePatterns {source : CIGSLT}
+      {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+      {sourceBound targetBound : List TypeExpr}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+      {sourceAvailable : List TypeExpr}
+      {outer : OneHoleContext} {wireName : String}
+      {before arguments : List Pattern} {parameters : List TermParam} :
+      CostStaticArgumentPlan source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer wireName before arguments
+        parameters →
+      List Pattern
+    | .nil => []
+    | .cons _ _ head tail =>
+        head.recomposePattern :: tail.recomposePatterns
+
+  /-- Target collection-element recomposition. -/
+  def CostStaticElementPlan.recomposePatterns {source : CIGSLT}
+      {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+      {sourceBound targetBound : List TypeExpr}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+      {sourceAvailable : List TypeExpr}
+      {outer : OneHoleContext} {collectionType : CollType}
+      {before elements : List Pattern} {rest : Option String}
+      {sourceElementType : TypeExpr} :
+      CostStaticElementPlan source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer collectionType before elements rest
+        sourceElementType → List Pattern
+    | .nil => []
+    | .cons head tail => head.recomposePattern :: tail.recomposePatterns
+end
+
+mutual
+  /-- Structural plan recomposition recovers the exact indexed target term. -/
+  theorem CostStaticRegionPlan.recomposePattern_eq {source : CIGSLT}
+      {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+      {sourceBound targetBound : List TypeExpr}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+      {sourceAvailable : List TypeExpr}
+      {outer : OneHoleContext} {pattern : Pattern} {sourceType : TypeExpr}
+      (plan : CostStaticRegionPlan source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer pattern sourceType) :
+      plan.recomposePattern = pattern := by
+    cases plan with
+    | bvar sourceIndex lookup correspondence availableScope => rfl
+    | fvar lookup => rfl
+    | boundaryApplication constructor rendered outsideCurrent certified
+        certifies =>
+        exact certified.content_eq
+    | application constructor rendered current preimage notBare children =>
+        simp [CostStaticRegionPlan.recomposePattern,
+          children.recomposePatterns_eq]
+    | lambda bodyPlan =>
+        simp [CostStaticRegionPlan.recomposePattern,
+          bodyPlan.recomposePattern_eq]
+    | multiLambda bodyPlan =>
+        simp [CostStaticRegionPlan.recomposePattern,
+          bodyPlan.recomposePattern_eq]
+    | collection choice selected children =>
+        simp [CostStaticRegionPlan.recomposePattern,
+          children.recomposePatterns_eq]
+    | boundaryCollection currentRejected oppositeChoice oppositeSelected
+        certified certifies =>
+        exact certified.content_eq
+
+  /-- Argument-spine structural recomposition is exact and ordered. -/
+  theorem CostStaticArgumentPlan.recomposePatterns_eq {source : CIGSLT}
+      {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+      {sourceBound targetBound : List TypeExpr}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+      {sourceAvailable : List TypeExpr}
+      {outer : OneHoleContext} {wireName : String}
+      {before arguments : List Pattern} {parameters : List TermParam}
+      (plan : CostStaticArgumentPlan source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer wireName before arguments
+        parameters) :
+      plan.recomposePatterns = arguments := by
+    cases plan with
+    | nil => rfl
+    | cons representation parameterType head tail =>
+        simp [CostStaticArgumentPlan.recomposePatterns,
+          head.recomposePattern_eq, tail.recomposePatterns_eq]
+
+  /-- Collection-spine structural recomposition is exact and ordered. -/
+  theorem CostStaticElementPlan.recomposePatterns_eq {source : CIGSLT}
+      {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+      {sourceBound targetBound : List TypeExpr}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+      {sourceAvailable : List TypeExpr}
+      {outer : OneHoleContext} {collectionType : CollType}
+      {before elements : List Pattern} {rest : Option String}
+      {sourceElementType : TypeExpr}
+      (plan : CostStaticElementPlan source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer collectionType before elements rest
+        sourceElementType) :
+      plan.recomposePatterns = elements := by
+    cases plan with
+    | nil => rfl
+    | cons head tail =>
+        simp [CostStaticElementPlan.recomposePatterns,
+          head.recomposePattern_eq, tail.recomposePatterns_eq]
+end
+
+mutual
+  /-- Mapping a proof-relevant source skeleton back into its generated static
+  fiber, reinserting every target-only ambient binder, and restoring the exact
+  finite boundary table recovers the structural plan verbatim.  Objecthood is
+  load-bearing only for ruling out open collection tails, which are schema
+  syntax rather than terms of the presented language. -/
+  theorem CostStaticRegionPlan.restoreMappedAbstractPattern
+      {source : CIGSLT} {color : CostStaticColor}
+      {targetFree : WellSorted.FreeTypeContext}
+      {sourceBound targetBound : List TypeExpr}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+      {sourceAvailable : List TypeExpr}
+      {outer : OneHoleContext} {pattern : Pattern} {sourceType : TypeExpr}
+      (plan : CostStaticRegionPlan source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer pattern sourceType)
+      {globalOccurrences : List CostRegionOccurrence}
+      (globalTable : TypedCostRegionBoundaryTable source color targetFree
+        globalOccurrences)
+      (entriesSubset : plan.boundaryTable.entries ⊆ globalTable.entries)
+      (object : WellSorted.isObjectPattern pattern = true) :
+      ReflectiveContextSupport.substituteAt source.costWholeLanguage
+          globalTable.restorationSupport globalTable.restorationAssignment
+          sourceAvailable.length
+          (thinning.thickenAmbientBVars 0
+            (mapPattern (color.symbols source) plan.abstractPattern)) =
+        plan.recomposePattern := by
+    cases plan with
+    | bvar sourceIndex lookup correspondence availableScope =>
+        have embedded :=
+          thinning.toTargetIndex_of_toSourceIndex?_eq_some correspondence
+        simp [CostStaticRegionPlan.abstractPattern,
+          CostStaticRegionPlan.recomposePattern, mapPattern,
+          CostStaticBinderThinning.thickenAmbientBVars,
+          CostStaticBinderThinning.embedIndexAt,
+          ReflectiveContextSupport.substituteAt, embedded]
+    | @fvar _ _ _ _ _ name _ lookup =>
+        simp [CostStaticRegionPlan.abstractPattern,
+          CostStaticRegionPlan.recomposePattern, mapPattern,
+          CostStaticBinderThinning.thickenAmbientBVars,
+          ReflectiveContextSupport.substituteAt,
+          globalTable.restorationAssignment_sourceVariable, liftBVars]
+    | boundaryApplication constructor rendered outsideCurrent certified
+        certifies =>
+        have globalMembership : certified.typed ∈ globalTable.entries := by
+          apply entriesSubset
+          change certified.typed ∈ [certified.typed]
+          simp
+        simp [CostStaticRegionPlan.abstractPattern,
+          CostStaticRegionPlan.recomposePattern, mapPattern,
+          CostStaticBinderThinning.thickenAmbientBVars,
+          ReflectiveContextSupport.substituteAt,
+          globalTable.restorationAssignment_boundaryVariable certified.typed
+            globalMembership,
+          globalTable.restorationSupport_boundaryVariable certified.typed
+            globalMembership,
+          certified.targetSupport_eq, liftBVars_zero]
+    | @application sourceBound targetBound sourceAvailable thinning outer
+        wireName arguments constructor rendered current preimage notBare
+        children =>
+        have labelEquality :
+            (color.symbols source).constructor
+                preimage.sourceConstructor.1.label = wireName := by
+          rw [← preimage.labelMap,
+            source.materializeDeclaredCostConstructor_label, rendered]
+        have childrenObject :
+            WellSorted.isObjectPatternList arguments = true := by
+          simpa [WellSorted.isObjectPattern] using object
+        have childrenRestored :=
+          CostStaticArgumentPlan.restoreMappedAbstractPatterns children
+            globalTable entriesSubset childrenObject
+        by_cases quoted : ReflectiveContextSupport.isQuoteConstructor
+            source.theory.presentation.presentation.language
+            preimage.sourceConstructor.1.label = true
+        · have targetQuoted :
+              ReflectiveContextSupport.isQuoteConstructor
+                source.costWholeLanguage
+                (color.constructorTag ++
+                  preimage.sourceConstructor.1.label) = true := by
+            rw [← CostStaticColor.symbols_constructor source color]
+            simpa only [reflectiveIsQuoteConstructor_mapCostStatic] using quoted
+          simp only [CostStaticRegionPlan.abstractPattern,
+            CostStaticRegionPlan.recomposePattern, mapPattern,
+            CostStaticBinderThinning.thickenAmbientBVars,
+            ReflectiveContextSupport.substituteAt, Pattern.apply.injEq]
+          constructor
+          · exact labelEquality
+          · simpa [CostStaticColor.symbols_constructor, quoted, targetQuoted,
+              mapPatternList_eq_map, List.map_map, Function.comp_def] using
+              childrenRestored
+        · have sourceOrdinary : ReflectiveContextSupport.isQuoteConstructor
+              source.theory.presentation.presentation.language
+              preimage.sourceConstructor.1.label = false :=
+            Bool.eq_false_of_not_eq_true quoted
+          have targetOrdinary :
+              ReflectiveContextSupport.isQuoteConstructor
+                source.costWholeLanguage
+                (color.constructorTag ++
+                  preimage.sourceConstructor.1.label) = false := by
+            rw [← CostStaticColor.symbols_constructor source color]
+            simpa only [reflectiveIsQuoteConstructor_mapCostStatic] using
+              sourceOrdinary
+          simp only [CostStaticRegionPlan.abstractPattern,
+            CostStaticRegionPlan.recomposePattern, mapPattern,
+            CostStaticBinderThinning.thickenAmbientBVars,
+            ReflectiveContextSupport.substituteAt, Pattern.apply.injEq]
+          constructor
+          · exact labelEquality
+          · simpa [CostStaticColor.symbols_constructor, sourceOrdinary,
+              targetOrdinary,
+              mapPatternList_eq_map, List.map_map,
+              Function.comp_def] using childrenRestored
+    | @lambda sourceBound targetBound sourceAvailable thinning outer binder
+        body domain codomain bodyPlan =>
+        have bodyObject : WellSorted.isObjectPattern body = true := by
+          simpa [WellSorted.isObjectPattern] using object
+        have bodyRestored :=
+          CostStaticRegionPlan.restoreMappedAbstractPattern bodyPlan
+            globalTable entriesSubset bodyObject
+        simpa [CostStaticRegionPlan.abstractPattern,
+          CostStaticRegionPlan.recomposePattern, mapPattern,
+          CostStaticBinderThinning.thickenAmbientBVars,
+          ReflectiveContextSupport.substituteAt,
+          CostStaticBinderThinning.thickenAmbientBVars_mapped,
+          Nat.add_comm] using bodyRestored
+    | @multiLambda sourceBound targetBound sourceAvailable thinning outer arity
+        binders body domain codomain bodyPlan =>
+        have bodyObject : WellSorted.isObjectPattern body = true := by
+          simpa [WellSorted.isObjectPattern] using object
+        have bodyRestored :=
+          CostStaticRegionPlan.restoreMappedAbstractPattern bodyPlan
+            globalTable entriesSubset bodyObject
+        simpa [CostStaticRegionPlan.abstractPattern,
+          CostStaticRegionPlan.recomposePattern, mapPattern,
+          CostStaticBinderThinning.thickenAmbientBVars,
+          ReflectiveContextSupport.substituteAt,
+          CostStaticBinderThinning.thickenAmbientBVars_prependMapped,
+          List.length_append, Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+          using bodyRestored
+    | @collection sourceBound targetBound sourceAvailable thinning outer
+        collectionType elements rest sourceType choice selected children =>
+        have restNone : rest = none := by
+          cases rest with
+          | none => rfl
+          | some rest => simp [WellSorted.isObjectPattern] at object
+        subst rest
+        have childrenObject :
+            WellSorted.isObjectPatternList elements = true := by
+          simpa [WellSorted.isObjectPattern] using object
+        have childrenRestored :=
+          CostStaticElementPlan.restoreMappedAbstractPatterns children
+            globalTable entriesSubset childrenObject
+        simp only [CostStaticRegionPlan.abstractPattern,
+          CostStaticRegionPlan.recomposePattern, mapPattern,
+          CostStaticBinderThinning.thickenAmbientBVars,
+          ReflectiveContextSupport.substituteAt, Pattern.collection.injEq,
+          true_and]
+        constructor
+        · simpa [mapPatternList_eq_map, List.map_map,
+            Function.comp_def] using childrenRestored
+        · rfl
+    | boundaryCollection currentRejected oppositeChoice oppositeSelected
+        certified certifies =>
+        have globalMembership : certified.typed ∈ globalTable.entries := by
+          apply entriesSubset
+          change certified.typed ∈ [certified.typed]
+          simp
+        simp [CostStaticRegionPlan.abstractPattern,
+          CostStaticRegionPlan.recomposePattern, mapPattern,
+          CostStaticBinderThinning.thickenAmbientBVars,
+          ReflectiveContextSupport.substituteAt,
+          globalTable.restorationAssignment_boundaryVariable certified.typed
+            globalMembership,
+          globalTable.restorationSupport_boundaryVariable certified.typed
+            globalMembership,
+          certified.targetSupport_eq, liftBVars_zero]
+
+  /-- Ordered constructor arguments inherit the same exact finite-table
+  round trip. -/
+  theorem CostStaticArgumentPlan.restoreMappedAbstractPatterns
+      {source : CIGSLT} {color : CostStaticColor}
+      {targetFree : WellSorted.FreeTypeContext}
+      {sourceBound targetBound : List TypeExpr}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+      {sourceAvailable : List TypeExpr}
+      {outer : OneHoleContext} {wireName : String}
+      {before arguments : List Pattern} {parameters : List TermParam}
+      (plan : CostStaticArgumentPlan source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer wireName before arguments
+        parameters)
+      {globalOccurrences : List CostRegionOccurrence}
+      (globalTable : TypedCostRegionBoundaryTable source color targetFree
+        globalOccurrences)
+      (entriesSubset : plan.boundaryTable.entries ⊆ globalTable.entries)
+      (object : WellSorted.isObjectPatternList arguments = true) :
+      plan.abstractPatterns.map (fun argument =>
+          ReflectiveContextSupport.substituteAt source.costWholeLanguage
+            globalTable.restorationSupport globalTable.restorationAssignment
+            sourceAvailable.length
+            (thinning.thickenAmbientBVars 0
+              (mapPattern (color.symbols source) argument))) =
+        plan.recomposePatterns := by
+    cases plan with
+    | nil => rfl
+    | cons representation parameterType head tail =>
+        simp only [WellSorted.isObjectPatternList, Bool.and_eq_true] at object
+        have headSubset : head.boundaryTable.entries ⊆ globalTable.entries := by
+          intro boundary membership
+          apply entriesSubset
+          change boundary ∈
+            (TypedCostRegionBoundaryTable.append head.boundaryTable
+              tail.boundaryTable).entries
+          rw [TypedCostRegionBoundaryTable.entries_append]
+          exact List.mem_append_left tail.boundaryTable.entries membership
+        have tailSubset : tail.boundaryTable.entries ⊆ globalTable.entries := by
+          intro boundary membership
+          apply entriesSubset
+          change boundary ∈
+            (TypedCostRegionBoundaryTable.append head.boundaryTable
+              tail.boundaryTable).entries
+          rw [TypedCostRegionBoundaryTable.entries_append]
+          exact List.mem_append_right head.boundaryTable.entries membership
+        have headRestored :=
+          CostStaticRegionPlan.restoreMappedAbstractPattern head globalTable
+            headSubset object.1
+        have tailRestored :=
+          CostStaticArgumentPlan.restoreMappedAbstractPatterns tail globalTable
+            tailSubset object.2
+        simp [CostStaticArgumentPlan.abstractPatterns,
+          CostStaticArgumentPlan.recomposePatterns, headRestored,
+          tailRestored]
+
+  /-- Ordered collection elements inherit the same exact finite-table round
+  trip without changing collection order or multiplicity. -/
+  theorem CostStaticElementPlan.restoreMappedAbstractPatterns
+      {source : CIGSLT} {color : CostStaticColor}
+      {targetFree : WellSorted.FreeTypeContext}
+      {sourceBound targetBound : List TypeExpr}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+      {sourceAvailable : List TypeExpr}
+      {outer : OneHoleContext} {collectionType : CollType}
+      {before elements : List Pattern} {rest : Option String}
+      {sourceElementType : TypeExpr}
+      (plan : CostStaticElementPlan source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer collectionType before
+        elements rest sourceElementType)
+      {globalOccurrences : List CostRegionOccurrence}
+      (globalTable : TypedCostRegionBoundaryTable source color targetFree
+        globalOccurrences)
+      (entriesSubset : plan.boundaryTable.entries ⊆ globalTable.entries)
+      (object : WellSorted.isObjectPatternList elements = true) :
+      plan.abstractPatterns.map (fun element =>
+          ReflectiveContextSupport.substituteAt source.costWholeLanguage
+            globalTable.restorationSupport globalTable.restorationAssignment
+            sourceAvailable.length
+            (thinning.thickenAmbientBVars 0
+              (mapPattern (color.symbols source) element))) =
+        plan.recomposePatterns := by
+    cases plan with
+    | nil => rfl
+    | cons head tail =>
+        simp only [WellSorted.isObjectPatternList, Bool.and_eq_true] at object
+        have headSubset : head.boundaryTable.entries ⊆ globalTable.entries := by
+          intro boundary membership
+          apply entriesSubset
+          change boundary ∈
+            (TypedCostRegionBoundaryTable.append head.boundaryTable
+              tail.boundaryTable).entries
+          rw [TypedCostRegionBoundaryTable.entries_append]
+          exact List.mem_append_left tail.boundaryTable.entries membership
+        have tailSubset : tail.boundaryTable.entries ⊆ globalTable.entries := by
+          intro boundary membership
+          apply entriesSubset
+          change boundary ∈
+            (TypedCostRegionBoundaryTable.append head.boundaryTable
+              tail.boundaryTable).entries
+          rw [TypedCostRegionBoundaryTable.entries_append]
+          exact List.mem_append_right head.boundaryTable.entries membership
+        have headRestored :=
+          CostStaticRegionPlan.restoreMappedAbstractPattern head globalTable
+            headSubset object.1
+        have tailRestored :=
+          CostStaticElementPlan.restoreMappedAbstractPatterns tail globalTable
+            tailSubset object.2
+        simp [CostStaticElementPlan.abstractPatterns,
+          CostStaticElementPlan.recomposePatterns, headRestored,
+          tailRestored]
+end
+
+mutual
+  /-- Every table projected from a structural plan lies pointwise in the
+  exact selected source/target static fiber. -/
+  theorem CostStaticRegionPlan.boundaryTable_fiberCoherent
+      {source : CIGSLT} {color : CostStaticColor}
+      {targetFree : WellSorted.FreeTypeContext}
+      {sourceBound targetBound : List TypeExpr}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+      {sourceAvailable : List TypeExpr}
+      {outer : OneHoleContext} {pattern : Pattern} {sourceType : TypeExpr}
+      (plan : CostStaticRegionPlan source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer pattern sourceType) :
+      plan.boundaryTable.FiberCoherent := by
+    cases plan with
+    | bvar sourceIndex lookup correspondence availableScope | fvar lookup =>
+        exact TypedCostRegionBoundaryTable.fiberCoherent_of_entries_eq_nil
+          .nil rfl
+    | boundaryApplication constructor rendered outsideCurrent certified
+        certifies =>
+        constructor
+        intro boundary membership
+        have boundaryEquality : boundary = certified.typed := by
+          change boundary ∈ [certified.typed] at membership
+          simpa using membership
+        cases boundaryEquality
+        exact (certifyCostRegionBoundary?_typeMap certifies).trans
+          certified.targetType_eq.symm
+    | application constructor rendered current preimage notBare children =>
+        exact children.boundaryTable_fiberCoherent
+    | lambda bodyPlan => exact bodyPlan.boundaryTable_fiberCoherent
+    | multiLambda bodyPlan => exact bodyPlan.boundaryTable_fiberCoherent
+    | collection choice selected children =>
+        exact children.boundaryTable_fiberCoherent
+    | boundaryCollection currentRejected oppositeChoice oppositeSelected
+        certified certifies =>
+        constructor
+        intro boundary membership
+        have boundaryEquality : boundary = certified.typed := by
+          change boundary ∈ [certified.typed] at membership
+          simpa using membership
+        cases boundaryEquality
+        exact (certifyCostRegionBoundary?_typeMap certifies).trans
+          certified.targetType_eq.symm
+
+  /-- Argument-spine table coherence composes by ordered append. -/
+  theorem CostStaticArgumentPlan.boundaryTable_fiberCoherent
+      {source : CIGSLT} {color : CostStaticColor}
+      {targetFree : WellSorted.FreeTypeContext}
+      {sourceBound targetBound : List TypeExpr}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+      {sourceAvailable : List TypeExpr}
+      {outer : OneHoleContext} {wireName : String}
+      {before arguments : List Pattern} {parameters : List TermParam}
+      (plan : CostStaticArgumentPlan source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer wireName before arguments
+        parameters) :
+      plan.boundaryTable.FiberCoherent := by
+    cases plan with
+    | nil =>
+        exact TypedCostRegionBoundaryTable.fiberCoherent_of_entries_eq_nil
+          .nil rfl
+    | cons representation parameterType head tail =>
+        exact (TypedCostRegionBoundaryTable.fiberCoherent_append_iff
+          head.boundaryTable tail.boundaryTable).2
+            ⟨head.boundaryTable_fiberCoherent,
+              tail.boundaryTable_fiberCoherent⟩
+
+  /-- Collection-spine table coherence composes by ordered append. -/
+  theorem CostStaticElementPlan.boundaryTable_fiberCoherent
+      {source : CIGSLT} {color : CostStaticColor}
+      {targetFree : WellSorted.FreeTypeContext}
+      {sourceBound targetBound : List TypeExpr}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+      {sourceAvailable : List TypeExpr}
+      {outer : OneHoleContext} {collectionType : CollType}
+      {before elements : List Pattern} {rest : Option String}
+      {sourceElementType : TypeExpr}
+      (plan : CostStaticElementPlan source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer collectionType before elements rest
+        sourceElementType) :
+      plan.boundaryTable.FiberCoherent := by
+    cases plan with
+    | nil =>
+        exact TypedCostRegionBoundaryTable.fiberCoherent_of_entries_eq_nil
+          .nil rfl
+    | cons head tail =>
+        exact (TypedCostRegionBoundaryTable.fiberCoherent_append_iff
+          head.boundaryTable tail.boundaryTable).2
+            ⟨head.boundaryTable_fiberCoherent,
+              tail.boundaryTable_fiberCoherent⟩
+end
+
+/-- Intrinsic reason that a finite plan entry ends the current static region.
+Application boundaries leave the current generated constructor role;
+collection boundaries record the exact-color failure and opposite-color
+success that make the collection itself a color transition. -/
+inductive CostStaticBoundaryKind (source : CIGSLT)
+    (color : CostStaticColor) (targetFree : WellSorted.FreeTypeContext)
+    (boundary : TypedCostRegionBoundary source color targetFree) : Prop where
+  | application
+      {wireName : String} {arguments : List Pattern}
+      (constructor : source.DeclaredCostConstructor)
+      (rendered : source.renderDeclaredCostConstructor constructor = wireName)
+      (outsideCurrent : source.declaredCostConstructorRole constructor ≠
+        .static color)
+      (content : boundary.boundary.content = .apply wireName arguments) :
+      CostStaticBoundaryKind source color targetFree boundary
+  | collection
+      {targetBound : List TypeExpr} {collectionType : CollType}
+      {elements : List Pattern} {rest : Option String}
+      {sourceType : TypeExpr}
+      (currentRejected : costStaticCollectionTypingChoice? source color
+        targetFree targetBound
+        collectionType elements
+        (mapTypeExpr (color.symbols source) sourceType) = none)
+      (oppositeChoice : CostCollectionTypingChoice)
+      (oppositeSelected : costStaticCollectionTypingChoice? source color.flip
+        targetFree targetBound
+        collectionType elements
+        (mapTypeExpr (color.symbols source) sourceType) =
+          some oppositeChoice)
+      (content : boundary.boundary.content =
+        .collection collectionType elements rest) :
+      CostStaticBoundaryKind source color targetFree boundary
+
+mutual
+  /-- Every finite entry projected from a region plan has a proof-relevant
+  transition kind; there is no default or application-only fallback. -/
+  theorem CostStaticRegionPlan.boundaryKind_of_mem_entries
+      {source : CIGSLT} {color : CostStaticColor}
+      {targetFree : WellSorted.FreeTypeContext}
+      {sourceBound targetBound : List TypeExpr}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+      {sourceAvailable : List TypeExpr}
+      {outer : OneHoleContext} {pattern : Pattern} {sourceType : TypeExpr}
+      (plan : CostStaticRegionPlan source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer pattern sourceType)
+      (boundary : TypedCostRegionBoundary source color targetFree)
+      (membership : boundary ∈ plan.boundaryTable.entries) :
+      CostStaticBoundaryKind source color targetFree boundary := by
+    cases plan with
+    | bvar sourceIndex lookup correspondence availableScope | fvar lookup =>
+        change boundary ∈ ([] : List
+          (TypedCostRegionBoundary source color targetFree)) at membership
+        simp at membership
+    | boundaryApplication constructor rendered outsideCurrent certified
+        certifies =>
+        have equality : boundary = certified.typed := by
+          change boundary ∈ [certified.typed] at membership
+          simpa using membership
+        subst boundary
+        exact .application constructor rendered outsideCurrent
+          certified.content_eq
+    | application constructor rendered current preimage notBare children =>
+        exact children.boundaryKind_of_mem_entries boundary membership
+    | lambda bodyPlan =>
+        exact bodyPlan.boundaryKind_of_mem_entries boundary membership
+    | multiLambda bodyPlan =>
+        exact bodyPlan.boundaryKind_of_mem_entries boundary membership
+    | collection choice selected children =>
+        exact children.boundaryKind_of_mem_entries boundary membership
+    | boundaryCollection currentRejected oppositeChoice oppositeSelected
+        certified certifies =>
+        have equality : boundary = certified.typed := by
+          change boundary ∈ [certified.typed] at membership
+          simpa using membership
+        subst boundary
+        exact .collection currentRejected oppositeChoice oppositeSelected
+          certified.content_eq
+
+  /-- Application-spine entries inherit their exact transition kind from one
+  of the two ordered finite subplans. -/
+  theorem CostStaticArgumentPlan.boundaryKind_of_mem_entries
+      {source : CIGSLT} {color : CostStaticColor}
+      {targetFree : WellSorted.FreeTypeContext}
+      {sourceBound targetBound : List TypeExpr}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+      {sourceAvailable : List TypeExpr}
+      {outer : OneHoleContext} {wireName : String}
+      {before arguments : List Pattern} {parameters : List TermParam}
+      (plan : CostStaticArgumentPlan source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer wireName before arguments
+        parameters)
+      (boundary : TypedCostRegionBoundary source color targetFree)
+      (membership : boundary ∈ plan.boundaryTable.entries) :
+      CostStaticBoundaryKind source color targetFree boundary := by
+    cases plan with
+    | nil =>
+        change boundary ∈ ([] : List
+          (TypedCostRegionBoundary source color targetFree)) at membership
+        simp at membership
+    | cons representation parameterType head tail =>
+        change boundary ∈
+          (TypedCostRegionBoundaryTable.append head.boundaryTable
+            tail.boundaryTable).entries at membership
+        rw [TypedCostRegionBoundaryTable.entries_append] at membership
+        rcases List.mem_append.mp membership with headMembership | tailMembership
+        · exact head.boundaryKind_of_mem_entries boundary headMembership
+        · exact tail.boundaryKind_of_mem_entries boundary tailMembership
+
+  /-- Collection-spine entries inherit their exact transition kind from one
+  of the two ordered finite subplans. -/
+  theorem CostStaticElementPlan.boundaryKind_of_mem_entries
+      {source : CIGSLT} {color : CostStaticColor}
+      {targetFree : WellSorted.FreeTypeContext}
+      {sourceBound targetBound : List TypeExpr}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+      {sourceAvailable : List TypeExpr}
+      {outer : OneHoleContext} {collectionType : CollType}
+      {before elements : List Pattern} {rest : Option String}
+      {sourceElementType : TypeExpr}
+      (plan : CostStaticElementPlan source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer collectionType before elements rest
+        sourceElementType)
+      (boundary : TypedCostRegionBoundary source color targetFree)
+      (membership : boundary ∈ plan.boundaryTable.entries) :
+      CostStaticBoundaryKind source color targetFree boundary := by
+    cases plan with
+    | nil =>
+        change boundary ∈ ([] : List
+          (TypedCostRegionBoundary source color targetFree)) at membership
+        simp at membership
+    | cons head tail =>
+        change boundary ∈
+          (TypedCostRegionBoundaryTable.append head.boundaryTable
+            tail.boundaryTable).entries at membership
+        rw [TypedCostRegionBoundaryTable.entries_append] at membership
+        rcases List.mem_append.mp membership with headMembership | tailMembership
+        · exact head.boundaryKind_of_mem_entries boundary headMembership
+        · exact tail.boundaryKind_of_mem_entries boundary tailMembership
+end
+
+mutual
+  /-- The source skeleton projected from a typed region plan is accepted by
+  the authored constructor fragment and is reflectively safe for the exact
+  global finite-boundary support assignment.  A local plan contributes only
+  an entry subset; sibling boundaries remain visible through `globalTable`. -/
+  theorem CostStaticRegionPlan.abstractPattern_supportedSafe
+      {source : CIGSLT} {color : CostStaticColor}
+      {targetFree : WellSorted.FreeTypeContext}
+      {sourceBound targetBound : List TypeExpr}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+      {sourceAvailable : List TypeExpr}
+      {outer : OneHoleContext} {pattern : Pattern} {sourceType : TypeExpr}
+      (plan : CostStaticRegionPlan source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer pattern sourceType)
+      {globalOccurrences : List CostRegionOccurrence}
+      (globalTable : TypedCostRegionBoundaryTable source color targetFree
+        globalOccurrences)
+      (entriesSubset : plan.boundaryTable.entries ⊆ globalTable.entries) :
+      ∃ typed : WellSorted.HasTypeWithConstructors
+          source.theory.presentation.presentation.language
+          (· ∈ source.continuationRetyping.wrappedLabels)
+          globalTable.sourceFreeContext sourceBound plan.abstractPattern
+          sourceType,
+        typed.toHasType.ReflectiveSupportSafeAt globalTable.sourceSupport
+          sourceAvailable (mapTypeExpr (color.symbols source)) := by
+    cases plan with
+    | bvar sourceIndex lookup correspondence availableScope =>
+        let typed : WellSorted.HasTypeWithConstructors
+            source.theory.presentation.presentation.language
+            (· ∈ source.continuationRetyping.wrappedLabels)
+            globalTable.sourceFreeContext sourceBound (.bvar _) _ :=
+          .bvar lookup
+        refine ⟨typed, ?_⟩
+        exact .bvar lookup sourceAvailable
+    | @fvar _ _ _ _ _ name _ lookup =>
+        have sourceLookup : globalTable.sourceFreeContext
+            (costRegionSourceVariableName name) = some sourceType := by
+          rw [globalTable.sourceFreeContext_sourceVariable, lookup]
+          simp
+        let typed : WellSorted.HasTypeWithConstructors
+            source.theory.presentation.presentation.language
+            (· ∈ source.continuationRetyping.wrappedLabels)
+            globalTable.sourceFreeContext sourceBound
+            (.fvar (costRegionSourceVariableName name)) sourceType :=
+          .fvar sourceLookup
+        refine ⟨typed, ?_⟩
+        exact .fvar sourceLookup sourceAvailable
+          ⟨sourceAvailable, by
+            rw [globalTable.sourceSupport_sourceVariable]
+            simp⟩
+    | boundaryApplication constructor rendered outsideCurrent certified
+        certifies =>
+        have globalMembership : certified.typed ∈ globalTable.entries := by
+          apply entriesSubset
+          change certified.typed ∈ [certified.typed]
+          simp
+        have sourceTypeEquality : certified.typed.boundary.type = sourceType :=
+          certifyCostRegionBoundary?_sourceType_eq certifies
+        have sourceLookup : globalTable.sourceFreeContext
+            (costRegionBoundaryVariableName certified.typed.boundary) =
+              some sourceType := by
+          rw [globalTable.sourceFreeContext_boundaryVariable certified.typed
+            globalMembership, sourceTypeEquality]
+        let typed : WellSorted.HasTypeWithConstructors
+            source.theory.presentation.presentation.language
+            (· ∈ source.continuationRetyping.wrappedLabels)
+            globalTable.sourceFreeContext sourceBound
+            (.fvar (costRegionBoundaryVariableName certified.typed.boundary))
+            sourceType := .fvar sourceLookup
+        refine ⟨typed, ?_⟩
+        exact globalTable.certifiedBoundaryFvar_reflectiveSupportSafeAt
+          globalMembership typed.toHasType
+    | application constructor rendered current preimage notBare children =>
+        obtain ⟨argumentsTyped, argumentsSafe⟩ :=
+          children.abstractPatterns_supportedSafe globalTable entriesSubset
+        have allowed : preimage.sourceConstructor.1.label ∈
+            source.continuationRetyping.wrappedLabels :=
+          (source.continuationRetyping.mem_wrappedLabels_iff
+            preimage.sourceConstructor).2 preimage.wrapped
+        let typed : WellSorted.HasTypeWithConstructors
+            source.theory.presentation.presentation.language
+            (· ∈ source.continuationRetyping.wrappedLabels)
+            globalTable.sourceFreeContext sourceBound
+            (.apply preimage.sourceConstructor.1.label
+              children.abstractPatterns)
+            (.base preimage.sourceConstructor.1.category) :=
+          .constructor allowed preimage.sourceConstructor.2 notBare
+            argumentsTyped
+        refine ⟨typed, ?_⟩
+        by_cases quoted : ReflectiveContextSupport.isQuoteConstructor
+            source.theory.presentation.presentation.language
+            preimage.sourceConstructor.1.label = true
+        · have safeAtQuote :
+              argumentsTyped.toArgumentsHaveTypes.ReflectiveSupportSafeAt
+                globalTable.sourceSupport []
+                  (mapTypeExpr (color.symbols source)) := by
+            simpa [quoted] using argumentsSafe
+          change typed.toHasType.ReflectiveSupportSafeAt
+            globalTable.sourceSupport sourceAvailable
+              (mapTypeExpr (color.symbols source))
+          simpa [typed, CostStaticRegionPlan.abstractPattern] using
+            (WellSorted.HasType.ReflectiveSupportSafeAt.constructorQuote
+              (membership := preimage.sourceConstructor.2)
+              (notBare := notBare) quoted safeAtQuote)
+        · have ordinary : ReflectiveContextSupport.isQuoteConstructor
+              source.theory.presentation.presentation.language
+              preimage.sourceConstructor.1.label = false :=
+            Bool.eq_false_of_not_eq_true quoted
+          have safeOrdinary :
+              argumentsTyped.toArgumentsHaveTypes.ReflectiveSupportSafeAt
+                globalTable.sourceSupport sourceAvailable
+                  (mapTypeExpr (color.symbols source)) := by
+            simpa [ordinary] using argumentsSafe
+          change typed.toHasType.ReflectiveSupportSafeAt
+            globalTable.sourceSupport sourceAvailable
+              (mapTypeExpr (color.symbols source))
+          simpa [typed, CostStaticRegionPlan.abstractPattern] using
+            (WellSorted.HasType.ReflectiveSupportSafeAt.constructorOrdinary
+              (membership := preimage.sourceConstructor.2)
+              (notBare := notBare) ordinary safeOrdinary)
+    | @lambda _ _ _ _ _ binder _ _ _ bodyPlan =>
+        obtain ⟨bodyTyped, bodySafe⟩ :=
+          bodyPlan.abstractPattern_supportedSafe globalTable entriesSubset
+        let typed : WellSorted.HasTypeWithConstructors
+            source.theory.presentation.presentation.language
+            (· ∈ source.continuationRetyping.wrappedLabels)
+            globalTable.sourceFreeContext sourceBound
+            (.lambda binder bodyPlan.abstractPattern) _ :=
+          .lambda (binder := binder) bodyTyped
+        refine ⟨typed, ?_⟩
+        change typed.toHasType.ReflectiveSupportSafeAt
+          globalTable.sourceSupport sourceAvailable
+            (mapTypeExpr (color.symbols source))
+        simpa [typed, CostStaticRegionPlan.abstractPattern] using
+          (WellSorted.HasType.ReflectiveSupportSafeAt.lambda bodySafe)
+    | @multiLambda _ _ _ _ _ arity binders _ _ _ bodyPlan =>
+        obtain ⟨bodyTyped, bodySafe⟩ :=
+          bodyPlan.abstractPattern_supportedSafe globalTable entriesSubset
+        let typed : WellSorted.HasTypeWithConstructors
+            source.theory.presentation.presentation.language
+            (· ∈ source.continuationRetyping.wrappedLabels)
+            globalTable.sourceFreeContext sourceBound
+            (.multiLambda arity binders bodyPlan.abstractPattern) _ :=
+          .multiLambda (binders := binders) bodyTyped
+        refine ⟨typed, ?_⟩
+        change typed.toHasType.ReflectiveSupportSafeAt
+          globalTable.sourceSupport sourceAvailable
+            (mapTypeExpr (color.symbols source))
+        simpa [typed, CostStaticRegionPlan.abstractPattern] using
+          (WellSorted.HasType.ReflectiveSupportSafeAt.multiLambda bodySafe)
+    | @collection _ _ _ _ _ collectionType elements rest sourceType choice
+        selected children =>
+        obtain ⟨elementsTyped, elementsSafe⟩ :=
+          CostStaticElementPlan.abstractPatterns_supportedSafe
+            (sourceBound := sourceBound) (targetBound := targetBound)
+            (thinning := thinning) (sourceAvailable := sourceAvailable)
+            children globalTable entriesSubset
+        rcases costStaticCollectionTypingChoice?_eq_some source color
+            targetFree
+            targetBound
+            collectionType elements
+            (mapTypeExpr (color.symbols source) sourceType) choice selected with
+          direct | bare
+        · rcases direct with
+            ⟨sourceElementType, choiceEquality, expectedEquality,
+              elementsChecked⟩
+          subst choice
+          have sourceTypeEquality : sourceType =
+              .collection collectionType sourceElementType :=
+            mapTypeExpr_costStatic_injective source color expectedEquality
+          subst sourceType
+          let typed : WellSorted.HasTypeWithConstructors
+              source.theory.presentation.presentation.language
+              (· ∈ source.continuationRetyping.wrappedLabels)
+              globalTable.sourceFreeContext sourceBound
+              (.collection collectionType children.abstractPatterns
+                (rest.map costRegionSourceVariableName))
+              (.collection collectionType sourceElementType) :=
+            .collection elementsTyped
+          refine ⟨typed, ?_⟩
+          change typed.toHasType.ReflectiveSupportSafeAt
+            globalTable.sourceSupport sourceAvailable
+              (mapTypeExpr (color.symbols source))
+          simpa [typed, CostStaticRegionPlan.abstractPattern,
+            CostCollectionTypingChoice.sourceElementType] using
+            (WellSorted.HasType.ReflectiveSupportSafeAt.collection elementsSafe)
+        · rcases bare with
+            ⟨rule, sourceElementType, choiceEquality, membership,
+              allowed, expectedEquality, parameterName, parameterShape,
+              elementsChecked⟩
+          subst choice
+          have sourceTypeEquality : sourceType = .base rule.category :=
+            mapTypeExpr_costStatic_injective source color expectedEquality
+          subst sourceType
+          let typed : WellSorted.HasTypeWithConstructors
+              source.theory.presentation.presentation.language
+              (· ∈ source.continuationRetyping.wrappedLabels)
+              globalTable.sourceFreeContext sourceBound
+              (.collection collectionType children.abstractPatterns
+                (rest.map costRegionSourceVariableName))
+              (.base rule.category) :=
+            .collectionConstructor allowed membership parameterShape
+              elementsTyped
+          refine ⟨typed, ?_⟩
+          change typed.toHasType.ReflectiveSupportSafeAt
+            globalTable.sourceSupport sourceAvailable
+              (mapTypeExpr (color.symbols source))
+          simpa [typed, CostStaticRegionPlan.abstractPattern] using
+            (WellSorted.HasType.ReflectiveSupportSafeAt.collectionConstructor
+              (membership := membership) (parameterShape := parameterShape)
+              elementsSafe)
+    | boundaryCollection currentRejected oppositeChoice oppositeSelected
+        certified certifies =>
+        have globalMembership : certified.typed ∈ globalTable.entries := by
+          apply entriesSubset
+          change certified.typed ∈ [certified.typed]
+          simp
+        have sourceTypeEquality : certified.typed.boundary.type = sourceType :=
+          certifyCostRegionBoundary?_sourceType_eq certifies
+        have sourceLookup : globalTable.sourceFreeContext
+            (costRegionBoundaryVariableName certified.typed.boundary) =
+              some sourceType := by
+          rw [globalTable.sourceFreeContext_boundaryVariable certified.typed
+            globalMembership, sourceTypeEquality]
+        let typed : WellSorted.HasTypeWithConstructors
+            source.theory.presentation.presentation.language
+            (· ∈ source.continuationRetyping.wrappedLabels)
+            globalTable.sourceFreeContext sourceBound
+            (.fvar (costRegionBoundaryVariableName certified.typed.boundary))
+            sourceType := .fvar sourceLookup
+        refine ⟨typed, ?_⟩
+        exact globalTable.certifiedBoundaryFvar_reflectiveSupportSafeAt
+          globalMembership typed.toHasType
+
+  /-- Constructor-argument companion to source-skeleton typing and support
+  safety.  Ordered table append is used only to prove finite membership. -/
+  theorem CostStaticArgumentPlan.abstractPatterns_supportedSafe
+      {source : CIGSLT} {color : CostStaticColor}
+      {targetFree : WellSorted.FreeTypeContext}
+      {sourceBound targetBound : List TypeExpr}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+      {sourceAvailable : List TypeExpr}
+      {outer : OneHoleContext} {wireName : String}
+      {before arguments : List Pattern} {parameters : List TermParam}
+      (plan : CostStaticArgumentPlan source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer wireName before arguments
+        parameters)
+      {globalOccurrences : List CostRegionOccurrence}
+      (globalTable : TypedCostRegionBoundaryTable source color targetFree
+        globalOccurrences)
+      (entriesSubset : plan.boundaryTable.entries ⊆ globalTable.entries) :
+      ∃ typed : WellSorted.ArgumentsHaveTypesWithConstructors
+          source.theory.presentation.presentation.language
+          (· ∈ source.continuationRetyping.wrappedLabels)
+          globalTable.sourceFreeContext sourceBound plan.abstractPatterns
+          parameters,
+        typed.toArgumentsHaveTypes.ReflectiveSupportSafeAt
+          globalTable.sourceSupport sourceAvailable
+            (mapTypeExpr (color.symbols source)) := by
+    cases plan with
+    | nil =>
+        let typed : WellSorted.ArgumentsHaveTypesWithConstructors
+            source.theory.presentation.presentation.language
+            (· ∈ source.continuationRetyping.wrappedLabels)
+            globalTable.sourceFreeContext sourceBound [] [] := .nil
+        refine ⟨typed, ?_⟩
+        exact .nil sourceBound sourceAvailable
+    | cons representation parameterType head tail =>
+        have headSubset : head.boundaryTable.entries ⊆
+            globalTable.entries := by
+          intro boundary membership
+          apply entriesSubset
+          change boundary ∈
+            (TypedCostRegionBoundaryTable.append head.boundaryTable
+              tail.boundaryTable).entries
+          rw [TypedCostRegionBoundaryTable.entries_append]
+          exact List.mem_append_left _ membership
+        have tailSubset : tail.boundaryTable.entries ⊆
+            globalTable.entries := by
+          intro boundary membership
+          apply entriesSubset
+          change boundary ∈
+            (TypedCostRegionBoundaryTable.append head.boundaryTable
+              tail.boundaryTable).entries
+          rw [TypedCostRegionBoundaryTable.entries_append]
+          exact List.mem_append_right _ membership
+        obtain ⟨headTyped, headSafe⟩ :=
+          CostStaticRegionPlan.abstractPattern_supportedSafe
+            (sourceBound := sourceBound) (targetBound := targetBound)
+            (thinning := thinning) (sourceAvailable := sourceAvailable)
+            head globalTable headSubset
+        obtain ⟨tailTyped, tailSafe⟩ :=
+          CostStaticArgumentPlan.abstractPatterns_supportedSafe
+            (sourceBound := sourceBound) (targetBound := targetBound)
+            (thinning := thinning) (sourceAvailable := sourceAvailable)
+            tail globalTable tailSubset
+        have abstractRepresentation :=
+          head.matchesParameterRepresentation _ representation
+        let typed : WellSorted.ArgumentsHaveTypesWithConstructors
+            source.theory.presentation.presentation.language
+            (· ∈ source.continuationRetyping.wrappedLabels)
+            globalTable.sourceFreeContext sourceBound
+            (head.abstractPattern :: tail.abstractPatterns) _ :=
+          .cons abstractRepresentation parameterType headTyped tailTyped
+        refine ⟨typed, ?_⟩
+        change typed.toArgumentsHaveTypes.ReflectiveSupportSafeAt
+          globalTable.sourceSupport sourceAvailable
+            (mapTypeExpr (color.symbols source))
+        simpa [typed, CostStaticArgumentPlan.abstractPatterns] using
+          (WellSorted.ArgumentsHaveTypes.ReflectiveSupportSafeAt.cons
+            (representation := abstractRepresentation)
+            (parameterType := parameterType) headSafe tailSafe)
+
+  /-- Homogeneous-collection companion to source-skeleton typing and support
+  safety. -/
+  theorem CostStaticElementPlan.abstractPatterns_supportedSafe
+      {source : CIGSLT} {color : CostStaticColor}
+      {targetFree : WellSorted.FreeTypeContext}
+      {sourceBound targetBound : List TypeExpr}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+      {sourceAvailable : List TypeExpr}
+      {outer : OneHoleContext} {collectionType : CollType}
+      {before elements : List Pattern} {rest : Option String}
+      {sourceElementType : TypeExpr}
+      (plan : CostStaticElementPlan source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer collectionType before elements rest
+        sourceElementType)
+      {globalOccurrences : List CostRegionOccurrence}
+      (globalTable : TypedCostRegionBoundaryTable source color targetFree
+        globalOccurrences)
+      (entriesSubset : plan.boundaryTable.entries ⊆ globalTable.entries) :
+      ∃ typed : WellSorted.ElementsHaveTypeWithConstructors
+          source.theory.presentation.presentation.language
+          (· ∈ source.continuationRetyping.wrappedLabels)
+          globalTable.sourceFreeContext sourceBound plan.abstractPatterns
+          sourceElementType,
+        typed.toElementsHaveType.ReflectiveSupportSafeAt
+          globalTable.sourceSupport sourceAvailable
+            (mapTypeExpr (color.symbols source)) := by
+    cases plan with
+    | nil =>
+        let typed : WellSorted.ElementsHaveTypeWithConstructors
+            source.theory.presentation.presentation.language
+            (· ∈ source.continuationRetyping.wrappedLabels)
+            globalTable.sourceFreeContext sourceBound [] sourceElementType :=
+          .nil sourceBound sourceElementType
+        refine ⟨typed, ?_⟩
+        exact .nil sourceBound sourceElementType sourceAvailable
+    | cons head tail =>
+        have headSubset : head.boundaryTable.entries ⊆
+            globalTable.entries := by
+          intro boundary membership
+          apply entriesSubset
+          change boundary ∈
+            (TypedCostRegionBoundaryTable.append head.boundaryTable
+              tail.boundaryTable).entries
+          rw [TypedCostRegionBoundaryTable.entries_append]
+          exact List.mem_append_left _ membership
+        have tailSubset : tail.boundaryTable.entries ⊆
+            globalTable.entries := by
+          intro boundary membership
+          apply entriesSubset
+          change boundary ∈
+            (TypedCostRegionBoundaryTable.append head.boundaryTable
+              tail.boundaryTable).entries
+          rw [TypedCostRegionBoundaryTable.entries_append]
+          exact List.mem_append_right _ membership
+        obtain ⟨headTyped, headSafe⟩ :=
+          CostStaticRegionPlan.abstractPattern_supportedSafe
+            (sourceBound := sourceBound) (targetBound := targetBound)
+            (thinning := thinning) (sourceAvailable := sourceAvailable)
+            head globalTable headSubset
+        obtain ⟨tailTyped, tailSafe⟩ :=
+          CostStaticElementPlan.abstractPatterns_supportedSafe
+            (sourceBound := sourceBound) (targetBound := targetBound)
+            (thinning := thinning) (sourceAvailable := sourceAvailable)
+            tail globalTable tailSubset
+        let typed : WellSorted.ElementsHaveTypeWithConstructors
+            source.theory.presentation.presentation.language
+            (· ∈ source.continuationRetyping.wrappedLabels)
+            globalTable.sourceFreeContext sourceBound
+            (head.abstractPattern :: tail.abstractPatterns)
+            sourceElementType := .cons headTyped tailTyped
+        refine ⟨typed, ?_⟩
+        change typed.toElementsHaveType.ReflectiveSupportSafeAt
+          globalTable.sourceSupport sourceAvailable
+            (mapTypeExpr (color.symbols source))
+        simpa [typed, CostStaticElementPlan.abstractPatterns] using
+          (WellSorted.ElementsHaveType.ReflectiveSupportSafeAt.cons
+            headSafe tailSafe)
+end
+
+/-- A maximal static node must start at an exact-color authored application
+or bare-collection declaration.  Variables and structural frames are handled
+by the surrounding region tree, while foreign-color roots are finite
+children. -/
+def CostStaticRegionPlan.isStaticRoot {source : CIGSLT}
+    {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+    {sourceBound targetBound : List TypeExpr}
+    {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+    {sourceAvailable : List TypeExpr}
+    {outer : OneHoleContext} {pattern : Pattern} {sourceType : TypeExpr} :
+    CostStaticRegionPlan source color targetFree sourceBound targetBound
+      thinning sourceAvailable outer pattern sourceType → Bool
+  | .application _ _ _ _ _ _ => true
+  | .collection _ _ _ => true
+  | _ => false
+
+/-- A plan rooted at a wire whose intrinsic declaration has the selected
+static role cannot be a finite foreign boundary.  Thus any successful plan at
+that exact application is a genuine maximal static root. -/
+theorem CostStaticRegionPlan.isStaticRoot_of_current_application
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {sourceBound targetBound : List TypeExpr}
+    {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+    {sourceAvailable : List TypeExpr} {outer : OneHoleContext}
+    {wireName : String} {arguments : List Pattern} {sourceType : TypeExpr}
+    (plan : CostStaticRegionPlan source color targetFree sourceBound
+      targetBound thinning sourceAvailable outer (.apply wireName arguments)
+        sourceType)
+    (constructor : source.DeclaredCostConstructor)
+    (decoded : source.decodeDeclaredCostConstructor wireName = some constructor)
+    (current : source.declaredCostConstructorRole constructor = .static color) :
+    plan.isStaticRoot = true := by
+  cases plan with
+  | boundaryApplication boundaryConstructor rendered outsideCurrent
+      certified certifies =>
+      have boundaryDecoded : source.decodeDeclaredCostConstructor wireName =
+          some boundaryConstructor := by
+        rw [← rendered]
+        exact source.decodeDeclaredCostConstructor_render boundaryConstructor
+      have constructorEquality : boundaryConstructor = constructor :=
+        Option.some.inj (boundaryDecoded.symm.trans decoded)
+      subst boundaryConstructor
+      exact (outsideCurrent current).elim
+  | application constructor rendered current preimage notBare children =>
+      rfl
+
+/-- A successful current-colour collection candidate excludes the only
+non-root collection plan, whose constructor stores rejection of that complete
+candidate family. -/
+theorem CostStaticRegionPlan.isStaticRoot_of_current_collection
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {sourceBound targetBound : List TypeExpr}
+    {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+    {sourceAvailable : List TypeExpr} {outer : OneHoleContext}
+    {collectionType : CollType} {elements : List Pattern}
+    {rest : Option String} {sourceType : TypeExpr}
+    (plan : CostStaticRegionPlan source color targetFree sourceBound
+      targetBound thinning sourceAvailable outer
+        (.collection collectionType elements rest) sourceType)
+    (choice : CostCollectionTypingChoice)
+    (selected : costStaticCollectionTypingChoice? source color targetFree
+      targetBound collectionType elements
+        (mapTypeExpr (color.symbols source) sourceType) = some choice) :
+    plan.isStaticRoot = true := by
+  cases plan with
+  | collection choice' selected' children => rfl
+  | boundaryCollection rejected oppositeChoice oppositeSelected certified
+      certifies =>
+      rw [selected] at rejected
+      contradiction
+
+/-- A successful static-root witness exposes exactly the two raw syntax forms
+accepted at the root, without eliminating dependent plan indices in clients. -/
+theorem CostStaticRegionPlan.pattern_shape_of_isStaticRoot
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {sourceBound targetBound : List TypeExpr}
+    {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+    {sourceAvailable : List TypeExpr}
+    {outer : OneHoleContext} {pattern : Pattern} {sourceType : TypeExpr}
+    (plan : CostStaticRegionPlan source color targetFree sourceBound
+      targetBound thinning sourceAvailable outer pattern sourceType)
+    (rootStatic : plan.isStaticRoot = true) :
+    (∃ wireName arguments, pattern = .apply wireName arguments) ∨
+      ∃ collectionType elements rest,
+        pattern = .collection collectionType elements rest := by
+  cases plan with
+  | application constructor rendered current preimage notBare children =>
+      exact Or.inl ⟨_, _, rfl⟩
+  | collection choice selected children =>
+      exact Or.inr ⟨_, _, _, rfl⟩
+  | bvar | fvar | boundaryApplication | lambda | multiLambda |
+      boundaryCollection =>
+      simp [CostStaticRegionPlan.isStaticRoot] at rootStatic
+
+/-- At an application root, the plan exposes the intrinsic generated
+constructor and its exact static colour.  This is the dispatch evidence used
+by the full compiler; no string-prefix classification is involved. -/
+theorem CostStaticRegionPlan.application_dispatch_of_isStaticRoot
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {sourceBound targetBound : List TypeExpr}
+    {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+    {sourceAvailable : List TypeExpr}
+    {outer : OneHoleContext} {pattern : Pattern} {sourceType : TypeExpr}
+    (plan : CostStaticRegionPlan source color targetFree sourceBound
+      targetBound thinning sourceAvailable outer pattern sourceType)
+    (rootStatic : plan.isStaticRoot = true)
+    {wireName : String} {arguments : List Pattern}
+    (shape : pattern = .apply wireName arguments) :
+    ∃ constructor,
+      source.decodeDeclaredCostConstructor wireName = some constructor ∧
+        source.declaredCostConstructorRole constructor = .static color := by
+  cases plan with
+  | application constructor rendered current preimage notBare children =>
+      injection shape with wireEquality argumentsEquality
+      subst wireName
+      subst arguments
+      have decoded : source.decodeDeclaredCostConstructor
+          (source.renderDeclaredCostConstructor constructor) = some constructor :=
+        source.decodeDeclaredCostConstructor_render constructor
+      rw [rendered] at decoded
+      exact ⟨constructor, decoded, current⟩
+  | collection choice selected children =>
+      cases shape
+  | bvar | fvar | boundaryApplication | lambda | multiLambda |
+      boundaryCollection =>
+      simp [CostStaticRegionPlan.isStaticRoot] at rootStatic
+
+/-- At a collection root, the plan exposes the exact proof-relevant
+declaration choice selected in the current colour and expected source fibre. -/
+theorem CostStaticRegionPlan.collection_choice_of_isStaticRoot
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {sourceBound targetBound : List TypeExpr}
+    {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+    {sourceAvailable : List TypeExpr}
+    {outer : OneHoleContext} {pattern : Pattern} {sourceType : TypeExpr}
+    (plan : CostStaticRegionPlan source color targetFree sourceBound
+      targetBound thinning sourceAvailable outer pattern sourceType)
+    (rootStatic : plan.isStaticRoot = true)
+    {collectionType : CollType} {elements : List Pattern}
+    {rest : Option String}
+    (shape : pattern = .collection collectionType elements rest) :
+    ∃ choice,
+      costStaticCollectionTypingChoice? source color targetFree targetBound
+          collectionType elements
+            (mapTypeExpr (color.symbols source) sourceType) =
+        some choice := by
+  cases plan with
+  | collection choice selected children =>
+      injection shape with collectionTypeEquality elementsEquality restEquality
+      subst collectionType
+      subst elements
+      subst rest
+      exact ⟨choice, selected⟩
+  | application constructor rendered current preimage notBare children =>
+      cases shape
+  | bvar | fvar | boundaryApplication | lambda | multiLambda |
+      boundaryCollection =>
+      simp [CostStaticRegionPlan.isStaticRoot] at rootStatic
+
+mutual
+  /-- Every finite boundary payload is no larger than the region fragment
+  that emitted it.  Equality occurs only when the entire fragment is itself
+  a foreign-color boundary. -/
+  theorem CostStaticRegionPlan.boundary_content_size_le
+      {source : CIGSLT} {color : CostStaticColor}
+      {targetFree : WellSorted.FreeTypeContext}
+      {sourceBound targetBound : List TypeExpr}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+      {sourceAvailable : List TypeExpr}
+      {outer : OneHoleContext} {pattern : Pattern} {sourceType : TypeExpr}
+      (plan : CostStaticRegionPlan source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer pattern sourceType)
+      (boundary : TypedCostRegionBoundary source color targetFree)
+      (membership : boundary ∈ plan.boundaryTable.entries) :
+      sizeOf boundary.boundary.content ≤ sizeOf pattern := by
+    cases plan with
+    | bvar sourceIndex lookup correspondence availableScope | fvar lookup =>
+        change boundary ∈ ([] : List
+          (TypedCostRegionBoundary source color targetFree)) at membership
+        simp at membership
+    | boundaryApplication constructor rendered outsideCurrent certified
+        certifies =>
+        have equality : boundary = certified.typed := by
+          change boundary ∈ [certified.typed] at membership
+          simpa using membership
+        subst boundary
+        rw [certified.content_eq]
+    | application constructor rendered current preimage notBare children =>
+        exact Nat.le_of_lt
+          (children.boundary_content_size_lt_application boundary membership)
+    | lambda bodyPlan =>
+        exact Nat.le_trans
+          (bodyPlan.boundary_content_size_le boundary membership)
+          (Nat.le_of_lt (by simp_wf))
+    | multiLambda bodyPlan =>
+        exact Nat.le_trans
+          (bodyPlan.boundary_content_size_le boundary membership)
+          (Nat.le_of_lt (by simp_wf))
+    | collection choice selected children =>
+        exact Nat.le_of_lt
+          (children.boundary_content_size_lt_collection boundary membership)
+    | boundaryCollection currentRejected oppositeChoice oppositeSelected
+        certified certifies =>
+        have equality : boundary = certified.typed := by
+          change boundary ∈ [certified.typed] at membership
+          simpa using membership
+        subst boundary
+        rw [certified.content_eq]
+
+  /-- An argument boundary is a strict subterm of the full constructor
+  application represented by the accumulated prefix and remaining spine. -/
+  theorem CostStaticArgumentPlan.boundary_content_size_lt_application
+      {source : CIGSLT} {color : CostStaticColor}
+      {targetFree : WellSorted.FreeTypeContext}
+      {sourceBound targetBound : List TypeExpr}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+      {sourceAvailable : List TypeExpr}
+      {outer : OneHoleContext} {wireName : String}
+      {before arguments : List Pattern} {parameters : List TermParam}
+      (plan : CostStaticArgumentPlan source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer wireName before arguments
+        parameters)
+      (boundary : TypedCostRegionBoundary source color targetFree)
+      (membership : boundary ∈ plan.boundaryTable.entries) :
+      sizeOf boundary.boundary.content <
+        sizeOf (Pattern.apply wireName (before ++ arguments)) := by
+    cases plan with
+    | nil =>
+        change boundary ∈ ([] : List
+          (TypedCostRegionBoundary source color targetFree)) at membership
+        simp at membership
+    | cons representation parameterType head tail =>
+        rename_i argument arguments parameter parameters sourceExpected
+        change boundary ∈
+          (TypedCostRegionBoundaryTable.append head.boundaryTable
+            tail.boundaryTable).entries at membership
+        rw [TypedCostRegionBoundaryTable.entries_append] at membership
+        rcases List.mem_append.mp membership with headMembership | tailMembership
+        · have headBound :=
+            head.boundary_content_size_le boundary headMembership
+          have argumentMembership :
+              argument ∈ before ++ argument :: arguments := by simp
+          have argumentBound := List.sizeOf_lt_of_mem argumentMembership
+          have spineBound : sizeOf (before ++ argument :: arguments) <
+              sizeOf (Pattern.apply wireName
+                (before ++ argument :: arguments)) := by
+            simp_wf
+          omega
+        · have tailBound :=
+            tail.boundary_content_size_lt_application boundary tailMembership
+          have spineEquality :
+              (before ++ [argument]) ++ arguments =
+                before ++ argument :: arguments := by
+            simp only [List.append_assoc, List.singleton_append]
+          rw [spineEquality] at tailBound
+          exact tailBound
+
+  /-- A homogeneous-element boundary is a strict subterm of the full
+  collection represented by the accumulated prefix and remaining spine. -/
+  theorem CostStaticElementPlan.boundary_content_size_lt_collection
+      {source : CIGSLT} {color : CostStaticColor}
+      {targetFree : WellSorted.FreeTypeContext}
+      {sourceBound targetBound : List TypeExpr}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+      {sourceAvailable : List TypeExpr}
+      {outer : OneHoleContext} {collectionType : CollType}
+      {before elements : List Pattern} {rest : Option String}
+      {sourceElementType : TypeExpr}
+      (plan : CostStaticElementPlan source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer collectionType before
+        elements rest sourceElementType)
+      (boundary : TypedCostRegionBoundary source color targetFree)
+      (membership : boundary ∈ plan.boundaryTable.entries) :
+      sizeOf boundary.boundary.content <
+        sizeOf (Pattern.collection collectionType (before ++ elements) rest) := by
+    cases plan with
+    | nil =>
+        change boundary ∈ ([] : List
+          (TypedCostRegionBoundary source color targetFree)) at membership
+        simp at membership
+    | cons head tail =>
+        rename_i element elements
+        change boundary ∈
+          (TypedCostRegionBoundaryTable.append head.boundaryTable
+            tail.boundaryTable).entries at membership
+        rw [TypedCostRegionBoundaryTable.entries_append] at membership
+        rcases List.mem_append.mp membership with headMembership | tailMembership
+        · have headBound :=
+            head.boundary_content_size_le boundary headMembership
+          have elementMembership :
+              element ∈ before ++ element :: elements := by simp
+          have elementBound := List.sizeOf_lt_of_mem elementMembership
+          have spineBound : sizeOf (before ++ element :: elements) <
+              sizeOf (Pattern.collection collectionType
+                (before ++ element :: elements) rest) := by
+            simp_wf
+            omega
+          omega
+        · have tailBound :=
+            tail.boundary_content_size_lt_collection boundary tailMembership
+          have spineEquality :
+              (before ++ [element]) ++ elements =
+                before ++ element :: elements := by
+            simp only [List.append_assoc, List.singleton_append]
+          rw [spineEquality] at tailBound
+          exact tailBound
+end
+
+/-- Every boundary of a genuine maximal static root is strictly smaller than
+that root.  This is the well-foundedness theorem for recursive region-tree
+decomposition; it is derived from the proof-relevant plan rather than from
+an untyped occurrence scan. -/
+theorem CostStaticRegionPlan.boundary_content_size_lt_of_isStaticRoot
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {sourceBound targetBound : List TypeExpr}
+    {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+    {sourceAvailable : List TypeExpr}
+    {outer : OneHoleContext} {pattern : Pattern} {sourceType : TypeExpr}
+    (plan : CostStaticRegionPlan source color targetFree sourceBound
+      targetBound thinning sourceAvailable outer pattern sourceType)
+    (rootStatic : plan.isStaticRoot = true)
+    (boundary : TypedCostRegionBoundary source color targetFree)
+    (membership : boundary ∈ plan.boundaryTable.entries) :
+    sizeOf boundary.boundary.content < sizeOf pattern := by
+  cases plan with
+  | application constructor rendered current preimage notBare children =>
+      simpa using
+        children.boundary_content_size_lt_application boundary membership
+  | collection choice selected children =>
+      simpa using
+        children.boundary_content_size_lt_collection boundary membership
+  | bvar | fvar | boundaryApplication | lambda | multiLambda |
+      boundaryCollection =>
+      simp [CostStaticRegionPlan.isStaticRoot] at rootStatic
+
+/-- One proof-carrying node of the alternating Cost region decomposition.
+
+`term` is the region in the generated Cost fiber.  `plan` is the sole
+proof-relevant decomposition authority.  The finite table and source skeleton
+are required to be exactly its projections, so no independent collector or
+boundary assignment can disagree with the color-aware plan. -/
+structure CostStaticRegionNode (source : CIGSLT)
+    (color : CostStaticColor)
+    (targetFree : WellSorted.FreeTypeContext) where
+  targetBound : List TypeExpr
+  sourceSort : LangSort source.theory.presentation.presentation.language
+  term : WellSorted.OpenTerm source.costWholeLanguage targetFree
+    targetBound
+    (color.mapLangSort source sourceSort)
+  plan : CostStaticRegionPlan source color targetFree
+    (CostStaticBinderThinning.sourceContextOfTarget source color targetBound)
+    targetBound
+    (CostStaticBinderThinning.ofTargetThinning source color targetBound)
+    targetBound .hole term.1 (.base sourceSort.1)
+  rootStatic : plan.isStaticRoot = true
+  skeleton : WellSorted.OpenTerm
+    source.theory.presentation.presentation.language
+      plan.boundaryTable.sourceFreeContext
+        (CostStaticBinderThinning.sourceContextOfTarget source color targetBound)
+        sourceSort
+  skeleton_pattern : skeleton.1 =
+    plan.abstractPattern
+  supported : WellSorted.HasTypeWithConstructors
+    source.theory.presentation.presentation.language
+    (· ∈ source.continuationRetyping.wrappedLabels)
+    plan.boundaryTable.sourceFreeContext
+      (CostStaticBinderThinning.sourceContextOfTarget source color targetBound)
+      skeleton.1
+      (.base sourceSort.1)
+  supportSafe : skeleton.2.1.ReflectiveSupportSafeAt
+    plan.boundaryTable.sourceSupport targetBound
+    (mapTypeExpr (color.symbols source))
+
+namespace CostStaticRegionNode
+
+/-- The source binder fibre is derived uniquely from the target context. -/
+abbrev sourceBound {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    (node : CostStaticRegionNode source color targetFree) : List TypeExpr :=
+  CostStaticBinderThinning.sourceContextOfTarget source color node.targetBound
+
+/-- Every node uses the executable target-context thinning, rather than an
+independently supplied proof-relevant path. -/
+abbrev thinning {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    (node : CostStaticRegionNode source color targetFree) :
+    CostStaticBinderThinning source color node.sourceBound node.targetBound :=
+  CostStaticBinderThinning.ofTargetThinning source color node.targetBound
+
+/-- The finite table is a projection of the sole structural plan. -/
+def boundaryTable {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    (node : CostStaticRegionNode source color targetFree) :
+    TypedCostRegionBoundaryTable source color targetFree
+      node.plan.occurrences :=
+  node.plan.boundaryTable
+
+/-- Package one typed structural plan as a static region node.  All derived
+evidence is obtained from the same plan and its exact finite table. -/
+def ofPlan {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {targetBound : List TypeExpr}
+    {sourceSort : LangSort source.theory.presentation.presentation.language}
+    (term : WellSorted.OpenTerm source.costWholeLanguage targetFree
+      targetBound
+      (color.mapLangSort source sourceSort))
+    (plan : CostStaticRegionPlan source color targetFree
+      (CostStaticBinderThinning.sourceContextOfTarget source color targetBound)
+      targetBound
+      (CostStaticBinderThinning.ofTargetThinning source color targetBound)
+      targetBound .hole term.1 (.base sourceSort.1))
+    (rootStatic : plan.isStaticRoot = true) :
+    CostStaticRegionNode source color targetFree := by
+  let table := plan.boundaryTable
+  have entriesSubset : table.entries ⊆ table.entries := by
+    intro boundary membership
+    exact membership
+  have supportedSafe :=
+    plan.abstractPattern_supportedSafe table entriesSubset
+  let supported := Classical.choose supportedSafe
+  have supportSafe := Classical.choose_spec supportedSafe
+  let skeleton : WellSorted.OpenTerm
+      source.theory.presentation.presentation.language
+      table.sourceFreeContext
+        (CostStaticBinderThinning.sourceContextOfTarget source color targetBound)
+        sourceSort :=
+    ⟨plan.abstractPattern, supported.toHasType,
+      plan.abstractPattern_canonicalBinderMetadata term.2.2.1,
+      plan.abstractPattern_object term.2.2.2.1,
+      plan.abstractPattern_reflectiveScopeSafeAt⟩
+  refine
+    { targetBound := targetBound
+      sourceSort := sourceSort
+      term := term
+      plan := plan
+      rootStatic := rootStatic
+      skeleton := skeleton
+      skeleton_pattern := rfl
+      supported := ?_
+      supportSafe := ?_ }
+  · exact supported
+  · simpa [skeleton] using supportSafe
+
+/-- Repackaging the sole structural plan of an existing node does not change
+the node.  The only apparently new datum is the source skeleton; its raw
+pattern is already fixed by `skeleton_pattern`, and all remaining fields are
+proofs. -/
+theorem ofPlan_eq_self {source : CIGSLT}
+    {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+    (node : CostStaticRegionNode source color targetFree) :
+    CostStaticRegionNode.ofPlan node.term node.plan node.rootStatic = node := by
+  cases node with
+  | mk targetBound sourceSort term plan rootStatic skeleton skeleton_pattern
+      supported supportSafe =>
+      simp only [CostStaticRegionNode.ofPlan]
+      congr 1
+      apply Subtype.ext
+      exact skeleton_pattern.symm
+
+/-- Execute the sole structural planner and package its successful result as
+one certified static-region node.  Failure remains explicit: this entry point
+does not invent a default plan or fall back to the obsolete total boundary
+assignment. -/
+def build? {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {targetBound : List TypeExpr}
+    {sourceSort : LangSort source.theory.presentation.presentation.language}
+    (term : WellSorted.OpenTerm source.costWholeLanguage targetFree
+      targetBound
+      (color.mapLangSort source sourceSort)) :
+    Option (CostStaticRegionNode source color targetFree) :=
+  let sourceBound := CostStaticBinderThinning.sourceContextOfTarget source color
+    targetBound
+  let thinning := CostStaticBinderThinning.ofTargetThinning source color
+    targetBound
+  match buildCostStaticRegionPlan? source color targetFree sourceBound
+      targetBound thinning targetBound .hole term.1 (.base sourceSort.1) with
+  | none => none
+  | some plan =>
+      if rootStatic : plan.isStaticRoot = true then
+        some (CostStaticRegionNode.ofPlan term plan rootStatic)
+      else
+        none
+
+/-- A successful executable node build retains the input generated term
+definitionally; the planner can only add evidence and finite boundary data. -/
+theorem build?_term_eq {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {targetBound : List TypeExpr}
+    {sourceSort : LangSort source.theory.presentation.presentation.language}
+    (term : WellSorted.OpenTerm source.costWholeLanguage targetFree
+      targetBound
+      (color.mapLangSort source sourceSort))
+    {node : CostStaticRegionNode source color targetFree}
+    (built : CostStaticRegionNode.build? term = some node) :
+    node.term.1 = term.1 := by
+  unfold CostStaticRegionNode.build? at built
+  dsimp only at built
+  cases planned : buildCostStaticRegionPlan? source color targetFree
+      (CostStaticBinderThinning.sourceContextOfTarget source color targetBound)
+      targetBound
+      (CostStaticBinderThinning.ofTargetThinning source color targetBound)
+      targetBound .hole term.1 (.base sourceSort.1) with
+  | none => simp [planned] at built
+  | some plan =>
+      rw [planned] at built
+      by_cases rootStatic : plan.isStaticRoot = true
+      · simp [rootStatic] at built
+        subst node
+        rfl
+      · simp [rootStatic] at built
+
+/-- A successful executable node build also retains the exact ambient binder
+fiber supplied to the planner. -/
+theorem build?_targetBound_eq {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {targetBound : List TypeExpr}
+    {sourceSort : LangSort source.theory.presentation.presentation.language}
+    (term : WellSorted.OpenTerm source.costWholeLanguage targetFree
+      targetBound (color.mapLangSort source sourceSort))
+    {node : CostStaticRegionNode source color targetFree}
+    (built : CostStaticRegionNode.build? term = some node) :
+    node.targetBound = targetBound := by
+  unfold CostStaticRegionNode.build? at built
+  dsimp only at built
+  cases planned : buildCostStaticRegionPlan? source color targetFree
+      (CostStaticBinderThinning.sourceContextOfTarget source color targetBound)
+      targetBound
+      (CostStaticBinderThinning.ofTargetThinning source color targetBound)
+      targetBound .hole term.1 (.base sourceSort.1) with
+  | none => simp [planned] at built
+  | some plan =>
+      rw [planned] at built
+      by_cases rootStatic : plan.isStaticRoot = true
+      · simp [rootStatic] at built
+        subst node
+        rfl
+      · simp [rootStatic] at built
+
+/-- A successful executable node build retains the exact source sort used to
+index its input term.  Raw-pattern equality alone cannot recover this
+dependent index, so the compiler exposes the preservation fact directly. -/
+theorem build?_sourceSort_eq {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {targetBound : List TypeExpr}
+    {sourceSort : LangSort source.theory.presentation.presentation.language}
+    (term : WellSorted.OpenTerm source.costWholeLanguage targetFree
+      targetBound (color.mapLangSort source sourceSort))
+    {node : CostStaticRegionNode source color targetFree}
+    (built : CostStaticRegionNode.build? term = some node) :
+    node.sourceSort = sourceSort := by
+  unfold CostStaticRegionNode.build? at built
+  dsimp only at built
+  cases planned : buildCostStaticRegionPlan? source color targetFree
+      (CostStaticBinderThinning.sourceContextOfTarget source color targetBound)
+      targetBound
+      (CostStaticBinderThinning.ofTargetThinning source color targetBound)
+      targetBound .hole term.1 (.base sourceSort.1) with
+  | none => simp [planned] at built
+  | some plan =>
+      rw [planned] at built
+      by_cases rootStatic : plan.isStaticRoot = true
+      · simp [rootStatic] at built
+        subst node
+        rfl
+      · simp [rootStatic] at built
+
+/-- One successful static-root candidate for a term in an arbitrary generated
+Cost sort.  The source sort and color are retained as data, while the two
+equalities certify that the candidate inhabits the requested fiber and keeps
+the exact input pattern. -/
+structure CostStaticRootNode (source : CIGSLT)
+    (targetFree : WellSorted.FreeTypeContext) (targetBound : List TypeExpr)
+    (targetSort : LangSort source.costWholeLanguage)
+    (term : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
+      targetSort) where
+  color : CostStaticColor
+  sourceSort : LangSort source.theory.presentation.presentation.language
+  targetSort_eq : color.mapLangSort source sourceSort = targetSort
+  node : CostStaticRegionNode source color targetFree
+  nodeSourceSort_eq : node.sourceSort = sourceSort
+  nodeBound_eq : node.targetBound = targetBound
+  nodeTerm_eq : node.term.1 = term.1
+
+namespace CostStaticRootNode
+
+/-- Try one explicit source-sort/color candidate.  The computation compares
+the generated sort names and then invokes the unique proof-relevant static
+planner; no typing derivation is eliminated into data. -/
+def buildFor? {source : CIGSLT}
+    {targetFree : WellSorted.FreeTypeContext} {targetBound : List TypeExpr}
+    {targetSort : LangSort source.costWholeLanguage}
+    (term : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
+      targetSort)
+    (color : CostStaticColor)
+    (sourceSort : LangSort source.theory.presentation.presentation.language) :
+    Option (CostStaticRootNode source targetFree targetBound targetSort term) := by
+  by_cases targetSort_eq : color.mapLangSort source sourceSort = targetSort
+  · let mappedTerm : WellSorted.OpenTerm source.costWholeLanguage targetFree
+        targetBound (color.mapLangSort source sourceSort) :=
+      WellSorted.OpenTerm.reindex rfl rfl targetSort_eq.symm term
+    match built : CostStaticRegionNode.build? mappedTerm with
+    | none => exact none
+    | some node =>
+        exact some
+          { color := color
+            sourceSort := sourceSort
+            targetSort_eq := targetSort_eq
+            node := node
+            nodeSourceSort_eq :=
+              CostStaticRegionNode.build?_sourceSort_eq mappedTerm built
+            nodeBound_eq :=
+              CostStaticRegionNode.build?_targetBound_eq mappedTerm built
+            nodeTerm_eq :=
+              (CostStaticRegionNode.build?_term_eq mappedTerm built).trans
+                (WellSorted.OpenTerm.reindex_pattern
+                  rfl rfl targetSort_eq.symm term) }
+  · exact none
+
+/-- On the exact generated sort fiber, the dependent root wrapper succeeds
+exactly when the underlying proof-relevant static node builder succeeds.
+This erases only equality transport, never the selected color or source sort. -/
+@[simp]
+theorem buildFor?_isSome_self {source : CIGSLT}
+    {targetFree : WellSorted.FreeTypeContext} {targetBound : List TypeExpr}
+    {color : CostStaticColor}
+    {sourceSort : LangSort source.theory.presentation.presentation.language}
+    (term : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
+      (color.mapLangSort source sourceSort)) :
+    (CostStaticRootNode.buildFor? term color sourceSort).isSome =
+      (CostStaticRegionNode.build? term).isSome := by
+  unfold CostStaticRootNode.buildFor?
+  split
+  · rename_i targetSortEquality
+    rw [Subsingleton.elim targetSortEquality rfl]
+    simp only [WellSorted.OpenTerm.reindex]
+    split
+    · rename_i rejected
+      change false = (CostStaticRegionNode.build? term).isSome
+      rw [rejected]
+      rfl
+    · rename_i node accepted
+      change true = (CostStaticRegionNode.build? term).isSome
+      exact (Option.isSome_iff_exists.mpr ⟨node, accepted⟩).symm
+  · rename_i rejected
+    exact (rejected rfl).elim
+
+/-- A successful fixed-sort root search retains the requested color and
+source sort literally in its proof-relevant result. -/
+theorem buildFor?_fields {source : CIGSLT}
+    {targetFree : WellSorted.FreeTypeContext} {targetBound : List TypeExpr}
+    {targetSort : LangSort source.costWholeLanguage}
+    (term : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
+      targetSort)
+    (color : CostStaticColor)
+    (sourceSort : LangSort source.theory.presentation.presentation.language)
+    {candidate : CostStaticRootNode source targetFree targetBound targetSort
+      term}
+    (built : CostStaticRootNode.buildFor? term color sourceSort =
+      some candidate) :
+    candidate.color = color ∧ candidate.sourceSort = sourceSort := by
+  unfold CostStaticRootNode.buildFor? at built
+  split at built
+  · dsimp only at built
+    split at built
+    · simp at built
+    · simp at built
+      subst candidate
+      exact ⟨rfl, rfl⟩
+  · simp at built
+
+/-- Search every authored source sort for one successful root in a fixed
+static color.  The finite enumeration is derived from the exact source
+`LanguageDef.typeNames`; it is not a parallel registry of admissible sorts. -/
+def buildForColor? {source : CIGSLT}
+    {targetFree : WellSorted.FreeTypeContext} {targetBound : List TypeExpr}
+    {targetSort : LangSort source.costWholeLanguage}
+    (term : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
+      targetSort)
+    (color : CostStaticColor) :
+    Option (CostStaticRootNode source targetFree targetBound targetSort term) :=
+  source.theory.presentation.presentation.language.typeNames.attach.findSome?
+    (fun sourceName =>
+      CostStaticRootNode.buildFor? term color
+        (⟨sourceName.1, sourceName.2⟩ :
+          LangSort source.theory.presentation.presentation.language))
+
+/-! ### Complete proof-relevant root candidates
+
+`buildForColor?` is retained as the executable fast path used by the existing
+green focused compiler.  It is not a semantic choice principle: the complete
+candidate family is exposed below, so later normalization theorems can quantify
+over every successful source-sort/color elaboration rather than reasoning
+about declaration order. -/
+
+/-- Every successful root elaboration in one colour, in authored type-name
+order.  The result retains the dependent source-sort witness and therefore
+does not reconstruct typing from an erased generated sort. -/
+def buildForColorCandidates {source : CIGSLT}
+    {targetFree : WellSorted.FreeTypeContext} {targetBound : List TypeExpr}
+    {targetSort : LangSort source.costWholeLanguage}
+    (term : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
+      targetSort)
+    (color : CostStaticColor) :
+    List (CostStaticRootNode source targetFree targetBound targetSort term) :=
+  source.theory.presentation.presentation.language.typeNames.attach.filterMap
+    (fun sourceName =>
+      CostStaticRootNode.buildFor? term color
+        (⟨sourceName.1, sourceName.2⟩ :
+          LangSort source.theory.presentation.presentation.language))
+
+/-- A successful first candidate is always one of the complete candidates.
+This is the bridge that lets executable compatibility code use the finite
+enumeration without making its order a semantic axiom. -/
+theorem buildForColor?_mem_buildForColorCandidates
+    {source : CIGSLT}
+    {targetFree : WellSorted.FreeTypeContext} {targetBound : List TypeExpr}
+    {targetSort : LangSort source.costWholeLanguage}
+    (term : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
+      targetSort)
+    (color : CostStaticColor)
+    {candidate : CostStaticRootNode source targetFree targetBound targetSort
+      term}
+    (built : buildForColor? term color = some candidate) :
+    candidate ∈ buildForColorCandidates term color := by
+  unfold buildForColor? at built
+  unfold buildForColorCandidates
+  obtain ⟨leftList, sourceName, rightList, split, candidateBuilt, _⟩ :=
+    List.findSome?_eq_some_iff.mp built
+  apply List.mem_filterMap.mpr
+  refine ⟨sourceName, ?_, ?_⟩
+  · simp [split]
+  · simpa [candidateBuilt]
+
+theorem mem_buildForColorCandidates_iff
+    {source : CIGSLT}
+    {targetFree : WellSorted.FreeTypeContext} {targetBound : List TypeExpr}
+    {targetSort : LangSort source.costWholeLanguage}
+    (term : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
+      targetSort)
+    (color : CostStaticColor)
+    {candidate : CostStaticRootNode source targetFree targetBound targetSort
+      term} :
+    candidate ∈ buildForColorCandidates term color ↔
+      ∃ sourceName : {name // name ∈
+          source.theory.presentation.presentation.language.typeNames},
+        CostStaticRootNode.buildFor? term color
+            (⟨sourceName.1, sourceName.2⟩ :
+              LangSort source.theory.presentation.presentation.language) =
+          some candidate := by
+  unfold buildForColorCandidates
+  rw [List.mem_filterMap]
+  constructor
+  · rintro ⟨sourceName, _, built⟩
+    exact ⟨sourceName, built⟩
+  · rintro ⟨sourceName, built⟩
+    exact ⟨sourceName, by simp, built⟩
+
+/-- Every explicit certified plan has a corresponding member of the complete
+root family carrying the same color and source sort.  The member need not be
+definitionally the explicit packaging of the plan; the deterministic node
+builder supplies their later equality within the fixed fiber. -/
+theorem exists_mem_buildForColorCandidates_of_plan
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {targetBound : List TypeExpr}
+    {sourceSort : LangSort source.theory.presentation.presentation.language}
+    (term : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
+      (color.mapLangSort source sourceSort))
+    (plan : CostStaticRegionPlan source color targetFree
+      (CostStaticBinderThinning.sourceContextOfTarget source color targetBound)
+      targetBound
+      (CostStaticBinderThinning.ofTargetThinning source color targetBound)
+      targetBound .hole term.1 (.base sourceSort.1))
+    (rootStatic : plan.isStaticRoot = true) :
+    ∃ candidate : CostStaticRootNode source targetFree targetBound
+        (color.mapLangSort source sourceSort) term,
+      candidate ∈ buildForColorCandidates term color ∧
+        candidate.color = color ∧ candidate.sourceSort = sourceSort := by
+  have nodeSome : (CostStaticRegionNode.build? term).isSome = true := by
+    unfold CostStaticRegionNode.build?
+    dsimp only
+    rw [plan.build_eq_self]
+    simp [rootStatic]
+  have rootSome :
+      (CostStaticRootNode.buildFor? term color sourceSort).isSome = true := by
+    rw [CostStaticRootNode.buildFor?_isSome_self]
+    exact nodeSome
+  obtain ⟨candidate, built⟩ := Option.isSome_iff_exists.mp rootSome
+  refine ⟨candidate, ?_, ?_⟩
+  · rw [CostStaticRootNode.mem_buildForColorCandidates_iff]
+    exact ⟨⟨sourceSort.1, sourceSort.2⟩, by simpa using built⟩
+  · exact CostStaticRootNode.buildFor?_fields term color sourceSort built
+
+/-- The complete two-colour candidate family.  Base-first ordering is only a
+stable presentation of the finite list; semantic independence is a separate
+theorem about all members of this list. -/
+def buildCandidates {source : CIGSLT}
+    {targetFree : WellSorted.FreeTypeContext} {targetBound : List TypeExpr}
+    {targetSort : LangSort source.costWholeLanguage}
+    (term : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
+      targetSort) :
+    List (CostStaticRootNode source targetFree targetBound targetSort term) :=
+  buildForColorCandidates term .base ++
+    buildForColorCandidates term .wrapped
+
+/-- A fixed-colour root enumeration contains no duplicate proof-relevant
+candidates.  Authored sort names are duplicate-free by validation, and every
+successful candidate retains the exact source sort that produced it. -/
+theorem buildForColorCandidates_nodup {source : CIGSLT}
+    {targetFree : WellSorted.FreeTypeContext} {targetBound : List TypeExpr}
+    {targetSort : LangSort source.costWholeLanguage}
+    (term : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
+      targetSort)
+    (color : CostStaticColor) :
+    (buildForColorCandidates term color).Nodup := by
+  unfold buildForColorCandidates
+  apply List.Nodup.filterMap
+  · intro first second candidate firstMembership secondMembership
+    have firstBuilt :
+        CostStaticRootNode.buildFor? term color
+            (⟨first.1, first.2⟩ :
+              LangSort source.theory.presentation.presentation.language) =
+          some candidate := by
+      simpa using firstMembership
+    have secondBuilt :
+        CostStaticRootNode.buildFor? term color
+            (⟨second.1, second.2⟩ :
+              LangSort source.theory.presentation.presentation.language) =
+          some candidate := by
+      simpa using secondMembership
+    have firstFields :=
+      CostStaticRootNode.buildFor?_fields term color
+        (⟨first.1, first.2⟩ :
+          LangSort source.theory.presentation.presentation.language)
+        firstBuilt
+    have secondFields :=
+      CostStaticRootNode.buildFor?_fields term color
+        (⟨second.1, second.2⟩ :
+          LangSort source.theory.presentation.presentation.language)
+        secondBuilt
+    apply Subtype.ext
+    exact congrArg Subtype.val
+      (firstFields.2.symm.trans secondFields.2)
+  · apply List.nodup_attach.mpr
+    exact LanguageDef.typeNames_nodup_of_validate_eq_nil
+      source.theory.presentation.presentation.language
+      source.theory.presentation.presentation.valid
+
+/-- The two fixed-colour candidate lists are disjoint because every result
+retains its selected colour as data. -/
+theorem buildForColorCandidates_base_disjoint_wrapped {source : CIGSLT}
+    {targetFree : WellSorted.FreeTypeContext} {targetBound : List TypeExpr}
+    {targetSort : LangSort source.costWholeLanguage}
+    (term : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
+      targetSort) :
+    List.Disjoint (buildForColorCandidates term .base)
+      (buildForColorCandidates term .wrapped) := by
+  rw [List.disjoint_left]
+  intro candidate baseMembership wrappedMembership
+  rw [mem_buildForColorCandidates_iff] at baseMembership wrappedMembership
+  obtain ⟨baseSort, baseBuilt⟩ := baseMembership
+  obtain ⟨wrappedSort, wrappedBuilt⟩ := wrappedMembership
+  have baseFields := CostStaticRootNode.buildFor?_fields term .base
+    (⟨baseSort.1, baseSort.2⟩ :
+      LangSort source.theory.presentation.presentation.language) baseBuilt
+  have wrappedFields := CostStaticRootNode.buildFor?_fields term .wrapped
+    (⟨wrappedSort.1, wrappedSort.2⟩ :
+      LangSort source.theory.presentation.presentation.language) wrappedBuilt
+  have impossible : CostStaticColor.base = .wrapped :=
+    baseFields.1.symm.trans wrappedFields.1
+  cases impossible
+
+/-- The complete two-colour root enumeration contains no duplicate
+proof-relevant candidates. -/
+theorem buildCandidates_nodup {source : CIGSLT}
+    {targetFree : WellSorted.FreeTypeContext} {targetBound : List TypeExpr}
+    {targetSort : LangSort source.costWholeLanguage}
+    (term : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
+      targetSort) :
+    (buildCandidates term).Nodup := by
+  unfold buildCandidates
+  rw [List.nodup_append]
+  refine ⟨buildForColorCandidates_nodup term .base,
+    buildForColorCandidates_nodup term .wrapped, ?_⟩
+  intro first firstMembership second secondMembership equality
+  subst second
+  exact (List.disjoint_left.mp
+    (buildForColorCandidates_base_disjoint_wrapped term) firstMembership)
+      secondMembership
+
+/-- Every complete-family member can be replayed by the deterministic builder
+at the colour and source sort stored in that member. -/
+theorem buildFor?_eq_some_of_mem_buildCandidates {source : CIGSLT}
+    {targetFree : WellSorted.FreeTypeContext} {targetBound : List TypeExpr}
+    {targetSort : LangSort source.costWholeLanguage}
+    {term : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
+      targetSort}
+    {candidate : CostStaticRootNode source targetFree targetBound targetSort
+      term}
+    (membership : candidate ∈ buildCandidates term) :
+    CostStaticRootNode.buildFor? term candidate.color candidate.sourceSort =
+      some candidate := by
+  unfold buildCandidates at membership
+  rw [List.mem_append] at membership
+  rcases membership with baseMembership | wrappedMembership
+  · rw [mem_buildForColorCandidates_iff] at baseMembership
+    obtain ⟨sourceSort, built⟩ := baseMembership
+    have fields := CostStaticRootNode.buildFor?_fields term .base
+      (⟨sourceSort.1, sourceSort.2⟩ :
+        LangSort source.theory.presentation.presentation.language) built
+    rw [fields.1, fields.2]
+    exact built
+  · rw [mem_buildForColorCandidates_iff] at wrappedMembership
+    obtain ⟨sourceSort, built⟩ := wrappedMembership
+    have fields := CostStaticRootNode.buildFor?_fields term .wrapped
+      (⟨sourceSort.1, sourceSort.2⟩ :
+        LangSort source.theory.presentation.presentation.language) built
+    rw [fields.1, fields.2]
+    exact built
+
+/-- Equal selected colours force equal authored source-sort indices inside
+one compact target-sort fibre. -/
+theorem sourceSort_eq_of_color_eq {source : CIGSLT}
+    {targetFree : WellSorted.FreeTypeContext} {targetBound : List TypeExpr}
+    {targetSort : LangSort source.costWholeLanguage}
+    {term : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
+      targetSort}
+    (first second : CostStaticRootNode source targetFree targetBound targetSort
+      term)
+    (colorEquality : first.color = second.color) :
+    first.sourceSort = second.sourceSort := by
+  have secondTargetSort :
+      first.color.mapLangSort source second.sourceSort = targetSort := by
+    simpa [colorEquality] using second.targetSort_eq
+  apply CostStaticColor.mapLangSort_injective source first.color
+  exact first.targetSort_eq.trans secondTargetSort.symm
+
+/-- Complete-family members with the same selected colour are literally the
+same deterministic root candidate. -/
+theorem eq_of_color_eq_of_mem_buildCandidates {source : CIGSLT}
+    {targetFree : WellSorted.FreeTypeContext} {targetBound : List TypeExpr}
+    {targetSort : LangSort source.costWholeLanguage}
+    {term : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
+      targetSort}
+    {first second : CostStaticRootNode source targetFree targetBound targetSort
+      term}
+    (firstMembership : first ∈ buildCandidates term)
+    (secondMembership : second ∈ buildCandidates term)
+    (colorEquality : first.color = second.color) :
+    first = second := by
+  have sourceSortEquality := sourceSort_eq_of_color_eq first second colorEquality
+  have firstBuilt := buildFor?_eq_some_of_mem_buildCandidates firstMembership
+  have secondBuilt := buildFor?_eq_some_of_mem_buildCandidates secondMembership
+  rw [colorEquality, sourceSortEquality] at firstBuilt
+  exact Option.some.inj
+    (firstBuilt.symm.trans secondBuilt)
+
+/-- The intrinsic generated wire at an application root uniquely determines
+the selected static colour.  This is source-generic: it follows from exact
+constructor decoding and does not inspect declaration order. -/
+theorem color_eq_of_application {source : CIGSLT}
+    {targetFree : WellSorted.FreeTypeContext} {targetBound : List TypeExpr}
+    {targetSort : LangSort source.costWholeLanguage}
+    {term : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
+      targetSort}
+    (first second : CostStaticRootNode source targetFree targetBound targetSort
+      term)
+    {wireName : String} {arguments : List Pattern}
+    (shape : term.1 = .apply wireName arguments) :
+    first.color = second.color := by
+  obtain ⟨firstConstructor, firstDecoded, firstRole⟩ :=
+    first.node.plan.application_dispatch_of_isStaticRoot first.node.rootStatic
+      (first.nodeTerm_eq.trans shape)
+  obtain ⟨secondConstructor, secondDecoded, secondRole⟩ :=
+    second.node.plan.application_dispatch_of_isStaticRoot
+      second.node.rootStatic (second.nodeTerm_eq.trans shape)
+  have constructorEquality : firstConstructor = secondConstructor :=
+    Option.some.inj (firstDecoded.symm.trans secondDecoded)
+  subst secondConstructor
+  have roleEquality := firstRole.symm.trans secondRole
+  injection roleEquality
+
+/-- A member of either fixed-colour family is a member of the complete
+two-colour family.  The list order presents the finite family but does not
+choose its semantic representative. -/
+theorem mem_buildCandidates_of_mem_buildForColorCandidates
+    {source : CIGSLT}
+    {targetFree : WellSorted.FreeTypeContext} {targetBound : List TypeExpr}
+    {targetSort : LangSort source.costWholeLanguage}
+    {term : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
+      targetSort}
+    {color : CostStaticColor}
+    {candidate : CostStaticRootNode source targetFree targetBound targetSort
+      term}
+    (membership : candidate ∈ buildForColorCandidates term color) :
+    candidate ∈ buildCandidates term := by
+  unfold buildCandidates
+  cases color with
+  | base => exact List.mem_append_left _ membership
+  | wrapped => exact List.mem_append_right _ membership
+
+/-- Every explicit certified plan has a corresponding member of the complete
+two-colour root family carrying the same colour and source sort. -/
+theorem exists_mem_buildCandidates_of_plan
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {targetBound : List TypeExpr}
+    {sourceSort : LangSort source.theory.presentation.presentation.language}
+    (term : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
+      (color.mapLangSort source sourceSort))
+    (plan : CostStaticRegionPlan source color targetFree
+      (CostStaticBinderThinning.sourceContextOfTarget source color targetBound)
+      targetBound
+      (CostStaticBinderThinning.ofTargetThinning source color targetBound)
+      targetBound .hole term.1 (.base sourceSort.1))
+    (rootStatic : plan.isStaticRoot = true) :
+    ∃ candidate : CostStaticRootNode source targetFree targetBound
+        (color.mapLangSort source sourceSort) term,
+      candidate ∈ buildCandidates term ∧
+        candidate.color = color ∧ candidate.sourceSort = sourceSort := by
+  obtain ⟨candidate, membership, fields⟩ :=
+    exists_mem_buildForColorCandidates_of_plan term plan rootStatic
+  exact ⟨candidate,
+    mem_buildCandidates_of_mem_buildForColorCandidates membership, fields⟩
+
+/-- Membership in the complete candidate family is invariant under transport
+of the typed compact term across equal binder and sort fibres.  The theorem
+retains the selected colour and source sort explicitly; it does not compare
+proof terms or depend on enumeration order. -/
+theorem exists_transport_mem_buildCandidates
+    {source : CIGSLT} {targetFree : WellSorted.FreeTypeContext}
+    {firstBound secondBound : List TypeExpr}
+    {firstSort secondSort : LangSort source.costWholeLanguage}
+    (firstTerm : WellSorted.OpenTerm source.costWholeLanguage targetFree
+      firstBound firstSort)
+    (secondTerm : WellSorted.OpenTerm source.costWholeLanguage targetFree
+      secondBound secondSort)
+    {candidate : CostStaticRootNode source targetFree firstBound firstSort
+      firstTerm}
+    (membership : candidate ∈ buildCandidates firstTerm)
+    (boundEq : firstBound = secondBound)
+    (sortEq : firstSort = secondSort)
+    (termEq : firstTerm.1 = secondTerm.1) :
+    ∃ transported : CostStaticRootNode source targetFree secondBound
+        secondSort secondTerm,
+      transported ∈ buildCandidates secondTerm ∧
+        transported.color = candidate.color ∧
+        transported.sourceSort = candidate.sourceSort := by
+  cases boundEq
+  cases sortEq
+  have termIdentity : firstTerm = secondTerm := by
+    apply Subtype.ext
+    exact termEq
+  cases termIdentity
+  exact ⟨candidate, membership, rfl, rfl⟩
+
+/-- Pointwise structural unambiguity of the complete two-colour root family
+for one typed compact term.  This checks the finite family itself, so neither
+base-first search nor authored sort order is promoted to semantics. -/
+def UnambiguousAt {source : CIGSLT}
+    {targetFree : WellSorted.FreeTypeContext} {targetBound : List TypeExpr}
+    {targetSort : LangSort source.costWholeLanguage}
+    (term : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
+      targetSort) : Prop :=
+  CostCandidateFamilyUnambiguous (buildCandidates term)
+
+instance unambiguousAtDecidable {source : CIGSLT}
+    {targetFree : WellSorted.FreeTypeContext} {targetBound : List TypeExpr}
+    {targetSort : LangSort source.costWholeLanguage}
+    (term : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
+      targetSort) : Decidable (UnambiguousAt term) :=
+  by
+    unfold UnambiguousAt
+    infer_instance
+
+/-- In an unambiguous root fiber, any two successfully enumerated static
+roots are the same proof-relevant root candidate. -/
+theorem UnambiguousAt.candidate_eq {source : CIGSLT}
+    {targetFree : WellSorted.FreeTypeContext} {targetBound : List TypeExpr}
+    {targetSort : LangSort source.costWholeLanguage}
+    {term : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
+      targetSort}
+    (unambiguous : UnambiguousAt term)
+    {first second : CostStaticRootNode source targetFree targetBound targetSort
+      term}
+    (firstMembership : first ∈ buildCandidates term)
+    (secondMembership : second ∈ buildCandidates term) :
+    first = second :=
+  eq_of_mem_of_mem_of_costCandidateFamilyUnambiguous unambiguous
+    firstMembership secondMembership
+
+theorem buildForColor?_mem_buildCandidates
+    {source : CIGSLT}
+    {targetFree : WellSorted.FreeTypeContext} {targetBound : List TypeExpr}
+    {targetSort : LangSort source.costWholeLanguage}
+    (term : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
+      targetSort)
+    (color : CostStaticColor)
+    {candidate : CostStaticRootNode source targetFree targetBound targetSort
+      term}
+    (built : buildForColor? term color = some candidate) :
+    candidate ∈ buildCandidates term := by
+  unfold buildCandidates
+  cases color with
+  | base =>
+      exact List.mem_append_left _
+        (buildForColor?_mem_buildForColorCandidates term .base built)
+  | wrapped =>
+      exact List.mem_append_right _
+        (buildForColor?_mem_buildForColorCandidates term .wrapped built)
+
+/-- Search the two derived static colors for a genuine root.  Base-first is
+only an executable enumeration order; semantic independence on an overlap is
+proved at the canonical-section boundary rather than assumed from this scan. -/
+def build? {source : CIGSLT}
+    {targetFree : WellSorted.FreeTypeContext} {targetBound : List TypeExpr}
+    {targetSort : LangSort source.costWholeLanguage}
+    (term : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
+      targetSort) :
+    Option (CostStaticRootNode source targetFree targetBound targetSort term) :=
+  match CostStaticRootNode.buildForColor? term .base with
+  | some candidate => some candidate
+  | none => CostStaticRootNode.buildForColor? term .wrapped
+
+/-- Every root candidate is intrinsically indexed by the exact input binder
+fiber and raw pattern, independently of how its finite search discovered it. -/
+theorem fields {source : CIGSLT}
+    {targetFree : WellSorted.FreeTypeContext} {targetBound : List TypeExpr}
+    {targetSort : LangSort source.costWholeLanguage}
+    {term : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
+      targetSort}
+    (candidate : CostStaticRootNode source targetFree targetBound targetSort term) :
+    candidate.node.targetBound = targetBound ∧
+      candidate.node.term.1 = term.1 :=
+  ⟨candidate.nodeBound_eq, candidate.nodeTerm_eq⟩
+
+end CostStaticRootNode
+
+/-- Structural source-level criterion used to discharge exact Cost laws.
+Every typed root fiber and every expected-keyed collection fiber must have at
+most one proof-relevant candidate.  The local checks are decidable finite
+computations; this object-level predicate is their universal closure.
+
+This is intentionally separate from `CostOpenCanonicalLaws`: unambiguity is
+a structural sufficient condition to be proved adequate, while the laws are
+the semantic full-subcategory boundary. -/
+structure UnambiguousStaticDecomposition (source : CIGSLT) : Prop where
+  rootCandidates :
+    ∀ {targetFree : WellSorted.FreeTypeContext}
+      {targetBound : List TypeExpr}
+      {targetSort : LangSort source.costWholeLanguage}
+      (term : WellSorted.OpenTerm source.costWholeLanguage targetFree
+        targetBound targetSort),
+      CostStaticRootNode.UnambiguousAt term
+  collectionCandidates :
+    ∀ (color : CostStaticColor)
+      (targetFree : WellSorted.FreeTypeContext)
+      (targetBound : List TypeExpr)
+      (collectionType : CollType) (elements : List Pattern)
+      (expected : TypeExpr),
+      CostStaticCollectionUnambiguousAt source color targetFree targetBound
+        collectionType elements expected
+
+/-- Global structural unambiguity turns any two enumerated roots in the same
+typed fiber into literal equality. -/
+theorem UnambiguousStaticDecomposition.root_candidate_eq
+    {source : CIGSLT} (unambiguous : UnambiguousStaticDecomposition source)
+    {targetFree : WellSorted.FreeTypeContext} {targetBound : List TypeExpr}
+    {targetSort : LangSort source.costWholeLanguage}
+    {term : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
+      targetSort}
+    {first second : CostStaticRootNode source targetFree targetBound targetSort
+      term}
+    (firstMembership : first ∈ CostStaticRootNode.buildCandidates term)
+    (secondMembership : second ∈ CostStaticRootNode.buildCandidates term) :
+    first = second :=
+  (unambiguous.rootCandidates term).candidate_eq firstMembership
+    secondMembership
+
+/-- Global structural unambiguity likewise retains exactly one selected
+collection declaration in every expected-keyed static fiber. -/
+theorem UnambiguousStaticDecomposition.collection_candidate_eq
+    {source : CIGSLT} (unambiguous : UnambiguousStaticDecomposition source)
+    {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {targetBound : List TypeExpr}
+    {collectionType : CollType} {elements : List Pattern}
+    {expected : TypeExpr}
+    {first second : CostCollectionTypingChoice}
+    (firstMembership : first ∈ costStaticCollectionTypingChoices source color
+      targetFree targetBound collectionType elements expected)
+    (secondMembership : second ∈ costStaticCollectionTypingChoices source
+      color targetFree targetBound collectionType elements expected) :
+    first = second :=
+  (unambiguous.collectionCandidates color targetFree targetBound
+    collectionType elements expected).choice_eq firstMembership
+      secondMembership
+
+/-- Every declarative structural plan in the canonical target fiber is
+accepted by the executable node builder.  Combined with the builder's
+dependent result type, this is exact soundness/completeness at the compiled
+one-region boundary; total decomposition remains the separate obligation of
+constructing such a plan for every static subterm. -/
+theorem exists_build?_eq_some_of_plan {source : CIGSLT}
+    {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+    {targetBound : List TypeExpr}
+    {sourceSort : LangSort source.theory.presentation.presentation.language}
+    (term : WellSorted.OpenTerm source.costWholeLanguage targetFree
+      targetBound (color.mapLangSort source sourceSort))
+    (plan : CostStaticRegionPlan source color targetFree
+      (CostStaticBinderThinning.sourceContextOfTarget source color targetBound)
+      targetBound
+      (CostStaticBinderThinning.ofTargetThinning source color targetBound)
+      targetBound .hole term.1 (.base sourceSort.1))
+    (rootStatic : plan.isStaticRoot = true) :
+    ∃ node, CostStaticRegionNode.build? term = some node := by
+  refine ⟨CostStaticRegionNode.ofPlan term plan rootStatic, ?_⟩
+  unfold CostStaticRegionNode.build?
+  dsimp only
+  rw [plan.build_eq_self]
+  simp [rootStatic]
+
+/-- Exact replay form of `exists_build?_eq_some_of_plan`: the deterministic
+node builder returns the node packaged from the supplied structural plan. -/
+theorem build?_eq_some_of_plan {source : CIGSLT}
+    {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+    {targetBound : List TypeExpr}
+    {sourceSort : LangSort source.theory.presentation.presentation.language}
+    (term : WellSorted.OpenTerm source.costWholeLanguage targetFree
+      targetBound (color.mapLangSort source sourceSort))
+    (plan : CostStaticRegionPlan source color targetFree
+      (CostStaticBinderThinning.sourceContextOfTarget source color targetBound)
+      targetBound
+      (CostStaticBinderThinning.ofTargetThinning source color targetBound)
+      targetBound .hole term.1 (.base sourceSort.1))
+    (rootStatic : plan.isStaticRoot = true) :
+    CostStaticRegionNode.build? term =
+      some (CostStaticRegionNode.ofPlan term plan rootStatic) := by
+  unfold CostStaticRegionNode.build?
+  dsimp only
+  rw [plan.build_eq_self]
+  simp [rootStatic]
+
+/-- Re-running the deterministic structural planner on an existing static
+node returns that node exactly.  This combines exact plan replay with the
+fact that repackaging a node's sole plan is identity. -/
+theorem build?_eq_some_self {source : CIGSLT}
+    {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+    (node : CostStaticRegionNode source color targetFree) :
+    CostStaticRegionNode.build? node.term = some node := by
+  rw [CostStaticRegionNode.build?_eq_some_of_plan node.term node.plan
+    node.rootStatic]
+  rw [node.ofPlan_eq_self]
+
+/-- The deterministic static-node builder is insensitive to proof transport
+between equal binder and source-sort fibres carrying the same raw pattern. -/
+theorem build?_eq_of_term_transport {source : CIGSLT}
+    {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+    {firstBound secondBound : List TypeExpr}
+    {firstSort secondSort :
+      LangSort source.theory.presentation.presentation.language}
+    (firstTerm : WellSorted.OpenTerm source.costWholeLanguage targetFree
+      firstBound (color.mapLangSort source firstSort))
+    (secondTerm : WellSorted.OpenTerm source.costWholeLanguage targetFree
+      secondBound (color.mapLangSort source secondSort))
+    (boundEq : firstBound = secondBound)
+    (sortEq : firstSort = secondSort)
+    (termEq : firstTerm.1 = secondTerm.1) :
+    CostStaticRegionNode.build? firstTerm =
+      CostStaticRegionNode.build? secondTerm := by
+  cases boundEq
+  cases sortEq
+  have termIdentity : firstTerm = secondTerm := by
+    apply Subtype.ext
+    exact termEq
+  cases termIdentity
+  rfl
+
+/-- The exact fixed-source-sort candidate carried by an explicit certified
+static plan.  All dependent equalities are definitional because the plan is
+already indexed by the canonical source/target binder fibers. -/
+def CostStaticRootNode.ofPlan {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {targetBound : List TypeExpr}
+    {sourceSort : LangSort source.theory.presentation.presentation.language}
+    (term : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
+      (color.mapLangSort source sourceSort))
+    (plan : CostStaticRegionPlan source color targetFree
+      (CostStaticBinderThinning.sourceContextOfTarget source color targetBound)
+      targetBound
+      (CostStaticBinderThinning.ofTargetThinning source color targetBound)
+      targetBound .hole term.1 (.base sourceSort.1))
+    (rootStatic : plan.isStaticRoot = true) :
+    CostStaticRootNode source targetFree targetBound
+      (color.mapLangSort source sourceSort) term :=
+  { color := color
+    sourceSort := sourceSort
+    targetSort_eq := rfl
+    node := CostStaticRegionNode.ofPlan term plan rootStatic
+    nodeSourceSort_eq := rfl
+    nodeBound_eq := rfl
+    nodeTerm_eq := rfl }
+
+/-- Structural unambiguity identifies the color and source-sort indices of
+two certified nodes over the same typed compact fiber.  Exposing these
+ordinary equalities before comparing the dependent nodes keeps all later
+heterogeneous transport local to the static boundary. -/
+theorem UnambiguousStaticDecomposition.staticNode_indices_eq
+    {source : CIGSLT}
+    (unambiguous : UnambiguousStaticDecomposition source)
+    {targetFree : WellSorted.FreeTypeContext}
+    {firstColor secondColor : CostStaticColor}
+    (first : CostStaticRegionNode source firstColor targetFree)
+    (second : CostStaticRegionNode source secondColor targetFree)
+    (boundEq : first.targetBound = second.targetBound)
+    (targetSortEq : firstColor.mapLangSort source first.sourceSort =
+      secondColor.mapLangSort source second.sourceSort)
+    (termEq : first.term.1 = second.term.1) :
+    firstColor = secondColor ∧ first.sourceSort = second.sourceSort := by
+  obtain ⟨firstCandidate, firstMembership, firstFields⟩ :=
+    CostStaticRootNode.exists_mem_buildCandidates_of_plan first.term
+      first.plan first.rootStatic
+  obtain ⟨secondCandidate, secondMembership, secondFields⟩ :=
+    CostStaticRootNode.exists_mem_buildCandidates_of_plan second.term
+      second.plan second.rootStatic
+  obtain ⟨transported, transportedMembership, transportedColor,
+      transportedSort⟩ :=
+    CostStaticRootNode.exists_transport_mem_buildCandidates second.term
+      first.term secondMembership boundEq.symm targetSortEq.symm termEq.symm
+  have candidateEq : firstCandidate = transported :=
+    unambiguous.root_candidate_eq firstMembership transportedMembership
+  have colorEq : firstColor = secondColor := by
+    exact firstFields.1.symm.trans
+      ((congrArg CostStaticRootNode.color candidateEq).trans
+        (transportedColor.trans secondFields.1))
+  have sourceSortEq : first.sourceSort = second.sourceSort := by
+    exact firstFields.2.symm.trans
+      ((congrArg CostStaticRootNode.sourceSort candidateEq).trans
+        (transportedSort.trans secondFields.2))
+  exact ⟨colorEq, sourceSortEq⟩
+
+/-- Structural unambiguity makes two certified static nodes over equal typed
+compact fibres the same proof-relevant node, even when they were initially
+presented through different generated colours or source sorts. -/
+theorem UnambiguousStaticDecomposition.staticNode_heq
+    {source : CIGSLT}
+    (unambiguous : UnambiguousStaticDecomposition source)
+    {targetFree : WellSorted.FreeTypeContext}
+    {firstColor secondColor : CostStaticColor}
+    (first : CostStaticRegionNode source firstColor targetFree)
+    (second : CostStaticRegionNode source secondColor targetFree)
+    (boundEq : first.targetBound = second.targetBound)
+    (targetSortEq : firstColor.mapLangSort source first.sourceSort =
+      secondColor.mapLangSort source second.sourceSort)
+    (termEq : first.term.1 = second.term.1) : HEq first second := by
+  obtain ⟨colorEq, sourceSortEq⟩ :=
+    unambiguous.staticNode_indices_eq first second boundEq targetSortEq termEq
+  cases colorEq
+  have buildersEq : CostStaticRegionNode.build? first.term =
+      CostStaticRegionNode.build? second.term :=
+    CostStaticRegionNode.build?_eq_of_term_transport first.term second.term
+      boundEq sourceSortEq termEq
+  have nodeEq : first = second := by
+    exact Option.some.inj
+      (first.build?_eq_some_self.symm.trans
+        (buildersEq.trans second.build?_eq_some_self))
+  exact nodeEq.rec (HEq.rfl : HEq first first)
+
+/-- A genuine static application root cannot simultaneously be presented as
+an interaction-principal or apparatus frame.  Both classifications decode
+the same generated wire back to one intrinsic declared constructor. -/
+theorem not_neutralApplication {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    (node : CostStaticRegionNode source color targetFree)
+    {rule : GrammarRule} {arguments : List Pattern}
+    (shape : node.term.1 = .apply rule.label arguments)
+    (constructor : source.DeclaredCostConstructor)
+    (materializes :
+      source.materializeDeclaredCostConstructor constructor = rule)
+    (neutral : source.declaredCostConstructorRole constructor =
+        .interactionPrincipal ∨
+      ∃ kind, source.declaredCostConstructorRole constructor =
+        .apparatus kind) :
+    False := by
+  obtain ⟨staticConstructor, staticDecoded, staticRole⟩ :=
+    node.plan.application_dispatch_of_isStaticRoot node.rootStatic shape
+  have materializedLabel :
+      (source.materializeDeclaredCostConstructor constructor).label =
+        rule.label :=
+    congrArg GrammarRule.label materializes
+  have rendered : source.renderDeclaredCostConstructor constructor =
+      rule.label :=
+    (source.materializeDeclaredCostConstructor_label constructor).symm.trans
+      materializedLabel
+  have neutralDecoded : source.decodeDeclaredCostConstructor rule.label =
+      some constructor := by
+    rw [← rendered]
+    exact source.decodeDeclaredCostConstructor_render constructor
+  have constructorEq : staticConstructor = constructor :=
+    Option.some.inj (staticDecoded.symm.trans neutralDecoded)
+  subst staticConstructor
+  rcases neutral with role | ⟨kind, role⟩
+  · rw [staticRole] at role
+    contradiction
+  · rw [staticRole] at role
+    contradiction
+
+/-- Embed a declaration-certified source image once its structural plan has
+been constructed.  Plan existence remains explicit here; it is never inferred
+from the obsolete application-only collector. -/
+def monochromatic {source : CIGSLT} {free : WellSorted.FreeTypeContext}
+    {bound : List TypeExpr}
+    {sort : LangSort source.theory.presentation.presentation.language}
+    (term : WellSorted.OpenTerm
+      source.theory.presentation.presentation.language free bound sort)
+    (supported : WellSorted.HasTypeWithConstructors
+      source.theory.presentation.presentation.language
+      (· ∈ source.continuationRetyping.wrappedLabels)
+      free bound term.1 (.base sort.1))
+    (color : CostStaticColor)
+    (plan : CostStaticRegionPlan source color
+      (free.map (color.symbols source))
+      (CostStaticBinderThinning.sourceContextOfTarget source color
+        (bound.map (mapTypeExpr (color.symbols source))))
+      (bound.map (mapTypeExpr (color.symbols source)))
+      (CostStaticBinderThinning.ofTargetThinning source color
+        (bound.map (mapTypeExpr (color.symbols source))))
+      (bound.map (mapTypeExpr (color.symbols source))) .hole
+      (term.mapCostStatic supported color).1 (.base sort.1))
+    (rootStatic : plan.isStaticRoot = true) :
+    CostStaticRegionNode source color (free.map (color.symbols source)) :=
+  ofPlan (term.mapCostStatic supported color) plan rootStatic
+
+/-- The finite occurrence table carried by this certified node.  All later
+tree construction consumes this value rather than the legacy total
+assignment. -/
+def finiteBoundaryTable {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    (node : CostStaticRegionNode source color targetFree) :
+    TypedCostRegionBoundaryTable source color targetFree
+      node.plan.occurrences :=
+  node.boundaryTable
+
+/-- Transport is derived from the finite table's pointwise coherence; it is
+not a separately authored premise of a region node. -/
+def transport {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    (node : CostStaticRegionNode source color targetFree) :
+    node.boundaryTable.Transport node.boundaryTable.sourceFreeContext
+      node.boundaryTable.sourceSupport :=
+  node.boundaryTable.transport_of_fiberCoherent
+    node.plan.boundaryTable_fiberCoherent
+
+/-- Reindex a node's authored source skeleton into any larger finite boundary
+table containing all entries used by its structural plan.  The raw skeleton
+is unchanged; only its proof-relevant free-context witness is reconstructed
+from the sole plan. -/
+def skeletonIn {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    (node : CostStaticRegionNode source color targetFree)
+    {globalOccurrences : List CostRegionOccurrence}
+    (globalTable : TypedCostRegionBoundaryTable source color targetFree
+      globalOccurrences)
+    (entriesSubset : node.boundaryTable.entries ⊆ globalTable.entries) :
+    WellSorted.OpenTerm source.theory.presentation.presentation.language
+      globalTable.sourceFreeContext node.sourceBound node.sourceSort := by
+  let supportedSafe :=
+    node.plan.abstractPattern_supportedSafe globalTable entriesSubset
+  let typed := Classical.choose supportedSafe
+  exact ⟨node.plan.abstractPattern, typed.toHasType,
+    node.plan.abstractPattern_canonicalBinderMetadata node.term.2.2.1,
+    node.plan.abstractPattern_object node.term.2.2.2.1,
+    node.plan.abstractPattern_reflectiveScopeSafeAt⟩
+
+@[simp]
+theorem skeletonIn_pattern {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    (node : CostStaticRegionNode source color targetFree)
+    {globalOccurrences : List CostRegionOccurrence}
+    (globalTable : TypedCostRegionBoundaryTable source color targetFree
+      globalOccurrences)
+    (entriesSubset : node.boundaryTable.entries ⊆ globalTable.entries) :
+    (node.skeletonIn globalTable entriesSubset).1 = node.skeleton.1 := by
+  rw [node.skeleton_pattern]
+  rfl
+
+/-- Enlarging the finite boundary table without changing any entry used by a
+region does not change the exact representative chosen for its authored
+source skeleton.  This is free-context naturality of the sole authored open
+section; table enumeration order contributes no normalization semantics. -/
+theorem normalizeCostStaticStratum_skeletonIn_eq
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    (node : CostStaticRegionNode source color targetFree)
+    {globalOccurrences : List CostRegionOccurrence}
+    (globalTable : TypedCostRegionBoundaryTable source color targetFree
+      globalOccurrences)
+    (entriesSubset : node.boundaryTable.entries ⊆ globalTable.entries) :
+    normalizeCostStaticStratum source color
+        (node.skeletonIn globalTable entriesSubset) =
+      normalizeCostStaticStratum source color node.skeleton := by
+  have preserves :
+      ∀ {name freeType},
+        name ∈ node.skeleton.1.freeFvarNames →
+        node.boundaryTable.sourceFreeContext name = some freeType →
+          globalTable.sourceFreeContext name = some freeType := by
+    intro name freeType _membership lookup
+    cases decoded : decodeCostRegionSourceVariableName name with
+    | some sourceName =>
+        simpa [TypedCostRegionBoundaryTable.sourceFreeContext, decoded]
+          using lookup
+    | none =>
+        cases localResolved : node.boundaryTable.resolve name with
+        | none =>
+            simp [TypedCostRegionBoundaryTable.sourceFreeContext, decoded,
+              localResolved] at lookup
+        | some boundary =>
+            have defined : node.boundaryTable.resolve name ≠ none := by
+              simp [localResolved]
+            have resolution :=
+              node.boundaryTable.resolve_eq_of_entries_subset globalTable
+                entriesSubset name defined
+            have globalResolved : globalTable.resolve name = some boundary := by
+              simpa [localResolved] using resolution
+            simpa [TypedCostRegionBoundaryTable.sourceFreeContext, decoded,
+              localResolved, globalResolved] using lookup
+  have recontextualized :
+      node.skeleton.recontextualizeFree preserves =
+        node.skeletonIn globalTable entriesSubset := by
+    apply Subtype.ext
+    simp
+  have natural :=
+    source.openCanonical.normalizeRecontextualizeFree node.skeleton preserves
+  unfold normalizeCostStaticStratum
+  rw [← recontextualized]
+  exact congrArg (mapPattern (color.symbols source)) natural
+
+/-- Every finite child is classified by the plan decision that emitted it.
+This theorem includes both foreign applications and color-transition bare
+collections; it has no application-only compatibility branch. -/
+theorem boundary_kind {source : CIGSLT}
+    {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+    (node : CostStaticRegionNode source color targetFree)
+    (boundary : TypedCostRegionBoundary source color targetFree)
+    (membership : boundary ∈ node.boundaryTable.entries) :
+    CostStaticBoundaryKind source color targetFree boundary := by
+  apply node.plan.boundaryKind_of_mem_entries boundary
+  exact membership
+
+/-- The finite raw recomposition associated with one typed region node is the
+structural projection of its sole plan. -/
+def recomposeRaw {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    (node : CostStaticRegionNode source color targetFree) : Pattern :=
+  node.plan.recomposePattern
+
+/-- Mapping the source skeleton into its generated static fibre, reinserting
+the exact target-only ambient binders, and restoring the node's finite boundary
+table recovers the plan's structural recomposition.  This is the node-level
+inverse law consumed by one-stratum normalization. -/
+theorem restoreMappedSkeleton_eq_recomposeRaw {source : CIGSLT}
+    {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+    (node : CostStaticRegionNode source color targetFree) :
+    node.boundaryTable.restoreSupportedSkeleton node.targetBound
+        (node.thinning.thickenAmbientBVars 0
+          (mapPattern (color.symbols source) node.skeleton.1)) =
+      node.recomposeRaw := by
+  rw [node.skeleton_pattern]
+  change ReflectiveContextSupport.substituteAt source.costWholeLanguage
+      node.boundaryTable.restorationSupport
+      node.boundaryTable.restorationAssignment node.targetBound.length
+      (node.thinning.thickenAmbientBVars 0
+        (mapPattern (color.symbols source) node.plan.abstractPattern)) =
+    node.plan.recomposePattern
+  exact node.plan.restoreMappedAbstractPattern node.boundaryTable
+    (by intro boundary membership; exact membership) node.term.2.2.2.1
+
+/-- Decomposing a typed region and immediately recomposing its finite table
+recovers the exact original Cost pattern. -/
+theorem recomposeRaw_eq {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    (node : CostStaticRegionNode source color targetFree) :
+    node.recomposeRaw = node.term.1 := by
+  exact node.plan.recomposePattern_eq
+
+/-- The node-level finite restoration law is an exact inverse back to the
+original generated term, not merely an equality with an auxiliary plan view. -/
+theorem restoreMappedSkeleton_eq_term {source : CIGSLT}
+    {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+    (node : CostStaticRegionNode source color targetFree) :
+    node.boundaryTable.restoreSupportedSkeleton node.targetBound
+        (node.thinning.thickenAmbientBVars 0
+          (mapPattern (color.symbols source) node.skeleton.1)) =
+      node.term.1 := by
+  rw [node.restoreMappedSkeleton_eq_recomposeRaw, node.recomposeRaw_eq]
+
+/-- Typed recomposition of one region node.  The carrier proof is transported
+along the independently established raw round trip. -/
+def recompose {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    (node : CostStaticRegionNode source color targetFree) :
+    WellSorted.OpenTerm source.costWholeLanguage targetFree
+      node.targetBound
+      (color.mapLangSort source node.sourceSort) :=
+  ⟨node.recomposeRaw, by
+    rw [node.recomposeRaw_eq]
+    exact node.term.2⟩
+
+/-- Typed recomposition is extensionally the original region, not merely a
+raw-pattern equality. -/
+theorem recompose_eq_term {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    (node : CostStaticRegionNode source color targetFree) :
+    node.recompose = node.term := by
+  apply Subtype.ext
+  exact node.recomposeRaw_eq
+
+/-- Map the unnormalized authored skeleton into its selected static Cost fiber
+and reinsert exactly the target-only ambient binders.  This is the rigid-
+boundary source endpoint paired with `normalizedThickenedSkeleton`. -/
+def mappedThickenedSkeleton {source : CIGSLT}
+    {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+    (node : CostStaticRegionNode source color targetFree) :
+    WellSorted.OpenTerm source.costWholeLanguage
+      node.boundaryTable.mappedFreeContext node.targetBound
+      (color.mapLangSort source node.sourceSort) := by
+  let mapped := node.skeleton.mapCostStatic node.supported color
+  have mappedTyped : WellSorted.HasType source.costWholeLanguage
+      node.boundaryTable.mappedFreeContext
+      (node.sourceBound.map (mapTypeExpr (color.symbols source)))
+      (mapPattern (color.symbols source) node.skeleton.1)
+      (mapTypeExpr (color.symbols source) (.base node.sourceSort.1)) := by
+    rw [← node.transport.freeContext]
+    exact mapped.2.1
+  refine ⟨node.thinning.thickenAmbientBVars 0
+      (mapPattern (color.symbols source) node.skeleton.1), ?_, ?_, ?_, ?_⟩
+  · simpa only [List.nil_append, List.length_nil, mapTypeExpr,
+      CostStaticColor.mapLangSort_name] using
+      mappedTyped.thickenAmbientBVars (inner := []) node.thinning
+  · rw [CostStaticBinderThinning.hasCanonicalBinderMetadata_thickenAmbientBVars]
+    simpa only [mapped, WellSorted.OpenTerm.mapCostStatic_pattern] using
+      mapped.2.2.1
+  · rw [CostStaticBinderThinning.isObjectPattern_thickenAmbientBVars]
+    simpa only [mapped, WellSorted.OpenTerm.mapCostStatic_pattern] using
+      mapped.2.2.2.1
+  · intro presentation membership
+    have thickenedScope := node.thinning.binderSafeAt_thickenAmbientBVars
+      presentation.quoteConstructor 0
+        (mapPattern (color.symbols source) node.skeleton.1) (by
+        simpa only [mapped, WellSorted.OpenTerm.mapCostStatic_pattern,
+          zero_add, List.length_map] using
+          mapped.2.2.2.2 presentation membership)
+    simpa only [zero_add] using thickenedScope
+
+/-- Static typing transport changes only the proof component of the mapped,
+binder-reinserted source skeleton. -/
+@[simp]
+theorem mappedThickenedSkeleton_pattern {source : CIGSLT}
+    {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+    (node : CostStaticRegionNode source color targetFree) :
+    node.mappedThickenedSkeleton.1 =
+      node.thinning.thickenAmbientBVars 0
+        (mapPattern (color.symbols source) node.skeleton.1) := by
+  rfl
+
+/-- The rigid-boundary source endpoint is safe for the exact finite
+restoration assignment after static mapping and target-binder reinsertion. -/
+theorem mappedThickenedSkeleton_supportSafe {source : CIGSLT}
+    {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+    (node : CostStaticRegionNode source color targetFree) :
+    node.mappedThickenedSkeleton.2.1.ReflectiveSupportSafeAt
+      node.boundaryTable.restorationSupport node.targetBound := by
+  have mappedPair : ∃ targetTyped : WellSorted.HasType
+      source.costWholeLanguage node.boundaryTable.mappedFreeContext
+      (node.sourceBound.map (mapTypeExpr (color.symbols source)))
+      (mapPattern (color.symbols source) node.skeleton.1)
+      (mapTypeExpr (color.symbols source) (.base node.sourceSort.1)),
+      targetTyped.ReflectiveSupportSafeAt
+        node.boundaryTable.restorationSupport node.targetBound := by
+    rw [← node.transport.freeContext, ← node.transport.reflectiveSupport]
+    exact node.supportSafe.mapCostStatic source color
+      node.supported.constructorsWithin
+  obtain ⟨mappedTyped, mappedSafe⟩ := mappedPair
+  have thickenedSafe :=
+    WellSorted.HasType.ReflectiveSupportSafeAt.thickenAmbientBVars
+      (source := source) (color := color)
+      (sourceBound := node.sourceBound) (targetBound := node.targetBound)
+      (inner := []) mappedSafe node.thinning
+  exact thickenedSafe.castTyping
+
+/-- Restoring the finite boundary table into the packaged rigid source
+endpoint is exactly the original generated term. -/
+theorem restore_mappedThickenedSkeleton_eq_term {source : CIGSLT}
+    {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+    (node : CostStaticRegionNode source color targetFree) :
+    node.boundaryTable.restoreSupportedSkeleton node.targetBound
+        node.mappedThickenedSkeleton.1 = node.term.1 := by
+  simpa [mappedThickenedSkeleton] using node.restoreMappedSkeleton_eq_term
+
+/-- Normalize the authored source skeleton and then reinsert exactly the
+target-only ambient binders.  Finite boundary payloads are still rigid free
+variables here, so they are never rewritten by binder insertion. -/
+def normalizedThickenedSkeletonRaw {source : CIGSLT}
+    {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+    (node : CostStaticRegionNode source color targetFree) : Pattern :=
+  node.thinning.thickenAmbientBVars 0
+    (normalizeCostStaticStratum source color node.skeleton)
+
+/-- The binder-reinserted normalized skeleton remains in the equation class
+of the binder-reinserted original static skeleton.  The hypothesis is exactly
+the authored-generator half of ambient-renaming naturality; the reflective
+half follows for every validated language from re-canonicalization. -/
+theorem normalizedThickenedSkeletonRaw_equationEquiv
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    (node : CostStaticRegionNode source color targetFree)
+    (stable : SupportedEquationAmbientRenamingStable
+      source.costWholeLanguage) :
+    EquationSemantics.EquationEquiv defaultBasePremises
+      source.costWholeLanguage node.normalizedThickenedSkeletonRaw
+      (node.thinning.thickenAmbientBVars 0
+        (mapPattern (color.symbols source) node.skeleton.1)) := by
+  have normalized := normalizeCostStaticStratum_equationEquiv
+    source color node.skeleton
+  have renamed := equationEquiv_renameAmbientBVarsAt stable
+    node.thinning.toTargetIndex node.thinning.toTargetIndex_strictMono 0
+      normalized
+  simpa only [normalizedThickenedSkeletonRaw,
+    CostStaticBinderThinning.thickenAmbientBVars_eq_renameAmbientBVarsAt]
+    using renamed
+
+/-- The normalized, binder-reinserted skeleton inhabits the exact target
+fiber before any finite boundary value is restored. -/
+def normalizedThickenedSkeleton {source : CIGSLT}
+    {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+    (node : CostStaticRegionNode source color targetFree) :
+    WellSorted.OpenTerm source.costWholeLanguage
+      node.boundaryTable.mappedFreeContext node.targetBound
+      (color.mapLangSort source node.sourceSort) := by
+  have mappedWellSorted :=
+    normalizeCostStaticStratum_openTermWellSorted_targetSupport source color
+      node.skeleton node.boundaryTable.sourceSupport node.targetBound
+      node.supported node.supportSafe
+  have freeContext := node.transport.freeContext
+  change node.plan.boundaryTable.sourceFreeContext.map (color.symbols source) =
+    node.plan.boundaryTable.mappedFreeContext at freeContext
+  rw [freeContext] at mappedWellSorted
+  refine ⟨node.normalizedThickenedSkeletonRaw, ?_, ?_, ?_, ?_⟩
+  · simpa [normalizedThickenedSkeletonRaw,
+      CostStaticRegionNode.boundaryTable] using
+      mappedWellSorted.1.thickenAmbientBVars
+        (source := source) (color := color) (inner := []) node.thinning
+  · simpa [normalizedThickenedSkeletonRaw] using mappedWellSorted.2.1
+  · simpa [normalizedThickenedSkeletonRaw] using mappedWellSorted.2.2.1
+  · intro presentation membership
+    have mappedScope := mappedWellSorted.2.2.2 presentation membership
+    have thickenedScope := node.thinning.binderSafeAt_thickenAmbientBVars
+      presentation.quoteConstructor 0
+      (normalizeCostStaticStratum source color node.skeleton) (by
+        simpa [List.length_map] using mappedScope)
+    simpa [normalizedThickenedSkeletonRaw] using thickenedScope
+
+/-- The typed package retains the independently defined raw normalized
+skeleton exactly; transport proofs affect only its carrier evidence. -/
+@[simp]
+theorem normalizedThickenedSkeleton_pattern {source : CIGSLT}
+    {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+    (node : CostStaticRegionNode source color targetFree) :
+    node.normalizedThickenedSkeleton.1 =
+      node.normalizedThickenedSkeletonRaw := by
+  rfl
+
+/-- Reflective support survives target-only binder insertion in the normalized
+skeleton.  The support index is the generated Cost index `id`; the source-side
+static image has already been discharged by the canonical-section theorem. -/
+theorem normalizedThickenedSkeleton_supportSafe {source : CIGSLT}
+    {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+    (node : CostStaticRegionNode source color targetFree) :
+    node.normalizedThickenedSkeleton.2.1.ReflectiveSupportSafeAt
+      node.boundaryTable.restorationSupport node.targetBound := by
+  have mappedPair := normalizeCostStaticStratum_typedTargetReflectiveSupport
+    source color node.skeleton node.boundaryTable.sourceSupport
+      node.targetBound node.supported node.supportSafe
+  have freeContext := node.transport.freeContext
+  change node.plan.boundaryTable.sourceFreeContext.map (color.symbols source) =
+    node.plan.boundaryTable.mappedFreeContext at freeContext
+  have reflectiveSupport := node.transport.reflectiveSupport
+  rw [freeContext, reflectiveSupport] at mappedPair
+  obtain ⟨mappedTyped, mappedSafe⟩ := mappedPair
+  let thickenedTypedRaw := mappedTyped.thickenAmbientBVars
+    (source := source) (color := color) (inner := []) node.thinning
+  have thickenedSafeRaw : thickenedTypedRaw.ReflectiveSupportSafeAt
+      node.boundaryTable.restorationSupport node.targetBound :=
+    WellSorted.HasType.ReflectiveSupportSafeAt.thickenAmbientBVars
+      (source := source) (color := color)
+      (sourceBound := node.sourceBound) (targetBound := node.targetBound)
+      (inner := []) mappedSafe node.thinning
+  let thickenedTyped : WellSorted.HasType source.costWholeLanguage
+      node.boundaryTable.mappedFreeContext node.targetBound
+      node.normalizedThickenedSkeletonRaw
+      (.base (color.mapLangSort source node.sourceSort).1) := by
+    simpa [thickenedTypedRaw, normalizedThickenedSkeletonRaw,
+      CostStaticRegionNode.boundaryTable, mapTypeExpr] using
+        thickenedTypedRaw
+  have thickenedSafe : thickenedTyped.ReflectiveSupportSafeAt
+      node.boundaryTable.restorationSupport node.targetBound := by
+    exact thickenedSafeRaw.castTyping
+  exact thickenedSafe.castTyping
+
+/-- Package the normalized rigid-boundary endpoint in the exact support-safe
+carrier used by supported equation substitution. -/
+def normalizedThickenedSupportSafe {source : CIGSLT}
+    {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+    (node : CostStaticRegionNode source color targetFree) :
+    WellSorted.SupportSafeOpenPattern source.costWholeLanguage
+      node.boundaryTable.mappedFreeContext
+      node.boundaryTable.restorationSupport node.targetBound
+      (.base (color.mapLangSort source node.sourceSort).1) :=
+  { term := node.normalizedThickenedSkeleton
+    safe := node.normalizedThickenedSkeleton_supportSafe }
+
+/-- Package the unnormalized mapped skeleton in the same support-safe fiber. -/
+def mappedThickenedSupportSafe {source : CIGSLT}
+    {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+    (node : CostStaticRegionNode source color targetFree) :
+    WellSorted.SupportSafeOpenPattern source.costWholeLanguage
+      node.boundaryTable.mappedFreeContext
+      node.boundaryTable.restorationSupport node.targetBound
+      (.base (color.mapLangSort source node.sourceSort).1) :=
+  { term := node.mappedThickenedSkeleton
+    safe := node.mappedThickenedSkeleton_supportSafe }
+
+/-- Child-first normalization of a single certified static region.  The
+source skeleton is normalized, only its ambient indices are reinserted, and
+then the recursively normalized finite boundary values are restored. -/
+def normalizeRawWith {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    (node : CostStaticRegionNode source color targetFree)
+    (values : TypedCostRegionBoundaryTable.Values source color targetFree
+      node.boundaryTable) : Pattern :=
+  values.restoreSupportedSkeleton node.boundaryTable node.targetBound
+    node.normalizedThickenedSkeleton.1
+
+/-- A region normalized in its local finite environment agrees exactly with
+normalization in any larger environment that extends every value it uses.
+The authored source section is reindexed by free-context naturality, while
+finite restoration observes only names occurring in the normalized object. -/
+theorem normalizeRawWith_eq_restore_skeletonIn_of_extends
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    (node : CostStaticRegionNode source color targetFree)
+    (values : TypedCostRegionBoundaryTable.Values source color targetFree
+      node.boundaryTable)
+    {globalOccurrences : List CostRegionOccurrence}
+    (globalTable : TypedCostRegionBoundaryTable source color targetFree
+      globalOccurrences)
+    (globalValues : TypedCostRegionBoundaryTable.Values source color targetFree
+      globalTable)
+    (entriesSubset : node.boundaryTable.entries ⊆ globalTable.entries)
+    (extension : TypedCostRegionBoundaryTable.Values.Extends
+      node.boundaryTable values globalTable globalValues) :
+    node.normalizeRawWith values =
+      globalValues.restoreSupportedSkeleton globalTable node.targetBound
+        (node.thinning.thickenAmbientBVars 0
+          (normalizeCostStaticStratum source color
+            (node.skeletonIn globalTable entriesSubset))) := by
+  have restored :=
+    TypedCostRegionBoundaryTable.Values.restoreSupportedSkeleton_eq_of_extends
+      node.boundaryTable values globalTable globalValues entriesSubset extension
+      node.normalizedThickenedSkeleton.2.1
+      node.normalizedThickenedSkeleton.2.2.2.1
+  calc
+    node.normalizeRawWith values =
+        globalValues.restoreSupportedSkeleton globalTable node.targetBound
+          node.normalizedThickenedSkeleton.1 := by
+      simpa [normalizeRawWith] using restored
+    _ = globalValues.restoreSupportedSkeleton globalTable node.targetBound
+          (node.thinning.thickenAmbientBVars 0
+            (normalizeCostStaticStratum source color
+              (node.skeletonIn globalTable entriesSubset))) := by
+      apply congrArg
+      change node.thinning.thickenAmbientBVars 0
+          (normalizeCostStaticStratum source color node.skeleton) =
+        node.thinning.thickenAmbientBVars 0
+          (normalizeCostStaticStratum source color
+            (node.skeletonIn globalTable entriesSubset))
+      exact congrArg (node.thinning.thickenAmbientBVars 0)
+        (node.normalizeCostStaticStratum_skeletonIn_eq globalTable
+          entriesSubset).symm
+
+/-- Exact source canonical completeness is preserved by the complete
+one-stratum pipeline whenever the binder thinning, finite boundary table, and
+replacement vector are shared.  This is the local collapse theorem; it says
+nothing about how two surrounding region decompositions are aligned. -/
+theorem restoreNormalizedStaticStratum_eq_of_openEquationSetoid
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    {sourceBound targetBound : List TypeExpr}
+    (thinning : CostStaticBinderThinning source color sourceBound targetBound)
+    (table : TypedCostRegionBoundaryTable source color targetFree occurrences)
+    (values : TypedCostRegionBoundaryTable.Values source color targetFree table)
+    {sourceSort : LangSort source.theory.presentation.presentation.language}
+    {left right : OpenTerm source.theory table.sourceFreeContext sourceBound
+      sourceSort}
+    (equivalent :
+      (openEquationSetoid source.theory table.sourceFreeContext sourceBound
+        sourceSort).r left right) :
+    values.restoreSupportedSkeleton table targetBound
+        (thinning.thickenAmbientBVars 0
+          (normalizeCostStaticStratum source color left)) =
+      values.restoreSupportedSkeleton table targetBound
+        (thinning.thickenAmbientBVars 0
+          (normalizeCostStaticStratum source color right)) := by
+  exact congrArg
+    (fun normalized => values.restoreSupportedSkeleton table targetBound
+      (thinning.thickenAmbientBVars 0 normalized))
+    (normalizeCostStaticStratum_eq_of_openEquationSetoid source color
+      equivalent)
+
+/-- Generator-specialized form of the local stratum collapse theorem.  It is
+the exact base case used when a contextual Cost equation has been aligned
+with one proof-relevant static region. -/
+theorem restoreNormalizedStaticStratum_eq_of_openEquationGenerator
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    {sourceBound targetBound : List TypeExpr}
+    (thinning : CostStaticBinderThinning source color sourceBound targetBound)
+    (table : TypedCostRegionBoundaryTable source color targetFree occurrences)
+    (values : TypedCostRegionBoundaryTable.Values source color targetFree table)
+    {sourceSort : LangSort source.theory.presentation.presentation.language}
+    {left right : OpenTerm source.theory table.sourceFreeContext sourceBound
+      sourceSort}
+    (generator : openEquationGenerator source.theory table.sourceFreeContext
+      sourceBound sourceSort left right) :
+    values.restoreSupportedSkeleton table targetBound
+        (thinning.thickenAmbientBVars 0
+          (normalizeCostStaticStratum source color left)) =
+      values.restoreSupportedSkeleton table targetBound
+        (thinning.thickenAmbientBVars 0
+          (normalizeCostStaticStratum source color right)) :=
+  restoreNormalizedStaticStratum_eq_of_openEquationSetoid thinning table values
+    (Relation.EqvGen.rel left right generator)
+
+/-- Structural unambiguity and equal finite replacement vectors make
+normalization independent of the proof-relevant static-node presentation.
+The color and node transports are discharged here, so recursive replay
+theorems need only compare ordinary normalized patterns. -/
+theorem UnambiguousStaticDecomposition.normalizeRawWith_eq
+    {source : CIGSLT}
+    (unambiguous : UnambiguousStaticDecomposition source)
+    {targetFree : WellSorted.FreeTypeContext}
+    {firstColor secondColor : CostStaticColor}
+    (first : CostStaticRegionNode source firstColor targetFree)
+    (second : CostStaticRegionNode source secondColor targetFree)
+    (boundEq : first.targetBound = second.targetBound)
+    (targetSortEq : firstColor.mapLangSort source first.sourceSort =
+      secondColor.mapLangSort source second.sourceSort)
+    (termEq : first.term.1 = second.term.1)
+    (firstValues : TypedCostRegionBoundaryTable.Values source firstColor
+      targetFree first.boundaryTable)
+    (secondValues : TypedCostRegionBoundaryTable.Values source secondColor
+      targetFree second.boundaryTable)
+    (valuesEq : HEq firstValues secondValues) :
+    first.normalizeRawWith firstValues =
+      second.normalizeRawWith secondValues := by
+  have colorEq := (unambiguous.staticNode_indices_eq first second boundEq
+    targetSortEq termEq).1
+  cases colorEq
+  have nodeEq : first = second := eq_of_heq
+    (unambiguous.staticNode_heq first second boundEq targetSortEq termEq)
+  cases nodeEq
+  have valuesEq' : firstValues = secondValues := eq_of_heq valuesEq
+  cases valuesEq'
+  rfl
+
+/-! ### The same-colour static equation action
+
+The generated Cost language contains both static colours, so substitution is
+not stable on arbitrary mixed-colour raw equation paths.  Region
+normalization needs a strictly smaller and structurally visible action: one
+authored source generator is mapped into a single selected colour, ambient
+binders are reinserted by one intrinsic thinning, and only then are rigid
+boundary variables replaced by arbitrary well-sorted Cost values. -/
+
+/-- A source open term together with exactly the constructor and reflective-
+support evidence needed to act on it inside one generated static colour. -/
+structure CostStaticSourceTerm (source : CIGSLT) (color : CostStaticColor)
+    (free : WellSorted.FreeTypeContext) (support : ContextSupport.Support)
+    (sourceBound targetBound : List TypeExpr)
+    (sort : LangSort source.theory.presentation.presentation.language) where
+  term : OpenTerm source.theory free sourceBound sort
+  supported : WellSorted.HasTypeWithConstructors
+    source.theory.presentation.presentation.language
+    (· ∈ source.continuationRetyping.wrappedLabels)
+    free sourceBound term.1 (.base sort.1)
+  safe : term.2.1.ReflectiveSupportSafeAt support targetBound
+    (mapTypeExpr (color.symbols source))
+
+namespace CostStaticSourceTerm
+
+/-- One source-authored equation edge between terms carrying the static
+fragment evidence needed by the Cost action. -/
+def generator {source : CIGSLT} {color : CostStaticColor}
+    {free : WellSorted.FreeTypeContext} {support : ContextSupport.Support}
+    {sourceBound targetBound : List TypeExpr}
+    {sort : LangSort source.theory.presentation.presentation.language}
+    (left right : CostStaticSourceTerm source color free support sourceBound
+      targetBound sort) : Prop :=
+  openEquationGenerator source.theory free sourceBound sort
+    left.term right.term
+
+/-- Least source equation relation whose intermediate vertices all retain
+the selected static constructor fragment and the same target-support fiber. -/
+def equationSetoid (source : CIGSLT) (color : CostStaticColor)
+    (free : WellSorted.FreeTypeContext) (support : ContextSupport.Support)
+    (sourceBound targetBound : List TypeExpr)
+    (sort : LangSort source.theory.presentation.presentation.language) :
+    Setoid (CostStaticSourceTerm source color free support sourceBound
+      targetBound sort) where
+  r := Relation.EqvGen generator
+  iseqv :=
+    { refl := Relation.EqvGen.refl
+      symm := fun relation => Relation.EqvGen.symm _ _ relation
+      trans := fun first second => Relation.EqvGen.trans _ _ _ first second }
+
+/-- Map one certified source term into a single Cost colour, reinsert its
+ambient target binders, and restore an arbitrary supported finite value
+assignment.  Mixed-colour values occur only as opaque assignment images. -/
+def act {source : CIGSLT} {color : CostStaticColor}
+    {free assignmentFree targetFree : WellSorted.FreeTypeContext}
+    {support assignmentSupport : ContextSupport.Support}
+    {sourceBound targetBound : List TypeExpr}
+    {sort : LangSort source.theory.presentation.presentation.language}
+    (term : CostStaticSourceTerm source color free support sourceBound
+      targetBound sort)
+    (thinning : CostStaticBinderThinning source color sourceBound targetBound)
+    (assignment : WellSorted.SupportedOpenAssignment source.costWholeLanguage
+      assignmentFree targetFree assignmentSupport) : Pattern :=
+  ReflectiveContextSupport.substitute source.costWholeLanguage assignmentSupport
+    assignment.assignment targetBound
+      (thinning.thickenAmbientBVars 0
+        (mapPattern (color.symbols source) term.term.1))
+
+/-- Map a certified source term into one selected Cost colour and reinsert
+the ambient target binders recorded by its thinning.  This is the generic
+term-level counterpart of `CostStaticRegionNode.mappedThickenedSkeleton`;
+it retains the exact open typing fibre before any boundary assignment acts. -/
+def mappedThickenedOpenTerm {source : CIGSLT} {color : CostStaticColor}
+    {free : WellSorted.FreeTypeContext} {support : ContextSupport.Support}
+    {sourceBound targetBound : List TypeExpr}
+    {sort : LangSort source.theory.presentation.presentation.language}
+    (term : CostStaticSourceTerm source color free support sourceBound
+      targetBound sort)
+    (thinning : CostStaticBinderThinning source color sourceBound targetBound) :
+    WellSorted.OpenTerm source.costWholeLanguage
+      (free.map (color.symbols source)) targetBound
+      (color.mapLangSort source sort) := by
+  let mapped := term.term.mapCostStatic term.supported color
+  refine ⟨thinning.thickenAmbientBVars 0 mapped.1, ?_, ?_, ?_, ?_⟩
+  · simpa only [List.nil_append, List.length_nil,
+      WellSorted.OpenTerm.mapCostStatic_pattern] using
+      mapped.2.1.thickenAmbientBVars (inner := []) thinning
+  · rw [CostStaticBinderThinning.hasCanonicalBinderMetadata_thickenAmbientBVars]
+    exact mapped.2.2.1
+  · rw [CostStaticBinderThinning.isObjectPattern_thickenAmbientBVars]
+    exact mapped.2.2.2.1
+  · intro declaration membership
+    have thickenedScope := thinning.binderSafeAt_thickenAmbientBVars
+      declaration.quoteConstructor 0 mapped.1 (by
+        simpa only [List.length_map, WellSorted.OpenTerm.mapCostStatic_pattern,
+          zero_add] using mapped.2.2.2.2 declaration membership)
+    simpa only [zero_add] using thickenedScope
+
+/-- The mapped and binder-reinserted source endpoint is safe for the exact
+support index carried by the source static fibre. -/
+theorem mappedThickenedOpenTerm_supportSafe
+    {source : CIGSLT} {color : CostStaticColor}
+    {free : WellSorted.FreeTypeContext} {support : ContextSupport.Support}
+    {sourceBound targetBound : List TypeExpr}
+    {sort : LangSort source.theory.presentation.presentation.language}
+    (term : CostStaticSourceTerm source color free support sourceBound
+      targetBound sort)
+    (thinning : CostStaticBinderThinning source color sourceBound targetBound) :
+    (term.mappedThickenedOpenTerm thinning).2.1.ReflectiveSupportSafeAt
+      support targetBound := by
+  obtain ⟨mappedTyped, mappedSafe⟩ := term.safe.mapCostStatic source color
+    term.supported.constructorsWithin
+  have thickenedSafe :=
+    WellSorted.HasType.ReflectiveSupportSafeAt.thickenAmbientBVars
+      (source := source) (color := color) (inner := []) mappedSafe thinning
+  exact thickenedSafe.castTyping
+
+/-- Package one mapped static endpoint in the support-safe carrier consumed
+by finite boundary substitution. -/
+def mappedThickenedSupportSafe
+    {source : CIGSLT} {color : CostStaticColor}
+    {free : WellSorted.FreeTypeContext} {support : ContextSupport.Support}
+    {sourceBound targetBound : List TypeExpr}
+    {sort : LangSort source.theory.presentation.presentation.language}
+    (term : CostStaticSourceTerm source color free support sourceBound
+      targetBound sort)
+    (thinning : CostStaticBinderThinning source color sourceBound targetBound) :
+    WellSorted.SupportSafeOpenPattern source.costWholeLanguage
+      (free.map (color.symbols source)) support targetBound
+      (.base (color.mapLangSort source sort).1) where
+  term := term.mappedThickenedOpenTerm thinning
+  safe := term.mappedThickenedOpenTerm_supportSafe thinning
+
+@[simp]
+theorem mappedThickenedSupportSafe_pattern
+    {source : CIGSLT} {color : CostStaticColor}
+    {free : WellSorted.FreeTypeContext} {support : ContextSupport.Support}
+    {sourceBound targetBound : List TypeExpr}
+    {sort : LangSort source.theory.presentation.presentation.language}
+    (term : CostStaticSourceTerm source color free support sourceBound
+      targetBound sort)
+    (thinning : CostStaticBinderThinning source color sourceBound targetBound) :
+    (term.mappedThickenedSupportSafe thinning).term.1 =
+      thinning.thickenAmbientBVars 0
+        (mapPattern (color.symbols source) term.term.1) := by
+  rfl
+
+/-- Retain the visible/sealed binder split of a mapped static endpoint.  At a
+region root all target binders are visible and the sealed suffix is empty. -/
+def mappedThickenedAvailable
+    {source : CIGSLT} {color : CostStaticColor}
+    {free : WellSorted.FreeTypeContext} {support : ContextSupport.Support}
+    {sourceBound targetBound : List TypeExpr}
+    {sort : LangSort source.theory.presentation.presentation.language}
+    (term : CostStaticSourceTerm source color free support sourceBound
+      targetBound sort)
+    (thinning : CostStaticBinderThinning source color sourceBound targetBound) :
+    WellSorted.AvailableOpenPattern source.costWholeLanguage
+      (free.map (color.symbols source)) targetBound []
+      (.base (color.mapLangSort source sort).1) :=
+  WellSorted.AvailableOpenPattern.ofOpenPattern
+    (term.mappedThickenedOpenTerm thinning)
+
+@[simp]
+theorem mappedThickenedAvailable_pattern
+    {source : CIGSLT} {color : CostStaticColor}
+    {free : WellSorted.FreeTypeContext} {support : ContextSupport.Support}
+    {sourceBound targetBound : List TypeExpr}
+    {sort : LangSort source.theory.presentation.presentation.language}
+    (term : CostStaticSourceTerm source color free support sourceBound
+      targetBound sort)
+    (thinning : CostStaticBinderThinning source color sourceBound targetBound) :
+    (term.mappedThickenedAvailable thinning).pattern =
+      thinning.thickenAmbientBVars 0
+        (mapPattern (color.symbols source) term.term.1) := by
+  rfl
+
+/-- The split-fiber package carries the same support certificate as the
+underlying mapped open term. -/
+theorem mappedThickenedAvailable_supportSafe
+    {source : CIGSLT} {color : CostStaticColor}
+    {free : WellSorted.FreeTypeContext} {support : ContextSupport.Support}
+    {sourceBound targetBound : List TypeExpr}
+    {sort : LangSort source.theory.presentation.presentation.language}
+    (term : CostStaticSourceTerm source color free support sourceBound
+      targetBound sort)
+    (thinning : CostStaticBinderThinning source color sourceBound targetBound) :
+    (term.mappedThickenedAvailable thinning).typed.ReflectiveSupportSafeAt
+      support targetBound := by
+  exact WellSorted.HasType.ReflectiveSupportSafeAt.castBound
+    (List.append_nil targetBound).symm
+    (term.mappedThickenedOpenTerm_supportSafe thinning)
+
+/-- Apply one finite boundary assignment while preserving the exact target
+typing fiber and quote-visible binder split. -/
+def actAvailable
+    {source : CIGSLT} {color : CostStaticColor}
+    {free assignmentFree targetFree : WellSorted.FreeTypeContext}
+    {support assignmentSupport : ContextSupport.Support}
+    {sourceBound targetBound : List TypeExpr}
+    {sort : LangSort source.theory.presentation.presentation.language}
+    (term : CostStaticSourceTerm source color free support sourceBound
+      targetBound sort)
+    (thinning : CostStaticBinderThinning source color sourceBound targetBound)
+    (assignment : WellSorted.SupportedOpenAssignment source.costWholeLanguage
+      assignmentFree targetFree assignmentSupport)
+    (freeContext : free.map (color.symbols source) = assignmentFree)
+    (reflectiveSupport : support = assignmentSupport) :
+    WellSorted.AvailableOpenPattern source.costWholeLanguage targetFree
+      targetBound [] (.base (color.mapLangSort source sort).1) := by
+  subst assignmentFree
+  subst assignmentSupport
+  exact (term.mappedThickenedAvailable thinning).substitute assignment
+    (term.mappedThickenedAvailable_supportSafe thinning)
+
+@[simp]
+theorem actAvailable_pattern
+    {source : CIGSLT} {color : CostStaticColor}
+    {free assignmentFree targetFree : WellSorted.FreeTypeContext}
+    {support assignmentSupport : ContextSupport.Support}
+    {sourceBound targetBound : List TypeExpr}
+    {sort : LangSort source.theory.presentation.presentation.language}
+    (term : CostStaticSourceTerm source color free support sourceBound
+      targetBound sort)
+    (thinning : CostStaticBinderThinning source color sourceBound targetBound)
+    (assignment : WellSorted.SupportedOpenAssignment source.costWholeLanguage
+      assignmentFree targetFree assignmentSupport)
+    (freeContext : free.map (color.symbols source) = assignmentFree)
+    (reflectiveSupport : support = assignmentSupport) :
+    (term.actAvailable thinning assignment freeContext
+      reflectiveSupport).pattern = term.act thinning assignment := by
+  subst assignmentFree
+  subst assignmentSupport
+  rfl
+
+end CostStaticSourceTerm
+
+/-- The source-authored static equation action required by Cost₁.  It is a
+single-generator law: no region tree, canonicalizer, or normalized endpoint
+appears in its statement. -/
+def _root_.CostStaticMappedGeneratorAction (source : CIGSLT) : Prop :=
+  ∀ {color : CostStaticColor}
+    {free assignmentFree targetFree : WellSorted.FreeTypeContext}
+    {support assignmentSupport : ContextSupport.Support}
+    {sourceBound targetBound : List TypeExpr}
+    {sort : LangSort source.theory.presentation.presentation.language}
+    (thinning : CostStaticBinderThinning source color sourceBound targetBound)
+    (assignment : WellSorted.SupportedOpenAssignment source.costWholeLanguage
+      assignmentFree targetFree assignmentSupport)
+    (_freeContext : free.map (color.symbols source) = assignmentFree)
+    (_reflectiveSupport : support = assignmentSupport)
+    {left right : CostStaticSourceTerm source color free support sourceBound
+      targetBound sort},
+    CostStaticSourceTerm.generator left right →
+      EquationSemantics.EquationEquiv defaultBasePremises
+        source.costWholeLanguage
+        (left.act thinning assignment) (right.act thinning assignment)
+
+/-- Typed counterpart of the static generator action.  Every intermediate
+target representative remains in the exact free, binder, and generated-sort
+fiber selected by the source region.  This is strictly weaker than demanding
+fiber preservation from arbitrary mixed-colour target generators. -/
+def _root_.CostStaticMappedGeneratorFiberAction (source : CIGSLT) : Prop :=
+  ∀ {color : CostStaticColor}
+    {free assignmentFree targetFree : WellSorted.FreeTypeContext}
+    {support assignmentSupport : ContextSupport.Support}
+    {sourceBound targetBound : List TypeExpr}
+    {sort : LangSort source.theory.presentation.presentation.language}
+    (thinning : CostStaticBinderThinning source color sourceBound targetBound)
+    (assignment : WellSorted.SupportedOpenAssignment source.costWholeLanguage
+      assignmentFree targetFree assignmentSupport)
+    (freeContext : free.map (color.symbols source) = assignmentFree)
+    (reflectiveSupport : support = assignmentSupport)
+    {left right : CostStaticSourceTerm source color free support sourceBound
+      targetBound sort},
+    CostStaticSourceTerm.generator left right →
+      (WellSorted.AvailableOpenPattern.equationSetoid
+        source.costWholeLanguage targetFree targetBound []
+          (.base (color.mapLangSort source sort).1)).r
+        (left.actAvailable thinning assignment freeContext reflectiveSupport)
+        (right.actAvailable thinning assignment freeContext reflectiveSupport)
+
+/-- A single-generator static action extends to the least certified source
+equation closure without adding any target-language equation authority. -/
+theorem CostStaticSourceTerm.equationSetoid_act
+    {source : CIGSLT} (stable : CostStaticMappedGeneratorAction source)
+    {color : CostStaticColor}
+    {free assignmentFree targetFree : WellSorted.FreeTypeContext}
+    {support assignmentSupport : ContextSupport.Support}
+    {sourceBound targetBound : List TypeExpr}
+    {sort : LangSort source.theory.presentation.presentation.language}
+    (thinning : CostStaticBinderThinning source color sourceBound targetBound)
+    (assignment : WellSorted.SupportedOpenAssignment source.costWholeLanguage
+      assignmentFree targetFree assignmentSupport)
+    (freeContext : free.map (color.symbols source) = assignmentFree)
+    (reflectiveSupport : support = assignmentSupport)
+    {left right : CostStaticSourceTerm source color free support sourceBound
+      targetBound sort}
+    (equivalent : (CostStaticSourceTerm.equationSetoid source color free support
+      sourceBound targetBound sort).r left right) :
+    EquationSemantics.EquationEquiv defaultBasePremises
+      source.costWholeLanguage
+      (left.act thinning assignment) (right.act thinning assignment) := by
+  induction equivalent with
+  | rel left right generator =>
+      exact stable thinning assignment freeContext reflectiveSupport generator
+  | refl term =>
+      exact Relation.EqvGen.refl _
+  | symm left right relation inductionHypothesis =>
+      exact Relation.EqvGen.symm _ _ inductionHypothesis
+  | trans left middle right first second firstIH secondIH =>
+      exact Relation.EqvGen.trans _ _ _ firstIH secondIH
+
+/-- A fiber-preserving generator action extends to the full certified source
+closure while retaining every intermediate target certificate. -/
+theorem CostStaticSourceTerm.equationSetoid_actAvailable
+    {source : CIGSLT}
+    (stable : CostStaticMappedGeneratorFiberAction source)
+    {color : CostStaticColor}
+    {free assignmentFree targetFree : WellSorted.FreeTypeContext}
+    {support assignmentSupport : ContextSupport.Support}
+    {sourceBound targetBound : List TypeExpr}
+    {sort : LangSort source.theory.presentation.presentation.language}
+    (thinning : CostStaticBinderThinning source color sourceBound targetBound)
+    (assignment : WellSorted.SupportedOpenAssignment source.costWholeLanguage
+      assignmentFree targetFree assignmentSupport)
+    (freeContext : free.map (color.symbols source) = assignmentFree)
+    (reflectiveSupport : support = assignmentSupport)
+    {left right : CostStaticSourceTerm source color free support sourceBound
+      targetBound sort}
+    (equivalent : (CostStaticSourceTerm.equationSetoid source color free support
+      sourceBound targetBound sort).r left right) :
+    (WellSorted.AvailableOpenPattern.equationSetoid
+      source.costWholeLanguage targetFree targetBound []
+        (.base (color.mapLangSort source sort).1)).r
+      (left.actAvailable thinning assignment freeContext reflectiveSupport)
+      (right.actAvailable thinning assignment freeContext
+        reflectiveSupport) := by
+  induction equivalent with
+  | rel left right generator =>
+      exact stable thinning assignment freeContext reflectiveSupport generator
+  | refl term =>
+      exact Relation.EqvGen.refl _
+  | symm left right relation inductionHypothesis =>
+      exact Relation.EqvGen.symm _ _ inductionHypothesis
+  | trans left middle right first second firstIH secondIH =>
+      exact Relation.EqvGen.trans _ _ _ firstIH secondIH
+
+/-- The original source skeleton packaged in the exact static action fiber. -/
+def sourceActionTerm {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    (node : CostStaticRegionNode source color targetFree) :
+    CostStaticSourceTerm source color node.boundaryTable.sourceFreeContext
+      node.boundaryTable.sourceSupport node.sourceBound node.targetBound
+      node.sourceSort where
+  term := node.skeleton
+  supported := node.supported
+  safe := node.supportSafe
+
+/-- The sole authored source representative, with constructor support and
+reflective support transported by the existing contextual section laws. -/
+def normalizedSourceActionTerm {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    (node : CostStaticRegionNode source color targetFree) :
+    CostStaticSourceTerm source color node.boundaryTable.sourceFreeContext
+      node.boundaryTable.sourceSupport node.sourceBound node.targetBound
+      node.sourceSort where
+  term := source.openCanonical.normalize node.skeleton
+  supported := source.openCanonicalPreservesWrappedConstructorTyping
+    node.skeleton node.supported
+  safe := source.openCanonical.preservesReflectiveSupport node.skeleton
+    node.boundaryTable.sourceSupport node.targetBound
+      (mapTypeExpr (color.symbols source)) node.supportSafe
+
+/-- The source canonical path remains inside the constructor- and support-
+certified carrier on which the same-colour Cost action is defined. -/
+def _root_.CostStaticCanonicalPathSafe (source : CIGSLT) : Prop :=
+  ∀ {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+    (node : CostStaticRegionNode source color targetFree),
+    (CostStaticSourceTerm.equationSetoid source color
+      node.boundaryTable.sourceFreeContext node.boundaryTable.sourceSupport
+      node.sourceBound node.targetBound node.sourceSort).r
+        node.normalizedSourceActionTerm node.sourceActionTerm
+
+/-- One static stratum is sound once its already-authored canonical path has
+been lifted to the exact support-safe fiber and its finite child values are
+pointwise equivalent to the original boundary contents.  The theorem stores
+no canonicalizer or equation policy: both hypotheses refer to the sole
+`LanguageDef` equation relation and the existing finite assignments. -/
+theorem normalizeRawWith_equationEquiv {source : CIGSLT}
+    {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+    (node : CostStaticRegionNode source color targetFree)
+    (stable : CostStaticMappedGeneratorAction source)
+    (values : TypedCostRegionBoundaryTable.Values source color targetFree
+      node.boundaryTable)
+    (valuesEquivalent :
+      (values.supportedOpenAssignment node.boundaryTable).Equivalent
+        ((TypedCostRegionBoundaryTable.Values.original node.boundaryTable
+          ).supportedOpenAssignment node.boundaryTable))
+    (skeletonEquivalent :
+      (CostStaticSourceTerm.equationSetoid source color
+        node.boundaryTable.sourceFreeContext node.boundaryTable.sourceSupport
+        node.sourceBound node.targetBound node.sourceSort).r
+          node.normalizedSourceActionTerm node.sourceActionTerm) :
+    EquationSemantics.EquationEquiv defaultBasePremises
+      source.costWholeLanguage (node.normalizeRawWith values) node.term.1 := by
+  let valuesAssignment := values.supportedOpenAssignment node.boundaryTable
+  let originalAssignment :=
+    (TypedCostRegionBoundaryTable.Values.original node.boundaryTable
+      ).supportedOpenAssignment node.boundaryTable
+  have patternStep := CostStaticSourceTerm.equationSetoid_act stable
+    node.thinning valuesAssignment node.transport.freeContext
+      node.transport.reflectiveSupport skeletonEquivalent
+  have normalizedPattern : node.normalizedThickenedSkeleton.1 =
+      node.thinning.thickenAmbientBVars 0
+        (mapPattern (color.symbols source)
+          (source.openCanonical.normalize node.skeleton).1) := by
+    rw [node.normalizedThickenedSkeleton_pattern]
+    rfl
+  have patternStep' : EquationSemantics.EquationEquiv defaultBasePremises
+      source.costWholeLanguage
+      (values.restoreSupportedSkeleton node.boundaryTable node.targetBound
+        node.normalizedThickenedSkeleton.1)
+      (values.restoreSupportedSkeleton node.boundaryTable node.targetBound
+        node.mappedThickenedSkeleton.1) := by
+    rw [normalizedPattern, node.mappedThickenedSkeleton_pattern]
+    change EquationSemantics.EquationEquiv defaultBasePremises
+      source.costWholeLanguage
+      (node.normalizedSourceActionTerm.act node.thinning valuesAssignment)
+      (node.sourceActionTerm.act node.thinning valuesAssignment)
+    exact patternStep
+  have assignmentStep :=
+    node.mappedThickenedSkeleton.2.1.equationEquiv_substitute_pointwise
+      valuesAssignment originalAssignment valuesEquivalent
+  have assignmentStep' : EquationSemantics.EquationEquiv defaultBasePremises
+      source.costWholeLanguage
+      (values.restoreSupportedSkeleton node.boundaryTable node.targetBound
+        node.mappedThickenedSkeleton.1)
+      ((TypedCostRegionBoundaryTable.Values.original node.boundaryTable
+        ).restoreSupportedSkeleton node.boundaryTable node.targetBound
+          node.mappedThickenedSkeleton.1) := by
+    simpa only [valuesAssignment, originalAssignment,
+      TypedCostRegionBoundaryTable.Values.supportedOpenAssignment,
+      TypedCostRegionBoundaryTable.Values.supportedAssignment,
+      TypedCostRegionBoundaryTable.Values.restoreSupportedSkeleton,
+      WellSorted.SupportSafeOpenPattern.substitute_pattern] using assignmentStep
+  have restored := Relation.EqvGen.trans _ _ _ patternStep' assignmentStep'
+  have originalRestoration :
+      (TypedCostRegionBoundaryTable.Values.original node.boundaryTable
+        ).restoreSupportedSkeleton node.boundaryTable node.targetBound
+            node.mappedThickenedSkeleton.1 = node.term.1 := by
+    rw [TypedCostRegionBoundaryTable.Values.restoreSupportedSkeleton_original]
+    exact node.restore_mappedThickenedSkeleton_eq_term
+  change EquationSemantics.EquationEquiv defaultBasePremises
+    source.costWholeLanguage
+    (values.restoreSupportedSkeleton node.boundaryTable node.targetBound
+      node.normalizedThickenedSkeleton.1)
+    ((TypedCostRegionBoundaryTable.Values.original node.boundaryTable
+      ).restoreSupportedSkeleton node.boundaryTable node.targetBound
+        node.mappedThickenedSkeleton.1) at restored
+  rw [originalRestoration] at restored
+  simpa only [normalizeRawWith] using restored
+
+/-- Child-first one-stratum normalization remains in the exact original
+target binder fiber for every finite replacement vector. -/
+theorem normalizeRawWith_wellSorted {source : CIGSLT}
+    {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+    (node : CostStaticRegionNode source color targetFree)
+    (values : TypedCostRegionBoundaryTable.Values source color targetFree
+      node.boundaryTable) :
+    WellSorted.OpenTermWellSorted source.costWholeLanguage targetFree
+      node.targetBound (color.mapLangSort source node.sourceSort)
+      (node.normalizeRawWith values) := by
+  change WellSorted.OpenPatternWellSorted source.costWholeLanguage targetFree
+    node.targetBound (.base (color.mapLangSort source node.sourceSort).1)
+      (node.normalizeRawWith values)
+  simpa only [normalizeRawWith] using
+    values.restoreSupportedSkeleton_openPatternWellSorted node.boundaryTable
+      node.normalizedThickenedSkeleton
+      node.normalizedThickenedSkeleton_supportSafe
+
+/-- Typed child-first normalization of one static region. -/
+def normalizeWith {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    (node : CostStaticRegionNode source color targetFree)
+    (values : TypedCostRegionBoundaryTable.Values source color targetFree
+      node.boundaryTable) :
+    WellSorted.OpenTerm source.costWholeLanguage targetFree node.targetBound
+      (color.mapLangSort source node.sourceSort) :=
+  ⟨node.normalizeRawWith values, node.normalizeRawWith_wellSorted values⟩
+
+/-- Package one normalized static region in the split typed carrier used by
+the recursive Cost proof. -/
+def normalizeWithAvailable {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    (node : CostStaticRegionNode source color targetFree)
+    (values : TypedCostRegionBoundaryTable.Values source color targetFree
+      node.boundaryTable) :
+    WellSorted.AvailableOpenPattern source.costWholeLanguage targetFree
+      node.targetBound [] (.base (color.mapLangSort source node.sourceSort).1) :=
+  WellSorted.AvailableOpenPattern.ofOpenPattern (node.normalizeWith values)
+
+/-- Package the exact authored target term in the same split typed fiber as
+its normalized static representative. -/
+def termAvailable {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    (node : CostStaticRegionNode source color targetFree) :
+    WellSorted.AvailableOpenPattern source.costWholeLanguage targetFree
+      node.targetBound [] (.base (color.mapLangSort source node.sourceSort).1) :=
+  WellSorted.AvailableOpenPattern.ofOpenPattern node.term
+
+/-- One static stratum normalizes inside its exact split target fiber.
+Source canonicalization is transported by the same-colour typed action;
+recursive boundary values vary only through fiberwise supported
+substitution. -/
+theorem normalizeWithAvailable_equationSetoid
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    (node : CostStaticRegionNode source color targetFree)
+    (stable : CostStaticMappedGeneratorFiberAction source)
+    (values : TypedCostRegionBoundaryTable.Values source color targetFree
+      node.boundaryTable)
+    (valuesEquivalent :
+      (values.supportedOpenAssignment node.boundaryTable).FiberEquivalent
+        ((TypedCostRegionBoundaryTable.Values.original node.boundaryTable
+          ).supportedOpenAssignment node.boundaryTable))
+    (skeletonEquivalent :
+      (CostStaticSourceTerm.equationSetoid source color
+        node.boundaryTable.sourceFreeContext node.boundaryTable.sourceSupport
+        node.sourceBound node.targetBound node.sourceSort).r
+          node.normalizedSourceActionTerm node.sourceActionTerm) :
+    (WellSorted.AvailableOpenPattern.equationSetoid
+      source.costWholeLanguage targetFree node.targetBound []
+        (.base (color.mapLangSort source node.sourceSort).1)).r
+      (node.normalizeWithAvailable values) node.termAvailable := by
+  let valuesAssignment := values.supportedOpenAssignment node.boundaryTable
+  let originalAssignment :=
+    (TypedCostRegionBoundaryTable.Values.original node.boundaryTable
+      ).supportedOpenAssignment node.boundaryTable
+  let mappedAvailableRaw :=
+    node.sourceActionTerm.mappedThickenedAvailable node.thinning
+  let mappedAvailable := mappedAvailableRaw.castFree
+    node.transport.freeContext
+  have mappedAvailableSafe :
+      mappedAvailable.typed.ReflectiveSupportSafeAt
+        node.boundaryTable.restorationSupport node.targetBound :=
+    mappedAvailableRaw.castFree_supportSafe node.transport.freeContext
+      (node.sourceActionTerm.mappedThickenedAvailable_supportSafe
+        node.thinning)
+  have patternStep := CostStaticSourceTerm.equationSetoid_actAvailable stable
+    node.thinning valuesAssignment node.transport.freeContext
+      node.transport.reflectiveSupport skeletonEquivalent
+  have assignmentStep := mappedAvailable.equationSetoid_substitute_pointwise
+    source.costWholeLanguage_validate mappedAvailableSafe
+      valuesAssignment originalAssignment valuesEquivalent
+  have leftEndpoint :
+      node.normalizedSourceActionTerm.actAvailable node.thinning
+          valuesAssignment node.transport.freeContext
+            node.transport.reflectiveSupport =
+        node.normalizeWithAvailable values := by
+    apply WellSorted.AvailableOpenPattern.ext
+    rw [CostStaticSourceTerm.actAvailable_pattern]
+    change node.normalizedSourceActionTerm.act node.thinning
+        valuesAssignment = node.normalizeRawWith values
+    unfold CostStaticSourceTerm.act normalizeRawWith
+    rw [node.normalizedThickenedSkeleton_pattern]
+    rfl
+  have middleEndpoint :
+      node.sourceActionTerm.actAvailable node.thinning valuesAssignment
+          node.transport.freeContext node.transport.reflectiveSupport =
+        mappedAvailable.substitute valuesAssignment mappedAvailableSafe := by
+    apply WellSorted.AvailableOpenPattern.ext
+    rw [CostStaticSourceTerm.actAvailable_pattern,
+      WellSorted.AvailableOpenPattern.substitute_pattern,
+      WellSorted.AvailableOpenPattern.castFree_pattern,
+      CostStaticSourceTerm.mappedThickenedAvailable_pattern]
+    rfl
+  have rightEndpoint :
+      mappedAvailable.substitute originalAssignment mappedAvailableSafe =
+        node.termAvailable := by
+    apply WellSorted.AvailableOpenPattern.ext
+    rw [WellSorted.AvailableOpenPattern.substitute_pattern,
+      WellSorted.AvailableOpenPattern.castFree_pattern,
+      CostStaticSourceTerm.mappedThickenedAvailable_pattern]
+    change
+      (TypedCostRegionBoundaryTable.Values.original node.boundaryTable
+        ).restoreSupportedSkeleton node.boundaryTable node.targetBound
+          node.mappedThickenedSkeleton.1 = node.term.1
+    rw [TypedCostRegionBoundaryTable.Values.restoreSupportedSkeleton_original]
+    exact node.restore_mappedThickenedSkeleton_eq_term
+  rw [leftEndpoint, middleEndpoint] at patternStep
+  rw [rightEndpoint] at assignmentStep
+  exact Relation.EqvGen.trans _ _ _ patternStep assignmentStep
+
+/-- One-stratum specialization using the original finite boundary contents. -/
+def normalizeRaw {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    (node : CostStaticRegionNode source color targetFree) : Pattern :=
+  node.normalizeRawWith
+    (TypedCostRegionBoundaryTable.Values.original node.boundaryTable)
+
+/-- Identity child values recover the one-stratum specialization exactly. -/
+theorem normalizeRawWith_original {source : CIGSLT}
+    {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+    (node : CostStaticRegionNode source color targetFree) :
+    node.normalizeRawWith
+        (TypedCostRegionBoundaryTable.Values.original node.boundaryTable) =
+      node.normalizeRaw := by
+  rfl
+
+/-- Identity child values reduce one-stratum soundness to the single
+support-safe canonical-path obligation. -/
+theorem normalizeRaw_equationEquiv {source : CIGSLT}
+    {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+    (node : CostStaticRegionNode source color targetFree)
+    (stable : CostStaticMappedGeneratorAction source)
+    (skeletonEquivalent :
+      (CostStaticSourceTerm.equationSetoid source color
+        node.boundaryTable.sourceFreeContext node.boundaryTable.sourceSupport
+        node.sourceBound node.targetBound node.sourceSort).r
+          node.normalizedSourceActionTerm node.sourceActionTerm) :
+    EquationSemantics.EquationEquiv defaultBasePremises
+      source.costWholeLanguage node.normalizeRaw node.term.1 := by
+  simpa [normalizeRaw] using node.normalizeRawWith_equationEquiv stable
+    (TypedCostRegionBoundaryTable.Values.original node.boundaryTable)
+    (WellSorted.SupportedOpenAssignment.Equivalent.refl
+      ((TypedCostRegionBoundaryTable.Values.original node.boundaryTable
+        ).supportedOpenAssignment node.boundaryTable))
+    skeletonEquivalent
+
+/-- The normalized region remains in the complete open Cost carrier at the
+same generated sort and exact original target binder fiber. -/
+theorem normalizeRaw_wellSorted {source : CIGSLT}
+    {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+    (node : CostStaticRegionNode source color targetFree) :
+    WellSorted.OpenTermWellSorted source.costWholeLanguage targetFree
+      node.targetBound (color.mapLangSort source node.sourceSort)
+      node.normalizeRaw := by
+  exact node.normalizeRawWith_wellSorted
+    (TypedCostRegionBoundaryTable.Values.original node.boundaryTable)
+
+/-- Typed one-stratum normalization. -/
+def normalize {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    (node : CostStaticRegionNode source color targetFree) :
+    WellSorted.OpenTerm source.costWholeLanguage targetFree node.targetBound
+      (color.mapLangSort source node.sourceSort) :=
+  ⟨node.normalizeRaw, node.normalizeRaw_wellSorted⟩
+
+@[simp]
+theorem normalize_pattern {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    (node : CostStaticRegionNode source color targetFree) :
+    node.normalize.1 = node.normalizeRaw :=
+  rfl
+
+end CostStaticRegionNode
+
+/-! ## Typed structural forest around colored regions -/
+
+mutual
+  /-- A proof-relevant decomposition of one typed Cost term.  Static nodes
+  invoke the source canonical section; every other constructor is merely a
+  structural frame whose children are decomposed recursively.  The family is
+  indexed by the original `Pattern` and typing fiber, so it is not a second
+  term representation. -/
+  inductive CostRegionTree (source : CIGSLT)
+      (targetFree : WellSorted.FreeTypeContext) :
+      List TypeExpr → List TypeExpr → Pattern → TypeExpr → Type where
+    | bvar {available outer : List TypeExpr} {index : Nat} {type : TypeExpr}
+        (lookup : (available ++ outer)[index]? = some type) :
+        CostRegionTree source targetFree available outer (.bvar index) type
+    | fvar {available outer : List TypeExpr} {name : String} {type : TypeExpr}
+        (lookup : targetFree name = some type) :
+        CostRegionTree source targetFree available outer (.fvar name) type
+    | static {color : CostStaticColor} {outer : List TypeExpr}
+        (node : CostStaticRegionNode source color targetFree)
+        (children : CostRegionBoundaryTrees source targetFree color
+          node.finiteBoundaryTable) :
+        CostRegionTree source targetFree
+          node.targetBound
+          outer node.term.1 (.base (color.mapLangSort source node.sourceSort).1)
+    | neutralApplicationOrdinary
+        {available outer : List TypeExpr} {rule : GrammarRule}
+        {arguments : List Pattern}
+        (membership : rule ∈ source.costWholeLanguage.terms)
+        (notBareCollection : ¬ UsesBareCollection rule)
+        (constructor : source.DeclaredCostConstructor)
+        (materializes :
+          source.materializeDeclaredCostConstructor constructor = rule)
+        (neutral :
+          source.declaredCostConstructorRole constructor =
+              .interactionPrincipal ∨
+            ∃ kind, source.declaredCostConstructorRole constructor =
+              .apparatus kind)
+        (ordinary : ReflectiveContextSupport.isQuoteConstructor
+          source.costWholeLanguage rule.label = false)
+        (children : CostRegionArgumentTrees source targetFree available outer
+          arguments rule.params) :
+        CostRegionTree source targetFree available outer
+          (.apply rule.label arguments) (.base rule.category)
+    | neutralApplicationQuote
+        {available outer : List TypeExpr} {rule : GrammarRule}
+        {arguments : List Pattern}
+        (membership : rule ∈ source.costWholeLanguage.terms)
+        (notBareCollection : ¬ UsesBareCollection rule)
+        (constructor : source.DeclaredCostConstructor)
+        (materializes :
+          source.materializeDeclaredCostConstructor constructor = rule)
+        (neutral :
+          source.declaredCostConstructorRole constructor =
+              .interactionPrincipal ∨
+            ∃ kind, source.declaredCostConstructorRole constructor =
+              .apparatus kind)
+        (quoted : ReflectiveContextSupport.isQuoteConstructor
+          source.costWholeLanguage rule.label = true)
+        (children : CostRegionArgumentTrees source targetFree []
+          (available ++ outer) arguments rule.params) :
+        CostRegionTree source targetFree available outer
+          (.apply rule.label arguments) (.base rule.category)
+    | lambda
+        {available outer : List TypeExpr}
+        {binder : Option String} {body : Pattern}
+        {domain codomain : TypeExpr}
+        (bodyTree : CostRegionTree source targetFree
+          (domain :: available) outer body codomain) :
+        CostRegionTree source targetFree available outer (.lambda binder body)
+          (.arrow domain codomain)
+    | multiLambda
+        {available outer : List TypeExpr}
+        {arity : Nat} {binders : List String}
+        {body : Pattern} {domain codomain : TypeExpr}
+        (bodyTree : CostRegionTree source targetFree
+          (List.replicate arity domain ++ available) outer body codomain) :
+        CostRegionTree source targetFree available outer
+          (.multiLambda arity binders body)
+          (.arrow (.multiBinder domain) codomain)
+    | subst
+        {available outer : List TypeExpr} {body replacement : Pattern}
+        {domain codomain : TypeExpr}
+        (bodyTree : CostRegionTree source targetFree
+          (domain :: available) outer body codomain)
+        (replacementTree : CostRegionTree source targetFree
+          available outer replacement domain) :
+        CostRegionTree source targetFree available outer
+          (.subst body replacement)
+          codomain
+    | collection
+        {available outer : List TypeExpr} {collectionType : CollType}
+        {elements : List Pattern} {rest : Option String}
+        {elementType : TypeExpr}
+        (children : CostRegionElementTrees source targetFree available outer
+          elements elementType) :
+        CostRegionTree source targetFree available outer
+          (.collection collectionType elements rest)
+          (.collection collectionType elementType)
+
+  /-- Region trees for an authored constructor's arguments, indexed by the
+  exact argument and parameter lists. -/
+  inductive CostRegionArgumentTrees (source : CIGSLT)
+      (targetFree : WellSorted.FreeTypeContext) :
+      List TypeExpr → List TypeExpr → List Pattern → List TermParam → Type where
+    | nil {available outer : List TypeExpr} :
+        CostRegionArgumentTrees source targetFree available outer [] []
+    | cons
+        {argument : Pattern} {arguments : List Pattern}
+        {parameter : TermParam} {parameters : List TermParam}
+        {expected : TypeExpr}
+        (representation : MatchesParameterRepresentation parameter argument)
+        (parameterType : parameterType? parameter = some expected)
+        (head : CostRegionTree source targetFree available outer argument
+          expected)
+        (tail : CostRegionArgumentTrees source targetFree available outer
+          arguments parameters) :
+        CostRegionArgumentTrees source targetFree available outer
+          (argument :: arguments) (parameter :: parameters)
+
+  /-- Region trees for a homogeneous collection's elements. -/
+  inductive CostRegionElementTrees (source : CIGSLT)
+      (targetFree : WellSorted.FreeTypeContext) :
+      List TypeExpr → List TypeExpr → List Pattern → TypeExpr → Type where
+    | nil (available outer : List TypeExpr) (elementType : TypeExpr) :
+        CostRegionElementTrees source targetFree available outer [] elementType
+    | cons {element : Pattern} {elements : List Pattern}
+        {elementType : TypeExpr}
+        (head : CostRegionTree source targetFree available outer element
+          elementType)
+        (tail : CostRegionElementTrees source targetFree available outer
+          elements elementType) :
+        CostRegionElementTrees source targetFree available outer
+          (element :: elements) elementType
+
+  /-- Recursive subtrees aligned exactly with a finite boundary table.  Each
+  child inhabits the transported type and binder support carried by its own
+  proof-relevant boundary record. -/
+  inductive CostRegionBoundaryTrees (source : CIGSLT)
+      (targetFree : WellSorted.FreeTypeContext) :
+      (color : CostStaticColor) → {occurrences : List CostRegionOccurrence} →
+      TypedCostRegionBoundaryTable source color targetFree occurrences →
+      Type where
+    | nil {color : CostStaticColor} :
+        CostRegionBoundaryTrees source targetFree color .nil
+    | cons {color : CostStaticColor} {occurrence : CostRegionOccurrence}
+        {occurrences : List CostRegionOccurrence}
+        {boundary : TypedCostRegionBoundary source color targetFree}
+        {content : boundary.boundary.content = occurrence.content}
+        {tail : TypedCostRegionBoundaryTable source color targetFree occurrences}
+        (head : CostRegionTree source targetFree
+          boundary.boundary.targetSupport [] boundary.boundary.content
+          boundary.boundary.targetType)
+        (children : CostRegionBoundaryTrees source targetFree color tail) :
+        CostRegionBoundaryTrees source targetFree color
+          (.cons boundary content tail)
+end
+
+/-- A finite boundary table with no entries has the unique empty aligned
+forest.  The eliminator works through dependent reindexing as well as for a
+definitionally empty table. -/
+def CostRegionBoundaryTrees.ofEntriesEqNil {source : CIGSLT}
+    {targetFree : WellSorted.FreeTypeContext} {color : CostStaticColor}
+    {occurrences : List CostRegionOccurrence}
+    (table : TypedCostRegionBoundaryTable source color targetFree occurrences)
+    (empty : table.entries = []) :
+    CostRegionBoundaryTrees source targetFree color table := by
+  cases table with
+  | nil => exact .nil
+  | cons boundary content tail =>
+      simp [TypedCostRegionBoundaryTable.entries] at empty
+
+/-- Concatenate two recursive boundary forests in the exact order of the
+finite table append.  Duplicate contents remain distinct occurrences. -/
+def CostRegionBoundaryTrees.append {source : CIGSLT}
+    {targetFree : WellSorted.FreeTypeContext} {color : CostStaticColor}
+    {leftOccurrences rightOccurrences : List CostRegionOccurrence}
+    {leftTable : TypedCostRegionBoundaryTable source color targetFree
+      leftOccurrences}
+    {rightTable : TypedCostRegionBoundaryTable source color targetFree
+      rightOccurrences} :
+    CostRegionBoundaryTrees source targetFree color leftTable →
+      CostRegionBoundaryTrees source targetFree color rightTable →
+      CostRegionBoundaryTrees source targetFree color
+        (TypedCostRegionBoundaryTable.append leftTable rightTable)
+  | .nil, right => right
+  | .cons head children, right => .cons head (children.append right)
+
+/-- Build a recursive forest by traversing the finite table itself.  The
+caller supplies one typed decomposition for each actual entry; there is no
+lookup default and no obligation for any occurrence outside the table. -/
+def CostRegionBoundaryTrees.ofTable {source : CIGSLT}
+    {targetFree : WellSorted.FreeTypeContext} {color : CostStaticColor}
+    : {occurrences : List CostRegionOccurrence} →
+      (table : TypedCostRegionBoundaryTable source color targetFree occurrences) →
+      (∀ boundary, boundary ∈ table.entries →
+        CostRegionTree source targetFree boundary.boundary.targetSupport []
+          boundary.boundary.content boundary.boundary.targetType) →
+      CostRegionBoundaryTrees source targetFree color table
+  | [], .nil, _ => .nil
+  | _ :: _, .cons boundary content tail, decompose =>
+      .cons
+        (decompose boundary (by
+          simp [TypedCostRegionBoundaryTable.entries]))
+        (CostRegionBoundaryTrees.ofTable tail (fun entry membership =>
+          decompose entry (by
+            simp [TypedCostRegionBoundaryTable.entries, membership])))
+
+/-- Execute a recursive decomposition callback once for every actual entry
+of a finite boundary table.  The callback is indexed by the boundary value
+it receives, so neither a lookup default nor a separately reconstructed
+typing fiber can enter the resulting forest. -/
+def CostRegionBoundaryTrees.build? {source : CIGSLT}
+    {targetFree : WellSorted.FreeTypeContext} {color : CostStaticColor}
+    (decompose : (boundary : TypedCostRegionBoundary source color targetFree) →
+      Option (CostRegionTree source targetFree
+        boundary.boundary.targetSupport [] boundary.boundary.content
+          boundary.boundary.targetType)) :
+    {occurrences : List CostRegionOccurrence} →
+      (table : TypedCostRegionBoundaryTable source color targetFree occurrences) →
+      Option (CostRegionBoundaryTrees source targetFree color table)
+  | [], .nil => some .nil
+  | _ :: _, .cons boundary _content tail =>
+      match decompose boundary with
+      | none => none
+      | some head =>
+          match CostRegionBoundaryTrees.build? decompose tail with
+          | none => none
+          | some children => some (.cons head children)
+
+/-- Pointwise success of the recursive callback is exactly the condition
+needed for finite-forest construction; no value outside the table is
+consulted by the builder. -/
+theorem CostRegionBoundaryTrees.exists_build?_eq_some
+    {source : CIGSLT} {targetFree : WellSorted.FreeTypeContext}
+    {color : CostStaticColor}
+    (decompose : (boundary : TypedCostRegionBoundary source color targetFree) →
+      Option (CostRegionTree source targetFree
+        boundary.boundary.targetSupport [] boundary.boundary.content
+          boundary.boundary.targetType))
+    {occurrences : List CostRegionOccurrence}
+    (table : TypedCostRegionBoundaryTable source color targetFree occurrences)
+    (succeeds : ∀ boundary, boundary ∈ table.entries →
+      ∃ tree, decompose boundary = some tree) :
+    ∃ forest, CostRegionBoundaryTrees.build? decompose table = some forest := by
+  induction table with
+  | nil =>
+      exact ⟨.nil, rfl⟩
+  | cons boundary content tail inductionHypothesis =>
+      obtain ⟨head, headBuilt⟩ := succeeds boundary (by
+        simp [TypedCostRegionBoundaryTable.entries])
+      obtain ⟨children, childrenBuilt⟩ := inductionHypothesis (fun entry member =>
+        succeeds entry (by
+          simp [TypedCostRegionBoundaryTable.entries, member]))
+      exact ⟨.cons head children, by
+        simp [CostRegionBoundaryTrees.build?, headBuilt, childrenBuilt]⟩
+
+/-- A static node becomes a complete region tree once—and only once—each
+entry of its finite boundary table has a typed recursive decomposition. -/
+def CostRegionTree.staticOfNode {source : CIGSLT}
+    {targetFree : WellSorted.FreeTypeContext} {color : CostStaticColor}
+    {outer : List TypeExpr}
+    (node : CostStaticRegionNode source color targetFree)
+    (decompose : ∀ boundary, boundary ∈ node.finiteBoundaryTable.entries →
+      CostRegionTree source targetFree boundary.boundary.targetSupport []
+        boundary.boundary.content boundary.boundary.targetType) :
+    CostRegionTree source targetFree
+      node.targetBound outer
+      node.term.1 (.base (color.mapLangSort source node.sourceSort).1) :=
+  .static node (CostRegionBoundaryTrees.ofTable node.finiteBoundaryTable
+    decompose)
+
+/-- Executable counterpart of `staticOfNode`.  A static node is admitted
+only after recursive decomposition has succeeded for every entry of its
+exact finite boundary table. -/
+def CostRegionTree.buildStatic? {source : CIGSLT}
+    {targetFree : WellSorted.FreeTypeContext} {color : CostStaticColor}
+    {outer : List TypeExpr}
+    (node : CostStaticRegionNode source color targetFree)
+    (decompose : (boundary : TypedCostRegionBoundary source color targetFree) →
+      Option (CostRegionTree source targetFree
+        boundary.boundary.targetSupport [] boundary.boundary.content
+          boundary.boundary.targetType)) :
+    Option (CostRegionTree source targetFree node.targetBound outer
+      node.term.1 (.base (color.mapLangSort source node.sourceSort).1)) :=
+  (CostRegionBoundaryTrees.build? decompose node.finiteBoundaryTable).map
+    (CostRegionTree.static node)
+
+/-- Pointwise success on the entries actually emitted by one node is enough
+for executable construction of the complete static subtree. -/
+theorem CostRegionTree.exists_buildStatic?_eq_some
+    {source : CIGSLT} {targetFree : WellSorted.FreeTypeContext}
+    {color : CostStaticColor} {outer : List TypeExpr}
+    (node : CostStaticRegionNode source color targetFree)
+    (decompose : (boundary : TypedCostRegionBoundary source color targetFree) →
+      Option (CostRegionTree source targetFree
+        boundary.boundary.targetSupport [] boundary.boundary.content
+          boundary.boundary.targetType))
+    (succeeds : ∀ boundary, boundary ∈ node.finiteBoundaryTable.entries →
+      ∃ tree, decompose boundary = some tree) :
+    ∃ tree, CostRegionTree.buildStatic? (outer := outer) node decompose =
+      some tree := by
+  obtain ⟨children, childrenBuilt⟩ :=
+    CostRegionBoundaryTrees.exists_build?_eq_some decompose
+      node.finiteBoundaryTable succeeds
+  exact ⟨.static node children, by
+    simp [CostRegionTree.buildStatic?, childrenBuilt]⟩
+
+/-- Inversion for one completed static node.  A successful result contains
+exactly the recursively built finite boundary forest; no other tree
+constructor can be introduced by this layer. -/
+theorem CostRegionTree.buildStatic?_eq_some_iff
+    {source : CIGSLT} {targetFree : WellSorted.FreeTypeContext}
+    {color : CostStaticColor} {outer : List TypeExpr}
+    (node : CostStaticRegionNode source color targetFree)
+    (decompose : (boundary : TypedCostRegionBoundary source color targetFree) →
+      Option (CostRegionTree source targetFree
+        boundary.boundary.targetSupport [] boundary.boundary.content
+          boundary.boundary.targetType))
+    {tree : CostRegionTree source targetFree node.targetBound outer
+      node.term.1 (.base (color.mapLangSort source node.sourceSort).1)} :
+    CostRegionTree.buildStatic? (outer := outer) node decompose = some tree ↔
+      ∃ children,
+        CostRegionBoundaryTrees.build? decompose node.finiteBoundaryTable =
+          some children ∧ tree = .static node children := by
+  unfold CostRegionTree.buildStatic?
+  cases childrenBuilt : CostRegionBoundaryTrees.build? decompose
+      node.finiteBoundaryTable with
+  | none => simp
+  | some children =>
+      simp only [Option.map_some, Option.some.injEq]
+      constructor
+      · intro equality
+        exact ⟨children, rfl, equality.symm⟩
+      · rintro ⟨otherChildren, otherBuilt, treeEq⟩
+        cases otherBuilt
+        exact treeEq.symm
+
+/-- Complete a discovered static-root candidate by recursively decomposing
+its exact finite boundary table.  The candidate's stored equalities are the
+only reindexing needed to return to the caller's original binder, pattern,
+and sort fiber. -/
+def CostStaticRegionNode.CostStaticRootNode.buildTree? {source : CIGSLT}
+    {targetFree : WellSorted.FreeTypeContext} {targetBound : List TypeExpr}
+    {targetSort : LangSort source.costWholeLanguage}
+    {term : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
+      targetSort}
+    (candidate : CostStaticRegionNode.CostStaticRootNode source targetFree
+      targetBound targetSort term)
+    (outer : List TypeExpr)
+    (decompose :
+      (boundary : TypedCostRegionBoundary source candidate.color targetFree) →
+        Option (CostRegionTree source targetFree
+          boundary.boundary.targetSupport [] boundary.boundary.content
+            boundary.boundary.targetType)) :
+    Option (CostRegionTree source targetFree targetBound outer term.1
+      (.base targetSort.1)) := by
+  simpa only [candidate.nodeBound_eq, candidate.nodeTerm_eq,
+    candidate.nodeSourceSort_eq, candidate.targetSort_eq] using
+      (CostRegionTree.buildStatic? (outer := outer) candidate.node decompose)
+
+/-- Completing the exact node reconstructed from an explicit plan needs
+recursive success only on that plan's actual finite boundary entries. -/
+theorem CostStaticRegionNode.exists_ofPlan_buildStatic?_eq_some
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {targetBound outer : List TypeExpr}
+    {sourceSort : LangSort source.theory.presentation.presentation.language}
+    (term : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
+      (color.mapLangSort source sourceSort))
+    (plan : CostStaticRegionPlan source color targetFree
+      (CostStaticBinderThinning.sourceContextOfTarget source color targetBound)
+      targetBound
+      (CostStaticBinderThinning.ofTargetThinning source color targetBound)
+      targetBound .hole term.1 (.base sourceSort.1))
+    (rootStatic : plan.isStaticRoot = true)
+    (decompose : (boundary : TypedCostRegionBoundary source color targetFree) →
+      Option (CostRegionTree source targetFree
+        boundary.boundary.targetSupport [] boundary.boundary.content
+          boundary.boundary.targetType))
+    (succeeds : ∀ boundary, boundary ∈ plan.boundaryTable.entries →
+      ∃ tree, decompose boundary = some tree) :
+    ∃ tree,
+      CostRegionTree.buildStatic? (outer := outer)
+          (CostStaticRegionNode.ofPlan term plan rootStatic) decompose =
+        some tree := by
+  let node := CostStaticRegionNode.ofPlan term plan rootStatic
+  have nodeSucceeds : ∀ boundary,
+      boundary ∈ node.finiteBoundaryTable.entries →
+        ∃ tree, decompose boundary = some tree := by
+    intro boundary membership
+    apply succeeds boundary
+    change boundary ∈ plan.boundaryTable.entries at membership
+    exact membership
+  exact CostRegionTree.exists_buildStatic?_eq_some
+    (outer := outer) node decompose nodeSucceeds
+
+/-- Compile an authored constructor's argument spine using an already
+indexed recursive decomposition callback.  The parameter list is the one
+stored in the sole generated `LanguageDef`; no secondary arity table is
+consulted. -/
+def CostRegionArgumentTrees.build? {source : CIGSLT}
+    {targetFree : WellSorted.FreeTypeContext}
+    (decompose : (available outer : List TypeExpr) → (pattern : Pattern) →
+      (type : TypeExpr) →
+        Option (CostRegionTree source targetFree available outer pattern type))
+    (available outer : List TypeExpr) :
+    (arguments : List Pattern) → (parameters : List TermParam) →
+      Option (CostRegionArgumentTrees source targetFree available outer
+        arguments parameters)
+  | [], [] => some .nil
+  | argument :: arguments, parameter :: parameters =>
+      match inspectOption (WellSorted.parameterType? parameter) with
+      | .rejected _ => none
+      | .accepted expected inspected =>
+          if representationChecked :
+              WellSorted.matchesParameterRepresentation? parameter argument =
+                true then
+            let representation :
+                WellSorted.MatchesParameterRepresentation parameter argument :=
+              (WellSorted.matchesParameterRepresentation?_eq_true_iff
+                parameter argument).mp representationChecked
+            match decompose available outer argument expected with
+            | none => none
+            | some head =>
+                match CostRegionArgumentTrees.build? decompose available outer
+                    arguments parameters with
+                | none => none
+                | some tail =>
+                    some (.cons representation inspected head tail)
+          else
+            none
+  | _, _ => none
+
+/-- Compile a homogeneous element spine using the same recursive
+decomposition callback.  Element order and duplicate occurrences are
+preserved definitionally. -/
+def CostRegionElementTrees.build? {source : CIGSLT}
+    {targetFree : WellSorted.FreeTypeContext}
+    (decompose : (available outer : List TypeExpr) → (pattern : Pattern) →
+      (type : TypeExpr) →
+        Option (CostRegionTree source targetFree available outer pattern type))
+    (available outer : List TypeExpr) :
+    (elements : List Pattern) → (elementType : TypeExpr) →
+      Option (CostRegionElementTrees source targetFree available outer
+        elements elementType)
+  | [], elementType => some (.nil available outer elementType)
+  | element :: elements, elementType =>
+      match decompose available outer element elementType with
+      | none => none
+      | some head =>
+          match CostRegionElementTrees.build? decompose available outer
+              elements elementType with
+          | none => none
+          | some tail => some (.cons head tail)
+
+/-- Complete one already checked static root.  This lower boundary isolates
+the dependent reindexing from raw checker-driven source-sort enumeration. -/
+def CostRegionTree.buildCheckedStaticRoot? {source : CIGSLT}
+    {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {targetBound : List TypeExpr}
+    {sourceSort : LangSort source.theory.presentation.presentation.language}
+    (decompose : (boundary : TypedCostRegionBoundary source color targetFree) →
+      Option (CostRegionTree source targetFree
+        boundary.boundary.targetSupport [] boundary.boundary.content
+          boundary.boundary.targetType))
+    (outer : List TypeExpr)
+    (term : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
+      (color.mapLangSort source sourceSort)) :
+    Option (CostRegionTree source targetFree targetBound outer term.1
+      (.base (color.mapLangSort source sourceSort).1)) :=
+  match nodeBuilt : CostStaticRegionNode.build? term with
+  | none => none
+  | some node =>
+      (CostRegionTree.buildStatic? (outer := outer) node decompose).map
+        fun tree => by
+          simpa only [
+            CostStaticRegionNode.build?_targetBound_eq term nodeBuilt,
+            CostStaticRegionNode.build?_term_eq term nodeBuilt,
+            CostStaticRegionNode.build?_sourceSort_eq term nodeBuilt] using tree
+
+/-- Invert completion of one checked static root.  The returned tree is
+heterogeneously equal to the direct static constructor because this wrapper
+only transports the node builder's certified binder, pattern, and sort
+equalities. -/
+theorem CostRegionTree.buildCheckedStaticRoot?_eq_some
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {targetBound outer : List TypeExpr}
+    {sourceSort : LangSort source.theory.presentation.presentation.language}
+    (decompose : (boundary : TypedCostRegionBoundary source color targetFree) →
+      Option (CostRegionTree source targetFree
+        boundary.boundary.targetSupport [] boundary.boundary.content
+          boundary.boundary.targetType))
+    (term : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
+      (color.mapLangSort source sourceSort))
+    {tree : CostRegionTree source targetFree targetBound outer term.1
+      (.base (color.mapLangSort source sourceSort).1)}
+    (built : CostRegionTree.buildCheckedStaticRoot? decompose outer term =
+      some tree) :
+    ∃ node children,
+      CostStaticRegionNode.build? term = some node ∧
+      CostRegionBoundaryTrees.build? decompose node.finiteBoundaryTable =
+        some children ∧
+      HEq tree (CostRegionTree.static (outer := outer) node children) := by
+  unfold CostRegionTree.buildCheckedStaticRoot? at built
+  split at built
+  · simp at built
+  · rename_i node nodeBuilt
+    cases staticBuilt : CostRegionTree.buildStatic? (outer := outer) node
+        decompose with
+    | none => simp [staticBuilt] at built
+    | some rawTree =>
+        have rawInv :=
+          (CostRegionTree.buildStatic?_eq_some_iff node decompose).mp staticBuilt
+        obtain ⟨children, childrenBuilt, rawEq⟩ := rawInv
+        subst rawTree
+        refine ⟨node, children, nodeBuilt, childrenBuilt, ?_⟩
+        simp only [staticBuilt, Option.map_some, Option.some.injEq] at built
+        subst tree
+        apply cast_heq
+
+/-- Try every authored source sort in one exact static colour.  Open-carrier
+admission is reconstructed by the executable checker before the static
+planner is invoked, so no proposition-valued typing derivation is eliminated
+into decomposition data. -/
+def CostRegionTree.buildStaticRootForColor? {source : CIGSLT}
+    {targetFree : WellSorted.FreeTypeContext}
+    (decompose : ∀ (color : CostStaticColor),
+      (boundary : TypedCostRegionBoundary source color targetFree) →
+        Option (CostRegionTree source targetFree
+          boundary.boundary.targetSupport [] boundary.boundary.content
+            boundary.boundary.targetType))
+    (available outer : List TypeExpr) (pattern : Pattern) (expected : TypeExpr)
+    (color : CostStaticColor) :
+    Option (CostRegionTree source targetFree available outer pattern expected) :=
+  source.theory.presentation.presentation.language.typeNames.attach.findSome?
+    fun sourceName => by
+      let sourceSort :
+          LangSort source.theory.presentation.presentation.language :=
+        ⟨sourceName.1, sourceName.2⟩
+      let targetSort : LangSort source.costWholeLanguage :=
+        color.mapLangSort source sourceSort
+      by_cases expectedEquality : expected = .base targetSort.1
+      · rw [expectedEquality]
+        by_cases checked : WellSorted.checkOpenPatternWellSorted
+            source.costWholeLanguage targetFree available
+              (.base targetSort.1) pattern = true
+        · let term : WellSorted.OpenTerm source.costWholeLanguage targetFree
+              available targetSort :=
+            ⟨pattern, WellSorted.checkOpenPatternWellSorted_sound checked⟩
+          exact CostRegionTree.buildCheckedStaticRoot? (decompose color) outer
+            term
+        · exact none
+      · exact none
+
+/-- Invert successful fixed-color root search into the exact static node and
+finite child forest selected by the executable compiler.  The ordinary
+equalities expose its input fiber; only the final wrapper cast remains
+heterogeneous. -/
+theorem CostRegionTree.buildStaticRootForColor?_eq_some
+    {source : CIGSLT} {targetFree : WellSorted.FreeTypeContext}
+    (decompose : ∀ (color : CostStaticColor),
+      (boundary : TypedCostRegionBoundary source color targetFree) →
+        Option (CostRegionTree source targetFree
+          boundary.boundary.targetSupport [] boundary.boundary.content
+            boundary.boundary.targetType))
+    (available outer : List TypeExpr) (pattern : Pattern) (expected : TypeExpr)
+    (color : CostStaticColor)
+    {tree : CostRegionTree source targetFree available outer pattern expected}
+    (built : CostRegionTree.buildStaticRootForColor? decompose available outer
+      pattern expected color = some tree) :
+    ∃ (node : CostStaticRegionNode source color targetFree)
+      (children : CostRegionBoundaryTrees source targetFree color
+        node.finiteBoundaryTable),
+      node.targetBound = available ∧
+      (TypeExpr.base (color.mapLangSort source node.sourceSort).1) = expected ∧
+      node.term.1 = pattern ∧
+      CostRegionBoundaryTrees.build? (decompose color)
+          node.finiteBoundaryTable = some children ∧
+      HEq tree (CostRegionTree.static (outer := outer) node children) := by
+  unfold CostRegionTree.buildStaticRootForColor? at built
+  obtain ⟨leftList, sourceName, rightList, splitList, callbackBuilt, prior⟩ :=
+    List.findSome?_eq_some_iff.mp built
+  dsimp only at callbackBuilt
+  split at callbackBuilt
+  · rename_i expectedEquality
+    cases expectedEquality
+    split at callbackBuilt
+    · rename_i checked
+      let sourceSort :
+          LangSort source.theory.presentation.presentation.language :=
+        ⟨sourceName.1, sourceName.2⟩
+      let targetSort : LangSort source.costWholeLanguage :=
+        color.mapLangSort source sourceSort
+      let term : WellSorted.OpenTerm source.costWholeLanguage targetFree
+          available targetSort :=
+        ⟨pattern, WellSorted.checkOpenPatternWellSorted_sound checked⟩
+      change CostRegionTree.buildCheckedStaticRoot? (decompose color) outer
+        term = some tree at callbackBuilt
+      have checkedInv := CostRegionTree.buildCheckedStaticRoot?_eq_some
+        (decompose color) term callbackBuilt
+      obtain ⟨node, children, nodeBuilt, childrenBuilt, treeEq⟩ := checkedInv
+      refine ⟨node, children,
+        CostStaticRegionNode.build?_targetBound_eq term nodeBuilt,
+        ?_, CostStaticRegionNode.build?_term_eq term nodeBuilt,
+        childrenBuilt, treeEq⟩
+      have nodeSort := CostStaticRegionNode.build?_sourceSort_eq term nodeBuilt
+      exact congrArg (fun sort =>
+        TypeExpr.base (color.mapLangSort source sort).1) nodeSort
+    · simp at callbackBuilt
+  · simp at callbackBuilt
+
+/-- An explicit certified plan and recursively successful finite boundary
+table make the checked-root compiler succeed. -/
+theorem CostRegionTree.buildCheckedStaticRoot?_isSome_of_plan
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {targetBound outer : List TypeExpr}
+    {sourceSort : LangSort source.theory.presentation.presentation.language}
+    (term : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
+      (color.mapLangSort source sourceSort))
+    (plan : CostStaticRegionPlan source color targetFree
+      (CostStaticBinderThinning.sourceContextOfTarget source color targetBound)
+      targetBound
+      (CostStaticBinderThinning.ofTargetThinning source color targetBound)
+      targetBound .hole term.1 (.base sourceSort.1))
+    (rootStatic : plan.isStaticRoot = true)
+    (decompose : (boundary : TypedCostRegionBoundary source color targetFree) →
+      Option (CostRegionTree source targetFree
+        boundary.boundary.targetSupport [] boundary.boundary.content
+          boundary.boundary.targetType))
+    (succeeds : ∀ boundary, boundary ∈ plan.boundaryTable.entries →
+      ∃ tree, decompose boundary = some tree) :
+    (CostRegionTree.buildCheckedStaticRoot? decompose outer term).isSome =
+      true := by
+  obtain ⟨tree, treeBuilt⟩ :=
+    CostStaticRegionNode.exists_ofPlan_buildStatic?_eq_some
+      (outer := outer) term plan rootStatic decompose succeeds
+  unfold CostRegionTree.buildCheckedStaticRoot?
+  split
+  · rename_i rejected
+    have impossible := rejected.symm.trans
+      (CostStaticRegionNode.build?_eq_some_of_plan term plan rootStatic)
+    contradiction
+  · rename_i node built
+    have nodeEquality : node =
+        CostStaticRegionNode.ofPlan term plan rootStatic :=
+      Option.some.inj (built.symm.trans
+        (CostStaticRegionNode.build?_eq_some_of_plan term plan rootStatic))
+    subst node
+    have builtProof : built =
+        CostStaticRegionNode.build?_eq_some_of_plan term plan rootStatic :=
+      Subsingleton.elim _ _
+    cases builtProof
+    rw [treeBuilt]
+    rfl
+
+/-- A certified maximal static plan whose finite children all decompose makes
+the raw fixed-colour root search succeed.  Search order is deliberately left
+abstract: the returned tree may come from an earlier successful source sort,
+but its dependent result type fixes the requested raw term and typing fiber. -/
+theorem CostRegionTree.exists_buildStaticRootForColor?_eq_some_of_plan
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {targetBound outer : List TypeExpr}
+    {sourceSort : LangSort source.theory.presentation.presentation.language}
+    (term : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
+      (color.mapLangSort source sourceSort))
+    (plan : CostStaticRegionPlan source color targetFree
+      (CostStaticBinderThinning.sourceContextOfTarget source color targetBound)
+      targetBound
+      (CostStaticBinderThinning.ofTargetThinning source color targetBound)
+      targetBound .hole term.1 (.base sourceSort.1))
+    (rootStatic : plan.isStaticRoot = true)
+    (decompose : ∀ (candidateColor : CostStaticColor),
+      (boundary : TypedCostRegionBoundary source candidateColor targetFree) →
+        Option (CostRegionTree source targetFree
+          boundary.boundary.targetSupport [] boundary.boundary.content
+            boundary.boundary.targetType))
+    (succeeds : ∀ boundary, boundary ∈ plan.boundaryTable.entries →
+      ∃ tree, decompose color boundary = some tree) :
+    ∃ tree,
+      CostRegionTree.buildStaticRootForColor? decompose targetBound outer
+          term.1 (.base (color.mapLangSort source sourceSort).1) color =
+        some tree := by
+  have checked := WellSorted.checkOpenPatternWellSorted_complete term.2
+  let reconstructed : WellSorted.OpenTerm source.costWholeLanguage targetFree
+      targetBound (color.mapLangSort source sourceSort) :=
+    ⟨term.1, WellSorted.checkOpenPatternWellSorted_sound checked⟩
+  have reconstructed_eq : reconstructed = term := Subtype.ext rfl
+  have reconstructedSucceeds : ∀ boundary,
+      boundary ∈ (reconstructed_eq ▸ plan).boundaryTable.entries →
+        ∃ tree, decompose color boundary = some tree := by
+    simpa [reconstructed_eq] using succeeds
+  have checkedRootSome :=
+    CostRegionTree.buildCheckedStaticRoot?_isSome_of_plan
+      (outer := outer)
+      reconstructed
+      (reconstructed_eq ▸ plan) (by simpa using rootStatic)
+      (decompose color) reconstructedSucceeds
+  apply Option.isSome_iff_exists.mp
+  rw [CostRegionTree.buildStaticRootForColor?, List.findSome?_isSome_iff]
+  refine ⟨sourceSort, List.mem_attach _ sourceSort, ?_⟩
+  dsimp only
+  split
+  · rename_i expectedEquality
+    have expectedProof : expectedEquality = rfl := Subsingleton.elim _ _
+    cases expectedProof
+    split
+    · rename_i checked'
+      have checkedProof : checked' = checked := Subsingleton.elim _ _
+      cases checkedProof
+      let checkedTerm : WellSorted.OpenTerm source.costWholeLanguage targetFree
+          targetBound (color.mapLangSort source sourceSort) :=
+        ⟨term.1, WellSorted.checkOpenPatternWellSorted_sound checked⟩
+      change (CostRegionTree.buildCheckedStaticRoot? (decompose color) outer
+        checkedTerm).isSome = true
+      have checkedTerm_eq : checkedTerm = reconstructed := Subtype.ext rfl
+      rw [checkedTerm_eq]
+      exact checkedRootSome
+    · rename_i rejected
+      exact (rejected checked).elim
+  · rename_i rejected
+    exact (rejected rfl).elim
+
+/-- Search both static colours.  The order is merely executable enumeration;
+the canonical-section proof must establish semantic independence whenever
+both colour images inhabit the same result fiber. -/
+def CostRegionTree.buildStaticRoot? {source : CIGSLT}
+    {targetFree : WellSorted.FreeTypeContext}
+    (decompose : ∀ (color : CostStaticColor),
+      (boundary : TypedCostRegionBoundary source color targetFree) →
+        Option (CostRegionTree source targetFree
+          boundary.boundary.targetSupport [] boundary.boundary.content
+            boundary.boundary.targetType))
+    (available outer : List TypeExpr) (pattern : Pattern)
+    (expected : TypeExpr) :
+    Option (CostRegionTree source targetFree available outer pattern expected) :=
+  match CostRegionTree.buildStaticRootForColor? decompose available outer
+      pattern expected .base with
+  | some tree => some tree
+  | none => CostRegionTree.buildStaticRootForColor? decompose available outer
+      pattern expected .wrapped
+
+/-- Invert successful two-color root search without promoting its base-first
+enumeration order to semantic data.  The witness records whichever color
+actually produced the executable result. -/
+theorem CostRegionTree.buildStaticRoot?_eq_some
+    {source : CIGSLT} {targetFree : WellSorted.FreeTypeContext}
+    (decompose : ∀ (color : CostStaticColor),
+      (boundary : TypedCostRegionBoundary source color targetFree) →
+        Option (CostRegionTree source targetFree
+          boundary.boundary.targetSupport [] boundary.boundary.content
+            boundary.boundary.targetType))
+    (available outer : List TypeExpr) (pattern : Pattern) (expected : TypeExpr)
+    {tree : CostRegionTree source targetFree available outer pattern expected}
+    (built : CostRegionTree.buildStaticRoot? decompose available outer
+      pattern expected = some tree) :
+    ∃ (color : CostStaticColor)
+      (node : CostStaticRegionNode source color targetFree)
+      (children : CostRegionBoundaryTrees source targetFree color
+        node.finiteBoundaryTable),
+      node.targetBound = available ∧
+      (TypeExpr.base (color.mapLangSort source node.sourceSort).1) = expected ∧
+      node.term.1 = pattern ∧
+      CostRegionBoundaryTrees.build? (decompose color)
+          node.finiteBoundaryTable = some children ∧
+      HEq tree (CostRegionTree.static (outer := outer) node children) := by
+  unfold CostRegionTree.buildStaticRoot? at built
+  cases baseBuilt : CostRegionTree.buildStaticRootForColor? decompose available
+      outer pattern expected .base with
+  | none =>
+      simp only [baseBuilt] at built
+      obtain ⟨node, children, fields⟩ :=
+        CostRegionTree.buildStaticRootForColor?_eq_some decompose available
+          outer pattern expected .wrapped built
+      exact ⟨.wrapped, node, children, fields⟩
+  | some baseTree =>
+      simp only [baseBuilt, Option.some.injEq] at built
+      subst tree
+      obtain ⟨node, children, fields⟩ :=
+        CostRegionTree.buildStaticRootForColor?_eq_some decompose available
+          outer pattern expected .base baseBuilt
+      exact ⟨.base, node, children, fields⟩
+
+/-- Success in either exact static colour implies success of the complete
+two-colour root search.  The executable base-first order is not used as a
+semantic choice: an earlier base result is already a valid tree in the same
+dependent input fibre. -/
+theorem CostRegionTree.exists_buildStaticRoot?_eq_some_of_color
+    {source : CIGSLT} {targetFree : WellSorted.FreeTypeContext}
+    (decompose : ∀ (color : CostStaticColor),
+      (boundary : TypedCostRegionBoundary source color targetFree) →
+        Option (CostRegionTree source targetFree
+          boundary.boundary.targetSupport [] boundary.boundary.content
+            boundary.boundary.targetType))
+    (available outer : List TypeExpr) (pattern : Pattern)
+    (expected : TypeExpr) (color : CostStaticColor)
+    (succeeds : ∃ tree,
+      CostRegionTree.buildStaticRootForColor? decompose available outer
+        pattern expected color = some tree) :
+    ∃ tree, CostRegionTree.buildStaticRoot? decompose available outer
+      pattern expected = some tree := by
+  rcases succeeds with ⟨tree, built⟩
+  cases color with
+  | base =>
+      exact ⟨tree, by
+        simp [CostRegionTree.buildStaticRoot?, built]⟩
+  | wrapped =>
+      unfold CostRegionTree.buildStaticRoot?
+      cases baseBuilt : CostRegionTree.buildStaticRootForColor? decompose
+          available outer pattern expected .base with
+      | none => exact ⟨tree, by simp [built]⟩
+      | some baseTree => exact ⟨baseTree, by simp⟩
+
+/-- Reindex one ordinary neutral frame across its already-checked wire and
+result-category equalities.  The constructor identity and all authored
+typing evidence remain data in the returned tree. -/
+def CostRegionTree.neutralApplicationOrdinaryReindex
+    {source : CIGSLT} {targetFree : WellSorted.FreeTypeContext}
+    {available outer : List TypeExpr} {rule : GrammarRule}
+    {wireName category : String} {arguments : List Pattern}
+    (labelEq : rule.label = wireName)
+    (categoryEq : rule.category = category)
+    (membership : rule ∈ source.costWholeLanguage.terms)
+    (notBare : ¬ WellSorted.UsesBareCollection rule)
+    (constructor : source.DeclaredCostConstructor)
+    (materializes : source.materializeDeclaredCostConstructor constructor = rule)
+    (neutral :
+      source.declaredCostConstructorRole constructor =
+          .interactionPrincipal ∨
+        ∃ kind, source.declaredCostConstructorRole constructor =
+          .apparatus kind)
+    (ordinary : ReflectiveContextSupport.isQuoteConstructor
+      source.costWholeLanguage rule.label = false)
+    (children : CostRegionArgumentTrees source targetFree available outer
+      arguments rule.params) :
+    CostRegionTree source targetFree available outer
+      (.apply wireName arguments) (.base category) := by
+  cases labelEq
+  cases categoryEq
+  exact .neutralApplicationOrdinary membership notBare constructor materializes
+    neutral ordinary children
+
+/-- Reindex one quoted neutral frame across the same checked wire and result
+category equalities.  The quote-specific available/outer split is preserved
+exactly. -/
+def CostRegionTree.neutralApplicationQuoteReindex
+    {source : CIGSLT} {targetFree : WellSorted.FreeTypeContext}
+    {available outer : List TypeExpr} {rule : GrammarRule}
+    {wireName category : String} {arguments : List Pattern}
+    (labelEq : rule.label = wireName)
+    (categoryEq : rule.category = category)
+    (membership : rule ∈ source.costWholeLanguage.terms)
+    (notBare : ¬ WellSorted.UsesBareCollection rule)
+    (constructor : source.DeclaredCostConstructor)
+    (materializes : source.materializeDeclaredCostConstructor constructor = rule)
+    (neutral :
+      source.declaredCostConstructorRole constructor =
+          .interactionPrincipal ∨
+        ∃ kind, source.declaredCostConstructorRole constructor =
+          .apparatus kind)
+    (quoted : ReflectiveContextSupport.isQuoteConstructor
+      source.costWholeLanguage rule.label = true)
+    (children : CostRegionArgumentTrees source targetFree []
+      (available ++ outer) arguments rule.params) :
+    CostRegionTree source targetFree available outer
+      (.apply wireName arguments) (.base category) := by
+  cases labelEq
+  cases categoryEq
+  exact .neutralApplicationQuote membership notBare constructor materializes
+    neutral quoted children
+
+/-- Build one equation-neutral generated application after its intrinsic
+constructor identity and role have been decoded.  Static constructors do not
+enter this helper: they must pass through the proof-relevant static planner so
+that source canonicalization is never bypassed by a structural fallback. -/
+def CostRegionTree.buildNeutralApplication? {source : CIGSLT}
+    {targetFree : WellSorted.FreeTypeContext}
+    (decompose : (available outer : List TypeExpr) → (pattern : Pattern) →
+      (type : TypeExpr) →
+        Option (CostRegionTree source targetFree available outer pattern type))
+    (available outer : List TypeExpr) (wireName : String)
+    (arguments : List Pattern) (category : String)
+    (constructor : source.DeclaredCostConstructor)
+    (neutral :
+      source.declaredCostConstructorRole constructor =
+          .interactionPrincipal ∨
+        ∃ kind, source.declaredCostConstructorRole constructor =
+          .apparatus kind) :
+    Option (CostRegionTree source targetFree available outer
+      (.apply wireName arguments) (.base category)) := by
+  let rule := source.materializeDeclaredCostConstructor constructor
+  have membership : rule ∈ source.costWholeLanguage.terms :=
+    source.materializeDeclaredCostConstructor_mem constructor
+  let buildWith :
+      (source.declaredCostConstructorRole constructor =
+            .interactionPrincipal ∨
+          ∃ kind, source.declaredCostConstructorRole constructor =
+            .apparatus kind) →
+        Option (CostRegionTree source targetFree available outer
+          (.apply wireName arguments) (.base category)) := fun neutral => by
+    by_cases rendered :
+        source.renderDeclaredCostConstructor constructor = wireName
+    · have labelEquality : rule.label = wireName :=
+        (source.materializeDeclaredCostConstructor_label constructor).trans
+          rendered
+      by_cases categoryEquality : rule.category = category
+      · if bareChecked : WellSorted.usesBareCollection? rule = true then
+          exact none
+        else
+          have notBare : ¬ WellSorted.UsesBareCollection rule := fun bare =>
+            bareChecked
+              ((WellSorted.usesBareCollection?_eq_true_iff rule).2 bare)
+          by_cases quoted : ReflectiveContextSupport.isQuoteConstructor
+              source.costWholeLanguage rule.label = true
+          · exact match CostRegionArgumentTrees.build? decompose []
+                (available ++ outer) arguments rule.params with
+            | none => none
+            | some children =>
+                some (CostRegionTree.neutralApplicationQuoteReindex
+                  labelEquality categoryEquality membership notBare
+                  constructor rfl neutral quoted children)
+          · exact match CostRegionArgumentTrees.build? decompose available
+                outer arguments rule.params with
+            | none => none
+            | some children =>
+                some (CostRegionTree.neutralApplicationOrdinaryReindex
+                  labelEquality categoryEquality membership notBare
+                  constructor rfl neutral
+                    (Bool.eq_false_of_not_eq_true quoted) children)
+      · exact none
+    · exact none
+  exact buildWith neutral
+
+/-- Intrinsic dispatch for one generated Cost application.  The exact
+constructor remains data while its semantic role is made explicit. -/
+inductive CostRegionApplicationDispatch (source : CIGSLT) where
+  | static (color : CostStaticColor)
+      (constructor : source.DeclaredCostConstructor)
+      (role : source.declaredCostConstructorRole constructor = .static color)
+  | interactionPrincipal
+      (constructor : source.DeclaredCostConstructor)
+      (role : source.declaredCostConstructorRole constructor =
+        .interactionPrincipal)
+  | apparatus (kind : CostApparatusConstructor)
+      (constructor : source.DeclaredCostConstructor)
+      (role : source.declaredCostConstructorRole constructor = .apparatus kind)
+
+/-- Turn the intrinsic constructor-role computation into proof-relevant
+dispatch data. -/
+def CIGSLT.dispatchDeclaredCostConstructor (source : CIGSLT)
+    (constructor : source.DeclaredCostConstructor) :
+    CostRegionApplicationDispatch source :=
+  match role : source.declaredCostConstructorRole constructor with
+  | .static color => .static color constructor role
+  | .interactionPrincipal => .interactionPrincipal constructor role
+  | .apparatus kind => .apparatus kind constructor role
+
+/-- Decode a Cost wire once into its exact semantic application role. -/
+def CIGSLT.decodeCostRegionApplication? (source : CIGSLT)
+    (wireName : String) : Option (CostRegionApplicationDispatch source) :=
+  (source.decodeDeclaredCostConstructor wireName).map
+    source.dispatchDeclaredCostConstructor
+
+@[simp]
+theorem CIGSLT.dispatchDeclaredCostConstructor_static
+    (source : CIGSLT) (color : CostStaticColor)
+    (constructor : source.DeclaredCostConstructor)
+    (role : source.declaredCostConstructorRole constructor = .static color) :
+    source.dispatchDeclaredCostConstructor constructor =
+      .static color constructor role := by
+  unfold CIGSLT.dispatchDeclaredCostConstructor
+  split
+  next actualColor classified =>
+    have colorEquality : actualColor = color := by
+      rw [classified] at role
+      exact CIGSLT.GeneratedCostConstructorRole.static.inj role
+    subst actualColor
+    rfl
+  next classified =>
+    rw [classified] at role
+    contradiction
+  next kind classified =>
+    rw [classified] at role
+    contradiction
+
+@[simp]
+theorem CIGSLT.dispatchDeclaredCostConstructor_interactionPrincipal
+    (source : CIGSLT) (constructor : source.DeclaredCostConstructor)
+    (role : source.declaredCostConstructorRole constructor =
+      .interactionPrincipal) :
+    source.dispatchDeclaredCostConstructor constructor =
+      .interactionPrincipal constructor role := by
+  unfold CIGSLT.dispatchDeclaredCostConstructor
+  split
+  next color classified =>
+    rw [classified] at role
+    contradiction
+  next classified => rfl
+  next kind classified =>
+    rw [classified] at role
+    contradiction
+
+@[simp]
+theorem CIGSLT.dispatchDeclaredCostConstructor_apparatus
+    (source : CIGSLT) (kind : CostApparatusConstructor)
+    (constructor : source.DeclaredCostConstructor)
+    (role : source.declaredCostConstructorRole constructor = .apparatus kind) :
+    source.dispatchDeclaredCostConstructor constructor =
+      .apparatus kind constructor role := by
+  unfold CIGSLT.dispatchDeclaredCostConstructor
+  split
+  next color classified =>
+    rw [classified] at role
+    contradiction
+  next classified =>
+    rw [classified] at role
+    contradiction
+  next actualKind classified =>
+    have kindEquality : actualKind = kind := by
+      rw [classified] at role
+      exact CIGSLT.GeneratedCostConstructorRole.apparatus.inj role
+    subst actualKind
+    rfl
+
+@[simp]
+theorem CIGSLT.decodeCostRegionApplication?_static
+    (source : CIGSLT) (wireName : String) (color : CostStaticColor)
+    (constructor : source.DeclaredCostConstructor)
+    (decoded : source.decodeDeclaredCostConstructor wireName = some constructor)
+    (role : source.declaredCostConstructorRole constructor = .static color) :
+    source.decodeCostRegionApplication? wireName =
+      some (.static color constructor role) := by
+  simp [CIGSLT.decodeCostRegionApplication?, decoded, role]
+
+@[simp]
+theorem CIGSLT.decodeCostRegionApplication?_interactionPrincipal
+    (source : CIGSLT) (wireName : String)
+    (constructor : source.DeclaredCostConstructor)
+    (decoded : source.decodeDeclaredCostConstructor wireName = some constructor)
+    (role : source.declaredCostConstructorRole constructor =
+      .interactionPrincipal) :
+    source.decodeCostRegionApplication? wireName =
+      some (.interactionPrincipal constructor role) := by
+  simp [CIGSLT.decodeCostRegionApplication?, decoded, role]
+
+@[simp]
+theorem CIGSLT.decodeCostRegionApplication?_apparatus
+    (source : CIGSLT) (wireName : String) (kind : CostApparatusConstructor)
+    (constructor : source.DeclaredCostConstructor)
+    (decoded : source.decodeDeclaredCostConstructor wireName = some constructor)
+    (role : source.declaredCostConstructorRole constructor = .apparatus kind) :
+    source.decodeCostRegionApplication? wireName =
+      some (.apparatus kind constructor role) := by
+  simp [CIGSLT.decodeCostRegionApplication?, decoded, role]
+
+/-- Fuel-indexed executable elaboration from compact Cost syntax to its
+proof-relevant alternating region tree.  Every recursive call receives one
+less unit of fuel.  Static boundary recursion additionally carries the strict
+source-size decrease certified by the selected structural plan; the fuel
+index makes failure and qualification observable without using partial
+recursion or eliminating an arbitrary typing proof into data. -/
+def CostRegionTree.buildFuel? {source : CIGSLT}
+    {targetFree : WellSorted.FreeTypeContext} :
+    (fuel : Nat) → (available outer : List TypeExpr) →
+      (pattern : Pattern) → (expected : TypeExpr) →
+        Option (CostRegionTree source targetFree available outer pattern
+          expected)
+  | 0, _available, _outer, _pattern, _expected => none
+  | fuel + 1, available, outer, pattern, expected => by
+      let recurse := fun available outer pattern expected =>
+        CostRegionTree.buildFuel? (source := source) (targetFree := targetFree)
+          fuel available outer pattern expected
+      let decompose := fun (_color : CostStaticColor)
+          (boundary : TypedCostRegionBoundary source _color targetFree) =>
+        CostRegionTree.buildFuel? (source := source) (targetFree := targetFree)
+          fuel boundary.boundary.targetSupport [] boundary.boundary.content
+            boundary.boundary.targetType
+      cases pattern with
+      | bvar index =>
+          exact if lookup : (available ++ outer)[index]? = some expected then
+            some (.bvar lookup)
+          else
+            none
+      | fvar name =>
+          exact if lookup : targetFree name = some expected then
+            some (.fvar lookup)
+          else
+            none
+      | apply wireName arguments =>
+          cases expected with
+          | base category =>
+              exact match source.decodeCostRegionApplication? wireName with
+              | none => none
+              | some (.static color _constructor _role) =>
+                  CostRegionTree.buildStaticRootForColor? decompose available
+                    outer (.apply wireName arguments) (.base category) color
+              | some (.interactionPrincipal constructor role) =>
+                  CostRegionTree.buildNeutralApplication? recurse available outer
+                    wireName arguments category constructor (Or.inl role)
+              | some (.apparatus kind constructor role) =>
+                  CostRegionTree.buildNeutralApplication? recurse available outer
+                    wireName arguments category constructor
+                      (Or.inr ⟨kind, role⟩)
+          | collection collectionType elementType => exact none
+          | arrow domain codomain => exact none
+          | multiBinder domain => exact none
+      | lambda binder body =>
+          cases expected with
+          | arrow domain codomain =>
+              exact (recurse (domain :: available) outer body codomain).map
+                CostRegionTree.lambda
+          | base category => exact none
+          | collection collectionType elementType => exact none
+          | multiBinder domain => exact none
+      | multiLambda arity binders body =>
+          cases expected with
+          | arrow domain codomain =>
+              cases domain with
+              | multiBinder binderType =>
+                  exact (recurse
+                    (List.replicate arity binderType ++ available) outer body
+                      codomain).map CostRegionTree.multiLambda
+              | base category => exact none
+              | collection collectionType elementType => exact none
+              | arrow first second => exact none
+          | base category => exact none
+          | collection collectionType elementType => exact none
+          | multiBinder domain => exact none
+      | subst body replacement => exact none
+      | collection collectionType elements rest =>
+          cases expected with
+          | collection actual elementType =>
+              if collectionEquality : actual = collectionType then
+                exact match CostRegionElementTrees.build? recurse available outer
+                    elements elementType with
+                | none => none
+                | some children => by
+                    rw [collectionEquality]
+                    exact some (.collection children)
+              else
+                exact none
+          | base category =>
+              exact CostRegionTree.buildStaticRoot? decompose available outer
+                (.collection collectionType elements rest) (.base category)
+          | arrow domain codomain => exact none
+          | multiBinder domain => exact none
+
+/-- Replay one canonical static-root plan through one layer of the full
+fuelled compiler, assuming its exact finite boundary children succeed at the
+smaller fuel.  Only application and collection plans can satisfy
+`isStaticRoot`; all other cases are eliminated by the intrinsic root witness. -/
+theorem CostRegionTree.buildFuel?_isSome_of_staticPlan
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {targetBound outer : List TypeExpr}
+    {sourceSort : LangSort source.theory.presentation.presentation.language}
+    (fuel : Nat)
+    (term : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
+      (color.mapLangSort source sourceSort))
+    (plan : CostStaticRegionPlan source color targetFree
+      (CostStaticBinderThinning.sourceContextOfTarget source color targetBound)
+      targetBound
+      (CostStaticBinderThinning.ofTargetThinning source color targetBound)
+      targetBound .hole term.1 (.base sourceSort.1))
+    (rootStatic : plan.isStaticRoot = true)
+    (succeeds : ∀ boundary, boundary ∈ plan.boundaryTable.entries →
+      ∃ tree,
+        CostRegionTree.buildFuel? (source := source) (targetFree := targetFree)
+          fuel boundary.boundary.targetSupport [] boundary.boundary.content
+            boundary.boundary.targetType = some tree) :
+    (CostRegionTree.buildFuel? (source := source) (targetFree := targetFree)
+      (fuel + 1) targetBound outer term.1
+        (.base ((color.symbols source).sort sourceSort.1))).isSome = true := by
+  rcases term with ⟨pattern, termWellSorted⟩
+  let decompose := fun (candidateColor : CostStaticColor)
+      (boundary : TypedCostRegionBoundary source candidateColor targetFree) =>
+    CostRegionTree.buildFuel? (source := source) (targetFree := targetFree)
+      fuel boundary.boundary.targetSupport [] boundary.boundary.content
+        boundary.boundary.targetType
+  have fixedSuccess : ∃ tree,
+      CostRegionTree.buildStaticRootForColor? decompose targetBound outer pattern
+          (.base ((color.symbols source).sort sourceSort.1)) color = some tree :=
+    CostRegionTree.exists_buildStaticRootForColor?_eq_some_of_plan
+      (⟨pattern, termWellSorted⟩ : WellSorted.OpenTerm
+        source.costWholeLanguage targetFree targetBound
+          (color.mapLangSort source sourceSort))
+      plan rootStatic decompose (by simpa [decompose] using succeeds)
+  rcases plan.pattern_shape_of_isStaticRoot rootStatic with
+      ⟨wireName, arguments, shape⟩ | ⟨collectionType, elements, rest, shape⟩
+  · obtain ⟨constructor, decoded, current⟩ :=
+      plan.application_dispatch_of_isStaticRoot rootStatic shape
+    change pattern = .apply wireName arguments at shape
+    subst pattern
+    simp only [CostRegionTree.buildFuel?]
+    rw [source.decodeCostRegionApplication?_static wireName color constructor
+      decoded current]
+    simpa [decompose] using (Option.isSome_iff_exists.mpr fixedSuccess)
+  · change pattern = .collection collectionType elements rest at shape
+    subst pattern
+    have completeSuccess :=
+      CostRegionTree.exists_buildStaticRoot?_eq_some_of_color decompose
+        targetBound outer (.collection collectionType elements rest)
+          (.base ((color.symbols source).sort sourceSort.1)) color fixedSuccess
+    simpa [CostRegionTree.buildFuel?, decompose] using
+      (Option.isSome_iff_exists.mpr completeSuccess)
+
+/- Executable node count for nested `Pattern` syntax.  Lean's generic
+`sizeOf` instance for the nested `Pattern`/`List Pattern` pair is suitable for
+proofs but has no generated LCNF entry in this build; this mutually recursive
+count is the corresponding runtime fuel measure. -/
+mutual
+  /-- Runtime fuel weight of one nested pattern. -/
+  def costRegionPatternWeight : Pattern → Nat
+    | .bvar _ | .fvar _ => 1
+    | .apply _ arguments => costRegionPatternListWeight arguments + 1
+    | .lambda _ body => costRegionPatternWeight body + 1
+    | .multiLambda _ _ body => costRegionPatternWeight body + 1
+    | .subst body replacement =>
+        costRegionPatternWeight body + costRegionPatternWeight replacement + 1
+    | .collection _ elements _ => costRegionPatternListWeight elements + 1
+
+  /-- Runtime fuel weight of a pattern spine. -/
+  def costRegionPatternListWeight : List Pattern → Nat
+    | [] => 0
+    | pattern :: patterns =>
+        costRegionPatternWeight pattern + costRegionPatternListWeight patterns
+end
+
+@[simp]
+theorem costRegionPatternListWeight_append (left right : List Pattern) :
+    costRegionPatternListWeight (left ++ right) =
+      costRegionPatternListWeight left + costRegionPatternListWeight right := by
+  induction left with
+  | nil => simp [costRegionPatternListWeight]
+  | cons head tail inductionHypothesis =>
+      simp [costRegionPatternListWeight, inductionHypothesis, Nat.add_assoc]
+
+/-- A member contributes a summand to the executable spine weight. -/
+theorem costRegionPatternWeight_le_listWeight_of_mem
+    {pattern : Pattern} {patterns : List Pattern}
+    (membership : pattern ∈ patterns) :
+    costRegionPatternWeight pattern ≤ costRegionPatternListWeight patterns := by
+  induction patterns with
+  | nil => simp at membership
+  | cons head tail inductionHypothesis =>
+      simp only [List.mem_cons] at membership
+      simp only [costRegionPatternListWeight]
+      rcases membership with equality | membership
+      · subst pattern
+        omega
+      · have := inductionHypothesis membership
+        omega
+
+/-- Typed open-object admission and recursive success on strictly smaller
+arguments are sufficient to compile an authored constructor spine.  This is
+the direct totality companion to `CostRegionArgumentTrees.build?`; it does not
+assume a pre-existing region tree. -/
+theorem CostRegionArgumentTrees.exists_build?_eq_some_of_wellSorted
+    {source : CIGSLT} {targetFree : WellSorted.FreeTypeContext}
+    {fuelBound : Nat}
+    (decompose : (available outer : List TypeExpr) → (pattern : Pattern) →
+      (type : TypeExpr) →
+        Option (CostRegionTree source targetFree available outer pattern type))
+    (succeeds : ∀ {available outer pattern type},
+      WellSorted.OpenPatternWellSorted source.costWholeLanguage targetFree
+          available type pattern →
+        costRegionPatternWeight pattern < fuelBound →
+        ∃ built, decompose available outer pattern type = some built)
+    {available outer : List TypeExpr} {arguments : List Pattern}
+    {parameters : List TermParam}
+    (typed : WellSorted.ArgumentsHaveTypes source.costWholeLanguage targetFree
+      available arguments parameters)
+    (canonical : Pattern.hasCanonicalBinderMetadataList arguments = true)
+    (objects : WellSorted.isObjectPatternList arguments = true)
+    (reflective : ∀ presentation ∈
+        source.costWholeLanguage.reflectivePresentations,
+      binderSafeListAt presentation.quoteConstructor available.length
+        arguments = true)
+    (enough : costRegionPatternListWeight arguments < fuelBound) :
+    ∃ built,
+      CostRegionArgumentTrees.build? decompose available outer arguments
+        parameters = some built := by
+  induction arguments generalizing parameters with
+  | nil =>
+      cases typed
+      exact ⟨.nil, rfl⟩
+  | cons argument arguments inductionHypothesis =>
+      cases typed with
+      | @cons _ _ _ headParameter tailParameters expected representation parameterType
+          argumentTyped argumentsTyped =>
+          have canonicalParts :
+              argument.hasCanonicalBinderMetadata = true ∧
+                Pattern.hasCanonicalBinderMetadataList arguments = true := by
+            simpa [Pattern.hasCanonicalBinderMetadataList] using canonical
+          have objectParts : WellSorted.isObjectPattern argument = true ∧
+              WellSorted.isObjectPatternList arguments = true := by
+            simpa [WellSorted.isObjectPatternList] using objects
+          have reflectiveHead : WellSorted.ReflectiveScopeSafeAt
+              source.costWholeLanguage available.length argument := by
+            intro presentation membership
+            have spine := reflective presentation membership
+            simp only [binderSafeListAt, Bool.and_eq_true] at spine
+            exact spine.1
+          have reflectiveTail : ∀ presentation ∈
+                source.costWholeLanguage.reflectivePresentations,
+              binderSafeListAt presentation.quoteConstructor available.length
+                arguments = true := by
+            intro presentation membership
+            have spine := reflective presentation membership
+            simp only [binderSafeListAt, Bool.and_eq_true] at spine
+            exact spine.2
+          have argumentWellSorted : WellSorted.OpenPatternWellSorted
+              source.costWholeLanguage targetFree available expected argument :=
+            ⟨argumentTyped, canonicalParts.1, objectParts.1, reflectiveHead⟩
+          have headBound : costRegionPatternWeight argument < fuelBound := by
+            simp only [costRegionPatternListWeight] at enough
+            omega
+          obtain ⟨head, headBuilt⟩ :=
+            succeeds (outer := outer) argumentWellSorted headBound
+          have tailBound :
+              costRegionPatternListWeight arguments < fuelBound := by
+            simp only [costRegionPatternListWeight] at enough
+            omega
+          obtain ⟨tail, tailBuilt⟩ := inductionHypothesis argumentsTyped
+            canonicalParts.2 objectParts.2 reflectiveTail tailBound
+          have representationChecked :
+              WellSorted.matchesParameterRepresentation? headParameter argument =
+                true :=
+            (WellSorted.matchesParameterRepresentation?_eq_true_iff
+              headParameter argument).mpr representation
+          apply Option.isSome_iff_exists.mp
+          simp [CostRegionArgumentTrees.build?, parameterType,
+            representationChecked, headBuilt, tailBuilt]
+
+/-- Homogeneous collection companion to direct argument-spine totality. -/
+theorem CostRegionElementTrees.exists_build?_eq_some_of_wellSorted
+    {source : CIGSLT} {targetFree : WellSorted.FreeTypeContext}
+    {fuelBound : Nat}
+    (decompose : (available outer : List TypeExpr) → (pattern : Pattern) →
+      (type : TypeExpr) →
+        Option (CostRegionTree source targetFree available outer pattern type))
+    (succeeds : ∀ {available outer pattern type},
+      WellSorted.OpenPatternWellSorted source.costWholeLanguage targetFree
+          available type pattern →
+        costRegionPatternWeight pattern < fuelBound →
+        ∃ built, decompose available outer pattern type = some built)
+    {available outer : List TypeExpr} {elements : List Pattern}
+    {elementType : TypeExpr}
+    (typed : WellSorted.ElementsHaveType source.costWholeLanguage targetFree
+      available elements elementType)
+    (canonical : Pattern.hasCanonicalBinderMetadataList elements = true)
+    (objects : WellSorted.isObjectPatternList elements = true)
+    (reflective : ∀ presentation ∈
+        source.costWholeLanguage.reflectivePresentations,
+      binderSafeListAt presentation.quoteConstructor available.length
+        elements = true)
+    (enough : costRegionPatternListWeight elements < fuelBound) :
+    ∃ built,
+      CostRegionElementTrees.build? decompose available outer elements
+        elementType = some built := by
+  induction elements with
+  | nil =>
+      exact ⟨.nil available outer elementType, rfl⟩
+  | cons element elements inductionHypothesis =>
+      cases typed with
+      | cons elementTyped elementsTyped =>
+          have canonicalParts :
+              element.hasCanonicalBinderMetadata = true ∧
+                Pattern.hasCanonicalBinderMetadataList elements = true := by
+            simpa [Pattern.hasCanonicalBinderMetadataList] using canonical
+          have objectParts : WellSorted.isObjectPattern element = true ∧
+              WellSorted.isObjectPatternList elements = true := by
+            simpa [WellSorted.isObjectPatternList] using objects
+          have reflectiveHead : WellSorted.ReflectiveScopeSafeAt
+              source.costWholeLanguage available.length element := by
+            intro presentation membership
+            have spine := reflective presentation membership
+            simp only [binderSafeListAt, Bool.and_eq_true] at spine
+            exact spine.1
+          have reflectiveTail : ∀ presentation ∈
+                source.costWholeLanguage.reflectivePresentations,
+              binderSafeListAt presentation.quoteConstructor available.length
+                elements = true := by
+            intro presentation membership
+            have spine := reflective presentation membership
+            simp only [binderSafeListAt, Bool.and_eq_true] at spine
+            exact spine.2
+          have elementWellSorted : WellSorted.OpenPatternWellSorted
+              source.costWholeLanguage targetFree available elementType
+                element :=
+            ⟨elementTyped, canonicalParts.1, objectParts.1, reflectiveHead⟩
+          have headBound : costRegionPatternWeight element < fuelBound := by
+            simp only [costRegionPatternListWeight] at enough
+            omega
+          obtain ⟨head, headBuilt⟩ :=
+            succeeds (outer := outer) elementWellSorted headBound
+          have tailBound :
+              costRegionPatternListWeight elements < fuelBound := by
+            simp only [costRegionPatternListWeight] at enough
+            omega
+          obtain ⟨tail, tailBuilt⟩ := inductionHypothesis elementsTyped
+            canonicalParts.2 objectParts.2 reflectiveTail tailBound
+          exact ⟨.cons head tail, by
+            simp [CostRegionElementTrees.build?, headBuilt, tailBuilt]⟩
+
+/-- If one recursive compiler succeeds on every strictly smaller certified
+tree, it succeeds on an authored constructor's entire ordered argument
+spine.  The statement is parameterized by the compiler, so it is reusable by
+the fuel proof without introducing a second elaboration relation. -/
+theorem CostRegionArgumentTrees.exists_build?_eq_some_of_trees
+    {source : CIGSLT} {targetFree : WellSorted.FreeTypeContext}
+    {fuelBound : Nat}
+    (decompose : (available outer : List TypeExpr) → (pattern : Pattern) →
+      (type : TypeExpr) →
+        Option (CostRegionTree source targetFree available outer pattern type))
+    (succeeds : ∀ {available outer pattern type}
+      (_tree : CostRegionTree source targetFree available outer pattern type),
+        WellSorted.isObjectPattern pattern = true →
+          costRegionPatternWeight pattern < fuelBound →
+          ∃ built, decompose available outer pattern type = some built)
+    {available outer : List TypeExpr} {arguments : List Pattern}
+    {parameters : List TermParam}
+    (trees : CostRegionArgumentTrees source targetFree available outer
+      arguments parameters)
+    (objects : WellSorted.isObjectPatternList arguments = true)
+    (enough : costRegionPatternListWeight arguments < fuelBound) :
+    ∃ built,
+      CostRegionArgumentTrees.build? decompose available outer arguments
+        parameters = some built := by
+  induction arguments generalizing parameters with
+  | nil =>
+      cases trees
+      exact ⟨.nil, rfl⟩
+  | cons argument arguments inductionHypothesis =>
+      cases trees with
+      | cons representation parameterType head tail =>
+          rename_i parameter parameters expected
+          have headBound : costRegionPatternWeight argument < fuelBound := by
+            simp only [costRegionPatternListWeight] at enough
+            omega
+          simp only [WellSorted.isObjectPatternList, Bool.and_eq_true] at objects
+          obtain ⟨headBuilt, headBuilds⟩ :=
+            succeeds head objects.1 headBound
+          have tailBound : costRegionPatternListWeight arguments < fuelBound := by
+            simp only [costRegionPatternListWeight] at enough
+            omega
+          obtain ⟨tailBuilt, tailBuilds⟩ :=
+            inductionHypothesis tail objects.2 tailBound
+          have representationChecked :
+              WellSorted.matchesParameterRepresentation? _ argument =
+                true :=
+            (WellSorted.matchesParameterRepresentation?_eq_true_iff
+              _ argument).mpr representation
+          apply Option.isSome_iff_exists.mp
+          cases parameter with
+          | simple parameterName parameterTypeExpr =>
+              have expectedEquality : parameterTypeExpr = expected :=
+                Option.some.inj parameterType
+              subst expected
+              simp [WellSorted.parameterType?,
+                CostRegionArgumentTrees.build?, representationChecked,
+                headBuilds, tailBuilds]
+          | abstractionNamed binderName bodyName parameterTypeExpr =>
+              cases parameterTypeExpr with
+              | base sort =>
+                  have expectedEquality :
+                      (.arrow (.base sort) (.base sort) : TypeExpr) =
+                        expected := Option.some.inj parameterType
+                  subst expected
+                  simp [WellSorted.parameterType?,
+                    CostRegionArgumentTrees.build?, representationChecked,
+                    headBuilds, tailBuilds]
+              | arrow domain codomain =>
+                  have expectedEquality :
+                      (.arrow domain codomain : TypeExpr) = expected :=
+                    Option.some.inj parameterType
+                  subst expected
+                  simp [WellSorted.parameterType?,
+                    CostRegionArgumentTrees.build?, representationChecked,
+                    headBuilds, tailBuilds]
+              | multiBinder body =>
+                  simp [WellSorted.parameterType?] at parameterType
+              | collection collectionType elementType =>
+                  simp [WellSorted.parameterType?] at parameterType
+          | multiAbstractionNamed binderNames bodyName parameterTypeExpr =>
+              cases parameterTypeExpr with
+              | base sort =>
+                  have expectedEquality :
+                      (.arrow (.multiBinder (.base sort)) (.base sort) :
+                        TypeExpr) = expected := Option.some.inj parameterType
+                  subst expected
+                  simp [WellSorted.parameterType?,
+                    CostRegionArgumentTrees.build?, representationChecked,
+                    headBuilds, tailBuilds]
+              | arrow domain codomain =>
+                  cases domain with
+                  | base sort =>
+                      simp [WellSorted.parameterType?] at parameterType
+                  | arrow first second =>
+                      simp [WellSorted.parameterType?] at parameterType
+                  | multiBinder binderType =>
+                      have expectedEquality :
+                          (.arrow (.multiBinder binderType) codomain :
+                            TypeExpr) = expected :=
+                        Option.some.inj parameterType
+                      subst expected
+                      simp [WellSorted.parameterType?,
+                        CostRegionArgumentTrees.build?, representationChecked,
+                        headBuilds, tailBuilds]
+                  | collection collectionType elementType =>
+                      simp [WellSorted.parameterType?] at parameterType
+              | multiBinder body =>
+                  simp [WellSorted.parameterType?] at parameterType
+              | collection collectionType elementType =>
+                  simp [WellSorted.parameterType?] at parameterType
+
+/-- The analogous finite-spine completeness theorem for homogeneous
+collections.  Duplicate elements remain separate recursive calls. -/
+theorem CostRegionElementTrees.exists_build?_eq_some_of_trees
+    {source : CIGSLT} {targetFree : WellSorted.FreeTypeContext}
+    {fuelBound : Nat}
+    (decompose : (available outer : List TypeExpr) → (pattern : Pattern) →
+      (type : TypeExpr) →
+        Option (CostRegionTree source targetFree available outer pattern type))
+    (succeeds : ∀ {available outer pattern type}
+      (_tree : CostRegionTree source targetFree available outer pattern type),
+        WellSorted.isObjectPattern pattern = true →
+          costRegionPatternWeight pattern < fuelBound →
+          ∃ built, decompose available outer pattern type = some built)
+    {available outer : List TypeExpr} {elements : List Pattern}
+    {elementType : TypeExpr}
+    (trees : CostRegionElementTrees source targetFree available outer elements
+      elementType)
+    (objects : WellSorted.isObjectPatternList elements = true)
+    (enough : costRegionPatternListWeight elements < fuelBound) :
+    ∃ built,
+      CostRegionElementTrees.build? decompose available outer elements
+        elementType = some built := by
+  induction elements with
+  | nil =>
+      cases trees
+      exact ⟨.nil _ _ _, rfl⟩
+  | cons element elements inductionHypothesis =>
+      cases trees with
+      | cons head tail =>
+          have headBound : costRegionPatternWeight element < fuelBound := by
+            simp only [costRegionPatternListWeight] at enough
+            omega
+          simp only [WellSorted.isObjectPatternList, Bool.and_eq_true] at objects
+          obtain ⟨headBuilt, headBuilds⟩ :=
+            succeeds head objects.1 headBound
+          have tailBound : costRegionPatternListWeight elements < fuelBound := by
+            simp only [costRegionPatternListWeight] at enough
+            omega
+          obtain ⟨tailBuilt, tailBuilds⟩ :=
+            inductionHypothesis tail objects.2 tailBound
+          exact ⟨.cons headBuilt tailBuilt, by
+            simp [CostRegionElementTrees.build?, headBuilds, tailBuilds]⟩
+
+/-- Membership in an aligned finite boundary forest exposes a certified
+child at that exact proof-relevant boundary fiber. -/
+theorem CostRegionBoundaryTrees.exists_tree_of_mem
+    {source : CIGSLT} {targetFree : WellSorted.FreeTypeContext}
+    {color : CostStaticColor} {occurrences : List CostRegionOccurrence}
+    {table : TypedCostRegionBoundaryTable source color targetFree occurrences}
+    (forest : CostRegionBoundaryTrees source targetFree color table)
+    (boundary : TypedCostRegionBoundary source color targetFree)
+    (membership : boundary ∈ table.entries) :
+    Nonempty (CostRegionTree source targetFree
+      boundary.boundary.targetSupport [] boundary.boundary.content
+        boundary.boundary.targetType) := by
+  induction table generalizing boundary with
+  | nil =>
+      simp [TypedCostRegionBoundaryTable.entries] at membership
+  | cons headBoundary content tail inductionHypothesis =>
+      cases forest with
+      | cons head children =>
+          change boundary ∈ headBoundary :: tail.entries at membership
+          rcases List.mem_cons.mp membership with equality | tailMembership
+          · subst boundary
+            exact ⟨head⟩
+          · exact inductionHypothesis children boundary tailMembership
+
+mutual
+  /-- Every boundary payload contributes no more executable fuel than the
+  region fragment that emitted it. -/
+  theorem CostStaticRegionPlan.boundary_content_weight_le
+      {source : CIGSLT} {color : CostStaticColor}
+      {targetFree : WellSorted.FreeTypeContext}
+      {sourceBound targetBound : List TypeExpr}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+      {sourceAvailable : List TypeExpr}
+      {outer : OneHoleContext} {pattern : Pattern} {sourceType : TypeExpr}
+      (plan : CostStaticRegionPlan source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer pattern sourceType)
+      (boundary : TypedCostRegionBoundary source color targetFree)
+      (membership : boundary ∈ plan.boundaryTable.entries) :
+      costRegionPatternWeight boundary.boundary.content ≤
+        costRegionPatternWeight pattern := by
+    cases plan with
+    | bvar sourceIndex lookup correspondence availableScope | fvar lookup =>
+        change boundary ∈ ([] : List
+          (TypedCostRegionBoundary source color targetFree)) at membership
+        simp at membership
+    | boundaryApplication constructor rendered outsideCurrent certified
+        certifies =>
+        have equality : boundary = certified.typed := by
+          change boundary ∈ [certified.typed] at membership
+          simpa using membership
+        subst boundary
+        rw [certified.content_eq]
+    | application constructor rendered current preimage notBare children =>
+        exact Nat.le_of_lt
+          (children.boundary_content_weight_lt_application boundary membership)
+    | lambda bodyPlan =>
+        have := bodyPlan.boundary_content_weight_le boundary membership
+        simp only [costRegionPatternWeight]
+        omega
+    | multiLambda bodyPlan =>
+        have := bodyPlan.boundary_content_weight_le boundary membership
+        simp only [costRegionPatternWeight]
+        omega
+    | collection choice selected children =>
+        exact Nat.le_of_lt
+          (children.boundary_content_weight_lt_collection boundary membership)
+    | boundaryCollection currentRejected oppositeChoice oppositeSelected
+        certified certifies =>
+        have equality : boundary = certified.typed := by
+          change boundary ∈ [certified.typed] at membership
+          simpa using membership
+        subst boundary
+        rw [certified.content_eq]
+
+  /-- Every boundary in an argument plan is a strict executable-fuel subterm
+  of its enclosing application. -/
+  theorem CostStaticArgumentPlan.boundary_content_weight_lt_application
+      {source : CIGSLT} {color : CostStaticColor}
+      {targetFree : WellSorted.FreeTypeContext}
+      {sourceBound targetBound : List TypeExpr}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+      {sourceAvailable : List TypeExpr}
+      {outer : OneHoleContext} {wireName : String}
+      {before arguments : List Pattern} {parameters : List TermParam}
+      (plan : CostStaticArgumentPlan source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer wireName before arguments
+        parameters)
+      (boundary : TypedCostRegionBoundary source color targetFree)
+      (membership : boundary ∈ plan.boundaryTable.entries) :
+      costRegionPatternWeight boundary.boundary.content <
+        costRegionPatternWeight (.apply wireName (before ++ arguments)) := by
+    cases plan with
+    | nil =>
+        change boundary ∈ ([] : List
+          (TypedCostRegionBoundary source color targetFree)) at membership
+        simp at membership
+    | cons representation parameterType head tail =>
+        rename_i argument arguments parameter parameters sourceExpected
+        change boundary ∈
+          (TypedCostRegionBoundaryTable.append head.boundaryTable
+            tail.boundaryTable).entries at membership
+        rw [TypedCostRegionBoundaryTable.entries_append] at membership
+        rcases List.mem_append.mp membership with headMembership | tailMembership
+        · have headBound :=
+            head.boundary_content_weight_le boundary headMembership
+          have argumentMembership :
+              argument ∈ before ++ argument :: arguments := by simp
+          have argumentBound :=
+            costRegionPatternWeight_le_listWeight_of_mem argumentMembership
+          simp only [costRegionPatternWeight]
+          omega
+        · have tailBound :=
+            tail.boundary_content_weight_lt_application boundary tailMembership
+          have spineEquality :
+              (before ++ [argument]) ++ arguments =
+                before ++ argument :: arguments := by
+            simp only [List.append_assoc, List.singleton_append]
+          rw [spineEquality] at tailBound
+          exact tailBound
+
+  /-- Every boundary in an element plan is a strict executable-fuel subterm
+  of its enclosing collection. -/
+  theorem CostStaticElementPlan.boundary_content_weight_lt_collection
+      {source : CIGSLT} {color : CostStaticColor}
+      {targetFree : WellSorted.FreeTypeContext}
+      {sourceBound targetBound : List TypeExpr}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+      {sourceAvailable : List TypeExpr}
+      {outer : OneHoleContext} {collectionType : CollType}
+      {before elements : List Pattern} {rest : Option String}
+      {sourceElementType : TypeExpr}
+      (plan : CostStaticElementPlan source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer collectionType before
+        elements rest sourceElementType)
+      (boundary : TypedCostRegionBoundary source color targetFree)
+      (membership : boundary ∈ plan.boundaryTable.entries) :
+      costRegionPatternWeight boundary.boundary.content <
+        costRegionPatternWeight
+          (.collection collectionType (before ++ elements) rest) := by
+    cases plan with
+    | nil =>
+        change boundary ∈ ([] : List
+          (TypedCostRegionBoundary source color targetFree)) at membership
+        simp at membership
+    | cons head tail =>
+        rename_i element elements
+        change boundary ∈
+          (TypedCostRegionBoundaryTable.append head.boundaryTable
+            tail.boundaryTable).entries at membership
+        rw [TypedCostRegionBoundaryTable.entries_append] at membership
+        rcases List.mem_append.mp membership with headMembership | tailMembership
+        · have headBound :=
+            head.boundary_content_weight_le boundary headMembership
+          have elementMembership :
+              element ∈ before ++ element :: elements := by simp
+          have elementBound :=
+            costRegionPatternWeight_le_listWeight_of_mem elementMembership
+          simp only [costRegionPatternWeight]
+          omega
+        · have tailBound :=
+            tail.boundary_content_weight_lt_collection boundary tailMembership
+          have spineEquality :
+              (before ++ [element]) ++ elements =
+                before ++ element :: elements := by
+            simp only [List.append_assoc, List.singleton_append]
+          rw [spineEquality] at tailBound
+          exact tailBound
+end
+
+/-- Every boundary of a certified maximal static root consumes strictly less
+runtime fuel than that root. -/
+theorem CostStaticRegionPlan.boundary_content_weight_lt_of_isStaticRoot
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {sourceBound targetBound : List TypeExpr}
+    {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+    {sourceAvailable : List TypeExpr}
+    {outer : OneHoleContext} {pattern : Pattern} {sourceType : TypeExpr}
+    (plan : CostStaticRegionPlan source color targetFree sourceBound
+      targetBound thinning sourceAvailable outer pattern sourceType)
+    (rootStatic : plan.isStaticRoot = true)
+    (boundary : TypedCostRegionBoundary source color targetFree)
+    (membership : boundary ∈ plan.boundaryTable.entries) :
+    costRegionPatternWeight boundary.boundary.content <
+      costRegionPatternWeight pattern := by
+  cases plan with
+  | application constructor rendered current preimage notBare children =>
+      simpa only [List.nil_append] using
+        children.boundary_content_weight_lt_application boundary membership
+  | collection choice selected children =>
+      simpa only [List.nil_append] using
+        children.boundary_content_weight_lt_collection boundary membership
+  | bvar | fvar | boundaryApplication | lambda | multiLambda |
+      boundaryCollection =>
+      simp [CostStaticRegionPlan.isStaticRoot] at rootStatic
+
+/-- Direct totality of one generated application layer.  Intrinsic
+constructor identity separates static roots from equation-neutral apparatus;
+both branches recurse only through the exact typing derivation supplied by
+the sole generated `LanguageDef`. -/
+theorem CostRegionTree.buildFuel?_isSome_of_wellSorted_application
+    {source : CIGSLT} {targetFree : WellSorted.FreeTypeContext}
+    (fuel : Nat)
+    {available outer : List TypeExpr} {wireName : String}
+    {arguments : List Pattern} {category : String}
+    (succeeds : ∀ {childAvailable childOuter childPattern childType},
+      WellSorted.OpenPatternWellSorted source.costWholeLanguage targetFree
+          childAvailable childType childPattern →
+        costRegionPatternWeight childPattern < fuel →
+        ∃ built,
+          CostRegionTree.buildFuel? (source := source)
+              (targetFree := targetFree) fuel childAvailable childOuter
+              childPattern childType = some built)
+    (wellSorted : WellSorted.OpenPatternWellSorted source.costWholeLanguage
+      targetFree available (.base category) (.apply wireName arguments))
+    (enough : costRegionPatternWeight (.apply wireName arguments) < fuel + 1) :
+    (CostRegionTree.buildFuel? (source := source) (targetFree := targetFree)
+      (fuel + 1) available outer (.apply wireName arguments)
+        (.base category)).isSome = true := by
+  obtain ⟨rule, membership, labelEquality, notBare, argumentsTyped,
+      typeEquality⟩ := wellSorted.1.applicationData
+  have categoryEquality : category = rule.category :=
+    TypeExpr.base.inj typeEquality
+  subst wireName
+  subst category
+  have coreMembership : rule ∈ source.costCoreLanguage.terms := by
+    simpa only [source.costWholeLanguage_terms] using membership
+  obtain ⟨constructor, materializes⟩ :=
+    source.exists_declaredCostConstructor_of_mem rule coreMembership
+  have decoded : source.decodeDeclaredCostConstructor rule.label =
+      some constructor := by
+    rw [← materializes,
+      source.materializeDeclaredCostConstructor_label constructor]
+    exact source.decodeDeclaredCostConstructor_render constructor
+  have rendered : source.renderDeclaredCostConstructor constructor =
+      rule.label :=
+    source.renderDeclaredCostConstructor_eq_of_decode rule.label constructor
+      decoded
+  subst rule
+  have canonicalArguments :
+      Pattern.hasCanonicalBinderMetadataList arguments = true := by
+    simpa [Pattern.hasCanonicalBinderMetadata] using wellSorted.2.1
+  have objectArguments :
+      WellSorted.isObjectPatternList arguments = true := by
+    simpa [WellSorted.isObjectPattern] using wellSorted.2.2.1
+  have argumentBound : costRegionPatternListWeight arguments < fuel := by
+    simp only [costRegionPatternWeight] at enough
+    omega
+  cases role : source.declaredCostConstructorRole constructor with
+  | static color =>
+      let preimage :=
+        costStaticConstructorPreimage source color constructor role
+      have targetCategoryEquality :
+          (source.materializeDeclaredCostConstructor constructor).category =
+          (color.symbols source).sort
+            preimage.sourceConstructor.1.category := by
+        exact preimage.categoryMap
+      have exactWellSorted : WellSorted.OpenPatternWellSorted
+          source.costWholeLanguage targetFree available
+            (mapTypeExpr (color.symbols source)
+              (.base preimage.sourceConstructor.1.category))
+            (.apply
+              (source.materializeDeclaredCostConstructor constructor).label
+                arguments) := by
+        simpa [mapTypeExpr, targetCategoryEquality] using wellSorted
+      obtain ⟨plan, _planned⟩ :=
+        exists_buildCostStaticRegionPlan?_root_of_wellSorted
+          (source := source) (color := color) (targetFree := targetFree)
+          available
+            (.apply
+              (source.materializeDeclaredCostConstructor constructor).label
+                arguments)
+            (.base preimage.sourceConstructor.1.category) exactWellSorted
+      have rootStatic := plan.isStaticRoot_of_current_application constructor
+        decoded role
+      let sourceSort :
+          LangSort source.theory.presentation.presentation.language :=
+        ⟨preimage.sourceConstructor.1.category,
+          LanguageDef.termCategory_mem_of_validate_eq_nil
+            source.theory.presentation.presentation.language
+            source.theory.presentation.presentation.valid
+            preimage.sourceConstructor.1 preimage.sourceConstructor.2⟩
+      have termWellSorted : WellSorted.OpenTermWellSorted
+          source.costWholeLanguage targetFree available
+            (color.mapLangSort source sourceSort)
+            (.apply
+              (source.materializeDeclaredCostConstructor constructor).label
+                arguments) := by
+        unfold WellSorted.OpenTermWellSorted
+        rw [CostStaticColor.mapLangSort_name]
+        dsimp only [sourceSort]
+        simpa only [mapTypeExpr] using exactWellSorted
+      let term : WellSorted.OpenTerm source.costWholeLanguage targetFree
+          available (color.mapLangSort source sourceSort) :=
+        ⟨.apply (source.materializeDeclaredCostConstructor constructor).label
+          arguments, termWellSorted⟩
+      have staticSuccess :=
+        CostRegionTree.buildFuel?_isSome_of_staticPlan (outer := outer)
+          fuel term plan
+          rootStatic (by
+            intro boundary boundaryMembership
+            have boundaryBound :=
+              plan.boundary_content_weight_lt_of_isStaticRoot rootStatic
+                boundary boundaryMembership
+            have childBound :
+                costRegionPatternWeight boundary.boundary.content < fuel := by
+              simp only [costRegionPatternWeight] at enough boundaryBound
+              omega
+            exact succeeds boundary.openPattern.2 childBound)
+      rw [targetCategoryEquality]
+      simpa [term, sourceSort] using staticSuccess
+  | interactionPrincipal =>
+      by_cases quoted : ReflectiveContextSupport.isQuoteConstructor
+          source.costWholeLanguage
+            (source.materializeDeclaredCostConstructor constructor).label = true
+      · have zeroScope :=
+          WellSorted.isWellScopedListAt_zero_of_typed_quote
+            source.costWholeLanguage_validate membership argumentsTyped quoted
+              wellSorted.2.2.2
+        have argumentsTypedAtZero : WellSorted.ArgumentsHaveTypes
+            source.costWholeLanguage targetFree [] arguments
+              (source.materializeDeclaredCostConstructor constructor).params := by
+          simpa using argumentsTyped.restrictOuterOfScoped
+            (inner := []) (outer := available) zeroScope
+        have reflectiveAtZero :=
+          WellSorted.reflectiveScopeSafeListAt_zero_of_typed_quote
+            source.costWholeLanguage_validate membership argumentsTyped quoted
+              wellSorted.2.2.2
+        obtain ⟨children, childrenBuilt⟩ :=
+          CostRegionArgumentTrees.exists_build?_eq_some_of_wellSorted
+            (fuelBound := fuel)
+            (outer := available ++ outer)
+            (fun childAvailable childOuter childPattern childType =>
+              CostRegionTree.buildFuel? (source := source)
+                (targetFree := targetFree) fuel childAvailable childOuter
+                  childPattern childType)
+            (fun childWellSorted childEnough =>
+              succeeds childWellSorted childEnough)
+            argumentsTypedAtZero canonicalArguments objectArguments
+              reflectiveAtZero argumentBound
+        have notBareChecked : WellSorted.usesBareCollection?
+            (source.materializeDeclaredCostConstructor constructor) = false :=
+          Bool.eq_false_of_not_eq_true (fun checked =>
+            notBare
+              ((WellSorted.usesBareCollection?_eq_true_iff
+                (source.materializeDeclaredCostConstructor constructor)).mp
+                  checked))
+        have dispatched :=
+          source.decodeCostRegionApplication?_interactionPrincipal
+            (source.materializeDeclaredCostConstructor constructor).label
+              constructor decoded role
+        simp only [CostRegionTree.buildFuel?]
+        rw [dispatched]
+        unfold CostRegionTree.buildNeutralApplication?
+        dsimp only
+        simp only [rendered, notBareChecked, quoted, childrenBuilt]
+        simp
+      · have ordinary : ReflectiveContextSupport.isQuoteConstructor
+            source.costWholeLanguage
+              (source.materializeDeclaredCostConstructor constructor).label =
+              false := Bool.eq_false_of_not_eq_true quoted
+        have reflectiveArguments :=
+          WellSorted.reflectiveScopeSafeListAt_of_nonquote ordinary
+            wellSorted.2.2.2
+        obtain ⟨children, childrenBuilt⟩ :=
+          CostRegionArgumentTrees.exists_build?_eq_some_of_wellSorted
+            (fuelBound := fuel)
+            (outer := outer)
+            (fun childAvailable childOuter childPattern childType =>
+              CostRegionTree.buildFuel? (source := source)
+                (targetFree := targetFree) fuel childAvailable childOuter
+                  childPattern childType)
+            (fun childWellSorted childEnough =>
+              succeeds childWellSorted childEnough)
+            argumentsTyped canonicalArguments objectArguments
+              reflectiveArguments argumentBound
+        have notBareChecked : WellSorted.usesBareCollection?
+            (source.materializeDeclaredCostConstructor constructor) = false :=
+          Bool.eq_false_of_not_eq_true (fun checked =>
+            notBare
+              ((WellSorted.usesBareCollection?_eq_true_iff
+                (source.materializeDeclaredCostConstructor constructor)).mp
+                  checked))
+        have dispatched :=
+          source.decodeCostRegionApplication?_interactionPrincipal
+            (source.materializeDeclaredCostConstructor constructor).label
+              constructor decoded role
+        simp only [CostRegionTree.buildFuel?]
+        rw [dispatched]
+        unfold CostRegionTree.buildNeutralApplication?
+        dsimp only
+        simp only [rendered, notBareChecked, ordinary, childrenBuilt]
+        simp
+  | apparatus kind =>
+      by_cases quoted : ReflectiveContextSupport.isQuoteConstructor
+          source.costWholeLanguage
+            (source.materializeDeclaredCostConstructor constructor).label = true
+      · have zeroScope :=
+          WellSorted.isWellScopedListAt_zero_of_typed_quote
+            source.costWholeLanguage_validate membership argumentsTyped quoted
+              wellSorted.2.2.2
+        have argumentsTypedAtZero : WellSorted.ArgumentsHaveTypes
+            source.costWholeLanguage targetFree [] arguments
+              (source.materializeDeclaredCostConstructor constructor).params := by
+          simpa using argumentsTyped.restrictOuterOfScoped
+            (inner := []) (outer := available) zeroScope
+        have reflectiveAtZero :=
+          WellSorted.reflectiveScopeSafeListAt_zero_of_typed_quote
+            source.costWholeLanguage_validate membership argumentsTyped quoted
+              wellSorted.2.2.2
+        obtain ⟨children, childrenBuilt⟩ :=
+          CostRegionArgumentTrees.exists_build?_eq_some_of_wellSorted
+            (fuelBound := fuel)
+            (outer := available ++ outer)
+            (fun childAvailable childOuter childPattern childType =>
+              CostRegionTree.buildFuel? (source := source)
+                (targetFree := targetFree) fuel childAvailable childOuter
+                  childPattern childType)
+            (fun childWellSorted childEnough =>
+              succeeds childWellSorted childEnough)
+            argumentsTypedAtZero canonicalArguments objectArguments
+              reflectiveAtZero argumentBound
+        have notBareChecked : WellSorted.usesBareCollection?
+            (source.materializeDeclaredCostConstructor constructor) = false :=
+          Bool.eq_false_of_not_eq_true (fun checked =>
+            notBare
+              ((WellSorted.usesBareCollection?_eq_true_iff
+                (source.materializeDeclaredCostConstructor constructor)).mp
+                  checked))
+        have dispatched := source.decodeCostRegionApplication?_apparatus
+          (source.materializeDeclaredCostConstructor constructor).label kind
+            constructor decoded role
+        simp only [CostRegionTree.buildFuel?]
+        rw [dispatched]
+        unfold CostRegionTree.buildNeutralApplication?
+        dsimp only
+        simp only [rendered, notBareChecked, quoted, childrenBuilt]
+        simp
+      · have ordinary : ReflectiveContextSupport.isQuoteConstructor
+            source.costWholeLanguage
+              (source.materializeDeclaredCostConstructor constructor).label =
+              false := Bool.eq_false_of_not_eq_true quoted
+        have reflectiveArguments :=
+          WellSorted.reflectiveScopeSafeListAt_of_nonquote ordinary
+            wellSorted.2.2.2
+        obtain ⟨children, childrenBuilt⟩ :=
+          CostRegionArgumentTrees.exists_build?_eq_some_of_wellSorted
+            (fuelBound := fuel)
+            (outer := outer)
+            (fun childAvailable childOuter childPattern childType =>
+              CostRegionTree.buildFuel? (source := source)
+                (targetFree := targetFree) fuel childAvailable childOuter
+                  childPattern childType)
+            (fun childWellSorted childEnough =>
+              succeeds childWellSorted childEnough)
+            argumentsTyped canonicalArguments objectArguments
+              reflectiveArguments argumentBound
+        have notBareChecked : WellSorted.usesBareCollection?
+            (source.materializeDeclaredCostConstructor constructor) = false :=
+          Bool.eq_false_of_not_eq_true (fun checked =>
+            notBare
+              ((WellSorted.usesBareCollection?_eq_true_iff
+                (source.materializeDeclaredCostConstructor constructor)).mp
+                  checked))
+        have dispatched := source.decodeCostRegionApplication?_apparatus
+          (source.materializeDeclaredCostConstructor constructor).label kind
+            constructor decoded role
+        simp only [CostRegionTree.buildFuel?]
+        rw [dispatched]
+        unfold CostRegionTree.buildNeutralApplication?
+        dsimp only
+        simp only [rendered, notBareChecked, ordinary, childrenBuilt]
+        simp
+
+/-- Direct totality of one authored bare-collection layer.  The executable
+candidate identifies its intrinsic static colour and exact authored element
+fibre before the region planner runs; a colour-blind declaration scan cannot
+enter this proof. -/
+theorem CostRegionTree.buildFuel?_isSome_of_wellSorted_bareCollection
+    {source : CIGSLT} {targetFree : WellSorted.FreeTypeContext}
+    (fuel : Nat)
+    {available outer : List TypeExpr} {collectionType : CollType}
+    {elements : List Pattern} {rest : Option String} {category : String}
+    (succeeds : ∀ {childAvailable childOuter childPattern childType},
+      WellSorted.OpenPatternWellSorted source.costWholeLanguage targetFree
+          childAvailable childType childPattern →
+        costRegionPatternWeight childPattern < fuel →
+        ∃ built,
+          CostRegionTree.buildFuel? (source := source)
+              (targetFree := targetFree) fuel childAvailable childOuter
+              childPattern childType = some built)
+    (wellSorted : WellSorted.OpenPatternWellSorted source.costWholeLanguage
+      targetFree available (.base category)
+        (.collection collectionType elements rest))
+    (enough : costRegionPatternWeight
+      (.collection collectionType elements rest) < fuel + 1) :
+    (CostRegionTree.buildFuel? (source := source) (targetFree := targetFree)
+      (fuel + 1) available outer (.collection collectionType elements rest)
+        (.base category)).isSome = true := by
+  rcases wellSorted.1.collectionData with
+      ⟨elementType, elementsTyped, impossible⟩ |
+      ⟨rule, parameterName, targetElementType, membership, parameterShape,
+        elementsTyped, typeEquality⟩
+  · cases impossible
+  · have categoryEquality : category = rule.category :=
+      TypeExpr.base.inj typeEquality
+    subst category
+    have objectElements : WellSorted.isObjectPatternList elements = true := by
+      have parts : rest.isNone = true ∧
+          WellSorted.isObjectPatternList elements = true := by
+        simpa [WellSorted.isObjectPattern] using wellSorted.2.2.1
+      exact parts.2
+    obtain ⟨color, choice, selectedWithEmptySuffix⟩ :=
+      exists_costStaticCollectionTypingChoice?_of_typed_bare source targetFree
+        available [] collectionType elements rest rule parameterName
+          targetElementType membership parameterShape elementsTyped
+            objectElements
+    have selected : costStaticCollectionTypingChoice? source color targetFree
+        available collectionType elements (.base rule.category) = some choice :=
+      by simpa using selectedWithEmptySuffix
+    have selectionSound := costStaticCollectionTypingChoice?_eq_some
+      source color targetFree available collectionType elements
+        (.base rule.category) choice selected
+    rcases selectionSound with
+        ⟨sourceElementType, choiceEquality, expectedEquality, checked⟩ |
+        ⟨sourceRule, sourceElementType, choiceEquality, sourceMembership,
+          wrapped, expectedEquality, sourceParameterName, sourceParameterShape,
+          checked⟩
+    · simp [mapTypeExpr] at expectedEquality
+    · subst choice
+      have selectedExact : costStaticCollectionTypingChoice? source color
+          targetFree available collectionType elements
+            (mapTypeExpr (color.symbols source)
+              (.base sourceRule.category)) =
+            some (.bare sourceRule sourceElementType) := by
+        rw [← expectedEquality]
+        exact selected
+      have exactWellSorted : WellSorted.OpenPatternWellSorted
+          source.costWholeLanguage targetFree available
+            (mapTypeExpr (color.symbols source)
+              (.base sourceRule.category))
+            (.collection collectionType elements rest) := by
+        rw [← expectedEquality]
+        exact wellSorted
+      obtain ⟨plan, _planned⟩ :=
+        exists_buildCostStaticRegionPlan?_root_of_wellSorted
+          (source := source) (color := color) (targetFree := targetFree)
+          available (.collection collectionType elements rest)
+            (.base sourceRule.category) exactWellSorted
+      have rootStatic := plan.isStaticRoot_of_current_collection
+        (.bare sourceRule sourceElementType) selectedExact
+      let sourceSort :
+          LangSort source.theory.presentation.presentation.language :=
+        ⟨sourceRule.category,
+          LanguageDef.termCategory_mem_of_validate_eq_nil
+            source.theory.presentation.presentation.language
+            source.theory.presentation.presentation.valid sourceRule
+              sourceMembership⟩
+      have termWellSorted : WellSorted.OpenTermWellSorted
+          source.costWholeLanguage targetFree available
+            (color.mapLangSort source sourceSort)
+            (.collection collectionType elements rest) := by
+        unfold WellSorted.OpenTermWellSorted
+        rw [CostStaticColor.mapLangSort_name]
+        dsimp only [sourceSort]
+        simpa only [mapTypeExpr] using exactWellSorted
+      let term : WellSorted.OpenTerm source.costWholeLanguage targetFree
+          available (color.mapLangSort source sourceSort) :=
+        ⟨.collection collectionType elements rest, termWellSorted⟩
+      have staticSuccess :=
+        CostRegionTree.buildFuel?_isSome_of_staticPlan (outer := outer)
+          fuel term plan rootStatic (by
+            intro boundary boundaryMembership
+            have boundaryBound :=
+              plan.boundary_content_weight_lt_of_isStaticRoot rootStatic
+                boundary boundaryMembership
+            have childBound :
+                costRegionPatternWeight boundary.boundary.content < fuel := by
+              simp only [costRegionPatternWeight] at enough boundaryBound
+              omega
+            exact succeeds boundary.openPattern.2 childBound)
+      rw [expectedEquality]
+      simpa [mapTypeExpr, term, sourceSort] using staticSuccess
+
+/-- The fuelled executable region compiler is total on the sole admitted
+open-object carrier.  The proof is syntax-directed for structural frames and
+uses the two declaration-derived root lemmas above for applications and bare
+collections; no pre-existing region tree is assumed. -/
+theorem CostRegionTree.buildFuel?_isSome_of_wellSorted
+    {source : CIGSLT} {targetFree : WellSorted.FreeTypeContext} :
+    ∀ fuel {available outer : List TypeExpr} {pattern : Pattern}
+      {type : TypeExpr},
+      WellSorted.OpenPatternWellSorted source.costWholeLanguage targetFree
+          available type pattern →
+      costRegionPatternWeight pattern < fuel →
+      (CostRegionTree.buildFuel? (source := source)
+        (targetFree := targetFree) fuel available outer pattern type).isSome =
+          true := by
+  intro fuel
+  induction fuel with
+  | zero =>
+      intro available outer pattern type wellSorted enough
+      omega
+  | succ fuel inductionHypothesis =>
+      intro available outer pattern type wellSorted enough
+      cases pattern with
+      | bvar index =>
+          cases wellSorted.1 with
+          | bvar lookup =>
+              have inside : index < available.length :=
+                (List.getElem?_eq_some_iff.mp lookup).1
+              have extendedLookup : (available ++ outer)[index]? = some type := by
+                simpa [List.getElem?_append_left inside] using lookup
+              simp [CostRegionTree.buildFuel?, extendedLookup]
+      | fvar name =>
+          cases wellSorted.1 with
+          | fvar lookup =>
+              simp [CostRegionTree.buildFuel?, lookup]
+      | apply wireName arguments =>
+          cases type with
+          | base category =>
+              exact
+                CostRegionTree.buildFuel?_isSome_of_wellSorted_application fuel
+                  (fun childWellSorted childEnough =>
+                    Option.isSome_iff_exists.mp
+                      (inductionHypothesis childWellSorted childEnough))
+                  wellSorted enough
+          | collection collectionType elementType => cases wellSorted.1
+          | arrow domain codomain => cases wellSorted.1
+          | multiBinder domain => cases wellSorted.1
+      | lambda binder body =>
+          cases type with
+          | arrow domain codomain =>
+              cases wellSorted.1 with
+              | lambda bodyTyped =>
+                  have bodyCanonical :
+                      body.hasCanonicalBinderMetadata = true := by
+                    have parts : binder.isNone = true ∧
+                        body.hasCanonicalBinderMetadata = true := by
+                      simpa [Pattern.hasCanonicalBinderMetadata] using
+                        wellSorted.2.1
+                    exact parts.2
+                  have bodyObject : WellSorted.isObjectPattern body = true := by
+                    simpa [WellSorted.isObjectPattern] using
+                      wellSorted.2.2.1
+                  have bodyReflective : WellSorted.ReflectiveScopeSafeAt
+                      source.costWholeLanguage (domain :: available).length
+                        body := by
+                    intro presentation membership
+                    have parent := wellSorted.2.2.2 presentation membership
+                    simpa [binderSafeAt, Nat.add_comm] using parent
+                  have bodyWellSorted : WellSorted.OpenPatternWellSorted
+                      source.costWholeLanguage targetFree
+                        (domain :: available) codomain body :=
+                    ⟨bodyTyped, bodyCanonical, bodyObject, bodyReflective⟩
+                  have bodyBound : costRegionPatternWeight body < fuel := by
+                    simp only [costRegionPatternWeight] at enough
+                    omega
+                  obtain ⟨builtBody, bodyBuilt⟩ := Option.isSome_iff_exists.mp
+                    (inductionHypothesis (outer := outer) bodyWellSorted
+                      bodyBound)
+                  simp [CostRegionTree.buildFuel?, bodyBuilt]
+          | base category => cases wellSorted.1
+          | collection collectionType elementType => cases wellSorted.1
+          | multiBinder domain => cases wellSorted.1
+      | multiLambda arity binders body =>
+          cases type with
+          | arrow domain codomain =>
+              cases domain with
+              | multiBinder binderType =>
+                  cases wellSorted.1 with
+                  | multiLambda bodyTyped =>
+                      have bodyCanonical :
+                          body.hasCanonicalBinderMetadata = true := by
+                        have parts : binders.isEmpty = true ∧
+                            body.hasCanonicalBinderMetadata = true := by
+                          simpa [Pattern.hasCanonicalBinderMetadata] using
+                            wellSorted.2.1
+                        exact parts.2
+                      have bodyObject :
+                          WellSorted.isObjectPattern body = true := by
+                        simpa [WellSorted.isObjectPattern] using
+                          wellSorted.2.2.1
+                      have bodyReflective : WellSorted.ReflectiveScopeSafeAt
+                          source.costWholeLanguage
+                            (List.replicate arity binderType ++ available).length
+                              body := by
+                        intro presentation membership
+                        have parent :=
+                          wellSorted.2.2.2 presentation membership
+                        simpa [binderSafeAt, List.length_append,
+                          List.length_replicate, Nat.add_comm,
+                          Nat.add_left_comm, Nat.add_assoc] using parent
+                      have bodyWellSorted : WellSorted.OpenPatternWellSorted
+                          source.costWholeLanguage targetFree
+                            (List.replicate arity binderType ++ available)
+                              codomain body :=
+                        ⟨bodyTyped, bodyCanonical, bodyObject, bodyReflective⟩
+                      have bodyBound : costRegionPatternWeight body < fuel := by
+                        simp only [costRegionPatternWeight] at enough
+                        omega
+                      obtain ⟨builtBody, bodyBuilt⟩ :=
+                        Option.isSome_iff_exists.mp
+                          (inductionHypothesis (outer := outer) bodyWellSorted
+                            bodyBound)
+                      simp [CostRegionTree.buildFuel?, bodyBuilt]
+              | base category => cases wellSorted.1
+              | collection collectionType elementType => cases wellSorted.1
+              | arrow first second => cases wellSorted.1
+          | base category => cases wellSorted.1
+          | collection collectionType elementType => cases wellSorted.1
+          | multiBinder domain => cases wellSorted.1
+      | subst body replacement =>
+          have impossible : WellSorted.isObjectPattern
+              (.subst body replacement) = true := wellSorted.2.2.1
+          simp [WellSorted.isObjectPattern] at impossible
+      | collection collectionType elements rest =>
+          cases type with
+          | collection actual elementType =>
+              cases wellSorted.1 with
+              | collection elementsTyped =>
+                  have canonicalElements :
+                      Pattern.hasCanonicalBinderMetadataList elements = true := by
+                    simpa [Pattern.hasCanonicalBinderMetadata] using
+                      wellSorted.2.1
+                  have objectParts : rest.isNone = true ∧
+                      WellSorted.isObjectPatternList elements = true := by
+                    simpa [WellSorted.isObjectPattern] using
+                      wellSorted.2.2.1
+                  have reflectiveElements : ∀ presentation ∈
+                        source.costWholeLanguage.reflectivePresentations,
+                      binderSafeListAt presentation.quoteConstructor
+                        available.length elements = true := by
+                    intro presentation membership
+                    simpa [binderSafeAt] using
+                      wellSorted.2.2.2 presentation membership
+                  have elementBound :
+                      costRegionPatternListWeight elements < fuel := by
+                    simp only [costRegionPatternWeight] at enough
+                    omega
+                  obtain ⟨children, childrenBuilt⟩ :=
+                    CostRegionElementTrees.exists_build?_eq_some_of_wellSorted
+                      (fuelBound := fuel) (outer := outer)
+                      (fun childAvailable childOuter childPattern childType =>
+                        CostRegionTree.buildFuel? (source := source)
+                          (targetFree := targetFree) fuel childAvailable
+                            childOuter childPattern childType)
+                      (fun childWellSorted childEnough =>
+                        Option.isSome_iff_exists.mp
+                          (inductionHypothesis childWellSorted childEnough))
+                      elementsTyped canonicalElements objectParts.2
+                        reflectiveElements elementBound
+                  simp [CostRegionTree.buildFuel?, childrenBuilt]
+          | base category =>
+              exact
+                CostRegionTree.buildFuel?_isSome_of_wellSorted_bareCollection
+                  fuel
+                  (fun childWellSorted childEnough =>
+                    Option.isSome_iff_exists.mp
+                      (inductionHypothesis childWellSorted childEnough))
+                  wellSorted enough
+          | arrow domain codomain => cases wellSorted.1
+          | multiBinder domain => cases wellSorted.1
+/-- Completeness of the fuelled executable elaborator relative to the
+proof-relevant tree relation.  Object-pattern admission excludes explicit
+substitution syntax; every structural child and every certified static
+boundary is strictly smaller than the enclosing syntax, so the same finite
+fuel measure drives both ordinary and alternating-region recursion. -/
+theorem CostRegionTree.buildFuel?_isSome_of_tree
+    {source : CIGSLT} {targetFree : WellSorted.FreeTypeContext} :
+    ∀ fuel {available outer : List TypeExpr} {pattern : Pattern}
+      {type : TypeExpr},
+      CostRegionTree source targetFree available outer pattern type →
+      WellSorted.isObjectPattern pattern = true →
+      costRegionPatternWeight pattern < fuel →
+      (CostRegionTree.buildFuel? (source := source)
+        (targetFree := targetFree) fuel available outer pattern type).isSome =
+          true := by
+  intro fuel
+  induction fuel with
+  | zero =>
+      intro available outer pattern type tree object enough
+      omega
+  | succ fuel inductionHypothesis =>
+      intro available outer pattern type tree object enough
+      cases tree with
+      | bvar lookup =>
+          simp [CostRegionTree.buildFuel?, lookup]
+      | fvar lookup =>
+          simp [CostRegionTree.buildFuel?, lookup]
+      | static node children =>
+          apply CostRegionTree.buildFuel?_isSome_of_staticPlan fuel node.term
+            node.plan node.rootStatic
+          intro boundary membership
+          obtain ⟨child⟩ :=
+            children.exists_tree_of_mem boundary membership
+          have childBound :
+              costRegionPatternWeight boundary.boundary.content < fuel := by
+            have boundaryBound :=
+              node.plan.boundary_content_weight_lt_of_isStaticRoot
+                node.rootStatic boundary membership
+            omega
+          exact Option.isSome_iff_exists.mp
+            (inductionHypothesis child boundary.contentObjectPattern childBound)
+      | neutralApplicationOrdinary membership notBare constructor materializes
+          neutral ordinary children =>
+          rename_i rule arguments
+          subst rule
+          have argumentObjects :
+              WellSorted.isObjectPatternList arguments = true := by
+            simpa [WellSorted.isObjectPattern] using object
+          have argumentBound :
+              costRegionPatternListWeight arguments < fuel := by
+            simp only [costRegionPatternWeight] at enough
+            omega
+          obtain ⟨builtChildren, childrenBuild⟩ :=
+            CostRegionArgumentTrees.exists_build?_eq_some_of_trees
+              (fuelBound := fuel)
+              (fun available outer pattern type =>
+                CostRegionTree.buildFuel? (source := source)
+                  (targetFree := targetFree) fuel available outer pattern type)
+              (fun child childObject childBound =>
+                Option.isSome_iff_exists.mp
+                  (inductionHypothesis child childObject childBound))
+              children argumentObjects argumentBound
+          have decoded : source.decodeDeclaredCostConstructor
+              (source.materializeDeclaredCostConstructor constructor).label =
+                some constructor := by
+            rw [source.materializeDeclaredCostConstructor_label constructor]
+            exact source.decodeDeclaredCostConstructor_render constructor
+          have rendered :
+              source.renderDeclaredCostConstructor constructor =
+                (source.materializeDeclaredCostConstructor constructor).label :=
+            (source.materializeDeclaredCostConstructor_label constructor).symm
+          have notBareChecked :
+              WellSorted.usesBareCollection?
+                  (source.materializeDeclaredCostConstructor constructor) = false :=
+            Bool.eq_false_of_not_eq_true (fun checked =>
+              notBare
+                ((WellSorted.usesBareCollection?_eq_true_iff
+                  (source.materializeDeclaredCostConstructor constructor)).mp
+                    checked))
+          rcases neutral with role | ⟨kind, role⟩
+          · have dispatched :=
+              source.decodeCostRegionApplication?_interactionPrincipal
+                (source.materializeDeclaredCostConstructor constructor).label
+                  constructor decoded role
+            simp only [CostRegionTree.buildFuel?]
+            rw [dispatched]
+            unfold CostRegionTree.buildNeutralApplication?
+            dsimp only
+            simp only [rendered, notBareChecked, ordinary, childrenBuild]
+            simp
+          · have dispatched :=
+              source.decodeCostRegionApplication?_apparatus
+                (source.materializeDeclaredCostConstructor constructor).label
+                  kind constructor decoded role
+            simp only [CostRegionTree.buildFuel?]
+            rw [dispatched]
+            unfold CostRegionTree.buildNeutralApplication?
+            dsimp only
+            simp only [rendered, notBareChecked, ordinary, childrenBuild]
+            simp
+      | neutralApplicationQuote membership notBare constructor materializes
+          neutral quoted children =>
+          rename_i rule arguments
+          subst rule
+          have argumentObjects :
+              WellSorted.isObjectPatternList arguments = true := by
+            simpa [WellSorted.isObjectPattern] using object
+          have argumentBound :
+              costRegionPatternListWeight arguments < fuel := by
+            simp only [costRegionPatternWeight] at enough
+            omega
+          obtain ⟨builtChildren, childrenBuild⟩ :=
+            CostRegionArgumentTrees.exists_build?_eq_some_of_trees
+              (fuelBound := fuel)
+              (fun available outer pattern type =>
+                CostRegionTree.buildFuel? (source := source)
+                  (targetFree := targetFree) fuel available outer pattern type)
+              (fun child childObject childBound =>
+                Option.isSome_iff_exists.mp
+                  (inductionHypothesis child childObject childBound))
+              children argumentObjects argumentBound
+          have decoded : source.decodeDeclaredCostConstructor
+              (source.materializeDeclaredCostConstructor constructor).label =
+                some constructor := by
+            rw [source.materializeDeclaredCostConstructor_label constructor]
+            exact source.decodeDeclaredCostConstructor_render constructor
+          have rendered :
+              source.renderDeclaredCostConstructor constructor =
+                (source.materializeDeclaredCostConstructor constructor).label :=
+            (source.materializeDeclaredCostConstructor_label constructor).symm
+          have notBareChecked :
+              WellSorted.usesBareCollection?
+                  (source.materializeDeclaredCostConstructor constructor) = false :=
+            Bool.eq_false_of_not_eq_true (fun checked =>
+              notBare
+                ((WellSorted.usesBareCollection?_eq_true_iff
+                  (source.materializeDeclaredCostConstructor constructor)).mp
+                    checked))
+          rcases neutral with role | ⟨kind, role⟩
+          · have dispatched :=
+              source.decodeCostRegionApplication?_interactionPrincipal
+                (source.materializeDeclaredCostConstructor constructor).label
+                  constructor decoded role
+            simp only [CostRegionTree.buildFuel?]
+            rw [dispatched]
+            unfold CostRegionTree.buildNeutralApplication?
+            dsimp only
+            simp only [rendered, notBareChecked, quoted, childrenBuild]
+            simp
+          · have dispatched :=
+              source.decodeCostRegionApplication?_apparatus
+                (source.materializeDeclaredCostConstructor constructor).label
+                  kind constructor decoded role
+            simp only [CostRegionTree.buildFuel?]
+            rw [dispatched]
+            unfold CostRegionTree.buildNeutralApplication?
+            dsimp only
+            simp only [rendered, notBareChecked, quoted, childrenBuild]
+            simp
+      | lambda bodyTree =>
+          rename_i binder body domain codomain
+          have bodyObject : WellSorted.isObjectPattern body = true := by
+            simpa [WellSorted.isObjectPattern] using object
+          have bodyBound : costRegionPatternWeight body < fuel := by
+            simp only [costRegionPatternWeight] at enough
+            omega
+          obtain ⟨builtBody, bodyBuild⟩ := Option.isSome_iff_exists.mp
+            (inductionHypothesis bodyTree bodyObject bodyBound)
+          simp [CostRegionTree.buildFuel?, bodyBuild]
+      | multiLambda bodyTree =>
+          rename_i arity binders body domain codomain
+          have bodyObject : WellSorted.isObjectPattern body = true := by
+            simpa [WellSorted.isObjectPattern] using object
+          have bodyBound : costRegionPatternWeight body < fuel := by
+            simp only [costRegionPatternWeight] at enough
+            omega
+          obtain ⟨builtBody, bodyBuild⟩ := Option.isSome_iff_exists.mp
+            (inductionHypothesis bodyTree bodyObject bodyBound)
+          simp [CostRegionTree.buildFuel?, bodyBuild]
+      | subst bodyTree replacementTree =>
+          simp [WellSorted.isObjectPattern] at object
+      | collection children =>
+          rename_i collectionType elements rest elementType
+          have objectParts :
+              rest.isNone = true ∧
+                WellSorted.isObjectPatternList elements = true := by
+            change (rest.isNone &&
+              WellSorted.isObjectPatternList elements) = true at object
+            simpa only [Bool.and_eq_true] using object
+          have elementObjects :
+              WellSorted.isObjectPatternList elements = true := objectParts.2
+          have elementBound :
+              costRegionPatternListWeight elements < fuel := by
+            simp only [costRegionPatternWeight] at enough
+            omega
+          obtain ⟨builtChildren, childrenBuild⟩ :=
+            CostRegionElementTrees.exists_build?_eq_some_of_trees
+              (fuelBound := fuel)
+              (fun available outer pattern type =>
+                CostRegionTree.buildFuel? (source := source)
+                  (targetFree := targetFree) fuel available outer pattern type)
+              (fun child childObject childBound =>
+                Option.isSome_iff_exists.mp
+                  (inductionHypothesis child childObject childBound))
+              children elementObjects elementBound
+          simp [CostRegionTree.buildFuel?, childrenBuild]
+
+/-- The canonical executable fuel bound is the raw syntax weight plus one.
+Every immediate structural child is smaller, and every recursive static
+boundary is strictly smaller by
+`CostStaticRegionPlan.boundary_content_weight_lt_of_isStaticRoot`. -/
+def CostRegionTree.build? {source : CIGSLT}
+    {targetFree : WellSorted.FreeTypeContext}
+    (available outer : List TypeExpr) (pattern : Pattern)
+    (expected : TypeExpr) :
+    Option (CostRegionTree source targetFree available outer pattern expected) :=
+  CostRegionTree.buildFuel? (costRegionPatternWeight pattern + 1) available
+    outer pattern expected
+
+/-- The canonical executable fuel bound succeeds on every admitted open
+object.  This is the direct compiler-totality theorem: unlike the relative
+tree theorem below, it assumes only the sole `LanguageDef` carrier. -/
+theorem CostRegionTree.build?_isSome_of_wellSorted
+    {source : CIGSLT} {targetFree : WellSorted.FreeTypeContext}
+    {available outer : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
+    (wellSorted : WellSorted.OpenPatternWellSorted source.costWholeLanguage
+      targetFree available type pattern) :
+    (CostRegionTree.build? (source := source) (targetFree := targetFree)
+      available outer pattern type).isSome = true := by
+  apply CostRegionTree.buildFuel?_isSome_of_wellSorted
+    (costRegionPatternWeight pattern + 1) wellSorted
+  omega
+
+/-- Witness form of direct executable totality. -/
+theorem CostRegionTree.exists_build?_eq_some_of_wellSorted
+    {source : CIGSLT} {targetFree : WellSorted.FreeTypeContext}
+    {available outer : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
+    (wellSorted : WellSorted.OpenPatternWellSorted source.costWholeLanguage
+      targetFree available type pattern) :
+    ∃ built,
+      CostRegionTree.build? (source := source) (targetFree := targetFree)
+        available outer pattern type = some built :=
+  Option.isSome_iff_exists.mp
+    (CostRegionTree.build?_isSome_of_wellSorted wellSorted)
+
+/-- The canonical syntax-weight fuel is sufficient for every admitted
+proof-relevant region decomposition. -/
+theorem CostRegionTree.build?_isSome_of_tree
+    {source : CIGSLT} {targetFree : WellSorted.FreeTypeContext}
+    {available outer : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
+    (tree : CostRegionTree source targetFree available outer pattern type)
+    (object : WellSorted.isObjectPattern pattern = true) :
+    (CostRegionTree.build? (source := source) (targetFree := targetFree)
+      available outer pattern type).isSome = true := by
+  apply CostRegionTree.buildFuel?_isSome_of_tree
+    (costRegionPatternWeight pattern + 1) tree object
+  omega
+
+/-- Witness form of executable completeness.  The returned tree may choose a
+different but semantically admissible static decomposition; existence is the
+appropriate statement before chooser-independence is applied to normalized
+representatives. -/
+theorem CostRegionTree.exists_build?_eq_some_of_tree
+    {source : CIGSLT} {targetFree : WellSorted.FreeTypeContext}
+    {available outer : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
+    (tree : CostRegionTree source targetFree available outer pattern type)
+    (object : WellSorted.isObjectPattern pattern = true) :
+    ∃ built, CostRegionTree.build? (source := source) (targetFree := targetFree)
+      available outer pattern type = some built :=
+  Option.isSome_iff_exists.mp (tree.build?_isSome_of_tree object)
+
+/-- Deterministically elaborate one admitted open Cost term into its complete
+proof-relevant alternating region tree.  Totality is discharged from the
+sole `LanguageDef`-derived open carrier; no default tree and no classical
+choice enter the executable path. -/
+def CostRegionTree.buildOpenTerm {source : CIGSLT}
+    {targetFree : WellSorted.FreeTypeContext}
+    {targetBound : List TypeExpr} {targetSort : LangSort source.costWholeLanguage}
+    (term : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
+      targetSort) :
+    CostRegionTree source targetFree targetBound [] term.1
+      (.base targetSort.1) :=
+  let result := CostRegionTree.build? (source := source)
+    (targetFree := targetFree) targetBound [] term.1 (.base targetSort.1)
+  result.get (CostRegionTree.build?_isSome_of_wellSorted term.2)
+
+/-- The deterministic elaboration is exactly the tree returned by the
+executable builder, not merely an extensionally related reconstruction. -/
+theorem CostRegionTree.build?_eq_some_buildOpenTerm {source : CIGSLT}
+    {targetFree : WellSorted.FreeTypeContext}
+    {targetBound : List TypeExpr} {targetSort : LangSort source.costWholeLanguage}
+    (term : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
+      targetSort) :
+    CostRegionTree.build? (source := source) (targetFree := targetFree)
+        targetBound [] term.1 (.base targetSort.1) =
+      some (CostRegionTree.buildOpenTerm (source := source) term) := by
+  exact (Option.some_get
+    (CostRegionTree.build?_isSome_of_wellSorted term.2)).symm
+
+/-! ## Proof-relevant open Cost elaborations
+
+The generated `LanguageDef` remains the sole authored presentation.  An
+elaboration is additional checked evidence for one term of that presentation:
+it records every static colour, source fibre, collection declaration, binder
+slice, and finite boundary selected by decomposition.  Compact raw syntax is
+therefore an erasure of this carrier, not the source of those choices. -/
+
+/-- One proof-relevant elaboration of an exact typed open Cost term.  The raw
+term is an index, so two alternative elaborations of the same compact syntax
+are represented explicitly rather than being silently selected by list
+order. -/
+structure CostOpenElaboration (source : CIGSLT)
+    {targetFree : WellSorted.FreeTypeContext}
+    {targetBound : List TypeExpr} {targetSort : LangSort source.costWholeLanguage}
+    (term : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
+      targetSort) where
+  tree : CostRegionTree source targetFree targetBound [] term.1
+    (.base targetSort.1)
+
+/-- Intrinsically typed proof-relevant Cost syntax, paired with its checked
+compact representation. -/
+abbrev CostElabTerm (source : CIGSLT)
+    (targetFree : WellSorted.FreeTypeContext) (targetBound : List TypeExpr)
+    (targetSort : LangSort source.costWholeLanguage) :=
+  Σ term : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
+      targetSort,
+    CostOpenElaboration source term
+
+namespace CostOpenElaboration
+
+/-- The total executable compiler chooses one elaboration of an admitted
+compact term.  This choice is operational data; exact chooser independence
+is a separate theorem boundary. -/
+def compile (source : CIGSLT)
+    {targetFree : WellSorted.FreeTypeContext}
+    {targetBound : List TypeExpr} {targetSort : LangSort source.costWholeLanguage}
+    (term : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
+      targetSort) :
+    CostOpenElaboration source term :=
+  ⟨CostRegionTree.buildOpenTerm (source := source) term⟩
+
+/-- Package a compact term together with the elaboration selected by the
+total compiler. -/
+def compileTerm (source : CIGSLT)
+    {targetFree : WellSorted.FreeTypeContext}
+    {targetBound : List TypeExpr} {targetSort : LangSort source.costWholeLanguage}
+    (term : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
+      targetSort) :
+    CostElabTerm source targetFree targetBound targetSort :=
+  ⟨term, compile source term⟩
+
+/-- Erase proof-relevant elaboration data to the checked compact Cost term. -/
+def erase {source : CIGSLT}
+    {targetFree : WellSorted.FreeTypeContext}
+    {targetBound : List TypeExpr} {targetSort : LangSort source.costWholeLanguage} :
+    CostElabTerm source targetFree targetBound targetSort →
+      WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
+        targetSort :=
+  Sigma.fst
+
+@[simp]
+theorem erase_compileTerm (source : CIGSLT)
+    {targetFree : WellSorted.FreeTypeContext}
+    {targetBound : List TypeExpr} {targetSort : LangSort source.costWholeLanguage}
+    (term : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
+      targetSort) :
+    erase (compileTerm source term) = term :=
+  rfl
+
+end CostOpenElaboration
+
+/-- A declaration-certified monochromatic source image is the base case of
+the alternating region decomposition.  It has one static frame and no
+foreign children. -/
+def CostRegionTree.monochromatic {source : CIGSLT}
+    {free : WellSorted.FreeTypeContext} {bound outer : List TypeExpr}
+    {sort : LangSort source.theory.presentation.presentation.language}
+    (term : WellSorted.OpenTerm
+      source.theory.presentation.presentation.language free bound sort)
+    (supported : WellSorted.HasTypeWithConstructors
+      source.theory.presentation.presentation.language
+      (· ∈ source.continuationRetyping.wrappedLabels)
+      free bound term.1 (.base sort.1))
+    (color : CostStaticColor)
+    (plan : CostStaticRegionPlan source color
+      (free.map (color.symbols source))
+      (CostStaticBinderThinning.sourceContextOfTarget source color
+        (bound.map (mapTypeExpr (color.symbols source))))
+      (bound.map (mapTypeExpr (color.symbols source)))
+      (CostStaticBinderThinning.ofTargetThinning source color
+        (bound.map (mapTypeExpr (color.symbols source))))
+      (bound.map (mapTypeExpr (color.symbols source))) .hole
+      (term.mapCostStatic supported color).1 (.base sort.1))
+    (rootStatic : plan.isStaticRoot = true)
+    (empty : plan.boundaryTable.entries = []) :
+    CostRegionTree source (free.map (color.symbols source))
+      (bound.map (mapTypeExpr (color.symbols source))) outer
+      (term.mapCostStatic supported color).1
+      (.base (color.mapLangSort source sort).1) := by
+  let node := CostStaticRegionNode.monochromatic term supported color plan
+    rootStatic
+  apply CostRegionTree.static node
+  apply CostRegionBoundaryTrees.ofEntriesEqNil node.finiteBoundaryTable
+  simpa [node, CostStaticRegionNode.finiteBoundaryTable,
+    CostStaticRegionNode.boundaryTable, CostStaticRegionNode.monochromatic,
+    CostStaticRegionNode.ofPlan] using empty
+
+mutual
+  /-- Forget the decomposition certificate and recover the original typing
+  derivation.  Thus every tree is a typed view of the sole `Pattern` carrier,
+  never an independently admitted syntax. -/
+  def CostRegionTree.toHasType {source : CIGSLT}
+      {targetFree : WellSorted.FreeTypeContext}
+      {available outer : List TypeExpr} {pattern : Pattern} {type : TypeExpr} :
+      CostRegionTree source targetFree available outer pattern type →
+      WellSorted.HasType source.costWholeLanguage targetFree
+        (available ++ outer) pattern type
+    | .bvar lookup => .bvar lookup
+    | .fvar lookup => .fvar lookup
+    | @CostRegionTree.static _ _ _ outer node _children =>
+        node.term.2.1.extendOuter outer
+    | .neutralApplicationOrdinary membership notBareCollection _constructor
+        _materializes _neutral _ordinary children =>
+        .constructor membership notBareCollection children.toArgumentsHaveTypes
+    | .neutralApplicationQuote membership notBareCollection _constructor
+        _materializes _neutral _quoted children =>
+        .constructor membership notBareCollection (by
+          simpa only [List.nil_append, List.append_assoc] using
+            children.toArgumentsHaveTypes)
+    | .lambda bodyTree => .lambda bodyTree.toHasType
+    | .multiLambda bodyTree => .multiLambda (by
+        simpa only [List.append_assoc] using bodyTree.toHasType)
+    | .subst bodyTree replacementTree =>
+      .subst bodyTree.toHasType replacementTree.toHasType
+    | .collection children =>
+        .collection children.toElementsHaveType
+
+  /-- Forget the region decomposition of constructor arguments. -/
+  def CostRegionArgumentTrees.toArgumentsHaveTypes {source : CIGSLT}
+      {targetFree : WellSorted.FreeTypeContext}
+      {available outer : List TypeExpr} {arguments : List Pattern}
+      {parameters : List TermParam} :
+      CostRegionArgumentTrees source targetFree available outer arguments
+        parameters →
+      WellSorted.ArgumentsHaveTypes source.costWholeLanguage targetFree
+        (available ++ outer) arguments parameters
+    | .nil => .nil
+    | .cons representation parameterType head tail =>
+        .cons representation parameterType head.toHasType
+          tail.toArgumentsHaveTypes
+
+  /-- Forget the region decomposition of homogeneous collection elements. -/
+  def CostRegionElementTrees.toElementsHaveType {source : CIGSLT}
+      {targetFree : WellSorted.FreeTypeContext}
+      {available outer : List TypeExpr} {elements : List Pattern}
+      {elementType : TypeExpr} :
+      CostRegionElementTrees source targetFree available outer elements
+        elementType →
+      WellSorted.ElementsHaveType source.costWholeLanguage targetFree
+        (available ++ outer) elements elementType
+    | .nil _ _ _ => .nil _ _
+    | .cons head tail =>
+        .cons head.toHasType tail.toElementsHaveType
+end
+
+mutual
+  /-- Reconstruct the underlying `Pattern` from the structural forest.  A
+  static node uses its independently proved finite-table recomposition;
+  neutral frames rebuild their immediate syntax from recursively
+  reconstructed children. -/
+  def CostRegionTree.recomposePattern {source : CIGSLT}
+      {targetFree : WellSorted.FreeTypeContext}
+      {available outer : List TypeExpr} {pattern : Pattern} {type : TypeExpr} :
+      CostRegionTree source targetFree available outer pattern type → Pattern
+    | @CostRegionTree.bvar _ _ available outer index type lookup => .bvar index
+    | @CostRegionTree.fvar _ _ available outer name type lookup => .fvar name
+    | @CostRegionTree.static _ _ color outer node _children => node.recomposeRaw
+    | @CostRegionTree.neutralApplicationOrdinary _ _ available outer rule
+        arguments _membership _notBareCollection _constructor _materializes
+        _neutral _ordinary children =>
+        .apply rule.label children.recomposePatterns
+    | @CostRegionTree.neutralApplicationQuote _ _ available outer rule arguments
+        _membership _notBareCollection _constructor _materializes _neutral
+        _quoted children =>
+        .apply rule.label children.recomposePatterns
+    | @CostRegionTree.lambda _ _ available outer binder body domain codomain
+        bodyTree =>
+        .lambda binder bodyTree.recomposePattern
+    | @CostRegionTree.multiLambda _ _ available outer arity binders body domain
+        codomain bodyTree =>
+        .multiLambda arity binders bodyTree.recomposePattern
+    | @CostRegionTree.subst _ _ available outer body replacement domain codomain
+        bodyTree replacementTree =>
+        .subst bodyTree.recomposePattern replacementTree.recomposePattern
+    | @CostRegionTree.collection _ _ available outer collectionType elements
+        rest elementType children =>
+        .collection collectionType children.recomposePatterns rest
+
+  /-- Reconstruct an authored constructor's argument list. -/
+  def CostRegionArgumentTrees.recomposePatterns {source : CIGSLT}
+      {targetFree : WellSorted.FreeTypeContext}
+      {available outer : List TypeExpr} {arguments : List Pattern}
+      {parameters : List TermParam} :
+      CostRegionArgumentTrees source targetFree available outer arguments
+        parameters →
+      List Pattern
+    | @CostRegionArgumentTrees.nil _ _ available outer => []
+    | @CostRegionArgumentTrees.cons _ _ available outer argument arguments
+        parameter parameters _ _representation _parameterType head tail =>
+        head.recomposePattern :: tail.recomposePatterns
+
+  /-- Reconstruct a homogeneous collection's element list. -/
+  def CostRegionElementTrees.recomposePatterns {source : CIGSLT}
+      {targetFree : WellSorted.FreeTypeContext}
+      {available outer : List TypeExpr} {elements : List Pattern}
+      {elementType : TypeExpr} :
+      CostRegionElementTrees source targetFree available outer elements
+        elementType →
+      List Pattern
+    | @CostRegionElementTrees.nil _ _ available outer elementType => []
+    | @CostRegionElementTrees.cons _ _ available outer element elements
+        elementType head tail =>
+        head.recomposePattern :: tail.recomposePatterns
+end
+
+mutual
+  /-- Structural recomposition recovers the exact indexed source pattern. -/
+  theorem CostRegionTree.recomposePattern_eq {source : CIGSLT}
+      {targetFree : WellSorted.FreeTypeContext}
+      {available outer : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
+      (tree : CostRegionTree source targetFree available outer pattern type) :
+      tree.recomposePattern = pattern := by
+    cases tree with
+    | bvar lookup => rfl
+    | fvar lookup => rfl
+    | static node children => exact node.recomposeRaw_eq
+    | neutralApplicationOrdinary membership notBareCollection constructor
+        materializes neutral ordinary children =>
+        simp [CostRegionTree.recomposePattern,
+          children.recomposePatterns_eq]
+    | neutralApplicationQuote membership notBareCollection constructor
+        materializes neutral quoted children =>
+        simp [CostRegionTree.recomposePattern,
+          children.recomposePatterns_eq]
+    | lambda bodyTree =>
+        simp [CostRegionTree.recomposePattern, bodyTree.recomposePattern_eq]
+    | multiLambda bodyTree =>
+        simp [CostRegionTree.recomposePattern, bodyTree.recomposePattern_eq]
+    | subst bodyTree replacementTree =>
+        simp [CostRegionTree.recomposePattern, bodyTree.recomposePattern_eq,
+          replacementTree.recomposePattern_eq]
+    | collection children =>
+        simp [CostRegionTree.recomposePattern,
+          children.recomposePatterns_eq]
+
+  /-- Argument-list recomposition is exact and order-preserving. -/
+  theorem CostRegionArgumentTrees.recomposePatterns_eq {source : CIGSLT}
+      {targetFree : WellSorted.FreeTypeContext}
+      {available outer : List TypeExpr} {arguments : List Pattern}
+      {parameters : List TermParam}
+      (trees : CostRegionArgumentTrees source targetFree available outer
+        arguments parameters) :
+      trees.recomposePatterns = arguments := by
+    cases trees with
+    | nil => rfl
+    | cons representation parameterType head tail =>
+        simp [CostRegionArgumentTrees.recomposePatterns,
+          head.recomposePattern_eq, tail.recomposePatterns_eq]
+
+  /-- Collection-element recomposition is exact and order-preserving. -/
+  theorem CostRegionElementTrees.recomposePatterns_eq {source : CIGSLT}
+      {targetFree : WellSorted.FreeTypeContext}
+      {available outer : List TypeExpr} {elements : List Pattern}
+      {elementType : TypeExpr}
+      (trees : CostRegionElementTrees source targetFree available outer
+        elements elementType) :
+      trees.recomposePatterns = elements := by
+    cases trees with
+    | nil => rfl
+    | cons head tail =>
+        simp [CostRegionElementTrees.recomposePatterns,
+          head.recomposePattern_eq, tail.recomposePatterns_eq]
+end
+
+/-! ## Child-first normalization of the alternating forest -/
+
+/-- Two terms in the same base fiber agree on the representation obligation
+of any enclosing parameter.  A simple parameter imposes no shape.  A binder
+parameter cannot contain a base-typed term in the first place, so the
+apparently stronger cases are eliminated by the source typing derivation. -/
+theorem matchesParameterRepresentation_of_base_typed
+    {language : LanguageDef} {free : WellSorted.FreeTypeContext}
+    {bound : List TypeExpr} {sourcePattern targetPattern : Pattern}
+    {sort : String} (parameter : TermParam)
+    (sourceTyped : WellSorted.HasType language free bound sourcePattern
+      (.base sort))
+    (representation : WellSorted.MatchesParameterRepresentation parameter
+      sourcePattern) :
+    WellSorted.MatchesParameterRepresentation parameter targetPattern := by
+  cases parameter with
+  | simple name type =>
+      trivial
+  | abstractionNamed binderName bodyName type =>
+      cases sourcePattern <;>
+        simp_all [WellSorted.MatchesParameterRepresentation]
+      case lambda binder body =>
+        cases sourceTyped
+  | multiAbstractionNamed binderNames bodyName type =>
+      cases sourcePattern <;>
+        simp_all [WellSorted.MatchesParameterRepresentation]
+      case multiLambda arity binders body =>
+        cases sourceTyped
+
+/-! A structural measure for the mutually recursive forest.  Unlike generic
+`sizeOf`, this measure deliberately ignores dependent indices and proof
+fields; one recursive child always contributes a strict summand. -/
+mutual
+  def CostRegionTree.weight {source : CIGSLT}
+      {targetFree : WellSorted.FreeTypeContext}
+      {available outer : List TypeExpr} {pattern : Pattern} {type : TypeExpr} :
+      CostRegionTree source targetFree available outer pattern type → Nat
+    | .bvar _ | .fvar _ => 1
+    | .static _ children => children.weight + 1
+    | .neutralApplicationOrdinary _ _ _ _ _ _ children =>
+        children.weight + 1
+    | .neutralApplicationQuote _ _ _ _ _ _ children => children.weight + 1
+    | .lambda body => body.weight + 1
+    | .multiLambda body => body.weight + 1
+    | .subst body replacement => body.weight + replacement.weight + 1
+    | .collection children => children.weight + 1
+
+  def CostRegionArgumentTrees.weight {source : CIGSLT}
+      {targetFree : WellSorted.FreeTypeContext}
+      {available outer : List TypeExpr} {arguments : List Pattern}
+      {parameters : List TermParam} :
+      CostRegionArgumentTrees source targetFree available outer arguments
+        parameters → Nat
+    | .nil => 1
+    | .cons _ _ head tail => head.weight + tail.weight + 1
+
+  def CostRegionElementTrees.weight {source : CIGSLT}
+      {targetFree : WellSorted.FreeTypeContext}
+      {available outer : List TypeExpr} {elements : List Pattern}
+      {elementType : TypeExpr} :
+      CostRegionElementTrees source targetFree available outer elements
+        elementType → Nat
+    | .nil _ _ _ => 1
+    | .cons head tail => head.weight + tail.weight + 1
+
+  def CostRegionBoundaryTrees.weight {source : CIGSLT}
+      {targetFree : WellSorted.FreeTypeContext} {color : CostStaticColor}
+      {occurrences : List CostRegionOccurrence}
+      {table : TypedCostRegionBoundaryTable source color targetFree occurrences} :
+      CostRegionBoundaryTrees source targetFree color table → Nat
+    | .nil => 1
+    | .cons head children => head.weight + children.weight + 1
+end
+
+/-! ### Intrinsic typing of the proof-relevant region tree
+
+The tree indices already determine the original raw term and its exact type.
+The following mutually recursive projections expose that typing directly,
+without re-running the executable checker or consulting constructor order.
+-/
+
+mutual
+  def CostRegionTree.originalTyped {source : CIGSLT}
+      {targetFree : WellSorted.FreeTypeContext}
+      {available outer : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
+      (tree : CostRegionTree source targetFree available outer pattern type) :
+      WellSorted.HasType source.costWholeLanguage targetFree
+        (available ++ outer) pattern type :=
+    match tree with
+    | .bvar lookup => .bvar lookup
+    | .fvar lookup => .fvar lookup
+    | @CostRegionTree.static _ _ color outer node children =>
+        node.term.2.1.extendOuter outer
+    | .neutralApplicationOrdinary membership notBareCollection _constructor
+        _materializes _neutral _ordinary children =>
+        .constructor membership notBareCollection children.originalTyped
+    | @CostRegionTree.neutralApplicationQuote _ _ available outer rule
+        arguments membership notBareCollection constructor materializes neutral
+        quoted children =>
+        .constructor membership notBareCollection (by
+          simpa only [List.nil_append, List.append_assoc] using
+            children.originalTyped)
+    | .lambda bodyTree =>
+        .lambda bodyTree.originalTyped
+    | @CostRegionTree.multiLambda _ _ available outer arity binders body domain
+        codomain bodyTree =>
+        .multiLambda (by
+          simpa only [List.append_assoc] using bodyTree.originalTyped)
+    | .subst bodyTree replacementTree =>
+        .subst bodyTree.originalTyped replacementTree.originalTyped
+    | .collection children =>
+        .collection children.originalTyped
+  termination_by tree.weight
+  decreasing_by
+    all_goals simp [CostRegionTree.weight]
+    all_goals omega
+
+  def CostRegionArgumentTrees.originalTyped {source : CIGSLT}
+      {targetFree : WellSorted.FreeTypeContext}
+      {available outer : List TypeExpr} {arguments : List Pattern}
+      {parameters : List TermParam}
+      (trees : CostRegionArgumentTrees source targetFree available outer
+        arguments parameters) :
+      WellSorted.ArgumentsHaveTypes source.costWholeLanguage targetFree
+        (available ++ outer) arguments parameters :=
+    match trees with
+    | .nil => .nil
+    | .cons representation parameterType head tail =>
+        .cons representation parameterType head.originalTyped
+          tail.originalTyped
+  termination_by trees.weight
+  decreasing_by
+    all_goals simp [CostRegionArgumentTrees.weight]
+    all_goals omega
+
+  def CostRegionElementTrees.originalTyped {source : CIGSLT}
+      {targetFree : WellSorted.FreeTypeContext}
+      {available outer : List TypeExpr} {elements : List Pattern}
+      {elementType : TypeExpr}
+      (trees : CostRegionElementTrees source targetFree available outer elements
+        elementType) :
+      WellSorted.ElementsHaveType source.costWholeLanguage targetFree
+        (available ++ outer) elements elementType :=
+    match trees with
+    | .nil _ _ _ => .nil _ _
+    | .cons head tail =>
+        .cons head.originalTyped tail.originalTyped
+  termination_by trees.weight
+  decreasing_by
+    all_goals simp [CostRegionElementTrees.weight]
+    all_goals omega
+end
+
+/-- Package the original tree index in the split binder-fiber carrier. -/
+def CostRegionTree.originalAvailableOpenPattern {source : CIGSLT}
+    {targetFree : WellSorted.FreeTypeContext}
+    {available outer : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
+    (tree : CostRegionTree source targetFree available outer pattern type)
+    (canonical : pattern.hasCanonicalBinderMetadata = true)
+    (object : WellSorted.isObjectPattern pattern = true)
+    (scope : WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
+      available.length pattern) :
+    WellSorted.AvailableOpenPattern source.costWholeLanguage targetFree
+      available outer type where
+  pattern := pattern
+  typed := tree.originalTyped
+  canonicalBinderMetadata := canonical
+  objectPattern := object
+  reflectiveScope := scope
+
+/-- The result of normalizing one region tree.  Besides the target typing,
+the package records exactly the invariants needed by an enclosing structural
+frame.  Reflective scope is stated as a preservation law at an arbitrary
+ambient depth: this lets one reflective presentation reset at its own quote
+while every other presentation continues at the surrounding depth. -/
+structure NormalizedCostRegionPattern (source : CIGSLT)
+    (targetFree : WellSorted.FreeTypeContext)
+    (available outer : List TypeExpr) (original : Pattern) (type : TypeExpr)
+    where
+  pattern : Pattern
+  typed : WellSorted.HasType source.costWholeLanguage targetFree
+    (available ++ outer) pattern type
+  canonicalBinderMetadata :
+    original.hasCanonicalBinderMetadata = true →
+      pattern.hasCanonicalBinderMetadata = true
+  objectPattern : WellSorted.isObjectPattern original = true →
+    WellSorted.isObjectPattern pattern = true
+  reflectiveScope : ∀ (presentation : ReflectivePresentationDecl),
+    presentation ∈ source.costWholeLanguage.reflectivePresentations →
+    ∀ {depth : Nat}, available.length ≤ depth →
+      binderSafeAt presentation.quoteConstructor depth original = true →
+        binderSafeAt presentation.quoteConstructor depth pattern = true
+  matchesParameterRepresentation : ∀ parameter,
+    WellSorted.MatchesParameterRepresentation parameter original →
+      WellSorted.MatchesParameterRepresentation parameter pattern
+
+namespace NormalizedCostRegionPattern
+
+/-- Package a normalized result while retaining the quote-visible binder
+prefix separately from its sealed outer suffix. -/
+def toAvailableOpenPattern {source : CIGSLT}
+    {targetFree : WellSorted.FreeTypeContext}
+    {available outer : List TypeExpr} {original : Pattern} {type : TypeExpr}
+    (normalized : NormalizedCostRegionPattern source targetFree available outer
+      original type)
+    (canonical : original.hasCanonicalBinderMetadata = true)
+    (object : WellSorted.isObjectPattern original = true)
+    (scope : WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
+      available.length original) :
+    WellSorted.AvailableOpenPattern source.costWholeLanguage targetFree
+      available outer type where
+  pattern := normalized.pattern
+  typed := normalized.typed
+  canonicalBinderMetadata := normalized.canonicalBinderMetadata canonical
+  objectPattern := normalized.objectPattern object
+  reflectiveScope := by
+    intro presentation membership
+    exact normalized.reflectiveScope presentation membership
+      (Nat.le_refl available.length) (scope presentation membership)
+
+@[simp]
+theorem toAvailableOpenPattern_pattern {source : CIGSLT}
+    {targetFree : WellSorted.FreeTypeContext}
+    {available outer : List TypeExpr} {original : Pattern} {type : TypeExpr}
+    (normalized : NormalizedCostRegionPattern source targetFree available outer
+      original type)
+    (canonical : original.hasCanonicalBinderMetadata = true)
+    (object : WellSorted.isObjectPattern original = true)
+    (scope : WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
+      available.length original) :
+    (normalized.toAvailableOpenPattern canonical object scope).pattern =
+      normalized.pattern :=
+  rfl
+
+/-- Package a normalized result in the established open object carrier.
+The full lexical context may include binders sealed by an outer quote, so its
+scope proof is obtained by weakening from the exact available prefix. -/
+def toOpenPattern {source : CIGSLT}
+    {targetFree : WellSorted.FreeTypeContext}
+    {available outer : List TypeExpr} {original : Pattern} {type : TypeExpr}
+    (normalized : NormalizedCostRegionPattern source targetFree available outer
+      original type)
+    (canonical : original.hasCanonicalBinderMetadata = true)
+    (object : WellSorted.isObjectPattern original = true)
+    (scope : WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
+      available.length original) :
+    WellSorted.OpenPattern source.costWholeLanguage targetFree
+      (available ++ outer) type :=
+  ⟨normalized.pattern, normalized.typed,
+    normalized.canonicalBinderMetadata canonical,
+    normalized.objectPattern object, by
+      intro presentation membership
+      exact binderSafeAt_mono presentation.quoteConstructor
+        (normalized.reflectiveScope presentation membership
+          (Nat.le_refl available.length) (scope presentation membership))
+        (by simp)⟩
+
+end NormalizedCostRegionPattern
+
+/-- Normalized constructor arguments, retaining their authored parameter
+order and the pointwise object/scope invariants needed by their parent. -/
+structure NormalizedCostRegionArguments (source : CIGSLT)
+    (targetFree : WellSorted.FreeTypeContext)
+    (available outer : List TypeExpr) (original : List Pattern)
+    (parameters : List TermParam) where
+  patterns : List Pattern
+  length_eq : patterns.length = original.length
+  typed : WellSorted.ArgumentsHaveTypes source.costWholeLanguage targetFree
+    (available ++ outer) patterns parameters
+  canonicalBinderMetadata :
+    Pattern.hasCanonicalBinderMetadataList original = true →
+      Pattern.hasCanonicalBinderMetadataList patterns = true
+  objectPatterns : WellSorted.isObjectPatternList original = true →
+    WellSorted.isObjectPatternList patterns = true
+  reflectiveScope : ∀ (presentation : ReflectivePresentationDecl),
+    presentation ∈ source.costWholeLanguage.reflectivePresentations →
+    ∀ {depth : Nat}, available.length ≤ depth →
+      binderSafeListAt presentation.quoteConstructor depth original = true →
+        binderSafeListAt presentation.quoteConstructor depth patterns = true
+
+/-- Normalized homogeneous elements with the same proof boundary as
+constructor arguments. -/
+structure NormalizedCostRegionElements (source : CIGSLT)
+    (targetFree : WellSorted.FreeTypeContext)
+    (available outer : List TypeExpr) (original : List Pattern)
+    (elementType : TypeExpr) where
+  patterns : List Pattern
+  length_eq : patterns.length = original.length
+  typed : WellSorted.ElementsHaveType source.costWholeLanguage targetFree
+    (available ++ outer) patterns elementType
+  canonicalBinderMetadata :
+    Pattern.hasCanonicalBinderMetadataList original = true →
+      Pattern.hasCanonicalBinderMetadataList patterns = true
+  objectPatterns : WellSorted.isObjectPatternList original = true →
+    WellSorted.isObjectPatternList patterns = true
+  reflectiveScope : ∀ (presentation : ReflectivePresentationDecl),
+    presentation ∈ source.costWholeLanguage.reflectivePresentations →
+    ∀ {depth : Nat}, available.length ≤ depth →
+      binderSafeListAt presentation.quoteConstructor depth original = true →
+        binderSafeListAt presentation.quoteConstructor depth patterns = true
+
+
+mutual
+  /-- Normalize a complete alternating tree from the leaves inward.  Static
+  nodes invoke exactly one source canonical section after all opposite-color
+  children have been normalized; neutral generated frames are rebuilt
+  structurally. -/
+  def CostRegionTree.normalize {source : CIGSLT}
+      {targetFree : WellSorted.FreeTypeContext}
+      {available outer : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
+      (tree : CostRegionTree source targetFree available outer pattern type) :
+      NormalizedCostRegionPattern source targetFree available outer pattern
+        type :=
+    match tree with
+    | @CostRegionTree.bvar _ _ available outer index type lookup =>
+        {
+          pattern := .bvar index
+          typed := .bvar lookup
+          canonicalBinderMetadata := by simp
+          objectPattern := by simp [WellSorted.isObjectPattern]
+          reflectiveScope := by
+            intro presentation membership depth availableWithin safe
+            exact safe
+          matchesParameterRepresentation := by
+            intro parameter representation
+            cases parameter <;>
+              simp_all [WellSorted.MatchesParameterRepresentation] }
+    | @CostRegionTree.fvar _ _ available outer name type lookup =>
+        {
+          pattern := .fvar name
+          typed := .fvar lookup
+          canonicalBinderMetadata := by simp
+          objectPattern := by simp [WellSorted.isObjectPattern]
+          reflectiveScope := by
+            intro presentation membership depth availableWithin safe
+            exact safe
+          matchesParameterRepresentation := by
+            intro parameter representation
+            cases parameter <;>
+              simp_all [WellSorted.MatchesParameterRepresentation] }
+    | @CostRegionTree.static _ _ color outer node children =>
+        let values := children.normalizeValues
+        let normalized := node.normalizeWith values
+        {
+          pattern := normalized.1
+          typed := normalized.2.1.extendOuter outer
+          canonicalBinderMetadata := fun _ => normalized.2.2.1
+          objectPattern := fun _ => normalized.2.2.2.1
+          reflectiveScope := by
+            intro presentation membership depth availableWithin safe
+            exact binderSafeAt_mono presentation.quoteConstructor
+              (normalized.2.2.2.2 presentation membership)
+              (by simpa using availableWithin)
+          matchesParameterRepresentation := by
+            intro parameter representation
+            exact matchesParameterRepresentation_of_base_typed parameter
+              (node.term.2.1.extendOuter outer) representation }
+    | @CostRegionTree.neutralApplicationOrdinary _ _ available outer rule
+        arguments membership notBareCollection constructor materializes neutral
+        ordinary children =>
+        let normalized := children.normalize
+        {
+          pattern := .apply rule.label normalized.patterns
+          typed := .constructor membership notBareCollection normalized.typed
+          canonicalBinderMetadata := by
+            intro canonical
+            exact normalized.canonicalBinderMetadata (by
+              simpa [Pattern.hasCanonicalBinderMetadata] using canonical)
+          objectPattern := by
+            intro objects
+            exact normalized.objectPatterns (by
+              simpa [WellSorted.isObjectPattern] using objects)
+          reflectiveScope := by
+            intro presentation presentationMembership depth availableWithin safe
+            have notThisQuote :
+                rule.label ≠ presentation.quoteConstructor := by
+              intro labelEquality
+              have detected : ReflectiveContextSupport.isQuoteConstructor
+                  source.costWholeLanguage rule.label = true := by
+                unfold ReflectiveContextSupport.isQuoteConstructor
+                rw [List.any_eq_true]
+                exact ⟨presentation, presentationMembership,
+                  by simp [labelEquality]⟩
+              rw [detected] at ordinary
+              contradiction
+            have inputList : binderSafeListAt presentation.quoteConstructor
+                depth arguments = true :=
+              binderSafeListAt_of_binderSafeAt_apply_of_ne
+                presentation.quoteConstructor rule.label depth arguments
+                notThisQuote safe
+            have outputList := normalized.reflectiveScope presentation
+              presentationMembership availableWithin inputList
+            exact binderSafeAt_apply_of_spines
+              presentation.quoteConstructor rule.label depth
+              normalized.patterns
+              (fun equality => (notThisQuote equality).elim)
+              outputList
+          matchesParameterRepresentation := by
+            intro parameter representation
+            cases parameter <;>
+              simp_all [WellSorted.MatchesParameterRepresentation] }
+    | @CostRegionTree.neutralApplicationQuote _ _ available outer rule
+        arguments membership notBareCollection constructor materializes neutral
+        quoted children =>
+        let normalized := children.normalize
+        {
+          pattern := .apply rule.label normalized.patterns
+          typed := .constructor membership notBareCollection (by
+            simpa only [List.nil_append, List.append_assoc] using
+              normalized.typed)
+          canonicalBinderMetadata := by
+            intro canonical
+            exact normalized.canonicalBinderMetadata (by
+              simpa [Pattern.hasCanonicalBinderMetadata] using canonical)
+          objectPattern := by
+            intro objects
+            exact normalized.objectPatterns (by
+              simpa [WellSorted.isObjectPattern] using objects)
+          reflectiveScope := by
+            intro presentation presentationMembership depth _ safe
+            exact binderSafeAt_apply_of_length_eq_of_list_preserving
+              presentation.quoteConstructor rule.label depth
+              normalized.length_eq
+              (fun localDepth inputList =>
+                normalized.reflectiveScope presentation
+                  presentationMembership (Nat.zero_le localDepth) inputList)
+              safe
+          matchesParameterRepresentation := by
+            intro parameter representation
+            cases parameter <;>
+              simp_all [WellSorted.MatchesParameterRepresentation] }
+    | @CostRegionTree.lambda _ _ available outer binder body domain codomain
+        bodyTree =>
+        let normalized := bodyTree.normalize
+        {
+          pattern := .lambda binder normalized.pattern
+          typed := .lambda normalized.typed
+          canonicalBinderMetadata := by
+            intro canonical
+            simp only [Pattern.hasCanonicalBinderMetadata,
+              Bool.and_eq_true] at canonical ⊢
+            exact ⟨canonical.1,
+              normalized.canonicalBinderMetadata canonical.2⟩
+          objectPattern := by
+            intro object
+            simpa [WellSorted.isObjectPattern] using
+              normalized.objectPattern object
+          reflectiveScope := by
+            intro presentation presentationMembership depth availableWithin safe
+            simp only [binderSafeAt] at safe ⊢
+            exact normalized.reflectiveScope presentation
+              presentationMembership (by simp; omega) safe
+          matchesParameterRepresentation := by
+            intro parameter representation
+            cases parameter <;> cases binder <;>
+              simp_all [WellSorted.MatchesParameterRepresentation] }
+    | @CostRegionTree.multiLambda _ _ available outer arity binders body domain
+        codomain bodyTree =>
+        let normalized := bodyTree.normalize
+        {
+          pattern := .multiLambda arity binders normalized.pattern
+          typed := .multiLambda (by
+            simpa only [List.append_assoc] using normalized.typed)
+          canonicalBinderMetadata := by
+            intro canonical
+            simp only [Pattern.hasCanonicalBinderMetadata,
+              Bool.and_eq_true] at canonical ⊢
+            exact ⟨canonical.1,
+              normalized.canonicalBinderMetadata canonical.2⟩
+          objectPattern := by
+            intro object
+            simpa [WellSorted.isObjectPattern] using
+              normalized.objectPattern object
+          reflectiveScope := by
+            intro presentation presentationMembership depth availableWithin safe
+            simp only [binderSafeAt] at safe ⊢
+            exact normalized.reflectiveScope presentation
+              presentationMembership (by
+                simp [List.length_append, List.length_replicate]
+                omega) safe
+          matchesParameterRepresentation := by
+            intro parameter representation
+            cases parameter <;> cases binders <;>
+              simp_all [WellSorted.MatchesParameterRepresentation] }
+    | @CostRegionTree.subst _ _ available outer body replacement domain codomain
+        bodyTree replacementTree =>
+        let normalizedBody := bodyTree.normalize
+        let normalizedReplacement := replacementTree.normalize
+        {
+          pattern := .subst normalizedBody.pattern normalizedReplacement.pattern
+          typed := .subst normalizedBody.typed normalizedReplacement.typed
+          canonicalBinderMetadata := by
+            intro canonical
+            simp only [Pattern.hasCanonicalBinderMetadata,
+              Bool.and_eq_true] at canonical ⊢
+            exact ⟨normalizedBody.canonicalBinderMetadata canonical.1,
+              normalizedReplacement.canonicalBinderMetadata canonical.2⟩
+          objectPattern := by
+            intro object
+            simp [WellSorted.isObjectPattern] at object
+          reflectiveScope := by
+            intro presentation presentationMembership depth availableWithin safe
+            simp only [binderSafeAt, Bool.and_eq_true] at safe ⊢
+            exact ⟨normalizedBody.reflectiveScope presentation
+                presentationMembership (by simp; omega) safe.1,
+              normalizedReplacement.reflectiveScope presentation
+                presentationMembership availableWithin safe.2⟩
+          matchesParameterRepresentation := by
+            intro parameter representation
+            cases parameter <;>
+              simp_all [WellSorted.MatchesParameterRepresentation] }
+    | @CostRegionTree.collection _ _ available outer collectionType elements
+        rest elementType children =>
+        let normalized := children.normalize
+        {
+          pattern := .collection collectionType normalized.patterns rest
+          typed := .collection normalized.typed
+          canonicalBinderMetadata := by
+            intro canonical
+            exact normalized.canonicalBinderMetadata (by
+              simpa [Pattern.hasCanonicalBinderMetadata] using canonical)
+          objectPattern := by
+            intro objects
+            have sourceParts : rest.isNone = true ∧
+                WellSorted.isObjectPatternList elements = true := by
+              simpa [WellSorted.isObjectPattern] using objects
+            simpa [WellSorted.isObjectPattern, sourceParts.1] using
+              normalized.objectPatterns sourceParts.2
+          reflectiveScope := by
+            intro presentation presentationMembership depth availableWithin safe
+            have inputList : binderSafeListAt presentation.quoteConstructor
+                depth elements = true := by
+              simpa [binderSafeAt] using safe
+            simpa [binderSafeAt] using
+              normalized.reflectiveScope presentation presentationMembership
+                availableWithin inputList
+          matchesParameterRepresentation := by
+            intro parameter representation
+            cases parameter <;>
+              simp_all [WellSorted.MatchesParameterRepresentation] }
+  termination_by tree.weight
+  decreasing_by
+    all_goals simp [CostRegionTree.weight]
+    all_goals omega
+
+  /-- Normalize a constructor argument spine without changing its authored
+  arity, ordering, or representation discipline. -/
+  def CostRegionArgumentTrees.normalize {source : CIGSLT}
+      {targetFree : WellSorted.FreeTypeContext}
+      {available outer : List TypeExpr} {arguments : List Pattern}
+      {parameters : List TermParam}
+      (trees : CostRegionArgumentTrees source targetFree available outer
+        arguments parameters) :
+      NormalizedCostRegionArguments source targetFree available outer arguments
+        parameters :=
+    match trees with
+    | @CostRegionArgumentTrees.nil _ _ available outer =>
+        {
+          patterns := []
+          length_eq := rfl
+          typed := .nil
+          canonicalBinderMetadata := by simp [Pattern.hasCanonicalBinderMetadataList]
+          objectPatterns := by simp [WellSorted.isObjectPatternList]
+          reflectiveScope := by
+            simp [binderSafeListAt] }
+    | @CostRegionArgumentTrees.cons _ _ available outer argument arguments
+        parameter parameters expected representation parameterType head tail =>
+        let normalizedHead := head.normalize
+        let normalizedTail := tail.normalize
+        {
+          patterns := normalizedHead.pattern :: normalizedTail.patterns
+          length_eq := by
+            simp [normalizedTail.length_eq]
+          typed := .cons
+            (normalizedHead.matchesParameterRepresentation _
+              representation)
+            parameterType normalizedHead.typed normalizedTail.typed
+          canonicalBinderMetadata := by
+            intro canonical
+            simp only [Pattern.hasCanonicalBinderMetadataList,
+              Bool.and_eq_true] at canonical ⊢
+            exact ⟨normalizedHead.canonicalBinderMetadata canonical.1,
+              normalizedTail.canonicalBinderMetadata canonical.2⟩
+          objectPatterns := by
+            intro objects
+            simp only [WellSorted.isObjectPatternList,
+              Bool.and_eq_true] at objects ⊢
+            exact ⟨normalizedHead.objectPattern objects.1,
+              normalizedTail.objectPatterns objects.2⟩
+          reflectiveScope := by
+            intro presentation presentationMembership depth availableWithin safe
+            simp only [binderSafeListAt, Bool.and_eq_true] at safe ⊢
+            exact ⟨normalizedHead.reflectiveScope presentation
+                presentationMembership availableWithin safe.1,
+              normalizedTail.reflectiveScope presentation
+                presentationMembership availableWithin safe.2⟩ }
+  termination_by trees.weight
+  decreasing_by
+    all_goals simp [CostRegionArgumentTrees.weight]
+    all_goals omega
+
+  /-- Normalize a homogeneous element spine pointwise. -/
+  def CostRegionElementTrees.normalize {source : CIGSLT}
+      {targetFree : WellSorted.FreeTypeContext}
+      {available outer : List TypeExpr} {elements : List Pattern}
+      {elementType : TypeExpr}
+      (trees : CostRegionElementTrees source targetFree available outer elements
+        elementType) :
+      NormalizedCostRegionElements source targetFree available outer elements
+        elementType :=
+    match trees with
+    | @CostRegionElementTrees.nil _ _ available outer elementType =>
+        {
+          patterns := []
+          length_eq := rfl
+          typed := .nil _ _
+          canonicalBinderMetadata := by simp [Pattern.hasCanonicalBinderMetadataList]
+          objectPatterns := by simp [WellSorted.isObjectPatternList]
+          reflectiveScope := by
+            simp [binderSafeListAt] }
+    | @CostRegionElementTrees.cons _ _ available outer element elements
+        elementType head tail =>
+        let normalizedHead := head.normalize
+        let normalizedTail := tail.normalize
+        {
+          patterns := normalizedHead.pattern :: normalizedTail.patterns
+          length_eq := by
+            simp [normalizedTail.length_eq]
+          typed := .cons normalizedHead.typed normalizedTail.typed
+          canonicalBinderMetadata := by
+            intro canonical
+            simp only [Pattern.hasCanonicalBinderMetadataList,
+              Bool.and_eq_true] at canonical ⊢
+            exact ⟨normalizedHead.canonicalBinderMetadata canonical.1,
+              normalizedTail.canonicalBinderMetadata canonical.2⟩
+          objectPatterns := by
+            intro objects
+            simp only [WellSorted.isObjectPatternList,
+              Bool.and_eq_true] at objects ⊢
+            exact ⟨normalizedHead.objectPattern objects.1,
+              normalizedTail.objectPatterns objects.2⟩
+          reflectiveScope := by
+            intro presentation presentationMembership depth availableWithin safe
+            simp only [binderSafeListAt, Bool.and_eq_true] at safe ⊢
+            exact ⟨normalizedHead.reflectiveScope presentation
+                presentationMembership availableWithin safe.1,
+              normalizedTail.reflectiveScope presentation
+                presentationMembership availableWithin safe.2⟩ }
+  termination_by trees.weight
+  decreasing_by
+    all_goals simp [CostRegionElementTrees.weight]
+    all_goals omega
+
+  /-- Normalize every finite boundary child and return a replacement vector
+  aligned definitionally with the node's stable boundary table. -/
+  def CostRegionBoundaryTrees.normalizeValues {source : CIGSLT}
+      {targetFree : WellSorted.FreeTypeContext} {color : CostStaticColor}
+      {occurrences : List CostRegionOccurrence}
+      {table : TypedCostRegionBoundaryTable source color targetFree occurrences}
+      (trees : CostRegionBoundaryTrees source targetFree color table) :
+      TypedCostRegionBoundaryTable.Values source color targetFree table :=
+    match trees with
+    | .nil => .nil
+    | @CostRegionBoundaryTrees.cons _ _ color occurrence occurrences boundary
+        content tail head children =>
+        let normalizedHead := head.normalize
+        .cons
+          ⟨normalizedHead.pattern,
+            ⟨by simpa only [List.append_nil] using normalizedHead.typed,
+              normalizedHead.canonicalBinderMetadata
+                boundary.contentCanonicalBinderMetadata,
+              normalizedHead.objectPattern boundary.contentObjectPattern,
+              by
+                intro presentation membership
+                exact normalizedHead.reflectiveScope presentation membership
+                  (Nat.le_refl boundary.boundary.targetSupport.length)
+                  (boundary.contentReflectiveScopeSafe presentation membership)⟩⟩
+          children.normalizeValues
+  termination_by trees.weight
+  decreasing_by
+    all_goals simp [CostRegionBoundaryTrees.weight]
+    all_goals omega
+end
+
+/-! ### Exact replay through finite structural builders
+
+These lemmas isolate the finite-list part of chooser independence.  A caller
+supplies exact agreement for each recursively built child; the list builders
+then preserve normalized argument, element, and boundary vectors exactly. -/
+
+/-- Exact child agreement lifts through the executable constructor-argument
+builder, preserving argument order and multiplicity. -/
+theorem CostRegionArgumentTrees.normalize_patterns_eq_of_build
+    {source : CIGSLT} {targetFree : WellSorted.FreeTypeContext}
+    (decompose : (available outer : List TypeExpr) → (pattern : Pattern) →
+      (type : TypeExpr) →
+        Option (CostRegionTree source targetFree available outer pattern type))
+    (coherent : ∀ {available outer pattern type}
+      (original : CostRegionTree source targetFree available outer pattern type)
+      {built}, decompose available outer pattern type = some built →
+        original.normalize.pattern = built.normalize.pattern)
+    {available outer arguments parameters}
+    (trees : CostRegionArgumentTrees source targetFree available outer
+      arguments parameters)
+    {built : CostRegionArgumentTrees source targetFree available outer
+      arguments parameters}
+    (builtEq : CostRegionArgumentTrees.build? decompose available outer
+      arguments parameters = some built) :
+    trees.normalize.patterns = built.normalize.patterns := by
+  cases trees with
+  | nil =>
+      simp [CostRegionArgumentTrees.build?] at builtEq
+      subst built
+      rfl
+  | cons representation parameterType head tail =>
+      simp only [CostRegionArgumentTrees.build?] at builtEq
+      split at builtEq
+      · simp at builtEq
+      · rename_i optionWitness sourceExpected parameterTypeResult inspectEq
+        have expectedEq : sourceExpected = _ :=
+          Option.some.inj (parameterTypeResult.symm.trans parameterType)
+        cases expectedEq
+        have representationChecked :=
+          (WellSorted.matchesParameterRepresentation?_eq_true_iff _ _).2
+            representation
+        split at builtEq
+        · rename_i checked
+          split at builtEq
+          · simp at builtEq
+          · rename_i builtHead headBuilt
+            split at builtEq
+            · simp at builtEq
+            · rename_i builtTail tailBuilt
+              have builtIdentity := Option.some.inj builtEq
+              cases builtIdentity
+              simp only [CostRegionArgumentTrees.normalize]
+              exact congrArg₂ List.cons (coherent head headBuilt)
+                (tail.normalize_patterns_eq_of_build decompose coherent
+                  tailBuilt)
+        · rename_i rejected
+          exact (rejected representationChecked).elim
+  termination_by arguments.length
+
+/-- Exact child agreement lifts through the executable homogeneous-element
+builder. -/
+theorem CostRegionElementTrees.normalize_patterns_eq_of_build
+    {source : CIGSLT} {targetFree : WellSorted.FreeTypeContext}
+    (decompose : (available outer : List TypeExpr) → (pattern : Pattern) →
+      (type : TypeExpr) →
+        Option (CostRegionTree source targetFree available outer pattern type))
+    (coherent : ∀ {available outer pattern type}
+      (original : CostRegionTree source targetFree available outer pattern type)
+      {built}, decompose available outer pattern type = some built →
+        original.normalize.pattern = built.normalize.pattern)
+    {available outer elements elementType}
+    (trees : CostRegionElementTrees source targetFree available outer elements
+      elementType)
+    {built : CostRegionElementTrees source targetFree available outer elements
+      elementType}
+    (builtEq : CostRegionElementTrees.build? decompose available outer elements
+      elementType = some built) :
+    trees.normalize.patterns = built.normalize.patterns := by
+  cases trees with
+  | nil =>
+      simp [CostRegionElementTrees.build?] at builtEq
+      subst built
+      rfl
+  | cons head tail =>
+      simp only [CostRegionElementTrees.build?] at builtEq
+      split at builtEq
+      · simp at builtEq
+      · rename_i builtHead headBuilt
+        split at builtEq
+        · simp at builtEq
+        · rename_i builtTail tailBuilt
+          have builtIdentity := Option.some.inj builtEq
+          cases builtIdentity
+          simp only [CostRegionElementTrees.normalize]
+          exact congrArg₂ List.cons (coherent head headBuilt)
+            (tail.normalize_patterns_eq_of_build decompose coherent tailBuilt)
+  termination_by elements.length
+
+/-- Exact child agreement lifts through the finite boundary-table builder,
+including the dependent target support and type carried by every occurrence. -/
+theorem CostRegionBoundaryTrees.normalizeValues_eq_of_build
+    {source : CIGSLT} {targetFree : WellSorted.FreeTypeContext}
+    {color : CostStaticColor}
+    (decompose : (boundary : TypedCostRegionBoundary source color targetFree) →
+      Option (CostRegionTree source targetFree
+        boundary.boundary.targetSupport [] boundary.boundary.content
+          boundary.boundary.targetType))
+    (coherent : ∀
+      (boundary : TypedCostRegionBoundary source color targetFree)
+      (original : CostRegionTree source targetFree
+        boundary.boundary.targetSupport [] boundary.boundary.content
+          boundary.boundary.targetType)
+      {built}, decompose boundary = some built →
+        original.normalize.pattern = built.normalize.pattern)
+    {occurrences : List CostRegionOccurrence}
+    {table : TypedCostRegionBoundaryTable source color targetFree occurrences}
+    (trees : CostRegionBoundaryTrees source targetFree color table)
+    {built : CostRegionBoundaryTrees source targetFree color table}
+    (builtEq : CostRegionBoundaryTrees.build? decompose table = some built) :
+    trees.normalizeValues = built.normalizeValues := by
+  cases trees with
+  | nil =>
+      simp [CostRegionBoundaryTrees.build?] at builtEq
+      subst built
+      rfl
+  | cons head children =>
+      simp only [CostRegionBoundaryTrees.build?] at builtEq
+      split at builtEq
+      · simp at builtEq
+      · rename_i builtHead headBuilt
+        split at builtEq
+        · simp at builtEq
+        · rename_i builtChildren childrenBuilt
+          have builtIdentity := Option.some.inj builtEq
+          cases builtIdentity
+          simp only [CostRegionBoundaryTrees.normalizeValues]
+          congr 1
+          · apply Subtype.ext
+            exact coherent _ head headBuilt
+          · exact children.normalizeValues_eq_of_build decompose coherent
+              childrenBuilt
+  termination_by occurrences.length
+
+/-- Transport only the raw-pattern index of a region tree.  The tree data is
+unchanged; this helper lets shape theorems feed the dependent executable
+builder without rewriting a result whose type mentions the original pattern. -/
+def CostRegionTree.reindexPattern
+    {source : CIGSLT} {targetFree : WellSorted.FreeTypeContext}
+    {available outer : List TypeExpr} {first second : Pattern}
+    {type : TypeExpr}
+    (patternEq : first = second)
+    (tree : CostRegionTree source targetFree available outer first type) :
+    CostRegionTree source targetFree available outer second type := by
+  cases patternEq
+  exact tree
+
+/-- Pattern-index transport does not change child-first normalization. -/
+theorem CostRegionTree.reindexPattern_normalize
+    {source : CIGSLT} {targetFree : WellSorted.FreeTypeContext}
+    {available outer : List TypeExpr} {first second : Pattern}
+    {type : TypeExpr}
+    (patternEq : first = second)
+    (tree : CostRegionTree source targetFree available outer first type) :
+    (tree.reindexPattern patternEq).normalize.pattern = tree.normalize.pattern := by
+  cases patternEq
+  rfl
+
+/-- Pattern-index transport is heterogeneous identity on the underlying
+proof-relevant tree.  This quarantines the only cast needed when a certified
+static plan exposes an application or collection root. -/
+theorem CostRegionTree.reindexPattern_heq
+    {source : CIGSLT} {targetFree : WellSorted.FreeTypeContext}
+    {available outer : List TypeExpr} {first second : Pattern}
+    {type : TypeExpr}
+    (patternEq : first = second)
+    (tree : CostRegionTree source targetFree available outer first type) :
+    HEq tree (tree.reindexPattern patternEq) := by
+  cases patternEq
+  rfl
+
+/-- Reindexing the already-checked wire and result category of an ordinary
+neutral frame does not affect child-first normalization. -/
+@[simp]
+theorem CostRegionTree.neutralApplicationOrdinaryReindex_normalize
+    {source : CIGSLT} {targetFree : WellSorted.FreeTypeContext}
+    {available outer : List TypeExpr} {rule : GrammarRule}
+    {wireName category : String} {arguments : List Pattern}
+    (labelEq : rule.label = wireName)
+    (categoryEq : rule.category = category)
+    (membership : rule ∈ source.costWholeLanguage.terms)
+    (notBare : ¬ WellSorted.UsesBareCollection rule)
+    (constructor : source.DeclaredCostConstructor)
+    (materializes : source.materializeDeclaredCostConstructor constructor = rule)
+    (neutral :
+      source.declaredCostConstructorRole constructor =
+          .interactionPrincipal ∨
+        ∃ kind, source.declaredCostConstructorRole constructor =
+          .apparatus kind)
+    (ordinary : ReflectiveContextSupport.isQuoteConstructor
+      source.costWholeLanguage rule.label = false)
+    (children : CostRegionArgumentTrees source targetFree available outer
+      arguments rule.params) :
+    (CostRegionTree.neutralApplicationOrdinaryReindex labelEq categoryEq
+      membership notBare constructor materializes neutral ordinary children
+      ).normalize.pattern = .apply wireName children.normalize.patterns := by
+  cases labelEq
+  cases categoryEq
+  simp [CostRegionTree.neutralApplicationOrdinaryReindex,
+    CostRegionTree.normalize]
+
+/-- Reindexing a quote frame preserves both its explicit depth reset and its
+normalized argument spine. -/
+@[simp]
+theorem CostRegionTree.neutralApplicationQuoteReindex_normalize
+    {source : CIGSLT} {targetFree : WellSorted.FreeTypeContext}
+    {available outer : List TypeExpr} {rule : GrammarRule}
+    {wireName category : String} {arguments : List Pattern}
+    (labelEq : rule.label = wireName)
+    (categoryEq : rule.category = category)
+    (membership : rule ∈ source.costWholeLanguage.terms)
+    (notBare : ¬ WellSorted.UsesBareCollection rule)
+    (constructor : source.DeclaredCostConstructor)
+    (materializes : source.materializeDeclaredCostConstructor constructor = rule)
+    (neutral :
+      source.declaredCostConstructorRole constructor =
+          .interactionPrincipal ∨
+        ∃ kind, source.declaredCostConstructorRole constructor =
+          .apparatus kind)
+    (quoted : ReflectiveContextSupport.isQuoteConstructor
+      source.costWholeLanguage rule.label = true)
+    (children : CostRegionArgumentTrees source targetFree []
+      (available ++ outer) arguments rule.params) :
+    (CostRegionTree.neutralApplicationQuoteReindex labelEq categoryEq
+      membership notBare constructor materializes neutral quoted children
+      ).normalize.pattern = .apply wireName children.normalize.patterns := by
+  cases labelEq
+  cases categoryEq
+  simp [CostRegionTree.neutralApplicationQuoteReindex,
+    CostRegionTree.normalize]
+
+/-- Invert a successful ordinary neutral-frame build into its exact finite
+argument replay and normalized outer frame. -/
+theorem CostRegionTree.buildNeutralApplication?_eq_some_of_ordinary
+    {source : CIGSLT} {targetFree : WellSorted.FreeTypeContext}
+    (decompose : (available outer : List TypeExpr) → (pattern : Pattern) →
+      (type : TypeExpr) →
+        Option (CostRegionTree source targetFree available outer pattern type))
+    (available outer : List TypeExpr) (wireName : String)
+    (arguments : List Pattern) (category : String)
+    (constructor : source.DeclaredCostConstructor)
+    (neutral :
+      source.declaredCostConstructorRole constructor =
+          .interactionPrincipal ∨
+        ∃ kind, source.declaredCostConstructorRole constructor =
+          .apparatus kind)
+    (rendered : source.renderDeclaredCostConstructor constructor = wireName)
+    (categoryEq :
+      (source.materializeDeclaredCostConstructor constructor).category =
+        category)
+    (notBare : WellSorted.usesBareCollection?
+      (source.materializeDeclaredCostConstructor constructor) = false)
+    (ordinary : ReflectiveContextSupport.isQuoteConstructor
+      source.costWholeLanguage
+        (source.materializeDeclaredCostConstructor constructor).label = false)
+    {tree : CostRegionTree source targetFree available outer
+      (.apply wireName arguments) (.base category)}
+    (built : CostRegionTree.buildNeutralApplication? decompose available outer
+      wireName arguments category constructor neutral = some tree) :
+    ∃ children,
+      CostRegionArgumentTrees.build? decompose available outer arguments
+          (source.materializeDeclaredCostConstructor constructor).params =
+        some children ∧
+      tree.normalize.pattern = .apply wireName children.normalize.patterns := by
+  unfold CostRegionTree.buildNeutralApplication? at built
+  dsimp only at built
+  have notBareProof :
+      ¬ WellSorted.UsesBareCollection
+        (source.materializeDeclaredCostConstructor constructor) := by
+    intro bare
+    have checked :=
+      (WellSorted.usesBareCollection?_eq_true_iff
+        (source.materializeDeclaredCostConstructor constructor)).2 bare
+    rw [notBare] at checked
+    contradiction
+  have labelEq :
+      (source.materializeDeclaredCostConstructor constructor).label =
+        wireName :=
+    (source.materializeDeclaredCostConstructor_label constructor).trans
+      rendered
+  have ordinaryWire : ReflectiveContextSupport.isQuoteConstructor
+      source.costWholeLanguage wireName = false := by
+    rw [← labelEq]
+    exact ordinary
+  simp [rendered, categoryEq, notBare, ordinaryWire] at built
+  cases childrenBuilt : CostRegionArgumentTrees.build? decompose available outer
+      arguments
+        (source.materializeDeclaredCostConstructor constructor).params with
+  | none => simp [childrenBuilt] at built
+  | some children =>
+      simp [childrenBuilt] at built
+      subst tree
+      refine ⟨children, rfl, ?_⟩
+      exact CostRegionTree.neutralApplicationOrdinaryReindex_normalize
+        _ _ _ notBareProof _ rfl neutral ordinary children
+
+/-- Quote-frame inversion is separate because its children are elaborated at
+empty available depth with the former available context moved into `outer`. -/
+theorem CostRegionTree.buildNeutralApplication?_eq_some_of_quote
+    {source : CIGSLT} {targetFree : WellSorted.FreeTypeContext}
+    (decompose : (available outer : List TypeExpr) → (pattern : Pattern) →
+      (type : TypeExpr) →
+        Option (CostRegionTree source targetFree available outer pattern type))
+    (available outer : List TypeExpr) (wireName : String)
+    (arguments : List Pattern) (category : String)
+    (constructor : source.DeclaredCostConstructor)
+    (neutral :
+      source.declaredCostConstructorRole constructor =
+          .interactionPrincipal ∨
+        ∃ kind, source.declaredCostConstructorRole constructor =
+          .apparatus kind)
+    (rendered : source.renderDeclaredCostConstructor constructor = wireName)
+    (categoryEq :
+      (source.materializeDeclaredCostConstructor constructor).category =
+        category)
+    (notBare : WellSorted.usesBareCollection?
+      (source.materializeDeclaredCostConstructor constructor) = false)
+    (quoted : ReflectiveContextSupport.isQuoteConstructor
+      source.costWholeLanguage
+        (source.materializeDeclaredCostConstructor constructor).label = true)
+    {tree : CostRegionTree source targetFree available outer
+      (.apply wireName arguments) (.base category)}
+    (built : CostRegionTree.buildNeutralApplication? decompose available outer
+      wireName arguments category constructor neutral = some tree) :
+    ∃ children,
+      CostRegionArgumentTrees.build? decompose [] (available ++ outer) arguments
+          (source.materializeDeclaredCostConstructor constructor).params =
+        some children ∧
+      tree.normalize.pattern = .apply wireName children.normalize.patterns := by
+  unfold CostRegionTree.buildNeutralApplication? at built
+  dsimp only at built
+  have notBareProof :
+      ¬ WellSorted.UsesBareCollection
+        (source.materializeDeclaredCostConstructor constructor) := by
+    intro bare
+    have checked :=
+      (WellSorted.usesBareCollection?_eq_true_iff
+        (source.materializeDeclaredCostConstructor constructor)).2 bare
+    rw [notBare] at checked
+    contradiction
+  have labelEq :
+      (source.materializeDeclaredCostConstructor constructor).label =
+        wireName :=
+    (source.materializeDeclaredCostConstructor_label constructor).trans
+      rendered
+  have quotedWire : ReflectiveContextSupport.isQuoteConstructor
+      source.costWholeLanguage wireName = true := by
+    rw [← labelEq]
+    exact quoted
+  simp [rendered, categoryEq, notBare, quotedWire] at built
+  cases childrenBuilt : CostRegionArgumentTrees.build? decompose []
+      (available ++ outer) arguments
+        (source.materializeDeclaredCostConstructor constructor).params with
+  | none => simp [childrenBuilt] at built
+  | some children =>
+      simp [childrenBuilt] at built
+      subst tree
+      refine ⟨children, rfl, ?_⟩
+      exact CostRegionTree.neutralApplicationQuoteReindex_normalize
+        _ _ _ notBareProof _ rfl neutral quoted children
+
+/-- Once intrinsic decoding identifies a neutral generated constructor, the
+outer fuelled compiler is exactly the neutral-frame builder.  The two neutral
+roles differ only in dispatch evidence and therefore share one replay path. -/
+theorem CostRegionTree.buildFuel?_eq_some_buildNeutralApplication
+    {source : CIGSLT} {targetFree : WellSorted.FreeTypeContext}
+    (fuel : Nat) (available outer : List TypeExpr) (wireName : String)
+    (arguments : List Pattern) (category : String)
+    (constructor : source.DeclaredCostConstructor)
+    (neutral :
+      source.declaredCostConstructorRole constructor =
+          .interactionPrincipal ∨
+        ∃ kind, source.declaredCostConstructorRole constructor =
+          .apparatus kind)
+    (decoded : source.decodeDeclaredCostConstructor wireName = some constructor)
+    {built : CostRegionTree source targetFree available outer
+      (.apply wireName arguments) (.base category)}
+    (builtEq : CostRegionTree.buildFuel? (source := source)
+      (targetFree := targetFree) (fuel + 1) available outer
+        (.apply wireName arguments) (.base category) = some built) :
+    CostRegionTree.buildNeutralApplication?
+        (fun childAvailable childOuter childPattern childType =>
+          CostRegionTree.buildFuel? (source := source)
+            (targetFree := targetFree) fuel childAvailable childOuter
+              childPattern childType)
+        available outer wireName arguments category constructor neutral =
+      some built := by
+  simp only [CostRegionTree.buildFuel?] at builtEq
+  rcases neutral with role | ⟨kind, role⟩
+  · rw [source.decodeCostRegionApplication?_interactionPrincipal wireName
+      constructor decoded role] at builtEq
+    exact builtEq
+  · rw [source.decodeCostRegionApplication?_apparatus wireName kind
+      constructor decoded role] at builtEq
+    exact builtEq
+
+/-- Successful fuelled construction transports along a raw-pattern equality
+to the correspondingly reindexed result. -/
+theorem CostRegionTree.buildFuel?_eq_some_reindexPattern
+    {source : CIGSLT} {targetFree : WellSorted.FreeTypeContext}
+    {fuel : Nat} {available outer : List TypeExpr} {first second : Pattern}
+    {type : TypeExpr}
+    (patternEq : first = second)
+    {built : CostRegionTree source targetFree available outer first type}
+    (builtEq : CostRegionTree.buildFuel? (source := source)
+      (targetFree := targetFree) fuel available outer first type = some built) :
+    CostRegionTree.buildFuel? (source := source) (targetFree := targetFree)
+        fuel available outer second type =
+      some (built.reindexPattern patternEq) := by
+  cases patternEq
+  exact builtEq
+
+/-- Under structural unambiguity, exact recursive boundary replay makes any
+successfully built static presentation normalize exactly like an existing
+presentation of the same compact term.  All color, sort, node, and wrapper
+casts are discharged here; callers compare only ordinary `Pattern` values. -/
+theorem CostStaticRegionNode.UnambiguousStaticDecomposition.static_normalize_eq_of_build
+    {source : CIGSLT}
+    (unambiguous :
+      CostStaticRegionNode.UnambiguousStaticDecomposition source)
+    {targetFree : WellSorted.FreeTypeContext}
+    {firstColor secondColor : CostStaticColor} {outer : List TypeExpr}
+    (first : CostStaticRegionNode source firstColor targetFree)
+    (firstChildren : CostRegionBoundaryTrees source targetFree firstColor
+      first.finiteBoundaryTable)
+    (second : CostStaticRegionNode source secondColor targetFree)
+    (secondChildren : CostRegionBoundaryTrees source targetFree secondColor
+      second.finiteBoundaryTable)
+    (boundEq : second.targetBound = first.targetBound)
+    (targetTypeEq :
+      TypeExpr.base (secondColor.mapLangSort source second.sourceSort).1 =
+        TypeExpr.base (firstColor.mapLangSort source first.sourceSort).1)
+    (termEq : second.term.1 = first.term.1)
+    (decompose :
+      (boundary : TypedCostRegionBoundary source secondColor targetFree) →
+        Option (CostRegionTree source targetFree
+          boundary.boundary.targetSupport [] boundary.boundary.content
+            boundary.boundary.targetType))
+    (childrenBuilt : CostRegionBoundaryTrees.build? decompose
+      second.finiteBoundaryTable = some secondChildren)
+    (coherent : ∀
+      (boundary : TypedCostRegionBoundary source secondColor targetFree)
+      (original : CostRegionTree source targetFree
+        boundary.boundary.targetSupport [] boundary.boundary.content
+          boundary.boundary.targetType)
+      {built}, decompose boundary = some built →
+        original.normalize.pattern = built.normalize.pattern)
+    {built : CostRegionTree source targetFree first.targetBound outer
+      first.term.1
+        (TypeExpr.base
+          (firstColor.mapLangSort source first.sourceSort).1)}
+    (builtEq : HEq built
+      (CostRegionTree.static (outer := outer) second secondChildren)) :
+    (CostRegionTree.static (outer := outer) first firstChildren
+      ).normalize.pattern = built.normalize.pattern := by
+  have targetSortEq :
+      firstColor.mapLangSort source first.sourceSort =
+        secondColor.mapLangSort source second.sourceSort := by
+    apply Subtype.ext
+    injection targetTypeEq with nameEq
+    exact nameEq.symm
+  have colorEq :=
+    (unambiguous.staticNode_indices_eq first second boundEq.symm
+      targetSortEq termEq.symm).1
+  cases colorEq
+  have nodeEq : first = second := eq_of_heq
+    (unambiguous.staticNode_heq first second boundEq.symm targetSortEq
+      termEq.symm)
+  cases nodeEq
+  have builtExact :
+      built = CostRegionTree.static (outer := outer) first secondChildren :=
+    eq_of_heq builtEq
+  subst built
+  have valuesEq :=
+    firstChildren.normalizeValues_eq_of_build decompose coherent childrenBuilt
+  simpa only [CostRegionTree.normalize, CostStaticRegionNode.normalizeWith]
+    using congrArg first.normalizeRawWith valuesEq
+
+/-- Structural unambiguity upgrades successful executable replay from
+contextual agreement to exact child-first normalization.  The proof follows
+the single fuelled compiler: neutral syntax is replayed structurally, while a
+static node is compared through its proof-relevant plan and finite boundary
+forest. -/
+theorem CostRegionTree.normalize_pattern_eq_of_buildFuel
+    {source : CIGSLT}
+    (unambiguous :
+      CostStaticRegionNode.UnambiguousStaticDecomposition source)
+    {targetFree : WellSorted.FreeTypeContext} :
+    ∀ fuel {available outer : List TypeExpr} {pattern : Pattern}
+      {type : TypeExpr}
+      (original : CostRegionTree source targetFree available outer pattern type)
+      {built},
+      CostRegionTree.buildFuel? (source := source) (targetFree := targetFree)
+          fuel available outer pattern type = some built →
+        original.normalize.pattern = built.normalize.pattern := by
+  intro fuel
+  induction fuel with
+  | zero =>
+      intro available outer pattern type original built builtEq
+      simp [CostRegionTree.buildFuel?] at builtEq
+  | succ fuel inductionHypothesis =>
+      intro available outer pattern type original built builtEq
+      cases original with
+      | bvar lookup =>
+          simp [CostRegionTree.buildFuel?, lookup] at builtEq
+          subst built
+          rfl
+      | fvar lookup =>
+          simp [CostRegionTree.buildFuel?, lookup] at builtEq
+          subst built
+          rfl
+      | @static color staticOuter node children =>
+          let decompose := fun (candidateColor : CostStaticColor)
+              (boundary : TypedCostRegionBoundary source candidateColor
+                targetFree) =>
+            CostRegionTree.buildFuel? (source := source)
+              (targetFree := targetFree) fuel
+                boundary.boundary.targetSupport [] boundary.boundary.content
+                  boundary.boundary.targetType
+          rcases node.plan.pattern_shape_of_isStaticRoot node.rootStatic with
+              ⟨wireName, arguments, shape⟩ | ⟨collectionType, elements, rest,
+                shape⟩
+          · obtain ⟨constructor, decoded, role⟩ :=
+              node.plan.application_dispatch_of_isStaticRoot node.rootStatic
+                shape
+            have reindexedBuilt :=
+              CostRegionTree.buildFuel?_eq_some_reindexPattern shape builtEq
+            simp only [CostRegionTree.buildFuel?] at reindexedBuilt
+            rw [source.decodeCostRegionApplication?_static wireName color
+              constructor decoded role] at reindexedBuilt
+            obtain ⟨second, secondChildren, boundEq, targetTypeEq, termEq,
+                childrenBuilt, treeEq⟩ :=
+              CostRegionTree.buildStaticRootForColor?_eq_some decompose
+                node.targetBound outer (.apply wireName arguments)
+                  (.base (color.mapLangSort source node.sourceSort).1) color
+                    reindexedBuilt
+            have reindexEq : HEq built (built.reindexPattern shape) :=
+              CostRegionTree.reindexPattern_heq shape built
+            have treeEqOriginal : HEq built
+                (CostRegionTree.static (outer := outer) second
+                  secondChildren) :=
+              HEq.trans reindexEq treeEq
+            have exactReplay :=
+              unambiguous.static_normalize_eq_of_build node children second
+                secondChildren boundEq targetTypeEq (termEq.trans shape.symm)
+                (decompose color)
+                childrenBuilt
+                (fun boundary child builtChild childBuilt =>
+                  inductionHypothesis child childBuilt)
+                treeEqOriginal
+            exact exactReplay
+          · have reindexedBuilt :=
+              CostRegionTree.buildFuel?_eq_some_reindexPattern shape builtEq
+            simp only [CostRegionTree.buildFuel?] at reindexedBuilt
+            obtain ⟨secondColor, second, secondChildren, boundEq,
+                targetTypeEq, termEq, childrenBuilt, treeEq⟩ :=
+              CostRegionTree.buildStaticRoot?_eq_some decompose node.targetBound
+                outer (.collection collectionType elements rest)
+                  (.base (color.mapLangSort source node.sourceSort).1)
+                    reindexedBuilt
+            have reindexEq : HEq built (built.reindexPattern shape) :=
+              CostRegionTree.reindexPattern_heq shape built
+            have treeEqOriginal : HEq built
+                (CostRegionTree.static (outer := outer) second
+                  secondChildren) :=
+              HEq.trans reindexEq treeEq
+            have exactReplay :=
+              unambiguous.static_normalize_eq_of_build node children second
+                secondChildren boundEq targetTypeEq (termEq.trans shape.symm)
+                (decompose secondColor) childrenBuilt
+                (fun boundary child builtChild childBuilt =>
+                  inductionHypothesis child childBuilt)
+                treeEqOriginal
+            exact exactReplay
+      | neutralApplicationOrdinary membership notBare constructor materializes
+          neutral ordinary children =>
+          rename_i rule arguments
+          subst rule
+          have decoded : source.decodeDeclaredCostConstructor
+              (source.materializeDeclaredCostConstructor constructor).label =
+                some constructor := by
+            rw [source.materializeDeclaredCostConstructor_label constructor]
+            exact source.decodeDeclaredCostConstructor_render constructor
+          have rendered : source.renderDeclaredCostConstructor constructor =
+              (source.materializeDeclaredCostConstructor constructor).label :=
+            (source.materializeDeclaredCostConstructor_label constructor).symm
+          have notBareChecked : WellSorted.usesBareCollection?
+              (source.materializeDeclaredCostConstructor constructor) = false :=
+            Bool.eq_false_of_not_eq_true (fun checked =>
+              notBare
+                ((WellSorted.usesBareCollection?_eq_true_iff
+                  (source.materializeDeclaredCostConstructor constructor)).mp
+                    checked))
+          have neutralBuilt :=
+            CostRegionTree.buildFuel?_eq_some_buildNeutralApplication
+              fuel available outer
+                (source.materializeDeclaredCostConstructor constructor).label
+                arguments
+                (source.materializeDeclaredCostConstructor constructor).category
+                constructor neutral decoded builtEq
+          obtain ⟨builtChildren, childrenBuilt, builtNormalized⟩ :=
+            CostRegionTree.buildNeutralApplication?_eq_some_of_ordinary
+              (fun childAvailable childOuter childPattern childType =>
+                CostRegionTree.buildFuel? (source := source)
+                  (targetFree := targetFree) fuel childAvailable childOuter
+                    childPattern childType)
+              _ _ _ _ _ constructor neutral rendered rfl notBareChecked
+                ordinary neutralBuilt
+          have childrenEq := children.normalize_patterns_eq_of_build
+            (fun childAvailable childOuter childPattern childType =>
+              CostRegionTree.buildFuel? (source := source)
+                (targetFree := targetFree) fuel childAvailable childOuter
+                  childPattern childType)
+            (fun child builtChild childBuilt =>
+              inductionHypothesis child childBuilt)
+            childrenBuilt
+          simpa only [CostRegionTree.normalize] using
+            (congrArg (Pattern.apply
+              (source.materializeDeclaredCostConstructor constructor).label)
+              childrenEq).trans builtNormalized.symm
+      | neutralApplicationQuote membership notBare constructor materializes
+          neutral quoted children =>
+          rename_i rule arguments
+          subst rule
+          have decoded : source.decodeDeclaredCostConstructor
+              (source.materializeDeclaredCostConstructor constructor).label =
+                some constructor := by
+            rw [source.materializeDeclaredCostConstructor_label constructor]
+            exact source.decodeDeclaredCostConstructor_render constructor
+          have rendered : source.renderDeclaredCostConstructor constructor =
+              (source.materializeDeclaredCostConstructor constructor).label :=
+            (source.materializeDeclaredCostConstructor_label constructor).symm
+          have notBareChecked : WellSorted.usesBareCollection?
+              (source.materializeDeclaredCostConstructor constructor) = false :=
+            Bool.eq_false_of_not_eq_true (fun checked =>
+              notBare
+                ((WellSorted.usesBareCollection?_eq_true_iff
+                  (source.materializeDeclaredCostConstructor constructor)).mp
+                    checked))
+          have neutralBuilt :=
+            CostRegionTree.buildFuel?_eq_some_buildNeutralApplication
+              fuel available outer
+                (source.materializeDeclaredCostConstructor constructor).label
+                arguments
+                (source.materializeDeclaredCostConstructor constructor).category
+                constructor neutral decoded builtEq
+          obtain ⟨builtChildren, childrenBuilt, builtNormalized⟩ :=
+            CostRegionTree.buildNeutralApplication?_eq_some_of_quote
+              (fun childAvailable childOuter childPattern childType =>
+                CostRegionTree.buildFuel? (source := source)
+                  (targetFree := targetFree) fuel childAvailable childOuter
+                    childPattern childType)
+              _ _ _ _ _ constructor neutral rendered rfl notBareChecked
+                quoted neutralBuilt
+          have childrenEq := children.normalize_patterns_eq_of_build
+            (fun childAvailable childOuter childPattern childType =>
+              CostRegionTree.buildFuel? (source := source)
+                (targetFree := targetFree) fuel childAvailable childOuter
+                  childPattern childType)
+            (fun child builtChild childBuilt =>
+              inductionHypothesis child childBuilt)
+            childrenBuilt
+          simpa only [CostRegionTree.normalize] using
+            (congrArg (Pattern.apply
+              (source.materializeDeclaredCostConstructor constructor).label)
+              childrenEq).trans builtNormalized.symm
+      | lambda bodyTree =>
+          rename_i binder body domain codomain
+          simp only [CostRegionTree.buildFuel?] at builtEq
+          cases bodyBuilt : CostRegionTree.buildFuel? (source := source)
+              (targetFree := targetFree) fuel (domain :: available) outer body
+                codomain with
+          | none => simp [bodyBuilt] at builtEq
+          | some builtBody =>
+              simp [bodyBuilt] at builtEq
+              subst built
+              simpa only [CostRegionTree.normalize] using
+                congrArg (Pattern.lambda binder)
+                  (inductionHypothesis bodyTree bodyBuilt)
+      | multiLambda bodyTree =>
+          rename_i arity binders body domain codomain
+          simp only [CostRegionTree.buildFuel?] at builtEq
+          cases bodyBuilt : CostRegionTree.buildFuel? (source := source)
+              (targetFree := targetFree) fuel
+                (List.replicate arity domain ++ available) outer body codomain with
+          | none => simp [bodyBuilt] at builtEq
+          | some builtBody =>
+              simp [bodyBuilt] at builtEq
+              subst built
+              simpa only [CostRegionTree.normalize] using
+                congrArg (Pattern.multiLambda arity binders)
+                  (inductionHypothesis bodyTree bodyBuilt)
+      | subst bodyTree replacementTree =>
+          simp [CostRegionTree.buildFuel?] at builtEq
+      | collection children =>
+          rename_i collectionType elements rest elementType
+          simp only [CostRegionTree.buildFuel?] at builtEq
+          cases childrenBuilt : CostRegionElementTrees.build?
+              (fun childAvailable childOuter childPattern childType =>
+                CostRegionTree.buildFuel? (source := source)
+                  (targetFree := targetFree) fuel childAvailable childOuter
+                    childPattern childType)
+              available outer elements elementType with
+          | none => simp [childrenBuilt] at builtEq
+          | some builtChildren =>
+              simp [childrenBuilt] at builtEq
+              subst built
+              have childrenEq := children.normalize_patterns_eq_of_build
+                (fun childAvailable childOuter childPattern childType =>
+                  CostRegionTree.buildFuel? (source := source)
+                    (targetFree := targetFree) fuel childAvailable childOuter
+                      childPattern childType)
+                (fun child builtChild childBuilt =>
+                  inductionHypothesis child childBuilt)
+                childrenBuilt
+              simpa only [CostRegionTree.normalize] using
+                congrArg (fun normalizedElements =>
+                  Pattern.collection collectionType normalizedElements rest)
+                    childrenEq
+
+/-- A strictly stronger raw-fiber normalization interface.
+
+This interface is retained as a negative control: it requires every raw
+equation path to remain in every independently chosen typing fiber.  That
+property is not required by Cost₁ and fails for valid languages with
+type-indistinguishable binder occurrences.  The operative Cost₁ theorem is
+the proof-relevant typed interface in `CostRegionNormalization`. -/
+structure CostRawFiberNormalizationLaws (source : CIGSLT) : Prop where
+  mappedGeneratorAction : CostStaticMappedGeneratorAction source
+  ambientRenamingStable :
+    SupportedEquationAmbientRenamingStable source.costWholeLanguage
+  canonicalPathSafe : CostStaticCanonicalPathSafe source
+  /-- Raw normalization paths remain inside every exact typed open fiber.
+  This law is independent of substitution naturality: it controls the
+  intermediate vertices of the authored equation closure itself. -/
+  fiberStable : OpenEquationFiberStable source.costWholeLanguage
+
+mutual
+  /-- Every valid proof-relevant region tree normalizes inside the contextual
+  equation class of its exact input.  Static nodes use the one-root canonical
+  path and finite supported substitution; all neutral syntax is lifted only
+  through syntax-derived one-hole contexts. -/
+  theorem CostRegionTree.normalize_equationEquiv
+      {source : CIGSLT} (laws : CostRawFiberNormalizationLaws source)
+      {targetFree : WellSorted.FreeTypeContext}
+      {available outer : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
+      (tree : CostRegionTree source targetFree available outer pattern type) :
+      EquationSemantics.EquationEquiv defaultBasePremises
+        source.costWholeLanguage tree.normalize.pattern pattern :=
+    match tree with
+    | @CostRegionTree.bvar _ _ available outer index type lookup => by
+        simpa only [CostRegionTree.normalize,
+          EquationSemantics.EquationEquiv] using
+            (Relation.EqvGen.refl (Pattern.bvar index) :
+              Relation.EqvGen
+                (EquationSemantics.EquationContextStep defaultBasePremises
+                  source.costWholeLanguage)
+                (.bvar index) (.bvar index))
+    | @CostRegionTree.fvar _ _ available outer name type lookup => by
+        simpa only [CostRegionTree.normalize,
+          EquationSemantics.EquationEquiv] using
+            (Relation.EqvGen.refl (Pattern.fvar name) :
+              Relation.EqvGen
+                (EquationSemantics.EquationContextStep defaultBasePremises
+                  source.costWholeLanguage)
+                (.fvar name) (.fvar name))
+    | @CostRegionTree.static _ _ color outer node children => by
+        have valuesEquivalent :
+            (children.normalizeValues.supportedOpenAssignment
+              node.boundaryTable).Equivalent
+              ((TypedCostRegionBoundaryTable.Values.original
+                node.boundaryTable).supportedOpenAssignment
+                  node.boundaryTable) :=
+          children.normalizeValues_equivalent_original laws
+        have normalized := node.normalizeRawWith_equationEquiv
+          laws.mappedGeneratorAction children.normalizeValues valuesEquivalent
+          (laws.canonicalPathSafe node)
+        simpa only [CostRegionTree.normalize,
+          CostStaticRegionNode.normalizeWith] using normalized
+    | @CostRegionTree.neutralApplicationOrdinary _ _ available outer rule
+        arguments membership notBareCollection constructor materializes neutral
+        ordinary children => by
+        simpa only [CostRegionTree.normalize] using
+          EquationSemantics.equationEquiv_apply_of_forall₂
+            _ (children.normalize_equivalent_original laws)
+    | @CostRegionTree.neutralApplicationQuote _ _ available outer rule
+        arguments membership notBareCollection constructor materializes neutral
+        quoted children => by
+        simpa only [CostRegionTree.normalize] using
+          EquationSemantics.equationEquiv_apply_of_forall₂
+            _ (children.normalize_equivalent_original laws)
+    | @CostRegionTree.lambda _ _ available outer binder body domain codomain
+        bodyTree => by
+        have bodyEquivalent := bodyTree.normalize_equationEquiv laws
+        simpa only [CostRegionTree.normalize, OneHoleContext.fill] using
+          EquationSemantics.equationEquiv_fill
+            (.lambda _ .hole) bodyEquivalent
+    | @CostRegionTree.multiLambda _ _ available outer arity binders body domain
+        codomain bodyTree => by
+        have bodyEquivalent := bodyTree.normalize_equationEquiv laws
+        simpa only [CostRegionTree.normalize, OneHoleContext.fill] using
+          EquationSemantics.equationEquiv_fill
+            (.multiLambda _ _ .hole) bodyEquivalent
+    | @CostRegionTree.subst _ _ available outer body replacement domain codomain
+        bodyTree replacementTree => by
+        have bodyEquivalent := bodyTree.normalize_equationEquiv laws
+        have replacementEquivalent :=
+          replacementTree.normalize_equationEquiv laws
+        have bodyStep := EquationSemantics.equationEquiv_fill
+          (.substBody .hole replacementTree.normalize.pattern) bodyEquivalent
+        have replacementStep := EquationSemantics.equationEquiv_fill
+          (.substReplacement body .hole) replacementEquivalent
+        have bodyStep' : EquationSemantics.EquationEquiv defaultBasePremises
+            source.costWholeLanguage
+            (.subst bodyTree.normalize.pattern
+              replacementTree.normalize.pattern)
+            (.subst body replacementTree.normalize.pattern) := by
+          simpa only [CostRegionTree.normalize, OneHoleContext.fill] using
+            bodyStep
+        have replacementStep' :
+            EquationSemantics.EquationEquiv defaultBasePremises
+              source.costWholeLanguage
+              (.subst body replacementTree.normalize.pattern)
+              (.subst body replacement) := by
+          simpa only [OneHoleContext.fill] using replacementStep
+        have combined : EquationSemantics.EquationEquiv defaultBasePremises
+            source.costWholeLanguage
+            (.subst bodyTree.normalize.pattern
+              replacementTree.normalize.pattern)
+            (.subst body replacement) := by
+          unfold EquationSemantics.EquationEquiv at bodyStep' replacementStep' ⊢
+          exact Relation.EqvGen.trans _ _ _ bodyStep' replacementStep'
+        simpa only [CostRegionTree.normalize] using combined
+    | @CostRegionTree.collection _ _ available outer collectionType elements
+        rest elementType children => by
+        simpa only [CostRegionTree.normalize] using
+          EquationSemantics.equationEquiv_collection_of_forall₂
+            _ _ (children.normalize_equivalent_original laws)
+  termination_by tree.weight
+  decreasing_by
+    all_goals subst_vars
+    all_goals simp [CostRegionTree.weight]
+    all_goals omega
+
+  /-- Normalized constructor arguments are pointwise equivalent to the
+  authored argument list, retaining order and multiplicity. -/
+  theorem CostRegionArgumentTrees.normalize_equivalent_original
+      {source : CIGSLT} (laws : CostRawFiberNormalizationLaws source)
+      {targetFree : WellSorted.FreeTypeContext}
+      {available outer : List TypeExpr} {arguments : List Pattern}
+      {parameters : List TermParam}
+      (trees : CostRegionArgumentTrees source targetFree available outer
+        arguments parameters) :
+      List.Forall₂
+        (EquationSemantics.EquationEquiv defaultBasePremises
+          source.costWholeLanguage)
+        trees.normalize.patterns arguments :=
+    match trees with
+    | @CostRegionArgumentTrees.nil _ _ available outer => by
+        simpa only [CostRegionArgumentTrees.normalize] using
+          (List.Forall₂.nil : List.Forall₂
+            (EquationSemantics.EquationEquiv defaultBasePremises
+              source.costWholeLanguage) [] [])
+    | @CostRegionArgumentTrees.cons _ _ available outer argument arguments
+        parameter parameters expected representation parameterType head tail => by
+        simpa only [CostRegionArgumentTrees.normalize] using
+          List.Forall₂.cons (head.normalize_equationEquiv laws)
+            (tail.normalize_equivalent_original laws)
+  termination_by trees.weight
+  decreasing_by
+    all_goals simp [CostRegionArgumentTrees.weight]
+    all_goals omega
+
+  /-- Normalized collection elements are pointwise equivalent to the authored
+  element list, retaining order and multiplicity. -/
+  theorem CostRegionElementTrees.normalize_equivalent_original
+      {source : CIGSLT} (laws : CostRawFiberNormalizationLaws source)
+      {targetFree : WellSorted.FreeTypeContext}
+      {available outer : List TypeExpr} {elements : List Pattern}
+      {elementType : TypeExpr}
+      (trees : CostRegionElementTrees source targetFree available outer elements
+        elementType) :
+      List.Forall₂
+        (EquationSemantics.EquationEquiv defaultBasePremises
+          source.costWholeLanguage)
+        trees.normalize.patterns elements :=
+    match trees with
+    | @CostRegionElementTrees.nil _ _ available outer elementType => by
+        simpa only [CostRegionElementTrees.normalize] using
+          (List.Forall₂.nil : List.Forall₂
+            (EquationSemantics.EquationEquiv defaultBasePremises
+              source.costWholeLanguage) [] [])
+    | @CostRegionElementTrees.cons _ _ available outer element elements
+        elementType head tail => by
+        simpa only [CostRegionElementTrees.normalize] using
+          List.Forall₂.cons (head.normalize_equationEquiv laws)
+            (tail.normalize_equivalent_original laws)
+  termination_by trees.weight
+  decreasing_by
+    all_goals simp [CostRegionElementTrees.weight]
+    all_goals omega
+
+  /-- Recursively normalized finite boundary values are pointwise equivalent
+  to the exact original occurrence values under every surrounding binder
+  weakening. -/
+  theorem CostRegionBoundaryTrees.normalizeValues_equivalent_original
+      {source : CIGSLT} (laws : CostRawFiberNormalizationLaws source)
+      {targetFree : WellSorted.FreeTypeContext} {color : CostStaticColor}
+      {occurrences : List CostRegionOccurrence}
+      {table : TypedCostRegionBoundaryTable source color targetFree occurrences}
+      (trees : CostRegionBoundaryTrees source targetFree color table) :
+      (trees.normalizeValues.supportedOpenAssignment table).Equivalent
+        ((TypedCostRegionBoundaryTable.Values.original table
+          ).supportedOpenAssignment table) :=
+    match trees with
+    | @CostRegionBoundaryTrees.nil _ _ color => by
+        intro lookup shift
+        simp only [CostRegionBoundaryTrees.normalizeValues,
+          TypedCostRegionBoundaryTable.Values.original,
+          EquationSemantics.EquationEquiv]
+        exact Relation.EqvGen.refl _
+    | @CostRegionBoundaryTrees.cons _ _ color occurrence occurrences boundary
+        content tail head children => by
+        let value : WellSorted.OpenPattern source.costWholeLanguage targetFree
+            boundary.boundary.targetSupport boundary.boundary.targetType := by
+          refine ⟨head.normalize.pattern, ?_⟩
+          exact ⟨by simpa only [List.append_nil] using head.normalize.typed,
+            head.normalize.canonicalBinderMetadata
+              boundary.contentCanonicalBinderMetadata,
+            head.normalize.objectPattern boundary.contentObjectPattern,
+            by
+              intro presentation membership
+              exact head.normalize.reflectiveScope presentation membership
+                (Nat.le_refl boundary.boundary.targetSupport.length)
+                (boundary.contentReflectiveScopeSafe presentation membership)⟩
+        have headEquivalent : ∀ shift,
+            EquationSemantics.EquationEquiv defaultBasePremises
+              source.costWholeLanguage
+              (liftBVars 0 shift value.1)
+              (liftBVars 0 shift boundary.boundary.content) := by
+          intro shift
+          simpa only [value] using equationEquiv_liftBVars
+            laws.ambientRenamingStable 0 shift
+              (head.normalize_equationEquiv laws)
+        have tailEquivalent :
+            (children.normalizeValues.supportedOpenAssignment tail).Equivalent
+              ((TypedCostRegionBoundaryTable.Values.original tail
+                ).supportedOpenAssignment tail) :=
+          children.normalizeValues_equivalent_original laws
+        intro lookup shift
+        simpa only [CostRegionBoundaryTrees.normalizeValues, value] using
+          (TypedCostRegionBoundaryTable.Values.supportedOpenAssignment_cons_equivalent
+            value children.normalizeValues headEquivalent tailEquivalent
+              lookup shift)
+  termination_by trees.weight
+  decreasing_by
+    all_goals simp [CostRegionBoundaryTrees.weight]
+    all_goals omega
+end
+
+/-- Unary normalization makes every overlap and every executable chooser
+semantically irrelevant: any two proof-relevant decompositions of the same
+typed Cost term normalize into the same authored contextual equation class.
+
+This conclusion quantifies over complete trees rather than over a particular
+enumeration strategy, so it covers color overlap, collection-rule overlap,
+boundary occurrence order, and recursive decomposition choices uniformly.
+It deliberately concludes `EquationEquiv`, not exact representative equality;
+the latter is the additional coherence law required by a canonical section. -/
+theorem CostRegionTree.normalize_overlap_equivalent
+    {source : CIGSLT} (laws : CostRawFiberNormalizationLaws source)
+    {targetFree : WellSorted.FreeTypeContext}
+    {available outer : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
+    (first second : CostRegionTree source targetFree available outer pattern
+      type) :
+    EquationSemantics.EquationEquiv defaultBasePremises
+      source.costWholeLanguage first.normalize.pattern
+        second.normalize.pattern := by
+  have firstToInput := first.normalize_equationEquiv laws
+  have secondToInput := second.normalize_equationEquiv laws
+  unfold EquationSemantics.EquationEquiv at firstToInput secondToInput ⊢
+  exact Relation.EqvGen.trans _ _ _ firstToInput
+    (Relation.EqvGen.symm _ _ secondToInput)
+
+/-- Original-value vectors respect finite table concatenation exactly. -/
+theorem TypedCostRegionBoundaryTable.Values.original_append
+    {source : CIGSLT} {targetFree : WellSorted.FreeTypeContext}
+    {color : CostStaticColor}
+    {leftOccurrences rightOccurrences : List CostRegionOccurrence}
+    (left : TypedCostRegionBoundaryTable source color targetFree
+      leftOccurrences)
+    (right : TypedCostRegionBoundaryTable source color targetFree
+      rightOccurrences) :
+    TypedCostRegionBoundaryTable.Values.original
+        (TypedCostRegionBoundaryTable.append left right) =
+      TypedCostRegionBoundaryTable.Values.append
+        (TypedCostRegionBoundaryTable.Values.original left)
+        (TypedCostRegionBoundaryTable.Values.original right) := by
+  induction left with
+  | nil =>
+      simp [TypedCostRegionBoundaryTable.append,
+        TypedCostRegionBoundaryTable.Values.original,
+        TypedCostRegionBoundaryTable.Values.append]
+  | cons boundary content tail inductionHypothesis =>
+      change TypedCostRegionBoundaryTable.Values.cons _
+          (TypedCostRegionBoundaryTable.Values.original
+            (TypedCostRegionBoundaryTable.append tail right)) =
+        TypedCostRegionBoundaryTable.Values.cons _
+          (TypedCostRegionBoundaryTable.Values.append
+            (TypedCostRegionBoundaryTable.Values.original tail)
+            (TypedCostRegionBoundaryTable.Values.original right))
+      congr
+
+/-- Repackage child-first normalization in the established open-pattern
+carrier.  The decomposition certificate is only a view of the authored Cost
+term; the returned object remains in the sole `LanguageDef`-derived carrier. -/
+def CostRegionTree.normalizeOpen {source : CIGSLT}
+    {targetFree : WellSorted.FreeTypeContext}
+    {available outer : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
+    (tree : CostRegionTree source targetFree available outer pattern type)
+    (canonical : pattern.hasCanonicalBinderMetadata = true)
+    (object : WellSorted.isObjectPattern pattern = true)
+    (scope : WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
+      available.length pattern) :
+    WellSorted.OpenPattern source.costWholeLanguage targetFree
+      (available ++ outer) type :=
+  tree.normalize.toOpenPattern canonical object scope
+
+@[simp]
+theorem CostRegionTree.normalizeOpen_pattern {source : CIGSLT}
+    {targetFree : WellSorted.FreeTypeContext}
+    {available outer : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
+    (tree : CostRegionTree source targetFree available outer pattern type)
+    (canonical : pattern.hasCanonicalBinderMetadata = true)
+    (object : WellSorted.isObjectPattern pattern = true)
+    (scope : WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
+      available.length pattern) :
+    (tree.normalizeOpen canonical object scope).1 = tree.normalize.pattern :=
+  rfl
+
+namespace CostOpenElaboration
+
+/-- Normalize one proof-relevant elaboration and erase only after the complete
+alternating tree has been normalized.  This is the semantic normalization
+boundary; compiling compact syntax chooses an inhabitant of this carrier but
+does not define equality between different inhabitants. -/
+def normalizeErasure {source : CIGSLT}
+    {targetFree : WellSorted.FreeTypeContext}
+    {targetBound : List TypeExpr} {targetSort : LangSort source.costWholeLanguage}
+    {term : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
+      targetSort}
+    (elaboration : CostOpenElaboration source term) :
+    WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
+      targetSort := by
+  let normalized := elaboration.tree.normalizeOpen term.2.2.1 term.2.2.2.1
+    term.2.2.2.2
+  refine ⟨normalized.1, ?_⟩
+  change WellSorted.OpenPatternWellSorted source.costWholeLanguage targetFree
+    targetBound (.base targetSort.1) normalized.1
+  simpa using normalized.2
+
+@[simp]
+theorem normalizeErasure_pattern {source : CIGSLT}
+    {targetFree : WellSorted.FreeTypeContext}
+    {targetBound : List TypeExpr} {targetSort : LangSort source.costWholeLanguage}
+    {term : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
+      targetSort}
+    (elaboration : CostOpenElaboration source term) :
+    elaboration.normalizeErasure.1 = elaboration.tree.normalize.pattern :=
+  rfl
+
+/-- Pull the sole authored typed equation relation back along compact erasure.
+This is deliberately an observational relation for the compact backend: it
+forgets proof-relevant declaration and region choices, so it is not the
+semantic equation relation of elaborated Cost syntax. -/
+def costCompactObservationSetoid (source : CIGSLT)
+    (targetFree : WellSorted.FreeTypeContext) (targetBound : List TypeExpr)
+    (targetSort : LangSort source.costWholeLanguage) :
+    Setoid (CostElabTerm source targetFree targetBound targetSort) where
+  r left right :=
+    (openEquationSetoid source.costIGSLT targetFree targetBound targetSort).r
+      (erase left) (erase right)
+  iseqv := by
+    constructor
+    · intro term
+      exact (openEquationSetoid source.costIGSLT targetFree targetBound
+        targetSort).iseqv.refl (erase term)
+    · intro left right equivalent
+      exact (openEquationSetoid source.costIGSLT targetFree targetBound
+        targetSort).iseqv.symm equivalent
+    · intro left middle right first second
+      exact (openEquationSetoid source.costIGSLT targetFree targetBound
+        targetSort).iseqv.trans first second
+
+@[simp]
+theorem costCompactObservationSetoid_r_iff (source : CIGSLT)
+    (targetFree : WellSorted.FreeTypeContext) (targetBound : List TypeExpr)
+    (targetSort : LangSort source.costWholeLanguage)
+    (left right : CostElabTerm source targetFree targetBound targetSort) :
+    (costCompactObservationSetoid source targetFree targetBound targetSort).r
+        left right ↔
+      (openEquationSetoid source.costIGSLT targetFree targetBound targetSort).r
+        (erase left) (erase right) :=
+  Iff.rfl
+
+/-- Normalize on the semantic elaboration carrier, then deterministically
+re-elaborate the normalized compact term.  Exact laws below prove that this
+output is independent of the input elaboration and constant on authored
+equation classes. -/
+def normalizeTerm (source : CIGSLT)
+    {targetFree : WellSorted.FreeTypeContext}
+    {targetBound : List TypeExpr} {targetSort : LangSort source.costWholeLanguage}
+    (term : CostElabTerm source targetFree targetBound targetSort) :
+    CostElabTerm source targetFree targetBound targetSort :=
+  compileTerm source term.2.normalizeErasure
+
+@[simp]
+theorem erase_normalizeTerm (source : CIGSLT)
+    {targetFree : WellSorted.FreeTypeContext}
+    {targetBound : List TypeExpr} {targetSort : LangSort source.costWholeLanguage}
+    (term : CostElabTerm source targetFree targetBound targetSort) :
+    erase (normalizeTerm source term) = term.2.normalizeErasure :=
+  rfl
+
+end CostOpenElaboration
+
+/-- Executable normalization on the exact typed open carrier of the generated
+Cost presentation.  The computation first performs the total proof-relevant
+elaboration and then normalizes children before their enclosing static
+region.  The result is reindexed only across `bound ++ [] = bound`; its raw
+pattern is unchanged by that transport. -/
+def CIGSLT.costNormalizeOpen (source : CIGSLT)
+    {targetFree : WellSorted.FreeTypeContext}
+    {targetBound : List TypeExpr} {targetSort : LangSort source.costWholeLanguage}
+    (term : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
+      targetSort) :
+    WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
+      targetSort :=
+  (CostOpenElaboration.compile source term).normalizeErasure
+
+@[simp]
+theorem CIGSLT.costNormalizeOpen_pattern (source : CIGSLT)
+    {targetFree : WellSorted.FreeTypeContext}
+    {targetBound : List TypeExpr} {targetSort : LangSort source.costWholeLanguage}
+    (term : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
+      targetSort) :
+    (source.costNormalizeOpen term).1 =
+      (CostRegionTree.buildOpenTerm (source := source) term).normalize.pattern :=
+  rfl
+
+/-- Exact compactification coherence for proof-relevant elaborations of one
+typed term.  This property is intentionally stronger than contextual
+equivalence: it states that erasing normalized semantic elaborations cannot
+observe declaration enumeration, colour-root choice, or region-cut choice.
+
+It is a separate full-subcategory law.  Unary normalization proves only that
+all such results lie in one authored equation class. -/
+def CompactCostNormalizationCoherent (source : CIGSLT) : Prop :=
+  ∀ {targetFree : WellSorted.FreeTypeContext}
+    {targetBound : List TypeExpr} {targetSort : LangSort source.costWholeLanguage}
+    (term : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
+      targetSort)
+    (first second : CostOpenElaboration source term),
+    first.normalizeErasure = second.normalizeErasure
+
+/-- The decidable structural criterion discharges compact coherence by
+replaying both semantic elaborations through the same deterministic compiler.
+This proves exact equality of independently normalized trees; it is not the
+definitional compile/erase retraction. -/
+theorem CostStaticRegionNode.UnambiguousStaticDecomposition.compactCoherent
+    {source : CIGSLT}
+    (unambiguous :
+      CostStaticRegionNode.UnambiguousStaticDecomposition source) :
+    CompactCostNormalizationCoherent source := by
+  intro targetFree targetBound targetSort term first second
+  let compiled := CostRegionTree.buildOpenTerm (source := source) term
+  have compiledEq : CostRegionTree.buildFuel? (source := source)
+      (targetFree := targetFree) (costRegionPatternWeight term.1 + 1)
+        targetBound [] term.1 (.base targetSort.1) = some compiled := by
+    simpa only [CostRegionTree.build?] using
+      (CostRegionTree.build?_eq_some_buildOpenTerm (source := source) term)
+  have firstEq := CostRegionTree.normalize_pattern_eq_of_buildFuel unambiguous
+    (costRegionPatternWeight term.1 + 1) first.tree compiledEq
+  have secondEq := CostRegionTree.normalize_pattern_eq_of_buildFuel unambiguous
+    (costRegionPatternWeight term.1 + 1) second.tree compiledEq
+  apply Subtype.ext
+  exact firstEq.trans secondEq.symm
+
+/-- Compact coherence identifies arbitrary semantic elaboration with the
+deterministic elaboration used by the executable raw interface. -/
+theorem CostOpenElaboration.normalizeErasure_eq_costNormalizeOpen
+    {source : CIGSLT} (coherent : CompactCostNormalizationCoherent source)
+    {targetFree : WellSorted.FreeTypeContext}
+    {targetBound : List TypeExpr} {targetSort : LangSort source.costWholeLanguage}
+    {term : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
+      targetSort}
+    (elaboration : CostOpenElaboration source term) :
+    elaboration.normalizeErasure = source.costNormalizeOpen term :=
+  coherent term elaboration (CostOpenElaboration.compile source term)
+
+/-- Exact local obligation for the Cost normalizer: the two endpoints of one
+authored typed equation generator receive definitionally equal canonical
+representatives.  Proving this property requires the ordinary transported
+equation and reflective-canonical cases; no closure bureaucracy is included
+in the statement. -/
+def CostOpenGeneratorInvariant (source : CIGSLT) : Prop :=
+  ∀ {targetFree : WellSorted.FreeTypeContext}
+    {targetBound : List TypeExpr} {targetSort : LangSort source.costWholeLanguage}
+    {left right : WellSorted.OpenTerm source.costWholeLanguage targetFree
+      targetBound targetSort},
+    openEquationGenerator source.costIGSLT targetFree targetBound targetSort
+        left right →
+      source.costNormalizeOpen left = source.costNormalizeOpen right
+
+/-- If recursive children reproduce their original boundary values, the
+full static-tree normalizer agrees exactly with the established certified
+one-stratum normalizer.  This is the old/new executor agreement boundary;
+recursive normalization differs only by supplying already-normalized child
+values. -/
+theorem CostRegionTree.normalize_static_eq_normalizeRaw_of_values_original
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {outer : List TypeExpr}
+    (node : CostStaticRegionNode source color targetFree)
+    (children : CostRegionBoundaryTrees source targetFree color
+      node.finiteBoundaryTable)
+    (identity : children.normalizeValues =
+      TypedCostRegionBoundaryTable.Values.original node.finiteBoundaryTable) :
+    (CostRegionTree.static (outer := outer) node children).normalize.pattern =
+      node.normalizeRaw := by
+  simp only [CostRegionTree.normalize]
+  rw [identity]
+  exact node.normalizeRawWith_original
+
+/-- An empty finite boundary forest necessarily supplies the identity value
+vector.  No hidden default assignment is involved. -/
+theorem CostRegionBoundaryTrees.normalizeValues_eq_original_of_entries_eq_nil
+    {source : CIGSLT} {targetFree : WellSorted.FreeTypeContext}
+    {color : CostStaticColor} {occurrences : List CostRegionOccurrence}
+    {table : TypedCostRegionBoundaryTable source color targetFree occurrences}
+    (trees : CostRegionBoundaryTrees source targetFree color table)
+    (empty : table.entries = []) :
+    trees.normalizeValues = TypedCostRegionBoundaryTable.Values.original table := by
+  cases table with
+  | nil =>
+      cases trees
+      simp [CostRegionBoundaryTrees.normalizeValues,
+        TypedCostRegionBoundaryTable.Values.original]
+  | cons boundary content tail =>
+      simp [TypedCostRegionBoundaryTable.entries] at empty
+
+/-- Therefore a static region with no foreign-color occurrence is a literal
+specialization of the established one-stratum executor. -/
+theorem CostRegionTree.normalize_static_eq_normalizeRaw_of_entries_eq_nil
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {outer : List TypeExpr}
+    (node : CostStaticRegionNode source color targetFree)
+    (children : CostRegionBoundaryTrees source targetFree color
+      node.finiteBoundaryTable)
+    (empty : node.finiteBoundaryTable.entries = []) :
+    (CostRegionTree.static (outer := outer) node children).normalize.pattern =
+      node.normalizeRaw :=
+  CostRegionTree.normalize_static_eq_normalizeRaw_of_values_original node
+    children (children.normalizeValues_eq_original_of_entries_eq_nil empty)
+
+end Mettapedia.GSLT.LanguageDef

@@ -30,6 +30,7 @@ import Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefDSL
 import Mettapedia.OSLF.Framework.GeneratedTyping
 import Mettapedia.OSLF.Framework.SynthesisBridge
 import Mettapedia.OSLF.Framework.ToposReduction
+import Mettapedia.OSLF.Framework.LanguagePresheafSharing
 import Mettapedia.OSLF.Framework.LambdaInstance
 import Mettapedia.OSLF.Framework.PetriNetInstance
 import Mettapedia.OSLF.Framework.TinyMLInstance

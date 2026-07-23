@@ -69,10 +69,10 @@ def lambdaCalc : LanguageDef := {
     { label := "App", category := "Term",
       params := [.simple "f" (.base "Term"), .simple "a" (.base "Term")],
       syntaxPattern := [.nonTerminal "f", .nonTerminal "a"] },
-    -- Lam . ^x.body:[Term -> Term] |- "λ" x "." body : Term
+    -- Lam . ^x.body:[Term -> Term] |- "λ" "." body : Term
     { label := "Lam", category := "Term",
       params := [.abstraction "body" (.arrow (.base "Term") (.base "Term"))],
-      syntaxPattern := [.terminal "λ", .nonTerminal "x", .terminal ".", .nonTerminal "body"] }
+      syntaxPattern := [.terminal "λ", .terminal ".", .nonTerminal "body"] }
   ],
   equations := [],
   rewrites := [
@@ -84,6 +84,44 @@ def lambdaCalc : LanguageDef := {
       right := .subst (.fvar "body") (.fvar "arg") }
   ]
 }
+
+/-- The sole authored lambda-calculus presentation passes the structural
+declaration gate. -/
+theorem lambdaCalc_validate_eq_nil : lambdaCalc.validate = [] := by
+  simp [LanguageDef.validate, lambdaCalc, LanguageDef.validateRewrite,
+    LanguageDef.duplicateErrors, LanguageDef.duplicateErrorsAux,
+    LanguageDef.validatePatternConstructors, LanguageDef.validatePremises,
+    LanguageDef.validateRulePatterns, Pattern.constructorRefs,
+    Pattern.constructorRefsList, Pattern.freeFvarNames,
+    Pattern.isWellScoped, Pattern.isWellScopedAt, Pattern.isWellScopedListAt,
+    LanguageDef.patternFvarNames, LanguageDef.patternBinderNames,
+    LanguageDef.premiseProducedFvarNames, LanguageDef.typeNames,
+    TypeDecl.plain, TypeExpr.baseNames, TermParam.bodyName,
+    TermParam.typeExpr]
+
+/-- Beta reduction needs no external relation mode and produces only
+variables already available from its redex. -/
+theorem lambdaCalc_executionFlowErrors_eq_nil :
+    lambdaCalc.executionFlowErrors [] = [] := by
+  apply LanguageDef.executionFlowErrors_eq_nil_of_premiseFree
+  · rfl
+  · intro rule membership
+    simp [lambdaCalc] at membership
+    subst rule
+    rfl
+  · intro rule membership name nameMembership
+    simp [lambdaCalc] at membership
+    subst rule
+    simp [Pattern.freeFvarNames] at nameMembership ⊢
+    exact nameMembership
+
+/-- Empty relation modes form the exact execution profile of the premise-free
+lambda-calculus presentation. -/
+theorem lambdaCalc_executionAdmissionErrors_eq_nil :
+    lambdaCalc.executionAdmissionErrors [] = [] :=
+  LanguageDef.executionAdmissionErrors_eq_nil_of_emptyModes
+    lambdaCalc lambdaCalc_validate_eq_nil
+      lambdaCalc_executionFlowErrors_eq_nil
 
 /-- All root reductions of `lambdaCalc`.  Its sole rule has no contextual
 premise, so contextual depth one is exact. -/

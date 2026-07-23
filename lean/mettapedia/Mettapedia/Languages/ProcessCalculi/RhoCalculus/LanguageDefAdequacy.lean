@@ -32,9 +32,17 @@ open Mettapedia.OSLF.MeTTaIL.MatchWithSpec
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.CanonicalMatch
 
-/-- The authored COMM rule has exactly one selected reflective declaration. -/
-theorem rhoComm_declaration_selected :
-    declarationForRule? rhoCalc rhoCommRewrite = some rhoReflectivePresentation := by
+/-- The authored COMM rule has exactly one selected matching presentation. -/
+theorem rhoComm_matchingPresentation_selected :
+    matchingPresentationForRule? rhoCalc rhoCommRewrite =
+      some rhoReflectivePresentation.toReflectivePresentationDecl := by
+  decide +kernel
+
+/-- The authored COMM rule has exactly one selected substitution
+presentation. -/
+theorem rhoComm_substitutionPresentation_selected :
+    substitutionPresentationForRule? rhoCalc rhoCommRewrite =
+      some rhoReflectivePresentation.toReflectivePresentationDecl := by
   decide +kernel
 
 /-- The generic rule-aware matcher is definitionally specialized by the
@@ -42,7 +50,7 @@ authored rho declaration, not by an engine callback. -/
 theorem matchPatternForRule_rhoComm (term : Pattern) :
     matchPatternForRule rhoCalc rhoCommRewrite term =
       matchPatternWith rhoCanonicalEquivalent rhoCommRewrite.left term := by
-  simp only [matchPatternForRule, rhoComm_declaration_selected]
+  simp only [matchPatternForRule, rhoComm_matchingPresentation_selected]
   rfl
 
 /-- The compiled matcher for authored rho COMM has the independent
@@ -51,8 +59,8 @@ theorem matchPatternForRule_rhoComm_iff
     {term : Pattern} {bindings : Bindings} :
     bindings ∈ matchPatternForRule rhoCalc rhoCommRewrite term ↔
       MatchRelWith rhoCanonicalEquivalent rhoCommRewrite.left term bindings := by
-  rw [matchPatternForRule_iff_matchRelWith_of_declaration
-    rhoComm_declaration_selected]
+  rw [matchPatternForRule_iff_matchRelWith_of_presentation
+    rhoComm_matchingPresentation_selected]
   rfl
 
 /-- Consequently, the executable premise-aware rule application uses the
@@ -79,8 +87,8 @@ theorem rhoCommRewrite_mem : rhoCommRewrite ∈ rhoCalc.rewrites := by
 /-- A missing rule reference is rejected rather than silently compiled. -/
 theorem malformed_reflective_rule_rejected :
     ({ rhoCalc with
-        reflectivePresentations :=
-          [{ rhoReflectivePresentation with rewriteRule := "MissingComm" }] }).validate ≠ [] := by
+        reflectiveRules :=
+          [{ rhoReflectiveRule with rewriteRule := "MissingComm" }] }).validate ≠ [] := by
   exact rhoCalc_missing_reflective_rule_validate_ne_nil
 
 /-! ## Authored COMM right-hand side -/
@@ -102,7 +110,7 @@ theorem applyBindingsForRule_rhoComm
               [normalizeReflective rhoReflectivePresentation payload]) body ::
           rest)
         none := by
-  rw [applyBindingsForRule, rhoComm_declaration_selected]
+  rw [applyBindingsForRule, rhoComm_substitutionPresentation_selected]
   simp [rhoCommRewrite, rhoCommBindings, applyBindingsReflective,
     applyBindingsReflectiveList, normalizeReflectiveReplacement,
     rhoReflectivePresentation]

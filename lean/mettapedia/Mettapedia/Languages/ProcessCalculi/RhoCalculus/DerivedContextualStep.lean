@@ -247,7 +247,7 @@ private theorem rhoComm_apply_exact
       applyBindingsForRule rhoCalc rhoCommRewrite
         (LanguageDefAdequacy.rhoCommBindings channel body payload rest) := by
   rw [applyBindingsForRule, applyBindingsForRule,
-    LanguageDefAdequacy.rhoComm_declaration_selected]
+    LanguageDefAdequacy.rhoComm_substitutionPresentation_selected]
   simp [rhoCommMatchedBindings, LanguageDefAdequacy.rhoCommBindings,
     rhoCommRewrite, applyBindingsReflective, applyBindingsReflectiveList]
 
@@ -361,7 +361,7 @@ theorem rhoComm_application_sound
           applyBindingsForRule rhoCalc rhoCommRewrite
             (LanguageDefAdequacy.rhoCommBindings inputChannel body payload residue) := by
       simp only [applyBindingsForRule,
-        LanguageDefAdequacy.rhoComm_declaration_selected]
+        LanguageDefAdequacy.rhoComm_substitutionPresentation_selected]
       simp [LanguageDefAdequacy.rhoCommBindings, residue,
         applyBindingsReflective, applyBindingsReflectiveList, rhoCommRewrite]
     rw [reordered]
@@ -441,8 +441,12 @@ theorem RhoStep.comm
 
 /-! ## Shape and meaning of an authored `ParCong` application -/
 
-private theorem rhoParCong_no_declaration :
-    declarationForRule? rhoCalc rhoParCongRewrite = none := by
+private theorem rhoParCong_no_matchingPresentation :
+    matchingPresentationForRule? rhoCalc rhoParCongRewrite = none := by
+  decide +kernel
+
+private theorem rhoParCong_no_substitutionPresentation :
+    substitutionPresentationForRule? rhoCalc rhoParCongRewrite = none := by
   decide +kernel
 
 /-- The structural matcher for `ParCong` selects one parallel component and
@@ -458,8 +462,8 @@ private theorem rhoParCong_match_shape
       bindings =
         [("rest", .collection .hashBag (elements.eraseIdx index) none),
          ("S", selected)] := by
-  rw [matchPatternForRule_iff_matchRel_of_no_declaration
-    rhoParCong_no_declaration] at matched
+  rw [matchPatternForRule_iff_matchRel_of_no_presentation
+    rhoParCong_no_matchingPresentation] at matched
   cases matched
   rename_i elements termRest bagMatch
   cases bagMatch
@@ -477,8 +481,8 @@ private theorem rhoParCong_match_exact (process : Pattern) (rest : List Pattern)
     [("rest", .collection .hashBag rest none), ("S", process)] ∈
       matchPatternForRule rhoCalc rhoParCongRewrite
         (.collection .hashBag (process :: rest) none) := by
-  rw [matchPatternForRule_iff_matchRel_of_no_declaration
-    rhoParCong_no_declaration]
+  rw [matchPatternForRule_iff_matchRel_of_no_presentation
+    rhoParCong_no_matchingPresentation]
   apply MatchRel.collection
   apply MatchBagRel.cons 0 (by simp) MatchRel.fvar MatchBagRel.nilRest
   rfl
@@ -507,7 +511,7 @@ theorem RhoStep.par {source target : Pattern} (rest : List Pattern)
     rfl ?_ ?_ rfl ?_
   · simpa [applyBindings, Bindings.lookup] using step
   · simp [matchPattern]
-  · rw [applyBindingsForRule, rhoParCong_no_declaration]
+  · rw [applyBindingsForRule, rhoParCong_no_substitutionPresentation]
     simp [rhoParCongRewrite, applyBindings]
 
 /-- Interpreting the single congruence premise of `ParCong` with a sound
@@ -559,7 +563,7 @@ private theorem rhoParCong_application_sound
   have targetShape :
       target = .collection .hashBag (candidate :: elements.eraseIdx index) none := by
     rw [← targetEq]
-    simp only [applyBindingsForRule, rhoParCong_no_declaration]
+    simp only [applyBindingsForRule, rhoParCong_no_substitutionPresentation]
     simp [rhoParCongRewrite, applyBindings]
   rw [targetShape]
   obtain ⟨innerPaper⟩ := innerPaper
@@ -697,7 +701,7 @@ private theorem rhoComm_application_preserves_closed
             (LanguageDefAdequacy.rhoCommBindings
               inputChannel body payload residue) := by
       simp only [applyBindingsForRule,
-        LanguageDefAdequacy.rhoComm_declaration_selected]
+        LanguageDefAdequacy.rhoComm_substitutionPresentation_selected]
       simp [LanguageDefAdequacy.rhoCommBindings, residue,
         applyBindingsReflective, applyBindingsReflectiveList, rhoCommRewrite]
     rw [reordered]
@@ -768,7 +772,7 @@ private theorem rhoParCong_application_preserves_closed
       target = .collection .hashBag
         (candidate :: elements.eraseIdx selectedIndex) none := by
     rw [← targetEq]
-    simp only [applyBindingsForRule, rhoParCong_no_declaration]
+    simp only [applyBindingsForRule, rhoParCong_no_substitutionPresentation]
     simp [rhoParCongRewrite, applyBindings]
   rw [targetShape]
   exact ⟨ProcWellSorted.parallel

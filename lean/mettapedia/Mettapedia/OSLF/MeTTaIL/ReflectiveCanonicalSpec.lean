@@ -24,7 +24,7 @@ open Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution
 def MatchForRuleRel
     (lang : LanguageDef) (rule : RewriteRule) (term : Pattern)
     (bindings : Bindings) : Prop :=
-  match declarationForRule? lang rule with
+  match matchingPresentationForRule? lang rule with
   | some declaration =>
       MatchRelWith (canonicalEquivalent declaration) rule.left term bindings
   | none => MatchRel rule.left term bindings
@@ -34,7 +34,7 @@ theorem matchPatternForRule_iff_matchForRuleRel
     {bindings : Bindings} :
     bindings ∈ matchPatternForRule lang rule term ↔
       MatchForRuleRel lang rule term bindings := by
-  cases selected : declarationForRule? lang rule with
+  cases selected : matchingPresentationForRule? lang rule with
   | none =>
       simp only [matchPatternForRule, MatchForRuleRel, selected]
       exact matchPattern_iff_matchRel
@@ -44,10 +44,10 @@ theorem matchPatternForRule_iff_matchForRuleRel
 
 /-- When no unique reflective declaration is selected, rule-aware matching
 has exactly the original structural relational meaning. -/
-theorem matchPatternForRule_iff_matchRel_of_no_declaration
+theorem matchPatternForRule_iff_matchRel_of_no_presentation
     {lang : LanguageDef} {rule : RewriteRule} {term : Pattern}
     {bindings : Bindings}
-    (missing : declarationForRule? lang rule = none) :
+    (missing : matchingPresentationForRule? lang rule = none) :
     bindings ∈ matchPatternForRule lang rule term ↔
       MatchRel rule.left term bindings := by
   rw [matchPatternForRule_iff_matchForRuleRel]
@@ -55,10 +55,10 @@ theorem matchPatternForRule_iff_matchRel_of_no_declaration
 
 /-- A uniquely selected reflective declaration gives the parameterized
 relational matcher compiled from that declaration. -/
-theorem matchPatternForRule_iff_matchRelWith_of_declaration
+theorem matchPatternForRule_iff_matchRelWith_of_presentation
     {lang : LanguageDef} {rule : RewriteRule} {term : Pattern}
     {bindings : Bindings} {declaration : ReflectivePresentationDecl}
-    (selected : declarationForRule? lang rule = some declaration) :
+    (selected : matchingPresentationForRule? lang rule = some declaration) :
     bindings ∈ matchPatternForRule lang rule term ↔
       MatchRelWith (canonicalEquivalent declaration) rule.left term bindings := by
   rw [matchPatternForRule_iff_matchForRuleRel]

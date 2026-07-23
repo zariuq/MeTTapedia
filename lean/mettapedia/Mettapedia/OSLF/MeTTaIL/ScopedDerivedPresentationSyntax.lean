@@ -25,7 +25,7 @@ mutual
   /-- A quote-aware name depends only on the declared local binder prefix, not
   on the ambient suffix of its sorting context. -/
   theorem nameWellSorted_restrictToBinderPrefix
-      {presentation : ReflectivePresentationDecl} {free : FreeSortContext}
+      {presentation : ReflectiveProcessSignature} {free : FreeSortContext}
       {depth : Nat} {tail : List String} {name : Pattern}
       (typed : NameWellSorted presentation free
         (List.replicate depth presentation.nameSort ++ tail) name)
@@ -62,7 +62,7 @@ mutual
 
   /-- Process form of binder-prefix restriction. -/
   theorem procWellSorted_restrictToBinderPrefix
-      {presentation : ReflectivePresentationDecl} {free : FreeSortContext}
+      {presentation : ReflectiveProcessSignature} {free : FreeSortContext}
       {depth : Nat} {tail : List String} {process : Pattern}
       (typed : ProcWellSorted presentation free
         (List.replicate depth presentation.nameSort ++ tail) process)
@@ -129,7 +129,7 @@ mutual
 
   /-- List form of binder-prefix restriction. -/
   theorem procListWellSorted_restrictToBinderPrefix
-      {presentation : ReflectivePresentationDecl} {free : FreeSortContext}
+      {presentation : ReflectiveProcessSignature} {free : FreeSortContext}
       {depth : Nat} {tail : List String} {processes : List Pattern}
       (typed : ProcListWellSorted presentation free
         (List.replicate depth presentation.nameSort ++ tail) processes)
@@ -152,9 +152,8 @@ end
 
 /-! ## Positive and negative controls -/
 
-private def prefixPresentation : ReflectivePresentationDecl where
+private def prefixPresentation : ReflectiveProcessSignature where
   name := "prefix-control"
-  rewriteRule := "Comm"
   nameSort := "Name"
   processSort := "Proc"
   quoteConstructor := "Quote"
