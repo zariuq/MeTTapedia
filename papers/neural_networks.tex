@@ -1,0 +1,566 @@
+%% When Does a Neural Architecture Earn Its Cost?
+%%
+%% Machine-checked boundary theory for the composable axes of a learned
+%% decoder: belief coordinates, state carrier, inference solver, plasticity
+%% rule -- and the fast-state/weight boundary.
+%% Companions: PC.tex (predictive coding), gslt2gslt.tex (typed synthesis).
+%%
+%% Build: pdflatex neural_networks.tex
+
+\documentclass[11pt]{article}
+\usepackage[T1]{fontenc}
+\usepackage[utf8]{inputenc}
+\usepackage{lmodern}
+\usepackage{geometry}
+\geometry{margin=1in}
+\usepackage{hyperref}
+\usepackage{booktabs}
+\usepackage{amsmath}
+\usepackage{amssymb}
+\usepackage{amsthm}
+\usepackage{float}
+\usepackage{array}
+\usepackage{needspace}
+\usepackage{newunicodechar}
+\setlength{\emergencystretch}{3em}
+
+\newunicodechar{ℝ}{\ensuremath{\mathbb{R}}}
+\newunicodechar{ℕ}{\ensuremath{\mathbb{N}}}
+\newunicodechar{∀}{\ensuremath{\forall}}
+\newunicodechar{∃}{\ensuremath{\exists}}
+\newunicodechar{∧}{\ensuremath{\land}}
+\newunicodechar{↔}{\ensuremath{\leftrightarrow}}
+\newunicodechar{≤}{\ensuremath{\leq}}
+\newunicodechar{≠}{\ensuremath{\neq}}
+\newunicodechar{∑}{\ensuremath{\sum}}
+
+\newtheorem{theorem}{Theorem}[section]
+\newtheorem{corollary}[theorem]{Corollary}
+\newcommand{\leanname}[1]{{\scriptsize\ttfamily
+  \def\_{\textunderscore\allowbreak}#1}}
+\newcommand{\code}[1]{\texttt{#1}}
+
+\title{When Does a Neural Architecture\\ Earn Its Cost?}
+\author{Oru\v{z}i \and Zarathustra Goertzel}
+\date{July 2026 --- working note}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+\noindent
+Architecture choices are usually settled by benchmark. We ask a different question:
+under what conditions does a component \emph{provably} earn, or fail to earn, its cost?
+We treat four design decisions as independent axes rather than competitors---how belief
+is represented, where state lives, how a coupled constraint is solved, and how parameters
+change---and give machine-checked boundaries for each. Fusion of independent evidence is
+addition in natural coordinates, and every hand-designed gating rule is that addition seen
+in another chart; the four ways this stops being optimal each have a closed form. Typed
+slots are licensed exactly when cross-slot coupling vanishes. Command routing collapses to
+a single gated interpolation, so it buys selectivity rather than a new update class, and
+order-independence of routed phases holds exactly when generators commute and an affine
+obstruction vanishes. Five named predictive-coding mechanisms have constructive
+backpropagation realizations; the residue is an execution-model property, not a
+training-rule advantage. Forgetting decomposes into a metric part and a connection part,
+and one Gram matrix certifies both a curriculum's right to be reordered and a command
+schedule's right to be treated as a set. Finally, in a \emph{linear-effect} model---one that
+concrete linear attention and additive evidence registers provably instantiate, and that
+softmax provably breaks---consolidating fast state into weights is faithful exactly when
+the fast effect is weight-reachable; bounded capacity forces a computable consolidation
+deadline, and the cadence objective derived from the model's own accounting puts the
+optimal consolidation at that deadline, refuting the interior optimum a posited quadratic
+had suggested. We are
+explicit throughout about which results are theorems about a declared model and which
+quantities remain empirical; a closing section states what is assumed rather than proved,
+and what would discharge it.
+\end{abstract}
+
+\section{Introduction}
+\label{sec:intro}
+
+Debates about neural architecture are usually resolved by running two systems and
+comparing a number. That settles which system won a benchmark; it does not say why, and it
+does not transfer. This note collects a different kind of result: for each of a small
+number of design decisions, a condition under which the decision is provably right, and a
+condition---usually a fixture, often a counterexample---under which it is provably wrong.
+
+Two commitments shape everything that follows. First, the models are exact and small:
+scalar and matrix linear-Gaussian systems, quadratic tasks, finite regime families. The
+purpose is to locate boundaries, not to predict benchmark scores, and we mark the places
+where a boundary is a theorem and the places where the corresponding quantity has to be
+measured. Second, every claim below is machine-checked in a Lean~4 development, and the
+negative results are checked with the same seriousness as the positive ones. Several of
+the sharpest statements here are refutations of things we previously believed.
+
+The organizing idea is that the usual contest---predictive coding \emph{versus}
+backpropagation, workspace \emph{versus} recurrence, learned mixing \emph{versus} Bayesian
+fusion---is a category error. These are independent axes that compose. A system chooses,
+separately: how accumulated belief is represented, where state lives and how it is
+addressed, how a coupled constraint is solved at inference time, and how parameters are
+updated. Asking which axis ``wins'' has no answer; asking when each earns its cost does.
+
+\section{Four axes, not four contestants}
+\label{sec:axes}
+
+We fix the decomposition used throughout:
+
+\begin{center}
+\begin{tabular}{@{}ll@{}}
+\toprule
+axis & the decision \\
+\midrule
+belief coordinates & point estimate, natural coordinates, or a mixture \\
+state carrier & one recurrent vector, typed slots, or a routed workspace \\
+inference solver & direct evaluation, or an iterative relaxation to equilibrium \\
+plasticity rule & backpropagation, or a local energy-based update \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The axes are genuinely independent: a typed-slot workspace can carry point estimates and
+train by backpropagation, and a single recurrent vector can carry natural coordinates and
+settle iteratively. The formal development reflects this---the state theorems do not
+mention the plasticity rule, and the plasticity theorems do not mention the state carrier.
+
+One consequence is worth stating early, because it is easy to hope otherwise. Within the
+finite family of regimes we model, no single recommendation is correct everywhere: for
+each candidate rule there is a modelled regime in which it fails its own guarantee
+(\leanname{no\_singleRecommendation\_covers\_modeledFamily}). The proof is a case analysis
+that exhibits, for each rule, a concrete regime defeating it. There is no universal
+architecture, and that is a theorem rather than a hedge.
+
+\section{The belief axis: fusion is addition}
+\label{sec:belief}
+
+Write belief in \emph{natural coordinates}: evidence counts $(n^{+},n^{-})$ in the
+discrete case, the information form $(\eta,\Lambda)=(\Sigma^{-1}\mu,\Sigma^{-1})$ in the
+Gaussian case. Then Bayesian fusion of independent evidence is \emph{addition}, and the
+familiar update rules are that addition seen in another chart.
+
+\begin{theorem}[Fusion is addition; charts are shadows]
+Gaussian fusion, probabilistic-logic revision in weight-of-evidence form, and revision on
+binary counts are the same operation
+(\leanname{gaussianFusion\_eq\_plnRevisionWTV},
+\leanname{gaussianFusion\_eq\_binaryCounts\_revision\_strength}). The settled state of a
+linear-Gaussian relaxation is the posterior mean
+(\leanname{equilibrium\_iff\_eq\_posteriorMean}), so ``settling performs inference'' is a
+theorem rather than a slogan.
+\end{theorem}
+
+The practical reading is that the optimal gate in a gated-interpolation cell is the Kalman
+gain: a learned mixer can at best match hardwired addition when the measurement model is
+calibrated, never beat it. Learning is therefore necessary in the \emph{measurement} maps
+and the \emph{gain schedule}, not in the fusion step.
+
+That optimality is conditional, and each condition fails somewhere real. Addition never
+forgets, so under drift it is provably suboptimal and the correct old-information
+retention is the derived rate $P/(P+Q)$ rather than a tuned constant. Naive addition
+double-counts correlated re-observation, and the overstatement is exactly the declared
+overlap. A single natural-coordinate slot projects away multimodal posteriors. And a
+miscalibrated measurement model poisons exact fusion, though recalibrating the measurement
+map reproduces the optimal update with fusion left hardwired---so every fusion-stage
+repair relocates to the measurement map. These four boundaries are the entire content of
+``when should the belief axis stop being additive''.
+
+\section{The state axis: typed slots, routing, and what stays safe}
+\label{sec:state}
+
+Moving from one recurrent vector to addressed slots adds structure and gives away freedom.
+The licensing condition is sharp: independent per-slot treatment is correct exactly when
+the cross-slot coupling vanishes, and coupled slots require a joint correction rather than
+a per-slot approximation.
+
+A command-routed workspace---opaque control tokens selecting a soft mixture of reusable
+read--transform--gate--write operators---sits on the same axis. Three results delimit it.
+
+\begin{theorem}[Routing buys selectivity, not a new update class]
+A simplex mixture of gated-interpolation experts is again a single gated interpolation
+under the mixed gain (\leanname{mixedExpertStep\_eq\_singleInterpolation}). Command tokens
+carry no semantics of their own: trajectories are determined by the induced routing
+schedule alone (\leanname{commandTrajectory\_eq\_of\_mixtureSchedule\_eq}). Immutable
+per-slot evidence survives every routing schedule, temperature and depth
+(\leanname{runTripleSlotSchedule\_evidence}).
+\end{theorem}
+
+\begin{theorem}[Compositionality is commutation]
+Swapping two affine phases shifts the state by $[B,A]x + (Ba+b-Ab-a)$
+(\leanname{affineCompositionDiscrepancy\_exact}); order-independence holds if and only if
+the linear parts commute \emph{and} the affine obstruction vanishes
+(\leanname{affinePhases\_orderIndependent\_iff}). Commuting linear parts alone do not
+suffice---a one-dimensional bias counterexample closes that loophole. Equivalently the
+pairwise interference energy $\lVert[A,B]\rVert_F^{2}$ must vanish
+(\leanname{linearPhases\_orderIndependent\_iff\_interferenceEnergy\_zero}).
+\end{theorem}
+
+\begin{theorem}[Stability does not compose]
+Two commands that each individually extinguish in two steps can alternate to $4^{n}$
+growth (\leanname{individuallyStable\_switchingDiverges}). Per-command guarantees are
+therefore worthless for command \emph{programs}; the honest certificate is
+schedule-uniform, and commuting stable generators always admit a common quadratic
+Lyapunov function (\leanname{commutingCommonQuadraticLyapunov\_crown}).
+\end{theorem}
+
+Against all of this, safety is indifferent. For arbitrary routes, temperatures, schedules
+and depths, ranked acceptance coincides with checker acceptance and recall of accepted
+outputs is unchanged (\leanname{inheritanceCrown}). When legality is owned by an external
+checker and the network only orders legal choices, the entire state axis lives on the safe
+side by construction, and the theorems above are about competence rather than safety.
+
+For readers arriving from the transformer literature, the whole state axis is a familiar
+machine with one substitution. Attention is the \emph{read} at every point---the encoder,
+the state carriers, the action scorer---and what varies across the axis is only the
+\emph{write}:
+
+\begin{center}
+\begin{tabular}{@{}llll@{}}
+\toprule
+mechanism & transformer & CAROM & this work \\
+\midrule
+read & multi-head attention & content-addressed read & same, at three sites \\
+transform & feed-forward block & per-operator $\phi_k$ & per-operator maps \\
+write & residual $+$ norm & gated residual & gate / residual / \emph{addition} \\
+state & residual stream, KV cache & fixed-address slots & typed slots or $(n^{+},n^{-})$ \\
+routing & mixture-of-experts gate & command-conditioned mix & selectivity, same class \\
+recurrence & weight-tied loop & $T$ recurrent updates & settling, interior-optimum depth \\
+no-weight adaptation & in-context learning & workspace contents & evidence registers, exact \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The last column's entries are not analogies but theorems: routing stays in the
+gated-interpolation class, the belief write is exactly Bayesian fusion in natural
+coordinates, the recurrence depth has a proved interior optimum, and the evidence
+registers are an exact instance of the fast-state model of
+\S\ref{sec:twotimescale}---the one member of the test-time-adaptation family whose
+calibration is provable rather than empirical.
+
+\section{The plasticity axis: what of predictive coding is a backprop trick}
+\label{sec:plasticity}
+
+Predictive coding is often presented as a rival to backpropagation. Within the finite,
+declared family of mechanisms we model, most of it is a preconditioner.
+
+\begin{theorem}[Subsumption partition]
+Of six named mechanisms, five have constructive backpropagation realizations---an explicit
+preconditioned or proximal update reaching the same endpoint or bound---and the sixth,
+synchronized local parallelism, is an \emph{execution-model} property rather than a
+training-rule advantage (\leanname{bp\_subsumption\_partition\_crown}). Unit-rate
+error-coordinate predictive coding simply is the backpropagation product
+(\leanname{identityPreconditionedPC\_bpEquivalentLicense},
+\leanname{epcOneStep\_bpEquivalentLicense}), and curvature-normalized preconditioning is
+loss-decreasing exactly on the open interval $(0,2)$, with unit rate the one-step optimum.
+\end{theorem}
+
+Two caveats are load-bearing. Larger negative curvature is not an escape algorithm: at an
+exact saddle a preconditioned gradient step still has zero gradient, so escape requires a
+perturbation or an explicit negative-curvature step, and the partition states this rather
+than eliding it. And the execution-model residue is not a free win either---on a
+unit-bandwidth synchronous chain, exact predictive coding has no strict latency advantage
+(\leanname{exactUnitBandwidthPC\_no\_strictDigitalLatencyAdvantage}), while propagation
+remains bounded by topology distance and local bandwidth
+(\leanname{pcFiniteSpeed\_distance\_le\_sweeps\_mul\_bandwidth}). The genuine residue is
+the serial-versus-parallel gap (\leanname{synchronizedLocalCost\_serial\_parallel\_exact}),
+which is a statement about hardware, not about learning rules.
+
+The continual-learning claim deserves the same treatment. Under matched target progress,
+restriction, exact scheduling and vanishing interference, a predictive-coding adapter can
+still forget \emph{more} than a backpropagation adapter---the two solutions are reflections
+across the optimum (\leanname{frozenAdapter\_four\_hypotheses\_insufficient}). The advantage
+is restored only by a fifth condition requiring both residuals to share a sign
+(\leanname{frozenAdapter\_five\_hypotheses\_restore\_sourceForgetting\_bound}). That
+condition is a controlled-adaptation assumption, and uncontrolled online data is precisely
+where it fails.
+
+\section{Depth is repairable; cost is not}
+\label{sec:depth}
+
+Iterative relaxation degrades badly with depth, and the degradation has a diagnosis: the
+per-layer precision-weighted energy is imbalanced across the stack, and a stability-bounded
+activity rate slows the error front so that layer $l$ is reached only after $L-l$ sweeps.
+Recent work repairs this to accuracy comparable with backpropagation on deep residual
+networks, and we have formalized the mechanisms at arbitrary depth over full covariance
+matrices with a nonlinear Jacobian remainder: the first-arrival attenuation that produces
+the imbalance, a precision spike that exactly cancels it, a forward-reference update that
+bounds deep-layer accumulation, auxiliary buffers that synchronize residual and main paths,
+and the invariance of frozen normalization statistics
+(\leanname{vectorDepthRepair\_crown}, \leanname{depthScalingRepair\_crown}).
+
+The scope should be read narrowly. These are exact local identities and propagation
+bounds. Convergence and accuracy for trained deep networks are classified in the
+development as empirical targets, not theorems. And no repair touches the price: the
+repaired dynamics remain an iterative relaxation, so ``matches backpropagation'' continues
+to mean matches its target, not its cost (\leanname{pcBPCompute\_crown}).
+
+\section{Forgetting has a metric side and a connection side}
+\label{sec:forgetting}
+
+Sequential learning departs from additive learning in two independent ways. For two
+quadratic tasks with curvatures $A_1,A_2$, step size $\eta$ and gradient $g_1$,
+\[
+\theta_{1\to2}-\theta_{\mathrm{add}}=\eta^{2}A_2 g_1(\theta),
+\qquad
+\theta_{1\to2}-\theta_{2\to1}=\eta^{2}[A_1,A_2]\theta .
+\]
+The first is a \emph{metric} effect---double counting, present even when the order cannot
+matter. The second is a \emph{connection} effect: order matters exactly to the extent that
+curvatures fail to commute. A rank-one trichotomy separates them cleanly: parallel tasks
+commute and any forgetting is pure double counting; orthogonal tasks do not interact;
+oblique tasks carry the irreducible commutator
+(\leanname{rankOne\_parallel\_orthogonal\_oblique\_trichotomy}). Per-pair conflict is
+measured exactly by the diagonal of an interference Gram built from commutators, which
+vanishes iff the pair commutes
+(\leanname{pairwiseInterferenceEnergy\_eq\_zero\_iff\_commute}).
+
+Two natural-looking claims are false, and the counterexamples are machine-checked. A
+trivial rotational factor does \emph{not} imply commutation in general: a palindromic
+product $ABA$ of symmetric matrices stays symmetric when $[A,B]\neq0$. And interference
+\emph{spectra} transfer under any similarity
+(\leanname{matrixCommutator\_charpoly\_unitConjugate}) while interference \emph{angles}
+transfer only under orthogonal conjugation---an explicit shear breaks them. Pointwise
+agreement of values and gradients does not determine curvature at all
+(\leanname{pointwiseAgreement\_not\_determineHessian\_negativeExample}), so behavioural
+similarity is never sufficient to trust a transferred measurement.
+
+The unifying observation is that one Gram matrix does double duty: it certifies both a
+curriculum's right to be reordered and a routed command schedule's right to be treated as
+a set (\S\ref{sec:state}). The continual-learning side and the architecture side are the
+same fact seen from two directions.
+
+\section{Fast state versus weights}
+\label{sec:twotimescale}
+
+A system may adapt at inference time in bounded fast state---a context, a cache, a bank of
+evidence registers---over frozen parameters, and periodically consolidate that state into
+weights. This is the deployment question behind personalization: how much adaptation
+belongs in state, and how often, if ever, must weights move?
+
+\emph{The results in this section are theorems about a linear-effect model}: the readout is
+the sum of a slow effect and a fast effect, each a linear map of its argument. We state the
+commitment here rather than in a limitation, because it is doing the work.
+
+\begin{theorem}[Faithfulness is reachability]
+In a linear-effect model, consolidating fast state into weights preserves the adapted
+readout exactly when the slow update reproduces the fast effect
+(\leanname{faithfulConsolidation\_iff\_effect\_eq}); some faithful consolidation exists
+exactly when the fast effect lies in the range of the weight-update map
+(\leanname{exists\_faithfulConsolidation\_iff\_mem\_range}). A transverse fixture outside
+that range has an exact irreducible consolidation loss.
+\end{theorem}
+
+\begin{theorem}[Capacity forces a deadline]
+Under constant arrivals at rate $r$ into capacity $C$, all evidence is admitted before the
+first saturation time $\lceil C/r\rceil$, and from that point admitted evidence is exactly
+$C$ while loss is exactly $rt-C$. The deadline is computed, not chosen.
+\end{theorem}
+
+Three further boundaries follow. Consolidation double-counts unless the reused contribution
+is discounted: carrying it at full weight yields exactly one extra copy in both precision
+and natural-parameter coordinates, and zeroing that contribution restores once-each
+calibration (\leanname{reused\_contribution\_exact\_excess}). The order of consolidations
+matters exactly when their curvatures fail to commute---the same Gram criterion as
+\S\ref{sec:forgetting}---so with oblique periods, permuting two of them yields a different
+final model. And in a stationary, within-capacity, fast-reachable regime, pure fast-state
+adaptation attains zero prediction error while any equally faithful consolidation attains
+the same error at strictly greater cost; consolidation becomes necessary exactly when the
+weights can realize the shift \emph{and} either capacity is exceeded or the shift leaves
+fast-state reachability (\leanname{twoTimescaleAdaptation\_crown}).
+
+Two families of practice bracket this section. On the weight side, constrained-update
+continual learning already builds the projections our faithfulness condition characterises:
+episodic-memory methods constrain an update against remembered losses~\cite{lopezpaz2017},
+and orthogonal-gradient methods project into a subspace leaving earlier outputs
+unchanged~\cite{farajtabar2020}---both are instances of the minimum-change update our
+reachability criterion licenses, and both inherit its incompatibility boundary. On the state
+side, a growing family makes the fast state itself the adapting object: test-time-training
+layers treat the hidden state as a model updated by self-supervised
+learning~\cite{sun2024}, one recurrence is derived directly from implicit online
+regression~\cite{liu2024}, and gated delta rules add learned erasure to targeted
+writes~\cite{yang2024}. Our additive evidence registers are the conservative, provably
+calibrated member of that family; the gated variants trade exact fusion for the forgetting a
+drifting world requires, which is precisely the boundary of Section~\ref{sec:belief}.
+
+That last statement is the one with practical force: it says weight updates are not the
+default, they are what you resort to when bounded state provably cannot carry the
+adaptation. How often to consolidate inside the feasible band is now derived rather than
+declared: tracing the objective to the development's own accounting---a counted update
+cost falling like $1/T$ against the hinge of lost evidence, identically zero before the
+saturation deadline---the unique positive-period optimum is the \emph{deadline itself}
+whenever losing a full register costs more than an update
+(\leanname{derivedCadenceObjective\_at\_exactDeadline}). An earlier draft of this theory
+optimized a posited symmetric quadratic instead; it selects an interior period, disagrees
+with the derived objective by an exact computed gap on the same fixture, and survives only
+as a declared approximation. Consolidate at the deadline the capacity computes, not on the
+schedule a smooth objective manufactures.
+
+\section{Search under a budget, and the corpus it produces}
+\label{sec:search}
+
+A discovery system spends a fixed budget of draws from a learned prior and keeps what an
+external checker verifies. Three measured facts from our own campaigns had no theory
+until recently: roughly three quarters of all draws were duplicates of programs already
+proposed; the four architectures' discoveries were $8$--$16\%$ overlapping, with about
+$70\%$ of the union found by exactly one architecture; and a fixed-split portfolio
+underperformed its own best member. Each is now a theorem about the draw model rather
+than an anecdote.
+
+Expected \emph{distinct} coverage under $n$ independent draws is
+$\sum_t (1-(1-p_t)^n)$ (\leanname{iidExpectedDistinctCoverage\_eq\_sum\_one\_sub\_pow}),
+and the duplicate burden is exactly expected hits minus expected distinct coverage
+(\leanname{iidExpectedDuplicateBurden\_eq\_hits\_sub\_distinct}); the two-draw collision
+probability is the prior's collision mass
+(\leanname{twoDrawCollisionProbability\_eq\_collisionMass}), which is what a
+$75\%$-duplicate search is measuring about its own prior. Deduplicating draws by a
+semantics-preserving canonical form buys back exactly the collapsed collision mass---the
+formal price tag on canonicalization, computed before building it. Sharpness has an
+interior optimum determined by ranking quality, not entropy alone, and two priors with
+equal entropy and different gold mass have strictly ordered yield: decisiveness is not a
+dial that buys ranking. The portfolio results close the loop
+(\leanname{budgetedSearchYield\_crown}): equal standalone yields can carry radically
+different union value through complementarity, and a fixed split can lose to the best
+single arm while an adaptive allocation dominates both---which is the observed
+$399$-versus-$435$ in one line.
+
+What the search produces is a corpus, and the corpus is now a formal object of its own:
+a provenance-authenticated many-to-many relation between programs and the sequences they
+solve, preserving every distinct program witness rather than quotienting programs by
+what they solve (\leanname{provenanceAwareProgramDiscovery\_crown}). Its equivalence
+ladder---exact syntax, finite-prefix agreement, finite-corpus footprint, full
+extensional equality---is kept honest by a counterexample at each invalid converse,
+including a finite-probe rigidity witness evaluated through the real synthesis
+semantics: agreement on a probed prefix does not force extensional equality. The
+dependence-aware evidence bridge enforces the matching discipline on statistics: witness
+multiplicity is not independent evidence, exact reuse receives overlap correction, and
+descendants trained on earlier discoveries do not count as fresh confirmation. Partial
+agreement can guide search without touching soundness: ranking by first-mismatch depth
+can never create an acceptance
+(\leanname{partialRanking\_cannot\_create\_acceptance}), and a two-queue scheduler that
+reserves a baseline fraction bounds how much a misguided heuristic can delay any
+baseline discovery (\leanname{baseline\_rank\_time\_slowdown\_bound})---so semantic
+shaping is admissible as guidance precisely because it is powerless over acceptance.
+
+\section{What the telemetry can and cannot see}
+\label{sec:identifiability}
+
+A map is only useful if you can locate yourself on it. Each boundary above is stated in
+terms of regime parameters---overlap, drift, distortion, cross-slot coupling, commutator
+energy---and the natural question is whether those are recoverable from what a deployed
+cell actually logs.
+
+Mostly they are not. Of eleven diagnostics, two are recoverable from primitive telemetry:
+gain variation from two logged gains, and the scalar spectral envelope from the settling
+residual. The other nine are \emph{confounded}: for each, two admissible regimes emit
+identical primitive telemetry and differ in the diagnostic. Each confound comes with the
+named intervention that resolves it---innovation-residual series for drift, source-identity
+metadata for overlap, calibration pairs for distortion, paired counterfactual endpoints for
+the plasticity branch, cross-slot perturbations for coupling, paired operator Jacobians for
+commutator energy, and Lyapunov measurements for switched stability.
+
+This has a sharp consequence for interpreting experiments. The very quantity that would
+explain a typed-slot advantage---the cross-slot coupling---is provably not identifiable
+from ordinary logs (\leanname{crossSlotHessian\_not\_identifiable}), so an observed
+workspace win cannot be attributed to the mechanism the theory names without adding the
+perturbation probe. Attribution requires intervention, and the required interventions are
+enumerated rather than guessed. A search over probe subsets yields exactly two
+inclusion-minimal suites, differing only in how routed behaviour is identified, and an
+adaptive procedure that stops at the first recommendation-determining prefix.
+
+\section{Scope, and what is assumed rather than proved}
+\label{sec:scope}
+
+We close with the boundary of the boundary theory, stated plainly because several results
+above are easier than they look.
+
+\emph{Typed linearity, now discharged where it can be.} The two-timescale results of
+\S\ref{sec:twotimescale} hold in a model whose effects are linear maps, and that
+commitment initially carried the argument invisibly: faithfulness reduces to cancellation
+and reachability to the definition of an image, with no hypothesis to flag. The boundary
+is now a theorem rather than a hope. Concrete linear attention---outer-product
+accumulation read by query contraction---provably \emph{instantiates} the model, with
+additivity over context concatenation derived before anything is packaged as a linear map
+(\leanname{linearAttentionContextEffect\_append}); the belief cell's evidence registers
+instantiate it exactly; and the abstract range condition becomes a concrete rank
+condition---reachability through an $r$-dimensional adapter bottleneck holds iff the
+required update has rank at most $r$
+(\leanname{rankBudgetReachable\_iff\_rank\_le}), so a rank-one adapter facing a rank-two
+context effect provably cannot consolidate faithfully. Softmax attention falls outside:
+normalization couples the context and breaks exact additivity, with a two-token
+counterexample and a quantitative defect bound
+(\leanname{scalarSoftmaxAttention\_not\_additive\_fixture},
+\leanname{abs\_normalizedContextMerge\_sub\_add\_le}). What remains empirical is whether a
+trained transformer's in-context adaptation operates in the near-linear regime---a question
+on which the evidence is suggestive rather than settled: linear attention is exactly the
+kernelised recurrence whose state is an accumulated outer product~\cite{katharopoulos2020},
+in-context learning has been read as an implicit gradient step~\cite{vonoswald2023,dai2022},
+and empirically a demonstration set's effect can be compressed into a single added
+vector~\cite{hendel2023,todd2023}, which is the additive-effect hypothesis in its most
+directly testable form. None of that is a proof, and we do not treat it as one.
+
+\emph{Derived, not declared, cost models.} An earlier draft optimized the consolidation
+cadence against a posited quadratic trade-off. Deriving the objective from the
+development's own accounting refuted it---the honest optimum is the corner of
+\S\ref{sec:twotimescale}---and the episode is retained deliberately: a cost model written
+down rather than derived is an assumption wearing a formula's clothes.
+
+\emph{Model families.} Except where noted, the results are scalar or matrix
+linear-Gaussian and quadratic. The depth-repair development reaches full covariance and a
+nonlinear Jacobian remainder but still proves exact local identities rather than
+convergence. Trained nonlinear accuracy is an empirical target everywhere it appears.
+
+\emph{Negative results are load-bearing.} Several of the most useful statements here are
+refutations---no universal recommendation, stability does not compose, four hypotheses do
+not suffice for a continual-learning advantage, commuting linear parts do not imply
+order-independence, nine diagnostics are not identifiable, softmax is not additive. We
+regard the counterexamples as the more durable half of this work, and the stance has
+already paid within this note's own lifetime: the first cadence formula did not survive
+its honest derivation, exactly as anticipated.
+
+\section*{Provenance}
+
+The development is a Lean~4 library. Definitions, theorem statements and complete proofs
+are available under the machine-learning tree of the Mettapedia formalization; the
+predictive-coding portion is pinned in the companion note, and the modules covering the
+utilization boundaries, the subsumption partition and the two-timescale theory are recent
+and not yet released. Crown theorems depend only on the standard logical basis
+(\code{propext}, \code{Classical.choice}, \code{Quot.sound}); the development contains no
+declared axioms and no unproved placeholders.
+
+\begin{thebibliography}{99}
+
+\bibitem{lopezpaz2017} D.~Lopez-Paz and M.~Ranzato.
+Gradient episodic memory for continual learning. \emph{NeurIPS}, 2017;
+arXiv:1706.08840.
+
+\bibitem{farajtabar2020} M.~Farajtabar, N.~Azizan, A.~Mott, and A.~Li.
+Orthogonal gradient descent for continual learning.
+\emph{AISTATS}, PMLR 108, 2020; arXiv:1910.07104.
+
+\bibitem{sun2024} Y.~Sun et al.
+Learning to (learn at test time): RNNs with expressive hidden states.
+arXiv:2407.04620, 2024.
+
+\bibitem{liu2024} B.~Liu et al.
+Longhorn: State space models are amortized online learners. arXiv:2407.14207, 2024.
+
+\bibitem{yang2024} S.~Yang et al.
+Gated delta networks: Improving Mamba2 with the delta rule. arXiv:2412.06464, 2024.
+
+\bibitem{katharopoulos2020} A.~Katharopoulos, A.~Vyas, N.~Pappas, and F.~Fleuret.
+Transformers are RNNs: Fast autoregressive transformers with linear attention.
+\emph{ICML}, 2020; arXiv:2006.16236.
+
+\bibitem{vonoswald2023} J.~von Oswald et al.
+Transformers learn in-context by gradient descent. \emph{ICML}, 2023; arXiv:2212.07677.
+
+\bibitem{dai2022} D.~Dai et al.
+Why can GPT learn in-context? Language models implicitly perform gradient descent as
+meta-optimizers. arXiv:2212.10559, 2022.
+
+\bibitem{hendel2023} R.~Hendel, M.~Geva, and A.~Globerson.
+In-context learning creates task vectors. \emph{EMNLP Findings}, 2023; arXiv:2310.15916.
+
+\bibitem{todd2023} E.~Todd et al.
+Function vectors in large language models. arXiv:2310.15213, 2023.
+
+\end{thebibliography}
+
+\end{document}

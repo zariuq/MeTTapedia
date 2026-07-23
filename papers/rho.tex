@@ -16,7 +16,15 @@
 \usepackage{amssymb}
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta,positioning}
+\usepackage{listings}
 \setlength{\emergencystretch}{3em}
+\lstset{
+  basicstyle=\ttfamily\small,
+  breaklines=true,
+  frame=single,
+  columns=fullflexible
+}
+\newcommand{\leanfile}[2]{\href{https://github.com/zariuq/MeTTapedia/blob/main/lean/mettapedia/Mettapedia/#1}{\code{#2}}}
 
 \newcommand{\code}[1]{\texttt{#1}}
 \newcommand{\formalized}{\textbf{[formalized]}}
@@ -48,13 +56,23 @@ states.  Exact causal receipts are retained for authority decisions, while
 prices and budget totals factor through explicit, generally non-injective
 aggregation maps.  The obstruction, the parameterized monad laws, this
 authority/observation factorization, and a computable canonical section for
-pure structural congruence are formalized.  Public raw admission checks both
-the cost grammar and whole-object binder scope, including purse locations.  On
-that admitted fragment, the budgeted Lean executor refines a declarative funded
-trace and erases to a path of the pure-rho GSLT mechanically derived from the
-authored language definition, with exactly one COMM step per funded event.
-Claims are marked as formalized or open; nothing here is asserted beyond its
-marker.
+pure structural congruence are formalized.  Beyond the single calculus, Cost
+is developed as a construction on \emph{continued interactive GSLTs} ---
+languages equipped with one ordered interaction cut, a computable canonical
+section, and a position-sensitive continuation-retyping plan --- and the
+generated funded language is itself such an object, with the object-closure
+laws of the resulting endofunctor programme largely discharged.  A second
+compiled counterexample is recorded: the global raw fiber-stability
+hypothesis of our earlier normalization architecture is false for rho, and
+its repair moves the entire equational theory onto typed open carriers with
+proof-relevant elaboration, on which exact canonical laws cut out the full
+subcategory hosting strict $\mathrm{Cost}_1$.  Public raw admission checks
+both the cost grammar and whole-object binder scope, including purse
+locations.  On that admitted fragment, the budgeted Lean executor refines a
+declarative funded trace and erases to a path of the pure-rho GSLT
+mechanically derived from the authored language definition, with exactly one
+COMM step per funded event.  Claims are marked as formalized or open;
+nothing here is asserted beyond its marker.
 \end{abstract}
 
 \section{Introduction}
@@ -324,6 +342,278 @@ the ordinary-monad faithfulness claim.  What replaces it is stronger where
 authority matters: exact indexed transitions and exact receipts, with every
 lossy view named as an observation.
 
+\section{The continued category: Cost as a construction on languages}
+\label{sec:continued}
+
+The corrected hypotheses of Section~\ref{sec:cost} are stated for one
+calculus.  The deeper architectural claim --- Meredith's ``wrapping by
+construction'' --- is that Cost is a \emph{construction on languages}: it
+should consume a language equipped with one interaction and return another
+such language, so that wrapping composes.  Making that precise forced a
+new compositional object, and we consider the result one of the genuinely
+novel architectures of this development.  This section states it exactly
+as formalized.  The staging is a strict tower --- each stage adds one kind
+of structure and forgets none:
+
+\begin{center}
+\resizebox{0.98\linewidth}{!}{%
+\begin{tikzpicture}[node distance=4mm and 8mm,
+  box/.style={draw, rounded corners, align=center, inner sep=5pt,
+    font=\small}]
+\node[box] (ld) {\code{LanguageDef}\\one authored declaration:\\grammar, equations, rewrites};
+\node[box, right=of ld] (gslt) {GSLT\\the derived rewriting theory:\\terms, equations, steps};
+\node[box, right=of gslt] (igslt) {iGSLT\\$+$ one interacting sort,\\one interaction rewrite};
+\node[box, right=of igslt] (cigslt) {CIGSLT\\$+$ ordered cut, canonical\\section, retyping plan, laws};
+\draw[-{Stealth}] (ld) -- (gslt) node[midway,above,font=\scriptsize]{derive};
+\draw[-{Stealth}] (gslt) -- (igslt) node[midway,above,font=\scriptsize]{select};
+\draw[-{Stealth}] (igslt) -- (cigslt) node[midway,above,font=\scriptsize]{continue};
+\draw[-{Stealth}] (cigslt.south) to[out=-150,in=-30]
+  node[midway,below,font=\scriptsize]{$\mathrm{Cost}$ (generate a new \code{LanguageDef})} (ld.south);
+\end{tikzpicture}
+}
+\end{center}
+
+\noindent
+The loop closes at the left: Cost consumes a continued object and emits a
+new \emph{authored-style declaration} --- the generated funded language of
+Section~\ref{sec:genfunded} --- which re-enters the same tower.  Nothing
+in the tower is hand-written twice; every stage is derived or selected
+from the stage before it.
+
+\subsection{Continued interactive GSLTs}
+
+A \emph{generated syntactic labelled transition system} (GSLT) is the
+rewriting theory mechanically derived from one authored
+\code{LanguageDef}; an \emph{interactive} GSLT (iGSLT) additionally fixes
+a validated presentation with one distinguished interacting sort and one
+interaction rewrite.  A \emph{continued interactive GSLT} (\code{CIGSLT})
+equips an iGSLT with exactly the data Cost needs to fire again:
+
+\begin{itemize}
+\item one ordered authored \emph{interaction cut}: the core contact
+  constructor, and a program operand and an environment operand, each an
+  authored constructor together with its selected \emph{continuation
+  position} and continuation schema variable;
+\item a \emph{computable contextual open section}: canonicalization on
+  every declaration-derived open sorted fiber, retaining sort,
+  free-variable context, binder context, and reflective scope
+  (Section~\ref{sec:canon});
+\item a \emph{continuation retyping plan}: the finite declaration-level
+  recipe that sends every constructor except the two selected principals
+  to a hereditarily \emph{wrapped} copy, and the two principals to
+  \emph{cut-aware base} copies whose continuation parameter alone is
+  retyped into the wrapped fiber;
+\item closure laws, each a proposition over the plan: every equation and
+  every reflective presentation of the source survives the retyping with
+  sorted base and wrapped images (\code{EquationsRetypable},
+  \code{ReflectivePresentationsRetypable}); the selected redex and
+  contractum remain sorted after their continuation positions move to the
+  wrapped fiber (\code{RedexRetypable}, \code{Wrappable}); the authored
+  envelope around the interaction core is a signature context stable
+  under retyping (\code{sourceEnvelopeStable}); every bare-collection
+  constructor --- whose label is invisible in raw syntax --- is
+  explicitly non-principal (\code{bareCollectionConstructorsWrapped});
+  and canonicalization preserves the non-principal typed constructor
+  fragment, so normalization can never manufacture an interaction
+  principal.
+\end{itemize}
+
+The last two laws deserve emphasis because each answers a concrete
+soundness hazard.  A bare collection hides its constructor label in the
+raw pattern, so a typing derivation chooses its rule non-syntactically;
+requiring all such rules to be non-principal makes every hidden choice
+harmless \emph{independently of which candidate a derivation picked}.
+And requiring the canonicalizer to preserve the non-principal fragment
+closes the loop between normalization and interaction: rearranging
+authored static structure is allowed, manufacturing a redex is not.
+
+In Lean the object is one structure, reproduced here abridged
+(\leanfile{GSLT/LanguageDef/ContinuedCategory.lean}{ContinuedCategory.lean}):
+
+\begin{lstlisting}
+structure CIGSLT where
+  theory        : IGSLT
+  cut           : InteractionCutPresentation theory
+  openCanonical : ComputableContextualOpenSection theory
+  continuationRetyping : ContinuationRetypingPlan cut
+  bareCollectionConstructorsWrapped : ...  -- hidden labels are non-principal
+  openCanonicalPreservesWrappedConstructorTyping : ...
+  equationsRetypable               : EquationsRetypable continuationRetyping
+  reflectivePresentationsRetypable : ...
+  sourceEnvelopeStable             : ContinuationStableContext cut ...
+  redexRetypable : continuationRetyping.RedexRetypable
+  wrappable      : continuationRetyping.Wrappable
+\end{lstlisting}
+
+\noindent
+Every law is a proposition over \code{(theory, cut, plan)} alone --- a
+deliberate design point: the closure obligations of the \emph{generated}
+object are statable before that object is fully assembled, which is what
+Section~\ref{sec:endofunctor} exploits.
+
+\subsection{Position-sensitive retyping is not a morphism}
+
+The retyping plan is deliberately \emph{not} a uniform signature
+morphism, and this is a theorem-shaped fact rather than an
+implementation convenience.  The generated language declares base copies
+of every source constructor and wrapped copies of the non-principals;
+the two principals receive \emph{cut-aware} base copies whose
+continuation parameter is wrapped while every other parameter is base.
+Consequently no single symbol action covers the retyping: occurrences of
+the wrapped sort must map differently at continuation positions than
+elsewhere.  The formal development therefore transports typing
+derivations along the plan with a dedicated induction
+(\code{mapCostStaticGenerated}), stated over exactly
+(theory, cut, plan) plus the bare-collection law --- and over nothing
+else.  This minimal signature is what makes the construction iterate
+without circularity: the generated object inhabits it before the
+generated object's own closure laws are discharged. \formalized
+
+\subsection{The generated funded language}
+\label{sec:genfunded}
+
+From a \code{CIGSLT} the construction produces the complete funded
+language in two stages.  The \emph{continuation signature} is the
+generated base/wrapped grammar above.  The \emph{whole language} adds a
+small administrative apparatus --- a contact constructor, a signing
+wrapper, funding and token-stack constructors --- and exactly one
+rewrite, the \emph{whole-redex rule}: the base-mapped source redex,
+signed and placed beside a funding stack whose head carries the demanded
+signature, contracts in one step to the wrapped contractum beside the
+unconsumed stack tail.  The generated source pattern is positively
+characterized --- it is literally one explicit contact of a signed redex
+with a matching funded stack
+(\leanfile{GSLT/LanguageDef/CostInteraction.lean}{CostInteraction.lean},
+theorem \code{costWholeRedexSource\_eq}):
+
+\begin{lstlisting}
+-- left side of the one generated rewrite
+contact( signed( <base-mapped source redex> , $sig ),
+         funding( stackCons($sig, $tail) ) )
+-- right side
+contact( <wrapped source contractum> , funding($tail) )
+\end{lstlisting}
+
+\noindent
+The rule consumes the stack head and carries the tail variable through
+unchanged, and no rule creates a replacement token. \formalized{} Funding is thereby part of the
+\emph{grammar and one rewrite} of an ordinary authored-style language ---
+not a side condition bolted onto an evaluator --- which is what makes the
+output of Cost a candidate input to Cost again.
+
+\subsection{Morphisms and the ordered category}
+
+Continued objects form a category.  A morphism is an iGSLT theory map
+that preserves the ordered cut (core contact, both operand constructors,
+core pattern, and envelope), reflects the interacting-sort fiber,
+preserves and reflects the finite wrapped-constructor closure, and
+commutes with canonicalization injectively on canonical keys.  The
+forgetful functor to iGSLTs forgets object structure but no morphism
+action. \formalized{} On top of this sits the \emph{ordered} category:
+canonical keys carry a collision-free structural code, giving every
+object a linear order on keys, and ordered morphisms are those whose
+key action is monotone.  Exact typed Cost objects
+(Section~\ref{sec:canon}) then form an honest full subcategory ---
+written \code{CostOneObjects} --- which is the intended domain of strict
+$\mathrm{Cost}_1$. \formalized
+
+\section{Typed normalization: a refutation and its repair}
+\label{sec:typednorm}
+
+The July development exposed a second incorrect hypothesis, this time in
+our own earlier normalization architecture, and the repair reshaped the
+whole equational layer.  We record both, because the counterexample is
+compiled and the repair is, we believe, the right general discipline for
+proof-relevant rewriting over generated languages.
+
+\paragraph{The refutation.} The earlier normalization laws demanded a
+global \emph{raw fiber stability}: that every raw equation-equivalence
+between patterns in a typed fiber restricts to that fiber.  For the rho
+instance this is \emph{false}, and the falsity is witnessed by a
+compiled counterexample: a mixed-colour reflective generator whose left
+endpoint is typed while its canonical right endpoint is ill-typed.
+\refuted{} A raw equivalence endpoint is simply too weak a datum: raw
+syntax cannot remember the binder slice that typing carries.
+
+\paragraph{The repair: typed equation carriers.} The equational theory
+is now carried at the typed level.  Open patterns in a declaration-derived
+fiber carry their typing; the authored equations generate a setoid on
+these \emph{typed} carriers; and the two directions between raw and
+typed are deliberately asymmetric.  Typed-to-raw erasure is free.
+Raw-to-typed lifting exists only edge-wise: one authored contextual
+generator step whose \emph{two endpoints are already packaged in the
+same typed open fiber} may be injected, and the endpoint certificates
+are the entire distinction from the refuted operation, which attempted
+to lift an opaque raw path after the fact
+(\leanfile{GSLT/LanguageDef/EquationSubstitution.lean}{EquationSubstitution.lean}).
+\formalized
+
+\paragraph{Proof-relevant elaboration.} Above the typed carriers sits a
+proof-relevant elaboration layer: a cost region tree is a typed
+derivation of how a pattern decomposes into coloured static regions, and
+normalization is defined on trees, not on raw syntax.  Compilation
+chooses a tree but contributes no semantic equation authority; the
+executable compact normalizer inherits typed soundness from the
+elaboration it erases.  The normalization theorem lands in the typed
+open-equation setoid of the exact fiber --- with \emph{no} global raw
+fiber-stability hypothesis anywhere in its statement or proof
+(\leanfile{GSLT/LanguageDef/CostRegionNormalization.lean}{CostRegionNormalization.lean}).
+\formalized
+
+\paragraph{Exact Cost objects.} An object carries \emph{exact} typed
+canonical laws (\code{CostOpenCanonicalLaws}) when typed unary
+normalization is sound in every fiber, compact normalization is
+coherent across elaboration choices, and each authored open-equation
+generator is collapsed.  On such objects the normalizer is a computable
+section of every typed open fiber: equivalence classes coincide with
+canonical representatives, completeness being generated solely from
+exact invariance under the authored generators.  These laws are an
+object \emph{property} --- membership is semantic, not structural ---
+and cut out the full subcategory on which strict $\mathrm{Cost}_1$
+lives. \formalized
+
+\section{Cost as an endofunctor: the object-closure programme}
+\label{sec:endofunctor}
+
+Iterating Cost means: the generated funded language, with its generated
+cut and generated retyping plan, is again a continued object.  The data
+triple exists by construction.  The closure laws are theorems to be
+proved \emph{generically} --- for every source object --- and this
+programme
+(\leanfile{GSLT/LanguageDef/CostEndofunctor.lean}{CostEndofunctor.lean})
+is now largely discharged:
+
+\begin{itemize}
+\item every bare-collection constructor of the generated language is
+  non-principal at the next layer (the generated principals never use
+  bare collections, by the source laws) \formalized;
+\item the generated interaction envelope is stable under the next
+  retyping, by transport of the source envelope-stability witness
+  \formalized;
+\item there is a single declaration-derived typing morphism from the
+  complete generated language into the signature that validates the
+  next layer (\code{costClosureTyping}), reusable by the equation,
+  contractum, and reflective closure proofs \formalized;
+\item the generic typed transport along a retyping plan
+  (\code{mapCostStaticGenerated}) is stated and proved over the minimal
+  non-circular signature described in
+  Section~\ref{sec:continued}. \formalized
+\end{itemize}
+
+The remaining obligations --- sorted base and wrapped images of the
+generated equations, sortedness of the twice-retyped redex and
+contractum, reflective-presentation survival, canonical preservation of
+the next non-principal fragment, and the contextual strengthening of the
+typed canonical section --- are active work; each has an identified
+proof route through the theorems above, and none requires new global
+hypotheses.  \open{} Two structural facts already shape the endgame:
+closure lands on the exact full subcategory (the laws of
+Section~\ref{sec:typednorm} must themselves be closed), and the uniform
+shortcut is provably unavailable --- the twice-retyped redex cannot be
+transported by any single signature morphism, because the declared
+cut-aware principal copies disagree with the uniform image at exactly
+the two continuation parameters.
+
 \section{Canonical forms and the computable section}
 \label{sec:canon}
 
@@ -357,6 +647,18 @@ and embedding instead of selecting representatives with
 The mathematical key is the canonical form itself. A runtime digest may later
 refine it under an explicitly assumed collision-resistance property, and the
 formalization never treats a concrete hash function as injective.
+
+In the formal development this section is \emph{contextual and open}: it is
+indexed by every declaration-derived open sorted fiber --- free-variable
+context, binder context, and reflective scope included --- and additionally
+preserves free-variable support, is natural under agreeing recontextualization
+of unused entries (exact raw representative equality, not merely contextual
+equivalence), and preserves reflective support.  The closed paper-facing
+section above is its restriction to the closed interacting fiber.  The typed
+Cost normalizer of Section~\ref{sec:typednorm} is held to the same
+interface. \formalized{} for the pure section; the contextual strengthening of
+the Cost-side section is part of the open endofunctor obligations of
+Section~\ref{sec:endofunctor}.
 
 \section{One authored presentation and semantic agreement}
 
@@ -457,13 +759,27 @@ Fixed-element cancellation boundary & \S5(a) & formalized \\
 $\mu$ joint-injectivity impossibility & \S5(b) & formalized \\
 Parameterized monad laws on funded execution & \S5 & formalized \\
 Exact receipt / lossy aggregate factorization & \S5 & formalized \\
-Computable pure canonical form + section & \S6 & formalized \\
-Authored COMM compiler agreement with established semantics & \S7 & formalized \\
-Binder-safe initialization and preservation & \S8 & formalized \\
-Funded-step erasure to the LanguageDef-derived pure GSLT & \S8 & formalized \\
-Runtime and declarative paths to derived pure paths, exact length & \S8 &
+Continued category (objects, morphisms, ordered keys) & \S6 & formalized \\
+Generated funded language: whole-redex rule, positive shape & \S6 &
   formalized \\
-Occurrence-disjoint modeled runtime waves to fixed cost matchings & \S8 &
+Generic typed transport over (theory, cut, plan) & \S6 & formalized \\
+Raw fiber stability for rho & \S7 & counterexample recorded \\
+Typed equation carriers; edge-wise raw-to-typed lifting & \S7 & formalized \\
+Proof-relevant elaboration; typed normalization soundness & \S7 &
+  formalized \\
+Exact canonical laws; \code{CostOneObjects} subcategory & \S7 & formalized \\
+Endofunctor closure: bare-collection, envelope, closure typing & \S8 &
+  formalized \\
+Endofunctor closure: remaining object laws & \S8 & open \\
+Computable pure canonical form + section & \S9 & formalized \\
+Authored COMM compiler agreement with established semantics & \S10 &
+  formalized \\
+Binder-safe initialization and preservation & \S11 & formalized \\
+Funded-step erasure to the LanguageDef-derived pure GSLT & \S11 &
+  formalized \\
+Runtime and declarative paths to derived pure paths, exact length & \S11 &
+  formalized \\
+Occurrence-disjoint modeled runtime waves to fixed cost matchings & \S11 &
   formalized \\
 Pure/extended and cost-profile execution boundary & \S4 &
   Lean theorems; C differential gate \\

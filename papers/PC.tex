@@ -61,8 +61,7 @@
 \title{Predictive Coding: What Is Exact,\\ What Is Not, and What It Costs}
 \author{Oru\v{z}i\thanks{Oru\v{z}i names the AI research collaborators who carried out
 this work: Anthropic Claude (Opus~4 and Fable~5) and OpenAI Codex (GPT-5.6-Sol) ---
-formalization, implementation, experiments, and drafting. Research direction and
-oversight: Zar Goertzel.}}
+formalization, implementation, experiments, and drafting.} \and Zarathustra Goertzel}
 \date{July 2026 --- working note}
 
 \begin{document}
@@ -200,7 +199,10 @@ vector-valued chains --- arbitrary width, arbitrary depth, arbitrary positive-de
 chain's residual map as such an $A$ and checking injectivity; no chain-specific
 completion-of-squares argument is repeated. At depth two the scalar case recovers the
 Kalman update and the two-source Gaussian fusion rule, which is where the PC
-literature's Bayesian intuition comes from.
+literature's Bayesian intuition comes from. This fully-settled reading is the
+\emph{prospective configuration} regime of \cite{millidge2023}, in which inference
+completes before the weights move; the Gaussian assumption it and we share can itself be
+relaxed without abandoning the inference view \cite{pinchetti2022}.
 
 This is also the cleanest way to see the trouble in the next section. The posterior mean
 given a clamped output is precisely \emph{not} the forward pass --- conditioning on the
@@ -588,9 +590,9 @@ need not.
 \label{sec:precond}
 
 The standard response to slow or misbehaving settling is to rescale the update ---
-precision scaling, natural-gradient-style metrics, or a line search. In the exactly
-solvable case, what rescaling buys is a single number, and the answer is unexpectedly
-sharp.
+precision scaling, natural-gradient-style metrics \cite{ofner2021}, or a line search. In
+the exactly solvable case, what rescaling buys is a single number, and the answer is
+unexpectedly sharp.
 
 Take one chain link: source activation $s$, downstream gain $g$, weight $w$, prediction
 $g w s$, target $y$, residual $r(w) = gws - y$ and loss $\ell(w) = \tfrac12 r(w)^2$.
@@ -708,6 +710,36 @@ depth-2 PC energy.
 
 This is the correctness certificate for the settling procedure used by the surviving
 experimental arms, whose logged energies were monotone in every accepted run.
+
+Two later formal tranches sharpen what a preconditioner claim may assert. The first is
+Fisher geometry: for a Gaussian layer the weight Fisher is exactly the Kronecker product
+of the precision with the activation second moment
+(\leanname{gaussianWeightFisher\_eq\_kronecker}), so ``precision-weighted predictive
+coding is a natural-gradient method'' is a conditional statement, and the condition
+fails concretely---under correlated activations no scalar precision recovers the natural
+step (\leanname{scalarPrecision\_cannot\_recover\_correlatedNaturalStep}). Between the
+full Fisher and a scalar precision sits a strict approximation ladder (layer block,
+Kronecker, activation-only, diagonal, scalar;
+\leanname{fisherApproximation\_strict\_ladder}) with an explicit direction-error bound
+(\leanname{direction\_error\_le\_approximate}), and a composed error budget separates
+settling, equilibrium, covariance, damping, and outer-optimizer contributions---so an
+experimental arm can be adjudicated as PC-distinct yet not Fisher-natural, which is
+precisely the classification our scalar-precision-plus-Adam arms occupy.
+
+The second welds this paper's two surviving mechanisms into one object: a depth-indexed
+joint energy with hidden error coordinates \emph{and} an explicit prospective output
+state. Zeroing the hidden errors recovers exactly the output-only prospective objective;
+hard-constraining the output to the frozen prediction recovers exactly the deep
+error-coordinate objective
+(\leanname{prospectiveEPCJointEnergy\_zeroErrors\_eq\_outputObjective},
+\leanname{prospectiveEPCJointEnergy\_hardOutputConstraint\_eq\_deepObjective}). The join
+has an ignition boundary---with a zero readout and zero hidden errors, every hidden force
+vanishes while the output force persists
+(\leanname{zeroReadout\_zeroErrors\_hiddenForce\_eq\_zero}), so a zero-initialized adapter
+provably stages itself: output first, depth after. And the two mechanisms may not be
+naively combined: summing their independently computed parameter updates is an effective
+overshoot that strictly increases the shared energy in an explicit fixture. The joint
+rule, not the sum, is the candidate worth testing.
 
 \section{Not every equilibrated-energy saddle is strict}
 \label{sec:saddles}
@@ -1057,8 +1089,9 @@ overfit-32 scale, not full-scale NMT performance.
 \textbf{Dead, on the evidence:} predictive coding as a drop-in replacement for
 backpropagation on synchronous digital hardware, for training program-synthesis models
 from scratch. At small scale it is dominated at equal epochs and vastly dominated at
-equal wall-clock; at medium multi-generation scale it holds a stable two-thirds frontier
-deficit with erratic self-training dynamics; on the recurrent architecture, seven
+equal wall-clock --- consistent with the measured $1.6$--$15\times$ per-step cost of
+settled inference over backprop \cite{rosenbaum2022}; at medium multi-generation scale it
+holds a stable two-thirds frontier deficit with erratic self-training dynamics; on the recurrent architecture, seven
 registered arms produced exactly one passing design, and it is staged from a
 BP-equivalent anchor rather than trained from random initialization.
 
@@ -1075,7 +1108,8 @@ BP-equivalent anchor rather than trained from random initialization.
   the pre-registered independent-seed replication passed on seed~1 with distinctness at
   every checkpoint of a fixed window. This is the one place PC ignited reproducibly under
   criteria fixed in advance. Buying PC's properties \emph{after} BP's learning is the
-  empirically supported direction.
+  empirically supported direction, and it is the same amortize-then-refine structure that
+  hybrid predictive coding uses to infer fast and then settle slow \cite{tschantz2023}.
 \item \emph{Second-order geometry, with the bar set by Theorem~\ref{thm:mode}.} The
   preconditioning failures are exactly characterized, so the cure is exactly specified:
   a metric whose departure from the identity is a contraction, $\rho(I-P)<1$, on the modes
@@ -1086,7 +1120,10 @@ BP-equivalent anchor rather than trained from random initialization.
   design space than levelizability, and untested.
 \item \emph{Asynchronous and neuromorphic settings.} Untested here; nothing in this note
   bears on them, except that the decisiveness instrument of Section~\ref{sec:yield}
-  travels to any setting where a learned prior guides search.
+  travels to any setting where a learned prior guides search. These are the settings the
+  energy-based learning tradition, such as equilibrium propagation \cite{scellier2017},
+  was designed for, and where a settle-then-update rule is not paying a wall-clock penalty
+  against a synchronous backprop baseline.
 \end{enumerate}
 
 \section{Limitations and open problems}
@@ -1106,7 +1143,29 @@ is mathematical over exact reals; implementation-level rounding behavior remains
 separate question. The ignition ladder is overfit-32 scale: its purpose is
 correctness-gated variant triage, not benchmark performance. The distinctness criterion's
 placement at the registered final step is a design choice whose alternatives remain
-untested. All ``dead'' verdicts are scoped to the regimes actually measured.
+untested. Settling itself is not unconditionally convergent: for large enough weights the
+relaxation can diverge \cite{frieder2022}, the empirical counterpart of the contraction
+condition our results assume. All ``dead'' verdicts are scoped to the regimes actually
+measured, and that scope has a provable outer boundary: in the infinite-width limit the
+distinctive predictive-coding dynamics collapse onto backpropagation \cite{innocenti2026},
+so the effect we are measuring is real precisely in the finite regime and vanishes where
+the network is wide relative to its depth. Depth in the other direction is likewise not a
+fundamental barrier: the degradation of standard predictive coding past a few layers has
+been traced to exponentially imbalanced inter-layer errors and repaired---by
+precision-weighted latent balancing, a deep-layer update correction, and auxiliary
+residual neurons---to backpropagation-comparable accuracy on deep residual networks
+\cite{qi2025}, the algorithmic counterpart of the coordinate-dependence our
+error-coordinate section makes exact. We have since formalized those mechanisms at
+arbitrary depth: the first-arrival attenuation that produces the imbalance, the precision
+spike that exactly cancels it, the forward-reference update that bounds deep-layer
+accumulation, the auxiliary buffers that synchronize residual and main paths, and the
+invariance of frozen normalization statistics---over full covariance matrices with a
+nonlinear Jacobian remainder, not the scalar chain the rest of this note works in. The
+scope of that formalization should be read narrowly: it establishes exact local
+identities and propagation bounds, and it deliberately classifies convergence and
+accuracy for trained deep networks as empirical targets rather than theorems. What none
+of it repairs is the cost: the repaired dynamics remain an iterative relaxation, so
+``matches backpropagation'' continues to mean matches its target, not its price.
 
 \appendix
 
@@ -1332,6 +1391,53 @@ carried entirely by one of three seeds. Shallow predictive coding as a frozen-ba
 is thus neither the liability the full-network depth results warn against nor an advantage;
 it is, at this scale, dominated-in-simplicity by the backpropagation adapter it matches.
 
+\subsection{The full credit-rule protocol}
+\label{sec:credit-protocol}
+
+The $2\times2$ above is one slice of a registered longitudinal comparison whose full protocol
+we state here, since the preceding sections leave it implicit. The comparison separates two
+regimes. In the \emph{full-model} regime---the tree network of
+Section~\ref{sec:tree} and the sequence-to-sequence ladder of
+Section~\ref{sec:ladder}---predictive coding is the whole learner, and it is there that it is
+costwise dominated. In the \emph{frozen-adapter} regime a backbone is frozen and every rule
+trains only a zero-initialised residual adapter $256\!-\!64\!-\!64\!-\!64\!-\!256$ (three
+hidden sites), inserted so the backbone's output is preserved exactly at initialisation. Five
+rules share that adapter, differing only in the update:
+
+\begin{center}\small
+\begin{tabular}{@{}lllc@{}}
+\toprule
+Rule & Mechanism & $T$ / rate / precision & cos$\to$BP \\
+\midrule
+BP control & AdamW backpropagation on the adapter & $0$ & $1.000$ \\
+BP$+$ & task $+$ proximal $\|\theta-\theta_{\mathrm{ref}}\|^2$, retention projection & $0$ & ${\approx}1$ \\
+prospective PC & settle the output-residual latent, adapter chases it & $8$ / $5\!\times\!10^{-4}$ / $1000$ & $0.99999$ \\
+incremental PC & one latent and one adapter step, interleaved & $4$ / $10^{-3}$ / $300$ & $0.011$ \\
+deep ePC & error units at three sites, detached between blocks & $4$ / $10^{-3}$ / $300$ & $0.99973$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Two facts govern any comparison of the arms. First, at their selected mechanism-gate
+configurations prospective PC and deep ePC are backpropagation-like by construction (cosine to
+the backpropagation gradient ${\approx}1$); only incremental PC is genuinely distinct at
+selection (cosine $0.011$), and the prospective cell reaches distinctness only by drifting over
+full training. Second, a code oracle proves the corner exactly: with one settling step and
+$\text{rate}\times\text{precision}=1$ the adapter's local gradient equals the backpropagation
+gradient. The classification bins are backpropagation-like $\ge 0.995$, intermediate
+$0.95$--$0.995$, distinct $<0.95$.
+
+The design is a $2\times4\times5$ factorial---two hash-seeded worlds; four state carriers
+(recurrent, typed workspace, belief-derived, belief-learned); five rules---run longitudinally
+over generations, each cell effect read against its within-carrier backpropagation control and
+each architecture-by-rule interaction against the recurrent arm. Every cell shares a
+byte-identical frozen parent and adapter initialisation; a cell passes only if the parent
+state hash is unchanged after training and zero-adapter output parity holds under exact tensor
+equality. The optimiser is AdamW at $3\times10^{-4}$ over $2500$ updates of batch $16$
+(incremental PC dividing its rate by $T$), all PC inference using monotone backtracking line
+search (shrink $0.5$, at most twelve backtracks, tolerance $10^{-6}$). Coverage for the
+current generations is under independent adjudication and is not reported here.
+
 \section*{Where to find these}
 
 All statements are machine-checked in Lean~4, in the Mettapedia library under the
@@ -1550,7 +1656,7 @@ program-synthesis substrate is Gauthier's OEIS self-learning system and its NMT 
 \cite{gauthier2023}. Our companion report \emph{AlienCoding} documents the replication
 methodology, the full campaign, and the reference numbers.
 
-\begin{thebibliography}{9}
+\begin{thebibliography}{99}
 
 \bibitem{whittington2017} J.~Whittington and R.~Bogacz.
 An approximation of the error backpropagation algorithm in a predictive coding network
@@ -1590,6 +1696,38 @@ Axiomatizing causal reasoning.
 
 \bibitem{gauthier2023} T.~Gauthier, M.~Ol\v{s}\'ak, and J.~Urban.
 Alien coding. arXiv:2301.11479, 2023.
+
+\bibitem{millidge2023} B.~Millidge, Y.~Song, T.~Salvatori, T.~Lukasiewicz, and R.~Bogacz.
+A theoretical framework for inference and learning in predictive coding networks.
+arXiv:2207.12316, 2022.
+
+\bibitem{tschantz2023} A.~Tschantz, B.~Millidge, A.~K.~Seth, and C.~L.~Buckley.
+Hybrid predictive coding: Inferring, fast and slow.
+\emph{PLoS Computational Biology}, 2023; arXiv:2204.02169.
+
+\bibitem{innocenti2026} F.~Innocenti et al.
+Infinite width and depth limits of predictive coding networks. arXiv:2602.07697, 2026.
+
+\bibitem{ofner2021} A.~Ofner et al.
+Predictive coding, precision and natural gradients. arXiv:2111.06942, 2021.
+
+\bibitem{frieder2022} S.~Frieder and T.~Lukasiewicz.
+(Non-)convergence results for predictive coding networks.
+\emph{International Conference on Machine Learning}, PMLR 162, 2022.
+
+\bibitem{rosenbaum2022} R.~Rosenbaum.
+On the relationship between predictive coding and backpropagation.
+\emph{PLoS ONE}, 2022; arXiv:2106.13082.
+
+\bibitem{pinchetti2022} L.~Pinchetti et al.
+Predictive coding beyond Gaussian distributions. \emph{NeurIPS}, 2022; arXiv:2211.03481.
+
+\bibitem{scellier2017} B.~Scellier and Y.~Bengio.
+Equilibrium propagation: Bridging the gap between energy-based models and
+backpropagation. \emph{Frontiers in Computational Neuroscience}, 11:24, 2017.
+
+\bibitem{qi2025} C.~Qi, M.~Forasassi, T.~Lukasiewicz, and T.~Salvatori.
+Towards the training of deeper predictive coding neural networks. arXiv:2506.23800, 2025.
 
 \end{thebibliography}
 

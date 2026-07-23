@@ -87,6 +87,20 @@ pipeline proven in Lean, and the first rule classes (grounded dispatch,
 argument congruence, equation matching) are welded to a reflectable
 small-step rule table whose rule-removal tests prove the engine
 genuinely depends on the declared rules.
+Two 2026-07 developments extend the architecture: parsers
+\emph{generated from the authored grammars themselves} (per-language
+LanguageDefs compiled to native readers with differential, mutation, and
+purity gates --- the pipeline caught two defects in the authored grammars
+before execution), and \code{--lang prime}, a \emph{distinct} lazy
+sibling language (branch-local call-by-need with call-time choice,
+opaque Need-cell capabilities, occurrence-bag results, and a
+policy-neutral certified search-control layer), whose living
+specification and design principles are distilled in the appendices.
+A correctness-gated four-engine benchmark study (adding JeTTa and
+MeTTaScript) locates each runtime's competence zone and measures the
+per-call and sharing costs that motivate the abstract-machine roadmap,
+whose derivation methodology now carries kernel-checked Lean
+foundations.
 The runtime features SymbolId-based dispatch (38\% instruction
 reduction), structured space kinds (queue, hash, stack), a pluggable
 match backend with PathMap/MORK integration, and compiled space
@@ -669,7 +683,10 @@ constructors --- \code{rho:nil}, \code{rho:par}, \code{rho:send}, \code{rho:recv
 \code{rho:quote}, \code{rho:drop} --- with \textsc{comm} as the only reduction. A program is
 reduced to quiescence by \code{cetta --lang rhocalc \textit{file}}, written either in a
 MeTTa-style s-expression surface (\code{.mrho}) or a Rholang-like surface (\code{.rho}); the
-runtime keeps a live index of sends and receive-sites, rebuilt after each reaction.
+runtime keeps a live index of sends and receive-sites, rebuilt after each reaction.  The
+deterministic (canonical) scheduler selects the key-least successor by streaming candidate
+keys against the best bound found so far instead of materializing and sorting the whole
+frontier, which keeps single-step selection cheap on wide parallel terms.
 
 \subsection{Reflection is enough}
 \label{sec:rho-reflection}
@@ -981,9 +998,12 @@ disjoint claims.  The sequential semantics therefore remains the reference, whil
 threaded implementation is tested as a legal parallel refinement: both threaded CLI modes,
 six contention and disjointness stress families, and the sequential/threaded prefix gate
 exercise same-channel disjoint reactions, competing funding covers, duplicate-looking
-occurrences, and causal receipt linearization.  These gates, together with thread and memory
-sanitizers, are implementation evidence; the Lean step/path theorem above supplies the
-declarative semantic boundary.
+occurrences, and causal receipt linearization.  Receipt emission is an \emph{optional
+observer} on this path: operational components are plain terms, causal provenance rides in a
+parallel producer vector, and a scripted transparency gate checks that a state-only run and a
+receipt-observed run consume identical resources and reach the same residual.  These gates,
+together with thread and memory sanitizers, are implementation evidence; the Lean step/path
+theorem above supplies the declarative semantic boundary.
 
 At the modeled parallel boundary, a list of enabled runtime candidates whose
 complete endpoint-and-funding source-index family is globally duplicate-free
@@ -1013,10 +1033,58 @@ generally non-injective observations of those receipts.  This is the resource-tr
 specialization of the wider graded and parameterized-effect account
 ~\cite{katsumata,orchard-wadler-eades}.  The companion theory paper states the obstruction,
 the indexed laws, and the authority/observation factorization precisely
-~\cite{rhocost-companion}.  The public surface is
+~\cite{rhocost-companion}.
+
+\paragraph{The continued category and repeated Cost.}  Since the July
+development, the Lean side
+(\href{https://github.com/zariuq/MeTTapedia/blob/main/lean/mettapedia/Mettapedia/GSLT/LanguageDef/ContinuedCategory.lean}{\code{GSLT/LanguageDef/ContinuedCategory.lean}},
+\href{https://github.com/zariuq/MeTTapedia/blob/main/lean/mettapedia/Mettapedia/GSLT/LanguageDef/CostEndofunctor.lean}{\code{CostEndofunctor.lean}})
+treats Cost not as a one-off wrapping of rho but
+as a construction on \emph{continued interactive GSLTs}: a language
+mechanically derived from one authored \code{LanguageDef}, equipped with
+one ordered interaction cut (a contact constructor plus program and
+environment operands with selected continuation positions), a computable
+canonical section of every typed open fiber, and a
+\emph{position-sensitive continuation-retyping plan} under which every
+non-principal constructor receives a hereditarily wrapped copy while the
+two principals receive cut-aware base copies whose continuation parameter
+alone moves to the wrapped fiber.  The generated funded language --- the
+base/wrapped signature plus a small contact/signing/funding apparatus and
+exactly one whole-redex rewrite that consumes a funding-stack head and
+carries the tail through --- is itself such an object, and the
+object-closure laws of the resulting endofunctor programme are largely
+discharged generically: bare-collection constructors of the generated
+language are provably non-principal at the next layer, the generated
+interaction envelope is stable under the next retyping, a single
+declaration-derived typing morphism validates the next layer's signature,
+and the typed transport along a retyping plan is proved over the minimal
+non-circular signature (theory, cut, plan).  The remaining generated-object
+laws are active work with identified routes.  Two corrections landed on the
+way and are recorded as compiled counterexamples rather than folklore: the
+global raw fiber-stability hypothesis of the earlier normalization
+architecture is \emph{false} for rho (a mixed-colour reflective generator
+has a typed left endpoint whose canonical right endpoint is ill-typed), and
+its repair carries the entire equational theory on \emph{typed} open
+carriers with proof-relevant region-tree elaboration --- raw-to-typed
+lifting exists only edge-wise, with both endpoints certified in the same
+typed fiber.  Exact typed canonical laws then cut out the full subcategory
+of \emph{Cost-canonical} objects, which, ordered by collision-free
+structural canonical keys, is the honest domain of strict
+$\mathrm{Cost}_1$.  The theory paper develops all of this precisely
+~\cite{rhocost-companion}; the engine consequence is concrete: the same
+authored declaration that generates this profile's grammar and its single
+funded rewrite is the object the endofunctor consumes, so iterated
+cost-accounting is a construction on the specification, never a second
+hand-written engine.  The public surface is
 \href{https://github.com/zariuq/CeTTa/blob/e23de3043462d80e27f9c9009bd0f1b955ed140c/lib/lts/rho/cost.metta}{\code{lib/lts/rho/cost.metta}};
 the engine is
 \href{https://github.com/zariuq/CeTTa/blob/e23de3043462d80e27f9c9009bd0f1b955ed140c/src/rhocalc_core.c}{\code{src/rhocalc\_core.c}}.
+Runnable showcases ship with the engine in \code{examples/rho/} --- a funded vending machine
+(an unfunded order left facing a live endpoint), a causal notary chain whose receipt is the
+provenance audit trail, an honest-budget meter exhibiting all three prefix verdicts and a
+two-cover spend, and a threaded settlement wave whose residual is byte-identical at every
+thread count --- each with expected outputs checked by the test suite, alongside a documented
+walkthrough of the calculus, both surfaces, and the profile.
 
 %% ────────────────────────────────────────────────────────────────────
 \section{Cross-Runtime Benchmarks}
@@ -1509,6 +1577,49 @@ on both HE and \CeTTa{} (see Section~\ref{sec:heprime}).
 The \code{rule-sig} encoding is semantically equivalent on all runtimes.
 
 %% ────────────────────────────────────────────────────────────────────
+\subsection{Four-Engine Study: JeTTa and MeTTaScript Join the Ladder}
+\label{sec:fourengine}
+
+A 2026-07 study extended the ladder with JeTTa (a Kotlin/JVM
+ahead-of-time compiler for MeTTa) and, via its upstream slide deck,
+MeTTaScript (TypeScript)~\cite{jetta-slides,jetta-review}.  Every timed
+run was gated on answer correctness; a fast wrong answer counts as a
+failure.  Three findings matter for \CeTTa{}'s roadmap:
+
+\begin{itemize}
+\item \textbf{Competence zones, not a single ranking.}  JeTTa dominates
+  deterministic arithmetic recursion (its compiler auto-memoizes pure
+  recursion: naive Fibonacci runs in $O(N)$); \PeTTa{} dominates
+  unindexed nondeterministic search (8-Queens roughly $150\times$ over
+  \CeTTa{}) and is the only engine with production tabling and bignums;
+  \CeTTa{} keeps near-zero startup and wins indexed knowledge-base
+  queries (the mined-chain workload roughly $26\times$ over \PeTTa{});
+  on the heaviest typed proof search in the study (the 85{,}013-proof
+  Metamath depth-5 run) \PeTTa{} completes in 13.0\,s under its shipped
+  8\,GiB stack configuration versus 62.7\,s for \CeTTa{} --- the
+  $4.8\times$ margin matching the earlier audited row.  An initial
+  rerun under SWI-Prolog's 1\,GiB \emph{default} stack overflowed and
+  was briefly misrecorded as an engine failure; the harness, not the
+  engine, was at fault.
+\item \textbf{The per-call and sharing taxes, measured.}  On naive
+  Fibonacci the per-call interpretation costs were approximately
+  $0.23\,\mu$s (\PeTTa{}, WAM) versus $9.6\,\mu$s (\CeTTa{} tree walk)
+  --- a $\approx 42\times$ machine tax --- while the tabling three-way
+  showed declared tabling and auto-memoization both answering
+  \code{fib 46} in $0.10$\,s where the untabled tree walk extrapolates
+  to tens of hours.  These are the evidence rows behind the abstract
+  machine hypothesis (Appendix on MAM) and the call-keyed sharing
+  direction in Prime.
+\item \textbf{Methodological hazards.}  Auto-memoization silently turns
+  repetition-scaled benchmarks into cache-lookup measurements; one
+  engine returned fast \emph{wrong} sums through silent 32-bit
+  wraparound; and a harness that launches an engine without its shipped
+  resource configuration (here, SWI-Prolog's 1\,GiB default stack in
+  place of \PeTTa{}'s configured 8\,GiB) manufactures failures that
+  read as engine limits.  All three hazards argue for correctness-gated,
+  semantics-aware benchmarking rather than wall-clock tables.
+\end{itemize}
+
 \section{Performance Analysis}
 
 \subsection{Current profiling status}
@@ -2137,6 +2248,239 @@ dependent type theory); certificate generation; backward search over
 computed codomains whose truth values still contain free variables.
 
 %% ────────────────────────────────────────────────────────────────────
+\section{Generated Readers: the LanguageDef as Syntax Authority}
+\label{sec:gslt2parse}
+
+A 2026-07 tranche (branch-local at the time of writing) replaces
+hand-maintained readers with parsers \emph{generated from the authored
+grammars themselves}.  Each language's surface syntax is written as a
+LanguageDef presentation (grammar productions, lexical scalar classes, and
+an atom-projection profile); a validating compiler normalizes the
+presentation into a parser intermediate form, classifies it into an
+admissible deterministic fragment, and emits native C readers linked into
+\CeTTa{}.  General GLL/GLR engines are retained as differential validators
+and as fallbacks for grammars outside the deterministic fragment.
+
+\begin{itemize}
+\item \textbf{Per-language ownership.}  The \HE{} family, a two-stage
+  \PeTTa{} reader (document splitting, then per-form parsing --- explicitly
+  a syntax-only work-in-progress, not \PeTTa{} evaluation semantics), and
+  the Prime surface each compile from their \emph{own} LanguageDefs into a
+  shared projection-neutral runtime; no language is routed through another
+  language's grammar.
+\item \textbf{The specification catches its own bugs.}  The
+  source-faithfulness classifier rejected two genuine defects \emph{in the
+  authored grammars} before execution: a token-start class that wrongly
+  admitted \code{@} (making \code{@doc} both a quotation and an ordinary
+  word), and a derivation ambiguity in which \code{*(e)} parsed both as a
+  bare \code{*} followed by an expression and as one unquote atom.  Both
+  were repaired at the specification level --- the relation was fixed, not
+  the validator weakened --- and re-verified in an independent Horn-clause
+  model of the grammar.
+\item \textbf{Evidence.}  Compiled-versus-legacy differentials (76/76 on
+  the Prime surface, including Unicode, numeric projection, open-name
+  rejection, and alpha-equivalent variable identity), compiler mutations
+  killed, purity gates showing zero guest-language leakage across the
+  generic engine and compiler files, and byte-identical regeneration of
+  generated artifacts from their sources.
+\end{itemize}
+
+The architectural claim is deliberately bounded: this is certified
+\emph{specialization} of admitted grammar schemata, with every generated
+component remaining an untrusted producer subject to differential and
+(ultimately) checker replay --- not yet a general compiler from arbitrary
+grammars.  Measured on the earlier prototype lane, a generated \HE{} reader
+ran at $0.75\times$--$0.87\times$ the hand-written reader's time on
+standard-library parsing with exact canonical-tree agreement, indicating
+that grammar-as-authority and native performance are not in tension.
+
+\subsection{GSLT2Parse: syntax is a GSLT}
+
+The engine tranche above is the executable half of a formal programme we
+call \emph{GSLT2Parse}, whose thesis is compositional: a language's
+\emph{syntax} is itself a generated syntactic labelled transition system,
+and a parser is that syntax-GSLT's evaluator.  One authored
+\code{LanguageDef} is therefore the single root from which the evaluator,
+the parser, and (through the Cost construction of
+Section~\ref{sec:rho-cost}) the resource semantics are all mechanically
+derived --- three semantic artifacts, one authority, no hand-maintained
+agreement obligations between them.  The formal side lives in the
+Mettapedia Lean development and is sorry- and axiom-clean across the
+roughly fifteen-thousand-line module family; the axiom reports below were
+re-checked against the kernel at the time of writing.  The pipeline, for
+the Metamath instance:
+
+\begin{center}
+\begin{tikzpicture}[node distance=3.2mm,
+  box/.style={draw, rounded corners, align=center, inner sep=4pt,
+    font=\small}]
+\node[box] (root) {authored syntax root
+  \href{https://github.com/zariuq/MeTTapedia/blob/main/lean/mettapedia/Mettapedia/Languages/Metamath/SourceGSLT.lean}{\code{SourceGSLT.sourceGrammar}}
+  \; (pure: no semantic imports)};
+\node[box, below=of root] (ir) {generated structural parser IR / scannerless
+  presentation\\ (preservation $+$ reflection:
+  \code{compileRules\_derivation\_iff})};
+\node[box, below=of ir] (cert) {\code{CheckedParserOutput}: checked DAG,
+  lexical validity,\\ exact ordered ledger, typed \code{feedToken} replay};
+\node[box, below=of cert] (mm) {\code{mm-lean4} runtime database and proof
+  checker};
+\node[box, below=of mm] (spec) {\code{Metamath.Spec.Provable}};
+\draw[-{Stealth}] (root) -- (ir)
+  node[midway,right,font=\scriptsize]{\;structural compilation};
+\draw[-{Stealth}] (ir) -- (cert)
+  node[midway,right,font=\scriptsize]{\;independent recheck};
+\draw[-{Stealth}] (cert) -- (mm)
+  node[midway,right,font=\scriptsize]{\;token-by-token typed lowering};
+\draw[-{Stealth}] (mm) -- (spec)
+  node[midway,right,font=\scriptsize]{\;operational $\leftrightarrow$
+    declarative equivalence};
+\end{tikzpicture}
+\end{center}
+
+\noindent
+Parsing and checking remain separate judgments at every stage; the
+composition modules join them by theorem.
+
+\paragraph{The generic compiler and its two-sided correspondence.}  A
+generic, language-agnostic compiler turns the grammar fragment of any
+\code{LanguageDef} into structural parser rules.  Three theorems bound its
+authority.  Changing any non-syntax field of the declaration cannot change
+the generated rules (\code{compileRules\_eq\_of\_terms\_eq}); generated-rule
+actions retain the independently decoded terminal/child skeleton, so a rule
+cannot silently drop, duplicate, or reorder children
+(\code{compileRules\_action\_shape}); and --- the load-bearing result ---
+derivability in the generated structural intermediate form is
+\emph{equivalent} to derivability in the authored grammar at the
+ordered-token boundary (\code{compileRules\_derivation\_iff}: preservation
+\emph{and} reflection, a genuine second relation rather than equality by
+definition; kernel axioms exactly \code{propext},
+\code{Classical.choice}, \code{Quot.sound};
+\href{https://github.com/zariuq/MeTTapedia/blob/main/lean/mettapedia/Mettapedia/GSLT/Parsing/LanguageDefSyntaxCorrespondence.lean}{\code{GSLT/Parsing/LanguageDefSyntaxCorrespondence.lean}}).
+
+\paragraph{Checked languages: two laws, crowns for free.}  The reusable
+\code{CheckedLanguage} interface packages what any language must supply to
+close the loop from bytes to meaning: a syntax-only root, a lexical
+relation, a lowering into a checker, and a declarative judgment, subject to
+exactly two laws --- exact lowering and checker adequacy.  From those two
+laws the certificate-indexed and whole-pipeline crown theorems
+(\code{pipelineAccepts\_iff\_parserAccepts\_and\_declarative} and kin) are
+derived \emph{once, generically}; the generic composition layer
+(\href{https://github.com/zariuq/MeTTapedia/blob/main/lean/mettapedia/Mettapedia/GSLT/CheckedLanguage.lean}{\code{GSLT/CheckedLanguage.lean}})
+proves them with \emph{no axioms at all}.  Parsing and checking remain
+separate judgments throughout: the composition joins them by theorem, and
+neither the parser nor its certificate is ever allowed to authorize a
+theorem.
+
+\paragraph{The Metamath vertical slice: a parser-to-provability crown.}
+The first full instance runs from raw Metamath bytes to formal
+provability.  The authored Metamath syntax root is a \emph{pure} grammar
+--- a semantic firewall: it imports only the generic grammar-inference
+layer, and the generic compiler contains no Metamath-specific names.  On
+top of it, \code{CheckedParserOutput} demands an independently checked
+grammar DAG, lexical validity, exact ordered-token agreement, and a
+successfully constructed verified reader; \code{TypedLoweringCertificate}
+pairs every classified source token, in order and without insertion or
+omission, with an actual \code{ParserState.feedToken} transition of the
+verified \code{mm-lean4} checker, and proves that the instrumented
+execution erases to the production checker database.  The crown
+(\code{generatedParserAndCheckerAcceptance\_iff\_specProvability}) then
+states that generated-parser-plus-checker acceptance is equivalent to
+declarative acceptance by \code{Metamath.Spec.Provable} --- kernel axioms
+again exactly \code{propext}, \code{Classical.choice}, \code{Quot.sound}.
+The reverse direction cannot manufacture syntax evidence: it is indexed by
+an existing checked parser output whose certificates have already passed
+their independent checkers.  The crown, verbatim from
+\href{https://github.com/zariuq/MeTTapedia/blob/main/lean/mettapedia/Mettapedia/Languages/Metamath/SourceGSLTCheckerAlignment.lean}{\code{SourceGSLTCheckerAlignment.lean}}:
+
+\begin{lstlisting}
+def GeneratedParserAndCheckerAccepts
+    {bytes : ByteArray} (output : CheckedParserOutput bytes)
+    (label : String) (formula : Metamath.Verify.Formula) : Prop :=
+  TypedLoweringCertificate bytes output.source /\
+    ImplementationAccepts bytes label formula
+
+theorem generatedParserAndCheckerAcceptance_iff_specProvability
+    {bytes : ByteArray} (output : CheckedParserOutput bytes)
+    (label : String) (formula : Metamath.Verify.Formula) :
+    GeneratedParserAndCheckerAccepts output label formula <->
+      DeclarativeAccepts bytes formula
+\end{lstlisting}
+
+\noindent
+Executable closure evidence: seven checked
+ordered ledgers (demo0, MIU, Peano, disjoint-variable and proof-format
+cases, and an authentic propositional \code{set.mm} slice) in exact
+object-level agreement with independent \code{mm-lean4} output;
+normal/compressed proof agreement; five malformed-source rejections;
+killed mutations across labels, disjoint-variable conditions, compressed
+proofs, declaration order, AST, lexer, and semantic references; and
+byte-identical regeneration of both generated Metamath artifacts from the
+Lean root.
+
+\paragraph{Second consumers and the engine loop.}  Megalodon has an honest
+second-consumer skeleton that reuses the generic signatures and crown ---
+deliberately \emph{not} yet claimed as an instance, since its verified
+checker and adequacy laws remain to be built.  On the engine side, the
+generated Metamath grammar artifact is consumed directly by \CeTTa{}
+(\code{lib\_parse\_metamath\_grammar\_generated\_v0.metta}) alongside the
+\code{lib\_parse} family and the signature-driven ABT binder layer in the
+Prime integration lane; the full engine-side parse gate (Metamath, ABT,
+and native-reader tests) was re-run green for this section.  Honest
+boundaries: the tested \code{set.mm} artifact is a nontrivial authentic
+slice, not the full corpus; raw byte-to-token completeness is secured per
+accepted certificate by exact typed reader replay, with a universal
+raw-byte characterization theorem remaining future work.
+
+\section{MeTTa Prime: A Lazy Sibling Language}
+\label{sec:prime}
+
+\code{--lang prime} is a \emph{distinct} MeTTa language sharing \CeTTa{}'s
+implementation substrate: branch-local call-by-need with call-time choice
+as the ordinary application semantics.  It is not an extension of \HE{}
+and does not reduce to \HE{} under erasure; the ``\HE{} unchanged'' gates
+that accompany every Prime tranche establish noninterference on shared
+code, not a semantic relationship.  Appendix~\ref{app:prime-spec} distills
+the living specification; the highlights are:
+
+\begin{itemize}
+\item \textbf{Need cells.}  Suspensions are opaque runtime capabilities
+  with an immutable origin and a checked cache state machine; completed
+  values and stable faults memoize, blackholes and interruptions remain
+  retryable.  Call-time choice makes sharing observable: one delayed
+  choice used twice yields only correlated outcomes.
+\item \textbf{Equation dispatch.}  Rewrite candidates for one call share
+  one source suspension per argument; the candidate \emph{frontier} is a
+  scheduling notion, never a kind of equality.  The static frontier
+  policies were all refuted as complete semantics by a common law audit;
+  the selected direction keys producer identity to the Need cell itself
+  (application and source positions are subscription edges), with a
+  policy-neutral certified control layer under which breadth-first,
+  depth-first, ranked, and permuted exploration provably preserve the
+  answer bag.
+\item \textbf{Faults as data.}  Ordinary evaluation propagates faults;
+  explicit structural observers inspect a fault atom as data, so
+  error-conditional programming is a deliberate boundary rather than an
+  accident of evaluation order.
+\item \textbf{Anonymous variables.}  Bare \code{\$} is a fresh anonymous
+  variable per occurrence (it matches any term and binds nothing
+  referenceable); named variables retain co-reference.  This is
+  Prime-only: \HE{} bare \code{\$} remains governed by the \HE{} written
+  contract.
+\item \textbf{Dependence-aware evidence export.}  A shared-cause
+  discriminator is reproduced natively: two syntactically distinct
+  explanations sharing one producer outcome yield exact possible-world
+  probability $1/2$ where naive independent-explanation disjunction gives
+  $3/4$.  Prime exports dependence structure to evidence consumers;
+  probability and proof authority never move inside the evaluator.
+\end{itemize}
+
+Early experiments host proof search as type inhabitation over the lazy
+frontier (Metamath-style problems with premise selection and
+reduction-ordering guidance), which is the intended cognitive-language
+role: demand-driven search over an inspectable frontier, with
+claim-bearing results lowered to an external checker rather than asserted
+by execution.
+
 \section{Related Work}
 
 \paragraph{Concurrent constraint programming.}
@@ -2659,7 +3003,27 @@ local library:
 
 \subsection{Status}
 
-This appendix records design rationale; it does not commit
+Since this appendix was first drafted, the derivation methodology it
+cites has acquired kernel-checked foundations in the Mettapedia Lean
+tree (\code{Mettapedia/Machines/}): a functional-correspondence module
+deriving a CEK-shaped eager machine and a Krivine-shaped demand-driven
+machine from fueled evaluators over one shared term substrate, with the
+evaluator-to-machine correspondence and machine determinism proved; a
+cone-duality module (forward/production and backward/demand reachability
+cones, their Galois adjunctions, wavefront exhaustion, and the
+demand-diamond restriction theorem); and a substrate module packaging
+the two machines as control cores over one term type with a
+kernel-checked strategy-separation witness (a single term on which the
+eager core returns nothing at every fuel while the demand core answers).
+Axioms for every keystone are within
+$\{\text{propext},\ \text{Classical.choice},\ \text{Quot.sound}\}$.
+These results turn ``the machine is derived from the semantics'' from a
+methodological citation into project theorems: the eager and lazy
+language lines require distinct control cores over a shared substrate,
+and demand-restricted evaluation is sound and complete for
+goal-reaching by theorem rather than folklore.
+
+This appendix otherwise records design rationale; it does not commit
 implementation.  Reasoned design review converged on $\sim$0.88
 confidence on MAM naming and two-engine strategy.  The concrete
 implementation plan (phase~2 seam; phase~3 tabling plugin;
@@ -2671,6 +3035,333 @@ revised as implementation reveals which proposals held and which
 did not.}
 
 %% ════════════════════════════════════════════════════════════════════
+
+\section{Appendix: The Prime Living Specification, Distilled}
+\label{app:prime-spec}
+
+This appendix distills the Prime living specification and decision ledger
+as of 2026-07-23.  The living document separates selected design,
+implemented behavior, verified evidence, proposals, and open questions;
+every consequential clause carries a counts-primal evidence annotation
+(independent supporting items $n^{+}$ and unresolved counterexamples
+$n^{-}$ are primal; a strength/confidence pair is derived from them, and
+retired refutations are kept on the record rather than deleted).
+
+\subsection{Constitutional boundary}
+
+Prime is a distinct language: branch-local call-by-need with call-time
+choice is its ordinary application semantics, while the \HE{}-family
+profiles keep their existing evaluation semantics; shared backend
+refactoring is permitted, silent semantic bleed is not.  Execution
+produces answers, effects, coverage, and receipts --- never theoremhood;
+claim-bearing results lower to an external generic checker for replay.
+
+\subsection{Design principles (P0--P11)}
+
+\begin{description}
+\item[P0 (meta).]  Prime aims to be as good as theoretically possible as
+  a cognitive language: specification details must follow from
+  best-possible elegance, ergonomics, performance, and coherence --- and
+  from the principles below --- rather than from incident, imitation, or
+  implementation convenience.  A clause that derives from no principle is
+  either evidence of a missing principle or a candidate for removal.
+\item[P1.]  Checking-first authority: engines, machines, indexes, and
+  learned guidance are producers or schedules; a generic checker replays
+  claim-bearing derivations.  A hit is not a proof.
+\item[P2.]  Canonical meaning is distinct from execution schedule; an
+  optimized schedule must refine the declared relation.
+\item[P3.]  Identity is semantic when sharing is observable: suspension,
+  answer-occurrence, branch, effect, and capability identities are not
+  interchangeable, and serialization may not erase aliasing or
+  correlation.
+\item[P4.]  Choice preserves occurrences and correlation: results form an
+  occurrence bag; one call-time suspension is shared by every occurrence
+  denoting the same source argument; explicit resampling creates fresh
+  choice identity.
+\item[P5.]  Effects are never hidden by backtracking vocabulary; sibling
+  branches do not share mutable state by default; commit and merge are
+  explicit policies with receipts.
+\item[P6.]  Completion is data: \emph{incomplete} is not \emph{false};
+  query polarity determines what one witness or one counterexample can
+  settle.
+\item[P7.]  Scope and names are explicit layers: canonical binding is
+  signature-driven de~Bruijn; matcher metavariables are a separate layer;
+  quoted structural names present identity without conferring resolution.
+\item[P8.]  Quotation does not grant authority: quoting makes syntax
+  inert and nameable; privacy, liveness, reachability, and authorization
+  are resolver and capability properties.
+\item[P9.]  Unknown syntax remains data: a form is evaluated only when an
+  admitted operation, equation, or judgment determines how; otherwise it
+  is residual, and an error requires positive evidence of a violated
+  contract.
+\item[P10.]  Open extension is package-indexed, with formation rules,
+  capabilities, and correspondence status; dynamic changes invalidate
+  caches by digest.
+\item[P11.]  Theoretical analyzability is an implementation requirement:
+  state-changing operations correspond to named transitions; tests carry
+  positive, negative, and mutation witnesses per semantic boundary.
+\end{description}
+
+\subsection{The Need core}
+
+A cell separates an immutable origin (term, lexical environment, package
+revision, provenance) from a checked mutable cache
+(\code{Empty} $\to$ \code{Evaluating(owner, generation)} $\to$
+cached value or stable fault), with same-owner recursive demand reported
+as a blackhole (receipted, not cached, cell restored) and other-owner
+demand routed to an explicit wait/help protocol (selection open).  Only
+faults stable under re-execution in the same world are cached; resource
+exhaustion and cancellation retain a resumable frontier.  \code{delay},
+\code{force}, and \code{resample} are the surface (lower-case only);
+\code{resample} deliberately breaks call-time correlation.
+
+\subsection{Ratified in the 2026-07 sprint}
+
+\begin{itemize}
+\item Bare \code{\$} as a fresh anonymous variable per occurrence
+  (parser 25/25, reference model 29/29, grammar tournament 16/16,
+  evaluator/quotation matrix 99/99 with sanitizers, a mechanized
+  unique-selection theorem, and a corpus check showing no existing
+  program depended on the old reading); the rejected root-binder
+  alternative is retired on the record.
+\item Producer identity is the Need cell (store-lineage allocation
+  identity), not application or source position --- a native alias probe
+  shows one shared cell observed from four application sites remaining
+  correlated; the four static frontier policies fail a common fifteen-law
+  audit at 9, 10, 11, and 12 laws respectively.
+\item A policy-neutral certified control layer: controllers reorder
+  certified frontier nodes and can neither create nor destroy answers;
+  pruning is explicit.  Exhaustive policy invariance is proved;
+  finite-budget fairness is a recorded obligation, not assumed.
+\item The authored Prime LanguageDef as executable syntax authority
+  through the generated reader (Section~\ref{sec:gslt2parse}).
+\item An equality vocabulary pin: directional rewriting, computed
+  equality, unreduced syntactic comparison, alpha-equivalence, and
+  registered/conversion equality are five different relations, and the
+  candidate frontier is scheduling, not equality.
+\end{itemize}
+
+\subsection{Open}
+
+The public suspension-observation surface (constraints and invariants
+selected; the concrete observed form is a narrowed choice); the worlds
+carrier presentation (event structures lead); registered-equality
+surface syntax; the other-owner forcing protocol; cyclic graph
+persistence; typed-laziness coherence as a mechanized refinement; the
+cell-causal native contender behind its confidence gate; and
+finite-budget fairness under adversarial ranking.
+
+\section{Appendix: Core Design, Implementation, and Specification
+Principles}
+\label{app:principles}
+
+Distilled from the project's design discussions (June--July 2026) and the
+implementation campaigns they governed.  Principles are grouped; each group
+opens with its load-bearing head.  They overlap deliberately with
+Appendix~\ref{app:prime-spec}: the Prime principles are the language-level
+refinement of these project-wide commitments.
+
+\subsection*{B.1 Authority: who may mint truth}
+\textbf{Checking-first.}  Producers --- search procedures, elaborators,
+learned models, external provers, the runtime itself --- are untrusted
+proposers; theoremhood is conferred only when a generic checker replays an
+explicit certificate against an admitted presentation.  Corollaries:
+authority flows through replayable proof objects, never execution traces
+of another engine; certificates carry their substitutions (the checker
+applies and compares, never unifies) and name their exact subject; a
+capability is enabled only by a machine-checked certificate of the
+property that makes it safe (checker conversion requires a
+confluence/canonical-section certificate; deterministic parser
+specialization requires a determinism proof); passing test suites are
+evidence, never theorems; and checking is search with the answers pinned
+--- one kernel, two guidance policies, heuristics never deciding truth.
+
+\subsection*{B.2 Inertness and honest verdicts}
+\textbf{Unknown stays inert.}  The evaluator does not evaluate what it
+cannot interpret: unmatched forms are their own normal form, and no
+profile emits ``feature unavailable.''  Externally this becomes a layered
+vocabulary: unknown syntax is residual; a recognized protocol with an
+unresolved endpoint is an explicit pending value; transport failure is a
+fault receipt; service rejection is a rejection value.  Judgments return
+proven, rejected-with-reason, unknown, or resource-incomplete ---
+unknown is never rejection, exhaustion is never quiescence; no verdict
+may flip as fuel increases; ``must'' judgments require nonemptiness plus
+completeness; and fuel is never a semantic premise --- the semantics is
+pure, with resource outcomes layered outside it.
+
+\subsection*{B.3 Specification as source}
+\textbf{Syntax is a GSLT; one root per language.}  Concrete syntax is
+itself a graph-structured lambda theory --- streams as terms, productions
+as rewrites --- and the parser is that theory's evaluator (print-parse as
+a section--retraction law; unambiguity as a confluence theorem).  Each
+hosted language has exactly one mathematical root; the engine supplies
+generic mechanism only.  The genericity gate: hosting language $N{+}1$
+must be a zero-line diff in generic code --- only new data.  Roots change
+by governed correction (impossibility witness plus sign-off), never by
+silent drift; hand-authored artifacts styled as generated are forbidden.
+Generated artifacts pass falsifier ladders (acceptance, AST differentials
+against an independent reference, near-miss rejection, print-parse
+stabilization, per-production coverage), and failures repair the
+declarative specification, never the engine.  The specification itself is
+self-hosted, queryable data --- properties, decisions, and support edges
+with explicit status --- in which refuted claims persist as refuted nodes
+so they cannot silently resurrect.  Generic machinery is verified against
+stable semantic authorities first; a rapidly evolving language rides as a
+canary, not an anchor.  Before accepting an obstruction, ask whether it
+survives in the canonical mathematical object or is an artifact of the
+encoding.
+
+\subsection*{B.4 Minimality}
+\textbf{Mechanism in the kernel, policy in the library.}  The core owns
+rewriting, the checking judgment, and one resumable fair scheduling
+primitive; strategies --- including proof search as type inhabitation ---
+are compiled library code, inspectable and overridable.  Match, unify,
+communication, comprehension, and inhabitant selection are one primitive.
+Inference rules are semantic; direction, agenda, indexing, tabling, and
+saturation are schedules over the same rules.  A candidate core construct
+must serve at least two of practical programming, native dependent
+typing, and guest-logic adequacy, or it is an extension package; each
+core principle carries an independence witness (something breaks without
+it, nothing else forces it).
+
+\subsection*{B.5 Pluralism}
+\textbf{Profiles are conservative extensions; no sovereign object
+theory.}  A profile is legitimate while existing programs run unchanged;
+the first non-gateable conservativity violation is the dialect trigger,
+and minting a dialect is a normal event --- the language is a family.
+The generic waist standardizes how rules are replayed, never what guest
+judgments mean; at least two object logics are maintained at all times so
+no package is both the definition and the validation target.  ``The
+checker accepted a derivation relative to package $P$'' is categorically
+different from ``$P$ is sound''; bridges between logics are theorems or
+they are nothing.
+
+\subsection*{B.6 Homoiconicity, reflection, binding}
+\textbf{No second grammar, and quotation confers no authority.}  Types,
+judgments, packages, and claims are ordinary atoms the reasoner can
+inspect and rewrite; one sigil-to-expansion table drives the reader and
+both printers, so compact and expanded notation are one language.
+Binding is ``both, by kind'': matcher metavariables keep identifier
+machinery while object binders are canonically de~Bruijn, meeting at
+elaboration, printing, and replay seams; stored checked terms are closed
+and alpha-equality is structural equality.  Reflective observation is
+taxed at the dangerous act, not the epistemic one: looking is cheap and
+pure, forcing carries the ceremony, and receipts attach where claims are
+made.
+
+\subsection*{B.7 Typing and graduality}
+\textbf{Graduality is a same-program theorem.}  A validly typed working
+program with annotations erased computes the same results --- always
+typed-versus-untyped of one program, never a cross-profile comparison.
+Semantic value types, syntactic shapes, and staging are three
+vocabularies; the gradual dynamic type has deliberately non-transitive
+consistency (no laundering a type through ``?''); permissive success
+typing is never advertised as sound gradual typing without cast-and-blame
+enforcement; and there is no subtyping without coercion coherence ---
+honest poverty over dishonest wealth.
+
+\subsection*{B.8 Equality}
+\textbf{Stratified, weakest-in-core.}  Identity and typed equality answer
+different questions (a cross-type comparison is ill-posed, not false);
+commitments form a lattice (same-atom, conversion, equal-at-type,
+identity, observational equivalence) with the core adopting the weakest
+adequate one.  Program equations are directional rewrites; checked
+conversion is admitted only from certified fragments; view equations are
+pure projections; semantic equivalences are separately proven --- a
+directional rule never silently becomes checker-authoritative symmetric
+conversion, and no registered equality may identify a suspension with its
+origin or two cells by origin equality, because observation is a
+projection and identifying across it destroys sharing.
+
+\subsection*{B.9 Laziness, sharing, capability}
+\textbf{Sharing is semantics.}  Branch-local call-by-need with call-time
+choice makes cell identity observable: a shared argument forces once per
+branch and every consumer sees the same value.  A suspension has three
+strictly ordered observables --- cell identity, origin, eventual result
+--- and the strictness \emph{is} call-time choice.  Origin is an
+allocation-time snapshot, so optimization cannot change what inspection
+sees; observing never forces and never leaks the cell capability;
+re-delaying an observed origin allocates fresh.  ``May force'' and ``may
+inspect'' are separate authorities; names are addresses while
+capabilities are authority (knowing a descriptor authorizes nothing);
+foreign services are one typed request/reply protocol with receipts, one
+suspension being one request with a memoized response and resampling the
+explicit freshness boundary --- which also gives sample-once stochastic
+choice for free.
+
+\subsection*{B.10 Occurrences, cost, and enrichment}
+\textbf{The non-conflation chain.}  Legal transition $\neq$ occurrence
+identity $\neq$ probability/rate $\neq$ scheduling priority $\neq$
+resource cost $\neq$ utility $\neq$ provenance/authority; every
+enrichment is a readout of one relational process.  Results are
+occurrence bags with completion status; answer identity is defined before
+any deduplication; rates attach to occurrences, never branch counts, so
+refactoring-invariance of the measure is a theorem obligation.  Cost
+receipts are measured pomsets whose algebraic laws are derived, never
+posited --- and when a desired law met a kernel-proved obstruction it was
+withdrawn by counterexample and repaired by indexing, not weakened by
+assumption.  One law appears three times: erasure recovers the base
+(gradual typing's erasure theorem, profile noninterference, cost
+observer-transparency) --- ``the definition of `this is still MeTTa'.''
+Control fields route compute, never truth; every legal transition keeps a
+protected baseline rate (no starvation, anytime behavior); reversibility
+is an effect property, not a global mode; and a system that modifies its
+own laws accepts a delta only with a proof that the delta preserves what
+it claims.
+
+\subsection*{B.11 Effects, errors, resources}
+\textbf{Unmetered by default; errors are values.}  Budgets and ledgers
+are opt-in and zero-cost when absent; effectful power is capability-gated
+and never hidden inside conversion; errors are inspectable, matchable
+atoms in the result bag --- branch-local, never process-killing, and
+richer than a boolean; default judgment forms carry no fuel argument, and
+exhaustion surfaces only when it changes the answer.
+
+\subsection*{B.12 Evidence and confidence}
+\textbf{Counts-primal, ladder-honest.}  Hard pruning requires proven
+legality or impossibility with recall preservation; everything uncertain
+is soft ranking, demonstrated by a counterexample of an uncertified mask
+eating a real solution.  Evidence accumulates as counts with explicit
+independence accounting (correlated descendants never count twice); the
+confidence ladder distinguishes kernel-factive ``program meets
+specification'' from the graded ``specification captures intent,'' whose
+independent review is the second source; specification authors are kept
+blind to candidate artifacts; and a reviewed specification plus a
+kernel-checked divergent witness is a factive, \emph{generative}
+refutation --- first mismatch, certified continuations, repair targets.
+
+\subsection*{B.13 From semantics to machines; method and naming}
+\textbf{Machines are derived, not designed.}  Abstract machines arise
+from evaluators by the functional correspondence, so the eager and lazy
+lines share a substrate while requiring distinct control cores --- now a
+mechanized fact --- and demand-driven execution restricted to the
+production-cone/demand-cone diamond is sound and complete for
+goal-reaching, making magic-set restriction, premise pruning, and tabling
+instances of a theorem.  Method: contested surface laws are settled by
+feature-ablation tournaments (every candidate behind a flag, one corpus,
+discriminating programs choose); falsification ladders run
+theory-decidable gates before compute is spent (``no conservativity, no
+experiment''); independently written engines share defect classes, so the
+executable-independent declarative specification is the productive
+referee.  Naming: mathematical vocabulary is used only after its
+preconditions are theorems (``earn the word''); the algebra is the
+specification, stated in interface headers and enforced as gates; one
+name, one meaning, no aliases after renames; anti-goals name integrity
+violations only, with scope stated positively; ergonomics is a
+first-class late phase, redone against collected real confusion once the
+semantics settles.
+
+\subsection*{B.14 Supersession, on the record}
+The principles themselves are governed by B.3: superseded forms stay
+recorded rather than deleted.  Notable retirements: notation as a
+side-record superseded by syntax-as-GSLT; early list-shaped cost receipts
+superseded by measured pomsets, whose desired law was withdrawn by
+kernel counterexample and repaired by parameterized-monad indexing;
+blanket trace-refusal refined to generator-based replay of standard
+certificate formats; ``freeze'' vocabulary replaced by governed change
+with impossibility witnesses; and a draft rule promoting every program
+equation to checker conversion refused in favor of the stratification of
+B.8.
 
 \begin{thebibliography}{9}
 \bibitem{metta}
@@ -2721,6 +3412,17 @@ did not.}
   D.~Orchard, P.~Wadler, and H.~Eades~III,
   ``Unifying Graded and Parameterised Monads,''
   in \emph{Proc. MSFP}, 2020.
+
+\bibitem{jetta-slides}
+  V.~Khudobakhshov,
+  ``JeTTa --- Performance: Compiling MeTTa to JVM Bytecode,''
+  Slide deck, July 2026.
+
+\bibitem{jetta-review}
+  Oru\v{z}i and Z.~Goertzel,
+  ``JeTTa: MeTTa Compiled to JVM Bytecode --- A Source-Level Review,
+  Cross-Engine Benchmark Study, and Defect Catalog,''
+  Working paper, 2026.
 
 \bibitem{knuthskilling}
   K.~H.~Knuth and J.~Skilling,
