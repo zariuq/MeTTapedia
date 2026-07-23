@@ -28,6 +28,8 @@ import Mettapedia.Languages.Metamath.SourceInferenceDeclarativeAdequacy
 import Mettapedia.Languages.Metamath.SourceGSLTOperations
 import Mettapedia.Languages.Metamath.SourceGSLTState
 import Mettapedia.Languages.Metamath.SourceGSLTNormalTheorem
+import Mettapedia.Languages.Metamath.SourceGSLTCompressedTheorem
+import Mettapedia.Languages.Metamath.SourceGSLTCompressedMMLean4
 
 /-!
 # Metamath Bridge Surface
