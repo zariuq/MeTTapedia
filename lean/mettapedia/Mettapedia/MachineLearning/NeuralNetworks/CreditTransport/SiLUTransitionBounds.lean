@@ -534,6 +534,97 @@ noncomputable def vectorAffineSiLUBudget
   simpa only [preactivationRadius, affineBudget, mul_zero, zero_mul,
     add_zero] using composed
 
+/-! ## Rectangular affine-coordinatewise-SiLU transitions -/
+
+variable {InputIndex OutputIndex : Type*}
+  [Fintype InputIndex] [Fintype OutputIndex]
+
+/-- Affine transition between different finite feature spaces. -/
+def rectangularVectorAffine
+    (linear : HiddenState InputIndex →L[ℝ] HiddenState OutputIndex)
+    (bias : HiddenState OutputIndex)
+    (input : HiddenState InputIndex) : HiddenState OutputIndex :=
+  linear input + bias
+
+theorem rectangularVectorAffine_mem_region
+    (linear : HiddenState InputIndex →L[ℝ] HiddenState OutputIndex)
+    (bias : HiddenState OutputIndex)
+    (center : HiddenState InputIndex) (radius : ℝ)
+    (input : HiddenState InputIndex) (hinput : ‖input - center‖ ≤ radius) :
+    vectorRegion (‖linear‖ * (‖center‖ + radius) + ‖bias‖)
+      (rectangularVectorAffine linear bias input) := by
+  have hinputNorm : ‖input‖ ≤ ‖center‖ + radius := by
+    calc
+      ‖input‖ = ‖(input - center) + center‖ := by congr 1; abel
+      _ ≤ ‖input - center‖ + ‖center‖ := norm_add_le _ _
+      _ ≤ ‖center‖ + radius := by linarith
+  have hlinear := linear.le_opNorm input
+  rw [vectorRegion]
+  calc
+    ‖rectangularVectorAffine linear bias input‖ ≤
+        ‖linear input‖ + ‖bias‖ :=
+      norm_add_le _ _
+    _ ≤ ‖linear‖ * ‖input‖ + ‖bias‖ := by linarith
+    _ ≤ ‖linear‖ * (‖center‖ + radius) + ‖bias‖ := by gcongr
+
+/-- Regional `R/J/H` budget for an affine layer between different finite
+feature spaces followed by coordinatewise SiLU. -/
+noncomputable def rectangularVectorAffineSiLUBudget
+    (linear : HiddenState InputIndex →L[ℝ] HiddenState OutputIndex)
+    (bias : HiddenState OutputIndex)
+    (center : HiddenState InputIndex)
+    (radius : ℝ) (hradius : 0 ≤ radius) :
+    RegionalJacobianBudget
+      (composeMap (vectorSiLU (Index := OutputIndex))
+        (rectangularVectorAffine linear bias))
+      (composeJacobian (vectorSiLUJacobian (Index := OutputIndex))
+        (rectangularVectorAffine linear bias)
+        (fun _ => linear))
+      (fun input => ‖input - center‖ ≤ radius)
+      ((1 + (‖linear‖ * (‖center‖ + radius) + ‖bias‖) / 4) * ‖linear‖)
+      ((1 + (‖linear‖ * (‖center‖ + radius) + ‖bias‖) / 4) * ‖linear‖)
+      ((1 / 2 + (‖linear‖ * (‖center‖ + radius) + ‖bias‖) / 4) *
+        ‖linear‖ * ‖linear‖) := by
+  let preactivationRadius :=
+    ‖linear‖ * (‖center‖ + radius) + ‖bias‖
+  have hpreactivationRadius : 0 ≤ preactivationRadius := by
+    dsimp [preactivationRadius]
+    positivity
+  let affineBudget : RegionalJacobianBudget
+      (rectangularVectorAffine linear bias) (fun _ => linear)
+      (fun input : HiddenState InputIndex => ‖input - center‖ ≤ radius)
+      ‖linear‖ ‖linear‖ 0 := {
+    rate_nonneg := norm_nonneg _
+    operatorBound_nonneg := norm_nonneg _
+    variation_nonneg := by norm_num
+    hasFDerivAt_on_domain := by
+      intro input _
+      have h := (linear.hasFDerivAt (x := input)).add_const bias
+      have heq : rectangularVectorAffine linear bias =ᶠ[nhds input]
+          (fun x => linear x + bias) := Eventually.of_forall fun _ => rfl
+      exact h.congr_of_eventuallyEq heq
+    map_pair_bound := by
+      intro left right _ _
+      rw [show rectangularVectorAffine linear bias left -
+          rectangularVectorAffine linear bias right =
+          linear (left - right) by
+        simp [rectangularVectorAffine, map_sub]]
+      exact linear.le_opNorm (left - right)
+    jacobian_norm_bound := by simp
+    jacobian_pair_bound := by simp
+  }
+  have hmapsInto : ∀ input, ‖input - center‖ ≤ radius →
+      vectorRegion preactivationRadius
+        (rectangularVectorAffine linear bias input) := by
+    intro input hinput
+    exact rectangularVectorAffine_mem_region
+      linear bias center radius input hinput
+  have composed :=
+    (vectorSiLUBudget (Index := OutputIndex) preactivationRadius
+      hpreactivationRadius).comp affineBudget hmapsInto
+  simpa only [preactivationRadius, affineBudget, mul_zero, zero_mul,
+    add_zero] using composed
+
 /-! ## Source-shaped node masks -/
 
 /-- Coordinate projection induced by a Boolean-shaped node mask.  Flattening
@@ -624,6 +715,53 @@ noncomputable def maskedAffineSiLUBudget
   simpa only [maskedAffineSiLU, maskedAffineSiLUJacobian, composeMap,
     composeJacobian, one_mul, zero_mul, zero_add] using composed
 
+/-- Exact masked affine-SiLU transition between different finite feature
+spaces. -/
+noncomputable def rectangularMaskedAffineSiLU
+    (mask : OutputIndex → Prop) [DecidablePred mask]
+    (linear : HiddenState InputIndex →L[ℝ] HiddenState OutputIndex)
+    (bias : HiddenState OutputIndex) :
+    HiddenState InputIndex → HiddenState OutputIndex :=
+  composeMap (maskProjection mask)
+    (composeMap vectorSiLU (rectangularVectorAffine linear bias))
+
+/-- Symbolic Jacobian of `rectangularMaskedAffineSiLU`. -/
+noncomputable def rectangularMaskedAffineSiLUJacobian
+    (mask : OutputIndex → Prop) [DecidablePred mask]
+    (linear : HiddenState InputIndex →L[ℝ] HiddenState OutputIndex)
+    (bias : HiddenState OutputIndex) :
+    HiddenState InputIndex →
+      (HiddenState InputIndex →L[ℝ] HiddenState OutputIndex) :=
+  composeJacobian (fun _ => maskProjection mask)
+    (composeMap vectorSiLU (rectangularVectorAffine linear bias))
+    (composeJacobian vectorSiLUJacobian
+      (rectangularVectorAffine linear bias) (fun _ => linear))
+
+/-- Complete regional budget for the source transition
+`mask * silu(linear input + bias)` with different input and output widths. -/
+noncomputable def rectangularMaskedAffineSiLUBudget
+    (mask : OutputIndex → Prop) [DecidablePred mask]
+    (linear : HiddenState InputIndex →L[ℝ] HiddenState OutputIndex)
+    (bias : HiddenState OutputIndex)
+    (center : HiddenState InputIndex)
+    (radius : ℝ) (hradius : 0 ≤ radius) :
+    RegionalJacobianBudget
+      (rectangularMaskedAffineSiLU mask linear bias)
+      (rectangularMaskedAffineSiLUJacobian mask linear bias)
+      (fun input => ‖input - center‖ ≤ radius)
+      ((1 + (‖linear‖ * (‖center‖ + radius) + ‖bias‖) / 4) * ‖linear‖)
+      ((1 + (‖linear‖ * (‖center‖ + radius) + ‖bias‖) / 4) * ‖linear‖)
+      ((1 / 2 + (‖linear‖ * (‖center‖ + radius) + ‖bias‖) / 4) *
+        ‖linear‖ * ‖linear‖) := by
+  have hmapsInto : ∀ input : HiddenState InputIndex,
+      ‖input - center‖ ≤ radius → True := by simp
+  have composed := (maskProjectionBudget mask).comp
+    (rectangularVectorAffineSiLUBudget
+      linear bias center radius hradius) hmapsInto
+  simpa only [rectangularMaskedAffineSiLU,
+    rectangularMaskedAffineSiLUJacobian, composeMap,
+    composeJacobian, one_mul, zero_mul, zero_add] using composed
+
 /-! ## Positive and negative fixtures -/
 
 /-- At zero preactivation the exact SiLU derivative is one half. -/
@@ -649,8 +787,10 @@ theorem sourceSiLU_not_affine_derivative :
 #print axioms scalarAffineSiLUBudget
 #print axioms vectorSiLUBudget
 #print axioms vectorAffineSiLUBudget
+#print axioms rectangularVectorAffineSiLUBudget
 #print axioms maskProjectionBudget
 #print axioms maskedAffineSiLUBudget
+#print axioms rectangularMaskedAffineSiLUBudget
 #print axioms sourceSiLU_not_affine_derivative
 
 end

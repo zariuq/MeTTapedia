@@ -1456,6 +1456,53 @@ def thickenAmbientBVars {source : CIGSLT} {color : CostStaticColor}
         (elements.map (thickenAmbientBVars thinning depth)) rest
 termination_by pattern => sizeOf pattern
 
+/-- A thinning into the empty target context carries no ambient positions to
+insert, so it acts identically at every local binder depth. -/
+theorem thickenAmbientBVars_eq_self_of_targetBound_eq_nil
+    {source : CIGSLT} {color : CostStaticColor}
+    {sourceBound targetBound : List TypeExpr}
+    (thinning : CostStaticBinderThinning source color sourceBound targetBound)
+    (empty : targetBound = []) (depth : Nat) (pattern : Pattern) :
+    thinning.thickenAmbientBVars depth pattern = pattern := by
+  subst targetBound
+  cases thinning
+  induction pattern using Pattern.inductionOn generalizing depth with
+  | hbvar index =>
+      simp [thickenAmbientBVars, embedIndexAt, toTargetIndex]
+      omega
+  | hfvar name =>
+      simp [thickenAmbientBVars]
+  | happly constructor arguments inductionHypothesis =>
+      simp only [thickenAmbientBVars, Pattern.apply.injEq, true_and]
+      calc
+        arguments.map
+              (CostStaticBinderThinning.nil.thickenAmbientBVars depth) =
+            arguments.map id :=
+          List.map_congr_left (fun argument membership =>
+            inductionHypothesis argument membership depth)
+        _ = arguments := List.map_id arguments
+  | hlambda binder body inductionHypothesis =>
+      simp only [thickenAmbientBVars, Pattern.lambda.injEq, true_and]
+      exact inductionHypothesis (depth + 1)
+  | hmultiLambda arity binders body inductionHypothesis =>
+      simp only [thickenAmbientBVars, Pattern.multiLambda.injEq, true_and]
+      exact inductionHypothesis (depth + arity)
+  | hsubst body replacement bodyInduction replacementInduction =>
+      simp only [thickenAmbientBVars, Pattern.subst.injEq]
+      exact
+        ⟨bodyInduction (depth + 1), replacementInduction depth⟩
+  | hcollection collectionType elements rest inductionHypothesis =>
+      simp only [thickenAmbientBVars, Pattern.collection.injEq, true_and]
+      constructor
+      · calc
+          elements.map
+                (CostStaticBinderThinning.nil.thickenAmbientBVars depth) =
+              elements.map id :=
+            List.map_congr_left (fun element membership =>
+              inductionHypothesis element membership depth)
+          _ = elements := List.map_id elements
+      · trivial
+
 /-- Moving one retained binder from the thinning into the local prefix gives
 the same embedded index. -/
 theorem embedIndexAt_mapped {source : CIGSLT}
@@ -2801,6 +2848,73 @@ def sourceResultType (collectionType : CollType) :
   | .direct elementType => .collection collectionType elementType
   | .bare rule _ => .base rule.category
 
+/-- Two proof-relevant collection choices induce the same compact typing
+fiber.  The selected declaration itself is intentionally absent: bare
+collection labels are not represented in the compact pattern, while the
+element and result fibers are observable through typing and recursive
+normalization. -/
+def SameObservableFiber (collectionType : CollType)
+    (first second : CostCollectionTypingChoice) : Prop :=
+  first.sourceElementType = second.sourceElementType ∧
+    first.sourceResultType collectionType =
+      second.sourceResultType collectionType
+
+@[refl]
+theorem sameObservableFiber_refl (collectionType : CollType)
+    (choice : CostCollectionTypingChoice) :
+    SameObservableFiber collectionType choice choice :=
+  ⟨rfl, rfl⟩
+
+@[symm]
+theorem SameObservableFiber.symm {collectionType : CollType}
+    {first second : CostCollectionTypingChoice}
+    (same : SameObservableFiber collectionType first second) :
+    SameObservableFiber collectionType second first :=
+  ⟨same.1.symm, same.2.symm⟩
+
+@[trans]
+theorem SameObservableFiber.trans {collectionType : CollType}
+    {first middle last : CostCollectionTypingChoice}
+    (firstMiddle : SameObservableFiber collectionType first middle)
+    (middleLast : SameObservableFiber collectionType middle last) :
+    SameObservableFiber collectionType first last :=
+  ⟨firstMiddle.1.trans middleLast.1,
+    firstMiddle.2.trans middleLast.2⟩
+
+/-- Observable-fiber agreement is preserved by either generated static
+color: equal source element fibers map to equal target element fibers. -/
+theorem targetElementType_eq_of_sameObservableFiber
+    (source : CIGSLT) (color : CostStaticColor)
+    {collectionType : CollType}
+    {first second : CostCollectionTypingChoice}
+    (same : SameObservableFiber collectionType first second) :
+    first.targetElementType source color =
+      second.targetElementType source color :=
+  congrArg (mapTypeExpr (color.symbols source)) same.1
+
+/-- Positive canary: distinct bare declarations with the same category and
+element type are observationally identical at the compact collection
+boundary. -/
+theorem sameObservableFiber_bare_of_category_eq
+    (collectionType : CollType) (firstRule secondRule : GrammarRule)
+    (elementType : TypeExpr)
+    (category : firstRule.category = secondRule.category) :
+    SameObservableFiber collectionType
+      (.bare firstRule elementType) (.bare secondRule elementType) := by
+  exact ⟨rfl, congrArg TypeExpr.base category⟩
+
+/-- Negative canary: changing the selected element fiber is observable even
+when both choices are represented by bare collections. -/
+theorem not_sameObservableFiber_bare_of_elementType_ne
+    (collectionType : CollType) (firstRule secondRule : GrammarRule)
+    {firstElementType secondElementType : TypeExpr}
+    (different : firstElementType ≠ secondElementType) :
+    ¬ SameObservableFiber collectionType
+      (.bare firstRule firstElementType)
+      (.bare secondRule secondElementType) := by
+  intro same
+  exact different same.1
+
 end CostCollectionTypingChoice
 
 /-! ### Finite candidate uniqueness
@@ -2821,6 +2935,82 @@ instance costCandidateFamilyUnambiguousDecidable {Candidate : Type}
   by
     unfold CostCandidateFamilyUnambiguous
     infer_instance
+
+/-- Every pair of collection choices in a finite candidate family induces
+the same compact typing fiber.  Unlike literal unambiguity, this criterion
+permits declaration-distinct bare choices whose labels are erased. -/
+def CostCollectionCandidateFamilyObservableCoherent
+    (collectionType : CollType)
+    (candidates : List CostCollectionTypingChoice) : Prop :=
+  candidates.Pairwise
+    (CostCollectionTypingChoice.SameObservableFiber collectionType)
+
+instance costCollectionCandidateFamilyObservableCoherentDecidable
+    (collectionType : CollType)
+    (candidates : List CostCollectionTypingChoice) :
+    Decidable
+      (CostCollectionCandidateFamilyObservableCoherent collectionType
+        candidates) := by
+  letI : DecidableRel
+      (CostCollectionTypingChoice.SameObservableFiber collectionType) :=
+    fun first second => by
+      unfold CostCollectionTypingChoice.SameObservableFiber
+      infer_instance
+  unfold CostCollectionCandidateFamilyObservableCoherent
+  infer_instance
+
+/-- Pairwise observable coherence is the membership-facing form consumed by
+the recursive collection normalizer. -/
+theorem sameObservableFiber_of_mem_of_mem_of_observableCoherent
+    {collectionType : CollType}
+    {candidates : List CostCollectionTypingChoice}
+    (coherent :
+      CostCollectionCandidateFamilyObservableCoherent collectionType
+        candidates)
+    {first second : CostCollectionTypingChoice}
+    (firstMembership : first ∈ candidates)
+    (secondMembership : second ∈ candidates) :
+    CostCollectionTypingChoice.SameObservableFiber collectionType
+      first second := by
+  induction candidates with
+  | nil =>
+      simp at firstMembership
+  | cons head tail inductionHypothesis =>
+      rw [CostCollectionCandidateFamilyObservableCoherent,
+        List.pairwise_cons] at coherent
+      rcases coherent with ⟨headCoherent, tailCoherent⟩
+      simp only [List.mem_cons] at firstMembership secondMembership
+      rcases firstMembership with firstHead | firstTail
+      · subst first
+        rcases secondMembership with secondHead | secondTail
+        · subst second
+          exact
+            CostCollectionTypingChoice.sameObservableFiber_refl
+              collectionType head
+        · exact headCoherent second secondTail
+      · rcases secondMembership with secondHead | secondTail
+        · subst second
+          exact
+            (headCoherent first firstTail).symm
+        · exact inductionHypothesis tailCoherent firstTail secondTail
+
+/-- Literal candidate uniqueness is a sufficient but strictly stronger
+entry criterion for observable collection coherence. -/
+theorem observableCoherent_of_costCandidateFamilyUnambiguous
+    {collectionType : CollType}
+    {candidates : List CostCollectionTypingChoice}
+    (unambiguous : CostCandidateFamilyUnambiguous candidates) :
+    CostCollectionCandidateFamilyObservableCoherent collectionType
+      candidates := by
+  cases candidates with
+  | nil =>
+      exact List.Pairwise.nil
+  | cons head tail =>
+      cases tail with
+      | nil =>
+          simp [CostCollectionCandidateFamilyObservableCoherent]
+      | cons next rest =>
+          simp [CostCandidateFamilyUnambiguous] at unambiguous
 
 /-- Any two members of an unambiguous finite candidate family coincide. -/
 theorem eq_of_mem_of_mem_of_costCandidateFamilyUnambiguous
@@ -3069,6 +3259,54 @@ instance costStaticCollectionUnambiguousAtDecidable (source : CIGSLT)
     unfold CostStaticCollectionUnambiguousAt
     infer_instance
 
+/-- Literal uniqueness of every expected-keyed collection family.  This is a
+structural sufficient condition for replaying an arbitrary semantic plan
+through the deterministic head projection; it is not part of semantic plan
+validity. -/
+def CostStaticCollectionGloballyUnambiguous (source : CIGSLT) : Prop :=
+  ∀ (color : CostStaticColor)
+    (targetFree : WellSorted.FreeTypeContext)
+    (targetBound : List TypeExpr)
+    (collectionType : CollType) (elements : List Pattern)
+    (expected : TypeExpr),
+    CostStaticCollectionUnambiguousAt source color targetFree targetBound
+      collectionType elements expected
+
+/-- Pointwise observable coherence of one expected-keyed collection family.
+This is weaker than literal unambiguity exactly where distinct bare
+declarations induce the same compact element and result fibers. -/
+def CostStaticCollectionObservableCoherentAt (source : CIGSLT)
+    (color : CostStaticColor) (targetFree : WellSorted.FreeTypeContext)
+    (targetBound : List TypeExpr)
+    (collectionType : CollType) (elements : List Pattern)
+    (expected : TypeExpr) : Prop :=
+  CostCollectionCandidateFamilyObservableCoherent collectionType
+    (costStaticCollectionTypingChoices source color targetFree targetBound
+      collectionType elements expected)
+
+instance costStaticCollectionObservableCoherentAtDecidable (source : CIGSLT)
+    (color : CostStaticColor) (targetFree : WellSorted.FreeTypeContext)
+    (targetBound : List TypeExpr)
+    (collectionType : CollType) (elements : List Pattern)
+    (expected : TypeExpr) :
+    Decidable (CostStaticCollectionObservableCoherentAt source color
+      targetFree targetBound collectionType elements expected) := by
+  unfold CostStaticCollectionObservableCoherentAt
+  infer_instance
+
+/-- Literal unambiguity discharges the weaker observable-coherence check. -/
+theorem CostStaticCollectionUnambiguousAt.observableCoherent
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {targetBound : List TypeExpr}
+    {collectionType : CollType} {elements : List Pattern}
+    {expected : TypeExpr}
+    (unambiguous : CostStaticCollectionUnambiguousAt source color targetFree
+      targetBound collectionType elements expected) :
+    CostStaticCollectionObservableCoherentAt source color targetFree
+      targetBound collectionType elements expected :=
+  observableCoherent_of_costCandidateFamilyUnambiguous unambiguous
+
 /-- Under pointwise collection unambiguity, two successful proof-relevant
 declaration choices are the same choice, not merely result-sort compatible. -/
 theorem CostStaticCollectionUnambiguousAt.choice_eq
@@ -3087,6 +3325,48 @@ theorem CostStaticCollectionUnambiguousAt.choice_eq
     first = second :=
   eq_of_mem_of_mem_of_costCandidateFamilyUnambiguous unambiguous
     firstMembership secondMembership
+
+/-- Under observable collection coherence, two successful choices may retain
+different bare declaration identities but induce the same compact typing
+fiber. -/
+theorem CostStaticCollectionObservableCoherentAt.choice_sameObservableFiber
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {targetBound : List TypeExpr}
+    {collectionType : CollType} {elements : List Pattern}
+    {expected : TypeExpr}
+    (coherent : CostStaticCollectionObservableCoherentAt source color
+      targetFree targetBound collectionType elements expected)
+    {first second : CostCollectionTypingChoice}
+    (firstMembership : first ∈ costStaticCollectionTypingChoices source color
+      targetFree targetBound collectionType elements expected)
+    (secondMembership : second ∈ costStaticCollectionTypingChoices source
+      color targetFree targetBound collectionType elements expected) :
+    CostCollectionTypingChoice.SameObservableFiber collectionType
+      first second :=
+  sameObservableFiber_of_mem_of_mem_of_observableCoherent coherent
+    firstMembership secondMembership
+
+/-- In particular, observable candidate coherence identifies the exact
+generated element type consumed by recursive collection normalization. -/
+theorem CostStaticCollectionObservableCoherentAt.targetElementType_eq
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {targetBound : List TypeExpr}
+    {collectionType : CollType} {elements : List Pattern}
+    {expected : TypeExpr}
+    (coherent : CostStaticCollectionObservableCoherentAt source color
+      targetFree targetBound collectionType elements expected)
+    {first second : CostCollectionTypingChoice}
+    (firstMembership : first ∈ costStaticCollectionTypingChoices source color
+      targetFree targetBound collectionType elements expected)
+    (secondMembership : second ∈ costStaticCollectionTypingChoices source
+      color targetFree targetBound collectionType elements expected) :
+    first.targetElementType source color =
+      second.targetElementType source color :=
+  CostCollectionTypingChoice.targetElementType_eq_of_sameObservableFiber
+    source color
+      (coherent.choice_sameObservableFiber firstMembership secondMembership)
 
 /-- Every enumerated candidate carries an exact source declaration or direct
 collection fibre and a successful element-spine check in the selected colour. -/
@@ -3379,6 +3659,88 @@ theorem sourceResultType_eq_of_mem_costStaticCollectionTypingChoices
       (map_sourceResultType_eq_of_mem_costStaticCollectionTypingChoices
         source color targetFree targetBound collectionType elements expected
         second secondMembership).symm
+
+/-- Cross-color collection overlap still determines one common authored
+result type.  Equality of the compact expected type additionally proves that
+the common result fiber avoids the interacting sort; only such fibers can
+erase both proof-relevant colors to the same target type. -/
+theorem sourceResultType_eq_of_mem_base_wrapped_collectionChoices
+    (source : CIGSLT)
+    (targetFree : WellSorted.FreeTypeContext) (targetBound : List TypeExpr)
+    (collectionType : CollType) (elements : List Pattern)
+    (expected : TypeExpr) (baseChoice wrappedChoice :
+      CostCollectionTypingChoice)
+    (baseMembership : baseChoice ∈
+      costStaticCollectionTypingChoices source .base targetFree targetBound
+        collectionType elements expected)
+    (wrappedMembership : wrappedChoice ∈
+      costStaticCollectionTypingChoices source .wrapped targetFree targetBound
+        collectionType elements expected) :
+    baseChoice.sourceResultType collectionType =
+        wrappedChoice.sourceResultType collectionType ∧
+      source.theory.presentation.interactingSort.1.name ∉
+        (wrappedChoice.sourceResultType collectionType).baseNames := by
+  apply (CostStaticColor.mapTypeExpr_base_eq_wrapped_iff_eq source
+    (baseChoice.sourceResultType collectionType)
+    (wrappedChoice.sourceResultType collectionType)).1
+  exact
+    (map_sourceResultType_eq_of_mem_costStaticCollectionTypingChoices
+      source .base targetFree targetBound collectionType elements expected
+        baseChoice baseMembership).trans
+      (map_sourceResultType_eq_of_mem_costStaticCollectionTypingChoices
+        source .wrapped targetFree targetBound collectionType elements
+          expected wrappedChoice wrappedMembership).symm
+
+/-- Positive cross-colour canary for label-free collection roots.  An
+authored bare declaration whose result is outside the interacting sort
+contributes the same proof-relevant choice to both static colours on the
+empty element spine.  Thus generated Cost objects cannot obtain Cost²
+closure merely by iterating a first-layer root-colour uniqueness proof. -/
+theorem crossColorEmptyBareCollectionCandidate
+    (source : CIGSLT) (targetFree : WellSorted.FreeTypeContext)
+    (targetBound : List TypeExpr) (collectionType : CollType)
+    (rule : GrammarRule) (sourceElementType : TypeExpr)
+    (membership :
+      rule ∈ source.theory.presentation.presentation.language.terms)
+    (wrapped :
+      rule.label ∈ source.continuationRetyping.wrappedLabels)
+    (noninteracting :
+      rule.category ≠
+        source.theory.presentation.interactingSort.1.name)
+    (parameterName : String)
+    (parameterShape : rule.params = [.simple parameterName
+      (.collection collectionType sourceElementType)]) :
+    let expected :=
+      mapTypeExpr (CostStaticColor.base.symbols source)
+        (.base rule.category)
+    (.bare rule sourceElementType : CostCollectionTypingChoice) ∈
+        costStaticCollectionTypingChoices source .base targetFree targetBound
+          collectionType [] expected ∧
+      (.bare rule sourceElementType : CostCollectionTypingChoice) ∈
+        costStaticCollectionTypingChoices source .wrapped targetFree targetBound
+          collectionType [] expected := by
+  dsimp only
+  have avoids :
+      source.theory.presentation.interactingSort.1.name ∉
+        (TypeExpr.base rule.category).baseNames := by
+    simpa [TypeExpr.baseNames] using
+      (fun equality :
+        source.theory.presentation.interactingSort.1.name = rule.category =>
+          noninteracting equality.symm)
+  have overlap :=
+    (CostStaticColor.mapTypeExpr_base_eq_wrapped_iff source
+      (.base rule.category)).2 avoids
+  constructor
+  · apply mem_costStaticCollectionTypingChoices_complete
+    right
+    exact ⟨rule, sourceElementType, rfl, membership, wrapped, rfl,
+      parameterName, parameterShape, by
+        simp [WellSorted.checkElementsHaveType]⟩
+  · apply mem_costStaticCollectionTypingChoices_complete
+    right
+    exact ⟨rule, sourceElementType, rfl, membership, wrapped, overlap,
+      parameterName, parameterShape, by
+        simp [WellSorted.checkElementsHaveType]⟩
 
 /-- Executable compatibility projection of the complete candidate family.
 Only the finite search procedure and its compatibility plan observe this
@@ -7339,10 +7701,10 @@ mutual
         {elements : List Pattern} {rest : Option String}
         {sourceType : TypeExpr}
         (choice : CostCollectionTypingChoice)
-        (selected : costStaticCollectionTypingChoice? source color targetFree
-          targetBound
-          collectionType elements
-          (mapTypeExpr (color.symbols source) sourceType) = some choice)
+        (selected : choice ∈
+          costStaticCollectionTypingChoices source color targetFree
+            targetBound collectionType elements
+            (mapTypeExpr (color.symbols source) sourceType))
         (children : CostStaticElementPlan source color targetFree sourceBound
           targetBound thinning
           sourceAvailable outer collectionType [] elements rest
@@ -7357,16 +7719,15 @@ mutual
         {outer : OneHoleContext} {collectionType : CollType}
         {elements : List Pattern} {rest : Option String}
         {sourceType : TypeExpr}
-        (currentRejected : costStaticCollectionTypingChoice? source color
-          targetFree targetBound
-          collectionType elements
-          (mapTypeExpr (color.symbols source) sourceType) = none)
+        (currentRejected :
+          costStaticCollectionTypingChoices source color targetFree targetBound
+            collectionType elements
+            (mapTypeExpr (color.symbols source) sourceType) = [])
         (oppositeChoice : CostCollectionTypingChoice)
-        (oppositeSelected : costStaticCollectionTypingChoice? source color.flip
-          targetFree targetBound
-          collectionType elements
-          (mapTypeExpr (color.symbols source) sourceType) =
-            some oppositeChoice)
+        (oppositeSelected : oppositeChoice ∈
+          costStaticCollectionTypingChoices source color.flip targetFree
+            targetBound collectionType elements
+            (mapTypeExpr (color.symbols source) sourceType))
         (certified : CertifiedCostRegionBoundary source color targetFree
           sourceAvailable
           (mapTypeExpr (color.symbols source) sourceType)
@@ -7622,7 +7983,8 @@ mutual
                 sourceBound targetBound thinning sourceAvailable outer
                 collectionType [] elements rest choice.sourceElementType with
             | none => none
-            | some children => some (.collection choice selected children)
+            | some children =>
+                some (.collection choice (List.mem_of_head? selected) children)
         | .rejected selected =>
             match inspectOption
                 (costStaticCollectionTypingChoice? source color.flip targetFree
@@ -7637,8 +7999,13 @@ mutual
                       (.collection collectionType elements rest)) with
                 | .rejected _ => none
                 | .accepted certified certifies =>
-                    some (.boundaryCollection selected oppositeChoice
-                      oppositeSelected certified certifies)
+                    some (.boundaryCollection
+                      ((costStaticCollectionTypingChoice?_eq_none_iff source
+                        color targetFree targetBound collectionType elements
+                        (mapTypeExpr (color.symbols source) sourceType)).1
+                          selected)
+                      oppositeChoice (List.mem_of_head? oppositeSelected)
+                      certified certifies)
 
   /-- Executable ordered companion for authored constructor arguments. -/
   def buildCostStaticArgumentPlan? (source : CIGSLT)
@@ -8820,23 +9187,40 @@ theorem exists_buildCostStaticRegionPlan?_root_of_wellSorted
   apply Option.isSome_iff_exists.mp
   simpa [succeeds, rootBundle] using rootSucceeds
 
-/-! The executable planner replays a proof-relevant structural plan exactly.
-Proof irrelevance identifies the branch certificates, while all constructor,
-collection-choice, occurrence-order, and recursive-plan data remain visible. -/
+/-! A semantic plan may select any member of a complete collection-candidate
+family.  Exact replay by the compact deterministic planner therefore requires
+an explicit receipt saying that this particular plan was the planner result.
+The receipt is operational evidence; it is not part of semantic validity. -/
+
+/-- Evidence that the compact deterministic planner selected one particular
+semantic region plan. -/
+def CostStaticRegionPlan.CompilerReceipt
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {sourceBound targetBound : List TypeExpr}
+    {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+    {sourceAvailable : List TypeExpr} {outer : OneHoleContext}
+    {pattern : Pattern} {sourceType : TypeExpr}
+    (plan : CostStaticRegionPlan source color targetFree sourceBound
+      targetBound thinning sourceAvailable outer pattern sourceType) : Prop :=
+  buildCostStaticRegionPlan? source color targetFree sourceBound targetBound
+    thinning sourceAvailable outer pattern sourceType = some plan
 
 mutual
-  theorem CostStaticRegionPlan.build_eq_self
+  /-- Literal uniqueness of collection candidates is sufficient to replay
+  every semantic region plan through the compact deterministic planner. -/
+  theorem CostStaticRegionPlan.compilerReceipt_of_collectionUnambiguous
       {source : CIGSLT} {color : CostStaticColor}
       {targetFree : WellSorted.FreeTypeContext}
       {sourceBound targetBound : List TypeExpr}
       {thinning : CostStaticBinderThinning source color sourceBound targetBound}
       {sourceAvailable : List TypeExpr} {outer : OneHoleContext}
       {pattern : Pattern} {sourceType : TypeExpr}
+      (unique : CostStaticCollectionGloballyUnambiguous source)
       (plan : CostStaticRegionPlan source color targetFree sourceBound
         targetBound thinning sourceAvailable outer pattern sourceType) :
-      buildCostStaticRegionPlan? source color targetFree sourceBound
-        targetBound thinning sourceAvailable outer pattern sourceType =
-          some plan := by
+      plan.CompilerReceipt := by
+    unfold CostStaticRegionPlan.CompilerReceipt
     cases plan with
     | bvar sourceIndex lookup correspondence availableScope =>
         simp [buildCostStaticRegionPlan?, correspondence, lookup,
@@ -8871,19 +9255,82 @@ mutual
               (costStaticConstructorPreimage source color constructor
                 current).sourceConstructor.1).mp checked)
         simp [buildCostStaticRegionPlan?, decoded, current, bareRejected,
-          children.build_eq_self]
+          children.compilerReceipt_of_collectionUnambiguous unique]
     | lambda bodyPlan =>
-        simp [buildCostStaticRegionPlan?, bodyPlan.build_eq_self]
+        have bodyBuilt :=
+          bodyPlan.compilerReceipt_of_collectionUnambiguous unique
+        unfold CostStaticRegionPlan.CompilerReceipt at bodyBuilt
+        simp [buildCostStaticRegionPlan?, bodyBuilt]
     | multiLambda bodyPlan =>
-        simp [buildCostStaticRegionPlan?, bodyPlan.build_eq_self]
-    | collection choice selected children =>
-        simp [buildCostStaticRegionPlan?, selected, children.build_eq_self]
-    | boundaryCollection currentRejected oppositeChoice oppositeSelected
-        certified certifies =>
-        simp [buildCostStaticRegionPlan?, currentRejected, oppositeSelected,
-          certifies]
+        have bodyBuilt :=
+          bodyPlan.compilerReceipt_of_collectionUnambiguous unique
+        unfold CostStaticRegionPlan.CompilerReceipt at bodyBuilt
+        simp [buildCostStaticRegionPlan?, bodyBuilt]
+    | @collection _ _ _ _ _ collectionType elements rest sourceType choice
+        selected children =>
+        cases candidatesEq :
+            costStaticCollectionTypingChoices source color targetFree
+              targetBound collectionType elements
+                (mapTypeExpr (color.symbols source) sourceType) with
+        | nil =>
+            rw [candidatesEq] at selected
+            simp at selected
+        | cons head tail =>
+            have headMembership : head ∈
+                costStaticCollectionTypingChoices source color targetFree
+                  targetBound collectionType elements
+                    (mapTypeExpr (color.symbols source) sourceType) := by
+              rw [candidatesEq]
+              simp
+            have headEq : head = choice :=
+              (unique color targetFree targetBound collectionType elements
+                (mapTypeExpr (color.symbols source) sourceType)).choice_eq
+                  headMembership selected
+            have selectedHead : costStaticCollectionTypingChoice? source color
+                targetFree targetBound collectionType elements
+                  (mapTypeExpr (color.symbols source) sourceType) =
+                some choice := by
+              simp [costStaticCollectionTypingChoice?, candidatesEq, headEq]
+            simp [buildCostStaticRegionPlan?, selectedHead,
+              children.compilerReceipt_of_collectionUnambiguous unique]
+    | @boundaryCollection _ _ _ _ _ collectionType elements rest sourceType
+        currentRejected oppositeChoice oppositeSelected certified certifies =>
+        have currentHeadNone : costStaticCollectionTypingChoice? source color
+            targetFree targetBound collectionType elements
+              (mapTypeExpr (color.symbols source) sourceType) = none :=
+          (costStaticCollectionTypingChoice?_eq_none_iff source color
+            targetFree targetBound collectionType elements
+              (mapTypeExpr (color.symbols source) sourceType)).2
+                currentRejected
+        cases oppositeCandidatesEq :
+            costStaticCollectionTypingChoices source color.flip targetFree
+              targetBound collectionType elements
+                (mapTypeExpr (color.symbols source) sourceType) with
+        | nil =>
+            rw [oppositeCandidatesEq] at oppositeSelected
+            simp at oppositeSelected
+        | cons head tail =>
+            have headMembership : head ∈
+                costStaticCollectionTypingChoices source color.flip targetFree
+                  targetBound collectionType elements
+                    (mapTypeExpr (color.symbols source) sourceType) := by
+              rw [oppositeCandidatesEq]
+              simp
+            have headEq : head = oppositeChoice :=
+              (unique color.flip targetFree targetBound collectionType elements
+                (mapTypeExpr (color.symbols source) sourceType)).choice_eq
+                  headMembership oppositeSelected
+            have oppositeHead :
+                costStaticCollectionTypingChoice? source color.flip targetFree
+                  targetBound collectionType elements
+                    (mapTypeExpr (color.symbols source) sourceType) =
+                  some oppositeChoice := by
+              simp [costStaticCollectionTypingChoice?, oppositeCandidatesEq,
+                headEq]
+            simp [buildCostStaticRegionPlan?, currentHeadNone, oppositeHead,
+              certifies]
 
-  theorem CostStaticArgumentPlan.build_eq_self
+  theorem CostStaticArgumentPlan.compilerReceipt_of_collectionUnambiguous
       {source : CIGSLT} {color : CostStaticColor}
       {targetFree : WellSorted.FreeTypeContext}
       {sourceBound targetBound : List TypeExpr}
@@ -8891,6 +9338,7 @@ mutual
       {sourceAvailable : List TypeExpr} {outer : OneHoleContext}
       {wireName : String} {before arguments : List Pattern}
       {parameters : List TermParam}
+      (unique : CostStaticCollectionGloballyUnambiguous source)
       (plan : CostStaticArgumentPlan source color targetFree sourceBound
         targetBound thinning sourceAvailable outer wireName before arguments
         parameters) :
@@ -8905,10 +9353,15 @@ mutual
             WellSorted.matchesParameterRepresentation? _ _ = true :=
           (WellSorted.matchesParameterRepresentation?_eq_true_iff _ _).mpr
             representation
+        have headBuilt :=
+          head.compilerReceipt_of_collectionUnambiguous unique
+        unfold CostStaticRegionPlan.CompilerReceipt at headBuilt
+        have tailBuilt :=
+          tail.compilerReceipt_of_collectionUnambiguous unique
         simp [buildCostStaticArgumentPlan?, parameterType,
-          representationChecked, head.build_eq_self, tail.build_eq_self]
+          representationChecked, headBuilt, tailBuilt]
 
-  theorem CostStaticElementPlan.build_eq_self
+  theorem CostStaticElementPlan.compilerReceipt_of_collectionUnambiguous
       {source : CIGSLT} {color : CostStaticColor}
       {targetFree : WellSorted.FreeTypeContext}
       {sourceBound targetBound : List TypeExpr}
@@ -8916,6 +9369,7 @@ mutual
       {sourceAvailable : List TypeExpr} {outer : OneHoleContext}
       {collectionType : CollType} {before elements : List Pattern}
       {rest : Option String} {sourceElementType : TypeExpr}
+      (unique : CostStaticCollectionGloballyUnambiguous source)
       (plan : CostStaticElementPlan source color targetFree sourceBound
         targetBound thinning sourceAvailable outer collectionType before
         elements rest sourceElementType) :
@@ -8926,72 +9380,13 @@ mutual
     | nil =>
         simp [buildCostStaticElementPlan?]
     | cons head tail =>
-        simp [buildCostStaticElementPlan?, head.build_eq_self,
-          tail.build_eq_self]
+        have headBuilt :=
+          head.compilerReceipt_of_collectionUnambiguous unique
+        unfold CostStaticRegionPlan.CompilerReceipt at headBuilt
+        have tailBuilt :=
+          tail.compilerReceipt_of_collectionUnambiguous unique
+        simp [buildCostStaticElementPlan?, headBuilt, tailBuilt]
 end
-
-theorem CostStaticRegionPlan.build_isSome
-    {source : CIGSLT} {color : CostStaticColor}
-    {targetFree : WellSorted.FreeTypeContext}
-    {sourceBound targetBound : List TypeExpr}
-    {thinning : CostStaticBinderThinning source color sourceBound targetBound}
-    {sourceAvailable : List TypeExpr} {outer : OneHoleContext}
-    {pattern : Pattern} {sourceType : TypeExpr}
-    (plan : CostStaticRegionPlan source color targetFree sourceBound
-      targetBound thinning sourceAvailable outer pattern sourceType) :
-    (buildCostStaticRegionPlan? source color targetFree sourceBound
-      targetBound thinning sourceAvailable outer pattern sourceType).isSome := by
-  rw [plan.build_eq_self]
-  rfl
-
-theorem CostStaticRegionPlan.exists_build_eq_some
-    {source : CIGSLT} {color : CostStaticColor}
-    {targetFree : WellSorted.FreeTypeContext}
-    {sourceBound targetBound : List TypeExpr}
-    {thinning : CostStaticBinderThinning source color sourceBound targetBound}
-    {sourceAvailable : List TypeExpr} {outer : OneHoleContext}
-    {pattern : Pattern} {sourceType : TypeExpr}
-    (plan : CostStaticRegionPlan source color targetFree sourceBound
-      targetBound thinning sourceAvailable outer pattern sourceType) :
-    ∃ compiled,
-      buildCostStaticRegionPlan? source color targetFree sourceBound
-        targetBound thinning sourceAvailable outer pattern sourceType =
-          some compiled :=
-  ⟨plan, plan.build_eq_self⟩
-
-theorem CostStaticArgumentPlan.exists_build_eq_some
-    {source : CIGSLT} {color : CostStaticColor}
-    {targetFree : WellSorted.FreeTypeContext}
-    {sourceBound targetBound : List TypeExpr}
-    {thinning : CostStaticBinderThinning source color sourceBound targetBound}
-    {sourceAvailable : List TypeExpr} {outer : OneHoleContext}
-    {wireName : String} {before arguments : List Pattern}
-    {parameters : List TermParam}
-    (plan : CostStaticArgumentPlan source color targetFree sourceBound
-      targetBound thinning sourceAvailable outer wireName before arguments
-      parameters) :
-    ∃ compiled,
-      buildCostStaticArgumentPlan? source color targetFree sourceBound
-        targetBound thinning sourceAvailable outer wireName before arguments
-        parameters = some compiled :=
-  ⟨plan, plan.build_eq_self⟩
-
-theorem CostStaticElementPlan.exists_build_eq_some
-    {source : CIGSLT} {color : CostStaticColor}
-    {targetFree : WellSorted.FreeTypeContext}
-    {sourceBound targetBound : List TypeExpr}
-    {thinning : CostStaticBinderThinning source color sourceBound targetBound}
-    {sourceAvailable : List TypeExpr} {outer : OneHoleContext}
-    {collectionType : CollType} {before elements : List Pattern}
-    {rest : Option String} {sourceElementType : TypeExpr}
-    (plan : CostStaticElementPlan source color targetFree sourceBound
-      targetBound thinning sourceAvailable outer collectionType before
-      elements rest sourceElementType) :
-    ∃ compiled,
-      buildCostStaticElementPlan? source color targetFree sourceBound
-        targetBound thinning sourceAvailable outer collectionType before
-        elements rest sourceElementType = some compiled :=
-  ⟨plan, plan.build_eq_self⟩
 
 mutual
   /-- Ordered finite occurrences projected from the one authoritative plan. -/
@@ -10224,16 +10619,15 @@ inductive CostStaticBoundaryKind (source : CIGSLT)
       {targetBound : List TypeExpr} {collectionType : CollType}
       {elements : List Pattern} {rest : Option String}
       {sourceType : TypeExpr}
-      (currentRejected : costStaticCollectionTypingChoice? source color
-        targetFree targetBound
-        collectionType elements
-        (mapTypeExpr (color.symbols source) sourceType) = none)
+      (currentRejected :
+        costStaticCollectionTypingChoices source color targetFree targetBound
+          collectionType elements
+          (mapTypeExpr (color.symbols source) sourceType) = [])
       (oppositeChoice : CostCollectionTypingChoice)
-      (oppositeSelected : costStaticCollectionTypingChoice? source color.flip
-        targetFree targetBound
-        collectionType elements
-        (mapTypeExpr (color.symbols source) sourceType) =
-          some oppositeChoice)
+      (oppositeSelected : oppositeChoice ∈
+        costStaticCollectionTypingChoices source color.flip targetFree
+          targetBound collectionType elements
+          (mapTypeExpr (color.symbols source) sourceType))
       (content : boundary.boundary.content =
         .collection collectionType elements rest) :
       CostStaticBoundaryKind source color targetFree boundary
@@ -10502,10 +10896,8 @@ mutual
             (sourceBound := sourceBound) (targetBound := targetBound)
             (thinning := thinning) (sourceAvailable := sourceAvailable)
             children globalTable entriesSubset
-        rcases costStaticCollectionTypingChoice?_eq_some source color
-            targetFree
-            targetBound
-            collectionType elements
+        rcases mem_costStaticCollectionTypingChoices_sound source color
+            targetFree targetBound collectionType elements
             (mapTypeExpr (color.symbols source) sourceType) choice selected with
           direct | bare
         · rcases direct with
@@ -10799,16 +11191,17 @@ theorem CostStaticRegionPlan.isStaticRoot_of_current_collection
       targetBound thinning sourceAvailable outer
         (.collection collectionType elements rest) sourceType)
     (choice : CostCollectionTypingChoice)
-    (selected : costStaticCollectionTypingChoice? source color targetFree
-      targetBound collectionType elements
-        (mapTypeExpr (color.symbols source) sourceType) = some choice) :
+    (selected : choice ∈
+      costStaticCollectionTypingChoices source color targetFree targetBound
+        collectionType elements
+        (mapTypeExpr (color.symbols source) sourceType)) :
     plan.isStaticRoot = true := by
   cases plan with
   | collection choice' selected' children => rfl
   | boundaryCollection rejected oppositeChoice oppositeSelected certified
       certifies =>
-      rw [selected] at rejected
-      contradiction
+      rw [rejected] at selected
+      simp at selected
 
 /-- A successful static-root witness exposes exactly the two raw syntax forms
 accepted at the root, without eliminating dependent plan indices in clients. -/
@@ -10884,10 +11277,9 @@ theorem CostStaticRegionPlan.collection_choice_of_isStaticRoot
     {rest : Option String}
     (shape : pattern = .collection collectionType elements rest) :
     ∃ choice,
-      costStaticCollectionTypingChoice? source color targetFree targetBound
-          collectionType elements
-            (mapTypeExpr (color.symbols source) sourceType) =
-        some choice := by
+      choice ∈ costStaticCollectionTypingChoices source color targetFree
+        targetBound collectionType elements
+          (mapTypeExpr (color.symbols source) sourceType) := by
   cases plan with
   | collection choice selected children =>
       injection shape with collectionTypeEquality elementsEquality restEquality
@@ -11501,10 +11893,8 @@ theorem mem_buildForColorCandidates_iff
   · rintro ⟨sourceName, built⟩
     exact ⟨sourceName, by simp, built⟩
 
-/-- Every explicit certified plan has a corresponding member of the complete
-root family carrying the same color and source sort.  The member need not be
-definitionally the explicit packaging of the plan; the deterministic node
-builder supplies their later equality within the fixed fiber. -/
+/-- Every compiler-selected plan has a corresponding member of the finite
+executable root family carrying the same color and source sort. -/
 theorem exists_mem_buildForColorCandidates_of_plan
     {source : CIGSLT} {color : CostStaticColor}
     {targetFree : WellSorted.FreeTypeContext}
@@ -11517,6 +11907,7 @@ theorem exists_mem_buildForColorCandidates_of_plan
       targetBound
       (CostStaticBinderThinning.ofTargetThinning source color targetBound)
       targetBound .hole term.1 (.base sourceSort.1))
+    (compiled : plan.CompilerReceipt)
     (rootStatic : plan.isStaticRoot = true) :
     ∃ candidate : CostStaticRootNode source targetFree targetBound
         (color.mapLangSort source sourceSort) term,
@@ -11525,7 +11916,7 @@ theorem exists_mem_buildForColorCandidates_of_plan
   have nodeSome : (CostStaticRegionNode.build? term).isSome = true := by
     unfold CostStaticRegionNode.build?
     dsimp only
-    rw [plan.build_eq_self]
+    rw [compiled]
     simp [rootStatic]
   have rootSome :
       (CostStaticRootNode.buildFor? term color sourceSort).isSome = true := by
@@ -11759,13 +12150,14 @@ theorem exists_mem_buildCandidates_of_plan
       targetBound
       (CostStaticBinderThinning.ofTargetThinning source color targetBound)
       targetBound .hole term.1 (.base sourceSort.1))
+    (compiled : plan.CompilerReceipt)
     (rootStatic : plan.isStaticRoot = true) :
     ∃ candidate : CostStaticRootNode source targetFree targetBound
         (color.mapLangSort source sourceSort) term,
       candidate ∈ buildCandidates term ∧
         candidate.color = color ∧ candidate.sourceSort = sourceSort := by
   obtain ⟨candidate, membership, fields⟩ :=
-    exists_mem_buildForColorCandidates_of_plan term plan rootStatic
+    exists_mem_buildForColorCandidates_of_plan term plan compiled rootStatic
   exact ⟨candidate,
     mem_buildCandidates_of_mem_buildForColorCandidates membership, fields⟩
 
@@ -11907,6 +12299,37 @@ structure UnambiguousStaticDecomposition (source : CIGSLT) : Prop where
       CostStaticCollectionUnambiguousAt source color targetFree targetBound
         collectionType elements expected
 
+/-- The collection component of structural unambiguity is exactly the global
+criterion needed to attach compiler receipts to arbitrary semantic plans. -/
+theorem UnambiguousStaticDecomposition.collectionGloballyUnambiguous
+    {source : CIGSLT}
+    (unambiguous : UnambiguousStaticDecomposition source) :
+    CostStaticCollectionGloballyUnambiguous source :=
+  unambiguous.collectionCandidates
+
+/-
+Bare collections have no constructor head, so observable coherence inside
+one colour does not make the root colour unique.  Cost² closure must handle
+that cross-colour case extensionally rather than packaging this local
+relation as a global decomposition criterion.
+-/
+
+/-- Every literal-unambiguity witness supplies local observable collection
+coherence.  Cross-colour root coherence remains a separate exact
+normalization theorem. -/
+theorem UnambiguousStaticDecomposition.collection_observableCoherent
+    {source : CIGSLT}
+    (unambiguous : UnambiguousStaticDecomposition source)
+    (color : CostStaticColor)
+    (targetFree : WellSorted.FreeTypeContext)
+    (targetBound : List TypeExpr)
+    (collectionType : CollType) (elements : List Pattern)
+    (expected : TypeExpr) :
+    CostStaticCollectionObservableCoherentAt source color targetFree
+      targetBound collectionType elements expected :=
+  (unambiguous.collectionCandidates color targetFree targetBound
+    collectionType elements expected).observableCoherent
+
 /-- Global structural unambiguity turns any two enumerated roots in the same
 typed fiber into literal equality. -/
 theorem UnambiguousStaticDecomposition.root_candidate_eq
@@ -11942,11 +12365,7 @@ theorem UnambiguousStaticDecomposition.collection_candidate_eq
     collectionType elements expected).choice_eq firstMembership
       secondMembership
 
-/-- Every declarative structural plan in the canonical target fiber is
-accepted by the executable node builder.  Combined with the builder's
-dependent result type, this is exact soundness/completeness at the compiled
-one-region boundary; total decomposition remains the separate obligation of
-constructing such a plan for every static subterm. -/
+/-- A compiler receipt supplies executable success for its semantic plan. -/
 theorem exists_build?_eq_some_of_plan {source : CIGSLT}
     {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
     {targetBound : List TypeExpr}
@@ -11958,12 +12377,13 @@ theorem exists_build?_eq_some_of_plan {source : CIGSLT}
       targetBound
       (CostStaticBinderThinning.ofTargetThinning source color targetBound)
       targetBound .hole term.1 (.base sourceSort.1))
+    (compiled : plan.CompilerReceipt)
     (rootStatic : plan.isStaticRoot = true) :
     ∃ node, CostStaticRegionNode.build? term = some node := by
   refine ⟨CostStaticRegionNode.ofPlan term plan rootStatic, ?_⟩
   unfold CostStaticRegionNode.build?
   dsimp only
-  rw [plan.build_eq_self]
+  rw [compiled]
   simp [rootStatic]
 
 /-- Exact replay form of `exists_build?_eq_some_of_plan`: the deterministic
@@ -11979,23 +12399,24 @@ theorem build?_eq_some_of_plan {source : CIGSLT}
       targetBound
       (CostStaticBinderThinning.ofTargetThinning source color targetBound)
       targetBound .hole term.1 (.base sourceSort.1))
+    (compiled : plan.CompilerReceipt)
     (rootStatic : plan.isStaticRoot = true) :
     CostStaticRegionNode.build? term =
       some (CostStaticRegionNode.ofPlan term plan rootStatic) := by
   unfold CostStaticRegionNode.build?
   dsimp only
-  rw [plan.build_eq_self]
+  rw [compiled]
   simp [rootStatic]
 
-/-- Re-running the deterministic structural planner on an existing static
-node returns that node exactly.  This combines exact plan replay with the
-fact that repackaging a node's sole plan is identity. -/
+/-- Re-running the deterministic structural planner returns an existing node
+exactly when that node carries the corresponding compiler receipt. -/
 theorem build?_eq_some_self {source : CIGSLT}
     {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
-    (node : CostStaticRegionNode source color targetFree) :
+    (node : CostStaticRegionNode source color targetFree)
+    (compiled : node.plan.CompilerReceipt) :
     CostStaticRegionNode.build? node.term = some node := by
   rw [CostStaticRegionNode.build?_eq_some_of_plan node.term node.plan
-    node.rootStatic]
+    compiled node.rootStatic]
   rw [node.ofPlan_eq_self]
 
 /-- The deterministic static-node builder is insensitive to proof transport
@@ -12065,10 +12486,16 @@ theorem UnambiguousStaticDecomposition.staticNode_indices_eq
     firstColor = secondColor ∧ first.sourceSort = second.sourceSort := by
   obtain ⟨firstCandidate, firstMembership, firstFields⟩ :=
     CostStaticRootNode.exists_mem_buildCandidates_of_plan first.term
-      first.plan first.rootStatic
+      first.plan
+      (first.plan.compilerReceipt_of_collectionUnambiguous
+        unambiguous.collectionGloballyUnambiguous)
+      first.rootStatic
   obtain ⟨secondCandidate, secondMembership, secondFields⟩ :=
     CostStaticRootNode.exists_mem_buildCandidates_of_plan second.term
-      second.plan second.rootStatic
+      second.plan
+      (second.plan.compilerReceipt_of_collectionUnambiguous
+        unambiguous.collectionGloballyUnambiguous)
+      second.rootStatic
   obtain ⟨transported, transportedMembership, transportedColor,
       transportedSort⟩ :=
     CostStaticRootNode.exists_transport_mem_buildCandidates second.term
@@ -12108,8 +12535,13 @@ theorem UnambiguousStaticDecomposition.staticNode_heq
       boundEq sourceSortEq termEq
   have nodeEq : first = second := by
     exact Option.some.inj
-      (first.build?_eq_some_self.symm.trans
-        (buildersEq.trans second.build?_eq_some_self))
+      ((first.build?_eq_some_self
+          (first.plan.compilerReceipt_of_collectionUnambiguous
+            unambiguous.collectionGloballyUnambiguous)).symm.trans
+        (buildersEq.trans
+          (second.build?_eq_some_self
+            (second.plan.compilerReceipt_of_collectionUnambiguous
+              unambiguous.collectionGloballyUnambiguous))))
   exact nodeEq.rec (HEq.rfl : HEq first first)
 
 /-- A genuine static application root cannot simultaneously be presented as
@@ -14006,6 +14438,7 @@ theorem CostRegionTree.buildCheckedStaticRoot?_isSome_of_plan
       targetBound
       (CostStaticBinderThinning.ofTargetThinning source color targetBound)
       targetBound .hole term.1 (.base sourceSort.1))
+    (compiled : plan.CompilerReceipt)
     (rootStatic : plan.isStaticRoot = true)
     (decompose : (boundary : TypedCostRegionBoundary source color targetFree) →
       Option (CostRegionTree source targetFree
@@ -14022,16 +14455,18 @@ theorem CostRegionTree.buildCheckedStaticRoot?_isSome_of_plan
   split
   · rename_i rejected
     have impossible := rejected.symm.trans
-      (CostStaticRegionNode.build?_eq_some_of_plan term plan rootStatic)
+      (CostStaticRegionNode.build?_eq_some_of_plan term plan compiled rootStatic)
     contradiction
   · rename_i node built
     have nodeEquality : node =
         CostStaticRegionNode.ofPlan term plan rootStatic :=
       Option.some.inj (built.symm.trans
-        (CostStaticRegionNode.build?_eq_some_of_plan term plan rootStatic))
+        (CostStaticRegionNode.build?_eq_some_of_plan term plan compiled
+          rootStatic))
     subst node
     have builtProof : built =
-        CostStaticRegionNode.build?_eq_some_of_plan term plan rootStatic :=
+        CostStaticRegionNode.build?_eq_some_of_plan term plan compiled
+          rootStatic :=
       Subsingleton.elim _ _
     cases builtProof
     rw [treeBuilt]
@@ -14053,6 +14488,7 @@ theorem CostRegionTree.exists_buildStaticRootForColor?_eq_some_of_plan
       targetBound
       (CostStaticBinderThinning.ofTargetThinning source color targetBound)
       targetBound .hole term.1 (.base sourceSort.1))
+    (compiled : plan.CompilerReceipt)
     (rootStatic : plan.isStaticRoot = true)
     (decompose : ∀ (candidateColor : CostStaticColor),
       (boundary : TypedCostRegionBoundary source candidateColor targetFree) →
@@ -14078,7 +14514,8 @@ theorem CostRegionTree.exists_buildStaticRootForColor?_eq_some_of_plan
     CostRegionTree.buildCheckedStaticRoot?_isSome_of_plan
       (outer := outer)
       reconstructed
-      (reconstructed_eq ▸ plan) (by simpa using rootStatic)
+      (reconstructed_eq ▸ plan) (by simpa using compiled)
+      (by simpa using rootStatic)
       (decompose color) reconstructedSucceeds
   apply Option.isSome_iff_exists.mp
   rw [CostRegionTree.buildStaticRootForColor?, List.findSome?_isSome_iff]
@@ -14546,6 +14983,7 @@ theorem CostRegionTree.buildFuel?_isSome_of_staticPlan
       targetBound
       (CostStaticBinderThinning.ofTargetThinning source color targetBound)
       targetBound .hole term.1 (.base sourceSort.1))
+    (compiled : plan.CompilerReceipt)
     (rootStatic : plan.isStaticRoot = true)
     (succeeds : ∀ boundary, boundary ∈ plan.boundaryTable.entries →
       ∃ tree,
@@ -14568,7 +15006,7 @@ theorem CostRegionTree.buildFuel?_isSome_of_staticPlan
       (⟨pattern, termWellSorted⟩ : WellSorted.OpenTerm
         source.costWholeLanguage targetFree targetBound
           (color.mapLangSort source sourceSort))
-      plan rootStatic decompose (by simpa [decompose] using succeeds)
+      plan compiled rootStatic decompose (by simpa [decompose] using succeeds)
   rcases plan.pattern_shape_of_isStaticRoot rootStatic with
       ⟨wireName, arguments, shape⟩ | ⟨collectionType, elements, rest, shape⟩
   · obtain ⟨constructor, decoded, current⟩ :=
@@ -15206,7 +15644,7 @@ theorem CostRegionTree.buildFuel?_isSome_of_wellSorted_application
               (source.materializeDeclaredCostConstructor constructor).label
                 arguments) := by
         simpa [mapTypeExpr, targetCategoryEquality] using wellSorted
-      obtain ⟨plan, _planned⟩ :=
+      obtain ⟨plan, planned⟩ :=
         exists_buildCostStaticRegionPlan?_root_of_wellSorted
           (source := source) (color := color) (targetFree := targetFree)
           available
@@ -15239,7 +15677,7 @@ theorem CostRegionTree.buildFuel?_isSome_of_wellSorted_application
           arguments, termWellSorted⟩
       have staticSuccess :=
         CostRegionTree.buildFuel?_isSome_of_staticPlan (outer := outer)
-          fuel term plan
+          fuel term plan planned
           rootStatic (by
             intro boundary boundaryMembership
             have boundaryBound :=
@@ -15485,13 +15923,14 @@ theorem CostRegionTree.buildFuel?_isSome_of_wellSorted_bareCollection
             (.collection collectionType elements rest) := by
         rw [← expectedEquality]
         exact wellSorted
-      obtain ⟨plan, _planned⟩ :=
+      obtain ⟨plan, planned⟩ :=
         exists_buildCostStaticRegionPlan?_root_of_wellSorted
           (source := source) (color := color) (targetFree := targetFree)
           available (.collection collectionType elements rest)
             (.base sourceRule.category) exactWellSorted
       have rootStatic := plan.isStaticRoot_of_current_collection
-        (.bare sourceRule sourceElementType) selectedExact
+        (.bare sourceRule sourceElementType)
+          (List.mem_of_head? selectedExact)
       let sourceSort :
           LangSort source.theory.presentation.presentation.language :=
         ⟨sourceRule.category,
@@ -15512,7 +15951,7 @@ theorem CostRegionTree.buildFuel?_isSome_of_wellSorted_bareCollection
         ⟨.collection collectionType elements rest, termWellSorted⟩
       have staticSuccess :=
         CostRegionTree.buildFuel?_isSome_of_staticPlan (outer := outer)
-          fuel term plan rootStatic (by
+          fuel term plan planned rootStatic (by
             intro boundary boundaryMembership
             have boundaryBound :=
               plan.boundary_content_weight_lt_of_isStaticRoot rootStatic
@@ -15732,19 +16171,8 @@ theorem CostRegionTree.buildFuel?_isSome_of_tree
       | fvar lookup =>
           simp [CostRegionTree.buildFuel?, lookup]
       | static node children =>
-          apply CostRegionTree.buildFuel?_isSome_of_staticPlan fuel node.term
-            node.plan node.rootStatic
-          intro boundary membership
-          obtain ⟨child⟩ :=
-            children.exists_tree_of_mem boundary membership
-          have childBound :
-              costRegionPatternWeight boundary.boundary.content < fuel := by
-            have boundaryBound :=
-              node.plan.boundary_content_weight_lt_of_isStaticRoot
-                node.rootStatic boundary membership
-            omega
-          exact Option.isSome_iff_exists.mp
-            (inductionHypothesis child boundary.contentObjectPattern childBound)
+          exact CostRegionTree.buildFuel?_isSome_of_wellSorted
+            (fuel + 1) node.term.2 enough
       | neutralApplicationOrdinary membership notBare constructor materializes
           neutral ordinary children =>
           rename_i rule arguments
@@ -17150,6 +17578,41 @@ theorem CostRegionTree.reindexPattern_heq
     (tree : CostRegionTree source targetFree available outer first type) :
     HEq tree (tree.reindexPattern patternEq) := by
   cases patternEq
+  rfl
+
+/-- Transport only the result-type index of a region tree.  As with pattern
+reindexing, all proof-relevant decomposition data and the computed normal form
+remain unchanged. -/
+def CostRegionTree.reindexType
+    {source : CIGSLT} {targetFree : WellSorted.FreeTypeContext}
+    {available outer : List TypeExpr} {pattern : Pattern}
+    {first second : TypeExpr}
+    (typeEq : first = second)
+    (tree : CostRegionTree source targetFree available outer pattern first) :
+    CostRegionTree source targetFree available outer pattern second := by
+  cases typeEq
+  exact tree
+
+/-- Result-type transport does not change child-first normalization. -/
+theorem CostRegionTree.reindexType_normalize
+    {source : CIGSLT} {targetFree : WellSorted.FreeTypeContext}
+    {available outer : List TypeExpr} {pattern : Pattern}
+    {first second : TypeExpr}
+    (typeEq : first = second)
+    (tree : CostRegionTree source targetFree available outer pattern first) :
+    (tree.reindexType typeEq).normalize.pattern = tree.normalize.pattern := by
+  cases typeEq
+  rfl
+
+/-- Result-type transport is heterogeneous identity on the underlying tree. -/
+theorem CostRegionTree.reindexType_heq
+    {source : CIGSLT} {targetFree : WellSorted.FreeTypeContext}
+    {available outer : List TypeExpr} {pattern : Pattern}
+    {first second : TypeExpr}
+    (typeEq : first = second)
+    (tree : CostRegionTree source targetFree available outer pattern first) :
+    HEq tree (tree.reindexType typeEq) := by
+  cases typeEq
   rfl
 
 /-- Reindexing the already-checked wire and result category of an ordinary

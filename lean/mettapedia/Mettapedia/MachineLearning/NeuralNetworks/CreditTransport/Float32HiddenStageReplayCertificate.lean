@@ -79,6 +79,22 @@ def Float32HiddenStageReplay.decodedOutput
     EuclideanSpace ℝ (Fin rows) :=
   WithLp.toLp 2 fun row ↦ (replay.addMask row).decodedOutput
 
+/-- Exact entrywise one-norm of the observed binary32 center.  This is a
+finite-arithmetic upper bound for its Euclidean norm. -/
+def Float32HiddenStageReplay.decodedOutputL1
+    {rows columns : ℕ} (replay : Float32HiddenStageReplay rows columns) : ℝ :=
+  ∑ row, |replay.decodedOutput row|
+
+theorem Float32HiddenStageReplay.decodedOutputL1_nonneg
+    {rows columns : ℕ} (replay : Float32HiddenStageReplay rows columns) :
+    0 ≤ replay.decodedOutputL1 :=
+  Finset.sum_nonneg fun _ _ ↦ abs_nonneg _
+
+theorem Float32HiddenStageReplay.decodedOutput_norm_le_L1
+    {rows columns : ℕ} (replay : Float32HiddenStageReplay rows columns) :
+    ‖replay.decodedOutput‖ ≤ replay.decodedOutputL1 := by
+  exact euclidean_norm_le_entrywiseL1 replay.decodedOutput
+
 /-- Runtime previous-center vector consumed by the stage's affine map. -/
 def Float32HiddenStageReplay.runtimePreviousCenter
     {rows columns : ℕ} (replay : Float32HiddenStageReplay rows columns) :
@@ -239,6 +255,38 @@ theorem Float32HiddenStageReplay.sound
       (replay.totalCertifiedErrorRat : ℝ) := by
   exact (euclidean_norm_le_entrywiseL1 _).trans
     (replay.totalCoordinateError_le hcheck)
+
+/-- Any exact center close to the observed replay center inherits a compact
+norm bound from the observed binary32 words. -/
+theorem Float32HiddenStageReplay.exactCenter_norm_le_observedL1_add_error
+    {rows columns : ℕ} (replay : Float32HiddenStageReplay rows columns)
+    (exactCenter : EuclideanSpace ℝ (Fin rows)) (error : ℝ)
+    (herror : ‖replay.decodedOutput - exactCenter‖ ≤ error) :
+    ‖exactCenter‖ ≤ replay.decodedOutputL1 + error := by
+  calc
+    ‖exactCenter‖ =
+        ‖replay.decodedOutput + (exactCenter - replay.decodedOutput)‖ := by
+      congr 1
+      abel
+    _ ≤ ‖replay.decodedOutput‖ +
+        ‖exactCenter - replay.decodedOutput‖ :=
+      norm_add_le _ _
+    _ = ‖replay.decodedOutput‖ +
+        ‖replay.decodedOutput - exactCenter‖ := by
+      rw [norm_sub_rev]
+    _ ≤ replay.decodedOutputL1 + error :=
+      add_le_add replay.decodedOutput_norm_le_L1 herror
+
+/-- The exact-real center represented by a valid replay is bounded using only
+the observed binary32 words and the kernel-checked local replay budget. -/
+theorem Float32HiddenStageReplay.idealBlock_norm_le_observedL1_add_error
+    {rows columns : ℕ} (replay : Float32HiddenStageReplay rows columns)
+    (hcheck : replay.check = true) :
+    ‖replay.idealBlock replay.decodedInput‖ ≤
+      replay.decodedOutputL1 + (replay.totalCertifiedErrorRat : ℝ) := by
+  exact replay.exactCenter_norm_le_observedL1_add_error
+    (replay.idealBlock replay.decodedInput)
+    (replay.totalCertifiedErrorRat : ℝ) (replay.sound hcheck)
 
 theorem Float32HiddenStageReplay.toLocalEvaluationErrorCertificate
     {rows columns : ℕ} (replay : Float32HiddenStageReplay rows columns)
@@ -418,6 +466,9 @@ theorem emptyHiddenStageBatch_is_rejected :
 #print axioms Float32HiddenStageReplay.coordinate_error_le
 #print axioms Float32HiddenStageReplay.totalCoordinateError_le
 #print axioms Float32HiddenStageReplay.sound
+#print axioms Float32HiddenStageReplay.decodedOutput_norm_le_L1
+#print axioms Float32HiddenStageReplay.exactCenter_norm_le_observedL1_add_error
+#print axioms Float32HiddenStageReplay.idealBlock_norm_le_observedL1_add_error
 #print axioms Float32HiddenStageReplay.toLocalEvaluationErrorCertificate
 #print axioms Float32HiddenStageReplay.toPreviousCenterLocalCertificate
 #print axioms Float32HiddenStageReplayBatch.totalObservedError_le

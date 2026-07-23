@@ -25,6 +25,9 @@ import Mettapedia.Languages.Metamath.InferenceNormalByteReflection
 import Mettapedia.Languages.Metamath.InferenceNormalProvabilitySoundness
 import Mettapedia.Languages.Metamath.InferenceSourceAdmission
 import Mettapedia.Languages.Metamath.SourceInferenceDeclarativeAdequacy
+import Mettapedia.Languages.Metamath.SourceGSLTOperations
+import Mettapedia.Languages.Metamath.SourceGSLTState
+import Mettapedia.Languages.Metamath.SourceGSLTNormalTheorem
 
 /-!
 # Metamath Bridge Surface

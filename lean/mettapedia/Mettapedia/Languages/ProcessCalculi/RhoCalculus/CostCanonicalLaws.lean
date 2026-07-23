@@ -1518,7 +1518,7 @@ private theorem rho_collection_root_sourceSort_interacting
   obtain ⟨choice, selected⟩ :=
     candidate.node.plan.collection_choice_of_isStaticRoot
       candidate.node.rootStatic nodeShape
-  rcases costStaticCollectionTypingChoice?_eq_some rhoCIGSLT
+  rcases mem_costStaticCollectionTypingChoices_sound rhoCIGSLT
       candidate.color targetFree candidate.node.targetBound collectionType
       elements
       (mapTypeExpr (candidate.color.symbols rhoCIGSLT)

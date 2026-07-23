@@ -97,6 +97,62 @@ theorem costBaseTypeExpr_baseNames (type : TypeExpr) :
   induction type <;>
     simp_all [costBaseTypeExpr, TypeExpr.baseNames, List.map_append]
 
+/-- The tagged base action retains the complete authored type structure. -/
+theorem costBaseTypeExpr_injective : Function.Injective costBaseTypeExpr := by
+  intro left
+  induction left with
+  | base leftSort =>
+      intro right equality
+      cases right with
+      | base rightSort =>
+          have names :
+              costBaseSortName leftSort = costBaseSortName rightSort := by
+            simpa [costBaseTypeExpr] using TypeExpr.base.inj equality
+          exact congrArg TypeExpr.base (costBaseSortName_injective names)
+      | arrow domain codomain =>
+          simp [costBaseTypeExpr] at equality
+      | multiBinder body =>
+          simp [costBaseTypeExpr] at equality
+      | collection collectionType body =>
+          simp [costBaseTypeExpr] at equality
+  | arrow leftDomain leftCodomain domainIH codomainIH =>
+      intro right equality
+      cases right with
+      | base sort =>
+          simp [costBaseTypeExpr] at equality
+      | arrow rightDomain rightCodomain =>
+          have parts := TypeExpr.arrow.inj equality
+          exact congrArg₂ TypeExpr.arrow
+            (domainIH parts.1) (codomainIH parts.2)
+      | multiBinder body =>
+          simp [costBaseTypeExpr] at equality
+      | collection collectionType body =>
+          simp [costBaseTypeExpr] at equality
+  | multiBinder leftBody bodyIH =>
+      intro right equality
+      cases right with
+      | base sort =>
+          simp [costBaseTypeExpr] at equality
+      | arrow domain codomain =>
+          simp [costBaseTypeExpr] at equality
+      | multiBinder rightBody =>
+          exact congrArg TypeExpr.multiBinder
+            (bodyIH (TypeExpr.multiBinder.inj equality))
+      | collection collectionType body =>
+          simp [costBaseTypeExpr] at equality
+  | collection leftCollectionType leftBody bodyIH =>
+      intro right equality
+      cases right with
+      | base sort =>
+          simp [costBaseTypeExpr] at equality
+      | arrow domain codomain =>
+          simp [costBaseTypeExpr] at equality
+      | multiBinder body =>
+          simp [costBaseTypeExpr] at equality
+      | collection rightCollectionType rightBody =>
+          have parts := TypeExpr.collection.inj equality
+          exact congrArg₂ TypeExpr.collection parts.1 (bodyIH parts.2)
+
 /-- Retype occurrences of the interacting sort to the wrapped-term sort,
 while embedding every other source sort in the tagged base namespace. -/
 def costWrappedTypeExpr (interactingSort : String) : TypeExpr → TypeExpr
@@ -130,6 +186,44 @@ theorem costWrappedTypeExpr_baseNames (interactingSort : String)
       simp [costWrappedTypeExpr, TypeExpr.baseNames, inductionHypothesis]
   | collection collectionType body inductionHypothesis =>
       simp [costWrappedTypeExpr, TypeExpr.baseNames, inductionHypothesis]
+
+/-- The base and wrapped type actions overlap exactly on types that do not
+mention the interacting sort.  This characterizes the label-free static
+fiber where a compact term may carry both colors without exposing a
+different type. -/
+theorem costWrappedTypeExpr_eq_costBaseTypeExpr_iff
+    (interactingSort : String) (type : TypeExpr) :
+    costWrappedTypeExpr interactingSort type = costBaseTypeExpr type ↔
+      interactingSort ∉ type.baseNames := by
+  induction type with
+  | base sort =>
+      by_cases equality : sort = interactingSort
+      · subst sort
+        constructor
+        · intro same
+          have baseEquality : TypeExpr.base costWrappedSortName =
+              TypeExpr.base (costBaseSortName interactingSort) := by
+            simpa [costWrappedTypeExpr, costBaseTypeExpr] using same
+          injection baseEquality with nameEquality
+          exact (costBaseSortName_ne_wrapped interactingSort
+            nameEquality.symm).elim
+        · intro avoids
+          exact (avoids (by simp [TypeExpr.baseNames])).elim
+      · constructor
+        · intro _
+          simpa [TypeExpr.baseNames] using
+            (fun reverse : interactingSort = sort => equality reverse.symm)
+        · intro _
+          simp [costWrappedTypeExpr, costBaseTypeExpr, equality]
+  | arrow domain codomain domainHypothesis codomainHypothesis =>
+      simp [costWrappedTypeExpr, costBaseTypeExpr, TypeExpr.baseNames,
+        domainHypothesis, codomainHypothesis]
+  | multiBinder body inductionHypothesis =>
+      simp [costWrappedTypeExpr, costBaseTypeExpr, TypeExpr.baseNames,
+        inductionHypothesis]
+  | collection collectionType body inductionHypothesis =>
+      simp [costWrappedTypeExpr, costBaseTypeExpr, TypeExpr.baseNames,
+        inductionHypothesis]
 
 /-- Map only the type annotation of one constructor parameter. -/
 def mapParameterType (mapType : TypeExpr → TypeExpr) : TermParam → TermParam

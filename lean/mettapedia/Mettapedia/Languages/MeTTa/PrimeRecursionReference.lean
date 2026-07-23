@@ -175,6 +175,11 @@ def afterDemand : Resume → Outcome → Local
   | .resampleAllocated, outcome => .output outcome
   | .resampleFreshAllocated _, outcome => .output outcome
 
+@[simp] theorem afterDemand_sum_value (value : Nat) :
+    afterDemand .sumReturned (.value value) =
+      .output (.value (value + 1)) :=
+  rfl
+
 def afterAllocation : Resume → CellId → Local
   | .sumAllocated, cell => .sumDemand cell
   | .fibLeftAllocated right, left =>

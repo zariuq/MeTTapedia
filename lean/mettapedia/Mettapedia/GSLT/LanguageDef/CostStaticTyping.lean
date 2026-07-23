@@ -144,6 +144,131 @@ theorem mapLangSort_name (source : CIGSLT) (color : CostStaticColor)
     (color.mapLangSort source sort).1 = (color.symbols source).sort sort.1 :=
   rfl
 
+/-- The two static type actions overlap exactly on types that avoid the
+authored interacting sort. -/
+theorem mapTypeExpr_base_eq_wrapped_iff (source : CIGSLT)
+    (type : TypeExpr) :
+    mapTypeExpr (CostStaticColor.base.symbols source) type =
+        mapTypeExpr (CostStaticColor.wrapped.symbols source) type ↔
+      source.theory.presentation.interactingSort.1.name ∉ type.baseNames := by
+  simp only [CostStaticColor.symbols, mapTypeExpr_costBaseStaticSymbols,
+    mapTypeExpr_costWrappedStaticSymbols]
+  rw [eq_comm]
+  exact costWrappedTypeExpr_eq_costBaseTypeExpr_iff _ _
+
+/-- Cross-color equality identifies both source types, not merely their
+generated images.  The common source type necessarily avoids the interacting
+sort, which is exactly the label-free overlap fiber. -/
+theorem mapTypeExpr_base_eq_wrapped_iff_eq (source : CIGSLT)
+    (left right : TypeExpr) :
+    mapTypeExpr (CostStaticColor.base.symbols source) left =
+        mapTypeExpr (CostStaticColor.wrapped.symbols source) right ↔
+      left = right ∧
+        source.theory.presentation.interactingSort.1.name ∉
+          right.baseNames := by
+  constructor
+  · intro equality
+    let interactingSort :=
+      source.theory.presentation.interactingSort.1.name
+    have rawEquality :
+        costBaseTypeExpr left =
+          costWrappedTypeExpr interactingSort right := by
+      simpa [CostStaticColor.symbols,
+        mapTypeExpr_costBaseStaticSymbols,
+        mapTypeExpr_costWrappedStaticSymbols, interactingSort] using
+          equality
+    have avoids : interactingSort ∉ right.baseNames := by
+      intro membership
+      have wrappedMembership :
+          costWrappedSortName ∈
+            (costWrappedTypeExpr interactingSort right).baseNames := by
+        rw [costWrappedTypeExpr_baseNames]
+        exact List.mem_map.mpr
+          ⟨interactingSort, membership, by simp⟩
+      have baseMembership :
+          costWrappedSortName ∈ (costBaseTypeExpr left).baseNames := by
+        rw [rawEquality]
+        exact wrappedMembership
+      rw [costBaseTypeExpr_baseNames] at baseMembership
+      rcases List.mem_map.mp baseMembership with
+        ⟨sourceSort, _, encodedEquality⟩
+      exact
+        (costBaseSortName_ne_wrapped sourceSort encodedEquality).elim
+    have wrappedBase :
+        costWrappedTypeExpr interactingSort right =
+          costBaseTypeExpr right :=
+      (costWrappedTypeExpr_eq_costBaseTypeExpr_iff interactingSort right).2
+        avoids
+    have sourceEq := costBaseTypeExpr_injective
+      (rawEquality.trans wrappedBase)
+    exact ⟨sourceEq, avoids⟩
+  · rintro ⟨sourceEq, avoids⟩
+    subst left
+    exact (mapTypeExpr_base_eq_wrapped_iff source right).2 avoids
+
+/-- At the sort level, base and wrapped colors coincide precisely away from
+the distinguished interacting sort.  A label-free collection in this
+overlap may therefore carry two proof-relevant root colors. -/
+theorem mapLangSort_base_eq_wrapped_iff (source : CIGSLT)
+    (sort : LangSort source.theory.presentation.presentation.language) :
+    CostStaticColor.base.mapLangSort source sort =
+        CostStaticColor.wrapped.mapLangSort source sort ↔
+      sort.1 ≠ source.theory.presentation.interactingSort.1.name := by
+  constructor
+  · intro same
+    have typeEquality :
+        mapTypeExpr (CostStaticColor.base.symbols source)
+            (.base sort.1) =
+          mapTypeExpr (CostStaticColor.wrapped.symbols source)
+            (.base sort.1) := by
+      exact congrArg TypeExpr.base (congrArg Subtype.val same)
+    have avoids :=
+      (mapTypeExpr_base_eq_wrapped_iff source (.base sort.1)).1 typeEquality
+    intro equality
+    exact avoids (by simpa [TypeExpr.baseNames] using equality.symm)
+  · intro different
+    apply Subtype.ext
+    have avoids :
+        source.theory.presentation.interactingSort.1.name ∉
+          (TypeExpr.base sort.1).baseNames := by
+      simpa [TypeExpr.baseNames] using
+        (fun equality :
+            source.theory.presentation.interactingSort.1.name = sort.1 =>
+          different equality.symm)
+    have typeEquality :=
+      (mapTypeExpr_base_eq_wrapped_iff source (.base sort.1)).2 avoids
+    exact TypeExpr.base.inj typeEquality
+
+/-- Cross-color equality of generated sorts recovers one common authored
+sort and proves that it is not the interacting sort. -/
+theorem mapLangSort_base_eq_wrapped_iff_eq (source : CIGSLT)
+    (left right :
+      LangSort source.theory.presentation.presentation.language) :
+    CostStaticColor.base.mapLangSort source left =
+        CostStaticColor.wrapped.mapLangSort source right ↔
+      left = right ∧
+        right.1 ≠ source.theory.presentation.interactingSort.1.name := by
+  constructor
+  · intro same
+    have typeEquality :
+        mapTypeExpr (CostStaticColor.base.symbols source) (.base left.1) =
+          mapTypeExpr (CostStaticColor.wrapped.symbols source)
+            (.base right.1) := by
+      exact congrArg TypeExpr.base (congrArg Subtype.val same)
+    have inversion :=
+      (mapTypeExpr_base_eq_wrapped_iff_eq source
+        (.base left.1) (.base right.1)).1 typeEquality
+    have sortEq : left = right := by
+      apply Subtype.ext
+      exact TypeExpr.base.inj inversion.1
+    refine ⟨sortEq, ?_⟩
+    intro equality
+    exact inversion.2 (by
+      simpa [TypeExpr.baseNames] using equality.symm)
+  · rintro ⟨sortEq, avoids⟩
+    subst left
+    exact (mapLangSort_base_eq_wrapped_iff source right).2 avoids
+
 /-- Each fixed static colour embeds authored sorts injectively.  In the
 wrapped colour the distinguished interacting sort lands in the reserved
 wrapped carrier, while every other sort remains in the injective base
@@ -787,6 +912,287 @@ theorem validateReflectivePresentation_costBase_of_wrapped
            declaration witness.equation witness.equationShape } :
       LanguageDef.ReflectivePresentationWitness
         (reflectiveRetypingLanguage plan) targetDeclaration))
+
+/-- A valid reflective presentation whose named constructors lie in the
+hereditary fragment also has a valid wrapped image in the exact
+continuation-retyped language. -/
+theorem validateReflectivePresentation_costWrapped_of_wrapped
+    {theory : IGSLT} {cut : InteractionCutPresentation theory}
+    (plan : ContinuationRetypingPlan cut)
+    (declaration : ReflectivePresentationDecl)
+    (valid :
+      theory.presentation.presentation.language.validateReflectivePresentation
+        declaration = [])
+    (quoteWrapped : declaration.quoteConstructor ∈ plan.wrappedLabels)
+    (dropWrapped : declaration.dropConstructor ∈ plan.wrappedLabels)
+    (unitWrapped :
+      declaration.parallelUnitConstructor ∈ plan.wrappedLabels) :
+    (reflectiveRetypingLanguage plan).validateReflectivePresentation
+      (costWrappedReflectivePresentationDecl theory declaration) = [] := by
+  rcases LanguageDef.reflectivePresentationWitness_of_validate_eq_nil
+      theory.presentation.presentation.language declaration valid with
+    ⟨witness⟩
+  have quoteFiltered : witness.quote ∈
+      theory.presentation.presentation.language.terms.filter
+        (fun term => term.label == declaration.quoteConstructor) := by
+    rw [witness.quoteUnique]
+    simp
+  have quoteMembership := (List.mem_filter.mp quoteFiltered).1
+  have quoteLabel : witness.quote.label = declaration.quoteConstructor :=
+    beq_iff_eq.mp (List.mem_filter.mp quoteFiltered).2
+  have dropFiltered : witness.drop ∈
+      theory.presentation.presentation.language.terms.filter
+        (fun term => term.label == declaration.dropConstructor) := by
+    rw [witness.dropUnique]
+    simp
+  have dropMembership := (List.mem_filter.mp dropFiltered).1
+  have dropLabel : witness.drop.label = declaration.dropConstructor :=
+    beq_iff_eq.mp (List.mem_filter.mp dropFiltered).2
+  have unitFiltered : witness.unit ∈
+      theory.presentation.presentation.language.terms.filter
+        (fun term =>
+          term.label == declaration.parallelUnitConstructor) := by
+    rw [witness.unitUnique]
+    simp
+  have unitMembership := (List.mem_filter.mp unitFiltered).1
+  have unitLabel :
+      witness.unit.label = declaration.parallelUnitConstructor :=
+    beq_iff_eq.mp (List.mem_filter.mp unitFiltered).2
+  have equationFiltered : witness.equation ∈
+      theory.presentation.presentation.language.equations.filter
+        (fun equation =>
+          equation.name == declaration.quoteDropEquation) := by
+    rw [witness.equationUnique]
+    simp
+  have equationMembership := (List.mem_filter.mp equationFiltered).1
+  have equationName :
+      witness.equation.name = declaration.quoteDropEquation :=
+    beq_iff_eq.mp (List.mem_filter.mp equationFiltered).2
+  let quoteAuthored :
+      AuthoredConstructor theory.presentation.presentation :=
+    ⟨witness.quote, quoteMembership⟩
+  let dropAuthored :
+      AuthoredConstructor theory.presentation.presentation :=
+    ⟨witness.drop, dropMembership⟩
+  let unitAuthored :
+      AuthoredConstructor theory.presentation.presentation :=
+    ⟨witness.unit, unitMembership⟩
+  have quoteSelected : quoteAuthored ∈ plan.wrappedConstructors :=
+    (plan.mem_wrappedLabels_iff quoteAuthored).mp (by
+      simpa [quoteAuthored, quoteLabel] using quoteWrapped)
+  have dropSelected : dropAuthored ∈ plan.wrappedConstructors :=
+    (plan.mem_wrappedLabels_iff dropAuthored).mp (by
+      simpa [dropAuthored, dropLabel] using dropWrapped)
+  have unitSelected : unitAuthored ∈ plan.wrappedConstructors :=
+    (plan.mem_wrappedLabels_iff unitAuthored).mp (by
+      simpa [unitAuthored, unitLabel] using unitWrapped)
+  let targetDeclaration :=
+    costWrappedReflectivePresentationDecl theory declaration
+  let targetQuote :=
+    costWrappedConstructor (theory := theory) witness.quote
+  let targetDrop :=
+    costWrappedConstructor (theory := theory) witness.drop
+  let targetUnit :=
+    costWrappedConstructor (theory := theory) witness.unit
+  let targetEquation := costWrappedEquation theory witness.equation
+  have targetQuoteUnique :
+      (reflectiveRetypingLanguage plan).terms.filter
+          (fun term =>
+            term.label == targetDeclaration.quoteConstructor) =
+        [targetQuote] := by
+    change plan.generatedLanguage.terms.filter
+        (fun term =>
+          term.label ==
+            costWrappedConstructorName declaration.quoteConstructor) =
+      [costWrappedConstructor (theory := theory) witness.quote]
+    simpa [quoteLabel, quoteAuthored] using
+      plan.costWrappedConstructor_filter_generated quoteAuthored quoteSelected
+  have targetDropUnique :
+      (reflectiveRetypingLanguage plan).terms.filter
+          (fun term =>
+            term.label == targetDeclaration.dropConstructor) =
+        [targetDrop] := by
+    change plan.generatedLanguage.terms.filter
+        (fun term =>
+          term.label ==
+            costWrappedConstructorName declaration.dropConstructor) =
+      [costWrappedConstructor (theory := theory) witness.drop]
+    simpa [dropLabel, dropAuthored] using
+      plan.costWrappedConstructor_filter_generated dropAuthored dropSelected
+  have targetUnitUnique :
+      (reflectiveRetypingLanguage plan).terms.filter
+          (fun term =>
+            term.label == targetDeclaration.parallelUnitConstructor) =
+        [targetUnit] := by
+    change plan.generatedLanguage.terms.filter
+        (fun term =>
+          term.label ==
+            costWrappedConstructorName declaration.parallelUnitConstructor) =
+      [costWrappedConstructor (theory := theory) witness.unit]
+    simpa [unitLabel, unitAuthored] using
+      plan.costWrappedConstructor_filter_generated unitAuthored unitSelected
+  have targetEquationMembership :
+      targetEquation ∈ (reflectiveRetypingLanguage plan).equations := by
+    change costWrappedEquation theory witness.equation ∈ _
+    rw [reflectiveRetypingLanguage]
+    exact List.mem_append_right _
+      (List.mem_map.mpr ⟨witness.equation, equationMembership, rfl⟩)
+  have targetEquationName :
+      targetEquation.name = targetDeclaration.quoteDropEquation := by
+    simp [targetEquation, targetDeclaration, costWrappedEquation,
+      costWrappedReflectivePresentationDecl, mapEquation,
+      mapReflectivePresentation, costWrappedStaticSymbols, equationName]
+  have targetEquationUnique :
+      (reflectiveRetypingLanguage plan).equations.filter
+          (fun equation =>
+            equation.name == targetDeclaration.quoteDropEquation) =
+        [targetEquation] := by
+    rw [← targetEquationName]
+    exact LanguageDef.filter_equations_by_name_eq_singleton
+      (reflectiveRetypingLanguage plan).equations targetEquation
+      (reflectiveRetypingLanguage_equationNames_nodup plan)
+      targetEquationMembership
+  apply (LanguageDef.ReflectivePresentationWitness.validate
+    ({ quote := targetQuote
+       drop := targetDrop
+       unit := targetUnit
+       equation := targetEquation
+       quoteParameter := witness.quoteParameter
+       dropParameter := witness.dropParameter
+       processSort := by
+         change (costWrappedStaticSymbols theory).sort
+             declaration.processSort ∈
+           plan.generatedLanguage.typeNames
+         exact (CostStaticColor.wrapped.mapGeneratedLangSort plan
+           ⟨declaration.processSort, witness.processSort⟩).2
+       nameSort := by
+         change (costWrappedStaticSymbols theory).sort declaration.nameSort ∈
+           plan.generatedLanguage.typeNames
+         exact (CostStaticColor.wrapped.mapGeneratedLangSort plan
+           ⟨declaration.nameSort, witness.nameSort⟩).2
+       sortsDistinct := by
+         change (costWrappedStaticSymbols theory).sort
+             declaration.processSort ≠
+           (costWrappedStaticSymbols theory).sort declaration.nameSort
+         intro equality
+         by_cases processInteracting :
+             declaration.processSort =
+               theory.presentation.interactingSort.1.name
+         · by_cases nameInteracting :
+               declaration.nameSort =
+                 theory.presentation.interactingSort.1.name
+           · exact witness.sortsDistinct
+               (processInteracting.trans nameInteracting.symm)
+           · have impossible :
+                 costWrappedSortName =
+                   costBaseSortName declaration.nameSort := by
+               simpa [costWrappedStaticSymbols, processInteracting,
+                 nameInteracting] using equality
+             exact costBaseSortName_ne_wrapped _ impossible.symm
+         · by_cases nameInteracting :
+               declaration.nameSort =
+                 theory.presentation.interactingSort.1.name
+           · have impossible :
+                 costBaseSortName declaration.processSort =
+                   costWrappedSortName := by
+               simpa [costWrappedStaticSymbols, processInteracting,
+                 nameInteracting] using equality
+             exact costBaseSortName_ne_wrapped _ impossible
+           · exact witness.sortsDistinct (costBaseSortName_injective (by
+               simpa [costWrappedStaticSymbols, processInteracting,
+                 nameInteracting] using equality))
+       quoteUnique := targetQuoteUnique
+       quoteCategory := by
+         change (if witness.quote.category =
+             theory.presentation.interactingSort.1.name then
+               costWrappedSortName
+             else costBaseSortName witness.quote.category) =
+           (costWrappedStaticSymbols theory).sort declaration.nameSort
+         rw [witness.quoteCategory]
+         rfl
+       quoteParameters := by
+         change
+           witness.quote.params.map
+               (mapParameterType
+                 (costWrappedTypeExpr
+                   theory.presentation.interactingSort.1.name)) =
+            [.simple witness.quoteParameter
+              (.base ((costWrappedStaticSymbols theory).sort
+                declaration.processSort))]
+         rw [witness.quoteParameters]
+         by_cases interacting :
+             declaration.processSort =
+               theory.presentation.interactingSort.1.name <;>
+           simp [mapParameterType, costWrappedTypeExpr,
+             costWrappedStaticSymbols, interacting]
+       dropUnique := targetDropUnique
+       dropCategory := by
+         change (if witness.drop.category =
+             theory.presentation.interactingSort.1.name then
+               costWrappedSortName
+             else costBaseSortName witness.drop.category) =
+           (costWrappedStaticSymbols theory).sort declaration.processSort
+         rw [witness.dropCategory]
+         rfl
+       dropParameters := by
+         change
+           witness.drop.params.map
+               (mapParameterType
+                 (costWrappedTypeExpr
+                   theory.presentation.interactingSort.1.name)) =
+            [.simple witness.dropParameter
+              (.base ((costWrappedStaticSymbols theory).sort
+                declaration.nameSort))]
+         rw [witness.dropParameters]
+         by_cases interacting :
+             declaration.nameSort =
+               theory.presentation.interactingSort.1.name <;>
+           simp [mapParameterType, costWrappedTypeExpr,
+             costWrappedStaticSymbols, interacting]
+       unitUnique := targetUnitUnique
+       unitCategory := by
+         change (if witness.unit.category =
+             theory.presentation.interactingSort.1.name then
+               costWrappedSortName
+             else costBaseSortName witness.unit.category) =
+           (costWrappedStaticSymbols theory).sort declaration.processSort
+         rw [witness.unitCategory]
+         rfl
+       unitParameters := by
+         change
+           (costWrappedConstructor
+              (theory := theory) witness.unit).params = []
+         simp [costWrappedConstructor, witness.unitParameters]
+       equationUnique := targetEquationUnique
+       equationShape := by
+         change LanguageDef.QuoteDropShape
+           (costWrappedReflectivePresentationDecl theory declaration)
+           (costWrappedEquation theory witness.equation)
+         exact quoteDropShape_mapEquationSymbols
+           (costWrappedStaticSymbols theory) declaration witness.equation
+             witness.equationShape } :
+      LanguageDef.ReflectivePresentationWitness
+        (reflectiveRetypingLanguage plan) targetDeclaration))
+
+/-- Exact criterion for reflective retyping: ordinary validation plus
+hereditary membership of the declaration's three named constructors produces
+both deterministic static images. -/
+theorem reflectivePresentationRetypable_of_validate_of_wrapped
+    {theory : IGSLT} {cut : InteractionCutPresentation theory}
+    (plan : ContinuationRetypingPlan cut)
+    (declaration : ReflectivePresentationDecl)
+    (valid :
+      theory.presentation.presentation.language.validateReflectivePresentation
+        declaration = [])
+    (quoteWrapped : declaration.quoteConstructor ∈ plan.wrappedLabels)
+    (dropWrapped : declaration.dropConstructor ∈ plan.wrappedLabels)
+    (unitWrapped :
+      declaration.parallelUnitConstructor ∈ plan.wrappedLabels) :
+    ReflectivePresentationRetypable plan declaration :=
+  ⟨validateReflectivePresentation_costBase_of_wrapped plan declaration valid
+      quoteWrapped dropWrapped unitWrapped,
+    validateReflectivePresentation_costWrapped_of_wrapped plan declaration
+      valid quoteWrapped dropWrapped unitWrapped⟩
 
 /-- Transport the declared reflective binder support of free parameters into
 one generated static Cost fiber.  Free-variable names are unchanged; only

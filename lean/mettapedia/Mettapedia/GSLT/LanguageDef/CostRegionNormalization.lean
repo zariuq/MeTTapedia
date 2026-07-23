@@ -1606,16 +1606,57 @@ theorem CIGSLT.costNormalizeOpen_typed_openEquationSetoid
   (CostOpenElaboration.compile source term
     ).normalizeErasure_typed_openEquationSetoid laws
 
-/-! ## Exact typed canonical sections -/
+/-! ## Exact contextual typed canonical sections -/
 
-/-- Exact laws needed for the sort-indexed Cost open section.
+/-- Contextual laws needed for the generated Cost open section and its next
+continued-interaction layer.
+
+These laws are deliberately separate from unary equation soundness.  They
+state that the chosen exact representative is natural in unused free-context
+entries, introduces no new free names, preserves arbitrary reflective support,
+and therefore supplies the contextual fields independently of equation
+soundness.  Preservation of the *next* continuation fragment is defined later,
+after that continuation plan itself exists. -/
+structure CostContextualOpenLaws (source : CIGSLT) : Prop where
+  preservesFreeVariableSupport : ∀
+      {free : WellSorted.FreeTypeContext} {bound : List TypeExpr}
+      {sort : LangSort source.costWholeLanguage}
+      (term : WellSorted.OpenTerm source.costWholeLanguage free bound sort)
+      {name : String},
+    name ∈ (source.costNormalizeOpen term).1.freeFvarNames →
+      name ∈ term.1.freeFvarNames
+  normalizeRecontextualizeFree :
+    ∀ {sourceFree targetFree : WellSorted.FreeTypeContext}
+      {bound : List TypeExpr}
+      {sort : LangSort source.costWholeLanguage}
+      (term : WellSorted.OpenTerm source.costWholeLanguage sourceFree bound sort)
+      (preserves : ∀ {name freeType},
+        name ∈ term.1.freeFvarNames →
+        sourceFree name = some freeType →
+          targetFree name = some freeType),
+    (source.costNormalizeOpen (term.recontextualizeFree preserves)).1 =
+      (source.costNormalizeOpen term).1
+  preservesReflectiveSupport :
+    ∀ {free : WellSorted.FreeTypeContext} {bound : List TypeExpr}
+      {sort : LangSort source.costWholeLanguage}
+      (term : WellSorted.OpenTerm source.costWholeLanguage free bound sort)
+      (support : ContextSupport.Support) (available : List TypeExpr)
+      (binderImage : TypeExpr → TypeExpr),
+    term.2.1.ReflectiveSupportSafeAt support available binderImage →
+      (source.costNormalizeOpen term).2.1.ReflectiveSupportSafeAt
+        support available binderImage
+
+/-- Exact laws needed for the contextual sort-indexed Cost open section.
 
 Typed unary normalization supplies soundness inside the exact free, bound,
 and sort fiber.  Compact coherence removes elaboration-choice dependence for
 one term, while generator invariance collapses each authored equation
-generator.  Exactness is not inferred from relational overlap coherence. -/
+generator.  The contextual extension carries the independent support and
+continuation-fragment obligations required to inhabit `CIGSLT`; exactness is
+not inferred from relational overlap coherence. -/
 structure CostOpenCanonicalLaws (source : CIGSLT) : Prop
-    extends CostTypedUnaryNormalizationLaws source where
+    extends CostTypedUnaryNormalizationLaws source,
+      CostContextualOpenLaws source where
   compactCoherent : CompactCostNormalizationCoherent source
   generatorInvariant : CostOpenGeneratorInvariant source
 
@@ -1645,6 +1686,24 @@ def CIGSLT.costOpenSection (source : CIGSLT)
     (fun term => source.costNormalizeOpen_typed_openEquationSetoid
       laws.toCostTypedUnaryNormalizationLaws term)
     (fun generator => laws.generatorInvariant generator)
+
+/-- Exact contextual open section of the generated Cost presentation.
+Every additional field is supplied by the Cost₁ object law rather than
+inferred from equation equivalence. -/
+def CIGSLT.costContextualOpenSection (source : CIGSLT)
+    (laws : CostOpenCanonicalLaws source) :
+    ComputableContextualOpenSection source.costIGSLT where
+  toComputableOpenSection := source.costOpenSection laws
+  preservesFreeVariableSupport := by
+    intro free bound sort term name membership
+    exact laws.preservesFreeVariableSupport term membership
+  normalizeRecontextualizeFree := by
+    intro sourceFree targetFree bound sort term preserves
+    exact laws.normalizeRecontextualizeFree term preserves
+  preservesReflectiveSupport := by
+    intro free bound sort term support available binderImage safe
+    exact laws.preservesReflectiveSupport term support available binderImage
+      safe
 
 /-- Exact representative independence on every typed open Cost equation
 path.  This theorem is downstream of the local generator law. -/

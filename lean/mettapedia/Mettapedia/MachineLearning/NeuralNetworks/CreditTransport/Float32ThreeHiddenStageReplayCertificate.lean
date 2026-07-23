@@ -189,6 +189,115 @@ theorem Float32ThreeHiddenStageReplay.sound
     hlocalFirst hlocalSecond hlocalThird
     hpairFirst hpairSecond hpairThird hinput
 
+/-- The fully exact two-stage center inherits a compact norm bound from the
+second observed binary32 center and the transported two-stage replay error. -/
+theorem Float32ThreeHiddenStageReplay.secondExactCenter_norm_le
+    {hiddenDim inputDim : ℕ}
+    (replay : Float32ThreeHiddenStageReplay hiddenDim inputDim)
+    (hcheck : replay.check = true)
+    (exactInput : EuclideanSpace ℝ (Fin inputDim))
+    (rateFirst rateSecond inputError : ℝ)
+    (hrateFirst : 0 ≤ rateFirst) (hrateSecond : 0 ≤ rateSecond)
+    (hpairFirst :
+      ‖replay.first.idealBlockAtRecordedError
+          replay.first.runtimePreviousCenter -
+        replay.first.idealBlockAtRecordedError exactInput‖ ≤
+          rateFirst * ‖replay.first.runtimePreviousCenter - exactInput‖)
+    (hpairSecond :
+      ‖replay.second.idealBlockAtRecordedError replay.first.decodedOutput -
+        replay.second.idealBlockAtRecordedError
+          (replay.first.idealBlockAtRecordedError exactInput)‖ ≤
+        rateSecond *
+          ‖replay.first.decodedOutput -
+            replay.first.idealBlockAtRecordedError exactInput‖)
+    (hinput :
+      ‖replay.first.runtimePreviousCenter - exactInput‖ ≤ inputError) :
+    ‖replay.second.idealBlockAtRecordedError
+        (replay.first.idealBlockAtRecordedError exactInput)‖ ≤
+      replay.second.decodedOutputL1 +
+        propagatedEvaluationError rateSecond
+          (replay.second.totalCertifiedErrorRat : ℝ)
+          (propagatedEvaluationError rateFirst
+            (replay.first.totalCertifiedErrorRat : ℝ) inputError) := by
+  have hvalid := replay.check_eq_true_iff.mp hcheck
+  have hfirstCheck : replay.first.check = true :=
+    replay.first.check_eq_true_iff.mpr hvalid.1
+  have hsecondCheck : replay.second.check = true :=
+    replay.second.check_eq_true_iff.mpr hvalid.2.1
+  have hlocalFirst :=
+    replay.first.toPreviousCenterLocalCertificate hfirstCheck
+  have hlocalSecond :=
+    replay.second.toPreviousCenterLocalCertificate hsecondCheck
+  rw [replay.second_runtimeInput_eq_first_output hcheck] at hlocalSecond
+  have hmismatch := twoStageOutputMismatch_le
+    replay.first.idealBlockAtRecordedError
+    replay.second.idealBlockAtRecordedError
+    exactInput replay.first.runtimePreviousCenter
+    replay.first.decodedOutput replay.second.decodedOutput
+    rateFirst rateSecond
+    (replay.first.totalCertifiedErrorRat : ℝ)
+    (replay.second.totalCertifiedErrorRat : ℝ)
+    inputError hrateFirst hrateSecond hlocalFirst hlocalSecond
+    hpairFirst hpairSecond hinput
+  exact replay.second.exactCenter_norm_le_observedL1_add_error
+    (replay.second.idealBlockAtRecordedError
+      (replay.first.idealBlockAtRecordedError exactInput))
+    (propagatedEvaluationError rateSecond
+      (replay.second.totalCertifiedErrorRat : ℝ)
+      (propagatedEvaluationError rateFirst
+        (replay.first.totalCertifiedErrorRat : ℝ) inputError))
+    hmismatch
+
+/-- The fully exact three-stage center is bounded by the third observed
+binary32 center plus the complete heterogeneous replay recurrence. -/
+theorem Float32ThreeHiddenStageReplay.thirdExactCenter_norm_le
+    {hiddenDim inputDim : ℕ}
+    (replay : Float32ThreeHiddenStageReplay hiddenDim inputDim)
+    (hcheck : replay.check = true)
+    (exactInput : EuclideanSpace ℝ (Fin inputDim))
+    (rateFirst rateSecond rateThird inputError : ℝ)
+    (hrateFirst : 0 ≤ rateFirst) (hrateSecond : 0 ≤ rateSecond)
+    (hrateThird : 0 ≤ rateThird)
+    (hpairFirst :
+      ‖replay.first.idealBlockAtRecordedError
+          replay.first.runtimePreviousCenter -
+        replay.first.idealBlockAtRecordedError exactInput‖ ≤
+          rateFirst * ‖replay.first.runtimePreviousCenter - exactInput‖)
+    (hpairSecond :
+      ‖replay.second.idealBlockAtRecordedError replay.first.decodedOutput -
+        replay.second.idealBlockAtRecordedError
+          (replay.first.idealBlockAtRecordedError exactInput)‖ ≤
+        rateSecond *
+          ‖replay.first.decodedOutput -
+            replay.first.idealBlockAtRecordedError exactInput‖)
+    (hpairThird :
+      ‖replay.third.idealBlockAtRecordedError replay.second.decodedOutput -
+        replay.third.idealBlockAtRecordedError
+          (replay.second.idealBlockAtRecordedError
+            (replay.first.idealBlockAtRecordedError exactInput))‖ ≤
+        rateThird *
+          ‖replay.second.decodedOutput -
+            replay.second.idealBlockAtRecordedError
+              (replay.first.idealBlockAtRecordedError exactInput)‖)
+    (hinput :
+      ‖replay.first.runtimePreviousCenter - exactInput‖ ≤ inputError) :
+    ‖replay.third.idealBlockAtRecordedError
+        (replay.second.idealBlockAtRecordedError
+          (replay.first.idealBlockAtRecordedError exactInput))‖ ≤
+      replay.third.decodedOutputL1 +
+        replay.totalCertifiedError
+          rateFirst rateSecond rateThird inputError := by
+  exact replay.third.exactCenter_norm_le_observedL1_add_error
+    (replay.third.idealBlockAtRecordedError
+      (replay.second.idealBlockAtRecordedError
+        (replay.first.idealBlockAtRecordedError exactInput)))
+    (replay.totalCertifiedError
+      rateFirst rateSecond rateThird inputError)
+    (replay.sound hcheck exactInput
+      rateFirst rateSecond rateThird inputError
+      hrateFirst hrateSecond hrateThird
+      hpairFirst hpairSecond hpairThird hinput)
+
 /-! ## Positive and negative executable fixtures -/
 
 /-- Exact enclosure of `exp 0 = 1`, used only to construct an executable
@@ -410,6 +519,8 @@ theorem miswiredThreeStageFixture_is_rejected :
 #print axioms Float32ThreeHiddenStageReplay.second_runtimeInput_eq_first_output
 #print axioms Float32ThreeHiddenStageReplay.third_runtimeInput_eq_second_output
 #print axioms Float32ThreeHiddenStageReplay.sound
+#print axioms Float32ThreeHiddenStageReplay.secondExactCenter_norm_le
+#print axioms Float32ThreeHiddenStageReplay.thirdExactCenter_norm_le
 #print axioms threeStageFixture_is_accepted
 #print axioms miswiredThreeStageFixture_is_rejected
 

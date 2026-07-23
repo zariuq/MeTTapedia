@@ -389,6 +389,120 @@ theorem allocate?_fresh_generation
     change candidate.generation = generation
     simp [candidate, freshCell]
 
+theorem allocate?_fresh_cell
+    {world next :
+      World Origin Rule Value StableFault RetryableFault Effect}
+    {origin : Origin} {generation : Nat} {cell : CellId}
+    (h : world.allocate? origin generation = some (next, cell)) :
+    cell = world.freshCell generation := by
+  let candidate := world.freshCell generation
+  change
+    (match world.heap.allocate? candidate origin with
+      | none => none
+      | some heap =>
+          let advanced :=
+            { world with heap := heap, nextCell := world.nextCell + 1 }
+          let recorded := advanced.record (.allocate candidate origin)
+          some (recorded.1, candidate)) =
+      some (next, cell) at h
+  split at h
+  · contradiction
+  · simp only [Option.some.injEq, Prod.mk.injEq] at h
+    exact h.2.symm
+
+theorem allocate?_lookup_same
+    {world next :
+      World Origin Rule Value StableFault RetryableFault Effect}
+    {origin : Origin} {generation : Nat} {cell : CellId}
+    (h : world.allocate? origin generation = some (next, cell)) :
+    next.heap.lookup cell =
+      some { origin := origin, cache := Cache.suspended } := by
+  let candidate := world.freshCell generation
+  change
+    (match world.heap.allocate? candidate origin with
+      | none => none
+      | some heap =>
+          let advanced :=
+            { world with heap := heap, nextCell := world.nextCell + 1 }
+          let recorded := advanced.record (.allocate candidate origin)
+          some (recorded.1, candidate)) =
+      some (next, cell) at h
+  cases hHeap : world.heap.allocate? candidate origin with
+  | none => simp [hHeap] at h
+  | some heap =>
+      simp only [hHeap, Option.some.injEq, Prod.mk.injEq] at h
+      rw [← h.1, ← h.2]
+      exact Heap.allocate?_lookup_same hHeap
+
+theorem allocate?_preserves_other
+    {world next :
+      World Origin Rule Value StableFault RetryableFault Effect}
+    {origin : Origin} {generation : Nat} {cell other : CellId}
+    (h : world.allocate? origin generation = some (next, cell))
+    (hOther : other ≠ cell) :
+    next.heap.lookup other = world.heap.lookup other := by
+  let candidate := world.freshCell generation
+  change
+    (match world.heap.allocate? candidate origin with
+      | none => none
+      | some heap =>
+          let advanced :=
+            { world with heap := heap, nextCell := world.nextCell + 1 }
+          let recorded := advanced.record (.allocate candidate origin)
+          some (recorded.1, candidate)) =
+      some (next, cell) at h
+  cases hHeap : world.heap.allocate? candidate origin with
+  | none => simp [hHeap] at h
+  | some heap =>
+      simp only [hHeap, Option.some.injEq, Prod.mk.injEq] at h
+      rw [← h.1]
+      apply Heap.allocate?_preserves_other hHeap
+      rwa [h.2]
+
+theorem allocate?_nextCell
+    {world next :
+      World Origin Rule Value StableFault RetryableFault Effect}
+    {origin : Origin} {generation : Nat} {cell : CellId}
+    (h : world.allocate? origin generation = some (next, cell)) :
+    next.nextCell = world.nextCell + 1 := by
+  let candidate := world.freshCell generation
+  change
+    (match world.heap.allocate? candidate origin with
+      | none => none
+      | some heap =>
+          let advanced :=
+            { world with heap := heap, nextCell := world.nextCell + 1 }
+          let recorded := advanced.record (.allocate candidate origin)
+          some (recorded.1, candidate)) =
+      some (next, cell) at h
+  split at h
+  · contradiction
+  · simp only [Option.some.injEq, Prod.mk.injEq] at h
+    rw [← h.1]
+    rfl
+
+theorem allocate?_lineage
+    {world next :
+      World Origin Rule Value StableFault RetryableFault Effect}
+    {origin : Origin} {generation : Nat} {cell : CellId}
+    (h : world.allocate? origin generation = some (next, cell)) :
+    next.lineage = world.lineage := by
+  let candidate := world.freshCell generation
+  change
+    (match world.heap.allocate? candidate origin with
+      | none => none
+      | some heap =>
+          let advanced :=
+            { world with heap := heap, nextCell := world.nextCell + 1 }
+          let recorded := advanced.record (.allocate candidate origin)
+          some (recorded.1, candidate)) =
+      some (next, cell) at h
+  split at h
+  · contradiction
+  · simp only [Option.some.injEq, Prod.mk.injEq] at h
+    rw [← h.1]
+    rfl
+
 end World
 
 /-- Work is counted in semantic machine operations.  Representation-specific
@@ -404,6 +518,21 @@ deriving DecidableEq, Repr
 
 namespace Work
 
+def add (left right : Work) : Work :=
+  { transitions := left.transitions + right.transitions
+    heapLookups := left.heapLookups + right.heapLookups
+    heapUpdates := left.heapUpdates + right.heapUpdates
+    receiptAppends := left.receiptAppends + right.receiptAppends
+    allocations := left.allocations + right.allocations }
+
+def operation
+    (lookups updates receipts allocations : Nat) : Work :=
+  { transitions := 1
+    heapLookups := lookups
+    heapUpdates := updates
+    receiptAppends := receipts
+    allocations := allocations }
+
 def bump (work : Work) (lookups updates receipts allocations : Nat) : Work :=
   { transitions := work.transitions + 1
     heapLookups := work.heapLookups + lookups
@@ -415,6 +544,29 @@ def bump (work : Work) (lookups updates receipts allocations : Nat) : Work :=
     (work : Work) (lookups updates receipts allocations : Nat) :
     (work.bump lookups updates receipts allocations).transitions =
       work.transitions + 1 :=
+  rfl
+
+@[simp] theorem add_zero (work : Work) :
+    work.add {} = work := by
+  cases work
+  rfl
+
+@[simp] theorem zero_add (work : Work) :
+    ({} : Work).add work = work := by
+  cases work
+  simp [add]
+
+theorem add_assoc (left middle right : Work) :
+    (left.add middle).add right = left.add (middle.add right) := by
+  cases left
+  cases middle
+  cases right
+  simp [add, Nat.add_assoc]
+
+@[simp] theorem bump_eq_add_operation
+    (work : Work) (lookups updates receipts allocations : Nat) :
+    work.bump lookups updates receipts allocations =
+      work.add (operation lookups updates receipts allocations) := by
   rfl
 
 end Work
@@ -848,6 +1000,152 @@ theorem step_increments_transition
           | simp only [List.mem_singleton] at hNext
             subst next
             rfl
+
+/-- One occurrence of a successor in the list-valued transition.  The index
+is semantic: two equal successor values produced by duplicate rules remain
+two distinct occurrences. -/
+structure StepOccurrence
+    (spec :
+      Spec Origin Local Resume Rule Value StableFault RetryableFault Effect)
+    (machine next :
+      Machine Origin Local Resume Rule Value StableFault RetryableFault Effect)
+    where
+  index : Nat
+  successorAt : (step spec machine)[index]? = some next
+
+namespace StepOccurrence
+
+theorem mem
+    (spec :
+      Spec Origin Local Resume Rule Value StableFault RetryableFault Effect)
+    {machine next :
+      Machine Origin Local Resume Rule Value StableFault RetryableFault Effect}
+    (occurrence : StepOccurrence spec machine next) :
+    next ∈ step spec machine := by
+  rw [List.mem_iff_getElem]
+  rcases List.getElem?_eq_some_iff.mp occurrence.successorAt with
+    ⟨hIndex, hNext⟩
+  exact ⟨occurrence.index, hIndex, hNext⟩
+
+end StepOccurrence
+
+/-- A finite execution path through the occurrence-sensitive transition
+relation. -/
+inductive Steps
+    (spec :
+      Spec Origin Local Resume Rule Value StableFault RetryableFault Effect) :
+    Nat →
+      Machine Origin Local Resume Rule Value StableFault RetryableFault Effect →
+      Machine Origin Local Resume Rule Value StableFault RetryableFault Effect →
+      Prop where
+  | refl (machine) : Steps spec 0 machine machine
+  | cons {length machine next final}
+      (hNext : StepOccurrence spec machine next)
+      (hRest : Steps spec length next final) :
+      Steps spec (Nat.succ length) machine final
+
+namespace Steps
+
+theorem trans
+    (spec :
+      Spec Origin Local Resume Rule Value StableFault RetryableFault Effect)
+    {left middle right :
+      Machine Origin Local Resume Rule Value StableFault RetryableFault Effect}
+    {leftLength rightLength : Nat}
+    (hLeft : Steps spec leftLength left middle)
+    (hRight : Steps spec rightLength middle right) :
+    Steps spec (leftLength + rightLength) left right := by
+  induction hLeft with
+  | refl => simpa using hRight
+  | cons hNext _ ih =>
+      simpa [Nat.succ_add] using Steps.cons hNext (ih hRight)
+
+/-- The abstract transition counter is an exact clock for `Steps`, rather
+than a separately asserted cost recurrence. -/
+theorem transitions_eq
+    (spec :
+      Spec Origin Local Resume Rule Value StableFault RetryableFault Effect)
+    {length : Nat}
+    {initial final :
+      Machine Origin Local Resume Rule Value StableFault RetryableFault Effect}
+    (execution : Steps spec length initial final) :
+    final.work.transitions = initial.work.transitions + length := by
+  induction execution with
+  | refl => rfl
+  | cons hNext _ ih =>
+      rw [ih, step_increments_transition spec _ _ (hNext.mem spec)]
+      omega
+
+end Steps
+
+/-- A deterministic finite path.  Unlike `Steps`, every transition is proved
+to have exactly one successor occurrence. -/
+inductive UniqueSteps
+    (spec :
+      Spec Origin Local Resume Rule Value StableFault RetryableFault Effect) :
+    Nat →
+      Machine Origin Local Resume Rule Value StableFault RetryableFault Effect →
+      Machine Origin Local Resume Rule Value StableFault RetryableFault Effect →
+      Prop where
+  | refl (machine) : UniqueSteps spec 0 machine machine
+  | cons {length machine next final}
+      (hNext : step spec machine = [next])
+      (hRest : UniqueSteps spec length next final) :
+      UniqueSteps spec (Nat.succ length) machine final
+
+namespace UniqueSteps
+
+theorem toSteps
+    (spec :
+      Spec Origin Local Resume Rule Value StableFault RetryableFault Effect)
+    {length : Nat}
+    {initial final :
+      Machine Origin Local Resume Rule Value StableFault RetryableFault Effect}
+    (execution : UniqueSteps spec length initial final) :
+    Steps spec length initial final := by
+  induction execution with
+  | refl => exact Steps.refl _
+  | @cons length machine next final hNext _ ih =>
+      have occurrence : StepOccurrence spec machine next :=
+        { index := 0
+          successorAt := by simp [hNext] }
+      exact Steps.cons occurrence ih
+
+theorem trans
+    (spec :
+      Spec Origin Local Resume Rule Value StableFault RetryableFault Effect)
+    {left middle right :
+      Machine Origin Local Resume Rule Value StableFault RetryableFault Effect}
+    {leftLength rightLength : Nat}
+    (hLeft : UniqueSteps spec leftLength left middle)
+    (hRight : UniqueSteps spec rightLength middle right) :
+    UniqueSteps spec (leftLength + rightLength) left right := by
+  induction hLeft with
+  | refl => simpa using hRight
+  | cons hNext _ ih =>
+      simpa [Nat.succ_add] using UniqueSteps.cons hNext (ih hRight)
+
+theorem runFrontier_eq
+    (spec :
+      Spec Origin Local Resume Rule Value StableFault RetryableFault Effect)
+    {length : Nat}
+    {initial final :
+      Machine Origin Local Resume Rule Value StableFault RetryableFault Effect}
+    (execution : UniqueSteps spec length initial final) :
+    runFrontier spec length [initial] = [final] := by
+  induction execution with
+  | refl => rfl
+  | @cons length machine next final hNext _ ih =>
+      have hRunning : isHalted machine = false := by
+        cases hControl : machine.control with
+        | force => simp [isHalted, hControl]
+        | run => simp [isHalted, hControl]
+        | returned => simp [isHalted, hControl]
+        | halted =>
+            simp [step, hControl] at hNext
+      simp [runFrontier, hRunning, advance, hNext, ih]
+
+end UniqueSteps
 
 end Dynamics
 

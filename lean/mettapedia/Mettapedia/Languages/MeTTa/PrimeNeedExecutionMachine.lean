@@ -138,9 +138,7 @@ theorem eraseWorld_allocate?
         (fun result => (eraseWorld result.1, result.2)) =
       (eraseWorld world).allocate? origin generation := by
   simp only [World.allocate?, CoreWorld.allocate?, eraseWorld_freshCell]
-  split
-  · rfl
-  · simp [World.record, ReceiptGraph.append, eraseWorld]
+  split <;> simp_all [World.record, ReceiptGraph.append, eraseWorld]
 
 end ErasureLaws
 
@@ -384,62 +382,335 @@ theorem step_commutes
       rfl
   | force cell stack =>
       simp only [PrimeNeedReference.step, step, eraseMachine, eraseWorld]
-      split
-      · rfl
-      · rename_i record hRecord
-        split
-        · rfl
-        · rfl
-        · rfl
-        · split
-          · rfl
-          · exact erase_branchAlternatives
-              ({ world := world, control := .force cell stack, work := work })
-              { world with nextEvaluator := world.nextEvaluator + 1 }
-              cell record world.nextEvaluator stack 0
-              (spec.alternatives record.origin)
+      generalize hLookup : world.heap.lookup cell = lookup
+      cases lookup with
+      | none =>
+          simp only [List.map_cons, List.map_nil, erase_retryMachine]
+          rfl
+      | some record =>
+          simp only
+          cases hCache : record.cache with
+          | suspended =>
+              simp only
+              generalize hAlternatives :
+                spec.alternatives record.origin = alternatives
+              cases alternatives with
+              | nil =>
+                  simp only
+                  simp only [List.map_cons, List.map_nil,
+                    erase_retryMachine, erase_recorded]
+                  rfl
+              | cons head tail =>
+                  simp only
+                  simpa only [eraseMachine, eraseWorld] using
+                    erase_branchAlternatives
+                      (Machine.mk world (.force cell stack) work)
+                      { world with
+                        nextEvaluator := world.nextEvaluator + 1 }
+                      cell record world.nextEvaluator stack 0 (head :: tail)
+          | evaluating owner =>
+              simp only
+              simp only [List.map_cons, List.map_nil, erase_retryMachine]
+              rfl
+          | value value =>
+              simp only
+              simp only [List.map_cons, List.map_nil, erase_finished,
+                erase_recorded]
+              rfl
+          | stableFault fault =>
+              simp only
+              simp only [List.map_cons, List.map_nil, erase_finished,
+                erase_recorded]
+              rfl
   | run state stack =>
       simp only [PrimeNeedReference.step, step, eraseMachine, eraseWorld]
-      split
-      · rfl
-      · rfl
-      · split
-        · rfl
-        · rename_i worldAndCell hAllocation
-          rcases worldAndCell with ⟨nextWorld, nextCell⟩
-          have hErase := eraseWorld_allocate? world
-            (match spec.action state with
-              | .allocate origin _ => origin
-              | _ => by contradiction)
-          simp only [hAllocation, Option.map_some] at hErase
-          rw [← hErase]
+      generalize hAction : spec.action state = action
+      cases action with
+      | done outcome =>
+          simp only [List.map_cons, List.map_nil, erase_finished]
           rfl
-      · split
-        · rfl
-        · rename_i sourceRecord hSource
-          split
-          · rfl
-          · rename_i worldAndCell hAllocation
-            rcases worldAndCell with ⟨nextWorld, nextCell⟩
-            have hErase := eraseWorld_allocate? world sourceRecord.origin
-              (match spec.action state with
-                | .resample source _ => source.generation + 1
-                | _ => by contradiction)
-            simp only [hAllocation, Option.map_some] at hErase
-            rw [← hErase]
-            rfl
-      · rfl
+      | demand cell resume =>
+          simp only [List.map_cons, List.map_nil, erase_finished]
+          rfl
+      | allocate origin resume =>
+          simp only
+          generalize hAllocation :
+            world.allocate? origin = allocation
+          have hErase := eraseWorld_allocate? world origin
+          cases allocation with
+          | none =>
+              simp only
+              simp only [hAllocation, Option.map_none] at hErase
+              simp only [eraseWorld] at hErase
+              simp only [List.map_cons, List.map_nil, erase_retryMachine]
+              rw [← hErase]
+              rfl
+          | some result =>
+              rcases result with ⟨nextWorld, nextCell⟩
+              simp only
+              simp only [hAllocation, Option.map_some] at hErase
+              simp only [eraseWorld] at hErase
+              simp only [List.map_cons, List.map_nil, erase_finished]
+              rw [← hErase]
+              rfl
+      | resample source resume =>
+          simp only
+          generalize hSource :
+            world.heap.lookup source = sourceLookup
+          cases sourceLookup with
+          | none =>
+              simp only
+              simp only [List.map_cons, List.map_nil, erase_retryMachine]
+              rfl
+          | some sourceRecord =>
+              simp only
+              generalize hAllocation :
+                world.allocate? sourceRecord.origin
+                  (source.generation + 1) = allocation
+              have hErase := eraseWorld_allocate? world sourceRecord.origin
+                (source.generation + 1)
+              cases allocation with
+              | none =>
+                  simp only
+                  simp only [hAllocation, Option.map_none] at hErase
+                  simp only [eraseWorld] at hErase
+                  simp only [List.map_cons, List.map_nil,
+                    erase_retryMachine]
+                  rw [← hErase]
+                  rfl
+              | some result =>
+                  rcases result with ⟨nextWorld, nextCell⟩
+                  simp only
+                  simp only [hAllocation, Option.map_some] at hErase
+                  simp only [eraseWorld] at hErase
+                  simp only [List.map_cons, List.map_nil, erase_finished]
+                  rw [← hErase]
+                  rfl
+      | perform effect next =>
+          simp only [List.map_cons, List.map_nil, erase_finished,
+            erase_recorded]
+          rfl
   | returned outcome stack =>
       simp only [PrimeNeedReference.step, step, eraseMachine, eraseWorld]
+      cases stack with
+      | nil =>
+          simp only [List.map_cons, List.map_nil, erase_finished]
+          rfl
+      | cons frame rest =>
+          cases frame with
+          | resume token =>
+              simp only [List.map_cons, List.map_nil, erase_finished]
+              rfl
+          | commit cell owner =>
+              generalize hLookup :
+                world.heap.lookup cell = lookup
+              cases lookup with
+              | none =>
+                  simp only [hLookup, List.map_cons, List.map_nil,
+                    erase_retryMachine]
+                  rfl
+              | some record =>
+                  simp only [hLookup]
+                  cases hCache : record.cache with
+                  | suspended =>
+                      simp only
+                      simp only [List.map_cons, List.map_nil,
+                        erase_retryMachine]
+                      rfl
+                  | value value =>
+                      simp only
+                      simp only [List.map_cons, List.map_nil,
+                        erase_retryMachine]
+                      rfl
+                  | stableFault fault =>
+                      simp only
+                      simp only [List.map_cons, List.map_nil,
+                        erase_retryMachine]
+                      rfl
+                  | evaluating actual =>
+                      simp only
+                      by_cases hOwner : actual = owner
+                      · simp only [hOwner]
+                        cases outcome with
+                        | value value =>
+                            rfl
+                        | stableFault fault =>
+                            rfl
+                        | retryableFault reason =>
+                            rfl
+                      · simp only [hOwner]
+                        rfl
+
+/-- A halted core state remains in a bounded frontier. -/
+def advance
+    (spec :
+      Spec Origin Local Resume Rule Value StableFault RetryableFault Effect)
+    (machine :
+      CoreMachine Origin Local Resume Rule Value StableFault RetryableFault
+        Effect) :
+    List
+      (CoreMachine Origin Local Resume Rule Value StableFault RetryableFault
+        Effect) :=
+  match step spec machine with
+  | [] => [machine]
+  | next => next
+
+def isHalted
+    (machine :
+      CoreMachine Origin Local Resume Rule Value StableFault RetryableFault
+        Effect) :
+    Bool :=
+  match machine.control with
+  | .halted _ => true
+  | _ => false
+
+def runFrontier
+    (spec :
+      Spec Origin Local Resume Rule Value StableFault RetryableFault Effect) :
+    Nat →
+      List
+        (CoreMachine Origin Local Resume Rule Value StableFault
+          RetryableFault Effect) →
+      List
+        (CoreMachine Origin Local Resume Rule Value StableFault
+          RetryableFault Effect)
+  | 0, states => states
+  | fuel + 1, states =>
+      if states.all isHalted then
+        states
+      else
+        runFrontier spec fuel (states.flatMap (advance spec))
+
+def haltedOutcome
+    (machine :
+      CoreMachine Origin Local Resume Rule Value StableFault RetryableFault
+        Effect) :
+    Option (Produced Value StableFault RetryableFault) :=
+  match machine.control with
+  | .halted outcome => some outcome
+  | _ => none
+
+def answers
+    (spec :
+      Spec Origin Local Resume Rule Value StableFault RetryableFault Effect)
+    (fuel : Nat)
+    (machine :
+      CoreMachine Origin Local Resume Rule Value StableFault RetryableFault
+        Effect) :
+    List (Produced Value StableFault RetryableFault) :=
+  (runFrontier spec fuel [machine]).filterMap haltedOutcome
+
+@[simp] theorem isHalted_erase
+    (machine :
+      Machine Origin Local Resume Rule Value StableFault RetryableFault
+        Effect) :
+    isHalted (eraseMachine machine) =
+      PrimeNeedReference.isHalted machine := by
+  rcases machine with ⟨world, control, work⟩
+  cases control <;> rfl
+
+@[simp] theorem haltedOutcome_erase
+    (machine :
+      Machine Origin Local Resume Rule Value StableFault RetryableFault
+        Effect) :
+    haltedOutcome (eraseMachine machine) =
+      PrimeNeedReference.haltedOutcome machine := by
+  rcases machine with ⟨world, control, work⟩
+  cases control <;> rfl
+
+/-- Erasure commutes with keeping a halted state in the frontier. -/
+theorem advance_commutes
+    (spec :
+      Spec Origin Local Resume Rule Value StableFault RetryableFault Effect)
+    (machine :
+      Machine Origin Local Resume Rule Value StableFault RetryableFault
+        Effect) :
+    (PrimeNeedReference.advance spec machine).map eraseMachine =
+      advance spec (eraseMachine machine) := by
+  unfold PrimeNeedReference.advance advance
+  rw [← step_commutes]
+  cases PrimeNeedReference.step spec machine <;> rfl
+
+private theorem flatMap_advance_commutes
+    (spec :
+      Spec Origin Local Resume Rule Value StableFault RetryableFault Effect)
+    (states :
+      List
+        (Machine Origin Local Resume Rule Value StableFault RetryableFault
+          Effect)) :
+    (states.flatMap (PrimeNeedReference.advance spec)).map eraseMachine =
+      (states.map eraseMachine).flatMap (advance spec) := by
+  induction states with
+  | nil => rfl
+  | cons head tail ih =>
+      simp only [List.flatMap_cons, List.map_append, List.map_cons,
+        advance_commutes, ih]
+
+private theorem all_isHalted_erase
+    (states :
+      List
+        (Machine Origin Local Resume Rule Value StableFault RetryableFault
+          Effect)) :
+    (states.map eraseMachine).all isHalted =
+      states.all PrimeNeedReference.isHalted := by
+  induction states with
+  | nil => rfl
+  | cons head tail ih =>
+      simp only [List.map_cons, List.all_cons, isHalted_erase, ih]
+
+/-- Exact bounded-run correspondence.  The theorem preserves frontier order,
+world multiplicity, duplicate alternatives, cache state, and work counters. -/
+theorem runFrontier_commutes
+    (spec :
+      Spec Origin Local Resume Rule Value StableFault RetryableFault Effect)
+    (fuel : Nat)
+    (states :
+      List
+        (Machine Origin Local Resume Rule Value StableFault RetryableFault
+          Effect)) :
+    (PrimeNeedReference.runFrontier spec fuel states).map eraseMachine =
+      runFrontier spec fuel (states.map eraseMachine) := by
+  induction fuel generalizing states with
+  | zero => rfl
+  | succ fuel ih =>
+      simp only [PrimeNeedReference.runFrontier, runFrontier]
+      rw [all_isHalted_erase]
       split
       · rfl
-      · rfl
-      · split
-        · rfl
-        · rename_i record hRecord
-          split
-          · split <;> rfl
-          · rfl
+      · rw [← flatMap_advance_commutes]
+        exact ih (states.flatMap (PrimeNeedReference.advance spec))
+
+private theorem filterMap_haltedOutcome_erase
+    (states :
+      List
+        (Machine Origin Local Resume Rule Value StableFault RetryableFault
+          Effect)) :
+    (states.map eraseMachine).filterMap haltedOutcome =
+      states.filterMap PrimeNeedReference.haltedOutcome := by
+  induction states with
+  | nil => rfl
+  | cons head tail ih =>
+      simp only [List.map_cons, List.filterMap_cons, haltedOutcome_erase, ih]
+
+/-- Receipt erasure preserves the exact bounded answer bag. -/
+theorem answers_commute
+    (spec :
+      Spec Origin Local Resume Rule Value StableFault RetryableFault Effect)
+    (fuel : Nat)
+    (machine :
+      Machine Origin Local Resume Rule Value StableFault RetryableFault
+        Effect) :
+    answers spec fuel (eraseMachine machine) =
+      PrimeNeedReference.answers spec fuel machine := by
+  unfold answers PrimeNeedReference.answers
+  change
+    (runFrontier spec fuel ([machine].map eraseMachine)).filterMap
+        haltedOutcome =
+      (PrimeNeedReference.runFrontier spec fuel [machine]).filterMap
+        PrimeNeedReference.haltedOutcome
+  rw [← runFrontier_commutes]
+  exact filterMap_haltedOutcome_erase
+    (PrimeNeedReference.runFrontier spec fuel [machine])
 
 /-- Forward simulation from the rich reference machine. -/
 theorem rich_step_sound

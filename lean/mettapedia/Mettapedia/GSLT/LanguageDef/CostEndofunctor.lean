@@ -16,6 +16,8 @@ interaction cut and is not an execution policy.
 namespace Mettapedia.GSLT.LanguageDef
 
 open CategoryTheory
+open Mettapedia.GSLT
+open Mettapedia.OSLF.Framework.ConstructorCategory
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.PatternCode
 open StructuralMorphism
@@ -1678,6 +1680,63 @@ theorem costStaticConstructorLabel_mem_costContinuationLabels_of_mem
     color authored.1 authored.2
       (List.mem_map.mpr ⟨authored, authoredMembership, rfl⟩)
 
+/-- Every constructor named by a generated static reflective presentation
+remains in the hereditary continuation fragment of the next Cost layer.
+The proof transports the source declaration's validated wrapped support
+through the same static color that produced the generated declaration. -/
+theorem costStaticReflectivePresentation_constructorLabels_mem
+    (source : CIGSLT) (declaration : ReflectivePresentationDecl)
+    (membership :
+      declaration ∈ source.costStaticReflectivePresentations) :
+    declaration.quoteConstructor ∈
+        source.costContinuationRetyping.wrappedLabels ∧
+      declaration.dropConstructor ∈
+        source.costContinuationRetyping.wrappedLabels ∧
+      declaration.parallelUnitConstructor ∈
+        source.costContinuationRetyping.wrappedLabels := by
+  rw [costStaticReflectivePresentations, List.mem_append] at membership
+  rcases membership with baseMembership | wrappedMembership
+  · rcases List.mem_map.mp baseMembership with
+      ⟨sourceDeclaration, sourceMembership, rfl⟩
+    have sourceLabels :=
+      (source.reflectivePresentationsRetypable sourceDeclaration
+        sourceMembership).constructorLabels_mem_wrapped
+    exact ⟨
+      source.costStaticConstructorLabel_mem_costContinuationLabels_of_mem
+        .base sourceDeclaration.quoteConstructor sourceLabels.1,
+      source.costStaticConstructorLabel_mem_costContinuationLabels_of_mem
+        .base sourceDeclaration.dropConstructor sourceLabels.2.1,
+      source.costStaticConstructorLabel_mem_costContinuationLabels_of_mem
+        .base sourceDeclaration.parallelUnitConstructor sourceLabels.2.2⟩
+  · rcases List.mem_map.mp wrappedMembership with
+      ⟨sourceDeclaration, sourceMembership, rfl⟩
+    have sourceLabels :=
+      (source.reflectivePresentationsRetypable sourceDeclaration
+        sourceMembership).constructorLabels_mem_wrapped
+    exact ⟨
+      source.costStaticConstructorLabel_mem_costContinuationLabels_of_mem
+        .wrapped sourceDeclaration.quoteConstructor sourceLabels.1,
+      source.costStaticConstructorLabel_mem_costContinuationLabels_of_mem
+        .wrapped sourceDeclaration.dropConstructor sourceLabels.2.1,
+      source.costStaticConstructorLabel_mem_costContinuationLabels_of_mem
+        .wrapped sourceDeclaration.parallelUnitConstructor
+          sourceLabels.2.2⟩
+
+/-- The complete generated reflective theory satisfies the same exact
+validator-based hereditary retyping obligation required by another Cost
+layer. -/
+theorem costReflectivePresentationsRetypable (source : CIGSLT) :
+    ReflectivePresentationsRetypable source.costContinuationRetyping := by
+  intro declaration membership
+  change declaration ∈ source.costStaticReflectivePresentations at membership
+  have labels :=
+    source.costStaticReflectivePresentation_constructorLabels_mem
+      declaration membership
+  exact reflectivePresentationRetypable_of_validate_of_wrapped
+    source.costContinuationRetyping declaration
+      (source.costStaticReflectivePresentation_validate declaration membership)
+      labels.1 labels.2.1 labels.2.2
+
 /-- Static symbol transport followed by schema-local alpha-renaming maps
 visible constructor support into the hereditary fragment of the next Cost
 layer. -/
@@ -1864,6 +1923,56 @@ theorem costEquationsRetypable (source : CIGSLT) :
         costWrappedEquation, mapEquation] using
           sourceRetypable.rightMatchCorrect
 
+/-- Exact object laws for the initial strict Cost₁ domain.
+
+The inherited bundle supplies typed unary soundness, exact representative
+selection, and contextual support/naturality.  The additional field is placed
+here because it refers to the generated continuation plan, which is defined
+only after the region normalizer. -/
+structure CostOneObjectLaws (source : CIGSLT) : Prop
+    extends CostOpenCanonicalLaws source where
+  preservesWrappedConstructorTyping :
+    ∀ {free : WellSorted.FreeTypeContext} {bound : List TypeExpr}
+      {sort : LangSort source.costWholeLanguage}
+      (term : WellSorted.OpenTerm source.costWholeLanguage free bound sort),
+    WellSorted.HasTypeWithConstructors source.costWholeLanguage
+        (· ∈ source.costContinuationRetyping.wrappedLabels)
+        free bound term.1 (.base sort.1) →
+      WellSorted.HasTypeWithConstructors source.costWholeLanguage
+        (· ∈ source.costContinuationRetyping.wrappedLabels)
+        free bound (source.costNormalizeOpen term).1 (.base sort.1)
+
+/-- The generated contextual section preserves the exact hereditary
+constructor fragment selected by the next continuation retyping plan. -/
+theorem costContextualOpenSection_preservesWrappedConstructorTyping
+    (source : CIGSLT) (laws : CostOneObjectLaws source) :
+    (source.costContextualOpenSection laws.toCostOpenCanonicalLaws
+      ).PreservesTypedConstructors
+        (· ∈ source.costContinuationRetyping.wrappedLabels) := by
+  intro free bound sort term supported
+  exact laws.preservesWrappedConstructorTyping term supported
+
+/-- One application of Cost as a genuine continued interactive GSLT.
+Every field is either derived from the sole generated `LanguageDef` or is an
+explicit law of the strict Cost₁ object domain. -/
+def costCIGSLT (source : CIGSLT) (laws : CostOneObjectLaws source) :
+    CIGSLT where
+  theory := source.costIGSLT
+  cut := source.costInteractionCut
+  openCanonical :=
+    source.costContextualOpenSection laws.toCostOpenCanonicalLaws
+  continuationRetyping := source.costContinuationRetyping
+  bareCollectionConstructorsWrapped :=
+    source.costBareCollectionConstructorsWrapped
+  openCanonicalPreservesWrappedConstructorTyping :=
+    source.costContextualOpenSection_preservesWrappedConstructorTyping laws
+  equationsRetypable := source.costEquationsRetypable
+  reflectivePresentationsRetypable :=
+    source.costReflectivePresentationsRetypable
+  sourceEnvelopeStable := source.costSourceEnvelopeStable
+  redexRetypable := source.costRedexRetypable
+  wrappable := source.costWrappable
+
 end CIGSLT
 
 /-! ## The strict canonical-order domain
@@ -1990,7 +2099,7 @@ def forget : CategoryTheory.Functor OrderedCIGSLT CIGSLT where
 
 /-- Exact typed Cost objects inside the strict ordered continued category. -/
 def costOneObjectProperty : CategoryTheory.ObjectProperty OrderedCIGSLT :=
-  fun source => CostOpenCanonicalLaws source.toCIGSLT
+  fun source => CIGSLT.CostOneObjectLaws source.toCIGSLT
 
 /-- The honest initial domain for strict Cost₁: arrows preserve key order by
 the ambient category, and objects carry the exact typed canonical laws. -/
