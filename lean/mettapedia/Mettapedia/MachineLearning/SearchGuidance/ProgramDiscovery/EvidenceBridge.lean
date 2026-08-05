@@ -1,4 +1,4 @@
-import Mettapedia.MachineLearning.SearchGuidance.ProgramDiscovery.ExperimentSemantics
+import Mettapedia.MachineLearning.SearchGuidance.ProgramDiscovery.PairedDesignEstimands
 import Mettapedia.MachineLearning.ContinualLearning.EvidenceLedger
 import Mettapedia.PLN.Evidence.EvidentialLedger
 import Mettapedia.PLN.WorldModel.WorldModelOverlap
@@ -215,7 +215,7 @@ def key : PacketKey := ⟨1, 7, 11⟩
 
 /-- Reusing one exact packet makes naive addition two, overlap one, and the
 corrected merged evidence one. -/
-theorem exact_repeat_overlap_fixture :
+theorem exact_repeat_overlap :
     AdditiveWorldModel.extract (State := State) (Query := Query) (Ev := ℕ)
         ({key} + {key}) key = 2 ∧
       layer.overlap {key} {key} key = 1 ∧
@@ -285,7 +285,7 @@ theorem trained_descendant_not_source_disjoint :
 
 /-- Source-disjoint refinds add two positive counts while preserving one exact
 program witness and recording two genuinely distinct sources. -/
-theorem source_disjoint_refind_fixture :
+theorem source_disjoint_refind :
     first.SourceDisjoint independentRefind ∧
       (aggregatePacketEvidence [first, independentRefind] (.p0, .t0)).pos = 2 ∧
       (distinctPacketPrograms [first, independentRefind] .t0).card = 1 ∧
@@ -305,7 +305,7 @@ theorem source_disjoint_refind_fixture :
 theorem source_disjoint_refind_has_additive_license :
     AdditiveRevisionLicense first independentRefind :=
   sourceDisjoint_licenses_additiveRevision first independentRefind
-    source_disjoint_refind_fixture.1
+    source_disjoint_refind.1
 
 theorem packet_experiment_repeat_counts_twice :
     (packetExperimentEvidence ({first, first} : Multiset Packet) (.p0, .t0)).pos = 2 := by

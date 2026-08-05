@@ -227,7 +227,7 @@ theorem unitChain_identity_preconditioner_positive_example :
     chainLinkBackpropGradient, chainLinkCurvature, chainLinkHalfSquaredLoss,
     chainLinkResidual, chainLinkPrediction]
 
-theorem unitChain_half_preconditioner_exact_fixture :
+theorem unitChain_half_preconditioner_exact :
     chainLinkPreconditionedPCUpdate (1 / 2) 1 1 2 0 = 1 ∧
       chainLinkHalfSquaredLoss 1 1 2
         (chainLinkPreconditionedPCUpdate (1 / 2) 1 1 2 0) = 1 / 2 ∧
@@ -539,7 +539,7 @@ theorem twoMode_second_initialLoss :
 
 /-- One matrix improves its first eigenmode from loss `1/2` to `1/8`, but
 overshoots its second eigenmode from `1/2` to `2`. -/
-theorem mixedModePreconditioner_helps_one_hurts_another_fixture :
+theorem mixedModePreconditioner_helps_one_hurts_another :
     multiweightChainHalfSquaredLoss twoModeUnitGain twoModeFirstTarget
         (multiweightChainMatrixPCUpdate mixedModePreconditioner twoModeUnitGain
           twoModeFirstTarget twoModeZeroWeight) = 1 / 8 ∧

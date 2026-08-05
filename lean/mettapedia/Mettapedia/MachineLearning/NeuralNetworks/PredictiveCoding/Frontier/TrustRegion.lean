@@ -231,7 +231,7 @@ theorem pcOrigin_full_curvature_comparison
     linarith
 
 /-- Positive fixture for the strict saddle-escape comparison. -/
-theorem unit_oneMLP_pc_escapeMagnitude_fixture :
+theorem unit_oneMLP_pc_escapeMagnitude :
     backpropOriginEscapeMagnitude 1 1 < pcOriginEscapeMagnitude 1 1 := by
   exact pcOrigin_escapeMagnitude_strictly_larger 1 1 (by norm_num)
 

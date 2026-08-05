@@ -108,7 +108,7 @@ noncomputable def unitScalarEvidence : GaussianEvidence (Fin 1) where
 
 /-- Positive fixture: reusing unit scalar evidence adds one unit of precision
 and one unit of natural parameter beyond once-each accounting. -/
-theorem scalarEvidence_reuse_doubleCounting_fixture :
+theorem scalarEvidence_reuse_doubleCounting :
     (((zeroScalarEvidence.update unitScalarEvidence).update unitScalarEvidence).update
         zeroScalarEvidence).precision 0 0 = 2 ∧
       (((zeroScalarEvidence.update unitScalarEvidence).update unitScalarEvidence).update
@@ -123,7 +123,7 @@ theorem scalarEvidence_reuse_doubleCounting_fixture :
       zeroScalarEvidence, unitScalarEvidence]
 
 /-- Negative fixture: a zero contribution creates no accounting excess. -/
-theorem zeroEvidence_reuse_has_no_excess_fixture :
+theorem zeroEvidence_reuse_has_no_excess :
     ((zeroScalarEvidence.update zeroScalarEvidence).update zeroScalarEvidence) =
       zeroScalarEvidence := by
   apply GaussianEvidence.extensionality
@@ -167,7 +167,7 @@ theorem linearCausalCodingBridge_crown :
   ⟨linearTwoTask_causalCoding_separation_crown.1,
     linearTwoTask_causalCoding_separation_crown.2.2.1,
     linearTwoTask_causalCoding_separation_crown.2.2.2,
-    scalarEvidence_reuse_doubleCounting_fixture.1,
+    scalarEvidence_reuse_doubleCounting.1,
     generalCausalCodingCorrespondence_requires_interventionalClamp⟩
 
 end Mettapedia.MachineLearning.ContinualLearning

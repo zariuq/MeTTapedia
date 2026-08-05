@@ -365,7 +365,7 @@ theorem identityEffect_pureFast_positiveFixture :
   refine ⟨constantUnitTask_stationary, by norm_num, ?_⟩
   exact ⟨unitScalarEffect, rfl⟩
 
-theorem identityEffect_consolidation_adds_cost_fixture :
+theorem identityEffect_consolidation_adds_cost :
     ∃ fast : Fin 1 → ℝ,
       pureFastObjective (identityEffectModel (Fin 1)) unitScalarEffect fast = 0 ∧
       ∀ delta : Fin 1 → ℝ,
@@ -388,7 +388,7 @@ noncomputable def fastAxisSlowFullModel :
 
 noncomputable def constantSecondAxisTask : ℕ → (Fin 2 → ℝ) := fun _ => secondAxisEffect
 
-theorem secondAxis_fast_unreachable_weight_reachable_fixture :
+theorem secondAxis_fast_unreachable_weight_reachable :
     ConsolidationPressure fastAxisSlowFullModel 10 5 secondAxisEffect ∧
       WeightConsolidationCanServe fastAxisSlowFullModel secondAxisEffect := by
   constructor
@@ -398,23 +398,23 @@ theorem secondAxis_fast_unreachable_weight_reachable_fixture :
     norm_num [fastAxisSlowFullModel, firstAxisMap, secondAxisEffect] at hcoordinate
   · exact ⟨secondAxisEffect, rfl⟩
 
-theorem secondAxis_feasibleConsolidationNecessary_fixture :
+theorem secondAxis_feasibleConsolidationNecessary :
     FeasibleWeightConsolidationNecessary
       fastAxisSlowFullModel 10 5 secondAxisEffect := by
   rw [feasibleWeightConsolidationNecessary_iff]
-  exact secondAxis_fast_unreachable_weight_reachable_fixture.symm
+  exact secondAxis_fast_unreachable_weight_reachable.symm
 
 /-- Capacity alone can force the complement even when the effect is reachable. -/
-theorem identityEffect_overCapacity_fixture :
+theorem identityEffect_overCapacity :
     ConsolidationPressure (identityEffectModel (Fin 1)) 3 4 unitScalarEffect ∧
       WeightConsolidationCanServe (identityEffectModel (Fin 1)) unitScalarEffect := by
   exact ⟨Or.inl (by norm_num), ⟨unitScalarEffect, rfl⟩⟩
 
-theorem identityEffect_overCapacity_requiresConsolidation_fixture :
+theorem identityEffect_overCapacity_requiresConsolidation :
     FeasibleWeightConsolidationNecessary
       (identityEffectModel (Fin 1)) 3 4 unitScalarEffect := by
   rw [feasibleWeightConsolidationNecessary_iff]
-  exact identityEffect_overCapacity_fixture.symm
+  exact identityEffect_overCapacity.symm
 
 /-- Negative boundary: pressure to leave fast state does not manufacture a
 weight solution.  Here neither the fast nor slow first-axis image contains

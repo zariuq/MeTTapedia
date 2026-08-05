@@ -880,7 +880,7 @@ theorem observationally_blind_intervention_certificate
 
 /-- Positive fixture at the exact covariance used for the equal-noise
 orientation: both observational energies are `1/2` at `(1,1)`. -/
-theorem unitNoiseForwardCovariance_observationalEnergy_fixture :
+theorem unitNoiseForwardCovariance_observationalEnergy :
     unitNoiseForwardCovariance.forwardClampedEnergy 1 1 = 1 / 2 ∧
       unitNoiseForwardCovariance.reverseClampedEnergy 1 1 = 1 / 2 := by
   constructor <;>
@@ -892,7 +892,7 @@ theorem unitNoiseForwardCovariance_observationalEnergy_fixture :
 
 /-- Positive intervention fixture at the same point: forward energy is zero,
 while reverse energy is `1/4`. -/
-theorem unitNoiseForwardCovariance_interventionalEnergy_fixture :
+theorem unitNoiseForwardCovariance_interventionalEnergy :
     unitNoiseForwardCovariance.forwardInterventionalEnergy 1 1 = 0 ∧
       unitNoiseForwardCovariance.reverseInterventionalEnergy 1 1 = 1 / 4 := by
   constructor
@@ -909,16 +909,16 @@ theorem unitNoiseForwardCovariance_observation_tied_intervention_separates :
         unitNoiseForwardCovariance.reverseClampedEnergy 1 1 ∧
       unitNoiseForwardCovariance.forwardInterventionalEnergy 1 1 ≠
         unitNoiseForwardCovariance.reverseInterventionalEnergy 1 1 :=
-  ⟨unitNoiseForwardCovariance_observationalEnergy_fixture.1.trans
-      unitNoiseForwardCovariance_observationalEnergy_fixture.2.symm,
+  ⟨unitNoiseForwardCovariance_observationalEnergy.1.trans
+      unitNoiseForwardCovariance_observationalEnergy.2.symm,
     by
-      rw [unitNoiseForwardCovariance_interventionalEnergy_fixture.1,
-        unitNoiseForwardCovariance_interventionalEnergy_fixture.2]
+      rw [unitNoiseForwardCovariance_interventionalEnergy.1,
+        unitNoiseForwardCovariance_interventionalEnergy.2]
       norm_num⟩
 
 /-- Negative fixture: at independent equal variance, intervention cannot
 orient a nonexistent edge; both energies are exactly `y²/2`. -/
-theorem independentEqualVarianceCovariance_interventionalEnergy_fixture
+theorem independentEqualVarianceCovariance_interventionalEnergy
     (x y : ℝ) :
     independentEqualVarianceCovariance.forwardInterventionalEnergy x y =
         y ^ 2 / 2 ∧

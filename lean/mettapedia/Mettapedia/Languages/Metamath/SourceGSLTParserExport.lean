@@ -117,9 +117,25 @@ private def keywordDefinitions
     (name spelling : String) : List Definition :=
   [separatedLexeme name (literal spelling), separatedToken name]
 
-private def members (className : String)
+def members (className : String)
     (codepoints : List Nat) : List ClassMember :=
   codepoints.map fun codepoint => { className, codepoint }
+
+@[simp] theorem query_mem_members_iff
+    (queryClass className : String) (queryCodepoint : Nat)
+    (codepoints : List Nat) :
+    ({ className := queryClass, codepoint := queryCodepoint } : ClassMember) ∈
+        members className codepoints ↔
+      queryClass = className ∧ queryCodepoint ∈ codepoints := by
+  constructor
+  · intro member
+    simp only [members, List.mem_map] at member
+    obtain ⟨codepoint, codepointIn, memberEq⟩ := member
+    cases memberEq
+    exact ⟨rfl, codepointIn⟩
+  · rintro ⟨classEq, codepointIn⟩
+    subst queryClass
+    exact List.mem_map.mpr ⟨queryCodepoint, codepointIn, rfl⟩
 
 def lexicalMembers : List ClassMember :=
   members "whitespace" whitespaceCodepoints ++

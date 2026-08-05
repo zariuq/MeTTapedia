@@ -21,6 +21,23 @@
 \usepackage{float}
 \usepackage{array}
 \usepackage{graphicx}
+\usepackage{tikz}
+\usetikzlibrary{positioning,arrows.meta,calc}
+\definecolor{provedc}{RGB}{31,84,140}
+\definecolor{learnedc}{RGB}{176,94,20}
+\definecolor{datac}{RGB}{90,90,90}
+\tikzset{
+  proved/.style   = {draw=provedc, very thick, fill=provedc!6, rounded corners=2pt,
+                     align=center, inner sep=4pt, font=\small},
+  learned/.style  = {draw=learnedc, very thick, dashed, fill=learnedc!6, rounded corners=2pt,
+                     align=center, inner sep=4pt, font=\small},
+  datum/.style    = {draw=datac, thick, fill=datac!5, rounded corners=2pt,
+                     align=center, inner sep=4pt, font=\small},
+  waist/.style    = {draw=provedc, very thick, fill=provedc!16, rounded corners=3pt,
+                     align=center, inner sep=5pt, font=\small\bfseries},
+  flow/.style     = {-{Stealth[length=2.4mm]}, thick, draw=datac!140},
+  thm/.style      = {font=\scriptsize\itshape, text=provedc, align=center},
+}
 \usepackage{needspace}
 \usepackage{newunicodechar}
 \setlength{\emergencystretch}{3em}
@@ -40,9 +57,14 @@
 \newcommand{\leanname}[1]{{\scriptsize\ttfamily
   \def\_{\textunderscore\allowbreak}#1}}
 \newcommand{\code}[1]{\texttt{#1}}
-\newcommand{\formalcommit}{84ec10fdac3c576b725133a70b6e41f45d1874f4}
+\newcommand{\formalcommit}{f3a31db36bb2f944312ee31c1d86c2758109e83a}
 \newcommand{\leansource}[3]{%
   \href{https://github.com/zariuq/MeTTapedia/blob/\formalcommit/#1\#L#2}{\leanname{#3}}}
+\newif\ifoeisterminalfacts
+\IfFileExists{generated/oeis_gen11_13_terminal_facts_v1.tex}{%
+  \oeisterminalfactstrue
+  \input{generated/oeis_gen11_13_terminal_facts_v1.tex}%
+}{\oeisterminalfactsfalse}
 
 \title{When Does a Neural Architecture\\ Earn Its Cost?}
 \author{Oru\v{z}i \and Zarathustra Goertzel}
@@ -79,7 +101,15 @@ quantities remain empirical; a closing section states what is assumed rather tha
 and what would discharge it. The axes are then assembled, without identifying them, in a
 \emph{unified carrier}: recurrent control, typed workspace contents, belief metadata and
 routed operators inhabit one product state whose workspace endpoint and strict
-non-workspace witnesses are both machine-checked.
+non-workspace witnesses are both machine-checked. In a sealed two-world continuation
+factorial over the four component carriers and five credit rules, the $1{,}617$-entry
+union has large exclusive marginals along both axes; prospective PC leads the aggregate
+rule portfolio but not every carrier--world cell, and BP remains faster.
+The experiment therefore supports composition and interaction, not a universal winner. A separate
+dependent-proof screen then starts every credit rule at update zero: prospective PC
+reproducibly departs from BP and contributes held-out marginal solutions, while BP keeps
+higher total coverage. This motivates cost-aware composition rather than winner-take-all
+selection.
 \end{abstract}
 
 \paragraph{Open artifacts.}
@@ -148,6 +178,1261 @@ each candidate rule there is a modelled regime in which it fails its own guarant
 that exhibits, for each rule, a concrete regime defeating it. There is no universal
 architecture, and that is a theorem rather than a hedge.
 
+\section{A source-to-theorem programme}
+\label{sec:atlas}
+
+This note belongs to a broader, authenticated literature programme rather than a
+hand-picked theorem list. Its current atlas deduplicates $363$ primary sources
+($349$ arXiv records) and eight source documents. It contains $254$ adjudicated primary
+claims and nine document claims; $254$ claims are bound to checked Lean declarations.
+The source-level queue is deliberately visible:
+
+\begin{center}
+\begin{tabular}{lrr}
+\toprule
+source classification & sources & adjudicated claims \\
+\midrule
+new formalization or stronger generalization & 200 & 212 \\
+corresponds to an existing theorem & 20 & 25 \\
+inapplicable: a required hypothesis fails & 7 & 7 \\
+executable obligation, not yet a theorem about the runtime & 3 & 6 \\
+empirical-only claim & 1 & 4 \\
+pending primary-source audit & 132 & --- \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Presence in the corpus is not counted as coverage. A source leaves the pending row only
+after its statement and assumptions have been checked against the primary text and it is
+either connected to a theorem, reduced to an executable obligation, kept empirical, or
+rejected with the failed hypothesis named. A theorem entry requires recovery of the
+source statement, a scope boundary, and a positive and negative fixture; wrappers whose
+proof is merely definitional equality do not qualify.
+
+The gradient block of \cite{lowe2019gim} now has an exact compositional
+semantics independent of any particular neural module.  A declared reverse map
+pairs its forward computation with a continuous-linear pullback.  Inserting a
+stop-gradient boundary preserves the forward composite for arbitrary
+surrounding maps, while its upstream pullback is exactly zero
+(\leanname{comp\_stopGradient\_forward\_eq},
+\leanname{comp\_stopGradient\_pullback\_eq\_zero}).  Replacing that boundary by
+reverse identity recovers the original composite, and a scalar counterfixture
+computes the same forward value $30$ while passing a nonzero upstream credit
+$6$ (\leanname{scalar\_identity\_does\_not\_isolate}).  These results
+formalize declared reverse-mode semantics, not the analytic derivative of an
+arbitrary forward map, the InfoNCE mutual-information bound, or the paper's
+empirical representation claims.
+
+The pairwise gradient criterion of \cite{riemer2019mer} has a similarly sharp
+finite-step boundary.  For a half-squared-distance retention loss, stepping
+along a second example's gradient changes the first loss by exactly
+$-\eta\langle g_1,g_2\rangle+\eta^2\lVert g_2\rVert^2/2$
+(\leanname{halfSquaredDistance\_gradientStep\_change\_exact}).  Positive
+alignment always admits a strictly positive transferring step, while negative
+alignment gives strict interference at every positive step
+(\leanname{positive\_alignment\_has\_safe\_finite\_step},
+\leanname{negative\_alignment\_strictly\_interferes}).  But the sign alone is
+not a finite-step certificate: a scalar fixture has positive unit alignment
+and increases the retained loss when the rate is three
+(\leanname{positive\_alignment\_large\_step\_interferes}).  This
+recovers the source's operational definition while separating it from the
+unformalized MER sampling and Reptile approximation.
+
+The meta-transfer criterion of \cite{bengio2019metatransfer} supplies a
+complementary signal for structural change.  For every positive finite
+categorical law, the expected score of a correctly matched unchanged mechanism
+vanishes along every probability-simplex tangent
+(\leanname{expectedScore\_eq\_zero\_of\_matched}); evaluating the same tangent
+under a shifted law need not vanish
+(\leanname{shifted\_distribution\_nonzero\_expectedScore}).  For two
+structural hypotheses with positive online likelihoods $L_1,L_2$, the exact
+derivative of negative log mixture likelihood is prior minus posterior and
+can be rewritten as
+\[
+ \frac{\sigma(\gamma)(1-\sigma(\gamma))(L_2-L_1)}
+      {\sigma(\gamma)L_1+(1-\sigma(\gamma))L_2}.
+\]
+Thus its sign selects the faster-adapting hypothesis
+(\leanname{metaTransferGradient\_eq\_scaled\_likelihoodGap}); equal
+likelihoods give no structural signal, while zero likelihoods invalidate the
+statistical interpretation.  These are score and gradient identities, not a
+proof that observational data identify a causal graph or that sparse
+mechanism shifts hold in a runtime.
+
+Perry, von K\"ugelgen, and Sch\"olkopf's sparse-mechanism-shift rate
+\cite{perry2022sms} supplies the missing probabilistic amplification step
+without hiding its causal premises.  For any finite family of false candidates,
+independent failure events across $m$ disjoint environment pairs make one
+candidate survive with probability at most $r^m$; a finite union bound gives
+\[
+  \Pr[\text{some false candidate survives}]
+  \leq |{\cal G}_{\rm false}|\,r^m
+\]
+without requiring independence between candidates
+(\leanname{measure\_identificationFailure\_le}).  If the target mechanism
+changes with probability at most $\rho^{\rm UB}$ and a discriminating witness
+changes with probability at least $\rho^{\rm LB}$, the one-pair failure factor
+is
+$r=1-(1-\rho^{\rm UB})\rho^{\rm LB}$
+(\leanname{pairFailureProbability\_le\_sparsePairFailure}).  It is strictly
+below one under the useful nondegenerate conditions
+$\rho^{\rm UB}<1$ and $\rho^{\rm LB}>0$, so the finite-candidate bound tends to
+zero (\leanname{sparseShiftFailureBound\_tendsto\_zero}).  Zero witness-shift
+probability and an always-shifted target both leave $r=1$, making the no-decay
+boundary executable.  The Lean result generalizes the event-probability spine
+of the source; faithfulness, shared mechanisms, pseudo-causal sufficiency and
+the argument that a wrong parent set supplies a witness remain explicit
+premises rather than conclusions of this theorem.
+
+Activation-subspace projection provides a stronger exact invariant for a
+single linear layer.  The gradient-projection memory of Saha, Garg, and Roy
+\cite{saha2021gpm} stores orthonormal activation bases; its residual-projected
+fully connected update annihilates every stored basis direction exactly
+(\leanname{fullyConnectedUpdate\_annihilates\_basis}).  Lin et al.'s TRGP
+construction \cite{lin2022trgp} adds a task-indexed scaling view of that frozen
+subspace.  Identity scaling recovers the shared weight, stored-coordinate
+inputs are transformed exactly by the small scaling matrix, and inputs
+orthogonal to the memory are unchanged
+(\leanname{effectiveWeight\_identityScale},
+\leanname{effectiveWeight\_mulVec\_storedCoordinates},
+\leanname{effectiveWeight\_mulVec\_eq\_weight\_of\_orthogonal}).
+Meanwhile an arbitrary residual-projected shared-weight step preserves the
+old projected weight for every step size
+(\leanname{projector\_weight\_preserved\_after\_projectedUpdate}).  The
+task-indexing and SVD premise are essential: a nonidentity scale changes the
+new-task view even though the shared weight is untouched, and a
+nonorthonormal stored basis breaks the intended coordinate action
+(\leanname{fourfoldScale\_view\_separates\_from\_shared},
+\leanname{nonorthonormal\_memory\_breaks\_scaledCoordinate\_action}).
+These are exact layerwise identities; the projected-gradient norm as a
+task-correlation surrogate, top-$K$ selection, finite nonlinear retention,
+and empirical transfer improvements remain outside the theorem.
+
+Equal function classes still need not have equal continual-update dynamics.
+Claim C.1 of Mirzadeh et al.\ \cite{mirzadeh2022wide} compares a direct linear
+model with a two-layer linear factorization.  For orthogonal old and new task
+rows, every finite sequence of new-task gradient packets preserves the direct
+model's old predictions
+(\leanname{directPrediction\_runDirectPackets\_eq}), and the analogous
+factorized path preserves the old data-to-hidden map
+(\leanname{oldFeatureMap\_runFeaturePackets\_eq}).  Nevertheless, output-head
+motion produces exactly one half of the squared old-feature-map image of the
+head displacement
+(\leanname{factorizedForgetting\_runFeaturePackets\_eq\_halfSquared\_headDrift}).
+Column independence makes every nonzero head displacement strictly forgetting
+(\leanname{factorizedForgetting\_pos\_of\_columnIndependent}), whereas an
+executable noninjective fixture changes the head without changing the old
+prediction
+(\leanname{noninjective\_featureMap\_head\_change\_zero\_forgetting}).
+A one-hidden-unit lift proves that this separation is dynamical rather than
+expressive (\leanname{collapsedWeight\_oneHiddenLift}).  It therefore does not
+turn the paper's empirical width trend into a universal nonlinear theorem.
+
+Guha and Lakshman \cite{guha2024width} instead give a conditional nonlinear
+width envelope: after collecting the task, depth, sparsity, activation and
+norm terms into a positive coefficient independent of the widths being
+compared, the remaining factor is $W^{-\beta}$ for a positive
+data-dependent exponent.  The formalized algebra proves the exact scaling
+identity and the stronger diminishing-gain statement: multiplying width
+repeatedly by the same $s>1$ keeps reducing the envelope, but each absolute
+reduction is $s^{-\beta}$ times the preceding one
+(\leanname{widthEnvelope\_scale},
+\leanname{scalingGain\_strictly\_diminishes}).  It also exposes the capacity
+decision boundary.  If the collected coefficient grows by a factor $\ell$
+while width grows by $s$, the new envelope is smaller exactly when
+$\ell<s^\beta$
+(\leanname{load\_width\_tradeoff\_lt\_iff}).  Zero exponent gives no width
+gain and a negative exponent reverses the monotonicity
+(\leanname{zero\_exponent\_has\_no\_width\_gain},
+\leanname{widthEnvelope\_strictly\_increases\_of\_exponent\_neg}).
+This theorem does not reprove the source's random active-row model,
+lazy-training assumption, spectral perturbation estimates, big-$O$
+constant, fitted exponent, or independence of the collected coefficient
+from width.  Those are runtime and source-model premises, so width alone
+cannot license promotion of a larger carrier.
+
+The continual-flow analysis of Graldi et al.\
+\cite{graldi2025lazy} supplies the complementary mechanism.  If the old-task
+residual follows the negative cross-task-kernel transport of the current
+new-task residual, its half-squared energy derivative is exactly the negative
+pairing of those two quantities
+(\leanname{oldTaskEnergy\_hasDerivAt\_crossTaskForgettingRate}).
+The pairing sign is therefore the exact instantaneous boundary: a negative
+pairing gives positive forgetting, a positive pairing gives transfer, and
+orthogonality gives zero rate
+(\leanname{crossTaskForgettingRate\_pos\_iff},
+\leanname{crossTaskForgettingRate\_eq\_zero\_of\_inner\_eq\_zero}).
+Its absolute magnitude is bounded by the product of old-residual norm,
+cross-kernel operator norm and new-residual norm
+(\leanname{abs\_crossTaskForgettingRate\_le}).
+Positive semidefiniteness of the complete task kernel is not enough: a
+unit-diagonal two-task kernel with off-diagonal coupling $1/2$ is
+positive semidefinite for every error pair, yet equal-norm aligned and
+opposite residuals give rates $-1/2$ and $+1/2$, respectively
+(\leanname{positiveSemidefinite\_jointKernel\_allows\_both\_rate\_signs}).
+This recovers the source differential identity but not its dynamical
+mean-field limit, Gaussian-process construction, self-consistent kernel
+system, finite-width approximation, lazy--rich transition or empirical
+critical feature-learning value.  The registered generations-11--13 trace
+measures teacher-forced and fixed-budget behavioural retention, not the
+cross-task pairing or its finite-step remainder, so it cannot turn this
+identity into a retention certificate.  A future retention experiment must
+measure both quantities explicitly.
+
+The diagonal ``Fisher'' used by continual-learning code also has a
+load-bearing estimator boundary.  Following van de Ven
+\cite{vandeven2025fisher}, the exact per-input contribution is the
+model-distribution expectation of the squared score.  Drawing one class from
+that same distribution is unbiased, both per input and after a finite dataset
+average
+(\leanname{expected\_model\_sample\_eq\_exact},
+\leanname{expectedSampledDatasetFisher\_eq\_exact}).  This does not identify
+the observed-label empirical contribution with the exact Fisher.  A valid
+three-class score model has exact contribution $1/2$ while its observed class
+contributes zero, and uniform rather than model-distributed label sampling
+has expectation $2/3$
+(\leanname{empirical\_zero\_exact\_positive},
+\leanname{uniform\_sampling\_differs\_from\_exact}).
+Minibatch aggregation introduces a second, exact discrepancy: squaring the
+sum of per-example gradients equals their individual squared mass plus every
+pairwise cross term
+(\leanname{batchSquaredMass\_eq\_individual\_add\_cross}).  Consequently the
+two gradients $(1,-1)$ cancel to zero after aggregation, whereas $(1,1)$ are
+amplified from individual squared mean one to batched value four
+(\leanname{opposing\_batch\_cancels},
+\leanname{aligned\_batch\_amplifies}).  Any Fisher-weighted PC or
+retention profile must therefore record its label law, per-example gradients,
+aggregation order, and normalization before these theorems apply.
+
+Natural continual learning (NCL) then supplies a distinct geometric use of
+the previous posterior precision.  Equation~(8) of Kao et
+al.~\cite{kao2021ncl} is recovered for every invertible symmetric
+positive-definite metric: applying inverse prior precision to the complete
+local Laplace-posterior gradient preconditions the current-task gradient while
+turning the quadratic restoring term into the ordinary displacement from the
+previous mean
+(\leanname{naturalContinualDirection\_eq}).  Completing the metric square
+shows that this direction is the unique minimizer of the penalized local
+trust-region Lagrangian and, equivalently, maximizes the linearized posterior
+gain over the prior-metric ball whose boundary it reaches
+(\leanname{trustLagrangian\_sub\_at\_lagrangeDirection},
+\leanname{lagrangeDirection\_strictly\_minimizes},
+\leanname{lagrangeDirection\_maximizes\_on\_own\_metricBall}).
+Preconditioned NCL and raw Laplace-gradient updates have exactly the same
+fixed points at nonzero rates
+(\leanname{ncl\_rawLaplace\_same\_fixed\_points}), but they need not traverse
+the same paths: a concrete diagonal precision $\operatorname{diag}(2,1)$ maps
+the posterior direction $(2,1)$ to $(1,1)$, which no scalar rescaling
+recovers
+(\leanname{anisotropicNaturalDirection\_eq},
+\leanname{anisotropic\_ncl\_not\_scalar\_raw}).  The result is local
+first-order trust-region geometry; it does not certify a Fisher estimator,
+Kronecker approximation, finite nonlinear loss decrease, or empirical
+retention gain.
+
+Riemannian Walk~\cite{chaudhry2018rwalk} uses that metric locally along the
+optimizer path rather than only at the endpoint.  Its online Fisher update is
+a convex combination that preserves $[0,1]$ under the declared coefficient
+bounds, while a two-event fixture proves that the result is chronological
+rather than permutation invariant
+(\leanname{movingFisher\_mem\_Icc},
+\leanname{movingFisher\_not\_permutationInvariant}).  For each coordinate and
+logged interval it divides the first-order loss decrease by a positively
+damped diagonal-Fisher approximation to KL displacement, accumulates the
+ratios, clips a negative final score to zero, and adds the result to Fisher
+importance in the next retention penalty.  The finite scalar construction is
+exactly invariant under any nonzero linear coordinate rescaling when
+gradient, displacement and Fisher transform covariantly
+(\leanname{stepSensitivity\_reparameterize}); replacing the Fisher metric by
+Euclidean displacement breaks that invariance
+(\leanname{euclideanSensitivity\_not\_reparameterizationInvariant}).
+The metric does not make the estimator endpoint-only: one displacement of
+size two and two displacements of size one reach the same parameter but
+produce importance $2/3$ and $4/3$, respectively
+(\leanname{same\_endpoint\_different\_pathImportance}).  Trace interval,
+actual post-optimizer displacement, damping and clipping are therefore
+semantic inputs.  At task boundaries, repeated pairwise averaging gives
+three successive scores weights $1/4,1/4,1/2$ and is not permutation
+invariant
+(\leanname{averageImportance\_three},
+\leanname{averageImportance\_not\_permutationInvariant}).
+These theorems validate neither the empirical diagonal-Fisher estimator nor
+the finite nonlinear KL approximation; both remain runtime obligations.
+
+Variational continual learning (VCL)~\cite{nguyen2018vcl} exposes the same
+order boundary at the posterior-projection level.  For finite-dimensional
+Bayesian linear regression, the diagonal-Gaussian Sherman--Morrison mean
+update solves the paper's normal equation exactly, and every diagonal
+precision increases by its feature-square likelihood contribution
+(\leanname{updatedMean\_satisfies\_sourceEquation},
+\leanname{updatedPrecision\_sub\_previous}).  Before approximation, full
+Gaussian likelihood packets add in natural coordinates and therefore commute
+(\leanname{exactEvidence\_order\_independent}).  Projection back to a
+diagonal covariance after every observation does not inherit this law.  From
+unit prior precision and zero mean, the feature/target events
+$((1,0),1)$ and $((1,1),1)$ produce the same final diagonal precision
+$(3,2)$ in either order, but means $(3/5,1/5)$ and $(5/9,1/3)$
+(\leanname{diagonalProjection\_order\_changes\_mean}).
+Consequently a full-information belief ledger may fuse independent packets
+as a set, while a projected diagonal carrier must retain the projection
+schedule.  Algorithm~1's coreset recursion has a second exact boundary:
+propagation uses $(C_{t-1}\cup D_t)\setminus C_t$, while prediction uses
+$C_t$.  If $C_t\subseteq C_{t-1}\cup D_t$, these partitions are disjoint,
+cover all available packets, and preserve the sum of arbitrary commutative
+evidence weights
+(\leanname{coreset\_schedule\_exactly\_once},
+\leanname{coreset\_schedule\_preserves\_evidence}).  Propagating the retained
+coreset and then using it again for prediction counts every retained packet
+twice; omitting an old packet when it leaves the coreset loses it
+(\leanname{retained\_packet\_reuse\_is\_double\_counting},
+\leanname{released\_old\_packet\_is\_lost\_without\_transfer}).
+This is an exact scheduling and linear-Gaussian boundary, not a bound on
+repeated mean-field projection error in a neural posterior.
+
+Bayesian Gradient Descent (BGD)~\cite{zeno2018bgd} turns the same uncertainty
+coordinate into a learning-rate and curvature signal.  For a scalar gradient
+with strong-monotonicity modulus $m$, each antithetic noise pair obeys
+\[
+  m\sigma\epsilon^2 \;\le\;
+  \frac{g(\mu+\sigma\epsilon)\epsilon+
+        g(\mu-\sigma\epsilon)(-\epsilon)}{2}.
+\]
+The inequality sums over any finite sample family; unit empirical second
+moment gives the source-shaped lower bound $m\sigma$ for the average
+(\leanname{modulus\_mul\_deviation\_le\_averagePairedCurvature}).
+Equation~(12)'s exact scalar deviation update stays positive and is below,
+equal to, or above the prior deviation according as the curvature signal is
+positive, zero, or negative
+(\leanname{uncertaintyUpdate\_positive},
+\leanname{uncertaintyUpdate\_lt\_prior\_of\_positive\_signal},
+\leanname{prior\_lt\_uncertaintyUpdate\_of\_negative\_signal}).
+Antithetic strong curvature therefore strictly reduces uncertainty
+(\leanname{antithetic\_strong\_curvature\_decreases\_uncertainty}).
+Pairing is load bearing: one one-sided sample from a strongly convex
+quadratic can report a negative signal
+(\leanname{oneSided\_sample\_can\_reverse\_positive\_curvature}).
+Thus a BGD-derived carrier profile needs paired-noise and second-moment
+telemetry; the finite theorem is not an identification with the exact
+Gaussian expectation or a convergence proof.
+
+The perfect-memory argument of Knoblauch et
+al.~\cite{knoblauch2020optimal} has a prior definitional boundary.  Their
+displayed class $E(\theta)$ intersects all admissible solution sets containing
+$\theta$; this records only
+\[
+  \theta\in A \Longrightarrow \theta'\in A.
+\]
+It does not imply equality of membership signatures.  On
+$\Theta=\{\bot,\top\}$ with admissible sets
+$\{\Theta,\{\top\}\}$, one has
+$\top\in E(\bot)$ but $E(\bot)\ne E(\top)$, refuting the first bullet of
+Lemma~3 as displayed
+(\leanname{source\_Lemma3\_first\_claim\_counterexample}).
+Defining $\theta\sim\theta'$ by
+$\theta\in A\leftrightarrow\theta'\in A$ for every admissible $A$ repairs the
+construction: the resulting classes are equal or disjoint and every
+admissible set contains a whole class or none of it
+(\leanname{mem\_membershipClass\_iff\_class\_eq},
+\leanname{membershipClass\_subset\_or\_disjoint}).  Complement closure is a
+sufficient missing hypothesis under which the displayed intersection equals
+the repaired class
+(\leanname{sourceIntersectionClass\_eq\_membershipClass\_of\_complementClosed}).
+One stored representative of every surviving repaired class then answers
+every admissible task-intersection query exactly
+(\leanname{representativeMemory\_is\_intersectionOracle}); omitting a class
+has an executable failure witness.  This repairs the set-theoretic
+perfect-memory premise; it does not formalize the paper's NP-hardness or
+minimal-cardinality claims.
+
+Gradient-based sample selection (GSS)~\cite{aljundi2019gss} makes the replay
+memory question geometric.  Removing remembered gradient half-spaces can only
+enlarge the feasible update cone, and the enlargement is strict even for two
+orthogonal constraints
+(\leanname{feasibleCone\_antitone},
+\leanname{constraint\_reduction\_strictly\_enlarges}).  For a
+fixed-size family of normalized gradients, the source's cosine surrogate
+satisfies
+\[
+  \sum_{i,j}\langle u_i,u_j\rangle
+    = \left\|\sum_i u_i\right\|^2,\qquad
+  \operatorname{Var}(u)
+    = 1-\frac{1}{M^2}\sum_{i,j}\langle u_i,u_j\rangle .
+\]
+Thus minimizing the surrogate exactly maximizes directional variance
+(\leanname{pairwiseSimilarity\_eq\_norm\_sum\_sq},
+\leanname{pairwiseSimilarity\_le\_iff\_variance\_ge}).  It does not,
+however, identify the retained cone: the opposite pairs
+$\{e_1,-e_1\}$ and $\{e_2,-e_2\}$ have equal zero surrogate and unit
+variance, yet the first forbids direction $e_1$ while the second permits it
+(\leanname{equal\_surrogate\_and\_variance\_but\_different\_feasible\_cones}).
+Accordingly, the paper's observed surrogate--solid-angle correlation remains
+empirical rather than a general theorem.  The greedy score boundary is also
+exact: cosine plus one lies in $[0,2]$, but antipodal unit gradients attain
+zero
+(\leanname{antipodal\_shiftedUnitSimilarity\_eq\_zero}), so a normalized
+sampling distribution requires a separately checked positive total score.
+
+\paragraph{Perfect generated inputs do not certify perfect replay targets.}
+Deep generative replay~\cite{shin2017dgr} trains on current labelled data
+together with generated past inputs labelled by the previous solver, whereas
+its joint-training comparator uses true past inputs and labels.  Let $r$ be
+the current-data fraction, $R_G$ the risk under generated inputs and teacher
+targets, $R_T$ the risk under true past inputs and teacher targets, and $R_Y$
+the risk under true past inputs and labels.  The train--test discrepancy has
+the exact decomposition
+\[
+ R_{\rm replay}-R_{\rm joint}
+  =(1-r)\bigl((R_G-R_T)+(R_T-R_Y)\bigr)
+ \quad
+ \text{(\leanname{replayTrainRisk\_sub\_jointTestRisk}).}
+\]
+Recovering the old input distribution removes the first term only.  For
+$r<1$, perfect generated-input replay equals true-label joint risk exactly
+when the teacher and true-label risks agree
+(\leanname{perfectGenerator\_train\_eq\_test\_iff\_teacherRisk\_eq}).
+Exact generator and teacher risks are sufficient, and the absolute
+train--test gap is bounded by the retained weight times the sum of their two
+absolute errors
+(\leanname{exactGenerator\_exactTeacher\_replay\_eq\_joint},
+\leanname{abs\_replayTrainRisk\_sub\_jointTestRisk\_le}).
+A perfect-generator fixture with mismatched teacher targets fails joint
+training, while a separate fixture shows that the two errors may cancel
+(\leanname{perfectGenerator\_teacherMismatch\_not\_joint},
+\leanname{generator\_teacher\_error\_cancellation}).
+Thus separate generator and teacher certificates are a robust sufficient
+boundary, not a necessary decomposition of every zero aggregate gap.  These
+are risk identities; they do not establish GAN convergence, teacher
+calibration, optimization convergence, privacy, or benchmark retention.
+
+\paragraph{Reservoir replay needs uniform eviction as well as uniform admission.}
+Dark Experience Replay~\cite{buzzega2020der} maintains a fixed-capacity buffer
+without knowing the final stream length.  If the buffer capacity is
+$m>0$, $n>0$ items have been seen, and every old item has marginal $m/n$,
+then admitting item $n+1$ with probability $m/(n+1)$ and conditionally
+evicting each occupied slot with probability $1/m$ gives
+\[
+ \frac{m}{n}\left(1-\frac{m}{n+1}\frac1m\right)
+ =\frac{m}{n+1}.
+\]
+The incoming item has the same marginal.  Lean proves this step, its
+propagation through every finite continuation using only the current stream
+length, validity of the probability ratios when $0<m\leq n$, and exact
+expected occupancy
+(\leanname{oldMarginalAfterStep\_eq\_uniformMarginal\_succ},
+\leanname{propagatedOldMarginal\_eq\_uniformMarginal},
+\leanname{uniformMarginal\_mem\_Icc},
+\leanname{sum\_uniformMarginals\_eq\_capacity}).
+
+Uniform conditional eviction is load bearing.  With capacity two after two
+items, admitting the third with the correct probability $2/3$ but using
+conditional eviction probabilities $3/4$ and $1/4$ leaves the two old
+marginals at $1/2$ and $5/6$, rather than $2/3$
+(\leanname{biasedEviction\_breaks\_equalMarginals}).
+Zero capacity supplies no normalized occupied-slot distribution
+(\leanname{uniformEvictionProbability\_zero}).
+These results certify equal marginals and expected occupancy, not the joint
+distribution over buffer subsets, independence of inclusion events, stored
+logit quality, calibration, or continual-learning performance.
+
+\paragraph{Low endpoints certify a linear mode only under a shape hypothesis.}
+MC-SGD~\cite{mirzadeh2021mode} evaluates task losses on straight
+parameter-space paths from earlier solutions to a common candidate.  If a loss
+is convex, the value at interpolation coordinate $t\in[0,1]$ is at most the
+affine combination of its endpoint losses; hence a common endpoint budget
+controls the entire segment
+(\leanname{convexOn\_univ\_segmentPoint\_le},
+\leanname{convexOn\_univ\_segmentPoint\_le\_endpointBudget}).
+Without convexity, low endpoints alone say no such thing: the scalar loss
+$4w(1-w)$ is zero at $0$ and $1$ but equals one at the midpoint
+(\leanname{lowEndpoints\_highMidpoint},
+\leanname{nonconvexBarrierLoss\_not\_convexOn\_univ}).
+
+The source's finite-grid path approximation also has an exact bookkeeping
+boundary.  A grid written as zero, interior coordinates and one decomposes
+into the anchor loss, interior penalty and candidate loss
+(\leanname{discretePathLoss\_zero\_cons\_append\_one}).
+But minimizing their aggregate does not imply minimizing each task separately.
+For scalar task losses $w^2$ and $(w-2)^2$, every grid reduces to its
+sum-of-squared-coordinates times their aggregate.  At positive grid weight the
+unique aggregate minimizer is $w=1$, although task one is strictly better at
+$0$ and task two at $2$
+(\leanname{twoTaskDiscretePathObjective\_eq\_weighted},
+\leanname{quadraticTwoTaskPathObjective\_eq\_one\_iff},
+\leanname{aggregate\_minimizer\_not\_component\_minimizer}).
+This corrects the informal inference following Equation~4; it does not refute
+the finite objective itself.  Neural-loss convexity, empirical connectivity,
+quadrature accuracy, optimizer convergence and benchmark gains remain
+empirical or executable obligations.
+
+\paragraph{A task-free plateau flag is exactly once only if its two tests do not overlap.}
+The online MAS protocol of Aljundi, Kelchtermans, and
+Tuytelaars~\cite{aljundi2019taskfree} consolidates importance weights when
+the current loss-window mean and standard deviation fall below their plateau
+thresholds.  Its flag then blocks further consolidation until a peak satisfies
+\[
+ \mu_{\rm old}+\sigma_{\rm old}<\mu_{\rm window}.
+\]
+Lean models Algorithm~1's two tests in their printed sequential order.  A
+consolidation with no simultaneous peak disarms the gate, so an unchanged
+window cannot emit again; a later peak rearms it
+(\leanname{same\_observation\_does\_not\_repeat\_of\_not\_peak},
+\leanname{step\_armed\_of\_peak}).
+The sufficient certificate
+\[
+ \delta_\mu\leq\mu_{\rm old}+\sigma_{\rm old}
+\]
+makes the plateau and peak mean inequalities disjoint and yields an
+exactly-once unchanged-window theorem
+(\leanname{plateau\_not\_peak\_of\_meanThreshold\_le\_peakBoundary},
+\leanname{same\_observation\_does\_not\_repeat\_of\_threshold\_order}).
+
+This condition is not syntactic bookkeeping.  Because the source prints two
+independent \texttt{if} statements, an observation satisfying both tests first
+consolidates and then immediately rearms the flag.  The same observation can
+therefore consolidate again
+(\leanname{simultaneous\_peak\_allows\_same\_observation\_repeat},
+\leanname{sequential\_if\_overlap\_repeats\_consolidation}).
+A separate plateau--peak--plateau fixture realizes the intended lifecycle.
+The state-machine result does not establish that low loss statistics identify
+a semantic task plateau, that a hard-example buffer is representative, that
+importance estimates are calibrated, or that the method retains accuracy.
+
+The closed-form pure-replay model of Banayeeanzade, Soltanolkotabi, and
+Rostami~\cite{banayeeanzade2025replay} makes the memory budget itself
+nonmonotone.  Write
+$D=\lVert w_1^\star-w_2^\star\rVert^2$,
+$A=\lVert w_1^\star\rVert^2$, and $s=p-n-m-1$.  Equation~(18) is
+\[
+  F(m)=\frac{n}{p}\left(1+\frac{m}{s}\right)D-\frac{m}{p}A.
+\]
+Its exact one-sample increment is
+\[
+ F(m+1)-F(m)
+ =\frac{n(p-n-1)D-A\,s(s-1)}{p\,s(s-1)}
+ \quad
+ \text{(\leanname{pureReplayForgettingClosedForm\_memoryStep\_difference}).}
+\]
+Hence, when $p>0$ and $s>1$, one more replay sample strictly improves the
+expression exactly when
+$n(p-n-1)D<A\,s(s-1)$, and strictly worsens it under the reverse inequality
+(\leanname{pureReplayForgettingClosedForm\_add\_memory\_lt\_iff},
+\leanname{pureReplayForgettingClosedForm\_lt\_add\_memory\_iff}).
+The boundary is not cosmetic: at $(p,n,m,A)=(10,2,1,1)$, increasing memory
+from one to two moves $F$ from $2/15$ to $2/25$ when $D=1$, but from $3/5$ to
+$16/25$ when $D=3$.  This is a derived theorem about the source's
+two-task noiseless Gaussian linear closed form.  It does not reprove the
+random-matrix expectation, transfer the formula to nonlinear carriers, or
+license replay or persistent evidence without measuring the required
+quantities.
+
+Fixed context-dependent gating (XdG)~\cite{masse2018xdg} makes a complementary
+claim about where a task may write.  For active endpoint sets $A_{\rm out}$ and
+$A_{\rm in}$, the active connection support is their Cartesian product, hence
+\[
+  |S|=|A_{\rm out}|\,|A_{\rm in}|,\qquad
+  |S_1\cap S_2|
+   =|A_{{\rm out},1}\cap A_{{\rm out},2}|\,
+    |A_{{\rm in},1}\cap A_{{\rm in},2}|.
+\]
+These identities are exact
+(\leanname{card\_connectionSupport},
+\leanname{card\_connectionSupport\_inter}).  If a new task's support is
+disjoint from an old task's support, its masked gradient update preserves the
+old masked linear readout
+(\leanname{disjoint\_support\_update\_preserves\_maskedLinear}).
+The source's concrete $400$-active-of-$2{,}000$ construction consequently
+activates $160{,}000$ of four million hidden-to-hidden connections---exactly
+four percent---and leaves ninety-six percent inactive.  The layer-local scope
+is load-bearing: disjoint hidden supports do not protect a shared downstream
+bias
+(\leanname{disjoint\_hidden\_support\_does\_not\_protect\_shared\_bias}).
+Thus task masks can certify a local noninterference boundary, but the source's
+whole-network retention and its complementarity with SI or EWC remain
+empirical until shared heads, optimizer state, normalization state, and every
+mutable path are bound.
+
+Latent replay~\cite{pellegrini2020latent} exposes the corresponding
+representation-state boundary.  Let $f$ be the representation below the replay
+site.  If every cached activation equals the current $f(x)$ for its raw example,
+then a replay step from cached activations is exactly the native-rehearsal step
+(\leanname{latentReplayStep\_eq\_nativeReplayStep\_of\_cacheMatches}).
+For a finite representation trace $z_0,\ldots,z_T$,
+\[
+  \lVert z_T-z_0\rVert
+    \le \sum_{t<T}\lVert z_{t+1}-z_t\rVert ,
+\]
+and an $L$-Lipschitz downstream head transports this into an output mismatch
+bounded by $L$ times the same path variation
+(\leanname{norm\_finalLatent\_sub\_initial\_le\_latentPathVariation},
+\leanname{norm\_head\_final\_sub\_initial\_le\_pathVariation}).
+A constant representation path has zero variation, while refreshing a cache at
+the current representation resets its pointwise age to zero.  Crucially,
+``frozen weights'' is weaker than a frozen representation map: a scalar
+stateful-normalization fixture keeps the weight fixed but changes its running
+state, thereby aging the cached activation and changing the downstream output
+(\leanname{fixed\_weight\_mutable\_normalization\_ages\_cache},
+\leanname{mutable\_normalization\_changes\_downstream\_output}).
+Consequently, latent or frozen-cone replay is exact only after parameters,
+normalization buffers, mode, randomness, preprocessing, and every other
+representation-affecting state have been authenticated; the source's storage,
+run-time, accuracy, and refresh-rate findings remain empirical.
+
+Compute-budgeted adaptive layer freezing~\cite{seo2025budgeted} supplies an
+explicit exchange criterion for deciding when such freezing is worthwhile.
+If $R$ is the anticipated information-per-compute rate, $b_n$ the backward
+cost of layer $n$, $q_n$ its current-batch Fisher-trace proxy, and $B_n$ the
+criterion for freezing the first $n$ layers, then
+\[
+  B_{n+1}=B_n+(R b_n-q_n).
+\]
+Hence extending a frozen prefix is weakly beneficial exactly when
+$q_n\le Rb_n$, and strictly beneficial exactly when the inequality is strict
+(\leanname{batchFreezingCriterion\_le\_succ\_iff},
+\leanname{batchFreezingCriterion\_lt\_succ\_iff}).  The layerwise condition
+lifts to a nonnegative certificate for an entire prefix.  It cannot be
+replaced by a global ratio: a two-layer fixture makes freezing the first layer
+the unique best global Fisher-per-compute choice while giving it a negative
+criterion on a shifted current batch
+(\leanname{twoLayer\_global\_rate\_prefers\_freeze\_first},
+\leanname{global\_best\_prefix\_can\_have\_negative\_batch\_criterion}).
+
+The paper's similarity-aware replay distribution has a second exact boundary.
+At positive temperature it is normalized and strictly prefers lower
+effective-use scores
+(\leanname{sum\_retrievalProbability\_eq\_one},
+\leanname{retrievalProbability\_gt\_of\_effectiveUse\_lt}).  At zero
+temperature exact-real division maps all logits to zero and erases this order.
+Moreover, cosine-valid negative class similarity can make effective use
+negative despite nonnegative use counts
+(\leanname{negative\_similarity\_can\_make\_effectiveUseFrequency\_negative}).
+Thus it is a signed routing score unless stronger hypotheses are checked, not
+a literal frequency.  Fisher trace remains a proxy: future knowledge,
+reinvestment of saved work, estimator fidelity, FLOP accounting, and accuracy
+remain executable or empirical obligations.
+
+\paragraph{Matched update counts are not matched computation.}
+The computationally budgeted protocol of Prabhu et
+al.~\cite{prabhu2023budgetcl} charges auxiliary teacher and selection
+forwards in the same work unit as ordinary training.  If one baseline update
+costs two half-baseline units, distillation costs three and costly sampling
+costs four.  The source's ratios are then exact on divisible budgets:
+\[
+  W_{\mathrm{base}}(3k)=W_{\mathrm{distill}}(2k),
+  \qquad
+  W_{\mathrm{base}}(2k)=W_{\mathrm{sample}}(k)
+\]
+(\leanname{distillation\_two\_thirds\_exact},
+\leanname{costlySampling\_one\_half\_exact}).
+For every positive per-update cost, integer division gives the greatest
+affordable update count
+(\leanname{affordableIterations\_maximal}). The rounding boundary is
+load-bearing: at a nominal baseline budget of one hundred updates,
+sixty-six distillation updates cost $198$ half-units, the baseline costs
+$200$, and rounding upward to sixty-seven costs $201$
+(\leanname{distillation\_rounding\_boundary\_at\_one\_hundred}).
+
+The same finite arithmetic governs a fixed horizon split across stream steps.
+All work is allocated exactly iff the number of steps divides the total
+budget
+(\leanname{allocatedAcrossSteps\_eq\_iff\_dvd}); the source's $8{,}000$-update
+horizon divides into $400$, $160$, and $40$ updates across $20$, $50$, and
+$200$ steps, respectively. A zero-cost profile has no meaningful finite
+affordability maximum, and a nondivisible horizon leaves a remainder. These
+are accounting theorems only: traces must still bind a common work unit and
+measure auxiliary operations, elapsed GPU work, and completed updates, while
+accuracy and verified discovery yield remain empirical.
+
+\paragraph{A real-time stream does not wait for a slow learner.}
+The protocol of Ghunaim et al.~\cite{ghunaim2023realtime} treats relative
+complexity as a schedule, not merely a statistic. If a method update consumes
+$p>0$ work units and each stream arrival supplies $q>0$, then after $T$
+arrivals the greatest affordable whole-update count is
+\[
+  U(T)=\left\lfloor \frac{Tq}{p}\right\rfloor .
+\]
+The formal scheduler proves maximality, exact conservation of consumed plus
+residual work, and a residual below one method update
+(\leanname{completedUpdates\_maximal},
+\leanname{consumed\_add\_residual\_eq\_available},
+\leanname{residualWork\_lt\_methodWork}). If $q\le p$, then $U(T)\le T$ and
+the remaining arrivals are precisely the skipped stream steps.
+
+Rational rates are load-bearing. On a common 60-step horizon, relative
+complexities $1,4/3,2,5/2,3,6$ complete respectively
+$60,45,30,24,20,10$ updates
+(\leanname{source\_table\_sixty\_step\_schedule}). Rounding $4/3$ down to the
+integer delay one incorrectly grants 60 updates rather than 45
+(\leanname{rounding\_four\_thirds\_to\_one\_overallocates}). Accordingly,
+future PC comparisons must record the model version used for every
+prediction, selected and skipped batches, work units, wall/GPU time, and
+checker parity. The arithmetic does not validate FLOP proxies or establish
+accuracy or discovery yield.
+
+\paragraph{Exact memory consistency is conditional.}
+Adaptive Continual Memory~\cite{prabhu2023acm} combines a fixed feature
+extractor with approximate nearest-neighbor storage.  Its exact finite core
+can be stated without an optimizer: for the discrete metric, exact
+one-nearest-neighbor lookup with an explicit most-recent-first tie rule recalls
+a newly prepended example immediately
+(\leanname{inserted\_example\_is\_immediately\_recalled}).  Every finite prefix
+of later inserts whose features differ from the query preserves that stored
+label
+(\leanname{distinct\_future\_inserts\_preserve\_stored\_example}).
+
+The hypotheses are load-bearing.  A conflicting duplicate feature can reverse
+the old prediction
+(\leanname{conflicting\_duplicate\_can\_reverse\_old\_prediction}); with
+$k=3$, two nonmatching labels can outvote a newly inserted exact match
+(\leanname{three\_neighbor\_majority\_can\_defeat\_exact\_insert}); and changing
+only the encoder can reverse recall while leaving memory byte-for-byte
+unchanged
+(\leanname{encoder\_drift\_can\_reverse\_recall}). Thus a zero optimization
+stability gap does not by itself imply prediction invariance. Approximate HNSW
+recall, logarithmic retrieval cost, wall time, and accuracy remain empirical
+obligations rather than consequences of the exact-memory theorem.
+
+\paragraph{Inverse-frequency replay needs capacity reconciliation.}
+Frequency-Aware Replay~\cite{hemati2023cir} gives each tracked class a weight
+inverse to the number of stream experiences in which it has appeared. For a
+finite nonempty class set with positive observation counts, the normalized
+weights are positive, sum to one, and strictly favor a less frequently
+observed class
+(\leanname{sum\_normalizedInverseQuota\_eq\_one},
+\leanname{normalizedInverseQuota\_gt\_of\_observations\_lt}).
+If a buffer of capacity $M$ independently rounds every real-valued class
+request upward, the total request $S$ satisfies the sharp general envelope
+\[
+  M \le S < M + |\mathcal C|
+\]
+(\leanname{capacity\_le\_totalRoundedSlots},
+\leanname{totalRoundedSlots\_lt\_capacity\_add\_card}).
+
+The lower inequality need not be equality. Two classes observed once and
+twice receive normalized quotas $2/3$ and $1/3$; a one-slot buffer therefore
+requests $\lceil2/3\rceil+\lceil1/3\rceil=2$ slots
+(\leanname{two\_class\_ceil\_oversubscribes\_one\_slot}). Moreover, totalized
+rational division gives a zero-count class zero inverse weight, rather than
+infinite priority
+(\leanname{zero\_observation\_is\_not\_prioritized}), so initialization at one
+is essential. Any use in the unified carrier must consequently trace the
+positive-count invariant and an explicit post-rounding allocation rule;
+accuracy and forgetting reduction remain empirical.
+
+\paragraph{The printed ordered-pair task-confusion identity double-counts.}
+Nori and Kim~\cite{nori2024taskconfusion} decompose a multiclass
+discriminative loss into pairwise class losses. Equation~(2) as printed sums
+every ordered distinct pair while using the normalization for an unordered
+pair sum. If $\ell_i$ is the additive contribution of class $i$, the exact
+finite identity is
+\[
+ \sum_i\sum_{j\ne i}(\ell_i+\ell_j)
+   =2(N-1)\sum_i\ell_i
+\]
+(\leanname{orderedPairLoss\_eq}). Thus the printed factor $1/(N-1)$ returns
+twice the original loss; $1/(2(N-1))$ repairs the ordered-pair formula
+(\leanname{printed\_ordered\_normalization\_eq\_twice},
+\leanname{corrected\_ordered\_normalization}). Already for two class
+contributions $3$ and $5$, the displayed ordered expression evaluates to
+$16$ while the original loss is $8$
+(\leanname{printed\_two\_class}). This refutes the equality as
+printed, but a positive constant rescaling preserves minimizers, so it does
+not by itself refute every downstream optimization argument.
+
+The source's derivative incompatibility core does survive: a nonzero
+cross derivative at an individual differentiable minimum excludes that
+point from minimizing the summed objective
+(\leanname{crossDerivative\_excludes\_sum\_minimizer}). Its generative
+feasibility statement is conditional in a second, load-bearing way. If
+inter-task confusion is identically zero and one parameter simultaneously
+minimizes every diagonal block, then it minimizes the total objective
+(\leanname{zero\_confusion\_and\_simultaneous\_minima\_are\_globally\_optimal}).
+Block diagonality alone does not supply the shared parameter: the scalar
+blocks $x^2$ and $(x-1)^2$ have unique, incompatible minimizers
+(\leanname{block\_diagonal\_does\_not\_imply\_simultaneous\_minimizer}).
+Accordingly, the theorem identifies what follows from a common minimizer; it
+does not prove that such a minimizer exists for a generative learner.
+
+The utility statistics of continual backpropagation
+\cite{dohare2024plasticity} reveal a source-level indexing boundary.  An
+exponential average initialized at zero and fed a constant signal is exactly
+$(1-\eta^a)$ times that signal after age $a$
+(\leanname{constantEmaRun\_eq}); dividing the current accumulator by this
+factor therefore recovers the signal.  Equation~(4) as typeset instead uses
+the previous accumulator.  Its literal finite semantics returns zero at age
+one and $2/3$, rather than one, for decay $1/2$ at age two
+(\leanname{printedLaggedBiasCorrection\_age\_one},
+\leanname{printedLaggedBiasCorrection\_half\_age\_two}).  The
+replacement mechanism has a separate exact invariant: transferring
+mean-activation times outgoing weight to the consumer bias before zeroing
+that weight preserves preactivation at the mean, with off-mean drift exactly
+equal to weight times mean-minus-activation
+(\leanname{transferMean\_zeroWeight\_preserves\_at\_mean},
+\leanname{transferMean\_zeroWeight\_change\_exact}).  These are finite
+mechanism theorems, not a proof of the paper's empirical plasticity claims.
+
+The last-layer ``zapping'' mechanism of Frati et al.
+\cite{frati2024reset} has a complementary upstream-credit boundary.  For a
+finite linear head and half-squared loss, the representation gradient is the
+prediction residual times the head vector, and a finite feature perturbation
+obeys an exact quadratic expansion
+(\leanname{halfSquaredFeatureLoss\_add\_exact}).  Consequently a zero head
+sends no upstream gradient, opposite heads reverse the gradient at a zero
+feature, and two heads can make the same present prediction while inducing
+different representation gradients
+(\leanname{equal\_prediction\_different\_featureGradient}).
+On the frozen scalar unit-feature restriction, however, $T$ head steps leave
+the residual equal to $(1-\eta)^T$ times its initial value
+(\leanname{runUnitFeatureHeadSteps\_sub\_target}).  The same nondegenerate
+schedule therefore preserves the strict ordering of two initial losses
+(\leanname{equalSchedule\_loss\_lt\_iff}).  A reset that starts farther from
+the fixed-feature target cannot become beneficial through identical head
+relearning alone; the source's benefit must use representation training,
+path dependence, stochastic resampling, or another mechanism absent from this
+restriction.  The result neither proves nor refutes the reported transfer
+improvements.
+
+Linear CKA supplies a caution about using representation similarity to judge
+these mechanisms.  In the finite squared formulation, independent nonzero
+isotropic rescalings leave the statistic unchanged
+(\leanname{linearCkaSquared\_scale}), and every dot-product-preserving feature
+map leaves the entire Gram signature unchanged
+(\leanname{linearCkaSquared\_map\_of\_dotPreserving}).  This recovers and
+slightly strengthens the orthogonal and positive-scaling invariances of
+Kornblith et al.~\cite{kornblith2019cka}.  The boundary is constructive:
+the invertible feature map $(x_1,x_2)\mapsto(x_1,2x_2)$ changes a centered
+fixture's squared CKA from $1$ to $125/152$
+(\leanname{invertibleAnisotropicRescaling\_changesCka}).
+Davari et al.'s subset-translation mechanism
+\cite{davari2022cka} has a separate function-preserving witness.  Translating
+one of three samples in a feature ignored by the readout and then recentering
+preserves that readout on every sample
+(\leanname{subsetTranslation\_preserves\_readout}), while squared CKA with the
+original representation falls to $5/8$
+(\leanname{functionPreserving\_subsetTranslation\_changesCka}).
+Thus neither a high nor a changed CKA value alone establishes functional or
+mechanistic equivalence.  The finite witness does not claim the source's
+asymptotic subset-translation formula or its empirical intervention results.
+
+Cyclical learning rates provide a complementary finite-time example in which
+one step cannot be judged in isolation.  On a scalar quadratic mode, an
+arbitrary finite rate schedule acts by the product of its per-step
+multipliers
+(\leanname{runRateSchedule\_eq\_scheduleGain\_mul}); repeated cycles raise that
+gain to the cycle count
+(\leanname{runRateCycles\_eq\_scheduleGain\_pow\_mul}).  This yields an exact
+instance of Smith's temporary-harm intuition \cite{smith2017clr}: a
+unit-curvature rate-$3$ step quadruples loss, but following it by rate $3/4$
+makes the two-step cycle quarter the starting loss and beat two matched
+rate-$1/4$ steps
+(\leanname{largeThenCorrectiveCycle\_beats\_twoQuarterRateSteps}).
+The nearby cycle $(3,1/4)$ instead has gain $-3/2$ and increases loss
+(\leanname{unstableLargeCycle\_increases\_loss}), so a large maximum
+rate alone does not license the one-cycle mechanism of Smith and Topin
+\cite{smith2018super}.  Moreover, fixed scalar curvature makes the gain
+invariant under schedule reversal (\leanname{scheduleGain\_reverse}).
+Order-specific gains and the reported super-convergence therefore require
+curvature variation, noncommuting modes, stochasticity, momentum,
+regularization, or empirical structure outside this theorem.
+
+The missing curvature-feedback mechanism has its own exact reduced boundary.
+Cohen et al.'s scalar quadratic calculation \cite{cohen2021edge} is recovered
+inside the declared two-coordinate edge-of-stability map: the unstable
+coordinate is multiplied by
+$1-\eta(2/\eta+y)=-(1+\eta y)$
+(\leanname{step\_unstable\_eq\_quadratic\_multiplier}).  Thus positive
+sharpness offset strictly grows every nonzero unstable amplitude, while
+$-2<\eta y<0$ strictly contracts it
+(\leanname{unstableAmplitude\_grows\_above\_edge},
+\leanname{unstableAmplitude\_contracts\_below\_edge}).
+Declaring equation~(3) of Damian, Nichani, and Lee
+\cite{damian2022self} as an exact finite map makes its negative feedback
+algebraically sharp: the offset decreases iff
+$2\alpha<\beta x^2$, increases iff $\beta x^2<2\alpha$, and is preserved
+exactly at equality
+(\leanname{sharpnessOffset\_decreases\_iff},
+\leanname{sharpnessOffset\_increases\_iff},
+\leanname{sharpnessOffset\_preserved\_iff}).  At zero offset the balance
+surface has a sign-flipping period-two orbit
+(\leanname{boundary\_twoCycle}); conversely, zero unstable amplitude removes
+the stabilizing term and leaves an arithmetic sharpening trajectory
+(\leanname{iterate\_zero\_unstable}).  These are exact theorems of the reduced
+map, not claims that arbitrary neural losses satisfy the source's Taylor,
+eigengap, remainder, ODE-tracking, or empirical hypotheses.
+
+The one-unstable-mode central flow of Cohen et al.
+\cite{cohen2024central} sharpens this boundary into an exact projection
+identity.  In the declared reduced flow, the unique variance cancelling the
+affine sharpness drift is
+$2\langle\nabla S,-\nabla L\rangle/\lVert\nabla S\rVert^2$
+(\leanname{sharpnessDrift\_eq\_zero\_iff},
+\leanname{oneModeVariance\_balances\_sharpness}).  Substituting it into the
+sharpness-penalized direction gives exactly the negative loss gradient with
+its sharpness-gradient component removed
+(\leanname{penalizedFlow\_eq\_centralFlow}).  The resulting direction is
+orthogonal to $\nabla S$ and has nonpositive first-order loss derivative at
+every nonnegative learning rate
+(\leanname{inner\_sharpnessGradient\_centralFlow\_eq\_zero},
+\leanname{inner\_lossGradient\_centralFlow\_nonpos}).  This projection is the
+same Hilbert-space least-squares residual used by the depth-one Anderson
+theory, rather than a second ad hoc construction.  Its limits are also exact:
+a loss gradient parallel to a nonzero sharpness gradient leaves no admissible
+direction, while regressive sharpening makes the formula request a negative
+variance
+(\leanname{centralFlow\_eq\_zero\_of\_lossGradient\_eq\_smul},
+\leanname{regressive\_negative\_variance}).  The paper itself calls
+the time-averaging derivation informal; these theorems certify equations
+(12)--(15) of the reduced model, not discrete neural-trajectory tracking,
+Taylor remainders, eigenspace assumptions, or the empirical predictions.
+
+Adaptive restart supplies a finite safeguard for accelerated blocks without
+turning a heuristic into a universal convergence theorem.  The function scheme
+of O'Donoghue and Cand\`es \cite{odonoghue2012restart} is exactly rejection by
+the zero-tolerance endpoint gate
+(\leanname{functionRestart\_iff\_endpointRejected}); the gradient scheme is
+exactly the positive inner-product test, equivalently an obtuse angle between
+momentum displacement and negative gradient
+(\leanname{gradientRestart\_iff\_negativeGradient\_obtuse}).  When the gradient
+and objective comparison share an anchor, a first-order lower bound makes the
+gradient test imply a function restart
+(\leanname{gradientRestart\_implies\_functionRestart\_of\_sameAnchor}).
+The anchor condition is substantive: one scalar-quadratic fixture triggers the
+lookahead-gradient restart while the objective improves, while another raises
+the objective without triggering the same-anchor gradient test
+(\leanname{lookaheadGradient\_can\_restart\_during\_improvement},
+\leanname{functionIncrease\_without\_sameAnchorGradientRestart}).
+Operationally, restart preserves the current position, zeros the extrapolation
+displacement, and is idempotent
+(\leanname{momentumDisplacement\_resetMomentum},
+\leanname{resetMomentum\_idempotent}).  A concrete settling implementation must
+still establish the source's convex or locally quadratic hypotheses before
+claiming its accelerated rate.
+
+Checkpoint averaging has a similarly exact admission boundary.  Section~3.5
+of Izmailov et al. \cite{izmailov2018swa} compares the prediction at an averaged
+weight with the average of predictions by centering the sampled weight
+displacements.  The formal result generalizes uniform scalar averaging to
+arbitrary nonnegative affine weights and real normed parameter and output
+spaces: affine normalization removes the constant term, centered displacements
+remove the complete linear term, and a declared pointwise Taylor-remainder
+budget controls the remaining aggregate error
+(\leanname{weightedPrediction\_sub\_center\_eq\_remainder},
+\leanname{norm\_weightedPrediction\_sub\_center\_le}).
+Affine predictors commute with averaging exactly
+(\leanname{weightedPrediction\_affine\_eq\_center}).  Both premises are sharp:
+centered weights under a scalar-square predictor have a unit second-order gap,
+while noncentered weights fail even for the identity predictor
+(\leanname{centered\_square\_prediction\_has\_unit\_gap},
+\leanname{noncentered\_affine\_prediction\_mismatch}).  Consequently
+weight averaging is a theorem-licensed approximation only after a trace
+supplies centering and local remainder evidence; the source's wider-optimum,
+generalization, batch-normalization and accuracy results remain empirical.
+
+One recent tranche illustrates the difference between bibliography and formalization.
+The PReLU recurrence of
+\href{https://arxiv.org/abs/1502.01852}{He et al.} is recovered as an exact finite-depth
+second-moment product; the prescribed scale preserves the moment, while zero fan-in and
+using the ReLU scale at nonzero PReLU slope are proved failure boundaries. The residual
+equations of \href{https://arxiv.org/abs/1512.03385}{He et al.} are generalized to a
+heterogeneous product transport bound, with identity at zero branch and expansion at the
+identity branch. \href{https://arxiv.org/abs/1901.09321}{Fixup}'s scalar branch
+condition is strengthened to heterogeneous preceding coefficients, separating a live
+zero-output last-layer update from a dead zero prefix. The Pre-LN/Post-LN ordering of
+\href{https://arxiv.org/abs/2002.04745}{Xiong et al.} yields an exact update-zero
+separation and a two-coordinate counterexample: a zero Pre-LN branch is identity, while
+Post-LN still changes a non-fixed state.
+
+The correlation linearization of \cite{schoenholz2017} is also recovered as an
+exact finite scalar transport law. For every positive subcritical multiplier
+$\chi<1$, the residual after $L$ layers is
+$\chi^L\varepsilon_0=\exp(-L/\xi_c)\varepsilon_0$ with
+$\xi_c^{-1}=-\log\chi$
+(\leanname{linearizedResidual\_eq\_depthScale\_exp}). A requested finite
+propagation horizon lies below $\xi_c$ exactly when
+$\exp(-1/H)<\chi$, and a constructive theorem supplies such a strictly
+subcritical multiplier for every $H>0$
+(\leanname{budget\_lt\_correlationDepthScale\_iff},
+\leanname{exists\_subcritical\_multiplier\_with\_depthScale\_gt}).
+The ordered, critical and chaotic cases respectively contract, preserve and
+expand every nonzero linearized residual. Equation~(13)'s independent-mask
+dropout term is likewise exact at correlation one: nontrivial dropout lowers
+correlation under positive variance, but an identically zero activation moment
+leaves it fixed
+(\leanname{dropoutCorrelationAtOne\_lt\_one},
+\leanname{dropoutCorrelationAtOne\_zero\_activationMoment}).
+These are conditional algebraic gates for measured runtime quantities, not a
+formalization of the Gaussian mean-field approximation or a guarantee of
+trainability.
+
+Equation~(8) of \cite{poole2016chaos} supplies a coupled geometric recurrence.
+Taking its Euclidean metric and squared-curvature updates as finite dynamics,
+the metric is exactly $\chi_1^L g_0$, while curvature error around the
+declared fixed point is exactly
+$(1/\chi_1)^L$ times its initial error
+(\leanname{euclideanMetric\_eq\_pow\_mul},
+\leanname{curvatureSq\_sub\_fixedPoint\_eq}). More revealingly, squared
+curvature times Euclidean metric obeys an exact product law: the inherited
+curvature cancels the metric stretch, leaving precisely the new nonlinear
+curvature-injection term
+(\leanname{gaussMetric\_succ}). Positive injection therefore gives strict
+layerwise growth, whereas zero injection conserves the product even when the
+linear metric expands
+(\leanname{gaussMetric\_succ\_strictly\_increases},
+\leanname{gaussMetric\_zero\_curvatureSource}). This formalizes the finite
+recurrence and its boundary, not the random-network mean-field derivation,
+activation integrals, manifold limit, shallow lower bound or simulations.
+
+The spatial hierarchy in \cite{xiao2018} adds a second boundary. Abstracting a
+Fourier mode to any finite family of unit complex phases, every nonnegative
+variance kernel of total mass one has mode-gain norm at most one
+(\leanname{norm\_modeGain\_le\_one}) and preserves the constant mode exactly.
+A point-mass kernel gives every phase unit gain, hence preserves every such
+mode at criticality
+(\leanname{critical\_pointKernel\_modeResidual}). By contrast, the normalized
+two-site uniform kernel preserves the constant mode but annihilates the
+alternating mode after one layer
+(\leanname{uniformTwoKernel\_separates\_modes},
+\leanname{uniformTwoKernel\_alternating\_annihilated}).
+Thus average criticality cannot certify preservation of spatial structure.
+This finite mode theorem does not recover the paper's random-channel limit,
+multi-channel orthogonal-kernel construction or end-to-end Jacobian spectrum;
+those remain separate obligations.
+
+The one-hidden-layer linear argument of \cite{yang2022mup} gives a complementary
+width boundary. Expanding one simultaneous update of
+$f(x)=V^\top Ux$ yields four exact dot-product terms
+(\leanname{twoLayerLinearOutput\_after\_update}). Under orthogonal standard
+statistics, its output is strictly increasing with width whenever the
+input--signal product is positive
+(\leanname{standardOneStepOutput\_strictMono\_width}). Under the source's
+maximal-update squared-norm statistics and reciprocal input/output-layer
+rates, any two positive-width finite networks instead have exactly the same
+one-step output
+(\leanname{maximal\_update\_statistics\_width\_invariant}). Rational
+width-four witnesses begin at the same zero output and move to five under
+standard scaling versus two under maximal-update scaling. This theorem
+recovers the paper's finite algebraic mechanism, not its random or
+infinite-width limit, optimizer generalization, optimal-hyperparameter claim,
+or empirical zero-shot transfer.
+
+The depthwise residual prescription of \cite{bordelon2023depth} exposes why a
+scalar coefficient is only meaningful together with branch geometry. For
+orthonormal residual directions, the squared norm of the accumulated effect is
+exactly the sum of squared coefficients
+(\leanname{orthonormal\_residualEffect\_norm\_sq\_eq}), so the uniform
+$1/\sqrt L$ scale has depth-independent quadratic budget
+(\leanname{sqrtDepthScale\_quadraticBudget}). Fully aligned unit directions
+give the opposite boundary: the same scale has squared effect proportional to
+$L$, whereas uniform $1/L$ preserves their total effect but makes the
+orthogonal quadratic budget decay. No uniform scalar coefficient can make both
+budgets one once $L>1$
+(\leanname{no\_scalar\_depthScale\_preserves\_both\_geometries}).
+Consequently any promoted depth profile must record cross-branch geometry as
+well as its coefficient. These finite identities neither establish the
+paper's dynamical mean-field limit nor its empirical hyperparameter transfer.
+
+\cite{yang2023depthmup} sharpens that one-coefficient law into a paired
+branch-and-update prescription. If the residual multiplier and the effective
+parameter update both scale as $1/\sqrt L$, their $L$ coherently aligned
+training contributions have exactly depth-independent total coefficient
+(\leanname{sqrtDepthScales\_coherentUpdateCoefficient}). The same per-layer
+contributions have orthonormal-direction quadratic budget proportional to
+$1/L$
+(\leanname{sqrtDepthScales\_updateQuadraticBudget}); correlation is therefore
+a load-bearing hypothesis, not a decorative intuition. Holding the effective
+update scale constant instead makes the coherent squared coefficient grow
+linearly with depth
+(\leanname{sqrtBranch\_constantUpdate\_coherent\_sq}). Moreover, for nonzero
+branch amplitude, requiring the coherent coefficient to stay invariant
+uniquely forces the paired $1/\sqrt L$ effective-update scale
+(\leanname{coherent\_invariance\_forces\_sqrt\_updateScale}). These exact
+finite statements do not claim the paper's tensor-program limit, optimizer
+derivation, infinite-depth feature diversity or empirical transfer.
+
+Fact~C.1 and Theorem~4.1 of \cite{santurkar2018} admit an exact finite
+interpretation. The activation-gradient pullback through one normalized scalar
+feature is the gain-to-standard-deviation ratio times the incoming gradient
+after subtracting its constant-batch component and its component along the
+normalized activation. The checked Pythagorean identity subtracts the squares
+of both components explicitly
+(\leanname{exactBatchNorm\_gradientPullback\_normSq\_eq}).
+The unscaled projection is therefore nonexpansive and is strictly smaller when
+either removed component is nonzero
+(\leanname{batchGradientProjection\_normSq\_lt}). This is not universal
+strict smoothing: a nonzero four-sample gradient orthogonal to both directions
+is unchanged
+(\leanname{orthogonalFour\_projection\_unchanged}).
+The result recovers the finite activation-gradient algebra; it does not imply
+the paper's Hessian, weight-space, global-optimization or empirical claims.
+
+The same discipline recovers the decision-theoretic core of
+\href{https://arxiv.org/abs/2311.06460}{logit-adjusted softmax}. Adding
+temperature-scaled log prior multiplies unnormalized softmax mass by the corresponding
+powered prior; at unit temperature, positive class-conditional likelihoods recover the
+finite Bayes posterior. The flattened finite-window estimator is normalized, and
+additive smoothing makes every class prior strictly positive. More importantly, the
+paper's class-balanced decision boundary is proved directly: any pointwise maximizer of
+class-conditional likelihood minimizes finite class-balanced error
+(\leanname{likelihoodMaximizer\_minimizes\_classBalancedError}).
+A normalized two-class fixture with a three-to-one prior separates that predictor from
+the ordinary sample-risk optimum: their balanced errors are $1/3$ and $1/2$, while
+their prior-weighted errors are $1/3$ and $1/4$, respectively
+(\leanname{balanced\_and\_prior\_optima\_separate}).
+
+Two additional sources constrain the machine above those residual blocks.
+\href{https://arxiv.org/abs/1706.03762}{Scaled dot-product attention} is formalized as
+positive affine weighting, with exact common-score-shift invariance and a multiset
+counterexample: duplicating one equally scored key changes the readout from $1$ to
+$4/3$. The auxiliary routing factor in
+\href{https://arxiv.org/abs/2101.03961}{Switch Transformer} is recovered exactly.
+Its uniform value is one, and Cauchy--Schwarz proves this is minimal when hard dispatch
+fractions equal mean router probabilities. Under the two-vector definition in the paper,
+however, an admissible three-expert batch has factor $4653/5000<1$; thus the stated
+uniform-minimum conclusion needs the missing self-consistency premise
+(\leanname{one\_le\_switchRoutingBalanceFactor\_selfConsistent},
+\leanname{switch\_uniform\_is\_not\_global\_minimum}).
+The local-capacity mechanism in
+\href{https://arxiv.org/abs/2006.16668}{GShard} has a different, deterministic
+guarantee: if every independently routed group accepts at most $C$ tokens for an
+expert, the aggregate accepted load is at most the group count times $C$.
+This bound is attained when every group is full.  Its converse is false---a two-group
+load $(2,0)$ meets the aggregate bound for local capacity one while violating the
+actual local invariant
+(\leanname{totalExpertLoad\_le\_card\_mul\_capacity},
+\leanname{global\_capacity\_does\_not\_imply\_local\_capacity}).
+The symbolic resource equations of
+\href{https://arxiv.org/abs/2312.07987}{SwitchHead} expose a complementary
+boundary. At fixed head count and projection dimensions, every positive number
+of active value/output experts has a strictly positive MAC overhead relative to
+the dense projection model
+(\leanname{transformerXLMACs\_lt\_switchHeadMACs\_sameGeometry}).
+Thus expert routing alone is not the source of the advertised saving: the design
+must reduce the number of attention matrices or alter other dimensions. Under
+the paper's fused smart-kernel storage model, storage is strictly monotone in
+head count; paired fixtures show a fourfold declared storage reduction after
+reducing heads and a MAC increase when all geometry is held fixed
+(\leanname{declaredTrainingStorage\_lt\_iff\_heads\_lt}).
+These are symbolic cost results, not claims about allocation, wall-clock time or
+task efficacy.
+The decaying outer-product memory of
+\href{https://arxiv.org/abs/1610.06258}{Ba et al.} is likewise unrolled over
+arbitrary finite key and value coordinates: its matrix read is exactly chronological
+decay-weighted dot-product attention. Zero decay keeps only the newest instruction and
+unit decay recovers scaled additive attention; at decay one-half, the scalar streams
+$(2,5)$ and $(5,2)$ read as $6$ and $9/2$, respectively
+(\leanname{read\_writeAllWithDecay},
+\leanname{decayed\_write\_order\_matters}).
+Proposition~1 of \cite{vonoswald2023} is now recovered as an exact finite-dimensional
+identity. A hand-constructed, unnormalized attention head stores the negative
+finite-batch gradient change of a linear predictor; negating its query-token target
+therefore gives exactly the predictor's value after one gradient step
+(\leanname{queryTokenTargetAfter\_eq\_neg\_updatedPrediction}).
+At zero initial weight this reduces to the corresponding finite kernel smoother
+(\leanname{neg\_queryTokenTargetAfter\_zeroWeight\_eq\_kernelSmoother}).
+The restriction to training-token keys and values is substantive: at nonzero initial
+weight, admitting the zero-target query contributes an additional residual term, as an
+executable counterexample shows
+(\leanname{full\_attention\_query\_contamination}).
+This is a theorem about the paper's explicit linear-attention construction, not evidence
+that training discovers that construction.
+The rank-one associative experts of
+\href{https://arxiv.org/abs/2506.21035}{Lu et al.} sharpen this memory boundary.
+A routed rank-one matrix acts exactly as the sum of atomic key--value reads, and a
+one-hot route recovers one atom
+(\leanname{read\_routedRankOneMemory}).
+The intrinsic L2 scores have unit squared mass only when their activation energy is
+strictly positive; zero activation yields zero score mass. Active-set restriction
+provably bounds nonzero routes by the declared top-$k$ budget. Two executable
+counterexamples delimit the architecture: duplicate keys make dense routing retrieve
+both values, and thresholding normalized weights $(3/4,1/4)$ at $1/2$ leaves mass
+$3/4$, not one
+(\leanname{dense\_routing\_interferes}).
+Thus atomic memory, sparse selection, and post-threshold renormalization are separate
+obligations.
+The continuous modern Hopfield update of
+\href{https://arxiv.org/abs/2008.02217}{Ramsauer et al.} gives a complementary
+retrieval certificate. For any finite score family, a target margin $\Delta$ makes
+each competing softmax weight at most $\exp(-\beta\Delta)$ and bounds total
+off-target mass by the number of competitors times that factor
+(\leanname{offTargetMass\_le}).
+Consequently every retrieved coordinate differs from the target by at most its
+declared pattern diameter times the same mass bound
+(\leanname{abs\_modernHopfieldRead\_sub\_target\_le}).
+This deterministic theorem generalizes the score algebra without claiming the
+paper's random-pattern capacity or global fixed-point result. Equal scores retrieve
+an average rather than either pattern, and zero inverse temperature erases a strict
+raw-score margin
+(\leanname{equal\_score\_collision\_returns\_average}).
+Finally, the affine acceleration equations surveyed by
+\href{https://arxiv.org/abs/2507.11746}{Saad} are lifted to arbitrary real normed
+spaces. Sum-to-one weights preserve fixed points and transport error exactly, but signed
+affine weights can amplify unit-bounded errors by a factor three. This is the reason an
+accelerated settling profile needs a residual or acceptance safeguard in addition to an
+affine extrapolator.
+
+The original binary local objective of
+\href{https://arxiv.org/abs/2212.13345}{Hinton's Forward--Forward
+algorithm}~\cite{hinton2022ff} now has an exact finite theorem as well.  For
+squared activation goodness $g=\lVert y\rVert^2$ and threshold $\theta$, the
+two local probabilities satisfy
+\[
+ p_{+}(g)=\sigma(g-\theta),\qquad
+ p_{-}(g)=1-p_{+}(g),
+\]
+and both lie strictly between zero and one
+(\leanname{negativeProbabilityOfGoodness\_eq\_one\_sub}).  Their negative-log
+losses are exactly the corresponding softplus expressions.  Differentiating
+with respect to goodness gives a strictly negative slope for the positive pass
+and a strictly positive slope for the negative pass
+(\leanname{positiveLoss\_derivative\_neg},
+\leanname{negativeLoss\_derivative\_pos}).  Raw squared goodness scales
+quadratically, whereas normalizing any nonzero activation makes its goodness
+exactly one
+(\leanname{activationGoodness\_l2Normalize\_eq\_one}).  The zero vector remains
+at goodness zero, and squared goodness alone cannot detect a direction
+reversal.  Finally, a two-negative fixture proves that this original binary
+objective is not the later full-comparison multiclass objective
+(\leanname{originalBinaryObjective\_ne\_twoNegativeFullComparison}).  These
+identities recover the local mechanism; they do not establish convergence,
+task accuracy, biological plausibility, or equivalence to backpropagation.
+
+Changing an error-coordinate frontier has a separate accounting obligation. With
+positive entry--exit gap $\delta$, total membership churn $N$, distinct coordinates
+ever switched $D$, and summed switch-event variation $V$, the formal aggregate law is
+\[
+  \delta\,(N-D)\leq V.
+\]
+The subtraction is exact first-switch accounting, not slack:
+\leanname{totalSwitchEvents\_eq\_chargeable\_add\_switchedCoordinateCount}
+decomposes churn into chargeable switches and one uncharged event per switched
+coordinate, while
+\leanname{totalChurn\_without\_distinctCount\_cannot\_be\_charged}
+refutes charging every event. A preregistered single-checkpoint diagnostic therefore
+remains a negative rather than a training license: fixed $5\%/10\%$ hysteresis made
+$2{,}761$ changes and captured less final squared mass than pointwise top-$5\%$, but
+did not log $D$ or per-coordinate variation. The next trace schema must expose
+$(N,D,V)$ before the aggregate theorem can certify a dynamic frontier.
+
+An audit need not create a duplicate module. The fixed-point residual and implicit
+gradient in Theorem~1 of
+\href{https://arxiv.org/abs/1909.01377}{Deep Equilibrium Models} match the existing
+affine workspace bridge: under spectral radius below one, the local equilibrium branch
+has derivative $(I-L)^{-1}$ composed with the parameter drive
+(\leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/WorkspaceDecoder/DEQBridge.lean}{242-L265}{linearDEQImplicitEquilibrium\_hasStrictFDerivAt}).
+The atlas records this as an affine complex-normed-space specialization, not as a proof
+of the paper's nonlinear theorem or of a constant-memory runtime.
+
+The same distinction matters for higher-order credit.  One inner update from
+\href{https://arxiv.org/abs/1703.03400}{model-agnostic meta-learning} is
+formalized for arbitrary differentiable scalar training gradients and evaluation losses.
+The exact outer derivative contains the adaptation-Jacobian factor
+$1-\alpha H$.  Zero rate and zero curvature recover the first-order approximation,
+whereas a quadratic fixture with $\alpha=1$ and $H=2$ makes the exact derivative
+$1$ and the first-order approximation $-1$
+(\leanname{oneStepMetaObjective\_hasDerivAt},
+\leanname{firstOrder\_metaGradient\_reverses\_direction}).
+Thus first-order meta-learning is an explicitly delimited approximation, not an
+interchangeable implementation of the exact update.
+
 \section{The belief axis: fusion is addition}
 \label{sec:belief}
 
@@ -211,12 +1496,152 @@ pairwise interference energy $\lVert[A,B]\rVert_F^{2}$ must vanish
 (\leanname{linearPhases\_orderIndependent\_iff\_interferenceEnergy\_zero}).
 \end{theorem}
 
+\begin{theorem}[Adjoint pairing gives exact time symmetry]
+For a group-valued reversible step family, taking the adjoint reverses both
+the step parameter and the execution order.  The half-step composition with
+its adjoint is time-symmetric
+(\leanname{adjointPair\_timeSymmetric}), and every palindromic scaled
+composition of a time-symmetric stage remains time-symmetric without assuming
+that its stages commute
+(\leanname{palindromic\_scaledStageComposition\_timeSymmetric}).
+This is the exact algebraic content of the adjoint and symmetric-composition
+construction of
+\href{https://arxiv.org/abs/0812.0377}{Blanes, Casas, and
+Murua}~\cite{blanes2008}.  A three-state
+permutation fixture shows that deleting the closing stage of a noncommuting
+palindrome can destroy symmetry
+(\leanname{nonpalindromic\_noncommutingComposition\_not\_timeSymmetric});
+conversely, commuting translations show that a syntactic palindrome is
+sufficient but not necessary
+(\leanname{nonpalindromic\_can\_still\_be\_timeSymmetric}).  These group laws
+do not by themselves establish numerical order, convergence, symplecticity, or
+invertibility of a learned phase.
+\end{theorem}
+
 \begin{theorem}[Stability does not compose]
 Two commands that each individually extinguish in two steps can alternate to $4^{n}$
 growth (\leanname{individuallyStable\_switchingDiverges}). Per-command guarantees are
-therefore worthless for command \emph{programs}; the honest certificate is
+therefore insufficient for command \emph{programs}; the honest certificate is
 schedule-uniform, and commuting stable generators always admit a common quadratic
 Lyapunov function (\leanname{commutingCommonQuadraticLyapunov\_crown}).
+\end{theorem}
+
+\begin{theorem}[Finite-word growth is the executable joint-spectral layer]
+The nonlinear joint spectral radius of
+\href{https://arxiv.org/abs/2507.11314}{Deidda, Guglielmi, and
+Tudisco}~\cite{deidda2025njsr} takes worst-case growth over every switching
+word at each depth.  At the finite layer, a uniform energy factor for all
+words of length $m$ and one for all words of length $n$ compose
+multiplicatively at length $m+n$
+(\leanname{FiniteWordEnergyBound.add}).  Hence any strict block factor gives
+a geometric envelope for every arbitrary schedule whose length is a multiple
+of the block depth
+(\leanname{FiniteWordEnergyBound.geometricEnvelope\_tendsto\_zero}).
+This is more expressive than demanding contraction at each step: one
+nilpotent command has no strict one-step factor but has a zero two-step factor
+(\leanname{expandingThenExtinguishing\_no\_strictOneStepBound},
+\leanname{expandingThenExtinguishing\_twoStepBound}).  Conversely, checking
+each command only under self-repetition is unsound for switching, as the
+alternating counterexample has no strict two-step uniform factor
+(\leanname{divergentBoolTransition\_no\_strictTwoStepBound}).
+The formal result is the finite, checkable substrate; it does not claim the
+paper's cone-norm limsup construction, Thompson-metric estimate, or
+asymptotic-stability equivalence.
+\end{theorem}
+
+\begin{theorem}[Two populations compile a directed graph exactly]
+The construction of
+\href{https://arxiv.org/abs/1506.03212}{Ashwin and
+Postlethwaite}~\cite{ashwinpostlethwaite2015} associates one state cell to
+every vertex and one transition cell to every edge. At the finite wiring
+layer, a state-to-transition coupling followed by a transition-to-state
+coupling realizes exactly the source graph relation
+(\leanname{twoPopulationTransition\_iff\_graphTransition}); a three-state
+cycle is checked as a positive fixture
+(\leanname{threeCycle\_twoPopulation}). Parallel edges remain
+distinct transition cells.
+
+The address map is load-bearing. Merging transition cells cannot delete a
+source transition, and an injective address map preserves exact recovery
+(\leanname{compressedPopulationTransition\_iff\_graphTransition\_of\_injective}).
+But a concrete noninjective map cross-wires the source half of one edge with
+the target half of another, producing an absent transition
+(\leanname{constantTransitionAddress\_creates\_spurious\_cross}). Thus a
+routed carrier must retain edge identity or declare and audit its compression
+semantics. This theorem deliberately stops at discrete incidence: it does not
+prove the paper's ODE-level heteroclinic or excitable realization, robustness,
+attraction, dwell time, noise behavior, parameter-region openness, or
+excitation thresholds.
+\end{theorem}
+
+\begin{theorem}[GLV rates certify local itinerary direction and passage]
+The generalized Lotka--Volterra construction of
+\href{https://arxiv.org/abs/1806.11039}{Voit and
+Meyer-Ortmanns}~\cite{voitmeyerortmanns2018} gives a rare invader $j$ at a
+single-species resident equilibrium $i$ the local rate
+\[
+  \nu(A_{ji})=\rho-A_{ji}\rho/\gamma.
+\]
+The full finite-species GLV field has the single-species state as an exact
+equilibrium, and its invader coordinate on a resident--invader probe reduces
+exactly to the scalar restriction
+(\leanname{glv\_singleSpeciesState\_is\_equilibrium},
+\leanname{glvVectorField\_residentInvaderState\_invader}).  That restriction
+has derivative $\nu(A_{ji})$ at zero
+(\leanname{glvInvaderField\_hasDerivAt\_zero}).  For positive reproduction
+and death rates, expansion is equivalent to $A_{ji}<\gamma$, contraction is
+equivalent to $A_{ji}>\gamma$, and a smaller predation rate is exactly a
+larger invasion rate
+(\leanname{glvInvasionRate\_pos\_iff},
+\leanname{glvInvasionRate\_neg\_iff},
+\leanname{glvInvasionRate\_order\_iff}).  The source's stronger incoming
+condition is also recovered in both directions:
+\[
+  \nu(e)<-\nu(c)\quad\Longleftrightarrow\quad 2\gamma-e<c
+\]
+(\leanname{glvContractionDominates\_iff}).
+
+Consequently the source inequalities package into one named certificate:
+both outgoing directions expand, the small-cycle direction is faster, both
+incoming contractions dominate it in magnitude, and all other transverse
+directions contract
+(\leanname{GLVLocalDirectionProfile.certified\_directionality}).  The
+representative decimal parameters are evaluated as exact rationals, yielding
+$87/107$, $77/107$, $-93/107$, and $-18/107$ for the four rate classes
+(\leanname{standardHierarchicalGLVProfile\_exact\_rates}).  More importantly,
+this analytic layer meets the finite compiler: away from the radial
+coordinate, a three-cycle graph edge exists if and only if its assigned local
+invasion rate is positive
+(\leanname{threeCycle\_transition\_iff\_positive\_invasion}).  Assigning a
+transverse predation rate below death supplies the executable opposite
+boundary
+(\leanname{below\_death\_transverse\_direction\_is\_unstable}).
+
+For the linearized abundance $u(t)=u_0e^{\lambda t}$, the threshold time
+$\log(\theta/u_0)/\lambda$ reaches $\theta$ exactly and decreases strictly
+with the positive initial amplitude
+(\leanname{linearizedAbundance\_at\_exitTime},
+\leanname{linearExitTime\_strictAnti\_initial}).  A nonpositive local rate
+cannot reach a higher threshold at nonnegative time
+(\leanname{nonpositive\_rate\_cannot\_reach\_higher\_threshold}).  These are
+local direction and passage laws, not a proof of a global heteroclinic orbit,
+network attraction, stochastic dwell-time scaling, perturbation robustness,
+or realization by the trained routed carrier.
+\end{theorem}
+
+\begin{theorem}[Local graph refinement preserves command coverage]
+The four-edge forward lift of
+\href{https://arxiv.org/abs/2607.00637}{Ninite and Jungers}---splitting one
+phase into one copy for each outgoing neighbour---realizes every nonempty finite
+command word whenever the original graph does
+(\leanname{forwardLift\_graphPathComplete}). Every phase-indexed regional
+Lyapunov certificate pulls back through the lift projection with exactly the
+same contraction rate
+(\leanname{PathCompleteRegionalLyapunov.forwardLift\_rate}). This preserves
+certificate feasibility; it does not assert that a chosen lift strictly
+improves an optimized bound. Conversely, lifting a graph that lacks one command
+does not manufacture that command
+(\leanname{falseOnlyUnitGraph\_forwardLift\_not\_pathComplete}).
 \end{theorem}
 
 Against all of this, safety is indifferent. For arbitrary routes, temperatures, schedules
@@ -267,7 +1692,45 @@ therefore how fast it should be overwritten --- the role error-correction bits a
 replacement policies play in hardware. The routed operators are a small shared
 arithmetic unit. A hardware designer would never run a tournament among these; the
 interesting object is the machine that has all of them, each doing its own job. The
-unified carrier places them in one product state.
+unified carrier places them in one product state (Figure~\ref{fig:nn-unified}).
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[node distance=5mm]
+\node[datum, text width=44mm] (src) {GSLT graph memory\\{\scriptsize nodes, typed edges, source features}};
+\node[learned, text width=44mm, right=14mm of src] (ctl)
+  {recurrent controller $h$\\{\scriptsize chronology and program counter}};
+\node[learned, text width=70mm, below=8mm of $(src)!0.5!(ctl)$] (slots)
+  {typed slot $i$\\
+   {\scriptsize address $t_i$ (elaborator-owned) \quad content $w_i$ \quad
+   posterior $(n_i^+,n_i^-)$ \quad innovations $(u_i^+,u_i^-)$}};
+\node[learned, text width=32mm, below left=8mm and 4mm of slots] (ops)
+  {operator bank\\{\scriptsize read $\to$ transform\\$\to$ learned gate}};
+\node[proved, text width=32mm, below right=8mm and 4mm of slots] (bayes)
+  {evidence law\\{\scriptsize fade, fuse,\\precision gain}};
+\node[learned, text width=70mm, below=12mm of slots] (decision)
+  {decision state and action scores\\{\scriptsize precision-biased slot read $+$ recurrent residual}};
+\node[waist, text width=70mm, below=6mm of decision] (waist2)
+  {\code{Refine(hole, head)} over the checker's legal mask};
+
+\draw[flow] (src) -- (slots);
+\draw[flow] (src) -- (ctl);
+\draw[flow] (ctl) -- (slots);
+\draw[flow] (slots) -- (ops);
+\draw[flow, provedc] (slots) -- (bayes);
+\draw[flow] (ops) -- (decision);
+\draw[flow, provedc] (bayes) -- (decision);
+\draw[flow] (ctl) |- (decision);
+\draw[flow] (decision) -- (waist2);
+\draw[flow, provedc] (waist2.west) -- ++(-34mm,0) |- (slots.west)
+  node[thm, pos=0.62, left] {typed\\frontier};
+\end{tikzpicture}
+\caption{The unified carrier as one machine. Solid blue borders mark components whose
+laws are machine-checked (the evidence law and the typed-action waist); dashed orange
+borders mark learned components. The address plane stays elaborator-owned: no learned
+state can enlarge the legal action support.}
+\label{fig:nn-unified}
+\end{figure}
 
 For each typed slot $i$, let
 \[
@@ -328,10 +1791,149 @@ tuple (role, parent operator, argument). At an episode boundary the table decays
 adds only the innovations $u^\pm$ produced during that episode. Reabsorbing the posterior
 $n^\pm$ would import the prior a second time; the development proves that error on a
 concrete fixture
-(\leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/UnifiedCarrier/Core.lean}{226-L231}{posterior\_reabsorption\_doubleCounts\_fixture}).
+(\leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/UnifiedCarrier/Core.lean}{226-L231}{posterior\_reabsorption\_doubleCounts}).
 Batch absorption is intentionally outside the causal interface because episode order
 changes the decay. The persistent feature is disabled by default until an experiment
 declares how episodes are ordered.
+
+\paragraph{Continuous opinions retain uncertainty separately from prediction.}
+The $K$-class evidential chart of
+\href{https://arxiv.org/abs/1806.01768}{Sensoy, Kaplan, and
+Kandemir}~\cite{sensoy2018edl} starts from nonnegative evidence $e_i$, sets
+$\alpha_i=e_i+1$ and $S=\sum_i\alpha_i$, and assigns
+\[
+ b_i=\frac{e_i}{S},\qquad
+ u=\frac{K}{S},\qquad
+ \mathbb{E}[p_i]=\frac{\alpha_i}{S}.
+\]
+The finite formalization proves $u+\sum_i b_i=1$, that the posterior means
+sum to one, and the exact decomposition
+$\mathbb{E}[p_i]=b_i+u/K$
+(\leanname{uncertainty\_add\_sum\_belief},
+\leanname{posteriorMean\_eq\_belief\_add\_uniform\_uncertainty}).
+Fusion must add raw evidence: it increases strength only by the fresh
+evidence mass. Adding two posterior concentration vectors instead imports
+the unit base concentration twice, overcounting exactly one unit per class
+(\leanname{strength\_fuse\_eq\_strength\_add\_totalEvidence},
+\leanname{sum\_concentration\_add\_eq\_strength\_fuse\_add\_classCount}).
+Positive fresh evidence strictly lowers $u$. Conversely, uniformly rescaling
+all concentrations preserves every posterior mean while dividing uncertainty
+by the scale
+(\leanname{posteriorMean\_rescaleConcentration},
+\leanname{uncertainty\_rescaleConcentration}). A checked binary fixture makes
+the boundary concrete: zero evidence and balanced high conflict both predict
+$(1/2,1/2)$, but have uncertainties $1$ and $1/10$
+(\leanname{binary\_sameMean\_differentUncertainty}). Thus the evidence
+metadata plane must carry strength rather than reconstruct it from logits.
+These identities do not certify calibration, out-of-distribution detection,
+adversarial robustness, causal packet identity, or task efficacy.
+
+\paragraph{Predictive means do not determine the kind of uncertainty.}
+The Prior Network decomposition of
+\href{https://arxiv.org/abs/1802.10501}{Malinin and
+Gales}~\cite{malinin2018prior} is recovered for a finite weighted ensemble
+of categorical predictors. If $\bar p=\sum_j w_jp_j$, then
+\[
+ I=H(\bar p)-\sum_jw_jH(p_j)
+   =\sum_jw_jD_{\mathrm{KL}}(p_j\Vert\bar p)\geq0,
+ \qquad I\leq H(\bar p).
+\]
+The formalization connects the categorical divergence explicitly to the
+existing Knuth--Skilling KL divergence
+(\leanname{categoricalDivergence\_eq\_ksKLDivergence}).
+The average-divergence identity is
+\leanname{distributionalInformation\_eq\_averageDivergenceFromMean}.
+Its nonnegativity and total-entropy bound are
+\leanname{distributionalInformation\_nonneg} and
+\leanname{distributionalInformation\_le\_totalUncertainty}.
+The zero boundary for duplicate predictors is
+(\leanname{duplicateEnsemble\_distributionalInformation\_eq\_zero}).
+A binary negative fixture makes the design consequence exact. Separated
+point masses and two duplicate uniform predictors both have mean
+$(1/2,1/2)$; the first assigns $\log 2$ to distributional information and
+zero to expected data uncertainty, while the second makes the opposite
+assignment
+(\leanname{sameMean\_oppositeUncertaintyDecomposition}).
+Consequently logits or posterior means alone cannot determine evidence
+routing: the metadata plane must retain either the predictive distribution
+over predictors or an independently justified sufficient statistic. This
+finite result does not derive the paper's Dirichlet digamma expectation or
+differential-entropy formula, and it does not certify calibration,
+out-of-distribution detection, accuracy, or task efficacy.
+
+\paragraph{Expert expansion has two distinct normalization steps.}
+For task-free expert growth, Lee et al.'s neural Dirichlet-process
+mixture~\cite{lee2020cndpm} assigns existing score
+$s_k=N_k\ell_k$ and candidate score $s_0=\alpha\ell_0$, then normalizes
+over all $K+1$ choices. The finite formalization proves unit total
+responsibility
+(\leanname{sum\_existingResponsibility\_add\_newResponsibility}), that the
+candidate is maximal exactly when its raw score is maximal
+(\leanname{candidateMaximal\_iff\_rawScoreMaximal}), and that adding the
+candidate preserves every pairwise existing-expert odds ratio
+(\leanname{existingResponsibility\_preserves\_pairwiseOdds}).
+If the candidate is rejected, Algorithm~1 performs a second normalization
+over existing experts. That step cancels the candidate score exactly
+(\leanname{renormalize\_combinedResponsibility\_eq\_conditional}) and makes
+the stored-count update add one observation
+(\leanname{conditionalExisting\_update\_adds\_one}). It cannot be omitted:
+with existing scores $(2,1)$ and candidate score $1$, the combined
+responsibilities are $(1/2,1/4,1/4)$, so updating only existing counts
+without conditioning adds $3/4$ rather than one
+(\leanname{twoExpert\_missingRenormalization\_loses\_mass}).
+This gives a precise exactly-once obligation for any future dynamic
+operator pool. It does not establish calibrated neural likelihoods, true
+task recovery, validity of the sequential variational approximation,
+short-term-memory homogeneity, bounded expert growth, or efficacy.
+
+\paragraph{Causal transport across frames.}
+The innovation ledger says which evidence may be counted; it does not by itself say
+whether two coordinate frames express the same mechanism. Following the metric-aware
+transport contract of Goertzel's Causal Memory and Credit Protocol, let
+$T:X\to Y$ connect source operators $H^X_a$ to memory operators $H^Y_a$.
+The development separates the two required conditions:
+\[
+ H^Y_aT=TH^X_a,\qquad
+ \langle Tx,Ty\rangle_Y=\langle x,y\rangle_X.
+\]
+Exact intertwining extends to every finite operator word
+(\leanname{intertwines\_operatorWord}); approximate local equations extend with a
+recursive budget that charges target-side amplification of earlier error and
+source-side growth of later error
+(\leanname{approxIntertwines\_operatorWord}). Under metric preservation, every
+transported word has the same pairwise response
+(\leanname{operatorWord\_inner\_preserved}). The separation is essential: the zero
+map intertwines \emph{every} pair, including two unequal scalar operators, but fails
+metric preservation
+(\leanname{zeroTransport\_intertwines\_unequal\_scalarOperators}).
+Finally, any additive evidence-frame map commutes with ledger assimilation
+(\leanname{mapEvidence\_assimilate}), so a fresh causal identity contributes one
+transported payload rather than one payload per manifestation. This theorem does not
+infer the transport or causal identity from data; those remain measured inputs.
+
+\paragraph{Direction is not evidence.}
+The same protocol distinguishes a new mechanism direction from new evidence
+about an existing mechanism.  Let $F_{cc}$ be a current-score covariance,
+$F_{MM}$ a positive-definite stored-score covariance, and $F_{cM}$ their cross
+covariance.  The remaining conditional information is
+\[
+ F_{c\mid M}=F_{cc}-F_{cM}F_{MM}^{-1}F_{Mc}.
+\]
+Positive semidefiniteness of the joint block covariance is equivalent to
+positive semidefiniteness of this Schur complement
+(\leanname{jointCovariance\_posSemidef\_iff\_conditionalInformation}), and the
+removed predictable component is itself positive semidefinite.  Hence
+$0\preceq F_{c\mid M}\preceq F_{cc}$
+(\leanname{conditionalInformation\_between\_zero\_and\_current}).
+An exact linear duplicate has zero residual and zero conditional information,
+whereas a zero-cross-covariance observation may occupy an already represented
+direction and retain its full information
+(\leanname{independent\_sameDirection\_fullInformation}).  Half
+correlation retains three quarters in the scalar unit fixture.  The source
+uses a Moore--Penrose inverse for singular stored covariance; the proved
+theorem deliberately covers the positive-definite specialization, and an
+explicit singular fixture prevents Lean's totalized matrix inverse from being
+mistaken for a pseudoinverse certificate.
 
 \paragraph{Refinement is exact and nontrivial.}
 Under an explicit mode, parameter relation and state projection, the unified carrier
@@ -357,21 +1959,707 @@ The same file proves a low-drift positive fixture and a high-drift negative fixt
 This says what the architecture experiment must measure---revision count, drift and work
 in common cost units---rather than predicting that persistent belief will win.
 
+\paragraph{Fast/slow consolidation has an exact conditional rate.}
+The slow learner of
+\href{https://arxiv.org/abs/2110.00175}{DualNet}~\cite{pham2021dualnet}
+uses the
+\href{https://arxiv.org/abs/1907.08610}{Lookahead}~\cite{zhang2019lookahead}
+update: starting from a slow state $x$, take $K$ fast steps with map $S$ and
+then set
+\[
+  L_{\beta,K}(x)=x+\beta\bigl(S^K(x)-x\bigr).
+\]
+Every fixed point of $S$ is a fixed point of $L_{\beta,K}$
+(\leanname{slowUpdate\_fixed}). If the fast step obeys the explicit
+pointwise certificate
+$\lVert S(x)-x_\star\rVert\le q\lVert x-x_\star\rVert$, then
+\[
+ \lVert L_{\beta,K}(x)-x_\star\rVert
+ \le \bigl(1-\beta+\beta q^K\bigr)\lVert x-x_\star\rVert
+\]
+for $0\le\beta\le1$
+(\leanname{fastIterate\_error\_le},
+\leanname{slowUpdate\_error\_le}). The factor is strictly below one for a
+positive interpolation, a genuinely contractive $q$, and $K>0$; when
+$0<q<1$, every additional fast step strictly lowers the one-cycle factor
+(\leanname{lookaheadRate\_lt\_one},
+\leanname{lookaheadRate\_strictly\_decreases}). For an affine contraction,
+the same factor gives the exact trajectory across arbitrary slow cycles
+(\leanname{repeated\_slowUpdate\_affine}).
+
+Both opposite boundaries are executable. Setting $\beta=0$ discards all
+fast progress, while $\beta=3$ turns the perfect fast map $x\mapsto0$ into
+a factor-two expansion
+(\leanname{zero\_interpolation\_discards\_fast\_progress},
+\leanname{overrelaxation\_can\_expand}). Thus this profile may be promoted
+only after traces bind $K$, $\beta$, a reference state, the observed
+contraction premise and elapsed work. The theorem does not infer contraction
+for stochastic optimization or predictive-coding settling, and decreasing
+the one-cycle factor does not by itself make a larger $K$ work-normalized
+optimal.
+
+\paragraph{A fixed-representation control has exact finite geometry.}
+The RanDumb baseline of
+\href{https://arxiv.org/abs/2402.08823}{Prabhu et
+al.}~\cite{prabhu2024random} freezes a normalized cosine--sine random
+Fourier map and updates class statistics online. For phase vectors
+$a,b\in\mathbb{R}^{D}$, its finite feature inner product reduces exactly to
+\[
+ k_D(a,b)=\frac1D\sum_{i=1}^{D}
+   \bigl(\cos a_i\cos b_i+\sin a_i\sin b_i\bigr)
+ =\frac1D\sum_{i=1}^{D}\cos(a_i-b_i)
+\]
+(\leanname{rffSimilarity\_eq\_average\_cos\_sub}). For every nonempty
+feature bank, $k_D(a,a)=1$, $k_D$ is symmetric, and
+$-1\le k_D(a,b)\le1$
+(\leanname{rffSimilarity\_self},
+\leanname{rffSimilarity\_comm},
+\leanname{rffSimilarity\_mem\_Icc}). Normalization is not injectivity:
+one-dimensional phases $0$ and $2\pi$ are distinct but have similarity one
+(\leanname{zeroPhase\_ne\_twoPiPhase},
+\leanname{periodic\_phase\_collision}).
+
+The count-weighted class-mean update has the exact conservation law
+\[
+ (n+1)\mu_{n+1}=n\mu_n+x_{n+1},
+\]
+and its recursive form counts every finite sample exactly once
+(\leanname{onlineMeanUpdate\_balance},
+\leanname{length\_smul\_onlineMean\_eq\_sum}). This makes a frozen random
+representation a characterized future control for the carrier experiment,
+not evidence that it will win. The theorem does not establish probabilistic
+RBF approximation, covariance invertibility or shrinkage quality,
+Mahalanobis-classifier accuracy, or the source's empirical comparison with
+learned representations.
+
+\paragraph{Streaming covariance has a certified precision domain.}
+The Deep Streaming LDA update of Hayes and Kanan
+\cite{hayes2020slda} maintains a shared covariance by averaging its previous
+value with a count-scaled rank-one innovation. The rank-one contribution is
+positive semidefinite, and the complete streaming update preserves positive
+semidefiniteness
+(\leanname{scatterIncrement\_posSemidef},
+\leanname{covarianceUpdate\_posSemidef}). For any incoming
+$\Sigma\succeq0$, the source's shrinkage operator
+\[
+  \widetilde{\Sigma}_{\varepsilon}
+  =(1-\varepsilon)\Sigma+\varepsilon I
+\]
+is positive definite, and hence invertible, throughout the explicit domain
+$0<\varepsilon\le1$
+(\leanname{shrinkCovariance\_posDef},
+\leanname{shrinkCovariance\_isUnit}). Both endpoints matter: zero shrinkage
+does not repair a singular zero covariance, while extending the coefficient
+beyond one can assign a negative coefficient to the incoming covariance and
+destroy positive semidefiniteness
+(\leanname{zero\_shrinkage\_zeroCovariance\_not\_isUnit},
+\leanname{excessive\_shrinkage\_can\_destroy\_posSemidef}).
+These results certify the online covariance geometry and the admissible
+precision domain; they do not establish representation quality, statistical
+consistency, calibration, classification accuracy, or the paper's empirical
+comparisons.
+
+\paragraph{Covariance-aware prototypes need their Gaussian normalizer.}
+FeCAM \cite{goswami2023fecam} classifies frozen features by class prototypes
+and covariance-aware distances. For a positive-semidefinite precision matrix
+$\Lambda$, the formalized Mahalanobis quadratic
+\[
+  D_\Lambda(x,\mu)=(x-\mu)^\top\Lambda(x-\mu)
+\]
+is nonnegative, and $\Lambda=I$ recovers squared Euclidean distance
+(\leanname{mahalanobisSquared\_nonnegative},
+\leanname{mahalanobisSquared\_identity}). With equal priors and one shared
+positive scalar precision, maximizing the corresponding Gaussian density is
+exactly equivalent to minimizing $D_\Lambda$
+(\leanname{same\_precision\_density\_gt\_iff\_mahalanobis\_lt}).
+
+Class-dependent covariance changes that conclusion: the Gaussian density also
+contains the determinant-dependent normalization. A scalar fixture with
+precisions $1$ and $9$ makes a Mahalanobis-only rule choose the first class
+while the normalized Gaussian score chooses the second
+(\leanname{heterogeneous\_precisions\_reverse\_distance\_decision}).
+Nor does correlation normalization remove the issue: two positive-definite
+$2\times2$ correlation matrices can have identical unit diagonals and
+different determinants
+(\leanname{correlation\_normalization\_does\_not\_equalize\_gaussian\_normalizer}).
+Thus the shared-covariance Bayes reduction is exact under its stated
+normalization hypotheses, whereas a per-class Mahalanobis-only score is not
+the full Gaussian Bayes classifier in general. These theorems make no claim
+about feature Gaussianity, covariance-estimation consistency, calibration,
+classification accuracy, or the source's empirical comparisons.
+
+\paragraph{Frozen projected sufficient statistics are order-invariant.}
+RanPAC \cite{mcdonnell2023ranpac} freezes a nonlinear random projection and
+accumulates the projected Gram matrix $G=\sum_i h_i h_i^\top$ together with
+the class-prototype matrix $C=\sum_i h_i y_i^\top$. Both ledgers compose
+exactly across concatenated streams and are invariant under every permutation
+of the same projected observations
+(\leanname{gramLedger\_append},
+\leanname{prototypeLedger\_append},
+\leanname{ledgers\_eq\_of\_perm}). Every finite Gram ledger is positive
+semidefinite; consequently $G+\lambda I$ is positive definite and invertible
+for every $\lambda>0$, without a full-rank premise on the samples
+(\leanname{gramLedger\_posSemidef},
+\leanname{ridgeGram\_posDef},
+\leanname{ridgeGram\_isUnit}).
+
+The least-squares link is also exact in the scalar specialization. Completing
+the square proves that the source's closed form uniquely minimizes the
+regularized squared-error objective whenever the quadratic coefficient is
+positive
+(\leanname{scalarRidgeLoss\_sub\_solution\_eq},
+\leanname{scalarRidgeSolution\_minimizes},
+\leanname{scalarRidgeSolution\_unique}). The hypotheses cannot be dropped:
+using different projectors at two stream positions makes the Gram result
+depend on raw arrival order, and a negative ridge that cancels the Gram
+coefficient makes totalized division return a value that is not a minimizer
+(\leanname{changing\_projector\_breaks\_raw\_order\_invariance},
+\leanname{singular\_negative\_ridge\_totalizedSolution\_not\_minimizer}).
+Thus the theorem licenses a frozen-statistic control only after projector and
+packet identity are bound; it does not establish random-feature utility,
+separability, generalization, classifier accuracy, or the source's empirical
+comparisons.
+
+\paragraph{Analytic incremental ridge is exactly joint under fixed geometry.}
+ACIL \cite{zhuang2022acil} maintains the inverse $R=A^{-1}$ of an
+accumulated ridge normal matrix and, for a new frozen-feature batch $(X,Y)$,
+forms the batch Schur inverse
+\[
+  S=(I+XRX^\top)^{-1},\qquad
+  R^+=R-RX^\top SXR .
+\]
+With explicit two-sided inverse contracts for $R$ and $S$, the matrix
+development proves that $R^+$ is a two-sided inverse of
+$A+X^\top X$
+(\leanname{updatedInverse\_twoSided}). If the old cross statistic is $C$,
+the source's residual correction
+\[
+  W^+=W+R^+X^\top(Y-XW),\qquad W=RC ,
+\]
+is exactly the joint ridge head
+$R^+(C+X^\top Y)$ and satisfies its enlarged normal equation
+(\leanname{recursiveHeadUpdate\_eq\_joint},
+\leanname{updatedNormal\_mul\_recursiveHeadUpdate}). The proof is
+finite-dimensional and does not require the target columns of successive
+batches to denote disjoint classes.
+F-OAL \cite{zhuang2024foal} uses the same Woodbury and residual recursions
+online. It is therefore an instance of this theorem after all labels are
+embedded in one fixed output coordinate space; padding a stored head with
+zero columns is not identified with changing the output index type.
+
+Both normal and cross statistics commute across batch order in one fixed
+feature coordinate system
+(\leanname{updatedNormal\_order\_independent},
+\leanname{updatedCross\_order\_independent}), but the premises are
+substantive. Exact scalar fixtures show that changing the ridge between
+phases changes the comparator and that applying position-indexed feature
+maps can destroy raw-order invariance
+(\leanname{changing\_ridge\_breaks\_joint\_equivalence},
+\leanname{changing\_feature\_map\_breaks\_raw\_order\_invariance}).
+A singular zero normal matrix fails the inverse contract. Moreover, a
+singleton inverse-normal statistic determines the exact squared feature
+magnitude
+(\leanname{featureSquare\_recoverable\_from\_inverseNormal}).
+Consequently the result licenses an exact frozen-head control and an
+incremental sufficient-statistic implementation; it does not prove
+end-to-end equivalence, generalization, accuracy, or privacy merely from
+discarding exemplars.
+
+\paragraph{Low-rank truncation changes interpolation into projection.}
+LoRanPAC \cite{peng2024loranpac} first displays a minimum-norm problem
+subject to exact interpolation after truncating the feature SVD, but later
+identifies its classifier as a minimizer of unconstrained squared residual.
+The distinction is substantive.  Let $P$ be the orthogonal projector onto
+the preserved right-singular subspace, let $y$ be a target row, and let
+$z=Pz$ be any representable prediction.  The formal development proves
+\[
+  \lVert z-y\rVert^2
+  =\lVert z-Py\rVert^2+\lVert Py-y\rVert^2 .
+\]
+Thus $Py$ uniquely minimizes squared loss among representable predictions,
+whereas exact interpolation is feasible iff $Py=y$
+(\leanname{squaredLoss\_decomposition},
+\leanname{squaredLoss\_eq\_zero\_iff},
+\leanname{projectedPrediction\_unique\_minimizer},
+\leanname{exists\_exact\_representable\_iff}).
+A proper rank-one projector preserves a nonzero first-axis target while a
+nonzero discarded-axis target admits no exact representable prediction
+(\leanname{keepFirstProjector\_proper},
+\leanname{discardedTarget\_no\_exact\_representable\_prediction}).
+This repairs the formulation boundary without refuting the least-squares
+algorithm; the continual approximate-SVD recurrence and its spectral,
+generalization and runtime bounds remain separate obligations.
+
+\paragraph{Streaming subspace sketches have two error ledgers.}
+Proposition~1 of Continuous Subspace Optimization
+\cite{cheng2025coso} first truncates every projected-gradient packet and then
+applies Frequent Directions to their stream.  Its final covariance-sketch
+bound therefore adds two quantities: the packetwise tail-singular-value
+energies and the residual of the sketch relative to the aggregate truncated
+stream.  Lean generalizes this composition step from matrices to every normed
+additive group:
+\[
+ \left\lVert\sum_t A_t-S\right\rVert
+ \leq \sum_t \lVert A_t-\widetilde A_t\rVert
+      +\left\lVert\sum_t\widetilde A_t-S\right\rVert
+\]
+(\leanname{twoStageSketch\_error\_le},
+\leanname{tailEnergy\_add\_sketchResidual\_bounds\_final}).
+A scalar fixture attains both triangle bounds exactly.  Conversely, opposing
+packet errors can cancel, so their summed budgets need not equal aggregate
+error, and perfect packetwise approximation does not control an uncertified
+downstream sketch
+(\leanname{opposing\_packet\_errors\_make\_local\_sum\_strict},
+\leanname{zero\_local\_error\_does\_not\_bound\_bad\_sketch}).
+The SVD tail identity and the Frequent-Directions theorem remain explicit
+certificate inputs; this result neither re-proves their recurrences nor
+licenses the paper's accuracy, memory, or runtime claims.
+
+\paragraph{Invariant risk has a fixed-scalar first-order test.}
+Theorem~4 of invariant risk minimization
+\cite{arjovsky2019irm} characterizes linear simultaneous optima by
+environmentwise gradient orthogonality.  The formal version works in an
+arbitrary real Hilbert predictor space.  If a classifier $w$ minimizes every
+environment risk over the image of a continuous linear representation
+$\Phi$, then
+\[
+  \left\langle \Phi w,\nabla R_e(\Phi w)\right\rangle=0
+  \qquad\text{for every environment }e
+\]
+(\leanname{simultaneousMinimizer\_implies\_predictor\_gradient\_orthogonal}).
+Conversely, if a predictor $v$ satisfies
+$\langle v,\nabla R_e(v)\rangle=0$ for every $e$, the rank-one
+representation $\Phi_v(a)=av$ makes the fixed scalar classifier $a=1$
+globally optimal for every risk.  Hence the fixed-scalar condition is an
+exact iff, not merely a stationary-point heuristic
+(\leanname{scalarOne\_simultaneouslyMinimizes\_iff\_gradient\_orthogonal}).
+
+The convexity input is explicit: each risk carries its exact gradient and
+global first-order supporting inequality.  A nonzero first-axis predictor
+passes two opposed transverse affine risks, while an aligned nonzero affine
+gradient makes scalar one fail global optimality
+(\leanname{transverse\_affineRisks\_scalarOne\_simultaneouslyMinimizes},
+\leanname{aligned\_affineRisk\_scalarOne\_not\_minimizer}).
+This result does not establish causal identification, out-of-distribution
+transfer, finite-penalty IRMv1 optimization, or the source's later
+general-position theorem.
+
+\paragraph{Finite environment counts leave a geometric blind subspace.}
+Rosenfeld, Ravikumar, and Risteski
+\cite{rosenfeld2020risks} show that invariant-risk identification has a
+nuisance-dimension threshold.  The formal tranche isolates two exact
+linear-algebraic mechanisms from their proof.  If $E<d_e$, every linear map
+from $d_e$ nuisance coordinates to $E$ scalar environment constraints has a
+nonzero kernel
+(\leanname{exists\_nonzero\_environment\_invisible\_direction}).
+This is a strict inequality: at $E=d_e$, the identity constraint has no
+nonzero invisible direction
+(\leanname{equal\_environment\_identity\_has\_no\_nonzero\_invisible\_direction}).
+
+The normalized minimum-norm part of their Lemma~C.1 is independent of
+coordinates.  Let $q\ne0$ be the minimum-norm solution at scalar right-hand
+side one, and decompose a unit solution as $s q+z$, where $s\ge0$ and
+$z\perp q$.  Then
+\[
+  (s\lVert q\rVert)^2+\lVert z\rVert^2=1,
+  \qquad
+  s\le\frac{1}{\lVert q\rVert}.
+\]
+Equality forces $z=0$, so the maximal normalized vector is unique
+(\leanname{orthogonalUnitSolution\_scale\_le},
+\leanname{orthogonalUnitSolution\_vector\_eq\_canonical\_of\_scale\_eq}).
+The constraint-level certificate needs only that $q$ maps to the target and
+is orthogonal to the homogeneous kernel; Lean derives both its unique
+minimum-norm property and the scaled decomposition
+(\leanname{MinimumNormConstraintBase.norm\_le\_of\_maps\_to\_target},
+\leanname{MinimumNormConstraintBase.unit\_candidate\_scale\_le}).
+The formalization also constructs this certificate.  For linearly independent
+environment vectors $\mu_1,\ldots,\mu_E$ with Gram matrix $G$, and any
+nonzero target $t$, it defines
+\[
+  q=\sum_i (G^{-1}t)_i\,\mu_i .
+\]
+The constraint map $x\mapsto(\langle\mu_i,x\rangle)_i$ sends $q$ to $t$,
+and every homogeneous residual is orthogonal to $q$
+(\leanname{environmentConstraintMap\_gramMinimumNormBase},
+\leanname{linearlyIndependent\_environment\_minimumNormConstraintBase}).
+Thus the normalized scale bound and its equality case follow constructively
+from independence, rather than from an assumed minimum-norm vector
+(\leanname{linearlyIndependent\_environment\_unit\_candidate\_scale\_le},
+\leanname{linearlyIndependent\_environment\_unit\_candidate\_unique}).
+Specializing $t_i=\sigma_i^2>0$ gives the geometric statement of
+Lemma~C.1 directly: the normalized direction has unit norm, satisfies every
+$p^\top\mu_i=\widetilde{\mu}\sigma_i^2$ equation, maximizes
+$\widetilde{\mu}\ge0$, and is unique at the maximum
+(\leanname{linearlyIndependent\_positiveVariance\_unique\_maximalDirection}).
+A repeated-vector family has singular Gram matrix, recording the required
+negative boundary
+(\leanname{repeatedPlaneEnvironments\_gram\_not\_isUnit}).
+A two-dimensional first-coordinate constraint with base norm two has a
+unique unit candidate at maximal scale $1/2$; without orthogonality, scalar
+cancellation admits scale two and refutes the bound.
+These results do not yet prove the equality-dimensional spurious
+construction or formalize the paper's Gaussian, logistic-risk, and
+zero-one-risk comparisons.
+
+\paragraph{Localized tangent features give an exact noninterference criterion.}
+Ortiz-Jimenez, Favero, and Frossard
+\cite{ortizjimenez2023task} express task $t$ in a kernel eigenbasis as
+$f_t(x)=\sum_\rho c_{t,\rho}\phi_\rho(x)$. Their Proposition~2 says that
+task arithmetic is exact when every feature carrying a nonzero coefficient
+for task $t$ is supported inside its domain $D_t$. The finite formalization
+strengthens the all-ones sum to every mixing vector $\alpha$:
+\[
+ x\in D_t
+ \quad\Longrightarrow\quad
+ \sum_u\alpha_u f_u(x)=\alpha_t f_t(x).
+\]
+This weighted property is equivalent to the observable boundary that
+$f_u$ vanishes on $D_t$ whenever $u\ne t$
+(\leanname{weightedTaskArithmetic\_iff\_noCrossTaskInterference}).
+Pairwise-disjoint domains and active-feature localization imply it directly
+(\leanname{localizedActiveFeatures\_weightedTaskArithmetic}).
+
+The converse records the load-bearing assumption rather than hiding it.
+On each domain, delete features whose restriction is identically zero and
+require the remaining restrictions to be linearly independent. Lean proves
+that this ordinary linear independence yields coefficient separation
+(\leanname{locallyIndependentOrZero\_localCoefficientSeparation}).
+If the disjoint task domains cover the point type, weighted task arithmetic
+is then equivalent to localization of every active feature
+(\leanname{weightedTaskArithmetic\_iff\_activeFeaturesLocalized}), the finite
+scalar counterpart of Proposition~3. Coordinate features on two singleton
+domains satisfy the equivalence. Conversely, two individually nonlocalized
+features can cancel on the other domain and still give exact task arithmetic;
+that representation is proved not locally separated
+(\leanname{cancellingRepresentation\_taskArithmetic\_not\_localized},
+\leanname{cancellingFeatures\_not\_locallySeparated}). Removing the cancelling
+coefficient yields explicit interference
+(\leanname{nonlocalized\_without\_cancellation\_fails\_taskArithmetic}).
+The theorem concerns finite exact representations; it does not identify
+trained neural features with NTK eigenfunctions, prove convergence of an
+infinite RKHS expansion, or transfer exact arithmetic to finite-precision
+runtime behavior.
+
+\paragraph{Detached superfluous outputs recover exactly the intended gradient.}
+SupSup \cite{wortsman2020supermasks} combines task masks before evaluating a
+fixed random network. At a fixed-feature linear head, this construction has
+an exact algebraic boundary. For arbitrary real coefficients $\alpha_t$ and
+masks $M_t$,
+\[
+ \ell\!\left(\sum_t\alpha_t M_t\right)
+   =\sum_t\alpha_t\ell(M_t),
+\]
+and a one-hot coefficient recovers the selected task mask exactly
+(\leanname{maskedLinearLogit\_weightedSupermask},
+\leanname{weightedSupermask\_oneHot}). A nonlinear activation cannot in
+general be moved across this sum: a scalar rectifier gives a concrete
+cancellation counterexample
+(\leanname{nonlinear\_activation\_breaks\_task\_logit\_superposition}).
+
+Appendix~I of the source partitions the output coordinates into real classes
+$R$ and added superfluous classes $S$. It detaches $R$ and differentiates
+log-sum-exp. If the supervised target $c$ lies in $R$, the resulting declared
+gradient is zero on $R$ and, for every $v\in S$, is exactly
+\[
+ \frac{e^{y_v}}{\sum_j e^{y_j}}
+ =\bigl(\nabla_y\operatorname{CE}(c,y)\bigr)_v .
+\]
+Lean proves both coordinate statements and the vector identity saying that
+the detached objective's gradient is precisely the supervised
+softmax-minus-one-hot gradient restricted to $S$
+(\leanname{detachedLogSumExpGradient\_eq\_crossEntropyGradient\_of\_mem},
+\leanname{detachedLogSumExpGradient\_eq\_zero\_of\_not\_mem},
+\leanname{detachedLogSumExpGradient\_eq\_restrict\_crossEntropyGradient}).
+The target partition is essential: if $c$ is incorrectly placed in $S$, the
+two gradients differ by exactly one at $c$
+(\leanname{target\_superfluous\_gradient\_difference\_eq\_one}).
+These results recover Equation~19's linear head and Lemma~I.1; they do not
+establish one-shot task recovery, the later expectation-sign claims, learned
+mask quality, Hopfield storage, or the empirical results.
+
+\paragraph{Top-\texorpdfstring{$N$}{N} prompt query has an exact exchange boundary.}
+Learning to Prompt (L2P)~\cite{wang2022l2p} chooses $N$ distinct prompt keys
+by minimizing the sum of their query--key matching costs.  For a finite pool
+$P$, cost $c$, and feasible selection $S\subseteq P$ with $|S|=N$, Lean proves
+the exact characterization
+\[
+ S\in\arg\min_{\substack{T\subseteq P\\|T|=N}}\sum_{i\in T}c_i
+ \quad\Longleftrightarrow\quad
+ \forall i\in S,\ \forall j\in P\setminus S,\ c_i\leq c_j .
+\]
+The forward direction swaps a selected and rejected prompt.  The reverse
+direction pairs the equal-cardinality set differences $S\setminus T$ and
+$T\setminus S$, so the result includes ties and arbitrary finite prompt
+types
+(\leanname{minimizer\_noCrossBoundaryInversion},
+\leanname{noCrossBoundaryInversion\_minimizer},
+\leanname{minimizesSelectionCost\_iff\_noCrossBoundaryInversion}).
+
+L2P's optional training-time diversity rule replaces $c_i$ by $c_i h_i$,
+where $h_i$ is historical selection frequency.  A uniform $h_i=h>0$
+preserves the complete set of minimizers
+(\leanname{minimizesSelectionCost\_uniformFrequency\_iff}).  Nonuniform
+frequency is genuinely different: in a two-prompt fixture the raw costs are
+$1<2$, but the strictly positive frequencies $(3,1)$ change the weighted
+costs to $(3,2)$.  Prompt zero is the raw-cost minimizer, prompt one is the
+frequency-weighted minimizer, and prompt zero is no longer a weighted
+minimizer
+(\leanname{firstPrompt\_raw\_minimizer},
+\leanname{secondPrompt\_positiveFrequency\_minimizer},
+\leanname{firstPrompt\_not\_positiveFrequency\_minimizer},
+\leanname{positiveReuseFrequency\_positive}).
+This finite result recovers Equations~3--4; it does not formalize prompt
+concatenation, learned query/key maps, Equation~5's surrogate loss, task
+inference, or empirical retention.
+
+\paragraph{Prefix prompting preserves query arity, not token output.}
+DualPrompt~\cite{wang2022dualprompt} distinguishes prompt tuning, which
+prepends the prompt to queries, keys and values, from prefix tuning, which
+prepends it only to keys and values.  For $p>0$ prompt tokens and $L$ input
+tokens, their output-query counts are respectively $p+L$ and $L$
+(\leanname{promptTuningQueryCount\_eq\_prefixTuningQueryCount\_iff},
+\leanname{prefixTuning\_preserves\_queryCount\_promptTuning\_increases}).
+
+Preserving query count does not imply preserving the old token values.  In one
+scalar attention coordinate, let $M_P,M_X>0$ be the unnormalized softmax masses
+of a nonempty prompt and token context, with separately normalized outputs
+$a_P,a_X$.  Lean proves the exact displacement
+\[
+ a_{P\mathbin{+\!\!+}X}-a_X
+ =\frac{M_P}{M_P+M_X}(a_P-a_X)
+\]
+and hence
+$a_{P\mathbin{+\!\!+}X}=a_X\Longleftrightarrow a_P=a_X$
+(\leanname{scalarPrefixAttention\_sub\_tokenAttention},
+\leanname{scalarPrefixAttention\_eq\_tokenAttention\_iff}).
+Equal-score scalar fixtures realize both strict change, from $1$ to $2$, and
+exact neutrality
+(\leanname{prefix\_changes},
+\leanname{prefix\_neutral}).
+This recovers Equations~4--5's arity distinction and supplies its exact
+attention boundary; it does not establish learned prompt quality, task-key
+identification, rehearsal freedom or benchmark accuracy.
+
+\paragraph{Hierarchical prompt loss requires an inequality, not budget substitution.}
+HiDe-Prompt~\cite{wang2023hideprompt} factors correct-class probability into
+within-task prediction and task-identity inference.  For positive
+probabilities $p_{\mathrm{WTP}},p_{\mathrm{TII}}$, negative-log loss makes the
+factorization exact:
+\[
+ -\log(p_{\mathrm{WTP}}p_{\mathrm{TII}})
+ =-\log p_{\mathrm{WTP}}-\log p_{\mathrm{TII}}
+\]
+(\leanname{negativeLogLoss\_mul}).  Writing the three nonnegative component
+losses as $H_{\mathrm{WTP}},H_{\mathrm{TII}},H_{\mathrm{TAP}}$, the complete
+loss is
+\[
+ L=\max\{H_{\mathrm{WTP}}+H_{\mathrm{TII}},H_{\mathrm{TAP}}\}.
+\]
+Component bounds $\delta,\epsilon,\eta$ therefore imply
+$0\leq L\leq\max\{\delta+\epsilon,\eta\}$, and conversely $L\leq\xi$ forces
+each component below $\xi$
+(\leanname{hierarchicalLoss\_mem\_Icc\_of\_component\_bounds},
+\leanname{componentLosses\_le\_of\_hierarchicalLoss\_le}).
+
+The source theorem states the interval correctly, but its appendix substitutes
+the upper bounds as exact losses.  That step is invalid: all three losses may
+be zero while $(\delta,\epsilon,\eta)=(1,1,1)$, giving $L=0$ but envelope $2$
+(\leanname{component\_upper\_bounds\_do\_not\_force\_envelope\_equality}).
+Moreover, equal joint probability can hide different allocations between
+within-task and task-identity performance, and strict improvement in one
+factor is visible only when the other has positive mass
+(\leanname{equal\_joint\_probability\_different\_components},
+\leanname{zero\_task\_probability\_masks\_within\_improvement}).
+These results audit the source's probability and loss algebra; they do not
+establish its learned prompts, pseudo-feature distributions, head
+optimization, rehearsal freedom or empirical accuracy.
+
+\paragraph{Decomposed prompting separates coefficient retention from behavior retention.}
+CODA-Prompt~\cite{smith2023coda} replaces discrete prompt selection by the
+input-conditioned linear combination
+\[
+ p(x)=\sum_m \alpha_m(x)P_m .
+\]
+Because each $\alpha_m$ is computed from that component's own key and
+attention vector, appending components preserves the complete prefix of old
+weights exactly
+(\leanname{componentWeights\_take\_old\_after\_append}).  The assembled prompt,
+however, obeys
+\[
+ p_{\mathrm{old}\mathbin{+\!\!+}\mathrm{fresh}}(x)
+ =p_{\mathrm{old}}(x)+p_{\mathrm{fresh}}(x),
+\]
+and therefore equals the old prompt exactly when the fresh weighted
+contribution vanishes
+(\leanname{assembledPrompt\_append},
+\leanname{assembledPrompt\_append\_eq\_old\_iff}).  A scalar fixture retains
+the old coefficient while changing the assembled value from $2$ to $14$,
+so frozen old weights are not a no-regression theorem
+(\leanname{scalar\_expansion\_preserves\_old\_weights\_but\_changes\_prompt}).
+If the coefficients were instead globally softmax-normalized, any finite
+new logit would reduce every positive old route weight
+(\leanname{finiteSoftmaxExpansion\_strictly\_decreases},
+\leanname{globallyNormalized\_expansion\_changes\_old\_weight}).
+
+The source also penalizes $\lVert BB^\top-I\rVert$.  Its squared-Frobenius
+version has the same zero set, and Lean proves that the penalty vanishes
+exactly when the rows of $B$ are orthonormal
+(\leanname{codaOrthogonalityPenalty\_eq\_zero\_iff\_rowsOrthonormal}).
+Identity rows give zero, while repeating one unit row gives squared penalty
+two
+(\leanname{identity\_penalty\_zero},
+\leanname{repeated\_row\_penalty\_eq\_two}).
+These are finite component and Gram identities; they do not establish the
+quality of learned similarities, end-to-end transformer optimization,
+forgetting, privacy, or accuracy.
+
+\paragraph{Checkpoint averaging has an exact affine boundary.}
+The model-soup recipe of
+\href{https://arxiv.org/abs/2203.05482}{Wortsman et
+al.}~\cite{wortsman2022soups} averages independently fine-tuned parameters,
+while its greedy variant retains an ingredient only when validation
+performance does not decrease. For an affine predictor
+$f(\theta)=A\theta+b$, parameter interpolation and output ensembling agree
+exactly:
+\[
+ f((1-\alpha)\theta_0+\alpha\theta_1)
+ =(1-\alpha)f(\theta_0)+\alpha f(\theta_1)
+\]
+(\leanname{affinePredict\_twoSoup}). The finite greedy construction has a
+separate, assumption-free invariant: every accepted-or-rejected proposal
+leaves the validation score of the current soup nondecreasing, so a
+best-first initialization cannot finish worse than its first ingredient on
+that same validation score
+(\leanname{soupScore\_greedySoup\_ge},
+\leanname{greedySoup\_no\_worse\_than\_first}).
+
+This does not license averaging arbitrary BP, PC, or carrier checkpoints. For
+the nonlinear scalar predictor $f(\theta)=\theta^2$, the endpoints
+$\theta=-1$ and $\theta=1$ both predict one, but their uniform parameter soup
+predicts zero while their output ensemble predicts one; against target one,
+the soup is strictly worse than both endpoints
+(\leanname{nonlinearSoup\_ne\_ensemble},
+\leanname{uniformSoup\_can\_be\_worse\_than\_both\_endpoints}). Any checkpoint
+soup therefore needs coordinate identity, validation provenance, path-loss
+and legal-policy measurements rather than an appeal to endpoint quality.
+
 \paragraph{Executable boundary.}
 The exact-real transition has a recorded addressed-packet witness whose child order,
 type indices, binary32 words and nonzero fresh packet are checked together
-(\leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/UnifiedCarrier/AddressedPacketFixture.lean}{119-L141}{productionInvocation\_certificate}).
+(\leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/UnifiedCarrier/MixedRadixAddressTransition.lean}{119-L141}{productionInvocation\_certificate}).
 A separate decision-site fixture decodes real binary32 weights and observations and
 proves all coordinate errors within their budgets
 (\leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/UnifiedCarrier/DecisionSiteFloat32Fixture.lean}{263-L291}{certificateBatch\_total\_error\_is\_bounded}).
 These are authenticated pointwise witnesses, not a claim that every tensor operation in
 a training run has been reconstructed in the kernel.
 
-The unified carrier is therefore an architecture specification and a verified refinement,
-not an efficacy result. Its decisive experiments remain single-variable: recurrent
-control on/off; precision-read bias on/off; Bayes gate versus unit gain; persistent prior
-on/off; and the carrier crossed with a mechanism-distinct credit rule. All share the
-unchanged typed-action waist and external checker.
+The registered PC-from-update-zero instance uses $60$ slots of content width $112$,
+evidence width $16$, recurrent-control width $48$, and four routed operators. It has
+$5{,}359{,}248$ parameters against the matched recurrent carrier's $5{,}279{,}800$,
+while $581{,}400$ trainable scalars occupy $66$ tensors. Persistent cross-episode
+evidence is disabled, so that campaign tests the within-episode carrier rather than the
+full persistence hypothesis. Terminal efficacy claims are admitted only after the
+generation-eleven--thirteen independent seal.
+
+The mechanism trace separates direction from magnitude. Raw-credit cosine describes
+the local credit before optimizer transport, whereas optimizer-displacement cosine
+describes the transported parameter direction; neither bounds the size of that motion.
+The formal telemetry boundary exhibits both cosines equal to one with transported norm
+ratio $10^{-3}$
+(\leanname{cosine\_eq\_one\_not\_normRatio\_le}). The terminal
+analysis therefore reports both cosine and norm ratio on both sides of optimizer
+transport, while verified yield and work remain separate empirical quantities.
+
+The comparison crosses recurrent, typed-workspace and unified-routed carriers with
+ordinary BP, an independent BP opportunity control, prospective PC, multi-site
+error-coordinate PC and incremental PC. All five rules begin from identical bytes
+within a carrier; no rule-specific generation-ten checkpoint or BP warm-up is used.
+PC is active at the first update, although the registered admission gate permits
+BP-equivalent ignition and measures later departure rather than requiring instant
+distinctness. The branch\footnote{A botched experiment that nonetheless adds data.
+It was intended as a from-scratch comparison of update rules; it was mis-specified
+and executed as a continuation from generation-eight weights (the last rule-neutral
+common ancestor, trained by the earlier backpropagation loop) over the
+generation-ten single-world pool. Its verified discoveries enter the solution pool
+with full provenance; its rule and carrier comparisons are recorded for completeness
+and are not evidence on the from-scratch question. Row labels 11--13 are
+pool-accounting indices, not scientific generation numbers; the branch is parallel
+to, not a successor of, the generation-nine/ten factorial.} retains all $15$ cells
+through its prospectively fixed three-round boundary, in one seeded world.
+
+\ifoeisterminalfacts
+\subsection{Recorded branch tables (mis-specified continuation; see footnote above)}
+\label{sec:nn-terminal}
+
+Verified union \oeisTerminalCumulativeUnion{}; the independent-BP control is the
+largest single rule ($400$), incremental PC fails ($56$); yields decline every round
+(a resource-boundary observation, not a saturation proof:
+\leanname{not\_correct\_on\_zeroTail\_and\_oneTail}). By rule
+and by carrier:
+
+\begin{center}\scriptsize
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}lrrrrrr@{}}
+\toprule
+rule & round 1 & round 2 & round 3 & cumulative & exclusive & train h \\
+\midrule
+\oeisTerminalRuleRows
+\bottomrule
+\end{tabular}}
+\end{center}
+\begin{center}\scriptsize
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}lrrrrrr@{}}
+\toprule
+carrier & round 1 & round 2 & round 3 & cumulative & exclusive & train h \\
+\midrule
+\oeisTerminalCarrierRows
+\bottomrule
+\end{tabular}}
+\end{center}
+
+The final round is shown cell by cell; optimizer cosine and norm ratio are
+reported together, and retention NLL remains a separate endpoint. The retention
+column measures teacher-forced, fixed-budget behavioural retention only---it bounds
+neither cross-task transfer nor what an unconstrained search would recover:
+\begin{center}\scriptsize
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}rllrrrrrr@{}}
+\toprule
+pool idx & carrier & rule & new & excl. & train h & opt. cos. & opt. norm & retention NLL \\
+\midrule
+\oeisTerminalFinalGenerationCellRows
+\bottomrule
+\end{tabular}}
+\end{center}
+
+Because persistent cross-episode evidence was disabled, these rows adjudicate the
+within-episode unified carrier only. They do not adjudicate the persistent evidence
+plane or any proposed single-variable ablation.
+
+Opportunity control: an independent BP seed given identical opportunity weakly
+dominates all nine candidate arms on the count/work Pareto:
+\begin{center}\small
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}llrrrrl@{}}
+\toprule
+carrier & rule & ext. & indep.\ BP ext. & beyond 2 BP & work $\times$BP & BP dom. \\
+\midrule
+\oeisTerminalCumulativeOpportunityRows
+\bottomrule
+\end{tabular}}
+\end{center}
+Within the branch the unified-routed carrier is the strongest carrier for every PC
+rule (largest beyond-two-BP margin $34$; prospective at $1.41\times$ work); the
+selection inequality of Section~\ref{sec:search} funds BP seeds first on these
+counts.
+\fi
+
+The remaining decisive experiments are single-variable: recurrent control on/off;
+precision-read bias on/off; Bayes gate versus unit gain; persistent prior on/off; and the
+carrier crossed with a mechanism-distinct credit rule. All share the unchanged
+typed-action waist and external checker.
 
 \section{The plasticity axis: what of predictive coding is a backprop trick}
 \label{sec:plasticity}
@@ -416,6 +2704,10 @@ where it fails.
 Iterative relaxation degrades badly with depth, and the degradation has a diagnosis: the
 per-layer precision-weighted energy is imbalanced across the stack, and a stability-bounded
 activity rate slows the error front so that layer $l$ is reached only after $L-l$ sweeps.
+The PCX benchmark of Pinchetti et al.~\cite{pinchetti2024pcx} makes this an
+executable measurement programme: compare the PC variants against
+backpropagation on shared architectures while recording layer energy,
+stability, and wall time rather than accuracy alone.
 Recent work repairs this to accuracy comparable with backpropagation on deep residual
 networks, and we have formalized the mechanisms at arbitrary depth over full covariance
 matrices with a nonlinear Jacobian remainder: the first-arrival attenuation that produces
@@ -561,6 +2853,25 @@ different union value through complementarity, and a fixed split can lose to the
 single arm while an adaptive allocation dominates both---which is the observed
 $399$-versus-$435$ in one line.
 
+Coverage alone still omits the cost of the arm that produced it. Let
+\[
+  U(P)=v\left|\bigcup_{a\in P}A_a\right|-\sum_{a\in P}c_a
+\]
+for checker-accepted target sets $A_a$, common target value $v$ and measured cost
+$c_a$. For a fresh arm $a$, the formal insertion law is exact:
+\[
+  U(P\cup\{a\})=U(P)+v\,|A_a\setminus{\textstyle\bigcup_{b\in P}}A_b|-c_a.
+\]
+No independence model is involved
+(\leanname{portfolioNetValue\_insert\_eq\_add\_marginalNetValue}).
+Comparing a candidate with an independently trained BP arm is therefore exactly a
+comparison of marginal net values, not standalone yields
+(\leanname{insert\_candidate\_gt\_insert\_opportunity\_iff}).
+The positive fixture has a lower-yield PC arm win because its exclusive targets repay
+equal cost; the negative fixture keeps those targets but raises its cost until the
+opportunity control wins. This is the theorem-level form of ``one more BP seed'':
+diversity is valuable, but not free.
+
 What the search produces is a corpus, and the corpus is now a formal object of its own:
 a provenance-authenticated many-to-many relation between programs and the sequences they
 solve, preserving every distinct program witness rather than quotienting programs by
@@ -578,6 +2889,105 @@ can never create an acceptance
 reserves a baseline fraction bounds how much a misguided heuristic can delay any
 baseline discovery (\leanname{baseline\_rank\_time\_slowdown\_bound})---so semantic
 shaping is admissible as guidance precisely because it is powerless over acceptance.
+
+\subsection{The completed carrier--credit factorial}
+\label{sec:carrier-credit-factorial}
+
+The architecture argument is now supported by a larger matched experiment, but the
+experiment does not collapse the axes the theory keeps separate. Four fully frozen
+generation-eight carriers---recurrent vector, typed workspace, derived-retention belief
+and learned-retention belief---each receive the same-form zero-output residual adapter.
+Five update rules begin from identical states and data ledgers within each parent and
+world; generation ten continues the exact generation-nine adapter and optimizer. Every
+candidate passes the whole-OEIS checker.
+
+The two-world cross-cell union is $1{,}617$ new entries. By update rule, union/exclusive
+marginal is prospective PC $968/299$, error-coordinate PC $893/66$, ordinary BP
+$869/51$, independent BP $866/77$, and incremental PC $693/124$. By carrier, the same
+quantity is recurrent $738/396$, derived belief $643/281$, learned belief $564/220$,
+and workspace $517/183$. Prospective PC has the strongest aggregate rule portfolio but
+does not win every carrier--world cell, and BP remains substantially faster. The result
+therefore supports the paper's factorization: state carrier and plasticity rule interact,
+yet each contributes exclusive verified coverage that a scalar ranking would erase.
+
+The checker evidence is itself graded. Shared channels in the original run allowed
+orphan workers to overwrite support files, so seven fresh single-owner replays rebuilt
+the terminal evidence chain without retraining. The ordinary and audited numerical
+summaries agree exactly; the isolated independent verifier is authoritative and passes
+all $749$ checks. Its SHA-256 is
+{\scriptsize\ttfamily
+3f08e6c3a57ba3e13a0e387737bbb31cfd990221a7b3b331214b4f9cab47bc7f}.
+This establishes the reported finite-corpus coverage under the checker, not full-domain
+correctness of the discovered programs and not efficacy of the still-untested unified
+carrier.
+
+\subsection{A dependent-proof credit screen}
+\label{sec:dtt-credit-screen}
+
+A separate preregistered experiment holds the checked dependent-proof frontier and
+two-layer pointer-ranker architecture fixed while changing only credit assignment. Five
+profiles train on the same $1{,}060$-batch ledger, with PC active from update zero.
+On $604$ held-out development problems, ordinary BP solves $286$, independent BP $220$,
+error-coordinate PC $244$, prospective PC $119$, and incremental PC $1$. These totals
+alone would rank BP first. The mechanism trace says something orthogonal:
+error-coordinate PC remains BP-like (median raw-credit cosine $0.9899$), prospective PC
+is strongly distinct ($0.0979$), and incremental PC is distinct but does not learn.
+
+Independent-seed replication resolves the useful part of that distinction. Prospective
+PC reproduces raw-credit cosine $0.0930$ and optimizer-displacement cosine $0.3358$.
+Against its matched independent-BP control it solves $160$ versus $220$ of $600$
+synthetic held-out problems, yet adds $40$ synthetic marginals; it also solves two of
+four tutorial problems versus zero. On the fixed DTTBench endpoint it proves
+\code{False\_elim} and \code{Iff\_refl}, while BP proves only
+\code{False\_elim}. Incremental PC again solves none of the synthetic set and adds no
+endpoint marginal. Figure~\ref{fig:nn-dtt-cosines} shows the replicated mechanism
+separation: the two statistics are medians over the training run, and optimizer
+transport pulls prospective PC's nearly orthogonal raw credit ($\approx 0.09$)
+partway back toward BP ($\approx 0.34$) while leaving the incremental--prospective
+gap intact.
+
+\begin{figure}[htbp]
+\centering
+\begin{tikzpicture}[x=1cm,y=1cm]
+\foreach \xv/\xl in {0/0, 1.5/0.25, 3.0/0.50, 4.5/0.75, 6.0/1.00} {
+  \draw[datac!40, thin] (\xv,-0.1) -- (\xv,3.9);
+  \node[below, font=\scriptsize, text=datac!150] at (\xv,-0.15) {\xl};
+}
+\foreach \y/\lab/\s/\r in {3.3/{prospective, raw credit}/0.0979/0.0930,
+                           2.3/{prospective, optimizer displacement}/0.3398/0.3358,
+                           1.3/{incremental, raw credit}/0.7638/0.7236,
+                           0.3/{incremental, optimizer displacement}/0.8754/0.8549} {
+  \node[left, font=\scriptsize, align=right] at (-0.15,\y+0.25) {\lab};
+  \fill[learnedc!90] (0,\y+0.28) rectangle (\s*6,\y+0.48);
+  \fill[learnedc!40] (0,\y+0.02) rectangle (\r*6,\y+0.22);
+  \node[right, font=\tiny] at (\s*6+0.03,\y+0.38) {\s};
+  \node[right, font=\tiny] at (\r*6+0.03,\y+0.12) {\r};
+}
+\draw[datac!140] (0,-0.1) -- (0,3.9);
+\node[below, font=\scriptsize] at (3.0,-0.55) {median cosine to matched BP};
+\begin{scope}[shift={(0.4,-1.15)}]
+\fill[learnedc!90] (0,0) rectangle (0.28,0.2);
+\node[right, font=\scriptsize] at (0.3,0.1) {screen seed};
+\fill[learnedc!40] (2.3,0) rectangle (2.58,0.2);
+\node[right, font=\scriptsize] at (2.6,0.1) {replication seed};
+\end{scope}
+\end{tikzpicture}
+\caption{Mechanism replication on the dependent-proof screen. Each pair of bars is
+one credit statistic on the two independent seeds; agreement is to the second
+decimal on every row. Prospective PC's raw credit is nearly orthogonal to BP even
+though the optimizer-transported displacement is not, so raw-credit and displacement
+cosines must be reported together.}
+\label{fig:nn-dtt-cosines}
+\end{figure}
+
+This is the situation the net-value theorem was designed to express: prospective PC is
+not the highest-coverage arm, but it is not redundant with BP. Whether its marginals
+repay its additional compute is an empirical input to the exact opportunity-control law.
+The endpoint had already been opened globally before replica training, so its row is
+fixed-benchmark replication; the repeated mechanism departure and synthetic held-out
+marginals carry the cleaner causal interpretation. The experiment uses a shallow
+pointer ranker, not the unified carrier, and therefore supplies no unified-carrier
+efficacy claim.
 
 \section{What the telemetry can and cannot see}
 \label{sec:identifiability}
@@ -626,15 +3036,18 @@ required update has rank at most $r$
 context effect provably cannot consolidate faithfully. Softmax attention falls outside:
 normalization couples the context and breaks exact additivity, with a two-token
 counterexample and a quantitative defect bound
-(\leanname{scalarSoftmaxAttention\_not\_additive\_fixture},
-\leanname{abs\_normalizedContextMerge\_sub\_add\_le}). What remains empirical is whether a
-trained transformer's in-context adaptation operates in the near-linear regime---a question
-on which the evidence is suggestive rather than settled: linear attention is exactly the
-kernelised recurrence whose state is an accumulated outer product~\cite{katharopoulos2020},
-in-context learning has been read as an implicit gradient step~\cite{vonoswald2023,dai2022},
-and empirically a demonstration set's effect can be compressed into a single added
-vector~\cite{hendel2023,todd2023}, which is the additive-effect hypothesis in its most
-directly testable form. None of that is a proof, and we do not treat it as one.
+(\leanname{scalarSoftmaxAttention\_not\_additive},
+\leanname{abs\_normalizedContextMerge\_sub\_add\_le}). The hand-constructed
+unnormalized head now has an exact in-context gradient-update theorem. What remains
+empirical is whether a trained transformer discovers that construction or operates in
+the near-linear regime---a question on which the evidence is suggestive rather than
+settled: linear attention is exactly the kernelised recurrence whose state is an
+accumulated outer product~\cite{katharopoulos2020}; alternative gradient-step
+interpretations have been proposed~\cite{dai2022}; and empirically a demonstration
+set's effect can be compressed into a single added vector~\cite{hendel2023,todd2023},
+which is the additive-effect hypothesis in its most directly testable form. These
+empirical observations are not consequences of the exact construction theorem, and we
+do not treat them as such.
 
 \emph{Derived, not declared, cost models.} An earlier draft optimized the consolidation
 cadence against a posited quadratic trade-off. Deriving the objective from the
@@ -678,6 +3091,139 @@ arXiv:1706.08840.
 Orthogonal gradient descent for continual learning.
 \emph{AISTATS}, PMLR 108, 2020; arXiv:1910.07104.
 
+\bibitem{saha2021gpm} G.~Saha, I.~Garg, and K.~Roy.
+Gradient projection memory for continual learning.
+\emph{ICLR}, 2021; arXiv:2103.09762.
+
+\bibitem{lin2022trgp} S.~Lin, L.~Yang, D.~Fan, and J.~Zhang.
+TRGP: Trust region gradient projection for continual learning.
+\emph{ICLR}, 2022; arXiv:2202.02931.
+
+\bibitem{mirzadeh2022wide} S.~I.~Mirzadeh, A.~Chaudhry, D.~Yin,
+H.~Hu, R.~Pascanu, D.~Gorur, and M.~Farajtabar.
+Wide neural networks forget less catastrophically.
+\emph{ICML}, PMLR 162, 2022; arXiv:2110.11526.
+
+\bibitem{guha2024width} E.~Guha and V.~Lakshman.
+On the diminishing returns of width for continual learning.
+\emph{ICML}, PMLR 235, 2024;
+\href{https://arxiv.org/abs/2403.06398}{arXiv:2403.06398}.
+
+\bibitem{graldi2025lazy} J.~Graldi, A.~Breccia, G.~Lanzillotta,
+T.~Hofmann, and L.~Noci.
+The importance of being lazy: scaling limits of continual learning.
+\emph{ICML}, PMLR 267, 2025;
+\href{https://arxiv.org/abs/2506.16884}{arXiv:2506.16884}.
+
+\bibitem{vandeven2025fisher} G.~M.~van de Ven.
+On the computation of the Fisher information in continual learning.
+\emph{ICLR Blogpost}, 2025; arXiv:2502.11756.
+
+\bibitem{kao2021ncl} T.-C.~Kao, K.~T.~Jensen, G.~M.~van de Ven,
+A.~Bernacchia, and G.~Hennequin.
+Natural continual learning: Success is a journey, not (just) a destination.
+\emph{NeurIPS}, 2021; arXiv:2106.08085.
+
+\bibitem{chaudhry2018rwalk} A.~Chaudhry, P.~K.~Dokania,
+T.~Ajanthan, and P.~H.~S.~Torr.
+Riemannian Walk for incremental learning: Understanding forgetting and
+intransigence.
+\emph{ECCV}, 2018; arXiv:1801.10112.
+
+\bibitem{nguyen2018vcl} C.~V.~Nguyen, Y.~Li, T.~D.~Bui, and
+R.~E.~Turner.
+Variational continual learning.
+\emph{ICLR}, 2018; arXiv:1710.10628.
+
+\bibitem{zeno2018bgd} C.~Zeno, I.~Golan, E.~Hoffer, and D.~Soudry.
+Task agnostic continual learning using online variational Bayes.
+arXiv:1803.10123, 2018.
+
+\bibitem{knoblauch2020optimal} J.~Knoblauch, H.~Husain, and T.~Diethe.
+Optimal continual learning has perfect memory and is NP-hard.
+\emph{ICML}, PMLR 108, 2020; arXiv:2006.05188.
+
+\bibitem{aljundi2019gss} R.~Aljundi, M.~Lin, B.~Goujaud, and Y.~Bengio.
+Gradient based sample selection for online continual learning.
+\emph{NeurIPS}, 2019; arXiv:1903.08671.
+
+\bibitem{shin2017dgr}
+H.~Shin, J.~K.~Lee, J.~Kim, and J.~Kim.
+Continual learning with deep generative replay.
+\emph{NeurIPS}, 2017;
+\href{https://arxiv.org/abs/1705.08690}{arXiv:1705.08690}.
+
+\bibitem{buzzega2020der}
+P.~Buzzega, M.~Boschini, A.~Porrello, D.~Abati, and S.~Calderara.
+Dark experience for general continual learning: a strong, simple baseline.
+\emph{NeurIPS}, 2020;
+\href{https://arxiv.org/abs/2004.07211}{arXiv:2004.07211}.
+
+\bibitem{mirzadeh2021mode}
+S.~I.~Mirzadeh, M.~Farajtabar, D.~Gorur, R.~Pascanu, and
+H.~Ghasemzadeh.
+Linear mode connectivity in multitask and continual learning.
+\emph{ICLR}, 2021;
+\href{https://arxiv.org/abs/2010.04495}{arXiv:2010.04495}.
+
+\bibitem{aljundi2019taskfree}
+R.~Aljundi, K.~Kelchtermans, and T.~Tuytelaars.
+Task-free continual learning.
+\emph{CVPR}, 2019;
+\href{https://arxiv.org/abs/1812.03596}{arXiv:1812.03596}.
+
+\bibitem{banayeeanzade2025replay}
+A.~Banayeeanzade, M.~Soltanolkotabi, and M.~Rostami.
+Theoretical insights into overparameterized models in multi-task and
+replay-based continual learning.
+\emph{Transactions on Machine Learning Research}, 2025;
+\href{https://arxiv.org/abs/2408.16939}{arXiv:2408.16939}.
+
+\bibitem{masse2018xdg} N.~Y.~Masse, G.~D.~Grant, and D.~J.~Freedman.
+Alleviating catastrophic forgetting using context-dependent gating and
+synaptic stabilization.
+\emph{Proceedings of the National Academy of Sciences},
+115(44):E10467--E10475, 2018; DOI:10.1073/pnas.1803839115;
+arXiv:1802.01569.
+
+\bibitem{pellegrini2020latent}
+L.~Pellegrini, G.~Graffieti, V.~Lomonaco, and D.~Maltoni.
+Latent replay for real-time continual learning.
+\emph{IEEE/RSJ International Conference on Intelligent Robots and Systems},
+pp.~10203--10209, 2020; DOI:10.1109/IROS45743.2020.9341460;
+arXiv:1912.01100.
+
+\bibitem{seo2025budgeted}
+M.~Seo, H.~Koh, and J.~Choi.
+Budgeted online continual learning by adaptive layer freezing and
+frequency-based sampling.
+\emph{ICLR}, 2025; arXiv:2410.15143.
+
+\bibitem{prabhu2023budgetcl}
+A.~Prabhu, H.~A.~A.~K.~Hammoud, P.~Dokania, P.~H.~S.~Torr, S.-N.~Lim,
+B.~Ghanem, and A.~Bibi.
+Computationally budgeted continual learning: what does matter?
+\emph{CVPR}, 2023;
+\href{https://arxiv.org/abs/2303.11165}{arXiv:2303.11165}.
+
+\bibitem{hemati2023cir}
+H.~Hemati et al.
+Class-incremental learning with repetition.
+\emph{Conference on Lifelong Learning Agents}, 2023;
+\href{https://arxiv.org/abs/2301.11396}{arXiv:2301.11396}.
+
+\bibitem{ghunaim2023realtime}
+Y.~Ghunaim et al.
+Real-time evaluation in online continual learning: A new hope.
+\emph{CVPR}, 2023;
+\href{https://arxiv.org/abs/2302.01047}{arXiv:2302.01047}.
+
+\bibitem{prabhu2023acm}
+A.~Prabhu, Z.~Cai, P.~Dokania, P.~H.~S.~Torr, V.~Koltun, and O.~Sener.
+Online continual learning without the storage constraint.
+\emph{ICML}, 2023;
+\href{https://arxiv.org/abs/2305.09253}{arXiv:2305.09253}.
+
 \bibitem{sun2024} Y.~Sun et al.
 Learning to (learn at test time): RNNs with expressive hidden states.
 arXiv:2407.04620, 2024.
@@ -694,6 +3240,282 @@ Transformers are RNNs: Fast autoregressive transformers with linear attention.
 
 \bibitem{vonoswald2023} J.~von Oswald et al.
 Transformers learn in-context by gradient descent. \emph{ICML}, 2023; arXiv:2212.07677.
+
+\bibitem{ninite2026} L.~Ninite and R.~M.~Jungers.
+Iterative graph lifting for automatic design of path-complete stability certificates.
+arXiv:2607.00637, 2026.
+
+\bibitem{deidda2025njsr} P.~Deidda, N.~Guglielmi, and F.~Tudisco.
+Nonlinear joint spectral radius.
+arXiv:2507.11314, 2025.
+
+\bibitem{ashwinpostlethwaite2015} P.~Ashwin and C.~Postlethwaite.
+Designing heteroclinic and excitable networks in phase space using two
+populations of coupled cells.
+\href{https://arxiv.org/abs/1506.03212}{arXiv:1506.03212}, 2015.
+
+\bibitem{voitmeyerortmanns2018} A.~Voit and H.~Meyer-Ortmanns.
+Hierarchical heteroclinic networks: controlling the time evolution of
+complex systems.
+\href{https://arxiv.org/abs/1806.11039}{arXiv:1806.11039}, 2018.
+
+\bibitem{zhang2019lookahead} M.~R.~Zhang, J.~Lucas, G.~Hinton, and J.~Ba.
+Lookahead optimizer: $k$ steps forward, 1 step back.
+\href{https://arxiv.org/abs/1907.08610}{arXiv:1907.08610}, 2019.
+
+\bibitem{pham2021dualnet} Q.~Pham, C.~Liu, and S.~C.~H.~Hoi.
+DualNet: continual learning, fast and slow.
+\href{https://arxiv.org/abs/2110.00175}{arXiv:2110.00175}, 2021.
+
+\bibitem{prabhu2024random} A.~Prabhu, S.~Sinha, P.~Kumaraguru,
+P.~H.~S.~Torr, O.~Sener, and P.~K.~Dokania.
+Random representations outperform online continually learned
+representations.
+\emph{NeurIPS}, 2024;
+\href{https://arxiv.org/abs/2402.08823}{arXiv:2402.08823}.
+
+\bibitem{hayes2020slda} T.~L.~Hayes and C.~Kanan.
+Lifelong machine learning with deep streaming linear discriminant analysis.
+\emph{CVPR Workshops}, 2020;
+\href{https://arxiv.org/abs/1909.01520}{arXiv:1909.01520}.
+
+\bibitem{goswami2023fecam} D.~Goswami, Y.~Liu, B.~Twardowski, and
+J.~van de Weijer.
+FeCAM: exploiting the heterogeneity of class distributions in
+exemplar-free continual learning.
+\emph{NeurIPS}, 2023;
+\href{https://arxiv.org/abs/2309.14062}{arXiv:2309.14062}.
+
+\bibitem{nori2024taskconfusion} M.~K.~Nori and I.-M.~Kim.
+Task confusion and catastrophic forgetting in class-incremental learning:
+a mathematical framework for discriminative and generative modelings.
+\href{https://arxiv.org/abs/2410.20768}{arXiv:2410.20768}, 2024.
+
+\bibitem{mcdonnell2023ranpac} M.~D.~McDonnell, D.~Gong, A.~Parveneh,
+E.~Abbasnejad, and A.~van den Hengel.
+RanPAC: random projections and pre-trained models for continual learning.
+\emph{NeurIPS}, 2023;
+\href{https://arxiv.org/abs/2307.02251}{arXiv:2307.02251}.
+
+\bibitem{zhuang2022acil} H.~Zhuang, Z.~Weng, H.~Wei, R.~Xie,
+K.-A.~Toh, and Z.~Lin.
+ACIL: analytic class-incremental learning with absolute memorization and
+privacy protection.
+\href{https://arxiv.org/abs/2205.14922}{arXiv:2205.14922}, 2022.
+
+\bibitem{zhuang2024foal} H.~Zhuang, Y.~Liu, R.~He, K.~Tong,
+Z.~Zeng, C.~Chen, Y.~Wang, and L.-P.~Chau.
+F-OAL: forward-only online analytic learning with fast training and low
+memory footprint in class-incremental learning.
+\href{https://arxiv.org/abs/2403.15751}{arXiv:2403.15751}, 2024.
+
+\bibitem{pinchetti2024pcx} L.~Pinchetti, C.~Qi, O.~Lokshyn,
+G.~Oliviers, C.~Emde, M.~Tang, A.~M'Charrak, S.~Frieder,
+B.~Menzat, R.~Bogacz, T.~Lukasiewicz, and T.~Salvatori.
+Benchmarking predictive coding networks---made simple.
+\emph{ICLR}, 2025;
+\href{https://arxiv.org/abs/2407.01163}{arXiv:2407.01163}.
+
+\bibitem{peng2024loranpac} L.~Peng, J.~Elenter, J.~Agterberg,
+A.~Ribeiro, and R.~Vidal.
+LoRanPAC: low-rank random features and pre-trained models for bridging
+theory and practice in continual learning.
+\emph{ICLR}, 2025;
+\href{https://arxiv.org/abs/2410.00645}{arXiv:2410.00645}.
+
+\bibitem{cheng2025coso} Q.~Cheng, Y.~Wan, L.~Wu, C.~Hou, and
+L.~Zhang.
+Continuous subspace optimization for continual learning.
+\href{https://arxiv.org/abs/2505.11816}{arXiv:2505.11816}, 2025.
+
+\bibitem{arjovsky2019irm} M.~Arjovsky, L.~Bottou, I.~Gulrajani, and
+D.~Lopez-Paz.
+Invariant risk minimization.
+\href{https://arxiv.org/abs/1907.02893}{arXiv:1907.02893}, 2019.
+
+\bibitem{rosenfeld2020risks} E.~Rosenfeld, P.~Ravikumar, and
+A.~Risteski.
+The risks of invariant risk minimization.
+\emph{ICLR}, 2021;
+\href{https://arxiv.org/abs/2010.05761}{arXiv:2010.05761}.
+
+\bibitem{ortizjimenez2023task} G.~Ortiz-Jimenez, A.~Favero, and
+P.~Frossard.
+Task arithmetic in the tangent space: improved editing of pre-trained
+models.
+\emph{NeurIPS}, 2023;
+\href{https://arxiv.org/abs/2305.12827}{arXiv:2305.12827}.
+
+\bibitem{wortsman2020supermasks} M.~Wortsman, V.~Ramanujan, R.~Liu,
+A.~Kembhavi, M.~Rastegari, J.~Yosinski, and A.~Farhadi.
+Supermasks in superposition.
+\emph{NeurIPS}, 2020;
+\href{https://arxiv.org/abs/2006.14769}{arXiv:2006.14769}.
+
+\bibitem{wang2022l2p} Z.~Wang, Z.~Zhang, C.-Y.~Lee, H.~Zhang, R.~Sun,
+X.~Ren, G.~Su, V.~Perot, J.~Dy, and T.~Pfister.
+Learning to prompt for continual learning.
+\emph{CVPR}, 2022;
+\href{https://arxiv.org/abs/2112.08654}{arXiv:2112.08654}.
+
+\bibitem{wang2022dualprompt} Z.~Wang, Z.~Zhang, S.~Ebrahimi, R.~Sun,
+H.~Zhang, C.-Y.~Lee, X.~Ren, G.~Su, V.~Perot, J.~Dy, and T.~Pfister.
+DualPrompt: complementary prompting for rehearsal-free continual learning.
+\emph{ECCV}, 2022;
+\href{https://arxiv.org/abs/2204.04799}{arXiv:2204.04799}.
+
+\bibitem{smith2023coda} J.~S.~Smith, L.~Karlinsky, V.~Gutta, P.~Cascante-Bonilla,
+D.~Kim, A.~Arbelle, R.~Panda, R.~Feris, and Z.~Kira.
+CODA-Prompt: continual decomposed attention-based prompting for
+rehearsal-free continual learning.
+\emph{CVPR}, 2023;
+\href{https://arxiv.org/abs/2211.13218}{arXiv:2211.13218}.
+
+\bibitem{wang2023hideprompt} L.~Wang, J.~Xie, X.~Zhang, M.~Huang,
+H.~Su, and J.~Zhu.
+Hierarchical decomposition of prompt-based continual learning: rethinking
+obscured sub-optimality.
+\href{https://arxiv.org/abs/2310.07234}{arXiv:2310.07234}, 2023.
+
+\bibitem{wortsman2022soups} M.~Wortsman, G.~Ilharco, S.~Y.~Gadre,
+R.~Roelofs, R.~Gontijo-Lopes, A.~S.~Morcos, H.~Namkoong, A.~Farhadi,
+Y.~Carmon, S.~Kornblith, and L.~Schmidt.
+Model soups: averaging weights of multiple fine-tuned models improves
+accuracy without increasing inference time.
+\emph{ICML}, PMLR 162, 2022;
+\href{https://arxiv.org/abs/2203.05482}{arXiv:2203.05482}.
+
+\bibitem{blanes2008} S.~Blanes, F.~Casas, and A.~Murua.
+Splitting and composition methods in the numerical integration of
+differential equations.
+arXiv:0812.0377, 2008.
+
+\bibitem{hinton2022ff} G.~Hinton.
+The Forward-Forward Algorithm: Some Preliminary Investigations.
+arXiv:2212.13345, 2022.
+
+\bibitem{schoenholz2017} S.~S.~Schoenholz, J.~Gilmer, S.~Ganguli, and
+J.~Sohl-Dickstein.
+Deep information propagation. \emph{ICLR}, 2017; arXiv:1611.01232.
+
+\bibitem{poole2016chaos} B.~Poole, S.~Lahiri, M.~Raghu,
+J.~Sohl-Dickstein, and S.~Ganguli.
+Exponential expressivity in deep neural networks through transient chaos.
+arXiv:1606.05340, 2016.
+
+\bibitem{xiao2018} L.~Xiao, Y.~Bahri, J.~Sohl-Dickstein,
+S.~S.~Schoenholz, and J.~Pennington.
+Dynamical isometry and a mean field theory of CNNs: how to train
+10,000-layer vanilla convolutional neural networks.
+\emph{ICML}, 2018; arXiv:1806.05393.
+
+\bibitem{yang2022mup} G.~Yang et al.
+Tensor programs V: tuning large neural networks via zero-shot hyperparameter
+transfer. arXiv:2203.03466, 2022.
+
+\bibitem{bordelon2023depth} B.~Bordelon, L.~Noci, M.~B.~Li, B.~Hanin,
+and C.~Pehlevan.
+Depthwise hyperparameter transfer in residual networks: dynamics and scaling
+limit. arXiv:2309.16620, 2023.
+
+\bibitem{yang2023depthmup} G.~Yang, D.~Yu, C.~Zhu, and S.~Hayou.
+Tensor programs VI: feature learning in infinite-depth neural networks.
+arXiv:2310.02244, 2023.
+
+\bibitem{santurkar2018} S.~Santurkar, D.~Tsipras, A.~Ilyas, and A.~Madry.
+How does batch normalization help optimization?
+\emph{NeurIPS}, 2018; arXiv:1805.11604.
+
+\bibitem{lowe2019gim} S.~Löwe, P.~O'Connor, and B.~S.~Veeling.
+Putting an end to end-to-end: gradient-isolated learning of representations.
+\emph{NeurIPS}, 2019; arXiv:1905.11786.
+
+\bibitem{riemer2019mer} M.~Riemer et al.
+Learning to learn without forgetting by maximizing transfer and minimizing
+interference. \emph{ICLR}, 2019; arXiv:1810.11910.
+
+\bibitem{bengio2019metatransfer}
+Y.~Bengio, T.~Deleu, N.~Rahaman, R.~Ke, S.~Lachapelle, O.~Bilaniuk,
+A.~Goyal, and C.~Pal.
+A meta-transfer objective for learning to disentangle causal mechanisms.
+arXiv:1901.10912, 2019.
+
+\bibitem{perry2022sms}
+R.~Perry, J.~von K\"ugelgen, and B.~Sch\"olkopf.
+Causal discovery in heterogeneous environments under the sparse mechanism
+shift hypothesis.
+\emph{NeurIPS}, 2022; arXiv:2206.02013.
+
+\bibitem{sensoy2018edl}
+M.~Sensoy, L.~Kaplan, and M.~Kandemir.
+Evidential deep learning to quantify classification uncertainty.
+\emph{NeurIPS}, 2018;
+\href{https://arxiv.org/abs/1806.01768}{arXiv:1806.01768}.
+
+\bibitem{malinin2018prior}
+A.~Malinin and M.~Gales.
+Predictive uncertainty estimation via Prior Networks.
+\emph{NeurIPS}, 2018;
+\href{https://arxiv.org/abs/1802.10501}{arXiv:1802.10501}.
+
+\bibitem{lee2020cndpm}
+S.~Lee, J.~Ha, D.~Zhang, and G.~Kim.
+A neural Dirichlet process mixture model for task-free continual learning.
+\emph{ICLR}, 2020;
+\href{https://arxiv.org/abs/2001.00689}{arXiv:2001.00689}.
+
+\bibitem{dohare2024plasticity} S.~Dohare, J.~F.~Hernandez-Garcia,
+P.~Rahman, A.~R.~Mahmood, and R.~S.~Sutton.
+Maintaining plasticity in deep continual learning.
+arXiv:2306.13812, 2024.
+
+\bibitem{frati2024reset} L.~Frati, N.~Traft, J.~Clune, and N.~Cheney.
+Reset it and forget it: relearning last-layer weights improves continual and
+transfer learning.
+arXiv:2310.07996, 2024.
+
+\bibitem{kornblith2019cka} S.~Kornblith, M.~Norouzi, H.~Lee, and G.~Hinton.
+Similarity of neural network representations revisited.
+\emph{ICML}, 2019; arXiv:1905.00414.
+
+\bibitem{davari2022cka} M.~Davari, S.~Horoi, A.~Natik, G.~Lajoie, G.~Wolf,
+and E.~Belilovsky.
+Reliability of CKA as a similarity measure in deep learning.
+arXiv:2210.16156, 2022.
+
+\bibitem{smith2017clr} L.~N.~Smith.
+Cyclical learning rates for training neural networks.
+\emph{WACV}, 2017; arXiv:1506.01186.
+
+\bibitem{smith2018super} L.~N.~Smith and N.~Topin.
+Super-convergence: very fast training of neural networks using large learning
+rates.
+arXiv:1708.07120, 2017.
+
+\bibitem{cohen2021edge} J.~M.~Cohen, S.~Kaur, Y.~Li, J.~Z.~Kolter, and
+A.~Talwalkar.
+Gradient descent on neural networks typically occurs at the edge of stability.
+\emph{ICLR}, 2021; arXiv:2103.00065.
+
+\bibitem{damian2022self} A.~Damian, E.~Nichani, and J.~D.~Lee.
+Self-stabilization: the implicit bias of gradient descent at the edge of
+stability.
+\emph{ICLR}, 2023; arXiv:2209.15594.
+
+\bibitem{cohen2024central} J.~M.~Cohen, A.~Damian, A.~Talwalkar,
+J.~Z.~Kolter, and J.~D.~Lee.
+Understanding optimization in deep learning with central flows.
+\emph{ICLR}, 2025; arXiv:2410.24206.
+
+\bibitem{odonoghue2012restart} B.~O'Donoghue and E.~Cand\`es.
+Adaptive restart for accelerated gradient schemes.
+\emph{Foundations of Computational Mathematics}, 15:715--732, 2015;
+arXiv:1204.3982.
+
+\bibitem{izmailov2018swa} P.~Izmailov, D.~Podoprikhin, T.~Garipov,
+D.~Vetrov, and A.~G.~Wilson.
+Averaging weights leads to wider optima and better generalization.
+\emph{UAI}, 2018; arXiv:1803.05407.
 
 \bibitem{dai2022} D.~Dai et al.
 Why can GPT learn in-context? Language models implicitly perform gradient descent as

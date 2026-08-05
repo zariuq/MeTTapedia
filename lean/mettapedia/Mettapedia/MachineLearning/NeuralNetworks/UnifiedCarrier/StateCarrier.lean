@@ -330,9 +330,19 @@ theorem sourcePolicyAfterUnifiedStep_isSome
 /-- An adversarial full-carrier decision cannot make an illegal operator
 appear in the common masked scorer. -/
 theorem illegalOperator_stays_absent_after_unifiedStep :
-    legalMaskedScore (fun operator : Bool => !operator)
-      (fun _operator => (37 : ℝ)) true = none := by
-  rfl
+    sourcePolicyReadout
+      (fun _ : Unit => true)
+      (fun decision : ℝ => fun _ : Unit => decision)
+      (fun _ : Unit => (1 : ℝ))
+      (fun decision context : ℝ => decision + context)
+      (fun readout embedding : ℝ => readout * embedding)
+      (fun operator : Bool => if operator then (2 : ℝ) else 1)
+      (fun _ : Bool => (0 : ℝ))
+      (fun operator : Bool => !operator)
+      ((indexedUnifiedCarrier.step (unitState 0) unitFullMode unitCommand
+        (unitState 0)).control)
+      true = none := by
+  simp [sourcePolicyReadout, legalMaskedScore]
 
 #print axioms indexedUnifiedCarrier_step_content
 #print axioms indexedUnifiedCarrier_step_evidence

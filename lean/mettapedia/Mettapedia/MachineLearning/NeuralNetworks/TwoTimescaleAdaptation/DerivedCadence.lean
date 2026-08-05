@@ -217,7 +217,7 @@ theorem derivedCadence_rateTwo_capacityEight_unique_deadline :
 /-- Exact error values expose rather than hide the mismatch: the old
 quadratic objective selects two, although the accounted objective strictly
 prefers four. -/
-theorem quadraticCadence_refuted_as_derived_fixture :
+theorem quadraticCadence_refuted_as_derived :
     optimalConsolidationPeriod 2 8 (1 / 4) = 2 ∧
       cadenceObjective 2 8 (1 / 4) 2 -
           derivedCadenceObjective 2 8 (1 / 4) 1 2 = 15 / 8 ∧
@@ -232,6 +232,6 @@ theorem quadraticCadence_refuted_as_derived_fixture :
 #print axioms realEvidenceLoss_natCast_eq_lostEvidence
 #print axioms countedCadenceAverageCost_eq_derived
 #print axioms derivedCadenceObjective_unique_minimum_at_deadline
-#print axioms quadraticCadence_refuted_as_derived_fixture
+#print axioms quadraticCadence_refuted_as_derived
 
 end Mettapedia.MachineLearning.NeuralNetworks.TwoTimescaleAdaptation

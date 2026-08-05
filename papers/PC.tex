@@ -20,9 +20,11 @@
 \usepackage{float}
 \usepackage{longtable}
 \usepackage{array}
+\usepackage{graphicx}
 \usepackage{fvextra}
 \usepackage{newunicodechar}
 \usepackage{needspace}
+\usepackage{seqsplit}
 \setlength{\emergencystretch}{3em}
 
 \newunicodechar{ℝ}{\ensuremath{\mathbb{R}}}
@@ -47,10 +49,17 @@
 \newtheorem{corollary}[theorem]{Corollary}
 \newcommand{\leanname}[1]{{\scriptsize\ttfamily
   \def\_{\textunderscore\allowbreak}#1}}
+\newcommand{\digestdisplay}[1]{{\scriptsize\ttfamily
+  \expandafter\seqsplit\expandafter{#1}}}
 \newcommand{\code}[1]{\texttt{#1}}
-\newcommand{\leancommit}{84ec10fdac3c576b725133a70b6e41f45d1874f4}
+\newcommand{\leancommit}{f3a31db36bb2f944312ee31c1d86c2758109e83a}
 \newcommand{\leansource}[3]{%
   \href{https://github.com/zariuq/MeTTapedia/blob/\leancommit/#1\#L#2}{\leanname{#3}}}
+\newif\ifoeisterminalfacts
+\IfFileExists{generated/oeis_gen11_13_terminal_facts_v1.tex}{%
+  \oeisterminalfactstrue
+  \input{generated/oeis_gen11_13_terminal_facts_v1.tex}%
+}{\oeisterminalfactsfalse}
 \newcommand{\leansignaturelink}[2]{%
   \par\Needspace{0.3\textheight}\smallskip\noindent
   \href{https://github.com/zariuq/MeTTapedia/blob/\leancommit/#1\#L#2}{%
@@ -101,11 +110,20 @@ over their own structural coefficient, the true orientation has strictly lower e
 if and only if that covariance is nonzero.
 Finally, two priors with \emph{equal}
 cross-entropy can have strictly ordered expected search yields: fit does not imply
-guidance. All statements are machine-checked in Lean~4. In the completed experiments
-reported here, PC did not overtake backpropagation: every from-scratch arm failed its
-registered bar, and the one ignition that reproduced across seeds started from a
-backprop-equivalent anchor. A later typed-GSLT factorial is still running and is excluded
-from that verdict until its registered cells and independent checks are sealed.
+guidance. All statements are machine-checked in Lean~4. The experiments separate
+regimes rather than forcing one verdict. End-to-end tree PC remained slower and below
+backpropagation in cumulative coverage, and the seq2seq ignition ladder required a
+backprop-equivalent PC endpoint before it departed. In contrast, a sealed two-world
+typed-GSLT continuation factorial, training only zero-output residual adapters from
+matched update-zero states, found $1{,}617$ new OEIS entries in union: prospective PC
+had the largest update-rule union ($968$) and exclusive marginal ($299$), while remaining
+substantially slower and interacting strongly with carrier and seed.
+The result is complementary value, not universal PC dominance. On a separately preregistered
+dependent-proof ranker, prospective PC starts at update zero, reproduces a strongly
+non-BP credit direction on two seeds (median raw cosines $0.0979$ and $0.0930$), and
+adds verified solved-set marginals despite trailing BP in total synthetic held-out
+coverage; unchanged incremental PC fails to learn. Mechanism separation and task
+efficacy are therefore measured independently.
 \end{abstract}
 
 \paragraph{Open artifacts.}
@@ -1104,6 +1122,269 @@ Two scope limits are registered with it and remain: the schedule begins from a
 BP-equivalent anchor, so this is not learning from random initialization; and it is
 overfit-32 scale, not full-scale NMT performance.
 
+\subsection{Typed-GSLT continuation from matched update-zero adapters}
+\label{sec:typed-factorial}
+
+A later experiment asks a different question from both campaigns above. Four fully
+frozen generation-eight typed-GSLT parents---a recurrent vector, typed workspace, and
+two belief-register carriers---receive the same zero-output residual adapter. Within
+each parent and world, five update rules start from identical model state, data ledger,
+minibatch order and search budget: ordinary BP, an independent BP replication, deep
+error-coordinate PC, incremental PC, and prospective PC. Generation ten continues each
+generation-nine adapter and optimizer exactly; it does not reinitialize or pass through a
+BP-pretraining phase. The registered surface is two worlds, four carriers, five rules
+and two continuation generations. Every proposed program is checked against the whole
+OEIS.
+
+The checker-audited cross-world union contains $1{,}617$ new A-numbers. Grouping the
+same sealed cells by update rule gives:
+
+\begin{center}
+\begin{tabular}{lrr}
+\toprule
+update rule & union & found by no other rule \\
+\midrule
+prospective PC & 968 & 299 \\
+error-coordinate PC & 893 & 66 \\
+ordinary BP & 869 & 51 \\
+independent BP & 866 & 77 \\
+incremental PC & 693 & 124 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Prospective PC therefore has both the largest union and, by a wide margin, the largest
+exclusive marginal. It does not win every matched cell. In world two it exceeds ordinary
+BP by $38$ entries on the recurrent carrier, $18$ on derived belief and $12$ on learned
+belief, and ties on the workspace; in world one it leads by $53$ on learned belief, ties
+derived belief, and trails on the recurrent and workspace carriers. BP is substantially
+faster per reported training hour. The warranted conclusion is that prospective PC
+contributes real, architecture-dependent search diversity in this frozen-parent
+adapter regime. Neither the aggregate ordering nor the name of the rule licenses a
+universal efficacy claim.
+
+The provenance boundary matters. Shared global checker channels allowed orphan workers
+to overwrite supporting checker outputs. The original numerical accountings were
+therefore replayed through seven fresh single-owner checker runs. The ordinary and
+audited numerical summaries agree exactly, while the authoritative terminal verifier
+retains the isolated evidence chain and passes all $749$ independent checks. Its
+SHA-256 is
+\begin{center}
+{\scriptsize\nolinkurl{3f08e6c3a57ba3e13a0e387737bbb31cfd990221a7b3b331214b4f9cab47bc7f}}.
+\end{center}
+The audited verdict it binds has SHA-256
+\begin{center}
+{\scriptsize\nolinkurl{02ca3cb75003f18678c5fcd43d93c07da584a365ffec709510a5c7147f8491a6}}.
+\end{center}
+These hashes identify the result; they do not turn experiment data into a theorem.
+
+A subsequent OEIS branch\footnote{A botched experiment that nonetheless adds data.
+The branch was intended as a from-scratch comparison of update rules; it was
+mis-specified and executed as a continuation from generation-eight weights (the last
+rule-neutral common ancestor, trained by the earlier backpropagation loop) over the
+generation-ten single-world pool. Its verified discoveries enter the solution pool
+with full provenance; its update-rule comparisons are single-world portfolio
+observations on a BP-built stack, recorded for completeness, and are not evidence on
+the from-scratch question. Row labels 11--13 are pool-accounting indices, not
+scientific generation numbers; the branch is parallel to, not a successor of, the
+generation-nine/ten factorial.} crossed three carriers---recurrent, typed workspace
+and the new unified routed---with two BP controls and three PC rules (prospective,
+the new multi-site error-coordinate, and incremental), all rules starting from
+identical generation-eight parent bytes, PC active from the branch's first update,
+$2{,}500$ updates per cell per round, three rounds, one seeded world, same per-cell
+search budget and whole-OEIS checker. Persistent
+cross-episode evidence is disabled in the unified carrier. Round three was fixed as
+the branch's terminal resource boundary before its result was available; the recorded
+counts below are admitted only after the round-three seal and an independent recount.
+
+Mechanism telemetry keeps direction and magnitude separate. Raw-credit cosine records
+the local direction before optimizer transport, while optimizer-displacement cosine
+records the direction actually transported to the parameters; neither statistic alone
+controls the transported step size. Indeed, both cosines can equal one while the
+transported norm is only $10^{-3}$ of the matched BP norm
+(\leanname{cosine\_eq\_one\_not\_normRatio\_le}). Accordingly,
+the terminal tables report raw and transported cosine together with their respective
+norm ratios. Verified discoveries per unit work, rather than cosine alone, remain the
+efficacy endpoint.
+
+\ifoeisterminalfacts
+\subsection{Recorded branch outcome (tabulated, not interpreted)}
+\label{sec:pc-terminal}
+
+Union \oeisTerminalCumulativeUnion{} (BP family \oeisTerminalBPCumulativeUnion{}, PC
+family \oeisTerminalPCCumulativeUnion{}, PC-only \oeisTerminalCumulativePCOnly{},
+Jaccard $378/747 \approx 0.506$, PC work \oeisTerminalPCToBPWorkRatio$\times$ BP).
+Within the branch the independent-BP control is the largest single arm ($400$) and
+incremental PC fails ($56$):
+\begin{center}\small
+\begin{tabular}{@{}lrrrrrr@{}}
+\toprule
+rule & round 1 & round 2 & round 3 & cumulative & exclusive & train h \\
+\midrule
+\oeisTerminalRuleRows
+\bottomrule
+\end{tabular}
+\end{center}
+Pairwise coverage: seed identity moves coverage more than rule identity
+(same-seed cross-rule Jaccard up to $0.9364$; cross-seed same-family $0.1560$):
+\begin{center}\scriptsize
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}llrrrrrr@{}}
+\toprule
+rule A & rule B & $|A|$ & $|B|$ & $|A \cap B|$ & A-only & B-only & Jaccard \\
+\midrule
+\oeisTerminalPairwiseRuleRows
+\bottomrule
+\end{tabular}}
+\end{center}
+Opportunity control: an independent BP seed given identical opportunity weakly
+dominates all nine candidate arms on the count/work Pareto
+(\leanname{insert\_candidate\_gt\_insert\_opportunity\_iff} instantiated):
+\begin{center}\small
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}llrrrrl@{}}
+\toprule
+carrier & rule & ext. & indep.\ BP ext. & beyond 2 BP & work $\times$BP & BP dom. \\
+\midrule
+\oeisTerminalCumulativeOpportunityRows
+\bottomrule
+\end{tabular}}
+\end{center}
+
+The final-round follow-up of every PC arm that crossed the registered two-round
+boundary is:
+\begin{center}\scriptsize
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}llrrrrrr@{}}
+\toprule
+carrier & rule & new & excl. & only vs BP & beyond two BP & coverage/BP & train h \\
+\midrule
+\oeisTerminalPromotionFollowupRows
+\bottomrule
+\end{tabular}}
+\end{center}
+
+The corresponding direction-and-magnitude telemetry is:
+\begin{center}\scriptsize
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}llrrrrrrrr@{}}
+\toprule
+carrier & rule & raw cos. & raw norm & opt. cos. & opt. norm & first opt. & last opt. & $<.995$ & $<.95$ \\
+\midrule
+\oeisTerminalPromotionMechanismRows
+\bottomrule
+\end{tabular}}
+\end{center}
+
+The compute dynamics for those final-round PC cells are:
+\begin{center}\scriptsize
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{@{}lllrrrrrr@{}}
+\toprule
+gen. & carrier & rule & train h & infer steps & interleaved & infer backtracks & local backtracks & peak MiB \\
+\midrule
+\oeisTerminalFinalGenerationPCWorkRows
+\bottomrule
+\end{tabular}}
+\end{center}
+
+The fixed-budget retention channel completed
+\oeisTerminalRetentionRecordsCompleted{} records and submitted
+\oeisTerminalRetentionCandidateSubmissions{} candidates, recovering
+\oeisTerminalRetentionExactRecoveries{} exact programs and
+\oeisTerminalRetentionPrefixRecoveries{} semantic-prefix reproducers; timeout affected
+\oeisTerminalRetentionTimedOutCells{} cells. This channel measures teacher-forced,
+fixed-budget behavioural retention only; a null recovery count bounds neither
+cross-task transfer nor what an unconstrained search would recover, and it is not
+evidence that the retained knowledge is absent from the weights. The analysis and independent verification
+are bound by SHA-256 identifiers
+ \digestdisplay{\oeisTerminalAnalysisSHA} and
+ \digestdisplay{\oeisTerminalVerificationSHA}.
+\fi
+
+\subsection{Dependent-proof ranking from update zero}
+\label{sec:dtt-round0}
+
+The next experiment removes the continuation history and changes the task. A small
+$84\!\to\!64\!\to\!1$ tanh ranker scores candidate refinements generated by the
+machine-checked dependent-proof frontier. Its training corpus contains $3{,}005$ rows
+and $13{,}545$ states; selection uses $600$ family-held-out synthetic problems plus four
+external tutorial problems. All profiles consume the same $1{,}060$-batch ledger, and
+PC is active from update zero rather than being initialized by BP.
+
+The two-layer credit boundary was proved before training. For prospective output
+settling, both local parameter credits equal their BP counterparts at the same
+rate--precision scale:
+\begin{leansignature}
+theorem prospectiveFirstCredit_eq_scaledBP
+    (precision rate firstWeight secondWeight input target : ℝ) :
+  prospectiveFirstCredit precision rate firstWeight secondWeight input target =
+    (precision * rate) * bpFirstCredit firstWeight secondWeight input target
+
+theorem prospectiveSecondCredit_eq_scaledBP
+    (precision rate firstWeight secondWeight input target : ℝ) :
+  prospectiveSecondCredit precision rate firstWeight secondWeight input target =
+    (precision * rate) * bpSecondCredit firstWeight secondWeight input target
+\end{leansignature}
+The boundary is nontrivial: hidden-state PC can recover the first-layer BP credit
+exactly while its two-layer credit pair is not any common scalar multiple of BP
+(\leanname{hiddenPC\_twoLayerCredit\_not\_commonScaledBP}).
+
+The one-world screen separates fit from mechanism:
+
+\begin{center}\small
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+profile & held-out solves / 604 & final loss & raw cosine to BP \\
+\midrule
+BP control & 286 & 0.0227 & 1.0000 \\
+independent BP & 220 & 0.0205 & 1.0000 \\
+error-coordinate PC & 244 & 0.0338 & 0.9899 \\
+prospective PC & 119 & 0.5855 & 0.0979 \\
+incremental PC & 1 & 1.7612 & 0.7638 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Thus error-coordinate PC is empirically BP-like in this ranker, prospective PC is
+strongly distinct but lower-yield, and incremental PC is neither a useful fit nor a
+competitive search guide. Prospective and incremental PC were then retrained from the
+independent-BP initialization. Prospective PC reproduced the mechanism result almost
+exactly: final loss $0.6073$, median raw-credit cosine $0.0930$, and
+optimizer-displacement cosine $0.3358$. Incremental PC again barely moved
+($1.7590\to1.7497$; cosines $0.7236/0.8549$).
+
+\begin{center}\small
+\begin{tabular}{@{}lrrrr@{}}
+\toprule
+profile & synthetic / 600 & tutorial / 4 & external test / 3 & DTTBench / 31 \\
+\midrule
+matched independent BP & 220 & 0 & 3 & 1 \\
+prospective PC replica & 160 & 2 & 3 & 2 \\
+incremental PC replica & 0 & 1 & 3 & 1 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Prospective PC loses $60$ total synthetic solves to BP but adds $40$ outside BP's
+synthetic solved set. Its DTTBench proofs are \code{False\_elim} and
+\code{Iff\_refl}; BP proves only \code{False\_elim}. Synthetic solved-set Jaccard
+similarity across prospective seeds is $0.6163$ ($106$ shared of $172$ in union).
+The independent verifier re-executed all $1{,}276$ replica searches, kernel-rechecked
+$172$ solved traces and recompiled all three DTT candidates in their original
+declarations. Its SHA-256 is
+\begin{center}
+{\scriptsize\nolinkurl{b191d1e779298233d932caf281333fde57c4d4feee79d09c5ac8217ceaf8844d}}.
+\end{center}
+
+The external test and DTTBench endpoints had already been opened globally before the
+replica was trained. The models and protocol were frozen before this evaluation and
+received no endpoint-dependent changes, but these endpoint rows are fixed-benchmark
+replication rather than fresh unopened evidence. The reproducible credit departure and
+synthetic held-out marginals are the cleaner evidence for retaining prospective PC as a
+diversity arm. Total coverage and equal-compute opportunity cost still determine whether
+it earns production budget.
+
 \section{Certified finite settling and authenticated checkpoint geometry}
 \label{sec:finite-settling}
 
@@ -1126,7 +1407,7 @@ certifies strict task descent for the step $-\alpha g_T$.
 The corresponding proof terms are
 \begin{itemize}
 \item alignment:
-\leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/WorkNormalizedTruncation.lean}{51}{finiteCredit\_positiveAlignment};
+\leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/WorkNormalizedTruncation.lean}{52}{finiteCredit\_positiveAlignment};
 \item task-loss composition:
 \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/WorkNormalizedTruncation.lean}{68}{finiteCredit\_strictTaskDescent}.
 \end{itemize}
@@ -1150,6 +1431,91 @@ while large fixed overhead reverses the comparison. These are guarantees about a
 loss model, not claims about verified OEIS yield; the latter still requires matched
 GPU-time experiments.
 
+\paragraph{Affine acceleration is not a stability certificate.}
+The source-to-theorem atlas also isolates the normalization shared by extrapolation and
+Anderson/Pulay fixed-point acceleration. For arbitrary real normed state spaces,
+coefficients summing to one preserve every constant state and genuine fixed point, and
+the accelerated error is exactly the same weighted combination of the constituent
+errors. Its norm is bounded by the absolute coefficient mass. This is sharp: the affine
+weights $(2,-1)$ preserve constants yet turn two unit-bounded scalar errors into error
+$3$. Nonnegative affine weights preserve a common radius, while signed acceleration
+requires an additional residual, restart, or acceptance safeguard. Affine preservation
+therefore licenses a solver transformation; it does not by itself license an accelerated
+PC training profile.
+
+\paragraph{A terminal acceleration polynomial does not fix drift sensitivity.}
+For a fixed quadratic, a finite accelerated schedule is summarized by its terminal
+residual polynomial. Under time-varying Hessians, however, the ordered realization
+matters: an insertion from a source eigenspace to a target eigenspace is transported by
+source-spectrum factors before its time index and target-spectrum factors afterward
+\cite{pasechnyuk2026}. This product-rule algebra is now formalized for arbitrary finite
+memory. The coupled spectral-pair execution is exactly affine in the perturbation scale,
+and every nonzero finite-difference quotient is the recursively accumulated
+time-ordered response
+(\leanname{inv\_smul\_runSpectralPair\_target\_sub\_zeroScale}).
+The realization dependence is strict: two scalar schedules have the same fixed target
+and source terminal products but insertion responses $5$ and $7$
+(\leanname{same\_fixed\_terminal\_different\_insertion\_response}).
+Therefore selecting an accelerated PC profile from its fixed-curvature terminal rate
+alone is unsound; the run must also bind a time-ordered curvature-drift budget. The
+formal result does not establish the source's Chebyshev--Jacobi constants or global
+nonlinear behaviour.
+
+\paragraph{Changing sparse frontiers need a switching budget.}
+A sparse error-coordinate solver also changes its active set while settling. With
+separate entry and exit thresholds and hysteresis gap
+$\delta=\theta_{\mathrm{in}}-\theta_{\mathrm{out}}>0$, every switch after the first
+on a coordinate consumes at least $\delta$ of signal variation. Consequently, for one
+coordinate,
+\[
+  \delta\,(N_{\mathrm{switch}}-1)
+  \;\leq\;\sum_t |s_{t+1}-s_t|,
+\]
+as proved by
+\leanname{gap\_mul\_switches\_after\_first\_le\_variation}.
+The aggregate law requires one further observable. If $N$ is total membership churn,
+$D$ is the number of distinct coordinates that switched at least once, and $V$ is the
+sum of their switch-event variations, then exact accounting gives
+\[
+  N=(N-D)+D,\qquad \delta\,(N-D)\leq V.
+\]
+The first identity and budget are kernel-checked in
+\leanname{gap\_mul\_reportedChurn\_sub\_distinct\_le\_totalSwitch\allowbreak Variation}.
+Subtracting $D$ is necessary: a two-coordinate fixture in which each coordinate switches
+only once has positive churn and zero emitted-event variation, refuting any charge of
+$\delta N$ without the distinct-coordinate count
+(\leanname{totalChurn\_without\_distinctCount\_cannot\_be\_\allowbreak charged}).
+The gap itself is also essential: a valid zero-gap trace alternates too cheaply for a
+unit switch cost
+(\leanname{zeroGapChatter\_refutes\_unit\_switch\_cost}).
+
+The current preregistered four-sweep diagnostic is deliberately negative. Pointwise
+top-$5\%$ membership had zero churn, whereas fixed $5\%/10\%$ hysteresis made $2{,}761$
+membership changes, reduced the active count from $6{,}807$ to $4{,}046$, and captured
+less final squared mass. That artifact reports neither $D$ nor per-coordinate
+switch-event variation and was bound to the earlier scalar theorem source. It therefore
+does not instantiate the aggregate certificate and does not authorize a trainer change.
+Future runtime traces must emit all three quantities $(N,D,V)$; only then can the
+variation theorem compose with the full-gradient fallback required by the sparse solver.
+Thus per-sweep top-$k$ membership is not certified merely because each frozen mask is
+well behaved.
+
+\paragraph{Proof-carrying frozen-cone specialization.}
+When a PC adapter is attached to a frozen backbone, static computation can be
+residualized rather than repeated during every settling sweep. For a semiring-polynomial
+expression with explicitly separated static and dynamic variables, residualization
+preserves its value
+(\leanname{eval\_residualize})
+and every formal derivative with respect to a dynamic input
+(\leanname{eval\_formalDeriv\_residualize}).
+The construction performs real constant folding, rather than validating itself by
+definition: a mixed fixture specializes nontrivially, while
+\leanname{misclassification\_breaks\_value\_and\_credit}
+shows that caching a dynamic dependency can agree at one observation yet break both the
+next value and the credit. These theorems establish exact symbolic preservation. They do
+not establish a GPU speedup, a floating-point schedule, or whole-model applicability;
+those require the generated residual program to pass the executable replay gate.
+
 \paragraph{From source tensors to exact-real geometry.}
 The finite-credit theorem is useful only if its constants can be tied to the program that
 ran. The checkpoint-replay tranche decodes finite IEEE-754 binary32 words inside Lean,
@@ -1165,19 +1531,18 @@ and a cross-node-coupling fixture proves why this does not extend to arbitrary c
 layers.
 
 The authenticated invocation theorem is
-\leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/Float32AuthenticatedCheckpointGeometry.lean}{197}{invocation0\_full\_geometry\_mismatch\_le}.
+\leansource{lean/mettapedia/artifacts/generated_lean_fixtures/CreditTransport/Float32AffineLayerOperatorNorms.lean}{197}{invocation0\_full\_geometry\_mismatch\_le}.
 Its scope is pointwise: it binds exact words, one invocation, and an exact-real regional
 calculation. It does not identify a BLAS accumulation schedule, prove a uniform
 floating-point model, bind the entire frozen parent, or establish efficacy. Those are
 separate endpoints of the certificate chain.
 
-\paragraph{Naming gate.}
+\paragraph{Naming criterion.}
 Acceleration that preserves a fixed point is a solver result, not automatically a new
 learning rule. Conversely, a rule that changes the mechanism must separate from the
 registered BP, PC, PC--ALM, and prior-art families under matched compute before it earns a
-new name. The present registry is intentionally closed:
-\leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/ThirdFamilyGate.lean}{197}{no\_registered\_candidate\_is\_namingLicensed}.
-Equivalence and collapse are evidence, not failures to be hidden.
+new name. No current candidate meets that bar. Equivalence and collapse are evidence,
+not failures to be hidden.
 
 \section{Verdict}
 \label{sec:verdict}
@@ -1190,24 +1555,50 @@ settled inference over backprop \cite{rosenbaum2022}; at medium multi-generation
 holds a stable two-thirds frontier deficit with erratic self-training dynamics; on the recurrent architecture, seven
 registered arms produced exactly one passing design, and it is staged from a
 BP-equivalent anchor rather than trained from random initialization. This is a scoped
-experimental verdict, not a theorem about every carrier, schedule, or hardware model; the
-new typed-GSLT factorial is not folded into it while that campaign remains live.
+experimental verdict about the end-to-end tree and seq2seq regimes, not a theorem about
+every carrier, schedule, or hardware model. It does not extend to the frozen-parent
+adapter factorial of Section~\ref{sec:typed-factorial}, where prospective PC starts with
+the adapter at update zero and leads the aggregate verified-coverage portfolio of the
+two-world experiment%
+\ifoeisterminalfacts
+\ ---though not of the mis-specified single-world branch recorded in
+Section~\ref{sec:pc-terminal}, where the independent-BP opportunity control has the
+largest single-arm coverage ($400$); that branch is footnoted as botched and carries
+no evidential weight on the from-scratch question%
+\fi
+.
 
 \textbf{Surviving, with formal or measured support:}
 \begin{enumerate}
 \item \emph{Shallow PC adapters under an exact frozen restriction.} The depth pathology
   depends only on the adapter after the coupled operator is genuinely restricted
   (Theorem~\ref{cor:adapter}), and the empirical verdict independently points at this
-  regime.  The theorem does not cover a shared active normalization or partial freezing:
+  regime. In the sealed two-world typed-GSLT factorial, prospective PC has the largest
+  update-rule union ($968$) and exclusive marginal ($299$), though not a universal
+  per-cell win and at substantially greater training cost%
+\ifoeisterminalfacts
+; the subsequent mis-specified single-world branch (recorded, not evidential:
+  Section~\ref{sec:pc-terminal}) logged the reverse ordering%
+\fi
+. The theorem does not cover a shared active
+  normalization or partial freezing:
   its negative half proves that an active unit-coupled backbone re-imports the backbone
   depth bound.
-\item \emph{BP-train, PC-fine-tune.} The staged homotopy arms were the only ones to reach
+\item \emph{BP-equivalent ignition followed by measured departure.} The staged homotopy
+  arms were the only seq2seq arms to reach
   32/32 exact decodes; the deepened-inference continuation passed every bar on seed~0, and
   the pre-registered independent-seed replication passed on seed~1 with distinctness at
-  every checkpoint of a fixed window. This is the one place PC ignited reproducibly under
-  criteria fixed in advance. Buying PC's properties \emph{after} BP's learning is the
-  empirically supported direction, and it is the same amortize-then-refine structure that
+  every checkpoint of a fixed window. This establishes one reproducible ignition route;
+  it is no longer the only positive PC regime in the paper. It has the same
+  amortize-then-refine structure that
   hybrid predictive coding uses to infer fast and then settle slow \cite{tschantz2023}.
+\item \emph{PC-from-update-zero as a verified diversity arm.} In the dependent-proof
+  screen of Section~\ref{sec:dtt-round0}, prospective PC reproduced a raw-credit cosine
+  near $0.09$ on two seeds, contributed $40$ synthetic held-out solutions outside its
+  matched BP control and one additional fixed-benchmark DTT theorem, while losing on
+  total synthetic coverage. This licenses continued evaluation alongside an
+  independent-BP opportunity control; it does not license replacing BP. Incremental PC
+  failed this promotion test unchanged.
 \item \emph{Second-order geometry, with the bar set by Theorem~\ref{thm:mode}.} The
   preconditioning failures are exactly characterized, so the cure is exactly specified:
   a metric whose departure from the identity is a contraction, $\rho(I-P)<1$, on the modes
@@ -1533,8 +1924,9 @@ byte-identical frozen parent and adapter initialisation; a cell passes only if t
 state hash is unchanged after training and zero-adapter output parity holds under exact tensor
 equality. The optimiser is AdamW at $3\times10^{-4}$ over $2500$ updates of batch $16$
 (incremental PC dividing its rate by $T$), all PC inference using monotone backtracking line
-search (shrink $0.5$, at most twelve backtracks, tolerance $10^{-6}$). Coverage for the
-current generations is under independent adjudication and is not reported here.
+search (shrink $0.5$, at most twelve backtracks, tolerance $10^{-6}$). The completed,
+independently adjudicated generation-nine/ten coverage is reported in
+Section~\ref{sec:typed-factorial}.
 
 \section*{Where to find these}
 
@@ -1636,7 +2028,7 @@ Thm~\ref{cor:adapter}
   & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/FrozenAdapterRestriction.lean}{233}{isFrozenAdapterSlowModeRate\_iff} & \\
   & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/FrozenAdapterRestriction.lean}{281}{frozenAdapterRestriction\_gap\_bound} & \\
   & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/FrozenAdapterRestriction.lean}{336}{activeBackboneAdapter\_backbone\_gap\_bound} & \\
-  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/FrozenAdapterRestriction.lean}{394}{partialFreezing\_reimports\_backbone\_negative\_fixture} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/FrozenAdapterRestriction.lean}{394}{partialFreezing\_reimports\_backbone\_negative} & \\
 Thm~\ref{thm:precond}
   & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/PreconditionedLearning.lean}{99}{chainLinkLoss\_preconditionedUpdate\_exact} & Preconditioned\-Learning \\
   & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/PreconditionedLearning.lean}{81}{chainLinkResidual\_preconditionedUpdate\_exact} & \\
@@ -1662,7 +2054,7 @@ Thm~\ref{thm:jordan}
 Thm~\ref{thm:mode}
   & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/PreconditionedLearning.lean}{380}{matrixPreconditionedResidual\_loss\_perMode\_exact}
   & Preconditioned\-Learning \\
-  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/PreconditionedLearning.lean}{542}{mixedModePreconditioner\_helps\_one\_hurts\_another\_fixture} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/PreconditionedLearning.lean}{542}{mixedModePreconditioner\_helps\_one\_hurts\_another} & \\
 Thm~\ref{thm:armijo}
   & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/BacktrackingDescent.lean}{65}{armijoBacktracking\_terminates} & Backtracking\-Descent \\
   & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/BacktrackingDescent.lean}{78}{armijoCondition\_energy\_nonincreasing} & \\
@@ -1706,7 +2098,7 @@ Thm~\ref{thm:intervention}
   & CausalDirection\-Identifiability \\
   & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/CausalDirectionIdentifiability.lean}{907}{PositiveBivariateCovariance.\allowbreak unitNoiseForwardCovariance\_observation\_tied\_intervention\_separates}
   & (positive fixture) \\
-  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/CausalDirectionIdentifiability.lean}{921}{PositiveBivariateCovariance.\allowbreak independentEqualVarianceCovariance\_interventionalEnergy\_fixture}
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/CausalDirectionIdentifiability.lean}{921}{PositiveBivariateCovariance.\allowbreak independentEqualVarianceCovariance\_interventionalEnergy}
   & (negative fixture) \\
 Thm~\ref{thm:causalselection}
   & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/CausalDirectionSelection.lean}{316}{PositiveBivariateCovariance.\allowbreak forwardOrientationWinsByMinimizedInterventionalEnergy\_iff}
@@ -1736,6 +2128,15 @@ Thm~\ref{thm:yield}
 Thm~\ref{thm:sep}
   & \leansource{lean/mettapedia/Mettapedia/MachineLearning/SearchGuidance/DecisivenessYield.lean}{242}{equal\_crossEntropy\_strictly\_ordered\_expectedYield}
   & SearchGuidance/ \mbox{DecisivenessYield} \\
+Sec.~\ref{sec:dtt-round0}
+  & \leanname{DTTTwoLayerPC.\allowbreak prospectiveFirstCredit\_eq\_scaledBP}
+  & CreditTransport/ DTTTwoLayerPC \\
+  & \leanname{DTTTwoLayerPC.\allowbreak prospectiveSecondCredit\_eq\_scaledBP}
+  & \\
+  & \leanname{DTTTwoLayerPC.\allowbreak hiddenPC\_twoLayerCredit\_not\_commonScaledBP}
+  & (negative boundary) \\
+  & \leanname{AdaptivePortfolio.\allowbreak insert\_candidate\_gt\_insert\_opportunity\_iff}
+  & SearchGuidance/ CostAwareOpportunityControl \\
 \bottomrule
 \end{longtable}
 }
@@ -1827,6 +2228,10 @@ backpropagation. \emph{Frontiers in Computational Neuroscience}, 11:24, 2017.
 
 \bibitem{qi2025} C.~Qi, M.~Forasassi, T.~Lukasiewicz, and T.~Salvatori.
 Towards the training of deeper predictive coding neural networks. arXiv:2506.23800, 2025.
+
+\bibitem{pasechnyuk2026} D.~Pasechnyuk-Vilensky and M.~Tak\'a\v{c}.
+Chebyshev-exact acceleration under Hessian variation, I: Sine--Jacobi method.
+arXiv:2606.16671, 2026.
 
 \end{thebibliography}
 

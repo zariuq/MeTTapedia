@@ -144,6 +144,43 @@
   True)
 
 !(assertEqual
+  (gslt-source-check-dag-streaming-indexed-v1
+    (gslt-fixture-source-v1) (gic-proves (gic-B)) 2
+    (gic-proof-dag-streaming-chunks))
+  True)
+
+!(assertEqual
+  (gslt-source-check-dag-streaming-indexed-v1
+    (gslt-fixture-source-v1) (gic-proves (gic-A)) 2
+    (gic-proof-dag-streaming-chunks))
+  False)
+
+!(assertEqual
+  (gslt-source-check-dag-pure-streaming-v1
+    (gslt-fixture-source-v1) (gic-proves (gic-B)) 2
+    (gic-proof-dag-streaming-chunks))
+  True)
+
+!(assertEqual
+  (gslt-source-check-dag-pure-streaming-v1
+    (gslt-fixture-source-v1) (gic-proves (gic-A)) 2
+    (gic-proof-dag-streaming-chunks))
+  False)
+
+!(assertEqual
+  (gslt-source-step-dag-pure-streaming-v1
+    (gslt-fixture-source-v1)
+    (GICPureStreamState 0 DEnvNil)
+    (DsnCons
+      (GSLiveNode
+        (GDNode 0 (GRuleInst "ax-a" LNil) DrNil)
+        DrNil)
+      DsnNil))
+  (GICPureStreamOK
+    (GICPureStreamState 1
+      (DEnvCons (DVal 0 (gic-proves (gic-A))) DEnvNil))))
+
+!(assertEqual
   (gslt-source-check-dag-terminal-indexed-v1
     (gslt-fixture-source-v1) (gic-proves (gic-B))
     (DcCons
@@ -181,4 +218,4 @@
   (gslt-source-run-v1 (gslt-fixture-source-v1) UnsupportedOperationV1)
   False)
 
-!(GSLTSourceV1Summary 24 24 0)
+!(GSLTSourceV1Summary 29 29 0)

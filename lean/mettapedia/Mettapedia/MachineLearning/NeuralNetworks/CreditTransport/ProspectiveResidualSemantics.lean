@@ -168,6 +168,45 @@ theorem prospectiveGradientStep_displacement
         prediction precision taskGradient state := by
   simp [prospectiveGradientStep]
 
+/--
+At the prediction itself, the quadratic penalty contributes no inference
+credit: the first prospective step is exactly a task-gradient step.
+-/
+theorem prospectiveGradientStep_from_prediction
+    (prediction : State) (precision rate : ℝ)
+    (taskGradient : State → State) :
+    prospectiveGradientStep prediction precision rate taskGradient prediction =
+      prediction - rate • taskGradient prediction := by
+  simp [prospectiveGradientStep, prospectiveEnergyGradient]
+
+/--
+If the accepted first latent is treated as a fixed local target, its quadratic
+prediction-error credit is the task gradient scaled by
+`precision * rate`.  This is the exact prospective ignition identity.
+-/
+theorem firstStep_localPredictionCredit_eq_scaledTaskGradient
+    (prediction : State) (precision rate : ℝ)
+    (taskGradient : State → State) :
+    precision •
+        (prediction -
+          prospectiveGradientStep
+            prediction precision rate taskGradient prediction) =
+      (precision * rate) • taskGradient prediction := by
+  rw [prospectiveGradientStep_from_prediction]
+  simp only [sub_sub_cancel, smul_smul]
+
+/-- Unit rate-times-precision recovers the task gradient exactly. -/
+theorem firstStep_localPredictionCredit_eq_taskGradient
+    (prediction : State) (precision rate : ℝ)
+    (taskGradient : State → State)
+    (hscale : precision * rate = 1) :
+    precision •
+        (prediction -
+          prospectiveGradientStep
+            prediction precision rate taskGradient prediction) =
+      taskGradient prediction := by
+  rw [firstStep_localPredictionCredit_eq_scaledTaskGradient, hscale, one_smul]
+
 /-- A nonzero accepted rate lets the pre-step energy gradient be reconstructed
 from the accepted displacement.  This identifies the gradient at the source
 state, not at the accepted endpoint. -/
@@ -234,6 +273,9 @@ theorem energyDescent_does_not_bound_finalGradient :
 #print axioms distance_exactProspectiveState_le_finalGradient_div
 #print axioms stationary_iff_exactProspectiveState
 #print axioms prospectiveGradientStep_displacement
+#print axioms prospectiveGradientStep_from_prediction
+#print axioms firstStep_localPredictionCredit_eq_scaledTaskGradient
+#print axioms firstStep_localPredictionCredit_eq_taskGradient
 #print axioms prospectiveGradientStep_recovers_sourceGradient
 #print axioms identityProspective_oneStep_reaches_exactState
 #print axioms identityProspective_stationary_iff

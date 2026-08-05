@@ -101,7 +101,7 @@ theorem admitted_and_lost_at_or_after_deadline
 
 /-- Positive deadline fixture: capacity ten at rate three saturates at period
 four; period three admits nine with no loss, while period four loses two. -/
-theorem capacityTen_rateThree_deadline_fixture :
+theorem capacityTen_rateThree_deadline :
     saturationDeadline 10 3 = 4 ∧
       admittedEvidence 10 3 3 = 9 ∧
       lostEvidence 10 3 3 = 0 ∧
@@ -111,7 +111,7 @@ theorem capacityTen_rateThree_deadline_fixture :
     admittedEvidence, arrivedEvidence, lostEvidence]
 
 /-- Negative boundary: a zero arrival rate never fills positive capacity. -/
-theorem zeroArrival_never_saturates_fixture
+theorem zeroArrival_never_saturates
     (capacity time : ℕ) :
     admittedEvidence capacity 0 time = 0 ∧
       lostEvidence capacity 0 time = 0 := by
@@ -242,7 +242,7 @@ theorem optimalConsolidationPeriod_unique_interior
 
 /-- Positive numeric fixture for the declared two-period quadratic optimum before the
 four-period saturation deadline. -/
-theorem cadence_rateTwo_capacityEight_fixture :
+theorem cadence_rateTwo_capacityEight :
     realSaturationDeadline 2 8 = 4 ∧
       optimalConsolidationPeriod 2 8 (1 / 4) = 2 ∧
       (∀ period : ℝ,
@@ -262,7 +262,7 @@ theorem cadence_rateTwo_capacityEight_fixture :
 
 /-- Negative boundary: zero update cost puts the quadratic point at immediate
 consolidation, so strict interior optimality genuinely needs positive cost. -/
-theorem zeroUpdateCost_not_interior_fixture
+theorem zeroUpdateCost_not_interior
     (arrivalRate capacity : ℝ) :
     optimalConsolidationPeriod arrivalRate capacity 0 = 0 := by
   simp [optimalConsolidationPeriod, quadraticOptimalPeriod,
@@ -270,7 +270,7 @@ theorem zeroUpdateCost_not_interior_fixture
 
 #print axioms admitted_and_lost_at_or_after_deadline
 #print axioms optimalConsolidationPeriod_unique_interior
-#print axioms cadence_rateTwo_capacityEight_fixture
-#print axioms zeroUpdateCost_not_interior_fixture
+#print axioms cadence_rateTwo_capacityEight
+#print axioms zeroUpdateCost_not_interior
 
 end Mettapedia.MachineLearning.NeuralNetworks.TwoTimescaleAdaptation

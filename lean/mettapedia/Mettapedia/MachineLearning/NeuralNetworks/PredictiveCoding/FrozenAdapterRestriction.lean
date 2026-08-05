@@ -391,7 +391,7 @@ theorem activeBackboneThree_adapterTwo_modalSpectralRadius :
 /-- A4 boundary fixture: ideal freezing leaves the depth-two adapter with
 rate zero, while activating the unit-coupled depth-three backbone produces
 global modal radius `1/2`. -/
-theorem partialFreezing_reimports_backbone_negative_fixture :
+theorem partialFreezing_reimports_backbone_negative :
     IsFrozenAdapterSlowModeRate 3 2 0 ∧
       HeterogeneousDepthBlockFamily.modalSpectralRadius
           (activeBackboneAdapterFamily 3 2 (by norm_num) (by norm_num)) =

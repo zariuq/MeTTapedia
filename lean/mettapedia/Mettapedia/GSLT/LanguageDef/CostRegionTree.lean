@@ -17017,6 +17017,19 @@ structure NormalizedCostRegionElements (source : CIGSLT)
       binderSafeListAt presentation.quoteConstructor depth original = true →
         binderSafeListAt presentation.quoteConstructor depth patterns = true
 
+/-- The only semantic choice made by child-first region-tree normalization.
+Every non-static frame is rebuilt structurally; a kernel supplies the typed
+normal form of one static region after its recursively normalized boundary
+values are available. -/
+abbrev CostStaticRegionNormalizer (source : CIGSLT) :=
+  {color : CostStaticColor} →
+  {targetFree : WellSorted.FreeTypeContext} →
+  (node : CostStaticRegionNode source color targetFree) →
+  (values : TypedCostRegionBoundaryTable.Values source color targetFree
+    node.boundaryTable) →
+  WellSorted.OpenTerm source.costWholeLanguage targetFree node.targetBound
+    (color.mapLangSort source node.sourceSort)
+
 
 mutual
   /-- Normalize a complete alternating tree from the leaves inward.  Static
@@ -17026,7 +17039,9 @@ mutual
   def CostRegionTree.normalize {source : CIGSLT}
       {targetFree : WellSorted.FreeTypeContext}
       {available outer : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
-      (tree : CostRegionTree source targetFree available outer pattern type) :
+      (tree : CostRegionTree source targetFree available outer pattern type)
+      (normalizeStatic : CostStaticRegionNormalizer source :=
+        fun node values => node.normalizeWith values) :
       NormalizedCostRegionPattern source targetFree available outer pattern
         type :=
     match tree with
@@ -17057,8 +17072,8 @@ mutual
             cases parameter <;>
               simp_all [WellSorted.MatchesParameterRepresentation] }
     | @CostRegionTree.static _ _ color outer node children =>
-        let values := children.normalizeValues
-        let normalized := node.normalizeWith values
+        let values := children.normalizeValues (normalizeStatic := normalizeStatic)
+        let normalized := normalizeStatic node values
         {
           pattern := normalized.1
           typed := normalized.2.1.extendOuter outer
@@ -17076,7 +17091,7 @@ mutual
     | @CostRegionTree.neutralApplicationOrdinary _ _ available outer rule
         arguments membership notBareCollection constructor materializes neutral
         ordinary children =>
-        let normalized := children.normalize
+        let normalized := children.normalize (normalizeStatic := normalizeStatic)
         {
           pattern := .apply rule.label normalized.patterns
           typed := .constructor membership notBareCollection normalized.typed
@@ -17120,7 +17135,7 @@ mutual
     | @CostRegionTree.neutralApplicationQuote _ _ available outer rule
         arguments membership notBareCollection constructor materializes neutral
         quoted children =>
-        let normalized := children.normalize
+        let normalized := children.normalize (normalizeStatic := normalizeStatic)
         {
           pattern := .apply rule.label normalized.patterns
           typed := .constructor membership notBareCollection (by
@@ -17149,7 +17164,7 @@ mutual
               simp_all [WellSorted.MatchesParameterRepresentation] }
     | @CostRegionTree.lambda _ _ available outer binder body domain codomain
         bodyTree =>
-        let normalized := bodyTree.normalize
+        let normalized := bodyTree.normalize (normalizeStatic := normalizeStatic)
         {
           pattern := .lambda binder normalized.pattern
           typed := .lambda normalized.typed
@@ -17174,7 +17189,7 @@ mutual
               simp_all [WellSorted.MatchesParameterRepresentation] }
     | @CostRegionTree.multiLambda _ _ available outer arity binders body domain
         codomain bodyTree =>
-        let normalized := bodyTree.normalize
+        let normalized := bodyTree.normalize (normalizeStatic := normalizeStatic)
         {
           pattern := .multiLambda arity binders normalized.pattern
           typed := .multiLambda (by
@@ -17202,8 +17217,9 @@ mutual
               simp_all [WellSorted.MatchesParameterRepresentation] }
     | @CostRegionTree.subst _ _ available outer body replacement domain codomain
         bodyTree replacementTree =>
-        let normalizedBody := bodyTree.normalize
-        let normalizedReplacement := replacementTree.normalize
+        let normalizedBody := bodyTree.normalize (normalizeStatic := normalizeStatic)
+        let normalizedReplacement :=
+          replacementTree.normalize (normalizeStatic := normalizeStatic)
         {
           pattern := .subst normalizedBody.pattern normalizedReplacement.pattern
           typed := .subst normalizedBody.typed normalizedReplacement.typed
@@ -17229,7 +17245,7 @@ mutual
               simp_all [WellSorted.MatchesParameterRepresentation] }
     | @CostRegionTree.collection _ _ available outer collectionType elements
         rest elementType children =>
-        let normalized := children.normalize
+        let normalized := children.normalize (normalizeStatic := normalizeStatic)
         {
           pattern := .collection collectionType normalized.patterns rest
           typed := .collection normalized.typed
@@ -17268,7 +17284,9 @@ mutual
       {available outer : List TypeExpr} {arguments : List Pattern}
       {parameters : List TermParam}
       (trees : CostRegionArgumentTrees source targetFree available outer
-        arguments parameters) :
+        arguments parameters)
+      (normalizeStatic : CostStaticRegionNormalizer source :=
+        fun node values => node.normalizeWith values) :
       NormalizedCostRegionArguments source targetFree available outer arguments
         parameters :=
     match trees with
@@ -17283,8 +17301,8 @@ mutual
             simp [binderSafeListAt] }
     | @CostRegionArgumentTrees.cons _ _ available outer argument arguments
         parameter parameters expected representation parameterType head tail =>
-        let normalizedHead := head.normalize
-        let normalizedTail := tail.normalize
+        let normalizedHead := head.normalize (normalizeStatic := normalizeStatic)
+        let normalizedTail := tail.normalize (normalizeStatic := normalizeStatic)
         {
           patterns := normalizedHead.pattern :: normalizedTail.patterns
           length_eq := by
@@ -17323,7 +17341,9 @@ mutual
       {available outer : List TypeExpr} {elements : List Pattern}
       {elementType : TypeExpr}
       (trees : CostRegionElementTrees source targetFree available outer elements
-        elementType) :
+        elementType)
+      (normalizeStatic : CostStaticRegionNormalizer source :=
+        fun node values => node.normalizeWith values) :
       NormalizedCostRegionElements source targetFree available outer elements
         elementType :=
     match trees with
@@ -17338,8 +17358,8 @@ mutual
             simp [binderSafeListAt] }
     | @CostRegionElementTrees.cons _ _ available outer element elements
         elementType head tail =>
-        let normalizedHead := head.normalize
-        let normalizedTail := tail.normalize
+        let normalizedHead := head.normalize (normalizeStatic := normalizeStatic)
+        let normalizedTail := tail.normalize (normalizeStatic := normalizeStatic)
         {
           patterns := normalizedHead.pattern :: normalizedTail.patterns
           length_eq := by
@@ -17375,13 +17395,15 @@ mutual
       {targetFree : WellSorted.FreeTypeContext} {color : CostStaticColor}
       {occurrences : List CostRegionOccurrence}
       {table : TypedCostRegionBoundaryTable source color targetFree occurrences}
-      (trees : CostRegionBoundaryTrees source targetFree color table) :
+      (trees : CostRegionBoundaryTrees source targetFree color table)
+      (normalizeStatic : CostStaticRegionNormalizer source :=
+        fun node values => node.normalizeWith values) :
       TypedCostRegionBoundaryTable.Values source color targetFree table :=
     match trees with
     | .nil => .nil
     | @CostRegionBoundaryTrees.cons _ _ color occurrence occurrences boundary
         content tail head children =>
-        let normalizedHead := head.normalize
+        let normalizedHead := head.normalize (normalizeStatic := normalizeStatic)
         .cons
           ⟨normalizedHead.pattern,
             ⟨by simpa only [List.append_nil] using normalizedHead.typed,
@@ -17393,12 +17415,30 @@ mutual
                 exact normalizedHead.reflectiveScope presentation membership
                   (Nat.le_refl boundary.boundary.targetSupport.length)
                   (boundary.contentReflectiveScopeSafe presentation membership)⟩⟩
-          children.normalizeValues
+          (children.normalizeValues (normalizeStatic := normalizeStatic))
   termination_by trees.weight
   decreasing_by
     all_goals simp [CostRegionBoundaryTrees.weight]
     all_goals omega
 end
+
+/-- A static tree invokes its supplied frame kernel on exactly the
+child-normalized boundary vector.  This constructor equation is exposed as a
+lemma so clients never need to unfold a dependent boundary-table index. -/
+@[simp]
+theorem CostRegionTree.normalize_static_pattern
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext} {outer : List TypeExpr}
+    (normalizeStatic : CostStaticRegionNormalizer source)
+    (node : CostStaticRegionNode source color targetFree)
+    (children : CostRegionBoundaryTrees source targetFree color
+      node.finiteBoundaryTable) :
+    ((CostRegionTree.static (outer := outer) node children).normalize
+      (normalizeStatic := normalizeStatic)).pattern =
+      (normalizeStatic node
+        (children.normalizeValues
+          (normalizeStatic := normalizeStatic))).1 := by
+  simp only [CostRegionTree.normalize]
 
 /-! ### Exact replay through finite structural builders
 
@@ -17410,13 +17450,16 @@ then preserve normalized argument, element, and boundary vectors exactly. -/
 builder, preserving argument order and multiplicity. -/
 theorem CostRegionArgumentTrees.normalize_patterns_eq_of_build
     {source : CIGSLT} {targetFree : WellSorted.FreeTypeContext}
+    (normalizeStatic : CostStaticRegionNormalizer source :=
+      fun node values => node.normalizeWith values)
     (decompose : (available outer : List TypeExpr) → (pattern : Pattern) →
       (type : TypeExpr) →
         Option (CostRegionTree source targetFree available outer pattern type))
     (coherent : ∀ {available outer pattern type}
       (original : CostRegionTree source targetFree available outer pattern type)
       {built}, decompose available outer pattern type = some built →
-        original.normalize.pattern = built.normalize.pattern)
+        (original.normalize (normalizeStatic := normalizeStatic)).pattern =
+          (built.normalize (normalizeStatic := normalizeStatic)).pattern)
     {available outer arguments parameters}
     (trees : CostRegionArgumentTrees source targetFree available outer
       arguments parameters)
@@ -17424,7 +17467,8 @@ theorem CostRegionArgumentTrees.normalize_patterns_eq_of_build
       arguments parameters}
     (builtEq : CostRegionArgumentTrees.build? decompose available outer
       arguments parameters = some built) :
-    trees.normalize.patterns = built.normalize.patterns := by
+    (trees.normalize (normalizeStatic := normalizeStatic)).patterns =
+      (built.normalize (normalizeStatic := normalizeStatic)).patterns := by
   cases trees with
   | nil =>
       simp [CostRegionArgumentTrees.build?] at builtEq
@@ -17453,8 +17497,9 @@ theorem CostRegionArgumentTrees.normalize_patterns_eq_of_build
               cases builtIdentity
               simp only [CostRegionArgumentTrees.normalize]
               exact congrArg₂ List.cons (coherent head headBuilt)
-                (tail.normalize_patterns_eq_of_build decompose coherent
-                  tailBuilt)
+                (tail.normalize_patterns_eq_of_build
+                  (normalizeStatic := normalizeStatic) decompose coherent
+                    tailBuilt)
         · rename_i rejected
           exact (rejected representationChecked).elim
   termination_by arguments.length
@@ -17463,13 +17508,16 @@ theorem CostRegionArgumentTrees.normalize_patterns_eq_of_build
 builder. -/
 theorem CostRegionElementTrees.normalize_patterns_eq_of_build
     {source : CIGSLT} {targetFree : WellSorted.FreeTypeContext}
+    (normalizeStatic : CostStaticRegionNormalizer source :=
+      fun node values => node.normalizeWith values)
     (decompose : (available outer : List TypeExpr) → (pattern : Pattern) →
       (type : TypeExpr) →
         Option (CostRegionTree source targetFree available outer pattern type))
     (coherent : ∀ {available outer pattern type}
       (original : CostRegionTree source targetFree available outer pattern type)
       {built}, decompose available outer pattern type = some built →
-        original.normalize.pattern = built.normalize.pattern)
+        (original.normalize (normalizeStatic := normalizeStatic)).pattern =
+          (built.normalize (normalizeStatic := normalizeStatic)).pattern)
     {available outer elements elementType}
     (trees : CostRegionElementTrees source targetFree available outer elements
       elementType)
@@ -17477,7 +17525,8 @@ theorem CostRegionElementTrees.normalize_patterns_eq_of_build
       elementType}
     (builtEq : CostRegionElementTrees.build? decompose available outer elements
       elementType = some built) :
-    trees.normalize.patterns = built.normalize.patterns := by
+    (trees.normalize (normalizeStatic := normalizeStatic)).patterns =
+      (built.normalize (normalizeStatic := normalizeStatic)).patterns := by
   cases trees with
   | nil =>
       simp [CostRegionElementTrees.build?] at builtEq
@@ -17495,7 +17544,8 @@ theorem CostRegionElementTrees.normalize_patterns_eq_of_build
           cases builtIdentity
           simp only [CostRegionElementTrees.normalize]
           exact congrArg₂ List.cons (coherent head headBuilt)
-            (tail.normalize_patterns_eq_of_build decompose coherent tailBuilt)
+            (tail.normalize_patterns_eq_of_build
+              (normalizeStatic := normalizeStatic) decompose coherent tailBuilt)
   termination_by elements.length
 
 /-- Exact child agreement lifts through the finite boundary-table builder,
@@ -17503,6 +17553,8 @@ including the dependent target support and type carried by every occurrence. -/
 theorem CostRegionBoundaryTrees.normalizeValues_eq_of_build
     {source : CIGSLT} {targetFree : WellSorted.FreeTypeContext}
     {color : CostStaticColor}
+    (normalizeStatic : CostStaticRegionNormalizer source :=
+      fun node values => node.normalizeWith values)
     (decompose : (boundary : TypedCostRegionBoundary source color targetFree) →
       Option (CostRegionTree source targetFree
         boundary.boundary.targetSupport [] boundary.boundary.content
@@ -17513,13 +17565,15 @@ theorem CostRegionBoundaryTrees.normalizeValues_eq_of_build
         boundary.boundary.targetSupport [] boundary.boundary.content
           boundary.boundary.targetType)
       {built}, decompose boundary = some built →
-        original.normalize.pattern = built.normalize.pattern)
+        (original.normalize (normalizeStatic := normalizeStatic)).pattern =
+          (built.normalize (normalizeStatic := normalizeStatic)).pattern)
     {occurrences : List CostRegionOccurrence}
     {table : TypedCostRegionBoundaryTable source color targetFree occurrences}
     (trees : CostRegionBoundaryTrees source targetFree color table)
     {built : CostRegionBoundaryTrees source targetFree color table}
     (builtEq : CostRegionBoundaryTrees.build? decompose table = some built) :
-    trees.normalizeValues = built.normalizeValues := by
+    trees.normalizeValues (normalizeStatic := normalizeStatic) =
+      built.normalizeValues (normalizeStatic := normalizeStatic) := by
   cases trees with
   | nil =>
       simp [CostRegionBoundaryTrees.build?] at builtEq
@@ -17539,8 +17593,9 @@ theorem CostRegionBoundaryTrees.normalizeValues_eq_of_build
           congr 1
           · apply Subtype.ext
             exact coherent _ head headBuilt
-          · exact children.normalizeValues_eq_of_build decompose coherent
-              childrenBuilt
+          · exact children.normalizeValues_eq_of_build
+              (normalizeStatic := normalizeStatic) decompose coherent
+                childrenBuilt
   termination_by occurrences.length
 
 /-- Transport only the raw-pattern index of a region tree.  The tree data is
@@ -17559,11 +17614,15 @@ def CostRegionTree.reindexPattern
 /-- Pattern-index transport does not change child-first normalization. -/
 theorem CostRegionTree.reindexPattern_normalize
     {source : CIGSLT} {targetFree : WellSorted.FreeTypeContext}
+    (normalizeStatic : CostStaticRegionNormalizer source :=
+      fun node values => node.normalizeWith values)
     {available outer : List TypeExpr} {first second : Pattern}
     {type : TypeExpr}
     (patternEq : first = second)
     (tree : CostRegionTree source targetFree available outer first type) :
-    (tree.reindexPattern patternEq).normalize.pattern = tree.normalize.pattern := by
+    ((tree.reindexPattern patternEq).normalize
+      (normalizeStatic := normalizeStatic)).pattern =
+        (tree.normalize (normalizeStatic := normalizeStatic)).pattern := by
   cases patternEq
   rfl
 
@@ -17578,6 +17637,45 @@ theorem CostRegionTree.reindexPattern_heq
     (tree : CostRegionTree source targetFree available outer first type) :
     HEq tree (tree.reindexPattern patternEq) := by
   cases patternEq
+  rfl
+
+/-- Transport only the active-binder-context index of a region tree.  The
+proof-relevant decomposition and every computed normal form are unchanged. -/
+def CostRegionTree.reindexAvailable
+    {source : CIGSLT} {targetFree : WellSorted.FreeTypeContext}
+    {first second outer : List TypeExpr} {pattern : Pattern}
+    {type : TypeExpr}
+    (availableEq : first = second)
+    (tree : CostRegionTree source targetFree first outer pattern type) :
+    CostRegionTree source targetFree second outer pattern type := by
+  cases availableEq
+  exact tree
+
+/-- Active-context transport does not change child-first normalization. -/
+theorem CostRegionTree.reindexAvailable_normalize
+    {source : CIGSLT} {targetFree : WellSorted.FreeTypeContext}
+    (normalizeStatic : CostStaticRegionNormalizer source :=
+      fun node values => node.normalizeWith values)
+    {first second outer : List TypeExpr} {pattern : Pattern}
+    {type : TypeExpr}
+    (availableEq : first = second)
+    (tree : CostRegionTree source targetFree first outer pattern type) :
+    ((tree.reindexAvailable availableEq).normalize
+      (normalizeStatic := normalizeStatic)).pattern =
+      (tree.normalize (normalizeStatic := normalizeStatic)).pattern := by
+  cases availableEq
+  rfl
+
+/-- Active-context transport is heterogeneous identity on the underlying
+proof-relevant tree. -/
+theorem CostRegionTree.reindexAvailable_heq
+    {source : CIGSLT} {targetFree : WellSorted.FreeTypeContext}
+    {first second outer : List TypeExpr} {pattern : Pattern}
+    {type : TypeExpr}
+    (availableEq : first = second)
+    (tree : CostRegionTree source targetFree first outer pattern type) :
+    HEq tree (tree.reindexAvailable availableEq) := by
+  cases availableEq
   rfl
 
 /-- Transport only the result-type index of a region tree.  As with pattern
@@ -17596,11 +17694,15 @@ def CostRegionTree.reindexType
 /-- Result-type transport does not change child-first normalization. -/
 theorem CostRegionTree.reindexType_normalize
     {source : CIGSLT} {targetFree : WellSorted.FreeTypeContext}
+    (normalizeStatic : CostStaticRegionNormalizer source :=
+      fun node values => node.normalizeWith values)
     {available outer : List TypeExpr} {pattern : Pattern}
     {first second : TypeExpr}
     (typeEq : first = second)
     (tree : CostRegionTree source targetFree available outer pattern first) :
-    (tree.reindexType typeEq).normalize.pattern = tree.normalize.pattern := by
+    ((tree.reindexType typeEq).normalize
+      (normalizeStatic := normalizeStatic)).pattern =
+      (tree.normalize (normalizeStatic := normalizeStatic)).pattern := by
   cases typeEq
   rfl
 
@@ -17620,6 +17722,8 @@ neutral frame does not affect child-first normalization. -/
 @[simp]
 theorem CostRegionTree.neutralApplicationOrdinaryReindex_normalize
     {source : CIGSLT} {targetFree : WellSorted.FreeTypeContext}
+    (normalizeStatic : CostStaticRegionNormalizer source :=
+      fun node values => node.normalizeWith values)
     {available outer : List TypeExpr} {rule : GrammarRule}
     {wireName category : String} {arguments : List Pattern}
     (labelEq : rule.label = wireName)
@@ -17637,9 +17741,11 @@ theorem CostRegionTree.neutralApplicationOrdinaryReindex_normalize
       source.costWholeLanguage rule.label = false)
     (children : CostRegionArgumentTrees source targetFree available outer
       arguments rule.params) :
-    (CostRegionTree.neutralApplicationOrdinaryReindex labelEq categoryEq
+    ((CostRegionTree.neutralApplicationOrdinaryReindex labelEq categoryEq
       membership notBare constructor materializes neutral ordinary children
-      ).normalize.pattern = .apply wireName children.normalize.patterns := by
+      ).normalize (normalizeStatic := normalizeStatic)).pattern =
+        .apply wireName
+          (children.normalize (normalizeStatic := normalizeStatic)).patterns := by
   cases labelEq
   cases categoryEq
   simp [CostRegionTree.neutralApplicationOrdinaryReindex,
@@ -17650,6 +17756,8 @@ normalized argument spine. -/
 @[simp]
 theorem CostRegionTree.neutralApplicationQuoteReindex_normalize
     {source : CIGSLT} {targetFree : WellSorted.FreeTypeContext}
+    (normalizeStatic : CostStaticRegionNormalizer source :=
+      fun node values => node.normalizeWith values)
     {available outer : List TypeExpr} {rule : GrammarRule}
     {wireName category : String} {arguments : List Pattern}
     (labelEq : rule.label = wireName)
@@ -17667,9 +17775,11 @@ theorem CostRegionTree.neutralApplicationQuoteReindex_normalize
       source.costWholeLanguage rule.label = true)
     (children : CostRegionArgumentTrees source targetFree []
       (available ++ outer) arguments rule.params) :
-    (CostRegionTree.neutralApplicationQuoteReindex labelEq categoryEq
+    ((CostRegionTree.neutralApplicationQuoteReindex labelEq categoryEq
       membership notBare constructor materializes neutral quoted children
-      ).normalize.pattern = .apply wireName children.normalize.patterns := by
+      ).normalize (normalizeStatic := normalizeStatic)).pattern =
+        .apply wireName
+          (children.normalize (normalizeStatic := normalizeStatic)).patterns := by
   cases labelEq
   cases categoryEq
   simp [CostRegionTree.neutralApplicationQuoteReindex,
@@ -17679,6 +17789,8 @@ theorem CostRegionTree.neutralApplicationQuoteReindex_normalize
 argument replay and normalized outer frame. -/
 theorem CostRegionTree.buildNeutralApplication?_eq_some_of_ordinary
     {source : CIGSLT} {targetFree : WellSorted.FreeTypeContext}
+    (normalizeStatic : CostStaticRegionNormalizer source :=
+      fun node values => node.normalizeWith values)
     (decompose : (available outer : List TypeExpr) → (pattern : Pattern) →
       (type : TypeExpr) →
         Option (CostRegionTree source targetFree available outer pattern type))
@@ -17707,7 +17819,9 @@ theorem CostRegionTree.buildNeutralApplication?_eq_some_of_ordinary
       CostRegionArgumentTrees.build? decompose available outer arguments
           (source.materializeDeclaredCostConstructor constructor).params =
         some children ∧
-      tree.normalize.pattern = .apply wireName children.normalize.patterns := by
+      (tree.normalize (normalizeStatic := normalizeStatic)).pattern =
+        .apply wireName
+          (children.normalize (normalizeStatic := normalizeStatic)).patterns := by
   unfold CostRegionTree.buildNeutralApplication? at built
   dsimp only at built
   have notBareProof :
@@ -17738,12 +17852,15 @@ theorem CostRegionTree.buildNeutralApplication?_eq_some_of_ordinary
       subst tree
       refine ⟨children, rfl, ?_⟩
       exact CostRegionTree.neutralApplicationOrdinaryReindex_normalize
+        (normalizeStatic := normalizeStatic)
         _ _ _ notBareProof _ rfl neutral ordinary children
 
 /-- Quote-frame inversion is separate because its children are elaborated at
 empty available depth with the former available context moved into `outer`. -/
 theorem CostRegionTree.buildNeutralApplication?_eq_some_of_quote
     {source : CIGSLT} {targetFree : WellSorted.FreeTypeContext}
+    (normalizeStatic : CostStaticRegionNormalizer source :=
+      fun node values => node.normalizeWith values)
     (decompose : (available outer : List TypeExpr) → (pattern : Pattern) →
       (type : TypeExpr) →
         Option (CostRegionTree source targetFree available outer pattern type))
@@ -17772,7 +17889,9 @@ theorem CostRegionTree.buildNeutralApplication?_eq_some_of_quote
       CostRegionArgumentTrees.build? decompose [] (available ++ outer) arguments
           (source.materializeDeclaredCostConstructor constructor).params =
         some children ∧
-      tree.normalize.pattern = .apply wireName children.normalize.patterns := by
+      (tree.normalize (normalizeStatic := normalizeStatic)).pattern =
+        .apply wireName
+          (children.normalize (normalizeStatic := normalizeStatic)).patterns := by
   unfold CostRegionTree.buildNeutralApplication? at built
   dsimp only at built
   have notBareProof :
@@ -17803,6 +17922,7 @@ theorem CostRegionTree.buildNeutralApplication?_eq_some_of_quote
       subst tree
       refine ⟨children, rfl, ?_⟩
       exact CostRegionTree.neutralApplicationQuoteReindex_normalize
+        (normalizeStatic := normalizeStatic)
         _ _ _ notBareProof _ rfl neutral quoted children
 
 /-- Once intrinsic decoding identifies a neutral generated constructor, the
@@ -17864,6 +17984,8 @@ theorem CostStaticRegionNode.UnambiguousStaticDecomposition.static_normalize_eq_
     {source : CIGSLT}
     (unambiguous :
       CostStaticRegionNode.UnambiguousStaticDecomposition source)
+    (normalizeStatic : CostStaticRegionNormalizer source :=
+      fun node values => node.normalizeWith values)
     {targetFree : WellSorted.FreeTypeContext}
     {firstColor secondColor : CostStaticColor} {outer : List TypeExpr}
     (first : CostStaticRegionNode source firstColor targetFree)
@@ -17890,15 +18012,17 @@ theorem CostStaticRegionNode.UnambiguousStaticDecomposition.static_normalize_eq_
         boundary.boundary.targetSupport [] boundary.boundary.content
           boundary.boundary.targetType)
       {built}, decompose boundary = some built →
-        original.normalize.pattern = built.normalize.pattern)
+        (original.normalize (normalizeStatic := normalizeStatic)).pattern =
+          (built.normalize (normalizeStatic := normalizeStatic)).pattern)
     {built : CostRegionTree source targetFree first.targetBound outer
       first.term.1
         (TypeExpr.base
           (firstColor.mapLangSort source first.sourceSort).1)}
     (builtEq : HEq built
       (CostRegionTree.static (outer := outer) second secondChildren)) :
-    (CostRegionTree.static (outer := outer) first firstChildren
-      ).normalize.pattern = built.normalize.pattern := by
+    ((CostRegionTree.static (outer := outer) first firstChildren
+      ).normalize (normalizeStatic := normalizeStatic)).pattern =
+        (built.normalize (normalizeStatic := normalizeStatic)).pattern := by
   have targetSortEq :
       firstColor.mapLangSort source first.sourceSort =
         secondColor.mapLangSort source second.sourceSort := by
@@ -17918,9 +18042,10 @@ theorem CostStaticRegionNode.UnambiguousStaticDecomposition.static_normalize_eq_
     eq_of_heq builtEq
   subst built
   have valuesEq :=
-    firstChildren.normalizeValues_eq_of_build decompose coherent childrenBuilt
-  simpa only [CostRegionTree.normalize, CostStaticRegionNode.normalizeWith]
-    using congrArg first.normalizeRawWith valuesEq
+    firstChildren.normalizeValues_eq_of_build
+      (normalizeStatic := normalizeStatic) decompose coherent childrenBuilt
+  simpa only [CostRegionTree.normalize] using
+    congrArg (fun values => (normalizeStatic first values).1) valuesEq
 
 /-- Structural unambiguity upgrades successful executable replay from
 contextual agreement to exact child-first normalization.  The proof follows
@@ -17931,6 +18056,8 @@ theorem CostRegionTree.normalize_pattern_eq_of_buildFuel
     {source : CIGSLT}
     (unambiguous :
       CostStaticRegionNode.UnambiguousStaticDecomposition source)
+    (normalizeStatic : CostStaticRegionNormalizer source :=
+      fun node values => node.normalizeWith values)
     {targetFree : WellSorted.FreeTypeContext} :
     ∀ fuel {available outer : List TypeExpr} {pattern : Pattern}
       {type : TypeExpr}
@@ -17938,7 +18065,8 @@ theorem CostRegionTree.normalize_pattern_eq_of_buildFuel
       {built},
       CostRegionTree.buildFuel? (source := source) (targetFree := targetFree)
           fuel available outer pattern type = some built →
-        original.normalize.pattern = built.normalize.pattern := by
+        (original.normalize (normalizeStatic := normalizeStatic)).pattern =
+          (built.normalize (normalizeStatic := normalizeStatic)).pattern := by
   intro fuel
   induction fuel with
   | zero =>
@@ -17987,7 +18115,8 @@ theorem CostRegionTree.normalize_pattern_eq_of_buildFuel
                   secondChildren) :=
               HEq.trans reindexEq treeEq
             have exactReplay :=
-              unambiguous.static_normalize_eq_of_build node children second
+              unambiguous.static_normalize_eq_of_build
+                (normalizeStatic := normalizeStatic) node children second
                 secondChildren boundEq targetTypeEq (termEq.trans shape.symm)
                 (decompose color)
                 childrenBuilt
@@ -18011,7 +18140,8 @@ theorem CostRegionTree.normalize_pattern_eq_of_buildFuel
                   secondChildren) :=
               HEq.trans reindexEq treeEq
             have exactReplay :=
-              unambiguous.static_normalize_eq_of_build node children second
+              unambiguous.static_normalize_eq_of_build
+                (normalizeStatic := normalizeStatic) node children second
                 secondChildren boundEq targetTypeEq (termEq.trans shape.symm)
                 (decompose secondColor) childrenBuilt
                 (fun boundary child builtChild childBuilt =>
@@ -18046,6 +18176,7 @@ theorem CostRegionTree.normalize_pattern_eq_of_buildFuel
                 constructor neutral decoded builtEq
           obtain ⟨builtChildren, childrenBuilt, builtNormalized⟩ :=
             CostRegionTree.buildNeutralApplication?_eq_some_of_ordinary
+              (normalizeStatic := normalizeStatic)
               (fun childAvailable childOuter childPattern childType =>
                 CostRegionTree.buildFuel? (source := source)
                   (targetFree := targetFree) fuel childAvailable childOuter
@@ -18053,6 +18184,7 @@ theorem CostRegionTree.normalize_pattern_eq_of_buildFuel
               _ _ _ _ _ constructor neutral rendered rfl notBareChecked
                 ordinary neutralBuilt
           have childrenEq := children.normalize_patterns_eq_of_build
+            (normalizeStatic := normalizeStatic)
             (fun childAvailable childOuter childPattern childType =>
               CostRegionTree.buildFuel? (source := source)
                 (targetFree := targetFree) fuel childAvailable childOuter
@@ -18092,6 +18224,7 @@ theorem CostRegionTree.normalize_pattern_eq_of_buildFuel
                 constructor neutral decoded builtEq
           obtain ⟨builtChildren, childrenBuilt, builtNormalized⟩ :=
             CostRegionTree.buildNeutralApplication?_eq_some_of_quote
+              (normalizeStatic := normalizeStatic)
               (fun childAvailable childOuter childPattern childType =>
                 CostRegionTree.buildFuel? (source := source)
                   (targetFree := targetFree) fuel childAvailable childOuter
@@ -18099,6 +18232,7 @@ theorem CostRegionTree.normalize_pattern_eq_of_buildFuel
               _ _ _ _ _ constructor neutral rendered rfl notBareChecked
                 quoted neutralBuilt
           have childrenEq := children.normalize_patterns_eq_of_build
+            (normalizeStatic := normalizeStatic)
             (fun childAvailable childOuter childPattern childType =>
               CostRegionTree.buildFuel? (source := source)
                 (targetFree := targetFree) fuel childAvailable childOuter
@@ -18152,6 +18286,7 @@ theorem CostRegionTree.normalize_pattern_eq_of_buildFuel
               simp [childrenBuilt] at builtEq
               subst built
               have childrenEq := children.normalize_patterns_eq_of_build
+                (normalizeStatic := normalizeStatic)
                 (fun childAvailable childOuter childPattern childType =>
                   CostRegionTree.buildFuel? (source := source)
                     (targetFree := targetFree) fuel childAvailable childOuter
@@ -18626,8 +18761,10 @@ theorem CostStaticRegionNode.UnambiguousStaticDecomposition.compactCoherent
     simpa only [CostRegionTree.build?] using
       (CostRegionTree.build?_eq_some_buildOpenTerm (source := source) term)
   have firstEq := CostRegionTree.normalize_pattern_eq_of_buildFuel unambiguous
+    (normalizeStatic := fun node values => node.normalizeWith values)
     (costRegionPatternWeight term.1 + 1) first.tree compiledEq
   have secondEq := CostRegionTree.normalize_pattern_eq_of_buildFuel unambiguous
+    (normalizeStatic := fun node values => node.normalizeWith values)
     (costRegionPatternWeight term.1 + 1) second.tree compiledEq
   apply Subtype.ext
   exact firstEq.trans secondEq.symm
@@ -18682,11 +18819,14 @@ theorem CostRegionTree.normalize_static_eq_normalizeRaw_of_values_original
 vector.  No hidden default assignment is involved. -/
 theorem CostRegionBoundaryTrees.normalizeValues_eq_original_of_entries_eq_nil
     {source : CIGSLT} {targetFree : WellSorted.FreeTypeContext}
+    (normalizeStatic : CostStaticRegionNormalizer source :=
+      fun node values => node.normalizeWith values)
     {color : CostStaticColor} {occurrences : List CostRegionOccurrence}
     {table : TypedCostRegionBoundaryTable source color targetFree occurrences}
     (trees : CostRegionBoundaryTrees source targetFree color table)
     (empty : table.entries = []) :
-    trees.normalizeValues = TypedCostRegionBoundaryTable.Values.original table := by
+    trees.normalizeValues (normalizeStatic := normalizeStatic) =
+      TypedCostRegionBoundaryTable.Values.original table := by
   cases table with
   | nil =>
       cases trees
@@ -18708,6 +18848,7 @@ theorem CostRegionTree.normalize_static_eq_normalizeRaw_of_entries_eq_nil
     (CostRegionTree.static (outer := outer) node children).normalize.pattern =
       node.normalizeRaw :=
   CostRegionTree.normalize_static_eq_normalizeRaw_of_values_original node
-    children (children.normalizeValues_eq_original_of_entries_eq_nil empty)
+    children
+      (children.normalizeValues_eq_original_of_entries_eq_nil (empty := empty))
 
 end Mettapedia.GSLT.LanguageDef

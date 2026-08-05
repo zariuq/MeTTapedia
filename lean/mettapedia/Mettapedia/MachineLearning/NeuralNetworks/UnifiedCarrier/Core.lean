@@ -50,7 +50,7 @@ theorem packedStateWidth_eq_posteriorOnly_add_innovations
   ring
 
 /-- Small positive fixture covering every packed-state component. -/
-theorem packedStateWidth_fixture :
+theorem packedStateWidth_example :
     packedStateWidth 3 4 2 3 = 47 := by
   norm_num [packedStateWidth]
 
@@ -223,7 +223,7 @@ noncomputable def maybeAbsorbInnovation
 
 /-- Scalar fixture: decaying prior `2` by one half and adding innovation `1`
 gives `2`; reabsorbing posterior `3` instead would give `4`. -/
-theorem posterior_reabsorption_doubleCounts_fixture :
+theorem posterior_reabsorption_doubleCounts :
     (1 / 2 : ℝ) * 2 + 1 = 2 ∧
       (1 / 2 : ℝ) * 2 + (2 + 1) = 4 := by
   norm_num
@@ -333,7 +333,7 @@ theorem recurrentControl_history_separates :
 #print axioms evidenceRun_innovation
 #print axioms absorbInnovation_eq_weightedEvidenceCarrier
 #print axioms maybeAbsorbInnovation_false
-#print axioms posterior_reabsorption_doubleCounts_fixture
+#print axioms posterior_reabsorption_doubleCounts
 #print axioms exp_precisionBiasedLogit
 #print axioms precisionBiasedLogit_strictMono_precision
 #print axioms positivePrecisionBias_separates

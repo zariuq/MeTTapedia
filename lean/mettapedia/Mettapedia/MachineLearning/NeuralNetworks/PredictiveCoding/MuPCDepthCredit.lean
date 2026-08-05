@@ -92,7 +92,7 @@ theorem chainLinkLoss_after_uniformDepthCredit_exact
 
 /-- Positive fixture: a half-rate depth-four chain has sharply different
 credit at the input, middle, and output layers. -/
-theorem halfRate_depthFour_depthCredit_fixture :
+theorem halfRate_depthFour_depthCredit :
     uniformDepthCreditPreconditioner (1 / 2) 4 0 = 1 / 16 ∧
       uniformDepthCreditPreconditioner (1 / 2) 4 2 = 1 / 4 ∧
       uniformDepthCreditPreconditioner (1 / 2) 4 4 = 1 := by

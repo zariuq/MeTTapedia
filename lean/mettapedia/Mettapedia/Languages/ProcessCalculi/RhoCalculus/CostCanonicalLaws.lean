@@ -1,4 +1,5 @@
 import Mettapedia.GSLT.LanguageDef.CostRegionTree
+import Mettapedia.GSLT.LanguageDef.CostRegionNormalization
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.EquationSubstitution
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefContinuedInteraction
 import Mettapedia.OSLF.MeTTaIL.MatchSpec
@@ -6,11 +7,12 @@ import Mettapedia.OSLF.MeTTaIL.MatchSpec
 /-!
 # Exact Cost canonical laws for pure rho
 
-This module discharges the semantic laws placing the sole authored pure-rho
-`LanguageDef` in the exact Cost₁ object domain.  Structural properties are
-kept separate from the resulting canonical-section laws: finite candidate
-uniqueness is a decidable sufficient criterion, while exact normalization is
-stated through the authored equation relation.
+This module discharges the selected-colour typed unary laws and compact
+decomposition coherence needed on the way to placing the sole authored
+pure-rho `LanguageDef` in the exact Cost₁ object domain.  Structural
+properties are kept separate from the remaining contextual open-section
+laws: finite candidate uniqueness is a decidable sufficient criterion, while
+normalization soundness is stated through the authored equation relation.
 -/
 
 namespace Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostCanonicalLaws
@@ -437,7 +439,7 @@ private theorem rho_costReflectiveConstructorsAllowed :
 /-- The local form of the same-colour static action.  `inner` counts binders
 introduced inside the source skeleton, while `available` is the independently
 tracked reflective-substitution context (and is reset below quotation). -/
-private def rhoCostStaticActionAt
+def rhoCostStaticActionAt
     {color : CostStaticColor}
     {assignmentFree targetFree : FreeTypeContext}
     {assignmentSupport : ContextSupport.Support}
@@ -454,10 +456,10 @@ private def rhoCostStaticActionAt
 
 /-- A source rho name mapped into one selected Cost colour, reinserted through
 an arbitrary ambient thinning, and then restored by an arbitrary supported
-Cost assignment still satisfies the selected generated Quote/Drop equation.
+Cost assignment has the exact selected generated Quote/Drop representative.
 The assignment values may use either colour; only the surrounding equation
 skeleton is required to remain monochromatic. -/
-private theorem rho_costStatic_quoteDrop_action
+private theorem rho_costStatic_quoteDrop_action_canonicalize_eq
     {color : CostStaticColor}
     {free targetFree : FreeTypeContext}
     {support : ContextSupport.Support}
@@ -475,17 +477,21 @@ private theorem rho_costStatic_quoteDrop_action
       (· ∈ rhoCIGSLT.continuationRetyping.wrappedLabels) name)
     (object : isObjectPattern name = true)
     (availableDepth : Nat) :
-    EquationSemantics.EquationEquiv defaultBasePremises
-      rhoCIGSLT.costWholeLanguage
-      (ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeLanguage
-        support assignment.assignment availableDepth
-        (thinning.thickenAmbientBVars inner.length
-          (mapPattern (color.symbols rhoCIGSLT)
-            (.apply "NQuote" [.apply "PDrop" [name]]))))
-      (ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeLanguage
-        support assignment.assignment availableDepth
-        (thinning.thickenAmbientBVars inner.length
-          (mapPattern (color.symbols rhoCIGSLT) name))) := by
+    Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+        (costStaticReflectivePresentationDecl rhoCIGSLT color
+          rhoReflectivePresentation.toReflectivePresentationDecl)
+        (ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeLanguage
+          support assignment.assignment availableDepth
+          (thinning.thickenAmbientBVars inner.length
+            (mapPattern (color.symbols rhoCIGSLT)
+              (.apply "NQuote" [.apply "PDrop" [name]])))) =
+      Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+        (costStaticReflectivePresentationDecl rhoCIGSLT color
+          rhoReflectivePresentation.toReflectivePresentationDecl)
+        (ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeLanguage
+          support assignment.assignment availableDepth
+          (thinning.thickenAmbientBVars inner.length
+            (mapPattern (color.symbols rhoCIGSLT) name))) := by
   let declaration := costStaticReflectivePresentationDecl rhoCIGSLT color
     rhoReflectivePresentation.toReflectivePresentationDecl
   have declarationMembership :
@@ -535,7 +541,8 @@ private theorem rho_costStatic_quoteDrop_action
     rw [CostStaticBinderThinning.isObjectPattern_thickenAmbientBVars,
       WellSorted.isObjectPattern_mapPattern]
     exact object
-  have cancellation := quoteDrop_substituteAt_equationEquiv_of_resultsQuoted
+  have cancellation :=
+    quoteDrop_substituteAt_canonicalize_eq_of_resultsQuoted
     rho_costReflectiveNameResultsQuoted assignment declaration
       declarationMembership quoteNeDrop thickenedTyped
       (by
@@ -544,13 +551,92 @@ private theorem rho_costStatic_quoteDrop_action
           rfl)
       thickenedSafe.castTyping
       (by simpa only [List.length_map] using thickenedObject) availableDepth
-  simpa [declaration, costStaticReflectivePresentationDecl,
-    costBaseReflectivePresentationDecl,
-    costWrappedReflectivePresentationDecl, mapReflectivePresentation,
-    CostStaticBinderThinning.thickenAmbientBVars, mapPattern,
-    List.length_map,
-    costBaseStaticSymbols, costBasePresentationSymbols,
-    costWrappedStaticSymbols, rhoReflectivePresentation] using cancellation
+  simpa only [declaration, costStaticReflectivePresentationDecl_eq_map,
+    mapReflectivePresentation, mapPattern, mapPatternList_eq_map,
+    CostStaticBinderThinning.thickenAmbientBVars, List.length_map,
+    List.map_cons, List.map_nil, rhoReflectivePresentation]
+    using cancellation
+
+/-- The exact selected representative above is one generated reflective
+Quote/Drop generator. -/
+private theorem rho_costStatic_quoteDrop_action_step
+    {color : CostStaticColor}
+    {free targetFree : FreeTypeContext}
+    {support : ContextSupport.Support}
+    {sourceBound targetBound inner : List TypeExpr}
+    {name : Pattern} {resultType : TypeExpr}
+    (thinning : CostStaticBinderThinning rhoCIGSLT color sourceBound
+      targetBound)
+    (assignment : SupportedOpenAssignment rhoCIGSLT.costWholeLanguage
+      (free.map (color.symbols rhoCIGSLT)) targetFree support)
+    (typed : HasType rhoCalc free (inner ++ sourceBound) name resultType)
+    (resultType_eq : resultType = TypeExpr.name)
+    (safeAtZero : typed.ReflectiveSupportSafeAt support []
+      (mapTypeExpr (color.symbols rhoCIGSLT)))
+    (supported : ConstructorsWithin
+      (· ∈ rhoCIGSLT.continuationRetyping.wrappedLabels) name)
+    (object : isObjectPattern name = true)
+    (availableDepth : Nat) :
+    EquationSemantics.EquationContextStep defaultBasePremises
+      rhoCIGSLT.costWholeLanguage
+      (ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeLanguage
+        support assignment.assignment availableDepth
+        (thinning.thickenAmbientBVars inner.length
+          (mapPattern (color.symbols rhoCIGSLT)
+            (.apply "NQuote" [.apply "PDrop" [name]]))))
+      (ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeLanguage
+        support assignment.assignment availableDepth
+        (thinning.thickenAmbientBVars inner.length
+          (mapPattern (color.symbols rhoCIGSLT) name))) := by
+  let declaration := costStaticReflectivePresentationDecl rhoCIGSLT color
+    rhoReflectivePresentation.toReflectivePresentationDecl
+  have declarationMembership :
+      declaration ∈ rhoCIGSLT.costWholeLanguage.reflectivePresentations := by
+    simpa [declaration] using
+      costStaticReflectivePresentationDecl_mem rhoCIGSLT color
+        rhoReflectivePresentation.toReflectivePresentationDecl
+        (by simp [rhoCIGSLT, rhoIGSLT, rhoInteractivePresentation,
+          rhoValidatedLanguageDef, rhoCalc])
+  apply EquationSemantics.EquationContextStep.reflectiveInContext .hole
+    declarationMembership
+  simpa only [declaration] using
+    rho_costStatic_quoteDrop_action_canonicalize_eq thinning assignment typed
+      resultType_eq safeAtZero supported object availableDepth
+
+/-- Closure-level wrapper around the direct selected-colour Quote/Drop
+generator. -/
+private theorem rho_costStatic_quoteDrop_action
+    {color : CostStaticColor}
+    {free targetFree : FreeTypeContext}
+    {support : ContextSupport.Support}
+    {sourceBound targetBound inner : List TypeExpr}
+    {name : Pattern} {resultType : TypeExpr}
+    (thinning : CostStaticBinderThinning rhoCIGSLT color sourceBound
+      targetBound)
+    (assignment : SupportedOpenAssignment rhoCIGSLT.costWholeLanguage
+      (free.map (color.symbols rhoCIGSLT)) targetFree support)
+    (typed : HasType rhoCalc free (inner ++ sourceBound) name resultType)
+    (resultType_eq : resultType = TypeExpr.name)
+    (safeAtZero : typed.ReflectiveSupportSafeAt support []
+      (mapTypeExpr (color.symbols rhoCIGSLT)))
+    (supported : ConstructorsWithin
+      (· ∈ rhoCIGSLT.continuationRetyping.wrappedLabels) name)
+    (object : isObjectPattern name = true)
+    (availableDepth : Nat) :
+    EquationSemantics.EquationEquiv defaultBasePremises
+      rhoCIGSLT.costWholeLanguage
+      (ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeLanguage
+        support assignment.assignment availableDepth
+        (thinning.thickenAmbientBVars inner.length
+          (mapPattern (color.symbols rhoCIGSLT)
+            (.apply "NQuote" [.apply "PDrop" [name]]))))
+      (ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeLanguage
+        support assignment.assignment availableDepth
+        (thinning.thickenAmbientBVars inner.length
+          (mapPattern (color.symbols rhoCIGSLT) name))) := by
+  exact Relation.EqvGen.rel _ _
+    (rho_costStatic_quoteDrop_action_step thinning assignment typed
+      resultType_eq safeAtZero supported object availableDepth)
 
 private theorem rhoCostEquationEquiv_trans {left middle right : Pattern}
     (first : EquationSemantics.EquationEquiv defaultBasePremises
@@ -591,11 +677,687 @@ private theorem rho_finishNormalizeReflectiveApply_quote_eq_of_not_drop
   | subst body replacement => rfl
   | collection collectionType elements rest => rfl
 
+/-- Re-canonicalizing in the selected generated colour absorbs source-rho
+canonicalization before the typed boundary action.  This is stronger than a
+raw target equivalence: it retains the exact reflective declaration that
+justifies the eventual one-edge typed path. -/
+private theorem rhoCostStaticActionAt_canonicalize_eq
+    {color : CostStaticColor}
+    {free assignmentFree targetFree : FreeTypeContext}
+    {support assignmentSupport : ContextSupport.Support}
+    {sourceBound targetBound inner available : List TypeExpr}
+    {pattern : Pattern} {type : TypeExpr}
+    (thinning : CostStaticBinderThinning rhoCIGSLT color sourceBound
+      targetBound)
+    (assignment : SupportedOpenAssignment rhoCIGSLT.costWholeLanguage
+      assignmentFree targetFree assignmentSupport)
+    (freeContext : free.map (color.symbols rhoCIGSLT) = assignmentFree)
+    (reflectiveSupport : support = assignmentSupport)
+    (typed : HasType rhoCalc free (inner ++ sourceBound) pattern type)
+    (safe : typed.ReflectiveSupportSafeAt support available
+      (mapTypeExpr (color.symbols rhoCIGSLT)))
+    (supported : ConstructorsWithin
+      (· ∈ rhoCIGSLT.continuationRetyping.wrappedLabels) pattern)
+    (object : isObjectPattern pattern = true) :
+    Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+        (costStaticReflectivePresentationDecl rhoCIGSLT color
+          rhoReflectivePresentation.toReflectivePresentationDecl)
+        (rhoCostStaticActionAt thinning assignment inner available pattern) =
+      Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+        (costStaticReflectivePresentationDecl rhoCIGSLT color
+          rhoReflectivePresentation.toReflectivePresentationDecl)
+        (rhoCostStaticActionAt thinning assignment inner available
+          (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+            rhoReflectivePresentation pattern)) := by
+  subst assignmentFree
+  subst assignmentSupport
+  let targetDeclaration := costStaticReflectivePresentationDecl rhoCIGSLT color
+    rhoReflectivePresentation.toReflectivePresentationDecl
+  have sourceMembership :
+      rhoReflectivePresentation.toReflectivePresentationDecl ∈
+        rhoCalc.reflectivePresentations := by
+    simp [rhoCalc]
+  have targetQuoteStatus :
+      ReflectiveContextSupport.isQuoteConstructor
+          rhoCIGSLT.costWholeLanguage
+          ((color.symbols rhoCIGSLT).constructor
+            rhoReflectivePresentation.quoteConstructor) = true := by
+    rw [reflectiveIsQuoteConstructor_mapCostStatic]
+    simp [rhoCIGSLT, rhoIGSLT, rhoInteractivePresentation,
+      rhoValidatedLanguageDef, ReflectiveContextSupport.isQuoteConstructor,
+      rhoCalc, rhoReflectivePresentation]
+  have targetDeclarationQuote : targetDeclaration.quoteConstructor =
+      (color.symbols rhoCIGSLT).constructor
+        rhoReflectivePresentation.quoteConstructor := by
+    simp [targetDeclaration, mapReflectivePresentation]
+  have targetQuoteStatusTag :
+      ReflectiveContextSupport.isQuoteConstructor
+          rhoCIGSLT.costWholeLanguage
+          (color.constructorTag ++
+            rhoReflectivePresentation.quoteConstructor) = true := by
+    rw [← CostStaticColor.symbols_constructor]
+    exact targetQuoteStatus
+  change
+    Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize targetDeclaration
+        (rhoCostStaticActionAt thinning assignment inner available pattern) =
+      Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize targetDeclaration
+        (rhoCostStaticActionAt thinning assignment inner available
+          (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+            rhoReflectivePresentation pattern))
+  exact HasType.ReflectiveSupportSafeAt.rec
+    (motive_1 := fun {bound pattern type}
+      (typed : HasType rhoCalc free bound pattern type)
+      (currentAvailable : List TypeExpr)
+      (currentImage : TypeExpr → TypeExpr)
+      (_ : typed.ReflectiveSupportSafeAt support currentAvailable currentImage) =>
+      ∀ (currentInner : List TypeExpr),
+        bound = currentInner ++ sourceBound →
+        currentImage = mapTypeExpr (color.symbols rhoCIGSLT) →
+        ConstructorsWithin
+          (· ∈ rhoCIGSLT.continuationRetyping.wrappedLabels) pattern →
+        isObjectPattern pattern = true →
+        Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+            targetDeclaration
+            (rhoCostStaticActionAt thinning assignment currentInner
+              currentAvailable pattern) =
+          Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+            targetDeclaration
+            (rhoCostStaticActionAt thinning assignment currentInner
+              currentAvailable
+              (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+                rhoReflectivePresentation pattern)))
+    (motive_2 := fun {bound arguments parameters}
+      (typed : ArgumentsHaveTypes rhoCalc free bound arguments parameters)
+      (currentAvailable : List TypeExpr)
+      (currentImage : TypeExpr → TypeExpr)
+      (_ : typed.ReflectiveSupportSafeAt support currentAvailable currentImage) =>
+      ∀ (currentInner : List TypeExpr),
+        bound = currentInner ++ sourceBound →
+        currentImage = mapTypeExpr (color.symbols rhoCIGSLT) →
+        ConstructorListWithin
+          (· ∈ rhoCIGSLT.continuationRetyping.wrappedLabels) arguments →
+        isObjectPatternList arguments = true →
+        Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeList
+            targetDeclaration
+            (arguments.map
+              (rhoCostStaticActionAt thinning assignment currentInner
+                currentAvailable)) =
+          Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeList
+            targetDeclaration
+            ((Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeList
+              rhoReflectivePresentation arguments).map
+                (rhoCostStaticActionAt thinning assignment currentInner
+                  currentAvailable)))
+    (motive_3 := fun {bound elements elementType}
+      (typed : ElementsHaveType rhoCalc free bound elements elementType)
+      (currentAvailable : List TypeExpr)
+      (currentImage : TypeExpr → TypeExpr)
+      (_ : typed.ReflectiveSupportSafeAt support currentAvailable currentImage) =>
+      ∀ (currentInner : List TypeExpr),
+        bound = currentInner ++ sourceBound →
+        currentImage = mapTypeExpr (color.symbols rhoCIGSLT) →
+        ConstructorListWithin
+          (· ∈ rhoCIGSLT.continuationRetyping.wrappedLabels) elements →
+        isObjectPatternList elements = true →
+        Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeList
+            targetDeclaration
+            (elements.map
+              (rhoCostStaticActionAt thinning assignment currentInner
+                currentAvailable)) =
+          Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeList
+            targetDeclaration
+            ((Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeList
+              rhoReflectivePresentation elements).map
+                (rhoCostStaticActionAt thinning assignment currentInner
+                  currentAvailable)))
+    (by
+      intro bound index resultType lookup currentAvailable currentImage
+        currentInner boundEquality imageEquality resultSupported resultObject
+      rfl)
+    (by
+      intro bound freeName resultType lookup currentAvailable currentImage shape
+        currentInner boundEquality imageEquality resultSupported resultObject
+      rfl)
+    (by
+      intro bound rule arguments membership notBare argumentsTyped
+        currentAvailable currentImage quoted argumentsSafe argumentsIH
+        currentInner boundEquality imageEquality resultSupported resultObject
+      have argumentsSupported : ConstructorListWithin
+          (· ∈ rhoCIGSLT.continuationRetyping.wrappedLabels) arguments :=
+        resultSupported.2
+      have argumentsObject : isObjectPatternList arguments = true := by
+        simpa [isObjectPattern] using resultObject
+      have selectedByQuote :
+          rule.label = rhoReflectivePresentation.quoteConstructor := by
+        unfold ReflectiveContextSupport.isQuoteConstructor at quoted
+        rw [List.any_eq_true] at quoted
+        obtain ⟨declaration, declarationMembership, quoteLabel⟩ := quoted
+        have declarationEquality : declaration =
+            rhoReflectivePresentation.toReflectivePresentationDecl := by
+          simpa [rhoCalc] using declarationMembership
+        subst declaration
+        have quoteLabel' :
+            rhoReflectivePresentation.quoteConstructor = rule.label := by
+          simpa using quoteLabel
+        exact quoteLabel'.symm
+      obtain ⟨argument, argumentTyped, rfl, argumentSafe⟩ :=
+        argumentsTyped.selectedQuoteArgument
+          LanguageDefAdequacy.rhoCalc_validate sourceMembership membership
+            selectedByQuote
+            argumentsSafe
+      have argumentSupported : ConstructorsWithin
+          (· ∈ rhoCIGSLT.continuationRetyping.wrappedLabels) argument :=
+        argumentsSupported.1
+      have argumentObject : isObjectPattern argument = true := by
+        simpa [isObjectPatternList] using argumentsObject
+      have argumentEquality :
+          Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+              targetDeclaration
+              (rhoCostStaticActionAt thinning assignment currentInner []
+                argument) =
+            Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+              targetDeclaration
+              (rhoCostStaticActionAt thinning assignment currentInner []
+                (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+                  rhoReflectivePresentation argument)) := by
+        simpa [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeList]
+          using argumentsIH currentInner boundEquality imageEquality
+            argumentsSupported argumentsObject
+      have quoteAction (payload : Pattern) :
+          rhoCostStaticActionAt thinning assignment currentInner
+              currentAvailable
+              (.apply rhoReflectivePresentation.quoteConstructor [payload]) =
+            .apply targetDeclaration.quoteConstructor
+              [rhoCostStaticActionAt thinning assignment currentInner []
+                payload] := by
+        rw [targetDeclarationQuote]
+        simp [rhoCostStaticActionAt,
+          ReflectiveContextSupport.substituteAt,
+          CostStaticBinderThinning.thickenAmbientBVars, mapPattern,
+          targetQuoteStatusTag]
+      by_cases dropShape : ∃ name,
+          Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+              rhoReflectivePresentation argument =
+            .apply rhoReflectivePresentation.dropConstructor [name]
+      · obtain ⟨name, canonicalEquality⟩ := dropShape
+        obtain ⟨nameTyped, nameSafe, nameObject⟩ :=
+          EquationSubstitution.rho_reflectiveDropCanonicalSupportStable
+            rhoReflectivePresentation.toReflectivePresentationDecl
+              sourceMembership argumentTyped argumentSafe argumentObject
+                canonicalEquality
+        have canonicalSupported : ConstructorsWithin
+            (· ∈ rhoCIGSLT.continuationRetyping.wrappedLabels)
+            (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+              rhoReflectivePresentation argument) :=
+          (constructorsWithin_canonicalize_iff rhoReflectivePresentation
+            rho_costReflectiveConstructorsAllowed argument).2
+              argumentSupported
+        rw [canonicalEquality] at canonicalSupported
+        have nameSupported : ConstructorsWithin
+            (· ∈ rhoCIGSLT.continuationRetyping.wrappedLabels) name :=
+          canonicalSupported.2.1
+        have nameTypedSafe :
+            ∃ nameTyped' : HasType rhoCalc free
+                (currentInner ++ sourceBound) name
+                (.base rhoReflectivePresentation.nameSort),
+              nameTyped'.ReflectiveSupportSafeAt support []
+                (mapTypeExpr (color.symbols rhoCIGSLT)) := by
+          rw [← boundEquality]
+          exact ⟨nameTyped, by simpa [imageEquality] using nameSafe⟩
+        obtain ⟨nameTyped, nameSafe⟩ := nameTypedSafe
+        have cancellation := rho_costStatic_quoteDrop_action_canonicalize_eq
+          (inner := currentInner) thinning assignment nameTyped rfl nameSafe
+            nameSupported nameObject currentAvailable.length
+        have lifted := EquationSemantics.canonicalize_fill_congr
+          targetDeclaration
+          (.apply targetDeclaration.quoteConstructor [] .hole [])
+          (by simpa [canonicalEquality] using argumentEquality)
+        have lifted' :
+            Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+                targetDeclaration
+                (.apply targetDeclaration.quoteConstructor
+                  [rhoCostStaticActionAt thinning assignment currentInner []
+                    argument]) =
+              Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+                targetDeclaration
+                (.apply targetDeclaration.quoteConstructor
+                  [rhoCostStaticActionAt thinning assignment currentInner []
+                    (.apply rhoReflectivePresentation.dropConstructor
+                      [name])]) := by
+          simpa [Mettapedia.OSLF.MeTTaIL.DerivedContexts.OneHoleContext.fill]
+            using lifted
+        have cancellationAction :
+            Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+                targetDeclaration
+                (rhoCostStaticActionAt thinning assignment currentInner
+                  currentAvailable
+                  (.apply rhoReflectivePresentation.quoteConstructor
+                    [.apply rhoReflectivePresentation.dropConstructor
+                      [name]])) =
+              Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+                targetDeclaration
+                (rhoCostStaticActionAt thinning assignment currentInner
+                  currentAvailable name) := by
+          simpa [rhoCostStaticActionAt, rhoReflectivePresentation,
+            targetDeclaration] using cancellation
+        have cancellation' :
+            Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+                targetDeclaration
+                (.apply targetDeclaration.quoteConstructor
+                  [rhoCostStaticActionAt thinning assignment currentInner []
+                    (.apply rhoReflectivePresentation.dropConstructor
+                      [name])]) =
+              Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+                targetDeclaration
+                (rhoCostStaticActionAt thinning assignment currentInner
+                  currentAvailable name) := by
+          rw [quoteAction] at cancellationAction
+          exact cancellationAction
+        have canonicalQuote :
+            Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+                rhoReflectivePresentation
+                (.apply rhoReflectivePresentation.quoteConstructor
+                  [argument]) = name := by
+          change
+            Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.finishNormalizeReflectiveApply
+                rhoReflectivePresentation
+                rhoReflectivePresentation.quoteConstructor
+                [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+                  rhoReflectivePresentation argument] = name
+          rw [canonicalEquality]
+          simp [Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.finishNormalizeReflectiveApply]
+        rw [selectedByQuote, quoteAction, canonicalQuote]
+        exact lifted'.trans cancellation'
+      · have canonicalQuote :
+            Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+                rhoReflectivePresentation
+                (.apply rhoReflectivePresentation.quoteConstructor
+                  [argument]) =
+              .apply rhoReflectivePresentation.quoteConstructor
+                [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+                  rhoReflectivePresentation argument] := by
+          change
+            Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.finishNormalizeReflectiveApply
+                rhoReflectivePresentation
+                rhoReflectivePresentation.quoteConstructor
+                [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+                  rhoReflectivePresentation argument] =
+              .apply rhoReflectivePresentation.quoteConstructor
+                [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+                  rhoReflectivePresentation argument]
+          exact rho_finishNormalizeReflectiveApply_quote_eq_of_not_drop
+            dropShape
+        have lifted := EquationSemantics.canonicalize_fill_congr
+          targetDeclaration
+          (.apply targetDeclaration.quoteConstructor [] .hole [])
+          argumentEquality
+        rw [selectedByQuote, quoteAction, canonicalQuote, quoteAction]
+        simpa [Mettapedia.OSLF.MeTTaIL.DerivedContexts.OneHoleContext.fill]
+          using lifted)
+    (by
+      intro bound rule arguments membership notBare argumentsTyped
+        currentAvailable currentImage ordinary argumentsSafe argumentsIH
+        currentInner boundEquality imageEquality resultSupported resultObject
+      have argumentsSupported : ConstructorListWithin
+          (· ∈ rhoCIGSLT.continuationRetyping.wrappedLabels) arguments :=
+        resultSupported.2
+      have argumentsObject : isObjectPatternList arguments = true := by
+        simpa [isObjectPattern] using resultObject
+      have listEquality := argumentsIH currentInner boundEquality imageEquality
+        argumentsSupported argumentsObject
+      have selected :
+          rule.label ≠ rhoReflectivePresentation.quoteConstructor := by
+        intro equality
+        have sourceQuote : ReflectiveContextSupport.isQuoteConstructor rhoCalc
+            rhoReflectivePresentation.quoteConstructor = true := by
+          simp only [ReflectiveContextSupport.isQuoteConstructor,
+            List.any_eq_true]
+          exact ⟨rhoReflectivePresentation.toReflectivePresentationDecl,
+            sourceMembership, by simp⟩
+        rw [equality] at ordinary
+        exact Bool.noConfusion (ordinary.symm.trans sourceQuote)
+      have selectedFalse :
+          (rule.label == rhoReflectivePresentation.quoteConstructor) = false :=
+        by simp [selected]
+      have targetOrdinaryStatus :
+          ReflectiveContextSupport.isQuoteConstructor
+              rhoCIGSLT.costWholeLanguage
+              ((color.symbols rhoCIGSLT).constructor rule.label) = false := by
+        rw [reflectiveIsQuoteConstructor_mapCostStatic]
+        exact ordinary
+      have targetOrdinaryStatusTag :
+          ReflectiveContextSupport.isQuoteConstructor
+              rhoCIGSLT.costWholeLanguage
+              (color.constructorTag ++ rule.label) = false := by
+        rw [← CostStaticColor.symbols_constructor]
+        exact targetOrdinaryStatus
+      have applicationAction (patterns : List Pattern) :
+          rhoCostStaticActionAt thinning assignment currentInner
+              currentAvailable (.apply rule.label patterns) =
+            .apply ((color.symbols rhoCIGSLT).constructor rule.label)
+              (patterns.map (rhoCostStaticActionAt thinning assignment
+                currentInner currentAvailable)) := by
+        simp [rhoCostStaticActionAt,
+          ReflectiveContextSupport.substituteAt,
+          CostStaticBinderThinning.thickenAmbientBVars, mapPattern,
+          targetOrdinaryStatusTag, List.map_map, Function.comp_def]
+      have canonicalApplication :
+          Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+              rhoReflectivePresentation (.apply rule.label arguments) =
+            .apply rule.label
+              (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeList
+                rhoReflectivePresentation arguments) := by
+        simp [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize,
+          Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.finishNormalizeReflectiveApply,
+          selectedFalse]
+      rw [canonicalApplication, applicationAction, applicationAction]
+      simp only [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize]
+      rw [listEquality])
+    (by
+      intro bound binder body domain codomain bodyTyped currentAvailable
+        currentImage bodySafe bodyIH currentInner boundEquality imageEquality
+        resultSupported resultObject
+      have bodyObject : isObjectPattern body = true := by
+        simpa [isObjectPattern] using resultObject
+      have bodyBound : domain :: bound =
+          (domain :: currentInner) ++ sourceBound := by
+        simp [boundEquality]
+      have bodyEquality := bodyIH (domain :: currentInner) bodyBound
+        imageEquality resultSupported bodyObject
+      simpa [rhoCostStaticActionAt,
+        ReflectiveContextSupport.substituteAt,
+        Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize,
+        CostStaticBinderThinning.thickenAmbientBVars, mapPattern]
+        using congrArg (Pattern.lambda binder) bodyEquality)
+    (by
+      intro bound arity binders body domain codomain bodyTyped currentAvailable
+        currentImage bodySafe bodyIH currentInner boundEquality imageEquality
+        resultSupported resultObject
+      have bodyObject : isObjectPattern body = true := by
+        simpa [isObjectPattern] using resultObject
+      have bodyBound : List.replicate arity domain ++ bound =
+          (List.replicate arity domain ++ currentInner) ++ sourceBound := by
+        simp [boundEquality, List.append_assoc]
+      have bodyEquality := bodyIH
+        (List.replicate arity domain ++ currentInner) bodyBound imageEquality
+          resultSupported bodyObject
+      simpa [rhoCostStaticActionAt,
+        ReflectiveContextSupport.substituteAt,
+        Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize,
+        CostStaticBinderThinning.thickenAmbientBVars, mapPattern,
+        List.length_append, List.length_replicate,
+        Nat.add_comm, Nat.add_left_comm, Nat.add_assoc]
+        using congrArg (Pattern.multiLambda arity binders) bodyEquality)
+    (by
+      intro bound body replacement domain codomain bodyTyped replacementTyped
+        currentAvailable currentImage bodySafe replacementSafe bodyIH replacementIH
+        currentInner boundEquality imageEquality resultSupported resultObject
+      simp [isObjectPattern] at resultObject)
+    (by
+      intro bound collectionType elements rest elementType elementsTyped
+        currentAvailable currentImage elementsSafe elementsIH currentInner
+        boundEquality imageEquality resultSupported resultObject
+      have objectParts : rest = none ∧ isObjectPatternList elements = true := by
+        simpa [isObjectPattern] using resultObject
+      rcases objectParts with ⟨rfl, elementsObject⟩
+      have listEquality := elementsIH currentInner boundEquality imageEquality
+        resultSupported elementsObject
+      let action := rhoCostStaticActionAt thinning assignment currentInner
+        currentAvailable
+      have actionCollection (selectedCollectionType : CollType)
+          (patterns : List Pattern) :
+          action (.collection selectedCollectionType patterns none) =
+            .collection selectedCollectionType (patterns.map action) none := by
+        simp [action, rhoCostStaticActionAt,
+          ReflectiveContextSupport.substituteAt,
+          CostStaticBinderThinning.thickenAmbientBVars, mapPattern,
+          List.map_map, Function.comp_def]
+      by_cases parallelShape :
+          collectionType = rhoReflectivePresentation.parallelCollection
+      · subst collectionType
+        have mapParallel : ∀ patterns,
+            action
+                (.collection rhoReflectivePresentation.parallelCollection
+                  patterns none) =
+              .collection targetDeclaration.parallelCollection
+                (patterns.map action) none := by
+          intro patterns
+          simp [action, rhoCostStaticActionAt, targetDeclaration,
+            ReflectiveContextSupport.substituteAt,
+            CostStaticBinderThinning.thickenAmbientBVars, mapPattern,
+            mapReflectivePresentation]
+        have mapUnit :
+            action (.apply rhoReflectivePresentation.parallelUnitConstructor []) =
+              .apply targetDeclaration.parallelUnitConstructor [] := by
+          simp [action, rhoCostStaticActionAt, targetDeclaration,
+            ReflectiveContextSupport.substituteAt,
+            CostStaticBinderThinning.thickenAmbientBVars, mapPattern,
+            mapReflectivePresentation]
+        have childrenEquality :
+            Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+                targetDeclaration
+                (.collection targetDeclaration.parallelCollection
+                  (elements.map action) none) =
+              Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+                targetDeclaration
+                (.collection targetDeclaration.parallelCollection
+                  ((Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeList
+                    rhoReflectivePresentation elements).map action) none) := by
+          simp only [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize,
+            beq_self_eq_true, if_true]
+          rw [listEquality]
+        have normalized :=
+          ReflectiveParallelSubstitution.normalizationMapCanonicalizeEqBetween
+            rhoReflectivePresentation targetDeclaration action mapParallel
+              mapUnit
+              (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeList
+                rhoReflectivePresentation elements)
+        have canonicalCollection :
+            Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+                rhoReflectivePresentation
+                (.collection rhoReflectivePresentation.parallelCollection
+                  elements none) =
+              Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.collapseParallel
+                rhoReflectivePresentation
+                (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.normalizeParallelElements
+                  rhoReflectivePresentation
+                  (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeList
+                    rhoReflectivePresentation elements)) := by
+          simp [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize]
+        change
+          Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+              targetDeclaration
+              (action (.collection
+                rhoReflectivePresentation.parallelCollection elements none)) =
+            Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+              targetDeclaration
+              (action
+                (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+                  rhoReflectivePresentation
+                  (.collection rhoReflectivePresentation.parallelCollection
+                    elements none)))
+        rw [canonicalCollection, mapParallel]
+        exact childrenEquality.trans normalized
+      · have selectedFalse :
+            (collectionType == rhoReflectivePresentation.parallelCollection) =
+              false := by simp [parallelShape]
+        have canonicalCollection :
+            Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+                rhoReflectivePresentation
+                (.collection collectionType elements none) =
+              .collection collectionType
+                (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeList
+                  rhoReflectivePresentation elements) none := by
+          simp [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize,
+            selectedFalse]
+        change
+          Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+              targetDeclaration
+              (action (.collection collectionType elements none)) =
+            Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+              targetDeclaration
+              (action
+                (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+                  rhoReflectivePresentation
+                  (.collection collectionType elements none)))
+        rw [canonicalCollection, actionCollection, actionCollection]
+        simp only [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize]
+        rw [listEquality])
+    (by
+      intro bound rule parameterName collectionType elements rest elementType
+        membership parameterShape elementsTyped currentAvailable currentImage
+        elementsSafe elementsIH currentInner boundEquality imageEquality
+        resultSupported resultObject
+      have objectParts : rest = none ∧ isObjectPatternList elements = true := by
+        simpa [isObjectPattern] using resultObject
+      rcases objectParts with ⟨rfl, elementsObject⟩
+      have listEquality := elementsIH currentInner boundEquality imageEquality
+        resultSupported elementsObject
+      let action := rhoCostStaticActionAt thinning assignment currentInner
+        currentAvailable
+      have actionCollection (selectedCollectionType : CollType)
+          (patterns : List Pattern) :
+          action (.collection selectedCollectionType patterns none) =
+            .collection selectedCollectionType (patterns.map action) none := by
+        simp [action, rhoCostStaticActionAt,
+          ReflectiveContextSupport.substituteAt,
+          CostStaticBinderThinning.thickenAmbientBVars, mapPattern,
+          List.map_map, Function.comp_def]
+      by_cases parallelShape :
+          collectionType = rhoReflectivePresentation.parallelCollection
+      · subst collectionType
+        have mapParallel : ∀ patterns,
+            action
+                (.collection rhoReflectivePresentation.parallelCollection
+                  patterns none) =
+              .collection targetDeclaration.parallelCollection
+                (patterns.map action) none := by
+          intro patterns
+          simp [action, rhoCostStaticActionAt, targetDeclaration,
+            ReflectiveContextSupport.substituteAt,
+            CostStaticBinderThinning.thickenAmbientBVars, mapPattern,
+            mapReflectivePresentation]
+        have mapUnit :
+            action (.apply rhoReflectivePresentation.parallelUnitConstructor []) =
+              .apply targetDeclaration.parallelUnitConstructor [] := by
+          simp [action, rhoCostStaticActionAt, targetDeclaration,
+            ReflectiveContextSupport.substituteAt,
+            CostStaticBinderThinning.thickenAmbientBVars, mapPattern,
+            mapReflectivePresentation]
+        have childrenEquality :
+            Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+                targetDeclaration
+                (.collection targetDeclaration.parallelCollection
+                  (elements.map action) none) =
+              Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+                targetDeclaration
+                (.collection targetDeclaration.parallelCollection
+                  ((Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeList
+                    rhoReflectivePresentation elements).map action) none) := by
+          simp only [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize,
+            beq_self_eq_true, if_true]
+          rw [listEquality]
+        have normalized :=
+          ReflectiveParallelSubstitution.normalizationMapCanonicalizeEqBetween
+            rhoReflectivePresentation targetDeclaration action mapParallel
+              mapUnit
+              (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeList
+                rhoReflectivePresentation elements)
+        have canonicalCollection :
+            Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+                rhoReflectivePresentation
+                (.collection rhoReflectivePresentation.parallelCollection
+                  elements none) =
+              Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.collapseParallel
+                rhoReflectivePresentation
+                (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.normalizeParallelElements
+                  rhoReflectivePresentation
+                  (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeList
+                    rhoReflectivePresentation elements)) := by
+          simp [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize]
+        change
+          Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+              targetDeclaration
+              (action (.collection
+                rhoReflectivePresentation.parallelCollection elements none)) =
+            Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+              targetDeclaration
+              (action
+                (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+                  rhoReflectivePresentation
+                  (.collection rhoReflectivePresentation.parallelCollection
+                    elements none)))
+        rw [canonicalCollection, mapParallel]
+        exact childrenEquality.trans normalized
+      · have selectedFalse :
+            (collectionType == rhoReflectivePresentation.parallelCollection) =
+              false := by simp [parallelShape]
+        have canonicalCollection :
+            Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+                rhoReflectivePresentation
+                (.collection collectionType elements none) =
+              .collection collectionType
+                (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeList
+                  rhoReflectivePresentation elements) none := by
+          simp [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize,
+            selectedFalse]
+        change
+          Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+              targetDeclaration
+              (action (.collection collectionType elements none)) =
+            Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+              targetDeclaration
+              (action
+                (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+                  rhoReflectivePresentation
+                  (.collection collectionType elements none)))
+        rw [canonicalCollection, actionCollection, actionCollection]
+        simp only [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize]
+        rw [listEquality])
+    (by
+      intro bound currentAvailable currentImage currentInner boundEquality
+        imageEquality argumentsSupported argumentsObject
+      rfl)
+    (by
+      intro bound argument arguments parameter parameters expected
+        representation parameterType argumentTyped argumentsTyped
+        currentAvailable currentImage argumentSafe argumentsSafe argumentIH
+        argumentsIH currentInner boundEquality imageEquality argumentsSupported
+        argumentsObject
+      have objectParts : isObjectPattern argument = true ∧
+          isObjectPatternList arguments = true := by
+        simpa [isObjectPatternList] using argumentsObject
+      simp only [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeList,
+        List.map_cons]
+      rw [argumentIH currentInner boundEquality imageEquality
+          argumentsSupported.1 objectParts.1,
+        argumentsIH currentInner boundEquality imageEquality
+          argumentsSupported.2 objectParts.2])
+    (by
+      intro bound elementType currentAvailable currentImage currentInner
+        boundEquality imageEquality elementsSupported elementsObject
+      rfl)
+    (by
+      intro bound element elements elementType elementTyped elementsTyped
+        currentAvailable currentImage elementSafe elementsSafe elementIH
+        elementsIH currentInner boundEquality imageEquality elementsSupported
+        elementsObject
+      have objectParts : isObjectPattern element = true ∧
+          isObjectPatternList elements = true := by
+        simpa [isObjectPatternList] using elementsObject
+      simp only [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeList,
+        List.map_cons]
+      rw [elementIH currentInner boundEquality imageEquality
+          elementsSupported.1 objectParts.1,
+        elementsIH currentInner boundEquality imageEquality
+          elementsSupported.2 objectParts.2])
+    safe inner rfl rfl supported object
+
 /-- Canonicalizing one constructor-certified rho skeleton before its
 same-colour Cost action is observationally neutral in the generated authored
 equation relation.  The induction is source typed: this retains the exact
 binder slice that the mixed-colour raw target language cannot reconstruct. -/
-private theorem rhoCostStaticActionAt_canonicalize_equationEquiv
+theorem rhoCostStaticActionAt_canonicalize_equationEquiv
     {color : CostStaticColor}
     {free assignmentFree targetFree : FreeTypeContext}
     {support assignmentSupport : ContextSupport.Support}
@@ -1367,6 +2129,88 @@ theorem rho_costSupportedEquationAmbientRenamingStable :
     reflectiveEquationAmbientRenamingStable_of_validate_eq_nil
       rhoCIGSLT.costWholeLanguage rhoCIGSLT.costWholeLanguage_validate⟩
 
+/-- Every generated rho equation generator remains one generated equation
+generator after an arbitrary ambient binder embedding.  Ordinary generated
+QuoteDrop instances are first identified with their matching authored
+reflective declaration, so both generator cases share the same reflective
+factor theorem. -/
+theorem rho_costEquationContextStepAmbientRenamingStable
+    (rename : Nat → Nat) (depth : Nat) {left right : Pattern}
+    (step : EquationSemantics.EquationContextStep defaultBasePremises
+      rhoCIGSLT.costWholeLanguage left right) :
+    EquationSemantics.EquationContextStep defaultBasePremises
+      rhoCIGSLT.costWholeLanguage
+      (ContextSubstitution.renameAmbientBVarsAt rename depth left)
+      (ContextSubstitution.renameAmbientBVarsAt rename depth right) := by
+  cases step with
+  | inContext context instanceWitness =>
+      obtain ⟨fuel, bounded⟩ := instanceWitness
+      obtain ⟨declaration, membership, representatives⟩ :=
+        rho_costEquationInstanceAt_canonicalize_eq bounded
+      have transported :=
+        reflectiveEquationContextStep_renameAmbientBVarsAt_of_validate_eq_nil
+          rhoCIGSLT.costWholeLanguage rhoCIGSLT.costWholeLanguage_validate
+          rename depth context membership representatives
+      exact transported
+  | reflectiveInContext context membership representatives =>
+      exact
+        reflectiveEquationContextStep_renameAmbientBVarsAt_of_validate_eq_nil
+          rhoCIGSLT.costWholeLanguage rhoCIGSLT.costWholeLanguage_validate
+          rename depth context membership representatives
+
+/-- Root weakening is the affine specialization of generated-rho ambient
+renaming, and therefore preserves one generator rather than merely its raw
+equivalence class. -/
+theorem rho_costEquationContextStepRootWeakeningStable :
+    EquationContextStepRootWeakeningStable
+      rhoCIGSLT.costWholeLanguage := by
+  intro left right step shift
+  simpa only [ContextSubstitution.renameAmbientBVarsAt_add_eq_liftBVars] using
+    rho_costEquationContextStepAmbientRenamingStable
+      (fun index => index + shift) 0 step
+
+/-- Typed generated-rho equation paths remain in their exact open fibre when
+an arbitrary block of binders is inserted at the root. -/
+theorem rho_costOpenPatternEquationWeakeningStable :
+    OpenPatternEquationWeakeningStable rhoCIGSLT.costWholeLanguage :=
+  rho_costEquationContextStepRootWeakeningStable.toOpenPattern
+
+/-- Mapping one certified source generator into a selected Cost colour and
+reinserting an arbitrary ambient binder thinning remains one edge of the
+exact split typed target fibre.  Boundary substitution is deliberately not
+performed here; its independent typed transport is the remaining action law. -/
+theorem rho_costStaticMappedThickenedGeneratorFiberAction
+    {color : CostStaticColor}
+    {free : FreeTypeContext} {support : ContextSupport.Support}
+    {sourceBound targetBound : List TypeExpr}
+    {sort : LangSort rhoCIGSLT.theory.presentation.presentation.language}
+    (thinning : CostStaticBinderThinning rhoCIGSLT color sourceBound
+      targetBound)
+    {left right : CostStaticSourceTerm rhoCIGSLT color free support sourceBound
+      targetBound sort}
+    (generator : CostStaticSourceTerm.generator left right) :
+    (AvailableOpenPattern.equationSetoid rhoCIGSLT.costWholeLanguage
+      (free.map (color.symbols rhoCIGSLT)) targetBound []
+        (.base (color.mapLangSort rhoCIGSLT sort).1)).r
+      (left.mappedThickenedAvailable thinning)
+      (right.mappedThickenedAvailable thinning) := by
+  have mapped : EquationSemantics.EquationContextStep defaultBasePremises
+      rhoCIGSLT.costWholeLanguage
+      (mapPattern (color.symbols rhoCIGSLT) left.term.1)
+      (mapPattern (color.symbols rhoCIGSLT) right.term.1) := by
+    apply equationContextStep_mapCostStatic rhoCIGSLT color
+    exact generator
+  have thickened := rho_costEquationContextStepAmbientRenamingStable
+    thinning.toTargetIndex 0 mapped
+  apply Relation.EqvGen.rel _ _
+  change EquationSemantics.EquationContextStep defaultBasePremises
+    rhoCIGSLT.costWholeLanguage
+      (left.mappedThickenedAvailable thinning).pattern
+      (right.mappedThickenedAvailable thinning).pattern
+  simpa only [CostStaticSourceTerm.mappedThickenedAvailable_pattern,
+    CostStaticBinderThinning.thickenAmbientBVars_eq_renameAmbientBVarsAt]
+    using thickened
+
 /-- Every source-authored rho equation generator acts soundly after mapping
 into one selected Cost colour, reinserting ambient binders, and restoring an
 arbitrary supported finite boundary assignment.  The proof factors through
@@ -1405,6 +2249,65 @@ theorem rho_costStaticMappedGeneratorAction :
   simpa [CostStaticSourceTerm.act, rhoCostStaticActionAt,
     ReflectiveContextSupport.substitute] using combined
 
+/-- Every source-authored rho generator acts by one selected generated
+reflective edge after mapping, ambient thinning, and supported boundary
+substitution.  Because the edge is built directly between the two certified
+endpoints, every intermediate representative remains in the exact target
+typing fibre. -/
+theorem rho_costStaticMappedGeneratorFiberAction :
+    CostStaticMappedGeneratorFiberAction rhoCIGSLT := by
+  intro color free assignmentFree targetFree support assignmentSupport
+    sourceBound targetBound sort thinning assignment freeContext
+      reflectiveSupport left right generator
+  have leftAbsorption := rhoCostStaticActionAt_canonicalize_eq
+    (inner := []) (available := targetBound) thinning assignment freeContext
+      reflectiveSupport left.term.2.1 left.safe
+        left.supported.constructorsWithin left.term.2.2.2.1
+  have rightAbsorption := rhoCostStaticActionAt_canonicalize_eq
+    (inner := []) (available := targetBound) thinning assignment freeContext
+      reflectiveSupport right.term.2.1 right.safe
+        right.supported.constructorsWithin right.term.2.2.2.1
+  have sourceGenerator :
+      EquationSemantics.EquationContextStep defaultBasePremises rhoCalc
+        left.term.1 right.term.1 := by
+    simpa [CostStaticSourceTerm.generator, openEquationGenerator, rhoCIGSLT,
+      rhoIGSLT, rhoInteractivePresentation, rhoValidatedLanguageDef] using
+        generator
+  have sourceCanonicalEquality :
+      Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+          rhoReflectivePresentation left.term.1 =
+        Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+          rhoReflectivePresentation right.term.1 := by
+    simpa only [CanonicalMatch.derivedCanonicalize_eq] using
+      LanguageDefSemanticAgreement.rhoEquationContextStep_canonicalize_eq
+        sourceGenerator
+  rw [sourceCanonicalEquality] at leftAbsorption
+  have representatives := leftAbsorption.trans rightAbsorption.symm
+  let declaration := costStaticReflectivePresentationDecl rhoCIGSLT color
+    rhoReflectivePresentation.toReflectivePresentationDecl
+  have declarationMembership : declaration ∈
+      rhoCIGSLT.costWholeLanguage.reflectivePresentations := by
+    simpa [declaration] using
+      costStaticReflectivePresentationDecl_mem rhoCIGSLT color
+        rhoReflectivePresentation.toReflectivePresentationDecl
+        (by simp [rhoCIGSLT, rhoIGSLT, rhoInteractivePresentation,
+          rhoValidatedLanguageDef, rhoCalc])
+  have targetGenerator : EquationSemantics.EquationContextStep
+      defaultBasePremises rhoCIGSLT.costWholeLanguage
+      (left.act thinning assignment) (right.act thinning assignment) := by
+    apply EquationSemantics.EquationContextStep.reflectiveInContext .hole
+      declarationMembership
+    simpa [declaration, CostStaticSourceTerm.act, rhoCostStaticActionAt,
+      ReflectiveContextSupport.substitute] using representatives
+  have availableGenerator :
+      WellSorted.AvailableOpenPattern.equationGenerator
+        (left.actAvailable thinning assignment freeContext reflectiveSupport)
+        (right.actAvailable thinning assignment freeContext
+          reflectiveSupport) := by
+    unfold WellSorted.AvailableOpenPattern.equationGenerator
+    simpa only [CostStaticSourceTerm.actAvailable_pattern] using targetGenerator
+  exact Relation.EqvGen.rel _ _ availableGenerator
+
 /-- Rho's canonical path is a single authored reflective edge in every
 constructor- and support-certified static source fibre.  Both endpoints are
 the proof-relevant terms already carried by the region node; the edge adds no
@@ -1432,6 +2335,15 @@ theorem rho_costStaticCanonicalPathSafe :
     exact
       Mettapedia.Languages.ProcessCalculi.RhoCalculus.Canonical.canonicalize_idempotent
         node.skeleton.1
+
+/-- The exact typed unary normalization laws for the rho Cost construction.
+Each field is discharged against the selected generated declaration and the
+single generated `LanguageDef`; no mixed-colour stability assumption is used. -/
+theorem rho_costTypedUnaryNormalizationLaws :
+    CostTypedUnaryNormalizationLaws rhoCIGSLT where
+  mappedGeneratorFiberAction := rho_costStaticMappedGeneratorFiberAction
+  weakeningStable := rho_costOpenPatternEquationWeakeningStable
+  canonicalPathSafe := rho_costStaticCanonicalPathSafe
 
 /-- Pure rho has at most one declaration-derived collection candidate in
 every exact expected fiber.  Its only bare collection declaration is parallel

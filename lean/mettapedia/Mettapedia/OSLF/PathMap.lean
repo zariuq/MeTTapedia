@@ -9,6 +9,8 @@ import Mettapedia.OSLF.PathMap.SolomonoffBridge
 import Mettapedia.OSLF.PathMap.Measure
 import Mettapedia.OSLF.PathMap.WorldModelBridge
 import Mettapedia.OSLF.PathMap.VarIdBridge
+import Mettapedia.OSLF.PathMap.CountedBatchRefinement
+import Mettapedia.OSLF.PathMap.PullConsumerRefinement
 import Mettapedia.OSLF.PathMap.Trie.CoinductiveTrie
 import Mettapedia.OSLF.PathMap.Trie.FiniteTrie
 import Mettapedia.OSLF.PathMap.Trie.TrieRefinement

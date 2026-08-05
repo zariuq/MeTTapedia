@@ -19,7 +19,7 @@ no environment filtering needed.
 ## References
 
 - Aydemir et al., "Engineering Formal Metatheory" (POPL 2008)
-- `/home/zar/claude/hyperon/mettail-rust/macros/src/gen/term_ops/subst.rs`
+- `mettail-rust/macros/src/gen/term_ops/subst.rs`
 -/
 
 namespace Mettapedia.OSLF.MeTTaIL.Substitution
@@ -102,6 +102,57 @@ termination_by body => sizeOf body
 `Pattern.subst body replacement`. -/
 def instantiateBVar (replacement body : Pattern) : Pattern :=
   instantiateBVarAt 0 replacement body
+
+/-! ## Unused-binder elimination
+
+Eta contraction removes a binder only when its bound variable is absent.
+Unlike substitution, this operation has no replacement term: it fails at the
+removed index and decrements every index outside that binder. -/
+
+/-- Remove the bound-variable level at `cutoff`.  Failure means that the
+removed variable occurs.  Inner binders advance the cutoff, while outer
+indices are decremented exactly once. -/
+def dropBVarAt? (cutoff : Nat) : Pattern → Option Pattern
+  | .bvar index =>
+      if index < cutoff then
+        some (.bvar index)
+      else if index = cutoff then
+        none
+      else
+        some (.bvar (index - 1))
+  | .fvar name => some (.fvar name)
+  | .apply constructor args => do
+      pure (.apply constructor (← args.mapM (dropBVarAt? cutoff)))
+  | .lambda name body => do
+      pure (.lambda name (← dropBVarAt? (cutoff + 1) body))
+  | .multiLambda arity names body => do
+      pure (.multiLambda arity names
+        (← dropBVarAt? (cutoff + arity) body))
+  | .subst body replacement => do
+      pure (.subst (← dropBVarAt? (cutoff + 1) body)
+        (← dropBVarAt? cutoff replacement))
+  | .collection collectionType elems rest => do
+      pure (.collection collectionType
+        (← elems.mapM (dropBVarAt? cutoff)) rest)
+termination_by pattern => sizeOf pattern
+
+/-- Eliminate the innermost unused binder. -/
+def dropBVar? (body : Pattern) : Option Pattern :=
+  dropBVarAt? 0 body
+
+section DropBVarFixtures
+
+private def fData : Pattern := .apply "F" []
+
+#guard dropBVar? (.bvar 0) = none
+#guard dropBVar? (.bvar 1) = some (.bvar 0)
+#guard dropBVar? (.apply "App" [.bvar 1, fData]) =
+  some (.apply "App" [.bvar 0, fData])
+#guard dropBVar? (.lambda none (.bvar 0)) =
+  some (.lambda none (.bvar 0))
+#guard dropBVar? (.lambda none (.bvar 1)) = none
+
+end DropBVarFixtures
 
 section InstantiateBVarFixtures
 

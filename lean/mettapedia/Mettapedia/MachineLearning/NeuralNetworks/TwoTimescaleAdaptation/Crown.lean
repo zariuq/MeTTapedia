@@ -173,8 +173,8 @@ theorem twoTimescaleAdaptation_crown : TwoTimescaleAdaptationCertificate where
   t2Deadline := admitted_and_lost_at_or_after_deadline
   t3Cadence := derivedCadenceObjective_unique_minimum_at_deadline
   t3QuadraticBoundary := ⟨quadraticCadenceModel_is_declaredApproximation,
-    quadraticCadence_refuted_as_derived_fixture.1,
-    quadraticCadence_refuted_as_derived_fixture.2.2.2⟩
+    quadraticCadence_refuted_as_derived.1,
+    quadraticCadence_refuted_as_derived.2.2.2⟩
   t4NoDoubleCount := naiveConsolidateThenContinue_exact_excess
   t4Reset := discountedReset_restores_calibration
   t5Order := fun step first second hstep =>
@@ -186,7 +186,7 @@ theorem twoTimescaleAdaptation_crown : TwoTimescaleAdaptationCertificate where
       fastAxisSlowFullModel capacity load task required hstationary
   t7CapabilityBoundary :=
     consolidationPressure_not_enough_without_weightReachability
-  t7Necessity := secondAxis_feasibleConsolidationNecessary_fixture
+  t7Necessity := secondAxis_feasibleConsolidationNecessary
 
 /-! ## Hidden-assumption discharge crown -/
 
@@ -244,12 +244,12 @@ theorem twoTimescaleAssumptionDischarge_crown :
   linearAttentionAdditive := linearAttentionContextEffect_append
   rankReachability := rankBudgetReachable_iff_rank_le
   rankNegative := rankOneAdapter_identityContext_no_faithfulConsolidation
-  softmaxCounterexample := scalarSoftmaxAttention_not_additive_fixture
+  softmaxCounterexample := scalarSoftmaxAttention_not_additive
   softmaxErrorBound := abs_normalizedContextMerge_sub_add_le
   countsPrimal := accumulatedCountRegister_append
   beliefExact := beliefRegister_fastEffect_add_exact
   countedCadence := countedCadenceAverageCost_eq_derived
-  quadraticRefuted := quadraticCadence_refuted_as_derived_fixture
+  quadraticRefuted := quadraticCadence_refuted_as_derived
 
 #print axioms twoTimescaleContributionCounts_exact
 #print axioms twoTimescaleAdaptation_crown

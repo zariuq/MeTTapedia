@@ -1282,7 +1282,7 @@ theorem pcConditionalPosteriorMean_depthTwo_eq_gaussianFusion
     hprecision₀ hprecision₁]
   exact pcDepth2MAP_eq_gaussianFusion_unitObservation x y gain₀ precision₀ precision₁
 
-theorem pcConditionalPosteriorMean_depthTwo_positive_fixture :
+theorem pcConditionalPosteriorMean_depthTwo_positive :
     pcConditionalPosteriorMean
         (pcDepthTwoLinks 1 1 1 1 (by norm_num) (by norm_num)) 1 2 0 =
       3 / 2 := by
@@ -1291,10 +1291,10 @@ theorem pcConditionalPosteriorMean_depthTwo_positive_fixture :
 
 /-- Negative fixture: conditioning blends finite-precision evidence rather
 than replacing the latent state by the observation. -/
-theorem pcConditionalPosteriorMean_depthTwo_ne_observation_fixture :
+theorem pcConditionalPosteriorMean_depthTwo_ne_observation :
     pcConditionalPosteriorMean
         (pcDepthTwoLinks 1 1 1 1 (by norm_num) (by norm_num)) 1 2 0 ≠ 2 := by
-  rw [pcConditionalPosteriorMean_depthTwo_positive_fixture]
+  rw [pcConditionalPosteriorMean_depthTwo_positive]
   norm_num
 
 /-- Depth-2 scaffold: the single local normal equation is equivalent to MAP. -/

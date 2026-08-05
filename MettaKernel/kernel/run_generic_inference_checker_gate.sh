@@ -7,7 +7,7 @@ CETTA="${CETTA:-$AIHUB/hyperon/CeTTa/cetta}"
 SOURCE="$ROOT/generic_inference_checker_v0.metta"
 LOGDIR="$ROOT/parity_logs"
 LOG="$LOGDIR/generic_inference_checker_v0.log"
-EXPECTED_ASSERTIONS=34
+EXPECTED_ASSERTIONS=43
 
 mkdir -p "$LOGDIR"
 
@@ -27,9 +27,9 @@ if grep -q 'Error\|❌' "$LOG"; then
   exit 1
 fi
 
-if [[ "$(grep -Fxc '[(GICSummary 34 34 0)]' "$LOG")" -ne 1 ]]; then
+if [[ "$(grep -Fxc '[(GICSummary 43 43 0)]' "$LOG")" -ne 1 ]]; then
   echo "GIC GATE: FAIL (exact summary absent or duplicated; log: $LOG)"
   exit 1
 fi
 
-echo "GIC GATE: PASS (34/34 assertions; 0 failures)"
+echo "GIC GATE: PASS (43/43 assertions; 0 failures)"

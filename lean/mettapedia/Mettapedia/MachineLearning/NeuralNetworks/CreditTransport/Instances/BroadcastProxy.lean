@@ -463,7 +463,7 @@ theorem syntheticGradient_strict_descent_of_smooth_upper
     next < current := by
   linarith
 
-theorem syntheticGradient_bounded_error_positive_fixture :
+theorem syntheticGradient_bounded_error_positive :
     let trueGradient : CreditVec2 := ⟨1, 1⟩
     let proxy : CreditVec2 := ⟨1, 1 / 2⟩
     (proxy.sub trueGradient).normSq < trueGradient.normSq ∧

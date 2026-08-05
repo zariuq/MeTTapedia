@@ -4,6 +4,9 @@ import Mettapedia.MachineLearning.NeuralNetworks.WorkspaceDecoder.RoutedCaromNon
 import Mettapedia.MachineLearning.NeuralNetworks.WorkspaceDecoder.RoutedCaromPathCompleteStability
 import Mettapedia.MachineLearning.NeuralNetworks.WorkspaceDecoder.RoutedCaromContinuousChannel
 import Mettapedia.MachineLearning.NeuralNetworks.WorkspaceDecoder.RoutedCaromAutonomousSemiflow
+import Mettapedia.MachineLearning.NeuralNetworks.WorkspaceDecoder.RoutedCaromGLVLocalDirectionality
+import Mettapedia.MachineLearning.NeuralNetworks.WorkspaceDecoder.RoutedCaromGLVSaddleProduct
+import Mettapedia.MachineLearning.NeuralNetworks.WorkspaceDecoder.RoutedCaromGLVTransitionLearning
 import Mettapedia.MachineLearning.NeuralNetworks.WorkspaceDecoder.RoutedCaromCommutingNilpotentStability
 import Mettapedia.MachineLearning.NeuralNetworks.WorkspaceDecoder.RoutedCaromJointNilpotentStability
 import Mettapedia.MachineLearning.NeuralNetworks.WorkspaceDecoder.RoutedCaromScalarShiftStability
@@ -34,6 +37,7 @@ inductive ProvenanceRung
   | affineCommutation
   | nonlinearCommutation
   | switchedStability
+  | itinerantGLV
   | safetyInheritance
   deriving DecidableEq, Repr
 
@@ -182,8 +186,41 @@ def contributions : ProvenanceRung → List Contribution
           "source-derived phase graphs and trained-router certificate extraction",
           "RoutedCaromPathCompleteStability"⟩
       , ⟨.scopeBoundary,
-          "heteroclinic generalized Lotka--Volterra and trained-router realization",
+          "global heteroclinic attraction and trained-router realization",
           "RoutedCaromAutonomousSemiflow"⟩ ]
+  | .itinerantGLV =>
+      [ ⟨.directLift, "one state population per vertex and one transition population per edge",
+          "RoutedCaromTwoPopulationCompiler"⟩
+      , ⟨.newContent,
+          "exact finite GLV equilibrium, invader restriction, and derivative",
+          "RoutedCaromGLVLocalDirectionality"⟩
+      , ⟨.newContent,
+          "compiled graph edge iff positive local GLV invasion direction",
+          "RoutedCaromGLVLocalDirectionality"⟩
+      , ⟨.newContent,
+          "saddle-value ratio and exact critical predation boundary",
+          "RoutedCaromGLVSaddleProduct"⟩
+      , ⟨.newContent,
+          "cyclic log-passage return slope equals the product of local saddle values",
+          "RoutedCaromGLVSaddleProduct"⟩
+      , ⟨.newContent,
+          "delayed successor-predecessor competition learning and its exact constant-activity flow",
+          "RoutedCaromGLVTransitionLearning"⟩
+      , ⟨.refutation,
+          "a dissipative cyclic product need not make every local passage dissipative",
+          "RoutedCaromGLVSaddleProduct"⟩
+      , ⟨.refutation,
+          "positive local saddle values do not imply a dissipative cyclic product",
+          "RoutedCaromGLVSaddleProduct"⟩
+      , ⟨.refutation,
+          "eager current-current activity changes self-competition instead of the intended transition",
+          "RoutedCaromGLVTransitionLearning"⟩
+      , ⟨.scopeBoundary,
+          "global heteroclinic existence, attraction, and perturbation robustness",
+          "RoutedCaromGLVSaddleProduct"⟩
+      , ⟨.scopeBoundary,
+          "binding a trained routed carrier to the GLV certificate",
+          "RoutedCaromGLVSaddleProduct"⟩ ]
   | .safetyInheritance =>
       [ ⟨.directLift, "legal-action acceptance soundness and recall",
           "TypedRegisters"⟩
@@ -235,6 +272,13 @@ theorem switchedStability_counts :
       contributionCount .switchedStability .scopeBoundary) = (1, 21, 6, 5) := by
   decide
 
+theorem itinerantGLV_counts :
+    (contributionCount .itinerantGLV .directLift,
+      contributionCount .itinerantGLV .newContent,
+      contributionCount .itinerantGLV .refutation,
+      contributionCount .itinerantGLV .scopeBoundary) = (1, 5, 3, 2) := by
+  decide
+
 theorem safetyInheritance_counts :
     (contributionCount .safetyInheritance .directLift,
       contributionCount .safetyInheritance .newContent,
@@ -281,6 +325,13 @@ realizes a nonconstant two-phase itinerary and observable halt.  This does not
 construct a heteroclinic GLV system or bind a trained routed carrier. -/
 def autonomousContinuousChannelStatus : ClaimStatus := .formallySealed
 
+/-- The finite GLV equilibrium, invasion-rate, local saddle-value, cyclic
+return-exponent, and delayed transition-learning layers are sealed.  Global
+heteroclinic attraction still requires the source's existence,
+leading-direction, and regularity hypotheses, and trained-router certificate
+extraction remains empirical. -/
+def itinerantGLVAnalyticStatus : ClaimStatus := .formallySealed
+
 /-- A common strict quadratic metric is constructively sealed for every
 finite jointly nilpotent family, with commuting individual nilpotence as a
 checkable sufficient condition.  The same construction covers a common
@@ -325,6 +376,7 @@ def commutingRealSchurQuadraticEnergyStatus : ClaimStatus := .formallySealed
 #print axioms affineCommutation_counts
 #print axioms nonlinearCommutation_counts
 #print axioms switchedStability_counts
+#print axioms itinerantGLV_counts
 #print axioms safetyInheritance_counts
 
 end Mettapedia.MachineLearning.NeuralNetworks.WorkspaceDecoder.RoutedCarom

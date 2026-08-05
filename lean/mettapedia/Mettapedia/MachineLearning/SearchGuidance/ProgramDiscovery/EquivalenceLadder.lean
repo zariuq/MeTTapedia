@@ -240,7 +240,7 @@ theorem one_common_target_not_extensional :
       ¬ ExtensionalEquivalent semantics .zeroA .lateOne := by
   exact ⟨trivial, trivial, finite_prefix_equality_not_extensional.2⟩
 
-theorem prefix_pseudometric_zero_fixture :
+theorem prefix_pseudometric_zero :
     prefixDistance semantics 2 .zeroA .lateOne = 0 :=
   (prefixDistance_eq_zero_iff semantics 2 .zeroA .lateOne).2
     finite_prefix_equality_not_extensional.1
@@ -307,7 +307,7 @@ theorem prefixEquivalent_transports_emitsPrefix
 
 /-- Two syntactically distinct Gauthier programs are fully extensionally equal
 by the authenticated commutativity law for the actual scalar table. -/
-theorem distinct_syntax_extensionally_equal_fixture :
+theorem distinct_syntax_extensionally_equal :
     Org.addi Org.X Org.z ≠ Org.addi Org.z Org.X ∧
       Extensional orgE1Signature (Org.addi Org.X Org.z) (Org.addi Org.z Org.X) := by
   constructor

@@ -23,6 +23,7 @@
 \usepackage{amssymb}
 \usepackage{amsthm}
 \usepackage{needspace}
+\usepackage{seqsplit}
 \hypersetup{
   colorlinks=true,
   linkcolor=blue!55!black,
@@ -40,12 +41,28 @@
 
 \newcommand{\code}[1]{\texttt{#1}}
 \newcommand{\sig}{\ensuremath{\sigma}}
-\newcommand{\formalcommit}{84ec10fdac3c576b725133a70b6e41f45d1874f4}
+\newcommand{\leanname}[1]{{\scriptsize\ttfamily
+  \def\_{\textunderscore\allowbreak}#1}}
+\newcommand{\digestdisplay}[1]{{\scriptsize\ttfamily
+  \expandafter\seqsplit\expandafter{#1}}}
+\newcommand{\formalcommit}{f3a31db36bb2f944312ee31c1d86c2758109e83a}
 \newcommand{\formalblob}{https://github.com/zariuq/MeTTapedia/blob/\formalcommit/lean/mettapedia/Mettapedia}
 \newcommand{\leansource}[3]{%
   \href{\formalblob/#1\#L#2}{\nolinkurl{#3}}}
 \newtheorem{obligation}{Obligation}
 \newtheorem{property}{Property}
+\newif\ifoeisterminalfacts
+\IfFileExists{generated/oeis_gen11_13_terminal_facts_v1.tex}{%
+  \oeisterminalfactstrue
+  \input{generated/oeis_gen11_13_terminal_facts_v1.tex}%
+}{\oeisterminalfactsfalse
+  \typeout{WARNING: generated/oeis_gen11_13_terminal_facts_v1.tex absent - terminal results elided from this build}}
+\newif\ifoeisadversarialfacts
+\IfFileExists{generated/oeis_adversarial_adjudication_facts_v1.tex}{%
+  \oeisadversarialfactstrue
+  \input{generated/oeis_adversarial_adjudication_facts_v1.tex}%
+}{\oeisadversarialfactsfalse
+  \typeout{WARNING: generated/oeis_adversarial_adjudication_facts_v1.tex absent - adjudication results elided from this build}}
 
 \title{OEIS Program Synthesis, Verified Semantics, and Graded Similarity:\\
        A Unified Account}
@@ -74,7 +91,23 @@ from kernel proof, and show how verified properties could safely guide search an
 generate proof obligations. Finally, we give full-domain Lean correctness proofs for
 thirty-three frozen discoveries from our campaign and four previously reported programs:
 the Hofstadter--Conway sequence and its centered transform, the Kolakoski sequence, and a
-cyclotomic-polynomial sequence.
+cyclotomic-polynomial sequence. A sealed two-world continuation factorial over four
+state carriers and five update rules adds a complementary empirical result: $1{,}617$
+new A-numbers in union, with prospective predictive coding contributing the largest
+rule union ($968$) and exclusive marginal ($299$), but not winning every carrier--seed
+cell and remaining substantially more expensive than backpropagation.
+\ifoeisterminalfacts
+A subsequent mis-specified branch (footnoted in Section~\ref{sec:roadmap}) added
+\oeisTerminalCumulativeUnion{} further verified A-numbers to the pool; its
+update-rule comparisons are recorded but carry no evidential weight on the
+from-scratch question.
+\fi
+\ifoeisadversarialfacts
+A post-seal candidate-blind adjudication refuted
+\oeisAdversarialRefutedEdges{} of \oeisAdversarialCandidateEdges{} frozen candidate
+edges by independent executable replay; every refutation is an unbounded continuation
+of a finite entry, none a value disagreement inside the published range.
+\fi
 \end{abstract}
 
 \paragraph{Open artifacts.}
@@ -558,6 +591,77 @@ two runs, not population claims. Roughly three quarters of every arm's search bu
 spent re-proposing programs it had already generated, which bounds how much any
 architectural conclusion can matter before search-side deduplication is addressed.
 
+\subsection{Two more generations: carrier by credit rule}
+\label{sec:credit-factorial}
+
+The next registered campaign keeps the four generation-eight parents frozen and trains
+only a shared-form zero-output residual adapter. It crosses the four carriers with five
+update rules---ordinary BP, an independent BP control, prospective PC, deep
+error-coordinate PC and incremental PC---in two worlds. Every rule begins from the same
+parent-specific update-zero state and data ledger. Generation ten continues the exact
+generation-nine adapter and optimizer, and all accepted programs again pass the
+whole-OEIS checker. Thus the experiment measures a cumulative adapter lineage rather
+than replacing the original carrier campaign or the fresh-initialization compounding
+control.
+
+Across the sealed generation-nine/ten surface, the cross-world union contains $1{,}617$
+new A-numbers. The update-rule portfolios are:
+
+\begin{center}
+\begin{tabular}{lrr}
+\toprule
+update rule & distinct new entries & exclusive marginal \\
+\midrule
+prospective PC & 968 & 299 \\
+error-coordinate PC & 893 & 66 \\
+ordinary BP & 869 & 51 \\
+independent BP & 866 & 77 \\
+incremental PC & 693 & 124 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The same cells grouped by carrier give $738/396$ for the recurrent vector,
+$643/281$ for derived belief, $564/220$ for learned belief and $517/183$ for the typed
+workspace, where each pair is union/exclusive marginal. These are not additive counts:
+their overlaps are precisely why the full union is the primary endpoint.
+
+Prospective PC supplies the largest rule union and exclusive marginal, but the matched
+comparisons expose a carrier--world interaction rather than universal dominance. It
+leads ordinary BP on three carriers and ties one in world two; in world one it leads
+only learned belief, ties derived belief and trails on the other two. BP also remains
+substantially faster per training hour. The robust empirical statement is therefore
+that the rules and carriers explore complementary verified-program regions under
+continued adapter learning.
+
+The terminal result is the checker-audited evidence chain, produced after seven
+single-owner replays isolated a shared-channel overwrite hazard. Its independent
+verifier passes $749/749$ checks and has SHA-256
+{\scriptsize\ttfamily
+3f08e6c3a57ba3e13a0e387737bbb31cfd990221a7b3b331214b4f9cab47bc7f}.
+The numerical verdict it authenticates has SHA-256
+{\scriptsize\ttfamily
+02ca3cb75003f18678c5fcd43d93c07da584a365ffec709510a5c7147f8491a6}.
+The ordinary and audited numerical summaries agree; the isolated chain is authoritative
+because provenance, not numerical coincidence, determines which checker evidence may
+support the claim.
+
+The next allocation decision is now stated as a theorem rather than an informal ranking.
+For target value $v$, arm costs $c_a$, and a selected portfolio $P$, define
+\[
+ U(P)=v\left|\bigcup_{a\in P}A_a\right|-\sum_{a\in P}c_a,
+\]
+where $A_a$ is the arm's checker-accepted set. Adding a fresh arm changes utility by
+exactly $v$ times its marginal coverage minus its cost
+(\leanname{portfolioNetValue\_insert\_eq\_add\_marginalNetValue}).
+Consequently a candidate is preferred to another independent BP seed exactly when its
+marginal net value is larger
+(\leanname{insert\_candidate\_gt\_insert\_opportunity\_iff}).
+The executable positive fixture shows a lower-standalone-yield PC arm winning through
+exclusive targets; the negative fixture shows the same exclusivity losing once its cost
+is too high. This licenses complementary arms without treating complementarity as a
+blank cheque.
+
 \section{From coverage to proof: adjudicating discoveries against their definitions}
 \label{sec:adjudication}
 
@@ -616,7 +720,7 @@ axiom audit; all depend only on the standard logical basis. Each record pins the
 identifier, entry revision, entry digest, offset, token stream and program hash, so a
 reader can reconstruct exactly which published text was translated. The registry cardinality
 is itself checked by
-\leansource{MachineLearning/SearchGuidance/ProgramDiscovery/OEISAdjudicationEvidence.lean}{148-L149}{certifiedProofPacket_count},
+\leansource{MachineLearning/SearchGuidance/ProgramDiscovery/ProofEvidenceNonIndependence.lean}{148-L149}{certifiedProofPacket_count},
 and all 33 individual proofs are in the linked adjudication module above.
 
 The OEIS definitions and metadata quoted below are attributed to the OEIS Foundation
@@ -1009,7 +1113,7 @@ translation carrying its own provenance. Because the proof depends on the transl
 two must not be pooled as independent support---an independent semantic review is a
 genuinely separate source, and only that can move the second link. This dependence boundary
 is formalized by
-\leansource{MachineLearning/SearchGuidance/ProgramDiscovery/OEISAdjudicationEvidence.lean}{112-L119}{translation_proof_have_no_additiveRevisionLicense}.
+\leansource{MachineLearning/SearchGuidance/ProgramDiscovery/ProofEvidenceNonIndependence.lean}{112-L119}{translation_proof_have_no_additiveRevisionLicense}.
 
 \paragraph{The adversarial frontier.}
 The positive cohort does not settle the weakest-evidence part of the catalogue. A
@@ -1017,10 +1121,21 @@ candidate-blind registry now locks thirty-three definitions selected from that f
 with distinct names checked in the kernel
 (\leansource{Sequences/OEIS/Adversarial33Specifications.lean}{18-L28}{registry\_names\_nodup}).
 It deliberately contains no candidate-realization claims: programs remain hidden from
-the specification phase. At this snapshot no neural discovery has yet been
+the specification phase.
+\ifoeisadversarialfacts
+At the registry snapshot no neural discovery had been kernel-refuted; the post-seal
+adjudication of Section~\ref{sec:postseal-adjudication} has since produced
+refutations by independent executable replay, which is a strictly weaker evidence
+grade than a kernel-checked counterexample. The kernel-grade adversarial result must
+still be reported as a three-way outcome---proof, checked counterexample, or
+unresolved proof obligation---and the executable adjudication below neither
+anticipates nor replaces it.
+\else
+At this snapshot no neural discovery has yet been
 kernel-refuted. The real adversarial result must therefore be reported later as a
 three-way outcome---proof, checked counterexample, or unresolved proof obligation---and
 not inferred from the existence of the registry.
+\fi
 
 \paragraph{Refutation is generative.} A failed adjudication is not a discarded result. A
 formalized definition is a certified generator: it produces additional terms beyond the
@@ -1077,6 +1192,163 @@ proofs, including stack-based recurrence and fixed-point programs and a nested c
 sieve~\cite{urban2026slides}. The unifying
 aim is an OEIS synthesis loop whose catalogue coverage, source interpretation, and
 full-domain program claims are explicitly distinguished and independently auditable.
+
+A subsequent branch\footnote{A botched experiment that nonetheless adds data. The
+branch was intended as a from-scratch comparison of update rules; it was
+mis-specified and executed as a continuation from generation-eight weights over the
+generation-ten single-world pool, in one world, under the unchanged registered
+training protocol. Its verified discoveries enter the solution pool with full
+provenance. Its update-rule comparisons are recorded for completeness only: they are
+portfolio observations on a BP-built stack and are not evidence on the from-scratch
+question. The row labels 11--13 below are pool-accounting indices used by the
+recording infrastructure, not scientific generation numbers; the branch is parallel
+to, not a successor of, the generation-nine/ten factorial.} ran three further
+discovery rounds over the cumulative pool: fifteen cells per round (three carriers,
+including the new unified carrier, crossed with five update rules, including a new
+multi-site error-coordinate rule and an independent-BP opportunity control), each
+rule starting from identical generation-eight parent bytes with predictive coding
+active from the branch's first update. Round three was prospectively fixed as its
+terminal resource boundary before results were available; the counts below enter
+this paper only after the round-three checker seal and an independent longitudinal
+recount.
+
+This stopping decision is not evidence that the discovery process saturated.  The
+formal boundary is sharper: every finite observed yield prefix has both an
+eventually-zero continuation and a continuation with positive yield forever, so no
+classifier of that prefix can identify saturation uniformly
+(\leanname{not\_correct\_on\_zeroTail\_and\_oneTail}).
+Continuation is instead a resource decision.  Under an explicit positive cost per
+computation, the expected useful computation of any certified metalevel policy is
+bounded by its value of perfect information divided by that cost
+(\leanname{expectedComputations\_le\_valueOfPerfectInformation\_div}).  Round three
+therefore closes the branch at its declared resource boundary; any later round would
+be a new experiment with a new preregistration, not completion of a scientifically
+privileged number.
+
+\ifoeisterminalfacts
+\subsection{Recorded outcome of the mis-specified branch}
+\label{sec:terminal-result}
+
+The independent recount covers the three branch rounds (pool indices
+\oeisTerminalFirstGeneration--\oeisTerminalLastGeneration),
+\oeisTerminalCellsPerGeneration{} cells per round. Cumulative verified union:
+\oeisTerminalCumulativeUnion{} previously absent A-numbers (BP family
+\oeisTerminalBPCumulativeUnion{}, PC family \oeisTerminalPCCumulativeUnion{}, overlap
+\oeisTerminalCumulativeOverlap{}; Jaccard $378/747 \approx 0.506$; PC training work
+\oeisTerminalPCToBPWorkRatio$\times$ BP).
+
+\begin{center}\small
+\begin{tabular}{@{}rrrrrrr@{}}
+\toprule
+pool idx & known before & new union & train h & new/train h & pipeline h & new/pipeline h \\
+\midrule
+\oeisTerminalGenerationRows
+\bottomrule
+\end{tabular}
+\end{center}
+
+\begin{center}\small
+\begin{tabular}{@{}rrrrrrr@{}}
+\toprule
+pool idx & BP & PC & overlap & BP-only & PC-only & PC/BP work \\
+\midrule
+\oeisTerminalComplementarityRows
+\bottomrule
+\end{tabular}
+\end{center}
+
+The final round's repair frontier of
+\oeisTerminalGenerationThirteenRepairFrontier{} entries resolved as
+\oeisTerminalGenerationThirteenNativeRediscoveries{} native rediscoveries,
+\oeisTerminalGenerationThirteenCheckerOnlyRediscoveries{} checker-identity
+rediscoveries, and \oeisTerminalGenerationThirteenStillAbsent{} still absent. The
+blind cohort (\oeisTerminalBlindSequenceCount{} sequences) accumulated
+\oeisTerminalReviewedRefutations{} reviewed refutation edges during the branch;
+\oeisTerminalPendingRefutationReviews{} reviews remain pending%
+\ifoeisadversarialfacts
+\ (the post-seal adjudication of Section~\ref{sec:postseal-adjudication}, a distinct
+cohort, produced the first refutation edges immediately after the seal)%
+\fi
+. The analysis and its independent recomputation have SHA-256 identifiers
+\digestdisplay{\oeisTerminalAnalysisSHA} and
+\digestdisplay{\oeisTerminalVerificationSHA}.
+\else
+\subsection{Recorded outcome of the mis-specified branch (elided)}
+\emph{This build lacks the generated fact file; the sealed branch results are elided
+rather than silently omitted.}
+\fi
+
+\ifoeisadversarialfacts
+\subsection{Post-seal candidate-blind adjudication}
+\label{sec:postseal-adjudication}
+
+Only after the independently verified branch-terminal seal did we expose
+the synthesized programs for the frozen adversarial cohort (a cohort distinct from the
+thirty-three positively adjudicated sequences of Section~\ref{sec:adjudication}). The
+reveal contains \oeisAdversarialCandidateEdges{} candidate--sequence edges over
+\oeisAdversarialSequenceCount{} sequences. Independent replay against the source prefix
+and the probes fixed before reveal refutes \oeisAdversarialRefutedEdges{} edges;
+\oeisAdversarialSequencesWithRefutation{} sequences have at least one refuted edge, and
+all revealed edges are refuted for \oeisAdversarialSequencesAllEdgesRefuted{} sequences.
+These refutations carry the evidence grade of independent executable recomputation:
+each is a replay of the candidate program against the pinned source prefix and a probe
+frozen before reveal, not a kernel-checked counterexample. The kernel-grade three-way
+adjudication promised at the registry declaration---proof, checked counterexample, or
+unresolved proof obligation---remains pending for this cohort.
+
+\begin{center}\small
+\begin{tabular}{@{}lr@{}}
+\toprule
+outcome & edges \\
+\midrule
+refuted by a frozen probe & \oeisAdversarialRefutedEdges \\
+passes every frozen probe & \oeisAdversarialPassingProbeEdges \\
+no frozen continuation probe & \oeisAdversarialNoProbeEdges \\
+evaluator resource boundary & \oeisAdversarialInconclusiveEdges \\
+\midrule
+total & \oeisAdversarialCandidateEdges \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The refutations share a single shape. In every refuted edge the frozen probe expects
+the published sequence to \emph{end}---the entry is finite, so the correct behaviour
+past its last term is to emit no term---and the program emits an integer instead. Not
+one refutation is a value disagreement inside the published range. The concentration
+is equally sharp at the probe-class level: the cohort carries fifteen sequences with
+frozen generated-value probes, seven with frozen finite-boundary probes, and eleven
+whose probes await definition derivation; all refuted edges come from the seven
+finite-boundary sequences (seven of seven refuted), while none of the fifteen
+value-probed sequences was refuted. The frontier failure mode exposed by this
+adjudication is therefore not wrong arithmetic but unbounded continuation: programs
+that extend finite sequences past their end.
+
+\begin{center}\small
+\begin{longtable}{@{}llll@{}}
+\toprule
+OEIS entry & program hash prefix & outcome & first decisive position \\
+\midrule
+\endhead
+\oeisAdversarialRefutationRows
+\bottomrule
+\end{longtable}
+\end{center}
+
+The remaining outcomes must not be collapsed into ``correct.'' Exactly
+\oeisAdversarialPassingProbeEdges{} edges pass every available frozen probe---each of
+these cleared sixteen frozen continuation values beyond the published prefix---while
+\oeisAdversarialNoProbeEdges{} have no frozen continuation probe and
+\oeisAdversarialInconclusiveEdges{} encounter an evaluator resource boundary. Passing
+finite probes is corroboration rather than a universal proof; absence of a probe is an
+open specification obligation; and resource exhaustion is explicitly not counted as a
+refutation. The adjudication and its independent replay have SHA-256 identifiers
+\digestdisplay{\oeisAdversarialAdjudicationSHA} and
+\digestdisplay{\oeisAdversarialVerificationSHA}.
+\else
+\subsection{Post-seal candidate-blind adjudication (elided)}
+\emph{This build lacks the generated adjudication fact file; the post-seal
+adversarial results are elided rather than silently omitted.}
+\fi
 
 \begin{thebibliography}{9}
 \bibitem{gauthier2023} T.~Gauthier and J.~Urban.

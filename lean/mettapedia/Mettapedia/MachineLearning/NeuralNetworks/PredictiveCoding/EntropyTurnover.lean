@@ -297,7 +297,7 @@ theorem arbitraryDepthLinearEntropyTurnover_general
     decisiveSoftTargetComparator_entropy_lt_target target htarget hne⟩
 
 /-- Positive fixture at depth four with the original `3/4` soft target. -/
-theorem arbitraryDepthLinearEntropyTurnover_depth_four_fixture :
+theorem arbitraryDepthLinearEntropyTurnover_depth_four :
     Real.binEntropy (3 / 4) < arbitraryDepthTurnoverEntropy 4 (3 / 4) 0 ∧
       arbitraryDepthTurnoverEntropy 4 (3 / 4) 4 = Real.binEntropy (3 / 4) ∧
       Real.binEntropy (3 / 4) < arbitraryDepthTurnoverEntropy 4 (3 / 4) 5 := by

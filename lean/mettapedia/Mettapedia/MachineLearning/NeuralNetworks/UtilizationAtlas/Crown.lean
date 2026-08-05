@@ -309,7 +309,7 @@ theorem pcInference_atlas_crown : PCInferenceAtlasLicense where
   unitBandwidthNoStrictLatencyAdvantage :=
     exactUnitBandwidthPC_no_strictDigitalLatencyAdvantage
   dagTopology := multiParentDAG_pcInferenceLicense
-  divergentNegative := expansiveRelaxation_divergent_fixture
+  divergentNegative := expansiveRelaxation_divergent
 
 /-- T5 expanded license, adding coupled correction and the generic routed
 certificates to the fixture-level workspace crown. -/

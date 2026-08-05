@@ -18,6 +18,7 @@ import Mettapedia.MachineLearning.NeuralNetworks.WorkspaceDecoder.BeliefWorldMod
 import Mettapedia.MachineLearning.NeuralNetworks.WorkspaceDecoder.BeliefStateProvenance
 import Mettapedia.MachineLearning.NeuralNetworks.WorkspaceDecoder.SequentialSelectivity
 import Mettapedia.MachineLearning.NeuralNetworks.WorkspaceDecoder.MatrixBelief
+import Mettapedia.MachineLearning.NeuralNetworks.WorkspaceDecoder.GaussianBeliefPropagation
 import Mettapedia.MachineLearning.NeuralNetworks.WorkspaceDecoder.SelectiveBeliefContract
 import Mettapedia.MachineLearning.NeuralNetworks.WorkspaceDecoder.NaturalEvidenceCoordinates
 import Mettapedia.MachineLearning.NeuralNetworks.WorkspaceDecoder.WeightedEvidenceDynamics
@@ -33,9 +34,16 @@ import Mettapedia.MachineLearning.NeuralNetworks.WorkspaceDecoder.CaromProvenanc
 import Mettapedia.MachineLearning.NeuralNetworks.WorkspaceDecoder.RoutedCarom
 import Mettapedia.MachineLearning.NeuralNetworks.WorkspaceDecoder.RoutedCaromCommutation
 import Mettapedia.MachineLearning.NeuralNetworks.WorkspaceDecoder.RoutedCaromNonlinearCommutation
+import Mettapedia.MachineLearning.NeuralNetworks.WorkspaceDecoder.RoutedCaromSymmetricComposition
 import Mettapedia.MachineLearning.NeuralNetworks.WorkspaceDecoder.RoutedCaromStability
 import Mettapedia.MachineLearning.NeuralNetworks.WorkspaceDecoder.RoutedCaromNonlinearStability
+import Mettapedia.MachineLearning.NeuralNetworks.WorkspaceDecoder.RoutedCaromNonlinearJointGrowth
+import Mettapedia.MachineLearning.NeuralNetworks.WorkspaceDecoder.RoutedCaromTwoPopulationCompiler
+import Mettapedia.MachineLearning.NeuralNetworks.WorkspaceDecoder.RoutedCaromGLVLocalDirectionality
+import Mettapedia.MachineLearning.NeuralNetworks.WorkspaceDecoder.RoutedCaromGLVSaddleProduct
+import Mettapedia.MachineLearning.NeuralNetworks.WorkspaceDecoder.RoutedCaromGLVTransitionLearning
 import Mettapedia.MachineLearning.NeuralNetworks.WorkspaceDecoder.RoutedCaromPathCompleteStability
+import Mettapedia.MachineLearning.NeuralNetworks.WorkspaceDecoder.RoutedCaromPathCompleteLift
 import Mettapedia.MachineLearning.NeuralNetworks.WorkspaceDecoder.RoutedCaromContinuousChannel
 import Mettapedia.MachineLearning.NeuralNetworks.WorkspaceDecoder.RoutedCaromAutonomousSemiflow
 import Mettapedia.MachineLearning.NeuralNetworks.WorkspaceDecoder.RoutedCaromCommutingNilpotentStability
@@ -68,6 +76,10 @@ the weighted-evidence selective-decoder contract, its exact count embedding
 and derived coordinate chart, the expressivity and calibration boundaries of
 hardwired fusion, derived forgetting under nonstationarity, linear measurement
 recalibration, and machine-checked transport accounting.
+The Gaussian-information layer additionally exposes exact leave-one-edge
+message cavities, their properness boundary, and scalar factor elimination by
+Schur complement with an independently derived completion-of-squares
+semantics.
 It also exports the exact CAROM recurrent-write reduction, its certified
 linear settling and legal-action inheritance, metric and interference scope
 boundaries, and the separated within-action/across-action recurrence model.
@@ -76,8 +88,22 @@ evidence registers, the exact affine commutation boundary, switched-system
 stability and divergence results, nonlinear near-identity command-order bounds
 under explicit derivative regularity, uniform nonlinear arbitrary-schedule
 stability from one coercive regional Lyapunov certificate with an invariant
-region and observation margin, phase-indexed path-complete regional stability
-with changing centers and a certified finite observation itinerary, and a
+region and observation margin, exact group-valued adjoint reversal and
+time-symmetric method--adjoint and palindromic compositions with explicit
+noncommuting and commuting boundaries,
+finite-word nonlinear growth factors with a submultiplicative composition law,
+arbitrary repeated-block schedule bounds, and explicit one-step and
+switching counterexamples,
+an exact two-population graph compiler with one state cell per vertex and one
+transition cell per edge, together with an injective-address recovery theorem
+and a noninjective collision that creates a spurious transition,
+the local generalized Lotka--Volterra invasion-rate boundary for compiled
+itineraries, including exact expansion, contraction-dominance, transverse
+stability, graph-edge correspondence, and logarithmic linearized exit time,
+phase-indexed path-complete regional stability
+with changing centers and a certified finite observation itinerary, a local
+forward graph lift that preserves finite-word path completeness and transports
+regional certificates without weakening their rate, and a
 continuous phase-flow contract composing entry, transverse attraction,
 positive dwell, observation, exit, activation, and an absorbing halt, with an
 explicit two-phase exponential channel, plus a shared-semiflow realization

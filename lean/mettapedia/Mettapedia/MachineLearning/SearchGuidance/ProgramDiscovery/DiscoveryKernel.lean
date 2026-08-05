@@ -228,7 +228,7 @@ def oneProgramManyTargets : Ledger :=
 
 /-- Positive fixture: two syntactically different accepted programs remain two
 distinct witnesses for one target. -/
-theorem two_programs_one_target_fixture :
+theorem two_programs_one_target :
     witnessPrograms twoProgramsOneTarget .first = {.alpha, .beta} ∧
       (coveredTargets twoProgramsOneTarget).card = 1 ∧
       (distinctEdges twoProgramsOneTarget).card = 2 := by
@@ -242,7 +242,7 @@ theorem two_programs_one_target_fixture :
 
 /-- Negative fixture: repeating one exact witness changes raw multiplicity but
 not distinct-program diversity. -/
-theorem exact_repeat_changes_occurrences_not_diversity_fixture :
+theorem exact_repeat_changes_occurrences_not_diversity :
     occurrenceCount repeatedExactProgram .alpha .first = 2 ∧
       (distinctPrograms repeatedExactProgram).card = 1 ∧
       (distinctEdges repeatedExactProgram).card = 1 := by
@@ -257,7 +257,7 @@ theorem exact_repeat_changes_occurrences_not_diversity_fixture :
 
 /-- One authenticated program may cover more than one target; target evidence
 must therefore not be assumed independent merely because the target IDs differ. -/
-theorem one_program_many_targets_fixture :
+theorem one_program_many_targets :
     (coveredTargets oneProgramManyTargets).card = 2 ∧
       (distinctPrograms oneProgramManyTargets).card = 1 ∧
       (distinctEdges oneProgramManyTargets).card = 2 := by
@@ -266,14 +266,14 @@ theorem one_program_many_targets_fixture :
     CheckedObservation.edge, alphaFirst, alphaSecond]
 
 /-- The target projection can strictly lose witness diversity. -/
-theorem target_projection_strictly_loses_witness_diversity_fixture :
+theorem target_projection_strictly_loses_witness_diversity :
     (coveredTargets twoProgramsOneTarget).card <
       (distinctEdges twoProgramsOneTarget).card := by
   classical
   simp [coveredTargets, distinctEdges, twoProgramsOneTarget,
     CheckedObservation.edge, alphaFirst, betaFirst]
 
-theorem alphaFirst_is_first_in_declared_lineage :
+theorem firstInLineage_of_minimal_index :
     FirstInLineage twoProgramsOneTarget alphaFirst := by
   simp [FirstInLineage, twoProgramsOneTarget, alphaFirst, betaFirst]
 

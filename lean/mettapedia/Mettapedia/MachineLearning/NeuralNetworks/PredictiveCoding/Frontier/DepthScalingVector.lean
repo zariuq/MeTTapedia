@@ -318,7 +318,7 @@ theorem vectorCorrectedActivityForce_eq_covarianceGradient
 /-- Two-dimensional negative fixture for the covariance-index audit.  The
 paper-displayed force uses unit incoming precision on the first coordinate;
 the corrected force uses outgoing precision two. -/
-theorem vectorDisplayedActivity_precisionIndexMismatch_fixture :
+theorem vectorDisplayedActivity_precisionIndexMismatch :
     let incomingPrecision : Matrix (Fin 2) (Fin 2) ℝ := !![1, 0; 0, 1]
     let outgoingPrecision : Matrix (Fin 2) (Fin 2) ℝ := !![2, 0; 0, 1]
     let jacobian : Matrix (Fin 2) (Fin 2) ℝ := 1
@@ -553,7 +553,7 @@ theorem coordinateSquarePrediction_remainder_exact (delta : Fin 2 → ℝ) :
 
 /-- Negative fixture for a purely linear treatment: the nonlinear remainder
 is nonzero at a unit perturbation. -/
-theorem coordinateSquarePrediction_remainder_nonzero_fixture :
+theorem coordinateSquarePrediction_remainder_nonzero :
     nonlinearJacobianRemainder coordinateSquarePrediction
         (0 : Matrix (Fin 2) (Fin 2) ℝ) 0 ![1, 0] ≠ 0 := by
   intro hzero
@@ -598,7 +598,7 @@ theorem coupledCovariance_is_full :
 
 /-- Positive full-covariance fixture: the exact Jacobian increment theorem
 applies to a non-diagonal two-coordinate covariance. -/
-theorem coupledCovariance_jacobianIncrement_fixture
+theorem coupledCovariance_jacobianIncrement
     (jacobian : Matrix (Fin 2) (Fin 2) ℝ)
     (incomingError outgoingError delta : Fin 2 → ℝ) :
     vectorHiddenPairEnergyAfterDisplacements coupledTwoMetric coupledTwoMetric
@@ -694,7 +694,7 @@ theorem cumulativeVectorPredictionDrift_const
 
 /-- Positive vector fixture: a nonzero constant drift accumulates linearly
 with depth while the stored forward-reference error remains zero. -/
-theorem vectorForwardReference_nonzeroDrift_fixture
+theorem vectorForwardReference_nonzeroDrift
     {Index : Type*} [Fintype Index]
     (drift : Index → ℝ) (coordinate : Index) (hdrift : drift coordinate ≠ 0)
     (layer : ℕ) (hlayer : 0 < layer) :
@@ -710,7 +710,7 @@ theorem vectorForwardReference_nonzeroDrift_fixture
 
 /-- Negative vector fixture: without drift, settled and forward-reference
 errors coincide in every coordinate. -/
-theorem vectorForwardReference_zeroDrift_fixture
+theorem vectorForwardReference_zeroDrift
     {Index : Type*} [Fintype Index]
     (initialPrediction finalActivity : ℕ → Index → ℝ) (layer : ℕ) :
     vectorStandardSettledPredictionError initialPrediction finalActivity

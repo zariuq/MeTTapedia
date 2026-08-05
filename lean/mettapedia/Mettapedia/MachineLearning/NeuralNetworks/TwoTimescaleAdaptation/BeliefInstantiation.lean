@@ -36,7 +36,7 @@ theorem accumulatedCountRegister_append (left right : List BinEvNat) :
 
 /-- Positive count fixture: two positive and one negative observation remain
 visible in the primal coordinates. -/
-theorem accumulatedCountRegister_fixture :
+theorem accumulatedCountRegister_example :
     accumulatedCountRegister [⟨1, 0⟩, ⟨1, 0⟩, ⟨0, 1⟩] = ⟨2, 1⟩ := by
   decide
 

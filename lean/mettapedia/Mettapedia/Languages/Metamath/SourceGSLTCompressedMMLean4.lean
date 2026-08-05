@@ -1,5 +1,6 @@
 import Mettapedia.Languages.Metamath.SourceGSLTCompressedTheorem
 import Metamath.Verify
+import Metamath.PrefixTraceCompressed
 
 /-!
 # Compressed action decoding agreement with mm-lean4
@@ -240,6 +241,161 @@ theorem decodeCompressedProgram_mmLean4_agrees
           toMMLean4ProgramResult]
       · simp [finished, toMMLean4DecodeResult,
           toMMLean4ProgramResult]
+
+/-- A concrete implementation token sequence representing an authored source
+program decodes to exactly the mapped source actions, including the final
+zero-accumulator check. -/
+theorem decodeCompressedProgram_eq_ok_of_sliceBytes
+    (tokens : List ByteSlice) (words : List (List UInt8))
+    (actions : List CompressedAction)
+    (bytes : tokens.map sliceBytes = words)
+    (decoded : decodeProgram words = some actions) :
+    decodeCompressedProgram tokens =
+      .ok (actions.map toMMLean4Action) := by
+  rw [decodeCompressedProgram_mmLean4_agrees, bytes, decoded]
+  rfl
+
+/-- Execute the implementation's inner compressed-token transition over an
+ordered token list.  This is the exact `feedProof.go` operation used by the
+parser, before its error-location wrapper. -/
+def runCompressedTokenGo
+    (parser : ParserState) (tokens : List ByteSlice)
+    (initial : ProofState) : Except ProofCheckFail ProofState :=
+  tokens.foldlM
+    (fun current token => ParserState.feedProof.go parser token current)
+    initial
+
+/-- Successful complete-program decoding exposes both the ordered actions and
+the required zero final accumulator. -/
+theorem decodeCompressedTokens_eq_of_program_ok
+    (tokens : List ByteSlice)
+    (actions : List ParserState.CompressedAction)
+    (decoded : decodeCompressedProgram tokens = .ok actions) :
+    decodeCompressedTokens tokens 0 = .ok (actions, 0) := by
+  unfold decodeCompressedProgram at decoded
+  cases tokensDecoded : decodeCompressedTokens tokens 0 with
+  | error error => simp [tokensDecoded] at decoded
+  | ok result =>
+      rcases result with ⟨decodedActions, accumulator⟩
+      by_cases finished : accumulator = 0
+      · subst accumulator
+        simp only [tokensDecoded, ↓reduceIte, Except.ok.injEq] at decoded
+        subst decodedActions
+        rfl
+      · simp [tokensDecoded, finished] at decoded
+
+/-- Decoding and applying an entire token sequence at once is exactly the
+same transition as the implementation's token-by-token compressed phase,
+including the numeric accumulator threaded across token boundaries. -/
+theorem runCompressedTokenGo_eq_of_decoded
+    (parser : ParserState) (tokens : List ByteSlice)
+    (accumulator finalAccumulator : Nat)
+    (initial result : ProofState)
+    (actions : List ParserState.CompressedAction)
+    (decoded :
+      decodeCompressedTokens tokens accumulator =
+        .ok (actions, finalAccumulator))
+    (applied :
+      ParserState.applyCompressedActions parser.db initial actions =
+        .ok result) :
+    runCompressedTokenGo parser tokens
+        { initial with ptp := .compressed accumulator } =
+      .ok { result with ptp := .compressed finalAccumulator } := by
+  induction tokens generalizing accumulator initial actions
+      finalAccumulator result with
+  | nil =>
+      simp [decodeCompressedTokens] at decoded
+      rcases decoded with ⟨rfl, rfl⟩
+      simp [runCompressedTokenGo,
+        ParserState.applyCompressedActions] at applied ⊢
+      cases applied
+      rfl
+  | cons token tokens ih =>
+      simp only [decodeCompressedTokens, bind, Except.bind] at decoded
+      cases headDecoded : ParserState.decodeCompressed token accumulator with
+      | error error => simp [headDecoded] at decoded
+      | ok headResult =>
+          rcases headResult with ⟨headActions, nextAccumulator⟩
+          simp only [headDecoded] at decoded
+          cases tailDecoded :
+              decodeCompressedTokens tokens nextAccumulator with
+          | error error => simp [tailDecoded] at decoded
+          | ok tailResult =>
+              rcases tailResult with ⟨tailActions, tailAccumulator⟩
+              simp only [tailDecoded, pure, Except.pure,
+                Except.ok.injEq, Prod.mk.injEq] at decoded
+              rcases decoded with ⟨rfl, rfl⟩
+              have appendExecution :
+                  ParserState.applyCompressedActions parser.db initial
+                      (headActions ++ tailActions) =
+                    (do
+                      let middle ←
+                        ParserState.applyCompressedActions parser.db initial
+                          headActions
+                      ParserState.applyCompressedActions parser.db middle
+                        tailActions) := by
+                unfold ParserState.applyCompressedActions
+                exact List.foldlM_append
+              rw [appendExecution] at applied
+              cases headApplied :
+                  ParserState.applyCompressedActions parser.db initial
+                    headActions with
+              | error error =>
+                  rw [headApplied] at applied
+                  simp only [bind, Except.bind] at applied
+                  cases applied
+              | ok middle =>
+                  have headExecution :
+                      ParserState.applyCompressedActions parser.db initial
+                          headActions = .ok middle := by
+                    exact headApplied
+                  have tailExecution :
+                      ParserState.applyCompressedActions parser.db middle
+                          tailActions = .ok result := by
+                    rw [headApplied] at applied
+                    simpa only [bind, Except.bind] using applied
+                  have phaseHeadExecution :
+                      ParserState.applyCompressedActions parser.db
+                          { initial with
+                            ptp := .compressed accumulator }
+                          headActions =
+                        .ok { middle with
+                          ptp := .compressed accumulator } :=
+                    Metamath.PrefixTraceCompressed.applyCA_ptp_ok
+                      parser.db initial headActions
+                        (.compressed accumulator) middle headExecution
+                  have firstToken :
+                      ParserState.feedProof.go parser token
+                          { initial with
+                          ptp := .compressed accumulator } =
+                        .ok { middle with
+                          ptp := .compressed nextAccumulator } := by
+                    unfold ParserState.feedProof.go
+                    simp only [headDecoded, bind, Except.bind]
+                    rw [phaseHeadExecution]
+                    rfl
+                  simp only [runCompressedTokenGo, List.foldlM_cons,
+                    bind, Except.bind]
+                  rw [firstToken]
+                  exact ih nextAccumulator tailAccumulator middle result
+                    tailActions tailDecoded tailExecution
+
+/-- Complete-program specialization of token-by-token execution. -/
+theorem runCompressedTokenGo_eq_of_program_ok
+    (parser : ParserState) (tokens : List ByteSlice)
+    (initial result : ProofState)
+    (actions : List ParserState.CompressedAction)
+    (decoded : decodeCompressedProgram tokens = .ok actions)
+    (applied :
+      ParserState.applyCompressedActions parser.db initial actions =
+        .ok result) :
+    runCompressedTokenGo parser tokens
+        { initial with ptp := .compressed 0 } =
+      .ok { result with ptp := .compressed 0 } := by
+  exact runCompressedTokenGo_eq_of_decoded parser tokens 0 0
+    initial result actions
+      (decodeCompressedTokens_eq_of_program_ok tokens actions decoded)
+      applied
 
 /-- Positive cross-implementation witness covering a base-five prefix,
 termination, save, and a later proof index. -/

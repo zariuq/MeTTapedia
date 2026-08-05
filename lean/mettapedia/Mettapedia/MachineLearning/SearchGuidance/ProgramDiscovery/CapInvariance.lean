@@ -346,7 +346,7 @@ theorem selected_witness_count_not_cap_invariant :
     capOneView.CoverageComplete ∧ capTwoView.CoverageComplete ∧
       (programsFor capOneView.selected Fixtures.Target.first).card ≠
         (programsFor capTwoView.selected Fixtures.Target.first).card := by
-  refine ⟨cap_preserves_coverage_not_multiplicity_fixture.1,
+  refine ⟨cap_preserves_coverage_not_multiplicity.1,
     capTwo_coverageComplete, ?_⟩
   decide +kernel
 

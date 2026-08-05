@@ -30,6 +30,13 @@ import Mettapedia.Languages.Metamath.SourceGSLTState
 import Mettapedia.Languages.Metamath.SourceGSLTNormalTheorem
 import Mettapedia.Languages.Metamath.SourceGSLTCompressedTheorem
 import Mettapedia.Languages.Metamath.SourceGSLTCompressedMMLean4
+import Mettapedia.Languages.Metamath.SourceGSLTCompressedExecutionMMLean4
+import Mettapedia.Languages.Metamath.SourceGSLTCompressedParserMMLean4
+import Mettapedia.Languages.Metamath.SourceGSLTRawByteLexical
+import Mettapedia.Languages.Metamath.InferenceSupportedProvableBoundary
+import Mettapedia.Languages.Metamath.InferenceSemanticFiniteSupport
+import Mettapedia.Languages.Metamath.SourceGSLTSpecGrounding
+import Mettapedia.Languages.Metamath.InferenceDummyAllocation
 
 /-!
 # Metamath Bridge Surface
@@ -107,19 +114,39 @@ Positive example:
   declaration separation, floating uniqueness, and DV well-formedness all
   derived from source validation; existential exact-label acceptance by the
   verified `stepNormal` fold is equivalent to that same declarative relation
+- the supported/active-frame semantic boundary is calibrated by a strongly
+  well-formed counterexample: unrestricted declarative `var` is strictly
+  stronger at a fixed frame; adjoining a genuinely fresh optional floating
+  hypothesis preserves frame and DV well-formedness and monotonically
+  transports every existing supported derivation
+- every unrestricted semantic derivation whose conclusion is based in the
+  active frame now constructs a finite, ordered semantic frame extension and
+  an exact supported derivation of the original conclusion; this characterizes
+  finite-extension closure without pretending the generated dummy names were
+  already declared in a fixed source prefix
 - canonical source admission takes exact bytes and an optional target rather
   than a caller-supplied rule table; database requests project the accepted
   reader database, theorem requests retain a target-absent proof-ingress
   boundary, and successful admission exposes exactly the presentation
   generated from that selected database
+- global object-namespace agreement separately retains labels of hypotheses
+  that have left the active frame; source theorem insertion therefore proves
+  freshness for the live runtime database, the real `finishProof`/`DB.insert`
+  branch succeeds, and the post-insertion runtime namespace agrees exactly
+  with the extended source state
 
 Negative example:
 - this umbrella does not expose the legacy file-lowering/source-proof
   simulation and crown-jewel claim class
 - the whole byte-parser loop does not yet construct a complete theorem-event
   ledger or prove event completeness; the local normal ledger does authenticate
-  frame trimming and exact normal transitions, while compressed proof actions,
-  heap sharing, include expansion, and EOF event provenance remain separate
+  frame trimming and exact normal transitions; compressed execution is now
+  preserved and reflected with proof-node identity through heaps, saves, and
+  assertions; the parser's bulk mandatory-header operation is now proved equal
+  to the source-derived checked preload sequence and composes with explicit
+  header labels, compressed actions, and final assertion insertion; raw
+  proof-token routing into those phases, include expansion, and EOF event
+  provenance remain separate
 - include-aware admission currently exposes database projection only, and the
   large-input proof-ingress traversal is checked against the reader's complete
   logical database snapshot rather than related by a general chunking theorem
@@ -135,8 +162,17 @@ Negative example:
   that caller/callee classification boundary from unrelated local premises
 - unrestricted declarative `Provable.var` admits semantic variables without a
   caller-frame witness; exact reflection therefore targets the supported
-  declarative relation, and the stronger global-support premise used by the
-  unrestricted biconditional is formally impossible for a finite frame
+  active-frame relation.  Fixed-frame conservativity is formally refuted even
+  under strong database/frame/DV well-formedness; the unrestricted relation is
+  instead reconciled as finite semantic frame-extension closure
+- proof-site monotonicity under one optional `$f` is proved, and the distinct
+  source-state storage theorem is also proved: accepted optional `$f` and
+  `$d` transitions leave the assertion's mandatory source projection exactly
+  unchanged.  Every unrestricted declarative derivation now has a proved
+  finite variable-leaf support, type-preserving renaming, and constructed
+  semantic frame extension.  Turning manufactured names into accepted source
+  operations remains separate: a fixed source prefix must supply declared
+  typecodes and variables plus globally fresh `$f` labels
 - these remaining source-spec, parser, and compressed-proof boundaries prevent
   a claim of whole-source adequacy
 -/

@@ -106,11 +106,11 @@ def strictCoreCommBodyBoundaryCounterexample : Pattern :=
 
 theorem strictCoreCommBodyBoundaryCounterexample_noBoundUnderQuote :
     noBoundUnderQuote 0 strictCoreCommBodyBoundaryCounterexample = true := by
-  native_decide
+  decide
 
 theorem strictCoreCommBodyBoundaryCounterexample_rhoProcCoreShape_false :
     rhoProcCoreShape strictCoreCommBodyBoundaryCounterexample = false := by
-  native_decide
+  decide
 
 theorem noBoundUnderQuote_not_sufficient_for_rhoProcCoreShape :
     ∃ p, noBoundUnderQuote 0 p = true ∧ rhoProcCoreShape p = false := by

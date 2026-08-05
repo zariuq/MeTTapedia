@@ -61,7 +61,7 @@ theorem queuePeriod_pos (semanticSlots : ℕ) : 0 < queuePeriod semanticSlots :=
 
 /-- The zero-based candidate at baseline rank `rank` is submitted after at
 most the multiplicative slowdown `semanticSlots + 1`. -/
-theorem baseline_rank_submitted_at_explicit_time
+theorem twoQueueCandidate_mul_queuePeriod
     {Candidate : Type*} (baseline semantic : List Candidate)
     (semanticSlots rank : ℕ) :
     twoQueueCandidate baseline semantic semanticSlots
@@ -77,7 +77,7 @@ theorem baseline_rank_time_slowdown_bound (semanticSlots rank : ℕ) :
 
 /-- Positive fixture: with one semantic slot, the scheduler alternates
 baseline and semantic candidates. -/
-theorem alternating_twoQueue_fixture :
+theorem alternating_twoQueue :
     twoQueueCandidate [10, 20] [30, 40] 1 0 = some 10 ∧
       twoQueueCandidate [10, 20] [30, 40] 1 1 = some 30 ∧
       twoQueueCandidate [10, 20] [30, 40] 1 2 = some 20 := by
@@ -96,7 +96,7 @@ theorem semanticOnly_can_omit_baseline_negativeExample :
 
 #print axioms partialRanking_cannot_create_acceptance
 #print axioms baselineShare_pos
-#print axioms baseline_rank_submitted_at_explicit_time
+#print axioms twoQueueCandidate_mul_queuePeriod
 #print axioms baseline_rank_time_slowdown_bound
 #print axioms semanticOnly_can_omit_baseline_negativeExample
 

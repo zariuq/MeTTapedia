@@ -114,7 +114,7 @@ theorem linearAttentionEffectModel_fastEffect_eq_contextEffect
 
 /-- Positive fixture: two scalar context items contribute by ordinary
 addition. -/
-theorem scalarLinearAttention_additive_fixture :
+theorem scalarLinearAttention_additive :
     linearAttentionContextEffect (fun _ : Fin 1 => 1)
         [⟨fun _ => 1, fun _ => 2⟩, ⟨fun _ => 1, fun _ => 3⟩] 0 = 5 := by
   norm_num [linearAttentionContextEffect, linearAttentionReadout,
@@ -196,7 +196,7 @@ theorem abs_normalizedContextMerge_sub_add_le
 
 /-- Explicit negative fixture: two unit-score singleton contexts read as one
 and three separately, but their concatenation reads as two rather than four. -/
-theorem scalarSoftmaxAttention_not_additive_fixture :
+theorem scalarSoftmaxAttention_not_additive :
     scalarSoftmaxAttention [(0, 1)] = 1 ∧
       scalarSoftmaxAttention [(0, 3)] = 3 ∧
       scalarSoftmaxAttention ([(0, 1)] ++ [(0, 3)]) = 2 ∧
@@ -208,6 +208,6 @@ theorem scalarSoftmaxAttention_not_additive_fixture :
 #print axioms linearAttentionContextEffect_append
 #print axioms linearAttentionEffectModel_fastEffect_eq_contextEffect
 #print axioms abs_normalizedContextMerge_sub_add_le
-#print axioms scalarSoftmaxAttention_not_additive_fixture
+#print axioms scalarSoftmaxAttention_not_additive
 
 end Mettapedia.MachineLearning.NeuralNetworks.TwoTimescaleAdaptation

@@ -498,7 +498,7 @@ theorem postCanonical_twoDraw_coverage :
 
 /-- Mere semantics-preserving postprocessing gives exactly the pushforward
 uniform semantic prior's coverage; it is not the strict-improvement lever. -/
-theorem canonical_postprocessing_no_strict_gain_fixture :
+theorem canonical_postprocessing_no_strict_gain :
     iidExpectedPostCanonicalCoverage 2 =
       iidExpectedDistinctCoverage (uniformPrior 2 (by norm_num)) 2 Finset.univ := by
   rw [postCanonical_twoDraw_coverage,
@@ -511,6 +511,6 @@ theorem canonical_postprocessing_no_strict_gain_fixture :
 #print axioms uniformPrior_expectedDistinct_fixedPoint
 #print axioms twoDraw_duplicateFree_gain_eq_collisionMass
 #print axioms equal_collisionMass_different_threeDrawCoverage
-#print axioms canonical_postprocessing_no_strict_gain_fixture
+#print axioms canonical_postprocessing_no_strict_gain
 
 end Mettapedia.MachineLearning.SearchGuidance

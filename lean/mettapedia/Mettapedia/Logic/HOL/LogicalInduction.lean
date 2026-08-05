@@ -2,6 +2,7 @@ import Mettapedia.Logic.HOL.LogicalInduction.Code
 import Mettapedia.Logic.HOL.LogicalInduction.DeductiveProcess
 import Mettapedia.Logic.HOL.LogicalInduction.Market
 import Mettapedia.Logic.HOL.LogicalInduction.Criterion
+import Mettapedia.Logic.HOL.LogicalInduction.BoundedTraders
 import Mettapedia.Logic.HOL.LogicalInduction.Conditioning
 import Mettapedia.Logic.HOL.LogicalInduction.Calibration
 
@@ -16,7 +17,8 @@ Following Garrabrant, Benson-Tilsen, Critch, Soares, and Taylor,
 - canonical coding of closed HOL formulas,
 - deductive processes,
 - time-indexed rational belief days,
-- trader/exploitability vocabulary,
+- trader/exploitability vocabulary and the budgeter soundness kernel
+  (bounded-volume traders cannot exploit),
 - theory-extension conditioning interfaces,
 - and calibration/timely-learning specifications.
 

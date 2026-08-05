@@ -125,8 +125,8 @@ theorem budgetedSearchYield_crown : BudgetedSearchYieldCertificate := by
   · exact equal_collisionMass_different_threeDrawCoverage
   · intro k θ hk
     exact twoDraw_duplicateFree_gain_eq_collisionMass θ hk
-  · exact canonical_postprocessing_no_strict_gain_fixture
-  · exact sharpness_has_interior_optimum_fixture
+  · exact canonical_postprocessing_no_strict_gain
+  · exact sharpness_has_interior_optimum
   · exact ⟨rankedPowerPrior_distinctCoverage_not_monotone,
       rankedPowerPrior_distinctCoverage_not_antitone⟩
   · intro k θ₁ budget₁ θ₂ budget₂ accepted

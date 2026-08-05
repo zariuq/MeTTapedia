@@ -256,6 +256,11 @@ def RuleSideCondition.isValidFor
           bodyDepth == ambientDepth + 1 &&
             replacementDepth == ambientDepth && resultDepth == ambientDepth
       | _, _, _ => false
+  | .unusedBinderElimination ambientDepth bodyArgument resultArgument =>
+      match formals[bodyArgument]?, formals[resultArgument]? with
+      | some (_, bodyDepth), some (_, resultDepth) =>
+          bodyDepth == ambientDepth + 1 && resultDepth == ambientDepth
+      | _, _ => false
 
 def RuleSchema.isValidIn (presentation : Presentation) (rule : RuleSchema) : Bool :=
   RuleSchema.isValidV1 rule &&
@@ -494,6 +499,10 @@ argument vector.  Failure to resolve an argument position fails closed. -/
       | some body, some replacement, some result =>
           decide (instantiateBVar replacement body = result)
       | _, _, _ => false
+  | .unusedBinderElimination _ bodyArgument resultArgument =>
+      match arguments[bodyArgument]?, arguments[resultArgument]? with
+      | some body, some result => decide (dropBVar? body = some result)
+      | _, _ => false
 
 def RuleSchema.sideConditionsHold
     (rule : RuleSchema) (arguments : List Pattern) : Bool :=

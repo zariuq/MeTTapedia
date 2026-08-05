@@ -829,7 +829,7 @@ theorem stable_uniformBlockMetric_totalDepth_spectralGap_ceiling
 /-- Restatement fixture for the scalar-Jacobi endpoint (`w = 1`): its exact
 first-mode rate is `cos (π / n)`, with the same inverse-square gap law as the
 block-local ceiling. -/
-theorem scalarJacobi_inverseSquareGap_fixture (segments : ℕ) :
+theorem scalarJacobi_inverseSquareGap (segments : ℕ) :
     0 ≤ 1 - pathRelaxationRate segments ∧
       1 - pathRelaxationRate segments ≤
         (Real.pi / (segments : ℝ)) ^ 2 / 2 := by
@@ -837,7 +837,7 @@ theorem scalarJacobi_inverseSquareGap_fixture (segments : ℕ) :
 
 /-- Restatement fixture for the inference-rate no-go: equal depth credit is
 possible exactly when every rate used along the chain is one. -/
-theorem localRate_equalization_noGo_fixture
+theorem localRate_equalization_noGo
     (inferenceRate : ℕ → ℝ) (depth : ℕ) :
     InferenceRatesEqualizeDepthCredit inferenceRate depth ↔
       ∀ j, 0 < j → j ≤ depth → inferenceRate j = 1 := by
@@ -845,7 +845,7 @@ theorem localRate_equalization_noGo_fixture
 
 /-- Restatement fixture for the Depth-μP no-go: its paired width/depth
 factors cancel each other and leave geometric inference attenuation intact. -/
-theorem depthMuP_localityAttenuation_unchanged_fixture
+theorem depthMuP_localityAttenuation_unchanged
     (width depth distance : ℕ) (inferenceRate : ℝ)
     (hwidth : 0 < width) (hdepth : 0 < depth) :
     depthMuPAdamLearningRateScale width depth *

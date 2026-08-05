@@ -554,7 +554,7 @@ noncomputable def thresholdCheckerReward (parameter : ℝ) : ℝ :=
 
 /-- A local two-point query can be completely flat although an accepted point
 is reachable outside the perturbation radius. -/
-theorem checker_plateau_zero_local_credit_but_acceptance_reachable :
+theorem zerothOrderEstimate_eq_zero_of_indicator :
     let problem : ZerothOrderProblem :=
       { loss := thresholdCheckerReward, epsilon := 1 / 4, direction := 1 }
     zerothOrderEstimate problem 0 = 0 ∧
@@ -572,7 +572,7 @@ theorem checker_plateau_zero_local_credit_but_acceptance_reachable :
 #print axioms scalarZerothOrder_finalUpdate
 #print axioms quadratic_zerothOrder_eq_forward_sample
 #print axioms cubic_central_difference_bias
-#print axioms checker_plateau_zero_local_credit_but_acceptance_reachable
+#print axioms zerothOrderEstimate_eq_zero_of_indicator
 
 end Instances
 

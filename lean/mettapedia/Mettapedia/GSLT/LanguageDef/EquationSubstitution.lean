@@ -109,6 +109,71 @@ end ReflectiveContextSupport
 
 namespace EquationSemantics
 
+/-- Compose one authored generator with a syntax-derived outer context without
+passing through the contextual-equivalence closure. -/
+private theorem equationContextStep_fillDirect
+    {base : Mettapedia.OSLF.MeTTaIL.ContextualStep.BasePremiseEvaluator}
+    {language : LanguageDef} (context : OneHoleContext)
+    {left right : Pattern}
+    (step : EquationContextStep base language left right) :
+    EquationContextStep base language (context.fill left) (context.fill right) := by
+  cases step with
+  | inContext inner equationWitness =>
+      simpa [OneHoleContext.fill_comp] using
+        (EquationContextStep.inContext (context.comp inner) equationWitness)
+  | reflectiveInContext inner membership representatives =>
+      simpa [OneHoleContext.fill_comp] using
+        (EquationContextStep.reflectiveInContext (context.comp inner)
+          membership representatives)
+
+/-- If both root generator families survive support-aware substitution as
+single generators, then every contextual generator survives as one generator.
+The transported context retains the exact quote-aware depth at its hole. -/
+theorem equationContextStep_substituteAt_of_generatorRoots
+    {base : Mettapedia.OSLF.MeTTaIL.ContextualStep.BasePremiseEvaluator}
+    {language : LanguageDef}
+    {support : ContextSupport.Support}
+    {assignment : ContextSupport.Assignment}
+    (equationInstancePreserves : ∀ availableDepth {left right},
+      EquationInstance base language left right →
+        EquationContextStep base language
+          (ReflectiveContextSupport.substituteAt language support assignment
+            availableDepth left)
+          (ReflectiveContextSupport.substituteAt language support assignment
+            availableDepth right))
+    (reflectivePreserves : ∀ availableDepth
+      {declaration : ReflectivePresentationDecl} {left right},
+      declaration ∈ language.reflectivePresentations →
+      Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+          declaration left =
+        Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+          declaration right →
+        EquationContextStep base language
+          (ReflectiveContextSupport.substituteAt language support assignment
+            availableDepth left)
+          (ReflectiveContextSupport.substituteAt language support assignment
+            availableDepth right))
+    (availableDepth : Nat) {left right : Pattern}
+    (step : EquationContextStep base language left right) :
+    EquationContextStep base language
+      (ReflectiveContextSupport.substituteAt language support assignment
+        availableDepth left)
+      (ReflectiveContextSupport.substituteAt language support assignment
+        availableDepth right) := by
+  cases step with
+  | @inContext context redex contractum equationWitness =>
+      let transported := ReflectiveContextSupport.substituteContextAt
+        language support assignment availableDepth context
+      have root := equationInstancePreserves transported.2 equationWitness
+      have filled := equationContextStep_fillDirect transported.1 root
+      simpa only [ReflectiveContextSupport.substituteAt_fill] using filled
+  | @reflectiveInContext context declaration left right membership representatives =>
+      let transported := ReflectiveContextSupport.substituteContextAt
+        language support assignment availableDepth context
+      have root := reflectivePreserves transported.2 membership representatives
+      have filled := equationContextStep_fillDirect transported.1 root
+      simpa only [ReflectiveContextSupport.substituteAt_fill] using filled
+
 /-- Once root equation instances and reflective representative equalities are
 known to survive substitution at every quotation-aware depth, contextual
 closure survives automatically.  The structural context is transported by
@@ -207,14 +272,7 @@ theorem equationContextStep_fill
     {left right : Pattern}
     (step : EquationContextStep base language left right) :
     EquationContextStep base language (context.fill left) (context.fill right) := by
-  cases step with
-  | inContext inner equationWitness =>
-      simpa [OneHoleContext.fill_comp] using
-        (EquationContextStep.inContext (context.comp inner) equationWitness)
-  | reflectiveInContext inner membership representatives =>
-      simpa [OneHoleContext.fill_comp] using
-        (EquationContextStep.reflectiveInContext (context.comp inner)
-          membership representatives)
+  exact equationContextStep_fillDirect context step
 
 end EquationSemantics
 
@@ -837,11 +895,97 @@ theorem nameResult_substituteAt_eq_of_safeAt_zero
     sealed.resultsQuoted assignment declaration declarationMembership typed
       resultType_eq safeAtZero object availableDepth
 
-/-- The declaration-authored Quote/Drop generator survives supported
-substitution at every ambient depth when every constructor returning the
-declaration's name sort is an authored quote boundary.  No global
+/-- Supported substitution preserves the selected declaration's exact
+Quote/Drop representative at every ambient depth when every constructor
+returning its name sort is an authored quote boundary.  This is the
+proof-relevant leaf behind the direct generator theorem below: the declaration
+identity remains explicit rather than being reconstructed from an erased
+contextual-equivalence proof. -/
+theorem quoteDrop_substituteAt_canonicalize_eq_of_resultsQuoted
+    {language : LanguageDef} {source target : FreeTypeContext}
+    {support : ContextSupport.Support}
+    {bound : List TypeExpr} {name : Pattern} {resultType : TypeExpr}
+    {binderImage : TypeExpr → TypeExpr}
+    (quotedResults : ReflectiveNameResultsQuoted language)
+    (assignment : SupportedOpenAssignment language source target support)
+    (declaration : ReflectivePresentationDecl)
+    (declarationMembership : declaration ∈ language.reflectivePresentations)
+    (quote_ne_drop : declaration.quoteConstructor ≠
+      declaration.dropConstructor)
+    (typed : HasType language source bound name resultType)
+    (resultType_eq : resultType = .base declaration.nameSort)
+    (safeAtZero : typed.ReflectiveSupportSafeAt support [] binderImage)
+    (object : isObjectPattern name = true)
+    (availableDepth : Nat) :
+    Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize declaration
+        (ReflectiveContextSupport.substituteAt language support
+          assignment.assignment availableDepth
+          (.apply declaration.quoteConstructor
+            [.apply declaration.dropConstructor [name]])) =
+      Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize declaration
+        (ReflectiveContextSupport.substituteAt language support
+          assignment.assignment availableDepth name) := by
+  have depthIndependent :=
+    nameResult_substituteAt_eq_of_safeAt_zero_of_resultsQuoted quotedResults
+      assignment declaration declarationMembership typed resultType_eq
+      safeAtZero object availableDepth
+  have quoteStatus : ReflectiveContextSupport.isQuoteConstructor language
+      declaration.quoteConstructor = true := by
+    simp only [ReflectiveContextSupport.isQuoteConstructor, List.any_eq_true]
+    exact ⟨declaration, declarationMembership, by simp⟩
+  have leftSubstitution :
+      ReflectiveContextSupport.substituteAt language support
+          assignment.assignment availableDepth
+          (.apply declaration.quoteConstructor
+            [.apply declaration.dropConstructor [name]]) =
+        .apply declaration.quoteConstructor
+          [.apply declaration.dropConstructor
+            [ReflectiveContextSupport.substituteAt language support
+              assignment.assignment 0 name]] := by
+    simp [ReflectiveContextSupport.substituteAt, quoteStatus]
+  rw [leftSubstitution]
+  simpa [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize,
+    Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeList,
+    Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.finishNormalizeReflectiveApply,
+    quote_ne_drop, Ne.symm quote_ne_drop]
+    using congrArg
+      (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize declaration)
+      depthIndependent
+
+/-- The declaration-authored Quote/Drop generator remains one generator after
+supported substitution at every ambient depth when every constructor returning
+the declaration's name sort is an authored quote boundary.  No global
 canonicalizer-naturality premise is used: support safety at the reset context
 makes the substituted name itself depth-independent. -/
+theorem quoteDrop_substituteAt_equationContextStep_of_resultsQuoted
+    {language : LanguageDef} {source target : FreeTypeContext}
+    {support : ContextSupport.Support}
+    {bound : List TypeExpr} {name : Pattern} {resultType : TypeExpr}
+    {binderImage : TypeExpr → TypeExpr}
+    (quotedResults : ReflectiveNameResultsQuoted language)
+    (assignment : SupportedOpenAssignment language source target support)
+    (declaration : ReflectivePresentationDecl)
+    (declarationMembership : declaration ∈ language.reflectivePresentations)
+    (quote_ne_drop : declaration.quoteConstructor ≠
+      declaration.dropConstructor)
+    (typed : HasType language source bound name resultType)
+    (resultType_eq : resultType = .base declaration.nameSort)
+    (safeAtZero : typed.ReflectiveSupportSafeAt support [] binderImage)
+    (object : isObjectPattern name = true)
+    (availableDepth : Nat) :
+    EquationContextStep defaultBasePremises language
+      (ReflectiveContextSupport.substituteAt language support
+        assignment.assignment availableDepth
+        (.apply declaration.quoteConstructor
+          [.apply declaration.dropConstructor [name]]))
+      (ReflectiveContextSupport.substituteAt language support
+        assignment.assignment availableDepth name) := by
+  exact EquationContextStep.reflectiveInContext .hole declarationMembership
+    (quoteDrop_substituteAt_canonicalize_eq_of_resultsQuoted quotedResults
+      assignment declaration declarationMembership quote_ne_drop typed
+      resultType_eq safeAtZero object availableDepth)
+
+/-- Closure-level form of the direct Quote/Drop substitution generator. -/
 theorem quoteDrop_substituteAt_equationEquiv_of_resultsQuoted
     {language : LanguageDef} {source target : FreeTypeContext}
     {support : ContextSupport.Support}
@@ -865,34 +1009,10 @@ theorem quoteDrop_substituteAt_equationEquiv_of_resultsQuoted
           [.apply declaration.dropConstructor [name]]))
       (ReflectiveContextSupport.substituteAt language support
         assignment.assignment availableDepth name) := by
-  have depthIndependent :=
-    nameResult_substituteAt_eq_of_safeAt_zero_of_resultsQuoted quotedResults
-      assignment declaration declarationMembership typed resultType_eq
-      safeAtZero object availableDepth
-  have quoteStatus : ReflectiveContextSupport.isQuoteConstructor language
-      declaration.quoteConstructor = true := by
-    simp only [ReflectiveContextSupport.isQuoteConstructor, List.any_eq_true]
-    exact ⟨declaration, declarationMembership, by simp⟩
-  apply Relation.EqvGen.rel
-  apply EquationContextStep.reflectiveInContext .hole declarationMembership
-  have leftSubstitution :
-      ReflectiveContextSupport.substituteAt language support
-          assignment.assignment availableDepth
-          (.apply declaration.quoteConstructor
-            [.apply declaration.dropConstructor [name]]) =
-        .apply declaration.quoteConstructor
-          [.apply declaration.dropConstructor
-            [ReflectiveContextSupport.substituteAt language support
-              assignment.assignment 0 name]] := by
-    simp [ReflectiveContextSupport.substituteAt, quoteStatus]
-  rw [leftSubstitution]
-  simpa [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize,
-    Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeList,
-    Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.finishNormalizeReflectiveApply,
-    quote_ne_drop, Ne.symm quote_ne_drop]
-    using congrArg
-      (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize declaration)
-      depthIndependent
+  exact Relation.EqvGen.rel _ _
+    (quoteDrop_substituteAt_equationContextStep_of_resultsQuoted quotedResults
+      assignment declaration declarationMembership quote_ne_drop typed
+      resultType_eq safeAtZero object availableDepth)
 
 /-! ## Generic reflective-parallel transport
 
@@ -1217,6 +1337,286 @@ theorem normalizationMapEquivalentBetween
         (by
           simpa [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.normalizeParallelElements,
             flattened, filtered] using collapse)))
+
+private theorem consMapCanonicalizeEq
+    (declaration : ReflectivePresentationDecl)
+    (head : Pattern) {left right : List Pattern}
+    (tailEquality :
+      Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize declaration
+          (.collection declaration.parallelCollection left none) =
+        Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize declaration
+          (.collection declaration.parallelCollection right none)) :
+    Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize declaration
+        (.collection declaration.parallelCollection (head :: left) none) =
+      Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize declaration
+        (.collection declaration.parallelCollection (head :: right) none) := by
+  have lifted := EquationSemantics.canonicalize_fill_congr declaration
+    (.collection declaration.parallelCollection [head] .hole [] none)
+      tailEquality
+  have flattenLeft :=
+    Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize_parallel_flatten
+      declaration [head] left
+  have flattenRight :=
+    Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize_parallel_flatten
+      declaration [head] right
+  have lifted' :
+      Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize declaration
+          (.collection declaration.parallelCollection
+            [head, .collection declaration.parallelCollection left none]
+            none) =
+        Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize declaration
+          (.collection declaration.parallelCollection
+            [head, .collection declaration.parallelCollection right none]
+            none) := by
+    simpa [OneHoleContext.fill] using lifted
+  exact flattenLeft.symm.trans (lifted'.trans flattenRight)
+
+private theorem spliceHeadMapCanonicalizeEq
+    (declaration : ReflectivePresentationDecl)
+    (nested rest : List Pattern) :
+    Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize declaration
+        (.collection declaration.parallelCollection
+          (.collection declaration.parallelCollection nested none :: rest)
+          none) =
+      Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize declaration
+        (.collection declaration.parallelCollection (nested ++ rest) none) := by
+  have moveNestedRight :=
+    Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize_parallel_permutation
+      declaration
+      (by
+        simpa using
+          (List.perm_append_comm
+            (l₁ := [.collection declaration.parallelCollection nested none])
+            (l₂ := rest)))
+  have flatten :=
+    Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize_parallel_flatten
+      declaration rest nested
+  have restoreOrder :=
+    Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize_parallel_permutation
+      declaration
+      (List.perm_append_comm (l₁ := rest) (l₂ := nested))
+  exact moveNestedRight.trans (flatten.trans restoreOrder)
+
+private theorem flattenMapCanonicalizeEqBetween
+    (sourceDeclaration targetDeclaration : ReflectivePresentationDecl)
+    (mapPattern : Pattern → Pattern)
+    (mapParallel : ∀ patterns,
+      mapPattern
+          (.collection sourceDeclaration.parallelCollection patterns none) =
+        .collection targetDeclaration.parallelCollection
+          (patterns.map mapPattern) none) :
+    ∀ patterns : List Pattern,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+          targetDeclaration
+          (.collection targetDeclaration.parallelCollection
+            (patterns.map mapPattern) none) =
+        Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+          targetDeclaration
+          (.collection targetDeclaration.parallelCollection
+            ((patterns.flatMap
+              (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.parallelSplice
+                sourceDeclaration)).map mapPattern) none)
+  | [] => rfl
+  | pattern :: patterns => by
+      have tailEquality := consMapCanonicalizeEq targetDeclaration
+        (mapPattern pattern)
+        (flattenMapCanonicalizeEqBetween sourceDeclaration targetDeclaration
+          mapPattern mapParallel patterns)
+      by_cases isParallel : ∃ nested,
+          pattern =
+            .collection sourceDeclaration.parallelCollection nested none
+      · obtain ⟨nested, rfl⟩ := isParallel
+        rw [mapParallel] at tailEquality
+        have spliced := spliceHeadMapCanonicalizeEq targetDeclaration
+          (nested.map mapPattern)
+          ((patterns.flatMap
+            (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.parallelSplice
+              sourceDeclaration)).map mapPattern)
+        simpa [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.parallelSplice,
+          List.map_append, mapParallel] using tailEquality.trans spliced
+      · have singleton :
+            Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.parallelSplice
+                sourceDeclaration pattern = [pattern] :=
+          Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.parallelSplice_eq_singleton_of_not_parallel
+            sourceDeclaration pattern (by
+              intro nested equality
+              exact isParallel ⟨nested, equality⟩)
+        simpa [List.flatMap_cons, singleton] using tailEquality
+
+private theorem filterUnitMapCanonicalizeEqBetween
+    (sourceDeclaration targetDeclaration : ReflectivePresentationDecl)
+    (mapPattern : Pattern → Pattern)
+    (mapUnit :
+      mapPattern (.apply sourceDeclaration.parallelUnitConstructor []) =
+        .apply targetDeclaration.parallelUnitConstructor []) :
+    ∀ patterns : List Pattern,
+      Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+          targetDeclaration
+          (.collection targetDeclaration.parallelCollection
+            (patterns.map mapPattern) none) =
+        Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+          targetDeclaration
+          (.collection targetDeclaration.parallelCollection
+            ((patterns.filter fun pattern =>
+              pattern ≠ .apply sourceDeclaration.parallelUnitConstructor []).map
+                mapPattern) none)
+  | [] => rfl
+  | pattern :: patterns => by
+      have tailEquality := consMapCanonicalizeEq targetDeclaration
+        (mapPattern pattern)
+        (filterUnitMapCanonicalizeEqBetween sourceDeclaration
+          targetDeclaration mapPattern mapUnit patterns)
+      by_cases isUnit :
+          pattern = .apply sourceDeclaration.parallelUnitConstructor []
+      · subst pattern
+        rw [mapUnit] at tailEquality
+        have unitToEmpty :=
+          (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize_parallel_collapse
+            targetDeclaration []).symm
+        have lifted := EquationSemantics.canonicalize_fill_congr
+          targetDeclaration
+          (.collection targetDeclaration.parallelCollection [] .hole
+            ((patterns.filter fun pattern =>
+              pattern ≠ .apply sourceDeclaration.parallelUnitConstructor []).map
+                mapPattern) none)
+          unitToEmpty
+        let tail :=
+          (patterns.filter fun pattern =>
+            pattern ≠ .apply sourceDeclaration.parallelUnitConstructor []).map
+              mapPattern
+        have lifted' :
+            Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+                targetDeclaration
+                (.collection targetDeclaration.parallelCollection
+                  ([.apply targetDeclaration.parallelUnitConstructor []] ++
+                    tail) none) =
+              Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+                targetDeclaration
+                (.collection targetDeclaration.parallelCollection
+                  ([.collection targetDeclaration.parallelCollection [] none] ++
+                    tail) none) := by
+          simpa [tail, OneHoleContext.fill,
+            Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.collapseParallel]
+            using lifted
+        have removeHead := lifted'.trans
+          (spliceHeadMapCanonicalizeEq targetDeclaration [] tail)
+        simpa [mapUnit, OneHoleContext.fill,
+          Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.collapseParallel, tail]
+          using tailEquality.trans removeHead
+      · simpa [isUnit] using tailEquality
+
+private theorem sortMapCanonicalizeEq
+    (declaration : ReflectivePresentationDecl)
+    (mapPattern : Pattern → Pattern) (patterns : List Pattern) :
+    Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize declaration
+        (.collection declaration.parallelCollection
+          (patterns.map mapPattern) none) =
+      Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize declaration
+        (.collection declaration.parallelCollection
+          ((Mettapedia.OSLF.MeTTaIL.PatternCode.sortPatterns patterns).map
+            mapPattern) none) := by
+  exact
+    Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize_parallel_permutation
+      declaration
+      ((Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.sortPatterns_perm
+        patterns).map mapPattern).symm
+
+private theorem collapseMapCanonicalizeEqBetween
+    (sourceDeclaration targetDeclaration : ReflectivePresentationDecl)
+    (mapPattern : Pattern → Pattern)
+    (mapParallel : ∀ patterns,
+      mapPattern
+          (.collection sourceDeclaration.parallelCollection patterns none) =
+        .collection targetDeclaration.parallelCollection
+          (patterns.map mapPattern) none)
+    (mapUnit :
+      mapPattern (.apply sourceDeclaration.parallelUnitConstructor []) =
+        .apply targetDeclaration.parallelUnitConstructor [])
+    (patterns : List Pattern) :
+    Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+        targetDeclaration
+        (.collection targetDeclaration.parallelCollection
+          (patterns.map mapPattern) none) =
+      Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+        targetDeclaration
+        (mapPattern
+          (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.collapseParallel
+            sourceDeclaration patterns)) := by
+  have collapseMap : mapPattern
+        (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.collapseParallel
+          sourceDeclaration patterns) =
+      Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.collapseParallel
+        targetDeclaration (patterns.map mapPattern) := by
+    cases patterns with
+    | nil =>
+        simpa [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.collapseParallel]
+          using mapUnit
+    | cons first rest =>
+        cases rest with
+        | nil => rfl
+        | cons second tail =>
+            simpa [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.collapseParallel]
+              using mapParallel (first :: second :: tail)
+  rw [collapseMap]
+  exact
+    Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize_parallel_collapse
+      targetDeclaration (patterns.map mapPattern)
+
+/-- Re-canonicalization makes full ACU normalization exactly natural for any
+map preserving the selected parallel constructor and unit.  Unlike the
+relation-valued theorem above, this algebra needs no target language or
+membership proof: it speaks only about the two explicit declarations. -/
+theorem normalizationMapCanonicalizeEqBetween
+    (sourceDeclaration targetDeclaration : ReflectivePresentationDecl)
+    (mapPattern : Pattern → Pattern)
+    (mapParallel : ∀ patterns,
+      mapPattern
+          (.collection sourceDeclaration.parallelCollection patterns none) =
+        .collection targetDeclaration.parallelCollection
+          (patterns.map mapPattern) none)
+    (mapUnit :
+      mapPattern (.apply sourceDeclaration.parallelUnitConstructor []) =
+        .apply targetDeclaration.parallelUnitConstructor [])
+    (patterns : List Pattern) :
+    Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+        targetDeclaration
+        (.collection targetDeclaration.parallelCollection
+          (patterns.map mapPattern) none) =
+      Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+        targetDeclaration
+        (mapPattern
+          (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.collapseParallel
+            sourceDeclaration
+            (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.normalizeParallelElements
+              sourceDeclaration patterns))) := by
+  let flattened := patterns.flatMap
+    (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.parallelSplice
+      sourceDeclaration)
+  let filtered := flattened.filter fun pattern =>
+    pattern ≠ .apply sourceDeclaration.parallelUnitConstructor []
+  have flatten := flattenMapCanonicalizeEqBetween sourceDeclaration
+    targetDeclaration mapPattern mapParallel patterns
+  have filter := filterUnitMapCanonicalizeEqBetween sourceDeclaration
+    targetDeclaration mapPattern mapUnit flattened
+  have sort := sortMapCanonicalizeEq targetDeclaration mapPattern filtered
+  have collapse := collapseMapCanonicalizeEqBetween sourceDeclaration
+    targetDeclaration mapPattern mapParallel mapUnit
+      (Mettapedia.OSLF.MeTTaIL.PatternCode.sortPatterns filtered)
+  exact flatten.trans (calc
+    _ = Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+          targetDeclaration
+          (.collection targetDeclaration.parallelCollection
+            (filtered.map mapPattern) none) := by
+      simpa [flattened, filtered] using filter
+    _ = Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+          targetDeclaration
+          (.collection targetDeclaration.parallelCollection
+            ((Mettapedia.OSLF.MeTTaIL.PatternCode.sortPatterns filtered).map
+              mapPattern) none) := by
+      simpa [flattened, filtered] using sort
+    _ = _ := by
+      simpa [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.normalizeParallelElements,
+        flattened, filtered] using collapse)
 
 /-- Full ACU normalization of one reflective parallel collection is natural
 up to that same authored reflective equation relation. -/
@@ -2321,15 +2721,25 @@ def ReflectiveEquationAmbientRenamingStable (language : LanguageDef) : Prop :=
         (ContextSubstitution.renameAmbientBVarsAt rename depth
           (context.fill right))
 
-/-- Validation is sufficient for reflective ambient-renaming stability.
-Canonicalization need not commute syntactically with renaming: the factor law
-shows that re-canonicalization absorbs any change in deterministic ordering,
-and transported one-hole contexts supply the contextual closure. -/
-theorem reflectiveEquationAmbientRenamingStable_of_validate_eq_nil
+/-- A validated reflective generator remains one authored generator after an
+ambient binder embedding.  The transported one-hole context records the
+binder depth at its hole, while the canonical factor law absorbs any change
+in deterministic parallel ordering. -/
+theorem reflectiveEquationContextStep_renameAmbientBVarsAt_of_validate_eq_nil
     (language : LanguageDef) (valid : language.validate = []) :
-    ReflectiveEquationAmbientRenamingStable language := by
-  intro rename _strict depth context declaration left right membership
-    representatives
+    ∀ (rename : Nat → Nat) (depth : Nat) (context : OneHoleContext)
+      {declaration : ReflectivePresentationDecl} {left right : Pattern},
+      declaration ∈ language.reflectivePresentations →
+      Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+          declaration left =
+        Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+          declaration right →
+      EquationContextStep defaultBasePremises language
+        (ContextSubstitution.renameAmbientBVarsAt rename depth
+          (context.fill left))
+        (ContextSubstitution.renameAmbientBVarsAt rename depth
+          (context.fill right)) := by
+  intro rename depth context declaration left right membership representatives
   let transported :=
     ContextSubstitution.renameAmbientContextAt rename depth context
   have declarationValid :=
@@ -2357,10 +2767,28 @@ theorem reflectiveEquationAmbientRenamingStable_of_validate_eq_nil
       _ = _ :=
           (canonicalize_renameAmbientBVarsAt_factor declaration quote_ne_drop
             rename transported.2 right).symm
-  have filled := reflective_fill_equivalent
-    (base := defaultBasePremises) membership transported.1
+  have transportedStep : EquationContextStep defaultBasePremises language
+      (transported.1.fill
+        (ContextSubstitution.renameAmbientBVarsAt rename transported.2 left))
+      (transported.1.fill
+        (ContextSubstitution.renameAmbientBVarsAt rename transported.2 right)) :=
+    EquationContextStep.reflectiveInContext transported.1 membership
       transportedRepresentatives
-  simpa only [ContextSubstitution.renameAmbientBVarsAt_fill] using filled
+  simpa only [ContextSubstitution.renameAmbientBVarsAt_fill] using
+    transportedStep
+
+/-- Validation is sufficient for reflective ambient-renaming stability.
+Canonicalization need not commute syntactically with renaming: the factor law
+shows that re-canonicalization absorbs any change in deterministic ordering,
+and transported one-hole contexts supply the contextual closure. -/
+theorem reflectiveEquationAmbientRenamingStable_of_validate_eq_nil
+    (language : LanguageDef) (valid : language.validate = []) :
+    ReflectiveEquationAmbientRenamingStable language := by
+  intro rename _strict depth context declaration left right membership
+    representatives
+  exact Relation.EqvGen.rel _ _
+    (reflectiveEquationContextStep_renameAmbientBVarsAt_of_validate_eq_nil
+      language valid rename depth context membership representatives)
 
 /-- Exact pair of generator obligations making the authored contextual
 equation setoid natural under ambient binder embeddings. -/
@@ -2676,6 +3104,43 @@ def castFree
     AvailableOpenPattern language targetFree available outer type := by
   cases freeEquality
   exact term
+
+/-- Reindex the proof-relevant split-binder fiber of an open pattern.
+
+The raw pattern is unchanged.  Only propositionally equal available/outer
+contexts and result types are transported, so this operation cannot invent a
+typing derivation or alter reflective scope. -/
+def reindexFiber
+    {language : LanguageDef} {free : FreeTypeContext}
+    {sourceAvailable targetAvailable sourceOuter targetOuter : List TypeExpr}
+    {sourceType targetType : TypeExpr}
+    (availableEquality : sourceAvailable = targetAvailable)
+    (outerEquality : sourceOuter = targetOuter)
+    (typeEquality : sourceType = targetType)
+    (term : AvailableOpenPattern language free sourceAvailable sourceOuter
+      sourceType) :
+    AvailableOpenPattern language free targetAvailable targetOuter targetType := by
+  cases availableEquality
+  cases outerEquality
+  cases typeEquality
+  exact term
+
+@[simp]
+theorem reindexFiber_pattern
+    {language : LanguageDef} {free : FreeTypeContext}
+    {sourceAvailable targetAvailable sourceOuter targetOuter : List TypeExpr}
+    {sourceType targetType : TypeExpr}
+    (availableEquality : sourceAvailable = targetAvailable)
+    (outerEquality : sourceOuter = targetOuter)
+    (typeEquality : sourceType = targetType)
+    (term : AvailableOpenPattern language free sourceAvailable sourceOuter
+      sourceType) :
+    (term.reindexFiber availableEquality outerEquality typeEquality).pattern =
+      term.pattern := by
+  cases availableEquality
+  cases outerEquality
+  cases typeEquality
+  rfl
 
 @[simp]
 theorem castFree_pattern
@@ -3036,6 +3501,42 @@ structure AvailableOpenArgument (language : LanguageDef)
   parameterType : parameterType? parameter = some expected
 
 namespace AvailableOpenArgument
+
+/-- Reindex an authored constructor argument across equal split fibers.
+Concrete binder representation is transported with the term, never
+reconstructed from its raw syntax. -/
+def reindexFiber
+    {language : LanguageDef} {free : FreeTypeContext}
+    {sourceAvailable targetAvailable sourceOuter targetOuter : List TypeExpr}
+    {parameter : TermParam} {sourceExpected targetExpected : TypeExpr}
+    (availableEquality : sourceAvailable = targetAvailable)
+    (outerEquality : sourceOuter = targetOuter)
+    (expectedEquality : sourceExpected = targetExpected)
+    (argument : AvailableOpenArgument language free sourceAvailable sourceOuter
+      parameter sourceExpected) :
+    AvailableOpenArgument language free targetAvailable targetOuter parameter
+      targetExpected := by
+  cases availableEquality
+  cases outerEquality
+  cases expectedEquality
+  exact argument
+
+@[simp]
+theorem reindexFiber_pattern
+    {language : LanguageDef} {free : FreeTypeContext}
+    {sourceAvailable targetAvailable sourceOuter targetOuter : List TypeExpr}
+    {parameter : TermParam} {sourceExpected targetExpected : TypeExpr}
+    (availableEquality : sourceAvailable = targetAvailable)
+    (outerEquality : sourceOuter = targetOuter)
+    (expectedEquality : sourceExpected = targetExpected)
+    (argument : AvailableOpenArgument language free sourceAvailable sourceOuter
+      parameter sourceExpected) :
+    (argument.reindexFiber availableEquality outerEquality expectedEquality
+      ).term.pattern = argument.term.pattern := by
+  cases availableEquality
+  cases outerEquality
+  cases expectedEquality
+  rfl
 
 @[ext]
 theorem ext
@@ -4138,6 +4639,33 @@ def OpenPatternEquationWeakeningStable (language : LanguageDef) : Prop :=
       ∀ inner : List TypeExpr,
         (openPatternEquationSetoid language free (inner ++ bound) type).r
           (left.weakenRoot inner) (right.weakenRoot inner)
+
+/-- Strong, directly checkable sufficient condition for typed root weakening:
+each authored contextual generator remains one generator after inserting an
+arbitrary number of binders at the root.  This property is intentionally
+separate from raw `EquationEquiv` naturality, which need not retain typed
+intermediate vertices. -/
+def EquationContextStepRootWeakeningStable (language : LanguageDef) : Prop :=
+  ∀ {left right : Pattern},
+    EquationContextStep defaultBasePremises language left right →
+      ∀ shift : Nat,
+        EquationContextStep defaultBasePremises language
+          (liftBVars 0 shift left) (liftBVars 0 shift right)
+
+/-- Generator-level root weakening maps the complete least typed equation
+setoid because every intermediate vertex is produced by `weakenRoot`. -/
+theorem EquationContextStepRootWeakeningStable.toOpenPattern
+    {language : LanguageDef}
+    (stable : EquationContextStepRootWeakeningStable language) :
+    OpenPatternEquationWeakeningStable language := by
+  intro free bound type left right equivalent inner
+  apply openPatternEquationSetoid_map
+    (map := fun pattern => pattern.weakenRoot inner)
+    (equivalent := equivalent)
+  intro first second generator
+  unfold openPatternEquationGenerator at generator ⊢
+  simpa only [OpenPattern.weakenRoot_pattern] using
+    stable generator inner.length
 
 /-- Weaken one support-indexed assignment value through an exact list of new
 inner binders and retain it in the arbitrary-type open carrier. -/

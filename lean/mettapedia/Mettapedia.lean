@@ -344,6 +344,16 @@ import Mettapedia.GSLT.Causality.SyncTree
 import Mettapedia.GSLT.Dynamics.WeightCost
 import Mettapedia.GSLT.Dynamics.ExtendedHML
 import Mettapedia.GSLT.Dynamics.PathIntegral
+import Mettapedia.GSLT.Dynamics.KnotDecomposition
+import Mettapedia.GSLT.Dynamics.UnfoldingTraversal
+import Mettapedia.GSLT.Dynamics.SemiringTraversal
+import Mettapedia.GSLT.Dynamics.CollapseAlgebra
+import Mettapedia.GSLT.Dynamics.ProvenanceInterpretation
+import Mettapedia.GSLT.Dynamics.SpaceQueryAlgebra
+import Mettapedia.GSLT.Dynamics.StoreReachability
+import Mettapedia.GSLT.Dynamics.StoreCollectionAdvanced
+import Mettapedia.GSLT.Dynamics.DialectTranslation
+import Mettapedia.GSLT.Dynamics.DialectObstructions
 import Mettapedia.GSLT.Synthesis.MainConservation
 import Mettapedia.GSLT.Meredith.GSLT
 import Mettapedia.GSLT.Meredith.LambdaTheory

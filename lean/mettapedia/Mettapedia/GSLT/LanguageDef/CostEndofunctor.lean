@@ -1,5 +1,6 @@
 import Mettapedia.GSLT.LanguageDef.CostContinued
 import Mettapedia.GSLT.LanguageDef.CostRegionNormalization
+import Mettapedia.GSLT.LanguageDef.CostSemanticErasure
 import Mettapedia.OSLF.MeTTaIL.PatternCode
 
 /-!
@@ -1925,12 +1926,15 @@ theorem costEquationsRetypable (source : CIGSLT) :
 
 /-- Exact object laws for the initial strict Cost₁ domain.
 
-The inherited bundle supplies typed unary soundness, exact representative
-selection, and contextual support/naturality.  The additional field is placed
-here because it refers to the generated continuation plan, which is defined
-only after the region normalizer. -/
+The inherited bundle supplies typed unary soundness, an exact section for the
+chosen compact executor, and contextual support/naturality.  It deliberately
+does not require every proof-relevant elaboration to have the same compact
+normal form; that stronger factorization law is not hereditary under Cost
+iteration.  The additional field is placed here because it refers to the
+generated continuation plan, which is defined only after the region
+normalizer. -/
 structure CostOneObjectLaws (source : CIGSLT) : Prop
-    extends CostOpenCanonicalLaws source where
+    extends CostOpenSectionLaws source where
   preservesWrappedConstructorTyping :
     ∀ {free : WellSorted.FreeTypeContext} {bound : List TypeExpr}
       {sort : LangSort source.costWholeLanguage}
@@ -1946,7 +1950,7 @@ structure CostOneObjectLaws (source : CIGSLT) : Prop
 constructor fragment selected by the next continuation retyping plan. -/
 theorem costContextualOpenSection_preservesWrappedConstructorTyping
     (source : CIGSLT) (laws : CostOneObjectLaws source) :
-    (source.costContextualOpenSection laws.toCostOpenCanonicalLaws
+    (source.costContextualOpenSection laws.toCostOpenSectionLaws
       ).PreservesTypedConstructors
         (· ∈ source.costContinuationRetyping.wrappedLabels) := by
   intro free bound sort term supported
@@ -1960,7 +1964,7 @@ def costCIGSLT (source : CIGSLT) (laws : CostOneObjectLaws source) :
   theory := source.costIGSLT
   cut := source.costInteractionCut
   openCanonical :=
-    source.costContextualOpenSection laws.toCostOpenCanonicalLaws
+    source.costContextualOpenSection laws.toCostOpenSectionLaws
   continuationRetyping := source.costContinuationRetyping
   bareCollectionConstructorsWrapped :=
     source.costBareCollectionConstructorsWrapped

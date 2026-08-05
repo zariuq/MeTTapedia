@@ -12,7 +12,8 @@
 # Literal string replacement (no regex) keeps the edits exact.
 set -u
 ROOT="$(cd "$(dirname "${BASH_SOURCE[0]}")" && pwd)"
-CETTA="/home/aimama/aihub/hyperon/CeTTa/cetta"
+AIHUB="${AIHUB:-$(cd "$ROOT/../../.." && pwd)}"
+CETTA="${CETTA:-$AIHUB/hyperon/CeTTa/cetta}"
 ENGINE="$ROOT/kernel_signature_lf_indexed_v0.metta"
 LF_ENGINE="$ROOT/kernel_signature_lf_v0.metta"
 NATREC_ENGINE="$ROOT/kernel_signature_lf_natrec_v0.metta"

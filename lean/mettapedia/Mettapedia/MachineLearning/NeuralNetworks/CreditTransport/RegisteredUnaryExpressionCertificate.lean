@@ -247,7 +247,7 @@ private def inputError : EvaluationErrorCertificate exactEnvironment input 2 1 :
 
 /-- The registered square node reconstructs the sharp four-unit regional
 transport rate rather than accepting an arbitrary function certificate. -/
-theorem registered_square_fixture :
+theorem registered_square :
     EvaluationErrorCertificate exactEnvironment
       (.unary RegisteredUnaryOp.square.realMap input) 4 4 := by
   convert registeredUnaryError (runtimeValue := 4) (localError := 0)
@@ -265,7 +265,7 @@ theorem square_unit_rate_rejected :
 #print axioms RegisteredUnaryOp.pair_bound
 #print axioms RegisteredUnaryOp.output_bound
 #print axioms RegisteredExpr.toScalarExpr_realEval
-#print axioms registered_square_fixture
+#print axioms registered_square
 #print axioms square_unit_rate_rejected
 
 end

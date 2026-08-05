@@ -4,8 +4,8 @@ import Mathlib.Data.String.Basic
 /-!
 # MeTTaIL Language Definition Syntax (Locally Nameless)
 
-Formalization of the MeTTaIL `language!` macro structure from
-`/home/zar/claude/hyperon/mettail-rust/`.
+Formalization of the MeTTaIL `language!` macro structure from the
+`mettail-rust` source tree.
 
 Uses **locally nameless** representation: bound variables are de Bruijn indices
 (`.bvar n`), free variables / metavariables are named (`.fvar x`). Binders
@@ -13,7 +13,7 @@ carry no names — α-equivalent patterns are syntactically identical.
 
 ## References
 
-- `/home/zar/claude/hyperon/mettail-rust/macros/src/ast/`
+- `mettail-rust/macros/src/ast/`
 - Williams & Stay, "Native Type Theory" (ACT 2021)
 - Meredith & Stay, "Operational Semantics in Logical Form"
 - Aydemir et al., "Engineering Formal Metatheory" (POPL 2008)
@@ -847,6 +847,11 @@ inductive RuleSideCondition where
   is declared at `d + 1` and the replacement and result at `d`. -/
   | explicitSubstitution
       (ambientDepth bodyArgument replacementArgument resultArgument : Nat)
+  /-- The result argument is obtained by removing one unused binder from the
+  body argument.  At ambient depth `d`, the body is declared at `d + 1` and
+  the result at `d`; an occurrence of the removed variable fails closed. -/
+  | unusedBinderElimination
+      (ambientDepth bodyArgument resultArgument : Nat)
 deriving Repr, DecidableEq
 
 /-- One ordered inference-rule schema.  Each metavariable records its exact
@@ -946,8 +951,7 @@ deriving Repr
 /-! ### Language Options
 
 Options classify runtime/backend/semantic behavior, matching Rust's
-`options { ... }` block in `language!`. Classified per GPT-Pro's
-recommendation:
+`options { ... }` block in `language!`:
 - **semantic**: change what language is being defined (e.g., `higher_order`)
 - **operational**: affect execution strategy, not denotation (e.g., `dispatch`)
 - **backend**: host integration (e.g., `mork_backend`)

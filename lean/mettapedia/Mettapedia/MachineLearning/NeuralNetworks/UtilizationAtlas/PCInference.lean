@@ -318,7 +318,7 @@ theorem expansiveRelaxationStep_iterate_exact
 
 /-- Negative fixture: from unit residual, the unstable inference residual
 diverges to infinity instead of converging to the zero equilibrium. -/
-theorem expansiveRelaxation_divergent_fixture :
+theorem expansiveRelaxation_divergent :
     Tendsto
       (fun sweeps : ℕ =>
         |(expansiveRelaxationStep 0)^[sweeps] 1 - 0|)
@@ -347,14 +347,14 @@ theorem pcInference_frontier_crown :
       atTop atTop := by
   exact ⟨halfRelaxation_exists_finite_residual_and_risk,
     minimalHalfRelaxationSweeps_sufficient,
-    expansiveRelaxation_divergent_fixture⟩
+    expansiveRelaxation_divergent⟩
 
 #print axioms posteriorMean_exactPCInferenceLicense
 #print axioms halfRelaxation_exists_finite_residual_and_risk
 #print axioms below_minimalHalfRelaxationSweeps_insufficient
 #print axioms exactUnitBandwidthPC_no_strictDigitalLatencyAdvantage
 #print axioms multiParentDAG_pcInferenceLicense
-#print axioms expansiveRelaxation_divergent_fixture
+#print axioms expansiveRelaxation_divergent
 #print axioms pcInference_frontier_crown
 
 end Mettapedia.MachineLearning.NeuralNetworks.UtilizationAtlas

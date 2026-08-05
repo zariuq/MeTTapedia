@@ -133,6 +133,17 @@
        (gic-check-dag-indexed $presentation $goal $root-id $nodes))
       ((SourceDagChunksIndexedCheckV1 $goal $root-id $chunks)
        (gic-check-dag-chunks-indexed $presentation $goal $root-id $chunks))
+      ((SourceDagStreamingIndexedCheckV1 $goal $root-id $chunks)
+       (gic-check-dag-streaming-indexed
+         $presentation $goal $root-id $chunks))
+      ((SourceDagPureStreamingCheckV1 $goal $root-id $chunks)
+       (gic-check-dag-pure-streaming
+         $presentation $goal $root-id $chunks))
+      ((SourceDagPureStreamingStepV1 $state $nodes)
+       (gic-check-dag-pure-stream-step
+         $presentation $state $nodes))
+      ((SourceDagPureStreamingFinishV1 $state $goal $root-id)
+       (gic-finish-dag-pure-stream $state $goal $root-id))
       ((SourceDagTerminalIndexedCheckV1 $goal $prefix-chunks $terminal)
        (gic-check-dag-terminal-indexed
          $presentation $goal $prefix-chunks $terminal))
@@ -168,6 +179,26 @@
       $source $goal $root-id $chunks)
    (gslt-source-run-v1 $source
      (SourceDagChunksIndexedCheckV1 $goal $root-id $chunks)))
+
+(= (gslt-source-check-dag-streaming-indexed-v1
+      $source $goal $root-id $chunks)
+   (gslt-source-run-v1 $source
+     (SourceDagStreamingIndexedCheckV1 $goal $root-id $chunks)))
+
+(= (gslt-source-check-dag-pure-streaming-v1
+      $source $goal $root-id $chunks)
+   (gslt-source-run-v1 $source
+     (SourceDagPureStreamingCheckV1 $goal $root-id $chunks)))
+
+(= (gslt-source-step-dag-pure-streaming-v1
+      $source $state $nodes)
+   (gslt-source-run-v1 $source
+     (SourceDagPureStreamingStepV1 $state $nodes)))
+
+(= (gslt-source-finish-dag-pure-streaming-v1
+      $source $state $goal $root-id)
+   (gslt-source-run-v1 $source
+     (SourceDagPureStreamingFinishV1 $state $goal $root-id)))
 
 (= (gslt-source-check-dag-terminal-indexed-v1
       $source $goal $prefix-chunks $terminal)

@@ -8,7 +8,7 @@ SOURCE="$ROOT/gslt_checked_source_v1.metta"
 SUITE="$ROOT/gslt_checked_source_v1_suite.metta"
 LOGDIR="$ROOT/parity_logs"
 LOG="$LOGDIR/gslt_checked_source_v1.log"
-EXPECTED_ASSERTIONS=24
+EXPECTED_ASSERTIONS=29
 
 mkdir -p "$LOGDIR"
 
@@ -33,9 +33,9 @@ if grep -q 'Error\|❌' "$LOG"; then
   exit 1
 fi
 
-if [[ "$(grep -Fxc '[(GSLTSourceV1Summary 24 24 0)]' "$LOG")" -ne 1 ]]; then
+if [[ "$(grep -Fxc '[(GSLTSourceV1Summary 29 29 0)]' "$LOG")" -ne 1 ]]; then
   echo "GSLT SOURCE V1 GATE: FAIL (exact summary absent or duplicated; log: $LOG)"
   exit 1
 fi
 
-echo "GSLT SOURCE V1 GATE: PASS (24/24 assertions; 0 failures)"
+echo "GSLT SOURCE V1 GATE: PASS (29/29 assertions; 0 failures)"

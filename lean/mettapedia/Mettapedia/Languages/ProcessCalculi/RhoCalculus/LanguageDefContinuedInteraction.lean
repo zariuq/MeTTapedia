@@ -608,7 +608,7 @@ theorem rhoContinuationRetyping_reflectivePresentationsRetypable :
 
 /-- Rho's reflective quote, drop, and parallel unit are all genuine
 non-principal constructors selected by the interaction cut. -/
-private theorem rhoReflectiveConstructorsAllowed :
+theorem rhoReflectiveConstructorsAllowed :
     ReflectiveConstructorsAllowed
       (· ∈ rhoContinuationRetyping.wrappedLabels)
       rhoReflectivePresentation := by

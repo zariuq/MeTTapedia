@@ -99,7 +99,7 @@ theorem pcBeatsBPAtEqualCompute_positiveFixture :
 
 /-- Negative outcome fixture: exact cost equality alone does not imply a PC
 advantage. -/
-theorem equalCompute_does_not_imply_pcBeats_fixture :
+theorem equalCompute_does_not_imply_pcBeats :
     PCBPAtEqualCompute equalComputeFixture 3 ∧
       ¬ PCBeatsBPAtEqualCompute equalComputeFixture 3 2 1 := by
   norm_num [PCBeatsBPAtEqualCompute, equalComputeFixture,
@@ -216,7 +216,7 @@ structure PCBPComputeCertificate : Prop where
 
 theorem pcBPCompute_crown : PCBPComputeCertificate where
   sharedCancellation := pcBPAtEqualCompute_iff_privateWork_eq
-  performanceSeparated := equalCompute_does_not_imply_pcBeats_fixture
+  performanceSeparated := equalCompute_does_not_imply_pcBeats
   empiricalBoundary := nonlinearPCBeatsBPAtEqualComputeBoundary_not_exact
 
 #print axioms pcBPAtEqualCompute_iff_privateWork_eq

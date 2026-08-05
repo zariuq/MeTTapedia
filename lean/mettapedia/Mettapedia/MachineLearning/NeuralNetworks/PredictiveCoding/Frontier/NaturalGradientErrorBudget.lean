@@ -121,7 +121,7 @@ end FiniteSettlingComposition
 
 /-! ## Positive and negative scalar fixtures -/
 
-theorem zeroPCNaturalErrorCertificate_fixture :
+theorem zeroPCNaturalErrorCertificate :
     PCNaturalErrorCertificate (0 : ℝ) 0 0 0 0 0 0 0 0 := by
   constructor <;> norm_num
 

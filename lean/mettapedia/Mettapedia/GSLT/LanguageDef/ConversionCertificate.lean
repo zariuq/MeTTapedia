@@ -111,6 +111,65 @@ theorem check_exists_derivation_with_exact_erasure
       refine ⟨.step head tailDerivation, ?_⟩
       simp [ConversionDerivation.erase, hhead, htail]
 
+/-! ## Conversion through a common reduct
+
+A directed reduction interface does not need a symmetry rule in its authored
+calculus.  Definitional conversion can instead be certified by two checked
+paths ending at one explicit common reduct. -/
+
+/-- Untrusted evidence that two terms reduce to one supplied common term. -/
+structure RawCommonReductCertificate where
+  common : Pattern
+  left : RawConversionCertificate
+  right : RawConversionCertificate
+deriving Repr
+
+/-- Check both directed paths against the same rooted conversion relation. -/
+def checkCommonReduct (checked : CheckedGSLT)
+    (conversion : RootedConversion checked) (left right : Pattern)
+    (certificate : RawCommonReductCertificate) : Bool :=
+  check checked conversion left certificate.common certificate.left &&
+    check checked conversion right certificate.common certificate.right
+
+/-- Proof-relevant meaning of a common-reduct certificate. -/
+structure CommonReductDerivation (checked : CheckedGSLT)
+    (conversion : RootedConversion checked) (left right : Pattern) where
+  common : Pattern
+  leftDerivation :
+    ConversionDerivation checked conversion left common
+  rightDerivation :
+    ConversionDerivation checked conversion right common
+
+/-- Accepted common-reduct certificates reconstruct both exact directed
+derivations. -/
+theorem checkCommonReduct_soundness {checked : CheckedGSLT}
+    {conversion : RootedConversion checked} {left right : Pattern}
+    {certificate : RawCommonReductCertificate}
+    (hcheck :
+      checkCommonReduct checked conversion left right certificate = true) :
+    Nonempty (CommonReductDerivation checked conversion left right) := by
+  simp only [checkCommonReduct, Bool.and_eq_true] at hcheck
+  rcases check_soundness hcheck.1 with ⟨leftDerivation⟩
+  rcases check_soundness hcheck.2 with ⟨rightDerivation⟩
+  exact
+    ⟨{ common := certificate.common
+       leftDerivation
+       rightDerivation }⟩
+
+/-- Erasing two typed paths produces an accepted common-reduct
+certificate. -/
+theorem checkCommonReduct_erase {checked : CheckedGSLT}
+    {conversion : RootedConversion checked} {left right common : Pattern}
+    (leftDerivation :
+      ConversionDerivation checked conversion left common)
+    (rightDerivation :
+      ConversionDerivation checked conversion right common) :
+    checkCommonReduct checked conversion left right
+      { common
+        left := leftDerivation.erase
+        right := rightDerivation.erase } = true := by
+  simp [checkCommonReduct, check_erase]
+
 /-! ## Positive and negative certificate fixtures -/
 
 private def datumConstructor (head : String) : GrammarRule :=
@@ -270,5 +329,41 @@ example :
 inequality; it is only failure to establish the requested path. -/
 example : check conversionChecked rootedConversion c a .refl = false := by
   simp [check, a, c]
+
+/-- Positive: directed reduction paths certify symmetric conversion through
+their shared endpoint without adding a symmetry rule. -/
+example :
+    checkCommonReduct conversionChecked rootedConversion a c
+      { common := c
+        left := acCertificate
+        right := .refl } = true := by
+  simp [checkCommonReduct, acCertificate, check,
+    RootedConversion.judgment, conversionChecked, rootedConversion,
+    abProof, bcProof, CheckedGSLT.checkRaw, InferenceChecker.checkRaw,
+    InferenceChecker.checkRawChildren, CheckedGSLT.presentation,
+    conversionSource, conversionPresentation, conversionLanguage,
+    conversionDecl, abRule, bcRule, datumConstructor,
+    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    RuleSchema.sideConditionsHold, instantiateSchema?,
+    instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
+    a, b, c]
+
+/-- Negative: choosing a non-common endpoint rejects even when one side has a
+valid path to a different term. -/
+example :
+    checkCommonReduct conversionChecked rootedConversion a c
+      { common := b
+        left := .step b abProof .refl
+        right := .refl } = false := by
+  simp [checkCommonReduct, check, RootedConversion.judgment,
+    conversionChecked, rootedConversion, abProof,
+    CheckedGSLT.checkRaw, InferenceChecker.checkRaw,
+    InferenceChecker.checkRawChildren, CheckedGSLT.presentation,
+    conversionSource, conversionPresentation, conversionLanguage,
+    conversionDecl, abRule, bcRule, datumConstructor,
+    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    RuleSchema.sideConditionsHold, instantiateSchema?,
+    instantiateSchemaAt?, instantiateSchemas?, instantiateSchemasAt?,
+    a, b, c]
 
 end Mettapedia.GSLT.LanguageDef.ConversionCertificate

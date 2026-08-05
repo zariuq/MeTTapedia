@@ -16,6 +16,7 @@
 \usepackage{multirow}
 \usepackage{array}
 \usepackage{amsmath}
+\newcommand{\eval}[2]{\mathrm{eval}(#1,\,#2)}
 \usepackage{amssymb}
 \usepackage{tikz}
 \usetikzlibrary{arrows.meta,positioning,fit,backgrounds}
@@ -87,7 +88,7 @@ pipeline proven in Lean, and the first rule classes (grounded dispatch,
 argument congruence, equation matching) are welded to a reflectable
 small-step rule table whose rule-removal tests prove the engine
 genuinely depends on the declared rules.
-Two 2026-07 developments extend the architecture: parsers
+Two further pillars extend the architecture: parsers
 \emph{generated from the authored grammars themselves} (per-language
 LanguageDefs compiled to native readers with differential, mutation, and
 purity gates --- the pipeline caught two defects in the authored grammars
@@ -389,6 +390,31 @@ probe confirmed the divergence.  The fix splits the rule into
 \code{HES\_Switch} (evaluated scrutinee) and \code{HES\_SwitchMinimal}
 (structural), with a distinguishing witness pair pinned in the test
 suite.
+
+\paragraph{A representative conformance probe.}
+The defect classes above are locked by gates rather than by a standing
+program suite (standing suites tax every future run; the classes are
+the durable artifact).  One representative probe is worth stating
+because its \emph{correct} answer is doubly instructive:
+
+\begin{verbatim}
+(= (same $x $x) hit)
+!(same a a)   ; [hit]
+!(same a b)   ; [(same a b)]  -- inert, NOT hit, NOT empty
+\end{verbatim}
+
+\noindent
+A nonlinear pattern constrains both positions to be equal, so
+positional pattern compilation without an equality check answers
+\code{hit} --- and an engine grounded in a failure-driven host answers
+with an empty bag --- while the specified behaviour is that the
+unmatched call remains \emph{uninterpreted}.  \CeTTa{}'s eager and lazy
+lanes and upstream \HE{} agree on this and on the sibling probes for
+grounded-argument strictness, duplicate multiplicity, view
+invalidation, and strict equality; engines with different declared
+semantics (\PeTTa{}'s Prolog grounding, set-carrier stores) simply
+answer as their own specifications say, which is what declared
+contracts are for.
 
 \subsection{The Reflective Modal Surface}
 \label{sec:modal}
@@ -1620,9 +1646,182 @@ failure.  Three findings matter for \CeTTa{}'s roadmap:
   semantics-aware benchmarking rather than wall-clock tables.
 \end{itemize}
 
+\subsection{Pinned Candidate Revalidation}
+\label{sec:pinned-candidate-revalidation}
+
+The four-engine conclusions above were rechecked on ordinary optimized
+binaries against a fixed \CeTTa{} candidate
+(\code{7707cef}), JeTTa \code{c95d87d} (version 0.7.0), and the
+corresponding pinned \PeTTa{}, HE, and MeTTa-on-MORK revisions.  Timed
+cells were admitted only after exact answers agreed; reported values are
+medians of five interleaved runs where the harness supports repetition.
+Sanitizer runs, failed cells, and semantically unequal cells are not
+timing evidence.
+
+\paragraph{Shared-program conformance.}
+Twenty of twenty-one selected HE programs produced identical output
+bags on HE with GroundingSpace, HE with MORK, \CeTTa{} native space, and
+\CeTTa{} explicit \PathMap{} space.  The remaining documentation example
+failed on both HE stores and was excluded rather than attributed to a
+\CeTTa{} backend.  A separate duplicate-atom discriminator exposed the
+important carrier boundary: HE's MORK store collapsed three insertions
+to set support, whereas both \CeTTa{} spaces preserved the two requested
+occurrences in the query result.  Thus \PathMap{} agreement is not merely
+cardinality agreement: \CeTTa{}'s counted encoding preserves the language's
+bag contract.
+
+The command-line \code{--space-engine pathmap} configuration presently
+stores the bootstrap portion in \PathMap{} and then falls back to the
+ordinary evaluator space.  It is useful for whole-program conformance but
+is not claimed as a pure backend performance result.  All \PathMap{}
+timings below use an explicit \code{(new-space pathmap)} and therefore
+exercise the backend itself.
+
+\paragraph{One-million-fact space lifecycle.}
+The Roman/friend matrix performs one million insertions, one exact hit,
+one exact miss, a full scan, one removal, a post-removal miss, and a
+post-removal count.  Every lane returned the same rows and multiplicities.
+Table~\ref{tab:roman-friend-refresh} reports whole-process wall time and
+peak RSS; the embedded operation timer is shown separately for the exact
+hit because it isolates lookup and reconstruction from process startup.
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{lrrr}
+\toprule
+Lane & Wall time & Peak RSS & Exact hit \\
+\midrule
+\PeTTa{} ordinary space & 0.85\,s & 295\,MiB & 129\,ms \\
+\CeTTa{} native space & 4.56\,s & 643\,MiB & 25.2\,$\mu$s \\
+\CeTTa{} native $\rightarrow$ resident MORK & 6.53\,s & 1{,}317\,MiB & 113\,$\mu$s \\
+\CeTTa{} explicit \PathMap{} & 6.43\,s & 1{,}015\,MiB & 56.3\,ms \\
+\CeTTa{} \PathMap{} $\rightarrow$ resident MORK & 4.45\,s & 422\,MiB & 116\,$\mu$s \\
+\CeTTa{} resident MORK & 4.46\,s & 349\,MiB & 167\,$\mu$s \\
+\PeTTa{} MORK bridge & 13.31\,s & 668\,MiB & 111\,$\mu$s \\
+\bottomrule
+\end{tabular}
+\caption{Pinned Roman/friend lifecycle at one million facts.
+Conversion lanes include transfer cost; resident lanes do not transfer the
+store for each query.}
+\label{tab:roman-friend-refresh}
+\end{table}
+
+The table does not support ``always outsource to MORK.''  \PeTTa{}'s
+ordinary indexed space wins the complete lifecycle, while resident MORK
+offers \CeTTa{} the smallest footprint among its million-fact lanes.
+\CeTTa{}'s explicit \PathMap{} exact-hit cost is dominated by the current
+single-pattern adapter and result reconstruction, not by trie lookup.
+Conversely, transferring a native store before a query loses both time and
+memory.  The engineering implication is local: retain resident indexed
+stores, push conjunction and folds into their query algebra, and stream or
+factorize results instead of repeatedly materializing space tuples.
+
+\paragraph{Conjunctive matching.}
+On a generated two-hop join with 400{,}000 edges and 399{,}999 answers,
+\CeTTa{}'s stock evaluator took 953\,ms per query and its streamed
+conjunctive fast path 797\,ms.  MeTTa-on-MORK's product-zipper query took
+819\,ms at the same scale.  These close values have different internal
+profiles: MeTTa-on-MORK prunes a multi-pattern product during trie descent,
+while \CeTTa{} still reconstructs candidate bindings around a shared
+evaluator.  At smaller explicit-store sizes, native \CeTTa{} remains
+faster than its present \PathMap{} adapter (31.3\,ms versus 73.6\,ms at
+20{,}000 edges).  The appropriate adoption path is therefore to expose
+multi-pattern cursor traversal and bounded row batches through \CeTTa{}'s
+backend interface, not to copy data across an FFI boundary for every join.
+
+\paragraph{MAM workload revalidation.}
+Table~\ref{tab:mam-refresh} uses the same five semantic workloads across
+the engines.  JeTTa's core time excludes JVM startup; its wall/RSS cell
+includes it.  \PeTTa{} uses native tail-recursive drivers for the
+million-step interpreter and differentiation loops.  A dash means the
+exact workload did not complete successfully and is not a performance
+number.
+
+\begin{table}[htbp]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lrrrr}
+\toprule
+Workload & JeTTa wall/RSS & \PeTTa{} wall/RSS
+         & \CeTTa{} HE wall/RSS & \CeTTa{} Prime wall/RSS \\
+\midrule
+Fibonacci(30)
+  & 0.26\,s / 76\,MiB & 0.40\,s / 19\,MiB
+  & 15.85\,s / 294\,MiB & 97.09\,s / 11.4\,GiB \\
+Interpreter ($10^6$)
+  & 1.70\,s / 875\,MiB & 0.80\,s / 19\,MiB
+  & --- (allocation failure) & --- (timeout) \\
+Differentiation ($10^6$)
+  & 2.74\,s / 741\,MiB & 1.40\,s / 19\,MiB
+  & --- (allocation failure) & --- (timeout) \\
+Synthesis(40)
+  & 0.45\,s / 104\,MiB & 0.10\,s / 19\,MiB
+  & 0.14\,s / 68\,MiB & 0.66\,s / 139\,MiB \\
+Backward chaining(1000)
+  & 0.41\,s / 102\,MiB & 0.10\,s / 23\,MiB
+  & 0.05\,s / 29\,MiB & --- (stack failure) \\
+\bottomrule
+\end{tabular}
+}
+\caption{Pinned MAM-workload revalidation.  Every numeric cell
+returned the stated exact checksum before timing.}
+\label{tab:mam-refresh}
+\end{table}
+
+The refreshed evidence sharpens rather than overturns the competence-zone
+picture.  JeTTa's compiled and memoized path is strongest on Fibonacci;
+\PeTTa{}'s WAM is strongest end-to-end on the million-step deterministic
+loops; and \CeTTa{} HE remains strongest on the low-output deduction row.
+Prime's failures and high Fibonacci cost are not presented as a competitive
+result: they are the measured obligations for the experimental Need-machine
+work---linear administrative cost within a demand path, followed by sound
+ground-call sharing across repeated pure calls.
+
 \section{Performance Analysis}
 
-\subsection{Current profiling status}
+\subsection{Asymptotic properties}
+
+The engine's asymptotic behaviour on the covered workload families is a
+maintained property, enforced by paired growth ladders (candidate
+against a pinned baseline, per-size time and memory cells plus log-log
+slope checks) rather than by review.  The load-bearing facts, with the
+algorithms in Appendix~\ref{app:algorithms}:
+
+\begin{itemize}
+\item \textbf{Interning is cluster-free.}  Stored record hashes and the
+  slot indices derived from them are distinct roles; an avalanche
+  finalizer at the slot boundary prevents structural name families from
+  degenerating into shared probe clusters, keeping bulk ingestion
+  $O(N)$.
+\item \textbf{Judgment recording is constant per step.}  Prime's
+  evidence machinery appends at $O(1)$ per evaluation step, so budgeted
+  judgments scale linearly with the runs they observe.
+\item \textbf{Branch-local arena discipline.}  Evaluation branches whose
+  results cannot escape release their scratch per branch; peak
+  evaluation memory on insertion workloads sits below a Prime-free
+  build's (paired-ladder ratios $0.60$--$0.78\times$).
+\item \textbf{Counting is engine-uniform and streamed.}  Match-set
+  counting flows through the backend visitor seam at the evaluation
+  site, never through per-engine fast paths in grounded dispatch;
+  cross-engine golden tests pin the uniformity.
+\item \textbf{Deterministic-tail loops are flat.}  Unbounded
+  tail-recursive effect loops (the classic bulk \code{add-atom}
+  pattern) run with constant frames and per-iteration arena reset.  The
+  transformation's semantic license --- iterative execution equals
+  recursive evaluation, answers and effect multisets alike, with
+  per-unfolding invariants transferring to whole runs --- is a
+  kernel-checked Lean theorem set
+  (\code{Languages/MeTTa/TailLoopKernel}).
+\end{itemize}
+
+On the bulk-ingest family the native engine matches the reference
+Prolog engine's complexity class ($O(N)$); the residual difference is a
+constant factor addressed by revision-keyed compiled views
+(Appendix~\ref{app:algorithms}).  Benchmark tables elsewhere in the
+paper are being re-measured against the current engine and should be
+read as indicative.
+
+\subsection{Earlier heap profiles}
 
 Valgrind reruns on the grounded targets, measured on the pre-GC tree
 (2026-06-27), split into one success
@@ -2595,6 +2794,20 @@ role: demand-driven search over an inspectable frontier, with
 claim-bearing results lowered to an external checker rather than asserted
 by execution.
 
+\paragraph{Practicality.}
+Ground-call memoization --- an off-by-default table admitting only
+ground, canonical, completed, effect-pure calls at an exact space
+revision, replayed as whole bags --- makes na\"ive recursive workloads
+practical (na\"ive \code{fib} runs in fractions of a second).  Judgment
+evaluation records its evidence at constant cost per step, so budgeted
+judgments scale linearly with the run they observe.  Prime's
+per-occurrence bookkeeping lives behind a single lazy extension pointer
+that is \code{NULL} on the \HE{} lane, so the shared evaluator carries
+no Prime overhead: paired storage ladders place the Prime-bearing
+engine below a Prime-free build on peak memory.
+Appendix~\ref{app:algorithms} records the algorithms and the
+asymptotic analysis.
+
 \section{Related Work}
 
 \paragraph{Concurrent constraint programming.}
@@ -3476,6 +3689,276 @@ certificate formats; ``freeze'' vocabulary replaced by governed change
 with impossibility witnesses; and a draft rule promoting every program
 equation to checker conversion refused in favor of the stratification of
 B.8.
+
+%% ════════════════════════════════════════════════════════════════════
+
+\section{Appendix: Concrete Syntax}
+\label{app:grammar}
+
+The authoritative syntax of every profile is its \code{LanguageDef}: the
+generated readers of Section~\ref{sec:gslt2parse} \emph{are} the
+grammar, and the rendering here is descriptive.  This appendix gives the
+human-readable account a newcomer needs before consulting the
+definitions.
+
+\subsection{The shared s-expression core}
+
+\begin{verbatim}
+program    ::= form*
+form       ::= bang | atom            ; top level
+bang       ::= "!" "(" atom* ")"      ; evaluated directive
+atom       ::= symbol | variable | literal | expr
+expr       ::= "(" atom* ")"
+variable   ::= "$" name               ; named, co-referring
+literal    ::= integer | float | "string"
+comment    ::= ";" ... end-of-line
+\end{verbatim}
+
+Distinguished expression heads shared by the family: \code{(= lhs rhs)}
+declares an equation (an unordered member of the enclosing space, never
+an ordered clause); \code{(: term type)} declares a type fact;
+\code{(match space pattern template)} queries; \code{(add-atom space a)}
+and \code{(remove-atom space a)} effect the store;
+\code{(pragma!\ key value)} configures.  Results of a bang print as a
+bag --- ordering is non-semantic throughout the family.
+
+\subsection{Profile deltas}
+
+\textbf{\HE{} lane} (\code{--lang he}, profiles \code{he},
+\code{he-compat}, \code{he-extended}): eager evaluation; grounded
+operators receive unevaluated arguments unless their contract demands
+values; unknown symbols remain uninterpreted (never an error);
+\code{\&self} denotes the ambient space and \code{(new-space kind)}
+introduces backend-selected spaces.
+
+\textbf{Prime} (\code{--lang prime}): identical concrete syntax with
+three visible deltas --- bare \code{\$} is a \emph{fresh anonymous}
+variable per occurrence; the judgment form
+\code{(prime-judge s (May (PrimeEvaluate e) v) budget?)} expresses
+budgeted evaluation claims; and evaluation is branch-local call-by-need
+with call-time choice, so program meaning coincides with the eager
+reading exactly on the terminating, effect-in-demanded-position
+fragment (Appendix~\ref{app:migration}).
+
+\textbf{\PeTTa{}}: the same core grammar hosted on Prolog;
+imports use \code{!(import!\ \&self lib)}; test harness forms
+(\code{!(test \dots)}) and library namespaces (\code{lib:op}) are
+conventions of the distribution rather than language deltas.
+
+\subsection{Operational semantics, in brief}
+
+In the style of the MeTTa formal-specification lineage, evaluation is a
+relation from a space and a term to a \emph{multiset} of results,
+written $\eval{s}{e} \Downarrow B$; the full small-step rule table and
+its Lean certification are Section~\ref{sec:langdefpack} material, and
+this digest fixes the reading.
+
+\paragraph{Eager lane.}  The generating rules, informally:
+\begin{align*}
+\textsc{(Value)}\quad & \eval{s}{v} \Downarrow \{v\}
+  \quad\text{$v$ irreducible} \\
+\textsc{(Dispatch)}\quad & \eval{s}{(f\,\bar a)} \Downarrow
+  \biguplus_{(=\ (f\,\bar p)\ r)\,\in\, s,\ \sigma = \mathrm{match}(\bar p, \bar a)}
+  \eval{s}{r\sigma} \\
+\textsc{(Ground)}\quad & \eval{s}{(g\,\bar a)} \Downarrow \mathrm{apply}(g, \bar a)
+  \quad\text{$g$ grounded; arguments per $g$'s contract} \\
+\textsc{(Match)}\quad & \eval{s}{(\mathrm{match}\ s'\ p\ t)} \Downarrow
+  \biguplus_{\sigma \,\in\, \mathrm{query}(s', p)} \{\,t\sigma\,\} \\
+\textsc{(Effect)}\quad & \eval{s}{(\mathrm{add\text{-}atom}\ s'\ a)}
+  \Downarrow \{()\} \ \text{bumping $s'$'s revision}
+\end{align*}
+Multiset union $\uplus$ is the whole story of nondeterminism: no rule
+orders branches, and no observation may depend on branch order.
+Equations are members of $s$, so \textsc{Dispatch} consults the store
+at its current revision --- rules are data.
+
+\paragraph{Prime lane.}  Application allocates rather than recurses:
+$\eval{s}{(f\,\bar a)}$ binds each argument to a \emph{need cell}
+(allocated once, shared by every candidate equation --- call-time
+choice), and evaluation proceeds by \emph{forcing} cells the taken path
+demands.  Forcing a completed cell replays its cached bag; forcing a
+fresh cell evaluates under the cell's captured lexical environment and
+memoizes values and stable faults.  The judgment form is a budgeted
+observation of this process:
+\[
+\frac{\mathrm{force}^{\le k}(\eval{s}{e}) \ni v}
+     {s \vdash \mathrm{May}\,(\mathrm{PrimeEvaluate}\ e)\ v\ \ \text{Established}\ (k)}
+\]
+read: within budget $k$, some demand-driven run of $e$ reaches $v$.
+Budget-indexed observations of one run are monotone for deterministic
+tails and eventually constant in general (the fuel-convergence
+discipline); the judgment therefore asserts a property of the run, not
+an artifact of its truncation.
+
+%% ════════════════════════════════════════════════════════════════════
+
+\section{Appendix: Moving from \HE{} and \PeTTa{} to Prime}
+\label{app:migration}
+
+Prime is a sibling, not an extension: most programs written against the
+shared fragment run unchanged, and the differences that matter are
+exactly the ones laziness makes visible.  A migration checklist:
+
+\begin{enumerate}
+\item \textbf{Unneeded arguments may never run.}  Under call-by-need an
+  argument the taken path never demands is never evaluated:
+  \code{(const 5 (loop))} returns \code{5} in Prime where an eager
+  engine diverges.  Programs that relied on argument evaluation
+  \emph{for its side effects} must put the effect in demanded position.
+\item \textbf{Effects fire on demand.}  An \code{add-atom} buried in a
+  never-demanded subterm does not fire.  Sequence effects through
+  demanded positions (e.g.\ a \code{let} whose body uses the bound
+  result) rather than relying on evaluation order.
+\item \textbf{Sharing is observable (call-time choice).}  One delayed
+  nondeterministic choice used twice yields \emph{correlated} outcomes:
+  \code{(pair x x)} with \code{x} a shared coin has two outcomes, not
+  four.  This is the semantics that makes the shared-cause probability
+  discriminator exact ($1/2$, not $3/4$) --- migrating probabilistic
+  code should treat it as a feature, and code that wanted independent
+  draws must introduce two sources.
+\item \textbf{Strict equality forces.}  \code{==} demands the structure
+  of both sides (a \code{STRUCTURE}-demand rule), so idioms like
+  \code{(filter-atom xs \$a (== \$a v))} behave as in \HE{}.
+\item \textbf{Bare \code{\$} is anonymous.}  Rename any \HE{} program
+  that used bare \code{\$} as a named variable; in Prime each occurrence
+  is fresh and binds nothing referenceable.
+\item \textbf{Unbounded searches want the judge.}  Where \HE{} code
+  guarded a possibly-divergent evaluation with ad-hoc fuel, Prime offers
+  \code{(prime-judge s (May (PrimeEvaluate e) v))} under a default or
+  explicit budget: a bounded \emph{claim} about the run, with receipts,
+  rather than a truncated run.
+\item \textbf{Memoization is opt-in.}  \code{pragma!\ search-table-mode
+  ground-call} enables the ground-call table (admission: ground,
+  canonical, completed, effect-pure, exact revision; whole-bag replay).
+  Nothing is memoized by default.
+\item \textbf{Faults are data at a boundary.}  Ordinary evaluation
+  propagates faults; use the structural observers to inspect them
+  deliberately instead of pattern-matching on error shapes mid-flow.
+\item \textbf{What does not change.}  Bag semantics and non-semantic
+  ordering; \code{match} and space effects on the shared fragment;
+  equations as unordered space members; the profile discipline (silent
+  fall-through for surfaces a profile does not provide).
+\end{enumerate}
+
+From \PeTTa{} specifically, the additional step is dropping reliance on
+clause order and cut-like control: Prime's dispatch explores an
+unordered candidate frontier under a policy-neutral certified control
+layer, so programs encoding priority through textual order must encode
+it in data instead.
+
+%% ════════════════════════════════════════════════════════════════════
+
+\section{Appendix: Implementation Algorithms and Asymptotics}
+\label{app:algorithms}
+
+This appendix records the algorithmic decisions behind the engine's
+current asymptotics, in the order an atom meets them.  Design principle
+throughout: identity is assigned once at the store boundary, inner loops
+speak identifiers rather than bytes, and every optimization must be a
+homomorphism of the observable algebra (bag union, conjunctive query,
+oriented rewrite, reify, sharing) --- enforced by differential and
+planted-mutation gates rather than review alone.
+
+\subsection{Interning and the slot-index boundary}
+
+All terms intern into a term universe: structural bytes are hashed
+incrementally per piece, and equality on the hot path is identifier
+comparison.  The July campaign exposed a subtle obligation: the
+\emph{stored} record hash and the \emph{slot index} derived from it are
+different roles.  An incremental \code{(h*33)\^{}piece} hash keeps a
+name family's entropy in the low bits, so families like
+\code{(friend sam \$k)} collapsed into one open-addressing cluster ---
+each new sibling's probe walked the whole family, $O(N^2)$ in
+aggregate.  The repair applies an avalanche finalizer (fmix-style) at
+exactly the four sites where a stored hash becomes a slot index,
+through one shared function so lookup and insert cannot disagree; the
+stored hash --- and every contract downstream of it --- is untouched.
+Bulk ingestion is $O(N)$; the harness fell from tens of seconds to
+fractions of a second at 100k facts.  The general lesson is recorded as
+a store obligation: constant carving reach in \emph{shape} and in
+\emph{constant} --- an access path whose cost grows with sibling count
+is a defect even when memory stays linear.
+
+\subsection{Match indexing and selectivity}
+
+Pattern queries route through a backend seam (candidates, query, and a
+reserved whole-conjunction operation).  The native discrimination index
+stores per-position keys; the campaign's design correction is
+\emph{selectivity-gated discrimination}: a position discriminates only
+where it has selectivity, and high-cardinality leaf positions collapse
+to flat lists under their prefix (preserving $O(1)$ ground lookup and
+the $O(N)$ variable walk while removing the per-leaf node overhead that
+dominated index memory at scale).
+
+\subsection{Arena discipline}
+
+Evaluation scratch lives in arenas.  Two proven refinements: branch
+arenas --- an all-solutions engine gains nothing from
+backtracking-style undo, so each nondeterministic branch marks and
+releases its scratch, with survivors copied out --- and per-iteration
+reset on the deterministic-tail loop lane, where the no-escape argument
+is strongest (effect-only, unit-result branches).  Together they
+inverted the paired memory ladders: insertion workloads now peak below
+the pre-Prime baseline.
+
+\subsection{The deterministic-tail loop lane}
+
+A single-branch tail self-call executes as a loop: constant frames,
+accumulator-threaded effects, per-iteration arena reset, with any
+nondeterministic tail falling back to the general evaluator (the
+call-time-choice guard).  The lane's semantic license is
+kernel-checked (\code{Languages/MeTTa/TailLoopKernel}): iterative
+execution equals fuel-indexed recursive evaluation --- answers and
+effect \emph{multisets} alike; halting deterministic-tail runs are
+precisely the fuel-convergent class; and per-unfolding invariants
+transfer to whole-run results.  Resource behaviour is deliberately
+outside the theorem: the differential and ladder gates check the
+implementation against it.
+
+\subsection{Tables and views}
+
+Two memo structures share the revision discipline (a table entry is
+valid only at the exact space revision that produced it):
+the ground-call table (admission: ground, canonical, completed with
+value or stable fault, effect-pure receipt delta; whole-bag replay with
+per-occurrence receipt references), and the revision-keyed
+\emph{compiled view} direction now under construction --- per
+(head, revision) admissibility bits and value-specific-type-fact gates
+first, growing toward loop-body views derived from the specification by
+partial evaluation rather than bolted beside the evaluator as caches.
+
+\subsection{Receipts under the valve}
+
+Histories are recorded at seams, on demand, under budget.  Prime's
+per-occurrence bookkeeping (world, need-cell identity, causal receipt,
+multiplicity, fault status, pinned revision) lives behind one lazy
+extension pointer, \code{NULL} on the \HE{} lane, so provenance-bearing
+evaluation and provenance-free evaluation share code without sharing
+cost.  Authority never flows from traces (the one-way evidence valve),
+which is what licenses throttling them arbitrarily for performance.
+
+\subsection{Asymptotic summary}
+
+\begin{center}
+\begin{tabular}{lll}
+\hline
+operation & cost & note \\
+\hline
+intern / equality & $O(1)$ amortized & avalanche-finalized slots \\
+bulk ingest ($N$ adds) & $O(N)$ & was $O(N^2)$ pre-repair \\
+ground exact-hit query & $O(1)$ expected & index probe \\
+variable-pattern match & $O(N)$ output-linear & seam visitors \\
+counting a match set & $O(\text{matches})$ & streamed, no tuple \\
+deterministic tail loop & $O(1)$ frames, flat RSS & lane + kernel \\
+judge-path recording & $O(1)$ per step & was super-linear \\
+\hline
+\end{tabular}
+\end{center}
+
+The remaining engineering frontier is a constant factor against the
+reference Prolog engine's assert path, under active reduction via the
+compiled-view work; no super-linear behaviour is currently known on the
+covered workload families.
 
 \begin{thebibliography}{9}
 \bibitem{metta}

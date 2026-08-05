@@ -4,6 +4,8 @@ import Mettapedia.Languages.MeTTa.PeTTa
 import Mettapedia.Languages.MeTTa.CoreProfile
 import Mettapedia.Languages.MeTTa.DialectProfile
 import Mettapedia.Languages.MeTTa.RuntimeSpec
+import Mettapedia.Languages.MeTTa.TailLoopKernel
+import Mettapedia.Languages.MeTTa.LeafPatchViewKernel
 import Mettapedia.Languages.MeTTa.RuntimeExec
 import Mettapedia.Languages.MeTTa.ExecutionContract
 import Mettapedia.Languages.MeTTa.ScopeContract

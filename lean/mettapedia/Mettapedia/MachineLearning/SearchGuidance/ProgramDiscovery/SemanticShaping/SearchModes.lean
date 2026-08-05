@@ -92,7 +92,7 @@ theorem hybrid_guidance_preserves_baseline_rank
     (semanticSlots rank : ℕ) :
     twoQueueCandidate baseline semantic semanticSlots
         (queuePeriod semanticSlots * rank) = baseline[rank]? :=
-  baseline_rank_submitted_at_explicit_time baseline semantic semanticSlots rank
+  twoQueueCandidate_mul_queuePeriod baseline semantic semanticSlots rank
 
 #print axioms SearchModeOutputs.targetGuided_coverage_le_hybrid
 #print axioms SearchModeOutputs.corpusWide_coverage_le_hybrid

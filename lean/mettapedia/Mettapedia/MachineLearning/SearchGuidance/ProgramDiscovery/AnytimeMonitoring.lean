@@ -1,4 +1,4 @@
-import Mettapedia.MachineLearning.SearchGuidance.ProgramDiscovery.ExperimentSemantics
+import Mettapedia.MachineLearning.SearchGuidance.ProgramDiscovery.PairedDesignEstimands
 import Mettapedia.PLN.Evidence.BinEvNat
 import Mathlib.Probability.Martingale.OptionalStopping
 

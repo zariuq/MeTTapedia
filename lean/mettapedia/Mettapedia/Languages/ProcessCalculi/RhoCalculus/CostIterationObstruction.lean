@@ -128,8 +128,7 @@ private theorem rhoBaseEmpty_normalized_pattern :
   simp [TypedCostRegionBoundaryTable.Values.restoreSupportedSkeleton,
     ReflectiveContextSupport.substitute, ReflectiveContextSupport.substituteAt]
 
-private theorem rhoCostNormalizeOpen_baseEmpty
-    (laws : CIGSLT.CostOneObjectLaws rhoCIGSLT) :
+private theorem rhoCostNormalizeOpen_baseEmpty :
     (rhoCIGSLT.costNormalizeOpen rhoBaseEmpty).1 =
       .apply (costBaseConstructorName "PZero") [] := by
   calc
@@ -138,7 +137,7 @@ private theorem rhoCostNormalizeOpen_baseEmpty
           ).normalizeErasure.1 := rfl
     _ = rhoBaseEmptyElaboration.normalizeErasure.1 :=
       congrArg (fun term => term.1)
-        (laws.compactCoherent rhoBaseEmpty
+        (CostCanonicalLaws.rho_compactCostNormalizationCoherent rhoBaseEmpty
           (CostOpenElaboration.compile rhoCIGSLT rhoBaseEmpty)
           rhoBaseEmptyElaboration)
     _ = _ := rhoBaseEmpty_normalized_pattern
@@ -573,7 +572,7 @@ private theorem sourceNode_sourceCanonical
     _ = (rhoBaseEmptyElaborationAt laws node _sourceSortEq
           _patternEq).normalizeErasure.1 :=
       congrArg (fun term => term.1)
-        (laws.compactCoherent node.skeleton
+        (CostCanonicalLaws.rho_compactCostNormalizationCoherent node.skeleton
           (CostOpenElaboration.compile rhoCIGSLT
             node.skeleton)
           (rhoBaseEmptyElaborationAt laws node _sourceSortEq _patternEq))

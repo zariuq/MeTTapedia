@@ -1646,22 +1646,32 @@ structure CostContextualOpenLaws (source : CIGSLT) : Prop where
       (source.costNormalizeOpen term).2.1.ReflectiveSupportSafeAt
         support available binderImage
 
-/-- Exact laws needed for the contextual sort-indexed Cost open section.
+/-- Exact laws needed for the chosen compact Cost executor to supply a
+contextual sort-indexed open section.
 
 Typed unary normalization supplies soundness inside the exact free, bound,
-and sort fiber.  Compact coherence removes elaboration-choice dependence for
-one term, while generator invariance collapses each authored equation
-generator.  The contextual extension carries the independent support and
-continuation-fragment obligations required to inhabit `CIGSLT`; exactness is
-not inferred from relational overlap coherence. -/
-structure CostOpenCanonicalLaws (source : CIGSLT) : Prop
+and sort fiber, while generator invariance collapses each authored equation
+generator.  The contextual extension carries the independent support laws
+required to inhabit `CIGSLT`.  No claim is made here that all proof-relevant
+elaborations erase to the same normal form; that strictly stronger property
+is separated below because it is not hereditary under Cost iteration. -/
+structure CostOpenSectionLaws (source : CIGSLT) : Prop
     extends CostTypedUnaryNormalizationLaws source,
       CostContextualOpenLaws source where
-  compactCoherent : CompactCostNormalizationCoherent source
   generatorInvariant : CostOpenGeneratorInvariant source
 
-/-- Object property selecting exactly the ciGSLTs on which typed Cost
-normalization is an exact open canonical section. -/
+/-- Additional compact-factorization law.
+
+This says every proof-relevant elaboration of one compact term erases to the
+same exact representative.  It is useful when true, but it is intentionally
+not required to construct the next continued Cost object: distinct semantic
+fibres may share one compact observation at higher Cost layers. -/
+structure CostOpenCanonicalLaws (source : CIGSLT) : Prop
+    extends CostOpenSectionLaws source where
+  compactCoherent : CompactCostNormalizationCoherent source
+
+/-- Object property selecting the ciGSLTs on which the proof-relevant Cost
+normalizer additionally factors through one exact compact representative. -/
 def CostCanonicalObjectProperty : CategoryTheory.ObjectProperty CIGSLT :=
   CostOpenCanonicalLaws
 
@@ -1680,7 +1690,7 @@ def costCanonicalObjectsForget :
 from proof-relevant tree normalization; completeness is generated solely from
 exact invariance under the authored open-equation generators. -/
 def CIGSLT.costOpenSection (source : CIGSLT)
-    (laws : CostOpenCanonicalLaws source) :
+    (laws : CostOpenSectionLaws source) :
     ComputableOpenSection source.costIGSLT :=
   ComputableOpenSection.ofGeneratorInvariant source.costNormalizeOpen
     (fun term => source.costNormalizeOpen_typed_openEquationSetoid
@@ -1691,7 +1701,7 @@ def CIGSLT.costOpenSection (source : CIGSLT)
 Every additional field is supplied by the Cost₁ object law rather than
 inferred from equation equivalence. -/
 def CIGSLT.costContextualOpenSection (source : CIGSLT)
-    (laws : CostOpenCanonicalLaws source) :
+    (laws : CostOpenSectionLaws source) :
     ComputableContextualOpenSection source.costIGSLT where
   toComputableOpenSection := source.costOpenSection laws
   preservesFreeVariableSupport := by
@@ -1708,7 +1718,7 @@ def CIGSLT.costContextualOpenSection (source : CIGSLT)
 /-- Exact representative independence on every typed open Cost equation
 path.  This theorem is downstream of the local generator law. -/
 theorem CIGSLT.costNormalizeOpen_complete (source : CIGSLT)
-    (laws : CostOpenCanonicalLaws source)
+    (laws : CostOpenSectionLaws source)
     {targetFree : WellSorted.FreeTypeContext}
     {targetBound : List TypeExpr}
     {targetSort : LangSort source.costWholeLanguage}
@@ -1737,7 +1747,7 @@ def CIGSLT.costCompactObservationSection (source : CIGSLT)
     change (openEquationSetoid source.costIGSLT targetFree targetBound
       targetSort).r term.2.normalizeErasure term.1
     exact term.2.normalizeErasure_typed_openEquationSetoid
-      laws.toCostTypedUnaryNormalizationLaws
+      laws.toCostOpenSectionLaws.toCostTypedUnaryNormalizationLaws
   complete := by
     intro left right equivalent
     change (openEquationSetoid source.costIGSLT targetFree targetBound
@@ -1747,7 +1757,8 @@ def CIGSLT.costCompactObservationSection (source : CIGSLT)
       CostOpenElaboration.compileTerm source right.2.normalizeErasure
     apply congrArg (CostOpenElaboration.compileTerm source)
     exact (left.2.normalizeErasure_eq_costNormalizeOpen laws.compactCoherent
-      ).trans ((source.costNormalizeOpen_complete laws equivalent).trans
+      ).trans ((source.costNormalizeOpen_complete laws.toCostOpenSectionLaws
+        equivalent).trans
         (right.2.normalizeErasure_eq_costNormalizeOpen
           laws.compactCoherent).symm)
 

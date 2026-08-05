@@ -113,7 +113,7 @@ noncomputable def scalarUnitParameter : Fin 1 → ℝ := fun _ => 1
 /-- Reusing the same scalar task has zero order defect but does not equal the
 single additive joint step: the sequential result is `1/4`, while the joint
 step is zero.  This is the linear same-cause double-counting fixture. -/
-theorem sameCause_reuse_zero_commutator_nonadditive_fixture :
+theorem sameCause_reuse_zero_commutator_nonadditive :
     sequentialTwoTaskUpdate scalarUnitTask scalarUnitTask (1 / 2)
         scalarUnitParameter = (fun _ => 1 / 4) ∧
       additiveTwoTaskUpdate scalarUnitTask scalarUnitTask (1 / 2)
@@ -152,7 +152,7 @@ noncomputable def orthogonalSecondTask : QuadraticTask (Fin 2) where
 
 /-- Disjoint coordinate modules have neither curvature order interference nor
 sequential non-additivity. -/
-theorem orthogonalModules_no_interference_fixture
+theorem orthogonalModules_no_interference
     (stepSize : ℝ) (parameter : Fin 2 → ℝ) :
     sequentialTwoTaskUpdate orthogonalFirstTask orthogonalSecondTask
         stepSize parameter =
@@ -191,7 +191,7 @@ noncomputable def obliqueParameter : Fin 2 → ℝ :=
 
 /-- Oblique task subspaces have a nonzero curvature commutator and path
 dependence: the two update orders disagree. -/
-theorem obliqueTasks_curvature_interference_fixture :
+theorem obliqueTasks_curvature_interference :
     curvatureCommutator obliqueFirstTask obliqueSecondTask ≠ 0 ∧
       sequentialTwoTaskUpdate obliqueFirstTask obliqueSecondTask 1
           obliqueParameter ≠
@@ -222,10 +222,10 @@ theorem linearTwoTask_causalCoding_separation_crown :
           scalarUnitParameter ≠
         additiveTwoTaskUpdate scalarUnitTask scalarUnitTask (1 / 2)
           scalarUnitParameter :=
-  ⟨obliqueTasks_curvature_interference_fixture.1,
-    obliqueTasks_curvature_interference_fixture.2,
-    sameCause_reuse_zero_commutator_nonadditive_fixture.2.2.1,
-    sameCause_reuse_zero_commutator_nonadditive_fixture.2.2.2⟩
+  ⟨obliqueTasks_curvature_interference.1,
+    obliqueTasks_curvature_interference.2,
+    sameCause_reuse_zero_commutator_nonadditive.2.2.1,
+    sameCause_reuse_zero_commutator_nonadditive.2.2.2⟩
 
 end TwoTask
 

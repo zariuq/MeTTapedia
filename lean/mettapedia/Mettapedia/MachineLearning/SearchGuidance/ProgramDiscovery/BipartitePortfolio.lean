@@ -297,7 +297,7 @@ def edge11 : Fin (2 * 2) := finProdFinEquiv (1, 1)
 def redundantArm : ProbSimplex (2 * 2) := pointPrior edge00
 def complementaryArm : ProbSimplex (2 * 2) := pointPrior edge11
 
-theorem equal_standalone_target_yield_fixture :
+theorem equal_standalone_target_yield :
     iidExpectedBipartiteTargetCoverage redundantArm 1 = 1 ∧
       iidExpectedBipartiteTargetCoverage complementaryArm 1 = 1 := by
   constructor
@@ -310,7 +310,7 @@ theorem equal_standalone_target_yield_fixture :
     norm_num [bipartiteTargetCoverage, wordCoversBipartiteTarget,
       edgeTarget, decodeEdge, edge11, finProdFinEquiv]
 
-theorem redundant_portfolio_target_union_fixture :
+theorem redundant_portfolio_target_union :
     twoArmExpectedBipartiteTargetUnionCoverage redundantArm 1 redundantArm 1 = 1 := by
   unfold redundantArm
   rw [twoArmExpectedBipartiteTargetUnionCoverage_pointPriors]
@@ -318,7 +318,7 @@ theorem redundant_portfolio_target_union_fixture :
     twoArmBipartiteTargetUnionCoverage, wordCoversBipartiteTarget,
     redundantArm, edgeTarget, decodeEdge, edge00, finProdFinEquiv]
 
-theorem complementary_portfolio_target_union_fixture :
+theorem complementary_portfolio_target_union :
     twoArmExpectedBipartiteTargetUnionCoverage redundantArm 1 complementaryArm 1 = 2 := by
   unfold redundantArm complementaryArm
   rw [twoArmExpectedBipartiteTargetUnionCoverage_pointPriors]
@@ -344,10 +344,10 @@ theorem equal_standalone_different_portfolio_value :
       twoArmExpectedBipartiteTargetUnionCoverage redundantArm 1 redundantArm 1 <
         twoArmExpectedBipartiteTargetUnionCoverage redundantArm 1 complementaryArm 1 := by
   constructor
-  · exact equal_standalone_target_yield_fixture.1.trans
-      equal_standalone_target_yield_fixture.2.symm
-  · rw [redundant_portfolio_target_union_fixture,
-      complementary_portfolio_target_union_fixture]
+  · exact equal_standalone_target_yield.1.trans
+      equal_standalone_target_yield.2.symm
+  · rw [redundant_portfolio_target_union,
+      complementary_portfolio_target_union]
     norm_num
 
 #print axioms iidExpectedBipartiteTargetCoverage_eq_sum_one_sub_pow

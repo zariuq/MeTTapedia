@@ -133,7 +133,7 @@ theorem rankedPowerPrior_warm_gt_cold :
 /-- T3 interior optimum fixture: sharpening from `β=0` to `β=1` helps by
 removing mass from the lowest-ranked rejected prefix, while further sharpening
 to `β=3` hurts because the highest-ranked rejected prefix dominates. -/
-theorem sharpness_has_interior_optimum_fixture :
+theorem sharpness_has_interior_optimum :
     iidExpectedDistinctCoverage (rankedPowerPrior 0) 2 rankedAccepted <
         iidExpectedDistinctCoverage (rankedPowerPrior 1) 2 rankedAccepted ∧
       iidExpectedDistinctCoverage (rankedPowerPrior 3) 2 rankedAccepted <
@@ -678,7 +678,7 @@ theorem computableAllocation_dominates_split_and_single :
     fullBestAllocation_yield]
   norm_num
 
-#print axioms sharpness_has_interior_optimum_fixture
+#print axioms sharpness_has_interior_optimum
 #print axioms equal_entropy_strictly_ordered_distinctYield
 #print axioms twoArmExpectedUnionCoverage_decomposition
 #print axioms twoArmExpectedTotalExclusive_strict_of_overlap_lt

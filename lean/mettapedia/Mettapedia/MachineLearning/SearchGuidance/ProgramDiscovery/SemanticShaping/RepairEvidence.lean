@@ -194,7 +194,7 @@ def failedFixture : RepairOutcome Unit Unit ℕ where
   beforeDepth := 2
   afterDepth := 1
 
-theorem oneImprovement_oneFailure_counts_fixture :
+theorem oneImprovement_oneFailure_counts :
     aggregateRepairEvidence [improvedFixture, failedFixture] = ⟨1, 1⟩ := by
   decide
 

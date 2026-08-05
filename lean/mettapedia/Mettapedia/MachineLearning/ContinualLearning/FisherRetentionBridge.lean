@@ -151,7 +151,7 @@ noncomputable def scalarFisherQuadraticFixture (update : ℝ) : ℝ :=
 
 /-- Equality of the local quadratic models is not equality of a nonlinear KL
 objective away from the expansion point. -/
-theorem nonlinearKL_not_equal_localQuadratic_fixture :
+theorem nonlinearKL_not_equal_localQuadratic :
     nonlinearPredictiveKLFixture 1 ≠ scalarFisherQuadraticFixture 1 := by
   norm_num [nonlinearPredictiveKLFixture, scalarFisherQuadraticFixture]
 

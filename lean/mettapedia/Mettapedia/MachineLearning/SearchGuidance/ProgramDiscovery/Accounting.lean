@@ -419,7 +419,7 @@ theorem shortest_fastest_disagree_and_pareto_nontrivial :
 
 /-- An empty bounded search can miss a retained capability; absence alone is
 not semantic forgetting. -/
-theorem finite_budget_absence_not_forgetting_fixture :
+theorem finite_budget_absence_not_forgetting :
     ∃ (previous capability search : SolveRelation Program Target) (edge : Program × Target),
       edge ∈ previous ∧ edge ∈ capability ∧ edge ∉ search := by
   exact ⟨{(.p0, .t0)}, {(.p0, .t0)}, ∅, (.p0, .t0), by simp⟩
@@ -445,7 +445,7 @@ def capOneView : CuratedView
 
 /-- A cap-one view can preserve target coverage while losing witness
 multiplicity; the raw count remains available in the same object. -/
-theorem cap_preserves_coverage_not_multiplicity_fixture :
+theorem cap_preserves_coverage_not_multiplicity :
     capOneView.CoverageComplete ∧
       (programsFor capOneView.selected Fixtures.Target.first).card = 1 ∧
       (witnessPrograms capOneView.raw Fixtures.Target.first).card = 2 := by
@@ -457,7 +457,7 @@ theorem cap_preserves_coverage_not_multiplicity_fixture :
     · change (programsFor {(.alpha, .first)} Fixtures.Target.first).card = 1
       decide +kernel
     · change (witnessPrograms twoProgramsOneTarget Fixtures.Target.first).card = 2
-      rw [two_programs_one_target_fixture.1]
+      rw [two_programs_one_target.1]
       decide +kernel
 
 end AccountingFixtures

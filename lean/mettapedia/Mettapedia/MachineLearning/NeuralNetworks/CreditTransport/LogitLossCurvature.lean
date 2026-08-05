@@ -499,7 +499,7 @@ noncomputable def twoClassLogits
 @[simp] theorem twoClassLogits_true (falseLogit trueLogit : ℝ) :
     twoClassLogits falseLogit trueLogit true = trueLogit := rfl
 
-theorem categorical_two_class_positive_fixture :
+theorem categorical_two_class_positive :
     HasDirectionalTaskUpperModelAt
       (categoricalCrossEntropy false) (twoClassLogits 0 0)
       (categoricalCrossEntropyGradient false (twoClassLogits 0 0))
@@ -532,7 +532,7 @@ theorem log_two_sub_half_lt_log_one_add_exp_neg_one :
   convert hlog using 1
   all_goals ring
 
-theorem binaryCrossEntropy_zero_target_positive_fixture :
+theorem binaryCrossEntropy_zero_target_positive :
     HasDirectionalTaskUpperModelAt
       (binaryCrossEntropyWithLogits 0) 0 (1 / 2) 2 1 := by
   convert binaryCrossEntropyWithLogits_directional_upper 0 0 2 using 1 <;>
@@ -599,9 +599,9 @@ theorem categorical_two_class_zero_curvature_fails :
 #print axioms binaryCrossEntropyWithLogits_directional_upper
 #print axioms categorical_directional_curvature_le
 #print axioms categoricalCrossEntropy_directional_upper
-#print axioms categorical_two_class_positive_fixture
+#print axioms categorical_two_class_positive
 #print axioms categorical_two_class_zero_curvature_fails
-#print axioms binaryCrossEntropy_zero_target_positive_fixture
+#print axioms binaryCrossEntropy_zero_target_positive
 #print axioms binaryCrossEntropy_zero_curvature_fails
 
 end

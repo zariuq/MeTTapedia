@@ -1097,6 +1097,193 @@
         (gic-index-check-dag-chunks-valid $space $goal $root-id $chunks))
       ($_ False))))
 
+; Streaming chronological DAG checking.  Each GSLiveNode carries releases
+; performed only after its ordinary rule instance and ordered premises pass.
+; Consecutive identifiers prevent a released identifier from being reused,
+; while a premature release causes any later child lookup to fail.
+(= (gic-index-release-dag-one $space $id)
+   (case (gic-index-dag-lookup $space $id)
+     (((FoundDagValue $goal)
+        (let $removed-value
+          (remove-atom $space
+            (GICIndexedDagValue $id $goal))
+          GICReleaseOK))
+      ($_ GICReleaseFail))))
+
+(= (gic-index-release-dag-many $space DrNil) GICReleaseOK)
+(= (gic-index-release-dag-many $space (DrCons $id $ids))
+   (case (gic-index-release-dag-one $space $id)
+     ((GICReleaseOK (gic-index-release-dag-many $space $ids))
+      ($_ GICReleaseFail))))
+
+(= (gic-index-check-stream-nodes $space $expected DsnNil)
+   (GICStreamOK $expected))
+(= (gic-index-check-stream-nodes $space $expected
+      (DsnCons
+        (GSLiveNode
+          (GDNode $id $rule-instance $child-ids) $releases)
+        $nodes))
+   (if (== $id $expected)
+     (case (gic-index-dag-lookup $space $id)
+       ((NoDagValue
+          (case (gic-index-instantiate-rule $space $rule-instance)
+            (((RuleOK $premises $conclusion)
+              (if
+                (gic-index-dag-children-match
+                  $space $premises $child-ids)
+                (let $added
+                  (add-atom $space
+                    (GICIndexedDagValue $id $conclusion))
+                  (case
+                    (gic-index-release-dag-many
+                      $space $releases)
+                    ((GICReleaseOK
+                       (gic-index-check-stream-nodes
+                         $space (+ $expected 1) $nodes))
+                     ($_ (GICStreamFail)))))
+                (GICStreamFail)))
+             ($_ (GICStreamFail)))))
+        ($_ (GICStreamFail))))
+     (GICStreamFail)))
+
+(= (gic-index-check-stream-chunks $space $expected DscNil)
+   (GICStreamOK $expected))
+(= (gic-index-check-stream-chunks $space $expected
+      (DscCons $nodes $chunks))
+   (case (gic-index-check-stream-nodes $space $expected $nodes)
+     (((GICStreamOK $next)
+       (gic-index-check-stream-chunks $space $next $chunks))
+      ($_ (GICStreamFail)))))
+
+(= (gic-index-check-stream-chunks-valid
+      $space $goal $root-id $chunks)
+   (case (gic-index-check-stream-chunks $space 0 $chunks)
+     (((GICStreamOK $next)
+       (case (gic-index-dag-lookup $space $root-id)
+         (((FoundDagValue $root-goal) (== $root-goal $goal))
+          ($_ False))))
+      ($_ False))))
+
+(= (gic-check-dag-streaming-indexed
+      $presentation $goal $root-id $chunks)
+   (case (gic-build-index $presentation)
+     (((GICIndexOK $space)
+       (gic-index-check-stream-chunks-valid
+         $space $goal $root-id $chunks))
+      ($_ False))))
+
+; Explicit-state streaming is the process-boundary form of the same
+; chronological checker.  Unlike the atomspace implementation above, its
+; live conclusions are ordinary data and can therefore be serialized between
+; bounded worker processes.  The caller must begin with expected id zero and
+; the empty environment; every successful step returns the only next state.
+(= (gic-pure-release-dag-one DEnvNil $target) GICPureReleaseFail)
+(= (gic-pure-release-dag-one
+      (DEnvCons (DVal $id $goal) $rest) $target)
+   (if (== $id $target)
+     (GICPureReleaseOK $rest)
+     (case (gic-pure-release-dag-one $rest $target)
+       (((GICPureReleaseOK $new-rest)
+         (GICPureReleaseOK
+           (DEnvCons (DVal $id $goal) $new-rest)))
+        ($_ GICPureReleaseFail)))))
+
+(= (gic-pure-release-dag-many $env DrNil)
+   (GICPureReleaseOK $env))
+(= (gic-pure-release-dag-many
+      $env (DrCons $id $ids))
+   (case (gic-pure-release-dag-one $env $id)
+     (((GICPureReleaseOK $next-env)
+       (gic-pure-release-dag-many $next-env $ids))
+      ($_ GICPureReleaseFail))))
+
+(= (gic-pure-check-stream-nodes
+      $rules $expected $env DsnNil)
+   (GICPureStreamOK
+     (GICPureStreamState $expected $env)))
+(= (gic-pure-check-stream-nodes
+      $rules $expected $env
+      (DsnCons
+        (GSLiveNode
+          (GDNode $id $rule-instance $child-ids) $releases)
+        $nodes))
+   (if (== $id $expected)
+     (case (gic-dag-lookup $env $id)
+       ((NoDagValue
+          (case (gic-instantiate-rule $rules $rule-instance)
+            (((RuleOK $premises $conclusion)
+              (if
+                (gic-dag-children-match
+                  $env $premises $child-ids)
+                (case
+                  (gic-pure-release-dag-many
+                    (DEnvCons
+                      (DVal $id $conclusion) $env)
+                    $releases)
+                  (((GICPureReleaseOK $next-env)
+                    (gic-pure-check-stream-nodes
+                      $rules (+ $expected 1) $next-env $nodes))
+                   ($_ GICPureStreamFail)))
+                GICPureStreamFail))
+             ($_ GICPureStreamFail))))
+        ($_ GICPureStreamFail)))
+     GICPureStreamFail))
+
+(= (gic-pure-check-stream-chunks
+      $rules $state DscNil)
+   (GICPureStreamOK $state))
+(= (gic-pure-check-stream-chunks
+      $rules $state (DscCons $nodes $chunks))
+   (case $state
+     (((GICPureStreamState $expected $env)
+       (case
+         (gic-pure-check-stream-nodes
+           $rules $expected $env $nodes)
+         (((GICPureStreamOK $next-state)
+           (gic-pure-check-stream-chunks
+             $rules $next-state $chunks))
+          ($_ GICPureStreamFail))))
+      ($_ GICPureStreamFail))))
+
+; Execute one externally bounded chunk and return its serializable state.
+(= (gic-check-dag-pure-stream-step
+      $presentation $state $nodes)
+   (if (gic-presentation-valid $presentation)
+     (case $presentation
+       (((GPresentation $constructors $judgments $rules)
+         (case $state
+           (((GICPureStreamState $expected $env)
+             (gic-pure-check-stream-nodes
+               $rules $expected $env $nodes))
+            ($_ GICPureStreamFail))))
+        ($_ GICPureStreamFail)))
+     GICPureStreamFail))
+
+(= (gic-finish-dag-pure-stream $state $goal $root-id)
+   (case $state
+     (((GICPureStreamState $expected $env)
+       (case (gic-dag-lookup $env $root-id)
+         (((FoundDagValue $root-goal) (== $root-goal $goal))
+          ($_ False))))
+      ($_ False))))
+
+(= (gic-check-dag-pure-streaming
+      $presentation $goal $root-id $chunks)
+   (if (gic-presentation-valid $presentation)
+     (case $presentation
+       (((GPresentation $constructors $judgments $rules)
+         (case
+           (gic-pure-check-stream-chunks
+             $rules
+             (GICPureStreamState 0 DEnvNil)
+             $chunks)
+           (((GICPureStreamOK $state)
+             (gic-finish-dag-pure-stream
+               $state $goal $root-id))
+            ($_ False))))
+        ($_ False)))
+     False))
+
 ; Check a terminal node against an already admitted chronological prefix
 ; without inserting it, allowing several adversarial variants to share one
 ; indexed prefix.
@@ -1426,6 +1613,155 @@
           DnNil)
         DcNil)))
   False)
+(= (gic-proof-dag-streaming-chunks)
+   (DscCons
+     (DsnCons
+       (GSLiveNode
+         (GDNode 0 (GRuleInst "ax-a" LNil) DrNil)
+         DrNil)
+       (DsnCons
+         (GSLiveNode
+           (GDNode 1 (GRuleInst "ax-imp-ab" LNil) DrNil)
+           DrNil)
+         DsnNil))
+     (DscCons
+       (DsnCons
+         (GSLiveNode
+           (GDNode 2
+             (GRuleInst "mp" (LCons (gic-A) (LCons (gic-B) LNil)))
+             (DrCons 0 (DrCons 1 DrNil)))
+           (DrCons 0 (DrCons 1 DrNil)))
+         DsnNil)
+       DscNil)))
+!(assertEqual
+  (gic-check-dag-streaming-indexed
+    (gic-presentation) (gic-proves (gic-B)) 2
+    (gic-proof-dag-streaming-chunks))
+  True)
+; A needed premise released after node zero is absent at node two.
+!(assertEqual
+  (gic-check-dag-streaming-indexed
+    (gic-presentation) (gic-proves (gic-B)) 2
+    (DscCons
+      (DsnCons
+        (GSLiveNode
+          (GDNode 0 (GRuleInst "ax-a" LNil) DrNil)
+          (DrCons 0 DrNil))
+        (DsnCons
+          (GSLiveNode
+            (GDNode 1 (GRuleInst "ax-imp-ab" LNil) DrNil)
+            DrNil)
+          DsnNil))
+      (DscCons
+        (DsnCons
+          (GSLiveNode
+            (GDNode 2
+              (GRuleInst "mp" (LCons (gic-A) (LCons (gic-B) LNil)))
+              (DrCons 0 (DrCons 1 DrNil)))
+            (DrCons 1 DrNil))
+          DsnNil)
+        DscNil)))
+  False)
+; Consecutive IDs reject reuse even after the old entry was released.
+!(assertEqual
+  (gic-check-dag-streaming-indexed
+    (gic-presentation) (gic-proves (gic-B)) 2
+    (DscCons
+      (DsnCons
+        (GSLiveNode
+          (GDNode 0 (GRuleInst "ax-a" LNil) DrNil)
+          (DrCons 0 DrNil))
+        (DsnCons
+          (GSLiveNode
+            (GDNode 0 (GRuleInst "ax-imp-ab" LNil) DrNil)
+            DrNil)
+          DsnNil))
+      DscNil))
+  False)
+; Unknown releases fail closed.
+!(assertEqual
+  (gic-check-dag-streaming-indexed
+    (gic-presentation) (gic-proves (gic-A)) 0
+    (DscCons
+      (DsnCons
+        (GSLiveNode
+          (GDNode 0 (GRuleInst "ax-a" LNil) DrNil)
+          (DrCons 99 DrNil))
+        DsnNil)
+      DscNil))
+  False)
+!(assertEqual
+  (gic-check-dag-pure-streaming
+    (gic-presentation) (gic-proves (gic-B)) 2
+    (gic-proof-dag-streaming-chunks))
+  True)
+!(assertEqual
+  (gic-check-dag-pure-stream-step
+    (gic-presentation)
+    (GICPureStreamState 0 DEnvNil)
+    (DsnCons
+      (GSLiveNode
+        (GDNode 0 (GRuleInst "ax-a" LNil) DrNil)
+        DrNil)
+      (DsnCons
+        (GSLiveNode
+          (GDNode 1 (GRuleInst "ax-imp-ab" LNil) DrNil)
+          DrNil)
+        DsnNil)))
+  (GICPureStreamOK
+    (GICPureStreamState 2
+      (DEnvCons
+        (DVal 1 (gic-proves (gic-imp (gic-A) (gic-B))))
+        (DEnvCons (DVal 0 (gic-proves (gic-A))) DEnvNil)))))
+!(assertEqual
+  (gic-check-dag-pure-streaming
+    (gic-presentation) (gic-proves (gic-B)) 2
+    (DscCons
+      (DsnCons
+        (GSLiveNode
+          (GDNode 0 (GRuleInst "ax-a" LNil) DrNil)
+          (DrCons 0 DrNil))
+        (DsnCons
+          (GSLiveNode
+            (GDNode 1 (GRuleInst "ax-imp-ab" LNil) DrNil)
+            DrNil)
+          DsnNil))
+      (DscCons
+        (DsnCons
+          (GSLiveNode
+            (GDNode 2
+              (GRuleInst "mp" (LCons (gic-A) (LCons (gic-B) LNil)))
+              (DrCons 0 (DrCons 1 DrNil)))
+            (DrCons 1 DrNil))
+          DsnNil)
+        DscNil)))
+  False)
+!(assertEqual
+  (gic-check-dag-pure-streaming
+    (gic-presentation) (gic-proves (gic-B)) 2
+    (DscCons
+      (DsnCons
+        (GSLiveNode
+          (GDNode 0 (GRuleInst "ax-a" LNil) DrNil)
+          (DrCons 0 DrNil))
+        (DsnCons
+          (GSLiveNode
+            (GDNode 0 (GRuleInst "ax-imp-ab" LNil) DrNil)
+            DrNil)
+          DsnNil))
+      DscNil))
+  False)
+!(assertEqual
+  (gic-check-dag-pure-streaming
+    (gic-presentation) (gic-proves (gic-A)) 0
+    (DscCons
+      (DsnCons
+        (GSLiveNode
+          (GDNode 0 (GRuleInst "ax-a" LNil) DrNil)
+          (DrCons 99 DrNil))
+        DsnNil)
+      DscNil))
+  False)
 !(assertEqual
   (gic-check-dag-terminal-indexed
     (gic-presentation) (gic-proves (gic-B))
@@ -1504,4 +1840,4 @@
         TraceCheckNil)))
   True)
 
-!(GICSummary 34 34 0)
+!(GICSummary 43 43 0)

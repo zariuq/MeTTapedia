@@ -280,7 +280,7 @@ theorem hybrid_refinement_constraint_and_legality_crown
 
 /-- Positive fixture: half-fraction refinement contracts absolute error by
 exactly `2^{-steps}`. -/
-theorem halfFraction_refinement_geometric_fixture
+theorem halfFraction_refinement_geometric
     (input target gain₀ gain₁ precision₀ precision₁ : ℝ)
     (hprecision₀ : 0 < precision₀) (hprecision₁ : 0 < precision₁)
     (steps : ℕ) (seed : ℝ) :

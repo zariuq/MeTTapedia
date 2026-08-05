@@ -128,7 +128,7 @@ theorem fisher_online_adaptation_crown : FisherOnlineAdaptationLicense where
   frozenAdapterPullback := by
     intro Parameter Output _ _ _ _ _ _ outputMetric parentJacobian x y
     exact frozenAdapterPullbackMetric_pair outputMetric parentJacobian x y
-  nonlinearScopeBoundary := nonlinearKL_not_equal_localQuadratic_fixture
+  nonlinearScopeBoundary := nonlinearKL_not_equal_localQuadratic
   projectionOrderBoundary :=
     curvature_then_projection_ne_projection_then_curvature
   pullbackInjectivityBoundary :=

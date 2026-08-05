@@ -7,9 +7,9 @@ import Mettapedia.MachineLearning.NeuralNetworks.PredictiveCoding.LocalityCeilin
 
 This file formalizes the scalar linear-Gaussian core of Qi, Forasassi,
 Lukasiewicz, and Salvatori, *Towards the Training of Deeper Predictive Coding
-Neural Networks*, arXiv:2506.23800v3 (2025-10-10).  The source archive
-retrieved on 2026-07-19 had SHA-256
-`049db0f555a7390aef09697fe8cfbf5a2c897b6dadb1a74c0bb612187b75b9c0`.
+Neural Networks*, arXiv:2506.23800v3 (2025-10-10).  The authenticated source
+artifact used for the current correspondence audit has SHA-256
+`8fa1d245be3cf937fa2c4a961d0f8068ca2bfdf4dd753d9413030901c4942c79`.
 
 The chain is genuinely arbitrary-depth: it has `depth + 1` scalar activities
 and `depth` weighted Gaussian links.  We derive the activity and weight
@@ -304,7 +304,7 @@ theorem zeroWeight_ramp_depthThree_energy :
 /-- Concrete covariance-index mismatch: the paper's displayed current-layer
 denominator and the corrected adjacent-layer denominator give different
 steps. -/
-theorem displayedActivity_covarianceMismatch_fixture :
+theorem displayedActivity_covarianceMismatch :
     let weight : DepthLinkData 2 := fun _ ↦ 1
     let covariance : DepthLinkData 2 := fun link ↦ if link.val = 0 then 1 else 2
     let activity : DepthActivity 2 := fun node ↦ if node.val = 2 then 1 else 0
@@ -456,6 +456,80 @@ theorem spikingCovariance_equalizes_all_layers
         (spikingCovariance rate (depth - layer) (depth - layer)) = signal := by
   exact spikingCovariance_equalizes_firstArrival rate signal
     (depth - layer) hrate
+
+/-- Signal transported across successive first-arrival updates under an
+arbitrary covariance schedule.  Index `step` is the distance already crossed
+from the output. -/
+noncomputable def scheduledFirstArrivalSignal
+    (rate : ℝ) (covarianceAtArrival : ℕ → ℝ) (signal : ℝ) : ℕ → ℝ
+  | 0 => signal
+  | distance + 1 =>
+      covarianceWeightedArrivalUpdate rate
+        (scheduledFirstArrivalSignal rate covarianceAtArrival signal distance)
+        (covarianceAtArrival distance)
+
+/-- General schedule-level closed form: cumulative first-arrival transport is
+the product of the local rate-to-covariance ratios. -/
+theorem scheduledFirstArrivalSignal_closedForm
+    (rate : ℝ) (covarianceAtArrival : ℕ → ℝ)
+    (signal : ℝ) (distance : ℕ) :
+    scheduledFirstArrivalSignal rate covarianceAtArrival signal distance =
+      (∏ step ∈ Finset.range distance,
+        rate / covarianceAtArrival step) * signal := by
+  induction distance with
+  | zero =>
+      simp [scheduledFirstArrivalSignal]
+  | succ distance ih =>
+      rw [scheduledFirstArrivalSignal, ih]
+      simp only [covarianceWeightedArrivalUpdate, Finset.prod_range_succ]
+      ring
+
+/-- Unit covariance recovers the ordinary geometric wavefront at every
+depth. -/
+theorem scheduledFirstArrivalSignal_unitCovariance
+    (rate signal : ℝ) (distance : ℕ) :
+    scheduledFirstArrivalSignal rate (fun _ ↦ 1) signal distance =
+      rate ^ distance * signal := by
+  rw [scheduledFirstArrivalSignal_closedForm]
+  simp
+
+/-- Applying the source spike at every layer's own first-arrival time removes
+the entire depth product, not merely one isolated local attenuation. -/
+theorem scheduledFirstArrivalSignal_spikingCovariance
+    (rate signal : ℝ) (distance : ℕ) (hrate : rate ≠ 0) :
+    scheduledFirstArrivalSignal rate
+        (fun step ↦ spikingCovariance rate step step) signal distance =
+      signal := by
+  rw [scheduledFirstArrivalSignal_closedForm]
+  simp [spikingCovariance, hrate]
+
+/-- The unit-covariance schedule is definitionally the previously sealed sPC
+wavefront recurrence. -/
+theorem scheduledFirstArrivalSignal_unit_eq_geometricArrivalError
+    (rate signal : ℝ) (distance : ℕ) :
+    scheduledFirstArrivalSignal rate (fun _ ↦ 1) signal distance =
+      geometricArrivalError rate signal distance := by
+  rw [scheduledFirstArrivalSignal_unitCovariance,
+    geometricArrivalError_closedForm]
+
+/-- In the positive contractive regime and at nonzero depth, the complete
+spiking schedule transports strictly more positive first-arrival signal than
+the unit-covariance schedule.  This is a signal theorem, not an accuracy
+claim. -/
+theorem scheduledSpiking_strictly_exceeds_unitCovariance
+    (rate signal : ℝ) (distance : ℕ)
+    (hratePositive : 0 < rate) (hrateContractive : rate < 1)
+    (hsignal : 0 < signal) (hdistance : 0 < distance) :
+    scheduledFirstArrivalSignal rate (fun _ ↦ 1) signal distance <
+      scheduledFirstArrivalSignal rate
+        (fun step ↦ spikingCovariance rate step step) signal distance := by
+  rw [scheduledFirstArrivalSignal_unitCovariance,
+    scheduledFirstArrivalSignal_spikingCovariance rate signal distance
+      (ne_of_gt hratePositive)]
+  have hpower : rate ^ distance < 1 :=
+    pow_lt_one₀ (le_of_lt hratePositive) hrateContractive
+      (Nat.ne_of_gt hdistance)
+  nlinarith
 
 /-- Negative fixture: a zero propagation rate cannot be rescued by choosing
 zero covariance, because division by zero remains zero in the field
@@ -610,6 +684,54 @@ theorem zeroDrift_standard_eq_forward
       forwardReferencePredictionError initialPrediction finalActivity layer := by
   simp [standardSettledPredictionError, forwardReferencePredictionError,
     cumulativePredictionDrift]
+
+/-- Scalar local weight credit before application of its learning rate and
+sign convention. -/
+noncomputable def scalarPredictionWeightCredit
+    (predictionError presynapticActivity : ℝ) : ℝ :=
+  predictionError * presynapticActivity
+
+/-- The forward-reference weight credit is the settled-prediction credit plus
+an exact accumulated-drift correction.  This lifts the error identity to the
+quantity that actually updates a scalar weight. -/
+theorem forwardReferenceWeightCredit_eq_standard_add_drift
+    (initialPrediction finalActivity drift : ℕ → ℝ)
+    (layer : ℕ) (presynapticActivity : ℝ) :
+    scalarPredictionWeightCredit
+        (forwardReferencePredictionError initialPrediction finalActivity layer)
+        presynapticActivity =
+      scalarPredictionWeightCredit
+          (standardSettledPredictionError initialPrediction finalActivity
+            drift layer)
+          presynapticActivity +
+        cumulativePredictionDrift drift layer * presynapticActivity := by
+  rw [standardSettledError_eq_forward_sub_cumulativeDrift]
+  simp [scalarPredictionWeightCredit]
+  ring
+
+/-- Mechanism-separation fixture: prediction drift can make forward-reference
+and settled-prediction weight credits point in opposite directions. -/
+theorem forwardReferenceWeightCredit_can_reverse_standard :
+    scalarPredictionWeightCredit
+        (standardSettledPredictionError (fun _ ↦ 0) (fun _ ↦ 1)
+          (fun _ ↦ 2) 1) 1 = -1 ∧
+      scalarPredictionWeightCredit
+        (forwardReferencePredictionError (fun _ ↦ 0) (fun _ ↦ 1) 1) 1 = 1 := by
+  norm_num [scalarPredictionWeightCredit, standardSettledPredictionError,
+    forwardReferencePredictionError, cumulativePredictionDrift]
+
+/-- Negative boundary: a zero presynaptic activity erases the distinction
+between the two error references at that weight. -/
+theorem zeroPresynapticActivity_erases_forwardCreditDifference
+    (initialPrediction finalActivity drift : ℕ → ℝ) (layer : ℕ) :
+    scalarPredictionWeightCredit
+        (forwardReferencePredictionError initialPrediction finalActivity layer)
+        0 =
+      scalarPredictionWeightCredit
+        (standardSettledPredictionError initialPrediction finalActivity drift
+          layer)
+        0 := by
+  simp [scalarPredictionWeightCredit]
 
 /-! ## T5: residual timing and auxiliary buffers -/
 
@@ -772,7 +894,7 @@ theorem liveStatistic_can_move_away_from_reference :
 
 /-- The same fixture changes the normalized activation from zero to minus
 one when the live mean is reused, while freezing preserves zero. -/
-theorem liveStatistic_changes_normalization_fixture :
+theorem liveStatistic_changes_normalization :
     scalarBatchNormalize 1 0 1 0 0 0 = 0 ∧
       scalarBatchNormalize 1 0 1 (liveBatchStatisticStep 0 1 0) 0 0 = -1 := by
   norm_num [scalarBatchNormalize, liveBatchStatisticStep]
@@ -807,11 +929,27 @@ structure DepthScalingRepairCertificate : Prop where
     ∀ (rate signal : ℝ) (distance : ℕ), rate ≠ 0 →
       covarianceWeightedArrivalUpdate rate signal
         (spikingCovariance rate distance distance) = signal
+  scheduleSpikingEqualization :
+    ∀ (rate signal : ℝ) (distance : ℕ), rate ≠ 0 →
+      scheduledFirstArrivalSignal rate
+        (fun step ↦ spikingCovariance rate step step) signal distance = signal
   forwardZeroDrift :
     ∀ (initialPrediction finalActivity : ℕ → ℝ) (layer : ℕ),
       standardSettledPredictionError initialPrediction finalActivity
           (fun _ ↦ 0) layer =
         forwardReferencePredictionError initialPrediction finalActivity layer
+  forwardWeightCreditDecomposition :
+    ∀ (initialPrediction finalActivity drift : ℕ → ℝ)
+      (layer : ℕ) (presynapticActivity : ℝ),
+      scalarPredictionWeightCredit
+          (forwardReferencePredictionError initialPrediction finalActivity
+            layer)
+          presynapticActivity =
+        scalarPredictionWeightCredit
+            (standardSettledPredictionError initialPrediction finalActivity
+              drift layer)
+            presynapticActivity +
+          cumulativePredictionDrift drift layer * presynapticActivity
   residualSynchronization :
     ∀ skipped : ℕ,
       bufferedResidualArrivalTime skipped = residualMainPathArrivalTime skipped
@@ -826,7 +964,11 @@ theorem depthScalingRepair_crown : DepthScalingRepairCertificate where
   activityConvention := negativeGradientActivityStep_eq_neg_correctedDisplayed
   weightConvention := paperDisplayedWeightStep_eq_neg_negativeGradient
   spikingEqualization := spikingCovariance_equalizes_firstArrival
+  scheduleSpikingEqualization :=
+    scheduledFirstArrivalSignal_spikingCovariance
   forwardZeroDrift := zeroDrift_standard_eq_forward
+  forwardWeightCreditDecomposition :=
+    forwardReferenceWeightCredit_eq_standard_add_drift
   residualSynchronization := auxiliaryBuffers_synchronize_residual_paths
   frozenStatistic := frozenBatchStatistic_iterate_exact
 
@@ -889,6 +1031,9 @@ theorem batchFreezingNetworkStabilityBoundary_not_exact :
 #print axioms oneLinkEnergy_weightIncrement_exact
 #print axioms unitBandwidth_exactArrival_requires_depth_sub_layer
 #print axioms spikingCovariance_equalizes_all_layers
+#print axioms scheduledFirstArrivalSignal_spikingCovariance
+#print axioms forwardReferenceWeightCredit_eq_standard_add_drift
+#print axioms forwardReferenceWeightCredit_can_reverse_standard
 #print axioms residualMainPath_exactSignal_requires_sweeps
 #print axioms depthScalingRepair_crown
 

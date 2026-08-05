@@ -399,7 +399,7 @@ theorem prospectiveEPC_livePath_hiddenIgnition_positiveFixture :
 /-- Negative boundary: even with a live readout and path, nonzero total output
 force does not by itself activate a hidden site when output mismatch is zero.
 The task force acts on the explicit output first. -/
-theorem prospectiveEPC_totalOutputForce_alone_not_hiddenForce_fixture :
+theorem prospectiveEPC_totalOutputForce_alone_not_hiddenForce :
     prospectiveEPCOutputForce prospectiveEPCUnitFixture
         (zeroHiddenErrors 1, 0) = 1 ∧
       prospectiveEPCHiddenForce prospectiveEPCUnitFixture

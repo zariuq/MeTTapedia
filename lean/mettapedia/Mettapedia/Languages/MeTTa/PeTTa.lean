@@ -1,6 +1,8 @@
 import Mettapedia.Languages.MeTTa.PeTTa.Answers
 import Mettapedia.Languages.MeTTa.PeTTa.SpaceSemantics
 import Mettapedia.Languages.MeTTa.PeTTa.Eval
+import Mettapedia.Languages.MeTTa.PeTTa.DispatchCoverage
+import Mettapedia.Languages.MeTTa.PeTTa.BodyClosureFusion
 import Mettapedia.Languages.MeTTa.PeTTa.LPSoundness
 import Mettapedia.Languages.MeTTa.PeTTa.FunctionFreeLPBridge
 import Mettapedia.Languages.MeTTa.PeTTa.Effects

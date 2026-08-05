@@ -168,7 +168,7 @@ theorem baselineRank_submittedWithin
     (htime : queuePeriod model.semanticSlots * rank < horizon) :
     SubmittedWithin model horizon program := by
   refine ⟨queuePeriod model.semanticSlots * rank, htime, ?_⟩
-  rw [baseline_rank_submitted_at_explicit_time]
+  rw [twoQueueCandidate_mul_queuePeriod]
   exact hlookup
 
 -- Reserving `semanticSlots` guided positions stretches each baseline rank by

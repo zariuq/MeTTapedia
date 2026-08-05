@@ -100,7 +100,7 @@ theorem thresholdSeparated_maximizes_sum
 
 /-- Calibrated survival probability is therefore an optimal priority score
 inside the equal-cost, visible-pool model. -/
-theorem calibrated_survival_priority_maximizes_expected_exactDiscoveries
+theorem expectedExactDiscoveries_le_of_thresholdSeparated
     (predictedSurvival trueSuccess : Candidate → ℝ)
     (pool chosen alternative : Finset Candidate) (threshold : ℝ)
     (hcalibrated : ∀ candidate ∈ pool,
@@ -161,7 +161,7 @@ theorem reversedCalibration_selects_strictly_worse_candidate :
     · norm_num [expectedExactDiscoveries, actualSuccess]
 
 #print axioms thresholdSeparated_maximizes_sum
-#print axioms calibrated_survival_priority_maximizes_expected_exactDiscoveries
+#print axioms expectedExactDiscoveries_le_of_thresholdSeparated
 #print axioms reversedCalibration_selects_strictly_worse_candidate
 
 end Mettapedia.MachineLearning.SearchGuidance.ProgramDiscovery.SemanticShaping

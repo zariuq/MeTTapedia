@@ -6,8 +6,24 @@ import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.Instances.Exact
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.Instances.Predictive
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.Instances.PrimalDual
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.Instances.BroadcastProxy
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.FeedbackAlignmentDynamics
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.FeedbackAlignmentDegeneracy
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.PEPITAAntialignment
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.DirectRandomTargetProjection
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.SignalPropagationForwardUnlock
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.AutoencoderTargetPropagation
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.OneStepMetaGradient
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.SoftHebbNormDynamics
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.NoPropLocalLearning
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.GradientIsolation
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.AgnosticEquilibriumLyapunov
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.TemperatureScaledLocalGoodness
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.ForwardForwardObjectiveDecomposition
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.ForwardForwardLocalGoodness
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.Instances.TargetPerturbation
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.DifferenceTargetPropagation
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.Instances.TemporalEquilibrium
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.EquilibriumPropagationErrorBudget
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.Instances.HolomorphicPhase
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.Instances.ContinuousHolomorphic
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.ImplicitEquilibrium
@@ -15,6 +31,7 @@ import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.Instances.Impli
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.Instances.SplittingOptimizer
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.Instances.VerifierFlow
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.KKT.OccurrenceAdjoint
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.KKT.GradientRouting
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.KKT.ResidualLagrangian
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.KKT.ParameterLagrangian
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.KKT.ForwardComposition
@@ -24,9 +41,17 @@ import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.KKT.ExistingIns
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.PrimalDualContinuation
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.ContinuationTaskBias
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.DirectionalTaskDescent
-import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.MechanismTelemetry
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.TruncatedNeumannResidual
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.PhantomGradientAlignment
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.TransportedDirectionAlignment
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.ActiveFrontierSettling
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.ActiveFrontierContraction
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.DynamicFrontierTrace
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.FrontierHysteresis
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.ChromaticSchedule
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.BoundedStaleEpoch
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.ShapeBucketPacking
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.LagrangianBoundary
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.NonlinearTiedProxy
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.CompositeTaskCurvature
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.LogitLossCurvature
@@ -35,23 +60,62 @@ import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.OperatorClassif
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.OperatorSplitting
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.NonlinearResolvent
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.AmortizedInitialization
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.EnergyDecrementStopping
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.NonlinearForwardBackward
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.PeacemanRachfordContraction
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.InexactForwardBackward
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.InexactContractionSchedule
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.InexactFirstOrderOracle
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.PartialStrongConvexityPL
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.InexactPrimalGradientRate
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.DirectKolenPollackAlignment
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.ResolverResidual
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.ProspectiveResidualSemantics
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.CarrierOutputPC
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.MultiSiteErrorCoordinatePC
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.TwoLayerLocalCreditSeparation
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.ErrorCoordinateResidualSemantics
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.PrimalDualStability
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.LocalAmortizedInitialization
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.AmortizedCreditReadout
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.WorkNormalizedTruncation
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.CarrierCutHybridDescent
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.CarrierCutSettlingContraction
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.UniformBlockExpectedDescent
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.ImportanceSampledCoordinateDescent
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.WeightedStrongConvexity
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.GammaImportanceSampling
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.PointwiseCoordinateReplay
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.WorkNormalizedPointwiseReplay
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.Float32PointwiseCoordinateReplay
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.Float32WorkNormalizedPointwiseReplay
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.FrozenConeSpecialization
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.CertifiedSettlingTrace
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.OptimizerTransport
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.DecoupledWeightDecay
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.AdamMomentScaling
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.AdamFirstMomentTransport
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.CyclicalLearningRateGeometry
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.EdgeOfStabilityFeedback
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.AdaptiveRestartDiagnostics
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.WeightAveragingPrediction
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.CentralFlowProjection
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.CoordinatewiseLearnedOptimizer
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.NeuralCertificateReplay
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.ConditionalAcceleration
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.SpectralPolynomialAcceleration
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.ChebyshevInertialIteration
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.IntegralQuadraticConstraint
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.RobustNoisyConvergence
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.SafeguardedCompositeBlock
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.SafeguardedAndersonConvergence
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.AndersonGainGeometry
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.RegularizedResidualMixing
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.InexactMoreauGradient
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.FixedRestartRate
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.DeepErrorCoordinateAcceleration
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.CurvatureDriftAcceleration
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.TimeOrderedSpectralInsertion
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.MaskedThreeSiteLayout
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.RegionalErrorCoordinateContraction
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.RegionalLinearizationCertificate
@@ -62,6 +126,12 @@ import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.FinitePrecision
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.FinitePrecisionReplayChain
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.FiniteCoordinateErrorCertificate
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.FinitePrecisionExpressionCertificate
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.CertifiedIntervalEvaluation
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.CertifiedRoundingErrorComposition
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.CertifiedDivisionSafety
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.CertifiedCorrectRounding
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.CertifiedElementaryApproximation
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.SymbolicTaylorRoundoff
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.RegisteredUnaryExpressionCertificate
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.RationalExpressionCertificateChecker
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.RationalExpEnclosureCertificate
@@ -75,31 +145,25 @@ import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.SiLUTransitionB
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.FiniteMatrixOperatorBounds
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.Float32CheckpointMatrix
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.Float32CheckpointGeometry
-import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.Float32AuthenticatedCheckpointGeometry
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.AffineFixedPointAcceleration
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.Float32ReplayGeometryBridge
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.Float32ActivationReplayCertificate
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.Float32ActivationReplayBatchCertificate
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.Float32ActivationReplayCoverageCertificate
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.Float32AffineReplayCertificate
-import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.Float32AuthenticatedAffineReplayChunkedGeneratedFixture
-import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.Float32AuthenticatedActivationReplaySite1Invocation0GeneratedFixture
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.Float32AffineSiLUReplayCertificate
-import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.Float32AuthenticatedAffineSiLUReplaySite1Invocation0GeneratedFixture
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.Float32AddMaskReplayCertificate
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.Float32HiddenStageReplayCertificate
-import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.Float32AuthenticatedHiddenStageReplaySite1Invocation0GeneratedFixture
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.Float32ThreeHiddenStageReplayCertificate
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.Float32ThreeHiddenStageReadoutReplayCertificate
-import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.Float32ThreeHiddenStageReadoutReplayBatchGeneratedFixture
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.Float32ThreeHiddenStageResidualReplayCertificate
-import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.Float32AuthenticatedThreeHiddenStageResidualReplayInvocation0GeneratedFixture
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.JacobianRemainderContraction
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.ParameterTracking
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.FixedPointSensitivity
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.VaryingScheduleTracking
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.PrimalDualFixedPointSensitivity
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.ContinuationKKTSensitivity
-import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.ThirdFamilyGateFixtures
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.SPDPreconditionedUpdateChord
 
 /-!
 # Credit-transport calculus
@@ -117,6 +181,19 @@ derivatives on heterogeneous finite DAGs, together with the derived Hilbert
 adjoint-gradient presentation, typed occurrence-reindexing invariance, and the
 exact active/inactive mask partition. Concrete shared-residual and tied-
 recurrence instances connect those identities to executable scalar evaluators.
+Occurrence-level gradient routing extends that recursion with one scalar per
+edge use, has a unique weighted reverse solution, recovers ordinary reverse
+mode under unit routes, and reduces to direct task credit under zero routes.
+Routes in the unit interval cannot amplify an individual pullback; parallel-
+edge and negative-route fixtures separate routing from node masking and record
+the boundary of that local norm guarantee.
+Gradient isolation is represented independently by a forward map paired with
+its declared reverse pullback.  Inserting a stop-gradient boundary preserves
+an arbitrary composite forward computation while annihilating all upstream
+declared credit.  Replacing it by reverse identity preserves the original
+pullback instead, and a scalar fixture separates the two boundaries.  This
+semantics deliberately does not identify an arbitrary declared pullback with
+the analytic derivative of its forward map.
 The settling layer includes global and local fixed-point sensitivity, finite
 parameter tracking, exact varying-schedule drift convolutions, explicit
 neighborhood-overlap boundaries, and an exact positive-leak instance of the
@@ -131,13 +208,52 @@ per-sweep work. Positive and negative fixtures show respectively when extra
 cheap rounds improve the bound and when fixed overhead reverses that
 conclusion; neither theorem substitutes guaranteed loss decrease for realized
 verifier yield.
+Finite phantom-gradient readout now has a separate Hilbert-space certificate.
+Lower and upper transport bounds for the exact implicit Jacobian turn a
+pointwise inverse-approximation error into an explicit inner-product margin
+against the exact gradient.  For damped Neumann readout, the inverse residual
+is exactly the omitted power of the damped equilibrium operator, yielding a
+geometric alignment budget at finite depth.  Zero upstream credit and equality
+at the threshold are explicit negative boundaries: neither permits a strict
+alignment claim.  Positive alignment remains distinct from finite task
+descent, which still requires the curvature and step-size premises exposed by
+the directional-descent layer.
+Frozen-cone specialization is represented by an actual residualizing
+transformation on semiring-polynomial expressions.  Static inputs are
+substituted, static-only cones are constant-folded, and mixed cones retain
+their dynamic dependencies.  The residual program preserves both values and
+formal partial derivatives for every dynamic state.  A counterfixture shows
+that freezing a dynamic dependency can agree at one observed state while
+breaking both later values and credit.
 Proof-carrying settling traces keep certificate assumptions outside measured
 rows, reconstruct every derived error, alignment, descent, and work field, and
 reject understated radii or nonmonotone accepted energies.  The optimizer
 boundary is explicit: positive uniform norm clipping preserves alignment, but
 adaptive coordinate scaling, stale moments, and decoupled weight decay need a
 separate transport-error certificate before raw local credit licenses the
-actual parameter displacement.
+actual parameter displacement.  Transported cosine and transported norm ratio
+are therefore recorded separately: an explicit positive scalar family has
+perfect raw and transported cosine for every scale, including a fixture whose
+transported norm is less than one percent of the matched BP norm.
+The decay algebra is refined separately.  Standard unpreconditioned SGD
+recovers exact equivalence between per-step weight decay and a learning-rate-
+adjusted scalar quadratic penalty.  A fixed diagonal preconditioner instead
+requires a scale-adjusted coordinate penalty; unequal diagonal entries rule
+out any single scalar penalty, and a changed preconditioner rules out one
+fixed coordinatewise penalty across both steps.  Thus AdamW-style decoupling
+cannot be silently reinterpreted as ordinary L2 regularization during a
+mechanism comparison.
+Adam's moment algebra is audited at the same optimizer boundary.  First and
+second moments transport under positive gradient scaling by factors `c` and
+`c²`, and bias correction preserves those factors.  With zero stabilizer the
+bias-corrected direction is exactly invariant under every positive scale.
+With the practical fixed positive stabilizer, scaling instead corresponds to
+inverse-rescaling that stabilizer, so exact invariance generally fails.
+Negative scaling reverses the direction, while time zero and a zero
+second-moment/zero-stabilizer denominator remain explicit degenerate
+boundaries.  Raw-credit comparisons therefore require matched incoming
+moments, time indices, bias correction, and stabilizers before they can be
+transported to Adam displacement claims.
 Fixed-checkpoint neural replay is typed at that boundary: tensor-resolved rows
 reconstruct the raw-to-optimizer transport distance and the sign convention of
 the displacement, while prospective and deep error-coordinate rows separately
@@ -146,6 +262,12 @@ with a longer finite settling depth is explicitly not equilibrium evidence;
 the emitted algebraic residual becomes an equilibrium-distance certificate
 only after method-specific curvature or monotonicity and readout bounds are
 supplied.
+For strongly convex inexact first-order oracles, the unconstrained primal
+gradient step now has a Hilbert-space distance/objective recurrence and a
+geometric best-iterate rate whose oracle error appears as one additive floor
+rather than accumulating with the iteration count.  The recurrence is exposed
+as a trace certificate so neural settling diagnostics can discharge it without
+claiming that every measured update satisfies the oracle hypotheses.
 Conditional acceleration begins only after curvature accounting.  A task with
 declared lower curvature bound `-rho` plus a `precision`-strongly-convex
 penalty has modulus `precision - rho`; positive precision alone is therefore
@@ -162,6 +284,34 @@ two-mode endpoint fixture attains the uniform factor, while the first scheduled
 sweep expands the high mode; only the composed solver is certified.  General
 nonlinear acceleration still requires its own invariant-region, smoothness,
 curvature, and oracle-error certificates.
+An arbitrary-degree Chebyshev inertial cycle is also recovered exactly from
+the transformed roots of the interval polynomial.  Every nonzero inertial
+weight preserves precisely the original fixed points, one complete cycle has
+the normalized Chebyshev spectral gain, and repeated complete cycles inherit
+the certified geometric rate.  Individual factors may expand, zero weight may
+mask a non-fixed point, and nonlinear factor order need not commute.
+A complementary integral-quadratic layer isolates the trace theorem behind
+matrix-IQC analyses without trusting an external semidefinite solver.  Finite
+nonnegative combinations of hard discounted supplies remain hard; a one-step
+storage inequality then telescopes to a geometric rate even when storage rises
+at an intermediate step.  Additive solver noise composes with the same
+telescope: arbitrary noise accumulates through the chronological discount
+kernel, while constant or uniformly bounded noise yields an explicit
+robustness floor.  A faster noiseless rate can still have a worse noise floor,
+so rate alone cannot select an accelerated profile.
+Fixed restart has a separate objective-gap theorem: a complete inner block
+with a subquadratic endpoint bound, combined with strong convexity, contracts
+by `8L / (mu * k^2)`, and repeated blocks inherit a geometric rate when that
+factor is below one.  This certifies a fixed block interval only; observable
+adaptive restart triggers remain conditional rather than being inferred from
+the rate theorem.
+Direct Kolen--Pollack alignment has an exact schedule-independent core as
+well.  When a shape-matched forward object and transposed feedback object
+receive the same time-varying innovation and decay, their gap is multiplied
+by `1 - learningRate` on every step and converges throughout the sharp scalar
+interval `0 < learningRate < 2`.  An asymmetric-innovation fixture shows why
+that result cannot be propagated through dimension-mismatched hidden layers
+without an additional approximation certificate.
 The nonlinear readout side now has a compositional certificate calculus.
 Forward motion, Jacobian norm, and Jacobian variation compose through addition
 and the chain rule, with intermediate-region preservation stated explicitly.
@@ -205,6 +355,46 @@ bounds.  A separate rational wire checker validates the algebraic subset by
 kernel reduction and exports a real error theorem; registered unary wire nodes
 are rejected until their source-specific floating-point evaluation enclosure
 is supplied.
+Asymmetric endpoint intervals provide a complementary exact-value layer.
+Addition and the exact four-corner multiplication hull satisfy the interval
+inclusion property, an indexed certificate reconstructs inclusion for the
+shared scalar-expression language, and finite input splitting transports
+tilewise bounds back to the original domain.  The repeated-variable fixture
+`2*x-x` records the dependency effect: splitting narrows its enclosure but
+does not silently recover an algebraic simplification.
+Approximation and rounding error are then composed at this asymmetric
+interval boundary.  Absolute errors add through an explicit intermediate
+value.  Relative errors use a zero-safe multiplicative witness, and two
+stages retain the product of their local errors.  Independently valid
+evaluation paths may be intersected.  Fixtures prove that dropping the
+relative cross term is unsound and that division by a zero reference loses
+information that the multiplicative predicate preserves.  No theorem here
+identifies an unauthenticated runtime operation with IEEE-754 rounding.
+Division receives an additional executable rational safety certificate.
+It checks both the ideal denominator interval and its absolute-error-expanded
+machine interval, then transports a replay error bound to nonzeroness of both
+denominators over the reals.  Equality at the separation margin, improper
+intervals, and the real-range-only failure are explicit negative fixtures.
+Correct-rounding cells add a distinct final-result layer.  For an authenticated
+monotone higher-to-target rounding map, an executable endpoint checker proves
+that every value in the certified interval rounds to one oracle-bound target.
+A nonmonotone interior counterexample shows why endpoint equality alone is
+insufficient, while an explicit-list checker proves that sampled candidate
+success cannot replace complete-domain validation.
+Elementary-function approximations receive a two-phase certificate matching
+the Dandelion decomposition: a certified elementary-to-Taylor error and a
+residual polynomial error add to a checked uniform budget.  A separate compact
+interval theorem bounds every value from endpoint samples and derivative-based
+confidence intervals covering all critical points.  Under-sized composed
+budgets and endpoint-only extrema checks are explicit negative fixtures; no
+Taylor generator, root oracle, or runtime elementary implementation is assumed.
+Symbolic Taylor round-off forms provide the complementary floating-point
+reduction.  A finite family of bounded error coordinates contributes its common
+radius times the `L1` sensitivity, and a rigorously bounded higher-order
+remainder is retained.  An executable rational certificate checks the global
+sensitivity, remainder, and total budgets.  Separately maximizing every
+sensitivity is proved sound but can be strictly looser than the
+correlation-preserving bound; deleting the remainder is explicitly unsound.
 Raw IEEE-754 binary32 checkpoint words have an exact real-valued bridge as
 well: finite words are decoded without decimal rounding, flat tensors receive
 an explicit `[output, input]` row-major matrix view, and the decoded matrix
@@ -244,6 +434,33 @@ tolerance, otherwise execution falls back to a baseline map.  Selection
 preserves geometric convergence toward a common target under separate
 target-contraction certificates, without claiming pairwise contraction across
 different selector branches.
+For stabilized Anderson acceleration, accepted proposals may be noncontractive:
+a summable accepted-step error budget and the fallback decrease instead form a
+quasi-Fejer trace.  The resulting finite-horizon budget yields summability of
+fallback decreases, vanishing residual, and convergence of squared distance to
+every fixed point.  A semantic residual binding plus a sequentially compact
+invariant set then recover convergence of the full state sequence to a fixed
+point.  The polynomial safeguard is proved summable only above exponent one;
+the harmonic boundary supplies a matching negative result.  These results
+license convergence monitoring, not a rate improvement.
+The complementary depth-one Anderson geometry is exact: least-squares
+projection removes the residual component along the latest residual
+difference, minimizes the residual over every scalar coefficient, and has a
+strict gain precisely when that component is nonzero.  For nonlinear maps the
+saved first-order residual supplies an exact remainder budget and a quadratic
+local radius; spending the full budget recovers the baseline rather than a
+strict improvement.  A scalar affine map reaches its fixed point in one
+nondegenerate Anderson step, while repeated history exposes the denominator
+boundary.
+Regularized residual mixing supplies a complementary coefficient-stability
+certificate.  Any regularized affine mixture that beats uniform averaging has
+squared coefficient norm at most `(1 + 1 / regularization) / history`, provided
+the declared residual scale bounds the uniform mixture.  The actual
+two-history scalar solver is constructed and proved globally optimal by an
+exact completed-square identity.  With zero regularization, identical
+residual columns permit optimal affine mixtures of arbitrarily large
+coefficient norm, so residual reduction alone cannot justify extrapolation
+stability.
 When curvature changes between the two scheduled sweeps, the terminal factor
 differs from the fixed-curvature polynomial by two ordered first-order terms
 and one quadratic interaction.  A pointwise drift certificate now adds that
@@ -252,6 +469,13 @@ through the same active-state isometry.  The unchanged-curvature fixture
 recovers the exact `4/7` block, while a finite second-sweep curvature jump makes
 the nominally accelerated mode expansive.  Sampled local Ritz values remain
 diagnostics rather than uniform spectral or drift certificates.
+For an arbitrary finite-memory schedule, a directed perturbation from one
+spectral fibre to another now has an exact time-ordered insertion response.
+The coupled triangular execution is affine in the perturbation scale, so its
+nonzero finite-difference quotient is exactly that response.  Two scalar
+realizations can share both fixed terminal products while having different
+insertion responses; a terminal residual polynomial therefore does not
+determine curvature-drift sensitivity.
 Constraint release is connected to task loss only through an explicit feasible repair,
 with lower-boundedness and repair regularity exposed as necessary premises.
 Approximate credit is connected to finite task descent through a conservative
@@ -280,7 +504,12 @@ map's contraction factor, exposes exact zeros of the summed operators, and
 therefore inherits finite-step initializer and stopping certificates.  Its
 positive fixture is genuinely nonlinear, while matched skew and anti-monotone
 fixtures separate stable implicit dynamics from scalar-potential and
-unlicensed forward dynamics.  A uniformly inexact resolvent is tracked without
+unlicensed forward dynamics.  Scaled monotone resolvents are also connected
+to Peaceman--Rachford splitting: reflection is nonexpansive for a monotone
+operator and strictly contractive at every positive rate for a strongly
+monotone Lipschitz operator.  Fixed reflected states decode exactly to zeros
+of the operator sum.  Zero-rate and period-two endpoint fixtures expose the
+strict boundaries.  A uniformly inexact resolvent is tracked without
 identifying it with the exact solver: per-step approximation errors accumulate
 geometrically, induce an explicit error floor, and enter a sound residual
 stopping rule.  A sharp biased-solver fixture shows that nonzero approximation

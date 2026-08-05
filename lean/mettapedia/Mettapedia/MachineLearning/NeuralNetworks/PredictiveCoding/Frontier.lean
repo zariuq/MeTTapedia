@@ -2,6 +2,7 @@ import Mettapedia.MachineLearning.NeuralNetworks.PredictiveCoding.Frontier.Regim
 import Mettapedia.MachineLearning.NeuralNetworks.PredictiveCoding.Frontier.CoordinateRescue
 import Mettapedia.MachineLearning.NeuralNetworks.PredictiveCoding.Frontier.TrustRegion
 import Mettapedia.MachineLearning.NeuralNetworks.PredictiveCoding.Frontier.DeepLineRestriction
+import Mettapedia.MachineLearning.NeuralNetworks.PredictiveCoding.Frontier.DeepLinearModeDynamics
 import Mettapedia.MachineLearning.NeuralNetworks.PredictiveCoding.Frontier.PreconditionedFlowTransport
 import Mettapedia.MachineLearning.NeuralNetworks.PredictiveCoding.Frontier.ResidualBoundary
 import Mettapedia.MachineLearning.NeuralNetworks.PredictiveCoding.Frontier.ResidualMomentBound
@@ -24,7 +25,8 @@ import Mettapedia.MachineLearning.NeuralNetworks.PredictiveCoding.Frontier.Prove
 # Predictive-coding optimistic frontier
 
 Umbrella for the regime index, error-coordinate boundary, trust-region and
-saddle results, residual Depth-μP boundary, prospective-interference toy,
+saddle results, exact deep-linear singular-mode gradient-flow dynamics,
+residual Depth-μP boundary, prospective-interference toy,
 hybrid monotone refinement, joint prospective error-coordinate energy,
 finite-settling gradient-gap bounds,
 certified Fisher/natural-gradient geometry for frozen online adapters,

@@ -1,4 +1,5 @@
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefCanonicalSection
+import Mettapedia.OSLF.MeTTaIL.ReflectiveCanonicalKeyedTyping
 
 /-!
 # Reflective-support stability of rho canonicalization
@@ -469,6 +470,52 @@ private theorem normalizeBagElements_supportSafe
       safe source sourceMembership
   exact bagSplice_member_supportSafe sourceTyped sourceSafe memberMembership
 
+/-- Flattening, removing the unit, and sorting parallel components by an
+explicit key preserves their pointwise typing and support discipline. -/
+private theorem normalizeParallelElementsBy_supportSafe
+    {Key : Type} [LinearOrder Key] (key : Pattern → Key)
+    {free : FreeTypeContext} {bound available : List TypeExpr}
+    {processes : List Pattern} {support : ContextSupport.Support}
+    {binderImage : TypeExpr → TypeExpr}
+    (typed : ElementsHaveType rhoCalc free bound processes TypeExpr.proc)
+    (safe : typed.ReflectiveSupportSafeAt support available binderImage) :
+    ∃ normalizedTyped : ElementsHaveType rhoCalc free bound
+        (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.normalizeParallelElementsBy
+          key rhoReflectivePresentation processes) TypeExpr.proc,
+      normalizedTyped.ReflectiveSupportSafeAt support available binderImage := by
+  apply ElementsHaveType.ReflectiveSupportSafeAt.of_forall_mem
+  intro member membership
+  have structuralMembership : member ∈
+      Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.normalizeParallelElements
+        rhoReflectivePresentation processes :=
+    (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.normalizeParallelElementsBy_perm
+      key rhoReflectivePresentation processes).mem_iff.mp membership
+  have filteredMembership : member ∈
+      ((processes.flatMap
+        (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.parallelSplice
+          rhoReflectivePresentation)).filter fun pattern =>
+            pattern ≠ .apply rhoReflectivePresentation.parallelUnitConstructor
+              []) :=
+    (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.sortPatterns_perm _).mem_iff.mp (by
+      simpa [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.normalizeParallelElements]
+        using structuralMembership)
+  have flatMembership := List.mem_of_mem_filter filteredMembership
+  rw [List.mem_flatMap] at flatMembership
+  obtain ⟨source, sourceMember, memberMember⟩ := flatMembership
+  have memberMember' : member ∈ bagSplice source := by
+    cases source with
+    | collection collectionType elements rest =>
+        cases collectionType <;> cases rest <;>
+          simpa [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.parallelSplice,
+            rhoReflectivePresentation, bagSplice] using memberMember
+    | _ =>
+        simpa [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.parallelSplice,
+          rhoReflectivePresentation, bagSplice] using memberMember
+  obtain ⟨sourceTyped, sourceSafe⟩ :=
+    ElementsHaveType.ReflectiveSupportSafeAt.forall_mem
+      safe source sourceMember
+  exact bagSplice_member_supportSafe sourceTyped sourceSafe memberMember'
+
 /-- Removing representation-only empty and singleton parallel wrappers
 preserves process sorting and reflective support. -/
 private theorem collapseBag_supportSafe
@@ -494,6 +541,47 @@ private theorem collapseBag_supportSafe
       | cons second remainder =>
           exact ⟨rho_parallel_hasSort typed,
             parallel_supportSafe typed safe⟩
+
+/-- The generic declaration-derived quote finisher specializes exactly to
+rho's independently defined quote/drop normalizer. -/
+private theorem finishRhoQuote_eq (pattern : Pattern) :
+    Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.finishNormalizeReflectiveApply
+        rhoReflectivePresentation "NQuote" [pattern] =
+      normalizeQuote pattern := by
+  cases pattern with
+  | apply constructor arguments =>
+      cases arguments with
+      | nil => simp [
+          Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.finishNormalizeReflectiveApply,
+          rhoReflectivePresentation, normalizeQuote]
+      | cons argument arguments =>
+          cases arguments with
+          | nil =>
+              by_cases isDrop : constructor = "PDrop"
+              · subst constructor
+                simp [Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.finishNormalizeReflectiveApply,
+                  rhoReflectivePresentation, normalizeQuote]
+              · simp [Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.finishNormalizeReflectiveApply,
+                  rhoReflectivePresentation, normalizeQuote, isDrop]
+          | cons second remainder =>
+              simp [Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.finishNormalizeReflectiveApply,
+                rhoReflectivePresentation, normalizeQuote]
+  | _ =>
+      simp [Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.finishNormalizeReflectiveApply,
+        rhoReflectivePresentation, normalizeQuote]
+
+/-- The generic declaration-derived parallel collapse specializes exactly to
+rho's independently defined bag collapse. -/
+private theorem collapseRhoParallel_eq (patterns : List Pattern) :
+    Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.collapseParallel
+        rhoReflectivePresentation patterns =
+      collapseBag patterns := by
+  cases patterns with
+  | nil => rfl
+  | cons pattern patterns =>
+      cases patterns with
+      | nil => rfl
+      | cons second remainder => rfl
 
 /-! ## The declaration-derived rho fragment -/
 
@@ -548,6 +636,51 @@ theorem matchesParameterRepresentation_canonicalize
       cases pattern <;> simp [MatchesParameterRepresentation, canonicalize]
       case multiLambda arity binders body => cases binders <;> simp
 
+/-- Key-parametric rho canonicalization preserves the authored binder
+representation of a constructor argument at every quote-visible depth. -/
+theorem matchesParameterRepresentation_canonicalizeByAt
+    {Key : Type} [LinearOrder Key] (key : Nat → Pattern → Key)
+    (availableDepth : Nat) (parameter : TermParam) (pattern : Pattern) :
+    MatchesParameterRepresentation parameter pattern →
+      MatchesParameterRepresentation parameter
+        (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeByAt
+          key rhoReflectivePresentation availableDepth pattern) := by
+  cases parameter with
+  | simple => exact fun _ => trivial
+  | abstractionNamed binderName bodyName type =>
+      cases pattern <;>
+        simp [MatchesParameterRepresentation,
+          Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeByAt]
+      case lambda binder body => cases binder <;> simp
+  | multiAbstractionNamed binderNames bodyName type =>
+      cases pattern <;>
+        simp [MatchesParameterRepresentation,
+          Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeByAt]
+      case multiLambda arity binders body => cases binders <;> simp
+
+/-- Two-depth keyed rho canonicalization preserves the authored binder
+representation of a constructor argument. -/
+theorem matchesParameterRepresentation_canonicalizeByDepths
+    {Key : Type} [LinearOrder Key] (key : Nat → Nat → Pattern → Key)
+    (availableDepth scopeDepth : Nat) (parameter : TermParam)
+    (pattern : Pattern) :
+    MatchesParameterRepresentation parameter pattern →
+      MatchesParameterRepresentation parameter
+        (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeByDepths
+          key rhoReflectivePresentation availableDepth scopeDepth pattern) := by
+  cases parameter with
+  | simple => exact fun _ => trivial
+  | abstractionNamed binderName bodyName type =>
+      cases pattern <;>
+        simp [MatchesParameterRepresentation,
+          Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeByDepths]
+      case lambda binder body => cases binder <;> simp
+  | multiAbstractionNamed binderNames bodyName type =>
+      cases pattern <;>
+        simp [MatchesParameterRepresentation,
+          Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeByDepths]
+      case multiLambda arity binders body => cases binders <;> simp
+
 /-- Eliminate the normalized singleton argument spine of rho's quote
 constructor and apply the quote/drop support theorem. -/
 private theorem normalizeQuote_spine_supportSafe
@@ -588,13 +721,16 @@ private theorem normalizeQuote_spine_supportSafe
       exact normalizeQuote_supportSafe argumentTyped argumentSafe object
         targetAvailable
 
-/-! ## Support preservation of the full rho canonicalizer -/
+/-! ## Support preservation of keyed rho canonicalization -/
 
-/-- On the declaration-derived rho fragment, canonicalization preserves both
-typing and reflective support.  The mutual recursor keeps constructor
-arguments and parallel elements synchronized with their authored typing
-spines. -/
-theorem canonicalize_supportSafe
+/-- On the declaration-derived rho fragment, two-depth keyed
+canonicalization preserves both typing and reflective support.  The mutual
+recursor keeps constructor arguments and parallel elements synchronized with
+their authored typing spines while quotation changes only the quote-visible
+depth. -/
+theorem canonicalizeByDepths_supportSafe
+    {Key : Type} [LinearOrder Key] (key : Nat → Nat → Pattern → Key)
+    (scopeDepth : Nat)
     {free : FreeTypeContext} {support : ContextSupport.Support}
     {bound available : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
     {binderImage : TypeExpr → TypeExpr}
@@ -603,7 +739,9 @@ theorem canonicalize_supportSafe
     (canonicalizable : CanonicalizableRhoType type)
     (object : isObjectPattern pattern = true) :
     ∃ normalizedTyped : HasType rhoCalc free bound
-        (canonicalize pattern) type,
+        (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeByDepths
+          key rhoReflectivePresentation available.length scopeDepth pattern)
+          type,
       normalizedTyped.ReflectiveSupportSafeAt support available binderImage := by
   exact HasType.ReflectiveSupportSafeAt.rec
     (motive_1 := fun {bound pattern type}
@@ -612,8 +750,11 @@ theorem canonicalize_supportSafe
       (currentImage : TypeExpr → TypeExpr)
       (_ : typed.ReflectiveSupportSafeAt support available currentImage) =>
       CanonicalizableRhoType type → isObjectPattern pattern = true →
+      ∀ scopeDepth,
       ∃ normalizedTyped : HasType rhoCalc free bound
-          (canonicalize pattern) type,
+          (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeByDepths
+            key rhoReflectivePresentation available.length scopeDepth pattern)
+            type,
         normalizedTyped.ReflectiveSupportSafeAt support available currentImage)
     (motive_2 := fun {bound arguments parameters}
       (typed : ArgumentsHaveTypes rhoCalc free bound arguments parameters)
@@ -621,9 +762,11 @@ theorem canonicalize_supportSafe
       (currentImage : TypeExpr → TypeExpr)
       (_ : typed.ReflectiveSupportSafeAt support available currentImage) =>
       ParametersCanonicalizable parameters →
-      isObjectPatternList arguments = true →
+      isObjectPatternList arguments = true → ∀ scopeDepth,
       ∃ normalizedTyped : ArgumentsHaveTypes rhoCalc free bound
-          (canonicalizeList arguments) parameters,
+          (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeListByDepths
+            key rhoReflectivePresentation available.length scopeDepth arguments)
+          parameters,
         normalizedTyped.ReflectiveSupportSafeAt support available currentImage)
     (motive_3 := fun {bound elements elementType}
       (typed : ElementsHaveType rhoCalc free bound elements elementType)
@@ -631,24 +774,26 @@ theorem canonicalize_supportSafe
       (currentImage : TypeExpr → TypeExpr)
       (_ : typed.ReflectiveSupportSafeAt support available currentImage) =>
       CanonicalizableRhoType elementType →
-      isObjectPatternList elements = true →
+      isObjectPatternList elements = true → ∀ scopeDepth,
       ∃ normalizedTyped : ElementsHaveType rhoCalc free bound
-          (canonicalizeList elements) elementType,
+          (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeListByDepths
+            key rhoReflectivePresentation available.length scopeDepth elements)
+          elementType,
         normalizedTyped.ReflectiveSupportSafeAt support available currentImage)
     (by
       intro bound index type lookup sourceAvailable currentImage canonicalizable
-        object
+        object scopeDepth
       exact ⟨HasType.bvar lookup,
         HasType.ReflectiveSupportSafeAt.bvar lookup sourceAvailable⟩)
     (by
       intro bound freeName type lookup sourceAvailable currentImage shape
-        canonicalizable object
+        canonicalizable object scopeDepth
       exact ⟨HasType.fvar lookup,
         HasType.ReflectiveSupportSafeAt.fvar lookup sourceAvailable shape⟩)
     (by
       intro bound rule arguments membership notBare argumentsTyped
         sourceAvailable currentImage quoted argumentsSafe argumentsIH
-        canonicalizable object
+        canonicalizable object scopeDepth
       simp [rhoCalc] at membership
       rcases membership with rfl | rfl | rfl | rfl | rfl | rfl
       · simp [ReflectiveContextSupport.isQuoteConstructor, rhoCalc,
@@ -672,20 +817,40 @@ theorem canonicalize_supportSafe
                 isObjectPatternList [argument] = true := by
               simpa [isObjectPattern, isObjectPatternList] using object
             obtain ⟨normalizedArgumentsTyped, normalizedArgumentsSafe⟩ :=
-              argumentsIH parametersCanonicalizable argumentsObject
+              argumentsIH parametersCanonicalizable argumentsObject scopeDepth
             have exactTyped : ArgumentsHaveTypes rhoCalc free bound
-                [canonicalize argument]
+                [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeByDepths
+                  key rhoReflectivePresentation 0 scopeDepth argument]
                 [TermParam.simple "p" TypeExpr.proc] := by
-              simpa [canonicalizeList] using normalizedArgumentsTyped
+              simpa [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeListByDepths]
+                using normalizedArgumentsTyped
             have exactSafe : exactTyped.ReflectiveSupportSafeAt support []
                 currentImage :=
               ArgumentsHaveTypes.ReflectiveSupportSafeAt.castTyping
                 (target := exactTyped) normalizedArgumentsSafe
             have canonicalObject :
-                isObjectPattern (canonicalize argument) = true :=
-              canonicalize_isObjectPattern
-                (by simpa [isObjectPatternList] using argumentsObject)
-            simpa [canonicalize, canonicalizeList] using
+                isObjectPattern
+                  (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeByDepths
+                    key rhoReflectivePresentation 0 scopeDepth argument) = true :=
+              Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeByDepths_isObjectPattern
+                key rhoReflectivePresentation 0 scopeDepth argument
+                  (by simpa [isObjectPatternList] using argumentsObject)
+            have keyedQuoteEq :
+                Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeByDepths
+                    key rhoReflectivePresentation sourceAvailable.length scopeDepth
+                    (.apply "NQuote" [argument]) =
+                  normalizeQuote
+                    (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeByDepths
+                      key rhoReflectivePresentation 0 scopeDepth argument) := by
+              simp only [
+                Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeByDepths,
+                Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeListByDepths]
+              rw [show ("NQuote" == rhoReflectivePresentation.quoteConstructor) =
+                true by rfl]
+              simp only [if_true]
+              exact finishRhoQuote_eq _
+            rw [keyedQuoteEq]
+            simpa [TypeExpr.name, TypeExpr.baseType] using
               (normalizeQuote_spine_supportSafe exactTyped exactSafe
                 canonicalObject sourceAvailable)
       · simp [ReflectiveContextSupport.isQuoteConstructor, rhoCalc,
@@ -697,13 +862,13 @@ theorem canonicalize_supportSafe
     (by
       intro bound rule arguments membership notBare argumentsTyped
         sourceAvailable currentImage ordinary argumentsSafe argumentsIH
-        canonicalizable object
+        canonicalizable object scopeDepth
       have parametersCanonicalizable :=
         rhoRule_parametersCanonicalizable membership notBare
       have argumentsObject : isObjectPatternList arguments = true := by
         simpa [isObjectPattern] using object
       obtain ⟨normalizedArgumentsTyped, normalizedArgumentsSafe⟩ :=
-        argumentsIH parametersCanonicalizable argumentsObject
+        argumentsIH parametersCanonicalizable argumentsObject scopeDepth
       let normalizedTyped :=
         HasType.constructor membership notBare normalizedArgumentsTyped
       let normalizedSafe : normalizedTyped.ReflectiveSupportSafeAt
@@ -718,48 +883,59 @@ theorem canonicalize_supportSafe
         rw [equality] at quoteStatus
         simp [ReflectiveContextSupport.isQuoteConstructor, rhoCalc,
           rhoReflectivePresentation] at quoteStatus
-      have notQuoteShape : ¬ (rule.label = "NQuote" ∧
-          ∃ argument, arguments = [argument]) := by
-        intro quoteShape
-        exact notQuote quoteShape.1
-      rw [canonicalize_apply_general rule.label arguments notQuoteShape]
-      exact ⟨normalizedTyped, normalizedSafe⟩)
+      simpa [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeByDepths,
+        Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.finishNormalizeReflectiveApply,
+        rhoReflectivePresentation, notQuote] using
+          ⟨normalizedTyped, normalizedSafe⟩)
     (by
       intro bound binder body domain codomain bodyTyped sourceAvailable
-        currentImage bodySafe bodyIH canonicalizable object
+        currentImage bodySafe bodyIH canonicalizable object scopeDepth
       have codomainCanonicalizable : CanonicalizableRhoType codomain := by
         simpa [CanonicalizableRhoType] using canonicalizable
       have bodyObject : isObjectPattern body = true := by
         simpa [isObjectPattern] using object
       obtain ⟨normalizedBodyTyped, normalizedBodySafe⟩ :=
-        bodyIH codomainCanonicalizable bodyObject
+        bodyIH codomainCanonicalizable bodyObject (scopeDepth + 1)
       exact ⟨HasType.lambda normalizedBodyTyped,
         HasType.ReflectiveSupportSafeAt.lambda normalizedBodySafe⟩)
     (by
       intro bound arity binders body domain codomain bodyTyped sourceAvailable
-        currentImage bodySafe bodyIH canonicalizable object
+        currentImage bodySafe bodyIH canonicalizable object scopeDepth
       have codomainCanonicalizable : CanonicalizableRhoType codomain := by
         simpa [CanonicalizableRhoType] using canonicalizable
       have bodyObject : isObjectPattern body = true := by
         simpa [isObjectPattern] using object
-      obtain ⟨normalizedBodyTyped, normalizedBodySafe⟩ :=
-        bodyIH codomainCanonicalizable bodyObject
-      exact ⟨HasType.multiLambda normalizedBodyTyped,
-        HasType.ReflectiveSupportSafeAt.multiLambda normalizedBodySafe⟩)
+      have alignedResult :
+          ∃ normalizedBodyTyped : HasType rhoCalc free
+              (List.replicate arity domain ++ bound)
+              (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeByDepths
+                key rhoReflectivePresentation
+                (sourceAvailable.length + arity) (scopeDepth + arity) body)
+                codomain,
+            normalizedBodyTyped.ReflectiveSupportSafeAt support
+              (List.replicate arity (currentImage domain) ++ sourceAvailable)
+              currentImage := by
+        simpa [List.length_append, Nat.add_comm] using
+          (bodyIH codomainCanonicalizable bodyObject (scopeDepth + arity))
+      obtain ⟨normalizedBodyTyped, normalizedBodySafe⟩ := alignedResult
+      simpa [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeByDepths]
+        using
+        ⟨HasType.multiLambda normalizedBodyTyped,
+          HasType.ReflectiveSupportSafeAt.multiLambda normalizedBodySafe⟩)
     (by
       intro bound body replacement domain codomain bodyTyped replacementTyped
         sourceAvailable currentImage bodySafe replacementSafe bodyIH replacementIH
-        canonicalizable object
+        canonicalizable object scopeDepth
       simp [isObjectPattern] at object)
     (by
       intro bound collectionType elements rest elementType elementsTyped
         sourceAvailable currentImage elementsSafe elementsIH canonicalizable
-        object
+        object scopeDepth
       simp [CanonicalizableRhoType] at canonicalizable)
     (by
       intro bound rule parameterName collectionType elements rest elementType
         membership parameterShape elementsTyped sourceAvailable currentImage
-        elementsSafe elementsIH canonicalizable object
+        elementsSafe elementsIH canonicalizable object scopeDepth
       simp [rhoCalc] at membership
       rcases membership with rfl | rfl | rfl | rfl | rfl | rfl
       · simp at parameterShape
@@ -773,11 +949,30 @@ theorem canonicalize_supportSafe
             have elementsObject : isObjectPatternList elements = true := by
               simpa [isObjectPattern] using object
             obtain ⟨canonicalElementsTyped, canonicalElementsSafe⟩ :=
-              elementsIH (by trivial) elementsObject
+              elementsIH (by trivial) elementsObject scopeDepth
             obtain ⟨normalizedElementsTyped, normalizedElementsSafe⟩ :=
-              normalizeBagElements_supportSafe canonicalElementsTyped
+              normalizeParallelElementsBy_supportSafe
+                (key sourceAvailable.length scopeDepth) canonicalElementsTyped
                 canonicalElementsSafe
-            simpa [canonicalize] using
+            have keyedParallelEq :
+                Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeByDepths
+                    key rhoReflectivePresentation sourceAvailable.length scopeDepth
+                    (.collection .hashBag elements none) =
+                  collapseBag
+                    (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.normalizeParallelElementsBy
+                      (key sourceAvailable.length scopeDepth)
+                      rhoReflectivePresentation
+                      (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeListByDepths
+                        key rhoReflectivePresentation sourceAvailable.length
+                        scopeDepth elements)) := by
+              simp only [
+                Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeByDepths]
+              rw [show (.hashBag == rhoReflectivePresentation.parallelCollection) =
+                true by rfl]
+              simp only [if_true]
+              exact collapseRhoParallel_eq _
+            rw [keyedParallelEq]
+            simpa [TypeExpr.proc, TypeExpr.baseType] using
               (collapseBag_supportSafe normalizedElementsTyped
                 normalizedElementsSafe)
         | some restName => simp [isObjectPattern] at object
@@ -785,13 +980,14 @@ theorem canonicalize_supportSafe
       · simp at parameterShape)
     (by
       intro bound sourceAvailable currentImage parametersCanonicalizable object
+        scopeDepth
       exact ⟨ArgumentsHaveTypes.nil,
         ArgumentsHaveTypes.ReflectiveSupportSafeAt.nil bound sourceAvailable⟩)
     (by
       intro bound argument arguments parameter parameters expected
         representation parameterType argumentTyped argumentsTyped
         sourceAvailable currentImage argumentSafe argumentsSafe argumentIH
-        argumentsIH parametersCanonicalizable object
+        argumentsIH parametersCanonicalizable object scopeDepth
       have argumentCanonicalizable : CanonicalizableRhoType expected :=
         parametersCanonicalizable parameter (by simp) expected parameterType
       have tailCanonicalizable : ParametersCanonicalizable parameters := by
@@ -802,16 +998,23 @@ theorem canonicalize_supportSafe
           isObjectPatternList arguments = true := by
         simpa [isObjectPatternList] using object
       obtain ⟨normalizedArgumentTyped, normalizedArgumentSafe⟩ :=
-        argumentIH argumentCanonicalizable objectParts.1
+        argumentIH argumentCanonicalizable objectParts.1 scopeDepth
       obtain ⟨normalizedArgumentsTyped, normalizedArgumentsSafe⟩ :=
-        argumentsIH tailCanonicalizable objectParts.2
+        argumentsIH tailCanonicalizable objectParts.2 scopeDepth
       have normalizedRepresentation :
           MatchesParameterRepresentation parameter
-            (canonicalize argument) :=
-        matchesParameterRepresentation_canonicalize parameter argument
-          representation
+            (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeByDepths
+              key rhoReflectivePresentation sourceAvailable.length scopeDepth
+              argument) :=
+        matchesParameterRepresentation_canonicalizeByDepths key
+          sourceAvailable.length scopeDepth parameter argument representation
       change ∃ normalizedTyped : ArgumentsHaveTypes rhoCalc free bound
-          (canonicalize argument :: canonicalizeList arguments)
+          (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeByDepths
+              key rhoReflectivePresentation sourceAvailable.length scopeDepth
+              argument ::
+            Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeListByDepths
+              key rhoReflectivePresentation sourceAvailable.length scopeDepth
+              arguments)
           (parameter :: parameters),
         normalizedTyped.ReflectiveSupportSafeAt support sourceAvailable
           currentImage
@@ -829,25 +1032,70 @@ theorem canonicalize_supportSafe
       exact ⟨normalizedSpine, normalizedSpineSafe⟩)
     (by
       intro bound elementType sourceAvailable currentImage canonicalizable object
+        scopeDepth
       exact ⟨ElementsHaveType.nil bound elementType,
         ElementsHaveType.ReflectiveSupportSafeAt.nil bound elementType
           sourceAvailable⟩)
     (by
       intro bound element elements elementType elementTyped elementsTyped
         sourceAvailable currentImage elementSafe elementsSafe elementIH
-        elementsIH canonicalizable object
+        elementsIH canonicalizable object scopeDepth
       have objectParts : isObjectPattern element = true ∧
           isObjectPatternList elements = true := by
         simpa [isObjectPatternList] using object
       obtain ⟨normalizedElementTyped, normalizedElementSafe⟩ :=
-        elementIH canonicalizable objectParts.1
+        elementIH canonicalizable objectParts.1 scopeDepth
       obtain ⟨normalizedElementsTyped, normalizedElementsSafe⟩ :=
-        elementsIH canonicalizable objectParts.2
+        elementsIH canonicalizable objectParts.2 scopeDepth
       exact ⟨ElementsHaveType.cons normalizedElementTyped
           normalizedElementsTyped,
         ElementsHaveType.ReflectiveSupportSafeAt.cons
           normalizedElementSafe normalizedElementsSafe⟩)
-    safe canonicalizable object
+    safe canonicalizable object scopeDepth
+
+/-- The original quote-visible keyed interface is the exact specialization
+whose key ignores structural depth. -/
+theorem canonicalizeByAt_supportSafe
+    {Key : Type} [LinearOrder Key] (key : Nat → Pattern → Key)
+    {free : FreeTypeContext} {support : ContextSupport.Support}
+    {bound available : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
+    {binderImage : TypeExpr → TypeExpr}
+    (typed : HasType rhoCalc free bound pattern type)
+    (safe : typed.ReflectiveSupportSafeAt support available binderImage)
+    (canonicalizable : CanonicalizableRhoType type)
+    (object : isObjectPattern pattern = true) :
+    ∃ normalizedTyped : HasType rhoCalc free bound
+        (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeByAt
+          key rhoReflectivePresentation available.length pattern) type,
+      normalizedTyped.ReflectiveSupportSafeAt support available binderImage := by
+  simpa only [
+    Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeByDepths_ignoreScope]
+    using
+      (canonicalizeByDepths_supportSafe
+        (key := fun availableDepth _ pattern => key availableDepth pattern)
+        (scopeDepth := 0) typed safe canonicalizable object)
+
+/-- The established structural rho canonicalizer is the collision-free
+`patternCode` instance of keyed support preservation. -/
+theorem canonicalize_supportSafe
+    {free : FreeTypeContext} {support : ContextSupport.Support}
+    {bound available : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
+    {binderImage : TypeExpr → TypeExpr}
+    (typed : HasType rhoCalc free bound pattern type)
+    (safe : typed.ReflectiveSupportSafeAt support available binderImage)
+    (canonicalizable : CanonicalizableRhoType type)
+    (object : isObjectPattern pattern = true) :
+    ∃ normalizedTyped : HasType rhoCalc free bound
+        (canonicalize pattern) type,
+      normalizedTyped.ReflectiveSupportSafeAt support available binderImage := by
+  simpa only [
+    Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeByAt_const,
+    Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeBy_patternCode,
+    CanonicalMatch.derivedCanonicalize_eq] using
+    (canonicalizeByAt_supportSafe
+      (key := fun _ pattern =>
+        Mettapedia.OSLF.MeTTaIL.PatternCode.patternCode pattern)
+      typed safe canonicalizable object)
 
 /-- Rho's open canonicalizer preserves reflective support in every authored
 sort.  The target typing proof is transported only across proof

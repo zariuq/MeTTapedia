@@ -97,7 +97,7 @@ end RepairFixtures
 
 /-! ## Bounded agreement is not extensional correctness -/
 
-theorem greater_or_complete_finite_match_not_extensional_correctness :
+theorem prefixEquivalent_not_extensional :
     Gauthier.PrefixEquivalent 20 1
         Mettapedia.GSLT.LanguageDef.GauthierProbeRigidity.probeId
         Mettapedia.GSLT.LanguageDef.GauthierProbeRigidity.probeZeroAfterZero ∧
@@ -130,7 +130,7 @@ theorem distinctPositions_sameTrace_not_independent :
 
 #print axioms RepairFixtures.greater_depth_not_unconditionally_repairable
 #print axioms RepairFixtures.smaller_residual_not_unconditionally_repairable
-#print axioms greater_or_complete_finite_match_not_extensional_correctness
+#print axioms prefixEquivalent_not_extensional
 #print axioms distinctPositions_sameTrace_not_independent
 
 end Mettapedia.MachineLearning.SearchGuidance.ProgramDiscovery.SemanticShaping

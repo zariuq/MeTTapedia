@@ -1,4 +1,3 @@
-import Mettapedia.MachineLearning.SearchGuidance.ProgramDiscovery.SemanticShaping.SemanticShapingCrown
 
 /-!
 # Safe semantic shaping
