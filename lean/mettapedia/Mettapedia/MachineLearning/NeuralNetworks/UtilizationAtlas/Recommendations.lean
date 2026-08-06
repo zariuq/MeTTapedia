@@ -162,17 +162,17 @@ theorem recommendationFor_guaranteed
       exact ⟨halfRelaxation_exists_finite_residual_and_risk,
         minimalHalfRelaxationSweeps_sufficient⟩
   | prospectivePCPlasticity =>
-      exact pcPlasticity_frontier_crown
+      exact pcPlasticity_frontier
   | stationaryIndependentGaussian =>
-      exact beliefPolicy_frontier_crown .stationaryIndependentGaussian
+      exact beliefPolicy_frontier .stationaryIndependentGaussian
   | positiveProcessDrift =>
-      exact beliefPolicy_frontier_crown .positiveProcessDrift
+      exact beliefPolicy_frontier .positiveProcessDrift
   | knownObservationOverlap =>
-      exact beliefPolicy_frontier_crown .knownObservationOverlap
+      exact beliefPolicy_frontier .knownObservationOverlap
   | fixedLinearDistortion =>
-      exact beliefPolicy_frontier_crown .fixedLinearDistortion
+      exact beliefPolicy_frontier .fixedLinearDistortion
   | finiteBimodalDecision =>
-      exact beliefPolicy_frontier_crown .finiteBimodalDecision
+      exact beliefPolicy_frontier .finiteBimodalDecision
   | separableTypedHoles =>
       exact slotwiseIndependentSettling_iff_crossSlotHessianBlock_zero
   | varyingObservationNoise =>
@@ -181,7 +181,7 @@ theorem recommendationFor_guaranteed
           everyConstantGate_strictlySuboptimal priorVariance firstNoise
             secondNoise gate hprior hfirst hsecond hnoise
   | contextDependentRouting =>
-      exact workspace_frontier_crown
+      exact workspace_frontier
 
 /-- Total licensed recommender for the finite modeled family. -/
 def licensedRecommendationFor
@@ -305,7 +305,7 @@ theorem licensedSingletonHybrid_licenses
 
 /-- Soundness, finite-family completeness, absence of a universal single
 winner, and hybrid closure. -/
-theorem recommendations_frontier_crown :
+theorem recommendations_frontier :
     (∀ regime, RecommendationGuarantee regime (recommendationFor regime)) ∧
     (¬ ∃ recommendation,
       ∀ regime, RecommendationGuarantee regime recommendation) ∧
@@ -321,6 +321,6 @@ theorem recommendations_frontier_crown :
 #print axioms recommendation_complete_for_modeledFamily
 #print axioms no_singleRecommendation_covers_modeledFamily
 #print axioms hybridRecommendation_closure
-#print axioms recommendations_frontier_crown
+#print axioms recommendations_frontier
 
 end Mettapedia.MachineLearning.NeuralNetworks.UtilizationAtlas

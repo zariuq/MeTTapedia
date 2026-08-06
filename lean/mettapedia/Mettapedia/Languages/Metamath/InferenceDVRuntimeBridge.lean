@@ -125,6 +125,70 @@ theorem runtimeVarsIn_eq_bodyVariables_of_respectsFrame
       activeVariables replacement hrespect).trans
       (bodyVariables_eq_taggedVariableNames replacement.body).symm
 
+/-- Every explicitly tagged variable in a frame-respecting formula is active
+in that frame. -/
+theorem bodyVariables_mem_of_respectsFrame
+    (activeVariables : List String) (replacement : ConstantHeadedFormula)
+    (hrespect :
+      formulaSymbolsRespectFrame activeVariables replacement = true)
+    {name : String} (hname : name ∈ BodyVariables replacement.body) :
+    name ∈ activeVariables := by
+  rcases replacement with ⟨typecode, body⟩
+  simp only [formulaSymbolsRespectFrame] at hrespect
+  induction body with
+  | nil => simp [BodyVariables] at hname
+  | cons symbol body ih =>
+      simp only [List.all_cons, Bool.and_eq_true] at hrespect
+      cases symbol with
+      | const constantName =>
+          exact ih hrespect.2 (by simpa [BodyVariables] using hname)
+      | var variableName =>
+          simp only [BodyVariables, List.mem_cons] at hname
+          rcases hname with rfl | htail
+          · exact List.contains_iff_mem.mp hrespect.1
+          · exact ih hrespect.2 htail
+
+/-- The raw runtime frame and its proof-facing projection induce the same DV
+semantics on substitutions whose replacement variables are active.  Optional
+raw `$d` pairs are therefore invisible precisely when they cannot be used. -/
+theorem dvOKSemantics_proofFacing_of_raw
+    {substitution : FiniteSubstitution} {db : RuntimeDB}
+    {calleeFrame : RuntimeFrame}
+    (hsemantics : DVOKSemantics substitution db.frame calleeFrame)
+    (hreplacements : ∀ name replacement,
+      LookupSemantics substitution name replacement →
+        formulaSymbolsRespectFrame
+          (db.frameFloatVars db.frame) replacement = true) :
+    DVOKSemantics substitution (proofFacingCallerFrame db) calleeFrame := by
+  intro pair hpair
+  obtain ⟨leftReplacement, rightReplacement, hleft, hright, hpairs⟩ :=
+    hsemantics pair hpair
+  refine ⟨leftReplacement, rightReplacement, hleft, hright, ?_⟩
+  intro left hleftMem right hrightMem
+  have hleftActive : left ∈ db.frameFloatVars db.frame :=
+    bodyVariables_mem_of_respectsFrame
+      (db.frameFloatVars db.frame) leftReplacement
+        (hreplacements pair.1 leftReplacement hleft) hleftMem
+  have hrightActive : right ∈ db.frameFloatVars db.frame :=
+    bodyVariables_mem_of_respectsFrame
+      (db.frameFloatVars db.frame) rightReplacement
+        (hreplacements pair.2 rightReplacement hright) hrightMem
+  rcases hpairs left hleftMem right hrightMem with hforward | hreverse
+  · left
+    simp only [proofFacingCallerFrame, Array.toList_filter]
+    apply List.mem_filter.mpr
+    refine ⟨hforward, ?_⟩
+    simp only [Bool.and_eq_true]
+    exact ⟨List.contains_iff_mem.mpr hleftActive,
+      List.contains_iff_mem.mpr hrightActive⟩
+  · right
+    simp only [proofFacingCallerFrame, Array.toList_filter]
+    apply List.mem_filter.mpr
+    refine ⟨hreverse, ?_⟩
+    simp only [Bool.and_eq_true]
+    exact ⟨List.contains_iff_mem.mpr hrightActive,
+      List.contains_iff_mem.mpr hleftActive⟩
+
 /-! ## Exact DV bridge -/
 
 /-- Independent generated DV semantics agrees exactly with the live verifier

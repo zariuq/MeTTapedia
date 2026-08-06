@@ -5,7 +5,7 @@ import Mettapedia.MachineLearning.NeuralNetworks.TwoTimescaleAdaptation.DerivedC
 import Mettapedia.MachineLearning.NeuralNetworks.TwoTimescaleAdaptation.Consolidation
 
 /-!
-# Two-timescale adaptation crown and provenance
+# Two-timescale adaptation certificate and provenance
 
 This module packages the theorem rungs without broadening their scope.  The
 hidden linearity assumption is discharged for concrete linear attention and
@@ -89,7 +89,7 @@ theorem twoTimescaleContributionCounts_exact :
       twoTimescaleContributionCount .empiricalTarget) = (4, 10, 5, 1) := by
   decide
 
-/-! ## Seven-rung proof-bearing crown -/
+/-! ## Seven-rung proof-bearing certificate -/
 
 structure TwoTimescaleAdaptationCertificate : Prop where
   t1Faithfulness :
@@ -166,7 +166,7 @@ structure TwoTimescaleAdaptationCertificate : Prop where
     FeasibleWeightConsolidationNecessary
       fastAxisSlowFullModel 10 5 secondAxisEffect
 
-theorem twoTimescaleAdaptation_crown : TwoTimescaleAdaptationCertificate where
+theorem twoTimescaleAdaptation : TwoTimescaleAdaptationCertificate where
   t1Faithfulness := fun slow fast =>
     exists_faithfulConsolidation_iff_mem_range slowAxisFastFullModel slow fast
   t1Loss := slowAxis_consolidationLoss_exact
@@ -188,7 +188,7 @@ theorem twoTimescaleAdaptation_crown : TwoTimescaleAdaptationCertificate where
     consolidationPressure_not_enough_without_weightReachability
   t7Necessity := secondAxis_feasibleConsolidationNecessary
 
-/-! ## Hidden-assumption discharge crown -/
+/-! ## Hidden-assumption discharge certificate -/
 
 structure TwoTimescaleAssumptionDischargeCertificate : Prop where
   linearAttentionAdditive :
@@ -239,7 +239,7 @@ structure TwoTimescaleAssumptionDischargeCertificate : Prop where
       derivedCadenceObjective 2 8 (1 / 4) 1 4 <
         derivedCadenceObjective 2 8 (1 / 4) 1 2
 
-theorem twoTimescaleAssumptionDischarge_crown :
+theorem twoTimescaleAssumptionDischarge :
     TwoTimescaleAssumptionDischargeCertificate where
   linearAttentionAdditive := linearAttentionContextEffect_append
   rankReachability := rankBudgetReachable_iff_rank_le
@@ -252,7 +252,7 @@ theorem twoTimescaleAssumptionDischarge_crown :
   quadraticRefuted := quadraticCadence_refuted_as_derived
 
 #print axioms twoTimescaleContributionCounts_exact
-#print axioms twoTimescaleAdaptation_crown
-#print axioms twoTimescaleAssumptionDischarge_crown
+#print axioms twoTimescaleAdaptation
+#print axioms twoTimescaleAssumptionDischarge
 
 end Mettapedia.MachineLearning.NeuralNetworks.TwoTimescaleAdaptation

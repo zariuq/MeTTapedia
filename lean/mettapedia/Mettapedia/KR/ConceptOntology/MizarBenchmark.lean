@@ -187,7 +187,7 @@ theorem objectDerivationLooseConcept_midpoint :
 `ObjectDerivation` concept forms under the loose article gate, fails the strict
 gate, and therefore has maximal credal width with the expected PLN display
 coordinates. -/
-structure ObjectDerivationCredalBenchmarkCrown : Prop where
+structure ObjectDerivationCredalBenchmark : Prop where
   definitionWitness :
     Item.definition_5 ∈ objectDerivationLooseConcept.extent
   strictClosureFails :
@@ -211,8 +211,8 @@ structure ObjectDerivationCredalBenchmarkCrown : Prop where
         (conceptFormationGamble mizarGateFamily articleContext.evidence
           objectDerivationLooseConcept) = (1 / 2 : ℝ)
 
-theorem objectDerivationCredalBenchmarkCrown :
-    ObjectDerivationCredalBenchmarkCrown where
+theorem objectDerivationCredalBenchmark :
+    ObjectDerivationCredalBenchmark where
   definitionWitness := definition_5_mem_objectDerivationLooseConcept_extent
   strictClosureFails := objectDerivationLooseConcept_not_closed_strict
   upperMembership := objectDerivationLooseConcept_mem_upper

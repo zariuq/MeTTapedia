@@ -1432,7 +1432,7 @@ def renderActiveProbeSupplementFixture : String :=
 /-- Proof-bearing interface for observation quotients, decision recovery,
 minimal interventions, adaptive selection, safe ambiguity, and selector-input
 discipline.  The adjacent guards pin the schema and executable forest. -/
-structure ActiveProbingCrown : Prop where
+structure ActiveProbing : Prop where
   canonicalTelemetryAdmissible : ∀ regime,
     (canonicalDecisionRegime regime).Admissible
   primitiveClassifierGrounded : ∀ regime,
@@ -1502,7 +1502,7 @@ structure ActiveProbingCrown : Prop where
     supplementSelectorInputKey input ≠ "utilization_diagnostics" ∧
       supplementSelectorInputKey input ≠ "regime"
 
-theorem active_probing_crown : ActiveProbingCrown where
+theorem active_probing : ActiveProbing where
   canonicalTelemetryAdmissible := canonicalDecisionRegime_admissible
   primitiveClassifierGrounded := primitiveOutcome_grounded_in_v3
   observationReflexive := observationallyEquivalent_refl
@@ -1546,6 +1546,6 @@ theorem active_probing_crown : ActiveProbingCrown where
 #print axioms fiberHybrid_component_minimal
 #print axioms safeDecisionFromGeneratedSignature_sound
 #print axioms safeDecisionFromSignature_sound_of_consistent
-#print axioms active_probing_crown
+#print axioms active_probing
 
 end Mettapedia.MachineLearning.NeuralNetworks.UtilizationAtlas

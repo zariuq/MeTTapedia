@@ -50,21 +50,21 @@ theorem deFinetti_canonical_compactPredictiveThatsAll_and_prefixTypedWidthComple
 /-- Stable index-level alias for the proved infinite i.i.d. regime split: the
 raw posterior process-law crown exists exactly in the zero-interior-mixing
 regime. -/
-theorem deFinetti_posterior_processLawCrown_iff_zeroInteriorMixingMass
+theorem deFinetti_posterior_processLaw_iff_zeroInteriorMixingMass
     (M : Mettapedia.ProbabilityTheory.Exchangeability.DeFinetti.BernoulliMixture) (k l : ℕ)
     (hZ : M.countEvidenceMass k l ≠ 0) :
-    Mettapedia.ProbabilityTheory.Exchangeability.DeFinettiProjectiveCredalBridge.PosteriorBernoulliMixtureProcessLawCrown
+    Mettapedia.ProbabilityTheory.Exchangeability.DeFinettiProjectiveCredalBridge.PosteriorBernoulliMixtureProcessLaw
       M k l hZ ↔
       M.mixingMeasure (Set.Ioo (0 : ℝ) 1) = 0 := by
   exact
-    Mettapedia.ProbabilityTheory.Exchangeability.DeFinettiProjectiveCredalBridge.posteriorBernoulliMixture_processLawCrown_iff_zeroInteriorMixingMass
+    Mettapedia.ProbabilityTheory.Exchangeability.DeFinettiProjectiveCredalBridge.posteriorBernoulliMixture_processLaw_iff_zeroInteriorMixingMass
       M k l hZ
 
 /-- Stable index-level alias for the proved infinite i.i.d. canonical compact
 predictive/process-law regime split.  The canonical compact predictive endpoint
 always exists, and the stronger raw process-law crown exists exactly in the
 zero-interior-mixing regime. -/
-theorem deFinetti_canonical_compactPredictiveThatsAll_and_processLawCrown_iff_zeroInteriorMixingMass
+theorem deFinetti_canonical_compactPredictiveThatsAll_and_processLaw_iff_zeroInteriorMixingMass
     (M : Mettapedia.ProbabilityTheory.Exchangeability.DeFinetti.BernoulliMixture) (k l : ℕ)
     (hZ : M.countEvidenceMass k l ≠ 0) :
     let A : Mettapedia.ProbabilityTheory.Exchangeability.DeFinettiProjectiveCredalBridge.ExternalBoolProcessLaw (ℕ → Bool) :=
@@ -79,11 +79,11 @@ theorem deFinetti_canonical_compactPredictiveThatsAll_and_processLawCrown_iff_ze
       (Mettapedia.ProbabilityTheory.Exchangeability.DeFinettiProjectiveCredalBridge.externalPathLawBoundedMeasurableCompactCredalSet
         ({A} : Set (Mettapedia.ProbabilityTheory.Exchangeability.DeFinettiProjectiveCredalBridge.ExternalBoolProcessLaw
           (ℕ → Bool)))) ∧
-      (Mettapedia.ProbabilityTheory.Exchangeability.DeFinettiProjectiveCredalBridge.PosteriorBernoulliMixtureProcessLawCrown
+      (Mettapedia.ProbabilityTheory.Exchangeability.DeFinettiProjectiveCredalBridge.PosteriorBernoulliMixtureProcessLaw
         M k l hZ ↔
         M.mixingMeasure (Set.Ioo (0 : ℝ) 1) = 0) := by
   exact
-    Mettapedia.KR.ConceptOntology.posteriorBernoulliMixture_canonical_compactPredictiveThatsAll_and_processLawCrown_iff_zeroInteriorMixingMass
+    Mettapedia.KR.ConceptOntology.posteriorBernoulliMixture_canonical_compactPredictiveThatsAll_and_processLaw_iff_zeroInteriorMixingMass
       M k l hZ
 
 /-- Stable index-level alias for the public sigma-additive infinite i.i.d.
@@ -102,7 +102,7 @@ theorem deFinetti_canonical_external_mixing_family
 /-- Stable index-level alias for the abstract infinite i.i.d. de Finetti crown
 package built from analytic prefix laws plus an explicit finite-window
 realization inside a compact carrier. -/
-theorem deFinetti_analytic_mixingFamily_processLawCrown_of_prefixFiniteWindowRealization
+theorem deFinetti_analytic_mixingFamily_processLaw_of_prefixFiniteWindowRealization
     (C : Set Mettapedia.ProbabilityTheory.Exchangeability.DeFinetti.BernoulliMixture)
     (hC : C.Nonempty)
     [TopologicalSpace
@@ -135,16 +135,16 @@ theorem deFinetti_analytic_mixingFamily_processLawCrown_of_prefixFiniteWindowRea
           C (fun M _ n => Mettapedia.ProbabilityTheory.Exchangeability.DeFinettiProjectiveCredalBridge.bernoulliMixturePrefixLaw_analytic M n)
           hC)
         carrier) :
-    Mettapedia.ProbabilityTheory.Exchangeability.DeFinettiProjectiveCredalBridge.ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown
+    Mettapedia.ProbabilityTheory.Exchangeability.DeFinettiProjectiveCredalBridge.ImpreciseDeFinettiAnalyticMixingFamilyProcessLaw
       C hC := by
   exact
-    Mettapedia.ProbabilityTheory.Exchangeability.DeFinettiProjectiveCredalBridge.impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_of_prefixFiniteWindowRealization
+    Mettapedia.ProbabilityTheory.Exchangeability.DeFinettiProjectiveCredalBridge.impreciseDeFinetti_analyticMixingFamilyProcessLaw_of_prefixFiniteWindowRealization
       C hC carrier hCompact hCarrierConvex hClosed hRealize
 
 /-- Stable index-level alias for the concrete infinite i.i.d. de Finetti crown
 package obtained from any carrier containing the explicit tail-false
 finite-window realizers. -/
-theorem deFinetti_analytic_mixingFamily_processLawCrown_of_prefixTailFalseExtensionCarrierSubset
+theorem deFinetti_analytic_mixingFamily_processLaw_of_prefixTailFalseExtensionCarrierSubset
     (C : Set Mettapedia.ProbabilityTheory.Exchangeability.DeFinetti.BernoulliMixture)
     (hC : C.Nonempty)
     [TopologicalSpace
@@ -172,39 +172,39 @@ theorem deFinetti_analytic_mixingFamily_processLawCrown_of_prefixTailFalseExtens
     (hSubset :
       Mettapedia.ProbabilityTheory.Exchangeability.DeFinettiProjectiveCredalBridge.prefixTailFalseExtensionCarrier ⊆
         carrier) :
-    Mettapedia.ProbabilityTheory.Exchangeability.DeFinettiProjectiveCredalBridge.ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown
+    Mettapedia.ProbabilityTheory.Exchangeability.DeFinettiProjectiveCredalBridge.ImpreciseDeFinettiAnalyticMixingFamilyProcessLaw
       C hC := by
   exact
-      Mettapedia.ProbabilityTheory.Exchangeability.DeFinettiProjectiveCredalBridge.impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_of_prefixTailFalseExtensionCarrierSubset
+      Mettapedia.ProbabilityTheory.Exchangeability.DeFinettiProjectiveCredalBridge.impreciseDeFinetti_analyticMixingFamilyProcessLaw_of_prefixTailFalseExtensionCarrierSubset
         C hC carrier hCompact hCarrierConvex hClosed hSubset
 
 /-- Stable index-level alias for the sharp F2 i.i.d. de Finetti boundary: the
 external mixing-family readout is unconditional, while the raw all-gambles
 analytic crown is equivalent to exact lower-prevision compatibility. -/
-theorem deFinetti_analytic_mixingFamily_sharpCompatibilityCrown
+theorem deFinetti_analytic_mixingFamily_sharpCompatibility
     (C : Set Mettapedia.ProbabilityTheory.Exchangeability.DeFinetti.BernoulliMixture)
     (hC : C.Nonempty) :
     Mettapedia.ProbabilityTheory.Exchangeability.DeFinettiProjectiveCredalBridge.ImpreciseDeFinettiCanonicalExternalMixingFamily
         C hC ∧
-      (Mettapedia.ProbabilityTheory.Exchangeability.DeFinettiProjectiveCredalBridge.ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown
+      (Mettapedia.ProbabilityTheory.Exchangeability.DeFinettiProjectiveCredalBridge.ImpreciseDeFinettiAnalyticMixingFamilyProcessLaw
           C hC ↔
         ∃ L : Mettapedia.ProbabilityTheory.ImpreciseProbability.LowerPrevision (ℕ → Bool),
           (Mettapedia.ProbabilityTheory.Exchangeability.DeFinettiProjectiveCredalBridge.bernoulliMixturePrefixProcessLowerSpec
             C (fun M _ n => Mettapedia.ProbabilityTheory.Exchangeability.DeFinettiProjectiveCredalBridge.bernoulliMixturePrefixLaw_analytic M n)
             hC).respectsLocalLower L) := by
   exact
-    Mettapedia.ProbabilityTheory.Exchangeability.DeFinettiProjectiveCredalBridge.impreciseDeFinetti_analyticMixingFamily_sharpCompatibilityCrown
+    Mettapedia.ProbabilityTheory.Exchangeability.DeFinettiProjectiveCredalBridge.impreciseDeFinetti_analyticMixingFamily_sharpCompatibility
       C hC
 
 /-- Stable index-level alias for the closed S2 verdict: the analytic raw crown
 does not imply pointwise zero-interior for every member of the credal family. -/
-theorem deFinetti_analytic_mixingFamily_rawCrown_not_implies_pointwiseZeroInterior :
+theorem deFinetti_analytic_mixingFamily_raw_not_implies_pointwiseZeroInterior :
     ¬ (∀ (C : Set Mettapedia.ProbabilityTheory.Exchangeability.DeFinetti.BernoulliMixture) (hC : C.Nonempty),
-        Mettapedia.ProbabilityTheory.Exchangeability.DeFinettiProjectiveCredalBridge.ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown
+        Mettapedia.ProbabilityTheory.Exchangeability.DeFinettiProjectiveCredalBridge.ImpreciseDeFinettiAnalyticMixingFamilyProcessLaw
           C hC →
           Mettapedia.ProbabilityTheory.Exchangeability.DeFinettiProjectiveCredalBridge.AnalyticMixingFamilyPointwiseZeroInterior C) := by
   exact
-    Mettapedia.ProbabilityTheory.Exchangeability.DeFinettiProjectiveCredalBridge.not_forall_impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_imp_pointwiseZeroInterior_closed
+    Mettapedia.ProbabilityTheory.Exchangeability.DeFinettiProjectiveCredalBridge.not_forall_impreciseDeFinetti_analyticMixingFamilyProcessLaw_imp_pointwiseZeroInterior_closed
 
 /-- Stable index-level alias for the proved infinite MLN collapse theorem:
 uniform Dobrushin small influence forces uniqueness of the infinite DLR
@@ -221,21 +221,21 @@ theorem infiniteMLN_paperUniformSmallTotalInfluence_implies_uniqueMeasure
 positive strict width on the reinforced line and Dobrushin collapse on the
 zero-weight grid. -/
 theorem infiniteMLN_reinforcedLineGeometric_zeroWeightGrid_concreteDLRPLNContrast :
-    Mettapedia.Logic.MarkovLogicInfinitePLNCrown.ConcreteDLRPLNContrast := by
+    Mettapedia.Logic.MarkovLogicInfinitePLNContrast.ConcreteDLRPLNContrast := by
   exact
-    Mettapedia.Logic.MarkovLogicInfinitePLNCrown.reinforcedLineGeometric_zeroWeightGrid_concreteDLRPLNContrast
+    Mettapedia.Logic.MarkovLogicInfinitePLNContrast.reinforcedLineGeometric_zeroWeightGrid_concreteDLRPLNContrast
 
 /-- Stable index-level alias for the symmetric-grid Ising reduction crown: the
 high-temperature collapse theorem is proved, and the reduction turns a
 low-temperature Peierls input into plus/minus separation and a strict PLN
 interval. That Peierls input is now supplied unconditionally by
-`symmetricGridZeroField_originPLNStrictIntervalCrown_of_axisAnchoredContourCode_twentyFour`,
+`symmetricGridZeroField_originPLNStrictInterval_of_axisAnchoredContourCode_twentyFour`,
 so the low-temperature strict-interval direction is itself proved, not merely
 reduced. -/
-theorem infiniteMLN_symmetricGridZeroField_originPhaseCoexistenceReductionCrown :
-    Mettapedia.Logic.MarkovLogicInfiniteSymmetricGridExample.SymmetricGridZeroFieldOriginPhaseCoexistenceReductionCrown := by
+theorem infiniteMLN_symmetricGridZeroField_originPhaseCoexistenceReduction :
+    Mettapedia.Logic.MarkovLogicInfiniteSymmetricGridExample.SymmetricGridZeroFieldOriginPhaseCoexistenceReduction := by
   exact
-    Mettapedia.Logic.MarkovLogicInfiniteSymmetricGridExample.symmetricGridZeroField_originPhaseCoexistenceReductionCrown
+    Mettapedia.Logic.MarkovLogicInfiniteSymmetricGridExample.symmetricGridZeroField_originPhaseCoexistenceReduction
 
 /-- Focused, paper-facing endpoint for the confidence-formula characterization.
 
@@ -250,7 +250,7 @@ This deliberately packages only the proved surface:
   the proved Dobrushin uniqueness theorem, a concrete strict-width-versus-
   collapse contrast, the symmetric-grid phase-coexistence reduction crown, and
   the public hypothesis-free low-temperature F4 strict-interval theorem
-  `symmetricGridZeroField_originPLNStrictIntervalCrown_of_axisAnchoredContourCode_twentyFour`;
+  `symmetricGridZeroField_originPLNStrictInterval_of_axisAnchoredContourCode_twentyFour`;
 * the public sigma-additive imprecise de Finetti mixing-family object and the
   exact lower-prevision compatibility boundary for the analytic raw
   all-gambles process-law crown, plus conditional finite-window realization
@@ -312,7 +312,7 @@ structure ConfidenceCharacterizationEndpointProfile where
       (hC : C.Nonempty),
       Mettapedia.ProbabilityTheory.Exchangeability.DeFinettiProjectiveCredalBridge.ImpreciseDeFinettiCanonicalExternalMixingFamily
           C hC ∧
-        (Mettapedia.ProbabilityTheory.Exchangeability.DeFinettiProjectiveCredalBridge.ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown
+        (Mettapedia.ProbabilityTheory.Exchangeability.DeFinettiProjectiveCredalBridge.ImpreciseDeFinettiAnalyticMixingFamilyProcessLaw
             C hC ↔
           ∃ L : Mettapedia.ProbabilityTheory.ImpreciseProbability.LowerPrevision (ℕ → Bool),
             (Mettapedia.ProbabilityTheory.Exchangeability.DeFinettiProjectiveCredalBridge.bernoulliMixturePrefixProcessLowerSpec
@@ -320,7 +320,7 @@ structure ConfidenceCharacterizationEndpointProfile where
               hC).respectsLocalLower L)
   infiniteAnalyticMixingFamilyRawCrownDoesNotForcePointwiseZeroInterior :
     ¬ (∀ (C : Set Mettapedia.ProbabilityTheory.Exchangeability.DeFinetti.BernoulliMixture) (hC : C.Nonempty),
-        Mettapedia.ProbabilityTheory.Exchangeability.DeFinettiProjectiveCredalBridge.ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown
+        Mettapedia.ProbabilityTheory.Exchangeability.DeFinettiProjectiveCredalBridge.ImpreciseDeFinettiAnalyticMixingFamilyProcessLaw
           C hC →
           Mettapedia.ProbabilityTheory.Exchangeability.DeFinettiProjectiveCredalBridge.AnalyticMixingFamilyPointwiseZeroInterior C)
   infiniteAnalyticMixingFamilyProcessLawCrownOfPrefixFiniteWindowRealization :
@@ -356,7 +356,7 @@ structure ConfidenceCharacterizationEndpointProfile where
             C (fun M _ n => Mettapedia.ProbabilityTheory.Exchangeability.DeFinettiProjectiveCredalBridge.bernoulliMixturePrefixLaw_analytic M n)
             hC)
           carrier),
-        Mettapedia.ProbabilityTheory.Exchangeability.DeFinettiProjectiveCredalBridge.ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown
+        Mettapedia.ProbabilityTheory.Exchangeability.DeFinettiProjectiveCredalBridge.ImpreciseDeFinettiAnalyticMixingFamilyProcessLaw
           C hC
   infiniteAnalyticMixingFamilyProcessLawCrownOfPrefixTailFalseExtensionCarrierSubset :
     ∀ (C : Set Mettapedia.ProbabilityTheory.Exchangeability.DeFinetti.BernoulliMixture)
@@ -386,12 +386,12 @@ structure ConfidenceCharacterizationEndpointProfile where
       (_hSubset :
         Mettapedia.ProbabilityTheory.Exchangeability.DeFinettiProjectiveCredalBridge.prefixTailFalseExtensionCarrier ⊆
           carrier),
-        Mettapedia.ProbabilityTheory.Exchangeability.DeFinettiProjectiveCredalBridge.ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown
+        Mettapedia.ProbabilityTheory.Exchangeability.DeFinettiProjectiveCredalBridge.ImpreciseDeFinettiAnalyticMixingFamilyProcessLaw
           C hC
   infiniteProcessLawCrownBoundary :
     ∀ (M : Mettapedia.ProbabilityTheory.Exchangeability.DeFinetti.BernoulliMixture) (k l : ℕ)
       (hZ : M.countEvidenceMass k l ≠ 0),
-      Mettapedia.ProbabilityTheory.Exchangeability.DeFinettiProjectiveCredalBridge.PosteriorBernoulliMixtureProcessLawCrown
+      Mettapedia.ProbabilityTheory.Exchangeability.DeFinettiProjectiveCredalBridge.PosteriorBernoulliMixtureProcessLaw
         M k l hZ ↔
         M.mixingMeasure (Set.Ioo (0 : ℝ) 1) = 0
   infiniteCanonicalCompactPredictiveProcessLawBoundary :
@@ -409,7 +409,7 @@ structure ConfidenceCharacterizationEndpointProfile where
         (Mettapedia.ProbabilityTheory.Exchangeability.DeFinettiProjectiveCredalBridge.externalPathLawBoundedMeasurableCompactCredalSet
           ({A} : Set (Mettapedia.ProbabilityTheory.Exchangeability.DeFinettiProjectiveCredalBridge.ExternalBoolProcessLaw
             (ℕ → Bool)))) ∧
-        (Mettapedia.ProbabilityTheory.Exchangeability.DeFinettiProjectiveCredalBridge.PosteriorBernoulliMixtureProcessLawCrown
+        (Mettapedia.ProbabilityTheory.Exchangeability.DeFinettiProjectiveCredalBridge.PosteriorBernoulliMixtureProcessLaw
           M k l hZ ↔
           M.mixingMeasure (Set.Ioo (0 : ℝ) 1) = 0)
   infiniteDobrushinUniqueness :
@@ -419,12 +419,12 @@ structure ConfidenceCharacterizationEndpointProfile where
       M.PaperUniformSmallTotalInfluence →
         M.PaperUniqueMeasure
   infiniteConcreteStrictWidthVsCollapseContrast :
-    Mettapedia.Logic.MarkovLogicInfinitePLNCrown.ConcreteDLRPLNContrast
+    Mettapedia.Logic.MarkovLogicInfinitePLNContrast.ConcreteDLRPLNContrast
   infiniteSymmetricGridStrictIntervalCrown :
-    Mettapedia.Logic.MarkovLogicInfiniteSymmetricGridExample.SymmetricGridZeroFieldOriginPLNStrictIntervalCrown
+    Mettapedia.Logic.MarkovLogicInfiniteSymmetricGridExample.SymmetricGridZeroFieldOriginPLNStrictInterval
       (24 : ℝ)
   infiniteSymmetricGridPhaseCoexistenceReduction :
-    Mettapedia.Logic.MarkovLogicInfiniteSymmetricGridExample.SymmetricGridZeroFieldOriginPhaseCoexistenceReductionCrown
+    Mettapedia.Logic.MarkovLogicInfiniteSymmetricGridExample.SymmetricGridZeroFieldOriginPhaseCoexistenceReduction
 
 /-- Current focused endpoint for the confidence-formula characterization. -/
 noncomputable def confidenceCharacterizationEndpointProfile :
@@ -450,25 +450,25 @@ noncomputable def confidenceCharacterizationEndpointProfile :
   infiniteCanonicalExternalMixingFamily :=
     deFinetti_canonical_external_mixing_family
   infiniteAnalyticMixingFamilySharpCompatibility :=
-    deFinetti_analytic_mixingFamily_sharpCompatibilityCrown
+    deFinetti_analytic_mixingFamily_sharpCompatibility
   infiniteAnalyticMixingFamilyRawCrownDoesNotForcePointwiseZeroInterior :=
-    deFinetti_analytic_mixingFamily_rawCrown_not_implies_pointwiseZeroInterior
+    deFinetti_analytic_mixingFamily_raw_not_implies_pointwiseZeroInterior
   infiniteAnalyticMixingFamilyProcessLawCrownOfPrefixFiniteWindowRealization :=
-    deFinetti_analytic_mixingFamily_processLawCrown_of_prefixFiniteWindowRealization
+    deFinetti_analytic_mixingFamily_processLaw_of_prefixFiniteWindowRealization
   infiniteAnalyticMixingFamilyProcessLawCrownOfPrefixTailFalseExtensionCarrierSubset :=
-    deFinetti_analytic_mixingFamily_processLawCrown_of_prefixTailFalseExtensionCarrierSubset
+    deFinetti_analytic_mixingFamily_processLaw_of_prefixTailFalseExtensionCarrierSubset
   infiniteProcessLawCrownBoundary :=
-    deFinetti_posterior_processLawCrown_iff_zeroInteriorMixingMass
+    deFinetti_posterior_processLaw_iff_zeroInteriorMixingMass
   infiniteCanonicalCompactPredictiveProcessLawBoundary :=
-    deFinetti_canonical_compactPredictiveThatsAll_and_processLawCrown_iff_zeroInteriorMixingMass
+    deFinetti_canonical_compactPredictiveThatsAll_and_processLaw_iff_zeroInteriorMixingMass
   infiniteDobrushinUniqueness :=
     infiniteMLN_paperUniformSmallTotalInfluence_implies_uniqueMeasure
   infiniteConcreteStrictWidthVsCollapseContrast :=
     infiniteMLN_reinforcedLineGeometric_zeroWeightGrid_concreteDLRPLNContrast
   infiniteSymmetricGridStrictIntervalCrown :=
-    Mettapedia.Logic.MarkovLogicInfiniteSymmetricGridExample.symmetricGridZeroField_originPLNStrictIntervalCrown_of_axisAnchoredContourCode_twentyFour
+    Mettapedia.Logic.MarkovLogicInfiniteSymmetricGridExample.symmetricGridZeroField_originPLNStrictInterval_of_axisAnchoredContourCode_twentyFour
   infiniteSymmetricGridPhaseCoexistenceReduction :=
-    infiniteMLN_symmetricGridZeroField_originPhaseCoexistenceReductionCrown
+    infiniteMLN_symmetricGridZeroField_originPhaseCoexistenceReduction
 
 /-- External runtime parity metadata for the arithmetic/provenance mirror.
 This is not a proof object; the corresponding commands are run by the build

@@ -2367,11 +2367,11 @@ def ClassifiedSource.isValid (source : ClassifiedSource) : Bool :=
   source.ledger.isValid &&
     source.tokens.all fun token => token.serialized != ""
 
-private def lexicalRuleLabel
+def lexicalRuleLabel
     (source : ClassifiedSource) (index : Nat) : String :=
   reservedPrefix ++ "lexical-leaf." ++ source.identity ++ "." ++ index.repr
 
-private def lexicalGrammarRule
+def lexicalGrammarRule
     (source : ClassifiedSource) (index : Nat)
     (token : ClassifiedToken) (sort : String) : GrammarRule :=
   { label := lexicalRuleLabel source index
@@ -2379,7 +2379,7 @@ private def lexicalGrammarRule
     params := []
     syntaxPattern := [.terminal token.serialized] }
 
-private def lexicalGrammarRulesFrom
+def lexicalGrammarRulesFrom
     (declarations : List LexicalDeclaration) (source : ClassifiedSource) :
     List ClassifiedToken → Nat → List GrammarRule
   | [], _ => []
@@ -2390,7 +2390,7 @@ private def lexicalGrammarRulesFrom
           lexicalGrammarRule source index token sort ::
             lexicalGrammarRulesFrom declarations source tokens (index + 1)
 
-private def lexicalGrammarRules
+def lexicalGrammarRules
     (declarations : List LexicalDeclaration) (source : ClassifiedSource) :
     List GrammarRule :=
   lexicalGrammarRulesFrom declarations source source.tokens 0

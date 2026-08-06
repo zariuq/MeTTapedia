@@ -98,7 +98,7 @@ variable {Index : Type*} [Fintype Index] [DecidableEq Index]
 /-- Natural-coordinate crown: discrete count fusion and continuous Gaussian
 information fusion are both componentwise addition; the latter becomes the
 usual matrix-gain interpolation only after deriving its mean chart. -/
-theorem naturalEvidenceFusionCrown
+theorem naturalEvidenceFusion
     (first second : BinEvNat)
     (oldMean proposedMean : Index → ℝ)
     (priorPrecision observationPrecision : Matrix Index Index ℝ)
@@ -135,7 +135,7 @@ theorem zeroTotal_counts_reconstruction_premise_fails :
 #print axioms binEvNat_revision_comm
 #print axioms binEvNat_confidence_mono_revision
 #print axioms plnDerivedChart_reconstructs_counts
-#print axioms naturalEvidenceFusionCrown
+#print axioms naturalEvidenceFusion
 #print axioms binEvNat_revision_positiveExample
 #print axioms zeroTotal_counts_reconstruction_premise_fails
 

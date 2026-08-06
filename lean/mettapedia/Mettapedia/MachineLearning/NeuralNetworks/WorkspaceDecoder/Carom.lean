@@ -174,7 +174,7 @@ theorem gated_step_eq_singleInterpolation
 /-- Unit-gate collapse package, structural scope: CAROM's aggregate gain lies
 in `[0,1]`, and the nonzero-gate update has the exact single-interpolation
 form. -/
-theorem unitGates_collapseCrown
+theorem unitGates_collapse
     (workspace : Workspace Slot Content) (slot : Slot)
     (hgates : mechanisms.toGatedOperatorFamily.GatesUnitInterval workspace)
     (hgate : mechanisms.gateSum workspace slot ≠ 0) :
@@ -332,7 +332,7 @@ noncomputable def toLegalActionWorkspaceDecoder :
 /-- Structural recall-safety crown: for arbitrary CAROM contents, gates,
 operators, and recurrence depth, ranked acceptance equals sealed acceptance;
 soundness and in-budget recall follow.  No score-accuracy claim is involved. -/
-theorem inheritanceCrown
+theorem inheritance
     (laws : AtomicRootLaws root)
     {budget : Nat} {trace : List (RefineAction root.Hole root.Head)}
     {program : root.Program} :
@@ -705,7 +705,7 @@ theorem oblique_positiveEnergy_zeroConnectionRemainderAtOrigin :
 /-- Crown correction: InterferenceGram energy and the connection remainder
 are different diagnostics.  Positive energy can coexist with zero remainder
 at a state, while same-cause reuse has zero energy and nonzero remainder. -/
-theorem interferenceEnergy_connectionRemainder_separationCrown :
+theorem interferenceEnergy_connectionRemainder_separation :
     (0 < pairwiseInterferenceEnergy obliqueFirstTask.curvature
           obliqueSecondTask.curvature ∧
       quadraticConnectionRemainder obliqueFirstTask obliqueSecondTask 1
@@ -832,7 +832,7 @@ theorem withinAction_depthZero_ne_depthOne_contractingExample :
 #print axioms Linearization.spectralCondition_uniqueEquilibrium
 #print axioms Linearization.tendsto_equilibrium
 #print axioms Linearization.geometricRate
-#print axioms LegalActionDecoder.inheritanceCrown
+#print axioms LegalActionDecoder.inheritance
 #print axioms contraction_does_not_force_finiteDepthOptimum
 #print axioms targetResidual_eq_zero_iff
 #print axioms equilibriumReadoutResidual_uniqueMaximum
@@ -840,7 +840,7 @@ theorem withinAction_depthZero_ne_depthOne_contractingExample :
 #print axioms validationCrossEntropy_can_reverse_targetMismatch
 #print axioms QuadraticOperatorFamily.interferenceEnergy_eq_zero_iff_commute
 #print axioms QuadraticOperatorFamily.centeredSequentialUpdates_orderIndependent_of_zeroEnergy
-#print axioms interferenceEnergy_connectionRemainder_separationCrown
+#print axioms interferenceEnergy_connectionRemainder_separation
 #print axioms acrossActionStep_rootProjection
 #print axioms finiteDepth_eq_equilibriumStep_when_initializedAtEquilibrium
 

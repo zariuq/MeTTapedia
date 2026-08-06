@@ -50,6 +50,8 @@ The generic `LanguageDef` remains free of lexer-specific fields.
 private def integersFrom (first count : Nat) : List Nat :=
   (List.range count).map (first + ·)
 
+def dollarCodepoint : Nat := 36
+
 def whitespaceCodepoints : List Nat := [32, 9, 13, 10, 12]
 
 def labelCodepoints : List Nat :=
@@ -57,17 +59,20 @@ def labelCodepoints : List Nat :=
     [46, 45, 95]
 
 def mathSymbolCodepoints : List Nat :=
-  (integersFrom 33 94).filter fun codepoint => codepoint != 36
+  (integersFrom 33 94).filter fun codepoint => codepoint != dollarCodepoint
 
 def compressedCodepoints : List Nat :=
   integersFrom 65 26 ++ [63]
 
 def commentNonDollarCodepoints : List Nat :=
-  (integersFrom 33 94).filter fun codepoint => codepoint != 36
+  (integersFrom 33 94).filter fun codepoint => codepoint != dollarCodepoint
 
 def commentDollarFollowCodepoints : List Nat :=
   (integersFrom 33 94).filter fun codepoint =>
     codepoint != 40 && codepoint != 41
+
+def commentOpenCodepoints : List Nat := [dollarCodepoint, 40]
+def commentCloseCodepoints : List Nat := [dollarCodepoint, 41]
 
 /-- One authored fixed-token row, with names for both generated parser
 representations.  `parserRef` names the scannerless GSLT definition;
@@ -75,30 +80,38 @@ representations.  `parserRef` names the scannerless GSLT definition;
 Keeping the three fields together prevents the two generated presentations
 from acquiring independent literal tables. -/
 structure LiteralBinding where
+  codepoints : List Nat
   spelling : String
   parserRef : String
   classifiedToken : String
   deriving DecidableEq, Repr
 
+private def literalBinding (codepoints : List Nat) (parserRef : String)
+    (classifiedToken : String) : LiteralBinding :=
+  { codepoints
+    spelling := String.ofList (codepoints.map Char.ofNat)
+    parserRef
+    classifiedToken }
+
 /-- Fixed structural tokens in source order.  Both parser presentations are
 derived mechanically from this single table. -/
 def literalBindings : List LiteralBinding :=
-  [{ spelling := "$c", parserRef := "kw-constant", classifiedToken := "MM_C" },
-   { spelling := "$v", parserRef := "kw-variable", classifiedToken := "MM_V" },
-   { spelling := "$d", parserRef := "kw-disjoint", classifiedToken := "MM_D" },
-   { spelling := "$f", parserRef := "kw-float", classifiedToken := "MM_F" },
-   { spelling := "$e", parserRef := "kw-essential", classifiedToken := "MM_E" },
-   { spelling := "$a", parserRef := "kw-axiom", classifiedToken := "MM_A" },
-   { spelling := "$p", parserRef := "kw-theorem", classifiedToken := "MM_P" },
-   { spelling := "$=", parserRef := "kw-proof", classifiedToken := "MM_EQPROOF" },
-   { spelling := "$.", parserRef := "kw-end", classifiedToken := "MM_DOT" },
-   { spelling := "${", parserRef := "kw-block-open", classifiedToken := "MM_SCOPE_OPEN" },
-   { spelling := "$}", parserRef := "kw-block-close", classifiedToken := "MM_SCOPE_CLOSE" },
-   { spelling := "$[", parserRef := "kw-include-open", classifiedToken := "MM_INCLUDE_OPEN" },
-   { spelling := "$]", parserRef := "kw-include-close", classifiedToken := "MM_INCLUDE_CLOSE" },
-   { spelling := "(", parserRef := "left-paren", classifiedToken := "MM_LP" },
-   { spelling := ")", parserRef := "right-paren", classifiedToken := "MM_RP" },
-   { spelling := "?", parserRef := "unknown-proof", classifiedToken := "MM_UNKNOWN" }]
+  [literalBinding [36, 99] "kw-constant" "MM_C",
+   literalBinding [36, 118] "kw-variable" "MM_V",
+   literalBinding [36, 100] "kw-disjoint" "MM_D",
+   literalBinding [36, 102] "kw-float" "MM_F",
+   literalBinding [36, 101] "kw-essential" "MM_E",
+   literalBinding [36, 97] "kw-axiom" "MM_A",
+   literalBinding [36, 112] "kw-theorem" "MM_P",
+   literalBinding [36, 61] "kw-proof" "MM_EQPROOF",
+   literalBinding [36, 46] "kw-end" "MM_DOT",
+   literalBinding [36, 123] "kw-block-open" "MM_SCOPE_OPEN",
+   literalBinding [36, 125] "kw-block-close" "MM_SCOPE_CLOSE",
+   literalBinding [36, 91] "kw-include-open" "MM_INCLUDE_OPEN",
+   literalBinding [36, 93] "kw-include-close" "MM_INCLUDE_CLOSE",
+   literalBinding [40] "left-paren" "MM_LP",
+   literalBinding [41] "right-paren" "MM_RP",
+   literalBinding [63] "unknown-proof" "MM_UNKNOWN"]
 
 /-- Lexical token sorts and their generated parser-definition names. -/
 def lexicalParserBindings : List (String × String) :=
@@ -124,11 +137,18 @@ def literalReference (token : String) : Option String :=
 def literalClassifiedToken (token : String) : Option String :=
   (literalBinding? token).map (·.classifiedToken)
 
+/-- Authored codepoints for a fixed structural spelling. -/
+def literalCodepoints (token : String) : Option (List Nat) :=
+  (literalBinding? token).map (·.codepoints)
+
 def lexicalReference (sort : String) : Option String :=
   lookupPairBinding? lexicalParserBindings sort
 
 /-- Fixed structural tokens admitted by the source grammar. -/
 def literalTokens : List String := literalBindings.map (·.spelling)
+
+example : literalCodepoints "$p" = some [36, 112] := by decide
+example : literalCodepoints "$q" = none := by decide
 
 private def serializedCodepoints (text : String) : List Nat :=
   text.toUTF8.toList.map UInt8.toNat

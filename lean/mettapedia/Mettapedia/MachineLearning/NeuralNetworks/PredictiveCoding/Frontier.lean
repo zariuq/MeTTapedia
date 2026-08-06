@@ -7,6 +7,7 @@ import Mettapedia.MachineLearning.NeuralNetworks.PredictiveCoding.Frontier.Preco
 import Mettapedia.MachineLearning.NeuralNetworks.PredictiveCoding.Frontier.ResidualBoundary
 import Mettapedia.MachineLearning.NeuralNetworks.PredictiveCoding.Frontier.ResidualMomentBound
 import Mettapedia.MachineLearning.NeuralNetworks.PredictiveCoding.Frontier.ProspectiveInterference
+import Mettapedia.MachineLearning.NeuralNetworks.PredictiveCoding.Frontier.ProspectiveMinimumInterference
 import Mettapedia.MachineLearning.NeuralNetworks.PredictiveCoding.Frontier.HybridRefinement
 import Mettapedia.MachineLearning.NeuralNetworks.PredictiveCoding.Frontier.ProspectiveErrorCoordinate
 import Mettapedia.MachineLearning.NeuralNetworks.PredictiveCoding.Frontier.DepthScalingRepair
@@ -18,7 +19,7 @@ import Mettapedia.MachineLearning.NeuralNetworks.PredictiveCoding.Frontier.Fishe
 import Mettapedia.MachineLearning.NeuralNetworks.PredictiveCoding.Frontier.NaturalGradientErrorBudget
 import Mettapedia.MachineLearning.NeuralNetworks.PredictiveCoding.Frontier.FisherDiagnostic
 import Mettapedia.MachineLearning.NeuralNetworks.PredictiveCoding.Frontier.FrozenAdapterFisher
-import Mettapedia.MachineLearning.NeuralNetworks.PredictiveCoding.Frontier.FisherOnlineAdaptationCrown
+import Mettapedia.MachineLearning.NeuralNetworks.PredictiveCoding.Frontier.FisherOnlineAdaptationLicense
 import Mettapedia.MachineLearning.NeuralNetworks.PredictiveCoding.Frontier.Provenance
 
 /-!
@@ -26,7 +27,8 @@ import Mettapedia.MachineLearning.NeuralNetworks.PredictiveCoding.Frontier.Prove
 
 Umbrella for the regime index, error-coordinate boundary, trust-region and
 saddle results, exact deep-linear singular-mode gradient-flow dynamics,
-residual Depth-μP boundary, prospective-interference toy,
+residual Depth-μP boundary, prospective-interference toy and its exact
+minimum-interference characterization,
 hybrid monotone refinement, joint prospective error-coordinate energy,
 finite-settling gradient-gap bounds,
 certified Fisher/natural-gradient geometry for frozen online adapters,

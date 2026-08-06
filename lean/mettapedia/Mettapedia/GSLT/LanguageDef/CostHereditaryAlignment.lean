@@ -48,6 +48,25 @@ structure PackedCostSemanticAtomJoin
 
 namespace PackedCostSemanticAtomJoin
 
+/-- Reverse a retained one-atom join while preserving its complete finite
+environment and the distinguished atom slot. -/
+def symm
+    {source : CIGSLT} {leftResult rightResult : Pattern}
+    (join : PackedCostSemanticAtomJoin source leftResult rightResult) :
+    PackedCostSemanticAtomJoin source rightResult leftResult where
+  color := join.color
+  targetFree := join.targetFree
+  occurrences := join.occurrences
+  table := join.table
+  values := join.values
+  root := join.root
+  inventory := join.inventory
+  environment := join.environment
+  bound := join.bound
+  slot := join.slot
+  leftFactors := join.rightFactors
+  rightFactors := join.leftFactors
+
 /-- Reindex only the two exposed result patterns of a retained atom join.
 The finite environment, occurrence inventory, and restoration factors remain
 unchanged. -/
@@ -79,6 +98,39 @@ theorem results_eq
   join.leftFactors.trans join.rightFactors.symm
 
 end PackedCostSemanticAtomJoin
+
+/-- A root-changing join through one rigid compact leaf rather than a
+semantic-atom slot.
+
+The rigidity field is independently checkable: supported substitution under
+the generated Cost language leaves the witness unchanged at every depth.  It
+is the certificate needed when reflective collapse exposes a bound variable,
+which is absent from the finite free-variable atom inventory. -/
+structure PackedCostRigidLeafJoin
+    (source : CIGSLT) (leftResult rightResult : Pattern) where
+  leaf : Pattern
+  rigid : ∀ support assignment depth,
+    ReflectiveContextSupport.substituteAt source.costWholeLanguage
+      support assignment depth leaf = leaf
+  leftFactors : leftResult = leaf
+  rightFactors : rightResult = leaf
+
+namespace PackedCostRigidLeafJoin
+
+def symm {source : CIGSLT} {leftResult rightResult : Pattern}
+    (join : PackedCostRigidLeafJoin source leftResult rightResult) :
+    PackedCostRigidLeafJoin source rightResult leftResult where
+  leaf := join.leaf
+  rigid := join.rigid
+  leftFactors := join.rightFactors
+  rightFactors := join.leftFactors
+
+theorem results_eq {source : CIGSLT} {leftResult rightResult : Pattern}
+    (join : PackedCostRigidLeafJoin source leftResult rightResult) :
+    leftResult = rightResult :=
+  join.leftFactors.trans join.rightFactors.symm
+
+end PackedCostRigidLeafJoin
 
 /-- Evidence that a retained Cost tree is rooted at one exact static colour.
 The constructor exposes the proof-relevant node and its finite boundary
@@ -182,6 +234,17 @@ inductive CostRegionRootNormalizationBridge
         (left.normalize (normalizeStatic := kernel.normalize)).pattern
         (right.normalize (normalizeStatic := kernel.normalize)).pattern) :
       CostRegionRootNormalizationBridge source kernel targetFree left right
+  | rigidLeaf
+      {leftAvailable leftOuter rightAvailable rightOuter : List TypeExpr}
+      {leftPattern rightPattern : Pattern} {leftType rightType : TypeExpr}
+      (left : CostRegionTree source targetFree leftAvailable leftOuter
+        leftPattern leftType)
+      (right : CostRegionTree source targetFree rightAvailable rightOuter
+        rightPattern rightType)
+      (join : PackedCostRigidLeafJoin source
+        (left.normalize (normalizeStatic := kernel.normalize)).pattern
+        (right.normalize (normalizeStatic := kernel.normalize)).pattern) :
+      CostRegionRootNormalizationBridge source kernel targetFree left right
 
 mutual
   /-- Structural closure of finite semantic-atom root bridges between two
@@ -251,6 +314,19 @@ mutual
         (right : CostRegionTree source targetFree rightAvailable rightOuter
           rightPattern rightType)
         (join : PackedCostSemanticAtomJoin source
+          (left.normalize (normalizeStatic := kernel.normalize)).pattern
+          (right.normalize (normalizeStatic := kernel.normalize)).pattern) :
+        CostRegionTreeNormalizationAlignment source kernel targetFree
+          left right
+    | rigidLeaf
+        {leftAvailable leftOuter rightAvailable rightOuter : List TypeExpr}
+        {leftPattern rightPattern : Pattern}
+        {leftType rightType : TypeExpr}
+        (left : CostRegionTree source targetFree leftAvailable leftOuter
+          leftPattern leftType)
+        (right : CostRegionTree source targetFree rightAvailable rightOuter
+          rightPattern rightType)
+        (join : PackedCostRigidLeafJoin source
           (left.normalize (normalizeStatic := kernel.normalize)).pattern
           (right.normalize (normalizeStatic := kernel.normalize)).pattern) :
         CostRegionTreeNormalizationAlignment source kernel targetFree
@@ -448,6 +524,32 @@ end
 
 namespace CostRegionRootNormalizationBridge
 
+/-- Reverse a root bridge by reversing its complete semantic certificate.
+No normalized-result equality is used to synthesize the reverse direction. -/
+def symm
+    {source : CIGSLT} {kernel : CostStaticNormalizationKernel source}
+    {targetFree : FreeTypeContext}
+    {leftAvailable leftOuter rightAvailable rightOuter : List TypeExpr}
+    {leftPattern rightPattern : Pattern} {leftType rightType : TypeExpr}
+    {left : CostRegionTree source targetFree leftAvailable leftOuter
+      leftPattern leftType}
+    {right : CostRegionTree source targetFree rightAvailable rightOuter
+      rightPattern rightType}
+    (bridge : CostRegionRootNormalizationBridge source kernel targetFree
+      left right) :
+    CostRegionRootNormalizationBridge source kernel targetFree right left :=
+  match bridge with
+  | .semanticRoot left right evaluation =>
+      .semanticRoot right left evaluation.symm
+  | .canonicalAtomRoot left right evaluation =>
+      .canonicalAtomRoot right left evaluation.symm
+  | .canonicalAtomRestorationRoot left right evaluation =>
+      .canonicalAtomRestorationRoot right left evaluation.symm
+  | .semanticAtom left right join =>
+      .semanticAtom right left join.symm
+  | .rigidLeaf left right join =>
+      .rigidLeaf right left join.symm
+
 /-- Forget only the local-root classification while retaining its complete
 semantic certificate in the structural alignment relation. -/
 def toTreeAlignment
@@ -471,8 +573,102 @@ def toTreeAlignment
       .canonicalAtomRestorationRoot left right evaluation
   | .semanticAtom left right join =>
       .semanticAtom left right join
+  | .rigidLeaf left right join =>
+      .rigidLeaf left right join
 
 end CostRegionRootNormalizationBridge
+
+mutual
+  /-- Reverse a hereditary tree alignment by reversing every local semantic
+  certificate and every aligned child.  This retains the complete
+  proof-relevant decomposition on both sides; it does not rebuild an
+  alignment from equality of the final normalized patterns. -/
+  def CostRegionTreeNormalizationAlignment.symm
+      {source : CIGSLT} {kernel : CostStaticNormalizationKernel source}
+      {targetFree : FreeTypeContext}
+      {leftAvailable leftOuter rightAvailable rightOuter : List TypeExpr}
+      {leftPattern rightPattern : Pattern} {leftType rightType : TypeExpr}
+      {left : CostRegionTree source targetFree leftAvailable leftOuter
+        leftPattern leftType}
+      {right : CostRegionTree source targetFree rightAvailable rightOuter
+        rightPattern rightType}
+      (alignment : CostRegionTreeNormalizationAlignment source kernel
+        targetFree left right) :
+      CostRegionTreeNormalizationAlignment source kernel targetFree
+        right left :=
+    match alignment with
+    | .refl tree => .refl tree
+    | .semanticRoot left right bridge =>
+        .semanticRoot right left bridge.symm
+    | .canonicalAtomRoot left right bridge =>
+        .canonicalAtomRoot right left bridge.symm
+    | .canonicalAtomRestorationRoot left right bridge =>
+        .canonicalAtomRestorationRoot right left bridge.symm
+    | .semanticAtom left right join =>
+        .semanticAtom right left join.symm
+    | .rigidLeaf left right join =>
+        .rigidLeaf right left join.symm
+    | .neutralApplicationOrdinary membership notBareCollection constructor
+        materializes neutral ordinary leftChildren rightChildren arguments =>
+        .neutralApplicationOrdinary membership notBareCollection constructor
+          materializes neutral ordinary rightChildren leftChildren
+          arguments.symm
+    | .neutralApplicationQuote membership notBareCollection constructor
+        materializes neutral quoted leftChildren rightChildren arguments =>
+        .neutralApplicationQuote membership notBareCollection constructor
+          materializes neutral quoted rightChildren leftChildren
+          arguments.symm
+    | .lambda left right body =>
+        .lambda right left body.symm
+    | .multiLambda left right body =>
+        .multiLambda right left body.symm
+    | .subst leftBody rightBody leftReplacement rightReplacement body
+        replacement =>
+        .subst rightBody leftBody rightReplacement leftReplacement body.symm
+          replacement.symm
+    | .collection leftChildren rightChildren elements =>
+        .collection rightChildren leftChildren elements.symm
+
+  /-- Reverse an authored-constructor argument alignment position by
+  position. -/
+  def CostRegionArgumentTreesNormalizationAlignment.symm
+      {source : CIGSLT} {kernel : CostStaticNormalizationKernel source}
+      {targetFree : FreeTypeContext} {available outer : List TypeExpr}
+      {leftArguments rightArguments : List Pattern}
+      {parameters : List TermParam}
+      {left : CostRegionArgumentTrees source targetFree available outer
+        leftArguments parameters}
+      {right : CostRegionArgumentTrees source targetFree available outer
+        rightArguments parameters}
+      (alignment : CostRegionArgumentTreesNormalizationAlignment source
+        kernel targetFree left right) :
+      CostRegionArgumentTreesNormalizationAlignment source kernel targetFree
+        right left :=
+    match alignment with
+    | .nil => .nil
+    | .cons leftRepresentation rightRepresentation parameterType leftHead
+        rightHead leftTail rightTail head tail =>
+        .cons rightRepresentation leftRepresentation parameterType rightHead
+          leftHead rightTail leftTail head.symm tail.symm
+
+  /-- Reverse a homogeneous collection alignment position by position. -/
+  def CostRegionElementTreesNormalizationAlignment.symm
+      {source : CIGSLT} {kernel : CostStaticNormalizationKernel source}
+      {targetFree : FreeTypeContext} {available outer : List TypeExpr}
+      {leftElements rightElements : List Pattern} {elementType : TypeExpr}
+      {left : CostRegionElementTrees source targetFree available outer
+        leftElements elementType}
+      {right : CostRegionElementTrees source targetFree available outer
+        rightElements elementType}
+      (alignment : CostRegionElementTreesNormalizationAlignment source kernel
+        targetFree left right) :
+      CostRegionElementTreesNormalizationAlignment source kernel targetFree
+        right left :=
+    match alignment with
+    | .nil available outer elementType => .nil available outer elementType
+    | .cons leftHead rightHead leftTail rightTail head tail =>
+        .cons rightHead leftHead rightTail leftTail head.symm tail.symm
+end
 
 mutual
   /-- Every root-aware semantic alignment yields exact equality of hereditary
@@ -497,6 +693,7 @@ mutual
     | canonicalAtomRestorationRoot left right bridge =>
         exact bridge.results_eq
     | semanticAtom left right join => exact join.results_eq
+    | rigidLeaf left right join => exact join.results_eq
     | neutralApplicationOrdinary membership notBare constructor materializes
         neutral ordinary leftChildren rightChildren arguments =>
         simp only [CostRegionTree.normalize]

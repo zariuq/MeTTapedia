@@ -210,7 +210,7 @@ def GeneratedParserAndCheckerAccepts
   TypedLoweringCertificate bytes output.source ∧
     ImplementationAccepts bytes label formula
 
-/-- Crown equivalence for one proof-carrying parser output.  The reverse
+/-- Acceptance equivalence for one proof-carrying parser output.  The reverse
 direction cannot manufacture syntax evidence: it is indexed by an existing
 `CheckedParserOutput`, whose grammar certificate and ordered lowering have
 already passed their independent checkers. -/

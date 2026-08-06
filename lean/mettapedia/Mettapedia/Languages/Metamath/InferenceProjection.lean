@@ -85,7 +85,7 @@ entry-preservation boundary. -/
 def sortObjectEntries
     (entries : List (String × Metamath.Verify.Object)) :
     List (String × Metamath.Verify.Object) :=
-  entries.mergeSort fun left right => left.1 < right.1
+  entries.mergeSort fun left right => left.1 ≤ right.1
 
 theorem mem_sortObjectEntries_iff
     (target : String × Metamath.Verify.Object)
@@ -342,12 +342,42 @@ def prefixProjectionValid (projection : PrefixProjection) : Bool :=
         projection.declaredVariables) &&
     sourceRuleLabelsValid (sourceRuleLabels projection)
 
+/-- Proof-facing caller frame for a live parser prefix.  The raw frame keeps
+all active `$d` pairs for scope restoration, including legal pairs declared
+before their `$f` hypotheses.  Only pairs whose endpoints currently have
+floating hypotheses can participate in proof substitution and therefore
+belong in the checker projection. -/
+def proofFacingCallerFrame (db : RuntimeDB) : RuntimeFrame :=
+  let floatingVariables := db.frameFloatVars db.frame
+  { dj := db.frame.dj.filter fun pair =>
+      floatingVariables.contains pair.1 &&
+        floatingVariables.contains pair.2
+    hyps := db.frame.hyps }
+
+/-- Proof-facing DV pairs are selected from, never added to, the live runtime
+frame. -/
+theorem proofFacingCallerFrame_dj_subset (db : RuntimeDB) :
+    ∀ pair ∈ (proofFacingCallerFrame db).dj.toList,
+      pair ∈ db.frame.dj.toList := by
+  intro pair hpair
+  simp only [proofFacingCallerFrame, Array.toList_filter,
+    List.mem_filter] at hpair
+  exact hpair.1
+
+/-- Canonical orientation is required for every raw caller `$d` pair, including
+pairs that are not yet proof-facing because one of their `$f` declarations is
+not active.  Keeping this as a separate projection gate preserves the runtime
+checker bridge without incorrectly exposing those pairs to source proofs. -/
+def rawCallerDVStrict (db : RuntimeDB) : Bool :=
+  db.frame.dj.toList.all fun pair => decide (pair.1 < pair.2)
+
 /-- Resolve a finite pre-insertion database into the exact objects consumed by
 the generated presentation. -/
 def projectPrefix? (db : RuntimeDB) : Option PrefixProjection := do
   guard db.error?.isNone
   guard db.wellFormed?
   guard db.assertDvVarsInFrame?
+  guard (rawCallerDVStrict db)
   let entries := objectEntries db
   guard (entries.all fun entry =>
     objectEmbeddedNameMatches entry.1 entry.2)
@@ -356,10 +386,11 @@ def projectPrefix? (db : RuntimeDB) : Option PrefixProjection := do
   guard (declaredConstants.all fun constantName =>
     !(declaredVariables.contains constantName))
   let activeHypotheses ← projectHypotheses? db db.frame.hyps.toList
-  guard (frameProjectionValid db.frame activeHypotheses)
+  let callerFrame := proofFacingCallerFrame db
+  guard (frameProjectionValid callerFrame activeHypotheses)
   let assertions ← projectAssertionsFromEntries? db entries
   let projection :=
-    { declaredConstants, declaredVariables, callerFrame := db.frame,
+    { declaredConstants, declaredVariables, callerFrame,
       activeHypotheses, assertions }
   guard (prefixProjectionValid projection)
   some projection

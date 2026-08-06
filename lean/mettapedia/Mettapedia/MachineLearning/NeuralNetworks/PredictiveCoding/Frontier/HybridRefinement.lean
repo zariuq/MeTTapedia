@@ -226,7 +226,7 @@ theorem hybrid_rankedAccepts_iff_checkerAccepts
 
 /-- Combined stretch crown: safe refinement never worsens the scalar PC
 energy, and learned ranking leaves checker acceptance exactly unchanged. -/
-theorem hybrid_monotone_refinement_and_legality_crown
+theorem hybrid_monotone_refinement_and_legality
     (fraction input target gain₀ gain₁ precision₀ precision₁ : ℝ)
     (hprecision₀ : 0 < precision₀) (hprecision₁ : 0 < precision₁)
     (hfraction₀ : 0 ≤ fraction) (hfraction₂ : fraction ≤ 2)
@@ -252,7 +252,7 @@ theorem hybrid_monotone_refinement_and_legality_crown
 never worsens the PC energy, every surfaced action has zero checker-derived
 constraint cost, and the checker accepts exactly the same traces with or
 without learned ranking. -/
-theorem hybrid_refinement_constraint_and_legality_crown
+theorem hybrid_refinement_constraint_and_legality
     (fraction input target gain₀ gain₁ precision₀ precision₁ : ℝ)
     (hprecision₀ : 0 < precision₀) (hprecision₁ : 0 < precision₁)
     (hfraction₀ : 0 ≤ fraction) (hfraction₂ : fraction ≤ 2)
@@ -302,8 +302,8 @@ theorem doubleFraction_not_strictly_contractive :
     |1 - (2 : ℝ)| = 1 := by
   norm_num
 
-#print axioms hybrid_monotone_refinement_and_legality_crown
-#print axioms hybrid_refinement_constraint_and_legality_crown
+#print axioms hybrid_monotone_refinement_and_legality
+#print axioms hybrid_refinement_constraint_and_legality
 #print axioms ranking_checkerConstraintObjective_zero
 
 end Mettapedia.MachineLearning.NeuralNetworks.PredictiveCoding.Frontier

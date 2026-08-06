@@ -332,7 +332,7 @@ theorem expansiveRelaxation_divergent :
 /-- T3 packages exact equilibrium correctness, finite approximate convergence,
 minimality, distinct budget/cost accounting, finite propagation, DAG topology,
 and a divergent negative fixture without identifying these obligations. -/
-theorem pcInference_frontier_crown :
+theorem pcInference_frontier :
     (∀ target initial tolerance : ℝ, 0 < tolerance →
       ∃ sweeps : ℕ,
         halfRelaxationResidual target initial sweeps < tolerance ∧
@@ -355,6 +355,6 @@ theorem pcInference_frontier_crown :
 #print axioms exactUnitBandwidthPC_no_strictDigitalLatencyAdvantage
 #print axioms multiParentDAG_pcInferenceLicense
 #print axioms expansiveRelaxation_divergent
-#print axioms pcInference_frontier_crown
+#print axioms pcInference_frontier
 
 end Mettapedia.MachineLearning.NeuralNetworks.UtilizationAtlas

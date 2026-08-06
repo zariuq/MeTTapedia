@@ -270,11 +270,11 @@ structure PCPlasticityLicense : Prop where
 
 /-- T4 crown: all plasticity permissions and counter-boundaries are carried
 by one checked license. -/
-theorem pcPlasticity_frontier_crown : PCPlasticityLicense := by
+theorem pcPlasticity_frontier : PCPlasticityLicense := by
   refine
     { bpEquivalent := epcOneStepParameterUpdate_unitRate_eq_backprop
       prospectiveInterference := ?_
-      prospectiveGeometry := prospectiveInterference_metric_not_connection_crown
+      prospectiveGeometry := prospectiveInterference_metric_not_connection
       sharpPreconditioner := ?_
       trustRegion := ⟨linearizedPCWeightGradient_eq_inverseFisherCorrection,
         equationSevenTaylorBoundary_not_exact⟩
@@ -289,7 +289,7 @@ theorem pcPlasticity_frontier_crown : PCPlasticityLicense := by
         frozenAdapter_five_hypotheses_restore_sourceForgetting_bound }
   · intro input oldHidden oldCorrectReadout errorReadout errorTarget
       hpath hnew
-    exact prospectiveRepair_target_and_advantage_crown
+    exact prospectiveRepair_target_and_advantage
       input oldHidden oldCorrectReadout errorReadout errorTarget hpath hnew
   · intro preconditioner sourceActivation downstreamGain target weight
       heffective hresidual
@@ -301,6 +301,6 @@ theorem pcPlasticity_frontier_crown : PCPlasticityLicense := by
 #print axioms scalarGradientEndpoint_doesNotOvershoot_iff
 #print axioms sameTargetResidualBranch_gradientEndpoints_iff
 #print axioms matchedProgress_unitTrustBounds_restore_sourceForgetting
-#print axioms pcPlasticity_frontier_crown
+#print axioms pcPlasticity_frontier
 
 end Mettapedia.MachineLearning.NeuralNetworks.UtilizationAtlas

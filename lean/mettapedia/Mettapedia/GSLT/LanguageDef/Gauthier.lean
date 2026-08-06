@@ -23,3 +23,4 @@ import Mettapedia.GSLT.LanguageDef.Gauthier.SkeletonMask
 import Mettapedia.GSLT.LanguageDef.Gauthier.SkeletonTrace
 import Mettapedia.GSLT.LanguageDef.Gauthier.RefinementInstance
 import Mettapedia.GSLT.LanguageDef.Gauthier.AtomicRefinement
+import Mettapedia.GSLT.LanguageDef.Gauthier.GradeBActionEvidence

@@ -271,7 +271,7 @@ theorem routedWorkspaceSafetyInheritance_license
       root.asRefinementInterface.RankedAccepts
         decoder.toLegalActionWorkspaceDecoder.ranking budget
         (root.encode program) program) :=
-  decoder.inheritanceCrown laws
+  decoder.inheritance laws
 
 /-! ## T5 crown -/
 
@@ -298,7 +298,7 @@ structure WorkspaceFrontierLicense : Prop where
       (1 / 4 : ℝ) ^ schedule.length *
         quadraticEnergy halfScalarCommonLyapunov.metric initial
 
-theorem workspace_frontier_crown : WorkspaceFrontierLicense where
+theorem workspace_frontier : WorkspaceFrontierLicense where
   independentIff :=
     slotwiseIndependentSettling_iff_crossSlotHessianBlock_zero
   routedStrictUsefulness :=
@@ -314,6 +314,6 @@ theorem workspace_frontier_crown : WorkspaceFrontierLicense where
 #print axioms routedComposition_license
 #print axioms routedCommonLyapunov_license
 #print axioms routedWorkspaceSafetyInheritance_license
-#print axioms workspace_frontier_crown
+#print axioms workspace_frontier
 
 end Mettapedia.MachineLearning.NeuralNetworks.UtilizationAtlas

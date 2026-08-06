@@ -48,7 +48,7 @@ def checkedLanguage : CheckedLanguage where
         (output.implementationAcceptance_iff_specProvability
           claim.label claim.formula)
 
-/-- Metamath's certificate-indexed crown theorem, obtained from the generic
+/-- Metamath's certificate-indexed equivalence theorem, obtained from the generic
 checked-language composition rather than re-proved for this language. -/
 theorem certificateAcceptance_iff_specProvability
     {bytes : ByteArray} (output : CheckedParserOutput bytes)

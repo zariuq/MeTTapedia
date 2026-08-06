@@ -222,7 +222,7 @@ theorem projectPrefix?_eq_some_fields
         declaredConstantNames (objectEntries db) ∧
       projection.declaredVariables =
         declaredVariableNames (objectEntries db) ∧
-      projection.callerFrame = db.frame ∧
+      projection.callerFrame = proofFacingCallerFrame db ∧
       projectHypotheses? db db.frame.hyps.toList =
         some projection.activeHypotheses ∧
       projectAssertionsFromEntries? db (objectEntries db) =
@@ -231,7 +231,8 @@ theorem projectPrefix?_eq_some_fields
   simp only [bind] at hproject
   simp only [Option.bind_eq_some_iff] at hproject
   obtain ⟨_guardError, _herror, _guardWellFormed, _hwellFormed,
-    _guardDV, _hdv, _guardEmbedded, _hembedded, _guardDeclarations,
+    _guardDV, _hdv, _guardRawDV, _hrawDV, _guardEmbedded, _hembedded,
+    _guardDeclarations,
     _hdeclarations, activeHypotheses, hactive, _guardFrame, _hframe,
     assertions, hassertions, _guardProjection, _hprojectionValid,
     hprojection⟩ := hproject
@@ -258,7 +259,7 @@ theorem projectedAssertion_database_fidelity
         declaredConstantNames (objectEntries db) ∧
       projection.declaredVariables =
         declaredVariableNames (objectEntries db) ∧
-      projection.callerFrame = db.frame ∧
+      projection.callerFrame = proofFacingCallerFrame db ∧
       projectHypotheses? db db.frame.hyps.toList =
         some projection.activeHypotheses := by
   obtain ⟨hconstants, hvariables, hcaller, hactive, hassertions⟩ :=

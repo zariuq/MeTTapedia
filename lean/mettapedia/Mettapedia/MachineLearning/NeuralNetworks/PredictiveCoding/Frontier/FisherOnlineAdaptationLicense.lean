@@ -5,7 +5,7 @@ import Mettapedia.MachineLearning.ContinualLearning.FisherRetentionBridge
 /-!
 # Certified Fisher geometry for online neural adaptation
 
-This crown packages the exact Gaussian identity, approximation bound, explicit
+This license packages the exact Gaussian identity, approximation bound, explicit
 PC-to-natural error budget, Fisher diagnostic, local continual-learning bridge,
 and frozen-adapter pullback.  The negative fixtures remain part of the license:
 scalar precision is not a general Fisher inverse, nonlinear KL is not its local
@@ -98,7 +98,7 @@ structure FisherOnlineAdaptationLicense : Prop where
         (identityAdapterMetric : AdapterMetric ℝ) frozenCoordinateReadout).pair
           fisherDiagnosticAxis1 fisherDiagnosticAxis1 = 0
 
-theorem fisher_online_adaptation_crown : FisherOnlineAdaptationLicense where
+theorem fisher_online_adaptation : FisherOnlineAdaptationLicense where
   gaussianFactorization := by
     intro Sample Input Output _ weight activation precision
     exact gaussianWeightFisher_eq_kronecker weight activation precision

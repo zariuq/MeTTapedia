@@ -100,50 +100,50 @@ def posteriorCompactPredictivePrincipalShadow
             (M.posteriorBernoulliMixture k l hZ) n).toPrecisePrevision X
       , (1 : ℝ) )
 
-theorem externalPredictiveThatsAll_of_posteriorSharedEnvelopeCrown
+theorem externalPredictiveThatsAll_of_posteriorSharedEnvelope
     {Ω : Type*} [MeasurableSpace Ω]
     {M : BernoulliMixture} {k l : ℕ}
     {hZ : M.countEvidenceMass k l ≠ 0}
     {A : ExternalBoolProcessLaw Ω}
-    (hCrown : PosteriorBernoulliMixtureSharedEnvelopeCrown M k l hZ A) :
+    (hCrown : PosteriorBernoulliMixtureSharedEnvelope M k l hZ A) :
     externalPredictiveThatsAll ({A} : Set (ExternalBoolProcessLaw Ω)) := by
   intro n X
   simpa using hCrown.prefixEnvelopeWidth_eq_zero n X
 
-theorem compactPredictiveThatsAll_of_posteriorExternalCarrierCrown
+theorem compactPredictiveThatsAll_of_posteriorExternalCarrier
     {Ω : Type*} [MeasurableSpace Ω]
     {M : BernoulliMixture} {k l : ℕ}
     {hZ : M.countEvidenceMass k l ≠ 0}
     {A : ExternalBoolProcessLaw Ω}
-    (hCrown : PosteriorBernoulliMixtureExternalCarrierCrown M k l hZ A) :
+    (hCrown : PosteriorBernoulliMixtureExternalCarrier M k l hZ A) :
     compactPredictiveThatsAll
       (externalPathLawBoundedMeasurableCompactCredalSet
         ({A} : Set (ExternalBoolProcessLaw Ω))) := by
   intro n X
   simpa using hCrown.compactPrefixWidth_eq_zero n X
 
-theorem posteriorExternalPredictivePrincipalShadow_of_posteriorSharedEnvelopeCrown
+theorem posteriorExternalPredictivePrincipalShadow_of_posteriorSharedEnvelope
     {Ω : Type*} [MeasurableSpace Ω]
     {M : BernoulliMixture} {k l : ℕ}
     {hZ : M.countEvidenceMass k l ≠ 0}
     {A : ExternalBoolProcessLaw Ω}
-    (hCrown : PosteriorBernoulliMixtureSharedEnvelopeCrown M k l hZ A) :
+    (hCrown : PosteriorBernoulliMixtureSharedEnvelope M k l hZ A) :
     posteriorExternalPredictivePrincipalShadow M k l hZ A := by
   intro n X
   simpa using
-    posteriorBernoulliMixture_sharedEnvelopeCrown_prefixPLNCoordinates_eq_posterior
+    posteriorBernoulliMixture_sharedEnvelope_prefixPLNCoordinates_eq_posterior
       hCrown n X
 
-theorem posteriorCompactPredictivePrincipalShadow_of_posteriorSharedEnvelopeCrown
+theorem posteriorCompactPredictivePrincipalShadow_of_posteriorSharedEnvelope
     {Ω : Type*} [MeasurableSpace Ω]
     {M : BernoulliMixture} {k l : ℕ}
     {hZ : M.countEvidenceMass k l ≠ 0}
     {A : ExternalBoolProcessLaw Ω}
-    (hCrown : PosteriorBernoulliMixtureSharedEnvelopeCrown M k l hZ A) :
+    (hCrown : PosteriorBernoulliMixtureSharedEnvelope M k l hZ A) :
     posteriorCompactPredictivePrincipalShadow M k l hZ A := by
   intro n X
   simpa using
-    posteriorBernoulliMixture_sharedEnvelopeCrown_compactPLNCoordinates_eq_posterior
+    posteriorBernoulliMixture_sharedEnvelope_compactPLNCoordinates_eq_posterior
       hCrown n X
 
 theorem posteriorBernoulliMixture_canonical_externalPredictivePrincipalShadow
@@ -168,8 +168,8 @@ theorem posteriorBernoulliMixture_canonical_externalPredictivePrincipalShadow
       CategoryTheory.coordProcess
       hcoord
   exact
-    posteriorExternalPredictivePrincipalShadow_of_posteriorSharedEnvelopeCrown
-      (posteriorBernoulliMixture_canonicalSharedEnvelopeCrown M k l hZ)
+    posteriorExternalPredictivePrincipalShadow_of_posteriorSharedEnvelope
+      (posteriorBernoulliMixture_canonicalSharedEnvelope M k l hZ)
 
 theorem posteriorBernoulliMixture_canonical_compactPredictivePrincipalShadow
     (M : BernoulliMixture) (k l : ℕ)
@@ -193,8 +193,8 @@ theorem posteriorBernoulliMixture_canonical_compactPredictivePrincipalShadow
       CategoryTheory.coordProcess
       hcoord
   exact
-    posteriorCompactPredictivePrincipalShadow_of_posteriorSharedEnvelopeCrown
-      (posteriorBernoulliMixture_canonicalSharedEnvelopeCrown M k l hZ)
+    posteriorCompactPredictivePrincipalShadow_of_posteriorSharedEnvelope
+      (posteriorBernoulliMixture_canonicalSharedEnvelope M k l hZ)
 
 theorem posteriorBernoulliMixture_canonical_externalPredictiveThatsAll
     (M : BernoulliMixture) (k l : ℕ)
@@ -228,8 +228,8 @@ theorem posteriorBernoulliMixture_canonical_externalPredictiveThatsAll
       (M.posteriorBernoulliMixture k l hZ)
       (bernoulliMixtureCanonicalProcessMeasure_represents
         (M.posteriorBernoulliMixture k l hZ))
-  exact externalPredictiveThatsAll_of_posteriorSharedEnvelopeCrown
-    (posteriorBernoulliMixture_sharedEnvelopeCrown M k l hZ A hRealize)
+  exact externalPredictiveThatsAll_of_posteriorSharedEnvelope
+    (posteriorBernoulliMixture_sharedEnvelope M k l hZ A hRealize)
 
 theorem posteriorBernoulliMixture_canonical_compactPredictiveThatsAll
     (M : BernoulliMixture) (k l : ℕ)
@@ -265,8 +265,8 @@ theorem posteriorBernoulliMixture_canonical_compactPredictiveThatsAll
       (M.posteriorBernoulliMixture k l hZ)
       (bernoulliMixtureCanonicalProcessMeasure_represents
         (M.posteriorBernoulliMixture k l hZ))
-  exact compactPredictiveThatsAll_of_posteriorExternalCarrierCrown
-    (posteriorBernoulliMixture_externalCarrierCrown M k l hZ A hRealize)
+  exact compactPredictiveThatsAll_of_posteriorExternalCarrier
+    (posteriorBernoulliMixture_externalCarrier M k l hZ A hRealize)
 
 theorem posteriorBernoulliMixture_canonical_externalPredictiveThatsAll_and_prefixWitness_iff_zeroInteriorMixingMass
     (M : BernoulliMixture) (k l : ℕ)
@@ -292,11 +292,11 @@ theorem posteriorBernoulliMixture_canonical_externalPredictiveThatsAll_and_prefi
       CategoryTheory.coordProcess
       hcoord
   rcases
-      posteriorBernoulliMixture_canonicalSharedEnvelopeCrown_and_prefixWitness_iff_zeroInteriorMixingMass
+      posteriorBernoulliMixture_canonicalSharedEnvelope_and_prefixWitness_iff_zeroInteriorMixingMass
         M k l hZ with
     ⟨hCrown, hIff⟩
   exact
-    ⟨externalPredictiveThatsAll_of_posteriorSharedEnvelopeCrown hCrown, hIff⟩
+    ⟨externalPredictiveThatsAll_of_posteriorSharedEnvelope hCrown, hIff⟩
 
 theorem posteriorBernoulliMixture_canonical_externalPredictiveThatsAll_and_prefixCarrierWitness_exists_iff_zeroInteriorMixingMass
     (M : BernoulliMixture) (k l : ℕ)
@@ -323,11 +323,11 @@ theorem posteriorBernoulliMixture_canonical_externalPredictiveThatsAll_and_prefi
       CategoryTheory.coordProcess
       hcoord
   rcases
-      posteriorBernoulliMixture_canonicalSharedEnvelopeCrown_and_prefixCarrierWitness_exists_iff_zeroInteriorMixingMass
+      posteriorBernoulliMixture_canonicalSharedEnvelope_and_prefixCarrierWitness_exists_iff_zeroInteriorMixingMass
         M k l hZ with
     ⟨hCrown, hIff⟩
   exact
-    ⟨externalPredictiveThatsAll_of_posteriorSharedEnvelopeCrown hCrown, hIff⟩
+    ⟨externalPredictiveThatsAll_of_posteriorSharedEnvelope hCrown, hIff⟩
 
 theorem posteriorBernoulliMixture_canonical_compactPredictiveThatsAll_and_prefixWitness_iff_zeroInteriorMixingMass
     (M : BernoulliMixture) (k l : ℕ)
@@ -355,7 +355,7 @@ theorem posteriorBernoulliMixture_canonical_compactPredictiveThatsAll_and_prefix
       CategoryTheory.coordProcess
       hcoord
   rcases
-      posteriorBernoulliMixture_canonicalSharedEnvelopeCrown_and_prefixWitness_iff_zeroInteriorMixingMass
+      posteriorBernoulliMixture_canonicalSharedEnvelope_and_prefixWitness_iff_zeroInteriorMixingMass
         M k l hZ with
     ⟨hCrown, hIff⟩
   have hCompact :
@@ -363,7 +363,7 @@ theorem posteriorBernoulliMixture_canonical_compactPredictiveThatsAll_and_prefix
         (externalPathLawBoundedMeasurableCompactCredalSet
           ({A} : Set (ExternalBoolProcessLaw (ℕ → Bool)))) := by
     exact
-      compactPredictiveThatsAll_of_posteriorExternalCarrierCrown
+      compactPredictiveThatsAll_of_posteriorExternalCarrier
         hCrown.processEnvelopeCrown.externalCarrierCrown
   exact
     ⟨hCompact, hIff⟩
@@ -395,7 +395,7 @@ theorem posteriorBernoulliMixture_canonical_compactPredictiveThatsAll_and_prefix
       CategoryTheory.coordProcess
       hcoord
   rcases
-      posteriorBernoulliMixture_canonicalSharedEnvelopeCrown_and_prefixCarrierWitness_exists_iff_zeroInteriorMixingMass
+      posteriorBernoulliMixture_canonicalSharedEnvelope_and_prefixCarrierWitness_exists_iff_zeroInteriorMixingMass
         M k l hZ with
     ⟨hCrown, hIff⟩
   have hCompact :
@@ -403,12 +403,12 @@ theorem posteriorBernoulliMixture_canonical_compactPredictiveThatsAll_and_prefix
         (externalPathLawBoundedMeasurableCompactCredalSet
           ({A} : Set (ExternalBoolProcessLaw (ℕ → Bool)))) := by
     exact
-      compactPredictiveThatsAll_of_posteriorExternalCarrierCrown
+      compactPredictiveThatsAll_of_posteriorExternalCarrier
         hCrown.processEnvelopeCrown.externalCarrierCrown
   exact
     ⟨hCompact, hIff⟩
 
-theorem posteriorBernoulliMixture_canonical_externalPredictiveThatsAll_and_processLawCrown_iff_zeroInteriorMixingMass
+theorem posteriorBernoulliMixture_canonical_externalPredictiveThatsAll_and_processLaw_iff_zeroInteriorMixingMass
     (M : BernoulliMixture) (k l : ℕ)
     (hZ : M.countEvidenceMass k l ≠ 0) :
     let A : ExternalBoolProcessLaw (ℕ → Bool) :=
@@ -420,13 +420,13 @@ theorem posteriorBernoulliMixture_canonical_externalPredictiveThatsAll_and_proce
           intro i
           exact measurable_pi_apply i)
     externalPredictiveThatsAll ({A} : Set (ExternalBoolProcessLaw (ℕ → Bool))) ∧
-      (PosteriorBernoulliMixtureProcessLawCrown M k l hZ ↔
+      (PosteriorBernoulliMixtureProcessLaw M k l hZ ↔
         M.mixingMeasure (Set.Ioo (0 : ℝ) 1) = 0) := by
   exact
     ⟨posteriorBernoulliMixture_canonical_externalPredictiveThatsAll M k l hZ,
-      posteriorBernoulliMixture_processLawCrown_iff_zeroInteriorMixingMass M k l hZ⟩
+      posteriorBernoulliMixture_processLaw_iff_zeroInteriorMixingMass M k l hZ⟩
 
-theorem posteriorBernoulliMixture_canonical_compactPredictiveThatsAll_and_processLawCrown_iff_zeroInteriorMixingMass
+theorem posteriorBernoulliMixture_canonical_compactPredictiveThatsAll_and_processLaw_iff_zeroInteriorMixingMass
     (M : BernoulliMixture) (k l : ℕ)
     (hZ : M.countEvidenceMass k l ≠ 0) :
     let A : ExternalBoolProcessLaw (ℕ → Bool) :=
@@ -440,11 +440,11 @@ theorem posteriorBernoulliMixture_canonical_compactPredictiveThatsAll_and_proces
     compactPredictiveThatsAll
       (externalPathLawBoundedMeasurableCompactCredalSet
         ({A} : Set (ExternalBoolProcessLaw (ℕ → Bool)))) ∧
-      (PosteriorBernoulliMixtureProcessLawCrown M k l hZ ↔
+      (PosteriorBernoulliMixtureProcessLaw M k l hZ ↔
         M.mixingMeasure (Set.Ioo (0 : ℝ) 1) = 0) := by
   exact
     ⟨posteriorBernoulliMixture_canonical_compactPredictiveThatsAll M k l hZ,
-      posteriorBernoulliMixture_processLawCrown_iff_zeroInteriorMixingMass M k l hZ⟩
+      posteriorBernoulliMixture_processLaw_iff_zeroInteriorMixingMass M k l hZ⟩
 
 theorem posteriorBernoulliMixture_canonical_externalPredictiveThatsAll_and_noPrefixCarrierWitness_of_interiorMixingMass
     (M : BernoulliMixture) (k l : ℕ)
@@ -471,11 +471,11 @@ theorem posteriorBernoulliMixture_canonical_externalPredictiveThatsAll_and_noPre
       CategoryTheory.coordProcess
       hcoord
   rcases
-      posteriorBernoulliMixture_canonicalSharedEnvelopeCrown_and_noPrefixCarrierWitness_of_interiorMixingMass
+      posteriorBernoulliMixture_canonicalSharedEnvelope_and_noPrefixCarrierWitness_of_interiorMixingMass
         M k l hZ hInterior with
     ⟨hCrown, hNoWitness⟩
   exact
-    ⟨externalPredictiveThatsAll_of_posteriorSharedEnvelopeCrown hCrown,
+    ⟨externalPredictiveThatsAll_of_posteriorSharedEnvelope hCrown,
       hNoWitness⟩
 
 theorem posteriorBernoulliMixture_canonical_compactPredictiveThatsAll_and_noPrefixCarrierWitness_of_interiorMixingMass
@@ -505,7 +505,7 @@ theorem posteriorBernoulliMixture_canonical_compactPredictiveThatsAll_and_noPref
       CategoryTheory.coordProcess
       hcoord
   rcases
-      posteriorBernoulliMixture_canonicalSharedEnvelopeCrown_and_noPrefixCarrierWitness_of_interiorMixingMass
+      posteriorBernoulliMixture_canonicalSharedEnvelope_and_noPrefixCarrierWitness_of_interiorMixingMass
         M k l hZ hInterior with
     ⟨hCrown, hNoWitness⟩
   have hCompact :
@@ -513,7 +513,7 @@ theorem posteriorBernoulliMixture_canonical_compactPredictiveThatsAll_and_noPref
         (externalPathLawBoundedMeasurableCompactCredalSet
           ({A} : Set (ExternalBoolProcessLaw (ℕ → Bool)))) := by
     exact
-      compactPredictiveThatsAll_of_posteriorExternalCarrierCrown
+      compactPredictiveThatsAll_of_posteriorExternalCarrier
         hCrown.processEnvelopeCrown.externalCarrierCrown
   exact
     ⟨hCompact, hNoWitness⟩
@@ -542,11 +542,11 @@ theorem posteriorBernoulliMixture_canonical_externalPredictiveThatsAll_and_noPre
       CategoryTheory.coordProcess
       hcoord
   rcases
-      posteriorBernoulliMixture_canonicalSharedEnvelopeCrown_and_noPrefixWitness_of_interiorMixingMass
+      posteriorBernoulliMixture_canonicalSharedEnvelope_and_noPrefixWitness_of_interiorMixingMass
         M k l hZ hInterior with
     ⟨hCrown, hNoWitness⟩
   exact
-    ⟨externalPredictiveThatsAll_of_posteriorSharedEnvelopeCrown hCrown,
+    ⟨externalPredictiveThatsAll_of_posteriorSharedEnvelope hCrown,
       hNoWitness⟩
 
 theorem posteriorBernoulliMixture_canonical_compactPredictiveThatsAll_and_noPrefixWitness_of_interiorMixingMass
@@ -575,7 +575,7 @@ theorem posteriorBernoulliMixture_canonical_compactPredictiveThatsAll_and_noPref
       CategoryTheory.coordProcess
       hcoord
   rcases
-      posteriorBernoulliMixture_canonicalSharedEnvelopeCrown_and_noPrefixWitness_of_interiorMixingMass
+      posteriorBernoulliMixture_canonicalSharedEnvelope_and_noPrefixWitness_of_interiorMixingMass
         M k l hZ hInterior with
     ⟨hCrown, hNoWitness⟩
   have hCompact :
@@ -583,7 +583,7 @@ theorem posteriorBernoulliMixture_canonical_compactPredictiveThatsAll_and_noPref
         (externalPathLawBoundedMeasurableCompactCredalSet
           ({A} : Set (ExternalBoolProcessLaw (ℕ → Bool)))) := by
     exact
-      compactPredictiveThatsAll_of_posteriorExternalCarrierCrown
+      compactPredictiveThatsAll_of_posteriorExternalCarrier
         hCrown.processEnvelopeCrown.externalCarrierCrown
   exact
     ⟨hCompact, hNoWitness⟩
@@ -659,8 +659,8 @@ theorem posteriorBernoulliMixture_conditionedTail_externalPredictiveThatsAll
     externalPredictiveThatsAll
       ({conditionedTailExternalBoolProcessLaw M X μ hX hrep obs hZ} :
         Set (ExternalBoolProcessLaw Ω)) := by
-  exact externalPredictiveThatsAll_of_posteriorSharedEnvelopeCrown
-    (posteriorBernoulliMixture_conditionedTail_sharedEnvelopeCrown
+  exact externalPredictiveThatsAll_of_posteriorSharedEnvelope
+    (posteriorBernoulliMixture_conditionedTail_sharedEnvelope
       M X μ hX hrep obs hZ)
 
 theorem posteriorBernoulliMixture_conditionedTail_compactPredictiveThatsAll
@@ -677,8 +677,8 @@ theorem posteriorBernoulliMixture_conditionedTail_compactPredictiveThatsAll
       (externalPathLawBoundedMeasurableCompactCredalSet
         ({conditionedTailExternalBoolProcessLaw M X μ hX hrep obs hZ} :
           Set (ExternalBoolProcessLaw Ω))) := by
-  exact compactPredictiveThatsAll_of_posteriorExternalCarrierCrown
-    (posteriorBernoulliMixture_conditionedTail_externalCarrierCrown
+  exact compactPredictiveThatsAll_of_posteriorExternalCarrier
+    (posteriorBernoulliMixture_conditionedTail_externalCarrier
       M X μ hX hrep obs hZ)
 
 theorem posteriorBernoulliMixture_conditionedTail_externalPredictivePrincipalShadow
@@ -698,8 +698,8 @@ theorem posteriorBernoulliMixture_conditionedTail_externalPredictivePrincipalSha
       hZ
       (conditionedTailExternalBoolProcessLaw M X μ hX hrep obs hZ) := by
   exact
-    posteriorExternalPredictivePrincipalShadow_of_posteriorSharedEnvelopeCrown
-      (posteriorBernoulliMixture_conditionedTail_sharedEnvelopeCrown
+    posteriorExternalPredictivePrincipalShadow_of_posteriorSharedEnvelope
+      (posteriorBernoulliMixture_conditionedTail_sharedEnvelope
         M X μ hX hrep obs hZ)
 
 theorem posteriorBernoulliMixture_conditionedTail_compactPredictivePrincipalShadow
@@ -719,8 +719,8 @@ theorem posteriorBernoulliMixture_conditionedTail_compactPredictivePrincipalShad
       hZ
       (conditionedTailExternalBoolProcessLaw M X μ hX hrep obs hZ) := by
   exact
-    posteriorCompactPredictivePrincipalShadow_of_posteriorSharedEnvelopeCrown
-      (posteriorBernoulliMixture_conditionedTail_sharedEnvelopeCrown
+    posteriorCompactPredictivePrincipalShadow_of_posteriorSharedEnvelope
+      (posteriorBernoulliMixture_conditionedTail_sharedEnvelope
         M X μ hX hrep obs hZ)
 
 theorem posteriorBernoulliMixture_conditionedTail_externalPredictiveThatsAll_and_prefixWitness_iff_zeroInteriorMixingMass
@@ -743,11 +743,11 @@ theorem posteriorBernoulliMixture_conditionedTail_externalPredictiveThatsAll_and
           hZ ↔
         M.mixingMeasure (Set.Ioo (0 : ℝ) 1) = 0) := by
   rcases
-      posteriorBernoulliMixture_conditionedTail_sharedEnvelopeCrown_and_prefixWitness_iff_zeroInteriorMixingMass
+      posteriorBernoulliMixture_conditionedTail_sharedEnvelope_and_prefixWitness_iff_zeroInteriorMixingMass
         M X μ hX hrep obs hZ with
     ⟨hCrown, hIff⟩
   exact
-    ⟨externalPredictiveThatsAll_of_posteriorSharedEnvelopeCrown hCrown, hIff⟩
+    ⟨externalPredictiveThatsAll_of_posteriorSharedEnvelope hCrown, hIff⟩
 
 theorem posteriorBernoulliMixture_conditionedTail_externalPredictiveThatsAll_and_prefixCarrierWitness_exists_iff_zeroInteriorMixingMass
     {Ω : Type*} [MeasurableSpace Ω]
@@ -770,11 +770,11 @@ theorem posteriorBernoulliMixture_conditionedTail_externalPredictiveThatsAll_and
             hZ carrier) ↔
         M.mixingMeasure (Set.Ioo (0 : ℝ) 1) = 0) := by
   rcases
-      posteriorBernoulliMixture_conditionedTail_sharedEnvelopeCrown_and_prefixCarrierWitness_exists_iff_zeroInteriorMixingMass
+      posteriorBernoulliMixture_conditionedTail_sharedEnvelope_and_prefixCarrierWitness_exists_iff_zeroInteriorMixingMass
         M X μ hX hrep obs hZ with
     ⟨hCrown, hIff⟩
   exact
-    ⟨externalPredictiveThatsAll_of_posteriorSharedEnvelopeCrown hCrown, hIff⟩
+    ⟨externalPredictiveThatsAll_of_posteriorSharedEnvelope hCrown, hIff⟩
 
 theorem posteriorBernoulliMixture_conditionedTail_compactPredictiveThatsAll_and_prefixWitness_iff_zeroInteriorMixingMass
     {Ω : Type*} [MeasurableSpace Ω]
@@ -797,7 +797,7 @@ theorem posteriorBernoulliMixture_conditionedTail_compactPredictiveThatsAll_and_
           hZ ↔
         M.mixingMeasure (Set.Ioo (0 : ℝ) 1) = 0) := by
   rcases
-      posteriorBernoulliMixture_conditionedTail_sharedEnvelopeCrown_and_prefixWitness_iff_zeroInteriorMixingMass
+      posteriorBernoulliMixture_conditionedTail_sharedEnvelope_and_prefixWitness_iff_zeroInteriorMixingMass
         M X μ hX hrep obs hZ with
     ⟨hCrown, hIff⟩
   have hCompact :
@@ -806,7 +806,7 @@ theorem posteriorBernoulliMixture_conditionedTail_compactPredictiveThatsAll_and_
           ({conditionedTailExternalBoolProcessLaw M X μ hX hrep obs hZ} :
             Set (ExternalBoolProcessLaw Ω))) := by
     exact
-      compactPredictiveThatsAll_of_posteriorExternalCarrierCrown
+      compactPredictiveThatsAll_of_posteriorExternalCarrier
         hCrown.processEnvelopeCrown.externalCarrierCrown
   exact
     ⟨hCompact, hIff⟩
@@ -833,7 +833,7 @@ theorem posteriorBernoulliMixture_conditionedTail_compactPredictiveThatsAll_and_
             hZ carrier) ↔
         M.mixingMeasure (Set.Ioo (0 : ℝ) 1) = 0) := by
   rcases
-      posteriorBernoulliMixture_conditionedTail_sharedEnvelopeCrown_and_prefixCarrierWitness_exists_iff_zeroInteriorMixingMass
+      posteriorBernoulliMixture_conditionedTail_sharedEnvelope_and_prefixCarrierWitness_exists_iff_zeroInteriorMixingMass
         M X μ hX hrep obs hZ with
     ⟨hCrown, hIff⟩
   have hCompact :
@@ -842,12 +842,12 @@ theorem posteriorBernoulliMixture_conditionedTail_compactPredictiveThatsAll_and_
           ({conditionedTailExternalBoolProcessLaw M X μ hX hrep obs hZ} :
             Set (ExternalBoolProcessLaw Ω))) := by
     exact
-      compactPredictiveThatsAll_of_posteriorExternalCarrierCrown
+      compactPredictiveThatsAll_of_posteriorExternalCarrier
         hCrown.processEnvelopeCrown.externalCarrierCrown
   exact
     ⟨hCompact, hIff⟩
 
-theorem posteriorBernoulliMixture_conditionedTail_externalPredictiveThatsAll_and_processCarrierCrown_iff_zeroInteriorMixingMass
+theorem posteriorBernoulliMixture_conditionedTail_externalPredictiveThatsAll_and_processCarrier_iff_zeroInteriorMixingMass
     {Ω : Type*} [MeasurableSpace Ω]
     (M : BernoulliMixture) (X : ℕ → Ω → Bool) (μ : MeasureTheory.Measure Ω)
     (hX : ∀ i : ℕ, Measurable (X i))
@@ -860,16 +860,16 @@ theorem posteriorBernoulliMixture_conditionedTail_externalPredictiveThatsAll_and
     externalPredictiveThatsAll
       ({conditionedTailExternalBoolProcessLaw M X μ hX hrep obs hZ} :
         Set (ExternalBoolProcessLaw Ω)) ∧
-      (PosteriorBernoulliMixtureConditionedTailProcessCarrierCrown
+      (PosteriorBernoulliMixtureConditionedTailProcessCarrier
           M obs hZ μ X hX hrep ↔
         M.mixingMeasure (Set.Ioo (0 : ℝ) 1) = 0) := by
   exact
     ⟨posteriorBernoulliMixture_conditionedTail_externalPredictiveThatsAll
         M X μ hX hrep obs hZ,
-      posteriorBernoulliMixture_conditionedTail_processCarrierCrown_iff_zeroInteriorMixingMass
+      posteriorBernoulliMixture_conditionedTail_processCarrier_iff_zeroInteriorMixingMass
         M X μ hX hrep obs hZ⟩
 
-theorem posteriorBernoulliMixture_conditionedTail_compactPredictiveThatsAll_and_processCarrierCrown_iff_zeroInteriorMixingMass
+theorem posteriorBernoulliMixture_conditionedTail_compactPredictiveThatsAll_and_processCarrier_iff_zeroInteriorMixingMass
     {Ω : Type*} [MeasurableSpace Ω]
     (M : BernoulliMixture) (X : ℕ → Ω → Bool) (μ : MeasureTheory.Measure Ω)
     (hX : ∀ i : ℕ, Measurable (X i))
@@ -883,13 +883,13 @@ theorem posteriorBernoulliMixture_conditionedTail_compactPredictiveThatsAll_and_
       (externalPathLawBoundedMeasurableCompactCredalSet
         ({conditionedTailExternalBoolProcessLaw M X μ hX hrep obs hZ} :
           Set (ExternalBoolProcessLaw Ω))) ∧
-      (PosteriorBernoulliMixtureConditionedTailProcessCarrierCrown
+      (PosteriorBernoulliMixtureConditionedTailProcessCarrier
           M obs hZ μ X hX hrep ↔
         M.mixingMeasure (Set.Ioo (0 : ℝ) 1) = 0) := by
   exact
     ⟨posteriorBernoulliMixture_conditionedTail_compactPredictiveThatsAll
         M X μ hX hrep obs hZ,
-      posteriorBernoulliMixture_conditionedTail_processCarrierCrown_iff_zeroInteriorMixingMass
+      posteriorBernoulliMixture_conditionedTail_processCarrier_iff_zeroInteriorMixingMass
         M X μ hX hrep obs hZ⟩
 
 theorem posteriorBernoulliMixture_conditionedTail_externalPredictiveThatsAll_and_noPrefixCarrierWitness_of_interiorMixingMass
@@ -914,11 +914,11 @@ theorem posteriorBernoulliMixture_conditionedTail_externalPredictiveThatsAll_and
           hZ
           carrier := by
   rcases
-      posteriorBernoulliMixture_conditionedTail_sharedEnvelopeCrown_and_noPrefixCarrierWitness_of_interiorMixingMass
+      posteriorBernoulliMixture_conditionedTail_sharedEnvelope_and_noPrefixCarrierWitness_of_interiorMixingMass
         M X μ hX hrep obs hZ hInterior with
     ⟨hCrown, hNoWitness⟩
   exact
-    ⟨externalPredictiveThatsAll_of_posteriorSharedEnvelopeCrown hCrown,
+    ⟨externalPredictiveThatsAll_of_posteriorSharedEnvelope hCrown,
       hNoWitness⟩
 
 theorem posteriorBernoulliMixture_conditionedTail_compactPredictiveThatsAll_and_noPrefixCarrierWitness_of_interiorMixingMass
@@ -944,7 +944,7 @@ theorem posteriorBernoulliMixture_conditionedTail_compactPredictiveThatsAll_and_
           hZ
           carrier := by
   rcases
-      posteriorBernoulliMixture_conditionedTail_sharedEnvelopeCrown_and_noPrefixCarrierWitness_of_interiorMixingMass
+      posteriorBernoulliMixture_conditionedTail_sharedEnvelope_and_noPrefixCarrierWitness_of_interiorMixingMass
         M X μ hX hrep obs hZ hInterior with
     ⟨hCrown, hNoWitness⟩
   have hCompact :
@@ -953,7 +953,7 @@ theorem posteriorBernoulliMixture_conditionedTail_compactPredictiveThatsAll_and_
           ({conditionedTailExternalBoolProcessLaw M X μ hX hrep obs hZ} :
             Set (ExternalBoolProcessLaw Ω))) := by
     exact
-      compactPredictiveThatsAll_of_posteriorExternalCarrierCrown
+      compactPredictiveThatsAll_of_posteriorExternalCarrier
         hCrown.processEnvelopeCrown.externalCarrierCrown
   exact
     ⟨hCompact, hNoWitness⟩
@@ -978,11 +978,11 @@ theorem posteriorBernoulliMixture_conditionedTail_externalPredictiveThatsAll_and
           (Mettapedia.ProbabilityTheory.Exchangeability.countFalse obs)
           hZ := by
   rcases
-      posteriorBernoulliMixture_conditionedTail_sharedEnvelopeCrown_and_noPrefixWitness_of_interiorMixingMass
+      posteriorBernoulliMixture_conditionedTail_sharedEnvelope_and_noPrefixWitness_of_interiorMixingMass
         M X μ hX hrep obs hZ hInterior with
     ⟨hCrown, hNoWitness⟩
   exact
-    ⟨externalPredictiveThatsAll_of_posteriorSharedEnvelopeCrown hCrown,
+    ⟨externalPredictiveThatsAll_of_posteriorSharedEnvelope hCrown,
       hNoWitness⟩
 
 theorem posteriorBernoulliMixture_conditionedTail_compactPredictiveThatsAll_and_noPrefixWitness_of_interiorMixingMass
@@ -1006,7 +1006,7 @@ theorem posteriorBernoulliMixture_conditionedTail_compactPredictiveThatsAll_and_
           (Mettapedia.ProbabilityTheory.Exchangeability.countFalse obs)
           hZ := by
   rcases
-      posteriorBernoulliMixture_conditionedTail_sharedEnvelopeCrown_and_noPrefixWitness_of_interiorMixingMass
+      posteriorBernoulliMixture_conditionedTail_sharedEnvelope_and_noPrefixWitness_of_interiorMixingMass
         M X μ hX hrep obs hZ hInterior with
     ⟨hCrown, hNoWitness⟩
   have hCompact :
@@ -1015,7 +1015,7 @@ theorem posteriorBernoulliMixture_conditionedTail_compactPredictiveThatsAll_and_
           ({conditionedTailExternalBoolProcessLaw M X μ hX hrep obs hZ} :
             Set (ExternalBoolProcessLaw Ω))) := by
     exact
-      compactPredictiveThatsAll_of_posteriorExternalCarrierCrown
+      compactPredictiveThatsAll_of_posteriorExternalCarrier
         hCrown.processEnvelopeCrown.externalCarrierCrown
   exact
     ⟨hCompact, hNoWitness⟩
@@ -1129,13 +1129,13 @@ theorem bernoulliMixture_singletonExternalPredictors_agree_of_realizations
   intro n X
   rw [hA n X, hB n X]
 
-theorem posteriorBernoulliMixture_singletonExternalPredictors_agree_of_externalCarrierCrowns
+theorem posteriorBernoulliMixture_singletonExternalPredictors_agree_of_externalCarriers
     {Ω₁ Ω₂ : Type*} [MeasurableSpace Ω₁] [MeasurableSpace Ω₂]
     {M : BernoulliMixture} {k l : ℕ}
     {hZ : M.countEvidenceMass k l ≠ 0}
     {A : ExternalBoolProcessLaw Ω₁} {B : ExternalBoolProcessLaw Ω₂}
-    (hA : PosteriorBernoulliMixtureExternalCarrierCrown M k l hZ A)
-    (hB : PosteriorBernoulliMixtureExternalCarrierCrown M k l hZ B) :
+    (hA : PosteriorBernoulliMixtureExternalCarrier M k l hZ A)
+    (hB : PosteriorBernoulliMixtureExternalCarrier M k l hZ B) :
     ∀ (n : ℕ) (X : Gamble (Fin n → Bool)),
       A.prefixPrevision n X = B.prefixPrevision n X := by
   intro n X

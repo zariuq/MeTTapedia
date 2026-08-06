@@ -1,4 +1,4 @@
-import Mettapedia.MachineLearning.SearchGuidance.BudgetedCoverageCrown
+import Mettapedia.MachineLearning.SearchGuidance.BudgetedSearchYield
 
 /-!
 # Witness-preserving program-discovery kernel

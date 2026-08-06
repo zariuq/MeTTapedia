@@ -1,4 +1,5 @@
 import Mettapedia.Languages.Metamath.SourceGSLTRawByteLexical
+import Mettapedia.Languages.Metamath.SourceGSLTStatementPlan
 
 /-!
 # The policy-indexed include / source-DAG GSLT
@@ -37,7 +38,7 @@ policy toggle confined to that single branch:
 
 Everything else — comment stripping at token level, include-directive
 recognition, outermost-scope and not-inside-statement gating
-(keyword-to-`$.` statement tracking, matching mm-lean4's scanner),
+(complete token-boundary tracking, shared with mm-lean4's repaired scanner),
 first-reference semantics via a `seen` set, chronological expansion, and
 exact rejection provenance — is shared.  Expansion never splices text:
 every emitted token is a located span of its *own* file
@@ -59,28 +60,45 @@ profiles coincide on every input the compatibility profile accepts.
 namespace Mettapedia.Languages.Metamath.SourceGSLTIncludeDAG
 
 open Mettapedia.Languages.Metamath.SourceGSLTRawByteLexical
+open Mettapedia.Languages.Metamath.SourceGSLT
+open Mettapedia.Languages.Metamath.SourceGSLTStatementPlan
 
 /-! ## Byte-level token classification -/
 
-def dollarByte : UInt8 := 36
-def commentOpenBytes : List UInt8 := [36, 40]
-def commentCloseBytes : List UInt8 := [36, 41]
-def includeOpenBytes : List UInt8 := [36, 91]
-def includeCloseBytes : List UInt8 := [36, 93]
-def scopeOpenBytes : List UInt8 := [36, 123]
-def scopeCloseBytes : List UInt8 := [36, 125]
-def statementEndBytes : List UInt8 := [36, 46]
+private def planBytes (literal : CompiledLiteral) : List UInt8 :=
+  literal.codepoints.map UInt8.ofNat
 
-/-- The four statement keywords mm-lean4's scanner tracks for the
-inside-a-statement gate: `$f`, `$e`, `$a`, `$p`. -/
+def dollarByte : UInt8 := UInt8.ofNat dollarCodepoint
+def commentOpenBytes : List UInt8 :=
+  planBytes sourceStatementPlan.commentOpen
+def commentCloseBytes : List UInt8 :=
+  planBytes sourceStatementPlan.commentClose
+def includeOpenBytes : List UInt8 :=
+  planBytes sourceStatementPlan.includeOpen
+def includeCloseBytes : List UInt8 :=
+  planBytes sourceStatementPlan.includeClose
+def scopeOpenBytes : List UInt8 :=
+  planBytes sourceStatementPlan.scopeOpen
+def scopeCloseBytes : List UInt8 :=
+  planBytes sourceStatementPlan.scopeClose
+def statementEndBytes : List UInt8 :=
+  planBytes sourceStatementPlan.statementEnd
+
+/-- The four label-bearing statement keywords used after a preceding label:
+`$f`, `$e`, `$a`, and `$p`.  This classifier belongs to statement dispatch;
+the include-placement scanner uses complete token-boundary tracking below. -/
 def statementKeyword (tok : List UInt8) : Bool :=
-  tok = [36, 102] || tok = [36, 101] || tok = [36, 97] || tok = [36, 112]
+  tok = planBytes sourceStatementPlan.floatingKeyword ||
+    tok = planBytes sourceStatementPlan.essentialKeyword ||
+    tok = planBytes sourceStatementPlan.axiomKeyword ||
+    tok = planBytes sourceStatementPlan.theoremKeyword
 
 /-- [MM §4.1.2] "they may not contain the 2-character sequences `$(` or
 `$)`" — adjacent-byte search for either sequence. -/
 def containsCommentSeq : List UInt8 → Bool
   | a :: b :: rest =>
-      (a = 36 && (b = 40 || b = 41)) || containsCommentSeq (b :: rest)
+      [a, b] = commentOpenBytes || [a, b] = commentCloseBytes ||
+        containsCommentSeq (b :: rest)
   | _ => false
 
 /-- [MM §4.1.2] "The file name may not contain a `$` or white space." A
@@ -229,11 +247,11 @@ theorem stripComments_subset {bytes : List UInt8} :
 
 /-! ## Phase B — include-directive recognition
 
-Scope depth is tracked through `${` / `$}` tokens and the
-inside-a-statement flag through the `$f`/`$e`/`$a`/`$p` keywords up to
-`$.` — the same discipline as mm-lean4's scanner (the book's prose also
-counts the label before a statement keyword; per the ratified
-mm-lean4-aligned choice, tracking starts at the keyword). -/
+Scope depth is tracked through `${` / `$}` tokens.  Statement placement is
+tracked from the first non-scope token through `$.`: this covers the opening
+keywords of `$c`, `$v`, and `$d` as well as the labels that open `$f`, `$e`,
+`$a`, and `$p`.  This is the book's complete statement boundary, shared with
+the repaired mm-lean4 include scanner. -/
 
 inductive SourceItem where
   | token (span : LocatedByteSpan)
@@ -246,11 +264,23 @@ def nextScopeDepth (tb : List UInt8) (scopeDepth : Nat) : Nat :=
   else if tb = scopeCloseBytes then scopeDepth - 1
   else scopeDepth
 
-/-- Inside-a-statement transition for one non-include token. -/
-def nextInStatement (tb : List UInt8) (inStatement : Bool) : Bool :=
-  if statementKeyword tb then true
-  else if tb = statementEndBytes then false
-  else inStatement
+/-- Inside-a-statement transition for one non-include token.
+
+[MM §4.1.2] an inclusion "must not be inside a statement".  Every
+statement runs from its opening token to its `$.`: `$c`, `$v`, and `$d`
+open with their keyword, while `$f`, `$e`, `$a`, and `$p` open with their
+label — so the only tokens that leave us *between* statements are the
+terminator and the two scope brackets.  Comments are already removed at
+this stage, so no other token can appear outside a statement.
+
+Note this is deliberately stronger than `statementKeyword`, which names
+only the label-bearing keywords and is used for statement dispatch
+elsewhere. -/
+def nextInStatement (tb : List UInt8) (_inStatement : Bool) : Bool :=
+  if tb = statementEndBytes then false
+  else if tb = scopeOpenBytes then false
+  else if tb = scopeCloseBytes then false
+  else true
 
 def segmentIncludes (bytes : List UInt8) :
     List LocatedByteSpan → Nat → Bool → ExpandResult (List SourceItem)
@@ -280,6 +310,59 @@ def segmentIncludes (bytes : List UInt8) :
             (nextScopeDepth (spanBytes bytes tok) scopeDepth)
             (nextInStatement (spanBytes bytes tok) inStatement)).bind
           fun items => .ok (.token tok :: items)
+
+/-! ### Negative boundary: the book's placement rule for `$[`
+
+[MM §4.1.2] a file-inclusion command "is only allowed in the outermost
+scope ... and must not be inside a statement (e.g., it may not occur
+between the label of a `$a` statement and its `$.`)", and included files
+"may not include incomplete statements".  The segmentation stage enforces
+exactly that, rejecting at the offending span with its own reason — the
+two theorems below state each rejection universally, so no accepted
+expansion can contain a misplaced include. -/
+
+/-- An include opener inside a statement is rejected at that exact span. -/
+theorem segmentIncludes_rejects_insideStatement {bytes : List UInt8}
+    {tok : LocatedByteSpan} {rest : List LocatedByteSpan}
+    (hopen : spanBytes bytes tok = includeOpenBytes) :
+    segmentIncludes bytes (tok :: rest) 0 true =
+      .rejected ⟨tok, .includeInsideStatement⟩ := by
+  unfold segmentIncludes
+  simp [hopen]
+
+/-- An include opener in an inner scope is rejected at that exact span,
+whatever the statement state. -/
+theorem segmentIncludes_rejects_innerScope {bytes : List UInt8}
+    {tok : LocatedByteSpan} {rest : List LocatedByteSpan}
+    {scopeDepth : Nat} {inStatement : Bool}
+    (hopen : spanBytes bytes tok = includeOpenBytes)
+    (hscope : scopeDepth ≠ 0) :
+    segmentIncludes bytes (tok :: rest) scopeDepth inStatement =
+      .rejected ⟨tok, .includeInInnerScope⟩ := by
+  unfold segmentIncludes
+  simp [hopen, hscope]
+
+/-- Inversion: whenever a successful segmentation meets an include
+opener, it was at the outermost scope and between statements.  Applied at
+each step of the recursion, this says no accepted expansion ever contains
+a misplaced include — the placement rule is structural, not a check that
+some other path could bypass. -/
+theorem segmentIncludes_include_wellPlaced {bytes : List UInt8}
+    {tok : LocatedByteSpan} {rest : List LocatedByteSpan}
+    {scopeDepth : Nat} {inStatement : Bool} {items : List SourceItem}
+    (hopen : spanBytes bytes tok = includeOpenBytes)
+    (hok : segmentIncludes bytes (tok :: rest) scopeDepth inStatement =
+      .ok items) :
+    scopeDepth = 0 ∧ inStatement = false := by
+  by_cases hscope : scopeDepth = 0
+  · subst hscope
+    by_cases hstmt : inStatement = true
+    · subst hstmt
+      rw [segmentIncludes_rejects_insideStatement hopen] at hok
+      exact nomatch hok
+    · exact ⟨rfl, by simpa using hstmt⟩
+  · rw [segmentIncludes_rejects_innerScope hopen hscope] at hok
+    exact nomatch hok
 
 /-- Emitted plain tokens are a subsequence of the input stream. -/
 theorem segmentIncludes_subset {bytes : List UInt8} :
@@ -830,6 +913,19 @@ example :
       [⟨"z", 0, 2⟩, ⟨"z", 3, 4⟩, ⟨"z", 5, 7⟩] 0 false =
       .ok [.include_ "s" ⟨"z", 0, 2⟩] := rfl
 
+/-- Positive boundary: a completed `$d x y $.` returns to outer statement
+scope, so the following include is recognized as a complete directive. -/
+example :
+    segmentIncludes
+      [36, 100, 32, 120, 32, 121, 32, 36, 46, 32,
+       36, 91, 32, 115, 32, 36, 93]
+      [⟨"z", 0, 2⟩, ⟨"z", 3, 4⟩, ⟨"z", 5, 6⟩, ⟨"z", 7, 9⟩,
+       ⟨"z", 10, 12⟩, ⟨"z", 13, 14⟩, ⟨"z", 15, 17⟩]
+      0 false =
+      .ok [.token ⟨"z", 0, 2⟩, .token ⟨"z", 3, 4⟩,
+        .token ⟨"z", 5, 6⟩, .token ⟨"z", 7, 9⟩,
+        .include_ "s" ⟨"z", 10, 12⟩] := rfl
+
 /-- Basic inclusion: `root` = `"$[ sub $] q"`, `sub` = `"p"`. -/
 def basicFiles : FileMap := fun n =>
   if n = "root" then
@@ -842,6 +938,44 @@ carrying its own file identity and offsets; the host token follows. -/
 example :
     expandDatabase basicFiles mmLean4CompatPolicy "root" =
       .ok [⟨"sub", 0, 1⟩, ⟨"root", 10, 11⟩] := rfl
+
+/-- A root whose include sits between `$d` and its terminator:
+`$c a $. $d x $[ sub $] $.`. -/
+def insideDjStatementFiles : FileMap := fun n =>
+  if n = "root" then
+    some (ByteArray.mk #[36, 99, 32, 97, 32, 36, 46, 32, 36, 100, 32,
+      120, 32, 36, 91, 32, 115, 117, 98, 32, 36, 93, 32, 36, 46])
+  else if n = "sub" then some (ByteArray.mk #[121])
+  else none
+
+/-- A root whose include sits inside a label-bearing statement:
+`ax $a x $[ sub $]`. -/
+def insideAxiomStatementFiles : FileMap := fun n =>
+  if n = "root" then
+    some (ByteArray.mk #[97, 120, 32, 36, 97, 32, 120, 32, 36, 91, 32,
+      115, 117, 98, 32, 36, 93])
+  else if n = "sub" then some (ByteArray.mk #[121])
+  else none
+
+/-- Negative: an include between `$d` and its `$.` is rejected at its own
+span, under both ratified policies. -/
+example :
+    expandDatabase insideDjStatementFiles bookSpecPolicy "root" =
+      .rejected ⟨⟨"root", 13, 15⟩, .includeInsideStatement⟩ := rfl
+
+example :
+    expandDatabase insideDjStatementFiles mmLean4CompatPolicy "root" =
+      .rejected ⟨⟨"root", 13, 15⟩, .includeInsideStatement⟩ := rfl
+
+/-- Negative: an include inside a label-bearing statement is likewise
+rejected at its own span, under both ratified policies. -/
+example :
+    expandDatabase insideAxiomStatementFiles bookSpecPolicy "root" =
+      .rejected ⟨⟨"root", 8, 10⟩, .includeInsideStatement⟩ := rfl
+
+example :
+    expandDatabase insideAxiomStatementFiles mmLean4CompatPolicy "root" =
+      .rejected ⟨⟨"root", 8, 10⟩, .includeInsideStatement⟩ := rfl
 
 /-- Positive: the book profile agrees on the cycle-free database
 (instance of `expandDatabase_compat_ok`). -/

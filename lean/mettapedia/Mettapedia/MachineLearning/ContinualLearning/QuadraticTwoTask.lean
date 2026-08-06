@@ -211,7 +211,7 @@ theorem obliqueTasks_curvature_interference :
 /-- Crown separating the two proved linear mechanisms: oblique curvatures
 produce order interference, while same-cause reuse produces non-additivity
 despite a zero commutator. -/
-theorem linearTwoTask_causalCoding_separation_crown :
+theorem linearTwoTask_causalCoding_separation :
     curvatureCommutator obliqueFirstTask obliqueSecondTask ≠ 0 ∧
       sequentialTwoTaskUpdate obliqueFirstTask obliqueSecondTask 1
           obliqueParameter ≠

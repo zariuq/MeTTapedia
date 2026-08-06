@@ -354,6 +354,7 @@ import Mettapedia.GSLT.Dynamics.StoreReachability
 import Mettapedia.GSLT.Dynamics.StoreCollectionAdvanced
 import Mettapedia.GSLT.Dynamics.DialectTranslation
 import Mettapedia.GSLT.Dynamics.DialectObstructions
+import Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization
 import Mettapedia.GSLT.Synthesis.MainConservation
 import Mettapedia.GSLT.Meredith.GSLT
 import Mettapedia.GSLT.Meredith.LambdaTheory

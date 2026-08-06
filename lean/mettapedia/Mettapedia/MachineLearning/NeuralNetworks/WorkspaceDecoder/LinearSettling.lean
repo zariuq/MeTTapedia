@@ -287,7 +287,7 @@ theorem linearTurnover_zero_isFixedPt :
 /-- Crown for prereg prediction (a), linear scope only: finite-depth fitting is
 exact, equilibrium evaluation is uniform and mismatched, and every over-settled
 depth is strictly worse. -/
-theorem finiteDepthMismatch_equilibriumCrown
+theorem finiteDepthMismatch_equilibrium
     (trainingDepth : ℕ) (target : ℝ) (htarget : target ∈ Ioo (0 : ℝ) 1)
     (hnonuniform : target ≠ 1 / 2) :
     finiteDepthMismatchLoss trainingDepth target trainingDepth = 0 ∧
@@ -394,7 +394,7 @@ theorem uniformTarget_no_uniqueDepth_negativeExample
 #print axioms LinearWorkspaceModel.linearWorkspace_tendsto_equilibrium
 #print axioms finiteDepthMismatch_uniqueOptimum
 #print axioms finiteDepthMismatch_overSettling_strictlyWorse
-#print axioms finiteDepthMismatch_equilibriumCrown
+#print axioms finiteDepthMismatch_equilibrium
 #print axioms linearSettlingTransportLedger_counts
 #print axioms depthFour_threeQuarter_uniqueOptimum
 #print axioms uniformTarget_no_uniqueDepth_negativeExample

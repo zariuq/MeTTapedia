@@ -2,7 +2,7 @@ import Mettapedia.Languages.Metamath.SourceGSLTSpecGrounding
 import Mettapedia.Languages.Metamath.InferenceSemanticFiniteSupport
 
 /-!
-# Dummy allocation: the extended-frame reconciliation crown
+# Dummy allocation and extended-frame reconciliation
 
 [MM §4.2.7] promises that proofs may use "temporary or dummy variables"
 through optional hypotheses of an extended frame.  This module cashes the
@@ -490,7 +490,7 @@ theorem frameToContext_dj_le_extendFloats
       intro a b hab
       exact ih a b (frameToContext_dj_le fr c v a b hab)
 
-/-! ## The crown -/
+/-! ## Finite-extension reconciliation -/
 
 /-- **[MM §4.2.7] Semantic extended-frame reconciliation.**  Every declarative
 derivation over a base active frame becomes a frame-supported derivation
@@ -619,7 +619,7 @@ example :
 
 `findVar_allocate`'s hit/miss argument never inspects the manufactured
 names — only positional indices and per-slot typecodes.  `TypedAlong`
-captures exactly that interface, so the crown's assembly applies to any
+captures exactly that interface, so the theorem's assembly applies to any
 declaration list whose typecodes align positionally with the support —
 in particular to source-accepted supply plans whose names are
 manufactured by the source-state layer rather than by `dummyName`. -/
@@ -691,10 +691,10 @@ theorem findVar_typedAlong {support : List MarioVR}
         rw [harith]
         exact hw
 
-/-- **Name-free crown generalization.**  A finite-support witness over a
+/-- **Name-free finite-support generalization.**  A finite-support witness over a
 base frame yields a supported derivation over the frame extended by
 **any** optional-float sequence positionally typed along the support.
-The renaming and transport assembly is exactly the crown's; only the
+The renaming and transport assembly is the same as above; only the
 lookup of ghost images changes, through `findVar_typedAlong`. -/
 theorem witness_toSupported_typedPlan
     {Γ : Metamath.Spec.Database} {fr : Metamath.Spec.Frame}
@@ -781,7 +781,7 @@ theorem witness_toSupported_typedPlan
   rw [hid] at hmain
   exact hmain
 
-/-- Coherence: the sealed crown's statement is recovered from the
+/-- Coherence: the finite-extension statement is recovered from the
 name-free generalization at the `allocate` plan — the generalization is
 genuinely stronger, not a restatement. -/
 example {Γ : Metamath.Spec.Database} {fr : Metamath.Spec.Frame}

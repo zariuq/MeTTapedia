@@ -967,7 +967,7 @@ theorem checkBytesCoreLogged_normalizedSpans_complete
   rw [List.map_append, doneCalls]
   exact feedCalls
 
-/-- Raw-byte fusion crown: on every successful input, mm-lean4's shipped
+/-- Raw-byte fusion theorem: on every successful input, mm-lean4's shipped
 one-shot byte/parser loop emits exactly the spans computed by the native
 append-respecting scanner generated from the authored separator definition.
 No intermediate token list or second lexical authority appears in the

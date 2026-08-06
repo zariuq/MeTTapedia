@@ -779,7 +779,7 @@ structure VectorDepthRepairCertificate : Prop where
         vectorForwardReferencePredictionError initialPrediction finalActivity
             layer - cumulativeVectorPredictionDrift drift layer
 
-theorem vectorDepthRepair_crown : VectorDepthRepairCertificate where
+theorem vectorDepthRepair : VectorDepthRepairCertificate where
   fullCovarianceIncrement := fun incomingCovariance outgoingCovariance
     hincoming houtgoing jacobian incomingError outgoingError delta ↦
       vectorHiddenPairEnergy_jacobianIncrement_exact incomingCovariance
@@ -795,6 +795,6 @@ theorem vectorDepthRepair_crown : VectorDepthRepairCertificate where
 #print axioms nonlinearVectorHiddenPairEnergy_increment_exact
 #print axioms coordinateSquarePrediction_hasFDerivAt_zero
 #print axioms vectorResidualMainPath_exactSignal_requires_sweeps
-#print axioms vectorDepthRepair_crown
+#print axioms vectorDepthRepair
 
 end Mettapedia.MachineLearning.NeuralNetworks.PredictiveCoding.Frontier

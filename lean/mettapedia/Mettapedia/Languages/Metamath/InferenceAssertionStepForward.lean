@@ -226,16 +226,21 @@ theorem assertionApplicationSemantics_to_stepGraph
     intro name replacement hlookup
     exact hactualsRespect replacement
       (hypothesisInstances_lookup_replacement_mem_actuals hinstances hlookup)
-  have hcallerFrame : projection.callerFrame = db.frame :=
+  have hcallerFrame :
+      projection.callerFrame = proofFacingCallerFrame db :=
     (projectPrefix?_eq_some_fields db projection hproject).2.2.1
-  have hdvSemantics' :
-      DVOKSemantics substitution db.frame assertion.frame := by
+  have hdvSemanticsFiltered :
+      DVOKSemantics substitution (proofFacingCallerFrame db)
+        assertion.frame := by
     simpa [hcallerFrame] using hdvSemantics
+  have hdvSemantics' :
+      DVOKSemantics substitution db.frame assertion.frame :=
+    hdvSemanticsFiltered.caller_mono
+      (proofFacingCallerFrame_dj_subset db)
   have hcallerDV :
       db.frame.dj.toList.all
         (fun pair => decide (pair.1 < pair.2)) = true := by
-    simpa [hcallerFrame] using
-      projectedCallerFrame_dvStrict db projection hproject
+    exact rawCallerDVStrict_of_projectPrefix?_eq_some db projection hproject
   have hdvCheck :
       Metamath.Verify.DB.dvCheck (db.frameFloatVars db.frame)
           db.frame.dj assertion.frame.dj

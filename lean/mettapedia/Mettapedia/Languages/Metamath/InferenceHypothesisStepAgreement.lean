@@ -121,11 +121,19 @@ theorem activeHypothesis_formula_respects_callerFrame
       frameProjectionValid projection.callerFrame
         projection.activeHypotheses = true :=
     hvalid.1.1.1.2
-  have hcaller : projection.callerFrame = db.frame := hfields.2.2.1
+  have hcaller :
+      projection.callerFrame = proofFacingCallerFrame db :=
+    hfields.2.2.1
   rw [hcaller] at hframeValid
-  exact projectedHypothesisFormula_runtimeGate_of_frameValid
-    db db.frame projection.activeHypotheses hfields.2.2.2.1
+  have hactive :
+      projectHypotheses? db (proofFacingCallerFrame db).hyps.toList =
+        some projection.activeHypotheses := by
+    simpa [proofFacingCallerFrame] using hfields.2.2.2.1
+  have hgate := projectedHypothesisFormula_runtimeGate_of_frameValid
+    db (proofFacingCallerFrame db) projection.activeHypotheses hactive
       hframeValid hypothesis hmember
+  simpa [Metamath.Verify.DB.formulaSymsRespectFrame,
+    Metamath.Verify.DB.frameFloatVars, proofFacingCallerFrame] using hgate
 
 /-- Executing an active-hypothesis leaf preserves the caller-frame invariant
 by pushing the exact projected formula. -/

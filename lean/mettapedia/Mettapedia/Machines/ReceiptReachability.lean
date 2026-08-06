@@ -192,7 +192,7 @@ end ExactReceiptIndex
 
 /-! ## A depth-only false positive -/
 
-private inductive DemoFrame
+private inductive ExampleFrame
   | root
   | left
   | right
@@ -201,24 +201,24 @@ private inductive DemoFrame
   | outsider
 deriving DecidableEq
 
-namespace DemoFrame
+namespace ExampleFrame
 
-def depth : DemoFrame → Nat
+def depth : ExampleFrame → Nat
   | root | orphan | outsider => 0
   | left | right => 1
   | join => 2
 
-def session : DemoFrame → Nat
+def session : ExampleFrame → Nat
   | outsider => 1
   | _ => 0
 
 /-- A discriminator label not available to a depth-only query. -/
-def component : DemoFrame → Nat
+def component : ExampleFrame → Nat
   | root | left | right | join => 0
   | orphan => 1
   | outsider => 2
 
-def parent : DemoFrame → DemoFrame → Prop
+def parent : ExampleFrame → ExampleFrame → Prop
   | left, root
   | right, root
   | join, left
@@ -230,27 +230,27 @@ instance : DecidableRel parent := fun child direct => by
     simp [parent] <;> infer_instance
 
 theorem parent_depth
-    {child direct : DemoFrame}
+    {child direct : ExampleFrame}
     (edge : parent child direct) :
     depth direct < depth child := by
   cases child <;> cases direct <;>
     simp [parent, depth] at edge ⊢
 
 theorem parent_session
-    {child direct : DemoFrame}
+    {child direct : ExampleFrame}
     (edge : parent child direct) :
     session child = session direct := by
   cases child <;> cases direct <;>
     simp [parent, session] at edge ⊢
 
 theorem parent_component
-    {child direct : DemoFrame}
+    {child direct : ExampleFrame}
     (edge : parent child direct) :
     component child = component direct := by
   cases child <;> cases direct <;>
     simp [parent, component] at edge ⊢
 
-def graph : ReceiptOrder DemoFrame where
+def graph : ReceiptOrder ExampleFrame where
   session := session
   depth := depth
   parent := parent
@@ -258,7 +258,7 @@ def graph : ReceiptOrder DemoFrame where
   parent_session := parent_session
 
 /-- An intentionally inadequate candidate: session plus depth only. -/
-def depthOnlyQuery (child target : DemoFrame) : Bool :=
+def depthOnlyQuery (child target : ExampleFrame) : Bool :=
   decide
     (session child = session target ∧
       depth target ≤ depth child)
@@ -285,6 +285,6 @@ theorem join_not_reach_orphan :
       component parent_component reachable
   simp [component] at sameComponent
 
-end DemoFrame
+end ExampleFrame
 
 end Mettapedia.Machines

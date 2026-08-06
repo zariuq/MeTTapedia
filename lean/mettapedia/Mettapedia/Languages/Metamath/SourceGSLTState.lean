@@ -152,6 +152,21 @@ theorem sourcePrefixValid_of_sourceStateValid
   simp only [sourceStateValid, Bool.and_eq_true] at valid
   aesop
 
+/-- A valid source state gives every declared constant and variable a
+distinct global namespace classification. -/
+theorem declaredConstant_not_variable_of_sourceStateValid
+    {state : SourceState} (valid : sourceStateValid state = true)
+    {name : String} (constantMem : name ∈ state.declaredConstants) :
+    name ∉ state.declaredVariables := by
+  have prefixValid := sourcePrefixValid_of_sourceStateValid state valid
+  unfold sourcePrefixValid at prefixValid
+  simp only [Bool.and_eq_true] at prefixValid
+  let disjoint := prefixValid.1.1.1.1.2
+  rw [List.all_eq_true] at disjoint
+  have absent := disjoint name (by
+    simpa [SourceState.toSourcePrefix] using constantMem)
+  simpa [SourceState.toSourcePrefix, List.contains_iff_mem] using absent
+
 /-- The executable global-namespace check exposes ordinary list uniqueness. -/
 theorem objectNames_nodup_of_sourceStateValid
     (state : SourceState) (valid : sourceStateValid state = true) :
@@ -214,6 +229,69 @@ def sourceAssertion (state : SourceState) (label : String)
     formula
     frame := mandatoryFrame state formula
     hypotheses := mandatoryHypotheses state formula }
+
+private theorem mem_variablesInEssentialHypotheses_iff :
+    ∀ {hyps : List HypothesisView} {v : String},
+      v ∈ variablesInEssentialHypotheses hyps ↔
+        ∃ label f, HypothesisView.essential label f ∈ hyps ∧
+          v ∈ taggedVariableNames f.body
+  | [], v => by
+      simp [variablesInEssentialHypotheses]
+  | .floating l tc w :: rest, v => by
+      show v ∈ variablesInEssentialHypotheses rest ↔ _
+      rw [mem_variablesInEssentialHypotheses_iff]
+      constructor
+      · rintro ⟨label, f, hmem, hv⟩
+        exact ⟨label, f, List.mem_cons_of_mem _ hmem, hv⟩
+      · rintro ⟨label, f, hmem, hv⟩
+        rcases List.mem_cons.mp hmem with heq | hmem'
+        · exact absurd heq (by simp)
+        · exact ⟨label, f, hmem', hv⟩
+  | .essential l f0 :: rest, v => by
+      show v ∈ taggedVariableNames f0.body ++
+        variablesInEssentialHypotheses rest ↔ _
+      rw [List.mem_append, mem_variablesInEssentialHypotheses_iff]
+      constructor
+      · rintro (hv | ⟨label, f, hmem, hv⟩)
+        · exact ⟨l, f0, by simp, hv⟩
+        · exact ⟨label, f, List.mem_cons_of_mem _ hmem, hv⟩
+      · rintro ⟨label, f, hmem, hv⟩
+        rcases List.mem_cons.mp hmem with heq | hmem'
+        · obtain ⟨rfl, rfl⟩ : label = l ∧ f = f0 := by
+            simpa [HypothesisView.essential.injEq] using heq
+          exact Or.inl hv
+        · exact Or.inr ⟨label, f, hmem', hv⟩
+
+/-- Public spelling of the mandatory-hypothesis filter. -/
+theorem mandatoryHypotheses_eq_filter (state : SourceState)
+    (formula : ConstantHeadedFormula) :
+    mandatoryHypotheses state formula =
+      state.activeHypotheses.filter (fun hyp =>
+        match hyp with
+        | .floating _ _ variableName =>
+            (mandatoryVariableNames state formula).contains
+              variableName
+        | .essential _ _ => true) := by
+  unfold mandatoryHypotheses
+  apply List.filter_congr
+  intro hyp hmem
+  cases hyp with
+  | floating l tc w => rfl
+  | essential l f => rfl
+
+/-- Public membership characterization of the mandatory variables. -/
+theorem mem_mandatoryVariableNames_iff {state : SourceState}
+    {formula : ConstantHeadedFormula} {v : String} :
+    v ∈ mandatoryVariableNames state formula ↔
+      (v ∈ taggedVariableNames formula.body ∨
+        ∃ label f, HypothesisView.essential label f ∈
+            state.activeHypotheses ∧
+          v ∈ taggedVariableNames f.body) := by
+  unfold mandatoryVariableNames
+  rw [List.mem_eraseDups, List.mem_append]
+  show v ∈ taggedVariableNames formula.body ∨
+    v ∈ variablesInEssentialHypotheses state.activeHypotheses ↔ _
+  rw [mem_variablesInEssentialHypotheses_iff]
 
 /-! ## [MM §4.2.7] Mandatory projection ignores optional support
 
@@ -486,6 +564,21 @@ def openScope? (state : SourceState) : Option SourceState := do
           activeDistinctLength := state.activeDistinctVariables.length } ::
           state.scopes }
 
+/-- Public inversion at the state-semantics boundary: a successful scope
+open changes only the boundary stack, recording the exact raw frame lengths.
+-/
+theorem openScope?_eq_some_shape {state after : SourceState}
+    (opened : openScope? state = some after) :
+    after =
+      { state with
+        scopes :=
+          { activeHypothesisLength := state.activeHypotheses.length
+            activeDistinctLength := state.activeDistinctVariables.length } ::
+            state.scopes } := by
+  simp [openScope?, acceptUpdate] at opened
+  rcases opened with ⟨_, _, _, rfl⟩
+  rfl
+
 def closeScope? (state : SourceState) : Option SourceState := do
   guard (readyForLocalUpdate state)
   let boundary ← state.scopes.head?
@@ -498,6 +591,30 @@ def closeScope? (state : SourceState) : Option SourceState := do
       scopes := state.scopes.tail
       pendingBlockCompletions := state.pendingBlockCompletions + 1 }
 
+/-- Public inversion at the state-semantics boundary: a successful scope
+close restores the exact raw-frame prefix recorded by the newest boundary and
+removes that boundary. -/
+theorem closeScope?_eq_some_shape {state after : SourceState}
+    (closed : closeScope? state = some after) :
+    ∃ boundary rest,
+      state.scopes = boundary :: rest ∧
+      after =
+        { state with
+          activeHypotheses :=
+            state.activeHypotheses.take boundary.activeHypothesisLength
+          activeDistinctVariables :=
+            state.activeDistinctVariables.take boundary.activeDistinctLength
+          scopes := rest
+          pendingBlockCompletions :=
+            state.pendingBlockCompletions + 1 } := by
+  simp [closeScope?, acceptUpdate] at closed
+  cases hscopes : state.scopes with
+  | nil => simp [hscopes] at closed
+  | cons boundary rest =>
+      simp [hscopes] at closed
+      rcases closed with ⟨_, _, _, rfl⟩
+      exact ⟨boundary, rest, rfl, rfl⟩
+
 def completeBlock? (state : SourceState) : Option SourceState := do
   guard (sourceStateValid state)
   guard (state.pendingBlockCompletions > 0)
@@ -506,6 +623,17 @@ def completeBlock? (state : SourceState) : Option SourceState := do
       pendingBlockCompletions := state.pendingBlockCompletions - 1 }
   guard (sourceStateValid after)
   pure after
+
+/-- Public inversion for the source-only block-completion marker.  Runtime
+scope pop already occurred; this transition changes no database carrier. -/
+theorem completeBlock?_eq_some_shape {state after : SourceState}
+    (completed : completeBlock? state = some after) :
+    after =
+      { state with
+        pendingBlockCompletions := state.pendingBlockCompletions - 1 } := by
+  simp [completeBlock?] at completed
+  rcases completed with ⟨_, _, _, rfl⟩
+  rfl
 
 def declareConstants? (state : SourceState)
     (names : List String) : Option SourceState := do
@@ -534,13 +662,107 @@ def declareVariables? (state : SourceState)
 private def canonicalPair (left right : String) : String × String :=
   if left < right then (left, right) else (right, left)
 
-private def pairsWith (left : String) : List String → List (String × String)
+/-- Canonical distinct pairs in the shipped checker's arrival order:
+each name pairs with every earlier name, earlier-first.  This mirrors
+`djvars_loop_aux` exactly, so the raw caller frame evolves
+list-identically. -/
+def allDistinctPairsFrom (prior : List String) :
+    List String → List (String × String)
   | [] => []
-  | right :: rest => canonicalPair left right :: pairsWith left rest
+  | name :: rest =>
+      prior.map (fun earlier => canonicalPair earlier name) ++
+        allDistinctPairsFrom (prior ++ [name]) rest
 
-def allDistinctPairs : List String → List (String × String)
-  | [] => []
-  | first :: rest => pairsWith first rest ++ allDistinctPairs rest
+def allDistinctPairs (names : List String) :
+    List (String × String) :=
+  allDistinctPairsFrom [] names
+
+/-- Public spelling of the canonical unordered pair (smaller name
+first), as pushed by the shipped reader's `$d` loop. -/
+def canonicalDJPair (left right : String) : String × String :=
+  if left < right then (left, right) else (right, left)
+
+theorem canonicalPair_eq_canonicalDJPair :
+    canonicalPair = canonicalDJPair := rfl
+
+/-- The first newly read name contributes its pairs against the prior prefix;
+the recursive suffix then sees that name as part of its prefix. -/
+theorem allDistinctPairsFrom_cons (prior : List String) (name : String)
+    (rest : List String) :
+    allDistinctPairsFrom prior (name :: rest) =
+      prior.map (fun earlier => canonicalDJPair earlier name) ++
+        allDistinctPairsFrom (prior ++ [name]) rest := by
+  rw [allDistinctPairsFrom, canonicalPair_eq_canonicalDJPair]
+
+/-- Appending one more name adds exactly its canonical pairs against
+all prior names, in prior order — the shipped reader's per-token `$d`
+increment. -/
+theorem allDistinctPairsFrom_snoc :
+    ∀ (xs : List String) (prior : List String) (x : String),
+      allDistinctPairsFrom prior (xs ++ [x]) =
+        allDistinctPairsFrom prior xs ++
+          (prior ++ xs).map (fun earlier => canonicalDJPair earlier x)
+  | [], prior, x => by
+      show prior.map (fun earlier => canonicalPair earlier x) ++
+        allDistinctPairsFrom (prior ++ [x]) [] = _
+      rw [canonicalPair_eq_canonicalDJPair]
+      simp [allDistinctPairsFrom]
+  | y :: ys, prior, x => by
+      show prior.map (fun earlier => canonicalPair earlier y) ++
+        allDistinctPairsFrom (prior ++ [y]) (ys ++ [x]) = _
+      rw [allDistinctPairsFrom_snoc ys (prior ++ [y]) x]
+      show _ = (prior.map (fun earlier => canonicalPair earlier y) ++
+        allDistinctPairsFrom (prior ++ [y]) ys) ++
+          (prior ++ y :: ys).map (fun earlier => canonicalDJPair earlier x)
+      simp [List.append_assoc]
+
+/-- One-token increment at the whole-list level: the pairs of the
+first `k + 1` names extend those of the first `k` names by the new
+name's pairs against every earlier name, in arrival order. -/
+theorem allDistinctPairs_take_succ (names : List String) (k : Nat)
+    (h : k < names.length) :
+    allDistinctPairs (names.take (k + 1)) =
+      allDistinctPairs (names.take k) ++
+        (names.take k).map
+          (fun earlier => canonicalDJPair earlier names[k]) := by
+  unfold allDistinctPairs
+  rw [List.take_add_one, getElem?_pos names k h]
+  show allDistinctPairsFrom [] (names.take k ++ [names[k]]) = _
+  rw [allDistinctPairsFrom_snoc]
+  simp
+
+/-- Generated pairs are strictly canonical when the names are
+duplicate-free. -/
+theorem allDistinctPairsFrom_strict :
+    ∀ {names prior : List String}, (prior ++ names).Nodup →
+      ∀ p ∈ allDistinctPairsFrom prior names, p.1 < p.2 := by
+  intro names
+  induction names with
+  | nil =>
+      intro prior _ p hp
+      exact absurd hp List.not_mem_nil
+  | cons n rest ih =>
+      intro prior hnodup p hp
+      rw [allDistinctPairsFrom] at hp
+      rcases List.mem_append.mp hp with hnew | hrec
+      · obtain ⟨m, hm, rfl⟩ := List.mem_map.mp hnew
+        have hne : m ≠ n := by
+          intro heq
+          subst heq
+          have hdisj := List.disjoint_of_nodup_append hnodup
+          exact hdisj hm (by simp)
+        unfold canonicalPair
+        by_cases hlt : m < n
+        · simp [hlt]
+        · have hgt : n < m :=
+            lt_of_le_of_ne (not_lt.mp hlt) (Ne.symm hne)
+          simp [hlt, hgt]
+      · refine ih ?_ p hrec
+        have hshift : prior ++ n :: rest = (prior ++ [n]) ++ rest :=
+          by simp
+        rw [← hshift]
+        exact hnodup
+
 
 def declareDisjoint? (state : SourceState)
     (names : List String) : Option SourceState := do
@@ -552,6 +774,18 @@ def declareDisjoint? (state : SourceState)
     { state with
       activeDistinctVariables :=
         state.activeDistinctVariables ++ allDistinctPairs names }
+
+/-- Acceptance of a `$d` declaration exposes the two grammar-level
+requirements needed by parser correspondence: at least two variables and no
+repeated variable name. -/
+theorem declareDisjoint?_arity_and_nodup
+    {state after : SourceState} {names : List String}
+    (declared : declareDisjoint? state names = some after) :
+    2 ≤ names.length ∧ names.Nodup := by
+  simp [declareDisjoint?, acceptUpdate] at declared
+  rcases declared with ⟨-, arity, unique, -, -, -, -⟩
+  exact ⟨arity,
+    nodup_of_eraseDups_length_eq names unique⟩
 
 /-- An accepted source `$d` operation whose generated pairs are all optional
 for a later assertion leaves that assertion's stored mandatory projection
@@ -631,6 +865,34 @@ theorem insertAssertion?_eq_some_shape
   simp [insertAssertion?, acceptUpdate] at inserted
   rcases inserted with ⟨_, _, _, rfl⟩
   exact ⟨rfl, rfl⟩
+
+/-- An accepted assertion insertion is exactly the advertised source-state
+update.  This stronger inversion form lets implementation-refinement proofs
+transport every untouched state component definitionally rather than
+reconstructing frame and scope invariants field by field. -/
+theorem declareDisjoint?_eq_some_state
+    {state after : SourceState} {names : List String}
+    (declared : declareDisjoint? state names = some after) :
+    after =
+      { state with
+        activeDistinctVariables :=
+          state.activeDistinctVariables ++ allDistinctPairs names } := by
+  simp [declareDisjoint?, acceptUpdate] at declared
+  rcases declared with ⟨-, -, -, -, -, -, rfl⟩
+  rfl
+
+theorem insertAssertion?_eq_some_state
+    {state after : SourceState} {label : String}
+    {formula : ConstantHeadedFormula}
+    (inserted : insertAssertion? state label formula = some after) :
+    after =
+      { state with
+        usedLabels := state.usedLabels ++ [label]
+        assertions := state.assertions ++
+          [sourceAssertion state label formula] } := by
+  simp [insertAssertion?, acceptUpdate] at inserted
+  rcases inserted with ⟨_, _, _, rfl⟩
+  rfl
 
 /-- Successful source insertion proves that the assertion label was absent
 from the complete global namespace, including labels retired by scope exit. -/
@@ -827,6 +1089,83 @@ theorem declareFloating?_inv {state after : SourceState}
   simp [declareFloating?, acceptUpdate] at h
   obtain ⟨hready, hbefore, hafter, hshape⟩ := h
   exact ⟨hbefore, hshape ▸ hafter, hshape.symm⟩
+
+/-- The two mathematical symbols named by an accepted `$f` declaration were
+already declared with their required kinds in the incoming source state. -/
+theorem declareFloating?_symbols_declared {state after : SourceState}
+    {label typecode variableName : String}
+    (h : declareFloating? state label typecode variableName = some after) :
+    typecode ∈ state.declaredConstants ∧
+      typecode ∉ state.declaredVariables ∧
+      variableName ∈ state.declaredVariables := by
+  obtain ⟨hbefore, hafter, hshape⟩ := declareFloating?_inv h
+  have hprefixAfter := sourcePrefixValid_of_sourceStateValid after hafter
+  rw [hshape] at hprefixAfter
+  unfold sourcePrefixValid at hprefixAfter
+  simp only [Bool.and_eq_true] at hprefixAfter
+  let hhypotheses := hprefixAfter.1.1.2
+  rw [List.all_eq_true] at hhypotheses
+  have hnew := hhypotheses
+    (HypothesisView.floating label typecode variableName) (by
+      simp [SourceState.toSourcePrefix])
+  have hdeclared :
+      state.declaredConstants.contains typecode = true ∧
+        state.declaredVariables.contains variableName = true := by
+    simpa [SourceState.toSourcePrefix, Function.comp_def, HypothesisView.formula,
+      formulaSymbolsRespectDeclarations] using hnew
+  have htype : typecode ∈ state.declaredConstants := by
+    simpa [List.contains_iff_mem] using hdeclared.1
+  have hvariable : variableName ∈ state.declaredVariables := by
+    simpa [List.contains_iff_mem] using hdeclared.2
+  have htypeNotVariable :=
+    declaredConstant_not_variable_of_sourceStateValid hbefore htype
+  exact ⟨htype, htypeNotVariable, hvariable⟩
+
+/-- Inversion for an accepted `$e` declaration. -/
+theorem declareEssential?_inv {state after : SourceState}
+    {label : String} {formula : ConstantHeadedFormula}
+    (h : declareEssential? state label formula = some after) :
+    sourceStateValid state = true ∧
+      sourceStateValid after = true ∧
+      after =
+        { state with
+          usedLabels := state.usedLabels ++ [label]
+          activeHypotheses := state.activeHypotheses ++
+            [HypothesisView.essential label formula] } := by
+  simp [declareEssential?, acceptUpdate] at h
+  obtain ⟨hready, hbefore, hafter, hshape⟩ := h
+  exact ⟨hbefore, hshape ▸ hafter, hshape.symm⟩
+
+/-- The formula admitted by an accepted `$e` declaration respects the
+incoming state's constant/variable classification. -/
+theorem declareEssential?_formula_declared {state after : SourceState}
+    {label : String} {formula : ConstantHeadedFormula}
+    (h : declareEssential? state label formula = some after) :
+    formulaSymbolsRespectDeclarations state.declaredConstants
+      state.declaredVariables formula = true := by
+  obtain ⟨-, hafter, hshape⟩ := declareEssential?_inv h
+  have prefixValid := sourcePrefixValid_of_sourceStateValid after hafter
+  rw [hshape] at prefixValid
+  unfold sourcePrefixValid at prefixValid
+  simp only [Bool.and_eq_true] at prefixValid
+  let hypothesesValid := prefixValid.1.1.2
+  rw [List.all_eq_true] at hypothesesValid
+  have added := hypothesesValid (HypothesisView.essential label formula) (by
+    simp [SourceState.toSourcePrefix])
+  simpa [SourceState.toSourcePrefix, Function.comp_def,
+    HypothesisView.formula] using added
+
+/-- Public spelling of the per-name variable-list update performed by
+`$v`; re-declared variables are kept once. -/
+def addVariableName (variableNames : List String)
+    (name : String) : List String :=
+  if variableNames.contains name then
+    variableNames
+  else
+    variableNames ++ [name]
+
+theorem addVariable_eq_addVariableName :
+    addVariable = addVariableName := rfl
 
 
 /-! ## Acceptance existence
@@ -1343,6 +1682,76 @@ theorem insertAssertion?_valid {state after : SourceState}
   obtain ⟨-, h⟩ := bind_guard_some h
   exact acceptUpdate_valid h
 
+theorem insertAssertion?_valid_before {state after : SourceState}
+    {label : String} {formula : ConstantHeadedFormula}
+    (h : insertAssertion? state label formula = some after) :
+    sourceStateValid state = true := by
+  unfold insertAssertion? at h
+  obtain ⟨-, h⟩ := bind_guard_some h
+  unfold acceptUpdate at h
+  obtain ⟨hbefore, -⟩ := bind_guard_some h
+  exact hbefore
+
+/-- The formula admitted by an accepted assertion insertion respects the
+incoming state's constant/variable classification. -/
+theorem insertAssertion?_formula_declared {state after : SourceState}
+    {label : String} {formula : ConstantHeadedFormula}
+    (h : insertAssertion? state label formula = some after) :
+    formulaSymbolsRespectDeclarations state.declaredConstants
+      state.declaredVariables formula = true := by
+  have hafter := insertAssertion?_valid h
+  have hshape := insertAssertion?_eq_some_state h
+  have prefixValid := sourcePrefixValid_of_sourceStateValid after hafter
+  rw [hshape] at prefixValid
+  unfold sourcePrefixValid at prefixValid
+  simp only [Bool.and_eq_true] at prefixValid
+  let assertionsValid := prefixValid.1.2
+  rw [List.all_eq_true] at assertionsValid
+  have added := assertionsValid (sourceAssertion state label formula) (by
+    simp [SourceState.toSourcePrefix])
+  simp only [sourceAssertionValid, Bool.and_eq_true] at added
+  simpa [SourceState.toSourcePrefix, sourceAssertion] using added.2
+
+/-- Inversion for an accepted `$c` declaration: both endpoints are
+valid, the statement is top-level, and the constants extend by exactly
+the declared names. -/
+theorem declareConstants?_inv {state after : SourceState}
+    {names : List String}
+    (h : declareConstants? state names = some after) :
+    sourceStateValid state = true ∧
+      sourceStateValid after = true ∧
+      state.scopes = [] ∧
+      after = { state with declaredConstants :=
+        state.declaredConstants ++ names } := by
+  unfold declareConstants? at h
+  obtain ⟨-, h⟩ := bind_guard_some h
+  obtain ⟨-, h⟩ := bind_guard_some h
+  obtain ⟨hscopes, h⟩ := bind_guard_some h
+  unfold acceptUpdate at h
+  obtain ⟨hbefore, h⟩ := bind_guard_some h
+  obtain ⟨hafter, h⟩ := bind_guard_some h
+  cases Option.some.inj h
+  exact ⟨hbefore, hafter, by simpa using hscopes, rfl⟩
+
+/-- Inversion for an accepted `$v` declaration: both endpoints are
+valid and the variables extend by the deduplicated name fold. -/
+theorem declareVariables?_inv {state after : SourceState}
+    {names : List String}
+    (h : declareVariables? state names = some after) :
+    sourceStateValid state = true ∧
+      sourceStateValid after = true ∧
+      after = { state with declaredVariables :=
+        (names.foldl addVariableName state.declaredVariables) } := by
+  unfold declareVariables? at h
+  obtain ⟨-, h⟩ := bind_guard_some h
+  obtain ⟨-, h⟩ := bind_guard_some h
+  unfold acceptUpdate at h
+  obtain ⟨hbefore, h⟩ := bind_guard_some h
+  obtain ⟨hafter, h⟩ := bind_guard_some h
+  cases Option.some.inj h
+  rw [addVariable_eq_addVariableName] at hafter ⊢
+  exact ⟨hbefore, hafter, rfl⟩
+
 /-- Every accepted local payload application yields a valid state. -/
 theorem applyLocalPayload?_valid {payload : LocalPayload}
     {state after : SourceState}
@@ -1398,5 +1807,112 @@ theorem applyLocalPayload?_valid {payload : LocalPayload}
 /-- The empty source state is valid (fold seed). -/
 theorem initialState_valid : sourceStateValid initialState = true := by
   decide
+
+/-! ## Shape facts for the composition's scope accounting -/
+
+private theorem acceptUpdate_eq {before next after : SourceState}
+    (h : acceptUpdate before next = some after) : after = next := by
+  unfold acceptUpdate at h
+  obtain ⟨-, h⟩ := bind_guard_some h
+  obtain ⟨-, h⟩ := bind_guard_some h
+  exact (Option.some.inj h).symm
+
+theorem openScope?_scopes_pending {state after : SourceState}
+    (h : openScope? state = some after) :
+    after.scopes.length = state.scopes.length + 1 ∧
+      after.pendingBlockCompletions = state.pendingBlockCompletions := by
+  unfold openScope? at h
+  obtain ⟨-, h⟩ := bind_guard_some h
+  rw [acceptUpdate_eq h]
+  exact ⟨rfl, rfl⟩
+
+theorem closeScope?_scopes_pending {state after : SourceState}
+    (h : closeScope? state = some after) :
+    state.scopes.length = after.scopes.length + 1 ∧
+      after.pendingBlockCompletions =
+        state.pendingBlockCompletions + 1 := by
+  unfold closeScope? at h
+  obtain ⟨-, h⟩ := bind_guard_some h
+  obtain ⟨boundary, hhead, h⟩ := bind_some_inv h
+  rw [acceptUpdate_eq h]
+  refine ⟨?_, rfl⟩
+  cases hscopes : state.scopes with
+  | nil => rw [hscopes] at hhead; exact nomatch hhead
+  | cons b rest => rfl
+
+theorem completeBlock?_scopes_pending {state after : SourceState}
+    (h : completeBlock? state = some after) :
+    after.scopes = state.scopes ∧
+      after.pendingBlockCompletions =
+        state.pendingBlockCompletions - 1 := by
+  unfold completeBlock? at h
+  obtain ⟨-, h⟩ := bind_guard_some h
+  obtain ⟨-, h⟩ := bind_guard_some h
+  obtain ⟨-, h⟩ := bind_guard_some h
+  cases Option.some.inj h
+  exact ⟨rfl, rfl⟩
+
+theorem declareConstants?_scopes_pending {state after : SourceState}
+    {names : List String} (h : declareConstants? state names = some after) :
+    after.scopes = state.scopes ∧
+      after.pendingBlockCompletions = state.pendingBlockCompletions := by
+  unfold declareConstants? at h
+  obtain ⟨-, h⟩ := bind_guard_some h
+  obtain ⟨-, h⟩ := bind_guard_some h
+  obtain ⟨-, h⟩ := bind_guard_some h
+  rw [acceptUpdate_eq h]
+  exact ⟨rfl, rfl⟩
+
+theorem declareVariables?_scopes_pending {state after : SourceState}
+    {names : List String} (h : declareVariables? state names = some after) :
+    after.scopes = state.scopes ∧
+      after.pendingBlockCompletions = state.pendingBlockCompletions := by
+  unfold declareVariables? at h
+  obtain ⟨-, h⟩ := bind_guard_some h
+  obtain ⟨-, h⟩ := bind_guard_some h
+  rw [acceptUpdate_eq h]
+  exact ⟨rfl, rfl⟩
+
+theorem declareDisjoint?_scopes_pending {state after : SourceState}
+    {names : List String} (h : declareDisjoint? state names = some after) :
+    after.scopes = state.scopes ∧
+      after.pendingBlockCompletions = state.pendingBlockCompletions := by
+  unfold declareDisjoint? at h
+  obtain ⟨-, h⟩ := bind_guard_some h
+  obtain ⟨-, h⟩ := bind_guard_some h
+  obtain ⟨-, h⟩ := bind_guard_some h
+  obtain ⟨-, h⟩ := bind_guard_some h
+  rw [acceptUpdate_eq h]
+  exact ⟨rfl, rfl⟩
+
+theorem declareFloating?_scopes_pending {state after : SourceState}
+    {label typecode variableName : String}
+    (h : declareFloating? state label typecode variableName = some after) :
+    after.scopes = state.scopes ∧
+      after.pendingBlockCompletions = state.pendingBlockCompletions := by
+  unfold declareFloating? at h
+  obtain ⟨-, h⟩ := bind_guard_some h
+  rw [acceptUpdate_eq h]
+  exact ⟨rfl, rfl⟩
+
+theorem declareEssential?_scopes_pending {state after : SourceState}
+    {label : String} {formula : ConstantHeadedFormula}
+    (h : declareEssential? state label formula = some after) :
+    after.scopes = state.scopes ∧
+      after.pendingBlockCompletions = state.pendingBlockCompletions := by
+  unfold declareEssential? at h
+  obtain ⟨-, h⟩ := bind_guard_some h
+  rw [acceptUpdate_eq h]
+  exact ⟨rfl, rfl⟩
+
+theorem insertAssertion?_scopes_pending {state after : SourceState}
+    {label : String} {formula : ConstantHeadedFormula}
+    (h : insertAssertion? state label formula = some after) :
+    after.scopes = state.scopes ∧
+      after.pendingBlockCompletions = state.pendingBlockCompletions := by
+  unfold insertAssertion? at h
+  obtain ⟨-, h⟩ := bind_guard_some h
+  rw [acceptUpdate_eq h]
+  exact ⟨rfl, rfl⟩
 
 end Mettapedia.Languages.Metamath.SourceGSLTState

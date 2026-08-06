@@ -109,6 +109,7 @@ lean/mettapedia/Mettapedia/Metatheory/
 
 # Auto-generated conformance runner output
 *.jsonl
+!lean/mettapedia/artifacts/conformance/gauthier_grade_b_action_evidence_v1.jsonl
 
 # AI review bundles (copies of source for external review)
 GPT-Pro_Responses/

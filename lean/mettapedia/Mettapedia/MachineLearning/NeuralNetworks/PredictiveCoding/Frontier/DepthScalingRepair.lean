@@ -960,7 +960,7 @@ structure DepthScalingRepairCertificate : Prop where
 /-- Composition crown: the sign/covariance boundary and all four repair
 mechanisms are assembled from the independently proved arbitrary-depth
 theorems. -/
-theorem depthScalingRepair_crown : DepthScalingRepairCertificate where
+theorem depthScalingRepair : DepthScalingRepairCertificate where
   activityConvention := negativeGradientActivityStep_eq_neg_correctedDisplayed
   weightConvention := paperDisplayedWeightStep_eq_neg_negativeGradient
   spikingEqualization := spikingCovariance_equalizes_firstArrival
@@ -1035,6 +1035,6 @@ theorem batchFreezingNetworkStabilityBoundary_not_exact :
 #print axioms forwardReferenceWeightCredit_eq_standard_add_drift
 #print axioms forwardReferenceWeightCredit_can_reverse_standard
 #print axioms residualMainPath_exactSignal_requires_sweeps
-#print axioms depthScalingRepair_crown
+#print axioms depthScalingRepair
 
 end Mettapedia.MachineLearning.NeuralNetworks.PredictiveCoding.Frontier

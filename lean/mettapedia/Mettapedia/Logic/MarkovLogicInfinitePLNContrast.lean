@@ -2,14 +2,14 @@ import Mettapedia.Logic.MarkovLogicInfiniteGridExample
 import Mettapedia.Logic.MarkovLogicInfiniteReinforcedLineExample
 
 /-!
-# Infinite MLN PLN Crown
+# Infinite MLN PLN contrast
 
 This module packages the first concrete contrast between a DLR phase-coexistence
 model with positive PLN strict-width semantics and a Dobrushin-regime model
 whose query envelope collapses.
 -/
 
-namespace Mettapedia.Logic.MarkovLogicInfinitePLNCrown
+namespace Mettapedia.Logic.MarkovLogicInfinitePLNContrast
 
 open Mettapedia.Logic.MarkovLogicInfiniteGridExample
 open Mettapedia.Logic.MarkovLogicInfiniteReinforcedLineExample
@@ -43,7 +43,7 @@ structure ConcreteDLRPLNContrast where
       infiniteMLNUpperQueryEnvelope
         (gridZeroFieldClassicalSpec 0) gridOriginSpinUpQuery
 
-/-- Concrete crown theorem: geometrically reinforced half-line couplings yield
+/-- Concrete contrast theorem: geometrically reinforced half-line couplings yield
 positive PLN strict-width at the origin, while the zero-weight zero-field grid is
 in the Dobrushin collapse regime for the analogous origin-spin query. -/
 theorem reinforcedLineGeometric_strictWidth_and_zeroWeightGrid_collapse :
@@ -106,4 +106,4 @@ theorem zeroWeightGrid_originSpinUp_queryEnvelope_collapse :
   reinforcedLineGeometric_zeroWeightGrid_concreteDLRPLNContrast
     |>.zeroWeightGrid_originSpinUp_collapse
 
-end Mettapedia.Logic.MarkovLogicInfinitePLNCrown
+end Mettapedia.Logic.MarkovLogicInfinitePLNContrast

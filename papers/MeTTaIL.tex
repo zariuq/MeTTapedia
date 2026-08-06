@@ -778,16 +778,16 @@ default_registry_contains_mettafull
 \subsection{Metamath as a Three-Way Conformance Target}
 
 Metamath is the first language where three independently developed artifacts
-can be connected through \code{LanguageDef}:
+are connected through \code{LanguageDef}:
 
 \begin{center}
 \begin{tabular}{c}
-\code{metamath.rs} \\
-(Rust \code{language!} macro) \\[4pt]
+\code{LanguageDefDSL.lean} \\
+(\code{languageDef!} presentation) \\[4pt]
 $\swarrow$ \hspace{6em} $\searrow$ \\[4pt]
 \begin{tabular}{c}
-\code{LanguageDefDSL.lean} \\
-(Lean \code{languageDef!})
+\code{SourceGSLT.lean} \\
+(source-syntax theorem tower)
 \end{tabular}
 \hspace{2em}
 \begin{tabular}{c}
@@ -795,24 +795,35 @@ $\swarrow$ \hspace{6em} $\searrow$ \\[4pt]
 (verified implementation)
 \end{tabular} \\[4pt]
 $\searrow$ \hspace{6em} $\swarrow$ \\[4pt]
-\textbf{Conformance theorem} \\
-(future work)
+\textbf{Conformance chain} \\
+(partially proved; see below)
 \end{tabular}
 \end{center}
 
-The Rust \code{metamath.rs} defines the full Metamath surface---\code{Database},
-\code{Stmt}, \code{MathString}, \code{ProofString}---with carrier-aware
-type declarations (\code{![label] as Label}, \code{![raw] as Sym},
-\code{![proofTok] as ProofTok}, \code{![path] as IncludePath}) and explicit
-term constructors for every \code{\$c}, \code{\$v}, \code{\$f}, \code{\$e},
-\code{\$a}, \code{\$p} declaration form.
+The \code{languageDef!} presentation \code{metamathCore} defines the full
+Metamath statement surface---\code{Database}, \code{Stmt}, \code{MathString},
+\code{ProofString}, normal and compressed proofs, blocks, and includes---with
+carrier-aware type declarations (\code{![label] as Label}, \code{![raw] as
+Sym}, \code{![proofTok] as ProofTok}, \code{![path] as IncludePath}) and
+explicit term constructors for every \code{\$c}, \code{\$v}, \code{\$d},
+\code{\$f}, \code{\$e}, \code{\$a}, \code{\$p} declaration form.  Beyond
+syntax, its \code{rewrites} block authors the front-end lowering,
+environment-loading, linearization, and compilation pipeline as rewrite rules
+in the same language object, and the definition renders back to the
+\code{language!} surface syntax with kernel-checked guards on the exported
+text.  (A Rust \code{metamath.rs} twin existed historically; the render
+surface is now checked directly, with no in-tree Rust consumer.)
 
-The Lean side currently has a core-step fragment in
-\codepath{Languages/Metamath/LanguageDSL.lean} exercising carrier types and
-the direct authored DSL surface, but not the full Metamath grammar.
+A second, elaborated-record presentation \code{sourceGrammar} carries the
+proof-facing tower: it is validated by the generic well-formation checker
+(\code{sourceGrammar\_valid}), declares its five lexical token classes with
+byte charsets, and every accepted run of the composed
+source pipeline derives the outer database sort in the lexicalized language of
+its own classified stream, with no externally supplied lexical or
+ordered-token premises (\code{runSource\_selfLexicalized\_derives}).
 
-The \code{mm-lean4} project (\codepath{hyperon/metamath/mm-lean4/}) provides
-a complete, sorry-free, axiom-free verification of the Metamath proof checker:
+The \code{mm-lean4} project provides a complete, sorry-free, axiom-free
+verification of the Metamath proof checker:
 \begin{itemize}
 \item \code{DeclarativeSpec.lean}: \code{CN} (constants), \code{VR} (variables),
   \code{Expr} (expressions), \code{Provable} (proof validity).
@@ -826,23 +837,39 @@ The types correspond across all three artifacts:
 \begin{center}
 \begin{tabular}{lll}
 \toprule
-\textbf{Rust \code{metamath.rs}} & \textbf{Lean \code{LanguageDef}} & \textbf{mm-lean4 \code{DeclarativeSpec}} \\
+\textbf{\code{languageDef!} form} & \textbf{\code{sourceGrammar}} & \textbf{mm-lean4 \code{DeclarativeSpec}} \\
 \midrule
-\code{Sym} (carrier: raw)   & \code{TypeDecl "Sym" .tokenRaw}   & \code{CN} / \code{VR} \\
-\code{Label} (carrier: label) & \code{TypeDecl "Label" .tokenLabel} & labels in frame \\
-\code{MathString}            & grammar rule chain                 & \code{Expr} \\
-\code{Database}              & \code{DbMore} / \code{DbOne}       & parsed DB structure \\
-\code{ProofString}           & proof token chain                  & proof witness \\
+\code{Sym} (carrier: raw)   & \code{symbol\_tok} class   & \code{CN} / \code{VR} \\
+\code{Label} (carrier: label) & \code{label\_tok} class & labels in frame \\
+\code{MathString}            & \code{symbol\_list} rules  & \code{Expr} \\
+\code{Database}              & \code{database} rules      & parsed DB structure \\
+\code{ProofString}           & \code{proof\_list} rules   & proof witness \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-\paragraph{What remains.}
-The formal conformance theorem---showing that the \code{LanguageDef} rewrite
-semantics agree with \code{mm-lean4}'s operational verification---is future
-work.  The type correspondence above provides the skeleton; the hard part
-is proving that the stack-machine semantics of Metamath proof verification
-agree with the term-rewriting semantics of the \code{LanguageDef} engine.
+\paragraph{What is proved and what remains.}
+The conformance chain between the source presentation and \code{mm-lean4} is
+now proved at the declaration level: every accepted source transition
+(\code{\$c}, \code{\$v}, \code{\$d}, \code{\$f}, \code{\$e}, \code{\$a},
+\code{\$p} insertion, scope push/pop/completion) is matched by the shipped
+database operation it corresponds to, and the whole statement fold co-evolves
+with the implementation database from the initial states with no supplied
+premises (\code{default\_initial\_applyPayloads}).  This includes identifying
+the implementation's mandatory-frame computation with the specification's
+mandatory frame (\code{trimFrame'\_eq\_mandatory}).  Three joints remain
+before the chain is a single bidirectional theorem: binding the composed
+pipeline's classified stream to the exact byte presentation the verified
+reader consumes; discharging each \code{\$p} obligation's normal or compressed
+proof from the reader's own chronology, with verified and
+incomplete~(\code{?}) outcomes kept distinct; and the prefix-wise simulation
+between the source fold and the production reader, in which reader microsteps
+are administrative and completed statements are the observable steps.  These
+are in active development, with the normal-proof discharge recently
+constructed against the production reader trace.  Separately, a
+statement-fragment translation between \code{metamathCore} and
+\code{sourceGrammar} would close the triangle's left edge; it is scoped but
+not yet started.
 
 \section{MQ-Calculus as a Formalized Verification Target}
 

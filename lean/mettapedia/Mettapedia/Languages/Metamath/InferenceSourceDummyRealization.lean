@@ -7,7 +7,7 @@ import Mettapedia.Languages.Metamath.InferenceDummyAllocation
 # Source-admissible realization of optional dummy declarations
 
 [MM §4.2.7] extended frames were reconciled semantically by
-`SourceGSLTSpecGrounding.extendFloat(s)` and the dummy-allocation crown.
+`SourceGSLTSpecGrounding.extendFloat(s)` and the dummy-allocation theorem.
 That layer manufactures *semantic* frame extensions; this module supplies
 their *source-admissible* counterpart: an optional dummy is realized by a
 `$v` declaration followed by a fresh-labeled `$f` statement, both passing

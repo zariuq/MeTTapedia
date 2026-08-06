@@ -2730,6 +2730,36 @@ replicate: \emph{one} authored root from which the parser, the checker
 operations, and their adequacy theorems are all derived, ready to be
 instantiated across a curriculum of further language definitions.
 
+\paragraph{Declaration-level co-evolution with the shipped checker
+(August 2026).}  The source-owned semantics above has since been joined to
+the verified implementation at the level of individual transitions.  Every
+accepted source declaration step --- \code{\$c}, \code{\$v}, \code{\$d},
+\code{\$f}, \code{\$e}, assertion insertion for \code{\$a}/\code{\$p}, and
+scope push/pop/completion --- is now matched by the \emph{shipped}
+\code{mm-lean4} database operation it corresponds to (the per-token
+declaration inserts, the checked hypothesis insertion, the axiom insertion
+including its mandatory-frame trim), and the whole statement fold co-evolves
+with the implementation database from the initial states with no supplied
+premises (\code{default\_initial\_applyPayloads} in
+\code{SourceGSLTRuntimeCoEvolution.lean}).  Two identifications carry the
+weight: the implementation's mutable mandatory-frame computation is proved
+equal to the specification's mandatory frame
+(\code{trimFrame'\_eq\_mandatory}), and the accepted pipeline's own
+classified stream supplies its lexical evidence
+(\code{runSource\_selfLexicalized\_derives}), so neither the frame nor the
+token boundary is ever assumed.  A deliberate honesty distinction
+structures the remaining work: results proved from one accepted source run
+and one checked byte presentation are kept as \emph{parallel} certificates
+until the classified stream is bound to the exact bytes the verified reader
+consumed, each \code{\$p} obligation's normal or compressed proof is
+discharged from the reader's own chronology (with verified and
+incomplete-\code{?} outcomes as disjoint results), and the source fold is
+related to the production reader by a prefix-wise simulation in which
+reader microsteps are administrative and completed statements are the
+observable steps.  The normal-proof discharge has been constructed against
+the production reader trace; the compressed analogue and the whole-prefix
+simulation are in active development.
+
 \paragraph{Second consumers and the engine loop.}  Megalodon has an honest
 second-consumer skeleton that reuses the generic signatures and crown ---
 deliberately \emph{not} yet claimed as an instance, since its verified
@@ -2742,7 +2772,11 @@ and native-reader tests) was re-run green for this section.  Honest
 boundaries: the tested \code{set.mm} artifact is a nontrivial authentic
 slice, not the full corpus; raw byte-to-token completeness is secured per
 accepted certificate by exact typed reader replay, with a universal
-raw-byte characterization theorem remaining future work.
+raw-byte characterization theorem remaining future work; and the
+declaration-level co-evolution above becomes a single bidirectional
+statement only once the same-presentation binding, per-\code{\$p}
+discharge, and prefix simulation land, as itemized in the preceding
+paragraph.
 
 \section{MeTTa Prime: A Lazy Sibling Language}
 \label{sec:prime}

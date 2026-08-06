@@ -1,4 +1,5 @@
 import Mettapedia.PLN.Bridges.PredictiveCoding.GaussianRevisionBridge
 import Mettapedia.PLN.Bridges.PredictiveCoding.EvidenceRegisterBridge
+import Mettapedia.PLN.Bridges.PredictiveCoding.CategoricalEvidenceRegisterBridge
 import Mettapedia.PLN.Bridges.PredictiveCoding.GradedTotalityRevision
 import Mettapedia.PLN.Bridges.PredictiveCoding.WorldModelConnection

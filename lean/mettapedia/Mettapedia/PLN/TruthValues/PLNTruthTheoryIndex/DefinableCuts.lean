@@ -11,7 +11,7 @@ import Mettapedia.ProbabilityTheory.ImpreciseProbability.ProjectiveCredal
 import Mettapedia.Logic.MarkovLogicInfiniteCredalBridge
 import Mettapedia.Logic.MarkovLogicPLNTruthBridge
 import Mettapedia.Logic.MarkovLogicInfiniteUniqueness
-import Mettapedia.Logic.MarkovLogicInfinitePLNCrown
+import Mettapedia.Logic.MarkovLogicInfinitePLNContrast
 import Mettapedia.Logic.MarkovLogicInfiniteSymmetricGridExample
 import Mettapedia.ProbabilityTheory.Exchangeability.DeFinettiProjectiveCredalBridge
 import Mettapedia.PLN.TruthValues.PLNDistinctionCredalBridge

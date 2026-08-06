@@ -349,7 +349,7 @@ theorem rotationPenaltySplit_not_affineEuclideanPotentialStep :
 /-- This is the requested category separation: a nondegenerate
 forward--backward step can have a monotone certificate and a strict contraction
 bound while failing the affine Euclidean scalar-potential criterion. -/
-theorem monotone_splitting_not_scalarPotential_crown :
+theorem monotone_splitting_not_scalarPotential :
     Nonempty (MonotoneForwardBackwardCertificate rotationPenaltySplitStep) ∧
       (∀ x : Fin 2 → ℝ,
         (rotationPenaltySplitStep *ᵥ x) ⬝ᵥ
@@ -366,7 +366,7 @@ theorem monotone_splitting_not_scalarPotential_crown :
 #print axioms rotationResolvent_isUnitResolvent
 #print axioms implicit_resolvent_contracts_while_explicit_step_expands
 #print axioms rotationPenaltySplit_fixed_iff_sum_zero
-#print axioms monotone_splitting_not_scalarPotential_crown
+#print axioms monotone_splitting_not_scalarPotential
 
 end
 

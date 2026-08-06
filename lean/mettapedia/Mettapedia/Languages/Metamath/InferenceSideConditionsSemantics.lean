@@ -2942,6 +2942,24 @@ def DVOKSemantics (substitution : FiniteSubstitution)
     (callerFrame calleeFrame : RuntimeFrame) : Prop :=
   DVListsSemantics substitution callerFrame.dj.toList calleeFrame.dj.toList
 
+/-- Enlarging the caller's DV ledger cannot invalidate a semantic DV check.
+This is the representation-refinement law used when the runtime retains
+optional `$d` pairs that are not yet visible in the active proof frame. -/
+theorem DVOKSemantics.caller_mono
+    {substitution : FiniteSubstitution}
+    {smallCaller largeCaller calleeFrame : RuntimeFrame}
+    (hsubset : ∀ pair ∈ smallCaller.dj.toList, pair ∈ largeCaller.dj.toList)
+    (hsemantics : DVOKSemantics substitution smallCaller calleeFrame) :
+    DVOKSemantics substitution largeCaller calleeFrame := by
+  intro pair hpair
+  obtain ⟨leftReplacement, rightReplacement, hleft, hright, hpairs⟩ :=
+    hsemantics pair hpair
+  refine ⟨leftReplacement, rightReplacement, hleft, hright, ?_⟩
+  intro left hleftMem right hrightMem
+  rcases hpairs left hleftMem right hrightMem with hforward | hreverse
+  · exact Or.inl (hsubset (left, right) hforward)
+  · exact Or.inr (hsubset (right, left) hreverse)
+
 private def memberHereSchema : RuleSchema :=
   { id := ruleId "$mm.member.here"
     metavariables := [formal "X", formal "XS"]

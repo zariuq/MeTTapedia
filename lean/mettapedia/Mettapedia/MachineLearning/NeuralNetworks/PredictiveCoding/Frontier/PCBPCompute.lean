@@ -214,13 +214,13 @@ structure PCBPComputeCertificate : Prop where
   empiricalBoundary :
     nonlinearPCBeatsBPAtEqualComputeBoundary.status ≠ .exactCostTheorem
 
-theorem pcBPCompute_crown : PCBPComputeCertificate where
+theorem pcBPCompute : PCBPComputeCertificate where
   sharedCancellation := pcBPAtEqualCompute_iff_privateWork_eq
   performanceSeparated := equalCompute_does_not_imply_pcBeats
   empiricalBoundary := nonlinearPCBeatsBPAtEqualComputeBoundary_not_exact
 
 #print axioms pcBPAtEqualCompute_iff_privateWork_eq
 #print axioms exactVectorPC_no_equalCompute_below_finiteSpeedBudget
-#print axioms pcBPCompute_crown
+#print axioms pcBPCompute
 
 end Mettapedia.MachineLearning.NeuralNetworks.PredictiveCoding.Frontier

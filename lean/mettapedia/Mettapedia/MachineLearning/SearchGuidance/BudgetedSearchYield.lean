@@ -1,13 +1,13 @@
 import Mettapedia.MachineLearning.SearchGuidance.SharpnessPortfolio
 
 /-!
-# Budgeted distinct-coverage crown
+# Budgeted distinct-coverage yield certificate
 
 This file packages the exact fixed-i.i.d. results for ranking quality,
 collisions, sharpness, and portfolio allocation into one certificate.  The
 scope is deliberately finite fixed-prior sampling.  Sequential/adaptive
 sampling requires a filtration or history-indexed kernel and is not licensed
-by this crown.
+by this certificate.
 -/
 
 noncomputable section
@@ -94,12 +94,12 @@ structure BudgetedSearchYieldCertificate : Prop where
         twoArmExpectedUnionCoverage bestPortfolioPrior 2
           unproductivePortfolioPrior 0 portfolioAccepted
 
-/-- T5 crown: in the finite fixed-i.i.d. checker model, distinct yield is
+/-- T5 certificate: in the finite fixed-i.i.d. checker model, distinct yield is
 controlled jointly by accepted ranking mass, collision/repetition, temperature,
 and allocation across complementary arms.  The collision, canonicalization,
 sharpness, and fixed-split counterexamples are part of the certificate, so the
 statement licenses no universal dominance claim outside its hypotheses. -/
-theorem budgetedSearchYield_crown : BudgetedSearchYieldCertificate := by
+theorem budgetedSearchYield : BudgetedSearchYieldCertificate := by
   refine
     { exactDistinctCoverage := ?_
       rankingQualitySeparation := ?_
@@ -137,6 +137,6 @@ theorem budgetedSearchYield_crown : BudgetedSearchYieldCertificate := by
       θ₁ θ₂ φ₁ φ₂ accepted hmass₁ hmass₂ hoverlap
   · exact computableAllocation_dominates_split_and_single
 
-#print axioms budgetedSearchYield_crown
+#print axioms budgetedSearchYield
 
 end Mettapedia.MachineLearning.SearchGuidance

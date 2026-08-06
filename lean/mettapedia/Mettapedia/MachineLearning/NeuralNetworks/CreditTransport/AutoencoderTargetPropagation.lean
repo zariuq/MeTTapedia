@@ -163,7 +163,7 @@ theorem propagatedTarget_distance_le
 /-- Reusable finite-target crown: independently measurable reconstruction,
 decoder, and cost budgets yield both a nearby lower target and strict realized
 upper cost improvement. -/
-theorem approximate_target_propagation_crown
+theorem approximate_target_propagation
     (encode : Lower → Upper)
     (decode : Upper → Lower)
     (cost : Upper → ℝ)

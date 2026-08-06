@@ -186,7 +186,7 @@ theorem precisionInterpolate_eq_plnRevision
 precision-weighted mean, Gaussian posterior fusion, unit-gain Kalman update,
 one-step workspace update, and PLN evidence revision; the abstract conjugate
 counts recover the two precisions used by that common gate. -/
-theorem beliefUpdate_unificationCrown
+theorem beliefUpdate_unification
     (source₁ source₂ : GaussianSource) :
     let update := precisionInterpolate source₁.mean source₂.mean
       source₁.precision source₂.precision
@@ -241,7 +241,7 @@ theorem zeroObservationPrecision_freezes_negativeBoundary
 #print axioms ScalarBeliefState.condition_mean_eq_conditionalPosteriorMean
 #print axioms conjugateObservationCount_gaussianSource_eq_precision
 #print axioms precisionInterpolate_eq_plnRevision
-#print axioms beliefUpdate_unificationCrown
+#print axioms beliefUpdate_unification
 #print axioms beliefUpdate_positiveExample
 #print axioms zeroObservationPrecision_freezes_negativeBoundary
 

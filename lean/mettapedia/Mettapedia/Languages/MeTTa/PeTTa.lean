@@ -7,6 +7,12 @@ import Mettapedia.Languages.MeTTa.PeTTa.LPSoundness
 import Mettapedia.Languages.MeTTa.PeTTa.FunctionFreeLPBridge
 import Mettapedia.Languages.MeTTa.PeTTa.Effects
 import Mettapedia.Languages.MeTTa.PeTTa.TypeSystem
+import Mettapedia.Languages.MeTTa.PeTTa.TypeSystemGSLT
+import Mettapedia.Languages.MeTTa.PeTTa.TypeSystemGSLTDeterminism
+import Mettapedia.Languages.MeTTa.PeTTa.TypeSystemGSLTGuard
+import Mettapedia.Languages.MeTTa.PeTTa.TypeSystemGSLTDecision
+import Mettapedia.Languages.MeTTa.PeTTa.TypeSystemGSLTComposition
+import Mettapedia.Languages.MeTTa.PeTTa.TypeSystemGSLTPlan
 import Mettapedia.Languages.MeTTa.PeTTa.TypedEval
 import Mettapedia.Languages.MeTTa.PeTTa.MinimalInstructions
 import Mettapedia.Languages.MeTTa.PeTTa.MeTTaEval

@@ -176,21 +176,25 @@ theorem stepGraph_to_assertionApplicationSemantics
     exact hactualsRespect replacement
       (hypothesisInstances_lookup_replacement_mem_actuals
         hinstances hreplacement)
-  have hcallerFrame : projection.callerFrame = db.frame :=
+  have hcallerFrame :
+      projection.callerFrame = proofFacingCallerFrame db :=
     (projectPrefix?_eq_some_fields db projection hproject).2.2.1
   have hcallerDV :
       db.frame.dj.toList.all
         (fun pair => decide (pair.1 < pair.2)) = true := by
-    simpa [hcallerFrame] using
-      projectedCallerFrame_dvStrict db projection hproject
+    exact rawCallerDVStrict_of_projectPrefix?_eq_some db projection hproject
   have hdvCheck' :
       Metamath.Verify.DB.dvCheck (db.frameFloatVars db.frame)
           db.frame.dj assertion.frame.dj runtimeSubstitution = .ok () := by
     simpa [hcallerVariables] using hdvCheck
-  have hdvSemantics :
+  have hdvSemanticsRaw :
       DVOKSemantics substitution db.frame assertion.frame :=
     (dvOKSemantics_iff_dvCheck_of_correspondence
       hcorrespondence hcallerDV hreplacementsRespect).mpr hdvCheck'
+  have hdvSemantics :
+      DVOKSemantics substitution (proofFacingCallerFrame db)
+        assertion.frame :=
+    dvOKSemantics_proofFacing_of_raw hdvSemanticsRaw hreplacementsRespect
   have hprefixCanonical :
       stackPrefix = pr.stack.shrink offset := by
     simpa [offset] using hstackPrefix

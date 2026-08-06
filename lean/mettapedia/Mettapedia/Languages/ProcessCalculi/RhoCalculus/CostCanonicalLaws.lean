@@ -1353,6 +1353,60 @@ private theorem rhoCostStaticActionAt_canonicalize_eq
           elementsSupported.2 objectParts.2])
     safe inner rfl rfl supported object
 
+/-- Equal authored rho canonical representatives remain exactly equal after
+the same typed same-colour Cost action.
+
+This is the two-endpoint form of
+`rhoCostStaticActionAt_canonicalize_eq`.  Its hypotheses expose the whole
+shared action fibre: the binder thinning, supported assignment, free-context
+image, and reflective-support image are common to both endpoints.  No claim
+is made for independently chosen actions or for arbitrary generated terms. -/
+theorem rhoCostStaticActionAt_canonicalize_eq_of_canonicalize_eq
+    {color : CostStaticColor}
+    {free assignmentFree targetFree : FreeTypeContext}
+    {support assignmentSupport : ContextSupport.Support}
+    {sourceBound targetBound inner available : List TypeExpr}
+    {left right : Pattern} {leftType rightType : TypeExpr}
+    (thinning : CostStaticBinderThinning rhoCIGSLT color sourceBound
+      targetBound)
+    (assignment : SupportedOpenAssignment rhoCIGSLT.costWholeLanguage
+      assignmentFree targetFree assignmentSupport)
+    (freeContext : free.map (color.symbols rhoCIGSLT) = assignmentFree)
+    (reflectiveSupport : support = assignmentSupport)
+    (leftTyped : HasType rhoCalc free (inner ++ sourceBound) left leftType)
+    (rightTyped : HasType rhoCalc free (inner ++ sourceBound) right rightType)
+    (leftSafe : leftTyped.ReflectiveSupportSafeAt support available
+      (mapTypeExpr (color.symbols rhoCIGSLT)))
+    (rightSafe : rightTyped.ReflectiveSupportSafeAt support available
+      (mapTypeExpr (color.symbols rhoCIGSLT)))
+    (leftSupported : ConstructorsWithin
+      (· ∈ rhoCIGSLT.continuationRetyping.wrappedLabels) left)
+    (rightSupported : ConstructorsWithin
+      (· ∈ rhoCIGSLT.continuationRetyping.wrappedLabels) right)
+    (leftObject : isObjectPattern left = true)
+    (rightObject : isObjectPattern right = true)
+    (canonical :
+      Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+          rhoReflectivePresentation left =
+        Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+          rhoReflectivePresentation right) :
+    Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+        (costStaticReflectivePresentationDecl rhoCIGSLT color
+          rhoReflectivePresentation.toReflectivePresentationDecl)
+        (rhoCostStaticActionAt thinning assignment inner available left) =
+      Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+        (costStaticReflectivePresentationDecl rhoCIGSLT color
+          rhoReflectivePresentation.toReflectivePresentationDecl)
+        (rhoCostStaticActionAt thinning assignment inner available right) := by
+  have leftAbsorption := rhoCostStaticActionAt_canonicalize_eq
+    thinning assignment freeContext reflectiveSupport leftTyped leftSafe
+      leftSupported leftObject
+  have rightAbsorption := rhoCostStaticActionAt_canonicalize_eq
+    thinning assignment freeContext reflectiveSupport rightTyped rightSafe
+      rightSupported rightObject
+  rw [canonical] at leftAbsorption
+  exact leftAbsorption.trans rightAbsorption.symm
+
 /-- Canonicalizing one constructor-certified rho skeleton before its
 same-colour Cost action is observationally neutral in the generated authored
 equation relation.  The induction is source typed: this retains the exact
@@ -2259,14 +2313,6 @@ theorem rho_costStaticMappedGeneratorFiberAction :
   intro color free assignmentFree targetFree support assignmentSupport
     sourceBound targetBound sort thinning assignment freeContext
       reflectiveSupport left right generator
-  have leftAbsorption := rhoCostStaticActionAt_canonicalize_eq
-    (inner := []) (available := targetBound) thinning assignment freeContext
-      reflectiveSupport left.term.2.1 left.safe
-        left.supported.constructorsWithin left.term.2.2.2.1
-  have rightAbsorption := rhoCostStaticActionAt_canonicalize_eq
-    (inner := []) (available := targetBound) thinning assignment freeContext
-      reflectiveSupport right.term.2.1 right.safe
-        right.supported.constructorsWithin right.term.2.2.2.1
   have sourceGenerator :
       EquationSemantics.EquationContextStep defaultBasePremises rhoCalc
         left.term.1 right.term.1 := by
@@ -2281,8 +2327,13 @@ theorem rho_costStaticMappedGeneratorFiberAction :
     simpa only [CanonicalMatch.derivedCanonicalize_eq] using
       LanguageDefSemanticAgreement.rhoEquationContextStep_canonicalize_eq
         sourceGenerator
-  rw [sourceCanonicalEquality] at leftAbsorption
-  have representatives := leftAbsorption.trans rightAbsorption.symm
+  have representatives :=
+    rhoCostStaticActionAt_canonicalize_eq_of_canonicalize_eq
+      (inner := []) (available := targetBound) thinning assignment freeContext
+        reflectiveSupport left.term.2.1 right.term.2.1 left.safe right.safe
+        left.supported.constructorsWithin
+        right.supported.constructorsWithin left.term.2.2.2.1
+        right.term.2.2.2.1 sourceCanonicalEquality
   let declaration := costStaticReflectivePresentationDecl rhoCIGSLT color
     rhoReflectivePresentation.toReflectivePresentationDecl
   have declarationMembership : declaration ∈

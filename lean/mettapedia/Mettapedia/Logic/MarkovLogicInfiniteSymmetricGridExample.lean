@@ -26603,7 +26603,7 @@ theorem symmetricGridZeroFieldOriginPlusMinusBoundarySeparation_of_peierlsErrorB
 /-- The review-facing strict-interval package for the symmetric zero-field
 origin-spin query: positive scalar envelope width, confidence complement below
 one, and positive binary query-outcome credal width. -/
-structure SymmetricGridZeroFieldOriginPLNStrictIntervalCrown
+structure SymmetricGridZeroFieldOriginPLNStrictInterval
     (w : ℝ) : Prop where
   queryEnvelopeWidth_pos :
     0 < infiniteMLNQueryEnvelopeWidth
@@ -26619,10 +26619,10 @@ structure SymmetricGridZeroFieldOriginPLNStrictIntervalCrown
 
 /-- A plus-boundary finite-volume half-gap is enough to obtain the strict PLN
 interval package for the symmetric zero-field origin-spin query. -/
-theorem symmetricGridZeroField_originPLNStrictIntervalCrown_of_plusHalfGap
+theorem symmetricGridZeroField_originPLNStrictInterval_of_plusHalfGap
     {w δ : ℝ}
     (hgap : symmetricGridZeroFieldOriginPlusHalfGap w δ) :
-    SymmetricGridZeroFieldOriginPLNStrictIntervalCrown w := by
+    SymmetricGridZeroFieldOriginPLNStrictInterval w := by
   rcases hgap with ⟨hδ, hplus⟩
   rcases symmetricGridZeroField_originSpinUp_plnStrictInterval_of_plusHalfGap
       (w := w) (δ := δ) hδ hplus with
@@ -26631,11 +26631,11 @@ theorem symmetricGridZeroField_originPLNStrictIntervalCrown_of_plusHalfGap
 
 /-- A Peierls-style finite-volume origin-error bound is enough to obtain the
 strict PLN interval package for the symmetric zero-field origin-spin query. -/
-theorem symmetricGridZeroField_originPLNStrictIntervalCrown_of_peierlsErrorBound
+theorem symmetricGridZeroField_originPLNStrictInterval_of_peierlsErrorBound
     {w ε : ℝ}
     (hPeierls : symmetricGridZeroFieldOriginPeierlsErrorBound w ε) :
-    SymmetricGridZeroFieldOriginPLNStrictIntervalCrown w :=
-  symmetricGridZeroField_originPLNStrictIntervalCrown_of_plusHalfGap
+    SymmetricGridZeroFieldOriginPLNStrictInterval w :=
+  symmetricGridZeroField_originPLNStrictInterval_of_plusHalfGap
     (symmetricGridZeroFieldOriginPlusHalfGap_of_peierlsErrorBound hPeierls)
 
 theorem symmetricGridZeroFieldOriginPlusHalfGap_of_contourCodeInjection_twentyFour_quarter
@@ -26666,16 +26666,16 @@ theorem symmetricGridZeroFieldOriginPlusMinusBoundarySeparation_of_contourCodeIn
       (symmetricGridZeroFieldOriginPeierlsErrorBound_of_contourCodeInjection_twentyFour_quarter
         hcode)
 
-theorem symmetricGridZeroField_originPLNStrictIntervalCrown_of_contourCodeInjection_twentyFour
+theorem symmetricGridZeroField_originPLNStrictInterval_of_contourCodeInjection_twentyFour
     (hcode :
       ∀ m, 2 ≤ m → ∀ i ∈ Finset.range m, ∀ j ∈ Finset.range (m - (i + 1)),
         ∃ f :
           {s // s ∈ originConnectedHullCutSetCandidatesInCutCardBoxAxisAnchored m i j} →
             ContourCode 8 m,
           Function.Injective f) :
-    SymmetricGridZeroFieldOriginPLNStrictIntervalCrown (24 : ℝ) := by
+    SymmetricGridZeroFieldOriginPLNStrictInterval (24 : ℝ) := by
   exact
-    symmetricGridZeroField_originPLNStrictIntervalCrown_of_peierlsErrorBound
+    symmetricGridZeroField_originPLNStrictInterval_of_peierlsErrorBound
       (symmetricGridZeroFieldOriginPeierlsErrorBound_of_contourCodeInjection_twentyFour_quarter
         hcode)
 
@@ -26692,13 +26692,13 @@ theorem symmetricGridZeroFieldOriginPlusMinusBoundarySeparation_of_axisAnchoredC
 /-- Public F4 theorem: the hypothesis-free low-temperature symmetric-grid
 strict PLN interval crown. This is the live public F4 path; the older
 conditional `CutWalkCode` shells below are retained only as superseded adapters. -/
-theorem symmetricGridZeroField_originPLNStrictIntervalCrown_of_axisAnchoredContourCode_twentyFour :
-    SymmetricGridZeroFieldOriginPLNStrictIntervalCrown (24 : ℝ) :=
-  symmetricGridZeroField_originPLNStrictIntervalCrown_of_contourCodeInjection_twentyFour
+theorem symmetricGridZeroField_originPLNStrictInterval_of_axisAnchoredContourCode_twentyFour :
+    SymmetricGridZeroFieldOriginPLNStrictInterval (24 : ℝ) :=
+  symmetricGridZeroField_originPLNStrictInterval_of_contourCodeInjection_twentyFour
     contourCodeInjection_family_axisAnchored
 
 /-- Superseded conditional adapter block: the public F4 crown is now
-`symmetricGridZeroField_originPLNStrictIntervalCrown_of_axisAnchoredContourCode_twentyFour`,
+`symmetricGridZeroField_originPLNStrictInterval_of_axisAnchoredContourCode_twentyFour`,
 which uses the unconditional axis-anchored `ContourCode` injection. These
 `CutWalkCode` implications are not a live dependency path for F4. -/
 theorem symmetricGridZeroFieldOriginPlusHalfGap_of_cutWalkCodeInjection_from_two
@@ -26739,7 +26739,7 @@ theorem symmetricGridZeroFieldOriginPlusMinusBoundarySeparation_of_cutWalkCodeIn
       (symmetricGridZeroFieldOriginPeierlsErrorBound_of_cutWalkCodeInjection_from_two
         hε_nonneg hε_lt_half hcode hgeom)
 
-theorem symmetricGridZeroField_originPLNStrictIntervalCrown_of_cutWalkCodeInjection_from_two
+theorem symmetricGridZeroField_originPLNStrictInterval_of_cutWalkCodeInjection_from_two
     {w ε : ℝ}
     (hε_nonneg : 0 ≤ ε) (hε_lt_half : ε < (1 / 2 : ℝ))
     (hcode :
@@ -26752,9 +26752,9 @@ theorem symmetricGridZeroField_originPLNStrictIntervalCrown_of_cutWalkCodeInject
       ((((2 : ENNReal) * 64) * (ENNReal.ofReal (Real.exp w))⁻¹) ^ 2) *
           (1 - ((2 : ENNReal) * 64) * (ENNReal.ofReal (Real.exp w))⁻¹)⁻¹ ≤
         ENNReal.ofReal ε) :
-    SymmetricGridZeroFieldOriginPLNStrictIntervalCrown w := by
+    SymmetricGridZeroFieldOriginPLNStrictInterval w := by
   exact
-    symmetricGridZeroField_originPLNStrictIntervalCrown_of_peierlsErrorBound
+    symmetricGridZeroField_originPLNStrictInterval_of_peierlsErrorBound
       (symmetricGridZeroFieldOriginPeierlsErrorBound_of_cutWalkCodeInjection_from_two
         hε_nonneg hε_lt_half hcode hgeom)
 
@@ -26802,16 +26802,16 @@ theorem symmetricGridZeroFieldOriginPlusMinusBoundarySeparation_of_cutWalkCodeIn
       (by norm_num) (by norm_num) hcode
       cutWalkCodeInjection_hgeom_eight_quarter
 
-theorem symmetricGridZeroField_originPLNStrictIntervalCrown_of_cutWalkCodeInjection_eight
+theorem symmetricGridZeroField_originPLNStrictInterval_of_cutWalkCodeInjection_eight
     (hcode :
       ∀ m, 2 ≤ m → ∀ i ∈ Finset.range m, ∀ j ∈ Finset.range (m - (i + 1)),
         ∃ f :
           {s // s ∈ originConnectedHullCutSetCandidatesInCutCardBoxAxisAnchored m i j} →
             CutWalkCode m,
           Function.Injective f) :
-    SymmetricGridZeroFieldOriginPLNStrictIntervalCrown (8 : ℝ) := by
+    SymmetricGridZeroFieldOriginPLNStrictInterval (8 : ℝ) := by
   exact
-    symmetricGridZeroField_originPLNStrictIntervalCrown_of_cutWalkCodeInjection_from_two
+    symmetricGridZeroField_originPLNStrictInterval_of_cutWalkCodeInjection_from_two
       (w := (8 : ℝ)) (ε := (1 / 4 : ℝ))
       (by norm_num) (by norm_num) hcode
       cutWalkCodeInjection_hgeom_eight_quarter
@@ -26840,19 +26840,19 @@ theorem symmetricGridZeroFieldOriginPlusMinusBoundarySeparation_of_axisAnchoredT
     symmetricGridZeroFieldOriginPlusMinusBoundarySeparation_of_cutWalkCodeInjection_eight
       (cutWalkCodeInjection_family_of_axisAnchoredTaggedClauseChain hchain)
 
-theorem symmetricGridZeroField_originPLNStrictIntervalCrown_of_axisAnchoredTaggedClauseChain_eight
+theorem symmetricGridZeroField_originPLNStrictInterval_of_axisAnchoredTaggedClauseChain_eight
     (hchain : AxisAnchoredTaggedClauseChainFamily) :
-    SymmetricGridZeroFieldOriginPLNStrictIntervalCrown (8 : ℝ) := by
+    SymmetricGridZeroFieldOriginPLNStrictInterval (8 : ℝ) := by
   exact
-    symmetricGridZeroField_originPLNStrictIntervalCrown_of_cutWalkCodeInjection_eight
+    symmetricGridZeroField_originPLNStrictInterval_of_cutWalkCodeInjection_eight
       (cutWalkCodeInjection_family_of_axisAnchoredTaggedClauseChain hchain)
 
 /-- Plus/minus boundary separation is enough to obtain the strict PLN interval
 package for the symmetric zero-field origin-spin query. -/
-theorem symmetricGridZeroField_originPLNStrictIntervalCrown_of_plusMinusBoundarySeparation
+theorem symmetricGridZeroField_originPLNStrictInterval_of_plusMinusBoundarySeparation
     {w : ℝ}
     (hsep : symmetricGridZeroFieldOriginPlusMinusBoundarySeparation w) :
-    SymmetricGridZeroFieldOriginPLNStrictIntervalCrown w where
+    SymmetricGridZeroFieldOriginPLNStrictInterval w where
   queryEnvelopeWidth_pos :=
     symmetricGridZeroField_originSpinUp_queryEnvelopeWidth_pos_of_plusMinusBoundarySeparation hsep
   queryEnvelopeWidthComplement_lt_one :=
@@ -26867,7 +26867,7 @@ interval package.  A Peierls error bound is exposed as an intermediate
 finite-volume route through the plus half-gap.  The low-temperature
 Peierls/coexistence theorem is exactly the remaining mathematical input needed
 to instantiate one of the low-temperature fields. -/
-structure SymmetricGridZeroFieldOriginPhaseCoexistenceReductionCrown : Prop where
+structure SymmetricGridZeroFieldOriginPhaseCoexistenceReduction : Prop where
   highTemperaturePrecise :
     ∀ {w : ℝ}, 4 * |w| < 1 →
       infiniteMLNLowerQueryEnvelope
@@ -26877,7 +26877,7 @@ structure SymmetricGridZeroFieldOriginPhaseCoexistenceReductionCrown : Prop wher
   plusHalfGapStrictInterval :
     ∀ {w δ : ℝ},
       symmetricGridZeroFieldOriginPlusHalfGap w δ →
-        SymmetricGridZeroFieldOriginPLNStrictIntervalCrown w
+        SymmetricGridZeroFieldOriginPLNStrictInterval w
   plusHalfGapBoundarySeparation :
     ∀ {w δ : ℝ},
       symmetricGridZeroFieldOriginPlusHalfGap w δ →
@@ -26909,23 +26909,23 @@ structure SymmetricGridZeroFieldOriginPhaseCoexistenceReductionCrown : Prop wher
   peierlsErrorBoundStrictInterval :
     ∀ {w ε : ℝ},
       symmetricGridZeroFieldOriginPeierlsErrorBound w ε →
-        SymmetricGridZeroFieldOriginPLNStrictIntervalCrown w
+        SymmetricGridZeroFieldOriginPLNStrictInterval w
   plusMinusBoundarySeparationStrictInterval :
     ∀ {w : ℝ},
       symmetricGridZeroFieldOriginPlusMinusBoundarySeparation w →
-        SymmetricGridZeroFieldOriginPLNStrictIntervalCrown w
+        SymmetricGridZeroFieldOriginPLNStrictInterval w
 
 /-- The symmetric zero-field Ising/MLN crown reduced to a precise
 low-temperature input: prove a plus half-gap or plus/minus boundary separation,
 and the PLN strict interval follows without additional assumptions. -/
-theorem symmetricGridZeroField_originPhaseCoexistenceReductionCrown :
-    SymmetricGridZeroFieldOriginPhaseCoexistenceReductionCrown where
+theorem symmetricGridZeroField_originPhaseCoexistenceReduction :
+    SymmetricGridZeroFieldOriginPhaseCoexistenceReduction where
   highTemperaturePrecise := by
     intro w hbudget
     exact symmetricGridZeroField_originSpinUp_queryEnvelope_precise_of_smallWeight hbudget
   plusHalfGapStrictInterval := by
     intro w δ hgap
-    exact symmetricGridZeroField_originPLNStrictIntervalCrown_of_plusHalfGap hgap
+    exact symmetricGridZeroField_originPLNStrictInterval_of_plusHalfGap hgap
   plusHalfGapBoundarySeparation := by
     intro w δ hgap
     exact symmetricGridZeroFieldOriginPlusMinusBoundarySeparation_of_plusHalfGap hgap
@@ -26942,9 +26942,9 @@ theorem symmetricGridZeroField_originPhaseCoexistenceReductionCrown :
     exact symmetricGridZeroFieldOriginPlusMinusBoundarySeparation_of_peierlsErrorBound hPeierls
   peierlsErrorBoundStrictInterval := by
     intro w ε hPeierls
-    exact symmetricGridZeroField_originPLNStrictIntervalCrown_of_peierlsErrorBound hPeierls
+    exact symmetricGridZeroField_originPLNStrictInterval_of_peierlsErrorBound hPeierls
   plusMinusBoundarySeparationStrictInterval := by
     intro w hsep
-    exact symmetricGridZeroField_originPLNStrictIntervalCrown_of_plusMinusBoundarySeparation hsep
+    exact symmetricGridZeroField_originPLNStrictInterval_of_plusMinusBoundarySeparation hsep
 
 end Mettapedia.Logic.MarkovLogicInfiniteSymmetricGridExample

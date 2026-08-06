@@ -41,7 +41,7 @@
 Dependent Type Theory and Higher-Order Tarski--Grothendieck Set Theory\\
 \large Design, Curriculum, and a Prototype-First Build Plan}
 \author{Oru\v{z}i \and Zar Goertzel}
-\date{2026-06-18 (design draft); realized-architecture update 2026-06-23}
+\date{2026-06-18 (design draft); realized-architecture update 2026-06-23;\\ Metamath-profile update 2026-08-06}
 
 \begin{document}
 \maketitle
@@ -347,6 +347,30 @@ verdict (Lean/Coq/Agda/Megalodon/HOL-Light), with status \textsc{checked} or
 oracle}; the destination is to \emph{host each core logic as a LanguageDef and re-prove
 the curriculum's theorems in our own kernel}. Verdicts are differential --- a row
 borrows its expectation from the source system, not from our own guess.
+
+\paragraph{The Metamath profile (August 2026 update).} The Metamath row of the
+matrix is now the furthest along the stated destination.  The full statement
+language is authored twice at the \code{LanguageDef} level --- once in
+\code{languageDef!} form (\code{metamathCore}, including the front-end
+lowering pipeline as rewrite rules) and once as the proof-facing
+\code{sourceGrammar}, whose presentation passes the generic validator and
+whose accepted pipeline runs derive the outer database sort in the
+lexicalized language of their own classified streams with no supplied lexical
+premises (\code{runSource\_selfLexicalized\_derives}).  On the semantic side,
+every accepted source declaration transition is matched by the corresponding
+shipped \code{mm-lean4} database operation, and the whole statement fold
+co-evolves with the implementation database from the initial states
+(\code{default\_initial\_applyPayloads}), including the identification of the
+implementation's mandatory-frame trim with the specification's mandatory
+frame (\code{trimFrame'\_eq\_mandatory}).  Checked source admission runs
+exact bytes through the actual verified reader into one generated
+presentation package.  Deliberately open, in the obligations ledger's sense:
+per-\code{\$p} proof discharge from the reader's own chronology (normal lane
+recently constructed; compressed in progress), the distinction between
+verified and \code{?}-incomplete outcomes as disjoint results, and the
+prefix-wise source/reader simulation in which reader microsteps are
+administrative.  The Metamath lane thereby serves as the template for how the
+other profile rows are intended to mature.
 
 \paragraph{Validation discipline.} Every checkpoint runs on three engines --- \CeTTa{}
 (C), PeTTa (Prolog), and the Lean-verified \emph{LeaTTa} as a deterministic oracle ---

@@ -1152,7 +1152,7 @@ structure CompressedProofLocatedTokens
   finishLocated : Nat × ByteSlice
   finishToken : ProofFinishToken finishLocated.2
 
-/-- Execute one complete located compressed-proof token programme through the
+/-- Execute one complete located compressed-proof token sequence through the
 production `feedToken` entry point, including the final theorem terminator. -/
 def runCompressedProofLocatedTokens
     {explicitHeaderLabels : List String}
@@ -1330,7 +1330,7 @@ noncomputable def CompressedTheoremStep.mmLean4FinishPreserved
 /-! ## One complete production token lifecycle -/
 
 /-- Proof-relevant preservation of one complete located compressed-proof token
-programme through `feedToken`, including the real `$.` finalization event. -/
+sequence through `feedToken`, including the real `$.` finalization event. -/
 structure CompressedFeedTokenPreservation
     {before after : SourceState} {label : String}
     {formula : ConstantHeadedFormula}
@@ -1354,10 +1354,10 @@ structure CompressedFeedTokenPreservation
       (runCompressedProofLocatedTokens live tokens).db after
 
 /-- A source compressed theorem occurrence, an agreeing runtime prefix, and a
-located lexical token programme determine the exact successful production
+located lexical token sequence determine the exact successful production
 `feedToken` execution through final database insertion.  Token origin is still
 an explicit upstream obligation: this theorem consumes, but does not invent,
-the located-token programme. -/
+the located-token sequence. -/
 noncomputable def CompressedTheoremStep.mmLean4FeedTokensPreserved
     {before after : SourceState} {label : String}
     {formula : ConstantHeadedFormula}

@@ -176,7 +176,7 @@ theorem nonOrthogonalChart_rawFlow_negativeExample :
 
 /-- Crown combining gradient transport, the exact conjugacy boundary,
 critical-point correspondence, and Hessian-index invariance. -/
-theorem generalChart_transport_crown
+theorem generalChart_transport
     {Error State : Type*}
     [NormedAddCommGroup Error] [InnerProductSpace ℝ Error] [CompleteSpace Error]
     [NormedAddCommGroup State] [InnerProductSpace ℝ State] [CompleteSpace State]
@@ -197,7 +197,7 @@ theorem generalChart_transport_crown
     chart_critical_points_correspond chart energy error stateGradient jacobian
       hchart henergy⟩
 
-#print axioms generalChart_transport_crown
+#print axioms generalChart_transport
 #print axioms chart_rawGradientFlow_conjugate_iff_JJt_identity
 #print axioms chart_hessian_negativeIndex_invariant
 

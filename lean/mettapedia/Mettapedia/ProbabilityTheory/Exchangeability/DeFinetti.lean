@@ -1866,7 +1866,7 @@ theorem posteriorPredictiveFalse_update_identity
 /-- Posterior/update API package for the Bernoulli-mixture de Finetti crown.
 The package records the proved Bayes-ratio update laws while keeping the
 normalizer nonzero hypothesis explicit. -/
-structure PosteriorUpdateCrown (M : BernoulliMixture) (k l : ℕ) where
+structure PosteriorUpdate (M : BernoulliMixture) (k l : ℕ) where
   normalizer_nonzero : M.countEvidenceMass k l ≠ 0
   posterior_isProbability : IsProbabilityMeasure (M.posteriorMixingMeasure k l)
   posterior_support_unit :
@@ -1897,10 +1897,10 @@ structure PosteriorUpdateCrown (M : BernoulliMixture) (k l : ℕ) where
         M.countEvidenceMass (k + countTrue xs) (l + countFalse xs) /
           M.countEvidenceMass k l
 
-theorem posteriorUpdateCrown
+theorem posteriorUpdate
     (M : BernoulliMixture) (k l : ℕ)
     (hZ : M.countEvidenceMass k l ≠ 0) :
-    PosteriorUpdateCrown M k l where
+    PosteriorUpdate M k l where
   normalizer_nonzero := hZ
   posterior_isProbability := posteriorMixingMeasure_isProbability M k l hZ
   posterior_support_unit := posteriorMixingMeasure_support_unit M k l
@@ -1921,7 +1921,7 @@ This packages the part of posterior conditioning that is already fully
 finite-cylinder and representation-level: a represented prior process plus a
 nonzero observed prefix normalizer yields posterior-mixture probabilities for
 all appended finite prefixes. -/
-structure RepresentedPosteriorPrefixConditioningCrown
+structure RepresentedPosteriorPrefixConditioning
     {Ω : Type*} [MeasurableSpace Ω]
     (M : BernoulliMixture) (X : ℕ → Ω → Bool) (μ : Measure Ω)
     {m : ℕ} (obs : Fin m → Bool) where
@@ -1929,7 +1929,7 @@ structure RepresentedPosteriorPrefixConditioningCrown
   normalizer_nonzero :
     M.countEvidenceMass (countTrue obs) (countFalse obs) ≠ 0
   posteriorUpdate :
-    PosteriorUpdateCrown M (countTrue obs) (countFalse obs)
+    PosteriorUpdate M (countTrue obs) (countFalse obs)
   observedCylinderMass :
     (μ (cyl X obs)).toReal =
       M.countEvidenceMass (countTrue obs) (countFalse obs)
@@ -1939,17 +1939,17 @@ structure RepresentedPosteriorPrefixConditioningCrown
         (M.posteriorBernoulliMixture
           (countTrue obs) (countFalse obs) normalizer_nonzero).prob xs
 
-theorem representedPosteriorPrefixConditioningCrown
+theorem representedPosteriorPrefixConditioning
     {Ω : Type*} [MeasurableSpace Ω]
     (M : BernoulliMixture) (X : ℕ → Ω → Bool) (μ : Measure Ω)
     {m : ℕ} (obs : Fin m → Bool)
     (hrep : Represents M X μ)
     (hZ : M.countEvidenceMass (countTrue obs) (countFalse obs) ≠ 0) :
-    RepresentedPosteriorPrefixConditioningCrown M X μ obs where
+    RepresentedPosteriorPrefixConditioning M X μ obs where
   represented := hrep
   normalizer_nonzero := hZ
   posteriorUpdate :=
-    posteriorUpdateCrown M (countTrue obs) (countFalse obs) hZ
+    posteriorUpdate M (countTrue obs) (countFalse obs) hZ
   observedCylinderMass :=
     represented_cyl_measure_toReal_eq_countEvidenceMass M X μ hrep obs
   prefixConditionalProbability := fun xs =>
@@ -1961,7 +1961,7 @@ theorem representedPosteriorPrefixConditioningCrown
 This upgrades finite-prefix conditioning from an external ratio to an explicit
 normalized restriction of the original sample-space measure, and then to the
 shifted tail process represented by that conditioned measure. -/
-structure RepresentedPosteriorConditionedMeasureCrown
+structure RepresentedPosteriorConditionedMeasure
     {Ω : Type*} [MeasurableSpace Ω]
     (M : BernoulliMixture) (X : ℕ → Ω → Bool) (μ : Measure Ω)
     {m : ℕ} (obs : Fin m → Bool) where
@@ -1970,7 +1970,7 @@ structure RepresentedPosteriorConditionedMeasureCrown
   normalizer_nonzero :
     M.countEvidenceMass (countTrue obs) (countFalse obs) ≠ 0
   prefixConditioning :
-    RepresentedPosteriorPrefixConditioningCrown M X μ obs
+    RepresentedPosteriorPrefixConditioning M X μ obs
   conditionedMeasure_isProbability :
     IsProbabilityMeasure (conditionedOnPrefixMeasure μ X obs)
   tailProcess_measurable :
@@ -1992,19 +1992,19 @@ structure RepresentedPosteriorConditionedMeasureCrown
       (tailProcess X m)
       (conditionedOnPrefixMeasure μ X obs)
 
-theorem representedPosteriorConditionedMeasureCrown
+theorem representedPosteriorConditionedMeasure
     {Ω : Type*} [MeasurableSpace Ω]
     (M : BernoulliMixture) (X : ℕ → Ω → Bool) (μ : Measure Ω)
     {m : ℕ} (obs : Fin m → Bool)
     (hX : ∀ i : ℕ, Measurable (X i))
     (hrep : Represents M X μ)
     (hZ : M.countEvidenceMass (countTrue obs) (countFalse obs) ≠ 0) :
-    RepresentedPosteriorConditionedMeasureCrown M X μ obs where
+    RepresentedPosteriorConditionedMeasure M X μ obs where
   represented := hrep
   coordinate_measurable := hX
   normalizer_nonzero := hZ
   prefixConditioning :=
-    representedPosteriorPrefixConditioningCrown M X μ obs hrep hZ
+    representedPosteriorPrefixConditioning M X μ obs hrep hZ
   conditionedMeasure_isProbability :=
     conditionedOnPrefixMeasure_isProbability M X μ hrep obs hZ
   tailProcess_measurable :=

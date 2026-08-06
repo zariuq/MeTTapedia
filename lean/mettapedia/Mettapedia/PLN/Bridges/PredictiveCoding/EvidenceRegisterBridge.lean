@@ -168,7 +168,7 @@ theorem gaussianSourceEvidence_reuse_exact_extra_copy
 /-- T1 crown: one addition in the existing continual-learning ledger is PLN
 revision in both WTV and counts charts and is the unique depth-two PC settling
 state; reusing evidence is exactly one extra copy in that same register. -/
-theorem additiveEvidenceRegister_revision_settling_crown
+theorem additiveEvidenceRegister_revision_settling
     (prior : GaussianEvidence (Fin 1)) (source₁ source₂ : GaussianSource) :
     scalarGaussianEvidenceMean
         ((gaussianSourceEvidence source₁).add
@@ -210,6 +210,6 @@ theorem additiveEvidenceRegister_revision_settling_crown
     pcDepthTwo_equilibrium_iff_eq_additiveRegister source₁ source₂,
     gaussianSourceEvidence_reuse_exact_extra_copy prior source₁ source₂⟩
 
-#print axioms additiveEvidenceRegister_revision_settling_crown
+#print axioms additiveEvidenceRegister_revision_settling
 
 end Mettapedia.PLN.Bridges.PredictiveCoding

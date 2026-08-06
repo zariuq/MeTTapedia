@@ -203,7 +203,7 @@ theorem pairwiseLinearCommutation_iff_orderIndependence
 
 /-- Combined switched-systems crown: commutation supplies order invariance;
 the common Lyapunov certificate independently supplies uniform stability. -/
-theorem commutingCommonQuadraticLyapunov_crown
+theorem commutingCommonQuadraticLyapunov
     {Command : Type uCommand} {Index : Type uIndex} [Fintype Index]
     {transition : Command → Matrix Index Index ℝ}
     (certificate : CommonQuadraticLyapunov transition)
@@ -258,7 +258,7 @@ theorem halfScalar_allSchedules_positiveExample
 #print axioms individuallyStable_switchingDiverges
 #print axioms CommonQuadraticLyapunov.runLinearSchedule_energy_le
 #print axioms CommonQuadraticLyapunov.geometricEnvelope_tendsto_zero
-#print axioms commutingCommonQuadraticLyapunov_crown
+#print axioms commutingCommonQuadraticLyapunov
 
 end RoutedCarom
 

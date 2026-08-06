@@ -5,7 +5,7 @@ import Mettapedia.MachineLearning.NeuralNetworks.WorkspaceDecoder.TypedRegisters
 /-!
 # Preregistered workspace-decoder predictions
 
-Prediction (a) is `finiteDepthMismatch_equilibriumCrown`: in the exact linear
+Prediction (a) is `finiteDepthMismatch_equilibrium`: in the exact linear
 shift model, finite-depth fitting and equilibrium evaluation disagree, giving a
 derived finite optimum.  It is not a claim about a trained nonlinear decoder.
 

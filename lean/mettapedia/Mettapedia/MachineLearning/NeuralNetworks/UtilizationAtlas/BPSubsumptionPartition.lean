@@ -817,7 +817,7 @@ structure BPSubsumptionPartitionLicense : Prop where
       (synchronizedLocalCost rounds activeNodes).parallelLatency <
         (synchronizedLocalCost rounds activeNodes).serialWork
 
-theorem bp_subsumption_partition_crown : BPSubsumptionPartitionLicense where
+theorem bp_subsumption_partition : BPSubsumptionPartitionLicense where
   namedPartition := namedPCBenefit_constructive_partition
   trainingRuleCharacterization := constructiveBPRealization_iff_not_executionOnly
   executionCharacterization := executionModelResidue_iff
@@ -845,6 +845,6 @@ theorem bp_subsumption_partition_crown : BPSubsumptionPartitionLicense where
 #print axioms unitBandwidthLocalBackprop_lowerBound_tight
 #print axioms namedPCBenefit_catalog_cardinality
 #print axioms namedPCBenefit_constructive_partition
-#print axioms bp_subsumption_partition_crown
+#print axioms bp_subsumption_partition
 
 end Mettapedia.MachineLearning.NeuralNetworks.UtilizationAtlas

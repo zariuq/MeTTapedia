@@ -727,7 +727,7 @@ theorem finiteBimodalDiagnostic_specializes :
     finiteBimodalIdentifiabilityRegime]
 
 /-- Proof-bearing instrument checklist consumed by the empirical campaign. -/
-structure DiagnosticInstrumentCrown : Prop where
+structure DiagnosticInstrument : Prop where
   primitiveRegistryGrounded :
     primitiveTelemetryFields.all (fun field =>
       utilizationAtlasDepthProbeSchemaPayload.contains
@@ -753,7 +753,7 @@ structure DiagnosticInstrumentCrown : Prop where
         finiteBimodalIdentifiabilityRegime =
       multimodalDecisionGapDiagnostic
 
-theorem diagnostic_instrument_crown : DiagnosticInstrumentCrown where
+theorem diagnostic_instrument : DiagnosticInstrument where
   primitiveRegistryGrounded := primitiveTelemetryRegistry_grounded
   derivedDiagnosticsExcluded :=
     primitiveTelemetryRegistry_excludes_derivedDiagnostics
@@ -784,6 +784,6 @@ theorem diagnostic_instrument_crown : DiagnosticInstrumentCrown where
 #print axioms crossSlotHessian_confound
 #print axioms lyapunovResidual_confound
 #print axioms multimodalDecisionGap_confound
-#print axioms diagnostic_instrument_crown
+#print axioms diagnostic_instrument
 
 end Mettapedia.MachineLearning.NeuralNetworks.UtilizationAtlas

@@ -162,7 +162,7 @@ theorem erased_singletons_hide_provenance :
 
 /-- Crown: exact tagged accounting and the impossibility of reconstructing
 all origins after erasure hold simultaneously. -/
-theorem repetition_provenance_boundary_crown :
+theorem repetition_provenance_boundary :
     (∀ stream : List (TaggedOccurrence Unit),
         originCount .environment stream + originCount .replay stream =
           stream.length) ∧
@@ -176,7 +176,7 @@ theorem repetition_provenance_boundary_crown :
 #print axioms originCount_environment_add_replay
 #print axioms observationOnly_not_correct_for_both_origins
 #print axioms no_universal_origin_reconstruction
-#print axioms repetition_provenance_boundary_crown
+#print axioms repetition_provenance_boundary
 
 end RepetitionProvenance
 

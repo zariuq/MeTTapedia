@@ -153,7 +153,7 @@ theorem generalCausalCodingCorrespondence_requires_interventionalClamp :
 /-- Causal bridge crown: linear order interference, same-cause sequential
 non-additivity, and exact ledger double counting are proved simultaneously,
 without promoting the general correspondence beyond conjecture status. -/
-theorem linearCausalCodingBridge_crown :
+theorem linearCausalCodingBridge :
     curvatureCommutator obliqueFirstTask obliqueSecondTask ≠ 0 ∧
       curvatureCommutator scalarUnitTask scalarUnitTask = 0 ∧
       sequentialTwoTaskUpdate scalarUnitTask scalarUnitTask (1 / 2)
@@ -164,9 +164,9 @@ theorem linearCausalCodingBridge_crown :
         zeroScalarEvidence).precision 0 0 = 2 ∧
       generalCausalCodingCorrespondenceStatus =
         .conjecturalBeyondLinearRequiresInterventionalClamp :=
-  ⟨linearTwoTask_causalCoding_separation_crown.1,
-    linearTwoTask_causalCoding_separation_crown.2.2.1,
-    linearTwoTask_causalCoding_separation_crown.2.2.2,
+  ⟨linearTwoTask_causalCoding_separation.1,
+    linearTwoTask_causalCoding_separation.2.2.1,
+    linearTwoTask_causalCoding_separation.2.2.2,
     scalarEvidence_reuse_doubleCounting.1,
     generalCausalCodingCorrespondence_requires_interventionalClamp⟩
 

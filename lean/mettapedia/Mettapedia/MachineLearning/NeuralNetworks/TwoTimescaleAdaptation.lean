@@ -7,7 +7,7 @@ import Mettapedia.MachineLearning.NeuralNetworks.TwoTimescaleAdaptation.Cadence
 import Mettapedia.MachineLearning.NeuralNetworks.TwoTimescaleAdaptation.DerivedCadence
 import Mettapedia.MachineLearning.NeuralNetworks.TwoTimescaleAdaptation.BeliefInstantiation
 import Mettapedia.MachineLearning.NeuralNetworks.TwoTimescaleAdaptation.Consolidation
-import Mettapedia.MachineLearning.NeuralNetworks.TwoTimescaleAdaptation.Crown
+import Mettapedia.MachineLearning.NeuralNetworks.TwoTimescaleAdaptation.Certificate
 
 /-!
 # Two-timescale adaptation

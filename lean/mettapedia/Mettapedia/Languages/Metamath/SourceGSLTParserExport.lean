@@ -99,8 +99,8 @@ theorem sourceCategories_compile :
       compiledSourceRules = some compiledCategoryDefinitions := by
   rfl
 
-private def literal (text : String) : Expr :=
-  .literal (text.toUTF8.toList.map UInt8.toNat)
+private def literal (codepoints : List Nat) : Expr :=
+  .literal codepoints
 
 private def lexicalName (name : String) : String :=
   name ++ "-lexeme"
@@ -114,8 +114,8 @@ private def separatedToken (name : String) : Definition :=
     body := .left (.ref (lexicalName name)) (.ref "skip") }
 
 private def keywordDefinitions
-    (name spelling : String) : List Definition :=
-  [separatedLexeme name (literal spelling), separatedToken name]
+    (name : String) (codepoints : List Nat) : List Definition :=
+  [separatedLexeme name (literal codepoints), separatedToken name]
 
 def members (className : String)
     (codepoints : List Nat) : List ClassMember :=
@@ -154,10 +154,10 @@ private def lexicalCoreDefinitions : List Definition :=
      body := .alt (.class "whitespace") .eof },
    { name := "comment"
      body := .node "comment" <|
-       .right (literal "$(") <|
+       .right (literal commentOpenCodepoints) <|
        .right (.ref "whitespace1") <|
        .right (.star (.seq (.ref "comment-chunk") (.ref "whitespace1"))) <|
-       .seq (literal "$)") (.class "whitespace") },
+       .seq (literal commentCloseCodepoints) (.class "whitespace") },
    { name := "comment-chunk"
      body := .alt
        (.plus (.ref "comment-pair-unit"))
@@ -191,7 +191,7 @@ private def lexicalCoreDefinitions : List Definition :=
 def lexicalDefinitions : List Definition :=
   lexicalCoreDefinitions ++
     literalBindings.flatMap fun binding =>
-      keywordDefinitions binding.parserRef binding.spelling
+      keywordDefinitions binding.parserRef binding.codepoints
 
 def structuralDefinitions : List Definition :=
   compiledSourceRules.map (CompiledRule.definition sourceBinding) ++

@@ -39,7 +39,8 @@ theorem projectPrefix?_soundnessGates
   unfold projectPrefix? at hproject
   simp only [bind, Option.bind_eq_some_iff] at hproject
   obtain ⟨_guardError, herror, _guardWellFormed, hwellFormed,
-    _guardDV, _hdv, _guardEmbedded, _hembedded, _guardDeclarations,
+    _guardDV, _hdv, _guardRawDV, _hrawDV, _guardEmbedded, _hembedded,
+    _guardDeclarations,
     _hdeclarations, activeHypotheses, _hactive, _guardFrame, _hframe,
     assertions, _hassertions, _guardProjection, _hprojectionValid,
     hprojection⟩ := hproject

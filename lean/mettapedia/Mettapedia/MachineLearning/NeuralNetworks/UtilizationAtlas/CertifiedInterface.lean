@@ -1,7 +1,7 @@
 import Mettapedia.MachineLearning.NeuralNetworks.UtilizationAtlas.ActiveProbing
 
 /-!
-# The utilization-atlas crown
+# The utilization-atlas certified interface
 
 This file exposes one checked interface spanning outcome semantics, belief
 regimes, predictive-coding inference and plasticity, typed/routed workspaces,
@@ -22,7 +22,7 @@ universe uState uHole uHead uProgram uRoute uTemperature uSlot uContent uParams
 
 /-! ## Family-level lift-versus-new accounting -/
 
-/-- The nine completed atlas rungs preceding this integration crown. -/
+/-- The nine completed atlas rungs preceding this certified interface. -/
 inductive AtlasRung where
   | outcomeSemantics
   | beliefFrontier
@@ -103,7 +103,7 @@ def atlasContributions : AtlasRung → List AtlasContribution
       , ⟨.newContent, "strict routing-usefulness fixture", "WorkspaceFrontier"⟩
       , ⟨.scopeBoundary, "finite quadratic typed slots", "WorkspaceFrontier"⟩ ]
   | .recommendations =>
-      [ ⟨.directLift, "belief, PC, and workspace frontier crowns",
+      [ ⟨.directLift, "belief, PC, and workspace frontier certificates",
           "T2--T5"⟩
       , ⟨.newContent, "finite regime recommendation map", "Recommendations"⟩
       , ⟨.newContent, "licensed soundness and completeness", "Recommendations"⟩
@@ -130,7 +130,7 @@ def atlasContributions : AtlasRung → List AtlasContribution
           "DiagnosticIdentifiability"⟩
       , ⟨.newContent, "two recoveries and nine admissible confounds",
           "DiagnosticIdentifiability"⟩
-      , ⟨.newContent, "finite probe checklist and instrument crown",
+      , ⟨.newContent, "finite probe checklist and instrument certificate",
           "DiagnosticIdentifiability"⟩
       , ⟨.scopeBoundary, "scalar/quadratic primitive-telemetry scope",
           "DiagnosticIdentifiability"⟩ ]
@@ -220,7 +220,7 @@ theorem accuratePolicy_utilizationLicense :
   refine ⟨⟨by decide, by decide⟩, by trivial, ?_⟩
   exact tradeoff_outcomes_exact.1
 
-theorem outcomeSemantics_frontier_crown : OutcomeSemanticsFrontierLicense where
+theorem outcomeSemantics_frontier : OutcomeSemanticsFrontierLicense where
   weaklyBetterReflexive := by
     intro outcome hlegal
     exact ⟨hlegal, hlegal, fun _metric => le_rfl⟩
@@ -298,7 +298,7 @@ structure PCInferenceAtlasLicense : Prop where
         |(expansiveRelaxationStep 0)^[sweeps] 1 - 0|)
       atTop atTop
 
-theorem pcInference_atlas_crown : PCInferenceAtlasLicense where
+theorem pcInference_atlas : PCInferenceAtlasLicense where
   exactPosterior := posteriorMean_exactPCInferenceLicense
   finiteResidualAndRisk := halfRelaxation_exists_finite_residual_and_risk
   minimumSufficient := minimalHalfRelaxationSweeps_sufficient
@@ -312,7 +312,7 @@ theorem pcInference_atlas_crown : PCInferenceAtlasLicense where
   divergentNegative := expansiveRelaxation_divergent
 
 /-- T5 expanded license, adding coupled correction and the generic routed
-certificates to the fixture-level workspace crown. -/
+certificates to the fixture-level workspace certificate. -/
 structure WorkspaceAtlasLicense : Prop where
   frontier : WorkspaceFrontierLicense
   coupledCorrection : ∀ firstCurvature secondCurvature coupling
@@ -378,8 +378,8 @@ structure WorkspaceAtlasLicense : Prop where
               decoder.toLegalActionWorkspaceDecoder.ranking budget
               (root.encode program) program)
 
-theorem workspace_atlas_crown : WorkspaceAtlasLicense where
-  frontier := workspace_frontier_crown
+theorem workspace_atlas : WorkspaceAtlasLicense where
+  frontier := workspace_frontier
   coupledCorrection := coupledTwoSlotCorrection_stationary
   independentResidual := independentSlotOptima_crossResidual_exact
   selectiveGain := selectiveWorkspaceGain_license
@@ -390,7 +390,7 @@ theorem workspace_atlas_crown : WorkspaceAtlasLicense where
 /-! ## T9 integrated license -/
 
 /-- One proof object carrying the complete finite utilization atlas. -/
-structure UtilizationAtlasCrown : Prop where
+structure UtilizationAtlas : Prop where
   outcomeSemantics : OutcomeSemanticsFrontierLicense
   beliefFrontier : ∀ regime : BeliefRegime,
     BeliefPolicyGuarantee regime (recommendedBeliefPolicy regime)
@@ -408,8 +408,8 @@ structure UtilizationAtlasCrown : Prop where
     first.Licenses regime ∨ second.Licenses regime →
       (first.combine second).Licenses regime
   diagnostics : DiagnosticsFrontierLicense
-  diagnosticInstrument : DiagnosticInstrumentCrown
-  activeProbing : ActiveProbingCrown
+  diagnosticInstrument : DiagnosticInstrument
+  activeProbing : ActiveProbing
   provenanceCounts :
     (atlasContributionCount .outcomeSemantics .directLift,
       atlasContributionCount .outcomeSemantics .newContent,
@@ -441,26 +441,26 @@ structure UtilizationAtlasCrown : Prop where
       atlasContributionCount .activeProbing .scopeBoundary) =
         (2, 4, 1)
 
-/-- Integrated crown: all nine rungs and their executable provenance ledger. -/
-theorem utilization_atlas_crown : UtilizationAtlasCrown where
-  outcomeSemantics := outcomeSemantics_frontier_crown
-  beliefFrontier := beliefPolicy_frontier_crown
-  pcInference := pcInference_atlas_crown
-  pcPlasticity := pcPlasticity_frontier_crown
-  workspaceFrontier := workspace_atlas_crown
+/-- Integrated certificate: all nine rungs and their executable provenance ledger. -/
+theorem utilization_atlas : UtilizationAtlas where
+  outcomeSemantics := outcomeSemantics_frontier
+  beliefFrontier := beliefPolicy_frontier
+  pcInference := pcInference_atlas
+  pcPlasticity := pcPlasticity_frontier
+  workspaceFrontier := workspace_atlas
   recommendationSoundness := recommendationFor_guaranteed
   noUniversalRecommendation := no_singleRecommendation_covers_modeledFamily
   hybridClosure := hybridRecommendation_closure
-  diagnostics := diagnostics_frontier_crown
-  diagnosticInstrument := diagnostic_instrument_crown
-  activeProbing := active_probing_crown
+  diagnostics := diagnostics_frontier
+  diagnosticInstrument := diagnostic_instrument
+  activeProbing := active_probing
   provenanceCounts := atlasContributionCounts
 
 #print axioms atlasContributionCounts
 #print axioms accuratePolicy_utilizationLicense
-#print axioms outcomeSemantics_frontier_crown
-#print axioms pcInference_atlas_crown
-#print axioms workspace_atlas_crown
-#print axioms utilization_atlas_crown
+#print axioms outcomeSemantics_frontier
+#print axioms pcInference_atlas
+#print axioms workspace_atlas
+#print axioms utilization_atlas
 
 end Mettapedia.MachineLearning.NeuralNetworks.UtilizationAtlas

@@ -186,7 +186,7 @@ theorem prospectiveRepair_strictAdvantage_iff
 /-- Figure-1 crown: ordinary and prospective repairs share the exact new
 target, while the prospective repair has a strict preserved-output advantage
 under precisely the live-old-path and hidden-movement conditions. -/
-theorem prospectiveRepair_target_and_advantage_crown
+theorem prospectiveRepair_target_and_advantage
     (input oldHidden oldCorrectReadout errorReadout errorTarget : ℝ)
     (hpath : errorReadout * input ≠ 0)
     (hnew : bpRepairedHidden errorReadout input errorTarget ≠ 0) :
@@ -279,7 +279,7 @@ theorem scalarOptimumTasks_metricMismatch_exact
 /-- Classification crown: prospective interference in this scalar toy is an
 optimum/metric conflict, not curvature-order interference or a sequential
 connection effect. -/
-theorem prospectiveInterference_metric_not_connection_crown
+theorem prospectiveInterference_metric_not_connection
     (oldOptimum newOptimum : ℝ) (hmove : newOptimum ≠ oldOptimum) :
     pairwiseInterferenceEnergy
         (scalarOptimumTask oldOptimum).curvature
@@ -328,7 +328,7 @@ theorem prospectiveEmpiricalTargets_count :
   decide
 
 #print axioms bp_hiddenRepair_changes_correctOutput_iff
-#print axioms prospectiveRepair_target_and_advantage_crown
-#print axioms prospectiveInterference_metric_not_connection_crown
+#print axioms prospectiveRepair_target_and_advantage
+#print axioms prospectiveInterference_metric_not_connection
 
 end Mettapedia.MachineLearning.NeuralNetworks.PredictiveCoding.Frontier

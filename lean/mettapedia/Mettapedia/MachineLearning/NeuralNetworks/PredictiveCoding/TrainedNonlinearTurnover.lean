@@ -429,7 +429,7 @@ theorem centeredSigmoidVectorZeroSeed_uniform
 /-- Crown: the concrete nonlinear activation, exact training, strict turnover,
 robust approximate margin, unreachable contraction target, and vector lift are
 all simultaneously witnessed. -/
-theorem trainedNonlinearEntropyTurnover_crown :
+theorem trainedNonlinearEntropyTurnover :
     (¬ ∃ L : ℝ →ₗ[ℝ] ℝ, ∀ x, L x = centeredSigmoidActivation x) ∧
       trainedCenteredSigmoidProblem.loss 1 = 0 ∧
       (∀ weight, trainedCenteredSigmoidProblem.loss 1 ≤

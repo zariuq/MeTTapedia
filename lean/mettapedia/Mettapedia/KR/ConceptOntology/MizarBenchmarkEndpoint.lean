@@ -41,11 +41,11 @@ theorem objectDerivationLooseConcept_selfInheritance_imprecise :
 
 /-- The inheritance truth-coordinate crown specialized to the unstable
 `ObjectDerivation` self-query. -/
-def objectDerivationSelfInheritanceTruthCoordinateCrown :
-    CredalInheritanceTruthCoordinateCrown
+def objectDerivationSelfInheritanceTruthCoordinate :
+    CredalInheritanceTruthCoordinate
       mizarGateFamily articleContext.evidence
       objectDerivationLooseConcept objectDerivationLooseConcept :=
-  credalInheritanceTruthCoordinateCrown
+  credalInheritanceTruthCoordinate
     mizarGateFamily articleContext.evidence
     objectDerivationLooseConcept objectDerivationLooseConcept
 
@@ -55,7 +55,7 @@ theorem objectDerivationLooseConcept_selfInheritance_width :
           mizarGateFamily articleContext.evidence
           objectDerivationLooseConcept objectDerivationLooseConcept) = 1 := by
   exact
-    objectDerivationSelfInheritanceTruthCoordinateCrown.imprecise_width_eq_one
+    objectDerivationSelfInheritanceTruthCoordinate.imprecise_width_eq_one
       objectDerivationLooseConcept_selfInheritance_imprecise
 
 theorem objectDerivationLooseConcept_selfInheritance_widthComplement :
@@ -64,7 +64,7 @@ theorem objectDerivationLooseConcept_selfInheritance_widthComplement :
           mizarGateFamily articleContext.evidence
           objectDerivationLooseConcept objectDerivationLooseConcept) = 0 := by
   exact
-    objectDerivationSelfInheritanceTruthCoordinateCrown.imprecise_widthComplement_eq_zero
+    objectDerivationSelfInheritanceTruthCoordinate.imprecise_widthComplement_eq_zero
       objectDerivationLooseConcept_selfInheritance_imprecise
 
 theorem objectDerivationLooseConcept_selfInheritance_midpoint :
@@ -73,19 +73,19 @@ theorem objectDerivationLooseConcept_selfInheritance_midpoint :
           mizarGateFamily articleContext.evidence
           objectDerivationLooseConcept objectDerivationLooseConcept) = (1 / 2 : ℝ) := by
   exact
-    objectDerivationSelfInheritanceTruthCoordinateCrown.imprecise_midpoint_eq_half
+    objectDerivationSelfInheritanceTruthCoordinate.imprecise_midpoint_eq_half
       objectDerivationLooseConcept_selfInheritance_imprecise
 
 /-- Review-facing bridge between the single-concept Mizar witness and the
 credal inheritance truth-coordinate surface. -/
-structure ObjectDerivationCredalInheritanceBenchmarkCrown : Prop where
-  benchmarkCrown : ObjectDerivationCredalBenchmarkCrown
+structure ObjectDerivationCredalInheritanceBenchmark : Prop where
+  benchmarkCrown : ObjectDerivationCredalBenchmark
   selfInheritanceImprecise :
     credallyImpreciseInheritance
       mizarGateFamily articleContext.evidence
       objectDerivationLooseConcept objectDerivationLooseConcept
   selfInheritanceTruthCoordinateCrown :
-    CredalInheritanceTruthCoordinateCrown
+    CredalInheritanceTruthCoordinate
       mizarGateFamily articleContext.evidence
       objectDerivationLooseConcept objectDerivationLooseConcept
   selfInheritanceWidthReadout :
@@ -104,11 +104,11 @@ structure ObjectDerivationCredalInheritanceBenchmarkCrown : Prop where
           mizarGateFamily articleContext.evidence
           objectDerivationLooseConcept objectDerivationLooseConcept) = (1 / 2 : ℝ)
 
-theorem objectDerivationCredalInheritanceBenchmarkCrown :
-    ObjectDerivationCredalInheritanceBenchmarkCrown where
-  benchmarkCrown := objectDerivationCredalBenchmarkCrown
+theorem objectDerivationCredalInheritanceBenchmark :
+    ObjectDerivationCredalInheritanceBenchmark where
+  benchmarkCrown := objectDerivationCredalBenchmark
   selfInheritanceImprecise := objectDerivationLooseConcept_selfInheritance_imprecise
-  selfInheritanceTruthCoordinateCrown := objectDerivationSelfInheritanceTruthCoordinateCrown
+  selfInheritanceTruthCoordinateCrown := objectDerivationSelfInheritanceTruthCoordinate
   selfInheritanceWidthReadout := objectDerivationLooseConcept_selfInheritance_width
   selfInheritanceWidthComplementReadout :=
     objectDerivationLooseConcept_selfInheritance_widthComplement
@@ -214,7 +214,7 @@ theorem unstableConceptCount_le_conlat_1
   cases a <;> decide
 
 /-- Review-facing package for the current 13-article threshold-gate pilot. -/
-structure MizarFamilyThresholdPilotCrown : Prop where
+structure MizarFamilyThresholdPilot : Prop where
   articleCount :
     Fintype.card MizarFamilyPilotArticle = 13
   fourThresholdsPerArticle :
@@ -229,8 +229,8 @@ structure MizarFamilyThresholdPilotCrown : Prop where
     ∀ a : MizarFamilyPilotArticle,
       unstableConceptCount a ≤ unstableConceptCount .conlat_1
 
-theorem mizarFamilyThresholdPilotCrown :
-    MizarFamilyThresholdPilotCrown where
+theorem mizarFamilyThresholdPilot :
+    MizarFamilyThresholdPilot where
   articleCount := mizarFamilyPilotArticle_card
   fourThresholdsPerArticle := sampledThresholds_length_eq_four
   nontrivialSplitEverywhere := lowerConceptCount_lt_upperConceptCount
@@ -302,7 +302,7 @@ theorem noncandidate_topBottom_absent
 /-- Review-facing package for the current narrow duality-ghost scan artifact.
 It records exactly the scanned pair count, candidate-article count, and the
 one-sided Top/Bottom findings already materialized in JSON. -/
-structure MizarFamilyDualityGhostPilotCrown : Prop where
+structure MizarFamilyDualityGhostPilot : Prop where
   trackedPairCount :
     Fintype.card MizarFamilyDualityTrackedPair = 3
   candidateArticleCount :
@@ -321,8 +321,8 @@ structure MizarFamilyDualityGhostPilotCrown : Prop where
       a ∉ dualityGhostCandidateArticles →
         topMentionCount a = 0 ∧ bottomMentionCount a = 0
 
-theorem mizarFamilyDualityGhostPilotCrown :
-    MizarFamilyDualityGhostPilotCrown where
+theorem mizarFamilyDualityGhostPilot :
+    MizarFamilyDualityGhostPilot where
   trackedPairCount := mizarFamilyDualityTrackedPair_card
   candidateArticleCount := dualityGhostCandidateArticles_card
   candidateCharacterization := mem_dualityGhostCandidateArticles_iff
@@ -393,7 +393,7 @@ theorem prefixCompletionTopUnstableArticles_length :
 /-- Review-facing package for the current less-curated prefix-completion slice.
 It records the 31-article expansion, its single degenerate holdout, and the
 aggregate threshold-gate instability counts already materialized as artifacts. -/
-structure MizarPrefixCompletionThresholdPilotCrown : Prop where
+structure MizarPrefixCompletionThresholdPilot : Prop where
   articleCount :
     prefixCompletionArticleNames.card = 31
   singleDegenerateHoldout :
@@ -414,8 +414,8 @@ structure MizarPrefixCompletionThresholdPilotCrown : Prop where
   topUnstableArticleCount :
     prefixCompletionTopUnstableArticles.length = 5
 
-theorem mizarPrefixCompletionThresholdPilotCrown :
-    MizarPrefixCompletionThresholdPilotCrown where
+theorem mizarPrefixCompletionThresholdPilot :
+    MizarPrefixCompletionThresholdPilot where
   articleCount := prefixCompletionArticleNames_card
   singleDegenerateHoldout := prefixCompletionDegenerateHoldouts_eq
   nontrivialConceptFamilyArticleCount := prefixCompletionNondegenerateArticleCount
@@ -430,22 +430,22 @@ theorem mizarPrefixCompletionThresholdPilotCrown :
 its inheritance truth-coordinate bridge, the current 13-article threshold
 pilot summary, the current narrow duality-ghost scan summary, and one honest
 step toward a less-curated MML slice. -/
-structure MizarCredalBenchmarkEndpointCrown : Prop where
+structure MizarCredalBenchmarkEndpoint : Prop where
   objectDerivationBridge :
-    ObjectDerivationCredalInheritanceBenchmarkCrown
+    ObjectDerivationCredalInheritanceBenchmark
   thresholdPilot :
-    MizarFamilyThresholdPilotCrown
+    MizarFamilyThresholdPilot
   dualityGhostPilot :
-    MizarFamilyDualityGhostPilotCrown
+    MizarFamilyDualityGhostPilot
   prefixCompletionPilot :
-    MizarPrefixCompletionThresholdPilotCrown
+    MizarPrefixCompletionThresholdPilot
 
-theorem mizarCredalBenchmarkEndpointCrown :
-    MizarCredalBenchmarkEndpointCrown where
-  objectDerivationBridge := objectDerivationCredalInheritanceBenchmarkCrown
-  thresholdPilot := mizarFamilyThresholdPilotCrown
-  dualityGhostPilot := mizarFamilyDualityGhostPilotCrown
-  prefixCompletionPilot := mizarPrefixCompletionThresholdPilotCrown
+theorem mizarCredalBenchmarkEndpoint :
+    MizarCredalBenchmarkEndpoint where
+  objectDerivationBridge := objectDerivationCredalInheritanceBenchmark
+  thresholdPilot := mizarFamilyThresholdPilot
+  dualityGhostPilot := mizarFamilyDualityGhostPilot
+  prefixCompletionPilot := mizarPrefixCompletionThresholdPilot
 
 end MizarBenchmark
 

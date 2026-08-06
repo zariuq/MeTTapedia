@@ -173,6 +173,52 @@ structure NormalTokenStep
   before_normal : before.ptp = .normal
   token_not_unknown : ¬ token.eqArray "?".toAscii
 
+/-- Every retained normal-token step remains in normal proof mode. -/
+theorem NormalTokenStep.after_normal
+    {anchor : ParserState} {before after : RuntimeProofState}
+    {token : ByteSlice}
+    (step : NormalTokenStep anchor before token after) :
+    after.ptp = .normal := by
+  have executed :=
+    Mettapedia.Languages.Metamath.InferenceNormalParserTrace.normalFeedProof_extracts_step
+      anchor token before after step.success step.result step.before_normal
+        step.token_not_unknown
+  exact (Metamath.PrefixProvenance.stepNormal_preserves_ptp
+    anchor.db before after (toLabel token).2 executed).trans
+      step.before_normal
+
+/-- The first ordinary proof label changes the canonical proof state from
+`.start` to `.normal`.  This is the first-token counterpart of
+`NormalTokenStep.after_normal`. -/
+theorem feedProof_first_normal_after_normal
+    (anchor : ParserState) (token : ByteSlice)
+    (before after : RuntimeProofState)
+    (success : (anchor.feedProof token before).db.error? = none)
+    (result : (anchor.feedProof token before).tokp = .proof after)
+    (before_start : before.ptp = .start)
+    (token_not_open : ¬ token.eqArray "(".toAscii)
+    (token_not_unknown : ¬ token.eqArray "?".toAscii) :
+    after.ptp = .normal := by
+  obtain ⟨actual, go_ok, actual_result⟩ :=
+    Metamath.PrefixTraceCompressed.feedProof_success_go_ok
+      anchor token before success
+  have actual_eq : after = actual := by
+    rw [result] at actual_result
+    exact TokenParser.proof.inj actual_result
+  subst actual
+  have go_normal :
+      ParserState.feedProof.goNormal anchor token
+        {before with ptp := .normal} = .ok after := by
+    unfold ParserState.feedProof.go at go_ok
+    simpa [before_start, token_not_open] using go_ok
+  have executed :=
+    Metamath.PrefixProvenance.goNormal_extracts_stepNormal
+      anchor token {before with ptp := .normal} after go_normal
+        token_not_unknown
+  exact (Metamath.PrefixProvenance.stepNormal_preserves_ptp
+    anchor.db {before with ptp := .normal} after (toLabel token).2
+      executed).trans rfl
+
 /-- Exact successful normal-token transitions in source order. Unlike the
 propositional `NormalTokensOK`, this family retains each token and intermediate
 proof state as constructor data. -/

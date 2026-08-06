@@ -68,6 +68,27 @@ theorem declaration_eq
         rhoReflectivePresentation.toReflectivePresentationDecl :=
   absorption.origin.target_eq
 
+/-- Local absorption extends through the exact one-hole context retained by
+the authored occurrence.  This is the full-endpoint representative equality
+needed by paired hereditary elaboration; equation/reflection provenance stays
+in the indexed witness rather than being reconstructed from the equality. -/
+theorem contextualRepresentatives
+    {left right : Pattern}
+    {witness : EquationSemantics.AuthoredGeneratorWitness
+      defaultBasePremises rhoCIGSLT.costWholeLanguage left right}
+    (absorption : RhoCostGeneratorAbsorption witness) :
+    Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+        absorption.declaration.1 left =
+      Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+        absorption.declaration.1 right := by
+  cases witness with
+  | equation context instanceWitness =>
+      exact EquationSemantics.canonicalize_fill_congr
+        absorption.declaration.1 context absorption.representatives
+  | reflective context declaration representatives =>
+      exact EquationSemantics.canonicalize_fill_congr
+        absorption.declaration.1 context absorption.representatives
+
 end RhoCostGeneratorAbsorption
 
 /-- A proof-relevant generated Quote/Drop equation instance is absorbed by

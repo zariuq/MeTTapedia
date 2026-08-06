@@ -78,7 +78,7 @@ trimmed target frame and leaves the prefix database unchanged. -/
         .proof (s.db.mkProofState pos targetLabel targetFormula targetFrame) := by
   simp [ParserState.resumeThm]
 
-private theorem normalFeedProof_extracts_step
+theorem normalFeedProof_extracts_step
     (s : ParserState) (token : ByteSlice) (initial final : RuntimeProofState)
     (hsuccess : (s.feedProof token initial).db.error? = none)
     (hresult : (s.feedProof token initial).tokp = .proof final)

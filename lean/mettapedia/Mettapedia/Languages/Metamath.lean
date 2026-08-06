@@ -37,6 +37,24 @@ import Mettapedia.Languages.Metamath.InferenceSupportedProvableBoundary
 import Mettapedia.Languages.Metamath.InferenceSemanticFiniteSupport
 import Mettapedia.Languages.Metamath.SourceGSLTSpecGrounding
 import Mettapedia.Languages.Metamath.InferenceDummyAllocation
+import Mettapedia.Languages.Metamath.InferenceSourceDummyRealization
+import Mettapedia.Languages.Metamath.SourceGSLTStatementPlan
+import Mettapedia.Languages.Metamath.SourceGSLTIncludeDAG
+import Mettapedia.Languages.Metamath.SourceGSLTRawSourceComposition
+import Mettapedia.Languages.Metamath.SourceGSLTLifecycleComposition
+import Mettapedia.Languages.Metamath.SourceGSLTRuntimeStateAgreement
+import Mettapedia.Languages.Metamath.SourceGSLTCompressedParserComposition
+import Mettapedia.Languages.Metamath.SourceGSLTCompressedReflection
+import Mettapedia.Languages.Metamath.SourceGSLTDerivationCorrespondence
+import Mettapedia.Languages.Metamath.SourceGSLTLexicalClosure
+import Mettapedia.Languages.Metamath.SourceGSLTRuntimeCoEvolution
+import Mettapedia.Languages.Metamath.SourceGSLTParallelAcceptance
+import Mettapedia.Languages.Metamath.SourceGSLTReaderTraceBinding
+import Mettapedia.Languages.Metamath.SourceGSLTRuntimeProofTransport
+import Mettapedia.Languages.Metamath.SourceGSLTRuntimeCompressedTransport
+import Mettapedia.Languages.Metamath.SourceGSLTParserPrefixBisimulation
+import Mettapedia.Languages.Metamath.SourceGSLTParserStatementTransitions
+import Mettapedia.Languages.Metamath.SourceGSLTParserStatementOutcomes
 
 /-!
 # Metamath Bridge Surface
@@ -134,19 +152,30 @@ Positive example:
   freshness for the live runtime database, the real `finishProof`/`DB.insert`
   branch succeeds, and the post-insertion runtime namespace agrees exactly
   with the extended source state
+- the streaming statement plan is compiled fail-closed from the authored
+  source productions; include expansion preserves file/offset provenance,
+  accepted segmentation recovers the exact input span stream, and declaration
+  folding carries every theorem occurrence into an exact normal or compressed
+  lifecycle discharge rather than treating declaration success as proof
+  success
+- one shared runtime-prefix projector now separates raw optional `$d` storage
+  from the active proof-facing frame; the two views are proved semantically
+  equivalent for legal substitutions, while source/runtime agreement also
+  records permanent object names, raw frame contents, and scope-stack order
+- exact reader-call traces now reconstruct statement-local normal and
+  compressed theorem outcomes at the real parser boundary.  Verified proofs
+  produce source proof occurrences and the next agreed prefix; explicitly
+  unknown normal or compressed proofs advance that same prefix without
+  producing a verified theorem judgment
 
 Negative example:
 - this umbrella does not expose the legacy file-lowering/source-proof
-  simulation and crown-jewel claim class
+  simulation and refined-trace claim class
 - the whole byte-parser loop does not yet construct a complete theorem-event
-  ledger or prove event completeness; the local normal ledger does authenticate
-  frame trimming and exact normal transitions; compressed execution is now
-  preserved and reflected with proof-node identity through heaps, saves, and
-  assertions; the parser's bulk mandatory-header operation is now proved equal
-  to the source-derived checked preload sequence and composes with explicit
-  header labels, compressed actions, and final assertion insertion; raw
-  proof-token routing into those phases, include expansion, and EOF event
-  provenance remain separate
+  ledger or prove event completeness.  Statement-local normal and compressed
+  traces now authenticate their actual reader transitions and proof outcomes,
+  but those results are not yet threaded through the complete statement-prefix
+  induction or lifted through include expansion and EOF
 - include-aware admission currently exposes database projection only, and the
   large-input proof-ingress traversal is checked against the reader's complete
   logical database snapshot rather than related by a general chunking theorem
@@ -165,14 +194,13 @@ Negative example:
   active-frame relation.  Fixed-frame conservativity is formally refuted even
   under strong database/frame/DV well-formedness; the unrestricted relation is
   instead reconciled as finite semantic frame-extension closure
-- proof-site monotonicity under one optional `$f` is proved, and the distinct
-  source-state storage theorem is also proved: accepted optional `$f` and
-  `$d` transitions leave the assertion's mandatory source projection exactly
-  unchanged.  Every unrestricted declarative derivation now has a proved
-  finite variable-leaf support, type-preserving renaming, and constructed
-  semantic frame extension.  Turning manufactured names into accepted source
-  operations remains separate: a fixed source prefix must supply declared
-  typecodes and variables plus globally fresh `$f` labels
+- proof-site monotonicity under optional `$f` extension is proved, and accepted
+  optional `$f` and `$d` transitions leave the assertion's mandatory source
+  projection exactly unchanged.  Every unrestricted declarative derivation
+  now has finite typed support; fresh dummy variables and labels are
+  constructed, admitted through the real source `$v`/`$f` gates, and yield a
+  supported derivation over the accepted successor whenever the required
+  typecodes are declared
 - these remaining source-spec, parser, and compressed-proof boundaries prevent
   a claim of whole-source adequacy
 -/

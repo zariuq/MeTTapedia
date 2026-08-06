@@ -213,6 +213,48 @@ theorem architectureUpdateInteraction_swap_architectures
   unfold architectureUpdateInteraction
   omega
 
+/-- The interaction is zero exactly when the update-rule contrast is the same
+under both architectures.  This is the additive/no-synergy boundary for a
+two-by-two design. -/
+theorem architectureUpdateInteraction_eq_zero_iff
+    (a₀ a₁ b₀ b₁ : ℕ) :
+    architectureUpdateInteraction a₀ a₁ b₀ b₁ = 0 ↔
+      (b₁ : ℤ) - b₀ = (a₁ : ℤ) - a₀ := by
+  unfold architectureUpdateInteraction
+  omega
+
+/-- Additive architecture and update contributions have no interaction. -/
+theorem architectureUpdateInteraction_additive_eq_zero
+    (baseline architectureEffect updateEffect : ℕ) :
+    architectureUpdateInteraction
+        baseline (baseline + updateEffect)
+        (baseline + architectureEffect)
+        (baseline + architectureEffect + updateEffect) = 0 := by
+  unfold architectureUpdateInteraction
+  omega
+
+/-- Three cells of a two-by-two design never identify its interaction: two
+possible values for the missing fourth cell give different contrasts while
+leaving every observed cell fixed. -/
+theorem three_cells_do_not_identify_architectureUpdateInteraction
+    (a₀ a₁ b₀ : ℕ) :
+    ∃ firstCompletion secondCompletion : ℕ,
+      architectureUpdateInteraction a₀ a₁ b₀ firstCompletion ≠
+        architectureUpdateInteraction a₀ a₁ b₀ secondCompletion := by
+  exact ⟨0, 1, by unfold architectureUpdateInteraction; omega⟩
+
+/-- A positive interaction fixture: the update adds one solve under the first
+architecture and four under the second, for a difference-in-differences of
+three. -/
+theorem architectureUpdateInteraction_positive_example :
+    architectureUpdateInteraction 10 11 10 14 = 3 := by
+  norm_num [architectureUpdateInteraction]
+
+/-- Equal update gains give the negative/no-interaction fixture. -/
+theorem architectureUpdateInteraction_zero_example :
+    architectureUpdateInteraction 10 12 13 15 = 0 := by
+  norm_num [architectureUpdateInteraction]
+
 /-! ## Population scope boundary -/
 
 /-- A genuine two-draw IID design supplies a marginal world law and the
@@ -267,6 +309,11 @@ theorem exists_agree_on_pair_ne_at_third
 #print axioms pairedContrast_eq_treatmentEffect
 #print axioms treatmentEffect_eq_of_eq_pairedResponses
 #print axioms exists_eq_unpairedResponses_ne_treatmentEffect
+#print axioms architectureUpdateInteraction_eq_zero_iff
+#print axioms architectureUpdateInteraction_additive_eq_zero
+#print axioms three_cells_do_not_identify_architectureUpdateInteraction
+#print axioms architectureUpdateInteraction_positive_example
+#print axioms architectureUpdateInteraction_zero_example
 #print axioms exists_eqOn_finset_ne_at
 
 end Mettapedia.MachineLearning.SearchGuidance.ProgramDiscovery

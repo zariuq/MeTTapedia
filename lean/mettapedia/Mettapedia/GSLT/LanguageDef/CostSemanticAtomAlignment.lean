@@ -1,4 +1,5 @@
 import Mettapedia.GSLT.LanguageDef.CostHereditaryCanonical
+import Mettapedia.GSLT.LanguageDef.ReflectiveCanonicalFreeRenaming
 
 /-!
 # Finite semantic-atom alignment
@@ -48,6 +49,54 @@ structure CostStaticAtomKeyCospan
 
 namespace CostStaticAtomKeyCospan
 
+/-- Reverse the two endpoint legs of a finite semantic-atom cospan while
+retaining the same common semantic quotient. -/
+def symm
+    {leftCount rightCount : Nat}
+    {leftKey : Fin leftCount -> CostStaticAtomKey}
+    {rightKey : Fin rightCount -> CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey) :
+    CostStaticAtomKeyCospan rightKey leftKey where
+  commonKeys := cospan.commonKeys
+  commonNodup := cospan.commonNodup
+  leftSlot := cospan.rightSlot
+  rightSlot := cospan.leftSlot
+  leftCommutes := cospan.rightCommutes
+  rightCommutes := cospan.leftCommutes
+  leftExtensional := cospan.rightExtensional
+  rightExtensional := cospan.leftExtensional
+  crossExtensional := by
+    intro right left
+    constructor
+    · intro slotsEq
+      exact ((cospan.crossExtensional left right).mp slotsEq.symm).symm
+    · intro keysEq
+      exact ((cospan.crossExtensional left right).mpr keysEq.symm).symm
+
+@[simp]
+theorem symm_commonKeys
+    {leftCount rightCount : Nat}
+    {leftKey : Fin leftCount -> CostStaticAtomKey}
+    {rightKey : Fin rightCount -> CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey) :
+    cospan.symm.commonKeys = cospan.commonKeys := rfl
+
+@[simp]
+theorem symm_leftSlot
+    {leftCount rightCount : Nat}
+    {leftKey : Fin leftCount -> CostStaticAtomKey}
+    {rightKey : Fin rightCount -> CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey) :
+    cospan.symm.leftSlot = cospan.rightSlot := rfl
+
+@[simp]
+theorem symm_rightSlot
+    {leftCount rightCount : Nat}
+    {leftKey : Fin leftCount -> CostStaticAtomKey}
+    {rightKey : Fin rightCount -> CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey) :
+    cospan.symm.rightSlot = cospan.leftSlot := rfl
+
 /-- Canonical internal spelling of one slot in the common semantic quotient. -/
 def commonAtomName
     {leftCount rightCount : Nat}
@@ -81,6 +130,20 @@ def lookupCommon?
   else none
 
 @[simp]
+theorem symm_lookupCommon?
+    {leftCount rightCount : Nat}
+    {leftKey : Fin leftCount -> CostStaticAtomKey}
+    {rightKey : Fin rightCount -> CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey) (name : String) :
+    cospan.symm.lookupCommon? name = cospan.lookupCommon? name := by
+  cases decoded : decodeCostStaticAtomVariableName name with
+  | none => simp [lookupCommon?, decoded]
+  | some slot =>
+      by_cases inBounds : slot < cospan.commonKeys.length
+      · simp [lookupCommon?, decoded, inBounds]
+      · simp [lookupCommon?, decoded, inBounds]
+
+@[simp]
 theorem lookupCommon?_commonAtomName
     {leftCount rightCount : Nat}
     {leftKey : Fin leftCount -> CostStaticAtomKey}
@@ -100,6 +163,73 @@ def commonSupport
   match cospan.lookupCommon? name with
   | some slot => (cospan.commonKeys.get slot).targetSupport
   | none => []
+
+/-- Authored source typing context of the common semantic namespace.
+
+The common quotient stores complete keys, so its source type is intrinsic to
+the slot and independent of which endpoint leg reaches it.  Names outside
+the finite quotient receive no typing authority. -/
+def commonSourceFreeContext
+    {leftCount rightCount : Nat}
+    {leftKey : Fin leftCount -> CostStaticAtomKey}
+    {rightKey : Fin rightCount -> CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey) :
+    WellSorted.FreeTypeContext := fun name =>
+  (cospan.lookupCommon? name).map fun slot =>
+    (cospan.commonKeys.get slot).sourceType
+
+@[simp]
+theorem commonSourceFreeContext_commonAtomName
+    {leftCount rightCount : Nat}
+    {leftKey : Fin leftCount -> CostStaticAtomKey}
+    {rightKey : Fin rightCount -> CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey)
+    (slot : Fin cospan.commonKeys.length) :
+    cospan.commonSourceFreeContext (cospan.commonAtomName slot) =
+      some (cospan.commonKeys.get slot).sourceType := by
+  simp [commonSourceFreeContext]
+
+/-- Generated target typing context of the common semantic namespace. -/
+def commonTargetFreeContext
+    {leftCount rightCount : Nat}
+    {leftKey : Fin leftCount -> CostStaticAtomKey}
+    {rightKey : Fin rightCount -> CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey) :
+    WellSorted.FreeTypeContext := fun name =>
+  (cospan.lookupCommon? name).map fun slot =>
+    (cospan.commonKeys.get slot).targetType
+
+@[simp]
+theorem commonTargetFreeContext_commonAtomName
+    {leftCount rightCount : Nat}
+    {leftKey : Fin leftCount -> CostStaticAtomKey}
+    {rightKey : Fin rightCount -> CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey)
+    (slot : Fin cospan.commonKeys.length) :
+    cospan.commonTargetFreeContext (cospan.commonAtomName slot) =
+      some (cospan.commonKeys.get slot).targetType := by
+  simp [commonTargetFreeContext]
+
+/-- A uniform selected-colour type map carries the common source context to
+the common target context exactly. -/
+theorem commonSourceFreeContext_map_eq_commonTargetFreeContext
+    {leftCount rightCount : Nat}
+    {leftKey : Fin leftCount -> CostStaticAtomKey}
+    {rightKey : Fin rightCount -> CostStaticAtomKey}
+    (source : CIGSLT) (color : CostStaticColor)
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey)
+    (typeMap : ∀ slot,
+      mapTypeExpr (color.symbols source)
+          (cospan.commonKeys.get slot).sourceType =
+        (cospan.commonKeys.get slot).targetType) :
+    cospan.commonSourceFreeContext.map (color.symbols source) =
+      cospan.commonTargetFreeContext := by
+  funext name
+  simp only [WellSorted.FreeTypeContext.map, commonSourceFreeContext,
+    commonTargetFreeContext]
+  cases selected : cospan.lookupCommon? name with
+  | none => simp
+  | some slot => exact congrArg some (typeMap slot)
 
 /-- Normalized compact value restored from the common semantic quotient. -/
 def commonAssignment
@@ -187,6 +317,76 @@ def reifyWith
       .collection collectionType
         (elements.map (cospan.reifyWith resolve leg)) rest
 termination_by pattern => sizeOf pattern
+
+/-- Reversing a cospan does not change reification through a fixed leg: the
+common semantic quotient and its internal atom names are retained exactly. -/
+theorem symm_reifyWith
+    {leftCount rightCount endpointCount : Nat}
+    {leftKey : Fin leftCount -> CostStaticAtomKey}
+    {rightKey : Fin rightCount -> CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey)
+    (resolve : String -> Option (Fin endpointCount))
+    (leg : Fin endpointCount -> Fin cospan.commonKeys.length) :
+    forall pattern,
+      cospan.symm.reifyWith resolve leg pattern =
+        cospan.reifyWith resolve leg pattern := by
+  intro pattern
+  induction pattern using Pattern.inductionOn with
+  | hbvar index => simp [reifyWith]
+  | hfvar name =>
+      cases resolve name <;>
+        simp [reifyWith, CostStaticAtomKeyCospan.symm, commonAtomName]
+  | happly constructor arguments inductionHypothesis =>
+      simp only [reifyWith, Pattern.apply.injEq, true_and]
+      apply List.map_congr_left
+      intro argument membership
+      exact inductionHypothesis argument membership
+  | hlambda binder body inductionHypothesis =>
+      simp only [reifyWith, Pattern.lambda.injEq, true_and]
+      exact inductionHypothesis
+  | hmultiLambda arity binders body inductionHypothesis =>
+      simp only [reifyWith, Pattern.multiLambda.injEq, true_and]
+      exact inductionHypothesis
+  | hsubst body replacement bodyHypothesis replacementHypothesis =>
+      simp only [reifyWith, Pattern.subst.injEq]
+      exact ⟨bodyHypothesis, replacementHypothesis⟩
+  | hcollection collectionType elements rest inductionHypothesis =>
+      simp only [reifyWith, Pattern.collection.injEq, true_and, and_true]
+      apply List.map_congr_left
+      intro element membership
+      exact inductionHypothesis element membership
+
+@[simp]
+theorem symm_commonSupport
+    {leftCount rightCount : Nat}
+    {leftKey : Fin leftCount -> CostStaticAtomKey}
+    {rightKey : Fin rightCount -> CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey) :
+    cospan.symm.commonSupport = cospan.commonSupport := by
+  funext name
+  unfold commonSupport lookupCommon? CostStaticAtomKeyCospan.symm
+  cases decoded : decodeCostStaticAtomVariableName name with
+  | none => simp
+  | some slot =>
+      by_cases inBounds : slot < cospan.commonKeys.length
+      · simp [inBounds]
+      · simp [inBounds]
+
+@[simp]
+theorem symm_commonAssignment
+    {leftCount rightCount : Nat}
+    {leftKey : Fin leftCount -> CostStaticAtomKey}
+    {rightKey : Fin rightCount -> CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey) :
+    cospan.symm.commonAssignment = cospan.commonAssignment := by
+  funext name
+  unfold commonAssignment lookupCommon? CostStaticAtomKeyCospan.symm
+  cases decoded : decodeCostStaticAtomVariableName name with
+  | none => simp
+  | some slot =>
+      by_cases inBounds : slot < cospan.commonKeys.length
+      · simp [inBounds]
+      · simp [inBounds]
 
 /-- Semantic-atom reification commutes with the local quote/drop contraction.
 Only free-variable spellings change, so the reflective constructor test and
@@ -920,6 +1120,28 @@ def commonSemanticPatternKeyAt
     (ReflectiveContextSupport.substituteAt source.costWholeLanguage
       cospan.commonSupport cospan.commonAssignment availableDepth pattern)
 
+/-- Equality of common semantic keys is exactly equality after restoration at
+the indexed binder depth.  The result relies on the independently proved
+injectivity of compact pattern codes; the key is not merely a hash. -/
+theorem commonSemanticPatternKeyAt_eq_iff
+    {leftCount rightCount : Nat}
+    {leftKey : Fin leftCount -> CostStaticAtomKey}
+    {rightKey : Fin rightCount -> CostStaticAtomKey}
+    (source : CIGSLT) (cospan : CostStaticAtomKeyCospan leftKey rightKey)
+    (availableDepth : Nat) (left right : Pattern) :
+    cospan.commonSemanticPatternKeyAt source availableDepth left =
+        cospan.commonSemanticPatternKeyAt source availableDepth right ↔
+      ReflectiveContextSupport.substituteAt source.costWholeLanguage
+          cospan.commonSupport cospan.commonAssignment availableDepth left =
+        ReflectiveContextSupport.substituteAt source.costWholeLanguage
+          cospan.commonSupport cospan.commonAssignment availableDepth right := by
+  constructor
+  · intro equal
+    apply Mettapedia.OSLF.MeTTaIL.PatternCode.patternCode_injective
+    exact equal
+  · intro equal
+    exact congrArg Mettapedia.OSLF.MeTTaIL.PatternCode.patternCode equal
+
 /-- Sorting opaque common-apex atoms by their restored compact meanings and
 then restoring is exactly ordinary collision-free sorting of those meanings.
 
@@ -1163,6 +1385,270 @@ end CostStaticAtomKeyCospan
 
 namespace CostStaticAtomEnvironment
 
+/-- Rename one endpoint atom into its slot in a common semantic quotient.
+Names outside the finite endpoint inventory remain unchanged. -/
+def sourceReificationName
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    {table : TypedCostRegionBoundaryTable source color targetFree occurrences}
+    {values : TypedCostRegionBoundaryTable.Values source color targetFree table}
+    {root : Pattern}
+    {inventory : CostStaticParameterInventory source color targetFree table
+      values root}
+    (environment : CostStaticAtomEnvironment source color targetFree inventory)
+    {leftCount rightCount : Nat}
+    {leftKey : Fin leftCount -> CostStaticAtomKey}
+    {rightKey : Fin rightCount -> CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey)
+    (leg : Fin environment.atomCount -> Fin cospan.commonKeys.length)
+    (name : String) : String :=
+  match environment.lookupAtom? name with
+  | some slot => cospan.commonAtomName (leg slot)
+  | none => name
+
+/-- The endpoint-to-common name action preserves exactly the source typing
+and reflective-support fibres recorded by the semantic key. -/
+def sourceReificationRenaming
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    {table : TypedCostRegionBoundaryTable source color targetFree occurrences}
+    {values : TypedCostRegionBoundaryTable.Values source color targetFree table}
+    {root : Pattern}
+    {inventory : CostStaticParameterInventory source color targetFree table
+      values root}
+    (environment : CostStaticAtomEnvironment source color targetFree inventory)
+    {leftCount rightCount : Nat}
+    {leftKey : Fin leftCount -> CostStaticAtomKey}
+    {rightKey : Fin rightCount -> CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey)
+    (leg : Fin environment.atomCount -> Fin cospan.commonKeys.length)
+    (commutes : forall slot,
+      cospan.commonKeys.get (leg slot) = (environment.atomValue slot).key) :
+    ReflectiveFVarRenaming environment.sourceAtomFreeContext
+      cospan.commonSourceFreeContext environment.sourceAtomSupport
+      cospan.commonSupport where
+  name := environment.sourceReificationName cospan leg
+  mapsLookup := by
+    intro name type lookup
+    cases selected : environment.lookupAtom? name with
+    | none =>
+        change (environment.lookupAtom? name).map
+          (fun slot => (environment.atomValue slot).key.sourceType) =
+            some type at lookup
+        simp [selected] at lookup
+    | some slot =>
+        change (environment.lookupAtom? name).map
+          (fun slot => (environment.atomValue slot).key.sourceType) =
+            some type at lookup
+        rw [selected] at lookup
+        have sourceTypeEq : (environment.atomValue slot).key.sourceType =
+            type := Option.some.inj lookup
+        simp only [sourceReificationName, selected,
+          cospan.commonSourceFreeContext_commonAtomName]
+        rw [congrArg CostStaticAtomKey.sourceType (commutes slot), sourceTypeEq]
+  mapsSupport := by
+    intro name type lookup
+    cases selected : environment.lookupAtom? name with
+    | none =>
+        change (environment.lookupAtom? name).map
+          (fun slot => (environment.atomValue slot).key.sourceType) =
+            some type at lookup
+        simp [selected] at lookup
+    | some slot =>
+        simp only [sourceReificationName, selected,
+          cospan.commonSupport_commonAtomName]
+        rw [congrArg CostStaticAtomKey.targetSupport (commutes slot)]
+        simp [CostStaticAtomEnvironment.sourceAtomSupport, selected]
+
+/-- The generic structural free-variable renamer computes exactly the direct
+common-cospan reifier. -/
+theorem renameFVars_sourceReificationName_eq_reifyWith
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    {table : TypedCostRegionBoundaryTable source color targetFree occurrences}
+    {values : TypedCostRegionBoundaryTable.Values source color targetFree table}
+    {root : Pattern}
+    {inventory : CostStaticParameterInventory source color targetFree table
+      values root}
+    (environment : CostStaticAtomEnvironment source color targetFree inventory)
+    {leftCount rightCount : Nat}
+    {leftKey : Fin leftCount -> CostStaticAtomKey}
+    {rightKey : Fin rightCount -> CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey)
+    (leg : Fin environment.atomCount -> Fin cospan.commonKeys.length) :
+    forall pattern,
+      Pattern.renameFVars (environment.sourceReificationName cospan leg)
+          pattern =
+        cospan.reifyWith environment.lookupAtom? leg pattern := by
+  intro pattern
+  induction pattern using Pattern.inductionOn with
+  | hbvar index =>
+      simp [Pattern.renameFVars, CostStaticAtomKeyCospan.reifyWith]
+  | hfvar name =>
+      cases selected : environment.lookupAtom? name <;>
+        simp [Pattern.renameFVars, sourceReificationName,
+          CostStaticAtomKeyCospan.reifyWith, selected]
+  | happly constructor arguments inductionHypothesis =>
+      simp only [Pattern.renameFVars, CostStaticAtomKeyCospan.reifyWith,
+        Pattern.apply.injEq, true_and]
+      exact List.map_congr_left inductionHypothesis
+  | hlambda binder body inductionHypothesis =>
+      simp [Pattern.renameFVars, CostStaticAtomKeyCospan.reifyWith,
+        inductionHypothesis]
+  | hmultiLambda arity binders body inductionHypothesis =>
+      simp [Pattern.renameFVars, CostStaticAtomKeyCospan.reifyWith,
+        inductionHypothesis]
+  | hsubst body replacement bodyInduction replacementInduction =>
+      simp [Pattern.renameFVars, CostStaticAtomKeyCospan.reifyWith,
+        bodyInduction, replacementInduction]
+  | hcollection collectionType elements rest inductionHypothesis =>
+      simp only [Pattern.renameFVars, CostStaticAtomKeyCospan.reifyWith,
+        Pattern.collection.injEq, true_and, and_true]
+      exact List.map_congr_left inductionHypothesis
+
+/-- Common-cospan reification preserves source typing and arbitrary mapped
+binder support.  This is the typed bridge needed before applying an authored
+open canonical section at the common semantic apex. -/
+theorem reifyWith_sourceReflectiveSupportSafeAt
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    {table : TypedCostRegionBoundaryTable source color targetFree occurrences}
+    {values : TypedCostRegionBoundaryTable.Values source color targetFree table}
+    {root : Pattern}
+    {inventory : CostStaticParameterInventory source color targetFree table
+      values root}
+    (environment : CostStaticAtomEnvironment source color targetFree inventory)
+    {leftCount rightCount : Nat}
+    {leftKey : Fin leftCount -> CostStaticAtomKey}
+    {rightKey : Fin rightCount -> CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey)
+    (leg : Fin environment.atomCount -> Fin cospan.commonKeys.length)
+    (commutes : forall slot,
+      cospan.commonKeys.get (leg slot) = (environment.atomValue slot).key)
+    {bound : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
+    {typed : WellSorted.HasType
+      source.theory.presentation.presentation.language
+      environment.sourceAtomFreeContext bound pattern type}
+    {available : List TypeExpr} {binderImage : TypeExpr -> TypeExpr}
+    (safe : typed.ReflectiveSupportSafeAt environment.sourceAtomSupport
+      available binderImage) :
+    exists retyped : WellSorted.HasType
+        source.theory.presentation.presentation.language
+        cospan.commonSourceFreeContext bound
+        (cospan.reifyWith environment.lookupAtom? leg pattern) type,
+      retyped.ReflectiveSupportSafeAt cospan.commonSupport available
+        binderImage := by
+  simpa only [sourceReificationRenaming,
+    environment.renameFVars_sourceReificationName_eq_reifyWith
+      cospan leg pattern] using
+    safe.renameFVars
+      (environment.sourceReificationRenaming cospan leg commutes)
+
+/-- Move a complete source static term into the common semantic namespace.
+Typing, constructor-fragment evidence, object admissibility, binder metadata,
+reflective scope, and the selected Cost binder image all travel together. -/
+noncomputable def reifySourceTermToCommon
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    {table : TypedCostRegionBoundaryTable source color targetFree occurrences}
+    {values : TypedCostRegionBoundaryTable.Values source color targetFree table}
+    {root : Pattern}
+    {inventory : CostStaticParameterInventory source color targetFree table
+      values root}
+    (environment : CostStaticAtomEnvironment source color targetFree inventory)
+    {leftCount rightCount : Nat}
+    {leftKey : Fin leftCount -> CostStaticAtomKey}
+    {rightKey : Fin rightCount -> CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey)
+    (leg : Fin environment.atomCount -> Fin cospan.commonKeys.length)
+    (commutes : forall slot,
+      cospan.commonKeys.get (leg slot) = (environment.atomValue slot).key)
+    {sourceBound targetBound : List TypeExpr}
+    {sort : Mettapedia.OSLF.Framework.ConstructorCategory.LangSort
+      source.theory.presentation.presentation.language}
+    (term : CostStaticRegionNode.CostStaticSourceTerm source color
+      environment.sourceAtomFreeContext environment.sourceAtomSupport
+      sourceBound targetBound sort) :
+    CostStaticRegionNode.CostStaticSourceTerm source color
+      cospan.commonSourceFreeContext cospan.commonSupport sourceBound
+      targetBound sort := by
+  classical
+  let renamedEvidence :=
+    environment.reifyWith_sourceReflectiveSupportSafeAt cospan leg commutes
+      term.safe
+  let retyped := Classical.choose renamedEvidence
+  have retypedSafe := Classical.choose_spec renamedEvidence
+  have patternEquality :
+      Pattern.renameFVars (environment.sourceReificationName cospan leg)
+          term.term.1 =
+        cospan.reifyWith environment.lookupAtom? leg term.term.1 :=
+    environment.renameFVars_sourceReificationName_eq_reifyWith
+      cospan leg term.term.1
+  have canonicalBinderMetadata :
+      (cospan.reifyWith environment.lookupAtom? leg
+          term.term.1).hasCanonicalBinderMetadata = true := by
+    rw [← patternEquality,
+      Pattern.hasCanonicalBinderMetadata_renameFVars]
+    exact term.term.2.2.1
+  have objectPattern : WellSorted.isObjectPattern
+      (cospan.reifyWith environment.lookupAtom? leg term.term.1) = true := by
+    rw [← patternEquality, WellSorted.isObjectPattern_renameFVars]
+    exact term.term.2.2.2.1
+  have reflectiveScope : WellSorted.ReflectiveScopeSafeAt
+      source.theory.presentation.presentation.language sourceBound.length
+      (cospan.reifyWith environment.lookupAtom? leg term.term.1) := by
+    rw [← patternEquality]
+    exact (WellSorted.reflectiveScopeSafeAt_renameFVars
+      source.theory.presentation.presentation.language
+      (environment.sourceReificationName cospan leg) sourceBound.length
+      term.term.1).mpr term.term.2.2.2.2
+  have rawSupport : ConstructorsWithin
+      (· ∈ source.continuationRetyping.wrappedLabels)
+      (cospan.reifyWith environment.lookupAtom? leg term.term.1) := by
+    rw [← patternEquality]
+    exact term.supported.constructorsWithin.renameFVars
+      (environment.sourceReificationName cospan leg)
+  let supported := retyped.withConstructors rawSupport
+    source.bareCollectionConstructorsWrapped
+  exact
+    { term := ⟨cospan.reifyWith environment.lookupAtom? leg term.term.1,
+        retyped, canonicalBinderMetadata, objectPattern, reflectiveScope⟩
+      supported := supported
+      safe := retypedSafe }
+
+@[simp]
+theorem reifySourceTermToCommon_pattern
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    {table : TypedCostRegionBoundaryTable source color targetFree occurrences}
+    {values : TypedCostRegionBoundaryTable.Values source color targetFree table}
+    {root : Pattern}
+    {inventory : CostStaticParameterInventory source color targetFree table
+      values root}
+    (environment : CostStaticAtomEnvironment source color targetFree inventory)
+    {leftCount rightCount : Nat}
+    {leftKey : Fin leftCount -> CostStaticAtomKey}
+    {rightKey : Fin rightCount -> CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey)
+    (leg : Fin environment.atomCount -> Fin cospan.commonKeys.length)
+    (commutes : forall slot,
+      cospan.commonKeys.get (leg slot) = (environment.atomValue slot).key)
+    {sourceBound targetBound : List TypeExpr}
+    {sort : Mettapedia.OSLF.Framework.ConstructorCategory.LangSort
+      source.theory.presentation.presentation.language}
+    (term : CostStaticRegionNode.CostStaticSourceTerm source color
+      environment.sourceAtomFreeContext environment.sourceAtomSupport
+      sourceBound targetBound sort) :
+    (environment.reifySourceTermToCommon cospan leg commutes term).term.1 =
+      cospan.reifyWith environment.lookupAtom? leg term.term.1 := by
+  rfl
+
 /-- A canonical frame is covered when every free name resolves to a slot in
 its proof-relevant finite semantic-atom environment. -/
 def Covers
@@ -1392,6 +1878,330 @@ def semanticKeyCospan
   CostStaticAtomKeyCospan.ofFunctions
     (fun slot => (left.atomValue slot).key)
     (fun slot => (right.atomValue slot).key)
+
+/-- Every common semantic slot retains a proof-relevant typed origin in at
+least one endpoint environment. -/
+theorem semanticKeyCospan_has_endpoint_origin
+    {source : CIGSLT} {leftColor rightColor : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {leftOccurrences rightOccurrences : List CostRegionOccurrence}
+    {leftTable : TypedCostRegionBoundaryTable source leftColor targetFree
+      leftOccurrences}
+    {rightTable : TypedCostRegionBoundaryTable source rightColor targetFree
+      rightOccurrences}
+    {leftValues : TypedCostRegionBoundaryTable.Values source leftColor
+      targetFree leftTable}
+    {rightValues : TypedCostRegionBoundaryTable.Values source rightColor
+      targetFree rightTable}
+    {leftRoot rightRoot : Pattern}
+    {leftInventory : CostStaticParameterInventory source leftColor targetFree
+      leftTable leftValues leftRoot}
+    {rightInventory : CostStaticParameterInventory source rightColor targetFree
+      rightTable rightValues rightRoot}
+    (left : CostStaticAtomEnvironment source leftColor targetFree leftInventory)
+    (right : CostStaticAtomEnvironment source rightColor targetFree
+      rightInventory)
+    (slot : Fin (left.semanticKeyCospan right).commonKeys.length) :
+    (∃ leftSlot,
+        (left.semanticKeyCospan right).commonKeys.get slot =
+          (left.atomValue leftSlot).key) ∨
+      ∃ rightSlot,
+        (left.semanticKeyCospan right).commonKeys.get slot =
+          (right.atomValue rightSlot).key := by
+  exact CostStaticAtomKeyCospan.ofFunctions_has_endpoint_origin
+    (fun leftSlot => (left.atomValue leftSlot).key)
+    (fun rightSlot => (right.atomValue rightSlot).key) slot
+
+/-- When both endpoint inventories belong to one selected colour, the
+endpoint type-map certificates induce a uniform type map on their common
+semantic quotient.  No representative is chosen: each common slot is
+transported from whichever proof-relevant endpoint origin witnesses it. -/
+theorem semanticKeyCospan_typeMap_of_sameColor
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {leftOccurrences rightOccurrences : List CostRegionOccurrence}
+    {leftTable : TypedCostRegionBoundaryTable source color targetFree
+      leftOccurrences}
+    {rightTable : TypedCostRegionBoundaryTable source color targetFree
+      rightOccurrences}
+    {leftValues : TypedCostRegionBoundaryTable.Values source color
+      targetFree leftTable}
+    {rightValues : TypedCostRegionBoundaryTable.Values source color
+      targetFree rightTable}
+    {leftRoot rightRoot : Pattern}
+    {leftInventory : CostStaticParameterInventory source color targetFree
+      leftTable leftValues leftRoot}
+    {rightInventory : CostStaticParameterInventory source color targetFree
+      rightTable rightValues rightRoot}
+    (left : CostStaticAtomEnvironment source color targetFree leftInventory)
+    (right : CostStaticAtomEnvironment source color targetFree rightInventory)
+    (leftTypeMap : ∀ slot,
+      mapTypeExpr (color.symbols source)
+          (left.atomValue slot).key.sourceType =
+        (left.atomValue slot).key.targetType)
+    (rightTypeMap : ∀ slot,
+      mapTypeExpr (color.symbols source)
+          (right.atomValue slot).key.sourceType =
+        (right.atomValue slot).key.targetType) :
+    ∀ slot,
+      mapTypeExpr (color.symbols source)
+          ((left.semanticKeyCospan right).commonKeys.get slot).sourceType =
+        ((left.semanticKeyCospan right).commonKeys.get slot).targetType := by
+  intro slot
+  rcases left.semanticKeyCospan_has_endpoint_origin right slot with
+      ⟨leftSlot, keyEq⟩ | ⟨rightSlot, keyEq⟩
+  · rw [keyEq]
+    exact leftTypeMap leftSlot
+  · rw [keyEq]
+    exact rightTypeMap rightSlot
+
+/-- The common semantic quotient restores through a genuine typed open
+assignment.  Typing and object evidence for each quotient slot are inherited
+from an endpoint origin; the proof-free common key merely transports those
+proofs across its recorded equality. -/
+def semanticKeyCospanSupportedOpenAssignment
+    {source : CIGSLT} {leftColor rightColor : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {leftOccurrences rightOccurrences : List CostRegionOccurrence}
+    {leftTable : TypedCostRegionBoundaryTable source leftColor targetFree
+      leftOccurrences}
+    {rightTable : TypedCostRegionBoundaryTable source rightColor targetFree
+      rightOccurrences}
+    {leftValues : TypedCostRegionBoundaryTable.Values source leftColor
+      targetFree leftTable}
+    {rightValues : TypedCostRegionBoundaryTable.Values source rightColor
+      targetFree rightTable}
+    {leftRoot rightRoot : Pattern}
+    {leftInventory : CostStaticParameterInventory source leftColor targetFree
+      leftTable leftValues leftRoot}
+    {rightInventory : CostStaticParameterInventory source rightColor targetFree
+      rightTable rightValues rightRoot}
+    (left : CostStaticAtomEnvironment source leftColor targetFree leftInventory)
+    (right : CostStaticAtomEnvironment source rightColor targetFree
+      rightInventory) :
+    WellSorted.SupportedOpenAssignment source.costWholeLanguage
+      (left.semanticKeyCospan right).commonTargetFreeContext targetFree
+      (left.semanticKeyCospan right).commonSupport where
+  assignment := (left.semanticKeyCospan right).commonAssignment
+  typed := by
+    intro name type lookup
+    change ((left.semanticKeyCospan right).lookupCommon? name).map
+      (fun slot =>
+        ((left.semanticKeyCospan right).commonKeys.get slot).targetType) =
+          some type at lookup
+    cases selected : (left.semanticKeyCospan right).lookupCommon? name with
+    | none => simp [selected] at lookup
+    | some slot =>
+        rw [selected] at lookup
+        have targetTypeEq :
+            ((left.semanticKeyCospan right).commonKeys.get slot).targetType =
+              type := Option.some.inj lookup
+        rcases left.semanticKeyCospan_has_endpoint_origin right slot with
+            ⟨leftSlot, keyEq⟩ | ⟨rightSlot, keyEq⟩
+        · have evidence := (left.atomValue leftSlot).normalTyped
+          rw [← keyEq, targetTypeEq] at evidence
+          simpa [CostStaticAtomKeyCospan.commonSupport,
+            CostStaticAtomKeyCospan.commonAssignment, selected, keyEq,
+            targetTypeEq] using evidence
+        · have evidence := (right.atomValue rightSlot).normalTyped
+          rw [← keyEq, targetTypeEq] at evidence
+          simpa [CostStaticAtomKeyCospan.commonSupport,
+            CostStaticAtomKeyCospan.commonAssignment, selected, keyEq,
+            targetTypeEq] using evidence
+  canonicalBinderMetadata := by
+    intro name type lookup
+    change ((left.semanticKeyCospan right).lookupCommon? name).map
+      (fun slot =>
+        ((left.semanticKeyCospan right).commonKeys.get slot).targetType) =
+          some type at lookup
+    cases selected : (left.semanticKeyCospan right).lookupCommon? name with
+    | none => simp [selected] at lookup
+    | some slot =>
+        rcases left.semanticKeyCospan_has_endpoint_origin right slot with
+            ⟨leftSlot, keyEq⟩ | ⟨rightSlot, keyEq⟩
+        · have evidence :=
+            (left.atomValue leftSlot).normalCanonicalBinderMetadata
+          rw [← keyEq] at evidence
+          simpa [CostStaticAtomKeyCospan.commonAssignment, selected] using evidence
+        · have evidence :=
+            (right.atomValue rightSlot).normalCanonicalBinderMetadata
+          rw [← keyEq] at evidence
+          simpa [CostStaticAtomKeyCospan.commonAssignment, selected] using evidence
+  objectPattern := by
+    intro name type lookup
+    change ((left.semanticKeyCospan right).lookupCommon? name).map
+      (fun slot =>
+        ((left.semanticKeyCospan right).commonKeys.get slot).targetType) =
+          some type at lookup
+    cases selected : (left.semanticKeyCospan right).lookupCommon? name with
+    | none => simp [selected] at lookup
+    | some slot =>
+        rcases left.semanticKeyCospan_has_endpoint_origin right slot with
+            ⟨leftSlot, keyEq⟩ | ⟨rightSlot, keyEq⟩
+        · have evidence := (left.atomValue leftSlot).normalObject
+          rw [← keyEq] at evidence
+          simpa [CostStaticAtomKeyCospan.commonAssignment, selected] using evidence
+        · have evidence := (right.atomValue rightSlot).normalObject
+          rw [← keyEq] at evidence
+          simpa [CostStaticAtomKeyCospan.commonAssignment, selected] using evidence
+  reflectiveScopeSafe := by
+    intro name type lookup declaration membership
+    change ((left.semanticKeyCospan right).lookupCommon? name).map
+      (fun slot =>
+        ((left.semanticKeyCospan right).commonKeys.get slot).targetType) =
+          some type at lookup
+    cases selected : (left.semanticKeyCospan right).lookupCommon? name with
+    | none => simp [selected] at lookup
+    | some slot =>
+        rcases left.semanticKeyCospan_has_endpoint_origin right slot with
+            ⟨leftSlot, keyEq⟩ | ⟨rightSlot, keyEq⟩
+        · have evidence :=
+            (left.atomValue leftSlot).normalReflectiveScopeSafe
+              declaration membership
+          rw [← keyEq] at evidence
+          simpa [CostStaticAtomKeyCospan.commonSupport,
+            CostStaticAtomKeyCospan.commonAssignment, selected] using evidence
+        · have evidence :=
+            (right.atomValue rightSlot).normalReflectiveScopeSafe
+              declaration membership
+          rw [← keyEq] at evidence
+          simpa [CostStaticAtomKeyCospan.commonSupport,
+            CostStaticAtomKeyCospan.commonAssignment, selected] using evidence
+
+/-- Rename one endpoint's authored atom namespace into a common semantic
+namespace as a fully typed, support-indexed open assignment.
+
+The assignment contains only rigid free variables.  Its typing is derived
+from the cospan commuting law, while the endpoint support remains the source
+support used by the authored reflective section.  Thus this construction is
+a genuine change of finite namespace, not an evaluation or a hidden choice
+of normalized representative. -/
+def sourceReificationSupportedOpenAssignment
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    {table : TypedCostRegionBoundaryTable source color targetFree occurrences}
+    {values : TypedCostRegionBoundaryTable.Values source color targetFree table}
+    {root : Pattern}
+    {inventory : CostStaticParameterInventory source color targetFree table
+      values root}
+    (environment : CostStaticAtomEnvironment source color targetFree inventory)
+    {leftCount rightCount : Nat}
+    {leftKey : Fin leftCount -> CostStaticAtomKey}
+    {rightKey : Fin rightCount -> CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey)
+    (leg : Fin environment.atomCount -> Fin cospan.commonKeys.length)
+    (commutes : ∀ slot,
+      cospan.commonKeys.get (leg slot) = (environment.atomValue slot).key) :
+    WellSorted.SupportedOpenAssignment
+      source.theory.presentation.presentation.language
+      environment.sourceAtomFreeContext cospan.commonSourceFreeContext
+  environment.sourceAtomSupport where
+  assignment := fun name =>
+    match environment.lookupAtom? name with
+    | some slot => .fvar (cospan.commonAtomName (leg slot))
+    | none => .fvar name
+  typed := by
+    intro name type lookup
+    cases selected : environment.lookupAtom? name with
+    | none =>
+        change (environment.lookupAtom? name).map
+          (fun slot => (environment.atomValue slot).key.sourceType) =
+            some type at lookup
+        simp [selected] at lookup
+    | some slot =>
+        change (environment.lookupAtom? name).map
+          (fun slot => (environment.atomValue slot).key.sourceType) =
+            some type at lookup
+        rw [selected] at lookup
+        have sourceTypeEq : (environment.atomValue slot).key.sourceType =
+            type := Option.some.inj lookup
+        have commonLookup : cospan.commonSourceFreeContext
+            (cospan.commonAtomName (leg slot)) = some type := by
+          rw [cospan.commonSourceFreeContext_commonAtomName,
+            congrArg CostStaticAtomKey.sourceType (commutes slot), sourceTypeEq]
+        simpa [selected] using
+          (WellSorted.HasType.fvar
+            (language := source.theory.presentation.presentation.language)
+            (bound := environment.sourceAtomSupport name) commonLookup)
+  canonicalBinderMetadata := by
+    intro name type lookup
+    cases environment.lookupAtom? name <;> rfl
+  objectPattern := by
+    intro name type lookup
+    cases environment.lookupAtom? name <;> rfl
+  reflectiveScopeSafe := by
+    intro name type lookup presentation membership
+    cases environment.lookupAtom? name <;> rfl
+
+/-- The supported source-namespace assignment computes exactly the direct
+common-cospan reifier at every reflective binder depth.
+
+All assignment images are free variables, so the support-indexed weakening
+performed by `substituteAt` is inert.  The statement nevertheless retains
+the support-aware API, making it suitable for rho's proved supported-
+substitution theorem rather than an untyped renaming shortcut. -/
+theorem sourceReificationSupportedOpenAssignment_substituteAt
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    {table : TypedCostRegionBoundaryTable source color targetFree occurrences}
+    {values : TypedCostRegionBoundaryTable.Values source color targetFree table}
+    {root : Pattern}
+    {inventory : CostStaticParameterInventory source color targetFree table
+      values root}
+    (environment : CostStaticAtomEnvironment source color targetFree inventory)
+    {leftCount rightCount : Nat}
+    {leftKey : Fin leftCount -> CostStaticAtomKey}
+    {rightKey : Fin rightCount -> CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey)
+    (leg : Fin environment.atomCount -> Fin cospan.commonKeys.length)
+    (commutes : ∀ slot,
+      cospan.commonKeys.get (leg slot) = (environment.atomValue slot).key)
+    (availableDepth : Nat) (pattern : Pattern) :
+    ReflectiveContextSupport.substituteAt
+        source.theory.presentation.presentation.language
+        environment.sourceAtomSupport
+        (environment.sourceReificationSupportedOpenAssignment cospan leg
+          commutes).assignment availableDepth pattern =
+      cospan.reifyWith environment.lookupAtom? leg pattern := by
+  induction pattern using Pattern.inductionOn generalizing availableDepth with
+  | hbvar index =>
+      simp [ReflectiveContextSupport.substituteAt,
+        CostStaticAtomKeyCospan.reifyWith]
+  | hfvar name =>
+      cases selected : environment.lookupAtom? name <;>
+        simp [sourceReificationSupportedOpenAssignment,
+          ReflectiveContextSupport.substituteAt,
+          CostStaticAtomKeyCospan.reifyWith, selected,
+          Mettapedia.OSLF.MeTTaIL.Substitution.liftBVars]
+  | happly constructor arguments inductionHypothesis =>
+      simp only [ReflectiveContextSupport.substituteAt,
+        CostStaticAtomKeyCospan.reifyWith,
+        Pattern.apply.injEq, true_and]
+      apply List.map_congr_left
+      intro argument membership
+      exact inductionHypothesis argument membership _
+  | hlambda binder body inductionHypothesis =>
+      simp only [ReflectiveContextSupport.substituteAt,
+        CostStaticAtomKeyCospan.reifyWith, Pattern.lambda.injEq, true_and]
+      exact inductionHypothesis _
+  | hmultiLambda arity binders body inductionHypothesis =>
+      simp only [ReflectiveContextSupport.substituteAt,
+        CostStaticAtomKeyCospan.reifyWith, Pattern.multiLambda.injEq,
+        true_and]
+      exact inductionHypothesis _
+  | hsubst body replacement bodyInduction replacementInduction =>
+      simp only [ReflectiveContextSupport.substituteAt,
+        CostStaticAtomKeyCospan.reifyWith, Pattern.subst.injEq]
+      exact ⟨bodyInduction _, replacementInduction _⟩
+  | hcollection collectionType elements rest inductionHypothesis =>
+      simp only [ReflectiveContextSupport.substituteAt,
+        CostStaticAtomKeyCospan.reifyWith,
+        Pattern.collection.injEq, true_and, and_true]
+      apply List.map_congr_left
+      intro element membership
+      exact inductionHypothesis element membership _
 
 /-- Cross-environment slots coalesce in the canonical joint exactly when
 their complete typed semantic keys agree. -/
@@ -2416,6 +3226,40 @@ structure CostStaticAtomFrameAlignment
 
 namespace CostStaticAtomFrameAlignment
 
+/-- Reverse a positional semantic-atom frame alignment without forgetting
+either endpoint inventory or its common semantic quotient. -/
+def symm
+    {source : CIGSLT} {leftColor rightColor : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {leftOccurrences rightOccurrences : List CostRegionOccurrence}
+    {leftTable : TypedCostRegionBoundaryTable source leftColor targetFree
+      leftOccurrences}
+    {rightTable : TypedCostRegionBoundaryTable source rightColor targetFree
+      rightOccurrences}
+    {leftValues : TypedCostRegionBoundaryTable.Values source leftColor
+      targetFree leftTable}
+    {rightValues : TypedCostRegionBoundaryTable.Values source rightColor
+      targetFree rightTable}
+    {leftRoot rightRoot : Pattern}
+    {leftInventory : CostStaticParameterInventory source leftColor targetFree
+      leftTable leftValues leftRoot}
+    {rightInventory : CostStaticParameterInventory source rightColor targetFree
+      rightTable rightValues rightRoot}
+    {left : CostStaticAtomEnvironment source leftColor targetFree leftInventory}
+    {right : CostStaticAtomEnvironment source rightColor targetFree
+      rightInventory}
+    {leftFrame rightFrame : Pattern}
+    (alignment : CostStaticAtomFrameAlignment left right leftFrame rightFrame) :
+    CostStaticAtomFrameAlignment right left rightFrame leftFrame where
+  cospan := alignment.cospan.symm
+  leftCovered := alignment.rightCovered
+  rightCovered := alignment.leftCovered
+  reifiedFrames_eq := by
+    simpa only [CostStaticAtomKeyCospan.symm_reifyWith,
+      CostStaticAtomKeyCospan.symm_leftSlot,
+      CostStaticAtomKeyCospan.symm_rightSlot] using
+      alignment.reifiedFrames_eq.symm
+
 /-- Align two single-occurrence frames when their retained positional atoms
 have the same complete typed semantic key. -/
 def singleFvar
@@ -2576,6 +3420,38 @@ structure CostStaticAtomEvaluationBridge
 
 namespace CostStaticAtomEvaluationBridge
 
+/-- Reverse an evaluation bridge by reversing its proof-relevant frame
+alignment and exchanging the two endpoint factorizations. -/
+def symm
+    {source : CIGSLT} {leftColor rightColor : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {leftOccurrences rightOccurrences : List CostRegionOccurrence}
+    {leftTable : TypedCostRegionBoundaryTable source leftColor targetFree
+      leftOccurrences}
+    {rightTable : TypedCostRegionBoundaryTable source rightColor targetFree
+      rightOccurrences}
+    {leftValues : TypedCostRegionBoundaryTable.Values source leftColor
+      targetFree leftTable}
+    {rightValues : TypedCostRegionBoundaryTable.Values source rightColor
+      targetFree rightTable}
+    {leftRoot rightRoot : Pattern}
+    {leftInventory : CostStaticParameterInventory source leftColor targetFree
+      leftTable leftValues leftRoot}
+    {rightInventory : CostStaticParameterInventory source rightColor targetFree
+      rightTable rightValues rightRoot}
+    {left : CostStaticAtomEnvironment source leftColor targetFree leftInventory}
+    {right : CostStaticAtomEnvironment source rightColor targetFree
+      rightInventory}
+    {leftFrame rightFrame : Pattern}
+    {alignment : CostStaticAtomFrameAlignment left right leftFrame rightFrame}
+    {availableDepth : Nat} {leftResult rightResult : Pattern}
+    (bridge : CostStaticAtomEvaluationBridge alignment availableDepth
+      leftResult rightResult) :
+    CostStaticAtomEvaluationBridge alignment.symm availableDepth rightResult
+      leftResult where
+  leftFactors := bridge.rightFactors
+  rightFactors := bridge.leftFactors
+
 /-- Exact local evaluator agreement derived from the proof-relevant common
 semantic-atom square. -/
 theorem results_eq
@@ -2652,6 +3528,34 @@ structure PackedCostStaticAtomEvaluationBridge
     rightResult
 
 namespace PackedCostStaticAtomEvaluationBridge
+
+/-- Reverse a packed semantic-atom evaluation bridge without erasing any
+endpoint inventory, atom environment, or cospan evidence. -/
+def symm
+    {source : CIGSLT} {leftResult rightResult : Pattern}
+    (packed : PackedCostStaticAtomEvaluationBridge source leftResult
+      rightResult) :
+    PackedCostStaticAtomEvaluationBridge source rightResult leftResult where
+  leftColor := packed.rightColor
+  rightColor := packed.leftColor
+  targetFree := packed.targetFree
+  leftOccurrences := packed.rightOccurrences
+  rightOccurrences := packed.leftOccurrences
+  leftTable := packed.rightTable
+  rightTable := packed.leftTable
+  leftValues := packed.rightValues
+  rightValues := packed.leftValues
+  leftRoot := packed.rightRoot
+  rightRoot := packed.leftRoot
+  leftInventory := packed.rightInventory
+  rightInventory := packed.leftInventory
+  leftEnvironment := packed.rightEnvironment
+  rightEnvironment := packed.leftEnvironment
+  leftFrame := packed.rightFrame
+  rightFrame := packed.leftFrame
+  alignment := packed.alignment.symm
+  availableDepth := packed.availableDepth
+  bridge := packed.bridge.symm
 
 /-- Package an already-constructed semantic-atom bridge while inferring all
 of its dependent endpoint data. -/
@@ -2758,6 +3662,41 @@ structure CostStaticCanonicalAtomFrameAlignment
       cospan.reifyWith right.lookupAtom? cospan.rightSlot rightFrame
 
 namespace CostStaticCanonicalAtomFrameAlignment
+
+/-- Reverse a canonical semantic-atom frame alignment while retaining the
+same common semantic quotient. -/
+def symm
+    {source : CIGSLT} {leftColor rightColor : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {leftOccurrences rightOccurrences : List CostRegionOccurrence}
+    {leftTable : TypedCostRegionBoundaryTable source leftColor targetFree
+      leftOccurrences}
+    {rightTable : TypedCostRegionBoundaryTable source rightColor targetFree
+      rightOccurrences}
+    {leftValues : TypedCostRegionBoundaryTable.Values source leftColor
+      targetFree leftTable}
+    {rightValues : TypedCostRegionBoundaryTable.Values source rightColor
+      targetFree rightTable}
+    {leftRoot rightRoot : Pattern}
+    {leftInventory : CostStaticParameterInventory source leftColor targetFree
+      leftTable leftValues leftRoot}
+    {rightInventory : CostStaticParameterInventory source rightColor targetFree
+      rightTable rightValues rightRoot}
+    {left : CostStaticAtomEnvironment source leftColor targetFree leftInventory}
+    {right : CostStaticAtomEnvironment source rightColor targetFree
+      rightInventory}
+    {leftFrame rightFrame : Pattern}
+    (alignment : CostStaticCanonicalAtomFrameAlignment left right leftFrame
+      rightFrame) :
+    CostStaticCanonicalAtomFrameAlignment right left rightFrame leftFrame where
+  cospan := alignment.cospan.symm
+  leftCovered := alignment.rightCovered
+  rightCovered := alignment.leftCovered
+  reifiedFrames_eq := by
+    simpa only [CostStaticAtomKeyCospan.symm_reifyWith,
+      CostStaticAtomKeyCospan.symm_leftSlot,
+      CostStaticAtomKeyCospan.symm_rightSlot] using
+      alignment.reifiedFrames_eq.symm
 
 /-- Common-apex restoration of aligned canonical atom frames is exact. -/
 theorem restoredFrames_eq
@@ -2873,6 +3812,44 @@ structure CostStaticCanonicalAtomRestorationAlignment
 
 namespace CostStaticCanonicalAtomRestorationAlignment
 
+/-- Reverse a canonical-frame restoration alignment at the same common
+semantic apex. -/
+def symm
+    {source : CIGSLT} {leftColor rightColor : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {leftOccurrences rightOccurrences : List CostRegionOccurrence}
+    {leftTable : TypedCostRegionBoundaryTable source leftColor targetFree
+      leftOccurrences}
+    {rightTable : TypedCostRegionBoundaryTable source rightColor targetFree
+      rightOccurrences}
+    {leftValues : TypedCostRegionBoundaryTable.Values source leftColor
+      targetFree leftTable}
+    {rightValues : TypedCostRegionBoundaryTable.Values source rightColor
+      targetFree rightTable}
+    {leftRoot rightRoot : Pattern}
+    {leftInventory : CostStaticParameterInventory source leftColor targetFree
+      leftTable leftValues leftRoot}
+    {rightInventory : CostStaticParameterInventory source rightColor targetFree
+      rightTable rightValues rightRoot}
+    {left : CostStaticAtomEnvironment source leftColor targetFree leftInventory}
+    {right : CostStaticAtomEnvironment source rightColor targetFree
+      rightInventory}
+    {availableDepth : Nat} {leftFrame rightFrame : Pattern}
+    (alignment : CostStaticCanonicalAtomRestorationAlignment left right
+      availableDepth leftFrame rightFrame) :
+    CostStaticCanonicalAtomRestorationAlignment right left availableDepth
+      rightFrame leftFrame where
+  cospan := alignment.cospan.symm
+  leftCovered := alignment.rightCovered
+  rightCovered := alignment.leftCovered
+  commonRestorations_eq := by
+    simpa only [CostStaticAtomKeyCospan.symm_commonSupport,
+      CostStaticAtomKeyCospan.symm_commonAssignment,
+      CostStaticAtomKeyCospan.symm_reifyWith,
+      CostStaticAtomKeyCospan.symm_leftSlot,
+      CostStaticAtomKeyCospan.symm_rightSlot] using
+      alignment.commonRestorations_eq.symm
+
 /-- A common restored canonical frame descends to exact equality of the two
 endpoint restorations.  Distinct internal atom identities remain retained in
 the certificate even when their compact restored meanings coincide. -/
@@ -2957,6 +3934,38 @@ structure CostStaticCanonicalAtomRestorationEvaluationBridge
 
 namespace CostStaticCanonicalAtomRestorationEvaluationBridge
 
+/-- Reverse a common-restoration evaluation bridge. -/
+def symm
+    {source : CIGSLT} {leftColor rightColor : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {leftOccurrences rightOccurrences : List CostRegionOccurrence}
+    {leftTable : TypedCostRegionBoundaryTable source leftColor targetFree
+      leftOccurrences}
+    {rightTable : TypedCostRegionBoundaryTable source rightColor targetFree
+      rightOccurrences}
+    {leftValues : TypedCostRegionBoundaryTable.Values source leftColor
+      targetFree leftTable}
+    {rightValues : TypedCostRegionBoundaryTable.Values source rightColor
+      targetFree rightTable}
+    {leftRoot rightRoot : Pattern}
+    {leftInventory : CostStaticParameterInventory source leftColor targetFree
+      leftTable leftValues leftRoot}
+    {rightInventory : CostStaticParameterInventory source rightColor targetFree
+      rightTable rightValues rightRoot}
+    {left : CostStaticAtomEnvironment source leftColor targetFree leftInventory}
+    {right : CostStaticAtomEnvironment source rightColor targetFree
+      rightInventory}
+    {availableDepth : Nat} {leftFrame rightFrame : Pattern}
+    {alignment : CostStaticCanonicalAtomRestorationAlignment left right
+      availableDepth leftFrame rightFrame}
+    {leftResult rightResult : Pattern}
+    (bridge : CostStaticCanonicalAtomRestorationEvaluationBridge alignment
+      leftResult rightResult) :
+    CostStaticCanonicalAtomRestorationEvaluationBridge alignment.symm
+      rightResult leftResult where
+  leftFactors := bridge.rightFactors
+  rightFactors := bridge.leftFactors
+
 /-- Exact evaluator agreement derived from the common restored semantic
 apex. -/
 theorem results_eq
@@ -3026,6 +4035,34 @@ structure PackedCostStaticCanonicalAtomRestorationEvaluationBridge
     leftResult rightResult
 
 namespace PackedCostStaticCanonicalAtomRestorationEvaluationBridge
+
+/-- Reverse a packed common-restoration evaluation bridge. -/
+def symm
+    {source : CIGSLT} {leftResult rightResult : Pattern}
+    (packed : PackedCostStaticCanonicalAtomRestorationEvaluationBridge source
+      leftResult rightResult) :
+    PackedCostStaticCanonicalAtomRestorationEvaluationBridge source rightResult
+      leftResult where
+  leftColor := packed.rightColor
+  rightColor := packed.leftColor
+  targetFree := packed.targetFree
+  leftOccurrences := packed.rightOccurrences
+  rightOccurrences := packed.leftOccurrences
+  leftTable := packed.rightTable
+  rightTable := packed.leftTable
+  leftValues := packed.rightValues
+  rightValues := packed.leftValues
+  leftRoot := packed.rightRoot
+  rightRoot := packed.leftRoot
+  leftInventory := packed.rightInventory
+  rightInventory := packed.leftInventory
+  leftEnvironment := packed.rightEnvironment
+  rightEnvironment := packed.leftEnvironment
+  availableDepth := packed.availableDepth
+  leftFrame := packed.rightFrame
+  rightFrame := packed.leftFrame
+  alignment := packed.alignment.symm
+  bridge := packed.bridge.symm
 
 /-- Package an already-constructed common-restoration evaluation bridge. -/
 def ofBridge
@@ -3125,6 +4162,38 @@ structure CostStaticCanonicalAtomEvaluationBridge
 
 namespace CostStaticCanonicalAtomEvaluationBridge
 
+/-- Reverse a canonical semantic-atom evaluation bridge. -/
+def symm
+    {source : CIGSLT} {leftColor rightColor : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {leftOccurrences rightOccurrences : List CostRegionOccurrence}
+    {leftTable : TypedCostRegionBoundaryTable source leftColor targetFree
+      leftOccurrences}
+    {rightTable : TypedCostRegionBoundaryTable source rightColor targetFree
+      rightOccurrences}
+    {leftValues : TypedCostRegionBoundaryTable.Values source leftColor
+      targetFree leftTable}
+    {rightValues : TypedCostRegionBoundaryTable.Values source rightColor
+      targetFree rightTable}
+    {leftRoot rightRoot : Pattern}
+    {leftInventory : CostStaticParameterInventory source leftColor targetFree
+      leftTable leftValues leftRoot}
+    {rightInventory : CostStaticParameterInventory source rightColor targetFree
+      rightTable rightValues rightRoot}
+    {left : CostStaticAtomEnvironment source leftColor targetFree leftInventory}
+    {right : CostStaticAtomEnvironment source rightColor targetFree
+      rightInventory}
+    {leftFrame rightFrame : Pattern}
+    {alignment : CostStaticCanonicalAtomFrameAlignment left right leftFrame
+      rightFrame}
+    {availableDepth : Nat} {leftResult rightResult : Pattern}
+    (bridge : CostStaticCanonicalAtomEvaluationBridge alignment availableDepth
+      leftResult rightResult) :
+    CostStaticCanonicalAtomEvaluationBridge alignment.symm availableDepth
+      rightResult leftResult where
+  leftFactors := bridge.rightFactors
+  rightFactors := bridge.leftFactors
+
 /-- Exact evaluator agreement derived from the canonical atom-frame square. -/
 theorem results_eq
     {source : CIGSLT} {leftColor rightColor : CostStaticColor}
@@ -3196,6 +4265,34 @@ structure PackedCostStaticCanonicalAtomEvaluationBridge
     leftResult rightResult
 
 namespace PackedCostStaticCanonicalAtomEvaluationBridge
+
+/-- Reverse a packed canonical semantic-atom evaluation bridge. -/
+def symm
+    {source : CIGSLT} {leftResult rightResult : Pattern}
+    (packed : PackedCostStaticCanonicalAtomEvaluationBridge source leftResult
+      rightResult) :
+    PackedCostStaticCanonicalAtomEvaluationBridge source rightResult
+      leftResult where
+  leftColor := packed.rightColor
+  rightColor := packed.leftColor
+  targetFree := packed.targetFree
+  leftOccurrences := packed.rightOccurrences
+  rightOccurrences := packed.leftOccurrences
+  leftTable := packed.rightTable
+  rightTable := packed.leftTable
+  leftValues := packed.rightValues
+  rightValues := packed.leftValues
+  leftRoot := packed.rightRoot
+  rightRoot := packed.leftRoot
+  leftInventory := packed.rightInventory
+  rightInventory := packed.leftInventory
+  leftEnvironment := packed.rightEnvironment
+  rightEnvironment := packed.leftEnvironment
+  leftFrame := packed.rightFrame
+  rightFrame := packed.leftFrame
+  alignment := packed.alignment.symm
+  availableDepth := packed.availableDepth
+  bridge := packed.bridge.symm
 
 /-- Package an already-constructed canonical atom-frame bridge. -/
 def ofBridge

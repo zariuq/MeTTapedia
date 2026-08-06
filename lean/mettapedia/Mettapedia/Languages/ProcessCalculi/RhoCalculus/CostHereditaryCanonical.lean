@@ -2,6 +2,8 @@ import Mettapedia.GSLT.LanguageDef.CostHereditaryCanonical
 import Mettapedia.GSLT.LanguageDef.CostHereditaryAlignment
 import Mettapedia.GSLT.LanguageDef.CostHereditaryContextRoute
 import Mettapedia.GSLT.LanguageDef.CostHereditaryTreeNormalization
+import Mettapedia.GSLT.LanguageDef.CostElaborationTransportSound
+import Mettapedia.GSLT.LanguageDef.CostSemanticAtomReifyCongruence
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CanonicalSupport
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostCanonicalLaws
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefContinuedInteraction
@@ -1437,6 +1439,188 @@ def rhoHereditaryStaticNormalizer : CostStaticRegionNormalizer rhoCIGSLT :=
 def rhoHereditaryNormalizationKernel :
     CostStaticNormalizationKernel rhoCIGSLT where
   normalize := rhoHereditaryStaticNormalizer
+
+/-- Two same-colour rho source frames may be compared at the typed common
+semantic-atom apex.  Canonical equality in that one authored source context
+survives the shared Cost action exactly, including ambient thinning and
+restoration of the common normalized atom values.
+
+This theorem intentionally stops at the generated reflective canonical
+representative.  Hereditary root equality additionally needs the existing
+restoration/permutation terminal, because restoring values can change the
+deterministic order of a parallel frame. -/
+theorem rhoCommonSourceAction_canonicalize_eq
+    {color : CostStaticColor} {targetFree : FreeTypeContext}
+    (leftNode rightNode : CostStaticRegionNode rhoCIGSLT color targetFree)
+    {leftValues : TypedCostRegionBoundaryTable.Values rhoCIGSLT color
+      targetFree leftNode.boundaryTable}
+    {rightValues : TypedCostRegionBoundaryTable.Values rhoCIGSLT color
+      targetFree rightNode.boundaryTable}
+    (leftInventory : CostStaticParameterInventory rhoCIGSLT color targetFree
+      leftNode.boundaryTable leftValues leftNode.skeleton.1)
+    (rightInventory : CostStaticParameterInventory rhoCIGSLT color targetFree
+      rightNode.boundaryTable rightValues rightNode.skeleton.1)
+    (sameTargetBound : leftNode.targetBound = rightNode.targetBound)
+    (commonSourceCanonical :
+      let leftEnvironment := CostStaticAtomEnvironment.ofInventory
+        leftInventory
+      let rightEnvironment := CostStaticAtomEnvironment.ofInventory
+        rightInventory
+      let cospan := leftEnvironment.semanticKeyCospan rightEnvironment
+      canonicalize rhoReflectivePresentation
+          (cospan.reifyWith leftEnvironment.lookupAtom? cospan.leftSlot
+            (leftNode.reifiedSourceFrame leftEnvironment).1) =
+        canonicalize rhoReflectivePresentation
+          (cospan.reifyWith rightEnvironment.lookupAtom? cospan.rightSlot
+            (rightNode.reifiedSourceFrame rightEnvironment).1)) :
+    let leftEnvironment := CostStaticAtomEnvironment.ofInventory leftInventory
+    let rightEnvironment := CostStaticAtomEnvironment.ofInventory rightInventory
+    let cospan := leftEnvironment.semanticKeyCospan rightEnvironment
+    let assignment :=
+      leftEnvironment.semanticKeyCospanSupportedOpenAssignment rightEnvironment
+    canonicalize
+        (costStaticReflectivePresentationDecl rhoCIGSLT color
+          rhoReflectivePresentation)
+        (rhoCostStaticActionAt leftNode.thinning assignment []
+          leftNode.targetBound
+          (cospan.reifyWith leftEnvironment.lookupAtom? cospan.leftSlot
+            (leftNode.reifiedSourceFrame leftEnvironment).1)) =
+      canonicalize
+        (costStaticReflectivePresentationDecl rhoCIGSLT color
+          rhoReflectivePresentation)
+        (rhoCostStaticActionAt rightNode.thinning assignment []
+          rightNode.targetBound
+          (cospan.reifyWith rightEnvironment.lookupAtom? cospan.rightSlot
+            (rightNode.reifiedSourceFrame rightEnvironment).1)) := by
+  let leftEnvironment := CostStaticAtomEnvironment.ofInventory leftInventory
+  let rightEnvironment := CostStaticAtomEnvironment.ofInventory rightInventory
+  let cospan := leftEnvironment.semanticKeyCospan rightEnvironment
+  let assignment :=
+    leftEnvironment.semanticKeyCospanSupportedOpenAssignment rightEnvironment
+  have typeMap : ∀ slot,
+      mapTypeExpr (color.symbols rhoCIGSLT)
+          (cospan.commonKeys.get slot).sourceType =
+        (cospan.commonKeys.get slot).targetType :=
+    leftEnvironment.semanticKeyCospan_typeMap_of_sameColor rightEnvironment
+      (leftNode.semanticAtom_typeMap leftValues leftInventory)
+      (rightNode.semanticAtom_typeMap rightValues rightInventory)
+  have freeContext :
+      cospan.commonSourceFreeContext.map (color.symbols rhoCIGSLT) =
+        cospan.commonTargetFreeContext :=
+    cospan.commonSourceFreeContext_map_eq_commonTargetFreeContext rhoCIGSLT
+      color typeMap
+  let leftCommon := leftEnvironment.reifySourceTermToCommon cospan
+    cospan.leftSlot cospan.leftCommutes
+    (leftNode.reifiedSourceTerm leftEnvironment)
+  let rightCommonRaw := rightEnvironment.reifySourceTermToCommon cospan
+    cospan.rightSlot cospan.rightCommutes
+    (rightNode.reifiedSourceTerm rightEnvironment)
+  let sourceBoundEq : leftNode.sourceBound = rightNode.sourceBound :=
+    congrArg
+      (CostStaticBinderThinning.sourceContextOfTarget rhoCIGSLT color)
+      sameTargetBound
+  let rightCommon := rightCommonRaw.reindex sourceBoundEq sameTargetBound rfl
+  have actionEquality :=
+    rhoCostStaticActionAt_canonicalize_eq_of_canonicalize_eq
+      (inner := []) (available := leftNode.targetBound) leftNode.thinning
+      assignment freeContext rfl leftCommon.term.2.1 rightCommon.term.2.1
+      leftCommon.safe rightCommon.safe leftCommon.supported.constructorsWithin
+      rightCommon.supported.constructorsWithin leftCommon.term.2.2.2.1
+      rightCommon.term.2.2.2.1 (by
+        simpa [leftCommon, rightCommon,
+          CostStaticRegionNode.CostStaticSourceTerm.reindex_pattern,
+          CostStaticRegionNode.reifiedSourceTerm,
+          CostStaticRegionNode.reifiedSourceFrame_pattern,
+          rightCommonRaw, leftEnvironment, rightEnvironment, cospan] using
+            commonSourceCanonical)
+  have rightAction :
+      rhoCostStaticActionAt leftNode.thinning assignment []
+          leftNode.targetBound rightCommon.term.1 =
+        rhoCostStaticActionAt rightNode.thinning assignment []
+          rightNode.targetBound rightCommonRaw.term.1 := by
+    simpa [CostStaticRegionNode.CostStaticSourceTerm.act,
+      rhoCostStaticActionAt, ReflectiveContextSupport.substitute,
+      rightCommon] using
+        (CostStaticRegionNode.CostStaticSourceTerm.reindex_act_ofTarget
+          rightCommonRaw sameTargetBound rfl assignment)
+  rw [rightAction] at actionEquality
+  simpa [leftCommon, rightCommonRaw,
+    CostStaticRegionNode.reifiedSourceTerm,
+    CostStaticRegionNode.reifiedSourceFrame_pattern, leftEnvironment,
+    rightEnvironment, cospan, assignment] using actionEquality
+
+/-- Structural alignment of the two already-canonical authored frames is a
+sufficient, occurrence-sensitive interface to the common-source Cost action.
+Related free-variable names must resolve to the same semantic atom at the
+common cospan apex; no equality of endpoint spellings or boundary names is
+assumed.
+
+The conclusion still concerns the generated reflective canonical
+representative.  A hereditary root bridge additionally consumes the existing
+restoration/permutation terminal, where equal semantic atoms may be restored
+to values whose deterministic parallel order differs from their boundary
+order. -/
+theorem rhoCommonSourceAction_canonicalize_eq_of_aligned
+    {color : CostStaticColor} {targetFree : FreeTypeContext}
+    (leftNode rightNode : CostStaticRegionNode rhoCIGSLT color targetFree)
+    {leftValues : TypedCostRegionBoundaryTable.Values rhoCIGSLT color
+      targetFree leftNode.boundaryTable}
+    {rightValues : TypedCostRegionBoundaryTable.Values rhoCIGSLT color
+      targetFree rightNode.boundaryTable}
+    (leftInventory : CostStaticParameterInventory rhoCIGSLT color targetFree
+      leftNode.boundaryTable leftValues leftNode.skeleton.1)
+    (rightInventory : CostStaticParameterInventory rhoCIGSLT color targetFree
+      rightNode.boundaryTable rightValues rightNode.skeleton.1)
+    (sameTargetBound : leftNode.targetBound = rightNode.targetBound)
+    {relation : String → String → Prop}
+    (matched :
+      let leftEnvironment := CostStaticAtomEnvironment.ofInventory
+        leftInventory
+      let rightEnvironment := CostStaticAtomEnvironment.ofInventory
+        rightInventory
+      let cospan := leftEnvironment.semanticKeyCospan rightEnvironment
+      ∀ {leftName rightName : String}, relation leftName rightName →
+        ∃ leftSlot rightSlot,
+          leftEnvironment.lookupAtom? leftName = some leftSlot ∧
+            rightEnvironment.lookupAtom? rightName = some rightSlot ∧
+            cospan.leftSlot leftSlot = cospan.rightSlot rightSlot)
+    (aligned :
+      let leftEnvironment := CostStaticAtomEnvironment.ofInventory
+        leftInventory
+      let rightEnvironment := CostStaticAtomEnvironment.ofInventory
+        rightInventory
+      FvarAligned relation
+        (canonicalize rhoReflectivePresentation
+          (leftNode.reifiedSourceFrame leftEnvironment).1)
+        (canonicalize rhoReflectivePresentation
+          (rightNode.reifiedSourceFrame rightEnvironment).1)) :
+    let leftEnvironment := CostStaticAtomEnvironment.ofInventory leftInventory
+    let rightEnvironment := CostStaticAtomEnvironment.ofInventory rightInventory
+    let cospan := leftEnvironment.semanticKeyCospan rightEnvironment
+    let assignment :=
+      leftEnvironment.semanticKeyCospanSupportedOpenAssignment rightEnvironment
+    canonicalize
+        (costStaticReflectivePresentationDecl rhoCIGSLT color
+          rhoReflectivePresentation)
+        (rhoCostStaticActionAt leftNode.thinning assignment []
+          leftNode.targetBound
+          (cospan.reifyWith leftEnvironment.lookupAtom? cospan.leftSlot
+            (leftNode.reifiedSourceFrame leftEnvironment).1)) =
+      canonicalize
+        (costStaticReflectivePresentationDecl rhoCIGSLT color
+          rhoReflectivePresentation)
+        (rhoCostStaticActionAt rightNode.thinning assignment []
+          rightNode.targetBound
+          (cospan.reifyWith rightEnvironment.lookupAtom? cospan.rightSlot
+            (rightNode.reifiedSourceFrame rightEnvironment).1)) := by
+  let leftEnvironment := CostStaticAtomEnvironment.ofInventory leftInventory
+  let rightEnvironment := CostStaticAtomEnvironment.ofInventory rightInventory
+  let cospan := leftEnvironment.semanticKeyCospan rightEnvironment
+  apply rhoCommonSourceAction_canonicalize_eq leftNode rightNode leftInventory
+    rightInventory sameTargetBound
+  exact leftEnvironment.canonicalize_commonReification_eq_of_aligned
+    rightEnvironment cospan cospan.leftSlot cospan.rightSlot
+    rhoReflectivePresentation (by decide) matched aligned
 
 /-- Close two selected rho static roots when their independently atomized
 canonical frames agree after restoration at the common semantic apex.  This

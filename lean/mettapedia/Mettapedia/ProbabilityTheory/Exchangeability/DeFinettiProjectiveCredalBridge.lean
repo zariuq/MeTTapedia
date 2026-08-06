@@ -3021,7 +3021,7 @@ theorem impreciseDeFinetti_processLawCompatibleCompletion_of_finiteWindowCompati
 /-- Paper-facing package for the imprecise de Finetti process-law crown.  It
 combines the process-level compact/FIP completion with finite-prefix PLN
 lower/upper-envelope and confidence-width readouts. -/
-structure ImpreciseDeFinettiProcessLawCrown
+structure ImpreciseDeFinettiProcessLaw
     (C : Set BernoulliMixture)
     (hLaw : ∀ M : BernoulliMixture, M ∈ C → ∀ n : ℕ,
       BernoulliMixturePrefixLaw M n)
@@ -3623,7 +3623,7 @@ theorem posteriorBernoulliMixturePrefixEnvelopeWidthComplement_eq_one
 finite-prefix surface.  This does not claim a new process carrier; it records
 that the normalized posterior mixture is already a singleton projective prefix
 system with compatible completions and determined finite-prefix intervals. -/
-structure PosteriorBernoulliMixturePrefixProjectiveCrown
+structure PosteriorBernoulliMixturePrefixProjective
     (M : BernoulliMixture) (k l : ℕ)
     (hZ : M.countEvidenceMass k l ≠ 0) : Prop where
   posterior_mem : M.posteriorBernoulliMixture k l hZ ∈
@@ -3648,10 +3648,10 @@ structure PosteriorBernoulliMixturePrefixProjectiveCrown
       (posteriorBernoulliMixtureSet M k l hZ) n
       (posteriorBernoulliMixturePrefixLawAt M k l hZ n) X = 1
 
-theorem posteriorBernoulliMixturePrefixProjectiveCrown
+theorem posteriorBernoulliMixturePrefixProjective
     (M : BernoulliMixture) (k l : ℕ)
     (hZ : M.countEvidenceMass k l ≠ 0) :
-    PosteriorBernoulliMixturePrefixProjectiveCrown M k l hZ where
+    PosteriorBernoulliMixturePrefixProjective M k l hZ where
   posterior_mem := posteriorBernoulliMixture_mem_posteriorSet M k l hZ
   posterior_prefix_law := by
     intro n
@@ -5241,7 +5241,7 @@ theorem posteriorBernoulliMixturePrefixProcess_finiteWindowCompatibleInCarrier_o
 
 /-- Main imprecise de Finetti process-law synthesis crown, stated at the
 minimal compact finite-window compatibility boundary. -/
-theorem impreciseDeFinetti_processLaw_projectiveNaturalExtension_crown_of_finiteWindowCompatibleInCarrier
+theorem impreciseDeFinetti_processLaw_projectiveNaturalExtension_of_finiteWindowCompatibleInCarrier
     (C : Set BernoulliMixture)
     (hLaw : ∀ M : BernoulliMixture, M ∈ C → ∀ n : ℕ,
       BernoulliMixturePrefixLaw M n)
@@ -5258,7 +5258,7 @@ theorem impreciseDeFinetti_processLaw_projectiveNaturalExtension_crown_of_finite
     (hFIP :
       (bernoulliMixturePrefixProcessLowerSpec C hLaw hC).finiteWindowCompatibleInCarrier
         carrier) :
-    ImpreciseDeFinettiProcessLawCrown C hLaw hC where
+    ImpreciseDeFinettiProcessLaw C hLaw hC where
   processCompatibleCompletion :=
     impreciseDeFinetti_processLawCompatibleCompletion_of_finiteWindowCompatibleInCarrier
       C hLaw hC carrier hCompact hCarrierConvex hClosed hFIP
@@ -5306,7 +5306,7 @@ theorem impreciseDeFinetti_processLaw_projectiveNaturalExtension_crown_of_finite
 /-- The exact raw all-gambles compatibility predicate for an imprecise de
 Finetti prefix-process lower envelope.
 
-Positive example: any instance of `ImpreciseDeFinettiProcessLawCrown` supplies
+Positive example: any instance of `ImpreciseDeFinettiProcessLaw` supplies
 this predicate by projection.  Negative example: in the posterior singleton
 case with positive interior mixing mass, the already-proved dichotomy refutes
 this predicate through the corresponding posterior process-law crown. -/
@@ -5320,13 +5320,13 @@ def ImpreciseDeFinettiRawProcessCompatible
 /-- The process-law crown follows from the exact raw compatibility predicate;
 the remaining prefix envelope, width, and agreement/disagreement readouts are
 the finite-prefix de Finetti machinery already proved above. -/
-theorem impreciseDeFinetti_processLaw_projectiveNaturalExtension_crown_of_rawProcessCompatible
+theorem impreciseDeFinetti_processLaw_projectiveNaturalExtension_of_rawProcessCompatible
     (C : Set BernoulliMixture)
     (hLaw : ∀ M : BernoulliMixture, M ∈ C → ∀ n : ℕ,
       BernoulliMixturePrefixLaw M n)
     (hC : C.Nonempty)
     (hCompat : ImpreciseDeFinettiRawProcessCompatible C hLaw hC) :
-    ImpreciseDeFinettiProcessLawCrown C hLaw hC where
+    ImpreciseDeFinettiProcessLaw C hLaw hC where
   processCompatibleCompletion := hCompat
   prefixCompatibleCompletion := by
     intro n
@@ -5372,19 +5372,19 @@ theorem impreciseDeFinetti_processLaw_projectiveNaturalExtension_crown_of_rawPro
 /-- Exact boundary form of the generic process-law crown: after all finite-prefix
 readouts are factored out, its raw process-side content is precisely compatible
 completion of the projective lower-envelope specification. -/
-theorem impreciseDeFinetti_processLaw_projectiveNaturalExtension_crown_iff_rawProcessCompatible
+theorem impreciseDeFinetti_processLaw_projectiveNaturalExtension_iff_rawProcessCompatible
     (C : Set BernoulliMixture)
     (hLaw : ∀ M : BernoulliMixture, M ∈ C → ∀ n : ℕ,
       BernoulliMixturePrefixLaw M n)
     (hC : C.Nonempty) :
-    ImpreciseDeFinettiProcessLawCrown C hLaw hC ↔
+    ImpreciseDeFinettiProcessLaw C hLaw hC ↔
       ImpreciseDeFinettiRawProcessCompatible C hLaw hC := by
   constructor
   · intro hCrown
     exact hCrown.processCompatibleCompletion
   · intro hCompat
     exact
-      impreciseDeFinetti_processLaw_projectiveNaturalExtension_crown_of_rawProcessCompatible
+      impreciseDeFinetti_processLaw_projectiveNaturalExtension_of_rawProcessCompatible
         C hLaw hC hCompat
 
 /-- A respecting global lower prevision is the direct constructive route to the
@@ -5432,7 +5432,7 @@ theorem ImpreciseDeFinettiRawProcessCompatible_iff_exists_respectsLocalLower
         C hLaw hC L hL
 
 /-- Main imprecise de Finetti process-law synthesis crown. -/
-theorem impreciseDeFinetti_processLaw_projectiveNaturalExtension_crown
+theorem impreciseDeFinetti_processLaw_projectiveNaturalExtension
     (C : Set BernoulliMixture)
     (hLaw : ∀ M : BernoulliMixture, M ∈ C → ∀ n : ℕ,
       BernoulliMixturePrefixLaw M n)
@@ -5453,14 +5453,14 @@ theorem impreciseDeFinetti_processLaw_projectiveNaturalExtension_crown
     (hRealize :
       (bernoulliMixturePrefixProcessLowerSpec C hLaw hC).jointPrevisionsRealizedInCarrier
         J carrier) :
-    ImpreciseDeFinettiProcessLawCrown C hLaw hC := by
+    ImpreciseDeFinettiProcessLaw C hLaw hC := by
   have hFIP :
       (bernoulliMixturePrefixProcessLowerSpec C hLaw hC).finiteWindowCompatibleInCarrier
         carrier :=
     ProjectiveLocalLowerPrevisionSpec.finiteWindowCompatibleInCarrier_of_jointPrevisionsRealizedInCarrier
       (bernoulliMixturePrefixProcessLowerSpec C hLaw hC) J carrier hLocal hRealize
   exact
-    impreciseDeFinetti_processLaw_projectiveNaturalExtension_crown_of_finiteWindowCompatibleInCarrier
+    impreciseDeFinetti_processLaw_projectiveNaturalExtension_of_finiteWindowCompatibleInCarrier
       C hLaw hC carrier hCompact hCarrierConvex hClosed hFIP
 
 /-- Canonical prefix marginal consistency plus carrier realization imply the
@@ -5545,7 +5545,7 @@ theorem impreciseDeFinetti_processLawCompatibleCompletion_of_prefixMarginalConsi
 
 /-- Main imprecise de Finetti process-law synthesis crown from the canonical
 largest-prefix marginal-consistency condition plus carrier realization. -/
-theorem impreciseDeFinetti_processLaw_projectiveNaturalExtension_crown_of_prefixMarginalConsistentCarrierRealization
+theorem impreciseDeFinetti_processLaw_projectiveNaturalExtension_of_prefixMarginalConsistentCarrierRealization
     (C : Set BernoulliMixture)
     (hLaw : ∀ M : BernoulliMixture, M ∈ C → ∀ n : ℕ,
       BernoulliMixturePrefixLaw M n)
@@ -5565,9 +5565,9 @@ theorem impreciseDeFinetti_processLaw_projectiveNaturalExtension_crown_of_prefix
       (bernoulliMixturePrefixProcessLowerSpec C hLaw hC).jointPrevisionsRealizedInCarrier
         (bernoulliMixturePrefixProcessFiniteJointWindowSystem C hLaw hC)
         carrier) :
-    ImpreciseDeFinettiProcessLawCrown C hLaw hC := by
+    ImpreciseDeFinettiProcessLaw C hLaw hC := by
   exact
-    impreciseDeFinetti_processLaw_projectiveNaturalExtension_crown_of_finiteWindowCompatibleInCarrier
+    impreciseDeFinetti_processLaw_projectiveNaturalExtension_of_finiteWindowCompatibleInCarrier
       C hLaw hC carrier hCompact hCarrierConvex hClosed
       (bernoulliMixturePrefixProcess_finiteWindowCompatibleInCarrier_of_prefixMarginalConsistentCarrierRealization
         C hLaw hC carrier hMarginal hRealize)
@@ -5577,7 +5577,7 @@ explicit tail-false finite-window realizers already yields the full imprecise
 de Finetti process-law crown.  This removes a separate local-coherence witness,
 an explicit finite-window realization witness, and a separate marginal-
 consistency assumption from the public synthesis boundary. -/
-theorem impreciseDeFinetti_analyticProcessLaw_projectiveNaturalExtension_crown_of_prefixTailFalseExtensionCarrierSubset
+theorem impreciseDeFinetti_analyticProcessLaw_projectiveNaturalExtension_of_prefixTailFalseExtensionCarrierSubset
     (C : Set BernoulliMixture)
     (hC : C.Nonempty)
     [TopologicalSpace (PrecisePrevision (ℕ → Bool))]
@@ -5592,10 +5592,10 @@ theorem impreciseDeFinetti_analyticProcessLaw_projectiveNaturalExtension_crown_o
           ((bernoulliMixturePrefixProcessLowerSpec
               C (fun M _ n => bernoulliMixturePrefixLaw_analytic M n) hC).localLower n)})
     (hSubset : prefixTailFalseExtensionCarrier ⊆ carrier) :
-    ImpreciseDeFinettiProcessLawCrown
+    ImpreciseDeFinettiProcessLaw
       C (fun M _ n => bernoulliMixturePrefixLaw_analytic M n) hC := by
   exact
-    impreciseDeFinetti_processLaw_projectiveNaturalExtension_crown_of_finiteWindowCompatibleInCarrier
+    impreciseDeFinetti_processLaw_projectiveNaturalExtension_of_finiteWindowCompatibleInCarrier
       C (fun M _ n => bernoulliMixturePrefixLaw_analytic M n) hC
       carrier hCompact hCarrierConvex hClosed
       (bernoulliMixturePrefixProcess_finiteWindowCompatibleInCarrier_of_marginalConsistent_prefixTailFalseExtensionCarrierSubset
@@ -5694,7 +5694,7 @@ theorem posteriorBernoulliMixture_processLawCompatibleCompletion_of_finiteWindow
 minimal compact finite-window compatibility boundary.  The generic credal-set
 and all-prefix-law obligations are generated by the normalized posterior
 Bernoulli mixture itself. -/
-theorem posteriorBernoulliMixture_processLaw_projectiveNaturalExtension_crown_of_finiteWindowCompatibleInCarrier
+theorem posteriorBernoulliMixture_processLaw_projectiveNaturalExtension_of_finiteWindowCompatibleInCarrier
     (M : BernoulliMixture) (k l : ℕ)
     (hZ : M.countEvidenceMass k l ≠ 0)
     [TopologicalSpace (PrecisePrevision (ℕ → Bool))]
@@ -5709,12 +5709,12 @@ theorem posteriorBernoulliMixture_processLaw_projectiveNaturalExtension_crown_of
     (hFIP :
       (posteriorBernoulliMixturePrefixProcessLowerSpec M k l hZ).finiteWindowCompatibleInCarrier
         carrier) :
-    ImpreciseDeFinettiProcessLawCrown
+    ImpreciseDeFinettiProcessLaw
       (posteriorBernoulliMixtureSet M k l hZ)
       (posteriorBernoulliMixtureSetPrefixLaw M k l hZ)
       (posteriorBernoulliMixtureSet_nonempty M k l hZ) := by
   exact
-    impreciseDeFinetti_processLaw_projectiveNaturalExtension_crown_of_finiteWindowCompatibleInCarrier
+    impreciseDeFinetti_processLaw_projectiveNaturalExtension_of_finiteWindowCompatibleInCarrier
       (posteriorBernoulliMixtureSet M k l hZ)
       (posteriorBernoulliMixtureSetPrefixLaw M k l hZ)
       (posteriorBernoulliMixtureSet_nonempty M k l hZ)
@@ -5723,7 +5723,7 @@ theorem posteriorBernoulliMixture_processLaw_projectiveNaturalExtension_crown_of
 /-- The explicit tail-false finite-window realizers already supply the
 projective natural-extension crown for any compact/convex/closed raw carrier
 that contains them. -/
-theorem posteriorBernoulliMixture_processLaw_projectiveNaturalExtension_crown_of_prefixTailFalseExtensionCarrierSubset
+theorem posteriorBernoulliMixture_processLaw_projectiveNaturalExtension_of_prefixTailFalseExtensionCarrierSubset
     (M : BernoulliMixture) (k l : ℕ)
     (hZ : M.countEvidenceMass k l ≠ 0)
     [TopologicalSpace (PrecisePrevision (ℕ → Bool))]
@@ -5736,16 +5736,16 @@ theorem posteriorBernoulliMixture_processLaw_projectiveNaturalExtension_crown_of
         dominatingPreciseCompletions
           ((posteriorBernoulliMixturePrefixProcessLowerSpec M k l hZ).localLower n)})
     (hSubset : prefixTailFalseExtensionCarrier ⊆ carrier) :
-    ImpreciseDeFinettiProcessLawCrown
+    ImpreciseDeFinettiProcessLaw
       (posteriorBernoulliMixtureSet M k l hZ)
       (posteriorBernoulliMixtureSetPrefixLaw M k l hZ)
       (posteriorBernoulliMixtureSet_nonempty M k l hZ) :=
-  posteriorBernoulliMixture_processLaw_projectiveNaturalExtension_crown_of_finiteWindowCompatibleInCarrier
+  posteriorBernoulliMixture_processLaw_projectiveNaturalExtension_of_finiteWindowCompatibleInCarrier
     M k l hZ carrier hCompact hCarrierConvex hClosed
     (posteriorBernoulliMixturePrefixProcess_finiteWindowCompatibleInCarrier_of_prefixTailFalseExtensionCarrierSubset
       M k l hZ carrier hSubset)
 
-theorem posteriorBernoulliMixture_processLaw_projectiveNaturalExtension_crown
+theorem posteriorBernoulliMixture_processLaw_projectiveNaturalExtension
     (M : BernoulliMixture) (k l : ℕ)
     (hZ : M.countEvidenceMass k l ≠ 0)
     [TopologicalSpace (PrecisePrevision (ℕ → Bool))]
@@ -5764,7 +5764,7 @@ theorem posteriorBernoulliMixture_processLaw_projectiveNaturalExtension_crown
     (hRealize :
       (posteriorBernoulliMixturePrefixProcessLowerSpec M k l hZ).jointPrevisionsRealizedInCarrier
         J carrier) :
-    ImpreciseDeFinettiProcessLawCrown
+    ImpreciseDeFinettiProcessLaw
       (posteriorBernoulliMixtureSet M k l hZ)
       (posteriorBernoulliMixtureSetPrefixLaw M k l hZ)
       (posteriorBernoulliMixtureSet_nonempty M k l hZ) := by
@@ -5775,19 +5775,19 @@ theorem posteriorBernoulliMixture_processLaw_projectiveNaturalExtension_crown
       (posteriorBernoulliMixturePrefixProcessLowerSpec M k l hZ)
       J carrier hLocal hRealize
   exact
-    posteriorBernoulliMixture_processLaw_projectiveNaturalExtension_crown_of_finiteWindowCompatibleInCarrier
+    posteriorBernoulliMixture_processLaw_projectiveNaturalExtension_of_finiteWindowCompatibleInCarrier
       M k l hZ carrier hCompact hCarrierConvex hClosed hFIP
 
 /-- Paper-facing posterior process-law package.  It records both the unconditional
 finite-prefix posterior singleton result and the conditional process-law result
 obtained once compact finite-window carrier compatibility is supplied. -/
-structure PosteriorBernoulliMixtureProcessLawCrown
+structure PosteriorBernoulliMixtureProcessLaw
     (M : BernoulliMixture) (k l : ℕ)
     (hZ : M.countEvidenceMass k l ≠ 0) : Prop where
   prefixProjectiveCrown :
-    PosteriorBernoulliMixturePrefixProjectiveCrown M k l hZ
+    PosteriorBernoulliMixturePrefixProjective M k l hZ
   processLawCrown :
-    ImpreciseDeFinettiProcessLawCrown
+    ImpreciseDeFinettiProcessLaw
       (posteriorBernoulliMixtureSet M k l hZ)
       (posteriorBernoulliMixtureSetPrefixLaw M k l hZ)
       (posteriorBernoulliMixtureSet_nonempty M k l hZ)
@@ -5804,7 +5804,7 @@ structure PosteriorBernoulliMixtureProcessLawCrown
 
 /-- Paper-facing posterior process-law package from the minimal compact
 finite-window compatibility boundary. -/
-theorem posteriorBernoulliMixture_processLawCrown_of_finiteWindowCompatibleInCarrier
+theorem posteriorBernoulliMixture_processLaw_of_finiteWindowCompatibleInCarrier
     (M : BernoulliMixture) (k l : ℕ)
     (hZ : M.countEvidenceMass k l ≠ 0)
     [TopologicalSpace (PrecisePrevision (ℕ → Bool))]
@@ -5819,11 +5819,11 @@ theorem posteriorBernoulliMixture_processLawCrown_of_finiteWindowCompatibleInCar
     (hFIP :
       (posteriorBernoulliMixturePrefixProcessLowerSpec M k l hZ).finiteWindowCompatibleInCarrier
         carrier) :
-    PosteriorBernoulliMixtureProcessLawCrown M k l hZ where
+    PosteriorBernoulliMixtureProcessLaw M k l hZ where
   prefixProjectiveCrown :=
-    posteriorBernoulliMixturePrefixProjectiveCrown M k l hZ
+    posteriorBernoulliMixturePrefixProjective M k l hZ
   processLawCrown :=
-    posteriorBernoulliMixture_processLaw_projectiveNaturalExtension_crown_of_finiteWindowCompatibleInCarrier
+    posteriorBernoulliMixture_processLaw_projectiveNaturalExtension_of_finiteWindowCompatibleInCarrier
       M k l hZ carrier hCompact hCarrierConvex hClosed hFIP
   processCompatibleCompletion :=
     posteriorBernoulliMixture_processLawCompatibleCompletion_of_finiteWindowCompatibleInCarrier
@@ -5837,7 +5837,7 @@ theorem posteriorBernoulliMixture_processLawCrown_of_finiteWindowCompatibleInCar
 
 /-- Paper-facing posterior process-law package from structured finite joint
 window realization data. -/
-theorem posteriorBernoulliMixture_processLawCrown_of_finiteWindowRealization
+theorem posteriorBernoulliMixture_processLaw_of_finiteWindowRealization
     (M : BernoulliMixture) (k l : ℕ)
     (hZ : M.countEvidenceMass k l ≠ 0)
     [TopologicalSpace (PrecisePrevision (ℕ → Bool))]
@@ -5856,7 +5856,7 @@ theorem posteriorBernoulliMixture_processLawCrown_of_finiteWindowRealization
     (hRealize :
       (posteriorBernoulliMixturePrefixProcessLowerSpec M k l hZ).jointPrevisionsRealizedInCarrier
         J carrier) :
-    PosteriorBernoulliMixtureProcessLawCrown M k l hZ := by
+    PosteriorBernoulliMixtureProcessLaw M k l hZ := by
   have hFIP :
       (posteriorBernoulliMixturePrefixProcessLowerSpec M k l hZ).finiteWindowCompatibleInCarrier
         carrier :=
@@ -5864,18 +5864,18 @@ theorem posteriorBernoulliMixture_processLawCrown_of_finiteWindowRealization
       (posteriorBernoulliMixturePrefixProcessLowerSpec M k l hZ)
       J carrier hLocal hRealize
   exact
-    posteriorBernoulliMixture_processLawCrown_of_finiteWindowCompatibleInCarrier
+    posteriorBernoulliMixture_processLaw_of_finiteWindowCompatibleInCarrier
       M k l hZ carrier hCompact hCarrierConvex hClosed hFIP
 
 /-- Paper-facing posterior process-law package from the canonical largest-prefix
 finite joint-window system.
 
-Compared with `posteriorBernoulliMixture_processLawCrown_of_finiteWindowRealization`,
+Compared with `posteriorBernoulliMixture_processLaw_of_finiteWindowRealization`,
 this fixes the finite-window system `J` to the Boolean-prefix construction
 `posteriorBernoulliMixturePrefixProcessFiniteJointWindowSystem`.  The remaining
 local-coherence and carrier-realization hypotheses are therefore stated for a
 canonical joint state space, not for an arbitrary witness. -/
-theorem posteriorBernoulliMixture_processLawCrown_of_prefixFiniteWindowRealization
+theorem posteriorBernoulliMixture_processLaw_of_prefixFiniteWindowRealization
     (M : BernoulliMixture) (k l : ℕ)
     (hZ : M.countEvidenceMass k l ≠ 0)
     [TopologicalSpace (PrecisePrevision (ℕ → Bool))]
@@ -5894,8 +5894,8 @@ theorem posteriorBernoulliMixture_processLawCrown_of_prefixFiniteWindowRealizati
       (posteriorBernoulliMixturePrefixProcessLowerSpec M k l hZ).jointPrevisionsRealizedInCarrier
         (posteriorBernoulliMixturePrefixProcessFiniteJointWindowSystem M k l hZ)
         carrier) :
-    PosteriorBernoulliMixtureProcessLawCrown M k l hZ :=
-  posteriorBernoulliMixture_processLawCrown_of_finiteWindowRealization
+    PosteriorBernoulliMixtureProcessLaw M k l hZ :=
+  posteriorBernoulliMixture_processLaw_of_finiteWindowRealization
     M k l hZ carrier hCompact hCarrierConvex hClosed
     (posteriorBernoulliMixturePrefixProcessFiniteJointWindowSystem M k l hZ)
     hLocal hRealize
@@ -5907,7 +5907,7 @@ This removes the standalone local-coherence assumption from the canonical
 largest-prefix endpoint.  The remaining finite-window work is the concrete
 prefix marginalization theorem and carrier realization for the same canonical
 joint state spaces. -/
-theorem posteriorBernoulliMixture_processLawCrown_of_prefixMarginalConsistentCarrierRealization
+theorem posteriorBernoulliMixture_processLaw_of_prefixMarginalConsistentCarrierRealization
     (M : BernoulliMixture) (k l : ℕ)
     (hZ : M.countEvidenceMass k l ≠ 0)
     [TopologicalSpace (PrecisePrevision (ℕ → Bool))]
@@ -5925,8 +5925,8 @@ theorem posteriorBernoulliMixture_processLawCrown_of_prefixMarginalConsistentCar
       (posteriorBernoulliMixturePrefixProcessLowerSpec M k l hZ).jointPrevisionsRealizedInCarrier
         (posteriorBernoulliMixturePrefixProcessFiniteJointWindowSystem M k l hZ)
         carrier) :
-    PosteriorBernoulliMixtureProcessLawCrown M k l hZ :=
-  posteriorBernoulliMixture_processLawCrown_of_prefixFiniteWindowRealization
+    PosteriorBernoulliMixtureProcessLaw M k l hZ :=
+  posteriorBernoulliMixture_processLaw_of_prefixFiniteWindowRealization
     M k l hZ carrier hCompact hCarrierConvex hClosed
     (posteriorBernoulliMixturePrefixProcessFiniteJointWindowSystem_localCoherent_of_marginalConsistent
       M k l hZ hMarginal)
@@ -5938,7 +5938,7 @@ realization alone.
 The canonical finite-prefix marginal theorem is now discharged internally, so
 the only remaining finite-window assumption at this endpoint is the explicit
 carrier realization of those canonical joint previsions. -/
-theorem posteriorBernoulliMixture_processLawCrown_of_prefixCarrierRealization
+theorem posteriorBernoulliMixture_processLaw_of_prefixCarrierRealization
     (M : BernoulliMixture) (k l : ℕ)
     (hZ : M.countEvidenceMass k l ≠ 0)
     [TopologicalSpace (PrecisePrevision (ℕ → Bool))]
@@ -5954,8 +5954,8 @@ theorem posteriorBernoulliMixture_processLawCrown_of_prefixCarrierRealization
       (posteriorBernoulliMixturePrefixProcessLowerSpec M k l hZ).jointPrevisionsRealizedInCarrier
         (posteriorBernoulliMixturePrefixProcessFiniteJointWindowSystem M k l hZ)
         carrier) :
-    PosteriorBernoulliMixtureProcessLawCrown M k l hZ :=
-  posteriorBernoulliMixture_processLawCrown_of_prefixMarginalConsistentCarrierRealization
+    PosteriorBernoulliMixtureProcessLaw M k l hZ :=
+  posteriorBernoulliMixture_processLaw_of_prefixMarginalConsistentCarrierRealization
     M k l hZ carrier hCompact hCarrierConvex hClosed
     (posteriorBernoulliMixturePrefixProcessMarginalConsistent_analytic M k l hZ)
     hRealize
@@ -6006,14 +6006,14 @@ The extra compact/convex/closed carrier packaging is supplied internally by the
 singleton carrier generated by the witness itself, equipped with the discrete
 topology.  So the honest remaining assumption here is exactly the witness, not
 any auxiliary compactness scaffolding. -/
-theorem posteriorBernoulliMixture_processLawCrown_of_prefixCarrierWitness
+theorem posteriorBernoulliMixture_processLaw_of_prefixCarrierWitness
     (M : BernoulliMixture) (k l : ℕ)
     (hZ : M.countEvidenceMass k l ≠ 0)
     (carrier : CredalPrevisionSet (ℕ → Bool))
     (hWitness :
       posteriorBernoulliMixturePrefixProcessCarrierWitness
         M k l hZ carrier) :
-    PosteriorBernoulliMixtureProcessLawCrown M k l hZ := by
+    PosteriorBernoulliMixtureProcessLaw M k l hZ := by
   rcases hWitness with ⟨P, _hPcarrier, hPmarg⟩
   let carrier' : CredalPrevisionSet (ℕ → Bool) := ({P} : CredalPrevisionSet (ℕ → Bool))
   letI : TopologicalSpace (PrecisePrevision (ℕ → Bool)) := ⊥
@@ -6036,7 +6036,7 @@ theorem posteriorBernoulliMixture_processLawCrown_of_prefixCarrierWitness
     refine ⟨P, ?_, hPmarg⟩
     simp [carrier']
   exact
-    posteriorBernoulliMixture_processLawCrown_of_prefixCarrierRealization
+    posteriorBernoulliMixture_processLaw_of_prefixCarrierRealization
       M k l hZ carrier' hCompact hCarrierConvex hClosed
       (posteriorBernoulliMixturePrefixProcess_jointPrevisionsRealizedInCarrier_of_carrierWitness
         M k l hZ carrier' hWitness')
@@ -6047,26 +6047,26 @@ posterior-process witness itself.
 This isolates the genuine remaining all-gambles object: if one global precise
 prevision with the analytic posterior prefix marginals exists, the compact/FIP
 process-law crown follows automatically. -/
-theorem posteriorBernoulliMixture_processLawCrown_of_prefixWitness
+theorem posteriorBernoulliMixture_processLaw_of_prefixWitness
     (M : BernoulliMixture) (k l : ℕ)
     (hZ : M.countEvidenceMass k l ≠ 0)
     (hWitness : posteriorBernoulliMixturePrefixProcessWitness M k l hZ) :
-    PosteriorBernoulliMixtureProcessLawCrown M k l hZ := by
+    PosteriorBernoulliMixtureProcessLaw M k l hZ := by
   rcases hWitness with ⟨P, hPmarg⟩
   exact
-    posteriorBernoulliMixture_processLawCrown_of_prefixCarrierWitness
+    posteriorBernoulliMixture_processLaw_of_prefixCarrierWitness
       M k l hZ ({P} : CredalPrevisionSet (ℕ → Bool))
       ⟨P, by simp, hPmarg⟩
 
 /-- In the zero-interior-mass regime, the raw posterior-process witness exists,
 so the full raw process-law crown follows directly. -/
-theorem posteriorBernoulliMixture_processLawCrown_of_zeroInteriorMixingMass
+theorem posteriorBernoulliMixture_processLaw_of_zeroInteriorMixingMass
     (M : BernoulliMixture) (k l : ℕ)
     (hZ : M.countEvidenceMass k l ≠ 0)
     (hInterior : M.mixingMeasure (Set.Ioo (0 : ℝ) 1) = 0) :
-    PosteriorBernoulliMixtureProcessLawCrown M k l hZ := by
+    PosteriorBernoulliMixtureProcessLaw M k l hZ := by
   exact
-    posteriorBernoulliMixture_processLawCrown_of_prefixWitness M k l hZ
+    posteriorBernoulliMixture_processLaw_of_prefixWitness M k l hZ
       (posteriorBernoulliMixturePrefixProcessWitness_of_zeroInteriorMixingMass
         M k l hZ hInterior)
 
@@ -6098,76 +6098,76 @@ theorem posteriorBernoulliMixturePrefixProcessWitness_of_processLawCompatibleCom
 
 /-- A raw posterior process-law crown already contains a compatible completion,
 so it forces the existence of the raw global posterior-process witness. -/
-theorem posteriorBernoulliMixturePrefixProcessWitness_of_processLawCrown
+theorem posteriorBernoulliMixturePrefixProcessWitness_of_processLaw
     (M : BernoulliMixture) (k l : ℕ)
     (hZ : M.countEvidenceMass k l ≠ 0)
-    (hCrown : PosteriorBernoulliMixtureProcessLawCrown M k l hZ) :
+    (hCrown : PosteriorBernoulliMixtureProcessLaw M k l hZ) :
     posteriorBernoulliMixturePrefixProcessWitness M k l hZ :=
   posteriorBernoulliMixturePrefixProcessWitness_of_processLawCompatibleCompletion
     M k l hZ hCrown.processCompatibleCompletion
 
 /-- Consequently, a raw posterior process-law crown also forces existence of a
 carrier witness for the analytic posterior prefix marginals. -/
-theorem posteriorBernoulliMixturePrefixProcessCarrierWitness_exists_of_processLawCrown
+theorem posteriorBernoulliMixturePrefixProcessCarrierWitness_exists_of_processLaw
     (M : BernoulliMixture) (k l : ℕ)
     (hZ : M.countEvidenceMass k l ≠ 0)
-    (hCrown : PosteriorBernoulliMixtureProcessLawCrown M k l hZ) :
+    (hCrown : PosteriorBernoulliMixtureProcessLaw M k l hZ) :
     ∃ carrier : CredalPrevisionSet (ℕ → Bool),
       posteriorBernoulliMixturePrefixProcessCarrierWitness M k l hZ carrier := by
   exact
     (posteriorBernoulliMixturePrefixProcessWitness_iff_existsCarrierWitness
       M k l hZ).mp
-      (posteriorBernoulliMixturePrefixProcessWitness_of_processLawCrown
+      (posteriorBernoulliMixturePrefixProcessWitness_of_processLaw
         M k l hZ hCrown)
 
 /-- The raw posterior process-law crown is equivalent to existence of some
 carrier witness for the analytic posterior prefix marginals. -/
-theorem posteriorBernoulliMixture_processLawCrown_iff_exists_prefixCarrierWitness
+theorem posteriorBernoulliMixture_processLaw_iff_exists_prefixCarrierWitness
     (M : BernoulliMixture) (k l : ℕ)
     (hZ : M.countEvidenceMass k l ≠ 0) :
-    PosteriorBernoulliMixtureProcessLawCrown M k l hZ ↔
+    PosteriorBernoulliMixtureProcessLaw M k l hZ ↔
       ∃ carrier : CredalPrevisionSet (ℕ → Bool),
         posteriorBernoulliMixturePrefixProcessCarrierWitness M k l hZ carrier := by
   constructor
   · intro hCrown
     exact
-      posteriorBernoulliMixturePrefixProcessCarrierWitness_exists_of_processLawCrown
+      posteriorBernoulliMixturePrefixProcessCarrierWitness_exists_of_processLaw
         M k l hZ hCrown
   · rintro ⟨carrier, hWitness⟩
     exact
-      posteriorBernoulliMixture_processLawCrown_of_prefixCarrierWitness
+      posteriorBernoulliMixture_processLaw_of_prefixCarrierWitness
         M k l hZ carrier hWitness
 
 /-- Exact regime split for the raw posterior process-law crown itself: it
 exists precisely in the zero-interior-mixing regime. -/
-theorem posteriorBernoulliMixture_processLawCrown_iff_zeroInteriorMixingMass
+theorem posteriorBernoulliMixture_processLaw_iff_zeroInteriorMixingMass
     (M : BernoulliMixture) (k l : ℕ)
     (hZ : M.countEvidenceMass k l ≠ 0) :
-    PosteriorBernoulliMixtureProcessLawCrown M k l hZ ↔
+    PosteriorBernoulliMixtureProcessLaw M k l hZ ↔
       M.mixingMeasure (Set.Ioo (0 : ℝ) 1) = 0 := by
   constructor
   · intro hCrown
     exact
       (posteriorBernoulliMixturePrefixProcessCarrierWitness_exists_iff_zeroInteriorMixingMass
         M k l hZ).mp
-        ((posteriorBernoulliMixture_processLawCrown_iff_exists_prefixCarrierWitness
+        ((posteriorBernoulliMixture_processLaw_iff_exists_prefixCarrierWitness
           M k l hZ).mp hCrown)
   · intro hInterior
     exact
-      posteriorBernoulliMixture_processLawCrown_of_zeroInteriorMixingMass
+      posteriorBernoulliMixture_processLaw_of_zeroInteriorMixingMass
         M k l hZ hInterior
 
 /-- In the nondegenerate interior-mass regime, the stronger raw posterior
 process-law crown is impossible. -/
-theorem not_posteriorBernoulliMixture_processLawCrown_of_interiorMixingMass
+theorem not_posteriorBernoulliMixture_processLaw_of_interiorMixingMass
     (M : BernoulliMixture) (k l : ℕ)
     (hZ : M.countEvidenceMass k l ≠ 0)
     (hInterior : 0 < M.mixingMeasure (Set.Ioo (0 : ℝ) 1)) :
-    ¬ PosteriorBernoulliMixtureProcessLawCrown M k l hZ := by
+    ¬ PosteriorBernoulliMixtureProcessLaw M k l hZ := by
   intro hCrown
   have hZero :
       M.mixingMeasure (Set.Ioo (0 : ℝ) 1) = 0 :=
-    (posteriorBernoulliMixture_processLawCrown_iff_zeroInteriorMixingMass
+    (posteriorBernoulliMixture_processLaw_iff_zeroInteriorMixingMass
       M k l hZ).mp hCrown
   have hNot :
       ¬ 0 < M.mixingMeasure (Set.Ioo (0 : ℝ) 1) := by
@@ -6177,7 +6177,7 @@ theorem not_posteriorBernoulliMixture_processLawCrown_of_interiorMixingMass
 
 /-- Paper-facing posterior process-law package from any compact/convex/closed
 raw carrier that contains the explicit tail-false finite-window realizers. -/
-theorem posteriorBernoulliMixture_processLawCrown_of_prefixTailFalseExtensionCarrierSubset
+theorem posteriorBernoulliMixture_processLaw_of_prefixTailFalseExtensionCarrierSubset
     (M : BernoulliMixture) (k l : ℕ)
     (hZ : M.countEvidenceMass k l ≠ 0)
     [TopologicalSpace (PrecisePrevision (ℕ → Bool))]
@@ -6190,8 +6190,8 @@ theorem posteriorBernoulliMixture_processLawCrown_of_prefixTailFalseExtensionCar
         dominatingPreciseCompletions
           ((posteriorBernoulliMixturePrefixProcessLowerSpec M k l hZ).localLower n)})
     (hSubset : prefixTailFalseExtensionCarrier ⊆ carrier) :
-    PosteriorBernoulliMixtureProcessLawCrown M k l hZ :=
-  posteriorBernoulliMixture_processLawCrown_of_prefixCarrierRealization
+    PosteriorBernoulliMixtureProcessLaw M k l hZ :=
+  posteriorBernoulliMixture_processLaw_of_prefixCarrierRealization
     M k l hZ carrier hCompact hCarrierConvex hClosed
     (posteriorBernoulliMixturePrefixProcess_jointPrevisionsRealizedInCarrier_of_prefixTailFalseExtensionCarrierSubset
       M k l hZ carrier hSubset)
@@ -6792,12 +6792,12 @@ mixing-family object and the raw all-gambles process-law crown.
 Negative example: it does not remove the remaining compact carrier/FIP
 hypothesis boundary; this package sits exactly at that boundary rather than
 hiding it. -/
-structure ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown
+structure ImpreciseDeFinettiAnalyticMixingFamilyProcessLaw
     (C : Set BernoulliMixture) (hC : C.Nonempty) : Prop where
   canonicalExternalMixingFamily :
     ImpreciseDeFinettiCanonicalExternalMixingFamily C hC
   processLawCrown :
-    ImpreciseDeFinettiProcessLawCrown
+    ImpreciseDeFinettiProcessLaw
       C (fun M _ n => bernoulliMixturePrefixLaw_analytic M n) hC
 
 /-- Singleton specialization bridge for the analytic family-level crown.
@@ -6807,16 +6807,16 @@ claimed for the posterior singleton family, it really yields the existing
 posterior-specific raw process-law crown.  Thus any later refutation of an
 unconditional family-level raw crown can pass through the already-proved
 posterior zero-interior-mass dichotomy. -/
-theorem posteriorBernoulliMixture_processLawCrown_of_singletonAnalyticMixingFamilyCrown
+theorem posteriorBernoulliMixture_processLaw_of_singletonAnalyticMixingFamily
     (M : BernoulliMixture) (k l : ℕ)
     (hZ : M.countEvidenceMass k l ≠ 0)
     (hCrown :
-      ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown
+      ImpreciseDeFinettiAnalyticMixingFamilyProcessLaw
         (posteriorBernoulliMixtureSet M k l hZ)
         (posteriorBernoulliMixtureSet_nonempty M k l hZ)) :
-    PosteriorBernoulliMixtureProcessLawCrown M k l hZ where
+    PosteriorBernoulliMixtureProcessLaw M k l hZ where
   prefixProjectiveCrown :=
-    posteriorBernoulliMixturePrefixProjectiveCrown M k l hZ
+    posteriorBernoulliMixturePrefixProjective M k l hZ
   processLawCrown := by
     simpa [posteriorBernoulliMixtureSetPrefixLaw] using hCrown.processLawCrown
   processCompatibleCompletion := by
@@ -6835,27 +6835,27 @@ family-level crown for all nonempty credal sets.
 
 This is the F2 guardrail: the canonical external mixing readout is unconditional,
 but the raw all-gambles process-law crown is not. -/
-theorem not_forall_impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_of_interiorMixingMass
+theorem not_forall_impreciseDeFinetti_analyticMixingFamilyProcessLaw_of_interiorMixingMass
     (M : BernoulliMixture) (k l : ℕ)
     (hInterior : 0 < M.mixingMeasure (Set.Ioo (0 : ℝ) 1)) :
     ¬ (∀ (C : Set BernoulliMixture) (hC : C.Nonempty),
-        ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown C hC) := by
+        ImpreciseDeFinettiAnalyticMixingFamilyProcessLaw C hC) := by
   intro hAll
   have hZ : M.countEvidenceMass k l ≠ 0 := by
     exact ne_of_gt
       (BernoulliMixture.countEvidenceMass_pos_of_interiorMass M k l hInterior)
   have hSingleton :
-      ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown
+      ImpreciseDeFinettiAnalyticMixingFamilyProcessLaw
         (posteriorBernoulliMixtureSet M k l hZ)
         (posteriorBernoulliMixtureSet_nonempty M k l hZ) :=
     hAll (posteriorBernoulliMixtureSet M k l hZ)
       (posteriorBernoulliMixtureSet_nonempty M k l hZ)
   have hPosterior :
-      PosteriorBernoulliMixtureProcessLawCrown M k l hZ :=
-    posteriorBernoulliMixture_processLawCrown_of_singletonAnalyticMixingFamilyCrown
+      PosteriorBernoulliMixtureProcessLaw M k l hZ :=
+    posteriorBernoulliMixture_processLaw_of_singletonAnalyticMixingFamily
       M k l hZ hSingleton
   exact
-    not_posteriorBernoulliMixture_processLawCrown_of_interiorMixingMass
+    not_posteriorBernoulliMixture_processLaw_of_interiorMixingMass
       M k l hZ hInterior hPosterior
 
 /-- The neutral analytic compatibility condition for the F2 family-level raw
@@ -7387,89 +7387,89 @@ theorem AnalyticMixingFamilyRawProcessCompatible_iff_exists_respectsLocalLower
 
 /-- The analytic family-level crown follows from the neutral raw compatibility
 condition together with the unconditional canonical external mixing readout. -/
-theorem impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_of_rawProcessCompatible
+theorem impreciseDeFinetti_analyticMixingFamilyProcessLaw_of_rawProcessCompatible
     (C : Set BernoulliMixture) (hC : C.Nonempty)
     (hCompat : AnalyticMixingFamilyRawProcessCompatible C hC) :
-    ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown C hC where
+    ImpreciseDeFinettiAnalyticMixingFamilyProcessLaw C hC where
   canonicalExternalMixingFamily :=
     impreciseDeFinetti_canonicalExternalMixingFamily C hC
   processLawCrown :=
-    impreciseDeFinetti_processLaw_projectiveNaturalExtension_crown_of_rawProcessCompatible
+    impreciseDeFinetti_processLaw_projectiveNaturalExtension_of_rawProcessCompatible
       C (fun M _ n => bernoulliMixturePrefixLaw_analytic M n) hC hCompat
 
 /-- Exact analytic boundary: the external de-Finetti mixing-family readout is
 unconditional, so the raw analytic crown is equivalent to the neutral raw
 process-compatibility predicate. -/
-theorem impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_iff_rawProcessCompatible
+theorem impreciseDeFinetti_analyticMixingFamilyProcessLaw_iff_rawProcessCompatible
     (C : Set BernoulliMixture) (hC : C.Nonempty) :
-    ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown C hC ↔
+    ImpreciseDeFinettiAnalyticMixingFamilyProcessLaw C hC ↔
       AnalyticMixingFamilyRawProcessCompatible C hC := by
   constructor
   · intro hCrown
     exact hCrown.processLawCrown.processCompatibleCompletion
   · intro hCompat
     exact
-      impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_of_rawProcessCompatible
+      impreciseDeFinetti_analyticMixingFamilyProcessLaw_of_rawProcessCompatible
         C hC hCompat
 
 /-- Exact lower-prevision form of the analytic F2 boundary: the raw all-gambles
 analytic crown exists iff some global lower prevision respects the analytic
 finite-prefix lower envelope. -/
-theorem impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_iff_exists_respectsLocalLower
+theorem impreciseDeFinetti_analyticMixingFamilyProcessLaw_iff_exists_respectsLocalLower
     (C : Set BernoulliMixture) (hC : C.Nonempty) :
-    ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown C hC ↔
+    ImpreciseDeFinettiAnalyticMixingFamilyProcessLaw C hC ↔
       ∃ L : LowerPrevision (ℕ → Bool),
         (bernoulliMixturePrefixProcessLowerSpec
           C (fun M _ n => bernoulliMixturePrefixLaw_analytic M n) hC).respectsLocalLower L := by
-  rw [impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_iff_rawProcessCompatible]
+  rw [impreciseDeFinetti_analyticMixingFamilyProcessLaw_iff_rawProcessCompatible]
   exact AnalyticMixingFamilyRawProcessCompatible_iff_exists_respectsLocalLower C hC
 
 /-- Public F2 sharp compatibility statement: the external sigma-additive
 de-Finetti mixing-family readout is unconditional, while the raw all-gambles
 analytic crown is exactly the lower-prevision compatibility condition. -/
-theorem impreciseDeFinetti_analyticMixingFamily_sharpCompatibilityCrown
+theorem impreciseDeFinetti_analyticMixingFamily_sharpCompatibility
     (C : Set BernoulliMixture) (hC : C.Nonempty) :
     ImpreciseDeFinettiCanonicalExternalMixingFamily C hC ∧
-      (ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown C hC ↔
+      (ImpreciseDeFinettiAnalyticMixingFamilyProcessLaw C hC ↔
         ∃ L : LowerPrevision (ℕ → Bool),
           (bernoulliMixturePrefixProcessLowerSpec
             C (fun M _ n => bernoulliMixturePrefixLaw_analytic M n) hC).respectsLocalLower L) := by
   exact
     ⟨impreciseDeFinetti_canonicalExternalMixingFamily C hC,
-      impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_iff_exists_respectsLocalLower
+      impreciseDeFinetti_analyticMixingFamilyProcessLaw_iff_exists_respectsLocalLower
         C hC⟩
 
 /-- Public S1 sufficiency in the discovered compatible-member form: if the
 credal family contains one mixture with an all-gambles analytic prefix-process
 witness, then the full analytic mixing-family process-law crown follows. -/
-theorem impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_of_hasCompatibleMember
+theorem impreciseDeFinetti_analyticMixingFamilyProcessLaw_of_hasCompatibleMember
     (C : Set BernoulliMixture) (hC : C.Nonempty)
     (hMember : AnalyticMixingFamilyHasCompatibleMember C) :
-    ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown C hC := by
+    ImpreciseDeFinettiAnalyticMixingFamilyProcessLaw C hC := by
   exact
-    impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_of_rawProcessCompatible
+    impreciseDeFinetti_analyticMixingFamilyProcessLaw_of_rawProcessCompatible
       C hC
       (AnalyticMixingFamilyRawProcessCompatible_of_hasCompatibleMember
         C hC hMember)
 
 /-- Public S1 sufficiency in concrete zero-interior-member form. -/
-theorem impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_of_hasZeroInteriorMember
+theorem impreciseDeFinetti_analyticMixingFamilyProcessLaw_of_hasZeroInteriorMember
     (C : Set BernoulliMixture) (hC : C.Nonempty)
     (hZeroMember : AnalyticMixingFamilyHasZeroInteriorMember C) :
-    ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown C hC := by
+    ImpreciseDeFinettiAnalyticMixingFamilyProcessLaw C hC := by
   exact
-    impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_of_hasCompatibleMember
+    impreciseDeFinetti_analyticMixingFamilyProcessLaw_of_hasCompatibleMember
       C hC
       (AnalyticMixingFamilyHasCompatibleMember_of_hasZeroInteriorMember
         C hZeroMember)
 
 /-- Public S1 sufficiency for the pointwise-zero candidate. -/
-theorem impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_of_pointwiseZeroInterior
+theorem impreciseDeFinetti_analyticMixingFamilyProcessLaw_of_pointwiseZeroInterior
     (C : Set BernoulliMixture) (hC : C.Nonempty)
     (hZero : AnalyticMixingFamilyPointwiseZeroInterior C) :
-    ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown C hC := by
+    ImpreciseDeFinettiAnalyticMixingFamilyProcessLaw C hC := by
   exact
-    impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_of_hasCompatibleMember
+    impreciseDeFinetti_analyticMixingFamilyProcessLaw_of_hasCompatibleMember
       C hC
       (AnalyticMixingFamilyHasCompatibleMember_of_pointwiseZeroInterior
         C hC hZero)
@@ -7477,14 +7477,14 @@ theorem impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_of_pointwiseZeroI
 /-- Pointwise zero-interior is not necessary for the analytic family-level raw
 crown: a zero-interior member supplies the compatible raw process, while a
 positive-interior member refutes the pointwise-zero candidate condition. -/
-theorem impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_and_not_pointwiseZeroInterior
+theorem impreciseDeFinetti_analyticMixingFamilyProcessLaw_and_not_pointwiseZeroInterior
     (C : Set BernoulliMixture) (hC : C.Nonempty)
     (hZeroMember : AnalyticMixingFamilyHasZeroInteriorMember C)
     (hPositiveMember : AnalyticMixingFamilyHasPositiveInteriorMember C) :
-    ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown C hC ∧
+    ImpreciseDeFinettiAnalyticMixingFamilyProcessLaw C hC ∧
       ¬ AnalyticMixingFamilyPointwiseZeroInterior C := by
   exact
-    ⟨impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_of_hasZeroInteriorMember
+    ⟨impreciseDeFinetti_analyticMixingFamilyProcessLaw_of_hasZeroInteriorMember
       C hC hZeroMember,
       not_AnalyticMixingFamilyPointwiseZeroInterior_of_hasPositiveInteriorMember
         C hPositiveMember⟩
@@ -7492,27 +7492,27 @@ theorem impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_and_not_pointwise
 /-- Consequently, the implication from analytic raw crown to pointwise
 zero-interior is false for any nonempty family containing both a zero-interior
 member and a positive-interior member. -/
-theorem not_forall_impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_imp_pointwiseZeroInterior
+theorem not_forall_impreciseDeFinetti_analyticMixingFamilyProcessLaw_imp_pointwiseZeroInterior
     (C : Set BernoulliMixture) (hC : C.Nonempty)
     (hZeroMember : AnalyticMixingFamilyHasZeroInteriorMember C)
     (hPositiveMember : AnalyticMixingFamilyHasPositiveInteriorMember C) :
     ¬ (∀ (D : Set BernoulliMixture) (hD : D.Nonempty),
-        ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown D hD →
+        ImpreciseDeFinettiAnalyticMixingFamilyProcessLaw D hD →
           AnalyticMixingFamilyPointwiseZeroInterior D) := by
   intro hAll
   have hPair :
-      ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown C hC ∧
+      ImpreciseDeFinettiAnalyticMixingFamilyProcessLaw C hC ∧
         ¬ AnalyticMixingFamilyPointwiseZeroInterior C :=
-    impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_and_not_pointwiseZeroInterior
+    impreciseDeFinetti_analyticMixingFamilyProcessLaw_and_not_pointwiseZeroInterior
       C hC hZeroMember hPositiveMember
   exact hPair.2 (hAll C hC hPair.1)
 
 /-- Closed S2 counterexample: there exists an analytic mixing family whose raw
 all-gambles crown exists but whose members do not all have zero interior mixing
 mass. -/
-theorem exists_impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_not_pointwiseZeroInterior :
+theorem exists_impreciseDeFinetti_analyticMixingFamilyProcessLaw_not_pointwiseZeroInterior :
     ∃ (C : Set BernoulliMixture), ∃ hC : C.Nonempty,
-      ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown C hC ∧
+      ImpreciseDeFinettiAnalyticMixingFamilyProcessLaw C hC ∧
         ¬ AnalyticMixingFamilyPointwiseZeroInterior C := by
   let C : Set BernoulliMixture :=
     analyticMixingFamilyPointwiseNecessityCounterexample
@@ -7529,30 +7529,30 @@ theorem exists_impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_not_pointw
       bernoulliMixtureDiracHalf_positiveInterior⟩
   exact
     ⟨C, hC,
-      impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_and_not_pointwiseZeroInterior
+      impreciseDeFinetti_analyticMixingFamilyProcessLaw_and_not_pointwiseZeroInterior
         C hC hZeroMember hPositiveMember⟩
 
 /-- Closed refutation of the too-strong necessity claim: the analytic raw crown
 does not force pointwise zero-interior for every member of the credal family. -/
-theorem not_forall_impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_imp_pointwiseZeroInterior_closed :
+theorem not_forall_impreciseDeFinetti_analyticMixingFamilyProcessLaw_imp_pointwiseZeroInterior_closed :
     ¬ (∀ (C : Set BernoulliMixture) (hC : C.Nonempty),
-        ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown C hC →
+        ImpreciseDeFinettiAnalyticMixingFamilyProcessLaw C hC →
           AnalyticMixingFamilyPointwiseZeroInterior C) := by
   intro hAll
-  rcases exists_impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_not_pointwiseZeroInterior with
+  rcases exists_impreciseDeFinetti_analyticMixingFamilyProcessLaw_not_pointwiseZeroInterior with
     ⟨C, hC, hCrown, hNotPointwise⟩
   exact hNotPointwise (hAll C hC hCrown)
 
 /-- Crown-level form of the family first-true obstruction. -/
-theorem not_impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_of_positiveFirstTrueLowerEnvelope
+theorem not_impreciseDeFinetti_analyticMixingFamilyProcessLaw_of_positiveFirstTrueLowerEnvelope
     (C : Set BernoulliMixture) (hC : C.Nonempty)
     (hPos : AnalyticMixingFamilyPositiveFirstTrueLowerEnvelope C) :
-    ¬ ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown C hC := by
+    ¬ ImpreciseDeFinettiAnalyticMixingFamilyProcessLaw C hC := by
   intro hCrown
   exact
     (not_AnalyticMixingFamilyRawProcessCompatible_of_positiveFirstTrueLowerEnvelope
       C hC hPos)
-      ((impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_iff_rawProcessCompatible
+      ((impreciseDeFinetti_analyticMixingFamilyProcessLaw_iff_rawProcessCompatible
         C hC).mp hCrown)
 
 /-- The exact raw compatibility condition fails for a positive-interior
@@ -7572,26 +7572,26 @@ theorem not_AnalyticMixingFamilyRawProcessCompatible_posteriorSingleton_of_inter
   let hZ : M.countEvidenceMass k l ≠ 0 :=
     ne_of_gt (BernoulliMixture.countEvidenceMass_pos_of_interiorMass M k l hInterior)
   have hCrown :
-      ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown
+      ImpreciseDeFinettiAnalyticMixingFamilyProcessLaw
         (posteriorBernoulliMixtureSet M k l hZ)
         (posteriorBernoulliMixtureSet_nonempty M k l hZ) :=
-    impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_of_rawProcessCompatible
+    impreciseDeFinetti_analyticMixingFamilyProcessLaw_of_rawProcessCompatible
       (posteriorBernoulliMixtureSet M k l hZ)
       (posteriorBernoulliMixtureSet_nonempty M k l hZ)
       hCompat
   have hPosterior :
-      PosteriorBernoulliMixtureProcessLawCrown M k l hZ :=
-    posteriorBernoulliMixture_processLawCrown_of_singletonAnalyticMixingFamilyCrown
+      PosteriorBernoulliMixtureProcessLaw M k l hZ :=
+    posteriorBernoulliMixture_processLaw_of_singletonAnalyticMixingFamily
       M k l hZ hCrown
   exact
-    not_posteriorBernoulliMixture_processLawCrown_of_interiorMixingMass
+    not_posteriorBernoulliMixture_processLaw_of_interiorMixingMass
       M k l hZ hInterior hPosterior
 
 /-- The analytic imprecise de Finetti package already exists at the canonical
 prefix finite-window realization boundary.  Compared with the concrete
 tail-false carrier-subset theorem below, this keeps only the abstract
 finite-window realization hypothesis for the canonical joint-window system. -/
-theorem impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_of_prefixFiniteWindowRealization
+theorem impreciseDeFinetti_analyticMixingFamilyProcessLaw_of_prefixFiniteWindowRealization
     (C : Set BernoulliMixture)
     (hC : C.Nonempty)
     [TopologicalSpace (PrecisePrevision (ℕ → Bool))]
@@ -7611,11 +7611,11 @@ theorem impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_of_prefixFiniteWi
         (bernoulliMixturePrefixProcessFiniteJointWindowSystem
           C (fun M _ n => bernoulliMixturePrefixLaw_analytic M n) hC)
         carrier) :
-    ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown C hC where
+    ImpreciseDeFinettiAnalyticMixingFamilyProcessLaw C hC where
   canonicalExternalMixingFamily :=
     impreciseDeFinetti_canonicalExternalMixingFamily C hC
   processLawCrown :=
-    impreciseDeFinetti_processLaw_projectiveNaturalExtension_crown_of_prefixMarginalConsistentCarrierRealization
+    impreciseDeFinetti_processLaw_projectiveNaturalExtension_of_prefixMarginalConsistentCarrierRealization
       C (fun M _ n => bernoulliMixturePrefixLaw_analytic M n) hC
       carrier hCompact hCarrierConvex hClosed
       (bernoulliMixturePrefixProcessMarginalConsistent_analytic C)
@@ -7625,7 +7625,7 @@ theorem impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_of_prefixFiniteWi
 all-gambles process-law crown assemble into one honest analytic infinite de
 Finetti package as soon as the explicit tail-false finite-window realizers sit
 inside a compact carrier. -/
-theorem impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_of_prefixTailFalseExtensionCarrierSubset
+theorem impreciseDeFinetti_analyticMixingFamilyProcessLaw_of_prefixTailFalseExtensionCarrierSubset
     (C : Set BernoulliMixture)
     (hC : C.Nonempty)
     [TopologicalSpace (PrecisePrevision (ℕ → Bool))]
@@ -7640,8 +7640,8 @@ theorem impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_of_prefixTailFals
           ((bernoulliMixturePrefixProcessLowerSpec
               C (fun M _ n => bernoulliMixturePrefixLaw_analytic M n) hC).localLower n)})
     (hSubset : prefixTailFalseExtensionCarrier ⊆ carrier) :
-    ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown C hC :=
-  impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_of_prefixFiniteWindowRealization
+    ImpreciseDeFinettiAnalyticMixingFamilyProcessLaw C hC :=
+  impreciseDeFinetti_analyticMixingFamilyProcessLaw_of_prefixFiniteWindowRealization
     C hC carrier hCompact hCarrierConvex hClosed
     (bernoulliMixturePrefixProcess_jointPrevisionsRealizedInCarrier_of_prefixTailFalseExtensionCarrierSubset
       C (fun M _ n => bernoulliMixturePrefixLaw_analytic M n) hC
@@ -7726,7 +7726,7 @@ external process law; it records exactly what follows once such a law realizes
 the posterior Bernoulli mixture: the compact bounded path-law carrier is
 nonempty and compact, finite-prefix cylinder observables are determined, and
 their PLN width/complement readouts are precise. -/
-structure PosteriorBernoulliMixtureExternalCarrierCrown
+structure PosteriorBernoulliMixtureExternalCarrier
     {Ω : Type*} [MeasurableSpace Ω]
     (M : BernoulliMixture) (k l : ℕ)
     (hZ : M.countEvidenceMass k l ≠ 0)
@@ -7787,7 +7787,7 @@ structure PosteriorBernoulliMixtureExternalCarrierCrown
 the compact bounded path-law carrier gives a precise posterior prefix process
 surface.  The remaining construction problem is therefore exactly the external
 realization predicate, not the PLN readout layer. -/
-theorem posteriorBernoulliMixture_externalCarrierCrown
+theorem posteriorBernoulliMixture_externalCarrier
     {Ω : Type*} [MeasurableSpace Ω]
     (M : BernoulliMixture) (k l : ℕ)
     (hZ : M.countEvidenceMass k l ≠ 0)
@@ -7795,7 +7795,7 @@ theorem posteriorBernoulliMixture_externalCarrierCrown
     (hRealize :
       BernoulliMixtureExternalProcessRealization
         (M.posteriorBernoulliMixture k l hZ) A) :
-    PosteriorBernoulliMixtureExternalCarrierCrown M k l hZ A where
+    PosteriorBernoulliMixtureExternalCarrier M k l hZ A where
   realizesPosterior := hRealize
   compactCarrier_nonempty :=
     externalPathLawBoundedMeasurableCompactCredalSet_nonempty
@@ -8114,17 +8114,17 @@ Bayes-ratio update laws from `DeFinetti.lean` to the posterior singleton
 projective-prefix crown and to the external process-carrier surface.  The
 remaining infinite-process construction boundary is still explicit in
 `posteriorExternalRealization`. -/
-structure PosteriorBernoulliMixtureUpdateExternalCarrierCrown
+structure PosteriorBernoulliMixtureUpdateExternalCarrier
     {Ω : Type*} [MeasurableSpace Ω]
     (M : BernoulliMixture) (k l : ℕ)
     (hZ : M.countEvidenceMass k l ≠ 0)
     (A : ExternalBoolProcessLaw Ω) : Prop where
   updateCrown :
-    BernoulliMixture.PosteriorUpdateCrown M k l
+    BernoulliMixture.PosteriorUpdate M k l
   prefixProjectiveCrown :
-    PosteriorBernoulliMixturePrefixProjectiveCrown M k l hZ
+    PosteriorBernoulliMixturePrefixProjective M k l hZ
   externalCarrierCrown :
-    PosteriorBernoulliMixtureExternalCarrierCrown M k l hZ A
+    PosteriorBernoulliMixtureExternalCarrier M k l hZ A
   posteriorExternalRealization :
     BernoulliMixtureExternalProcessRealization
       (M.posteriorBernoulliMixture k l hZ) A
@@ -8161,7 +8161,7 @@ structure PosteriorBernoulliMixtureUpdateExternalCarrierCrown
 /-- Once an external Boolean process realizes the normalized posterior mixture,
 the posterior update laws, singleton projective-prefix determinations, and
 compact external-carrier readouts form one review-facing package. -/
-theorem posteriorBernoulliMixture_updateExternalCarrierCrown
+theorem posteriorBernoulliMixture_updateExternalCarrier
     {Ω : Type*} [MeasurableSpace Ω]
     (M : BernoulliMixture) (k l : ℕ)
     (hZ : M.countEvidenceMass k l ≠ 0)
@@ -8169,13 +8169,13 @@ theorem posteriorBernoulliMixture_updateExternalCarrierCrown
     (hRealize :
       BernoulliMixtureExternalProcessRealization
         (M.posteriorBernoulliMixture k l hZ) A) :
-    PosteriorBernoulliMixtureUpdateExternalCarrierCrown M k l hZ A where
+    PosteriorBernoulliMixtureUpdateExternalCarrier M k l hZ A where
   updateCrown :=
-    BernoulliMixture.posteriorUpdateCrown M k l hZ
+    BernoulliMixture.posteriorUpdate M k l hZ
   prefixProjectiveCrown :=
-    posteriorBernoulliMixturePrefixProjectiveCrown M k l hZ
+    posteriorBernoulliMixturePrefixProjective M k l hZ
   externalCarrierCrown :=
-    posteriorBernoulliMixture_externalCarrierCrown M k l hZ A hRealize
+    posteriorBernoulliMixture_externalCarrier M k l hZ A hRealize
   posteriorExternalRealization := hRealize
   processPrefixPrevision_eq_posterior := hRealize
   processOneBitTruePrevision_eq_countEvidenceMass :=
@@ -8201,11 +8201,11 @@ theorem posteriorBernoulliMixture_updateExternalCarrierCrown
 
 /-- Posterior/update/external-carrier package from a represented measurable
 posterior process.  Compared with
-`PosteriorBernoulliMixtureUpdateExternalCarrierCrown`, the infinite-process
+`PosteriorBernoulliMixtureUpdateExternalCarrier`, the infinite-process
 boundary has been reduced from a raw all-prefix realization predicate to the
 standard de Finetti singleton-cylinder representation predicate
 `DeFinetti.Represents`. -/
-structure PosteriorBernoulliMixtureRepresentedExternalCarrierCrown
+structure PosteriorBernoulliMixtureRepresentedExternalCarrier
     {Ω : Type*} [MeasurableSpace Ω]
     (M : BernoulliMixture) (k l : ℕ)
     (hZ : M.countEvidenceMass k l ≠ 0)
@@ -8218,7 +8218,7 @@ structure PosteriorBernoulliMixtureRepresentedExternalCarrierCrown
       (M.posteriorBernoulliMixture k l hZ)
       (ExternalBoolProcessLaw.ofProcess μ X hX)
   updateExternalCarrierCrown :
-    PosteriorBernoulliMixtureUpdateExternalCarrierCrown M k l hZ
+    PosteriorBernoulliMixtureUpdateExternalCarrier M k l hZ
       (ExternalBoolProcessLaw.ofProcess μ X hX)
   processPrefixPrevision_eq_posterior :
     ∀ (n : ℕ) (Y : Gamble (Fin n → Bool)),
@@ -8236,7 +8236,7 @@ structure PosteriorBernoulliMixtureRepresentedExternalCarrierCrown
 
 /-- A represented measurable posterior process canonically supplies the
 external realization consumed by the posterior update/external-carrier crown. -/
-theorem posteriorBernoulliMixture_representedExternalCarrierCrown
+theorem posteriorBernoulliMixture_representedExternalCarrier
     {Ω : Type*} [MeasurableSpace Ω]
     (M : BernoulliMixture) (k l : ℕ)
     (hZ : M.countEvidenceMass k l ≠ 0)
@@ -8244,14 +8244,14 @@ theorem posteriorBernoulliMixture_representedExternalCarrierCrown
     (X : ℕ → Ω → Bool) (hX : ∀ i : ℕ, Measurable (X i))
     (hRep : DeFinetti.Represents
       (M.posteriorBernoulliMixture k l hZ) X μ) :
-    PosteriorBernoulliMixtureRepresentedExternalCarrierCrown
+    PosteriorBernoulliMixtureRepresentedExternalCarrier
       M k l hZ μ X hX where
   representedPosterior := hRep
   inducedExternalRealization :=
     externalBoolProcessLawOf_realizes_posteriorBernoulliMixture_of_represents
       M k l hZ μ X hX hRep
   updateExternalCarrierCrown :=
-    posteriorBernoulliMixture_updateExternalCarrierCrown
+    posteriorBernoulliMixture_updateExternalCarrier
       M k l hZ (ExternalBoolProcessLaw.ofProcess μ X hX)
       (externalBoolProcessLawOf_realizes_posteriorBernoulliMixture_of_represents
         M k l hZ μ X hX hRep)
@@ -8272,16 +8272,16 @@ theorem posteriorBernoulliMixture_representedExternalCarrierCrown
 /-- The posterior Bernoulli mixture has a canonical represented global
 `Bool^ℕ` process witness, obtained by mixing the internal iid `Theta → Bool^ℕ`
 kernel against the posterior `Theta` law itself. -/
-theorem posteriorBernoulliMixture_canonicalRepresentedExternalCarrierCrown
+theorem posteriorBernoulliMixture_canonicalRepresentedExternalCarrier
     (M : BernoulliMixture) (k l : ℕ)
     (hZ : M.countEvidenceMass k l ≠ 0) :
-    PosteriorBernoulliMixtureRepresentedExternalCarrierCrown
+    PosteriorBernoulliMixtureRepresentedExternalCarrier
       M k l hZ
       (bernoulliMixtureCanonicalProcessMeasure
         (M.posteriorBernoulliMixture k l hZ))
       coordProcess
       bernoulliMixtureCanonical_coordProcess_measurable := by
-  exact posteriorBernoulliMixture_representedExternalCarrierCrown
+  exact posteriorBernoulliMixture_representedExternalCarrier
     M k l hZ
     (bernoulliMixtureCanonicalProcessMeasure
       (M.posteriorBernoulliMixture k l hZ))
@@ -8292,16 +8292,16 @@ theorem posteriorBernoulliMixture_canonicalRepresentedExternalCarrierCrown
 
 /-- The posterior Bernoulli mixture therefore also has a canonical external
 path-law carrier crown with no extra realization assumptions. -/
-theorem posteriorBernoulliMixture_canonicalExternalCarrierCrown
+theorem posteriorBernoulliMixture_canonicalExternalCarrier
     (M : BernoulliMixture) (k l : ℕ)
     (hZ : M.countEvidenceMass k l ≠ 0) :
-    PosteriorBernoulliMixtureExternalCarrierCrown M k l hZ
+    PosteriorBernoulliMixtureExternalCarrier M k l hZ
       (ExternalBoolProcessLaw.ofProcess
         (bernoulliMixtureCanonicalProcessMeasure
           (M.posteriorBernoulliMixture k l hZ))
         coordProcess
         bernoulliMixtureCanonical_coordProcess_measurable) := by
-  exact posteriorBernoulliMixture_externalCarrierCrown
+  exact posteriorBernoulliMixture_externalCarrier
     M k l hZ
     (ExternalBoolProcessLaw.ofProcess
       (bernoulliMixtureCanonicalProcessMeasure
@@ -8315,16 +8315,16 @@ theorem posteriorBernoulliMixture_canonicalExternalCarrierCrown
 Bernoulli mixture itself supplies the required external `Bool^ℕ` process law by
 mixing the internal iid `Theta → Bool^ℕ` kernel against its own posterior
 `Theta` law. -/
-theorem posteriorBernoulliMixture_canonicalUpdateExternalCarrierCrown
+theorem posteriorBernoulliMixture_canonicalUpdateExternalCarrier
     (M : BernoulliMixture) (k l : ℕ)
     (hZ : M.countEvidenceMass k l ≠ 0) :
-    PosteriorBernoulliMixtureUpdateExternalCarrierCrown M k l hZ
+    PosteriorBernoulliMixtureUpdateExternalCarrier M k l hZ
       (ExternalBoolProcessLaw.ofProcess
         (bernoulliMixtureCanonicalProcessMeasure
           (M.posteriorBernoulliMixture k l hZ))
         coordProcess
         bernoulliMixtureCanonical_coordProcess_measurable) := by
-  exact posteriorBernoulliMixture_updateExternalCarrierCrown
+  exact posteriorBernoulliMixture_updateExternalCarrier
     M k l hZ
     (ExternalBoolProcessLaw.ofProcess
       (bernoulliMixtureCanonicalProcessMeasure
@@ -8343,15 +8343,15 @@ and an external process law whose bounded-measurable compact path carrier
 computes the same posterior prefix observables exactly.
 
 Negative example: it does not claim a raw all-gambles
-`PosteriorBernoulliMixtureProcessLawCrown`; that stronger compact/FIP carrier
+`PosteriorBernoulliMixtureProcessLaw`; that stronger compact/FIP carrier
 boundary remains separate. -/
-structure PosteriorBernoulliMixtureProcessEnvelopeCrown
+structure PosteriorBernoulliMixtureProcessEnvelope
     {Ω : Type*} [MeasurableSpace Ω]
     (M : BernoulliMixture) (k l : ℕ)
     (hZ : M.countEvidenceMass k l ≠ 0)
     (A : ExternalBoolProcessLaw Ω) : Prop where
   prefixProjectiveCrown :
-    PosteriorBernoulliMixturePrefixProjectiveCrown M k l hZ
+    PosteriorBernoulliMixturePrefixProjective M k l hZ
   prefixCylinderCompatibleCompletion :
     (posteriorBernoulliMixturePrefixProcessLowerSpec M k l hZ).toCredalSpec.hasCompatibleCylinderCompletion
   prefixCylinderEnvelopeWidth_eq_zero :
@@ -8363,14 +8363,14 @@ structure PosteriorBernoulliMixtureProcessEnvelopeCrown
       ((posteriorBernoulliMixturePrefixProcessLowerSpec M k l hZ).toCredalSpec).cylinderEnvelopeWidthComplement
         n X = 1
   externalCarrierCrown :
-    PosteriorBernoulliMixtureExternalCarrierCrown M k l hZ A
+    PosteriorBernoulliMixtureExternalCarrier M k l hZ A
   updateExternalCarrierCrown :
-    PosteriorBernoulliMixtureUpdateExternalCarrierCrown M k l hZ A
+    PosteriorBernoulliMixtureUpdateExternalCarrier M k l hZ A
 
 /-- Once an external Boolean process realizes the posterior Bernoulli mixture,
 the exact prefix/projective crown, exact cylinder completion, and external
 bounded-measurable compact carrier readouts form one honest Crown 2 package. -/
-theorem posteriorBernoulliMixture_processEnvelopeCrown
+theorem posteriorBernoulliMixture_processEnvelope
     {Ω : Type*} [MeasurableSpace Ω]
     (M : BernoulliMixture) (k l : ℕ)
     (hZ : M.countEvidenceMass k l ≠ 0)
@@ -8378,9 +8378,9 @@ theorem posteriorBernoulliMixture_processEnvelopeCrown
     (hRealize :
       BernoulliMixtureExternalProcessRealization
         (M.posteriorBernoulliMixture k l hZ) A) :
-    PosteriorBernoulliMixtureProcessEnvelopeCrown M k l hZ A where
+    PosteriorBernoulliMixtureProcessEnvelope M k l hZ A where
   prefixProjectiveCrown :=
-    posteriorBernoulliMixturePrefixProjectiveCrown M k l hZ
+    posteriorBernoulliMixturePrefixProjective M k l hZ
   prefixCylinderCompatibleCompletion :=
     posteriorBernoulliMixturePrefixProcess_hasCompatibleCylinderCompletion M k l hZ
   prefixCylinderEnvelopeWidth_eq_zero := by
@@ -8393,24 +8393,24 @@ theorem posteriorBernoulliMixture_processEnvelopeCrown
       posteriorBernoulliMixturePrefixProcess_cylinderEnvelopeWidthComplement_eq_one
         M k l hZ n X
   externalCarrierCrown :=
-    posteriorBernoulliMixture_externalCarrierCrown M k l hZ A hRealize
+    posteriorBernoulliMixture_externalCarrier M k l hZ A hRealize
   updateExternalCarrierCrown :=
-    posteriorBernoulliMixture_updateExternalCarrierCrown M k l hZ A hRealize
+    posteriorBernoulliMixture_updateExternalCarrier M k l hZ A hRealize
 
 /-- Canonical unconditional posterior Crown 2 endpoint: the posterior
 Bernoulli mixture itself supplies the needed global `Bool^ℕ` external process
 law by mixing the iid `Theta → Bool^ℕ` kernel against its posterior `Theta`
 law. -/
-theorem posteriorBernoulliMixture_canonicalProcessEnvelopeCrown
+theorem posteriorBernoulliMixture_canonicalProcessEnvelope
     (M : BernoulliMixture) (k l : ℕ)
     (hZ : M.countEvidenceMass k l ≠ 0) :
-    PosteriorBernoulliMixtureProcessEnvelopeCrown M k l hZ
+    PosteriorBernoulliMixtureProcessEnvelope M k l hZ
       (ExternalBoolProcessLaw.ofProcess
         (bernoulliMixtureCanonicalProcessMeasure
           (M.posteriorBernoulliMixture k l hZ))
         coordProcess
         bernoulliMixtureCanonical_coordProcess_measurable) := by
-  exact posteriorBernoulliMixture_processEnvelopeCrown
+  exact posteriorBernoulliMixture_processEnvelope
     M k l hZ
     (ExternalBoolProcessLaw.ofProcess
       (bernoulliMixtureCanonicalProcessMeasure
@@ -8426,13 +8426,13 @@ This packages the process-envelope crown together with the exact lower, upper,
 and bounded-measurable natural-extension readouts on every finite-prefix
 observable. It is the minimal interface needed to connect the posterior
 predictive object to downstream credal-envelope consumers. -/
-structure PosteriorBernoulliMixtureSharedEnvelopeCrown
+structure PosteriorBernoulliMixtureSharedEnvelope
     {Ω : Type*} [MeasurableSpace Ω]
     (M : BernoulliMixture) (k l : ℕ)
     (hZ : M.countEvidenceMass k l ≠ 0)
     (A : ExternalBoolProcessLaw Ω) : Prop where
   processEnvelopeCrown :
-    PosteriorBernoulliMixtureProcessEnvelopeCrown M k l hZ A
+    PosteriorBernoulliMixtureProcessEnvelope M k l hZ A
   prefixLowerEnvelope_eq_posterior :
     ∀ (n : ℕ) (X : Gamble (Fin n → Bool)),
       externalPathLawPrefixLowerEnvelope
@@ -8468,7 +8468,7 @@ structure PosteriorBernoulliMixtureSharedEnvelopeCrown
 
 /-- Any external process law realizing the posterior Bernoulli mixture yields
 the full shared-envelope Crown 2 interface. -/
-theorem posteriorBernoulliMixture_sharedEnvelopeCrown
+theorem posteriorBernoulliMixture_sharedEnvelope
     {Ω : Type*} [MeasurableSpace Ω]
     (M : BernoulliMixture) (k l : ℕ)
     (hZ : M.countEvidenceMass k l ≠ 0)
@@ -8476,9 +8476,9 @@ theorem posteriorBernoulliMixture_sharedEnvelopeCrown
     (hRealize :
       BernoulliMixtureExternalProcessRealization
         (M.posteriorBernoulliMixture k l hZ) A) :
-    PosteriorBernoulliMixtureSharedEnvelopeCrown M k l hZ A where
+    PosteriorBernoulliMixtureSharedEnvelope M k l hZ A where
   processEnvelopeCrown :=
-    posteriorBernoulliMixture_processEnvelopeCrown M k l hZ A hRealize
+    posteriorBernoulliMixture_processEnvelope M k l hZ A hRealize
   prefixLowerEnvelope_eq_posterior := by
     intro n X
     exact posteriorBernoulliMixture_externalPathLawPrefixLowerEnvelope_eq_posterior
@@ -8501,7 +8501,7 @@ theorem posteriorBernoulliMixture_sharedEnvelopeCrown
 law: the exact shared-envelope endpoint exists, the sigma-additive
 bounded-measurable witness exists on the common compact path carrier, and the
 remaining stronger raw all-gambles process-law crown is classified separately. -/
-theorem posteriorBernoulliMixture_sharedEnvelopeCrown_and_pathBoundedMeasurableCompactWitness_and_processLawCrown_iff_zeroInteriorMixingMass
+theorem posteriorBernoulliMixture_sharedEnvelope_and_pathBoundedMeasurableCompactWitness_and_processLaw_iff_zeroInteriorMixingMass
     {Ω : Type*} [MeasurableSpace Ω]
     (M : BernoulliMixture) (k l : ℕ)
     (hZ : M.countEvidenceMass k l ≠ 0)
@@ -8509,7 +8509,7 @@ theorem posteriorBernoulliMixture_sharedEnvelopeCrown_and_pathBoundedMeasurableC
     (hRealize :
       BernoulliMixtureExternalProcessRealization
         (M.posteriorBernoulliMixture k l hZ) A) :
-    PosteriorBernoulliMixtureSharedEnvelopeCrown M k l hZ A ∧
+    PosteriorBernoulliMixtureSharedEnvelope M k l hZ A ∧
       A.pathBoundedMeasurablePrevision ∈
         externalPathLawBoundedMeasurableCompactCredalSet
           ({A} : Set (ExternalBoolProcessLaw Ω)) ∧
@@ -8518,10 +8518,10 @@ theorem posteriorBernoulliMixture_sharedEnvelopeCrown_and_pathBoundedMeasurableC
             (externalPathLawPrefixBoundedMeasurableGamble n X) =
           (bernoulliMixturePrefixLaw_analytic
             (M.posteriorBernoulliMixture k l hZ) n).toPrecisePrevision X) ∧
-      (PosteriorBernoulliMixtureProcessLawCrown M k l hZ ↔
+      (PosteriorBernoulliMixtureProcessLaw M k l hZ ↔
         M.mixingMeasure (Set.Ioo (0 : ℝ) 1) = 0) := by
   refine ⟨?_, ?_, ?_, ?_⟩
-  · exact posteriorBernoulliMixture_sharedEnvelopeCrown M k l hZ A hRealize
+  · exact posteriorBernoulliMixture_sharedEnvelope M k l hZ A hRealize
   · exact
       (posteriorBernoulliMixture_externalPathBoundedMeasurableCompactWitness
         M k l hZ A hRealize).1
@@ -8529,21 +8529,21 @@ theorem posteriorBernoulliMixture_sharedEnvelopeCrown_and_pathBoundedMeasurableC
       (posteriorBernoulliMixture_externalPathBoundedMeasurableCompactWitness
         M k l hZ A hRealize).2
   · exact
-      posteriorBernoulliMixture_processLawCrown_iff_zeroInteriorMixingMass
+      posteriorBernoulliMixture_processLaw_iff_zeroInteriorMixingMass
         M k l hZ
 
 /-- Canonical shared-envelope Crown 2 interface from the posterior's own
 global `Bool^ℕ` process law. -/
-theorem posteriorBernoulliMixture_canonicalSharedEnvelopeCrown
+theorem posteriorBernoulliMixture_canonicalSharedEnvelope
     (M : BernoulliMixture) (k l : ℕ)
     (hZ : M.countEvidenceMass k l ≠ 0) :
-    PosteriorBernoulliMixtureSharedEnvelopeCrown M k l hZ
+    PosteriorBernoulliMixtureSharedEnvelope M k l hZ
       (ExternalBoolProcessLaw.ofProcess
         (bernoulliMixtureCanonicalProcessMeasure
           (M.posteriorBernoulliMixture k l hZ))
         coordProcess
         bernoulliMixtureCanonical_coordProcess_measurable) := by
-  exact posteriorBernoulliMixture_sharedEnvelopeCrown
+  exact posteriorBernoulliMixture_sharedEnvelope
     M k l hZ
     (ExternalBoolProcessLaw.ofProcess
       (bernoulliMixtureCanonicalProcessMeasure
@@ -8556,10 +8556,10 @@ theorem posteriorBernoulliMixture_canonicalSharedEnvelopeCrown
 /-- The canonical posterior process always lives at the exact shared-envelope
 endpoint, and its stronger raw all-gambles witness exists exactly in the
 zero-interior-mass regime. -/
-theorem posteriorBernoulliMixture_canonicalSharedEnvelopeCrown_and_prefixWitness_iff_zeroInteriorMixingMass
+theorem posteriorBernoulliMixture_canonicalSharedEnvelope_and_prefixWitness_iff_zeroInteriorMixingMass
     (M : BernoulliMixture) (k l : ℕ)
     (hZ : M.countEvidenceMass k l ≠ 0) :
-    PosteriorBernoulliMixtureSharedEnvelopeCrown M k l hZ
+    PosteriorBernoulliMixtureSharedEnvelope M k l hZ
       (ExternalBoolProcessLaw.ofProcess
         (bernoulliMixtureCanonicalProcessMeasure
           (M.posteriorBernoulliMixture k l hZ))
@@ -8568,16 +8568,16 @@ theorem posteriorBernoulliMixture_canonicalSharedEnvelopeCrown_and_prefixWitness
       (posteriorBernoulliMixturePrefixProcessWitness M k l hZ ↔
         M.mixingMeasure (Set.Ioo (0 : ℝ) 1) = 0) := by
   exact
-    ⟨posteriorBernoulliMixture_canonicalSharedEnvelopeCrown M k l hZ,
+    ⟨posteriorBernoulliMixture_canonicalSharedEnvelope M k l hZ,
       posteriorBernoulliMixturePrefixProcessWitness_iff_zeroInteriorMixingMass M k l hZ⟩
 
 /-- The same canonical shared-envelope endpoint also classifies the remaining
 carrier-witness boundary exactly: some raw carrier witness exists iff the prior
 puts zero mass on the interior `(0,1)`. -/
-theorem posteriorBernoulliMixture_canonicalSharedEnvelopeCrown_and_prefixCarrierWitness_exists_iff_zeroInteriorMixingMass
+theorem posteriorBernoulliMixture_canonicalSharedEnvelope_and_prefixCarrierWitness_exists_iff_zeroInteriorMixingMass
     (M : BernoulliMixture) (k l : ℕ)
     (hZ : M.countEvidenceMass k l ≠ 0) :
-    PosteriorBernoulliMixtureSharedEnvelopeCrown M k l hZ
+    PosteriorBernoulliMixtureSharedEnvelope M k l hZ
       (ExternalBoolProcessLaw.ofProcess
         (bernoulliMixtureCanonicalProcessMeasure
           (M.posteriorBernoulliMixture k l hZ))
@@ -8587,33 +8587,33 @@ theorem posteriorBernoulliMixture_canonicalSharedEnvelopeCrown_and_prefixCarrier
           posteriorBernoulliMixturePrefixProcessCarrierWitness M k l hZ carrier) ↔
         M.mixingMeasure (Set.Ioo (0 : ℝ) 1) = 0) := by
   exact
-    ⟨posteriorBernoulliMixture_canonicalSharedEnvelopeCrown M k l hZ,
+    ⟨posteriorBernoulliMixture_canonicalSharedEnvelope M k l hZ,
       posteriorBernoulliMixturePrefixProcessCarrierWitness_exists_iff_zeroInteriorMixingMass
         M k l hZ⟩
 
 /-- The canonical posterior process already gives the full exact shared-envelope
 endpoint, and the stronger raw process-law crown exists exactly in the
 zero-interior-mass regime. -/
-theorem posteriorBernoulliMixture_canonicalSharedEnvelopeCrown_and_processLawCrown_iff_zeroInteriorMixingMass
+theorem posteriorBernoulliMixture_canonicalSharedEnvelope_and_processLaw_iff_zeroInteriorMixingMass
     (M : BernoulliMixture) (k l : ℕ)
     (hZ : M.countEvidenceMass k l ≠ 0) :
-    PosteriorBernoulliMixtureSharedEnvelopeCrown M k l hZ
+    PosteriorBernoulliMixtureSharedEnvelope M k l hZ
       (ExternalBoolProcessLaw.ofProcess
         (bernoulliMixtureCanonicalProcessMeasure
           (M.posteriorBernoulliMixture k l hZ))
         coordProcess
         bernoulliMixtureCanonical_coordProcess_measurable) ∧
-      (PosteriorBernoulliMixtureProcessLawCrown M k l hZ ↔
+      (PosteriorBernoulliMixtureProcessLaw M k l hZ ↔
         M.mixingMeasure (Set.Ioo (0 : ℝ) 1) = 0) := by
   exact
-    ⟨posteriorBernoulliMixture_canonicalSharedEnvelopeCrown M k l hZ,
-      posteriorBernoulliMixture_processLawCrown_iff_zeroInteriorMixingMass
+    ⟨posteriorBernoulliMixture_canonicalSharedEnvelope M k l hZ,
+      posteriorBernoulliMixture_processLaw_iff_zeroInteriorMixingMass
         M k l hZ⟩
 
 /-- Canonical posterior-process version of the full honest final boundary
 package: exact shared-envelope endpoint, actual sigma-additive
 bounded-measurable witness, and exact raw process-law crown classification. -/
-theorem posteriorBernoulliMixture_canonicalSharedEnvelopeCrown_and_pathBoundedMeasurableCompactWitness_and_processLawCrown_iff_zeroInteriorMixingMass
+theorem posteriorBernoulliMixture_canonicalSharedEnvelope_and_pathBoundedMeasurableCompactWitness_and_processLaw_iff_zeroInteriorMixingMass
     (M : BernoulliMixture) (k l : ℕ)
     (hZ : M.countEvidenceMass k l ≠ 0) :
     let A : ExternalBoolProcessLaw (ℕ → Bool) :=
@@ -8622,7 +8622,7 @@ theorem posteriorBernoulliMixture_canonicalSharedEnvelopeCrown_and_pathBoundedMe
           (M.posteriorBernoulliMixture k l hZ))
         coordProcess
         bernoulliMixtureCanonical_coordProcess_measurable
-    PosteriorBernoulliMixtureSharedEnvelopeCrown M k l hZ A ∧
+    PosteriorBernoulliMixtureSharedEnvelope M k l hZ A ∧
       A.pathBoundedMeasurablePrevision ∈
         externalPathLawBoundedMeasurableCompactCredalSet
           ({A} : Set (ExternalBoolProcessLaw (ℕ → Bool))) ∧
@@ -8631,7 +8631,7 @@ theorem posteriorBernoulliMixture_canonicalSharedEnvelopeCrown_and_pathBoundedMe
             (externalPathLawPrefixBoundedMeasurableGamble n X) =
           (bernoulliMixturePrefixLaw_analytic
             (M.posteriorBernoulliMixture k l hZ) n).toPrecisePrevision X) ∧
-      (PosteriorBernoulliMixtureProcessLawCrown M k l hZ ↔
+      (PosteriorBernoulliMixtureProcessLaw M k l hZ ↔
         M.mixingMeasure (Set.Ioo (0 : ℝ) 1) = 0) := by
   let A : ExternalBoolProcessLaw (ℕ → Bool) :=
     ExternalBoolProcessLaw.ofProcess
@@ -8640,7 +8640,7 @@ theorem posteriorBernoulliMixture_canonicalSharedEnvelopeCrown_and_pathBoundedMe
       coordProcess
       bernoulliMixtureCanonical_coordProcess_measurable
   exact
-    posteriorBernoulliMixture_sharedEnvelopeCrown_and_pathBoundedMeasurableCompactWitness_and_processLawCrown_iff_zeroInteriorMixingMass
+    posteriorBernoulliMixture_sharedEnvelope_and_pathBoundedMeasurableCompactWitness_and_processLaw_iff_zeroInteriorMixingMass
       M k l hZ A
       (bernoulliMixtureCanonicalExternalProcessRealization
         (M.posteriorBernoulliMixture k l hZ))
@@ -8649,11 +8649,11 @@ theorem posteriorBernoulliMixture_canonicalSharedEnvelopeCrown_and_pathBoundedMe
 shared-envelope posterior process object, while the stronger single-global raw
 all-gambles witness is impossible.  This is the sharp formal statement of the
 current raw-vs-bounded-measurable boundary. -/
-theorem posteriorBernoulliMixture_canonicalSharedEnvelopeCrown_and_noPrefixCarrierWitness_of_interiorMixingMass
+theorem posteriorBernoulliMixture_canonicalSharedEnvelope_and_noPrefixCarrierWitness_of_interiorMixingMass
     (M : BernoulliMixture) (k l : ℕ)
     (hZ : M.countEvidenceMass k l ≠ 0)
     (hInterior : 0 < M.mixingMeasure (Set.Ioo (0 : ℝ) 1)) :
-    PosteriorBernoulliMixtureSharedEnvelopeCrown M k l hZ
+    PosteriorBernoulliMixtureSharedEnvelope M k l hZ
       (ExternalBoolProcessLaw.ofProcess
         (bernoulliMixtureCanonicalProcessMeasure
           (M.posteriorBernoulliMixture k l hZ))
@@ -8661,7 +8661,7 @@ theorem posteriorBernoulliMixture_canonicalSharedEnvelopeCrown_and_noPrefixCarri
         bernoulliMixtureCanonical_coordProcess_measurable) ∧
       ∀ carrier : CredalPrevisionSet (ℕ → Bool),
         ¬ posteriorBernoulliMixturePrefixProcessCarrierWitness M k l hZ carrier := by
-  refine ⟨posteriorBernoulliMixture_canonicalSharedEnvelopeCrown M k l hZ, ?_⟩
+  refine ⟨posteriorBernoulliMixture_canonicalSharedEnvelope M k l hZ, ?_⟩
   intro carrier
   exact
     not_posteriorBernoulliMixturePrefixProcessCarrierWitness_of_interiorMixingMass
@@ -8670,18 +8670,18 @@ theorem posteriorBernoulliMixture_canonicalSharedEnvelopeCrown_and_noPrefixCarri
 /-- Direct-witness form of the same boundary: in the interior-mass regime, the
 canonical shared-envelope endpoint exists exactly, while the stronger raw
 global all-gambles witness itself is impossible. -/
-theorem posteriorBernoulliMixture_canonicalSharedEnvelopeCrown_and_noPrefixWitness_of_interiorMixingMass
+theorem posteriorBernoulliMixture_canonicalSharedEnvelope_and_noPrefixWitness_of_interiorMixingMass
     (M : BernoulliMixture) (k l : ℕ)
     (hZ : M.countEvidenceMass k l ≠ 0)
     (hInterior : 0 < M.mixingMeasure (Set.Ioo (0 : ℝ) 1)) :
-    PosteriorBernoulliMixtureSharedEnvelopeCrown M k l hZ
+    PosteriorBernoulliMixtureSharedEnvelope M k l hZ
       (ExternalBoolProcessLaw.ofProcess
         (bernoulliMixtureCanonicalProcessMeasure
           (M.posteriorBernoulliMixture k l hZ))
         coordProcess
         bernoulliMixtureCanonical_coordProcess_measurable) ∧
       ¬ posteriorBernoulliMixturePrefixProcessWitness M k l hZ := by
-  refine ⟨posteriorBernoulliMixture_canonicalSharedEnvelopeCrown M k l hZ, ?_⟩
+  refine ⟨posteriorBernoulliMixture_canonicalSharedEnvelope M k l hZ, ?_⟩
   exact
     not_posteriorBernoulliMixturePrefixProcessWitness_of_interiorMixingMass
       M k l hZ hInterior
@@ -8723,14 +8723,14 @@ theorem posteriorBernoulliMixture_canonicalPathBoundedMeasurableCompactWitness_a
         (M.posteriorBernoulliMixture k l hZ))
       hInterior
 
-namespace PosteriorBernoulliMixtureSharedEnvelopeCrown
+namespace PosteriorBernoulliMixtureSharedEnvelope
 
 theorem prefixEnvelopeWidth_eq_zero
     {Ω : Type*} [MeasurableSpace Ω]
     {M : BernoulliMixture} {k l : ℕ}
     {hZ : M.countEvidenceMass k l ≠ 0}
     {A : ExternalBoolProcessLaw Ω}
-    (hCrown : PosteriorBernoulliMixtureSharedEnvelopeCrown M k l hZ A)
+    (hCrown : PosteriorBernoulliMixtureSharedEnvelope M k l hZ A)
     (n : ℕ)
     (X : Gamble (Fin n → Bool)) :
     externalPathLawPrefixEnvelopeWidth ({A} : Set (ExternalBoolProcessLaw Ω)) n X = 0 := by
@@ -8746,7 +8746,7 @@ theorem prefixEnvelopeWidthComplement_eq_one
     {M : BernoulliMixture} {k l : ℕ}
     {hZ : M.countEvidenceMass k l ≠ 0}
     {A : ExternalBoolProcessLaw Ω}
-    (hCrown : PosteriorBernoulliMixtureSharedEnvelopeCrown M k l hZ A)
+    (hCrown : PosteriorBernoulliMixtureSharedEnvelope M k l hZ A)
     (n : ℕ)
     (X : Gamble (Fin n → Bool)) :
     externalPathLawPrefixEnvelopeWidthComplement
@@ -8762,7 +8762,7 @@ theorem prefixEnvelopeMidpoint_eq_posterior
     {M : BernoulliMixture} {k l : ℕ}
     {hZ : M.countEvidenceMass k l ≠ 0}
     {A : ExternalBoolProcessLaw Ω}
-    (hCrown : PosteriorBernoulliMixtureSharedEnvelopeCrown M k l hZ A)
+    (hCrown : PosteriorBernoulliMixtureSharedEnvelope M k l hZ A)
     (n : ℕ)
     (X : Gamble (Fin n → Bool)) :
     externalPathLawPrefixEnvelopeMidpoint
@@ -8786,7 +8786,7 @@ theorem prefixPLNCoordinates_eq_posterior
     {M : BernoulliMixture} {k l : ℕ}
     {hZ : M.countEvidenceMass k l ≠ 0}
     {A : ExternalBoolProcessLaw Ω}
-    (hCrown : PosteriorBernoulliMixtureSharedEnvelopeCrown M k l hZ A)
+    (hCrown : PosteriorBernoulliMixtureSharedEnvelope M k l hZ A)
     (n : ℕ)
     (X : Gamble (Fin n → Bool)) :
     ( externalPathLawPrefixEnvelopeMidpoint
@@ -8805,7 +8805,7 @@ theorem compactPLNCoordinates_eq_posterior
     {M : BernoulliMixture} {k l : ℕ}
     {hZ : M.countEvidenceMass k l ≠ 0}
     {A : ExternalBoolProcessLaw Ω}
-    (hCrown : PosteriorBernoulliMixtureSharedEnvelopeCrown M k l hZ A)
+    (hCrown : PosteriorBernoulliMixtureSharedEnvelope M k l hZ A)
     (n : ℕ)
     (X : Gamble (Fin n → Bool)) :
     ( boundedMeasurableEnvelopeMidpoint
@@ -8848,16 +8848,16 @@ theorem compactPLNCoordinates_eq_posterior
                 ({A} : Set (ExternalBoolProcessLaw Ω)) ⟨A, rfl⟩ n X
       _ = 1 := hCrown.prefixEnvelopeWidthComplement_eq_one n X
 
-end PosteriorBernoulliMixtureSharedEnvelopeCrown
+end PosteriorBernoulliMixtureSharedEnvelope
 
 /-- The shared-envelope Crown 2 interface collapses the singleton external
 posterior prefix credal width to zero. -/
-theorem posteriorBernoulliMixture_sharedEnvelopeCrown_prefixEnvelopeWidth_eq_zero
+theorem posteriorBernoulliMixture_sharedEnvelope_prefixEnvelopeWidth_eq_zero
     {Ω : Type*} [MeasurableSpace Ω]
     {M : BernoulliMixture} {k l : ℕ}
     {hZ : M.countEvidenceMass k l ≠ 0}
     {A : ExternalBoolProcessLaw Ω}
-    (hCrown : PosteriorBernoulliMixtureSharedEnvelopeCrown M k l hZ A)
+    (hCrown : PosteriorBernoulliMixtureSharedEnvelope M k l hZ A)
     (n : ℕ)
     (X : Gamble (Fin n → Bool)) :
     externalPathLawPrefixEnvelopeWidth ({A} : Set (ExternalBoolProcessLaw Ω)) n X = 0 :=
@@ -8865,12 +8865,12 @@ theorem posteriorBernoulliMixture_sharedEnvelopeCrown_prefixEnvelopeWidth_eq_zer
 
 /-- The shared-envelope Crown 2 interface makes the singleton external
 posterior prefix width-complement coordinate maximal. -/
-theorem posteriorBernoulliMixture_sharedEnvelopeCrown_prefixEnvelopeWidthComplement_eq_one
+theorem posteriorBernoulliMixture_sharedEnvelope_prefixEnvelopeWidthComplement_eq_one
     {Ω : Type*} [MeasurableSpace Ω]
     {M : BernoulliMixture} {k l : ℕ}
     {hZ : M.countEvidenceMass k l ≠ 0}
     {A : ExternalBoolProcessLaw Ω}
-    (hCrown : PosteriorBernoulliMixtureSharedEnvelopeCrown M k l hZ A)
+    (hCrown : PosteriorBernoulliMixtureSharedEnvelope M k l hZ A)
     (n : ℕ)
     (X : Gamble (Fin n → Bool)) :
     externalPathLawPrefixEnvelopeWidthComplement
@@ -8879,12 +8879,12 @@ theorem posteriorBernoulliMixture_sharedEnvelopeCrown_prefixEnvelopeWidthComplem
 
 /-- The shared-envelope Crown 2 interface makes the singleton external
 posterior prefix midpoint equal the analytic posterior prevision. -/
-theorem posteriorBernoulliMixture_sharedEnvelopeCrown_prefixEnvelopeMidpoint_eq_posterior
+theorem posteriorBernoulliMixture_sharedEnvelope_prefixEnvelopeMidpoint_eq_posterior
     {Ω : Type*} [MeasurableSpace Ω]
     {M : BernoulliMixture} {k l : ℕ}
     {hZ : M.countEvidenceMass k l ≠ 0}
     {A : ExternalBoolProcessLaw Ω}
-    (hCrown : PosteriorBernoulliMixtureSharedEnvelopeCrown M k l hZ A)
+    (hCrown : PosteriorBernoulliMixtureSharedEnvelope M k l hZ A)
     (n : ℕ)
     (X : Gamble (Fin n → Bool)) :
     externalPathLawPrefixEnvelopeMidpoint
@@ -8896,12 +8896,12 @@ theorem posteriorBernoulliMixture_sharedEnvelopeCrown_prefixEnvelopeMidpoint_eq_
 /-- The shared-envelope Crown 2 interface exposes exact PLN-style
 midpoint/confidence coordinates on the singleton external posterior prefix
 credal slice. -/
-theorem posteriorBernoulliMixture_sharedEnvelopeCrown_prefixPLNCoordinates_eq_posterior
+theorem posteriorBernoulliMixture_sharedEnvelope_prefixPLNCoordinates_eq_posterior
     {Ω : Type*} [MeasurableSpace Ω]
     {M : BernoulliMixture} {k l : ℕ}
     {hZ : M.countEvidenceMass k l ≠ 0}
     {A : ExternalBoolProcessLaw Ω}
-    (hCrown : PosteriorBernoulliMixtureSharedEnvelopeCrown M k l hZ A)
+    (hCrown : PosteriorBernoulliMixtureSharedEnvelope M k l hZ A)
     (n : ℕ)
     (X : Gamble (Fin n → Bool)) :
     ( externalPathLawPrefixEnvelopeMidpoint
@@ -8916,12 +8916,12 @@ theorem posteriorBernoulliMixture_sharedEnvelopeCrown_prefixPLNCoordinates_eq_po
 /-- The shared-envelope Crown 2 interface exposes exact PLN-style
 midpoint/confidence coordinates on the compact bounded-measurable posterior
 path carrier. -/
-theorem posteriorBernoulliMixture_sharedEnvelopeCrown_compactPLNCoordinates_eq_posterior
+theorem posteriorBernoulliMixture_sharedEnvelope_compactPLNCoordinates_eq_posterior
     {Ω : Type*} [MeasurableSpace Ω]
     {M : BernoulliMixture} {k l : ℕ}
     {hZ : M.countEvidenceMass k l ≠ 0}
     {A : ExternalBoolProcessLaw Ω}
-    (hCrown : PosteriorBernoulliMixtureSharedEnvelopeCrown M k l hZ A)
+    (hCrown : PosteriorBernoulliMixtureSharedEnvelope M k l hZ A)
     (n : ℕ)
     (X : Gamble (Fin n → Bool)) :
     ( boundedMeasurableEnvelopeMidpoint
@@ -8987,17 +8987,17 @@ theorem conditionedTailExternalBoolProcessLaw_realizes_posteriorBernoulliMixture
 
 /-- A represented prior process plus a nonzero observed prefix supplies the
 posterior external-carrier crown through the conditioned tail process. -/
-theorem posteriorBernoulliMixture_conditionedTail_externalCarrierCrown
+theorem posteriorBernoulliMixture_conditionedTail_externalCarrier
     {Ω : Type*} [MeasurableSpace Ω]
     (M : BernoulliMixture) (X : ℕ → Ω → Bool) (μ : Measure Ω)
     (hX : ∀ i : ℕ, Measurable (X i))
     (hrep : DeFinetti.Represents M X μ) {m : ℕ}
     (obs : Fin m → Bool)
     (hZ : M.countEvidenceMass (countTrue obs) (countFalse obs) ≠ 0) :
-    PosteriorBernoulliMixtureExternalCarrierCrown
+    PosteriorBernoulliMixtureExternalCarrier
       M (countTrue obs) (countFalse obs) hZ
       (conditionedTailExternalBoolProcessLaw M X μ hX hrep obs hZ) := by
-  exact posteriorBernoulliMixture_externalCarrierCrown
+  exact posteriorBernoulliMixture_externalCarrier
     M (countTrue obs) (countFalse obs) hZ
     (conditionedTailExternalBoolProcessLaw M X μ hX hrep obs hZ)
     (conditionedTailExternalBoolProcessLaw_realizes_posteriorBernoulliMixture
@@ -9005,17 +9005,17 @@ theorem posteriorBernoulliMixture_conditionedTail_externalCarrierCrown
 
 /-- A represented prior process plus a nonzero observed prefix supplies the
 posterior update/external-carrier crown through the conditioned tail process. -/
-theorem posteriorBernoulliMixture_conditionedTail_updateExternalCarrierCrown
+theorem posteriorBernoulliMixture_conditionedTail_updateExternalCarrier
     {Ω : Type*} [MeasurableSpace Ω]
     (M : BernoulliMixture) (X : ℕ → Ω → Bool) (μ : Measure Ω)
     (hX : ∀ i : ℕ, Measurable (X i))
     (hrep : DeFinetti.Represents M X μ) {m : ℕ}
     (obs : Fin m → Bool)
     (hZ : M.countEvidenceMass (countTrue obs) (countFalse obs) ≠ 0) :
-    PosteriorBernoulliMixtureUpdateExternalCarrierCrown
+    PosteriorBernoulliMixtureUpdateExternalCarrier
       M (countTrue obs) (countFalse obs) hZ
       (conditionedTailExternalBoolProcessLaw M X μ hX hrep obs hZ) := by
-  exact posteriorBernoulliMixture_updateExternalCarrierCrown
+  exact posteriorBernoulliMixture_updateExternalCarrier
     M (countTrue obs) (countFalse obs) hZ
     (conditionedTailExternalBoolProcessLaw M X μ hX hrep obs hZ)
     (conditionedTailExternalBoolProcessLaw_realizes_posteriorBernoulliMixture
@@ -9027,17 +9027,17 @@ Starting from a represented prior process and a nonzero observed prefix, the
 shifted conditioned tail supplies the external realization consumed by the
 unconditional process-envelope crown at the posterior counts
 `(countTrue obs, countFalse obs)`. -/
-theorem posteriorBernoulliMixture_conditionedTail_processEnvelopeCrown
+theorem posteriorBernoulliMixture_conditionedTail_processEnvelope
     {Ω : Type*} [MeasurableSpace Ω]
     (M : BernoulliMixture) (X : ℕ → Ω → Bool) (μ : Measure Ω)
     (hX : ∀ i : ℕ, Measurable (X i))
     (hrep : DeFinetti.Represents M X μ) {m : ℕ}
     (obs : Fin m → Bool)
     (hZ : M.countEvidenceMass (countTrue obs) (countFalse obs) ≠ 0) :
-    PosteriorBernoulliMixtureProcessEnvelopeCrown
+    PosteriorBernoulliMixtureProcessEnvelope
       M (countTrue obs) (countFalse obs) hZ
       (conditionedTailExternalBoolProcessLaw M X μ hX hrep obs hZ) := by
-  exact posteriorBernoulliMixture_processEnvelopeCrown
+  exact posteriorBernoulliMixture_processEnvelope
     M (countTrue obs) (countFalse obs) hZ
     (conditionedTailExternalBoolProcessLaw M X μ hX hrep obs hZ)
     (conditionedTailExternalBoolProcessLaw_realizes_posteriorBernoulliMixture
@@ -9048,17 +9048,17 @@ theorem posteriorBernoulliMixture_conditionedTail_processEnvelopeCrown
 Starting from a represented prior process and a nonzero observed prefix, the
 shifted conditioned tail computes the exact posterior lower, upper, and natural
 Walley envelopes on every finite-prefix observable. -/
-theorem posteriorBernoulliMixture_conditionedTail_sharedEnvelopeCrown
+theorem posteriorBernoulliMixture_conditionedTail_sharedEnvelope
     {Ω : Type*} [MeasurableSpace Ω]
     (M : BernoulliMixture) (X : ℕ → Ω → Bool) (μ : Measure Ω)
     (hX : ∀ i : ℕ, Measurable (X i))
     (hrep : DeFinetti.Represents M X μ) {m : ℕ}
     (obs : Fin m → Bool)
     (hZ : M.countEvidenceMass (countTrue obs) (countFalse obs) ≠ 0) :
-    PosteriorBernoulliMixtureSharedEnvelopeCrown
+    PosteriorBernoulliMixtureSharedEnvelope
       M (countTrue obs) (countFalse obs) hZ
       (conditionedTailExternalBoolProcessLaw M X μ hX hrep obs hZ) := by
-  exact posteriorBernoulliMixture_sharedEnvelopeCrown
+  exact posteriorBernoulliMixture_sharedEnvelope
     M (countTrue obs) (countFalse obs) hZ
     (conditionedTailExternalBoolProcessLaw M X μ hX hrep obs hZ)
     (conditionedTailExternalBoolProcessLaw_realizes_posteriorBernoulliMixture
@@ -9068,21 +9068,21 @@ theorem posteriorBernoulliMixture_conditionedTail_sharedEnvelopeCrown
 the shifted posterior tail always stays at the exact shared-envelope endpoint,
 and the stronger raw all-gambles witness exists exactly in the zero-interior
 regime of the underlying prior mixture. -/
-theorem posteriorBernoulliMixture_conditionedTail_sharedEnvelopeCrown_and_prefixWitness_iff_zeroInteriorMixingMass
+theorem posteriorBernoulliMixture_conditionedTail_sharedEnvelope_and_prefixWitness_iff_zeroInteriorMixingMass
     {Ω : Type*} [MeasurableSpace Ω]
     (M : BernoulliMixture) (X : ℕ → Ω → Bool) (μ : Measure Ω)
     (hX : ∀ i : ℕ, Measurable (X i))
     (hrep : DeFinetti.Represents M X μ) {m : ℕ}
     (obs : Fin m → Bool)
     (hZ : M.countEvidenceMass (countTrue obs) (countFalse obs) ≠ 0) :
-    PosteriorBernoulliMixtureSharedEnvelopeCrown
+    PosteriorBernoulliMixtureSharedEnvelope
       M (countTrue obs) (countFalse obs) hZ
       (conditionedTailExternalBoolProcessLaw M X μ hX hrep obs hZ) ∧
       (posteriorBernoulliMixturePrefixProcessWitness
           M (countTrue obs) (countFalse obs) hZ ↔
         M.mixingMeasure (Set.Ioo (0 : ℝ) 1) = 0) := by
   exact
-    ⟨posteriorBernoulliMixture_conditionedTail_sharedEnvelopeCrown
+    ⟨posteriorBernoulliMixture_conditionedTail_sharedEnvelope
         M X μ hX hrep obs hZ,
       posteriorBernoulliMixturePrefixProcessWitness_iff_zeroInteriorMixingMass
         M (countTrue obs) (countFalse obs) hZ⟩
@@ -9090,14 +9090,14 @@ theorem posteriorBernoulliMixture_conditionedTail_sharedEnvelopeCrown_and_prefix
 /-- Conditioned-tail version of the same exact carrier-witness classification:
 the shared-envelope posterior object always exists, while a raw carrier
 witness exists exactly in the zero-interior regime. -/
-theorem posteriorBernoulliMixture_conditionedTail_sharedEnvelopeCrown_and_prefixCarrierWitness_exists_iff_zeroInteriorMixingMass
+theorem posteriorBernoulliMixture_conditionedTail_sharedEnvelope_and_prefixCarrierWitness_exists_iff_zeroInteriorMixingMass
     {Ω : Type*} [MeasurableSpace Ω]
     (M : BernoulliMixture) (X : ℕ → Ω → Bool) (μ : Measure Ω)
     (hX : ∀ i : ℕ, Measurable (X i))
     (hrep : DeFinetti.Represents M X μ) {m : ℕ}
     (obs : Fin m → Bool)
     (hZ : M.countEvidenceMass (countTrue obs) (countFalse obs) ≠ 0) :
-    PosteriorBernoulliMixtureSharedEnvelopeCrown
+    PosteriorBernoulliMixtureSharedEnvelope
       M (countTrue obs) (countFalse obs) hZ
       (conditionedTailExternalBoolProcessLaw M X μ hX hrep obs hZ) ∧
       ((∃ carrier : CredalPrevisionSet (ℕ → Bool),
@@ -9105,7 +9105,7 @@ theorem posteriorBernoulliMixture_conditionedTail_sharedEnvelopeCrown_and_prefix
             M (countTrue obs) (countFalse obs) hZ carrier) ↔
         M.mixingMeasure (Set.Ioo (0 : ℝ) 1) = 0) := by
   exact
-    ⟨posteriorBernoulliMixture_conditionedTail_sharedEnvelopeCrown
+    ⟨posteriorBernoulliMixture_conditionedTail_sharedEnvelope
         M X μ hX hrep obs hZ,
       posteriorBernoulliMixturePrefixProcessCarrierWitness_exists_iff_zeroInteriorMixingMass
         M (countTrue obs) (countFalse obs) hZ⟩
@@ -9114,7 +9114,7 @@ theorem posteriorBernoulliMixture_conditionedTail_sharedEnvelopeCrown_and_prefix
 the shifted posterior tail still lives at the exact shared-envelope endpoint,
 while the stronger single-global raw witness remains impossible in the same
 nondegenerate interior-mass regime. -/
-theorem posteriorBernoulliMixture_conditionedTail_sharedEnvelopeCrown_and_noPrefixCarrierWitness_of_interiorMixingMass
+theorem posteriorBernoulliMixture_conditionedTail_sharedEnvelope_and_noPrefixCarrierWitness_of_interiorMixingMass
     {Ω : Type*} [MeasurableSpace Ω]
     (M : BernoulliMixture) (X : ℕ → Ω → Bool) (μ : Measure Ω)
     (hX : ∀ i : ℕ, Measurable (X i))
@@ -9122,14 +9122,14 @@ theorem posteriorBernoulliMixture_conditionedTail_sharedEnvelopeCrown_and_noPref
     (obs : Fin m → Bool)
     (hZ : M.countEvidenceMass (countTrue obs) (countFalse obs) ≠ 0)
     (hInterior : 0 < M.mixingMeasure (Set.Ioo (0 : ℝ) 1)) :
-    PosteriorBernoulliMixtureSharedEnvelopeCrown
+    PosteriorBernoulliMixtureSharedEnvelope
       M (countTrue obs) (countFalse obs) hZ
       (conditionedTailExternalBoolProcessLaw M X μ hX hrep obs hZ) ∧
       ∀ carrier : CredalPrevisionSet (ℕ → Bool),
         ¬ posteriorBernoulliMixturePrefixProcessCarrierWitness
           M (countTrue obs) (countFalse obs) hZ carrier := by
   refine
-    ⟨posteriorBernoulliMixture_conditionedTail_sharedEnvelopeCrown
+    ⟨posteriorBernoulliMixture_conditionedTail_sharedEnvelope
       M X μ hX hrep obs hZ, ?_⟩
   intro carrier
   exact
@@ -9140,7 +9140,7 @@ theorem posteriorBernoulliMixture_conditionedTail_sharedEnvelopeCrown_and_noPref
 represented prior process on an observed prefix, the shifted tail remains at
 the exact shared-envelope endpoint, while the stronger raw global witness is
 still impossible in the same interior-mass regime. -/
-theorem posteriorBernoulliMixture_conditionedTail_sharedEnvelopeCrown_and_noPrefixWitness_of_interiorMixingMass
+theorem posteriorBernoulliMixture_conditionedTail_sharedEnvelope_and_noPrefixWitness_of_interiorMixingMass
     {Ω : Type*} [MeasurableSpace Ω]
     (M : BernoulliMixture) (X : ℕ → Ω → Bool) (μ : Measure Ω)
     (hX : ∀ i : ℕ, Measurable (X i))
@@ -9148,13 +9148,13 @@ theorem posteriorBernoulliMixture_conditionedTail_sharedEnvelopeCrown_and_noPref
     (obs : Fin m → Bool)
     (hZ : M.countEvidenceMass (countTrue obs) (countFalse obs) ≠ 0)
     (hInterior : 0 < M.mixingMeasure (Set.Ioo (0 : ℝ) 1)) :
-    PosteriorBernoulliMixtureSharedEnvelopeCrown
+    PosteriorBernoulliMixtureSharedEnvelope
       M (countTrue obs) (countFalse obs) hZ
       (conditionedTailExternalBoolProcessLaw M X μ hX hrep obs hZ) ∧
       ¬ posteriorBernoulliMixturePrefixProcessWitness
         M (countTrue obs) (countFalse obs) hZ := by
   refine
-    ⟨posteriorBernoulliMixture_conditionedTail_sharedEnvelopeCrown
+    ⟨posteriorBernoulliMixture_conditionedTail_sharedEnvelope
       M X μ hX hrep obs hZ, ?_⟩
   exact
     not_posteriorBernoulliMixturePrefixProcessWitness_of_interiorMixingMass
@@ -9217,8 +9217,8 @@ theorem posteriorBernoulliMixture_conditionedTail_prefixPLNCoordinates_eq_poster
               (countTrue obs) (countFalse obs) hZ) n).toPrecisePrevision G
       , (1 : ℝ) ) := by
   exact
-    posteriorBernoulliMixture_sharedEnvelopeCrown_prefixPLNCoordinates_eq_posterior
-      (posteriorBernoulliMixture_conditionedTail_sharedEnvelopeCrown
+    posteriorBernoulliMixture_sharedEnvelope_prefixPLNCoordinates_eq_posterior
+      (posteriorBernoulliMixture_conditionedTail_sharedEnvelope
         M X μ hX hrep obs hZ) n G
 
 /-- The conditioned posterior tail exposes exact PLN-style midpoint/confidence
@@ -9247,8 +9247,8 @@ theorem posteriorBernoulliMixture_conditionedTail_compactPLNCoordinates_eq_poste
               (countTrue obs) (countFalse obs) hZ) n).toPrecisePrevision G
       , (1 : ℝ) ) := by
   exact
-    posteriorBernoulliMixture_sharedEnvelopeCrown_compactPLNCoordinates_eq_posterior
-      (posteriorBernoulliMixture_conditionedTail_sharedEnvelopeCrown
+    posteriorBernoulliMixture_sharedEnvelope_compactPLNCoordinates_eq_posterior
+      (posteriorBernoulliMixture_conditionedTail_sharedEnvelope
         M X μ hX hrep obs hZ) n G
 
 /-- Posterior process-law and conditioned-tail carrier package.
@@ -9257,7 +9257,7 @@ This is the review-facing endpoint that joins the two remaining Crown 2
 interfaces: a compact/FIP posterior singleton process-law crown, and the
 external posterior carrier obtained by conditioning a represented prior process
 on the observed prefix and reading its shifted tail. -/
-structure PosteriorBernoulliMixtureConditionedTailProcessCarrierCrown
+structure PosteriorBernoulliMixtureConditionedTailProcessCarrier
     {Ω : Type*} [MeasurableSpace Ω]
     (M : BernoulliMixture) {m : ℕ} (obs : Fin m → Bool)
     (hZ : M.countEvidenceMass (countTrue obs) (countFalse obs) ≠ 0)
@@ -9265,24 +9265,24 @@ structure PosteriorBernoulliMixtureConditionedTailProcessCarrierCrown
     (hX : ∀ i : ℕ, Measurable (X i))
     (hrep : DeFinetti.Represents M X μ) : Prop where
   posteriorProcessLawCrown :
-    PosteriorBernoulliMixtureProcessLawCrown
+    PosteriorBernoulliMixtureProcessLaw
       M (countTrue obs) (countFalse obs) hZ
   conditionedTailRealization :
     BernoulliMixtureExternalProcessRealization
       (M.posteriorBernoulliMixture (countTrue obs) (countFalse obs) hZ)
       (conditionedTailExternalBoolProcessLaw M X μ hX hrep obs hZ)
   conditionedTailExternalCarrierCrown :
-    PosteriorBernoulliMixtureExternalCarrierCrown
+    PosteriorBernoulliMixtureExternalCarrier
       M (countTrue obs) (countFalse obs) hZ
       (conditionedTailExternalBoolProcessLaw M X μ hX hrep obs hZ)
   conditionedTailUpdateExternalCarrierCrown :
-    PosteriorBernoulliMixtureUpdateExternalCarrierCrown
+    PosteriorBernoulliMixtureUpdateExternalCarrier
       M (countTrue obs) (countFalse obs) hZ
       (conditionedTailExternalBoolProcessLaw M X μ hX hrep obs hZ)
 
 /-- Combined posterior process-law and conditioned-tail carrier package from
 the minimal compact finite-window compatibility boundary. -/
-theorem posteriorBernoulliMixture_conditionedTail_processCarrierCrown_of_finiteWindowCompatibleInCarrier
+theorem posteriorBernoulliMixture_conditionedTail_processCarrier_of_finiteWindowCompatibleInCarrier
     {Ω : Type*} [MeasurableSpace Ω]
     (M : BernoulliMixture) (X : ℕ → Ω → Bool) (μ : Measure Ω)
     (hX : ∀ i : ℕ, Measurable (X i))
@@ -9304,25 +9304,25 @@ theorem posteriorBernoulliMixture_conditionedTail_processCarrierCrown_of_finiteW
       (posteriorBernoulliMixturePrefixProcessLowerSpec
         M (countTrue obs) (countFalse obs) hZ).finiteWindowCompatibleInCarrier
         carrier) :
-    PosteriorBernoulliMixtureConditionedTailProcessCarrierCrown
+    PosteriorBernoulliMixtureConditionedTailProcessCarrier
       M obs hZ μ X hX hrep where
   posteriorProcessLawCrown :=
-    posteriorBernoulliMixture_processLawCrown_of_finiteWindowCompatibleInCarrier
+    posteriorBernoulliMixture_processLaw_of_finiteWindowCompatibleInCarrier
       M (countTrue obs) (countFalse obs) hZ
       carrier hCompact hCarrierConvex hClosed hFIP
   conditionedTailRealization :=
     conditionedTailExternalBoolProcessLaw_realizes_posteriorBernoulliMixture
       M X μ hX hrep obs hZ
   conditionedTailExternalCarrierCrown :=
-    posteriorBernoulliMixture_conditionedTail_externalCarrierCrown
+    posteriorBernoulliMixture_conditionedTail_externalCarrier
       M X μ hX hrep obs hZ
   conditionedTailUpdateExternalCarrierCrown :=
-    posteriorBernoulliMixture_conditionedTail_updateExternalCarrierCrown
+    posteriorBernoulliMixture_conditionedTail_updateExternalCarrier
       M X μ hX hrep obs hZ
 
 /-- Combined posterior process-law and conditioned-tail carrier package from
 structured finite joint-window realization data. -/
-theorem posteriorBernoulliMixture_conditionedTail_processCarrierCrown_of_finiteWindowRealization
+theorem posteriorBernoulliMixture_conditionedTail_processCarrier_of_finiteWindowRealization
     {Ω : Type*} [MeasurableSpace Ω]
     (M : BernoulliMixture) (X : ℕ → Ω → Bool) (μ : Measure Ω)
     (hX : ∀ i : ℕ, Measurable (X i))
@@ -9350,7 +9350,7 @@ theorem posteriorBernoulliMixture_conditionedTail_processCarrierCrown_of_finiteW
       (posteriorBernoulliMixturePrefixProcessLowerSpec
         M (countTrue obs) (countFalse obs) hZ).jointPrevisionsRealizedInCarrier
         J carrier) :
-    PosteriorBernoulliMixtureConditionedTailProcessCarrierCrown
+    PosteriorBernoulliMixtureConditionedTailProcessCarrier
       M obs hZ μ X hX hrep := by
   have hFIP :
       (posteriorBernoulliMixturePrefixProcessLowerSpec
@@ -9361,7 +9361,7 @@ theorem posteriorBernoulliMixture_conditionedTail_processCarrierCrown_of_finiteW
         M (countTrue obs) (countFalse obs) hZ)
       J carrier hLocal hRealize
   exact
-    posteriorBernoulliMixture_conditionedTail_processCarrierCrown_of_finiteWindowCompatibleInCarrier
+    posteriorBernoulliMixture_conditionedTail_processCarrier_of_finiteWindowCompatibleInCarrier
       M X μ hX hrep obs hZ carrier hCompact hCarrierConvex hClosed hFIP
 
 /-- Combined posterior process-law and conditioned-tail carrier package from
@@ -9371,7 +9371,7 @@ This fixes the finite-window system in the combined Crown 2 endpoint to
 `posteriorBernoulliMixturePrefixProcessFiniteJointWindowSystem`.  The remaining
 finite-window assumptions are now exactly local coherence and carrier
 realization for that canonical Boolean-prefix joint system. -/
-theorem posteriorBernoulliMixture_conditionedTail_processCarrierCrown_of_prefixFiniteWindowRealization
+theorem posteriorBernoulliMixture_conditionedTail_processCarrier_of_prefixFiniteWindowRealization
     {Ω : Type*} [MeasurableSpace Ω]
     (M : BernoulliMixture) (X : ℕ → Ω → Bool) (μ : Measure Ω)
     (hX : ∀ i : ℕ, Measurable (X i))
@@ -9400,9 +9400,9 @@ theorem posteriorBernoulliMixture_conditionedTail_processCarrierCrown_of_prefixF
         (posteriorBernoulliMixturePrefixProcessFiniteJointWindowSystem
           M (countTrue obs) (countFalse obs) hZ)
         carrier) :
-    PosteriorBernoulliMixtureConditionedTailProcessCarrierCrown
+    PosteriorBernoulliMixtureConditionedTailProcessCarrier
       M obs hZ μ X hX hrep :=
-  posteriorBernoulliMixture_conditionedTail_processCarrierCrown_of_finiteWindowRealization
+  posteriorBernoulliMixture_conditionedTail_processCarrier_of_finiteWindowRealization
     M X μ hX hrep obs hZ carrier hCompact hCarrierConvex hClosed
     (posteriorBernoulliMixturePrefixProcessFiniteJointWindowSystem
       M (countTrue obs) (countFalse obs) hZ)
@@ -9415,7 +9415,7 @@ This is the sharpest conditioned-tail Crown 2 reduction currently exposed:
 `hMarginal` is the finite product-sum marginal theorem for the canonical
 largest-prefix windows, and `hRealize` is the remaining carrier realization
 boundary for those same finite joint previsions. -/
-theorem posteriorBernoulliMixture_conditionedTail_processCarrierCrown_of_prefixMarginalConsistentCarrierRealization
+theorem posteriorBernoulliMixture_conditionedTail_processCarrier_of_prefixMarginalConsistentCarrierRealization
     {Ω : Type*} [MeasurableSpace Ω]
     (M : BernoulliMixture) (X : ℕ → Ω → Bool) (μ : Measure Ω)
     (hX : ∀ i : ℕ, Measurable (X i))
@@ -9442,9 +9442,9 @@ theorem posteriorBernoulliMixture_conditionedTail_processCarrierCrown_of_prefixM
         (posteriorBernoulliMixturePrefixProcessFiniteJointWindowSystem
           M (countTrue obs) (countFalse obs) hZ)
         carrier) :
-    PosteriorBernoulliMixtureConditionedTailProcessCarrierCrown
+    PosteriorBernoulliMixtureConditionedTailProcessCarrier
       M obs hZ μ X hX hrep :=
-  posteriorBernoulliMixture_conditionedTail_processCarrierCrown_of_prefixFiniteWindowRealization
+  posteriorBernoulliMixture_conditionedTail_processCarrier_of_prefixFiniteWindowRealization
     M X μ hX hrep obs hZ carrier hCompact hCarrierConvex hClosed
     (posteriorBernoulliMixturePrefixProcessFiniteJointWindowSystem_localCoherent_of_marginalConsistent
       M (countTrue obs) (countFalse obs) hZ hMarginal)
@@ -9456,7 +9456,7 @@ canonical carrier realization alone.
 The finite-prefix marginal theorem for the canonical largest-prefix windows is
 now proved internally; the only remaining assumption here is the explicit
 carrier realization of those same canonical joint previsions. -/
-theorem posteriorBernoulliMixture_conditionedTail_processCarrierCrown_of_prefixCarrierRealization
+theorem posteriorBernoulliMixture_conditionedTail_processCarrier_of_prefixCarrierRealization
     {Ω : Type*} [MeasurableSpace Ω]
     (M : BernoulliMixture) (X : ℕ → Ω → Bool) (μ : Measure Ω)
     (hX : ∀ i : ℕ, Measurable (X i))
@@ -9480,9 +9480,9 @@ theorem posteriorBernoulliMixture_conditionedTail_processCarrierCrown_of_prefixC
         (posteriorBernoulliMixturePrefixProcessFiniteJointWindowSystem
           M (countTrue obs) (countFalse obs) hZ)
         carrier) :
-    PosteriorBernoulliMixtureConditionedTailProcessCarrierCrown
+    PosteriorBernoulliMixtureConditionedTailProcessCarrier
       M obs hZ μ X hX hrep :=
-  posteriorBernoulliMixture_conditionedTail_processCarrierCrown_of_prefixMarginalConsistentCarrierRealization
+  posteriorBernoulliMixture_conditionedTail_processCarrier_of_prefixMarginalConsistentCarrierRealization
     M X μ hX hrep obs hZ carrier hCompact hCarrierConvex hClosed
     (posteriorBernoulliMixturePrefixProcessMarginalConsistent_analytic
       M (countTrue obs) (countFalse obs) hZ)
@@ -9491,11 +9491,11 @@ theorem posteriorBernoulliMixture_conditionedTail_processCarrierCrown_of_prefixC
 /-- Combined posterior process-law and conditioned-tail carrier package from a
 single global carrier witness for the analytic posterior prefix laws.
 
-As in `posteriorBernoulliMixture_processLawCrown_of_prefixCarrierWitness`, the
+As in `posteriorBernoulliMixture_processLaw_of_prefixCarrierWitness`, the
 auxiliary compactness scaffolding is supplied internally by the singleton
 witness carrier, so the visible remaining assumption is just the witness
 itself. -/
-theorem posteriorBernoulliMixture_conditionedTail_processCarrierCrown_of_prefixCarrierWitness
+theorem posteriorBernoulliMixture_conditionedTail_processCarrier_of_prefixCarrierWitness
     {Ω : Type*} [MeasurableSpace Ω]
     (M : BernoulliMixture) (X : ℕ → Ω → Bool) (μ : Measure Ω)
     (hX : ∀ i : ℕ, Measurable (X i))
@@ -9506,7 +9506,7 @@ theorem posteriorBernoulliMixture_conditionedTail_processCarrierCrown_of_prefixC
     (hWitness :
       posteriorBernoulliMixturePrefixProcessCarrierWitness
         M (countTrue obs) (countFalse obs) hZ carrier) :
-    PosteriorBernoulliMixtureConditionedTailProcessCarrierCrown
+    PosteriorBernoulliMixtureConditionedTailProcessCarrier
       M obs hZ μ X hX hrep := by
   rcases hWitness with ⟨P, _hPcarrier, hPmarg⟩
   let carrier' : CredalPrevisionSet (ℕ → Bool) := ({P} : CredalPrevisionSet (ℕ → Bool))
@@ -9532,14 +9532,14 @@ theorem posteriorBernoulliMixture_conditionedTail_processCarrierCrown_of_prefixC
     refine ⟨P, ?_, hPmarg⟩
     simp [carrier']
   exact
-    posteriorBernoulliMixture_conditionedTail_processCarrierCrown_of_prefixCarrierRealization
+    posteriorBernoulliMixture_conditionedTail_processCarrier_of_prefixCarrierRealization
       M X μ hX hrep obs hZ carrier' hCompact hCarrierConvex hClosed
       (posteriorBernoulliMixturePrefixProcess_jointPrevisionsRealizedInCarrier_of_carrierWitness
         M (countTrue obs) (countFalse obs) hZ carrier' hWitness')
 
 /-- Combined posterior process-law and conditioned-tail carrier package from
 the raw global posterior-process witness itself. -/
-theorem posteriorBernoulliMixture_conditionedTail_processCarrierCrown_of_prefixWitness
+theorem posteriorBernoulliMixture_conditionedTail_processCarrier_of_prefixWitness
     {Ω : Type*} [MeasurableSpace Ω]
     (M : BernoulliMixture) (X : ℕ → Ω → Bool) (μ : Measure Ω)
     (hX : ∀ i : ℕ, Measurable (X i))
@@ -9549,17 +9549,17 @@ theorem posteriorBernoulliMixture_conditionedTail_processCarrierCrown_of_prefixW
     (hWitness :
       posteriorBernoulliMixturePrefixProcessWitness
         M (countTrue obs) (countFalse obs) hZ) :
-    PosteriorBernoulliMixtureConditionedTailProcessCarrierCrown
+    PosteriorBernoulliMixtureConditionedTailProcessCarrier
       M obs hZ μ X hX hrep := by
   rcases hWitness with ⟨P, hPmarg⟩
   exact
-    posteriorBernoulliMixture_conditionedTail_processCarrierCrown_of_prefixCarrierWitness
+    posteriorBernoulliMixture_conditionedTail_processCarrier_of_prefixCarrierWitness
       M X μ hX hrep obs hZ ({P} : CredalPrevisionSet (ℕ → Bool))
       ⟨P, by simp, hPmarg⟩
 
 /-- In the zero-interior-mass regime, the raw posterior-process witness exists,
 so the full conditioned-tail raw carrier crown follows directly. -/
-theorem posteriorBernoulliMixture_conditionedTail_processCarrierCrown_of_zeroInteriorMixingMass
+theorem posteriorBernoulliMixture_conditionedTail_processCarrier_of_zeroInteriorMixingMass
     {Ω : Type*} [MeasurableSpace Ω]
     (M : BernoulliMixture) (X : ℕ → Ω → Bool) (μ : Measure Ω)
     (hX : ∀ i : ℕ, Measurable (X i))
@@ -9567,17 +9567,17 @@ theorem posteriorBernoulliMixture_conditionedTail_processCarrierCrown_of_zeroInt
     (obs : Fin m → Bool)
     (hZ : M.countEvidenceMass (countTrue obs) (countFalse obs) ≠ 0)
     (hInterior : M.mixingMeasure (Set.Ioo (0 : ℝ) 1) = 0) :
-    PosteriorBernoulliMixtureConditionedTailProcessCarrierCrown
+    PosteriorBernoulliMixtureConditionedTailProcessCarrier
       M obs hZ μ X hX hrep := by
   exact
-    posteriorBernoulliMixture_conditionedTail_processCarrierCrown_of_prefixWitness
+    posteriorBernoulliMixture_conditionedTail_processCarrier_of_prefixWitness
       M X μ hX hrep obs hZ
       (posteriorBernoulliMixturePrefixProcessWitness_of_zeroInteriorMixingMass
         M (countTrue obs) (countFalse obs) hZ hInterior)
 
 /-- A conditioned-tail Crown 2 package already contains the raw posterior
 process-law crown, hence the raw global posterior-process witness. -/
-theorem posteriorBernoulliMixturePrefixProcessWitness_of_conditionedTail_processCarrierCrown
+theorem posteriorBernoulliMixturePrefixProcessWitness_of_conditionedTail_processCarrier
     {Ω : Type*} [MeasurableSpace Ω]
     (M : BernoulliMixture) (X : ℕ → Ω → Bool) (μ : Measure Ω)
     (hX : ∀ i : ℕ, Measurable (X i))
@@ -9585,16 +9585,16 @@ theorem posteriorBernoulliMixturePrefixProcessWitness_of_conditionedTail_process
     (obs : Fin m → Bool)
     (hZ : M.countEvidenceMass (countTrue obs) (countFalse obs) ≠ 0)
     (hCrown :
-      PosteriorBernoulliMixtureConditionedTailProcessCarrierCrown
+      PosteriorBernoulliMixtureConditionedTailProcessCarrier
         M obs hZ μ X hX hrep) :
     posteriorBernoulliMixturePrefixProcessWitness
       M (countTrue obs) (countFalse obs) hZ :=
-  posteriorBernoulliMixturePrefixProcessWitness_of_processLawCrown
+  posteriorBernoulliMixturePrefixProcessWitness_of_processLaw
     M (countTrue obs) (countFalse obs) hZ hCrown.posteriorProcessLawCrown
 
 /-- Consequently, a conditioned-tail Crown 2 package also forces existence of
 some raw carrier witness for the analytic posterior prefix marginals. -/
-theorem posteriorBernoulliMixturePrefixProcessCarrierWitness_exists_of_conditionedTail_processCarrierCrown
+theorem posteriorBernoulliMixturePrefixProcessCarrierWitness_exists_of_conditionedTail_processCarrier
     {Ω : Type*} [MeasurableSpace Ω]
     (M : BernoulliMixture) (X : ℕ → Ω → Bool) (μ : Measure Ω)
     (hX : ∀ i : ℕ, Measurable (X i))
@@ -9602,7 +9602,7 @@ theorem posteriorBernoulliMixturePrefixProcessCarrierWitness_exists_of_condition
     (obs : Fin m → Bool)
     (hZ : M.countEvidenceMass (countTrue obs) (countFalse obs) ≠ 0)
     (hCrown :
-      PosteriorBernoulliMixtureConditionedTailProcessCarrierCrown
+      PosteriorBernoulliMixtureConditionedTailProcessCarrier
         M obs hZ μ X hX hrep) :
     ∃ carrier : CredalPrevisionSet (ℕ → Bool),
       posteriorBernoulliMixturePrefixProcessCarrierWitness
@@ -9610,19 +9610,19 @@ theorem posteriorBernoulliMixturePrefixProcessCarrierWitness_exists_of_condition
   exact
     (posteriorBernoulliMixturePrefixProcessWitness_iff_existsCarrierWitness
       M (countTrue obs) (countFalse obs) hZ).mp
-      (posteriorBernoulliMixturePrefixProcessWitness_of_conditionedTail_processCarrierCrown
+      (posteriorBernoulliMixturePrefixProcessWitness_of_conditionedTail_processCarrier
         M X μ hX hrep obs hZ hCrown)
 
 /-- The conditioned-tail Crown 2 package is equivalent to existence of some raw
 carrier witness for the analytic posterior prefix marginals. -/
-theorem posteriorBernoulliMixture_conditionedTail_processCarrierCrown_iff_exists_prefixCarrierWitness
+theorem posteriorBernoulliMixture_conditionedTail_processCarrier_iff_exists_prefixCarrierWitness
     {Ω : Type*} [MeasurableSpace Ω]
     (M : BernoulliMixture) (X : ℕ → Ω → Bool) (μ : Measure Ω)
     (hX : ∀ i : ℕ, Measurable (X i))
     (hrep : DeFinetti.Represents M X μ) {m : ℕ}
     (obs : Fin m → Bool)
     (hZ : M.countEvidenceMass (countTrue obs) (countFalse obs) ≠ 0) :
-    PosteriorBernoulliMixtureConditionedTailProcessCarrierCrown
+    PosteriorBernoulliMixtureConditionedTailProcessCarrier
       M obs hZ μ X hX hrep ↔
       ∃ carrier : CredalPrevisionSet (ℕ → Bool),
         posteriorBernoulliMixturePrefixProcessCarrierWitness
@@ -9630,23 +9630,23 @@ theorem posteriorBernoulliMixture_conditionedTail_processCarrierCrown_iff_exists
   constructor
   · intro hCrown
     exact
-      posteriorBernoulliMixturePrefixProcessCarrierWitness_exists_of_conditionedTail_processCarrierCrown
+      posteriorBernoulliMixturePrefixProcessCarrierWitness_exists_of_conditionedTail_processCarrier
         M X μ hX hrep obs hZ hCrown
   · rintro ⟨carrier, hWitness⟩
     exact
-      posteriorBernoulliMixture_conditionedTail_processCarrierCrown_of_prefixCarrierWitness
+      posteriorBernoulliMixture_conditionedTail_processCarrier_of_prefixCarrierWitness
         M X μ hX hrep obs hZ carrier hWitness
 
 /-- Exact regime split for the conditioned-tail Crown 2 package itself: it
 exists precisely in the zero-interior-mixing regime. -/
-theorem posteriorBernoulliMixture_conditionedTail_processCarrierCrown_iff_zeroInteriorMixingMass
+theorem posteriorBernoulliMixture_conditionedTail_processCarrier_iff_zeroInteriorMixingMass
     {Ω : Type*} [MeasurableSpace Ω]
     (M : BernoulliMixture) (X : ℕ → Ω → Bool) (μ : Measure Ω)
     (hX : ∀ i : ℕ, Measurable (X i))
     (hrep : DeFinetti.Represents M X μ) {m : ℕ}
     (obs : Fin m → Bool)
     (hZ : M.countEvidenceMass (countTrue obs) (countFalse obs) ≠ 0) :
-    PosteriorBernoulliMixtureConditionedTailProcessCarrierCrown
+    PosteriorBernoulliMixtureConditionedTailProcessCarrier
       M obs hZ μ X hX hrep ↔
       M.mixingMeasure (Set.Ioo (0 : ℝ) 1) = 0 := by
   constructor
@@ -9654,18 +9654,18 @@ theorem posteriorBernoulliMixture_conditionedTail_processCarrierCrown_iff_zeroIn
     exact
       (posteriorBernoulliMixturePrefixProcessCarrierWitness_exists_iff_zeroInteriorMixingMass
         M (countTrue obs) (countFalse obs) hZ).mp
-        ((posteriorBernoulliMixture_conditionedTail_processCarrierCrown_iff_exists_prefixCarrierWitness
+        ((posteriorBernoulliMixture_conditionedTail_processCarrier_iff_exists_prefixCarrierWitness
           M X μ hX hrep obs hZ).mp hCrown)
   · intro hInterior
     exact
-      posteriorBernoulliMixture_conditionedTail_processCarrierCrown_of_zeroInteriorMixingMass
+      posteriorBernoulliMixture_conditionedTail_processCarrier_of_zeroInteriorMixingMass
         M X μ hX hrep obs hZ hInterior
 
 /-- Conditioned-tail version of the same honest final boundary package: the
 shifted posterior tail gives the exact shared-envelope endpoint, an actual
 sigma-additive bounded-measurable witness, and an exact classification of the
 stronger raw conditioned-tail process-carrier crown. -/
-theorem posteriorBernoulliMixture_conditionedTail_sharedEnvelopeCrown_and_pathBoundedMeasurableCompactWitness_and_processCarrierCrown_iff_zeroInteriorMixingMass
+theorem posteriorBernoulliMixture_conditionedTail_sharedEnvelope_and_pathBoundedMeasurableCompactWitness_and_processCarrier_iff_zeroInteriorMixingMass
     {Ω : Type*} [MeasurableSpace Ω]
     (M : BernoulliMixture) (X : ℕ → Ω → Bool) (μ : Measure Ω)
     (hX : ∀ i : ℕ, Measurable (X i))
@@ -9674,7 +9674,7 @@ theorem posteriorBernoulliMixture_conditionedTail_sharedEnvelopeCrown_and_pathBo
     (hZ : M.countEvidenceMass (countTrue obs) (countFalse obs) ≠ 0) :
     let A : ExternalBoolProcessLaw Ω :=
       conditionedTailExternalBoolProcessLaw M X μ hX hrep obs hZ
-    PosteriorBernoulliMixtureSharedEnvelopeCrown
+    PosteriorBernoulliMixtureSharedEnvelope
       M (countTrue obs) (countFalse obs) hZ A ∧
       A.pathBoundedMeasurablePrevision ∈
         externalPathLawBoundedMeasurableCompactCredalSet
@@ -9685,14 +9685,14 @@ theorem posteriorBernoulliMixture_conditionedTail_sharedEnvelopeCrown_and_pathBo
           (bernoulliMixturePrefixLaw_analytic
             (M.posteriorBernoulliMixture
               (countTrue obs) (countFalse obs) hZ) n).toPrecisePrevision G) ∧
-      (PosteriorBernoulliMixtureConditionedTailProcessCarrierCrown
+      (PosteriorBernoulliMixtureConditionedTailProcessCarrier
           M obs hZ μ X hX hrep ↔
         M.mixingMeasure (Set.Ioo (0 : ℝ) 1) = 0) := by
   let A : ExternalBoolProcessLaw Ω :=
     conditionedTailExternalBoolProcessLaw M X μ hX hrep obs hZ
   refine ⟨?_, ?_, ?_, ?_⟩
   · exact
-      posteriorBernoulliMixture_conditionedTail_sharedEnvelopeCrown
+      posteriorBernoulliMixture_conditionedTail_sharedEnvelope
         M X μ hX hrep obs hZ
   · exact
       (posteriorBernoulliMixture_externalPathBoundedMeasurableCompactWitness
@@ -9705,35 +9705,35 @@ theorem posteriorBernoulliMixture_conditionedTail_sharedEnvelopeCrown_and_pathBo
         (conditionedTailExternalBoolProcessLaw_realizes_posteriorBernoulliMixture
           M X μ hX hrep obs hZ)).2
   · exact
-      posteriorBernoulliMixture_conditionedTail_processCarrierCrown_iff_zeroInteriorMixingMass
+      posteriorBernoulliMixture_conditionedTail_processCarrier_iff_zeroInteriorMixingMass
         M X μ hX hrep obs hZ
 
 /-- Conditioned-tail version of the same exact crown-level split: the
 shared-envelope posterior object always exists, while the stronger raw
 conditioned-tail process-carrier crown exists exactly in the zero-interior
 regime. -/
-theorem posteriorBernoulliMixture_conditionedTail_sharedEnvelopeCrown_and_processCarrierCrown_iff_zeroInteriorMixingMass
+theorem posteriorBernoulliMixture_conditionedTail_sharedEnvelope_and_processCarrier_iff_zeroInteriorMixingMass
     {Ω : Type*} [MeasurableSpace Ω]
     (M : BernoulliMixture) (X : ℕ → Ω → Bool) (μ : Measure Ω)
     (hX : ∀ i : ℕ, Measurable (X i))
     (hrep : DeFinetti.Represents M X μ) {m : ℕ}
     (obs : Fin m → Bool)
     (hZ : M.countEvidenceMass (countTrue obs) (countFalse obs) ≠ 0) :
-    PosteriorBernoulliMixtureSharedEnvelopeCrown
+    PosteriorBernoulliMixtureSharedEnvelope
       M (countTrue obs) (countFalse obs) hZ
       (conditionedTailExternalBoolProcessLaw M X μ hX hrep obs hZ) ∧
-      (PosteriorBernoulliMixtureConditionedTailProcessCarrierCrown
+      (PosteriorBernoulliMixtureConditionedTailProcessCarrier
           M obs hZ μ X hX hrep ↔
         M.mixingMeasure (Set.Ioo (0 : ℝ) 1) = 0) := by
   exact
-    ⟨posteriorBernoulliMixture_conditionedTail_sharedEnvelopeCrown
+    ⟨posteriorBernoulliMixture_conditionedTail_sharedEnvelope
         M X μ hX hrep obs hZ,
-      posteriorBernoulliMixture_conditionedTail_processCarrierCrown_iff_zeroInteriorMixingMass
+      posteriorBernoulliMixture_conditionedTail_processCarrier_iff_zeroInteriorMixingMass
         M X μ hX hrep obs hZ⟩
 
 /-- In the nondegenerate interior-mass regime, the stronger conditioned-tail
 raw process-carrier crown is impossible. -/
-theorem not_posteriorBernoulliMixture_conditionedTail_processCarrierCrown_of_interiorMixingMass
+theorem not_posteriorBernoulliMixture_conditionedTail_processCarrier_of_interiorMixingMass
     {Ω : Type*} [MeasurableSpace Ω]
     (M : BernoulliMixture) (X : ℕ → Ω → Bool) (μ : Measure Ω)
     (hX : ∀ i : ℕ, Measurable (X i))
@@ -9741,12 +9741,12 @@ theorem not_posteriorBernoulliMixture_conditionedTail_processCarrierCrown_of_int
     (obs : Fin m → Bool)
     (hZ : M.countEvidenceMass (countTrue obs) (countFalse obs) ≠ 0)
     (hInterior : 0 < M.mixingMeasure (Set.Ioo (0 : ℝ) 1)) :
-    ¬ PosteriorBernoulliMixtureConditionedTailProcessCarrierCrown
+    ¬ PosteriorBernoulliMixtureConditionedTailProcessCarrier
       M obs hZ μ X hX hrep := by
   intro hCrown
   have hZero :
       M.mixingMeasure (Set.Ioo (0 : ℝ) 1) = 0 :=
-    (posteriorBernoulliMixture_conditionedTail_processCarrierCrown_iff_zeroInteriorMixingMass
+    (posteriorBernoulliMixture_conditionedTail_processCarrier_iff_zeroInteriorMixingMass
       M X μ hX hrep obs hZ).mp hCrown
   have hNot :
       ¬ 0 < M.mixingMeasure (Set.Ioo (0 : ℝ) 1) := by
@@ -9757,7 +9757,7 @@ theorem not_posteriorBernoulliMixture_conditionedTail_processCarrierCrown_of_int
 /-- Combined posterior process-law and conditioned-tail carrier package from
 any compact/convex/closed raw carrier containing the explicit tail-false
 finite-window realizers. -/
-theorem posteriorBernoulliMixture_conditionedTail_processCarrierCrown_of_prefixTailFalseExtensionCarrierSubset
+theorem posteriorBernoulliMixture_conditionedTail_processCarrier_of_prefixTailFalseExtensionCarrierSubset
     {Ω : Type*} [MeasurableSpace Ω]
     (M : BernoulliMixture) (X : ℕ → Ω → Bool) (μ : Measure Ω)
     (hX : ∀ i : ℕ, Measurable (X i))
@@ -9776,9 +9776,9 @@ theorem posteriorBernoulliMixture_conditionedTail_processCarrierCrown_of_prefixT
           ((posteriorBernoulliMixturePrefixProcessLowerSpec
             M (countTrue obs) (countFalse obs) hZ).localLower n)})
     (hSubset : prefixTailFalseExtensionCarrier ⊆ carrier) :
-    PosteriorBernoulliMixtureConditionedTailProcessCarrierCrown
+    PosteriorBernoulliMixtureConditionedTailProcessCarrier
       M obs hZ μ X hX hrep :=
-  posteriorBernoulliMixture_conditionedTail_processCarrierCrown_of_prefixCarrierRealization
+  posteriorBernoulliMixture_conditionedTail_processCarrier_of_prefixCarrierRealization
     M X μ hX hrep obs hZ carrier hCompact hCarrierConvex hClosed
     (posteriorBernoulliMixturePrefixProcess_jointPrevisionsRealizedInCarrier_of_prefixTailFalseExtensionCarrierSubset
       M (countTrue obs) (countFalse obs) hZ carrier hSubset)
@@ -10364,7 +10364,7 @@ structure ProjectiveDeFinettiCredalBridgeProfile where
         (bernoulliMixturePrefixProcessLowerSpec C _hLaw _hC).jointPrevisionsRealizedInCarrier
           (bernoulliMixturePrefixProcessFiniteJointWindowSystem C _hLaw _hC)
           carrier →
-          ImpreciseDeFinettiProcessLawCrown C _hLaw _hC
+          ImpreciseDeFinettiProcessLaw C _hLaw _hC
   analyticMixingFamilyProcessLawCrownOfPrefixFiniteWindowRealization :
     ∀ (C : Set BernoulliMixture)
       (_hC : C.Nonempty)
@@ -10385,7 +10385,7 @@ structure ProjectiveDeFinettiCredalBridgeProfile where
           (bernoulliMixturePrefixProcessFiniteJointWindowSystem
             C (fun M _ n => analyticPrefixLaw M n) _hC)
           carrier) →
-          ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown C _hC
+          ImpreciseDeFinettiAnalyticMixingFamilyProcessLaw C _hC
   analyticMixingFamilyProcessLawCrownOfPrefixTailFalseExtensionCarrierSubset :
     ∀ (C : Set BernoulliMixture)
       (_hC : C.Nonempty)
@@ -10401,7 +10401,7 @@ structure ProjectiveDeFinettiCredalBridgeProfile where
             ((bernoulliMixturePrefixProcessLowerSpec
                 C (fun M _ n => analyticPrefixLaw M n) _hC).localLower n)}),
       (_hSubset : prefixTailFalseExtensionCarrier ⊆ carrier) →
-          ImpreciseDeFinettiAnalyticMixingFamilyProcessLawCrown C _hC
+          ImpreciseDeFinettiAnalyticMixingFamilyProcessLaw C _hC
   hasCompatibleCompletionOfFactorization :
     ∀ {Ω Window Global : Type*} [MeasurableSpace Ω] [LE Window]
       {X : ℕ → Ω → Bool} {μ : Measure Ω}
@@ -10553,11 +10553,11 @@ noncomputable def projectiveDeFinettiCredalBridgeProfile :
   processLawCompatibleCompletionOfPrefixMarginalConsistentCarrierRealization :=
     impreciseDeFinetti_processLawCompatibleCompletion_of_prefixMarginalConsistentCarrierRealization
   processLawCrownOfPrefixMarginalConsistentCarrierRealization :=
-    impreciseDeFinetti_processLaw_projectiveNaturalExtension_crown_of_prefixMarginalConsistentCarrierRealization
+    impreciseDeFinetti_processLaw_projectiveNaturalExtension_of_prefixMarginalConsistentCarrierRealization
   analyticMixingFamilyProcessLawCrownOfPrefixFiniteWindowRealization :=
-    impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_of_prefixFiniteWindowRealization
+    impreciseDeFinetti_analyticMixingFamilyProcessLaw_of_prefixFiniteWindowRealization
   analyticMixingFamilyProcessLawCrownOfPrefixTailFalseExtensionCarrierSubset :=
-    impreciseDeFinetti_analyticMixingFamilyProcessLawCrown_of_prefixTailFalseExtensionCarrierSubset
+    impreciseDeFinetti_analyticMixingFamilyProcessLaw_of_prefixTailFalseExtensionCarrierSubset
   hasCompatibleCompletionOfFactorization :=
     DeFinettiProjectiveCredalSpecialization.hasCompatibleCompletion_of_factorization
   hasCompatibleCompletionOfExchangeable :=

@@ -127,7 +127,7 @@ noncomputable def toLegalActionWorkspaceDecoder :
 /-- T5 inheritance crown: every route, temperature, schedule, workspace
 content, and recurrence depth preserves accepted-language equivalence,
 soundness, and in-budget recall. -/
-theorem inheritanceCrown
+theorem inheritance
     (laws : AtomicRootLaws root)
     {budget : Nat} {trace : List (RefineAction root.Hole root.Head)}
     {program : root.Program} :
@@ -173,7 +173,7 @@ end RoutedLegalActionDecoder
 
 #print axioms routedGatedStep_eq_convexMixture
 #print axioms routedGatedStep_constantExperts
-#print axioms RoutedLegalActionDecoder.inheritanceCrown
+#print axioms RoutedLegalActionDecoder.inheritance
 #print axioms RoutedLegalActionDecoder.architectureSwap_safe
 
 end RoutedCarom

@@ -5,7 +5,7 @@ import Mettapedia.MachineLearning.NeuralNetworks.TwoTimescaleAdaptation.AdapterR
 /-!
 # Certified online adaptation for frozen-network adapters
 
-This crown joins the finite-PC, constrained-BP, online-regret, and
+This license joins the finite-PC, constrained-BP, online-regret, and
 Jacobian-reachability results without widening their scope.  The certified
 models are:
 
@@ -343,7 +343,7 @@ structure CertifiedOnlineAdaptationLicense : Prop where
         requiredEffect.rank ≤ rankBudget
   bpSubsumptionPartition : BPSubsumptionPartitionLicense.{0, 0}
 
-theorem certified_online_adaptation_crown :
+theorem certified_online_adaptation :
     CertifiedOnlineAdaptationLicense where
   hilbertContractionRate := hilbertSettlingContraction_lt_one
   hilbertFiniteSettlingGap := hilbertFiniteSettlingGradientGap_le
@@ -392,8 +392,8 @@ theorem certified_online_adaptation_crown :
   exhaustedJacobianBoundary :=
     identityOldOutputFixture_no_strictPlasticity_negative_example
   adapterRankCriterion := frozenAdapterEffect_reachable_iff_rank_le
-  bpSubsumptionPartition := bp_subsumption_partition_crown
+  bpSubsumptionPartition := bp_subsumption_partition
 
-#print axioms certified_online_adaptation_crown
+#print axioms certified_online_adaptation
 
 end Mettapedia.MachineLearning.NeuralNetworks.UtilizationAtlas

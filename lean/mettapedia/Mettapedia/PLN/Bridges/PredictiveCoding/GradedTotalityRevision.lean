@@ -179,7 +179,7 @@ theorem undetermined_negativeEvidence_not_accepted_fixture :
 
 /-- T2 crown packages the absolute safety invariant, strict separation from
 hard masking, and monotonicity of the pooled count readout. -/
-theorem gradedTotalityRevision_crown :
+theorem gradedTotalityRevision :
     (∀ threshold behavioral,
       ¬ gradedTotalityAccepted threshold .provablyPartial behavioral) ∧
       (hardMaskTotalityValue .undeterminedAtBudget
@@ -199,6 +199,6 @@ theorem gradedTotalityRevision_crown :
       gradedTotalityValue_monotone_in_positiveEvidence
         verdict behavioral amount hamount⟩
 
-#print axioms gradedTotalityRevision_crown
+#print axioms gradedTotalityRevision
 
 end Mettapedia.PLN.Bridges.PredictiveCoding

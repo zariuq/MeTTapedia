@@ -255,7 +255,7 @@ def EngineAlignedTraceWitness
       prFinal.stack[0]? = some f' ∧
       Metamath.Kernel.toExpr f' = Metamath.Kernel.toExpr f
 
-/-- Intermediate crown-jewel witness:
+/-- Intermediate refined-trace witness:
 it keeps the successful runtime trace together with a concrete labeled engine
 trace and a token-to-engine-segment refinement witness.
 
@@ -1040,7 +1040,7 @@ theorem metamath_languageDef_bridge_of_alignmentComplete
     bytes label f hSuccess
     (engineAlignmentComplete_to_engineRefinedAlignmentComplete bytes label f hComplete)
 
-/-- Longest-lasting practical crown-jewel bridge:
+/-- Longest-lasting practical refined-trace bridge:
 if checker-runtime labels are disjoint from authored rewrite names, the
 Metamath implementation, refined engine witness layer, and declarative
 specification all agree. -/
@@ -1059,7 +1059,7 @@ theorem metamath_languageDef_bridge_of_runtimeProvenanceDisjoint
 This is the longest-lasting conformance shape presently available: it exposes
 runtime acceptance, concrete engine acceptance, and token-to-engine-segment
 refinement in one witness family. -/
-theorem metamath_languageDef_crown_jewel_of_refinedComplete
+theorem metamath_languageDef_refinedTraceAgreement_of_refinedComplete
     (bytes : ByteArray) (label : String) (f : Metamath.Verify.Formula)
     (hSuccess : (checkBytesDB bytes).error? = none)
     (hComplete : EngineRefinedAlignmentComplete bytes label f) :
@@ -1077,14 +1077,14 @@ theorem metamath_languageDef_crown_jewel_of_refinedComplete
         bytes label f hSuccess hComplete hSpec
 
 /-- Runtime-provenance-disjoint version of the refined public bridge API. -/
-theorem metamath_languageDef_crown_jewel_of_runtimeProvenanceDisjoint
+theorem metamath_languageDef_refinedTraceAgreement_of_runtimeProvenanceDisjoint
     (bytes : ByteArray) (label : String) (f : Metamath.Verify.Formula)
     (hSuccess : (checkBytesDB bytes).error? = none)
     (hDisjoint : RuntimeProvenanceDisjointFromAuthored bytes) :
     (EngineRefinedTraceWitness bytes label f ↔ ImplAccepts bytes label f) ∧
       (EngineRefinedTraceWitness bytes label f ↔ SpecAccepts bytes f) ∧
       (SpecAccepts bytes f → ∃ start finish, LanguageDefAccepts start finish) := by
-  exact metamath_languageDef_crown_jewel_of_refinedComplete
+  exact metamath_languageDef_refinedTraceAgreement_of_refinedComplete
     bytes label f hSuccess
     (runtimeProvenanceDisjoint_to_engineRefinedAlignmentComplete bytes label f hDisjoint)
 
@@ -1289,9 +1289,9 @@ theorem minimalAxiom_ax1_engineRefinedTraceWitness_to_engineAndSpec :
     minimalAxiomBytes "ax1" minimalAxiom_wfph
     minimalAxiom_ax1_engineRefinedTraceWitness
 
-/-- Concrete refined crown-jewel package for the accepted minimal axiom
+/-- Concrete refined-trace agreement for the accepted minimal axiom
 fixture. -/
-theorem minimalAxiom_ax1_refined_crown_jewel :
+theorem minimalAxiom_ax1_refinedTraceAgreement :
     EngineRefinedTraceWitness minimalAxiomBytes "ax1" minimalAxiom_wfph ∧
       ImplAccepts minimalAxiomBytes "ax1" minimalAxiom_wfph ∧
       SpecAccepts minimalAxiomBytes minimalAxiom_wfph ∧

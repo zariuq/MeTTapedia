@@ -3211,7 +3211,7 @@ theorem globalEnvelopeMidpoint_credalInheritanceGamble_eq
 /-- Review-facing package: the credal inheritance predicates read directly as
 PLN-style midpoint and width-complement coordinates on the independent-gate
 inheritance gamble. -/
-structure CredalInheritanceTruthCoordinateCrown
+structure CredalInheritanceTruthCoordinate
     (Γ : Gate → EvidenceGate Q)
     (M : Obj → Attr → Q)
     (subConcept superConcept : DualConcept Obj Attr) where
@@ -3247,11 +3247,11 @@ structure CredalInheritanceTruthCoordinateCrown
           (credalInheritanceGamble Γ M subConcept superConcept) = 1
 
 omit [Nonempty Obj] in
-theorem credalInheritanceTruthCoordinateCrown
+theorem credalInheritanceTruthCoordinate
     (Γ : Gate → EvidenceGate Q)
     (M : Obj → Attr → Q)
     (subConcept superConcept : DualConcept Obj Attr) :
-    CredalInheritanceTruthCoordinateCrown Γ M subConcept superConcept where
+    CredalInheritanceTruthCoordinate Γ M subConcept superConcept where
   widthReadout :=
     globalEnvelopeWidth_credalInheritanceGamble_eq Γ M subConcept superConcept
   widthComplementReadout :=

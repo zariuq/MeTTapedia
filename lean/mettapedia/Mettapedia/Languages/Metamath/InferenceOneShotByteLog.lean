@@ -170,9 +170,9 @@ def closeAtEOF (state : ParserState) (base : Nat) : DB :=
       | .thm => state.db.mkParseError eofPos .unclosedThm
   | .label pos label =>
       state.db.mkErrorFromEvidence pos (.tokenForm (.notACommand label))
-  | .includePath pos =>
+  | .includePath _ pos =>
       state.db.mkErrorFromEvidence pos (.tokenForm (.notACommand "$["))
-  | .includeClose pos _ =>
+  | .includeClose _ pos _ =>
       state.db.mkErrorFromEvidence pos (.tokenForm (.notACommand "$["))
   | .proof _ => state.db.mkParseError eofPos .unclosedProof
 

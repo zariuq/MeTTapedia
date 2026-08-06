@@ -177,7 +177,7 @@ theorem centeredIndependentResidual_mean_one_secondMoment_le_exp
 aligned increments blow up, inverse-depth increments stay below `exp 1`, and
 centered independent square-root increments have uniformly bounded second
 moment. -/
-theorem scalarResidualScaling_boundary_crown :
+theorem scalarResidualScaling_boundary :
     (∀ bound : ℝ, ∃ depth : ℕ, 0 < depth ∧
       bound < alignedDepthMuPResidualStack depth) ∧
       (∀ depth : ℕ, inverseDepthResidualStack depth ≤ Real.exp 1) := by
@@ -195,6 +195,6 @@ theorem matrixResidualMomentBoundary_is_reproductionTarget :
   rfl
 
 #print axioms centeredIndependentResidual_mean_one_secondMoment_le_exp
-#print axioms scalarResidualScaling_boundary_crown
+#print axioms scalarResidualScaling_boundary
 
 end Mettapedia.MachineLearning.NeuralNetworks.PredictiveCoding.Frontier

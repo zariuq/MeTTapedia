@@ -491,12 +491,12 @@ private theorem rhoBaseEmptyElaborationAt_normalize_eq
       patternEq).tree.normalize.pattern =
       (rhoBaseEmptyTreeAt laws node).normalize.pattern := by
   exact (CostRegionTree.reindexPattern_normalize
-    patternEq
-    ((rhoBaseEmptyTreeAt laws node).reindexType
+    (patternEq := patternEq)
+    (tree := (rhoBaseEmptyTreeAt laws node).reindexType
       (sourceNode_sourceType_eq laws node sourceSortEq))).trans
         (CostRegionTree.reindexType_normalize
-          (sourceNode_sourceType_eq laws node sourceSortEq)
-          (rhoBaseEmptyTreeAt laws node))
+          (typeEq := sourceNode_sourceType_eq laws node sourceSortEq)
+          (tree := rhoBaseEmptyTreeAt laws node))
 
 private theorem rhoBaseEmptyNodeAt_normalizedThickenedSkeletonRaw
     {color : CostStaticColor}
@@ -661,7 +661,7 @@ private theorem wrappedTree_normalize_eq
     (wrappedTree laws).normalize.pattern =
       (wrappedTreeNatural laws).normalize.pattern :=
   CostRegionTree.reindexType_normalize
-    (colorOverlapType laws) (wrappedTreeNatural laws)
+    (typeEq := colorOverlapType laws) (tree := wrappedTreeNatural laws)
 
 private def baseElaboration
     (laws : CIGSLT.CostOneObjectLaws rhoCIGSLT) :

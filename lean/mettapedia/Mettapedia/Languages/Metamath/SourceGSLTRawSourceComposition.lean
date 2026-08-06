@@ -1,5 +1,6 @@
 import Mettapedia.Languages.Metamath.SourceGSLTIncludeDAG
 import Mettapedia.Languages.Metamath.SourceGSLTState
+import Mettapedia.Languages.Metamath.SourceGSLTStatementPlan
 
 /-!
 # Raw-source composition: expanded spans → statements → source operations
@@ -53,10 +54,11 @@ set_option maxRecDepth 100000
 
 namespace Mettapedia.Languages.Metamath.SourceGSLTRawSourceComposition
 
-open Mettapedia.Languages.Metamath.SourceGSLTRawByteLexical (LocatedByteSpan)
+open Mettapedia.Languages.Metamath.SourceGSLTRawByteLexical (LocatedByteSpan tokenize)
 open Mettapedia.Languages.Metamath.SourceGSLTIncludeDAG
 open Mettapedia.Languages.Metamath.SourceGSLTOperations (SourceOperation)
 open Mettapedia.Languages.Metamath.SourceGSLTState
+open Mettapedia.Languages.Metamath.SourceGSLTStatementPlan
 open Mettapedia.Languages.Metamath.InferenceProjection
 open Mettapedia.Languages.Metamath.InferenceEncoding
 
@@ -69,8 +71,7 @@ def tokenText (tok : List UInt8) : String :=
 /-- [MM §4.1.1] label charset: letters, digits, hyphen, underscore,
 period. -/
 def labelByte (b : UInt8) : Bool :=
-  (65 ≤ b && b ≤ 90) || (97 ≤ b && b ≤ 122) ||
-    (48 ≤ b && b ≤ 57) || b = 45 || b = 95 || b = 46
+  sourceStatementPlan.labelMembers.contains b.toNat
 
 def labelBytesValid (tok : List UInt8) : Bool :=
   !tok.isEmpty && tok.all labelByte
@@ -78,7 +79,7 @@ def labelBytesValid (tok : List UInt8) : Bool :=
 /-- [MM §4.1.1] math-symbol charset: the 93 printable standard ASCII
 characters other than space and `$`. -/
 def mathByte (b : UInt8) : Bool :=
-  33 ≤ b && b ≤ 126 && b ≠ 36
+  sourceStatementPlan.mathMembers.contains b.toNat
 
 def mathBytesValid (tok : List UInt8) : Bool :=
   !tok.isEmpty && tok.all mathByte
@@ -86,28 +87,48 @@ def mathBytesValid (tok : List UInt8) : Bool :=
 /-- Normal-proof step token: a label or the unknown-step marker `?`
 ([MM §4.4]). -/
 def proofTokenValid (tok : List UInt8) : Bool :=
-  labelBytesValid tok || tok = [63]
+  labelBytesValid tok ||
+    tok = sourceStatementPlan.unknownProof.codepoints.map UInt8.ofNat
 
 /-- [MM §4.4.5] compressed-proof word charset: upper-case letters and
 `?`. -/
 def compressedWordByte (b : UInt8) : Bool :=
-  (65 ≤ b && b ≤ 90) || b = 63
+  sourceStatementPlan.compressedMembers.contains b.toNat
 
 def compressedWordValid (tok : List UInt8) : Bool :=
   !tok.isEmpty && tok.all compressedWordByte
 
-/-! ## Keyword bytes (beyond the step-1 set) -/
+/-! ## Source-derived keyword bytes -/
 
-def constKeywordBytes : List UInt8 := [36, 99]
-def varKeywordBytes : List UInt8 := [36, 118]
-def djKeywordBytes : List UInt8 := [36, 100]
-def floatKeywordBytes : List UInt8 := [36, 102]
-def essentialKeywordBytes : List UInt8 := [36, 101]
-def axiomKeywordBytes : List UInt8 := [36, 97]
-def provableKeywordBytes : List UInt8 := [36, 112]
-def proofSeparatorBytes : List UInt8 := [36, 61]
-def parenOpenBytes : List UInt8 := [40]
-def parenCloseBytes : List UInt8 := [41]
+private def planBytes (literal : CompiledLiteral) : List UInt8 :=
+  literal.codepoints.map UInt8.ofNat
+
+def constKeywordBytes : List UInt8 :=
+  planBytes sourceStatementPlan.constantKeyword
+def varKeywordBytes : List UInt8 :=
+  planBytes sourceStatementPlan.variableKeyword
+def djKeywordBytes : List UInt8 :=
+  planBytes sourceStatementPlan.disjointKeyword
+def floatKeywordBytes : List UInt8 :=
+  planBytes sourceStatementPlan.floatingKeyword
+def essentialKeywordBytes : List UInt8 :=
+  planBytes sourceStatementPlan.essentialKeyword
+def axiomKeywordBytes : List UInt8 :=
+  planBytes sourceStatementPlan.axiomKeyword
+def provableKeywordBytes : List UInt8 :=
+  planBytes sourceStatementPlan.theoremKeyword
+def proofSeparatorBytes : List UInt8 :=
+  planBytes sourceStatementPlan.proofSeparator
+def statementEndBytes : List UInt8 :=
+  planBytes sourceStatementPlan.statementEnd
+def scopeOpenBytes : List UInt8 :=
+  planBytes sourceStatementPlan.scopeOpen
+def scopeCloseBytes : List UInt8 :=
+  planBytes sourceStatementPlan.scopeClose
+def parenOpenBytes : List UInt8 :=
+  planBytes sourceStatementPlan.parenOpen
+def parenCloseBytes : List UInt8 :=
+  planBytes sourceStatementPlan.parenClose
 
 /-! ## Located carriers -/
 
@@ -446,6 +467,10 @@ def segmentStep (mode : SegMode) (tok : LocatedToken) :
   | .proofWords site label formula separator openParen closeParen
       header acc =>
       if tok.bytes = statementEndBytes then
+        -- an empty compressed proof body is not derivable ([MM §4.4.5])
+        if acc.isEmpty then
+          .rejected ⟨tok.span, .invalidCompressedWord⟩
+        else
         match splitFormula site formula with
         | .rejected r => .rejected r
         | .ok (typecode, body) =>
@@ -495,6 +520,7 @@ def segmentStatements (tokens : List LocatedToken) :
 inductive FoldError where
   | undeclaredSymbol
   | operationRejected (operation : SourceOperation)
+  | unclosedScope
 deriving DecidableEq, Repr
 
 structure FoldRejection where
@@ -632,12 +658,22 @@ inductive PipelineError where
   | resolution
   | statement (rejection : StatementRejection)
   | fold (rejection : FoldRejection)
+  | incompleteSource
 deriving DecidableEq, Repr
 
 inductive PipelineResult where
   | ok (state : SourceState) (obligations : List TheoremObligation)
   | error (error : PipelineError)
 deriving DecidableEq
+
+/-- Scope-site scan over the statement stream: the spans of currently
+unclosed `${` statements, innermost first. -/
+def scopeSites : List RawStatement → List LocatedByteSpan →
+    List LocatedByteSpan
+  | [], stack => stack
+  | .openScope site :: rest, stack => scopeSites rest (site :: stack)
+  | .closeScope _ :: rest, stack => scopeSites rest stack.tail
+  | _ :: rest, stack => scopeSites rest stack
 
 /-- Whole forward composition: source DAG → located spans → include
 expansion → statements → accepted source state, every stage carrying
@@ -655,7 +691,14 @@ def runSource (files : FileMap) (policy : IncludePolicy)
           | .ok statements =>
               match foldStatements initialState statements with
               | .rejected r => .error (.fold r)
-              | .ok (state, obligations) => .ok state obligations
+              | .ok (state, obligations) =>
+                  if sourceStateComplete state then
+                    .ok state obligations
+                  else
+                    match scopeSites statements [] with
+                    | site :: _ =>
+                        .error (.fold ⟨site, .unclosedScope⟩)
+                    | [] => .error .incompleteSource
 
 /-- The resolution stage never fails on expansion output: the step-1
 provenance theorem supplies every span's file. -/
@@ -690,7 +733,17 @@ theorem runSource_no_resolution_failure
           | ok pair =>
               obtain ⟨state, obligations⟩ := pair
               simp only [hfold] at h
-              exact nomatch h
+              cases hcomplete : sourceStateComplete state with
+              | false =>
+                  rw [if_neg (by simp [hcomplete])] at h
+                  cases hscan : scopeSites statements [] with
+                  | nil => simp only [hscan] at h; exact nomatch h
+                  | cons site rest =>
+                      simp only [hscan] at h
+                      exact nomatch h
+              | true =>
+                  simp only [hcomplete, ↓reduceIte] at h
+                  exact nomatch h
 
 /-! ## Acceptance validity end to end -/
 
@@ -844,14 +897,13 @@ theorem foldStatements_valid :
               exact foldStatements_valid
                 (applyStatement_valid happ) hrest
 
-/-- **Composed acceptance validity**: whatever source state the whole
-pipeline accepts is valid — the fold seeds at the valid empty state and
-every step passes the gates. -/
-theorem runSource_ok_valid {files : FileMap} {policy : IncludePolicy}
+/-- **Composed acceptance completeness**: the whole pipeline accepts only a
+valid source state with no unmatched block and no pending block completion. -/
+theorem runSource_ok_complete {files : FileMap} {policy : IncludePolicy}
     {root : String} {fuel : Nat} {state : SourceState}
     {obligations : List TheoremObligation}
     (h : runSource files policy root fuel = .ok state obligations) :
-    sourceStateValid state = true := by
+    sourceStateComplete state = true := by
   simp only [runSource] at h
   cases hexp : expandDatabase files policy root fuel with
   | rejected r =>
@@ -878,8 +930,794 @@ theorem runSource_ok_valid {files : FileMap} {policy : IncludePolicy}
               | ok pair =>
                   obtain ⟨final, obs⟩ := pair
                   simp only [hfold] at h
+                  cases hcomplete : sourceStateComplete final with
+                  | false =>
+                      rw [if_neg (by simp [hcomplete])] at h
+                      cases hscan : scopeSites statements [] with
+                      | nil => simp only [hscan] at h; exact nomatch h
+                      | cons site rest =>
+                          simp only [hscan] at h
+                          exact nomatch h
+                  | true =>
+                      simp only [hcomplete, ↓reduceIte] at h
+                      exact (PipelineResult.ok.inj h).1 ▸ hcomplete
+
+/-- Whatever source state the whole pipeline accepts is locally valid. -/
+theorem runSource_ok_valid {files : FileMap} {policy : IncludePolicy}
+    {root : String} {fuel : Nat} {state : SourceState}
+    {obligations : List TheoremObligation}
+    (h : runSource files policy root fuel = .ok state obligations) :
+    sourceStateValid state = true := by
+  have complete := runSource_ok_complete h
+  simp [sourceStateComplete] at complete
+  exact complete.1.1
+
+/-- Scope accounting through the fold: the semantic scope stack's depth
+tracks the statement-stream scan exactly, and readiness (no pending
+block completions) is restored after every accepted statement. -/
+theorem foldStatements_scopes :
+    ∀ {statements : List RawStatement} {state final : SourceState}
+      {obligations : List TheoremObligation}
+      (stack : List LocatedByteSpan),
+      foldStatements state statements = .ok (final, obligations) →
+      state.scopes.length = stack.length →
+      state.pendingBlockCompletions = 0 →
+      final.scopes.length = (scopeSites statements stack).length ∧
+        final.pendingBlockCompletions = 0
+  | [], state, final, obligations, stack, h, hlen, hpend => by
+      simp only [foldStatements] at h
+      cases h
+      exact ⟨hlen, hpend⟩
+  | stmt :: rest, state, final, obligations, stack, h, hlen, hpend => by
+      cases stmt with
+      | openScope site =>
+          simp only [foldStatements] at h
+          cases happ : applyLocalPayload? .openScope state with
+          | none => simp only [applyStatement, happ] at h; exact nomatch h
+          | some next =>
+              simp only [applyStatement, happ] at h
+              cases hrest : foldStatements next rest with
+              | rejected r => simp only [hrest] at h; exact nomatch h
+              | ok finalPair =>
+                  obtain ⟨final', restObs⟩ := finalPair
+                  simp only [hrest] at h
                   cases h
-                  exact foldStatements_valid initialState_valid hfold
+                  have hdelta := openScope?_scopes_pending
+                    (show openScope? state = some next from happ)
+                  exact foldStatements_scopes (site :: stack) hrest
+                    (by rw [hdelta.1, hlen]; rfl)
+                    (by rw [hdelta.2]; exact hpend)
+      | closeScope site =>
+          simp only [foldStatements] at h
+          cases happ : applyLocalPayload? .closeScope state with
+          | none => simp only [applyStatement, happ] at h; exact nomatch h
+          | some middle =>
+              simp only [applyStatement, happ] at h
+              cases hcomp : applyLocalPayload? .completeBlock middle with
+              | none => simp only [hcomp] at h; exact nomatch h
+              | some next =>
+                  simp only [hcomp] at h
+                  cases hrest : foldStatements next rest with
+                  | rejected r => simp only [hrest] at h; exact nomatch h
+                  | ok finalPair =>
+                      obtain ⟨final', restObs⟩ := finalPair
+                      simp only [hrest] at h
+                      cases h
+                      have h1 := closeScope?_scopes_pending
+                        (show closeScope? state = some middle from happ)
+                      have h2 := completeBlock?_scopes_pending
+                        (show completeBlock? middle = some next from hcomp)
+                      refine foldStatements_scopes stack.tail hrest ?_ ?_
+                      · rw [h2.1]
+                        have htail := List.length_tail (l := stack)
+                        omega
+                      · rw [h2.2, h1.2, hpend]
+      | constDecl site names terminator =>
+          simp only [foldStatements] at h
+          cases happ : applyLocalPayload?
+              (.declareConstants (names.map (·.name))) state with
+          | none => simp only [applyStatement, happ] at h; exact nomatch h
+          | some next =>
+              simp only [applyStatement, happ] at h
+              cases hrest : foldStatements next rest with
+              | rejected r => simp only [hrest] at h; exact nomatch h
+              | ok finalPair =>
+                  obtain ⟨final', restObs⟩ := finalPair
+                  simp only [hrest] at h
+                  cases h
+                  have hdelta := declareConstants?_scopes_pending
+                    (show declareConstants? state (names.map (·.name)) =
+                      some next from happ)
+                  exact foldStatements_scopes (statements := rest) stack hrest
+                    (by rw [hdelta.1]; exact hlen)
+                    (by rw [hdelta.2]; exact hpend)
+      | varDecl site names terminator =>
+          simp only [foldStatements] at h
+          cases happ : applyLocalPayload?
+              (.declareVariables (names.map (·.name))) state with
+          | none => simp only [applyStatement, happ] at h; exact nomatch h
+          | some next =>
+              simp only [applyStatement, happ] at h
+              cases hrest : foldStatements next rest with
+              | rejected r => simp only [hrest] at h; exact nomatch h
+              | ok finalPair =>
+                  obtain ⟨final', restObs⟩ := finalPair
+                  simp only [hrest] at h
+                  cases h
+                  have hdelta := declareVariables?_scopes_pending
+                    (show declareVariables? state (names.map (·.name)) =
+                      some next from happ)
+                  exact foldStatements_scopes (statements := rest) stack hrest
+                    (by rw [hdelta.1]; exact hlen)
+                    (by rw [hdelta.2]; exact hpend)
+      | djDecl site names terminator =>
+          simp only [foldStatements] at h
+          cases happ : applyLocalPayload?
+              (.declareDisjoint (names.map (·.name))) state with
+          | none => simp only [applyStatement, happ] at h; exact nomatch h
+          | some next =>
+              simp only [applyStatement, happ] at h
+              cases hrest : foldStatements next rest with
+              | rejected r => simp only [hrest] at h; exact nomatch h
+              | ok finalPair =>
+                  obtain ⟨final', restObs⟩ := finalPair
+                  simp only [hrest] at h
+                  cases h
+                  have hdelta := declareDisjoint?_scopes_pending
+                    (show declareDisjoint? state (names.map (·.name)) =
+                      some next from happ)
+                  exact foldStatements_scopes (statements := rest) stack hrest
+                    (by rw [hdelta.1]; exact hlen)
+                    (by rw [hdelta.2]; exact hpend)
+      | floating site label typecode variableName terminator =>
+          simp only [foldStatements] at h
+          cases happ : applyLocalPayload?
+              (.declareFloating label.name typecode.name
+                variableName.name) state with
+          | none => simp only [applyStatement, happ] at h; exact nomatch h
+          | some next =>
+              simp only [applyStatement, happ] at h
+              cases hrest : foldStatements next rest with
+              | rejected r => simp only [hrest] at h; exact nomatch h
+              | ok finalPair =>
+                  obtain ⟨final', restObs⟩ := finalPair
+                  simp only [hrest] at h
+                  cases h
+                  have hdelta := declareFloating?_scopes_pending
+                    (show declareFloating? state label.name typecode.name
+                      variableName.name = some next from happ)
+                  exact foldStatements_scopes (statements := rest) stack hrest
+                    (by rw [hdelta.1]; exact hlen)
+                    (by rw [hdelta.2]; exact hpend)
+      | essential site label typecode body terminator =>
+          simp only [foldStatements] at h
+          cases htag : tagBody state body with
+          | rejected r =>
+              simp only [applyStatement, htag] at h
+              exact nomatch h
+          | ok syms =>
+              simp only [applyStatement, htag] at h
+              cases happ : applyLocalPayload?
+                  (.declareEssential label.name ⟨typecode.name, syms⟩)
+                  state with
+              | none => simp only [happ] at h; exact nomatch h
+              | some next =>
+                  simp only [happ] at h
+                  cases hrest : foldStatements next rest with
+                  | rejected r => simp only [hrest] at h; exact nomatch h
+                  | ok finalPair =>
+                      obtain ⟨final', restObs⟩ := finalPair
+                      simp only [hrest] at h
+                      cases h
+                      have hdelta := declareEssential?_scopes_pending
+                        (show declareEssential? state label.name
+                          ⟨typecode.name, syms⟩ = some next from happ)
+                      exact foldStatements_scopes (statements := rest) stack hrest
+                        (by rw [hdelta.1]; exact hlen)
+                        (by rw [hdelta.2]; exact hpend)
+      | axiomatic site label typecode body terminator =>
+          simp only [foldStatements] at h
+          cases htag : tagBody state body with
+          | rejected r =>
+              simp only [applyStatement, htag] at h
+              exact nomatch h
+          | ok syms =>
+              simp only [applyStatement, htag] at h
+              cases happ : applyLocalPayload?
+                  (.declareAxiom label.name ⟨typecode.name, syms⟩)
+                  state with
+              | none => simp only [happ] at h; exact nomatch h
+              | some next =>
+                  simp only [happ] at h
+                  cases hrest : foldStatements next rest with
+                  | rejected r => simp only [hrest] at h; exact nomatch h
+                  | ok finalPair =>
+                      obtain ⟨final', restObs⟩ := finalPair
+                      simp only [hrest] at h
+                      cases h
+                      have hdelta := insertAssertion?_scopes_pending
+                        (show insertAssertion? state label.name
+                          ⟨typecode.name, syms⟩ = some next from happ)
+                      exact foldStatements_scopes (statements := rest) stack hrest
+                        (by rw [hdelta.1]; exact hlen)
+                        (by rw [hdelta.2]; exact hpend)
+      | provable site label typecode body proof separator terminator =>
+          simp only [foldStatements] at h
+          cases htag : tagBody state body with
+          | rejected r =>
+              simp only [applyStatement, htag] at h
+              exact nomatch h
+          | ok syms =>
+              simp only [applyStatement, htag] at h
+              cases hins : insertAssertion? state label.name
+                  ⟨typecode.name, syms⟩ with
+              | none => simp only [hins] at h; exact nomatch h
+              | some next =>
+                  simp only [hins] at h
+                  cases hrest : foldStatements next rest with
+                  | rejected r => simp only [hrest] at h; exact nomatch h
+                  | ok finalPair =>
+                      obtain ⟨final', restObs⟩ := finalPair
+                      simp only [hrest] at h
+                      cases h
+                      have hdelta := insertAssertion?_scopes_pending hins
+                      exact foldStatements_scopes (statements := rest) stack hrest
+                        (by rw [hdelta.1]; exact hlen)
+                        (by rw [hdelta.2]; exact hpend)
+
+/-- **The site-less fallback never fires**: incompleteness always has
+an unclosed `${` to blame, by the scope-accounting invariant — every
+rejection of the composed pipeline carries an exact source position. -/
+theorem runSource_no_incompleteSource
+    (files : FileMap) (policy : IncludePolicy) (root : String)
+    (fuel : Nat) :
+    runSource files policy root fuel ≠ .error .incompleteSource := by
+  intro h
+  simp only [runSource] at h
+  cases hexp : expandDatabase files policy root fuel with
+  | rejected r => simp only [hexp] at h; exact nomatch h
+  | ok spans =>
+      simp only [hexp] at h
+      cases hres : resolveTokens files spans with
+      | none => simp only [hres] at h; exact nomatch h
+      | some tokens =>
+          simp only [hres] at h
+          cases hseg : segmentStatements tokens with
+          | rejected r => simp only [hseg] at h; exact nomatch h
+          | ok statements =>
+              simp only [hseg] at h
+              cases hfold : foldStatements initialState statements with
+              | rejected r => simp only [hfold] at h; exact nomatch h
+              | ok pair =>
+                  obtain ⟨final, obs⟩ := pair
+                  simp only [hfold] at h
+                  cases hcomplete : sourceStateComplete final with
+                  | true =>
+                      simp only [hcomplete, ↓reduceIte] at h
+                      exact nomatch h
+                  | false =>
+                      rw [if_neg (by simp [hcomplete])] at h
+                      cases hscan : scopeSites statements [] with
+                      | cons site rest =>
+                          simp only [hscan] at h
+                          exact nomatch h
+                      | nil =>
+                          obtain ⟨hlen, hpend⟩ :=
+                            foldStatements_scopes [] hfold rfl rfl
+                          rw [hscan] at hlen
+                          have hscopes : final.scopes = [] :=
+                            List.eq_nil_of_length_eq_zero hlen
+                          have hvalid :=
+                            foldStatements_valid initialState_valid hfold
+                          rw [show sourceStateComplete final = true by
+                            simp [sourceStateComplete, hvalid, hscopes,
+                              hpend]] at hcomplete
+                          exact nomatch hcomplete
+
+/-! ## Reflection: exact witness recovery
+
+The segmentation retains every consumed span, so the statement list
+recovers the token-span stream exactly.  The invariant is the open
+statement's consumed spans, in source order. -/
+
+/-- Spans already consumed by the currently open statement, in source
+order. -/
+def SegMode.pendingSpans : SegMode → List LocatedByteSpan
+  | .top => []
+  | .pendingLabel label => [label.span]
+  | .collecting _ site acc =>
+      site :: (acc.reverse.map (·.span))
+  | .floatBody site label acc =>
+      label.span :: site :: (acc.reverse.map (·.span))
+  | .essentialBody site label acc =>
+      label.span :: site :: (acc.reverse.map (·.span))
+  | .axiomBody site label acc =>
+      label.span :: site :: (acc.reverse.map (·.span))
+  | .provableBody site label acc =>
+      label.span :: site :: (acc.reverse.map (·.span))
+  | .proofDecide site label formula separator =>
+      label.span :: site :: (formula.reverse.map (·.span)) ++ [separator]
+  | .proofNormal site label formula separator acc =>
+      label.span :: site :: (formula.reverse.map (·.span)) ++
+        separator :: (acc.reverse.map (·.span))
+  | .proofHeader site label formula separator openParen acc =>
+      label.span :: site :: (formula.reverse.map (·.span)) ++
+        separator :: openParen :: (acc.reverse.map (·.span))
+  | .proofWords site label formula separator openParen closeParen
+      header acc =>
+      label.span :: site :: (formula.reverse.map (·.span)) ++
+        separator :: openParen :: (header.map (·.span)) ++
+        closeParen :: (acc.reverse.map (·.span))
+
+theorem SegMode.pendingSpans_of_site_none {mode : SegMode}
+    (h : mode.site = none) : mode.pendingSpans = [] := by
+  cases mode <;> first | rfl | exact nomatch h
+
+theorem splitFormula_ok {site : LocatedByteSpan} {acc : List LocatedName}
+    {typecode : LocatedName} {body : List LocatedName}
+    (h : splitFormula site acc = .ok (typecode, body)) :
+    acc.reverse = typecode :: body := by
+  unfold splitFormula at h
+  cases hrev : acc.reverse with
+  | nil => rw [hrev] at h; exact nomatch h
+  | cons t b =>
+      rw [hrev] at h
+      cases h
+      rfl
+
+set_option linter.unusedSimpArgs false in
+/-- One accepted segmentation step conserves spans: what the step emits
+plus what remains pending is what was pending plus the consumed
+token.  (The per-mode closers share one uniform simp set; the
+unused-argument linter is scoped off for exactly this proof.) -/
+theorem segmentStep_spans {mode : SegMode} {tok : LocatedToken}
+    {emitted : List RawStatement} {next : SegMode}
+    (h : segmentStep mode tok = .ok (emitted, next)) :
+    emitted.flatMap RawStatement.tokenSpans ++ next.pendingSpans =
+      mode.pendingSpans ++ [tok.span] := by
+  cases mode with
+  | top =>
+      simp only [segmentStep] at h
+      repeat' split at h
+      all_goals cases h
+      all_goals
+        simp [SegMode.pendingSpans, RawStatement.tokenSpans,
+          LocatedToken.toName]
+  | pendingLabel label =>
+      simp only [segmentStep] at h
+      repeat' split at h
+      all_goals cases h
+      all_goals
+        simp [SegMode.pendingSpans, RawStatement.tokenSpans,
+          LocatedToken.toName]
+  | collecting kind site acc =>
+      simp only [segmentStep] at h
+      repeat' split at h
+      all_goals cases h
+      all_goals
+        simp [SegMode.pendingSpans, RawStatement.tokenSpans,
+          LocatedToken.toName]
+  | floatBody site label acc =>
+      simp only [segmentStep] at h
+      by_cases hterm : tok.bytes = statementEndBytes
+      · rw [if_pos hterm] at h
+        cases hrev : acc.reverse with
+        | nil =>
+            rw [hrev] at h
+            exact nomatch h
+        | cons typecode rest1 =>
+            cases rest1 with
+            | nil =>
+                rw [hrev] at h
+                exact nomatch h
+            | cons variableName rest2 =>
+                cases rest2 with
+                | nil =>
+                    rw [hrev] at h
+                    cases h
+                    simp [SegMode.pendingSpans, RawStatement.tokenSpans,
+                      hrev]
+                | cons w rest3 =>
+                    rw [hrev] at h
+                    exact nomatch h
+      · rw [if_neg hterm] at h
+        repeat' split at h
+        all_goals cases h
+        all_goals
+          simp [SegMode.pendingSpans, RawStatement.tokenSpans,
+            LocatedToken.toName]
+  | essentialBody site label acc =>
+      simp only [segmentStep] at h
+      by_cases hterm : tok.bytes = statementEndBytes
+      · rw [if_pos hterm] at h
+        cases hsp : splitFormula site acc with
+        | rejected r =>
+            simp only [hsp] at h
+            exact nomatch h
+        | ok pair =>
+            obtain ⟨typecode, body⟩ := pair
+            simp only [hsp] at h
+            cases h
+            simp [SegMode.pendingSpans, RawStatement.tokenSpans,
+              splitFormula_ok hsp]
+      · rw [if_neg hterm] at h
+        repeat' split at h
+        all_goals cases h
+        all_goals
+          simp [SegMode.pendingSpans, RawStatement.tokenSpans,
+            LocatedToken.toName]
+  | axiomBody site label acc =>
+      simp only [segmentStep] at h
+      by_cases hterm : tok.bytes = statementEndBytes
+      · rw [if_pos hterm] at h
+        cases hsp : splitFormula site acc with
+        | rejected r =>
+            simp only [hsp] at h
+            exact nomatch h
+        | ok pair =>
+            obtain ⟨typecode, body⟩ := pair
+            simp only [hsp] at h
+            cases h
+            simp [SegMode.pendingSpans, RawStatement.tokenSpans,
+              splitFormula_ok hsp]
+      · rw [if_neg hterm] at h
+        repeat' split at h
+        all_goals cases h
+        all_goals
+          simp [SegMode.pendingSpans, RawStatement.tokenSpans,
+            LocatedToken.toName]
+  | provableBody site label acc =>
+      simp only [segmentStep] at h
+      repeat' split at h
+      all_goals cases h
+      all_goals
+        simp [SegMode.pendingSpans, RawStatement.tokenSpans,
+          LocatedToken.toName]
+  | proofDecide site label formula separator =>
+      simp only [segmentStep] at h
+      repeat' split at h
+      all_goals cases h
+      all_goals
+        simp [SegMode.pendingSpans, RawStatement.tokenSpans,
+          LocatedToken.toName]
+  | proofNormal site label formula separator acc =>
+      simp only [segmentStep] at h
+      by_cases hterm : tok.bytes = statementEndBytes
+      · rw [if_pos hterm] at h
+        cases hsp : splitFormula site formula with
+        | rejected r =>
+            simp only [hsp] at h
+            exact nomatch h
+        | ok pair =>
+            obtain ⟨typecode, body⟩ := pair
+            simp only [hsp] at h
+            cases h
+            simp [SegMode.pendingSpans, RawStatement.tokenSpans,
+              ProofPayload.tokenSpans, splitFormula_ok hsp]
+      · rw [if_neg hterm] at h
+        repeat' split at h
+        all_goals cases h
+        all_goals
+          simp [SegMode.pendingSpans, RawStatement.tokenSpans,
+            LocatedToken.toName]
+  | proofHeader site label formula separator openParen acc =>
+      simp only [segmentStep] at h
+      repeat' split at h
+      all_goals cases h
+      all_goals
+        simp [SegMode.pendingSpans, RawStatement.tokenSpans,
+          LocatedToken.toName]
+  | proofWords site label formula separator openParen closeParen
+      header acc =>
+      simp only [segmentStep] at h
+      by_cases hterm : tok.bytes = statementEndBytes
+      · rw [if_pos hterm] at h
+        by_cases hacc : acc.isEmpty
+        · rw [if_pos hacc] at h
+          exact nomatch h
+        · rw [if_neg hacc] at h
+          cases hsp : splitFormula site formula with
+          | rejected r =>
+              simp only [hsp] at h
+              exact nomatch h
+          | ok pair =>
+              obtain ⟨typecode, body⟩ := pair
+              simp only [hsp] at h
+              cases h
+              simp [SegMode.pendingSpans, RawStatement.tokenSpans,
+                ProofPayload.tokenSpans, splitFormula_ok hsp]
+      · rw [if_neg hterm] at h
+        repeat' split at h
+        all_goals cases h
+        all_goals
+          simp [SegMode.pendingSpans, RawStatement.tokenSpans,
+            LocatedToken.toName]
+
+/-- Run-level span conservation. -/
+theorem segmentRun_spans :
+    ∀ (tokens : List LocatedToken) (mode : SegMode)
+      (acc statements : List RawStatement),
+      segmentRun tokens mode acc = .ok statements →
+      statements.flatMap RawStatement.tokenSpans =
+        (acc.reverse.flatMap RawStatement.tokenSpans) ++
+          (mode.pendingSpans ++ tokens.map (·.span))
+  | [], mode, acc, statements, h => by
+      simp only [segmentRun] at h
+      cases hsite : mode.site with
+      | none =>
+          simp only [hsite] at h
+          cases h
+          simp [SegMode.pendingSpans_of_site_none hsite]
+      | some site =>
+          simp only [hsite] at h
+          exact nomatch h
+  | tok :: rest, mode, acc, statements, h => by
+      simp only [segmentRun] at h
+      cases hstep : segmentStep mode tok with
+      | rejected r =>
+          simp only [hstep] at h
+          exact nomatch h
+      | ok pair =>
+          obtain ⟨emitted, nextMode⟩ := pair
+          simp only [hstep] at h
+          have hrec := segmentRun_spans rest nextMode
+            (emitted.reverse ++ acc) statements h
+          have hstepSpans := segmentStep_spans hstep
+          have key : List.flatMap RawStatement.tokenSpans emitted ++
+              (nextMode.pendingSpans ++ List.map (·.span) rest) =
+              mode.pendingSpans ++ (tok.span :: List.map (·.span) rest) := by
+            rw [← List.append_assoc, hstepSpans, List.append_assoc,
+              List.singleton_append]
+          rw [hrec]
+          simp only [List.reverse_append, List.reverse_reverse,
+            List.flatMap_append, List.append_assoc, List.map_cons, key]
+
+/-- **Exact witness recovery**: an accepted segmentation flattens back
+to precisely the input span stream.  The statements are the derivation
+witness; no unparser exists or is needed. -/
+theorem segmentStatements_tokenSpans {tokens : List LocatedToken}
+    {statements : List RawStatement}
+    (h : segmentStatements tokens = .ok statements) :
+    statements.flatMap RawStatement.tokenSpans = tokens.map (·.span) := by
+  have := segmentRun_spans tokens .top [] statements h
+  simpa [SegMode.pendingSpans] using this
+
+/-- Every span a statement carries is an input token's span. -/
+theorem segmentStatements_span_provenance {tokens : List LocatedToken}
+    {statements : List RawStatement}
+    (h : segmentStatements tokens = .ok statements) :
+    ∀ st ∈ statements, ∀ sp ∈ st.tokenSpans,
+      sp ∈ tokens.map (·.span) := by
+  intro st hst sp hsp
+  rw [← segmentStatements_tokenSpans h]
+  exact List.mem_flatMap.mpr ⟨st, hst, hsp⟩
+
+/-- Resolution preserves the span stream. -/
+theorem resolveTokens_spans (files : FileMap) :
+    ∀ {spans : List LocatedByteSpan} {tokens : List LocatedToken},
+      resolveTokens files spans = some tokens →
+      tokens.map (·.span) = spans
+  | [], tokens, h => by
+      simp only [resolveTokens] at h
+      cases h
+      rfl
+  | span :: rest, tokens, h => by
+      simp only [resolveTokens] at h
+      cases hfile : files span.fileId with
+      | none => simp only [hfile] at h; exact nomatch h
+      | some content =>
+          simp only [hfile] at h
+          cases hrest : resolveTokens files rest with
+          | none => simp only [hrest] at h; exact nomatch h
+          | some tokens' =>
+              simp only [hrest] at h
+              cases h
+              simp [resolveTokens_spans files hrest]
+
+/-! ## Obligation provenance through the fold -/
+
+/-- Every obligation an accepted statement emits sites inside that
+statement's own spans. -/
+theorem applyStatement_obligations {state next : SourceState}
+    {stmt : RawStatement} {obligations : List TheoremObligation}
+    (h : applyStatement state stmt = .ok (next, obligations)) :
+    ∀ ob ∈ obligations, ob.site ∈ stmt.tokenSpans := by
+  cases stmt with
+  | openScope site =>
+      cases happ : applyLocalPayload? .openScope state with
+      | none => simp only [applyStatement, happ] at h; exact nomatch h
+      | some s =>
+          simp only [applyStatement, happ] at h
+          cases h
+          intro ob hob
+          exact nomatch hob
+  | closeScope site =>
+      cases happ : applyLocalPayload? .closeScope state with
+      | none => simp only [applyStatement, happ] at h; exact nomatch h
+      | some middle =>
+          simp only [applyStatement, happ] at h
+          cases hcomplete : applyLocalPayload? .completeBlock middle with
+          | none => simp only [hcomplete] at h; exact nomatch h
+          | some s =>
+              simp only [hcomplete] at h
+              cases h
+              intro ob hob
+              exact nomatch hob
+  | constDecl site names terminator =>
+      cases happ : applyLocalPayload?
+          (.declareConstants (names.map (·.name))) state with
+      | none => simp only [applyStatement, happ] at h; exact nomatch h
+      | some s =>
+          simp only [applyStatement, happ] at h
+          cases h
+          intro ob hob
+          exact nomatch hob
+  | varDecl site names terminator =>
+      cases happ : applyLocalPayload?
+          (.declareVariables (names.map (·.name))) state with
+      | none => simp only [applyStatement, happ] at h; exact nomatch h
+      | some s =>
+          simp only [applyStatement, happ] at h
+          cases h
+          intro ob hob
+          exact nomatch hob
+  | djDecl site names terminator =>
+      cases happ : applyLocalPayload?
+          (.declareDisjoint (names.map (·.name))) state with
+      | none => simp only [applyStatement, happ] at h; exact nomatch h
+      | some s =>
+          simp only [applyStatement, happ] at h
+          cases h
+          intro ob hob
+          exact nomatch hob
+  | floating site label typecode variableName terminator =>
+      cases happ : applyLocalPayload?
+          (.declareFloating label.name typecode.name variableName.name)
+          state with
+      | none => simp only [applyStatement, happ] at h; exact nomatch h
+      | some s =>
+          simp only [applyStatement, happ] at h
+          cases h
+          intro ob hob
+          exact nomatch hob
+  | essential site label typecode body terminator =>
+      cases htag : tagBody state body with
+      | rejected r =>
+          simp only [applyStatement, htag] at h
+          exact nomatch h
+      | ok syms =>
+          simp only [applyStatement, htag] at h
+          cases happ : applyLocalPayload?
+              (.declareEssential label.name ⟨typecode.name, syms⟩)
+              state with
+          | none => simp only [happ] at h; exact nomatch h
+          | some s =>
+              simp only [happ] at h
+              cases h
+              intro ob hob
+              exact nomatch hob
+  | axiomatic site label typecode body terminator =>
+      cases htag : tagBody state body with
+      | rejected r =>
+          simp only [applyStatement, htag] at h
+          exact nomatch h
+      | ok syms =>
+          simp only [applyStatement, htag] at h
+          cases happ : applyLocalPayload?
+              (.declareAxiom label.name ⟨typecode.name, syms⟩) state with
+          | none => simp only [happ] at h; exact nomatch h
+          | some s =>
+              simp only [happ] at h
+              cases h
+              intro ob hob
+              exact nomatch hob
+  | provable site label typecode body proof separator terminator =>
+      cases htag : tagBody state body with
+      | rejected r =>
+          simp only [applyStatement, htag] at h
+          exact nomatch h
+      | ok syms =>
+          simp only [applyStatement, htag] at h
+          cases hins : insertAssertion? state label.name
+              ⟨typecode.name, syms⟩ with
+          | none => simp only [hins] at h; exact nomatch h
+          | some s =>
+              simp only [hins] at h
+              cases h
+              intro ob hob
+              rcases List.mem_singleton.mp hob with rfl
+              simp [RawStatement.tokenSpans]
+
+theorem foldStatements_obligations :
+    ∀ {statements : List RawStatement} {state final : SourceState}
+      {obligations : List TheoremObligation},
+      foldStatements state statements = .ok (final, obligations) →
+      ∀ ob ∈ obligations, ∃ st ∈ statements, ob.site ∈ st.tokenSpans
+  | [], state, final, obligations, h => by
+      simp only [foldStatements] at h
+      cases h
+      intro ob hob
+      exact nomatch hob
+  | stmt :: rest, state, final, obligations, h => by
+      simp only [foldStatements] at h
+      cases happ : applyStatement state stmt with
+      | rejected r =>
+          simp only [happ] at h
+          exact nomatch h
+      | ok pair =>
+          obtain ⟨next, stepObligations⟩ := pair
+          simp only [happ] at h
+          cases hrest : foldStatements next rest with
+          | rejected r =>
+              simp only [hrest] at h
+              exact nomatch h
+          | ok finalPair =>
+              obtain ⟨final', restObligations⟩ := finalPair
+              simp only [hrest] at h
+              cases h
+              intro ob hob
+              rcases List.mem_append.mp hob with hstep | htail
+              · exact ⟨stmt, List.Mem.head _,
+                  applyStatement_obligations happ ob hstep⟩
+              · obtain ⟨st, hst, hsp⟩ :=
+                  foldStatements_obligations hrest ob htail
+                exact ⟨st, List.Mem.tail _ hst, hsp⟩
+
+/-- **End-to-end obligation provenance**: every `$p` obligation the
+composed pipeline carries sites at a genuine token of a genuine file of
+the source DAG — steps 1 and 3 compose without splicing. -/
+theorem runSource_obligation_provenance {files : FileMap}
+    {policy : IncludePolicy} {root : String} {fuel : Nat}
+    {state : SourceState} {obligations : List TheoremObligation}
+    (h : runSource files policy root fuel = .ok state obligations) :
+    ∀ ob ∈ obligations, ∃ bytes,
+      files ob.site.fileId = some bytes ∧
+        ob.site ∈ tokenize ob.site.fileId bytes := by
+  simp only [runSource] at h
+  cases hexp : expandDatabase files policy root fuel with
+  | rejected r =>
+      simp only [hexp] at h
+      exact nomatch h
+  | ok spans =>
+      simp only [hexp] at h
+      cases hres : resolveTokens files spans with
+      | none =>
+          simp only [hres] at h
+          exact nomatch h
+      | some tokens =>
+          simp only [hres] at h
+          cases hseg : segmentStatements tokens with
+          | rejected r =>
+              simp only [hseg] at h
+              exact nomatch h
+          | ok statements =>
+              simp only [hseg] at h
+              cases hfold : foldStatements initialState statements with
+              | rejected r =>
+                  simp only [hfold] at h
+                  exact nomatch h
+              | ok pair =>
+                  obtain ⟨final, obs⟩ := pair
+                  simp only [hfold] at h
+                  cases hcomplete : sourceStateComplete final with
+                  | false =>
+                      rw [if_neg (by simp [hcomplete])] at h
+                      cases hscan : scopeSites statements [] with
+                      | nil => simp only [hscan] at h; exact nomatch h
+                      | cons site rest =>
+                          simp only [hscan] at h
+                          exact nomatch h
+                  | true =>
+                      simp only [hcomplete, ↓reduceIte] at h
+                      intro ob hob
+                      have hob' : ob ∈ obs := by
+                        simpa [(PipelineResult.ok.inj h).2] using hob
+                      obtain ⟨st, hst, hsp⟩ :=
+                        foldStatements_obligations hfold ob hob'
+                      have hmem : ob.site ∈ tokens.map (·.span) :=
+                        segmentStatements_span_provenance hseg st hst _ hsp
+                      rw [resolveTokens_spans files hres] at hmem
+                      exact expandDatabase_provenance hexp _ hmem
 
 /-! ## Kernel-checked calibration
 
@@ -941,6 +1779,26 @@ def fixtureWitnessCheck : Bool :=
               (statements.flatMap RawStatement.tokenSpans) == spans
 
 example : fixtureWitnessCheck = true := by decide
+
+/-- Negative: a source ending with an open block is rejected at the
+global completion gate, at the innermost unclosed `${`'s own span —
+matching the authored block production and mm-lean4's `unclosedBlock`
+verdict, with exact-position provenance. -/
+example :
+    runSource (fun n =>
+        if n = "root" then some (ByteArray.mk #[36, 123]) else none)
+      mmLean4CompatPolicy "root" =
+      .error (.fold ⟨⟨"root", 0, 2⟩, .unclosedScope⟩) := by decide
+
+/-- Positive boundary: nested, balanced empty blocks are complete. -/
+example :
+    runSource (fun n =>
+        if n = "root" then
+          some (ByteArray.mk #[36, 123, 32, 36, 123, 32,
+            36, 125, 32, 36, 125])
+        else none)
+      mmLean4CompatPolicy "root" =
+      .ok initialState [] := by decide
 
 /-- Negative: `$f` without a label is rejected at the keyword's span. -/
 example :
@@ -1023,5 +1881,33 @@ def missingIncludeCheck : Bool :=
   | _ => false
 
 example : missingIncludeCheck = true := by decide
+
+/-- Positive (kernel-checked): an empty balanced block is accepted and
+returns exactly the empty state. -/
+example :
+    runSource (fun n =>
+        if n = "root" then
+          some (ByteArray.mk #[36, 123, 32, 36, 125])
+        else none)
+      mmLean4CompatPolicy "root" = .ok initialState [] := by decide
+
+/-- Negative (kernel-checked): a stray `$}` is rejected by the gate at
+its own span. -/
+example :
+    runSource (fun n =>
+        if n = "root" then some (ByteArray.mk #[36, 125]) else none)
+      mmLean4CompatPolicy "root" =
+      .error (.fold ⟨⟨"root", 0, 2⟩,
+        .operationRejected .closeScope⟩) := by decide
+
+/-- Negative (kernel-checked): with one inner block closed, the
+unterminated **outer** `${` is the reported site. -/
+example :
+    runSource (fun n =>
+        if n = "root" then
+          some (ByteArray.mk #[36, 123, 32, 36, 123, 32, 36, 125])
+        else none)
+      mmLean4CompatPolicy "root" =
+      .error (.fold ⟨⟨"root", 0, 2⟩, .unclosedScope⟩) := by decide
 
 end Mettapedia.Languages.Metamath.SourceGSLTRawSourceComposition

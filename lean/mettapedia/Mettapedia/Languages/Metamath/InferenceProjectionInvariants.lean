@@ -127,7 +127,8 @@ theorem prefixProjectionValid_of_projectPrefix?_eq_some
   unfold projectPrefix? at hproject
   simp only [bind, Option.bind_eq_some_iff] at hproject
   obtain ⟨_guardError, _herror, _guardWellFormed, _hwellFormed,
-    _guardDV, _hdv, _guardEmbedded, _hembedded, _guardDeclarations,
+    _guardDV, _hdv, _guardRawDV, _hrawDV, _guardEmbedded, _hembedded,
+    _guardDeclarations,
     _hdeclarations, activeHypotheses, _hactive, _guardFrame, _hframe,
     assertions, _hassertions, _guardProjection, hprojectionValid,
     hprojection⟩ := hproject
@@ -136,6 +137,26 @@ theorem prefixProjectionValid_of_projectPrefix?_eq_some
   split at hprojectionValid
   · assumption
   · simp at hprojectionValid
+
+/-- A successful live projection also validates canonical orientation in the
+raw runtime frame.  This is stronger than validity of the proof-facing frame:
+it includes optional `$d` pairs whose floating hypotheses are not active. -/
+theorem rawCallerDVStrict_of_projectPrefix?_eq_some
+    (db : RuntimeDB) (projection : PrefixProjection)
+    (hproject : projectPrefix? db = some projection) :
+    rawCallerDVStrict db = true := by
+  unfold projectPrefix? at hproject
+  simp only [bind, Option.bind_eq_some_iff] at hproject
+  obtain ⟨_guardError, _herror, _guardWellFormed, _hwellFormed,
+    _guardDV, _hdv, _guardRawDV, hrawDV, _guardEmbedded, _hembedded,
+    _guardDeclarations, _hdeclarations, activeHypotheses, _hactive,
+    _guardFrame, _hframe, assertions, _hassertions, _guardProjection,
+    _hprojectionValid, hprojection⟩ := hproject
+  cases hprojection
+  unfold guard at hrawDV
+  split at hrawDV
+  · assumption
+  · simp at hrawDV
 
 /-- Hence every assertion retained by a successful live-prefix projection has
 distinct generated substitution keys. -/

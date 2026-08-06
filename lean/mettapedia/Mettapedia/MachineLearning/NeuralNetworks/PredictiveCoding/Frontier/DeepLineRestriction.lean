@@ -424,7 +424,7 @@ theorem deepPCLineEquilibratedEnergy_hasStrictSaddleCertificate
 rank-one equilibrated PC restriction has a strict saddle certificate, whereas
 every BP matrix-direction restriction is critical from depth two and flat to
 second order from depth three. -/
-theorem arbitraryDepth_lineRestriction_strictSaddle_crown
+theorem arbitraryDepth_lineRestriction_strictSaddle
     {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V]
     (depth : ℕ) (target hiddenDirection directionalPrediction : V)
     (hdepth : 3 ≤ depth) (htarget : target ≠ 0)
@@ -444,7 +444,7 @@ theorem arbitraryDepth_lineRestriction_strictSaddle_crown
 /-- Shared-line crown: the rank-one PC restriction has strict negative
 curvature while the BP restriction induced by zero earlier weights is exactly
 constant at every parameter value. -/
-theorem rankOnePCLine_strict_BPconstant_crown
+theorem rankOnePCLine_strict_BPconstant
     {V : Type*} [NormedAddCommGroup V] [InnerProductSpace ℝ V]
     (depth : ℕ) (target hiddenDirection : V)
     (htarget : target ≠ 0) (hhidden : ‖hiddenDirection‖ = 1) :
@@ -472,7 +472,7 @@ theorem generalDeepLinearOriginBoundary_discharged
         iteratedDeriv 2
           (deepLinearBPRayLoss depth target directionalPrediction) 0 = 0 := by
   exact ⟨generalDeepLinearOriginBoundary_resolved,
-    arbitraryDepth_lineRestriction_strictSaddle_crown depth target hiddenDirection
+    arbitraryDepth_lineRestriction_strictSaddle depth target hiddenDirection
       directionalPrediction hdepth htarget hhidden⟩
 
 /-- Positive fixture: a unit scalar target and hidden direction have exact
@@ -493,8 +493,8 @@ theorem zeroTarget_lineRestriction_curvature_boundary
     -‖(0 : Output)‖ ^ 2 = 0 := by
   norm_num
 
-#print axioms arbitraryDepth_lineRestriction_strictSaddle_crown
-#print axioms rankOnePCLine_strict_BPconstant_crown
+#print axioms arbitraryDepth_lineRestriction_strictSaddle
+#print axioms rankOnePCLine_strict_BPconstant
 #print axioms generalDeepLinearOriginBoundary_discharged
 
 end Mettapedia.MachineLearning.NeuralNetworks.PredictiveCoding.Frontier

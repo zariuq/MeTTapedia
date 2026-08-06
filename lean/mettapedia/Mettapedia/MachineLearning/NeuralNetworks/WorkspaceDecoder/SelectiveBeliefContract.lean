@@ -152,7 +152,7 @@ theorem wellFormed_rankedAccepts
     laws hbudget hwellFormed hcost
 
 /-- Architectural inheritance package for the WM arm. -/
-theorem inheritanceCrown
+theorem inheritance
     (laws : AtomicRootLaws root)
     {budget : Nat} {trace : List (RefineAction root.Hole root.Head)}
     {program : root.Program} :
@@ -266,7 +266,7 @@ theorem duplicateWeightedPacket_not_idempotent :
   norm_num [BinaryEvidence.hplus_def] at hpos
 
 #print axioms WeightedSelectiveBeliefDecoder.ranking_listsAllLegalActions
-#print axioms WeightedSelectiveBeliefDecoder.inheritanceCrown
+#print axioms WeightedSelectiveBeliefDecoder.inheritance
 #print axioms WeightedSelectiveBeliefDecoder.derivedDecayDefault_le_one
 #print axioms exactGain_equilibrium_iff_posterior
 #print axioms inputConditionedGain_sequentialMotivation

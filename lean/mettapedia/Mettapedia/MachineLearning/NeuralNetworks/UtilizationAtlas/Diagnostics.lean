@@ -307,7 +307,7 @@ structure DiagnosticsFrontierLicense : Prop where
               certificate.rate ≤ 0
   multimodalGapExact : multimodalDecisionGapDiagnostic = 1 / 2
 
-theorem diagnostics_frontier_crown : DiagnosticsFrontierLicense where
+theorem diagnostics_frontier : DiagnosticsFrontierLicense where
   processStationaryBoundary := processVarianceQDiagnostic_eq_zero_iff
   overlapExact := overlapDiagnostic_eq_overlap
   distortionBoundary :=
@@ -443,6 +443,6 @@ def renderUtilizationAtlasDepthProbeSchemaFixture : String :=
 #print axioms commutatorDiagnostic_eq_zero_iff
 #print axioms crossSlotHessianDiagnostic_eq_zero_iff_independent
 #print axioms certifiedLyapunovResidualDiagnostic_nonpositive
-#print axioms diagnostics_frontier_crown
+#print axioms diagnostics_frontier
 
 end Mettapedia.MachineLearning.NeuralNetworks.UtilizationAtlas

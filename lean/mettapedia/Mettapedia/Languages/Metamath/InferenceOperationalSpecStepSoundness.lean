@@ -137,13 +137,15 @@ theorem projectedCaller_toFrame
       some (operationalFrame projection.callerFrame
         projection.activeHypotheses) := by
   have hfields := projectPrefix?_eq_some_fields db projection hproject
-  have hcaller : projection.callerFrame = db.frame := hfields.2.2.1
+  have hcaller :
+      projection.callerFrame = proofFacingCallerFrame db := hfields.2.2.1
   have hactive :
       projectHypotheses? db db.frame.hyps.toList =
         some projection.activeHypotheses := hfields.2.2.2.1
   rw [hcaller]
-  exact toFrame_of_projectHypotheses db db.frame
-    projection.activeHypotheses hactive
+  apply toFrame_of_projectHypotheses db (proofFacingCallerFrame db)
+    projection.activeHypotheses
+  simpa [proofFacingCallerFrame] using hactive
 
 /-- A retained assertion's mandatory frame has the exact operational image. -/
 theorem projectedAssertion_toFrame

@@ -1,4 +1,5 @@
 import Mettapedia.GSLT.LanguageDef.CostHereditaryContextRoute
+import Mettapedia.GSLT.LanguageDef.CostStaticPlanContextView
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostGeneratorInvariantCounterexample
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryCanonical
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryCanonicalCanary
@@ -347,47 +348,47 @@ def rhoBreadthRedexA : Pattern :=
 theorem rhoBreadthLeftProcess_eq :
     rhoBreadthLeftProcess = rhoCutOrderWrappedDrop rhoBreadthRedexA := rfl
 
-private def rhoBreadthBaseDropDeclared :
+def rhoBreadthBaseDropDeclared :
     rhoCIGSLT.DeclaredCostConstructor :=
   ⟨.base ⟨rhoCalc.terms[1], rhoBreadthRule_mem 1 (by omega)⟩, True.intro⟩
 
-private theorem rhoBreadthBaseDropRole :
+theorem rhoBreadthBaseDropRole :
     rhoCIGSLT.declaredCostConstructorRole rhoBreadthBaseDropDeclared =
       .static .base := by
   rfl
 
-private def rhoBreadthBaseDropPreimage :
+def rhoBreadthBaseDropPreimage :
     CostStaticConstructorPreimage rhoCIGSLT .base rhoBreadthBaseDropDeclared :=
   costStaticConstructorPreimage rhoCIGSLT .base rhoBreadthBaseDropDeclared
     rhoBreadthBaseDropRole
 
-private theorem rhoBreadthBaseDrop_notBare :
+theorem rhoBreadthBaseDrop_notBare :
     ¬ UsesBareCollection rhoBreadthBaseDropPreimage.sourceConstructor.1 := by
   simp [rhoBreadthBaseDropPreimage, costStaticConstructorPreimage,
     rhoBreadthBaseDropDeclared, UsesBareCollection, rhoCalc, TypeExpr.name,
     TypeExpr.proc, TypeExpr.baseType]
 
-private def rhoBreadthBaseQuoteDeclared :
+def rhoBreadthBaseQuoteDeclared :
     rhoCIGSLT.DeclaredCostConstructor :=
   ⟨.base ⟨rhoCalc.terms[2], rhoBreadthRule_mem 2 (by omega)⟩, True.intro⟩
 
-private theorem rhoBreadthBaseQuoteRole :
+theorem rhoBreadthBaseQuoteRole :
     rhoCIGSLT.declaredCostConstructorRole rhoBreadthBaseQuoteDeclared =
       .static .base := by
   rfl
 
-private def rhoBreadthBaseQuotePreimage :
+def rhoBreadthBaseQuotePreimage :
     CostStaticConstructorPreimage rhoCIGSLT .base rhoBreadthBaseQuoteDeclared :=
   costStaticConstructorPreimage rhoCIGSLT .base rhoBreadthBaseQuoteDeclared
     rhoBreadthBaseQuoteRole
 
-private theorem rhoBreadthBaseQuote_notBare :
+theorem rhoBreadthBaseQuote_notBare :
     ¬ UsesBareCollection rhoBreadthBaseQuotePreimage.sourceConstructor.1 := by
   simp [rhoBreadthBaseQuotePreimage, costStaticConstructorPreimage,
     rhoBreadthBaseQuoteDeclared, UsesBareCollection, rhoCalc, TypeExpr.name,
     TypeExpr.proc, TypeExpr.baseType]
 
-private def rhoBreadthBaseFvarAPlan (outer : OneHoleContext) :
+def rhoBreadthBaseFvarAPlan (outer : OneHoleContext) :
     CostStaticRegionPlan rhoCIGSLT .base rhoCutOrderFree
       (CostStaticBinderThinning.sourceContextOfTarget rhoCIGSLT .base []) []
       (CostStaticBinderThinning.ofTargetThinning rhoCIGSLT .base [])
@@ -397,7 +398,7 @@ private def rhoBreadthBaseFvarAPlan (outer : OneHoleContext) :
       CostStaticColor.symbols, costBaseStaticSymbols,
       costBasePresentationSymbols])
 
-private def rhoBreadthBaseDropAPlan (outer : OneHoleContext) :
+def rhoBreadthBaseDropAPlan (outer : OneHoleContext) :
     CostStaticRegionPlan rhoCIGSLT .base rhoCutOrderFree
       (CostStaticBinderThinning.sourceContextOfTarget rhoCIGSLT .base []) []
       (CostStaticBinderThinning.ofTargetThinning rhoCIGSLT .base [])
@@ -411,7 +412,7 @@ private def rhoBreadthBaseDropAPlan (outer : OneHoleContext) :
           (.apply (costBaseConstructorName "PDrop") [] .hole [])))
       .nil
 
-private def rhoBreadthBaseRedexAPlan :
+def rhoBreadthBaseRedexAPlan :
     CostStaticRegionPlan rhoCIGSLT .base rhoCutOrderFree
       (CostStaticBinderThinning.sourceContextOfTarget rhoCIGSLT .base []) []
       (CostStaticBinderThinning.ofTargetThinning rhoCIGSLT .base [])
@@ -635,7 +636,7 @@ private theorem rhoBreadthWrappedDrop_notBare :
     UsesBareCollection, rhoCalc, TypeExpr.name, TypeExpr.proc,
     TypeExpr.baseType]
 
-private noncomputable def rhoBreadthLeftProcessPlan :
+noncomputable def rhoBreadthLeftProcessPlan :
     CostStaticRegionPlan rhoCIGSLT .wrapped rhoCutOrderFree
       (CostStaticBinderThinning.sourceContextOfTarget rhoCIGSLT .wrapped []) []
       (CostStaticBinderThinning.ofTargetThinning rhoCIGSLT .wrapped [])
@@ -1051,29 +1052,29 @@ noncomputable def rhoBreadthProcessAlignment :
       rhoBreadthLeftProcessTree rhoBreadthRightProcessTree :=
   rhoBreadthProcessRootBridge.toTreeAlignment
 
-private def rhoBreadthOutputRule : GrammarRule :=
+def rhoBreadthOutputRule : GrammarRule :=
   costBaseConstructor rhoInteractionCut rhoCalc.terms[4]
 
-private theorem rhoBreadthOutputMembership :
+theorem rhoBreadthOutputMembership :
     rhoBreadthOutputRule ∈ rhoCIGSLT.costWholeLanguage.terms :=
   rhoCIGSLT.costBaseConstructor_mem_costWhole _
     (rhoBreadthRule_mem 4 (by omega))
 
-private theorem rhoBreadthOutput_notBare :
+theorem rhoBreadthOutput_notBare :
     ¬ UsesBareCollection rhoBreadthOutputRule := by
   rw [rhoBreadthOutputRule, usesBareCollection_costBaseConstructor_iff]
   simp [UsesBareCollection, rhoCalc, TypeExpr.name, TypeExpr.proc,
     TypeExpr.baseType]
 
-private def rhoBreadthOutputDeclared : rhoCIGSLT.DeclaredCostConstructor :=
+def rhoBreadthOutputDeclared : rhoCIGSLT.DeclaredCostConstructor :=
   ⟨.base ⟨rhoCalc.terms[4], rhoBreadthRule_mem 4 (by omega)⟩, True.intro⟩
 
-private theorem rhoBreadthOutput_materializes :
+theorem rhoBreadthOutput_materializes :
     rhoCIGSLT.materializeDeclaredCostConstructor rhoBreadthOutputDeclared =
       rhoBreadthOutputRule := by
   rfl
 
-private theorem rhoBreadthOutputRole :
+theorem rhoBreadthOutputRole :
     rhoCIGSLT.declaredCostConstructorRole rhoBreadthOutputDeclared =
       .interactionPrincipal := by
   simp only [CIGSLT.declaredCostConstructorRole, rhoBreadthOutputDeclared]
@@ -1082,12 +1083,12 @@ private theorem rhoBreadthOutputRole :
   apply Subtype.ext
   exact rhoInteractionCut_environment_constructor_value.symm
 
-private theorem rhoBreadthOutput_notQuote :
+theorem rhoBreadthOutput_notQuote :
     ReflectiveContextSupport.isQuoteConstructor rhoCIGSLT.costWholeLanguage
       rhoBreadthOutputRule.label = false := by
   decide
 
-private theorem rhoBreadthOutputFirstParam :
+theorem rhoBreadthOutputFirstParam :
     costBaseParameter rhoInteractionCut rhoCalc.terms[4]
       (TermParam.simple "n" TypeExpr.name, 0) =
       .simple "n" (.base (costBaseSortName "Name")) := by
@@ -1100,7 +1101,7 @@ private theorem rhoBreadthOutputFirstParam :
     rhoIGSLT, rhoInteractivePresentation, TypeDecl.plain,
     TypeExpr.name, TypeExpr.proc, TypeExpr.baseType]
 
-private theorem rhoBreadthOutputSecondParam :
+theorem rhoBreadthOutputSecondParam :
     costBaseParameter rhoInteractionCut rhoCalc.terms[4]
       (TermParam.simple "q" TypeExpr.proc, 0 + 1) =
       .simple "q" (.base costWrappedSortName) := by
@@ -1289,5 +1290,201 @@ theorem canonicalizeByAt_not_absorbs_canonicalize :
     (.collection .hashBag [.fvar "b", .fvar "a"] none)
   rw [plainSide, keyedFvars "a" "b", keyedFvars "b" "a"] at contradiction
   simp at contradiction
+
+/-! ## Context-view canaries: the two-state plan view over the breadth
+fixtures
+
+Descending the base Quote/Drop plan through the quote frame reaches the
+exact drop sub-plan; descending the wrapped left sibling through the drop
+frame into the boundary content stops at the certified boundary.  The
+stopped configuration also refutes a reached-only view outright. -/
+
+/-- Positive reached canary: through the quote frame, the base Quote/Drop
+plan yields the exact drop sub-plan with the quote skeleton factored. -/
+theorem rhoBreadth_contextView_reached :
+    Nonempty (CostStaticPlanReached rhoCIGSLT .base rhoCutOrderFree
+      (rhoCutOrderBaseDrop (.fvar "a"))
+      rhoBreadthBaseRedexAPlan.abstractPattern) := by
+  refine ⟨{ sourceBound := _
+            targetBound := []
+            thinning := _
+            sourceAvailable := []
+            outer := OneHoleContext.hole.comp
+              (.apply (costBaseConstructorName "NQuote") [] .hole [])
+            sourceType := .base "Proc"
+            plan := rhoBreadthBaseDropAPlan _
+            skeletonContext := .apply "NQuote" [] .hole []
+            abstract_eq := ?_ }⟩
+  unfold rhoBreadthBaseRedexAPlan
+  simp only [CostStaticRegionPlan.abstractPattern,
+    CostStaticArgumentPlan.abstractPatterns, OneHoleContext.fill,
+    rhoBreadthBaseQuotePreimage, costStaticConstructorPreimage,
+    rhoBreadthBaseQuoteDeclared, rhoCalc, List.nil_append]
+  rfl
+
+/-- The reached configuration through the total decomposition theorem. -/
+theorem rhoBreadth_contextView_total_reachedConfig :
+    Nonempty (CostStaticPlanContextView rhoCIGSLT .base rhoCutOrderFree
+      (rhoCutOrderBaseDrop (.fvar "a"))
+      rhoBreadthBaseRedexAPlan.abstractPattern) :=
+  CostStaticRegionPlan.nonempty_contextView
+    (.apply (costBaseConstructorName "NQuote") [] .hole [])
+    rhoBreadthBaseRedexAPlan rfl
+
+/-- The reached configuration also retains the exact sub-plan boundary-table
+slice inside the root table. -/
+theorem rhoBreadth_contextInventory_total_reachedConfig :
+    Nonempty (CostStaticPlanContextInventoryView rhoCIGSLT .base
+      rhoCutOrderFree (rhoCutOrderBaseDrop (.fvar "a"))
+      rhoBreadthBaseRedexAPlan.abstractPattern
+      rhoBreadthBaseRedexAPlan.boundaryTable.entries) :=
+  CostStaticRegionPlan.nonempty_contextInventoryView
+    (.apply (costBaseConstructorName "NQuote") [] .hole [])
+    rhoBreadthBaseRedexAPlan rfl
+
+/-- Positive stopped canary: descending the wrapped left sibling into the
+certified boundary content stops at that boundary, with the residual quote
+frame and the drop skeleton retained. -/
+theorem rhoBreadth_contextView_stopped :
+    Nonempty (CostStaticPlanStopped rhoCIGSLT .wrapped rhoCutOrderFree
+      (rhoCutOrderBaseDrop (.fvar "a"))
+      rhoBreadthLeftProcessPlan.abstractPattern) := by
+  refine ⟨{ boundarySupport := []
+            boundaryType := _
+            content := rhoBreadthRedexA
+            certified := rhoBreadthBoundaryWitnessA
+            residual := .apply (costBaseConstructorName "NQuote") [] .hole []
+            content_eq := rfl
+            skeletonContext := .apply "PDrop" [] .hole []
+            abstract_eq := ?_ }⟩
+  unfold rhoBreadthLeftProcessPlan rhoBreadthWrappedBoundaryAPlan
+  simp only [CostStaticRegionPlan.abstractPattern,
+    CostStaticArgumentPlan.abstractPatterns, OneHoleContext.fill,
+    rhoBreadthWrappedDropPreimage, costStaticConstructorPreimage,
+    rhoBreadthWrappedDropDeclared, rhoBreadthDropConstructor, rhoCalc,
+    List.nil_append]
+  rfl
+
+/-- The stopped configuration through the total decomposition theorem: the
+occurrence context re-enters the base fibre through the wrapped drop's
+`NQuote` argument. -/
+theorem rhoBreadth_contextView_total_stoppedConfig :
+    Nonempty (CostStaticPlanContextView rhoCIGSLT .wrapped rhoCutOrderFree
+      (rhoCutOrderBaseDrop (.fvar "a"))
+      rhoBreadthLeftProcessPlan.abstractPattern) :=
+  CostStaticRegionPlan.nonempty_contextView
+    (.apply (costWrappedConstructorName "PDrop") []
+      (.apply (costBaseConstructorName "NQuote") [] .hole []) [])
+    rhoBreadthLeftProcessPlan rfl
+
+/-- The stopped configuration retains its certified boundary as an actual
+member of the root finite table, rather than merely reconstructing the same
+abstract skeleton. -/
+theorem rhoBreadth_contextInventory_total_stoppedConfig :
+    Nonempty (CostStaticPlanContextInventoryView rhoCIGSLT .wrapped
+      rhoCutOrderFree (rhoCutOrderBaseDrop (.fvar "a"))
+      rhoBreadthLeftProcessPlan.abstractPattern
+      rhoBreadthLeftProcessPlan.boundaryTable.entries) :=
+  CostStaticRegionPlan.nonempty_contextInventoryView
+    (.apply (costWrappedConstructorName "PDrop") []
+      (.apply (costBaseConstructorName "NQuote") [] .hole []) [])
+    rhoBreadthLeftProcessPlan rfl
+
+/-- A reached-only view is false: at the wrapped colour every plan for the
+base-headed drop payload is a certified boundary, and the left sibling's
+skeleton pins that boundary to the full inner redex, never to the bare drop
+cell. -/
+theorem rhoBreadth_contextView_reachedOnly_false :
+    IsEmpty (CostStaticPlanReached rhoCIGSLT .wrapped rhoCutOrderFree
+      (rhoCutOrderBaseDrop (.fvar "a"))
+      rhoBreadthLeftProcessPlan.abstractPattern) := by
+  constructor
+  rintro ⟨sourceBound, targetBound, thinning, sourceAvailable, outer,
+    sourceType, plan, skeletonContext, abstractEq⟩
+  cases plan with
+  | application declared rendered current preimage notBare children =>
+      obtain ⟨inner, selected⟩ := declared
+      cases inner with
+      | base sourceConstructor =>
+          simp only [CIGSLT.declaredCostConstructorRole] at current
+          split at current <;> exact absurd current (by decide)
+      | wrapped sourceConstructor =>
+          simp only [CIGSLT.renderDeclaredCostConstructor,
+            CIGSLT.renderGeneratedCostConstructor,
+            CostConstructor.render] at rendered
+          exact costBaseConstructorName_ne_wrapped _ _ rendered.symm
+      | apparatus kind =>
+          simp only [CIGSLT.declaredCostConstructorRole] at current
+          exact absurd current (by simp)
+  | boundaryApplication declared rendered outsideCurrent certified
+      certifies =>
+      unfold rhoBreadthLeftProcessPlan rhoBreadthWrappedBoundaryAPlan
+        at abstractEq
+      simp only [CostStaticRegionPlan.abstractPattern,
+        CostStaticArgumentPlan.abstractPatterns] at abstractEq
+      cases skeletonContext with
+      | hole => simp [OneHoleContext.fill] at abstractEq
+      | apply frameName frameBefore frameInner frameAfter =>
+          simp only [OneHoleContext.fill, Pattern.apply.injEq]
+            at abstractEq
+          obtain ⟨-, argumentsEq⟩ := abstractEq
+          cases frameBefore with
+          | nil =>
+              simp only [List.nil_append, List.cons.injEq] at argumentsEq
+              obtain ⟨fillInner, -⟩ := argumentsEq
+              cases frameInner with
+              | hole =>
+                  simp only [OneHoleContext.fill] at fillInner
+                  have recordsEq := costRegionBoundaryVariableName_injective
+                    (Pattern.fvar.inj fillInner)
+                  have contentsEq :=
+                    congrArg CostRegionBoundary.content recordsEq
+                  rw [certified.content_eq,
+                    rhoBreadthBoundaryWitnessA.content_eq] at contentsEq
+                  exact absurd contentsEq (by decide)
+              | apply innerName innerBefore innerInner innerAfter =>
+                  simp [OneHoleContext.fill] at fillInner
+              | lambda innerBinder innerInner =>
+                  simp [OneHoleContext.fill] at fillInner
+              | multiLambda innerArity innerBinders innerInner =>
+                  simp [OneHoleContext.fill] at fillInner
+              | collection innerType innerBefore innerInner innerAfter
+                  innerRest =>
+                  simp [OneHoleContext.fill] at fillInner
+              | substBody innerInner innerReplacement =>
+                  simp [OneHoleContext.fill] at fillInner
+              | substReplacement innerBody innerInner =>
+                  simp [OneHoleContext.fill] at fillInner
+          | cons frameHead frameTail =>
+              simp only [List.cons_append, List.cons.injEq] at argumentsEq
+              have tailNil := argumentsEq.2.symm
+              simp [List.append_eq_nil_iff] at tailNil
+      | lambda frameBinder frameInner =>
+          simp [OneHoleContext.fill] at abstractEq
+      | multiLambda frameArity frameBinders frameInner =>
+          simp [OneHoleContext.fill] at abstractEq
+      | collection frameType frameBefore frameInner frameAfter frameRest =>
+          simp [OneHoleContext.fill] at abstractEq
+      | substBody frameInner frameReplacement =>
+          simp [OneHoleContext.fill] at abstractEq
+      | substReplacement frameBody frameInner =>
+          simp [OneHoleContext.fill] at abstractEq
+
+/-- Inventory canary: because the reached branch is impossible, totality
+forces an actual certified entry in the wrapped root table. -/
+theorem rhoBreadth_contextInventory_stopped_entry_exists :
+    ∃ boundary : TypedCostRegionBoundary rhoCIGSLT .wrapped rhoCutOrderFree,
+      boundary ∈ rhoBreadthLeftProcessPlan.boundaryTable.entries := by
+  obtain ⟨inventory⟩ := rhoBreadth_contextInventory_total_stoppedConfig
+  cases viewEq : inventory.view with
+  | reached state =>
+      exact False.elim
+        (rhoBreadth_contextView_reachedOnly_false.false state)
+  | stopped state =>
+      have embedding := inventory.entryEmbedding
+      rw [viewEq] at embedding
+      exact ⟨state.certified.typed,
+        embedding.subset (by
+          simp [CostStaticPlanContextView.retainedEntries])⟩
 
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryRouteBreadthCanary

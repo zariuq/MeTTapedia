@@ -63,7 +63,7 @@ total tokenization by white-space separation, with byte-exact spans.
 * Ours: the authored separator definition compiled to the incremental
   scanner, its chunk-independence law, and its equality with the unique
   relational tokenization.
-* [mm-lean4 `Metamath.Verify`] the one-shot byte loop; the fusion crown
+* [mm-lean4 `Metamath.Verify`] the one-shot byte loop; the fusion theorem
   proves its token-call trace equals ours on every successful input.
 * [knife `parser.rs`] `parse_segments` / the segment tokenizer over
   `Token` spans. -/

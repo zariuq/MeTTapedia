@@ -190,7 +190,7 @@ structure DepthRepairImplementationCertificate : Prop where
         residualMainPathArrivalTime skipped
   batchNormBridge : executableFrozenBatchNormStep = frozenBatchStatisticStep
 
-theorem depthRepairImplementation_crown :
+theorem depthRepairImplementation :
     DepthRepairImplementationCertificate where
   precisionBridge := implementedSpikingPrecision_eq_rate_div_formalCovariance
   forwardBridge := executableForwardUpdateError_eq_formalForwardReference
@@ -198,6 +198,6 @@ theorem depthRepairImplementation_crown :
   batchNormBridge := executableFrozenBatchNormStep_eq_formalFreeze
 
 #print axioms implementedSpikingPrecision_eq_rate_div_formalCovariance
-#print axioms depthRepairImplementation_crown
+#print axioms depthRepairImplementation
 
 end Mettapedia.MachineLearning.NeuralNetworks.PredictiveCoding.Frontier

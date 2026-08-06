@@ -354,7 +354,7 @@ def BeliefPolicyGuarantee : BeliefRegime → BeliefPolicy → Prop
 
 /-- T2 policy crown: every modeled regime selects a policy carrying its full
 boundary proof. -/
-theorem beliefPolicy_frontier_crown (regime : BeliefRegime) :
+theorem beliefPolicy_frontier (regime : BeliefRegime) :
     BeliefPolicyGuarantee regime (recommendedBeliefPolicy regime) := by
   cases regime with
   | stationaryIndependentGaussian =>
@@ -404,6 +404,6 @@ theorem beliefPolicy_frontier_crown (regime : BeliefRegime) :
 #print axioms bimodalCompletion_minimumAtomicWidth_two
 #print axioms bimodalDecisionGap_eq_half
 #print axioms scalarGaussianNatural_add_exact
-#print axioms beliefPolicy_frontier_crown
+#print axioms beliefPolicy_frontier
 
 end Mettapedia.MachineLearning.NeuralNetworks.UtilizationAtlas
