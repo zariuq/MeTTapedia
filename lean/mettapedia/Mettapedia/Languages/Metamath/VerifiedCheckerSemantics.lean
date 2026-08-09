@@ -27,7 +27,7 @@ def RuntimeAccepts (database : RuntimeDB) (label : String)
       (result : RuntimeFormula),
     proof.foldlM (fun state step => database.stepNormal state step)
       ⟨⟨0, 0⟩, label, formula, database.frame, #[], #[],
-        Metamath.Verify.ProofTokenParser.normal⟩ = .ok finalState ∧
+        Metamath.Verify.ProofTokenParser.normal, false⟩ = .ok finalState ∧
       finalState.stack.size = 1 ∧
       finalState.stack[0]? = some result ∧
       toOperationalExpr result = toOperationalExpr formula
@@ -61,6 +61,7 @@ theorem implementationAccepts_iff_declarativeAccepts
       DeclarativeAccepts bytes formula := by
   simpa [ImplementationAccepts, RuntimeAccepts, DeclarativeAccepts,
     checkBytesDB] using
-    parserAcceptance_iff_specProvable bytes label formula readerAccepted
+    proofCheckerNormalAcceptance_iff_specProvable_inParsedDB
+      bytes label formula readerAccepted
 
 end Mettapedia.Languages.Metamath.VerifiedCheckerSemantics

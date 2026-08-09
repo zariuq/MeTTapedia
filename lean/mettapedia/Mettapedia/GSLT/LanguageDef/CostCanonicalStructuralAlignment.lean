@@ -51,7 +51,7 @@ inductive CostRegionTree.StructuralRootView
         ∃ kind, source.declaredCostConstructorRole constructor =
           .apparatus kind)
       (ordinary : ReflectiveContextSupport.isQuoteConstructor
-        source.costWholeLanguage rule.label = false)
+        source.costWholeReflectionProfile rule.label = false)
       (children : CostRegionArgumentTrees source targetFree available outer
         arguments rule.params) :
       StructuralRootView source targetFree
@@ -70,7 +70,7 @@ inductive CostRegionTree.StructuralRootView
         ∃ kind, source.declaredCostConstructorRole constructor =
           .apparatus kind)
       (quoted : ReflectiveContextSupport.isQuoteConstructor
-        source.costWholeLanguage rule.label = true)
+        source.costWholeReflectionProfile rule.label = true)
       (children : CostRegionArgumentTrees source targetFree []
         (available ++ outer) arguments rule.params) :
       StructuralRootView source targetFree
@@ -261,7 +261,7 @@ theorem CostRegionTreeNormalizationAlignment.nonempty_neutralOrdinary_ofCanonica
         .interactionPrincipal ∨
       ∃ kind, source.declaredCostConstructorRole constructor = .apparatus kind)
     (ordinary : ReflectiveContextSupport.isQuoteConstructor
-      source.costWholeLanguage rule.label = false)
+      source.costWholeReflectionProfile rule.label = false)
     (leftChildren : CostRegionArgumentTrees source targetFree available outer
       leftArguments rule.params)
     (rightChildren : CostRegionArgumentTrees source targetFree available outer
@@ -306,7 +306,7 @@ theorem CostRegionTreeNormalizationAlignment.nonempty_neutralQuote_ofCanonicalFo
         .interactionPrincipal ∨
       ∃ kind, source.declaredCostConstructorRole constructor = .apparatus kind)
     (quoted : ReflectiveContextSupport.isQuoteConstructor
-      source.costWholeLanguage rule.label = true)
+      source.costWholeReflectionProfile rule.label = true)
     (leftChildren : CostRegionArgumentTrees source targetFree []
       (available ++ outer) leftArguments rule.params)
     (rightChildren : CostRegionArgumentTrees source targetFree []

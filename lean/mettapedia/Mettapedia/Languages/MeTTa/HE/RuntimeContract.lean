@@ -28,8 +28,8 @@ For each HE op that Rust may execute, this artifact exports:
 - `Space.lean` — queryEquations, getAtomTypes, simpleMatch
 - `Matching.lean` — matchAtoms, mergeBindings
 - `TypeCheck.lean` — typeCast, checkIfFunctionTypeIsApplicable
-- `HELanguageDef.lean` — explicit MettaCall rewrites for surface ops like `match`
-- `HEPremises.lean` — computable premise relations for rewrite-lane surface ops
+- `HELanguageDef.lean` — explicit MettaCall rewrites for interface ops like `match`
+- `HEPremises.lean` — computable premise relations for rewrite-lane interface ops
 - `Types.lean` — Bindings, ResultSet, legacy structural serialization
 -/
 
@@ -129,7 +129,7 @@ def matchContract : OpRuntimeContract where
   bindingsFlow := .mergeFromMatch
   resultCases :=
     [ "match succeeds: template with pattern variables substituted, one result per match"
-    , "no match: internal Empty sentinel, surfaced as no user-visible results"
+    , "no match: internal Empty sentinel, reported as no user-visible results"
     ]
   errorCases := []
   mutatesSpace := false
@@ -221,7 +221,7 @@ def chainContract : OpRuntimeContract where
   bindingsFlow := .assignVariable
   resultCases :=
     [ "eval succeeds (non-Empty): template with $var substituted, output bindings include $var assignment"
-    , "eval yields Empty: internal Empty sentinel, surfaced as no user-visible results"
+    , "eval yields Empty: internal Empty sentinel, reported as no user-visible results"
     ]
   errorCases := []
   mutatesSpace := false
@@ -243,7 +243,7 @@ def chainContract : OpRuntimeContract where
     ]
 
 /-- `switch` / `switch-minimal` — the primitive pattern-matching control op.
-    Both surface names are accepted by parseSwitchMinimalCallArgs.
+    Both interface names are accepted by parseSwitchMinimalCallArgs.
     Scrutinee is already evaluated; branches are `((pattern template) ...)`.
     First matching branch wins; on no match, yields no user-visible results. -/
 def switchContract : OpRuntimeContract where
@@ -266,7 +266,7 @@ def switchContract : OpRuntimeContract where
   bindingsFlow := .mergeFromMatch
   resultCases :=
     [ "first matching branch: template with pattern variables substituted (may yield multiple results if match is nondeterministic)"
-    , "no matching branch: internal Empty sentinel, surfaced as no user-visible results"
+    , "no matching branch: internal Empty sentinel, reported as no user-visible results"
     ]
   errorCases := []
   mutatesSpace := false
@@ -321,7 +321,7 @@ def caseContract : OpRuntimeContract where
   bindingsFlow := .mergeFromMatch
   resultCases :=
     [ "scrutinee evaluates, then matching branch selected (via switch semantics)"
-    , "no matching branch: internal Empty sentinel, surfaced as no user-visible results"
+    , "no matching branch: internal Empty sentinel, reported as no user-visible results"
     ]
   errorCases := []
   mutatesSpace := false
@@ -654,7 +654,7 @@ def superposeContract : OpRuntimeContract where
   bindingsFlow := .passthrough
   resultCases :=
     [ "non-empty expression: one result per element (nondeterministic)"
-    , "empty expression (): internal Empty sentinel, surfaced as no user-visible results"
+    , "empty expression (): internal Empty sentinel, reported as no user-visible results"
     ]
   errorCases := []
   mutatesSpace := false

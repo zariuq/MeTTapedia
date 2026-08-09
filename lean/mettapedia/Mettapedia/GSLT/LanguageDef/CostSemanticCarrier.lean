@@ -52,8 +52,8 @@ theorem normalize_idempotent {source : CIGSLT} {color : CostStaticColor}
   cases term with
   | mk term supported safe =>
       have identity :=
-        ComputableOpenSection.normalize_idempotent
-          source.openCanonical.toComputableOpenSection term
+        ComputableReflectiveFiberSection.normalize_idempotent
+          source.openCanonical.toComputableReflectiveFiberSection term
       unfold CostStaticSourceTerm.normalize
       congr
 
@@ -67,8 +67,11 @@ theorem normalize_eq_of_equationSetoid
     (equivalent : (CostStaticSourceTerm.equationSetoid source color free support
       sourceBound targetBound sort).r left right) :
     left.normalize = right.normalize := by
-  have erased : (openEquationSetoid source.theory free sourceBound sort).r
-      left.term right.term := by
+  have erased :
+      (ReflectiveEquationSemantics.reflectiveOpenPatternEquationSetoid
+        source.reflection.1 defaultBasePremises
+        source.theory.presentation.presentation.language free sourceBound
+          (.base sort.1)).r left.term right.term := by
     induction equivalent with
     | rel left right generator =>
         exact Relation.EqvGen.rel _ _ generator
@@ -114,7 +117,10 @@ def original {source : CIGSLT} {color : CostStaticColor}
         frame.normalizedSourceActionTerm frame.sourceActionTerm) :
     CostStaticFrameState frame where
   current := frame.sourceActionTerm
-  canonicalPath := canonicalPath
+  canonicalPath := by
+    simpa [CostStaticSourceTerm.normalize,
+      CostStaticRegionNode.sourceActionTerm,
+      CostStaticRegionNode.normalizedSourceActionTerm] using canonicalPath
 
 def normalize {source : CIGSLT} {color : CostStaticColor}
     {targetFree : WellSorted.FreeTypeContext}
@@ -150,8 +156,8 @@ def actAvailable {source : CIGSLT} {color : CostStaticColor}
     (state : CostStaticFrameState frame)
     (values : TypedCostRegionBoundaryTable.Values source color targetFree
       frame.boundaryTable) :
-    WellSorted.AvailableOpenPattern source.costWholeLanguage targetFree
-      frame.targetBound []
+    WellSorted.AvailableOpenPattern source.costWholeReflectionProfile
+      source.costWholeLanguage targetFree frame.targetBound []
       (.base (color.mapLangSort source frame.sourceSort).1) :=
   state.current.actAvailable frame.thinning
     (values.supportedOpenAssignment frame.boundaryTable)
@@ -180,8 +186,8 @@ def actAvailableWithOuter {source : CIGSLT} {color : CostStaticColor}
     (values : TypedCostRegionBoundaryTable.Values source color targetFree
       frame.boundaryTable)
     (outer : List TypeExpr) :
-    WellSorted.AvailableOpenPattern source.costWholeLanguage targetFree
-      frame.targetBound outer
+    WellSorted.AvailableOpenPattern source.costWholeReflectionProfile
+      source.costWholeLanguage targetFree frame.targetBound outer
       (.base (color.mapLangSort source frame.sourceSort).1) := by
   let current := state.actAvailable values
   exact {
@@ -218,7 +224,7 @@ theorem original_actAvailable_pattern
       (TypedCostRegionBoundaryTable.Values.original frame.boundaryTable)
       ).pattern = frame.term.1 := by
   rw [actAvailable_pattern]
-  change ReflectiveContextSupport.substitute source.costWholeLanguage
+  change ReflectiveContextSupport.substitute source.costWholeReflectionProfile
       frame.boundaryTable.restorationSupport
       ((TypedCostRegionBoundaryTable.Values.original frame.boundaryTable
         ).assignment frame.boundaryTable)
@@ -267,7 +273,7 @@ mutual
             ∃ kind, source.declaredCostConstructorRole constructor =
               .apparatus kind)
         (ordinary : ReflectiveContextSupport.isQuoteConstructor
-          source.costWholeLanguage rule.label = false)
+          source.costWholeReflectionProfile rule.label = false)
         (children : CostSemanticArgumentTrees source targetFree available outer
           arguments rule.params) :
         CostSemanticTree source targetFree available outer
@@ -286,7 +292,7 @@ mutual
             ∃ kind, source.declaredCostConstructorRole constructor =
               .apparatus kind)
         (quoted : ReflectiveContextSupport.isQuoteConstructor
-          source.costWholeLanguage rule.label = true)
+          source.costWholeReflectionProfile rule.label = true)
         (children : CostSemanticArgumentTrees source targetFree []
           (available ++ outer) arguments rule.params) :
         CostSemanticTree source targetFree available outer
@@ -375,8 +381,9 @@ mutual
         {boundary : TypedCostRegionBoundary source color targetFree}
         {content : boundary.boundary.content = occurrence.content}
         {tail : TypedCostRegionBoundaryTable source color targetFree occurrences}
-        {value : WellSorted.OpenPattern source.costWholeLanguage targetFree
-          boundary.boundary.targetSupport boundary.boundary.targetType}
+        {value : ReflectiveWellSorted.OpenPattern
+          source.costWholeReflectionProfile source.costWholeLanguage targetFree
+            boundary.boundary.targetSupport boundary.boundary.targetType}
         {values : TypedCostRegionBoundaryTable.Values source color targetFree
           tail}
         (head : CostSemanticTree source targetFree
@@ -469,20 +476,24 @@ def NormalizedCostSemanticTree.toBoundaryValue
     {available : List TypeExpr} {original : Pattern} {type : TypeExpr}
     (normalized : NormalizedCostSemanticTree source targetFree available []
       original type)
-    (value : WellSorted.OpenPattern source.costWholeLanguage targetFree
-      available type)
+    (value : ReflectiveWellSorted.OpenPattern
+      source.costWholeReflectionProfile source.costWholeLanguage targetFree
+        available type)
     (original_eq : original = value.1) :
-    WellSorted.OpenPattern source.costWholeLanguage targetFree available type := by
+    ReflectiveWellSorted.OpenPattern source.costWholeReflectionProfile
+      source.costWholeLanguage targetFree available type := by
   subst original
   exact ⟨normalized.result.pattern,
-    ⟨by simpa only [List.append_nil] using normalized.result.typed,
-      normalized.result.canonicalBinderMetadata value.2.2.1,
-      normalized.result.objectPattern value.2.2.2.1,
+    ⟨⟨by simpa only [List.append_nil] using normalized.result.typed,
+      normalized.result.canonicalBinderMetadata value.2.1.2.1,
+      normalized.result.objectPattern value.2.1.2.2.1,
+      by simpa [WellSorted.ScopeSafeAt] using
+        normalized.result.typed.isWellScopedAt⟩,
       by
         intro presentation membership
         exact normalized.result.reflectiveScope presentation membership
           (Nat.le_refl available.length)
-          (value.2.2.2.2 presentation membership)⟩⟩
+          (value.2.2 presentation membership)⟩⟩
 
 /-- A normalized argument spine with its proof-relevant semantic children. -/
 structure NormalizedCostSemanticArguments (source : CIGSLT)
@@ -597,7 +608,7 @@ mutual
                   rule.label ≠ presentation.quoteConstructor := by
                 intro labelEquality
                 have detected : ReflectiveContextSupport.isQuoteConstructor
-                    source.costWholeLanguage rule.label = true := by
+                    source.costWholeReflectionProfile rule.label = true := by
                   unfold ReflectiveContextSupport.isQuoteConstructor
                   rw [List.any_eq_true]
                   exact ⟨presentation, presentationMembership,

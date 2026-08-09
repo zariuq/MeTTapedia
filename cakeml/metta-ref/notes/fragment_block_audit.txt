@@ -37,14 +37,14 @@ eval_return_fragment:
   roundtrip theorems, a CakeML translator certificate for the numeric HOL
   eval_return_fragment, and a CF wrapper theorem for
   bridge_eval_return_fragment_hand. The bridge theory also proves that the
-  bridge_surface_atom-level return core imports to the numeric
+  bridge_syntax_atom-level return core imports to the numeric
   eval_return_fragment result, and CF-proves the tiny string-boundary predicate
-  bridge_surface_is_return_symbol_hand. The marked SML/CakeML body is now
+  bridge_syntax_is_return_symbol_hand. The marked SML/CakeML body is now
   factored into eval_return_fragment_core_is_return_head,
   eval_return_fragment_core_items, and the public eval_return_fragment_core,
   matching the proved factored bridge target. The bridge theory now also
-  relates a source-string atom model to bridge_surface_atom and proves that the
-  source-level return core refines the surface-level return core. The exact
+  relates a source-string atom model to bridge_syntax_atom and proves that the
+  source-level return core refines the source-level return core. The exact
   marked prototype return-core block is quoted in the HOL bridge theory, but
   its direct CF proof still has unresolved raw pattern-match obligations. The
   marked block remains exploratory until the actual shipped string-world block
@@ -131,13 +131,13 @@ CF wrappers currently include:
 - bridge_eval_not_values_hand
 - bridge_eval_return_fragment_hand
 - bridge_eval_match_fragment_hand
-- bridge_surface_is_return_symbol_hand
-- bridge_surface_eval_add_values_wrapper_hand
-- bridge_surface_eval_lt_values_wrapper_hand
-- bridge_surface_eval_eq_values_wrapper_hand
-- bridge_surface_eval_and_values_wrapper_hand
-- bridge_surface_eval_or_values_wrapper_hand
-- bridge_surface_eval_not_values_wrapper_hand
+- bridge_syntax_is_return_symbol_hand
+- bridge_syntax_eval_add_values_wrapper_hand
+- bridge_syntax_eval_lt_values_wrapper_hand
+- bridge_syntax_eval_eq_values_wrapper_hand
+- bridge_syntax_eval_and_values_wrapper_hand
+- bridge_syntax_eval_or_values_wrapper_hand
+- bridge_syntax_eval_not_values_wrapper_hand
 
 Generated CakeML artifacts currently include:
 
@@ -150,7 +150,7 @@ Generated CakeML artifacts currently include:
   consumes that s-expression artifact with the CakeML compiler's s-expression
   input mode and emits an ignored assembly file as a shape/harness check.
 
-Source/surface bridge artifacts currently include:
+Source/syntax bridge artifacts currently include:
 
 - bridge_proto_atom and bridge_proto_source_rel, mirroring the handwritten
   Sym/Var/Int/Str/Expr prototype atom shape and relating it to
@@ -165,22 +165,22 @@ Source/surface bridge artifacts currently include:
   bridge_proto_return_value_hand_spec, direct CF proofs of the two handwritten
   constructor payloads used by the quoted prototype return block:
   `[atom]` and `[Protoexpr [Protosym "return", value]]`.
-- bridge_source_atom and bridge_source_surface_rel, relating source mlstring
-  symbols/variables/strings to bridge_surface_atom values through explicit
+- bridge_source_atom and bridge_source_syntax_rel, relating source mlstring
+  symbols/variables/strings to bridge_syntax_atom values through explicit
   variable and string environments.
-- bridge_source_eval_return_fragment_core_refines_surface, proving the
-  source-level return core refines the surface-level return core under that
+- bridge_source_eval_return_fragment_core_refines_syntax, proving the
+  source-level return core refines the source-level return core under that
   relation.
 - bridge_source_eval_return_fragment_core_v_certificate,
   bridge_source_eval_return_fragment_core_v_app_spec_certificate, and
   bridge_source_eval_return_fragment_core_hand_spec, translating and CF-proving
   a tiny wrapper for the source-string return-core shape.
-- bridge_surface_eval_match_fragment_rel, relating surface match inputs to the
+- bridge_syntax_eval_match_fragment_rel, relating syntax match inputs to the
   numeric bridge_eval_match_fragment result, plus
-  bridge_surface_eval_match_fragment_rel_agrees_with_eval_m1_rec.
-- bridge_source_token, bridge_source_surface_token_rel, and
-  bridge_parse_atom_token_source_surface_related, proving token-level parsing
-  of related source/surface atom tokens produces related source/surface atoms.
+  bridge_syntax_eval_match_fragment_rel_agrees_with_eval_m1_rec.
+- bridge_source_token, bridge_source_syntax_token_rel, and
+  bridge_parse_atom_token_source_syntax_related, proving token-level parsing
+  of related source/syntax atom tokens produces related source/syntax atoms.
 - bridge_atom_token_parse_result and bridge_parse_atom_token_result, a
   parser-head result shape with positive/negative witnesses,
   bridge_parse_atom_token_result_success relating success exactly to
@@ -206,22 +206,22 @@ Source/surface bridge artifacts currently include:
   bridge_import_parsed_program_tokens_result_with_env_success,
   positive/negative witnesses, translator/app-spec certificates, and a tiny CF
   wrapper spec.
-- bridge_parse_source_surface_tokens_fuel_related and
-  bridge_parse_source_surface_full_tokens_related, proving the general
-  fuel-indexed source-token to surface-token parser simulation for arbitrary
-  related token lists, plus bridge_parse_source_surface_full_expr_positive_example
+- bridge_parse_source_syntax_tokens_fuel_related and
+  bridge_parse_source_syntax_full_tokens_related, proving the general
+  fuel-indexed source-token to syntax-token parser simulation for arbitrary
+  related token lists, plus bridge_parse_source_syntax_full_expr_positive_example
   as a concrete nested positive witness.
 - bridge_tokenize_source_chars_fuel and
   bridge_parse_source_program_chars_fuel, a raw char-list lexer and
   lexer/parser composition for whitespace, comments, parentheses, bang,
   decimal integers, variables, symbols, and string literals. The bridge
   includes positive/negative lexer witnesses,
-  bridge_source_chars_to_surface_program_parser_related, translator/app-spec
+  bridge_source_chars_to_syntax_program_parser_related, translator/app-spec
   certificates, and tiny CF wrapper specs over LIST_TYPE CHAR.
 - bridge_tokenize_source_string_fuel and
   bridge_parse_source_program_string_fuel, the mlstring entrypoints that
   `explode` source text into the verified char-list lexer/parser. The bridge
-  includes bridge_source_string_to_surface_program_parser_related,
+  includes bridge_source_string_to_syntax_program_parser_related,
   positive/negative string witnesses, translator/app-spec certificates, and
   tiny CF wrapper specs over STRING_TYPE.
 - bridge_parse_source_{atom,command,program}_string_shipped and
@@ -272,9 +272,9 @@ Source/surface bridge artifacts currently include:
   no-fuel, and shipped no-parser-fuel theorems for atom/command/program token
   entrypoints. This remains a model parser/result-shape bridge rather than a
   proof of the exact shipped parser body.
-- bridge_parse_command_source_surface_tokens_fuel_related and
-  bridge_parse_program_source_surface_tokens_fuel_related, lifting the
-  source-token/surface-token parser simulation through `!` run commands,
+- bridge_parse_command_source_syntax_tokens_fuel_related and
+  bridge_parse_program_source_syntax_tokens_fuel_related, lifting the
+  source-token/syntax-token parser simulation through `!` run commands,
   ordinary add-atom commands, and multi-command programs. Positive and
   negative examples cover run, mixed add/run, and unrelated variable-token
   cases.
@@ -299,26 +299,26 @@ Source/surface bridge artifacts currently include:
   bridge_proto_eval_return_fragment_core_factored_eq proving that the factored
   shape is extensionally equal to the raw nested-pattern semantics. This is a
   verified refactor target, not yet a proof of the exact raw marked block.
-- bridge_surface_eval_{add,lt,eq,and,or,not}_values_wrapper, with
+- bridge_syntax_eval_{add,lt,eq,and,or,not}_values_wrapper, with
   import/agreement theorems, translator certificates/app specs, and CF wrapper
-  specs. These prove surface-boundary wrappers for already-evaluated primitive
+  specs. These prove syntax-boundary wrappers for already-evaluated primitive
   argument result lists, not the full recursive evaluator branches.
-- bridge_surface_eval_add_evaluated_args_wrapper, an explicit alias for the
+- bridge_syntax_eval_add_evaluated_args_wrapper, an explicit alias for the
   already-evaluated argument-list + boundary with import/rec_add_values
   theorems, positive/negative examples, a translator/app-spec certificate pair,
-  and bridge_surface_eval_add_evaluated_args_wrapper_hand_spec.
-- bridge_surface_eval_add_fragment_wrapper, with
-  bridge_surface_eval_add_fragment_wrapper_agrees_with_eval_m1_rec,
-  bridge_surface_eval_add_fragment_wrapper_via_values, and a nested evaluated
+  and bridge_syntax_eval_add_evaluated_args_wrapper_hand_spec.
+- bridge_syntax_eval_add_fragment_wrapper, with
+  bridge_syntax_eval_add_fragment_wrapper_agrees_with_eval_m1_rec,
+  bridge_syntax_eval_add_fragment_wrapper_via_values, and a nested evaluated
   argument witness. This is a HOL-level evaluated + wrapper over eval_m1_rec,
   not yet a translated/CF executable wrapper.
-- bridge_surface_eval_{lt,eq,and,or,not}_fragment_wrapper, with HOL-level
+- bridge_syntax_eval_{lt,eq,and,or,not}_fragment_wrapper, with HOL-level
   import/agreement theorems against eval_m1_rec for the corresponding
   recursive primitive branch shapes. These are not translated/CF-certified
   executable wrappers yet because they call eval_m1_rec.
-- bridge_surface_eval_match_fragment_wrapper, with relation/agreement theorems
-  and bridge_surface_eval_match_fragment_wrapper_hand_spec, CF-proving a tiny
-  CakeML wrapper over imported surface match calls.
+- bridge_syntax_eval_match_fragment_wrapper, with relation/agreement theorems
+  and bridge_syntax_eval_match_fragment_wrapper_hand_spec, CF-proving a tiny
+  CakeML wrapper over imported syntax match calls.
 - bridge_eval_match_fragment_artifact_manifest_checked and
   bridge_eval_match_fragment_artifact_manifest_points_to_match_branch, which
   tie the generated match artifact manifest to the existing match-branch HOL

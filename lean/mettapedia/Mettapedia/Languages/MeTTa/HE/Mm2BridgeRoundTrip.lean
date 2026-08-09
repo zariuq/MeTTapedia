@@ -1,18 +1,18 @@
 import Mettapedia.Languages.MeTTa.HE.CeTTaRuntimeContracts
 
 /-!
-# MM2 Surface↔IR Symbol Lowering/Raising Round-Trip
+# MM2 Syntax↔IR Symbol Lowering/Raising Round-Trip
 
 Formalizes the symbol lowering pass in CeTTa's `mm2_lower.c`. The MM2
-surface syntax uses compact symbols (`exec`, `,`, `BTM`, `ACT`, `=`, `!=`,
-`O`, `+`, `-`, `z3`). The lowering pass maps each surface symbol to a
+concrete syntax uses compact symbols (`exec`, `,`, `BTM`, `ACT`, `=`, `!=`,
+`O`, `+`, `-`, `z3`). The lowering pass maps each source symbol to a
 context-specific IR symbol (`mm2_exec`, `mm2_pattern_and`, etc.).
 
 ## Key results (0 sorry)
 
 - `mm2_raise_lower`: raise ∘ lower = id for every valid ctx/symbol pair
-- `mm2_lower_injective`: distinct surface symbols → distinct IR (per context)
-- `mm2_raise_surjective`: every IR symbol has a surface preimage
+- `mm2_lower_injective`: distinct source symbols → distinct IR (per context)
+- `mm2_raise_surjective`: every IR symbol has a source-syntax preimage
 - `mm2_lower_preserves_children`: lowering only changes the head symbol
 - `mm2_exec_child_contexts`: exec rule children get [general, pattern, template]
 -/
@@ -28,8 +28,8 @@ inductive Mm2LowerCtx where
   | template
   deriving DecidableEq, Repr
 
-/-- Surface-level MM2 symbols (the 10 from mm2_lower.c). -/
-inductive Mm2SurfaceSym where
+/-- Source-level MM2 symbols (the 10 from mm2_lower.c). -/
+inductive Mm2SyntaxSym where
   | exec       -- `!`
   | comma      -- `,`
   | btm        -- `BTM`
@@ -59,7 +59,7 @@ inductive Mm2IRSym where
 
 /-! ## §2: Lowering and raising maps -/
 
-/-- Lower a surface symbol to an IR symbol given a context.
+/-- Lower a source-syntax symbol to an IR symbol given a context.
     Returns `none` for invalid ctx/symbol combinations.
 
     Key: `ACT` is context-sensitive:
@@ -70,7 +70,7 @@ inductive Mm2IRSym where
     Similarly, template-specific symbols (`O`, `+`, `-`, `z3`) only lower in
     template context; pattern-specific symbols (`BTM`) only in pattern context;
     guard symbols (`=`, `!=`) only in pattern context. -/
-def mm2Lower : Mm2LowerCtx → Mm2SurfaceSym → Option Mm2IRSym
+def mm2Lower : Mm2LowerCtx → Mm2SyntaxSym → Option Mm2IRSym
   | _, .exec => some .mm2_exec
   | _, .comma => some .mm2_pattern_and
   | .pattern, .btm => some .mm2_pattern_btm
@@ -84,8 +84,8 @@ def mm2Lower : Mm2LowerCtx → Mm2SurfaceSym → Option Mm2IRSym
   | .template, .z3 => some .mm2_sink_z3
   | _, _ => none
 
-/-- Raise an IR symbol back to its surface symbol and context. -/
-def mm2Raise : Mm2IRSym → Mm2LowerCtx × Mm2SurfaceSym
+/-- Raise an IR symbol back to its source-syntax symbol and context. -/
+def mm2Raise : Mm2IRSym → Mm2LowerCtx × Mm2SyntaxSym
   | .mm2_exec => (.general, .exec)
   | .mm2_pattern_and => (.general, .comma)
   | .mm2_pattern_btm => (.pattern, .btm)
@@ -102,16 +102,16 @@ def mm2Raise : Mm2IRSym → Mm2LowerCtx × Mm2SurfaceSym
 
 /-- **Theorem 1**: `raise(lower(s, ctx)) = (ctx', s)` where `ctx'` is the
     canonical context for that IR symbol, and `s` is recovered exactly.
-    The surface symbol is always recovered; the context may be normalized
+    The source symbol is always recovered; the context may be normalized
     (general for context-insensitive symbols). -/
-theorem mm2_raise_lower (ctx : Mm2LowerCtx) (s : Mm2SurfaceSym) (ir : Mm2IRSym)
+theorem mm2_raise_lower (ctx : Mm2LowerCtx) (s : Mm2SyntaxSym) (ir : Mm2IRSym)
     (h : mm2Lower ctx s = some ir) :
     (mm2Raise ir).2 = s := by
   cases s <;> cases ctx <;> simp [mm2Lower] at h <;> subst h <;> rfl
 
-/-- **Theorem 2**: Lowering is injective per context — distinct surface symbols
+/-- **Theorem 2**: Lowering is injective per context — distinct source symbols
     that are valid in the same context produce distinct IR symbols. -/
-theorem mm2_lower_injective (ctx : Mm2LowerCtx) (s₁ s₂ : Mm2SurfaceSym)
+theorem mm2_lower_injective (ctx : Mm2LowerCtx) (s₁ s₂ : Mm2SyntaxSym)
     (ir : Mm2IRSym)
     (h₁ : mm2Lower ctx s₁ = some ir) (h₂ : mm2Lower ctx s₂ = some ir) :
     s₁ = s₂ := by
@@ -119,7 +119,7 @@ theorem mm2_lower_injective (ctx : Mm2LowerCtx) (s₁ s₂ : Mm2SurfaceSym)
   have r₂ := mm2_raise_lower ctx s₂ ir h₂
   rw [← r₁, ← r₂]
 
-/-- **Theorem 3**: Every IR symbol has a surface preimage (raising is total,
+/-- **Theorem 3**: Every IR symbol has a source-syntax preimage (raising is total,
     and re-lowering succeeds). -/
 theorem mm2_raise_surjective (ir : Mm2IRSym) :
     ∃ ctx s, mm2Lower ctx s = some ir := by
@@ -144,8 +144,8 @@ structure Mm2Tree (α : Type) where
   children : List (Mm2Tree α)
 
 /-- Lower a tree's head symbol, keeping children unchanged. -/
-def lowerTreeHead (ctx : Mm2LowerCtx) (t : Mm2Tree Mm2SurfaceSym) :
-    Option (Mm2Tree Mm2IRSym × List (Mm2Tree Mm2SurfaceSym)) :=
+def lowerTreeHead (ctx : Mm2LowerCtx) (t : Mm2Tree Mm2SyntaxSym) :
+    Option (Mm2Tree Mm2IRSym × List (Mm2Tree Mm2SyntaxSym)) :=
   match mm2Lower ctx t.head with
   | some irHead => some (⟨irHead, []⟩, t.children)
   | none => none
@@ -153,8 +153,8 @@ def lowerTreeHead (ctx : Mm2LowerCtx) (t : Mm2Tree Mm2SurfaceSym) :
 /-- **Theorem 4**: Lowering only changes the head — children are passed through
     unchanged. -/
 theorem mm2_lower_preserves_children (ctx : Mm2LowerCtx)
-    (t : Mm2Tree Mm2SurfaceSym) (irTree : Mm2Tree Mm2IRSym)
-    (remainder : List (Mm2Tree Mm2SurfaceSym))
+    (t : Mm2Tree Mm2SyntaxSym) (irTree : Mm2Tree Mm2IRSym)
+    (remainder : List (Mm2Tree Mm2SyntaxSym))
     (h : lowerTreeHead ctx t = some (irTree, remainder)) :
     remainder = t.children := by
   simp [lowerTreeHead] at h
@@ -191,8 +191,8 @@ theorem act_context_sensitive :
     mm2Lower .pattern .act ≠ mm2Lower .template .act := by
   simp [mm2Lower]
 
-/-- Every lowering that succeeds can be raised back to the original surface symbol. -/
-theorem lower_raise_surface_roundtrip (ctx : Mm2LowerCtx) (s : Mm2SurfaceSym)
+/-- Every successful lowering raises back to the original source symbol. -/
+theorem lower_raise_syntax_roundtrip (ctx : Mm2LowerCtx) (s : Mm2SyntaxSym)
     (ir : Mm2IRSym) (h : mm2Lower ctx s = some ir) :
     mm2Lower (mm2Raise ir).1 (mm2Raise ir).2 = some ir := by
   cases s <;> cases ctx <;> simp [mm2Lower] at h <;> subst h <;> rfl

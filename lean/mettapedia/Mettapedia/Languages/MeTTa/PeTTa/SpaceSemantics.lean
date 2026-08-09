@@ -55,7 +55,7 @@ def empty : PeTTaSpace := { facts := [], rules := [] }
 def addAtom (s : PeTTaSpace) (p : Pattern) : PeTTaSpace :=
   { s with facts := p :: s.facts }
 
- /-- Stored surface atom corresponding to a premise-free rewrite rule.
+ /-- Stored source atom corresponding to a premise-free rewrite rule.
 
 This is the narrow current slice needed for PeTTa's space library behavior:
 premise-free rules are visible to `get-atoms` / variable-pattern `match` as
@@ -173,7 +173,7 @@ theorem mem_storedAtoms_of_fact {s : PeTTaSpace} {fact : Pattern}
   unfold storedAtoms
   exact List.mem_append_left _ h
 
-/-- Any premise-free stored rule contributes its surface `(= lhs rhs)` atom to
+/-- Any premise-free stored rule contributes its interface `(= lhs rhs)` atom to
 the stored-atom query view. -/
 theorem mem_storedAtoms_of_premiseFreeRule
     {s : PeTTaSpace} {r : RewriteRule}

@@ -10,41 +10,41 @@ open Mettapedia.Languages.MeTTa.PureKernel.Typing
 open Mettapedia.Languages.MeTTa.PureKernel.PatternBridge
 
 structure PureCheckSuccess where
-  term : SurfacePureTm 0
+  term : PureSyntaxTerm 0
   claimedType : PureTm 0
   typing : HasType .nil term.toPureTm claimedType
 
 def PureCheckSuccess.certificate (result : PureCheckSuccess) : CheckedPureCertificate :=
-  pureCheckingBoundary.checkSurface result.term result.claimedType result.typing
+  pureCheckingBoundary.checkSyntax result.term result.claimedType result.typing
 
 theorem PureCheckSuccess.quoteAgreement (result : PureCheckSuccess) :
     result.certificate.artifact.pattern = quoteClosedTm result.certificate.term :=
   result.certificate.quoteAgreement
 
-def inferSurfacePure (surface : SurfacePureTm 0) : Except String PureCheckSuccess := do
-  let inferred <- inferClosedPureType surface.toPureTm
+def inferPureSyntax (sourceTerm : PureSyntaxTerm 0) : Except String PureCheckSuccess := do
+  let inferred <- inferClosedPureType sourceTerm.toPureTm
   pure
-    { term := surface
+    { term := sourceTerm
       claimedType := inferred.type
       typing := inferred.typing }
 
-def checkSurfacePure
-    (surface : SurfacePureTm 0)
-    (claimedType : SurfacePureTm 0) :
+def checkPureSyntax
+    (sourceTerm : PureSyntaxTerm 0)
+    (claimedType : PureSyntaxTerm 0) :
     Except String PureCheckSuccess := do
   let _ <- checkIsPureType .nil claimedType.toPureTm
-  let typing <- checkClosedPureType surface.toPureTm claimedType.toPureTm
+  let typing <- checkClosedPureType sourceTerm.toPureTm claimedType.toPureTm
   pure
-    { term := surface
+    { term := sourceTerm
       claimedType := claimedType.toPureTm
       typing := typing.typing }
 
-def checkSurfacePureWithOptionalType
-    (surface : SurfacePureTm 0)
-    (claimedType? : Option (SurfacePureTm 0)) :
+def checkPureSyntaxWithOptionalType
+    (sourceTerm : PureSyntaxTerm 0)
+    (claimedType? : Option (PureSyntaxTerm 0)) :
     Except String PureCheckSuccess := do
   match claimedType? with
-  | some claimedType => checkSurfacePure surface claimedType
-  | none => inferSurfacePure surface
+  | some claimedType => checkPureSyntax sourceTerm claimedType
+  | none => inferPureSyntax sourceTerm
 
 end Mettapedia.Languages.MeTTa.ElaboratedCore

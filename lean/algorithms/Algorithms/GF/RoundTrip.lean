@@ -22,11 +22,11 @@ def main (args : List String) : IO Unit := do
   IO.println ""
 
   -- Step 1: Parse English through GF
-  let surface := "John sees the man with the telescope"
-  IO.println s!"Input: \"{surface}\""
+  let text := "John sees the man with the telescope"
+  IO.println s!"Input: \"{text}\""
   IO.println ""
 
-  let trees ← driver.parse "PaperAmbiguityEng" "S" surface
+  let trees ← driver.parse "PaperAmbiguityEng" "S" text
   IO.println s!"GF returned {trees.size} parse(s)"
 
   if trees.isEmpty then
@@ -57,17 +57,17 @@ def main (args : List String) : IO Unit := do
       let erased := erase checkedExpr
 
       -- Step 4: Linearize through GF → English
-      let engSurface ← driver.linearize "PaperAmbiguityEng" erased
-      IO.println s!"  → English: {engSurface}"
+      let engText ← driver.linearize "PaperAmbiguityEng" erased
+      IO.println s!"  → English: {engText}"
 
       -- Step 5: Linearize through GF → Czech
-      let czeSurface ← driver.linearize "PaperAmbiguityCze" erased
-      IO.println s!"  → Czech:   {czeSurface}"
+      let czeText ← driver.linearize "PaperAmbiguityCze" erased
+      IO.println s!"  → Czech:   {czeText}"
 
       -- Verify round-trip
-      if engSurface == surface then
+      if engText == text then
         IO.println "  ✓ English round-trip matches!"
       else
-        IO.println s!"  ✗ English mismatch: got \"{engSurface}\""
+        IO.println s!"  ✗ English mismatch: got \"{engText}\""
 
   IO.println "\n=== Done ==="

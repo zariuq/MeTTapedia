@@ -100,9 +100,9 @@ If a term reduces in a weaker language (fewer rules), it reduces in any
 stronger language (more rules). The engine can specialize rules to stronger
 fragments without re-checking reductions established in weaker fragments. -/
 
-/-- Reduction is monotone in the rule set: if `lang₁`'s rules are a subset
-    of `lang₂`'s rules and both use the same reflective presentation, then any
-    reduction in `lang₁` is also a reduction in `lang₂`.
+/-- Reduction is monotone in the core rule set: if `lang₁`'s rules are a
+    subset of `lang₂`'s rules, then any core reduction in `lang₁` is also a
+    reduction in `lang₂`.
 
     The engine can safely specialize rules to stronger fragments.
     This holds for ALL languages, including those with premise-driven rules
@@ -111,12 +111,10 @@ fragments without re-checking reductions established in weaker fragments. -/
 theorem specialization_preserves_reduction
     {lang₁ lang₂ : LanguageDef}
     (hrules : ∀ r, r ∈ lang₁.rewrites → r ∈ lang₂.rewrites)
-    (hreflect : lang₁.reflectivePresentations = lang₂.reflectivePresentations)
-    (hreflectRules : lang₁.reflectiveRules = lang₂.reflectiveRules)
     {relEnv : RelationEnv} {p q : Pattern}
     (hred : langReducesUsing relEnv lang₁ p q) :
     langReducesUsing relEnv lang₂ p q :=
-  contextualStep_mono_rules hrules hreflect hreflectRules hred
+  contextualStep_mono_rules hrules hred
 
 /-- Diamond is monotone in the rule set: if `lang₁ ⊆ lang₂`, then
     `◇₁φ ≤ ◇₂φ`.
@@ -126,8 +124,6 @@ theorem specialization_preserves_reduction
 theorem diamond_mono_rules
     {lang₁ lang₂ : LanguageDef}
     (hrules : ∀ r, r ∈ lang₁.rewrites → r ∈ lang₂.rewrites)
-    (hreflect : lang₁.reflectivePresentations = lang₂.reflectivePresentations)
-    (hreflectRules : lang₁.reflectiveRules = lang₂.reflectiveRules)
     {relEnv : RelationEnv}
     (φ : Pattern → Prop) (p : Pattern)
     (h : langDiamondUsing relEnv lang₁ φ p) :
@@ -135,7 +131,7 @@ theorem diamond_mono_rules
   rw [langDiamondUsing_spec] at h ⊢
   obtain ⟨q, hred, hφ⟩ := h
   exact ⟨q,
-    specialization_preserves_reduction hrules hreflect hreflectRules hred,
+    specialization_preserves_reduction hrules hred,
     hφ⟩
 
 /-- Box is contravariant in the rule set: `◇₁ ≤ ◇₂` implies `□₂ ≤ □₁`.
@@ -147,8 +143,6 @@ theorem diamond_mono_rules
 theorem box_contra_rules
     {lang₁ lang₂ : LanguageDef}
     (hrules : ∀ r, r ∈ lang₁.rewrites → r ∈ lang₂.rewrites)
-    (hreflect : lang₁.reflectivePresentations = lang₂.reflectivePresentations)
-    (hreflectRules : lang₁.reflectiveRules = lang₂.reflectiveRules)
     {relEnv : RelationEnv}
     (φ : Pattern → Prop) (p : Pattern)
     (h : langBoxUsing relEnv lang₂ φ p) :
@@ -156,7 +150,7 @@ theorem box_contra_rules
   rw [langBoxUsing_spec] at h ⊢
   intro q hred
   exact h q
-    (specialization_preserves_reduction hrules hreflect hreflectRules hred)
+    (specialization_preserves_reduction hrules hred)
 
 /-! ## §5: Substitution-Reduction Fusion (Beck-Chevalley)
 

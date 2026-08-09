@@ -100,12 +100,12 @@ theorem rhoQuoteDropBVar_not_reflectiveScopeSafe :
   intro safe
   have sourceMembership :
     rhoReflectivePresentation.toReflectivePresentationDecl ∈
-        rhoCIGSLT.theory.presentation.presentation.language.reflectivePresentations := by
+        rhoCIGSLT.reflection.1.presentations := by
     simp [rhoCIGSLT, rhoIGSLT, rhoInteractivePresentation,
       rhoValidatedLanguageDef, rhoCalc]
   have membership : rhoRigidBaseDeclaration ∈
-      rhoCIGSLT.costWholeLanguage.reflectivePresentations := by
-    simpa only [CIGSLT.costWholeLanguage_reflectivePresentations,
+      rhoCIGSLT.costWholeReflectionProfile.presentations := by
+    simpa only [CIGSLT.costWholeReflectionProfile_presentations,
       rhoRigidBaseDeclaration] using
       costStaticReflectivePresentationDecl_mem rhoCIGSLT .base
         rhoReflectivePresentation.toReflectivePresentationDecl
@@ -468,26 +468,18 @@ noncomputable def rhoParallelSingletonBVarCompiledRootBridge :
       rhoParallelSingletonBVarRightTree := by
   apply CostRegionTree.StaticRootView.rootBridge_reindex_left
     rhoParallelSingletonBVarStaticView
-  apply rhoStaticRootBridgeOfRigidLeaf
-    rhoParallelSingletonBVarStaticView.node
-    rhoParallelSingletonBVarStaticView.children
-      rhoParallelSingletonBVarRightTree rhoParallelSingletonBVarRight
-  · intro support assignment depth
-    simp [rhoParallelSingletonBVarRight,
-      ReflectiveContextSupport.substituteAt]
-  · calc
-      (rhoParallelSingletonBVarStaticView.exposedTree.normalize
-          (normalizeStatic := rhoHereditaryStaticNormalizer)).pattern =
-          (rhoHereditaryStaticNormalizer
-            rhoParallelSingletonBVarStaticView.node
-            (rhoParallelSingletonBVarStaticView.children.normalizeValues
-              (normalizeStatic :=
-                rhoHereditaryStaticNormalizer))).1 :=
-        CostRegionTree.normalize_static_pattern
-          rhoHereditaryStaticNormalizer
+  let staticNormal :
+      (rhoHereditaryStaticNormalizer
+        rhoParallelSingletonBVarStaticView.node
+        (rhoParallelSingletonBVarStaticView.children.normalizeValues
+          (normalizeStatic := rhoHereditaryStaticNormalizer))).1 =
+          rhoParallelSingletonBVarRight := by
+    calc
+      (rhoHereditaryStaticNormalizer
           rhoParallelSingletonBVarStaticView.node
-          rhoParallelSingletonBVarStaticView.children
-      _ = ((CostRegionTree.buildOpenTerm
+          (rhoParallelSingletonBVarStaticView.children.normalizeValues
+            (normalizeStatic := rhoHereditaryStaticNormalizer))).1 =
+          ((CostRegionTree.buildOpenTerm
           (source := rhoCIGSLT) rhoParallelSingletonBVarTerm).normalize
             (normalizeStatic := rhoHereditaryStaticNormalizer)).pattern :=
         (rhoParallelSingletonBVarStaticView.normalize_pattern
@@ -495,7 +487,15 @@ noncomputable def rhoParallelSingletonBVarCompiledRootBridge :
       _ = rhoParallelSingletonBVarRight := by
         simpa only [CostRegionTree.normalizeHereditary] using
           rhoParallelSingletonBVarCompiled_normalizeHereditary
-  · exact rhoParallelSingletonBVarRightTree_normalize
+  let exposure : RhoCollapsingLeafExposure
+      rhoParallelSingletonBVarStaticView.node
+      rhoParallelSingletonBVarStaticView.children
+      rhoParallelSingletonBVarRightTree :=
+    .rigidBVar 0
+      (by simpa [rhoParallelSingletonBVarRight] using staticNormal)
+      (by simpa [rhoParallelSingletonBVarRight] using
+        rhoParallelSingletonBVarRightTree_normalize)
+  exact exposure.toRootBridge
 
 /-- The production bridge entails exact hereditary equality without exposing
 the compiler's dependent boundary table. -/

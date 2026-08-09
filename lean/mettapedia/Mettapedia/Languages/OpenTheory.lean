@@ -4,7 +4,7 @@ import Mettapedia.Languages.OpenTheory.CoreRules
 /-!
 # OpenTheory bridge surface
 
-This surface currently exposes provenance-sensitive typed syntax, the pinned
+This module currently exposes provenance-sensitive typed syntax, the pinned
 source-compatible substitution model, typed alpha-canonical sequents, and an
 executable checker for the first six nonbinding primitive rules.  The checker
 has Type-valued one-step certificates, an independent declarative semantics,

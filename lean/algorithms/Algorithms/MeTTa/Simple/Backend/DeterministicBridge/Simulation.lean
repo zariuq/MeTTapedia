@@ -1,7 +1,7 @@
 -- LLM primer: Simulation.lean bridges the deterministic evaluator (`evalMemo`)
 -- with the reference evaluator (`evalAuxStateful`).  The target is to discharge
--- `hAgreeRaw`:
---   ∀ s term, DeterministicAcceptedRaw s term →
+-- the rejected global agreement claim:
+--   ∀ s term, DeterministicAccepted s term →
 --     OptimizedEval.evalWithState OBI s term = SessionReference.evalWithStateCore s term
 --
 -- Key observations:

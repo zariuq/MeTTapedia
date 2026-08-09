@@ -78,7 +78,7 @@ theorem ch8_hol_categorical_wrapper_bool_fixture
     (H : WMHyper
       (Multiset (HenkinModel.{0, 0, 0} HOLFixtureBase HOLFixtureConst)))
     (hcat :
-      Mettapedia.PLN.Bridges.HOL.PLNWorldModelHOLCompleteness.WMCategoricalEndpointSurface
+      Mettapedia.PLN.Bridges.HOL.PLNWorldModelHOLCompleteness.WMCategoricalEndpointContract
         (Base := HOLFixtureBase) (Const := HOLFixtureConst) (H := H))
     {X : H.Obj} (φc : H.query X) :
     BinaryWorldModel.queryStrength
@@ -103,7 +103,7 @@ theorem ch8_fol_categorical_consequence_singleton_fixture
     {L : Language.{u}}
     (H : WMHyper (Mettapedia.PLN.Bridges.Logic.WorldModel.PLNWorldModelFOLCompleteness.FOLState L))
     (hcat :
-      Mettapedia.PLN.Bridges.Logic.WorldModel.PLNWorldModelFOLCompleteness.WMCategoricalEndpointSurface (H := H))
+      Mettapedia.PLN.Bridges.Logic.WorldModel.PLNWorldModelFOLCompleteness.WMCategoricalEndpointContract (H := H))
     {X : H.Obj} (φc : H.query X)
     (S : Mettapedia.PLN.Bridges.Logic.WorldModel.PLNWorldModelFOLCompleteness.PointedFOL L) :
     BinaryWorldModel.queryStrength

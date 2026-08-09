@@ -1,7 +1,7 @@
 /-
-# GFCore.NormClause — Canonicalize RGLView surface variation
+# GFCore.NormClause — Canonicalize RGLView linearization variation
 
-Maps different RGL surface realizations to a small set of canonical clause forms.
+Maps different RGL linearization realizations to a small set of canonical clause forms.
 FocusComp, PredVPS+UseComp, PredVP+UseComp, AdvIsNP all become `copular`.
 PredVP+ComplSlash, PredVPS+ComplVPS2 all become `predication`.
 
@@ -15,7 +15,7 @@ import GFCore.RGLView
 
 namespace GFCore
 
-/-- Normalized clause structure. All surface variants mapped to one form. -/
+/-- Normalized clause structure. All linearization variants mapped to one form. -/
 inductive NormClause where
   | copular     (subject : RGLView) (complement : RGLView)
   | predication (subject : RGLView) (verb : RGLView) (object? : Option RGLView)
@@ -59,14 +59,14 @@ private def isCopularVP : RGLView → Option RGLView
   | _ => none
 
 /-- Normalize an RGLView into a NormClause.
-    Canonicalizes all surface clause variants. -/
+    Canonicalizes all clause-form variants. -/
 partial def normClause : RGLView → NormClause
   -- Sentence wrapper: unwrap
   | .sentence _ _ core => normClause core
   -- Predication: subject | verb-phrase
   | .pred subj vp => normPred subj vp
   -- Copula with origin provenance
-  | .copularSurface origin lhs rhs =>
+  | .copularForm origin lhs rhs =>
     match origin with
     | .focusComp =>
       -- FocusComp: lhs=focused_complement, rhs=matrix_subject

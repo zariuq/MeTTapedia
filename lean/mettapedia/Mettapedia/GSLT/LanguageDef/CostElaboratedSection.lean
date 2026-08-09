@@ -104,15 +104,15 @@ namespace CostElaboratedSectionData
 /-- The exact semantic relation selected by the transported static kernel. -/
 def semantics {source : CIGSLT}
     (data : CostElaboratedSectionData source) :
-    OpenElaborationSemantics source.costOpenElaborationCarrier :=
+    ReflectiveOpenElaborationSemantics source.costOpenElaborationCarrier :=
   source.costStructuralSemantics source.costStaticPlanLift data.transportSound
 
 /-- The local normalization data induces an exact section on every typed open
 proof-relevant Cost fibre. -/
 def canonicalSection {source : CIGSLT}
     (data : CostElaboratedSectionData source) :
-    OpenElaborationSemantics.ComputableSection data.semantics :=
-  OpenElaborationSemantics.ComputableSection.ofPathInvariant
+    ReflectiveOpenElaborationSemantics.ComputableSection data.semantics :=
+  ReflectiveOpenElaborationSemantics.ComputableSection.ofPathInvariant
     (source.costStructuralPathLift source.costStaticPlanLift
       data.transportSound)
     data.normalize data.normalizationPath data.transportInvariant
@@ -127,7 +127,7 @@ theorem equivalent_iff_normalize_eq {source : CIGSLT}
     (left right : CostElabTerm source targetFree targetBound targetSort) :
     (data.semantics.relation targetFree targetBound targetSort).r left right ↔
       data.normalize left = data.normalize right :=
-  OpenElaborationSemantics.ComputableSection.equivalent_iff_normalize_eq
+  ReflectiveOpenElaborationSemantics.ComputableSection.equivalent_iff_normalize_eq
     data.canonicalSection left right
 
 /-- Exact elaborated normalization remains an authored equation path after
@@ -138,10 +138,13 @@ theorem normalize_erases_equivalent {source : CIGSLT}
     {targetBound : List TypeExpr}
     {targetSort : LangSort source.costWholeLanguage}
     (term : CostElabTerm source targetFree targetBound targetSort) :
-    (openEquationSetoid source.costIGSLT targetFree targetBound targetSort).r
+    (ReflectiveEquationSemantics.reflectiveOpenPatternEquationSetoid
+      source.costWholeReflectionProfile defaultBasePremises
+        source.costWholeLanguage targetFree targetBound
+          (.base targetSort.1)).r
       (CostOpenElaboration.erase (data.normalize term))
       (CostOpenElaboration.erase term) :=
-  OpenElaborationSemantics.ComputableSection.normalize_erases_equivalent
+  ReflectiveOpenElaborationSemantics.ComputableSection.normalize_erases_equivalent
     data.canonicalSection term
 
 /-- Semantic normalization stays in the retained root fibre. -/

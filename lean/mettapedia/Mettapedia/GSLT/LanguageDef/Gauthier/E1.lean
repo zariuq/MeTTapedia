@@ -72,7 +72,7 @@ inductive WellFormed {σ : Type u} (sig : Signature σ) : Prog → Prop where
       (∀ c ∈ ch, WellFormed sig c) →
       WellFormed sig (.node id ch)
 
-/-- RPN surface tokens are table indices, matching `Ins` ids. -/
+/-- RPN source tokens are table indices, matching `Ins` ids. -/
 abbrev Tok := Nat
 
 /-- Pop `n` stack items, preserving top-first order in the returned prefix. -/
@@ -1436,7 +1436,7 @@ theorem canonicalize_sound {sig : Signature Prim} (policy : CanonicalPolicy sig)
 
 /-! ## Signature relabeling invariance -/
 
-/-- The executable shape of a table entry, excluding its surface name. -/
+/-- The executable shape of a table entry, excluding its source name. -/
 def EntryShapeEq (e₁ e₂ : Entry Prim) : Prop :=
   e₂.arity = e₁.arity ∧ e₂.hoArity = e₁.hoArity ∧ e₂.prim = e₁.prim
 

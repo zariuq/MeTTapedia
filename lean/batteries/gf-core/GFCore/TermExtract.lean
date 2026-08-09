@@ -79,7 +79,7 @@ partial def extractTerm : RGLView → Term
       | _ => (extractTerm verb).head?.getD { gfFun := "?verb", cat := "V" }
     .event verbLex [(.patient, extractTerm obj)]
   -- Complement: "X is Y" as NP
-  | .copularSurface _ subj _compl => extractTerm subj
+  | .copularForm _ subj _compl => extractTerm subj
   -- Sentence wrapper
   | .sentence _ _ core => extractTerm core
   -- Coordination

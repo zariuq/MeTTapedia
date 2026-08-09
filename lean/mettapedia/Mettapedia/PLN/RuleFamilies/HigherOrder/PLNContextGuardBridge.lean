@@ -250,7 +250,7 @@ theorem contextUnion_queryRevisedEvidence_requiredSubset_canary :
     contextComplete_query_exact_canary
     (WMJudgmentCtx.query_of_base {demoEvidence₂} demoEvidence₂ (by simp) observed)
 
-/-- Context-union composition also lifts to the ITV rule surface. -/
+/-- Context-union composition also lifts to the ITV rule family. -/
 theorem contextUnion_applyITVCtx_canary :
     BinaryWorldModel.WMITVJudgmentCtx
       (State := BinaryEvidence) (Query := ContextDemoQuery)

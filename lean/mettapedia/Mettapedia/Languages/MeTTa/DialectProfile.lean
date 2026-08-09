@@ -24,10 +24,10 @@ namespace Mettapedia.Languages.MeTTa.DialectProfile
 open Mettapedia.Languages.MeTTa.CoreProfile
 
 /-- Coarse operational shape of a MeTTa-family dialect. -/
-inductive RuntimeSurface where
+inductive RuntimeShape where
   /-- Closed kernel-style reduction on typed terms. -/
   | kernelClosed
-  /-- Explicit interpreter/state-machine surface. -/
+  /-- Explicit interpreter/state-machine state. -/
   | interpreterState
   /-- Relational atomspace semantics over a program/space object. -/
   | relationalAtomspace
@@ -37,7 +37,7 @@ inductive RuntimeSurface where
 
 /-- Where executable/runtime-facing artifacts are honestly derived from. -/
 inductive ArtifactBoundary where
-  /-- One fixed dialect-level `LanguageDef` / premise surface. -/
+  /-- One fixed dialect-level `LanguageDef` / premise interface. -/
   | dialectStatic
   /-- Artifacts are exported from a concrete program/space within the dialect. -/
   | programParametric
@@ -53,7 +53,7 @@ as with the current PeTTa formalization.
 structure MeTTaDialectProfile where
   name : ProfileName
   referenceCoreProfile? : Option MeTTaCoreProfile := none
-  runtimeSurface : RuntimeSurface
+  runtimeShape : RuntimeShape
   artifactBoundary : ArtifactBoundary
   /-- Principal semantic carrier used by the dialect-facing formalization. -/
   principalCarrier : String
@@ -64,7 +64,7 @@ structure MeTTaDialectProfile where
 def pureDialectProfile : MeTTaDialectProfile where
   name := "Pure"
   referenceCoreProfile? := some pureProfile
-  runtimeSurface := .kernelClosed
+  runtimeShape := .kernelClosed
   artifactBoundary := .dialectStatic
   principalCarrier := "PureTm 0"
   artifactLanguageSource? := none
@@ -73,7 +73,7 @@ def pureDialectProfile : MeTTaDialectProfile where
 def heDialectProfile : MeTTaDialectProfile where
   name := "HE"
   referenceCoreProfile? := some heProfile
-  runtimeSurface := .interpreterState
+  runtimeShape := .interpreterState
   artifactBoundary := .dialectStatic
   principalCarrier := "State"
   artifactLanguageSource? := some "mettaHE"
@@ -87,7 +87,7 @@ one fixed global `LanguageDef`.
 def pettaDialectProfile : MeTTaDialectProfile where
   name := "PeTTa"
   referenceCoreProfile? := none
-  runtimeSurface := .relationalAtomspace
+  runtimeShape := .relationalAtomspace
   artifactBoundary := .programParametric
   principalCarrier := "PeTTaSpace"
   artifactLanguageSource? := some "pettaSpaceToLangDef"
@@ -96,7 +96,7 @@ def pettaDialectProfile : MeTTaDialectProfile where
 def fullLegacyDialectProfile : MeTTaDialectProfile where
   name := "FullLegacy"
   referenceCoreProfile? := some fullLegacyProfile
-  runtimeSurface := .legacyStateMachine
+  runtimeShape := .legacyStateMachine
   artifactBoundary := .dialectStatic
   principalCarrier := "State"
   artifactLanguageSource? := some "mettaFullLegacy"

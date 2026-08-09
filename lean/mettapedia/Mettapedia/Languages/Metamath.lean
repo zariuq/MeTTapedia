@@ -55,6 +55,7 @@ import Mettapedia.Languages.Metamath.SourceGSLTRuntimeCompressedTransport
 import Mettapedia.Languages.Metamath.SourceGSLTParserPrefixBisimulation
 import Mettapedia.Languages.Metamath.SourceGSLTParserStatementTransitions
 import Mettapedia.Languages.Metamath.SourceGSLTParserStatementOutcomes
+import Mettapedia.Languages.Metamath.SourceGSLTParserStatementSimulation
 
 /-!
 # Metamath Bridge Surface
@@ -167,15 +168,18 @@ Positive example:
   produce source proof occurrences and the next agreed prefix; explicitly
   unknown normal or compressed proofs advance that same prefix without
   producing a verified theorem judgment
+- the exact located statement partition now induces a prefix-wise simulation
+  over the source fold, preserving each statement's spans, reader calls,
+  chronological obligation order, and intermediate source/runtime agreement;
+  generated-presentation admission remains explicit at theorem boundaries
 
 Negative example:
 - this umbrella does not expose the legacy file-lowering/source-proof
   simulation and refined-trace claim class
-- the whole byte-parser loop does not yet construct a complete theorem-event
-  ledger or prove event completeness.  Statement-local normal and compressed
-  traces now authenticate their actual reader transitions and proof outcomes,
-  but those results are not yet threaded through the complete statement-prefix
-  induction or lifted through include expansion and EOF
+- the byte/parser construction does not yet derive every theorem-boundary
+  generated-presentation admission from the accepted lexical source.  The
+  prefix induction consumes that indexed admission honestly, and it is not yet
+  lifted through include expansion and EOF
 - include-aware admission currently exposes database projection only, and the
   large-input proof-ingress traversal is checked against the reader's complete
   logical database snapshot rather than related by a general chunking theorem

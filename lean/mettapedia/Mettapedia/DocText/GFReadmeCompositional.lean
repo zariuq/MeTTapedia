@@ -372,22 +372,22 @@ theorem gf_heading_image_witness
     parseGFHeadingLine? renderGFHeading gfReadmeBlocks
     gf_heading_images hMem
 
-private def insertSurfaceBucket (acc : List (String × List GFClaim)) (surface : String) (c : GFClaim) :
+private def insertRenderedBucket (acc : List (String × List GFClaim)) (rendered : String) (c : GFClaim) :
     List (String × List GFClaim) :=
   match acc with
-  | [] => [(surface, [c])]
+  | [] => [(rendered, [c])]
   | (k, cs) :: rest =>
-      if k = surface then
+      if k = rendered then
         (k, c :: cs) :: rest
       else
-        (k, cs) :: insertSurfaceBucket rest surface c
+        (k, cs) :: insertRenderedBucket rest rendered c
 
-def claimSurfaceBuckets : List (String × List GFClaim) :=
+def claimRenderedBuckets : List (String × List GFClaim) :=
   allGFClaims.foldl
-    (fun acc c => insertSurfaceBucket acc (renderGFClaim c) c) []
+    (fun acc c => insertRenderedBucket acc (renderGFClaim c) c) []
 
-def ambiguousClaimSurfaces : List (String × List GFClaim) :=
-  claimSurfaceBuckets.filter (fun p => p.snd.length > 1)
+def ambiguousClaimRenderings : List (String × List GFClaim) :=
+  claimRenderedBuckets.filter (fun p => p.snd.length > 1)
 
 theorem anchor_formalization :
     renderGFClaim .formalizesGFInLean4 =
@@ -425,9 +425,9 @@ theorem anchor_no_sorries :
     s!"GF README structured parse failures: {repr fails}"
 
 #eval
-  if ambiguousClaimSurfaces.isEmpty then
-    "GF README ambiguity diagnostic: no duplicate surfaces across distinct claims"
+  if ambiguousClaimRenderings.isEmpty then
+    "GF README ambiguity diagnostic: no duplicate renderings across distinct claims"
   else
-    s!"GF README ambiguity diagnostic: duplicate surfaces found: {repr ambiguousClaimSurfaces}"
+    s!"GF README ambiguity diagnostic: duplicate renderings found: {repr ambiguousClaimRenderings}"
 
 end Mettapedia.DocText.GFReadmeCompositional

@@ -12,6 +12,7 @@ import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Engine
 import Mettapedia.OSLF.Framework.RewriteSystem
 import Mettapedia.OSLF.Framework.RhoInstance
 import Mettapedia.OSLF.Framework.DerivedModalities
+import Mettapedia.OSLF.Framework.InterpretedTypeSynthesis
 import Mettapedia.OSLF.Framework.CategoryBridge
 import Mettapedia.OSLF.Framework.FULLStatus
 import Mettapedia.OSLF.Framework.TypeSynthesis
@@ -351,13 +352,14 @@ theorem coreMain_nativeType_piOmega_translation_endpoint
     {L₁ L₂ : Mettapedia.CategoryTheory.LambdaTheories.LambdaTheory}
     (F : Mettapedia.OSLF.NativeType.TheoryMorphism L₁ L₂)
     (S : L₁.Obj)
-    (types : Set (L₁.fibration.Sub S)) :
-    F.mapPred (Mettapedia.OSLF.NativeType.piType L₁ S types) =
-      Mettapedia.OSLF.NativeType.piType L₂ (F.mapSort S) (F.mapPred '' types)
+    (predicateFamily : Set (L₁.fibration.Sub S)) :
+    F.mapPred (Mettapedia.OSLF.NativeType.piType L₁ S predicateFamily) =
+      Mettapedia.OSLF.NativeType.piType L₂ (F.mapSort S)
+        (F.mapPred '' predicateFamily)
     ∧
     (F.mapNatType (Mettapedia.OSLF.NativeType.NatType.full (L := L₁) S)).pred =
       (Mettapedia.OSLF.NativeType.NatType.full (L := L₂) (F.mapSort S)).pred := by
-  exact F.piOmega_translation_endpoint S types
+  exact F.piOmega_translation_endpoint S predicateFamily
 
 /-- CoreMain-facing Native Type translation endpoint for Π/Ω/Prop implication
 preservation across theory morphisms. -/
@@ -365,17 +367,18 @@ theorem coreMain_nativeType_piOmegaProp_translation_endpoint
     {L₁ L₂ : Mettapedia.CategoryTheory.LambdaTheories.LambdaTheory}
     (F : Mettapedia.OSLF.NativeType.TheoryMorphism L₁ L₂)
     (S : L₁.Obj)
-    (types : Set (L₁.fibration.Sub S))
+    (predicateFamily : Set (L₁.fibration.Sub S))
     (φ ψ : L₁.fibration.Sub S) :
-    F.mapPred (Mettapedia.OSLF.NativeType.piType L₁ S types) =
-      Mettapedia.OSLF.NativeType.piType L₂ (F.mapSort S) (F.mapPred '' types)
+    F.mapPred (Mettapedia.OSLF.NativeType.piType L₁ S predicateFamily) =
+      Mettapedia.OSLF.NativeType.piType L₂ (F.mapSort S)
+        (F.mapPred '' predicateFamily)
     ∧
     (F.mapNatType (Mettapedia.OSLF.NativeType.NatType.full (L := L₁) S)).pred =
       (Mettapedia.OSLF.NativeType.NatType.full (L := L₂) (F.mapSort S)).pred
     ∧
     F.mapPred (Mettapedia.OSLF.NativeType.implType L₁ S φ ψ) =
       Mettapedia.OSLF.NativeType.implType L₂ (F.mapSort S) (F.mapPred φ) (F.mapPred ψ) := by
-  exact F.piOmegaProp_translation_endpoint S types φ ψ
+  exact F.piOmegaProp_translation_endpoint S predicateFamily φ ψ
 
 /-- CoreMain-facing Native Type translation endpoint for Π/Σ/Ω/Prop implication
 preservation across theory morphisms. -/
@@ -383,20 +386,22 @@ theorem coreMain_nativeType_piSigmaOmegaProp_translation_endpoint
     {L₁ L₂ : Mettapedia.CategoryTheory.LambdaTheories.LambdaTheory}
     (F : Mettapedia.OSLF.NativeType.TheoryMorphism L₁ L₂)
     (S : L₁.Obj)
-    (types : Set (L₁.fibration.Sub S))
+    (predicateFamily : Set (L₁.fibration.Sub S))
     (φ ψ : L₁.fibration.Sub S) :
-    F.mapPred (Mettapedia.OSLF.NativeType.piType L₁ S types) =
-      Mettapedia.OSLF.NativeType.piType L₂ (F.mapSort S) (F.mapPred '' types)
+    F.mapPred (Mettapedia.OSLF.NativeType.piType L₁ S predicateFamily) =
+      Mettapedia.OSLF.NativeType.piType L₂ (F.mapSort S)
+        (F.mapPred '' predicateFamily)
     ∧
-    F.mapPred (Mettapedia.OSLF.NativeType.sigmaType L₁ S types) =
-      Mettapedia.OSLF.NativeType.sigmaType L₂ (F.mapSort S) (F.mapPred '' types)
+    F.mapPred (Mettapedia.OSLF.NativeType.sigmaType L₁ S predicateFamily) =
+      Mettapedia.OSLF.NativeType.sigmaType L₂ (F.mapSort S)
+        (F.mapPred '' predicateFamily)
     ∧
     (F.mapNatType (Mettapedia.OSLF.NativeType.NatType.full (L := L₁) S)).pred =
       (Mettapedia.OSLF.NativeType.NatType.full (L := L₂) (F.mapSort S)).pred
     ∧
     F.mapPred (Mettapedia.OSLF.NativeType.implType L₁ S φ ψ) =
       Mettapedia.OSLF.NativeType.implType L₂ (F.mapSort S) (F.mapPred φ) (F.mapPred ψ) := by
-  exact F.piSigmaOmegaProp_translation_endpoint S types φ ψ
+  exact F.piSigmaOmegaProp_translation_endpoint S predicateFamily φ ψ
 
 /-- CoreMain-facing bundled endpoint: Π/Ω/Prop translation together with
 nontrivial constructor-category cross-sort transport composition. -/
@@ -404,14 +409,15 @@ theorem coreMain_nativeType_piOmegaProp_constructor_transport_bundle
     {L₁ L₂ : Mettapedia.CategoryTheory.LambdaTheories.LambdaTheory}
     (F : Mettapedia.OSLF.NativeType.TheoryMorphism L₁ L₂)
     (S : L₁.Obj)
-    (types : Set (L₁.fibration.Sub S))
+    (predicateFamily : Set (L₁.fibration.Sub S))
     (φ ψ : L₁.fibration.Sub S)
     (lang : Mettapedia.OSLF.MeTTaIL.Syntax.LanguageDef)
     {A B C : Mettapedia.OSLF.NativeType.ConstructorNatType lang}
     (f : Mettapedia.OSLF.NativeType.ConstructorNatTypeHom lang A B)
     (g : Mettapedia.OSLF.NativeType.ConstructorNatTypeHom lang B C) :
-    (F.mapPred (Mettapedia.OSLF.NativeType.piType L₁ S types) =
-      Mettapedia.OSLF.NativeType.piType L₂ (F.mapSort S) (F.mapPred '' types))
+    (F.mapPred (Mettapedia.OSLF.NativeType.piType L₁ S predicateFamily) =
+      Mettapedia.OSLF.NativeType.piType L₂ (F.mapSort S)
+        (F.mapPred '' predicateFamily))
     ∧
     ((F.mapNatType (Mettapedia.OSLF.NativeType.NatType.full (L := L₁) S)).pred =
       (Mettapedia.OSLF.NativeType.NatType.full (L := L₂) (F.mapSort S)).pred)
@@ -420,7 +426,7 @@ theorem coreMain_nativeType_piOmegaProp_constructor_transport_bundle
       Mettapedia.OSLF.NativeType.implType L₂ (F.mapSort S) (F.mapPred φ) (F.mapPred ψ))
     ∧
     Nonempty (Mettapedia.OSLF.NativeType.ConstructorNatTypeHom lang A C) := by
-  exact F.piOmegaProp_with_constructor_transport_bundle S types φ ψ lang f g
+  exact F.piOmegaProp_with_constructor_transport_bundle S predicateFamily φ ψ lang f g
 
 /-- CoreMain-facing composition-stability endpoint for the bundled
 Π/Ω/Prop + constructor transport contract. -/
@@ -429,17 +435,18 @@ theorem coreMain_nativeType_comp_piOmegaProp_constructor_transport_bundle
     (F : Mettapedia.OSLF.NativeType.TheoryMorphism L₁ L₂)
     (G : Mettapedia.OSLF.NativeType.TheoryMorphism L₂ L₃)
     (S : L₁.Obj)
-    (types : Set (L₁.fibration.Sub S))
+    (predicateFamily : Set (L₁.fibration.Sub S))
     (φ ψ : L₁.fibration.Sub S)
     (lang : Mettapedia.OSLF.MeTTaIL.Syntax.LanguageDef)
     {A B C : Mettapedia.OSLF.NativeType.ConstructorNatType lang}
     (f : Mettapedia.OSLF.NativeType.ConstructorNatTypeHom lang A B)
     (g : Mettapedia.OSLF.NativeType.ConstructorNatTypeHom lang B C) :
     (((Mettapedia.OSLF.NativeType.TheoryMorphism.comp G F).mapPred
-      (Mettapedia.OSLF.NativeType.piType L₁ S types)) =
+      (Mettapedia.OSLF.NativeType.piType L₁ S predicateFamily)) =
       Mettapedia.OSLF.NativeType.piType L₃
         ((Mettapedia.OSLF.NativeType.TheoryMorphism.comp G F).mapSort S)
-        (((Mettapedia.OSLF.NativeType.TheoryMorphism.comp G F).mapPred '' types)))
+        (((Mettapedia.OSLF.NativeType.TheoryMorphism.comp G F).mapPred ''
+          predicateFamily)))
     ∧
     ((((Mettapedia.OSLF.NativeType.TheoryMorphism.comp G F).mapNatType
       (Mettapedia.OSLF.NativeType.NatType.full (L := L₁) S)).pred =
@@ -454,7 +461,7 @@ theorem coreMain_nativeType_comp_piOmegaProp_constructor_transport_bundle
         ((Mettapedia.OSLF.NativeType.TheoryMorphism.comp G F).mapPred ψ))
     ∧
     Nonempty (Mettapedia.OSLF.NativeType.ConstructorNatTypeHom lang A C) := by
-  exact F.comp_piOmegaProp_with_constructor_transport_bundle G S types φ ψ lang f g
+  exact F.comp_piOmegaProp_with_constructor_transport_bundle G S predicateFamily φ ψ lang f g
 
 /-- CoreMain-facing canonical colax/lax Π/Prop rule-set endpoint for theory
 translations. -/
@@ -478,36 +485,41 @@ theorem coreMain_nativeType_piSigmaProp_colax_rules_endpoint
 theorem coreMain_nativeType_id_piOmega_canary
     (L : Mettapedia.CategoryTheory.LambdaTheories.LambdaTheory)
     (S : L.Obj)
-    (types : Set (L.fibration.Sub S)) :
+    (predicateFamily : Set (L.fibration.Sub S)) :
     ((Mettapedia.OSLF.NativeType.TheoryMorphism.id L).mapPred
-      (Mettapedia.OSLF.NativeType.piType L S types) =
+      (Mettapedia.OSLF.NativeType.piType L S predicateFamily) =
         Mettapedia.OSLF.NativeType.piType L
           ((Mettapedia.OSLF.NativeType.TheoryMorphism.id L).mapSort S)
-          ((Mettapedia.OSLF.NativeType.TheoryMorphism.id L).mapPred '' types))
+          ((Mettapedia.OSLF.NativeType.TheoryMorphism.id L).mapPred ''
+            predicateFamily))
     ∧
     (((Mettapedia.OSLF.NativeType.TheoryMorphism.id L).mapNatType
       (Mettapedia.OSLF.NativeType.NatType.full (L := L) S)).pred =
       (Mettapedia.OSLF.NativeType.NatType.full (L := L)
         ((Mettapedia.OSLF.NativeType.TheoryMorphism.id L).mapSort S)).pred) := by
-  simpa using Mettapedia.OSLF.NativeType.TheoryMorphism.id_piOmega_translation_endpoint L S types
+  simpa using
+    Mettapedia.OSLF.NativeType.TheoryMorphism.id_piOmega_translation_endpoint
+      L S predicateFamily
 
 /-- CoreMain-facing identity-canary for the Native Type Π/Σ/Ω/Prop endpoint. -/
 theorem coreMain_nativeType_id_piSigmaOmegaProp_canary
     (L : Mettapedia.CategoryTheory.LambdaTheories.LambdaTheory)
     (S : L.Obj)
-    (types : Set (L.fibration.Sub S))
+    (predicateFamily : Set (L.fibration.Sub S))
     (φ ψ : L.fibration.Sub S) :
     ((Mettapedia.OSLF.NativeType.TheoryMorphism.id L).mapPred
-      (Mettapedia.OSLF.NativeType.piType L S types) =
+      (Mettapedia.OSLF.NativeType.piType L S predicateFamily) =
         Mettapedia.OSLF.NativeType.piType L
           ((Mettapedia.OSLF.NativeType.TheoryMorphism.id L).mapSort S)
-          ((Mettapedia.OSLF.NativeType.TheoryMorphism.id L).mapPred '' types))
+          ((Mettapedia.OSLF.NativeType.TheoryMorphism.id L).mapPred ''
+            predicateFamily))
     ∧
     ((Mettapedia.OSLF.NativeType.TheoryMorphism.id L).mapPred
-      (Mettapedia.OSLF.NativeType.sigmaType L S types) =
+      (Mettapedia.OSLF.NativeType.sigmaType L S predicateFamily) =
         Mettapedia.OSLF.NativeType.sigmaType L
           ((Mettapedia.OSLF.NativeType.TheoryMorphism.id L).mapSort S)
-          ((Mettapedia.OSLF.NativeType.TheoryMorphism.id L).mapPred '' types))
+          ((Mettapedia.OSLF.NativeType.TheoryMorphism.id L).mapPred ''
+            predicateFamily))
     ∧
     (((Mettapedia.OSLF.NativeType.TheoryMorphism.id L).mapNatType
       (Mettapedia.OSLF.NativeType.NatType.full (L := L) S)).pred =
@@ -522,7 +534,7 @@ theorem coreMain_nativeType_id_piSigmaOmegaProp_canary
         ((Mettapedia.OSLF.NativeType.TheoryMorphism.id L).mapPred ψ) := by
   simpa using
     Mettapedia.OSLF.NativeType.TheoryMorphism.id_piSigmaOmegaProp_translation_endpoint
-      L S types φ ψ
+      L S predicateFamily φ ψ
 
 /-- CoreMain-facing canonical representable Π/Σ transport endpoint routed
 through the Prop-12 ΠΣ predicate-rule pack. -/
@@ -719,13 +731,14 @@ theorem coreMain_nativeType_piOmegaProp_grothendieck_package
     {L₁ L₂ : Mettapedia.CategoryTheory.LambdaTheories.LambdaTheory}
     (F : Mettapedia.OSLF.NativeType.TheoryMorphism L₁ L₂)
     (S : L₁.Obj)
-    (types : Set (L₁.fibration.Sub S))
+    (predicateFamily : Set (L₁.fibration.Sub S))
     (φ ψ : L₁.fibration.Sub S)
     (lang : Mettapedia.OSLF.MeTTaIL.Syntax.LanguageDef)
     {A B : Mettapedia.OSLF.NativeType.ConstructorNatType lang}
     (h : Mettapedia.OSLF.NativeType.ConstructorNatTypeHom lang A B) :
-    (F.mapPred (Mettapedia.OSLF.NativeType.piType L₁ S types) =
-      Mettapedia.OSLF.NativeType.piType L₂ (F.mapSort S) (F.mapPred '' types))
+    (F.mapPred (Mettapedia.OSLF.NativeType.piType L₁ S predicateFamily) =
+      Mettapedia.OSLF.NativeType.piType L₂ (F.mapSort S)
+        (F.mapPred '' predicateFamily))
     ∧
     (F.mapNatType (Mettapedia.OSLF.NativeType.NatType.full (L := L₁) S)).pred =
       (Mettapedia.OSLF.NativeType.NatType.full (L := L₂) (F.mapSort S)).pred
@@ -736,7 +749,7 @@ theorem coreMain_nativeType_piOmegaProp_grothendieck_package
     (Mettapedia.OSLF.NativeType.grothHom_to_constructorNatTypeHom
       (Mettapedia.OSLF.NativeType.constructorNatTypeHom_to_grothHom h) = h) := by
   refine ⟨?_, ?_, ?_, ?_⟩
-  · exact F.preserves_piType S types
+  · exact F.preserves_piType S predicateFamily
   · exact F.preserves_fullNatType_pred S
   · exact F.preserves_propImp S φ ψ
   · exact Mettapedia.OSLF.NativeType.constructorNatTypeHom_groth_roundtrip h

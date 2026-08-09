@@ -4,7 +4,7 @@ import Mettapedia.Languages.MeTTa.HE.LookupPlan
 /-!
 # HE Contract Catalog
 
-Semantic catalog for the HE execution-contract surface.
+Semantic catalog for the HE execution-contract interface.
 -/
 
 namespace Mettapedia.Languages.MeTTa.HE.ExecutionContract
@@ -59,7 +59,7 @@ private def heUnifyControlTheoremRefs : List String :=
 /-- First HE execution-contract entry: the derived `eqQuery` lookup family. -/
 def heEqQueryLookupContract : LookupQueryContract where
   head := "eqQuery"
-  surfaceHead := none
+  sourceHead := none
   arity := 2
   lookupFamily := Mettapedia.Languages.MeTTa.HE.LookupPlan.heEqQueryFamily
   owner := .artifactBackend
@@ -84,7 +84,7 @@ grounded-builtin lanes.
 Why control:
 - `switch`, `assert`, and `case` sequence nested evaluation and branch/continuation
   structure in `Interpreter.lean` / `HELanguageDef.lean`
-- these forms are part of the live HE runtime surface already, so exporting
+- these forms are part of the live HE runtime interface already, so exporting
   them as control contracts lets later Rust work consume the same authority
   instead of rediscovering their control semantics ad hoc
 
@@ -218,7 +218,7 @@ def heControlEntries : List ExecutionContractEntry :=
   ]
 
 /--
-Current honest HE execution-contract surface.
+Current honest HE execution-contract interface.
 
 This intentionally exports only the lanes whose semantic ownership is already
 clear in the HE formalization:

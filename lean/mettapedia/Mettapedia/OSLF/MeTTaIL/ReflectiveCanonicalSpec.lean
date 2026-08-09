@@ -19,49 +19,64 @@ open Mettapedia.OSLF.MeTTaIL.MatchSpec
 open Mettapedia.OSLF.MeTTaIL.MatchWithSpec
 open Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical
 open Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution
+open Mettapedia.OSLF.MeTTaIL.Reflection
 
-/-- Independent relational meaning of `matchPatternForRule`. -/
-def MatchForRuleRel
-    (lang : LanguageDef) (rule : RewriteRule) (term : Pattern)
+/-- Independent relational meaning of profile-indexed rule matching. -/
+def MatchForRuleRelUsing
+    (profile : ReflectionProfile) (rule : RewriteRule) (term : Pattern)
     (bindings : Bindings) : Prop :=
-  match matchingPresentationForRule? lang rule with
+  match matchingPresentationForRule? profile rule with
   | some declaration =>
       MatchRelWith (canonicalEquivalent declaration) rule.left term bindings
   | none => MatchRel rule.left term bindings
 
-theorem matchPatternForRule_iff_matchForRuleRel
-    {lang : LanguageDef} {rule : RewriteRule} {term : Pattern}
+/-- The core relation is the reflection-free instance. -/
+def MatchForRuleRel
+    (_language : LanguageDef) (rule : RewriteRule) (term : Pattern)
+    (bindings : Bindings) : Prop :=
+  MatchForRuleRelUsing .empty rule term bindings
+
+theorem matchPatternForRuleUsing_iff_matchForRuleRelUsing
+    {profile : ReflectionProfile} {rule : RewriteRule} {term : Pattern}
     {bindings : Bindings} :
-    bindings ∈ matchPatternForRule lang rule term ↔
-      MatchForRuleRel lang rule term bindings := by
-  cases selected : matchingPresentationForRule? lang rule with
+    bindings ∈ matchPatternForRuleUsing profile rule term ↔
+      MatchForRuleRelUsing profile rule term bindings := by
+  cases selected : matchingPresentationForRule? profile rule with
   | none =>
-      simp only [matchPatternForRule, MatchForRuleRel, selected]
+      simp only [matchPatternForRuleUsing, MatchForRuleRelUsing, selected]
       exact matchPattern_iff_matchRel
   | some declaration =>
-      simp only [matchPatternForRule, MatchForRuleRel, selected]
+      simp only [matchPatternForRuleUsing, MatchForRuleRelUsing, selected]
       exact matchPatternWith_iff_matchRelWith
 
-/-- When no unique reflective declaration is selected, rule-aware matching
-has exactly the original structural relational meaning. -/
-theorem matchPatternForRule_iff_matchRel_of_no_presentation
-    {lang : LanguageDef} {rule : RewriteRule} {term : Pattern}
+/-- Core rule matching has exactly the original structural meaning. -/
+theorem matchPatternForRule_iff_matchForRuleRel
+    {language : LanguageDef} {rule : RewriteRule} {term : Pattern}
+    {bindings : Bindings} :
+    bindings ∈ matchPatternForRule language rule term ↔
+      MatchForRuleRel language rule term bindings := by
+  exact matchPatternForRuleUsing_iff_matchForRuleRelUsing
+
+/-- When a profile selects no unique reflective declaration, rule-aware
+matching has exactly the original structural relational meaning. -/
+theorem matchPatternForRuleUsing_iff_matchRel_of_no_presentation
+    {profile : ReflectionProfile} {rule : RewriteRule} {term : Pattern}
     {bindings : Bindings}
-    (missing : matchingPresentationForRule? lang rule = none) :
-    bindings ∈ matchPatternForRule lang rule term ↔
+    (missing : matchingPresentationForRule? profile rule = none) :
+    bindings ∈ matchPatternForRuleUsing profile rule term ↔
       MatchRel rule.left term bindings := by
-  rw [matchPatternForRule_iff_matchForRuleRel]
-  simp [MatchForRuleRel, missing]
+  rw [matchPatternForRuleUsing_iff_matchForRuleRelUsing]
+  simp [MatchForRuleRelUsing, missing]
 
 /-- A uniquely selected reflective declaration gives the parameterized
 relational matcher compiled from that declaration. -/
-theorem matchPatternForRule_iff_matchRelWith_of_presentation
-    {lang : LanguageDef} {rule : RewriteRule} {term : Pattern}
+theorem matchPatternForRuleUsing_iff_matchRelWith_of_presentation
+    {profile : ReflectionProfile} {rule : RewriteRule} {term : Pattern}
     {bindings : Bindings} {declaration : ReflectivePresentationDecl}
-    (selected : matchingPresentationForRule? lang rule = some declaration) :
-    bindings ∈ matchPatternForRule lang rule term ↔
+    (selected : matchingPresentationForRule? profile rule = some declaration) :
+    bindings ∈ matchPatternForRuleUsing profile rule term ↔
       MatchRelWith (canonicalEquivalent declaration) rule.left term bindings := by
-  rw [matchPatternForRule_iff_matchForRuleRel]
-  simp [MatchForRuleRel, selected]
+  rw [matchPatternForRuleUsing_iff_matchForRuleRelUsing]
+  simp [MatchForRuleRelUsing, selected]
 
 end Mettapedia.OSLF.MeTTaIL.ReflectiveCanonicalSpec

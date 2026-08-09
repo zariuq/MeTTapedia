@@ -64,7 +64,7 @@ concrete DocTextClaimsEng of DocTextClaims = {
     Clm_00059 = {s = "It includes two concrete grammars for Czech and English"} ;
     Clm_00060 = {s = "It isn't a claim of global decidability"} ;
     Clm_00061 = {s = "It isn't a full MeTTa interpreter or a parser"} ;
-    Clm_00062 = {s = "It isn't a parser or a surface syntax standard"} ;
+    Clm_00062 = {s = "It isn't a parser or a concrete syntax standard"} ;
     Clm_00063 = {s = "It isn't a proof of \"all desired properties\""} ;
     Clm_00064 = {s = "It isn't a substitute for a concrete semantics implementation"} ;
     Clm_00065 = {s = "It proves `◇ ⊣ □`"} ;
@@ -288,7 +288,7 @@ concrete DocTextClaimsEng of DocTextClaims = {
     Clm_00283 = {s = "Verifier modes are distinct specifications"} ;
     Clm_00284 = {s = "Worked examples prove the end-to-end pipeline"} ;
     Clm_00285 = {s = "`Mettapedia/OSLF/Framework/NTTClaimTracker.lean` is the authoritative tracker"} ;
-    Clm_00286 = {s = "`Mettapedia/OSLF/NativeType/` formalizes the strict NTT claim surface"} ;
+    Clm_00286 = {s = "`Mettapedia/OSLF/NativeType/` formalizes the strict NTT claim scope"} ;
     Clm_00287 = {s = "`RelationEnv` is needed for premise evaluation"} ;
     Clm_00288 = {s = "`checkLangUsing` provides an executable checker"} ;
     Clm_00289 = {s = "`langDiamondUsing` and `langBoxUsing` derive modal operators"} ;

@@ -320,7 +320,7 @@ cannot fire for that query's head.
 
 This is the generic environment-monotonicity invariant used by the SR return path:
 helper slices may append rules, but if those rules have neither the queried head key
-nor a headless LHS, they do not change the executable candidate surface in the
+nor a headless LHS, they do not change the executable candidate set in the
 initial static world. -/
 theorem candidatesW_append_nonfiring_for_head
     {atoms extra : List Atom} {gt : GroundingTable}
@@ -357,7 +357,7 @@ cannot fire for that query's head.
 
 This is the orientation used by environments of the form `prelude ++ core`: if the
 prelude contributes neither rules for the queried head nor headless rules, loading
-it before a core rule set leaves the core candidate surface unchanged. -/
+it before a core rule set leaves the core candidate set unchanged. -/
 theorem candidatesW_prepend_nonfiring_for_head
     {pre atoms : List Atom} {gt : GroundingTable}
     {toEval : Atom} {k : String}
@@ -1225,7 +1225,7 @@ theorem interpretStack1_eval_var_notReducible_eq
 /-- One fuel-driver step decomposes into one scheduler step, immediate harvesting of final
 successors, and recursive processing of the non-final successors followed by the remaining work.
 
-This is the B2 induction surface: later soundness proofs should rewrite by this lemma and apply the
+This is the B2 induction principle: later soundness proofs should rewrite by this lemma and apply the
 induction hypothesis to the recursive work-list, rather than unfolding concrete execution traces. -/
 theorem interpretFuel_cons_step_eq
     (env : MinEnv) (fuel : Nat) (st : St) (it : Item) (rest : List Item)
@@ -1820,7 +1820,7 @@ The legacy open exact-list runtime crossings are false after equality-class repa
 relations normalize to `eq` during merge, and origin-blind renaming does not transport those classes.
 /-- Open-value version of the fuel-driver static-candidate crossing.
 
-This is the reusable fuel-level surface for open matcher values: the binding set need not be closed,
+This is the reusable fuel-indexed theorem for open matcher values: the binding set need not be closed,
 but the runtime-renamed value keys must be fresh for all values they carry. Under that invariant,
 empty-ambient merge, loop pruning, freshened-RHS equality, and final-readout stability are all
 discharged once, rather than supplied as per-rule premises. Matcher equivariance (`hmatchFresh`) is
@@ -2557,7 +2557,7 @@ theorem evalAtomMin_renamed_closed_coreBinding_reverse_contains_closed_mops
 /-- Public minimal-evaluator α form of
 `interpretFuel_eval_renamed_closed_coreBinding_reverse_alpha_final_mops`.
 
-This is the compact Gate-2 surface for static symbol-headed rules with
+This is the compact Gate-2 theorem package for static symbol-headed rules with
 freshened escaping RHS variables: the executable minimal evaluator emits the
 runtime-freshened readout, the certified MOPS relation reaches the unfreshened
 reduct, and the two atoms agree up to `AlphaEq`. -/

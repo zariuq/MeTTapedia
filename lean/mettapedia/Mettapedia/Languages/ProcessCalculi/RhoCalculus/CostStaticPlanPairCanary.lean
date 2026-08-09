@@ -51,18 +51,20 @@ def rhoPairFvarAPlan :
 
 theorem rhoPairSourceReflectiveDecl_mem :
     rhoReflectivePresentation.toReflectivePresentationDecl ∈
-      (rhoCIGSLT.theory.presentation.presentation.language).reflectivePresentations := by
-  simp [rhoCIGSLT, rhoIGSLT, rhoInteractivePresentation,
-    rhoValidatedLanguageDef, rhoCalc]
+      rhoCIGSLT.reflection.1.presentations := by
+  change rhoReflectivePresentation.toReflectivePresentationDecl ∈
+    ReflectionExtension.rhoReflectionProfile.presentations
+  simp [ReflectionExtension.rhoReflectionProfile]
 
 /-- The base Quote/Drop collapse as a source-language reflective occurrence
 between the two decoration skeletons. -/
 def rhoPairCollapseWitness :
-    EquationSemantics.AuthoredGeneratorWitness defaultBasePremises
+    ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness
+      rhoCIGSLT.reflection.1 defaultBasePremises
       rhoCIGSLT.theory.presentation.presentation.language
       rhoBreadthBaseRedexAPlan.decoration.abstractPattern
       rhoPairFvarAPlan.decoration.abstractPattern := by
-  refine EquationSemantics.AuthoredGeneratorWitness.reflective .hole
+  refine ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness.reflective .hole
     ⟨rhoReflectivePresentation.toReflectivePresentationDecl,
       rhoPairSourceReflectiveDecl_mem⟩ ?_
   have leftEq : rhoBreadthBaseRedexAPlan.decoration.abstractPattern =
@@ -419,12 +421,12 @@ theorem rhoPair_stopped_exists_restoring_atom_names :
       let cospan := rhoPairStoppedLeftEnvironment.semanticKeyCospan
         rhoPairStoppedRightEnvironment
       ∀ depth,
-        ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeLanguage
+        ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeReflectionProfile
             cospan.commonSupport cospan.commonAssignment depth
             (cospan.reifyWith rhoPairStoppedLeftEnvironment.lookupAtom?
               cospan.leftSlot
               (.fvar (rhoPairStoppedLeftEnvironment.atomName leftSlot))) =
-          ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeLanguage
+          ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeReflectionProfile
             cospan.commonSupport cospan.commonAssignment depth
             (cospan.reifyWith rhoPairStoppedRightEnvironment.lookupAtom?
               cospan.rightSlot
@@ -488,12 +490,12 @@ theorem rhoPair_mixed_exists_restoring_atom_names :
       let cospan := rhoPairStoppedLeftEnvironment.semanticKeyCospan
         rhoPairReachedRightEnvironment
       ∀ depth,
-        ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeLanguage
+        ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeReflectionProfile
             cospan.commonSupport cospan.commonAssignment depth
             (cospan.reifyWith rhoPairStoppedLeftEnvironment.lookupAtom?
               cospan.leftSlot
               (.fvar (rhoPairStoppedLeftEnvironment.atomName leftSlot))) =
-          ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeLanguage
+          ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeReflectionProfile
             cospan.commonSupport cospan.commonAssignment depth
             (cospan.reifyWith rhoPairReachedRightEnvironment.lookupAtom?
               cospan.rightSlot

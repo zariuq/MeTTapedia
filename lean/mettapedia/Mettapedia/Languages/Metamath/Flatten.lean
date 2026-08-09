@@ -1610,8 +1610,8 @@ private theorem step_preserves {s q : Pattern} (h : Step s q) : M s = M q := by
   rcases h with ⟨_, h⟩
   cases h with
   | @rule _ _ _ _ bs _ hr hbs hprem happ =>
-      rw [matchPatternForRule_eq_syntactic_of_no_presentations (by rfl)] at hbs
-      rw [applyBindingsForRule_eq_syntactic_of_no_presentations (by rfl)] at happ
+      rw [matchPatternForRule_eq_syntactic] at hbs
+      rw [applyBindingsForRule_eq_syntactic] at happ
       rw [mm_rewrites_eq] at hr
       simp only [mmRules, List.mem_cons, List.not_mem_nil, or_false] at hr
       rcases hr with rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl|rfl
@@ -1874,11 +1874,11 @@ private theorem contextualTopRule {source target : Pattern}
     Step source target := by
   refine ⟨1, .rule (initialBindings := bindings) (finalBindings := bindings)
     member ?_ ?_ ?_⟩
-  · rw [matchPatternForRule_eq_syntactic_of_no_presentations (by rfl)]
+  · rw [matchPatternForRule_eq_syntactic]
     exact matched
   · rw [noPremises]
     exact .nil bindings
-  · rw [applyBindingsForRule_eq_syntactic_of_no_presentations (by rfl)]
+  · rw [applyBindingsForRule_eq_syntactic]
     exact instantiated
 
 private theorem step_BeginCompile (db : Pattern) :

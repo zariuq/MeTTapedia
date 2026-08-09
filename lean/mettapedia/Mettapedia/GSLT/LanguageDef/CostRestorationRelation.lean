@@ -19,108 +19,108 @@ open Mettapedia.OSLF.MeTTaIL.Syntax
 namespace ReflectiveContextSupport
 
 /-- Two compact patterns restore to the same pattern at every ambient binder
-depth under one language, support function, and assignment. -/
-def RestoresTogether (language : LanguageDef)
+depth under one profile, support function, and assignment. -/
+def RestoresTogether (profile : Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile)
     (support : ContextSupport.Support)
     (assignment : ContextSupport.Assignment)
     (left right : Pattern) : Prop :=
   ∀ depth,
-    substituteAt language support assignment depth left =
-      substituteAt language support assignment depth right
+    substituteAt profile support assignment depth left =
+      substituteAt profile support assignment depth right
 
 namespace RestoresTogether
 
-theorem refl (language : LanguageDef) (support : ContextSupport.Support)
+theorem refl (profile : Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile) (support : ContextSupport.Support)
     (assignment : ContextSupport.Assignment) (pattern : Pattern) :
-    RestoresTogether language support assignment pattern pattern := by
+    RestoresTogether profile support assignment pattern pattern := by
   intro depth
   rfl
 
-theorem symm {language : LanguageDef} {support : ContextSupport.Support}
+theorem symm {profile : Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile} {support : ContextSupport.Support}
     {assignment : ContextSupport.Assignment} {left right : Pattern}
-    (restores : RestoresTogether language support assignment left right) :
-    RestoresTogether language support assignment right left := by
+    (restores : RestoresTogether profile support assignment left right) :
+    RestoresTogether profile support assignment right left := by
   intro depth
   exact (restores depth).symm
 
-theorem trans {language : LanguageDef} {support : ContextSupport.Support}
+theorem trans {profile : Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile} {support : ContextSupport.Support}
     {assignment : ContextSupport.Assignment} {first second third : Pattern}
-    (firstSecond : RestoresTogether language support assignment first second)
-    (secondThird : RestoresTogether language support assignment second third) :
-    RestoresTogether language support assignment first third := by
+    (firstSecond : RestoresTogether profile support assignment first second)
+    (secondThird : RestoresTogether profile support assignment second third) :
+    RestoresTogether profile support assignment first third := by
   intro depth
   exact (firstSecond depth).trans (secondThird depth)
 
 private theorem map_substituteAt_eq_of_forall₂
-    {language : LanguageDef} {support : ContextSupport.Support}
+    {profile : Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile} {support : ContextSupport.Support}
     {assignment : ContextSupport.Assignment}
     {left right : List Pattern}
     (related : List.Forall₂
-      (RestoresTogether language support assignment) left right)
+      (RestoresTogether profile support assignment) left right)
     (depth : Nat) :
-    left.map (substituteAt language support assignment depth) =
-      right.map (substituteAt language support assignment depth) := by
+    left.map (substituteAt profile support assignment depth) =
+      right.map (substituteAt profile support assignment depth) := by
   induction related with
   | nil => rfl
   | cons headRestores tailRestores inductionHypothesis =>
       simp only [List.map_cons, List.cons.injEq]
       exact ⟨headRestores depth, inductionHypothesis⟩
 
-theorem apply {language : LanguageDef} {support : ContextSupport.Support}
+theorem apply {profile : Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile} {support : ContextSupport.Support}
     {assignment : ContextSupport.Assignment} {constructor : String}
     {leftArguments rightArguments : List Pattern}
     (arguments : List.Forall₂
-      (RestoresTogether language support assignment)
+      (RestoresTogether profile support assignment)
       leftArguments rightArguments) :
-    RestoresTogether language support assignment
+    RestoresTogether profile support assignment
       (.apply constructor leftArguments) (.apply constructor rightArguments) := by
   intro depth
   simp only [substituteAt, Pattern.apply.injEq, true_and]
   exact map_substituteAt_eq_of_forall₂ arguments
-    (if isQuoteConstructor language constructor then 0 else depth)
+    (if isQuoteConstructor profile constructor then 0 else depth)
 
-theorem lambda {language : LanguageDef} {support : ContextSupport.Support}
+theorem lambda {profile : Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile} {support : ContextSupport.Support}
     {assignment : ContextSupport.Assignment} {binder : Option String}
     {leftBody rightBody : Pattern}
-    (body : RestoresTogether language support assignment leftBody rightBody) :
-    RestoresTogether language support assignment
+    (body : RestoresTogether profile support assignment leftBody rightBody) :
+    RestoresTogether profile support assignment
       (.lambda binder leftBody) (.lambda binder rightBody) := by
   intro depth
   simp only [substituteAt, Pattern.lambda.injEq, true_and]
   exact body (depth + 1)
 
-theorem multiLambda {language : LanguageDef}
+theorem multiLambda {profile : Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile}
     {support : ContextSupport.Support}
     {assignment : ContextSupport.Assignment} {arity : Nat}
     {binders : List String} {leftBody rightBody : Pattern}
-    (body : RestoresTogether language support assignment leftBody rightBody) :
-    RestoresTogether language support assignment
+    (body : RestoresTogether profile support assignment leftBody rightBody) :
+    RestoresTogether profile support assignment
       (.multiLambda arity binders leftBody)
       (.multiLambda arity binders rightBody) := by
   intro depth
   simp only [substituteAt, Pattern.multiLambda.injEq, true_and]
   exact body (depth + arity)
 
-theorem subst {language : LanguageDef} {support : ContextSupport.Support}
+theorem subst {profile : Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile} {support : ContextSupport.Support}
     {assignment : ContextSupport.Assignment}
     {leftBody rightBody leftReplacement rightReplacement : Pattern}
-    (body : RestoresTogether language support assignment leftBody rightBody)
-    (replacement : RestoresTogether language support assignment
+    (body : RestoresTogether profile support assignment leftBody rightBody)
+    (replacement : RestoresTogether profile support assignment
       leftReplacement rightReplacement) :
-    RestoresTogether language support assignment
+    RestoresTogether profile support assignment
       (.subst leftBody leftReplacement) (.subst rightBody rightReplacement) := by
   intro depth
   simp only [substituteAt, Pattern.subst.injEq]
   exact ⟨body (depth + 1), replacement depth⟩
 
-theorem collection {language : LanguageDef}
+theorem collection {profile : Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile}
     {support : ContextSupport.Support}
     {assignment : ContextSupport.Assignment} {collectionType : CollType}
     {leftElements rightElements : List Pattern} {rest : Option String}
     (elements : List.Forall₂
-      (RestoresTogether language support assignment)
+      (RestoresTogether profile support assignment)
       leftElements rightElements) :
-    RestoresTogether language support assignment
+    RestoresTogether profile support assignment
       (.collection collectionType leftElements rest)
       (.collection collectionType rightElements rest) := by
   intro depth
@@ -129,20 +129,20 @@ theorem collection {language : LanguageDef}
 
 /-- A bound variable is a rigid restoration leaf: supported substitution
 never consults the assignment at that node. -/
-theorem bvar (language : LanguageDef) (support : ContextSupport.Support)
+theorem bvar (profile : Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile) (support : ContextSupport.Support)
     (assignment : ContextSupport.Assignment) (index : Nat) :
-    RestoresTogether language support assignment (.bvar index) (.bvar index) :=
-  refl language support assignment (.bvar index)
+    RestoresTogether profile support assignment (.bvar index) (.bvar index) :=
+  refl profile support assignment (.bvar index)
 
 /-- Two parameter names with one closed assigned value restore together even
 when their declared support suffixes differ.  Closedness is exactly what
 makes both support-indexed weakenings inert. -/
 theorem fvar_of_assignment_eq_of_scoped
-    (language : LanguageDef) (support : ContextSupport.Support)
+    (profile : Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile) (support : ContextSupport.Support)
     (assignment : ContextSupport.Assignment) (leftName rightName : String)
     (assignmentEq : assignment leftName = assignment rightName)
     (assignedScoped : (assignment leftName).isWellScopedAt 0 = true) :
-    RestoresTogether language support assignment
+    RestoresTogether profile support assignment
       (.fvar leftName) (.fvar rightName) := by
   intro depth
   simp only [substituteAt]
@@ -158,11 +158,11 @@ theorem fvar_of_assignment_eq_of_scoped
 dropped.  With one retained binder on the left and none on the right, assigning
 the same bound variable produces different de Bruijn indices at depth one. -/
 theorem unequal_support_bvar_assignment_not_restoresTogether
-    (language : LanguageDef) (binderType : TypeExpr) :
+    (profile : Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile) (binderType : TypeExpr) :
     let support : ContextSupport.Support := fun name =>
       if name = "left" then [binderType] else []
     let assignment : ContextSupport.Assignment := fun _ => .bvar 0
-    ¬ RestoresTogether language support assignment
+    ¬ RestoresTogether profile support assignment
       (.fvar "left") (.fvar "right") := by
   dsimp only
   intro restores
@@ -173,15 +173,15 @@ mutual
   /-- A structural semantic-leaf alignment whose selected leaves restore
   together itself restores together at every depth. -/
   def PatternLeafAligned.toRestoresTogether
-      {language : LanguageDef} {support : ContextSupport.Support}
+      {profile : Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile} {support : ContextSupport.Support}
       {assignment : ContextSupport.Assignment} :
       ∀ {left right : Pattern},
         PatternLeafAligned
-          (RestoresTogether language support assignment) left right →
-        RestoresTogether language support assignment left right
+          (RestoresTogether profile support assignment) left right →
+        RestoresTogether profile support assignment left right
     | _, _, .leaf related => related
     | _, _, .bvar index =>
-        RestoresTogether.bvar language support assignment index
+        RestoresTogether.bvar profile support assignment index
     | _, _, .apply constructor arguments =>
         RestoresTogether.apply
           (PatternLeafAlignedList.toRestoresTogether arguments)
@@ -201,12 +201,12 @@ mutual
 
   /-- Listwise companion of `PatternLeafAligned.toRestoresTogether`. -/
   def PatternLeafAlignedList.toRestoresTogether
-      {language : LanguageDef} {support : ContextSupport.Support}
+      {profile : Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile} {support : ContextSupport.Support}
       {assignment : ContextSupport.Assignment} :
       ∀ {left right : List Pattern},
         PatternLeafAlignedList
-          (RestoresTogether language support assignment) left right →
-        List.Forall₂ (RestoresTogether language support assignment) left right
+          (RestoresTogether profile support assignment) left right →
+        List.Forall₂ (RestoresTogether profile support assignment) left right
     | _, _, .nil => .nil
     | _, _, .cons head tail =>
         .cons (PatternLeafAligned.toRestoresTogether head)
@@ -253,7 +253,8 @@ inductive CommonRestorationApex
   every possible depth. -/
   | leafAligned {depth : Nat} {left right : Pattern}
       (aligned : PatternLeafAligned
-        (ReflectiveContextSupport.RestoresTogether source.costWholeLanguage
+        (ReflectiveContextSupport.RestoresTogether
+          source.costWholeReflectionProfile
           cospan.commonSupport cospan.commonAssignment) left right) :
       CommonRestorationApex source cospan declaration depth left right
   /-- Rigid ordinary application congruence.  Quote applications use depth
@@ -262,7 +263,7 @@ inductive CommonRestorationApex
       {leftArguments rightArguments : List Pattern}
       (arguments : CommonRestorationApexList source cospan declaration
         (if ReflectiveContextSupport.isQuoteConstructor
-            source.costWholeLanguage constructor then 0 else depth)
+            source.costWholeReflectionProfile constructor then 0 else depth)
         leftArguments rightArguments) :
       CommonRestorationApex source cospan declaration depth
         (.apply constructor leftArguments) (.apply constructor rightArguments)
@@ -305,13 +306,13 @@ inductive CommonRestorationApex
           (canonicalizeListByAt
             (cospan.commonSemanticPatternKeyAt source) declaration depth
             leftElements)).map
-              (ReflectiveContextSupport.substituteAt source.costWholeLanguage
+              (ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
                 cospan.commonSupport cospan.commonAssignment depth))
         ((parallelContents declaration
           (canonicalizeListByAt
             (cospan.commonSemanticPatternKeyAt source) declaration depth
             rightElements)).map
-              (ReflectiveContextSupport.substituteAt source.costWholeLanguage
+              (ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
                 cospan.commonSupport cospan.commonAssignment depth))) :
       CommonRestorationApex source cospan declaration depth
         (canonicalizeByAt (cospan.commonSemanticPatternKeyAt source)
@@ -356,7 +357,8 @@ theorem refl
     CommonRestorationApex source cospan declaration depth pattern pattern :=
   .leafAligned (PatternLeafAligned.refl
     (fun name => ReflectiveContextSupport.RestoresTogether.refl
-      source.costWholeLanguage cospan.commonSupport cospan.commonAssignment
+      source.costWholeReflectionProfile cospan.commonSupport
+      cospan.commonAssignment
       (.fvar name)) pattern)
 
 /-- Exact equality embeds into the restoration relation without inventing a
@@ -463,9 +465,9 @@ mutual
       {declaration : ReflectivePresentationDecl}
       {depth : Nat} {left right : Pattern}
       (apex : CommonRestorationApex source cospan declaration depth left right) :
-      ReflectiveContextSupport.substituteAt source.costWholeLanguage
+      ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
           cospan.commonSupport cospan.commonAssignment depth left =
-        ReflectiveContextSupport.substituteAt source.costWholeLanguage
+        ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
           cospan.commonSupport cospan.commonAssignment depth right :=
     match apex with
     | .leafAligned aligned =>
@@ -504,10 +506,10 @@ mutual
       (apex : CommonRestorationApexList source cospan declaration depth
         left right) :
       left.map (ReflectiveContextSupport.substituteAt
-          source.costWholeLanguage cospan.commonSupport
+          source.costWholeReflectionProfile cospan.commonSupport
           cospan.commonAssignment depth) =
         right.map (ReflectiveContextSupport.substituteAt
-          source.costWholeLanguage cospan.commonSupport
+          source.costWholeReflectionProfile cospan.commonSupport
           cospan.commonAssignment depth) :=
     match apex with
     | .nil depth => rfl
@@ -528,10 +530,12 @@ theorem Permutation.restored_perm
       left right) :
     List.Perm
       (left.map (ReflectiveContextSupport.substituteAt
-        source.costWholeLanguage cospan.commonSupport cospan.commonAssignment
+        source.costWholeReflectionProfile cospan.commonSupport
+        cospan.commonAssignment
         depth))
       (right.map (ReflectiveContextSupport.substituteAt
-        source.costWholeLanguage cospan.commonSupport cospan.commonAssignment
+        source.costWholeReflectionProfile cospan.commonSupport
+        cospan.commonAssignment
         depth)) := by
   rw [restoredList_eq alignment.aligned]
   exact alignment.permutation.map _
@@ -658,66 +662,136 @@ theorem of_canonicalRootAligned
     {rightKey : Fin rightCount → CostStaticAtomKey}
     (cospan : CostStaticAtomKeyCospan leftKey rightKey)
     (declaration : ReflectivePresentationDecl)
-    (close : ∀ childDepth {leftChild rightChild : Pattern},
+    (close : ∀ leftChildDepth rightChildDepth childRootDepth
+      {leftChild rightChild : Pattern},
       canonicalize declaration leftChild = canonicalize declaration rightChild →
-        CommonRestorationApex source cospan declaration childDepth
+        CommonRestorationApex source cospan declaration childRootDepth
           (canonicalizeByAt (cospan.commonSemanticPatternKeyAt source)
-            declaration childDepth leftChild)
+            declaration leftChildDepth leftChild)
           (canonicalizeByAt (cospan.commonSemanticPatternKeyAt source)
-            declaration childDepth rightChild))
-    {depth : Nat} {left right : Pattern}
+            declaration rightChildDepth rightChild))
+    {leftDepth rightDepth rootDepth : Nat} {left right : Pattern}
     (ordinaryHead : ∀ {constructor : String}
       {leftArguments rightArguments : List Pattern},
       left = .apply constructor leftArguments →
       right = .apply constructor rightArguments →
       constructor ≠ declaration.quoteConstructor →
-      ReflectiveContextSupport.isQuoteConstructor source.costWholeLanguage
+      ReflectiveContextSupport.isQuoteConstructor source.costWholeReflectionProfile
         constructor = false)
     (aligned : CanonicalRootAligned declaration left right) :
-    CommonRestorationApex source cospan declaration depth
+    CommonRestorationApex source cospan declaration rootDepth
       (canonicalizeByAt (cospan.commonSemanticPatternKeyAt source)
-        declaration depth left)
+        declaration leftDepth left)
       (canonicalizeByAt (cospan.commonSemanticPatternKeyAt source)
-        declaration depth right) := by
+        declaration rightDepth right) := by
   let key := cospan.commonSemanticPatternKeyAt source
-  have closeList : ∀ childDepth {leftChildren rightChildren : List Pattern},
+  have closeList : ∀ leftChildDepth rightChildDepth childRootDepth
+      {leftChildren rightChildren : List Pattern},
       List.Forall₂
           (fun leftChild rightChild =>
             canonicalize declaration leftChild =
               canonicalize declaration rightChild)
           leftChildren rightChildren →
-        CommonRestorationApexList source cospan declaration childDepth
-          (canonicalizeListByAt key declaration childDepth leftChildren)
-          (canonicalizeListByAt key declaration childDepth rightChildren) := by
-    intro childDepth leftChildren rightChildren children
+        CommonRestorationApexList source cospan declaration childRootDepth
+          (canonicalizeListByAt key declaration leftChildDepth leftChildren)
+          (canonicalizeListByAt key declaration rightChildDepth rightChildren) := by
+    intro leftChildDepth rightChildDepth childRootDepth leftChildren
+      rightChildren children
     rw [canonicalizeListByAt_eq_map, canonicalizeListByAt_eq_map]
     induction children with
-    | nil => exact .nil childDepth
+    | nil => exact .nil childRootDepth
     | cons related _ inductionHypothesis =>
-        exact .cons (close childDepth related) inductionHypothesis
+        exact .cons
+          (close leftChildDepth rightChildDepth childRootDepth related)
+          inductionHypothesis
   cases aligned with
-  | bvar index => exact of_eq cospan declaration depth rfl
-  | fvar name => exact of_eq cospan declaration depth rfl
+  | bvar index => exact of_eq cospan declaration rootDepth rfl
+  | fvar name => exact of_eq cospan declaration rootDepth rfl
   | @apply constructor ne leftArguments rightArguments children =>
       have quoteStatus := ordinaryHead rfl rfl ne
-      simpa only [canonicalizeByAt, ne, beq_eq_false_iff_ne, if_false,
-        quoteStatus] using
-        (CommonRestorationApex.apply constructor (closeList depth children))
+      have arguments : CommonRestorationApexList source cospan declaration
+          (if ReflectiveContextSupport.isQuoteConstructor
+              source.costWholeReflectionProfile constructor then 0 else rootDepth)
+          (canonicalizeListByAt key declaration leftDepth leftArguments)
+          (canonicalizeListByAt key declaration rightDepth rightArguments) := by
+        simpa [quoteStatus] using
+          closeList leftDepth rightDepth rootDepth children
+      simpa [canonicalizeByAt, ne] using
+        (CommonRestorationApex.apply constructor arguments)
   | lambda binder body =>
-      exact .lambda binder (close (depth + 1) body)
+      exact .lambda binder
+        (close (leftDepth + 1) (rightDepth + 1) (rootDepth + 1) body)
   | multiLambda arity binders body =>
-      exact .multiLambda binders (close (depth + arity) body)
+      exact .multiLambda binders
+        (close (leftDepth + arity) (rightDepth + arity)
+          (rootDepth + arity) body)
   | subst body replacement =>
-      exact .subst (close (depth + 1) body) (close depth replacement)
+      exact .subst
+        (close (leftDepth + 1) (rightDepth + 1) (rootDepth + 1) body)
+        (close leftDepth rightDepth rootDepth replacement)
   | @collection collectionType ne leftElements rightElements children =>
       have notParallel :
           (collectionType == declaration.parallelCollection) = false :=
         beq_eq_false_iff_ne.mpr ne
-      simpa only [canonicalizeByAt, notParallel, if_false] using
+      simpa [canonicalizeByAt, notParallel] using
         (CommonRestorationApex.collection collectionType none
-          (closeList depth children))
+          (closeList leftDepth rightDepth rootDepth children))
   | collectionRest collectionType rest children =>
-      exact .collection collectionType (some rest) (closeList depth children)
+      exact .collection collectionType (some rest)
+        (closeList leftDepth rightDepth rootDepth children)
+
+/-- A left Quote/Drop shell contributes no additional restoration evidence:
+keyed canonicalization removes it and resets only the payload's quote-visible
+depth.  The recursive apex may therefore compare that depth-zero payload with
+an endpoint canonicalized at a different visible depth. -/
+theorem of_quoteDrop_left
+    {source : CIGSLT} {leftCount rightCount : Nat}
+    {leftKey : Fin leftCount → CostStaticAtomKey}
+    {rightKey : Fin rightCount → CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey)
+    (declaration : ReflectivePresentationDecl)
+    (quote_ne_drop : declaration.quoteConstructor ≠
+      declaration.dropConstructor)
+    {leftDepth rightDepth rootDepth : Nat} {inner right : Pattern}
+    (innerApex : CommonRestorationApex source cospan declaration rootDepth
+      (canonicalizeByAt (cospan.commonSemanticPatternKeyAt source)
+        declaration 0 inner)
+      (canonicalizeByAt (cospan.commonSemanticPatternKeyAt source)
+        declaration rightDepth right)) :
+    CommonRestorationApex source cospan declaration rootDepth
+      (canonicalizeByAt (cospan.commonSemanticPatternKeyAt source)
+        declaration leftDepth
+        (.apply declaration.quoteConstructor
+          [.apply declaration.dropConstructor [inner]]))
+      (canonicalizeByAt (cospan.commonSemanticPatternKeyAt source)
+        declaration rightDepth right) := by
+  simpa only [canonicalizeByAt_quote_drop _ declaration quote_ne_drop] using
+    innerApex
+
+/-- Right-oriented companion of `of_quoteDrop_left`. -/
+theorem of_quoteDrop_right
+    {source : CIGSLT} {leftCount rightCount : Nat}
+    {leftKey : Fin leftCount → CostStaticAtomKey}
+    {rightKey : Fin rightCount → CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey)
+    (declaration : ReflectivePresentationDecl)
+    (quote_ne_drop : declaration.quoteConstructor ≠
+      declaration.dropConstructor)
+    {leftDepth rightDepth rootDepth : Nat} {left inner : Pattern}
+    (innerApex : CommonRestorationApex source cospan declaration rootDepth
+      (canonicalizeByAt (cospan.commonSemanticPatternKeyAt source)
+        declaration leftDepth left)
+      (canonicalizeByAt (cospan.commonSemanticPatternKeyAt source)
+        declaration 0 inner)) :
+    CommonRestorationApex source cospan declaration rootDepth
+      (canonicalizeByAt (cospan.commonSemanticPatternKeyAt source)
+        declaration leftDepth left)
+      (canonicalizeByAt (cospan.commonSemanticPatternKeyAt source)
+        declaration rightDepth
+        (.apply declaration.quoteConstructor
+          [.apply declaration.dropConstructor [inner]])) := by
+  simpa only [canonicalizeByAt_quote_drop _ declaration quote_ne_drop] using
+    innerApex
 
 /-- Equality transports only the indices of a common apex; it adds no
 semantic evidence. -/
@@ -865,10 +939,10 @@ theorem parallel_nested_reassociation_bvars
     rcases rawMembership with rfl | rfl <;> simp
   rw [twelveNoUnit, zeroOneNoUnit]
   have restoredTwelve := twelvePermutation.map
-    (ReflectiveContextSupport.substituteAt source.costWholeLanguage
+    (ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
       cospan.commonSupport cospan.commonAssignment depth)
   have restoredZeroOne := zeroOnePermutation.map
-    (ReflectiveContextSupport.substituteAt source.costWholeLanguage
+    (ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
       cospan.commonSupport cospan.commonAssignment depth)
   simp only [ReflectiveContextSupport.substituteAt, List.map_cons,
     List.map_nil] at restoredTwelve restoredZeroOne
@@ -895,7 +969,8 @@ theorem parallel_swap_bvars_not_patternLeafAligned
     (cospan : CostStaticAtomKeyCospan leftKey rightKey)
     (first second : Nat) (different : first ≠ second) :
     ¬ PatternLeafAligned
-      (ReflectiveContextSupport.RestoresTogether source.costWholeLanguage
+      (ReflectiveContextSupport.RestoresTogether
+        source.costWholeReflectionProfile
         cospan.commonSupport cospan.commonAssignment)
       (.collection .hashBag [.bvar first, .bvar second] none)
       (.collection .hashBag [.bvar second, .bvar first] none) := by
@@ -907,6 +982,40 @@ theorem parallel_swap_bvars_not_patternLeafAligned
     List.map_cons, List.map_nil, Pattern.collection.injEq,
     true_and] at atZero
   exact different (Pattern.bvar.inj (List.cons.inj atZero.1).1)
+
+/-- Restoring a keyed canonical frame does not generically commute with the
+ordinary canonicalizer unless the assigned opaque values are themselves
+canonical for that declaration.  Here the keyed canonicalizer correctly
+leaves one atom opaque, restoration reveals a noncanonical Quote/Drop value,
+and ordinary canonicalization subsequently contracts it.
+
+This counterexample rules out a tempting shortcut in the static common-apex
+proof: recursive canonicality of boundary values must be established before
+any fixed-point argument can replace occurrence-aware restoration. -/
+theorem substituteAt_canonicalizeByAt_not_commute_without_canonical_assignment
+    (source : CIGSLT) (declaration : ReflectivePresentationDecl)
+    (different : declaration.dropConstructor ≠
+      declaration.quoteConstructor) :
+    let support : ContextSupport.Support := fun _ => []
+    let assignment : ContextSupport.Assignment :=
+      fun _ => Pattern.apply declaration.quoteConstructor
+        [Pattern.apply declaration.dropConstructor [Pattern.fvar "payload"]]
+    let key : Nat → Pattern → Nat := fun _ pattern =>
+      Mettapedia.OSLF.MeTTaIL.PatternCode.patternCode
+        (ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
+          support assignment 0 pattern)
+    ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile support
+        assignment 0
+        (canonicalizeByAt key declaration 0 (.fvar "atom")) ≠
+      canonicalize declaration
+        (ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile support
+          assignment 0 (.fvar "atom")) := by
+  dsimp only
+  simp only [canonicalizeByAt, ReflectiveContextSupport.substituteAt,
+    List.length_nil, Nat.sub_zero,
+    Mettapedia.OSLF.MeTTaIL.Substitution.liftBVars_zero]
+  rw [canonicalize_quote_drop declaration different]
+  exact Pattern.noConfusion
 
 /-- Negative rigid-leaf canary: the apex cannot identify distinct bound
 indices because neither restoration nor permutation changes a bound leaf. -/

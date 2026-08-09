@@ -25,6 +25,7 @@ open Mettapedia.Languages.Metamath.SourceGSLTRuntimeStateAgreement
 open Mettapedia.Languages.Metamath.SourceGSLTRuntimeCoEvolution
 open Mettapedia.Languages.Metamath.MMLean4Bridge
 open Mettapedia.Languages.Metamath.InferenceProjection
+open Mettapedia.Languages.Metamath.InferenceEncoding
 
 /-! ## `$c` and `$v` token transitions -/
 
@@ -33,13 +34,14 @@ call, at the reader-computed diagnostic position. -/
 theorem retainedCall_constSymbol
     {fileId : String} {call : TokenCall}
     {entry : LocatedToken × TokenCall} {db : DB} {name : LocatedName}
+    {seen : Bool}
     (significant : significantLocatedEntry? fileId call = some entry)
-    (before_eq : parserObservedState call.before = ⟨db, .const⟩)
+    (before_eq : parserObservedState call.before = ⟨db, .const seen⟩)
     (spelling : tokenText entry.1.bytes = name.name)
     (charset : NameCharset mathBytesValid name) :
     parserObservedState call.after =
       ⟨db.insert (call.before.mkPos call.origin.parserOffset) name.name
-          (fun label => .const label), .const⟩ := by
+          (fun label => .const label), .const true⟩ := by
   obtain ⟨bytes, valid, name_eq⟩ := charset
   have entryBytes : entry.1.bytes = bytes :=
     tokenText_injective (spelling.trans name_eq)
@@ -92,13 +94,14 @@ call, at the reader-computed diagnostic position. -/
 theorem retainedCall_varSymbol
     {fileId : String} {call : TokenCall}
     {entry : LocatedToken × TokenCall} {db : DB} {name : LocatedName}
+    {seen : Bool}
     (significant : significantLocatedEntry? fileId call = some entry)
-    (before_eq : parserObservedState call.before = ⟨db, .var⟩)
+    (before_eq : parserObservedState call.before = ⟨db, .var seen⟩)
     (spelling : tokenText entry.1.bytes = name.name)
     (charset : NameCharset mathBytesValid name) :
     parserObservedState call.after =
       ⟨db.insert (call.before.mkPos call.origin.parserOffset) name.name
-          (fun label => .var label), .var⟩ := by
+          (fun label => .var label), .var true⟩ := by
   obtain ⟨bytes, valid, name_eq⟩ := charset
   have entryBytes : entry.1.bytes = bytes :=
     tokenText_injective (spelling.trans name_eq)
@@ -152,7 +155,7 @@ theorem retainedCall_constTerminator
     {fileId : String} {call : TokenCall}
     {entry : LocatedToken × TokenCall} {db : DB}
     (significant : significantLocatedEntry? fileId call = some entry)
-    (before_eq : parserObservedState call.before = ⟨db, .const⟩)
+    (before_eq : parserObservedState call.before = ⟨db, .const true⟩)
     (spelling : tokenText entry.1.bytes = "$." ) :
     parserObservedState call.after = ⟨db, .start⟩ := by
   have entryBytes : entry.1.bytes = statementEndBytes :=
@@ -169,7 +172,7 @@ theorem retainedCall_constTerminator
   obtain ⟨beforeDb, beforeMode⟩ :=
     call_before_fields_of_observed significant before_eq
   rw [call.after_eq]
-  simp [ParserState.feedToken, ParserState.sym, beforeDb, beforeMode,
+  simp [ParserState.feedToken, beforeDb, beforeMode,
     notComment, notInclude, isEnd, parserObservedState,
     observedSemanticState, parserSemanticState, logicalTokenMode]
 
@@ -179,7 +182,7 @@ theorem retainedCall_varTerminator
     {fileId : String} {call : TokenCall}
     {entry : LocatedToken × TokenCall} {db : DB}
     (significant : significantLocatedEntry? fileId call = some entry)
-    (before_eq : parserObservedState call.before = ⟨db, .var⟩)
+    (before_eq : parserObservedState call.before = ⟨db, .var true⟩)
     (spelling : tokenText entry.1.bytes = "$." ) :
     parserObservedState call.after = ⟨db, .start⟩ := by
   have entryBytes : entry.1.bytes = statementEndBytes :=
@@ -196,7 +199,7 @@ theorem retainedCall_varTerminator
   obtain ⟨beforeDb, beforeMode⟩ :=
     call_before_fields_of_observed significant before_eq
   rw [call.after_eq]
-  simp [ParserState.feedToken, ParserState.sym, beforeDb, beforeMode,
+  simp [ParserState.feedToken, beforeDb, beforeMode,
     notComment, notInclude, isEnd, parserObservedState,
     observedSemanticState, parserSemanticState, logicalTokenMode]
 
@@ -207,20 +210,27 @@ payload, even though the production reader computes a distinct diagnostic
 position for each token. -/
 theorem SpelledCallTrace.constNames_final
     {fileId : String} {db : DB} {names : List LocatedName}
+    {seen : Bool}
     {entries : List (LocatedToken × TokenCall)}
     {final : ParserObservedState}
-    (trace : SpelledCallTrace fileId ⟨db, .const⟩
+    (trace : SpelledCallTrace fileId ⟨db, .const seen⟩
       (names.map LocatedName.name ++ ["$."]) entries final)
     (charsets : ∀ name ∈ names, NameCharset mathBytesValid name)
+    (seenOrNonempty : seen = true ∨ names ≠ [])
     (position : Pos) :
     final =
       ⟨names.map LocatedName.name |>.foldl
           (fun current name =>
             current.insert position name (fun label => .const label)) db,
         .start⟩ := by
-  induction names generalizing db entries final with
+  induction names generalizing db entries final seen with
   | nil =>
       simp only [List.map_nil, List.nil_append] at trace
+      have seenTrue : seen = true := by
+        rcases seenOrNonempty with seenTrue | nonempty
+        · exact seenTrue
+        · exact (nonempty rfl).elim
+      subst seen
       cases trace with
       | @cons _ _ texts tailEntries text entry spelling significant
           after_errorFree before_eq tail =>
@@ -258,8 +268,9 @@ theorem SpelledCallTrace.constNames_final
           have tailAtToken := tail.reindexInitial headFinal
           have tailAtPosition := tailAtToken.reindexInitial
             (congrArg (fun nextDb =>
-              (⟨nextDb, .const⟩ : ParserObservedState)) positionEq)
+              (⟨nextDb, .const true⟩ : ParserObservedState)) positionEq)
           have result := inductionHypothesis tailAtPosition restCharsets
+            (Or.inl rfl)
           simpa [List.foldl_cons] using result
 
 /-- A complete `$v` body executes the same database fold as the source
@@ -267,20 +278,27 @@ payload, with successful token positions erased only after the reader has
 validated each insertion. -/
 theorem SpelledCallTrace.varNames_final
     {fileId : String} {db : DB} {names : List LocatedName}
+    {seen : Bool}
     {entries : List (LocatedToken × TokenCall)}
     {final : ParserObservedState}
-    (trace : SpelledCallTrace fileId ⟨db, .var⟩
+    (trace : SpelledCallTrace fileId ⟨db, .var seen⟩
       (names.map LocatedName.name ++ ["$."]) entries final)
     (charsets : ∀ name ∈ names, NameCharset mathBytesValid name)
+    (seenOrNonempty : seen = true ∨ names ≠ [])
     (position : Pos) :
     final =
       ⟨names.map LocatedName.name |>.foldl
           (fun current name =>
             current.insert position name (fun label => .var label)) db,
         .start⟩ := by
-  induction names generalizing db entries final with
+  induction names generalizing db entries final seen with
   | nil =>
       simp only [List.map_nil, List.nil_append] at trace
+      have seenTrue : seen = true := by
+        rcases seenOrNonempty with seenTrue | nonempty
+        · exact seenTrue
+        · exact (nonempty rfl).elim
+      subst seen
       cases trace with
       | @cons _ _ texts tailEntries text entry spelling significant
           after_errorFree before_eq tail =>
@@ -318,8 +336,9 @@ theorem SpelledCallTrace.varNames_final
           have tailAtToken := tail.reindexInitial headFinal
           have tailAtPosition := tailAtToken.reindexInitial
             (congrArg (fun nextDb =>
-              (⟨nextDb, .var⟩ : ParserObservedState)) positionEq)
+              (⟨nextDb, .var true⟩ : ParserObservedState)) positionEq)
           have result := inductionHypothesis tailAtPosition restCharsets
+            (Or.inl rfl)
           simpa [List.foldl_cons] using result
 
 /-- A complete retained `$c` statement is exactly one source payload at a
@@ -330,7 +349,8 @@ theorem SpelledCallTrace.constStatement_final
     {final : ParserObservedState}
     (trace : SpelledCallTrace fileId ⟨db, .start⟩
       ("$c" :: names.map LocatedName.name ++ ["$."]) entries final)
-    (charsets : ∀ name ∈ names, NameCharset mathBytesValid name) :
+    (charsets : ∀ name ∈ names, NameCharset mathBytesValid name)
+    (namesNonempty : names ≠ []) :
     ∃ position : Pos,
       final =
         ⟨runtimeApplyPayload position
@@ -343,7 +363,8 @@ theorem SpelledCallTrace.constStatement_final
       have afterKeyword := retainedCall_constKeyword significant before_eq
         spelling
       have tail' := tail.reindexInitial afterKeyword
-      have finalEq := tail'.constNames_final charsets position
+      have finalEq := tail'.constNames_final charsets
+        (Or.inr namesNonempty) position
       exact ⟨position, by
         simpa [runtimeApplyPayload] using finalEq⟩
 
@@ -355,7 +376,8 @@ theorem SpelledCallTrace.varStatement_final
     {final : ParserObservedState}
     (trace : SpelledCallTrace fileId ⟨db, .start⟩
       ("$v" :: names.map LocatedName.name ++ ["$."]) entries final)
-    (charsets : ∀ name ∈ names, NameCharset mathBytesValid name) :
+    (charsets : ∀ name ∈ names, NameCharset mathBytesValid name)
+    (namesNonempty : names ≠ []) :
     ∃ position : Pos,
       final =
         ⟨runtimeApplyPayload position
@@ -368,7 +390,8 @@ theorem SpelledCallTrace.varStatement_final
       have afterKeyword := retainedCall_varKeyword significant before_eq
         spelling
       have tail' := tail.reindexInitial afterKeyword
-      have finalEq := tail'.varNames_final charsets position
+      have finalEq := tail'.varNames_final charsets
+        (Or.inr namesNonempty) position
       exact ⟨position, by
         simpa [runtimeApplyPayload] using finalEq⟩
 
@@ -379,6 +402,7 @@ the refinement relation to the same successor. -/
 theorem SourceParserPrefixAgrees.constDecl
     {fileId : String} {source next : SourceState}
     {site terminator : LocatedByteSpan} {names : List LocatedName}
+    {obligations : List TheoremObligation}
     {initial final : ParserObservedState}
     {entries : List (LocatedToken × TokenCall)}
     (agreement : SourceParserPrefixAgrees source initial)
@@ -386,11 +410,10 @@ theorem SourceParserPrefixAgrees.constDecl
       ("$c" :: names.map LocatedName.name ++ ["$."]) entries final)
     (charsets : ∀ name ∈ names, NameCharset mathBytesValid name)
     (applied : applyStatement source (.constDecl site names terminator) =
-      .ok (next, [])) :
+      .ok (next, obligations)) :
     SourceParserPrefixAgrees next final := by
   rcases initial with ⟨db, mode⟩
   cases agreement.mode_eq
-  obtain ⟨position, finalEq⟩ := trace.constStatement_final charsets
   cases payloadApplied : applyLocalPayload?
       (.declareConstants (names.map LocatedName.name)) source with
   | none =>
@@ -398,6 +421,14 @@ theorem SourceParserPrefixAgrees.constDecl
       exact nomatch applied
   | some after =>
       simp only [applyStatement, payloadApplied] at applied
+      have mappedNamesNonempty :=
+        declareConstants?_names_nonempty payloadApplied
+      have namesNonempty : names ≠ [] := by
+        intro namesEmpty
+        apply mappedNamesNonempty
+        simp [namesEmpty]
+      obtain ⟨position, finalEq⟩ :=
+        trace.constStatement_final charsets namesNonempty
       cases applied
       rw [finalEq]
       exact
@@ -415,6 +446,7 @@ the refinement relation to the same successor. -/
 theorem SourceParserPrefixAgrees.varDecl
     {fileId : String} {source next : SourceState}
     {site terminator : LocatedByteSpan} {names : List LocatedName}
+    {obligations : List TheoremObligation}
     {initial final : ParserObservedState}
     {entries : List (LocatedToken × TokenCall)}
     (agreement : SourceParserPrefixAgrees source initial)
@@ -422,11 +454,10 @@ theorem SourceParserPrefixAgrees.varDecl
       ("$v" :: names.map LocatedName.name ++ ["$."]) entries final)
     (charsets : ∀ name ∈ names, NameCharset mathBytesValid name)
     (applied : applyStatement source (.varDecl site names terminator) =
-      .ok (next, [])) :
+      .ok (next, obligations)) :
     SourceParserPrefixAgrees next final := by
   rcases initial with ⟨db, mode⟩
   cases agreement.mode_eq
-  obtain ⟨position, finalEq⟩ := trace.varStatement_final charsets
   cases payloadApplied : applyLocalPayload?
       (.declareVariables (names.map LocatedName.name)) source with
   | none =>
@@ -434,6 +465,14 @@ theorem SourceParserPrefixAgrees.varDecl
       exact nomatch applied
   | some after =>
       simp only [applyStatement, payloadApplied] at applied
+      have mappedNamesNonempty :=
+        declareVariables?_names_nonempty payloadApplied
+      have namesNonempty : names ≠ [] := by
+        intro namesEmpty
+        apply mappedNamesNonempty
+        simp [namesEmpty]
+      obtain ⟨position, finalEq⟩ :=
+        trace.varStatement_final charsets namesNonempty
       cases applied
       rw [finalEq]
       exact
@@ -806,6 +845,7 @@ advance the refinement relation to the same successor database. -/
 theorem SourceParserPrefixAgrees.djDecl
     {fileId : String} {source next : SourceState}
     {site terminator : LocatedByteSpan} {names : List LocatedName}
+    {obligations : List TheoremObligation}
     {initial final : ParserObservedState}
     {entries : List (LocatedToken × TokenCall)}
     (agreement : SourceParserPrefixAgrees source initial)
@@ -813,7 +853,7 @@ theorem SourceParserPrefixAgrees.djDecl
       ("$d" :: names.map LocatedName.name ++ ["$."]) entries final)
     (charsets : ∀ name ∈ names, NameCharset mathBytesValid name)
     (applied : applyStatement source (.djDecl site names terminator) =
-      .ok (next, [])) :
+      .ok (next, obligations)) :
     SourceParserPrefixAgrees next final := by
   rcases initial with ⟨db, mode⟩
   cases agreement.mode_eq
@@ -860,8 +900,12 @@ theorem tagBody_typecode_cons
     simpa [List.contains_iff_mem] using formulaDeclared.1
   have typecodeNotVariable :=
     declaredConstant_not_variable_of_sourceStateValid valid typecodeConstant
-  simp [tagBody, tagSymbol, List.contains_iff_mem, typecodeConstant,
-    typecodeNotVariable, taggedBody]
+  have typecodeNotActive : typecode.name ∉ state.activeVariables := by
+    intro active
+    exact typecodeNotVariable
+      (activeVariable_declared_of_sourceStateValid valid active)
+  simp [tagBody, tagSymbol, typecodeNotActive, typecodeConstant,
+    taggedBody]
 
 /-- A one-token `$f` chronology enters floating-hypothesis formula
 collection. -/
@@ -926,8 +970,24 @@ theorem parserObservedState_feedTokens_float
     formula position label success
   have database := Metamath.ParserOps.feedTokens_float_db state formula
     position label first shape success
-  have mode := Metamath.ParserOps.feedTokens_nonthm_success_tokp_start state
-    formula .float position label (by intro equality; cases equality) success
+  have head := Metamath.ParserOps.feedTokens_success_hasConstHead state
+    formula ⟨.float, position, label⟩ success
+  have shapeBool : Formula.isFloatShape formula = true := by
+    by_cases shapeValue : Formula.isFloatShape formula
+    · exact shapeValue
+    · have bad :
+          (state.feedTokens formula
+            ⟨.float, position, label⟩).db.error? ≠ none := by
+          simpa [ParserState.feedTokens, head, shapeValue] using
+            Metamath.ParserLoopInduction.withAt_preserves_error label _
+              (Metamath.ParserLoopInduction.ParserState_mkErrorFromEvidence_sets_error
+                state position
+                  (.scopeDecl .expectedConstantAndVariable))
+      exact (bad success).elim
+  have mode :
+      (state.feedTokens formula
+        ⟨.float, position, label⟩).tokp = .start := by
+    simp [ParserState.feedTokens, head, shapeBool, ParserState.withAt_tokp]
   change
     (⟨(state.feedTokens formula ⟨.float, position, label⟩).db,
       logicalTokenMode
@@ -950,8 +1010,25 @@ theorem parserObservedState_feedTokens_essential
     formula ⟨.ess, position, label⟩ success
   have database := Metamath.ParserOps.feedTokens_ess_db state formula
     position label first success
-  have mode := Metamath.ParserOps.feedTokens_nonthm_success_tokp_start state
-    formula .ess position label (by intro equality; cases equality) success
+  have head := Metamath.ParserOps.feedTokens_success_hasConstHead state
+    formula ⟨.ess, position, label⟩ success
+  have gate : ParserState.topLevelEssViolation? state.db = none := by
+    cases gateValue : ParserState.topLevelEssViolation? state.db with
+    | none => rfl
+    | some error =>
+        have bad :
+            (state.feedTokens formula
+              ⟨.ess, position, label⟩).db.error? ≠ none := by
+          simpa [ParserState.feedTokens, head, gateValue] using
+            Metamath.ParserLoopInduction.withAt_preserves_error label _
+              (Metamath.ParserLoopInduction.ParserState_mkErrorFromEvidence_sets_error
+                state position
+                  (.scopeDecl error))
+        exact (bad success).elim
+  have mode :
+      (state.feedTokens formula
+        ⟨.ess, position, label⟩).tokp = .start := by
+    simp [ParserState.feedTokens, head, gate, ParserState.withAt_tokp]
   change
     (⟨(state.feedTokens formula ⟨.ess, position, label⟩).db,
       logicalTokenMode
@@ -974,8 +1051,12 @@ theorem parserObservedState_feedTokens_axiom
     formula ⟨.ax, position, label⟩ success
   have database := Metamath.ParserOps.feedTokens_ax_db state formula
     position label first success
-  have mode := Metamath.ParserOps.feedTokens_nonthm_success_tokp_start state
-    formula .ax position label (by intro equality; cases equality) success
+  have head := Metamath.ParserOps.feedTokens_success_hasConstHead state
+    formula ⟨.ax, position, label⟩ success
+  have mode :
+      (state.feedTokens formula
+        ⟨.ax, position, label⟩).tokp = .start := by
+    simp [ParserState.feedTokens, head, ParserState.withAt_tokp]
   change
     (⟨(state.feedTokens formula ⟨.ax, position, label⟩).db,
       logicalTokenMode
@@ -1104,6 +1185,467 @@ theorem retainedCall_axiomTerminator
     call_before_fields_of_observed significant before_eq
   rw [beforeDb] at feedFinal
   exact dispatched.trans feedFinal
+
+/-- A one-token floating-hypothesis terminator chronology performs the
+shipped insertion and returns to a statement boundary. -/
+theorem SpelledCallTrace.floatTerminator_final
+    {fileId : String} {db : DB} {formula : RuntimeFormula}
+    {label : String} {labelPos : Pos}
+    {entries : List (LocatedToken × TokenCall)}
+    {final : ParserObservedState}
+    (trace : SpelledCallTrace fileId
+      ⟨db, .math formula ⟨.float, labelPos, label⟩⟩
+      ["$."] entries final) :
+    final = ⟨db.insertHyp labelPos label false formula, .start⟩ := by
+  cases trace with
+  | @cons _ _ texts tailEntries text entry spelling significant
+      after_errorFree before_eq tail =>
+      cases tail with
+      | nil state =>
+          exact retainedCall_floatTerminator significant before_eq spelling
+            after_errorFree
+
+/-- A one-token essential-hypothesis terminator chronology performs the
+shipped insertion and returns to a statement boundary. -/
+theorem SpelledCallTrace.essentialTerminator_final
+    {fileId : String} {db : DB} {formula : RuntimeFormula}
+    {label : String} {labelPos : Pos}
+    {entries : List (LocatedToken × TokenCall)}
+    {final : ParserObservedState}
+    (trace : SpelledCallTrace fileId
+      ⟨db, .math formula ⟨.ess, labelPos, label⟩⟩
+      ["$."] entries final) :
+    final = ⟨db.insertHyp labelPos label true formula, .start⟩ := by
+  cases trace with
+  | @cons _ _ texts tailEntries text entry spelling significant
+      after_errorFree before_eq tail =>
+      cases tail with
+      | nil state =>
+          exact retainedCall_essentialTerminator significant before_eq spelling
+            after_errorFree
+
+/-- A one-token axiom terminator chronology performs the shipped insertion
+and returns to a statement boundary. -/
+theorem SpelledCallTrace.axiomTerminator_final
+    {fileId : String} {db : DB} {formula : RuntimeFormula}
+    {label : String} {labelPos : Pos}
+    {entries : List (LocatedToken × TokenCall)}
+    {final : ParserObservedState}
+    (trace : SpelledCallTrace fileId
+      ⟨db, .math formula ⟨.ax, labelPos, label⟩⟩
+      ["$."] entries final) :
+    final = ⟨db.insertAxiom labelPos label formula, .start⟩ := by
+  cases trace with
+  | @cons _ _ texts tailEntries text entry spelling significant
+      after_errorFree before_eq tail =>
+      cases tail with
+      | nil state =>
+          exact retainedCall_axiomTerminator significant before_eq spelling
+            after_errorFree
+
+/-! ## Complete `$f`, `$e`, and `$a` statement transitions -/
+
+/-- A complete retained `$f` statement is exactly the source floating
+declaration payload at the reader-computed label position. -/
+theorem SpelledCallTrace.floatingStatement_final
+    {fileId : String} {db : DB} {source next : SourceState}
+    {label typecode variableName : LocatedName}
+    {entries : List (LocatedToken × TokenCall)}
+    {final : ParserObservedState}
+    (trace : SpelledCallTrace fileId ⟨db, .start⟩
+      (label.name :: "$f" ::
+        [typecode.name, variableName.name] ++ ["$."])
+      entries final)
+    (agreement : RuntimeDBAgrees db source)
+    (labelCharset : NameCharset labelBytesValid label)
+    (typecodeCharset : NameCharset mathBytesValid typecode)
+    (variableCharset : NameCharset mathBytesValid variableName)
+    (declared : declareFloating? source label.name typecode.name
+      variableName.name = some next) :
+    ∃ position : Pos,
+      final =
+        ⟨runtimeApplyPayload position
+            (.declareFloating label.name typecode.name variableName.name) db,
+          .start⟩ := by
+  let formulaNames : List LocatedName := [typecode, variableName]
+  obtain ⟨typecodeConstant, typecodeNotVariable, variableDeclared⟩ :=
+    declareFloating?_symbols_declared declared
+  have sourceValid := (declareFloating?_inv declared).1
+  have typecodeNotActive : typecode.name ∉ source.activeVariables := by
+    intro active
+    exact typecodeNotVariable
+      (activeVariable_declared_of_sourceStateValid sourceValid active)
+  have variableActive := declareFloating?_variable_active declared
+  have taggedFormula : tagBody source formulaNames =
+      .ok [.const typecode.name, .var variableName.name] := by
+    simp [formulaNames, tagBody, tagSymbol, typecodeConstant,
+      typecodeNotActive, variableActive]
+  obtain ⟨afterLabel, labelTrace, afterLabelTrace⟩ := trace.splitAt 1
+  have labelTrace' : SpelledCallTrace fileId ⟨db, .start⟩
+      [label.name] (entries.take 1) afterLabel := by
+    simpa [formulaNames] using labelTrace
+  obtain ⟨labelPos, afterLabel_eq⟩ :=
+    labelTrace'.startLabel_final labelCharset
+  have afterLabelTrace' := afterLabelTrace.reindexInitial afterLabel_eq
+  obtain ⟨afterKeyword, keywordTrace, afterKeywordTrace⟩ :=
+    afterLabelTrace'.splitAt 1
+  have keywordTrace' : SpelledCallTrace fileId
+      ⟨db, .label labelPos label.name⟩ ["$f"]
+      ((entries.drop 1).take 1) afterKeyword := by
+    simpa [formulaNames] using keywordTrace
+  have afterKeyword_eq := keywordTrace'.floatKeyword_final
+  have afterKeywordTrace' :=
+    afterKeywordTrace.reindexInitial afterKeyword_eq
+  obtain ⟨afterFormula, formulaTrace, terminatorTrace⟩ :=
+    afterKeywordTrace'.splitAt formulaNames.length
+  have formulaTrace' : SpelledCallTrace fileId
+      ⟨db, .math #[] ⟨.float, labelPos, label.name⟩⟩
+      (formulaNames.map LocatedName.name)
+      (((entries.drop 1).drop 1).take formulaNames.length)
+      afterFormula := by
+    simpa [formulaNames] using formulaTrace
+  have formulaCharsets :
+      ∀ name ∈ formulaNames, NameCharset mathBytesValid name := by
+    intro name member
+    rcases List.mem_cons.mp member with rfl | member
+    · exact typecodeCharset
+    · have equality := List.mem_singleton.mp member
+      subst name
+      exact variableCharset
+  have afterFormula_eq := formulaTrace'.mathSymbols_final agreement
+    (declareFloating?_inv declared).1 formulaCharsets taggedFormula
+  have afterFormula_eq' : afterFormula =
+      ⟨db, .math
+        ((⟨typecode.name, [.var variableName.name]⟩ :
+          ConstantHeadedFormula).toRuntime)
+        ⟨.float, labelPos, label.name⟩⟩ := by
+    simpa [formulaNames, ConstantHeadedFormula.toRuntime] using
+      afterFormula_eq
+  have terminatorTrace' := terminatorTrace.reindexInitial afterFormula_eq'
+  have terminatorTrace'' : SpelledCallTrace fileId
+      ⟨db, .math
+        ((⟨typecode.name, [.var variableName.name]⟩ :
+          ConstantHeadedFormula).toRuntime)
+        ⟨.float, labelPos, label.name⟩⟩
+      ["$."]
+      (((entries.drop 1).drop 1).drop formulaNames.length) final := by
+    simpa [formulaNames] using terminatorTrace'
+  exact ⟨labelPos, by
+    simpa [runtimeApplyPayload] using
+      terminatorTrace''.floatTerminator_final⟩
+
+/-- A complete retained `$e` statement is exactly the source essential
+declaration payload at the reader-computed label position. -/
+theorem SpelledCallTrace.essentialStatement_final
+    {fileId : String} {db : DB} {source next : SourceState}
+    {label typecode : LocatedName} {body : List LocatedName}
+    {bodySymbols : List Sym}
+    {entries : List (LocatedToken × TokenCall)}
+    {final : ParserObservedState}
+    (trace : SpelledCallTrace fileId ⟨db, .start⟩
+      (label.name :: "$e" ::
+        (typecode :: body).map LocatedName.name ++ ["$."])
+      entries final)
+    (agreement : RuntimeDBAgrees db source)
+    (labelCharset : NameCharset labelBytesValid label)
+    (typecodeCharset : NameCharset mathBytesValid typecode)
+    (bodyCharsets :
+      ∀ name ∈ body, NameCharset mathBytesValid name)
+    (taggedBody : tagBody source body = .ok bodySymbols)
+    (declared : declareEssential? source label.name
+      ⟨typecode.name, bodySymbols⟩ = some next) :
+    ∃ position : Pos,
+      final =
+        ⟨runtimeApplyPayload position
+            (.declareEssential label.name ⟨typecode.name, bodySymbols⟩) db,
+          .start⟩ := by
+  let formulaNames : List LocatedName := typecode :: body
+  have taggedFormula : tagBody source formulaNames =
+      .ok (.const typecode.name :: bodySymbols) :=
+    tagBody_typecode_cons (declareEssential?_inv declared).1
+      (declareEssential?_formula_declared declared) taggedBody
+  obtain ⟨afterLabel, labelTrace, afterLabelTrace⟩ := trace.splitAt 1
+  have labelTrace' : SpelledCallTrace fileId ⟨db, .start⟩
+      [label.name] (entries.take 1) afterLabel := by
+    simpa [formulaNames] using labelTrace
+  obtain ⟨labelPos, afterLabel_eq⟩ :=
+    labelTrace'.startLabel_final labelCharset
+  have afterLabelTrace' := afterLabelTrace.reindexInitial afterLabel_eq
+  obtain ⟨afterKeyword, keywordTrace, afterKeywordTrace⟩ :=
+    afterLabelTrace'.splitAt 1
+  have keywordTrace' : SpelledCallTrace fileId
+      ⟨db, .label labelPos label.name⟩ ["$e"]
+      ((entries.drop 1).take 1) afterKeyword := by
+    simpa [formulaNames] using keywordTrace
+  have afterKeyword_eq := keywordTrace'.essentialKeyword_final
+  have afterKeywordTrace' :=
+    afterKeywordTrace.reindexInitial afterKeyword_eq
+  obtain ⟨afterFormula, formulaTrace, terminatorTrace⟩ :=
+    afterKeywordTrace'.splitAt formulaNames.length
+  have formulaTrace' : SpelledCallTrace fileId
+      ⟨db, .math #[] ⟨.ess, labelPos, label.name⟩⟩
+      (formulaNames.map LocatedName.name)
+      (((entries.drop 1).drop 1).take formulaNames.length)
+      afterFormula := by
+    simpa [formulaNames] using formulaTrace
+  have formulaCharsets :
+      ∀ name ∈ formulaNames, NameCharset mathBytesValid name := by
+    intro name member
+    rcases List.mem_cons.mp member with rfl | member
+    · exact typecodeCharset
+    · exact bodyCharsets name member
+  have afterFormula_eq := formulaTrace'.mathSymbols_final agreement
+    (declareEssential?_inv declared).1 formulaCharsets taggedFormula
+  have afterFormula_eq' : afterFormula =
+      ⟨db, .math
+        ((⟨typecode.name, bodySymbols⟩ : ConstantHeadedFormula).toRuntime)
+        ⟨.ess, labelPos, label.name⟩⟩ := by
+    simpa [formulaNames, ConstantHeadedFormula.toRuntime] using
+      afterFormula_eq
+  have terminatorTrace' := terminatorTrace.reindexInitial afterFormula_eq'
+  have terminatorTrace'' : SpelledCallTrace fileId
+      ⟨db, .math
+        ((⟨typecode.name, bodySymbols⟩ : ConstantHeadedFormula).toRuntime)
+        ⟨.ess, labelPos, label.name⟩⟩
+      ["$."]
+      (((entries.drop 1).drop 1).drop formulaNames.length) final := by
+    simpa [formulaNames] using terminatorTrace'
+  exact ⟨labelPos, by
+    simpa [runtimeApplyPayload] using
+      terminatorTrace''.essentialTerminator_final⟩
+
+/-- A complete retained `$a` statement is exactly the source axiom payload at
+the reader-computed label position. -/
+theorem SpelledCallTrace.axiomaticStatement_final
+    {fileId : String} {db : DB} {source next : SourceState}
+    {label typecode : LocatedName} {body : List LocatedName}
+    {bodySymbols : List Sym}
+    {entries : List (LocatedToken × TokenCall)}
+    {final : ParserObservedState}
+    (trace : SpelledCallTrace fileId ⟨db, .start⟩
+      (label.name :: "$a" ::
+        (typecode :: body).map LocatedName.name ++ ["$."])
+      entries final)
+    (agreement : RuntimeDBAgrees db source)
+    (labelCharset : NameCharset labelBytesValid label)
+    (typecodeCharset : NameCharset mathBytesValid typecode)
+    (bodyCharsets :
+      ∀ name ∈ body, NameCharset mathBytesValid name)
+    (taggedBody : tagBody source body = .ok bodySymbols)
+    (declared : declareAxiom? source label.name
+      ⟨typecode.name, bodySymbols⟩ = some next) :
+    ∃ position : Pos,
+      final =
+        ⟨runtimeApplyPayload position
+            (.declareAxiom label.name ⟨typecode.name, bodySymbols⟩) db,
+          .start⟩ := by
+  let formulaNames : List LocatedName := typecode :: body
+  have inserted : insertAssertion? source label.name
+      ⟨typecode.name, bodySymbols⟩ = some next := declared
+  have taggedFormula : tagBody source formulaNames =
+      .ok (.const typecode.name :: bodySymbols) :=
+    tagBody_typecode_cons (insertAssertion?_valid_before inserted)
+      (insertAssertion?_formula_declared inserted) taggedBody
+  obtain ⟨afterLabel, labelTrace, afterLabelTrace⟩ := trace.splitAt 1
+  have labelTrace' : SpelledCallTrace fileId ⟨db, .start⟩
+      [label.name] (entries.take 1) afterLabel := by
+    simpa [formulaNames] using labelTrace
+  obtain ⟨labelPos, afterLabel_eq⟩ :=
+    labelTrace'.startLabel_final labelCharset
+  have afterLabelTrace' := afterLabelTrace.reindexInitial afterLabel_eq
+  obtain ⟨afterKeyword, keywordTrace, afterKeywordTrace⟩ :=
+    afterLabelTrace'.splitAt 1
+  have keywordTrace' : SpelledCallTrace fileId
+      ⟨db, .label labelPos label.name⟩ ["$a"]
+      ((entries.drop 1).take 1) afterKeyword := by
+    simpa [formulaNames] using keywordTrace
+  have afterKeyword_eq := keywordTrace'.axiomKeyword_final
+  have afterKeywordTrace' :=
+    afterKeywordTrace.reindexInitial afterKeyword_eq
+  obtain ⟨afterFormula, formulaTrace, terminatorTrace⟩ :=
+    afterKeywordTrace'.splitAt formulaNames.length
+  have formulaTrace' : SpelledCallTrace fileId
+      ⟨db, .math #[] ⟨.ax, labelPos, label.name⟩⟩
+      (formulaNames.map LocatedName.name)
+      (((entries.drop 1).drop 1).take formulaNames.length)
+      afterFormula := by
+    simpa [formulaNames] using formulaTrace
+  have formulaCharsets :
+      ∀ name ∈ formulaNames, NameCharset mathBytesValid name := by
+    intro name member
+    rcases List.mem_cons.mp member with rfl | member
+    · exact typecodeCharset
+    · exact bodyCharsets name member
+  have afterFormula_eq := formulaTrace'.mathSymbols_final agreement
+    (insertAssertion?_valid_before inserted) formulaCharsets taggedFormula
+  have afterFormula_eq' : afterFormula =
+      ⟨db, .math
+        ((⟨typecode.name, bodySymbols⟩ : ConstantHeadedFormula).toRuntime)
+        ⟨.ax, labelPos, label.name⟩⟩ := by
+    simpa [formulaNames, ConstantHeadedFormula.toRuntime] using
+      afterFormula_eq
+  have terminatorTrace' := terminatorTrace.reindexInitial afterFormula_eq'
+  have terminatorTrace'' : SpelledCallTrace fileId
+      ⟨db, .math
+        ((⟨typecode.name, bodySymbols⟩ : ConstantHeadedFormula).toRuntime)
+        ⟨.ax, labelPos, label.name⟩⟩
+      ["$."]
+      (((entries.drop 1).drop 1).drop formulaNames.length) final := by
+    simpa [formulaNames] using terminatorTrace'
+  exact ⟨labelPos, by
+    simpa [runtimeApplyPayload] using
+      terminatorTrace''.axiomTerminator_final⟩
+
+/-- An accepted source `$f` statement and its exact reader call group advance
+the refinement relation to the same successor. -/
+theorem SourceParserPrefixAgrees.floating
+    {fileId : String} {source next : SourceState}
+    {site terminator : LocatedByteSpan}
+    {label typecode variableName : LocatedName}
+    {obligations : List TheoremObligation}
+    {initial final : ParserObservedState}
+    {entries : List (LocatedToken × TokenCall)}
+    (agreement : SourceParserPrefixAgrees source initial)
+    (trace : SpelledCallTrace fileId initial
+      (label.name :: "$f" ::
+        [typecode.name, variableName.name] ++ ["$."])
+      entries final)
+    (labelCharset : NameCharset labelBytesValid label)
+    (typecodeCharset : NameCharset mathBytesValid typecode)
+    (variableCharset : NameCharset mathBytesValid variableName)
+    (applied : applyStatement source
+      (.floating site label typecode variableName terminator) =
+        .ok (next, obligations)) :
+    SourceParserPrefixAgrees next final := by
+  rcases initial with ⟨db, mode⟩
+  cases agreement.mode_eq
+  cases payloadApplied : applyLocalPayload?
+      (.declareFloating label.name typecode.name variableName.name) source with
+  | none =>
+      simp only [applyStatement, payloadApplied] at applied
+      exact nomatch applied
+  | some after =>
+      simp only [applyStatement, payloadApplied] at applied
+      cases applied
+      obtain ⟨position, finalEq⟩ :=
+        trace.floatingStatement_final agreement.database labelCharset
+          typecodeCharset variableCharset payloadApplied
+      rw [finalEq]
+      exact
+        { mode_eq := rfl
+          database :=
+            SourceGSLTRuntimeCoEvolution.RuntimeDBAgrees.applyPayload
+              agreement.database payloadApplied agreement.interrupt_eq position
+          interrupt_eq :=
+            (runtimeApplyPayload_interrupt position
+              (.declareFloating label.name typecode.name variableName.name)
+              db).trans agreement.interrupt_eq }
+
+/-- An accepted source `$e` statement and its exact reader call group advance
+the refinement relation to the same successor. -/
+theorem SourceParserPrefixAgrees.essential
+    {fileId : String} {source next : SourceState}
+    {site terminator : LocatedByteSpan}
+    {label typecode : LocatedName} {body : List LocatedName}
+    {obligations : List TheoremObligation}
+    {initial final : ParserObservedState}
+    {entries : List (LocatedToken × TokenCall)}
+    (agreement : SourceParserPrefixAgrees source initial)
+    (trace : SpelledCallTrace fileId initial
+      (label.name :: "$e" ::
+        (typecode :: body).map LocatedName.name ++ ["$."])
+      entries final)
+    (labelCharset : NameCharset labelBytesValid label)
+    (typecodeCharset : NameCharset mathBytesValid typecode)
+    (bodyCharsets :
+      ∀ name ∈ body, NameCharset mathBytesValid name)
+    (applied : applyStatement source
+      (.essential site label typecode body terminator) =
+        .ok (next, obligations)) :
+    SourceParserPrefixAgrees next final := by
+  rcases initial with ⟨db, mode⟩
+  cases agreement.mode_eq
+  cases bodyTagged : tagBody source body with
+  | rejected rejection =>
+      simp only [applyStatement, bodyTagged] at applied
+      exact nomatch applied
+  | ok bodySymbols =>
+      cases payloadApplied : applyLocalPayload?
+          (.declareEssential label.name ⟨typecode.name, bodySymbols⟩)
+          source with
+      | none =>
+          simp only [applyStatement, bodyTagged, payloadApplied] at applied
+          exact nomatch applied
+      | some after =>
+          simp only [applyStatement, bodyTagged, payloadApplied] at applied
+          cases applied
+          obtain ⟨position, finalEq⟩ :=
+            trace.essentialStatement_final agreement.database labelCharset
+              typecodeCharset bodyCharsets bodyTagged payloadApplied
+          rw [finalEq]
+          exact
+            { mode_eq := rfl
+              database :=
+                SourceGSLTRuntimeCoEvolution.RuntimeDBAgrees.applyPayload
+                  agreement.database payloadApplied agreement.interrupt_eq
+                    position
+              interrupt_eq :=
+                (runtimeApplyPayload_interrupt position
+                  (.declareEssential label.name
+                    ⟨typecode.name, bodySymbols⟩) db).trans
+                    agreement.interrupt_eq }
+
+/-- An accepted source `$a` statement and its exact reader call group advance
+the refinement relation to the same successor. -/
+theorem SourceParserPrefixAgrees.axiomatic
+    {fileId : String} {source next : SourceState}
+    {site terminator : LocatedByteSpan}
+    {label typecode : LocatedName} {body : List LocatedName}
+    {obligations : List TheoremObligation}
+    {initial final : ParserObservedState}
+    {entries : List (LocatedToken × TokenCall)}
+    (agreement : SourceParserPrefixAgrees source initial)
+    (trace : SpelledCallTrace fileId initial
+      (label.name :: "$a" ::
+        (typecode :: body).map LocatedName.name ++ ["$."])
+      entries final)
+    (labelCharset : NameCharset labelBytesValid label)
+    (typecodeCharset : NameCharset mathBytesValid typecode)
+    (bodyCharsets :
+      ∀ name ∈ body, NameCharset mathBytesValid name)
+    (applied : applyStatement source
+      (.axiomatic site label typecode body terminator) =
+        .ok (next, obligations)) :
+    SourceParserPrefixAgrees next final := by
+  rcases initial with ⟨db, mode⟩
+  cases agreement.mode_eq
+  cases bodyTagged : tagBody source body with
+  | rejected rejection =>
+      simp only [applyStatement, bodyTagged] at applied
+      exact nomatch applied
+  | ok bodySymbols =>
+      cases payloadApplied : applyLocalPayload?
+          (.declareAxiom label.name ⟨typecode.name, bodySymbols⟩) source with
+      | none =>
+          simp only [applyStatement, bodyTagged, payloadApplied] at applied
+          exact nomatch applied
+      | some after =>
+          simp only [applyStatement, bodyTagged, payloadApplied] at applied
+          cases applied
+          obtain ⟨position, finalEq⟩ :=
+            trace.axiomaticStatement_final agreement.database labelCharset
+              typecodeCharset bodyCharsets bodyTagged payloadApplied
+          rw [finalEq]
+          exact
+            { mode_eq := rfl
+              database :=
+                SourceGSLTRuntimeCoEvolution.RuntimeDBAgrees.applyPayload
+                  agreement.database payloadApplied agreement.interrupt_eq
+                    position
+              interrupt_eq :=
+                (runtimeApplyPayload_interrupt position
+                  (.declareAxiom label.name ⟨typecode.name, bodySymbols⟩)
+                    db).trans agreement.interrupt_eq }
 
 /-! ## Executable integration canaries -/
 

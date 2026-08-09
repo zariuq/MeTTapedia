@@ -1,5 +1,5 @@
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostCanonicalLaws
-import Mettapedia.GSLT.LanguageDef.EquationOccurrence
+import Mettapedia.GSLT.LanguageDef.ReflectiveEquationOccurrence
 
 /-!
 # A cross-boundary ordering canary for compact rho Cost normalization
@@ -17,6 +17,7 @@ must not infer inequality from a raw or ill-typed mixed-colour term.
 namespace Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostGeneratorInvariantCounterexample
 
 open Mettapedia.GSLT.LanguageDef
+open Mettapedia.GSLT.LanguageDef.ReflectionExtension
 open Mettapedia.GSLT.LanguageDef.WellSorted
 open Mettapedia.GSLT.LanguageDef.StructuralMorphism
 open Mettapedia.OSLF.Framework.ConstructorCategory
@@ -182,20 +183,31 @@ theorem rhoCutOrderRight_typed :
 def rhoCutOrderWrappedProcSort : LangSort rhoCIGSLT.costWholeLanguage :=
   CostStaticColor.wrapped.mapLangSort rhoCIGSLT rhoProc
 
-def rhoCutOrderLeft : OpenTerm rhoCIGSLT.costWholeLanguage rhoCutOrderFree []
-    rhoCutOrderWrappedProcSort := by
-  exact ⟨rhoCutOrderLeftPattern, rhoCutOrderLeft_typed, rfl, rfl, by
-    intro declaration membership
+def rhoCutOrderLeft : ReflectiveWellSorted.OpenTerm
+    rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
+    rhoCutOrderFree [] rhoCutOrderWrappedProcSort := by
+  refine ⟨rhoCutOrderLeftPattern,
+    ⟨rhoCutOrderLeft_typed, rfl, rfl, ?_⟩, ?_⟩
+  · simp [ScopeSafeAt, rhoCutOrderLeftPattern, rhoCutOrderParallel,
+      rhoCutOrderWrappedDrop, rhoCutOrderRedex, rhoCutOrderBaseQuote,
+      rhoCutOrderBaseDrop, Pattern.isWellScopedAt,
+      Pattern.isWellScopedListAt]
+  · intro declaration membership
     simp [rhoCutOrderLeftPattern, rhoCutOrderParallel,
       rhoCutOrderWrappedDrop, rhoCutOrderRedex, rhoCutOrderBaseQuote,
-      rhoCutOrderBaseDrop, binderSafeAt, binderSafeListAt]⟩
+      rhoCutOrderBaseDrop, binderSafeAt, binderSafeListAt]
 
-def rhoCutOrderRight : OpenTerm rhoCIGSLT.costWholeLanguage rhoCutOrderFree []
-    rhoCutOrderWrappedProcSort := by
-  exact ⟨rhoCutOrderRightPattern, rhoCutOrderRight_typed, rfl, rfl, by
-    intro declaration membership
+def rhoCutOrderRight : ReflectiveWellSorted.OpenTerm
+    rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
+    rhoCutOrderFree [] rhoCutOrderWrappedProcSort := by
+  refine ⟨rhoCutOrderRightPattern,
+    ⟨rhoCutOrderRight_typed, rfl, rfl, ?_⟩, ?_⟩
+  · simp [ScopeSafeAt, rhoCutOrderRightPattern, rhoCutOrderParallel,
+      rhoCutOrderWrappedDrop, Pattern.isWellScopedAt,
+      Pattern.isWellScopedListAt]
+  · intro declaration membership
     simp [rhoCutOrderRightPattern, rhoCutOrderParallel,
-      rhoCutOrderWrappedDrop, binderSafeAt, binderSafeListAt]⟩
+      rhoCutOrderWrappedDrop, binderSafeAt, binderSafeListAt]
 
 /-- The structural context placing the base Quote/Drop edge beneath a wrapped
 Drop and beside a second wrapped process. -/
@@ -208,17 +220,20 @@ def rhoCutOrderContext : OneHoleContext :=
 The generated declaration, redex context, and representative equality remain
 available as data before support erasure. -/
 def rhoCutOrderGeneratorWitness :
-    EquationSemantics.AuthoredGeneratorWitness defaultBasePremises
+    ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness
+      rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
       rhoCIGSLT.costWholeLanguage rhoCutOrderLeft.1 rhoCutOrderRight.1 := by
   let declaration := costStaticReflectivePresentationDecl rhoCIGSLT .base
     rhoReflectivePresentation.toReflectivePresentationDecl
   have membership : declaration ∈
-      rhoCIGSLT.costWholeLanguage.reflectivePresentations := by
+      rhoCIGSLT.costWholeReflectionProfile.presentations := by
     simpa [declaration] using
       costStaticReflectivePresentationDecl_mem rhoCIGSLT .base
         rhoReflectivePresentation.toReflectivePresentationDecl
-        (by simp [rhoCIGSLT, rhoIGSLT, rhoInteractivePresentation,
-          rhoValidatedLanguageDef, rhoCalc])
+        (by
+          change rhoReflectivePresentation.toReflectivePresentationDecl ∈
+            rhoReflectionProfile.presentations
+          simp [rhoReflectionProfile])
   have representatives :
       Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize declaration
           rhoCutOrderRedex =
@@ -229,7 +244,7 @@ def rhoCutOrderGeneratorWitness :
       Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize,
       Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeList,
       Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.finishNormalizeReflectiveApply,
-      Mettapedia.GSLT.LanguageDef.mapReflectivePresentation,
+      mapReflectivePresentation,
       rhoReflectivePresentation,
       CostStaticColor.constructorTag,
       costBaseConstructorName, costBaseConstructorTag]
@@ -237,15 +252,17 @@ def rhoCutOrderGeneratorWitness :
     rhoCutOrderLeftPattern, rhoCutOrderRightPattern,
     rhoCutOrderParallel, rhoCutOrderWrappedDrop,
     OneHoleContext.fill] using
-      (EquationSemantics.AuthoredGeneratorWitness.reflective
+      (ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness.reflective
         rhoCutOrderContext ⟨declaration, membership⟩ representatives)
 
 /-- The two checked endpoints are joined by one generated reflective edge in
 their exact open typing fibre. -/
 theorem rhoCutOrder_generator :
-    openEquationGenerator rhoCIGSLT.costIGSLT
-      rhoCutOrderFree [] rhoCutOrderWrappedProcSort
-      rhoCutOrderLeft rhoCutOrderRight := by
+    ReflectiveEquationSemantics.reflectiveOpenPatternEquationGenerator
+      rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
+      rhoCIGSLT.costWholeLanguage rhoCutOrderFree []
+      (.base rhoCutOrderWrappedProcSort.1) rhoCutOrderLeft
+      rhoCutOrderRight := by
   exact rhoCutOrderGeneratorWitness.erase
 
 /-! ## Explicit outer wrapped-region plan -/
@@ -328,15 +345,20 @@ private theorem rhoCutOrderParallelChoice_mem :
   exact ⟨"ps", .hashBag, .base "Proc", rfl⟩
 
 private theorem rhoCutOrderRedex_wellSorted :
-    OpenPatternWellSorted rhoCIGSLT.costWholeLanguage rhoCutOrderFree []
+    ReflectiveWellSorted.OpenPatternWellSorted
+      rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
+      rhoCutOrderFree []
       (mapTypeExpr (CostStaticColor.wrapped.symbols rhoCIGSLT)
         (.base "Name"))
       rhoCutOrderRedex := by
-  refine ⟨?_, rfl, rfl, ?_⟩
+  refine ⟨⟨?_, rfl, rfl, ?_⟩, ?_⟩
   · simpa [mapTypeExpr, CostStaticColor.symbols,
       costWrappedStaticSymbols, rhoCIGSLT, rhoIGSLT,
       rhoInteractivePresentation, rhoCalc, TypeDecl.plain,
       show "Name" ≠ "Proc" by decide] using rhoCutOrderRedex_typed
+  · simp [ScopeSafeAt, rhoCutOrderRedex, rhoCutOrderBaseQuote,
+      rhoCutOrderBaseDrop, Pattern.isWellScopedAt,
+      Pattern.isWellScopedListAt]
   · intro declaration membership
     simp [rhoCutOrderRedex, rhoCutOrderBaseQuote, rhoCutOrderBaseDrop,
       binderSafeAt, binderSafeListAt]
@@ -559,7 +581,7 @@ private def rhoCutOrderBaseNameSort : LangSort rhoCIGSLT.costWholeLanguage :=
 private def rhoCutOrderRedexTerm :
     OpenTerm rhoCIGSLT.costWholeLanguage rhoCutOrderFree []
       rhoCutOrderBaseNameSort :=
-  ⟨rhoCutOrderRedex, rhoCutOrderRedex_wellSorted⟩
+  ⟨rhoCutOrderRedex, rhoCutOrderRedex_wellSorted.1⟩
 
 def rhoCutOrderBaseRedexNode :
     CostStaticRegionNode rhoCIGSLT .base rhoCutOrderFree :=
@@ -809,12 +831,12 @@ private theorem rhoCutOrderRightPlan_rootStatic :
 noncomputable def rhoCutOrderLeftNode :
     CostStaticRegionNode rhoCIGSLT .wrapped rhoCutOrderFree :=
   CostStaticRegionNode.ofPlan (sourceSort := rhoProc)
-    rhoCutOrderLeft rhoCutOrderLeftPlan rhoCutOrderLeftPlan_rootStatic
+    rhoCutOrderLeft.toCore rhoCutOrderLeftPlan rhoCutOrderLeftPlan_rootStatic
 
 def rhoCutOrderRightNode :
     CostStaticRegionNode rhoCIGSLT .wrapped rhoCutOrderFree :=
   CostStaticRegionNode.ofPlan (sourceSort := rhoProc)
-    rhoCutOrderRight rhoCutOrderRightPlan rhoCutOrderRightPlan_rootStatic
+    rhoCutOrderRight.toCore rhoCutOrderRightPlan rhoCutOrderRightPlan_rootStatic
 
 theorem rhoCutOrderLeftNode_skeleton_pattern :
     rhoCutOrderLeftNode.skeleton.1 =
@@ -940,7 +962,8 @@ def rhoCutOrderRightTree :
   .static rhoCutOrderRightNode rhoCutOrderRightChildren
 
 private theorem rhoCutOrderWrappedDrop_notQuote :
-    ReflectiveContextSupport.isQuoteConstructor rhoCIGSLT.costWholeLanguage
+    ReflectiveContextSupport.isQuoteConstructor
+      rhoCIGSLT.costWholeReflectionProfile
       (costWrappedConstructorName "PDrop") = false := by
   decide
 

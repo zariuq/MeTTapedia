@@ -934,7 +934,7 @@ theorem exists_reconcileAll_of_satisfied
   unfold Metta.Bindings.reconcileAll
   exact exists_unifyRounds_equationFuel_of_satisfied _ hnoFloat hsat
 
-/-- Bridge to the whole-binding reconciliation surface consumed by the
+/-- Bridge to the whole-binding reconciliation interface consumed by the
 matcher-origin reconciliation-witness construction.  A satisfiable,
 host-float-free combined equation system (the binding's own equations together
 with the extra constraints) makes `wholeBindingReconciliation` succeed — this is

@@ -662,6 +662,73 @@ exclusive targets; the negative fixture shows the same exclusivity losing once i
 is too high. This licenses complementary arms without treating complementarity as a
 blank cheque.
 
+\subsection{A fresh four-arm round, and what its headline count conceals}
+\label{sec:fresh-round-one}
+
+The preceding campaigns all continued an existing parameter lineage. The next one does
+not: every arm begins from freshly initialized weights, so that the update rule rather
+than an inherited state is the object under comparison. Four arms are trained
+concurrently---two carriers (a unified multi-site carrier and a coarser recurrent
+sequence-to-sequence carrier) crossed with ordinary BP and prospective PC---from one
+shared initialization per carrier, with a common pool, checker and union step. The
+round contributes pool event fourteen; we retain both numberings because the pool
+accounting and the training rounds no longer advance together.
+
+The cross-arm union contains $493$ new A-numbers. The per-arm counts are $336$ for
+recurrent BP, $34$ for recurrent PC, $70$ for unified BP and $73$ for unified PC. Taken
+alone, that table says the recurrent BP arm dominates by an order of magnitude. Three
+further measurements say it does not mean what it appears to.
+
+\paragraph{Almost all of the headline is repertoire reproduction.}
+Restricting to sequences that actually appeared in optimizer batches and asking whether
+the accepted candidate reproduced a program already in the catalog gives $210/265$
+($79.2\%$) for recurrent BP, $2/17$ ($11.8\%$) for recurrent PC, $21/44$ ($47.7\%$) for
+unified BP and $23/48$ ($47.9\%$) for unified PC. The largest count is therefore also
+the most reproductive: it is exceptional at recovering the learned program repertoire,
+which is a real capability but a different one from discovery.
+
+\paragraph{Strict novelty inverts part of the ranking.}
+Of the $493$, only $35$ are sequences absent from the entire round-one catalog:
+$18$ from recurrent BP, $7$ from recurrent PC, $6$ from unified BP and $4$ from unified
+PC. As a fraction of each arm's own yield that is $5.4\%$, $20.6\%$, $8.6\%$ and
+$5.5\%$: the arm with the smallest absolute count has by far the largest novelty share.
+Every one of the $35$ was exclusive to a single arm.
+
+\paragraph{The two recurrent arms share nothing.}
+Their solved sets intersect in zero A-numbers---$33$ of recurrent PC's $34$ are
+exclusive across all four arms---so the low-yield arm is complementary rather than a
+degraded copy of its partner. This is precisely the configuration the portfolio theorem
+above was written for: marginal coverage, not standalone yield, is what a further arm
+must be judged on.
+
+\paragraph{Discovery is collateral, not conditional.}
+The sharpest result concerns none of the arms individually. Of $240$ queried target
+sequences, direct hits number $6$, $0$, $8$ and $8$ respectively---at most $3.3\%$. Not
+one of the $493$ accepted discoveries was for the sequence being requested when it was
+generated. Every one was found by the checker noticing that a program generated for some
+other target also explains it. Meanwhile the same runs cover $1{,}206$, $355$, $1{,}619$
+and $1{,}780$ catalog sequences in total.
+
+The synthesizers therefore behave as strong \emph{unconditional} program priors with
+weak conditioning on the request. Asked for a program for a particular sequence they
+mostly fail; allowed to generate and let the checker attribute, they are productive.
+That separates two estimands which the literature routinely reports as one, and we
+report them separately hereafter: \emph{local specificity}, the rate at which a
+requested target is solved, and \emph{global utility}, the verified coverage a run
+produces regardless of what was asked. Improving the first is a conditioning problem
+and is not addressed by anything that improves the second.
+
+\paragraph{The matched pair.}
+Within the unified carrier, where search work is matched to within $0.1\%$
+($129.52$ against $129.64$ GPU-seconds), PC leads BP on global coverage
+($1{,}780$ against $1{,}619$), on additions to the pool ($73$ against $70$), on unique
+candidate programs ($16{,}265$ against $14{,}431$) and on accepted programs with
+coverage ($7{,}447$ against $6{,}315$), while tying on direct target hits ($8$ each) and
+trailing on strictly catalog-new sequences ($4$ against $6$). Its training cost was
+$3.83$ times higher: $36.25$ hours against $9.46$. This is a single seed and a
+descriptive result, not an efficacy claim; we record it because the matched-work
+condition makes it interpretable and the cost ratio makes it consequential.
+
 \section{From coverage to proof: adjudicating discoveries against their definitions}
 \label{sec:adjudication}
 

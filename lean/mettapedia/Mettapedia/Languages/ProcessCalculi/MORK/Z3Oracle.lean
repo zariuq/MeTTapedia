@@ -6,7 +6,7 @@ import Mettapedia.Languages.MeTTa.RuntimeExec
 
 The first concrete witness of the existing oracle runtime kernel class.
 This file connects the abstract oracle syntax (`OracleQuery`, `OracleResponse`,
-`ResourceRequest`, `MeTTaRuntimeOracleSurface`) to concrete Z3 behavior:
+`ResourceRequest`, `MeTTaRuntimeOracleInterface`) to concrete Z3 behavior:
 query environments, payload-to-space conversion, pattern matching over oracle
 payloads, and conformance theorems against a mock Z3 oracle.
 
@@ -168,7 +168,7 @@ theorem oracleMatchPattern_unsat_empty (σ : Subst) (pat : Atom) :
 
 end MatchingSoundness
 
-/-! ## 7. Bridge to `MeTTaRuntimeOracleSurface` -/
+/-! ## 7. Bridge to `MeTTaRuntimeOracleInterface` -/
 
 section OracleSurfaceBridge
 

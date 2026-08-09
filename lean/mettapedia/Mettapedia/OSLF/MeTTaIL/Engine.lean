@@ -114,6 +114,36 @@ def builtinRelationTuples (_lang : LanguageDef) (rel : String) (args : List Patt
       [[lhs, lhs], [rhs, rhs]]
   | _, _ => []
 
+/-- Match one relation argument without confusing variables inside an already
+bound value with rule metavariables.  An unbound top-level metavariable is an
+output position and may acquire a binding; a bound one is an exact value.
+Other argument schemas retain ordinary structural matching. -/
+def matchRelationArgument (bindings : Bindings) (argument value : Pattern) :
+    List Bindings :=
+  match argument with
+  | .fvar name =>
+      match bindings.lookup name with
+      | some existing => if existing = value then [[]] else []
+      | none => [[(name, value)]]
+  | _ => matchPattern (applyBindings bindings argument) value
+
+/-- Match a relation row while threading bindings introduced by earlier
+arguments.  The result contains only the extension relative to `seed`, so the
+caller can merge it through the same authority boundary used by ordinary
+pattern matching. -/
+def matchRelationArgs (seed : Bindings) :
+    List Pattern → List Pattern → List Bindings
+  | [], [] => [[]]
+  | argument :: arguments, value :: values =>
+      (matchRelationArgument seed argument value).flatMap fun headBindings =>
+        match mergeBindings seed headBindings with
+        | none => []
+        | some extended =>
+            (matchRelationArgs extended arguments values).filterMap fun tailBindings =>
+              mergeBindings headBindings tailBindings
+  | _, _ => []
+termination_by arguments _ => arguments.length
+
 /-- Evaluate a relationQuery premise by matching query arguments against
     built-in and environment-provided relation tuples. -/
 def relationQueryStep (relEnv : RelationEnv) (lang : LanguageDef)
@@ -121,7 +151,7 @@ def relationQueryStep (relEnv : RelationEnv) (lang : LanguageDef)
   let argPats := args.map (applyBindings bindings)
   let tuples := builtinRelationTuples lang rel argPats ++ relEnv.tuples rel argPats
   tuples.flatMap fun tuple =>
-    (matchArgs argPats tuple).filterMap fun bPrem =>
+    (matchRelationArgs bindings args tuple).filterMap fun bPrem =>
       mergeBindings bindings bPrem
 
 /-- Compute all binding extensions produced by one non-contextual premise.
@@ -618,6 +648,25 @@ private def extRelationEnv : RelationEnv where
   IO.println s!"External relationQuery test: {term}"
   IO.println s!"  default env reducts ({noEnv.length}): {noEnv.map toString}"
   IO.println s!"  custom env reducts ({withEnv.length}): {withEnv.map toString}"
+
+/-- A variable occurring inside an already-bound relation value is data.  It
+is not reinterpreted as a fresh rule metavariable when another row is read. -/
+example :
+    matchRelationArgs [("input", .fvar "object-variable")]
+        [.fvar "input", .fvar "output"]
+        [.fvar "object-variable", extB] =
+      [[("output", extB)]] := by
+  simp [matchRelationArgs, matchRelationArgument, Bindings.lookup,
+    mergeBindings]
+
+/-- A row whose input differs from an already-bound relation value is
+rejected rather than rebinding either the host or object-level variable. -/
+example :
+    matchRelationArgs [("input", .fvar "object-variable")]
+        [.fvar "input", .fvar "output"]
+        [extA, extB] = [] := by
+  simp [matchRelationArgs, matchRelationArgument, Bindings.lookup,
+    mergeBindings, extA]
 
 /-- The base engine cannot interpret recursive congruence on its own. -/
 example (bindings : Bindings) (source target : Pattern) :

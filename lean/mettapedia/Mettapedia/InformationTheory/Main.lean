@@ -2,6 +2,7 @@ import Mettapedia.InformationTheory.Basic
 import Mettapedia.InformationTheory.MutualInformation
 import Mettapedia.InformationTheory.ShannonEntropy.Main
 import Mettapedia.InformationTheory.EntropyKL
+import Mettapedia.InformationTheory.FiniteBrierInformation
 
 /-!
 # Information Theory (Entry Point)

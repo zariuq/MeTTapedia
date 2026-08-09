@@ -30,7 +30,7 @@ partial def extractEntity : RGLView → Option GroundedLexeme
   | .prepNP _ np => extractEntity np      -- "in stars" → stars
   | .kindOf k _  => extractEntity k       -- "kind of X" → head of kind
   | .pred s _    => extractEntity s       -- in NP context, take subject
-  | .copularSurface _ s _    => extractEntity s
+  | .copularForm _ s _    => extractEntity s
   | .transV v _  => extractEntity v       -- verb as entity (rare)
   | .sentence _ _ c => extractEntity c
   | .coordAnd xs => xs.findSome? extractEntity
@@ -52,7 +52,7 @@ partial def extractAllEntities : RGLView → List GroundedLexeme
   | .prepNP p np => extractAllEntities p ++ extractAllEntities np
   | .kindOf k o  => extractAllEntities k ++ extractAllEntities o
   | .pred s v    => extractAllEntities s ++ extractAllEntities v
-  | .copularSurface _ s c    => extractAllEntities s ++ extractAllEntities c
+  | .copularForm _ s c    => extractAllEntities s ++ extractAllEntities c
   | .transV v o  => extractAllEntities v ++ extractAllEntities o
   | .coordAnd xs => xs.flatMap extractAllEntities
   | .coordOr xs  => xs.flatMap extractAllEntities
@@ -63,7 +63,7 @@ partial def findKindOf? : RGLView → Option GroundedLexeme
   | .kindOf _ of_ => extractEntity of_
   | .sentence _ _ c => findKindOf? c
   | .pred _ vp => findKindOf? vp
-  | .copularSurface _ _ c => findKindOf? c
+  | .copularForm _ _ c => findKindOf? c
   | .opaque _ args => args.findSome? findKindOf?
   | _ => none
 
@@ -161,7 +161,7 @@ partial def extractFrame : RGLView → Frame
       | none => .opaque "pred-kindOf: no subject"
     | none => extractVPFrame subjEntity vp
   -- Copula complement: subject is complement
-  | .copularSurface _ subj compl =>
+  | .copularForm _ subj compl =>
     let subjEntity := extractEntity subj
     -- Check for kindOf
     match findKindOf? compl with

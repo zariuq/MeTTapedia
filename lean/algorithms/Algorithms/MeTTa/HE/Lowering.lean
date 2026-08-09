@@ -4,7 +4,7 @@ import Algorithms.MeTTa.Simple.Relations
 Lowering from frozen HE atoms to the shared MeTTaIL runtime.
 
 Semantics note:
-- HE lowering uses explicit `Sym`/`Expr` constructors to preserve HE surface intent
+- HE lowering uses explicit `Sym`/`Expr` constructors to preserve HE source-syntax intent
   from `hyperon/hyperon-experimental/docs/metta.md`.
 - The lowering target here is data only: `LanguageDef` + `SpecBundle`.
 - Legacy `Simple.Session` execution now lives in

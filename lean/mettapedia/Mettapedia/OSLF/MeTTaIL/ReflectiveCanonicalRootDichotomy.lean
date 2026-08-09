@@ -86,6 +86,42 @@ inductive CanonicalRootAligned (declaration : ReflectivePresentationDecl) :
         (.collection collectionType leftElements (some rest))
         (.collection collectionType rightElements (some rest))
 
+/-- Structural canonical-root alignment is symmetric.  Child evidence is
+reversed pointwise; no canonicalizer injectivity beyond the data already
+stored in the alignment is used. -/
+theorem CanonicalRootAligned.symm
+    {declaration : ReflectivePresentationDecl} {left right : Pattern}
+    (aligned : CanonicalRootAligned declaration left right) :
+    CanonicalRootAligned declaration right left := by
+  have reverseChildren : ∀ {leftChildren rightChildren : List Pattern},
+      List.Forall₂
+          (fun leftChild rightChild =>
+            canonicalize declaration leftChild =
+              canonicalize declaration rightChild)
+          leftChildren rightChildren →
+        List.Forall₂
+          (fun rightChild leftChild =>
+            canonicalize declaration rightChild =
+              canonicalize declaration leftChild)
+          rightChildren leftChildren := by
+    intro leftChildren rightChildren children
+    induction children with
+    | nil => exact .nil
+    | cons head tail inductionHypothesis =>
+        exact .cons head.symm inductionHypothesis
+  cases aligned with
+  | bvar index => exact .bvar index
+  | fvar name => exact .fvar name
+  | apply ne children => exact .apply ne (reverseChildren children)
+  | lambda binder body => exact .lambda binder body.symm
+  | multiLambda arity binders body =>
+      exact .multiLambda arity binders body.symm
+  | subst body replacement => exact .subst body.symm replacement.symm
+  | collection ne children =>
+      exact .collection ne (reverseChildren children)
+  | collectionRest collectionType rest children =>
+      exact .collectionRest collectionType rest (reverseChildren children)
+
 private theorem canonicalize_bvar
     (declaration : ReflectivePresentationDecl) (index : Nat) :
     canonicalize declaration (.bvar index) = .bvar index := by

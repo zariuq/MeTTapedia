@@ -766,7 +766,7 @@ private def dispatchApplyLegacy (f : FunctionSig) (args : List EngValue) : Optio
   | "ComplVV", [vv, vp] =>
     match vv.asV2Comp?, vp.asVP? with
     | some f, some comp =>
-      if f.kind == .vp then some (.vp (applyCompVerb f (vpCompSurface comp))) else none
+      if f.kind == .vp then some (.vp (applyCompVerb f (vpCompText comp))) else none
     | _, _ => none
   | "ComplVS", [vs, s] =>
     match vs.asV2Comp?, s.asListS? with
@@ -789,7 +789,7 @@ private def dispatchApplyLegacy (f : FunctionSig) (args : List EngValue) : Optio
     match vv.asV2Comp?, vps.asVPSlash? with
     | some f, some s =>
       if f.kind == .vp then
-        let base := applyCompVerb f (vpCompSurface s.toEnglishVP)
+        let base := applyCompVerb f (vpCompText s.toEnglishVP)
         some (.vpslash { base with c2 := s.c2 })
       else none
     | _, _ => none
@@ -797,7 +797,7 @@ private def dispatchApplyLegacy (f : FunctionSig) (args : List EngValue) : Optio
     match v2v.asV2Comp?, np.asNP?, vps.asVPSlash? with
     | some f, some obj, some s =>
       if f.kind == .vp then
-        let base0 := applyCompVerb f (vpCompSurface s.toEnglishVP)
+        let base0 := applyCompVerb f (vpCompText s.toEnglishVP)
         let objTxt := addCompPrep f.objPrep (obj.s .NPAcc)
         let base := { base0 with compl := fun _ => objTxt }
         some (.vpslash { base with c2 := s.c2 })
@@ -856,7 +856,7 @@ private def dispatchApplyLegacy (f : FunctionSig) (args : List EngValue) : Optio
   | "SlashV2V", [v2c, vp] =>
     match v2c.asV2Comp?, vp.asVP? with
     | some f, some comp =>
-      if f.kind == .vp then some (.vpslash (applyV2CompSlash f (vpCompSurface comp))) else none
+      if f.kind == .vp then some (.vpslash (applyV2CompSlash f (vpCompText comp))) else none
     | _, _ => none
   | "SlashV2S", [v2c, s] =>
     match v2c.asV2Comp?, s.asListS? with
@@ -945,12 +945,12 @@ private def dispatchApplyLegacy (f : FunctionSig) (args : List EngValue) : Optio
     | none => none
   | "ImpPl1", [vp] =>
     match vp.asVP? with
-    | some v => some (.raw Category.Utt (joinWords ["let us", vpCompSurface v]))
+    | some v => some (.raw Category.Utt (joinWords ["let us", vpCompText v]))
     | none => none
   | "ImpP3", [np, vp] =>
     match np.asNP?, vp.asVP? with
     | some n, some v =>
-      some (.raw Category.Utt (joinWords ["let", n.s (.NCase .Nom), vpCompSurface v]))
+      some (.raw Category.Utt (joinWords ["let", n.s (.NCase .Nom), vpCompText v]))
     | _, _ => none
   | "SelfAdvVP", [vp] =>
     match vp.asVP? with
@@ -1105,7 +1105,7 @@ private def dispatchApplyLegacy (f : FunctionSig) (args : List EngValue) : Optio
     match vp.asVP? with
     | some v =>
       let advTxt := renderValue iadv {}
-      some (.qvp ⟨joinWords [advTxt, vpCompSurface v]⟩)
+      some (.qvp ⟨joinWords [advTxt, vpCompText v]⟩)
     | none => none
   | "AddAdvQVP", [qvp, iadv] =>
     match qvp.asQVP? with
@@ -1133,7 +1133,7 @@ private def dispatchApplyLegacy (f : FunctionSig) (args : List EngValue) : Optio
   | "AAnter", [] => some (.ant .Anter)
   | "ImpVP", [vp] =>
     match vp.asVP? with
-    | some v => some (.raw Category.Imp (vpCompSurface v))
+    | some v => some (.raw Category.Imp (vpCompText v))
     | none => none
   | "AdvImp", [adv, imp] =>
     match adv.asAdv? with
@@ -1145,7 +1145,7 @@ private def dispatchApplyLegacy (f : FunctionSig) (args : List EngValue) : Optio
     some (.raw Category.SC (renderValue qs {}))
   | "EmbedVP", [vp] =>
     match vp.asVP? with
-    | some v => some (.raw Category.SC (vpCompSurface v))
+    | some v => some (.raw Category.SC (vpCompText v))
     | none => none
   | "UseSlash", [tmp, pol, cls] =>
     match tmp.asTemp?, pol.asPol?, cls.asClSlash? with
@@ -1213,7 +1213,7 @@ private def dispatchApplyLegacy (f : FunctionSig) (args : List EngValue) : Optio
     | none => none
   | "MkVPI", [vp] =>
     match vp.asVP? with
-    | some v => some (.raw (.base "VPI") (vpCompSurface v))
+    | some v => some (.raw (.base "VPI") (vpCompText v))
     | none => none
   | "ConjVPI", [cj, xs] =>
     match cj.asConj?, xs.asListVPI? with
@@ -1433,7 +1433,7 @@ private def dispatchApplyLegacy (f : FunctionSig) (args : List EngValue) : Optio
     | none => none
   | "UttVP", [vp] =>
     match vp.asVP? with
-    | some v => some (.raw Category.Utt (vpCompSurface v))
+    | some v => some (.raw Category.Utt (vpCompText v))
     | none => none
   | "UttCN", [cn] =>
     match cn.asCN? with
@@ -1726,7 +1726,7 @@ private def dispatchApplyLegacy (f : FunctionSig) (args : List EngValue) : Optio
 
 /-- Public dispatch entrypoint.
 
-The tagged path gives proof-facing reductions a small, stable surface for the
+The tagged path gives proof-facing reductions a small, stable interface for the
 most-used witness constructors, while the legacy matcher preserves the full
 current behavior for everything else. -/
 def dispatchApply (f : FunctionSig) (args : List EngValue) : Option EngValue :=

@@ -38,10 +38,14 @@ private def permutationRight : Pattern :=
   .collection .hashBag [.fvar "a", .fvar "b"] none
 
 private theorem permutationLeft_wellSorted :
-    OpenPatternWellSorted rhoCIGSLT.costWholeLanguage permutationFree []
-      (.collection .hashBag permutationAtomType) permutationLeft := by
-  refine ⟨?_, by decide, by simp [permutationLeft,
-    isObjectPattern, isObjectPatternList], ?_⟩
+    ReflectiveWellSorted.OpenPatternWellSorted
+      rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
+      permutationFree [] (.collection .hashBag permutationAtomType)
+      permutationLeft := by
+  refine ⟨⟨?_, by decide, by simp [permutationLeft,
+    isObjectPattern, isObjectPatternList], by
+      simp [ScopeSafeAt, permutationLeft, Pattern.isWellScopedAt,
+        Pattern.isWellScopedListAt]⟩, ?_⟩
   · exact .collection (.cons (.fvar (by simp [permutationFree]))
       (.cons (.fvar (by simp [permutationFree]))
         (.nil [] permutationAtomType)))
@@ -49,10 +53,14 @@ private theorem permutationLeft_wellSorted :
     simp [permutationLeft, binderSafeAt, binderSafeListAt]
 
 private theorem permutationRight_wellSorted :
-    OpenPatternWellSorted rhoCIGSLT.costWholeLanguage permutationFree []
-      (.collection .hashBag permutationAtomType) permutationRight := by
-  refine ⟨?_, by decide, by simp [permutationRight,
-    isObjectPattern, isObjectPatternList], ?_⟩
+    ReflectiveWellSorted.OpenPatternWellSorted
+      rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
+      permutationFree [] (.collection .hashBag permutationAtomType)
+      permutationRight := by
+  refine ⟨⟨?_, by decide, by simp [permutationRight,
+    isObjectPattern, isObjectPatternList], by
+      simp [ScopeSafeAt, permutationRight, Pattern.isWellScopedAt,
+        Pattern.isWellScopedListAt]⟩, ?_⟩
   · exact .collection (.cons (.fvar (by simp [permutationFree]))
       (.cons (.fvar (by simp [permutationFree]))
         (.nil [] permutationAtomType)))

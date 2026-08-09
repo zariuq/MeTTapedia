@@ -307,13 +307,13 @@ private def grammarRules (language : LanguageDef) : List RuleSchema :=
   language.terms.filterMap productionRule?
 
 private def rawPresentation (language : LanguageDef) (ledger : SourceLedger) : Presentation :=
-  { language :=
-      { encodedLanguage language ledger with
-        judgments :=
+  { language := encodedLanguage language ledger
+    calculus :=
+      { judgments :=
           [{ head := boundaryJudgmentHead, arity := 2 },
            { head := tokenSpanJudgmentHead, arity := 4 },
            { head := derivesJudgmentHead, arity := 5 }]
-        inferenceRules :=
+        rules :=
           boundaryFactRules ledger ++ tokenFactRules ledger ++ grammarRules language } }
 
 /-- Generate the raw source-indexed presentation only for the exact supported
@@ -1570,13 +1570,13 @@ private theorem dagGrammarRules_mem_iff
 
 private def rawDAGPresentation
     (language : LanguageDef) (ledger : SourceLedger) : Presentation :=
-  { language :=
-      { encodedLanguage language ledger with
-        judgments :=
+  { language := encodedLanguage language ledger
+    calculus :=
+      { judgments :=
           [{ head := boundaryJudgmentHead, arity := 2 },
            { head := tokenSpanJudgmentHead, arity := 4 },
            { head := derivesNodeJudgmentHead, arity := 4 }]
-        inferenceRules := boundaryFactRules ledger ++ tokenFactRules ledger ++
+        rules := boundaryFactRules ledger ++ tokenFactRules ledger ++
           dagGrammarRules language } }
 
 /-- Generate the shared proof-DAG presentation from the same grammar and
@@ -2437,13 +2437,13 @@ private def lexicalFactRules
 private def rawLexicalDAGPresentation (language : LanguageDef)
     (declarations : List LexicalDeclaration)
     (source : ClassifiedSource) : Presentation :=
-  { language :=
-      { encodedLanguage language source.ledger with
-        judgments :=
+  { language := encodedLanguage language source.ledger
+    calculus :=
+      { judgments :=
           [{ head := boundaryJudgmentHead, arity := 2 },
            { head := tokenSpanJudgmentHead, arity := 4 },
            { head := derivesNodeJudgmentHead, arity := 4 }]
-        inferenceRules :=
+        rules :=
           boundaryFactRules source.ledger ++ tokenFactRules source.ledger ++
             lexicalFactRules declarations source ++ dagGrammarRules language } }
 
@@ -2975,10 +2975,6 @@ private theorem zeroLiteralLabels_eq :
 private theorem zeroEncodedLanguage_validate :
     (encodedLanguage exprLanguage zeroLedger).validate = [] := by
   apply LanguageDef.validate_eq_nil_of_constructorOnly
-  · rfl
-  · rfl
-  · rfl
-  · rfl
   · rfl
   · rfl
   · simp [encodedLanguage, exprLanguage, exprType, dataTypeName,

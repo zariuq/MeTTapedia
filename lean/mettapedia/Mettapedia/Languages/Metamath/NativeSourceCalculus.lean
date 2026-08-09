@@ -1,5 +1,6 @@
 import Metamath.DeclarativeSpec
 import Mettapedia.GSLT.LanguageDef.CheckedSource
+import Mettapedia.GSLT.LanguageDef.CalculusLanguageDef
 import Mettapedia.Languages.Metamath.MMLean4SemanticView
 
 /-!
@@ -20,6 +21,8 @@ elaboration remain separate obligations.
 namespace Mettapedia.Languages.Metamath.NativeSourceCalculus
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
+open Mettapedia.GSLT
+open Mettapedia.GSLT.LanguageDef
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
 open Mettapedia.GSLT.LanguageDef.CheckedSource
 open Mettapedia.Languages.Metamath.MMLean4SemanticView
@@ -159,16 +162,6 @@ def staticConstructors : List (String × Nat) :=
     ("__metamath.SourceIdentity", 2), ("__metamath.Binding", 2),
     ("__metamath.Substitution", 1), ("__metamath.Context", 2) ]
 
-def sourceLanguage : LanguageDef :=
-  { name := "metamath-native-source-calculus-v0"
-    types := [TypeDecl.plain dataType]
-    terms :=
-      staticConstructors.map (fun declaration =>
-        constructorRule declaration.1 declaration.2) ++
-      sourceVocabulary.map (fun value => constructorRule value 0)
-    equations := []
-    rewrites := [] }
-
 private def rule (id : String) (premises : List Pattern)
     (conclusion : Pattern) : RuleSchema :=
   { id := ⟨id⟩, metavariables := [], premises, conclusion }
@@ -192,19 +185,33 @@ def assertionRules (assertion : SourceAssertion) : List RuleSchema :=
         [substitutionJudgment assertion, contextJudgment assertion])
       (provesPattern assertion.formula) ]
 
-def generatedPresentation : Presentation :=
-  { language :=
-      { sourceLanguage with
-        judgments :=
-          [{ head := "__metamath.SourceProves", arity := 2 },
-           { head := "__metamath.SubstitutionValid", arity := 3 },
-           { head := "__metamath.ContextValid", arity := 3 }]
-        inferenceRules := targetHypotheses.map hypothesisRule ++
-          assertionRules axiomSyllogism } }
+/-- The native Metamath slice is authored as one definition.  The object
+constructors and inference rules are not separate authorities. -/
+abbrev generatedDefinition : CalculusLanguageDef :=
+  { name := "metamath-native-source-calculus-v0"
+    types := [TypeDecl.plain dataType]
+    terms :=
+      staticConstructors.map (fun declaration =>
+        constructorRule declaration.1 declaration.2) ++
+      sourceVocabulary.map (fun value => constructorRule value 0)
+    equations := []
+    rewrites := []
+    judgments :=
+      [{ head := "__metamath.SourceProves", arity := 2 },
+       { head := "__metamath.SubstitutionValid", arity := 3 },
+       { head := "__metamath.ContextValid", arity := 3 }]
+    rules := targetHypotheses.map hypothesisRule ++
+      assertionRules axiomSyllogism }
+
+/-- The object-language projection used by source validation. -/
+abbrev sourceLanguage : LanguageDef := generatedDefinition.toLanguageDef
+
+/-- The derived nested checker input retained for the validation API. -/
+abbrev generatedPresentation : Presentation := generatedDefinition.toNested
 
 theorem sourceLanguage_validate : sourceLanguage.validate = [] := by
   apply LanguageDef.validate_eq_nil_of_constructorOnly sourceLanguage <;>
-    simp [sourceLanguage, staticConstructors, sourceVocabulary,
+    simp [staticConstructors, sourceVocabulary,
       sourceDigest, sourceRevision, constructorRule, dataType,
       LanguageDef.typeNames, TypeDecl.plain, TermParam.typeExpr,
       TypeExpr.baseNames]
@@ -215,7 +222,7 @@ theorem generatedPresentation_valid : generatedPresentation.isValidV2 = true := 
     simpa [generatedPresentation] using sourceLanguage_validate
   unfold Presentation.isValidV2 Presentation.isValidV1
   rw [generatedLanguageValidate]
-  simp [generatedPresentation, sourceLanguage, staticConstructors,
+  simp [generatedPresentation, staticConstructors,
     sourceVocabulary, sourceDigest,
     sourceRevision, constructorRule, dataType, targetHypotheses,
     rFloat, sFloat, tFloat, theoremRSEssential, theoremSTEssential,
@@ -238,6 +245,12 @@ theorem generatedPresentation_valid : generatedPresentation.isValidV2 = true := 
     Pattern.isWellScopedListAt, Pattern.hasCanonicalBinderMetadata,
     Pattern.hasCanonicalBinderMetadataList]
   decide
+
+/-- The complete native slice as one GSLT. -/
+def totalTheory : GSLT :=
+  generatedDefinition.toGSLTOfNoEquations generatedPresentation_valid rfl
+
+theorem totalTheory_Term : totalTheory.Term = (Pattern ⊕ List Pattern) := rfl
 
 def validatedPresentation : ValidatedPresentation :=
   ⟨generatedPresentation, generatedPresentation_valid⟩

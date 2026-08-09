@@ -14,7 +14,7 @@ supports with clean theorem-level backing:
    core;
 3. equality at the semantic core forces agreement on selected invariant
    judgments (pattern predicates, WM query equivalence, evidence, strength);
-4. cross-linguistic surface variation can coexist with shared core semantics.
+4. cross-linguistic linearization variation can coexist with shared core semantics.
 
 This is a **weak, formal UG** result: it is about shared abstract/semantic
 structure inside the current GF architecture, not a biological or empirical
@@ -258,15 +258,15 @@ theorem english_czech_share_core_semantics
   simpa [semanticCore] using english_czech_tree_sem_iff I φ tree
 
 /-- Witness: the same abstract tree can have different cross-linguistic
-surface forms while retaining identical OSLF semantics at the shared core. -/
-theorem theBigHouse_surface_variation_with_shared_core_semantics
+source forms while retaining identical OSLF semantics at the shared core. -/
+theorem theBigHouse_linearization_variation_with_shared_core_semantics
     (I : String → Pattern → Prop) (φ : OSLFFormula) :
-    theBigHouse_pair.englishSurface ≠ theBigHouse_pair.czechSurface ∧
+    theBigHouse_pair.englishText ≠ theBigHouse_pair.czechText ∧
       (sem (langReduces englishGFLanguageDef) I φ
           (semanticCore.observe theBigHouse_pair.tree) ↔
         sem (langReduces czechGFLanguageDef) I φ
           (semanticCore.observe theBigHouse_pair.tree)) := by
-  refine ⟨cross_ling_surfaces_differ.2, ?_⟩
+  refine ⟨cross_ling_texts_differ.2, ?_⟩
   simpa [semanticCore] using english_czech_tree_sem_iff I φ theBigHouse_pair.tree
 
 /-- The selected shared semantic core is nontrivial. -/

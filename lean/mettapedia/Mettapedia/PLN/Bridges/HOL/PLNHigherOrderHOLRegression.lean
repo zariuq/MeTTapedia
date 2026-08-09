@@ -15,12 +15,12 @@ import Mettapedia.PLN.RuleFamilies.HigherOrder.PLNProbHOLPlannerBridgeRegression
 import Mettapedia.PLN.RuleFamilies.HigherOrder.PLNRegimeMixtureRegression
 
 /-!
-# Higher-Order HOL Regression Surface
+# Higher-Order HOL Regression Suite
 
 Aggregates the initial HO PLN layer built over the real Church/Henkin HOL
-semantics, the enriched HO PLN rule surface, the real HOL world-model
+semantics, the enriched HO PLN rule family, the real HOL world-model
 bridge, the direct `Set -> HOL -> WM` higher-order regression fixtures, and the
 planner-facing bridge from semantic `ProbHOL` into mixed-mode higher-order
 guarded planning, together with the finite regime-mixture theorem/regression
-surface for direct-vs-soft-vs-reveal Chapter-11 reasoning.
+suite for direct-vs-soft-vs-reveal Chapter-11 reasoning.
 -/

@@ -182,7 +182,7 @@ noncomputable abbrev expansiveConstructionBase : ConstructionBase :=
   queryConstructionBaseFromTrace
     agentSurface agentFrontier agentRules witnessTrace expansiveQueryPerspective Set.univ
 
-/-- Regime-sensitive construction base: the visible query surface depends on
+/-- Regime-sensitive construction base: the visible query interface depends on
 both the current trace and the budget. -/
 noncomputable abbrev regimeSensitiveConstructionBase : ConstructionBase :=
   statefulQueryConstructionBaseFromTrace

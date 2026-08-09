@@ -100,10 +100,10 @@ def isLeaf : RawTerm → Bool
 
 end RawTerm
 
-/-- A parse candidate from GF runtime: surface text + parsed tree + metadata. -/
+/-- A parse candidate from GF runtime: source text + parsed tree + metadata. -/
 structure ParseCandidate where
   language : String
-  surface  : String
+  text  : String
   prob?    : Option Float := none
   tree     : RawTerm
 
@@ -191,7 +191,7 @@ end FailureClass
     Only `exact` results enter the proof path. -/
 inductive Analysis where
   | exact (expr : CheckedExpr) (source : Source)
-  | opaque (surface : String) (reason : FailureClass)
+  | opaque (text : String) (reason : FailureClass)
   deriving Repr
 
 namespace Analysis

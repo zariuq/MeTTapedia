@@ -13,7 +13,7 @@ semantics.
 
 - `DeclarativeSpec.lean` keeps the readable declarative meaning layer.
 - `ExecutionContract.lean` records executable contract slices for the live
-  evaluator surface.
+  evaluator interface.
 - `BoundaryContract.lean` classifies two-phase witness/residual behavior for
   boundary-aware operations.
 - `SemanticBundle.lean` packages the stage-indexed runtime-facing semantic
@@ -25,7 +25,7 @@ Positive example:
   boundary layer, where runtime lane policy matters.
 
 Negative example:
-- backend search policy or host-only surfaces should not be mistaken for the
+- backend search policy or host-only interfaces should not be mistaken for the
   canonical declarative meaning of PeTTa programs.
 -/
 

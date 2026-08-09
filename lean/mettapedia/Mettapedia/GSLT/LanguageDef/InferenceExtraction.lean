@@ -5,6 +5,7 @@ namespace Mettapedia.GSLT.LanguageDef.InferenceExtraction
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.LogicSemantics
+open Mettapedia.GSLT.LanguageDef.LogicExtension
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
 
 structure EvidenceProfile where
@@ -144,6 +145,7 @@ structure RuleExtraction (profile : EvidenceProfile) where
   conclusionDefinition : conclusion = profile.derived result
   conclusionPreserved : schema.conclusion = conclusion
   ruleIdPreserved : schema.id.value = source.name
+  sideConditionsEmpty : schema.sideConditions = []
 
 structure CheckedInput (profile : EvidenceProfile) (input : Pattern) where
   proof : Pattern
@@ -244,7 +246,8 @@ def extractRule? (profile : EvidenceProfile) (language : LanguageDef)
       premiseOrder := rfl
       conclusionDefinition := rfl
       conclusionPreserved := rfl
-      ruleIdPreserved := rfl }
+      ruleIdPreserved := rfl
+      sideConditionsEmpty := rfl }
 
 /-- Proof erasure commutes with rule extraction: the schema placed in a
 generated presentation is exactly the schema carried by the corresponding
@@ -305,9 +308,9 @@ def referencedRelations (language : LanguageDef) : List String :=
       | _ => none
 
 def relationFactRules (profile : EvidenceProfile)
-    (language : LanguageDef) : List RuleSchema :=
+    (language : LanguageDef) (logic : LogicProgram := []) : List RuleSchema :=
   let referenced := referencedRelations language
-  let facts := (datalogClosureTuples language).filter fun fact =>
+  let facts := (datalogClosureTuples logic).filter fun fact =>
     referenced.contains fact.1
   facts.zipIdx.map fun (fact, index) =>
     { id := { value := s!"$ld.fact.{fact.1}.{index}" }
@@ -316,44 +319,45 @@ def relationFactRules (profile : EvidenceProfile)
       conclusion := profile.relationJudgment fact.1 fact.2 }
 
 def rawPresentation? (profile : EvidenceProfile)
-    (language : LanguageDef) : Option Presentation := do
+    (language : LanguageDef) (logic : LogicProgram := []) : Option Presentation := do
   let rules ← language.rewrites.mapM (extractRuleSchema? profile language)
   pure
-    { language :=
-        { language with
-          judgments :=
+    { language
+      calculus :=
+        { judgments :=
             { head := profile.derivedHead, arity := 1 } ::
               (relationJudgmentDecls profile language).eraseDups
-          inferenceRules := relationFactRules profile language ++ rules } }
+          rules := relationFactRules profile language logic ++ rules } }
 
 /-- Structurally recursive specification of generated presentation assembly.
 It is convenient for kernel reasoning; `rawPresentation?` remains the
 tail-recursive executable implementation. -/
 def rawPresentationStructural? (profile : EvidenceProfile)
-    (language : LanguageDef) : Option Presentation := do
+    (language : LanguageDef) (logic : LogicProgram := []) : Option Presentation := do
   let rules ← language.rewrites.mapM'
     (extractRuleSchema? profile language)
   pure
-    { language :=
-        { language with
-          judgments :=
+    { language
+      calculus :=
+        { judgments :=
             { head := profile.derivedHead, arity := 1 } ::
               (relationJudgmentDecls profile language).eraseDups
-          inferenceRules := relationFactRules profile language ++ rules } }
+          rules := relationFactRules profile language logic ++ rules } }
 
 /-- Executable and structurally recursive presentation assembly agree
 exactly. -/
 theorem rawPresentation?_eq_structural (profile : EvidenceProfile)
-    (language : LanguageDef) :
-    rawPresentation? profile language =
-      rawPresentationStructural? profile language := by
+    (language : LanguageDef) (logic : LogicProgram := []) :
+    rawPresentation? profile language logic =
+      rawPresentationStructural? profile language logic := by
   rw [rawPresentationStructural?]
   rw [rawPresentation?]
   rw [List.mapM'_eq_mapM]
 
 def validatedPresentation? (profile : EvidenceProfile)
-    (language : LanguageDef) : Option ValidatedPresentation := do
-  let presentation ← rawPresentation? profile language
+    (language : LanguageDef) (logic : LogicProgram := []) :
+    Option ValidatedPresentation := do
+  let presentation ← rawPresentation? profile language logic
   presentation.validateV2?
 
 end Mettapedia.GSLT.LanguageDef.InferenceExtraction

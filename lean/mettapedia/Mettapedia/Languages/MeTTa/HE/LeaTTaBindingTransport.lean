@@ -6,7 +6,7 @@ import Mettapedia.Languages.MeTTa.HE.EqualityClosure
 # Representation-independent HE/LeaTTa binding transport
 
 This layer transports the faithful HE matcher and merge relations to LeaTTa's
-binding surface through `LeaBindingRelEquiv`. Concrete binding-list order is not
+binding interface through `LeaBindingRelEquiv`. Concrete binding-list order is not
 part of the contract: the official binding set is order-free, while the two
 implementations use opposite insertion conventions.
 -/
@@ -555,7 +555,7 @@ def MettaSubstNoSelfVariable (subst : Metta.Subst) : Prop :=
 
 /-- Structural Boolean equality is sound on the HE-translatable fragment.
 Host floats are excluded because their Boolean equality need not be
-reflexive; no stronger equality law is assumed for the host surface. -/
+reflexive; no stronger equality law is assumed for the host interface. -/
 theorem mettaAtom_eq_of_beq_true_noFloat :
     ∀ {left right : Metta.Atom},
       MettaAtomNoFloat left → MettaAtomNoFloat right →
@@ -643,7 +643,7 @@ theorem mettaAtom_eq_of_beq_true_noFloat :
 /-- Structural Boolean equality is reflexive on the host-float-free atom
 fragment.  This is the converse companion to
 `mettaAtom_eq_of_beq_true_noFloat`; together they provide the lawful equality
-surface used by semantic projection proofs without asserting `LawfulBEq` for
+interface used by semantic projection proofs without asserting `LawfulBEq` for
 the larger runtime atom type. -/
 theorem mettaAtom_beq_self_noFloat :
     ∀ atom : Metta.Atom, MettaAtomNoFloat atom → (atom == atom) = true := by
@@ -10562,7 +10562,7 @@ theorem valueProvenanceProbe_base_not_congruence :
               exact hnot hxy
 
 /-- Both engines successfully extend the solution-equivalent bases by the
-same surface equation `p = f z`, but expose different latent variable
+same interface equation `p = f z`, but expose different latent variable
 provenance in their equality graphs. -/
 theorem valueProvenanceProbe_add_oracles :
     valueProvenanceProbeHEOut ∈

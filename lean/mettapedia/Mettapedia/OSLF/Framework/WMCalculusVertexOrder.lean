@@ -145,7 +145,7 @@ theorem wmLangReduces_mono_fullVertex {v w : WMFullVertex} (h : v ≤ w)
     langReduces (wmFullVertexLanguageDef v) p q := by
   unfold langReduces langReducesUsing at hred ⊢
   exact contextualStep_mono_rules
-    (wmFullVertexRules_subset_of_le h) rfl rfl hred
+    (wmFullVertexRules_subset_of_le h) hred
 
 /-- Multi-step reduction is monotone along the WM full vertex weakness order. -/
 theorem wmLangReducesStar_mono_fullVertex {v w : WMFullVertex} (h : v ≤ w)
@@ -163,7 +163,7 @@ theorem wmLangReduces_mono_extVertex {v w : WMExtVertex} (h : v ≤ w)
     langReduces (wmExtVertexLanguageDef v) p q := by
   unfold langReduces langReducesUsing at hred ⊢
   exact contextualStep_mono_rules
-    (wmExtVertexRules_subset_of_le h) rfl rfl hred
+    (wmExtVertexRules_subset_of_le h) hred
 
 /-- Multi-step reduction monotonicity for 6-axis vertex. -/
 theorem wmLangReducesStar_mono_extVertex {v w : WMExtVertex} (h : v ≤ w)

@@ -5,7 +5,7 @@ Manual classification of the remaining GF modules after the syntax-only
 authority split.
 
 This file is intentionally lightweight: the lists are the maintained audit
-surface that tells us which modules are candidates for immediate retargeting
+registry that tells us which modules are candidates for immediate retargeting
 to the real `GFCore.check` / PGF-witness lane, which ones remain legacy
 semantic research, and which ones are plausible purge candidates if we decide
 to simplify the tree further.
@@ -27,7 +27,7 @@ def groundedCoverageBoundaryLanguages : List String :=
   ]
 
 /-- Legacy consumers that look worth retargeting to the real checked/witnessed
-    GF path now, because their claim surface is mostly diagnostic/example-level. -/
+    GF path now, because their claim set is mostly diagnostic/example-level. -/
 def realGFRetargetableNow : List String :=
   []
 

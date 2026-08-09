@@ -14,7 +14,7 @@ import MettaHyperonFull.Proofs.Substitution
 # HE <-> LeaTTa Bridge Basics
 
 This file starts the Lean-side bridge between Mettapedia's HE atom/space
-surface and LeaTTa's verified Meta-MeTTa core. The first step is deliberately
+interface and LeaTTa's verified Meta-MeTTa core. The first step is deliberately
 small and honest: a structural translation on atoms plus the shape-preservation
 lemmas that later simulation proofs will need.
 
@@ -140,7 +140,7 @@ Reversing the HE assignment list aligns the two concrete binding orders. -/
 def toLeaTTaMatchSubst (assigns : List (String × Atom)) : Metta.Subst :=
   assigns.reverse.map fun (v, a) => (v, toLeaTTaAtom a)
 
-/-- Assignment-only LeaTTa bindings induced by the HE assignment surface. -/
+/-- Assignment-only LeaTTa bindings induced by the HE assignment interface. -/
 def toLeaTTaAssignmentBindings (b : Bindings) : Metta.Bindings :=
   Metta.Bindings.ofSubst (toLeaTTaSubst b.assignments)
 
@@ -201,7 +201,7 @@ def LeaEqualityRelEquiv (b : Bindings) (lb : Metta.Bindings) : Prop :=
     (Metta.BindingRel.eq x y ∈ lb ∨ Metta.BindingRel.eq y x ∈ lb) ↔
       ((x, y) ∈ b.equalities ∨ (y, x) ∈ b.equalities)
 
-/-- Representation-independent agreement of the two binding surfaces. The
+/-- Representation-independent agreement of the two binding interfaces. The
 relation follows the English specification's order-free binding-set semantics:
 direct values agree structurally, and explicit aliases agree as undirected
 edges. Resolver and instantiation correspondence are consequences to prove,
@@ -526,7 +526,7 @@ private theorem lookup_none_not_mem_assignment_keys {xs : List (String × Atom)}
 /-- Successful `simpleMatch` / `simpleMatchList` preserve the no-duplicate-key
 discipline of the incoming HE seed, independently of any groundness
 assumption. This is the seed-shape invariant needed for transporting witnesses
-into LeaTTa's matcher-facing `Bindings` surface. -/
+into LeaTTa's matcher-facing `Bindings` interface. -/
 private theorem simpleMatch_preserves_assignmentsNodup (fuel : Nat) :
     (∀ pattern target b qb,
       AssignmentsNodup b →
@@ -993,7 +993,7 @@ private theorem toLeaTTaSubst_keys_nodup (assigns : List (String × Atom)) :
   simpa using toLeaTTaSubst_lookup_map assigns.reverse v
 
 /-- The canonical LeaTTa substitution reads exactly the same direct assignment
-surface as HE's `Bindings.lookup`. -/
+interface as HE's `Bindings.lookup`. -/
 @[simp] theorem toLeaTTaSubst_lookup (assigns : List (String × Atom)) (v : String) :
     Metta.Subst.lookup (toLeaTTaSubst assigns) v =
       Option.map toLeaTTaAtom (List.lookup v assigns) := by
@@ -1823,8 +1823,8 @@ private theorem simpleMatchList_seeded_lookup_bridge_of_elem
               exact matchAll_cons_of_head_tail hhead htail
 
 /-- Seed-sensitive LeaTTa matcher target used by the recursive HE matcher
-bridge. For expression/expression pairs we keep the seeded `matchAll` surface
-explicit; for all other shapes we stay on the direct `matchAtoms` surface and
+bridge. For expression/expression pairs we keep the seeded `matchAll` interface
+explicit; for all other shapes we stay on the direct `matchAtoms` interface and
 thread the incoming seed through LeaTTa's merge. This is the specialized
 expression factorization the equation-step bridge actually needs. -/
 private def LeaSeedMatch
@@ -1837,7 +1837,7 @@ private def LeaSeedMatch
         (fun mb => Metta.Bindings.merge lb mb)
 
 /-- Leaf-shape success bridge from HE's seeded one-way matcher into the direct
-LeaTTa matcher surface. Expression-pattern recursion is intentionally excluded
+LeaTTa matcher interface. Expression-pattern recursion is intentionally excluded
 here; the recursive case lands first on seeded `matchAll`
 (`simpleMatch_expr_seeded_matchAll_bridge_of_elem`) and needs a separate
 factorization step back to direct expression `matchAtoms`. -/
@@ -1874,7 +1874,7 @@ private theorem simpleMatch_leaf_seeded_lookup_bridge_disjoint :
 /-- Exact canonical leaf bridge on the non-expression fragment: when seeded HE
 matching succeeds on a leaf-shape pattern, the canonical LeaTTa matcher-facing
 binding order `toLeaTTaMatchBindings qb` is itself produced by LeaTTa's direct
-matcher/merge surface. This sharpens the lookup-extensional bridge to the exact
+matcher/merge interface. This sharpens the lookup-extensional bridge to the exact
 binding list shape later factorization lemmas want. -/
 private theorem simpleMatch_leaf_seeded_exact_bridge_disjoint :
     ∀ fuel,
@@ -2256,7 +2256,7 @@ private theorem simpleMatch_leaf_seeded_exact_bridge_noVar :
 as `simpleMatch_leaf_seeded_exact_bridge_noVar`. This is the exact shape the
 later `queryOp` item transport wants: any LeaTTa matcher witness with the same
 lookup behavior as the HE result is acceptable, so we stay on the genuine
-runtime surface instead of forcing canonical binding-list equality. -/
+runtime interface instead of forcing canonical binding-list equality. -/
 private theorem simpleMatch_leaf_seeded_lookup_bridge_noVar :
     ∀ fuel,
       ∀ {pattern target b qb lb},
@@ -2352,9 +2352,9 @@ private theorem simpleMatch_leaf_seeded_lookup_bridge_noVar :
 /-- Recursive lookup-extensional bridge on the fragment where successful HE
 matching never produces variable-valued assignments. This isolates the real
 positive core needed by the later equation-step transport: we can transport the
-HE witness all the way onto LeaTTa's seeded matcher surface (`LeaSeedMatch`)
+HE witness all the way onto LeaTTa's seeded matcher interface (`LeaSeedMatch`)
 without yet committing to the final expression-level factorization back to the
-direct `matchAtoms` surface. -/
+direct `matchAtoms` interface. -/
 private theorem simpleMatch_seeded_lookup_bridge_noVar (fuel : Nat) :
     (∀ {pattern target b qb lb},
       AssignmentsNodup b →
@@ -2526,8 +2526,8 @@ private theorem simpleMatch_expr_seeded_matchAll_bridge_of_elem
   exact ⟨lb', hmem, hlookup⟩
 
 /-- Exact canonical list lift: if each successful element match lands the
-canonical LeaTTa binding surface for that head, then successful HE list
-matching lands the canonical LeaTTa binding surface for the whole list from
+canonical LeaTTa binding interface for that head, then successful HE list
+matching lands the canonical LeaTTa binding interface for the whole list from
 the corresponding singleton seed. -/
 private theorem simpleMatchList_seeded_exact_bridge_of_elem
     (fuel : Nat)
@@ -2784,8 +2784,8 @@ private theorem subst_apply_eq_of_lookup_eq {s₁ s₂ : Metta.Subst}
   | _ =>
       simp [Metta.Subst.apply]
 
-/-- For key-unique HE bindings, the matcher-oriented LeaTTa binding surface and
-the substitution-oriented surface instantiate translated HE atoms identically.
+/-- For key-unique HE bindings, the matcher-oriented LeaTTa binding interface and
+the substitution-oriented interface instantiate translated HE atoms identically.
 This lets later query/equation proofs use LeaTTa's concrete matcher outputs
 without changing the substituted reduct. -/
 theorem instantiate_toLeaTTaMatchBindings_eq_subst_of_nodup
@@ -2890,7 +2890,7 @@ theorem instantiated_rule_typed_of_reduction_preserves_type
 /-- Operational wrapper for the previous theorem: if a LeaTTa work item already
 contains the translated instantiated RHS, the same item carries an explicit
 empty-context LeaTTa typing judgment under the preservation hypotheses. This
-keeps the bridge anchored to the executable item surface rather than stopping
+keeps the bridge anchored to the executable item interface rather than stopping
 at a bare substitution identity. -/
 theorem typed_evalResult_item_of_reduction_preserves_type
     {items : List Metta.Minimal.Item} {prev : Metta.Minimal.Stack}
@@ -3022,7 +3022,7 @@ single direct lookup as soon as it has one unfold step available. -/
       simp [Bindings.resolve, Bindings.resolveAtomAux, h, hstable]
 
 /-- First substitution correspondence lemma: on variable leaves, HE's
-assignment-only application surface matches LeaTTa instantiation once we are in
+assignment-only application operation matches LeaTTa instantiation once we are in
 the no-variable-values fragment. This is the kernel of the later ground-query
 equation-step bridge. -/
 theorem toLeaTTaAtom_apply_var_eq_instantiate {b : Bindings}
@@ -3158,7 +3158,7 @@ application on the broader no-variable-values fragment, provided assignment keys
 remain unique and the fuel covers the term depth. This is the exact semantic
 agreement line exposed by the chain-resolution counterexample: HE may leave
 variables unbound, but it must not bind them to further variables if we want its
-`apply` surface to match LeaTTa's one-pass `instantiate`. -/
+`apply` interface to match LeaTTa's one-pass `instantiate`. -/
 theorem toLeaTTaAtom_apply_eq_instantiate_matchBindings_of_noVarAssignmentValues
     {b : Bindings} (hno : NoVarAssignmentValues b) (hkeys : AssignmentsNodup b)
     (hfresh : ValueKeysFreshForValues (toLeaTTaMatchBindings b)) :
@@ -3270,7 +3270,7 @@ theorem visible_successor_of_variable_item
   rw [happly]
   simpa [toLeaTTaAtom] using alphaEq_var_var emittedVar targetVar
 
-/-- Typed visible-successor bridge on the instantiated-item surface. If a LeaTTa
+/-- Typed visible-successor bridge on the instantiated-item interface. If a LeaTTa
 item already carries the translated instantiated RHS, then under the explicit
 LeaTTa preservation hypotheses it simultaneously (1) represents the visible HE
 successor up to α-equivalence and (2) carries the corresponding empty-context
@@ -3545,7 +3545,7 @@ private theorem leaRenameVars_eq_substApply_uniformCounter
       congrArg Metta.Atom.expr (List.map_congr_left ih)
 
 /-- Translating the HE-side runtime-freshened LHS lands exactly on LeaTTa's
-renaming surface for the same runtime counter. -/
+renaming interface for the same runtime counter. -/
 private theorem toLeaTTaAtom_uniformCounterFreshenEquation_fst
     (counter : Nat) (lhs rhs : Atom) (fuel : Nat)
     (hdepth : atomDepth lhs + 1 ≤ fuel) :
@@ -3741,8 +3741,8 @@ private theorem freshenEquationAgainst_eq_of_ground
   simp [freshenEquationAgainst, hvarsL, hvarsR, freshMappingAgainst, renameVars_nil]
 
 /-- Safe compatibility fragment: in a singleton space containing a fully ground
-equation, the repaired visible-avoid query surface coincides with the ordinary
-faithful HE query surface.  The proof is not about all queries; it uses that
+equation, the repaired visible-avoid query interface coincides with the ordinary
+faithful HE query interface.  The proof is not about all queries; it uses that
 the rule itself has no equation-local variables to freshen. -/
 theorem queryEquationsAgainstVisible_single_ground_rule_eq_queryEquations
     {lhs rhs atom : Atom} (hLhsGround : GroundAtom lhs)
@@ -3781,7 +3781,7 @@ theorem queryEquationsAgainstVisible_single_ground_rule_mem_queryEquations
 
 /-- Exact empty-seed bridge on the ground-pattern fragment: successful HE
 matching against a ground pattern leaves the empty seed unchanged and lands the
-empty LeaTTa binding witness on the direct matcher surface. This is the exact
+empty LeaTTa binding witness on the direct matcher interface. This is the exact
 closed-rule fragment used by the positive equation-step theorem below. -/
 private theorem simpleMatch_ground_empty_exact :
     ∀ fuel,
@@ -3940,7 +3940,7 @@ private theorem simpleMatch_ground_empty_exact :
                     exact matchAll_cons_of_head_tail hheadSeeded htail
       exact ⟨hAtomSucc, hListSucc⟩
 
-/-- Faithful post-G3 query witness: the public equation-query surface now
+/-- Faithful post-G3 query witness: the public equation-query interface now
 matches the queried atom against the freshened rule LHS with `matchAtoms`,
 merges the result with the empty ambient bindings, and filters loops. The old
 `simpleMatch = some qb` shape is valid only on staged fragments. -/
@@ -4058,7 +4058,7 @@ theorem mem_queryEquations_decompose
               | expression es' =>
                   simp at hout
 
-/-- The visible-avoid query surface has the same raw-rule decomposition shape
+/-- The visible-avoid query interface has the same raw-rule decomposition shape
 as `queryEquations`: every witness still comes from a specific indexed raw
 equation together with its avoid-aware freshened matcher witness. This lets the
 bridge reuse the same candidate-transport architecture once it pivots to the
@@ -4182,7 +4182,7 @@ private theorem heHeadKey_freshenEquation_fst
               | expression inner =>
                   cases n <;> rfl
 
-/-- The visible-avoid HE freshening surface also preserves the structural head
+/-- The visible-avoid HE freshening interface also preserves the structural head
 key of the LHS. Avoiding visible names may change fresh suffix choices, but it
 never changes the rule head that candidate indexing sees. -/
 private theorem heHeadKey_freshenEquationAgainst_fst
@@ -4402,7 +4402,7 @@ private theorem faithfulQueryWitness_headKey_compat
   exact matchRel_headKey_compat (DeclMatchSpec.matchAtoms_sound hmb) hatom
 
 /-- The translated `(= lhs rhs)` rules present in an HE atom list. This helper
-matches the exact rule surface consumed by both LeaTTa `Space.equalityRules`
+matches the exact rule interface consumed by both LeaTTa `Space.equalityRules`
 and LeaTTa's indexed-kernel `extractRules`. -/
 def translatedEquationRules : List Atom → List (Metta.Atom × Metta.Atom)
   | [] => []
@@ -4419,7 +4419,7 @@ def translatedEquationRules : List Atom → List (Metta.Atom × Metta.Atom)
       | _ => translatedEquationRules rest
 
 /-- Translating an HE atom list preserves exactly the LeaTTa `equalityRules`
-surface. -/
+interface. -/
 @[simp] theorem equalityRules_toLeaTTaAtoms (atoms : List Atom) :
     (Metta.Space.equalityRules ⟨toLeaTTaAtoms atoms⟩) = translatedEquationRules atoms := by
   induction atoms with
@@ -4471,7 +4471,7 @@ LeaTTa's executable space layer. -/
   exact equalityRules_toLeaTTaAtoms space.atoms
 
 /-- LeaTTa's index-layer rule extraction sees the same translated equation
-surface as `Space.equalityRules`. This is the raw rule-space identity needed
+interface as `Space.equalityRules`. This is the raw rule-space identity needed
 before we can compare step relations. -/
 @[simp] theorem extractRules_toLeaTTaAtoms (atoms : List Atom) :
     Metta.Minimal.extractRules (toLeaTTaAtoms atoms) = translatedEquationRules atoms := by
@@ -4505,7 +4505,7 @@ private theorem mem_extractRules_of_mem_eq_atom
     (mem_translatedEquationRules_of_mem_eq_atom (atoms := atoms) (lhs := lhs) (rhs := rhs) hmem)
 
 /-- Every HE `queryEquations` witness comes from a raw `(= lhs rhs)` rule that
-already sits in LeaTTa's extracted translated rule surface; the freshened HE
+already sits in LeaTTa's extracted translated rule interface; the freshened HE
 match is therefore pinned to a concrete raw LeaTTa equation rule before any
 alpha-boundary reasoning. -/
 theorem queryEquations_extractRule_witness
@@ -4527,8 +4527,8 @@ theorem queryEquations_extractRule_witness
   · simpa [toLeaTTaSpace] using
       (mem_extractRules_of_mem_eq_atom (atoms := space.atoms) (lhs := lhs) (rhs := rawRhs) hrawMem)
 
-/-- The visible-avoid query surface also pins every witness to a concrete raw
-translated rule in LeaTTa's extracted rule set. This is the repaired-surface
+/-- The visible-avoid query interface also pins every witness to a concrete raw
+translated rule in LeaTTa's extracted rule set. This is the repaired-interface
 analogue of `queryEquations_extractRule_witness`, ready for later transport
 theorems that use the stronger freshness discipline. -/
 theorem queryEquationsAgainstVisible_extractRule_witness
@@ -4564,7 +4564,7 @@ theorem queryEquations_noVarAssignmentValues
     queryEquations_extractRule_witness hmem
   exact faithfulQueryWitness_noVarAssignmentValues hmatch
 
-/-- The visible-avoid query surface preserves the same equality-aware matcher
+/-- The visible-avoid query interface preserves the same equality-aware matcher
 invariant. This is the repaired query path used by the conformance bridge. -/
 theorem queryEquationsAgainstVisible_noVarAssignmentValues
     {space : Space} {atom rhs : Atom} {qb : Bindings} {fuel : Nat}
@@ -4584,7 +4584,7 @@ theorem queryEquations_assignmentsNodup
     queryEquations_extractRule_witness hmem
   exact faithfulQueryWitness_assignmentsNodup hmatch
 
-/-- The repaired visible-avoid query surface preserves assignment-key
+/-- The repaired visible-avoid query interface preserves assignment-key
 uniqueness as part of the faithful HE query witness. -/
 theorem queryEquationsAgainstVisible_assignmentsNodup
     {space : Space} {atom rhs : Atom} {qb : Bindings} {fuel : Nat}
@@ -4651,7 +4651,7 @@ theorem queryEquations_extractCandidate_split
   rcases list_mem_split hcand with ⟨pre, post, hsplit⟩
   exact ⟨idx, lhs, rawRhs, pre, post, hzip, hmatch, hsplit⟩
 
-/-- The repaired visible-avoid HE query surface also identifies the concrete
+/-- The repaired visible-avoid HE query interface also identifies the concrete
 raw translated rule bucket that LeaTTa's indexed kernel will inspect for the
 same symbol-headed query. This is the avoid-aware analogue of
 `queryEquations_extractCandidate_split`, ready for the repaired transport
@@ -4799,7 +4799,7 @@ theorem queryEquations_hasLoop_false
   rcases hfw with ⟨_, _hmb, hmergeLoop⟩
   exact hmergeLoop.2.2
 
-/-- The repaired visible-avoid query surface inherits the same loop-freedom
+/-- The repaired visible-avoid query interface inherits the same loop-freedom
 fact from the public filter. -/
 theorem queryEquationsAgainstVisible_hasLoop_false
     {space : Space} {atom rhs : Atom} {qb : Bindings} {fuel : Nat}
@@ -4839,13 +4839,13 @@ theorem queryEquations_alphaBoundary
   · intro hdepth
     simpa [hRhs] using toLeaTTaAtom_freshenEquation_snd idx lhs rawRhs fuel hdepth
 
-/-- The repaired visible-avoid query surface has the same exact translation
+/-- The repaired visible-avoid query interface has the same exact translation
 boundary shape: once the fuel reaches the relevant depths, the HE freshened
 rule seen by the matcher is exactly the LeaTTa translation of the raw rule
 under the avoid-aware HE renaming. This packages the stronger freshness
 discipline in the same form as `queryEquations_alphaBoundary`, so later
 transport proofs can reuse the same translation skeleton on the repaired
-surface. -/
+interface. -/
 theorem queryEquationsAgainstVisible_alphaBoundary
     {space : Space} {atom rhs : Atom} {qb : Bindings} {fuel : Nat}
     (hmem : (rhs, qb) ∈ queryEquationsAgainstVisible space atom fuel) :
@@ -5082,7 +5082,7 @@ theorem queryOp_contains_item_of_splitCandidate
   exact hfoldedMem
 
 /-- On the exact closed-ground fragment, an HE equation-query witness already appears on
-LeaTTa's executable `queryOp` surface: the same translated ground rule survives
+LeaTTa's executable `queryOp` interface: the same translated ground rule survives
 candidate selection, freshening is inert, matching yields the empty binding witness,
 and the resulting item is emitted by the candidate fold. This is the first honest
 positive bridge to the real `queryOp` layer rather than raw `equalityReductions`. -/
@@ -5243,7 +5243,7 @@ def QueryOpWitnessTransport
 
 /-- Honest reduction of the remaining non-ground positive bridge: if the
 specialized freshened-witness transport above is provided, then the translated
-HE query result already appears on LeaTTa's executable `queryOp` surface. This
+HE query result already appears on LeaTTa's executable `queryOp` interface. This
 isolates the proof debt to one named transport lemma rather than scattering it
 through the operational proof. -/
 theorem queryOp_contains_queryEquations_result_of_transport
@@ -5285,7 +5285,7 @@ abbrev EquationMatchQueryOpTransport
 /-- Honest positive `equation_match → queryOp` theorem at the executable item
 layer. Once the specialized non-ground witness transport is supplied as the
 single named hypothesis above, the corresponding translated query result item
-already appears on LeaTTa's `queryOp` surface. -/
+already appears on LeaTTa's `queryOp` interface. -/
 theorem queryOp_contains_equation_match_item_of_transport
     {space : Space} {src rhs : Atom} {qb : Bindings} {fuel : Nat}
     {gt : Metta.GroundingTable} {k : String}
@@ -5308,7 +5308,7 @@ theorem queryOp_contains_equation_match_item_of_transport
 /-- Honest visible-successor bridge on the fragment where HE's recursive
 application agrees with LeaTTa's one-pass matcher instantiation: if the
 translated instantiated RHS item is already present on LeaTTa's executable
-`queryOp` surface, then the visible HE `equation_match` successor is present as
+`queryOp` interface, then the visible HE `equation_match` successor is present as
 well, up to α-equivalence. This avoids the false general target
 `QueryOpWitnessTransport` used to aim at: the runtime emits the instantiated
 RHS, not the freshened raw RHS. -/
@@ -5342,8 +5342,8 @@ theorem queryOp_contains_equation_match_visible_successor_of_instantiated_item
       heq hno hkeys hfresh hdepth hitem
 
 /-- The same instantiated-item visible-successor bridge on the repaired
-visible-avoid query surface. Once the translated instantiated RHS item is
-present on LeaTTa's executable `queryOp` surface, the avoid-aware HE
+visible-avoid query interface. Once the translated instantiated RHS item is
+present on LeaTTa's executable `queryOp` interface, the avoid-aware HE
 `equation_match` successor is already visible up to α-equivalence on the
 no-variable-values fragment. -/
 theorem queryOp_contains_equation_match_visible_successor_of_instantiated_item_againstVisible
@@ -5377,8 +5377,8 @@ theorem queryOp_contains_equation_match_visible_successor_of_instantiated_item_a
 
 /-- Typed specialization of the previous executable `queryOp` bridge: if the
 translated instantiated RHS item is already present on LeaTTa's `queryOp`
-surface and the translated rule/bindings satisfy LeaTTa's preservation
-hypotheses, then the same `queryOp` surface already contains a visible
+interface and the translated rule/bindings satisfy LeaTTa's preservation
+hypotheses, then the same `queryOp` interface already contains a visible
 successor item that is both α-equivalent to the HE successor and well-typed in
 LeaTTa's empty context. -/
 theorem queryOp_contains_typed_equation_match_visible_successor_of_instantiated_item
@@ -5415,7 +5415,7 @@ theorem queryOp_contains_typed_equation_match_visible_successor_of_instantiated_
     typed_visible_successor_of_instantiated_item
       hno hkeys hfresh hb hdepth hitem hσ hL hR
 
-/-- Typed instantiated-item bridge on the repaired visible-avoid query surface.
+/-- Typed instantiated-item bridge on the repaired visible-avoid query interface.
 The same avoid-aware HE witness already yields a typed alpha-visible LeaTTa
 successor once the instantiated RHS item is present on `queryOp`. -/
 theorem queryOp_contains_typed_equation_match_visible_successor_of_instantiated_item_againstVisible
@@ -5453,8 +5453,8 @@ theorem queryOp_contains_typed_equation_match_visible_successor_of_instantiated_
       hfresh hb hdepth hitem hσ hL hR
 
 /-- Typed semantic package for the executable `equation_match` seam on the
-instantiated-item surface. When the translated instantiated RHS item is already
-known to be present on LeaTTa's `queryOp` surface, the HE small-step and the
+instantiated-item interface. When the translated instantiated RHS item is already
+known to be present on LeaTTa's `queryOp` interface, the HE small-step and the
 typed alpha-visible LeaTTa witness can be exhibited together. This is the typed
 counterpart of the untyped semantic packaging above, but it stays on the
 instantiated-item seam where the current preservation theorems apply directly. -/
@@ -5529,7 +5529,7 @@ def EquationMatchVisibleItemTransport
 
 /-- Honest positive simulation theorem at the visible-successor item layer.
 Once the specialized freshened-witness transport above is discharged, LeaTTa's
-executable `queryOp` surface already contains an item whose emitted atom is the
+executable `queryOp` interface already contains an item whose emitted atom is the
 translated HE `equation_match` successor up to α-renaming. This is the theorem
 the eventual `HESmallStep.equation_match` bridge should consume. -/
 theorem queryOp_contains_equation_match_visible_successor_of_transport
@@ -5568,7 +5568,7 @@ theorem queryOp_contains_equation_match_visible_successor_of_transport
 The raw rule/candidate layer is still LeaTTa's unrenamed equation rule, but the
 HE witness consumed by the transport comes from `freshenEquationAgainst`, whose
 avoid set is the variables already visible in the query atom. This is the
-single named hypothesis needed by repaired query-surface bridge theorems. -/
+single named hypothesis needed by repaired query-interface bridge theorems. -/
 def EquationMatchVisibleItemTransportAgainst
     (space : Space) (src rhs : Atom) (qb : Bindings) (fuel : Nat)
     (gt : Metta.GroundingTable) (prev : Metta.Minimal.Stack) (counter : Nat) :
@@ -5623,8 +5623,8 @@ theorem equationMatchVisibleItemTransportAgainst_of_variable_item
   simpa [toLeaTTaAtom] using alphaEq_var_var emittedVar targetVar
 
 /-- Honest positive simulation theorem for the repaired visible-avoid
-`queryEquationsAgainstVisible` surface. Once the avoid-aware transport witness
-is supplied, LeaTTa's executable `queryOp` surface already contains an emitted
+`queryEquationsAgainstVisible` interface. Once the avoid-aware transport witness
+is supplied, LeaTTa's executable `queryOp` interface already contains an emitted
 item alpha-equivalent to the HE visible successor. -/
 theorem queryOp_contains_equation_match_visible_successor_againstVisible_of_transport
     {space : Space} {src rhs : Atom} {qb : Bindings} {fuel : Nat}
@@ -5657,7 +5657,7 @@ theorem queryOp_contains_equation_match_visible_successor_againstVisible_of_tran
     queryOp_contains_item_of_splitCandidate env st0 prev
       (toLeaTTaAtom src) Metta.Bindings.empty hNotVarHead hsplit hitem
 
-/-- Downstream package for the repaired visible-avoid query surface: the public
+/-- Downstream package for the repaired visible-avoid query interface: the public
 HE query witness has already passed the loop filter, and under the avoid-aware
 transport obligation the corresponding LeaTTa executable `queryOp` item is
 visible up to alpha-equivalence. -/
@@ -5684,7 +5684,7 @@ theorem queryEquationsAgainstVisible_queryOp_visible_successor_package_of_transp
       (fuel := fuel) (gt := gt) (k := k)
       prev counter hk hquery htransport
 
-/-- Repaired HE-side equation-step package for the visible-avoid surface. Under
+/-- Repaired HE-side equation-step package for the visible-avoid interface. Under
 the same avoid-aware transport obligation used by the executable bridge, we can
 exhibit both the HE companion equation step and the corresponding LeaTTa
 `queryOp` witness up to alpha-equivalence. -/
@@ -5736,7 +5736,7 @@ def LeaTTaEquationQueryOpHit
     Metta.AlphaEq emitted (toLeaTTaAtom dst)
 
 /-- Local freshened-item transport obligation for the repaired visible-query
-surface.  The HE query witness already determines the raw candidate split; this
+interface.  The HE query witness already determines the raw candidate split; this
 predicate isolates the remaining executable content at the single-candidate
 level: LeaTTa freshening, matcher output, merge, loop filtering, instantiation,
 and alpha-agreement with the HE visible successor. -/
@@ -5818,7 +5818,7 @@ theorem freshenedQueryOpItemTransportAgainstVisible_of_variable_item
 
 /-- Candidate extraction plus a local freshened-item transport proof produces
 the concrete executable `queryOp` witness for the repaired visible-query
-surface.  This removes candidate selection from the remaining bridge debt: the
+interface.  This removes candidate selection from the remaining bridge debt: the
 only supplied hypothesis is now the single-candidate LeaTTa matcher/freshening
 transport. -/
 theorem queryOp_contains_equation_match_visible_successor_againstVisible_of_freshened_item_transport

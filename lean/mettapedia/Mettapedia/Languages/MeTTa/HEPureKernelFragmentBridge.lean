@@ -6,7 +6,7 @@ import Mettapedia.Languages.MeTTa.Translation.HEPeTTaSound
 
 This file records the current honest bridge between:
 
-- HE/PeTTa-facing surface syntax and runtime lanes,
+- HE/PeTTa-facing concrete syntax and runtime lanes,
 - the MeTTa abstract-machine boundary,
 - the Pure checking/kernel waist.
 
@@ -19,7 +19,7 @@ Positive example:
 
 Negative example:
 - HE runtime rules are not reclassified as kernel certificates.
-- the current `mettaPure` rewrite surface is not the direct `R_exec₀` runtime
+- the current `mettaPure` rewrite interface is not the direct `R_exec₀` runtime
   fragment.
 -/
 
@@ -69,7 +69,7 @@ runtime/pure distinction. -/
 def hePureKernelPhaseOrder : List String :=
   [ "freeze the abstract-machine lane split as authoritative"
   , "treat PureTranslatable only as an artifact/pattern witness"
-  , "route closed Pure surface terms through the Pure checking waist"
+  , "route closed Pure source terms through the Pure checking waist"
   , "keep HE runtime rules and queries on the runtime-exec lane"
   , "only after explicit typed translation should stronger HE->Pure claims open"
   , "only after that reconsider direct runtime equivalence claims" ]
@@ -120,55 +120,55 @@ theorem pureTranslatable_has_patternWitness
     ∃ p, atomToPattern a = some p := by
   exact translatable_witness a (PureTranslatable.toTranslatable h)
 
-theorem surfacePureClosed_uses_kernelCertificateLane (term : SurfacePureTm 0) :
-    SurfaceNode.abstractMachineLane (SurfaceNode.surfacePureClosed term) =
+theorem pureClosedSyntax_uses_kernelCertificateLane (term : PureSyntaxTerm 0) :
+    SyntaxNode.abstractMachineLane (SyntaxNode.pureClosedSyntax term) =
       AbstractMachineLane.kernelCertificateLane := by
-  exact (surfacePureClosed_routes_to_checking_boundary term).1
+  exact (pureClosedSyntax_routes_to_checking_boundary term).1
 
-theorem surfacePureClosed_region_is_pureKernel (term : SurfacePureTm 0) :
-    ElaboratedNode.region (elaborate (SurfaceNode.surfacePureClosed term)) =
+theorem pureClosedSyntax_region_is_pureKernel (term : PureSyntaxTerm 0) :
+    ElaboratedNode.region (elaborate (SyntaxNode.pureClosedSyntax term)) =
       ElaboratedRegion.pureKernelRegion := by
-  exact elaborate_surfacePureClosed_region term
+  exact elaborate_pureClosedSyntax_region term
 
 theorem heRuntimeRule_uses_runtimeRuleLane (pattern : Pattern) :
-    SurfaceNode.abstractMachineLane (SurfaceNode.heRuntimeRule pattern) =
+    SyntaxNode.abstractMachineLane (SyntaxNode.heRuntimeRule pattern) =
       AbstractMachineLane.runtimeRuleLane := by
   exact (heRuntimeRule_routes_to_exec_backend pattern).1
 
 theorem heRuntimeRule_region_is_runtimeExec (pattern : Pattern) :
-    ElaboratedNode.region (elaborate (SurfaceNode.heRuntimeRule pattern)) =
+    ElaboratedNode.region (elaborate (SyntaxNode.heRuntimeRule pattern)) =
       ElaboratedRegion.runtimeExecRegion := by
   exact elaborate_heRuntimeRule_region pattern
 
 theorem heRuntimeQuery_uses_runtimeQueryLane (pattern : Pattern) :
-    SurfaceNode.abstractMachineLane (SurfaceNode.heRuntimeQuery pattern) =
+    SyntaxNode.abstractMachineLane (SyntaxNode.heRuntimeQuery pattern) =
       AbstractMachineLane.runtimeQueryLane := by
   exact (heRuntimeQuery_routes_to_query_backend pattern).1
 
 theorem heRuntimeRule_not_kernelCertificateLane (pattern : Pattern) :
-    SurfaceNode.abstractMachineLane (SurfaceNode.heRuntimeRule pattern) ≠
+    SyntaxNode.abstractMachineLane (SyntaxNode.heRuntimeRule pattern) ≠
       AbstractMachineLane.kernelCertificateLane := by
-  simp [SurfaceNode.abstractMachineLane]
+  simp [SyntaxNode.abstractMachineLane]
 
 theorem pettaRuntimeRule_not_kernelCertificateLane (pattern : Pattern) :
-    SurfaceNode.abstractMachineLane (SurfaceNode.pettaRuntimeRule pattern) ≠
+    SyntaxNode.abstractMachineLane (SyntaxNode.pettaRuntimeRule pattern) ≠
       AbstractMachineLane.kernelCertificateLane := by
-  simp [SurfaceNode.abstractMachineLane]
+  simp [SyntaxNode.abstractMachineLane]
 
 theorem pettaRuntimeQuery_uses_runtimeQueryLane (pattern : Pattern) :
-    SurfaceNode.abstractMachineLane (SurfaceNode.pettaRuntimeQuery pattern) =
+    SyntaxNode.abstractMachineLane (SyntaxNode.pettaRuntimeQuery pattern) =
       AbstractMachineLane.runtimeQueryLane := by
   exact (pettaRuntimeQuery_routes_to_query_backend pattern).1
 
 theorem heRuntimeQuery_not_runtimeRuleLane (pattern : Pattern) :
-    SurfaceNode.abstractMachineLane (SurfaceNode.heRuntimeQuery pattern) ≠
+    SyntaxNode.abstractMachineLane (SyntaxNode.heRuntimeQuery pattern) ≠
       AbstractMachineLane.runtimeRuleLane := by
-  simp [SurfaceNode.abstractMachineLane]
+  simp [SyntaxNode.abstractMachineLane]
 
 theorem pettaRuntimeQuery_not_runtimeRuleLane (pattern : Pattern) :
-    SurfaceNode.abstractMachineLane (SurfaceNode.pettaRuntimeQuery pattern) ≠
+    SyntaxNode.abstractMachineLane (SyntaxNode.pettaRuntimeQuery pattern) ≠
       AbstractMachineLane.runtimeRuleLane := by
-  simp [SurfaceNode.abstractMachineLane]
+  simp [SyntaxNode.abstractMachineLane]
 
 theorem mettaPure_current_frontier_not_directExec0
     (r : RewriteRule)

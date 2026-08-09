@@ -1,23 +1,23 @@
-import Mettapedia.OSLF.MeTTaIL.Syntax
+import Mettapedia.GSLT.LanguageDef.LogicExtension
 import Mettapedia.OSLF.MeTTaIL.Engine
 import Mettapedia.Logic.LP.Core
 import Mettapedia.Logic.LP.Semantics
 import Mettapedia.Logic.LP.FunctionFree
 
 /-!
-# LogicSemantics — Bridge from LanguageDef.logic to LP.Core
+# LogicSemantics — Bridge from typed logic extensions to LP.Core
 
-Connects the typed `DatalogClause` rules in `LanguageDef.logic` to
+Connects typed `DatalogClause` programs to
 the proven LP.Core semantics (T_P operator, least Herbrand model,
 fixpoint theorems).
 
 ## Architecture
 
 ```
-LanguageDef.logic : List LogicDecl
+LogicProgram : List LogicDeclaration
     │
     ├─ .relation : LogicRelationDecl → relation signature
-    ├─ .datalogClause : DatalogClause → typed Datalog rule
+    ├─ .clause : DatalogClause → typed Datalog rule
     │       │
     │       ↓ datalogClauseToLPClause
     │   LP.Clause langDefLPSig
@@ -28,7 +28,6 @@ LanguageDef.logic : List LogicDecl
     │       ↓ LP.leastHerbrandModel (proven: T_P monotone, Tarski fixpoint)
     │   LP.Interpretation langDefLPSig
     │
-    └─ .ruleText : String → legacy (opaque, no semantics)
 ```
 
 ## Trust model
@@ -53,6 +52,7 @@ namespace Mettapedia.OSLF.MeTTaIL.LogicSemantics
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Engine
 open Mettapedia.Logic.LP
+open Mettapedia.GSLT.LanguageDef.LogicExtension
 
 /-! ## Section 1: The LanguageDef LP Signature -/
 
@@ -170,41 +170,37 @@ theorem fact_safe_iff_ground (c : DatalogClause) (hfact : c.isFact = true) :
   · intro h
     simp [h]
 
-/-! ## Section 4: Extract Datalog program from LanguageDef -/
+/-! ## Section 4: Extract the typed Datalog program -/
 
-/-- Extract all typed Datalog clauses from a LanguageDef's logic declarations. -/
-def extractDatalogClauses (lang : LanguageDef) : List DatalogClause :=
-  lang.logic.filterMap fun
-    | .datalogClause dc => some dc
-    | _ => none
+/-- Extract all typed Datalog clauses from an extension program. -/
+def extractDatalogClauses (program : LogicProgram) : List DatalogClause :=
+  program.clauses
 
-/-- Extract relation declarations from a LanguageDef. -/
-def extractRelationDecls (lang : LanguageDef) : List LogicRelationDecl :=
-  lang.logic.filterMap fun
-    | .relation rd => some rd
-    | _ => none
+/-- Extract relation declarations from an extension program. -/
+def extractRelationDecls (program : LogicProgram) : List LogicRelationDecl :=
+  program.relationDeclarations
 
 /-- Arity-preserving LP program extracted from LanguageDef Datalog clauses. -/
-def langDefArityProgram (lang : LanguageDef) : Program arityDefLPSig :=
-  (extractDatalogClauses lang).map datalogClauseToArityLPClause
+def langDefArityProgram (program : LogicProgram) : Program arityDefLPSig :=
+  (extractDatalogClauses program).map datalogClauseToArityLPClause
 
 /-- Arity-preserving LP knowledge base for LanguageDef logic.  Facts are kept as
     empty-body clauses in `prog`, so `db` remains empty. -/
-def langDefArityKnowledgeBase (lang : LanguageDef) :
+def langDefArityKnowledgeBase (program : LogicProgram) :
     KnowledgeBase arityDefLPSig where
-  prog := langDefArityProgram lang
+  prog := langDefArityProgram program
   db := ∅
 
 /-- Any extracted Datalog clause contributes its arity-preserving LP head to the
     least Herbrand model when its converted body is already in that model. -/
 theorem langDefArity_clause_head_in_leastModel
-    (lang : LanguageDef) (c : DatalogClause)
-    (hc : c ∈ extractDatalogClauses lang) (g : Grounding arityDefLPSig)
+    (program : LogicProgram) (c : DatalogClause)
+    (hc : c ∈ extractDatalogClauses program) (g : Grounding arityDefLPSig)
     (hbody : ∀ b ∈ (datalogClauseToArityLPClause c).body,
-      g.groundAtom b ∈ leastHerbrandModel (langDefArityKnowledgeBase lang)) :
+      g.groundAtom b ∈ leastHerbrandModel (langDefArityKnowledgeBase program)) :
     g.groundAtom (datalogClauseToArityLPClause c).head ∈
-      leastHerbrandModel (langDefArityKnowledgeBase lang) := by
-  exact leastHerbrandModel_clause (langDefArityKnowledgeBase lang)
+      leastHerbrandModel (langDefArityKnowledgeBase program) := by
+  exact leastHerbrandModel_clause (langDefArityKnowledgeBase program)
     (datalogClauseToArityLPClause c)
     (List.mem_map.mpr ⟨c, hc, rfl⟩) g hbody
 
@@ -248,16 +244,16 @@ def datalogClauseToGroundFactTuple? (c : DatalogClause) : Option (String × List
   | _ => none
 
 /-- Ground fact tuples authored in `LanguageDef.logic`. -/
-def extractGroundFactTuples (lang : LanguageDef) : List (String × List Pattern) :=
-  (extractDatalogClauses lang).filterMap datalogClauseToGroundFactTuple?
+def extractGroundFactTuples (program : LogicProgram) : List (String × List Pattern) :=
+  (extractDatalogClauses program).filterMap datalogClauseToGroundFactTuple?
 
 /-- Generic relation environment induced by ground Datalog facts in
     `LanguageDef.logic`. The query arguments are matched later by the engine's
     normal `relationQuery` machinery, so this table returns all tuples for the
     requested relation name. -/
-def logicFactRelationEnv (lang : LanguageDef) : RelationEnv where
+def logicFactRelationEnv (program : LogicProgram) : RelationEnv where
   tuples rel _queryArgs :=
-    (extractGroundFactTuples lang).filterMap fun fact =>
+    (extractGroundFactTuples program).filterMap fun fact =>
       if fact.1 = rel then some fact.2 else none
 
 abbrev GroundTuple := String × List Pattern
@@ -357,8 +353,8 @@ theorem datalogClauseToGroundFactTuple?_allNullaryConst
   exact datalogAtomToGroundTuple?_allNullaryConst h
 
 theorem extractGroundFactTuples_allNullaryConst
-    (lang : LanguageDef) :
-    GroundTuplesAllNullaryConst (extractGroundFactTuples lang) := by
+    (program : LogicProgram) :
+    GroundTuplesAllNullaryConst (extractGroundFactTuples program) := by
   intro tuple h
   simp [extractGroundFactTuples, List.mem_filterMap] at h
   obtain ⟨clause, _hclause, htuple⟩ := h
@@ -369,15 +365,15 @@ theorem extractGroundFactTuples_allNullaryConst
     tuple-level ground-atom theorem is proved below, after executable bindings
     have been defined. -/
 theorem langDefArity_groundFactTuple_head_in_leastModel
-    (lang : LanguageDef) (c : DatalogClause) (tuple : GroundTuple)
-    (hc : c ∈ extractDatalogClauses lang)
+    (program : LogicProgram) (c : DatalogClause) (tuple : GroundTuple)
+    (hc : c ∈ extractDatalogClauses program)
     (htuple : datalogClauseToGroundFactTuple? c = some tuple)
     (g : Grounding arityDefLPSig) :
     g.groundAtom (datalogClauseToArityLPClause c).head ∈
-      leastHerbrandModel (langDefArityKnowledgeBase lang) := by
+      leastHerbrandModel (langDefArityKnowledgeBase program) := by
   cases hbody : c.body with
   | nil =>
-      apply langDefArity_clause_head_in_leastModel lang c hc g
+      apply langDefArity_clause_head_in_leastModel program c hc g
       intro b hb
       simp [datalogClauseToArityLPClause, hbody] at hb
   | cons _ _ =>
@@ -1220,18 +1216,18 @@ theorem datalogAtomToGroundTuple?_groundAtom_eq
     simp [instantiateDatalogAtom?, hinstTerms]
   exact instantiateDatalogAtom?_groundAtom_eq hinstAtom
 
-abbrev GroundTuplesInArityLeastModel (lang : LanguageDef)
+abbrev GroundTuplesInArityLeastModel (program : LogicProgram)
     (known : List GroundTuple) : Prop :=
   ∀ tuple ∈ known,
     groundTupleToArityGroundAtom tuple ∈
-      leastHerbrandModel (langDefArityKnowledgeBase lang)
+      leastHerbrandModel (langDefArityKnowledgeBase program)
 
 theorem datalogClauseToGroundFactTuple?_groundAtom_in_leastModel
-    (lang : LanguageDef) {clause : DatalogClause} {tuple : GroundTuple}
-    (hc : clause ∈ extractDatalogClauses lang)
+    (program : LogicProgram) {clause : DatalogClause} {tuple : GroundTuple}
+    (hc : clause ∈ extractDatalogClauses program)
     (htuple : datalogClauseToGroundFactTuple? clause = some tuple) :
     groundTupleToArityGroundAtom tuple ∈
-      leastHerbrandModel (langDefArityKnowledgeBase lang) := by
+      leastHerbrandModel (langDefArityKnowledgeBase program) := by
   cases hbody : clause.body with
   | nil =>
       have hhead :
@@ -1239,7 +1235,7 @@ theorem datalogClauseToGroundFactTuple?_groundAtom_in_leastModel
         simpa [datalogClauseToGroundFactTuple?, hbody] using htuple
       have heq := datalogAtomToGroundTuple?_groundAtom_eq hhead
       rw [← heq]
-      apply langDefArity_clause_head_in_leastModel lang clause hc
+      apply langDefArity_clause_head_in_leastModel program clause hc
         (DatalogBindings.toArityGrounding ([] : DatalogBindings))
       intro b hb
       simp [datalogClauseToArityLPClause, hbody] at hb
@@ -1247,12 +1243,12 @@ theorem datalogClauseToGroundFactTuple?_groundAtom_in_leastModel
       simp [datalogClauseToGroundFactTuple?, hbody] at htuple
 
 theorem extractGroundFactTuples_in_leastModel
-    (lang : LanguageDef) :
-    GroundTuplesInArityLeastModel lang (extractGroundFactTuples lang) := by
+    (program : LogicProgram) :
+    GroundTuplesInArityLeastModel program (extractGroundFactTuples program) := by
   intro tuple htuple
   simp [extractGroundFactTuples, List.mem_filterMap] at htuple
   obtain ⟨clause, hc, hfact⟩ := htuple
-  exact datalogClauseToGroundFactTuple?_groundAtom_in_leastModel lang hc hfact
+  exact datalogClauseToGroundFactTuple?_groundAtom_in_leastModel program hc hfact
 
 def deriveDatalogClauseTuples (known : List GroundTuple) (clause : DatalogClause) :
     List GroundTuple :=
@@ -1275,18 +1271,18 @@ theorem deriveDatalogClauseTuples_preserves_allNullaryConst
   exact instantiateDatalogAtom?_allNullaryConst hb hinst
 
 theorem deriveDatalogClauseTuples_in_leastModel
-    (lang : LanguageDef) {known : List GroundTuple} {clause : DatalogClause}
+    (program : LogicProgram) {known : List GroundTuple} {clause : DatalogClause}
     {tuple : GroundTuple}
-    (hc : clause ∈ extractDatalogClauses lang)
-    (hknown : GroundTuplesInArityLeastModel lang known)
+    (hc : clause ∈ extractDatalogClauses program)
+    (hknown : GroundTuplesInArityLeastModel program known)
     (htuple : tuple ∈ deriveDatalogClauseTuples known clause) :
     groundTupleToArityGroundAtom tuple ∈
-      leastHerbrandModel (langDefArityKnowledgeBase lang) := by
+      leastHerbrandModel (langDefArityKnowledgeBase program) := by
   simp [deriveDatalogClauseTuples, List.mem_filterMap] at htuple
   obtain ⟨bindings, hbindings, hinst⟩ := htuple
   have hheadEq := instantiateDatalogAtom?_groundAtom_eq hinst
   rw [← hheadEq]
-  apply langDefArity_clause_head_in_leastModel lang clause hc
+  apply langDefArity_clause_head_in_leastModel program clause hc
     (DatalogBindings.toArityGrounding bindings)
   intro b hb
   simp only [datalogClauseToArityLPClause, List.mem_map] at hb
@@ -1331,26 +1327,26 @@ theorem datalogClosureStep_preserves_allNullaryConst
       exact deriveDatalogClauseTuples_preserves_allNullaryConst hknown htuple
 
 theorem datalogClosureStep_in_leastModel
-    (lang : LanguageDef) {known : List GroundTuple} {tuple : GroundTuple}
-    (hknown : GroundTuplesInArityLeastModel lang known)
-    (h : tuple ∈ datalogClosureStep (extractDatalogClauses lang) known) :
+    (program : LogicProgram) {known : List GroundTuple} {tuple : GroundTuple}
+    (hknown : GroundTuplesInArityLeastModel program known)
+    (h : tuple ∈ datalogClosureStep (extractDatalogClauses program) known) :
     groundTupleToArityGroundAtom tuple ∈
-      leastHerbrandModel (langDefArityKnowledgeBase lang) := by
+      leastHerbrandModel (langDefArityKnowledgeBase program) := by
   rw [mem_datalogClosureStep_iff_supported] at h
   cases h with
   | inl hmem =>
       exact hknown tuple hmem
   | inr hderived =>
       obtain ⟨clause, hc, htuple⟩ := hderived
-      exact deriveDatalogClauseTuples_in_leastModel lang hc hknown htuple
+      exact deriveDatalogClauseTuples_in_leastModel program hc hknown htuple
 
 theorem datalogClosureStep_preserves_leastModelSound
-    (lang : LanguageDef) {known : List GroundTuple}
-    (hknown : GroundTuplesInArityLeastModel lang known) :
-    GroundTuplesInArityLeastModel lang
-      (datalogClosureStep (extractDatalogClauses lang) known) := by
+    (program : LogicProgram) {known : List GroundTuple}
+    (hknown : GroundTuplesInArityLeastModel program known) :
+    GroundTuplesInArityLeastModel program
+      (datalogClosureStep (extractDatalogClauses program) known) := by
   intro tuple htuple
-  exact datalogClosureStep_in_leastModel lang hknown htuple
+  exact datalogClosureStep_in_leastModel program hknown htuple
 
 def datalogClosureWithFuel (clauses : List DatalogClause) : Nat → List GroundTuple →
     List GroundTuple
@@ -1392,12 +1388,12 @@ theorem datalogClosureWithFuel_preserves_allNullaryConst
         exact ih hnext h
 
 theorem datalogClosureWithFuel_in_leastModel
-    (lang : LanguageDef) :
+    (program : LogicProgram) :
     ∀ {fuel : Nat} {known : List GroundTuple} {tuple : GroundTuple},
-      GroundTuplesInArityLeastModel lang known →
-      tuple ∈ datalogClosureWithFuel (extractDatalogClauses lang) fuel known →
+      GroundTuplesInArityLeastModel program known →
+      tuple ∈ datalogClosureWithFuel (extractDatalogClauses program) fuel known →
       groundTupleToArityGroundAtom tuple ∈
-        leastHerbrandModel (langDefArityKnowledgeBase lang) := by
+        leastHerbrandModel (langDefArityKnowledgeBase program) := by
   intro fuel
   induction fuel with
   | zero =>
@@ -1407,22 +1403,22 @@ theorem datalogClosureWithFuel_in_leastModel
       exact hknown tuple hmem
   | succ fuel ih =>
       intro known tuple hknown h
-      have hcurrent : GroundTuplesInArityLeastModel lang known.eraseDups := by
+      have hcurrent : GroundTuplesInArityLeastModel program known.eraseDups := by
         intro t ht
         exact hknown t (by simpa using ht)
       have hnext :
-          GroundTuplesInArityLeastModel lang
-            (datalogClosureStep (extractDatalogClauses lang) known.eraseDups) :=
-        datalogClosureStep_preserves_leastModelSound lang hcurrent
+          GroundTuplesInArityLeastModel program
+            (datalogClosureStep (extractDatalogClauses program) known.eraseDups) :=
+        datalogClosureStep_preserves_leastModelSound program hcurrent
       by_cases hfixed :
-          datalogClosureStep (extractDatalogClauses lang) known.eraseDups =
+          datalogClosureStep (extractDatalogClauses program) known.eraseDups =
             known.eraseDups
       · have hmem : tuple ∈ known.eraseDups := by
           simpa [datalogClosureWithFuel, hfixed] using h
         exact hcurrent tuple hmem
       · have htail :
-            tuple ∈ datalogClosureWithFuel (extractDatalogClauses lang) fuel
-              (datalogClosureStep (extractDatalogClauses lang) known.eraseDups) := by
+            tuple ∈ datalogClosureWithFuel (extractDatalogClauses program) fuel
+              (datalogClosureStep (extractDatalogClauses program) known.eraseDups) := by
           simpa [datalogClosureWithFuel, hfixed] using h
         exact ih hnext htail
 
@@ -1473,84 +1469,84 @@ def datalogAtomRelationSpec (atom : DatalogAtom) : String × Nat :=
 def datalogClauseRelationSpecs (clause : DatalogClause) : List (String × Nat) :=
   datalogAtomRelationSpec clause.head :: clause.body.map datalogAtomRelationSpec
 
-def datalogRelationSpecs (lang : LanguageDef) : List (String × Nat) :=
-  ((extractRelationDecls lang).map fun rel => (rel.name, rel.argTypes.length)) ++
-    ((extractDatalogClauses lang).flatMap datalogClauseRelationSpecs)
+def datalogRelationSpecs (program : LogicProgram) : List (String × Nat) :=
+  ((extractRelationDecls program).map fun rel => (rel.name, rel.argTypes.length)) ++
+    ((extractDatalogClauses program).flatMap datalogClauseRelationSpecs)
 
-def datalogConstants (lang : LanguageDef) : List String :=
-  ((extractDatalogClauses lang).flatMap datalogClauseConstants).eraseDups
+def datalogConstants (program : LogicProgram) : List String :=
+  ((extractDatalogClauses program).flatMap datalogClauseConstants).eraseDups
 
-def datalogClosureFuelBound (lang : LanguageDef) : Nat :=
-  let constCount := (datalogConstants lang).length
-  let specs := (datalogRelationSpecs lang).eraseDups
+def datalogClosureFuelBound (program : LogicProgram) : Nat :=
+  let constCount := (datalogConstants program).length
+  let specs := (datalogRelationSpecs program).eraseDups
   specs.foldl (fun acc spec => acc + constCount ^ spec.2) 1
 
-def datalogClosureTuplesWithFuel (lang : LanguageDef) (fuel : Nat) : List GroundTuple :=
-  datalogClosureWithFuel (extractDatalogClauses lang) fuel (extractGroundFactTuples lang)
+def datalogClosureTuplesWithFuel (program : LogicProgram) (fuel : Nat) : List GroundTuple :=
+  datalogClosureWithFuel (extractDatalogClauses program) fuel (extractGroundFactTuples program)
 
-def datalogClosureTuples (lang : LanguageDef) : List GroundTuple :=
-  datalogClosureTuplesWithFuel lang (datalogClosureFuelBound lang)
+def datalogClosureTuples (program : LogicProgram) : List GroundTuple :=
+  datalogClosureTuplesWithFuel program (datalogClosureFuelBound program)
 
 theorem datalogClosureTuplesWithFuel_in_leastModel
-    (lang : LanguageDef) (fuel : Nat) :
-    GroundTuplesInArityLeastModel lang
-      (datalogClosureTuplesWithFuel lang fuel) := by
+    (program : LogicProgram) (fuel : Nat) :
+    GroundTuplesInArityLeastModel program
+      (datalogClosureTuplesWithFuel program fuel) := by
   intro tuple h
-  exact datalogClosureWithFuel_in_leastModel lang
-    (extractGroundFactTuples_in_leastModel lang) h
+  exact datalogClosureWithFuel_in_leastModel program
+    (extractGroundFactTuples_in_leastModel program) h
 
 theorem datalogClosureTuples_in_leastModel
-    (lang : LanguageDef) :
-    GroundTuplesInArityLeastModel lang (datalogClosureTuples lang) :=
-  datalogClosureTuplesWithFuel_in_leastModel lang (datalogClosureFuelBound lang)
+    (program : LogicProgram) :
+    GroundTuplesInArityLeastModel program (datalogClosureTuples program) :=
+  datalogClosureTuplesWithFuel_in_leastModel program (datalogClosureFuelBound program)
 
 theorem datalogClosureTuplesWithFuel_allNullaryConst
-    (lang : LanguageDef) (fuel : Nat) :
-    GroundTuplesAllNullaryConst (datalogClosureTuplesWithFuel lang fuel) := by
+    (program : LogicProgram) (fuel : Nat) :
+    GroundTuplesAllNullaryConst (datalogClosureTuplesWithFuel program fuel) := by
   intro tuple h
   exact datalogClosureWithFuel_preserves_allNullaryConst
-    (extractDatalogClauses lang)
-    (extractGroundFactTuples_allNullaryConst lang) h
+    (extractDatalogClauses program)
+    (extractGroundFactTuples_allNullaryConst program) h
 
 theorem datalogClosureTuples_allNullaryConst
-    (lang : LanguageDef) :
-    GroundTuplesAllNullaryConst (datalogClosureTuples lang) :=
-  datalogClosureTuplesWithFuel_allNullaryConst lang (datalogClosureFuelBound lang)
+    (program : LogicProgram) :
+    GroundTuplesAllNullaryConst (datalogClosureTuples program) :=
+  datalogClosureTuplesWithFuel_allNullaryConst program (datalogClosureFuelBound program)
 
 /-- Generic relation environment induced by finite Datalog closure over
     `LanguageDef.logic`. The query arguments are matched later by the engine's
     normal `relationQuery` machinery. -/
-def logicDatalogRelationEnv (lang : LanguageDef) : RelationEnv where
+def logicDatalogRelationEnv (program : LogicProgram) : RelationEnv where
   tuples rel _queryArgs :=
-    (datalogClosureTuples lang).filterMap fun fact =>
+    (datalogClosureTuples program).filterMap fun fact =>
       if fact.1 = rel then some fact.2 else none
 
 /-- The relation environment used by premise queries exposes exactly the tuples
     with the requested relation name from the finite Datalog closure. -/
 theorem mem_logicDatalogRelationEnv_tuples_iff
-    (lang : LanguageDef) (rel : String) (query tuple : List Pattern) :
-    tuple ∈ (logicDatalogRelationEnv lang).tuples rel query ↔
-      (rel, tuple) ∈ datalogClosureTuples lang := by
+    (program : LogicProgram) (rel : String) (query tuple : List Pattern) :
+    tuple ∈ (logicDatalogRelationEnv program).tuples rel query ↔
+      (rel, tuple) ∈ datalogClosureTuples program := by
   simp [logicDatalogRelationEnv]
 
 theorem logicDatalogRelationEnv_tuples_in_leastModel
-    (lang : LanguageDef) {rel : String} {query tuple : List Pattern}
-    (h : tuple ∈ (logicDatalogRelationEnv lang).tuples rel query) :
+    (program : LogicProgram) {rel : String} {query tuple : List Pattern}
+    (h : tuple ∈ (logicDatalogRelationEnv program).tuples rel query) :
     groundTupleToArityGroundAtom (rel, tuple) ∈
-      leastHerbrandModel (langDefArityKnowledgeBase lang) := by
+      leastHerbrandModel (langDefArityKnowledgeBase program) := by
   rw [mem_logicDatalogRelationEnv_tuples_iff] at h
-  exact datalogClosureTuples_in_leastModel lang (rel, tuple) h
+  exact datalogClosureTuples_in_leastModel program (rel, tuple) h
 
 theorem logicDatalogRelationEnv_tuples_allNullaryConst
-    (lang : LanguageDef) {rel : String} {query tuple : List Pattern}
-    (h : tuple ∈ (logicDatalogRelationEnv lang).tuples rel query) :
+    (program : LogicProgram) {rel : String} {query tuple : List Pattern}
+    (h : tuple ∈ (logicDatalogRelationEnv program).tuples rel query) :
     ∀ p ∈ tuple, Pattern.isNullaryConst p := by
   rw [mem_logicDatalogRelationEnv_tuples_iff] at h
-  exact datalogClosureTuples_allNullaryConst lang (rel, tuple) h
+  exact datalogClosureTuples_allNullaryConst program (rel, tuple) h
 
 /-- Check if all Datalog clauses in a LanguageDef are safe. -/
-def allClausesSafe (lang : LanguageDef) : Bool :=
-  (extractDatalogClauses lang).all DatalogClause.isSafe
+def allClausesSafe (program : LogicProgram) : Bool :=
+  (extractDatalogClauses program).all DatalogClause.isSafe
 
 /-! ## Section 4c: Converse-completeness boundary -/
 
@@ -1559,12 +1555,13 @@ def unsafeVariableFactClause : DatalogClause :=
     head := { rel := "unsafeAny", args := [.var "X"] }
     body := [] }
 
-def unsafeVariableFactLang : LanguageDef :=
+def unsafeVariableFactBase : LanguageDef :=
   { LanguageDef.empty "UnsafeVariableFact" with
-    types := [TypeDecl.plain "Obj"]
-    logic :=
-      [ .relation { name := "unsafeAny", argTypes := [.base "Obj"] }
-      , .datalogClause unsafeVariableFactClause ] }
+    types := [TypeDecl.plain "Obj"] }
+
+def unsafeVariableFactProgram : LogicProgram :=
+  [ .relation { name := "unsafeAny", argTypes := [.base "Obj"] }
+  , .clause unsafeVariableFactClause ]
 
 def unsafeVariableFactGrounding : Grounding arityDefLPSig :=
   fun _ => .const "fresh"
@@ -1576,40 +1573,34 @@ def unsafeVariableFactAtom : GroundAtom arityDefLPSig :=
 def unsafeVariableFactTuple : GroundTuple :=
   ("unsafeAny", [.apply "fresh" []])
 
-theorem unsafeVariableFactLang_not_safe :
-    allClausesSafe unsafeVariableFactLang = false := rfl
+theorem unsafeVariableFactProgram_not_safe :
+    allClausesSafe unsafeVariableFactProgram = false := rfl
 
-theorem unsafeVariableFactLang_validate_rejects :
-    LanguageDef.validate unsafeVariableFactLang ≠ [] := by
-  apply List.ne_nil_of_mem (a :=
-    ({ context := "UnsafeVariableFact",
-       message := "unsafe Datalog clause unsafe-variable-fact: head variable not in body" } :
-      ValidationError))
-  simp [LanguageDef.validate, LanguageDef.empty, LanguageDef.typeNames,
-    unsafeVariableFactLang, unsafeVariableFactClause, DatalogClause.isSafe]
-  right
-  constructor
-  · exact ⟨"X", by simp [DatalogAtom.vars]⟩
-  · rfl
+theorem unsafeVariableFactProgram_admission_rejects :
+    LogicProgram.AdmissibleFor unsafeVariableFactProgram
+      unsafeVariableFactBase = false := by
+  decide
 
 theorem unsafeVariableFactAtom_in_leastModel :
     unsafeVariableFactAtom ∈
-      leastHerbrandModel (langDefArityKnowledgeBase unsafeVariableFactLang) := by
+      leastHerbrandModel
+        (langDefArityKnowledgeBase unsafeVariableFactProgram) := by
   apply langDefArity_clause_head_in_leastModel
-    unsafeVariableFactLang unsafeVariableFactClause
+    unsafeVariableFactProgram unsafeVariableFactClause
     (g := unsafeVariableFactGrounding)
-  · simp [unsafeVariableFactLang, extractDatalogClauses]
+  · simp [unsafeVariableFactProgram, extractDatalogClauses,
+      LogicProgram.clauses]
   · intro b hb
     simp [datalogClauseToArityLPClause, unsafeVariableFactClause] at hb
 
 theorem unsafeVariableFactTuple_not_in_executable_closure :
-    unsafeVariableFactTuple ∉ datalogClosureTuples unsafeVariableFactLang := by
+    unsafeVariableFactTuple ∉ datalogClosureTuples unsafeVariableFactProgram := by
   decide
 
 /-- Check if all Datalog clauses reference only declared relations. -/
-def allRelationsDeclared (lang : LanguageDef) : Bool :=
-  let declaredRels := (extractRelationDecls lang).map (·.name)
-  let clauses := extractDatalogClauses lang
+def allRelationsDeclared (program : LogicProgram) : Bool :=
+  let declaredRels := (extractRelationDecls program).map (·.name)
+  let clauses := extractDatalogClauses program
   clauses.all fun c =>
     c.head.rel ∈ declaredRels && c.body.all fun b => b.rel ∈ declaredRels
 

@@ -8,7 +8,7 @@ This module separates three concerns:
 * `Name` reifies arbitrary syntax without evaluating it.
 * `PersistentName` records the additional closedness obligation required by
   stable runtime identities.
-* `NamedTerm` is a name-parametric surface whose elaboration erases binders to
+* `NamedTerm` is name-parametric syntax whose elaboration erases binders to
   de Bruijn indices.
 
 The Prime definitions are independent of the rho-calculus definitions.  The
@@ -170,9 +170,9 @@ def recognize (name : PrimeName) : Option PersistentName :=
 
 end PersistentName
 
-/-! ## Name-parametric ABT surface -/
+/-! ## Name-parametric ABT syntax -/
 
-/-- A small binding surface sufficient to state the name-parametric
+/-- A small binding syntax sufficient to state the name-parametric
 elaboration theorem.  The production signature-driven ABT supports more
 constructors; all of them recurse through the same binder lookup. -/
 inductive NamedTerm (N : Type u) where
@@ -262,11 +262,11 @@ theorem elaborate_outer_under_inner [DecidableEq N] {outer inner : N}
   simp [elaborate, lookupIndex, hne]
 
 /-- Canonical naming of an elaborated ABT is defined only after the named
-surface has successfully erased to de Bruijn form. -/
+syntax has successfully erased to de Bruijn form. -/
 def canonicalName? [DecidableEq N] (term : NamedTerm N) : Option (Name CoreTerm) :=
   (elaborate [] term).map Name.quote
 
-/-- Injectively changing the representation of every surface name cannot
+/-- Injectively changing the representation of every source name cannot
 change the structural name of the resulting canonical ABT. -/
 theorem canonicalName_map_of_injective [DecidableEq N] [DecidableEq M]
     (f : N → M) (hf : Function.Injective f) (term : NamedTerm N) :

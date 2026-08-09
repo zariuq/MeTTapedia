@@ -211,7 +211,7 @@ theorem fullNTTParity_closed : nttRemainingCount = 0 :=
 #check Mettapedia.OSLF.MeTTaIL.LogicSemantics.logicDatalogRelationEnv_tuples_in_leastModel
 #check Mettapedia.OSLF.MeTTaIL.LogicSemantics.unsafeVariableFactAtom_in_leastModel
 #check Mettapedia.OSLF.MeTTaIL.LogicSemantics.unsafeVariableFactTuple_not_in_executable_closure
-#check Mettapedia.OSLF.MeTTaIL.LogicSemantics.unsafeVariableFactLang_validate_rejects
+#check Mettapedia.OSLF.MeTTaIL.LogicSemantics.unsafeVariableFactProgram_admission_rejects
 #check Mettapedia.OSLF.MeTTaIL.LogicSemantics.mem_logicDatalogRelationEnv_tuples_iff
 #check Mettapedia.OSLF.MeTTaIL.LogicSemantics.datalogClauseToArityLPClause
 #check Mettapedia.OSLF.MeTTaIL.LogicSemantics.langDefArity_clause_head_in_leastModel

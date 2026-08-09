@@ -70,7 +70,7 @@
         "reason": "ParseEng treats the infinitive fragment as a phrase with an implicit subject and inserts a PGF meta hole.",
         "holeEvidence": "UttVP ASimul PPos ? (ComplSlash (SlashV2a declare_*_V2) (MassNP (UseN war_*_N)))"
       },
-      "recommendedHandling": "Use a Constitution-specific grammar category for enumerated powers. Treat any ordinary-sentence completion as contextual and weaker than exact surface grounding.",
+      "recommendedHandling": "Use a Constitution-specific grammar category for enumerated powers. Treat any ordinary-sentence completion as contextual and weaker than exact source-text grounding.",
       "candidateFixes": [
         {
           "kind": "context_completion",

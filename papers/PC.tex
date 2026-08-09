@@ -1385,6 +1385,65 @@ synthetic held-out marginals are the cleaner evidence for retaining prospective 
 diversity arm. Total coverage and equal-compute opportunity cost still determine whether
 it earns production budget.
 
+\subsection{A fresh four-arm round, and the geometry of its credit}
+\label{sec:fresh-round-credit}
+
+The campaigns above all continued an inherited parameter state. The next one begins from
+fresh weights in every arm, crossing two carriers---a unified multi-site carrier and a
+coarser recurrent sequence-to-sequence carrier---with ordinary BP and prospective PC.
+Within the unified pair, at search work matched to within $0.1\%$, PC leads BP on
+verified coverage and on unique accepted programs while tying on directly requested
+targets, at $3.83$ times the training cost. That is one seed and we treat it as
+descriptive. The instructive results are not the counts but the credit geometry
+measured alongside them.
+
+\paragraph{Departure is real, and it is banded.}
+Instrumenting the settling of the recurrent PC arm and comparing its parameter credit
+against BP credit on the same batch gives a cosine of $0.16$--$0.41$ across updates
+whose inference gradients are entirely ordinary. The departure is therefore not a
+numerical artifact: it is present at healthy conditioning and persists across batches.
+The unified arm, by contrast, terminates at cosine $0.992$---effectively BP. Two
+otherwise comparable predictive-coding arms thus sit at opposite ends of the departure
+scale, and the variable that distinguishes them is where the graph is cut: the unified
+carrier's fine multi-site cut leaves little for settling to recover, while the coarse
+recurrent cut discards a great deal. We record cut granularity as the candidate control
+variable for departure and do not yet claim the relation is causal.
+
+The same instrumentation exhibits the boundary of the useful regime. Approaching a
+settling failure the cosine falls to $0.0008$: credit essentially orthogonal to the BP
+direction, hence carrying no first-order reduction of the task loss. That is not a
+stronger departure but a departed and no-longer-descending state, which is exactly the
+complement of the \emph{departs-but-descends} band---positive inner product, not a
+scalar multiple, squared cosine below one---established constructively in
+\S\ref{sec:finite-settling}. The practical consequence is that a monotone-energy gate
+cannot detect this failure: energy decreased at every accepted step while the credit was
+already orthogonal. The admissible criterion is a floor on credit cosine, which is the
+credit-unit stationarity condition that a bare gradient-norm tolerance provably cannot
+supply.
+
+\paragraph{Settling depth saturates well before the energy does.}
+Settling the same state to fifty times the production depth moves the credit cosine from
+$0.241$ at depth five to $0.270$, after which it is immobile to three figures from depth
+$32$ through depth $160$---while the energy continues to fall by a further $26\%$
+throughout. Roughly nine tenths of all available transport occurs in the first five
+steps. Energy descent and credit transport are therefore decoupled: the solver goes on
+doing genuine work on the objective and that work buys no further credit. The
+consequence for design is immediate and negative---a faster or more stable inference
+solver cannot recover credit the graph cut never carried---and the consequence for
+theory is a target we state as open: predict the saturation depth from the spectrum
+rather than discovering it empirically.
+
+\paragraph{Where the recurrent arm's instability comes from.}
+The recurrent arm's settling failures are not an ill-conditioned objective. Decomposing
+the settle energy at an authenticated failing state, the residual term contributes a
+gradient of $0.16$ and the operator-presence auxiliary $197$, while the plain next-token
+cross entropy---whose gradient at the logits is bounded elementwise by construction---
+arrives at the latent error coordinates at $3.7\times10^{7}$. A bounded quantity at the
+outputs appearing as tens of millions at the latents locates the amplification in the
+map between them, which is the unrolled recurrence. The failure is
+gradient-amplification-through-time, and no reformulation of the objective addresses it;
+the repair is a matter of conditioning or of parametrization.
+
 \section{Certified finite settling and authenticated checkpoint geometry}
 \label{sec:finite-settling}
 

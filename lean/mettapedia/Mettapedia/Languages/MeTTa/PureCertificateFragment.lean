@@ -13,13 +13,13 @@ realistically check today.
 This file isolates the current pure certificate story from the larger
 `ElaboratedCore` classifier:
 
-- a binder-aware closed surface syntax
+- a binder-aware closed concrete syntax
 - lowering to trusted `PureTm`
 - lowering to the shared quoted MeTTa artifact
 - a certificate stating those two views agree
 
 This is intentionally small and closed. It is not a general theorem-proving
-surface yet.
+syntax yet.
 -/
 
 namespace Mettapedia.Languages.MeTTa.ElaboratedCore
@@ -31,29 +31,29 @@ open Mettapedia.Languages.MeTTa.PureKernel.CoreEmbedding
 open Mettapedia.Languages.MeTTa.PureKernel.Typing
 open Mettapedia.OSLF.MeTTaIL.Syntax
 
-/-- Small binder-aware surface syntax for the first real pure fragment above
+/-- Small binder-aware concrete syntax for the first real pure fragment above
 `PureKernel`.
 
 This mirrors the trusted Pure syntax closely on purpose: the immediate goal is
 to make the first dual-view certificate real, not to invent a second kernel. -/
-inductive SurfacePureTm : Nat → Type where
-  | var : Fin n → SurfacePureTm n
-  | u0 : SurfacePureTm n
-  | u1 : SurfacePureTm n
-  | pi : SurfacePureTm n → SurfacePureTm (n + 1) → SurfacePureTm n
-  | sigma : SurfacePureTm n → SurfacePureTm (n + 1) → SurfacePureTm n
-  | id : SurfacePureTm n → SurfacePureTm n → SurfacePureTm n → SurfacePureTm n
-  | lam : SurfacePureTm (n + 1) → SurfacePureTm n
-  | app : SurfacePureTm n → SurfacePureTm n → SurfacePureTm n
-  | pair : SurfacePureTm n → SurfacePureTm n → SurfacePureTm n
-  | fst : SurfacePureTm n → SurfacePureTm n
-  | snd : SurfacePureTm n → SurfacePureTm n
-  | refl : SurfacePureTm n → SurfacePureTm n
+inductive PureSyntaxTerm : Nat → Type where
+  | var : Fin n → PureSyntaxTerm n
+  | u0 : PureSyntaxTerm n
+  | u1 : PureSyntaxTerm n
+  | pi : PureSyntaxTerm n → PureSyntaxTerm (n + 1) → PureSyntaxTerm n
+  | sigma : PureSyntaxTerm n → PureSyntaxTerm (n + 1) → PureSyntaxTerm n
+  | id : PureSyntaxTerm n → PureSyntaxTerm n → PureSyntaxTerm n → PureSyntaxTerm n
+  | lam : PureSyntaxTerm (n + 1) → PureSyntaxTerm n
+  | app : PureSyntaxTerm n → PureSyntaxTerm n → PureSyntaxTerm n
+  | pair : PureSyntaxTerm n → PureSyntaxTerm n → PureSyntaxTerm n
+  | fst : PureSyntaxTerm n → PureSyntaxTerm n
+  | snd : PureSyntaxTerm n → PureSyntaxTerm n
+  | refl : PureSyntaxTerm n → PureSyntaxTerm n
 deriving DecidableEq, Repr
 
-namespace SurfacePureTm
+namespace PureSyntaxTerm
 
-def toPureTm : SurfacePureTm n → PureTm n
+def toPureTm : PureSyntaxTerm n → PureTm n
   | .var i => .var i
   | .u0 => .u0
   | .u1 => .u1
@@ -67,7 +67,7 @@ def toPureTm : SurfacePureTm n → PureTm n
   | .snd p => .snd (toPureTm p)
   | .refl a => .refl (toPureTm a)
 
-def toPatternWith (ν : Nat → String) (k : Nat) (ρ : QuoteEnv n) : SurfacePureTm n → Pattern
+def toPatternWith (ν : Nat → String) (k : Nat) (ρ : QuoteEnv n) : PureSyntaxTerm n → Pattern
   | .var i => .fvar (ρ i)
   | .u0 => Mettapedia.Languages.MeTTa.Pure.Core.u0
   | .u1 => Mettapedia.Languages.MeTTa.Pure.Core.u1
@@ -97,15 +97,15 @@ def toPatternWith (ν : Nat → String) (k : Nat) (ρ : QuoteEnv n) : SurfacePur
   | .snd p => Mettapedia.Languages.MeTTa.Pure.Core.mkSnd (toPatternWith ν k ρ p)
   | .refl a => Mettapedia.Languages.MeTTa.Pure.Core.mkRefl (toPatternWith ν k ρ a)
 
-def toPattern (ρ : QuoteEnv n) (t : SurfacePureTm n) : Pattern :=
+def toPattern (ρ : QuoteEnv n) (t : PureSyntaxTerm n) : Pattern :=
   toPatternWith defaultBinderName 0 ρ t
 
-def toClosedPattern (t : SurfacePureTm 0) : Pattern :=
+def toClosedPattern (t : PureSyntaxTerm 0) : Pattern :=
   toPattern emptyEnv t
 
 theorem toPatternWith_eq_quoteTmWith
     (ν : Nat → String) (k : Nat) (ρ : QuoteEnv n) :
-    ∀ t : SurfacePureTm n, toPatternWith ν k ρ t = quoteTmWith ν k ρ (toPureTm t)
+    ∀ t : PureSyntaxTerm n, toPatternWith ν k ρ t = quoteTmWith ν k ρ (toPureTm t)
   | .var i => rfl
   | .u0 => rfl
   | .u1 => rfl
@@ -128,15 +128,15 @@ theorem toPatternWith_eq_quoteTmWith
   | .refl a => by
       simp [toPatternWith, toPureTm, quoteTmWith, toPatternWith_eq_quoteTmWith]
 
-theorem toPattern_eq_quoteTm (ρ : QuoteEnv n) (t : SurfacePureTm n) :
+theorem toPattern_eq_quoteTm (ρ : QuoteEnv n) (t : PureSyntaxTerm n) :
     toPattern ρ t = quoteTm ρ (toPureTm t) := by
   simpa [toPattern, quoteTm] using toPatternWith_eq_quoteTmWith defaultBinderName 0 ρ t
 
-theorem toClosedPattern_eq_quoteClosedTm (t : SurfacePureTm 0) :
+theorem toClosedPattern_eq_quoteClosedTm (t : PureSyntaxTerm 0) :
     toClosedPattern t = quoteClosedTm (toPureTm t) := by
   simpa [toClosedPattern, quoteClosedTm] using toPattern_eq_quoteTm emptyEnv t
 
-end SurfacePureTm
+end PureSyntaxTerm
 
 /-- Certificate for the trusted Pure branch. -/
 structure PureCertificate where
@@ -144,52 +144,52 @@ structure PureCertificate where
   artifact : SharedArtifact
   artifact_eq : artifact.pattern = quoteClosedTm term
 
-/-- First real overlap certificate for a shared pure surface fragment.
+/-- First real overlap certificate for a shared pure source fragment.
 
 This is the first nontrivial "both views at once" object:
-- one binder-aware surface term,
+- one binder-aware source term,
 - one trusted PureKernel term,
 - one shared MeTTa artifact,
 - and a proof that the two downstream views agree. -/
 structure SharedPureOverlapCertificate where
-  surface : SurfacePureTm 0
+  sourceTerm : PureSyntaxTerm 0
   pure : PureCertificate
   overlapClass : OverlapClass
-  pure_eq : pure.term = surface.toPureTm
-  artifact_eq_surface : pure.artifact.pattern = surface.toClosedPattern
+  pure_eq : pure.term = sourceTerm.toPureTm
+  artifact_eq_source : pure.artifact.pattern = sourceTerm.toClosedPattern
   artifact_eq_pure : pure.artifact.pattern = quoteClosedTm pure.term
 
 def SharedPureOverlapCertificate.backendName (_ : SharedPureOverlapCertificate) : String :=
   "PureKernel+Artifact"
 
-def certifySurfacePure (surface : SurfacePureTm 0) : SharedPureOverlapCertificate :=
+def certifyPureSyntax (sourceTerm : PureSyntaxTerm 0) : SharedPureOverlapCertificate :=
   let pure : PureCertificate := {
-    term := surface.toPureTm
-    artifact := ⟨surface.toClosedPattern⟩
-    artifact_eq := by simpa using surface.toClosedPattern_eq_quoteClosedTm
+    term := sourceTerm.toPureTm
+    artifact := ⟨sourceTerm.toClosedPattern⟩
+    artifact_eq := by simpa using sourceTerm.toClosedPattern_eq_quoteClosedTm
   }
   {
-    surface := surface
+    sourceTerm := sourceTerm
     pure := pure
     overlapClass := OverlapClass.artifactOnly
     pure_eq := rfl
-    artifact_eq_surface := rfl
+    artifact_eq_source := rfl
     artifact_eq_pure := pure.artifact_eq
   }
 
-theorem certifySurfacePure_backendName (term : SurfacePureTm 0) :
-    (certifySurfacePure term).backendName = "PureKernel+Artifact" := rfl
+theorem certifyPureSyntax_backendName (term : PureSyntaxTerm 0) :
+    (certifyPureSyntax term).backendName = "PureKernel+Artifact" := rfl
 
-theorem certifySurfacePure_overlapClass (term : SurfacePureTm 0) :
-    (certifySurfacePure term).overlapClass = OverlapClass.artifactOnly := rfl
+theorem certifyPureSyntax_overlapClass (term : PureSyntaxTerm 0) :
+    (certifyPureSyntax term).overlapClass = OverlapClass.artifactOnly := rfl
 
-theorem certifySurfacePure_overlapName (term : SurfacePureTm 0) :
-    OverlapClass.name (certifySurfacePure term).overlapClass = "artifact-only" := rfl
+theorem certifyPureSyntax_overlapName (term : PureSyntaxTerm 0) :
+    OverlapClass.name (certifyPureSyntax term).overlapClass = "artifact-only" := rfl
 
-theorem surfacePureClosed_overlap_is_not_directExec
-    (term : SurfacePureTm 0) :
-    (certifySurfacePure term).overlapClass ≠ OverlapClass.directExec morkRuntimeExec0 := by
-  simp [certifySurfacePure]
+theorem pureClosedSyntax_overlap_is_not_directExec
+    (term : PureSyntaxTerm 0) :
+    (certifyPureSyntax term).overlapClass ≠ OverlapClass.directExec morkRuntimeExec0 := by
+  simp [certifyPureSyntax]
 
 /-- First restricted import envelope for the current Pure certificate lane.
 
@@ -388,95 +388,95 @@ def checkImportedPureCertificate
 def CheckedPureCertificate.toPureCertificate (cert : CheckedPureCertificate) : PureCertificate :=
   cert.imported.toPureCertificate
 
-def importPureCertificate (surface : SurfacePureTm 0) : PureCertificateImport :=
-  .overlap (certifySurfacePure surface)
+def importPureCertificate (sourceTerm : PureSyntaxTerm 0) : PureCertificateImport :=
+  .overlap (certifyPureSyntax sourceTerm)
 
-theorem importPureCertificate_kind (surface : SurfacePureTm 0) :
-    (importPureCertificate surface).kindName = "shared-pure-overlap" := rfl
+theorem importPureCertificate_kind (sourceTerm : PureSyntaxTerm 0) :
+    (importPureCertificate sourceTerm).kindName = "shared-pure-overlap" := rfl
 
 theorem importPureCertificate_term
-    (surface : SurfacePureTm 0) :
-    (importPureCertificate surface).term = surface.toPureTm := rfl
+    (sourceTerm : PureSyntaxTerm 0) :
+    (importPureCertificate sourceTerm).term = sourceTerm.toPureTm := rfl
 
 theorem importPureCertificate_artifact
-    (surface : SurfacePureTm 0) :
-    (importPureCertificate surface).artifact.pattern = surface.toClosedPattern := rfl
+    (sourceTerm : PureSyntaxTerm 0) :
+    (importPureCertificate sourceTerm).artifact.pattern = sourceTerm.toClosedPattern := rfl
 
-def certifyTypedSurfacePure
-    (surface : SurfacePureTm 0)
+def certifyTypedPureSyntax
+    (sourceTerm : PureSyntaxTerm 0)
     (claimedType : PureTm 0)
-    (typing : HasType .nil surface.toPureTm claimedType) :
+    (typing : HasType .nil sourceTerm.toPureTm claimedType) :
     CheckedPureCertificate :=
-  checkImportedPureCertificate (importPureCertificate surface) claimedType <| by
+  checkImportedPureCertificate (importPureCertificate sourceTerm) claimedType <| by
     simpa [importPureCertificate_term] using typing
 
-theorem certifyTypedSurfacePure_kind
-    (surface : SurfacePureTm 0)
+theorem certifyTypedPureSyntax_kind
+    (sourceTerm : PureSyntaxTerm 0)
     (claimedType : PureTm 0)
-    (typing : HasType .nil surface.toPureTm claimedType) :
-    (certifyTypedSurfacePure surface claimedType typing).kindName =
+    (typing : HasType .nil sourceTerm.toPureTm claimedType) :
+    (certifyTypedPureSyntax sourceTerm claimedType typing).kindName =
       "shared-pure-overlap" := by
-  simp [certifyTypedSurfacePure, checkImportedPureCertificate,
+  simp [certifyTypedPureSyntax, checkImportedPureCertificate,
     CheckedPureCertificate.kindName, importPureCertificate,
     PureCertificateImport.kindName]
 
-theorem certifyTypedSurfacePure_term
-    (surface : SurfacePureTm 0)
+theorem certifyTypedPureSyntax_term
+    (sourceTerm : PureSyntaxTerm 0)
     (claimedType : PureTm 0)
-    (typing : HasType .nil surface.toPureTm claimedType) :
-    (certifyTypedSurfacePure surface claimedType typing).term = surface.toPureTm := by
-  change (importPureCertificate surface).term = surface.toPureTm
-  exact importPureCertificate_term surface
+    (typing : HasType .nil sourceTerm.toPureTm claimedType) :
+    (certifyTypedPureSyntax sourceTerm claimedType typing).term = sourceTerm.toPureTm := by
+  change (importPureCertificate sourceTerm).term = sourceTerm.toPureTm
+  exact importPureCertificate_term sourceTerm
 
-theorem certifyTypedSurfacePure_artifact
-    (surface : SurfacePureTm 0)
+theorem certifyTypedPureSyntax_artifact
+    (sourceTerm : PureSyntaxTerm 0)
     (claimedType : PureTm 0)
-    (typing : HasType .nil surface.toPureTm claimedType) :
-    (certifyTypedSurfacePure surface claimedType typing).artifact.pattern =
-      surface.toClosedPattern := by
-  change (importPureCertificate surface).artifact.pattern = surface.toClosedPattern
-  exact importPureCertificate_artifact surface
+    (typing : HasType .nil sourceTerm.toPureTm claimedType) :
+    (certifyTypedPureSyntax sourceTerm claimedType typing).artifact.pattern =
+      sourceTerm.toClosedPattern := by
+  change (importPureCertificate sourceTerm).artifact.pattern = sourceTerm.toClosedPattern
+  exact importPureCertificate_artifact sourceTerm
 
-theorem certifyTypedSurfacePure_overlap_is_not_directExec
-    (surface : SurfacePureTm 0)
+theorem certifyTypedPureSyntax_overlap_is_not_directExec
+    (sourceTerm : PureSyntaxTerm 0)
     (claimedType : PureTm 0)
-    (typing : HasType .nil surface.toPureTm claimedType) :
-    (certifyTypedSurfacePure surface claimedType typing).overlapClass ≠
+    (typing : HasType .nil sourceTerm.toPureTm claimedType) :
+    (certifyTypedPureSyntax sourceTerm claimedType typing).overlapClass ≠
       OverlapClass.directExec morkRuntimeExec0 := by
-  simp [certifyTypedSurfacePure, checkImportedPureCertificate,
-    CheckedPureCertificate.overlapClass, importPureCertificate, certifySurfacePure]
+  simp [certifyTypedPureSyntax, checkImportedPureCertificate,
+    CheckedPureCertificate.overlapClass, importPureCertificate, certifyPureSyntax]
 
-theorem certifyTypedSurfacePure_typing
-    (surface : SurfacePureTm 0)
+theorem certifyTypedPureSyntax_typing
+    (sourceTerm : PureSyntaxTerm 0)
     (claimedType : PureTm 0)
-    (typing : HasType .nil surface.toPureTm claimedType) :
+    (typing : HasType .nil sourceTerm.toPureTm claimedType) :
     HasType .nil
-      (certifyTypedSurfacePure surface claimedType typing).term
-      (certifyTypedSurfacePure surface claimedType typing).claimedType := by
-  simpa [certifyTypedSurfacePure_term] using
-    (certifyTypedSurfacePure surface claimedType typing).emptyContextTyping
+      (certifyTypedPureSyntax sourceTerm claimedType typing).term
+      (certifyTypedPureSyntax sourceTerm claimedType typing).claimedType := by
+  simpa [certifyTypedPureSyntax_term] using
+    (certifyTypedPureSyntax sourceTerm claimedType typing).emptyContextTyping
 
-theorem certifyTypedSurfacePure_closedTypingJudgment
-    (surface : SurfacePureTm 0)
+theorem certifyTypedPureSyntax_closedTypingJudgment
+    (sourceTerm : PureSyntaxTerm 0)
     (claimedType : PureTm 0)
-    (typing : HasType .nil surface.toPureTm claimedType) :
-    (certifyTypedSurfacePure surface claimedType typing).closedTypingJudgment.kind =
+    (typing : HasType .nil sourceTerm.toPureTm claimedType) :
+    (certifyTypedPureSyntax sourceTerm claimedType typing).closedTypingJudgment.kind =
       .closedTyping := rfl
 
-theorem certifyTypedSurfacePure_quotedArtifactJudgment
-    (surface : SurfacePureTm 0)
+theorem certifyTypedPureSyntax_quotedArtifactJudgment
+    (sourceTerm : PureSyntaxTerm 0)
     (claimedType : PureTm 0)
-    (typing : HasType .nil surface.toPureTm claimedType) :
-    (certifyTypedSurfacePure surface claimedType typing).quotedArtifactJudgment.kind =
+    (typing : HasType .nil sourceTerm.toPureTm claimedType) :
+    (certifyTypedPureSyntax sourceTerm claimedType typing).quotedArtifactJudgment.kind =
       .quotedArtifactAgreement := rfl
 
-theorem certifyTypedSurfacePure_quotedArtifactAgreement
-    (surface : SurfacePureTm 0)
+theorem certifyTypedPureSyntax_quotedArtifactAgreement
+    (sourceTerm : PureSyntaxTerm 0)
     (claimedType : PureTm 0)
-    (typing : HasType .nil surface.toPureTm claimedType) :
-    (certifyTypedSurfacePure surface claimedType typing).quotedArtifactJudgment.artifact.pattern =
-      quoteClosedTm (certifyTypedSurfacePure surface claimedType typing).quotedArtifactJudgment.term := by
+    (typing : HasType .nil sourceTerm.toPureTm claimedType) :
+    (certifyTypedPureSyntax sourceTerm claimedType typing).quotedArtifactJudgment.artifact.pattern =
+      quoteClosedTm (certifyTypedPureSyntax sourceTerm claimedType typing).quotedArtifactJudgment.term := by
   exact PureCertificateJudgment.quotedArtifactAgreement_holds
-    (certifyTypedSurfacePure surface claimedType typing)
+    (certifyTypedPureSyntax sourceTerm claimedType typing)
 
 end Mettapedia.Languages.MeTTa.ElaboratedCore

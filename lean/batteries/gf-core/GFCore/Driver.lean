@@ -9,7 +9,7 @@ Configuration: set GF_BIN and GF_LIB environment variables.
 Usage:
   let driver ← GFDriver.fromEnv "/path/to/Grammar.pgf"
   let output ← driver.parseRaw "GrammarEng" "S" "John sees the man"
-  let surface ← driver.linearize "GrammarEng" tree
+  let text ← driver.linearize "GrammarEng" tree
 -/
 
 import GFCore.Syntax
@@ -132,11 +132,11 @@ def parseBatch (d : GFDriver) (lang : String) (cat : String) (sentences : Array 
     outputs := outputs.push { trees, errors, rawOutput := block }
   pure outputs
 
-/-- Parse a surface string, returning structured output (trees + errors).
+/-- Parse a linearized string, returning structured output (trees + errors).
     Does NOT silently filter error messages — caller gets everything. -/
-def parseRawStructured (d : GFDriver) (lang : String) (cat : String) (surface : String)
+def parseRawStructured (d : GFDriver) (lang : String) (cat : String) (text : String)
     : IO ParseOutput := do
-  let cmd := "p -lang=" ++ lang ++ " -cat=" ++ cat ++ " \"" ++ surface ++ "\""
+  let cmd := "p -lang=" ++ lang ++ " -cat=" ++ cat ++ " \"" ++ text ++ "\""
   let output ← d.runCommand cmd
   if output.isEmpty then
     pure { trees := #[], errors := #[], rawOutput := "" }
@@ -156,11 +156,11 @@ def parseRawStructured (d : GFDriver) (lang : String) (cat : String) (surface : 
         trees := trees.push line
     pure { trees, errors, rawOutput := output }
 
-/-- Parse a surface string, returning only successful tree strings.
+/-- Parse a linearized string, returning only successful tree strings.
     Error messages are available via `parseRawStructured`. -/
-def parseRaw (d : GFDriver) (lang : String) (cat : String) (surface : String)
+def parseRaw (d : GFDriver) (lang : String) (cat : String) (text : String)
     : IO (Array String) := do
-  let output ← d.parseRawStructured lang cat surface
+  let output ← d.parseRawStructured lang cat text
   pure output.trees
 
 /-- Parse a GF abstract tree string like "PredVP (UsePN john_PN) (UseV walk_V)"
@@ -216,11 +216,11 @@ where
       let result ← collectArgs rest #[]
       pure (.app name none result.1, result.2)
 
-/-- Parse a surface string into RawTerms. Parse failures for individual
+/-- Parse a linearized string into RawTerms. Parse failures for individual
     tree expressions are collected and returned alongside successes. -/
-def parseWithErrors (d : GFDriver) (lang : String) (cat : String) (surface : String)
+def parseWithErrors (d : GFDriver) (lang : String) (cat : String) (text : String)
     : IO (Array RawTerm × Array String) := do
-  let output ← d.parseRawStructured lang cat surface
+  let output ← d.parseRawStructured lang cat text
   let mut trees : Array RawTerm := #[]
   let mut errors : Array String := output.errors
   for s in output.trees do
@@ -229,17 +229,17 @@ def parseWithErrors (d : GFDriver) (lang : String) (cat : String) (surface : Str
     | .error e => errors := errors.push s!"GF expr parse error: {e} (input: '{s}')"
   pure (trees, errors)
 
-/-- Parse a surface string into RawTerms (convenience, discards errors). -/
-def parse (d : GFDriver) (lang : String) (cat : String) (surface : String)
+/-- Parse a linearized string into RawTerms (convenience, discards errors). -/
+def parse (d : GFDriver) (lang : String) (cat : String) (text : String)
     : IO (Array RawTerm) := do
-  let (trees, _) ← d.parseWithErrors lang cat surface
+  let (trees, _) ← d.parseWithErrors lang cat text
   pure trees
 
-/-- Parse surface text into ParseCandidates. -/
-def parseToCandidate (d : GFDriver) (lang : String) (cat : String) (surface : String)
+/-- Parse source text into ParseCandidates. -/
+def parseToCandidate (d : GFDriver) (lang : String) (cat : String) (text : String)
     : IO (Array ParseCandidate) := do
-  let trees ← d.parse lang cat surface
-  pure (trees.map fun t => { language := lang, surface, prob? := none, tree := t })
+  let trees ← d.parse lang cat text
+  pure (trees.map fun t => { language := lang, text, prob? := none, tree := t })
 
 /-- Convert a RawTerm to GF expression string syntax. -/
 private partial def rawTermToGFExpr : RawTerm → String
@@ -251,7 +251,7 @@ private partial def rawTermToGFExpr : RawTerm → String
         if s.contains ' ' then s!"({s})" else s
       f ++ " " ++ (String.intercalate " " argStrs.toList)
 
-/-- Linearize a RawTerm to a surface string in the given language. -/
+/-- Linearize a RawTerm to a linearized string in the given language. -/
 def linearize (d : GFDriver) (lang : String) (tree : RawTerm) : IO String := do
   let exprStr := rawTermToGFExpr tree
   let cmd := s!"l -lang={lang} {exprStr}"

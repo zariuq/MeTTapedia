@@ -14,8 +14,9 @@ Binder and collection nodes remain representation forms rather than becoming
 independent constructors.  A binder is accepted only where an authored
 parameter has binder shape; a bare collection denotes a carrier term only
 where an authored single-collection constructor gives it that result sort.
-Closed semantic terms additionally exclude schema metavariables and enforce
-every quotation boundary declared by the language.
+Closed semantic terms additionally exclude schema metavariables.  Quotation
+boundaries belong to the separate reflection extension and are therefore not
+part of this core carrier.
 -/
 
 namespace Mettapedia.GSLT.LanguageDef.WellSorted
@@ -275,12 +276,14 @@ abbrev HasSort (language : LanguageDef) (free : FreeTypeContext)
     (bound : List TypeExpr) (pattern : Pattern) (sort : String) : Prop :=
   HasType language free bound pattern (.base sort)
 
-/-- Scope safety for a language combines ordinary locally nameless scope with
-the sealing boundary of every reflective quotation declaration. -/
-def ScopeSafe (language : LanguageDef) (pattern : Pattern) : Prop :=
-  pattern.isWellScopedAt 0 = true ∧
-    ∀ presentation ∈ language.reflectivePresentations,
-      binderSafeAt presentation.quoteConstructor 0 pattern = true
+/-- Ordinary locally nameless scope at an ambient binder depth. -/
+def ScopeSafeAt (depth : Nat) (pattern : Pattern) : Prop :=
+  pattern.isWellScopedAt depth = true
+
+/-- Top-level locally nameless scope.  The language parameter records the
+carrier being checked; the law itself is representation-generic. -/
+def ScopeSafe (_language : LanguageDef) (pattern : Pattern) : Prop :=
+  ScopeSafeAt 0 pattern
 
 mutual
   /-- Object-language terms contain neither a pending explicit-substitution
@@ -302,24 +305,16 @@ mutual
         isObjectPattern pattern && isObjectPatternList patterns
 end
 
-/-- Quote-aware scope safety at an arbitrary ambient binder depth.  Ordinary
-locally nameless scope follows from the sorting derivation; this predicate
-adds the sealing boundary of every authored reflective quotation. -/
-def ReflectiveScopeSafeAt (language : LanguageDef) (depth : Nat)
-    (pattern : Pattern) : Prop :=
-  ∀ presentation ∈ language.reflectivePresentations,
-    binderSafeAt presentation.quoteConstructor depth pattern = true
-
 /-- An open object-language pattern at an arbitrary type expression.  Unlike
 the raw schema carrier, it excludes pending substitutions and open collection
-tails, uses canonical locally nameless binder metadata, and respects every
-reflective quotation boundary at the ambient binder depth. -/
+tails, uses canonical locally nameless binder metadata, and is locally scoped
+at the ambient binder depth. -/
 def OpenPatternWellSorted (language : LanguageDef) (free : FreeTypeContext)
     (bound : List TypeExpr) (type : TypeExpr) (pattern : Pattern) : Prop :=
   HasType language free bound pattern type ∧
     pattern.hasCanonicalBinderMetadata = true ∧
     isObjectPattern pattern = true ∧
-    ReflectiveScopeSafeAt language bound.length pattern
+    ScopeSafeAt bound.length pattern
 
 /-- The arbitrary-type open object carrier.  `OpenTerm` below is exactly its
 base-sort specialization. -/
@@ -626,8 +621,8 @@ theorem OpenTerm.mem_of_restrictTo_freeFvarNames
   exact FreeTypeContext.mem_of_restrictTo_eq_some lookup
 
 /-- A semantic term at an authored sort: it is sorted from the exact grammar,
-contains no schema metavariables or open collection tails, and respects all
-declared binder and quotation boundaries. -/
+contains no schema metavariables or open collection tails, and respects the
+ordinary locally nameless binder discipline. -/
 def ClosedTermWellSorted (language : LanguageDef) (sort : LangSort language)
     (pattern : Pattern) : Prop :=
   HasSort language FreeTypeContext.empty [] pattern sort.1 ∧
@@ -818,7 +813,7 @@ mutual
 end
 
 /-- At top level, groundness follows from declaration typing, object shape,
-and the ordinary locally nameless component of `ScopeSafe`. -/
+and ordinary locally nameless scope. -/
 theorem ground_of_closed_sorting
     {language : LanguageDef} {sort : LangSort language} {pattern : Pattern}
     (typed : HasSort language FreeTypeContext.empty [] pattern sort.1)
@@ -826,7 +821,7 @@ theorem ground_of_closed_sorting
     (safe : ScopeSafe language pattern) :
     pattern.isGround = true := by
   simpa [Pattern.isGround] using
-    typed.empty_isGroundAt object safe.1
+    typed.empty_isGroundAt object safe
 
 /-! ## Structural transport -/
 
@@ -1397,16 +1392,11 @@ theorem ElementsHaveType.map
       (mapTypeExpr morphism.symbols elementType) :=
   typed.mapTyping morphism.toTyping
 
-/-- Transport an open sorted term along a structural presentation map.  The
-only non-structural premise is preservation of every target reflective quote
-boundary at the current binder depth; typing, object shape, and binder
-metadata are all forced by the authored declaration map. -/
+/-- Transport an open sorted term along a structural presentation map.
+Typing, object shape, binder metadata, and ordinary scope are all forced by
+the authored declaration map. -/
 def OpenTerm.map {source target : ValidatedLanguageDef}
     (morphism : StructuralMorphism source target)
-    (mapsReflectiveScope : ∀ {depth pattern},
-      ReflectiveScopeSafeAt source.language depth pattern →
-        ReflectiveScopeSafeAt target.language depth
-          (mapPattern morphism.symbols pattern))
     {free : FreeTypeContext} {bound : List TypeExpr}
     {sort : LangSort source.language}
     (term : OpenTerm source.language free bound sort) :
@@ -1414,32 +1404,25 @@ def OpenTerm.map {source target : ValidatedLanguageDef}
       (free.map morphism.symbols)
       (bound.map (mapTypeExpr morphism.symbols))
       (mapLangSort morphism sort) := by
+  have mappedTyped := term.2.1.map morphism
   refine ⟨mapPattern morphism.symbols term.1, ?_, ?_, ?_, ?_⟩
-  · simpa [mapTypeExpr] using term.2.1.map morphism
+  · simpa [mapTypeExpr] using mappedTyped
   · simpa using term.2.2.1
   · simpa using term.2.2.2.1
-  · simpa using mapsReflectiveScope term.2.2.2.2
+  · simpa [ScopeSafeAt] using mappedTyped.isWellScopedAt
 
 @[simp]
 theorem OpenTerm.map_pattern {source target : ValidatedLanguageDef}
     (morphism : StructuralMorphism source target)
-    (mapsReflectiveScope : ∀ {depth pattern},
-      ReflectiveScopeSafeAt source.language depth pattern →
-        ReflectiveScopeSafeAt target.language depth
-          (mapPattern morphism.symbols pattern))
     {free : FreeTypeContext} {bound : List TypeExpr}
     {sort : LangSort source.language}
     (term : OpenTerm source.language free bound sort) :
-    (term.map morphism mapsReflectiveScope).1 =
+    (term.map morphism).1 =
       mapPattern morphism.symbols term.1 :=
   rfl
 
-/-- Everything in the closed declaration-derived carrier except reflective
-scope safety follows from the structural presentation map.  Reflective scope
-is supplied separately because a target theory may author additional quote
-boundaries; a plain inclusion of source declarations cannot prove safety for
-those additional boundaries. -/
-theorem ClosedTermWellSorted.map_of_scopeSafe
+/-- Structural presentation maps preserve the closed core carrier. -/
+theorem ClosedTermWellSorted.map
     {source target : ValidatedLanguageDef}
     (morphism : StructuralMorphism source target)
     {sourceSort : StructuralMorphism.AuthoredSort source}
@@ -1447,9 +1430,7 @@ theorem ClosedTermWellSorted.map_of_scopeSafe
     (mapsSort : morphism.mapSort sourceSort = targetSort)
     {pattern : Pattern}
     (closed : ClosedTermWellSorted source.language
-      (authoredSortToLangSort source sourceSort) pattern)
-    (scopeSafe : ScopeSafe target.language
-      (mapPattern morphism.symbols pattern)) :
+      (authoredSortToLangSort source sourceSort) pattern) :
     ClosedTermWellSorted target.language
       (authoredSortToLangSort target targetSort)
       (mapPattern morphism.symbols pattern) := by
@@ -1482,6 +1463,9 @@ theorem ClosedTermWellSorted.map_of_scopeSafe
   have object :
       isObjectPattern (mapPattern morphism.symbols pattern) = true := by
     simpa using closed.2.2.2.1
+  have scopeSafe : ScopeSafe target.language
+      (mapPattern morphism.symbols pattern) := by
+    simpa [ScopeSafe, ScopeSafeAt] using mappedTyped.isWellScopedAt
   exact ⟨mappedTyped,
     ground_of_closed_sorting
       (sort := authoredSortToLangSort target targetSort)

@@ -1,14 +1,14 @@
 import MeTTailCore.MeTTaIL.Syntax
 import MeTTailCore.MeTTaSyntax.Spec
 
-/-! # Surface ↔ Core round-trip
+/-! # Source Syntax ↔ Core Round-Trip
 
 Defines `SExpr` (the parsed S-expression AST), encoding/decoding functions
 parameterized by `AtomEncodingSpec`, and round-trip correctness proofs for
-the surface-representable subset.
+the syntax-representable subset.
 
 The key property: `decode spec (encode spec sexpr) = some sexpr` for
-well-formed surface atoms.
+well-formed source-syntax atoms.
 -/
 
 namespace MeTTailCore.MeTTaSyntax
@@ -16,7 +16,7 @@ namespace MeTTailCore.MeTTaSyntax
 open MeTTailCore.MeTTaIL.Syntax (Pattern)
 
 -- ═══════════════════════════════════════════════════════════════════════
--- Surface S-expression AST
+-- Source S-expression AST
 -- ═══════════════════════════════════════════════════════════════════════
 
 /-- Parsed S-expression, before lowering to core runtime terms. -/
@@ -52,10 +52,10 @@ end
 instance : DecidableEq SExpr := decEqSExpr
 
 -- ═══════════════════════════════════════════════════════════════════════
--- Surface atom classification
+-- Source-syntax atom classification
 -- ═══════════════════════════════════════════════════════════════════════
 
-/-- Classification of a surface atom token. -/
+/-- Classification of a source-syntax atom token. -/
 inductive AtomKind where
   | variable : String → AtomKind
   | intLit : Int → AtomKind
@@ -64,10 +64,10 @@ inductive AtomKind where
   | symbol : String → AtomKind
 deriving Repr, DecidableEq, BEq
 
-/-- Classify a surface atom token given the encoding spec. -/
+/-- Classify a source-syntax atom token given the encoding spec. -/
 def classifyAtom (spec : AtomEncodingSpec) (tok : String) : AtomKind :=
   -- Check operator aliases first
-  match spec.operatorAliases.find? (·.surfaceSymbol == tok) with
+  match spec.operatorAliases.find? (·.sourceSymbol == tok) with
   | some alias => .operatorAlias alias.constructorLabel
   | none =>
     -- Variable?
@@ -136,7 +136,7 @@ def encodeSymbolName (name : String) : Pattern :=
   .apply name []
 
 mutual
-/-- Encode a surface S-expression into a core Pattern. -/
+/-- Encode a source S-expression into a core Pattern. -/
 def encode (spec : AtomEncodingSpec) : SExpr → Pattern
   | .atom tok =>
     match classifyAtom spec tok with
@@ -164,7 +164,7 @@ decreasing_by all_goals simp_wf; omega
 end
 
 -- ═══════════════════════════════════════════════════════════════════════
--- Decoding: Pattern → Option SExpr  (partial, surface subset only)
+-- Decoding: Pattern → Option SExpr  (partial, source-syntax subset only)
 -- ═══════════════════════════════════════════════════════════════════════
 
 /-- Decode an integer token pattern back to an Int. -/
@@ -189,12 +189,12 @@ def decodeStringToken (enc : StringEncoding) (tok : String) : Option String :=
     if tok.startsWith pre then decodeHexBytes (tok.drop pre.length).toString
     else none
 
-/-- Decode a core Pattern back to a surface SExpr, if surface-representable. -/
+/-- Decode a core Pattern back to a source S-expression, if syntax-representable. -/
 def decode (spec : AtomEncodingSpec) : Pattern → Option SExpr
   | .apply ctor [] =>
     -- Nullary operator alias?
     match spec.operatorAliases.find? (·.constructorLabel == ctor) with
-    | some alias => some (.atom alias.surfaceSymbol)
+    | some alias => some (.atom alias.sourceSymbol)
     | none =>
       if ctor == spec.exprNil then some (.list [])
       else none
@@ -261,7 +261,7 @@ structure SpecConsistent (spec : AtomEncodingSpec) : Prop where
     spec.operatorAliases.find? (·.constructorLabel == a.constructorLabel) = some a
 
 -- ═══════════════════════════════════════════════════════════════════════
--- Well-formedness: surface atoms that roundtrip correctly
+-- Well-formedness: source-syntax atoms that roundtrip correctly
 -- ═══════════════════════════════════════════════════════════════════════
 
 /-- Extract the token string from a Pattern leaf. -/
@@ -269,7 +269,7 @@ def extractPatternLeaf : Pattern → Option String
   | .apply s [] => some s
   | _ => none
 
-/-- A surface atom is "well-formed" for encoding purposes:
+/-- A source-syntax atom is "well-formed" for encoding purposes:
     - symbols don't collide with spec constructor names
     - integer/string token representations roundtrip correctly
     - variables and operator aliases are always well-formed -/
@@ -326,7 +326,7 @@ private theorem decode_encodeExprTail (spec : AtomEncodingSpec)
       (fun item hmem => ih item (List.mem_cons_of_mem x hmem))
     rw [hx, hxs]
 
-/-- Main round-trip theorem: decoding an encoded well-formed surface atom
+/-- Main round-trip theorem: decoding an encoded well-formed source-syntax atom
     recovers the original, given a consistent encoding spec. -/
 theorem decode_encode (spec : AtomEncodingSpec)
     (hsc : SpecConsistent spec)
@@ -380,7 +380,8 @@ theorem decode_encode (spec : AtomEncodingSpec)
         simp only [encodeIntToken, hie, decode, extractPatternLeaf] at hwf_rt ⊢
         rw [if_neg (fun h => hsc.sym_ne_int.symm (beq_iff_eq.mp h))]
         rw [if_pos (beq_self_eq_true _)]
-        simp [hwf_rt]
+        rw [hwf_rt]
+        rfl
     | .stringLit s =>
       simp only [wellFormedAtom, hc] at hwf
       obtain ⟨htok, hwf_rt⟩ := hwf
@@ -400,7 +401,7 @@ theorem decode_encode (spec : AtomEncodingSpec)
         simp [hwf_rt]
     | .operatorAlias ctor =>
       -- Extract alias info from classifyAtom
-      have ha : ∃ alias, spec.operatorAliases.find? (·.surfaceSymbol == tok) = some alias ∧
+      have ha : ∃ alias, spec.operatorAliases.find? (·.sourceSymbol == tok) = some alias ∧
           ctor = alias.constructorLabel := by
         unfold classifyAtom at hc
         split at hc

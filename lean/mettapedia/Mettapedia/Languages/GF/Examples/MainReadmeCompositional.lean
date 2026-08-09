@@ -11,7 +11,7 @@ export Mettapedia.DocText.MainReadmeCompositional
   ( TopDir RepoId RepoPath topDirToken repoPath renderRepoPath repoDisplayName
     Tooling Claim renderClaim RepoEntry Section mainSections
     allMainReadmeClaims canonicalMainReadmeClaims parseClaimLine?
-    ParsedReadmeLine parseStructuredLine? claimSurfaceBuckets ambiguousClaimSurfaces
+    ParsedReadmeLine parseStructuredLine? claimRenderedBuckets ambiguousClaimRenderings
     mainReadmeStructuredLines mainReadmeBlocks ParsedMainStructuredLine
     parseSelectedStructuredMainLine? selectedStructuredMainReadmeLines
     mainHardAuditPasses main_hard_audit mainReadmeMarkdown

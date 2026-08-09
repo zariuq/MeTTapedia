@@ -1,5 +1,6 @@
 import Mettapedia.OSLF.MeTTaIL.DerivedContexts
 import Mettapedia.OSLF.MeTTaIL.ContextualStep
+import Mettapedia.OSLF.MeTTaIL.InterpretedContextualStep
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefAdequacy
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.PureBoundary
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.ScopedSemanticSubstitution
@@ -31,16 +32,27 @@ open Mettapedia.OSLF.MeTTaIL.ScopedPattern
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.PureBoundary
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.ScopedSemanticSubstitution
+open Mettapedia.GSLT.LanguageDef.ReflectionExtension
 
 /-- Non-contextual premise behavior for canonical rho. -/
 def rhoBasePremises : BasePremiseEvaluator :=
   engineBasePremises RelationEnv.empty
 
+/-- The separately authored rho reflection profile interpreted as rule
+semantics for contextual closure. -/
+abbrev rhoRuleInterpretation :
+    Mettapedia.OSLF.MeTTaIL.InterpretedContextualStep.RuleInterpretation :=
+  .reflection rhoReflectionProfile
+
 /-- Bounded authored-rule reduction for canonical rho. -/
-abbrev RhoStepAt := StepAt rhoBasePremises rhoCalc
+abbrev RhoStepAt :=
+  Mettapedia.OSLF.MeTTaIL.InterpretedContextualStep.StepAt
+    rhoRuleInterpretation rhoBasePremises rhoCalc
 
 /-- The least finite authored-rule reduction for canonical rho. -/
-abbrev RhoStep := Step rhoBasePremises rhoCalc
+abbrev RhoStep :=
+  Mettapedia.OSLF.MeTTaIL.InterpretedContextualStep.Step
+    rhoRuleInterpretation rhoBasePremises rhoCalc
 
 /-! ## The sole authored parallel frame -/
 
@@ -125,7 +137,7 @@ about matcher evidence; it does not assume that successful execution is its
 own semantic justification. -/
 private theorem rhoComm_match_shape
     {source : Pattern} {bindings : Bindings}
-    (matched : bindings ∈ matchPatternForRule rhoCalc rhoCommRewrite source) :
+    (matched : bindings ∈ matchPatternForRuleUsing rhoReflectionProfile rhoCommRewrite source) :
     ∃ (elements : List Pattern) (termRest : Option String)
       (inputIndex : Nat) (inputBound : inputIndex < elements.length)
       (outputIndex : Nat)
@@ -211,7 +223,7 @@ rule. -/
 private theorem rhoComm_match_exact
     (channel body payload : Pattern) (rest : List Pattern) :
     rhoCommMatchedBindings channel body payload rest ∈
-      matchPatternForRule rhoCalc rhoCommRewrite
+      matchPatternForRuleUsing rhoReflectionProfile rhoCommRewrite
         (.collection .hashBag
           ([.apply "PInput" [channel, .lambda none body],
             .apply "POutput" [channel, payload]] ++ rest) none) := by
@@ -242,11 +254,11 @@ private theorem rhoComm_match_exact
 the presentation-facing binding package. -/
 private theorem rhoComm_apply_exact
     (channel body payload : Pattern) (rest : List Pattern) :
-    applyBindingsForRule rhoCalc rhoCommRewrite
+    applyBindingsForRuleUsing rhoReflectionProfile rhoCommRewrite
         (rhoCommMatchedBindings channel body payload rest) =
-      applyBindingsForRule rhoCalc rhoCommRewrite
+      applyBindingsForRuleUsing rhoReflectionProfile rhoCommRewrite
         (LanguageDefAdequacy.rhoCommBindings channel body payload rest) := by
-  rw [applyBindingsForRule, applyBindingsForRule,
+  rw [applyBindingsForRuleUsing, applyBindingsForRuleUsing,
     LanguageDefAdequacy.rhoComm_substitutionPresentation_selected]
   simp [rhoCommMatchedBindings, LanguageDefAdequacy.rhoCommBindings,
     rhoCommRewrite, applyBindingsReflective, applyBindingsReflectiveList]
@@ -322,8 +334,8 @@ theorem rhoComm_application_sound
     {free : FreeSortContext} {bound : List String}
     {source target : Pattern} {bindings : Bindings}
     (sourceTyped : ProcWellSorted rhoReflectivePresentation free bound source)
-    (matched : bindings ∈ matchPatternForRule rhoCalc rhoCommRewrite source)
-    (targetEq : applyBindingsForRule rhoCalc rhoCommRewrite bindings = target) :
+    (matched : bindings ∈ matchPatternForRuleUsing rhoReflectionProfile rhoCommRewrite source)
+    (targetEq : applyBindingsForRuleUsing rhoReflectionProfile rhoCommRewrite bindings = target) :
     Nonempty (Reduces source target) := by
   obtain ⟨elements, termRest, inputIndex, inputBound, outputIndex, outputBound,
     inputChannel, body, inputBinder, outputChannel, payload, sourceEq,
@@ -353,14 +365,14 @@ theorem rhoComm_application_sound
       target = .collection .hashBag (semanticCommSubst body payload :: residue) none := by
     rw [← targetEq]
     have reordered :
-        applyBindingsForRule rhoCalc rhoCommRewrite
+        applyBindingsForRuleUsing rhoReflectionProfile rhoCommRewrite
             [("q", payload),
              ("rest", .collection .hashBag
                ((elements.eraseIdx inputIndex).eraseIdx outputIndex) none),
              ("p", body), ("n", inputChannel)] =
-          applyBindingsForRule rhoCalc rhoCommRewrite
+          applyBindingsForRuleUsing rhoReflectionProfile rhoCommRewrite
             (LanguageDefAdequacy.rhoCommBindings inputChannel body payload residue) := by
-      simp only [applyBindingsForRule,
+      simp only [applyBindingsForRuleUsing,
         LanguageDefAdequacy.rhoComm_substitutionPresentation_selected]
       simp [LanguageDefAdequacy.rhoCommBindings, residue,
         applyBindingsReflective, applyBindingsReflectiveList, rhoCommRewrite]
@@ -426,34 +438,29 @@ theorem RhoStep.comm
         ([.apply "PInput" [channel, .lambda none body],
           .apply "POutput" [channel, payload]] ++ rest) none)
       (.collection .hashBag (semanticCommSubst body payload :: rest) none) := by
-  refine step_of_rule
-    (relEnv := RelationEnv.empty)
-    (rule := rhoCommRewrite)
-    (initialBindings := rhoCommMatchedBindings channel body payload rest)
-    (finalBindings := rhoCommMatchedBindings channel body payload rest)
-    LanguageDefAdequacy.rhoCommRewrite_mem
-    (rhoComm_match_exact channel body payload rest) ?_ ?_ ?_
-  · exact .nil
-  · simp [rhoCommRewrite, applyPremisesWithEnv]
-  · rw [rhoComm_apply_exact,
+  refine ⟨1, .rule LanguageDefAdequacy.rhoCommRewrite_mem
+    (rhoComm_match_exact channel body payload rest) (.nil _) ?_⟩
+  change applyBindingsForRuleUsing rhoReflectionProfile rhoCommRewrite
+    (rhoCommMatchedBindings channel body payload rest) = _
+  rw [rhoComm_apply_exact,
       LanguageDefAdequacy.applyBindingsForRule_rhoComm_agrees_derived
         bodyTyped payloadTyped]
 
 /-! ## Shape and meaning of an authored `ParCong` application -/
 
 private theorem rhoParCong_no_matchingPresentation :
-    matchingPresentationForRule? rhoCalc rhoParCongRewrite = none := by
+    matchingPresentationForRule? rhoReflectionProfile rhoParCongRewrite = none := by
   decide +kernel
 
 private theorem rhoParCong_no_substitutionPresentation :
-    substitutionPresentationForRule? rhoCalc rhoParCongRewrite = none := by
+    substitutionPresentationForRule? rhoReflectionProfile rhoParCongRewrite = none := by
   decide +kernel
 
 /-- The structural matcher for `ParCong` selects one parallel component and
 binds the remainder; no collection-wide semantic switch participates. -/
 private theorem rhoParCong_match_shape
     {source : Pattern} {bindings : Bindings}
-    (matched : bindings ∈ matchPatternForRule rhoCalc rhoParCongRewrite source) :
+    (matched : bindings ∈ matchPatternForRuleUsing rhoReflectionProfile rhoParCongRewrite source) :
     ∃ (elements : List Pattern) (termRest : Option String)
       (index : Nat) (indexBound : index < elements.length)
       (selected : Pattern),
@@ -462,7 +469,7 @@ private theorem rhoParCong_match_shape
       bindings =
         [("rest", .collection .hashBag (elements.eraseIdx index) none),
          ("S", selected)] := by
-  rw [matchPatternForRule_iff_matchRel_of_no_presentation
+  rw [matchPatternForRuleUsing_iff_matchRel_of_no_presentation
     rhoParCong_no_matchingPresentation] at matched
   cases matched
   rename_i elements termRest bagMatch
@@ -479,9 +486,9 @@ private theorem rhoParCong_match_shape
 structural matcher. -/
 private theorem rhoParCong_match_exact (process : Pattern) (rest : List Pattern) :
     [("rest", .collection .hashBag rest none), ("S", process)] ∈
-      matchPatternForRule rhoCalc rhoParCongRewrite
+      matchPatternForRuleUsing rhoReflectionProfile rhoParCongRewrite
         (.collection .hashBag (process :: rest) none) := by
-  rw [matchPatternForRule_iff_matchRel_of_no_presentation
+  rw [matchPatternForRuleUsing_iff_matchRel_of_no_presentation
     rhoParCong_no_matchingPresentation]
   apply MatchRel.collection
   apply MatchBagRel.cons 0 (by simp) MatchRel.fvar MatchBagRel.nilRest
@@ -493,7 +500,7 @@ theorem RhoStep.par {source target : Pattern} (rest : List Pattern)
     RhoStep
       (.collection .hashBag (source :: rest) none)
       (.collection .hashBag (target :: rest) none) := by
-  refine step_of_single_congruence_rule
+  refine Mettapedia.OSLF.MeTTaIL.InterpretedContextualStep.step_of_single_congruence_rule
     (base := rhoBasePremises)
     (rule := rhoParCongRewrite)
     (initialBindings :=
@@ -511,7 +518,11 @@ theorem RhoStep.par {source target : Pattern} (rest : List Pattern)
     rfl ?_ ?_ rfl ?_
   · simpa [applyBindings, Bindings.lookup] using step
   · simp [matchPattern]
-  · rw [applyBindingsForRule, rhoParCong_no_substitutionPresentation]
+  · change applyBindingsForRuleUsing rhoReflectionProfile rhoParCongRewrite
+      [("T", target),
+       ("rest", .collection .hashBag rest none),
+       ("S", source)] = _
+    rw [applyBindingsForRuleUsing, rhoParCong_no_substitutionPresentation]
     simp [rhoParCongRewrite, applyBindings]
 
 /-- Interpreting the single congruence premise of `ParCong` with a sound
@@ -520,13 +531,13 @@ private theorem rhoParCong_application_sound
     {free : FreeSortContext} {bound : List String} {fuel : Nat}
     {source target : Pattern} {initial final : Bindings}
     (sourceTyped : ProcWellSorted rhoReflectivePresentation free bound source)
-    (matched : initial ∈ matchPatternForRule rhoCalc rhoParCongRewrite source)
-    (premises : PremisesAt rhoBasePremises rhoCalc fuel initial
+    (matched : initial ∈ matchPatternForRuleUsing rhoReflectionProfile rhoParCongRewrite source)
+    (premises : Mettapedia.OSLF.MeTTaIL.InterpretedContextualStep.PremisesAt rhoRuleInterpretation rhoBasePremises rhoCalc fuel initial
       rhoParCongRewrite.premises final)
-    (targetEq : applyBindingsForRule rhoCalc rhoParCongRewrite final = target)
+    (targetEq : applyBindingsForRuleUsing rhoReflectionProfile rhoParCongRewrite final = target)
     (recursiveSound : ∀ {innerSource innerTarget : Pattern},
       ProcWellSorted rhoReflectivePresentation free bound innerSource →
-      StepAt rhoBasePremises rhoCalc fuel innerSource innerTarget →
+      Mettapedia.OSLF.MeTTaIL.InterpretedContextualStep.StepAt rhoRuleInterpretation rhoBasePremises rhoCalc fuel innerSource innerTarget →
       Nonempty (Reduces innerSource innerTarget)) :
     Nonempty (Reduces source target) := by
   obtain ⟨elements, termRest, index, indexBound, selected, sourceEq,
@@ -537,7 +548,7 @@ private theorem rhoParCong_application_sound
   rename_i elementsTyped
   have selectedTyped := elementsTyped.getElem index indexBound
   rw [selectedEq] at selectedTyped
-  change PremisesAt rhoBasePremises rhoCalc fuel
+  change Mettapedia.OSLF.MeTTaIL.InterpretedContextualStep.PremisesAt rhoRuleInterpretation rhoBasePremises rhoCalc fuel
     [("rest", .collection .hashBag (elements.eraseIdx index) none),
      ("S", selected)]
     [.congruence (.fvar "S") (.fvar "T")] final at premises
@@ -550,7 +561,7 @@ private theorem rhoParCong_application_sound
   subst premiseBindings
   simp [mergeBindings] at merged
   subst final
-  have innerStep : StepAt rhoBasePremises rhoCalc fuel selected candidate := by
+  have innerStep : Mettapedia.OSLF.MeTTaIL.InterpretedContextualStep.StepAt rhoRuleInterpretation rhoBasePremises rhoCalc fuel selected candidate := by
     simpa [applyBindings, Bindings.lookup] using recursiveStep
   have innerPaper := recursiveSound selectedTyped innerStep
   have sourcePermutation : StructuralCongruence
@@ -563,7 +574,7 @@ private theorem rhoParCong_application_sound
   have targetShape :
       target = .collection .hashBag (candidate :: elements.eraseIdx index) none := by
     rw [← targetEq]
-    simp only [applyBindingsForRule, rhoParCong_no_substitutionPresentation]
+    simp only [applyBindingsForRuleUsing, rhoParCong_no_substitutionPresentation]
     simp [rhoParCongRewrite, applyBindings]
   rw [targetShape]
   obtain ⟨innerPaper⟩ := innerPaper
@@ -624,8 +635,8 @@ private theorem rhoComm_application_preserves_closed
     (sourceTyped :
       ProcWellSorted rhoReflectivePresentation free [] source)
     (sourceSafe : binderSafeAt "NQuote" 0 source = true)
-    (matched : bindings ∈ matchPatternForRule rhoCalc rhoCommRewrite source)
-    (targetEq : applyBindingsForRule rhoCalc rhoCommRewrite bindings = target) :
+    (matched : bindings ∈ matchPatternForRuleUsing rhoReflectionProfile rhoCommRewrite source)
+    (targetEq : applyBindingsForRuleUsing rhoReflectionProfile rhoCommRewrite bindings = target) :
     ProcWellSorted rhoReflectivePresentation free [] target ∧
       binderSafeAt "NQuote" 0 target = true := by
   obtain ⟨elements, termRest, inputIndex, inputBound, outputIndex, outputBound,
@@ -692,15 +703,15 @@ private theorem rhoComm_application_preserves_closed
         .collection .hashBag (semanticCommSubst body payload :: residue) none := by
     rw [← targetEq]
     have reordered :
-        applyBindingsForRule rhoCalc rhoCommRewrite
+        applyBindingsForRuleUsing rhoReflectionProfile rhoCommRewrite
             [("q", payload),
              ("rest", .collection .hashBag
                ((elements.eraseIdx inputIndex).eraseIdx outputIndex) none),
              ("p", body), ("n", inputChannel)] =
-          applyBindingsForRule rhoCalc rhoCommRewrite
+          applyBindingsForRuleUsing rhoReflectionProfile rhoCommRewrite
             (LanguageDefAdequacy.rhoCommBindings
               inputChannel body payload residue) := by
-      simp only [applyBindingsForRule,
+      simp only [applyBindingsForRuleUsing,
         LanguageDefAdequacy.rhoComm_substitutionPresentation_selected]
       simp [LanguageDefAdequacy.rhoCommBindings, residue,
         applyBindingsReflective, applyBindingsReflectiveList, rhoCommRewrite]
@@ -721,14 +732,14 @@ private theorem rhoParCong_application_preserves_closed
     (sourceTyped :
       ProcWellSorted rhoReflectivePresentation free [] source)
     (sourceSafe : binderSafeAt "NQuote" 0 source = true)
-    (matched : initial ∈ matchPatternForRule rhoCalc rhoParCongRewrite source)
-    (premises : PremisesAt rhoBasePremises rhoCalc fuel initial
+    (matched : initial ∈ matchPatternForRuleUsing rhoReflectionProfile rhoParCongRewrite source)
+    (premises : Mettapedia.OSLF.MeTTaIL.InterpretedContextualStep.PremisesAt rhoRuleInterpretation rhoBasePremises rhoCalc fuel initial
       rhoParCongRewrite.premises final)
-    (targetEq : applyBindingsForRule rhoCalc rhoParCongRewrite final = target)
+    (targetEq : applyBindingsForRuleUsing rhoReflectionProfile rhoParCongRewrite final = target)
     (recursivePreserves : ∀ {innerSource innerTarget : Pattern},
       ProcWellSorted rhoReflectivePresentation free [] innerSource →
       binderSafeAt "NQuote" 0 innerSource = true →
-      StepAt rhoBasePremises rhoCalc fuel innerSource innerTarget →
+      Mettapedia.OSLF.MeTTaIL.InterpretedContextualStep.StepAt rhoRuleInterpretation rhoBasePremises rhoCalc fuel innerSource innerTarget →
       ProcWellSorted rhoReflectivePresentation free [] innerTarget ∧
         binderSafeAt "NQuote" 0 innerTarget = true) :
     ProcWellSorted rhoReflectivePresentation free [] target ∧
@@ -748,7 +759,7 @@ private theorem rhoParCong_application_preserves_closed
       elements[selectedIndex] (List.getElem_mem selectedBound)
     rw [selectedEq] at elementSafe
     exact elementSafe
-  change PremisesAt rhoBasePremises rhoCalc fuel
+  change Mettapedia.OSLF.MeTTaIL.InterpretedContextualStep.PremisesAt rhoRuleInterpretation rhoBasePremises rhoCalc fuel
     [("rest", .collection .hashBag (elements.eraseIdx selectedIndex) none),
      ("S", selected)]
     [.congruence (.fvar "S") (.fvar "T")] final at premises
@@ -761,7 +772,7 @@ private theorem rhoParCong_application_preserves_closed
   subst premiseBindings
   simp [mergeBindings] at merged
   subst final
-  have innerStep : StepAt rhoBasePremises rhoCalc fuel selected candidate := by
+  have innerStep : Mettapedia.OSLF.MeTTaIL.InterpretedContextualStep.StepAt rhoRuleInterpretation rhoBasePremises rhoCalc fuel selected candidate := by
     simpa [applyBindings, Bindings.lookup] using recursiveStep
   have candidatePreserved :=
     recursivePreserves selectedTyped selectedSafe innerStep
@@ -772,7 +783,7 @@ private theorem rhoParCong_application_preserves_closed
       target = .collection .hashBag
         (candidate :: elements.eraseIdx selectedIndex) none := by
     rw [← targetEq]
-    simp only [applyBindingsForRule, rhoParCong_no_substitutionPresentation]
+    simp only [applyBindingsForRuleUsing, rhoParCong_no_substitutionPresentation]
     simp [rhoParCongRewrite, applyBindings]
   rw [targetShape]
   exact ⟨ProcWellSorted.parallel
@@ -845,12 +856,12 @@ def commInParallelReduct : Pattern :=
 /-- Positive control: an authored `ParCong` layer transports COMM. -/
 theorem commInParallel_mem :
     commInParallelReduct ∈
-      rewriteAt rhoBasePremises rhoCalc 2 commInParallel := by
+      Mettapedia.OSLF.MeTTaIL.InterpretedContextualStep.rewriteAt rhoRuleInterpretation rhoBasePremises rhoCalc 2 commInParallel := by
   decide +kernel
 
 /-- Relational form of the positive parallel-context control. -/
 theorem commInParallel_step : RhoStep commInParallel commInParallelReduct := by
-  exact ⟨2, mem_rewriteAt_iff_stepAt.mp commInParallel_mem⟩
+  exact ⟨2, Mettapedia.OSLF.MeTTaIL.InterpretedContextualStep.mem_rewriteAt_iff_stepAt.mp commInParallel_mem⟩
 
 /-- Semantic witness for the same positive case.  The inner source is
 permuted into the presentation order by EQUIV, COMM fires, and the authored
@@ -882,13 +893,13 @@ of depth five.  Contextual depth is explicit evidence rather than a hidden
 global cutoff. -/
 theorem derived_executor_reaches_four_parallel_frames :
     nestParallel 4 commReduct ∈
-      rewriteAt rhoBasePremises rhoCalc 5 (nestParallel 4 commRedex) := by
+      Mettapedia.OSLF.MeTTaIL.InterpretedContextualStep.rewriteAt rhoRuleInterpretation rhoBasePremises rhoCalc 5 (nestParallel 4 commRedex) := by
   decide +kernel
 
 /-- Relational form of the depth-cap counterexample. -/
 theorem derived_step_reaches_four_parallel_frames :
     RhoStep (nestParallel 4 commRedex) (nestParallel 4 commReduct) := by
-  exact ⟨5, mem_rewriteAt_iff_stepAt.mp
+  exact ⟨5, Mettapedia.OSLF.MeTTaIL.InterpretedContextualStep.mem_rewriteAt_iff_stepAt.mp
     derived_executor_reaches_four_parallel_frames⟩
 
 def freeDrop : Pattern :=
@@ -901,27 +912,27 @@ def commUnderSet : Pattern :=
   .collection .hashSet [commRedex] none
 
 private theorem rhoComm_no_match_freeDrop :
-    matchPatternForRule rhoCalc rhoCommRewrite freeDrop = [] := by
+    matchPatternForRuleUsing rhoReflectionProfile rhoCommRewrite freeDrop = [] := by
   decide +kernel
 
 private theorem rhoParCong_no_match_freeDrop :
-    matchPatternForRule rhoCalc rhoParCongRewrite freeDrop = [] := by
+    matchPatternForRuleUsing rhoReflectionProfile rhoParCongRewrite freeDrop = [] := by
   decide +kernel
 
 private theorem rhoComm_no_match_underQuote :
-    matchPatternForRule rhoCalc rhoCommRewrite commUnderQuote = [] := by
+    matchPatternForRuleUsing rhoReflectionProfile rhoCommRewrite commUnderQuote = [] := by
   decide +kernel
 
 private theorem rhoParCong_no_match_underQuote :
-    matchPatternForRule rhoCalc rhoParCongRewrite commUnderQuote = [] := by
+    matchPatternForRuleUsing rhoReflectionProfile rhoParCongRewrite commUnderQuote = [] := by
   decide +kernel
 
 private theorem rhoComm_no_match_underSet :
-    matchPatternForRule rhoCalc rhoCommRewrite commUnderSet = [] := by
+    matchPatternForRuleUsing rhoReflectionProfile rhoCommRewrite commUnderSet = [] := by
   decide +kernel
 
 private theorem rhoParCong_no_match_underSet :
-    matchPatternForRule rhoCalc rhoParCongRewrite commUnderSet = [] := by
+    matchPatternForRuleUsing rhoReflectionProfile rhoParCongRewrite commUnderSet = [] := by
   decide +kernel
 
 private theorem rhoCalc_rewrites :
@@ -929,32 +940,38 @@ private theorem rhoCalc_rewrites :
 
 /-- Free Drop is inert at every contextual depth. -/
 theorem freeDrop_rewriteAt_nil (fuel : Nat) :
-    rewriteAt rhoBasePremises rhoCalc fuel freeDrop = [] := by
+    Mettapedia.OSLF.MeTTaIL.InterpretedContextualStep.rewriteAt rhoRuleInterpretation rhoBasePremises rhoCalc fuel freeDrop = [] := by
   cases fuel with
   | zero => rfl
   | succ fuel =>
-      rw [rewriteAt, rhoCalc_rewrites]
-      simp [applyRuleUsing, rhoComm_no_match_freeDrop,
+      rw [Mettapedia.OSLF.MeTTaIL.InterpretedContextualStep.rewriteAt,
+        rhoCalc_rewrites]
+      simp [Mettapedia.OSLF.MeTTaIL.InterpretedContextualStep.applyRuleUsing,
+        rhoRuleInterpretation, rhoComm_no_match_freeDrop,
         rhoParCong_no_match_freeDrop]
 
 /-- No authored rho rule descends under quotation. -/
 theorem commUnderQuote_rewriteAt_nil (fuel : Nat) :
-    rewriteAt rhoBasePremises rhoCalc fuel commUnderQuote = [] := by
+    Mettapedia.OSLF.MeTTaIL.InterpretedContextualStep.rewriteAt rhoRuleInterpretation rhoBasePremises rhoCalc fuel commUnderQuote = [] := by
   cases fuel with
   | zero => rfl
   | succ fuel =>
-      rw [rewriteAt, rhoCalc_rewrites]
-      simp [applyRuleUsing, rhoComm_no_match_underQuote,
+      rw [Mettapedia.OSLF.MeTTaIL.InterpretedContextualStep.rewriteAt,
+        rhoCalc_rewrites]
+      simp [Mettapedia.OSLF.MeTTaIL.InterpretedContextualStep.applyRuleUsing,
+        rhoRuleInterpretation, rhoComm_no_match_underQuote,
         rhoParCong_no_match_underQuote]
 
 /-- Pure rho has no finite-set context rule. -/
 theorem commUnderSet_rewriteAt_nil (fuel : Nat) :
-    rewriteAt rhoBasePremises rhoCalc fuel commUnderSet = [] := by
+    Mettapedia.OSLF.MeTTaIL.InterpretedContextualStep.rewriteAt rhoRuleInterpretation rhoBasePremises rhoCalc fuel commUnderSet = [] := by
   cases fuel with
   | zero => rfl
   | succ fuel =>
-      rw [rewriteAt, rhoCalc_rewrites]
-      simp [applyRuleUsing, rhoComm_no_match_underSet,
+      rw [Mettapedia.OSLF.MeTTaIL.InterpretedContextualStep.rewriteAt,
+        rhoCalc_rewrites]
+      simp [Mettapedia.OSLF.MeTTaIL.InterpretedContextualStep.applyRuleUsing,
+        rhoRuleInterpretation, rhoComm_no_match_underSet,
         rhoParCong_no_match_underSet]
 
 /-- Relational free-Drop boundary. -/
@@ -962,7 +979,7 @@ theorem no_freeDrop_step (target : Pattern) :
     ¬RhoStep freeDrop target := by
   intro step
   obtain ⟨fuel, bounded⟩ := step
-  have member := mem_rewriteAt_iff_stepAt.mpr bounded
+  have member := Mettapedia.OSLF.MeTTaIL.InterpretedContextualStep.mem_rewriteAt_iff_stepAt.mpr bounded
   rw [freeDrop_rewriteAt_nil] at member
   exact List.not_mem_nil member
 
@@ -971,7 +988,7 @@ theorem no_commUnderQuote_step (target : Pattern) :
     ¬RhoStep commUnderQuote target := by
   intro step
   obtain ⟨fuel, bounded⟩ := step
-  have member := mem_rewriteAt_iff_stepAt.mpr bounded
+  have member := Mettapedia.OSLF.MeTTaIL.InterpretedContextualStep.mem_rewriteAt_iff_stepAt.mpr bounded
   rw [commUnderQuote_rewriteAt_nil] at member
   exact List.not_mem_nil member
 
@@ -980,7 +997,7 @@ theorem no_commUnderSet_step (target : Pattern) :
     ¬RhoStep commUnderSet target := by
   intro step
   obtain ⟨fuel, bounded⟩ := step
-  have member := mem_rewriteAt_iff_stepAt.mpr bounded
+  have member := Mettapedia.OSLF.MeTTaIL.InterpretedContextualStep.mem_rewriteAt_iff_stepAt.mpr bounded
   rw [commUnderSet_rewriteAt_nil] at member
   exact List.not_mem_nil member
 

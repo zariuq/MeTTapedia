@@ -245,21 +245,18 @@ private theorem classificationDB_project_wx :
       some (.floating "wx" "wff" "x") := by
   simp [projectHypothesis?, classificationDB_find_wx, classificationFloatX,
     classificationFloatXView]
-  exact ⟨(), rfl⟩
 
 private theorem classificationDB_project_ess :
     projectHypothesis? classificationDB "ess" =
       some (.essential "ess" classificationEssentialView) := by
   simp [projectHypothesis?, classificationDB_find_ess,
     classificationEssential, classificationEssentialView]
-  exact ⟨(), rfl⟩
 
 private theorem classificationDB_project_wy :
     projectHypothesis? classificationDB "wy" =
       some (.floating "wy" "wff" "y") := by
   simp [projectHypothesis?, classificationDB_find_wy, classificationFloatY,
     classificationFloatYView]
-  exact ⟨(), rfl⟩
 
 /-- Positive boundary: essential hypotheses are skipped while the two floating
 variables retain their source-frame order. -/

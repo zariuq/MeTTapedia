@@ -56,7 +56,7 @@ PeTTa inherits the observable integer-vs-float result distinction from the
 actual Prolog implementation in `hyperon/PeTTa/src/metta.pl` together with
 SWI-Prolog arithmetic behavior.
 
-This belongs in the declarative spec surface because programs can observe it.
+This belongs in the declarative spec interface because programs can observe it.
 
 Positive examples:
 - `(+ 2 3)` returns `5`, not `5.0`

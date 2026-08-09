@@ -29,7 +29,7 @@ once in the proof and carried everywhere by the certificate.
 
 The public theorem we want is deliberately user-facing and portable. In HE,
 the coarse declarative judgment is broader than stable executable behavior, so
-the exported theorem surface lives in `ExecutableBoundary.lean` rather than forcing
+the exported theorem interface lives in `ExecutableBoundary.lean` rather than forcing
 the evaluator to coincide with the coarse spec directly. The private sync model
 in this file is not the final public story; it is the internal exact bridge
 that makes the refined public story provable.
@@ -67,7 +67,7 @@ certification biconditional composes them at the right boundary.
 **Layer 4 — Executable refinement boundary** (proved):
 - `ExecutableBoundary.EvalAtomStablyReaches`
 - `ExecutableBoundary.EvalAtomCertified`
-- theorem surface: refined HE certification iff stable eventual evaluator reach
+- theorem interface: refined HE certification iff stable eventual evaluator reach
 
 **Layer 5 — Counterexample-guided boundary control** (proved):
 - coarse `EvalSpec.EvalAtom` does not imply certification
@@ -1667,7 +1667,7 @@ private theorem interpretFunction_eval_to_sync
 
 /-! ### Step 3 exactness bundle targets
 
-These structures define the bounded theorem surface we now care about:
+These structures define the bounded theorem interface we now care about:
 - sync derivation implies evaluator membership at the same fuel,
 - evaluator membership implies sync derivation at the same fuel.
 
@@ -1747,7 +1747,7 @@ private theorem allEvalToSync_zero (space : Space) (dispatch : GroundedDispatch)
 
 The first half of exactness is proved by induction on the shared evaluator fuel.
 This mirrors the successful `AllSound` organization above and keeps the proof
-surface bounded to one private bundle instead of a growing forest of ad hoc
+interface bounded to one private bundle instead of a growing forest of ad hoc
 helper lemmas. -/
 
 private theorem isEmpty_false_of_mem {α : Type*} {xs : List α} {x : α}
@@ -4021,7 +4021,7 @@ private theorem evalAtomAligned_to_sync_of_interpretExpression_complete
 /-! ### Prototype public completeness: `EvalAtomFiltered`
 
 This is the first public-facing completeness theorem on the honest HE-compatible
-surface. It does not claim full 6-way completeness yet; instead it isolates the
+interface. It does not claim full 6-way completeness yet; instead it isolates the
 top-level `evalAtom` leg and shows that once `InterpretExpression` has the same
 public reachability completeness, the filtered public `EvalAtom` judgment does
 too. -/
@@ -5562,7 +5562,7 @@ The lasting public artifact is a single top-level certification predicate for
 the canonical coarse HE semantics.
 
 The private sync/aligned machinery in this file proves that refined boundary,
-but is not itself part of the exported theorem surface. -/
+but is not itself part of the exported theorem interface. -/
 
 /-- Stable executable reachability already implies the public declarative
     `EvalAtom` meaning by soundness. -/

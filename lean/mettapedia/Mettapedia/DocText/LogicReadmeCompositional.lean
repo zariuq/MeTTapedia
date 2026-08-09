@@ -479,22 +479,22 @@ theorem logic_heading_image_witness
     parseLogicHeadingLine? renderLogicHeading logicReadmeBlocks
     logic_heading_images hMem
 
-private def insertSurfaceBucket (acc : List (String × List LogicClaim)) (surface : String) (c : LogicClaim) :
+private def insertRenderedBucket (acc : List (String × List LogicClaim)) (rendered : String) (c : LogicClaim) :
     List (String × List LogicClaim) :=
   match acc with
-  | [] => [(surface, [c])]
+  | [] => [(rendered, [c])]
   | (k, cs) :: rest =>
-      if k = surface then
+      if k = rendered then
         (k, c :: cs) :: rest
       else
-        (k, cs) :: insertSurfaceBucket rest surface c
+        (k, cs) :: insertRenderedBucket rest rendered c
 
-def claimSurfaceBuckets : List (String × List LogicClaim) :=
+def claimRenderedBuckets : List (String × List LogicClaim) :=
   allLogicClaims.foldl
-    (fun acc c => insertSurfaceBucket acc (renderLogicClaim c) c) []
+    (fun acc c => insertRenderedBucket acc (renderLogicClaim c) c) []
 
-def ambiguousClaimSurfaces : List (String × List LogicClaim) :=
-  claimSurfaceBuckets.filter (fun p => p.snd.length > 1)
+def ambiguousClaimRenderings : List (String × List LogicClaim) :=
+  claimRenderedBuckets.filter (fun p => p.snd.length > 1)
 
 #eval
   let fails := allLogicClaims.filter (fun c =>
@@ -522,9 +522,9 @@ def ambiguousClaimSurfaces : List (String × List LogicClaim) :=
     s!"Logic structured parse failures: {repr fails}"
 
 #eval
-  if ambiguousClaimSurfaces.isEmpty then
-    "Logic ambiguity diagnostic: no duplicate surfaces across distinct claims"
+  if ambiguousClaimRenderings.isEmpty then
+    "Logic ambiguity diagnostic: no duplicate renderings across distinct claims"
   else
-    s!"Logic ambiguity diagnostic: duplicate surfaces found: {repr ambiguousClaimSurfaces}"
+    s!"Logic ambiguity diagnostic: duplicate renderings found: {repr ambiguousClaimRenderings}"
 
 end Mettapedia.DocText.LogicReadmeCompositional

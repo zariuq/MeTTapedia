@@ -313,7 +313,8 @@ noncomputable def headerStep_runtimeReflected
   | mandatory hypothesis =>
       have member : hypothesis ∈ source.activeHypotheses :=
         mandatoryMember hypothesis rfl
-      obtain ⟨runtimeCanonical, canonicalStep, nextAgreement⟩ :=
+      obtain ⟨runtimeCanonical, canonicalStep, nextAgreement,
+          _incomplete⟩ :=
         headerStep_runtimePreserved db hproject runtimeBefore
           (HeaderStep.mandatory before hypothesis member) agreement
       have hruntime : runtimeAfter = runtimeCanonical :=
@@ -345,7 +346,8 @@ noncomputable def headerStep_runtimeReflected
                   projectedActiveHypothesis_reverse_fidelity db source hproject
                     label embedded essential runtimeFormula hfind hscope
                 obtain ⟨member, label_eq, _hformula⟩ := hexists.choose_spec
-                obtain ⟨runtimeCanonical, canonicalStep, nextAgreement⟩ :=
+                obtain ⟨runtimeCanonical, canonicalStep, nextAgreement,
+                    _incomplete⟩ :=
                   headerStep_runtimePreserved db hproject runtimeBefore
                     (HeaderStep.explicitHypothesis before label hexists.choose
                       member label_eq) agreement
@@ -367,7 +369,8 @@ noncomputable def headerStep_runtimeReflected
                   embedded runtimeFormula frame hfind
               obtain ⟨member, label_eq, _hformula, _hframe⟩ :=
                 hexists.choose_spec
-              obtain ⟨runtimeCanonical, canonicalStep, nextAgreement⟩ :=
+              obtain ⟨runtimeCanonical, canonicalStep, nextAgreement,
+                  _incomplete⟩ :=
                 headerStep_runtimePreserved db hproject runtimeBefore
                   (HeaderStep.explicitAssertion before label hexists.choose
                     member label_eq) agreement

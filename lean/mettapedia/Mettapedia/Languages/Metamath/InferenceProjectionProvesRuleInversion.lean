@@ -104,7 +104,8 @@ theorem sideRule_conclusion_isSideJudgment
     {rule : RuleSchema} (hmember : rule ∈ sideRules) :
     IsSideJudgment rule.conclusion := by
   have hvalid := rule_isValidIn_of_mem validatedSidePresentation (by
-    simpa [validatedSidePresentation, sidePresentation] using hmember)
+    simpa [validatedSidePresentation, sidePresentation, sideCalculus]
+      using hmember)
   simp only [RuleSchema.isValidIn, Bool.and_eq_true] at hvalid
   have hconclusionValid :
       sidePresentation.judgmentSchemaValid rule.conclusion = true :=

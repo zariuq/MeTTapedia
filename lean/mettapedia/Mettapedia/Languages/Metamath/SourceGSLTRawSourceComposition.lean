@@ -533,13 +533,13 @@ inductive FoldResult (α : Type _) where
   | rejected (rejection : FoldRejection)
 deriving DecidableEq, Repr
 
-/-- mm-lean4 `feedToken` symbol discipline: a body token is a variable
-occurrence exactly when declared `$v`, else a constant occurrence when
-declared `$c`; otherwise rejected at its own span.  (Global-namespace
-disjointness of the valid states makes the branch order immaterial.) -/
+/-- A body token is a variable occurrence exactly while its `$v` declaration
+is active, else a constant occurrence when declared `$c`; otherwise it is
+rejected at its own span.  Global namespace disjointness makes the branch
+order immaterial. -/
 def tagSymbol (state : SourceState) (tok : LocatedName) :
     FoldResult Metamath.Verify.Sym :=
-  if state.declaredVariables.contains tok.name then
+  if state.activeVariables.contains tok.name then
     .ok (.var tok.name)
   else if state.declaredConstants.contains tok.name then
     .ok (.const tok.name)
@@ -1865,7 +1865,7 @@ example :
       .error (.statement ⟨⟨"root", 0, 2⟩,
         .strayStatementTerminator⟩) := by decide
 
-/-- Negative: an include of a missing file surfaces the step-1
+/-- Negative: an include of a missing file reports the step-1
 rejection through the composed pipeline. -/
 def missingIncludeCheck : Bool :=
   match runSource (fun n =>

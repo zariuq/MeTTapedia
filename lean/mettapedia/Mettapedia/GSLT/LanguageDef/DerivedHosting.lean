@@ -62,8 +62,6 @@ def lfLanguageDef : LanguageDef :=
     rewrites {
       Beta . |- App(Lam(A, ^x.B), X) ~> eval(B, X);
     }
-    logic { }
-    oracles { }
   }
 
 def lfOSLF : OSLFTypeSystem (langRewriteSystem lfLanguageDef "LFTerm") :=
@@ -130,8 +128,6 @@ def holLanguageDef : LanguageDef :=
     rewrites {
       HBeta . |- HApp(HLam(^x.B), X) ~> eval(B, X);
     }
-    logic { }
-    oracles { }
   }
 
 def holOSLF : OSLFTypeSystem (langRewriteSystem holLanguageDef "HolTerm") :=

@@ -149,10 +149,6 @@ def wmCoreLanguageDef : LanguageDef := {
   rewrites := coreRules
 }
 
-@[simp] theorem wmCoreLanguageDef_reflectivePresentations :
-    wmCoreLanguageDef.reflectivePresentations = [] := by
-  rfl
-
 /-- Core rules are a subset of the core LanguageDef's rules (trivially). -/
 theorem coreRules_subset_wmCore :
     ∀ r ∈ coreRules, r ∈ wmCoreLanguageDef.rewrites := by
@@ -1207,10 +1203,6 @@ def wmExtVertexLanguageDef (v : WMExtVertex) : LanguageDef := {
     ++ forgettingRules v.forgetting
 }
 
-@[simp] theorem wmExtVertexLanguageDef_reflectivePresentations (v : WMExtVertex) :
-    (wmExtVertexLanguageDef v).reflectivePresentations = [] := by
-  rfl
-
 /-- Assemble the full WM calculus LanguageDef for a 13-axis vertex.
     Each axis contributes its own set of rewrite rules. -/
 def wmFullVertexLanguageDef (v : WMFullVertex) : LanguageDef := {
@@ -1235,17 +1227,9 @@ def wmFullVertexLanguageDef (v : WMFullVertex) : LanguageDef := {
     ++ carrierRules v.carrier
 }
 
-@[simp] theorem wmFullVertexLanguageDef_reflectivePresentations (v : WMFullVertex) :
-    (wmFullVertexLanguageDef v).reflectivePresentations = [] := by
-  rfl
-
 /-- LanguageDef for the basic 4-axis vertex (no overlap/forgetting). -/
 def wmVertexLanguageDef (v : WMVertex) : LanguageDef :=
   wmExtVertexLanguageDef { base := v, overlap := .additive, forgetting := .none }
-
-@[simp] theorem wmVertexLanguageDef_reflectivePresentations (v : WMVertex) :
-    (wmVertexLanguageDef v).reflectivePresentations = [] := by
-  simp [wmVertexLanguageDef]
 
 /-! ### Guarded LanguageDef Constructors -/
 
@@ -1264,10 +1248,6 @@ def wmExtVertexLanguageDefGuarded (v : WMExtVertex) : LanguageDef := {
     ++ overlapRules v.overlap
     ++ forgettingRulesGuarded v.forgetting
 }
-
-@[simp] theorem wmExtVertexLanguageDefGuarded_reflectivePresentations (v : WMExtVertex) :
-    (wmExtVertexLanguageDefGuarded v).reflectivePresentations = [] := by
-  rfl
 
 /-- Guarded WM calculus LanguageDef for a 13-axis vertex.
     All side-conditioned rules use `Premise.relationQuery` guards. -/
@@ -1292,10 +1272,6 @@ def wmFullVertexLanguageDefGuarded (v : WMFullVertex) : LanguageDef := {
     ++ kripkeRulesGuarded v.kripke
     ++ carrierRulesGuarded v.carrier
 }
-
-@[simp] theorem wmFullVertexLanguageDefGuarded_reflectivePresentations (v : WMFullVertex) :
-    (wmFullVertexLanguageDefGuarded v).reflectivePresentations = [] := by
-  rfl
 
 /-- The 6-axis and full LanguageDefs have the same rewrite rules (when extra axes are off).
     The names differ ("WMCalculus" vs "WMCalculusFull") and supportTracked adds

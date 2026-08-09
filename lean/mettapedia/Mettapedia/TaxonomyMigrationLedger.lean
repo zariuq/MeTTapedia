@@ -490,7 +490,7 @@ Verification surface:
 - Spot-check moved theorem axiom footprints remain within the accepted project
   footprint.
 
-## Cluster 6c.6: PLN forced-query and ITV-selector truth-value surface
+## Cluster 6c.6: PLN forced-query and ITV-selector truth-value interface
 
 Status: completed in the working tree.
 
@@ -498,7 +498,7 @@ Moved paths:
 - `PLNForcedQueries.lean` moved from the logic attic to
   `Mettapedia/PLN/TruthValues/PLNForcedQueries.lean`.
 - The truth-value hub `Mettapedia/PLN/TruthValues.lean` now imports the moved
-  forced-query surface.
+  forced-query interface.
 
 Namespace:
 - Forced-query and chosen ITV-selector definitions now live under
@@ -2183,7 +2183,7 @@ Verification surface:
 - Spot-check canonical API theorem-handle axiom footprints remain within the
   accepted project footprint.
 
-## Cluster 6c.43: exact PLN core and WM calculus surfaces
+## Cluster 6c.43: exact PLN core and WM calculi
 
 Status: completed in the working tree.
 

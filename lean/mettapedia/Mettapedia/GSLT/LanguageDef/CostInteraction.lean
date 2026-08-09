@@ -20,6 +20,7 @@ open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.DerivedContexts
 open StructuralMorphism
 open WellSorted
+open ReflectionExtension
 
 /-! ## Disjoint namespaces for generated schema variables -/
 
@@ -217,9 +218,9 @@ def costStaticEquations (source : CIGSLT) : List Equation :=
 wrapped images of the exact authored presentation list. -/
 def costStaticReflectivePresentations (source : CIGSLT) :
     List ReflectivePresentationDecl :=
-  source.theory.presentation.presentation.language.reflectivePresentations.map
+  source.reflection.1.presentations.map
       costBaseReflectivePresentationDecl ++
-    source.theory.presentation.presentation.language.reflectivePresentations.map
+    source.reflection.1.presentations.map
       (costWrappedReflectivePresentationDecl source.theory)
 
 /-- Transform one source rule-local reflective selection for the funded
@@ -239,7 +240,7 @@ interaction rewrite.  Zero, one, or ambiguous selections remain zero, one,
 or ambiguous after transport; no reflective behavior is guessed. -/
 def costInteractionReflectiveRules (source : CIGSLT) :
     List ReflectiveRuleDecl :=
-  (source.theory.presentation.presentation.language.reflectiveRules.filter
+  (source.reflection.1.rules.filter
       fun declaration => declaration.rewriteRule ==
         source.theory.presentation.interactionRewrite.1.name).map
     costInteractionReflectiveRuleDecl
@@ -509,15 +510,14 @@ theorem mapReflectivePresentation_costBase {source target : CIGSLT}
     (morphism : source.Morphism target)
     (declaration : ReflectivePresentationDecl) :
     mapReflectivePresentation
-        (costPresentationSymbols
-          morphism.underlying.structural.structural.symbols)
+        (costReflectiveSymbols morphism.reflectiveSymbols)
         (costBaseReflectivePresentationDecl declaration) =
       costBaseReflectivePresentationDecl
-        (mapReflectivePresentation
-          morphism.underlying.structural.structural.symbols declaration) := by
+        (mapReflectivePresentation morphism.reflectiveSymbols declaration) := by
   cases declaration
   simp [costBaseReflectivePresentationDecl, mapReflectivePresentation,
-    costBaseStaticSymbols, costBasePresentationSymbols]
+    costBaseStaticReflectiveSymbols, costBaseStaticSymbols,
+    costBasePresentationSymbols, costReflectiveSymbols, reflectiveSymbols]
 
 /-- Wrapped reflective presentations are natural because continued maps
 preserve and reflect the distinguished interacting sort. -/
@@ -525,15 +525,14 @@ theorem mapReflectivePresentation_costWrapped {source target : CIGSLT}
     (morphism : source.Morphism target)
     (declaration : ReflectivePresentationDecl) :
     mapReflectivePresentation
-        (costPresentationSymbols
-          morphism.underlying.structural.structural.symbols)
+        (costReflectiveSymbols morphism.reflectiveSymbols)
         (costWrappedReflectivePresentationDecl source.theory declaration) =
       costWrappedReflectivePresentationDecl target.theory
-        (mapReflectivePresentation
-          morphism.underlying.structural.structural.symbols declaration) := by
+        (mapReflectivePresentation morphism.reflectiveSymbols declaration) := by
   cases declaration
   simp [costWrappedReflectivePresentationDecl, mapReflectivePresentation,
-    costWrappedStaticSymbols,
+    costWrappedStaticReflectiveSymbols, costWrappedStaticSymbols,
+    costReflectiveSymbols, reflectiveSymbols,
     morphism.map_costWrappedCategory]
 
 /-- Rule-local reflective selections commute with continued structural maps:
@@ -543,15 +542,13 @@ theorem mapReflectiveRule_costInteraction {source target : CIGSLT}
     (morphism : source.Morphism target)
     (declaration : ReflectiveRuleDecl) :
     mapReflectiveRule
-        (costPresentationSymbols
-          morphism.underlying.structural.structural.symbols)
+        (costReflectiveSymbols morphism.reflectiveSymbols)
         (costInteractionReflectiveRuleDecl declaration) =
       costInteractionReflectiveRuleDecl
-        (mapReflectiveRule
-          morphism.underlying.structural.structural.symbols declaration) := by
+        (mapReflectiveRule morphism.reflectiveSymbols declaration) := by
   cases declaration
   simp [mapReflectiveRule, costInteractionReflectiveRuleDecl,
-    costWholeRedexRewriteName]
+    costWholeRedexRewriteName, costReflectiveSymbols, reflectiveSymbols]
 
 /-- A continued theory map carries each final base-fiber equation declaration
 to the declaration generated from the mapped source equation. -/
@@ -628,8 +625,7 @@ theorem mapsCostStaticReflectivePresentations {source target : CIGSLT}
     (declaration : ReflectivePresentationDecl)
     (membership : declaration ∈ source.costStaticReflectivePresentations) :
     mapReflectivePresentation
-        (costPresentationSymbols
-          morphism.underlying.structural.structural.symbols) declaration ∈
+        (costReflectiveSymbols morphism.reflectiveSymbols) declaration ∈
       target.costStaticReflectivePresentations := by
   rw [CIGSLT.costStaticReflectivePresentations] at membership ⊢
   rcases List.mem_append.mp membership with
@@ -639,9 +635,8 @@ theorem mapsCostStaticReflectivePresentations {source target : CIGSLT}
     apply List.mem_append_left
     apply List.mem_map.mpr
     refine ⟨mapReflectivePresentation
-        morphism.underlying.structural.structural.symbols sourceDeclaration,
-      morphism.underlying.structural.structural.mapsReflectivePresentations
-        sourceDeclaration sourceMembership, ?_⟩
+        morphism.reflectiveSymbols sourceDeclaration,
+      morphism.mapsReflectivePresentations sourceDeclaration sourceMembership, ?_⟩
     exact (morphism.mapReflectivePresentation_costBase
       sourceDeclaration).symm
   · rcases List.mem_map.mp wrappedMembership with
@@ -649,9 +644,8 @@ theorem mapsCostStaticReflectivePresentations {source target : CIGSLT}
     apply List.mem_append_right
     apply List.mem_map.mpr
     refine ⟨mapReflectivePresentation
-        morphism.underlying.structural.structural.symbols sourceDeclaration,
-      morphism.underlying.structural.structural.mapsReflectivePresentations
-        sourceDeclaration sourceMembership, ?_⟩
+        morphism.reflectiveSymbols sourceDeclaration,
+      morphism.mapsReflectivePresentations sourceDeclaration sourceMembership, ?_⟩
     exact (morphism.mapReflectivePresentation_costWrapped
       sourceDeclaration).symm
 
@@ -663,8 +657,7 @@ theorem mapsCostInteractionReflectiveRules {source target : CIGSLT}
     (declaration : ReflectiveRuleDecl)
     (membership : declaration ∈ source.costInteractionReflectiveRules) :
     mapReflectiveRule
-        (costPresentationSymbols
-          morphism.underlying.structural.structural.symbols) declaration ∈
+        (costReflectiveSymbols morphism.reflectiveSymbols) declaration ∈
       target.costInteractionReflectiveRules := by
   rw [CIGSLT.costInteractionReflectiveRules] at membership ⊢
   rcases List.mem_map.mp membership with
@@ -674,11 +667,10 @@ theorem mapsCostInteractionReflectiveRules {source target : CIGSLT}
       source.theory.presentation.interactionRewrite.1.name :=
     beq_iff_eq.mp (List.mem_filter.mp selectedMembership).2
   let targetDeclaration := mapReflectiveRule
-    morphism.underlying.structural.structural.symbols sourceDeclaration
+    morphism.reflectiveSymbols sourceDeclaration
   have targetMembership : targetDeclaration ∈
-      target.theory.presentation.presentation.language.reflectiveRules :=
-    morphism.underlying.structural.structural.mapsReflectiveRules
-      sourceDeclaration sourceMembership
+      target.reflection.1.rules :=
+    morphism.mapsReflectiveRules sourceDeclaration sourceMembership
   have targetSelectedName : targetDeclaration.rewriteRule =
       target.theory.presentation.interactionRewrite.1.name := by
     change morphism.underlying.structural.structural.symbols.rewrite
@@ -687,7 +679,7 @@ theorem mapsCostInteractionReflectiveRules {source target : CIGSLT}
     rw [selectedName]
     exact congrArg RewriteRule.name morphism.mapsInteractionRewriteValue
   have targetSelectedMembership : targetDeclaration ∈
-      target.theory.presentation.presentation.language.reflectiveRules.filter
+      target.reflection.1.rules.filter
         (fun candidate => candidate.rewriteRule ==
           target.theory.presentation.interactionRewrite.1.name) :=
     List.mem_filter.mpr ⟨targetMembership,

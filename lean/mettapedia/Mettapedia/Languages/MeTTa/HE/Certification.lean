@@ -4,7 +4,7 @@ import Mettapedia.Languages.MeTTa.HE.Correctness
 # Hyperon Experimental MeTTa Certification Boundary
 
 This module is the light public entry point for the verified HE evaluator
-certificate surface.
+certificate interface.
 
 ## Exported Boundary
 
@@ -37,7 +37,7 @@ The additive implementation-refined spec boundary is defined in
 - conformance counterexamples ruling out stronger false boundaries
 
 This file intentionally adds no new semantics. It provides a stable, lighter
-module boundary for users who want the refined HE certificate surface without
+module boundary for users who want the refined HE certificate interface without
 reading the full internal proof development first.
 
 ## Auditor Note

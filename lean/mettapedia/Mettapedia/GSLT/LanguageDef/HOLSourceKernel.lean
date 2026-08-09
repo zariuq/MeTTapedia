@@ -1,4 +1,5 @@
 import Mettapedia.GSLT.LanguageDef.InferenceExtraction
+import Mettapedia.GSLT.LanguageDef.LogicExtension
 
 /-!
 # Source-scale HOL kernel presentations
@@ -16,6 +17,7 @@ namespace Mettapedia.GSLT.LanguageDef.HOLSourceKernel
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
 open Mettapedia.GSLT.LanguageDef.InferenceExtraction
+open Mettapedia.GSLT.LanguageDef.LogicExtension
 
 private def ty (name : String) : TypeExpr := .base name
 
@@ -26,7 +28,7 @@ private def termCtor (label category : String) (parameters : List (String × Str
     params := parameters.map fun (name, typeName) => .simple name (ty typeName)
     syntaxPattern := [] }
 
-private def rel (name : String) (arguments : List String) : LogicDecl :=
+private def rel (name : String) (arguments : List String) : LogicDeclaration :=
   .relation { name, argTypes := arguments.map ty }
 
 private def app (head : String) (arguments : List Pattern := []) : Pattern :=
@@ -162,7 +164,7 @@ private def hol4ProofTerms : List GrammarRule :=
   , termCtor "H4_INST_TYPE" "HolProof"
       [("substitution", "HolSubst"), ("input", "HolThm"), ("output", "HolResult")] ]
 
-private def sideRelations : List LogicDecl :=
+private def sideRelations : LogicProgram :=
   [ rel "termHasType" ["HolTerm", "HolType"]
   , rel "isBool" ["HolTerm"]
   , rel "alphaEq" ["HolTerm", "HolTerm"]
@@ -298,18 +300,20 @@ def holLightSourceKernel : LanguageDef :=
     types := commonTypes
     terms := commonTerms ++ holLightProofTerms
     equations := []
-    rewrites := holLightRewrites
-    logic := sideRelations
-    oracles := [] }
+    rewrites := holLightRewrites }
 
 def hol4SourceKernel : LanguageDef :=
   { name := "HOL4SourceKernel"
     types := commonTypes
     terms := commonTerms ++ hol4ProofTerms
     equations := []
-    rewrites := hol4Rewrites
-    logic := sideRelations
-    oracles := [] }
+    rewrites := hol4Rewrites }
+
+def holLightSourceLogic : AdmittedProgram holLightSourceKernel :=
+  ⟨sideRelations, by decide⟩
+
+def hol4SourceLogic : AdmittedProgram hol4SourceKernel :=
+  ⟨sideRelations, by decide⟩
 
 def holLightSourceProfile : EvidenceProfile :=
   { checkHead := "HLCheck"
@@ -329,9 +333,10 @@ def hol4SourceProfile : EvidenceProfile :=
 
 def holLightSourcePresentation? : Option Presentation :=
   rawPresentation? holLightSourceProfile holLightSourceKernel
+    holLightSourceLogic.1
 
 def hol4SourcePresentation? : Option Presentation :=
-  rawPresentation? hol4SourceProfile hol4SourceKernel
+  rawPresentation? hol4SourceProfile hol4SourceKernel hol4SourceLogic.1
 
 #guard LanguageDef.validate holLightSourceKernel == []
 #guard LanguageDef.validate hol4SourceKernel == []

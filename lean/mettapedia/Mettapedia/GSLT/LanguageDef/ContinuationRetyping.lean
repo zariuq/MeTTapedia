@@ -41,8 +41,6 @@ def costBasePresentationSymbols : PresentationSymbols where
   relation := id
   equation := id
   rewrite := id
-  reflective := id
-  reflectiveRule := id
 
 theorem costBaseSortName_injective : Function.Injective costBaseSortName := by
   intro left right equality
@@ -777,7 +775,7 @@ theorem generatedTerm_parameter_baseName_mem {theory : IGSLT}
 
 /-- Generated typing constructors intentionally carry no parser notation or
 host evaluator policy.  They are the internal signature derived from the
-authored presentation, not a second surface language. -/
+authored presentation, not a second source language. -/
 theorem generatedTerm_syntaxPattern_eq_nil {theory : IGSLT}
     {cut : InteractionCutPresentation theory}
     (plan : ContinuationRetypingPlan cut) (term : GrammarRule)
@@ -799,10 +797,6 @@ theorem generatedLanguage_validate {theory : IGSLT}
     (plan : ContinuationRetypingPlan cut) :
     plan.generatedLanguage.validate = [] := by
   apply LanguageDef.validate_eq_nil_of_constructorOnly
-  · rfl
-  · rfl
-  · rfl
-  · rfl
   · rfl
   · rfl
   · exact generatedTypeNames_nodup plan

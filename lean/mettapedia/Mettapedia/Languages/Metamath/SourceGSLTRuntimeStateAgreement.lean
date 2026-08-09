@@ -93,11 +93,12 @@ def runtimeScopeSizes (state : SourceState) : List (Nat × Nat) :=
 
 /-! ## Complete agreement -/
 
-/-- Erase the scope-history carrier before projection.  Projection observes
+/-- Erase administrative carriers before projection.  Projection observes
 the current frame and global object map; scope history is related separately
-by `RuntimeDBAgrees.scopeStack`. -/
+by `RuntimeDBAgrees.scopeStack`, while incomplete-proof labels are a warning
+ledger with no source-prefix meaning. -/
 def projectionDB (db : RuntimeDB) : RuntimeDB :=
-  { db with scopes := #[] }
+  { db with scopes := #[], incompleteProofs := #[] }
 
 @[simp] theorem projectionDB_default :
     projectionDB (default : RuntimeDB) = default := by
@@ -201,6 +202,113 @@ scope-history carrier before calling `projectPrefix?`. -/
 def projectSourcePrefix? (live : RuntimeDB) : Option PrefixProjection :=
   projectPrefix? (projectionDB live)
 
+/-- Hypothesis projection reads the global object map, not variable activity. -/
+@[simp] theorem projectHypothesis?_with_activeVars
+    (db : RuntimeDB) (activeVars : Array (String × Nat))
+    (label : String) :
+    projectHypothesis? { db with activeVars := activeVars } label =
+      projectHypothesis? db label := by
+  unfold projectHypothesis? Metamath.Verify.DB.find?
+  rfl
+
+@[simp] theorem projectHypotheses?_with_activeVars
+    (db : RuntimeDB) (activeVars : Array (String × Nat))
+    (labels : List String) :
+    projectHypotheses? { db with activeVars := activeVars } labels =
+      projectHypotheses? db labels := by
+  induction labels with
+  | nil => rfl
+  | cons label labels ih =>
+      unfold projectHypotheses? at ih ⊢
+      simp only [List.mapM_cons]
+      rw [projectHypothesis?_with_activeVars, ih]
+
+@[simp] theorem projectAssertion?_with_activeVars
+    (db : RuntimeDB) (activeVars : Array (String × Nat))
+    (label : String) (formula : RuntimeFormula) (frame : RuntimeFrame)
+    (embeddedLabel : String) :
+    projectAssertion? { db with activeVars := activeVars }
+        label formula frame embeddedLabel =
+      projectAssertion? db label formula frame embeddedLabel := by
+  simp [projectAssertion?]
+
+@[simp] theorem projectAssertionsFromEntries?_with_activeVars
+    (db : RuntimeDB) (activeVars : Array (String × Nat))
+    (entries : List (String × Metamath.Verify.Object)) :
+    projectAssertionsFromEntries? { db with activeVars := activeVars }
+        entries =
+      projectAssertionsFromEntries? db entries := by
+  induction entries with
+  | nil => rfl
+  | cons entry entries ih =>
+      rcases entry with ⟨label, object⟩
+      cases object <;> simp [projectAssertionsFromEntries?, ih]
+
+@[simp] theorem wellFormed?_with_activeVars
+    (db : RuntimeDB) (activeVars : Array (String × Nat)) :
+    ({ db with activeVars := activeVars } : RuntimeDB).wellFormed? =
+      db.wellFormed? := by
+  simp [Metamath.Verify.DB.wellFormed?,
+    Metamath.Verify.DB.wellFormedFrame?,
+    Metamath.Verify.DB.wellFormedObjects?,
+    Metamath.Verify.DB.frameHypsOk?,
+    Metamath.Verify.DB.frameFloatVarsUnique?,
+    Metamath.Verify.DB.wellFormedObj?,
+    Metamath.Verify.DB.hypOK?, Metamath.Verify.DB.find?]
+
+@[simp] theorem assertDvVarsInFrame?_with_activeVars
+    (db : RuntimeDB) (activeVars : Array (String × Nat)) :
+    ({ db with activeVars := activeVars } : RuntimeDB).assertDvVarsInFrame? =
+      db.assertDvVarsInFrame? := by
+  simp [Metamath.Verify.DB.assertDvVarsInFrame?,
+    Metamath.Verify.DB.frameDvVarsInFrame?,
+    Metamath.Verify.DB.frameFloatVars,
+    Metamath.Verify.DB.find?]
+
+@[simp] theorem proofFacingCallerFrame_with_activeVars
+    (db : RuntimeDB) (activeVars : Array (String × Nat)) :
+    proofFacingCallerFrame { db with activeVars := activeVars } =
+      proofFacingCallerFrame db := by
+  unfold proofFacingCallerFrame Metamath.Verify.DB.frameFloatVars
+  rfl
+
+@[simp] theorem rawCallerDVStrict_with_activeVars
+    (db : RuntimeDB) (activeVars : Array (String × Nat)) :
+    rawCallerDVStrict { db with activeVars := activeVars } =
+      rawCallerDVStrict db := rfl
+
+@[simp] theorem objectEntries_with_activeVars
+    (db : RuntimeDB) (activeVars : Array (String × Nat)) :
+    objectEntries { db with activeVars := activeVars } =
+      objectEntries db := rfl
+
+/-- Prefix projection is insensitive to the separately tracked active-variable
+stack. -/
+@[simp] theorem projectPrefix?_with_activeVars
+    (db : RuntimeDB) (activeVars : Array (String × Nat)) :
+    projectPrefix? { db with activeVars := activeVars } =
+      projectPrefix? db := by
+  unfold projectPrefix?
+  simp only [wellFormed?_with_activeVars,
+    assertDvVarsInFrame?_with_activeVars,
+    rawCallerDVStrict_with_activeVars,
+    objectEntries_with_activeVars,
+    projectHypotheses?_with_activeVars,
+    proofFacingCallerFrame_with_activeVars,
+    projectAssertionsFromEntries?_with_activeVars]
+  rfl
+
+/-- The proof-facing projection deliberately ignores the separate
+scope-sensitive active-variable stack. -/
+@[simp] theorem projectSourcePrefix?_with_activeVars
+    (db : RuntimeDB) (activeVars : Array (String × Nat)) :
+    projectSourcePrefix? { db with activeVars := activeVars } =
+      projectSourcePrefix? db := by
+  change projectPrefix?
+      { projectionDB db with activeVars := activeVars } =
+    projectPrefix? (projectionDB db)
+  exact projectPrefix?_with_activeVars _ _
+
 /-- A successful source-facing projection exposes exactly the values read
 from the live implementation state. -/
 theorem projectSourcePrefix?_eq_some_fields
@@ -219,6 +327,142 @@ theorem projectSourcePrefix?_eq_some_fields
         some projection.assertions := by
   exact projectPrefix?_eq_some_fields (projectionDB db) projection hproject
 
+/-! ## Active-variable stack representation -/
+
+/-- Exact agreement between the shipped depth-tagged active-variable stack
+and the source state's scope-sensitive active-variable list.  At global
+scope every entry has depth zero.  Inside a block, the saved source prefix
+agrees recursively with the outer scopes and every entry after that prefix
+has the current runtime depth. -/
+inductive RuntimeActiveVariablesAgree :
+    List (String × Nat) → List String → List ScopeBoundary → Prop
+  | global {entries names}
+      (names_eq : entries.map Prod.fst = names)
+      (depth_zero : ∀ entry ∈ entries, entry.2 = 0) :
+      RuntimeActiveVariablesAgree entries names []
+  | block {entries names boundary rest}
+      (names_eq : entries.map Prod.fst = names)
+      (boundary_le : boundary.activeVariableLength ≤ entries.length)
+      (outer : RuntimeActiveVariablesAgree
+        (entries.take boundary.activeVariableLength)
+        (names.take boundary.activeVariableLength) rest)
+      (current_depth :
+        ∀ entry ∈ entries.drop boundary.activeVariableLength,
+          entry.2 = (boundary :: rest).length) :
+      RuntimeActiveVariablesAgree entries names (boundary :: rest)
+
+theorem RuntimeActiveVariablesAgree.names_eq
+    {entries : List (String × Nat)} {names : List String}
+    {scopes : List ScopeBoundary}
+    (agreement : RuntimeActiveVariablesAgree entries names scopes) :
+    entries.map Prod.fst = names := by
+  cases agreement with
+  | global names_eq _ => exact names_eq
+  | block names_eq _ _ _ => exact names_eq
+
+theorem RuntimeActiveVariablesAgree.depth_bounded
+    {entries : List (String × Nat)} {names : List String}
+    {scopes : List ScopeBoundary}
+    (agreement : RuntimeActiveVariablesAgree entries names scopes) :
+    ∀ entry ∈ entries, entry.2 ≤ scopes.length := by
+  induction agreement with
+  | global names_eq depth_zero =>
+      intro entry hentry
+      simp [depth_zero entry hentry]
+  | @block entries names boundary rest names_eq boundary_le outer
+      current_depth ih =>
+      intro entry hentry
+      rw [← List.take_append_drop boundary.activeVariableLength entries]
+        at hentry
+      rcases List.mem_append.mp hentry with houter | hcurrent
+      · exact Nat.le_trans (ih entry houter) (by simp)
+      · simp [current_depth entry hcurrent]
+
+/-- Opening a source scope and pushing the shipped runtime scope preserve the
+active-variable representation. -/
+theorem RuntimeActiveVariablesAgree.pushScope
+    {entries : List (String × Nat)} {names : List String}
+    {scopes : List ScopeBoundary}
+    (agreement : RuntimeActiveVariablesAgree entries names scopes)
+    (boundary : ScopeBoundary)
+    (hboundary : boundary.activeVariableLength = names.length) :
+    RuntimeActiveVariablesAgree entries names (boundary :: scopes) := by
+  have hlength : entries.length = names.length := by
+    simpa using congrArg List.length agreement.names_eq
+  refine .block agreement.names_eq ?_ ?_ ?_
+  · simp [hboundary, hlength]
+  · have entriesTake :
+        entries.take boundary.activeVariableLength = entries := by
+      rw [hboundary, ← hlength, List.take_length]
+    have namesTake : names.take boundary.activeVariableLength = names := by
+      rw [hboundary, List.take_length]
+    rw [entriesTake, namesTake]
+    exact agreement
+  · intro entry hentry
+    simp [hboundary, ← hlength] at hentry
+
+/-- Activating one variable appends the source name and the shipped entry at
+the current scope depth. -/
+theorem RuntimeActiveVariablesAgree.activate
+    {entries : List (String × Nat)} {names : List String}
+    {scopes : List ScopeBoundary}
+    (agreement : RuntimeActiveVariablesAgree entries names scopes)
+    (name : String) :
+    RuntimeActiveVariablesAgree
+      (entries ++ [(name, scopes.length)]) (names ++ [name]) scopes := by
+  cases agreement with
+  | global names_eq depth_zero =>
+      refine .global (by simp [names_eq]) ?_
+      intro entry hentry
+      rcases List.mem_append.mp hentry with hold | hnew
+      · exact depth_zero entry hold
+      · simpa using congrArg Prod.snd (List.mem_singleton.mp hnew)
+  | @block entries names boundary rest names_eq boundary_le outer
+      current_depth =>
+      have hlength : entries.length = names.length := by
+        simpa using congrArg List.length names_eq
+      have hnamesLength : boundary.activeVariableLength ≤ names.length := by
+        simpa [← hlength] using boundary_le
+      refine .block (by simp [names_eq]) ?_ ?_ ?_
+      · simpa using Nat.le_trans boundary_le (Nat.le_succ entries.length)
+      · simpa [List.take_append_of_le_length boundary_le,
+          List.take_append_of_le_length hnamesLength] using outer
+      · intro entry hentry
+        rw [List.drop_append_of_le_length boundary_le] at hentry
+        rcases List.mem_append.mp hentry with hold | hnew
+        · exact current_depth entry hold
+        · simpa using congrArg Prod.snd (List.mem_singleton.mp hnew)
+
+/-- Closing the newest scope filters out exactly its active-variable suffix
+and exposes the recursively related outer prefix. -/
+theorem RuntimeActiveVariablesAgree.popScope
+    {entries : List (String × Nat)} {names : List String}
+    {boundary : ScopeBoundary} {rest : List ScopeBoundary}
+    (agreement : RuntimeActiveVariablesAgree entries names
+      (boundary :: rest)) :
+    RuntimeActiveVariablesAgree
+      (entries.filter fun entry => entry.2 ≤ rest.length)
+      (names.take boundary.activeVariableLength) rest := by
+  cases agreement with
+  | block names_eq boundary_le outer current_depth =>
+      have hprefix :
+          (entries.take boundary.activeVariableLength).filter
+              (fun entry => entry.2 ≤ rest.length) =
+            entries.take boundary.activeVariableLength := by
+        apply List.filter_eq_self.mpr
+        intro entry hentry
+        exact decide_eq_true (outer.depth_bounded entry hentry)
+      have hsuffix :
+          (entries.drop boundary.activeVariableLength).filter
+              (fun entry => entry.2 ≤ rest.length) = [] := by
+        apply List.filter_eq_nil_iff.mpr
+        intro entry hentry
+        rw [decide_eq_true_eq]
+        simp [current_depth entry hentry]
+      rw [← List.take_append_drop boundary.activeVariableLength entries,
+        List.filter_append, hprefix, hsuffix, List.append_nil]
+      exact outer
+
 /-- Source/runtime agreement at a parser-prefix boundary.  Projection,
 permanent namespace, and scoped stack are separate fields because they obey
 different structural laws. -/
@@ -230,11 +474,46 @@ structure RuntimeDBAgrees (db : RuntimeDB) (state : SourceState) : Prop where
     db.frame.dj.toList = state.activeDistinctVariables ∧
       db.frame.hyps.toList =
         state.activeHypotheses.map HypothesisView.label
+  activeVariables : RuntimeActiveVariablesAgree db.activeVars.toList
+    state.activeVariables state.scopes
   scopeStack : db.scopes.toList = runtimeScopeSizes state
 
 theorem RuntimeDBAgrees.errorFree {db : RuntimeDB} {state : SourceState}
     (agreement : RuntimeDBAgrees db state) : db.error? = none :=
   agreement.objectNamespace.errorFree
+
+/-- The source-facing projection does not observe the incomplete-proof
+warning ledger. -/
+@[simp] theorem projectSourcePrefix?_recordIncomplete
+    (db : RuntimeDB) (incomplete : Bool) (label : String) :
+    projectSourcePrefix? (db.recordIncomplete incomplete label) =
+      projectSourcePrefix? db := by
+  cases incomplete with
+  | false => rfl
+  | true =>
+      unfold Metamath.Verify.DB.recordIncomplete
+      simp only [if_true]
+      unfold projectSourcePrefix? projectionDB
+      rfl
+
+/-- Recording the warning label of an accepted incomplete proof is
+administrative: it changes none of the source-facing database observations. -/
+theorem RuntimeDBAgrees.recordIncomplete
+    {db : RuntimeDB} {state : SourceState}
+    (agreement : RuntimeDBAgrees db state)
+    (incomplete : Bool) (label : String) :
+    RuntimeDBAgrees (db.recordIncomplete incomplete label) state := by
+  refine
+    { projection := by simpa using agreement.projection
+      objectNamespace :=
+        { errorFree := by
+            simpa using agreement.objectNamespace.errorFree
+          occupied_iff := by
+            intro candidate
+            simpa using agreement.objectNamespace.occupied_iff candidate }
+      rawFrame := by simpa using agreement.rawFrame
+      activeVariables := by simpa using agreement.activeVariables
+      scopeStack := by simpa using agreement.scopeStack }
 
 /-- Complete agreement exposes the direct shared projector as well as the
 source-facing wrapper used in the relation. -/
@@ -286,6 +565,10 @@ theorem default_initial_runtimeDBAgrees :
     { projection := default_projectPrefix
       objectNamespace := default_initial_namespaceAgrees
       rawFrame := ⟨rfl, rfl⟩
+      activeVariables := .global rfl (by
+        intro entry hentry
+        change entry ∈ ([] : List (String × Nat)) at hentry
+        simp at hentry)
       scopeStack := rfl }
 
 /-- Negative boundary: a runtime-only pushed scope is visible even though it
@@ -405,9 +688,12 @@ theorem RuntimeDBAgrees.insertAssertion_of_projection {db : RuntimeDB}
     { projection := postProjection
       objectNamespace := runtimeNamespaceAfterInsert agreement inserted pos
       rawFrame := ?_
+      activeVariables := ?_
       scopeStack := ?_ }
   · rw [insertEq]
     exact agreement.rawFrame
+  · rw [insertEq]
+    exact agreement.activeVariables
   · rw [insertEq]
     exact agreement.scopeStack
 
@@ -438,6 +724,7 @@ theorem RuntimeDBAgrees.pushScope {db : RuntimeDB}
     { projection := ?_
       objectNamespace := ?_
       rawFrame := agreement.rawFrame
+      activeVariables := ?_
       scopeStack := ?_ }
   · rw [projectSourcePrefix?_pushScope]
     simpa [runtimePrefix, SourceState.callerFrame,
@@ -451,6 +738,10 @@ theorem RuntimeDBAgrees.pushScope {db : RuntimeDB}
       simpa [DB.pushScope, Metamath.Verify.DB.find?,
         SourceState.objectNames] using
         agreement.objectNamespace.occupied_iff label
+  · simpa [DB.pushScope] using agreement.activeVariables.pushScope
+      { activeVariableLength := before.activeVariables.length
+        activeHypothesisLength := before.activeHypotheses.length
+        activeDistinctLength := before.activeDistinctVariables.length } rfl
   · simp [DB.pushScope, runtimeScopeSizes, ScopeBoundary.runtimeSize,
       agreement.scopeStack]
     simp [Metamath.Verify.Frame.size, hdj, hhyps]
@@ -495,7 +786,9 @@ theorem RuntimeDBAgrees.popScope_of_projection {db : RuntimeDB}
   have popEq : db.popScope pos =
       { db with
         frame := db.frame.shrink (ScopeBoundary.runtimeSize boundary)
-        scopes := db.scopes.pop } := by
+        scopes := db.scopes.pop
+        activeVars := db.activeVars.filter
+          (fun entry => entry.2 ≤ db.scopes.size - 1) } := by
     simp [Metamath.Verify.DB.popScope, hback]
   have scopesList : db.scopes.toList =
       rest.reverse.map ScopeBoundary.runtimeSize ++
@@ -512,10 +805,18 @@ theorem RuntimeDBAgrees.popScope_of_projection {db : RuntimeDB}
       rest.reverse.map ScopeBoundary.runtimeSize := by
     rw [scopesArray]
     simp
+  have scopeSize : db.scopes.size = (boundary :: rest).length := by
+    calc
+      db.scopes.size = db.scopes.toList.length := by simp
+      _ = (runtimeScopeSizes before).length :=
+        congrArg List.length agreement.scopeStack
+      _ = (boundary :: rest).length := by
+        simp [runtimeScopeSizes, hscopes]
   refine
     { projection := postProjection
       objectNamespace := ?_
       rawFrame := ?_
+      activeVariables := ?_
       scopeStack := ?_ }
   · refine
       { errorFree := ?_
@@ -535,6 +836,10 @@ theorem RuntimeDBAgrees.popScope_of_projection {db : RuntimeDB}
       simp [Metamath.Verify.Frame.shrink, ScopeBoundary.runtimeSize,
         agreement.rawFrame.2]
   · rw [popEq]
+    have activeAgreement := agreement.activeVariables
+    rw [hscopes] at activeAgreement
+    simpa [scopeSize] using activeAgreement.popScope
+  · rw [popEq]
     simpa [runtimeScopeSizes] using poppedScopes
 
 /-- The source-only completion marker after `$\}` leaves the shipped database
@@ -549,6 +854,7 @@ theorem RuntimeDBAgrees.completeBlock {db : RuntimeDB}
     { projection := ?_
       objectNamespace := ?_
       rawFrame := agreement.rawFrame
+      activeVariables := agreement.activeVariables
       scopeStack := ?_ }
   · simpa [runtimePrefix, SourceState.callerFrame,
       SourceState.proofDistinctVariables,

@@ -17,7 +17,7 @@ open Mettapedia.OSLF.MeTTaIL.ContextualStep
 
 /-- A fully evidenced authored rule application compiles to a MORK rule and
 fires on the singleton translation of its source.  This includes rules whose
-surface right-hand sides normalize substitution or rest-variable syntax. -/
+source right-hand sides normalize substitution or rest-variable syntax. -/
 theorem authoredRule_mork_fire
     {base : BasePremiseEvaluator} {lang : LanguageDef} {fuel : Nat}
     {source target : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern}

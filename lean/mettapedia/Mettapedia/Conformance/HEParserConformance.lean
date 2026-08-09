@@ -11,7 +11,7 @@ This file is intentionally a conformance bridge:
 - actual parser behavior comes from `Algorithms.MeTTa.Simple.Parser`
 
 The checks here are deliberately curated around the syntax points that matter
-most for current HE compatibility and the newly declared canonical surface.
+most for current HE compatibility and the newly declared canonical syntax.
 
 This module intentionally exposes **executable conformance fixtures**, not
 kernel theorems. The parser computations here do not reduce far enough for

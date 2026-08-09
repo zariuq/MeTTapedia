@@ -12,7 +12,7 @@ export Mettapedia.DocText.GFReadmeCompositional
     gfReadmeBlocks gfReadmeMarkdown
     ParsedGFStructuredLine parseSelectedStructuredGFLine?
     selectedStructuredGFLines gfHardAuditPasses gf_hard_audit
-    claimSurfaceBuckets ambiguousClaimSurfaces
+    claimRenderedBuckets ambiguousClaimRenderings
     anchor_formalization anchor_no_sorries )
 
 end Mettapedia.Languages.GF.Examples.GFReadmeCompositional

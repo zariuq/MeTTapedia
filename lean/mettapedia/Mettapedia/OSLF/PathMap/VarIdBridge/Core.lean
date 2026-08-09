@@ -31,7 +31,7 @@ open Mettapedia.OSLF.PathMap.Trie
 abbrev Slot := Nat
 abbrev Spelling := String
 
-/-! ## Current bridge surface: exact terms and structural slot terms -/
+/-! ## Current bridge: exact terms and structural slot terms -/
 
 /-- A small exact term language carrying CeTTa `VarId`s. -/
 inductive ExactTerm where
@@ -192,7 +192,7 @@ theorem collapsed_presentation_keys_distinct :
   have hp := congrArg Prod.snd h
   simp [presentationKey, payloadA, payloadB, exampleVarA, exampleVarB] at hp
 
-/-! ## List-shaped `CAtom` bridge surface -/
+/-! ## List-shaped `CAtom` bridge -/
 
 /-- A structural atom with local slots and list-shaped expressions. -/
 inductive SlotAtom where
@@ -1066,7 +1066,7 @@ theorem contextual_packet_heProjected_twoPhase_perm_direct
   contextual_packet_twoPhase_perm_direct table sel
     (ContextualNativeMatcher.fromHEProjection projection fuel) space query hmult
 
-/-! ## Future bridge surface: locally nameless open/close laws -/
+/-! ## Future bridge: locally nameless open/close laws -/
 
 namespace LocallyNameless
 

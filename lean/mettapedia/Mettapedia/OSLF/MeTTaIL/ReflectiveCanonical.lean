@@ -18,6 +18,7 @@ namespace Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Match
 open Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution
+open Mettapedia.OSLF.MeTTaIL.Reflection
 
 /-- Splice a normalized occurrence of the declared parallel collection into
 its parent parallel collection. -/
@@ -1193,47 +1194,62 @@ theorem canonicalEquivalent_eq_true_iff
 Only repeated metavariable consistency changes for the selected reflective
 rule.  Constructor matching, binder handling, and collection search remain
 the generic matcher. -/
-def matchPatternForRule
-    (lang : LanguageDef) (rule : RewriteRule) (term : Pattern) : List Bindings :=
-  match matchingPresentationForRule? lang rule with
+def matchPatternForRuleUsing
+    (profile : ReflectionProfile) (rule : RewriteRule)
+    (term : Pattern) : List Bindings :=
+  match matchingPresentationForRule? profile rule with
   | some declaration =>
       matchPatternWith (canonicalEquivalent declaration) rule.left term
   | none => matchPattern rule.left term
 
+/-- Match an authored rule in the five-field, reflection-free core. -/
+def matchPatternForRule
+    (_language : LanguageDef) (rule : RewriteRule)
+    (term : Pattern) : List Bindings :=
+  matchPatternForRuleUsing .empty rule term
+
 /-- Rule-aware matching is unchanged when two languages share both reflective
 data tables. -/
-theorem matchPatternForRule_eq_of_reflectiveData_eq
-    {lang₁ lang₂ : LanguageDef}
-    (samePresentations :
-      lang₁.reflectivePresentations = lang₂.reflectivePresentations)
-    (sameRules : lang₁.reflectiveRules = lang₂.reflectiveRules)
+theorem matchPatternForRuleUsing_eq_of_reflectiveData_eq
+    {profile₁ profile₂ : ReflectionProfile}
+    (samePresentations : profile₁.presentations = profile₂.presentations)
+    (sameRules : profile₁.rules = profile₂.rules)
     (rule : RewriteRule) (term : Pattern) :
-    matchPatternForRule lang₁ rule term = matchPatternForRule lang₂ rule term := by
-  simp only [matchPatternForRule]
+    matchPatternForRuleUsing profile₁ rule term =
+      matchPatternForRuleUsing profile₂ rule term := by
+  simp only [matchPatternForRuleUsing]
   rw [matchingPresentationForRule?_eq_of_reflectiveData_eq
     samePresentations sameRules rule]
 
 /-- Missing or ambiguous reflective data is definitionally backward
 compatible with structural matching. -/
 theorem matchPatternForRule_eq_syntactic_of_no_presentation
-    {lang : LanguageDef} {rule : RewriteRule}
-    (missing : matchingPresentationForRule? lang rule = none) (term : Pattern) :
-    matchPatternForRule lang rule term = matchPattern rule.left term := by
-  simp [matchPatternForRule, missing]
+    {profile : ReflectionProfile} {rule : RewriteRule}
+    (missing : matchingPresentationForRule? profile rule = none)
+    (term : Pattern) :
+    matchPatternForRuleUsing profile rule term = matchPattern rule.left term := by
+  simp [matchPatternForRuleUsing, missing]
 
 @[simp] theorem matchPatternForRule_eq_syntactic_of_no_presentations
-    {lang : LanguageDef} (empty : lang.reflectivePresentations = [])
+    {profile : ReflectionProfile} (empty : profile.presentations = [])
     (rule : RewriteRule) (term : Pattern) :
-    matchPatternForRule lang rule term = matchPattern rule.left term := by
+    matchPatternForRuleUsing profile rule term = matchPattern rule.left term := by
   apply matchPatternForRule_eq_syntactic_of_no_presentation
   exact matchingPresentationForRule?_eq_none_of_no_presentations empty rule
 
 @[simp] theorem matchPatternForRule_eq_syntactic_of_no_reflectiveRules
-    {lang : LanguageDef} (empty : lang.reflectiveRules = [])
+    {profile : ReflectionProfile} (empty : profile.rules = [])
     (rule : RewriteRule) (term : Pattern) :
-    matchPatternForRule lang rule term = matchPattern rule.left term := by
+    matchPatternForRuleUsing profile rule term = matchPattern rule.left term := by
   apply matchPatternForRule_eq_syntactic_of_no_presentation
   exact matchingPresentationForRule?_eq_none_of_no_rules empty rule
+
+@[simp] theorem matchPatternForRule_eq_syntactic
+    (language : LanguageDef) (rule : RewriteRule) (term : Pattern) :
+    matchPatternForRule language rule term = matchPattern rule.left term := by
+  simp [matchPatternForRule, matchPatternForRuleUsing,
+    ReflectionProfile.empty, matchingPresentationForRule?,
+    reflectiveRuleForRule?]
 
 /-! ## Executable boundary examples -/
 
@@ -1254,12 +1270,17 @@ private def commCandidate (outputChannel : Pattern) : Pattern :=
       .apply "POutput" [outputChannel, .apply "PZero" []]]
     none
 
+private def rhoProfile : ReflectionProfile :=
+  { presentations :=
+      [rhoReflectivePresentation.toReflectivePresentationDecl]
+    rules := [rhoReflectiveRule] }
+
 -- The declaration-derived matcher admits two presentations of one channel.
-#guard !(matchPatternForRule rhoCalc rhoCommRewrite
+#guard !(matchPatternForRuleUsing rhoProfile rhoCommRewrite
   (commCandidate canonicalChannel)).isEmpty
 
 -- It still rejects a genuinely distinct channel.
-#guard (matchPatternForRule rhoCalc rhoCommRewrite
+#guard (matchPatternForRuleUsing rhoProfile rhoCommRewrite
   (commCandidate distinctChannel)).isEmpty
 
 end Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical

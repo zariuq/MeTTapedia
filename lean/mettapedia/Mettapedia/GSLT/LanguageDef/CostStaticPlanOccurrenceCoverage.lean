@@ -43,12 +43,13 @@ origin.  This is the declaration *before* the two-colour static image, so a
 cell whose edge lives in the source language can be compared against it. -/
 def CostAuthoredGeneratorOrigin.sourceDeclaration
     {source : CIGSLT} {left right : Pattern}
-    {witness : EquationSemantics.AuthoredGeneratorWitness
-      defaultBasePremises source.costWholeLanguage left right} :
+    {witness : ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness
+      source.costWholeReflectionProfile defaultBasePremises
+      source.costWholeLanguage left right} :
     CostAuthoredGeneratorOrigin source witness →
       SourceGeneratorDeclaration :=
   match witness with
-  | .equation _ instanceWitness =>
+  | .core (.equation _ instanceWitness) =>
       match instanceWitness with
       | .forward _ _ _ _ _ _ _ => fun origin =>
           .equation (CostEquationDeclarationOrigin.sourceEquation origin)
@@ -62,10 +63,14 @@ def CostTypedGeneratorOccurrence.sourceDeclaration
     {source : CIGSLT}
     {targetFree : FreeTypeContext} {targetBound : List TypeExpr}
     {targetSort : LangSort source.costWholeLanguage}
-    {left right : WellSorted.OpenTerm source.costWholeLanguage targetFree
+    {left right : ReflectiveWellSorted.OpenTerm
+      source.costWholeReflectionProfile source.costWholeLanguage targetFree
       targetBound targetSort}
-    {generator : openEquationGenerator source.costIGSLT targetFree targetBound
-      targetSort left right}
+    {generator :
+      ReflectiveEquationSemantics.reflectiveOpenPatternEquationGenerator
+        source.costWholeReflectionProfile defaultBasePremises
+        source.costWholeLanguage targetFree targetBound (.base targetSort.1)
+        left right}
     (occurrence : CostTypedGeneratorOccurrence source generator) :
     SourceGeneratorDeclaration :=
   occurrence.origin.sourceDeclaration
@@ -163,7 +168,8 @@ theorem substituteAt_reifyWith_eq
     (rightResolve : String → Option (Fin rightEndpoint))
     (leftLeg : Fin leftEndpoint → Fin cospan.commonKeys.length)
     (rightLeg : Fin rightEndpoint → Fin cospan.commonKeys.length)
-    (language : LanguageDef) (support : ContextSupport.Support)
+    (profile : Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile)
+    (support : ContextSupport.Support)
     (assignment : ContextSupport.Assignment)
     {relation : Pattern → Pattern → Prop}
     (fixedContext : PatternLeafAlignedContext relation witness.context)
@@ -171,19 +177,19 @@ theorem substituteAt_reifyWith_eq
       witness.cell.second.pattern)
     (relatedLeavesRestore : ∀ {leftLeaf rightLeaf},
       relation leftLeaf rightLeaf → ∀ leafDepth,
-        ReflectiveContextSupport.substituteAt language support assignment
+        ReflectiveContextSupport.substituteAt profile support assignment
             leafDepth (cospan.reifyWith leftResolve leftLeg leftLeaf) =
-          ReflectiveContextSupport.substituteAt language support assignment
+          ReflectiveContextSupport.substituteAt profile support assignment
             leafDepth (cospan.reifyWith rightResolve rightLeg rightLeaf))
     (depth : Nat) :
-    ReflectiveContextSupport.substituteAt language support assignment depth
+    ReflectiveContextSupport.substituteAt profile support assignment depth
         (cospan.reifyWith leftResolve leftLeg leftArgument) =
-      ReflectiveContextSupport.substituteAt language support assignment depth
+      ReflectiveContextSupport.substituteAt profile support assignment depth
         (cospan.reifyWith rightResolve rightLeg rightArgument) := by
   have aligned : PatternLeafAligned relation leftArgument rightArgument :=
     witness.patternLeafAlignedWithContext fixedContext changedLeaf
   apply cospan.substituteAt_reifyWith_eq_of_patternLeafAligned
-    leftResolve rightResolve leftLeg rightLeg language support assignment
+    leftResolve rightResolve leftLeg rightLeg profile support assignment
     relatedLeavesRestore aligned depth
 
 end CostChangedSiteWitness
@@ -559,7 +565,7 @@ def CostArgumentSiteClassification.assembleNeutralOrdinary {source : CIGSLT}
         ∃ kind, source.declaredCostConstructorRole constructor =
           .apparatus kind)
     (ordinary : ReflectiveContextSupport.isQuoteConstructor
-      source.costWholeLanguage rule.label = false)
+      source.costWholeReflectionProfile rule.label = false)
     {leftSpine : CostRegionArgumentTrees source targetFree available outer
       leftArguments rule.params}
     {rightSpine : CostRegionArgumentTrees source targetFree available outer
@@ -592,7 +598,7 @@ def CostArgumentSiteClassification.assembleNeutralQuote {source : CIGSLT}
         ∃ kind, source.declaredCostConstructorRole constructor =
           .apparatus kind)
     (quoted : ReflectiveContextSupport.isQuoteConstructor
-      source.costWholeLanguage rule.label = true)
+      source.costWholeReflectionProfile rule.label = true)
     {leftSpine : CostRegionArgumentTrees source targetFree []
       (available ++ outer) leftArguments rule.params}
     {rightSpine : CostRegionArgumentTrees source targetFree []
@@ -713,10 +719,14 @@ structure CostOccurrenceTiedSpineCoverage (source : CIGSLT)
     (kernel : CostStaticNormalizationKernel source)
     {targetFree : FreeTypeContext} {targetBound : List TypeExpr}
     {targetSort : LangSort source.costWholeLanguage}
-    {left right : WellSorted.OpenTerm source.costWholeLanguage targetFree
+    {left right : ReflectiveWellSorted.OpenTerm
+      source.costWholeReflectionProfile source.costWholeLanguage targetFree
       targetBound targetSort}
-    (generator : openEquationGenerator source.costIGSLT targetFree targetBound
-      targetSort left right)
+    (generator :
+      ReflectiveEquationSemantics.reflectiveOpenPatternEquationGenerator
+        source.costWholeReflectionProfile defaultBasePremises
+        source.costWholeLanguage targetFree targetBound (.base targetSort.1)
+        left right)
     (occurrence : CostTypedGeneratorOccurrence source generator) : Type where
   rule : GrammarRule
   membership : rule ∈ source.costWholeLanguage.terms
@@ -727,7 +737,7 @@ structure CostOccurrenceTiedSpineCoverage (source : CIGSLT)
       .interactionPrincipal ∨
     ∃ kind, source.declaredCostConstructorRole constructor = .apparatus kind
   ordinary : ReflectiveContextSupport.isQuoteConstructor
-    source.costWholeLanguage rule.label = false
+    source.costWholeReflectionProfile rule.label = false
   category_eq : rule.category = targetSort.1
   leftArguments : List Pattern
   rightArguments : List Pattern
@@ -745,10 +755,14 @@ namespace CostOccurrenceTiedSpineCoverage
 variable {source : CIGSLT} {kernel : CostStaticNormalizationKernel source}
   {targetFree : FreeTypeContext} {targetBound : List TypeExpr}
   {targetSort : LangSort source.costWholeLanguage}
-  {left right : WellSorted.OpenTerm source.costWholeLanguage targetFree
+  {left right : ReflectiveWellSorted.OpenTerm
+    source.costWholeReflectionProfile source.costWholeLanguage targetFree
     targetBound targetSort}
-  {generator : openEquationGenerator source.costIGSLT targetFree targetBound
-    targetSort left right}
+  {generator :
+    ReflectiveEquationSemantics.reflectiveOpenPatternEquationGenerator
+      source.costWholeReflectionProfile defaultBasePremises
+      source.costWholeLanguage targetFree targetBound (.base targetSort.1)
+      left right}
   {occurrence : CostTypedGeneratorOccurrence source generator}
 
 /-- The left endpoint elaboration selected by the coverage's neutral frame. -/

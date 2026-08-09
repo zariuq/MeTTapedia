@@ -15,27 +15,30 @@ namespace Mettapedia.GSLT.LanguageDef
 open Mettapedia.OSLF.Framework.ConstructorCategory
 open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open Mettapedia.OSLF.MeTTaIL.DerivedContexts
+open Mettapedia.OSLF.MeTTaIL.Reflection
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open WellSorted
 
-namespace EquationSemantics.AuthoredGeneratorWitness
+namespace ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness
 
 /-- Restrict an exact contextual occurrence to its retained redex and
 contractum while preserving equation/reflection identity and all local
 evidence. -/
 def atRedex
-    {base : BasePremiseEvaluator} {language : LanguageDef}
+    {profile : ReflectionProfile} {base : BasePremiseEvaluator}
+    {language : LanguageDef}
     {left right : Pattern}
-    (witness : EquationSemantics.AuthoredGeneratorWitness base language
+    (witness : ReflectiveAuthoredGeneratorWitness profile base language
       left right) :
-    EquationSemantics.AuthoredGeneratorWitness base language witness.redex
+    ReflectiveAuthoredGeneratorWitness profile base language witness.redex
       witness.contractum :=
   match witness with
-  | .equation _ instanceWitness => .equation .hole instanceWitness
+  | .core (.equation _ instanceWitness) =>
+      .core (.equation .hole instanceWitness)
   | .reflective _ declaration representatives =>
       .reflective .hole declaration representatives
 
-end EquationSemantics.AuthoredGeneratorWitness
+end ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness
 
 namespace CostOpenElaboration
 
@@ -45,28 +48,30 @@ def normalizeWithStaticErasure
     {source : CIGSLT} (normalizeStatic : CostStaticRegionNormalizer source)
     {targetFree : FreeTypeContext} {targetBound : List TypeExpr}
     {targetSort : LangSort source.costWholeLanguage}
-    {term : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
-      targetSort}
+    {term : ReflectiveWellSorted.OpenTerm source.costWholeReflectionProfile
+      source.costWholeLanguage targetFree targetBound targetSort}
     (elaboration : CostOpenElaboration source term) :
-    WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
-      targetSort := by
+    ReflectiveWellSorted.OpenTerm source.costWholeReflectionProfile
+      source.costWholeLanguage targetFree targetBound targetSort := by
   let normalized := elaboration.tree.normalize
     (normalizeStatic := normalizeStatic)
   refine ⟨normalized.pattern, ?_⟩
-  refine ⟨?_, normalized.canonicalBinderMetadata term.2.2.1,
-    normalized.objectPattern term.2.2.2.1, ?_⟩
-  · simpa using normalized.typed
+  refine ⟨⟨?_, normalized.canonicalBinderMetadata term.2.1.2.1,
+    normalized.objectPattern term.2.1.2.2.1, ?_⟩, ?_⟩
+  · simpa only [List.append_nil] using normalized.typed
+  · change normalized.pattern.isWellScopedAt targetBound.length = true
+    simpa only [List.append_nil] using normalized.typed.isWellScopedAt
   · intro presentation membership
     exact normalized.reflectiveScope presentation membership
-      (Nat.le_refl targetBound.length) (term.2.2.2.2 presentation membership)
+      (Nat.le_refl targetBound.length) (term.2.2 presentation membership)
 
 @[simp]
 theorem normalizeWithStaticErasure_pattern
     {source : CIGSLT} (normalizeStatic : CostStaticRegionNormalizer source)
     {targetFree : FreeTypeContext} {targetBound : List TypeExpr}
     {targetSort : LangSort source.costWholeLanguage}
-    {term : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
-      targetSort}
+    {term : ReflectiveWellSorted.OpenTerm source.costWholeReflectionProfile
+      source.costWholeLanguage targetFree targetBound targetSort}
     (elaboration : CostOpenElaboration source term) :
     (elaboration.normalizeWithStaticErasure normalizeStatic).1 =
       (elaboration.tree.normalize
@@ -85,12 +90,16 @@ structure CostGeneratorTreeNormalizationAlignment
     (source : CIGSLT) (kernel : CostStaticNormalizationKernel source)
     {targetFree : FreeTypeContext} {targetBound : List TypeExpr}
     {targetSort : LangSort source.costWholeLanguage}
-    {left right : WellSorted.OpenTerm source.costWholeLanguage targetFree
+    {left right : ReflectiveWellSorted.OpenTerm
+      source.costWholeReflectionProfile source.costWholeLanguage targetFree
       targetBound targetSort}
-    (generator : openEquationGenerator source.costIGSLT targetFree targetBound
-      targetSort left right) where
-  occurrence : EquationSemantics.AuthoredGeneratorWitness
-    defaultBasePremises source.costWholeLanguage left.1 right.1
+    (generator : ReflectiveEquationSemantics.reflectiveOpenPatternEquationGenerator
+      source.costWholeReflectionProfile defaultBasePremises
+      source.costWholeLanguage targetFree targetBound (.base targetSort.1)
+      left right) where
+  occurrence : ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness
+    source.costWholeReflectionProfile defaultBasePremises
+      source.costWholeLanguage left.1 right.1
   erasesTo : occurrence.erase = generator
   leftElaboration : CostOpenElaboration source left
   rightElaboration : CostOpenElaboration source right
@@ -105,10 +114,13 @@ def toNormalizationLift
     {source : CIGSLT} {kernel : CostStaticNormalizationKernel source}
     {targetFree : FreeTypeContext} {targetBound : List TypeExpr}
     {targetSort : LangSort source.costWholeLanguage}
-    {left right : WellSorted.OpenTerm source.costWholeLanguage targetFree
+    {left right : ReflectiveWellSorted.OpenTerm
+      source.costWholeReflectionProfile source.costWholeLanguage targetFree
       targetBound targetSort}
-    {generator : openEquationGenerator source.costIGSLT targetFree targetBound
-      targetSort left right}
+    {generator : ReflectiveEquationSemantics.reflectiveOpenPatternEquationGenerator
+      source.costWholeReflectionProfile defaultBasePremises
+      source.costWholeLanguage targetFree targetBound (.base targetSort.1)
+      left right}
     (alignment : CostGeneratorTreeNormalizationAlignment source kernel
       generator) :
     CostGeneratorNormalizationLift source kernel.normalize generator where
@@ -133,10 +145,13 @@ def CostOpenGeneratorTreeAlignable
     (source : CIGSLT) (kernel : CostStaticNormalizationKernel source) : Prop :=
   ∀ {targetFree : FreeTypeContext} {targetBound : List TypeExpr}
     {targetSort : LangSort source.costWholeLanguage}
-    {left right : WellSorted.OpenTerm source.costWholeLanguage targetFree
+    {left right : ReflectiveWellSorted.OpenTerm
+      source.costWholeReflectionProfile source.costWholeLanguage targetFree
       targetBound targetSort}
-    (generator : openEquationGenerator source.costIGSLT targetFree targetBound
-      targetSort left right),
+    (generator : ReflectiveEquationSemantics.reflectiveOpenPatternEquationGenerator
+      source.costWholeReflectionProfile defaultBasePremises
+      source.costWholeLanguage targetFree targetBound (.base targetSort.1)
+      left right),
     Nonempty (CostGeneratorTreeNormalizationAlignment source kernel generator)
 
 namespace CostOpenGeneratorTreeAlignable

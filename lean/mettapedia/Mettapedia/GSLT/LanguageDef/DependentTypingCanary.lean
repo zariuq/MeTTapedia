@@ -1,12 +1,13 @@
 import Mettapedia.GSLT.LanguageDef.InferenceChecker
+import Mettapedia.GSLT.LanguageDef.CalculusLanguageDef
 
 /-!
 # Dependent typing canary for rooted GSLT declarations
 
 This module is an adequacy probe for generic dependent application and
 explicit conversion.  The language-specific constructors, judgments, and
-ordered inference rules occur only in one `LanguageDef`; the checker contains
-no branch for this fixture.
+ordered inference rules occur only in one `CalculusLanguageDef`; the checker
+contains no branch for this fixture.
 -/
 
 namespace Mettapedia.GSLT.LanguageDef.DependentTypingCanary
@@ -14,6 +15,7 @@ namespace Mettapedia.GSLT.LanguageDef.DependentTypingCanary
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Substitution
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
+open Mettapedia.GSLT.LanguageDef
 
 private def expressionType : TypeDecl := TypeDecl.plain "Expr"
 
@@ -114,7 +116,7 @@ private def conversionTypingRule : RuleSchema :=
     conclusion :=
       typing (.fvar "ctx") (.fvar "term") (.fvar "target") }
 
-private def language : LanguageDef :=
+private abbrev definition : CalculusLanguageDef :=
   { name := "dependent-typing-canary"
     types := [expressionType]
     terms :=
@@ -132,14 +134,16 @@ private def language : LanguageDef :=
     equations := []
     rewrites := []
     judgments := [{ head := "Ty", arity := 3 }, { head := "Converts", arity := 2 }]
-    inferenceRules :=
+    rules :=
       [ universeZeroRule, naturalRule, zeroRule, booleanRule, falseRule,
         reflRule, applicationRule, explicitSubstitutionRule,
         conversionTypingRule ]
     conversion :=
       some { judgmentHead := "Converts", version := "explicit-substitution-v1" } }
 
-private def presentation : Presentation := { language }
+private def language : LanguageDef := definition.toLanguageDef
+private def calculus := definition.toCalculus
+private def presentation : Presentation := definition.toNested
 
 private theorem language_validate : language.validate = [] := by
   apply LanguageDef.validate_eq_nil_of_constructorOnly language <;>
@@ -149,7 +153,7 @@ private theorem language_validate : language.validate = [] := by
 
 private theorem presentation_valid : presentation.isValidV2 = true := by
   have hvalidate : presentation.language.validate = [] := by
-    simpa [presentation] using language_validate
+    simpa [presentation, language] using language_validate
   unfold Presentation.isValidV2 Presentation.isValidV1
   rw [hvalidate]
   simp [presentation,
@@ -165,13 +169,22 @@ private theorem presentation_valid : presentation.isValidV2 = true := by
     Pattern.isWellScoped, Pattern.isWellScopedAt, Pattern.isWellScopedListAt,
     Pattern.hasCanonicalBinderMetadata,
     Pattern.hasCanonicalBinderMetadataList, Pattern.zipHead, Pattern.mapHead,
-    Pattern.evalHead, language, expressionType,
+    Pattern.evalHead, expressionType,
     expressionConstructor, universeZeroRule, naturalRule, zeroRule,
     booleanRule, falseRule, reflRule, applicationRule,
     explicitSubstitutionRule, conversionTypingRule, closedTypingRule, typing,
     converts, pi, app, equalityBody, equality, context, universeZero,
     universeOne, natural, zero, boolean, falseTerm, refl, ruleId]
   decide
+
+/-- The complete canary as one GSLT, not merely as checker input. -/
+private def totalTheory : Mettapedia.GSLT.GSLT :=
+  definition.toGSLTOfNoEquations presentation_valid rfl
+
+private theorem totalTheory_Term :
+    totalTheory.Term = (Pattern ⊕ List Pattern) := by
+  unfold totalTheory CalculusLanguageDef.toGSLTOfNoEquations
+  rfl
 
 private def checked : ValidatedPresentation := ⟨presentation, presentation_valid⟩
 
@@ -214,7 +227,7 @@ theorem dependent_application_accepts :
     checkRaw checked
       (typing context applicationTerm computedResult)
       convertedApplicationProof = true := by
-  simp [checkRaw, checkRawChildren, checked, presentation, language,
+  simp [checkRaw, checkRawChildren, checked, presentation,
     convertedApplicationProof, applicationProof, conversionProof,
     reflTypingProof, zeroTypingProof, applicationTerm, structuralResult,
     computedResult, applicationRule, conversionTypingRule,
@@ -241,7 +254,7 @@ theorem argument_type_mismatch_rejects :
     checkRaw checked
       (typing context (app refl falseTerm) (.subst equalityBody falseTerm))
       mismatchedApplicationProof = false := by
-  simp [checkRaw, checkRawChildren, checked, presentation, language,
+  simp [checkRaw, checkRawChildren, checked, presentation,
     mismatchedApplicationProof, reflTypingProof, falseTypingProof,
     applicationRule, reflRule, falseRule, closedTypingRule,
     universeZeroRule, naturalRule, booleanRule, zeroRule,
@@ -265,7 +278,7 @@ theorem omitted_conversion_rejects :
     checkRaw checked
       (typing context applicationTerm computedResult)
       omittedConversionProof = false := by
-  simp [checkRaw, checkRawChildren, checked, presentation, language,
+  simp [checkRaw, checkRawChildren, checked, presentation,
     omittedConversionProof, applicationProof, reflTypingProof, zeroTypingProof,
     applicationTerm, structuralResult, computedResult, applicationRule,
     conversionTypingRule, explicitSubstitutionRule, reflRule, zeroRule,
@@ -291,7 +304,7 @@ theorem swapped_application_children_reject :
     checkRaw checked
       (typing context applicationTerm structuralResult)
       swappedApplicationChildren = false := by
-  simp [checkRaw, checkRawChildren, checked, presentation, language,
+  simp [checkRaw, checkRawChildren, checked, presentation,
     swappedApplicationChildren, reflTypingProof, zeroTypingProof,
     applicationTerm, structuralResult, applicationRule, reflRule, zeroRule,
     closedTypingRule, universeZeroRule, naturalRule, booleanRule, falseRule,
@@ -317,7 +330,7 @@ theorem fabricated_conversion_result_rejects :
     checkRaw checked
       (converts structuralResult (equality natural zero falseTerm))
       invalidConversionProof = false := by
-  simp [checkRaw, checked, presentation, language,
+  simp [checkRaw, checked, presentation,
     invalidConversionProof, structuralResult, explicitSubstitutionRule,
     conversionTypingRule, applicationRule, reflRule, zeroRule,
     closedTypingRule, universeZeroRule, naturalRule, booleanRule, falseRule,
@@ -338,7 +351,7 @@ rule for `U1 : U1`. -/
 theorem universe_ceiling_rejects :
     checkRaw checked (typing context universeOne universeOne)
       falseUniverseCeilingProof = false := by
-  simp [checkRaw, checkRawChildren, checked, presentation, language,
+  simp [checkRaw, checkRawChildren, checked, presentation,
     falseUniverseCeilingProof, universeZeroRule, applicationRule,
     conversionTypingRule, explicitSubstitutionRule, reflRule, zeroRule,
     closedTypingRule, naturalRule, booleanRule, falseRule,

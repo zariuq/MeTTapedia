@@ -101,7 +101,7 @@ theorem contract_match_monotonic :
 
 /-- **Contract 2**: Variant-equivalent queries produce identical RHS atoms on
     the legacy simpleMatch query model. The repaired public faithful query
-    surface needs a separate matcher-invariance theorem. -/
+    interface needs a separate matcher-invariance theorem. -/
 theorem contract_variant_rhs_reuse :
     ∀ (space : Space) (q₁ q₂ : Atom) (_hvar : VariantEquiv q₁ q₂) (fuel : Nat),
     (variantLegacyQueryEquations space q₁ fuel).map Prod.fst =

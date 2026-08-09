@@ -554,11 +554,11 @@ theorem substituteAt_commonReifiedAtom_eq_of_key_eq
       (right.atomValue rightSlot).key)
     (depth : Nat) :
     let cospan := left.semanticKeyCospan right
-    ReflectiveContextSupport.substituteAt source.costWholeLanguage
+    ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
         cospan.commonSupport cospan.commonAssignment depth
         (cospan.reifyWith left.lookupAtom? cospan.leftSlot
           (.fvar (left.atomName leftSlot))) =
-      ReflectiveContextSupport.substituteAt source.costWholeLanguage
+      ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
         cospan.commonSupport cospan.commonAssignment depth
         (cospan.reifyWith right.lookupAtom? cospan.rightSlot
           (.fvar (right.atomName rightSlot))) := by
@@ -603,11 +603,11 @@ theorem substituteAt_commonReifiedAtom_eq_of_restorationComponents
       (right.atomValue rightSlot).key.normal)
     (depth : Nat) :
     let cospan := left.semanticKeyCospan right
-    ReflectiveContextSupport.substituteAt source.costWholeLanguage
+    ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
         cospan.commonSupport cospan.commonAssignment depth
         (cospan.reifyWith left.lookupAtom? cospan.leftSlot
           (.fvar (left.atomName leftSlot))) =
-      ReflectiveContextSupport.substituteAt source.costWholeLanguage
+      ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
         cospan.commonSupport cospan.commonAssignment depth
         (cospan.reifyWith right.lookupAtom? cospan.rightSlot
           (.fvar (right.atomName rightSlot))) := by
@@ -659,11 +659,11 @@ theorem substituteAt_commonReifiedAtom_eq_of_scoped_normal
       (left.atomValue leftSlot).key.normal.isWellScopedAt 0 = true)
     (depth : Nat) :
     let cospan := left.semanticKeyCospan right
-    ReflectiveContextSupport.substituteAt source.costWholeLanguage
+    ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
         cospan.commonSupport cospan.commonAssignment depth
         (cospan.reifyWith left.lookupAtom? cospan.leftSlot
           (.fvar (left.atomName leftSlot))) =
-      ReflectiveContextSupport.substituteAt source.costWholeLanguage
+      ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
         cospan.commonSupport cospan.commonAssignment depth
         (cospan.reifyWith right.lookupAtom? cospan.rightSlot
           (.fvar (right.atomName rightSlot))) := by
@@ -756,6 +756,96 @@ def selectedTreeFromForest
       (view.entryEmbedding.position_get index)
   exact (trees.getEntry position).tree.reindexBoundary boundaryEq
 
+/-- The semantic atom selected by a retained context-view boundary stores
+exactly the hereditary normal form of the proof-relevant child replayed from
+the full forest.  This is the one-environment form of the boundary transport
+joint: it exposes the normalized value without introducing a second parent
+environment or assuming an equality at the restoration apex. -/
+theorem selectedBoundaryAtom_normal_eq
+    {source : CIGSLT} {kernel : CostStaticNormalizationKernel source}
+    (unambiguous : CostStaticRegionNode.UnambiguousStaticDecomposition source)
+    {color : CostStaticColor} {targetFree : FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    {table : TypedCostRegionBoundaryTable source color targetFree occurrences}
+    {payload rootAbstract : Pattern}
+    (view : CostStaticPlanContextInventoryView source color targetFree payload
+      rootAbstract table.entries)
+    (trees : CostRegionBoundaryTrees source targetFree color table)
+    {inventory : CostStaticParameterInventory source color targetFree table
+      (trees.normalizeValues (normalizeStatic := kernel.normalize))
+      rootAbstract}
+    (environment : CostStaticAtomEnvironment source color targetFree inventory)
+    (index : Fin view.view.retainedEntries.length)
+    (occurrence : CostStaticFVarOccurrence rootAbstract)
+    (nameEq : occurrence.name = costRegionBoundaryVariableName
+      (view.view.retainedEntries.get index).boundary)
+    (slot : Fin environment.atomCount)
+    (selected : environment.slotOfName? occurrence.name = some slot) :
+    (environment.atomValue slot).key.normal =
+      ((view.selectedTreeFromForest trees index).normalizedBoundaryValue
+        kernel).1 := by
+  let position := view.entryEmbedding.position index
+  have boundaryEq : (trees.getEntry position).boundary =
+      view.view.retainedEntries.get index :=
+    (trees.getEntry_boundary position).trans
+      (view.entryEmbedding.position_get index)
+  have atomEq :=
+    environment.atomValue_eq_normalizedBoundaryValue_of_reindexedGetEntry
+      unambiguous trees position (view.view.retainedEntries.get index)
+      boundaryEq occurrence nameEq slot selected
+  calc
+    (environment.atomValue slot).key.normal =
+        (((trees.getEntry position).tree.reindexBoundary
+          boundaryEq).normalizedBoundaryValue kernel).1 := by
+      simpa only [TypedCostStaticAtom.ofBoundaryValue] using
+        congrArg (fun atom => atom.key.normal) atomEq
+    _ = ((trees.getEntry position).tree.normalizedBoundaryValue kernel).1 :=
+      CostRegionTree.reindexBoundary_normalizedBoundaryValue boundaryEq _
+    _ = ((view.selectedTreeFromForest trees index).normalizedBoundaryValue
+        kernel).1 := by
+      symm
+      unfold selectedTreeFromForest
+      exact CostRegionTree.reindexBoundary_normalizedBoundaryValue _ _
+
+/-- The semantic atom selected by a retained context-view boundary carries
+exactly that proof-relevant boundary's target support.  This is the support
+companion of `selectedBoundaryAtom_normal_eq`: both facts are recovered from
+the same replayable finite position, so neither duplicate boundary spellings
+nor equal normalized values can change which occurrence was selected. -/
+theorem selectedBoundaryAtom_targetSupport_eq
+    {source : CIGSLT} {kernel : CostStaticNormalizationKernel source}
+    (unambiguous : CostStaticRegionNode.UnambiguousStaticDecomposition source)
+    {color : CostStaticColor} {targetFree : FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    {table : TypedCostRegionBoundaryTable source color targetFree occurrences}
+    {payload rootAbstract : Pattern}
+    (view : CostStaticPlanContextInventoryView source color targetFree payload
+      rootAbstract table.entries)
+    (trees : CostRegionBoundaryTrees source targetFree color table)
+    {inventory : CostStaticParameterInventory source color targetFree table
+      (trees.normalizeValues (normalizeStatic := kernel.normalize))
+      rootAbstract}
+    (environment : CostStaticAtomEnvironment source color targetFree inventory)
+    (index : Fin view.view.retainedEntries.length)
+    (occurrence : CostStaticFVarOccurrence rootAbstract)
+    (nameEq : occurrence.name = costRegionBoundaryVariableName
+      (view.view.retainedEntries.get index).boundary)
+    (slot : Fin environment.atomCount)
+    (selected : environment.slotOfName? occurrence.name = some slot) :
+    (environment.atomValue slot).key.targetSupport =
+      (view.view.retainedEntries.get index).boundary.targetSupport := by
+  let position := view.entryEmbedding.position index
+  have boundaryEq : (trees.getEntry position).boundary =
+      view.view.retainedEntries.get index :=
+    (trees.getEntry_boundary position).trans
+      (view.entryEmbedding.position_get index)
+  have atomEq :=
+    environment.atomValue_eq_normalizedBoundaryValue_of_reindexedGetEntry
+      unambiguous trees position (view.view.retainedEntries.get index)
+      boundaryEq occurrence nameEq slot selected
+  simpa only [TypedCostStaticAtom.ofBoundaryValue] using
+    congrArg (fun atom => atom.key.targetSupport) atomEq
+
 /-- A stopped boundary whose selected child normalizes to a direct source
 variable restores exactly like that source variable in another parent atom
 environment.  The selected child is recovered from its replayable finite
@@ -811,11 +901,11 @@ theorem selectedBoundaryAtom_restoresAsSourceVariable
         kernel).1 = .fvar name)
     (depth : Nat) :
     let cospan := leftEnvironment.semanticKeyCospan rightEnvironment
-    ReflectiveContextSupport.substituteAt source.costWholeLanguage
+    ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
         cospan.commonSupport cospan.commonAssignment depth
         (cospan.reifyWith leftEnvironment.lookupAtom? cospan.leftSlot
           (.fvar (leftEnvironment.atomName leftSlot))) =
-      ReflectiveContextSupport.substituteAt source.costWholeLanguage
+      ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
         cospan.commonSupport cospan.commonAssignment depth
         (cospan.reifyWith rightEnvironment.lookupAtom? cospan.rightSlot
           (.fvar (rightEnvironment.atomName rightSlot))) := by
@@ -914,11 +1004,11 @@ theorem selectedBoundaryAtom_restoresAsSourceVariable_supportIndependent
         kernel).1 = .fvar name)
     (depth : Nat) :
     let cospan := leftEnvironment.semanticKeyCospan rightEnvironment
-    ReflectiveContextSupport.substituteAt source.costWholeLanguage
+    ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
         cospan.commonSupport cospan.commonAssignment depth
         (cospan.reifyWith leftEnvironment.lookupAtom? cospan.leftSlot
           (.fvar (leftEnvironment.atomName leftSlot))) =
-      ReflectiveContextSupport.substituteAt source.costWholeLanguage
+      ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
         cospan.commonSupport cospan.commonAssignment depth
         (cospan.reifyWith rightEnvironment.lookupAtom? cospan.rightSlot
           (.fvar (rightEnvironment.atomName rightSlot))) := by
@@ -1017,11 +1107,11 @@ theorem selectedBoundaryAtom_restoresAsSourceVariable_of_alignment
         .fvar name)
     (depth : Nat) :
     let cospan := leftEnvironment.semanticKeyCospan rightEnvironment
-    ReflectiveContextSupport.substituteAt source.costWholeLanguage
+    ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
         cospan.commonSupport cospan.commonAssignment depth
         (cospan.reifyWith leftEnvironment.lookupAtom? cospan.leftSlot
           (.fvar (leftEnvironment.atomName leftSlot))) =
-      ReflectiveContextSupport.substituteAt source.costWholeLanguage
+      ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
         cospan.commonSupport cospan.commonAssignment depth
         (cospan.reifyWith rightEnvironment.lookupAtom? cospan.rightSlot
           (.fvar (rightEnvironment.atomName rightSlot))) := by
@@ -1085,11 +1175,11 @@ theorem selectedBoundaryAtom_restoresAsSourceVariable_of_alignment_supportIndepe
         .fvar name)
     (depth : Nat) :
     let cospan := leftEnvironment.semanticKeyCospan rightEnvironment
-    ReflectiveContextSupport.substituteAt source.costWholeLanguage
+    ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
         cospan.commonSupport cospan.commonAssignment depth
         (cospan.reifyWith leftEnvironment.lookupAtom? cospan.leftSlot
           (.fvar (leftEnvironment.atomName leftSlot))) =
-      ReflectiveContextSupport.substituteAt source.costWholeLanguage
+      ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
         cospan.commonSupport cospan.commonAssignment depth
         (cospan.reifyWith rightEnvironment.lookupAtom? cospan.rightSlot
           (.fvar (rightEnvironment.atomName rightSlot))) := by
@@ -1442,11 +1532,11 @@ theorem selectedEnvironmentAtoms_restore_eq
       (pair.selectedTargetTreeFromForest rightTrees index))
     (depth : Nat) :
     let cospan := leftEnvironment.semanticKeyCospan rightEnvironment
-    ReflectiveContextSupport.substituteAt source.costWholeLanguage
+    ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
         cospan.commonSupport cospan.commonAssignment depth
         (cospan.reifyWith leftEnvironment.lookupAtom? cospan.leftSlot
           (.fvar (leftEnvironment.atomName leftSlot))) =
-      ReflectiveContextSupport.substituteAt source.costWholeLanguage
+      ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
         cospan.commonSupport cospan.commonAssignment depth
         (cospan.reifyWith rightEnvironment.lookupAtom? cospan.rightSlot
           (.fvar (rightEnvironment.atomName rightSlot))) := by

@@ -10,8 +10,8 @@ Grounded in (real, not invented):
   * `MettaKernel/kernel/kernel_signature_lf_v0.metta`, `curriculum_lf_demo.metta`
       — the kernel's de Bruijn AST: `Srt` / `Con` / `Var` / `Pi` / `Lam` / `App`.
   * `MettaKernel/kernel/kernel_binding_waist_v1.metta` — de Bruijn `shift` (`bind-shift`).
-  * `lf-core-g` (`tests/support/lib_parse_gslt_core_grammars.metta`) — the surface grammar.
-  * Dedukti `FO.dk` / `plus.dk` + Lambdapi — concrete surface  `Π x:A.B`  `λ x:A.B`  `A→B`  `f a`  `Type`.
+  * `lf-core-g` (`tests/support/lib_parse_gslt_core_grammars.metta`) — the concrete grammar.
+  * Dedukti `FO.dk` / `plus.dk` + Lambdapi — concrete syntax  `Π x:A.B`  `λ x:A.B`  `A→B`  `f a`  `Type`.
 
 This is the operational (`T`) side; the equations `E` (α/β-conversion) and rewrites `R` come from
 the kernel (`nf` / `conv` / `infer`) and are wired in later (M3, the parse→kernel bridge).
@@ -77,16 +77,16 @@ theorem WellScoped.shift {t : Term} {n : Nat} (h : WellScoped n t) :
   | lam _ _ ihA ihb => intro c; exact .lam (ihA c) (ihb (c + 1))
   | app _ _ ihf iha => intro c; exact .app (ihf c) (iha c)
 
-/-! ## Concrete surface tokens and the `lf-core-g` recognizer
+/-! ## Concrete source tokens and the `lf-core-g` recognizer
 
-The surface tokens are exactly `lf-core-g`'s terminals: `Π λ → : . ( ) Type` and identifiers
+The source tokens are exactly `lf-core-g`'s terminals: `Π λ → : . ( ) Type` and identifiers
 `(Lex lf-id _)`. The recognizer is fuel-bounded recursive descent over the stratified grammar
 (`Term → Pi | Lam | Arrow`, `Arrow → App → Term | App`, `App → App Atom | Atom`,
 `Atom → ( Term ) | id | Type`), carrying a name context (head = innermost binder) that turns a
 bound identifier into a de Bruijn `var` and a free one into `con` — the named→de-Bruijn scope
 resolution. `A → B` lowers to `pi A (shift 0 B)` (Dedukti: arrow = non-dependent product). -/
 
-/-- Surface tokens of `lf-core-g`. -/
+/-- Source tokens of `lf-core-g`. -/
 inductive Tok where
   | pi | lam | arr | colon | dot | lpar | rpar | type
   | id : String → Tok

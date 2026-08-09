@@ -2,7 +2,7 @@
 # English GF Examples
 
 Comprehensive examples demonstrating the English linearization pipeline.
-Each example shows the GF abstract tree and its English surface form.
+Each example shows the GF abstract tree and its English source form.
 
 ## References
 - GF RGL Demo: http://www.grammaticalframework.org/lib/doc/synopsis/index.html
@@ -193,7 +193,7 @@ private def catWalksIfDogSleeps :=
 
 /-! ## Contextual Ambiguity Examples -/
 
-/-- Minimal literal proper-name NP for example-level surfaces. -/
+/-- Minimal literal proper-name NP for example-level linearizations. -/
 def literalNP (txt : String) : EnglishNP :=
   { s := fun _ => txt, agr := .AgP3Sg .Neutr }
 
@@ -205,7 +205,7 @@ def theTelescopeNP : EnglishNP := linDetCN theDefArt (linUseN telescope_N)
 def theCribNP : EnglishNP := linDetCN theDefArt (linUseN crib_N)
 
 /-- NP-attachment reading: John saw [the man with the telescope]. -/
-def telescopeNPAttachmentSurface : String :=
+def telescopeNPAttachmentText : String :=
   linUseCl .Pres .Simul .CPos
     (linPredVP johnNP
       (complV2 see_V2
@@ -213,13 +213,13 @@ def telescopeNPAttachmentSurface : String :=
           (linAdvCN (linUseN man_N) (linPrepNP with_Prep theTelescopeNP)))))
 
 /-- VP-attachment reading: John [saw the man] [with the telescope]. -/
-def telescopeVPAttachmentSurface : String :=
+def telescopeVPAttachmentText : String :=
   linUseCl .Pres .Simul .CPos
     (linPredVP johnNP
       (advVP (complV2 see_V2 theManNP) (linPrepNP with_Prep theTelescopeNP)))
 
 /-- NP-attachment reading: Anna dressed [the baby in the crib]. -/
-def annaNPAttachmentSurface : String :=
+def annaNPAttachmentText : String :=
   linUseCl .Pres .Simul .CPos
     (linPredVP annaNP
       (complV2 dress_V2
@@ -227,7 +227,7 @@ def annaNPAttachmentSurface : String :=
           (linAdvCN (linUseN baby_N) (linPrepNP in_Prep theCribNP)))))
 
 /-- VP-attachment reading: Anna [dressed the baby] [in the crib]. -/
-def annaVPAttachmentSurface : String :=
+def annaVPAttachmentText : String :=
   linUseCl .Pres .Simul .CPos
     (linPredVP annaNP
       (advVP (complV2 dress_V2 theBabyNP) (linPrepNP in_Prep theCribNP)))
@@ -311,13 +311,13 @@ theorem ex_man_she_loves :
 
 -- Contextual ambiguity proofs
 theorem ex_telescope_np_attachment :
-    telescopeNPAttachmentSurface = "John sees the man with the telescope" := by decide
+    telescopeNPAttachmentText = "John sees the man with the telescope" := by decide
 theorem ex_telescope_vp_attachment :
-    telescopeVPAttachmentSurface = "John sees the man with the telescope" := by decide
+    telescopeVPAttachmentText = "John sees the man with the telescope" := by decide
 theorem ex_anna_np_attachment :
-    annaNPAttachmentSurface = "Anna dresses the baby in the crib" := by decide
+    annaNPAttachmentText = "Anna dresses the baby in the crib" := by decide
 theorem ex_anna_vp_attachment :
-    annaVPAttachmentSurface = "Anna dresses the baby in the crib" := by decide
+    annaVPAttachmentText = "Anna dresses the baby in the crib" := by decide
 
 -- Garden-path disambiguation
 theorem ex_parse1 : parse1_theOldManWalks = "the old man walks" := by decide

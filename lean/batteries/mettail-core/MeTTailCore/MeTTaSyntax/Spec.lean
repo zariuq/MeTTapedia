@@ -44,7 +44,7 @@ structure CommandHead where
   arityMax : Option Nat := none
 deriving Repr, DecidableEq, BEq
 
-/-- Surface sugar for command heads only; core Pattern constructors remain canonical. -/
+/-- Syntax sugar for command heads only; core Pattern constructors remain canonical. -/
 structure SugarAlias where
   alias : String
   canonical : String
@@ -392,8 +392,8 @@ def pettaCommandHeads : List CommandHead :=
   , { head := "set-fuel", command := "setFuel", arityMin := 1, arityMax := some 1 }
   ]
 
-/-- PeTTa syntax spec — unified surface authority (schema v3).
-    Command heads include all recognized PeTTa surface forms.
+/-- PeTTa syntax spec — unified syntax authority (schema v3).
+    Command heads include all recognized PeTTa source forms.
     Program policy: explicit query only (no implicit-last-query). -/
 def petta : SyntaxSpec :=
   { dialect := "PeTTa"
@@ -423,12 +423,12 @@ def SyntaxSpec.checksumString (s : SyntaxSpec) : String :=
   toString s.checksum
 
 -- ═══════════════════════════════════════════════════════════════════════
--- Atom encoding spec: lowering surface S-expressions to core constructors
+-- Atom encoding spec: lowering source S-expressions to core constructors
 -- ═══════════════════════════════════════════════════════════════════════
 
-/-- A surface operator mapped to a nullary core constructor. -/
+/-- A source operator mapped to a nullary core constructor. -/
 structure OperatorAlias where
-  surfaceSymbol : String
+  sourceSymbol : String
   constructorLabel : String
 deriving Repr, DecidableEq, BEq
 
@@ -443,7 +443,7 @@ inductive StringEncoding where
   | hexPrefixed (prefix_ : String)
 deriving Repr, DecidableEq, BEq
 
-/-- Lowering rules from surface S-expressions to core runtime constructors.
+/-- Lowering rules from source S-expressions to core runtime constructors.
     Constructor labels reference `GrammarRule.label` in the `LanguageDef`. -/
 structure AtomEncodingSpec where
   symbolWrapper : String

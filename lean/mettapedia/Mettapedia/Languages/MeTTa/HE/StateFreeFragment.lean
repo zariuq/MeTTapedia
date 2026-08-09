@@ -180,7 +180,7 @@ structure WorldStateOpFree (world : Metta.Minimal.World) : Prop where
 
 /-- The static environment exposes no state operation through rule lookup,
 visible-space reads, type inference, or documentation lookup.  These are the
-four observable producer surfaces used by the evaluator; phrasing the fields
+four observable producer interfaces used by the evaluator; phrasing the fields
 at those public boundaries avoids depending on `HashMap` iteration details. -/
 structure MinEnvStateOpFree (env : Metta.Minimal.MinEnv) : Prop where
   atoms : StateOpFreeList env.atoms

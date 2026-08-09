@@ -351,22 +351,22 @@ theorem languages_heading_image_witness
     parseLanguagesHeadingLine? renderLanguagesHeading languagesReadmeBlocks
     languages_heading_images hMem
 
-private def insertSurfaceBucket (acc : List (String × List LanguagesClaim)) (surface : String)
+private def insertRenderedBucket (acc : List (String × List LanguagesClaim)) (rendered : String)
     (c : LanguagesClaim) : List (String × List LanguagesClaim) :=
   match acc with
-  | [] => [(surface, [c])]
+  | [] => [(rendered, [c])]
   | (k, cs) :: rest =>
-      if k = surface then
+      if k = rendered then
         (k, c :: cs) :: rest
       else
-        (k, cs) :: insertSurfaceBucket rest surface c
+        (k, cs) :: insertRenderedBucket rest rendered c
 
-def claimSurfaceBuckets : List (String × List LanguagesClaim) :=
+def claimRenderedBuckets : List (String × List LanguagesClaim) :=
   allLanguagesClaims.foldl
-    (fun acc c => insertSurfaceBucket acc (renderLanguagesClaim c) c) []
+    (fun acc c => insertRenderedBucket acc (renderLanguagesClaim c) c) []
 
-def ambiguousClaimSurfaces : List (String × List LanguagesClaim) :=
-  claimSurfaceBuckets.filter (fun p => p.snd.length > 1)
+def ambiguousClaimRenderings : List (String × List LanguagesClaim) :=
+  claimRenderedBuckets.filter (fun p => p.snd.length > 1)
 
 #eval
   let fails := allLanguagesClaims.filter (fun c =>
@@ -394,9 +394,9 @@ def ambiguousClaimSurfaces : List (String × List LanguagesClaim) :=
     s!"Languages structured parse failures: {repr fails}"
 
 #eval
-  if ambiguousClaimSurfaces.isEmpty then
-    "Languages ambiguity diagnostic: no duplicate surfaces across distinct claims"
+  if ambiguousClaimRenderings.isEmpty then
+    "Languages ambiguity diagnostic: no duplicate renderings across distinct claims"
   else
-    s!"Languages ambiguity diagnostic: duplicate surfaces found: {repr ambiguousClaimSurfaces}"
+    s!"Languages ambiguity diagnostic: duplicate renderings found: {repr ambiguousClaimRenderings}"
 
 end Mettapedia.DocText.LanguagesReadmeCompositional

@@ -358,7 +358,7 @@ theorem truthSymmetricModusPonens_conf_le_inputs
   · exact min_le_right _ _
   · exact le_trans (min_le_left _ _) (min_le_left _ _)
 
-/-! ## Additional WM-backed rule surfaces absent from current upstream PeTTa main
+/-! ## Additional WM-backed rule families absent from current upstream PeTTa main
 
 These are constructive additions from the WM side of the development.
 

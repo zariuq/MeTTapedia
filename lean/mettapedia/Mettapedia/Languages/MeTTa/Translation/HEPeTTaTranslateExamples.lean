@@ -212,7 +212,7 @@ The tempting universal claims
 
 are both false on arbitrary `Atom`.
 
-Positive example: well-formed PeTTa surface forms lower to HE-normal output.
+Positive example: well-formed PeTTa source forms lower to HE-normal output.
 Negative examples:
 * malformed heads such as `(foldall)` fall through unchanged, so they are not HE-normal;
 * the optimizer can expose a nested non-HE-normal PeTTa term by eliminating a

@@ -6,7 +6,7 @@ In **Grammatical Framework (GF)** a grammar is split into an *abstract syntax*
 (the language-independent meaning, as a typed tree) and a *concrete syntax* (how
 that tree is spelled out in one particular language). For a richly inflected
 language like Czech, most of the work of the concrete syntax is *morphology*: a
-single noun has up to fourteen surface forms (7 cases × 2 numbers), a verb
+single noun has up to fourteen source forms (7 cases × 2 numbers), a verb
 changes for person and number, and an adjective agrees with its noun in gender,
 number, and case. This directory is the Lean 4 formalization of that Czech
 *morphological* layer — the inflection tables and the agreement rules — ported
@@ -79,7 +79,7 @@ coverage is intentionally partial.
 - **String-level regression tests** for the PAN paradigm — every case/number
   slot of the full 7 × 2 table pinned by `decide` (`Tests.lean`).
 - An **18-entry roundtrip corpus** (`RoundTripCorpus.lean`): parsing is proved
-  sound and complete *on this corpus* of theorem-backed surfaces — corpus-
+  sound and complete *on this corpus* of theorem-backed linearizations — corpus-
   restricted by design, not a claim of full Czech parsing.
 
 ## What's missing

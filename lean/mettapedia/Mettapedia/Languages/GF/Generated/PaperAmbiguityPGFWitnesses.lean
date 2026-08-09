@@ -6,7 +6,7 @@ namespace Mettapedia.Languages.GF.Generated.PaperAmbiguityPGFWitnesses
 open Mettapedia.Languages.GF.HandCrafted.Abstract
 open Mettapedia.Languages.GF.PGFWitnessIR
 
-def englishTelescopeSurface : String := "John sees the man with the telescope"
+def englishTelescopeText : String := "John sees the man with the telescope"
 def englishTelescopeLanguage : String := "PaperAmbiguityEng"
 def englishTelescopeParse1 : ExportedTree :=
   .node "UseCl" [
@@ -153,7 +153,7 @@ def englishTelescopeProb2 : Float := 10.397207260131836
 def englishTelescopeParses : List ExportedTree := [englishTelescopeParse1, englishTelescopeParse2]
 def englishTelescopeRecovered : List AbstractNode := [englishTelescopeAbstractNode1, englishTelescopeAbstractNode2]
 
-def englishAnnaSurface : String := "Anna dresses the baby in the crib"
+def englishAnnaText : String := "Anna dresses the baby in the crib"
 def englishAnnaLanguage : String := "PaperAmbiguityEng"
 def englishAnnaParse1 : ExportedTree :=
   .node "UseCl" [
@@ -300,7 +300,7 @@ def englishAnnaProb2 : Float := 10.397207260131836
 def englishAnnaParses : List ExportedTree := [englishAnnaParse1, englishAnnaParse2]
 def englishAnnaRecovered : List AbstractNode := [englishAnnaAbstractNode1, englishAnnaAbstractNode2]
 
-def czechTelescopeSurface : String := "Jan vidí muže s teleskopem"
+def czechTelescopeText : String := "Jan vidí muže s teleskopem"
 def czechTelescopeLanguage : String := "PaperAmbiguityCze"
 def czechTelescopeParse1 : ExportedTree :=
   .node "UseCl" [
@@ -447,7 +447,7 @@ def czechTelescopeProb2 : Float := 10.397207260131836
 def czechTelescopeParses : List ExportedTree := [czechTelescopeParse1, czechTelescopeParse2]
 def czechTelescopeRecovered : List AbstractNode := [czechTelescopeAbstractNode1, czechTelescopeAbstractNode2]
 
-def czechAnnaSurface : String := "Anna obléká dítě v kolébkě"
+def czechAnnaText : String := "Anna obléká dítě v kolébkě"
 def czechAnnaLanguage : String := "PaperAmbiguityCze"
 def czechAnnaParse1 : ExportedTree :=
   .node "UseCl" [
@@ -595,10 +595,10 @@ def czechAnnaParses : List ExportedTree := [czechAnnaParse1, czechAnnaParse2]
 def czechAnnaRecovered : List AbstractNode := [czechAnnaAbstractNode1, czechAnnaAbstractNode2]
 
 def allWitnessParses : List (String × String × String × List ExportedTree) := [
-  ("englishTelescope", englishTelescopeLanguage, englishTelescopeSurface, englishTelescopeParses),
-  ("englishAnna", englishAnnaLanguage, englishAnnaSurface, englishAnnaParses),
-  ("czechTelescope", czechTelescopeLanguage, czechTelescopeSurface, czechTelescopeParses),
-  ("czechAnna", czechAnnaLanguage, czechAnnaSurface, czechAnnaParses)
+  ("englishTelescope", englishTelescopeLanguage, englishTelescopeText, englishTelescopeParses),
+  ("englishAnna", englishAnnaLanguage, englishAnnaText, englishAnnaParses),
+  ("czechTelescope", czechTelescopeLanguage, czechTelescopeText, czechTelescopeParses),
+  ("czechAnna", czechAnnaLanguage, czechAnnaText, czechAnnaParses)
 ]
 
 def usedFunctions : List String := ["ASimul", "AdvCN", "AdvVP", "ComplSlash", "DetCN", "PPos", "PredVP", "PrepNP", "SlashV2a", "TPres", "TTAnt", "UseCl", "UseN", "UsePN", "anna_PN", "baby_N", "crib_N", "dress_V2", "in_Prep", "john_PN", "man_N", "see_V2", "telescope_N", "the_Det", "with_Prep"]

@@ -658,9 +658,9 @@ private def queryEquationsLegacy (space : Space) (atom : Atom) (fuel : Nat := 10
       | none => none
     | _ => none
 
-/-- The faithful equation-query surface: alpha-freshen the rule, run the
+/-- The faithful equation-query interface: alpha-freshen the rule, run the
 official HE matcher `matchAtoms`, then replay the empty incoming seed via
-`mergeBindings`.  This is the surface the declarative HE `equation_match`
+`mergeBindings`.  This is the interface the declarative HE `equation_match`
 rules should consume; the legacy `simpleMatch` path is kept only as a private
 comparison helper for the bounded G3 agreement theorem. -/
 def queryEquations (space : Space) (atom : Atom) (fuel : Nat := 100) : List (Atom × Bindings) :=
@@ -681,7 +681,7 @@ space whose freshened left-hand side matched the query through the faithful
 two-sided HE `matchAtoms` matcher.  The extra replay of the empty incoming seed
 inside `queryEquations` is definitionally transparent here; this theorem is
 the small audit hook that prevents the retired one-sided query path from
-re-entering the public surface. -/
+re-entering the public interface. -/
 theorem queryEquations_matchAtoms_witness
     {space : Space} {atom : Atom} {fuel : Nat} {rhs : Atom} {qb : Bindings}
     (h : (rhs, qb) ∈ queryEquations space atom fuel) :
@@ -726,7 +726,7 @@ theorem queryEquations_matchAtoms_witness
 /-- Variant of `queryEquations` that standardizes equation-local variables apart
     from the query atom's currently visible variables before matching. This is a
     closer executable model of the concrete runtime's stronger freshness
-    discipline, without yet replacing the legacy query surface. -/
+    discipline, without yet replacing the legacy query interface. -/
 private def queryEquationsAgainstVisibleLegacy
     (space : Space) (atom : Atom) (fuel : Nat := 100) : List (Atom × Bindings) :=
   let avoid := (collectVars atom fuel).eraseDups
@@ -740,7 +740,7 @@ private def queryEquationsAgainstVisibleLegacy
     | _ => none
 
 /-- Faithful visible-avoid equation query: standardize apart from the query's
-currently visible variables, then use the official matcher/merge surface. -/
+currently visible variables, then use the official matcher/merge interface. -/
 def queryEquationsAgainstVisible
     (space : Space) (atom : Atom) (fuel : Nat := 100) : List (Atom × Bindings) :=
   let avoid := (collectVars atom fuel).eraseDups
@@ -757,7 +757,7 @@ def queryEquationsAgainstVisible
       | _ => []
 
 /-- Visible-avoid analogue of `queryEquations_matchAtoms_witness`: every hit of
-the repaired visible query surface is backed by the faithful HE matcher on the
+the repaired visible query interface is backed by the faithful HE matcher on the
 freshened equation left-hand side, where freshening avoids the query atom's
 currently visible variables. -/
 theorem queryEquationsAgainstVisible_matchAtoms_witness

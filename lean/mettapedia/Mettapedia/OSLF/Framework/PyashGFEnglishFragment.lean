@@ -324,7 +324,7 @@ def pyashEnglishMoodHeadToWDFClause? (mood head : String) : Option PyashEnglishW
   else
     none
 
-/-- Normalize broader surface mood tokens into controlled WDF moods. -/
+/-- Normalize broader source mood tokens into controlled WDF moods. -/
 def pyashEnglishNormalizeMood (mood : String) : String :=
   if mood == "imperative" || mood == "execute" || mood == "run" ||
       mood == "action" || mood == "instruction" || mood == "request" then "do"
@@ -336,7 +336,7 @@ def pyashEnglishNormalizeMood (mood : String) : String :=
       mood == "failed" then "error"
   else mood
 
-/-- Normalize broader surface head tokens into controlled WDF heads. -/
+/-- Normalize broader source head tokens into controlled WDF heads. -/
 def pyashEnglishNormalizeHead (head : String) : String :=
   if head == "reads" || head == "reading" || head == "reader" ||
       head == "load" || head == "loads" || head == "loading" ||
@@ -401,7 +401,7 @@ def pyashEnglishNormalizeHead (head : String) : String :=
       head == "error_dispatch" || head == "raise_error" then "dispatch_error"
   else head
 
-/-- Surface-to-controlled normalization layer used by broader English parse fronts. -/
+/-- Source-to-controlled normalization layer used by broader English parse fronts. -/
 def pyashEnglishNormalizeMoodHead (mood head : String) : String × String :=
   (pyashEnglishNormalizeMood mood, pyashEnglishNormalizeHead head)
 

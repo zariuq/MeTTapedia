@@ -89,7 +89,7 @@ omit [NeZero k] in
       .link src dst := by
   simp [markovTransitionQueryOfAtom]
 
-/-- Public XiPLN query surface for direct Markov transition atoms. The rule
+/-- Public XiPLN query interface for direct Markov transition atoms. The rule
 sets are intentionally empty here: the value is the concrete encoder and the
 direct WM/OSLF semantics, not generic additive screening rules. -/
 def markovTransitionXiPLN :

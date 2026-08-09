@@ -1,6 +1,6 @@
 # MeTTailCore
 
-Lean 4 formalization of MeTTa surface syntax specs and intermediate language
+Lean 4 formalization of MeTTa concrete syntax specs and intermediate language
 (MeTTaIL) runtime semantics.
 
 **Toolchain:** Lean 4.28.0
@@ -12,7 +12,7 @@ lake build
 
 ## Two Layers
 
-### MeTTaSyntax — surface parsing and round-trip
+### MeTTaSyntax — syntax parsing and round-trip
 
 - `Spec.lean` — lexer, eval-prefix, lowering policies, command dispatch specs
 - `Roundtrip.lean` — S-expression encode/decode parameterized by `AtomEncodingSpec`; zero-sorry round-trip proof (`decode (encode x) = some x`)

@@ -75,7 +75,7 @@ theorem matchQueryComputesAnswer (n : Nat) :
   simp [answerSpace, answer_match_eq, answerTemplate, Metta.instantiate,
     Metta.bindingsToSubst, Metta.Subst.apply, Metta.Subst.lookup, mVar]
 
-/-- LeaTTa's operational `match` rule computes the same exact answer on the runnable surface. -/
+/-- LeaTTa's operational `match` rule computes the same exact answer on the runnable interface. -/
 theorem matchQueryReduceAtomComputesAnswer (cfg : Metta.RuntimeConfig) (n : Nat) :
     Metta.reduceAtom cfg (answerSpace n) matchQuery = some [node n] := by
   simp [Metta.reduceAtom, matchQuery, matchQueryComputesAnswer, mE, mSym]

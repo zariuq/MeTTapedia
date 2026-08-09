@@ -33,7 +33,7 @@ require gf_core from "../batteries/gf-core"
 
 require certifyingDatalog from "../externals/certifyingDatalog"
 
-require «mm-lean4» from "../externals/mm-lean4"
+require «mm-lean4» from "../standalone/mm-lean4"
 
 -- Standalone Knuth–Skilling external (canonical home; namespace `KnuthSkilling.*`).
 -- Replaces the previously embedded copy at `Mettapedia/ProbabilityTheory/KnuthSkilling/`.

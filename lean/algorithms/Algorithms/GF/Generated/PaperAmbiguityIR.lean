@@ -413,8 +413,8 @@ def czechGrammar : NormalizedGrammar :=
   ] }
   ] }
 
-def englishTelescopeSurface : String := "John sees the man with the telescope"
-def englishTelescopeTokens : Array Tok := tokenize englishTelescopeSurface
+def englishTelescopeText : String := "John sees the man with the telescope"
+def englishTelescopeTokens : Array Tok := tokenize englishTelescopeText
 def englishTelescopeExpected : Array ExportedTree := #[
   .node "UseCl" [
     .node "TTAnt" [
@@ -488,8 +488,8 @@ def englishTelescopeExpected : Array ExportedTree := #[
 def englishTelescopeParsed : Array Parsed := parsesForStart englishGrammar englishTelescopeTokens
 def englishTelescopeRecovered : Array ExportedTree := englishTelescopeParsed.map Parsed.recovered
 
-def englishAnnaSurface : String := "Anna dresses the baby in the crib"
-def englishAnnaTokens : Array Tok := tokenize englishAnnaSurface
+def englishAnnaText : String := "Anna dresses the baby in the crib"
+def englishAnnaTokens : Array Tok := tokenize englishAnnaText
 def englishAnnaExpected : Array ExportedTree := #[
   .node "UseCl" [
     .node "TTAnt" [
@@ -563,8 +563,8 @@ def englishAnnaExpected : Array ExportedTree := #[
 def englishAnnaParsed : Array Parsed := parsesForStart englishGrammar englishAnnaTokens
 def englishAnnaRecovered : Array ExportedTree := englishAnnaParsed.map Parsed.recovered
 
-def czechTelescopeSurface : String := "Jan vidí muže s teleskopem"
-def czechTelescopeTokens : Array Tok := tokenize czechTelescopeSurface
+def czechTelescopeText : String := "Jan vidí muže s teleskopem"
+def czechTelescopeTokens : Array Tok := tokenize czechTelescopeText
 def czechTelescopeExpected : Array ExportedTree := #[
   .node "UseCl" [
     .node "TTAnt" [
@@ -638,8 +638,8 @@ def czechTelescopeExpected : Array ExportedTree := #[
 def czechTelescopeParsed : Array Parsed := parsesForStart czechGrammar czechTelescopeTokens
 def czechTelescopeRecovered : Array ExportedTree := czechTelescopeParsed.map Parsed.recovered
 
-def czechAnnaSurface : String := "Anna obléká dítě v kolébkě"
-def czechAnnaTokens : Array Tok := tokenize czechAnnaSurface
+def czechAnnaText : String := "Anna obléká dítě v kolébkě"
+def czechAnnaTokens : Array Tok := tokenize czechAnnaText
 def czechAnnaExpected : Array ExportedTree := #[
   .node "UseCl" [
     .node "TTAnt" [

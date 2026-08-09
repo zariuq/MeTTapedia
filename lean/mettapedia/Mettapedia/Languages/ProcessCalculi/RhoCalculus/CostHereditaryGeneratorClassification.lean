@@ -31,11 +31,16 @@ structure RhoCostGeneratorRootAlignment
     (kernel : CostStaticNormalizationKernel rhoCIGSLT)
     {targetFree : FreeTypeContext} {targetBound : List TypeExpr}
     {targetSort : LangSort rhoCIGSLT.costWholeLanguage}
-    {left right : OpenTerm rhoCIGSLT.costWholeLanguage targetFree targetBound
-      targetSort}
-    (generator : openEquationGenerator rhoCIGSLT.costIGSLT targetFree
-      targetBound targetSort left right) where
-  occurrence : EquationSemantics.AuthoredGeneratorWitness defaultBasePremises
+    {left right : ReflectiveWellSorted.OpenTerm
+      rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
+      targetFree targetBound targetSort}
+    (generator :
+      ReflectiveEquationSemantics.reflectiveOpenPatternEquationGenerator
+        rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
+        rhoCIGSLT.costWholeLanguage targetFree targetBound (.base targetSort.1)
+        left right) where
+  occurrence : ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness
+    rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
     rhoCIGSLT.costWholeLanguage left.1 right.1
   erasesTo : occurrence.erase = generator
   absorption : RhoCostGeneratorAbsorption occurrence
@@ -56,10 +61,14 @@ def positionCases
     {kernel : CostStaticNormalizationKernel rhoCIGSLT}
     {targetFree : FreeTypeContext} {targetBound : List TypeExpr}
     {targetSort : LangSort rhoCIGSLT.costWholeLanguage}
-    {left right : OpenTerm rhoCIGSLT.costWholeLanguage targetFree targetBound
-      targetSort}
-    {generator : openEquationGenerator rhoCIGSLT.costIGSLT targetFree
-      targetBound targetSort left right}
+    {left right : ReflectiveWellSorted.OpenTerm
+      rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
+      targetFree targetBound targetSort}
+    {generator :
+      ReflectiveEquationSemantics.reflectiveOpenPatternEquationGenerator
+        rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
+        rhoCIGSLT.costWholeLanguage targetFree targetBound (.base targetSort.1)
+        left right}
     (alignment : RhoCostGeneratorRootAlignment kernel generator) :
     alignment.absorption.color = alignment.regionColor ∨
       alignment.absorption.color = alignment.regionColor.flip :=
@@ -73,10 +82,14 @@ def toTreeAlignment
     {kernel : CostStaticNormalizationKernel rhoCIGSLT}
     {targetFree : FreeTypeContext} {targetBound : List TypeExpr}
     {targetSort : LangSort rhoCIGSLT.costWholeLanguage}
-    {left right : OpenTerm rhoCIGSLT.costWholeLanguage targetFree targetBound
-      targetSort}
-    {generator : openEquationGenerator rhoCIGSLT.costIGSLT targetFree
-      targetBound targetSort left right}
+    {left right : ReflectiveWellSorted.OpenTerm
+      rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
+      targetFree targetBound targetSort}
+    {generator :
+      ReflectiveEquationSemantics.reflectiveOpenPatternEquationGenerator
+        rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
+        rhoCIGSLT.costWholeLanguage targetFree targetBound (.base targetSort.1)
+        left right}
     (alignment : RhoCostGeneratorRootAlignment kernel generator) :
     CostRegionTreeNormalizationAlignment rhoCIGSLT kernel targetFree
       alignment.leftElaboration.tree alignment.rightElaboration.tree :=
@@ -88,10 +101,14 @@ def toGeneratorTreeRoute
     {kernel : CostStaticNormalizationKernel rhoCIGSLT}
     {targetFree : FreeTypeContext} {targetBound : List TypeExpr}
     {targetSort : LangSort rhoCIGSLT.costWholeLanguage}
-    {left right : OpenTerm rhoCIGSLT.costWholeLanguage targetFree targetBound
-      targetSort}
-    {generator : openEquationGenerator rhoCIGSLT.costIGSLT targetFree
-      targetBound targetSort left right}
+    {left right : ReflectiveWellSorted.OpenTerm
+      rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
+      targetFree targetBound targetSort}
+    {generator :
+      ReflectiveEquationSemantics.reflectiveOpenPatternEquationGenerator
+        rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
+        rhoCIGSLT.costWholeLanguage targetFree targetBound (.base targetSort.1)
+        left right}
     (alignment : RhoCostGeneratorRootAlignment kernel generator) :
     CostGeneratorTreeNormalizationRoute rhoCIGSLT kernel generator where
   occurrence := alignment.occurrence
@@ -107,10 +124,14 @@ def toGeneratorTreeAlignment
     {kernel : CostStaticNormalizationKernel rhoCIGSLT}
     {targetFree : FreeTypeContext} {targetBound : List TypeExpr}
     {targetSort : LangSort rhoCIGSLT.costWholeLanguage}
-    {left right : OpenTerm rhoCIGSLT.costWholeLanguage targetFree targetBound
-      targetSort}
-    {generator : openEquationGenerator rhoCIGSLT.costIGSLT targetFree
-      targetBound targetSort left right}
+    {left right : ReflectiveWellSorted.OpenTerm
+      rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
+      targetFree targetBound targetSort}
+    {generator :
+      ReflectiveEquationSemantics.reflectiveOpenPatternEquationGenerator
+        rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
+        rhoCIGSLT.costWholeLanguage targetFree targetBound (.base targetSort.1)
+        left right}
     (alignment : RhoCostGeneratorRootAlignment kernel generator) :
     CostGeneratorTreeNormalizationAlignment rhoCIGSLT kernel generator :=
   alignment.toGeneratorTreeRoute.toAlignment
@@ -121,10 +142,14 @@ theorem normalize_patterns_eq
     {kernel : CostStaticNormalizationKernel rhoCIGSLT}
     {targetFree : FreeTypeContext} {targetBound : List TypeExpr}
     {targetSort : LangSort rhoCIGSLT.costWholeLanguage}
-    {left right : OpenTerm rhoCIGSLT.costWholeLanguage targetFree targetBound
-      targetSort}
-    {generator : openEquationGenerator rhoCIGSLT.costIGSLT targetFree
-      targetBound targetSort left right}
+    {left right : ReflectiveWellSorted.OpenTerm
+      rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
+      targetFree targetBound targetSort}
+    {generator :
+      ReflectiveEquationSemantics.reflectiveOpenPatternEquationGenerator
+        rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
+        rhoCIGSLT.costWholeLanguage targetFree targetBound (.base targetSort.1)
+        left right}
     (alignment : RhoCostGeneratorRootAlignment kernel generator) :
     (alignment.leftElaboration.tree.normalize
         (normalizeStatic := kernel.normalize)).pattern =

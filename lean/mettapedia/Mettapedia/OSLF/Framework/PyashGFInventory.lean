@@ -1,7 +1,7 @@
 import Mettapedia.Languages.GF.HandCrafted.Abstract
 
 /-!
-# Pyash GF Inventory Surface
+# Pyash GF Inventory Interface
 
 This module provides a broad GF-side inventory for upstream Pyash `be` words
 observed in the current source corpus (examples/module/configure/world/mind).

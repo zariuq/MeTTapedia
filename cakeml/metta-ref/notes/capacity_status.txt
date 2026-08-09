@@ -261,19 +261,19 @@ Currently proves:
   The match translation also emits
   generated/bridge_eval_match_fragment.sexp
   as an auditable translated-code artifact.
-- the bridge now lifts the bridge_surface_atom return-core behavior through
-  the numeric eval_return_fragment: bridge_surface_eval_return_fragment_core
-  is proved to import to eval_return_fragment whenever the surface atom imports
+- the bridge now lifts the bridge_syntax_atom return-core behavior through
+  the numeric eval_return_fragment: bridge_syntax_eval_return_fragment_core
+  is proved to import to eval_return_fragment whenever the syntax atom imports
   successfully. The string-boundary return predicate
-  bridge_surface_is_return_symbol_hand is directly CF-proved, and
+  bridge_syntax_is_return_symbol_hand is directly CF-proved, and
   tools/check_generated_match_sexp.sh now
   consumes the generated match s-expression with the CakeML compiler's
   s-expression mode as a harness check.
 - the bridge now defines a source-string atom layer, bridge_source_atom, and a
-  bridge_source_surface_rel relation to bridge_surface_atom through explicit
+  bridge_source_syntax_rel relation to bridge_syntax_atom through explicit
   variable/string environments. HOL proves positive/negative examples and
-  bridge_source_eval_return_fragment_core_refines_surface, so the source-level
-  return core refines the surface-level return core under the relation. The
+  bridge_source_eval_return_fragment_core_refines_syntax, so the source-level
+  return core refines the source-level return core under the relation. The
   pure source-level return core is now also translated and has a tiny CF
   wrapper theorem, bridge_source_eval_return_fragment_core_hand_spec.
 - the bridge now defines a prototype atom mirror, bridge_proto_atom, for the
@@ -283,21 +283,21 @@ Currently proves:
   translated/CF-backed wrapper theorem,
   bridge_proto_eval_return_fragment_core_hand_spec.
 - the parser bridge now has a token-boundary theorem:
-  bridge_parse_atom_token_source_surface_related proves that related
+  bridge_parse_atom_token_source_syntax_related proves that related
   bridge_source_token/bridge_token atom tokens parse to related
-  bridge_source_atom/bridge_surface_atom values and related token remainders.
+  bridge_source_atom/bridge_syntax_atom values and related token remainders.
   It also has a checked nested positive witness,
-  bridge_parse_source_surface_full_expr_positive_example, for a source
-  `(return $x)` token list and the corresponding surface token list. The
+  bridge_parse_source_syntax_full_expr_positive_example, for a source
+  `(return $x)` token list and the corresponding source token list. The
   full fuel-indexed and full-token-list simulations are now proved by
-  bridge_parse_source_surface_tokens_fuel_related and
-  bridge_parse_source_surface_full_tokens_related.
+  bridge_parse_source_syntax_tokens_fuel_related and
+  bridge_parse_source_syntax_full_tokens_related.
 - the parser bridge now lifts the token-boundary theorem through the command
-  and program layers. bridge_parse_command_source_surface_tokens_fuel_related
+  and program layers. bridge_parse_command_source_syntax_tokens_fuel_related
   covers `!` run commands and ordinary add-atom commands;
-  bridge_parse_program_source_surface_tokens_fuel_related covers
+  bridge_parse_program_source_syntax_tokens_fuel_related covers
   multi-command token-list programs. The umbrella theorem
-  bridge_source_surface_token_list_parser_simulation packages the atom,
+  bridge_source_syntax_token_list_parser_simulation packages the atom,
   command, and program simulations into one full token-list/parser statement.
   Positive/negative witnesses cover a `!(return $x)` command, a mixed add/run
   program, and an unrelated variable token.
@@ -310,52 +310,52 @@ Currently proves:
   app-spec certificates, and tiny CF wrapper theorems. For the mutually
   recursive full atom parsers, the app spec uses the atom-parser conjunct of
   the translation theorem.
-- the bridge now has surface evaluated primitive-values wrappers:
-  bridge_surface_eval_add_values_wrapper imports already-evaluated surface
+- the bridge now has syntax evaluated primitive-values wrappers:
+  bridge_syntax_eval_add_values_wrapper imports already-evaluated syntax
   argument result lists, agrees with the numeric rec_add_values semantics when
   imports succeed, has positive/negative examples, and has translator/app-spec
   plus CF wrapper certificates through
-  bridge_surface_eval_add_values_wrapper_hand_spec.
-- the same surface wrapper pattern is now checked for <, ==, and/or/not:
-  bridge_surface_eval_lt_values_wrapper,
-  bridge_surface_eval_eq_values_wrapper,
-  bridge_surface_eval_and_values_wrapper,
-  bridge_surface_eval_or_values_wrapper, and
-  bridge_surface_eval_not_values_wrapper import already-evaluated surface
+  bridge_syntax_eval_add_values_wrapper_hand_spec.
+- the same syntax wrapper pattern is now checked for <, ==, and/or/not:
+  bridge_syntax_eval_lt_values_wrapper,
+  bridge_syntax_eval_eq_values_wrapper,
+  bridge_syntax_eval_and_values_wrapper,
+  bridge_syntax_eval_or_values_wrapper, and
+  bridge_syntax_eval_not_values_wrapper import already-evaluated syntax
   argument result lists, prove agreement with the corresponding rec_*_values
   helper, and have translator/app-spec/CF wrapper certificates. These are not
-  yet full recursive surface evaluator branches.
-- the recursive primitive branch surface layer has started:
-  bridge_surface_eval_lt_fragment_wrapper,
-  bridge_surface_eval_eq_fragment_wrapper,
-  bridge_surface_eval_and_fragment_wrapper,
-  bridge_surface_eval_or_fragment_wrapper, and
-  bridge_surface_eval_not_fragment_wrapper import surface branch calls and
+  yet full recursive syntax evaluator branches.
+- the recursive primitive branch syntax layer has started:
+  bridge_syntax_eval_lt_fragment_wrapper,
+  bridge_syntax_eval_eq_fragment_wrapper,
+  bridge_syntax_eval_and_fragment_wrapper,
+  bridge_syntax_eval_or_fragment_wrapper, and
+  bridge_syntax_eval_not_fragment_wrapper import syntax branch calls and
   prove agreement with eval_m1_rec for the corresponding recursive HOL branch
   shapes. These are HOL-level bridge theorems, not yet translated/CF
   executable wrapper certificates.
-- the bridge now adds a surface-level match wrapper relation,
-  bridge_surface_eval_match_fragment_rel, with soundness, positive/negative
-  examples, and bridge_surface_eval_match_fragment_rel_agrees_with_eval_m1_rec
-  connecting successfully imported surface match calls to the numeric
+- the bridge now adds a source-level match wrapper relation,
+  bridge_syntax_eval_match_fragment_rel, with soundness, positive/negative
+  examples, and bridge_syntax_eval_match_fragment_rel_agrees_with_eval_m1_rec
+  connecting successfully imported syntax match calls to the numeric
   recursive evaluator branch.
-- the surface match wrapper is now executable and proof-bearing:
-  bridge_surface_eval_match_fragment_wrapper imports surface inputs, calls the
+- the syntax match wrapper is now executable and proof-bearing:
+  bridge_syntax_eval_match_fragment_wrapper imports syntax inputs, calls the
   numeric bridge_eval_match_fragment when imports succeed, has relation and
   eval_m1_rec agreement theorems, and has a tiny CF wrapper theorem,
-  bridge_surface_eval_match_fragment_wrapper_hand_spec.
+  bridge_syntax_eval_match_fragment_wrapper_hand_spec.
 - the generated match s-expression now has a checked HOL manifest:
   bridge_eval_match_fragment_artifact_manifest_checked plus
   bridge_eval_match_fragment_artifact_manifest_points_to_match_branch. The
   manifest theorem points to the existing match-branch semantic theorem rather
   than treating the file manifest as a semantic source of truth.
-- the surface match wrapper now has a dynamic-symbol environment variant:
-  bridge_surface_eval_match_fragment_wrapper_with_env imports match space and
-  query atoms through bridge_import_surface_atom_with_env, proves relation and
+- the syntax match wrapper now has a dynamic-symbol environment variant:
+  bridge_syntax_eval_match_fragment_wrapper_with_env imports match space and
+  query atoms through bridge_import_syntax_atom_with_env, proves relation and
   eval_m1_rec agreement theorems, has positive/negative dynamic-symbol
   witnesses, and has translator/app-spec/CF wrapper certificates.
-- eval, case, switch, let*, and chain now also have env-aware surface HOL
-  wrappers. Each wrapper imports its public surface syntax through the dynamic
+- eval, case, switch, let*, and chain now also have env-aware syntax HOL
+  wrappers. Each wrapper imports its public concrete syntax through the dynamic
   symbol environment and proves agreement with the corresponding eval_m1_rec
   branch. Chain additionally preserves the substituted-template provenance
   theorem through the env-aware wrapper. These control wrappers are not yet
@@ -380,23 +380,23 @@ Currently proves:
   certificates for that factored definition, and CF-proves the corresponding
   factored handwritten body
   bridge_proto_eval_return_fragment_core_factored_body_hand_spec.
-- the surface primitive-values bridge now also names the evaluated-argument
-  addition boundary explicitly as bridge_surface_eval_add_evaluated_args_wrapper,
+- the syntax primitive-values bridge now also names the evaluated-argument
+  addition boundary explicitly as bridge_syntax_eval_add_evaluated_args_wrapper,
   with import/rec_add_values theorems, positive/negative examples, a CakeML
   translator certificate, an app-spec certificate, and the CF wrapper theorem
-  bridge_surface_eval_add_evaluated_args_wrapper_hand_spec. This is still the
+  bridge_syntax_eval_add_evaluated_args_wrapper_hand_spec. This is still the
   already-evaluated argument-list boundary, not a proof of the recursive
   handwritten eval_add_fragment block.
 - the same already-evaluated argument-list CF shape now has direct imported
   semantic postconditions for <, ==, and, or, and not:
-  bridge_surface_eval_lt_values_wrapper_hand_rec_lt_spec,
-  bridge_surface_eval_eq_values_wrapper_hand_rec_eq_spec,
-  bridge_surface_eval_and_values_wrapper_hand_rec_and_spec,
-  bridge_surface_eval_or_values_wrapper_hand_rec_or_spec, and
-  bridge_surface_eval_not_values_wrapper_hand_rec_not_spec. These theorems
+  bridge_syntax_eval_lt_values_wrapper_hand_rec_lt_spec,
+  bridge_syntax_eval_eq_values_wrapper_hand_rec_eq_spec,
+  bridge_syntax_eval_and_values_wrapper_hand_rec_and_spec,
+  bridge_syntax_eval_or_values_wrapper_hand_rec_or_spec, and
+  bridge_syntax_eval_not_values_wrapper_hand_rec_not_spec. These theorems
   state the rec_* semantics directly in the app postcondition after successful
-  surface import.
-- the <, ==, and/or/not surface primitive wrappers now also expose the
+  syntax import.
+- the <, ==, and/or/not syntax primitive wrappers now also expose the
   recursive branch-fragment boundary in CF postconditions: when the imported
   already-evaluated argument lists are exactly the eval_m1_rec results for the
   branch arguments, the wrapper postcondition is the corresponding
@@ -408,11 +408,11 @@ Currently proves:
   eval_vec_cons_fragment agrees with the integrated dependent Vec/Cons branch.
   Each exported fragment imports back exactly, with positive and negative
   SML/CakeML examples for typed Add and evalc result checking.
-- the SML/CakeML runner now has a small get-type/type-capacity surface:
+- the SML/CakeML runner now has a small get-type/type-capability subset:
   direct declarations, simple function-result lookup, typed Add rejection, an
   evalc-type prototype, and the dependent Vec/Cons witness are executable.
   The get-type subset is compared against CeTTa on three selected scripts.
-- the SML/CakeML runner now has a minimal HE evalc context-space surface:
+- the SML/CakeML runner now has a minimal HE evalc context-space interface:
   bind! of new-space creates a named local space, add-atom can extend that
   space, evalc can evaluate an atom in the named context, assertEqual can
   witness the result, and match can use context-space for &self. The selected
@@ -425,13 +425,13 @@ Currently proves:
   branches, so curated CeTTa comparison scripts exercise those branch shapes
   directly rather than only through separate capacity helper functions.
 - dynamic symbol environments now lift from symbol-level roundtrips to whole
-  surface atoms and atom lists: bridge_export_surface_atom_with_env and
-  bridge_export_surface_atom_list_with_env are inverse to the corresponding
+  syntax atoms and atom lists: bridge_export_syntax_atom_with_env and
+  bridge_export_syntax_atom_list_with_env are inverse to the corresponding
   import functions under bridge_dyn_env_ok, and parser import success is tied
-  to an exported surface atom by
+  to an exported syntax atom by
   bridge_import_parsed_atom_tokens_with_env_export_sound.
-- the return-core surface import theorem has also been lifted through dynamic
-  environments: bridge_surface_eval_return_fragment_core_import_with_env proves
+- the return-core syntax import theorem has also been lifted through dynamic
+  environments: bridge_syntax_eval_return_fragment_core_import_with_env proves
   return-fragment import correctness under bridge_dyn_env_ok, relying on
   bridge_import_symbol_with_env_return_iff to rule out dynamic aliases for the
   reserved return code.
@@ -482,8 +482,8 @@ Currently proves:
   command import, and HOL runner kernel into one top-level semantic result
   with positive import/run and negative parse/import examples. The remaining
   gap is still the exact shipped CakeML runner wrapper and its CF proof.
-- evaluated-argument surface addition now also has an env-aware dynamic-symbol
-  bridge: bridge_surface_eval_add_evaluated_args_wrapper_with_env imports the
+- evaluated-argument syntax addition now also has an env-aware dynamic-symbol
+  bridge: bridge_syntax_eval_add_evaluated_args_wrapper_with_env imports the
   original and evaluated argument-result lists through bridge_dyn_env_ok-style
   environments, proves equality with rec_add_values when imports succeed,
   has dynamic positive/negative examples, and has translator/app-spec/CF
@@ -498,13 +498,13 @@ Currently proves:
   first-binding value, the residual binding/body payload, residual
   eval_let_star_with membership, residual let_star_provenance, and residual
   let_star_family_provenance for every successful first-binding branch result.
-- eval and evalc now have tiny surface helper wrappers over imported evaluated
+- eval and evalc now have tiny syntax helper wrappers over imported evaluated
   result/value lists. The wrappers are translated, have app-spec certificates,
   have quoted CakeML CF wrapper specs, and connect successful imports to the
   corresponding bridge_eval_eval_fragment/eval_evalc_fragment postconditions.
 - The eval/evalc helper CF specs now also have recursive branch postconditions:
-  bridge_surface_eval_payload_result_wrapper_hand_eval_m1_rec_spec and
-  bridge_surface_evalc_checked_values_wrapper_hand_eval_m1_rec_spec state
+  bridge_syntax_eval_payload_result_wrapper_hand_eval_m1_rec_spec and
+  bridge_syntax_evalc_checked_values_wrapper_hand_eval_m1_rec_spec state
   app-level results directly as eval_m1_rec branch results.
 - The evalc and let* payload decompositions are now lifted through the common
   recursive soundness layer: bridge_eval_m1_rec_fuller_evalc_payload_sound and
@@ -622,14 +622,14 @@ Currently proves:
   whitespace, comments, parentheses, bang, decimal integers, variables,
   symbols, and string literals. It includes positive and negative witnesses,
   bridge_parse_source_program_chars_fuel, and
-  bridge_source_chars_to_surface_program_parser_related, plus translator/app
+  bridge_source_chars_to_syntax_program_parser_related, plus translator/app
   spec certificates and tiny CF wrappers over LIST_TYPE CHAR. This is still a
   verified char-list lexer model, not yet a CF proof of the shipped
   String.explode-based parser entrypoint.
 - The source-string parser boundary now has bridge_tokenize_source_string_fuel
   and bridge_parse_source_program_string_fuel, implemented as mlstring
   `explode` into the verified char-list lexer/parser. It includes
-  bridge_source_string_to_surface_program_parser_related, positive and negative
+  bridge_source_string_to_syntax_program_parser_related, positive and negative
   string witnesses, translator/app-spec certificates, and tiny CF wrappers over
   STRING_TYPE. This proves the source-string model entrypoint, but still does
   not prove the exact shipped SML/CakeML parser functions.
@@ -651,13 +651,13 @@ Currently proves:
   translator/app-spec certificates, and tiny CF wrapper specs.
   bridge_tokenize_source_chars_fuel_no_fuel_error and
   bridge_tokenize_source_string_bound_no_fuel_error prove that this chosen
-  lexer bound cannot surface the synthetic lexer fuel error. The parser proof
+  lexer bound cannot expose the synthetic lexer fuel error. The parser proof
   infrastructure includes bridge_parse_source_atom_tokens_fuel_rest_lt, which
   proves every successful source full-atom or expression-item parse returns a
   strict suffix of the input token list. It now also includes
   bridge_parse_source_atom_tokens_fuel_no_fuel_error_strong and
   bridge_parse_source_atom_tokens_double_bound_no_fuel_error, proving that
-  source atom/expression-item token parsing cannot surface the synthetic parser
+  source atom/expression-item token parsing cannot expose the synthetic parser
   fuel error under a doubled token-length bound.
   bridge_parse_source_atom_tokens_bound_no_fuel_error and
   bridge_parse_source_command_tokens_bound_no_fuel_error connect that doubled
@@ -665,11 +665,11 @@ Currently proves:
   parser now has bridge_parse_source_command_tokens_fuel_rest_lt,
   bridge_parse_source_program_tokens_fuel_no_fuel_error_strong, and
   bridge_parse_source_program_tokens_bound_no_fuel_error, proving the public
-  source program-token bound cannot surface the synthetic parser fuel error.
+  source program-token bound cannot expose the synthetic parser fuel error.
   bridge_parse_source_atom_tokens_shipped_no_parser_fuel_error and
   bridge_parse_source_command_tokens_shipped_no_parser_fuel_error plus
   bridge_parse_source_program_tokens_shipped_no_parser_fuel_error lift these
-  results to the shipped string-error result surface. The remaining parser-bound
+  results to the shipped string-error result syntax. The remaining parser-bound
   work is top-level composition of the translated pure parser with the runner's
   exact string/eval entrypoint, not a second handwritten recursive parser
   proof.
@@ -759,21 +759,21 @@ Next proofs
 3. Grow the HOL-to-CakeML bridge by moving pure helpers through
    HOL-definition-to-translator certificates, and reserve CF for wrappers,
    stateful code, and FFI boundaries.
-4. Continue lifting public string/surface wrappers to executable fragments.
+4. Continue lifting public string/syntax wrappers to executable fragments.
    The shipped-shaped factored return-core block is CF-proved over
    bridge_proto_atom; an exact shipped-structure proto return block now has a
    direct CF proof against the same core. The artificial one-pattern return
-   block has been removed from the bridge surface so only proof-bearing
+   block has been removed from the bridge syntax so only proof-bearing
    wrappers remain. Token-list parser simulation covers source tokens to
    bridge tokens at atom, command, and program levels, and now also covers
    prototype Sym-string tokens to source tokens at atom, command, and program
-   levels, including no-explicit-fuel bounded parser entrypoints. Surface evaluated-+
+   levels, including no-explicit-fuel bounded parser entrypoints. Syntax evaluated-+
    wrappers have CF theorems that connect imported evaluated argument lists
    to the full add fragment. Case/switch now have a translated first-branch
    payload selector and value-list selector, with HOL decomposition theorems
    showing how the existing recursive branches factor into certified
    selection/substitution payloads plus recursive evaluation of the selected
-   bodies. Tiny surface payload wrappers for case/switch are translator-backed
+   bodies. Tiny syntax payload wrappers for case/switch are translator-backed
    and CF-proved, and the case/switch decomposition now feeds recursive
    result/family soundness for selected payloads. Eval, evalc, and let* also
    have first decomposition helpers: eval separates the "not reducible"
@@ -783,7 +783,7 @@ Next proofs
    and evalc/let* payload theorems are lifted through the common recursive
    soundness layer.
 5. Expand evalc/type/dependent-type coverage beyond the minimal named-space
-   evalc and typed Add surface toward richer dependent type unification.
+   evalc and typed Add syntax toward richer dependent type unification.
 6. Strengthen the finite call-ml/call-native byte-profile boundary toward a
    fuller external-call story.
 7. Increase the selected CeTTa comparison set beyond 13 exact-output files plus
@@ -795,7 +795,7 @@ Deferred from first verified kernel
 -----------------------------------
 
 - Raw-text lexer and human syntax error behavior. Token-list parsing now has a
-  general source/surface simulation theorem, but raw source text does not yet.
+  general source/syntax simulation theorem, but raw source text does not yet.
 - Full HE type system and dependent type inference.
 - Full module/import filesystem behavior.
 - Arbitrary host grounded atoms beyond the finite call-ml/byte-protocol

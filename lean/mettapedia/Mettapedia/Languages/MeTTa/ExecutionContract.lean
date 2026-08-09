@@ -5,7 +5,7 @@ import Mettapedia.Languages.MeTTa.SuiteBase.ExecutionContractArtifact
 /-!
 # MeTTa Execution Contract
 
-Public compatibility facade for the shared MeTTa execution-contract surface.
+Public compatibility facade for the shared MeTTa execution-contract interface.
 Internal definitions live in `SuiteBase` modules; this path remains stable for
 existing Lean and Rust-adjacent consumers.
 -/

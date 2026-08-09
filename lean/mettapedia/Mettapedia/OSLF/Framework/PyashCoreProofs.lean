@@ -121,39 +121,39 @@ def pyashCoreReductionCases : List (String × Pattern × Pattern) :=
   , ("translation_run_do_step", pyashStateTranslationRunning, pyashStateTranslationDoneOk)
   , ("ret_read_derive_signature_step", pyashStateRetReadDerive, pyashStateRetReadDispatched)
   , ("ret_read_dispatch_ret_step", pyashStateRetReadDispatched, pyashStateRetReadDoneOk)
-  , ("configure_command_map_def_signature_mismatch_surfaces_error",
+  , ("configure_command_map_def_signature_mismatch_reports_error",
       pyashStateConfigureCommandMapDefMismatch, pyashStateConfigureCommandMapDefDoneSignatureErr)
-  , ("configure_sandbox_map_def_signature_mismatch_surfaces_error",
+  , ("configure_sandbox_map_def_signature_mismatch_reports_error",
       pyashStateConfigureSandboxMapDefMismatch, pyashStateConfigureSandboxMapDefDoneSignatureErr)
-  , ("configure_verify_loop_map_def_signature_mismatch_surfaces_error",
+  , ("configure_verify_loop_map_def_signature_mismatch_reports_error",
       pyashStateConfigureVerifyLoopMapDefMismatch, pyashStateConfigureVerifyLoopMapDefDoneSignatureErr)
-  , ("world_path_io_signature_mismatch_surfaces_error",
+  , ("world_path_io_signature_mismatch_reports_error",
       pyashStateWorldPathIOMismatch, pyashStateWorldPathIODoneSignatureErr)
-  , ("pipeline_refinery_signature_mismatch_surfaces_error",
+  , ("pipeline_refinery_signature_mismatch_reports_error",
       pyashStatePipelineRefineryMismatch, pyashStatePipelineRefineryDoneSignatureErr)
-  , ("pipeline_chirp_signature_mismatch_surfaces_error",
+  , ("pipeline_chirp_signature_mismatch_reports_error",
       pyashStatePipelineChirpMismatch, pyashStatePipelineChirpDoneSignatureErr)
-  , ("pipeline_reentry_signature_mismatch_surfaces_error",
+  , ("pipeline_reentry_signature_mismatch_reports_error",
       pyashStatePipelineReentryMismatch, pyashStatePipelineReentryDoneSignatureErr)
-  , ("list_signature_mismatch_surfaces_error",
+  , ("list_signature_mismatch_reports_error",
       pyashStateListMismatch, pyashStateListDoneSignatureErr)
-  , ("input_signature_mismatch_surfaces_error",
+  , ("input_signature_mismatch_reports_error",
       pyashStateInputMismatch, pyashStateInputDoneSignatureErr)
-  , ("stream_signature_mismatch_surfaces_error",
+  , ("stream_signature_mismatch_reports_error",
       pyashStateStreamMismatch, pyashStateStreamDoneSignatureErr)
-  , ("compile_signature_mismatch_surfaces_error",
+  , ("compile_signature_mismatch_reports_error",
       pyashStateCompileMismatch, pyashStateCompileDoneSignatureErr)
-  , ("import_signature_mismatch_surfaces_error",
+  , ("import_signature_mismatch_reports_error",
       pyashStateImportMismatch, pyashStateImportDoneSignatureErr)
-  , ("download_signature_mismatch_surfaces_error",
+  , ("download_signature_mismatch_reports_error",
       pyashStateDownloadMismatch, pyashStateDownloadDoneSignatureErr)
-  , ("translation_signature_mismatch_surfaces_error",
+  , ("translation_signature_mismatch_reports_error",
       pyashStateTranslationMismatch, pyashStateTranslationDoneSignatureErr)
-  , ("dispatch_error_instr_surfaces_dispatch_error", pyashStateDispatchErrorInstr, pyashStateDoneDispatchErr)
-  , ("dispatch_then_surfaces_dispatch_error", pyashStateDispatchThenError, pyashStateDoneDispatchErr)
-  , ("malformed_signature_shape_surfaces_error",
+  , ("dispatch_error_instr_reports_dispatch_error", pyashStateDispatchErrorInstr, pyashStateDoneDispatchErr)
+  , ("dispatch_then_reports_dispatch_error", pyashStateDispatchThenError, pyashStateDoneDispatchErr)
+  , ("malformed_signature_shape_reports_error",
       pyashStateMalformedSignatureShape, pyashStateDoneMalformedSignatureErr)
-  , ("signature_mismatch_surfaces_error", pyashStateMismatch, pyashStateDoneSignatureErr)
+  , ("signature_mismatch_reports_error", pyashStateMismatch, pyashStateDoneSignatureErr)
   ]
 
 /--
@@ -1098,192 +1098,192 @@ theorem pyashCore_ret_read_dispatch_ret_step :
     (q := pyashStateRetReadDoneOk)
     (by simp [pyashCoreReductionCases])
 
-/-- `configure` command-map mismatch is surfaced as a signature error state. -/
-theorem pyashCore_configure_command_map_def_signature_mismatch_surfaces_error :
+/-- `configure` command-map mismatch is reported as a signature error state. -/
+theorem pyashCore_configure_command_map_def_signature_mismatch_reports_error :
     langReduces pyashCore
       pyashStateConfigureCommandMapDefMismatch
       pyashStateConfigureCommandMapDefDoneSignatureErr := by
   exact pyashCore_reduction_case
-    (label := "configure_command_map_def_signature_mismatch_surfaces_error")
+    (label := "configure_command_map_def_signature_mismatch_reports_error")
     (p := pyashStateConfigureCommandMapDefMismatch)
     (q := pyashStateConfigureCommandMapDefDoneSignatureErr)
     (by simp [pyashCoreReductionCases])
 
-/-- `configure` sandbox-map mismatch is surfaced as a signature error state. -/
-theorem pyashCore_configure_sandbox_map_def_signature_mismatch_surfaces_error :
+/-- `configure` sandbox-map mismatch is reported as a signature error state. -/
+theorem pyashCore_configure_sandbox_map_def_signature_mismatch_reports_error :
     langReduces pyashCore
       pyashStateConfigureSandboxMapDefMismatch
       pyashStateConfigureSandboxMapDefDoneSignatureErr := by
   exact pyashCore_reduction_case
-    (label := "configure_sandbox_map_def_signature_mismatch_surfaces_error")
+    (label := "configure_sandbox_map_def_signature_mismatch_reports_error")
     (p := pyashStateConfigureSandboxMapDefMismatch)
     (q := pyashStateConfigureSandboxMapDefDoneSignatureErr)
     (by simp [pyashCoreReductionCases])
 
-/-- `configure` verify-loop mismatch is surfaced as a signature error state. -/
-theorem pyashCore_configure_verify_loop_map_def_signature_mismatch_surfaces_error :
+/-- `configure` verify-loop mismatch is reported as a signature error state. -/
+theorem pyashCore_configure_verify_loop_map_def_signature_mismatch_reports_error :
     langReduces pyashCore
       pyashStateConfigureVerifyLoopMapDefMismatch
       pyashStateConfigureVerifyLoopMapDefDoneSignatureErr := by
   exact pyashCore_reduction_case
-    (label := "configure_verify_loop_map_def_signature_mismatch_surfaces_error")
+    (label := "configure_verify_loop_map_def_signature_mismatch_reports_error")
     (p := pyashStateConfigureVerifyLoopMapDefMismatch)
     (q := pyashStateConfigureVerifyLoopMapDefDoneSignatureErr)
     (by simp [pyashCoreReductionCases])
 
-/-- `world` path-io mismatch is surfaced as a signature error state. -/
-theorem pyashCore_world_path_io_signature_mismatch_surfaces_error :
+/-- `world` path-io mismatch is reported as a signature error state. -/
+theorem pyashCore_world_path_io_signature_mismatch_reports_error :
     langReduces pyashCore
       pyashStateWorldPathIOMismatch
       pyashStateWorldPathIODoneSignatureErr := by
   exact pyashCore_reduction_case
-    (label := "world_path_io_signature_mismatch_surfaces_error")
+    (label := "world_path_io_signature_mismatch_reports_error")
     (p := pyashStateWorldPathIOMismatch)
     (q := pyashStateWorldPathIODoneSignatureErr)
     (by simp [pyashCoreReductionCases])
 
-/-- `pipeline` refinery mismatch is surfaced as a signature error state. -/
-theorem pyashCore_pipeline_refinery_signature_mismatch_surfaces_error :
+/-- `pipeline` refinery mismatch is reported as a signature error state. -/
+theorem pyashCore_pipeline_refinery_signature_mismatch_reports_error :
     langReduces pyashCore
       pyashStatePipelineRefineryMismatch
       pyashStatePipelineRefineryDoneSignatureErr := by
   exact pyashCore_reduction_case
-    (label := "pipeline_refinery_signature_mismatch_surfaces_error")
+    (label := "pipeline_refinery_signature_mismatch_reports_error")
     (p := pyashStatePipelineRefineryMismatch)
     (q := pyashStatePipelineRefineryDoneSignatureErr)
     (by simp [pyashCoreReductionCases])
 
-/-- `pipeline` chirp mismatch is surfaced as a signature error state. -/
-theorem pyashCore_pipeline_chirp_signature_mismatch_surfaces_error :
+/-- `pipeline` chirp mismatch is reported as a signature error state. -/
+theorem pyashCore_pipeline_chirp_signature_mismatch_reports_error :
     langReduces pyashCore
       pyashStatePipelineChirpMismatch
       pyashStatePipelineChirpDoneSignatureErr := by
   exact pyashCore_reduction_case
-    (label := "pipeline_chirp_signature_mismatch_surfaces_error")
+    (label := "pipeline_chirp_signature_mismatch_reports_error")
     (p := pyashStatePipelineChirpMismatch)
     (q := pyashStatePipelineChirpDoneSignatureErr)
     (by simp [pyashCoreReductionCases])
 
-/-- `pipeline` re-entry mismatch is surfaced as a signature error state. -/
-theorem pyashCore_pipeline_reentry_signature_mismatch_surfaces_error :
+/-- `pipeline` re-entry mismatch is reported as a signature error state. -/
+theorem pyashCore_pipeline_reentry_signature_mismatch_reports_error :
     langReduces pyashCore
       pyashStatePipelineReentryMismatch
       pyashStatePipelineReentryDoneSignatureErr := by
   exact pyashCore_reduction_case
-    (label := "pipeline_reentry_signature_mismatch_surfaces_error")
+    (label := "pipeline_reentry_signature_mismatch_reports_error")
     (p := pyashStatePipelineReentryMismatch)
     (q := pyashStatePipelineReentryDoneSignatureErr)
     (by simp [pyashCoreReductionCases])
 
-/-- `list` mismatch is surfaced as a signature error state. -/
-theorem pyashCore_list_signature_mismatch_surfaces_error :
+/-- `list` mismatch is reported as a signature error state. -/
+theorem pyashCore_list_signature_mismatch_reports_error :
     langReduces pyashCore
       pyashStateListMismatch
       pyashStateListDoneSignatureErr := by
   exact pyashCore_reduction_case
-    (label := "list_signature_mismatch_surfaces_error")
+    (label := "list_signature_mismatch_reports_error")
     (p := pyashStateListMismatch)
     (q := pyashStateListDoneSignatureErr)
     (by simp [pyashCoreReductionCases])
 
-/-- `input` mismatch is surfaced as a signature error state. -/
-theorem pyashCore_input_signature_mismatch_surfaces_error :
+/-- `input` mismatch is reported as a signature error state. -/
+theorem pyashCore_input_signature_mismatch_reports_error :
     langReduces pyashCore
       pyashStateInputMismatch
       pyashStateInputDoneSignatureErr := by
   exact pyashCore_reduction_case
-    (label := "input_signature_mismatch_surfaces_error")
+    (label := "input_signature_mismatch_reports_error")
     (p := pyashStateInputMismatch)
     (q := pyashStateInputDoneSignatureErr)
     (by simp [pyashCoreReductionCases])
 
-/-- `stream` mismatch is surfaced as a signature error state. -/
-theorem pyashCore_stream_signature_mismatch_surfaces_error :
+/-- `stream` mismatch is reported as a signature error state. -/
+theorem pyashCore_stream_signature_mismatch_reports_error :
     langReduces pyashCore
       pyashStateStreamMismatch
       pyashStateStreamDoneSignatureErr := by
   exact pyashCore_reduction_case
-    (label := "stream_signature_mismatch_surfaces_error")
+    (label := "stream_signature_mismatch_reports_error")
     (p := pyashStateStreamMismatch)
     (q := pyashStateStreamDoneSignatureErr)
     (by simp [pyashCoreReductionCases])
 
-/-- `compile` mismatch is surfaced as a signature error state. -/
-theorem pyashCore_compile_signature_mismatch_surfaces_error :
+/-- `compile` mismatch is reported as a signature error state. -/
+theorem pyashCore_compile_signature_mismatch_reports_error :
     langReduces pyashCore
       pyashStateCompileMismatch
       pyashStateCompileDoneSignatureErr := by
   exact pyashCore_reduction_case
-    (label := "compile_signature_mismatch_surfaces_error")
+    (label := "compile_signature_mismatch_reports_error")
     (p := pyashStateCompileMismatch)
     (q := pyashStateCompileDoneSignatureErr)
     (by simp [pyashCoreReductionCases])
 
-/-- `import` mismatch is surfaced as a signature error state. -/
-theorem pyashCore_import_signature_mismatch_surfaces_error :
+/-- `import` mismatch is reported as a signature error state. -/
+theorem pyashCore_import_signature_mismatch_reports_error :
     langReduces pyashCore
       pyashStateImportMismatch
       pyashStateImportDoneSignatureErr := by
   exact pyashCore_reduction_case
-    (label := "import_signature_mismatch_surfaces_error")
+    (label := "import_signature_mismatch_reports_error")
     (p := pyashStateImportMismatch)
     (q := pyashStateImportDoneSignatureErr)
     (by simp [pyashCoreReductionCases])
 
-/-- `download` mismatch is surfaced as a signature error state. -/
-theorem pyashCore_download_signature_mismatch_surfaces_error :
+/-- `download` mismatch is reported as a signature error state. -/
+theorem pyashCore_download_signature_mismatch_reports_error :
     langReduces pyashCore
       pyashStateDownloadMismatch
       pyashStateDownloadDoneSignatureErr := by
   exact pyashCore_reduction_case
-    (label := "download_signature_mismatch_surfaces_error")
+    (label := "download_signature_mismatch_reports_error")
     (p := pyashStateDownloadMismatch)
     (q := pyashStateDownloadDoneSignatureErr)
     (by simp [pyashCoreReductionCases])
 
-/-- `translation` mismatch is surfaced as a signature error state. -/
-theorem pyashCore_translation_signature_mismatch_surfaces_error :
+/-- `translation` mismatch is reported as a signature error state. -/
+theorem pyashCore_translation_signature_mismatch_reports_error :
     langReduces pyashCore
       pyashStateTranslationMismatch
       pyashStateTranslationDoneSignatureErr := by
   exact pyashCore_reduction_case
-    (label := "translation_signature_mismatch_surfaces_error")
+    (label := "translation_signature_mismatch_reports_error")
     (p := pyashStateTranslationMismatch)
     (q := pyashStateTranslationDoneSignatureErr)
     (by simp [pyashCoreReductionCases])
 
-/-- Explicit dispatch-error instruction surfaces dispatch error deterministically. -/
-theorem pyashCore_dispatch_error_instr_surfaces_dispatch_error :
+/-- Explicit dispatch-error instruction reports dispatch error deterministically. -/
+theorem pyashCore_dispatch_error_instr_reports_dispatch_error :
     langReduces pyashCore pyashStateDispatchErrorInstr pyashStateDoneDispatchErr := by
   exact pyashCore_reduction_case
-    (label := "dispatch_error_instr_surfaces_dispatch_error")
+    (label := "dispatch_error_instr_reports_dispatch_error")
     (p := pyashStateDispatchErrorInstr)
     (q := pyashStateDoneDispatchErr)
     (by simp [pyashCoreReductionCases])
 
-/-- Unsupported `then` dispatch branch surfaces explicit dispatch error. -/
-theorem pyashCore_dispatch_then_surfaces_dispatch_error :
+/-- Unsupported `then` dispatch branch reports explicit dispatch error. -/
+theorem pyashCore_dispatch_then_reports_dispatch_error :
     langReduces pyashCore pyashStateDispatchThenError pyashStateDoneDispatchErr := by
   exact pyashCore_reduction_case
-    (label := "dispatch_then_surfaces_dispatch_error")
+    (label := "dispatch_then_reports_dispatch_error")
     (p := pyashStateDispatchThenError)
     (q := pyashStateDoneDispatchErr)
     (by simp [pyashCoreReductionCases])
 
-/-- Malformed nested signature shapes are surfaced via signature-error path. -/
-theorem pyashCore_malformed_signature_shape_surfaces_error :
+/-- Malformed nested signature shapes are reported via signature-error path. -/
+theorem pyashCore_malformed_signature_shape_reports_error :
     langReduces pyashCore pyashStateMalformedSignatureShape pyashStateDoneMalformedSignatureErr := by
   exact pyashCore_reduction_case
-    (label := "malformed_signature_shape_surfaces_error")
+    (label := "malformed_signature_shape_reports_error")
     (p := pyashStateMalformedSignatureShape)
     (q := pyashStateDoneMalformedSignatureErr)
     (by simp [pyashCoreReductionCases])
 
-/-- Signature mismatch is surfaced as an error-state result. -/
-theorem pyashCore_signature_mismatch_surfaces_error :
+/-- Signature mismatch is reported as an error-state result. -/
+theorem pyashCore_signature_mismatch_reports_error :
     langReduces pyashCore pyashStateMismatch pyashStateDoneSignatureErr := by
   exact pyashCore_reduction_case
-    (label := "signature_mismatch_surfaces_error")
+    (label := "signature_mismatch_reports_error")
     (p := pyashStateMismatch)
     (q := pyashStateDoneSignatureErr)
     (by simp [pyashCoreReductionCases])

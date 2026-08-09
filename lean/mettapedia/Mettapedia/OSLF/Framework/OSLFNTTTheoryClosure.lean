@@ -873,7 +873,7 @@ theorem semE_fragment_formulaCategoricalEndpoint_step
 
 /-- Star-closure variant of `semE_fragment_formulaCategoricalEndpoint_step`.
 
-The categorical endpoint component is formula-structural (state/query surface),
+The categorical endpoint component is formula-structural (state/query interface),
 while the evidence closure component is transported along `OSLFTheoryStepStar`
 through `semEFragmentEvidenceInterface`. -/
 theorem semE_fragment_formulaCategoricalEndpoint_stepStar

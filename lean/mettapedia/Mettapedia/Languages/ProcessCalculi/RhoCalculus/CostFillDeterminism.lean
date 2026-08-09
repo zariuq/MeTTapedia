@@ -26,14 +26,16 @@ theorem rho_costWholeLanguage_labelDeterministic :
 
 /-- Every generated rho Cost rule with one bare-collection parameter is one
 of the two parallel copies, classified by its result category. -/
-private theorem rho_collectionRule_cases {rule : GrammarRule}
+theorem rho_collectionRule_cases {rule : GrammarRule}
     (membership : rule ∈ rhoCIGSLT.costWholeLanguage.terms)
     {name : String} {collectionType : CollType} {elementType : TypeExpr}
     (shape : rule.params =
       [.simple name (.collection collectionType elementType)]) :
-    (rule.category = costBaseSortName "Proc" ∧
+    (collectionType = rhoReflectivePresentation.parallelCollection ∧
+      rule.category = costBaseSortName "Proc" ∧
         elementType = .base (costBaseSortName "Proc")) ∨
-      (rule.category = costWrappedSortName ∧
+      (collectionType = rhoReflectivePresentation.parallelCollection ∧
+        rule.category = costWrappedSortName ∧
         elementType = .base costWrappedSortName) := by
   have memberships := membership
   rw [CIGSLT.costWholeLanguage_terms] at memberships
@@ -66,7 +68,7 @@ private theorem rho_collectionRule_cases {rule : GrammarRule}
       · rw [rho_costBaseParallelConstructor_params] at shape
         simp only [List.cons.injEq, TermParam.simple.injEq,
           TypeExpr.collection.injEq, and_true] at shape
-        exact Or.inl ⟨rfl, shape.2.2.symm⟩
+        exact Or.inl ⟨shape.2.1.symm, rfl, shape.2.2.symm⟩
       · rw [rho_costBaseOutputConstructor_params] at shape
         simp at shape
       · rw [rho_costBaseInputConstructor_params] at shape
@@ -91,7 +93,7 @@ private theorem rho_collectionRule_cases {rule : GrammarRule}
       · rw [rho_costWrappedParallelConstructor_params] at shape
         simp only [List.cons.injEq, TermParam.simple.injEq,
           TypeExpr.collection.injEq, and_true] at shape
-        refine Or.inr ⟨?_, shape.2.2.symm⟩
+        refine Or.inr ⟨shape.2.1.symm, ?_, shape.2.2.symm⟩
         simp [costWrappedConstructor, rhoCalc, rhoIGSLT,
           rhoInteractivePresentation, TypeDecl.plain]
       · simp [costWrappedConstructor, mapParameterType,
@@ -126,9 +128,9 @@ theorem rho_costWholeLanguage_collectionChoiceDeterministic :
     rightElementType leftMembership rightMembership leftShape rightShape
     categoriesEq
   rcases rho_collectionRule_cases leftMembership leftShape with
-    ⟨leftCategory, leftElement⟩ | ⟨leftCategory, leftElement⟩ <;>
+    ⟨_, leftCategory, leftElement⟩ | ⟨_, leftCategory, leftElement⟩ <;>
     rcases rho_collectionRule_cases rightMembership rightShape with
-      ⟨rightCategory, rightElement⟩ | ⟨rightCategory, rightElement⟩
+      ⟨_, rightCategory, rightElement⟩ | ⟨_, rightCategory, rightElement⟩
   · exact leftElement.trans rightElement.symm
   · exact absurd (leftCategory.symm.trans (categoriesEq.trans rightCategory))
       (by decide)

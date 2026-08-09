@@ -5167,7 +5167,7 @@ theorem pendingEliminationTraceEntries_card_lt_of_newly_realized
   simp [pendingEliminationTraceEntries, hafter] at hmemAfter
 
 /-- The same strict decrease is available directly at the executable merge
-surface used by recursive expression matching. -/
+interface used by recursive expression matching. -/
 theorem pendingEliminationTraceEntries_card_lt_of_mergeBindings
     {left right out : Bindings} {trace : List (String × Metta.Atom)}
     {entry : String × Metta.Atom} {fuel : Nat}
@@ -9034,7 +9034,7 @@ theorem LeaEliminationTraceReplay.valuesConsistent_of_equality_subrecord
           rw [hvalues] at hlength
           simp at hlength
 
-/-! ## Full replay through the public merge surface -/
+/-! ## Full replay through the public merge interface -/
 
 /-- Folding a fresh, key-disjoint assignment suffix into an equality-free
 seed recreates the suffix by the declarative merge relation. -/
@@ -9314,7 +9314,7 @@ theorem LeaEliminationTraceReplay.mergeTraceSound_empty_left
     (h.mergeRel_empty_left htriangular)] using hsound
 
 /-- Consequently the full replay is returned by the executable HE merge
-surface at some finite fuel. -/
+interface at some finite fuel. -/
 theorem LeaEliminationTraceReplay.mem_mergeBindings_empty_left
     {trace : List (String × Metta.Atom)} {out : Bindings}
     (h : LeaEliminationTraceReplay Bindings.empty trace out)
@@ -10035,7 +10035,7 @@ theorem LeaBindingCongruence.addEquality_self
   rw [EqualityClosure.mem_eqClass_iff_reachable]
 
 /-- One original HE atom match together with its actual merge into a live
-accumulator.  The matcher and merge are retained at the executable surface so
+accumulator.  The matcher and merge are retained at the executable interface so
 the package can be inserted directly into `MatchListAccRel.cons`; congruence
 describes the accumulator *after* that merge, not the from-empty matcher
 record.  This separation is essential for nested expression matching. -/
@@ -11106,7 +11106,7 @@ noncomputable def HEMatchListAccSolutionCertified.withLiveMerge
 /-- Pair any certified matcher whose concrete result is empty with the
 identity live merge.  This closes symbol/symbol and grounded/grounded heads
 inside the residual kernel without invoking either recursive lane.  The
-matcher proof is retained at the original HE surface; only its propositionally
+matcher proof is retained at the original HE interface; only its propositionally
 empty output is rewritten. -/
 noncomputable def HEMatchCertified.withEmptyLiveMerge
     {trace : List (String × Metta.Atom)}
@@ -16304,7 +16304,7 @@ theorem exists_eliminationTraceExecutableReplay_of_congruence
 
 /-- Step-1 crown: under cross-engine input congruence, every successful
 repaired-LeaTTa reconciliation trace is realized both stepwise by HE's
-executable insertion helpers and as one result of HE's public merge surface.
+executable insertion helpers and as one result of HE's public merge interface.
 The proof uses only triangular solve structure, never substitution or
 representative equality. -/
 theorem exists_eliminationTraceExecutableMergeReplay_of_congruence
@@ -16811,7 +16811,7 @@ theorem LeaAliasTraceReplay.exists_mem_matchAtoms_expression_reverse
 
 /-- Matcher-origin form of the nonrecursive alias compiler: the right record
 is itself returned by `matchAtoms`, then is merged into the live seed by the
-public HE merge surface. -/
+public HE merge interface. -/
 theorem LeaAliasTraceConsistentReplay.exists_matcherLiveMerge
     {base out : Bindings} {aliases : List (String × String)}
     (h : LeaAliasTraceConsistentReplay base aliases out) :
@@ -18630,7 +18630,7 @@ theorem exists_leafMatch_mergeRel_assignmentFreeSeed_certified
   · exact hbound
   · exact hleaf
 
-/-- Executable surface of the assignment-free-seed leaf merge theorem, aligned to
+/-- Executable interface of the assignment-free-seed leaf merge theorem, aligned to
 the exact concrete merge proof by proof irrelevance only. -/
 theorem HEMatchCertified.exists_mergeIntoAssignmentFreeSeed_of_leaf
     {trace : List (String × Metta.Atom)}
@@ -19380,7 +19380,7 @@ theorem LeaUnifyValuesExecutablePrefixWitness.triangular
   rw [h.front_trace_eq] at htriangular
   exact htriangular
 
-/-- The prefix record is returned by HE's public merge surface from the empty
+/-- The prefix record is returned by HE's public merge interface from the empty
 seed.  This is an operational existence fact, separate from its quotient
 congruence with `ofSubst`. -/
 theorem LeaUnifyValuesExecutablePrefixWitness.mem_mergeBindings_empty_left
@@ -20080,7 +20080,7 @@ theorem HEReconciliationTraceStructuralRel.toCongruence
 
 /-- Every successful translated reconciliation has a canonical HE witness
 with full binding congruence, not merely the structural fields.  Its Robinson
-trace is executed by the public empty-left merge surface; alias restoration is
+trace is executed by the public empty-left merge interface; alias restoration is
 then proved solution-neutral from the successful unifier certificate.  This
 still deliberately does not identify the witness with an independent runtime
 `addVarBinding`/`addVarEquality` result. -/
@@ -20143,7 +20143,7 @@ theorem exists_reconciliationExecutableCongruenceWitness_of_congruence
       and_congr (hbase.semantic.solutions valuation).symm Iff.rfl
 
 /-- A successful repaired-LeaTTa reconciliation has one canonical HE witness
-that is operational at both public surfaces used by recursive matching: its
+that is operational at both public interfaces used by recursive matching: its
 selected solve constraints are emitted by `matchAtomsList`, and the same
 binding record is emitted by empty-left `mergeBindings`.  Replaying the full
 alias certificate then yields full congruence with the repaired rebuild.

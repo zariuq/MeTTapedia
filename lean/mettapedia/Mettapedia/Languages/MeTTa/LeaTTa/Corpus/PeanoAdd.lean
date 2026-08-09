@@ -54,7 +54,7 @@ def addRules : List Metta.Atom :=
 
 def addEnv : MinEnv := MinEnv.ofAtomsGT addRules stdGroundings
 
-/-- A world whose `&self` rule surface is exactly the pre-indexed static environment. -/
+/-- A world whose `&self` rule set is exactly the pre-indexed static environment. -/
 def StaticWorld (w : World) : Prop :=
   w.selfExtra = [] ∧ w.selfImports = []
 
@@ -63,7 +63,7 @@ private theorem staticWorld_init : StaticWorld St.init.world :=
 
 /-- Static world condition needed by the full Peano evaluator.
 
-`StaticWorld` controls the equation-rule surface.  The full evaluator additionally consults the
+`StaticWorld` controls the equation-rule set.  The full evaluator additionally consults the
 token-aware type service before treating `add` and `S` as untyped tuple constructors, so their two
 observable lookups are pinned explicitly.  This permits unrelated world state and harmless tokens;
 it does not replace the semantic lookup condition with a stronger representation condition. -/
@@ -852,7 +852,7 @@ theorem interpretFuelAddZeroKernelReadoutStack (fuel n : Nat) :
       Relation.ReflTransGen (KernelStep addRules stdGroundings) (addQuery 0 n) (peano n) := by
   simpa [atomToStack_eval] using interpretFuelAddZeroKernelReadout fuel n
 
-/-- Exact executable query surface for the base Peano rule over a static world. The base rule
+/-- Exact executable query interface for the base Peano rule over a static world. The base rule
 contributes the only item; the recursive rule's LHS does not match `(add Z n)`. The query scan
 still advances the fresh-name counter across both static candidates. -/
 theorem queryOpAddZeroEqOfStatic (n : Nat) (st : St)
@@ -911,7 +911,7 @@ theorem queryOpAddZeroEqOfStatic (n : Nat) (st : St)
     hloop, hinstRhs, hbnd,
     Nat.add_comm, Nat.add_left_comm]
 
-/-- Exact scheduler surface for the base Peano rule. This packages the `evalOp → queryOp`
+/-- Exact scheduler interface for the base Peano rule. This packages the `evalOp → queryOp`
 dispatch around `queryOpAddZeroEqOfStatic`; it is still a one-step symbolic rule boundary, not a
 full evaluator trace. -/
 theorem interpretStack1AddZeroKernelReadoutOfStaticEq (fuel n : Nat) (st : St)
@@ -973,7 +973,7 @@ theorem interpretFuelAddZeroKernelReadoutOfStaticEq (fuel n : Nat) (st : St)
   simp [interpretFuel, hstep, heval, finItem, isFinal, finalPair, hclosed,
     peano_bne_empty_true]
 
-/-- Exact executable query surface for the recursive Peano rule over a static world. The base rule
+/-- Exact executable query interface for the recursive Peano rule over a static world. The base rule
 misses `(add (S m) n)`, and the recursive rule contributes the only item. -/
 theorem queryOpAddSuccEqOfStatic (m n : Nat) (st : St)
     (hstatic : StaticWorld st.world) :
@@ -1309,7 +1309,7 @@ theorem interpretFuelAddSuccKernelReadoutOfStatic (fuel m n : Nat) (st : St)
   simpa [addEnv, addQuery, peano, mE, mSym, mVar, atomToStack_eval,
     Nat.add_assoc, Nat.add_comm, Nat.add_left_comm] using h
 
-/-- Exact scheduler surface for the recursive Peano rule, using
+/-- Exact scheduler interface for the recursive Peano rule, using
 `queryOpAddSuccEqOfStatic` after the `evalOp → queryOp` dispatch. -/
 theorem interpretStack1AddSuccKernelReadoutOfStaticEq (fuel m n : Nat) (st : St)
     (hstatic : StaticWorld st.world) :

@@ -24,7 +24,7 @@ PeTTa together with the translator bridge between them.
 5. **Translator bridge**
    `HEPeTTaTranslateCore`, validated roundtrip theorems, the shared
    atomspace/import fragments, and an explicit empty state-identity boundary
-   for surfaces whose PeTTa and HE operational contracts diverge
+   for interfaces whose PeTTa and HE operational contracts diverge
 
 Positive example:
 - HE can remain the clearest declarative anchor while PeTTa contributes a
@@ -32,6 +32,6 @@ Positive example:
   explicit rather than informal.
 
 Negative example:
-- runtime-only host surfaces or backend quirks are not automatically promoted
+- runtime-only host interfaces or backend quirks are not automatically promoted
   into a shared semantic core just because a translator exists.
 -/

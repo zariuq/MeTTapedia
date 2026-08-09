@@ -456,27 +456,19 @@ theorem checkHasType_eq_true_iff
   ⟨checkHasType_sound, fun typed =>
     checkHasType_complete_of_object typed object⟩
 
-/-! ## Executable admission of the complete open carrier -/
+/-! ## Executable admission of the complete open core carrier -/
 
-/-- Executable form of the reflective quotation-scope condition.  It ranges
-over exactly the reflective presentations authored by `language`; no
-additional quotation policy is introduced by the checker. -/
-def checkReflectiveScopeSafeAt (language : LanguageDef) (depth : Nat)
-    (pattern : Pattern) : Bool :=
-  language.reflectivePresentations.all fun presentation =>
-    Mettapedia.OSLF.MeTTaIL.ScopedPattern.binderSafeAt
-      presentation.quoteConstructor depth pattern
+/-- Executable ordinary scope check at the ambient binder depth. -/
+def checkScopeSafeAt (depth : Nat) (pattern : Pattern) : Bool :=
+  pattern.isWellScopedAt depth
 
-/-- The executable quotation-scope check is exactly the declarative
-`ReflectiveScopeSafeAt` predicate. -/
-theorem checkReflectiveScopeSafeAt_eq_true_iff
-    (language : LanguageDef) (depth : Nat) (pattern : Pattern) :
-    checkReflectiveScopeSafeAt language depth pattern = true ↔
-      ReflectiveScopeSafeAt language depth pattern := by
-  simp [checkReflectiveScopeSafeAt, ReflectiveScopeSafeAt, List.all_eq_true]
+@[simp]
+theorem checkScopeSafeAt_eq_true_iff (depth : Nat) (pattern : Pattern) :
+    checkScopeSafeAt depth pattern = true ↔ ScopeSafeAt depth pattern := by
+  rfl
 
 /-- One executable admission check for the arbitrary-type open object
-carrier.  Typing, binder metadata, schema elimination, and reflective scope
+carrier.  Typing, binder metadata, schema elimination, and ordinary scope
 remain distinct conjuncts even though the runtime exposes one Boolean. -/
 def checkOpenPatternWellSorted (language : LanguageDef)
     (free : FreeTypeContext) (bound : List TypeExpr) (expected : TypeExpr)
@@ -484,7 +476,7 @@ def checkOpenPatternWellSorted (language : LanguageDef)
   checkHasType language free bound pattern expected &&
     pattern.hasCanonicalBinderMetadata &&
     isObjectPattern pattern &&
-    checkReflectiveScopeSafeAt language bound.length pattern
+    checkScopeSafeAt bound.length pattern
 
 /-- Successful executable admission constructs evidence in the sole
 declarative open-pattern carrier. -/
@@ -496,8 +488,7 @@ theorem checkOpenPatternWellSorted_sound
     OpenPatternWellSorted language free bound expected pattern := by
   simp only [checkOpenPatternWellSorted, Bool.and_eq_true] at checked
   exact ⟨checkHasType_sound checked.1.1.1, checked.1.1.2, checked.1.2,
-    (checkReflectiveScopeSafeAt_eq_true_iff language bound.length pattern).mp
-      checked.2⟩
+    (checkScopeSafeAt_eq_true_iff bound.length pattern).mp checked.2⟩
 
 /-- Every genuine arbitrary-type open object is accepted by the executable
 admission check. -/
@@ -506,11 +497,10 @@ theorem checkOpenPatternWellSorted_complete
     {bound : List TypeExpr} {pattern : Pattern} {expected : TypeExpr}
     (wellSorted : OpenPatternWellSorted language free bound expected pattern) :
     checkOpenPatternWellSorted language free bound expected pattern = true := by
-  rcases wellSorted with ⟨typed, canonical, object, reflective⟩
+  rcases wellSorted with ⟨typed, canonical, object, scopeProof⟩
   simp [checkOpenPatternWellSorted,
     checkHasType_complete_of_object typed object, canonical, object,
-    (checkReflectiveScopeSafeAt_eq_true_iff language bound.length pattern).mpr
-      reflective]
+    (checkScopeSafeAt_eq_true_iff bound.length pattern).mpr scopeProof]
 
 /-- Executable open-pattern admission is neither weaker nor stronger than
 the declaration-derived carrier. -/

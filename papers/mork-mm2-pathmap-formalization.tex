@@ -214,7 +214,7 @@ formal development.
 \texttt{ExtendedBridge.lean}      & Extended bridge for \texttt{.subst} + rest-variable resolution & 83 \\
 \texttt{ExecutionBoundary.lean}   & \texttt{morkTranslatable} + scheduler + source + ext re-exports & 510 \\
 \texttt{Z3Oracle.lean}            & Z3 oracle semantics, payload-to-space, conformance & 347 \\
-\texttt{DirectExecSurface.lean}   & Scheduler exactness package, PeTTa fragment bridge & 234 \\
+\texttt{DirectExecInterface.lean} & Scheduler exactness package, PeTTa fragment bridge & 234 \\
 \texttt{InvertibleHead.lean}      & PeTTa compat-head compilation, staged inverse soundness & 2{,}766 \\
 \midrule
 \textbf{Total} & & \textbf{12{,}373} \\
@@ -1754,7 +1754,7 @@ are supplied for each base/unfold/fold node.
 The bridge to \texttt{matchHeadArgWithEval} (PeTTa Dispatch module) is
 not yet formalized.  The current scope covers the \emph{fragment boundary}
 and \emph{compilation scheme soundness}; the connection to the PeTTa
-surface language is future work.  Non-injective head functions are
+source language is future work.  Non-injective head functions are
 excluded by the \texttt{InvertibleHead} predicate.
 \end{remark}
 
@@ -1763,7 +1763,7 @@ excluded by the \texttt{InvertibleHead} predicate.
 \label{sec:directexec}
 %% ============================================================
 
-\texttt{DirectExecSurface.lean} (234~lines) packages the scheduler-level
+\texttt{DirectExecInterface.lean} (234~lines) packages the scheduler-level
 exactness theorems (Tasks~A/B/C from \texttt{ThreePhaseRefinement.lean})
 into a single reusable \texttt{SchedulerSeam} and composes the first
 real PeTTa fragment through it.

@@ -1002,7 +1002,7 @@ The important implementation distinction is between:
 \item \textbf{semantic freshness}: internally allocated rho fresh names are
   opaque grounded identities, printed as \code{rho:fresh:N} only for
   deterministic tests and human inspection; and
-\item \textbf{surface spellings}: a user-written symbol such as
+\item \textbf{source spellings}: a user-written symbol such as
   \code{rho:fresh:1} is not a capability and does not communicate with the
   internally allocated name that happens to print the same way.
 \end{itemize}
@@ -1233,7 +1233,7 @@ rules for analysis:
 surface$\leftrightarrow$IR lowering
 (\code{exec}$\leftrightarrow$\code{mm2\_exec},
 \code{,}$\leftrightarrow$\code{mm2\_pattern\_and}, etc.), preserving
-round-trip fidelity between MM2 surface syntax and \CeTTa{}'s internal
+round-trip fidelity between MM2 source syntax and \CeTTa{}'s internal
 representation.
 
 %% ────────────────────────────────────────────────────────────────────
@@ -1745,9 +1745,9 @@ surface-level operators:
   chosen at surface.
 \end{description}
 
-The request builder (one per \code{--lang}) normalizes surface syntax
+The request builder (one per \code{--lang}) normalizes source syntax
 into \code{SearchRequest~+~SearchLangContract}; the MAM consumes the
-normalized object, never raw surface atoms.
+normalized object, never raw source atoms.
 
 \subsection{The seven-type vocabulary}
 

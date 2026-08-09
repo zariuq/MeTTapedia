@@ -183,7 +183,7 @@ theorem pln_revision_definetti_family_false_ratio_mem_prefix_envelope
         oneBitFalseGamble :=
   posteriorBernoulliMixtureFamily_falseRatio_mem_prefixEnvelope C k l hZ hM
 
-/-- Public comparison-surface form of the semantic Walley lower endpoint for
+/-- Public comparison-source form of the semantic Walley lower endpoint for
 general de-Finetti revision: any scalar lower bound of all posterior-family
 next-success ratios is below the lower envelope itself.  This is an endpoint
 characterization of the supplied posterior family, not a proof-theoretic
@@ -203,7 +203,7 @@ theorem pln_revision_definetti_family_true_lower_envelope_greatest_scalar_lower_
   posteriorBernoulliMixtureFamily_trueRatio_lowerEnvelope_greatestLowerBound
     C k l hZ hC ha
 
-/-- Public comparison-surface form of the semantic Walley upper endpoint for
+/-- Public comparison-source form of the semantic Walley upper endpoint for
 general de-Finetti revision: any scalar upper bound of all posterior-family
 next-success ratios is above the upper envelope itself. -/
 theorem pln_revision_definetti_family_true_upper_envelope_least_scalar_upper_bound
@@ -221,7 +221,7 @@ theorem pln_revision_definetti_family_true_upper_envelope_least_scalar_upper_bou
   posteriorBernoulliMixtureFamily_trueRatio_upperEnvelope_leastUpperBound
     C k l hZ hC ha
 
-/-- Public comparison-surface form of the semantic Walley lower endpoint for
+/-- Public comparison-source form of the semantic Walley lower endpoint for
 the next-failure posterior-family ratios. -/
 theorem pln_revision_definetti_family_false_lower_envelope_greatest_scalar_lower_bound
     (C : Set BernoulliMixture) (k l : ℕ)
@@ -238,7 +238,7 @@ theorem pln_revision_definetti_family_false_lower_envelope_greatest_scalar_lower
   posteriorBernoulliMixtureFamily_falseRatio_lowerEnvelope_greatestLowerBound
     C k l hZ hC ha
 
-/-- Public comparison-surface form of the semantic Walley upper endpoint for
+/-- Public comparison-source form of the semantic Walley upper endpoint for
 the next-failure posterior-family ratios. -/
 theorem pln_revision_definetti_family_false_upper_envelope_least_scalar_upper_bound
     (C : Set BernoulliMixture) (k l : ℕ)

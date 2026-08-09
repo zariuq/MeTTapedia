@@ -6,13 +6,13 @@ import Mettapedia.OSLF.Framework.TypeSynthesis
 # Pyash Core OSLF/GSLT Instance
 
 This module formalizes a focused Pyash core from the current public spec and
-implementation surface:
+implementation interface:
 
 - sentence-first representation (`mood`, `verb`, role/type payload shape),
 - signature-first dispatch staging,
-- `do -> ya` result surfacing,
+- `do -> ya` result reporting,
 - alias normalization (`subj`/`obj` -> `su`/`ob`),
-- signature-mismatch error surfacing.
+- signature-mismatch error reporting.
 
 References in the cloned upstream repository:
 - `documentation/specifications/01-sentence-and-grammar.md`
@@ -388,7 +388,7 @@ def pyashCore : LanguageDef := {
         .apply "ErrDispatch" []
       ] },
 
-    -- Unsupported mood dispatch can surface an explicit dispatch error.
+    -- Unsupported mood dispatch can interface an explicit dispatch error.
     { name := "StepDispatchThenError",
       typeContext := [
         ("v", .base "Verb"), ("rts", .base "RoleTypes"), ("out", .base "Outcome")
@@ -407,7 +407,7 @@ def pyashCore : LanguageDef := {
         .apply "ErrDispatch" []
       ] },
 
-    -- Signature mismatch is surfaced as an error sentence outcome.
+    -- Signature mismatch is reported as an error sentence outcome.
     { name := "StepDispatchMismatch",
       typeContext := [
         ("m", .base "Mood"), ("v", .base "Verb"), ("rts", .base "RoleTypes"),
@@ -1053,7 +1053,7 @@ def pyashStateRunning : Pattern :=
     .apply "Ok" []
   ]
 
-/-- Executing `do` surfaces a `ya` result and halts. -/
+/-- Executing `do` reports a `ya` result and halts. -/
 def pyashStateDoneOk : Pattern :=
   .apply "State" [
     .apply "Done" [],
@@ -2577,7 +2577,7 @@ def pyashStateDoneMalformedSignatureErr : Pattern :=
     .apply "ErrSignature" []
   ]
 
-/-- Mismatch state used to verify error surfacing behavior. -/
+/-- Mismatch state used to verify error reporting behavior. -/
 def pyashStateMismatch : Pattern :=
   .apply "State" [
     .apply "Dispatch" [],

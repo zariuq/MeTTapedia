@@ -22,7 +22,8 @@ open Mettapedia.OSLF.MeTTaIL.Syntax
 def ImplAccepts (bytes : ByteArray) (label : String) (f : Metamath.Verify.Formula) : Prop :=
   ∃ (proof : Array String) (prFinal : Metamath.Verify.ProofState) (f' : Metamath.Verify.Formula),
     proof.foldlM (fun pr step => Metamath.Verify.DB.stepNormal (checkBytesDB bytes) pr step)
-      ⟨⟨0, 0⟩, label, f, (checkBytesDB bytes).frame, #[], #[], Metamath.Verify.ProofTokenParser.normal⟩ =
+      ⟨⟨0, 0⟩, label, f, (checkBytesDB bytes).frame, #[], #[],
+        Metamath.Verify.ProofTokenParser.normal, false⟩ =
         Except.ok prFinal ∧
       prFinal.stack.size = 1 ∧
       prFinal.stack[0]? = some f' ∧
@@ -40,13 +41,15 @@ theorem implAccepts_iff_specAccepts
     (hSuccess : (checkBytesDB bytes).error? = none) :
     ImplAccepts bytes label f ↔ SpecAccepts bytes f := by
   simpa [ImplAccepts, SpecAccepts, checkBytesDB] using
-    parserAcceptance_iff_specProvable bytes label f hSuccess
+    proofCheckerNormalAcceptance_iff_specProvable_inParsedDB
+      bytes label f hSuccess
 
 /-- Initial runtime proof state used by checker acceptance witnesses. -/
 def initialProofState
     (bytes : ByteArray) (label : String) (f : Metamath.Verify.Formula) :
     Metamath.Verify.ProofState :=
-  ⟨⟨0, 0⟩, label, f, (checkBytesDB bytes).frame, #[], #[], Metamath.Verify.ProofTokenParser.normal⟩
+  ⟨⟨0, 0⟩, label, f, (checkBytesDB bytes).frame, #[], #[],
+    Metamath.Verify.ProofTokenParser.normal, false⟩
 
 /-- Runtime provenance for proof tokens:
 the token resolves to a hypothesis/assertion object in the checker DB. -/

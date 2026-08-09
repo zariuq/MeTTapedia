@@ -33,6 +33,28 @@ theorem sortPatternsBy_perm {Key : Type} [LinearOrder Key]
     List.Perm (sortPatternsBy key patterns) patterns := by
   exact List.mergeSort_perm patterns _
 
+/-- Stable key sorting is idempotent even when distinct patterns have equal
+keys.  Antisymmetry on patterns is neither available nor desirable here:
+equal-key occurrences retain their input order. -/
+theorem sortPatternsBy_idempotent {Key : Type} [LinearOrder Key]
+    (key : Pattern → Key) (patterns : List Pattern) :
+    sortPatternsBy key (sortPatternsBy key patterns) =
+      sortPatternsBy key patterns := by
+  let relation : Pattern → Pattern → Bool :=
+    fun left right => decide (key left ≤ key right)
+  have transitive : ∀ left middle right,
+      relation left middle → relation middle right → relation left right := by
+    intro left middle right leftMiddle middleRight
+    simpa [relation] using le_trans
+      (of_decide_eq_true leftMiddle) (of_decide_eq_true middleRight)
+  have total : ∀ left right, relation left right || relation right left := by
+    intro left right
+    rcases le_total (key left) (key right) with ordered | ordered
+    · simp [relation, ordered]
+    · simp [relation, ordered]
+  apply List.mergeSort_of_pairwise
+  exact List.pairwise_mergeSort transitive total patterns
+
 /-- A two-element list already ordered by the supplied semantic key is a
 fixed point of keyed sorting. -/
 theorem sortPatternsBy_pair_eq_of_le {Key : Type} [LinearOrder Key]
@@ -312,6 +334,28 @@ mutual
           canonicalizeListByDepths_ignoreScope key declaration availableDepth
             scopeDepth patterns]
 end
+
+/-- The one-depth keyed canonicalizer cancels the declared Quote/Drop shell.
+The child is canonicalized at quote-visible depth zero; the ambient depth is
+irrelevant to the contraction itself. -/
+@[simp]
+theorem canonicalizeByAt_quote_drop
+    {Key : Type} [LinearOrder Key]
+    (key : Nat → Pattern → Key)
+    (declaration : ReflectivePresentationDecl)
+    (quote_ne_drop : declaration.quoteConstructor ≠
+      declaration.dropConstructor)
+    (availableDepth : Nat) (name : Pattern) :
+    canonicalizeByAt key declaration availableDepth
+        (.apply declaration.quoteConstructor
+          [.apply declaration.dropConstructor [name]]) =
+      canonicalizeByAt key declaration 0 name := by
+  simpa only [
+      canonicalizeByDepths_ignoreScope key declaration availableDepth 0,
+      canonicalizeByDepths_ignoreScope key declaration 0 0] using
+    (canonicalizeByDepths_quote_drop
+      (fun availableDepth _ pattern => key availableDepth pattern)
+      declaration quote_ne_drop availableDepth 0 name)
 
 /-- Finishing a reflective application before recursively canonicalizing it
 does not change its eventual canonical representative. -/

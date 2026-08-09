@@ -14,6 +14,7 @@ seals the surrounding binder support.
 namespace Mettapedia.Languages.ProcessCalculi.RhoCalculus.CanonicalSupport
 
 open Mettapedia.GSLT.LanguageDef
+open Mettapedia.GSLT.LanguageDef.ReflectionExtension
 open Mettapedia.GSLT.LanguageDef.WellSorted
 open Mettapedia.OSLF.Framework.ConstructorCategory
 open Mettapedia.OSLF.MeTTaIL.Syntax
@@ -30,8 +31,8 @@ private theorem quote_supportSafe
     {process : Pattern} {support : ContextSupport.Support}
     {binderImage : TypeExpr → TypeExpr}
     (typed : HasSort rhoCalc free bound process "Proc")
-    (safe : typed.ReflectiveSupportSafeAt support [] binderImage) :
-    (rho_quote_hasSort typed).ReflectiveSupportSafeAt support available
+    (safe : typed.ReflectiveSupportSafeAt rhoReflectionProfile support [] binderImage) :
+    (rho_quote_hasSort typed).ReflectiveSupportSafeAt rhoReflectionProfile support available
       binderImage := by
   let rule : GrammarRule :=
     { label := "NQuote"
@@ -60,8 +61,7 @@ private theorem quote_supportSafe
     (rule := rule) (membership := membership) (notBare := notBare)
     (argumentsTyped := argumentsTyped)
     (by
-      simp [ReflectiveContextSupport.isQuoteConstructor, rhoCalc,
-        rhoReflectivePresentation, rule])
+      simp [ReflectiveContextSupport.isQuoteConstructor, rhoReflectionProfile, rhoReflectivePresentation, rule])
     (.cons (representation := representation) (parameterType := parameterType)
       safe (.nil bound []))
 
@@ -69,7 +69,7 @@ private theorem quote_supportSafe
 private theorem zero_supportSafe
     (free : FreeTypeContext) (bound available : List TypeExpr)
     (support : ContextSupport.Support) (binderImage : TypeExpr → TypeExpr) :
-    (rho_zero_hasSort free bound).ReflectiveSupportSafeAt support available
+    (rho_zero_hasSort free bound).ReflectiveSupportSafeAt rhoReflectionProfile support available
       binderImage := by
   let rule : GrammarRule :=
     { label := "PZero"
@@ -90,8 +90,7 @@ private theorem zero_supportSafe
     (rule := rule) (membership := membership) (notBare := notBare)
     (argumentsTyped := argumentsTyped)
     (by
-      simp [ReflectiveContextSupport.isQuoteConstructor, rhoCalc,
-        rhoReflectivePresentation, rule])
+      simp [ReflectiveContextSupport.isQuoteConstructor, rhoReflectionProfile, rhoReflectivePresentation, rule])
     (.nil bound available)
 
 /-- A support-safe parallel element spine remains support-safe after applying
@@ -101,8 +100,8 @@ private theorem parallel_supportSafe
     {processes : List Pattern} {support : ContextSupport.Support}
     {binderImage : TypeExpr → TypeExpr}
     (typed : ElementsHaveType rhoCalc free bound processes TypeExpr.proc)
-    (safe : typed.ReflectiveSupportSafeAt support available binderImage) :
-    (rho_parallel_hasSort typed).ReflectiveSupportSafeAt support available
+    (safe : typed.ReflectiveSupportSafeAt rhoReflectionProfile support available binderImage) :
+    (rho_parallel_hasSort typed).ReflectiveSupportSafeAt rhoReflectionProfile support available
       binderImage := by
   let rule : GrammarRule :=
     { label := "PPar"
@@ -134,21 +133,21 @@ private theorem name_supportSafeAt_of_nil
     {name : Pattern} {support : ContextSupport.Support}
     {binderImage : TypeExpr → TypeExpr}
     (typed : HasSort rhoCalc free bound name "Name")
-    (safe : typed.ReflectiveSupportSafeAt support [] binderImage)
+    (safe : typed.ReflectiveSupportSafeAt rhoReflectionProfile support [] binderImage)
     (object : isObjectPattern name = true)
     (targetAvailable : List TypeExpr) :
-    typed.ReflectiveSupportSafeAt support targetAvailable binderImage := by
+    typed.ReflectiveSupportSafeAt rhoReflectionProfile support targetAvailable binderImage := by
   change HasType rhoCalc free bound name TypeExpr.name at typed
   exact HasType.ReflectiveSupportSafeAt.rec
     (motive_1 := fun {bound pattern type}
       (typed : HasType rhoCalc free bound pattern type)
       (sourceAvailable : List TypeExpr)
       (currentImage : TypeExpr → TypeExpr)
-      (_ : typed.ReflectiveSupportSafeAt support sourceAvailable currentImage) =>
+      (_ : typed.ReflectiveSupportSafeAt rhoReflectionProfile support sourceAvailable currentImage) =>
       type = TypeExpr.name → sourceAvailable = [] →
       isObjectPattern pattern = true →
       ∀ targetAvailable,
-        typed.ReflectiveSupportSafeAt support targetAvailable currentImage)
+        typed.ReflectiveSupportSafeAt rhoReflectionProfile support targetAvailable currentImage)
     (motive_2 := fun _ _ _ _ => True)
     (motive_3 := fun _ _ _ _ => True)
     (by
@@ -183,8 +182,7 @@ private theorem name_supportSafeAt_of_nil
       rcases membership with rfl | rfl | rfl | rfl | rfl | rfl
       · simp [TypeExpr.name, TypeExpr.baseType] at typeEquality
       · simp [TypeExpr.name, TypeExpr.baseType] at typeEquality
-      · simp [ReflectiveContextSupport.isQuoteConstructor, rhoCalc,
-          rhoReflectivePresentation] at ordinary
+      · simp [ReflectiveContextSupport.isQuoteConstructor, rhoReflectionProfile, rhoReflectivePresentation] at ordinary
       · simp [TypeExpr.name, TypeExpr.baseType] at typeEquality
       · simp [TypeExpr.name, TypeExpr.baseType] at typeEquality
       · simp [TypeExpr.name, TypeExpr.baseType] at typeEquality)
@@ -232,9 +230,9 @@ theorem drop_argument_supportSafe
     {name : Pattern} {support : ContextSupport.Support}
     {binderImage : TypeExpr → TypeExpr}
     (typed : HasSort rhoCalc free bound (.apply "PDrop" [name]) "Proc")
-    (safe : typed.ReflectiveSupportSafeAt support available binderImage) :
+    (safe : typed.ReflectiveSupportSafeAt rhoReflectionProfile support available binderImage) :
     ∃ nameTyped : HasSort rhoCalc free bound name "Name",
-      nameTyped.ReflectiveSupportSafeAt support available binderImage := by
+      nameTyped.ReflectiveSupportSafeAt rhoReflectionProfile support available binderImage := by
   change HasType rhoCalc free bound (.apply "PDrop" [name]) TypeExpr.proc
     at typed
   exact HasType.ReflectiveSupportSafeAt.rec
@@ -242,10 +240,10 @@ theorem drop_argument_supportSafe
       (typed : HasType rhoCalc free bound pattern type)
       (sourceAvailable : List TypeExpr)
       (currentImage : TypeExpr → TypeExpr)
-      (_ : typed.ReflectiveSupportSafeAt support sourceAvailable currentImage) =>
+      (_ : typed.ReflectiveSupportSafeAt rhoReflectionProfile support sourceAvailable currentImage) =>
       pattern = .apply "PDrop" [name] → type = TypeExpr.proc →
       ∃ nameTyped : HasType rhoCalc free bound name TypeExpr.name,
-        nameTyped.ReflectiveSupportSafeAt support sourceAvailable currentImage)
+        nameTyped.ReflectiveSupportSafeAt rhoReflectionProfile support sourceAvailable currentImage)
     (motive_2 := fun _ _ _ _ => True)
     (motive_3 := fun _ _ _ _ => True)
     (by intros; contradiction)
@@ -258,8 +256,7 @@ theorem drop_argument_supportSafe
       simp [rhoCalc] at membership
       rcases membership with rfl | rfl | rfl | rfl | rfl | rfl
       · simp at labelEquality
-      · simp [ReflectiveContextSupport.isQuoteConstructor, rhoCalc,
-          rhoReflectivePresentation] at quoted
+      · simp [ReflectiveContextSupport.isQuoteConstructor, rhoReflectionProfile, rhoReflectivePresentation] at quoted
       · simp at labelEquality
       · simp at labelEquality
       · simp at labelEquality
@@ -285,8 +282,7 @@ theorem drop_argument_supportSafe
               .nil
             let exactSpine := ArgumentsHaveTypes.cons representation
               parameterType argumentTyped emptyTyped
-            have exactSafe : exactSpine.ReflectiveSupportSafeAt
-                support sourceAvailable currentImage :=
+            have exactSafe : exactSpine.ReflectiveSupportSafeAt rhoReflectionProfile support sourceAvailable currentImage :=
               ArgumentsHaveTypes.ReflectiveSupportSafeAt.castTyping
                 (target := exactSpine) argumentsSafe
             exact ⟨argumentTyped,
@@ -318,12 +314,12 @@ private theorem normalizeQuote_supportSafe
     {process : Pattern} {support : ContextSupport.Support}
     {binderImage : TypeExpr → TypeExpr}
     (typed : HasSort rhoCalc free bound process "Proc")
-    (safe : typed.ReflectiveSupportSafeAt support [] binderImage)
+    (safe : typed.ReflectiveSupportSafeAt rhoReflectionProfile support [] binderImage)
     (object : isObjectPattern process = true)
     (targetAvailable : List TypeExpr) :
     ∃ normalizedTyped : HasSort rhoCalc free bound
         (normalizeQuote process) "Name",
-      normalizedTyped.ReflectiveSupportSafeAt support targetAvailable
+      normalizedTyped.ReflectiveSupportSafeAt rhoReflectionProfile support targetAvailable
         binderImage := by
   by_cases isDrop : ∃ name, process = .apply "PDrop" [name]
   · obtain ⟨name, rfl⟩ := isDrop
@@ -349,10 +345,10 @@ private theorem parallel_elements_supportSafe
     {binderImage : TypeExpr → TypeExpr}
     (typed : HasSort rhoCalc free bound
       (.collection .hashBag elements none) "Proc")
-    (safe : typed.ReflectiveSupportSafeAt support available binderImage) :
+    (safe : typed.ReflectiveSupportSafeAt rhoReflectionProfile support available binderImage) :
     ∃ elementsTyped : ElementsHaveType rhoCalc free bound
         elements TypeExpr.proc,
-      elementsTyped.ReflectiveSupportSafeAt support available binderImage := by
+      elementsTyped.ReflectiveSupportSafeAt rhoReflectionProfile support available binderImage := by
   change HasType rhoCalc free bound (.collection .hashBag elements none)
     TypeExpr.proc at typed
   exact HasType.ReflectiveSupportSafeAt.rec
@@ -360,12 +356,12 @@ private theorem parallel_elements_supportSafe
       (typed : HasType rhoCalc free bound pattern type)
       (sourceAvailable : List TypeExpr)
       (currentImage : TypeExpr → TypeExpr)
-      (_ : typed.ReflectiveSupportSafeAt support sourceAvailable currentImage) =>
+      (_ : typed.ReflectiveSupportSafeAt rhoReflectionProfile support sourceAvailable currentImage) =>
       pattern = .collection .hashBag elements none →
       type = TypeExpr.proc →
       ∃ elementsTyped : ElementsHaveType rhoCalc free bound
           elements TypeExpr.proc,
-        elementsTyped.ReflectiveSupportSafeAt support sourceAvailable
+        elementsTyped.ReflectiveSupportSafeAt rhoReflectionProfile support sourceAvailable
           currentImage)
     (motive_2 := fun _ _ _ _ => True)
     (motive_3 := fun _ _ _ _ => True)
@@ -419,10 +415,10 @@ private theorem bagSplice_member_supportSafe
     {process member : Pattern} {support : ContextSupport.Support}
     {binderImage : TypeExpr → TypeExpr}
     (typed : HasSort rhoCalc free bound process "Proc")
-    (safe : typed.ReflectiveSupportSafeAt support available binderImage)
+    (safe : typed.ReflectiveSupportSafeAt rhoReflectionProfile support available binderImage)
     (membership : member ∈ bagSplice process) :
     ∃ memberTyped : HasSort rhoCalc free bound member "Proc",
-      memberTyped.ReflectiveSupportSafeAt support available binderImage := by
+      memberTyped.ReflectiveSupportSafeAt rhoReflectionProfile support available binderImage := by
   cases process with
   | collection collectionType elements rest =>
       cases collectionType <;> cases rest
@@ -457,10 +453,10 @@ private theorem normalizeBagElements_supportSafe
     {processes : List Pattern} {support : ContextSupport.Support}
     {binderImage : TypeExpr → TypeExpr}
     (typed : ElementsHaveType rhoCalc free bound processes TypeExpr.proc)
-    (safe : typed.ReflectiveSupportSafeAt support available binderImage) :
+    (safe : typed.ReflectiveSupportSafeAt rhoReflectionProfile support available binderImage) :
     ∃ normalizedTyped : ElementsHaveType rhoCalc free bound
         (normalizeBagElements processes) TypeExpr.proc,
-      normalizedTyped.ReflectiveSupportSafeAt support available binderImage := by
+      normalizedTyped.ReflectiveSupportSafeAt rhoReflectionProfile support available binderImage := by
   apply ElementsHaveType.ReflectiveSupportSafeAt.of_forall_mem
   intro member membership
   obtain ⟨source, sourceMembership, memberMembership⟩ :=
@@ -478,11 +474,11 @@ private theorem normalizeParallelElementsBy_supportSafe
     {processes : List Pattern} {support : ContextSupport.Support}
     {binderImage : TypeExpr → TypeExpr}
     (typed : ElementsHaveType rhoCalc free bound processes TypeExpr.proc)
-    (safe : typed.ReflectiveSupportSafeAt support available binderImage) :
+    (safe : typed.ReflectiveSupportSafeAt rhoReflectionProfile support available binderImage) :
     ∃ normalizedTyped : ElementsHaveType rhoCalc free bound
         (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.normalizeParallelElementsBy
           key rhoReflectivePresentation processes) TypeExpr.proc,
-      normalizedTyped.ReflectiveSupportSafeAt support available binderImage := by
+      normalizedTyped.ReflectiveSupportSafeAt rhoReflectionProfile support available binderImage := by
   apply ElementsHaveType.ReflectiveSupportSafeAt.of_forall_mem
   intro member membership
   have structuralMembership : member ∈
@@ -523,10 +519,10 @@ private theorem collapseBag_supportSafe
     {processes : List Pattern} {support : ContextSupport.Support}
     {binderImage : TypeExpr → TypeExpr}
     (typed : ElementsHaveType rhoCalc free bound processes TypeExpr.proc)
-    (safe : typed.ReflectiveSupportSafeAt support available binderImage) :
+    (safe : typed.ReflectiveSupportSafeAt rhoReflectionProfile support available binderImage) :
     ∃ collapsedTyped : HasSort rhoCalc free bound
         (collapseBag processes) "Proc",
-      collapsedTyped.ReflectiveSupportSafeAt support available binderImage := by
+      collapsedTyped.ReflectiveSupportSafeAt rhoReflectionProfile support available binderImage := by
   cases processes with
   | nil =>
       exact ⟨rho_zero_hasSort free bound,
@@ -689,12 +685,12 @@ private theorem normalizeQuote_spine_supportSafe
     {binderImage : TypeExpr → TypeExpr}
     (typed : ArgumentsHaveTypes rhoCalc free bound [process]
       [.simple "p" TypeExpr.proc])
-    (safe : typed.ReflectiveSupportSafeAt support [] binderImage)
+    (safe : typed.ReflectiveSupportSafeAt rhoReflectionProfile support [] binderImage)
     (object : isObjectPattern process = true)
     (targetAvailable : List TypeExpr) :
     ∃ normalizedTyped : HasSort rhoCalc free bound
         (normalizeQuote process) "Name",
-      normalizedTyped.ReflectiveSupportSafeAt support targetAvailable
+      normalizedTyped.ReflectiveSupportSafeAt rhoReflectionProfile support targetAvailable
         binderImage := by
   cases typed with
   | @cons _ argument arguments parameter parameters expected representation
@@ -707,11 +703,11 @@ private theorem normalizeQuote_spine_supportSafe
       let emptyTyped : ArgumentsHaveTypes rhoCalc free bound [] [] := .nil
       let exactSpine := ArgumentsHaveTypes.cons representation parameterType
         argumentTyped emptyTyped
-      have exactSafe : exactSpine.ReflectiveSupportSafeAt support []
+      have exactSafe : exactSpine.ReflectiveSupportSafeAt rhoReflectionProfile support []
           binderImage :=
         ArgumentsHaveTypes.ReflectiveSupportSafeAt.castTyping
           (target := exactSpine) safe
-      have argumentSafe : argumentTyped.ReflectiveSupportSafeAt support []
+      have argumentSafe : argumentTyped.ReflectiveSupportSafeAt rhoReflectionProfile support []
           binderImage :=
         ArgumentsHaveTypes.ReflectiveSupportSafeAt.head
           (representation := representation)
@@ -735,51 +731,51 @@ theorem canonicalizeByDepths_supportSafe
     {bound available : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
     {binderImage : TypeExpr → TypeExpr}
     (typed : HasType rhoCalc free bound pattern type)
-    (safe : typed.ReflectiveSupportSafeAt support available binderImage)
+    (safe : typed.ReflectiveSupportSafeAt rhoReflectionProfile support available binderImage)
     (canonicalizable : CanonicalizableRhoType type)
     (object : isObjectPattern pattern = true) :
     ∃ normalizedTyped : HasType rhoCalc free bound
         (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeByDepths
           key rhoReflectivePresentation available.length scopeDepth pattern)
           type,
-      normalizedTyped.ReflectiveSupportSafeAt support available binderImage := by
+      normalizedTyped.ReflectiveSupportSafeAt rhoReflectionProfile support available binderImage := by
   exact HasType.ReflectiveSupportSafeAt.rec
     (motive_1 := fun {bound pattern type}
       (typed : HasType rhoCalc free bound pattern type)
       (available : List TypeExpr)
       (currentImage : TypeExpr → TypeExpr)
-      (_ : typed.ReflectiveSupportSafeAt support available currentImage) =>
+      (_ : typed.ReflectiveSupportSafeAt rhoReflectionProfile support available currentImage) =>
       CanonicalizableRhoType type → isObjectPattern pattern = true →
       ∀ scopeDepth,
       ∃ normalizedTyped : HasType rhoCalc free bound
           (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeByDepths
             key rhoReflectivePresentation available.length scopeDepth pattern)
             type,
-        normalizedTyped.ReflectiveSupportSafeAt support available currentImage)
+        normalizedTyped.ReflectiveSupportSafeAt rhoReflectionProfile support available currentImage)
     (motive_2 := fun {bound arguments parameters}
       (typed : ArgumentsHaveTypes rhoCalc free bound arguments parameters)
       (available : List TypeExpr)
       (currentImage : TypeExpr → TypeExpr)
-      (_ : typed.ReflectiveSupportSafeAt support available currentImage) =>
+      (_ : typed.ReflectiveSupportSafeAt rhoReflectionProfile support available currentImage) =>
       ParametersCanonicalizable parameters →
       isObjectPatternList arguments = true → ∀ scopeDepth,
       ∃ normalizedTyped : ArgumentsHaveTypes rhoCalc free bound
           (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeListByDepths
             key rhoReflectivePresentation available.length scopeDepth arguments)
           parameters,
-        normalizedTyped.ReflectiveSupportSafeAt support available currentImage)
+        normalizedTyped.ReflectiveSupportSafeAt rhoReflectionProfile support available currentImage)
     (motive_3 := fun {bound elements elementType}
       (typed : ElementsHaveType rhoCalc free bound elements elementType)
       (available : List TypeExpr)
       (currentImage : TypeExpr → TypeExpr)
-      (_ : typed.ReflectiveSupportSafeAt support available currentImage) =>
+      (_ : typed.ReflectiveSupportSafeAt rhoReflectionProfile support available currentImage) =>
       CanonicalizableRhoType elementType →
       isObjectPatternList elements = true → ∀ scopeDepth,
       ∃ normalizedTyped : ElementsHaveType rhoCalc free bound
           (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeListByDepths
             key rhoReflectivePresentation available.length scopeDepth elements)
           elementType,
-        normalizedTyped.ReflectiveSupportSafeAt support available currentImage)
+        normalizedTyped.ReflectiveSupportSafeAt rhoReflectionProfile support available currentImage)
     (by
       intro bound index type lookup sourceAvailable currentImage canonicalizable
         object scopeDepth
@@ -796,10 +792,8 @@ theorem canonicalizeByDepths_supportSafe
         canonicalizable object scopeDepth
       simp [rhoCalc] at membership
       rcases membership with rfl | rfl | rfl | rfl | rfl | rfl
-      · simp [ReflectiveContextSupport.isQuoteConstructor, rhoCalc,
-          rhoReflectivePresentation] at quoted
-      · simp [ReflectiveContextSupport.isQuoteConstructor, rhoCalc,
-          rhoReflectivePresentation] at quoted
+      · simp [ReflectiveContextSupport.isQuoteConstructor, rhoReflectionProfile, rhoReflectivePresentation] at quoted
+      · simp [ReflectiveContextSupport.isQuoteConstructor, rhoReflectionProfile, rhoReflectivePresentation] at quoted
       · cases argumentsTyped with
         | @cons _ argument arguments parameter parameters expected
             representation parameterType argumentTyped tailTyped =>
@@ -824,7 +818,7 @@ theorem canonicalizeByDepths_supportSafe
                 [TermParam.simple "p" TypeExpr.proc] := by
               simpa [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeListByDepths]
                 using normalizedArgumentsTyped
-            have exactSafe : exactTyped.ReflectiveSupportSafeAt support []
+            have exactSafe : exactTyped.ReflectiveSupportSafeAt rhoReflectionProfile support []
                 currentImage :=
               ArgumentsHaveTypes.ReflectiveSupportSafeAt.castTyping
                 (target := exactTyped) normalizedArgumentsSafe
@@ -853,12 +847,9 @@ theorem canonicalizeByDepths_supportSafe
             simpa [TypeExpr.name, TypeExpr.baseType] using
               (normalizeQuote_spine_supportSafe exactTyped exactSafe
                 canonicalObject sourceAvailable)
-      · simp [ReflectiveContextSupport.isQuoteConstructor, rhoCalc,
-          rhoReflectivePresentation] at quoted
-      · simp [ReflectiveContextSupport.isQuoteConstructor, rhoCalc,
-          rhoReflectivePresentation] at quoted
-      · simp [ReflectiveContextSupport.isQuoteConstructor, rhoCalc,
-          rhoReflectivePresentation] at quoted)
+      · simp [ReflectiveContextSupport.isQuoteConstructor, rhoReflectionProfile, rhoReflectivePresentation] at quoted
+      · simp [ReflectiveContextSupport.isQuoteConstructor, rhoReflectionProfile, rhoReflectivePresentation] at quoted
+      · simp [ReflectiveContextSupport.isQuoteConstructor, rhoReflectionProfile, rhoReflectivePresentation] at quoted)
     (by
       intro bound rule arguments membership notBare argumentsTyped
         sourceAvailable currentImage ordinary argumentsSafe argumentsIH
@@ -871,8 +862,7 @@ theorem canonicalizeByDepths_supportSafe
         argumentsIH parametersCanonicalizable argumentsObject scopeDepth
       let normalizedTyped :=
         HasType.constructor membership notBare normalizedArgumentsTyped
-      let normalizedSafe : normalizedTyped.ReflectiveSupportSafeAt
-          support sourceAvailable currentImage :=
+      let normalizedSafe : normalizedTyped.ReflectiveSupportSafeAt rhoReflectionProfile support sourceAvailable currentImage :=
         HasType.ReflectiveSupportSafeAt.constructorOrdinary
           (membership := membership) (notBare := notBare)
           (argumentsTyped := normalizedArgumentsTyped) ordinary
@@ -881,8 +871,7 @@ theorem canonicalizeByDepths_supportSafe
         intro equality
         have quoteStatus := ordinary
         rw [equality] at quoteStatus
-        simp [ReflectiveContextSupport.isQuoteConstructor, rhoCalc,
-          rhoReflectivePresentation] at quoteStatus
+        simp [ReflectiveContextSupport.isQuoteConstructor, rhoReflectionProfile, rhoReflectivePresentation] at quoteStatus
       simpa [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeByDepths,
         Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.finishNormalizeReflectiveApply,
         rhoReflectivePresentation, notQuote] using
@@ -912,7 +901,7 @@ theorem canonicalizeByDepths_supportSafe
                 key rhoReflectivePresentation
                 (sourceAvailable.length + arity) (scopeDepth + arity) body)
                 codomain,
-            normalizedBodyTyped.ReflectiveSupportSafeAt support
+            normalizedBodyTyped.ReflectiveSupportSafeAt rhoReflectionProfile support
               (List.replicate arity (currentImage domain) ++ sourceAvailable)
               currentImage := by
         simpa [List.length_append, Nat.add_comm] using
@@ -1016,13 +1005,12 @@ theorem canonicalizeByDepths_supportSafe
               key rhoReflectivePresentation sourceAvailable.length scopeDepth
               arguments)
           (parameter :: parameters),
-        normalizedTyped.ReflectiveSupportSafeAt support sourceAvailable
+        normalizedTyped.ReflectiveSupportSafeAt rhoReflectionProfile support sourceAvailable
           currentImage
       let normalizedSpine := ArgumentsHaveTypes.cons
         normalizedRepresentation parameterType normalizedArgumentTyped
         normalizedArgumentsTyped
-      let normalizedSpineSafe : normalizedSpine.ReflectiveSupportSafeAt
-          support sourceAvailable currentImage :=
+      let normalizedSpineSafe : normalizedSpine.ReflectiveSupportSafeAt rhoReflectionProfile support sourceAvailable currentImage :=
         ArgumentsHaveTypes.ReflectiveSupportSafeAt.cons
           (representation := normalizedRepresentation)
           (parameterType := parameterType)
@@ -1061,13 +1049,13 @@ theorem canonicalizeByAt_supportSafe
     {bound available : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
     {binderImage : TypeExpr → TypeExpr}
     (typed : HasType rhoCalc free bound pattern type)
-    (safe : typed.ReflectiveSupportSafeAt support available binderImage)
+    (safe : typed.ReflectiveSupportSafeAt rhoReflectionProfile support available binderImage)
     (canonicalizable : CanonicalizableRhoType type)
     (object : isObjectPattern pattern = true) :
     ∃ normalizedTyped : HasType rhoCalc free bound
         (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeByAt
           key rhoReflectivePresentation available.length pattern) type,
-      normalizedTyped.ReflectiveSupportSafeAt support available binderImage := by
+      normalizedTyped.ReflectiveSupportSafeAt rhoReflectionProfile support available binderImage := by
   simpa only [
     Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeByDepths_ignoreScope]
     using
@@ -1082,12 +1070,12 @@ theorem canonicalize_supportSafe
     {bound available : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
     {binderImage : TypeExpr → TypeExpr}
     (typed : HasType rhoCalc free bound pattern type)
-    (safe : typed.ReflectiveSupportSafeAt support available binderImage)
+    (safe : typed.ReflectiveSupportSafeAt rhoReflectionProfile support available binderImage)
     (canonicalizable : CanonicalizableRhoType type)
     (object : isObjectPattern pattern = true) :
     ∃ normalizedTyped : HasType rhoCalc free bound
         (canonicalize pattern) type,
-      normalizedTyped.ReflectiveSupportSafeAt support available binderImage := by
+      normalizedTyped.ReflectiveSupportSafeAt rhoReflectionProfile support available binderImage := by
   simpa only [
     Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeByAt_const,
     Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeBy_patternCode,
@@ -1106,9 +1094,8 @@ theorem rhoCanonicalizeOpenTerm_preservesReflectiveSupport
     (support : ContextSupport.Support)
     (available : List TypeExpr)
     (binderImage : TypeExpr → TypeExpr)
-    (safe : term.2.1.ReflectiveSupportSafeAt support available binderImage) :
-    (rhoCanonicalizeOpenTerm term).2.1.ReflectiveSupportSafeAt
-      support available binderImage := by
+    (safe : term.2.1.ReflectiveSupportSafeAt rhoReflectionProfile support available binderImage) :
+    (rhoCanonicalizeOpenTerm term).2.1.ReflectiveSupportSafeAt rhoReflectionProfile support available binderImage := by
   rcases term.2 with ⟨typed, canonical, object, scopeSafe⟩
   rcases rhoLangSort_eq_proc_or_name sort with rfl | rfl
   · obtain ⟨normalizedTyped, normalizedSafe⟩ :=
@@ -1125,24 +1112,29 @@ theorem rhoCanonicalizeOpenTerm_preservesReflectiveSupport
 /-- The exact `rhoCalc` root carries a support-stable computable open
 section.  This is the rho witness needed by iterable syntax constructions;
 it introduces neither a second carrier nor a second equality relation. -/
-def rhoContextualOpenSection : ComputableContextualOpenSection rhoIGSLT where
-  toComputableOpenSection := rhoOpenSection
+def rhoContextualOpenSection :
+    ComputableReflectiveFiberContextualSection rhoIGSLT
+      rhoCalcValidatedReflective.admittedReflection where
+  toComputableReflectiveFiberSection := rhoFiberOpenSection
   preservesFreeVariableSupport := by
     intro free bound sort term name membership
-    change name ∈ (rhoCanonicalizeOpenTerm term).1.freeFvarNames at membership
-    rw [rhoCanonicalizeOpenTerm_pattern] at membership
+    change name ∈
+      (rhoCanonicalizeReflectiveOpenTerm term).1.freeFvarNames at membership
+    rw [rhoCanonicalizeReflectiveOpenTerm_pattern] at membership
     rw [← CanonicalMatch.derivedCanonicalize_eq term.1] at membership
     exact (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.mem_freeFvarNames_canonicalize_iff
       rhoReflectivePresentation name term.1).mp membership
   normalizeRecontextualizeFree := by
     intro sourceFree targetFree bound sort term preserves
     change
-      (rhoCanonicalizeOpenTerm
+      (rhoCanonicalizeReflectiveOpenTerm
         (term.recontextualizeFree preserves)).1 =
-      (rhoCanonicalizeOpenTerm term).1
-    simp only [rhoCanonicalizeOpenTerm_pattern,
-      WellSorted.OpenTerm.recontextualizeFree_pattern]
-  preservesReflectiveSupport :=
-    rhoCanonicalizeOpenTerm_preservesReflectiveSupport
+      (rhoCanonicalizeReflectiveOpenTerm term).1
+    simp only [rhoCanonicalizeReflectiveOpenTerm_pattern,
+      ReflectiveWellSorted.OpenTerm.recontextualizeFree_pattern]
+  preservesReflectiveSupport := by
+    intro free bound sort term support available binderImage safe
+    exact rhoCanonicalizeOpenTerm_preservesReflectiveSupport term.toCore
+      support available binderImage safe
 
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.CanonicalSupport

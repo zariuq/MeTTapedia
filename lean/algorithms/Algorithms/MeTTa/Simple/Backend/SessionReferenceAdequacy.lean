@@ -366,7 +366,7 @@ theorem eval_done_eq_totalEvalWithStateCore
   exact SessionReferenceFaithful.evalWithStateCoreF_done_eq_total fuel s term hdone
 
 /-- Successful faithful intrinsic evaluation preserves session well-formedness through the
-    public total-reference surface. -/
+    public total-reference interface. -/
 theorem intrinsic_done_preserves
     (fuel : Nat) (s : Session) (term : Pattern)
     (hdone :
@@ -376,7 +376,7 @@ theorem intrinsic_done_preserves
   exact SessionReferenceFaithful.intrinsicStatefulF_preserves_done fuel s term hdone hs
 
 /-- Successful faithful evaluation preserves session well-formedness through the
-    public total-reference surface. -/
+    public total-reference interface. -/
 theorem eval_done_preserves
     (fuel : Nat) (s : Session) (term : Pattern)
     (hdone :

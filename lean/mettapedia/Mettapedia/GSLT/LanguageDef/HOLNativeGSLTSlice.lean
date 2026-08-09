@@ -248,18 +248,14 @@ def holLightNativeSlice : LanguageDef :=
     types := commonTypes
     terms := commonDataTerms ++ sideProofTerms ++ holLightProofTerms
     equations := []
-    rewrites := sideRewrites "HLNativeCheck" "HLNativeOk" ++ holLightRewrites
-    logic := []
-    oracles := [] }
+    rewrites := sideRewrites "HLNativeCheck" "HLNativeOk" ++ holLightRewrites }
 
 def hol4NativeSlice : LanguageDef :=
   { name := "HOL4NativeGSLTSlice"
     types := commonTypes
     terms := commonDataTerms ++ sideProofTerms ++ hol4ProofTerms
     equations := []
-    rewrites := sideRewrites "H4NativeCheck" "H4NativeOk" ++ hol4Rewrites
-    logic := []
-    oracles := [] }
+    rewrites := sideRewrites "H4NativeCheck" "H4NativeOk" ++ hol4Rewrites }
 
 def holLightNativeProfile : EvidenceProfile :=
   { checkHead := "HLNativeCheck"
@@ -284,10 +280,8 @@ def hol4NativePresentation? : Option Presentation :=
 /-- A failed extraction must remain invalid at the ordinary presentation
 boundary; it must not silently turn into an admissible empty calculus. -/
 private def invalidExtractionPresentation (language : LanguageDef) : Presentation :=
-  { language :=
-      { language with
-        judgments := [{ head := "", arity := 0 }]
-        inferenceRules := [] } }
+  { language
+    calculus := { judgments := [{ head := "", arity := 0 }] } }
 
 def holLightNativePresentation : Presentation :=
   holLightNativePresentation?.getD
@@ -350,7 +344,7 @@ private theorem holLightRewriteValid :
       hypsCons, app, equalityNameHead, implicationNameHead, boolNameHead,
       functionNameHead, pNameHead, qNameHead,
       N, T, P, Q, Q2, H, H1, H2, HO, pvar,
-      LanguageDef.validatePremises, LanguageDef.validatePatternConstructors,
+      LanguageDef.validatePatternConstructors,
       LanguageDef.validateRulePatterns, LanguageDef.patternFvarNames,
       LanguageDef.patternBinderNames, Pattern.constructorRefs,
       Pattern.constructorRefsList,
@@ -378,7 +372,7 @@ private theorem hol4RewriteValid :
       hypsCons, app, equalityNameHead, implicationNameHead, boolNameHead,
       functionNameHead, pNameHead, qNameHead,
       N, T, P, Q, H, HO, pvar,
-      LanguageDef.validatePremises, LanguageDef.validatePatternConstructors,
+      LanguageDef.validatePatternConstructors,
       LanguageDef.validateRulePatterns, LanguageDef.patternFvarNames,
       LanguageDef.patternBinderNames, Pattern.constructorRefs,
       Pattern.constructorRefsList,
@@ -853,8 +847,6 @@ private def mainRuleIds (language : LanguageDef) : List String :=
 
 #guard LanguageDef.validate holLightNativeSlice == []
 #guard LanguageDef.validate hol4NativeSlice == []
-#guard holLightNativeSlice.logic.isEmpty
-#guard hol4NativeSlice.logic.isEmpty
 #guard holLightNativeSlice.rewrites.all (·.premises.isEmpty)
 #guard hol4NativeSlice.rewrites.all (·.premises.isEmpty)
 #guard mainRuleIds holLightNativeSlice == holLightSelectedRuleIds

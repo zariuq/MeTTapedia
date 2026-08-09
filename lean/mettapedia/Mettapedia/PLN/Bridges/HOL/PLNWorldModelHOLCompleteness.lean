@@ -35,8 +35,8 @@ abbrev PointedHOL := @Mettapedia.Logic.HOL.HenkinModel
 abbrev HOLState := @Mettapedia.PLN.Bridges.HOL.PLNWorldModelHOLCompletenessCore.HOLState
 
 /-- Public categorical endpoint alias for HOL world-model states. -/
-abbrev WMCategoricalEndpointSurface :=
-  @Mettapedia.PLN.Bridges.HOL.PLNWorldModelHOLCompletenessCore.WMCategoricalEndpointSurface
+abbrev WMCategoricalEndpointContract :=
+  @Mettapedia.PLN.Bridges.HOL.PLNWorldModelHOLCompletenessCore.WMCategoricalEndpointContract
 
 /-- Public pointwise implication relation for closed HOL formulas. -/
 abbrev pointwiseImplies (φ ψ : HOLQuery (Base := Base) Const) : Prop :=
@@ -579,7 +579,7 @@ theorem provable_imp_onTheory_of_pointwiseImpliesOnTheory_classical
         hBot
 
 /-- Classical completeness closes the semantic-to-proof direction for the
-extensional closed-theory proof surface used by HOL completeness. -/
+extensional closed-theory proof relation used by HOL completeness. -/
 theorem provable_imp_onTheory_of_singletonStrengthLEOnTheory_classical
     {T : ClosedTheorySet (WithParams Const)}
     {φ ψ : HOLQuery (Base := Base) (WithParams Const)}
@@ -608,7 +608,7 @@ theorem provable_imp_onTheory_of_singletonStrengthLEOnTheory_classical
         ψ).mpr hsing)
 
 /-- Naming alias: classical singleton consequence implies provability in the
-extensional closed-theory proof surface used by HOL completeness. -/
+extensional closed-theory proof relation used by HOL completeness. -/
 theorem provable_imp_onTheory_of_singletonConsequenceOnTheory_classical
     {T : ClosedTheorySet (WithParams Const)}
     {φ ψ : HOLQuery (Base := Base) (WithParams Const)}

@@ -8,9 +8,9 @@ tree, in a way that is independent of any one language — "some agent performs
 some action on some object." The *concrete syntax*, or *linearization*, says how
 that tree is *spelled out* in a particular language: word order, agreement,
 morphology, articles. Because the meaning is shared, the same abstract tree can
-be linearized into English, into Czech, or into a logical form, and a surface
+be linearized into English, into Czech, or into a logical form, and a linearized string
 string can be *parsed* back to the tree. That separation — typed meaning tree on
-one side, language-specific surface function on the other — is what makes GF a
+one side, language-specific linearization function on the other — is what makes GF a
 *multilingual* grammar formalism rather than a parser for a single language.
 
 This directory formalizes a working subset of GF in Lean 4 and connects it to
@@ -81,7 +81,7 @@ ArchivedLegacy/              Frozen earlier material (kept for reference; not a 
   the lexical content of a tree, modification enriches it, and the garden-path
   sentence "The old man the boats" is disambiguated at the lexical level.
 - **Roundtrip regression** (`RoundTripRegression.lean`): the curated English and
-  Czech corpora — 38 surfaces in total (20 English + 18 Czech, per the
+  Czech corpora — 38 linearizations in total (20 English + 18 Czech, per the
   per-language `RoundTripCorpus.lean` files) — have *no* roundtrip failures
   (`*_Failures_empty`).
 - **Worked examples** (`Examples/`) prove the end-to-end pipeline on specific

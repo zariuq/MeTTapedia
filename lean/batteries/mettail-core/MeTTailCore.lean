@@ -16,7 +16,7 @@ import MeTTailCore.MeTTaIL.RewriteIRV2
 import MeTTailCore.MeTTaSyntax.CommandIR
 import MeTTailCore.MeTTaSyntax.Spec
 import MeTTailCore.MeTTaSyntax.Pretty
-import MeTTailCore.MeTTaSyntax.RuleSurface
+import MeTTailCore.MeTTaSyntax.RuleSyntax
 import MeTTailCore.Crypto.SHA256
 import MeTTailCore.EvalIR
 import MeTTailCore.EvalIRMachine

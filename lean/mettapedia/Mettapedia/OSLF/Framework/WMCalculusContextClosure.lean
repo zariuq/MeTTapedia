@@ -211,11 +211,6 @@ def wmExtVertexLanguageDefWithCong (v : WMExtVertex) : LanguageDef := {
   rewrites := (wmExtVertexLanguageDef v).rewrites ++ coreCongruenceRules
 }
 
-@[simp] theorem wmExtVertexLanguageDefWithCong_reflectivePresentations
-    (v : WMExtVertex) :
-    (wmExtVertexLanguageDefWithCong v).reflectivePresentations = [] := by
-  rfl
-
 /-- Extended full WM LanguageDef with all congruence rules. -/
 def wmFullVertexLanguageDefWithCong (v : WMFullVertex) : LanguageDef := {
   name := "WMCalculusFullCong"
@@ -224,11 +219,6 @@ def wmFullVertexLanguageDefWithCong (v : WMFullVertex) : LanguageDef := {
   equations := []
   rewrites := (wmFullVertexLanguageDef v).rewrites ++ allCongruenceRules
 }
-
-@[simp] theorem wmFullVertexLanguageDefWithCong_reflectivePresentations
-    (v : WMFullVertex) :
-    (wmFullVertexLanguageDefWithCong v).reflectivePresentations = [] := by
-  rfl
 
 /-! ## Subset Theorems -/
 
@@ -267,7 +257,7 @@ theorem congReduces_of_rawReduces_ext (v : WMExtVertex) (p q : Pattern) :
     langReduces (wmExtVertexLanguageDefWithCong v) p q := by
   intro h
   unfold langReduces langReducesUsing at h ⊢
-  exact Step.mono_rules (rawRules_subset_congRules_ext v) rfl rfl h
+  exact Step.mono_rules (rawRules_subset_congRules_ext v) h
 
 /-- Any raw reduction is also a congruence-extended reduction (full vertex). -/
 theorem congReduces_of_rawReduces_full (v : WMFullVertex) (p q : Pattern) :
@@ -275,7 +265,7 @@ theorem congReduces_of_rawReduces_full (v : WMFullVertex) (p q : Pattern) :
     langReduces (wmFullVertexLanguageDefWithCong v) p q := by
   intro h
   unfold langReduces langReducesUsing at h ⊢
-  exact Step.mono_rules (rawRules_subset_congRules_full v) rfl rfl h
+  exact Step.mono_rules (rawRules_subset_congRules_full v) h
 
 /-! ## Guarded LanguageDefs with Congruence (completing the 2×2 square) -/
 
@@ -289,11 +279,6 @@ def wmExtVertexLanguageDefGuardedWithCong (v : WMExtVertex) : LanguageDef := {
   rewrites := (wmExtVertexLanguageDefGuarded v).rewrites ++ coreCongruenceRules
 }
 
-@[simp] theorem wmExtVertexLanguageDefGuardedWithCong_reflectivePresentations
-    (v : WMExtVertex) :
-    (wmExtVertexLanguageDefGuardedWithCong v).reflectivePresentations = [] := by
-  rfl
-
 /-- Guarded full WM LanguageDef with all congruence rules. -/
 def wmFullVertexLanguageDefGuardedWithCong (v : WMFullVertex) : LanguageDef := {
   name := "WMCalculusFullGuardedCong"
@@ -302,11 +287,6 @@ def wmFullVertexLanguageDefGuardedWithCong (v : WMFullVertex) : LanguageDef := {
   equations := []
   rewrites := (wmFullVertexLanguageDefGuarded v).rewrites ++ allCongruenceRules
 }
-
-@[simp] theorem wmFullVertexLanguageDefGuardedWithCong_reflectivePresentations
-    (v : WMFullVertex) :
-    (wmFullVertexLanguageDefGuardedWithCong v).reflectivePresentations = [] := by
-  rfl
 
 /-! ### Guarded ⊆ Guarded+Cong (horizontal arrows) -/
 
@@ -333,7 +313,7 @@ theorem guardedCongReduces_of_guardedReduces_ext (v : WMExtVertex) (p q : Patter
     langReducesUsing relEnv (wmExtVertexLanguageDefGuardedWithCong v) p q := by
   intro h
   unfold langReducesUsing at h ⊢
-  exact Step.mono_rules (guardedRules_subset_guardedCongRules_ext v) rfl rfl h
+  exact Step.mono_rules (guardedRules_subset_guardedCongRules_ext v) h
 
 /-- Any guarded reduction is also a guarded+cong reduction (full).
     Horizontal arrow in the 2×2 square. -/
@@ -342,7 +322,7 @@ theorem guardedCongReduces_of_guardedReduces_full (v : WMFullVertex) (p q : Patt
     langReducesUsing relEnv (wmFullVertexLanguageDefGuardedWithCong v) p q := by
   intro h
   unfold langReducesUsing at h ⊢
-  exact Step.mono_rules (guardedRules_subset_guardedCongRules_full v) rfl rfl h
+  exact Step.mono_rules (guardedRules_subset_guardedCongRules_full v) h
 
 /-! ## OSLF Per Vertex (With Congruence) -/
 

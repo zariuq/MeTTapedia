@@ -35,8 +35,6 @@ theorem langReduces_mono_vertex_temporal {v w : ProbabilityVertex} (h : v ≤ w)
   unfold langReduces langReducesUsing at hred ⊢
   exact contextualStep_mono_rules
     (activeRulesWithTemporal_subset_of_le h)
-    (by rfl)
-    (by rfl)
     hred
 
 theorem langReducesStar_mono_vertex_temporal {v w : ProbabilityVertex} (h : v ≤ w)

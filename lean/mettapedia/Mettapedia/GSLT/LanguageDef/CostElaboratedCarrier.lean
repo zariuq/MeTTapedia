@@ -5,8 +5,9 @@ import Mettapedia.GSLT.LanguageDef.CostRegionNormalization
 # The proof-relevant Cost carrier and compact factorization boundary
 
 `CostElabTerm` is the semantic carrier selected by proof-relevant region
-decomposition.  Raw `Pattern` remains its checked compact execution format.
-This module packages that relationship without imposing compact faithfulness.
+decomposition.  Reflection-certified `Pattern` remains its checked compact
+execution format.  This module packages that relationship without imposing
+compact faithfulness.
 -/
 
 namespace Mettapedia.GSLT.LanguageDef
@@ -19,7 +20,8 @@ namespace CIGSLT
 /-- The complete Cost region elaboration as a proof-relevant carrier over the
 generated authored presentation. -/
 def costOpenElaborationCarrier (source : CIGSLT) :
-    OpenElaborationCarrier source.costIGSLT where
+    ReflectiveOpenElaborationCarrier source.costIGSLT
+      source.costWholeAdmittedReflection where
   Carrier := CostElabTerm source
   erase := CostOpenElaboration.erase
   compile := CostOpenElaboration.compileTerm source
@@ -30,7 +32,9 @@ theorem costOpenElaborationCarrier_erase_compile
     (source : CIGSLT)
     {free : WellSorted.FreeTypeContext} {bound : List TypeExpr}
     {sort : LangSort source.costWholeLanguage}
-    (term : OpenTerm source.costIGSLT free bound sort) :
+    (term : ReflectiveWellSorted.OpenTerm
+      source.costWholeReflectionProfile source.costWholeLanguage
+        free bound sort) :
     source.costOpenElaborationCarrier.erase
         (source.costOpenElaborationCarrier.compile term) = term :=
   source.costOpenElaborationCarrier.erase_compile term
@@ -54,7 +58,8 @@ def CostCompactErasureFaithful (source : CIGSLT) : Prop :=
     Function.Injective
       (source.costOpenElaborationCarrier.erase :
         CostElabTerm source targetFree targetBound targetSort →
-          OpenTerm source.costIGSLT targetFree targetBound targetSort)
+          ReflectiveWellSorted.OpenTerm source.costWholeReflectionProfile
+            source.costWholeLanguage targetFree targetBound targetSort)
 
 /-- Every compact term has at most one proof-relevant Cost elaboration.
 
@@ -63,7 +68,8 @@ erasure projection is contractible rather than merely inhabited. -/
 def CostElaborationFibersSubsingleton (source : CIGSLT) : Prop :=
   ∀ (targetFree : WellSorted.FreeTypeContext) (targetBound : List TypeExpr)
     (targetSort : LangSort source.costWholeLanguage)
-    (term : OpenTerm source.costIGSLT targetFree targetBound targetSort),
+    (term : ReflectiveWellSorted.OpenTerm source.costWholeReflectionProfile
+      source.costWholeLanguage targetFree targetBound targetSort),
     Subsingleton (CostOpenElaboration source term)
 
 /-- Faithfulness of compact erasure is exactly subsingletonness of every
@@ -116,10 +122,13 @@ choices are unobservable after normalization, precisely the property that
 fails at the rho Cost² overlap. -/
 def CostNormalizationFactorsThroughCompactErasure (source : CIGSLT) : Prop :=
   ∃ normalize : ∀ {free bound sort},
-      OpenTerm source.costIGSLT free bound sort →
-        OpenTerm source.costIGSLT free bound sort,
+      ReflectiveWellSorted.OpenTerm source.costWholeReflectionProfile
+          source.costWholeLanguage free bound sort →
+        ReflectiveWellSorted.OpenTerm source.costWholeReflectionProfile
+          source.costWholeLanguage free bound sort,
     ∀ {free bound sort}
-      (term : OpenTerm source.costIGSLT free bound sort)
+      (term : ReflectiveWellSorted.OpenTerm source.costWholeReflectionProfile
+        source.costWholeLanguage free bound sort)
       (elaboration : CostOpenElaboration source term),
       elaboration.normalizeErasure = normalize term
 

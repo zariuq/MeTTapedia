@@ -286,7 +286,7 @@ theorem interpretStack1_pendingItem (f : Nat) :
       = ([pendingFinished], St.init) := by
   simp [interpretStack1, pendingItem, pendingFinished, isEmbeddedOp]
 
-/-- At budget `0` the unfinished frame is surfaced as a `StackOverflow`
+/-- At budget `0` the unfinished frame is reported as a `StackOverflow`
 error. -/
 theorem interpretFuel_pending_zero :
     (interpretFuel witnessEnv 0 St.init [pendingItem] []).1

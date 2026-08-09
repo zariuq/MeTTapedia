@@ -62,7 +62,7 @@ namespace CompletenessFrontier
 abbrev DerivabilityGoal (F : CompletenessFrontier Const Γ) : Prop :=
   Derivable (Base := Base) (Const := Const) F.antecedents F.succedent
 
-/-- Semilocal semantic consequence packaged in the reusable surface format. -/
+/-- Semilocal semantic consequence packaged in the reusable source format. -/
 abbrev SemilocalSurface (F : CompletenessFrontier Const Γ) : Prop :=
   ConsequenceCounterexampleSurface
     (DerivabilityGoal (Base := Base) (Const := Const) F)

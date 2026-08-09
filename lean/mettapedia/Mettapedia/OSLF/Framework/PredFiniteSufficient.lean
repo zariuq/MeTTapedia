@@ -6,9 +6,10 @@ import Mettapedia.OSLF.MeTTaIL.MatchSpec
 /-!
 # Positive Sufficient Condition for Predecessor-Finiteness
 
-Complements the negative result `not_global_hPredFinite_langReduces_rhoCalc`
-(canonical ρ-calculus COMM erases the channel name, so predecessor-finiteness
-fails globally) with a positive characterization:
+Complements the separate negative result `not_global_hPredFinite_rhoStep`
+(explicitly interpreted rho COMM erases the channel name, so
+predecessor-finiteness fails globally) with a positive characterization for
+the reflection-free generated relation:
 
 A `LanguageDef` is **predecessor-finite-safe** when every rewrite rule has
 `isMatchCorrect` LHS and RHS (no `.subst` or `.collection` nodes), is
@@ -118,11 +119,11 @@ structure RulePredFiniteSafe (r : RewriteRule) : Prop where
   variablePreserving : ∀ x : String, x ∈ freeVars r.left → x ∈ freeVars r.right
   noPremises : r.premises = []
 
-/-- A language definition is predecessor-finite-safe: all rules satisfy the
-finite-predecessor rule condition, and reflective matching is absent. -/
+/-- A language definition is predecessor-finite-safe when all of its core
+rewrite rules satisfy the finite-predecessor condition.  Reflective matching
+is a separate interpretation and therefore is not a field or premise here. -/
 structure LangPredFiniteSafe (lang : LanguageDef) : Prop where
   rulesSafe : ∀ r ∈ lang.rewrites, RulePredFiniteSafe r
-  noReflectivePresentations : lang.reflectivePresentations = []
 
 /-! ## Structural Decomposition Lemmas -/
 
@@ -139,12 +140,12 @@ theorem step_decomposes_of_langPredFiniteSafe
   obtain ⟨_, step⟩ := h
   cases step with
   | @rule fuel source target r initialBindings finalBindings hr hbs hprem hq =>
-    rw [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule_eq_syntactic_of_no_presentations
-      hSafe.noReflectivePresentations] at hbs
+    simp only [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule_eq_syntactic]
+      at hbs
     rw [(hSafe.rulesSafe r hr).noPremises] at hprem
     cases hprem
-    rw [Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule_eq_syntactic_of_no_presentations
-      hSafe.noReflectivePresentations] at hq
+    simp only [Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule_eq_syntactic]
+      at hq
     exact ⟨r, hr, initialBindings, hbs, hq⟩
 
 theorem applyPremisesWithEnv_nil

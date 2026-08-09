@@ -1724,7 +1724,7 @@ noncomputable def credalHOLFormulaNoisyOrMultiJoinITV
 /-- Kyburg-style finite-rule multi-join collapse: if every hierarchical
 completion gives the same value after applying the finite PLN rule, then the
 same-completion credal rule interval is exactly that point interval. This is
-the precise pole of the HO-PLN credal rule surface. -/
+the precise pole of the HO-PLN credal rule family. -/
 theorem credalHOLFormulaFiniteRuleInterval_eq_const_of_pointwise_value_eq
     {ι : Type y} [Nonempty ι] {n : ℕ}
     (Hs : ι → HierarchicalState.{u, v, w, x} Base Const)
@@ -6366,7 +6366,7 @@ noncomputable def credalPredicateQFMThereExistsSymmetricModusPonensITV
     credibility hcred
 
 /-- Same-completion QFM universal-endpoint interval for PLN `sim2inh`. This
-is a constrained rule surface: each capacity/reference-class completion must
+is a constrained rule family: each capacity/reference-class completion must
 have a positive source-strength endpoint and a target-strength endpoint no
 larger than the source-strength endpoint. -/
 noncomputable def credalPredicateQFMForAllSim2InhInterval

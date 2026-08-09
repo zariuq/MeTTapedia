@@ -1,11 +1,12 @@
 import Mettapedia.GSLT.LanguageDef.InferenceChecker
+import Mettapedia.GSLT.LanguageDef.CalculusLanguageDef
 
 /-!
 # PeTTa typecheck-v2 determinism and effect system as a rooted GSLT (stage 1)
 
 Companion to `TypeSystemGSLT.lean`: the determinism/effect half of PeTTa's
 `typecheck-v2` branch (reference revision `e038e4d`, repository
-`trueagi-io/PeTTa`) as one `LanguageDef` — mode atoms, the analysis-verdict
+`trueagi-io/PeTTa`) as one `CalculusLanguageDef` — mode atoms, the analysis-verdict
 lattice, effect join, overload aggregation, clause-head overlap,
 closed-domain exhaustiveness, and the syntax-directed body walker.  The
 generic V2 checker contains no branch for this fixture; every acceptance
@@ -40,6 +41,8 @@ namespace Mettapedia.Languages.MeTTa.PeTTa.TypeSystemGSLTDeterminism
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Substitution
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
+open Mettapedia.GSLT.LanguageDef.InferenceExtension
+open Mettapedia.GSLT.LanguageDef
 
 /-- Single carrier sort: modes, verdicts, clause heads, and bodies live in
 one abstract term algebra, exactly as the reference manipulates them as
@@ -499,9 +502,9 @@ private def exhaustiveBoolRule : RuleSchema :=
     premises := [covers (.fvar "hs") hTrue, covers (.fvar "hs") hFalse]
     conclusion := exhaustiveBool (.fvar "hs") }
 
-/-! ## The language -/
+/-! ## The complete authored definition -/
 
-private def language : LanguageDef :=
+private abbrev definition : CalculusLanguageDef :=
   { name := "petta-typecheck-v2-determinism"
     types := [termType]
     terms :=
@@ -545,7 +548,7 @@ private def language : LanguageDef :=
         { head := "OverlapHeads", arity := 2 },
         { head := "Covers", arity := 2 },
         { head := "ExhaustiveBool", arity := 1 } ]
-    inferenceRules :=
+    rules :=
       [ modeLeRefl, modeLeDetSemidet, modeLeSemidetNondet, modeLeDetNondet,
         committedDet, committedSemidet,
         effectJoinUnspecLeft, effectJoinUnspecRight,
@@ -567,7 +570,9 @@ private def language : LanguageDef :=
         coversHereVar, coversHereMatch, coversThere,
         exhaustiveBoolRule ] }
 
-private def presentation : Presentation := { language }
+private def language : LanguageDef := definition.toLanguageDef
+private def calculus : ProofCalculus := definition.toCalculus
+private def presentation : Presentation := definition.toNested
 
 /-! ## Receipts -/
 
@@ -579,7 +584,7 @@ theorem language_validate : language.validate = [] := by
 
 theorem presentation_valid : presentation.isValidV2 = true := by
   have hvalidate : presentation.language.validate = [] := by
-    simpa [presentation] using language_validate
+    simpa [presentation, language] using language_validate
   unfold Presentation.isValidV2 Presentation.isValidV1
   rw [hvalidate]
   simp [presentation,
@@ -595,7 +600,7 @@ theorem presentation_valid : presentation.isValidV2 = true := by
     Pattern.isWellScoped, Pattern.isWellScopedAt, Pattern.isWellScopedListAt,
     Pattern.hasCanonicalBinderMetadata,
     Pattern.hasCanonicalBinderMetadataList, Pattern.zipHead, Pattern.mapHead,
-    Pattern.evalHead, language, termType, termConstructor,
+    Pattern.evalHead, termType, termConstructor,
     modeLeRefl, modeLeDetSemidet, modeLeSemidetNondet, modeLeDetNondet,
     committedDet, committedSemidet, effectJoinUnspecLeft,
     effectJoinUnspecRight, effectJoinLeft, effectJoinRight,
@@ -619,13 +624,21 @@ theorem presentation_valid : presentation.isValidV2 = true := by
     bCollapse, bSuperpose, bEval, bOnce, bSeq, bCall, dCons, ruleId]
   decide
 
+/-- The determinism/effect language and its fifty rules as one GSLT. -/
+def totalTheory : Mettapedia.GSLT.GSLT :=
+  definition.toGSLTOfNoEquations presentation_valid rfl
+
+theorem totalTheory_Term : totalTheory.Term = (Pattern ⊕ List Pattern) := by
+  unfold totalTheory CalculusLanguageDef.toGSLTOfNoEquations
+  rfl
+
 def checked : ValidatedPresentation := ⟨presentation, presentation_valid⟩
 
 /-- Inventory pin: 22 constructors. -/
 theorem language_constructor_count : language.terms.length = 22 := by decide
 
 /-- Inventory pin: 50 inference rules. -/
-theorem language_rule_count : language.inferenceRules.length = 50 := by decide
+theorem calculus_rule_count : calculus.rules.length = 50 := by decide
 
 /-! ## Positive acceptance theorems -/
 
@@ -636,7 +649,7 @@ private def detNondetLeProof : RawProof :=
 theorem mode_le_det_nondet :
     checkRaw checked (modeLe mDet mNondet)
       detNondetLeProof = true := by
-  simp [checkRaw, checkRawChildren, checked, presentation, language,
+  simp [checkRaw, checkRawChildren, checked, presentation,
     detNondetLeProof, modeLeRefl, modeLeDetSemidet, modeLeSemidetNondet,
     modeLeDetNondet, committedDet, committedSemidet, effectJoinUnspecLeft,
     effectJoinUnspecRight, effectJoinLeft, effectJoinRight,
@@ -676,7 +689,7 @@ private def joinDetSemidetProof : RawProof :=
 theorem effect_join_det_semidet :
     checkRaw checked (effectJoin mDet mSemidet mSemidet)
       joinDetSemidetProof = true := by
-  simp [checkRaw, checkRawChildren, checked, presentation, language,
+  simp [checkRaw, checkRawChildren, checked, presentation,
     joinDetSemidetProof, detSemidetLeProof, modeLeRefl, modeLeDetSemidet,
     modeLeSemidetNondet, modeLeDetNondet, committedDet, committedSemidet,
     effectJoinUnspecLeft, effectJoinUnspecRight, effectJoinLeft,
@@ -713,7 +726,7 @@ private def joinUnspecProof : RawProof :=
 theorem effect_join_unspecified_absorbs :
     checkRaw checked (effectJoin mUnspecified mDet mUnspecified)
       joinUnspecProof = true := by
-  simp [checkRaw, checkRawChildren, checked, presentation, language,
+  simp [checkRaw, checkRawChildren, checked, presentation,
     joinUnspecProof, modeLeRefl, modeLeDetSemidet, modeLeSemidetNondet,
     modeLeDetNondet, committedDet, committedSemidet, effectJoinUnspecLeft,
     effectJoinUnspecRight, effectJoinLeft, effectJoinRight,
@@ -750,7 +763,7 @@ private def effectVarProof : RawProof :=
 theorem effect_var_instantiates_to_det :
     checkRaw checked (modeInstance mEffectVar mDet)
       effectVarProof = true := by
-  simp [checkRaw, checkRawChildren, checked, presentation, language,
+  simp [checkRaw, checkRawChildren, checked, presentation,
     effectVarProof, modeLeRefl, modeLeDetSemidet, modeLeSemidetNondet,
     modeLeDetNondet, committedDet, committedSemidet, effectJoinUnspecLeft,
     effectJoinUnspecRight, effectJoinLeft, effectJoinRight,
@@ -788,7 +801,7 @@ private def overloadWeakenProof : RawProof :=
 theorem overload_det_semidet_weakens :
     checkRaw checked (overloadAgg mDet mSemidet mSemidet)
       overloadWeakenProof = true := by
-  simp [checkRaw, checkRawChildren, checked, presentation, language,
+  simp [checkRaw, checkRawChildren, checked, presentation,
     overloadWeakenProof, modeLeRefl, modeLeDetSemidet,
     modeLeSemidetNondet, modeLeDetNondet, committedDet, committedSemidet,
     effectJoinUnspecLeft, effectJoinUnspecRight, effectJoinLeft,
@@ -829,7 +842,7 @@ private def conflictProof : RawProof :=
 theorem conflicting_declarations_det_nondet :
     checkRaw checked (conflictingDecls mDet mNondet)
       conflictProof = true := by
-  simp [checkRaw, checkRawChildren, checked, presentation, language,
+  simp [checkRaw, checkRawChildren, checked, presentation,
     conflictProof, committedDetProof, modeLeRefl, modeLeDetSemidet,
     modeLeSemidetNondet, modeLeDetNondet, committedDet, committedSemidet,
     effectJoinUnspecLeft, effectJoinUnspecRight, effectJoinLeft,
@@ -884,7 +897,7 @@ private def seqBodyProof : RawProof :=
 theorem body_composition_superpose_nondet :
     checkRaw checked (bodyVerdict (bSeq bCollapse bSuperpose) verNondet)
       seqBodyProof = true := by
-  simp [checkRaw, checkRawChildren, checked, presentation, language,
+  simp [checkRaw, checkRawChildren, checked, presentation,
     seqBodyProof, collapseOkProof, superposeNondetProof,
     okNondetJoinProof, okNondetLeProof, modeLeRefl, modeLeDetSemidet,
     modeLeSemidetNondet, modeLeDetNondet, committedDet, committedSemidet,
@@ -924,7 +937,7 @@ private def onceCapProof : RawProof :=
 theorem once_caps_nondet_to_may_fail :
     checkRaw checked (bodyVerdict (bOnce bSuperpose) verMayFail)
       onceCapProof = true := by
-  simp [checkRaw, checkRawChildren, checked, presentation, language,
+  simp [checkRaw, checkRawChildren, checked, presentation,
     onceCapProof, superposeNondetProof, modeLeRefl, modeLeDetSemidet,
     modeLeSemidetNondet, modeLeDetNondet, committedDet, committedSemidet,
     effectJoinUnspecLeft, effectJoinUnspecRight, effectJoinLeft,
@@ -970,7 +983,7 @@ declaration (`det_proofs.pl:990-1010`). -/
 theorem det_body_admits_det_arrow :
     checkRaw checked (arrowAdmits mDet verOk)
       detAdmitsProof = true := by
-  simp [checkRaw, checkRawChildren, checked, presentation, language,
+  simp [checkRaw, checkRawChildren, checked, presentation,
     detAdmitsProof, clauseSetDetProof, detReflLeProof, modeLeRefl,
     modeLeDetSemidet, modeLeSemidetNondet, modeLeDetNondet, committedDet,
     committedSemidet, effectJoinUnspecLeft, effectJoinUnspecRight,
@@ -1016,7 +1029,7 @@ declaration: weakening is downgraded, never rejected. -/
 theorem nondet_arrow_admits_nondet_body :
     checkRaw checked (arrowAdmits mNondet verNondet)
       nondetAdmitsProof = true := by
-  simp [checkRaw, checkRawChildren, checked, presentation, language,
+  simp [checkRaw, checkRawChildren, checked, presentation,
     nondetAdmitsProof, clauseSetNondetProof, nondetReflLeProof,
     modeLeRefl, modeLeDetSemidet, modeLeSemidetNondet, modeLeDetNondet,
     committedDet, committedSemidet, effectJoinUnspecLeft,
@@ -1054,7 +1067,7 @@ unifiable-on-copies (`det_validate.pl:245`). -/
 theorem variable_head_overlaps :
     checkRaw checked (overlapHeads hVarHead hTrue)
       varOverlapProof = true := by
-  simp [checkRaw, checkRawChildren, checked, presentation, language,
+  simp [checkRaw, checkRawChildren, checked, presentation,
     varOverlapProof, modeLeRefl, modeLeDetSemidet, modeLeSemidetNondet,
     modeLeDetNondet, committedDet, committedSemidet, effectJoinUnspecLeft,
     effectJoinUnspecRight, effectJoinLeft, effectJoinRight,
@@ -1111,7 +1124,7 @@ private def exhaustiveProof : RawProof :=
 theorem exhaustive_bool_with_both_keys :
     checkRaw checked (exhaustiveBool boolHeads)
       exhaustiveProof = true := by
-  simp [checkRaw, checkRawChildren, checked, presentation, language,
+  simp [checkRaw, checkRawChildren, checked, presentation,
     exhaustiveProof, boolHeads, coversTrueProof, coversFalseInnerProof,
     coversFalseProof, modeLeRefl, modeLeDetSemidet, modeLeSemidetNondet,
     modeLeDetNondet, committedDet, committedSemidet, effectJoinUnspecLeft,
@@ -1159,7 +1172,7 @@ supplies a refl derivation, which concludes the wrong inequality. -/
 theorem det_arrow_rejects_nondet_body :
     checkRaw checked (arrowAdmits mDet verNondet)
       nondetIntoDetCandidate = false := by
-  simp [checkRaw, checkRawChildren, checked, presentation, language,
+  simp [checkRaw, checkRawChildren, checked, presentation,
     nondetIntoDetCandidate, clauseSetNondetProof, nondetReflLeProof,
     modeLeRefl, modeLeDetSemidet, modeLeSemidetNondet, modeLeDetNondet,
     committedDet, committedSemidet, effectJoinUnspecLeft,
@@ -1199,7 +1212,7 @@ private def overloadConflictCandidate : RawProof :=
 theorem overload_refl_rejects_det_nondet :
     checkRaw checked (overloadAgg mDet mNondet mNondet)
       overloadConflictCandidate = false := by
-  simp [checkRaw, checkRawChildren, checked, presentation, language,
+  simp [checkRaw, checkRawChildren, checked, presentation,
     overloadConflictCandidate, modeLeRefl, modeLeDetSemidet,
     modeLeSemidetNondet, modeLeDetNondet, committedDet, committedSemidet,
     effectJoinUnspecLeft, effectJoinUnspecRight, effectJoinLeft,
@@ -1236,7 +1249,7 @@ instantiates to the wrong pair (`det_validate.pl:245`). -/
 theorem distinct_literal_heads_do_not_overlap :
     checkRaw checked (overlapHeads hTrue hFalse)
       overlapReflCandidate = false := by
-  simp [checkRaw, checkRawChildren, checked, presentation, language,
+  simp [checkRaw, checkRawChildren, checked, presentation,
     overlapReflCandidate, modeLeRefl, modeLeDetSemidet,
     modeLeSemidetNondet, modeLeDetNondet, committedDet, committedSemidet,
     effectJoinUnspecLeft, effectJoinUnspecRight, effectJoinLeft,
@@ -1273,7 +1286,7 @@ it cannot be instantiated at `HTrue`. -/
 theorem distinct_literal_heads_var_candidate_rejects :
     checkRaw checked (overlapHeads hTrue hFalse)
       overlapVarCandidate = false := by
-  simp [checkRaw, checkRawChildren, checked, presentation, language,
+  simp [checkRaw, checkRawChildren, checked, presentation,
     overlapVarCandidate, modeLeRefl, modeLeDetSemidet,
     modeLeSemidetNondet, modeLeDetNondet, committedDet, committedSemidet,
     effectJoinUnspecLeft, effectJoinUnspecRight, effectJoinLeft,
@@ -1314,7 +1327,7 @@ the error is exactly a failed coverage derivation on a closed domain). -/
 theorem missing_false_key_not_covered :
     checkRaw checked (covers (dCons hTrue dNil) hFalse)
       missingKeyCandidate = false := by
-  simp [checkRaw, checkRawChildren, checked, presentation, language,
+  simp [checkRaw, checkRawChildren, checked, presentation,
     missingKeyCandidate, modeLeRefl, modeLeDetSemidet,
     modeLeSemidetNondet, modeLeDetNondet, committedDet, committedSemidet,
     effectJoinUnspecLeft, effectJoinUnspecRight, effectJoinLeft,
@@ -1353,7 +1366,7 @@ private def onceLaunderCandidate : RawProof :=
 theorem once_does_not_launder_nondet_to_ok :
     checkRaw checked (bodyVerdict (bOnce bSuperpose) verOk)
       onceLaunderCandidate = false := by
-  simp [checkRaw, checkRawChildren, checked, presentation, language,
+  simp [checkRaw, checkRawChildren, checked, presentation,
     onceLaunderCandidate, superposeNondetProof, modeLeRefl,
     modeLeDetSemidet, modeLeSemidetNondet, modeLeDetNondet, committedDet,
     committedSemidet, effectJoinUnspecLeft, effectJoinUnspecRight,

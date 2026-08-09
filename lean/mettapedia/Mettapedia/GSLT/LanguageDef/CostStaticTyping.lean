@@ -21,7 +21,9 @@ namespace Mettapedia.GSLT.LanguageDef
 open Mettapedia.OSLF.Framework.ConstructorCategory
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.ScopedPattern
+open Mettapedia.OSLF.MeTTaIL.Reflection
 open StructuralMorphism
+open ReflectionExtension
 
 namespace CostStaticColor
 
@@ -36,6 +38,55 @@ def symbolsOf (theory : IGSLT) : CostStaticColor → PresentationSymbols
 def symbols (source : CIGSLT) : CostStaticColor → PresentationSymbols
   | .base => costBaseStaticSymbols
   | .wrapped => costWrappedStaticSymbols source.theory
+
+/-- The corresponding action on the independently authored reflection
+fibre.  Its core projection is exactly `symbols`; the additional component
+renames presentation and reflective-rule identifiers. -/
+def reflectiveSymbols (source : CIGSLT) : CostStaticColor → ReflectiveSymbols
+  | .base => costBaseStaticReflectiveSymbols
+  | .wrapped => costWrappedStaticReflectiveSymbols source.theory
+
+@[simp]
+theorem reflectiveSymbols_toPresentationSymbols
+    (source : CIGSLT) (color : CostStaticColor) :
+    (color.reflectiveSymbols source).toPresentationSymbols =
+      color.symbols source := by
+  cases color <;> rfl
+
+@[simp]
+theorem reflectiveSymbols_sort (source : CIGSLT)
+    (color : CostStaticColor) (name : String) :
+    (color.reflectiveSymbols source).sort name =
+      (color.symbols source).sort name := by
+  cases color <;> rfl
+
+@[simp]
+theorem reflectiveSymbols_constructor (source : CIGSLT)
+    (color : CostStaticColor) (name : String) :
+    (color.reflectiveSymbols source).constructor name =
+      (color.symbols source).constructor name := by
+  cases color <;> rfl
+
+@[simp]
+theorem reflectiveSymbols_relation (source : CIGSLT)
+    (color : CostStaticColor) (name : String) :
+    (color.reflectiveSymbols source).relation name =
+      (color.symbols source).relation name := by
+  cases color <;> rfl
+
+@[simp]
+theorem reflectiveSymbols_equation (source : CIGSLT)
+    (color : CostStaticColor) (name : String) :
+    (color.reflectiveSymbols source).equation name =
+      (color.symbols source).equation name := by
+  cases color <;> rfl
+
+@[simp]
+theorem reflectiveSymbols_rewrite (source : CIGSLT)
+    (color : CostStaticColor) (name : String) :
+    (color.reflectiveSymbols source).rewrite name =
+      (color.symbols source).rewrite name := by
+  cases color <;> rfl
 
 theorem symbols_eq_symbolsOf (source : CIGSLT) (color : CostStaticColor) :
     color.symbols source = color.symbolsOf source.theory := by
@@ -347,14 +398,15 @@ therefore contributes only the ordinary locally nameless scope check. -/
 theorem reflectiveScopeSafeAt_mapCostStatic
     (source : CIGSLT) (color : CostStaticColor)
     {depth : Nat} {pattern : Pattern}
-    (sourceSafe : WellSorted.ReflectiveScopeSafeAt
-      source.theory.presentation.presentation.language depth pattern)
+    (sourceSafe : ReflectiveWellSorted.ReflectiveScopeSafeAt
+      source.reflection.1 depth pattern)
     (mappedOrdinaryScope :
       (mapPattern (color.symbols source) pattern).isWellScopedAt depth = true) :
-    WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage depth
+    ReflectiveWellSorted.ReflectiveScopeSafeAt
+      source.costWholeReflectionProfile depth
       (mapPattern (color.symbols source) pattern) := by
   intro targetPresentation targetMembership
-  rw [CIGSLT.costWholeLanguage_reflectivePresentations,
+  rw [CIGSLT.costWholeReflectionProfile_presentations,
     CIGSLT.costStaticReflectivePresentations, List.mem_append]
     at targetMembership
   rcases targetMembership with baseMembership | wrappedMembership
@@ -364,7 +416,8 @@ theorem reflectiveScopeSafeAt_mapCostStatic
     | base =>
         simpa [costBaseReflectivePresentationDecl,
           mapReflectivePresentation, CostStaticColor.symbols,
-          costBaseStaticSymbols, costBasePresentationSymbols] using
+          costBaseStaticSymbols, costBaseStaticReflectiveSymbols,
+          costBasePresentationSymbols] using
           (show binderSafeAt
               ((CostStaticColor.base.symbols source).constructor
                 sourcePresentation.quoteConstructor) depth
@@ -383,7 +436,8 @@ theorem reflectiveScopeSafeAt_mapCostStatic
             depth pattern
         simpa [costBaseReflectivePresentationDecl,
           mapReflectivePresentation, CostStaticColor.symbols,
-          costBaseStaticSymbols, costBasePresentationSymbols] using
+          costBaseStaticSymbols, costBaseStaticReflectiveSymbols,
+          costBasePresentationSymbols] using
           (scopeEquality.trans mappedOrdinaryScope)
   · rcases List.mem_map.mp wrappedMembership with
       ⟨sourcePresentation, sourceMembership, rfl⟩
@@ -399,11 +453,12 @@ theorem reflectiveScopeSafeAt_mapCostStatic
             depth pattern
         simpa [costWrappedReflectivePresentationDecl,
           mapReflectivePresentation, CostStaticColor.symbols,
-          costWrappedStaticSymbols] using
+          costWrappedStaticSymbols, costWrappedStaticReflectiveSymbols] using
           (scopeEquality.trans mappedOrdinaryScope)
     | wrapped =>
         simpa [costWrappedReflectivePresentationDecl,
-          mapReflectivePresentation, CostStaticColor.symbols] using
+          mapReflectivePresentation, CostStaticColor.symbols,
+          costWrappedStaticReflectiveSymbols] using
           (show binderSafeAt
               ((CostStaticColor.wrapped.symbols source).constructor
                 sourcePresentation.quoteConstructor) depth
@@ -418,12 +473,13 @@ base and wrapped constructor namespaces are disjoint. -/
 @[simp]
 theorem reflectiveIsQuoteConstructor_mapCostStatic
     (source : CIGSLT) (color : CostStaticColor) (constructor : String) :
-    ReflectiveContextSupport.isQuoteConstructor source.costWholeLanguage
+    ReflectiveContextSupport.isQuoteConstructor
+        source.costWholeReflectionProfile
         ((color.symbols source).constructor constructor) =
       ReflectiveContextSupport.isQuoteConstructor
-        source.theory.presentation.presentation.language constructor := by
+        source.reflection.1 constructor := by
   unfold ReflectiveContextSupport.isQuoteConstructor
-  rw [CIGSLT.costWholeLanguage_reflectivePresentations]
+  rw [CIGSLT.costWholeReflectionProfile_presentations]
   rw [CIGSLT.costStaticReflectivePresentations, List.any_append]
   cases color with
   | base =>
@@ -437,14 +493,16 @@ theorem reflectiveIsQuoteConstructor_mapCostStatic
           apply costBaseConstructorName_injective
           simpa [CostStaticColor.symbols,
             costBaseReflectivePresentationDecl, mapReflectivePresentation,
-            costBaseStaticSymbols, costBasePresentationSymbols] using equality
+            costBaseStaticSymbols, costBaseStaticReflectiveSymbols,
+            costBasePresentationSymbols] using equality
         · have impossible :
               costWrappedConstructorName declaration.quoteConstructor =
                 costBaseConstructorName constructor := by
             simpa [CostStaticColor.symbols,
               costWrappedReflectivePresentationDecl,
               mapReflectivePresentation, costWrappedStaticSymbols,
-              costBaseStaticSymbols, costBasePresentationSymbols] using equality
+              costWrappedStaticReflectiveSymbols, costBaseStaticSymbols,
+              costBasePresentationSymbols] using equality
           exact False.elim
             (costBaseConstructorName_ne_wrapped constructor
               declaration.quoteConstructor impossible.symm)
@@ -453,7 +511,8 @@ theorem reflectiveIsQuoteConstructor_mapCostStatic
         refine ⟨declaration, membership, ?_⟩
         simp [CostStaticColor.symbols,
           costBaseReflectivePresentationDecl, mapReflectivePresentation,
-          costBaseStaticSymbols, costBasePresentationSymbols, equality]
+          costBaseStaticSymbols, costBaseStaticReflectiveSymbols,
+          costBasePresentationSymbols, equality]
   | wrapped =>
       rw [Bool.eq_iff_iff]
       simp only [List.any_map, Function.comp_apply, Bool.or_eq_true,
@@ -466,7 +525,8 @@ theorem reflectiveIsQuoteConstructor_mapCostStatic
                 costWrappedConstructorName constructor := by
             simpa [CostStaticColor.symbols,
               costBaseReflectivePresentationDecl, mapReflectivePresentation,
-              costBaseStaticSymbols, costBasePresentationSymbols,
+              costBaseStaticSymbols, costBaseStaticReflectiveSymbols,
+              costBasePresentationSymbols,
               costWrappedStaticSymbols] using equality
           exact False.elim
             (costBaseConstructorName_ne_wrapped
@@ -475,13 +535,15 @@ theorem reflectiveIsQuoteConstructor_mapCostStatic
           apply costWrappedConstructorName_injective
           simpa [CostStaticColor.symbols,
             costWrappedReflectivePresentationDecl,
-            mapReflectivePresentation, costWrappedStaticSymbols] using equality
+            mapReflectivePresentation, costWrappedStaticSymbols,
+            costWrappedStaticReflectiveSymbols] using equality
       · rintro ⟨declaration, membership, equality⟩
         right
         refine ⟨declaration, membership, ?_⟩
         simp [CostStaticColor.symbols,
           costWrappedReflectivePresentationDecl, mapReflectivePresentation,
-          costWrappedStaticSymbols, equality]
+          costWrappedStaticSymbols, costWrappedStaticReflectiveSymbols,
+          equality]
 
 /-- The sole extra law required by typed static transport: declarations
 whose bare collection representation hides its label must belong to the
@@ -666,28 +728,31 @@ theorem ReflectivePresentationRetypable.constructorLabels_mem_wrapped
   · apply plan.sourceLabel_mem_wrappedLabels_of_generated witness.quote
       (List.mem_filter.mp quoteFiltered).1
     simpa [costWrappedReflectivePresentationDecl,
-      mapReflectivePresentation, costWrappedStaticSymbols] using
+      mapReflectivePresentation, costWrappedStaticSymbols,
+      costWrappedStaticReflectiveSymbols] using
         beq_iff_eq.mp (List.mem_filter.mp quoteFiltered).2
   · apply plan.sourceLabel_mem_wrappedLabels_of_generated witness.drop
       (List.mem_filter.mp dropFiltered).1
     simpa [costWrappedReflectivePresentationDecl,
-      mapReflectivePresentation, costWrappedStaticSymbols] using
+      mapReflectivePresentation, costWrappedStaticSymbols,
+      costWrappedStaticReflectiveSymbols] using
         beq_iff_eq.mp (List.mem_filter.mp dropFiltered).2
   · apply plan.sourceLabel_mem_wrappedLabels_of_generated witness.unit
       (List.mem_filter.mp unitFiltered).1
     simpa [costWrappedReflectivePresentationDecl,
-      mapReflectivePresentation, costWrappedStaticSymbols] using
+      mapReflectivePresentation, costWrappedStaticSymbols,
+      costWrappedStaticReflectiveSymbols] using
         beq_iff_eq.mp (List.mem_filter.mp unitFiltered).2
 
 /-- Structural symbol transport preserves the exact quote/drop equation
 shape recognized by the sole reflective-presentation validator. -/
 theorem quoteDropShape_mapEquationSymbols
-    (symbols : PresentationSymbols)
+    (symbols : ReflectiveSymbols)
     (declaration : ReflectivePresentationDecl) (equation : Equation)
     (shape : LanguageDef.QuoteDropShape declaration equation) :
     LanguageDef.QuoteDropShape
       (mapReflectivePresentation symbols declaration)
-      (mapEquation symbols equation) := by
+      (mapEquation symbols.toPresentationSymbols equation) := by
   rw [LanguageDef.quoteDropShape_iff] at shape ⊢
   rcases shape with ⟨name, forward | reverse⟩
   · refine ⟨name, Or.inl ?_⟩
@@ -832,7 +897,8 @@ theorem validateReflectivePresentation_costBase_of_wrapped
       targetEquation.name = targetDeclaration.quoteDropEquation := by
     simp [targetEquation, targetDeclaration, costBaseEquation,
       costBaseReflectivePresentationDecl, mapEquation,
-      mapReflectivePresentation, costBaseStaticSymbols, equationName]
+      mapReflectivePresentation, costBaseStaticSymbols,
+      costBaseStaticReflectiveSymbols, equationName]
   have targetEquationUnique :
       (reflectiveRetypingLanguage plan).equations.filter
           (fun equation =>
@@ -908,7 +974,7 @@ theorem validateReflectivePresentation_costBase_of_wrapped
          change LanguageDef.QuoteDropShape
            (costBaseReflectivePresentationDecl declaration)
            (costBaseEquation witness.equation)
-         exact quoteDropShape_mapEquationSymbols costBaseStaticSymbols
+         exact quoteDropShape_mapEquationSymbols costBaseStaticReflectiveSymbols
            declaration witness.equation witness.equationShape } :
       LanguageDef.ReflectivePresentationWitness
         (reflectiveRetypingLanguage plan) targetDeclaration))
@@ -1041,7 +1107,8 @@ theorem validateReflectivePresentation_costWrapped_of_wrapped
       targetEquation.name = targetDeclaration.quoteDropEquation := by
     simp [targetEquation, targetDeclaration, costWrappedEquation,
       costWrappedReflectivePresentationDecl, mapEquation,
-      mapReflectivePresentation, costWrappedStaticSymbols, equationName]
+      mapReflectivePresentation, costWrappedStaticSymbols,
+      costWrappedStaticReflectiveSymbols, equationName]
   have targetEquationUnique :
       (reflectiveRetypingLanguage plan).equations.filter
           (fun equation =>
@@ -1169,7 +1236,7 @@ theorem validateReflectivePresentation_costWrapped_of_wrapped
            (costWrappedReflectivePresentationDecl theory declaration)
            (costWrappedEquation theory witness.equation)
          exact quoteDropShape_mapEquationSymbols
-           (costWrappedStaticSymbols theory) declaration witness.equation
+           (costWrappedStaticReflectiveSymbols theory) declaration witness.equation
              witness.equationShape } :
       LanguageDef.ReflectivePresentationWitness
         (reflectiveRetypingLanguage plan) targetDeclaration))
@@ -1870,9 +1937,11 @@ mutual
       {language : LanguageDef} {free : WellSorted.FreeTypeContext}
       {bound : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
       {typed : WellSorted.HasType language free bound pattern type}
+      {profile : ReflectionProfile}
       {support : ContextSupport.Support} {available : List TypeExpr}
-      (safe : typed.ReflectiveSupportSafeAt support available) :
-      typed.ReflectiveSupportSafeAt (mapCostStaticSupport source color support)
+      (safe : typed.ReflectiveSupportSafeAt profile support available) :
+      typed.ReflectiveSupportSafeAt profile
+        (mapCostStaticSupport source color support)
         (available.map (mapTypeExpr (color.symbols source)))
         (mapTypeExpr (color.symbols source)) := by
     cases safe with
@@ -1919,9 +1988,11 @@ mutual
       {parameters : List TermParam}
       {typed : WellSorted.ArgumentsHaveTypes language free bound arguments
         parameters}
+      {profile : ReflectionProfile}
       {support : ContextSupport.Support} {available : List TypeExpr}
-      (safe : typed.ReflectiveSupportSafeAt support available) :
-      typed.ReflectiveSupportSafeAt (mapCostStaticSupport source color support)
+      (safe : typed.ReflectiveSupportSafeAt profile support available) :
+      typed.ReflectiveSupportSafeAt profile
+        (mapCostStaticSupport source color support)
         (available.map (mapTypeExpr (color.symbols source)))
         (mapTypeExpr (color.symbols source)) := by
     cases safe with
@@ -1942,9 +2013,11 @@ mutual
       {elementType : TypeExpr}
       {typed : WellSorted.ElementsHaveType language free bound elements
         elementType}
+      {profile : ReflectionProfile}
       {support : ContextSupport.Support} {available : List TypeExpr}
-      (safe : typed.ReflectiveSupportSafeAt support available) :
-      typed.ReflectiveSupportSafeAt (mapCostStaticSupport source color support)
+      (safe : typed.ReflectiveSupportSafeAt profile support available) :
+      typed.ReflectiveSupportSafeAt profile
+        (mapCostStaticSupport source color support)
         (available.map (mapTypeExpr (color.symbols source)))
         (mapTypeExpr (color.symbols source)) := by
     cases safe with
@@ -1971,7 +2044,7 @@ mutual
         source.theory.presentation.presentation.language
         free bound pattern type}
       {support : ContextSupport.Support} {available : List TypeExpr}
-      (safe : typed.ReflectiveSupportSafeAt support available
+      (safe : typed.ReflectiveSupportSafeAt source.reflection.1 support available
         (mapTypeExpr (color.symbols source)))
       (supported : ConstructorsWithin
         (· ∈ source.continuationRetyping.wrappedLabels) pattern) :
@@ -1980,7 +2053,8 @@ mutual
           (bound.map (mapTypeExpr (color.symbols source)))
           (mapPattern (color.symbols source) pattern)
           (mapTypeExpr (color.symbols source) type),
-        targetTyped.ReflectiveSupportSafeAt support available := by
+        targetTyped.ReflectiveSupportSafeAt source.costWholeReflectionProfile
+          support available := by
     cases safe with
     | @bvar bound index type lookup available _binderImage =>
         have mappedLookup :
@@ -1994,7 +2068,7 @@ mutual
             (.bvar index) (mapTypeExpr (color.symbols source) type) :=
           WellSorted.HasType.bvar mappedLookup
         have targetSafe : targetTyped.ReflectiveSupportSafeAt
-            support available :=
+            source.costWholeReflectionProfile support available :=
           .bvar mappedLookup _
         simp only [mapPattern]
         exact ⟨targetTyped, targetSafe⟩
@@ -2036,10 +2110,10 @@ mutual
                 mappedArguments
             have targetArgumentsSafe :
                 targetArguments.ReflectiveSupportSafeAt
-                  support [] := by
+                  source.costWholeReflectionProfile support [] := by
               have mappedArgumentsSafe' :
                   targetArguments.ReflectiveSupportSafeAt
-                    support [] := by
+                    source.costWholeReflectionProfile support [] := by
                 simpa only [parameterEquality, CostStaticColor.symbols,
                   List.map_nil] using
                   mappedArgumentsSafe
@@ -2053,7 +2127,7 @@ mutual
                   targetBare)
             have targetQuoted :
                 ReflectiveContextSupport.isQuoteConstructor
-                    source.costWholeLanguage
+                    source.costWholeReflectionProfile
                     ((CostStaticColor.base.symbols source).constructor
                       rule.label) = true := by
               rw [reflectiveIsQuoteConstructor_mapCostStatic]
@@ -2062,7 +2136,7 @@ mutual
               (source.costBaseConstructor_mem_costWhole rule membership)
               targetNotBare targetArguments
             have targetSafe : targetTyped.ReflectiveSupportSafeAt
-                support available :=
+                source.costWholeReflectionProfile support available :=
               WellSorted.HasType.ReflectiveSupportSafeAt.constructorQuote
                 (membership :=
                   source.costBaseConstructor_mem_costWhole rule membership)
@@ -2103,10 +2177,10 @@ mutual
                 parameterMapEquality] using mappedArguments
             have targetArgumentsSafe :
                 targetArguments.ReflectiveSupportSafeAt
-                  support [] := by
+                  source.costWholeReflectionProfile support [] := by
               have mappedArgumentsSafe' :
                   targetArguments.ReflectiveSupportSafeAt
-                    support [] := by
+                    source.costWholeReflectionProfile support [] := by
                 simpa only [costWrappedConstructor, CostStaticColor.symbols,
                   parameterMapEquality, List.map_nil] using
                   mappedArgumentsSafe
@@ -2120,7 +2194,7 @@ mutual
                   (theory := source.theory) rule).mp targetBare)
             have targetQuoted :
                 ReflectiveContextSupport.isQuoteConstructor
-                    source.costWholeLanguage
+                    source.costWholeReflectionProfile
                     ((CostStaticColor.wrapped.symbols source).constructor
                       rule.label) = true := by
               rw [reflectiveIsQuoteConstructor_mapCostStatic]
@@ -2130,7 +2204,7 @@ mutual
                 wrappedConstructor)
               targetNotBare targetArguments
             have targetSafe : targetTyped.ReflectiveSupportSafeAt
-                support available :=
+                source.costWholeReflectionProfile support available :=
               WellSorted.HasType.ReflectiveSupportSafeAt.constructorQuote
                 (membership :=
                   source.costWrappedConstructor_mem_costWhole authored
@@ -2166,10 +2240,10 @@ mutual
                 mappedArguments
             have targetArgumentsSafe :
                 targetArguments.ReflectiveSupportSafeAt
-                  support available := by
+                  source.costWholeReflectionProfile support available := by
               have mappedArgumentsSafe' :
                   targetArguments.ReflectiveSupportSafeAt
-                    support available := by
+                    source.costWholeReflectionProfile support available := by
                 simpa only [parameterEquality, CostStaticColor.symbols] using
                   mappedArgumentsSafe
               exact mappedArgumentsSafe'
@@ -2182,7 +2256,7 @@ mutual
                   targetBare)
             have targetOrdinary :
                 ReflectiveContextSupport.isQuoteConstructor
-                    source.costWholeLanguage
+                    source.costWholeReflectionProfile
                     ((CostStaticColor.base.symbols source).constructor
                       rule.label) = false := by
               rw [reflectiveIsQuoteConstructor_mapCostStatic]
@@ -2191,7 +2265,7 @@ mutual
               (source.costBaseConstructor_mem_costWhole rule membership)
               targetNotBare targetArguments
             have targetSafe : targetTyped.ReflectiveSupportSafeAt
-                support available :=
+                source.costWholeReflectionProfile support available :=
               WellSorted.HasType.ReflectiveSupportSafeAt.constructorOrdinary
                 (membership :=
                   source.costBaseConstructor_mem_costWhole rule membership)
@@ -2232,10 +2306,10 @@ mutual
                 parameterMapEquality] using mappedArguments
             have targetArgumentsSafe :
                 targetArguments.ReflectiveSupportSafeAt
-                  support available := by
+                  source.costWholeReflectionProfile support available := by
               have mappedArgumentsSafe' :
                   targetArguments.ReflectiveSupportSafeAt
-                    support available := by
+                    source.costWholeReflectionProfile support available := by
                 simpa only [costWrappedConstructor, CostStaticColor.symbols,
                   parameterMapEquality] using mappedArgumentsSafe
               exact mappedArgumentsSafe'
@@ -2248,7 +2322,7 @@ mutual
                   (theory := source.theory) rule).mp targetBare)
             have targetOrdinary :
                 ReflectiveContextSupport.isQuoteConstructor
-                    source.costWholeLanguage
+                    source.costWholeReflectionProfile
                     ((CostStaticColor.wrapped.symbols source).constructor
                       rule.label) = false := by
               rw [reflectiveIsQuoteConstructor_mapCostStatic]
@@ -2258,7 +2332,7 @@ mutual
                 wrappedConstructor)
               targetNotBare targetArguments
             have targetSafe : targetTyped.ReflectiveSupportSafeAt
-                support available :=
+                source.costWholeReflectionProfile support available :=
               WellSorted.HasType.ReflectiveSupportSafeAt.constructorOrdinary
                 (membership :=
                   source.costWrappedConstructor_mem_costWhole authored
@@ -2276,13 +2350,13 @@ mutual
           bodySafe.mapCostStatic (bound := domain :: bound) source color supported
         have mappedBodySafe' :
             mappedBody.ReflectiveSupportSafeAt
-              support
+              source.costWholeReflectionProfile support
               (mapTypeExpr (color.symbols source) domain :: available) :=
           mappedBodySafe
         let targetTyped := WellSorted.HasType.lambda
           (binder := binder) mappedBody
         have targetSafe : targetTyped.ReflectiveSupportSafeAt
-            support available :=
+            source.costWholeReflectionProfile support available :=
           .lambda mappedBodySafe'
         simp only [mapPattern, mapTypeExpr]
         exact ⟨targetTyped, targetSafe⟩
@@ -2301,7 +2375,7 @@ mutual
             (mapTypeExpr (color.symbols source) codomain) := by
           simpa [List.map_append, List.map_replicate] using mappedBody
         have mappedBodySafe' : mappedBody'.ReflectiveSupportSafeAt
-            support
+            source.costWholeReflectionProfile support
             (List.replicate arity
                 (mapTypeExpr (color.symbols source) domain) ++
               available) :=
@@ -2310,7 +2384,7 @@ mutual
         let targetTyped := WellSorted.HasType.multiLambda
           (binders := binders) mappedBody'
         have targetSafe : targetTyped.ReflectiveSupportSafeAt
-            support available :=
+            source.costWholeReflectionProfile support available :=
           .multiLambda mappedBodySafe'
         simp only [mapPattern, mapTypeExpr]
         exact ⟨targetTyped, targetSafe⟩
@@ -2324,12 +2398,12 @@ mutual
             source color supported.2
         have mappedBodySafe' :
             mappedBody.ReflectiveSupportSafeAt
-              support
+              source.costWholeReflectionProfile support
               (mapTypeExpr (color.symbols source) domain :: available) :=
           mappedBodySafe
         let targetTyped := WellSorted.HasType.subst mappedBody mappedReplacement
         have targetSafe : targetTyped.ReflectiveSupportSafeAt
-            support available :=
+            source.costWholeReflectionProfile support available :=
           .subst mappedBodySafe' mappedReplacementSafe
         simp only [mapPattern]
         exact ⟨targetTyped, targetSafe⟩
@@ -2340,7 +2414,7 @@ mutual
         let targetTyped := WellSorted.HasType.collection
           (collectionType := collectionType) (rest := rest) mappedElements
         have targetSafe : targetTyped.ReflectiveSupportSafeAt
-            support available :=
+            source.costWholeReflectionProfile support available :=
           .collection mappedElementsSafe
         simp only [mapPattern, mapPatternList_eq_map, mapTypeExpr]
         exact ⟨targetTyped, targetSafe⟩
@@ -2373,7 +2447,7 @@ mutual
               (source.costBaseConstructor_mem_costWhole rule membership)
               targetShape mappedElements
             have targetSafe : targetTyped.ReflectiveSupportSafeAt
-                support available :=
+                source.costWholeReflectionProfile support available :=
               WellSorted.HasType.ReflectiveSupportSafeAt.collectionConstructor
                 (rule := costBaseConstructor source.cut rule)
                 (parameterName := parameterName)
@@ -2409,7 +2483,7 @@ mutual
                 wrappedConstructor)
               targetShape mappedElements
             have targetSafe : targetTyped.ReflectiveSupportSafeAt
-                support available :=
+                source.costWholeReflectionProfile support available :=
               WellSorted.HasType.ReflectiveSupportSafeAt.collectionConstructor
                 (rule := costWrappedConstructor (theory := source.theory) rule)
                 (parameterName := parameterName)
@@ -2434,7 +2508,7 @@ mutual
         source.theory.presentation.presentation.language
         free bound arguments parameters}
       {support : ContextSupport.Support} {available : List TypeExpr}
-      (safe : typed.ReflectiveSupportSafeAt support available
+      (safe : typed.ReflectiveSupportSafeAt source.reflection.1 support available
         (mapTypeExpr (color.symbols source)))
       (supported : ConstructorListWithin
         (· ∈ source.continuationRetyping.wrappedLabels) arguments) :
@@ -2443,7 +2517,8 @@ mutual
           (bound.map (mapTypeExpr (color.symbols source)))
           (arguments.map (mapPattern (color.symbols source)))
           (parameters.map (mapTermParam (color.symbols source))),
-        targetTyped.ReflectiveSupportSafeAt support available := by
+        targetTyped.ReflectiveSupportSafeAt source.costWholeReflectionProfile
+          support available := by
     cases safe with
     | nil =>
         let targetTyped := WellSorted.ArgumentsHaveTypes.nil
@@ -2474,7 +2549,7 @@ mutual
           mappedRepresentation
           mappedParameterType mappedArgument mappedArguments
         have targetSafe : targetTyped.ReflectiveSupportSafeAt
-            support available :=
+            source.costWholeReflectionProfile support available :=
           WellSorted.ArgumentsHaveTypes.ReflectiveSupportSafeAt.cons
             (representation := mappedRepresentation)
             (parameterType := mappedParameterType)
@@ -2492,7 +2567,7 @@ mutual
         source.theory.presentation.presentation.language
         free bound elements elementType}
       {support : ContextSupport.Support} {available : List TypeExpr}
-      (safe : typed.ReflectiveSupportSafeAt support available
+      (safe : typed.ReflectiveSupportSafeAt source.reflection.1 support available
         (mapTypeExpr (color.symbols source)))
       (supported : ConstructorListWithin
         (· ∈ source.continuationRetyping.wrappedLabels) elements) :
@@ -2501,7 +2576,8 @@ mutual
           (bound.map (mapTypeExpr (color.symbols source)))
           (elements.map (mapPattern (color.symbols source)))
           (mapTypeExpr (color.symbols source) elementType),
-        targetTyped.ReflectiveSupportSafeAt support available := by
+        targetTyped.ReflectiveSupportSafeAt source.costWholeReflectionProfile
+          support available := by
     cases safe with
     | nil =>
         let targetTyped := WellSorted.ElementsHaveType.nil
@@ -2519,7 +2595,7 @@ mutual
         let targetTyped := WellSorted.ElementsHaveType.cons
           mappedElement mappedElements
         have targetSafe : targetTyped.ReflectiveSupportSafeAt
-            support available :=
+            source.costWholeReflectionProfile support available :=
           WellSorted.ElementsHaveType.ReflectiveSupportSafeAt.cons
             (elementTyped := mappedElement)
             (elementsTyped := mappedElements)

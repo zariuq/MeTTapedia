@@ -1,3 +1,4 @@
+import Mettapedia.GSLT.LanguageDef.InferenceExtension
 import Mettapedia.OSLF.MeTTaIL.Substitution
 
 /-!
@@ -23,28 +24,70 @@ namespace Mettapedia.GSLT.LanguageDef.InferenceChecker
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Substitution
+open Mettapedia.GSLT.LanguageDef.InferenceExtension
 
-/-- A checker presentation is a derived view of the proof-calculus fields in
-the authoritative `LanguageDef`. -/
+/-- A language definition conservatively extended with an authored proof
+calculus.  `language` remains the exact five-field object-language definition;
+`calculus` supplies a meta-level judgment and inference system.  Erasing the
+calculus therefore recovers the base definition definitionally.  Admission is
+`isValidV2` below. -/
 structure Presentation where
   language : LanguageDef
+  calculus : ProofCalculus := .empty
 deriving Repr
 
+namespace Presentation
+
+/-- Forget the proof calculus and recover the exact five-field base. -/
+def erase (definition : Presentation) : LanguageDef :=
+  definition.language
+
+@[simp] theorem erase_mk (language : LanguageDef) (calculus : ProofCalculus) :
+    erase { language, calculus } = language :=
+  rfl
+
+/-- The extended definition is exactly the total space of the inference
+extension layer. -/
+def toAttached (definition : Presentation) :
+    InferenceExtension.layer.Total :=
+  InferenceExtension.layer.attach definition.language definition.calculus
+
+/-- Recover the named extended definition from the inference-layer total
+space. -/
+def ofAttached (attached : InferenceExtension.layer.Total) :
+    Presentation :=
+  { language := attached.1, calculus := attached.2 }
+
+@[simp] theorem ofAttached_toAttached (definition : Presentation) :
+    ofAttached definition.toAttached = definition := by
+  cases definition
+  rfl
+
+@[simp] theorem toAttached_ofAttached
+    (attached : InferenceExtension.layer.Total) :
+    (ofAttached attached).toAttached = attached := by
+  cases attached
+  rfl
+
+/-- The named extended definition and the Grothendieck total space of the
+coGSLT-authored inference layer are equivalent descriptions of one object. -/
+def attachedEquiv : Presentation ≃ InferenceExtension.layer.Total where
+  toFun := toAttached
+  invFun := ofAttached
+  left_inv := ofAttached_toAttached
+  right_inv := toAttached_ofAttached
+
+end Presentation
+
 @[simp] def Presentation.judgments (presentation : Presentation) : List JudgmentDecl :=
-  presentation.language.judgments
+  presentation.calculus.judgments
 
 @[simp] def Presentation.rules (presentation : Presentation) : List RuleSchema :=
-  presentation.language.inferenceRules
+  presentation.calculus.rules
 
-/-- The base syntax/rewriting validator depends only on its original fields.
-Full GSLT admission is `Presentation.isValidV2` below, which additionally
-validates every rooted judgment and inference rule. -/
-@[simp] private theorem baseValidation_afterProofCalculus
-    (language : LanguageDef) (judgments : List JudgmentDecl)
-    (rules : List RuleSchema) :
-    ({ language with judgments, inferenceRules := rules } : LanguageDef).validate =
-      language.validate := by
-  rfl
+@[simp] def Presentation.conversion (presentation : Presentation) :
+    Option ConversionDecl :=
+  presentation.calculus.conversion
 
 /-- Rule identifier plus arguments in the schema's declared order. -/
 structure RuleInstance where
@@ -145,9 +188,10 @@ theorem Presentation.lookupRule?_append_of_eq_some
     (presentation : Presentation) (extraRules : List RuleSchema)
     {id : RuleId} {rule : RuleSchema}
     (hlookup : presentation.lookupRule? id = some rule) :
-    ({ language :=
-        { presentation.language with
-          inferenceRules := presentation.rules ++ extraRules } } :
+    ({ language := presentation.language
+       calculus :=
+        { presentation.calculus with
+          rules := presentation.rules ++ extraRules } } :
         Presentation).lookupRule? id = some rule := by
   unfold Presentation.lookupRule? at hlookup ⊢
   have preserve : ∀ rules : List RuleSchema,
@@ -284,7 +328,7 @@ in the same `LanguageDef`; absence means that the language declares no
 conversion-certificate interface. -/
 def Presentation.conversionDeclarationValid
     (presentation : Presentation) : Bool :=
-  match presentation.language.conversion with
+  match presentation.conversion with
   | none => true
   | some declaration =>
       declaration.judgmentHead != "" && declaration.version != "" &&
@@ -1772,11 +1816,11 @@ private def stepRule : RuleSchema :=
       judgmentPath (.fvar "theory") (.fvar "source") (.fvar "target") }
 
 private def corpusPresentation : Presentation :=
-  { language :=
-      { LanguageDef.empty "generic-inference-corpus" with
-        judgments :=
+  { language := LanguageDef.empty "generic-inference-corpus"
+    calculus :=
+      { judgments :=
           [judgmentDecl "Fact" 2, judgmentDecl "Edge" 3, judgmentDecl "Path" 3]
-        inferenceRules := [factRule, edgeRule, stepRule] } }
+        rules := [factRule, edgeRule, stepRule] } }
 
 private theorem emptyLanguage_validate (name : String) :
     (LanguageDef.empty name).validate = [] := by
@@ -1798,8 +1842,7 @@ theorem corpusPresentation_valid : corpusPresentation.isValidV2 = true := by
     fixedConstructorListsValid,
     Pattern.zipHead, Pattern.mapHead, Pattern.evalHead,
     Pattern.isWellScoped, Pattern.isWellScopedAt, Pattern.isWellScopedListAt,
-    Pattern.hasCanonicalBinderMetadata, Pattern.hasCanonicalBinderMetadataList,
-    baseValidation_afterProofCalculus]
+    Pattern.hasCanonicalBinderMetadata, Pattern.hasCanonicalBinderMetadataList]
   decide
 
 private def corpus : ValidatedPresentation :=
@@ -1809,9 +1852,10 @@ private def extraFactRule : RuleSchema :=
   { factRule with id := ruleId "fact-extra" }
 
 private def extendedCorpusPresentation : Presentation :=
-  { language :=
-      { corpusPresentation.language with
-        inferenceRules := corpusPresentation.rules ++ [extraFactRule] } }
+  { language := corpusPresentation.language
+    calculus :=
+      { corpusPresentation.calculus with
+        rules := corpusPresentation.rules ++ [extraFactRule] } }
 
 private theorem extendedCorpusPresentation_valid :
     extendedCorpusPresentation.isValidV2 = true := by
@@ -1830,7 +1874,7 @@ private theorem extendedCorpusPresentation_valid :
     Pattern.zipHead, Pattern.mapHead, Pattern.evalHead,
     Pattern.isWellScoped, Pattern.isWellScopedAt,
     Pattern.isWellScopedListAt, Pattern.hasCanonicalBinderMetadata,
-    Pattern.hasCanonicalBinderMetadataList, baseValidation_afterProofCalculus]
+    Pattern.hasCanonicalBinderMetadataList]
   decide
 
 private def extendedCorpus : ValidatedPresentation :=
@@ -1844,7 +1888,8 @@ theorem corpus_refines_extendedCorpus :
   rfl
 
 private def emptyRuleCorpusPresentation : Presentation :=
-  { language := { corpusPresentation.language with inferenceRules := [] } }
+  { language := corpusPresentation.language
+    calculus := { corpusPresentation.calculus with rules := [] } }
 
 private theorem emptyRuleCorpusPresentation_valid :
     emptyRuleCorpusPresentation.isValidV2 = true := by
@@ -1852,8 +1897,7 @@ private theorem emptyRuleCorpusPresentation_valid :
     Presentation.isValidV2, Presentation.judgmentSignatureValid,
     Presentation.judgmentHeads, Presentation.isValidV1,
     Presentation.ruleIds, emptyLanguage_validate, judgmentDecl,
-    Pattern.zipHead, Pattern.mapHead, Pattern.evalHead,
-    baseValidation_afterProofCalculus]
+    Pattern.zipHead, Pattern.mapHead, Pattern.evalHead]
   decide
 
 private def emptyRuleCorpus : ValidatedPresentation :=
@@ -2191,10 +2235,10 @@ private def nestedConstructorRule : RuleSchema :=
       judgmentHolds (.apply "Pair" [.fvar "left", .fvar "right"]) }
 
 private def nestedConstructorPresentation : Presentation :=
-  { language :=
-      { signatureFixtureLanguage with
-        judgments := [judgmentDecl "Holds" 1]
-        inferenceRules := [nestedConstructorRule] } }
+  { language := signatureFixtureLanguage
+    calculus :=
+      { judgments := [judgmentDecl "Holds" 1]
+        rules := [nestedConstructorRule] } }
 
 theorem nestedConstructor_schema_accepts :
     (nestedConstructorPresentation.judgmentSchemaValid
@@ -2253,10 +2297,10 @@ private def binderJudgmentRule : RuleSchema :=
     conclusion := .apply "Scoped" [.lambda none (.fvar "body")] }
 
 private def binderJudgmentPresentation : Presentation :=
-  { language :=
-      { LanguageDef.empty "binder-judgment-fixture" with
-        judgments := [judgmentDecl "Scoped" 1]
-        inferenceRules := [binderJudgmentRule] } }
+  { language := LanguageDef.empty "binder-judgment-fixture"
+    calculus :=
+      { judgments := [judgmentDecl "Scoped" 1]
+        rules := [binderJudgmentRule] } }
 
 /-- V2 imposes no ad hoc ban on a binder-bearing judgment argument; V1's
 exact-depth, scope, and canonical-metadata gates remain authoritative. -/
@@ -2276,14 +2320,12 @@ theorem binderJudgment_presentation_accepts :
     Pattern.hasCanonicalBinderMetadata,
     Pattern.hasCanonicalBinderMetadataList,
     Pattern.zipHead, Pattern.mapHead, Pattern.evalHead,
-    emptyLanguage_validate, baseValidation_afterProofCalculus]
+    emptyLanguage_validate]
   decide
 
 private def constructorCollisionPresentation : Presentation :=
-  { language :=
-      { signatureFixtureLanguage with
-        judgments := [judgmentDecl "Pair" 2]
-        inferenceRules := [] } }
+  { language := signatureFixtureLanguage
+    calculus := { judgments := [judgmentDecl "Pair" 2] } }
 
 theorem constructorJudgmentCollision_reject :
     constructorCollisionPresentation.judgmentSignatureValid = false := by
@@ -2292,11 +2334,11 @@ theorem constructorJudgmentCollision_reject :
     judgmentDecl, signatureFixtureLanguage, pairConstructor]
 
 private def duplicateIdPresentation : Presentation :=
-  { language :=
-      { LanguageDef.empty "duplicate-id" with
-        judgments :=
+  { language := LanguageDef.empty "duplicate-id"
+    calculus :=
+      { judgments :=
           [judgmentDecl "Fact" 2, judgmentDecl "Edge" 3, judgmentDecl "Path" 3]
-        inferenceRules := [factRule, factRule] } }
+        rules := [factRule, factRule] } }
 
 theorem duplicateId_presentation_reject :
     duplicateIdPresentation.isValidV2 = false := by

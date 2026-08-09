@@ -53,7 +53,7 @@ structure OpProfileEntry where
 deriving Repr, DecidableEq
 
 private def opCategoryToString : OpCategory → String
-  | .surfaceSugar => "surfaceSugar"
+  | .syntaxSugar => "syntaxSugar"
   | .preludeEqAndType => "preludeEqAndType"
   | .mettaCallControl => "mettaCallControl"
   | .minimalInstruction => "minimalInstruction"

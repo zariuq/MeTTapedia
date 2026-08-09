@@ -294,9 +294,11 @@ theorem RuleExtraction.ruleApplicationOfBinding
     simpa [instantiateSchemas?] using hpremiseInstantiation
   have hconclusionInstantiation :=
     instantiateSchema?_eq_applyBindings hconclusion harguments
+  have hsideConditions := RuleSchema.sideConditionsHold_of_empty
+    extraction.schema arguments extraction.sideConditionsEmpty
   apply instantiateRule?_eq_some_iff_application.mp
   simp [instantiateRule?, hlookup, hvalid,
-    hpremiseInstantiation', hconclusionInstantiation]
+    hsideConditions, hpremiseInstantiation', hconclusionInstantiation]
 
 /-- The conclusion of the generated application is precisely the
 proof-relevant interpretation of the authored source reduct. -/

@@ -847,7 +847,7 @@ noncomputable def finiteTableChapter12SourceProfile :
   witnessOnlyCounterexampleNotExtensionalInherits :=
     witnessOnlyCounterexampleTable_not_extensionalInherits
 
-/-! ## OSLF pattern-coded source surface -/
+/-! ## OSLF pattern-coded source syntax -/
 
 /-- The concrete OSLF pattern type used to name the Chapter-12 finite-table
 source concepts. -/
@@ -863,7 +863,7 @@ def chapter12WitnessPattern : Chapter12Pattern :=
 
 /-- Tiny classifier from OSLF pattern names into the Chapter-12 membership
 concepts.  Unknown patterns default to `feature`; the named witness pattern is
-the only witness-classified pattern in this minimal source surface. -/
+the only witness-classified pattern in this minimal source syntax. -/
 def chapter12PatternConcept (p : Chapter12Pattern) : MembershipConcept :=
   if p = chapter12WitnessPattern then
     MembershipConcept.witness
@@ -888,7 +888,7 @@ theorem chapter12PatternConcept_witness :
 /-- Role-wrapped OSLF pattern syntax for Chapter-12 concept sources.
 
 The role name supplies the concept channel while the payload stays available to
-carry richer surface syntax.  This is a source classifier over OSLF patterns,
+carry richer concrete syntax.  This is a source classifier over OSLF patterns,
 not a new ASSOC/PAT evidence semantics. -/
 def chapter12RolePattern (role : String) (payload : Chapter12Pattern) : Chapter12Pattern :=
   .apply "chapter12-role" [.apply role [], payload]

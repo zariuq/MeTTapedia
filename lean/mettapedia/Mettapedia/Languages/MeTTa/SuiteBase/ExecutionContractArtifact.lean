@@ -240,7 +240,7 @@ private def normalizeLookupQuery (q : LookupQueryContract) : LookupQueryContract
     sourceRuleCompilable := p.sourceRuleCompilable
     queryCompilable := p.queryCompilable
     spaceEffectCompilable := p.spaceEffectCompilable
-    surfaceHead := q.surfaceHead
+    sourceHead := q.sourceHead
     theoremRefs := p.theoremRefs
     lookupFamily := normalizeFamily q.lookupFamily
   }
@@ -410,7 +410,7 @@ private def renderLookupQuery (q : LookupQueryContract) : String :=
   "{"
     ++ "\"entry_kind\":\"lookup_query\","
     ++ "\"head\":" ++ jsonStr q.head ++ ","
-    ++ "\"surface_head\":" ++ jsonOptStr q.surfaceHead ++ ","
+    ++ "\"source_head\":" ++ jsonOptStr q.sourceHead ++ ","
     ++ "\"arity\":" ++ jsonNat q.arity ++ ","
     ++ renderPermissionCore p ++ ","
     ++ renderMemoShapesField p ++ ","
@@ -592,18 +592,18 @@ private def lintLookupQuery (q : LookupQueryContract) : List String :=
     | _, none => []
     | _, some _ =>
         [s!"{entryTag}: builtin_demand is only valid for grounded_builtin ownership"]
-  let surfaceErrs :=
-    match q.surfaceHead with
+  let sourceHeadErrs :=
+    match q.sourceHead with
     | some s =>
         if s.isEmpty then
-          [s!"{entryTag}: surface_head must be non-empty when provided"]
+          [s!"{entryTag}: source_head must be non-empty when provided"]
         else []
     | none => []
   let theoremErrs :=
     if p.theoremRefs.isEmpty then
       [s!"{entryTag}: theorem_refs cannot be empty"]
     else []
-  headErrs ++ kernelErrs ++ queryErrs ++ memoErrs ++ builtinErrs ++ surfaceErrs ++ theoremErrs
+  headErrs ++ kernelErrs ++ queryErrs ++ memoErrs ++ builtinErrs ++ sourceHeadErrs ++ theoremErrs
 
 private def lintSpaceEffect (e : SpaceEffectContract) : List String :=
   let entryTag := s!"space_effect/{e.head}"

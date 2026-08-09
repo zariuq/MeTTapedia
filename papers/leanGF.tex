@@ -135,7 +135,7 @@ proof trees showing how premises combine to yield hypotheses.
 
 \begin{figure}[h]
 \begin{lstlisting}
-Surface English text
+English linearization
   |
   v
 Layer 1: GF ParseEng (C runtime, 115K WordNet entries)
@@ -469,7 +469,7 @@ redesigned Layer~4 from a flat \code{Frame} IR to a three-pass
 compositional pipeline:
 
 \begin{enumerate}
-\item \textbf{NormClause}: canonicalizes surface variation.
+\item \textbf{NormClause}: canonicalizes linearization variation.
   \code{FocusComp}, \code{PredVPS+UseComp}, \code{PredVP+UseComp},
   and \code{AdvIsNP} all map to a single \code{copular(subject, complement)}
   form. Transitive verbs map to \code{predication(subject, verb, object)}.
@@ -517,7 +517,7 @@ inductive CopulaOrigin where
 
 inductive RGLView where
   ...
-  | copularSurface (origin : CopulaOrigin) (lhs rhs : RGLView)
+  | copularForm (origin : CopulaOrigin) (lhs rhs : RGLView)
 \end{lstlisting}
 
 \code{NormClause} then uses the origin to guarantee canonical
@@ -880,7 +880,7 @@ Two grounded slices are currently in the live lane:
   syntax-only \code{LanguageDef}, again with 0 equations and 0 rewrites.
   We additionally generate a theorem-usable \code{ProjectCoreSig.funsList},
   so the larger slice is not only regression-checked but also available to
-  Lean as a kernel-reducible constructor surface.
+  Lean as a kernel-reducible constructor interface.
   On the Rust side, the same artifact is already checked structurally via
   Lean-exported \code{language!} fixtures and exact shared-core comparison;
   compiling the full generated Rust module is presently an engineering-scale
@@ -908,7 +908,7 @@ For the real syntax-only lane, the NTT/OSLF layer presently supports:
   progressive clauses, all still on the syntax-only lane;
 \item explicit proofs and regression checks that the syntax-only lane
   has no executable reductions.
-\item exact structural export into the Rust \code{language!} surface for both
+\item exact structural export into the Rust \code{language!} notation for both
   \code{PaperAmbiguity} and the larger \code{project\_core} slice, with
   canonical shared-core agreement checked mechanically.
 \end{itemize}
@@ -1095,7 +1095,7 @@ the logic chain.
 
 The pipeline spans five layers: GF parses English (98\% coverage on
 EntailmentBank), \GFCore{} provides the grammar-agnostic trust boundary
-(25~modules), RGLView/NormClause canonicalize surface variation, the
+(25~modules), RGLView/NormClause canonicalize linearization variation, the
 unified Term/Atom layer provides PLN-compatible propositions, and the
 LP~bridge connects to a formally verified least Herbrand model via
 Tarski's fixpoint theorem.

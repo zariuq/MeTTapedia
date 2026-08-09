@@ -11,7 +11,7 @@ import MeTTailCore.Crypto.SHA256
 /-!
 # HE Artifact Bundle
 
-Full-HE authority surface bundled with manifest integrity checking.
+Full-HE authority interface bundled with manifest integrity checking.
 This is the single entry point for mettail-rust to load all HE contracts.
 
 Schema v3 — mirrors PeTTa's `petta.manifest.json` pattern:
@@ -22,7 +22,7 @@ Schema v3 — mirrors PeTTa's `petta.manifest.json` pattern:
 ## Contract-First Rule
 Per `mettail-rust/CLAUDE.md`: profile chooses, contracts execute, Rust lowers
 certified lanes. The manifest is how Rust discovers and validates the full
-HE contract surface.
+HE contract interface.
 
 ## Backend
 MM2/MORK. Datalog/Ascent is deprecated and NOT referenced.

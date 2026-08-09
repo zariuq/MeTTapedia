@@ -26,16 +26,17 @@ def hol4EvidenceProfile : EvidenceProfile :=
     relationHeadPrefix := "$hol.rel." }
 
 def holLightInferencePresentation? : Option Presentation :=
-  rawPresentation? holLightEvidenceProfile holLightEqKernel
+  rawPresentation? holLightEvidenceProfile holLightEqKernel holLightLogic.1
 
 def hol4InferencePresentation? : Option Presentation :=
-  rawPresentation? hol4EvidenceProfile hol4LcfKernel
+  rawPresentation? hol4EvidenceProfile hol4LcfKernel hol4Logic.1
 
 def holLightValidatedPresentation? : Option ValidatedPresentation :=
   validatedPresentation? holLightEvidenceProfile holLightEqKernel
+    holLightLogic.1
 
 def hol4ValidatedPresentation? : Option ValidatedPresentation :=
-  validatedPresentation? hol4EvidenceProfile hol4LcfKernel
+  validatedPresentation? hol4EvidenceProfile hol4LcfKernel hol4Logic.1
 
 def extractedEvidenceArity? (profile : EvidenceProfile)
     (language : LanguageDef) : Option (List Nat) := do
@@ -53,7 +54,7 @@ def extractedRulesInBindingFragment? (profile : EvidenceProfile)
     (language : LanguageDef) : Option Bool := do
   let rules ← language.rewrites.mapM (extractRule? profile language)
   pure <| rules.all fun extraction =>
-    extraction.schema.patterns.all
+    (RuleSchema.patterns extraction.schema).all
       (checkBindingSchemaFragment extraction.schema.metavariables)
 
 #guard holLightValidatedPresentation?.isSome
@@ -71,8 +72,10 @@ def extractedRulesInBindingFragment? (profile : EvidenceProfile)
 #guard extractedSideArity? hol4EvidenceProfile hol4LcfKernel ==
   some [1, 0, 1, 1, 1, 0, 0, 0]
 
-#guard (relationFactRules holLightEvidenceProfile holLightEqKernel).length == 3
-#guard (relationFactRules hol4EvidenceProfile hol4LcfKernel).length == 3
+#guard (relationFactRules holLightEvidenceProfile holLightEqKernel
+  holLightLogic.1).length == 3
+#guard (relationFactRules hol4EvidenceProfile hol4LcfKernel
+  hol4Logic.1).length == 3
 
 #guard holLightInferencePresentation?.map (·.rules.length) == some 18
 #guard hol4InferencePresentation?.map (·.rules.length) == some 11

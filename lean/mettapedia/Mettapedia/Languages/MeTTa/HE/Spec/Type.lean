@@ -272,7 +272,7 @@ inductive ApplicabilityRel (space : Space) :
         (.error (mkError expression
           -- The pseudocode prints `idx - 1` despite iterating expression
           -- positions from one.  The reference evaluator and the documented
-          -- `BadArgType` surface report one-based argument positions.
+          -- `BadArgType` interface reports one-based argument positions.
           (.badArgType (argumentsBefore.length + 1)
             expectedArgument actualType)))
   | badReturn {expression functionType expectedType operator returnType : Atom}

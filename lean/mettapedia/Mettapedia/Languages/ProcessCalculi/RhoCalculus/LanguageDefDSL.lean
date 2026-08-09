@@ -122,8 +122,6 @@ private def referenceEncodingDeltaSource : LanguageDef :=
         ~> (PPar {(eval cont qs.*map(|q| (NQuote q))), ...rest});
       NewCong . | S ~> T |- (PNew ^[xs].S) ~> (PNew ^[xs].T);
     }
-    logic { }
-    oracles { }
   }
 
 /-- Polyadic input, restriction/extrusion, and their rules as a bounded audit
@@ -148,8 +146,6 @@ private def nativeFoldDeltaSource : LanguageDef :=
     }
     equations { }
     rewrites { }
-    logic { }
-    oracles { }
   }
 
 end DeltaDSL

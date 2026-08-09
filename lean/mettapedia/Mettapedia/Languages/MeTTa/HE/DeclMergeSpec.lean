@@ -114,7 +114,7 @@ end
 
 /-! ## §1.5  Executable fold helpers + fuel monotonicity
 
-The executable merge surface is a pair of left-to-right folds over lists of
+The executable merge interface is a pair of left-to-right folds over lists of
 relations.  We name those folds explicitly so the soundness/completeness proofs
 can talk about them directly, then prove the small monotonicity/seedwise lemmas
 needed to synchronize local witnesses to one common fuel. -/
@@ -482,7 +482,7 @@ theorem addVarEquality_sound
     AddVarEqualityRel b a c out :=
   (mergeSoundFamily fuel).2.1 h
 
-/-- Soundness of the full executable `mergeBindings` surface against the
+/-- Soundness of the full executable `mergeBindings` interface against the
     faithful declarative merge relation. -/
 theorem mergeBindings_sound
     {left right out : Bindings} {fuel : Nat}
@@ -826,7 +826,7 @@ theorem addVarEquality_complete
     ∃ fuel, out ∈ addVarEquality b a c fuel :=
   completePack.addVarEquality h
 
-/-- Completeness of the full executable `mergeBindings` surface. -/
+/-- Completeness of the full executable `mergeBindings` interface. -/
 theorem mergeBindings_complete
     {left right out : Bindings}
     (h : MergeRel left right out) :

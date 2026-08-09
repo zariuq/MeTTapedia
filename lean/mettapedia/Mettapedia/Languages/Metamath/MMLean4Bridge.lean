@@ -1,6 +1,7 @@
 import Metamath.DeclarativeSpec
 import Metamath.Verify
 import Metamath.KernelClean
+import Metamath.RunEmission
 import Metamath.Spec.Operational
 
 /-!
@@ -60,9 +61,29 @@ abbrev toOperationalDatabase := Metamath.Kernel.toDatabase
 /-- Totalized database bridge used by existing `mm-lean4` theorems. -/
 abbrev toOperationalDatabaseTotal := Metamath.Kernel.toDatabaseTotal
 
-/-- End-to-end acceptance theorem already proved in `mm-lean4`. -/
-abbrev parserAcceptance_iff_specProvable :=
-  Metamath.Kernel.verify_parser_acceptance_iff_spec_provable
+/-- Fixed-parsed-database checker adequacy proved in `mm-lean4`. -/
+abbrev proofCheckerNormalAcceptance_iff_specProvable_inParsedDB :=
+  Metamath.Kernel.proofChecker_normal_acceptance_iff_specProvable_in_parsedDB
+
+/-- Execution chronology emitted by one concrete single-pass invocation. -/
+abbrev SinglePassEmission := Metamath.RunEmission.SinglePassEmission
+abbrev ExecutionChronology := Metamath.RunEmission.ExecutionChronology
+
+/-- Every successful prefix-certified run has one execution chronology. -/
+abbrev checkSinglePassExecutionChronologyExactlyOne :=
+  Metamath.RunEmission.checkSinglePass_execution_chronology_exactly_one
+
+/-- Every stored theorem is derivable from the run's axiom events. -/
+abbrev checkSinglePassEveryTheoremProvableFromRunAxiomEvents :=
+  Metamath.RunEmission.checkSinglePass_every_theorem_provable_from_run_axiom_events
+
+/-- Sound-default specialization of the execution-chronology theorem. -/
+abbrev checkSinglePassSoundDefaultExecutionChronology :=
+  Metamath.RunEmission.checkSinglePass_soundDefault_execution_chronology
+
+/-- Knife-mode specialization of the execution-chronology theorem. -/
+abbrev checkSinglePassKnifeExecutionChronology :=
+  Metamath.RunEmission.checkSinglePass_knife_execution_chronology
 
 /-- Explicit carrier table for the new Metamath bridge.
 This is intentionally small and type-directed: it tells us which verified

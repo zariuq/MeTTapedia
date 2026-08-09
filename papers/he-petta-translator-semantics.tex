@@ -46,13 +46,13 @@
 This document states the semantic contract for translating between Hyperon
 Experimental (\HE{}) MeTTa and \PeTTa{} MeTTa.  The central point is that both
 systems use MeTTa syntax, but they do not always give the same operational
-meaning to every surface form.  A faithful translator must therefore do more
+meaning to every source form.  A faithful translator must therefore do more
 than parse and reprint S-expressions: it must preserve observable behavior on a
 shared core, lower source conveniences to explicit target forms where possible,
-and classify helper or profile-specific surfaces explicitly when portability
+and classify helper or profile-specific interfaces explicitly when portability
 requires more than syntax.
 
-We describe the shared and non-shared language surfaces, the main translation
+We describe the shared and non-shared language interfaces, the main translation
 rules in both directions, the status of quote/eval/reduce, \code{test},
 \code{hyperpose}, type queries, state, imports, and space operations, and the
 validation obligations for production use.  The companion engineering
@@ -115,19 +115,19 @@ Lane & Meaning & Example \\
 Shared core & Behavior is expected to agree on the target engines under
 consideration. & \code{if}, \code{case}, many \code{let}, \code{match}, and
 arithmetic examples. \\
-Portable lowering & Source surface is rewritten to target forms without
+Portable lowering & Source syntax is rewritten to target forms without
 \PeTTa{}-only assumptions. & \code{length (collapse e)} to \code{let} plus
 \code{size-atom}. \\
 Translator helper & Generated artifact needs a small helper definition to
 preserve source behavior. & \code{test}, \code{assertEqualToEval},
 \PeTTa{}-profile \code{quoted-syntax}. \\
-\HE{}-extended compatibility & Uses an \HE{}-family surface present in CeTTa
+\HE{}-extended compatibility & Uses an \HE{}-family interface present in CeTTa
 \code{he-extended} and \PeTTa{} \code{--he}, but not upstream \HE{} core. &
 \code{select 1} in an explicit extended lane. \\
 \PeTTa{} \HE{} compatibility & Intended for \code{./run.sh --he}; may rely on
 profile behavior outside \HE{} core. & Callable-return application and selected
 quote/eval/reduce compatibility. \\
-\PeTTa{} extension & Useful runtime surface outside the strict portability
+\PeTTa{} extension & Useful runtime interface outside the strict portability
 claim. & \code{cut}, native \code{msort}, Python FFI, host resources, selected path/indexing support. \\
 \bottomrule
 \end{longtable}
@@ -136,9 +136,9 @@ This table is part of the correctness contract.  A helper-class artifact may be
 correct for its intended target while remaining unsuitable as a backend-agnostic
 \HE{} conformance example.
 
-\section{\HE{} Surface}
+\section{\HE{} Interface}
 
-The \HE{} target surface used by the translator is centered on explicit
+The \HE{} target interface used by the translator is centered on explicit
 evaluation and binding constructs.  Important target forms include:
 \begin{center}
 \begin{tabular}{p{0.38\linewidth}p{0.52\linewidth}}
@@ -150,18 +150,18 @@ Construct & Role \\
 \code{superpose}, \code{superpose-bind} & Re-entry of alternatives. \\
 \code{eval}, \code{evalc}, \code{unquote} & Explicit evaluation of syntax/data. \\
 \code{case}, \code{switch} & Pattern-directed branching. \\
-\code{size-atom} & Explicit tuple size/count surface. \\
-\code{function}, \code{return} & Minimal function-return surface. \\
+\code{size-atom} & Explicit tuple size/count interface. \\
+\code{function}, \code{return} & Minimal function-return interface. \\
 \code{metta} & Interpreter call with expected type and space. \\
 \bottomrule
 \end{tabular}
 \end{center}
 
 The translator should not turn implementation extensions into \HE{} core
-requirements.  If a target runtime provides an extra surface, that surface must
+requirements.  If a target runtime provides an extra interface, that interface must
 be named as a profile or extension.
 
-\section{\PeTTa{} Surface}
+\section{\PeTTa{} Interface}
 
 \PeTTa{} source programs use the same S-expression syntax plus Prolog-backed
 runtime conveniences.  Some forms are shared.  Others require explicit
@@ -170,7 +170,7 @@ translation.
 \begin{longtable}{>{\raggedright\arraybackslash}p{0.32\linewidth}
                   >{\raggedright\arraybackslash}p{0.58\linewidth}}
 \toprule
-\PeTTa{} surface & Translation status \\
+\PeTTa{} interface & Translation status \\
 \midrule
 \endhead
 \code{let}, \code{let*}, \code{if}, \code{case}, \code{match},
@@ -238,7 +238,7 @@ Preserve observable test behavior without assuming a target-native
 \PeTTa{} \code{test}. \\
 \code{once} & \code{collapse} plus \code{case}/\code{decons-atom} by default &
 Preserve committed choice without relying on \code{select}; explicit extended
-and \PeTTa{} profile lanes may use their native surfaces. \\
+and \PeTTa{} profile lanes may use their native interfaces. \\
 \code{unique-atom (collapse e)} & \code{collapse (unique e')} & Use target uniqueness. \\
 \code{hyperpose} & \code{superpose}, unless preserved & Drop scheduling, keep values. \\
 \bottomrule
@@ -279,7 +279,7 @@ quoted syntax by inserting a helper:
 \end{lstlisting}
 and lowering \code{(quote e)} to
 \code{(quoted-syntax (quote e'))}.  That helper is a profile compatibility
-surface, not a pure-\HE{} core claim.
+interface, not a pure-\HE{} core claim.
 
 \section{Tests And Assertions}
 
@@ -340,7 +340,7 @@ native ordering.
 
 \section{Hyperpose}
 
-\code{hyperpose} is \PeTTa{}'s parallel nondeterministic surface.  The default
+\code{hyperpose} is \PeTTa{}'s parallel nondeterministic interface.  The default
 portable translation lowers it to \code{superpose}, preserving the
 nondeterministic values but not claiming to preserve parallel scheduling.
 
@@ -402,14 +402,14 @@ concrete semantic divergences observed empirically between upstream \HE{} and
 meaning does not.
 
 \paragraph{Method.}
-Each \HE{} surface is run on upstream Rust \HE{} (the sole oracle of \HE{}
+Each \HE{} test form is run on upstream Rust \HE{} (the sole oracle of \HE{}
 meaning) and on \PeTTa{} \code{--he} (the subject under test); result lines are
 compared after safe normalization only.  Over the 34 canonical \HE{} example
 programs (the \code{a}--\code{g} families), \PeTTa{} \code{--he} reproduces the
 upstream result on \textbf{26 of 34}; the 8 divergences are not scattered but
-cluster in the families below, and per-surface probes corroborate and add finer
+cluster in the families below, and per-feature probes corroborate and add finer
 cases (such as the \code{if}-arity row).  The machine-readable record is the
-surface registry \code{petta-he-profile/tests/he\_spec\_surfaces.tsv} and the
+interface registry \code{petta-he-profile/tests/he\_spec\_surfaces.tsv} and the
 divergence registry \code{petta-he-profile/src/he/DIVERGENCES.md} (measured
 2026-06).
 
@@ -430,7 +430,7 @@ match-template and eval staging. & bridged by helper \\
 Arity strictness & \HE{} errors \code{IncorrectNumberOfArguments} on a
 two-argument \code{if}; \PeTTa{} \code{--he} evaluates it as if-then
 (\code{(if True 42)} $\to$ \code{42}). & DIV-011; leniency \\
-Typed-error surface & \HE{} emits structured \code{BadArgType}/\code{BadType};
+Typed-error interface & \HE{} emits structured \code{BadArgType}/\code{BadType};
 \PeTTa{} is more permissive (inferred type, \code{\%Undefined\%}, or empty), and
 grounded arithmetic on non-numbers must be guarded to avoid a host abort. &
 \code{b5}; leniency \\
@@ -449,10 +449,10 @@ minor \\
 
 \paragraph{Consequence.}
 \PeTTa{} \code{--he} is faithful to upstream \HE{} on many broad shared-core
-surfaces (for example arithmetic, \code{eval}, \code{chain},
+interfaces (for example arithmetic, \code{eval}, \code{chain},
 \code{cons-atom}/\code{decons-atom}, simple defining equations, and simple type
 queries), but falls back to \PeTTa{} semantics on the families above ---
-precisely the surfaces where the two dialects genuinely disagree.  \PeTTa{}
+precisely the interfaces where the two dialects genuinely disagree.  \PeTTa{}
 \code{--he} is
 therefore a useful compatibility profile, \emph{not} a faithful \HE{} reference:
 it must not be used as an \HE{} oracle or as evidence of \HE{} conformance.  For
@@ -475,7 +475,7 @@ There are several distinct evidence layers:
 \end{itemize}
 
 These gates answer different questions.  A green \PeTTa{} \code{--he} survey is
-not automatically a cross-engine proof.  A helper-surface classification is not
+not automatically a cross-engine proof.  A helper-interface classification is not
 a runtime failure.  A proof over the common fragment does not license arbitrary
 host extensions.
 
@@ -488,7 +488,7 @@ A translation rule is production-ready only when:
 \item fresh variables are capture-avoiding;
 \item generated helper names avoid source-symbol collisions;
 \item observable output is preserved or explicitly classified;
-\item helper surfaces are named as helpers, not \HE{} core;
+\item helper interfaces are named as helpers, not \HE{} core;
 \item translator tests pass;
 \item representative generated artifacts run under their intended target;
 \item cross-engine differences are classified when portability is claimed.
@@ -502,7 +502,7 @@ translation that changes source behavior is a regression.
 The \HE{} $\leftrightarrow$ \PeTTa{} translator should be understood as a
 semantic bridge between related MeTTa profiles, not as a string rewriter between
 identical languages.  Its most important discipline is classification: shared
-core behavior, portable lowering, helper surfaces, compatibility profiles, and
+core behavior, portable lowering, helper interfaces, compatibility profiles, and
 extensions must stay distinct.  With that discipline, the translator can serve
 both engineering use and formalization work without making false portability
 claims.

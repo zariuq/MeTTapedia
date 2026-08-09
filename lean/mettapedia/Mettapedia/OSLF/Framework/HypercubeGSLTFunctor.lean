@@ -41,19 +41,15 @@ The key structural lemma: if a term reduces in a weaker vertex's language,
 it also reduces in a stronger vertex's language.  This follows from rule
 monotonicity (`activeRules_subset_of_le`). -/
 
-/-- Declarative one-step reduction is monotone in the rule set when the two
-languages share the reflective presentation that determines matching and
-right-hand-side substitution.  This is the general version for any
-`RelationEnv`, with no restriction on premises. -/
+/-- Core declarative one-step reduction is monotone in the rule set.  This is
+the general version for any `RelationEnv`, with no restriction on premises. -/
 theorem contextualStep_mono_rules
     {lang₁ lang₂ : LanguageDef}
     (hrules : ∀ r, r ∈ lang₁.rewrites → r ∈ lang₂.rewrites)
-    (hreflect : lang₁.reflectivePresentations = lang₂.reflectivePresentations)
-    (hreflectRules : lang₁.reflectiveRules = lang₂.reflectiveRules)
     {relEnv : RelationEnv} {p q : Pattern}
     (hred : Step (engineBasePremises relEnv) lang₁ p q) :
     Step (engineBasePremises relEnv) lang₂ p q :=
-  hred.mono_rules hrules hreflect hreflectRules
+  hred.mono_rules hrules
 
 /-- Reduction is monotone along the hypercube weakness order. -/
 theorem langReduces_mono_vertex {v w : ProbabilityVertex} (h : v ≤ w)
@@ -65,8 +61,6 @@ theorem langReduces_mono_vertex {v w : ProbabilityVertex} (h : v ≤ w)
     (lang₁ := vertexLanguageDef w)
     (lang₂ := vertexLanguageDef v)
     (activeRules_subset_of_le h)
-    rfl
-    rfl
     hred
 
 /-! ## §2: Multi-Step Reduction Transport

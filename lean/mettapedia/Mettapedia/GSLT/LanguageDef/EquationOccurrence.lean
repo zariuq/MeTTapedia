@@ -209,26 +209,16 @@ end AuthoredEquationInstanceWitness
 
 /-- A proof-relevant authored contextual generator.
 
-This is the occurrence layer above `EquationContextStep`: equation identity,
-orientation, bindings, reflective-declaration identity, and redex context live
-in `Type`; `erase` recovers the ordinary support relation in `Prop`. -/
+This is the occurrence layer above the five-field `EquationContextStep`:
+equation identity, orientation, bindings, and redex context live in `Type`;
+`erase` recovers the ordinary support relation in `Prop`.  Reflection has its
+own indexed occurrence layer in `ReflectiveEquationOccurrence`. -/
 inductive AuthoredGeneratorWitness
     (base : BasePremiseEvaluator) (language : LanguageDef) :
     Pattern → Pattern → Type where
   | equation (context : OneHoleContext) {redex contractum : Pattern}
       (instanceWitness : AuthoredEquationInstanceWitness base language redex
         contractum) :
-      AuthoredGeneratorWitness base language (context.fill redex)
-        (context.fill contractum)
-  | reflective (context : OneHoleContext)
-      (declaration : { declaration : ReflectivePresentationDecl //
-        declaration ∈ language.reflectivePresentations })
-      {redex contractum : Pattern}
-      (representatives :
-        Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
-            declaration.1 redex =
-          Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
-            declaration.1 contractum) :
       AuthoredGeneratorWitness base language (context.fill redex)
         (context.fill contractum)
 
@@ -242,8 +232,6 @@ def erase {base : BasePremiseEvaluator} {language : LanguageDef}
       EquationContextStep base language left right
   | .equation context instanceWitness =>
       .inContext context instanceWitness.erase
-  | .reflective context declaration representatives =>
-      .reflectiveInContext context declaration.2 representatives
 
 /-- Support erasure is complete: every proposition-valued authored generator
 has a proof-relevant occurrence above it. This does not choose an occurrence
@@ -259,31 +247,24 @@ theorem exists_erasing_to {base : BasePremiseEvaluator}
         AuthoredEquationInstanceWitness.exists_erasing_to instanceWitness
       refine ⟨.equation context instanceOccurrence, ?_⟩
       exact Subsingleton.elim _ _
-  | @reflectiveInContext context declaration redex contractum membership
-      representatives =>
-      refine ⟨.reflective context ⟨declaration, membership⟩ representatives, ?_⟩
-      exact Subsingleton.elim _ _
 
 /-- Exact redex context retained by either authored generator form. -/
 def redexContext {base : BasePremiseEvaluator} {language : LanguageDef}
     {left right : Pattern} :
     AuthoredGeneratorWitness base language left right → OneHoleContext
   | .equation context _ => context
-  | .reflective context _ _ => context
 
 /-- Exact redex selected inside the retained one-hole context. -/
 def redex {base : BasePremiseEvaluator} {language : LanguageDef}
     {left right : Pattern} :
     AuthoredGeneratorWitness base language left right → Pattern
   | .equation _ (redex := redex) _ => redex
-  | .reflective _ _ (redex := redex) _ => redex
 
 /-- Exact contractum selected inside the retained one-hole context. -/
 def contractum {base : BasePremiseEvaluator} {language : LanguageDef}
     {left right : Pattern} :
     AuthoredGeneratorWitness base language left right → Pattern
   | .equation _ (contractum := contractum) _ => contractum
-  | .reflective _ _ (contractum := contractum) _ => contractum
 
 /-- The retained context and redex reconstruct the indexed left endpoint. -/
 @[simp]
@@ -292,7 +273,8 @@ theorem redexContext_fill_redex
     {left right : Pattern}
     (witness : AuthoredGeneratorWitness base language left right) :
     witness.redexContext.fill witness.redex = left := by
-  cases witness <;> rfl
+  cases witness
+  rfl
 
 /-- The retained context and contractum reconstruct the indexed right
 endpoint. -/
@@ -302,7 +284,8 @@ theorem redexContext_fill_contractum
     {left right : Pattern}
     (witness : AuthoredGeneratorWitness base language left right) :
     witness.redexContext.fill witness.contractum = right := by
-  cases witness <;> rfl
+  cases witness
+  rfl
 
 /-- Executable constructor discriminator for the proof-relevant generator
 witness. -/
@@ -310,7 +293,6 @@ def isEquation {base : BasePremiseEvaluator} {language : LanguageDef}
     {left right : Pattern} :
     AuthoredGeneratorWitness base language left right → Bool
   | .equation .. => true
-  | .reflective .. => false
 
 end AuthoredGeneratorWitness
 

@@ -7,7 +7,7 @@ import Mettapedia.PLN.WorldModel.WorldModelCalculus
 # Predictive-coding bridge to binary world models
 
 This file connects the scalar linear-Gaussian predictive-coding bridge to the
-`BinaryWorldModel` query surface.
+`BinaryWorldModel` query interface.
 
 The bridge is local: two unit-strength scalar Gaussian observations become
 binary evidence for one world-model query, and the derived query strength

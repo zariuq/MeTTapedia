@@ -124,11 +124,11 @@ def capitalizeFirst (s : String) : String :=
   | [] => ""
   | c :: cs => String.ofList (c.toUpper :: cs)
 
-/-- Heading surface from singular mass NP. -/
+/-- Heading text from singular mass NP. -/
 def headingNP (cn : EnglishCN) : String :=
   capitalizeFirst <| (linMassNP cn).s (.NCase .Nom)
 
-/-- Heading surface from plural mass NP. -/
+/-- Heading text from plural mass NP. -/
 def headingPlNP (cn : EnglishCN) : String :=
   capitalizeFirst <| (linMassPluralNP cn).s (.NCase .Nom)
 

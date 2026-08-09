@@ -475,7 +475,7 @@ end
 end CostWire
 
 /- The raw reference semantics is intentionally kernel-executable across
-module boundaries.  This attribute set is the trusted reduction surface used
+module boundaries.  This attribute set is the trusted reduction interface used
 by closed conformance examples and later bridge proofs. -/
 attribute [reducible]
   stableInsertBy stableSortBy

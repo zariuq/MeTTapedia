@@ -3,10 +3,11 @@ import Mettapedia.GSLT.LanguageDef.CostSemanticSoundness
 /-!
 # Authored erasure and the exact semantic Cost object
 
-The retained semantic relation projects to paths in the sole authored Cost
-`IGSLT` equation setoid.  Together with in-place exact normalization, this
-packages semantic Cost as an `ElaboratedOpenTheory` without imposing compact
-faithfulness or a second equation authority.
+The retained semantic relation projects to paths in the admitted reflective
+equation theory over the sole authored Cost `IGSLT`.  Together with in-place
+exact normalization, this packages semantic Cost as a
+`ReflectiveElaboratedOpenTheory` without imposing compact faithfulness or a
+second equation authority.
 -/
 
 namespace Mettapedia.GSLT.LanguageDef
@@ -28,11 +29,14 @@ theorem supportedOpenAssignment_cons_fiberEquivalent_of_values
     {boundary : TypedCostRegionBoundary source color targetFree}
     {content : boundary.boundary.content = occurrence.content}
     {tail : TypedCostRegionBoundaryTable source color targetFree occurrences}
-    (leftValue rightValue : WellSorted.OpenPattern source.costWholeLanguage
-      targetFree boundary.boundary.targetSupport boundary.boundary.targetType)
+    (leftValue rightValue : ReflectiveWellSorted.OpenPattern
+      source.costWholeReflectionProfile source.costWholeLanguage targetFree
+      boundary.boundary.targetSupport boundary.boundary.targetType)
     (leftValues rightValues : Values source color targetFree tail)
     (headEquivalent : ∀ inner : List TypeExpr,
-      (openPatternEquationSetoid source.costWholeLanguage targetFree
+      (ReflectiveEquationSemantics.reflectiveOpenPatternEquationSetoid
+        source.costWholeReflectionProfile defaultBasePremises
+        source.costWholeLanguage targetFree
         (inner ++ boundary.boundary.targetSupport)
         boundary.boundary.targetType).r
         (leftValue.weakenRoot inner) (rightValue.weakenRoot inner))
@@ -49,10 +53,12 @@ theorem supportedOpenAssignment_cons_fiberEquivalent_of_values
       simpa [WellSorted.SupportedOpenAssignment.weakenedValue,
         supportedOpenAssignment, supportedAssignment, assignment,
         TypedCostRegionBoundaryTable.restorationSupport, decodedName] using
-        ((openPatternEquationSetoid source.costWholeLanguage targetFree
-          (inner ++
-            (TypedCostRegionBoundaryTable.cons boundary content tail
-              ).restorationSupport name) type).iseqv.refl
+        ((ReflectiveEquationSemantics.reflectiveOpenPatternEquationSetoid
+          source.costWholeReflectionProfile defaultBasePremises
+          source.costWholeLanguage targetFree
+            (inner ++
+              (TypedCostRegionBoundaryTable.cons boundary content tail
+                ).restorationSupport name) type).iseqv.refl
           (WellSorted.SupportedOpenAssignment.weakenedValue
             ((Values.cons leftValue leftValues).supportedOpenAssignment
               (.cons boundary content tail)) lookup inner))
@@ -81,7 +87,8 @@ theorem supportedOpenAssignment_cons_fiberEquivalent_of_values
                     (costRegionBoundaryVariableName boundary.boundary) :=
           congrArg (fun support => inner ++ support) supportEquality.symm
         have transported :=
-          WellSorted.openPatternEquationSetoid_reindexBound boundEquality
+          ReflectiveWellSorted.reflectiveOpenPatternEquationSetoid_reindexBound
+            boundEquality
             (headEquivalent inner)
         have leftEndpoint :
             (leftValue.weakenRoot inner).reindexBound boundEquality =
@@ -121,7 +128,8 @@ theorem supportedOpenAssignment_cons_fiberEquivalent_of_values
                   ).restorationSupport name :=
           congrArg (fun support => inner ++ support) supportEquality.symm
         have transported :=
-          WellSorted.openPatternEquationSetoid_reindexBound boundEquality
+          ReflectiveWellSorted.reflectiveOpenPatternEquationSetoid_reindexBound
+            boundEquality
             tailStep
         have leftEndpoint :
             ((leftValues.supportedOpenAssignment tail).weakenedValue
@@ -158,7 +166,8 @@ theorem normalizedArgument_pattern
     (parameterType : WellSorted.parameterType? parameter = some type)
     (canonical : pattern.hasCanonicalBinderMetadata = true)
     (object : WellSorted.isObjectPattern pattern = true)
-    (scope : WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
+    (scope : ReflectiveWellSorted.ReflectiveScopeSafeAt
+      source.costWholeReflectionProfile
       available.length pattern) :
     (tree.normalizedArgument parameter representation parameterType canonical
       object scope).term.pattern = tree.normalize.result.pattern :=
@@ -174,7 +183,8 @@ theorem originalArgument_pattern
     (parameterType : WellSorted.parameterType? parameter = some type)
     (canonical : pattern.hasCanonicalBinderMetadata = true)
     (object : WellSorted.isObjectPattern pattern = true)
-    (scope : WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
+    (scope : ReflectiveWellSorted.ReflectiveScopeSafeAt
+      source.costWholeReflectionProfile
       available.length pattern) :
     (tree.originalArgument parameter representation parameterType canonical object
       scope).term.pattern = pattern :=
@@ -192,7 +202,8 @@ theorem simpleArgument_equationSetoid
         (.simple parameterName parameterTypeExpression) = some type)
     (canonical : pattern.hasCanonicalBinderMetadata = true)
     (object : WellSorted.isObjectPattern pattern = true)
-    (scope : WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
+    (scope : ReflectiveWellSorted.ReflectiveScopeSafeAt
+      source.costWholeReflectionProfile
       available.length pattern)
     (equivalent :
       (WellSorted.AvailableOpenPattern.equationSetoid
@@ -207,13 +218,15 @@ theorem simpleArgument_equationSetoid
       (tree.originalArgument (.simple parameterName parameterTypeExpression)
         True.intro parameterType canonical object scope) := by
   let pack := fun
-      (term : WellSorted.AvailableOpenPattern source.costWholeLanguage
-        targetFree available outer type) =>
+      (term : WellSorted.AvailableOpenPattern
+        source.costWholeReflectionProfile source.costWholeLanguage targetFree
+        available outer type) =>
     ({ term := term
        representation := True.intro
        parameterType := parameterType } :
-      WellSorted.AvailableOpenArgument source.costWholeLanguage targetFree
-        available outer (.simple parameterName parameterTypeExpression) type)
+      WellSorted.AvailableOpenArgument source.costWholeReflectionProfile
+        source.costWholeLanguage targetFree available outer
+          (.simple parameterName parameterTypeExpression) type)
   have packed :=
     WellSorted.AvailableOpenArgument.equationSetoid_of_term_map pack
       (by
@@ -245,7 +258,8 @@ def NormalizationSound {source : CIGSLT}
   (∀
       (canonical : pattern.hasCanonicalBinderMetadata = true)
       (object : WellSorted.isObjectPattern pattern = true)
-      (scope : WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
+      (scope : ReflectiveWellSorted.ReflectiveScopeSafeAt
+        source.costWholeReflectionProfile
         available.length pattern),
       (WellSorted.AvailableOpenPattern.equationSetoid
         source.costWholeLanguage targetFree available outer type).r
@@ -258,7 +272,8 @@ def NormalizationSound {source : CIGSLT}
       (parameterType : WellSorted.parameterType? parameter = some type)
       (canonical : pattern.hasCanonicalBinderMetadata = true)
       (object : WellSorted.isObjectPattern pattern = true)
-      (scope : WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
+      (scope : ReflectiveWellSorted.ReflectiveScopeSafeAt
+        source.costWholeReflectionProfile
         available.length pattern),
       (WellSorted.AvailableOpenArgument.equationSetoid
         source.costWholeLanguage targetFree available outer parameter type).r
@@ -282,11 +297,12 @@ def NormalizationSound {source : CIGSLT}
     (canonical : Pattern.hasCanonicalBinderMetadataList arguments = true)
     (objects : WellSorted.isObjectPatternList arguments = true)
     (scope : ∀ presentation ∈
-        source.costWholeLanguage.reflectivePresentations,
+        source.costWholeReflectionProfile.presentations,
       binderSafeListAt presentation.quoteConstructor available.length
         arguments = true),
     WellSorted.AvailableOpenArguments.EquationForall₂
-      source.costWholeLanguage targetFree available outer
+      source.costWholeReflectionProfile source.costWholeLanguage targetFree
+      available outer
       (trees.normalizedAvailable canonical objects scope)
       (trees.originalAvailable canonical objects scope)
 
@@ -305,11 +321,12 @@ def NormalizationSound {source : CIGSLT}
     (canonical : Pattern.hasCanonicalBinderMetadataList elements = true)
     (objects : WellSorted.isObjectPatternList elements = true)
     (scope : ∀ presentation ∈
-        source.costWholeLanguage.reflectivePresentations,
+        source.costWholeReflectionProfile.presentations,
       binderSafeListAt presentation.quoteConstructor available.length
         elements = true),
     WellSorted.AvailableOpenElements.EquationForall₂
-      source.costWholeLanguage targetFree available outer elementType
+      source.costWholeReflectionProfile source.costWholeLanguage targetFree
+      available outer elementType
       (trees.normalizedAvailable canonical objects scope)
       (trees.originalAvailable canonical objects scope)
 
@@ -371,7 +388,8 @@ private theorem CostSemanticTree.normalizationSound_static
       (canonical : (state.actAvailableWithOuter values outer).pattern.hasCanonicalBinderMetadata = true)
       (object : WellSorted.isObjectPattern
         (state.actAvailableWithOuter values outer).pattern = true)
-      (scope : WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
+      (scope : ReflectiveWellSorted.ReflectiveScopeSafeAt
+        source.costWholeReflectionProfile
         frame.targetBound.length
           (state.actAvailableWithOuter values outer).pattern),
       (WellSorted.AvailableOpenPattern.equationSetoid
@@ -383,36 +401,37 @@ private theorem CostSemanticTree.normalizationSound_static
     have localStep := state.normalize_actAvailable_equationSetoid
       laws.mappedGeneratorFiberAction children.normalize.1 values childrenSound
     have openStepRaw :=
-      WellSorted.AvailableOpenPattern.equationSetoid_to_openPatternEquationSetoid
+      WellSorted.AvailableOpenPattern.equationSetoid_to_reflectiveOpenPatternEquationSetoid
         localStep
-    have openStep := WellSorted.openPatternEquationSetoid_reindexBound
-      (List.append_nil frame.targetBound) openStepRaw
+    have openStep :=
+      ReflectiveWellSorted.reflectiveOpenPatternEquationSetoid_reindexBound
+        (List.append_nil frame.targetBound) openStepRaw
     have lifted :=
-      WellSorted.AvailableOpenPattern.openPatternEquationSetoid_to_availableWithOuter
+      WellSorted.AvailableOpenPattern.reflectiveOpenPatternEquationSetoid_to_availableWithOuter
         outer openStep
     have leftEndpoint :
         WellSorted.AvailableOpenPattern.ofOpenPatternWithOuter
-            ((state.normalize.actAvailable children.normalize.1).toOpenPattern
+            ((state.normalize.actAvailable children.normalize.1).toReflectiveOpenPattern
               |>.reindexBound (List.append_nil frame.targetBound)) outer =
           current.normalizedAvailable canonical object scope := by
       apply WellSorted.AvailableOpenPattern.ext
       simp only [
         WellSorted.AvailableOpenPattern.ofOpenPatternWithOuter_pattern,
-        WellSorted.OpenPattern.reindexBound_pattern,
-        WellSorted.AvailableOpenPattern.toOpenPattern_pattern,
+        ReflectiveWellSorted.OpenPattern.reindexBound_pattern,
+        WellSorted.AvailableOpenPattern.toReflectiveOpenPattern_pattern,
         CostSemanticTree.normalizedAvailable_pattern]
       rw [CostSemanticTree.normalize_static_result_pattern]
       rfl
     have rightEndpoint :
         WellSorted.AvailableOpenPattern.ofOpenPatternWithOuter
-            ((state.actAvailable values).toOpenPattern
+            ((state.actAvailable values).toReflectiveOpenPattern
               |>.reindexBound (List.append_nil frame.targetBound)) outer =
           current.originalAvailable canonical object scope := by
       apply WellSorted.AvailableOpenPattern.ext
       simp only [
         WellSorted.AvailableOpenPattern.ofOpenPatternWithOuter_pattern,
-        WellSorted.OpenPattern.reindexBound_pattern,
-        WellSorted.AvailableOpenPattern.toOpenPattern_pattern,
+        ReflectiveWellSorted.OpenPattern.reindexBound_pattern,
+        WellSorted.AvailableOpenPattern.toReflectiveOpenPattern_pattern,
         CostSemanticTree.originalAvailable_pattern]
       rfl
     rw [leftEndpoint, rightEndpoint] at lifted
@@ -434,10 +453,11 @@ private theorem CostSemanticTree.normalizationSound_static
       | collection collectionType elementType =>
           simp [WellSorted.parameterType?] at parameterType
 
-/-- The semantic normalizer erases to an authored equation path while retaining
-the exact split binder, parameter, collection, and finite-boundary fibers.  The
-generated four-way recursor supplies all mutually recursive hypotheses, so this
-proof has no auxiliary termination measure or heartbeat-sensitive mutual block. -/
+/-- The semantic normalizer erases to an admitted reflective equation path
+while retaining the exact split binder, parameter, collection, and
+finite-boundary fibers.  The generated four-way recursor supplies all mutually
+recursive hypotheses, so this proof has no auxiliary termination measure or
+heartbeat-sensitive mutual block. -/
 theorem CostSemanticTree.normalizationSound
     {source : CIGSLT} (laws : CostTypedUnaryNormalizationLaws source)
     {targetFree : WellSorted.FreeTypeContext}
@@ -457,7 +477,8 @@ theorem CostSemanticTree.normalizationSound
     have termSound : ∀
         (canonical : (Pattern.bvar index).hasCanonicalBinderMetadata = true)
         (object : WellSorted.isObjectPattern (.bvar index) = true)
-        (scope : WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
+        (scope : ReflectiveWellSorted.ReflectiveScopeSafeAt
+          source.costWholeReflectionProfile
           available'.length (.bvar index)),
         (WellSorted.AvailableOpenPattern.equationSetoid
           source.costWholeLanguage targetFree available' outer' type').r
@@ -488,7 +509,8 @@ theorem CostSemanticTree.normalizationSound
     have termSound : ∀
         (canonical : (Pattern.fvar name).hasCanonicalBinderMetadata = true)
         (object : WellSorted.isObjectPattern (.fvar name) = true)
-        (scope : WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
+        (scope : ReflectiveWellSorted.ReflectiveScopeSafeAt
+          source.costWholeReflectionProfile
           available'.length (.fvar name)),
         (WellSorted.AvailableOpenPattern.equationSetoid
           source.costWholeLanguage targetFree available' outer' type').r
@@ -524,7 +546,8 @@ theorem CostSemanticTree.normalizationSound
     have termSound : ∀
         (canonical : (Pattern.apply rule.label arguments).hasCanonicalBinderMetadata = true)
         (object : WellSorted.isObjectPattern (.apply rule.label arguments) = true)
-        (scope : WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
+        (scope : ReflectiveWellSorted.ReflectiveScopeSafeAt
+          source.costWholeReflectionProfile
           available'.length (.apply rule.label arguments)),
         (WellSorted.AvailableOpenPattern.equationSetoid
           source.costWholeLanguage targetFree available' outer'
@@ -539,14 +562,14 @@ theorem CostSemanticTree.normalizationSound
           WellSorted.isObjectPatternList arguments = true := by
         simpa [current, WellSorted.isObjectPattern] using object
       have argumentScope : ∀ presentation ∈
-          source.costWholeLanguage.reflectivePresentations,
+          source.costWholeReflectionProfile.presentations,
           binderSafeListAt presentation.quoteConstructor available'.length
             arguments = true := by
         intro presentation presentationMembership
         have notThisQuote : rule.label ≠ presentation.quoteConstructor := by
           intro labelEquality
           have detected : ReflectiveContextSupport.isQuoteConstructor
-              source.costWholeLanguage rule.label = true := by
+              source.costWholeReflectionProfile rule.label = true := by
             unfold ReflectiveContextSupport.isQuoteConstructor
             rw [List.any_eq_true]
             exact ⟨presentation, presentationMembership, by simp [labelEquality]⟩
@@ -590,7 +613,8 @@ theorem CostSemanticTree.normalizationSound
     have termSound : ∀
         (canonical : (Pattern.apply rule.label arguments).hasCanonicalBinderMetadata = true)
         (object : WellSorted.isObjectPattern (.apply rule.label arguments) = true)
-        (scope : WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
+        (scope : ReflectiveWellSorted.ReflectiveScopeSafeAt
+          source.costWholeReflectionProfile
           available'.length (.apply rule.label arguments)),
         (WellSorted.AvailableOpenPattern.equationSetoid
           source.costWholeLanguage targetFree available' outer'
@@ -605,7 +629,8 @@ theorem CostSemanticTree.normalizationSound
           WellSorted.isObjectPatternList arguments = true := by
         simpa [current, WellSorted.isObjectPattern] using object
       have parentScopeAtBound :
-          WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
+          ReflectiveWellSorted.ReflectiveScopeSafeAt
+            source.costWholeReflectionProfile
             (available' ++ outer').length (.apply rule.label arguments) := by
         intro presentation presentationMembership
         exact binderSafeAt_mono presentation.quoteConstructor
@@ -616,8 +641,9 @@ theorem CostSemanticTree.normalizationSound
         simpa only [List.nil_append] using children.originalTyped
       have argumentScope :=
         WellSorted.reflectiveScopeSafeListAt_zero_of_typed_quote
-          source.costWholeLanguage_validate membership argumentsTyped quoted
-            parentScopeAtBound
+          source.costWholeLanguage_validate
+            source.costWholeReflectionProfile_validate membership
+              argumentsTyped quoted parentScopeAtBound
       have assembled := (childrenSound argumentCanonical argumentObjects
         argumentScope).assembleQuote membership notBareCollection quoted
       have leftEndpoint :
@@ -651,7 +677,8 @@ theorem CostSemanticTree.normalizationSound
     have termSound : ∀
         (canonical : (Pattern.lambda binder body).hasCanonicalBinderMetadata = true)
         (object : WellSorted.isObjectPattern (.lambda binder body) = true)
-        (scope : WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
+        (scope : ReflectiveWellSorted.ReflectiveScopeSafeAt
+          source.costWholeReflectionProfile
           available'.length (.lambda binder body)),
         (WellSorted.AvailableOpenPattern.equationSetoid
           source.costWholeLanguage targetFree available' outer'
@@ -665,7 +692,8 @@ theorem CostSemanticTree.normalizationSound
       have bodyObject : WellSorted.isObjectPattern body = true := by
         simpa [current, WellSorted.isObjectPattern] using object
       have bodyScope :
-          WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
+          ReflectiveWellSorted.ReflectiveScopeSafeAt
+            source.costWholeReflectionProfile
             (domain :: available').length body := by
         intro presentation presentationMembership
         simpa [binderSafeAt, List.length_cons] using
@@ -704,18 +732,21 @@ theorem CostSemanticTree.normalizationSound
             have bodyObject : WellSorted.isObjectPattern body = true := by
               simpa [current, WellSorted.isObjectPattern] using object
             have bodyScope :
-                WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
+                ReflectiveWellSorted.ReflectiveScopeSafeAt
+                  source.costWholeReflectionProfile
                   (domain :: available').length body := by
               intro presentation presentationMembership
               simpa [binderSafeAt, List.length_cons] using
                 scope presentation presentationMembership
             let pack := fun
-                (term : WellSorted.AvailableOpenPattern source.costWholeLanguage
+                (term : WellSorted.AvailableOpenPattern
+                  source.costWholeReflectionProfile source.costWholeLanguage
                   targetFree (domain :: available') outer' codomain) =>
               ({ term := term.lambda none rfl
                  representation := True.intro
                  parameterType := parameterType } :
-                WellSorted.AvailableOpenArgument source.costWholeLanguage
+                WellSorted.AvailableOpenArgument
+                  source.costWholeReflectionProfile source.costWholeLanguage
                   targetFree available' outer'
                     (.abstractionNamed binderName bodyName declared)
                       (.arrow domain codomain))
@@ -723,7 +754,7 @@ theorem CostSemanticTree.normalizationSound
               WellSorted.AvailableOpenArgument.equationSetoid_of_term_map pack
                 (by
                   intro left right generator
-                  exact EquationSemantics.equationContextStep_fill
+                  exact EquationSemantics.reflectiveEquationContextStep_fill
                     (.lambda none .hole) generator)
                 (bodySound.1 bodyCanonical bodyObject bodyScope)
             have leftEndpoint :
@@ -754,7 +785,8 @@ theorem CostSemanticTree.normalizationSound
         (canonical : (Pattern.multiLambda arity binders body).hasCanonicalBinderMetadata = true)
         (object : WellSorted.isObjectPattern
           (.multiLambda arity binders body) = true)
-        (scope : WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
+        (scope : ReflectiveWellSorted.ReflectiveScopeSafeAt
+          source.costWholeReflectionProfile
           available'.length (.multiLambda arity binders body)),
         (WellSorted.AvailableOpenPattern.equationSetoid
           source.costWholeLanguage targetFree available' outer'
@@ -769,7 +801,8 @@ theorem CostSemanticTree.normalizationSound
       have bodyObject : WellSorted.isObjectPattern body = true := by
         simpa [current, WellSorted.isObjectPattern] using object
       have bodyScope :
-          WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
+          ReflectiveWellSorted.ReflectiveScopeSafeAt
+            source.costWholeReflectionProfile
             (List.replicate arity domain ++ available').length body := by
         intro presentation presentationMembership
         simpa [binderSafeAt, List.length_append, List.length_replicate,
@@ -811,19 +844,22 @@ theorem CostSemanticTree.normalizationSound
             have bodyObject : WellSorted.isObjectPattern body = true := by
               simpa [current, WellSorted.isObjectPattern] using object
             have bodyScope :
-                WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
+                ReflectiveWellSorted.ReflectiveScopeSafeAt
+                  source.costWholeReflectionProfile
                   (List.replicate arity domain ++ available').length body := by
               intro presentation presentationMembership
               simpa [binderSafeAt, List.length_append, List.length_replicate,
                 Nat.add_comm] using scope presentation presentationMembership
             let pack := fun
-                (term : WellSorted.AvailableOpenPattern source.costWholeLanguage
+                (term : WellSorted.AvailableOpenPattern
+                  source.costWholeReflectionProfile source.costWholeLanguage
                   targetFree (List.replicate arity domain ++ available') outer'
                     codomain) =>
               ({ term := term.multiLambda arity [] rfl
                  representation := True.intro
                  parameterType := parameterType } :
-                WellSorted.AvailableOpenArgument source.costWholeLanguage
+                WellSorted.AvailableOpenArgument
+                  source.costWholeReflectionProfile source.costWholeLanguage
                   targetFree available' outer'
                     (.multiAbstractionNamed binderNames bodyName declared)
                       (.arrow (.multiBinder domain) codomain))
@@ -831,7 +867,7 @@ theorem CostSemanticTree.normalizationSound
               WellSorted.AvailableOpenArgument.equationSetoid_of_term_map pack
                 (by
                   intro left right generator
-                  exact EquationSemantics.equationContextStep_fill
+                  exact EquationSemantics.reflectiveEquationContextStep_fill
                     (.multiLambda arity [] .hole) generator)
                 (bodySound.1 bodyCanonical bodyObject bodyScope)
             have leftEndpoint :
@@ -870,7 +906,8 @@ theorem CostSemanticTree.normalizationSound
           ).hasCanonicalBinderMetadata = true)
         (object : WellSorted.isObjectPattern
           (.collection collectionType elements rest) = true)
-        (scope : WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
+        (scope : ReflectiveWellSorted.ReflectiveScopeSafeAt
+          source.costWholeReflectionProfile
           available'.length (.collection collectionType elements rest)),
         (WellSorted.AvailableOpenPattern.equationSetoid
           source.costWholeLanguage targetFree available' outer'
@@ -888,7 +925,7 @@ theorem CostSemanticTree.normalizationSound
               WellSorted.isObjectPatternList elements = true := by
             simpa [current, WellSorted.isObjectPattern] using object
           have elementScope : ∀ presentation ∈
-              source.costWholeLanguage.reflectivePresentations,
+              source.costWholeReflectionProfile.presentations,
               binderSafeListAt presentation.quoteConstructor available'.length
                 elements = true := by
             intro presentation presentationMembership
@@ -925,8 +962,9 @@ theorem CostSemanticTree.normalizationSound
   · intros
     rename_i available' outer'
     intro canonical objects scope
-    let empty := WellSorted.AvailableOpenArguments.nil source.costWholeLanguage
-      targetFree available' outer'
+    let empty := WellSorted.AvailableOpenArguments.nil
+      (profile := source.costWholeReflectionProfile)
+      source.costWholeLanguage targetFree available' outer'
     have leftEndpoint :
         (CostSemanticArgumentTrees.nil (source := source)
           (targetFree := targetFree)).normalizedAvailable canonical objects scope =
@@ -952,8 +990,8 @@ theorem CostSemanticTree.normalizationSound
     have objectParts : WellSorted.isObjectPattern argument = true ∧
         WellSorted.isObjectPatternList arguments = true := by
       simpa [WellSorted.isObjectPatternList] using objects
-    have headScope : WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
-        available'.length argument := by
+    have headScope : ReflectiveWellSorted.ReflectiveScopeSafeAt
+        source.costWholeReflectionProfile available'.length argument := by
       intro presentation presentationMembership
       have parts :
           binderSafeAt presentation.quoteConstructor available'.length argument = true ∧
@@ -962,7 +1000,7 @@ theorem CostSemanticTree.normalizationSound
         simpa [binderSafeListAt] using scope presentation presentationMembership
       exact parts.1
     have tailScope : ∀ presentation ∈
-        source.costWholeLanguage.reflectivePresentations,
+        source.costWholeReflectionProfile.presentations,
         binderSafeListAt presentation.quoteConstructor available'.length
           arguments = true := by
       intro presentation presentationMembership
@@ -1000,8 +1038,9 @@ theorem CostSemanticTree.normalizationSound
   · intros
     rename_i available' outer' elementType
     intro canonical objects scope
-    let empty := WellSorted.AvailableOpenElements.nil source.costWholeLanguage
-      targetFree available' outer' elementType
+    let empty := WellSorted.AvailableOpenElements.nil
+      (profile := source.costWholeReflectionProfile)
+      source.costWholeLanguage targetFree available' outer' elementType
     have leftEndpoint :
         (CostSemanticElementTrees.nil (source := source)
           (targetFree := targetFree) available' outer' elementType
@@ -1027,8 +1066,8 @@ theorem CostSemanticTree.normalizationSound
     have objectParts : WellSorted.isObjectPattern element = true ∧
         WellSorted.isObjectPatternList elements = true := by
       simpa [WellSorted.isObjectPatternList] using objects
-    have headScope : WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
-        available'.length element := by
+    have headScope : ReflectiveWellSorted.ReflectiveScopeSafeAt
+        source.costWholeReflectionProfile available'.length element := by
       intro presentation presentationMembership
       have parts :
           binderSafeAt presentation.quoteConstructor available'.length element = true ∧
@@ -1037,7 +1076,7 @@ theorem CostSemanticTree.normalizationSound
         simpa [binderSafeListAt] using scope presentation presentationMembership
       exact parts.1
     have tailScope : ∀ presentation ∈
-        source.costWholeLanguage.reflectivePresentations,
+        source.costWholeReflectionProfile.presentations,
         binderSafeListAt presentation.quoteConstructor available'.length
           elements = true := by
       intro presentation presentationMembership
@@ -1079,40 +1118,45 @@ theorem CostSemanticTree.normalizationSound
       children headSound childrenSound
     let normalizedHead := head.normalize
     let normalizedValue := normalizedHead.toBoundaryValue value rfl
-    have headSplitStep := headSound.1 value.2.2.1 value.2.2.2.1 value.2.2.2.2
+    have headSplitStep :=
+      headSound.1 value.2.1.2.1 value.2.1.2.2.1 value.2.2
     have headOpenRaw :=
-      WellSorted.AvailableOpenPattern.equationSetoid_to_openPatternEquationSetoid
+      WellSorted.AvailableOpenPattern.equationSetoid_to_reflectiveOpenPatternEquationSetoid
         headSplitStep
     have headOpenTransported :=
-      WellSorted.openPatternEquationSetoid_reindexBound
+      ReflectiveWellSorted.reflectiveOpenPatternEquationSetoid_reindexBound
         (List.append_nil boundary.boundary.targetSupport) headOpenRaw
     have headOpen :
-        (openPatternEquationSetoid source.costWholeLanguage targetFree
+        (ReflectiveEquationSemantics.reflectiveOpenPatternEquationSetoid
+          source.costWholeReflectionProfile defaultBasePremises
+          source.costWholeLanguage targetFree
           boundary.boundary.targetSupport boundary.boundary.targetType).r
           normalizedValue value := by
       have leftEndpoint :
-          ((head.normalizedAvailable value.2.2.1 value.2.2.2.1 value.2.2.2.2
-            ).toOpenPattern).reindexBound
+          ((head.normalizedAvailable value.2.1.2.1 value.2.1.2.2.1 value.2.2
+            ).toReflectiveOpenPattern).reindexBound
               (List.append_nil boundary.boundary.targetSupport) =
             normalizedValue := by
         apply Subtype.ext
-        simp only [WellSorted.OpenPattern.reindexBound_pattern,
-          WellSorted.AvailableOpenPattern.toOpenPattern_pattern,
+        simp only [ReflectiveWellSorted.OpenPattern.reindexBound_pattern,
+          WellSorted.AvailableOpenPattern.toReflectiveOpenPattern_pattern,
           CostSemanticTree.normalizedAvailable_pattern]
         change head.normalize.result.pattern = normalizedValue.1
         rfl
       have rightEndpoint :
-          ((head.originalAvailable value.2.2.1 value.2.2.2.1 value.2.2.2.2
-            ).toOpenPattern).reindexBound
+          ((head.originalAvailable value.2.1.2.1 value.2.1.2.2.1 value.2.2
+            ).toReflectiveOpenPattern).reindexBound
               (List.append_nil boundary.boundary.targetSupport) = value := by
         apply Subtype.ext
-        simp only [WellSorted.OpenPattern.reindexBound_pattern,
-          WellSorted.AvailableOpenPattern.toOpenPattern_pattern,
+        simp only [ReflectiveWellSorted.OpenPattern.reindexBound_pattern,
+          WellSorted.AvailableOpenPattern.toReflectiveOpenPattern_pattern,
           CostSemanticTree.originalAvailable_pattern]
       rw [leftEndpoint, rightEndpoint] at headOpenTransported
       exact headOpenTransported
     have headEquivalent : ∀ inner : List TypeExpr,
-        (openPatternEquationSetoid source.costWholeLanguage targetFree
+        (ReflectiveEquationSemantics.reflectiveOpenPatternEquationSetoid
+          source.costWholeReflectionProfile defaultBasePremises
+          source.costWholeLanguage targetFree
           (inner ++ boundary.boundary.targetSupport)
           boundary.boundary.targetType).r
           (normalizedValue.weakenRoot inner) (value.weakenRoot inner) := by
@@ -1130,46 +1174,53 @@ theorem CostSemanticTree.normalizationSound
 
 namespace CostSemanticOpenElaboration
 
-/-- In-place semantic normalization erases to the sole authored open equation
-setoid.  The retained frame and boundary evidence contribute no second semantic
-authority. -/
+/-- In-place semantic normalization erases to the admitted reflective open
+equation setoid over the authored Cost language.  The retained frame and
+boundary evidence contribute no second semantic authority. -/
 theorem normalizeOpen_typed_openEquationSetoid
     {source : CIGSLT} (laws : CostTypedUnaryNormalizationLaws source)
     {targetFree : WellSorted.FreeTypeContext}
     {targetBound : List TypeExpr}
     {targetSort : LangSort source.costWholeLanguage}
-    (term : OpenTerm source.costIGSLT targetFree targetBound targetSort)
+    (term : ReflectiveWellSorted.OpenTerm
+      source.costWholeReflectionProfile source.costWholeLanguage targetFree
+      targetBound targetSort)
     (tree : CostSemanticOpenElaboration source term) :
-    (openEquationSetoid source.costIGSLT targetFree targetBound targetSort).r
-      (normalizeOpen term tree) term := by
-  have split := (tree.normalizationSound laws).1 term.2.2.1 term.2.2.2.1
-    term.2.2.2.2
+    (ReflectiveEquationSemantics.reflectiveOpenPatternEquationSetoid
+      source.costWholeReflectionProfile defaultBasePremises
+      source.costWholeLanguage targetFree targetBound
+        (.base targetSort.1)).r (normalizeOpen term tree) term := by
+  have split := (tree.normalizationSound laws).1 term.2.1.2.1
+    term.2.1.2.2.1 term.2.2
   have openRaw :=
-    WellSorted.AvailableOpenPattern.equationSetoid_to_openPatternEquationSetoid
+    WellSorted.AvailableOpenPattern.equationSetoid_to_reflectiveOpenPatternEquationSetoid
       split
-  have transported := WellSorted.openPatternEquationSetoid_reindexBound
-    (List.append_nil targetBound) openRaw
+  have transported :=
+    ReflectiveWellSorted.reflectiveOpenPatternEquationSetoid_reindexBound
+      (List.append_nil targetBound) openRaw
   have leftEndpoint :
-      ((tree.normalizedAvailable term.2.2.1 term.2.2.2.1 term.2.2.2.2
-        ).toOpenPattern.reindexBound (List.append_nil targetBound)) =
+      ((tree.normalizedAvailable term.2.1.2.1 term.2.1.2.2.1 term.2.2
+        ).toReflectiveOpenPattern.reindexBound (List.append_nil targetBound)) =
         normalizeOpen term tree := by
     apply Subtype.ext
     simp [normalizeOpen_pattern,
       CostSemanticTree.normalizedAvailable_pattern,
-      WellSorted.OpenPattern.reindexBound_pattern,
-      WellSorted.AvailableOpenPattern.toOpenPattern_pattern]
+      ReflectiveWellSorted.OpenPattern.reindexBound_pattern,
+      WellSorted.AvailableOpenPattern.toReflectiveOpenPattern_pattern]
   have rightEndpoint :
-      ((tree.originalAvailable term.2.2.1 term.2.2.2.1 term.2.2.2.2
-        ).toOpenPattern.reindexBound (List.append_nil targetBound)) = term := by
+      ((tree.originalAvailable term.2.1.2.1 term.2.1.2.2.1 term.2.2
+        ).toReflectiveOpenPattern.reindexBound
+          (List.append_nil targetBound)) = term := by
     apply Subtype.ext
     simp [CostSemanticTree.originalAvailable_pattern,
-      WellSorted.OpenPattern.reindexBound_pattern,
-      WellSorted.AvailableOpenPattern.toOpenPattern_pattern]
+      ReflectiveWellSorted.OpenPattern.reindexBound_pattern,
+      WellSorted.AvailableOpenPattern.toReflectiveOpenPattern_pattern]
   rw [leftEndpoint, rightEndpoint] at transported
   exact transported
 
-/-- One proof-relevant semantic edge projects to an authored equation path.
-Exact equality of retained normal forms supplies the common middle vertex. -/
+/-- One proof-relevant semantic edge projects to an admitted reflective
+equation path.  Exact equality of retained normal forms supplies the common
+middle vertex. -/
 theorem Step.erasesToAuthored
     {source : CIGSLT} (laws : CostTypedUnaryNormalizationLaws source)
     {targetFree : WellSorted.FreeTypeContext}
@@ -1177,16 +1228,20 @@ theorem Step.erasesToAuthored
     {targetSort : LangSort source.costWholeLanguage}
     {left right : CostSemanticElabTerm source targetFree targetBound targetSort}
     (step : Step source targetFree targetBound targetSort left right) :
-    (openEquationSetoid source.costIGSLT targetFree targetBound targetSort).r
-      left.1 right.1 := by
+    (ReflectiveEquationSemantics.reflectiveOpenPatternEquationSetoid
+      source.costWholeReflectionProfile defaultBasePremises
+      source.costWholeLanguage targetFree targetBound
+        (.base targetSort.1)).r left.1 right.1 := by
   have leftPath := normalizeOpen_typed_openEquationSetoid laws left.1 left.2
   have rightPath := normalizeOpen_typed_openEquationSetoid laws right.1 right.2
   have normalizedTermEq : normalizeOpen left.1 left.2 =
       normalizeOpen right.1 right.2 :=
     congrArg Sigma.fst (normalizeTerm_eq_of_step step)
   have commonToRight :
-      (openEquationSetoid source.costIGSLT targetFree targetBound targetSort).r
-        (normalizeOpen left.1 left.2) right.1 := by
+      (ReflectiveEquationSemantics.reflectiveOpenPatternEquationSetoid
+        source.costWholeReflectionProfile defaultBasePremises
+        source.costWholeLanguage targetFree targetBound
+          (.base targetSort.1)).r (normalizeOpen left.1 left.2) right.1 := by
     rw [normalizedTermEq]
     exact rightPath
   exact Relation.EqvGen.trans _ _ _
@@ -1200,7 +1255,8 @@ namespace CIGSLT
 generated authored Cost presentation. -/
 def costSemanticOpenElaborationCarrier (source : CIGSLT)
     (canonicalPathSafe : CostStaticCanonicalPathSafe source) :
-    OpenElaborationCarrier source.costIGSLT where
+    ReflectiveOpenElaborationCarrier source.costIGSLT
+      source.costWholeAdmittedReflection where
   Carrier := CostSemanticElabTerm source
   erase := CostSemanticOpenElaboration.erase
   compile := CostSemanticOpenElaboration.compileTerm source canonicalPathSafe
@@ -1210,38 +1266,42 @@ def costSemanticOpenElaborationCarrier (source : CIGSLT)
 /-- Stable-frame semantic edges form an authored path lift. -/
 def costSemanticPathLift (source : CIGSLT)
     (laws : CostTypedUnaryNormalizationLaws source) :
-    OpenElaborationPathLift
+    ReflectiveOpenElaborationPathLift
       (source.costSemanticOpenElaborationCarrier laws.canonicalPathSafe) where
   step := fun free bound sort =>
     CostSemanticOpenElaboration.Step source free bound sort
-  erasesToAuthoredPath := fun step =>
+  erasesToReflectivePath := fun step =>
     CostSemanticOpenElaboration.Step.erasesToAuthored laws step
 
 /-- The exact proof-relevant Cost relation with its mandatory erasure into the
-sole authored `IGSLT` equation setoid. -/
+admitted reflective equation theory over the authored Cost `IGSLT`. -/
 def costSemanticSemantics (source : CIGSLT)
     (laws : CostTypedUnaryNormalizationLaws source) :
-    OpenElaborationSemantics
+    ReflectiveOpenElaborationSemantics
       (source.costSemanticOpenElaborationCarrier laws.canonicalPathSafe) :=
-  OpenElaborationSemantics.ofPathLift (source.costSemanticPathLift laws)
+  ReflectiveOpenElaborationSemantics.ofPathLift
+    (source.costSemanticPathLift laws)
 
 /-- The retained child-first normalizer is an exact section of semantic Cost
 equivalence on every typed open fibre. -/
 def costSemanticCanonicalSection (source : CIGSLT)
     (laws : CostTypedUnaryNormalizationLaws source) :
-    OpenElaborationSemantics.ComputableSection
+    ReflectiveOpenElaborationSemantics.ComputableSection
       (source.costSemanticSemantics laws) :=
-  OpenElaborationSemantics.ComputableSection.ofPathInvariant
+  ReflectiveOpenElaborationSemantics.ComputableSection.ofPathInvariant
     (source.costSemanticPathLift laws)
     (fun term => CostSemanticOpenElaboration.normalizeTerm term)
     (fun term => CostSemanticOpenElaboration.normalizeTerm_related term)
     (fun step => CostSemanticOpenElaboration.normalizeTerm_eq_of_step step)
 
 /-- Cost with retained frames, colour, declaration choices, and finite boundary
-values is an exact elaborated open theory over the generated Cost `IGSLT`. -/
+values is an exact reflective elaborated open theory over the generated Cost
+`IGSLT`. -/
 def costSemanticElaboratedOpenTheory (source : CIGSLT)
-    (laws : CostTypedUnaryNormalizationLaws source) : ElaboratedOpenTheory where
+    (laws : CostTypedUnaryNormalizationLaws source) :
+    ReflectiveElaboratedOpenTheory where
   theory := source.costIGSLT
+  reflection := source.costWholeAdmittedReflection
   carrier := source.costSemanticOpenElaborationCarrier laws.canonicalPathSafe
   semantics := source.costSemanticSemantics laws
   canonical := source.costSemanticCanonicalSection laws

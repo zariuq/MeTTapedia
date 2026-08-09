@@ -14,7 +14,7 @@ Composed theorem endpoints over the canonical presheaf/subobject modal semantics
 
 - canonical modal-subobject Beck-Chevalley + reduction-graph witness transport,
 - policy-driven OSLF -> NTT -> WM evidence closure (step/star),
-- one endpoint surface tying both together.
+- one endpoint tying both together.
 -/
 
 namespace Mettapedia.OSLF.Framework.OSLFNTTWMCanonicalClosure
@@ -1167,7 +1167,7 @@ theorem canonical_rulePack_transport_pack_and_fixpoint_endpoint_of_goal
         (hStrengthFromEvidence := goal.hStrengthFromEvidence))
 
 /-- Compact combined endpoint via canonical Prop-12 ΠΣ-rule instantiation.
-This keeps a compatibility route while preserving the rule-pack-first surface. -/
+This keeps a compatibility route while preserving the rule-pack-first interface. -/
 theorem canonical_prop12_transport_pack_and_fixpoint_endpoint_compact
     (ctx : CanonicalClosureContext)
     (modal : CanonicalModalSquare ctx)
@@ -1771,7 +1771,7 @@ theorem canonical_star_to_fixpoint_endpoint
 
 /-- Combined canonical endpoint:
 consume the explicit representable Π/Σ rule-pack transport package and the
-canonical star-to-fixpoint closure theorem under one shared context surface. -/
+canonical star-to-fixpoint closure theorem under one shared context. -/
 theorem canonical_rulePack_transport_and_fixpoint_endpoint
     (ctx : CanonicalClosureContext)
     (hφTop :

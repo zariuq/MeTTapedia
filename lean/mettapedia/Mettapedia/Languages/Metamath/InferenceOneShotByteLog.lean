@@ -160,8 +160,8 @@ def closeAtEOF (state : ParserState) (base : Nat) : DB :=
         state.db.mkParseError eofPos .unclosedBlock
       else state.db
   | .comment _ => state.db.mkParseError eofPos .unclosedComment
-  | .const => state.db.mkParseError eofPos .unclosedConst
-  | .var => state.db.mkParseError eofPos .unclosedVar
+  | .const _ => state.db.mkParseError eofPos .unclosedConst
+  | .var _ => state.db.mkParseError eofPos .unclosedVar
   | .djvars _ => state.db.mkParseError eofPos .unclosedDjvars
   | .math _ parser => match parser.k with
       | .float => state.db.mkParseError eofPos .unclosedFloat
@@ -786,9 +786,8 @@ theorem DoneTrace.db_eq_done
   | priorError herror =>
       simp [ParserState.done, herror]
   | whitespace herror hchar =>
-      unfold ParserState.done
-      simp only [herror, hchar]
-      rfl
+      simp [ParserState.done, Raw.closeAtEOF, herror, hchar]
+      cases before.tokp <;> rfl
   | trailingError parserOffset token herror hchar hafter =>
       simp only [trailingCall, Raw.TokenOrigin.parserOffset,
         Raw.TokenOrigin.token] at hafter
@@ -797,9 +796,10 @@ theorem DoneTrace.db_eq_done
   | trailingClose parserOffset token herror hchar hafter =>
       simp only [trailingCall, Raw.TokenOrigin.parserOffset,
         Raw.TokenOrigin.token] at hafter
-      unfold ParserState.done
-      simp only [herror, hchar, hafter]
-      rfl
+      simp [ParserState.done, Raw.closeAtEOF, herror, hchar, hafter,
+        trailingCall, Raw.TokenOrigin.parserOffset,
+        Raw.TokenOrigin.token]
+      cases (before.feedToken parserOffset token.toSlice).tokp <;> rfl
 
 /-- The certified EOF computation erases to `ParserState.done`. -/
 theorem doneLogged_db_eq_done (before : ParserState) (eofOffset : Nat) :

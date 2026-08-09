@@ -1,6 +1,6 @@
 import Mettapedia.Languages.MeTTa.OSLFCore.Bridge
 import Mettapedia.Languages.MeTTa.Translation.HEPeTTaSound
-import Mettapedia.Languages.MeTTa.Translation.HEPeTTaValidatedSurface
+import Mettapedia.Languages.MeTTa.Translation.HEPeTTaValidatedFragment
 
 /-!
 # Executable HE ↔ PeTTa Translator
@@ -215,7 +215,7 @@ def translatePeTTa (a : Atom) (supply : Nat) : Atom × Nat :=
       [.symbol "quoted-syntax",
         .expression [.symbol "quote",
           .expression [.symbol "new-state", tinit]]], s1)
-  -- PeTTa unique workaround surface → list-preserving HE unique surface
+  -- PeTTa unique workaround interface → list-preserving HE unique interface
   | .expression [.symbol "unique-atom", .expression [.symbol "collapse", x]] =>
     let (tx, s1) := translatePeTTa x supply
     (.expression [.symbol "collapse", .expression [.symbol "unique", tx]], s1)
@@ -281,7 +281,7 @@ where
 
 /-! ## Extended foldall boundary
 
-The proven core translator keeps `foldall` lowering on the pure HE surface via
+The proven core translator keeps `foldall` lowering on the pure HE interface via
 `collapse`. The executable Prolog translator also supports an optional
 HE-extended lowering that swaps this single collector head to `collect`.
 
@@ -321,7 +321,7 @@ theorem translatePeTTa_foldall_extended_boundary (agg goal init : Atom) (s : Nat
   simp [translatePeTTa, translatePeTTaFoldallExtended, normalizeExtendedFoldallCollector]
 
 /-- `translatePeTTa` raises the native list-valued PeTTa unique workaround to
-    the list-preserving HE surface `collapse (unique X)`. -/
+    the list-preserving HE interface `collapse (unique X)`. -/
 theorem translatePeTTa_uniqueWorkaround (x : Atom) (s : Nat) :
     translatePeTTa (.expression
       [.symbol "unique-atom", .expression [.symbol "collapse", x]]) s =
@@ -334,7 +334,7 @@ theorem translatePeTTa_uniqueWorkaround (x : Atom) (s : Nat) :
     `(foldl-atom xs' init' $acc $item (eval (merge' $acc $item)))`.
 
     Negative example: this is not a claim about HE runtime semantics for raw
-    `reduce`; it only covers the short `foldl-atom` surface. -/
+    `reduce`; it only covers the short `foldl-atom` interface. -/
 theorem translatePeTTa_foldlAtomShort (xs init agg : Atom) (s : Nat) :
     translatePeTTa (.expression [.symbol "foldl-atom", xs, init, agg]) s =
     let (txs, s1) := translatePeTTa xs s
@@ -351,7 +351,7 @@ theorem translatePeTTa_foldlAtomShort (xs init agg : Atom) (s : Nat) :
     Positive example: `(reduce (fib 5))` becomes `(eval (fib 5))`.
 
     Negative example: this is not the HE/CeTTa 5-argument fold-compatibility
-    alias `reduce`; it is the PeTTa evaluator-dispatch surface. -/
+    alias `reduce`; it is the PeTTa evaluator-dispatch interface. -/
 theorem translatePeTTa_reduceEval (expr : Atom) (s : Nat) :
     translatePeTTa (.expression [.symbol "reduce", expr]) s =
     let (texpr, s1) := translatePeTTa expr s
@@ -365,7 +365,7 @@ stays explicit and local:
 
 - it only handles the structural append-suffix head-pattern family
 - it keeps the recovered-tail application on the named `__tr-raw-apply1`
-  helper surface
+  helper interface
 - it does not claim anything about equality-form inversion such as `h_unify`
 -/
 
@@ -530,7 +530,7 @@ theorem translatePeTTa_appendSuffixLetExtension_cons_shape
 
 This mirrors the executable post-translation optimizer while keeping it separate
 from the core `translatePeTTa` lowering. The optimizer improves the generated HE
-surface but intentionally does *not* preserve the current stable-common-fragment
+interface but intentionally does *not* preserve the current stable-common-fragment
 fixed-point proofs, because it may reintroduce HE-native administrative heads
 such as `chain` and `nop`.
 -/
@@ -595,7 +595,7 @@ mutual
 end
 
 /-- The executable optimizer avoids turning `let (collapse ...)` into `chain`
-because that path is not a stable common HE/CeTTa surface today. -/
+because that path is not a stable common HE/CeTTa interface today. -/
 def safeChainSource (a : Atom) : Bool :=
   !(containsHeadSymbol "collapse" a || containsHeadSymbol "collapse-bind" a)
 
@@ -757,7 +757,7 @@ theorem translateHE_unique_extends_to_all_unary (x : Atom) (s : Nat) :
           .expression [.symbol "superpose", uniqueVar]]], s3) := rfl
 
 /-- **Roundtrip alignment**: the PeTTa→HE reverse translation of the
-    native `(unique-atom (collapse X))` idiom produces the HE surface
+    native `(unique-atom (collapse X))` idiom produces the HE interface
     form `(collapse (unique X'))`. -/
 theorem translateHE_unique_roundtrip_structure (x : Atom) (s : Nat) :
     (translatePeTTa

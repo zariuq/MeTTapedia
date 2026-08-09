@@ -44,3 +44,4 @@ import Mettapedia.MachineLearning.NeuralNetworks.PredictiveCoding.LocalityCeilin
 import Mettapedia.MachineLearning.NeuralNetworks.PredictiveCoding.LocalPreconditionedRate
 import Mettapedia.MachineLearning.NeuralNetworks.PredictiveCoding.HierarchicalEscape
 import Mettapedia.MachineLearning.NeuralNetworks.PredictiveCoding.Frontier
+import Mettapedia.MachineLearning.NeuralNetworks.PredictiveCoding.RankedDAGTensorDynamics

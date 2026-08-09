@@ -43,10 +43,12 @@ theorem rhoStaticNeutralSingleton_typed :
 
 /-- Checked singleton shell used by the executable region-tree compiler. -/
 def rhoStaticNeutralSingleton :
-    OpenTerm rhoCIGSLT.costWholeLanguage rhoCutOrderFree []
+    ReflectiveWellSorted.OpenTerm rhoCIGSLT.costWholeReflectionProfile
+      rhoCIGSLT.costWholeLanguage rhoCutOrderFree []
       rhoBreadthBaseProcSort := by
   refine ⟨rhoStaticNeutralSingletonPattern,
-    rhoStaticNeutralSingleton_typed, rfl, rfl, ?_⟩
+    ⟨⟨rhoStaticNeutralSingleton_typed, rfl, rfl,
+      rhoStaticNeutralSingleton_typed.isWellScopedAt⟩, ?_⟩⟩
   intro declaration membership
   simp [rhoStaticNeutralSingletonPattern, rhoBreadthLeftPattern,
     rhoBreadthLeftProcess, rhoBreadthOutputName, rhoCutOrderRedex,

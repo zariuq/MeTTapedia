@@ -116,25 +116,13 @@ private def renderTermZone1Shared (rule : GrammarRule) : String :=
   s!"{rule.label} . <{arity}:{shape}>|-<syntax>:{rule.category}"
 
 /-- Zone-1 shared-core canonical rendering.
-    Matches Rust's zone1_shared_core in canonical.rs:21:
-    - Declarations are sorted alphabetically by name
-    - Term details projected to label/category/arity/shape
-    - No options (Lean LanguageDef has no options field yet) -/
+    Declarations are sorted alphabetically by name and term details are
+    projected to label/category/arity/shape.  Runtime configuration is a
+    separate extension and therefore absent from this language identity. -/
 def zone1SharedCore (lang : LanguageDef) : String :=
   Id.run do
     let mut out := ""
     out := out ++ s!"name:{lang.name}\n"
-    -- Options: sorted by key (matches Rust opts.sort_by(|a, b| a.0.cmp(b.0)))
-    let sortedOpts := lang.options.toArray.qsort (fun a b => a.key < b.key) |>.toList
-    out := out ++ "options:\n"
-    for opt in sortedOpts do
-      let val := match opt.value with
-        | .bool b => toString b
-        | .int n => toString n
-        | .float f => toString f
-        | .keyword k => k
-        | .str s => s!"\"" ++ s ++ "\""
-      out := out ++ s!"  {opt.key}={val}\n"
     -- Types: sorted by name (matches Rust sort_by_key)
     let sortedTypes := lang.types.toArray.qsort (fun a b => a.name < b.name) |>.toList
     out := out ++ "types:\n"
@@ -193,14 +181,12 @@ it factorizes out the arbitrary author-specified ordering. -/
 
     This is the non-trivial contract property: zone1SharedCore is determined
     by the sorted structural content, not by the author-specified declaration
-    order. If two LanguageDefs agree on name, sorted options, sorted types,
-    sorted terms, sorted equations, and sorted rewrites, they produce the
+    order. If two LanguageDefs agree on name, sorted types, sorted terms,
+    sorted equations, and sorted rewrites, they produce the
     same canonical string. -/
 theorem zone1SharedCore_determined_by_sorted_content
     (lang1 lang2 : LanguageDef)
     (hname : lang1.name = lang2.name)
-    (hopts : lang1.options.toArray.qsort (fun a b => a.key < b.key) =
-             lang2.options.toArray.qsort (fun a b => a.key < b.key))
     (htypes : lang1.types.toArray.qsort (fun a b => a.name < b.name) =
               lang2.types.toArray.qsort (fun a b => a.name < b.name))
     (hterms : lang1.terms.toArray.qsort (fun a b => a.label < b.label) =
@@ -209,8 +195,8 @@ theorem zone1SharedCore_determined_by_sorted_content
             lang2.equations.toArray.qsort (fun a b => a.name < b.name))
     (hrws : lang1.rewrites.toArray.qsort (fun a b => a.name < b.name) =
             lang2.rewrites.toArray.qsort (fun a b => a.name < b.name)) :
-    zone1SharedCore lang1 = zone1SharedCore lang2 := by
+  zone1SharedCore lang1 = zone1SharedCore lang2 := by
   simp only [zone1SharedCore]
-  rw [hname, hopts, htypes, hterms, heqs, hrws]
+  rw [hname, htypes, hterms, heqs, hrws]
 
 end Mettapedia.OSLF.MeTTaIL.Canonical

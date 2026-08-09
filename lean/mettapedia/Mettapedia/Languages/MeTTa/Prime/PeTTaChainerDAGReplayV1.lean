@@ -83,12 +83,15 @@ private def cacheLanguage : LanguageDef :=
       dataConstructor "ppd.Reach" 2,
       dataConstructor "ppd.Witness" 2]
     equations := []
-    rewrites := []
-    judgments := [{ head := "ppd.Derives", arity := 1 }]
-    inferenceRules := rules }
+    rewrites := [] }
+
+private def cacheCalculus :
+    Mettapedia.GSLT.LanguageDef.InferenceExtension.ProofCalculus :=
+  { judgments := [{ head := "ppd.Derives", arity := 1 }]
+    rules }
 
 def cache : Presentation :=
-  { language := cacheLanguage }
+  { language := cacheLanguage, calculus := cacheCalculus }
 
 def projectedCache :=
   Mettapedia.Languages.MeTTa.Prime.MinimalCheckingPackage.project rules
@@ -101,7 +104,7 @@ private theorem cache_language_valid : cache.language.validate = [] := by
 theorem cache_is_valid : cache.isValidV2 = true := by
   unfold Presentation.isValidV2 Presentation.isValidV1
   rw [cache_language_valid]
-  simp [cache, rules, ruleEdgeAB, ruleEdgeToPath, ruleEdgeToReach,
+  simp [cache, cacheCalculus, rules, ruleEdgeAB, ruleEdgeToPath, ruleEdgeToReach,
     rulePathReachWitness, schema, derives, edge, path, reach, witness,
     atomA, atomB, app, pvar, cacheLanguage, dataConstructor,
     Presentation.ruleIds, RuleSchema.isValidV1,

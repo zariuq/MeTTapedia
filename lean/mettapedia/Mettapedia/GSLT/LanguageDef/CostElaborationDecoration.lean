@@ -520,7 +520,8 @@ def CostOpenElaboration.decoration {source : CIGSLT}
     {targetFree : WellSorted.FreeTypeContext}
     {targetBound : List TypeExpr}
     {targetSort : LangSort source.costWholeLanguage}
-    {term : OpenTerm source.costIGSLT targetFree targetBound targetSort}
+    {term : ReflectiveWellSorted.OpenTerm source.costWholeReflectionProfile
+      source.costWholeLanguage targetFree targetBound targetSort}
     (elaboration : CostOpenElaboration source term) :
     CostTreeDecoration source :=
   elaboration.tree.decoration
@@ -542,7 +543,8 @@ elaboration.  The eventual semantic lift may transport this decoration along
 an authored equation; this identity supplies the strict no-transport baseline
 and makes accidental compact collapse testable. -/
 def costStructuralDecorationIdentity (source : CIGSLT) :
-    OpenElaborationSemantics.Identity source.costOpenElaborationCarrier where
+    ReflectiveOpenElaborationSemantics.Identity
+      source.costOpenElaborationCarrier where
   Key := fun _targetFree _targetBound _targetSort => CostTreeDecoration source
   key := CostElabTerm.decoration
 

@@ -85,10 +85,6 @@ def plnSelectorLanguageDef : LanguageDef := {
   rewrites := [ruleExtBayes2, ruleExtBayesFamily, ruleNormalizeStrength]
 }
 
-@[simp] theorem plnSelectorLanguageDef_reflectivePresentations :
-    plnSelectorLanguageDef.reflectivePresentations = [] := by
-  rfl
-
 /-! ## Encoding / Decoding Relation -/
 
 variable {Goal : Type u} {Fact : Type v}
@@ -179,12 +175,10 @@ theorem plnSelector_lang_extBayes2 (pp qq ll : Pattern) :
   refine ⟨1, StepAt.rule (rule := ruleExtBayes2)
     (initialBindings := bs0) (finalBindings := bs0) ?hr ?hmatch (.nil bs0) ?happly⟩
   · simp [plnSelectorLanguageDef]
-  · rw [matchPatternForRule_eq_syntactic_of_no_presentations
-      plnSelectorLanguageDef_reflectivePresentations]
-    simp [bs0, ruleExtBayes2, pUpdate, pFuse, matchPattern, matchArgs, mergeBindings]
-  · rw [applyBindingsForRule_eq_syntactic_of_no_presentations
-      plnSelectorLanguageDef_reflectivePresentations]
-    simp [bs0, ruleExtBayes2, pUpdate, pFuse, applyBindings]
+  · simp [matchPatternForRule, bs0, ruleExtBayes2, pUpdate, pFuse,
+      matchPattern, matchArgs, mergeBindings]
+  · simp [applyBindingsForRule, bs0, ruleExtBayes2, pUpdate, pFuse,
+      applyBindings]
 
 theorem plnSelector_lang_extBayesFamily (xsp ll : Pattern) :
     plnSelectorLangReduces
@@ -195,12 +189,10 @@ theorem plnSelector_lang_extBayesFamily (xsp ll : Pattern) :
   refine ⟨1, StepAt.rule (rule := ruleExtBayesFamily)
     (initialBindings := bs0) (finalBindings := bs0) ?hr ?hmatch (.nil bs0) ?happly⟩
   · simp [plnSelectorLanguageDef]
-  · rw [matchPatternForRule_eq_syntactic_of_no_presentations
-      plnSelectorLanguageDef_reflectivePresentations]
-    simp [bs0, ruleExtBayesFamily, pUpdate, pFuseFamily, matchPattern, matchArgs, mergeBindings]
-  · rw [applyBindingsForRule_eq_syntactic_of_no_presentations
-      plnSelectorLanguageDef_reflectivePresentations]
-    simp [bs0, ruleExtBayesFamily, pFuseFamily, pFMapUpdate, applyBindings]
+  · simp [matchPatternForRule, bs0, ruleExtBayesFamily, pUpdate,
+      pFuseFamily, matchPattern, matchArgs, mergeBindings]
+  · simp [applyBindingsForRule, bs0, ruleExtBayesFamily, pFuseFamily,
+      pFMapUpdate, applyBindings]
 
 theorem plnSelector_lang_normalize (ep : Pattern) :
     plnSelectorLangReduces (pNormalizeNZ ep) ep := by
@@ -209,12 +201,10 @@ theorem plnSelector_lang_normalize (ep : Pattern) :
   refine ⟨1, StepAt.rule (rule := ruleNormalizeStrength)
     (initialBindings := bs0) (finalBindings := bs0) ?hr ?hmatch (.nil bs0) ?happly⟩
   · simp [plnSelectorLanguageDef]
-  · rw [matchPatternForRule_eq_syntactic_of_no_presentations
-      plnSelectorLanguageDef_reflectivePresentations]
-    simp [bs0, ruleNormalizeStrength, pNormalizeNZ, matchPattern, matchArgs, mergeBindings]
-  · rw [applyBindingsForRule_eq_syntactic_of_no_presentations
-      plnSelectorLanguageDef_reflectivePresentations]
-    simp [bs0, ruleNormalizeStrength, pNormalizeNZ, applyBindings]
+  · simp [matchPatternForRule, bs0, ruleNormalizeStrength, pNormalizeNZ,
+      matchPattern, matchArgs, mergeBindings]
+  · simp [applyBindingsForRule, bs0, ruleNormalizeStrength,
+      pNormalizeNZ, applyBindings]
 
 /-! ## One-Way Soundness: DSL Rewrite ⇒ LanguageDef Rewrite -/
 
@@ -444,10 +434,8 @@ theorem langReduces_to_reduces_exists_of_normalizeFinite
   obtain ⟨_, hStep⟩ := h
   cases hStep with
   | @rule fuel source target r bs0 bs hr hbs0 hprem hq =>
-  rw [matchPatternForRule_eq_syntactic_of_no_presentations
-    plnSelectorLanguageDef_reflectivePresentations] at hbs0
-  rw [applyBindingsForRule_eq_syntactic_of_no_presentations
-    plnSelectorLanguageDef_reflectivePresentations] at hq
+  simp only [matchPatternForRule_eq_syntactic] at hbs0
+  simp only [applyBindingsForRule_eq_syntactic] at hq
   have hrCases :
       r = ruleExtBayes2 ∨ r = ruleExtBayesFamily ∨ r = ruleNormalizeStrength := by
     simpa [plnSelectorLanguageDef] using hr

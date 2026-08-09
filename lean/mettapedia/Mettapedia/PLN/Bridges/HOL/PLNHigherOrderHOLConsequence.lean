@@ -17,17 +17,17 @@ abbrev HOLQuery (Const : Ty Base → Type v) :=
 abbrev HOLState (Base : Type u) (Const : Ty Base → Type v) :=
   Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLCore.HOLState Base Const
 
-/-- Classical higher-order theory surface for the HO WM-PLN layer. -/
+/-- Classical higher-order theory interface for the HO WM-PLN layer. -/
 abbrev ClassicalHOLTheory :=
   Mettapedia.PLN.Bridges.HOL.PLNWorldModelHOLCompleteness.ClassicalHOLTheory
     (Base := Base) (Const := Const)
 
-/-- Classical higher-order query surface over `WithParams Const`. -/
+/-- Classical higher-order query interface over `WithParams Const`. -/
 abbrev ClassicalHOLQuery :=
   Mettapedia.PLN.Bridges.HOL.PLNWorldModelHOLCompleteness.ClassicalHOLQuery
     (Base := Base) (Const := Const)
 
-/-- Classical higher-order state surface built from Henkin models of a theory. -/
+/-- Classical higher-order state interface built from Henkin models of a theory. -/
 abbrev ClassicalHOLState :=
   Mettapedia.PLN.Bridges.HOL.PLNWorldModelHOLCompleteness.ClassicalHOLState
     (Base := Base) (Const := Const)
@@ -155,9 +155,9 @@ theorem classical_singletonConsequenceOnTheory_to_holExtensionalProvImpOnTheory
     (Base := Base) (Const := Const) enum henum hT0 hEM hImp0 h
 
 /-- Sound finite theory-relative derivability embeds into the stronger
-extensional closed-theory proof surface once the classical completeness
+extensional closed-theory proof relation once the classical completeness
 side-conditions are supplied. This names the honest relation between the two
-surfaces without treating them as definitionally identical. -/
+relations without treating them as definitionally identical. -/
 theorem holDerivableImpOnTheory_to_holExtensionalProvImpOnTheory_classical
     {T : ClassicalHOLTheory (Base := Base) (Const := Const)}
     {φ ψ : ClassicalHOLQuery (Base := Base) (Const := Const)}

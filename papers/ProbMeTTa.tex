@@ -45,7 +45,7 @@ probabilities. The formalization comprises approximately 7{,}200 lines of
 Lean with zero unproven assumptions (\texttt{sorry}), covering BDD
 construction correctness, Weighted Model Counting, compilation
 soundness and completeness, an explicit runtime evaluation relation
-for ProbMeTTa's source-level query operations, a normalized source surface
+for ProbMeTTa's source-level query operations, a normalized source syntax
 for the top-level ProbMeTTa operators, a literal annotated-disjunction
 builder core for \texttt{new-id}, \texttt{build-ad-helper}, and
 \texttt{build-ad-rules}, an LP-level literal matching layer for nonground
@@ -78,7 +78,7 @@ This paper presents:
 \begin{enumerate}
 \item A self-contained formalization of ProbLog's distribution semantics in Lean~4
 \item ProbMeTTa: a working ProbLog implementation in MeTTa (27/27 tests passing)
-\item A formal proof that ProbMeTTa's query/runtime core, source surface,
+\item A formal proof that ProbMeTTa's query/runtime core, source syntax,
   literal matcher/state layers, and top-level presentation correctly compute
   ProbLog probabilities
 \item Kernel-checked conformance tests linking the Lean formalization to the MeTTa code
@@ -266,7 +266,7 @@ approximately 7{,}200 lines in the verified ProbMeTTa slice with zero
 \texttt{sorry} (unproven assumptions). The core compilation and WMC correctness
 is approximately 1{,}700 lines; extensions cover annotated disjunctions,
 first-order translation, the explicit runtime evaluation relation, the
-normalized source surface, literal nonground matching, literal state-space and
+normalized source syntax, literal nonground matching, literal state-space and
 presentation layers, and the end-to-end theorem surface.
 
 \subsection{BDD Core (\texttt{Core.lean}, 169 lines)}
@@ -397,10 +397,10 @@ This layer bridges the gap between the abstract compilation relation
 (\texttt{GroundBDDCompile}) and the actual source-level runtime operations
 in ProbMeTTa's \texttt{lib\_prob.metta}.
 
-\subsection{Normalized Source Surface (\texttt{ProbMeTTaSourceSurface.lean}, 627 lines)}
+\subsection{Normalized Source Syntax (\texttt{ProbMeTTaSourceSyntax.lean}, 627 lines)}
 
 On top of the runtime/query core, the formalization now includes a normalized
-source surface for the actual top-level ProbMeTTa operators:
+source syntax for the actual top-level ProbMeTTa operators:
 \texttt{prob-rule}, \texttt{=>}, \texttt{::}, \texttt{::adr}, \texttt{::=>},
 \texttt{prob-wmc-env}, \texttt{?prob-bdd-ev}, \texttt{?prob}, and
 \texttt{?prob-given}.
@@ -493,7 +493,7 @@ The complete verified chain:
 \[
 \underbrace{\text{ProbLog program}}_{\texttt{ProbLogProgram}}
 \xrightarrow{\text{literal state/source}}
-\underbrace{\text{state + source surface}}_{\texttt{ProbMeTTaStateSpace},\,\texttt{ProbMeTTaSourceProgram}}
+\underbrace{\text{state + source syntax}}_{\texttt{ProbMeTTaStateSpace},\,\texttt{ProbMeTTaSourceProgram}}
 \xrightarrow{\text{runtime}}
 \underbrace{\text{runtime query core}}_{\texttt{ProbMeTTaCoreEval}}
 \overset{\cong}{\longleftrightarrow}
@@ -506,7 +506,7 @@ The complete verified chain:
 
 The runtime relation \texttt{ProbMeTTaCoreEval} for
 \texttt{?prob-bdd}/\texttt{?prob-bdd-ev} is proved equivalent to the abstract
-BDD compilation layer, the normalized source surface packages the actual
+BDD compilation layer, the normalized source syntax packages the actual
 top-level ProbMeTTa operators on top of that bridge, the literal matching/state
 layers reconnect the source runtime branches that depend on \texttt{match} and
 mutable spaces, and the presentation layer closes the loop at the displayed
@@ -644,7 +644,7 @@ We have shown three things:
 A formal proof in Lean~4 (approximately 7{,}200 lines, 0~\texttt{sorry}) covers BDD
 construction, Weighted Model Counting, compilation soundness and
 completeness, an explicit runtime evaluation relation for
-ProbMeTTa's source-level query operations, a normalized source surface for the
+ProbMeTTa's source-level query operations, a normalized source syntax for the
 top-level operators, a literal nonground matching layer, literal state and
 presentation layers, and a literal annotated-disjunction builder core.
 Kernel-checked conformance tests link the abstract proof to the concrete MeTTa

@@ -89,6 +89,39 @@ theorem targetBound_length_eq
     view.node.targetBound.length = available.length :=
   congrArg List.length view.availableEq
 
+/-- Two static-root views exposed from trees in one available-context fibre
+have definitionally comparable target binder contexts.  This is the
+cast-stable equality consumed by restoration bridges; it does not unfold
+either compiled tree. -/
+theorem targetBound_eq_targetBound
+    {source : CIGSLT} {targetFree : FreeTypeContext}
+    {available leftOuter rightOuter : List TypeExpr}
+    {leftPattern rightPattern : Pattern} {type : TypeExpr}
+    {leftTree : CostRegionTree source targetFree available leftOuter
+      leftPattern type}
+    {rightTree : CostRegionTree source targetFree available rightOuter
+      rightPattern type}
+    {leftColor rightColor : CostStaticColor}
+    (leftView : leftTree.StaticRootView leftColor)
+    (rightView : rightTree.StaticRootView rightColor) :
+    leftView.node.targetBound = rightView.node.targetBound :=
+  leftView.availableEq.trans rightView.availableEq.symm
+
+/-- Length-level companion of `targetBound_eq_targetBound`. -/
+theorem targetBound_length_eq_targetBound_length
+    {source : CIGSLT} {targetFree : FreeTypeContext}
+    {available leftOuter rightOuter : List TypeExpr}
+    {leftPattern rightPattern : Pattern} {type : TypeExpr}
+    {leftTree : CostRegionTree source targetFree available leftOuter
+      leftPattern type}
+    {rightTree : CostRegionTree source targetFree available rightOuter
+      rightPattern type}
+    {leftColor rightColor : CostStaticColor}
+    (leftView : leftTree.StaticRootView leftColor)
+    (rightView : rightTree.StaticRootView rightColor) :
+    leftView.node.targetBound.length = rightView.node.targetBound.length :=
+  congrArg List.length (leftView.targetBound_eq_targetBound rightView)
+
 /-- Transport a semantic root bridge built on two exposed static constructors
 back through the exact pattern, binder-context, and result-type indices of the
 original compiled trees.  No heterogeneous equality escapes this boundary. -/

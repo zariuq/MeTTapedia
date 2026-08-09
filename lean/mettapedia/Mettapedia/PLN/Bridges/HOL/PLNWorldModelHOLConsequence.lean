@@ -5,7 +5,7 @@ import Mettapedia.PLN.Bridges.HOL.PLNWorldModelHOLCompleteness
 
 Thin public wrapper over the real HOL consequence bridge.
 
-This file intentionally exposes the state-indexed WM consequence rule surface
+This file intentionally exposes the state-indexed WM consequence rule family
 without re-encoding the underlying Henkin-model semantics.
 -/
 

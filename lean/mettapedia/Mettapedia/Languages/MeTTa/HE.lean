@@ -52,7 +52,7 @@ Authoritative Lean 4 formalization of the HE MeTTa evaluation specification.
 - `SyntaxSpec` — Authoritative HE syntax profiles
 - `Conformance` — Derivation-tree conformance witnesses
 - `Properties` — Universal theorems by induction on derivations
-- `DeclarativeSpec` — Unified spec surface (clause forms, examples, audit index)
+- `DeclarativeSpec` — Unified spec interface (clause forms, examples, audit index)
 - `ExecutableBoundary` — Additive implementation-refined top-level HE boundary
 - `LetChainResumption` — Resumable source/body frame refinement for `let`/`chain`
 - `Certification` — Light public entry point for the exported top-level

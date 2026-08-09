@@ -441,22 +441,22 @@ theorem atps_heading_image_witness
     parseAtpsHeadingLine? renderAtpsHeading atpsReadmeBlocks
     atps_heading_images hMem
 
-private def insertSurfaceBucket (acc : List (String × List AtpsClaim)) (surface : String) (c : AtpsClaim) :
+private def insertRenderedBucket (acc : List (String × List AtpsClaim)) (rendered : String) (c : AtpsClaim) :
     List (String × List AtpsClaim) :=
   match acc with
-  | [] => [(surface, [c])]
+  | [] => [(rendered, [c])]
   | (k, cs) :: rest =>
-      if k = surface then
+      if k = rendered then
         (k, c :: cs) :: rest
       else
-        (k, cs) :: insertSurfaceBucket rest surface c
+        (k, cs) :: insertRenderedBucket rest rendered c
 
-def claimSurfaceBuckets : List (String × List AtpsClaim) :=
+def claimRenderedBuckets : List (String × List AtpsClaim) :=
   allAtpsClaims.foldl
-    (fun acc c => insertSurfaceBucket acc (renderAtpsClaim c) c) []
+    (fun acc c => insertRenderedBucket acc (renderAtpsClaim c) c) []
 
-def ambiguousClaimSurfaces : List (String × List AtpsClaim) :=
-  claimSurfaceBuckets.filter (fun p => p.snd.length > 1)
+def ambiguousClaimRenderings : List (String × List AtpsClaim) :=
+  claimRenderedBuckets.filter (fun p => p.snd.length > 1)
 
 #eval
   let fails := allAtpsClaims.filter (fun c =>
@@ -484,9 +484,9 @@ def ambiguousClaimSurfaces : List (String × List AtpsClaim) :=
     s!"ATPS structured parse failures: {repr fails}"
 
 #eval
-  if ambiguousClaimSurfaces.isEmpty then
-    "ATPS ambiguity diagnostic: no duplicate surfaces across distinct claims"
+  if ambiguousClaimRenderings.isEmpty then
+    "ATPS ambiguity diagnostic: no duplicate renderings across distinct claims"
   else
-    s!"ATPS ambiguity diagnostic: duplicate surfaces found: {repr ambiguousClaimSurfaces}"
+    s!"ATPS ambiguity diagnostic: duplicate renderings found: {repr ambiguousClaimRenderings}"
 
 end Mettapedia.DocText.AtpsReadmeCompositional

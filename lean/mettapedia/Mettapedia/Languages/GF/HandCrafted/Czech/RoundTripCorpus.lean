@@ -1,13 +1,13 @@
 import Mettapedia.Languages.GF.HandCrafted.Czech.Tests
 
 /-!
-# Czech Surface Roundtrip Corpus
+# Czech Linearization Roundtrip Corpus
 
 Restricted roundtrip over a theorem-backed Czech form corpus (drawn from the
 proved declension examples in `Czech/Tests.lean`).
 
 This remains corpus-restricted by design: parsing succeeds exactly on the
-validated surfaces and is proved complete/sound for this corpus.
+validated linearizations and is proved complete/sound for this corpus.
 -/
 
 namespace Mettapedia.Languages.GF.HandCrafted.Czech.RoundTripCorpus
@@ -15,7 +15,7 @@ namespace Mettapedia.Languages.GF.HandCrafted.Czech.RoundTripCorpus
 open Mettapedia.Languages.GF.HandCrafted.Czech
 open Mettapedia.Languages.GF.HandCrafted.Czech.Declensions
 
-inductive ExampleSurface where
+inductive ExampleTree where
   | panNomSg
   | panGenSg
   | panVocSg
@@ -52,7 +52,7 @@ private def moře : CzechNoun := declMORE "moře"
 private def stavení : CzechNoun := declSTAVENI "stavení"
 
 /-- Grammar-level linearization (declension form selection) per curated example. -/
-def linearizeSurface : ExampleSurface → String
+def linearizeExample : ExampleTree → String
   | .panNomSg => declineFull pán ⟨Case.Nom, Number.Sg⟩
   | .panGenSg => declineFull pán ⟨Case.Gen, Number.Sg⟩
   | .panVocSg => declineFull pán ⟨Case.Voc, Number.Sg⟩
@@ -73,7 +73,7 @@ def linearizeSurface : ExampleSurface → String
   | .staveniLocPl => declineFull stavení ⟨Case.Loc, Number.Pl⟩
 
 /-- Full curated Czech corpus used by the roundtrip parser. -/
-def allExamples : List ExampleSurface :=
+def allExamples : List ExampleTree :=
   [ .panNomSg
   , .panGenSg
   , .panVocSg
@@ -94,35 +94,35 @@ def allExamples : List ExampleSurface :=
   , .staveniLocPl
   ]
 
-/-- Every surface constructor appears in the curated corpus list. -/
-theorem mem_allExamples (e : ExampleSurface) : e ∈ allExamples := by
+/-- Every example constructor appears in the curated corpus list. -/
+theorem mem_allExamples (e : ExampleTree) : e ∈ allExamples := by
   cases e <;> simp [allExamples]
 
 /-- Canonical parser for the validated corpus (returns all matching analyses). -/
-def parseSurface : String → List ExampleSurface
-  | s => allExamples.filter (fun e => linearizeSurface e = s)
+def parseLinearization : String → List ExampleTree
+  | s => allExamples.filter (fun e => linearizeExample e = s)
 
 /-- Corpus completeness: parsing linearization recovers the source analysis. -/
-theorem parse_linearize_complete (e : ExampleSurface) :
-    e ∈ parseSurface (linearizeSurface e) := by
+theorem parse_linearize_complete (e : ExampleTree) :
+    e ∈ parseLinearization (linearizeExample e) := by
   refine List.mem_filter.mpr ?_
   exact ⟨mem_allExamples e, by simp⟩
 
-/-- Corpus soundness: any parsed analysis linearizes back to the input surface. -/
-theorem parse_sound (s : String) (e : ExampleSurface) :
-    e ∈ parseSurface s → linearizeSurface e = s := by
+/-- Corpus soundness: any parsed analysis linearizes back to the input text. -/
+theorem parse_sound (s : String) (e : ExampleTree) :
+    e ∈ parseLinearization s → linearizeExample e = s := by
   intro h
   simpa using (List.mem_filter.mp h).2
 
-/-- Negative example: unknown surface has no analysis in this corpus parser. -/
-theorem parse_unknown_empty : parseSurface "nesmyslny-vstup" = [] := by
+/-- Negative example: unknown text has no analysis in this corpus parser. -/
+theorem parse_unknown_empty : parseLinearization "nesmyslny-vstup" = [] := by
   decide
 
 /-- Representative corpus entries are uniquely parsed in this restricted parser. -/
-theorem distinct_surface_examples :
-    (parseSurface "pán").length = 1 ∧
-    (parseSurface "pane").length = 1 ∧
-    (parseSurface "staveních").length = 1 := by
+theorem distinct_linearization_examples :
+    (parseLinearization "pán").length = 1 ∧
+    (parseLinearization "pane").length = 1 ∧
+    (parseLinearization "staveních").length = 1 := by
   decide
 
 end Mettapedia.Languages.GF.HandCrafted.Czech.RoundTripCorpus

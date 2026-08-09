@@ -220,12 +220,12 @@ theorem linearize_witnessPassiveClause_nom_sg :
   rw [evalNode_witnessPassiveClause, renderCls_passive]
 
 /-- Concrete string endpoint for the active PredVP/ComplSlash witness path. -/
-theorem predvp_complslash_surface_eq_string :
+theorem predvp_complslash_linearization_eq_string :
     linearizeTree {} witnessActiveClause .Nom .Sg = "the cat loves the dog" :=
   linearize_witnessActiveClause_nom_sg
 
 /-- Concrete string endpoint for the passive PredVP/PassV2 witness path. -/
-theorem predvp_passv2_surface_eq_string :
+theorem predvp_passv2_linearization_eq_string :
     linearizeTree {} witnessPassiveClause .Nom .Sg = "the dog is loved" :=
   linearize_witnessPassiveClause_nom_sg
 

@@ -38,11 +38,11 @@ abbrev FOLQuery (L : Language.{u}) := Mettapedia.PLN.Bridges.Logic.WorldModel.PL
 abbrev PointedFOL (L : Language.{u}) := Mettapedia.PLN.Bridges.Logic.WorldModel.PLNWorldModelFOL.PointedFOL L
 abbrev FOLState (L : Language.{u}) := Multiset (PointedFOL L)
 
-/-- Alias for the unified categorical endpoint surface, specialized to FOL WM
+/-- Alias for the unified categorical endpoint contract, specialized to FOL WM
 states. -/
-abbrev WMCategoricalEndpointSurface {L : Language.{u}}
+abbrev WMCategoricalEndpointContract {L : Language.{u}}
     (H : WMHyperdoctrine (FOLState L)) : Prop :=
-  Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelCategoricalBridge.WMHyperdoctrine.EndpointSurface (H := H)
+  Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelCategoricalBridge.WMHyperdoctrine.EndpointContract (H := H)
 
 /-- State-side condition: every pointed structure in `W` is a model of `T`. -/
 def stateModelsTheory {L : Language.{u}} (T : Theory L) (W : FOLState L) : Prop :=
@@ -297,7 +297,7 @@ theorem multiset_strength_le_of_consequence {L : Language.{u}}
 same multiset strength inequality with explicit endpoint-surface input. -/
 theorem multiset_strength_le_of_consequence_categorical {L : Language.{u}}
     (H : WMHyperdoctrine (FOLState L))
-    (_hcat : WMCategoricalEndpointSurface (H := H))
+    (_hcat : WMCategoricalEndpointContract (H := H))
     {X : H.Obj} (_φc : H.query X)
     (T : Theory L)
     (W : FOLState L) (φ ψ : FOLQuery L)
@@ -325,7 +325,7 @@ def wmConsequenceRuleOn_of_consequence {L : Language.{u}}
 state-indexed WM consequence rules. -/
 def wmConsequenceRuleOn_of_consequence_categorical {L : Language.{u}}
     (H : WMHyperdoctrine (FOLState L))
-    (_hcat : WMCategoricalEndpointSurface (H := H))
+    (_hcat : WMCategoricalEndpointContract (H := H))
     {X : H.Obj} (_φc : H.query X)
     (T : Theory L) (φ ψ : FOLQuery L)
     (hcons : T ⊨[SmallStruc L] (φ ➝ ψ)) :
@@ -359,7 +359,7 @@ theorem multiset_consequence_of_provable_imp {L : Language.{u}}
 same multiset strength inequality with explicit endpoint-surface input. -/
 theorem multiset_strength_le_of_provable_imp_categorical {L : Language.{u}}
     (H : WMHyperdoctrine (FOLState L))
-    (_hcat : WMCategoricalEndpointSurface (H := H))
+    (_hcat : WMCategoricalEndpointContract (H := H))
     {X : H.Obj} (_φc : H.query X)
     (T : Theory L)
     (W : FOLState L) (φ ψ : FOLQuery L)
@@ -381,7 +381,7 @@ def wmConsequenceRuleOn_of_provable_imp {L : Language.{u}}
 WM consequence rules. -/
 def wmConsequenceRuleOn_of_provable_imp_categorical {L : Language.{u}}
     (H : WMHyperdoctrine (FOLState L))
-    (_hcat : WMCategoricalEndpointSurface (H := H))
+    (_hcat : WMCategoricalEndpointContract (H := H))
     {X : H.Obj} (_φc : H.query X)
     (T : Theory L) (φ ψ : FOLQuery L)
     (hprov : T ⊢ (φ ➝ ψ)) :

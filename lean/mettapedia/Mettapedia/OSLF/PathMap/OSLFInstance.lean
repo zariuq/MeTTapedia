@@ -208,9 +208,9 @@ private theorem pathMap_rootStep
   rw [langReducesUsing,
     step_iff_rootStep_of_noncontextualRules pathMapLang_rules_noncontextual]
   refine ⟨rule, ruleMember, initialBindings, ?_, finalBindings, premises, ?_⟩
-  · rw [matchPatternForRule_eq_syntactic_of_no_presentations (by rfl)]
+  · rw [matchPatternForRule_eq_syntactic]
     exact matched
-  · rw [applyBindingsForRule_eq_syntactic_of_no_presentations (by rfl)]
+  · rw [applyBindingsForRule_eq_syntactic]
     exact targetEq
 
 /-! ## OSLF Pipeline Instantiation -/
@@ -501,8 +501,8 @@ theorem pathMap_pjoin_complete (relEnv : RelationEnv) (a b : String) (φ : Patte
     rw [langReducesUsing,
       step_iff_rootStep_of_noncontextualRules pathMapLang_rules_noncontextual] at hq_red
     rcases hq_red with ⟨r, hr, bs0, hm, bs, hp, hb⟩
-    rw [matchPatternForRule_eq_syntactic_of_no_presentations (by rfl)] at hm
-    rw [applyBindingsForRule_eq_syntactic_of_no_presentations (by rfl)] at hb
+    rw [matchPatternForRule_eq_syntactic] at hm
+    rw [applyBindingsForRule_eq_syntactic] at hb
     simp only [pathMapLang, List.mem_cons, List.mem_nil_iff, or_false] at hr
     rcases hr with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
     · -- PJoin_self: b⊆a premise, q = fvar a
@@ -616,8 +616,8 @@ theorem pathMap_pmeet_complete (relEnv : RelationEnv) (a b : String) (φ : Patte
     rw [langReducesUsing,
       step_iff_rootStep_of_noncontextualRules pathMapLang_rules_noncontextual] at hq_red
     rcases hq_red with ⟨r, hr, bs0, hm, bs, hp, hb⟩
-    rw [matchPatternForRule_eq_syntactic_of_no_presentations (by rfl)] at hm
-    rw [applyBindingsForRule_eq_syntactic_of_no_presentations (by rfl)] at hb
+    rw [matchPatternForRule_eq_syntactic] at hm
+    rw [applyBindingsForRule_eq_syntactic] at hb
     simp only [pathMapLang, List.mem_cons, List.mem_nil_iff, or_false] at hr
     rcases hr with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
     · -- PJoin_self: match against PMeet fails
@@ -726,8 +726,8 @@ theorem pathMap_psubtract_complete (relEnv : RelationEnv) (a b : String) (φ : P
     rw [langReducesUsing,
       step_iff_rootStep_of_noncontextualRules pathMapLang_rules_noncontextual] at hq_red
     rcases hq_red with ⟨r, hr, bs0, hm, bs, hp, hb⟩
-    rw [matchPatternForRule_eq_syntactic_of_no_presentations (by rfl)] at hm
-    rw [applyBindingsForRule_eq_syntactic_of_no_presentations (by rfl)] at hb
+    rw [matchPatternForRule_eq_syntactic] at hm
+    rw [applyBindingsForRule_eq_syntactic] at hb
     simp only [pathMapLang, List.mem_cons, List.mem_nil_iff, or_false] at hr
     rcases hr with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
     · -- PJoin_self: match against PSubtract fails
@@ -819,8 +819,8 @@ theorem pathMap_prestrict_complete (relEnv : RelationEnv) (a b : String) (φ : P
     rw [langReducesUsing,
       step_iff_rootStep_of_noncontextualRules pathMapLang_rules_noncontextual] at hq_red
     rcases hq_red with ⟨r, hr, bs0, hm, bs, hp, hb⟩
-    rw [matchPatternForRule_eq_syntactic_of_no_presentations (by rfl)] at hm
-    rw [applyBindingsForRule_eq_syntactic_of_no_presentations (by rfl)] at hb
+    rw [matchPatternForRule_eq_syntactic] at hm
+    rw [applyBindingsForRule_eq_syntactic] at hb
     simp only [pathMapLang, List.mem_cons, List.mem_nil_iff, or_false] at hr
     rcases hr with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl
     ·

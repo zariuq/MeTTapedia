@@ -401,38 +401,41 @@ noncomputable def mandatoryHeader_runtimePreserved
       (db.preloadMandatoryHyps
           (sourceProofStart db pos label sourceState formula) =
         .ok runtimeAfter) ×'
-      MachineAgrees db sourceState.toSourcePrefix target after runtimeAfter := by
+      MachineAgrees db sourceState.toSourcePrefix target after runtimeAfter ×'
+      runtimeAfter.incomplete = false := by
   let runtimeStart := sourceProofStart db pos label sourceState formula
   have startAgreement :
       MachineAgrees db sourceState.toSourcePrefix target
         (emptyMachine sourceState.toSourcePrefix target) runtimeStart := by
     simpa [runtimeStart, sourceProofStart, Metamath.Verify.DB.mkProofState] using
       (emptyMachineAgrees db sourceState.toSourcePrefix target runtimeStart)
-  obtain ⟨runtimeAfter, hpreload, agreement⟩ :=
+  obtain ⟨runtimeAfter, hpreload, agreement, incomplete⟩ :=
     headerBuild_runtimePreserved db hproject runtimeStart build startAgreement
-  refine ⟨runtimeAfter, ?_, agreement⟩
-  let labels :=
-    (mandatoryHypotheses sourceState formula).map HypothesisView.label
-  have itemLabels :
-      (((mandatoryHypotheses sourceState formula).map
-          HeaderItem.mandatory).map headerRuntimeLabel) = labels := by
-    simp [labels, headerRuntimeLabel]
-  calc
-    db.preloadMandatoryHyps runtimeStart =
-        runtimeStart.frame.hyps.foldlM
-          (mandatoryPreloadStep db) runtimeStart :=
-      preloadMandatoryHyps_eq_mandatoryFold db runtimeStart
-    _ = runtimeStart.frame.hyps.toList.foldlM
-          (mandatoryPreloadStep db) runtimeStart :=
-      (Array.foldlM_toList).symm
-    _ = labels.foldlM (mandatoryPreloadStep db) runtimeStart := by
-      simp [labels, runtimeStart]
-    _ = labels.foldlM (db.preload) runtimeStart := by
-      exact mandatoryPreloadFold_eq_preloadFold db sourceState formula
-        runtimeStart hproject
-    _ = .ok runtimeAfter := by
-      rw [itemLabels] at hpreload
-      exact hpreload
+  refine ⟨runtimeAfter, ?_, agreement, ?_⟩
+  · let labels :=
+      (mandatoryHypotheses sourceState formula).map HypothesisView.label
+    have itemLabels :
+        (((mandatoryHypotheses sourceState formula).map
+            HeaderItem.mandatory).map headerRuntimeLabel) = labels := by
+      simp [labels, headerRuntimeLabel]
+    calc
+      db.preloadMandatoryHyps runtimeStart =
+          runtimeStart.frame.hyps.foldlM
+            (mandatoryPreloadStep db) runtimeStart :=
+        preloadMandatoryHyps_eq_mandatoryFold db runtimeStart
+      _ = runtimeStart.frame.hyps.toList.foldlM
+            (mandatoryPreloadStep db) runtimeStart :=
+        (Array.foldlM_toList).symm
+      _ = labels.foldlM (mandatoryPreloadStep db) runtimeStart := by
+        simp [labels, runtimeStart]
+      _ = labels.foldlM (db.preload) runtimeStart := by
+        exact mandatoryPreloadFold_eq_preloadFold db sourceState formula
+          runtimeStart hproject
+      _ = .ok runtimeAfter := by
+        rw [itemLabels] at hpreload
+        exact hpreload
+  · simpa [runtimeStart, sourceProofStart,
+      Metamath.Verify.DB.mkProofState] using incomplete
 
 /-! ## Complete parser-core execution -/
 
@@ -486,6 +489,7 @@ theorem finishProof_compressed_success
     (parser : ParserState) (proof : RuntimeProofState)
     (mode : proof.ptp = .compressed 0)
     (singleton : proof.stack = #[proof.fmla])
+    (complete : proof.incomplete = false)
     (inserted :
       (parser.db.insert proof.pos proof.label
         (.assert proof.fmla proof.frame)).error? = none) :
@@ -494,12 +498,13 @@ theorem finishProof_compressed_success
           (.assert proof.fmla proof.frame) ∧
       (parser.finishProof proof).db.error? = none := by
   cases proof with
-  | mk pos label formula frame heap stack ptp =>
-      simp only at mode singleton inserted ⊢
+  | mk pos label formula frame heap stack ptp incomplete =>
+      simp only at mode singleton complete inserted ⊢
       subst ptp
       subst stack
+      subst incomplete
       simp [ParserState.finishProof, ParserState.withAt,
-        ParserState.withDB, inserted]
+        ParserState.withDB, Metamath.Verify.DB.recordIncomplete, inserted]
 
 /-! ## Concrete explicit-header tokens -/
 
@@ -837,6 +842,7 @@ structure CompressedParserExecutionPreservation
     MachineAgrees db before.toSourcePrefix step.target
       step.finalState runtimeFinal
   finalStack : runtimeFinal.stack = #[formula.toRuntime]
+  finalIncomplete : runtimeFinal.incomplete = false
 
 /-- The three implementation phases preserve the source-authored theorem
 identity, claimed formula, and mandatory frame all the way to the final proof
@@ -1196,14 +1202,16 @@ noncomputable def CompressedTheoremStep.mmLean4ParserCorePreserved
   obtain ⟨sourceMandatory, mandatoryBuild, explicitBuild⟩ :=
     Mettapedia.Languages.Metamath.SourceGSLTCompressedParserMMLean4.HeaderBuild.splitAppend
       fullHeader
-  obtain ⟨runtimeMandatory, mandatoryExecution, mandatoryAgreement⟩ :=
+  obtain ⟨runtimeMandatory, mandatoryExecution, mandatoryAgreement,
+      mandatoryIncomplete⟩ :=
     mandatoryHeader_runtimePreserved db hproject pos label formula
       mandatoryBuild
   obtain ⟨runtimeInitial, explicitHeaderExecution,
-      initialAgreement⟩ :=
+      initialAgreement, explicitIncomplete⟩ :=
     headerBuild_runtimePreserved db hproject runtimeMandatory explicitBuild
       mandatoryAgreement
-  obtain ⟨runtimeFinal, actionExecution, finalAgreement⟩ :=
+  obtain ⟨runtimeFinal, actionExecution, finalAgreement,
+      actionIncomplete⟩ :=
     execute_mmLean4Preserved db step.presentation_eq hproject runtimeInitial
       step.execution initialAgreement
   have rootStack :
@@ -1225,7 +1233,10 @@ noncomputable def CompressedTheoremStep.mmLean4ParserCorePreserved
       explicitHeaderExecution := explicitHeaderExecution
       actionExecution := actionExecution
       finalAgreement := finalAgreement
-      finalStack := finalStack }
+      finalStack := finalStack
+      finalIncomplete :=
+        actionIncomplete.trans
+          (explicitIncomplete.trans mandatoryIncomplete) }
 
 /-! ## Source-owned theorem insertion -/
 
@@ -1295,6 +1306,8 @@ noncomputable def CompressedTheoremStep.mmLean4FinishPreserved
     simpa [finalProof] using core.finalStack
   have singleton : finalProof.stack = #[finalProof.fmla] := by
     rw [finalStack, finalIdentity.2.1]
+  have finalIncomplete : finalProof.incomplete = false := by
+    simpa [finalProof] using core.finalIncomplete
   have insertError :
       (parser.db.insert finalProof.pos finalProof.label
         (.assert finalProof.fmla finalProof.frame)).error? = none := by
@@ -1302,7 +1315,8 @@ noncomputable def CompressedTheoremStep.mmLean4FinishPreserved
       CompressedTheoremStep.runtimeInsert_errorFree
         step namespaceAgreement finalProof.pos
   have finished :=
-    finishProof_compressed_success parser finalProof rfl singleton insertError
+    finishProof_compressed_success parser finalProof rfl singleton
+      finalIncomplete insertError
   have finishDB :
       (parser.finishProof finalProof).db =
         parser.db.insert finalProof.pos label

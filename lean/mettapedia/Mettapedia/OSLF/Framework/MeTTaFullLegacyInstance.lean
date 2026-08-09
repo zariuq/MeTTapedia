@@ -4,7 +4,7 @@ import Mettapedia.OSLF.Framework.MeTTaFullInstance
 # MeTTa Full Legacy Instance Module
 
 Legacy-named module wrapper for the historical full-state MeTTa OSLF instance.
-This module intentionally re-exports the existing implementation surface via
+This module intentionally re-exports the existing implementation interface via
 aliases, while preserving backward compatibility with `MeTTaFullInstance`.
 -/
 

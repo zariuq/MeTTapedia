@@ -6,7 +6,7 @@
 ; This file is a kernel-side fixture for the MeTTaAdd table-to-signature
 ; lowering.  The source table is the addDecls rule table in the Lean
 ; MIEvalHosting path; the declarations below mirror the kernel-admissible
-; reachability slice used by that generated surface and are checked by the
+; reachability slice used by that generated signature and are checked by the
 ; existing lambda-Pi kernel.  There is no evaluator, trace validator, or
 ; MeTTa-specific checker here: the only witnesses are LF proof terms.
 ;
@@ -49,7 +49,7 @@
 (= (ma-sig-append SNil $ys) $ys)
 (= (ma-sig-append (SCons $x $xs) $ys) (SCons $x (ma-sig-append $xs $ys)))
 
-; ---------- generated signature surface -------------------------------------
+; ---------- generated signature -------------------------------------
 (= (ma-extraction-scaffold)
    (SCons (DConst __ldName (ma-ty))
    (SCons (DConst __ldIndex (ma-ty))

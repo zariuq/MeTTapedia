@@ -167,7 +167,7 @@ process languages where a meaningful live set IS forward-closed.
 
 The function below retains `isGovLive` as the declared live predicate and
 exposes both proofs as parameters, so the architectural wiring is complete —
-the obligation to supply the proofs surfaces only at instantiation time.  This
+the obligation to supply the proofs appears only at instantiation time.  This
 is the correct design: the DDLPlus/governance reasoning infrastructure is
 language-agnostic and applies to any language with a forward-closed live set. -/
 

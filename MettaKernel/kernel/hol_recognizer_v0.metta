@@ -5,7 +5,7 @@
 ; (Mettapedia/GSLT/LanguageDef/HOL.lean).
 ;
 ; Source anchors: HOL/STT terms are hosted as LF signatures in the HHP style and
-; follow the Assaf-Burel HOL-to-Dedukti translation boundary: surface parsing
+; follow the Assaf-Burel HOL-to-Dedukti translation boundary: source-syntax parsing
 ; lowers to LF constants/terms, then the LF kernel checks the result.  Binding
 ; and lambda lowering cross-reference the BIND-* rows.
 ;
@@ -13,7 +13,7 @@
 ; fail-closed parser/elaborator, and covered HOL-core-g connectives only.
 ;
 ; A total, fail-closed, fuel-bounded recursive-descent recognizer for the
-; `hol-core-g` surface grammar:
+; `hol-core-g` concrete grammar:
 ;   Term -> Bind | Iff
 ;   Bind -> ∀ id . Term | ∃ id . Term | λ id . Term
 ;   Iff  -> Imp ⇔ Iff | Imp
@@ -180,7 +180,7 @@
 
 ; ---------- proof-fragment elaboration for the existing LF kernel ------------
 ; `hol-core-g` lambdas are syntactically unannotated.  The checked implication
-; fragment has enough surface shape to elaborate lambdas immediately under
+; fragment has enough syntax shape to elaborate lambdas immediately under
 ; `impI A B` to the LF kernel proof domain `prf A`; all final acceptance remains
 ; with the imported kernel.
 
@@ -220,7 +220,7 @@
      (((Ok $raw) (hol-elab-proof $raw))
       ((Err $e) (Err $e)))))
 
-; ---------- example surface token streams -----------------------------------
+; ---------- example source token streams -----------------------------------
 (= (hol-append Nil $ys) $ys)
 (= (hol-append (Cons $x $xs) $ys) (Cons $x (hol-append $xs $ys)))
 (= (hol-id-toks $x) (Cons (Lex hol-id $x) Nil))

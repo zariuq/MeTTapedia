@@ -20,7 +20,7 @@ open Mettapedia.GSLT.LanguageDef.CheckedSource
 structure RootedConversion (checked : CheckedGSLT) where
   declaration : ConversionDecl
   isRooted :
-    checked.source.presentation.language.conversion = some declaration
+    checked.source.presentation.conversion = some declaration
 
 def RootedConversion.judgment {checked : CheckedGSLT}
     (conversion : RootedConversion checked)
@@ -206,10 +206,10 @@ private def bcRule : RuleSchema :=
     conclusion := .apply conversionDecl.judgmentHead [b, c] }
 
 private def conversionPresentation : Presentation :=
-  { language :=
-      { conversionLanguage with
-        judgments := [{ head := "Converts", arity := 2 }]
-        inferenceRules := [abRule, bcRule]
+  { language := conversionLanguage
+    calculus :=
+      { judgments := [{ head := "Converts", arity := 2 }]
+        rules := [abRule, bcRule]
         conversion := some conversionDecl } }
 
 private theorem conversionPresentation_language_validate :

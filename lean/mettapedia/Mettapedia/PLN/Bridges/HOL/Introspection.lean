@@ -266,7 +266,7 @@ structure WhatBreaks (T : ClosedTheorySet Const) (φ : ClosedFormula Const)
   sourceTokens : Set (DerivationTree.SourceToken (Base := Base) Const)
   exactnessNeeds : DeductionExactnessNeeds pA pB pC sAB sBC
 
-/-- Combined query surface for "what would break this answer", while preserving
+/-- Combined query interface for "what would break this answer", while preserving
 the two governed components as distinct fields. -/
 def whatBreaks {T : ClosedTheorySet Const} {φ : ClosedFormula Const}
     (w : IntrospectionQuery (Const := Const) T φ)

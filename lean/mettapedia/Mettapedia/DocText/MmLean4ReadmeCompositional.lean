@@ -516,22 +516,22 @@ theorem mmLean4_heading_image_witness
     parseMmHeadingLine? renderMmHeading mmLean4ReadmeBlocks
     mmLean4_heading_images hMem
 
-private def insertSurfaceBucket (acc : List (String × List MmClaim)) (surface : String) (c : MmClaim) :
+private def insertRenderedBucket (acc : List (String × List MmClaim)) (rendered : String) (c : MmClaim) :
     List (String × List MmClaim) :=
   match acc with
-  | [] => [(surface, [c])]
+  | [] => [(rendered, [c])]
   | (k, cs) :: rest =>
-      if k = surface then
+      if k = rendered then
         (k, c :: cs) :: rest
       else
-        (k, cs) :: insertSurfaceBucket rest surface c
+        (k, cs) :: insertRenderedBucket rest rendered c
 
-def claimSurfaceBuckets : List (String × List MmClaim) :=
+def claimRenderedBuckets : List (String × List MmClaim) :=
   allMmClaims.foldl
-    (fun acc c => insertSurfaceBucket acc (renderMmClaim c) c) []
+    (fun acc c => insertRenderedBucket acc (renderMmClaim c) c) []
 
-def ambiguousClaimSurfaces : List (String × List MmClaim) :=
-  claimSurfaceBuckets.filter (fun p => p.snd.length > 1)
+def ambiguousClaimRenderings : List (String × List MmClaim) :=
+  claimRenderedBuckets.filter (fun p => p.snd.length > 1)
 
 #eval
   let fails := allMmClaims.filter (fun c =>
@@ -559,9 +559,9 @@ def ambiguousClaimSurfaces : List (String × List MmClaim) :=
     s!"mm-lean4 structured parse failures: {repr fails}"
 
 #eval
-  if ambiguousClaimSurfaces.isEmpty then
-    "mm-lean4 ambiguity diagnostic: no duplicate surfaces across distinct claims"
+  if ambiguousClaimRenderings.isEmpty then
+    "mm-lean4 ambiguity diagnostic: no duplicate renderings across distinct claims"
   else
-    s!"mm-lean4 ambiguity diagnostic: duplicate surfaces found: {repr ambiguousClaimSurfaces}"
+    s!"mm-lean4 ambiguity diagnostic: duplicate renderings found: {repr ambiguousClaimRenderings}"
 
 end Mettapedia.DocText.MmLean4ReadmeCompositional

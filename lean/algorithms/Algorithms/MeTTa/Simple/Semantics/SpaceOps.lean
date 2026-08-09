@@ -6,7 +6,7 @@ Space-effect semantics for the `Algorithms.MeTTa.Simple` / `PeTTaCore` lane.
 
 This module is not a dialect-neutral MeTTa space specification. It models the
 PeTTa-side relation-environment effects used by the verified simple runtime,
-including policy-controlled lowering from surface space references into
+including policy-controlled lowering from source-syntax space references into
 relation names.
 -/
 

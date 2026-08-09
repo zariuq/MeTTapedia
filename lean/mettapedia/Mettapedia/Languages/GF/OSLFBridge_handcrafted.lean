@@ -437,10 +437,10 @@ theorem gfCategoryToType_arrow (dom rest : Category) :
     gfCategoryToType dom ++ "→" ++ gfCategoryToType rest := by
   simp [gfCategoryToType]
 
-/-- NodeEquiv under Czech linearization implies identical surface forms
+/-- NodeEquiv under Czech linearization implies identical source forms
     for all morphological parameters. This is a linearization-level
     equivalence, not an OSLF reduction-level one. -/
-theorem gfNodeEquiv_surface_eq
+theorem gfNodeEquiv_linearization_eq
     (env : CzechLinEnv) (n₁ n₂ : AbstractNode)
     (h : NodeEquiv (czechLinearize env) n₁ n₂)
     (φ : String → Prop) (params : Mettapedia.Languages.GF.HandCrafted.Czech.CzechParams) :

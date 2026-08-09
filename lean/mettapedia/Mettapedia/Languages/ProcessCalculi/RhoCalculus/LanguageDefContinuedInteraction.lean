@@ -21,6 +21,7 @@ open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.DerivedContexts
 open Mettapedia.GSLT.LanguageDef.WellSorted
 open Mettapedia.GSLT.LanguageDef.StructuralMorphism
+open Mettapedia.GSLT.LanguageDef.ReflectionExtension
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefCanonicalSection
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.CanonicalSupport
 
@@ -456,10 +457,11 @@ theorem rhoContinuationRetyping_equationsRetypable :
 /-- Rho's reflective quote, drop, and parallel-unit constructors are all
 residual constructors, never the input/output interaction principals. -/
 theorem rhoContinuationRetyping_reflectivePresentationsRetypable :
-    ReflectivePresentationsRetypable rhoContinuationRetyping := by
+    ReflectivePresentationsRetypable rhoContinuationRetyping
+      rhoReflectionProfile := by
   intro declaration membership
-  change declaration ∈ rhoCalc.reflectivePresentations at membership
-  simp only [rhoCalc, List.mem_singleton] at membership
+  change declaration ∈ rhoReflectionProfile.presentations at membership
+  simp only [rhoReflectionProfile, List.mem_singleton] at membership
   subst declaration
   constructor
   · apply LanguageDef.validateReflectivePresentation_eq_nil_of_unique
@@ -483,8 +485,9 @@ theorem rhoContinuationRetyping_reflectivePresentationsRetypable :
       simp at sourceEquality
     · simpa [reflectiveRetypingLanguage,
         costBaseReflectivePresentationDecl, costBaseStaticSymbols,
+        costBaseStaticReflectiveSymbols,
         costBasePresentationSymbols,
-        Mettapedia.GSLT.LanguageDef.mapReflectivePresentation,
+        Mettapedia.GSLT.LanguageDef.ReflectionExtension.mapReflectivePresentation,
         rhoReflectivePresentation, rhoCalc] using
         rhoContinuationRetyping.costBaseConstructor_filter_generated
           rhoCalc.terms[2] rhoQuoteConstructor.2
@@ -492,8 +495,9 @@ theorem rhoContinuationRetyping_reflectivePresentationsRetypable :
     · exact rho_costBaseQuoteConstructor_params
     · simpa [reflectiveRetypingLanguage,
         costBaseReflectivePresentationDecl, costBaseStaticSymbols,
+        costBaseStaticReflectiveSymbols,
         costBasePresentationSymbols,
-        Mettapedia.GSLT.LanguageDef.mapReflectivePresentation,
+        Mettapedia.GSLT.LanguageDef.ReflectionExtension.mapReflectivePresentation,
         rhoReflectivePresentation, rhoCalc] using
         rhoContinuationRetyping.costBaseConstructor_filter_generated
           rhoCalc.terms[1] rhoContinuationDropConstructor.2
@@ -501,8 +505,9 @@ theorem rhoContinuationRetyping_reflectivePresentationsRetypable :
     · exact rho_costBaseDropConstructor_params
     · simpa [reflectiveRetypingLanguage,
         costBaseReflectivePresentationDecl, costBaseStaticSymbols,
+        costBaseStaticReflectiveSymbols,
         costBasePresentationSymbols,
-        Mettapedia.GSLT.LanguageDef.mapReflectivePresentation,
+        Mettapedia.GSLT.LanguageDef.ReflectionExtension.mapReflectivePresentation,
         rhoReflectivePresentation, rhoCalc] using
         rhoContinuationRetyping.costBaseConstructor_filter_generated
           rhoCalc.terms[0] rhoContinuationUnitConstructor.2
@@ -511,8 +516,9 @@ theorem rhoContinuationRetyping_reflectivePresentationsRetypable :
     · simp [reflectiveRetypingLanguage, rhoIGSLT,
         rhoInteractivePresentation, rhoValidatedLanguageDef, rhoCalc,
         rhoReflectivePresentation, costBaseReflectivePresentationDecl,
-        costBaseStaticSymbols, costBasePresentationSymbols,
-        Mettapedia.GSLT.LanguageDef.mapReflectivePresentation,
+        costBaseStaticSymbols, costBaseStaticReflectiveSymbols,
+        costBasePresentationSymbols,
+        Mettapedia.GSLT.LanguageDef.ReflectionExtension.mapReflectivePresentation,
         costBaseEquation, costWrappedEquation,
         Mettapedia.GSLT.LanguageDef.mapEquation, costBaseStaticSymbols,
         costWrappedStaticSymbols, mapTypeContext, mapPattern]
@@ -522,7 +528,8 @@ theorem rhoContinuationRetyping_reflectivePresentationsRetypable :
           costBaseStaticSymbols, costBasePresentationSymbols, mapPattern,
           rhoCalc, rhoReflectivePresentation,
           costBaseReflectivePresentationDecl,
-          Mettapedia.GSLT.LanguageDef.mapReflectivePresentation]
+          costBaseStaticReflectiveSymbols,
+          Mettapedia.GSLT.LanguageDef.ReflectionExtension.mapReflectivePresentation]
   · apply LanguageDef.validateReflectivePresentation_eq_nil_of_unique
       (quote := costWrappedConstructor (theory := rhoIGSLT) rhoCalc.terms[2])
       (drop := costWrappedConstructor (theory := rhoIGSLT) rhoCalc.terms[1])
@@ -543,15 +550,17 @@ theorem rhoContinuationRetyping_reflectivePresentationsRetypable :
             constructor <;> decide)
       simpa [reflectiveRetypingLanguage,
         costWrappedReflectivePresentationDecl, costWrappedStaticSymbols,
-        Mettapedia.GSLT.LanguageDef.mapReflectivePresentation,
+        costWrappedStaticReflectiveSymbols,
+        Mettapedia.GSLT.LanguageDef.ReflectionExtension.mapReflectivePresentation,
         rhoReflectivePresentation, rhoContinuationQuoteConstructor,
         rhoQuoteConstructor, costWrappedConstructor, rhoCalc] using
         rhoContinuationRetyping.costWrappedConstructor_filter_generated
           rhoContinuationQuoteConstructor selected
     · simp [costWrappedConstructor, rhoIGSLT, rhoInteractivePresentation,
         rhoValidatedLanguageDef, rhoCalc,
-        costWrappedReflectivePresentationDecl, costWrappedStaticSymbols,
-        Mettapedia.GSLT.LanguageDef.mapReflectivePresentation,
+        costWrappedReflectivePresentationDecl,
+        costWrappedStaticReflectiveSymbols, costWrappedStaticSymbols,
+        Mettapedia.GSLT.LanguageDef.ReflectionExtension.mapReflectivePresentation,
         rhoReflectivePresentation]
     · exact rho_costWrappedQuoteConstructor_params
     · have selected : rhoContinuationDropConstructor ∈
@@ -561,15 +570,17 @@ theorem rhoContinuationRetyping_reflectivePresentationsRetypable :
             constructor <;> decide)
       simpa [reflectiveRetypingLanguage,
         costWrappedReflectivePresentationDecl, costWrappedStaticSymbols,
-        Mettapedia.GSLT.LanguageDef.mapReflectivePresentation,
+        costWrappedStaticReflectiveSymbols,
+        Mettapedia.GSLT.LanguageDef.ReflectionExtension.mapReflectivePresentation,
         rhoReflectivePresentation, rhoContinuationDropConstructor,
         costWrappedConstructor, rhoCalc] using
         rhoContinuationRetyping.costWrappedConstructor_filter_generated
           rhoContinuationDropConstructor selected
     · simp [costWrappedConstructor, rhoIGSLT, rhoInteractivePresentation,
         rhoValidatedLanguageDef, rhoCalc,
-        costWrappedReflectivePresentationDecl, costWrappedStaticSymbols,
-        Mettapedia.GSLT.LanguageDef.mapReflectivePresentation,
+        costWrappedReflectivePresentationDecl,
+        costWrappedStaticReflectiveSymbols, costWrappedStaticSymbols,
+        Mettapedia.GSLT.LanguageDef.ReflectionExtension.mapReflectivePresentation,
         rhoReflectivePresentation]
     · exact rho_costWrappedDropConstructor_params
     · have selected : rhoContinuationUnitConstructor ∈
@@ -579,21 +590,24 @@ theorem rhoContinuationRetyping_reflectivePresentationsRetypable :
             constructor <;> decide)
       simpa [reflectiveRetypingLanguage,
         costWrappedReflectivePresentationDecl, costWrappedStaticSymbols,
-        Mettapedia.GSLT.LanguageDef.mapReflectivePresentation,
+        costWrappedStaticReflectiveSymbols,
+        Mettapedia.GSLT.LanguageDef.ReflectionExtension.mapReflectivePresentation,
         rhoReflectivePresentation, rhoContinuationUnitConstructor,
         costWrappedConstructor, rhoCalc] using
         rhoContinuationRetyping.costWrappedConstructor_filter_generated
           rhoContinuationUnitConstructor selected
     · simp [costWrappedConstructor, rhoIGSLT, rhoInteractivePresentation,
         rhoValidatedLanguageDef, rhoCalc,
-        costWrappedReflectivePresentationDecl, costWrappedStaticSymbols,
-        Mettapedia.GSLT.LanguageDef.mapReflectivePresentation,
+        costWrappedReflectivePresentationDecl,
+        costWrappedStaticReflectiveSymbols, costWrappedStaticSymbols,
+        Mettapedia.GSLT.LanguageDef.ReflectionExtension.mapReflectivePresentation,
         rhoReflectivePresentation]
     · rfl
     · simp [reflectiveRetypingLanguage, rhoIGSLT,
         rhoInteractivePresentation, rhoValidatedLanguageDef, rhoCalc,
         rhoReflectivePresentation, costWrappedReflectivePresentationDecl,
-        Mettapedia.GSLT.LanguageDef.mapReflectivePresentation,
+        costWrappedStaticReflectiveSymbols,
+        Mettapedia.GSLT.LanguageDef.ReflectionExtension.mapReflectivePresentation,
         costBaseEquation, costWrappedEquation,
         Mettapedia.GSLT.LanguageDef.mapEquation, costBaseStaticSymbols,
         costWrappedStaticSymbols, mapTypeContext, mapPattern]
@@ -604,7 +618,8 @@ theorem rhoContinuationRetyping_reflectivePresentationsRetypable :
           costWrappedStaticSymbols, mapPattern, rhoCalc, rhoIGSLT,
           rhoInteractivePresentation, rhoValidatedLanguageDef,
           rhoReflectivePresentation, costWrappedReflectivePresentationDecl,
-          Mettapedia.GSLT.LanguageDef.mapReflectivePresentation]
+          costWrappedStaticReflectiveSymbols,
+          Mettapedia.GSLT.LanguageDef.ReflectionExtension.mapReflectivePresentation]
 
 /-- Rho's reflective quote, drop, and parallel unit are all genuine
 non-principal constructors selected by the interaction cut. -/
@@ -646,7 +661,7 @@ non-principal constructor fragment selected by its interaction cut. -/
 theorem rhoContextualOpenSection_preservesWrappedConstructors :
     rhoContextualOpenSection.PreservesConstructors
       (· ∈ rhoContinuationRetyping.wrappedLabels) := by
-  apply ComputableContextualOpenSection.preservesConstructors_reflective
+  apply ComputableReflectiveFiberContextualSection.preservesConstructors_reflective
     rhoContextualOpenSection rhoReflectivePresentation
   · intro free bound sort term
     change Mettapedia.Languages.ProcessCalculi.RhoCalculus.Canonical.canonicalize
@@ -698,7 +713,7 @@ non-principal constructor fragment selected by its interaction cut. -/
 theorem rhoContextualOpenSection_preservesWrappedConstructorTyping :
     rhoContextualOpenSection.PreservesTypedConstructors
       (· ∈ rhoContinuationRetyping.wrappedLabels) := by
-  apply ComputableContextualOpenSection.preservesTypedConstructors_reflective
+  apply ComputableReflectiveFiberContextualSection.preservesTypedConstructors_reflective
     rhoContextualOpenSection rhoReflectivePresentation
   · intro free bound sort term
     change Mettapedia.Languages.ProcessCalculi.RhoCalculus.Canonical.canonicalize
@@ -713,6 +728,7 @@ theorem rhoContextualOpenSection_preservesWrappedConstructorTyping :
 interactive GSLT. -/
 def rhoCIGSLT : CIGSLT where
   theory := rhoIGSLT
+  reflection := rhoCalcValidatedReflective.admittedReflection
   cut := rhoInteractionCut
   openCanonical := rhoContextualOpenSection
   continuationRetyping := rhoContinuationRetyping

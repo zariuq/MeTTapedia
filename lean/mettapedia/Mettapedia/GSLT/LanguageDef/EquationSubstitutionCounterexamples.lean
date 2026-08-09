@@ -18,7 +18,9 @@ open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Match
 open Mettapedia.OSLF.MeTTaIL.MatchSpec
 open Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical
+open Mettapedia.OSLF.MeTTaIL.Reflection
 open Mettapedia.OSLF.MeTTaIL.Substitution
+open Mettapedia.GSLT.LanguageDef.ReflectiveEquationSemantics
 open Mettapedia.GSLT.LanguageDef.WellSorted
 
 private def zeroRule : GrammarRule where
@@ -71,6 +73,9 @@ private def presentation : ReflectivePresentationDecl where
   parallelUnitConstructor := "PZero"
   quoteDropEquation := "QuoteDrop"
 
+private def binderOccurrenceProfile : ReflectionProfile where
+  presentations := [presentation]
+
 /-- A fully validated reflective presentation with an additional
 abstraction-bearing name constructor. -/
 def binderOccurrenceLanguage : LanguageDef where
@@ -79,19 +84,17 @@ def binderOccurrenceLanguage : LanguageDef where
   terms := [zeroRule, dropRule, quoteRule, parallelRule, nameBinderRule]
   equations := [quoteDropEquation]
   rewrites := []
-  reflectivePresentations := [presentation]
-  reflectiveRules := []
 
 theorem binderOccurrenceLanguage_valid :
     binderOccurrenceLanguage.validate = [] := by
-  apply LanguageDef.validate_eq_nil_of_constructorEquationsRewritesAndReflective
+  apply LanguageDef.validate_eq_nil_of_constructorEquationsAndRewrites
   all_goals
     simp [binderOccurrenceLanguage, zeroRule, dropRule, quoteRule,
-      parallelRule, nameBinderRule, quoteDropEquation, presentation,
+      parallelRule, nameBinderRule, quoteDropEquation,
       LanguageDef.typeNames, TypeDecl.plain, TypeExpr.name, TypeExpr.proc,
       TypeExpr.baseType,
       LanguageDef.validateEquation, LanguageDef.validatePatternConstructors,
-      LanguageDef.validatePremises, LanguageDef.validateRulePatterns,
+      LanguageDef.validateRulePatterns,
       LanguageDef.patternFvarNames, LanguageDef.patternBinderNames,
       Pattern.constructorRefs, Pattern.constructorRefsList,
       Pattern.freeFvarNames, Pattern.isWellScoped, Pattern.isWellScopedAt,
@@ -101,16 +104,25 @@ theorem binderOccurrenceLanguage_valid :
   case hequationValid =>
     intro constructor arity reference
     rcases reference with ⟨rfl, rfl⟩ | ⟨rfl, rfl⟩ <;> rfl
-  case hreflectiveValid =>
-    apply LanguageDef.validateReflectivePresentation_eq_nil_of_unique
-        (quote := quoteRule) (drop := dropRule) (unit := zeroRule)
-        (equation := quoteDropEquation)
-        (quoteParameter := "process") (dropParameter := "name")
-        (equationVariable := "N")
-    all_goals
-      simp [zeroRule, dropRule, quoteRule, quoteDropEquation,
-        LanguageDef.typeNames, TypeExpr.name, TypeExpr.proc,
-        TypeExpr.baseType]
+
+private theorem presentation_valid :
+    binderOccurrenceLanguage.validateReflectivePresentation presentation = [] := by
+  apply LanguageDef.validateReflectivePresentation_eq_nil_of_unique
+      (quote := quoteRule) (drop := dropRule) (unit := zeroRule)
+      (equation := quoteDropEquation)
+      (quoteParameter := "process") (dropParameter := "name")
+      (equationVariable := "N")
+  all_goals
+    simp [binderOccurrenceLanguage, zeroRule, dropRule, quoteRule,
+      parallelRule, nameBinderRule, quoteDropEquation, presentation,
+      LanguageDef.typeNames,
+      TypeDecl.plain, TypeExpr.name, TypeExpr.proc, TypeExpr.baseType]
+
+private theorem binderOccurrenceProfile_valid :
+    Mettapedia.OSLF.MeTTaIL.Reflection.validate
+      binderOccurrenceLanguage binderOccurrenceProfile = [] := by
+  simp [Mettapedia.OSLF.MeTTaIL.Reflection.validate,
+    binderOccurrenceProfile, presentation_valid]
 
 private def support : ContextSupport.Support
   | "M" => [TypeExpr.name]
@@ -168,7 +180,8 @@ theorem quotedName_typed :
 private theorem bareName_supportSafeAt
     (available : List TypeExpr)
     (shape : ∃ inner, TypeExpr.name :: available = inner ++ support "M") :
-    bareName_typed.ReflectiveSupportSafeAt support available := by
+    bareName_typed.ReflectiveSupportSafeAt
+      binderOccurrenceProfile support available := by
   have lookup : free "M" = some TypeExpr.name := by
     simp [free]
   let bodyTyped : HasType binderOccurrenceLanguage free
@@ -196,16 +209,17 @@ private theorem bareName_supportSafeAt
       TypeExpr.name :=
     HasType.constructor membership notBare argumentsTyped
   have ordinary : ReflectiveContextSupport.isQuoteConstructor
-      binderOccurrenceLanguage nameBinderRule.label = false := by
+      binderOccurrenceProfile nameBinderRule.label = false := by
     simp [ReflectiveContextSupport.isQuoteConstructor,
-      binderOccurrenceLanguage, presentation, nameBinderRule]
-  have bodySafe : bodyTyped.ReflectiveSupportSafeAt support
+      binderOccurrenceProfile, presentation, nameBinderRule]
+  have bodySafe : bodyTyped.ReflectiveSupportSafeAt binderOccurrenceProfile support
       (TypeExpr.name :: available) :=
     .fvar lookup (TypeExpr.name :: available) shape
-  have lambdaSafe : lambdaTyped.ReflectiveSupportSafeAt support available :=
+  have lambdaSafe : lambdaTyped.ReflectiveSupportSafeAt
+      binderOccurrenceProfile support available :=
     .lambda bodySafe
-  have argumentsSafe : argumentsTyped.ReflectiveSupportSafeAt support
-      available :=
+  have argumentsSafe : argumentsTyped.ReflectiveSupportSafeAt
+      binderOccurrenceProfile support available :=
     .cons (representation := representation) (parameterType := parameterType)
       lambdaSafe (.nil bound available)
   exact HasType.ReflectiveSupportSafeAt.castTyping
@@ -215,7 +229,8 @@ private theorem bareName_supportSafeAt
 
 /-- The direct endpoint passes the existing support-suffix discipline. -/
 theorem bareName_supportSafe :
-    bareName_typed.ReflectiveSupportSafeAt support bound := by
+    bareName_typed.ReflectiveSupportSafeAt
+      binderOccurrenceProfile support bound := by
   apply bareName_supportSafeAt bound
   exact ⟨[TypeExpr.name], by simp [support, bound]⟩
 
@@ -223,7 +238,8 @@ theorem bareName_supportSafe :
 available support before entering the drop, and the inner lambda then restores
 one name-typed slot. -/
 theorem quotedName_supportSafe :
-    quotedName_typed.ReflectiveSupportSafeAt support bound := by
+    quotedName_typed.ReflectiveSupportSafeAt
+      binderOccurrenceProfile support bound := by
   have dropMembership : dropRule ∈ binderOccurrenceLanguage.terms := by
     simp [binderOccurrenceLanguage, dropRule]
   have dropNotBare : ¬ UsesBareCollection dropRule := by
@@ -252,27 +268,29 @@ theorem quotedName_supportSafe :
   let outputTyped : HasType binderOccurrenceLanguage free bound quotedName
       TypeExpr.name :=
     HasType.constructor quoteMembership quoteNotBare quoteArgumentsTyped
-  have bareSafeAtQuote : bareName_typed.ReflectiveSupportSafeAt support [] := by
+  have bareSafeAtQuote : bareName_typed.ReflectiveSupportSafeAt
+      binderOccurrenceProfile support [] := by
     apply bareName_supportSafeAt []
     exact ⟨[], by simp [support]⟩
   have dropOrdinary : ReflectiveContextSupport.isQuoteConstructor
-      binderOccurrenceLanguage dropRule.label = false := by
+      binderOccurrenceProfile dropRule.label = false := by
     simp [ReflectiveContextSupport.isQuoteConstructor,
-      binderOccurrenceLanguage, presentation, dropRule]
+      binderOccurrenceProfile, presentation, dropRule]
   have dropArgumentsSafe : dropArgumentsTyped.ReflectiveSupportSafeAt
-      support [] :=
+      binderOccurrenceProfile support [] :=
     .cons (representation := dropRepresentation)
       (parameterType := dropParameterType) bareSafeAtQuote (.nil bound [])
-  have dropSafe : dropTyped.ReflectiveSupportSafeAt support [] :=
+  have dropSafe : dropTyped.ReflectiveSupportSafeAt
+      binderOccurrenceProfile support [] :=
     .constructorOrdinary (membership := dropMembership)
       (notBare := dropNotBare) (argumentsTyped := dropArgumentsTyped)
       dropOrdinary dropArgumentsSafe
   have quoteStatus : ReflectiveContextSupport.isQuoteConstructor
-      binderOccurrenceLanguage quoteRule.label = true := by
+      binderOccurrenceProfile quoteRule.label = true := by
     simp [ReflectiveContextSupport.isQuoteConstructor,
-      binderOccurrenceLanguage, presentation, quoteRule]
+      binderOccurrenceProfile, presentation, quoteRule]
   have quoteArgumentsSafe : quoteArgumentsTyped.ReflectiveSupportSafeAt
-      support [] :=
+      binderOccurrenceProfile support [] :=
     .cons (representation := quoteRepresentation)
       (parameterType := quoteParameterType) dropSafe (.nil bound [])
   exact HasType.ReflectiveSupportSafeAt.castTyping
@@ -282,33 +300,42 @@ theorem quotedName_supportSafe :
       quoteStatus quoteArgumentsSafe)
 
 private def bareOpenPattern :
-    OpenPattern binderOccurrenceLanguage free bound TypeExpr.name := by
-  refine ⟨bareName, bareName_typed, rfl, rfl, ?_⟩
-  intro declaration membership
-  simp [binderOccurrenceLanguage] at membership
-  subst declaration
-  rfl
+    ReflectiveWellSorted.OpenPattern binderOccurrenceProfile
+      binderOccurrenceLanguage free bound TypeExpr.name := by
+  refine ⟨bareName, ?_, ?_⟩
+  · refine ⟨bareName_typed, rfl, rfl, ?_⟩
+    simp [bareName, bound, ScopeSafeAt, Pattern.isWellScopedAt,
+      Pattern.isWellScopedListAt]
+  · intro declaration membership
+    simp [binderOccurrenceProfile] at membership
+    subst declaration
+    rfl
 
 private def quotedOpenPattern :
-    OpenPattern binderOccurrenceLanguage free bound TypeExpr.name := by
-  refine ⟨quotedName, quotedName_typed, rfl, rfl, ?_⟩
-  intro declaration membership
-  simp [binderOccurrenceLanguage] at membership
-  subst declaration
-  rfl
+    ReflectiveWellSorted.OpenPattern binderOccurrenceProfile
+      binderOccurrenceLanguage free bound TypeExpr.name := by
+  refine ⟨quotedName, ?_, ?_⟩
+  · refine ⟨quotedName_typed, rfl, rfl, ?_⟩
+    simp [quotedName, bareName, bound, ScopeSafeAt, Pattern.isWellScopedAt,
+      Pattern.isWellScopedListAt]
+  · intro declaration membership
+    simp [binderOccurrenceProfile] at membership
+    subst declaration
+    rfl
 
 private def bareSupportSafePattern :
-    SupportSafeOpenPattern binderOccurrenceLanguage free support bound
-      TypeExpr.name :=
+    SupportSafeOpenPattern binderOccurrenceProfile binderOccurrenceLanguage
+      free support bound TypeExpr.name :=
   ⟨bareOpenPattern, bareName_supportSafe⟩
 
 private def quotedSupportSafePattern :
-    SupportSafeOpenPattern binderOccurrenceLanguage free support bound
-      TypeExpr.name :=
+    SupportSafeOpenPattern binderOccurrenceProfile binderOccurrenceLanguage
+      free support bound TypeExpr.name :=
   ⟨quotedOpenPattern, quotedName_supportSafe⟩
 
 private def supportedAssignment : SupportedOpenAssignment
-    binderOccurrenceLanguage free FreeTypeContext.empty support where
+    binderOccurrenceProfile binderOccurrenceLanguage free
+      FreeTypeContext.empty support where
   assignment := assignment
   typed := by
     intro name type lookup
@@ -342,7 +369,7 @@ private def supportedAssignment : SupportedOpenAssignment
       simp [free] at lookup
       subst type
       intro declaration membership
-      simp [binderOccurrenceLanguage] at membership
+      simp [binderOccurrenceProfile] at membership
       subst declaration
       rfl
     · simp [free, equality] at lookup
@@ -355,23 +382,23 @@ theorem canonicalize_before_substitution :
   rfl
 
 theorem substitute_quotedName :
-    ReflectiveContextSupport.substitute binderOccurrenceLanguage support
+    ReflectiveContextSupport.substitute binderOccurrenceProfile support
         assignment bound quotedName =
       .apply "NQuote"
         [.apply "PDrop"
           [.apply "NBind" [.lambda none (.bvar 0)]]] := by
   simp [ReflectiveContextSupport.substitute,
     ReflectiveContextSupport.substituteAt,
-    ReflectiveContextSupport.isQuoteConstructor, binderOccurrenceLanguage,
+    ReflectiveContextSupport.isQuoteConstructor, binderOccurrenceProfile,
     presentation, support, assignment, bound, quotedName, bareName, liftBVars]
 
 theorem substitute_bareName :
-    ReflectiveContextSupport.substitute binderOccurrenceLanguage support
+    ReflectiveContextSupport.substitute binderOccurrenceProfile support
         assignment bound bareName =
       .apply "NBind" [.lambda none (.bvar 1)] := by
   simp [ReflectiveContextSupport.substitute,
     ReflectiveContextSupport.substituteAt,
-    ReflectiveContextSupport.isQuoteConstructor, binderOccurrenceLanguage,
+    ReflectiveContextSupport.isQuoteConstructor, binderOccurrenceProfile,
     presentation, support, assignment, bound, bareName, liftBVars]
 
 /-- Canonical equality is not preserved: the same type-only support suffix
@@ -379,10 +406,10 @@ selects the inner binder below quotation and the outer equal-typed binder
 after Quote/Drop cancellation. -/
 theorem canonicalize_after_substitution_ne :
     canonicalize presentation
-        (ReflectiveContextSupport.substitute binderOccurrenceLanguage support
+        (ReflectiveContextSupport.substitute binderOccurrenceProfile support
           assignment bound quotedName) ≠
       canonicalize presentation
-        (ReflectiveContextSupport.substitute binderOccurrenceLanguage support
+        (ReflectiveContextSupport.substitute binderOccurrenceProfile support
           assignment bound bareName) := by
   rw [substitute_quotedName, substitute_bareName]
   simp [canonicalize, canonicalizeList, presentation,
@@ -447,14 +474,16 @@ private theorem equationInstanceAt_canonicalize_eq
 
 private theorem equationContextStep_canonicalize_eq
     {left right : Pattern}
-    (step : EquationSemantics.EquationContextStep defaultBasePremises
-      binderOccurrenceLanguage left right) :
+    (step : ReflectiveEquationContextStep binderOccurrenceProfile
+      defaultBasePremises binderOccurrenceLanguage left right) :
     canonicalize presentation left = canonicalize presentation right := by
   cases step with
-  | @inContext context redex contractum equationInstance =>
-      obtain ⟨fuel, bounded⟩ := equationInstance
-      exact EquationSemantics.canonicalize_fill_congr presentation context
-        (equationInstanceAt_canonicalize_eq bounded)
+  | core coreStep =>
+      cases coreStep with
+      | @inContext context redex contractum equationInstance =>
+          obtain ⟨fuel, bounded⟩ := equationInstance
+          exact canonicalize_fill_congr presentation context
+            (equationInstanceAt_canonicalize_eq bounded)
   | @reflectiveInContext context declaration reflectedLeft reflectedRight
       membership representatives =>
       have declarationEquality : declaration = presentation := by
@@ -463,15 +492,14 @@ private theorem equationContextStep_canonicalize_eq
         | head => rfl
         | tail _ impossible => cases impossible
       rw [declarationEquality] at representatives
-      exact EquationSemantics.canonicalize_fill_congr presentation context
-        representatives
+      exact canonicalize_fill_congr presentation context representatives
 
 /-- For this validated fixture, the authored contextual equation relation is
 exactly sound for the declared reflective representative. -/
 theorem equationEquiv_canonicalize_eq
     {left right : Pattern}
-    (equivalent : EquationSemantics.EquationEquiv defaultBasePremises
-      binderOccurrenceLanguage left right) :
+    (equivalent : ReflectiveEquationEquiv binderOccurrenceProfile
+      defaultBasePremises binderOccurrenceLanguage left right) :
     canonicalize presentation left = canonicalize presentation right := by
   induction equivalent with
   | rel left right step =>
@@ -486,11 +514,11 @@ theorem equationEquiv_canonicalize_eq
 an authored reflective-equation edge before substitution, but their images
 are not even related by the authored contextual equation closure afterward. -/
 theorem substituted_endpoints_not_equivalent :
-    ¬ EquationSemantics.EquationEquiv defaultBasePremises
+    ¬ ReflectiveEquationEquiv binderOccurrenceProfile defaultBasePremises
       binderOccurrenceLanguage
-      (ReflectiveContextSupport.substitute binderOccurrenceLanguage support
+      (ReflectiveContextSupport.substitute binderOccurrenceProfile support
         assignment bound quotedName)
-      (ReflectiveContextSupport.substitute binderOccurrenceLanguage support
+      (ReflectiveContextSupport.substitute binderOccurrenceProfile support
         assignment bound bareName) := by
   intro equivalent
   exact canonicalize_after_substitution_ne
@@ -501,11 +529,12 @@ the current type-suffix support judgment do not imply reflective equation
 substitution stability.  The missing information is the identity of the
 equal-typed binder occurrence selected by each free parameter use. -/
 theorem binderOccurrenceLanguage_not_reflectiveEquationSubstitutionStable :
-    ¬ ReflectiveEquationSubstitutionStable binderOccurrenceLanguage := by
+    ¬ ReflectiveEquationSubstitutionStable
+      (profile := binderOccurrenceProfile) binderOccurrenceLanguage := by
   intro stable
   have preserved := stable supportedAssignment
     (declaration := presentation)
-    (by simp [binderOccurrenceLanguage, presentation])
+    (by simp [binderOccurrenceProfile])
     quotedSupportSafePattern bareSupportSafePattern
     canonicalize_before_substitution
   apply substituted_endpoints_not_equivalent
@@ -515,10 +544,11 @@ theorem binderOccurrenceLanguage_not_reflectiveEquationSubstitutionStable :
 /-- The same fixture fails the structural sealing condition for exactly the
 ordinary name-returning binder constructor that drives the counterexample. -/
 theorem binderOccurrenceLanguage_not_reflectiveNameResultSealed :
-    ¬ ReflectiveNameResultSealed binderOccurrenceLanguage := by
+    ¬ ReflectiveNameResultSealed
+      (profile := binderOccurrenceProfile) binderOccurrenceLanguage := by
   intro sealed
   have forbidden := sealed presentation (by
-      simp [binderOccurrenceLanguage, presentation]) nameBinderRule (by
+      simp [binderOccurrenceProfile]) nameBinderRule (by
       simp [binderOccurrenceLanguage, nameBinderRule]) (by
       simp [nameBinderRule, presentation])
   simp [nameBinderRule, presentation] at forbidden
@@ -532,15 +562,19 @@ private def malformedQuoteDrop : Pattern :=
   .apply "NQuote" [.apply "PDrop" [zeroProcess]]
 
 private theorem zeroProcess_openWellSorted :
-    OpenPatternWellSorted binderOccurrenceLanguage FreeTypeContext.empty []
-      TypeExpr.proc zeroProcess := by
-  refine ⟨?_, rfl, rfl, ?_⟩
-  · apply HasType.constructor (rule := zeroRule)
-    · simp [binderOccurrenceLanguage, zeroRule]
-    · simp [UsesBareCollection, zeroRule]
-    · exact .nil
+    ReflectiveWellSorted.OpenPatternWellSorted binderOccurrenceProfile
+      binderOccurrenceLanguage FreeTypeContext.empty [] TypeExpr.proc
+      zeroProcess := by
+  refine ⟨?_, ?_⟩
+  · refine ⟨?_, rfl, rfl, ?_⟩
+    · apply HasType.constructor (rule := zeroRule)
+      · simp [binderOccurrenceLanguage, zeroRule]
+      · simp [UsesBareCollection, zeroRule]
+      · exact .nil
+    · simp [zeroProcess, ScopeSafeAt, Pattern.isWellScopedAt,
+        Pattern.isWellScopedListAt]
   · intro declaration membership
-    simp [binderOccurrenceLanguage] at membership
+    simp [binderOccurrenceProfile] at membership
     subst declaration
     rfl
 
@@ -548,30 +582,31 @@ private theorem malformedQuoteDrop_not_typed :
     ¬ HasType binderOccurrenceLanguage FreeTypeContext.empty []
       malformedQuoteDrop TypeExpr.proc := by
   intro typed
-  have safe := typed.reflectiveSupportSafeAt_empty []
+  have safe := typed.reflectiveSupportSafeAt_empty
+    (profile := binderOccurrenceProfile) []
   have declarationMembership : presentation ∈
-      binderOccurrenceLanguage.reflectivePresentations := by
+      binderOccurrenceProfile.presentations := by
     change List.Mem presentation [presentation]
     exact .head _
   obtain ⟨dropPattern, dropTyped, dropShape, dropSafe⟩ :=
     typed.selectedQuoteArgument binderOccurrenceLanguage_valid
-      declarationMembership safe
+      binderOccurrenceProfile_valid declarationMembership safe
   have dropPatternEq : dropPattern = .apply "PDrop" [zeroProcess] := by
     simpa using (congrArg List.head? dropShape).symm
   subst dropPattern
   have dropOrdinary : ReflectiveContextSupport.isQuoteConstructor
-      binderOccurrenceLanguage presentation.dropConstructor = false := by
+      binderOccurrenceProfile presentation.dropConstructor = false := by
     simp [ReflectiveContextSupport.isQuoteConstructor,
-      binderOccurrenceLanguage, presentation]
+      binderOccurrenceProfile, presentation]
   obtain ⟨zero, zeroTyped, zeroShape, zeroSafe⟩ :=
     dropTyped.selectedOrdinaryDropArgument binderOccurrenceLanguage_valid
-      declarationMembership dropOrdinary dropSafe
+      binderOccurrenceProfile_valid declarationMembership dropOrdinary dropSafe
   have zeroEq : zero = zeroProcess := by
     simpa using (congrArg List.head? zeroShape).symm
   subst zero
   have zeroProcType : HasType binderOccurrenceLanguage
       FreeTypeContext.empty [] zeroProcess TypeExpr.proc :=
-    zeroProcess_openWellSorted.1
+    zeroProcess_openWellSorted.1.1
   have impossible := HasType.apply_type_unique_of_validate_eq_nil
     binderOccurrenceLanguage_valid zeroTyped zeroProcType
   simp [presentation, TypeExpr.proc, TypeExpr.baseType] at impossible
@@ -580,16 +615,18 @@ private theorem malformedQuoteDrop_not_typed :
 typed open fiber.  Quote/Drop canonicalization identifies the well-sorted
 zero process with a raw preimage whose Drop argument has the wrong sort. -/
 theorem binderOccurrenceLanguage_not_openEquationFiberStable :
-    ¬ OpenEquationFiberStable binderOccurrenceLanguage := by
+    ¬ ReflectiveOpenEquationFiberStable
+      binderOccurrenceProfile defaultBasePremises binderOccurrenceLanguage := by
   intro stable
-  have generator : EquationSemantics.EquationContextStep defaultBasePremises
-      binderOccurrenceLanguage malformedQuoteDrop zeroProcess := by
-    apply EquationSemantics.EquationContextStep.reflectiveInContext .hole
+  have generator : ReflectiveEquationContextStep binderOccurrenceProfile
+      defaultBasePremises binderOccurrenceLanguage
+      malformedQuoteDrop zeroProcess := by
+    apply ReflectiveEquationContextStep.reflectiveInContext .hole
       (declaration := presentation)
     · change List.Mem presentation [presentation]
       exact .head _
     · rfl
   have malformedWellSorted := (stable generator).mpr zeroProcess_openWellSorted
-  exact malformedQuoteDrop_not_typed malformedWellSorted.1
+  exact malformedQuoteDrop_not_typed malformedWellSorted.1.1
 
 end Mettapedia.GSLT.LanguageDef.EquationSubstitutionCounterexamples

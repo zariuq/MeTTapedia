@@ -16,7 +16,7 @@ Packages the current authoritative integration waist for MeTTa:
 - the native / PathMap / MORK engine capability boundary
 
 This file does **not** introduce a new evaluator. It makes explicit which lane
-is authoritative for which kind of surface node.
+is authoritative for which kind of syntax node.
 
 Positive example:
 - closed Pure terms route to the Pure checking waist.
@@ -39,15 +39,15 @@ open Mettapedia.OSLF.MeTTaIL.Syntax
 /-- The current authoritative MeTTa abstract-machine waist. -/
 structure MeTTaAbstractMachineBoundary where
   checkingBoundary : PureCheckingBoundary
-  execSurface : MeTTaRuntimeExecExtendedSurface
-  querySurface : MeTTaRuntimeQuerySurface
+  execInterface : MeTTaRuntimeExecExtendedInterface
+  queryInterface : MeTTaRuntimeQueryInterface
   runtimeKernel : RuntimeKernelPackage
 
 /-- The live MeTTa abstract-machine waist in this repository. -/
 noncomputable def mettaAbstractMachineBoundary : MeTTaAbstractMachineBoundary where
   checkingBoundary := pureCheckingBoundary
-  execSurface := morkRuntimeExec0Ext
-  querySurface := morkRuntimeQueryExec0
+  execInterface := morkRuntimeExec0Ext
+  queryInterface := morkRuntimeQueryExec0
   runtimeKernel := morkRuntimeKernelPackage
 
 theorem checkingBoundary_region :
@@ -60,12 +60,12 @@ theorem checkingBoundary_overlap :
       OverlapClass.artifactOnly := by
   rfl
 
-theorem execSurface_backend :
-    mettaAbstractMachineBoundary.execSurface.backendName = "MORK/MM2" := by
+theorem execInterface_backend :
+    mettaAbstractMachineBoundary.execInterface.backendName = "MORK/MM2" := by
   rfl
 
-theorem querySurface_backend :
-    mettaAbstractMachineBoundary.querySurface.backendName = "MORK/MM2" := by
+theorem queryInterface_backend :
+    mettaAbstractMachineBoundary.queryInterface.backendName = "MORK/MM2" := by
   rfl
 
 theorem runtimeKernel_exec_backend :
@@ -74,15 +74,15 @@ theorem runtimeKernel_exec_backend :
 
 /-! ## §2. Authority lanes -/
 
-/-- Which authoritative lane a surface node is routed to. -/
+/-- Which authoritative lane a syntax node is routed to. -/
 inductive AbstractMachineLane where
   /-- Closed Pure terms whose authority is the DTT kernel checking waist. -/
   | kernelCertificateLane
   /-- Typed Core atoms that already have a shared artifact view. -/
   | kernelTypedArtifactLane
-  /-- Runtime rule firing through the theoremic runtime-exec surface. -/
+  /-- Runtime rule firing through the theoremic runtime-execution interface. -/
   | runtimeRuleLane
-  /-- Runtime query evaluation through the theoremic runtime-query surface. -/
+  /-- Runtime query evaluation through the theoremic runtime-query interface. -/
   | runtimeQueryLane
   /-- Legacy runtime artifact lane with no claimed execution backend. -/
   | runtimeAuditLane
@@ -113,20 +113,20 @@ def AbstractMachineLane.needsRuntimeKernel : AbstractMachineLane → Bool
   | AbstractMachineLane.runtimeQueryLane => true
   | _ => false
 
-/-- Which authority lane a surface node belongs to. -/
-def SurfaceNode.abstractMachineLane : SurfaceNode → AbstractMachineLane
-  | SurfaceNode.surfacePureClosed _ => AbstractMachineLane.kernelCertificateLane
-  | SurfaceNode.coreTypedAtom _ => AbstractMachineLane.kernelTypedArtifactLane
-  | SurfaceNode.heRuntimeRule _ => AbstractMachineLane.runtimeRuleLane
-  | SurfaceNode.pettaRuntimeRule _ => AbstractMachineLane.runtimeRuleLane
-  | SurfaceNode.heRuntimeQuery _ => AbstractMachineLane.runtimeQueryLane
-  | SurfaceNode.pettaRuntimeQuery _ => AbstractMachineLane.runtimeQueryLane
-  | SurfaceNode.fullLegacyRuntime _ => AbstractMachineLane.runtimeAuditLane
-  | SurfaceNode.oracleCall _ _ _ _ => AbstractMachineLane.oracleLane
-  | SurfaceNode.metaQuoted _ _ => AbstractMachineLane.metaLane
+/-- Which authority lane a syntax node belongs to. -/
+def SyntaxNode.abstractMachineLane : SyntaxNode → AbstractMachineLane
+  | SyntaxNode.pureClosedSyntax _ => AbstractMachineLane.kernelCertificateLane
+  | SyntaxNode.coreTypedAtom _ => AbstractMachineLane.kernelTypedArtifactLane
+  | SyntaxNode.heRuntimeRule _ => AbstractMachineLane.runtimeRuleLane
+  | SyntaxNode.pettaRuntimeRule _ => AbstractMachineLane.runtimeRuleLane
+  | SyntaxNode.heRuntimeQuery _ => AbstractMachineLane.runtimeQueryLane
+  | SyntaxNode.pettaRuntimeQuery _ => AbstractMachineLane.runtimeQueryLane
+  | SyntaxNode.fullLegacyRuntime _ => AbstractMachineLane.runtimeAuditLane
+  | SyntaxNode.oracleCall _ _ _ _ => AbstractMachineLane.oracleLane
+  | SyntaxNode.metaQuoted _ _ => AbstractMachineLane.metaLane
 
-theorem surfaceNode_region_agrees_with_lane (s : SurfaceNode) :
-    (elaborate s).region = (SurfaceNode.abstractMachineLane s).region := by
+theorem syntaxNode_region_agrees_with_lane (s : SyntaxNode) :
+    (elaborate s).region = (SyntaxNode.abstractMachineLane s).region := by
   cases s <;> rfl
 
 theorem kernelCertificateLane_needsPureChecking :
@@ -145,40 +145,40 @@ theorem kernelTypedArtifactLane_not_runtimeKernel :
     AbstractMachineLane.needsRuntimeKernel AbstractMachineLane.kernelTypedArtifactLane = false := by
   rfl
 
-/-! ## §3. Surface-node routing facts -/
+/-! ## §3. Syntax-node routing facts -/
 
-theorem surfacePureClosed_routes_to_checking_boundary (term : SurfacePureTm 0) :
-    SurfaceNode.abstractMachineLane (SurfaceNode.surfacePureClosed term) =
+theorem pureClosedSyntax_routes_to_checking_boundary (term : PureSyntaxTerm 0) :
+    SyntaxNode.abstractMachineLane (SyntaxNode.pureClosedSyntax term) =
       AbstractMachineLane.kernelCertificateLane ∧
     mettaAbstractMachineBoundary.checkingBoundary.supportsImportedCertificates = true ∧
     mettaAbstractMachineBoundary.checkingBoundary.supportsConversion = true := by
-  simp [SurfaceNode.abstractMachineLane, mettaAbstractMachineBoundary, pureCheckingBoundary]
+  simp [SyntaxNode.abstractMachineLane, mettaAbstractMachineBoundary, pureCheckingBoundary]
 
-theorem coreTypedAtom_routes_to_artifact_lane (surface : SurfaceCoreTypedAtom) :
-    SurfaceNode.abstractMachineLane (SurfaceNode.coreTypedAtom surface) =
+theorem coreTypedAtom_routes_to_artifact_lane (sourceAtom : CoreTypedSyntaxAtom) :
+    SyntaxNode.abstractMachineLane (SyntaxNode.coreTypedAtom sourceAtom) =
       AbstractMachineLane.kernelTypedArtifactLane ∧
-    (certifySurfaceCoreTypedAtom surface).overlapClass = OverlapClass.artifactOnly := by
-  exact ⟨rfl, certifySurfaceCoreTypedAtom_overlapClass surface⟩
+    (certifyCoreTypedSyntaxAtom sourceAtom).overlapClass = OverlapClass.artifactOnly := by
+  exact ⟨rfl, certifyCoreTypedSyntaxAtom_overlapClass sourceAtom⟩
 
 theorem heRuntimeRule_routes_to_exec_backend (pattern : Pattern) :
-    SurfaceNode.abstractMachineLane (SurfaceNode.heRuntimeRule pattern) =
+    SyntaxNode.abstractMachineLane (SyntaxNode.heRuntimeRule pattern) =
       AbstractMachineLane.runtimeRuleLane ∧
-    match elaborate (SurfaceNode.heRuntimeRule pattern) with
+    match elaborate (SyntaxNode.heRuntimeRule pattern) with
     | ElaboratedNode.runtimeNode cert =>
         RuntimeLowering.backendName cert.lowering =
-          mettaAbstractMachineBoundary.execSurface.backendName
+          mettaAbstractMachineBoundary.execInterface.backendName
     | _ => False := by
   constructor
   · rfl
   · exact elaborate_heRuntimeRule_backend pattern
 
 theorem heRuntimeQuery_routes_to_query_backend (pattern : Pattern) :
-    SurfaceNode.abstractMachineLane (SurfaceNode.heRuntimeQuery pattern) =
+    SyntaxNode.abstractMachineLane (SyntaxNode.heRuntimeQuery pattern) =
       AbstractMachineLane.runtimeQueryLane ∧
-    match elaborate (SurfaceNode.heRuntimeQuery pattern) with
+    match elaborate (SyntaxNode.heRuntimeQuery pattern) with
     | ElaboratedNode.runtimeNode cert =>
         RuntimeLowering.backendName cert.lowering =
-          mettaAbstractMachineBoundary.querySurface.backendName
+          mettaAbstractMachineBoundary.queryInterface.backendName
     | _ => False := by
   constructor
   · rfl
@@ -186,12 +186,12 @@ theorem heRuntimeQuery_routes_to_query_backend (pattern : Pattern) :
       morkRuntimeQueryExec0_backendName]
 
 theorem pettaRuntimeQuery_routes_to_query_backend (pattern : Pattern) :
-    SurfaceNode.abstractMachineLane (SurfaceNode.pettaRuntimeQuery pattern) =
+    SyntaxNode.abstractMachineLane (SyntaxNode.pettaRuntimeQuery pattern) =
       AbstractMachineLane.runtimeQueryLane ∧
-    match elaborate (SurfaceNode.pettaRuntimeQuery pattern) with
+    match elaborate (SyntaxNode.pettaRuntimeQuery pattern) with
     | ElaboratedNode.runtimeNode cert =>
         RuntimeLowering.backendName cert.lowering =
-          mettaAbstractMachineBoundary.querySurface.backendName
+          mettaAbstractMachineBoundary.queryInterface.backendName
     | _ => False := by
   constructor
   · rfl
@@ -199,21 +199,21 @@ theorem pettaRuntimeQuery_routes_to_query_backend (pattern : Pattern) :
       morkRuntimeQueryExec0_backendName]
 
 theorem pettaRuntimeRule_shares_exec_backend (pattern : Pattern) :
-    SurfaceNode.abstractMachineLane (SurfaceNode.pettaRuntimeRule pattern) =
+    SyntaxNode.abstractMachineLane (SyntaxNode.pettaRuntimeRule pattern) =
       AbstractMachineLane.runtimeRuleLane ∧
-    match elaborate (SurfaceNode.pettaRuntimeRule pattern) with
+    match elaborate (SyntaxNode.pettaRuntimeRule pattern) with
     | ElaboratedNode.runtimeNode cert =>
         RuntimeLowering.backendName cert.lowering =
-          mettaAbstractMachineBoundary.execSurface.backendName
+          mettaAbstractMachineBoundary.execInterface.backendName
     | _ => False := by
   constructor
   · rfl
   · exact elaborate_pettaRuntimeRule_backend pattern
 
 theorem fullLegacyRuntime_is_audit_lane (pattern : Pattern) :
-    SurfaceNode.abstractMachineLane (SurfaceNode.fullLegacyRuntime pattern) =
+    SyntaxNode.abstractMachineLane (SyntaxNode.fullLegacyRuntime pattern) =
       AbstractMachineLane.runtimeAuditLane ∧
-    match elaborate (SurfaceNode.fullLegacyRuntime pattern) with
+    match elaborate (SyntaxNode.fullLegacyRuntime pattern) with
     | ElaboratedNode.runtimeNode cert =>
         RuntimeLowering.backendName cert.lowering = "audit-only"
     | _ => False := by
@@ -222,19 +222,19 @@ theorem fullLegacyRuntime_is_audit_lane (pattern : Pattern) :
 theorem oracleCall_routes_to_oracle_lane
     (dialect : MeTTaDialectProfile) (opName resultDescriptor : String)
     (args : List Pattern) :
-    SurfaceNode.abstractMachineLane
-        (SurfaceNode.oracleCall dialect opName resultDescriptor args) =
+    SyntaxNode.abstractMachineLane
+        (SyntaxNode.oracleCall dialect opName resultDescriptor args) =
       AbstractMachineLane.oracleLane ∧
     ElaboratedNode.region
-      (elaborate (SurfaceNode.oracleCall dialect opName resultDescriptor args)) =
+      (elaborate (SyntaxNode.oracleCall dialect opName resultDescriptor args)) =
         ElaboratedRegion.oracleRegion := by
   exact ⟨rfl, elaborate_oracleCall_region dialect opName resultDescriptor args⟩
 
 theorem metaQuoted_routes_to_meta_lane
     (description : String) (pattern : Pattern) :
-    SurfaceNode.abstractMachineLane (SurfaceNode.metaQuoted description pattern) =
+    SyntaxNode.abstractMachineLane (SyntaxNode.metaQuoted description pattern) =
       AbstractMachineLane.metaLane ∧
-    ElaboratedNode.region (elaborate (SurfaceNode.metaQuoted description pattern)) =
+    ElaboratedNode.region (elaborate (SyntaxNode.metaQuoted description pattern)) =
       ElaboratedRegion.metaRegion := by
   exact ⟨rfl, elaborate_metaQuoted_region description pattern⟩
 
@@ -290,8 +290,8 @@ theorem kernel_lane_not_direct_runtimeExec0
 /-- HE and PeTTa runtime rules already meet at the same runtime-exec backend
 waist even though they remain distinct dialects. -/
 theorem he_and_petta_runtime_rules_share_backend (hePattern pettaPattern : Pattern) :
-    match elaborate (SurfaceNode.heRuntimeRule hePattern),
-          elaborate (SurfaceNode.pettaRuntimeRule pettaPattern) with
+    match elaborate (SyntaxNode.heRuntimeRule hePattern),
+          elaborate (SyntaxNode.pettaRuntimeRule pettaPattern) with
     | ElaboratedNode.runtimeNode heCert, ElaboratedNode.runtimeNode pettaCert =>
         RuntimeLowering.backendName heCert.lowering =
           RuntimeLowering.backendName pettaCert.lowering

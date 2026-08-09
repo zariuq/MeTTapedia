@@ -23,16 +23,20 @@ open CategoryTheory
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.DerivedContexts
 open StructuralMorphism
+open ReflectionExtension
 
 /-- A continued interactive GSLT over one exact authored presentation. -/
 structure CIGSLT where
   theory : IGSLT
+  /-- Reflection is an admitted extension over the exact five-field source;
+  it is not part of the source `LanguageDef`. -/
+  reflection : AdmittedProfile theory.presentation.presentation.language
   cut : InteractionCutPresentation theory
   /-- Canonicalization on every declaration-derived open sorted fiber.  The
-  sort, free-variable context, binder context, object boundary, and
-  reflective scope are retained; the paper-facing closed section is derived
-  from this datum. -/
-  openCanonical : ComputableContextualOpenSection theory
+  sort, free-variable context, binder context, and object boundary are
+  retained; the paper-facing closed section is derived from this datum. -/
+  openCanonical :
+    ComputableReflectiveFiberContextualSection theory reflection
   continuationRetyping : ContinuationRetypingPlan cut
   /-- A bare collection representation hides its constructor label in the
   raw `Pattern`, so every such constructor must belong to the non-principal
@@ -55,12 +59,10 @@ structure CIGSLT where
   signature.  This is the exact extra stability needed to carry equations
   through position-sensitive continuation retyping. -/
   equationsRetypable : EquationsRetypable continuationRetyping
-  /-- Every constructor named by an authored reflective presentation remains
-  in the hereditary continuation closure.  This is the exact condition under
-  which Cost can transport static canonicalization into both the base and
-  wrapped fibers without inventing a wrapped interaction principal. -/
+  /-- The separately admitted reflection profile survives both generated
+  static Cost fibres. -/
   reflectivePresentationsRetypable :
-    ReflectivePresentationsRetypable continuationRetyping
+    ReflectivePresentationsRetypable continuationRetyping reflection.1
   /-- The path from the interaction root to its ordered core stays outside
   the two selected continuation slots.  This structural witness is stable
   under repeated Cost retyping; the generated sorting theorem is derived
@@ -73,10 +75,10 @@ structure CIGSLT where
 
 namespace CIGSLT
 
-/-- Restrict the contextual canonicalizer to the closed interacting carrier.
-This is the section used for canonical keys in the paper-facing interface. -/
-def canonical (theory : CIGSLT) : ComputableCanonicalSection theory.theory :=
-  theory.openCanonical.toComputableCanonicalSection
+/-- Forget the contextual laws while retaining the admitted reflective fibre. -/
+def canonical (theory : CIGSLT) :
+    ComputableReflectiveFiberSection theory.theory theory.reflection :=
+  theory.openCanonical.toComputableReflectiveFiberSection
 
 /-- The stable source envelope remains sorted in the declaration-derived
 continuation signature. -/
@@ -84,10 +86,18 @@ theorem sourceEnvelopeRetypable (source : CIGSLT) :
     source.continuationRetyping.SourceEnvelopeRetypable :=
   source.sourceEnvelopeStable.retype source.continuationRetyping
 
-/-- Canonical signature keys are normalized representatives of authored
-equation classes, before any optional digest is applied. -/
+/-- The closed interacting fibre on which continued canonical keys live. -/
+abbrev CanonicalCarrier (theory : CIGSLT) :=
+  ReflectiveWellSorted.OpenTerm theory.reflection.1
+    theory.theory.presentation.presentation.language
+    WellSorted.FreeTypeContext.empty []
+    theory.theory.presentation.interactingLangSort
+
+/-- Canonical signature keys are reflection-certified normalized
+representatives of authored equation classes, before any optional digest is
+applied. -/
 abbrev CanonicalKey (theory : CIGSLT) :=
-  { term : theory.theory.toGSLT.Term //
+  { term : theory.CanonicalCarrier //
       theory.canonical.normalize term = term }
 
 /-- Every canonical key lies in the image of the computable section. -/
@@ -112,20 +122,37 @@ theorem mapOptionalPattern_comp (first second : PresentationSymbols)
       mapOptionalPattern second (mapOptionalPattern first pattern) := by
   cases pattern <;> simp [mapOptionalPattern, mapPattern_comp]
 
-/-- Map a canonical key by translating its representative and then applying
-the target's computable section. -/
-def canonicalKeyMap {source target : CIGSLT}
-    (underlying : IGSLT.Morphism source.theory target.theory) :
-    source.CanonicalKey → target.CanonicalKey :=
-  fun key =>
-    ⟨target.canonical.normalize (underlying.mapTerm key.1),
-      target.canonical.normalize_idempotent _⟩
-
 /-- A continued morphism is one iGSLT theory map preserving the exact
 ordered cut, its selected continuation positions, the finite wrapped
 constructor closure, and the computable canonical keys. -/
 structure Morphism (source target : CIGSLT) where
   underlying : IGSLT.Morphism source.theory target.theory
+  /-- Independent action on the reflection namespace.  Its core component is
+  fixed by `underlying`; only reflection names are additional data. -/
+  reflectionSymbols : ReflectionSymbols
+  mapsReflectivePresentations : ∀ declaration,
+    declaration ∈ source.reflection.1.presentations →
+      mapReflectivePresentation
+          { toPresentationSymbols :=
+              underlying.structural.structural.symbols
+            reflection := reflectionSymbols }
+          declaration ∈ target.reflection.1.presentations
+  mapsReflectiveRules : ∀ declaration,
+    declaration ∈ source.reflection.1.rules →
+      mapReflectiveRule
+          { toPresentationSymbols :=
+              underlying.structural.structural.symbols
+            reflection := reflectionSymbols }
+          declaration ∈ target.reflection.1.rules
+  /-- Structural transport preserves exactly the quote-visible scope selected
+  by the independently authored reflection profiles.  This law cannot be
+  inferred from ordinary sorting: a target may introduce new quotation
+  constructors, and a non-injective constructor map may expose them. -/
+  mapsReflectiveScope : ∀ {depth pattern},
+    ReflectiveWellSorted.ReflectiveScopeSafeAt source.reflection.1 depth
+        pattern →
+      ReflectiveWellSorted.ReflectiveScopeSafeAt target.reflection.1 depth
+        (mapPattern underlying.structural.structural.symbols pattern)
   mapsCoreSort :
     underlying.structural.structural.mapSort source.cut.coreContact.sort =
       target.cut.coreContact.sort
@@ -211,29 +238,45 @@ structure Morphism (source target : CIGSLT) where
     mapOptionalPattern underlying.structural.structural.symbols
         source.cut.environment.surface.pattern =
       target.cut.environment.surface.pattern
-  /-- Structural transport preserves every reflective quotation boundary at
-  arbitrary binder depth.  Closed top-level scope preservation is already a
-  field of the underlying iGSLT map; the open law is the additional datum
-  needed beneath binders. -/
-  mapsReflectiveScopeSafeAt : ∀ {depth pattern},
-    WellSorted.ReflectiveScopeSafeAt
-        source.theory.presentation.presentation.language depth pattern →
-      WellSorted.ReflectiveScopeSafeAt
-        target.theory.presentation.presentation.language depth
-          (mapPattern underlying.structural.structural.symbols pattern)
   /-- Canonicalization is natural on declaration-derived open sorted terms.
   Unlike a law on raw patterns, both sides retain the expected sort and the
   exact free and bound typing contexts. -/
   mapsOpenCanonical : ∀ {free bound sort}
-      (term : OpenTerm source.theory free bound sort),
+      (term : ReflectiveWellSorted.OpenTerm source.reflection.1
+        source.theory.presentation.presentation.language free bound sort),
     target.openCanonical.normalize
-        (WellSorted.OpenTerm.map underlying.structural.structural
-          mapsReflectiveScopeSafeAt term) =
-      WellSorted.OpenTerm.map underlying.structural.structural
-        mapsReflectiveScopeSafeAt (source.openCanonical.normalize term)
-  quoteFaithful : Function.Injective (canonicalKeyMap underlying)
+        (term.map underlying.structural.structural mapsReflectiveScope) =
+      (source.openCanonical.normalize term).map
+        underlying.structural.structural mapsReflectiveScope
+  /-- Structural translation is injective on normalized reflective keys.
+  The target canonicalizer is omitted here because naturality proves that the
+  image of a normalized key is already normalized. -/
+  quoteFaithful : Function.Injective (fun key : source.CanonicalKey =>
+    mapPattern underlying.structural.structural.symbols key.1.1)
 
 namespace Morphism
+
+/-- The complete symbol action of a continued morphism, assembled from its
+core and reflection components. -/
+def reflectiveSymbols {source target : CIGSLT}
+    (morphism : Morphism source target) : ReflectiveSymbols where
+  toPresentationSymbols := morphism.underlying.structural.structural.symbols
+  reflection := morphism.reflectionSymbols
+
+/-- Map one term in the admitted reflective fibre.  Ordinary structural
+typing and quote-visible scope are transported by separate morphism laws. -/
+def mapOpenTerm {source target : CIGSLT}
+    (morphism : Morphism source target) {free bound sort}
+    (term : ReflectiveWellSorted.OpenTerm source.reflection.1
+      source.theory.presentation.presentation.language free bound sort) :
+    ReflectiveWellSorted.OpenTerm target.reflection.1
+      target.theory.presentation.presentation.language
+      (free.map morphism.underlying.structural.structural.symbols)
+      (bound.map (mapTypeExpr
+        morphism.underlying.structural.structural.symbols))
+      (WellSorted.mapLangSort morphism.underlying.structural.structural sort) :=
+  term.map morphism.underlying.structural.structural
+    morphism.mapsReflectiveScope
 
 /-- A continued morphism maps the selected interacting sort in its
 name-indexed form to the target's selected interacting sort. -/
@@ -247,14 +290,32 @@ theorem mapsInteractingLangSort {source target : CIGSLT}
     morphism.underlying.structural.mapsInteractingSort]
   rfl
 
+/-- Map the closed interacting reflective fibre and discharge the three
+index equalities produced by structural transport. -/
+def mapCanonicalTerm {source target : CIGSLT}
+    (morphism : Morphism source target)
+    (term : source.CanonicalCarrier) : target.CanonicalCarrier :=
+  (morphism.mapOpenTerm term).reindex
+    (WellSorted.FreeTypeContext.map_empty
+      morphism.underlying.structural.structural.symbols)
+    rfl morphism.mapsInteractingLangSort
+
+/-- Map a canonical key by translating its representative and then applying
+the target's computable section. -/
+def canonicalKeyMap {source target : CIGSLT}
+    (morphism : Morphism source target) :
+    source.CanonicalKey → target.CanonicalKey :=
+  fun key =>
+    ⟨target.canonical.normalize (morphism.mapCanonicalTerm key.1),
+      target.canonical.normalize_idempotent _⟩
+
 /-- Open typed naturality restricts to naturality of the closed
 paper-facing canonical sections. -/
 theorem mapsCanonical {source target : CIGSLT}
-    (morphism : Morphism source target) (term : source.theory.toGSLT.Term) :
-    target.canonical.normalize (morphism.underlying.mapTerm term) =
-      morphism.underlying.mapTerm (source.canonical.normalize term) := by
-  have openNaturality :=
-    morphism.mapsOpenCanonical (closedTermToOpen term)
+    (morphism : Morphism source target)
+    (term : source.CanonicalCarrier) :
+    target.canonical.normalize (morphism.mapCanonicalTerm term) =
+      morphism.mapCanonicalTerm (source.canonical.normalize term) := by
   let symbols := morphism.underlying.structural.structural.symbols
   have freeEquality :
       WellSorted.FreeTypeContext.empty.map symbols =
@@ -264,30 +325,33 @@ theorem mapsCanonical {source target : CIGSLT}
       ([] : List TypeExpr).map (mapTypeExpr symbols) = [] :=
     rfl
   have sortEquality := morphism.mapsInteractingLangSort
-  let mappedTerm := WellSorted.OpenTerm.map
-    morphism.underlying.structural.structural
-    morphism.mapsReflectiveScopeSafeAt (closedTermToOpen term)
   have normalizationTransport := target.openCanonical.normalize_reindex
-    freeEquality boundEquality sortEquality mappedTerm
+    freeEquality boundEquality sortEquality (morphism.mapOpenTerm term)
   have transportedNaturality := congrArg
-    (reindexOpenTerm freeEquality boundEquality sortEquality) openNaturality
-  have fiberNaturality := normalizationTransport.trans transportedNaturality
-  have mappedInputEquality :
-      reindexOpenTerm freeEquality boundEquality sortEquality mappedTerm =
-        closedTermToOpen (morphism.underlying.mapTerm term) := by
-    apply Subtype.ext
-    calc
-      (reindexOpenTerm freeEquality boundEquality sortEquality mappedTerm).1 =
-          mappedTerm.1 := reindexOpenTerm_pattern _ _ _ _
-      _ = mapPattern symbols term.1 := rfl
-      _ = (closedTermToOpen (morphism.underlying.mapTerm term)).1 := rfl
-  rw [mappedInputEquality] at fiberNaturality
-  apply Subtype.ext
-  simpa [CIGSLT.canonical,
-    ComputableContextualOpenSection.toComputableCanonicalSection,
-    ComputableOpenSection.toComputableCanonicalSection,
-    IGSLT.Morphism.mapTerm, IGSLT.mapClosedTerm, mappedTerm,
-    symbols] using congrArg Subtype.val fiberNaturality
+    (ReflectiveWellSorted.OpenTerm.reindex freeEquality boundEquality
+      sortEquality) (morphism.mapsOpenCanonical term)
+  exact normalizationTransport.trans transportedNaturality
+
+/-- Mapping a normalized key does not invoke canonicalization observably: by
+naturality its raw target representative is exactly the structural image. -/
+@[simp]
+theorem canonicalKeyMap_pattern {source target : CIGSLT}
+    (morphism : Morphism source target) (key : source.CanonicalKey) :
+    (morphism.canonicalKeyMap key).1.1 =
+      mapPattern morphism.underlying.structural.structural.symbols key.1.1 := by
+  have naturality := morphism.mapsCanonical key.1
+  rw [key.2] at naturality
+  simpa [canonicalKeyMap, mapCanonicalTerm, mapOpenTerm] using
+    congrArg (fun term => term.1) naturality
+
+/-- The canonical-key action is genuinely injective; this is derived from
+raw quote faithfulness and canonicalization naturality. -/
+theorem canonicalKeyMap_injective {source target : CIGSLT}
+    (morphism : Morphism source target) :
+    Function.Injective morphism.canonicalKeyMap := by
+  intro left right equality
+  apply morphism.quoteFaithful
+  simpa using congrArg (fun key => key.1.1) equality
 
 /-- Preservation of the hereditary continuation closure is derived from
 preservation and reflection of the two principal introductions.  The closure
@@ -332,27 +396,41 @@ theorem reflectsWrappedConstructors {source target : CIGSLT}
     apply membership.2
     rw [sourceEnvironment, morphism.mapsEnvironmentConstructor]
 
-/-- Continued morphisms are determined by their underlying iGSLT map. -/
+/-- Continued morphisms are determined by their core and reflection symbol
+actions.  Forgetting reflection is intentionally not faithful. -/
 @[ext]
 theorem ext {source target : CIGSLT}
     {first second : Morphism source target}
-    (underlying : first.underlying = second.underlying) : first = second := by
+    (underlying : first.underlying = second.underlying)
+    (reflectionSymbols : first.reflectionSymbols = second.reflectionSymbols) :
+    first = second := by
   cases first
   cases second
   cases underlying
+  cases reflectionSymbols
   rfl
 
-/-- The canonical-key action of the identity is the identity. -/
-@[simp]
-theorem canonicalKeyMap_id (theory : CIGSLT)
-    (key : theory.CanonicalKey) :
-    canonicalKeyMap (IGSLT.Morphism.id theory.theory) key = key := by
-  apply Subtype.ext
-  simp [canonicalKeyMap, key.2]
+/-- Identity structural transport preserves reflection scope exactly. -/
+theorem mapsReflectiveScope_id (theory : CIGSLT) {depth pattern}
+    (safe : ReflectiveWellSorted.ReflectiveScopeSafeAt theory.reflection.1
+      depth pattern) :
+    ReflectiveWellSorted.ReflectiveScopeSafeAt theory.reflection.1 depth
+      (mapPattern PresentationSymbols.id pattern) := by
+  simpa using safe
 
 /-- Identity continued morphism. -/
 def id (theory : CIGSLT) : Morphism theory theory where
   underlying := IGSLT.Morphism.id theory.theory
+  reflectionSymbols := ReflectionSymbols.id
+  mapsReflectivePresentations := by
+    intro declaration membership
+    change mapReflectivePresentation ReflectiveSymbols.id declaration ∈ _
+    simpa using membership
+  mapsReflectiveRules := by
+    intro declaration membership
+    change mapReflectiveRule ReflectiveSymbols.id declaration ∈ _
+    simpa using membership
+  mapsReflectiveScope := mapsReflectiveScope_id theory
   mapsCoreSort := by
     change (StructuralMorphism.id _).mapSort theory.cut.coreContact.sort = _
     exact StructuralMorphism.mapSort_id _ _
@@ -412,13 +490,6 @@ def id (theory : CIGSLT) : Morphism theory theory where
   mapsEnvironmentSurface := by
     change mapOptionalPattern PresentationSymbols.id _ = _
     exact mapOptionalPattern_id _
-  mapsReflectiveScopeSafeAt := by
-    intro depth pattern safe
-    change WellSorted.ReflectiveScopeSafeAt
-      theory.theory.presentation.presentation.language depth
-        (mapPattern PresentationSymbols.id pattern)
-    rw [mapPattern_id]
-    exact safe
   mapsOpenCanonical := by
     intro free bound sort term
     have freeEquality : free = free.map PresentationSymbols.id :=
@@ -440,69 +511,105 @@ def id (theory : CIGSLT) : Morphism theory theory where
       simp
     have naturality := theory.openCanonical.normalize_reindex
       freeEquality boundEquality sortEquality term
-    let identityScope : ∀ {depth pattern},
-        WellSorted.ReflectiveScopeSafeAt
-            theory.theory.presentation.presentation.language depth pattern →
-          WellSorted.ReflectiveScopeSafeAt
-            theory.theory.presentation.presentation.language depth
-              (mapPattern PresentationSymbols.id pattern) := by
-      intro depth pattern safe
-      simpa using safe
     change theory.openCanonical.normalize
-        (WellSorted.OpenTerm.map
+        (ReflectiveWellSorted.OpenTerm.map
           (StructuralMorphism.id theory.theory.presentation.presentation)
-          identityScope term) =
-      WellSorted.OpenTerm.map
+          (mapsReflectiveScope_id theory) term) =
+      ReflectiveWellSorted.OpenTerm.map
         (StructuralMorphism.id theory.theory.presentation.presentation)
-        identityScope (theory.openCanonical.normalize term)
+        (mapsReflectiveScope_id theory)
+        (theory.openCanonical.normalize term)
     have mappedInputEquality :
-        WellSorted.OpenTerm.map
+        ReflectiveWellSorted.OpenTerm.map
             (StructuralMorphism.id theory.theory.presentation.presentation)
-            identityScope term =
-          reindexOpenTerm freeEquality boundEquality sortEquality term := by
+            (mapsReflectiveScope_id theory) term =
+          term.reindex freeEquality boundEquality sortEquality := by
       apply Subtype.ext
       calc
-        (WellSorted.OpenTerm.map
+        (ReflectiveWellSorted.OpenTerm.map
             (StructuralMorphism.id theory.theory.presentation.presentation)
-            identityScope term).1 =
+            (mapsReflectiveScope_id theory) term).1 =
           mapPattern PresentationSymbols.id term.1 := rfl
         _ = term.1 := mapPattern_id term.1
-        _ = (reindexOpenTerm freeEquality boundEquality sortEquality term).1 :=
-          (reindexOpenTerm_pattern _ _ _ _).symm
+        _ = (term.reindex freeEquality boundEquality sortEquality).1 :=
+          (ReflectiveWellSorted.OpenTerm.reindex_pattern _ _ _ _).symm
     apply Subtype.ext
     rw [mappedInputEquality]
     have rawNaturality := congrArg Subtype.val naturality
     calc
       (theory.openCanonical.normalize
-          (reindexOpenTerm freeEquality boundEquality sortEquality term)).1 =
-        (reindexOpenTerm freeEquality boundEquality sortEquality
-          (theory.openCanonical.normalize term)).1 := rawNaturality
+          (term.reindex freeEquality boundEquality sortEquality)).1 =
+        ((theory.openCanonical.normalize term).reindex freeEquality
+          boundEquality sortEquality).1 := rawNaturality
       _ = (theory.openCanonical.normalize term).1 :=
-        reindexOpenTerm_pattern _ _ _ _
+        ReflectiveWellSorted.OpenTerm.reindex_pattern _ _ _ _
       _ = mapPattern PresentationSymbols.id
           (theory.openCanonical.normalize term).1 :=
         (mapPattern_id _).symm
+      _ = (ReflectiveWellSorted.OpenTerm.map
+          (StructuralMorphism.id theory.theory.presentation.presentation)
+          (mapsReflectiveScope_id theory)
+          (theory.openCanonical.normalize term)).1 := rfl
   quoteFaithful := by
     intro left right equality
+    apply Subtype.ext
+    apply Subtype.ext
+    change mapPattern PresentationSymbols.id left.1.1 =
+      mapPattern PresentationSymbols.id right.1.1 at equality
     simpa using equality
 
-/-- Canonical-key action respects composition. -/
-theorem canonicalKeyMap_comp {first second third : CIGSLT}
-    (left : Morphism first second) (right : Morphism second third)
-    (key : first.CanonicalKey) :
-    canonicalKeyMap (IGSLT.Morphism.comp left.underlying right.underlying) key =
-      canonicalKeyMap right.underlying
-        (canonicalKeyMap left.underlying key) := by
+/-- The canonical-key action of the identity is the identity. -/
+@[simp]
+theorem canonicalKeyMap_id (theory : CIGSLT)
+    (key : theory.CanonicalKey) :
+    canonicalKeyMap (id theory) key = key := by
   apply Subtype.ext
-  simp only [canonicalKeyMap, IGSLT.Morphism.mapTerm_comp]
-  rw [right.mapsCanonical, right.mapsCanonical]
-  rw [second.canonical.normalize_idempotent]
+  have naturality := (id theory).mapsCanonical key.1
+  rw [key.2] at naturality
+  exact naturality.trans (by
+    apply Subtype.ext
+    change mapPattern PresentationSymbols.id key.1.1 = key.1.1
+    exact mapPattern_id _)
+
+/-- Reflection-scope preservation composes with the underlying structural
+symbol actions. -/
+theorem mapsReflectiveScope_comp {first second third : CIGSLT}
+    (left : Morphism first second) (right : Morphism second third)
+    {depth pattern}
+    (safe : ReflectiveWellSorted.ReflectiveScopeSafeAt first.reflection.1
+      depth pattern) :
+    ReflectiveWellSorted.ReflectiveScopeSafeAt third.reflection.1 depth
+      (mapPattern (left.underlying.structural.structural.symbols.comp
+        right.underlying.structural.structural.symbols) pattern) := by
+  rw [mapPattern_comp]
+  exact right.mapsReflectiveScope (left.mapsReflectiveScope safe)
 
 /-- Composition of continued morphisms. -/
 def comp {first second third : CIGSLT}
     (left : Morphism first second) (right : Morphism second third) :
     Morphism first third where
   underlying := IGSLT.Morphism.comp left.underlying right.underlying
+  reflectionSymbols := left.reflectionSymbols.comp right.reflectionSymbols
+  mapsReflectivePresentations := by
+    intro declaration membership
+    change mapReflectivePresentation
+        (left.reflectiveSymbols.comp right.reflectiveSymbols) declaration ∈ _
+    rw [mapReflectivePresentation_comp]
+    exact right.mapsReflectivePresentations _
+      (left.mapsReflectivePresentations declaration membership)
+  mapsReflectiveRules := by
+    intro declaration membership
+    change mapReflectiveRule
+        (left.reflectiveSymbols.comp right.reflectiveSymbols) declaration ∈ _
+    rw [mapReflectiveRule_comp]
+    exact right.mapsReflectiveRules _
+      (left.mapsReflectiveRules declaration membership)
+  mapsReflectiveScope := by
+    intro depth pattern safe
+    change ReflectiveWellSorted.ReflectiveScopeSafeAt third.reflection.1 depth
+      (mapPattern (left.underlying.structural.structural.symbols.comp
+        right.underlying.structural.structural.symbols) pattern)
+    exact mapsReflectiveScope_comp left right safe
   mapsCoreSort := by
     change (StructuralMorphism.comp
       left.underlying.structural.structural
@@ -622,42 +729,22 @@ def comp {first second third : CIGSLT}
         right.underlying.structural.structural.symbols) _ = _
     rw [mapOptionalPattern_comp, left.mapsEnvironmentSurface,
       right.mapsEnvironmentSurface]
-  mapsReflectiveScopeSafeAt := by
-    intro depth pattern safe
-    have firstSafe := left.mapsReflectiveScopeSafeAt safe
-    have secondSafe := right.mapsReflectiveScopeSafeAt firstSafe
-    change WellSorted.ReflectiveScopeSafeAt
-      third.theory.presentation.presentation.language depth
-        (mapPattern
-          (IGSLT.Morphism.comp left.underlying right.underlying).structural.structural.symbols
-          pattern)
-    rw [IGSLT.Morphism.comp_baseStructural]
-    change WellSorted.ReflectiveScopeSafeAt
-      third.theory.presentation.presentation.language depth
-        (mapPattern
-          (left.underlying.structural.structural.symbols.comp
-            right.underlying.structural.structural.symbols) pattern)
-    rw [mapPattern_comp]
-    exact secondSafe
   mapsOpenCanonical := by
     intro free bound sort term
     let firstStructural := left.underlying.structural.structural
     let secondStructural := right.underlying.structural.structural
     let compositeStructural :=
       StructuralMorphism.comp firstStructural secondStructural
-    let firstMapped := WellSorted.OpenTerm.map firstStructural
-      left.mapsReflectiveScopeSafeAt term
-    let nestedMapped := WellSorted.OpenTerm.map secondStructural
-      right.mapsReflectiveScopeSafeAt firstMapped
-    let nestedNormalized := WellSorted.OpenTerm.map secondStructural
-      right.mapsReflectiveScopeSafeAt
-        (WellSorted.OpenTerm.map firstStructural
-          left.mapsReflectiveScopeSafeAt
-            (first.openCanonical.normalize term))
+    let firstMapped := term.map firstStructural left.mapsReflectiveScope
+    let nestedMapped := firstMapped.map secondStructural
+      right.mapsReflectiveScope
+    let nestedNormalized :=
+      ((first.openCanonical.normalize term).map firstStructural
+        left.mapsReflectiveScope).map secondStructural
+          right.mapsReflectiveScope
     have rightNaturality := right.mapsOpenCanonical firstMapped
     have leftNaturality := congrArg
-      (WellSorted.OpenTerm.map secondStructural
-        right.mapsReflectiveScopeSafeAt)
+      (fun mapped => mapped.map secondStructural right.mapsReflectiveScope)
       (left.mapsOpenCanonical term)
     have combined :
         third.openCanonical.normalize nestedMapped = nestedNormalized :=
@@ -689,31 +776,31 @@ def comp {first second third : CIGSLT}
     have normalizationTransport := third.openCanonical.normalize_reindex
       freeEquality boundEquality sortEquality nestedMapped
     have transportedCombined := congrArg
-      (reindexOpenTerm freeEquality boundEquality sortEquality) combined
+      (ReflectiveWellSorted.OpenTerm.reindex freeEquality boundEquality
+        sortEquality) combined
     have fiberNaturality := normalizationTransport.trans transportedCombined
-    let compositeScope : ∀ {depth pattern},
-        WellSorted.ReflectiveScopeSafeAt
-            first.theory.presentation.presentation.language depth pattern →
-          WellSorted.ReflectiveScopeSafeAt
-            third.theory.presentation.presentation.language depth
-              (mapPattern compositeStructural.symbols pattern) := by
+    have compositeScope : ∀ {depth pattern},
+        ReflectiveWellSorted.ReflectiveScopeSafeAt first.reflection.1 depth
+            pattern →
+          ReflectiveWellSorted.ReflectiveScopeSafeAt third.reflection.1 depth
+            (mapPattern compositeStructural.symbols pattern) := by
       intro depth pattern safe
-      have firstSafe := left.mapsReflectiveScopeSafeAt safe
-      have secondSafe := right.mapsReflectiveScopeSafeAt firstSafe
-      simpa [compositeStructural, StructuralMorphism.comp,
-        mapPattern_comp] using secondSafe
-    let compositeMapped := WellSorted.OpenTerm.map compositeStructural
-      compositeScope term
-    let compositeNormalized := WellSorted.OpenTerm.map compositeStructural
-      compositeScope (first.openCanonical.normalize term)
+      change ReflectiveWellSorted.ReflectiveScopeSafeAt third.reflection.1
+        depth (mapPattern
+          (left.underlying.structural.structural.symbols.comp
+            right.underlying.structural.structural.symbols) pattern)
+      exact mapsReflectiveScope_comp left right safe
+    let compositeMapped := term.map compositeStructural compositeScope
+    let compositeNormalized := (first.openCanonical.normalize term).map
+      compositeStructural compositeScope
     have inputEquality :
-        reindexOpenTerm freeEquality boundEquality sortEquality nestedMapped =
+        nestedMapped.reindex freeEquality boundEquality sortEquality =
           compositeMapped := by
       apply Subtype.ext
       calc
-        (reindexOpenTerm freeEquality boundEquality sortEquality
-            nestedMapped).1 = nestedMapped.1 :=
-          reindexOpenTerm_pattern _ _ _ _
+        (nestedMapped.reindex freeEquality boundEquality sortEquality).1 =
+            nestedMapped.1 :=
+          ReflectiveWellSorted.OpenTerm.reindex_pattern _ _ _ _
         _ = mapPattern secondStructural.symbols
             (mapPattern firstStructural.symbols term.1) := rfl
         _ = mapPattern compositeStructural.symbols term.1 := by
@@ -722,14 +809,13 @@ def comp {first second third : CIGSLT}
             secondStructural.symbols term.1
         _ = compositeMapped.1 := rfl
     have outputEquality :
-        reindexOpenTerm freeEquality boundEquality sortEquality
-            nestedNormalized =
+        nestedNormalized.reindex freeEquality boundEquality sortEquality =
           compositeNormalized := by
       apply Subtype.ext
       calc
-        (reindexOpenTerm freeEquality boundEquality sortEquality
-            nestedNormalized).1 = nestedNormalized.1 :=
-          reindexOpenTerm_pattern _ _ _ _
+        (nestedNormalized.reindex freeEquality boundEquality sortEquality).1 =
+            nestedNormalized.1 :=
+          ReflectiveWellSorted.OpenTerm.reindex_pattern _ _ _ _
         _ = mapPattern secondStructural.symbols
             (mapPattern firstStructural.symbols
               (first.openCanonical.normalize term).1) := rfl
@@ -740,15 +826,50 @@ def comp {first second third : CIGSLT}
             secondStructural.symbols _
         _ = compositeNormalized.1 := rfl
     rw [inputEquality, outputEquality] at fiberNaturality
+    apply Subtype.ext
     simpa [compositeMapped, compositeNormalized, compositeStructural,
-      IGSLT.Morphism.comp, InteractiveMorphism.comp] using fiberNaturality
+      IGSLT.Morphism.comp, InteractiveMorphism.comp]
+      using congrArg (fun mapped => mapped.1) fiberNaturality
   quoteFaithful := by
     intro leftKey rightKey equality
+    have nestedEquality :
+        mapPattern right.underlying.structural.structural.symbols
+            (mapPattern left.underlying.structural.structural.symbols
+              leftKey.1.1) =
+          mapPattern right.underlying.structural.structural.symbols
+            (mapPattern left.underlying.structural.structural.symbols
+              rightKey.1.1) := by
+      change mapPattern
+          (left.underlying.structural.structural.symbols.comp
+            right.underlying.structural.structural.symbols) leftKey.1.1 =
+        mapPattern
+          (left.underlying.structural.structural.symbols.comp
+            right.underlying.structural.structural.symbols) rightKey.1.1
+        at equality
+      simpa only [mapPattern_comp] using equality
+    have firstKeyEquality :
+        canonicalKeyMap left leftKey = canonicalKeyMap left rightKey := by
+      apply right.quoteFaithful
+      simpa using nestedEquality
     apply left.quoteFaithful
-    apply right.quoteFaithful
-    rw [← canonicalKeyMap_comp left right,
-      ← canonicalKeyMap_comp left right]
-    exact equality
+    simpa using congrArg (fun key => key.1.1) firstKeyEquality
+
+/-- Canonical-key action respects composition. -/
+theorem canonicalKeyMap_comp {first second third : CIGSLT}
+    (left : Morphism first second) (right : Morphism second third)
+    (key : first.CanonicalKey) :
+    canonicalKeyMap (comp left right) key =
+      canonicalKeyMap right (canonicalKeyMap left key) := by
+  apply Subtype.ext
+  apply Subtype.ext
+  rw [canonicalKeyMap_pattern, canonicalKeyMap_pattern,
+    canonicalKeyMap_pattern]
+  change mapPattern
+      (left.underlying.structural.structural.symbols.comp
+        right.underlying.structural.structural.symbols) key.1.1 =
+    mapPattern right.underlying.structural.structural.symbols
+      (mapPattern left.underlying.structural.structural.symbols key.1.1)
+  exact mapPattern_comp _ _ _
 
 end Morphism
 
@@ -759,19 +880,22 @@ instance : CategoryTheory.Category CIGSLT where
   comp := Morphism.comp
   id_comp morphism := by
     apply Morphism.ext
-    apply IGSLT.Morphism.ext
-    apply InteractiveMorphism.ext
-    rfl
+    · apply IGSLT.Morphism.ext
+      apply InteractiveMorphism.ext
+      rfl
+    · rfl
   comp_id morphism := by
     apply Morphism.ext
-    apply IGSLT.Morphism.ext
-    apply InteractiveMorphism.ext
-    rfl
+    · apply IGSLT.Morphism.ext
+      apply InteractiveMorphism.ext
+      rfl
+    · rfl
   assoc first second third := by
     apply Morphism.ext
-    apply IGSLT.Morphism.ext
-    apply InteractiveMorphism.ext
-    rfl
+    · apply IGSLT.Morphism.ext
+      apply InteractiveMorphism.ext
+      rfl
+    · rfl
 
 /-- Forget the selected cut, section, and wrappability witness. -/
 def forget : CategoryTheory.Functor CIGSLT IGSLT where
@@ -785,12 +909,6 @@ def forget : CategoryTheory.Functor CIGSLT IGSLT where
     apply IGSLT.Morphism.ext
     apply InteractiveMorphism.ext
     rfl
-
-/-- Forgetting continued structure loses no information about morphisms. -/
-instance forget_faithful : CategoryTheory.Functor.Faithful forget where
-  map_injective := by
-    intro source target first second equality
-    exact Morphism.ext equality
 
 end CIGSLT
 

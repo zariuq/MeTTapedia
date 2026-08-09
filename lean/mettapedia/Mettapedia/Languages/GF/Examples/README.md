@@ -9,7 +9,7 @@ as a typed tree. The *concrete syntax* (the *linearization*) says how that tree
 is *spelled out* in a particular language, handling word order, agreement, and
 morphology. The same abstract tree can be linearized to English, to Czech, or to
 a logical formula; conversely a string can be *parsed* back to the tree. That
-separation — meaning as a typed tree, surface form as a function of it — is what
+separation — meaning as a typed tree, source form as a function of it — is what
 makes GF a multilingual grammar formalism rather than a parser for one language.
 
 This directory collects **worked examples** that run that idea end to end inside
@@ -22,7 +22,7 @@ output is exactly what the theory predicts.
 Two flavours appear here:
 
 - **Linearization demos** — start from a language-independent semantic tree and
-  generate English surface text, with the morphology/agreement machinery
+  generate English source text, with the morphology/agreement machinery
   actually firing (the rendered string is pinned by a `decide` proof).
 - **Semantic-pipeline demos** — push GF abstract trees through the OSLF
   layers (visible-action store semantics, the ◇/□ modal layer, and the

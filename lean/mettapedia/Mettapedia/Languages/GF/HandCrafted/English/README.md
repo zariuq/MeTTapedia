@@ -4,7 +4,7 @@
 
 A **Grammatical Framework (GF)** grammar separates the *abstract syntax* — the
 language-independent meaning of a sentence, as a typed tree — from the *concrete
-syntax*, which *linearizes* that tree into a particular language's surface
+syntax*, which *linearizes* that tree into a particular language's linearized form
 strings. English carries little inflection but a lot of *syntax*: tense and
 aspect are spelled out with auxiliary verbs, questions and negation need
 *do-support* ("does he walk?", "he doesn't walk"), word order flips between
@@ -63,7 +63,7 @@ demonstrative and quantifier determiners, interrogatives (who/what), preposition
 coordinating `EnglishConj`, and subordinating `EnglishSubj`.
 
 ### Linearization — `Linearization.lean` and `Linearization/`
-The typed evaluator bridging GF abstract trees to English surface strings:
+The typed evaluator bridging GF abstract trees to English linearized strings:
 category-aware lexical leaves, the core compositional constructors (UseN, DetCN,
 AdjCN, UseV, PredVP, UseCl, …), tense/polarity transport, and coordination
 constructors, with coverage diagnostics against `FunctionSig.allFunctions`.
@@ -81,7 +81,7 @@ directory's scope.
   subordination, and **garden-path disambiguation** — including the famous
   "The old man the boats" (the `ex_parse2` theorem pins the substantivized-noun
   reading "the old man the boats" by `decide`).
-- A **20-surface roundtrip corpus** (`RoundTripCorpus.lean`): `parse_linearize_complete`
+- A **20-linearization roundtrip corpus** (`RoundTripCorpus.lean`): `parse_linearize_complete`
   and `parse_sound` prove the parser sound and complete *on this corpus*
   (including the telescope/Anna NP-vs-VP attachment ambiguities) — corpus-
   restricted by design, not a claim of full English parsing.
@@ -89,7 +89,7 @@ directory's scope.
 ## What's missing
 
 - Full numeral linearization (type defined but not linearized).
-- Conjunction linearization (types defined, no surface generation).
+- Conjunction linearization (types defined, no linearization generation).
 - Passive-voice morphology.
 - Comparative/superlative clause-level constructions.
 - Many GF RGL functions (Idiom, Extend, Construction modules) not covered.
@@ -102,7 +102,7 @@ transitively).
 
 **Proof state.** All sixteen files (the eleven top-level files plus the five
 under `Linearization/`) are `sorry`-free; the comment-stripped count is 0 (see
-the footer). The example and roundtrip theorems are *kernel* checks — surface
+the footer). The example and roundtrip theorems are *kernel* checks — linearization
 strings are pinned by `decide`/`rfl` and the corpus soundness/completeness
 results are proven, not asserted.
 

@@ -119,7 +119,7 @@ structure LanguageDef where
 Key design choices:
 \begin{itemize}
 \item \textbf{Carrier-aware types} (\code{TypeDecl} with \code{CarrierKind}):
-  Metamath surface syntax requires raw lexical carriers (\code{![raw] as Sym},
+  Metamath concrete syntax requires raw lexical carriers (\code{![raw] as Sym},
   \code{![label] as Label}). Rust already supports these via
   \code{LangType.carrier\_kind}; Lean now matches.
 \item \textbf{Authored binder names} (\code{Pattern.lambda : Option String}):
@@ -141,13 +141,13 @@ Key design choices:
   unknown relations, and arity mismatches---all at definition time.
 \end{itemize}
 
-\subsection{The \code{languageDef!} Authored Surface}
+\subsection{The \code{languageDef!} Authored Notation}
 
 The Rust side uses a \code{language!} procedural macro to let humans author
 language definitions in a single readable block.  Lean now has a matching
-\code{languageDef!} macro that parses the \emph{same} surface syntax into the
-\emph{same} \code{LanguageDef} type---no separate ``surface AST'' is introduced.
-The macro \emph{is} the surface layer; the single \code{LanguageDef} is the
+\code{languageDef!} macro that parses the \emph{same} concrete syntax into the
+\emph{same} \code{LanguageDef} type---no separate ``syntax tree'' is introduced.
+The macro \emph{is} the notation layer; the single \code{LanguageDef} is the
 core.
 
 \begin{lstlisting}[language={},caption={Lean \code{languageDef!} example
@@ -183,7 +183,7 @@ def smokeLang : LanguageDef :=
   }
 \end{lstlisting}
 
-The Rust and Lean term-declaration surfaces are intentionally identical:
+The Rust and Lean term-declaration notations are intentionally identical:
 %
 \begin{center}
 \begin{tabular}{@{}l@{\qquad}l@{}}
@@ -194,7 +194,7 @@ The Rust and Lean term-declaration surfaces are intentionally identical:
 \end{tabular}
 \end{center}
 
-Three additional layers support the authored surface:
+Three additional layers support the authored notation:
 \begin{enumerate}
 \item \textbf{Validation.}
   \code{LanguageDef.validate} checks types, constructors, relations,
@@ -238,7 +238,7 @@ validated export
 \subsection{RhoCalc as the \code{LanguageDef} Parity Pressure Test}
 
 The $\rho$-calculus (Meredith \& Stay) is the flagship language instance for both
-the Rust \code{language!} macro and the Lean \code{languageDef!} surface.  The
+the Rust \code{language!} macro and the Lean \code{languageDef!} notation.  The
 Rust definition in \codepath{hyperon/mettail-rust/languages/src/rhocalc.rs}
 (${\sim}380$ lines) covers the full process calculus including native arithmetic,
 string operations, and fold terms.
@@ -280,7 +280,7 @@ def rhoCalcProcessFragment : LanguageDef :=
 
 All structural properties are kernel-checked: \code{LanguageDef.validate}
 returns \code{[]} (proved by \code{native\_decide}), and export substring
-checks confirm that the Lean-rendered text matches the Rust surface.
+checks confirm that the Lean-rendered text matches the Rust syntax.
 
 \paragraph{Honest boundary.}
 Two Rust rules cannot yet be authored in Lean:
@@ -801,7 +801,7 @@ $\searrow$ \hspace{6em} $\swarrow$ \\[4pt]
 \end{center}
 
 The \code{languageDef!} presentation \code{metamathCore} defines the full
-Metamath statement surface---\code{Database}, \code{Stmt}, \code{MathString},
+Metamath statement syntax---\code{Database}, \code{Stmt}, \code{MathString},
 \code{ProofString}, normal and compressed proofs, blocks, and includes---with
 carrier-aware type declarations (\code{![label] as Label}, \code{![raw] as
 Sym}, \code{![proofTok] as ProofTok}, \code{![path] as IncludePath}) and
@@ -810,9 +810,9 @@ explicit term constructors for every \code{\$c}, \code{\$v}, \code{\$d},
 syntax, its \code{rewrites} block authors the front-end lowering,
 environment-loading, linearization, and compilation pipeline as rewrite rules
 in the same language object, and the definition renders back to the
-\code{language!} surface syntax with kernel-checked guards on the exported
-text.  (A Rust \code{metamath.rs} twin existed historically; the render
-surface is now checked directly, with no in-tree Rust consumer.)
+\code{language!} concrete syntax with kernel-checked guards on the exported
+text.  (A Rust \code{metamath.rs} twin existed historically; the rendered
+text is now checked directly, with no in-tree Rust consumer.)
 
 A second, elaborated-record presentation \code{sourceGrammar} carries the
 proof-facing tower: it is validated by the generic well-formation checker
@@ -997,7 +997,7 @@ Pure-mode morphism theory is deferred pending the MeTTa-Pure bridge.
 
 \paragraph{Reproducibility.}
 \begin{lstlisting}[language={},caption={Build command for MaTT targets}]
-ulimit -Sv 6291456 && LAKE_JOBS=3 nice -n 19 lake build \
+lake build \
   Mettapedia.OSLF.Framework.MATTFragment \
   Mettapedia.OSLF.Framework.MATTClaimMap \
   Mettapedia.OSLF.Framework.MATTProvableNow
@@ -1006,6 +1006,61 @@ ulimit -Sv 6291456 && LAKE_JOBS=3 nice -n 19 lake build \
 The reviewer anchor in
 \codepath{Mettapedia/OSLF/SpecIndex.lean}:265 is labelled
 ``Conservative MaTT Claim Map (No Overclaim)''.
+
+\section{The ProofGSLT Layer: Generic Proof Checking over Presentations}
+\label{sec:proofgslt}
+
+Beyond rewriting, a \code{LanguageDef} may declare \emph{judgment forms} and
+\emph{inference rules}.  The generic inference checker
+(\codepath{Mettapedia/GSLT/LanguageDef/InferenceChecker.lean}) validates
+these proof-calculus fields --- V1 fixes exact metavariable occurrence
+depths with no implicit lifting; V2 adds finite structural judgment
+signatures --- and checks untrusted proof trees against them, reconstructing
+\code{Type}-valued \code{Derivation} evidence.  Judgments are ordinary
+\code{Pattern} terms of the same syntax IR, so the proof lane introduces no
+second syntax authority.
+
+The ProofGSLT modules
+(\codepath{Mettapedia/GSLT/LanguageDef/}, canonical import
+\code{ProofGSLTFramework}, compiled fixtures in
+\code{ProofGSLTInterpretationCanary}) develop the categorical theory of
+these validated presentations:
+
+\begin{itemize}
+\item a strict rule-retaining preorder whose arrows transport derivations,
+  checked proofs, and identical chronological proof-DAG artifacts, with a
+  compiled negative theorem for missing rules;
+\item open derivations with positional premise holes and a proved
+  simultaneous-substitution calculus (both unit laws, associativity);
+\item a provably non-thin category of derivation-valued interpretations ---
+  one primitive rule may be implemented by a composite target proof --- with
+  a compiled counterexample showing strict retention cannot express this;
+\item set-valued models with contravariant pullback and semantic-transport
+  naturality, plus covariant indexed derivation families with concrete
+  categories of elements;
+\item fuel-free checkers for open proof trees and chronological proof DAGs
+  (premise references plus backward node references) with \emph{exact} typed
+  reconstruction, and a compiled sharing canary --- two submitted DAG nodes,
+  three expanded rule occurrences --- keeping compact evidence identity
+  distinct from expanded proof meaning;
+\item sharing-preserving substitution of checked DAGs into the premise
+  holes of a checked DAG: acceptance preserved, expansion commutes with
+  composition exactly, submitted node count exactly additive while
+  expanded cost multiplies per citation, with compiled refuters for the
+  unshifted and uniformly wired variants;
+\item the multisorted-clone structure of open derivations (judgments as
+  sorts, proof plugging as simultaneous substitution), the algebraic core of
+  a cartesian multicategory.
+\end{itemize}
+
+The standalone treatment, with the full theorem inventory and verification
+statement, is \code{ProofGSLT.tex}.  For this companion the operative point
+is that any validated presentation whose \code{LanguageDef} declares
+judgment forms and inference rules is already a ProofGSLT object: the proof
+calculus, interpretation category, models, and both checked evidence formats
+come from the framework with no per-language authorship.  The
+\code{languageDef!} macro does not yet author the proof-calculus fields;
+extending it is a natural seam alongside the next steps below.
 
 \section{What This Companion Covers and Does Not Cover}
 
@@ -1028,6 +1083,10 @@ The reviewer anchor in
 \item Executable Rust backends: MeTTaHE (from Lean pipeline), MeTTaFullState
   (legacy), PeTTa (alias wrapper), all with REPL + oracle integration.
 \item MeTTa-IL as 2-mode adjoint doctrine fragment (MaTT, 9 proved claims).
+\item Generic inference checker over \code{LanguageDef} judgments/rules,
+  with the ProofGSLT categorical layer (strict refinement, open derivations,
+  non-thin interpretations, models, exact DAG evidence);
+  Section~\ref{sec:proofgslt} and the standalone \code{ProofGSLT.tex}.
 \end{itemize}
 
 \textbf{Not yet full end-to-end by construction:}
@@ -1096,7 +1155,7 @@ Layer & Role \\
   identity types, universes, inductive families. Bidirectionally checked.
   Subject reduction and decidable conversion hold by construction. \\[4pt]
 \textbf{B — Elaboration boundary} &
-  A (not necessarily trusted) elaborator translating MeTTa surface syntax into
+  A (not necessarily trusted) elaborator translating MeTTa concrete syntax into
   kernel terms. A checked reflection bridge maps quoted MeTTa atoms to kernel
   terms and back. \\[4pt]
 \textbf{C — Full MeTTa runtime} &
@@ -1152,11 +1211,11 @@ The local context \code{G} is an \emph{ordered list} of typed variables
 \code{[(x1,A1), ..., (xn,An)]}---not an unordered atomspace.
 The signature \code{Sk} carries declared kernel constants.
 
-\subsection{Surface Syntax (S-Expression Style)}
+\subsection{Concrete Syntax (S-Expression Style)}
 
-The kernel surface can remain MeTTa-shaped:
+The kernel interface can remain MeTTa-shaped:
 
-\begin{lstlisting}[language={},caption={Proposed MeTTa-Pure surface forms}]
+\begin{lstlisting}[language={},caption={Proposed MeTTa-Pure source forms}]
 (Pi   (($x A)) B)       -- dependent function type
 (lam  (($x A)) t)       -- lambda abstraction
 (app  t u)              -- application
@@ -1169,7 +1228,7 @@ The kernel surface can remain MeTTa-shaped:
 \end{lstlisting}
 
 This keeps the S-expression aesthetic while elaborating to a real binder AST.
-At Layer C, \code{=} stays the runtime rewrite operator; the surface \code{:}
+At Layer C, \code{=} stays the runtime rewrite operator; the syntax \code{:}
 annotation gains a second meaning as a kernel declaration when inside a
 pure context.
 
@@ -1383,5 +1442,15 @@ theorem paper_mork_mq_branching_equiv (i : Nat) (p q : Process) :
     (CommReduction i p q {.zero, p} /\ CommReduction i p q {.one, q}) <->
     (forall (fold : MORK.FoldStep) (_ : fold.isBinary), ...)
 \end{lstlisting}
+
+\begin{thebibliography}{9}
+
+\bibitem{gratzer2020multimodal}
+D.~Gratzer, G.~A. Kavvos, A.~Nordvall Forsberg, and L.~Birkedal.
+\newblock Multimodal dependent type theory.
+\newblock In \emph{Proceedings of the 35th Annual ACM/IEEE Symposium on
+  Logic in Computer Science (LICS 2020)}, pages 492--506. ACM, 2020.
+
+\end{thebibliography}
 
 \end{document}

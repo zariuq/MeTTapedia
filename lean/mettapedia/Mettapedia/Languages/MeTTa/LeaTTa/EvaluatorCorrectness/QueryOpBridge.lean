@@ -26,10 +26,10 @@ open Metta
 open Metta.Minimal
 open Mettapedia.Languages.MeTTa.HE.CanonAbsorbsFreshening
 
-/-! ## Static candidate surface -/
+/-! ## Static candidate set -/
 
 /-- When neither mutable nor imported rules have been added to `&self`, the executable candidate
-surface `candidatesW` is exactly the pre-indexed static environment used by `KernelStep`. -/
+interface `candidatesW` is exactly the pre-indexed static environment used by `KernelStep`. -/
 theorem candidatesW_eq_candidates_of_no_selfRules
     (env : MinEnv) (w : World) (toEval : Atom)
     (hExtra : w.selfExtra = []) (hImports : w.selfImports = []) :
@@ -44,7 +44,7 @@ theorem candidatesW_init_eq_candidates (env : MinEnv) (toEval : Atom) :
     candidatesW env St.init.world toEval = env.candidates toEval := by
   exact candidatesW_eq_candidates_of_no_selfRules env St.init.world toEval rfl rfl
 
-/-! ## Executable `queryOp` fold surface -/
+/-! ## Executable `queryOp` fold interface -/
 
 /-- The finite set of live spellings that executable rule freshening must avoid at a query step. -/
 abbrev queryOpAvoid (prev : Stack) (toEval : Atom) (b : Bindings) : List VarName :=
@@ -975,7 +975,7 @@ theorem ClosedValueBindings.resolve_eq_lookupVal {b : Bindings}
               simp [Bindings.resolve, hcls, hvalues, hfuelEq,
                 Bindings.resolveAtomAux, haux]
 
-/-- Membership in the value-key surface of a value-only binding set gives a successful lookup. -/
+/-- Membership in the value-key domain of a value-only binding set gives a successful lookup. -/
 theorem ValueBindings.lookup_some_of_key_mem {b : Bindings} (hval : ValueBindings b) :
     ∀ {x : VarName}, x ∈ bindingValueKeys b →
       ∃ value, Bindings.lookupVal b x = some value := by
@@ -1065,7 +1065,7 @@ theorem singleton_renamedValueKeysFreshForValues (f : VarName → VarName)
   rcases hmem with ⟨rfl, rfl⟩
   exact hfresh
 
-/-- A key outside the value-key surface cannot have a direct value lookup. -/
+/-- A key outside the value-key domain cannot have a direct value lookup. -/
 theorem ValueBindings.lookup_none_of_not_key {b : Bindings} (hval : ValueBindings b) :
     ∀ {x : VarName}, x ∉ bindingValueKeys b → Bindings.lookupVal b x = none := by
   intro x hnot
@@ -1948,7 +1948,7 @@ theorem mem_bindingValueKeys_iff {b : Bindings} {x : VarName} :
             simp [bindingValueKeys] at hatom ⊢
             exact ih.mpr ⟨atom, hatom⟩
 
-/-- Every direct value-binding key occurs in the complete variable surface of
+/-- Every direct value-binding key occurs in the complete variable domain of
 the binding set. -/
 theorem bindingValueKey_mem_vars {b : Bindings} {x : VarName}
     (hx : x ∈ bindingValueKeys b) : x ∈ Bindings.vars b := by
@@ -2436,7 +2436,7 @@ theorem bindingValueKeys_renameBindings (f : VarName → VarName) :
   | BindingRel.eq x y :: rest => by
       simp [bindingValueKeys, renameBindings, bindingValueKeys_renameBindings f rest]
 
-/-- If a key is absent from the value-key surface, direct value lookup does not find it. -/
+/-- If a key is absent from the value-key domain, direct value lookup does not find it. -/
 theorem lookupVal_none_of_not_mem_keys {x : VarName} :
     ∀ {b : Bindings}, x ∉ bindingValueKeys b → Bindings.lookupVal b x = none
   | [], _ => by
@@ -2457,7 +2457,7 @@ theorem lookupVal_none_of_not_mem_keys {x : VarName} :
         simpa [bindingValueKeys] using hnot
       simpa [Bindings.lookupVal] using lookupVal_none_of_not_mem_keys hnotRest
 
-/-- If a key is absent from the value-key surface, every `removeVal` filter test succeeds. -/
+/-- If a key is absent from the value-key domain, every `removeVal` filter test succeeds. -/
 theorem removeVal_filter_true_of_not_mem {x : VarName} :
     ∀ {b : Bindings}, x ∉ bindingValueKeys b →
       ∀ r ∈ b, (match r with | BindingRel.val y _ => y != x | _ => true) = true

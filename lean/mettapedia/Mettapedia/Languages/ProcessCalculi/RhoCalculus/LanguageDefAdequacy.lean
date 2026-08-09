@@ -3,6 +3,8 @@ import Mettapedia.OSLF.MeTTaIL.DerivedPresentationSyntax
 import Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical
 import Mettapedia.OSLF.MeTTaIL.ReflectiveCanonicalSpec
 import Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution
+import Mettapedia.OSLF.MeTTaIL.ReflectiveEngine
+import Mettapedia.GSLT.LanguageDef.ReflectionExtension
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CanonicalMatch
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.RhoOpening
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.SemanticSubstitution
@@ -28,38 +30,40 @@ open Mettapedia.OSLF.MeTTaIL.Engine
 open Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical
 open Mettapedia.OSLF.MeTTaIL.ReflectiveCanonicalSpec
 open Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution
+open Mettapedia.OSLF.MeTTaIL.ReflectiveEngine
 open Mettapedia.OSLF.MeTTaIL.MatchWithSpec
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.CanonicalMatch
+open Mettapedia.GSLT.LanguageDef.ReflectionExtension
 
 /-- The authored COMM rule has exactly one selected matching presentation. -/
 theorem rhoComm_matchingPresentation_selected :
-    matchingPresentationForRule? rhoCalc rhoCommRewrite =
+    matchingPresentationForRule? rhoReflectionProfile rhoCommRewrite =
       some rhoReflectivePresentation.toReflectivePresentationDecl := by
   decide +kernel
 
 /-- The authored COMM rule has exactly one selected substitution
 presentation. -/
 theorem rhoComm_substitutionPresentation_selected :
-    substitutionPresentationForRule? rhoCalc rhoCommRewrite =
+    substitutionPresentationForRule? rhoReflectionProfile rhoCommRewrite =
       some rhoReflectivePresentation.toReflectivePresentationDecl := by
   decide +kernel
 
 /-- The generic rule-aware matcher is definitionally specialized by the
 authored rho declaration, not by an engine callback. -/
 theorem matchPatternForRule_rhoComm (term : Pattern) :
-    matchPatternForRule rhoCalc rhoCommRewrite term =
+    matchPatternForRuleUsing rhoReflectionProfile rhoCommRewrite term =
       matchPatternWith rhoCanonicalEquivalent rhoCommRewrite.left term := by
-  simp only [matchPatternForRule, rhoComm_matchingPresentation_selected]
+  simp only [matchPatternForRuleUsing, rhoComm_matchingPresentation_selected]
   rfl
 
 /-- The compiled matcher for authored rho COMM has the independent
 equivalence-parameterized relational specification on every candidate. -/
 theorem matchPatternForRule_rhoComm_iff
     {term : Pattern} {bindings : Bindings} :
-    bindings ∈ matchPatternForRule rhoCalc rhoCommRewrite term ↔
+    bindings ∈ matchPatternForRuleUsing rhoReflectionProfile rhoCommRewrite term ↔
       MatchRelWith rhoCanonicalEquivalent rhoCommRewrite.left term bindings := by
-  rw [matchPatternForRule_iff_matchRelWith_of_presentation
+  rw [matchPatternForRuleUsing_iff_matchRelWith_of_presentation
     rhoComm_matchingPresentation_selected]
   rfl
 
@@ -67,13 +71,14 @@ theorem matchPatternForRule_rhoComm_iff
 proved pure-rho repeated-channel comparator for every candidate term. -/
 theorem applyRuleWithPremisesUsing_rhoComm
     (relationEnvironment : RelationEnv) (term : Pattern) :
-    applyRuleWithPremisesUsing relationEnvironment rhoCalc rhoCommRewrite term =
+    applyRuleWithPremisesUsingReflection rhoReflectionProfile
+        relationEnvironment rhoCalc rhoCommRewrite term =
       (matchPatternWith rhoCanonicalEquivalent rhoCommRewrite.left term).flatMap
         (fun bindings =>
           (applyPremisesWithEnv relationEnvironment rhoCalc rhoCommRewrite.premises bindings).map
             (fun finalBindings =>
-              applyBindingsForRule rhoCalc rhoCommRewrite finalBindings)) := by
-  unfold applyRuleWithPremisesUsing
+              applyBindingsForRuleUsing rhoReflectionProfile rhoCommRewrite finalBindings)) := by
+  unfold applyRuleWithPremisesUsingReflection
   rw [matchPatternForRule_rhoComm]
 
 /-- The strict-core authored language passes its structural validation gate. -/
@@ -86,10 +91,10 @@ theorem rhoCommRewrite_mem : rhoCommRewrite ∈ rhoCalc.rewrites := by
 
 /-- A missing rule reference is rejected rather than silently compiled. -/
 theorem malformed_reflective_rule_rejected :
-    ({ rhoCalc with
-        reflectiveRules :=
-          [{ rhoReflectiveRule with rewriteRule := "MissingComm" }] }).validate ≠ [] := by
-  exact rhoCalc_missing_reflective_rule_validate_ne_nil
+    Mettapedia.OSLF.MeTTaIL.Reflection.validate rhoCalc
+      { rhoReflectionProfile with
+        rules := [{ rhoReflectiveRule with rewriteRule := "MissingComm" }] } ≠ [] := by
+  exact rho_missing_rewrite_rejected
 
 /-! ## Authored COMM right-hand side -/
 
@@ -102,7 +107,7 @@ def rhoCommBindings (channel body payload : Pattern) (rest : List Pattern) : Bin
 substitution and preserves the unmatched parallel components. -/
 theorem applyBindingsForRule_rhoComm
     (channel body payload : Pattern) (rest : List Pattern) :
-    applyBindingsForRule rhoCalc rhoCommRewrite
+    applyBindingsForRuleUsing rhoReflectionProfile rhoCommRewrite
         (rhoCommBindings channel body payload rest) =
       .collection .hashBag
         (substituteReflective rhoReflectivePresentation 0
@@ -110,7 +115,7 @@ theorem applyBindingsForRule_rhoComm
               [normalizeReflective rhoReflectivePresentation payload]) body ::
           rest)
         none := by
-  rw [applyBindingsForRule, rhoComm_substitutionPresentation_selected]
+  rw [applyBindingsForRuleUsing, rhoComm_substitutionPresentation_selected]
   simp [rhoCommRewrite, rhoCommBindings, applyBindingsReflective,
     applyBindingsReflectiveList, normalizeReflectiveReplacement,
     rhoReflectivePresentation]
@@ -350,7 +355,7 @@ theorem applyBindingsForRule_rhoComm_agrees_derived
       (rhoReflectivePresentation.nameSort :: bound) body)
     (payloadTyped : ProcWellSorted rhoReflectivePresentation free bound payload)
     (channel : Pattern) (rest : List Pattern) :
-    applyBindingsForRule rhoCalc rhoCommRewrite
+    applyBindingsForRuleUsing rhoReflectionProfile rhoCommRewrite
         (rhoCommBindings channel body payload rest) =
       .collection .hashBag (semanticCommSubst body payload :: rest) none := by
   rw [applyBindingsForRule_rhoComm]
@@ -363,7 +368,7 @@ theorem applyBindingsForRule_rhoComm_agrees_derived
 /-- A received quoted payload exposes a matched dropped name exactly as the
 paper-facing semantic COMM substitution does. -/
 theorem rhoComm_bound_drop_agrees (channel : Pattern) (rest : List Pattern) :
-    applyBindingsForRule rhoCalc rhoCommRewrite
+    applyBindingsForRuleUsing rhoReflectionProfile rhoCommRewrite
         (rhoCommBindings channel (.apply "PDrop" [.bvar 0])
           (.apply "PZero" []) rest) =
       .collection .hashBag
@@ -378,7 +383,7 @@ theorem rhoComm_bound_drop_agrees_derived
     (payloadTyped :
       ProcWellSorted rhoReflectivePresentation free bound payload)
     (channel : Pattern) (rest : List Pattern) :
-    applyBindingsForRule rhoCalc rhoCommRewrite
+    applyBindingsForRuleUsing rhoReflectionProfile rhoCommRewrite
         (rhoCommBindings channel (.apply "PDrop" [.bvar 0]) payload rest) =
       .collection .hashBag
         (semanticCommSubst (.apply "PDrop" [.bvar 0]) payload :: rest)
@@ -396,7 +401,7 @@ theorem rhoComm_bound_drop_agrees_derived
 theorem rhoComm_quoted_code_agrees (channel : Pattern) (rest : List Pattern) :
     let quotedBody :=
       .apply "NQuote" [.apply "POutput" [.bvar 0, .apply "PZero" []]]
-    applyBindingsForRule rhoCalc rhoCommRewrite
+    applyBindingsForRuleUsing rhoReflectionProfile rhoCommRewrite
         (rhoCommBindings channel quotedBody (.apply "PZero" []) rest) =
       .collection .hashBag
         (semanticCommSubst quotedBody (.apply "PZero" []) :: rest) none := by
@@ -406,7 +411,7 @@ theorem rhoComm_quoted_code_agrees (channel : Pattern) (rest : List Pattern) :
 profile; compiling COMM does not introduce a free-Drop reduction. -/
 theorem rhoComm_free_drop_stays_inert (channel : Pattern) (rest : List Pattern) :
     let freeDrop := .apply "PDrop" [.apply "NQuote" [.apply "PZero" []]]
-    applyBindingsForRule rhoCalc rhoCommRewrite
+    applyBindingsForRuleUsing rhoReflectionProfile rhoCommRewrite
         (rhoCommBindings channel freeDrop (.apply "PZero" []) rest) =
       .collection .hashBag
         (semanticCommSubst freeDrop (.apply "PZero" []) :: rest) none := by

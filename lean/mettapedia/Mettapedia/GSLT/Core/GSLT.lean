@@ -180,6 +180,57 @@ def bisimSetoid : Setoid S.Term where
   r := S.Bisimilar
   iseqv := ⟨S.bisimilar_refl, fun h => S.bisimilar_symm h, fun h1 h2 => S.bisimilar_trans h1 h2⟩
 
+/-! ## Elaboration out of a GSLT -/
+
+/-- An elaboration interprets authored GSLT terms as payloads and cannot
+distinguish terms identified by either an authored equation or an authored
+rewrite.  Failure is explicit because not every well-formed source term need
+be admissible in a particular target context. -/
+structure Elaboration (source : GSLT) (Payload : Type*) where
+  elaborate : source.Term → Option Payload
+  equation : ∀ {left right}, source.Equiv left right →
+    elaborate left = elaborate right
+  rewrite : ∀ {left right}, source.Step left right →
+    elaborate left = elaborate right
+
+/-- An exact elaboration additionally quotes every payload back into the
+authored GSLT and recovers it on re-elaboration. -/
+structure ExactElaboration (source : GSLT) (Payload : Type*) extends
+    Elaboration source Payload where
+  quote : Payload → source.Term
+  elaborate_quote : ∀ payload, elaborate (quote payload) = some payload
+
+namespace Elaboration
+
+/-- A consumer of elaborated payloads can be staged after any elaboration
+without gaining authority over the authored theory. -/
+def map {source : GSLT} {Payload Artifact : Type*}
+    (elaboration : Elaboration source Payload) (compile : Payload → Artifact) :
+    Elaboration source Artifact where
+  elaborate := fun term => (elaboration.elaborate term).map compile
+  equation := by
+    intro left right equivalent
+    rw [elaboration.equation equivalent]
+  rewrite := by
+    intro left right step
+    rw [elaboration.rewrite step]
+
+end Elaboration
+
+namespace ExactElaboration
+
+/-- Canonical quotation is faithful: two distinct payloads cannot be hidden
+behind one authored term. -/
+theorem quote_injective {source : GSLT} {Payload : Type*}
+    (elaboration : ExactElaboration source Payload) :
+    Function.Injective elaboration.quote := by
+  intro first second equal
+  have interpreted := congrArg elaboration.elaborate equal
+  rw [elaboration.elaborate_quote, elaboration.elaborate_quote] at interpreted
+  exact Option.some.inj interpreted
+
+end ExactElaboration
+
 end GSLT
 
 /-! ## Morphisms of GSLTs

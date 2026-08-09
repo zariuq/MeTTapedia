@@ -255,17 +255,20 @@ private def cacheLanguage : LanguageDef :=
       dataConstructor "wex.B" 0,
       dataConstructor "wex.ResultSet" 1]
     equations := []
-    rewrites := []
-    judgments := [
+    rewrites := [] }
+
+private def cacheCalculus :
+    Mettapedia.GSLT.LanguageDef.InferenceExtension.ProofCalculus :=
+  { judgments := [
       { head := "wex1.Evals", arity := 2 },
       { head := "wex2.LenIs", arity := 2 },
       { head := "wex3.MayEval", arity := 2 },
       { head := "wex3.In", arity := 2 }]
-    inferenceRules := canonicalRules }
+    rules := canonicalRules }
 
 /-- Independently specified companion cache. -/
 def cache : Presentation :=
-  { language := cacheLanguage }
+  { language := cacheLanguage, calculus := cacheCalculus }
 
 def projectedCache : Except
     Mettapedia.Languages.MeTTa.Prime.MinimalCheckingPackage.ProjectionError
@@ -281,7 +284,7 @@ private theorem cache_language_valid : cache.language.validate = [] := by
 theorem cache_is_valid : cache.isValidV2 = true := by
   unfold Presentation.isValidV2 Presentation.isValidV1
   rw [cache_language_valid]
-  simp [cache, canonicalRules, canonicalSource, compileSource,
+  simp [cache, cacheCalculus, canonicalRules, canonicalSource, compileSource,
     compileDecl, compileEquation, compileClosure, cacheLanguage,
     dataConstructor, app, pvar, schema, Presentation.ruleIds,
     RuleSchema.isValidV1, RuleSchema.metavariableNames,
@@ -406,7 +409,8 @@ private theorem rule_mem_of_lookup {ruleInstance : RuleInstance}
     (lookup : validated.1.lookupRule? ruleInstance.ruleId = some rule) :
     rule ∈ canonicalRules := by
   unfold Presentation.lookupRule? at lookup
-  exact List.mem_of_find?_eq_some lookup
+  simpa [validated, cache, cacheCalculus] using
+    List.mem_of_find?_eq_some lookup
 
 /-- Every local application of a rule generated from the canonical source
 preserves the source's pattern-level meaning. -/
@@ -672,7 +676,8 @@ private theorem instantiate_add_zero (right : NatValue) :
     instantiateRule? validated
       (ruleInstance "wex1.add-z" [encodeNat right]) =
       some ([], encodeJudgment (.add .zero right) (.nat right)) := by
-  simp [instantiateRule?, Presentation.lookupRule?, validated, cache, cacheLanguage,
+  simp [instantiateRule?, Presentation.lookupRule?, validated, cache, cacheCalculus,
+    cacheLanguage,
     canonicalRules, canonicalSource, compileSource, compileDecl,
     compileEquation, compileClosure, schema, ruleInstance,
     argumentsValidAt, argumentValidAt, instantiateSchemas?,
@@ -686,7 +691,8 @@ private theorem instantiate_add_successor
         [encodeNat left, encodeNat right, encodeNat result]) =
       some ([encodeJudgment (.add left right) (.nat result)],
         encodeJudgment (.add (.succ left) right) (.nat (.succ result))) := by
-  simp [instantiateRule?, Presentation.lookupRule?, validated, cache, cacheLanguage,
+  simp [instantiateRule?, Presentation.lookupRule?, validated, cache, cacheCalculus,
+    cacheLanguage,
     canonicalRules, canonicalSource, compileSource, compileDecl,
     compileEquation, compileClosure, schema, ruleInstance,
     argumentsValidAt, argumentValidAt, instantiateSchemas?,
@@ -696,7 +702,8 @@ private theorem instantiate_add_successor
 private theorem instantiate_length_nil :
     instantiateRule? validated (ruleInstance "wex2.len-nil") =
       some ([], encodeJudgment (.length .nil) (.nat .zero)) := by
-  simp [instantiateRule?, Presentation.lookupRule?, validated, cache, cacheLanguage,
+  simp [instantiateRule?, Presentation.lookupRule?, validated, cache, cacheCalculus,
+    cacheLanguage,
     canonicalRules, canonicalSource, compileSource, compileDecl,
     compileEquation, compileClosure, schema, ruleInstance,
     argumentsValidAt, instantiateSchemas?, instantiateSchemasAt?,
@@ -710,7 +717,8 @@ private theorem instantiate_length_cons
         [encodeItem head, encodeList tail, encodeNat result]) =
       some ([encodeJudgment (.length tail) (.nat result)],
         encodeJudgment (.length (.cons head tail)) (.nat (.succ result))) := by
-  simp [instantiateRule?, Presentation.lookupRule?, validated, cache, cacheLanguage,
+  simp [instantiateRule?, Presentation.lookupRule?, validated, cache, cacheCalculus,
+    cacheLanguage,
     canonicalRules, canonicalSource, compileSource, compileDecl,
     compileEquation, compileClosure, schema, ruleInstance,
     argumentsValidAt, argumentValidAt, instantiateSchemas?,
@@ -721,7 +729,8 @@ private theorem instantiate_length_cons
 private theorem instantiate_pick_a :
     instantiateRule? validated (ruleInstance "wex3.pick-a") =
       some ([], encodeJudgment .pick (.pick .a)) := by
-  simp [instantiateRule?, Presentation.lookupRule?, validated, cache, cacheLanguage,
+  simp [instantiateRule?, Presentation.lookupRule?, validated, cache, cacheCalculus,
+    cacheLanguage,
     canonicalRules, canonicalSource, compileSource, compileDecl,
     compileEquation, compileClosure, schema, ruleInstance,
     argumentsValidAt, instantiateSchemas?, instantiateSchemasAt?,
@@ -731,7 +740,8 @@ private theorem instantiate_pick_a :
 private theorem instantiate_pick_b :
     instantiateRule? validated (ruleInstance "wex3.pick-b") =
       some ([], encodeJudgment .pick (.pick .b)) := by
-  simp [instantiateRule?, Presentation.lookupRule?, validated, cache, cacheLanguage,
+  simp [instantiateRule?, Presentation.lookupRule?, validated, cache, cacheCalculus,
+    cacheLanguage,
     canonicalRules, canonicalSource, compileSource, compileDecl,
     compileEquation, compileClosure, schema, ruleInstance,
     argumentsValidAt, instantiateSchemas?, instantiateSchemasAt?,

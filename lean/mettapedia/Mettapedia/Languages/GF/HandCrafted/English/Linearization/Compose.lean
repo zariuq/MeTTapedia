@@ -22,7 +22,7 @@ def copulaVP (renderComp : Agr → String) : EnglishVP :=
 def addCompPrep (prep : String) (s : String) : String :=
   if prep == "" then s else prep ++ " " ++ s
 
-def vpCompSurface (vp : EnglishVP) : String :=
+def vpCompText (vp : EnglishVP) : String :=
   joinWords [vp.inf, vp.particle, vp.compl (.AgP3Sg .Neutr), vp.adv]
 
 def applyV3Slash (v3 : EnglishV3Frame) (filled : String) (missingPrep : String) : EnglishVPSlash :=

@@ -81,7 +81,7 @@ theorem elaborateCheckedPureConversion_quoteAgreement
       quoteClosedTm (elaborateCheckedPureConversion cert targetType h).term := by
   exact (elaborateCheckedPureConversion cert targetType h).quoteAgreement
 
-/-- Small typed MeTTa-Core surface fragment whose atoms already have a shared
+/-- Small typed MeTTa-Core source fragment whose atoms already have a shared
 artifact view through `Core.Bridge.atomToPattern`.
 
 This is intentionally weaker than a direct PureKernel compilation target:
@@ -90,7 +90,7 @@ This is intentionally weaker than a direct PureKernel compilation target:
 - negative example: grounded atoms do not currently admit such a view and are
   excluded from this fragment
 -/
-structure SurfaceCoreTypedAtom where
+structure CoreTypedSyntaxAtom where
   space : CoreAtomspace
   atom : CoreAtom
   ty : CoreAtom
@@ -98,12 +98,12 @@ structure SurfaceCoreTypedAtom where
   pattern : Pattern
   pattern_eq : atomToPattern atom = some pattern
 
-namespace SurfaceCoreTypedAtom
+namespace CoreTypedSyntaxAtom
 
-def toArtifact (surface : SurfaceCoreTypedAtom) : SharedArtifact :=
-  ⟨surface.pattern⟩
+def toArtifact (sourceAtom : CoreTypedSyntaxAtom) : SharedArtifact :=
+  ⟨sourceAtom.pattern⟩
 
-def ofSymbol (space : CoreAtomspace) (s : String) : SurfaceCoreTypedAtom :=
+def ofSymbol (space : CoreAtomspace) (s : String) : CoreTypedSyntaxAtom :=
   { space := space
     atom := .symbol s
     ty := .symbol "Symbol"
@@ -111,7 +111,7 @@ def ofSymbol (space : CoreAtomspace) (s : String) : SurfaceCoreTypedAtom :=
     pattern := .apply s []
     pattern_eq := by simp [atomToPattern] }
 
-def ofVariable (space : CoreAtomspace) (v : String) : SurfaceCoreTypedAtom :=
+def ofVariable (space : CoreAtomspace) (v : String) : CoreTypedSyntaxAtom :=
   { space := space
     atom := .var v
     ty := .symbol "Variable"
@@ -124,7 +124,7 @@ def ofAnnotated
     (atom ty : CoreAtom) (pattern : Pattern)
     (hpattern : atomToPattern atom = some pattern)
     (hannot : Mettapedia.Languages.MeTTa.OSLFCore.typeAnnotation atom ty ∈ space.atoms) :
-    SurfaceCoreTypedAtom :=
+    CoreTypedSyntaxAtom :=
   { space := space
     atom := atom
     ty := ty
@@ -149,32 +149,32 @@ theorem ofAnnotated_atom (space : CoreAtomspace) (a ty : CoreAtom)
     (ha : Mettapedia.Languages.MeTTa.OSLFCore.typeAnnotation a ty ∈ space.atoms) :
     (ofAnnotated space a ty p hp ha).atom = a := rfl
 
-/-- The bridge from every `SurfaceCoreTypedAtom` to a `Pattern` is always
+/-- The bridge from every `CoreTypedSyntaxAtom` to a `Pattern` is always
 determined by `Core.Bridge.atomToPattern`. -/
-theorem pattern_from_bridge (surface : SurfaceCoreTypedAtom) :
-    atomToPattern surface.atom = some surface.pattern :=
-  surface.pattern_eq
+theorem pattern_from_bridge (sourceAtom : CoreTypedSyntaxAtom) :
+    atomToPattern sourceAtom.atom = some sourceAtom.pattern :=
+  sourceAtom.pattern_eq
 
-theorem toArtifact_pattern (surface : SurfaceCoreTypedAtom) :
-    surface.toArtifact.pattern = surface.pattern := rfl
+theorem toArtifact_pattern (sourceAtom : CoreTypedSyntaxAtom) :
+    sourceAtom.toArtifact.pattern = sourceAtom.pattern := rfl
 
-end SurfaceCoreTypedAtom
+end CoreTypedSyntaxAtom
 
 /-- Certificate for a typed MeTTa-Core atom that already has both a type
 judgment and a shared artifact view. -/
 structure CoreTypedCertificate where
-  surface : SurfaceCoreTypedAtom
+  sourceAtom : CoreTypedSyntaxAtom
   overlapClass : OverlapClass
   artifact : SharedArtifact
-  artifact_eq : artifact.pattern = surface.pattern
+  artifact_eq : artifact.pattern = sourceAtom.pattern
 
 def CoreTypedCertificate.backendName (_ : CoreTypedCertificate) : String :=
   "CoreTypes+Artifact"
 
-def certifySurfaceCoreTypedAtom (surface : SurfaceCoreTypedAtom) : CoreTypedCertificate :=
-  { surface := surface
+def certifyCoreTypedSyntaxAtom (sourceAtom : CoreTypedSyntaxAtom) : CoreTypedCertificate :=
+  { sourceAtom := sourceAtom
     overlapClass := OverlapClass.artifactOnly
-    artifact := surface.toArtifact
+    artifact := sourceAtom.toArtifact
     artifact_eq := rfl }
 
 /-- Certificate for the runtime branch. -/
@@ -220,10 +220,10 @@ def ElaboratedNode.artifact : ElaboratedNode → SharedArtifact
   | ElaboratedNode.oracleNode cert => cert.artifact
   | ElaboratedNode.metaNode cert => cert.artifact
 
-/-- Surface language for elaboration. -/
-inductive SurfaceNode where
-  | surfacePureClosed (term : SurfacePureTm 0)
-  | coreTypedAtom (surface : SurfaceCoreTypedAtom)
+/-- Source language for elaboration. -/
+inductive SyntaxNode where
+  | pureClosedSyntax (term : PureSyntaxTerm 0)
+  | coreTypedAtom (sourceAtom : CoreTypedSyntaxAtom)
   | heRuntimeRule (pattern : Pattern)
   | heRuntimeQuery (pattern : Pattern)
   | pettaRuntimeRule (pattern : Pattern)
@@ -236,13 +236,13 @@ inductive SurfaceNode where
       (args : List Pattern)
   | metaQuoted (description : String) (pattern : Pattern)
 
-/-- Elaborator from surface language into the elaborated MeTTa-Core. -/
-noncomputable def elaborate : SurfaceNode → ElaboratedNode
-  | SurfaceNode.surfacePureClosed term =>
-      ElaboratedNode.pureNode (certifySurfacePure term).pure
-  | SurfaceNode.coreTypedAtom surface =>
-      ElaboratedNode.coreTypedNode (certifySurfaceCoreTypedAtom surface)
-  | SurfaceNode.heRuntimeRule pattern =>
+/-- Elaborator from source language into the elaborated MeTTa-Core. -/
+noncomputable def elaborate : SyntaxNode → ElaboratedNode
+  | SyntaxNode.pureClosedSyntax term =>
+      ElaboratedNode.pureNode (certifyPureSyntax term).pure
+  | SyntaxNode.coreTypedAtom sourceAtom =>
+      ElaboratedNode.coreTypedNode (certifyCoreTypedSyntaxAtom sourceAtom)
+  | SyntaxNode.heRuntimeRule pattern =>
       ElaboratedNode.runtimeNode {
         dialect := heDialectProfile
         spec := heRuntimeSpec
@@ -250,7 +250,7 @@ noncomputable def elaborate : SurfaceNode → ElaboratedNode
         artifact := ⟨pattern⟩
         dialect_eq := rfl
       }
-  | SurfaceNode.heRuntimeQuery pattern =>
+  | SyntaxNode.heRuntimeQuery pattern =>
       ElaboratedNode.runtimeNode {
         dialect := heDialectProfile
         spec := heRuntimeSpec
@@ -258,7 +258,7 @@ noncomputable def elaborate : SurfaceNode → ElaboratedNode
         artifact := ⟨pattern⟩
         dialect_eq := rfl
       }
-  | SurfaceNode.pettaRuntimeRule pattern =>
+  | SyntaxNode.pettaRuntimeRule pattern =>
       ElaboratedNode.runtimeNode {
         dialect := pettaDialectProfile
         spec := pettaRuntimeSpec
@@ -266,7 +266,7 @@ noncomputable def elaborate : SurfaceNode → ElaboratedNode
         artifact := ⟨pattern⟩
         dialect_eq := rfl
       }
-  | SurfaceNode.pettaRuntimeQuery pattern =>
+  | SyntaxNode.pettaRuntimeQuery pattern =>
       ElaboratedNode.runtimeNode {
         dialect := pettaDialectProfile
         spec := pettaRuntimeSpec
@@ -274,7 +274,7 @@ noncomputable def elaborate : SurfaceNode → ElaboratedNode
         artifact := ⟨pattern⟩
         dialect_eq := rfl
       }
-  | SurfaceNode.fullLegacyRuntime pattern =>
+  | SyntaxNode.fullLegacyRuntime pattern =>
       ElaboratedNode.runtimeNode {
         dialect := fullLegacyDialectProfile
         spec := fullLegacyRuntimeSpec
@@ -282,7 +282,7 @@ noncomputable def elaborate : SurfaceNode → ElaboratedNode
         artifact := ⟨pattern⟩
         dialect_eq := rfl
       }
-  | SurfaceNode.oracleCall dialect opName resultDescriptor args =>
+  | SyntaxNode.oracleCall dialect opName resultDescriptor args =>
       ElaboratedNode.oracleNode {
         dialect := dialect
         opName := opName
@@ -290,66 +290,66 @@ noncomputable def elaborate : SurfaceNode → ElaboratedNode
         args := args
         artifact := ⟨Pattern.apply opName args⟩
       }
-  | SurfaceNode.metaQuoted description pattern =>
+  | SyntaxNode.metaQuoted description pattern =>
       ElaboratedNode.metaNode {
         description := description
         artifact := ⟨pattern⟩
       }
 
-theorem elaborate_surfacePureClosed_region (term : SurfacePureTm 0) :
-    ElaboratedNode.region (elaborate (SurfaceNode.surfacePureClosed term)) =
+theorem elaborate_pureClosedSyntax_region (term : PureSyntaxTerm 0) :
+    ElaboratedNode.region (elaborate (SyntaxNode.pureClosedSyntax term)) =
       ElaboratedRegion.pureKernelRegion := rfl
 
-theorem elaborate_coreTypedAtom_region (surface : SurfaceCoreTypedAtom) :
-    ElaboratedNode.region (elaborate (SurfaceNode.coreTypedAtom surface)) =
+theorem elaborate_coreTypedAtom_region (sourceAtom : CoreTypedSyntaxAtom) :
+    ElaboratedNode.region (elaborate (SyntaxNode.coreTypedAtom sourceAtom)) =
       ElaboratedRegion.pureKernelRegion := rfl
 
 theorem elaborate_heRuntimeRule_region (pattern : Pattern) :
-    ElaboratedNode.region (elaborate (SurfaceNode.heRuntimeRule pattern)) =
+    ElaboratedNode.region (elaborate (SyntaxNode.heRuntimeRule pattern)) =
       ElaboratedRegion.runtimeExecRegion := rfl
 
 theorem elaborate_pettaRuntimeQuery_region (pattern : Pattern) :
-    ElaboratedNode.region (elaborate (SurfaceNode.pettaRuntimeQuery pattern)) =
+    ElaboratedNode.region (elaborate (SyntaxNode.pettaRuntimeQuery pattern)) =
       ElaboratedRegion.runtimeExecRegion := rfl
 
 theorem elaborate_oracleCall_region
     (dialect : MeTTaDialectProfile) (opName resultDescriptor : String)
     (args : List Pattern) :
     ElaboratedNode.region
-        (elaborate (SurfaceNode.oracleCall dialect opName resultDescriptor args)) =
+        (elaborate (SyntaxNode.oracleCall dialect opName resultDescriptor args)) =
       ElaboratedRegion.oracleRegion := rfl
 
 theorem elaborate_metaQuoted_region
     (description : String) (pattern : Pattern) :
-    ElaboratedNode.region (elaborate (SurfaceNode.metaQuoted description pattern)) =
+    ElaboratedNode.region (elaborate (SyntaxNode.metaQuoted description pattern)) =
       ElaboratedRegion.metaRegion := rfl
 
-theorem elaborate_surfacePureClosed_artifact
-    (term : SurfacePureTm 0) :
-    (ElaboratedNode.artifact (elaborate (SurfaceNode.surfacePureClosed term))).pattern =
+theorem elaborate_pureClosedSyntax_artifact
+    (term : PureSyntaxTerm 0) :
+    (ElaboratedNode.artifact (elaborate (SyntaxNode.pureClosedSyntax term))).pattern =
       term.toClosedPattern := rfl
 
 theorem elaborate_coreTypedAtom_artifact
-    (surface : SurfaceCoreTypedAtom) :
-    (ElaboratedNode.artifact (elaborate (SurfaceNode.coreTypedAtom surface))).pattern =
-      surface.pattern := rfl
+    (sourceAtom : CoreTypedSyntaxAtom) :
+    (ElaboratedNode.artifact (elaborate (SyntaxNode.coreTypedAtom sourceAtom))).pattern =
+      sourceAtom.pattern := rfl
 
-theorem elaborate_surfacePureClosed_term
-    (term : SurfacePureTm 0) :
-    match elaborate (SurfaceNode.surfacePureClosed term) with
+theorem elaborate_pureClosedSyntax_term
+    (term : PureSyntaxTerm 0) :
+    match elaborate (SyntaxNode.pureClosedSyntax term) with
     | ElaboratedNode.pureNode cert => cert.term = term.toPureTm
     | _ => False := by
-  simp [elaborate, certifySurfacePure]
+  simp [elaborate, certifyPureSyntax]
 
-theorem elaborate_surfacePureClosed_quoteAgreement
-    (term : SurfacePureTm 0) :
-    (ElaboratedNode.artifact (elaborate (SurfaceNode.surfacePureClosed term))).pattern =
+theorem elaborate_pureClosedSyntax_quoteAgreement
+    (term : PureSyntaxTerm 0) :
+    (ElaboratedNode.artifact (elaborate (SyntaxNode.pureClosedSyntax term))).pattern =
       Mettapedia.Languages.MeTTa.PureKernel.PatternBridge.quoteClosedTm term.toPureTm := by
   exact term.toClosedPattern_eq_quoteClosedTm
 
 theorem elaborate_heRuntimeRule_backend
     (pattern : Pattern) :
-    match elaborate (SurfaceNode.heRuntimeRule pattern) with
+    match elaborate (SyntaxNode.heRuntimeRule pattern) with
     | ElaboratedNode.runtimeNode cert =>
         RuntimeLowering.backendName cert.lowering = "MORK/MM2"
     | _ => False := by
@@ -357,7 +357,7 @@ theorem elaborate_heRuntimeRule_backend
 
 theorem elaborate_pettaRuntimeRule_backend
     (pattern : Pattern) :
-    match elaborate (SurfaceNode.pettaRuntimeRule pattern) with
+    match elaborate (SyntaxNode.pettaRuntimeRule pattern) with
     | ElaboratedNode.runtimeNode cert =>
         RuntimeLowering.backendName cert.lowering = "MORK/MM2"
     | _ => False := by
@@ -365,7 +365,7 @@ theorem elaborate_pettaRuntimeRule_backend
 
 theorem elaborate_fullLegacyRuntime_auditOnly
     (pattern : Pattern) :
-    match elaborate (SurfaceNode.fullLegacyRuntime pattern) with
+    match elaborate (SyntaxNode.fullLegacyRuntime pattern) with
     | ElaboratedNode.runtimeNode cert =>
         RuntimeLowering.backendName cert.lowering = "audit-only"
     | _ => False := by
@@ -373,20 +373,20 @@ theorem elaborate_fullLegacyRuntime_auditOnly
 
 /-- Proof-of-concept certificate that a closed Pure term already has a shared
 artifact view at the MeTTaIL substrate. -/
-noncomputable def pureArtifactCertificate (term : SurfacePureTm 0) : SharedArtifact :=
-  ElaboratedNode.artifact (elaborate (SurfaceNode.surfacePureClosed term))
+noncomputable def pureArtifactCertificate (term : PureSyntaxTerm 0) : SharedArtifact :=
+  ElaboratedNode.artifact (elaborate (SyntaxNode.pureClosedSyntax term))
 
-theorem certifySurfaceCoreTypedAtom_overlapClass (surface : SurfaceCoreTypedAtom) :
-    (certifySurfaceCoreTypedAtom surface).overlapClass = OverlapClass.artifactOnly := rfl
+theorem certifyCoreTypedSyntaxAtom_overlapClass (sourceAtom : CoreTypedSyntaxAtom) :
+    (certifyCoreTypedSyntaxAtom sourceAtom).overlapClass = OverlapClass.artifactOnly := rfl
 
-theorem certifySurfaceCoreTypedAtom_overlapName (surface : SurfaceCoreTypedAtom) :
-    OverlapClass.name (certifySurfaceCoreTypedAtom surface).overlapClass = "artifact-only" := rfl
+theorem certifyCoreTypedSyntaxAtom_overlapName (sourceAtom : CoreTypedSyntaxAtom) :
+    OverlapClass.name (certifyCoreTypedSyntaxAtom sourceAtom).overlapClass = "artifact-only" := rfl
 
-theorem surfaceCoreTypedAtom_overlap_is_not_directExec
-    (surface : SurfaceCoreTypedAtom) :
-    (certifySurfaceCoreTypedAtom surface).overlapClass ≠
+theorem coreTypedSyntaxAtom_overlap_is_not_directExec
+    (sourceAtom : CoreTypedSyntaxAtom) :
+    (certifyCoreTypedSyntaxAtom sourceAtom).overlapClass ≠
       OverlapClass.directExec morkRuntimeExec0 := by
-  simp [certifySurfaceCoreTypedAtom]
+  simp [certifyCoreTypedSyntaxAtom]
 
 /-- Language-level summary imported from `PureRuntimeFrontier`: the current
 `mettaPure` rewrite system still does not satisfy the direct `R_exec₀`
@@ -403,8 +403,8 @@ already target the same theoremic backend seam, even though they remain
 different dialects. -/
 theorem runtimeBackendAgreement
     (hePattern pettaPattern : Pattern) :
-    match elaborate (SurfaceNode.heRuntimeRule hePattern),
-          elaborate (SurfaceNode.pettaRuntimeRule pettaPattern) with
+    match elaborate (SyntaxNode.heRuntimeRule hePattern),
+          elaborate (SyntaxNode.pettaRuntimeRule pettaPattern) with
     | ElaboratedNode.runtimeNode heCert, ElaboratedNode.runtimeNode pettaCert =>
         RuntimeLowering.backendName heCert.lowering =
           RuntimeLowering.backendName pettaCert.lowering

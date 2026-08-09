@@ -148,7 +148,7 @@ def lambdaCanonicalSection : ComputableCanonicalSection lambdaIGSLT where
     intro left right equivalent
     exact (presentedEquationSetoid_iff_eq_of_no_generators
       defaultBasePremises lambdaInteractivePresentation
-      (by rfl) (by rfl) left right).mp equivalent
+      (by rfl) left right).mp equivalent
 
 /-- Lambda equality is contextually trivial on the shared raw carrier as
 well as on the closed semantic carrier.  This is the control showing that a
@@ -163,27 +163,46 @@ def lambdaContextualSection : ComputableContextualSection lambdaIGSLT where
     exact
       (EquationSemantics.equationEquiv_iff_eq_of_no_generators
         (base := defaultBasePremises) (language := lambdaCalc)
-        (by rfl) (by rfl) left right).mp equivalent
+        (by rfl) left right).mp equivalent
   equivalentClosed := fun term =>
     (lambdaIGSLT.toGSLT.equations).iseqv.refl term
 
 /-- The sort-indexed open section is also identity for lambda: the authored
 presentation contains no static equation or reflective generator in any
 fiber. -/
-def lambdaOpenSection : ComputableOpenSection lambdaIGSLT where
+def lambdaOpenSection : ComputableReflectiveOpenSection lambdaIGSLT
+    (ReflectionExtension.emptyAdmitted lambdaCalc) where
   normalize := id
   equivalent := fun term => Relation.EqvGen.refl term
   complete := by
     intro free bound sort left right equivalent
-    exact (openEquationSetoid_iff_eq_of_no_generators lambdaIGSLT
-      (by rfl) (by rfl) left right).mp equivalent
+    apply Subtype.ext
+    exact
+      (ReflectiveEquationSemantics.equationEquiv_iff_eq_of_no_generators
+        (profile := .empty) (base := defaultBasePremises)
+        (language := lambdaCalc) (by rfl) (by rfl) left.1 right.1).mp
+        (reflectiveOpenEquationSetoid_to_equiv equivalent)
+  preservesReflectiveScope := by
+    intro free bound sort term safe
+    exact safe
 
 /-- Identity normalization preserves every ordinary-binder and reflective
 support boundary.  Lambda has no authored reflective quote, but carrying the
 generic theorem makes the Cost lift iterable without a special case. -/
 def lambdaContextualOpenSection :
-    ComputableContextualOpenSection lambdaIGSLT where
-  toComputableOpenSection := lambdaOpenSection
+    ComputableReflectiveFiberContextualSection lambdaIGSLT
+      (ReflectionExtension.emptyAdmitted lambdaCalc) where
+  normalize := id
+  equivalent := fun term => Relation.EqvGen.refl term
+  complete := by
+    intro free bound sort left right equivalent
+    apply Subtype.ext
+    exact
+      (ReflectiveEquationSemantics.equationEquiv_iff_eq_of_no_generators
+        (profile := .empty) (base := defaultBasePremises)
+        (language := lambdaCalc) (by rfl) (by rfl) left.1 right.1).mp
+        (ReflectiveEquationSemantics.reflectiveOpenPatternEquationSetoid_to_equiv
+          equivalent)
   preservesFreeVariableSupport := by
     intro free bound sort term name membership
     exact membership
@@ -212,7 +231,7 @@ constructor fragment selected by its interaction cut. -/
 theorem lambdaContextualOpenSection_preservesWrappedConstructors :
     lambdaContextualOpenSection.PreservesConstructors
       (· ∈ lambdaContinuationRetyping.wrappedLabels) := by
-  apply ComputableContextualOpenSection.preservesConstructors_id
+  apply ComputableReflectiveFiberContextualSection.preservesConstructors_id
     lambdaContextualOpenSection
   · intro free bound sort term
     rfl
@@ -222,7 +241,7 @@ non-principal constructor fragment selected by its interaction cut. -/
 theorem lambdaContextualOpenSection_preservesWrappedConstructorTyping :
     lambdaContextualOpenSection.PreservesTypedConstructors
       (· ∈ lambdaContinuationRetyping.wrappedLabels) := by
-  apply ComputableContextualOpenSection.preservesTypedConstructors_id
+  apply ComputableReflectiveFiberContextualSection.preservesTypedConstructors_id
     lambdaContextualOpenSection
   · intro free bound sort term
     rfl
@@ -331,15 +350,15 @@ theorem lambdaContinuationRetyping_equationsRetypable :
 /-- The lambda control authors no reflective presentation, so reflective
 Cost stability is vacuous. -/
 theorem lambdaContinuationRetyping_reflectivePresentationsRetypable :
-    ReflectivePresentationsRetypable lambdaContinuationRetyping := by
+    ReflectivePresentationsRetypable lambdaContinuationRetyping .empty := by
   intro declaration membership
-  simp [lambdaIGSLT, lambdaInteractivePresentation,
-    lambdaValidatedLanguageDef, lambdaCalc] at membership
+  simp at membership
 
 /-- The exact `lambdaCalc` definition therefore carries continued interaction
 structure. -/
 def lambdaCIGSLT : CIGSLT where
   theory := lambdaIGSLT
+  reflection := ReflectionExtension.emptyAdmitted lambdaCalc
   cut := lambdaInteractionCut
   openCanonical := lambdaContextualOpenSection
   continuationRetyping := lambdaContinuationRetyping

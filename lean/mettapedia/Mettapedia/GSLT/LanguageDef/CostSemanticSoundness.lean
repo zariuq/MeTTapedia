@@ -92,10 +92,11 @@ def CostSemanticTree.originalAvailable {source : CIGSLT}
     (tree : CostSemanticTree source targetFree available outer pattern type)
     (canonical : pattern.hasCanonicalBinderMetadata = true)
     (object : WellSorted.isObjectPattern pattern = true)
-    (scope : WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
+    (scope : ReflectiveWellSorted.ReflectiveScopeSafeAt
+      source.costWholeReflectionProfile
       available.length pattern) :
-    WellSorted.AvailableOpenPattern source.costWholeLanguage targetFree
-      available outer type where
+    WellSorted.AvailableOpenPattern source.costWholeReflectionProfile
+      source.costWholeLanguage targetFree available outer type where
   pattern := pattern
   typed := tree.originalTyped
   canonicalBinderMetadata := canonical
@@ -109,10 +110,11 @@ def CostSemanticTree.normalizedAvailable {source : CIGSLT}
     (tree : CostSemanticTree source targetFree available outer pattern type)
     (canonical : pattern.hasCanonicalBinderMetadata = true)
     (object : WellSorted.isObjectPattern pattern = true)
-    (scope : WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
+    (scope : ReflectiveWellSorted.ReflectiveScopeSafeAt
+      source.costWholeReflectionProfile
       available.length pattern) :
-    WellSorted.AvailableOpenPattern source.costWholeLanguage targetFree
-      available outer type :=
+    WellSorted.AvailableOpenPattern source.costWholeReflectionProfile
+      source.costWholeLanguage targetFree available outer type :=
   tree.normalize.result.toAvailableOpenPattern canonical object scope
 
 @[simp]
@@ -122,7 +124,8 @@ theorem CostSemanticTree.originalAvailable_pattern {source : CIGSLT}
     (tree : CostSemanticTree source targetFree available outer pattern type)
     (canonical : pattern.hasCanonicalBinderMetadata = true)
     (object : WellSorted.isObjectPattern pattern = true)
-    (scope : WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
+    (scope : ReflectiveWellSorted.ReflectiveScopeSafeAt
+      source.costWholeReflectionProfile
       available.length pattern) :
     (tree.originalAvailable canonical object scope).pattern = pattern :=
   rfl
@@ -134,7 +137,8 @@ theorem CostSemanticTree.normalizedAvailable_pattern {source : CIGSLT}
     (tree : CostSemanticTree source targetFree available outer pattern type)
     (canonical : pattern.hasCanonicalBinderMetadata = true)
     (object : WellSorted.isObjectPattern pattern = true)
-    (scope : WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
+    (scope : ReflectiveWellSorted.ReflectiveScopeSafeAt
+      source.costWholeReflectionProfile
       available.length pattern) :
     (tree.normalizedAvailable canonical object scope).pattern =
       tree.normalize.result.pattern :=
@@ -151,10 +155,11 @@ def CostSemanticTree.originalArgument {source : CIGSLT}
     (parameterType : WellSorted.parameterType? parameter = some type)
     (canonical : pattern.hasCanonicalBinderMetadata = true)
     (object : WellSorted.isObjectPattern pattern = true)
-    (scope : WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
+    (scope : ReflectiveWellSorted.ReflectiveScopeSafeAt
+      source.costWholeReflectionProfile
       available.length pattern) :
-    WellSorted.AvailableOpenArgument source.costWholeLanguage targetFree
-      available outer parameter type where
+    WellSorted.AvailableOpenArgument source.costWholeReflectionProfile
+      source.costWholeLanguage targetFree available outer parameter type where
   term := tree.originalAvailable canonical object scope
   representation := representation
   parameterType := parameterType
@@ -170,10 +175,11 @@ def CostSemanticTree.normalizedArgument {source : CIGSLT}
     (parameterType : WellSorted.parameterType? parameter = some type)
     (canonical : pattern.hasCanonicalBinderMetadata = true)
     (object : WellSorted.isObjectPattern pattern = true)
-    (scope : WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
+    (scope : ReflectiveWellSorted.ReflectiveScopeSafeAt
+      source.costWholeReflectionProfile
       available.length pattern) :
-    WellSorted.AvailableOpenArgument source.costWholeLanguage targetFree
-      available outer parameter type where
+    WellSorted.AvailableOpenArgument source.costWholeReflectionProfile
+      source.costWholeLanguage targetFree available outer parameter type where
   term := tree.normalizedAvailable canonical object scope
   representation :=
     tree.normalize.result.matchesParameterRepresentation parameter representation
@@ -190,11 +196,11 @@ def originalAvailable {source : CIGSLT}
       arguments parameters)
     (canonical : Pattern.hasCanonicalBinderMetadataList arguments = true)
     (objects : WellSorted.isObjectPatternList arguments = true)
-    (scope : ∀ presentation ∈ source.costWholeLanguage.reflectivePresentations,
+    (scope : ∀ presentation ∈ source.costWholeReflectionProfile.presentations,
       binderSafeListAt presentation.quoteConstructor available.length
         arguments = true) :
-    WellSorted.AvailableOpenArguments source.costWholeLanguage targetFree
-      available outer parameters :=
+    WellSorted.AvailableOpenArguments source.costWholeReflectionProfile
+      source.costWholeLanguage targetFree available outer parameters :=
   WellSorted.AvailableOpenArguments.ofCertificates trees.originalTyped canonical
     objects scope
 
@@ -207,11 +213,11 @@ def normalizedAvailable {source : CIGSLT}
       arguments parameters)
     (canonical : Pattern.hasCanonicalBinderMetadataList arguments = true)
     (objects : WellSorted.isObjectPatternList arguments = true)
-    (scope : ∀ presentation ∈ source.costWholeLanguage.reflectivePresentations,
+    (scope : ∀ presentation ∈ source.costWholeReflectionProfile.presentations,
       binderSafeListAt presentation.quoteConstructor available.length
         arguments = true) :
-    WellSorted.AvailableOpenArguments source.costWholeLanguage targetFree
-      available outer parameters :=
+    WellSorted.AvailableOpenArguments source.costWholeReflectionProfile
+      source.costWholeLanguage targetFree available outer parameters :=
   WellSorted.AvailableOpenArguments.ofCertificates trees.normalize.result.typed
     (trees.normalize.result.canonicalBinderMetadata canonical)
     (trees.normalize.result.objectPatterns objects)
@@ -228,7 +234,7 @@ theorem originalAvailable_patterns {source : CIGSLT}
       arguments parameters)
     (canonical : Pattern.hasCanonicalBinderMetadataList arguments = true)
     (objects : WellSorted.isObjectPatternList arguments = true)
-    (scope : ∀ presentation ∈ source.costWholeLanguage.reflectivePresentations,
+    (scope : ∀ presentation ∈ source.costWholeReflectionProfile.presentations,
       binderSafeListAt presentation.quoteConstructor available.length
         arguments = true) :
     (trees.originalAvailable canonical objects scope).patterns = arguments :=
@@ -243,7 +249,7 @@ theorem normalizedAvailable_patterns {source : CIGSLT}
       arguments parameters)
     (canonical : Pattern.hasCanonicalBinderMetadataList arguments = true)
     (objects : WellSorted.isObjectPatternList arguments = true)
-    (scope : ∀ presentation ∈ source.costWholeLanguage.reflectivePresentations,
+    (scope : ∀ presentation ∈ source.costWholeReflectionProfile.presentations,
       binderSafeListAt presentation.quoteConstructor available.length
         arguments = true) :
     (trees.normalizedAvailable canonical objects scope).patterns =
@@ -263,11 +269,11 @@ def originalAvailable {source : CIGSLT}
       elementType)
     (canonical : Pattern.hasCanonicalBinderMetadataList elements = true)
     (objects : WellSorted.isObjectPatternList elements = true)
-    (scope : ∀ presentation ∈ source.costWholeLanguage.reflectivePresentations,
+    (scope : ∀ presentation ∈ source.costWholeReflectionProfile.presentations,
       binderSafeListAt presentation.quoteConstructor available.length
         elements = true) :
-    WellSorted.AvailableOpenElements source.costWholeLanguage targetFree
-      available outer elementType :=
+    WellSorted.AvailableOpenElements source.costWholeReflectionProfile
+      source.costWholeLanguage targetFree available outer elementType :=
   WellSorted.AvailableOpenElements.ofCertificates trees.originalTyped canonical
     objects scope
 
@@ -280,11 +286,11 @@ def normalizedAvailable {source : CIGSLT}
       elementType)
     (canonical : Pattern.hasCanonicalBinderMetadataList elements = true)
     (objects : WellSorted.isObjectPatternList elements = true)
-    (scope : ∀ presentation ∈ source.costWholeLanguage.reflectivePresentations,
+    (scope : ∀ presentation ∈ source.costWholeReflectionProfile.presentations,
       binderSafeListAt presentation.quoteConstructor available.length
         elements = true) :
-    WellSorted.AvailableOpenElements source.costWholeLanguage targetFree
-      available outer elementType :=
+    WellSorted.AvailableOpenElements source.costWholeReflectionProfile
+      source.costWholeLanguage targetFree available outer elementType :=
   WellSorted.AvailableOpenElements.ofCertificates trees.normalize.result.typed
     (trees.normalize.result.canonicalBinderMetadata canonical)
     (trees.normalize.result.objectPatterns objects)
@@ -301,7 +307,7 @@ theorem originalAvailable_patterns {source : CIGSLT}
       elementType)
     (canonical : Pattern.hasCanonicalBinderMetadataList elements = true)
     (objects : WellSorted.isObjectPatternList elements = true)
-    (scope : ∀ presentation ∈ source.costWholeLanguage.reflectivePresentations,
+    (scope : ∀ presentation ∈ source.costWholeReflectionProfile.presentations,
       binderSafeListAt presentation.quoteConstructor available.length
         elements = true) :
     (trees.originalAvailable canonical objects scope).patterns = elements :=
@@ -316,7 +322,7 @@ theorem normalizedAvailable_patterns {source : CIGSLT}
       elementType)
     (canonical : Pattern.hasCanonicalBinderMetadataList elements = true)
     (objects : WellSorted.isObjectPatternList elements = true)
-    (scope : ∀ presentation ∈ source.costWholeLanguage.reflectivePresentations,
+    (scope : ∀ presentation ∈ source.costWholeReflectionProfile.presentations,
       binderSafeListAt presentation.quoteConstructor available.length
         elements = true) :
     (trees.normalizedAvailable canonical objects scope).patterns =
@@ -355,6 +361,7 @@ theorem normalize_actAvailable_equationSetoid
   let mappedAvailable := mappedAvailableRaw.castFree frame.transport.freeContext
   have mappedAvailableSafe :
       mappedAvailable.typed.ReflectiveSupportSafeAt
+        source.costWholeReflectionProfile
         frame.boundaryTable.restorationSupport frame.targetBound :=
     mappedAvailableRaw.castFree_supportSafe frame.transport.freeContext
       (state.current.mappedThickenedAvailable_supportSafe frame.thinning)
@@ -362,8 +369,9 @@ theorem normalize_actAvailable_equationSetoid
     stable frame.thinning normalizedAssignment frame.transport.freeContext
       frame.transport.reflectiveSupport state.canonicalPath
   have assignmentStep := mappedAvailable.equationSetoid_substitute_pointwise
-    source.costWholeLanguage_validate mappedAvailableSafe normalizedAssignment
-      currentAssignment valuesEquivalent
+    source.costWholeLanguage_validate
+      source.costWholeReflectionProfile_validate mappedAvailableSafe
+      normalizedAssignment currentAssignment valuesEquivalent
   have leftEndpoint :
       state.current.normalize.actAvailable frame.thinning normalizedAssignment
           frame.transport.freeContext frame.transport.reflectiveSupport =

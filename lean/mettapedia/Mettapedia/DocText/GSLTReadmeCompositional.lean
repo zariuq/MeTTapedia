@@ -384,22 +384,22 @@ theorem gslt_heading_image_witness
     parseGSLTHeadingLine? renderGSLTHeading gsltReadmeBlocks
     gslt_heading_images hMem
 
-private def insertSurfaceBucket (acc : List (String × List GSLTClaim)) (surface : String)
+private def insertRenderedBucket (acc : List (String × List GSLTClaim)) (rendered : String)
     (c : GSLTClaim) : List (String × List GSLTClaim) :=
   match acc with
-  | [] => [(surface, [c])]
+  | [] => [(rendered, [c])]
   | (k, cs) :: rest =>
-      if k = surface then
+      if k = rendered then
         (k, c :: cs) :: rest
       else
-        (k, cs) :: insertSurfaceBucket rest surface c
+        (k, cs) :: insertRenderedBucket rest rendered c
 
-def claimSurfaceBuckets : List (String × List GSLTClaim) :=
+def claimRenderedBuckets : List (String × List GSLTClaim) :=
   allGSLTClaims.foldl
-    (fun acc c => insertSurfaceBucket acc (renderGSLTClaim c) c) []
+    (fun acc c => insertRenderedBucket acc (renderGSLTClaim c) c) []
 
-def ambiguousClaimSurfaces : List (String × List GSLTClaim) :=
-  claimSurfaceBuckets.filter (fun p => p.snd.length > 1)
+def ambiguousClaimRenderings : List (String × List GSLTClaim) :=
+  claimRenderedBuckets.filter (fun p => p.snd.length > 1)
 
 #eval
   let fails := allGSLTClaims.filter (fun c =>
@@ -427,9 +427,9 @@ def ambiguousClaimSurfaces : List (String × List GSLTClaim) :=
     s!"GSLT structured parse failures: {repr fails}"
 
 #eval
-  if ambiguousClaimSurfaces.isEmpty then
-    "GSLT ambiguity diagnostic: no duplicate surfaces across distinct claims"
+  if ambiguousClaimRenderings.isEmpty then
+    "GSLT ambiguity diagnostic: no duplicate renderings across distinct claims"
   else
-    s!"GSLT ambiguity diagnostic: duplicate surfaces found: {repr ambiguousClaimSurfaces}"
+    s!"GSLT ambiguity diagnostic: duplicate renderings found: {repr ambiguousClaimRenderings}"
 
 end Mettapedia.DocText.GSLTReadmeCompositional

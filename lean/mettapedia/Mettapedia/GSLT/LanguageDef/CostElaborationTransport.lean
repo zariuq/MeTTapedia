@@ -1,5 +1,6 @@
 import Mettapedia.GSLT.LanguageDef.CostElaborationDecoration
 import Mettapedia.GSLT.LanguageDef.EquationOccurrence
+import Mettapedia.GSLT.LanguageDef.ReflectiveEquationOccurrence
 
 /-!
 # Fiber transport for proof-relevant Cost decorations
@@ -140,24 +141,29 @@ theorem erase_mapCostStatic (source : CIGSLT) (color : CostStaticColor)
 
 end EquationSemantics.AuthoredEquationInstanceWitness
 
-namespace EquationSemantics.AuthoredGeneratorWitness
+namespace ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness
 
 /-- Map one exact authored contextual generator occurrence into either static
 Cost copy.  Equation and reflective identities are transported, rather than
 forgotten and existentially reconstructed afterward. -/
 def mapCostStatic (source : CIGSLT) (color : CostStaticColor)
     {left right : Pattern}
-    (witness : AuthoredGeneratorWitness defaultBasePremises
-      source.theory.presentation.presentation.language left right) :
-    AuthoredGeneratorWitness defaultBasePremises source.costWholeLanguage
+    (witness : ReflectiveAuthoredGeneratorWitness source.reflection.1
+      defaultBasePremises source.theory.presentation.presentation.language
+        left right) :
+    ReflectiveAuthoredGeneratorWitness source.costWholeReflectionProfile
+      defaultBasePremises source.costWholeLanguage
       (mapPattern (color.symbols source) left)
       (mapPattern (color.symbols source) right) := by
   cases witness with
-  | @equation context redex contractum instanceWitness =>
+  | core witness =>
+    cases witness with
+    | @equation context redex contractum instanceWitness =>
       rw [← CIGSLT.mapOneHoleContext_fill,
         ← CIGSLT.mapOneHoleContext_fill]
-      exact .equation (CIGSLT.mapOneHoleContext (color.symbols source) context)
-        (instanceWitness.mapCostStatic source color)
+      exact .core (.equation
+        (CIGSLT.mapOneHoleContext (color.symbols source) context)
+        (instanceWitness.mapCostStatic source color))
   | @reflective context declaration redex contractum representatives =>
       rw [← CIGSLT.mapOneHoleContext_fill,
         ← CIGSLT.mapOneHoleContext_fill]
@@ -172,8 +178,9 @@ def mapCostStatic (source : CIGSLT) (color : CostStaticColor)
 /-- Support erasure commutes with the proof-relevant Cost embedding. -/
 theorem erase_mapCostStatic (source : CIGSLT) (color : CostStaticColor)
     {left right : Pattern}
-    (witness : AuthoredGeneratorWitness defaultBasePremises
-      source.theory.presentation.presentation.language left right) :
+    (witness : ReflectiveAuthoredGeneratorWitness source.reflection.1
+      defaultBasePremises source.theory.presentation.presentation.language
+        left right) :
     (witness.mapCostStatic source color).erase =
       equationContextStep_mapCostStatic source color witness.erase :=
   Subsingleton.elim _ _
@@ -185,12 +192,14 @@ projection. -/
 theorem mapCostStatic_renameAmbientBVarsAt
     (source : CIGSLT) (color : CostStaticColor)
     (stable : WellSorted.SupportedEquationAmbientRenamingStable
-      source.costWholeLanguage)
+      (profile := source.costWholeReflectionProfile) source.costWholeLanguage)
     (rename : Nat → Nat) (strict : StrictMono rename) (depth : Nat)
     {left right : Pattern}
-    (witness : AuthoredGeneratorWitness defaultBasePremises
-      source.theory.presentation.presentation.language left right) :
-    EquationEquiv defaultBasePremises source.costWholeLanguage
+    (witness : ReflectiveAuthoredGeneratorWitness source.reflection.1
+      defaultBasePremises source.theory.presentation.presentation.language
+        left right) :
+    ReflectiveEquationEquiv source.costWholeReflectionProfile
+      defaultBasePremises source.costWholeLanguage
       (ContextSubstitution.renameAmbientBVarsAt rename depth
         (mapPattern (color.symbols source) left))
       (ContextSubstitution.renameAmbientBVarsAt rename depth
@@ -203,13 +212,15 @@ used by Cost static regions. -/
 theorem mapCostStatic_thickenAmbientBVars
     (source : CIGSLT) (color : CostStaticColor)
     (stable : WellSorted.SupportedEquationAmbientRenamingStable
-      source.costWholeLanguage)
+      (profile := source.costWholeReflectionProfile) source.costWholeLanguage)
     {sourceBound targetBound : List TypeExpr}
     (thinning : CostStaticBinderThinning source color sourceBound targetBound)
     (depth : Nat) {left right : Pattern}
-    (witness : AuthoredGeneratorWitness defaultBasePremises
-      source.theory.presentation.presentation.language left right) :
-    EquationEquiv defaultBasePremises source.costWholeLanguage
+    (witness : ReflectiveAuthoredGeneratorWitness source.reflection.1
+      defaultBasePremises source.theory.presentation.presentation.language
+        left right) :
+    ReflectiveEquationEquiv source.costWholeReflectionProfile
+      defaultBasePremises source.costWholeLanguage
       (thinning.thickenAmbientBVars depth
         (mapPattern (color.symbols source) left))
       (thinning.thickenAmbientBVars depth
@@ -224,23 +235,28 @@ substitution half of the Cost action before ambient binder reinsertion. -/
 theorem mapCostStatic_substitute
     (source : CIGSLT) (color : CostStaticColor)
     (stable : WellSorted.SupportedEquationSubstitutionStable
-      source.costWholeLanguage)
+      (profile := source.costWholeReflectionProfile) source.costWholeLanguage)
     {sourceFree targetFree : WellSorted.FreeTypeContext}
     {support : ContextSupport.Support} {bound : List TypeExpr}
     {type : TypeExpr} {left right : Pattern}
     (leftEndpoint : WellSorted.SupportSafeOpenPattern
-      source.costWholeLanguage sourceFree support bound type)
+      source.costWholeReflectionProfile source.costWholeLanguage sourceFree
+        support bound type)
     (rightEndpoint : WellSorted.SupportSafeOpenPattern
-      source.costWholeLanguage sourceFree support bound type)
+      source.costWholeReflectionProfile source.costWholeLanguage sourceFree
+        support bound type)
     (left_eq : leftEndpoint.term.1 =
       mapPattern (color.symbols source) left)
     (right_eq : rightEndpoint.term.1 =
       mapPattern (color.symbols source) right)
     (assignment : WellSorted.SupportedOpenAssignment
-      source.costWholeLanguage sourceFree targetFree support)
-    (witness : AuthoredGeneratorWitness defaultBasePremises
-      source.theory.presentation.presentation.language left right) :
-    EquationEquiv defaultBasePremises source.costWholeLanguage
+      source.costWholeReflectionProfile source.costWholeLanguage sourceFree
+        targetFree support)
+    (witness : ReflectiveAuthoredGeneratorWitness source.reflection.1
+      defaultBasePremises source.theory.presentation.presentation.language
+        left right) :
+    ReflectiveEquationEquiv source.costWholeReflectionProfile
+      defaultBasePremises source.costWholeLanguage
       (leftEndpoint.substitute assignment).1
       (rightEndpoint.substitute assignment).1 := by
   apply WellSorted.SupportSafeOpenPattern.equationGenerator_substitute stable
@@ -248,7 +264,7 @@ theorem mapCostStatic_substitute
   simpa [WellSorted.SupportSafeOpenPattern.equationGenerator, left_eq,
     right_eq] using (witness.mapCostStatic source color).erase
 
-end EquationSemantics.AuthoredGeneratorWitness
+end ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness
 
 namespace CostRegionBoundary
 
@@ -1022,8 +1038,8 @@ edge to be traversed in reverse; it does not require a second primitive edge
 that recreates discarded evidence. -/
 inductive IntroducedByGenerator {source : CIGSLT} :
     ∀ {left right : Pattern},
-      EquationSemantics.AuthoredGeneratorWitness
-          defaultBasePremises
+      ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness
+          source.reflection.1 defaultBasePremises
           source.theory.presentation.presentation.language left right →
         CostStaticChoiceOccurrence source → Prop where
   | equation (context : OneHoleContext) {redex contractum : Pattern}
@@ -1037,17 +1053,17 @@ inductive IntroducedByGenerator {source : CIGSLT} :
         EquationSemantics.AuthoredEquationInstanceWitness.TargetApplicationTemplate
         instanceWitness relative sourceLabel arguments) :
       IntroducedByGenerator
-        (EquationSemantics.AuthoredGeneratorWitness.equation context
-          instanceWitness)
+        (.core (EquationSemantics.AuthoredGeneratorWitness.equation context
+          instanceWitness))
         (.application (context.comp relative) sourceLabel arguments constructor)
 
 /-- The exact template witness selects the claimed occurrence in the target
 endpoint of the authored generator. -/
 theorem IntroducedByGenerator.selects {source : CIGSLT}
     {left right : Pattern}
-    {generator : EquationSemantics.AuthoredGeneratorWitness
-      defaultBasePremises source.theory.presentation.presentation.language
-      left right}
+    {generator : ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness
+      source.reflection.1 defaultBasePremises
+        source.theory.presentation.presentation.language left right}
     {occurrence : CostStaticChoiceOccurrence source}
     (introduced : IntroducedByGenerator generator occurrence) :
     Selects occurrence.sitePattern occurrence.position right := by
@@ -1067,9 +1083,9 @@ theorem IntroducedByGenerator.selects {source : CIGSLT}
 by the contextual equation generator. -/
 theorem IntroducedByGenerator.inRedex {source : CIGSLT}
     {left right : Pattern}
-    {generator : EquationSemantics.AuthoredGeneratorWitness
-      defaultBasePremises source.theory.presentation.presentation.language
-      left right}
+    {generator : ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness
+      source.reflection.1 defaultBasePremises
+        source.theory.presentation.presentation.language left right}
     {occurrence : CostStaticChoiceOccurrence source}
     (introduced : IntroducedByGenerator generator occurrence) :
     ∃ inner : OneHoleContext,
@@ -1082,9 +1098,9 @@ theorem IntroducedByGenerator.inRedex {source : CIGSLT}
 reflective witnesses have no creation constructor. -/
 theorem IntroducedByGenerator.generator_isEquation {source : CIGSLT}
     {left right : Pattern}
-    {generator : EquationSemantics.AuthoredGeneratorWitness
-      defaultBasePremises source.theory.presentation.presentation.language
-      left right}
+    {generator : ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness
+      source.reflection.1 defaultBasePremises
+        source.theory.presentation.presentation.language left right}
     {occurrence : CostStaticChoiceOccurrence source}
     (introduced : IntroducedByGenerator generator occurrence) :
     generator.isEquation = true := by
@@ -1098,26 +1114,28 @@ theorem not_introducedByGenerator_reflective {source : CIGSLT}
     (context : OneHoleContext) {declaration : ReflectivePresentationDecl}
     {left right : Pattern}
     (membership : declaration ∈
-      source.theory.presentation.presentation.language.reflectivePresentations)
+      source.reflection.1.presentations)
     (representatives :
       Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize declaration left =
         Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize declaration right)
     (occurrence : CostStaticChoiceOccurrence source) :
     ¬ IntroducedByGenerator
-      (EquationSemantics.AuthoredGeneratorWitness.reflective context
+      (ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness.reflective
+        context
         ⟨declaration, membership⟩ representatives) occurrence := by
   intro introduced
   have equation := introduced.generator_isEquation
-  simp [EquationSemantics.AuthoredGeneratorWitness.isEquation] at equation
+  simp [ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness.isEquation]
+    at equation
 
 /-- A retained choice lies in the redex zone of an exact authored contextual
 generator.  Choices outside this zone belong to the unchanged context and
 must have residual origins; choices inside may be introduced or removed by
 the authored rule template. -/
 def InRedex {source : CIGSLT} {left right : Pattern}
-    (generator : EquationSemantics.AuthoredGeneratorWitness
-      defaultBasePremises source.theory.presentation.presentation.language
-      left right)
+    (generator : ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness
+      source.reflection.1 defaultBasePremises
+        source.theory.presentation.presentation.language left right)
     (occurrence : CostStaticChoiceOccurrence source) : Prop :=
   ∃ inner : OneHoleContext,
     occurrence.position = generator.redexContext.comp inner
@@ -1154,9 +1172,10 @@ structure CostStaticPlanLift (source : CIGSLT) where
   generatorWitness :
     ∀ {first second sourceBoundaries targetBoundaries},
       Edge first second sourceBoundaries targetBoundaries →
-        EquationSemantics.AuthoredGeneratorWitness
-          defaultBasePremises source.theory.presentation.presentation.language
-          first.abstractPattern second.abstractPattern
+        ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness
+          source.reflection.1 defaultBasePremises
+            source.theory.presentation.presentation.language
+              first.abstractPattern second.abstractPattern
   sourceBoundaries_eq :
     ∀ {first second sourceBoundaries targetBoundaries},
       Edge first second sourceBoundaries targetBoundaries →
@@ -1219,8 +1238,9 @@ def erasesToSourceGenerator {source : CIGSLT}
     {sourceBoundaries targetBoundaries :
       List (CostRegionBoundary × CostTreeDecoration source)}
     (edge : staticLift.Edge first second sourceBoundaries targetBoundaries) :
-    EquationSemantics.EquationContextStep defaultBasePremises
-      source.theory.presentation.presentation.language
+    ReflectiveEquationSemantics.ReflectiveEquationContextStep
+      source.reflection.1 defaultBasePremises
+        source.theory.presentation.presentation.language
       first.abstractPattern second.abstractPattern :=
   (staticLift.generatorWitness edge).erase
 
@@ -1235,8 +1255,9 @@ def mappedGeneratorWitness {source : CIGSLT}
     {sourceBoundaries targetBoundaries :
       List (CostRegionBoundary × CostTreeDecoration source)}
     (edge : staticLift.Edge first second sourceBoundaries targetBoundaries) :
-    EquationSemantics.AuthoredGeneratorWitness defaultBasePremises
-      source.costWholeLanguage
+    ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness
+      source.costWholeReflectionProfile defaultBasePremises
+        source.costWholeLanguage
       (mapPattern (color.symbols source) first.abstractPattern)
       (mapPattern (color.symbols source) second.abstractPattern) :=
   (staticLift.generatorWitness edge).mapCostStatic source color
@@ -1253,7 +1274,7 @@ theorem mappedGeneratorWitness_erase {source : CIGSLT}
     (staticLift.mappedGeneratorWitness color edge).erase =
       equationContextStep_mapCostStatic source color
         (staticLift.erasesToSourceGenerator edge) :=
-  EquationSemantics.AuthoredGeneratorWitness.erase_mapCostStatic
+  ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness.erase_mapCostStatic
     source color (staticLift.generatorWitness edge)
 
 /-- Exact template provenance implies the coarser positional redex fact. -/
@@ -1284,9 +1305,11 @@ structure CostStaticPlanEdge (source : CIGSLT)
     (sourceBoundaries targetBoundaries :
       List (CostRegionBoundary × CostTreeDecoration source)) where
   sameFiber : CostStaticPlanDecoration.SameFiber first second
-  generatorWitness : EquationSemantics.AuthoredGeneratorWitness
-    defaultBasePremises source.theory.presentation.presentation.language
-      first.abstractPattern second.abstractPattern
+  generatorWitness :
+    ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness
+      source.reflection.1 defaultBasePremises
+        source.theory.presentation.presentation.language
+          first.abstractPattern second.abstractPattern
   sourceBoundaryInventory : first.boundaries =
     sourceBoundaries.map (fun boundary => boundary.1)
   targetBoundaryInventory : second.boundaries =
@@ -1700,7 +1723,7 @@ and finite boundary children. -/
             ∃ kind, source.declaredCostConstructorRole constructor =
               .apparatus kind)
         (ordinary : ReflectiveContextSupport.isQuoteConstructor
-          source.costWholeLanguage rule.label = false)
+          source.costWholeReflectionProfile rule.label = false)
         (leftChildren : CostRegionArgumentTrees source targetFree available
           outer leftArguments rule.params)
         (rightChildren : CostRegionArgumentTrees source targetFree available
@@ -1726,7 +1749,7 @@ and finite boundary children. -/
             ∃ kind, source.declaredCostConstructorRole constructor =
               .apparatus kind)
         (quoted : ReflectiveContextSupport.isQuoteConstructor
-          source.costWholeLanguage rule.label = true)
+          source.costWholeReflectionProfile rule.label = true)
         (leftChildren : CostRegionArgumentTrees source targetFree []
           (available ++ outer) leftArguments rule.params)
         (rightChildren : CostRegionArgumentTrees source targetFree []
@@ -2246,14 +2269,15 @@ def FiberEquation
       right) : Prop :=
   ∀ (leftCanonical : leftPattern.hasCanonicalBinderMetadata = true)
     (leftObject : WellSorted.isObjectPattern leftPattern = true)
-    (leftScope : WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
-      leftAvailable.length leftPattern)
+    (leftScope : ReflectiveWellSorted.ReflectiveScopeSafeAt
+      source.costWholeReflectionProfile leftAvailable.length leftPattern)
     (rightCanonical : rightPattern.hasCanonicalBinderMetadata = true)
     (rightObject : WellSorted.isObjectPattern rightPattern = true)
-    (rightScope : WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
-      rightAvailable.length rightPattern),
+    (rightScope : ReflectiveWellSorted.ReflectiveScopeSafeAt
+      source.costWholeReflectionProfile rightAvailable.length rightPattern),
     let fiber := transport.sameFiber
     (WellSorted.AvailableOpenPattern.equationSetoid
+      (profile := source.costWholeReflectionProfile)
       source.costWholeLanguage targetFree leftAvailable leftOuter leftType).r
       (left.originalAvailableOpenPattern leftCanonical leftObject leftScope)
       ((right.originalAvailableOpenPattern rightCanonical rightObject
@@ -2330,9 +2354,11 @@ def CostStructuralTransportSound (source : CIGSLT)
     {left right : CostElabTerm source targetFree targetBound targetSort},
     CostRegionTreeTransport source staticLift targetFree
         left.2.tree right.2.tree →
-      (openEquationSetoid source.costIGSLT targetFree targetBound
-        targetSort).r (CostOpenElaboration.erase left)
-          (CostOpenElaboration.erase right)
+      (ReflectiveEquationSemantics.reflectiveOpenPatternEquationSetoid
+        source.costWholeReflectionProfile defaultBasePremises
+          source.costWholeLanguage targetFree targetBound
+            (.base targetSort.1)).r (CostOpenElaboration.erase left)
+              (CostOpenElaboration.erase right)
 
 /-- A concrete Cost elaboration path lift.  Its elementary evidence is only
 the recursive proof-relevant transport; semantic support is the separately
@@ -2340,19 +2366,19 @@ proved erasure theorem, never an independently chosen target generator. -/
 def costStructuralPathLift (source : CIGSLT)
     (staticLift : CostStaticPlanLift source)
     (sound : source.CostStructuralTransportSound staticLift) :
-    OpenElaborationPathLift source.costOpenElaborationCarrier where
+    ReflectiveOpenElaborationPathLift source.costOpenElaborationCarrier where
   step := fun _targetFree _targetBound _targetSort left right =>
     CostRegionTreeTransport source staticLift _targetFree
       left.2.tree right.2.tree
-  erasesToAuthoredPath := fun transport => sound transport
+  erasesToReflectivePath := fun transport => sound transport
 
 /-- The least proof-relevant Cost equation semantics generated by one lawful
 static-plan lift and the recursive neutral-frame transport. -/
 def costStructuralSemantics (source : CIGSLT)
     (staticLift : CostStaticPlanLift source)
     (sound : source.CostStructuralTransportSound staticLift) :
-    OpenElaborationSemantics source.costOpenElaborationCarrier :=
-  OpenElaborationSemantics.ofPathLift
+    ReflectiveOpenElaborationSemantics source.costOpenElaborationCarrier :=
+  ReflectiveOpenElaborationSemantics.ofPathLift
     (source.costStructuralPathLift staticLift sound)
 
 /-- Structural Cost equivalence is always sound for compact authored
@@ -2370,7 +2396,7 @@ theorem costStructuralSemantics_implies_compactObservation (source : CIGSLT)
         targetFree targetBound targetSort left right) :
     (source.costOpenElaborationCarrier.compactObservationSetoid
       targetFree targetBound targetSort).r left right :=
-  (source.costStructuralSemantics staticLift sound).erasesToAuthored equivalent
+  (source.costStructuralSemantics staticLift sound).erasesToReflective equivalent
 
 /-- Every path in structural Cost semantics retains its root identity.  In
 particular, compactly overlapping base and wrapped roots remain distinct. -/

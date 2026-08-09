@@ -6,7 +6,7 @@ import Mettapedia.OSLF.MeTTaIL.Substitution
 # PeTTa Scope Contract
 
 First concrete scope-contract instance for the shared MeTTa binder/scope
-surface.
+interface.
 
 This artifact classifies local binder forms and scoped payload forms so Rust
 does not have to recover free-variable semantics by head-specific walkers.
@@ -14,7 +14,7 @@ does not have to recover free-variable semantics by head-specific walkers.
 Positive example:
 - `let`, `chain`, and `let*` expose binder/value/body positions explicitly.
 - `add-atom` / `remove-atom` with `(= lhs rhs)` payloads expose a scoped rule
-  payload instead of forcing Rust to infer local rule scope from surface syntax.
+  payload instead of forcing Rust to infer local rule scope from concrete syntax.
 
 Negative example:
 - this file does not describe executable backend ownership or MM2 text.

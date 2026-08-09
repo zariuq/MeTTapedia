@@ -103,10 +103,10 @@ theorem modal_logic_counit (relEnv : RelationEnv) (lang : LanguageDef)
 /-- Scope ordering is preserved by the logic-aware ◇.
     Same as `diamond_scope_composition` but parameterized by relEnv. -/
 theorem modal_logic_scope_composition (relEnv : RelationEnv) (lang : LanguageDef)
-    (scopeInverse scopeSurface : Pattern → Prop)
-    (h : scopeInverse ≤ scopeSurface) :
+    (scopeInverse sourceOrderScope : Pattern → Prop)
+    (h : scopeInverse ≤ sourceOrderScope) :
     langDiamondUsing relEnv lang scopeInverse ≤
-    langDiamondUsing relEnv lang scopeSurface :=
+    langDiamondUsing relEnv lang sourceOrderScope :=
   modal_logic_diamond_mono relEnv lang h
 
 -- ═══════════════════════════════════════════════════════════════════

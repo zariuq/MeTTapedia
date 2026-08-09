@@ -344,22 +344,22 @@ theorem cognitiveArchitecture_heading_image_witness
     parseCognitiveArchitectureHeadingLine? renderCognitiveArchitectureHeading cognitiveArchitectureReadmeBlocks
     cognitiveArchitecture_heading_images hMem
 
-private def insertSurfaceBucket (acc : List (String × List CognitiveArchitectureClaim)) (surface : String)
+private def insertRenderedBucket (acc : List (String × List CognitiveArchitectureClaim)) (rendered : String)
     (c : CognitiveArchitectureClaim) : List (String × List CognitiveArchitectureClaim) :=
   match acc with
-  | [] => [(surface, [c])]
+  | [] => [(rendered, [c])]
   | (k, cs) :: rest =>
-      if k = surface then
+      if k = rendered then
         (k, c :: cs) :: rest
       else
-        (k, cs) :: insertSurfaceBucket rest surface c
+        (k, cs) :: insertRenderedBucket rest rendered c
 
-def claimSurfaceBuckets : List (String × List CognitiveArchitectureClaim) :=
+def claimRenderedBuckets : List (String × List CognitiveArchitectureClaim) :=
   allCognitiveArchitectureClaims.foldl
-    (fun acc c => insertSurfaceBucket acc (renderCognitiveArchitectureClaim c) c) []
+    (fun acc c => insertRenderedBucket acc (renderCognitiveArchitectureClaim c) c) []
 
-def ambiguousClaimSurfaces : List (String × List CognitiveArchitectureClaim) :=
-  claimSurfaceBuckets.filter (fun p => p.snd.length > 1)
+def ambiguousClaimRenderings : List (String × List CognitiveArchitectureClaim) :=
+  claimRenderedBuckets.filter (fun p => p.snd.length > 1)
 
 #eval
   let fails := allCognitiveArchitectureClaims.filter (fun c =>
@@ -387,9 +387,9 @@ def ambiguousClaimSurfaces : List (String × List CognitiveArchitectureClaim) :=
     s!"CognitiveArchitecture structured parse failures: {repr fails}"
 
 #eval
-  if ambiguousClaimSurfaces.isEmpty then
-    "CognitiveArchitecture ambiguity diagnostic: no duplicate surfaces across distinct claims"
+  if ambiguousClaimRenderings.isEmpty then
+    "CognitiveArchitecture ambiguity diagnostic: no duplicate renderings across distinct claims"
   else
-    s!"CognitiveArchitecture ambiguity diagnostic: duplicate surfaces found: {repr ambiguousClaimSurfaces}"
+    s!"CognitiveArchitecture ambiguity diagnostic: duplicate renderings found: {repr ambiguousClaimRenderings}"
 
 end Mettapedia.DocText.CognitiveArchitectureReadmeCompositional

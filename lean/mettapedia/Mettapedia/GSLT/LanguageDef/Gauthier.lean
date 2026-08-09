@@ -24,3 +24,8 @@ import Mettapedia.GSLT.LanguageDef.Gauthier.SkeletonTrace
 import Mettapedia.GSLT.LanguageDef.Gauthier.RefinementInstance
 import Mettapedia.GSLT.LanguageDef.Gauthier.AtomicRefinement
 import Mettapedia.GSLT.LanguageDef.Gauthier.GradeBActionEvidence
+import Mettapedia.GSLT.LanguageDef.Gauthier.CanonicalPatternSchema
+import Mettapedia.GSLT.LanguageDef.Gauthier.PatternSourceSupport
+import Mettapedia.GSLT.LanguageDef.Gauthier.SchemaCredalBank
+import Mettapedia.GSLT.LanguageDef.Gauthier.SchemaActionEvidence
+import Mettapedia.GSLT.LanguageDef.Gauthier.SchemaValueGate

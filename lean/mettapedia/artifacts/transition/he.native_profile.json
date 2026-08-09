@@ -2,8 +2,8 @@
   "dialect": "he",
   "backend": "MM2/MORK",
   "opProfiles": [
-    { "name": "let", "category": "surfaceSugar", "interpreterRef": "N/A — desugars to (case expr ((pat body)))", "languageDefRule": null },
-    { "name": "let*", "category": "surfaceSugar", "interpreterRef": "N/A — desugars to nested let", "languageDefRule": null },
+    { "name": "let", "category": "syntaxSugar", "interpreterRef": "N/A — desugars to (case expr ((pat body)))", "languageDefRule": null },
+    { "name": "let*", "category": "syntaxSugar", "interpreterRef": "N/A — desugars to nested let", "languageDefRule": null },
     { "name": "if", "category": "preludeEqAndType", "interpreterRef": "N/A — handled by (= (if True $then $else) $then) equations", "languageDefRule": "MC_Equation (via injected equations)" },
     { "name": "case", "category": "mettaCallControl", "interpreterRef": "Interpreter.lean:385-396", "languageDefRule": "MC_Case_Start" },
     { "name": "switch", "category": "mettaCallControl", "interpreterRef": "Interpreter.lean:342-356", "languageDefRule": "MC_SwitchMinimal_Start (parseSwitchMinimalCallArgs accepts both switch and switch-minimal)" },

@@ -1,4 +1,4 @@
-import Mettapedia.GSLT.LanguageDef.InferenceChecker
+import Mettapedia.GSLT.LanguageDef.CalculusLanguageDef
 import Mettapedia.Languages.Metamath.InferenceEncoding
 
 /-!
@@ -31,11 +31,12 @@ must establish that no-duplicate-key invariant before using these rules.
 namespace Mettapedia.Languages.Metamath.InferenceSideConditions
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
+open Mettapedia.GSLT.LanguageDef
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
 open Mettapedia.Languages.Metamath.InferenceEncoding
 open Mettapedia.Languages.Metamath.InferenceEncoding.Builder
 
-/-! ## Fixed data language and judgment signature -/
+/-! ## Fixed data vocabulary and judgment signature -/
 
 def dataTypeName : String := "$mm.data"
 
@@ -55,26 +56,6 @@ def nullaryDataConstructor (label : String) : GrammarRule :=
 def reservedDataHeads : List String :=
   [ stringHead, nilHead, consHead, constSymHead, varSymHead, formulaHead
   , dvPairHead, frameHead, bindingHead, substitutionHead ]
-
-/-- The fixed constructor vocabulary used by the Metamath inference layer.
-Judgments are deliberately not placed in `LanguageDef.logic`; V2 gives them a
-separate structural signature. -/
-def dataLanguage : LanguageDef :=
-  { name := "metamath-inference-data"
-    types := [TypeDecl.plain dataTypeName]
-    terms :=
-      [ dataConstructor stringHead 1
-      , dataConstructor nilHead 0
-      , dataConstructor consHead 2
-      , dataConstructor constSymHead 1
-      , dataConstructor varSymHead 1
-      , dataConstructor formulaHead 2
-      , dataConstructor dvPairHead 2
-      , dataConstructor frameHead 2
-      , dataConstructor bindingHead 2
-      , dataConstructor substitutionHead 1 ]
-    equations := []
-    rewrites := [] }
 
 def appendHead : String := "$mm.j.append"
 def lookupHead : String := "$mm.j.lookup"
@@ -360,6 +341,56 @@ def sideRules : List RuleSchema :=
   , dvListsNilRule, dvListsConsRule
   , dvOKRule ]
 
+/-! ## One complete authored definition -/
+
+/-- The Metamath data grammar and its side-condition calculus, authored as one
+flat definition. -/
+abbrev sideDefinition : CalculusLanguageDef :=
+  { name := "metamath-inference-data"
+    types := [TypeDecl.plain dataTypeName]
+    terms :=
+      [ dataConstructor stringHead 1
+      , dataConstructor nilHead 0
+      , dataConstructor consHead 2
+      , dataConstructor constSymHead 1
+      , dataConstructor varSymHead 1
+      , dataConstructor formulaHead 2
+      , dataConstructor dvPairHead 2
+      , dataConstructor frameHead 2
+      , dataConstructor bindingHead 2
+      , dataConstructor substitutionHead 1 ]
+    equations := []
+    rewrites := []
+    judgments := judgmentDecls
+    rules := sideRules }
+
+/-- Five-field object-language view retained for consumers. -/
+abbrev dataLanguage : LanguageDef := sideDefinition.toLanguageDef
+
+/-- Proof-calculus view retained for the generic checker. -/
+abbrev sideCalculus :
+    Mettapedia.GSLT.LanguageDef.InferenceExtension.ProofCalculus :=
+  sideDefinition.toCalculus
+
+/-- Derived checker input; not a second authored definition. -/
+abbrev sidePresentation : Presentation := sideDefinition.toNested
+
+/-- Every fixed side-condition rule identifier occupies the namespace later
+excluded from generated source-rule identifiers. -/
+theorem sideRuleId_startsWith_reservedRulePrefix
+    {id : RuleId} (member : id ∈ sideRules.map RuleSchema.id) :
+    id.value.startsWith "$mm." = true := by
+  simp [sideRules, appendNilRule, appendConsRule, lookupHereRule,
+    lookupThereRule, substBodyNilRule, substBodyConstRule, substBodyVarRule,
+    applySubstFormulaRule, varsNilRule, varsConstRule, varsVarRule,
+    memberHereRule, memberThereRule, dvRelForwardRule, dvRelReverseRule,
+    allWithNilRule, allWithConsRule, allPairsNilRule, allPairsConsRule,
+    dvListsNilRule, dvListsConsRule, dvOKRule, rid] at member
+  rcases member with rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl |
+      rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl | rfl |
+      rfl | rfl <;>
+    rw [String.startsWith_string_iff] <;> decide
+
 /-- Reserved namespace for generated side-condition rules.  `$` is excluded
 from Metamath labels, so the later source projector must reject or prove absent
 this prefix before combining source rules with this presentation. -/
@@ -369,15 +400,9 @@ def reservedRulePrefix : String := "$mm."
 def sourceRuleIdsDisjoint (sourceIds : List RuleId) : Bool :=
   sourceIds.all fun id => !(id.value.startsWith reservedRulePrefix)
 
-def sidePresentation : Presentation :=
-  { language :=
-      { dataLanguage with
-        judgments := judgmentDecls
-        inferenceRules := sideRules } }
-
 theorem dataLanguage_validate : dataLanguage.validate = [] := by
   apply LanguageDef.validate_eq_nil_of_constructorOnly dataLanguage <;>
-    simp [dataLanguage, dataConstructor, dataTypeName, stringHead, nilHead,
+    simp [dataConstructor, dataTypeName, stringHead, nilHead,
       consHead, constSymHead, varSymHead, formulaHead, dvPairHead, frameHead,
       bindingHead, substitutionHead, LanguageDef.typeNames,
       TypeDecl.plain, TermParam.typeExpr, TypeExpr.baseNames]
@@ -385,14 +410,8 @@ theorem dataLanguage_validate : dataLanguage.validate = [] := by
 theorem sidePresentation_valid : sidePresentation.isValidV2 = true := by
   unfold Presentation.isValidV2 Presentation.isValidV1
   simp only [sidePresentation]
-  have hbase :
-      ({ dataLanguage with
-          judgments := judgmentDecls
-          inferenceRules := sideRules } : LanguageDef).validate =
-        dataLanguage.validate := by
-    rfl
-  rw [hbase, dataLanguage_validate]
-  simp [sideRules, judgmentDecls, dataLanguage, dataConstructor, dataTypeName,
+  rw [dataLanguage_validate]
+  simp [sideRules, judgmentDecls, dataConstructor, dataTypeName,
     stringHead, nilHead, consHead, constSymHead, varSymHead, formulaHead,
     dvPairHead, frameHead, bindingHead, substitutionHead,
     appendHead, lookupHead, substBodyHead, applySubstHead, varsHead,
@@ -420,6 +439,13 @@ theorem sidePresentation_valid : sidePresentation.isValidV2 = true := by
     rid, mv, formal]
   decide
 
+/-- The side-condition language and its proof calculus as one GSLT. -/
+def totalTheory : Mettapedia.GSLT.GSLT :=
+  sideDefinition.toGSLTOfNoEquations sidePresentation_valid rfl
+
+theorem totalTheory_Term : totalTheory.Term = (Pattern ⊕ List Pattern) :=
+  rfl
+
 def validatedSidePresentation : ValidatedPresentation :=
   ⟨sidePresentation, sidePresentation_valid⟩
 
@@ -432,7 +458,7 @@ private def proofNode (rule : String) (arguments : List Pattern)
 local macro "side_core" : tactic =>
   `(tactic|
     simp [checkRaw, checkRawChildren, validatedSidePresentation,
-      sidePresentation, sideRules, appendNilRule, appendConsRule,
+      sidePresentation, sideCalculus, sideRules, appendNilRule, appendConsRule,
       lookupHereRule, lookupThereRule, substBodyNilRule, substBodyConstRule,
       substBodyVarRule, applySubstFormulaRule, varsNilRule, varsConstRule,
       varsVarRule, memberHereRule, memberThereRule, dvRelForwardRule,

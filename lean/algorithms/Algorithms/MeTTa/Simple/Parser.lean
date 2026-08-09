@@ -466,9 +466,9 @@ def parseProgram (text : String) : Except String (List (Nat × Stmt)) :=
 
 -- ═══════════════════════════════════════════════════════════════════════
 -- Parser conformance: PeTTa command heads
--- These tests make Parser.lean a verified oracle for the PeTTa surface
+-- These tests make Parser.lean a verified oracle for the PeTTa syntax
 -- syntax contract. Each test proves a specific SyntaxCommand is produced
--- from the corresponding PeTTa surface form.
+-- from the corresponding PeTTa source form.
 -- ═══════════════════════════════════════════════════════════════════════
 
 section ParserConformance

@@ -32,20 +32,15 @@ scoped syntax "MParam!" str ":" str : term
 scoped syntax "Var!" str : term
 scoped syntax "App!" str "[" term,* "]" : term
 scoped syntax "Rel!" str "[" term,* "]" : term
-scoped syntax "relation" str "[" term,* "]" : term
-scoped syntax "rule" str : term
-scoped syntax "external" str "[" term,* "]" "->" term : term
 scoped syntax "languageDef!" "{"
   "name" ":" term ","
   "types" ":" term ","
   "terms" ":" term ","
   "equations" ":" term ","
-  "rewrites" ":" term ","
-  "logic" ":" term ","
-  "oracles" ":" term
+  "rewrites" ":" term
   "}" : term
 
-/-! ## Parsed `language!`-Style Surface Syntax -/
+/-! ## Parsed `language!`-Style Syntax -/
 
 declare_syntax_cat langDefTypeExpr
 declare_syntax_cat langDefTypeAtom
@@ -64,8 +59,6 @@ declare_syntax_cat langDefEvalPolicy
 declare_syntax_cat langDefTermDecl
 declare_syntax_cat langDefEquationDecl
 declare_syntax_cat langDefRewriteDecl
-declare_syntax_cat langDefLogicDecl
-declare_syntax_cat langDefOracleDecl
 
 scoped syntax ident : langDefTypeAtom
 scoped syntax ident "(" langDefTypeExpr ")" : langDefTypeAtom
@@ -155,9 +148,6 @@ scoped syntax ident "." langDefTypeBinding,* "|" langDefPremise,* "|-" langDefPa
 scoped syntax ident "." langDefTypeBinding,* "|-" langDefPattern "~>" langDefPattern ";" : langDefRewriteDecl
 scoped syntax ident "." langDefPremise,* "|-" langDefPattern "~>" langDefPattern ";" : langDefRewriteDecl
 scoped syntax ident "." langDefTypeBinding,* "|" langDefPremise,* "|-" langDefPattern "~>" langDefPattern ";" : langDefRewriteDecl
-scoped syntax "relation" ident "(" langDefTypeExpr,* ")" ";" : langDefLogicDecl
-scoped syntax "rule" str ";" : langDefLogicDecl
-scoped syntax "external" ident "(" langDefTypeExpr,* ")" "->" langDefTypeExpr ";" : langDefOracleDecl
 
 private def mkStrTerm (s : String) : TSyntax `term :=
   ⟨Syntax.mkStrLit s⟩
@@ -231,20 +221,20 @@ private def resolveEvalPolicyName : TSyntax `langDefEvalPolicy → MacroM TermEv
 
 private structure ExpandedPattern where
   term : TSyntax `term
-  surface : String
+  sourceText : String
   restName? : Option String := none
 deriving Inhabited
 
 private structure ExpandedPremise where
   term : TSyntax `term
-  surface : String
+  sourceText : String
 deriving Inhabited
 
-private def mkExpandedPattern (term : TSyntax `term) (surface : String)
+private def mkExpandedPattern (term : TSyntax `term) (sourceText : String)
     (restName? : Option String := none) : ExpandedPattern :=
-  { term := term, surface := surface, restName? := restName? }
+  { term := term, sourceText := sourceText, restName? := restName? }
 
-private def renderSurfaceStringLit (s : String) : String :=
+private def renderSourceStringLit (s : String) : String :=
   "\"" ++ (s.replace "\\" "\\\\").replace "\"" "\\\"" ++ "\""
 
 private def restVarName (stx : TSyntax `langDefRestVar) : MacroM String := do
@@ -429,7 +419,7 @@ private partial def expandPatternOpInfo
       let leftTerm := left'.term
       let rightTerm := right'.term
       let term ← `(Pattern.zip $leftTerm $rightTerm)
-      pure (mkExpandedPattern term s!"*zip({left'.surface}, {right'.surface})")
+      pure (mkExpandedPattern term s!"*zip({left'.sourceText}, {right'.sourceText})")
   | `(langDefPatternOp| *map($src:langDefPatternOpSource, | $params:ident,* | $body:langDefPattern)) => do
       let src' ← expandPatternOpSourceInfo src
       let body' ← expandPatternInfo body
@@ -440,10 +430,10 @@ private partial def expandPatternOpInfo
       let bodyTerm := body'.term
       let term ← `(Pattern.map $srcTerm $paramList $bodyTerm)
       let renderedParams := String.intercalate ", " paramNames
-      pure (mkExpandedPattern term s!"*map({src'.surface}, |{renderedParams}| {body'.surface})")
+      pure (mkExpandedPattern term s!"*map({src'.sourceText}, |{renderedParams}| {body'.sourceText})")
   | `(langDefPatternOp| $src:ident.*map(| $params:ident,* | $body:langDefPattern)) => do
       let src' : ExpandedPattern :=
-        { term := ← `(Pattern.fvar $(mkStrTerm src.getId.toString)), surface := src.getId.toString }
+        { term := ← `(Pattern.fvar $(mkStrTerm src.getId.toString)), sourceText := src.getId.toString }
       let body' ← expandPatternInfo body
       let paramNames := params.getElems.toList.map (fun p => p.getId.toString)
       let paramTerms ← params.getElems.toList.mapM (fun p => pure (mkStrTerm p.getId.toString))
@@ -452,7 +442,7 @@ private partial def expandPatternOpInfo
       let bodyTerm := body'.term
       let term ← `(Pattern.map $srcTerm $paramList $bodyTerm)
       let renderedParams := String.intercalate ", " paramNames
-      pure (mkExpandedPattern term s!"{src'.surface}.*map(|{renderedParams}| {body'.surface})")
+      pure (mkExpandedPattern term s!"{src'.sourceText}.*map(|{renderedParams}| {body'.sourceText})")
   | `(langDefPatternOp| $src:langDefPatternOp.*map(| $params:ident,* | $body:langDefPattern)) => do
       let src' ← expandPatternOpInfo src
       let body' ← expandPatternInfo body
@@ -463,7 +453,7 @@ private partial def expandPatternOpInfo
       let bodyTerm := body'.term
       let term ← `(Pattern.map $srcTerm $paramList $bodyTerm)
       let renderedParams := String.intercalate ", " paramNames
-      pure (mkExpandedPattern term s!"{src'.surface}.*map(|{renderedParams}| {body'.surface})")
+      pure (mkExpandedPattern term s!"{src'.sourceText}.*map(|{renderedParams}| {body'.sourceText})")
   | stx => Macro.throwErrorAt stx "unsupported pattern operator"
 
 private partial def splitPrefixPatternArgs (stx : TSyntax `langDefPattern) :
@@ -489,15 +479,15 @@ private partial def expandPatternInfo (stx0 : TSyntax `langDefPattern) : MacroM 
       pure (mkExpandedPattern term s!"#{n.getNat}")
   | `(langDefPattern| $nm:str) => do
       let term ← `(Pattern.apply $nm [])
-      pure (mkExpandedPattern term (renderSurfaceStringLit nm.getString))
+      pure (mkExpandedPattern term (renderSourceStringLit nm.getString))
   | `(langDefPattern| $ctor:ident $args*) => do
       let argSyntax ← args.toList.mapM (fun arg => splitPrefixPatternArgs ⟨arg⟩)
       let args' ← (flattenLists argSyntax).mapM expandPatternInfo
       let argsTerm ← mkTermList (args'.map (·.term))
       let ctorName := ctor.getId.toString
-      let surfaceArgs := String.intercalate " " (args'.map (·.surface))
+      let sourceArgs := String.intercalate " " (args'.map (·.sourceText))
       let term ← `(Pattern.apply $(mkStrTerm ctorName) $argsTerm)
-      pure (mkExpandedPattern term s!"{ctorName} {surfaceArgs}")
+      pure (mkExpandedPattern term s!"{ctorName} {sourceArgs}")
   | `(langDefPattern| $nm:ident) => do
       let raw := nm.getId.toString
       let term ← `(Pattern.fvar $(mkStrTerm raw))
@@ -519,59 +509,59 @@ private partial def expandPatternInfo (stx0 : TSyntax `langDefPattern) : MacroM 
   | `(langDefPattern| $ctor:str($args:langDefPattern,*)) => do
       let args' ← args.getElems.toList.mapM expandPatternInfo
       let argsTerm ← mkTermList (args'.map (·.term))
-      let ctorName := renderSurfaceStringLit ctor.getString
-      let surfaceArgs := String.intercalate ", " (args'.map (·.surface))
+      let ctorName := renderSourceStringLit ctor.getString
+      let sourceArgs := String.intercalate ", " (args'.map (·.sourceText))
       let term ← `(Pattern.apply $ctor $argsTerm)
-      pure (mkExpandedPattern term s!"{ctorName}({surfaceArgs})")
+      pure (mkExpandedPattern term s!"{ctorName}({sourceArgs})")
   | `(langDefPattern| $ctor:ident($args:langDefPattern,*)) => do
       let args' ← args.getElems.toList.mapM expandPatternInfo
       let argsTerm ← mkTermList (args'.map (·.term))
       let ctorName := ctor.getId.toString
-      let surfaceArgs := String.intercalate ", " (args'.map (·.surface))
+      let sourceArgs := String.intercalate ", " (args'.map (·.sourceText))
       let term ← `(Pattern.apply $(mkStrTerm ctorName) $argsTerm)
-      pure (mkExpandedPattern term s!"{ctorName}({surfaceArgs})")
+      pure (mkExpandedPattern term s!"{ctorName}({sourceArgs})")
   | `(langDefPattern| ($inner:langDefPattern)) => do
       let inner' ← expandPatternInfo inner
-      pure (mkExpandedPattern inner'.term s!"({inner'.surface})")
+      pure (mkExpandedPattern inner'.term s!"({inner'.sourceText})")
   | `(langDefPattern| eval($scope:langDefPattern, $repl:langDefPattern)) => do
       let scope' ← expandPatternInfo scope
       let repl' ← expandPatternInfo repl
       let scopeTerm := scope'.term
       let replTerm := repl'.term
       let term ← `(Pattern.eval $scopeTerm $replTerm)
-      pure (mkExpandedPattern term s!"eval({scope'.surface}, {repl'.surface})")
+      pure (mkExpandedPattern term s!"eval({scope'.sourceText}, {repl'.sourceText})")
   | `(langDefPattern| (eval $scope:ident $repl:langDefPattern)) => do
       let repl' ← expandPatternInfo repl
       let scopeName := scope.getId.toString
       let scopeTerm ← `(Pattern.fvar $(mkStrTerm scopeName))
       let replTerm := repl'.term
       let term ← `(Pattern.eval $scopeTerm $replTerm)
-      pure (mkExpandedPattern term s!"(eval {scopeName} {repl'.surface})")
+      pure (mkExpandedPattern term s!"(eval {scopeName} {repl'.sourceText})")
   | `(langDefPattern| (eval $scope:langDefPattern $repl:langDefPattern)) => do
       let scope' ← expandPatternInfo scope
       let repl' ← expandPatternInfo repl
       let scopeTerm := scope'.term
       let replTerm := repl'.term
       let term ← `(Pattern.eval $scopeTerm $replTerm)
-      pure (mkExpandedPattern term s!"(eval {scope'.surface} {repl'.surface})")
+      pure (mkExpandedPattern term s!"(eval {scope'.sourceText} {repl'.sourceText})")
   | `(langDefPattern| ^ $binder:ident . $body:langDefPattern) => do
       let body' ← expandPatternInfo body
       let bodyTerm := body'.term
       let binderName := mkStrTerm binder.getId.toString
       let term ← `(Pattern.lambda (some $binderName) $bodyTerm)
-      pure (mkExpandedPattern term s!"^{binder.getId.toString}.{body'.surface}")
+      pure (mkExpandedPattern term s!"^{binder.getId.toString}.{body'.sourceText}")
   | `(langDefPattern| ^ $binder:ident .( $body:langDefPattern )) => do
       let body' ← expandPatternInfo body
       let bodyTerm := body'.term
       let binderName := mkStrTerm binder.getId.toString
       let term ← `(Pattern.lambda (some $binderName) $bodyTerm)
-      pure (mkExpandedPattern term s!"^{binder.getId.toString}.({body'.surface})")
+      pure (mkExpandedPattern term s!"^{binder.getId.toString}.({body'.sourceText})")
   | `(langDefPattern| ^ $binder:ident . ($body:langDefPattern)) => do
       let body' ← expandPatternInfo body
       let bodyTerm := body'.term
       let binderName := mkStrTerm binder.getId.toString
       let term ← `(Pattern.lambda (some $binderName) $bodyTerm)
-      pure (mkExpandedPattern term s!"^{binder.getId.toString}.({body'.surface})")
+      pure (mkExpandedPattern term s!"^{binder.getId.toString}.({body'.sourceText})")
   | `(langDefPattern| ^ $binderAndBody:ident) => do
       let (binderName, bodyName) ← splitCompactBinderIdent binderAndBody.getId
       let bodyTerm ← `(Pattern.fvar $(mkStrTerm bodyName))
@@ -587,7 +577,7 @@ private partial def expandPatternInfo (stx0 : TSyntax `langDefPattern) : MacroM 
         pure (mkStrTerm b.getId.toString))
       let binderList ← mkTermList binderTerms
       let term ← `(Pattern.multiLambda $(quote binders.getElems.size) $binderList $bodyTerm)
-      pure (mkExpandedPattern term s!"^[{renderedBinders}].{body'.surface}")
+      pure (mkExpandedPattern term s!"^[{renderedBinders}].{body'.sourceText}")
   | `(langDefPattern| ^[ $binders:ident,* ] .( $body:langDefPattern )) => do
       let body' ← expandPatternInfo body
       let binderNames := binders.getElems.toList.map (·.getId.toString)
@@ -597,7 +587,7 @@ private partial def expandPatternInfo (stx0 : TSyntax `langDefPattern) : MacroM 
         pure (mkStrTerm b.getId.toString))
       let binderList ← mkTermList binderTerms
       let term ← `(Pattern.multiLambda $(quote binders.getElems.size) $binderList $bodyTerm)
-      pure (mkExpandedPattern term s!"^[{renderedBinders}].({body'.surface})")
+      pure (mkExpandedPattern term s!"^[{renderedBinders}].({body'.sourceText})")
   | `(langDefPattern| ^[ $binders:ident,* ] . ($body:langDefPattern)) => do
       let body' ← expandPatternInfo body
       let binderNames := binders.getElems.toList.map (·.getId.toString)
@@ -607,7 +597,7 @@ private partial def expandPatternInfo (stx0 : TSyntax `langDefPattern) : MacroM 
         pure (mkStrTerm b.getId.toString))
       let binderList ← mkTermList binderTerms
       let term ← `(Pattern.multiLambda $(quote binders.getElems.size) $binderList $bodyTerm)
-      pure (mkExpandedPattern term s!"^[{renderedBinders}].({body'.surface})")
+      pure (mkExpandedPattern term s!"^[{renderedBinders}].({body'.sourceText})")
   | `(langDefPattern| { $elems:langDefPattern,* }) => do
       let elems' ← elems.getElems.toList.mapM expandPatternInfo
       let trailingRest? := elems'.reverse.findSome? (·.restName?)
@@ -618,31 +608,31 @@ private partial def expandPatternInfo (stx0 : TSyntax `langDefPattern) : MacroM 
       if concreteElems.any (fun elem => elem.restName?.isSome) then
         Macro.throwError "collection rest `...rest` may only appear once at the end of a collection pattern"
       let elemsTerm ← mkTermList (concreteElems.map (·.term))
-      let surfaceElems := String.intercalate ", " (concreteElems.map (·.surface))
+      let sourceElements := String.intercalate ", " (concreteElems.map (·.sourceText))
       let term ←
         match trailingRest? with
         | some restName =>
             `(Pattern.collection CollType.hashBag $elemsTerm (some $(mkStrTerm restName)))
         | none =>
             `(Pattern.collection CollType.hashBag $elemsTerm none)
-      let surface :=
+      let sourceText :=
         match trailingRest? with
         | some restName =>
             if concreteElems.isEmpty then
               "{..." ++ restName ++ "}"
             else
-              "{" ++ surfaceElems ++ ", ..." ++ restName ++ "}"
+              "{" ++ sourceElements ++ ", ..." ++ restName ++ "}"
         | none =>
-            "{" ++ surfaceElems ++ "}"
-      pure (mkExpandedPattern term surface)
+            "{" ++ sourceElements ++ "}"
+      pure (mkExpandedPattern term sourceText)
   | `(langDefPattern| ($ctor:ident $args:langDefPattern*)) => do
       let argSyntax ← args.toList.mapM (fun arg => splitPrefixPatternArgs ⟨arg⟩)
       let args' ← (flattenLists argSyntax).mapM expandPatternInfo
       let argsTerm ← mkTermList (args'.map (·.term))
       let ctorName := ctor.getId.toString
-      let surfaceArgs := String.intercalate " " (args'.map (·.surface))
+      let sourceArgs := String.intercalate " " (args'.map (·.sourceText))
       let term ← `(Pattern.apply $(mkStrTerm ctorName) $argsTerm)
-      pure (mkExpandedPattern term s!"({ctorName} {surfaceArgs})")
+      pure (mkExpandedPattern term s!"({ctorName} {sourceArgs})")
   | stx => do
       let args := stx.raw.getArgs
       match args.size with
@@ -658,9 +648,9 @@ private partial def expandPatternInfo (stx0 : TSyntax `langDefPattern) : MacroM 
             let elems' ← (sepSyntaxToList args[1]!).mapM (fun s => expandPatternInfo ⟨s⟩)
             let elemsTerm ← mkTermList (elems'.map (·.term))
             let restName ← restVarName ⟨args[3]!⟩
-            let surfaceElems := String.intercalate ", " (elems'.map (·.surface))
+            let sourceElements := String.intercalate ", " (elems'.map (·.sourceText))
             let term ← `(Pattern.collection CollType.hashBag $elemsTerm (some $(mkStrTerm restName)))
-            pure (mkExpandedPattern term ("{" ++ surfaceElems ++ ", ..." ++ restName ++ "}"))
+            pure (mkExpandedPattern term ("{" ++ sourceElements ++ ", ..." ++ restName ++ "}"))
           catch _ =>
             Macro.throwErrorAt stx "unsupported pattern syntax"
       | _ =>
@@ -701,35 +691,35 @@ private partial def expandPremiseInfo (stx0 : TSyntax `langDefPremise) : MacroM 
       let varName := nm.getId.toString
       let patTerm := pat'.term
       let term ← `(Premise.freshness (FreshnessCondition.mk $(mkStrTerm varName) $patTerm))
-      pure ⟨term, s!"{varName} # {pat'.surface}"⟩
+      pure ⟨term, s!"{varName} # {pat'.sourceText}"⟩
   | `(langDefPremise| $lhs:langDefPattern ~> $rhs:langDefPattern) => do
       let lhs' ← expandPatternInfo lhs
       let rhs' ← expandPatternInfo rhs
       let lhsTerm := lhs'.term
       let rhsTerm := rhs'.term
       let term ← `(Premise.congruence $lhsTerm $rhsTerm)
-      pure ⟨term, s!"{lhs'.surface} ~> {rhs'.surface}"⟩
+      pure ⟨term, s!"{lhs'.sourceText} ~> {rhs'.sourceText}"⟩
   | `(langDefPremise| $rel:ident($args:langDefPattern,*)) => do
       let args' ← args.getElems.toList.mapM expandPatternInfo
       let argsTerm ← mkTermList (args'.map (·.term))
       let relName := rel.getId.toString
-      let surfaceArgs := String.intercalate ", " (args'.map (·.surface))
+      let sourceArgs := String.intercalate ", " (args'.map (·.sourceText))
       let term ← `(Premise.relationQuery $(mkStrTerm relName) $argsTerm)
-      pure ⟨term, s!"{relName}({surfaceArgs})"⟩
+      pure ⟨term, s!"{relName}({sourceArgs})"⟩
   | `(langDefPremise| $collection:ident.*map(| $param:ident | $body:langDefPremise)) => do
       let body' ← expandPremiseInfo body
       let collectionName := collection.getId.toString
       let paramName := param.getId.toString
       let bodyTerm := body'.term
       let term ← `(Premise.forAll $(mkStrTerm collectionName) $(mkStrTerm paramName) $bodyTerm)
-      pure ⟨term, s!"{collectionName}.*map(|{paramName}| {body'.surface})"⟩
+      pure ⟨term, s!"{collectionName}.*map(|{paramName}| {body'.sourceText})"⟩
   | `(langDefPremise| forAll($collection:ident, $param:ident, $body:langDefPremise)) => do
       let body' ← expandPremiseInfo body
       let collectionName := collection.getId.toString
       let paramName := param.getId.toString
       let bodyTerm := body'.term
       let term ← `(Premise.forAll $(mkStrTerm collectionName) $(mkStrTerm paramName) $bodyTerm)
-      pure ⟨term, s!"forAll({collectionName}, {paramName}, {body'.surface})"⟩
+      pure ⟨term, s!"forAll({collectionName}, {paramName}, {body'.sourceText})"⟩
   | stx => Macro.throwErrorAt stx "unsupported premise syntax"
 
 private partial def expandPremise (stx : TSyntax `langDefPremise) : MacroM (TSyntax `term) := do
@@ -867,30 +857,6 @@ private def expandRewriteDecl (stx : TSyntax `langDefRewriteDecl) : MacroM (TSyn
   | _ =>
       Macro.throwErrorAt raw "unsupported rewrite declaration"
 
-private def expandLogicDecl (stx : TSyntax `langDefLogicDecl) : MacroM (TSyntax `term) := do
-  let args := stx.raw.getArgs
-  match args.size with
-  | 6 =>
-      let argTypes' ← ((@Syntax.SepArray.mk "," args[3]!.getArgs) : Array Syntax).toList.mapM (fun ty => expandTypeExpr ⟨ty⟩)
-      let argTypesTerm ← mkTermList argTypes'
-      `(LogicDecl.relation (LogicRelationDecl.mk $(mkStrTerm args[1]!.getId.toString) $argTypesTerm))
-  | 3 =>
-      let txt : TSyntax `str := ⟨args[1]!⟩
-      `(LogicDecl.ruleText $txt)
-  | _ =>
-      Macro.throwErrorAt stx "unsupported logic declaration"
-
-private def expandOracleDecl (stx : TSyntax `langDefOracleDecl) : MacroM (TSyntax `term) := do
-  let args := stx.raw.getArgs
-  match args.size with
-  | 8 =>
-      let argTypes' ← ((@Syntax.SepArray.mk "," args[3]!.getArgs) : Array Syntax).toList.mapM (fun ty => expandTypeExpr ⟨ty⟩)
-      let argTypesTerm ← mkTermList argTypes'
-      let resultType' ← expandTypeExpr ⟨args[6]!⟩
-      `(OracleDecl.mk $(mkStrTerm args[1]!.getId.toString) $argTypesTerm $resultType')
-  | _ =>
-      Macro.throwErrorAt stx "unsupported oracle declaration"
-
 macro
   "languageDef!" "{"
   "name" ":" langName:term
@@ -898,30 +864,22 @@ macro
   "terms" "{" termDecls:langDefTermDecl* "}"
   "equations" "{" eqs:langDefEquationDecl* "}"
   "rewrites" "{" rws:langDefRewriteDecl* "}"
-  "logic" "{" lgs:langDefLogicDecl* "}"
-  "oracles" "{" ors:langDefOracleDecl* "}"
   "}" : term => do
     let typeDecls' ← typeDecls.toList.mapM expandTypeDecl
     let termDecls' ← termDecls.toList.mapM expandTermDecl
     let eqDecls' ← eqs.toList.mapM expandEquationDecl
     let rwDecls' ← rws.toList.mapM expandRewriteDecl
-    let logicDecls' ← lgs.toList.mapM expandLogicDecl
-    let oracleDecls' ← ors.toList.mapM expandOracleDecl
     let typeDeclsTerm ← mkTermList typeDecls'
     let termDeclsTerm ← mkTermList termDecls'
     let eqDeclsTerm ← mkTermList eqDecls'
     let rwDeclsTerm ← mkTermList rwDecls'
-    let logicDeclsTerm ← mkTermList logicDecls'
-    let oracleDeclsTerm ← mkTermList oracleDecls'
     `(LanguageDef.resolveNullaryPatterns
       (LanguageDef.ofCore
         $langName
         $typeDeclsTerm
         $termDeclsTerm
         $eqDeclsTerm
-        $rwDeclsTerm
-        $logicDeclsTerm
-        $oracleDeclsTerm))
+        $rwDeclsTerm))
 
 macro_rules
   | `(T! $s:str) => `(SyntaxItem.terminal $s)
@@ -934,22 +892,15 @@ macro_rules
   | `(Var! $nm:str) => `(Pattern.fvar $nm)
   | `(App! $ctor:str [ $args,* ]) => `(Pattern.apply $ctor [ $args,* ])
   | `(Rel! $rel:str [ $args,* ]) => `(Premise.relationQuery $rel [ $args,* ])
-  | `(relation $relName:str [ $args,* ]) =>
-      `(LogicDecl.relation (LogicRelationDecl.mk $relName [ $args,* ]))
-  | `(rule $txt:str) => `(LogicDecl.ruleText $txt)
-  | `(external $oracleName:str [ $args,* ] -> $result:term) =>
-      `(OracleDecl.mk $oracleName [ $args,* ] $result)
   | `(languageDef! {
       name : $langName,
       types : $tys,
       terms : $tmRules,
       equations : $eqns,
-      rewrites : $rws,
-      logic : $lgs,
-      oracles : $ors
+      rewrites : $rws
     }) =>
       `(LanguageDef.resolveNullaryPatterns
-        (LanguageDef.ofCore $langName $tys $tmRules $eqns $rws $lgs $ors))
+        (LanguageDef.ofCore $langName $tys $tmRules $eqns $rws))
 
 /-! ## Generic Builders -/
 

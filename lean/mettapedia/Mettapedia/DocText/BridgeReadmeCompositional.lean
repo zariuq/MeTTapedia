@@ -191,22 +191,22 @@ theorem bridge_heading_image_witness
     parseBridgeHeadingLine? renderBridgeHeading bridgeReadmeBlocks
     bridge_heading_images hMem
 
-private def insertSurfaceBucket (acc : List (String × List BridgeClaim)) (surface : String)
+private def insertRenderedBucket (acc : List (String × List BridgeClaim)) (rendered : String)
     (c : BridgeClaim) : List (String × List BridgeClaim) :=
   match acc with
-  | [] => [(surface, [c])]
+  | [] => [(rendered, [c])]
   | (k, cs) :: rest =>
-      if k = surface then
+      if k = rendered then
         (k, c :: cs) :: rest
       else
-        (k, cs) :: insertSurfaceBucket rest surface c
+        (k, cs) :: insertRenderedBucket rest rendered c
 
-def claimSurfaceBuckets : List (String × List BridgeClaim) :=
+def claimRenderedBuckets : List (String × List BridgeClaim) :=
   allBridgeClaims.foldl
-    (fun acc c => insertSurfaceBucket acc (renderBridgeClaim c) c) []
+    (fun acc c => insertRenderedBucket acc (renderBridgeClaim c) c) []
 
-def ambiguousClaimSurfaces : List (String × List BridgeClaim) :=
-  claimSurfaceBuckets.filter (fun p => p.snd.length > 1)
+def ambiguousClaimRenderings : List (String × List BridgeClaim) :=
+  claimRenderedBuckets.filter (fun p => p.snd.length > 1)
 
 #eval
   let fails := allBridgeClaims.filter (fun c =>
@@ -234,9 +234,9 @@ def ambiguousClaimSurfaces : List (String × List BridgeClaim) :=
     s!"Bridge structured parse failures: {repr fails}"
 
 #eval
-  if ambiguousClaimSurfaces.isEmpty then
-    "Bridge ambiguity diagnostic: no duplicate surfaces across distinct claims"
+  if ambiguousClaimRenderings.isEmpty then
+    "Bridge ambiguity diagnostic: no duplicate renderings across distinct claims"
   else
-    s!"Bridge ambiguity diagnostic: duplicate surfaces found: {repr ambiguousClaimSurfaces}"
+    s!"Bridge ambiguity diagnostic: duplicate renderings found: {repr ambiguousClaimRenderings}"
 
 end Mettapedia.DocText.BridgeReadmeCompositional

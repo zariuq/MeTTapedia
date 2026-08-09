@@ -202,7 +202,7 @@ theorem oslf_matchPattern_fvar_fvar_assignment_shape :
 
 /-- Conformance-facing audit hook for the retired one-sided query path:
 `DeclMatchSpec` owns the semantic counterexample, and the conformance suite
-exposes it so the old `simpleMatch` query surface cannot be mistaken for the
+exposes it so the old `simpleMatch` query interface cannot be mistaken for the
 faithful HE matcher again. -/
 theorem retiredSimpleMatch_query_path_fails_HE_faithfulness :
     ¬ DeclMatchSpec.RetiredSimpleMatchQueryPathFaithfulOn
@@ -225,7 +225,7 @@ theorem queryEquations_hits_are_declarative_matches
   exact
     ⟨lhs, rhs0, idx, hmem, hrhs, DeclMatchSpec.matchAtoms_sound hmatch⟩
 
-/-- Visible-avoid query faithfulness hook: the repaired query surface used by
+/-- Visible-avoid query faithfulness hook: the repaired query interface used by
 the LeaTTa visible-observation bridge is also backed by the dedicated HE
 declarative match relation. -/
 theorem queryEquationsAgainstVisible_hits_are_declarative_matches
@@ -312,7 +312,7 @@ theorem leatta_minimal_error_passthrough_mettaEval :
   rw [Metta.Minimal.mettaEval]
   simp only [hsource, herror, Bool.or_true, if_true]
 
-theorem leatta_minimal_error_passthrough_matches_HE_mettaCall_surface :
+theorem leatta_minimal_error_passthrough_matches_HE_mettaCall_interface :
     LeaTTaBridge.toLeaTTaAtom (Atom.error (.symbol "x") (.symbol "e")) =
         leattaErrorPassthroughAtom ∧
       Metta.Minimal.mettaEval (Metta.Minimal.MinEnv.ofAtomsGT [] []) 4
@@ -644,8 +644,8 @@ rebuilding the refinement statement.
 private abbrev ILPattern := Mettapedia.OSLF.MeTTaIL.Syntax.Pattern
 private abbrev ILRelEnv := Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv
 
-/-- Observable evaluation surfaces of an executable HE engine.  The record
-carries exactly the surfaces every engine under grading exposes; OSLF
+/-- Observable evaluation interfaces of an executable HE engine.  The record
+carries exactly the interfaces every engine under grading exposes; OSLF
 LanguageDef-rule steps are carried once by the standalone
 `he_premise_core_step_models_oslf_language_step` theorem below, not by a
 per-engine field, because that leg is not derived from the engine under
@@ -656,14 +656,14 @@ structure HEOperationalEngine where
   mettaCallStep :
     Space → GroundedDispatch → Atom → Atom → Bindings → Nat → ResultPair → Prop
 
-/-- Stable top-level reachability through an engine's own `evalAtomStep` surface. -/
+/-- Stable top-level reachability through an engine's own `evalAtomStep` interface. -/
 def StableEvalAtomStep (engine : HEOperationalEngine)
     (space : Space) (dispatch : GroundedDispatch)
     (atom type_ : Atom) (b : Bindings) (r : ResultPair) : Prop :=
   ∃ fuel0, ∀ fuel, fuel ≥ fuel0 →
     engine.evalAtomStep space dispatch atom type_ b fuel r
 
-/-- Stable `mettaCall` reachability through an engine's own call-step surface. -/
+/-- Stable `mettaCall` reachability through an engine's own call-step interface. -/
 def StableMettaCallStep (engine : HEOperationalEngine)
     (space : Space) (dispatch : GroundedDispatch)
     (atom type_ : Atom) (b : Bindings) (r : ResultPair) : Prop :=
@@ -799,7 +799,7 @@ theorem engine_bridge_of_leattaEquationFragment_mettaCall
   evalAtom_sound := h_eval
   mettaCall_sound := leattaEquationFragment_mettaCall_sound engine h_metta_refines
 /-- Engine-parametric declarative HE model theorem for any engine whose
-`mettaCallStep` surface is proven to refine the LeaTTa equation-call fragment,
+`mettaCallStep` interface is proven to refine the LeaTTa equation-call fragment,
 with the remaining engine obligations supplied explicitly. -/
 theorem engine_models_declarative_he_of_leattaEquationFragment_mettaCall
     (engine : HEOperationalEngine)
@@ -823,7 +823,7 @@ theorem engine_models_declarative_he_of_leattaEquationFragment_mettaCall
 fragment.  It is intentionally not named as a complete LeaTTa runtime: the
 `mettaCallStep` field is exactly the observed equation-call fragment from
 `LeaTTaBridge`, while the `evalAtomStep` field exposes the already-declarative
-HE eval surface needed by the shared refinement theorem. -/
+HE eval interface needed by the shared refinement theorem. -/
 def leattaEquationFragmentEngine : HEOperationalEngine where
   evalAtomStep := fun space dispatch atom type_ b _fuel r =>
     EvalAtom space dispatch atom type_ b r
@@ -891,7 +891,7 @@ theorem leattaEquationNoMatchFragmentEngine_models_declarative_he :
 
 /-- Concrete positive readout for the widened fragment: the empty-space
 symbol-headed no-match executable observation satisfies official HE
-`MettaCall.no_match` through the engine-parametric call surface. -/
+`MettaCall.no_match` through the engine-parametric call interface. -/
 theorem emptySpace_foo_equationNoMatchFragment_models_mettaCall :
     MettaCall Space.empty GroundedDispatch.none
       (.expression [.symbol "foo"]) Atom.undefinedType Bindings.empty
@@ -1021,7 +1021,7 @@ private def leattaBadUnifyThreeArgsError : Metta.Atom :=
   Metta.Minimal.errAtom leattaBadUnifyThreeArgs
     (Metta.Minimal.unifyBadArityMessage leattaBadUnifyThreeArgs)
 
-/-- LeaTTa's minimal interpreter surfaces malformed primitive `unify` with the
+/-- LeaTTa's minimal interpreter reports malformed primitive `unify` with the
 same descriptive bad-arity message as the HE reference. -/
 theorem leatta_minimal_unify_bad_arity_eval_message :
     Metta.Minimal.evalAtomMin
@@ -1070,9 +1070,9 @@ theorem leatta_minimal_unify_bad_arity_error_is_HE_bad_arity_translation :
     Metta.Minimal.unifyBadArityMessage]
 
 /-- Exact malformed-`unify` branch agreement: LeaTTa's minimal executable
-readout and the HE declarative reference surface the same bad-arity error for a
+readout and the HE declarative reference interface the same bad-arity error for a
 three-argument primitive `unify`. -/
-theorem leatta_minimal_unify_bad_arity_matches_HE_bad_arity_surface :
+theorem leatta_minimal_unify_bad_arity_matches_HE_bad_arity_interface :
     Metta.Minimal.evalAtomMin
         (Metta.Minimal.MinEnv.ofAtomsGT [] []) 4
         leattaBadUnifyThreeArgs =
@@ -1123,11 +1123,11 @@ theorem leattaBadUnifyThreeArgs_unifyBadArityMettaCallStep_counter4 :
       heBadUnifyThreeArgs Atom.undefinedType Bindings.empty
       (mkUnifyBadArityError heBadUnifyThreeArgs, Bindings.empty) := by
   refine ⟨[.symbol "a", .symbol "p", .symbol "t"], rfl, by decide, rfl, rfl, ?_⟩
-  exact leatta_minimal_unify_bad_arity_matches_HE_bad_arity_surface.1
+  exact leatta_minimal_unify_bad_arity_matches_HE_bad_arity_interface.1
 
 /-! ### LeaTTa query/unify fragment with extensional primitive bindings
 
-This sibling fragment keeps the same engine-parametric refinement surface, but
+This sibling fragment keeps the same engine-parametric refinement interface, but
 uses the lookup-extensional executable observation for primitive `unify`. -/
 
 theorem leattaQueryUnifyFragmentExt_mettaCall_sound
@@ -1516,7 +1516,7 @@ theorem leattaQueryOpHitAgainstVisibleWithMerge_models_mettaCall_final_with_quer
 /-- Pure HE evidence package for one visible equation-query step.
 It records the public query premise consumed by `MettaCall.equation_match`, the
 visible-avoid query premise used by the LeaTTa bridge, and the declarative
-`MatchRel` witnesses for both query surfaces.  The package is deliberately
+`MatchRel` witnesses for both query interfaces.  The package is deliberately
 engine-independent: executable engines prove that their observations carry this
 evidence, and the theorem below turns the evidence into the official HE
 `MettaCall`. -/
@@ -1711,7 +1711,7 @@ theorem engine_mettaCall_sound_of_leattaVisibleEquationQueryEvidence
 /-! ### LeaTTa visible equation-query evidence fragment
 
 This fragment is narrower than `leattaEquationFragmentEngine`: its executable
-call surface is exactly the repaired visible equation-query path, with public
+call interface is exactly the repaired visible equation-query path, with public
 and visible HE query premises present in the observation. -/
 
 def LeaTTaVisibleEquationQueryOpMettaCallStep
@@ -1789,7 +1789,7 @@ theorem leattaVisibleEquationQueryOpFragmentEngine_models_declarative_he :
 
 This is the widest currently proved call fragment that keeps the repaired
 equation-query path explicit: `Error` passthrough is carried by the HE
-surface rule and checked against LeaTTa's executable translation above,
+source rule and checked against LeaTTa's executable translation above,
 equation hits must come through the visible `matchAtoms`-backed query evidence
 above, no-match stays the official empty public-query branch, and primitive
 `unify` uses the lookup-extensional executable binding observation from
@@ -1850,7 +1850,7 @@ theorem leattaRepairedQueryUnifyExtMettaCallStep_sound
   · exact LeaTTaBridge.leattaNoMatchMettaCallStep_sound hno
   · exact LeaTTaBridge.leattaUnifyMettaCallStepExt_sound hunify
 
-/-- Any engine whose call surface refines the repaired LeaTTa-backed
+/-- Any engine whose call interface refines the repaired LeaTTa-backed
 error/query/no-match/extensional-`unify` fragment satisfies the corresponding
 declarative HE `MettaCall` obligation. -/
 theorem leattaRepairedQueryUnifyExtFragment_mettaCall_sound
@@ -1870,7 +1870,7 @@ theorem leattaRepairedQueryUnifyExtFragment_mettaCall_sound
     (h_refines space dispatch atom type_ b fuel r hstep)
 
 /-- Assemble a full engine bridge from explicit non-call obligations plus a
-proof that the engine's call surface refines the repaired LeaTTa-backed
+proof that the engine's call interface refines the repaired LeaTTa-backed
 error/query/no-match/extensional-`unify` fragment. -/
 theorem engine_bridge_of_leattaRepairedQueryUnifyExtFragment_mettaCall
     (engine : HEOperationalEngine)
@@ -1890,7 +1890,7 @@ theorem engine_bridge_of_leattaRepairedQueryUnifyExtFragment_mettaCall
   mettaCall_sound :=
     leattaRepairedQueryUnifyExtFragment_mettaCall_sound engine h_metta_refines
 /-- Engine-parametric declarative HE model theorem for any engine whose
-`mettaCallStep` surface is proven to refine the repaired LeaTTa-backed
+`mettaCallStep` interface is proven to refine the repaired LeaTTa-backed
 error/query/no-match/extensional-`unify` fragment. -/
 theorem engine_models_declarative_he_of_leattaRepairedQueryUnifyExtFragment_mettaCall
     (engine : HEOperationalEngine)
@@ -1981,7 +1981,7 @@ theorem leatta_minimal_error_passthrough_repairedQueryUnifyExtFragment_models_me
           ⟨.symbol "x", .symbol "e", rfl, rfl,
             leatta_error_passthrough_atom_is_HE_error_translation⟩)
 
-/-! ### Repaired query/unify fragment plus malformed-`unify` surface
+/-! ### Repaired query/unify fragment plus malformed-`unify` interface
 
 This super-fragment keeps the repaired query/extensional-`unify` bridge intact
 and adds the subject-side malformed-`unify` observation repaired above. -/
@@ -2011,7 +2011,7 @@ theorem leattaRepairedQueryUnifyExtBadArityMettaCallStep_sound
   · exact leattaUnifyBadArityMettaCallStep_sound hbad
   · exact LeaTTaBridge.leattaEquationMettaCallStep_sound heq
 
-/-- Any engine whose call surface refines the repaired query/extensional-`unify`
+/-- Any engine whose call interface refines the repaired query/extensional-`unify`
 fragment plus the malformed-`unify` executable observation satisfies the
 corresponding declarative HE `MettaCall` obligation. -/
 theorem leattaRepairedQueryUnifyExtBadArityFragment_mettaCall_sound
@@ -2239,7 +2239,7 @@ theorem leatta_minimal_unify_bad_arity_repairedQueryUnifyExtBadArityFragment_mod
       heBadUnifyThreeArgs Atom.undefinedType Bindings.empty
       (mkUnifyBadArityError heBadUnifyThreeArgs, Bindings.empty) := by
   constructor
-  · exact leatta_minimal_unify_bad_arity_matches_HE_bad_arity_surface.1
+  · exact leatta_minimal_unify_bad_arity_matches_HE_bad_arity_interface.1
   · exact
       leattaRepairedQueryUnifyExtBadArityFragmentEngine_models_declarative_he.mettaCall_models
         Space.empty GroundedDispatch.none
@@ -2396,7 +2396,7 @@ theorem leattaFreshenedVariableItemTransportAgainstVisibleWithMerge_models_metta
 
 /-- Concrete equality-bearing query readout through the engine-parametric
 LeaTTa equation fragment.  This is the repaired path for the chain-resolution
-boundary where HE's visible query surface preserves an equality relation that
+boundary where HE's visible query interface preserves an equality relation that
 the assignment-only instantiated-item shortcut cannot carry. -/
 theorem chainResolveBoundary_equationFragment_models_mettaCall_counter0 :
     MettaCall
@@ -2578,7 +2578,7 @@ theorem heFuelEvaluatorEngine_stable_evalAtom_models_certified
         using hstable)
 
 /-- For the concrete HE fuel evaluator, the engine-parametric stable
-`evalAtomStep` surface is exactly the public certified evaluator boundary. -/
+`evalAtomStep` interface is exactly the public certified evaluator boundary. -/
 theorem heFuelEvaluatorEngine_stable_evalAtom_iff_certified
     (space : Space) (dispatch : GroundedDispatch)
     (atom type_ : Atom) (b : Bindings) (r : ResultPair) :
@@ -2594,7 +2594,7 @@ theorem heFuelEvaluatorEngine_stable_evalAtom_iff_certified
     simpa [heFuelEvaluatorEngine] using hstable fuel hfuel
 
 /-- Stable reachability through the concrete fuel evaluator's `mettaCall`
-    surface gives the internal implementation-refined call certificate. -/
+    interface gives the internal implementation-refined call certificate. -/
 theorem heFuelEvaluatorEngine_stable_mettaCall_models_certified
     (space : Space) (dispatch : GroundedDispatch)
     (atom type_ : Atom) (b : Bindings) (r : ResultPair) :
@@ -2610,7 +2610,7 @@ theorem heFuelEvaluatorEngine_stable_mettaCall_models_certified
       using hstable
 
 /-- For the concrete HE fuel evaluator, the engine-parametric stable
-`mettaCallStep` surface is exactly the implementation-refined `MettaCall`
+`mettaCallStep` interface is exactly the implementation-refined `MettaCall`
 certificate used by the conformance bridge. -/
 theorem heFuelEvaluatorEngine_stable_mettaCall_iff_certified
     (space : Space) (dispatch : GroundedDispatch)
@@ -2738,7 +2738,7 @@ example : (evalAtom fuelTestSpace GroundedDispatch.none
 
 The nonlinear three-edge case checks the atom-level observable, while the
 smaller two-edge case checks the binding readout directly.  LeaTTa and HE now
-preserve the same connected variable classes at both surfaces. -/
+preserve the same connected variable classes at both interfaces. -/
 
 private def connectedClassLeaPattern : Metta.Atom :=
   .expr [.sym "g", .var "p1", .var "p2", .var "p2"]

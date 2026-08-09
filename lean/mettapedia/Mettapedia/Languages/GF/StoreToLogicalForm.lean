@@ -340,10 +340,10 @@ theorem extractQuantEntries_two (q1 : String) (d1 r1 : Pattern)
   exact hfm
 
 /-- Two-quantifier specification: `scopeOrderedQuants` with `scope q1 q2` in the store
-    produces `[(q1, d1, r1), (q2, d2, r2)]` (surface scope, q1 outermost).
+    produces `[(q1, d1, r1), (q2, d2, r2)]` (source-order scope, q1 outermost).
 
     Requires: `scope q1 q2 ∈ store` and `scope q2 q1 ∉ store`. -/
-theorem scopeOrderedQuants_two_surface_spec
+theorem scopeOrderedQuants_two_source_order_spec
     (q1 : String) (d1 r1 : Pattern) (q2 : String) (d2 r2 : Pattern)
     (hscope : StoreAtom.scope q1 q2 ∈
       ({StoreAtom.quant q1 d1 r1, StoreAtom.quant q2 d2 r2,

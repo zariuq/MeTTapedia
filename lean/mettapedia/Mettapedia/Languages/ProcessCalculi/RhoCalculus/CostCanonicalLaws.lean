@@ -1,5 +1,6 @@
 import Mettapedia.GSLT.LanguageDef.CostRegionTree
 import Mettapedia.GSLT.LanguageDef.CostRegionNormalization
+import Mettapedia.GSLT.LanguageDef.WellSortedFillInversion
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.EquationSubstitution
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefContinuedInteraction
 import Mettapedia.OSLF.MeTTaIL.MatchSpec
@@ -18,11 +19,13 @@ normalization soundness is stated through the authored equation relation.
 namespace Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostCanonicalLaws
 
 open Mettapedia.GSLT.LanguageDef
+open Mettapedia.GSLT.LanguageDef.ReflectionExtension
 open Mettapedia.GSLT.LanguageDef.WellSorted
 open Mettapedia.GSLT.LanguageDef.CostStaticRegionNode
 open Mettapedia.OSLF.Framework.ConstructorCategory
 open Mettapedia.OSLF.MeTTaIL.Match
 open Mettapedia.OSLF.MeTTaIL.MatchSpec
+open Mettapedia.OSLF.MeTTaIL.ScopedPattern
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefGSLT
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefContinuedInteraction
@@ -37,6 +40,16 @@ private theorem ifSingletonList_length_le_one {α : Type}
     (if condition then [candidate] else []).length ≤ 1 := by
   by_cases condition <;> simp_all
 
+private theorem rhoCIGSLT_reflectionProfile_eq :
+    rhoCIGSLT.reflection.1 = rhoReflectionProfile := by
+  rfl
+
+private theorem rhoReflectivePresentation_mem_source :
+    rhoReflectivePresentation.toReflectivePresentationDecl ∈
+      rhoCIGSLT.reflection.1.presentations := by
+  rw [rhoCIGSLT_reflectionProfile_eq]
+  simp [rhoReflectionProfile]
+
 /-! ## Generated reflective substitution boundary -/
 
 /-- Every constructor returning either generated copy of rho's name sort is
@@ -45,7 +58,7 @@ uses intrinsic declaration identity: base and wrapped `NQuote` are the only
 possible cases, while the fixed Cost apparatus inhabits disjoint reserved
 sorts. -/
 theorem rho_costReflectiveNameResultsQuoted :
-    ReflectiveNameResultsQuoted rhoCIGSLT.costWholeLanguage := by
+    ReflectiveNameResultsQuoted (profile := rhoCIGSLT.costWholeReflectionProfile) rhoCIGSLT.costWholeLanguage := by
   intro declaration declarationMembership rule ruleMembership categoryEquality
   obtain ⟨color, sourceDeclaration, sourceMembership, rfl⟩ :=
     (mem_costStaticReflectivePresentations_iff_exists_source rhoCIGSLT).1
@@ -53,8 +66,8 @@ theorem rho_costReflectiveNameResultsQuoted :
   have sourceDeclarationEq :
       sourceDeclaration =
         rhoReflectivePresentation.toReflectivePresentationDecl := by
-    simpa [rhoCIGSLT, rhoIGSLT, rhoInteractivePresentation,
-      rhoValidatedLanguageDef, rhoCalc] using sourceMembership
+    change (sourceDeclaration ∈ rhoReflectionProfile.presentations) at sourceMembership
+    simpa [rhoReflectionProfile] using sourceMembership
   subst sourceDeclaration
   have interactingName :
       rhoCIGSLT.theory.presentation.interactingSort.1.name = "Proc" := by
@@ -63,16 +76,12 @@ theorem rho_costReflectiveNameResultsQuoted :
       (costStaticReflectivePresentationDecl rhoCIGSLT color
           rhoReflectivePresentation.toReflectivePresentationDecl).nameSort =
         costBaseSortName "Name" := by
-    cases color with
-    | base => rfl
-    | wrapped =>
-        simp only [costStaticReflectivePresentationDecl,
-          costWrappedReflectivePresentationDecl, mapReflectivePresentation,
-          costWrappedStaticSymbols, rhoReflectivePresentation]
-        rw [if_neg]
-        intro equality
-        exact (by decide : "Name" ≠ "Proc")
-          (equality.trans interactingName)
+    cases color <;>
+      simp [costStaticReflectivePresentationDecl_eq_map,
+        mapReflectivePresentation, CostStaticColor.symbols, costBaseStaticSymbols,
+        costBasePresentationSymbols, costWrappedStaticSymbols,
+        rhoReflectivePresentation, interactingName,
+        show "Name" ≠ "Proc" by decide]
   have ruleCategoryBase : rule.category = costBaseSortName "Name" :=
     categoryEquality.trans declarationNameSort
   have coreMembership : rule ∈ rhoCIGSLT.costCoreLanguage.terms := by
@@ -97,14 +106,15 @@ theorem rho_costReflectiveNameResultsQuoted :
         refine ⟨costStaticReflectivePresentationDecl rhoCIGSLT .base
           rhoReflectivePresentation.toReflectivePresentationDecl,
           ?_, ?_⟩
-        · simpa only [rhoCIGSLT.costWholeLanguage_reflectivePresentations]
+        · simpa only [rhoCIGSLT.costWholeReflectionProfile_presentations]
             using costStaticReflectivePresentationDecl_mem rhoCIGSLT .base
               rhoReflectivePresentation.toReflectivePresentationDecl
                 sourceMembership
         · simp [CIGSLT.materializeDeclaredCostConstructor,
             costBaseConstructor, costStaticReflectivePresentationDecl,
             costBaseReflectivePresentationDecl, mapReflectivePresentation,
-            costBaseStaticSymbols, costBasePresentationSymbols, sourceLabel]
+            costBaseStaticReflectiveSymbols, costBaseStaticSymbols,
+            costBasePresentationSymbols, sourceLabel]
       · intro targetBare
         exact sourceNotBare
           ((usesBareCollection_costBaseConstructor_iff rhoCIGSLT.cut
@@ -135,14 +145,15 @@ theorem rho_costReflectiveNameResultsQuoted :
         refine ⟨costStaticReflectivePresentationDecl rhoCIGSLT .wrapped
           rhoReflectivePresentation.toReflectivePresentationDecl,
           ?_, ?_⟩
-        · simpa only [rhoCIGSLT.costWholeLanguage_reflectivePresentations]
+        · simpa only [rhoCIGSLT.costWholeReflectionProfile_presentations]
             using costStaticReflectivePresentationDecl_mem rhoCIGSLT .wrapped
               rhoReflectivePresentation.toReflectivePresentationDecl
                 sourceMembership
         · simp [CIGSLT.materializeDeclaredCostConstructor,
             costWrappedConstructor, costStaticReflectivePresentationDecl,
             costWrappedReflectivePresentationDecl, mapReflectivePresentation,
-            costWrappedStaticSymbols, sourceLabel]
+            costWrappedStaticReflectiveSymbols, costWrappedStaticSymbols,
+            sourceLabel]
       · intro targetBare
         exact sourceNotBare
           ((usesBareCollection_costWrappedConstructor_iff sourceRule).mp (by
@@ -168,6 +179,112 @@ theorem rho_costReflectiveNameResultsQuoted :
               CostApparatusConstructor.grammarRule,
               costTokenStackEmptyConstructor, costTokenStackConsConstructor,
               costTokenStackSortName] using ruleCategoryBase.symm))
+
+/-- No collection node inhabits either generated reflective name fibre of
+rho Cost.  A raw collection has a collection type, while a collection at a
+base type must use an authored bare-collection rule.  The generated
+name-result classification rules out the latter: every name-resulting rule is
+a quotation constructor and is not bare.
+
+This is the typed guard needed when Quote/Drop exposes its name payload.  In
+particular, a process parallel bag cannot be exposed into that name fibre,
+even though an untyped keyed canonicalizer can exhibit exactly that shape. -/
+theorem rho_no_collection_at_reflectiveNameSort
+    (declaration : ReflectivePresentationDecl)
+    (declarationMembership : declaration ∈
+      rhoCIGSLT.costWholeReflectionProfile.presentations)
+    {free : FreeTypeContext} {bound : List TypeExpr}
+    {collectionType : CollType} {elements : List Pattern}
+    {rest : Option String} :
+    ¬ HasType rhoCIGSLT.costWholeLanguage free bound
+      (.collection collectionType elements rest) (.base declaration.nameSort) := by
+  intro typed
+  rcases hasType_collection_inversion typed with
+    ⟨elementType, impossible, elementsTyped⟩ |
+      ⟨rule, parameterName, elementType, membership, parameterShape,
+        resultType, elementsTyped⟩
+  · cases impossible
+  · have categoryEquality : rule.category = declaration.nameSort :=
+      (TypeExpr.base.inj resultType).symm
+    have notBare :=
+      (rho_costReflectiveNameResultsQuoted declaration declarationMembership
+        rule membership categoryEquality).2
+    exact notBare ⟨parameterName, collectionType, elementType,
+      parameterShape⟩
+
+/-- The selected Drop constructor in either generated rho Cost colour is an
+ordinary constructor, never a quotation boundary. -/
+theorem rho_costStatic_drop_isOrdinary (color : CostStaticColor) :
+    ReflectiveContextSupport.isQuoteConstructor rhoCIGSLT.costWholeReflectionProfile
+        (costStaticReflectivePresentationDecl rhoCIGSLT color
+          rhoReflectivePresentation.toReflectivePresentationDecl
+          ).dropConstructor = false := by
+  rw [show
+    (costStaticReflectivePresentationDecl rhoCIGSLT color
+      rhoReflectivePresentation.toReflectivePresentationDecl
+      ).dropConstructor =
+        (color.symbols rhoCIGSLT).constructor
+          rhoReflectivePresentation.dropConstructor by
+    simp [costStaticReflectivePresentationDecl_eq_map,
+      mapReflectivePresentation]]
+  rw [reflectiveIsQuoteConstructor_mapCostStatic]
+  rw [rhoCIGSLT_reflectionProfile_eq]
+  simp [rhoReflectionProfile, ReflectiveContextSupport.isQuoteConstructor,
+    rhoReflectivePresentation]
+
+/-- In either generated rho Cost colour, a typed Quote/Drop redex carries a
+payload in that declaration's exact reflective name fibre.  The support
+witness is returned below the quote reset, at visible depth zero.
+
+Together with `rho_no_collection_at_reflectiveNameSort`, this rules out the
+untyped counterexample in which Quote/Drop exposes a process parallel bag and
+an enclosing keyed collection re-sorts it at another depth. -/
+theorem rho_costStatic_quoteDrop_inner_typed
+    (color : CostStaticColor)
+    {free : FreeTypeContext} {support : ContextSupport.Support}
+    {bound available : List TypeExpr} {binderImage : TypeExpr → TypeExpr}
+    {inner : Pattern} {type : TypeExpr}
+    (typed : HasType rhoCIGSLT.costWholeLanguage free bound
+      (.apply
+        (costStaticReflectivePresentationDecl rhoCIGSLT color
+          rhoReflectivePresentation.toReflectivePresentationDecl
+          ).quoteConstructor
+        [.apply
+          (costStaticReflectivePresentationDecl rhoCIGSLT color
+            rhoReflectivePresentation.toReflectivePresentationDecl
+            ).dropConstructor [inner]]) type)
+    (safe : typed.ReflectiveSupportSafeAt
+      rhoCIGSLT.costWholeReflectionProfile support available binderImage) :
+    ∃ innerTyped : HasType rhoCIGSLT.costWholeLanguage free bound inner
+        (.base (costStaticReflectivePresentationDecl rhoCIGSLT color
+          rhoReflectivePresentation.toReflectivePresentationDecl).nameSort),
+      innerTyped.ReflectiveSupportSafeAt rhoCIGSLT.costWholeReflectionProfile
+        support [] binderImage := by
+  let declaration := costStaticReflectivePresentationDecl rhoCIGSLT color
+    rhoReflectivePresentation.toReflectivePresentationDecl
+  have declarationMembership : declaration ∈
+      rhoCIGSLT.costWholeReflectionProfile.presentations := by
+    simpa [declaration] using
+      costStaticReflectivePresentationDecl_mem rhoCIGSLT color
+        rhoReflectivePresentation.toReflectivePresentationDecl
+        rhoReflectivePresentation_mem_source
+  obtain ⟨argument, argumentTyped, argumentsShape, argumentSafe⟩ :=
+    typed.selectedQuoteArgument rhoCIGSLT.costWholeLanguage_validate
+      rhoCIGSLT.costWholeReflectionProfile_validate declarationMembership safe
+  have argumentEquality :
+      .apply declaration.dropConstructor [inner] = argument := by
+    simpa [declaration] using (List.cons.inj argumentsShape).1
+  subst argument
+  obtain ⟨payload, payloadTyped, payloadShape, payloadSafe⟩ :=
+    argumentTyped.selectedOrdinaryDropArgument
+      rhoCIGSLT.costWholeLanguage_validate
+      rhoCIGSLT.costWholeReflectionProfile_validate declarationMembership
+      (by simpa [declaration] using rho_costStatic_drop_isOrdinary color)
+      argumentSafe
+  have payloadEquality : inner = payload := by
+    simpa using (List.cons.inj payloadShape).1
+  subst payload
+  exact ⟨payloadTyped, payloadSafe⟩
 
 /-! ### Why the generated law is static-fiber scoped
 
@@ -206,7 +323,8 @@ private theorem rhoCostMixedColorDrop_typed :
   exact checkHasType_sound (by decide)
 
 private theorem rhoCostMixedColorDrop_supportSafe :
-    rhoCostMixedColorDrop_typed.ReflectiveSupportSafeAt (fun _ => []) [] :=
+    rhoCostMixedColorDrop_typed.ReflectiveSupportSafeAt
+      rhoCIGSLT.costWholeReflectionProfile (fun _ => []) [] :=
   rhoCostMixedColorDrop_typed.reflectiveSupportSafeAt_empty []
 
 private theorem rhoCostMixedColorDrop_object :
@@ -228,7 +346,8 @@ private theorem rhoCostMixedColorDrop_canonicalize :
     Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.finishNormalizeReflectiveApply,
     costStaticReflectivePresentationDecl,
     costWrappedReflectivePresentationDecl, mapReflectivePresentation,
-    costWrappedStaticSymbols, rhoReflectivePresentation, rhoCIGSLT,
+    costWrappedStaticReflectiveSymbols, costWrappedStaticSymbols,
+    rhoReflectivePresentation, rhoCIGSLT,
     rhoIGSLT, rhoInteractivePresentation, rhoCalc, TypeDecl.plain,
     costBaseConstructorName, costBaseConstructorTag,
     costWrappedConstructorName, costWrappedConstructorTag,
@@ -245,12 +364,11 @@ private theorem rhoCostMixedColorCanonicalName_not_typed :
   let declaration := costStaticReflectivePresentationDecl rhoCIGSLT .base
     rhoReflectivePresentation.toReflectivePresentationDecl
   have declarationMembership : declaration ∈
-      rhoCIGSLT.costWholeLanguage.reflectivePresentations := by
+      rhoCIGSLT.costWholeReflectionProfile.presentations := by
     simpa [declaration] using
       costStaticReflectivePresentationDecl_mem rhoCIGSLT .base
         rhoReflectivePresentation.toReflectivePresentationDecl
-        (by simp [rhoCIGSLT, rhoIGSLT, rhoInteractivePresentation,
-          rhoValidatedLanguageDef, rhoCalc])
+        rhoReflectivePresentation_mem_source
   have typed' : HasType rhoCIGSLT.costWholeLanguage FreeTypeContext.empty []
       (.apply declaration.quoteConstructor
         [.apply (costWrappedConstructorName "PZero") []])
@@ -262,7 +380,8 @@ private theorem rhoCostMixedColorCanonicalName_not_typed :
       rhoReflectivePresentation] using typed
   obtain ⟨argument, argumentTyped, argumentsShape, _argumentSafe⟩ :=
     typed'.selectedQuoteArgument rhoCIGSLT.costWholeLanguage_validate
-      declarationMembership (typed'.reflectiveSupportSafeAt_empty [])
+      rhoCIGSLT.costWholeReflectionProfile_validate declarationMembership
+      (typed'.reflectiveSupportSafeAt_empty [])
   have argumentEquality :
       .apply (costWrappedConstructorName "PZero") [] = argument := by
     simpa using argumentsShape
@@ -289,27 +408,18 @@ private theorem rhoCostMixedColorCanonicalDrop_not_typed :
   let declaration := costStaticReflectivePresentationDecl rhoCIGSLT .wrapped
     rhoReflectivePresentation.toReflectivePresentationDecl
   have declarationMembership :
-      declaration ∈ rhoCIGSLT.costWholeLanguage.reflectivePresentations := by
+      declaration ∈ rhoCIGSLT.costWholeReflectionProfile.presentations := by
     change declaration ∈ rhoCIGSLT.costStaticReflectivePresentations
     apply costStaticReflectivePresentationDecl_mem
     exact .head _
   have dropOrdinary :
-      ReflectiveContextSupport.isQuoteConstructor
-        rhoCIGSLT.costWholeLanguage declaration.dropConstructor = false := by
-    simp [declaration, ReflectiveContextSupport.isQuoteConstructor,
-      CIGSLT.costStaticReflectivePresentations,
-      costWrappedReflectivePresentationDecl, mapReflectivePresentation,
-      costBaseReflectivePresentationDecl, costBaseStaticSymbols,
-      costBasePresentationSymbols, costWrappedStaticSymbols,
-      rhoReflectivePresentation, rhoCIGSLT, rhoIGSLT,
-      rhoInteractivePresentation, rhoValidatedLanguageDef, rhoCalc,
-      costBaseConstructorName, costWrappedConstructorName,
-      costBaseConstructorTag, costWrappedConstructorTag,
-      CostStaticColor.constructorTag]
+      ReflectiveContextSupport.isQuoteConstructor rhoCIGSLT.costWholeReflectionProfile declaration.dropConstructor = false := by
+    simpa [declaration] using rho_costStatic_drop_isOrdinary .wrapped
   obtain ⟨argument, argumentTyped, argumentsShape, _argumentSafe⟩ :=
     typed.selectedOrdinaryDropArgument
-      rhoCIGSLT.costWholeLanguage_validate declarationMembership dropOrdinary
-        (typed.reflectiveSupportSafeAt_empty [])
+      rhoCIGSLT.costWholeLanguage_validate
+      rhoCIGSLT.costWholeReflectionProfile_validate declarationMembership
+      dropOrdinary (typed.reflectiveSupportSafeAt_empty [])
   have argumentEquality : argument = rhoCostMixedColorCanonicalName := by
     simpa [rhoCostMixedColorCanonicalDrop] using
       (congrArg List.head? argumentsShape).symm
@@ -330,26 +440,28 @@ wrapped Drop may contain a base Quote whose empty base parallel body is
 collapsed by the wrapped canonicalizer to the wrapped unit.  The resulting
 name is not sorted in the original base quotation fibre. -/
 theorem rho_costReflectiveDropCanonicalSupportStable_not :
-    ¬ ReflectiveDropCanonicalSupportStable rhoCIGSLT.costWholeLanguage := by
+    ¬ ReflectiveDropCanonicalSupportStable (profile := rhoCIGSLT.costWholeReflectionProfile) rhoCIGSLT.costWholeLanguage := by
   intro stable
   let declaration := costStaticReflectivePresentationDecl rhoCIGSLT .wrapped
     rhoReflectivePresentation.toReflectivePresentationDecl
   have declarationMembership : declaration ∈
-      rhoCIGSLT.costWholeLanguage.reflectivePresentations := by
+      rhoCIGSLT.costWholeReflectionProfile.presentations := by
     simpa [declaration] using
       costStaticReflectivePresentationDecl_mem rhoCIGSLT .wrapped
         rhoReflectivePresentation.toReflectivePresentationDecl
-        (by simp [rhoCIGSLT, rhoIGSLT, rhoInteractivePresentation,
-          rhoValidatedLanguageDef, rhoCalc])
+        rhoReflectivePresentation_mem_source
   have exposed := stable declaration declarationMembership
     rhoCostMixedColorDrop_typed rhoCostMixedColorDrop_supportSafe
       rhoCostMixedColorDrop_object (by
-        simpa [declaration, costStaticReflectivePresentationDecl,
-          costWrappedReflectivePresentationDecl, mapReflectivePresentation,
-          costWrappedStaticSymbols, CostStaticColor.symbols,
-          CostStaticColor.constructorTag, rhoReflectivePresentation,
-          rhoCostMixedColorCanonicalDrop]
-          using rhoCostMixedColorDrop_canonicalize)
+        have dropConstructor : declaration.dropConstructor =
+            costWrappedConstructorName "PDrop" := by
+          simp [declaration, costStaticReflectivePresentationDecl_eq_map,
+            mapReflectivePresentation, CostStaticColor.reflectiveSymbols,
+            costWrappedStaticReflectiveSymbols, costWrappedStaticSymbols,
+            rhoReflectivePresentation]
+        rw [dropConstructor]
+        simpa only [rhoCostMixedColorCanonicalDrop] using
+          rhoCostMixedColorDrop_canonicalize)
   rcases exposed with ⟨nameTyped, _nameSafe, _nameObject⟩
   exact rhoCostMixedColorCanonicalName_not_typed nameTyped
 
@@ -360,12 +472,14 @@ The region compiler therefore must prove typed soundness for its selected
 paths rather than assume that every raw generated edge preserves every
 possible typing fiber. -/
 theorem rho_costOpenEquationFiberStable_not :
-    ¬ OpenEquationFiberStable rhoCIGSLT.costWholeLanguage := by
+    ¬ ReflectiveEquationSemantics.ReflectiveOpenEquationFiberStable
+      rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
+        rhoCIGSLT.costWholeLanguage := by
   intro stable
   let declaration := costStaticReflectivePresentationDecl rhoCIGSLT .wrapped
     rhoReflectivePresentation.toReflectivePresentationDecl
   have declarationMembership :
-      declaration ∈ rhoCIGSLT.costWholeLanguage.reflectivePresentations := by
+      declaration ∈ rhoCIGSLT.costWholeReflectionProfile.presentations := by
     change declaration ∈ rhoCIGSLT.costStaticReflectivePresentations
     apply costStaticReflectivePresentationDecl_mem
     exact .head _
@@ -391,19 +505,23 @@ theorem rho_costOpenEquationFiberStable_not :
         (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize declaration)
         normalized
   have generator :
-      EquationSemantics.EquationContextStep defaultBasePremises
-        rhoCIGSLT.costWholeLanguage rhoCostMixedColorDrop
+      ReflectiveEquationSemantics.ReflectiveEquationContextStep rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
+      rhoCIGSLT.costWholeLanguage rhoCostMixedColorDrop
           rhoCostMixedColorCanonicalDrop := by
-    exact EquationSemantics.EquationContextStep.reflectiveInContext
+    exact ReflectiveEquationSemantics.ReflectiveEquationContextStep.reflectiveInContext
       (base := defaultBasePremises) (.hole) declarationMembership
         representatives
   have leftWellSorted :
-      OpenPatternWellSorted rhoCIGSLT.costWholeLanguage
+      ReflectiveWellSorted.OpenPatternWellSorted
+        rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
         FreeTypeContext.empty [] (.base costWrappedSortName)
           rhoCostMixedColorDrop :=
-    checkOpenPatternWellSorted_sound (by decide)
+    ⟨checkOpenPatternWellSorted_sound (by decide), by
+      intro declaration _membership
+      simp [rhoCostMixedColorDrop, rhoCostMixedColorName,
+        binderSafeAt, binderSafeListAt]⟩
   have rightWellSorted := (stable generator).mp leftWellSorted
-  exact rhoCostMixedColorCanonicalDrop_not_typed rightWellSorted.1
+  exact rhoCostMixedColorCanonicalDrop_not_typed rightWellSorted.1.1
 
 /-! ## Same-colour mapped equation action -/
 
@@ -446,10 +564,10 @@ def rhoCostStaticActionAt
     {sourceBound targetBound : List TypeExpr}
     (thinning : CostStaticBinderThinning rhoCIGSLT color sourceBound
       targetBound)
-    (assignment : SupportedOpenAssignment rhoCIGSLT.costWholeLanguage
+    (assignment : SupportedOpenAssignment rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
       assignmentFree targetFree assignmentSupport)
     (inner available : List TypeExpr) (pattern : Pattern) : Pattern :=
-  ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeLanguage
+  ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeReflectionProfile
     assignmentSupport assignment.assignment available.length
       (thinning.thickenAmbientBVars inner.length
         (mapPattern (color.symbols rhoCIGSLT) pattern))
@@ -467,11 +585,11 @@ private theorem rho_costStatic_quoteDrop_action_canonicalize_eq
     {name : Pattern} {resultType : TypeExpr}
     (thinning : CostStaticBinderThinning rhoCIGSLT color sourceBound
       targetBound)
-    (assignment : SupportedOpenAssignment rhoCIGSLT.costWholeLanguage
+    (assignment : SupportedOpenAssignment rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
       (free.map (color.symbols rhoCIGSLT)) targetFree support)
     (typed : HasType rhoCalc free (inner ++ sourceBound) name resultType)
     (resultType_eq : resultType = TypeExpr.name)
-    (safeAtZero : typed.ReflectiveSupportSafeAt support []
+    (safeAtZero : typed.ReflectiveSupportSafeAt rhoReflectionProfile support []
       (mapTypeExpr (color.symbols rhoCIGSLT)))
     (supported : ConstructorsWithin
       (· ∈ rhoCIGSLT.continuationRetyping.wrappedLabels) name)
@@ -480,7 +598,7 @@ private theorem rho_costStatic_quoteDrop_action_canonicalize_eq
     Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
         (costStaticReflectivePresentationDecl rhoCIGSLT color
           rhoReflectivePresentation.toReflectivePresentationDecl)
-        (ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeLanguage
+        (ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeReflectionProfile
           support assignment.assignment availableDepth
           (thinning.thickenAmbientBVars inner.length
             (mapPattern (color.symbols rhoCIGSLT)
@@ -488,19 +606,18 @@ private theorem rho_costStatic_quoteDrop_action_canonicalize_eq
       Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
         (costStaticReflectivePresentationDecl rhoCIGSLT color
           rhoReflectivePresentation.toReflectivePresentationDecl)
-        (ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeLanguage
+        (ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeReflectionProfile
           support assignment.assignment availableDepth
           (thinning.thickenAmbientBVars inner.length
             (mapPattern (color.symbols rhoCIGSLT) name))) := by
   let declaration := costStaticReflectivePresentationDecl rhoCIGSLT color
     rhoReflectivePresentation.toReflectivePresentationDecl
   have declarationMembership :
-      declaration ∈ rhoCIGSLT.costWholeLanguage.reflectivePresentations := by
+      declaration ∈ rhoCIGSLT.costWholeReflectionProfile.presentations := by
     simpa [declaration] using
       costStaticReflectivePresentationDecl_mem rhoCIGSLT color
         rhoReflectivePresentation.toReflectivePresentationDecl
-        (by simp [rhoCIGSLT, rhoIGSLT, rhoInteractivePresentation,
-          rhoValidatedLanguageDef, rhoCalc])
+        rhoReflectivePresentation_mem_source
   have quoteNeDrop : declaration.quoteConstructor ≠
       declaration.dropConstructor := by
     cases color <;>
@@ -514,7 +631,8 @@ private theorem rho_costStatic_quoteDrop_action_canonicalize_eq
             sourceBound.map (mapTypeExpr (color.symbols rhoCIGSLT)))
           (mapPattern (color.symbols rhoCIGSLT) name)
           (mapTypeExpr (color.symbols rhoCIGSLT) resultType),
-        mappedTyped'.ReflectiveSupportSafeAt support [] := by
+        mappedTyped'.ReflectiveSupportSafeAt
+          rhoCIGSLT.costWholeReflectionProfile support [] := by
     have raw :
         ∃ mappedTyped' : HasType rhoCIGSLT.costWholeLanguage
             (free.map (color.symbols rhoCIGSLT))
@@ -522,14 +640,16 @@ private theorem rho_costStatic_quoteDrop_action_canonicalize_eq
               (mapTypeExpr (color.symbols rhoCIGSLT)))
             (mapPattern (color.symbols rhoCIGSLT) name)
             (mapTypeExpr (color.symbols rhoCIGSLT) resultType),
-          mappedTyped'.ReflectiveSupportSafeAt support [] :=
+          mappedTyped'.ReflectiveSupportSafeAt
+            rhoCIGSLT.costWholeReflectionProfile support [] :=
       ⟨mappedTyped, mappedSafe⟩
     simpa only [List.map_append] using raw
   obtain ⟨mappedTyped, mappedSafe⟩ := mappedTypedSafe
   let thickenedTyped := mappedTyped.thickenAmbientBVars
     (source := rhoCIGSLT) (color := color)
       (inner := inner.map (mapTypeExpr (color.symbols rhoCIGSLT))) thinning
-  have thickenedSafe : thickenedTyped.ReflectiveSupportSafeAt support [] :=
+  have thickenedSafe : thickenedTyped.ReflectiveSupportSafeAt
+      rhoCIGSLT.costWholeReflectionProfile support [] :=
     WellSorted.HasType.ReflectiveSupportSafeAt.thickenAmbientBVars
       (source := rhoCIGSLT) (color := color)
       (inner := inner.map (mapTypeExpr (color.symbols rhoCIGSLT)))
@@ -553,6 +673,7 @@ private theorem rho_costStatic_quoteDrop_action_canonicalize_eq
       (by simpa only [List.length_map] using thickenedObject) availableDepth
   simpa only [declaration, costStaticReflectivePresentationDecl_eq_map,
     mapReflectivePresentation, mapPattern, mapPatternList_eq_map,
+    CostStaticColor.reflectiveSymbols_constructor,
     CostStaticBinderThinning.thickenAmbientBVars, List.length_map,
     List.map_cons, List.map_nil, rhoReflectivePresentation]
     using cancellation
@@ -567,37 +688,36 @@ private theorem rho_costStatic_quoteDrop_action_step
     {name : Pattern} {resultType : TypeExpr}
     (thinning : CostStaticBinderThinning rhoCIGSLT color sourceBound
       targetBound)
-    (assignment : SupportedOpenAssignment rhoCIGSLT.costWholeLanguage
+    (assignment : SupportedOpenAssignment rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
       (free.map (color.symbols rhoCIGSLT)) targetFree support)
     (typed : HasType rhoCalc free (inner ++ sourceBound) name resultType)
     (resultType_eq : resultType = TypeExpr.name)
-    (safeAtZero : typed.ReflectiveSupportSafeAt support []
+    (safeAtZero : typed.ReflectiveSupportSafeAt rhoReflectionProfile support []
       (mapTypeExpr (color.symbols rhoCIGSLT)))
     (supported : ConstructorsWithin
       (· ∈ rhoCIGSLT.continuationRetyping.wrappedLabels) name)
     (object : isObjectPattern name = true)
     (availableDepth : Nat) :
-    EquationSemantics.EquationContextStep defaultBasePremises
+    ReflectiveEquationSemantics.ReflectiveEquationContextStep rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
       rhoCIGSLT.costWholeLanguage
-      (ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeLanguage
+      (ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeReflectionProfile
         support assignment.assignment availableDepth
         (thinning.thickenAmbientBVars inner.length
           (mapPattern (color.symbols rhoCIGSLT)
             (.apply "NQuote" [.apply "PDrop" [name]]))))
-      (ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeLanguage
+      (ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeReflectionProfile
         support assignment.assignment availableDepth
         (thinning.thickenAmbientBVars inner.length
           (mapPattern (color.symbols rhoCIGSLT) name))) := by
   let declaration := costStaticReflectivePresentationDecl rhoCIGSLT color
     rhoReflectivePresentation.toReflectivePresentationDecl
   have declarationMembership :
-      declaration ∈ rhoCIGSLT.costWholeLanguage.reflectivePresentations := by
+      declaration ∈ rhoCIGSLT.costWholeReflectionProfile.presentations := by
     simpa [declaration] using
       costStaticReflectivePresentationDecl_mem rhoCIGSLT color
         rhoReflectivePresentation.toReflectivePresentationDecl
-        (by simp [rhoCIGSLT, rhoIGSLT, rhoInteractivePresentation,
-          rhoValidatedLanguageDef, rhoCalc])
-  apply EquationSemantics.EquationContextStep.reflectiveInContext .hole
+        rhoReflectivePresentation_mem_source
+  apply ReflectiveEquationSemantics.ReflectiveEquationContextStep.reflectiveInContext .hole
     declarationMembership
   simpa only [declaration] using
     rho_costStatic_quoteDrop_action_canonicalize_eq thinning assignment typed
@@ -613,24 +733,25 @@ private theorem rho_costStatic_quoteDrop_action
     {name : Pattern} {resultType : TypeExpr}
     (thinning : CostStaticBinderThinning rhoCIGSLT color sourceBound
       targetBound)
-    (assignment : SupportedOpenAssignment rhoCIGSLT.costWholeLanguage
+    (assignment : SupportedOpenAssignment rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
       (free.map (color.symbols rhoCIGSLT)) targetFree support)
     (typed : HasType rhoCalc free (inner ++ sourceBound) name resultType)
     (resultType_eq : resultType = TypeExpr.name)
-    (safeAtZero : typed.ReflectiveSupportSafeAt support []
+    (safeAtZero : typed.ReflectiveSupportSafeAt rhoReflectionProfile support []
       (mapTypeExpr (color.symbols rhoCIGSLT)))
     (supported : ConstructorsWithin
       (· ∈ rhoCIGSLT.continuationRetyping.wrappedLabels) name)
     (object : isObjectPattern name = true)
     (availableDepth : Nat) :
-    EquationSemantics.EquationEquiv defaultBasePremises
+    ReflectiveEquationSemantics.ReflectiveEquationEquiv
+      rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
       rhoCIGSLT.costWholeLanguage
-      (ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeLanguage
+      (ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeReflectionProfile
         support assignment.assignment availableDepth
         (thinning.thickenAmbientBVars inner.length
           (mapPattern (color.symbols rhoCIGSLT)
             (.apply "NQuote" [.apply "PDrop" [name]]))))
-      (ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeLanguage
+      (ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeReflectionProfile
         support assignment.assignment availableDepth
         (thinning.thickenAmbientBVars inner.length
           (mapPattern (color.symbols rhoCIGSLT) name))) := by
@@ -639,11 +760,14 @@ private theorem rho_costStatic_quoteDrop_action
       resultType_eq safeAtZero supported object availableDepth)
 
 private theorem rhoCostEquationEquiv_trans {left middle right : Pattern}
-    (first : EquationSemantics.EquationEquiv defaultBasePremises
+    (first : ReflectiveEquationSemantics.ReflectiveEquationEquiv
+      rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
       rhoCIGSLT.costWholeLanguage left middle)
-    (second : EquationSemantics.EquationEquiv defaultBasePremises
+    (second : ReflectiveEquationSemantics.ReflectiveEquationEquiv
+      rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
       rhoCIGSLT.costWholeLanguage middle right) :
-    EquationSemantics.EquationEquiv defaultBasePremises
+    ReflectiveEquationSemantics.ReflectiveEquationEquiv
+      rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
       rhoCIGSLT.costWholeLanguage left right :=
   Relation.EqvGen.trans _ _ _ first second
 
@@ -689,12 +813,12 @@ private theorem rhoCostStaticActionAt_canonicalize_eq
     {pattern : Pattern} {type : TypeExpr}
     (thinning : CostStaticBinderThinning rhoCIGSLT color sourceBound
       targetBound)
-    (assignment : SupportedOpenAssignment rhoCIGSLT.costWholeLanguage
+    (assignment : SupportedOpenAssignment rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
       assignmentFree targetFree assignmentSupport)
     (freeContext : free.map (color.symbols rhoCIGSLT) = assignmentFree)
     (reflectiveSupport : support = assignmentSupport)
     (typed : HasType rhoCalc free (inner ++ sourceBound) pattern type)
-    (safe : typed.ReflectiveSupportSafeAt support available
+    (safe : typed.ReflectiveSupportSafeAt rhoReflectionProfile support available
       (mapTypeExpr (color.symbols rhoCIGSLT)))
     (supported : ConstructorsWithin
       (· ∈ rhoCIGSLT.continuationRetyping.wrappedLabels) pattern)
@@ -715,24 +839,22 @@ private theorem rhoCostStaticActionAt_canonicalize_eq
     rhoReflectivePresentation.toReflectivePresentationDecl
   have sourceMembership :
       rhoReflectivePresentation.toReflectivePresentationDecl ∈
-        rhoCalc.reflectivePresentations := by
-    simp [rhoCalc]
+        rhoReflectionProfile.presentations := by
+    simp [rhoReflectionProfile]
   have targetQuoteStatus :
-      ReflectiveContextSupport.isQuoteConstructor
-          rhoCIGSLT.costWholeLanguage
+      ReflectiveContextSupport.isQuoteConstructor rhoCIGSLT.costWholeReflectionProfile
           ((color.symbols rhoCIGSLT).constructor
             rhoReflectivePresentation.quoteConstructor) = true := by
     rw [reflectiveIsQuoteConstructor_mapCostStatic]
-    simp [rhoCIGSLT, rhoIGSLT, rhoInteractivePresentation,
-      rhoValidatedLanguageDef, ReflectiveContextSupport.isQuoteConstructor,
-      rhoCalc, rhoReflectivePresentation]
+    rw [rhoCIGSLT_reflectionProfile_eq]
+    simp [rhoReflectionProfile, ReflectiveContextSupport.isQuoteConstructor,
+      rhoReflectivePresentation]
   have targetDeclarationQuote : targetDeclaration.quoteConstructor =
       (color.symbols rhoCIGSLT).constructor
         rhoReflectivePresentation.quoteConstructor := by
     simp [targetDeclaration, mapReflectivePresentation]
   have targetQuoteStatusTag :
-      ReflectiveContextSupport.isQuoteConstructor
-          rhoCIGSLT.costWholeLanguage
+      ReflectiveContextSupport.isQuoteConstructor rhoCIGSLT.costWholeReflectionProfile
           (color.constructorTag ++
             rhoReflectivePresentation.quoteConstructor) = true := by
     rw [← CostStaticColor.symbols_constructor]
@@ -749,7 +871,8 @@ private theorem rhoCostStaticActionAt_canonicalize_eq
       (typed : HasType rhoCalc free bound pattern type)
       (currentAvailable : List TypeExpr)
       (currentImage : TypeExpr → TypeExpr)
-      (_ : typed.ReflectiveSupportSafeAt support currentAvailable currentImage) =>
+      (_ : typed.ReflectiveSupportSafeAt rhoReflectionProfile support
+        currentAvailable currentImage) =>
       ∀ (currentInner : List TypeExpr),
         bound = currentInner ++ sourceBound →
         currentImage = mapTypeExpr (color.symbols rhoCIGSLT) →
@@ -770,7 +893,8 @@ private theorem rhoCostStaticActionAt_canonicalize_eq
       (typed : ArgumentsHaveTypes rhoCalc free bound arguments parameters)
       (currentAvailable : List TypeExpr)
       (currentImage : TypeExpr → TypeExpr)
-      (_ : typed.ReflectiveSupportSafeAt support currentAvailable currentImage) =>
+      (_ : typed.ReflectiveSupportSafeAt rhoReflectionProfile support
+        currentAvailable currentImage) =>
       ∀ (currentInner : List TypeExpr),
         bound = currentInner ++ sourceBound →
         currentImage = mapTypeExpr (color.symbols rhoCIGSLT) →
@@ -792,7 +916,8 @@ private theorem rhoCostStaticActionAt_canonicalize_eq
       (typed : ElementsHaveType rhoCalc free bound elements elementType)
       (currentAvailable : List TypeExpr)
       (currentImage : TypeExpr → TypeExpr)
-      (_ : typed.ReflectiveSupportSafeAt support currentAvailable currentImage) =>
+      (_ : typed.ReflectiveSupportSafeAt rhoReflectionProfile support
+        currentAvailable currentImage) =>
       ∀ (currentInner : List TypeExpr),
         bound = currentInner ++ sourceBound →
         currentImage = mapTypeExpr (color.symbols rhoCIGSLT) →
@@ -834,7 +959,7 @@ private theorem rhoCostStaticActionAt_canonicalize_eq
         obtain ⟨declaration, declarationMembership, quoteLabel⟩ := quoted
         have declarationEquality : declaration =
             rhoReflectivePresentation.toReflectivePresentationDecl := by
-          simpa [rhoCalc] using declarationMembership
+          simpa [rhoReflectionProfile] using declarationMembership
         subst declaration
         have quoteLabel' :
             rhoReflectivePresentation.quoteConstructor = rule.label := by
@@ -842,8 +967,9 @@ private theorem rhoCostStaticActionAt_canonicalize_eq
         exact quoteLabel'.symm
       obtain ⟨argument, argumentTyped, rfl, argumentSafe⟩ :=
         argumentsTyped.selectedQuoteArgument
-          LanguageDefAdequacy.rhoCalc_validate sourceMembership membership
-            selectedByQuote
+          LanguageDefAdequacy.rhoCalc_validate
+            rhoCalcValidatedReflective.admittedReflection.2 sourceMembership
+            membership selectedByQuote
             argumentsSafe
       have argumentSupported : ConstructorsWithin
           (· ∈ rhoCIGSLT.continuationRetyping.wrappedLabels) argument :=
@@ -900,7 +1026,7 @@ private theorem rhoCostStaticActionAt_canonicalize_eq
             ∃ nameTyped' : HasType rhoCalc free
                 (currentInner ++ sourceBound) name
                 (.base rhoReflectivePresentation.nameSort),
-              nameTyped'.ReflectiveSupportSafeAt support []
+              nameTyped'.ReflectiveSupportSafeAt rhoReflectionProfile support []
                 (mapTypeExpr (color.symbols rhoCIGSLT)) := by
           rw [← boundEquality]
           exact ⟨nameTyped, by simpa [imageEquality] using nameSafe⟩
@@ -908,7 +1034,7 @@ private theorem rhoCostStaticActionAt_canonicalize_eq
         have cancellation := rho_costStatic_quoteDrop_action_canonicalize_eq
           (inner := currentInner) thinning assignment nameTyped rfl nameSafe
             nameSupported nameObject currentAvailable.length
-        have lifted := EquationSemantics.canonicalize_fill_congr
+        have lifted := ReflectiveEquationSemantics.canonicalize_fill_congr
           targetDeclaration
           (.apply targetDeclaration.quoteConstructor [] .hole [])
           (by simpa [canonicalEquality] using argumentEquality)
@@ -987,7 +1113,7 @@ private theorem rhoCostStaticActionAt_canonicalize_eq
                   rhoReflectivePresentation argument]
           exact rho_finishNormalizeReflectiveApply_quote_eq_of_not_drop
             dropShape
-        have lifted := EquationSemantics.canonicalize_fill_congr
+        have lifted := ReflectiveEquationSemantics.canonicalize_fill_congr
           targetDeclaration
           (.apply targetDeclaration.quoteConstructor [] .hole [])
           argumentEquality
@@ -1008,7 +1134,7 @@ private theorem rhoCostStaticActionAt_canonicalize_eq
       have selected :
           rule.label ≠ rhoReflectivePresentation.quoteConstructor := by
         intro equality
-        have sourceQuote : ReflectiveContextSupport.isQuoteConstructor rhoCalc
+        have sourceQuote : ReflectiveContextSupport.isQuoteConstructor rhoReflectionProfile
             rhoReflectivePresentation.quoteConstructor = true := by
           simp only [ReflectiveContextSupport.isQuoteConstructor,
             List.any_eq_true]
@@ -1020,14 +1146,12 @@ private theorem rhoCostStaticActionAt_canonicalize_eq
           (rule.label == rhoReflectivePresentation.quoteConstructor) = false :=
         by simp [selected]
       have targetOrdinaryStatus :
-          ReflectiveContextSupport.isQuoteConstructor
-              rhoCIGSLT.costWholeLanguage
+          ReflectiveContextSupport.isQuoteConstructor rhoCIGSLT.costWholeReflectionProfile
               ((color.symbols rhoCIGSLT).constructor rule.label) = false := by
         rw [reflectiveIsQuoteConstructor_mapCostStatic]
         exact ordinary
       have targetOrdinaryStatusTag :
-          ReflectiveContextSupport.isQuoteConstructor
-              rhoCIGSLT.costWholeLanguage
+          ReflectiveContextSupport.isQuoteConstructor rhoCIGSLT.costWholeReflectionProfile
               (color.constructorTag ++ rule.label) = false := by
         rw [← CostStaticColor.symbols_constructor]
         exact targetOrdinaryStatus
@@ -1369,15 +1493,15 @@ theorem rhoCostStaticActionAt_canonicalize_eq_of_canonicalize_eq
     {left right : Pattern} {leftType rightType : TypeExpr}
     (thinning : CostStaticBinderThinning rhoCIGSLT color sourceBound
       targetBound)
-    (assignment : SupportedOpenAssignment rhoCIGSLT.costWholeLanguage
+    (assignment : SupportedOpenAssignment rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
       assignmentFree targetFree assignmentSupport)
     (freeContext : free.map (color.symbols rhoCIGSLT) = assignmentFree)
     (reflectiveSupport : support = assignmentSupport)
     (leftTyped : HasType rhoCalc free (inner ++ sourceBound) left leftType)
     (rightTyped : HasType rhoCalc free (inner ++ sourceBound) right rightType)
-    (leftSafe : leftTyped.ReflectiveSupportSafeAt support available
+    (leftSafe : leftTyped.ReflectiveSupportSafeAt rhoReflectionProfile support available
       (mapTypeExpr (color.symbols rhoCIGSLT)))
-    (rightSafe : rightTyped.ReflectiveSupportSafeAt support available
+    (rightSafe : rightTyped.ReflectiveSupportSafeAt rhoReflectionProfile support available
       (mapTypeExpr (color.symbols rhoCIGSLT)))
     (leftSupported : ConstructorsWithin
       (· ∈ rhoCIGSLT.continuationRetyping.wrappedLabels) left)
@@ -1419,17 +1543,18 @@ theorem rhoCostStaticActionAt_canonicalize_equationEquiv
     {pattern : Pattern} {type : TypeExpr}
     (thinning : CostStaticBinderThinning rhoCIGSLT color sourceBound
       targetBound)
-    (assignment : SupportedOpenAssignment rhoCIGSLT.costWholeLanguage
+    (assignment : SupportedOpenAssignment rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
       assignmentFree targetFree assignmentSupport)
     (freeContext : free.map (color.symbols rhoCIGSLT) = assignmentFree)
     (reflectiveSupport : support = assignmentSupport)
     (typed : HasType rhoCalc free (inner ++ sourceBound) pattern type)
-    (safe : typed.ReflectiveSupportSafeAt support available
+    (safe : typed.ReflectiveSupportSafeAt rhoReflectionProfile support available
       (mapTypeExpr (color.symbols rhoCIGSLT)))
     (supported : ConstructorsWithin
       (· ∈ rhoCIGSLT.continuationRetyping.wrappedLabels) pattern)
     (object : isObjectPattern pattern = true) :
-    EquationSemantics.EquationEquiv defaultBasePremises
+    ReflectiveEquationSemantics.ReflectiveEquationEquiv
+      rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
       rhoCIGSLT.costWholeLanguage
       (rhoCostStaticActionAt thinning assignment inner available pattern)
       (rhoCostStaticActionAt thinning assignment inner available
@@ -1441,38 +1566,35 @@ theorem rhoCostStaticActionAt_canonicalize_equationEquiv
     rhoReflectivePresentation.toReflectivePresentationDecl
   have sourceMembership :
       rhoReflectivePresentation.toReflectivePresentationDecl ∈
-        rhoCalc.reflectivePresentations := by
-    simp [rhoCalc]
+        rhoReflectionProfile.presentations := by
+    simp [rhoReflectionProfile]
   have targetMembership : targetDeclaration ∈
-      rhoCIGSLT.costWholeLanguage.reflectivePresentations := by
+      rhoCIGSLT.costWholeReflectionProfile.presentations := by
     simpa [targetDeclaration] using
       costStaticReflectivePresentationDecl_mem rhoCIGSLT color
         rhoReflectivePresentation.toReflectivePresentationDecl sourceMembership
   have targetQuoteStatus :
-      ReflectiveContextSupport.isQuoteConstructor
-          rhoCIGSLT.costWholeLanguage
+      ReflectiveContextSupport.isQuoteConstructor rhoCIGSLT.costWholeReflectionProfile
           ((color.symbols rhoCIGSLT).constructor
             rhoReflectivePresentation.quoteConstructor) = true := by
     rw [reflectiveIsQuoteConstructor_mapCostStatic]
-    simp [rhoCIGSLT, rhoIGSLT, rhoInteractivePresentation,
-      rhoValidatedLanguageDef, ReflectiveContextSupport.isQuoteConstructor,
-      rhoCalc, rhoReflectivePresentation]
+    rw [rhoCIGSLT_reflectionProfile_eq]
+    simp [rhoReflectionProfile, ReflectiveContextSupport.isQuoteConstructor,
+      rhoReflectivePresentation]
   have targetDropStatus :
-      ReflectiveContextSupport.isQuoteConstructor
-          rhoCIGSLT.costWholeLanguage
+      ReflectiveContextSupport.isQuoteConstructor rhoCIGSLT.costWholeReflectionProfile
           ((color.symbols rhoCIGSLT).constructor
             rhoReflectivePresentation.dropConstructor) = false := by
     rw [reflectiveIsQuoteConstructor_mapCostStatic]
-    simp [rhoCIGSLT, rhoIGSLT, rhoInteractivePresentation,
-      rhoValidatedLanguageDef, ReflectiveContextSupport.isQuoteConstructor,
-      rhoCalc, rhoReflectivePresentation]
+    rw [rhoCIGSLT_reflectionProfile_eq]
+    simp [rhoReflectionProfile, ReflectiveContextSupport.isQuoteConstructor,
+      rhoReflectivePresentation]
   have targetDeclarationQuote : targetDeclaration.quoteConstructor =
       (color.symbols rhoCIGSLT).constructor
         rhoReflectivePresentation.quoteConstructor := by
     simp [targetDeclaration, mapReflectivePresentation]
   have targetQuoteStatusTag :
-      ReflectiveContextSupport.isQuoteConstructor
-          rhoCIGSLT.costWholeLanguage
+      ReflectiveContextSupport.isQuoteConstructor rhoCIGSLT.costWholeReflectionProfile
           (color.constructorTag ++
             rhoReflectivePresentation.quoteConstructor) = true := by
     rw [← CostStaticColor.symbols_constructor]
@@ -1482,15 +1604,17 @@ theorem rhoCostStaticActionAt_canonicalize_equationEquiv
       (typed : HasType rhoCalc free bound pattern type)
       (currentAvailable : List TypeExpr)
       (currentImage : TypeExpr → TypeExpr)
-      (_ : typed.ReflectiveSupportSafeAt support currentAvailable currentImage) =>
+      (_ : typed.ReflectiveSupportSafeAt rhoReflectionProfile support
+        currentAvailable currentImage) =>
       ∀ (currentInner : List TypeExpr),
         bound = currentInner ++ sourceBound →
         currentImage = mapTypeExpr (color.symbols rhoCIGSLT) →
         ConstructorsWithin
           (· ∈ rhoCIGSLT.continuationRetyping.wrappedLabels) pattern →
         isObjectPattern pattern = true →
-        EquationSemantics.EquationEquiv defaultBasePremises
-          rhoCIGSLT.costWholeLanguage
+        ReflectiveEquationSemantics.ReflectiveEquationEquiv
+      rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
+      rhoCIGSLT.costWholeLanguage
           (rhoCostStaticActionAt thinning assignment currentInner
             currentAvailable pattern)
           (rhoCostStaticActionAt thinning assignment currentInner
@@ -1501,7 +1625,8 @@ theorem rhoCostStaticActionAt_canonicalize_equationEquiv
       (typed : ArgumentsHaveTypes rhoCalc free bound arguments parameters)
       (currentAvailable : List TypeExpr)
       (currentImage : TypeExpr → TypeExpr)
-      (_ : typed.ReflectiveSupportSafeAt support currentAvailable currentImage) =>
+      (_ : typed.ReflectiveSupportSafeAt rhoReflectionProfile support
+        currentAvailable currentImage) =>
       ∀ (currentInner : List TypeExpr),
         bound = currentInner ++ sourceBound →
         currentImage = mapTypeExpr (color.symbols rhoCIGSLT) →
@@ -1509,8 +1634,9 @@ theorem rhoCostStaticActionAt_canonicalize_equationEquiv
           (· ∈ rhoCIGSLT.continuationRetyping.wrappedLabels) arguments →
         isObjectPatternList arguments = true →
         List.Forall₂
-          (EquationSemantics.EquationEquiv defaultBasePremises
-            rhoCIGSLT.costWholeLanguage)
+          (ReflectiveEquationSemantics.ReflectiveEquationEquiv
+      rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
+      rhoCIGSLT.costWholeLanguage)
           (arguments.map
             (rhoCostStaticActionAt thinning assignment currentInner
               currentAvailable))
@@ -1522,7 +1648,8 @@ theorem rhoCostStaticActionAt_canonicalize_equationEquiv
       (typed : ElementsHaveType rhoCalc free bound elements elementType)
       (currentAvailable : List TypeExpr)
       (currentImage : TypeExpr → TypeExpr)
-      (_ : typed.ReflectiveSupportSafeAt support currentAvailable currentImage) =>
+      (_ : typed.ReflectiveSupportSafeAt rhoReflectionProfile support
+        currentAvailable currentImage) =>
       ∀ (currentInner : List TypeExpr),
         bound = currentInner ++ sourceBound →
         currentImage = mapTypeExpr (color.symbols rhoCIGSLT) →
@@ -1530,8 +1657,9 @@ theorem rhoCostStaticActionAt_canonicalize_equationEquiv
           (· ∈ rhoCIGSLT.continuationRetyping.wrappedLabels) elements →
         isObjectPatternList elements = true →
         List.Forall₂
-          (EquationSemantics.EquationEquiv defaultBasePremises
-            rhoCIGSLT.costWholeLanguage)
+          (ReflectiveEquationSemantics.ReflectiveEquationEquiv
+      rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
+      rhoCIGSLT.costWholeLanguage)
           (elements.map
             (rhoCostStaticActionAt thinning assignment currentInner
               currentAvailable))
@@ -1558,7 +1686,7 @@ theorem rhoCostStaticActionAt_canonicalize_equationEquiv
         simpa [isObjectPattern] using resultObject
       have pointwise := argumentsIH currentInner boundEquality imageEquality
         argumentsSupported argumentsObject
-      have lifted := EquationSemantics.equationEquiv_apply_of_forall₂
+      have lifted := ReflectiveEquationSemantics.equationEquiv_apply_of_forall₂
         ((color.symbols rhoCIGSLT).constructor rule.label) pointwise
       have selectedByQuote :
           rule.label = rhoReflectivePresentation.quoteConstructor := by
@@ -1567,7 +1695,7 @@ theorem rhoCostStaticActionAt_canonicalize_equationEquiv
         obtain ⟨declaration, declarationMembership, quoteLabel⟩ := quoted
         have declarationEquality : declaration =
             rhoReflectivePresentation.toReflectivePresentationDecl := by
-          simpa [rhoCalc] using declarationMembership
+          simpa [rhoReflectionProfile] using declarationMembership
         subst declaration
         have quoteLabel' :
             rhoReflectivePresentation.quoteConstructor = rule.label := by
@@ -1577,8 +1705,9 @@ theorem rhoCostStaticActionAt_canonicalize_equationEquiv
           rule.label = rhoReflectivePresentation.quoteConstructor
       · obtain ⟨argument, argumentTyped, rfl, argumentSafe⟩ :=
           argumentsTyped.selectedQuoteArgument
-            LanguageDefAdequacy.rhoCalc_validate sourceMembership membership
-              selected argumentsSafe
+            LanguageDefAdequacy.rhoCalc_validate
+              rhoCalcValidatedReflective.admittedReflection.2 sourceMembership
+              membership selected argumentsSafe
         have argumentSupported : ConstructorsWithin
             (· ∈ rhoCIGSLT.continuationRetyping.wrappedLabels) argument :=
           argumentsSupported.1
@@ -1587,8 +1716,10 @@ theorem rhoCostStaticActionAt_canonicalize_equationEquiv
         cases pointwise with
         | @cons _ _ _ _ argumentEquivalent tailPointwise =>
             cases tailPointwise
-            have lifted' : EquationSemantics.EquationEquiv defaultBasePremises
-                rhoCIGSLT.costWholeLanguage
+            have lifted' :
+                ReflectiveEquationSemantics.ReflectiveEquationEquiv
+                  rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
+                  rhoCIGSLT.costWholeLanguage
                 (.apply targetDeclaration.quoteConstructor
                   [rhoCostStaticActionAt thinning assignment currentInner []
                     argument])
@@ -1640,7 +1771,8 @@ theorem rhoCostStaticActionAt_canonicalize_equationEquiv
                   ∃ nameTyped' : HasType rhoCalc free
                       (currentInner ++ sourceBound) name
                       (.base rhoReflectivePresentation.nameSort),
-                    nameTyped'.ReflectiveSupportSafeAt support []
+                    nameTyped'.ReflectiveSupportSafeAt rhoReflectionProfile
+                      support []
                       (mapTypeExpr (color.symbols rhoCIGSLT)) := by
                 rw [← boundEquality]
                 exact ⟨nameTyped, by simpa [imageEquality] using nameSafe⟩
@@ -1651,7 +1783,8 @@ theorem rhoCostStaticActionAt_canonicalize_equationEquiv
                     nameObject currentAvailable.length
               rw [canonicalEquality] at lifted'
               have cancellationAction :
-                  EquationSemantics.EquationEquiv defaultBasePremises
+                  ReflectiveEquationSemantics.ReflectiveEquationEquiv
+                    rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
                     rhoCIGSLT.costWholeLanguage
                     (rhoCostStaticActionAt thinning assignment currentInner
                       currentAvailable
@@ -1664,7 +1797,8 @@ theorem rhoCostStaticActionAt_canonicalize_equationEquiv
                   using cancellation
               rw [quoteAction] at cancellationAction
               have cancellation' :
-                  EquationSemantics.EquationEquiv defaultBasePremises
+                  ReflectiveEquationSemantics.ReflectiveEquationEquiv
+                    rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
                     rhoCIGSLT.costWholeLanguage
                     (.apply targetDeclaration.quoteConstructor
                       [rhoCostStaticActionAt thinning assignment currentInner []
@@ -1725,12 +1859,12 @@ theorem rhoCostStaticActionAt_canonicalize_equationEquiv
         simpa [isObjectPattern] using resultObject
       have pointwise := argumentsIH currentInner boundEquality imageEquality
         argumentsSupported argumentsObject
-      have lifted := EquationSemantics.equationEquiv_apply_of_forall₂
+      have lifted := ReflectiveEquationSemantics.equationEquiv_apply_of_forall₂
         ((color.symbols rhoCIGSLT).constructor rule.label) pointwise
       have selected :
           rule.label ≠ rhoReflectivePresentation.quoteConstructor := by
         intro equality
-        have sourceQuote : ReflectiveContextSupport.isQuoteConstructor rhoCalc
+        have sourceQuote : ReflectiveContextSupport.isQuoteConstructor rhoReflectionProfile
             rhoReflectivePresentation.quoteConstructor = true := by
           simp only [ReflectiveContextSupport.isQuoteConstructor,
             List.any_eq_true]
@@ -1742,14 +1876,12 @@ theorem rhoCostStaticActionAt_canonicalize_equationEquiv
           (rule.label == rhoReflectivePresentation.quoteConstructor) = false :=
         by simp [selected]
       have targetOrdinaryStatus :
-          ReflectiveContextSupport.isQuoteConstructor
-              rhoCIGSLT.costWholeLanguage
+          ReflectiveContextSupport.isQuoteConstructor rhoCIGSLT.costWholeReflectionProfile
               ((color.symbols rhoCIGSLT).constructor rule.label) = false := by
         rw [reflectiveIsQuoteConstructor_mapCostStatic]
         exact ordinary
       have targetOrdinaryStatusTag :
-          ReflectiveContextSupport.isQuoteConstructor
-              rhoCIGSLT.costWholeLanguage
+          ReflectiveContextSupport.isQuoteConstructor rhoCIGSLT.costWholeReflectionProfile
               (color.constructorTag ++ rule.label) = false := by
         rw [← CostStaticColor.symbols_constructor]
         exact targetOrdinaryStatus
@@ -1785,7 +1917,7 @@ theorem rhoCostStaticActionAt_canonicalize_equationEquiv
         simp [boundEquality]
       have bodyEquivalent := bodyIH (domain :: currentInner) bodyBound
         imageEquality resultSupported bodyObject
-      have lifted := EquationSemantics.equationEquiv_fill
+      have lifted := ReflectiveEquationSemantics.equationEquiv_fill
         (.lambda binder .hole) bodyEquivalent
       simpa [rhoCostStaticActionAt,
         ReflectiveContextSupport.substituteAt,
@@ -1804,7 +1936,7 @@ theorem rhoCostStaticActionAt_canonicalize_equationEquiv
       have bodyEquivalent := bodyIH
         (List.replicate arity domain ++ currentInner) bodyBound imageEquality
           resultSupported bodyObject
-      have lifted := EquationSemantics.equationEquiv_fill
+      have lifted := ReflectiveEquationSemantics.equationEquiv_fill
         (.multiLambda arity binders .hole) bodyEquivalent
       simpa [rhoCostStaticActionAt,
         ReflectiveContextSupport.substituteAt,
@@ -1827,7 +1959,7 @@ theorem rhoCostStaticActionAt_canonicalize_equationEquiv
       rcases objectParts with ⟨rfl, elementsObject⟩
       have pointwise := elementsIH currentInner boundEquality imageEquality
         resultSupported elementsObject
-      have lifted := EquationSemantics.equationEquiv_collection_of_forall₂
+      have lifted := ReflectiveEquationSemantics.equationEquiv_collection_of_forall₂
         collectionType none pointwise
       let action := rhoCostStaticActionAt thinning assignment currentInner
         currentAvailable
@@ -1862,10 +1994,12 @@ theorem rhoCostStaticActionAt_canonicalize_equationEquiv
             mapReflectivePresentation]
         have normalized :=
           ReflectiveParallelSubstitution.normalizationMapEquivalentBetween
+            (language := rhoCIGSLT.costWholeLanguage)
             rhoReflectivePresentation targetMembership action mapParallel mapUnit
               (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeList
                 rhoReflectivePresentation elements)
-        have lifted' : EquationSemantics.EquationEquiv defaultBasePremises
+        have lifted' : ReflectiveEquationSemantics.ReflectiveEquationEquiv
+            rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
             rhoCIGSLT.costWholeLanguage
             (action (.collection rhoReflectivePresentation.parallelCollection
               elements none))
@@ -1905,7 +2039,8 @@ theorem rhoCostStaticActionAt_canonicalize_equationEquiv
           simp [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize,
             selectedFalse]
         rw [canonicalCollection]
-        change EquationSemantics.EquationEquiv defaultBasePremises
+        change ReflectiveEquationSemantics.ReflectiveEquationEquiv
+          rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
           rhoCIGSLT.costWholeLanguage
           (action (.collection collectionType elements none))
           (action (.collection collectionType
@@ -1923,7 +2058,7 @@ theorem rhoCostStaticActionAt_canonicalize_equationEquiv
       rcases objectParts with ⟨rfl, elementsObject⟩
       have pointwise := elementsIH currentInner boundEquality imageEquality
         resultSupported elementsObject
-      have lifted := EquationSemantics.equationEquiv_collection_of_forall₂
+      have lifted := ReflectiveEquationSemantics.equationEquiv_collection_of_forall₂
         collectionType none pointwise
       let action := rhoCostStaticActionAt thinning assignment currentInner
         currentAvailable
@@ -1958,10 +2093,12 @@ theorem rhoCostStaticActionAt_canonicalize_equationEquiv
             mapReflectivePresentation]
         have normalized :=
           ReflectiveParallelSubstitution.normalizationMapEquivalentBetween
+            (language := rhoCIGSLT.costWholeLanguage)
             rhoReflectivePresentation targetMembership action mapParallel mapUnit
               (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeList
                 rhoReflectivePresentation elements)
-        have lifted' : EquationSemantics.EquationEquiv defaultBasePremises
+        have lifted' : ReflectiveEquationSemantics.ReflectiveEquationEquiv
+            rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
             rhoCIGSLT.costWholeLanguage
             (action (.collection rhoReflectivePresentation.parallelCollection
               elements none))
@@ -2001,7 +2138,8 @@ theorem rhoCostStaticActionAt_canonicalize_equationEquiv
           simp [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize,
             selectedFalse]
         rw [canonicalCollection]
-        change EquationSemantics.EquationEquiv defaultBasePremises
+        change ReflectiveEquationSemantics.ReflectiveEquationEquiv
+          rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
           rhoCIGSLT.costWholeLanguage
           (action (.collection collectionType elements none))
           (action (.collection collectionType
@@ -2054,7 +2192,7 @@ theorem rho_costEquationInstanceAt_canonicalize_eq
     {fuel : Nat} {source target : Pattern}
     (witness : EquationSemantics.EquationInstanceAt defaultBasePremises
       rhoCIGSLT.costWholeLanguage fuel source target) :
-    ∃ declaration ∈ rhoCIGSLT.costWholeLanguage.reflectivePresentations,
+    ∃ declaration ∈ rhoCIGSLT.costWholeReflectionProfile.presentations,
       Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize declaration
           source =
         Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize declaration
@@ -2092,7 +2230,7 @@ theorem rho_costEquationInstanceAt_canonicalize_eq
           rhoReflectivePresentation.toReflectivePresentationDecl ∈
             rhoCIGSLT.costStaticReflectivePresentations
         apply costStaticReflectivePresentationDecl_mem
-        exact .head _
+        exact rhoReflectivePresentation_mem_source
       · rw [← sourceEquality, ← targetEquality]
         cases color <;>
           simp [rhoCalc, rhoReflectivePresentation, costStaticEquationDecl,
@@ -2102,6 +2240,8 @@ theorem rho_costEquationInstanceAt_canonicalize_eq
             applyBindings, costStaticReflectivePresentationDecl,
             costBaseReflectivePresentationDecl,
             costWrappedReflectivePresentationDecl, mapReflectivePresentation,
+            costBaseStaticReflectiveSymbols,
+            costWrappedStaticReflectiveSymbols,
             costBasePresentationSymbols, costBaseStaticSymbols,
             costWrappedStaticSymbols, costBaseConstructorName,
             costWrappedConstructorName, costBaseConstructorTag,
@@ -2141,7 +2281,7 @@ theorem rho_costEquationInstanceAt_canonicalize_eq
           rhoReflectivePresentation.toReflectivePresentationDecl ∈
             rhoCIGSLT.costStaticReflectivePresentations
         apply costStaticReflectivePresentationDecl_mem
-        exact .head _
+        exact rhoReflectivePresentation_mem_source
       · rw [← sourceEquality, ← targetEquality]
         cases color <;>
           simp [rhoCalc, rhoReflectivePresentation, costStaticEquationDecl,
@@ -2151,6 +2291,8 @@ theorem rho_costEquationInstanceAt_canonicalize_eq
             applyBindings, costStaticReflectivePresentationDecl,
             costBaseReflectivePresentationDecl,
             costWrappedReflectivePresentationDecl, mapReflectivePresentation,
+            costBaseStaticReflectiveSymbols,
+            costWrappedStaticReflectiveSymbols,
             costBasePresentationSymbols, costBaseStaticSymbols,
             costWrappedStaticSymbols, costBaseConstructorName,
             costWrappedConstructorName, costBaseConstructorTag,
@@ -2164,24 +2306,28 @@ order-preserving ambient binder embedding.  Each equation instance is first
 identified with its matching generated reflective edge, after which the
 generic declaration-derived ambient-renaming theorem applies. -/
 theorem rho_costAuthoredEquationAmbientRenamingStable :
-    AuthoredEquationAmbientRenamingStable rhoCIGSLT.costWholeLanguage := by
+    AuthoredEquationAmbientRenamingStable (profile := rhoCIGSLT.costWholeReflectionProfile) rhoCIGSLT.costWholeLanguage := by
   intro rename strict depth context redex contractum instanceWitness
   obtain ⟨fuel, bounded⟩ := instanceWitness
   obtain ⟨declaration, membership, representatives⟩ :=
     rho_costEquationInstanceAt_canonicalize_eq bounded
   exact (reflectiveEquationAmbientRenamingStable_of_validate_eq_nil
-    rhoCIGSLT.costWholeLanguage rhoCIGSLT.costWholeLanguage_validate)
+    (profile := rhoCIGSLT.costWholeReflectionProfile)
+      rhoCIGSLT.costWholeLanguage rhoCIGSLT.costWholeLanguage_validate
+        rhoCIGSLT.costWholeReflectionProfile_validate)
       rename strict depth context membership representatives
 
 /-- Both ordinary and reflective generated rho equations are natural under
 ambient binder embeddings, using only the generated language's own equation
 and reflective declaration tables. -/
 theorem rho_costSupportedEquationAmbientRenamingStable :
-    SupportedEquationAmbientRenamingStable
+    SupportedEquationAmbientRenamingStable (profile := rhoCIGSLT.costWholeReflectionProfile)
       rhoCIGSLT.costWholeLanguage :=
   ⟨rho_costAuthoredEquationAmbientRenamingStable,
     reflectiveEquationAmbientRenamingStable_of_validate_eq_nil
-      rhoCIGSLT.costWholeLanguage rhoCIGSLT.costWholeLanguage_validate⟩
+      (profile := rhoCIGSLT.costWholeReflectionProfile)
+      rhoCIGSLT.costWholeLanguage rhoCIGSLT.costWholeLanguage_validate
+        rhoCIGSLT.costWholeReflectionProfile_validate⟩
 
 /-- Every generated rho equation generator remains one generated equation
 generator after an arbitrary ambient binder embedding.  Ordinary generated
@@ -2190,33 +2336,40 @@ reflective declaration, so both generator cases share the same reflective
 factor theorem. -/
 theorem rho_costEquationContextStepAmbientRenamingStable
     (rename : Nat → Nat) (depth : Nat) {left right : Pattern}
-    (step : EquationSemantics.EquationContextStep defaultBasePremises
+    (step : ReflectiveEquationSemantics.ReflectiveEquationContextStep rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
       rhoCIGSLT.costWholeLanguage left right) :
-    EquationSemantics.EquationContextStep defaultBasePremises
+    ReflectiveEquationSemantics.ReflectiveEquationContextStep rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
       rhoCIGSLT.costWholeLanguage
       (ContextSubstitution.renameAmbientBVarsAt rename depth left)
       (ContextSubstitution.renameAmbientBVarsAt rename depth right) := by
   cases step with
-  | inContext context instanceWitness =>
-      obtain ⟨fuel, bounded⟩ := instanceWitness
-      obtain ⟨declaration, membership, representatives⟩ :=
-        rho_costEquationInstanceAt_canonicalize_eq bounded
-      have transported :=
-        reflectiveEquationContextStep_renameAmbientBVarsAt_of_validate_eq_nil
-          rhoCIGSLT.costWholeLanguage rhoCIGSLT.costWholeLanguage_validate
-          rename depth context membership representatives
-      exact transported
+  | core coreStep =>
+      cases coreStep with
+      | inContext context instanceWitness =>
+          obtain ⟨fuel, bounded⟩ := instanceWitness
+          obtain ⟨declaration, membership, representatives⟩ :=
+            rho_costEquationInstanceAt_canonicalize_eq bounded
+          exact
+            reflectiveEquationContextStep_renameAmbientBVarsAt_of_validate_eq_nil
+              (profile := rhoCIGSLT.costWholeReflectionProfile)
+              rhoCIGSLT.costWholeLanguage
+              rhoCIGSLT.costWholeLanguage_validate
+              rhoCIGSLT.costWholeReflectionProfile_validate
+              rename depth context membership representatives
   | reflectiveInContext context membership representatives =>
       exact
         reflectiveEquationContextStep_renameAmbientBVarsAt_of_validate_eq_nil
+          (profile := rhoCIGSLT.costWholeReflectionProfile)
           rhoCIGSLT.costWholeLanguage rhoCIGSLT.costWholeLanguage_validate
-          rename depth context membership representatives
+          rhoCIGSLT.costWholeReflectionProfile_validate rename depth context
+          membership representatives
 
 /-- Root weakening is the affine specialization of generated-rho ambient
 renaming, and therefore preserves one generator rather than merely its raw
 equivalence class. -/
 theorem rho_costEquationContextStepRootWeakeningStable :
-    EquationContextStepRootWeakeningStable
+    ReflectiveEquationContextStepRootWeakeningStable
+      rhoCIGSLT.costWholeReflectionProfile
       rhoCIGSLT.costWholeLanguage := by
   intro left right step shift
   simpa only [ContextSubstitution.renameAmbientBVarsAt_add_eq_liftBVars] using
@@ -2226,8 +2379,9 @@ theorem rho_costEquationContextStepRootWeakeningStable :
 /-- Typed generated-rho equation paths remain in their exact open fibre when
 an arbitrary block of binders is inserted at the root. -/
 theorem rho_costOpenPatternEquationWeakeningStable :
-    OpenPatternEquationWeakeningStable rhoCIGSLT.costWholeLanguage :=
-  rho_costEquationContextStepRootWeakeningStable.toOpenPattern
+    ReflectiveOpenPatternEquationWeakeningStable
+      rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage :=
+  rho_costEquationContextStepRootWeakeningStable.toReflectiveOpenPattern
 
 /-- Mapping one certified source generator into a selected Cost colour and
 reinserting an arbitrary ambient binder thinning remains one edge of the
@@ -2243,12 +2397,14 @@ theorem rho_costStaticMappedThickenedGeneratorFiberAction
     {left right : CostStaticSourceTerm rhoCIGSLT color free support sourceBound
       targetBound sort}
     (generator : CostStaticSourceTerm.generator left right) :
-    (AvailableOpenPattern.equationSetoid rhoCIGSLT.costWholeLanguage
+    (AvailableOpenPattern.equationSetoid
+      (profile := rhoCIGSLT.costWholeReflectionProfile)
+      rhoCIGSLT.costWholeLanguage
       (free.map (color.symbols rhoCIGSLT)) targetBound []
         (.base (color.mapLangSort rhoCIGSLT sort).1)).r
       (left.mappedThickenedAvailable thinning)
       (right.mappedThickenedAvailable thinning) := by
-  have mapped : EquationSemantics.EquationContextStep defaultBasePremises
+  have mapped : ReflectiveEquationSemantics.ReflectiveEquationContextStep rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
       rhoCIGSLT.costWholeLanguage
       (mapPattern (color.symbols rhoCIGSLT) left.term.1)
       (mapPattern (color.symbols rhoCIGSLT) right.term.1) := by
@@ -2257,8 +2413,8 @@ theorem rho_costStaticMappedThickenedGeneratorFiberAction
   have thickened := rho_costEquationContextStepAmbientRenamingStable
     thinning.toTargetIndex 0 mapped
   apply Relation.EqvGen.rel _ _
-  change EquationSemantics.EquationContextStep defaultBasePremises
-    rhoCIGSLT.costWholeLanguage
+  change ReflectiveEquationSemantics.ReflectiveEquationContextStep rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
+      rhoCIGSLT.costWholeLanguage
       (left.mappedThickenedAvailable thinning).pattern
       (right.mappedThickenedAvailable thinning).pattern
   simpa only [CostStaticSourceTerm.mappedThickenedAvailable_pattern,
@@ -2277,18 +2433,20 @@ theorem rho_costStaticMappedGeneratorAction :
       reflectiveSupport left right generator
   have leftEquivalent := rhoCostStaticActionAt_canonicalize_equationEquiv
     (inner := []) (available := targetBound) thinning assignment freeContext
-      reflectiveSupport left.term.2.1 left.safe
-        left.supported.constructorsWithin left.term.2.2.2.1
+      reflectiveSupport left.term.2.1.1 left.safe
+        left.supported.constructorsWithin left.term.2.1.2.2.1
   have rightEquivalent := rhoCostStaticActionAt_canonicalize_equationEquiv
     (inner := []) (available := targetBound) thinning assignment freeContext
-      reflectiveSupport right.term.2.1 right.safe
-        right.supported.constructorsWithin right.term.2.2.2.1
+      reflectiveSupport right.term.2.1.1 right.safe
+        right.supported.constructorsWithin right.term.2.1.2.2.1
   have sourceGenerator :
-      EquationSemantics.EquationContextStep defaultBasePremises rhoCalc
+      ReflectiveEquationSemantics.ReflectiveEquationContextStep rhoReflectionProfile
+        defaultBasePremises rhoCalc
         left.term.1 right.term.1 := by
-    simpa [CostStaticSourceTerm.generator, openEquationGenerator, rhoCIGSLT,
-      rhoIGSLT, rhoInteractivePresentation, rhoValidatedLanguageDef] using
-        generator
+    change ReflectiveEquationSemantics.ReflectiveEquationContextStep
+      rhoCIGSLT.reflection.1 defaultBasePremises rhoCalc
+        left.term.1 right.term.1 at generator
+    simpa only [rhoCIGSLT_reflectionProfile_eq] using generator
   have canonicalEquality :
       Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
           rhoReflectivePresentation left.term.1 =
@@ -2314,11 +2472,13 @@ theorem rho_costStaticMappedGeneratorFiberAction :
     sourceBound targetBound sort thinning assignment freeContext
       reflectiveSupport left right generator
   have sourceGenerator :
-      EquationSemantics.EquationContextStep defaultBasePremises rhoCalc
+      ReflectiveEquationSemantics.ReflectiveEquationContextStep rhoReflectionProfile
+        defaultBasePremises rhoCalc
         left.term.1 right.term.1 := by
-    simpa [CostStaticSourceTerm.generator, openEquationGenerator, rhoCIGSLT,
-      rhoIGSLT, rhoInteractivePresentation, rhoValidatedLanguageDef] using
-        generator
+    change ReflectiveEquationSemantics.ReflectiveEquationContextStep
+      rhoCIGSLT.reflection.1 defaultBasePremises rhoCalc
+        left.term.1 right.term.1 at generator
+    simpa only [rhoCIGSLT_reflectionProfile_eq] using generator
   have sourceCanonicalEquality :
       Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
           rhoReflectivePresentation left.term.1 =
@@ -2330,23 +2490,22 @@ theorem rho_costStaticMappedGeneratorFiberAction :
   have representatives :=
     rhoCostStaticActionAt_canonicalize_eq_of_canonicalize_eq
       (inner := []) (available := targetBound) thinning assignment freeContext
-        reflectiveSupport left.term.2.1 right.term.2.1 left.safe right.safe
+        reflectiveSupport left.term.2.1.1 right.term.2.1.1 left.safe right.safe
         left.supported.constructorsWithin
-        right.supported.constructorsWithin left.term.2.2.2.1
-        right.term.2.2.2.1 sourceCanonicalEquality
+        right.supported.constructorsWithin left.term.2.1.2.2.1
+        right.term.2.1.2.2.1 sourceCanonicalEquality
   let declaration := costStaticReflectivePresentationDecl rhoCIGSLT color
     rhoReflectivePresentation.toReflectivePresentationDecl
   have declarationMembership : declaration ∈
-      rhoCIGSLT.costWholeLanguage.reflectivePresentations := by
+      rhoCIGSLT.costWholeReflectionProfile.presentations := by
     simpa [declaration] using
       costStaticReflectivePresentationDecl_mem rhoCIGSLT color
         rhoReflectivePresentation.toReflectivePresentationDecl
-        (by simp [rhoCIGSLT, rhoIGSLT, rhoInteractivePresentation,
-          rhoValidatedLanguageDef, rhoCalc])
-  have targetGenerator : EquationSemantics.EquationContextStep
-      defaultBasePremises rhoCIGSLT.costWholeLanguage
+        rhoReflectivePresentation_mem_source
+  have targetGenerator : ReflectiveEquationSemantics.ReflectiveEquationContextStep
+      rhoCIGSLT.costWholeReflectionProfile defaultBasePremises rhoCIGSLT.costWholeLanguage
       (left.act thinning assignment) (right.act thinning assignment) := by
-    apply EquationSemantics.EquationContextStep.reflectiveInContext .hole
+    apply ReflectiveEquationSemantics.ReflectiveEquationContextStep.reflectiveInContext .hole
       declarationMembership
     simpa [declaration, CostStaticSourceTerm.act, rhoCostStaticActionAt,
       ReflectiveContextSupport.substitute] using representatives
@@ -2367,8 +2526,8 @@ theorem rho_costStaticCanonicalPathSafe :
     CostStaticCanonicalPathSafe rhoCIGSLT := by
   intro color targetFree node
   apply Relation.EqvGen.rel _ _
-  unfold CostStaticSourceTerm.generator openEquationGenerator
-  apply EquationSemantics.EquationContextStep.reflectiveInContext .hole
+  unfold CostStaticSourceTerm.generator
+  apply ReflectiveEquationSemantics.ReflectiveEquationContextStep.reflectiveInContext .hole
     (declaration :=
       rhoReflectivePresentation.toReflectivePresentationDecl)
   · change List.Mem rhoReflectivePresentation.toReflectivePresentationDecl
@@ -2430,7 +2589,7 @@ theorem rho_costStaticCollectionUnambiguous
 
 /-- Parallel composition is the sole authored rho declaration whose
 representation is one bare collection. -/
-private theorem rho_rule_eq_parallel_of_bare_shape
+theorem rho_rule_eq_parallel_of_bare_shape
     {rule : GrammarRule} (membership : rule ∈ rhoCalc.terms)
     {parameterName : String} {collectionType : CollType}
     {elementType : TypeExpr}
@@ -2459,6 +2618,50 @@ private theorem rho_rule_eq_parallel_of_bare_shape
     simp [rhoCalc, TypeExpr.name, TypeExpr.proc, TypeExpr.bag,
       TypeExpr.baseType] at parameterShape
 
+/-- A rho static plan rooted at a bare collection necessarily comes from the
+authored PPar rule, hence its source result is the interacting process sort.
+This is the node-level form used by cast-stable static-root comparisons; it
+does not rerun the executable candidate search. -/
+theorem rho_collection_node_sourceSort_interacting
+    {color : CostStaticColor} {targetFree : FreeTypeContext}
+    (node : CostStaticRegionNode rhoCIGSLT color targetFree)
+    {collectionType : CollType} {elements : List Pattern}
+    {rest : Option String}
+    (shape : node.term.1 = .collection collectionType elements rest) :
+    node.sourceSort.1 =
+      rhoCIGSLT.theory.presentation.interactingSort.1.name := by
+  obtain ⟨choice, selected⟩ :=
+    node.plan.collection_choice_of_isStaticRoot node.rootStatic shape
+  rcases mem_costStaticCollectionTypingChoices_sound rhoCIGSLT color
+      targetFree node.targetBound collectionType elements
+      (mapTypeExpr (color.symbols rhoCIGSLT)
+        (.base node.sourceSort.1)) choice selected with
+    direct | bare
+  · rcases direct with
+      ⟨sourceElementType, _choiceShape, expectedEquality, _checked⟩
+    have impossible :
+        (.base node.sourceSort.1 : TypeExpr) =
+          .collection collectionType sourceElementType :=
+      mapTypeExpr_costStatic_injective rhoCIGSLT color expectedEquality
+    cases impossible
+  · rcases bare with
+      ⟨rule, sourceElementType, _choiceShape, ruleMembership, _wrapped,
+        expectedEquality, parameterName, parameterShape, _checked⟩
+    have sourceTypeEquality :
+        (.base node.sourceSort.1 : TypeExpr) = .base rule.category :=
+      mapTypeExpr_costStatic_injective rhoCIGSLT color expectedEquality
+    have sourceCategoryEquality : node.sourceSort.1 = rule.category :=
+      TypeExpr.base.inj sourceTypeEquality
+    have ruleEquality : rule = rhoCalc.terms[3] :=
+      rho_rule_eq_parallel_of_bare_shape ruleMembership parameterShape
+    have ruleCategory : rule.category = "Proc" := by
+      rw [ruleEquality]
+      rfl
+    have nodeInteracting : node.sourceSort.1 = "Proc" :=
+      sourceCategoryEquality.trans ruleCategory
+    change node.sourceSort.1 = (TypeDecl.plain "Proc").name
+    simpa [TypeDecl.plain] using nodeInteracting
+
 /-- Any rho static root whose compact syntax is a bare collection is rooted
 at the interacting process sort.  Direct homogeneous collection typing is
 impossible at the node's authored base-sort index; the remaining declaration
@@ -2478,46 +2681,10 @@ private theorem rho_collection_root_sourceSort_interacting
   have nodeShape : candidate.node.term.1 =
       .collection collectionType elements rest :=
     candidate.nodeTerm_eq.trans shape
-  obtain ⟨choice, selected⟩ :=
-    candidate.node.plan.collection_choice_of_isStaticRoot
-      candidate.node.rootStatic nodeShape
-  rcases mem_costStaticCollectionTypingChoices_sound rhoCIGSLT
-      candidate.color targetFree candidate.node.targetBound collectionType
-      elements
-      (mapTypeExpr (candidate.color.symbols rhoCIGSLT)
-        (.base candidate.node.sourceSort.1)) choice selected with
-    direct | bare
-  · rcases direct with
-      ⟨sourceElementType, _choiceShape, expectedEquality, _checked⟩
-    have impossible :
-        (.base candidate.node.sourceSort.1 : TypeExpr) =
-          .collection collectionType sourceElementType :=
-      mapTypeExpr_costStatic_injective rhoCIGSLT candidate.color
-        expectedEquality
-    cases impossible
-  · rcases bare with
-      ⟨rule, sourceElementType, _choiceShape, ruleMembership, _wrapped,
-        expectedEquality, parameterName, parameterShape, _checked⟩
-    have sourceTypeEquality :
-        (.base candidate.node.sourceSort.1 : TypeExpr) =
-          .base rule.category :=
-      mapTypeExpr_costStatic_injective rhoCIGSLT candidate.color
-        expectedEquality
-    have sourceCategoryEquality :
-        candidate.node.sourceSort.1 = rule.category :=
-      TypeExpr.base.inj sourceTypeEquality
-    have ruleEquality : rule = rhoCalc.terms[3] :=
-      rho_rule_eq_parallel_of_bare_shape ruleMembership parameterShape
-    have ruleCategory : rule.category = "Proc" := by
-      rw [ruleEquality]
-      rfl
-    have nodeInteracting : candidate.node.sourceSort.1 = "Proc" :=
-      sourceCategoryEquality.trans ruleCategory
-    have candidateInteracting : candidate.sourceSort.1 = "Proc" :=
-      (congrArg Subtype.val candidate.nodeSourceSort_eq).symm.trans
-        nodeInteracting
-    change candidate.sourceSort.1 = (TypeDecl.plain "Proc").name
-    simpa [TypeDecl.plain] using candidateInteracting
+  have nodeInteracting :=
+    rho_collection_node_sourceSort_interacting candidate.node nodeShape
+  exact (congrArg Subtype.val candidate.nodeSourceSort_eq).symm.trans
+    nodeInteracting
 
 /-- Two rho collection roots in one compact target fibre select the same
 static colour because PPar returns the distinguished interacting sort, whose

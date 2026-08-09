@@ -8,7 +8,7 @@ import Mettapedia.Languages.MeTTa.PeTTa.MeTTaEval
 import Mettapedia.Languages.MeTTa.PeTTa.LPSoundness
 
 /-!
-# MeTTa Runtime Spec Surface
+# MeTTa Runtime Specification Profile
 
 First draft of an auditable `R_spec` layer for the MeTTa family.
 
@@ -23,7 +23,7 @@ The intended reading is:
 - `R_spec` remains recognizably MeTTa
 - PureKernel `A/B/C1` stays separate and untouched
 - future maps `HE -> R_spec`, `PeTTa -> R_spec`, and then `R_spec -> C*`
-  should target this surface rather than redefining the kernel
+  should target this profile rather than redefining the kernel
 -/
 
 namespace Mettapedia.Languages.MeTTa.RuntimeSpec
@@ -33,33 +33,33 @@ open Mettapedia.Languages.MeTTa.CoreProfile
 open Mettapedia.OSLF.MeTTaIL.Syntax
 
 /-- Whether variable bindings are an explicit semantic object. -/
-inductive BindingsSurface where
+inductive BindingsMode where
   | none
   | explicit
   deriving DecidableEq, Repr
 
-/-- Whether branching is represented explicitly in the semantic surface. -/
-inductive BranchingSurface where
+/-- Whether branching is represented explicitly in the semantic interface. -/
+inductive BranchingMode where
   | single
   | explicitAlternatives
   deriving DecidableEq, Repr
 
-/-- How the runtime surface exposes the space/context side of MeTTa execution. -/
-inductive ContextSurface where
+/-- How the runtime interface exposes the space/context side of MeTTa execution. -/
+inductive ContextMode where
   | none
   | explicitSpace
   | explicitStateAndSpace
   deriving DecidableEq, Repr
 
-/-- How the runtime surface exposes native/grounded execution hooks. -/
-inductive NativeHookSurface where
+/-- How the runtime interface exposes native/grounded execution hooks. -/
+inductive NativeHookMode where
   | none
   | groundedDispatch
   | oracleLayer
   deriving DecidableEq, Repr
 
 /-- Whether collapse/superpose-style collection control is explicit. -/
-inductive CollectionControlSurface where
+inductive CollectionControlMode where
   | none
   | collapseSuperpose
   deriving DecidableEq, Repr
@@ -67,18 +67,18 @@ inductive CollectionControlSurface where
 /-- Minimal first-draft runtime spec for a MeTTa dialect.
 
 The carrier names are intentionally strings in the first draft.  This keeps the
-surface auditable without prematurely fixing the exact theorem boundary between
+profile auditable without prematurely fixing the exact theorem boundary between
 runtime relations living in different files.
 -/
 structure MeTTaRuntimeSpec where
   dialect : MeTTaDialectProfile
   stateCarrier : String
   resultCarrier : String
-  bindingsSurface : BindingsSurface
-  branchingSurface : BranchingSurface
-  contextSurface : ContextSurface
-  nativeHookSurface : NativeHookSurface
-  collectionControl : CollectionControlSurface
+  bindingsMode : BindingsMode
+  branchingMode : BranchingMode
+  contextMode : ContextMode
+  nativeHookMode : NativeHookMode
+  collectionControl : CollectionControlMode
 
 /-- Lightweight audit predicate: the named sort appears in the chosen `LanguageDef`. -/
 def languageHasTypeNamed (lang : LanguageDef) (ty : String) : Prop :=
@@ -103,19 +103,19 @@ instance premiseProgramHasRelationNamedDecidable
   unfold premiseProgramHasRelationNamed
   infer_instance
 
-/-- Runtime-facing kernel surface.  Pure is intentionally degenerate here:
+/-- Runtime-facing kernel profile.  Pure is intentionally degenerate here:
 there is no ambient atomspace or bindings store. -/
 def pureRuntimeSpec : MeTTaRuntimeSpec where
   dialect := pureDialectProfile
   stateCarrier := "PureTm 0"
   resultCarrier := "PureTm 0"
-  bindingsSurface := .none
-  branchingSurface := .single
-  contextSurface := .none
-  nativeHookSurface := .none
+  bindingsMode := .none
+  branchingMode := .single
+  contextMode := .none
+  nativeHookMode := .none
   collectionControl := .none
 
-/-- Runtime-facing HE surface.
+/-- Runtime-facing HE profile.
 
 This records the recognizably MeTTa runtime features already explicit in the HE
 formalization: `State`, `ResultSet`, explicit bindings, explicit space, and
@@ -125,13 +125,13 @@ def heRuntimeSpec : MeTTaRuntimeSpec where
   dialect := heDialectProfile
   stateCarrier := "State"
   resultCarrier := "ResultSet"
-  bindingsSurface := .explicit
-  branchingSurface := .explicitAlternatives
-  contextSurface := .explicitStateAndSpace
-  nativeHookSurface := .groundedDispatch
+  bindingsMode := .explicit
+  branchingMode := .explicitAlternatives
+  contextMode := .explicitStateAndSpace
+  nativeHookMode := .groundedDispatch
   collectionControl := .collapseSuperpose
 
-/-- Runtime-facing PeTTa surface.
+/-- Runtime-facing PeTTa profile.
 
 PeTTa's semantic carrier is the program/space object `PeTTaSpace`.  The richest
 currently formalized MeTTa-facing result carrier is `EvalResult` from
@@ -143,21 +143,21 @@ def pettaRuntimeSpec : MeTTaRuntimeSpec where
   dialect := pettaDialectProfile
   stateCarrier := "PeTTaSpace"
   resultCarrier := "EvalResult"
-  bindingsSurface := .explicit
-  branchingSurface := .explicitAlternatives
-  contextSurface := .explicitSpace
-  nativeHookSurface := .none
+  bindingsMode := .explicit
+  branchingMode := .explicitAlternatives
+  contextMode := .explicitSpace
+  nativeHookMode := .none
   collectionControl := .collapseSuperpose
 
-/-- Runtime-facing legacy full/core surface. -/
+/-- Runtime-facing legacy full/core profile. -/
 def fullLegacyRuntimeSpec : MeTTaRuntimeSpec where
   dialect := fullLegacyDialectProfile
   stateCarrier := "State"
   resultCarrier := "Atom"
-  bindingsSurface := .none
-  branchingSurface := .single
-  contextSurface := .explicitStateAndSpace
-  nativeHookSurface := .groundedDispatch
+  bindingsMode := .none
+  branchingMode := .single
+  contextMode := .explicitStateAndSpace
+  nativeHookMode := .groundedDispatch
   collectionControl := .none
 
 /-- First-draft runtime inventory. -/
@@ -172,7 +172,7 @@ def findRuntimeSpec (name : String) : Option MeTTaRuntimeSpec :=
     pureRuntimeSpec.dialect = pureDialectProfile := rfl
 
 @[simp] theorem pureRuntimeSpec_bindings :
-    pureRuntimeSpec.bindingsSurface = .none := rfl
+    pureRuntimeSpec.bindingsMode = .none := rfl
 
 @[simp] theorem heRuntimeSpec_dialect :
     heRuntimeSpec.dialect = heDialectProfile := rfl
@@ -184,7 +184,7 @@ def findRuntimeSpec (name : String) : Option MeTTaRuntimeSpec :=
     heRuntimeSpec.resultCarrier = "ResultSet" := rfl
 
 @[simp] theorem heRuntimeSpec_native :
-    heRuntimeSpec.nativeHookSurface = .groundedDispatch := rfl
+    heRuntimeSpec.nativeHookMode = .groundedDispatch := rfl
 
 @[simp] theorem pettaRuntimeSpec_dialect :
     pettaRuntimeSpec.dialect = pettaDialectProfile := rfl
@@ -196,12 +196,12 @@ def findRuntimeSpec (name : String) : Option MeTTaRuntimeSpec :=
     pettaRuntimeSpec.resultCarrier = "EvalResult" := rfl
 
 @[simp] theorem pettaRuntimeSpec_native :
-    pettaRuntimeSpec.nativeHookSurface = .none := rfl
+    pettaRuntimeSpec.nativeHookMode = .none := rfl
 
 @[simp] theorem fullLegacyRuntimeSpec_dialect :
     fullLegacyRuntimeSpec.dialect = fullLegacyDialectProfile := rfl
 
-/-! ## HE Fact Surface -/
+/-! ## HE Facts -/
 
 /-- `heRuntimeSpec` is anchored in the fixed HE core profile and its exported
 language/premise objects. -/
@@ -211,19 +211,19 @@ theorem heRuntimeSpec_profile_fact :
     heProfile.premises = Mettapedia.Languages.MeTTa.HE.Premises.mettaHEPremises := by
   simp [heRuntimeSpec, heDialectProfile, heProfile]
 
-/-- The HE runtime surface explicitly exposes both `State` and `Space` in the
+/-- The HE runtime profile explicitly exposes both `State` and `Space` in the
 exported language definition. -/
 theorem heRuntimeSpec_state_context_fact :
-    heRuntimeSpec.contextSurface = .explicitStateAndSpace ∧
+    heRuntimeSpec.contextMode = .explicitStateAndSpace ∧
     languageHasTypeNamed Mettapedia.Languages.MeTTa.HE.LanguageDef.mettaHE "State" ∧
     languageHasTypeNamed Mettapedia.Languages.MeTTa.HE.LanguageDef.mettaHE "Space" := by
   native_decide
 
 /-- HE's result carrier is concretely a list of `(Atom × Bindings)` pairs, so
-bindings and explicit alternatives are part of the formal semantic surface. -/
+bindings and explicit alternatives are part of the formal semantic interface. -/
 theorem heRuntimeSpec_result_bindings_fact :
-    heRuntimeSpec.bindingsSurface = .explicit ∧
-    heRuntimeSpec.branchingSurface = .explicitAlternatives ∧
+    heRuntimeSpec.bindingsMode = .explicit ∧
+    heRuntimeSpec.branchingMode = .explicitAlternatives ∧
     Mettapedia.Languages.MeTTa.HE.ResultSet =
       List (Mettapedia.Languages.MeTTa.HE.ResultPair) := by
   simp [heRuntimeSpec, Mettapedia.Languages.MeTTa.HE.ResultSet]
@@ -232,7 +232,7 @@ theorem heRuntimeSpec_result_bindings_fact :
 `groundedCallResult` premise relation and the interpreter's explicit
 `GroundedDispatch` parameter. -/
 theorem heRuntimeSpec_native_hook_fact :
-    heRuntimeSpec.nativeHookSurface = .groundedDispatch ∧
+    heRuntimeSpec.nativeHookMode = .groundedDispatch ∧
     premiseProgramHasRelationNamed Mettapedia.Languages.MeTTa.HE.Premises.mettaHEPremises
       "groundedCallResult" := by
   decide
@@ -249,7 +249,7 @@ theorem heRuntimeSpec_collection_control_fact :
       "collapseBind" := by
   decide
 
-/-! ## PeTTa Fact Surface -/
+/-! ## PeTTa Facts -/
 
 /-- `pettaRuntimeSpec` is anchored in the fixed PeTTa dialect profile, while the
 lowered `LanguageDef` artifact source remains program-parametric. -/
@@ -272,16 +272,16 @@ theorem pettaRuntimeSpec_state_artifact_fact :
 /-- PeTTa's richest current MeTTa-facing result carrier is `EvalResult`, which
 threads explicit bindings through a list of alternatives. -/
 theorem pettaRuntimeSpec_result_bindings_fact :
-    pettaRuntimeSpec.bindingsSurface = .explicit ∧
-    pettaRuntimeSpec.branchingSurface = .explicitAlternatives ∧
+    pettaRuntimeSpec.bindingsMode = .explicit ∧
+    pettaRuntimeSpec.branchingMode = .explicitAlternatives ∧
     Mettapedia.Languages.MeTTa.PeTTa.EvalResult =
       List (Pattern × Mettapedia.OSLF.MeTTaIL.Match.Bindings) := by
   simp [pettaRuntimeSpec, Mettapedia.Languages.MeTTa.PeTTa.EvalResult]
 
-/-- PeTTa's base runtime surface is explicitly space-indexed: `(match &self ...)`
+/-- PeTTa's base runtime profile is explicitly space-indexed: `(match &self ...)`
 is interpreted directly against `s.spaceMatch`. -/
 theorem pettaRuntimeSpec_context_fact :
-    pettaRuntimeSpec.contextSurface = .explicitSpace ∧
+    pettaRuntimeSpec.contextMode = .explicitSpace ∧
     ∀ (s : Mettapedia.Languages.MeTTa.PeTTa.PeTTaSpace) (pat tmpl : Pattern),
       Mettapedia.Languages.MeTTa.PeTTa.PeTTaEval s
         (.apply "match" [.apply "&self" [], pat, tmpl])
@@ -290,7 +290,7 @@ theorem pettaRuntimeSpec_context_fact :
   intro s pat tmpl
   exact Mettapedia.Languages.MeTTa.PeTTa.petta_eval_spaceQuery_correct s pat tmpl
 
-/-- PeTTa exposes `superpose`/`collapse` at the semantic surface in both the
+/-- PeTTa exposes `superpose`/`collapse` through the semantic interface in both the
 type-free and binding-threaded relations. -/
 theorem pettaRuntimeSpec_collection_control_fact :
     pettaRuntimeSpec.collectionControl = .collapseSuperpose ∧
@@ -309,7 +309,7 @@ theorem pettaRuntimeSpec_collection_control_fact :
   · intro s p ty bindings results h
     exact Mettapedia.Languages.MeTTa.PeTTa.MeTTaEval.collapse p ty bindings results h
 
-/- The absence of a native-hook surface in the first PeTTa runtime spec remains
+/- The absence of a native-hook mode in the first PeTTa runtime spec remains
 an explicit regularization choice. The current formalization has pure,
 binding-threaded, LP, and artifact layers, but no single dedicated base-runtime
 hook analogous to HE's `groundedCallResult`. -/

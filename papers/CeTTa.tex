@@ -271,7 +271,7 @@ layers---never as visibility masks over one shared universe:
 \begin{description}
 \item[\code{he-compat}] A literal mirror of Rust \HE{}~v0.2.10,
   including its quirks: integer division for \code{/}, the strict
-  three-argument \code{if} surface, Rust's library inventory behavior.
+  three-argument \code{if} form, Rust's library inventory behavior.
   Compatibility means matching upstream \emph{behavior}, not
   reproducing its library set; library availability is out of scope
   for conformance.
@@ -463,7 +463,7 @@ and untestable-by-absence.  The cure is to make the rule set a
 Three granularity strata are kept distinct.  \emph{HEFine} is the Lean
 \code{mettaHE} instruction machine (59 rules over interpreter states;
 the proof reference).  \emph{HE small-step} is the coarse user-visible
-one-step relation---one observable surface rewrite, e.g.\
+one-step relation---one observable source rewrite, e.g.\
 \code{(+ 1 (+ 2 3))} $\to$ \code{(+ 1 5)}---which is what the
 \code{lts} surface exposes.  \emph{HEBigStep} is full evaluation.  The
 table encodes the small-step relation; its relationship to the fine machine is a
@@ -586,7 +586,7 @@ First, \code{DeclMatchSpec.lean} states the author's
 \code{merge\_bindings}/\code{add\_var\_binding}/\code{add\_var\_equality},
 proving \code{mergeBindings\_sound} and
 \code{mergeBindings\_complete}.  Third,
-\code{QuerySurfaceAgreement.lean} proves a bounded adequacy theorem for
+\code{QueryInterfaceAgreement.lean} proves a bounded adequacy theorem for
 the \emph{public} query interface:
 \code{queryEquations\_ground\_two\_way\_adequate} and its
 \code{queryEquationsAgainstVisible}-companion show that, on the
@@ -708,7 +708,7 @@ what makes the calculus higher-order. \CeTTa{} implements exactly these six stri
 constructors --- \code{rho:nil}, \code{rho:par}, \code{rho:send}, \code{rho:recv},
 \code{rho:quote}, \code{rho:drop} --- with \textsc{comm} as the only reduction. A program is
 reduced to quiescence by \code{cetta --lang rhocalc \textit{file}}, written either in a
-MeTTa-style s-expression surface (\code{.mrho}) or a Rholang-like surface (\code{.rho}); the
+MeTTa-style S-expression syntax (\code{.mrho}) or a Rholang-like syntax (\code{.rho}); the
 runtime keeps a live index of sends and receive-sites, rebuilt after each reaction.  The
 deterministic (canonical) scheduler selects the key-least successor by streaming candidate
 keys against the best bound found so far instead of materializing and sorting the whole
@@ -861,7 +861,7 @@ accounting~\cite{costendofunctor,rhocost-companion}. Its design commitments are 
 funding, causality from consumption, and an explicit separation between exact authority
 receipts and lossy numerical valuations.
 
-\paragraph{Purses and funded reactions.} In the \code{.rho} surface, \code{\{P\}alice} is
+\paragraph{Purses and funded reactions.} In the \code{.rho} syntax, \code{\{P\}alice} is
 the process \code{P} signed by \code{alice}, and \code{purse pay \{alice : ()\}} is a store
 on channel \code{pay} holding one token signed by \code{alice}. The funding rule is
 \emph{located}: a \textsc{comm} on \code{pay} consumes one token per participating endpoint
@@ -1348,7 +1348,7 @@ genuinely multiple proof routes collapsing to \code{8} unique
 mistake.  Fresh timings on this grounded full row are 16.4\,s on
 \CeTTa{} and 44.5\,s on \PeTTa{} (about 2.7$\times$ faster).  Upstream \HE{} does not currently
 run this loader shape directly: its \code{metta} runner rejects the
-relative-file \code{import! ./support/...} surface as an illegal module
+relative-file \code{import! ./support/...} syntax as an illegal module
 name, so the \HE{} column for this row remains a loader blocker rather
 than a performance number.  The 183-pair core therefore remains the
 grounded small PLN row, while the full TFBS-inclusive checkpoint is now
@@ -2084,10 +2084,10 @@ rules for analysis:
 \end{verbatim}
 
 \CeTTa{}'s \code{mm2\_lower.c} handles bidirectional
-surface$\leftrightarrow$IR lowering
+source syntax$\leftrightarrow$IR lowering
 (\code{exec}$\leftrightarrow$\code{mm2\_exec},
 \code{,}$\leftrightarrow$\code{mm2\_pattern\_and}, etc.), preserving
-round-trip fidelity between MM2 surface syntax and \CeTTa{}'s internal
+round-trip fidelity between MM2 concrete syntax and \CeTTa{}'s internal
 representation.
 
 %% ────────────────────────────────────────────────────────────────────
@@ -2452,7 +2452,7 @@ computed codomains whose truth values still contain free variables.
 
 A 2026-07 tranche (branch-local at the time of writing) replaces
 hand-maintained readers with parsers \emph{generated from the authored
-grammars themselves}.  Each language's surface syntax is written as a
+grammars themselves}.  Each language's concrete syntax is written as a
 LanguageDef presentation (grammar productions, lexical scalar classes, and
 an atom-projection profile); a validating compiler normalizes the
 presentation into a parser intermediate form, classifies it into an
@@ -2464,7 +2464,7 @@ and as fallbacks for grammars outside the deterministic fragment.
 \item \textbf{Per-language ownership.}  The \HE{} family, a two-stage
   \PeTTa{} reader (document splitting, then per-form parsing --- explicitly
   a syntax-only work-in-progress, not \PeTTa{} evaluation semantics), and
-  the Prime surface each compile from their \emph{own} LanguageDefs into a
+  the Prime syntax each compile from their \emph{own} LanguageDefs into a
   shared projection-neutral runtime; no language is routed through another
   language's grammar.
 \item \textbf{The specification catches its own bugs.}  The
@@ -2477,7 +2477,7 @@ and as fallbacks for grammars outside the deterministic fragment.
   the validator weakened --- and re-verified in an independent Horn-clause
   model of the grammar.
 \item \textbf{Evidence.}  Compiled-versus-legacy differentials (76/76 on
-  the Prime surface, including Unicode, numeric projection, open-name
+  the Prime syntax, including Unicode, numeric projection, open-name
   rejection, and alpha-equivalent variable identity), compiler mutations
   killed, purity gates showing zero guest-language leakage across the
   generic engine and compiler files, and byte-identical regeneration of
@@ -3070,7 +3070,7 @@ repair is now written down in three Lean files:
 \code{match\_atoms} and proves \code{matchAtoms\_sound}/\code{\_complete};
 \code{DeclMergeSpec.lean} does the same for
 \code{merge\_bindings}, proving \code{mergeBindings\_sound}/\code{\_complete};
-and \code{QuerySurfaceAgreement.lean} proves the staged ground-fragment
+and \code{QueryInterfaceAgreement.lean} proves the staged ground-fragment
 adequacy theorems
 \code{queryEquations\_ground\_two\_way\_adequate} and
 \code{queryEquationsAgainstVisible\_ground\_two\_way\_adequate}.  So the
@@ -3285,7 +3285,7 @@ cleanly under one MAM.
 
 A core architectural commitment is that the following axes are
 \textbf{distinct data} in \code{SearchRequest}, not tangled behind
-surface-level operators:
+source-level operators:
 
 \begin{description}
 \item[Schedule.]  \code{dfs}~/~\code{bfs}~/~\code{iddfs}~/\code{interleave}
@@ -3303,12 +3303,12 @@ surface-level operators:
 \item[Backend.]  \code{native}~/~\PathMap{}~/~MORK chosen by the
   actual \code{Space}, not by a global preference.
 \item[Lane.]  \code{recursive-dependent-proof}~/~\code{atp-saturation}~/\code{solver-oracle}~/~\dots{}
-  chosen at surface.
+  chosen in source syntax.
 \end{description}
 
-The request builder (one per \code{--lang}) normalizes surface syntax
+The request builder (one per \code{--lang}) normalizes concrete syntax
 into \code{SearchRequest~+~SearchLangContract}; the MAM consumes the
-normalized object, never raw surface atoms.
+normalized object, never raw source atoms.
 
 \subsection{The seven-type vocabulary}
 
@@ -3473,7 +3473,7 @@ as a blackhole (receipted, not cached, cell restored) and other-owner
 demand routed to an explicit wait/help protocol (selection open).  Only
 faults stable under re-execution in the same world are cached; resource
 exhaustion and cancellation retain a resumable frontier.  \code{delay},
-\code{force}, and \code{resample} are the surface (lower-case only);
+\code{force}, and \code{resample} are the source constructs (lower-case only);
 \code{resample} deliberately breaks call-time correlation.
 
 \subsection{Ratified in the 2026-07 sprint}
@@ -3507,7 +3507,7 @@ exhaustion and cancellation retain a resumable frontier.  \code{delay},
 The public suspension-observation surface (constraints and invariants
 selected; the concrete observed form is a narrowed choice); the worlds
 carrier presentation (event structures lead); registered-equality
-surface syntax; the other-owner forcing protocol; cyclic graph
+concrete syntax; the other-owner forcing protocol; cyclic graph
 persistence; typed-laziness coherence as a mechanized refinement; the
 cell-causal native contender behind its confidence gate; and
 finite-budget fairness under adversarial ranking.

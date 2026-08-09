@@ -316,7 +316,7 @@ theorem rhoIntrinsicDirectSpentTrace_semantics_reducesN_concat
     {n m : Nat} {p q r : Pattern}
     (h1 : ReducesN n p q) (h2 : ReducesN m q r) :
     (rhoIntrinsicDirectSpentTrace
-      (rhoRewritePathOfReducesN (reducesN_concat h1 h2))).SurfaceLike ∧
+      (rhoRewritePathOfReducesN (reducesN_concat h1 h2))).CanonicalShape ∧
       (rhoIntrinsicDirectSpentTrace
         (rhoRewritePathOfReducesN (reducesN_concat h1 h2))).toLedger =
           totalAction rhoIntrinsicLedgerAction
@@ -453,7 +453,7 @@ theorem rhoIntrinsicSemanticBridge_reducesN
       (totalAction rhoIntrinsicLedgerAction (rhoRewritePathOfReducesN h)) =
         traceAccount (S := rhoGSLT) (A := Nat) (k := 2)
           (rhoIntrinsicReducesNTrace h) ∧
-    (rhoIntrinsicDirectSpentTrace (rhoRewritePathOfReducesN h)).SurfaceLike ∧
+    (rhoIntrinsicDirectSpentTrace (rhoRewritePathOfReducesN h)).CanonicalShape ∧
     (rhoIntrinsicDirectSpentTrace (rhoRewritePathOfReducesN h)).toLedger =
       totalAction rhoIntrinsicLedgerAction (rhoRewritePathOfReducesN h) ∧
     (rhoIntrinsicDirectSpentTrace (rhoRewritePathOfReducesN h)).toPublicPattern =
@@ -620,7 +620,7 @@ theorem rhoIntrinsicSemanticBridge_reducesN_concat
       (totalAction rhoIntrinsicLedgerAction
         (rhoRewritePathOfReducesN (reducesN_concat h1 h2))) ∧
     (rhoIntrinsicDirectSpentTrace
-      (rhoRewritePathOfReducesN (reducesN_concat h1 h2))).SurfaceLike ∧
+      (rhoRewritePathOfReducesN (reducesN_concat h1 h2))).CanonicalShape ∧
     (rhoIntrinsicDirectSpentTrace
       (rhoRewritePathOfReducesN (reducesN_concat h1 h2))).toLedger =
         totalAction rhoIntrinsicLedgerAction
@@ -750,7 +750,7 @@ theorem rhoIntrinsicSemanticBridge_reducesN_full_concat
           traceAccount (S := rhoGSLT) (A := Nat) (k := 2)
             (rhoIntrinsicReducesNTrace (reducesN_concat h1 h2)) ∧
     (rhoIntrinsicDirectSpentTrace
-      (rhoRewritePathOfReducesN (reducesN_concat h1 h2))).SurfaceLike ∧
+      (rhoRewritePathOfReducesN (reducesN_concat h1 h2))).CanonicalShape ∧
     (rhoIntrinsicDirectSpentTrace
       (rhoRewritePathOfReducesN (reducesN_concat h1 h2))).toLedger =
         totalAction rhoIntrinsicLedgerAction
@@ -862,7 +862,7 @@ theorem rhoIntrinsicSemanticBridge_reducesN_full_concat
       (totalAction rhoIntrinsicLedgerAction
         (rhoRewritePathOfReducesN (reducesN_concat h1 h2))) ∧
     (rhoIntrinsicDirectSpentTrace
-      (rhoRewritePathOfReducesN (reducesN_concat h1 h2))).SurfaceLike ∧
+      (rhoRewritePathOfReducesN (reducesN_concat h1 h2))).CanonicalShape ∧
     (rhoIntrinsicDirectSpentTrace
       (rhoRewritePathOfReducesN (reducesN_concat h1 h2))).toLedger =
         totalAction rhoIntrinsicLedgerAction

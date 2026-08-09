@@ -234,10 +234,10 @@ private def fixtureRule : RuleSchema :=
     conclusion := .apply "Holds" [] }
 
 private def fixturePresentation : Presentation :=
-  { language :=
-      { LanguageDef.empty "checked-source-fixture" with
-        judgments := [{ head := "Holds", arity := 0 }]
-        inferenceRules := [fixtureRule] } }
+  { language := LanguageDef.empty "checked-source-fixture"
+    calculus :=
+      { judgments := [{ head := "Holds", arity := 0 }]
+        rules := [fixtureRule] } }
 
 private def fixtureIdentity : SourceIdentity :=
   { systemId := "fixture-source"
@@ -320,9 +320,10 @@ forces presentation revalidation and is rejected. -/
   validationError
       ({ fixtureSource with
         presentation :=
-          { language :=
-              { fixturePresentation.language with
-                inferenceRules := [fixtureRule, fixtureRule] } } }).validate ==
+          { fixturePresentation with
+            calculus :=
+              { fixturePresentation.calculus with
+                rules := [fixtureRule, fixtureRule] } } }).validate ==
     some .invalidPresentation
 
 end Mettapedia.GSLT.LanguageDef.CheckedSource

@@ -155,10 +155,8 @@ private def cacheLanguage (constructors : ArityTable) : LanguageDef :=
 
 @[simp] private def cachePresentation (constructors : ArityTable)
     (judgments : List JudgmentDecl) (rules : List RuleSchema) : Presentation :=
-  { language :=
-      { cacheLanguage constructors with
-        judgments
-        inferenceRules := rules } }
+  { language := cacheLanguage constructors
+    calculus := { judgments, rules } }
 
 /-- Deterministically build the current checker's structural companion from
 the authored rule list.  This is a calibration projection, not a new source

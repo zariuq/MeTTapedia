@@ -4,5 +4,5 @@ import Mettapedia.Languages.MeTTa.PeTTa.ContractExport
 /-!
 # PeTTa Execution Contract
 
-Public compatibility facade for the PeTTa execution-contract surface.
+Public compatibility facade for the PeTTa execution-contract interface.
 -/

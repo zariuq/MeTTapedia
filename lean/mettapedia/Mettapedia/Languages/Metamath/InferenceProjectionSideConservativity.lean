@@ -67,15 +67,22 @@ theorem isSideJudgment_of_sidePresentation_hasJudgmentShape
   cases judgment with
   | apply head arguments =>
       unfold Presentation.hasJudgmentShape Presentation.lookupJudgment? at hshape
-      cases hfound : (sidePresentation.language.judgments.filter fun declaration =>
+      change
+        (match judgmentDecls.filter (fun (declaration : JudgmentDecl) =>
+            declaration.head == head &&
+              declaration.arity == arguments.length) with
+          | [declaration] => some declaration
+          | _ => none).isSome = true at hshape
+      cases hfound : (judgmentDecls.filter fun declaration =>
           declaration.head == head &&
             declaration.arity == arguments.length) with
-      | nil => simp [hfound] at hshape
+      | nil =>
+          simp [hfound] at hshape
       | cons declaration rest =>
           cases rest with
           | nil =>
               have hmemFilter : declaration ∈
-                  (sidePresentation.language.judgments.filter fun candidate =>
+                  (judgmentDecls.filter fun candidate =>
                     candidate.head == head &&
                       candidate.arity == arguments.length) := by
                 rw [hfound]
@@ -85,7 +92,7 @@ theorem isSideJudgment_of_sidePresentation_hasJudgmentShape
                 simp only [Bool.and_eq_true, beq_iff_eq] at hparts
                 exact hparts.2.1
               have hmemDecl : declaration ∈ judgmentDecls := by
-                simpa [sidePresentation] using hparts.1
+                simpa [sidePresentation, sideCalculus] using hparts.1
               have hheadReserved :
                   declaration.head ∈ reservedJudgmentHeads := by
                 have hmap :
@@ -95,7 +102,8 @@ theorem isSideJudgment_of_sidePresentation_hasJudgmentShape
                 simpa [judgmentDecls, reservedJudgmentHeads] using hmap
               subst head
               exact hheadReserved
-          | cons second tail => simp [hfound] at hshape
+          | cons second tail =>
+              simp [hfound] at hshape
   | bvar | fvar | lambda | multiLambda | subst | collection =>
       simp [Presentation.hasJudgmentShape] at hshape
 
@@ -107,7 +115,7 @@ theorem sideRule_premises_all_isSideJudgment
     AllSideJudgments rule.premises := by
   intro premise hpremise
   have hvalid := rule_isValidIn_of_mem validatedSidePresentation (by
-    simpa [validatedSidePresentation, sidePresentation] using hmem)
+    simpa [validatedSidePresentation, sidePresentation, sideCalculus] using hmem)
   simp only [RuleSchema.isValidIn, Bool.and_eq_true] at hvalid
   have hpremiseValid :
       sidePresentation.judgmentSchemaValid premise = true :=
@@ -186,7 +194,8 @@ theorem standalone_lookup_of_projected_lookup_of_sideRule
       rw [List.find?_append, hsideLookup] at hlookup
       have hselected : selectedRule = rule := Option.some.inj hlookup
       subst selectedRule
-      simpa [validatedSidePresentation, sidePresentation] using hsideLookup
+      simpa [validatedSidePresentation, sidePresentation, sideCalculus]
+        using hsideLookup
 
 /-! ## Application and tree restriction -/
 

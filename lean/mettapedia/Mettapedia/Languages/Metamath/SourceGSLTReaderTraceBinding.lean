@@ -245,12 +245,30 @@ theorem readerInComment_feedToken_outside_of_notOpen
         exact readerInComment_label state (state.mkPos offset) token outside
       · rw [if_neg command]
         exact readerInComment_label state (state.mkPos offset) token outside
-    case const =>
-      simpa [ParserState.feedToken, modeEq, notCommentOpen, includeOpen]
-        using readerInComment_sym state (state.mkPos offset) token .const outside
-    case var =>
-      simpa [ParserState.feedToken, modeEq, notCommentOpen, includeOpen]
-        using readerInComment_sym state (state.mkPos offset) token .var outside
+    case const seen =>
+      simp only [ParserState.feedToken, modeEq, commentOpenFalse,
+        includeOpen, Bool.false_eq_true, if_false]
+      by_cases endToken : token.eqArray "$.".toAscii = true
+      · rw [if_pos endToken]
+        cases seen with
+        | false =>
+            simpa [ParserState.mkErrorFromEvidence,
+              ParserState.withDB] using outside
+        | true => rfl
+      · rw [if_neg endToken]
+        rfl
+    case var seen =>
+      simp only [ParserState.feedToken, modeEq, commentOpenFalse,
+        includeOpen, Bool.false_eq_true, if_false]
+      by_cases endToken : token.eqArray "$.".toAscii = true
+      · rw [if_pos endToken]
+        cases seen with
+        | false =>
+            simpa [ParserState.mkErrorFromEvidence,
+              ParserState.withDB] using outside
+        | true => rfl
+      · rw [if_neg endToken]
+        rfl
     case djvars names =>
       simp only [ParserState.feedToken, modeEq, commentOpenFalse,
         includeOpen, Bool.false_eq_true, if_false]
@@ -291,7 +309,12 @@ theorem readerInComment_feedToken_outside_of_notOpen
             | some object =>
                 cases object with
                 | const name => simp [objectResult, readerInComment]
-                | var name => simp [objectResult, readerInComment]
+                | var objectName =>
+                    by_cases active : state.db.isActiveVar name = true
+                    · simp [objectResult, active, readerInComment]
+                    · simpa [objectResult, active,
+                        ParserState.mkErrorFromEvidence,
+                        ParserState.withDB] using outside
                 | hyp essential formula label =>
                     cases violation : state.db.mathSymbolViolation? name <;>
                       simpa [objectResult, violation,
@@ -321,7 +344,8 @@ theorem readerInComment_feedToken_outside_of_notOpen
       · simpa [closeToken, ParserState.mkErrorFromEvidence,
           ParserState.withDB] using outside
       · rw [if_neg closeToken]
-        cases pathResult : ParserState.normalizeIncludePath state.sourceFile
+        cases pathResult : ParserState.normalizeIncludePath
+            state.db.config.literalIncludePaths state.sourceFile
             (ParserState.includePathFromToken token).1 with
         | error failure =>
             simpa [ParserState.mkErrorFromEvidence,
@@ -955,7 +979,7 @@ theorem byteSlice_toString_eq_tokenText (slice : ByteSlice) :
   rw [byteSlice_forIn_yield slice
     (fun c s => pure (ForInStep.yield (s.push (Char.ofUInt8 c))))
     (fun c s => s.push (Char.ofUInt8 c)) (by intros; rfl) ""]
-  rw [← sliceBytes_eq_sliceList]
+  rw [← SourceGSLTCompressedMMLean4.sliceBytes_eq_sliceList]
   have characterAgreement : ∀ byte : UInt8,
       Char.ofUInt8 byte = Metamath.Verify.uint8ToChar byte := by
     intro byte

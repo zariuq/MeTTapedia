@@ -38,27 +38,30 @@ deriving Repr
 
 namespace PresentationExtension
 
-/-- Apply the delta to a base language (append-only; identifiers are the
-merge discipline, checked by `disjointFrom`). -/
-def apply (extension : PresentationExtension) (base : LanguageDef) :
-    LanguageDef :=
-  { base with
-    name := extension.rename.getD base.name
-    terms := base.terms ++ extension.newTerms
-    judgments := base.judgments ++ extension.newJudgments
-    inferenceRules := base.inferenceRules ++ extension.newRules }
+/-- Apply the delta to a base presentation.  Term declarations extend the
+five-field language; proof declarations extend only its attached calculus. -/
+def apply (extension : PresentationExtension) (base : Presentation) :
+    Presentation :=
+  { language :=
+      { base.language with
+        name := extension.rename.getD base.language.name
+        terms := base.language.terms ++ extension.newTerms }
+    calculus :=
+      { base.calculus with
+        judgments := base.judgments ++ extension.newJudgments
+        rules := base.rules ++ extension.newRules } }
 
 /-- Executable disjointness: no constructor label, judgment head, or rule
 identifier of the extension collides with the base. -/
 def disjointFrom (extension : PresentationExtension)
-    (base : LanguageDef) : Bool :=
+    (base : Presentation) : Bool :=
   extension.newTerms.all (fun term =>
-    !(base.terms.any fun existing => existing.label == term.label)) &&
+    !(base.language.terms.any fun existing => existing.label == term.label)) &&
   extension.newJudgments.all (fun judgment =>
     !(base.judgments.any fun existing =>
         existing.head == judgment.head)) &&
   extension.newRules.all (fun rule =>
-    !(base.inferenceRules.any fun existing => existing.id == rule.id))
+    !(base.rules.any fun existing => existing.id == rule.id))
 
 /-- The identity extension. -/
 def empty : PresentationExtension := ⟨[], [], [], none⟩
@@ -71,14 +74,16 @@ def comp (first second : PresentationExtension) : PresentationExtension :=
     rename := second.rename <|> first.rename }
 
 /-- Left identity law. -/
-theorem empty_apply (base : LanguageDef) : empty.apply base = base := by
+theorem empty_apply (base : Presentation) : empty.apply base = base := by
+  cases base
   simp [empty, apply]
 
 /-- Associativity: composing deltas then applying equals applying in
 sequence. -/
 theorem comp_apply (first second : PresentationExtension)
-    (base : LanguageDef) :
+    (base : Presentation) :
     (first.comp second).apply base = second.apply (first.apply base) := by
+  cases base
   simp only [comp, apply, List.append_assoc]
   cases second.rename <;> cases first.rename <;> simp [Option.getD]
 
@@ -108,7 +113,7 @@ deriving Repr
 
 /-- Executable check of the policy against the delta. -/
 def policyHolds (extension : PresentationExtension)
-    (base : LanguageDef) : ConservativityPolicy → Bool
+    (base : Presentation) : ConservativityPolicy → Bool
   | .newJudgmentsOnly =>
       extension.newRules.all fun rule =>
         match rule.conclusion with
@@ -130,11 +135,11 @@ the composite a first-class validated presentation. -/
 structure ValidatedExtension (base : ValidatedPresentation) where
   extension : PresentationExtension
   policy : PresentationExtension.ConservativityPolicy
-  disjoint : extension.disjointFrom base.1.language = true
+  disjoint : extension.disjointFrom base.1 = true
   policyHolds :
-    extension.policyHolds base.1.language policy = true
+    extension.policyHolds base.1 policy = true
   valid :
-    (Presentation.mk (extension.apply base.1.language)).isValidV2 = true
+    (extension.apply base.1).isValidV2 = true
 
 namespace ValidatedExtension
 
@@ -142,7 +147,7 @@ variable {base : ValidatedPresentation}
 
 /-- The composite as a validated presentation. -/
 def target (self : ValidatedExtension base) : ValidatedPresentation :=
-  ⟨Presentation.mk (self.extension.apply base.1.language), self.valid⟩
+  ⟨self.extension.apply base.1, self.valid⟩
 
 /-- Every base rule lookup survives into the composite: the extension is
 proof-preserving by construction. -/

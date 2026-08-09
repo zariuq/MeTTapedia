@@ -192,7 +192,7 @@ def markovPathMassSemantics
   simp [MassSemantics.evidenceOfMasses, markovPathMassSemantics, markovPathEvidenceOfProb]
 
 /-- Package a multiset WM state as a singleton mass semantics source for the
-path-query surface. -/
+path-query interface. -/
 def markovTransitionPathStateOfWM
     (hk : 0 < k) (prior : Fin k → DirichletParams k)
     (W : MarkovTransitionWMState k) : MarkovTransitionPathState k :=

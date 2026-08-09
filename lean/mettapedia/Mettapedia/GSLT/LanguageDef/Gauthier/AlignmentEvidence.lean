@@ -3,7 +3,7 @@
 
 An action observation retains its query, decoder prefix, alignment coordinate,
 typed checker verdict, and lineage.  The innovation identity intentionally
-forgets occurrence path, surface spelling, and descendant lineage while
+forgets occurrence path, source spelling, and descendant lineage while
 retaining the causal root, action, and verdict.  Consequently repeated DAG
 manifestations and common-ancestor descendants contribute once, whereas truly
 independent roots add.
@@ -218,7 +218,7 @@ theorem alignedRepresentativeEvidence_duplicate
   split <;> simp [correctedEvidence]
 
 /-- Different manifestations with one causal root/action/verdict collapse to
-one precision contribution even when paths and surface programs differ. -/
+one precision contribution even when paths and source programs differ. -/
 theorem correctedEvidence_common_root
     (first second : ActionObservation)
     (hid : first.innovationId = second.innovationId) :

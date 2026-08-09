@@ -68,11 +68,11 @@ noncomputable def rhoStaticRootBridgeOfRestoredPatternLeafAlignedCanonicalFrame
         CostStaticAtomEnvironment.ofInventory rightInventory
       let cospan := leftEnvironment.semanticKeyCospan rightEnvironment
       ∀ {leftLeaf rightLeaf}, relation leftLeaf rightLeaf → ∀ depth,
-        ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeLanguage
+        ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeReflectionProfile
             cospan.commonSupport cospan.commonAssignment depth
             (cospan.reifyWith leftEnvironment.lookupAtom? cospan.leftSlot
               leftLeaf) =
-          ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeLanguage
+          ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeReflectionProfile
             cospan.commonSupport cospan.commonAssignment depth
             (cospan.reifyWith rightEnvironment.lookupAtom? cospan.rightSlot
               rightLeaf)) :
@@ -93,7 +93,7 @@ noncomputable def rhoStaticRootBridgeOfRestoredPatternLeafAlignedCanonicalFrame
   let cospan := leftEnvironment.semanticKeyCospan rightEnvironment
   exact cospan.substituteAt_reifyWith_eq_of_patternLeafAligned
     leftEnvironment.lookupAtom? rightEnvironment.lookupAtom?
-    cospan.leftSlot cospan.rightSlot rhoCIGSLT.costWholeLanguage
+    cospan.leftSlot cospan.rightSlot rhoCIGSLT.costWholeReflectionProfile
     cospan.commonSupport cospan.commonAssignment relatedLeavesRestore
     canonicalFramesAligned leftNode.targetBound.length
 
@@ -201,11 +201,11 @@ noncomputable def rhoStaticRootBridgeOfRestoredFvarAlignedCanonicalFrame
         CostStaticAtomEnvironment.ofInventory rightInventory
       let cospan := leftEnvironment.semanticKeyCospan rightEnvironment
       ∀ {leftName rightName}, relation leftName rightName → ∀ depth,
-        ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeLanguage
+        ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeReflectionProfile
             cospan.commonSupport cospan.commonAssignment depth
             (cospan.reifyWith leftEnvironment.lookupAtom? cospan.leftSlot
               (.fvar leftName)) =
-          ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeLanguage
+          ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeReflectionProfile
             cospan.commonSupport cospan.commonAssignment depth
             (cospan.reifyWith rightEnvironment.lookupAtom? cospan.rightSlot
               (.fvar rightName))) :
@@ -224,11 +224,11 @@ noncomputable def rhoStaticRootBridgeOfRestoredFvarAlignedCanonicalFrame
   let cospan := leftEnvironment.semanticKeyCospan rightEnvironment
   let leafRelation : Pattern → Pattern → Prop := fun leftLeaf rightLeaf =>
     ∀ depth,
-      ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeLanguage
+      ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeReflectionProfile
           cospan.commonSupport cospan.commonAssignment depth
           (cospan.reifyWith leftEnvironment.lookupAtom? cospan.leftSlot
             leftLeaf) =
-        ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeLanguage
+        ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeReflectionProfile
           cospan.commonSupport cospan.commonAssignment depth
           (cospan.reifyWith rightEnvironment.lookupAtom? cospan.rightSlot
             rightLeaf)
@@ -340,7 +340,7 @@ noncomputable def toRootBridge
   dsimp only
   intro leftName rightName related depth
   rcases related with ⟨rfl, rfl⟩
-  exact view.selectedBoundaryAtom_restoresAsSourceVariable_of_alignment_supportIndependent
+  apply view.selectedBoundaryAtom_restoresAsSourceVariable_of_alignment_supportIndependent
     CostCanonicalLaws.rho_unambiguousStaticDecomposition leftChildren
     (leftNode.normalizationEnvironment rhoHereditaryStaticNormalizer
       leftChildren)

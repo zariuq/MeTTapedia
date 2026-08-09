@@ -90,7 +90,7 @@ The broader \GF{} subtree spans 44,562 lines across 96~Lean files, with
 \code{translation\_preserves\_type} &
 Abstract-tree typing is translation-invariant &
 \textbf{Proved (D)} &
-Meaningful grammatical types live on shared abstract syntax, not on surface form. \\
+Meaningful grammatical types live on shared abstract syntax, not on source form. \\
 \code{montague\_thesis} &
 Language-parametric architectural invariance &
 \textbf{Proved (D)} &
@@ -104,13 +104,13 @@ Actual GF/PGF witness export agrees across English and Czech &
 \textbf{Proved (GF)} &
 The ambiguity witnesses now come from real GF parsing/export, not only a curated lookup layer. \\
 \code{telescope\_instrument\_scene\_values} &
-Same-surface PP-attachment ranked by world evidence &
+Same-text PP-attachment ranked by world evidence &
 \textbf{Proved (Sem)} &
-Same surface, two parses, distinct compiled patterns, world-sensitive evidence reversal. \\
+Same text, two parses, distinct compiled patterns, world-sensitive evidence reversal. \\
 \code{anna\_scene\_rankings\_reverse} &
 Locative PP-attachment ranked by world evidence &
 \textbf{Proved (Sem)} &
-Second same-surface case: ``Anna dresses the baby in the crib'' gets reversed
+Second same-text case: ``Anna dresses the baby in the crib'' gets reversed
 evidence rankings in baby-in-crib vs.\ dressing-in-crib scenes. \\
 \code{translation\_preserves\_evidence\_allW} &
 Evidence is translation-invariant in all world models &
@@ -156,7 +156,7 @@ This paper connects four layers that are often studied separately:
 
 \begin{enumerate}
 \item \textbf{\GF{} (grammar layer).}  \GF{} provides typed abstract syntax trees
-  (language-independent structure) plus concrete linearizations (surface forms
+  (language-independent structure) plus concrete linearizations (source forms
   in English, Czech, etc.).
 \item \textbf{\OSLF{} (behavioral logic layer).}  Given rewrite rules on those
   trees, \OSLF{} derives modal operators and a type/predicate logic of what
@@ -217,12 +217,12 @@ Galois adjunction $\Dia \dashv \Bx$.  The resulting type system lets us
   to a noun phrase preserves previously present lexical material
   (universally quantified, not just for concrete examples).
 \item \textbf{Contextual ambiguity analysis}: Two independent cases of
-  same-surface PP-attachment ambiguity are formally verified end-to-end.
+  same-text PP-attachment ambiguity are formally verified end-to-end.
   For ``John sees the man with the telescope'' (instrumental PP) and
   ``Anna dresses the baby in the crib'' (locative PP), each sentence has
   two distinct abstract trees, actual \GF{}/PGF witness export recovers those
   analyses in both English and Czech, a lightweight curated roundtrip corpus
-  records the English surface forms, and appropriate world states produce
+  records the English source forms, and appropriate world states produce
   evidence rankings that reverse across scenes.  This is a formal existence
   result: the three-layer pipeline (GF abstract syntax, OSLF bridge,
   evidence-valued world semantics) can support world-model-guided
@@ -312,7 +312,7 @@ language description into two layers:
   $\code{DetCN} : \code{Det} \to \code{CN} \to \code{NP}$).  Abstract
   syntax is \emph{language-independent}.
 \item \textbf{Concrete syntax}: Language-specific linearization rules mapping
-  abstract trees to surface strings, parameterized by morphological features
+  abstract trees to linearized strings, parameterized by morphological features
   (case, number, gender, tense, etc.).
 \end{itemize}
 
@@ -618,7 +618,7 @@ constructor check for~$l_1$, it fails for~$l_2$.
 \end{theorem}
 
 \begin{theorem}[Parse disambiguation]
-Competing candidate analyses for the same surface string can satisfy different
+Competing candidate analyses for the same linearized string can satisfy different
 native predicates before world-model evidence is considered.  In the current
 development, two independent PP-attachment cases (instrumental and locative)
 already separate at the OSLF compiled-pattern layer; world-model evidence
@@ -733,7 +733,7 @@ expressions contain their parts.
 
 The current development now uses two honest ambiguity families.
 
-\paragraph{Same-surface PP attachment.}
+\paragraph{Same-text PP attachment.}
 The sentence ``John sees the man with the telescope'' is represented by two
 distinct abstract trees:
 \begin{itemize}
@@ -741,20 +741,20 @@ distinct abstract trees:
 \item \textbf{VP attachment}: John [saw the man] [with the telescope].
 \end{itemize}
 Both trees linearize to the same string, and the curated roundtrip corpus now
-records both analyses for that same surface.  In addition, actual \GF{}/PGF
+records both analyses for that same text.  In addition, actual \GF{}/PGF
 parsing/export recovers the same two abstract trees in both English and Czech:
 
-\begin{lstlisting}[language=ml,caption={Same-surface contextual ambiguity}]
-theorem telescope_np_surface :
-    telescopeNPAttachmentSurface =
+\begin{lstlisting}[language=ml,caption={Same-text contextual ambiguity}]
+theorem telescope_np_text :
+    telescopeNPAttachmentText =
       "John sees the man with the telescope"
 
-theorem telescope_vp_surface :
-    telescopeVPAttachmentSurface =
+theorem telescope_vp_text :
+    telescopeVPAttachmentText =
       "John sees the man with the telescope"
 
-theorem telescope_surface_ambiguous_in_corpus :
-    parseSurface "John sees the man with the telescope" =
+theorem telescope_text_ambiguous_in_corpus :
+    parseLinearization "John sees the man with the telescope" =
       [.telescopeNPAttachment, .telescopeVPAttachment]
 
 theorem english_telescope_instrument_scene_values :
@@ -781,13 +781,13 @@ theorem telescope_modifier_scene_values :
 
 In an instrument-favoring scene, the VP-attachment reading is strongly
 supported while the NP-attachment reading is conflicted; in a modifier-favoring
-scene the ranking reverses. This is a same-surface ambiguity theorem with
+scene the ranking reverses. This is a same-text ambiguity theorem with
 world-sensitive evidence, not merely a lexical-profile contrast.
-This gives a complete small theorem package: same surface, two analyses in the
+This gives a complete small theorem package: same text, two analyses in the
 validated roundtrip corpus, actual \GF{}/PGF witness recovery in English and
 Czech, distinct compiled patterns, and world-sensitive evidence reversal.
 
-\paragraph{A second same-surface case: locative PP attachment.}
+\paragraph{A second same-text case: locative PP attachment.}
 The sentence ``Anna dresses the baby in the crib'' has two distinct abstract trees:
 \begin{itemize}
 \item \textbf{NP attachment}: Anna dressed [the baby in the crib] (the crib
@@ -800,17 +800,17 @@ analyses.  Actual \GF{}/PGF witness export again recovers the same abstract tree
 English and Czech:
 
 \begin{lstlisting}[language=ml]
-theorem anna_np_surface :
-    annaNPAttachmentSurface = "Anna dresses the baby in the crib"
+theorem anna_np_text :
+    annaNPAttachmentText = "Anna dresses the baby in the crib"
 
-theorem anna_vp_surface :
-    annaVPAttachmentSurface = "Anna dresses the baby in the crib"
+theorem anna_vp_text :
+    annaVPAttachmentText = "Anna dresses the baby in the crib"
 
-theorem anna_same_surface :
-    annaNPAttachmentSurface = annaVPAttachmentSurface
+theorem anna_same_text :
+    annaNPAttachmentText = annaVPAttachmentText
 
-theorem anna_surface_ambiguous_in_corpus :
-    parseSurface "Anna dresses the baby in the crib" =
+theorem anna_text_ambiguous_in_corpus :
+    parseLinearization "Anna dresses the baby in the crib" =
       [.annaNPAttachment, .annaVPAttachment]
 
 theorem english_czech_anna_recovered_equal :
@@ -848,7 +848,7 @@ for world-model-guided PP-attachment disambiguation: the three-layer pipeline
 (GF abstract syntax, OSLF compiled-pattern bridge, evidence-valued world
 semantics) supports disambiguation that is world-state-sensitive, formally
 verified, and compositionally grounded via the Frege compositionality theorem
-already proved for the grammar.  The current surface-side setup has two layers:
+already proved for the grammar.  The current source-text-side setup has two layers:
 actual \GF{}/PGF witness export recovers the English and Czech abstract trees,
 while the curated roundtrip corpus remains a lightweight English-side lookup for
 the paper examples rather than a general parser.  The proper next step is to
@@ -865,12 +865,12 @@ We formalize this with cross-linguistic pairs:
 \begin{lstlisting}[language=ml,caption={Cross-linguistic invariance}]
 structure CrossLingPair where
   tree : AbstractNode
-  englishSurface : String
-  czechSurface : String
+  englishText : String
+  czechText : String
 
 -- "the cat" / "kocka" share the same abstract tree
-theorem cross_ling_surfaces_differ :
-    theCat_pair.englishSurface ≠ theCat_pair.czechSurface
+theorem cross_ling_texts_differ :
+    theCat_pair.englishText ≠ theCat_pair.czechText
 
 -- Same tree → same lexical containment
 theorem cross_ling_lexical_invariance :
@@ -1334,12 +1334,12 @@ theorem temporal_asymmetry_syntaxOnly :
 \paragraph{Scope ordering as an inequality (\code{SemanticHighlights.lean}).}
 For the ``every man loves some woman'' (EMLA) witness:
 \begin{lstlisting}[language=ml]
-theorem emla_scope_inverse_le_surface :
+theorem emla_scope_inverse_le_text :
     qsemE2 R I Dom env (∃q2, ∀q1, ...) p ≤
     qsemE2 R I Dom env (∀q1, ∃q2, ...) p
 \end{lstlisting}
 $\exists\forall$ evidence is dominated by $\forall\exists$ evidence---the
-surface scope is the ``stronger'' reading in the evidence order.
+source-order scope is the ``stronger'' reading in the evidence order.
 
 \paragraph{Scope completeness (\code{ScopeLinearExtension.lean}).}
 For the two-quantifier EMLA fragment, reachable scope orders are

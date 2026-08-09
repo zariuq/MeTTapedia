@@ -77,15 +77,15 @@ def RuntimeResourceClass.name : RuntimeResourceClass → String
 /-- Runtime-side lowering target. This is intentionally smaller than "all
 runtime semantics": it only records the current theoremic seams. -/
 inductive RuntimeLowering where
-  | exec (surface : MeTTaRuntimeExecSurface)
-  | query (surface : MeTTaRuntimeQuerySurface)
-  | spaceEffect (surface : MeTTaRuntimeExecSurface)
+  | exec (interface : MeTTaRuntimeExecInterface)
+  | query (interface : MeTTaRuntimeQueryInterface)
+  | spaceEffect (interface : MeTTaRuntimeExecInterface)
   | auditOnly
 
 def RuntimeLowering.backendName : RuntimeLowering → String
-  | RuntimeLowering.exec surface => surface.backendName
-  | RuntimeLowering.query surface => surface.backendName
-  | RuntimeLowering.spaceEffect surface => surface.backendName
+  | RuntimeLowering.exec interface => interface.backendName
+  | RuntimeLowering.query interface => interface.backendName
+  | RuntimeLowering.spaceEffect interface => interface.backendName
   | RuntimeLowering.auditOnly => "audit-only"
 
 def RuntimeLowering.kernelClass : RuntimeLowering → RuntimeKernelClass
@@ -95,7 +95,7 @@ def RuntimeLowering.kernelClass : RuntimeLowering → RuntimeKernelClass
   | RuntimeLowering.auditOnly => .metaPhase
 
 /-- Neutral packaging of a runtime target below elaboration and above concrete
-backend theorems. This is the object we want surface elaboration to classify
+backend theorems. This is the object we want source elaboration to classify
 into, before dialect-specific details are considered.
 -/
 structure RuntimeKernelTarget where
@@ -116,10 +116,10 @@ direct `R_exec₀` source-rule bridge.
 trusted proof target and the current theoremic runtime execution seam. -/
 inductive OverlapClass where
   | artifactOnly
-  | directExec (surface : MeTTaRuntimeExecSurface)
+  | directExec (interface : MeTTaRuntimeExecInterface)
 
 def OverlapClass.name : OverlapClass → String
   | .artifactOnly => "artifact-only"
-  | .directExec surface => surface.backendName
+  | .directExec interface => interface.backendName
 
 end Mettapedia.Languages.MeTTa.ElaboratedCore

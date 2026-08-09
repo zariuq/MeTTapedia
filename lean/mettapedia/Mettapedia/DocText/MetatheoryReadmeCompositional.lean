@@ -841,22 +841,22 @@ theorem metatheory_heading_image_witness
     parseMetatheoryHeadingLine? renderMetatheoryHeading metatheoryReadmeBlocks
     metatheory_heading_images hMem
 
-private def insertSurfaceBucket (acc : List (String × List MetatheoryClaim)) (surface : String)
+private def insertRenderedBucket (acc : List (String × List MetatheoryClaim)) (rendered : String)
     (c : MetatheoryClaim) : List (String × List MetatheoryClaim) :=
   match acc with
-  | [] => [(surface, [c])]
+  | [] => [(rendered, [c])]
   | (k, cs) :: rest =>
-      if k = surface then
+      if k = rendered then
         (k, c :: cs) :: rest
       else
-        (k, cs) :: insertSurfaceBucket rest surface c
+        (k, cs) :: insertRenderedBucket rest rendered c
 
-def claimSurfaceBuckets : List (String × List MetatheoryClaim) :=
+def claimRenderedBuckets : List (String × List MetatheoryClaim) :=
   allMetatheoryClaims.foldl
-    (fun acc c => insertSurfaceBucket acc (renderMetatheoryClaim c) c) []
+    (fun acc c => insertRenderedBucket acc (renderMetatheoryClaim c) c) []
 
-def ambiguousClaimSurfaces : List (String × List MetatheoryClaim) :=
-  claimSurfaceBuckets.filter (fun p => p.snd.length > 1)
+def ambiguousClaimRenderings : List (String × List MetatheoryClaim) :=
+  claimRenderedBuckets.filter (fun p => p.snd.length > 1)
 
 #eval
   let fails := allMetatheoryClaims.filter (fun c =>
@@ -884,9 +884,9 @@ def ambiguousClaimSurfaces : List (String × List MetatheoryClaim) :=
     s!"Metatheory structured parse failures: {repr fails}"
 
 #eval
-  if ambiguousClaimSurfaces.isEmpty then
-    "Metatheory ambiguity diagnostic: no duplicate surfaces across distinct claims"
+  if ambiguousClaimRenderings.isEmpty then
+    "Metatheory ambiguity diagnostic: no duplicate renderings across distinct claims"
   else
-    s!"Metatheory ambiguity diagnostic: duplicate surfaces found: {repr ambiguousClaimSurfaces}"
+    s!"Metatheory ambiguity diagnostic: duplicate renderings found: {repr ambiguousClaimRenderings}"
 
 end Mettapedia.DocText.MetatheoryReadmeCompositional

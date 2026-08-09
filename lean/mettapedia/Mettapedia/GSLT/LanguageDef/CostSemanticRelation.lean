@@ -71,7 +71,7 @@ mutual
             ∃ kind, source.declaredCostConstructorRole constructor =
               .apparatus kind)
         (ordinary : ReflectiveContextSupport.isQuoteConstructor
-          source.costWholeLanguage rule.label = false)
+          source.costWholeReflectionProfile rule.label = false)
         (leftChildren : CostSemanticArgumentTrees source targetFree available
           outer leftArguments rule.params)
         (rightChildren : CostSemanticArgumentTrees source targetFree available
@@ -97,7 +97,7 @@ mutual
             ∃ kind, source.declaredCostConstructorRole constructor =
               .apparatus kind)
         (quoted : ReflectiveContextSupport.isQuoteConstructor
-          source.costWholeLanguage rule.label = true)
+          source.costWholeReflectionProfile rule.label = true)
         (leftChildren : CostSemanticArgumentTrees source targetFree []
           (available ++ outer) leftArguments rule.params)
         (rightChildren : CostSemanticArgumentTrees source targetFree []
@@ -260,9 +260,9 @@ mutual
         {boundary : TypedCostRegionBoundary source color targetFree}
         {content : boundary.boundary.content = occurrence.content}
         {tail : TypedCostRegionBoundaryTable source color targetFree occurrences}
-        {leftValue rightValue : WellSorted.OpenPattern
-          source.costWholeLanguage targetFree boundary.boundary.targetSupport
-          boundary.boundary.targetType}
+        {leftValue rightValue : ReflectiveWellSorted.OpenPattern
+          source.costWholeReflectionProfile source.costWholeLanguage targetFree
+            boundary.boundary.targetSupport boundary.boundary.targetType}
         {leftValues rightValues : TypedCostRegionBoundaryTable.Values source
           color targetFree tail}
         (leftHead : CostSemanticTree source targetFree
@@ -794,8 +794,9 @@ theorem CostSemanticTree.Rel.normalForm_eq
         CostSemanticBoundaryTrees.cons rightHead.normalize.tree
           rightChildren.normalize.2⟩
     let NormalizedBoundaryHead :=
-      Σ normalizedValue : WellSorted.OpenPattern source.costWholeLanguage
-          targetFree boundary.boundary.targetSupport boundary.boundary.targetType,
+      Σ normalizedValue : ReflectiveWellSorted.OpenPattern
+          source.costWholeReflectionProfile source.costWholeLanguage targetFree
+            boundary.boundary.targetSupport boundary.boundary.targetType,
         CostSemanticTree source targetFree boundary.boundary.targetSupport []
           normalizedValue.1 boundary.boundary.targetType
     have packagedHeadEq :

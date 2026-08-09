@@ -14,7 +14,7 @@ authored `languageDef!` fragment:
 It is intentionally a **semantic fragment**, not the full runtime-loaded GF
 grammar. The full constructor inventory still comes from `GFCore.GrammarSig`;
 this module exists to make the semantic kernel readable, reviewable, and
-reusable from the shared Lean `languageDef!` surface.
+reusable from the shared Lean `languageDef!` notation.
 -/
 
 namespace Mettapedia.Languages.GF.SemanticKernelDSL
@@ -117,8 +117,6 @@ def gfSemanticKernelLanguageDef : LanguageDef :=
       DetTheElim . cn:CN |- DetCN("the_Det", cn) ~> "⊛definite"(cn);
       DetNoElim . cn:CN |- DetCN("no_Det", cn) ~> "⊛negUniversal"(cn);
     }
-    logic { }
-    oracles { }
   }
 
 private def equationAt (i : Nat) (h : i < gfSemanticKernelLanguageDef.equations.length) : Equation :=

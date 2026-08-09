@@ -344,6 +344,7 @@ noncomputable def SpelledCallTrace.acceptedNormalStatement
       (entries.take formulaPrefix.length) proofInitial := by
     simpa [formulaPrefix] using formulaTrace
   let anchored := formulaTrace'.provableFormula_parserAnchor agreement
+    (insertAssertion?_valid_before inserted)
     labelCharset typecodeCharset bodyCharsets taggedFormula
   let anchor := anchored.2
   have proofTrace' : SpelledCallTrace fileId proofInitial
@@ -388,19 +389,23 @@ noncomputable def SpelledCallTrace.acceptedNormalStatement
         exact agreement.errorFree)
   have postInsert :
       (anchor.state.finishProof bodyRun.after).db =
-        db.insert theoremPos label.name
+        (db.insert theoremPos label.name
           (.assert (ConstantHeadedFormula.toRuntime
-            ⟨typecode.name, bodySymbols⟩) anchor.frame) := by
+            ⟨typecode.name, bodySymbols⟩) anchor.frame)).recordIncomplete
+              bodyRun.after.incomplete label.name := by
     calc
       (anchor.state.finishProof bodyRun.after).db =
-          anchor.state.db.insert bodyRun.after.pos bodyRun.after.label
-            (.assert bodyRun.after.fmla bodyRun.after.frame) := finishFacts.1
-      _ = db.insert bodyRun.after.pos bodyRun.after.label
-            (.assert bodyRun.after.fmla bodyRun.after.frame) := by
+          (anchor.state.db.insert bodyRun.after.pos bodyRun.after.label
+            (.assert bodyRun.after.fmla bodyRun.after.frame)).recordIncomplete
+              bodyRun.after.incomplete bodyRun.after.label := finishFacts.1
+      _ = (db.insert bodyRun.after.pos bodyRun.after.label
+            (.assert bodyRun.after.fmla bodyRun.after.frame)).recordIncomplete
+              bodyRun.after.incomplete bodyRun.after.label := by
           rw [anchor.database_eq]
-      _ = db.insert theoremPos label.name
+      _ = (db.insert theoremPos label.name
             (.assert (ConstantHeadedFormula.toRuntime
-              ⟨typecode.name, bodySymbols⟩) anchor.frame) := by
+              ⟨typecode.name, bodySymbols⟩) anchor.frame)).recordIncomplete
+                bodyRun.after.incomplete label.name := by
           rw [bodyRun.label_eq, bodyRun.formula_eq, bodyRun.frame_eq]
           rfl
   have mandatoryTrim := trimFrame'_eq_mandatory agreement
@@ -412,6 +417,8 @@ noncomputable def SpelledCallTrace.acceptedNormalStatement
     Except.ok.inj (anchor.trim.symm.trans mandatoryTrim)
   have nextAgreement := RuntimeDBAgrees.insertAssertion agreement inserted
     theoremPos
+  have recordedAgreement := nextAgreement.recordIncomplete
+    bodyRun.after.incomplete label.name
   refine
     { inserted := inserted
       nextPrefix := ?_ }
@@ -421,7 +428,7 @@ noncomputable def SpelledCallTrace.acceptedNormalStatement
       database := ?_
       interrupt_eq := ?_ }
   rw [postInsert]
-  have frameInsertEq :
+  have insertEq :
       db.insert theoremPos label.name
           (.assert (ConstantHeadedFormula.toRuntime
             ⟨typecode.name, bodySymbols⟩) anchor.frame) =
@@ -431,11 +438,11 @@ noncomputable def SpelledCallTrace.acceptedNormalStatement
             (mandatoryFrame before
               ⟨typecode.name, bodySymbols⟩).toRuntime) := by
     rw [frameEq]
-  rw [frameInsertEq]
-  exact nextAgreement
+  rw [insertEq]
+  exact recordedAgreement
   rw [postInsert]
-  exact (runtimeInsert_interrupt db theoremPos label.name _).trans
-    interruptEq
+  simpa using
+    (runtimeInsert_interrupt db theoremPos label.name _).trans interruptEq
 
 /-! ## Verified versus incomplete normal bodies -/
 

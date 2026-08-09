@@ -95,7 +95,7 @@ def compoundN (modifier : String) (n : EnglishNoun) : EnglishNoun :=
 
 /-! ## Decline Helper -/
 
-/-- Decline a noun to a surface form -/
+/-- Decline a noun to a source form -/
 def decline (n : EnglishNoun) (num : Number) (cas : Case) : String :=
   n.s num cas
 

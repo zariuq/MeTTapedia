@@ -307,7 +307,7 @@ inductive RuntimeApplicabilityRel (space : Space) :
           bindings output) →
       RuntimeApplicabilityRel space expression functionType expectedType
         bindings (.error (mkError expression
-          -- Keep the named refinement's error surface aligned with the
+          -- Keep the named refinement's error interface aligned with the
           -- published core correction: argument positions are one-based.
           (.badArgType (argumentsBefore.length + 1)
             expectedArgument actualType)))

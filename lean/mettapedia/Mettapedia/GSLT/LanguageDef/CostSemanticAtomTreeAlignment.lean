@@ -25,19 +25,15 @@ def CostRegionTree.normalizedBoundaryValue
     (tree : CostRegionTree source targetFree
       boundary.boundary.targetSupport [] boundary.boundary.content
       boundary.boundary.targetType) :
-    OpenPattern source.costWholeLanguage targetFree
-      boundary.boundary.targetSupport boundary.boundary.targetType :=
+    ReflectiveWellSorted.OpenPattern source.costWholeReflectionProfile
+      source.costWholeLanguage targetFree boundary.boundary.targetSupport
+      boundary.boundary.targetType := by
   let normalized := tree.normalize (normalizeStatic := kernel.normalize)
-  ⟨normalized.pattern,
-    ⟨by simpa only [List.append_nil] using normalized.typed,
-      normalized.canonicalBinderMetadata
-        boundary.contentCanonicalBinderMetadata,
-      normalized.objectPattern boundary.contentObjectPattern,
-      by
-        intro presentation membership
-        exact normalized.reflectiveScope presentation membership
-          (Nat.le_refl boundary.boundary.targetSupport.length)
-          (boundary.contentReflectiveScopeSafe presentation membership)⟩⟩
+  let packaged := normalized.toOpenPattern
+    boundary.contentCanonicalBinderMetadata
+    boundary.contentObjectPattern boundary.contentReflectiveScopeSafe
+  refine ⟨packaged.1, ?_⟩
+  simpa using packaged.2
 
 @[simp]
 theorem CostRegionTree.normalizedBoundaryValue_pattern
@@ -58,9 +54,11 @@ theorem TypedCostStaticAtom.ofBoundaryValue_key_eq_of_sameFiber
     {source : CIGSLT} {color : CostStaticColor}
     {targetFree : FreeTypeContext}
     {left right : TypedCostRegionBoundary source color targetFree}
-    (leftValue : OpenPattern source.costWholeLanguage targetFree
+    (leftValue : ReflectiveWellSorted.OpenPattern
+      source.costWholeReflectionProfile source.costWholeLanguage targetFree
       left.boundary.targetSupport left.boundary.targetType)
-    (rightValue : OpenPattern source.costWholeLanguage targetFree
+    (rightValue : ReflectiveWellSorted.OpenPattern
+      source.costWholeReflectionProfile source.costWholeLanguage targetFree
       right.boundary.targetSupport right.boundary.targetType)
     (sameFiber : CostRegionBoundary.SameFiber left.boundary right.boundary)
     (normalEq : leftValue.1 = rightValue.1) :

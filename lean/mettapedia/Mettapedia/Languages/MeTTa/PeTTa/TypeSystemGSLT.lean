@@ -1,14 +1,17 @@
-import Mettapedia.GSLT.LanguageDef.InferenceChecker
+import Mettapedia.GSLT.LanguageDef.CalculusExtension
+import Mettapedia.GSLT.LanguageDef.CalculusLanguageDef
 
 /-!
 # PeTTa typecheck-v2 type system as a rooted GSLT (stage 1: core)
 
-This module presents the type system of PeTTa's `typecheck-v2` branch
-(reference revision `e038e4d`, repository `trueagi-io/PeTTa`) as one
-`LanguageDef`: the type language as a syntax-free constructor table, and the
-consistency and dynamic-typing judgments as ordered inference rules.  The
-generic V2 checker contains no branch for this fixture; every acceptance and
-rejection below is decided by the presentation data alone.
+This module defines the type system of PeTTa's `typecheck-v2` branch
+(reference revision `e038e4d`, repository `trueagi-io/PeTTa`) in one flat
+`CalculusLanguageDef`: the five object-language fields followed by the
+judgments and rules.  Its `toExtended` view proves that those last fields are
+authored by `calculusSyntaxGSLT`, while `toGSLT` gives the whole definition one
+carrier, one equation relation, and one reduction relation.  The generic V2
+checker contains no branch for this fixture; every acceptance and rejection
+below is decided by the authored definition alone.
 
 Provenance discipline: each rule's doc-comment cites the reference clause it
 was extracted from (paths are relative to the reference repository at the
@@ -31,7 +34,11 @@ namespace Mettapedia.Languages.MeTTa.PeTTa.TypeSystemGSLT
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Substitution
+open Mettapedia.GSLT.LanguageDef
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
+open Mettapedia.GSLT.LanguageDef.InferenceExtension
+open Mettapedia.GSLT.LanguageDef.CalculusExtension
+open Mettapedia.GSLT.LanguageDef.ExtensionComposition
 
 /-- Single carrier sort: types, mode atoms, and witness values live in one
 abstract term algebra, exactly as the reference manipulates them as untyped
@@ -283,9 +290,13 @@ def guardPassesRule : RuleSchema :=
     premises := [valueHasType (.fvar "v") (.fvar "t")]
     conclusion := guardPasses (.fvar "v") (.fvar "t") }
 
-/-! ## The language -/
+/-! ## The complete authored definition
 
-def language : LanguageDef :=
+The term grammar and proof calculus are written once, as one flat record.
+`language` and `calculus` below are reducible projections retained for the
+checker API; they are not separately authored definitions. -/
+
+abbrev definition : CalculusLanguageDef :=
   { name := "petta-typecheck-v2-core"
     types := [termType]
     terms :=
@@ -322,7 +333,7 @@ def language : LanguageDef :=
         { head := "UnionMember", arity := 2 },
         { head := "ValueHasType", arity := 2 },
         { head := "GuardPasses", arity := 2 } ]
-    inferenceRules :=
+    rules :=
       [ consistentRefl, consistentDynLeft, consistentDynRight,
         consistentUnionRight, consistentUnionLeft, consistentBrand,
         consistentArrow, consistentListNil, consistentListCons,
@@ -332,13 +343,54 @@ def language : LanguageDef :=
         hasTypeNilList, hasTypeConsList,
         guardPassesRule ] }
 
-def presentation : Presentation := { language }
+/-- The exact five-field language consumed by object-language tooling. -/
+abbrev language : LanguageDef := definition.toLanguageDef
+
+/-- The exact proof calculus consumed by the generic checker. -/
+abbrev calculus : ProofCalculus := definition.toCalculus
+
+/-- The same human-authored record viewed in the general compositional
+extension family.  Its extension index is the canonical calculus-authoring
+layer, so this is a reducible view rather than a second definition. -/
+abbrev extendedDefinition :
+    ExtendedLanguageDef
+      Mettapedia.GSLT.LanguageDef.ExtensionComposition.calculusLayer :=
+  definition.toExtended
+
+@[simp] theorem extendedDefinition_language :
+    extendedDefinition.toLanguageDef = language := rfl
+
+@[simp] theorem extendedDefinition_calculus :
+    extendedDefinition.extension = calculus := rfl
+
+@[simp] theorem extendedDefinition_elaborates :
+    Mettapedia.GSLT.LanguageDef.ExtensionComposition.calculusLayer.elaborate
+        language extendedDefinition.authoredSource =
+      some calculus :=
+  extendedDefinition.elaborate_authoredSource
+
+/-- The authored calculus document.  This is a term of the canonical
+calculus-authoring GSLT, not an additional field of the object language. -/
+def calculusSource : CalculusSyntax := quote calculus
+
+/-- The derived input consumed by the existing inference checker.  It is a
+reducible view of `definition`, not a second authored object. -/
+abbrev presentation : Presentation := definition.toNested
+
+/-- The authored GSLT document elaborates to exactly the derived checker
+input. -/
+@[simp] theorem calculusSource_elaborates :
+    elaborateDefinition? language calculusSource = some presentation := by
+  exact elaborateDefinition?_quote language calculus
+
+/-- Erasing the calculus fibre recovers the exact five-field object language. -/
+@[simp] theorem presentation_erase : presentation.erase = language := rfl
 
 /-! ## Receipts -/
 
 theorem language_validate : language.validate = [] := by
   apply LanguageDef.validate_eq_nil_of_constructorOnly language <;>
-    simp [language, termType, termConstructor,
+    simp [termType, termConstructor,
       LanguageDef.typeNames, TypeDecl.plain, TermParam.typeExpr,
       TypeExpr.baseNames]
 
@@ -360,7 +412,7 @@ theorem presentation_valid : presentation.isValidV2 = true := by
     Pattern.isWellScoped, Pattern.isWellScopedAt, Pattern.isWellScopedListAt,
     Pattern.hasCanonicalBinderMetadata,
     Pattern.hasCanonicalBinderMetadataList, Pattern.zipHead, Pattern.mapHead,
-    Pattern.evalHead, language, termType, termConstructor,
+    Pattern.evalHead, termType, termConstructor,
     consistentRefl, consistentDynLeft, consistentDynRight,
     consistentUnionRight, consistentUnionLeft, consistentBrand,
     consistentArrow, consistentListNil, consistentListCons,
@@ -374,13 +426,13 @@ theorem presentation_valid : presentation.isValidV2 = true := by
     ruleId]
   decide
 
-def checked : ValidatedPresentation := ⟨presentation, presentation_valid⟩
+abbrev checked : ValidatedPresentation := definition.checked presentation_valid
 
 /-- Inventory pin: 25 constructors. -/
 theorem language_constructor_count : language.terms.length = 25 := by decide
 
 /-- Inventory pin: 21 inference rules. -/
-theorem language_rule_count : language.inferenceRules.length = 21 := by decide
+theorem calculus_rule_count : calculus.rules.length = 21 := by decide
 
 /-! ## Positive acceptance theorems -/
 
@@ -391,7 +443,7 @@ def dynRightProof : RawProof :=
 theorem number_consistent_with_dynamic :
     checkRaw checked (consistent tNum tUndefined edgeDynamic)
       dynRightProof = true := by
-  simp [checkRaw, checkRawChildren, checked, presentation, language,
+  simp [checkRaw, checkRawChildren, checked,
     dynRightProof, consistentRefl, consistentDynLeft, consistentDynRight,
     consistentUnionRight, consistentUnionLeft, consistentBrand,
     consistentArrow, consistentListNil, consistentListCons,
@@ -413,7 +465,7 @@ def dynLeftProof : RawProof :=
 theorem dynamic_consistent_with_string :
     checkRaw checked (consistent tUndefined tStr edgeDynamic)
       dynLeftProof = true := by
-  simp [checkRaw, checkRawChildren, checked, presentation, language,
+  simp [checkRaw, checkRawChildren, checked,
     dynLeftProof, consistentRefl, consistentDynLeft, consistentDynRight,
     consistentUnionRight, consistentUnionLeft, consistentBrand,
     consistentArrow, consistentListNil, consistentListCons,
@@ -448,7 +500,7 @@ def unionRightProof : RawProof :=
 theorem number_consistent_with_union :
     checkRaw checked (consistent tNum numberUnion edgeStructural)
       unionRightProof = true := by
-  simp [checkRaw, checkRawChildren, checked, presentation, language,
+  simp [checkRaw, checkRawChildren, checked,
     unionRightProof, unionMemberProof, reflNumProof, numberUnion,
     consistentRefl, consistentDynLeft, consistentDynRight,
     consistentUnionRight, consistentUnionLeft, consistentBrand,
@@ -471,7 +523,7 @@ def hasTypeNumProof : RawProof :=
 /-- The dynamic judgment accepts the base-type witness. -/
 theorem value_num_has_type_number :
     checkRaw checked (valueHasType vNum tNum) hasTypeNumProof = true := by
-  simp [checkRaw, checkRawChildren, checked, presentation, language,
+  simp [checkRaw, checkRawChildren, checked,
     hasTypeNumProof,
     consistentRefl, consistentDynLeft, consistentDynRight,
     consistentUnionRight, consistentUnionLeft, consistentBrand,
@@ -496,7 +548,7 @@ def hasTypeBrandProof : RawProof :=
 theorem value_num_has_branded_type :
     checkRaw checked (valueHasType vNum brandedNum)
       hasTypeBrandProof = true := by
-  simp [checkRaw, checkRawChildren, checked, presentation, language,
+  simp [checkRaw, checkRawChildren, checked,
     hasTypeBrandProof, hasTypeNumProof, brandedNum,
     consistentRefl, consistentDynLeft, consistentDynRight,
     consistentUnionRight, consistentUnionLeft, consistentBrand,
@@ -521,7 +573,7 @@ def guardProof : RawProof :=
 (`typecheck_or_error`, bound branch). -/
 theorem guard_passes_on_welltyped :
     checkRaw checked (guardPasses vNum tNum) guardProof = true := by
-  simp [checkRaw, checkRawChildren, checked, presentation, language,
+  simp [checkRaw, checkRawChildren, checked,
     guardProof, hasTypeNumProof,
     consistentRefl, consistentDynLeft, consistentDynRight,
     consistentUnionRight, consistentUnionLeft, consistentBrand,
@@ -553,7 +605,7 @@ def transitivityViaRefl : RawProof :=
 theorem non_transitivity_candidate_refl_rejects :
     checkRaw checked (consistent tNum tStr edgeExact)
       transitivityViaRefl = false := by
-  simp [checkRaw, checked, presentation, language, transitivityViaRefl,
+  simp [checkRaw, checked, transitivityViaRefl,
     consistentRefl, consistentDynLeft, consistentDynRight,
     consistentUnionRight, consistentUnionLeft, consistentBrand,
     consistentArrow, consistentListNil, consistentListCons,
@@ -575,7 +627,7 @@ def transitivityViaDynLeft : RawProof :=
 theorem non_transitivity_candidate_dyn_left_rejects :
     checkRaw checked (consistent tNum tStr edgeDynamic)
       transitivityViaDynLeft = false := by
-  simp [checkRaw, checked, presentation, language, transitivityViaDynLeft,
+  simp [checkRaw, checked, transitivityViaDynLeft,
     consistentRefl, consistentDynLeft, consistentDynRight,
     consistentUnionRight, consistentUnionLeft, consistentBrand,
     consistentArrow, consistentListNil, consistentListCons,
@@ -597,7 +649,7 @@ def transitivityViaDynRight : RawProof :=
 theorem non_transitivity_candidate_dyn_right_rejects :
     checkRaw checked (consistent tNum tStr edgeDynamic)
       transitivityViaDynRight = false := by
-  simp [checkRaw, checked, presentation, language, transitivityViaDynRight,
+  simp [checkRaw, checked, transitivityViaDynRight,
     consistentRefl, consistentDynLeft, consistentDynRight,
     consistentUnionRight, consistentUnionLeft, consistentBrand,
     consistentArrow, consistentListNil, consistentListCons,
@@ -622,7 +674,7 @@ def wrongBaseProof : RawProof :=
 (`literal_type_mismatch` class). -/
 theorem value_true_not_number :
     checkRaw checked (valueHasType vTrue tNum) wrongBaseProof = false := by
-  simp [checkRaw, checked, presentation, language, wrongBaseProof,
+  simp [checkRaw, checked, wrongBaseProof,
     consistentRefl, consistentDynLeft, consistentDynRight,
     consistentUnionRight, consistentUnionLeft, consistentBrand,
     consistentArrow, consistentListNil, consistentListCons,
@@ -647,7 +699,7 @@ theorem distinct_brands_reject :
     checkRaw checked
       (consistent (tBrand brandA tNum) (tBrand brandB tNum) edgeExact)
       brandMismatchProof = false := by
-  simp [checkRaw, checked, presentation, language, brandMismatchProof,
+  simp [checkRaw, checked, brandMismatchProof,
     consistentRefl, consistentDynLeft, consistentDynRight,
     consistentUnionRight, consistentUnionLeft, consistentBrand,
     consistentArrow, consistentListNil, consistentListCons,
@@ -663,7 +715,121 @@ theorem distinct_brands_reject :
     Pattern.hasCanonicalBinderMetadata,
     Pattern.hasCanonicalBinderMetadataList]
 
-/-! ## Export surface (consumed by `TypeSystemGSLTMeTTaExport`)
+/-! ## PeTTa as one theory
+
+The single flat definition above has two reducible views for existing object
+and checker APIs.  This section supplies their common denotation as a single
+`GSLT` — one carrier, one equation relation, and one reduction relation — and
+proves that both views embed exactly.
+
+The three components are spelled out by `rfl` immediately below the definition,
+so the carrier, equations and reduction relation can be read without unfolding
+anything. -/
+
+section TotalTheory
+
+open Mettapedia.GSLT
+open Mettapedia.OSLF.MeTTaIL.Engine
+open Mettapedia.OSLF.MeTTaIL.ContextualStep
+open Mettapedia.OSLF.Framework.TypeSynthesis
+open Mettapedia.GSLT.LanguageDef.CalculusAsLanguage
+open Mettapedia.GSLT.LanguageDef.EquationSemantics
+open Mettapedia.GSLT.LanguageDef.TotalGSLT
+
+/-- Compatibility is derived from the authored empty equation list, rather
+than assumed by the total theory. -/
+abbrev reductionRespectsEquations : ReductionRespectsEquations language :=
+  ReductionRespectsEquations.of_no_equations rfl
+
+/-- **The PeTTa type system as one GSLT.**  Object terms and proof obligations
+under a single carrier, equation relation, and reduction relation. -/
+def totalTheory : GSLT :=
+  definition.toGSLT presentation_valid reductionRespectsEquations
+
+/-- **The carrier**: an object pattern, or a proof-obligation state. -/
+theorem totalTheory_Term : totalTheory.Term = (Pattern ⊕ GoalState) := rfl
+
+/-- **The equations**: exact equality within each component, never across. -/
+theorem totalTheory_object_equiv (source target : Pattern) :
+    totalTheory.Equiv (Sum.inl source) (Sum.inl target) ↔ source = target := by
+  unfold totalTheory CalculusLanguageDef.toGSLT combinedGSLT
+  constructor
+  · intro equivalent
+    cases equivalent with
+    | left objectEquivalent =>
+        exact (equationEquiv_iff_eq_of_no_generators rfl source target).mp
+          objectEquivalent
+  · intro equal
+    exact GSLT.SumEquiv.left
+      ((equationEquiv_iff_eq_of_no_generators rfl source target).mpr equal)
+
+/-- **The reduction relation**: authored object reduction on one side, backward
+inference-rule application on the other. -/
+theorem totalTheory_rewrites :
+    totalTheory.rewrites =
+      GSLT.SumStep (languageGSLT language reductionRespectsEquations)
+        (proofSearchGSLT checked) := rfl
+
+/-- The authored term language declares no equations, so exact equality is the
+faithful object equivalence here. -/
+theorem totalTheory_object_equations_empty : language.equations = [] := rfl
+
+/-- **The object language embeds faithfully.**  Attaching twenty-one inference
+rules changes no object-term reduction, in either direction. -/
+theorem totalTheory_object_step (source target : Pattern) :
+    totalTheory.Step (Sum.inl source) (Sum.inl target) ↔
+      langReducesUsing RelationEnv.empty language source target :=
+  combinedGSLT_language_step checked reductionRespectsEquations source target
+
+/-- Proof-search steps of the total theory are exactly the calculus's. -/
+theorem totalTheory_proof_step (source target : GoalState) :
+    totalTheory.Step (Sum.inr source) (Sum.inr target) ↔
+      (proofSearchGSLT checked).Step source target :=
+  combinedGSLT_calculus_step checked reductionRespectsEquations source target
+
+/-- **Nothing crosses.**  With the two faithfulness laws this is exact
+conservativity: the object fragment of the total theory *is* the authored term
+language. -/
+theorem totalTheory_no_crossing (pattern : Pattern) (state : GoalState) :
+    ¬ totalTheory.Step (Sum.inl pattern) (Sum.inr state) ∧
+      ¬ totalTheory.Step (Sum.inr state) (Sum.inl pattern) :=
+  combinedGSLT_no_crossing checked reductionRespectsEquations pattern state
+
+/-- **Adequacy inside the one theory.**  A goal list is derivable in the
+calculus exactly when it reduces to the empty obligation state — no reference
+to a separate proof-search structure. -/
+theorem totalTheory_derivability (goals : GoalState) :
+    Nonempty (DerivationList checked goals) ↔
+      totalTheory.MultiStep (Sum.inr goals) (Sum.inr []) :=
+  derivability_iff_combinedGSLT checked reductionRespectsEquations goals
+
+/-- One concrete reduction: `Number` is consistent with the wildcard, and its
+goal discharges to no outstanding obligations in a single step of the combined
+theory. -/
+theorem totalTheory_dynRight_discharges :
+    totalTheory.Step
+      (Sum.inr [consistent tNum tUndefined edgeDynamic]) (Sum.inr []) := by
+  rw [totalTheory_proof_step]
+  refine ⟨{ ruleId := ruleId "consistent-dyn-right", arguments := [tNum] },
+    [], consistent tNum tUndefined edgeDynamic, [], ?_, rfl, rfl⟩
+  simp [
+    consistentRefl, consistentDynLeft, consistentDynRight,
+    consistentUnionRight, consistentUnionLeft, consistentBrand,
+    consistentArrow, consistentListNil, consistentListCons,
+    unionMemberHere, unionMemberThere, hasTypeNum, hasTypeStr, hasTypeTrue,
+    hasTypeFalse, hasTypeWildcard, hasTypeUnion, hasTypeBrand,
+    hasTypeNilList, hasTypeConsList, guardPassesRule,
+    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    argumentValidAt, RuleSchema.sideConditionsHold,
+    instantiateSchema?, instantiateSchemaAt?, instantiateSchemas?,
+    instantiateSchemasAt?, lookupArgumentAt?, consistent, tNum, tUndefined,
+    edgeDynamic, ruleId, Pattern.isGroundAt, Pattern.isGroundListAt,
+    Pattern.hasCanonicalBinderMetadata,
+    Pattern.hasCanonicalBinderMetadataList]
+
+end TotalTheory
+
+/-! ## Export interface (consumed by `TypeSystemGSLTMeTTaExport`)
 
 Public aliases over the private presentation and receipt fixtures, so the
 exporter renders exactly the checked objects: the executable relational

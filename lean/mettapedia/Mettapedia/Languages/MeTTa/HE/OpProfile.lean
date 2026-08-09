@@ -9,7 +9,7 @@ This determines how each operator flows through the export pipeline
 
 | Category | Where implemented | Example |
 |----------|------------------|---------|
-| surfaceSugar | Surface parser lowering only | let, let* |
+| syntaxSugar | Parser lowering only | let, let* |
 | preludeEqAndType | Injected equations + type annotation | if |
 | mettaCallControl | Explicit MettaCall rewrite rule | case, switch, assert |
 | minimalInstruction | OSLF MeTTaMinimalInstance layer | unify, collapse-bind, superpose-bind |
@@ -32,8 +32,8 @@ namespace Mettapedia.Languages.MeTTa.HE.OpProfile
 
 /-- Classification of how an HE MeTTa operator is implemented. -/
 inductive OpCategory where
-  /-- Lowered by the surface parser before encoding (no runtime semantics). -/
-  | surfaceSugar
+  /-- Lowered by the parser before encoding (no runtime semantics). -/
+  | syntaxSugar
   /-- Equations and type annotation injected into the space at startup. -/
   | preludeEqAndType
   /-- Explicit rewrite rule in MettaCall dispatch (HELanguageDef.lean). -/
@@ -46,7 +46,7 @@ deriving DecidableEq, Repr
 
 /-- An operator's formal classification entry. -/
 structure OpEntry where
-  /-- Surface-level operator name as it appears in MeTTa source. -/
+  /-- Source-level operator name as it appears in MeTTa source. -/
   name : String
   /-- Implementation category. -/
   category : OpCategory
@@ -61,12 +61,12 @@ deriving Repr
 Each entry pins down exactly where the operator's semantics live,
 preventing ad-hoc Rust implementations. -/
 def tier1Ops : List OpEntry :=
-  [ -- Surface sugar: lowered before encoding, no runtime dispatch needed
+  [ -- Syntax sugar: lowered before encoding, no runtime dispatch needed
     { name := "let"
-      category := .surfaceSugar
+      category := .syntaxSugar
       interpreterRef := "N/A — desugars to (case expr ((pat body)))" }
   , { name := "let*"
-      category := .surfaceSugar
+      category := .syntaxSugar
       interpreterRef := "N/A — desugars to nested let" }
 
     -- Prelude: equations + type annotation injected into space

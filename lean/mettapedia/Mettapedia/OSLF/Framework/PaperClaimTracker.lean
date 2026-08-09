@@ -53,7 +53,7 @@ def paperClaimList : List PaperClaim :=
   , ⟨"oslf.pdf", "Thm 1", "Behavioral equiv → same native types (forward)",
     "theorem1_substitutability_forward", .proven⟩
   , ⟨"oslf.pdf", "Thm 1", "Full substitutability equivalence (image-finite)",
-    "theorem1_substitutability_imageFinite; necessity: AssumptionNecessity.not_global_hPredFinite_langReduces_rhoCalc", .assumptionScoped⟩
+    "theorem1_substitutability_imageFinite; necessity: AssumptionNecessity.not_global_hPredFinite_rhoStep", .assumptionScoped⟩
   , ⟨"oslf.pdf", "§11", "ρ-calculus instance",
     "rhoOSLF", .proven⟩
   , ⟨"oslf.pdf", "§11", "λ-calculus instance",
@@ -166,7 +166,7 @@ theorem fullNTTParity_closed :
 #check @Mettapedia.OSLF.Framework.AssumptionNecessity.types_nonempty_necessary_for_piSigma
 #check @Mettapedia.OSLF.Framework.AssumptionNecessity.hClosed_necessary_for_fragment
 #check @Mettapedia.OSLF.Framework.AssumptionNecessity.not_global_hImageFinite_rhoCoreStarRel
-#check @Mettapedia.OSLF.Framework.AssumptionNecessity.not_global_hPredFinite_langReduces_rhoCalc
+#check @Mettapedia.OSLF.Framework.AssumptionNecessity.not_global_hPredFinite_rhoStep
 #check @fullNTTParity_closed
 
 -- Unified endpoint

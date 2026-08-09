@@ -11,12 +11,12 @@ Theorem-bearing diagnostics for the larger grounded `project_core` slice.
 
 Unlike the regression-style JSON checks in `GFProjectCoreConformance`, this file
 works over the generated kernel-reducible `ProjectCoreSig.funsList`, so the
-constructor/NTT surface is available for ordinary Lean proofs.
+constructor/NTT interface is available for ordinary Lean proofs.
 
 This remains intentionally syntax-only:
 
 - real GF constructors and sorts are present;
-- the larger English/Czech bilingual abstract surface is available as a
+- the larger English/Czech bilingual abstract syntax is available as a
   theorem-level `LanguageDef`;
 - the reduction relation is still empty, so modal structure is honest and
   vacuous until a separate grounded semantic layer exists above the grammar.

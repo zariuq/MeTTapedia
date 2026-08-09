@@ -198,7 +198,7 @@ theorem leastRuleClosure_thresholdValid_lowerFormedConceptQuerySet_of_specAgrees
     GateFamily M tau encode seed hSeed hSupport
 
 /- The same ontology-growth stability transport also applies to the new
-full-inheritance query surface: once a robust lower-formed seed family is
+full-inheritance query interface: once a robust lower-formed seed family is
 encoded against `fullInheritanceStrength`, local agreement of the MLN
 specifications preserves threshold-validity of that exact full-strength family. -/
 omit [Fintype Gate] [Nonempty Gate] in

@@ -29,6 +29,7 @@ open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Engine
 open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open Mettapedia.OSLF.Framework.TypeSynthesis
+open Mettapedia.GSLT.LanguageDef.LogicExtension
 
 private def ty (name : String) : TypeExpr :=
   .base name
@@ -40,23 +41,21 @@ private def termCtor (label category : String) (params : List (String × String)
     params := params.map fun (name, typeName) => .simple name (ty typeName)
     syntaxPattern := [] }
 
-private def rel (name : String) (args : List String) : LogicDecl :=
+private def rel (name : String) (args : List String) : LogicDeclaration :=
   .relation { name := name, argTypes := args.map ty }
-
-private def ruleNote (text : String) : LogicDecl :=
-  .ruleText text
 
 private def datalogAtom (relName : String) (args : List DatalogTerm) : DatalogAtom :=
   { rel := relName, args := args }
 
 private def datalogRule (name relName : String) (args : List DatalogTerm)
-    (body : List DatalogAtom) : LogicDecl :=
-  .datalogClause
+    (body : List DatalogAtom) : LogicDeclaration :=
+  .clause
     { name := name
       head := datalogAtom relName args
       body := body }
 
-private def datalogFact (name relName : String) (args : List String) : LogicDecl :=
+private def datalogFact (name relName : String)
+    (args : List String) : LogicDeclaration :=
   datalogRule name relName (args.map DatalogTerm.const) []
 
 private def pvar (name : String) : Pattern :=
@@ -204,7 +203,7 @@ private def hol4ProofTerms : List GrammarRule :=
   , termCtor "H4_SUBST" "HolProof" [("sigma", "HolSubst"), ("template", "HolTerm"), ("thm", "HolThm")]
   , termCtor "H4_INST_TYPE" "HolProof" [("theta", "HolSubst"), ("thm", "HolThm")] ]
 
-private def sideConditionLogic : List LogicDecl :=
+private def sideConditionLogic : LogicProgram :=
   [ rel "isBool" ["HolTerm"]
   , rel "holBoolSeed" ["HolTerm"]
   , rel "notFreeIn" ["HolTerm", "HolHyps"]
@@ -316,13 +315,7 @@ def holLightEqKernel : LanguageDef :=
     types := commonTypes
     terms := commonTerms ++ holLightProofTerms
     equations := []
-    rewrites := holLightProfileRewrites
-    logic :=
-      sideConditionLogic ++
-      [ ruleNote "Source primitive block: fusion.ml REFL TRANS MK_COMB ABS BETA ASSUME EQ_MP DEDUCT_ANTISYM INST_TYPE INST"
-      , ruleNote "Bounded source replay block: bool.ml CONJ/CONJUNCT1/DISCH for A ==> A through IMP_DEF and equality-kernel rules"
-      , ruleNote "Connectives are definitional: bool.ml T_DEF AND_DEF IMP_DEF FORALL_DEF" ]
-    oracles := [] }
+    rewrites := holLightProfileRewrites }
 
 /-- HOL4 LCF profile: `DISCH` and `MP` are primitive rules. -/
 def hol4LcfKernel : LanguageDef :=
@@ -330,38 +323,37 @@ def hol4LcfKernel : LanguageDef :=
     types := commonTypes
     terms := commonTerms ++ hol4ProofTerms
     equations := []
-    rewrites := hol4Rewrites
-    logic :=
-      sideConditionLogic ++
-      [ ruleNote "Source primitive block: FinalThm-sig.sml ASSUME REFL BETA_CONV ABS DISCH MP SUBST INST_TYPE"
-      , ruleNote "Implementation anchor: std-thm.ML primitive rules of inference" ]
-    oracles := [] }
+    rewrites := hol4Rewrites }
 
-def holLightNoLogic : LanguageDef :=
-  { holLightEqKernel with logic := [] }
+def holLightLogic : AdmittedProgram holLightEqKernel :=
+  ⟨sideConditionLogic, by decide⟩
 
-def hol4NoLogic : LanguageDef :=
-  { hol4LcfKernel with logic := [] }
+def hol4Logic : AdmittedProgram hol4LcfKernel :=
+  ⟨sideConditionLogic, by decide⟩
+
+abbrev holLightNoLogic : LanguageDef := holLightEqKernel
+
+abbrev hol4NoLogic : LanguageDef := hol4LcfKernel
 
 def holLightLogicRelationEnv : RelationEnv :=
-  Mettapedia.OSLF.MeTTaIL.LogicSemantics.logicDatalogRelationEnv holLightEqKernel
+  Mettapedia.OSLF.MeTTaIL.LogicSemantics.logicDatalogRelationEnv holLightLogic.1
 
 def hol4LogicRelationEnv : RelationEnv :=
-  Mettapedia.OSLF.MeTTaIL.LogicSemantics.logicDatalogRelationEnv hol4LcfKernel
+  Mettapedia.OSLF.MeTTaIL.LogicSemantics.logicDatalogRelationEnv hol4Logic.1
 
 def holLightNoLogicRelationEnv : RelationEnv :=
-  Mettapedia.OSLF.MeTTaIL.LogicSemantics.logicDatalogRelationEnv holLightNoLogic
+  RelationEnv.empty
 
 def hol4NoLogicRelationEnv : RelationEnv :=
-  Mettapedia.OSLF.MeTTaIL.LogicSemantics.logicDatalogRelationEnv hol4NoLogic
+  RelationEnv.empty
 
 /-- OSLF construction endpoint using relation tuples induced by finite `logic` closure. -/
 def holLightOSLF :=
-  langOSLFWithLogic holLightEqKernel "HolJudgment"
+  langOSLFWithLogic holLightEqKernel holLightLogic "HolJudgment"
 
 /-- OSLF construction endpoint using relation tuples induced by finite `logic` closure. -/
 def hol4OSLF :=
-  langOSLFWithLogic hol4LcfKernel "HolJudgment"
+  langOSLFWithLogic hol4LcfKernel hol4Logic "HolJudgment"
 
 def A : Pattern := aTerm
 def B : Pattern := bTerm
@@ -512,7 +504,7 @@ def holLightBadSelfImpArticle : ProofArticle :=
     holLightSelfImpResult [holLightImpDefAAArticle, holLightDischAACoreArticle]
 
 #guard
-    (Mettapedia.OSLF.MeTTaIL.LogicSemantics.logicFactRelationEnv hol4LcfKernel).tuples
+    (Mettapedia.OSLF.MeTTaIL.LogicSemantics.logicFactRelationEnv hol4Logic.1).tuples
       "isBool" [A] == []
 
 #guard
@@ -615,8 +607,8 @@ def holLightBadSelfImpArticle : ProofArticle :=
 example : holLightRewrites.length = 10 := rfl
 example : holLightProfileRewrites.length = 15 := rfl
 example : hol4LcfKernel.rewrites.length = 8 := by decide
-example : holLightEqKernel.logic.length = 11 := rfl
-example : hol4LcfKernel.logic.length = 10 := rfl
+example : holLightLogic.1.length = 8 := rfl
+example : hol4Logic.1.length = 8 := rfl
 #guard LanguageDef.validate holLightEqKernel == []
 #guard LanguageDef.validate hol4LcfKernel == []
 

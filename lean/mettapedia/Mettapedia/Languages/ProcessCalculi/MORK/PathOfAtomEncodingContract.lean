@@ -89,7 +89,7 @@ states the exact theorem-shaped contract that the bridge algorithm relies on:
 - root `descend_until` on that singleton trie returns the full encoded path
 
 So `mork:path-of-atom` is mathematically justified by the singleton parse
-contract, not by an informal promise about symbolic surface syntax.
+contract, not by an informal promise about symbolic concrete syntax.
 -/
 
 end Mettapedia.Languages.ProcessCalculi.MORK

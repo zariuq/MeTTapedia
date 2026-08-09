@@ -214,7 +214,7 @@ def weightedAnswers (S : MSpace Atom) (cands : List Atom) : ℕ :=
   (cands.map S).sum
 
 /-- **Distribution.**  Querying the union is the sum of querying the parts —
-union of spaces surfaces in answers as ⊕, which is also why per-source
+union of spaces appears in answers as ⊕, which is also why per-source
 attribution is recoverable from a union query by receipts: the sum
 decomposes. -/
 theorem weightedAnswers_union (S T : MSpace Atom) (cands : List Atom) :

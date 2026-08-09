@@ -3,13 +3,13 @@ import Mettapedia.Languages.MeTTa.HE.Types
 /-!
 # HE legacy one-way matcher
 
-The coarse `simpleMatch` surface is the historical one-way matcher used by the
+The coarse `simpleMatch` interface is the historical one-way matcher used by the
 older HE equation-query path and several control-form helpers. It is kept as a
 shared primitive so the faithful `matchAtoms` / `mergeBindings` layer can reuse
 the same atom utilities without forcing a module cycle through `Space.lean`.
 
 `simpleMatch` is deliberately **not** the authoritative HE query matcher for
-equations; G3 moves that public query surface onto `matchAtoms`.
+equations; G3 moves that public query interface onto `matchAtoms`.
 -/
 
 namespace Mettapedia.Languages.MeTTa.HE

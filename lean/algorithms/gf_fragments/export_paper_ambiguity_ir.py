@@ -34,10 +34,10 @@ JSON_WITNESSES_OUT = GENERATED / 'paper_ambiguity_parse_witnesses.json'
 JSON_GRAMMAR_OUT = GENERATED / 'PaperAmbiguity.gf.json'
 
 # The cross-language witness fragment currently uses parseable present-tense
-# surfaces in both languages. The tiny Czech concrete exposes `TPast` with a
+# texts in both languages. The tiny Czech concrete exposes `TPast` with a
 # non-parseable marker string, so `TPres` is the honest common denominator until
 # Czech past morphology is normalized in the fragment.
-SURFACES = [
+TEXTS = [
     ('PaperAmbiguityEng', 'englishTelescope', 'John sees the man with the telescope'),
     ('PaperAmbiguityEng', 'englishAnna', 'Anna dresses the baby in the crib'),
     ('PaperAmbiguityCze', 'czechTelescope', 'Jan vidí muže s teleskopem'),
@@ -86,10 +86,10 @@ def load_pgf_module():
     return pgf
 
 
-def tokenize_surface(surface: str) -> list[str]:
+def tokenize_text(text: str) -> list[str]:
     toks = []
     curr = []
-    for ch in surface:
+    for ch in text:
         if ch.isalnum() or ch in "'_":
             curr.append(ch.lower())
         else:
@@ -124,7 +124,7 @@ def collect_bracket_leaves(node, acc):
     child_tokens = []
     for child in node.children:
         if isinstance(child, str):
-            child_tokens.extend(tokenize_surface(child))
+            child_tokens.extend(tokenize_text(child))
         else:
             collect_bracket_leaves(child, acc)
     if child_tokens:
@@ -171,7 +171,7 @@ def export_annotated_expr(expr, concr, fun_sigs):
             set_tokens_at_path(tree, path, [])
     fill_zero_tokens(tree)
     synth_tokens(tree)
-    tree['surface'] = concr.linearize(expr)
+    tree['text'] = concr.linearize(expr)
     return tree
 
 
@@ -191,17 +191,17 @@ def parse_witnesses(grammar_json):
     witness_entries = []
     used = set()
     fun_sigs = grammar_json['abstract']['funs']
-    for lang, label, surface in SURFACES:
+    for lang, label, text in TEXTS:
         concr = pgf_obj.languages[lang]
         parses = []
-        for prob, expr in concr.parse(surface):
+        for prob, expr in concr.parse(text):
             tree = export_annotated_expr(expr, concr, fun_sigs)
             parses.append({'prob': prob, 'tree': tree})
             collect_functions(tree, used)
         witness_entries.append({
             'label': label,
             'language': lang,
-            'surface': surface,
+            'text': text,
             'parseCount': len(parses),
             'parses': parses,
         })
@@ -238,7 +238,7 @@ def render_abstract_node(tree, indent=''):
 
 def render_witness_def(entry):
     lines = []
-    lines.append(f'def {entry["label"]}Surface : String := {lean_str(entry["surface"])}')
+    lines.append(f'def {entry["label"]}Text : String := {lean_str(entry["text"])}')
     lines.append(f'def {entry["label"]}Language : String := {lean_str(entry["language"])}')
     for idx, parse in enumerate(entry['parses'], start=1):
         plain_tree = export_plain_tree(parse['tree'])
@@ -270,10 +270,10 @@ open Mettapedia.Languages.GF.PGFWitnessIR
 {'\n\n'.join(entries)}
 
 def allWitnessParses : List (String × String × String × List ExportedTree) := [
-  ({lean_str('englishTelescope')}, englishTelescopeLanguage, englishTelescopeSurface, englishTelescopeParses),
-  ({lean_str('englishAnna')}, englishAnnaLanguage, englishAnnaSurface, englishAnnaParses),
-  ({lean_str('czechTelescope')}, czechTelescopeLanguage, czechTelescopeSurface, czechTelescopeParses),
-  ({lean_str('czechAnna')}, czechAnnaLanguage, czechAnnaSurface, czechAnnaParses)
+  ({lean_str('englishTelescope')}, englishTelescopeLanguage, englishTelescopeText, englishTelescopeParses),
+  ({lean_str('englishAnna')}, englishAnnaLanguage, englishAnnaText, englishAnnaParses),
+  ({lean_str('czechTelescope')}, czechTelescopeLanguage, czechTelescopeText, czechTelescopeParses),
+  ({lean_str('czechAnna')}, czechAnnaLanguage, czechAnnaText, czechAnnaParses)
 ]
 
 def usedFunctions : List String := [{used_funs}]
@@ -394,17 +394,17 @@ def render_array_trees(name, trees):
     return f'''def {name} : Array ExportedTree := #[\n{rendered}\n]'''
 
 
-def build_language_ir(bundle, language, surface_specs):
+def build_language_ir(bundle, language, text_specs):
     grammar_rules = []
     witness_defs = []
-    for label, surface_name in surface_specs:
+    for label, text_name in text_specs:
         entry = next(w for w in bundle['witnesses'] if w['label'] == label)
         expected_trees = []
         for idx, parse in enumerate(entry['parses'], start=1):
             compiled = compile_tree(parse['tree'], label, idx, [], True)
             grammar_rules.extend(compiled['rules'])
             expected_trees.append(compiled['expected'])
-        witness_defs.append((label, surface_name, entry['surface'], expected_trees))
+        witness_defs.append((label, text_name, entry['text'], expected_trees))
     return grammar_rules, witness_defs
 
 
@@ -416,12 +416,12 @@ def render_grammar(name, language, rules):
 
 def write_algorithms_ir(bundle):
     english_rules, english_defs = build_language_ir(bundle, 'PaperAmbiguityEng', [
-        ('englishTelescope', 'englishTelescopeSurface'),
-        ('englishAnna', 'englishAnnaSurface'),
+        ('englishTelescope', 'englishTelescopeText'),
+        ('englishAnna', 'englishAnnaText'),
     ])
     czech_rules, czech_defs = build_language_ir(bundle, 'PaperAmbiguityCze', [
-        ('czechTelescope', 'czechTelescopeSurface'),
-        ('czechAnna', 'czechAnnaSurface'),
+        ('czechTelescope', 'czechTelescopeText'),
+        ('czechAnna', 'czechAnnaText'),
     ])
 
     parts = [
@@ -434,17 +434,17 @@ def write_algorithms_ir(bundle):
         render_grammar('czechGrammar', 'PaperAmbiguityCze', czech_rules), '\n\n',
     ]
 
-    for label, surface_name, surface, expected in english_defs:
-        parts.append(f'def {surface_name} : String := {lean_str(surface)}\n')
-        parts.append(f'def {label}Tokens : Array Tok := tokenize {surface_name}\n')
+    for label, text_name, text, expected in english_defs:
+        parts.append(f'def {text_name} : String := {lean_str(text)}\n')
+        parts.append(f'def {label}Tokens : Array Tok := tokenize {text_name}\n')
         parts.append(render_array_trees(f'{label}Expected', expected))
         parts.append('\n')
         parts.append(f'def {label}Parsed : Array Parsed := parsesForStart englishGrammar {label}Tokens\n')
         parts.append(f'def {label}Recovered : Array ExportedTree := {label}Parsed.map Parsed.recovered\n\n')
 
-    for label, surface_name, surface, expected in czech_defs:
-        parts.append(f'def {surface_name} : String := {lean_str(surface)}\n')
-        parts.append(f'def {label}Tokens : Array Tok := tokenize {surface_name}\n')
+    for label, text_name, text, expected in czech_defs:
+        parts.append(f'def {text_name} : String := {lean_str(text)}\n')
+        parts.append(f'def {label}Tokens : Array Tok := tokenize {text_name}\n')
         parts.append(render_array_trees(f'{label}Expected', expected))
         parts.append('\n')
         parts.append(f'def {label}Parsed : Array Parsed := parsesForStart czechGrammar {label}Tokens\n')

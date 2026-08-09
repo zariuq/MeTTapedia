@@ -26,7 +26,7 @@ Design pins (from the 2026-07-09 dual review):
   invertibility), `$d` on a syntax axiom, or an undeclared variable is a
   reported error, not a silently dropped row.
 * **Syntax theorems (`$p` at a grammar typecode) do not extend the grammar**;
-  they are surfaced as notes.
+  they are reported as notes.
 * **No frozen outputs:** this generator is meant to (re)run per database load;
   committing its output for a fixed database would be hand-encoding with
   provenance theater.
@@ -248,7 +248,7 @@ def wellFormedErrors (db : MMDb) (info : TypecodeInfo) : List String :=
   declarationErrors db info ++ syntaxAxiomErrors db info ++
     pairingErrors db info ++ grammarHygieneErrors db info
 
-/-- Excluded-by-design rows, surfaced (never silent): syntax theorems. -/
+/-- Excluded-by-design rows, reported (never silent): syntax theorems. -/
 def exclusionNotes (db : MMDb) (info : TypecodeInfo) : List String :=
   db.assertions.filterMap (fun a =>
     if a.kind == .thm && !(info.provable.contains a.typecode) then

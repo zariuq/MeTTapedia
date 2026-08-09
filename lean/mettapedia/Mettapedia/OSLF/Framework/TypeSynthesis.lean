@@ -45,6 +45,7 @@ open Mettapedia.OSLF.MeTTaIL.Match
 open Mettapedia.OSLF.MeTTaIL.Engine
 open Mettapedia.OSLF.MeTTaIL.ContextualStep
 open Mettapedia.OSLF.MeTTaIL.LogicSemantics
+open Mettapedia.GSLT.LanguageDef.LogicExtension
 open Mettapedia.OSLF.Framework
 open Mettapedia.OSLF.Framework.DerivedModalities
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction
@@ -114,31 +115,6 @@ theorem exec_to_langReducesUsing (relEnv : RelationEnv) (lang : LanguageDef)
 def langReduces (lang : LanguageDef) (p q : Pattern) : Prop :=
   langReducesUsing RelationEnv.empty lang p q
 
-/-! ## Step 1b: Legacy Compatibility Bridge
-
-These lemmas make the compatibility layer explicit:
-lowering via `LanguageDef.toLegacy` preserves executable/declarative
-reduction semantics definitionally.
--/
-
-@[simp] theorem langReducesExecUsing_toLegacy_iff
-    (relEnv : RelationEnv) (lang : LanguageDef) (p q : Pattern) :
-    langReducesExecUsing relEnv (LanguageDef.toLegacy lang).toLanguageDef p q
-      ↔ langReducesExecUsing relEnv lang p q := by
-  rfl
-
-@[simp] theorem langReducesUsing_toLegacy_iff
-    (relEnv : RelationEnv) (lang : LanguageDef) (p q : Pattern) :
-    langReducesUsing relEnv (LanguageDef.toLegacy lang).toLanguageDef p q
-      ↔ langReducesUsing relEnv lang p q := by
-  rfl
-
-@[simp] theorem langReduces_toLegacy_iff
-    (lang : LanguageDef) (p q : Pattern) :
-    langReduces (LanguageDef.toLegacy lang).toLanguageDef p q
-      ↔ langReduces lang p q := by
-  rfl
-
 /-! ## Step 2: RewriteSystem from LanguageDef -/
 
 /-- Convert a LanguageDef into a RewriteSystem, parameterized by relation env.
@@ -163,30 +139,19 @@ def langRewriteSystem (lang : LanguageDef) (procSort : String := "Proc") :
     RewriteSystem :=
   langRewriteSystemUsing RelationEnv.empty lang procSort
 
-/-- Rewrite-system wrapper using relation tuples induced by finite Datalog
-    closure over `LanguageDef.logic`. -/
-def langRewriteSystemWithLogic (lang : LanguageDef) (procSort : String := "Proc") :
+/-- Rewrite-system wrapper using relation tuples induced by an admitted finite
+    Datalog extension. -/
+def langRewriteSystemWithLogic (lang : LanguageDef)
+    (logic : AdmittedProgram lang) (procSort : String := "Proc") :
     RewriteSystem :=
-  langRewriteSystemUsing (logicDatalogRelationEnv lang) lang procSort
+  langRewriteSystemUsing (logicDatalogRelationEnv logic.1) lang procSort
 
-/-- Rewrite-system wrapper using relation tuples induced only by ground Datalog
-    facts in `LanguageDef.logic`. Kept for audit comparisons with the full
-    closure wrapper. -/
-def langRewriteSystemWithLogicFacts (lang : LanguageDef) (procSort : String := "Proc") :
+/-- Rewrite-system wrapper using only the ground facts of an admitted logic
+    extension. -/
+def langRewriteSystemWithLogicFacts (lang : LanguageDef)
+    (logic : AdmittedProgram lang) (procSort : String := "Proc") :
     RewriteSystem :=
-  langRewriteSystemUsing (logicFactRelationEnv lang) lang procSort
-
-@[simp] theorem langRewriteSystemUsing_toLegacy_eq
-    (relEnv : RelationEnv) (lang : LanguageDef) (procSort : String := "Proc") :
-    langRewriteSystemUsing relEnv (LanguageDef.toLegacy lang).toLanguageDef procSort
-      = langRewriteSystemUsing relEnv lang procSort := by
-  rfl
-
-@[simp] theorem langRewriteSystem_toLegacy_eq
-    (lang : LanguageDef) (procSort : String := "Proc") :
-    langRewriteSystem (LanguageDef.toLegacy lang).toLanguageDef procSort
-      = langRewriteSystem lang procSort := by
-  rfl
+  langRewriteSystemUsing (logicFactRelationEnv logic.1) lang procSort
 
 /-! ## Step 3: Reduction Span -/
 
@@ -319,18 +284,19 @@ def langOSLF (lang : LanguageDef) (procSort : String := "Proc") :
     OSLFTypeSystem (langRewriteSystem lang procSort) :=
   langOSLFUsing RelationEnv.empty lang procSort
 
-/-- OSLF type system using relation tuples induced by finite Datalog closure over
-    `LanguageDef.logic`. -/
-def langOSLFWithLogic (lang : LanguageDef) (procSort : String := "Proc") :
-    OSLFTypeSystem (langRewriteSystemWithLogic lang procSort) :=
-  langOSLFUsing (logicDatalogRelationEnv lang) lang procSort
+/-- OSLF type system using relation tuples induced by an admitted finite
+    Datalog extension. -/
+def langOSLFWithLogic (lang : LanguageDef) (logic : AdmittedProgram lang)
+    (procSort : String := "Proc") :
+    OSLFTypeSystem (langRewriteSystemWithLogic lang logic procSort) :=
+  langOSLFUsing (logicDatalogRelationEnv logic.1) lang procSort
 
-/-- OSLF type system using relation tuples induced only by ground Datalog facts in
-    `LanguageDef.logic`. Kept for audit comparisons with the full closure
-    wrapper. -/
-def langOSLFWithLogicFacts (lang : LanguageDef) (procSort : String := "Proc") :
-    OSLFTypeSystem (langRewriteSystemWithLogicFacts lang procSort) :=
-  langOSLFUsing (logicFactRelationEnv lang) lang procSort
+/-- OSLF type system using only the ground facts of an admitted logic
+    extension. -/
+def langOSLFWithLogicFacts (lang : LanguageDef) (logic : AdmittedProgram lang)
+    (procSort : String := "Proc") :
+    OSLFTypeSystem (langRewriteSystemWithLogicFacts lang logic procSort) :=
+  langOSLFUsing (logicFactRelationEnv logic.1) lang procSort
 
 /-- `langOSLF` is definitionally equal to `langOSLFUsing RelationEnv.empty`. -/
 theorem langOSLF_eq_langOSLFUsing_empty (lang : LanguageDef) (procSort : String) :
@@ -339,28 +305,16 @@ theorem langOSLF_eq_langOSLFUsing_empty (lang : LanguageDef) (procSort : String)
 /-- `langOSLFWithLogicFacts` is the `langOSLFUsing` specialization for
     `logicFactRelationEnv`. -/
 theorem langOSLFWithLogicFacts_eq_langOSLFUsing_logicFactRelationEnv
-    (lang : LanguageDef) (procSort : String) :
-    langOSLFWithLogicFacts lang procSort =
-      langOSLFUsing (logicFactRelationEnv lang) lang procSort := rfl
+    (lang : LanguageDef) (logic : AdmittedProgram lang) (procSort : String) :
+    langOSLFWithLogicFacts lang logic procSort =
+      langOSLFUsing (logicFactRelationEnv logic.1) lang procSort := rfl
 
 /-- `langOSLFWithLogic` is the `langOSLFUsing` specialization for
     `logicDatalogRelationEnv`. -/
 theorem langOSLFWithLogic_eq_langOSLFUsing_logicDatalogRelationEnv
-    (lang : LanguageDef) (procSort : String) :
-    langOSLFWithLogic lang procSort =
-      langOSLFUsing (logicDatalogRelationEnv lang) lang procSort := rfl
-
-@[simp] theorem langOSLFUsing_toLegacy_eq
-    (relEnv : RelationEnv) (lang : LanguageDef) (procSort : String := "Proc") :
-    langOSLFUsing relEnv (LanguageDef.toLegacy lang).toLanguageDef procSort
-      = langOSLFUsing relEnv lang procSort := by
-  rfl
-
-@[simp] theorem langOSLF_toLegacy_eq
-    (lang : LanguageDef) (procSort : String := "Proc") :
-    langOSLF (LanguageDef.toLegacy lang).toLanguageDef procSort
-      = langOSLF lang procSort := by
-  rfl
+    (lang : LanguageDef) (logic : AdmittedProgram lang) (procSort : String) :
+    langOSLFWithLogic lang logic procSort =
+      langOSLFUsing (logicDatalogRelationEnv logic.1) lang procSort := rfl
 
 /-! ## Step 6: Native Types -/
 
@@ -402,12 +356,18 @@ theorem rhoCalc_emptyBag_langReduces_irreducible (q : Pattern) :
             Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule
               rhoCalc rhoCommRewrite (.collection .hashBag [] none) = [] := by
           decide +kernel
-        simp [emptyMatch] at matchMember
+        have impossible : initialBindings ∈ ([] : List Bindings) := by
+          rw [← emptyMatch]
+          exact matchMember
+        exact List.not_mem_nil impossible
       · have emptyMatch :
             Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule
               rhoCalc rhoParCongRewrite (.collection .hashBag [] none) = [] := by
           decide +kernel
-        simp [emptyMatch] at matchMember
+        have impossible : initialBindings ∈ ([] : List Bindings) := by
+          rw [← emptyMatch]
+          exact matchMember
+        exact List.not_mem_nil impossible
 
 /-- Concrete restricted bridge instance (assumption-free):
     whenever a `langReduces` step is known to come from the specialized

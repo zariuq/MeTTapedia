@@ -95,7 +95,7 @@ theorem no_mettaPure_rewrite_fits_direct_runtimeExec0_source_bridge
   exact (mettaPure_rewrite_lhs_not_fvar r hr x) hlhs
 
 /-- The real current overlap is the closed Pure/PureKernel bridge: one-step
-closed Pure computations already land in the quoted C1 surface. -/
+closed Pure computations already land in the quoted C1 interface. -/
 theorem closedPure_overlap_via_abc
     {t u : PureTm 0} (h : PureOpStep t u) :
     PureProfileTheoryStep (quoteClosedTm t) (quoteClosedTm u) :=

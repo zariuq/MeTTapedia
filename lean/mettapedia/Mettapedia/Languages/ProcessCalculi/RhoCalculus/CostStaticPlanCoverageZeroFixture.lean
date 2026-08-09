@@ -76,11 +76,12 @@ def rhoCoverageZeroRedexPlan :
 /-- The zero-name collapse as a source-language reflective occurrence
 between the two decoration skeletons. -/
 def rhoCoverageZeroCollapseWitness :
-    EquationSemantics.AuthoredGeneratorWitness defaultBasePremises
+    ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness
+      rhoCIGSLT.reflection.1 defaultBasePremises
       rhoCIGSLT.theory.presentation.presentation.language
       rhoCoverageZeroRedexPlan.decoration.abstractPattern
       rhoCoverageZeroFvarPlan.decoration.abstractPattern := by
-  refine EquationSemantics.AuthoredGeneratorWitness.reflective .hole
+  refine ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness.reflective .hole
     ⟨rhoReflectivePresentation.toReflectivePresentationDecl,
       rhoPairSourceReflectiveDecl_mem⟩ ?_
   have leftEq : rhoCoverageZeroRedexPlan.decoration.abstractPattern =

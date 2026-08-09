@@ -23,14 +23,14 @@
 ;   * the only acceptance verdict comes from the imported `kernel-check`.
 ;   * a parse failure never reaches the kernel (fail-closed).
 ;   * the fast generalized GLL/GLR engine is an oracle-checked performance sibling
-;     that stays outside this trusted surface.
+;     that stays outside this trusted kernel boundary.
 ; ============================================================================
 
 !(import! &self lf_recognizer_v0)
 !(import! &self kernel_signature_lf_v0)
 
 ; ---------- parse -> kernel bridge (fail-closed) ----------------------------
-; Parse the proof term and its claimed type from surface tokens; the kernel gives
+; Parse the proof term and its claimed type from source tokens; the kernel gives
 ; the only verdict.  A parse failure never reaches the kernel.
 (= (lf-prove $term-toks $type-toks)
    (case (lf-recognize $term-toks)
@@ -40,7 +40,7 @@
            ((Err $e) (Err (type-parse-failed $e))))))
       ((Err $e) (Err (term-parse-failed $e))))))
 
-; Convenience: proof term parsed from surface, type supplied as kernel AST.
+; Convenience: proof term parsed from source syntax, type supplied as kernel AST.
 (= (lf-check $term-toks $type)
    (case (lf-recognize $term-toks)
      (((Ok $term) (kernel-check (good-sig) $term $type))

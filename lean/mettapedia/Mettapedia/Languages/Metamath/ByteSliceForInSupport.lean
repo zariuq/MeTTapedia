@@ -81,6 +81,61 @@ public theorem byteSlice_forIn_yield {β : Type} (s : ByteSlice)
   rw [Nat.sub_self, Nat.add_zero]
   rfl
 
+theorem loop_except_yield {state error : Type} (s : ByteSlice)
+    (f : UInt8 → state → Except error (ForInStep state))
+    (step : state → UInt8 → Except error state)
+    (hf : ∀ byte initial, f byte initial =
+      (step initial byte).map ForInStep.yield) :
+    ∀ (i : Nat) (h : i ≤ s.size) (initial : state),
+      ByteSlice.forIn.loop s f i h initial =
+        ((s.byteArray.data.toList.drop
+            (s.start + (s.size - i))).take i).foldlM step initial
+  | 0, _, initial => by
+      rw [List.take_zero]
+      rfl
+  | i + 1, h, initial => by
+      have hstop := s.stop_le_size_byteArray
+      have hsize : s.size = s.stop - s.start := rfl
+      have hlen : s.byteArray.data.toList.length = s.byteArray.size := rfl
+      have hbound : s.start + (s.size - 1 - i) <
+          s.byteArray.data.toList.length := by
+        omega
+      have h1 : s.start + (s.size - (i + 1)) =
+          s.start + (s.size - 1 - i) := by
+        omega
+      have h2 : s.start + (s.size - i) =
+          (s.start + (s.size - 1 - i)) + 1 := by
+        omega
+      rw [h1, List.drop_eq_getElem_cons hbound, List.take_succ_cons,
+        List.foldlM_cons]
+      unfold ByteSlice.forIn.loop
+      simp only [bind, Except.bind]
+      rw [hf]
+      have hhead :
+          s.byteArray.data.toList[s.start + (s.size - 1 - i)]'hbound =
+            s[s.size - 1 - i] := rfl
+      rw [hhead]
+      cases hstep : step initial s[s.size - 1 - i] with
+      | error error => simp [Except.map]
+      | ok next =>
+          simp only [Except.map]
+          rw [loop_except_yield s f step hf i (Nat.le_of_succ_le h), h2]
+
+/-- An exception-producing, yield-only `forIn` is a monadic left fold over
+the slice's bytes. -/
+public theorem byteSlice_forIn_except_yield {state error : Type}
+    (s : ByteSlice)
+    (f : UInt8 → state → Except error (ForInStep state))
+    (step : state → UInt8 → Except error state)
+    (hf : ∀ byte initial, f byte initial =
+      (step initial byte).map ForInStep.yield) (initial : state) :
+    ByteSlice.forIn s initial f =
+      (sliceList s).foldlM step initial := by
+  unfold ByteSlice.forIn
+  rw [loop_except_yield s f step hf s.size (Nat.le_refl _) initial]
+  rw [Nat.sub_self, Nat.add_zero]
+  rfl
+
 theorem loop_exit {β : Type} (s : ByteSlice)
     (f' : UInt8 → β → Id (ForInStep β)) (P : UInt8 → β → Bool)
     (d g : UInt8 → β → β)

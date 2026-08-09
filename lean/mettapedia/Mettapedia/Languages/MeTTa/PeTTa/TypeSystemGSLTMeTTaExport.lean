@@ -58,21 +58,21 @@ private def envBindings : String :=
   "             (let $rrest (ptg-reify-decls $n $rest)\n" ++
   "               (DCons (Decl $n $rd) $rrest)))))))\n"
 
-/-- The reifier, generated from the root's surface tables as DETERMINISTIC
+/-- The reifier, generated from the root's interface tables as DETERMINISTIC
 single-clause dispatchers (clause choice enumerates every matching clause,
 so a fallback clause may never overlap a table clause: each relation is
-one `if`-chain).  Base names from `surfaceBaseTypeTable`, arrows from
-`surfaceModeTable`, variadic union/list walkers, `TNominal` symbol
+one `if`-chain).  Base names from `syntaxBaseTypeTable`, arrows from
+`syntaxModeTable`, variadic union/list walkers, `TNominal` symbol
 fallback, `TCtor` constructor-shape fallback. -/
 private def reifier : String :=
   "(= (ptg-reify-type $t)\n" ++
-  String.join (surfaceBaseTypeTable.map fun entry =>
+  String.join (syntaxBaseTypeTable.map fun entry =>
     s!"   (if (== $t {entry.1}) {entry.2}\n") ++
   "   (if (is-expr $t)\n" ++
   "       (if (ptg-is-empty-expr $t) (TCtor ptg-empty FZ)\n" ++
   "           (ptg-reify-expr-type (car-atom $t) $t))\n" ++
   "       (TNominal $t))" ++
-  String.join (surfaceBaseTypeTable.map fun _ => ")") ++ ")\n" ++
+  String.join (syntaxBaseTypeTable.map fun _ => ")") ++ ")\n" ++
   "(= (ptg-reify-list $ts)\n" ++
   "   (if (ptg-is-empty-expr $ts) TTNil\n" ++
   "       (let $t (car-atom $ts)\n" ++
@@ -92,7 +92,7 @@ private def reifier : String :=
   "       (let $elems (cdr-atom $t)\n" ++
   "         (let $e (car-atom $elems)\n" ++
   "           (let $rt (ptg-reify-type $e) (TList $rt))))\n" ++
-  String.join (surfaceModeTable.map fun entry =>
+  String.join (syntaxModeTable.map fun entry =>
     s!"   (if (== $h {entry.1})\n" ++
     "       (let $body (cdr-atom $t)\n" ++
     "         (let $ret (ptg-last-atom $body)\n" ++
@@ -102,7 +102,7 @@ private def reifier : String :=
     s!"                 (TArrow {entry.2} $rargs $rret))))))\n") ++
   "   (let $rest (cdr-atom $t)\n" ++
   "     (let $k (ptg-arity $rest) (TCtor $h $k)))" ++
-  String.join (surfaceModeTable.map fun _ => ")") ++ ")))\n" ++
+  String.join (syntaxModeTable.map fun _ => ")") ++ ")))\n" ++
   "(= (ptg-last-atom $es)\n" ++
   "   (let $rest (cdr-atom $es)\n" ++
   "     (if (ptg-is-empty-expr $rest) (car-atom $es) (ptg-last-atom $rest))))\n" ++
@@ -139,10 +139,10 @@ pinned message text.  Runtime derivation-evidence emission (GIC-replayable
 per verdict) is a declared gap of this version. -/
 private def verdictHarness : String :=
   "(= (ptg-reify-mode $m)\n" ++
-  String.join (surfaceModeTable.map fun entry =>
+  String.join (syntaxModeTable.map fun entry =>
     s!"   (if (== $m {entry.1}) {entry.2}\n") ++
   "   MPlain" ++
-  String.join (surfaceModeTable.map fun _ => ")") ++ ")\n" ++
+  String.join (syntaxModeTable.map fun _ => ")") ++ ")\n" ++
   "(= (petta-type-guard $env $v $t $mode)\n" ++
   "   (let $rt (ptg-reify-type $t)\n" ++
   "     (if (is-var $v)\n" ++

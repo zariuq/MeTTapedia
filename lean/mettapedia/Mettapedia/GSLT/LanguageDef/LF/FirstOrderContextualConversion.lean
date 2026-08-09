@@ -1,4 +1,5 @@
 import Mettapedia.GSLT.LanguageDef.ConversionCertificate
+import Mettapedia.GSLT.LanguageDef.CalculusLanguageDef
 
 /-!
 # First-order contextual conversion presentation for empty-signature LF
@@ -35,6 +36,7 @@ open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
 open Mettapedia.GSLT.LanguageDef.CheckedSource
 open Mettapedia.GSLT.LanguageDef.ConversionCertificate
+open Mettapedia.GSLT.LanguageDef
 
 def natType : TypeDecl := TypeDecl.plain "LFNat"
 def sortTypeDecl : TypeDecl := TypeDecl.plain "LFSort"
@@ -415,7 +417,7 @@ def allRules : List RuleSchema :=
    rootBetaRule, rootEtaRule, contextualConversionRule,
    conversionReflRule, conversionTransRule]
 
-def language : LanguageDef :=
+abbrev definition : CalculusLanguageDef :=
   { name := "indexed-lf-first-order-contextual-beta-eta"
     types := [natType, sortTypeDecl, nameType, termType, contextType]
     terms :=
@@ -463,10 +465,12 @@ def language : LanguageDef :=
        { head := "Plugs", arity := 3 },
        { head := "RootStep", arity := 2 },
        { head := "Converts", arity := 2 }]
-    inferenceRules := allRules
+    rules := allRules
     conversion := some conversionDeclaration }
 
-def presentation : Presentation := { language }
+def language : LanguageDef := definition.toLanguageDef
+def calculus := definition.toCalculus
+def presentation : Presentation := definition.toNested
 
 theorem language_validate : language.validate = [] := by
   apply LanguageDef.validate_eq_nil_of_constructorOnly language <;>
@@ -476,7 +480,7 @@ theorem language_validate : language.validate = [] := by
 
 theorem presentation_valid : presentation.isValidV2 = true := by
   have hvalidate : presentation.language.validate = [] := by
-    simpa [presentation] using language_validate
+    simpa [presentation, language] using language_validate
   unfold Presentation.isValidV2 Presentation.isValidV1
   rw [hvalidate]
   simp [presentation, Presentation.ruleIds,
@@ -494,7 +498,7 @@ theorem presentation_valid : presentation.isValidV2 = true := by
     Pattern.isWellScoped, Pattern.isWellScopedAt,
     Pattern.isWellScopedListAt, Pattern.hasCanonicalBinderMetadata,
     Pattern.hasCanonicalBinderMetadataList, Pattern.zipHead,
-    Pattern.mapHead, Pattern.evalHead, allRules, language,
+    Pattern.mapHead, Pattern.evalHead, allRules,
     natType, sortTypeDecl, nameType, termType, contextType, constructor,
     conversionDeclaration, rule, formal, m,
     ltZeroSuccRule, ltSuccSuccRule, addZeroRule, addSuccRule,
@@ -514,6 +518,14 @@ theorem presentation_valid : presentation.isValidV2 = true := by
     piDomainContext, piBodyContext, lamDomainContext, lamBodyContext,
     appFunctionContext, appArgumentContext, ruleId]
   simp (config := { maxSteps := 1000000, decide := true })
+
+/-- The complete first-order LF conversion language as one GSLT. -/
+def totalTheory : Mettapedia.GSLT.GSLT :=
+  definition.toGSLTOfNoEquations presentation_valid rfl
+
+theorem totalTheory_Term : totalTheory.Term = (Pattern ⊕ List Pattern) := by
+  unfold totalTheory CalculusLanguageDef.toGSLTOfNoEquations
+  rfl
 
 def source : GSLTSource :=
   { identity :=
@@ -589,7 +601,7 @@ theorem pi_body_beta_certificate_accepts :
   simp (config := { maxSteps := 1000000, decide := true })
     [check, RootedConversion.judgment, CheckedGSLT.checkRaw,
      InferenceChecker.checkRaw, InferenceChecker.checkRawChildren,
-     CheckedGSLT.presentation, checked, source, presentation, language,
+     CheckedGSLT.presentation, checked, source, presentation,
      rootedConversion, piBodyBetaCertificate, piBodyBetaProof, betaRootProof,
      substIdentityProof, plugBetaSourceProof, plugBetaTargetProof, rawProof,
      allRules, contextualConversionRule, rootBetaRule, substVarEqualRule,
@@ -620,7 +632,7 @@ theorem captured_eta_root_proof_rejects :
   simp (config := { maxSteps := 1000000, decide := true })
     [CheckedGSLT.checkRaw, InferenceChecker.checkRaw,
      InferenceChecker.checkRawChildren, CheckedGSLT.presentation, checked,
-     source, presentation, language, fabricatedCapturedEtaProof,
+     source, presentation, fabricatedCapturedEtaProof,
      fabricatedCapturedUnbindProof, rawProof, allRules, rootEtaRule,
      unbindVarBelowRule, ltZeroSuccRule, rule, formal, m, instantiateRule?,
      Presentation.lookupRule?, instantiateSchema?, instantiateSchemaAt?,
@@ -642,7 +654,7 @@ theorem fabricated_context_target_rejects :
   simp (config := { maxSteps := 1000000, decide := true })
     [CheckedGSLT.checkRaw, InferenceChecker.checkRaw,
      InferenceChecker.checkRawChildren, CheckedGSLT.presentation, checked,
-     source, presentation, language, fabricatedContextTargetProof,
+     source, presentation, fabricatedContextTargetProof,
      betaRootProof, substIdentityProof, plugBetaSourceProof,
      plugBetaTargetProof, rawProof, allRules, contextualConversionRule,
      rootBetaRule, substVarEqualRule, plugPiBodyRule, plugHoleRule, rule,

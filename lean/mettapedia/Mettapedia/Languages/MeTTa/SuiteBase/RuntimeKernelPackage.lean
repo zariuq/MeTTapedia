@@ -15,14 +15,14 @@ open MeTTailCore.MeTTaIL.EffectSafety
 
 /-! ## 4. Packaged runtime kernel -/
 
-/-- The runtime kernel package: the triad of proved surfaces together with
+/-- The runtime kernel package: the triad of proved interfaces together with
 their explicit effect and resource classifications.
 
 This is the backend-neutral target object that ElaboratedCore can consume
 without importing MORK internals. -/
 structure RuntimeKernelPackage where
   triad : MeTTaRuntimeKernelTriad
-  oracle : MeTTaRuntimeOracleSurface
+  oracle : MeTTaRuntimeOracleInterface
   execClass : ClassifiedFragment
   queryClass : ClassifiedFragment
   spaceEffectClass : ClassifiedFragment

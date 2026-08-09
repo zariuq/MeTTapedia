@@ -19,11 +19,11 @@ open Syntax
 /-! ## Linguistic Equivalence
 
 Two English nouns are linguistically equivalent iff they produce
-identical surface forms for all Number x Case combinations.
+identical source forms for all Number x Case combinations.
 -/
 
 /-- Two English nouns are linguistically equivalent iff they produce
-    the same surface string in every slot -/
+    the same linearized string in every slot -/
 def LinguisticallyEquivalent (n1 n2 : EnglishNoun) : Prop :=
   ∀ (p : EnglishParams), n1.s p.number p.case = n2.s p.number p.case
 
@@ -45,7 +45,7 @@ theorem lingEquiv_trans {n1 n2 n3 : EnglishNoun} :
 
 /-! ## DetCN Properties -/
 
-/-- Two equivalent CNs produce identical surface forms when declined directly -/
+/-- Two equivalent CNs produce identical source forms when declined directly -/
 theorem lingEquiv_implies_same_decline (cn1 cn2 : EnglishCN) :
     LinguisticallyEquivalent cn1 cn2 →
     ∀ (n : Number) (c : Case), cn1.s n c = cn2.s n c :=

@@ -4,7 +4,7 @@ import Mettapedia.PLN.Bridges.HOL.Introspection
 /-!
 # WM-4 introspection curriculum example
 
-This wrapper makes the proof-witness query surface easy to find from the PLN
+This wrapper makes the proof-witness query interface easy to find from the PLN
 examples room: why, how strongly, what breaks, and whether re-derivation is
 worth the budget.
 -/

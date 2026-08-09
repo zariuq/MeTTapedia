@@ -5,7 +5,7 @@ import Mettapedia.Logic.LP.NormalGrounding
 # First-Order Normal ProbLog Bridge
 
 This file lifts the current ground crown theorem to a first-order normal-program
-surface layer by explicit grounding.
+source-language layer by explicit grounding.
 
 Positive example:
 - A function-free normal rule with variables can now be supplied as a
@@ -54,12 +54,12 @@ theorem problog_functionFree_normal_equivalence {σ : LPSignature} {n : ℕ}
   simpa using
     (problog_full_ground_equivalence prog.toGroundNormalProgram s goalsQ goalsE env henv hEpos)
 
-/-- **First-order normal ProbLog surface equivalence via grounding.**
+/-- **First-order normal ProbLog source equivalence via grounding.**
 
     This is the same bridge as `problog_functionFree_normal_equivalence`, but
-    exposed at a first-order query/evidence surface. A grounding substitution
+    exposed at a first-order query/evidence interface. A grounding substitution
     chooses the concrete ground instance of the first-order goals. -/
-theorem problog_functionFree_normal_surface_equivalence {σ : LPSignature} {n : ℕ}
+theorem problog_functionFree_normal_source_equivalence {σ : LPSignature} {n : ℕ}
     [IsEmpty σ.functionSymbols] [Nonempty (GroundTerm σ)]
     [Fintype σ.vars] [DecidableEq σ.vars]
     [Fintype σ.constants] [DecidableEq σ.constants]

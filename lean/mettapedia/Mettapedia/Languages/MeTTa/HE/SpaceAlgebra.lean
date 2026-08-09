@@ -1,5 +1,5 @@
 /-
-# SpaceAlgebra: the abstract storage/query surface
+# SpaceAlgebra: the abstract storage/query interface
 
 The published interpreter specification fixes program-level state sequencing
 ("each atom sees the effects of preceding evaluations or atomspace

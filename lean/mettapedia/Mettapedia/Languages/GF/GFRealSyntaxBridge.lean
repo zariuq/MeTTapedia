@@ -30,7 +30,7 @@ open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.Formula
 open Mettapedia.OSLF.Framework.TypeSynthesis
 
-/-- Convert a checked GF tree into the canonical MeTTaIL pattern surface. -/
+/-- Convert a checked GF tree into the canonical MeTTaIL pattern syntax. -/
 def gfCheckedExprToPattern (e : CheckedExpr) : Pattern :=
   match e with
   | .node decl args =>

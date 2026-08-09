@@ -2722,6 +2722,57 @@ development as empirical targets, not theorems. And no repair touches the price:
 repaired dynamics remain an iterative relaxation, so ``matches backpropagation'' continues
 to mean matches its target, not its cost (\leanname{pcBPCompute\_crown}).
 
+\section{Curvature spread decides both the signal and the solver}
+\label{sec:block-settling}
+
+Depth is one way an iterative relaxation degrades. Curvature spread across the sites
+being settled is another, and it turns out to govern two things at once---how far the
+settled credit can depart from backpropagation, and whether the settling procedure can
+reach it at all. On a block-diagonal quadratic settle energy, which is the exact local
+model of multi-site settling near an equilibrium, the following are proved.
+
+\emph{Solver substitution cannot move an equilibrium.} A single global rate, per-block
+rates, and Levenberg-style damping have identical stationary sets
+(\leanname{stationary\_set\_shared}). Changing how one settles therefore changes the path
+and not the destination, which is what licenses a solver swap as the same dynamics rather
+than a new one.
+
+\emph{A single global rate is defeated by spread.} Any rate above $2/L$ for the stiffest
+block amplifies that block's error at every step
+(\leanname{stiff\_block\_unstable}), while any rate small enough to be stable there
+retains at least $1 - T\cdot(2\tau/\sigma)$ of a tame block's error after $T$ steps
+(\leanname{tame\_block\_starved}); with curvatures $\{1,10^{6}\}$ and eight steps the
+tame block keeps at least $99\%$ of its error. Per-block rates $c/\text{curvature}$
+instead contract every block by the same factor $1-c$ regardless of spread
+(\leanname{blockStep\_spread\_invariant}), and damping contracts unconditionally, its
+per-block factor lying in $[0,1)$ for every damping parameter
+(\leanname{dampedStep\_factor\_stable}). Blockwise and damped stepping are thus the
+solver family whose stability does not degrade as spread grows.
+
+\emph{A residual tolerance certifies nothing about credit.} Credit error is bounded by
+the credit-weight bound times the residual, but no uniform constant exists: for every
+gradient tolerance and every demanded credit-error bound there is a model violating it
+(\leanname{residual\_tolerance\_insufficient\_for\_credit}). A settling criterion stated
+in gradient units therefore has no consequence for the quantity actually being
+transported, and must be stated in credit units or accompanied by a per-model bound.
+
+\emph{Departure needs spread, not degeneracy.} At curvature ratio two, with every block
+strictly contracting under the global rate, the settled credit has positive inner product
+with the instantaneous credit, is not a scalar multiple of it, and has squared cosine
+strictly below one---by exact rational arithmetic
+(\leanname{bounded\_spread\_departure}). The regime in which predictive coding is
+genuinely non-backpropagation is thus reachable at bounded conditioning; it is not an
+artifact of the numerics degenerating.
+
+Read together these say something sharper than any one of them. The same quantity that
+makes settled credit interesting---spread---is what defeats the naive solver, so the
+interesting regime and the badly-conditioned regime are adjacent but not identical, and
+the correct response to instability there is a metric change rather than a smaller step.
+What remains open is quantitative: a bound relating spread to attainable cosine, and a
+prediction of the depth at which transported credit saturates. The measurements in the
+companion experiments show that saturation occurring far earlier than energy convergence,
+which the block-diagonal model does not yet explain.
+
 \section{Forgetting has a metric side and a connection side}
 \label{sec:forgetting}
 

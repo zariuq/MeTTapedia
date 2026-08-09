@@ -25,7 +25,7 @@ private abbrev detResult (s : Session) (term : Pattern) : Session × Pattern :=
 def CoreIntrinsicDirectSingleton (s : Session) : Prop :=
   ∀ ctor args, (Session.intrinsicDirectPub s ctor args).length ≤ 1
 
--- ─── Builtin surface predicate ──────────────────────────────────────────────
+-- ─── Builtin inventory predicate ─────────────────────────────────────────────
 -- Bridges the runtime Bool flag to the semantic singleton invariant.
 -- States that for all intrinsic:* relations, the session's builtin table
 -- returns at most one row — matching the core builtins' behavior.
@@ -33,34 +33,34 @@ def CoreIntrinsicDirectSingleton (s : Session) : Prop :=
 /-- The session's builtin table returns ≤1 row for every `intrinsic:*` relation.
     This holds when builtins are `coreIntrinsicBuiltins` (possibly merged with
     user builtins that don't define `intrinsic:*` relations). -/
-def CoreBuiltinSurface (s : Session) : Prop :=
+def CoreBuiltinInventory (s : Session) : Prop :=
   ∀ rel args, (s.bundle.builtins.relation (intrinsicRelationName rel) args).length ≤ 1
 
-/-- `CoreBuiltinSurface` implies `CoreIntrinsicDirectSingleton`.
+/-- `CoreBuiltinInventory` implies `CoreIntrinsicDirectSingleton`.
     Pure math: `intrinsicDirectPub` is `filterMap` over the builtin rows,
     so its length is bounded by the row count. -/
-theorem coreIntrinsicDirectSingleton_of_surface
-    (s : Session) (hSurf : CoreBuiltinSurface s) :
+theorem coreIntrinsicDirectSingleton_of_inventory
+    (s : Session) (hInventory : CoreBuiltinInventory s) :
     CoreIntrinsicDirectSingleton s := by
   intro ctor args
-  exact Nat.le_trans (Session.intrinsicDirectPub_length_le s ctor args) (hSurf ctor args)
+  exact Nat.le_trans (Session.intrinsicDirectPub_length_le s ctor args) (hInventory ctor args)
 
-/-- Sessions whose builtins ARE `coreIntrinsicBuiltins` satisfy `CoreBuiltinSurface`. -/
-theorem coreBuiltinSurface_of_coreBuiltins
+/-- Sessions whose builtins ARE `coreIntrinsicBuiltins` satisfy `CoreBuiltinInventory`. -/
+theorem coreBuiltinInventory_of_coreBuiltins
     (s : Session) (hB : s.bundle.builtins = coreIntrinsicBuiltins) :
-    CoreBuiltinSurface s := by
+    CoreBuiltinInventory s := by
   intro rel args
   simp [hB]
   exact coreIntrinsicBuiltins_relation_length_le_one (intrinsicRelationName rel) args
 
 /-- For sessions built with `mergeBuiltinTables coreIntrinsicBuiltins extra` where
-    `extra` returns `[]` for all `intrinsic:*` relations, `CoreBuiltinSurface` holds. -/
-theorem coreBuiltinSurface_of_merge_noIntrinsic
+    `extra` returns `[]` for all `intrinsic:*` relations, `CoreBuiltinInventory` holds. -/
+theorem coreBuiltinInventory_of_merge_noIntrinsic
     (s : Session)
     (extra : MeTTailCore.MeTTaIL.Profile.BuiltinTable)
     (hB : s.bundle.builtins = mergeBuiltinTables coreIntrinsicBuiltins extra)
     (hExtra : ∀ rel args, extra.relation (intrinsicRelationName rel) args = []) :
-    CoreBuiltinSurface s := by
+    CoreBuiltinInventory s := by
   intro rel args
   simp [hB, mergeBuiltinTables, hExtra]
   exact coreIntrinsicBuiltins_relation_length_le_one (intrinsicRelationName rel) args

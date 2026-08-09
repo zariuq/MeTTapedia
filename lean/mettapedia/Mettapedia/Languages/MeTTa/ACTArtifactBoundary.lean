@@ -3,7 +3,7 @@ import Mettapedia.Languages.MeTTa.SpaceEngineBoundary
 /-!
 # ACT Artifact Boundary: Storage Seam, Not Execution Authority
 
-Formalizes the ACT (compiled atom table) artifact surface:
+Formalizes the ACT (compiled atom table) artifact interface:
 - `open-act` creates a new space with attached compiled content (queryable)
 - `load-act!` materializes ACT atoms into an existing live space (additive)
 - `dump!` exports a live space's atoms to an ACT file (storage)
@@ -22,7 +22,7 @@ not an execution engine.
 ## What This Formalizes
 
 1. ACT operations are storage/query operations, not execution operations
-2. `open-act` yields a PathMap-backed space (shared query surface, no exec)
+2. `open-act` yields a PathMap-backed space (shared query capabilities, no exec)
 3. `load-act!` is additive materialization (atoms appear in live space)
 4. `dump!` exports atoms without granting execution privilege to the file
 5. ACT is engine-neutral: usable with any PathMap-capable engine
@@ -65,7 +65,7 @@ Each ACT operation is classified by what capability it requires and
 what capability it grants. -/
 
 /-- Which engine capability an ACT operation REQUIRES to function.
-    All ACT operations only need atomStorage (the shared surface). -/
+    All ACT operations only need atomStorage (the shared capability). -/
 def ACTOperation.requiredCapability : ACTOperation → EngineCapability
   | .openAct => .atomStorage   -- creates a new space
   | .loadAct => .atomStorage   -- adds atoms to existing space
@@ -102,10 +102,10 @@ theorem act_never_grants_exec :
     ∀ op : ACTOperation, op.grantsExecStep = false := by
   intro op; cases op <;> rfl
 
-/-! ## §4: ACT Operations Use Only the Shared Surface
+/-! ## §4: ACT Operations Use Only the Shared Capabilities
 
 All ACT operations require only `atomStorage`, which is part of the
-shared surface (available on all three engines). This means ACT works
+shared capabilities (available on all three engines). This means ACT works
 with native, PathMap, and MORK engines equally.
 
 Positive example: `dump!` works on a native space (serializes its atoms).
@@ -127,7 +127,7 @@ theorem act_artifact_engine_neutral :
     op.requiredCapability ∈ engine.capabilities := by
   intro op engine; cases op <;> cases engine <;> decide
 
-/-! ## §5: Open-ACT Yields Shared Query Surface
+/-! ## §5: Open-ACT Yields Shared Query Capabilities
 
 `open-act` creates a new space with `SPACE_MATCH_BACKEND_PATHMAP_IMPORTED`.
 This space has the PathMap engine's capabilities (query + candidate acceleration)
@@ -150,7 +150,7 @@ def openActEngine : SpaceEngine := .pathmap
     Positive example: `(match (mork:open-act "data.act") (= $x $y) ...)` works.
     Negative example: `(step! (mork:open-act "data.act"))` has no effect
     (no exec facts to fire, no MORK scheduler active). -/
-theorem act_open_shared_query_surface :
+theorem act_open_shared_query_capabilities :
     EngineCapability.equationQuery ∈ openActEngine.capabilities ∧
     EngineCapability.candidateAcceleration ∈ openActEngine.capabilities ∧
     EngineCapability.execStep ∉ openActEngine.capabilities := by
@@ -232,7 +232,7 @@ The ACT theorems strengthen the SpaceEngineBoundary story:
     The artifact format has no exec authority (from SpaceEngineBoundary),
     AND all operations on ACT artifacts have no exec authority (this file). -/
 theorem act_helpers_refine_space_engine_boundary :
-    ArtifactSurface.act.grantsExec = false ∧
+    ArtifactFormat.act.grantsExec = false ∧
     (∀ op : ACTOperation, op.grantsExecStep = false) :=
   ⟨rfl, act_never_grants_exec⟩
 
@@ -248,7 +248,7 @@ artifact/storage seams; ACT is query/storage support, not execution authority."
 |---------|-------------|
 | `act_never_grants_exec` | No ACT operation grants execStep |
 | `act_artifact_engine_neutral` | ACT works with any engine |
-| `act_open_shared_query_surface` | open-act → query+acceleration, no exec |
+| `act_open_shared_query_capabilities` | open-act → query+acceleration, no exec |
 | `act_import_materializes_live_space` | load-act! preserves engine type |
 | `act_dump_preserves_artifact_boundary` | dump! is read-only, no exec grant |
 | `act_not_mm2_semantics` | ACT ≠ MM2 execution |

@@ -122,8 +122,8 @@ def tracker : List Milestone :=
   , { area := "GF BinaryEvidence Semantics"
       title := "Quantified formulas with scope ambiguity"
       status := .done
-      codeRef := "Mettapedia/OSLF/QuantifiedFormula.lean: QFormula / qsemE / iSup_iInf_le_iInf_iSup; Mettapedia/Languages/GF/WorldModelSemantics.lean: surfaceScopeReading / inverseScopeReading / inverse_scope_le_surface_scope_evidence"
-      note := "QFormula extends OSLFFormula with ∀/∃. Environment-based semantics. Scope ordering: inverse (specific) ≤ surface (non-specific)." }
+      codeRef := "Mettapedia/OSLF/QuantifiedFormula.lean: QFormula / qsemE / iSup_iInf_le_iInf_iSup; Mettapedia/Languages/GF/WorldModelSemantics.lean: sourceOrderScopeReading / inverseScopeReading / inverse_scope_le_source_order_scope_evidence"
+      note := "QFormula extends OSLFFormula with ∀/∃. Environment-based semantics. Scope ordering: inverse (specific) ≤ source-order (non-specific)." }
   , { area := "GF BinaryEvidence Semantics"
       title := "Anaphora as variable binding"
       status := .done
@@ -155,10 +155,10 @@ def tracker : List Milestone :=
       codeRef := "Mettapedia/OSLF/Framework/AssumptionNecessity.lean"
       note := "Dedicated necessity/counterexample theorem family is now formalized for retained global assumptions (`hImageFinite`, `hAtomAll`, `hDiaTopAll`) used by broad wrappers." }
   , { area := "Assumption Audit"
-      title := "Canonical one-step `langReduces rhoCalc` predecessor-finiteness is necessity-audited"
+      title := "Explicitly interpreted rho-step predecessor-finiteness is necessity-audited"
       status := .done
-      codeRef := "Mettapedia/OSLF/Framework/AssumptionNecessity.lean: langReduces_rhoCalc_not_predFinite / not_global_hPredFinite_langReduces_rhoCalc"
-      note := "Canonical `rhoCalc` COMM erases the channel parameter, yielding a fixed one-step target with infinitely many distinct predecessors. Hence predecessor finiteness in `coreMain_theorem1_langReduces_of_finite` is explicit and provably necessary; forward image-finiteness is explicit as well for the unbounded contextual relation." }
+      codeRef := "Mettapedia/OSLF/Framework/AssumptionNecessity.lean: rhoStep_not_predFinite / not_global_hPredFinite_rhoStep"
+      note := "The authored rho COMM rule under its explicit reflection profile erases the channel parameter, yielding a fixed one-step target with infinitely many distinct predecessors. Hence predecessor finiteness remains an explicit hypothesis for Theorem-1 wrappers over this relation; forward image-finiteness is explicit as well for the unbounded contextual relation." }
   , { area := "Literature Alignment"
       title := "Internal conjunction/disjunction completion in paper-level topos route"
       status := .done
@@ -194,8 +194,8 @@ theorem remainingCount_eq_zero : remainingCount = 0 := by
 /-!
 ## Strict Literature-Alignment Tracker
 
-`tracker` above tracks the currently completed CoreMain-facing OSLF endpoint
-surface.  The strict tracker below appends paper-level frontier items that are
+`tracker` above tracks the currently completed CoreMain-facing OSLF endpoints.
+The strict tracker below appends paper-level frontier items that are
 still open in the source literature.
 -/
 
@@ -256,7 +256,7 @@ theorem strictRemainingCount_eq_zero : strictRemainingCount = 0 := by
   decide
 
 /-!
-## Paper-Parity Tracker (No Overclaim Surface)
+## Paper-Parity Tracker (No-Overclaim Inventory)
 
 This tracker encodes parity targets against the core claims in:
 - `/home/zar/claude/literature/Hyperon Study Materials/Rho and OSLF/oslf.pdf`
@@ -266,7 +266,7 @@ This tracker encodes parity targets against the core claims in:
 Unlike `tracker`/`strictTracker`, this list is intentionally conservative:
 entries remain non-`done` until their theorem-level endpoints are fully formalized.
 
-Important: this is an OSLF-facing parity surface. Full theorem-number parity for
+Important: this is an OSLF-facing parity inventory. Full theorem-number parity for
 Native Type Theory is tracked separately in
 `Mettapedia/OSLF/Framework/NTTClaimTracker.lean`.
 -/
@@ -292,7 +292,7 @@ def paperParityTracker : List Milestone :=
       title := "Topos -> internal-language bridge theorem family (fiber-logic endpoint subset)"
       status := .done
       codeRef := "Mettapedia/OSLF/Framework/ToposTOGLBridge.lean: topos_full_internal_logic_bridge_package (⊤/⊥/∧/∨/Frame →/¬) + topos_representable_patternPred_piSigma_transport_via_rulePack + topos_representable_patternPred_piSigma_transport_pack_via_rulePack + topos_representable_patternPred_piSigma_transport_pack_via_prop12 + topos_representable_patternPred_piSigma_transport_via_prop12_pack; Mettapedia/OSLF/NativeType/CodomainFibration.lean: prop12_piSigmaPredicateRulePack / prop12_piEta_presheaf / prop12_sigmaEta_presheaf; Mettapedia/OSLF/Framework/BeckChevalleyOSLF.lean: representable_patternPred_piSigma_transport_via_rulePack / representable_patternPred_piSigma_transport_pack_via_rulePack / representable_patternPred_piSigma_transport_via_prop12_pack / RepresentablePiSigmaTransportPack / representable_patternPred_piSigma_transport_pack_via_prop12; Mettapedia/OSLF/Framework/OSLFNTTWMCanonicalClosure.lean: canonical_rulePack_transport_pack_and_fixpoint_endpoint_compact / canonical_prop12_transport_pack_and_fixpoint_endpoint_compact / canonical_rulePack_transport_pack_and_fixpoint_endpoint_of_transportGoal / canonical_prop12_transport_pack_and_fixpoint_endpoint_of_transportGoal / canonical_rulePack_transport_piSigma_and_fixpoint_of_transportGoal / canonical_prop12_transport_piSigma_and_fixpoint_of_transportGoal / canonicalConsequenceRuleOn_compact_fixpoint; Mettapedia/OSLF/CoreMain.lean: coreMain_representable_patternPred_piSigma_transport_via_rulePack / coreMain_representable_patternPred_piSigma_transport_pack_via_rulePack / coreMain_representable_patternPred_piSigma_transport_via_prop12_pack / coreMain_representable_patternPred_piSigma_transport_pack / coreMain_paper_parity_full_package; /home/zar/claude/literature/Hyperon Study Materials/Rho and OSLF/Native_Type_Theory.pdf"
-      note := "Endpoint subset: ⊤/⊥/∧/∨ internalization plus Frame-derived →/¬ and a representable Π/Σ transport surface that is rule-pack-first (`...via_rulePack`), with explicit Prop-12 compatibility wrappers (`...via_prop12...`) and compact canonical WM-closure endpoints." }
+      note := "Endpoint subset: ⊤/⊥/∧/∨ internalization plus Frame-derived →/¬ and a representable Π/Σ transport theorem family that is rule-pack-first (`...via_rulePack`), with explicit Prop-12 compatibility wrappers (`...via_prop12...`) and compact canonical WM-closure endpoints." }
   , { area := "TOGL/Graph Foundations"
       title := "Explicit formal bridge from graph-theoretic foundations to OSLF canonical endpoint"
       status := .done
@@ -316,7 +316,7 @@ theorem paperParityRemaining_eq_nil : paperParityRemaining = [] := by
 theorem paperParityRemainingCount_eq_zero : paperParityRemainingCount = 0 := by
   decide
 
-/-- Full NTT-paper parity is closed under the strict theorem-number keyed surface. -/
+/-- Full NTT-paper parity is closed under the strict theorem-number-keyed inventory. -/
 theorem nttStrictParity_closed :
     Mettapedia.OSLF.Framework.NTTClaimTracker.nttRemainingCount = 0 :=
   Mettapedia.OSLF.Framework.NTTClaimTracker.nttRemainingCount_zero
@@ -444,7 +444,7 @@ These checks tie tracker statements to concrete constants in the codebase.
 #check @Mettapedia.Languages.GF.WorldModelSemantics.definiteDescriptionEvidence
 #check @Mettapedia.Languages.GF.WorldModelSemantics.negation_preserves_definite_presup
 #check @Mettapedia.Languages.GF.WorldModelSemantics.conditional_filters_definite_presup
-#check @Mettapedia.Languages.GF.WorldModelSemantics.inverse_scope_le_surface_scope_evidence
+#check @Mettapedia.Languages.GF.WorldModelSemantics.inverse_scope_le_source_order_scope_evidence
 #check @Mettapedia.Languages.GF.WorldModelSemantics.iSup_inf_le_inf_iSup
 #check @Mettapedia.PLN.Evidence.IdentityEvidence.transport_enabled_canary_guard_pass
 #check @Mettapedia.PLN.Evidence.IdentityEvidence.transport_enabled_canary_guard_fail

@@ -4,10 +4,10 @@ import Mettapedia.OSLF.Framework.DerivedModalities
 /-!
 # HE Small-Step: The Coarse User-Visible One-Step Relation
 
-The **HE small-step** granularity stratum (user-visible surface steps): one
-observable surface rewrite over ordinary MeTTa atoms, e.g.
+The **HE small-step** granularity stratum (user-visible interface steps): one
+observable interface rewrite over ordinary MeTTa atoms, e.g.
 `(+ 1 (+ 2 3)) → (+ 1 5)`.  This is the relation that CeTTa's
-`lts:he:transitions` surface exposes and that the runtime HE small-step rule
+`lts:he:transitions` interface exposes and that the runtime HE small-step rule
 table drives.
 
 This Lean model now mirrors **all ten** of the table's live rules:
@@ -111,7 +111,7 @@ def SpecialFormHead (a : Atom) : Prop :=
 /-- `a` is an equation redex: a non-grounded-headed expression with at least
 one matching `(= lhs rhs)` equation in the space.  `queryEquations` is the
 official query from `Space.lean` (alpha-freshened, using the faithful
-`matchAtoms`/`mergeBindings` surface). -/
+`matchAtoms`/`mergeBindings` interface). -/
 def EquationRedex (space : Space) (d : GroundedDispatch) (fuel : Nat)
     (a : Atom) : Prop :=
   (∃ es, a = .expression es) ∧
@@ -119,7 +119,7 @@ def EquationRedex (space : Space) (d : GroundedDispatch) (fuel : Nat)
   HeadNotExecutable d a ∧
   ∃ p ∈ queryEquations space a fuel, p.2.hasLoop = false
 
-/-- Avoid-aware equation redex surface. This is the repaired companion to
+/-- Avoid-aware equation redex interface. This is the repaired companion to
 `EquationRedex` for runtimes that standardize equation-local variables apart
 from variables already visible in the queried atom before matching. It uses the
 same faithful `matchAtoms`/`mergeBindings` matcher as `queryEquations`, but
@@ -258,7 +258,7 @@ inductive HESmallStep (space : Space) (d : GroundedDispatch) (fuel : Nat) :
       HESmallStep space d fuel (.expression es)
         (.expression [.symbol "function", body'])
   /-- `function` return case: a quiescent `(return x)` body unwraps to `x`
-  literally, with no further evaluation of the payload at this surface step. -/
+  literally, with no further evaluation of the payload at this interface step. -/
   | function_return {es : List Atom} {body ret : Atom}
       (h_shape : es = [.symbol "function", body])
       (h_quiescent : ¬ HECanSmallStep space d fuel body)
@@ -375,7 +375,7 @@ inductive HESmallStep (space : Space) (d : GroundedDispatch) (fuel : Nat) :
       HESmallStep space d fuel (.expression (pre ++ a :: post))
                                (.expression (pre ++ a' :: post))
 
-/-- Repaired equation-root step surface using `queryEquationsAgainstVisible`.
+/-- Repaired equation-root step interface using `queryEquationsAgainstVisible`.
 
 This is intentionally a companion relation rather than an immediate replacement
 for `HESmallStep`: the existing coarse small-step development has many

@@ -12,7 +12,7 @@ Light public facade making the major HE semantic layers explicit.
 
 1. **Declarative evaluation semantics**
    `EvalAtom` and its five mutually-recursive companion relations in
-   `EvalSpec.lean`, with the auditable clause-form surface in
+   `EvalSpec.lean`, with the auditable clause-form representation in
    `DeclarativeSpec.lean`.
 2. **Operational instruction semantics**
    `MinimalStep` in `MinimalMeTTa.lean`.

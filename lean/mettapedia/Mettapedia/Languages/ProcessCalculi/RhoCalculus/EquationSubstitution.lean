@@ -20,23 +20,31 @@ open Mettapedia.OSLF.MeTTaIL.Substitution
 open Mettapedia.OSLF.MeTTaIL.DerivedContexts
 open Mettapedia.GSLT.LanguageDef
 open Mettapedia.GSLT.LanguageDef.EquationSemantics
+open Mettapedia.GSLT.LanguageDef.ReflectiveEquationSemantics
+open Mettapedia.GSLT.LanguageDef.ReflectionExtension
 open Mettapedia.GSLT.LanguageDef.WellSorted
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Canonical
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.CanonicalSupport
 
 private theorem equationEquiv_refl (pattern : Pattern) :
-    EquationEquiv defaultBasePremises rhoCalc pattern pattern :=
+    ReflectiveEquationEquiv rhoReflectionProfile defaultBasePremises rhoCalc
+      pattern pattern :=
   Relation.EqvGen.refl pattern
 
 private theorem equationEquiv_symm {left right : Pattern}
-    (equivalent : EquationEquiv defaultBasePremises rhoCalc left right) :
-    EquationEquiv defaultBasePremises rhoCalc right left :=
+    (equivalent : ReflectiveEquationEquiv rhoReflectionProfile
+      defaultBasePremises rhoCalc left right) :
+    ReflectiveEquationEquiv rhoReflectionProfile defaultBasePremises rhoCalc
+      right left :=
   Relation.EqvGen.symm _ _ equivalent
 
 private theorem equationEquiv_trans {left middle right : Pattern}
-    (first : EquationEquiv defaultBasePremises rhoCalc left middle)
-    (second : EquationEquiv defaultBasePremises rhoCalc middle right) :
-    EquationEquiv defaultBasePremises rhoCalc left right :=
+    (first : ReflectiveEquationEquiv rhoReflectionProfile
+      defaultBasePremises rhoCalc left middle)
+    (second : ReflectiveEquationEquiv rhoReflectionProfile
+      defaultBasePremises rhoCalc middle right) :
+    ReflectiveEquationEquiv rhoReflectionProfile defaultBasePremises rhoCalc
+      left right :=
   Relation.EqvGen.trans _ _ _ first second
 
 /-- The exact rho signature seals every authored name result behind the sole
@@ -44,12 +52,12 @@ quotation constructor.  In particular, no ordinary binder-bearing constructor
 can return `Name`, which is the structural feature needed by supported
 substitution below quote/drop cancellation. -/
 theorem rho_reflectiveNameResultSealed :
-    ReflectiveNameResultSealed rhoCalc := by
+    ReflectiveNameResultSealed (profile := rhoReflectionProfile) rhoCalc := by
   intro declaration declarationMembership rule ruleMembership categoryEquality
   have declarationEquality :
       declaration =
         rhoReflectivePresentation.toReflectivePresentationDecl := by
-    simpa [rhoCalc] using declarationMembership
+    simpa [rhoReflectionProfile] using declarationMembership
   subst declaration
   simp [rhoCalc] at ruleMembership
   rcases ruleMembership with rfl | rfl | rfl | rfl | rfl | rfl
@@ -64,13 +72,14 @@ theorem rho_reflectiveNameResultSealed :
 /-- Rho canonicalization can expose `PDrop` only with a name argument that
 remains in the original typing and reflective-support fiber. -/
 theorem rho_reflectiveDropCanonicalSupportStable :
-    ReflectiveDropCanonicalSupportStable rhoCalc := by
+    ReflectiveDropCanonicalSupportStable
+      (profile := rhoReflectionProfile) rhoCalc := by
   intro declaration declarationMembership free support bound available pattern
     name binderImage typed safe object canonicalEquality
   have declarationEquality :
       declaration =
         rhoReflectivePresentation.toReflectivePresentationDecl := by
-    simpa [rhoCalc] using declarationMembership
+    simpa [rhoReflectionProfile] using declarationMembership
   subst declaration
   change
     Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
@@ -86,7 +95,8 @@ theorem rho_reflectiveDropCanonicalSupportStable :
   have dropResult :
       ∃ dropTyped : HasType rhoCalc free bound (.apply "PDrop" [name])
           TypeExpr.proc,
-        dropTyped.ReflectiveSupportSafeAt support available binderImage := by
+        dropTyped.ReflectiveSupportSafeAt rhoReflectionProfile support available
+          binderImage := by
     simpa [rhoReflectivePresentation, TypeExpr.proc, TypeExpr.baseType] using
       canonicalResult
   obtain ⟨dropTyped, dropSafe⟩ := dropResult
@@ -112,20 +122,22 @@ theorem name_substituteAt_eq_of_safeAt_zero
     {support : ContextSupport.Support}
     {bound : List TypeExpr} {name : Pattern} {resultType : TypeExpr}
     {binderImage : TypeExpr → TypeExpr}
-    (assignment : SupportedOpenAssignment rhoCalc source target support)
+    (assignment : SupportedOpenAssignment rhoReflectionProfile rhoCalc source
+      target support)
     (typed : HasType rhoCalc source bound name resultType)
     (resultType_eq : resultType = TypeExpr.name)
-    (safeAtZero : typed.ReflectiveSupportSafeAt support [] binderImage)
+    (safeAtZero : typed.ReflectiveSupportSafeAt rhoReflectionProfile support []
+      binderImage)
     (object : isObjectPattern name = true)
     (availableDepth : Nat) :
-    ReflectiveContextSupport.substituteAt rhoCalc support
+    ReflectiveContextSupport.substituteAt rhoReflectionProfile support
         assignment.assignment 0 name =
-      ReflectiveContextSupport.substituteAt rhoCalc support
+      ReflectiveContextSupport.substituteAt rhoReflectionProfile support
         assignment.assignment availableDepth name := by
   apply nameResult_substituteAt_eq_of_safeAt_zero
     rho_reflectiveNameResultSealed assignment
     rhoReflectivePresentation.toReflectivePresentationDecl
-    (by simp [rhoCalc]) typed
+    (by simp [rhoReflectionProfile]) typed
   · simpa [rhoReflectivePresentation, TypeExpr.name, TypeExpr.baseType] using
       resultType_eq
   · exact safeAtZero
@@ -140,30 +152,33 @@ theorem quote_drop_substituteAt_equationEquiv
     {support : ContextSupport.Support}
     {bound : List TypeExpr} {name : Pattern} {resultType : TypeExpr}
     {binderImage : TypeExpr → TypeExpr}
-    (assignment : SupportedOpenAssignment rhoCalc source target support)
+    (assignment : SupportedOpenAssignment rhoReflectionProfile rhoCalc source
+      target support)
     (typed : HasType rhoCalc source bound name resultType)
     (resultType_eq : resultType = TypeExpr.name)
-    (safeAtZero : typed.ReflectiveSupportSafeAt support [] binderImage)
+    (safeAtZero : typed.ReflectiveSupportSafeAt rhoReflectionProfile support []
+      binderImage)
     (object : isObjectPattern name = true)
     (availableDepth : Nat) :
-    EquationEquiv defaultBasePremises rhoCalc
-      (ReflectiveContextSupport.substituteAt rhoCalc support
+    ReflectiveEquationEquiv rhoReflectionProfile defaultBasePremises rhoCalc
+      (ReflectiveContextSupport.substituteAt rhoReflectionProfile support
         assignment.assignment availableDepth
         (.apply "NQuote" [.apply "PDrop" [name]]))
-      (ReflectiveContextSupport.substituteAt rhoCalc support
+      (ReflectiveContextSupport.substituteAt rhoReflectionProfile support
         assignment.assignment availableDepth name) := by
   have membership :
       rhoReflectivePresentation.toReflectivePresentationDecl ∈
-        rhoCalc.reflectivePresentations := by
-    simp [rhoCalc]
-  exact quoteDrop_substituteAt_equationEquiv_of_resultsQuoted
-    rho_reflectiveNameResultSealed.resultsQuoted assignment
-    rhoReflectivePresentation.toReflectivePresentationDecl membership
-    (by simp [rhoReflectivePresentation]) typed
-    (by
-      simpa [rhoReflectivePresentation, TypeExpr.name, TypeExpr.baseType]
-        using resultType_eq)
-    safeAtZero object availableDepth
+        rhoReflectionProfile.presentations := by
+    simp [rhoReflectionProfile]
+  simpa [rhoReflectivePresentation] using
+    (quoteDrop_substituteAt_equationEquiv_of_resultsQuoted
+      rho_reflectiveNameResultSealed.resultsQuoted assignment
+      rhoReflectivePresentation.toReflectivePresentationDecl membership
+      (by simp [rhoReflectivePresentation]) typed
+      (by
+        simpa [rhoReflectivePresentation, TypeExpr.name, TypeExpr.baseType]
+          using resultType_eq)
+      safeAtZero object availableDepth)
 
 /-! ## Rho canonicalization is substitution-natural in the authored quotient -/
 
@@ -179,22 +194,26 @@ theorem substituteAt_canonicalize_equationEquiv
     {source target : FreeTypeContext} {support : ContextSupport.Support}
     {bound available : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
     {binderImage : TypeExpr → TypeExpr}
-    (assignment : SupportedOpenAssignment rhoCalc source target support)
+    (assignment : SupportedOpenAssignment rhoReflectionProfile rhoCalc source
+      target support)
     (typed : HasType rhoCalc source bound pattern type)
-    (safe : typed.ReflectiveSupportSafeAt support available binderImage)
+    (safe : typed.ReflectiveSupportSafeAt rhoReflectionProfile support available
+      binderImage)
     (object : isObjectPattern pattern = true) :
-    EquationEquiv defaultBasePremises rhoCalc
-      (ReflectiveContextSupport.substituteAt rhoCalc support
+    ReflectiveEquationEquiv rhoReflectionProfile defaultBasePremises rhoCalc
+      (ReflectiveContextSupport.substituteAt rhoReflectionProfile support
         assignment.assignment available.length pattern)
-      (ReflectiveContextSupport.substituteAt rhoCalc support
+      (ReflectiveContextSupport.substituteAt rhoReflectionProfile support
         assignment.assignment available.length (canonicalize pattern)) := by
   have transported :=
     substituteAt_canonicalize_equationEquiv_of_resultsQuoted
-        rhoCalc LanguageDefAdequacy.rhoCalc_validate
+        (profile := rhoReflectionProfile)
+          rhoCalc LanguageDefAdequacy.rhoCalc_validate
+          rhoCalcValidatedReflective.admittedReflection.2
           rho_reflectiveNameResultSealed.resultsQuoted
           rho_reflectiveDropCanonicalSupportStable assignment
           rhoReflectivePresentation.toReflectivePresentationDecl
-          (by simp [rhoCalc]) typed safe object
+          (by simp [rhoReflectionProfile]) typed safe object
   simpa only [CanonicalMatch.derivedCanonicalize_eq] using transported
 
 /-- Root specialization of `substituteAt_canonicalize_equationEquiv` to the
@@ -202,16 +221,18 @@ support-safe open carrier used by the generic substitution interface. -/
 theorem supportSafe_substitute_canonicalize_equationEquiv
     {source target : FreeTypeContext} {support : ContextSupport.Support}
     {bound : List TypeExpr} {type : TypeExpr}
-    (assignment : SupportedOpenAssignment rhoCalc source target support)
-    (pattern : SupportSafeOpenPattern rhoCalc source support bound type) :
-    EquationEquiv defaultBasePremises rhoCalc
+    (assignment : SupportedOpenAssignment rhoReflectionProfile rhoCalc source
+      target support)
+    (pattern : SupportSafeOpenPattern rhoReflectionProfile rhoCalc source support
+      bound type) :
+    ReflectiveEquationEquiv rhoReflectionProfile defaultBasePremises rhoCalc
       (pattern.substitute assignment).1
-      (ReflectiveContextSupport.substitute rhoCalc support
+      (ReflectiveContextSupport.substitute rhoReflectionProfile support
         assignment.assignment bound (canonicalize pattern.term.1)) := by
   simpa [SupportSafeOpenPattern.substitute_pattern,
     ReflectiveContextSupport.substitute] using
-    substituteAt_canonicalize_equationEquiv assignment pattern.term.2.1
-      pattern.safe pattern.term.2.2.2.1
+    substituteAt_canonicalize_equationEquiv assignment pattern.term.2.1.1
+      pattern.safe pattern.term.2.1.2.2.1
 
 /-- Pure rho's sole reflective presentation is stable under every supported
 substitution on the exact typed/support-safe carrier.
@@ -221,13 +242,14 @@ content is the syntax-directed canonicalization theorem above, whose
 quote/drop case is discharged by `rho_reflectiveNameResultSealed` and whose
 parallel case is discharged in the authored ACU quotient. -/
 theorem rho_reflectiveEquationSubstitutionStable :
-    ReflectiveEquationSubstitutionStable rhoCalc := by
+    ReflectiveEquationSubstitutionStable
+      (profile := rhoReflectionProfile) rhoCalc := by
   intro source target support bound type assignment declaration membership
     left right representatives
   have declarationEquality :
       declaration =
         rhoReflectivePresentation.toReflectivePresentationDecl := by
-    simpa [rhoCalc] using membership
+    simpa [rhoReflectionProfile] using membership
   subst declaration
   have canonicalEquality :
       canonicalize left.term.1 = canonicalize right.term.1 := by
@@ -236,10 +258,11 @@ theorem rho_reflectiveEquationSubstitutionStable :
     supportSafe_substitute_canonicalize_equationEquiv assignment left
   have rightStep :=
     supportSafe_substitute_canonicalize_equationEquiv assignment right
-  have middleStep : EquationEquiv defaultBasePremises rhoCalc
-      (ReflectiveContextSupport.substitute rhoCalc support
+  have middleStep : ReflectiveEquationEquiv rhoReflectionProfile
+      defaultBasePremises rhoCalc
+      (ReflectiveContextSupport.substitute rhoReflectionProfile support
         assignment.assignment bound (canonicalize left.term.1))
-      (ReflectiveContextSupport.substitute rhoCalc support
+      (ReflectiveContextSupport.substitute rhoReflectionProfile support
         assignment.assignment bound (canonicalize right.term.1)) := by
     rw [canonicalEquality]
     exact equationEquiv_refl _
@@ -252,14 +275,16 @@ of the sole authored rho canonical section: an ordinary contextual equation
 edge has equal rho representatives, after which the reflective stability
 theorem above transports it. -/
 theorem rho_authoredEquationSubstitutionStable :
-    AuthoredEquationSubstitutionStable rhoCalc := by
+    AuthoredEquationSubstitutionStable
+      (profile := rhoReflectionProfile) rhoCalc := by
   intro source target support bound type assignment left right witness
   obtain ⟨context, redex, contractum, equationWitness, leftEquality,
     rightEquality⟩ := witness
-  have generator : EquationContextStep defaultBasePremises rhoCalc
+  have generator : ReflectiveEquationContextStep rhoReflectionProfile
+      defaultBasePremises rhoCalc
       left.term.1 right.term.1 := by
     rw [leftEquality, rightEquality]
-    exact .inContext context equationWitness
+    exact .core (.inContext context equationWitness)
   have canonicalEquality :
       canonicalize left.term.1 = canonicalize right.term.1 :=
     LanguageDefSemanticAgreement.rhoEquationContextStep_canonicalize_eq
@@ -267,14 +292,15 @@ theorem rho_authoredEquationSubstitutionStable :
   apply rho_reflectiveEquationSubstitutionStable assignment
     (declaration :=
       rhoReflectivePresentation.toReflectivePresentationDecl)
-    (by simp [rhoCalc]) left right
+    (by simp [rhoReflectionProfile]) left right
   simpa only [CanonicalMatch.derivedCanonicalize_eq] using canonicalEquality
 
 /-- The complete M1 admission theorem for pure rho: both generator families
 of the sole authored contextual equation relation survive supported
 substitution. -/
 theorem rho_supportedEquationSubstitutionStable :
-    SupportedEquationSubstitutionStable rhoCalc :=
+    SupportedEquationSubstitutionStable
+      (profile := rhoReflectionProfile) rhoCalc :=
   ⟨rho_authoredEquationSubstitutionStable,
     rho_reflectiveEquationSubstitutionStable⟩
 

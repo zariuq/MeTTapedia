@@ -43,7 +43,7 @@ def pettaCoreRule (r : ILRewriteRule) : Prop :=
 /-- The first explicit PeTTa runtime core fragment.
 
 This is the maximal low-risk fragment that already aligns with the current
-`R_exec₀` proof surface. It deliberately stays on rule application and does not
+`R_exec₀` proof interface. It deliberately stays on rule application and does not
 claim coverage for substitution-heavy runtime steps.
 -/
 inductive PeTTaCoreStep (s : Mettapedia.Languages.MeTTa.PeTTa.PeTTaSpace) :
@@ -149,8 +149,8 @@ theorem evalStep_toMorkSourceFire
     simp only [languageDefToSourceExecRules, List.mem_filterMap]
     refine ⟨r, hr_lang, ?_⟩
     simp [hprem, allPremisesTranslatable, premiseToSourceFactor]
-  · simpa [morkRuntimeExec0, MeTTaRuntimeExecSurface.bindingsTranslation,
-      MeTTaRuntimeExecSurface.sourceRuleTranslation] using
+  · simpa [morkRuntimeExec0, MeTTaRuntimeExecInterface.bindingsTranslation,
+      MeTTaRuntimeExecInterface.sourceRuleTranslation] using
       (morkRuntimeExec0.noPremiseBridge p q x r
         Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv.empty
         (Mettapedia.Languages.MeTTa.PeTTa.LPSoundness.pettaSpaceToLangDef s)

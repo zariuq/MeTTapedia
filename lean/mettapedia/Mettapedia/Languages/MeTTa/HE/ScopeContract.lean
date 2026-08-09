@@ -23,8 +23,8 @@ Operators with binding scope:
 - `match`: binds pattern variables in template
 - `case`: scrutinee evaluated, branches bind patterns
 - `switch` / `switch-minimal`: same structure as case
-- `let`: surface sugar, but scope info needed for hygiene
-- `let*`: sequential binding surface sugar
+- `let`: syntax sugar, but scope info needed for hygiene
+- `let*`: sequential binding syntax sugar
 
 Operators without binding scope (eval, evalc, metta, cons-atom, decons-atom,
 collapse-bind, superpose-bind, function, return, context-space, call-native,
@@ -167,9 +167,9 @@ def switchMinimalScopeEntry : ScopeContractEntry where
   allowsWildcard := true
   theoremRefs := switchTheoremRefs
 
-/-- `(let <var> <value> <body>)` — surface sugar that desugars to case,
+/-- `(let <var> <value> <body>)` — syntax sugar that desugars to case,
     but scope info is needed for hygiene before desugaring.
-    Ref: OpProfile.lean classifies let as surfaceSugar, and
+    Ref: OpProfile.lean classifies let as syntaxSugar, and
     LetChainResumption.lean packages the resumable source/body sequencing
     structure that preserves the same observable binding behavior.
     Binder position 0 ($var), value position 1, body position 2. -/
@@ -184,8 +184,8 @@ def letScopeEntry : ScopeContractEntry where
   allowsWildcard := true
   theoremRefs := letTheoremRefs
 
-/-- `(let* <bindings> <body>)` — sequential binding surface sugar.
-    Ref: OpProfile.lean classifies let* as surfaceSugar, and
+/-- `(let* <bindings> <body>)` — sequential binding syntax sugar.
+    Ref: OpProfile.lean classifies let* as syntaxSugar, and
     LetChainResumption.lean packages the resumable step-by-step sequencing
     boundary needed to drain one binding body before resuming the next.
     Value position 0 (bindings list), body position 1. -/

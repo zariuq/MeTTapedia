@@ -288,14 +288,11 @@ theorem mem_rewriteAt_iff_stepAt
 
 /-! ## Monotonicity -/
 
-/-- Rule-set inclusion preserves a bounded contextual derivation when the two
-languages share both reflective data tables. -/
+/-- Rule-set inclusion preserves a bounded contextual derivation in the
+five-field, reflection-free core. -/
 theorem StepAt.mono_rules
     {lang₁ lang₂ : LanguageDef}
     (rulesMono : ∀ rule, rule ∈ lang₁.rewrites → rule ∈ lang₂.rewrites)
-    (presentationsEq :
-      lang₁.reflectivePresentations = lang₂.reflectivePresentations)
-    (reflectiveRulesEq : lang₁.reflectiveRules = lang₂.reflectiveRules)
     {relEnv : RelationEnv} {fuel : Nat} {source target : Pattern}
     (evidence : StepAt (engineBasePremises relEnv) lang₁ fuel source target) :
     StepAt (engineBasePremises relEnv) lang₂ fuel source target := by
@@ -343,29 +340,27 @@ theorem StepAt.mono_rules
             | cons first rest =>
                 exact .cons (premiseMono first) (inductionHypothesis rest)
       cases evidence with
-      | rule ruleMember matched premises targetEq =>
-          have matched₂ := matched
-          rw [matchPatternForRule_eq_of_reflectiveData_eq
-            presentationsEq reflectiveRulesEq] at matched₂
-          have targetEq₂ := targetEq
-          rw [applyBindingsForRule_eq_of_reflectiveData_eq
-            presentationsEq reflectiveRulesEq] at targetEq₂
+      | @rule stepFuel stepSource stepTarget authoredRule initialBindings
+          finalBindings ruleMember matched premises targetEq =>
+          have matched₂ : initialBindings ∈
+              matchPatternForRule lang₂ authoredRule source := by
+            simpa [matchPatternForRule] using matched
+          have targetEq₂ :
+              applyBindingsForRule lang₂ authoredRule finalBindings =
+                target := by
+            simpa [applyBindingsForRule] using targetEq
           exact .rule (rulesMono _ ruleMember) matched₂
             (premisesMono premises) targetEq₂
 
-/-- Rule-set inclusion preserves the least contextual relation when the two
-languages share both reflective data tables. -/
+/-- Rule-set inclusion preserves the least contextual core relation. -/
 theorem Step.mono_rules
     {lang₁ lang₂ : LanguageDef}
     (rulesMono : ∀ rule, rule ∈ lang₁.rewrites → rule ∈ lang₂.rewrites)
-    (presentationsEq :
-      lang₁.reflectivePresentations = lang₂.reflectivePresentations)
-    (reflectiveRulesEq : lang₁.reflectiveRules = lang₂.reflectiveRules)
     {relEnv : RelationEnv} {source target : Pattern}
     (evidence : Step (engineBasePremises relEnv) lang₁ source target) :
     Step (engineBasePremises relEnv) lang₂ source target := by
   obtain ⟨fuel, bounded⟩ := evidence
-  exact ⟨fuel, bounded.mono_rules rulesMono presentationsEq reflectiveRulesEq⟩
+  exact ⟨fuel, bounded.mono_rules rulesMono⟩
 
 /-- Enlarging a relation environment preserves a bounded contextual
 derivation. -/

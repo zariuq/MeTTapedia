@@ -135,11 +135,11 @@ abbrev WMStrengthObligation
   BinaryWorldModel.queryStrength (State := State) (Query := Query) W q₁ ≤
     BinaryWorldModel.queryStrength (State := State) (Query := Query) W q₂
 
-/-- Alias for the unified categorical endpoint surface used by WM wrappers. -/
-abbrev WMCategoricalEndpointSurface
+/-- Alias for the unified categorical endpoint contract used by WM wrappers. -/
+abbrev WMCategoricalEndpointContract
     {State : Type*} [EvidenceType State]
     (H : Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelHyperdoctrine.WMHyperdoctrine State) : Prop :=
-  Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelCategoricalBridge.WMHyperdoctrine.EndpointSurface (H := H)
+  Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelCategoricalBridge.WMHyperdoctrine.EndpointContract (H := H)
 
 /-- Explicit interpretation map from Pure/profile judgments into WM obligations.
 
@@ -310,7 +310,7 @@ same Pure one-step WM obligation transport, with explicit endpoint-surface input
 theorem pureTheoryStep_to_wmStrengthObligation_categorical
     (I : PureJudgmentWMInterface State Query)
     (H : Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelHyperdoctrine.WMHyperdoctrine State)
-    (_hcat : WMCategoricalEndpointSurface (H := H))
+    (_hcat : WMCategoricalEndpointContract (H := H))
     {X : H.Obj} (_φc : H.query X)
     (hbridge : PureClosedTheoryBridge)
     {W : State} {t u : PureTm 0}
@@ -325,7 +325,7 @@ theorem pureTheoryStep_to_wmStrengthObligation_categorical
 theorem pureTheoryStep_to_wmStrengthObligation_categorical_default
     (I : PureJudgmentWMInterface State Query)
     (H : Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelHyperdoctrine.WMHyperdoctrine State)
-    (_hcat : WMCategoricalEndpointSurface (H := H))
+    (_hcat : WMCategoricalEndpointContract (H := H))
     {X : H.Obj} (_φc : H.query X)
     {W : State} {t u : PureTm 0}
     (hW : I.side W)
@@ -370,7 +370,7 @@ same Pure star WM obligation transport, with explicit endpoint-surface input. -/
 theorem pureTheoryStepStar_to_wmStrengthObligation_categorical
     (I : PureJudgmentWMInterface State Query)
     (H : Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelHyperdoctrine.WMHyperdoctrine State)
-    (_hcat : WMCategoricalEndpointSurface (H := H))
+    (_hcat : WMCategoricalEndpointContract (H := H))
     {X : H.Obj} (_φc : H.query X)
     (hbridge : PureClosedTheoryBridge)
     {W : State} {t u : PureTm 0}
@@ -385,7 +385,7 @@ theorem pureTheoryStepStar_to_wmStrengthObligation_categorical
 theorem pureTheoryStepStar_to_wmStrengthObligation_categorical_default
     (I : PureJudgmentWMInterface State Query)
     (H : Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelHyperdoctrine.WMHyperdoctrine State)
-    (_hcat : WMCategoricalEndpointSurface (H := H))
+    (_hcat : WMCategoricalEndpointContract (H := H))
     {X : H.Obj} (_φc : H.query X)
     {W : State} {t u : PureTm 0}
     (hW : I.side W)
@@ -448,7 +448,7 @@ state-indexed WM consequence rule. -/
 def wmConsequenceRuleOn_of_closed_pureTheoryStep_categorical
     (I : PureJudgmentWMInterface State Query)
     (H : Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelHyperdoctrine.WMHyperdoctrine State)
-    (_hcat : WMCategoricalEndpointSurface (H := H))
+    (_hcat : WMCategoricalEndpointContract (H := H))
     {X : H.Obj} (_φc : H.query X)
     (hbridge : PureClosedTheoryBridge)
     {t u : PureTm 0}
@@ -469,7 +469,7 @@ state-indexed WM consequence rule. -/
 def wmConsequenceRuleOn_of_closed_pureTheoryStepStar_categorical
     (I : PureJudgmentWMInterface State Query)
     (H : Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelHyperdoctrine.WMHyperdoctrine State)
-    (_hcat : WMCategoricalEndpointSurface (H := H))
+    (_hcat : WMCategoricalEndpointContract (H := H))
     {X : H.Obj} (_φc : H.query X)
     (hbridge : PureClosedTheoryBridge)
     {t u : PureTm 0}

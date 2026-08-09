@@ -40,7 +40,7 @@ Type abbreviations for GF abstract categories mapped to English concrete types.
 /-- English common noun in concrete syntax -/
 abbrev EnglishCN := EnglishNoun
 
-/-- English NP: a function from NPCase to surface form + agreement -/
+/-- English NP: a function from NPCase to source form + agreement -/
 structure EnglishNP where
   s : NPCase → String
   agr : Agr
@@ -363,7 +363,7 @@ private def walkVP := predV walk_V
 private def sleepVP := predV sleep_V
 private def eatVP := predV eat_V
 
--- NP surface forms
+-- NP source forms
 -- #eval! theCat.s (.NCase .Nom)    -- "the cat"
 -- #eval! theCat.s (.NCase .Gen)    -- "the cat's"
 -- #eval! aDog.s (.NCase .Nom)      -- "a dog"

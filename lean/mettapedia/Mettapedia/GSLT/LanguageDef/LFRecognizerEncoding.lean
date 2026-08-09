@@ -203,7 +203,7 @@ catch-alls, since token suffixes are input-derived and already normal.  Peano fu
 exactly as `recognize`'s `Nat` fuel (`≤0` → `Z`; `-1` → the `f` under `S f`); the fall-through in
 `lf-term` passes the decremented fuel to `lf-arrow`, matching `LF.pTerm`. -/
 
-/-- Tokens (a clean re-lexing of the surface: `(Tid s)` is `(Lex lf-id s)`). -/
+/-- Tokens (a clean re-lexing of the source syntax: `(Tid s)` is `(Lex lf-id s)`). -/
 def tPI : AST := con0 "PI"
 def tLAM : AST := con0 "LAM"
 def tARR : AST := con0 "ARR"

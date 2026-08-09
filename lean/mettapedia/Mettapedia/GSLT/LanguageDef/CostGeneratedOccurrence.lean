@@ -1,5 +1,5 @@
 import Mettapedia.GSLT.LanguageDef.CostCanonicalSection
-import Mettapedia.GSLT.LanguageDef.EquationOccurrence
+import Mettapedia.GSLT.LanguageDef.ReflectiveEquationOccurrence
 
 /-!
 # Authored origins of generated Cost occurrences
@@ -34,7 +34,7 @@ structure CostReflectiveDeclarationOrigin (source : CIGSLT)
   color : CostStaticColor
   sourceDeclaration : ReflectivePresentationDecl
   sourceMembership : sourceDeclaration ∈
-    source.theory.presentation.presentation.language.reflectivePresentations
+    source.reflection.1.presentations
   target_eq : target = costStaticReflectivePresentationDecl source color
     sourceDeclaration
 
@@ -55,11 +55,11 @@ authored origin. -/
 theorem nonempty_costReflectiveDeclarationOrigin_of_mem
     (source : CIGSLT) {target : ReflectivePresentationDecl}
     (membership : target ∈
-      source.costWholeLanguage.reflectivePresentations) :
+      source.costWholeReflectionProfile.presentations) :
     Nonempty (CostReflectiveDeclarationOrigin source target) := by
   have staticMembership : target ∈
       source.costStaticReflectivePresentations := by
-    simpa only [CIGSLT.costWholeLanguage_reflectivePresentations] using
+    simpa only [CIGSLT.costWholeReflectionProfile_presentations] using
       membership
   obtain ⟨color, sourceDeclaration, sourceMembership, target_eq⟩ :=
     (mem_costStaticReflectivePresentations_iff_exists_source source).1
@@ -99,10 +99,11 @@ proof-relevant generated Cost generator.  The match deliberately preserves
 the equation/reflection distinction. -/
 def CostAuthoredGeneratorOrigin (source : CIGSLT)
     {left right : Pattern}
-    (witness : EquationSemantics.AuthoredGeneratorWitness
-      defaultBasePremises source.costWholeLanguage left right) : Type :=
+    (witness : ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness
+      source.costWholeReflectionProfile defaultBasePremises
+      source.costWholeLanguage left right) : Type :=
   match witness with
-  | .equation _ instanceWitness =>
+  | .core (.equation _ instanceWitness) =>
       CostEquationInstanceOrigin source instanceWitness
   | .reflective _ declaration _ =>
       CostReflectiveDeclarationOrigin source declaration.1
@@ -112,12 +113,15 @@ generator layer: every occurrence comes from one authored source declaration
 in one exact static colour. -/
 theorem nonempty_costAuthoredGeneratorOrigin
     (source : CIGSLT) {left right : Pattern}
-    (witness : EquationSemantics.AuthoredGeneratorWitness
-      defaultBasePremises source.costWholeLanguage left right) :
+    (witness : ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness
+      source.costWholeReflectionProfile defaultBasePremises
+      source.costWholeLanguage left right) :
     Nonempty (CostAuthoredGeneratorOrigin source witness) := by
   cases witness with
-  | equation context instanceWitness =>
-      exact nonempty_costEquationInstanceOrigin source instanceWitness
+  | core witness =>
+      cases witness with
+      | equation context instanceWitness =>
+          exact nonempty_costEquationInstanceOrigin source instanceWitness
   | reflective context declaration representatives =>
       exact nonempty_costReflectiveDeclarationOrigin_of_mem source
         declaration.2
@@ -125,11 +129,12 @@ theorem nonempty_costAuthoredGeneratorOrigin
 /-- Static colour retained by an authored generated-occurrence origin. -/
 def CostAuthoredGeneratorOrigin.color
     {source : CIGSLT} {left right : Pattern}
-    {witness : EquationSemantics.AuthoredGeneratorWitness
-      defaultBasePremises source.costWholeLanguage left right} :
+    {witness : ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness
+      source.costWholeReflectionProfile defaultBasePremises
+      source.costWholeLanguage left right} :
     CostAuthoredGeneratorOrigin source witness → CostStaticColor :=
   match witness with
-  | .equation _ instanceWitness =>
+  | .core (.equation _ instanceWitness) =>
       match instanceWitness with
       | .forward _ _ _ _ _ _ _ => fun origin =>
           CostEquationDeclarationOrigin.color origin
@@ -149,11 +154,15 @@ structure CostTypedGeneratorOccurrence
     {targetFree : WellSorted.FreeTypeContext}
     {targetBound : List TypeExpr}
     {targetSort : LangSort source.costWholeLanguage}
-    {left right : WellSorted.OpenTerm source.costWholeLanguage targetFree
+    {left right : ReflectiveWellSorted.OpenTerm
+      source.costWholeReflectionProfile source.costWholeLanguage targetFree
       targetBound targetSort}
-    (generator : openEquationGenerator source.costIGSLT targetFree targetBound
-      targetSort left right) where
-  witness : EquationSemantics.AuthoredGeneratorWitness defaultBasePremises
+    (generator : ReflectiveEquationSemantics.reflectiveOpenPatternEquationGenerator
+      source.costWholeReflectionProfile defaultBasePremises
+      source.costWholeLanguage targetFree targetBound (.base targetSort.1)
+      left right) where
+  witness : ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness
+    source.costWholeReflectionProfile defaultBasePremises
     source.costWholeLanguage left.1 right.1
   erasesTo : witness.erase = generator
   origin : CostAuthoredGeneratorOrigin source witness
@@ -166,13 +175,17 @@ theorem nonempty_costTypedGeneratorOccurrence
     {targetFree : WellSorted.FreeTypeContext}
     {targetBound : List TypeExpr}
     {targetSort : LangSort source.costWholeLanguage}
-    {left right : WellSorted.OpenTerm source.costWholeLanguage targetFree
+    {left right : ReflectiveWellSorted.OpenTerm
+      source.costWholeReflectionProfile source.costWholeLanguage targetFree
       targetBound targetSort}
-    (generator : openEquationGenerator source.costIGSLT targetFree targetBound
-      targetSort left right) :
+    (generator : ReflectiveEquationSemantics.reflectiveOpenPatternEquationGenerator
+      source.costWholeReflectionProfile defaultBasePremises
+      source.costWholeLanguage targetFree targetBound (.base targetSort.1)
+      left right) :
     Nonempty (CostTypedGeneratorOccurrence source generator) := by
   obtain ⟨witness, erasesTo⟩ :=
-    EquationSemantics.AuthoredGeneratorWitness.exists_erasing_to generator
+    ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness.exists_erasing_to
+      generator
   obtain ⟨origin⟩ := nonempty_costAuthoredGeneratorOrigin source witness
   exact ⟨⟨witness, erasesTo, origin⟩⟩
 
@@ -185,10 +198,13 @@ def declarationColor
     {targetFree : WellSorted.FreeTypeContext}
     {targetBound : List TypeExpr}
     {targetSort : LangSort source.costWholeLanguage}
-    {left right : WellSorted.OpenTerm source.costWholeLanguage targetFree
+    {left right : ReflectiveWellSorted.OpenTerm
+      source.costWholeReflectionProfile source.costWholeLanguage targetFree
       targetBound targetSort}
-    {generator : openEquationGenerator source.costIGSLT targetFree targetBound
-      targetSort left right}
+    {generator : ReflectiveEquationSemantics.reflectiveOpenPatternEquationGenerator
+      source.costWholeReflectionProfile defaultBasePremises
+      source.costWholeLanguage targetFree targetBound (.base targetSort.1)
+      left right}
     (occurrence : CostTypedGeneratorOccurrence source generator) :
     CostStaticColor := occurrence.origin.color
 

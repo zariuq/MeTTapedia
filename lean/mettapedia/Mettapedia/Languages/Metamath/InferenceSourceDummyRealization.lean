@@ -88,6 +88,9 @@ theorem declareDummy?_shape {state after : SourceState}
     after =
       { state with
         declaredVariables := state.declaredVariables ++ [variableName]
+        activeVariables := state.activeVariables ++ [variableName]
+        variableTypecodes := recordVariableTypecode state.variableTypecodes
+          variableName typecode
         usedLabels := state.usedLabels ++ [label]
         activeHypotheses := state.activeHypotheses ++
           [HypothesisView.floating label typecode variableName] } := by
@@ -120,6 +123,9 @@ theorem proofDistinct_extend {state : SourceState}
     (hfresh : variableName ∉ state.declaredVariables) :
     ({ state with
         declaredVariables := state.declaredVariables ++ [variableName]
+        activeVariables := state.activeVariables ++ [variableName]
+        variableTypecodes := recordVariableTypecode state.variableTypecodes
+          variableName typecode
         usedLabels := state.usedLabels ++ [label]
         activeHypotheses := state.activeHypotheses ++
           [HypothesisView.floating label typecode variableName] } :
@@ -129,15 +135,20 @@ theorem proofDistinct_extend {state : SourceState}
       pair.1 ∈ state.declaredVariables ∧
         pair.2 ∈ state.declaredVariables := by
     intro pair hmem
-    unfold sourceStateValid at hvalid
-    simp only [Bool.and_eq_true, List.all_eq_true] at hvalid
-    obtain ⟨⟨⟨⟨⟨⟨⟨-, -⟩, -⟩, -⟩, -⟩, -⟩, hdv⟩, -⟩ := hvalid
+    rw [sourceStateValid, Bool.and_eq_true] at hvalid
+    have hprojection := hvalid.1
+    unfold sourceStateProjectionValid at hprojection
+    simp only [Bool.and_eq_true, List.all_eq_true] at hprojection
+    obtain ⟨⟨⟨⟨⟨⟨⟨-, -⟩, -⟩, -⟩, -⟩, -⟩, hdv⟩, -⟩ := hprojection
     have := hdv pair hmem
     simp only [decide_eq_true_eq, List.contains_iff_mem] at this
     exact ⟨this.1.2, this.2⟩
   have hfloats :
       ({ state with
           declaredVariables := state.declaredVariables ++ [variableName]
+          activeVariables := state.activeVariables ++ [variableName]
+          variableTypecodes := recordVariableTypecode state.variableTypecodes
+            variableName typecode
           usedLabels := state.usedLabels ++ [label]
           activeHypotheses := state.activeHypotheses ++
             [HypothesisView.floating label typecode variableName] } :
@@ -363,9 +374,11 @@ theorem activeFloating_subset_declared {state : SourceState}
     (hvalid : sourceStateValid state = true) :
     ∀ v ∈ state.activeFloatingVariables, v ∈ state.declaredVariables := by
   intro v hv
-  unfold sourceStateValid at hvalid
-  simp only [Bool.and_eq_true] at hvalid
-  have hprefix := hvalid.1.1.1.1.1.1.1
+  rw [sourceStateValid, Bool.and_eq_true] at hvalid
+  have hprojection := hvalid.1
+  unfold sourceStateProjectionValid at hprojection
+  simp only [Bool.and_eq_true] at hprojection
+  have hprefix := hprojection.1.1.1.1.1.1.1
   unfold sourcePrefixValid at hprefix
   simp only [Bool.and_eq_true] at hprefix
   obtain ⟨⟨⟨⟨⟨⟨-, -⟩, -⟩, -⟩, hhyps⟩, -⟩, -⟩ := hprefix
@@ -403,15 +416,25 @@ theorem declareDummy?_accepts (state : SourceState)
     declareDummy? state label typecode variableName =
       some { state with
         declaredVariables := state.declaredVariables ++ [variableName]
+        activeVariables := state.activeVariables ++ [variableName]
+        variableTypecodes := recordVariableTypecode state.variableTypecodes
+          variableName typecode
         usedLabels := state.usedLabels ++ [label]
         activeHypotheses := state.activeHypotheses ++
           [HypothesisView.floating label typecode variableName] } := by
+  have hvarFreshDeclared : variableName ∉ state.declaredVariables := fun h =>
+    hvarFresh (by simp [SourceState.objectNames, h])
+  have hactiveFresh : variableName ∉ state.activeVariables := fun h =>
+    hvarFresh (by
+      simp [SourceState.objectNames,
+        activeVariable_declared_of_sourceStateValid hvalid h])
   have hstep₁ := declareVariables?_accepts state variableName hvalid
-    hready hvarFresh
+    hready hvarFresh hactiveFresh
   have hvalid₁ := (declareVariables?_singleton_inv hstep₁).2.1
   have hlabelFresh₁ : label ∉
-      ({ state with declaredVariables :=
-          state.declaredVariables ++ [variableName] } :
+      ({ state with
+          declaredVariables := state.declaredVariables ++ [variableName]
+          activeVariables := state.activeVariables ++ [variableName] } :
         SourceState).objectNames := by
     intro h
     apply hlabelFresh
@@ -428,14 +451,21 @@ theorem declareDummy?_accepts (state : SourceState)
     (fun hv => hvarFresh (by
         simp [SourceState.objectNames, hv]))
       (activeFloating_subset_declared hvalid _ h)
+  have htypeCompatible : variableTypecodeCompatible state.variableTypecodes
+      variableName typecode = true := by
+    have hnone := variableTypecode?_eq_none_of_sourceStateValid hvalid
+      hvarFreshDeclared
+    simp [variableTypecodeCompatible, hnone]
   have hstep₂ := declareFloating?_accepts
-    { state with declaredVariables :=
-        state.declaredVariables ++ [variableName] }
+    { state with
+      declaredVariables := state.declaredVariables ++ [variableName]
+      activeVariables := state.activeVariables ++ [variableName] }
     label typecode variableName hvalid₁ hready hlabelFresh₁
     hlabelNonempty hlabelPrefix
     (List.mem_append_right _ (List.mem_singleton.mpr rfl))
+    (List.mem_append_right _ (List.mem_singleton.mpr rfl))
     (by simpa [SourceState.activeFloatingVariables] using hnofloat)
-    htype
+    htype htypeCompatible
   unfold declareDummy?
   rw [hstep₁]
   exact hstep₂
@@ -741,9 +771,11 @@ theorem callerFrame_essential_bounded {state : SourceState} {bound : Nat}
     simpa [sourceOperationalCallerFrame, sourceOperationalFrame,
       operationalFrame, SourceState.toSourcePrefix] using hmem
   rcases List.mem_map.mp hmem' with ⟨hyp, hhyp, himg⟩
-  unfold sourceStateValid at hvalid
-  simp only [Bool.and_eq_true] at hvalid
-  have hprefix := hvalid.1.1.1.1.1.1.1
+  rw [sourceStateValid, Bool.and_eq_true] at hvalid
+  have hprojection := hvalid.1
+  unfold sourceStateProjectionValid at hprojection
+  simp only [Bool.and_eq_true] at hprojection
+  have hprefix := hprojection.1.1.1.1.1.1.1
   unfold sourcePrefixValid at hprefix
   simp only [Bool.and_eq_true] at hprefix
   obtain ⟨⟨⟨⟨⟨⟨-, -⟩, -⟩, -⟩, hhyps⟩, -⟩, -⟩ := hprefix
@@ -899,6 +931,8 @@ example :
     declareDummies? supplyCalibrationState (supplyPlan 1 [⟨"w", 0⟩] 0) =
       some { supplyCalibrationState with
         declaredVariables := [supplyName 1 0]
+        activeVariables := [supplyName 1 0]
+        variableTypecodes := [(supplyName 1 0, "w")]
         usedLabels := [supplyLabel 1 0]
         activeHypotheses :=
           [HypothesisView.floating (supplyLabel 1 0) "w"
@@ -920,6 +954,8 @@ def richCalibrationState : SourceState :=
   { initialState with
     declaredConstants := ["w"]
     declaredVariables := ["x", "y"]
+    activeVariables := ["x", "y"]
+    variableTypecodes := [("x", "w")]
     usedLabels := ["f", "e"]
     activeHypotheses :=
       [HypothesisView.floating "f" "w" "x",
@@ -956,6 +992,8 @@ example :
     declareDummies? richCalibrationState (supplyPlan 1 [⟨"w", 0⟩] 0) =
       some { richCalibrationState with
         declaredVariables := ["x", "y", supplyName 1 0]
+        activeVariables := ["x", "y", supplyName 1 0]
+        variableTypecodes := [("x", "w"), (supplyName 1 0, "w")]
         usedLabels := ["f", "e", supplyLabel 1 0]
         activeHypotheses := richCalibrationState.activeHypotheses ++
           [HypothesisView.floating (supplyLabel 1 0) "w"

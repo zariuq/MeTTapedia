@@ -123,7 +123,7 @@ steps toward a genuinely dual-target fragment.
 The working thesis is:
 
 \begin{quote}
-One surface \MeTTa{} should elaborate to one shared \MeTTa-Core, which then
+One source-language \MeTTa{} should elaborate to one shared \MeTTa-Core, which then
 lowers to two distinct but connected targets:
 \begin{enumerate}[nosep]
   \item a proof-oriented target: \MeTTa-Pure / PureKernel;
@@ -136,7 +136,7 @@ This is intended to be closer to the Lean-style pattern
 
 \begin{center}
 \fbox{\parbox{0.88\linewidth}{
-surface language $\to$ elaborated core $\to$ checked kernel and compiled runtime
+source language $\to$ elaborated core $\to$ checked kernel and compiled runtime
 }}
 \end{center}
 
@@ -156,13 +156,13 @@ than to either of the following extremes:
 
 \begin{center}
 \begin{tikzpicture}[node distance=1.1cm and 1.8cm]
-  % Surface
-  \node[sharedbox, minimum width=8cm] (surface)
-    {Surface \MeTTa{} / Shared Substrate\\
+  % Source syntax
+  \node[sharedbox, minimum width=8cm] (syntax)
+    {Source \MeTTa{} / Shared Substrate\\
      \footnotesize\MeTTaIL{} / Pattern / LanguageDef / artifacts};
 
   % Elaborated Core
-  \node[neutralbox, minimum width=5cm, below=0.8cm of surface] (elab)
+  \node[neutralbox, minimum width=5cm, below=0.8cm of syntax] (elab)
     {Elaborated \MeTTa-Core\\
      \footnotesize\leanref{ElaboratedCore.elaborate}};
 
@@ -190,7 +190,7 @@ than to either of the following extremes:
      \footnotesize\leanref{wmConsequenceRuleOn}};
 
   % Arrows
-  \draw[arrw] (surface) -- (elab);
+  \draw[arrw] (syntax) -- (elab);
   \draw[arrw] (elab) -- (pure);
   \draw[arrw] (elab) -- (rtspec);
   \draw[arrw] (pure)  -- (abc);
@@ -302,14 +302,14 @@ The same module also exposes the current closed service operations:
 
 \paragraph{Bidirectional checking.}
 \codepath{Mettapedia/Languages/MeTTa/PureBidirectionalChecking.lean}
-packages closed surface checking through \leanref{PureCheckSuccess},
-\leanref{inferSurfacePure}, and \leanref{checkSurfacePure}. Parser-free checked
+packages closed source-syntax checking through \leanref{PureCheckSuccess},
+\leanref{inferPureSyntax}, and \leanref{checkPureSyntax}. Parser-free checked
 canonical evaluation then lives in
 \codepath{Mettapedia/Languages/MeTTa/PureCanonicalEvaluation.lean}:
 \begin{itemize}[nosep]
   \item \leanref{CheckedCanonicalEvaluation},
   \item \leanref{PureCheckingBoundary.checkAndCanonicalizeClosedTerm},
-  \item \leanref{PureCheckingBoundary.checkAndEvalSurface},
+  \item \leanref{PureCheckingBoundary.checkAndEvalSyntax},
   \item \leanref{subjectReductionRedStar}.
 \end{itemize}
 
@@ -322,11 +322,11 @@ archived prototype CLI tools:
 
 \begin{center}
 \begin{tikzpicture}[node distance=0.9cm and 1.2cm]
-  \node[sharedbox, minimum width=5.8cm] (surface)
+  \node[sharedbox, minimum width=5.8cm] (input)
     {Closed Pure term or certificate\\
      \footnotesize trusted input to the live proof-side boundary};
 
-  \node[proofbox, below=0.9cm of surface, minimum width=6.2cm] (waist)
+  \node[proofbox, below=0.9cm of input, minimum width=6.2cm] (waist)
     {Pure semantic waist\\
      \footnotesize \leanref{PureCheckingBoundary}\\
      \footnotesize checking + canonicalization};
@@ -343,7 +343,7 @@ archived prototype CLI tools:
     {\leanref{PureCheckingBoundary.canonicalizeClosed}\\
      \footnotesize canonical development + quoted artifact};
 
-  \draw[arrw] (surface) -- (waist);
+  \draw[arrw] (input) -- (waist);
   \draw[arrw] (waist) -- (check);
   \draw[arrw] (waist) -- (checkeval);
   \draw[arrw] (waist) -- (agree);
@@ -411,7 +411,7 @@ theory.'' The present closed fragment already supports:
 \noindent
 What this \emph{does not} yet mean is direct MM2/\MORK{} operational overlap.
 The current sense in which it is already a strain of \MeTTa{} is that the
-surface syntax, artifact substrate, and elaborated-core story are shared, while
+concrete syntax, artifact substrate, and elaborated-core story are shared, while
 the proof-side operational account remains an honest closed-fragment kernel
 waist.
 
@@ -430,7 +430,7 @@ language itself:
 \noindent
 These are not runtime closures or ad hoc higher-order macros. They are
 constructors of \leanref{PureTm} with typing, reduction, substitution, and
-conversion rules in the kernel theory. The preferred surface syntax
+conversion rules in the kernel theory. The preferred concrete syntax
 \code{(lambda \$x body)} is therefore a user-facing presentation of a real
 kernel binder, not a disguised \code{apply}/\code{let} encoding.
 
@@ -445,7 +445,7 @@ practice:
   operationally real and useful, but they are not currently the semantic center
   of the proof kernel.
   \item \textbf{Encoded ``lambda'' tricks} in some \HE{}/older \MeTTa{} usage
-  are even further away: they may be practical higher-order surface devices,
+  are even further away: they may be practical higher-order syntax devices,
   but they are not the same thing as kernel-level binders with theoremic
   typing and conversion.
 \end{itemize}
@@ -454,7 +454,7 @@ practice:
 So when this paper says that Pure is already a real strain of \MeTTa{}, it does
 not mean ``Pure already subsumes \PeTTa{} operationally.'' It means that Pure
 already contributes a real typed binder language, expressed in \MeTTa{}-shaped
-surface syntax, that lands in a trusted kernel and shared artifact substrate.
+concrete syntax, that lands in a trusted kernel and shared artifact substrate.
 
 \subsection{The Runtime Branch}
 \label{sec:runtime-branch}
@@ -466,7 +466,7 @@ DialectProfile / RuntimeSpec $\;\to\;$ RuntimeExec $\;\to\;$ \MORK{}/MM2 seam
 \end{center}
 
 \paragraph{Three runtime surfaces.}
-The central type is \leanref{MeTTaRuntimeExecSurface}
+The central type is \leanref{MeTTaRuntimeExecInterface}
 (\codepath{RuntimeExec.lean}), a structure with 8~fields including an
 \emph{embedded proof}:
 
@@ -495,7 +495,7 @@ QuerySeam & \leanref{morkRuntimeQueryExec0} &
 \end{center}
 
 \paragraph{Query surface detail.}
-\leanref{MeTTaRuntimeQuerySurface}
+\leanref{MeTTaRuntimeQueryInterface}
 carries bidirectional correctness:
 \begin{itemize}[nosep]
   \item \leanref{sourceFactorSound} --- computable results inject into
@@ -511,7 +511,7 @@ carries bidirectional correctness:
   \item \codepath{Mettapedia/Languages/ProcessCalculi/MORK/ExecutionBoundary.lean}
   (509~lines) --- 160+ re-exported theorems including
   \leanref{fireCorrespondence}, \leanref{schedulerProgress}.
-  \item \codepath{Mettapedia/Languages/ProcessCalculi/MORK/DirectExecSurface.lean}
+  \item \codepath{Mettapedia/Languages/ProcessCalculi/MORK/DirectExecInterface.lean}
   (326~lines) --- composition package:
   \leanref{pettaEvalStep\_schedulerFires},
   \leanref{addAtomCmd\_schedulerFires}.
@@ -538,7 +538,7 @@ source-rule bridge.
 The real current overlap path is:
 
 \begin{center}
-closed Pure surface terms $\;\to\;$ PureKernel term $\;\to\;$
+closed Pure source terms $\;\to\;$ PureKernel term $\;\to\;$
 quoted / shared artifact
 \end{center}
 
@@ -549,9 +549,9 @@ proved by:
   via quotation.
   \item \leanref{closedPure\_overlap\_via\_abc\_to\_wm} --- extends to WM
   consequence.
-  \item \leanref{surfacePureClosed\_overlap\_is\_not\_directExec}
+  \item \leanref{pureClosedSyntax\_overlap\_is\_not\_directExec}
   (\codepath{PureCertificateFragment.lean}).
-  \item \leanref{surfaceCoreTypedAtom\_overlap\_is\_not\_directExec}
+  \item \leanref{coreTypedSyntaxAtom\_overlap\_is\_not\_directExec}
   (\codepath{ElaboratedCore.lean}).
 \end{itemize}
 
@@ -619,8 +619,8 @@ neutral vocabulary shared by proof and runtime views:
 The file \codepath{ElaboratedCore.lean} (414~lines, 0~sorry)
 contains the PoC classifier.
 
-\paragraph{Surface language.}
-\leanref{SurfaceNode} is an inductive with 11~constructors:
+\paragraph{Source language.}
+\leanref{SyntaxNode} is an inductive with 11~constructors:
 
 \begin{center}
 \small
@@ -628,7 +628,7 @@ contains the PoC classifier.
 \toprule
 Constructor & Region & Certificate type \\
 \midrule
-\code{surfacePureClosed} & pureKernel & \leanref{PureCertificate} \\
+\code{pureClosedSyntax} & pureKernel & \leanref{PureCertificate} \\
 \code{coreTypedAtom} & pureKernel & \leanref{CoreTypedCertificate} \\
 \code{pettaCoreRule} & runtimeExec & \leanref{PeTTaCoreRuleRuntimeCertificate} \\
 \code{pettaSpaceCoreQuery} & runtimeExec & \leanref{PeTTaSpaceCoreRuntimeCertificate} \\
@@ -648,15 +648,15 @@ Constructor & Region & Certificate type \\
 \code{metaNode}.
 
 \paragraph{Main elaborator.}
-\leanref{elaborate : SurfaceNode $\to$ ElaboratedNode} maps all
-11~surface types to their classified outputs.
+\leanref{elaborate : SyntaxNode $\to$ ElaboratedNode} maps all
+11~source-node variants to their classified outputs.
 
 \paragraph{Preservation theorems (all proved).}
 \begin{itemize}[nosep]
   \item 7~region-preservation theorems (e.g.\
-  \leanref{elaborate\_surfacePureClosed\_region}).
+  \leanref{elaborate\_pureClosedSyntax\_region}).
   \item 5~artifact-preservation theorems (e.g.\
-  \leanref{elaborate\_surfacePureClosed\_artifact}).
+  \leanref{elaborate\_pureClosedSyntax\_artifact}).
   \item Backend agreement:
   \leanref{runtimeBackendAgreement} --- \HE{} and \PeTTa{} target the same
   \MORK{}/MM2 backend.
@@ -679,7 +679,7 @@ The likely neutral runtime-facing classes are:
 \end{enumerate}
 
 \TODO{Refactor the current dialect-specific runtime constructors in
-\code{SurfaceNode} to these neutral classes.}
+\code{SyntaxNode} to these neutral classes.}
 
 %% ====================================================================
 \section{Current Proven Overlap vs.\ Intended Overlap}
@@ -738,13 +738,13 @@ fragments:
 
 \subsection{The Gap}
 
-Direct proof/runtime overlap is \textbf{not yet proved}. No surface
+Direct proof/runtime overlap is \textbf{not yet proved}. No source-syntax
 fragment currently satisfies \emph{both} PureKernel reduction \emph{and}
 $R_{\mathrm{exec}_0}$ source-rule bridge simultaneously.
 
 \begin{center}
 \begin{tikzpicture}[node distance=0.9cm and 2.5cm]
-  \node[proofbox] (sptm) {SurfacePureTm};
+  \node[proofbox] (sptm) {PureSyntaxTerm};
   \node[proofbox, below=of sptm] (pcert) {PureCertificate};
   \node[rtbox, right=3cm of sptm] (pcs) {PeTTaCoreStep};
   \node[rtbox, below=of pcs] (rexec) {morkRuntimeExec0};
@@ -766,7 +766,7 @@ $R_{\mathrm{exec}_0}$ source-rule bridge simultaneously.
 \subsection{Next Objective}
 
 The next objective is a \emph{genuinely dual-target fragment}: a small
-surface subset that elaborates to both a PureKernel certificate and a
+source-syntax subset that elaborates to both a PureKernel certificate and a
 direct $R_{\mathrm{exec}_0}$ source-rule firing, sharing the same artifact.
 The likely candidate avoids \code{.subst} and uses symbolic atoms with
 top-rule rewrite patterns.
@@ -832,7 +832,7 @@ over one space. The \MORK{}/MM2 formalization covers:
   step exists.
   \item \leanref{pettaEvalStep\_schedulerFires},
   \leanref{pettaEvalcStep\_schedulerFires}
-  (\codepath{DirectExecSurface.lean}) ---
+  (\codepath{DirectExecInterface.lean}) ---
   \PeTTa{} steps fire through the full scheduler seam.
 \end{itemize}
 
@@ -872,7 +872,7 @@ Space mutations are explicit, not proof-kernel rewrites:
 \paragraph{Proved at scheduler level.}
 \leanref{addAtomCmd\_schedulerFires},
 \leanref{removeAtomCmd\_schedulerFires}
-(\codepath{DirectExecSurface.lean}) ---
+(\codepath{DirectExecInterface.lean}) ---
 commands fire through the full \MORK{}/MM2 scheduler.
 Pattern matching round-trips via \leanref{matchAtom\_addAtomCmdAtom}
 (\codepath{SpaceEffectFragment.lean}).
@@ -915,12 +915,12 @@ These should stay separated from ordinary runtime execution.
 \label{sec:cert-lane}
 
 The Pure certificate lane is the first real dual-view fragment:
-a surface term maps to both a trusted PureKernel term and a shared
+a source term maps to both a trusted PureKernel term and a shared
 \MeTTaIL{} artifact, with proven agreement.
 
-\subsection{Surface Language}
+\subsection{Source Language}
 
-\leanref{SurfacePureTm}
+\leanref{PureSyntaxTerm}
 (\codepath{PureCertificateFragment.lean}, 191~lines)
 is an inductive parameterized by \code{n : Nat} (de~Bruijn depth)
 with 12~constructors:
@@ -945,18 +945,18 @@ Constructor & Meaning \\
 
 \subsection{Embeddings}
 
-Two maps out of \leanref{SurfacePureTm}:
+Two maps out of \leanref{PureSyntaxTerm}:
 
 \begin{enumerate}
-  \item \leanref{toPureTm : SurfacePureTm\;n $\to$ PureTm\;n} ---
+  \item \leanref{toPureTm : PureSyntaxTerm\;n $\to$ PureTm\;n} ---
   structural embedding into the trusted kernel.
-  \item \leanref{toClosedPattern : SurfacePureTm\;0 $\to$ Pattern} ---
+  \item \leanref{toClosedPattern : PureSyntaxTerm\;0 $\to$ Pattern} ---
   quotation into the shared \MeTTaIL{} artifact space.
 \end{enumerate}
 
 \begin{fact}[Quotation agreement]
 \leanref{toClosedPattern\_eq\_quoteClosedTm}:
-the surface quotation agrees with the kernel quotation for all closed terms.
+the source quotation agrees with the kernel quotation for all closed terms.
 Proved by structural induction over all 12~constructors
 (\leanref{toPatternWith\_eq\_quoteTmWith}).
 \end{fact}
@@ -967,11 +967,11 @@ Proved by structural induction over all 12~constructors
   \item \leanref{PureCertificate} --- fields: \code{term} (closed
   \leanref{PureTm\;0}), \code{artifact}, \code{abcSurface}.
   \item \leanref{SharedPureOverlapCertificate} --- the first real
-  dual-view object: surface term, trusted Pure term, shared artifact,
+  dual-view object: source term, trusted Pure term, shared artifact,
   all proved to agree.
-  \item \leanref{certifySurfacePure} --- constructor that builds the
-  overlap certificate from a surface term.
-  \item \leanref{certifySurfacePure\_overlapClass} --- proves the
+  \item \leanref{certifyPureSyntax} --- constructor that builds the
+  overlap certificate from a source term.
+  \item \leanref{certifyPureSyntax\_overlapClass} --- proves the
   result is \code{artifactOnly}.
 \end{itemize}
 
@@ -1177,7 +1177,7 @@ Deliberately deferred to later kernel layers:
 \section{Why Legacy MeTTaFull Is Not the Primary Runtime Source}
 \label{sec:legacy}
 
-The \code{fullLegacyRuntime} constructor exists in \leanref{SurfaceNode}
+The \code{fullLegacyRuntime} constructor exists in \leanref{SyntaxNode}
 (one of 11~constructors), but it is \emph{not} the primary runtime-core
 witness.
 
@@ -1186,7 +1186,7 @@ witness.
   \leanref{RuntimeSpec} is deliberately dialect-facing and audit-facing:
   it records bindings, branching, context, native hooks, and collection control
   \emph{without} defining execution machinery.
-  It does not carry embedded proofs the way \leanref{MeTTaRuntimeExecSurface}
+  It does not carry embedded proofs the way \leanref{MeTTaRuntimeExecInterface}
   does.
 
   \item \textbf{Real execution witnesses are the \PeTTa{}/MM2-backed fragments.}
@@ -1297,7 +1297,7 @@ The architecture parallels the Lean compilation pipeline:
 \toprule
 Role & Lean & \MeTTa{} (this project) \\
 \midrule
-Surface language & Lean 4 & \MeTTa{} surface \\
+Source language & Lean 4 & \MeTTa{} syntax \\
 Elaborated middle & Lean elaborator & \leanref{ElaboratedCore} \\
 Trusted proof target & Lean kernel & PureKernel (A/B/C1) \\
 Efficient runtime & Lean compiler/IR & RuntimeExec / \MORK{}/MM2 \\
@@ -1314,7 +1314,7 @@ Overlap certificates & kernel $+$ IR agree & \leanref{SharedPureOverlapCertifica
   over one space.
   \item Current overlap is artifact-only, not the deep kernel/IR agreement
   that Lean achieves.
-  \item The elaborator is a PoC classifier (11 surface $\to$ 7 elaborated),
+  \item The elaborator is a PoC classifier (11 source-node variants $\to$ 7 elaborated),
   not a full type-inference engine.
 \end{itemize}
 
@@ -1374,7 +1374,7 @@ surface.
   \item \leanref{evalStep\_toMorkSourceFire} --- lands on
   $R_{\mathrm{exec}_0}$.
   \item \leanref{pettaEvalStep\_schedulerFires}
-  (\codepath{DirectExecSurface.lean}) --- fires through full scheduler.
+  (\codepath{DirectExecInterface.lean}) --- fires through full scheduler.
   \item \leanref{pettaCoreStep\_to\_wmStrengthObligation}
   (\codepath{PLNWorldModelPeTTaCoreBridge.lean}) ---
   WM landing.
@@ -1413,7 +1413,7 @@ surface.
   \leanref{removeAtom\_fireSourceRule\_mem} --- fire at source level.
   \item \leanref{addAtomCmd\_schedulerFires},
   \leanref{removeAtomCmd\_schedulerFires}
-  (\codepath{DirectExecSurface.lean}) --- through full scheduler.
+  (\codepath{DirectExecInterface.lean}) --- through full scheduler.
 \end{itemize}
 
 \subsection{WM Landing}
@@ -1524,7 +1524,7 @@ target for the MeTTa language family, connected to the \MORK{}/MM2 pattern-rewri
 runtime through explicit overlap certificates.
 The full kernel will support ordinary strictly-positive inductive families
 with generated recursors, small structural fixpoints above that, and an
-elaborated surface language that classifies \MeTTa{} programs as either
+elaborated source language that classifies \MeTTa{} programs as either
 kernel-provable or runtime-executable.
 
 \paragraph{Road map.}
@@ -1572,7 +1572,7 @@ Too weak as a final user model. Feels like separate languages.
 \subsection{Elaborated-core architecture}
 
 \textbf{Pros.}
-One surface language. One classifier. Two targets. Lean-like.
+One source language. One classifier. Two targets. Lean-like.
 
 \textbf{Cons.}
 Harder design work. Forces explicit phase distinctions.
@@ -1820,7 +1820,7 @@ Component & Lines \\
 \quad mettail-core (16 files) & 3254 \\
 \midrule
 \textit{\MORK{}/MM2 boundary} & \\
-\quad ExecutionBoundary, DirectExecSurface, etc.\ & ${\sim}1200$ \\
+\quad ExecutionBoundary, DirectExecInterface, etc.\ & ${\sim}1200$ \\
 \midrule
 \textit{WM bridges} & \\
 \quad PureKernel, Runtime, PeTTa, HE & ${\sim}400$ \\
@@ -1954,7 +1954,7 @@ flow through the entire system:
 
 \begin{itemize}[nosep]
   \item \leanref{SharedArtifact} wraps a \leanref{Pattern}.
-  \item \leanref{MeTTaRuntimeExecSurface} translates \leanref{Pattern}
+  \item \leanref{MeTTaRuntimeExecInterface} translates \leanref{Pattern}
   to \MORK{} \code{Atom} via \leanref{morkPatternToAtom}.
   \item \leanref{morkTranslatable} classifies which patterns the
   \MORK{}/MM2 backend can handle (rejects \code{.subst} and rest-variables).
@@ -2060,7 +2060,7 @@ context.  This is confirmed at the formal level by the
 \small
 \begin{tabular}{@{}lll@{}}
 \toprule
-Dialect & \code{bindingsSurface} & \code{contextSurface} \\
+Dialect & \code{bindingsMode} & \code{contextMode} \\
 \midrule
 Pure   & \code{.none}     & \code{.none} \\
 \HE{}  & \code{.explicit} & \code{.explicitStateAndSpace} \\
@@ -2155,8 +2155,8 @@ becoming the trusted semantic core:
   \code{bodyPositions}, so the compiler does not have to rediscover
   scoping rules.
   \item \textbf{No ambient bindings}:
-  the Pure runtime spec declares \code{bindingsSurface = .none} and
-  \code{contextSurface = .none}.  There is no implicit binding store;
+  the Pure runtime spec declares \code{bindingsMode = .none} and
+  \code{contextMode = .none}.  There is no implicit binding store;
   all variable resolution is local.
 \end{itemize}
 
@@ -2184,7 +2184,7 @@ Near-term AI systems built on \MeTTa{} should use a layered strategy:
 \end{enumerate}
 
 \noindent
-``Many spaces'' as surface syntax is not enough.  True many-space
+``Many spaces'' as concrete syntax is not enough.  True many-space
 semantics requires either separate binding contexts, explicit
 communication/import-export primitives, or separate runtimes and stores.
 Until then, the honest strategy is: fluid scratchpad $+$ explicit

@@ -17,7 +17,7 @@ to evidence-valued quantified semantics (`qsemE2`) via **store-native** evaluati
    evaluates to `I pred [pos] p` — a genuine evidence change.
 
 3. **V2 is conservative**: Scope choice commits to one quantifier nesting.
-   The inverse reading ∃y.∀x is provably ≤ the surface reading ∀x.∃y
+   The inverse reading ∃y.∀x is provably ≤ the source-order reading ∀x.∃y
    in the BinaryEvidence lattice.
 
 4. **State-native semantics**: `gsemE2` evaluates formulas directly over
@@ -284,7 +284,7 @@ theorem extendEnv2_comm (env : VarEnv2) {x y : String} (hne : x ≠ y)
   cases hzx : (z == x) <;> cases hzy : (z == y) <;> simp_all
 
 /-- **Scope ordering theorem**: The wide-∃ (inverse scope) reading gives
-    at most as much evidence as the wide-∀ (surface scope) reading.
+    at most as much evidence as the wide-∀ (source-order scope) reading.
 
     `∃y.∀x.φ(x,y) ≤ ∀x.∃y.φ(x,y)`
 
@@ -310,10 +310,10 @@ theorem scope_ordering_qsemE2
   exact iSup_iInf_le_iInf_iSup _
 
 /-- **Scope choice is conservative**: committing to q1 scoping over q2
-    (surface scope: ∀q1.∃q2) selects the WEAKER reading. The inverse
+    (source-order scope: ∀q1.∃q2) selects the WEAKER reading. The inverse
     reading (∃q2.∀q1) is provably stronger.
 
-    This justifies V2: surface scope is the safe/conservative choice. -/
+    This justifies V2: source-order scope is the safe/conservative choice. -/
 theorem scopeChoice_is_conservative
     (R : Pattern → Pattern → Prop) (I : QEvidenceAtomSem)
     (Dom : Domain2) (env : VarEnv2)
@@ -358,7 +358,7 @@ Combines the operational nondeterminism of V2 with the semantic ordering. -/
 /-- **V2 evidence bridge**: Given two distinct quantifiers in the store,
     scope choice creates a nondeterministic fork. Both orderings are
     operationally reachable, and they are ordered in evidence:
-    inverse scope (∃-wide) ≤ surface scope (∀-wide). -/
+    inverse scope (∃-wide) ≤ source-order scope (∀-wide). -/
 theorem V2_evidence_bridge
     {cfg : VisibleCfg}
     (q1 q2 : String) (s : GrammarState)

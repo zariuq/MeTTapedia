@@ -73,7 +73,7 @@ def hePremiseCoreRule (r : ILRewriteRule) : Prop :=
 This is not the current live HE core fragment. It packages the next honest
 theoremic widening: rules whose premises are already accepted by the extended
 MORK bridge (`relationQuery` plus `freshness`), while still keeping the runtime
-surface at top-level rule application.
+interface at top-level rule application.
 -/
 def heGuardedPremiseCoreRule (r : ILRewriteRule) : Prop :=
   heCoreRule r ∧ allPremisesTranslatableExt r.premises = true
@@ -81,7 +81,7 @@ def heGuardedPremiseCoreRule (r : ILRewriteRule) : Prop :=
 /-- The first explicit HE runtime core fragment.
 
 This is the maximal low-risk fragment that already aligns with the current
-`R_exec₀` proof surface. It deliberately stays at top-level rule application and
+`R_exec₀` proof interface. It deliberately stays at top-level rule application and
 does not claim coverage for collection congruence or scheduler-level execution.
 -/
 inductive HECoreStep : ILPattern → ILPattern → Prop where
@@ -99,8 +99,8 @@ abbrev HECoreStepStar := Relation.ReflTransGen HECoreStep
 /-- First premise-bearing HE runtime core fragment.
 
 This fragment still stays at top-level rule application, but it moves from the
-legacy no-premise reduction surface to the honest premise-aware reduction
-surface of the least authored contextual relation.
+legacy no-premise reduction interface to the honest premise-aware reduction
+interface of the least authored contextual relation.
 
 Positive example:
 - `relationQuery`-driven HE top rules can live here and still lower to the
@@ -185,7 +185,7 @@ private theorem allPremisesTranslatableExt_noncontextual
 /-- RelationQuery-only HE premise-core rules automatically sit inside the
 future guarded/source-aware bridge as well. This records that the current HE
 premise-core fragment is already compatible with the extended `R_exec₀`
-surface, even though no live HE rule currently needs guards. -/
+interface, even though no live HE rule currently needs guards. -/
 theorem hePremiseCoreRule_to_guarded {r : ILRewriteRule}
     (h : hePremiseCoreRule r) :
     heGuardedPremiseCoreRule r := by
@@ -294,8 +294,8 @@ theorem rule_toMorkSourceFire
     simp only [languageDefToSourceExecRules, List.mem_filterMap]
     refine ⟨r, hr, ?_⟩
     simp [hprem, allPremisesTranslatable, premiseToSourceFactor]
-  · simpa [morkRuntimeExec0, MeTTaRuntimeExecSurface.bindingsTranslation,
-      MeTTaRuntimeExecSurface.sourceRuleTranslation] using
+  · simpa [morkRuntimeExec0, MeTTaRuntimeExecInterface.bindingsTranslation,
+      MeTTaRuntimeExecInterface.sourceRuleTranslation] using
       (morkRuntimeExec0.noPremiseBridge p q x r
         Mettapedia.OSLF.MeTTaIL.Engine.RelationEnv.empty mettaHE
         hlhs htrans_rhs hprem bs hmatch_mem hq hground workspace hp_in)

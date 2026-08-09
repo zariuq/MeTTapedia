@@ -102,16 +102,43 @@ restore its normalized value. -/
 structure TypedCostStaticAtom (source : CIGSLT) (color : CostStaticColor)
     (targetFree : WellSorted.FreeTypeContext) where
   key : CostStaticAtomKey
-  normalTyped : WellSorted.HasType source.costWholeLanguage targetFree
-    key.targetSupport key.normal key.targetType
-  normalCanonicalBinderMetadata :
-    key.normal.hasCanonicalBinderMetadata = true
-  normalObject : WellSorted.isObjectPattern key.normal = true
-  normalReflectiveScopeSafe :
-    WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
-      key.targetSupport.length key.normal
+  normalWellSorted : ReflectiveWellSorted.OpenPatternWellSorted
+    source.costWholeReflectionProfile source.costWholeLanguage targetFree
+      key.targetSupport key.targetType key.normal
 
 namespace TypedCostStaticAtom
+
+/-- Ordinary typing projected from the single reflective target fibre. -/
+def normalTyped {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    (atom : TypedCostStaticAtom source color targetFree) :
+    WellSorted.HasType source.costWholeLanguage targetFree
+      atom.key.targetSupport atom.key.normal atom.key.targetType :=
+  atom.normalWellSorted.1.1
+
+/-- Canonical binder metadata projected from the single reflective target
+fibre. -/
+def normalCanonicalBinderMetadata {source : CIGSLT}
+    {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+    (atom : TypedCostStaticAtom source color targetFree) :
+    atom.key.normal.hasCanonicalBinderMetadata = true :=
+  atom.normalWellSorted.1.2.1
+
+/-- Object admissibility projected from the single reflective target fibre. -/
+def normalObject {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    (atom : TypedCostStaticAtom source color targetFree) :
+    WellSorted.isObjectPattern atom.key.normal = true :=
+  atom.normalWellSorted.1.2.2.1
+
+/-- Quote-scope safety projected from the single reflective target fibre. -/
+def normalReflectiveScopeSafe {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    (atom : TypedCostStaticAtom source color targetFree) :
+    ReflectiveWellSorted.ReflectiveScopeSafeAt
+      source.costWholeReflectionProfile atom.key.targetSupport.length
+        atom.key.normal :=
+  atom.normalWellSorted.2
 
 /-- Proof irrelevance leaves the explicit semantic key as the complete
 identity of a typed atom. -/
@@ -143,7 +170,8 @@ comes from the child value. -/
 def ofBoundaryValue {source : CIGSLT} {color : CostStaticColor}
     {targetFree : WellSorted.FreeTypeContext}
     (boundary : TypedCostRegionBoundary source color targetFree)
-    (value : WellSorted.OpenPattern source.costWholeLanguage targetFree
+    (value : ReflectiveWellSorted.OpenPattern
+      source.costWholeReflectionProfile source.costWholeLanguage targetFree
       boundary.boundary.targetSupport boundary.boundary.targetType) :
     TypedCostStaticAtom source color targetFree where
   key :=
@@ -152,10 +180,7 @@ def ofBoundaryValue {source : CIGSLT} {color : CostStaticColor}
       targetType := boundary.boundary.targetType
       targetSupport := boundary.boundary.targetSupport
       normal := value.1 }
-  normalTyped := value.2.1
-  normalCanonicalBinderMetadata := value.2.2.1
-  normalObject := value.2.2.2.1
-  normalReflectiveScopeSafe := value.2.2.2.2
+  normalWellSorted := value.2
 
 /-- Package a retagged source free variable as its generated target value.
 The decoding witness records that the target type really is the selected
@@ -173,13 +198,16 @@ def ofSourceFVar {source : CIGSLT} {color : CostStaticColor}
       targetType := targetType
       targetSupport := []
       normal := .fvar name }
-  normalTyped := .fvar targetLookup
-  normalCanonicalBinderMetadata := by
-    simp [Pattern.hasCanonicalBinderMetadata]
-  normalObject := by simp [WellSorted.isObjectPattern]
-  normalReflectiveScopeSafe := by
-    intro presentation membership
-    simp [binderSafeAt]
+  normalWellSorted := by
+    have typed : WellSorted.HasType source.costWholeLanguage targetFree []
+        (.fvar name) targetType :=
+      WellSorted.HasType.fvar targetLookup
+    refine ⟨⟨typed, ?_, ?_, ?_⟩, ?_⟩
+    · simp [Pattern.hasCanonicalBinderMetadata]
+    · simp [WellSorted.isObjectPattern]
+    · exact typed.isWellScopedAt
+    · intro presentation membership
+      simp [binderSafeAt]
 
 end TypedCostStaticAtom
 

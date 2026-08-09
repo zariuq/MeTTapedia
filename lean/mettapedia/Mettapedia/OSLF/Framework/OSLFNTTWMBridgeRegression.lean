@@ -568,7 +568,7 @@ theorem formula_pathOrder_star_endpoint_projection_fixture
   exact ⟨hPack.2.2.2.1, hPack.2.2.2.2⟩
 
 /-- Canonical-closure regression fixture: consume `CanonicalClosureContext`
-directly at the fixpoint endpoint surface. -/
+directly at the fixpoint endpoint. -/
 theorem canonical_context_fixpoint_endpoint_fixture
     (ctx : CanonicalClosureContext)
     {Pm Bm Dm : CategoryTheory.Functor (Opposite (ConstructorObj ctx.lang)) (Type _)}
@@ -645,7 +645,7 @@ theorem canonical_context_fixpoint_endpoint_fixture
       (hStrengthFromEvidence := hStrengthFromEvidence))
 
 /-- Canonical-closure regression fixture:
-consume the explicit rule-pack transport surface and the fixpoint closure
+consume the explicit rule-pack transport interface and the fixpoint closure
 endpoint from one shared `CanonicalClosureContext`. -/
 theorem canonical_context_rulePack_fixpoint_endpoint_fixture
     (ctx : CanonicalClosureContext)

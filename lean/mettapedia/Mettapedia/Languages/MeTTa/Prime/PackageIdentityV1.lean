@@ -100,14 +100,17 @@ private def cacheLanguage : LanguageDef :=
     terms := [dataConstructor "ppi.A" 0,
       dataConstructor "ppi.Imp" 2, dataConstructor "ppi.B" 0]
     equations := []
-    rewrites := []
-    judgments := [
+    rewrites := [] }
+
+private def cacheCalculus :
+    Mettapedia.GSLT.LanguageDef.InferenceExtension.ProofCalculus :=
+  { judgments := [
       { head := "ppi.Proves", arity := 1 },
       { head := "ppi.Convertible", arity := 2 }]
-    inferenceRules := package.rules ++ package.conversions }
+    rules := package.rules ++ package.conversions }
 
 def cache : Presentation :=
-  { language := cacheLanguage }
+  { language := cacheLanguage, calculus := cacheCalculus }
 
 def validatePackage (candidate : PrimeRulePackageV1)
     (cached : Presentation) : Bool :=
@@ -138,7 +141,7 @@ private def conversionMutated : PrimeRulePackageV1 :=
       (ppiConvertible (pvar "term") ppiA)] }
 
 private def wrongCache : Presentation :=
-  { language := { cache.language with judgments := [] } }
+  { cache with calculus := { cache.calculus with judgments := [] } }
 
 def main : IO Unit := do
   unless validatePackage package cache do

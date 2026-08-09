@@ -408,22 +408,22 @@ def parseStructuredLine? (line : String) : Option ParsedReadmeLine :=
             | some c => some (.claim c)
             | none => none
 
-private def insertSurfaceBucket (acc : List (String × List Claim)) (surface : String) (c : Claim) :
+private def insertRenderedBucket (acc : List (String × List Claim)) (rendered : String) (c : Claim) :
     List (String × List Claim) :=
   match acc with
-  | [] => [(surface, [c])]
+  | [] => [(rendered, [c])]
   | (k, cs) :: rest =>
-      if k = surface then
+      if k = rendered then
         (k, c :: cs) :: rest
       else
-        (k, cs) :: insertSurfaceBucket rest surface c
+        (k, cs) :: insertRenderedBucket rest rendered c
 
-def claimSurfaceBuckets : List (String × List Claim) :=
+def claimRenderedBuckets : List (String × List Claim) :=
   canonicalMainReadmeClaims.foldl
-    (fun acc c => insertSurfaceBucket acc (renderClaim c) c) []
+    (fun acc c => insertRenderedBucket acc (renderClaim c) c) []
 
-def ambiguousClaimSurfaces : List (String × List Claim) :=
-  claimSurfaceBuckets.filter (fun p => p.snd.length > 1)
+def ambiguousClaimRenderings : List (String × List Claim) :=
+  claimRenderedBuckets.filter (fun p => p.snd.length > 1)
 
 def mainReadmeStructuredLines : List String :=
   let title := ["# " ++ renderMainHeading .title]
@@ -600,10 +600,10 @@ theorem parse_roundtrip_entry :
     s!"main structured parse failures: {repr fails}"
 
 #eval
-  if ambiguousClaimSurfaces.isEmpty then
-    "ambiguity diagnostic: no duplicate surfaces across distinct claims"
+  if ambiguousClaimRenderings.isEmpty then
+    "ambiguity diagnostic: no duplicate renderings across distinct claims"
   else
-    s!"ambiguity diagnostic: duplicate surfaces found: {repr ambiguousClaimSurfaces}"
+    s!"ambiguity diagnostic: duplicate renderings found: {repr ambiguousClaimRenderings}"
 
 /-! ## Coverage Guardrails
 

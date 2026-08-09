@@ -181,7 +181,7 @@ abbrev useNHouseTree : AbstractNode :=
 abbrev bareHouseTree : AbstractNode :=
   AbstractNode.leaf "house" (.base "N")
 
-/-- `UseN(p)` reduces to `p` in the English GF language surface as well. -/
+/-- `UseN(p)` reduces to `p` in the English GF language syntax as well. -/
 private theorem english_langReduces_UseN (p : Pattern) :
     langReduces englishGFLanguageDef (.apply "UseN" [p]) p := by
   unfold langReduces langReducesUsing

@@ -1,6 +1,11 @@
 import Mettapedia.GSLT.Core.LambdaTheoryCategory
+import Mettapedia.GSLT.Core.BranchingTemporal
 import Mettapedia.GSLT.Core.Web
 import Mettapedia.GSLT.Core.ChangeOfBase
+import Mettapedia.GSLT.Core.Composition
+import Mettapedia.GSLT.Core.CertifiedPlanning
+import Mettapedia.GSLT.Core.Ultrainfinite
+import Mettapedia.GSLT.Core.UltrainfiniteTransport
 import Mettapedia.GSLT.GraphTheory.Basic
 import Mettapedia.GSLT.GraphTheory.BohmTree
 import Mettapedia.GSLT.GraphTheory.WeakProduct
@@ -37,6 +42,10 @@ import Mettapedia.GSLT.Parsing.HornGuardedSpecialization
 import Mettapedia.GSLT.Parsing.HornSemanticEnumeration
 import Mettapedia.GSLT.Parsing.HornRequestDiscovery
 import Mettapedia.GSLT.Parsing.HornSemanticPlan
+import Mettapedia.GSLT.LanguageDef
+import Mettapedia.GSLT.LanguageDef.ReflectiveStructuralCategory
+import Mettapedia.GSLT.LanguageDef.ReflectiveWellSorted
+import Mettapedia.GSLT.LanguageDef.ReflectiveWellSortedChecker
 
 /-!
 # Graph-Structured Lambda Theories (GSLT)

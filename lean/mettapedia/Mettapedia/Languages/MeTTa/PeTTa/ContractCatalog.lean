@@ -21,7 +21,7 @@ open MeTTailCore.MeTTaIL.EffectSafety
 /-- First PeTTa execution-contract entry: `match &self` via `spaceMatch`. -/
 def spaceMatchLookupContract : LookupQueryContract where
   head := "match"
-  surfaceHead := some "match"
+  sourceHead := some "match"
   arity := 3
   lookupFamily := Mettapedia.Languages.MeTTa.PeTTa.LookupPlan.pettaSpaceMatchFamily
   owner := .artifactBackend
@@ -49,7 +49,7 @@ def spaceMatchEntry : ExecutionContractEntry :=
 
 def getAtomsLookupContract : LookupQueryContract where
   head := "get-atoms"
-  surfaceHead := some "get-atoms"
+  sourceHead := some "get-atoms"
   arity := 1
   lookupFamily := Mettapedia.Languages.MeTTa.PeTTa.LookupPlan.pettaGetAtomsFamily
   owner := .artifactBackend

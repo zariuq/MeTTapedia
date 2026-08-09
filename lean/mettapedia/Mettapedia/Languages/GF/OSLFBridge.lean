@@ -391,7 +391,7 @@ def gfSigToLanguageDef
     rwRules
 
 /-- Authoritative syntax-only `LanguageDef` from a literal GF function list.
-    This is the real GF surface in the MeTTaIL DSL: categories + constructors,
+    This is the real GF syntax in the MeTTaIL DSL: categories + constructors,
     with no authored semantic overlay. -/
 def gfSyntaxLanguageDefFromList
     (grammarName : String)

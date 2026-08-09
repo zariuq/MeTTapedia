@@ -18,7 +18,7 @@ invalidation) and `BindingComposition` (extension invariant).
 ## Scope
 
 Exact same-query cache results are about the repaired public `queryEquations`
-surface. Variant-key cache results in this file are legacy simpleMatch-surface
+interface. Variant-key cache results in this file are legacy simpleMatch-interface
 results; the faithful public matcher needs its own invariance theorem.
 -/
 
@@ -67,7 +67,7 @@ When the cache is keyed by canonical (variant-normalized) query, a cache
 hit means: the stored query is variant-equivalent to the actual query.
 The RHS atoms are the same (`variant_queries_same_rhs`) on the legacy model.
 At the support level: exact agreement for the historical simpleMatch model is
-proved in VariantQueryCorrectness. The repaired public query surface is a later
+proved in VariantQueryCorrectness. The repaired public query interface is a later
 faithful-matcher theorem, not a consequence of this legacy proof. -/
 
 /-- **Binding structure under variant cache**: the bindings from a
@@ -93,7 +93,7 @@ All theorems fully proved:
 - `Bindings.empty_extends` — vacuous extension from empty
 - `variant_cache_binding_shape` — legacy variant queries produce same-length results
 
-The repaired public query surface needs a faithful-matcher variant theorem
+The repaired public query interface needs a faithful-matcher variant theorem
 before these legacy table-cache sketches can be used as runtime evidence.
 -/
 

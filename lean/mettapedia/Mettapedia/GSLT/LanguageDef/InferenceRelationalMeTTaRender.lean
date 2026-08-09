@@ -14,7 +14,7 @@ the same presentation as DATA for the operational generic checker): two
 projections of one authored root, kept in the authored rule order.
 
 Fail-closed contract: rules with side conditions, binder-arity
-metavariables, or patterns outside the surface fragment (bound variables,
+metavariables, or patterns outside the source fragment (bound variables,
 lambdas, substitutions, collections) do not render — the projection
 refuses rather than approximates.  Quoting is plain interpolation; no
 `Repr`-derived output enters the artifact.
@@ -31,7 +31,7 @@ def derivationToken : String := "ptg-true"
 
 mutual
 
-/-- Render a surface-fragment pattern as MeTTa source text. -/
+/-- Render a source-fragment pattern as MeTTa source text. -/
 def renderTerm? : Pattern → Option String
   | .fvar name => some s!"${name}"
   | .apply head [] => some head
@@ -80,17 +80,17 @@ def renderClauses? (rules : List RuleSchema) : Option (List String) :=
 
 mutual
 
-/-- Structural image of `renderTerm?`'s domain: the surface fragment.
+/-- Structural image of `renderTerm?`'s domain: the source fragment.
 Structurally recursive (no well-founded wrapper) so `decide` can evaluate
 it in the kernel. -/
-def surfaceOk : Pattern → Bool
+def sourceSyntaxOk : Pattern → Bool
   | .fvar _ => true
-  | .apply _ arguments => surfaceOkList arguments
+  | .apply _ arguments => sourceSyntaxOkList arguments
   | _ => false
 
-def surfaceOkList : List Pattern → Bool
+def sourceSyntaxOkList : List Pattern → Bool
   | [] => true
-  | pattern :: patterns => surfaceOk pattern && surfaceOkList patterns
+  | pattern :: patterns => sourceSyntaxOk pattern && sourceSyntaxOkList patterns
 
 end
 
@@ -101,8 +101,8 @@ that refusal to build time without kernel-evaluating string construction. -/
 def projectable (rule : RuleSchema) : Bool :=
   rule.sideConditions.isEmpty &&
   rule.metavariables.all (fun formal => formal.2 == 0) &&
-  surfaceOk rule.conclusion &&
-  rule.premises.all surfaceOk
+  sourceSyntaxOk rule.conclusion &&
+  rule.premises.all sourceSyntaxOk
 
 /-- The full relational program for a presentation's rules, or `none` if
 any rule falls outside the projectable fragment. -/

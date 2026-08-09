@@ -12,6 +12,7 @@ import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Engine
 import Mettapedia.OSLF.Framework.RewriteSystem
 import Mettapedia.OSLF.Framework.RhoInstance
 import Mettapedia.OSLF.Framework.DerivedModalities
+import Mettapedia.OSLF.Framework.InterpretedTypeSynthesis
 import Mettapedia.OSLF.Framework.CategoryBridge
 import Mettapedia.OSLF.Framework.LanguageMorphism
 import Mettapedia.OSLF.Framework.LanguageEqCategory
@@ -76,6 +77,7 @@ OSLF/
 │   ├── RewriteSystem.lean         -- Abstract OSLF: RewriteSystem -> OSLFTypeSystem
 │   ├── RhoInstance.lean           -- ρ-calculus instance (proven Galois connection)
 │   ├── DerivedModalities.lean     -- Derived ◇/□ from adjoint triple (0 sorries)
+│   ├── InterpretedTypeSynthesis.lean -- Explicit interpretation -> OSLF synthesis
 │   ├── CategoryBridge.lean        -- Categorical lift: GaloisConnection → Adjunction
 │   ├── FULLStatus.lean            -- FULL-OSLF done/missing tracker
 │   ├── TypeSynthesis.lean         -- LanguageDef → OSLFTypeSystem (auto Galois)
@@ -298,6 +300,20 @@ export Mettapedia.OSLF.Framework.DerivedModalities (
   rho_galois_from_span
 )
 
+export Mettapedia.OSLF.Framework.InterpretedTypeSynthesis (
+  interpretedReduces
+  interpretedRewriteSystem
+  interpretedSpan
+  interpretedDiamond
+  interpretedBox
+  interpretedGalois
+  interpretedDiamond_spec
+  interpretedBox_spec
+  interpretedOSLF
+  rewriteAt_syntactic
+  interpretedReduces_syntactic_iff
+)
+
 export Mettapedia.OSLF.Framework.TypeSynthesis (
   langReducesExecUsing
   langReducesUsing
@@ -367,6 +383,15 @@ export Mettapedia.OSLF.Framework.GeneratedTyping (
 )
 
 export Mettapedia.OSLF.Framework.SynthesisBridge (
+  rhoInterpretedSpan
+  rhoInterpretedDiamond
+  rhoInterpretedBox
+  rhoInterpretedGalois
+  rhoInterpretedDiamond_spec
+  rhoInterpretedBox_spec
+  rhoInterpretedDiamond_implies_possibly
+  syntacticInterpretedDiamond_eq_langDiamondUsing
+  syntacticInterpretedBox_eq_langBoxUsing
   langDiamond_implies_possibly_at
   possibly_implies_langDiamond_at
   specialized_possibly

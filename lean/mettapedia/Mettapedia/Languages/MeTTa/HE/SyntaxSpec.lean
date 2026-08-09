@@ -16,7 +16,7 @@ The current plan is deliberately dual-layered:
    - matches HE-as-implemented today
    - preserves parser-evolution quirks such as `!name` parsing as a symbol atom
 2. **Canonical syntax**
-   - the intended cleaned surface
+   - the intended cleaned interface
    - removes the `!name` symbol quirk so `!` is purely an evaluation prefix
 
 The old artifact filenames stay stable for the compatibility profile:
@@ -220,9 +220,9 @@ def heSyntaxAuthorityProfile : HESyntaxAuthorityProfile :=
     notes :=
       [ "Compatibility syntax preserves the HE parser-evolution quirk where !name can be a symbol atom."
       , "Canonical syntax removes that quirk and treats ! as a pure evaluation prefix."
-      , "Tokenizer behavior remains host-parameterized; syntax authority here covers lexical classes and the S-expression surface."
+      , "Tokenizer behavior remains host-parameterized; syntax authority here covers lexical classes and the S-expression syntax."
       , "WORD and STRING token classes are authoritative here; grounded-vs-symbol construction is delegated to the host tokenizer."
-      , "Compatibility quirks, canonical surface, and host-parameterized tokenizer semantics are separate authority layers."
+      , "Compatibility quirks, canonical interface, and host-parameterized tokenizer semantics are separate authority layers."
       , "Parser implementations should conform to this Lean syntax authority, not define it."
       ] }
 

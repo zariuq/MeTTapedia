@@ -17,7 +17,8 @@ open Mettapedia.OSLF.Framework.ConstructorCategory
 abbrev CostSemanticOpenElaboration (source : CIGSLT)
     {targetFree : WellSorted.FreeTypeContext}
     {targetBound : List TypeExpr} {targetSort : LangSort source.costWholeLanguage}
-    (term : OpenTerm source.costIGSLT targetFree targetBound targetSort) :=
+    (term : ReflectiveWellSorted.OpenTerm source.costWholeReflectionProfile
+      source.costWholeLanguage targetFree targetBound targetSort) :=
   CostSemanticTree source targetFree targetBound [] term.1
     (.base targetSort.1)
 
@@ -25,7 +26,8 @@ abbrev CostSemanticOpenElaboration (source : CIGSLT)
 abbrev CostSemanticElabTerm (source : CIGSLT)
     (targetFree : WellSorted.FreeTypeContext) (targetBound : List TypeExpr)
     (targetSort : LangSort source.costWholeLanguage) :=
-  Σ term : OpenTerm source.costIGSLT targetFree targetBound targetSort,
+  Σ term : ReflectiveWellSorted.OpenTerm source.costWholeReflectionProfile
+      source.costWholeLanguage targetFree targetBound targetSort,
     CostSemanticOpenElaboration source term
 
 namespace CostSemanticOpenElaboration
@@ -35,7 +37,8 @@ static frames certified by the unary canonical path. -/
 def compile (source : CIGSLT) (canonicalPathSafe : CostStaticCanonicalPathSafe source)
     {targetFree : WellSorted.FreeTypeContext}
     {targetBound : List TypeExpr} {targetSort : LangSort source.costWholeLanguage}
-    (term : OpenTerm source.costIGSLT targetFree targetBound targetSort) :
+    (term : ReflectiveWellSorted.OpenTerm source.costWholeReflectionProfile
+      source.costWholeLanguage targetFree targetBound targetSort) :
     CostSemanticOpenElaboration source term :=
   (CostRegionTree.buildOpenTerm (source := source) term).toSemantic
     canonicalPathSafe
@@ -46,7 +49,8 @@ def compileTerm (source : CIGSLT)
     (canonicalPathSafe : CostStaticCanonicalPathSafe source)
     {targetFree : WellSorted.FreeTypeContext}
     {targetBound : List TypeExpr} {targetSort : LangSort source.costWholeLanguage}
-    (term : OpenTerm source.costIGSLT targetFree targetBound targetSort) :
+    (term : ReflectiveWellSorted.OpenTerm source.costWholeReflectionProfile
+      source.costWholeLanguage targetFree targetBound targetSort) :
     CostSemanticElabTerm source targetFree targetBound targetSort :=
   ⟨term, compile source canonicalPathSafe term⟩
 
@@ -55,7 +59,8 @@ def erase {source : CIGSLT}
     {targetFree : WellSorted.FreeTypeContext}
     {targetBound : List TypeExpr} {targetSort : LangSort source.costWholeLanguage} :
     CostSemanticElabTerm source targetFree targetBound targetSort →
-      OpenTerm source.costIGSLT targetFree targetBound targetSort :=
+      ReflectiveWellSorted.OpenTerm source.costWholeReflectionProfile
+        source.costWholeLanguage targetFree targetBound targetSort :=
   Sigma.fst
 
 @[simp]
@@ -63,7 +68,8 @@ theorem erase_compileTerm (source : CIGSLT)
     (canonicalPathSafe : CostStaticCanonicalPathSafe source)
     {targetFree : WellSorted.FreeTypeContext}
     {targetBound : List TypeExpr} {targetSort : LangSort source.costWholeLanguage}
-    (term : OpenTerm source.costIGSLT targetFree targetBound targetSort) :
+    (term : ReflectiveWellSorted.OpenTerm source.costWholeReflectionProfile
+      source.costWholeLanguage targetFree targetBound targetSort) :
     erase (compileTerm source canonicalPathSafe term) = term :=
   rfl
 
@@ -72,21 +78,25 @@ fibre.  No compact recompilation occurs. -/
 def normalizeOpen {source : CIGSLT}
     {targetFree : WellSorted.FreeTypeContext}
     {targetBound : List TypeExpr} {targetSort : LangSort source.costWholeLanguage}
-    (term : OpenTerm source.costIGSLT targetFree targetBound targetSort)
+    (term : ReflectiveWellSorted.OpenTerm source.costWholeReflectionProfile
+      source.costWholeLanguage targetFree targetBound targetSort)
     (tree : CostSemanticOpenElaboration source term) :
-    OpenTerm source.costIGSLT targetFree targetBound targetSort := by
-  let normalized := tree.normalize.result.toOpenPattern term.2.2.1
-    term.2.2.2.1 term.2.2.2.2
+    ReflectiveWellSorted.OpenTerm source.costWholeReflectionProfile
+      source.costWholeLanguage targetFree targetBound targetSort := by
+  let normalized := tree.normalize.result.toOpenPattern term.2.1.2.1
+    term.2.1.2.2.1 term.2.2
   refine ⟨normalized.1, ?_⟩
-  change WellSorted.OpenPatternWellSorted source.costWholeLanguage targetFree
-    targetBound (.base targetSort.1) normalized.1
+  change ReflectiveWellSorted.OpenPatternWellSorted
+    source.costWholeReflectionProfile source.costWholeLanguage targetFree
+      targetBound (.base targetSort.1) normalized.1
   simpa using normalized.2
 
 @[simp]
 theorem normalizeOpen_pattern {source : CIGSLT}
     {targetFree : WellSorted.FreeTypeContext}
     {targetBound : List TypeExpr} {targetSort : LangSort source.costWholeLanguage}
-    (term : OpenTerm source.costIGSLT targetFree targetBound targetSort)
+    (term : ReflectiveWellSorted.OpenTerm source.costWholeReflectionProfile
+      source.costWholeLanguage targetFree targetBound targetSort)
     (tree : CostSemanticOpenElaboration source term) :
     (normalizeOpen term tree).1 = tree.normalize.result.pattern :=
   rfl

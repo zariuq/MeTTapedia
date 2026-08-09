@@ -3,6 +3,7 @@ import Mettapedia.OSLF.CoreMain
 import Mettapedia.OSLF.Bridges
 import Mettapedia.OSLF.PathMap
 import Mettapedia.OSLF.SpecIndex
+import Mettapedia.OSLF.Framework.NativeTypeTheory
 
 /-!
 # OSLF

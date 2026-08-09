@@ -16,7 +16,7 @@ open Mettapedia.Languages.MeTTa.OSLFCore
 open Mettapedia.Languages.MeTTa.LeaTTa.EvaluatorCorrectness.QueryOpBridge
 
 /-- Conformance-facing observation predicate for the repaired visible-avoid
-equation surface: an HE equation step is paired with the concrete LeaTTa
+equation interface: an HE equation step is paired with the concrete LeaTTa
 `queryOp` item that observes the same successor up to α-equivalence. -/
 def LeaTTaVisibleEquationStepObservation
     (space : Space) (d : GroundedDispatch) (fuel : Nat)
@@ -70,7 +70,7 @@ theorem emptySpace_foo_noMatchQueryOpHit_counter0
       Metta.Minimal.extractRules, heHeadKey]
 
 /-- Raw executable-hit constructor for the repaired visible-avoid equation
-surface. The HE visible query premise provides the declarative companion step;
+interface. The HE visible query premise provides the declarative companion step;
 the LeaTTa premise is the actual `queryOp` hit rather than the stronger raw
 candidate-transport certificate. -/
 theorem equation_match_againstVisible_observation_of_queryOp_hit
@@ -123,7 +123,7 @@ theorem equation_match_againstVisible_observation_of_transport
         hk h_query htransport)
 
 /-- Observation wrapper for the local freshened-item transport obligation on
-the repaired visible-query surface. -/
+the repaired visible-query interface. -/
 theorem equation_match_againstVisible_observation_of_freshened_item_transport
     {space : Space} {d : GroundedDispatch} {fuel : Nat}
     {es : List Atom} {rhs : Atom} {qb : Bindings}
@@ -179,7 +179,7 @@ theorem equation_match_againstVisible_observation_of_freshened_variable_item_tra
         hk h_query hvarTransport)
 
 /-- Observation-level wrapper for the instantiated-item seam on the repaired
-visible-avoid query surface.  For the non-ground fragment where HE recursive
+visible-avoid query interface.  For the non-ground fragment where HE recursive
 application agrees with LeaTTa instantiation, it is enough to prove that the
 instantiated RHS item is present in `queryOp`; this theorem packages that item
 with the corresponding HE equation step. -/
@@ -217,7 +217,7 @@ theorem equation_match_againstVisible_observation_of_instantiated_item
 
 /-- Conditional HE-side equation-step simulation: once the single remaining
 specialized transport lemma is supplied, an HE `equation_match` successor is
-already visible on LeaTTa's executable `queryOp` surface up to α-renaming.
+already visible on LeaTTa's executable `queryOp` interface up to α-renaming.
 This packages the positive P1 bridge at the actual
 `HESmallStep.equation_match` boundary while keeping the one honest proof debt
 explicit. -/
@@ -598,7 +598,7 @@ theorem freshRhsBoundary_EquationMatchVisibleItemTransport_counter5
 
 /-- The avoid-aware transport target is also inhabited on the fresh-RHS
 boundary. Here the query atom has no visible variables, so the avoid-aware
-freshening surface agrees extensionally with the ordinary freshening surface,
+freshening interface agrees extensionally with the ordinary freshening interface,
 while still exercising the repaired theorem interface. -/
 theorem freshRhsBoundary_FreshenedQueryOpItemTransportAgainstVisible_counter5
     (gt : Metta.GroundingTable) :
@@ -699,7 +699,7 @@ theorem queryOp_contains_equation_match_visible_successor_freshRhsBoundary_count
       hquery
       (freshRhsBoundary_EquationMatchVisibleItemTransport_counter5 gt)
 
-/-- The repaired visible-avoid query surface also recovers the fresh-RHS
+/-- The repaired visible-avoid query interface also recovers the fresh-RHS
 boundary witness through the new avoid-aware transport theorem. This pins the
 `queryEquationsAgainstVisible` path to the same alpha-level executable
 `queryOp` target. -/
@@ -733,7 +733,7 @@ theorem queryOp_contains_equation_match_visible_successor_againstVisible_freshRh
       (freshRhsBoundary_EquationMatchVisibleItemTransportAgainst_counter5 gt)
 
 /-- End-to-end repaired equation-step package on the fresh-RHS boundary: the
-visible-avoid HE equation-step surface and the LeaTTa executable `queryOp`
+visible-avoid HE equation-step interface and the LeaTTa executable `queryOp`
 witness agree up to alpha-equivalence at the counter where literal fresh-name
 transport fails. -/
 theorem equation_match_againstVisible_freshRhsBoundary_queryOp_visible_successor_counter5
@@ -1849,7 +1849,7 @@ theorem leattaEquationMettaCallStep_of_visible_observation_with_merge
       h_no_loop, h_recurse⟩
 
 /-- Parametric equality-aware equation-call bridge for the repaired visible
-query surface. Unlike the instantiated-RHS shortcut below, this theorem consumes
+query interface. Unlike the instantiated-RHS shortcut below, this theorem consumes
 the avoid-aware transport witness directly, so equality-bearing HE matches can
 enter the step-shaped LeaTTa call fragment without dropping their equality
 constraints. -/
@@ -1901,7 +1901,7 @@ theorem leattaEquationMettaCallStep_of_transport_againstVisible_empty_input
       h_recurse
 
 /-- Binding-threaded equality-aware equation-call bridge for the repaired
-visible query surface, specialized to recursive evaluations whose final atom is
+visible query interface, specialized to recursive evaluations whose final atom is
 the visible HE equation successor. -/
 theorem leattaEquationMettaCallStep_of_transport_againstVisible_with_merge
     {space : Space} {d : GroundedDispatch} {fuel : Nat}
@@ -1982,7 +1982,7 @@ theorem leattaEquationMettaCallStep_of_visible_observation_with_merge_final
       hobs, h_not_error, h_not_grounded, h_query_public, h_merge,
       h_no_loop, h_recurse⟩
 
-/-- Continuation-aware equality bridge for the repaired visible query surface.
+/-- Continuation-aware equality bridge for the repaired visible query interface.
 The LeaTTa `queryOp` observation witnesses the immediate visible equation
 successor `qb.applyFull rhs fuel`; the final `MettaCall` result is supplied by the
 recursive HE `EvalAtom` premise. -/
@@ -2036,7 +2036,7 @@ theorem leattaEquationMettaCallStep_of_transport_againstVisible_with_merge_final
       h_recurse
 
 /-- Continuation-aware bridge from a concrete LeaTTa `queryOp` hit on the
-repaired visible query surface. This is the executable-trace boundary: the
+repaired visible query interface. This is the executable-trace boundary: the
 caller supplies the actual emitted item up to alpha-equivalence, while the HE
 premises supply query, merge, loop, and recursive evaluation evidence. -/
 theorem leattaEquationMettaCallStep_of_queryOp_hit_againstVisible_with_merge_final
@@ -2089,7 +2089,7 @@ theorem leattaEquationMettaCallStep_of_queryOp_hit_againstVisible_with_merge_fin
       h_recurse
 
 /-- Continuation-aware bridge from the local freshened-item transport obligation
-on the repaired visible query surface. -/
+on the repaired visible query interface. -/
 theorem leattaEquationMettaCallStep_of_freshened_item_transport_againstVisible_with_merge_final
     {space : Space} {d : GroundedDispatch} {fuel : Nat}
     {es : List Atom} {rhs type_ : Atom}
@@ -2236,7 +2236,7 @@ theorem leattaEquationMettaCallStep_of_instantiated_item_againstVisible_empty_in
       h_recurse⟩
 
 /-- Empty-input observed-call wrapper for the repaired visible-avoid equation
-surface.  The visible query premise builds the LeaTTa executable observation;
+interface.  The visible query premise builds the LeaTTa executable observation;
 the public query premise is kept separate because the official HE `MettaCall`
 constructor consumes `queryEquations`.  This is the reusable bridge shape for
 non-ground matches whose RHS instantiation agrees with HE substitution. -/
@@ -2744,7 +2744,7 @@ private theorem freshenEquationAgainst_unaryIdentity_counter0
         .var (unaryIdentityFresh0 var)) := by
   simpa using freshenEquationAgainst_unaryIdentity_counter0_atFuel head var 5
 
-/-- HE query-surface membership for the singleton unary-identity equation on
+/-- HE query-interface membership for the singleton unary-identity equation on
 the repaired visible-avoid path.  This is reference-side evidence only: it uses
 HE's `queryEquationsAgainstVisible`/`matchAtoms` definitions, not LeaTTa. -/
 theorem queryEquationsAgainstVisible_unaryIdentity_counter0_mem_atFuel
@@ -2801,7 +2801,7 @@ theorem queryEquationsAgainstVisible_unaryIdentity_counter0_mem
       queryEquationsAgainstVisible_unaryIdentity_counter0_mem_atFuel
       head var value 5
 
-/-- HE public query-surface membership for the singleton unary-identity
+/-- HE public query-interface membership for the singleton unary-identity
 equation.  This is the premise consumed by the official `MettaCall` rule. -/
 theorem queryEquations_unaryIdentity_counter0_mem_atFuel
     (head var value : String) (extraFuel : Nat) :
@@ -3123,7 +3123,7 @@ private theorem nonGroundAssignment_instantiated_queryOp_item_counter0
     Bindings.isBound, Bindings.lookup, Bindings.empty, hx0] using
     (unaryIdentity_instantiated_queryOp_item_counter0 "id" "x" "a" gt)
 
-/-- Concrete non-ground assignment transport for the repaired query surface:
+/-- Concrete non-ground assignment transport for the repaired query interface:
 `(= (id $x) $x)` queried at `(id a)` emits `a` on LeaTTa's `queryOp` layer. -/
 theorem nonGroundAssignment_FreshenedQueryOpItemTransportAgainstVisible_counter0
     (gt : Metta.GroundingTable) :
@@ -3425,7 +3425,7 @@ The previous boundary only rules out exact simulation into raw
 relationships stay as equality constraints, while the current
 `toLeaTTaMatchBindings` projection only carries value assignments. If a query
 atom already contains a name that collides with a later freshened rule variable,
-the repaired visible-avoid HE query surface preserves the equality information,
+the repaired visible-avoid HE query interface preserves the equality information,
 but the instantiated-item shortcut below cannot transport it on its own.
 -/
 
@@ -3450,7 +3450,7 @@ private theorem queryEquations_chainResolveBoundary :
       [(.var "x#0", chainResolveBoundaryQueryBindings)] := by
   rfl
 
-/-- The visible-avoid query surface repairs the generated-name collision in the
+/-- The visible-avoid query interface repairs the generated-name collision in the
 boundary example: the freshened rule variable corresponding to the raw `y`
 parameter is renamed to `y#2`, avoiding the query's already-visible `y#1`.
 After G3's faithful matcher migration, the `x`/`y#1` relationship is an
@@ -3461,7 +3461,7 @@ private theorem queryEquationsAgainstVisible_chainResolveBoundary :
       [(.var "x#0", chainResolveBoundaryVisibleQueryBindings)] := by
   rfl
 
-/-- On the repaired visible-avoid query surface, the chain boundary no longer
+/-- On the repaired visible-avoid query interface, the chain boundary no longer
 reuses the query-visible name `y#1` for the freshened rule parameter `y`; the
 freshened binding key is `y#2` instead. The equality relation `y#1 = x#0`
 remains explicit, which is the G3b equality-threading seam. -/

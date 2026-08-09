@@ -196,14 +196,6 @@ theorem addDeclsLanguageDef_rewrites_eq :
     addDeclsLanguageDef.rewrites = [addZRule, addSRule] := by
   rfl
 
-@[simp] theorem addDeclsLanguageDef_reflectivePresentations :
-    addDeclsLanguageDef.reflectivePresentations = [] := by
-  rfl
-
-@[simp] theorem revDeclsLanguageDef_reflectivePresentations :
-    revDeclsLanguageDef.reflectivePresentations = [] := by
-  rfl
-
 theorem revDeclsLanguageDef_rewrites_eq :
     revDeclsLanguageDef.rewrites =
       [revAppendNilRule, revAppendConsRule, revNilRule, revConsRule] := by
@@ -280,9 +272,7 @@ theorem addDeclsLanguageDef_reduces_add_z_one :
   · unfold addZRule addOnePattern addZeroPattern
     simp [Mettapedia.OSLF.MeTTaIL.Engine.applyPremisesWithEnv]
   · unfold addZRule addOnePattern addZeroPattern
-    simp [applyBindingsForRule, substitutionPresentationForRule?,
-      reflectiveRuleForRule?, LanguageDef.ofCore, addDeclsLanguageDef,
-      rewriteDeclsToLanguageDef, rewriteDeclsToLanguageDefWithTerms,
+    simp [applyBindingsForRule,
       Mettapedia.OSLF.MeTTaIL.Match.applyBindings]
 
 theorem addDeclsLanguageDef_not_reduces_add_z_one_to_zero :
@@ -303,10 +293,7 @@ theorem addDeclsLanguageDef_not_reduces_add_z_one_to_zero :
           Mettapedia.OSLF.MeTTaIL.Match.mergeBindings] at hbs0
         subst bs0
         cases hprem
-        simp [addZRule, addZeroPattern,
-          applyBindingsForRule, substitutionPresentationForRule?,
-          reflectiveRuleForRule?, LanguageDef.ofCore, addDeclsLanguageDef,
-          rewriteDeclsToLanguageDef, rewriteDeclsToLanguageDefWithTerms,
+        simp [addZRule, addZeroPattern, applyBindingsForRule,
           Mettapedia.OSLF.MeTTaIL.Match.applyBindings] at hq
       · simp [addSRule, addZOnePattern, addOnePattern, addZeroPattern,
           Mettapedia.OSLF.MeTTaIL.Match.matchPattern,
@@ -342,9 +329,7 @@ theorem addDeclsLanguageDef_reduces_add_one_one_root :
   · unfold addSRule addOnePattern addZeroPattern
     simp [Mettapedia.OSLF.MeTTaIL.Engine.applyPremisesWithEnv]
   · unfold addSRule addOneOneAfterRootPattern addZOnePattern addOnePattern addZeroPattern
-    simp [applyBindingsForRule, substitutionPresentationForRule?,
-      reflectiveRuleForRule?, LanguageDef.ofCore, addDeclsLanguageDef,
-      rewriteDeclsToLanguageDef, rewriteDeclsToLanguageDefWithTerms,
+    simp [applyBindingsForRule,
       Mettapedia.OSLF.MeTTaIL.Match.applyBindings]
 
 theorem addDeclsLanguageDef_reduces_add_two_one_root :
@@ -366,9 +351,7 @@ theorem addDeclsLanguageDef_reduces_add_two_one_root :
     simp [Mettapedia.OSLF.MeTTaIL.Engine.applyPremisesWithEnv]
   · unfold addSRule addTwoOneAfterRootPattern addOneOnePattern addOnePattern
       addZeroPattern
-    simp [applyBindingsForRule, substitutionPresentationForRule?,
-      reflectiveRuleForRule?, LanguageDef.ofCore, addDeclsLanguageDef,
-      rewriteDeclsToLanguageDef, rewriteDeclsToLanguageDefWithTerms,
+    simp [applyBindingsForRule,
       Mettapedia.OSLF.MeTTaIL.Match.applyBindings]
 
 theorem revDeclsLanguageDef_reduces_rev_nil :
@@ -388,9 +371,7 @@ theorem revDeclsLanguageDef_reduces_rev_nil :
   · unfold revNilRule
     simp [Mettapedia.OSLF.MeTTaIL.Engine.applyPremisesWithEnv]
   · unfold revNilRule nilValuePattern
-    simp [applyBindingsForRule, substitutionPresentationForRule?,
-      reflectiveRuleForRule?, LanguageDef.ofCore, revDeclsLanguageDef,
-      rewriteDeclsToLanguageDefWithTerms,
+    simp [applyBindingsForRule,
       Mettapedia.OSLF.MeTTaIL.Match.applyBindings]
 
 theorem revDeclsLanguageDef_reduces_append_nil_list0 :
@@ -414,9 +395,7 @@ theorem revDeclsLanguageDef_reduces_append_nil_list0 :
     simp [Mettapedia.OSLF.MeTTaIL.Engine.applyPremisesWithEnv]
   · unfold revAppendNilRule list0Pattern consValuePattern nilValuePattern
       addZeroPattern
-    simp [applyBindingsForRule, substitutionPresentationForRule?,
-      reflectiveRuleForRule?, LanguageDef.ofCore, revDeclsLanguageDef,
-      rewriteDeclsToLanguageDefWithTerms,
+    simp [applyBindingsForRule,
       Mettapedia.OSLF.MeTTaIL.Match.applyBindings]
 
 theorem revDeclsLanguageDef_reduces_rev_list0_root :
@@ -440,9 +419,7 @@ theorem revDeclsLanguageDef_reduces_rev_list0_root :
   · unfold revConsRule revList0AfterRootPattern appendCallPattern
       revCallPattern list0Pattern consValuePattern nilValuePattern
       addZeroPattern
-    simp [applyBindingsForRule, substitutionPresentationForRule?,
-      reflectiveRuleForRule?, LanguageDef.ofCore, revDeclsLanguageDef,
-      rewriteDeclsToLanguageDefWithTerms,
+    simp [applyBindingsForRule,
       Mettapedia.OSLF.MeTTaIL.Match.applyBindings]
 
 theorem addDeclsReachabilitySig_extends_extracted :

@@ -546,21 +546,22 @@ mutual
       (rightResolve : String → Option (Fin rightEndpoint))
       (leftLeg : Fin leftEndpoint → Fin cospan.commonKeys.length)
       (rightLeg : Fin rightEndpoint → Fin cospan.commonKeys.length)
-      (language : LanguageDef) (support : ContextSupport.Support)
+      (profile : Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile)
+      (support : ContextSupport.Support)
       (assignment : ContextSupport.Assignment)
       {relation : Pattern → Pattern → Prop}
       (restores : ∀ {leftLeaf rightLeaf}, relation leftLeaf rightLeaf →
         ∀ depth,
-          ReflectiveContextSupport.substituteAt language support assignment
+          ReflectiveContextSupport.substituteAt profile support assignment
               depth (cospan.reifyWith leftResolve leftLeg leftLeaf) =
-            ReflectiveContextSupport.substituteAt language support assignment
+            ReflectiveContextSupport.substituteAt profile support assignment
               depth (cospan.reifyWith rightResolve rightLeg rightLeaf)) :
       ∀ {leftPattern rightPattern : Pattern},
         PatternLeafAligned relation leftPattern rightPattern →
         ∀ depth,
-          ReflectiveContextSupport.substituteAt language support assignment
+          ReflectiveContextSupport.substituteAt profile support assignment
               depth (cospan.reifyWith leftResolve leftLeg leftPattern) =
-            ReflectiveContextSupport.substituteAt language support assignment
+            ReflectiveContextSupport.substituteAt profile support assignment
               depth (cospan.reifyWith rightResolve rightLeg rightPattern)
     | _, _, .leaf related, depth => restores related depth
     | _, _, .bvar index, depth => by
@@ -571,39 +572,39 @@ mutual
           ReflectiveContextSupport.substituteAt, List.map_map,
           Pattern.apply.injEq, true_and]
         exact substituteAt_reifyWithList_eq_of_patternLeafAlignedList cospan
-          leftResolve rightResolve leftLeg rightLeg language support assignment
+          leftResolve rightResolve leftLeg rightLeg profile support assignment
           restores arguments
-          (if ReflectiveContextSupport.isQuoteConstructor language constructor
+          (if ReflectiveContextSupport.isQuoteConstructor profile constructor
             then 0 else depth)
     | _, _, .lambda binder body, depth => by
         simp only [CostStaticAtomKeyCospan.reifyWith,
           ReflectiveContextSupport.substituteAt, Pattern.lambda.injEq,
           true_and]
         exact substituteAt_reifyWith_eq_of_patternLeafAligned cospan
-          leftResolve rightResolve leftLeg rightLeg language support assignment
+          leftResolve rightResolve leftLeg rightLeg profile support assignment
           restores body (depth + 1)
     | _, _, .multiLambda arity binders body, depth => by
         simp only [CostStaticAtomKeyCospan.reifyWith,
           ReflectiveContextSupport.substituteAt,
           Pattern.multiLambda.injEq, true_and]
         exact substituteAt_reifyWith_eq_of_patternLeafAligned cospan
-          leftResolve rightResolve leftLeg rightLeg language support assignment
+          leftResolve rightResolve leftLeg rightLeg profile support assignment
           restores body (depth + arity)
     | _, _, .subst body replacement, depth => by
         simp only [CostStaticAtomKeyCospan.reifyWith,
           ReflectiveContextSupport.substituteAt, Pattern.subst.injEq]
         exact ⟨substituteAt_reifyWith_eq_of_patternLeafAligned cospan
-            leftResolve rightResolve leftLeg rightLeg language support
+            leftResolve rightResolve leftLeg rightLeg profile support
             assignment restores body (depth + 1),
           substituteAt_reifyWith_eq_of_patternLeafAligned cospan
-            leftResolve rightResolve leftLeg rightLeg language support
+            leftResolve rightResolve leftLeg rightLeg profile support
             assignment restores replacement depth⟩
     | _, _, .collection collectionType rest elements, depth => by
         simp only [CostStaticAtomKeyCospan.reifyWith,
           ReflectiveContextSupport.substituteAt, List.map_map,
           Pattern.collection.injEq, true_and, and_true]
         exact substituteAt_reifyWithList_eq_of_patternLeafAlignedList cospan
-          leftResolve rightResolve leftLeg rightLeg language support assignment
+          leftResolve rightResolve leftLeg rightLeg profile support assignment
           restores elements depth
 
   /-- Listwise companion of
@@ -617,32 +618,33 @@ mutual
       (rightResolve : String → Option (Fin rightEndpoint))
       (leftLeg : Fin leftEndpoint → Fin cospan.commonKeys.length)
       (rightLeg : Fin rightEndpoint → Fin cospan.commonKeys.length)
-      (language : LanguageDef) (support : ContextSupport.Support)
+      (profile : Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile)
+      (support : ContextSupport.Support)
       (assignment : ContextSupport.Assignment)
       {relation : Pattern → Pattern → Prop}
       (restores : ∀ {leftLeaf rightLeaf}, relation leftLeaf rightLeaf →
         ∀ depth,
-          ReflectiveContextSupport.substituteAt language support assignment
+          ReflectiveContextSupport.substituteAt profile support assignment
               depth (cospan.reifyWith leftResolve leftLeg leftLeaf) =
-            ReflectiveContextSupport.substituteAt language support assignment
+            ReflectiveContextSupport.substituteAt profile support assignment
               depth (cospan.reifyWith rightResolve rightLeg rightLeaf)) :
       ∀ {leftPatterns rightPatterns : List Pattern},
         PatternLeafAlignedList relation leftPatterns rightPatterns →
         ∀ depth,
           (leftPatterns.map fun pattern =>
-            ReflectiveContextSupport.substituteAt language support assignment
+            ReflectiveContextSupport.substituteAt profile support assignment
               depth (cospan.reifyWith leftResolve leftLeg pattern)) =
           (rightPatterns.map fun pattern =>
-            ReflectiveContextSupport.substituteAt language support assignment
+            ReflectiveContextSupport.substituteAt profile support assignment
               depth (cospan.reifyWith rightResolve rightLeg pattern))
     | _, _, .nil, _ => rfl
     | _, _, .cons head tail, depth => by
         simp only [List.map_cons, List.cons.injEq]
         exact ⟨substituteAt_reifyWith_eq_of_patternLeafAligned cospan
-            leftResolve rightResolve leftLeg rightLeg language support
+            leftResolve rightResolve leftLeg rightLeg profile support
             assignment restores head depth,
           substituteAt_reifyWithList_eq_of_patternLeafAlignedList cospan
-            leftResolve rightResolve leftLeg rightLeg language support
+            leftResolve rightResolve leftLeg rightLeg profile support
             assignment restores tail depth⟩
 end
 
@@ -665,23 +667,24 @@ mutual
       (rightResolve : String → Option (Fin rightEndpoint))
       (leftLeg : Fin leftEndpoint → Fin cospan.commonKeys.length)
       (rightLeg : Fin rightEndpoint → Fin cospan.commonKeys.length)
-      (language : LanguageDef) (support : ContextSupport.Support)
+      (profile : Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile)
+      (support : ContextSupport.Support)
       (assignment : ContextSupport.Assignment)
       {relation : String → String → Prop}
       (restores : ∀ {leftName rightName}, relation leftName rightName →
         ∀ depth,
-          ReflectiveContextSupport.substituteAt language support assignment
+          ReflectiveContextSupport.substituteAt profile support assignment
               depth
               (cospan.reifyWith leftResolve leftLeg (.fvar leftName)) =
-            ReflectiveContextSupport.substituteAt language support assignment
+            ReflectiveContextSupport.substituteAt profile support assignment
               depth
               (cospan.reifyWith rightResolve rightLeg (.fvar rightName))) :
       ∀ {leftPattern rightPattern : Pattern},
         FvarAligned relation leftPattern rightPattern →
         ∀ depth,
-          ReflectiveContextSupport.substituteAt language support assignment
+          ReflectiveContextSupport.substituteAt profile support assignment
               depth (cospan.reifyWith leftResolve leftLeg leftPattern) =
-            ReflectiveContextSupport.substituteAt language support assignment
+            ReflectiveContextSupport.substituteAt profile support assignment
               depth (cospan.reifyWith rightResolve rightLeg rightPattern)
     | _, _, .bvar index, depth => by
         simp [CostStaticAtomKeyCospan.reifyWith,
@@ -692,39 +695,39 @@ mutual
           ReflectiveContextSupport.substituteAt, List.map_map,
           Pattern.apply.injEq, true_and]
         exact substituteAt_reifyWithList_eq_of_fvarAlignedList cospan
-          leftResolve rightResolve leftLeg rightLeg language support assignment
+          leftResolve rightResolve leftLeg rightLeg profile support assignment
           restores arguments
-          (if ReflectiveContextSupport.isQuoteConstructor language constructor
+          (if ReflectiveContextSupport.isQuoteConstructor profile constructor
             then 0 else depth)
     | _, _, .lambda binder body, depth => by
         simp only [CostStaticAtomKeyCospan.reifyWith,
           ReflectiveContextSupport.substituteAt, Pattern.lambda.injEq,
           true_and]
         exact substituteAt_reifyWith_eq_of_fvarAligned cospan leftResolve
-          rightResolve leftLeg rightLeg language support assignment restores
+          rightResolve leftLeg rightLeg profile support assignment restores
           body (depth + 1)
     | _, _, .multiLambda arity binders body, depth => by
         simp only [CostStaticAtomKeyCospan.reifyWith,
           ReflectiveContextSupport.substituteAt, Pattern.multiLambda.injEq,
           true_and]
         exact substituteAt_reifyWith_eq_of_fvarAligned cospan leftResolve
-          rightResolve leftLeg rightLeg language support assignment restores
+          rightResolve leftLeg rightLeg profile support assignment restores
           body (depth + arity)
     | _, _, .subst body replacement, depth => by
         simp only [CostStaticAtomKeyCospan.reifyWith,
           ReflectiveContextSupport.substituteAt, Pattern.subst.injEq]
         exact ⟨substituteAt_reifyWith_eq_of_fvarAligned cospan leftResolve
-            rightResolve leftLeg rightLeg language support assignment restores
+            rightResolve leftLeg rightLeg profile support assignment restores
             body (depth + 1),
           substituteAt_reifyWith_eq_of_fvarAligned cospan leftResolve
-            rightResolve leftLeg rightLeg language support assignment restores
+            rightResolve leftLeg rightLeg profile support assignment restores
             replacement depth⟩
     | _, _, .collection collectionType rest elements, depth => by
         simp only [CostStaticAtomKeyCospan.reifyWith,
           ReflectiveContextSupport.substituteAt, List.map_map,
           Pattern.collection.injEq, true_and, and_true]
         exact substituteAt_reifyWithList_eq_of_fvarAlignedList cospan
-          leftResolve rightResolve leftLeg rightLeg language support assignment
+          leftResolve rightResolve leftLeg rightLeg profile support assignment
           restores elements depth
 
   /-- Listwise companion of
@@ -738,34 +741,35 @@ mutual
       (rightResolve : String → Option (Fin rightEndpoint))
       (leftLeg : Fin leftEndpoint → Fin cospan.commonKeys.length)
       (rightLeg : Fin rightEndpoint → Fin cospan.commonKeys.length)
-      (language : LanguageDef) (support : ContextSupport.Support)
+      (profile : Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile)
+      (support : ContextSupport.Support)
       (assignment : ContextSupport.Assignment)
       {relation : String → String → Prop}
       (restores : ∀ {leftName rightName}, relation leftName rightName →
         ∀ depth,
-          ReflectiveContextSupport.substituteAt language support assignment
+          ReflectiveContextSupport.substituteAt profile support assignment
               depth
               (cospan.reifyWith leftResolve leftLeg (.fvar leftName)) =
-            ReflectiveContextSupport.substituteAt language support assignment
+            ReflectiveContextSupport.substituteAt profile support assignment
               depth
               (cospan.reifyWith rightResolve rightLeg (.fvar rightName))) :
       ∀ {leftPatterns rightPatterns : List Pattern},
         FvarAlignedList relation leftPatterns rightPatterns →
         ∀ depth,
           (leftPatterns.map fun pattern =>
-            ReflectiveContextSupport.substituteAt language support assignment
+            ReflectiveContextSupport.substituteAt profile support assignment
               depth (cospan.reifyWith leftResolve leftLeg pattern)) =
           (rightPatterns.map fun pattern =>
-            ReflectiveContextSupport.substituteAt language support assignment
+            ReflectiveContextSupport.substituteAt profile support assignment
               depth (cospan.reifyWith rightResolve rightLeg pattern))
     | _, _, .nil, _ => rfl
     | _, _, .cons head tail, depth => by
         simp only [List.map_cons, List.cons.injEq]
         exact ⟨substituteAt_reifyWith_eq_of_fvarAligned cospan leftResolve
-            rightResolve leftLeg rightLeg language support assignment restores
+            rightResolve leftLeg rightLeg profile support assignment restores
             head depth,
           substituteAt_reifyWithList_eq_of_fvarAlignedList cospan leftResolve
-            rightResolve leftLeg rightLeg language support assignment restores
+            rightResolve leftLeg rightLeg profile support assignment restores
             tail depth⟩
 end
 

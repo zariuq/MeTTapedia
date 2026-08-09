@@ -190,7 +190,7 @@ theorem checkedChurchRosserDeclKernelIntoPureProfile_profile
   rfl
 
 /-- The assembled value-bearing declaration boundary exposes the same
-engine-facing kernel/profile surface as the generic Church-Rosser embedding.
+engine-facing kernel/profile interface as the generic Church-Rosser embedding.
 This is the honest interface theorem for later clients: carrying the packaged
 boundary is enough to recover the kernel identity and target profile without
 re-proving anything about the embedding layer. -/

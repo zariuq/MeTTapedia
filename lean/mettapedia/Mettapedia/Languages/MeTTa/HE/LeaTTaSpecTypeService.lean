@@ -240,7 +240,7 @@ theorem packagesPresent_runtimeGetTypes
   exact ⟨packages, packagesRel, alpha⟩
 
 /-- A concrete runtime preparation equation realizes the abstract prepared
-package surface.  The equation orientation is fixed for the later
+package interface.  The equation orientation is fixed for the later
 space-algebra instance: executable preparation equals the translation of the
 independent prepared atom. -/
 theorem preparedPackagesPresent_runtimeGetTypes
@@ -321,7 +321,7 @@ theorem PackagesPresent.length_eq
   simpa [observedTypes] using alpha.length_eq
 
 /-- A package-level candidate scan recovered from the exact ordered atom
-surface.  The expression shape identifies the operator whose packages are
+interface.  The expression shape identifies the operator whose packages are
 being recovered. -/
 def RecoveredPackageCandidateScanRel
     (oracle : TypePreparationOracle)

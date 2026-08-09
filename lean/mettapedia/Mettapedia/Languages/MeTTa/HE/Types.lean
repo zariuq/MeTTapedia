@@ -52,7 +52,7 @@ def mkError (source : Atom) (code : ErrorCode) : Atom :=
   Atom.error source code.toAtom
 
 /-- Construct an `(Error source message)` atom with a textual message payload.
-    Hyperon Experimental uses this surface for malformed minimal-instruction
+    Hyperon Experimental uses this interface for malformed minimal-instruction
     parser errors such as bad-arity `unify`. -/
 def mkErrorMessage (source : Atom) (message : String) : Atom :=
   Atom.error source (.symbol message)
@@ -67,7 +67,7 @@ def unifyBadArityMessage : Atom → String
       "expected: (unify <atom> <pattern> <then> <else>), found: " ++
         toString source
 
-/-- Reference HE error for malformed primitive `unify` surfaces. -/
+/-- Reference HE error for malformed primitive `unify` interfaces. -/
 def mkUnifyBadArityError (source : Atom) : Atom :=
   mkErrorMessage source (unifyBadArityMessage source)
 

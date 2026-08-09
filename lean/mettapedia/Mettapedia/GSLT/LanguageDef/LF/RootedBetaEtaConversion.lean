@@ -1,11 +1,12 @@
 import Mettapedia.GSLT.LanguageDef.ConversionCertificate
+import Mettapedia.GSLT.LanguageDef.CalculusLanguageDef
 
 /-!
 # Rooted beta-eta conversion for indexed LF
 
 This module places the structural beta-eta reduction rules used by the LF
-checker inside one authoritative `LanguageDef`.  Rule application is handled
-by the generic inference checker:
+checker inside one authoritative `CalculusLanguageDef`.  Rule application is
+handled by the generic inference checker:
 
 * beta uses checked binder-eliminating substitution;
 * eta uses checked unused-binder elimination;
@@ -24,6 +25,7 @@ open Mettapedia.OSLF.MeTTaIL.Substitution
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
 open Mettapedia.GSLT.LanguageDef.CheckedSource
 open Mettapedia.GSLT.LanguageDef.ConversionCertificate
+open Mettapedia.GSLT.LanguageDef
 
 def lfSortType : TypeDecl := TypeDecl.plain "LFSort"
 def lfTermType : TypeDecl := TypeDecl.plain "LFTerm"
@@ -140,7 +142,7 @@ def lamCongruenceRule : RuleSchema :=
         (lam (.fvar "domainResult") (.fvar "bodyResult")) }
 
 /-- The sole LF term grammar and rooted conversion calculus. -/
-def language : LanguageDef :=
+abbrev definition : CalculusLanguageDef :=
   { name := "indexed-lf-beta-eta"
     types := [lfSortType, lfTermType, lfNameType, lfIndexType]
     terms :=
@@ -164,12 +166,14 @@ def language : LanguageDef :=
     equations := []
     rewrites := []
     judgments := [{ head := conversionDeclaration.judgmentHead, arity := 2 }]
-    inferenceRules :=
+    rules :=
       [betaRule, etaRule, appCongruenceRule, piCongruenceRule,
         lamCongruenceRule]
     conversion := some conversionDeclaration }
 
-def presentation : Presentation := { language }
+def language : LanguageDef := definition.toLanguageDef
+def calculus := definition.toCalculus
+def presentation : Presentation := definition.toNested
 
 theorem language_validate : language.validate = [] := by
   apply LanguageDef.validate_eq_nil_of_constructorOnly language <;>
@@ -179,7 +183,7 @@ theorem language_validate : language.validate = [] := by
 
 theorem presentation_valid : presentation.isValidV2 = true := by
   have hvalidate : presentation.language.validate = [] := by
-    simpa [presentation] using language_validate
+    simpa [presentation, language] using language_validate
   unfold Presentation.isValidV2 Presentation.isValidV1
   rw [hvalidate]
   simp [presentation, Presentation.ruleIds,
@@ -195,12 +199,20 @@ theorem presentation_valid : presentation.isValidV2 = true := by
     Pattern.isWellScoped, Pattern.isWellScopedAt,
     Pattern.isWellScopedListAt, Pattern.hasCanonicalBinderMetadata,
     Pattern.hasCanonicalBinderMetadataList, Pattern.zipHead,
-    Pattern.mapHead, Pattern.evalHead, language, lfSortType, lfTermType,
+    Pattern.mapHead, Pattern.evalHead, lfSortType, lfTermType,
     lfNameType, lfIndexType, constructor, conversionDeclaration, betaRule,
     etaRule,
     appCongruenceRule, piCongruenceRule, lamCongruenceRule,
     converts, app, pi, lam, ruleId]
   decide
+
+/-- The complete LF grammar and rooted conversion calculus as one GSLT. -/
+def totalTheory : Mettapedia.GSLT.GSLT :=
+  definition.toGSLTOfNoEquations presentation_valid rfl
+
+theorem totalTheory_Term : totalTheory.Term = (Pattern ⊕ List Pattern) := by
+  unfold totalTheory CalculusLanguageDef.toGSLTOfNoEquations
+  rfl
 
 /-- Source package consumed by the generic checker.  The identity names this
 Lean definition; an exported artifact binds its byte-level digest separately. -/
@@ -252,7 +264,7 @@ theorem beta_certificate_accepts :
     check checked rootedConversion betaSource typeTerm betaCertificate = true := by
   simp [check, RootedConversion.judgment, CheckedGSLT.checkRaw,
     InferenceChecker.checkRaw, InferenceChecker.checkRawChildren,
-    CheckedGSLT.presentation, checked, source, presentation, language,
+    CheckedGSLT.presentation, checked, source, presentation,
     rootedConversion, betaCertificate, betaProof, betaSource, identity,
     betaRule, etaRule, appCongruenceRule, piCongruenceRule,
     lamCongruenceRule, conversionDeclaration, instantiateRule?,
@@ -282,7 +294,7 @@ theorem eta_certificate_accepts :
     check checked rootedConversion etaSource typeTerm etaCertificate = true := by
   simp [check, RootedConversion.judgment, CheckedGSLT.checkRaw,
     InferenceChecker.checkRaw, InferenceChecker.checkRawChildren,
-    CheckedGSLT.presentation, checked, source, presentation, language,
+    CheckedGSLT.presentation, checked, source, presentation,
     rootedConversion, etaCertificate, etaProof, etaSource, betaRule,
     etaRule, appCongruenceRule, piCongruenceRule, lamCongruenceRule,
     conversionDeclaration, instantiateRule?, Presentation.lookupRule?,
@@ -319,7 +331,7 @@ theorem captured_eta_rejects :
       (.step typeTerm capturedEtaProof .refl) = false := by
   simp [check, RootedConversion.judgment, CheckedGSLT.checkRaw,
     InferenceChecker.checkRaw, CheckedGSLT.presentation, checked, source,
-    presentation, language, rootedConversion, capturedEtaProof,
+    presentation, rootedConversion, capturedEtaProof,
     capturedEtaSource, betaRule, etaRule, appCongruenceRule,
     piCongruenceRule, lamCongruenceRule, conversionDeclaration,
     instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
@@ -341,7 +353,7 @@ theorem fabricated_beta_result_rejects :
       (.step kindTerm fabricatedBetaProof .refl) = false := by
   simp [check, RootedConversion.judgment, CheckedGSLT.checkRaw,
     InferenceChecker.checkRaw, CheckedGSLT.presentation, checked, source,
-    presentation, language, rootedConversion, fabricatedBetaProof,
+    presentation, rootedConversion, fabricatedBetaProof,
     betaSource, identity, betaRule, etaRule, appCongruenceRule,
     piCongruenceRule, lamCongruenceRule, conversionDeclaration,
     instantiateRule?, Presentation.lookupRule?, argumentsValidAt,

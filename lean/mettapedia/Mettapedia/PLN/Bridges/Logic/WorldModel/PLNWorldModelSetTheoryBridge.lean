@@ -35,9 +35,9 @@ abbrev SetQuery := FOLQuery SetLang
 abbrev SetPointed := PointedFOL SetLang
 abbrev SetState := FOLState SetLang
 
-abbrev WMCategoricalEndpointSurface
+abbrev WMCategoricalEndpointContract
     (H : WMHyperdoctrine SetState) : Prop :=
-  Mettapedia.PLN.Bridges.Logic.WorldModel.PLNWorldModelFOLCompleteness.WMCategoricalEndpointSurface (H := H)
+  Mettapedia.PLN.Bridges.Logic.WorldModel.PLNWorldModelFOLCompleteness.WMCategoricalEndpointContract (H := H)
 
 /-- Set-theory model-side condition for WM states. -/
 abbrev stateModelsTheory (T : SetTheory) (W : SetState) : Prop :=
@@ -182,7 +182,7 @@ theorem set_to_wm_expressivity_split
 
 /-- Unified endpoint pack:
 from set-theoretic provability, we get WM multiset consequence transfer and the
-categorical endpoint surface in one theorem. -/
+categorical endpoint contract in one theorem. -/
 theorem provable_imp_to_multiset_and_endpoint_surface
     (H : WMHyperdoctrine SetState)
     (T : SetTheory) (φ ψ : SetQuery)
@@ -191,12 +191,12 @@ theorem provable_imp_to_multiset_and_endpoint_surface
       BinaryWorldModel.queryStrength (State := SetState) (Query := SetQuery) W φ ≤
         BinaryWorldModel.queryStrength (State := SetState) (Query := SetQuery) W ψ)
     ∧
-    EndpointSurface (H := H) := by
+    EndpointContract (H := H) := by
   constructor
   · intro W hW
     exact multiset_strength_le_of_provable_imp
       (T := T) (W := W) (φ := φ) (ψ := ψ) hW hprov
-  · exact endpointSurface_of_hyperdoctrine (H := H)
+  · exact endpointContract_of_hyperdoctrine (H := H)
 
 /-- Set-theory consequence packaged as a state-indexed WM consequence rule. -/
 def wmConsequenceRuleOn_of_consequence
@@ -217,7 +217,7 @@ def wmConsequenceRuleOn_of_provable_imp
 /-- Categorical-aligned set-theory consequence wrapper. -/
 theorem multiset_strength_le_of_consequence_categorical
     (H : WMHyperdoctrine SetState)
-    (hcat : WMCategoricalEndpointSurface (H := H))
+    (hcat : WMCategoricalEndpointContract (H := H))
     {X : H.Obj} (φc : H.query X)
     (T : SetTheory) (W : SetState) (φ ψ : SetQuery)
     (hW : stateModelsTheory T W)
@@ -232,7 +232,7 @@ theorem multiset_strength_le_of_consequence_categorical
 /-- Categorical-aligned set-theory provability wrapper. -/
 theorem multiset_strength_le_of_provable_imp_categorical
     (H : WMHyperdoctrine SetState)
-    (hcat : WMCategoricalEndpointSurface (H := H))
+    (hcat : WMCategoricalEndpointContract (H := H))
     {X : H.Obj} (φc : H.query X)
     (T : SetTheory) (W : SetState) (φ ψ : SetQuery)
     (hW : stateModelsTheory T W)
@@ -247,7 +247,7 @@ theorem multiset_strength_le_of_provable_imp_categorical
 /-- Categorical-aligned packaging from semantic consequence. -/
 def wmConsequenceRuleOn_of_consequence_categorical
     (H : WMHyperdoctrine SetState)
-    (hcat : WMCategoricalEndpointSurface (H := H))
+    (hcat : WMCategoricalEndpointContract (H := H))
     {X : H.Obj} (φc : H.query X)
     (T : SetTheory) (φ ψ : SetQuery)
     (hcons : T ⊨[SmallStruc SetLang] (φ ➝ ψ)) :
@@ -259,7 +259,7 @@ def wmConsequenceRuleOn_of_consequence_categorical
 /-- Categorical-aligned packaging from provable implication. -/
 def wmConsequenceRuleOn_of_provable_imp_categorical
     (H : WMHyperdoctrine SetState)
-    (hcat : WMCategoricalEndpointSurface (H := H))
+    (hcat : WMCategoricalEndpointContract (H := H))
     {X : H.Obj} (φc : H.query X)
     (T : SetTheory) (φ ψ : SetQuery)
     (hprov : T ⊢ (φ ➝ ψ)) :
@@ -322,10 +322,10 @@ def wmConsequenceRuleOn_of_provable_imp_ZFC
   wmConsequenceRuleOn_of_provable_imp (T := 𝗭𝗙𝗖) (φ := φ) (ψ := ψ) hprov
 
 /-- Category-facing endpoint: set-theory WM hyperdoctrines satisfy the unified
-institution/Beck-Chevalley endpoint surface. -/
+institution/Beck-Chevalley endpoint contract. -/
 theorem categorical_endpoint_surface
     (H : WMHyperdoctrine SetState) :
-    EndpointSurface (H := H) :=
-  endpointSurface_of_hyperdoctrine (H := H)
+    EndpointContract (H := H) :=
+  endpointContract_of_hyperdoctrine (H := H)
 
 end Mettapedia.PLN.Bridges.Logic.WorldModel.PLNWorldModelSetTheoryBridge

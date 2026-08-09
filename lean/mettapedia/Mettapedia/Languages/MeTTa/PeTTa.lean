@@ -8,6 +8,7 @@ import Mettapedia.Languages.MeTTa.PeTTa.FunctionFreeLPBridge
 import Mettapedia.Languages.MeTTa.PeTTa.Effects
 import Mettapedia.Languages.MeTTa.PeTTa.TypeSystem
 import Mettapedia.Languages.MeTTa.PeTTa.TypeSystemGSLT
+import Mettapedia.Languages.MeTTa.PeTTa.TypeSystemGSLTLayers
 import Mettapedia.Languages.MeTTa.PeTTa.TypeSystemGSLTDeterminism
 import Mettapedia.Languages.MeTTa.PeTTa.TypeSystemGSLTGuard
 import Mettapedia.Languages.MeTTa.PeTTa.TypeSystemGSLTDecision
@@ -35,6 +36,7 @@ import Mettapedia.Languages.MeTTa.PeTTa.RewriteIRV2
 import Mettapedia.Languages.MeTTa.PeTTa.Artifacts
 import Mettapedia.Languages.MeTTa.PeTTa.CoreFragment
 import Mettapedia.Languages.MeTTa.PeTTa.SpaceCoreFragment
+import Mettapedia.Languages.MeTTa.PeTTa.MeTTaZeroExtension
 import Mettapedia.Languages.MeTTa.PeTTa.Unit
 import Mettapedia.Languages.MeTTa.PeTTa.StageIndex
 import Mettapedia.Languages.MeTTa.PeTTa.OSLFPackage

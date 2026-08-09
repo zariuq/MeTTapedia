@@ -5,8 +5,8 @@ import Mettapedia.Languages.MeTTa.HE.BridgeMatrix
 # Runtime Cache Contracts
 
 Historical implementation-facing contracts for cache/tabling sketches. The
-variant-key theorem in this file is now explicitly legacy simpleMatch-surface
-only; it is not evidence for the repaired public faithful query surface.
+variant-key theorem in this file is now explicitly legacy simpleMatch-interface
+only; it is not evidence for the repaired public faithful query interface.
 
 ## Contracts
 
@@ -95,7 +95,7 @@ theorem faithful_variables (c : Canonicalization) (v₁ v₂ : String) :
   VarRenaming.faithful_iff c.ren c.inj v₁ v₂
 
 /-- **Contract 1g**: Variant-equivalent queries share canonical RHS atoms on
-    the legacy simpleMatch query model. The public faithful query surface still
+    the legacy simpleMatch query model. The public faithful query interface still
     needs its own invariant. -/
 theorem variant_cache_safe (c : Canonicalization)
     (space : Space) (q : Atom) (fuel : Nat) :
@@ -269,7 +269,7 @@ CeTTa profiles gate which operations are available. -/
 
 /-- CeTTa profile levels (from `session.h`). -/
 inductive ProfileLevel where
-  | heCompat     -- HE-compatible public surface
+  | heCompat     -- HE-compatible public interface
   | heExtended   -- HE-compatible + CeTTa extensions
   | hePrime      -- Extended + dependent telescope
   deriving DecidableEq, Repr

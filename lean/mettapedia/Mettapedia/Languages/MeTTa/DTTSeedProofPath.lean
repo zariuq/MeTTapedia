@@ -236,34 +236,34 @@ theorem pureUnitRec_currentBoundary_conditional_oracle_connection
 
 def tutUnitPattern : Pattern := .apply "TutUnit" []
 def tutUnitCtorPattern : Pattern := .apply "TutUnitCtor" []
-def tutUnitRecSurfaceOnCtorPattern : Pattern :=
-  .apply "TutUnitRecSurface" [tutUnitPattern, tutUnitCtorPattern, tutUnitCtorPattern]
+def tutUnitRecSyntaxOnCtorPattern : Pattern :=
+  .apply "TutUnitRecSyntax" [tutUnitPattern, tutUnitCtorPattern, tutUnitCtorPattern]
 
 def elaborateTutUnitOraclePattern : Pattern → Option (PureTm 0)
   | .apply "TutUnit" [] => some unitTyTerm
   | .apply "TutUnitCtor" [] => some unitCtorTerm
-  | .apply "TutUnitRecSurface"
+  | .apply "TutUnitRecSyntax"
       [.apply "TutUnit" [], .apply "TutUnitCtor" [], .apply "TutUnitCtor" []] =>
       some unitRecOnCtor
   | _ => none
 
 structure HePrimeOracleReduction where
-  surfaceSource : Pattern
-  surfaceTarget : Pattern
+  syntaxSource : Pattern
+  syntaxTarget : Pattern
   source : PureTm 0
   target : PureTm 0
-  sourceElab : elaborateTutUnitOraclePattern surfaceSource = some source
-  targetElab : elaborateTutUnitOraclePattern surfaceTarget = some target
+  sourceElab : elaborateTutUnitOraclePattern syntaxSource = some source
+  targetElab : elaborateTutUnitOraclePattern syntaxTarget = some target
   sourceType : HasTypeDecl unitRecDeclEnv .nil source (.const unitTyName)
   reduces : RedStarDecl unitRecDeclEnv source target
   targetType : HasTypeDecl unitRecDeclEnv .nil target (.const unitTyName)
 
-/-- First runtime/oracle bridge: the he-prime surface call
-`(TutUnitRecSurface TutUnit TutUnitCtor TutUnitCtor)` is the same closed
+/-- First runtime/oracle bridge: the he-prime syntax call
+`(TutUnitRecSyntax TutUnit TutUnitCtor TutUnitCtor)` is the same closed
 Unit-rec computation witnessed by the PureKernel oracle. -/
-def hePrime_tutUnitRecSurface_oracle_certificate : HePrimeOracleReduction :=
-  { surfaceSource := tutUnitRecSurfaceOnCtorPattern
-    surfaceTarget := tutUnitCtorPattern
+def hePrime_tutUnitRecSyntax_oracle_certificate : HePrimeOracleReduction :=
+  { syntaxSource := tutUnitRecSyntaxOnCtorPattern
+    syntaxTarget := tutUnitCtorPattern
     source := unitRecOnCtor
     target := unitCtorTerm
     sourceElab := rfl
@@ -272,17 +272,17 @@ def hePrime_tutUnitRecSurface_oracle_certificate : HePrimeOracleReduction :=
     reduces := pureUnitRec_iota_oracle.2.1
     targetType := pureUnitRec_iota_oracle.2.2 }
 
-theorem hePrime_tutUnitRecSurface_oracle_connection :
-    elaborateTutUnitOraclePattern tutUnitRecSurfaceOnCtorPattern = some unitRecOnCtor ∧
+theorem hePrime_tutUnitRecSyntax_oracle_connection :
+    elaborateTutUnitOraclePattern tutUnitRecSyntaxOnCtorPattern = some unitRecOnCtor ∧
       elaborateTutUnitOraclePattern tutUnitCtorPattern = some unitCtorTerm ∧
       HasTypeDecl unitRecDeclEnv .nil unitRecOnCtor (.const unitTyName) ∧
       RedStarDecl unitRecDeclEnv unitRecOnCtor unitCtorTerm ∧
       HasTypeDecl unitRecDeclEnv .nil unitCtorTerm (.const unitTyName) :=
-  ⟨ hePrime_tutUnitRecSurface_oracle_certificate.sourceElab
-  , hePrime_tutUnitRecSurface_oracle_certificate.targetElab
-  , hePrime_tutUnitRecSurface_oracle_certificate.sourceType
-  , hePrime_tutUnitRecSurface_oracle_certificate.reduces
-  , hePrime_tutUnitRecSurface_oracle_certificate.targetType
+  ⟨ hePrime_tutUnitRecSyntax_oracle_certificate.sourceElab
+  , hePrime_tutUnitRecSyntax_oracle_certificate.targetElab
+  , hePrime_tutUnitRecSyntax_oracle_certificate.sourceType
+  , hePrime_tutUnitRecSyntax_oracle_certificate.reduces
+  , hePrime_tutUnitRecSyntax_oracle_certificate.targetType
   ⟩
 
 /-! ## Current-boundary no-values slice -> quoted profile bridge -/
@@ -358,7 +358,7 @@ theorem generatedRecursor_currentBoundary_noValues_subjectReduction_and_profileB
 /-- On the same assumption-free slice, a successful generated recursor
 conversion-by-normalization witness yields a quoted common reduct in the
 Pure-profile theory. This is the current bridge from the checked recursor
-conversion service to the engine-facing quoted proof surface. -/
+conversion service to the engine-facing quoted proof representation. -/
 theorem generatedRecursor_currentBoundary_noValues_convByNormalization_profileBridge_of_all_none_specs
     {contract : FamilyRecursorDeclContract}
     {specs : List DeclSpec}

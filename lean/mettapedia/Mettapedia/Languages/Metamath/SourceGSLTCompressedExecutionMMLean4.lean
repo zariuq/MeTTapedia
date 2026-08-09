@@ -510,7 +510,8 @@ noncomputable def headerStep_runtimePreserved
     Σ runtimeAfter,
       (db.preload runtimeBefore (headerRuntimeLabel item) =
         .ok runtimeAfter) ×'
-      MachineAgrees db source target after runtimeAfter := by
+      MachineAgrees db source target after runtimeAfter ×'
+      runtimeAfter.incomplete = runtimeBefore.incomplete := by
   cases step with
   | mandatory before hypothesis member =>
       have hmemberRuntime :
@@ -533,7 +534,7 @@ noncomputable def headerStep_runtimePreserved
         simp [newNode]
       refine
         ⟨runtimeBefore.pushHeap (.fmla hypothesis.formula.toRuntime),
-          runtimePreload, ?_⟩
+          runtimePreload, ?_, rfl⟩
       refine
         { stackFormulas := agreement.stackFormulas
           heapEntries := agreement.heapEntries ++
@@ -574,7 +575,7 @@ noncomputable def headerStep_runtimePreserved
         simp [newNode]
       refine
         ⟨runtimeBefore.pushHeap (.fmla hypothesis.formula.toRuntime),
-          runtimePreload, ?_⟩
+          runtimePreload, ?_, rfl⟩
       refine
         { stackFormulas := agreement.stackFormulas
           heapEntries := agreement.heapEntries ++
@@ -617,7 +618,7 @@ noncomputable def headerStep_runtimePreserved
       refine
         ⟨runtimeBefore.pushHeap
             (.assert assertion.formula.toRuntime assertion.frame.toRuntime),
-          runtimePreload, ?_⟩
+          runtimePreload, ?_, rfl⟩
       refine
         { stackFormulas := agreement.stackFormulas
           heapEntries := agreement.heapEntries ++
@@ -648,19 +649,23 @@ noncomputable def headerBuild_runtimePreserved
       ((items.map headerRuntimeLabel).foldlM
           (fun state label => db.preload state label) runtimeBefore =
         .ok runtimeAfter) ×'
-      MachineAgrees db source target after runtimeAfter := by
+      MachineAgrees db source target after runtimeAfter ×'
+      runtimeAfter.incomplete = runtimeBefore.incomplete := by
   induction build generalizing runtimeBefore with
   | nil state =>
-      exact ⟨runtimeBefore, rfl, agreement⟩
+      exact ⟨runtimeBefore, rfl, agreement, rfl⟩
   | @cons item items before middle after head tail ih =>
-      obtain ⟨runtimeMiddle, headStep, middleAgreement⟩ :=
+      obtain ⟨runtimeMiddle, headStep, middleAgreement,
+          middleIncomplete⟩ :=
         headerStep_runtimePreserved db hproject runtimeBefore head agreement
-      obtain ⟨runtimeAfter, tailSteps, afterAgreement⟩ :=
+      obtain ⟨runtimeAfter, tailSteps, afterAgreement,
+          afterIncomplete⟩ :=
         ih runtimeMiddle middleAgreement
-      refine ⟨runtimeAfter, ?_, afterAgreement⟩
-      simp only [List.map_cons, List.foldlM_cons]
-      rw [headStep]
-      exact tailSteps
+      refine ⟨runtimeAfter, ?_, afterAgreement,
+        afterIncomplete.trans middleIncomplete⟩
+      · simp only [List.map_cons, List.foldlM_cons]
+        rw [headStep]
+        exact tailSteps
 
 /-! ## Verified implementation steps -/
 
@@ -1213,7 +1218,7 @@ def runtimeAction
       if db.config.rejectUnknownSteps then
         .error (.proofCheck .unknownStepQuestionRejected)
       else
-        .ok (runtimeState.push runtimeState.fmla)
+        .ok { runtimeState.push runtimeState.fmla with incomplete := true }
 
 /-- Every successful verified implementation action reflects to a source
 occurrence transition.  Heap dispatch is recovered through the exact related
@@ -1295,7 +1300,8 @@ noncomputable def actionStep_runtimePreserved
     Σ runtimeAfter,
       (runtimeAction db runtimeBefore (toMMLean4Action action) =
         .ok runtimeAfter) ×'
-      MachineAgrees db source target after runtimeAfter := by
+      MachineAgrees db source target after runtimeAfter ×'
+      runtimeAfter.incomplete = runtimeBefore.incomplete := by
   cases step with
   | proof index nodeId node heapLookup nodeLookup =>
       obtain ⟨runtimeStep, nextAgreement⟩ :=
@@ -1304,7 +1310,7 @@ noncomputable def actionStep_runtimePreserved
       exact
         ⟨runtimeBefore.push node.formula.toRuntime,
           by simpa [runtimeAction, toMMLean4Action] using runtimeStep,
-          nextAgreement⟩
+          nextAgreement, rfl⟩
   | @assertion index assertion actuals result substitution retained
         parents children heapLookup member stack_eq node resolved =>
       obtain ⟨runtimeStep, nextAgreement⟩ :=
@@ -1314,14 +1320,14 @@ noncomputable def actionStep_runtimePreserved
       exact
         ⟨assertionResultState runtimeBefore assertion result,
           by simpa [runtimeAction, toMMLean4Action] using runtimeStep,
-          nextAgreement⟩
+          nextAgreement, rfl⟩
   | save nodeId node stackTop nodeLookup =>
       obtain ⟨runtimeSave, nextAgreement⟩ :=
         saveAction_preserved db before runtimeBefore nodeId node stackTop
           nodeLookup agreement
       refine
         ⟨runtimeBefore.pushHeap (.fmla node.formula.toRuntime), ?_,
-          nextAgreement⟩
+          nextAgreement, rfl⟩
       simp only [toMMLean4Action, runtimeAction]
       rw [runtimeSave]
 
@@ -1341,20 +1347,24 @@ noncomputable def execute_runtimeFoldPreserved
     Σ runtimeAfter,
       ((actions.map toMMLean4Action).foldlM (runtimeAction db)
           runtimeBefore = .ok runtimeAfter) ×'
-      MachineAgrees db source target after runtimeAfter := by
+      MachineAgrees db source target after runtimeAfter ×'
+      runtimeAfter.incomplete = runtimeBefore.incomplete := by
   induction execution generalizing runtimeBefore with
   | nil state =>
-      exact ⟨runtimeBefore, rfl, agreement⟩
+      exact ⟨runtimeBefore, rfl, agreement, rfl⟩
   | @cons before middle after action actions head tail ih =>
-      obtain ⟨runtimeMiddle, headStep, middleAgreement⟩ :=
+      obtain ⟨runtimeMiddle, headStep, middleAgreement,
+          middleIncomplete⟩ :=
         actionStep_runtimePreserved db hsource hproject runtimeBefore head
           agreement
-      obtain ⟨runtimeAfter, tailSteps, afterAgreement⟩ :=
+      obtain ⟨runtimeAfter, tailSteps, afterAgreement,
+          afterIncomplete⟩ :=
         ih runtimeMiddle middleAgreement
-      refine ⟨runtimeAfter, ?_, afterAgreement⟩
-      simp only [List.map_cons, List.foldlM_cons]
-      rw [headStep]
-      exact tailSteps
+      refine ⟨runtimeAfter, ?_, afterAgreement,
+        afterIncomplete.trans middleIncomplete⟩
+      · simp only [List.map_cons, List.foldlM_cons]
+        rw [headStep]
+        exact tailSteps
 
 /-- Full source-execution preservation stated against the shipped
 `mm-lean4` compressed-action driver. -/
@@ -1371,14 +1381,16 @@ noncomputable def execute_mmLean4Preserved
     Σ runtimeAfter,
       (ParserState.applyCompressedActions db runtimeBefore
           (actions.map toMMLean4Action) = .ok runtimeAfter) ×'
-      MachineAgrees db source target after runtimeAfter := by
-  obtain ⟨runtimeAfter, runtimeSteps, afterAgreement⟩ :=
+      MachineAgrees db source target after runtimeAfter ×'
+      runtimeAfter.incomplete = runtimeBefore.incomplete := by
+  obtain ⟨runtimeAfter, runtimeSteps, afterAgreement,
+      afterIncomplete⟩ :=
     execute_runtimeFoldPreserved db hsource hproject runtimeBefore execution
       agreement
   exact ⟨runtimeAfter,
     applyCompressedActions_eq_runtimeFold db runtimeBefore
       (actions.map toMMLean4Action) |>.trans runtimeSteps,
-    afterAgreement⟩
+    afterAgreement, afterIncomplete⟩
 
 /-- Reflection of an arbitrary successful runtime compressed-action fold.
 Each step reconstructs its source occurrence before the induction proceeds,
@@ -1514,6 +1526,7 @@ structure CompressedExecutionPreservation
     MachineAgrees db before.toSourcePrefix step.target
       step.finalState runtimeFinal
   finalStack : runtimeFinal.stack = #[formula.toRuntime]
+  finalIncomplete : runtimeFinal.incomplete = runtimeBase.incomplete
 
 /-- Full preservation from a source compressed theorem occurrence into the
 verified implementation's header and action machines.  The only database
@@ -1536,10 +1549,12 @@ noncomputable def CompressedTheoremStep.mmLean4ExecutionPreserved
       MachineAgrees db before.toSourcePrefix step.target
         (emptyMachine before.toSourcePrefix step.target) runtimeStart :=
     emptyMachineAgrees db before.toSourcePrefix step.target runtimeBase
-  obtain ⟨runtimeInitial, headerExecution, initialAgreement⟩ :=
+  obtain ⟨runtimeInitial, headerExecution, initialAgreement,
+      headerIncomplete⟩ :=
     headerBuild_runtimePreserved db hproject runtimeStart step.header
       startAgreement
-  obtain ⟨runtimeFinal, actionExecution, finalAgreement⟩ :=
+  obtain ⟨runtimeFinal, actionExecution, finalAgreement,
+      actionIncomplete⟩ :=
     execute_mmLean4Preserved db step.presentation_eq hproject runtimeInitial
       step.execution initialAgreement
   have rootStack :
@@ -1554,7 +1569,9 @@ noncomputable def CompressedTheoremStep.mmLean4ExecutionPreserved
       headerExecution := headerExecution
       actionExecution := actionExecution
       finalAgreement := finalAgreement
-      finalStack := finalStack }
+      finalStack := finalStack
+      finalIncomplete := by
+        simpa [runtimeStart] using actionIncomplete.trans headerIncomplete }
 
 /-! ## Positive and negative representation boundaries -/
 

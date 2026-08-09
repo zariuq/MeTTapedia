@@ -465,12 +465,28 @@ def activeHypothesisRule (hypothesis : HypothesisView) : RuleSchema :=
     premises := []
     conclusion := proves (encodeFormula hypothesis.formula) }
 
+@[simp] theorem activeHypothesisRule_id_value (hypothesis : HypothesisView) :
+    (activeHypothesisRule hypothesis).id.value = hypothesis.label := by
+  rfl
+
 def assertionHypothesisFormalsFrom : Nat → List HypothesisView →
     List (String × Nat)
   | _, [] => []
   | index, _ :: hypotheses =>
       formal (hypothesisBodyFormalName index) ::
         assertionHypothesisFormalsFrom (index + 1) hypotheses
+
+@[simp] theorem assertionHypothesisFormalsFrom_nil (index : Nat) :
+    assertionHypothesisFormalsFrom index [] = [] := by
+  rfl
+
+@[simp] theorem assertionHypothesisFormalsFrom_cons
+    (index : Nat) (hypothesis : HypothesisView)
+    (hypotheses : List HypothesisView) :
+    assertionHypothesisFormalsFrom index (hypothesis :: hypotheses) =
+      (hypothesisBodyFormalName index, 0) ::
+        assertionHypothesisFormalsFrom (index + 1) hypotheses := by
+  rfl
 
 def assertionHypothesisProvesFrom : Nat → List HypothesisView → List Pattern
   | _, [] => []
@@ -479,6 +495,20 @@ def assertionHypothesisProvesFrom : Nat → List HypothesisView → List Pattern
           (Builder.formula (encodeString hypothesis.typecode)
             (mv (hypothesisBodyFormalName index))) ::
         assertionHypothesisProvesFrom (index + 1) hypotheses
+
+@[simp] theorem assertionHypothesisProvesFrom_nil (index : Nat) :
+    assertionHypothesisProvesFrom index [] = [] := by
+  rfl
+
+@[simp] theorem assertionHypothesisProvesFrom_cons
+    (index : Nat) (hypothesis : HypothesisView)
+    (hypotheses : List HypothesisView) :
+    assertionHypothesisProvesFrom index (hypothesis :: hypotheses) =
+      proves
+          (Builder.formula (encodeString hypothesis.typecode)
+            (.fvar (hypothesisBodyFormalName index))) ::
+        assertionHypothesisProvesFrom (index + 1) hypotheses := by
+  rfl
 
 def assertionBindingsFrom : Nat → List HypothesisView → List Pattern
   | _, [] => []
@@ -489,6 +519,28 @@ def assertionBindingsFrom : Nat → List HypothesisView → List Pattern
         assertionBindingsFrom (index + 1) hypotheses
   | index, .essential _ _ :: hypotheses =>
       assertionBindingsFrom (index + 1) hypotheses
+
+@[simp] theorem assertionBindingsFrom_nil (index : Nat) :
+    assertionBindingsFrom index [] = [] := by
+  rfl
+
+@[simp] theorem assertionBindingsFrom_floating
+    (index : Nat) (label typecode variableName : String)
+    (hypotheses : List HypothesisView) :
+    assertionBindingsFrom index
+        (.floating label typecode variableName :: hypotheses) =
+      Builder.binding (encodeString variableName)
+          (Builder.formula (encodeString typecode)
+            (.fvar (hypothesisBodyFormalName index))) ::
+        assertionBindingsFrom (index + 1) hypotheses := by
+  rfl
+
+@[simp] theorem assertionBindingsFrom_essential
+    (index : Nat) (label : String) (formula : ConstantHeadedFormula)
+    (hypotheses : List HypothesisView) :
+    assertionBindingsFrom index (.essential label formula :: hypotheses) =
+      assertionBindingsFrom (index + 1) hypotheses := by
+  rfl
 
 def assertionSubstitution (assertion : AssertionView) : Pattern :=
   Builder.substitution
@@ -504,6 +556,32 @@ def assertionEssentialChecksFrom (substitution : Pattern) :
           (Builder.formula (encodeString formula.typecode)
             (mv (hypothesisBodyFormalName index))) ::
         assertionEssentialChecksFrom substitution (index + 1) hypotheses
+
+@[simp] theorem assertionEssentialChecksFrom_nil
+    (substitution : Pattern) (index : Nat) :
+    assertionEssentialChecksFrom substitution index [] = [] := by
+  rfl
+
+@[simp] theorem assertionEssentialChecksFrom_floating
+    (substitution : Pattern) (index : Nat)
+    (label typecode variableName : String)
+    (hypotheses : List HypothesisView) :
+    assertionEssentialChecksFrom substitution index
+        (.floating label typecode variableName :: hypotheses) =
+      assertionEssentialChecksFrom substitution (index + 1) hypotheses := by
+  rfl
+
+@[simp] theorem assertionEssentialChecksFrom_essential
+    (substitution : Pattern) (index : Nat)
+    (label : String) (formula : ConstantHeadedFormula)
+    (hypotheses : List HypothesisView) :
+    assertionEssentialChecksFrom substitution index
+        (.essential label formula :: hypotheses) =
+      applySubst substitution (encodeFormula formula)
+          (Builder.formula (encodeString formula.typecode)
+            (.fvar (hypothesisBodyFormalName index))) ::
+        assertionEssentialChecksFrom substitution (index + 1) hypotheses := by
+  rfl
 
 def assertionRule (callerFrame : RuntimeFrame)
     (assertion : AssertionView) : RuleSchema :=
@@ -524,6 +602,11 @@ def assertionRule (callerFrame : RuntimeFrame)
             resultFormula ]
     conclusion := proves resultFormula }
 
+@[simp] theorem assertionRule_id_value
+    (callerFrame : RuntimeFrame) (assertion : AssertionView) :
+    (assertionRule callerFrame assertion).id.value = assertion.label := by
+  rfl
+
 def generatedSourceRules (projection : PrefixProjection) : List RuleSchema :=
   projection.activeHypotheses.map activeHypothesisRule ++
     projection.assertions.map (assertionRule projection.callerFrame)
@@ -538,7 +621,7 @@ theorem validatedSidePresentation_refines_of_generated_rules
     RuleLookupRefines validatedSidePresentation target := by
   apply RuleLookupRefines.of_rules_eq_append
       (generatedSourceRules projection)
-  simpa [validatedSidePresentation, sidePresentation] using hrules
+  simpa [validatedSidePresentation, sidePresentation, sideCalculus] using hrules
 
 def presentationOfProjection? (projection : PrefixProjection) :
     Option Presentation := do
@@ -548,10 +631,10 @@ def presentationOfProjection? (projection : PrefixProjection) :
   let sourceRules := generatedSourceRules projection
   guard (sourceRuleIdsDisjoint (sourceRules.map RuleSchema.id))
   some
-    { language :=
-        { languageWithSourceVocabulary vocabulary with
-          judgments := judgmentDecls ++ [provesDecl]
-          inferenceRules := sideRules ++ sourceRules } }
+    { language := languageWithSourceVocabulary vocabulary
+      calculus :=
+        { judgments := judgmentDecls ++ [provesDecl]
+          rules := sideRules ++ sourceRules } }
 
 /-- A successful presentation projection exposes exactly the side calculus
 followed by the generated source rules. -/

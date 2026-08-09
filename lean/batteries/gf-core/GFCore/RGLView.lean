@@ -48,7 +48,7 @@ inductive Tense where
   | conditional
   deriving Repr, DecidableEq, BEq, Inhabited
 
-/-- Which copular surface constructor produced this view.
+/-- Which copular-form constructor produced this view.
     Preserved so NormClause can decide argument order. -/
 inductive CopulaOrigin where
   | predVPUseComp
@@ -72,7 +72,7 @@ inductive RGLView where
   | advMod  (adv : RGLView) (vp : RGLView)
   | prepNP  (prep : RGLView) (np : RGLView)
   | pred    (subject : RGLView) (verbPhrase : RGLView)
-  | copularSurface (origin : CopulaOrigin) (lhs : RGLView) (rhs : RGLView)
+  | copularForm (origin : CopulaOrigin) (lhs : RGLView) (rhs : RGLView)
   | transV  (verb : RGLView) (object : RGLView)
   | passiveV (verb : RGLView)
   | reflV   (verb : RGLView) (reflArg : RGLView)
@@ -225,7 +225,7 @@ partial def toRGLView (e : CheckedExpr) : RGLView :=
   -- Preserves origin so NormClause can swap arguments correctly
   | "FocusComp" =>
     if args.size ≥ 2 then
-      .copularSurface .focusComp (toRGLView args[0]!) (toRGLView args[1]!)
+      .copularForm .focusComp (toRGLView args[0]!) (toRGLView args[1]!)
     else .opaque name (args.toList.map toRGLView)
   -- Determiners (pass through — extracted by DetCN handler)
   | "DetQuant" | "DetQuantOrd" =>
@@ -326,7 +326,7 @@ partial def toRGLView (e : CheckedExpr) : RGLView :=
   -- AdvIsNP: existential/locative ("here is the tree")
   | "AdvIsNP" =>
     if args.size ≥ 2 then
-      .copularSurface .advIsNP (toRGLView args[0]!) (toRGLView args[1]!)
+      .copularForm .advIsNP (toRGLView args[0]!) (toRGLView args[1]!)
     else .opaque name (args.toList.map toRGLView)
   -- Noise wrappers to skip
   | "NoPConj" | "NoVoc" | "TTAnt" | "TPres" | "TPast" | "TFut" | "TCond"
@@ -409,7 +409,7 @@ partial def RGLView.pretty : RGLView → String
   | .advMod av vp => s!"{vp.pretty} {av.pretty}"
   | .prepNP pr np => s!"{pr.pretty} {np.pretty}"
   | .pred subj vp => s!"{subj.pretty} | {vp.pretty}"
-  | .copularSurface origin lhs rhs =>
+  | .copularForm origin lhs rhs =>
     let o := match origin with | .focusComp => "[focus]" | .advIsNP => "[exist]" | _ => ""
     s!"{o}{lhs.pretty} is {rhs.pretty}"
   | .transV v o => s!"{v.pretty}({o.pretty})"

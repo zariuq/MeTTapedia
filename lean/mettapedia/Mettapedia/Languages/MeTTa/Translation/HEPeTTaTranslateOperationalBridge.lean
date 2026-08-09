@@ -11,7 +11,7 @@ The key scope boundary is honest:
 
 - state has a local model here, but no nonempty stable-common identity
   fragment: PeTTa named state and HE native state have different contracts
-- shared atomspace surface: `match`, `get-atoms`, `add-atom`, `remove-atom`
+- shared atomspace interface: `match`, `get-atoms`, `add-atom`, `remove-atom`
 - explicit handles are allowed as long as the handle itself is already in the
   stable/common fragment
 - allocation of new spaces is modeled by `SpaceAllocStep` with

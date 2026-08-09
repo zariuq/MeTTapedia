@@ -3570,7 +3570,7 @@ steps.  The lemmas stay at the certified step layer; they do not unfold a
 concrete `interpretFuel` trace.
 
 This slice is deliberately relation-facing.  The executable `kernelEnv` below
-uses the same small control surface rather than loading the whole parsed
+uses the same small control interface rather than loading the whole parsed
 prelude, so the conv proof does not depend on unrelated stdlib bookkeeping.
 -/
 
@@ -8067,52 +8067,52 @@ private theorem operatorTypesPinned_init (env : MinEnv) (op : String) :
   simp [OperatorTypesPinned, typePrep, St.init, World.empty,
     subTokens.eq_1, wrapStates.eq_3]
 
-/-- A finite runtime surface shares one exact world-indexed type-service contract.  The observed
+/-- A finite runtime operator inventory shares one exact world-indexed type-service contract.  The observed
 lists remain computed from the environment, so the bundle cannot drift from declaration order. -/
-def OperatorSurfacePinned (env : MinEnv) (world : World) (operators : List String) : Prop :=
+def OperatorInventoryPinned (env : MinEnv) (world : World) (operators : List String) : Prop :=
   ∀ op ∈ operators, OperatorTypesPinned env world op (getTypes env (.sym op))
 
-private theorem operatorSurfacePinned_init
+private theorem operatorInventoryPinned_init
     (env : MinEnv) (operators : List String) :
-    OperatorSurfacePinned env St.init.world operators := by
+    OperatorInventoryPinned env St.init.world operators := by
   intro op _hop
   exact operatorTypesPinned_init env op
 
 /-- Operator heads consumed by the full control-flow kernel environment. -/
-def kernelEnvOperatorSurface : List String :=
+def kernelEnvOperatorInventory : List String :=
   ["is-bad", "let", "unify", "if", "==", "nf", "infer", "conv", "def-body-of"]
 
 /-- Operator heads consumed by the small root-dispatch kernel environment. -/
-def kernelCoreEnvOperatorSurface : List String :=
+def kernelCoreEnvOperatorInventory : List String :=
   ["is-bad", "unify", "Bad", "nf", "infer", "conv"]
 
 /-- Operator heads consumed by recursive definition normalization. -/
-def kernelDefControlEnvOperatorSurface : List String :=
+def kernelDefControlEnvOperatorInventory : List String :=
   ["is-bad", "let", "unify", "if", "==", "nf", "conv", "def-body-of",
     "Srt", "Var", "Con", "Pi", "Lam"]
 
 abbrev KernelEnvTypeWorld (world : World) : Prop :=
-  OperatorSurfacePinned kernelEnv world kernelEnvOperatorSurface
+  OperatorInventoryPinned kernelEnv world kernelEnvOperatorInventory
 
 abbrev KernelCoreEnvTypeWorld (world : World) : Prop :=
-  OperatorSurfacePinned kernelCoreEnv world kernelCoreEnvOperatorSurface
+  OperatorInventoryPinned kernelCoreEnv world kernelCoreEnvOperatorInventory
 
 abbrev KernelDefControlEnvTypeWorld (world : World) : Prop :=
-  OperatorSurfacePinned kernelDefControlEnv world kernelDefControlEnvOperatorSurface
+  OperatorInventoryPinned kernelDefControlEnv world kernelDefControlEnvOperatorInventory
 
 theorem kernelEnvTypeWorld_init : KernelEnvTypeWorld St.init.world :=
-  operatorSurfacePinned_init kernelEnv kernelEnvOperatorSurface
+  operatorInventoryPinned_init kernelEnv kernelEnvOperatorInventory
 
 theorem kernelCoreEnvTypeWorld_init : KernelCoreEnvTypeWorld St.init.world :=
-  operatorSurfacePinned_init kernelCoreEnv kernelCoreEnvOperatorSurface
+  operatorInventoryPinned_init kernelCoreEnv kernelCoreEnvOperatorInventory
 
 theorem kernelDefControlEnvTypeWorld_init : KernelDefControlEnvTypeWorld St.init.world :=
-  operatorSurfacePinned_init kernelDefControlEnv kernelDefControlEnvOperatorSurface
+  operatorInventoryPinned_init kernelDefControlEnv kernelDefControlEnvOperatorInventory
 
-theorem OperatorSurfacePinned.transport
+theorem OperatorInventoryPinned.transport
     {env : MinEnv} {world nextWorld : World} {operators : List String}
-    (h : OperatorSurfacePinned env world operators) (hWorld : nextWorld = world) :
-    OperatorSurfacePinned env nextWorld operators := by
+    (h : OperatorInventoryPinned env world operators) (hWorld : nextWorld = world) :
+    OperatorInventoryPinned env nextWorld operators := by
   subst hWorld
   exact h
 
@@ -9936,7 +9936,7 @@ def kernelEnv_let_recursionNeutralPolicy
     3)
     exact letSelectedType_recursionNeutral
 
-/-- LeaTTa's standard grounding table leaves the stdlib `let` surface to equality rules. -/
+/-- LeaTTa's standard grounding table leaves the stdlib `let` operator to equality rules. -/
 theorem callGrounded_let_of_stdGroundings
     (env : MinEnv) (args : List Metta.Atom)
     (hgt : env.gt = stdGroundings) :
@@ -10286,20 +10286,20 @@ theorem KernelCoreEnvTypeWorld.isBad
     {world : World} (h : KernelCoreEnvTypeWorld world) :
     OperatorTypesPinned kernelCoreEnv world "is-bad"
       [mExpr "->" [mSym "Atom", mSym "Bool"]] := by
-  have hp := h "is-bad" (by simp [kernelCoreEnvOperatorSurface])
+  have hp := h "is-bad" (by simp [kernelCoreEnvOperatorInventory])
   simpa [OperatorTypesPinned, kernelCoreEnv_is_bad_types] using hp
 
 theorem KernelCoreEnvTypeWorld.unify
     {world : World} (h : KernelCoreEnvTypeWorld world) :
     OperatorTypesPinned kernelCoreEnv world "unify" [.sym "%Undefined%"] := by
-  have hp := h "unify" (by simp [kernelCoreEnvOperatorSurface])
+  have hp := h "unify" (by simp [kernelCoreEnvOperatorInventory])
   simpa [OperatorTypesPinned, kernelCoreEnv_unify_types] using hp
 
 theorem KernelEnvTypeWorld.isBad
     {world : World} (h : KernelEnvTypeWorld world) :
     OperatorTypesPinned kernelEnv world "is-bad"
       [mExpr "->" [mSym "Atom", mSym "Bool"]] := by
-  have hp := h "is-bad" (by simp [kernelEnvOperatorSurface])
+  have hp := h "is-bad" (by simp [kernelEnvOperatorInventory])
   simpa [OperatorTypesPinned, kernelEnv_is_bad_types] using hp
 
 theorem KernelEnvTypeWorld.letOp
@@ -10307,7 +10307,7 @@ theorem KernelEnvTypeWorld.letOp
     OperatorTypesPinned kernelEnv world "let"
       [mExpr "->" [mSym "Atom", mSym "%Undefined%", mSym "Atom",
         mSym "%Undefined%"]] := by
-  have hp := h "let" (by simp [kernelEnvOperatorSurface])
+  have hp := h "let" (by simp [kernelEnvOperatorInventory])
   simpa [OperatorTypesPinned, kernelEnv_let_types] using hp
 
 theorem KernelEnvTypeWorld.unify
@@ -10315,17 +10315,17 @@ theorem KernelEnvTypeWorld.unify
     OperatorTypesPinned kernelEnv world "unify"
       [mExpr "->" [mSym "Atom", mSym "Atom", mSym "Atom", mSym "Atom",
         mSym "%Undefined%"]] := by
-  have hp := h "unify" (by simp [kernelEnvOperatorSurface])
+  have hp := h "unify" (by simp [kernelEnvOperatorInventory])
   simpa [OperatorTypesPinned, kernelEnv_unify_types] using hp
 
 theorem KernelEnvTypeWorld.ifOp
     {world : World} (h : KernelEnvTypeWorld world) :
     OperatorTypesPinned kernelEnv world "if"
       [mExpr "->" [mSym "Bool", mSym "Atom", mSym "Atom", mSym "%Undefined%"]] := by
-  have hp := h "if" (by simp [kernelEnvOperatorSurface])
+  have hp := h "if" (by simp [kernelEnvOperatorInventory])
   simpa [OperatorTypesPinned, kernelEnv_if_types] using hp
 
-/-- LeaTTa's standard grounding table leaves the stdlib `if` surface to equality rules. -/
+/-- LeaTTa's standard grounding table leaves the stdlib `if` operator to equality rules. -/
 theorem callGrounded_if_of_stdGroundings
     (env : MinEnv) (args : List Metta.Atom)
     (hgt : env.gt = stdGroundings) :
@@ -11571,7 +11571,7 @@ private theorem is_bad_root_instantiate_stable_from_closed
 
 /-- One exact `is-bad` scheduler step with closed incoming value bindings.
 The existential names are the executable's private freshenings; they are
-proven distinct and disjoint from the incoming public surface. -/
+proven distinct and disjoint from the incoming public interface. -/
 theorem interpretFuel_kernelEnv_is_bad_root_eq_from_closed
     (fuel : Nat) (st : St) (a : Metta.Atom) (incoming : Metta.Bindings)
     (hStatic : st.world.selfExtra = [])
@@ -11751,7 +11751,7 @@ theorem KernelEnvTypeWorld.eqOp
     {world : World} (h : KernelEnvTypeWorld world) :
     OperatorTypesPinned kernelEnv world "=="
       [mExpr "->" [mSym "Atom", mSym "Atom", mSym "Bool"]] := by
-  have hp := h "==" (by simp [kernelEnvOperatorSurface])
+  have hp := h "==" (by simp [kernelEnvOperatorInventory])
   simpa [OperatorTypesPinned, kernelEnv_eq_types] using hp
 
 /-- The static candidate slice for the core `is-bad` runtime query contains the single
@@ -12339,7 +12339,7 @@ def kernelCoreEnv_Bad_recursionNeutralPolicy
 theorem KernelCoreEnvTypeWorld.bad
     {world : World} (h : KernelCoreEnvTypeWorld world) :
     OperatorTypesPinned kernelCoreEnv world "Bad" [.sym "%Undefined%"] := by
-  have hp := h "Bad" (by simp [kernelCoreEnvOperatorSurface])
+  have hp := h "Bad" (by simp [kernelCoreEnvOperatorInventory])
   simpa [OperatorTypesPinned, kernelCoreEnv_Bad_types] using hp
 
 /-- The root evaluator reports `NotReducible` for the data pattern `(Bad $v)`. -/
@@ -18715,7 +18715,7 @@ theorem conv_interpretFuel_bridge_alpha_mops
 
 /-- Minimal-evaluator form of the core `conv` bridge.
 
-This is the SR-facing surface: `evalAtomMin` emits LeaTTa's runtime-freshened
+This is the SR-facing interface: `evalAtomMin` emits LeaTTa's runtime-freshened
 readout, MOPS reaches the certified unfreshened reduct, and the two agree up
 to `AlphaEq`. -/
 theorem conv_evalAtomMin_bridge_alpha_mops
@@ -19175,7 +19175,7 @@ theorem KernelCoreEnvTypeWorld.conv
     {world : World} (h : KernelCoreEnvTypeWorld world) :
     OperatorTypesPinned kernelCoreEnv world "conv"
       [mExpr "->" [mSym "Atom", mSym "Atom", mSym "Atom", mSym "Bool"]] := by
-  have hp := h "conv" (by simp [kernelCoreEnvOperatorSurface])
+  have hp := h "conv" (by simp [kernelCoreEnvOperatorInventory])
   simpa [OperatorTypesPinned, kernelCoreEnv_conv_types] using hp
 
 /-- Runtime type-checking succeeds for four arguments declared as `Atom`. -/
@@ -19249,7 +19249,7 @@ theorem KernelCoreEnvTypeWorld.nf
     {world : World} (h : KernelCoreEnvTypeWorld world) :
     OperatorTypesPinned kernelCoreEnv world "nf"
       [mExpr "->" [mSym "Atom", mSym "Atom", mSym "Atom"]] := by
-  have hp := h "nf" (by simp [kernelCoreEnvOperatorSurface])
+  have hp := h "nf" (by simp [kernelCoreEnvOperatorInventory])
   simpa [OperatorTypesPinned, kernelCoreEnv_nf_types] using hp
 
 /-- Lift an actual root minimal-evaluator `nf` readout through the outer `mettaEval` loop.
@@ -19651,7 +19651,7 @@ theorem nf_eq_fragment_mettaEval_root_bridge_alpha_mops_of_fragment
 
 /-- Kernel-facing form of `nf_eq_fragment_mettaEval_root_bridge_alpha_mops_of_fragment`.
 
-This is the SR-facing surface: the actual `mettaEval` root readout is tied to LeaTTa's
+This is the SR-facing interface: the actual `mettaEval` root readout is tied to LeaTTa's
 certified executable-kernel relation, and the recursive `nf` spine is carried by the contextual
 kernel closure. -/
 theorem nf_eq_fragment_mettaEval_root_bridge_alpha_kernel_of_fragment
@@ -20449,7 +20449,7 @@ theorem queryOp_append_nonfiring_for_head
 
 Any helper extension of `kernelCoreRules` that contributes neither a rule for
 the queried head nor a headless equality rule preserves the static candidate
-surface.  This is the PureKernel-facing consolidation point: helper-specific
+set.  This is the PureKernel-facing consolidation point: helper-specific
 facts should instantiate this theorem instead of redoing candidate bookkeeping.
 -/
 theorem kernelCoreRules_candidates_eq_core_of_append_nonfiring
@@ -20488,7 +20488,7 @@ theorem kernelCoreRules_queryOp_eq_core_of_append_nonfiring
 
 This is the candidate-level form of the SR env-monotonicity invariant: a helper
 extension of `kernelCoreRules` that contributes no `nf`-headed rule and no
-headless equality rule preserves the static `nf` candidate surface. -/
+headless equality rule preserves the static `nf` candidate set. -/
 theorem kernelCoreRules_nf_candidates_eq_core_of_append_nonfiring
     {extra : List Metta.Atom} (sig : DIndGArtifactSig) (raw : DIndGArtifactTerm)
     (hidx : (extractRules extra).filter (fun r => headKey r.1 == some "nf") = [])
@@ -20965,7 +20965,7 @@ theorem KernelEnvTypeWorld.nf
     {world : World} (h : KernelEnvTypeWorld world) :
     OperatorTypesPinned kernelEnv world "nf"
       [mExpr "->" [mSym "Atom", mSym "Atom", mSym "Atom"]] := by
-  have hp := h "nf" (by simp [kernelEnvOperatorSurface])
+  have hp := h "nf" (by simp [kernelEnvOperatorInventory])
   simpa [OperatorTypesPinned, kernelEnv_nf_types] using hp
 
 /-- Ordered type-service output for recursive Def-control `nf`; `%Undefined%` makes the root
@@ -21024,7 +21024,7 @@ theorem KernelDefControlEnvTypeWorld.nf
     {world : World} (h : KernelDefControlEnvTypeWorld world) :
     OperatorTypesPinned kernelDefControlEnv world "nf"
       [mExpr "->" [mSym "Atom", mSym "Atom", mSym "%Undefined%"]] := by
-  have hp := h "nf" (by simp [kernelDefControlEnvOperatorSurface])
+  have hp := h "nf" (by simp [kernelDefControlEnvOperatorInventory])
   simpa [OperatorTypesPinned, kernelDefControlEnv_nf_types] using hp
 
 /-- Ordered type-service output for recursive Def-control `conv`. -/
@@ -21090,7 +21090,7 @@ theorem KernelDefControlEnvTypeWorld.conv
     {world : World} (h : KernelDefControlEnvTypeWorld world) :
     OperatorTypesPinned kernelDefControlEnv world "conv"
       [mExpr "->" [mSym "Atom", mSym "Atom", mSym "Atom", mSym "Bool"]] := by
-  have hp := h "conv" (by simp [kernelDefControlEnvOperatorSurface])
+  have hp := h "conv" (by simp [kernelDefControlEnvOperatorInventory])
   simpa [OperatorTypesPinned, kernelDefControlEnv_conv_types] using hp
 
 private def convFreshReadoutAt (counter : Nat)
@@ -21514,7 +21514,7 @@ theorem KernelDefControlEnvTypeWorld.isBad
     {world : World} (h : KernelDefControlEnvTypeWorld world) :
     OperatorTypesPinned kernelDefControlEnv world "is-bad"
       [mExpr "->" [mSym "Atom", mSym "Bool"]] := by
-  have hp := h "is-bad" (by simp [kernelDefControlEnvOperatorSurface])
+  have hp := h "is-bad" (by simp [kernelDefControlEnvOperatorInventory])
   simpa [OperatorTypesPinned, kernelDefControlEnv_is_bad_types] using hp
 
 theorem kernelDefControlEnv_callGrounded_isBad
@@ -21612,7 +21612,7 @@ theorem KernelDefControlEnvTypeWorld.letOp
     OperatorTypesPinned kernelDefControlEnv world "let"
       [mExpr "->" [mSym "Atom", mSym "%Undefined%", mSym "Atom",
         mSym "%Undefined%"]] := by
-  have hp := h "let" (by simp [kernelDefControlEnvOperatorSurface])
+  have hp := h "let" (by simp [kernelDefControlEnvOperatorInventory])
   simpa [OperatorTypesPinned, kernelDefControlEnv_let_types] using hp
 
 /-- Def-control `let` has a singleton signature with raw `%Undefined%` return, so an outer
@@ -21837,7 +21837,7 @@ theorem KernelDefControlEnvTypeWorld.unify
     OperatorTypesPinned kernelDefControlEnv world "unify"
       [mExpr "->" [mSym "Atom", mSym "Atom", mSym "Atom", mSym "Atom",
         mSym "%Undefined%"]] := by
-  have hp := h "unify" (by simp [kernelDefControlEnvOperatorSurface])
+  have hp := h "unify" (by simp [kernelDefControlEnvOperatorInventory])
   simpa [OperatorTypesPinned, kernelDefControlEnv_unify_types] using hp
 
 theorem kernelDefControlEnv_callGrounded_unify (args : List Metta.Atom) :
@@ -22375,7 +22375,7 @@ theorem KernelDefControlEnvTypeWorld.ifOp
     {world : World} (h : KernelDefControlEnvTypeWorld world) :
     OperatorTypesPinned kernelDefControlEnv world "if"
       [mExpr "->" [mSym "Bool", mSym "Atom", mSym "Atom", mSym "%Undefined%"]] := by
-  have hp := h "if" (by simp [kernelDefControlEnvOperatorSurface])
+  have hp := h "if" (by simp [kernelDefControlEnvOperatorInventory])
   simpa [OperatorTypesPinned, kernelDefControlEnv_if_types] using hp
 
 theorem kernelDefControlEnv_callGrounded_if (args : List Metta.Atom) :
@@ -22797,7 +22797,7 @@ theorem KernelDefControlEnvTypeWorld.eqOp
     {world : World} (h : KernelDefControlEnvTypeWorld world) :
     OperatorTypesPinned kernelDefControlEnv world "=="
       [mExpr "->" [mSym "Atom", mSym "Atom", mSym "Bool"]] := by
-  have hp := h "==" (by simp [kernelDefControlEnvOperatorSurface])
+  have hp := h "==" (by simp [kernelDefControlEnvOperatorInventory])
   simpa [OperatorTypesPinned, kernelDefControlEnv_eq_types] using hp
 
 /-- Transport an ordinary `is-bad` equation through its exact all-`Atom`/`Bool` selected path. -/
@@ -23613,7 +23613,7 @@ def kernelDefControlEnv_Srt_recursionNeutralPolicy
 theorem KernelDefControlEnvTypeWorld.srt
     {world : World} (h : KernelDefControlEnvTypeWorld world) :
     OperatorTypesPinned kernelDefControlEnv world "Srt" [.sym "%Undefined%"] := by
-  have hp := h "Srt" (by simp [kernelDefControlEnvOperatorSurface])
+  have hp := h "Srt" (by simp [kernelDefControlEnvOperatorInventory])
   simpa [OperatorTypesPinned, kernelDefControlEnv_Srt_types] using hp
 
 theorem interpretFuel_kernelDefControlEnv_eval_Srt_notReducible_eq_state
@@ -23814,7 +23814,7 @@ def kernelDefControlEnv_Var_recursionNeutralPolicy
 theorem KernelDefControlEnvTypeWorld.var
     {world : World} (h : KernelDefControlEnvTypeWorld world) :
     OperatorTypesPinned kernelDefControlEnv world "Var" [.sym "%Undefined%"] := by
-  have hp := h "Var" (by simp [kernelDefControlEnvOperatorSurface])
+  have hp := h "Var" (by simp [kernelDefControlEnvOperatorInventory])
   simpa [OperatorTypesPinned, kernelDefControlEnv_Var_types] using hp
 
 theorem interpretFuel_kernelDefControlEnv_eval_Var_notReducible_eq_state_from
@@ -24105,7 +24105,7 @@ def kernelDefControlEnv_Con_recursionNeutralPolicy
 theorem KernelDefControlEnvTypeWorld.con
     {world : World} (h : KernelDefControlEnvTypeWorld world) :
     OperatorTypesPinned kernelDefControlEnv world "Con" [.sym "%Undefined%"] := by
-  have hp := h "Con" (by simp [kernelDefControlEnvOperatorSurface])
+  have hp := h "Con" (by simp [kernelDefControlEnvOperatorInventory])
   simpa [OperatorTypesPinned, kernelDefControlEnv_Con_types] using hp
 
 theorem interpretFuel_kernelDefControlEnv_eval_Con_notReducible_eq_state
@@ -24390,7 +24390,7 @@ def kernelDefControlEnv_Pi_recursionNeutralPolicy
 theorem KernelDefControlEnvTypeWorld.pi
     {world : World} (h : KernelDefControlEnvTypeWorld world) :
     OperatorTypesPinned kernelDefControlEnv world "Pi" [.sym "%Undefined%"] := by
-  have hp := h "Pi" (by simp [kernelDefControlEnvOperatorSurface])
+  have hp := h "Pi" (by simp [kernelDefControlEnvOperatorInventory])
   simpa [OperatorTypesPinned, kernelDefControlEnv_Pi_types] using hp
 
 theorem interpretFuel_kernelDefControlEnv_eval_Pi_notReducible_eq_state
@@ -24621,7 +24621,7 @@ def kernelDefControlEnv_Lam_recursionNeutralPolicy
 theorem KernelDefControlEnvTypeWorld.lam
     {world : World} (h : KernelDefControlEnvTypeWorld world) :
     OperatorTypesPinned kernelDefControlEnv world "Lam" [.sym "%Undefined%"] := by
-  have hp := h "Lam" (by simp [kernelDefControlEnvOperatorSurface])
+  have hp := h "Lam" (by simp [kernelDefControlEnvOperatorInventory])
   simpa [OperatorTypesPinned, kernelDefControlEnv_Lam_types] using hp
 
 theorem interpretFuel_kernelDefControlEnv_eval_Lam_notReducible_eq_state
@@ -25653,14 +25653,14 @@ theorem KernelEnvTypeWorld.defBodyOf
     {world : World} (h : KernelEnvTypeWorld world) :
     OperatorTypesPinned kernelEnv world "def-body-of"
       [mExpr "->" [mSym "Atom", mSym "Atom", mSym "%Undefined%"]] := by
-  have hp := h "def-body-of" (by simp [kernelEnvOperatorSurface])
+  have hp := h "def-body-of" (by simp [kernelEnvOperatorInventory])
   simpa [OperatorTypesPinned, kernelEnv_def_body_of_types] using hp
 
 theorem KernelDefControlEnvTypeWorld.defBodyOf
     {world : World} (h : KernelDefControlEnvTypeWorld world) :
     OperatorTypesPinned kernelDefControlEnv world "def-body-of"
       [mExpr "->" [mSym "Atom", mSym "Atom", mSym "%Undefined%"]] := by
-  have hp := h "def-body-of" (by simp [kernelDefControlEnvOperatorSurface])
+  have hp := h "def-body-of" (by simp [kernelDefControlEnvOperatorInventory])
   simpa [OperatorTypesPinned, kernelDefControlEnv_def_body_of_types] using hp
 
 /-- Membership-shaped binary fold for quoted arguments whose root readout is
@@ -68112,7 +68112,7 @@ theorem nfRootReadoutNameFree_not_match_bad_pattern
 The executable readout is still the actual `kernelCoreEnv` readout.  The new
 content is the certified relation side: the root and contextual kernel chains
 lift through any rule-list extension.  This is the environment-composition
-surface needed by later helper slices whose rules strictly extend the core. -/
+fragment needed by later helper slices whose rules strictly extend the core. -/
 theorem nf_eq_fragment_mettaEval_decl_conv_append_left_of_fragment
     {extra : List Metta.Atom}
     {sig : DIndGArtifactSig} {raw : DIndGArtifactTerm} {term : PureTm 0}
@@ -68621,7 +68621,7 @@ theorem KernelCoreEnvTypeWorld.infer
     {world : World} (h : KernelCoreEnvTypeWorld world) :
     OperatorTypesPinned kernelCoreEnv world "infer"
       [mExpr "->" [mSym "Atom", mSym "Atom", mSym "Atom", mSym "Atom"]] := by
-  have hp := h "infer" (by simp [kernelCoreEnvOperatorSurface])
+  have hp := h "infer" (by simp [kernelCoreEnvOperatorInventory])
   simpa [OperatorTypesPinned, kernelCoreEnv_infer_types] using hp
 
 theorem kernelCoreEnv_infer_typeMismatch_any (a b c : Metta.Atom) :
@@ -68658,7 +68658,7 @@ theorem kernelCoreEnv_infer_returnsAtom :
   decide
 
 /-- The concrete raw `infer` application still has an Atom return declaration
-after the surface encoders are unfolded. -/
+after the syntax encoders are unfolded. -/
 theorem kernelCoreEnv_infer_returnsAtom_raw :
     returnsAtom kernelCoreEnvInferSelected = true :=
   kernelCoreEnv_infer_returnsAtom
@@ -68679,7 +68679,7 @@ theorem infer_srt_type_queryVars_empty :
     telAtom, argsAtom, termAtom, sortAtom, ctxNilAtom, mExpr, mSym, declNameAtom,
     Metta.Atom.vars]
 
-/-- The same no-query-variable fact after the surface constructors have been
+/-- The same no-query-variable fact after the syntax constructors have been
 unfolded by `mettaEval`. -/
 theorem infer_srt_type_queryVars_empty_raw :
     [sigAtom cicStage3RawArtifactSig, Metta.Atom.sym "CtxNil",
@@ -68724,7 +68724,7 @@ theorem kernelCoreEnv_infer_candidates :
     ruleInferSrtKind, ruleInferBad, ruleConv, mTypeDecl, mBool, extractRules]
 
 /-- The same candidate lookup after the head-inspection code has unfolded the
-surface query to a raw expression. This keeps the executable proof from relying
+source query to a raw expression. This keeps the executable proof from relying
 on a fragile simp order. -/
 theorem kernelCoreEnv_infer_candidates_raw :
     candidatesW kernelCoreEnv St.init.world
@@ -69226,7 +69226,7 @@ theorem kernelCoreEnv_infer_queryOp :
   rw [hfold]
   simp [evalResult, finItem, termAtom, sortAtom, mExpr, mSym]
 
-/-- The same exact `queryOp` result after the surface query encoders have been
+/-- The same exact `queryOp` result after the source query encoders have been
 unfolded by the interpreter. -/
 theorem kernelCoreEnv_infer_queryOp_raw :
     queryOp kernelCoreEnv St.init []
@@ -69311,7 +69311,7 @@ def inferSrtTypeEvalItem : Item :=
           inferQuery cicStage3RawArtifactSig (.srt .type)]) []
     bnd := [] }
 
-/-- The same work item after `mettaEval` has unfolded the surface query
+/-- The same work item after `mettaEval` has unfolded the source query
 constructors. -/
 def inferSrtTypeEvalItemRaw : Item :=
   { stack :=

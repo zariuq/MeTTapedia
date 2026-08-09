@@ -30,13 +30,16 @@ structure CostStaticRegionNormalizerLaws
     (source : CIGSLT) (normalizeStatic : CostStaticRegionNormalizer source) :
     Prop where
   ambientRenamingStable :
-    SupportedEquationAmbientRenamingStable source.costWholeLanguage
+    SupportedEquationAmbientRenamingStable
+      (profile := source.costWholeReflectionProfile)
+      source.costWholeLanguage
   normalizesCurrentFrame : ∀
     {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
     (node : CostStaticRegionNode source color targetFree)
     (values : TypedCostRegionBoundaryTable.Values source color targetFree
       node.boundaryTable),
-    EquationSemantics.EquationEquiv defaultBasePremises
+    ReflectiveEquationSemantics.ReflectiveEquationEquiv
+      source.costWholeReflectionProfile defaultBasePremises
       source.costWholeLanguage (normalizeStatic node values).1
       (values.restoreSupportedSkeleton node.boundaryTable node.targetBound
         node.mappedThickenedSkeleton.1)
@@ -56,7 +59,8 @@ theorem normalizesOriginal
       (values.supportedOpenAssignment node.boundaryTable).Equivalent
         ((TypedCostRegionBoundaryTable.Values.original node.boundaryTable
           ).supportedOpenAssignment node.boundaryTable)) :
-    EquationSemantics.EquationEquiv defaultBasePremises
+    ReflectiveEquationSemantics.ReflectiveEquationEquiv
+      source.costWholeReflectionProfile defaultBasePremises
       source.costWholeLanguage (normalizeStatic node values).1 node.term.1 := by
   let valuesAssignment := values.supportedOpenAssignment node.boundaryTable
   let originalAssignment :=
@@ -65,7 +69,9 @@ theorem normalizesOriginal
   have assignmentStep :=
     node.mappedThickenedSkeleton.2.1.equationEquiv_substitute_pointwise
       valuesAssignment originalAssignment valuesEquivalent
-  have assignmentStep' : EquationSemantics.EquationEquiv defaultBasePremises
+  have assignmentStep' :
+      ReflectiveEquationSemantics.ReflectiveEquationEquiv
+      source.costWholeReflectionProfile defaultBasePremises
       source.costWholeLanguage
       (values.restoreSupportedSkeleton node.boundaryTable node.targetBound
         node.mappedThickenedSkeleton.1)
@@ -98,24 +104,27 @@ mutual
       {targetFree : WellSorted.FreeTypeContext}
       {available outer : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
       (tree : CostRegionTree source targetFree available outer pattern type) :
-      EquationSemantics.EquationEquiv defaultBasePremises
+      ReflectiveEquationSemantics.ReflectiveEquationEquiv
+        source.costWholeReflectionProfile defaultBasePremises
         source.costWholeLanguage
         (tree.normalize (normalizeStatic := normalizeStatic)).pattern pattern :=
     match tree with
     | @CostRegionTree.bvar _ _ available outer index type lookup => by
         simpa only [CostRegionTree.normalize,
-          EquationSemantics.EquationEquiv] using
+          ReflectiveEquationSemantics.ReflectiveEquationEquiv] using
             (Relation.EqvGen.refl (Pattern.bvar index) :
               Relation.EqvGen
-                (EquationSemantics.EquationContextStep defaultBasePremises
+                (ReflectiveEquationSemantics.ReflectiveEquationContextStep
+                  source.costWholeReflectionProfile defaultBasePremises
                   source.costWholeLanguage)
                 (.bvar index) (.bvar index))
     | @CostRegionTree.fvar _ _ available outer name type lookup => by
         simpa only [CostRegionTree.normalize,
-          EquationSemantics.EquationEquiv] using
+          ReflectiveEquationSemantics.ReflectiveEquationEquiv] using
             (Relation.EqvGen.refl (Pattern.fvar name) :
               Relation.EqvGen
-                (EquationSemantics.EquationContextStep defaultBasePremises
+                (ReflectiveEquationSemantics.ReflectiveEquationContextStep
+                  source.costWholeReflectionProfile defaultBasePremises
                   source.costWholeLanguage)
                 (.fvar name) (.fvar name))
     | @CostRegionTree.static _ _ color outer node children => by
@@ -135,14 +144,14 @@ mutual
         arguments membership notBareCollection constructor materializes neutral
         ordinary children => by
         simpa only [CostRegionTree.normalize] using
-          EquationSemantics.equationEquiv_apply_of_forall₂ _
+          ReflectiveEquationSemantics.equationEquiv_apply_of_forall₂ _
             (children.normalizeWithStatic_equivalent_original
               normalizeStatic laws)
     | @CostRegionTree.neutralApplicationQuote _ _ available outer rule
         arguments membership notBareCollection constructor materializes neutral
         quoted children => by
         simpa only [CostRegionTree.normalize] using
-          EquationSemantics.equationEquiv_apply_of_forall₂ _
+          ReflectiveEquationSemantics.equationEquiv_apply_of_forall₂ _
             (children.normalizeWithStatic_equivalent_original
               normalizeStatic laws)
     | @CostRegionTree.lambda _ _ available outer binder body domain codomain
@@ -150,13 +159,14 @@ mutual
         have bodyEquivalent :=
           bodyTree.normalizeWithStatic_equationEquiv normalizeStatic laws
         simpa only [CostRegionTree.normalize, OneHoleContext.fill] using
-          EquationSemantics.equationEquiv_fill (.lambda _ .hole) bodyEquivalent
+          ReflectiveEquationSemantics.equationEquiv_fill
+            (.lambda _ .hole) bodyEquivalent
     | @CostRegionTree.multiLambda _ _ available outer arity binders body domain
         codomain bodyTree => by
         have bodyEquivalent :=
           bodyTree.normalizeWithStatic_equationEquiv normalizeStatic laws
         simpa only [CostRegionTree.normalize, OneHoleContext.fill] using
-          EquationSemantics.equationEquiv_fill
+          ReflectiveEquationSemantics.equationEquiv_fill
             (.multiLambda _ _ .hole) bodyEquivalent
     | @CostRegionTree.subst _ _ available outer body replacement domain codomain
         bodyTree replacementTree => by
@@ -164,14 +174,16 @@ mutual
           bodyTree.normalizeWithStatic_equationEquiv normalizeStatic laws
         have replacementEquivalent :=
           replacementTree.normalizeWithStatic_equationEquiv normalizeStatic laws
-        have bodyStep := EquationSemantics.equationEquiv_fill
+        have bodyStep := ReflectiveEquationSemantics.equationEquiv_fill
           (.substBody .hole
             (replacementTree.normalize
               (normalizeStatic := normalizeStatic)).pattern)
           bodyEquivalent
-        have replacementStep := EquationSemantics.equationEquiv_fill
+        have replacementStep := ReflectiveEquationSemantics.equationEquiv_fill
           (.substReplacement body .hole) replacementEquivalent
-        have bodyStep' : EquationSemantics.EquationEquiv defaultBasePremises
+        have bodyStep' :
+            ReflectiveEquationSemantics.ReflectiveEquationEquiv
+            source.costWholeReflectionProfile defaultBasePremises
             source.costWholeLanguage
             (.subst
               (bodyTree.normalize
@@ -184,14 +196,17 @@ mutual
           simpa only [CostRegionTree.normalize, OneHoleContext.fill] using
             bodyStep
         have replacementStep' :
-            EquationSemantics.EquationEquiv defaultBasePremises
+            ReflectiveEquationSemantics.ReflectiveEquationEquiv
+              source.costWholeReflectionProfile defaultBasePremises
               source.costWholeLanguage
               (.subst body
                 (replacementTree.normalize
                   (normalizeStatic := normalizeStatic)).pattern)
               (.subst body replacement) := by
           simpa only [OneHoleContext.fill] using replacementStep
-        have combined : EquationSemantics.EquationEquiv defaultBasePremises
+        have combined :
+            ReflectiveEquationSemantics.ReflectiveEquationEquiv
+            source.costWholeReflectionProfile defaultBasePremises
             source.costWholeLanguage
             (.subst
               (bodyTree.normalize
@@ -199,13 +214,13 @@ mutual
               (replacementTree.normalize
                 (normalizeStatic := normalizeStatic)).pattern)
             (.subst body replacement) := by
-          unfold EquationSemantics.EquationEquiv at bodyStep' replacementStep' ⊢
+          unfold ReflectiveEquationSemantics.ReflectiveEquationEquiv at bodyStep' replacementStep' ⊢
           exact Relation.EqvGen.trans _ _ _ bodyStep' replacementStep'
         simpa only [CostRegionTree.normalize] using combined
     | @CostRegionTree.collection _ _ available outer collectionType elements
         rest elementType children => by
         simpa only [CostRegionTree.normalize] using
-          EquationSemantics.equationEquiv_collection_of_forall₂ _ _
+          ReflectiveEquationSemantics.equationEquiv_collection_of_forall₂ _ _
             (children.normalizeWithStatic_equivalent_original
               normalizeStatic laws)
   termination_by tree.weight
@@ -225,7 +240,8 @@ mutual
       (trees : CostRegionArgumentTrees source targetFree available outer
         arguments parameters) :
       List.Forall₂
-        (EquationSemantics.EquationEquiv defaultBasePremises
+        (ReflectiveEquationSemantics.ReflectiveEquationEquiv
+          source.costWholeReflectionProfile defaultBasePremises
           source.costWholeLanguage)
         (trees.normalize (normalizeStatic := normalizeStatic)).patterns
         arguments :=
@@ -233,7 +249,8 @@ mutual
     | @CostRegionArgumentTrees.nil _ _ available outer => by
         simpa only [CostRegionArgumentTrees.normalize] using
           (List.Forall₂.nil : List.Forall₂
-            (EquationSemantics.EquationEquiv defaultBasePremises
+            (ReflectiveEquationSemantics.ReflectiveEquationEquiv
+              source.costWholeReflectionProfile defaultBasePremises
               source.costWholeLanguage) [] [])
     | @CostRegionArgumentTrees.cons _ _ available outer argument arguments
         parameter parameters expected representation parameterType head tail => by
@@ -258,7 +275,8 @@ mutual
       (trees : CostRegionElementTrees source targetFree available outer elements
         elementType) :
       List.Forall₂
-        (EquationSemantics.EquationEquiv defaultBasePremises
+        (ReflectiveEquationSemantics.ReflectiveEquationEquiv
+          source.costWholeReflectionProfile defaultBasePremises
           source.costWholeLanguage)
         (trees.normalize (normalizeStatic := normalizeStatic)).patterns
         elements :=
@@ -266,7 +284,8 @@ mutual
     | @CostRegionElementTrees.nil _ _ available outer elementType => by
         simpa only [CostRegionElementTrees.normalize] using
           (List.Forall₂.nil : List.Forall₂
-            (EquationSemantics.EquationEquiv defaultBasePremises
+            (ReflectiveEquationSemantics.ReflectiveEquationEquiv
+              source.costWholeReflectionProfile defaultBasePremises
               source.costWholeLanguage) [] [])
     | @CostRegionElementTrees.cons _ _ available outer element elements
         elementType head tail => by
@@ -298,22 +317,29 @@ mutual
         intro lookup shift
         simp only [CostRegionBoundaryTrees.normalizeValues,
           TypedCostRegionBoundaryTable.Values.original,
-          EquationSemantics.EquationEquiv]
+          ReflectiveEquationSemantics.ReflectiveEquationEquiv]
         exact Relation.EqvGen.refl _
     | @CostRegionBoundaryTrees.cons _ _ color occurrence occurrences boundary
         content tail head children => by
-        let value : WellSorted.OpenPattern source.costWholeLanguage targetFree
+        let value : ReflectiveWellSorted.OpenPattern
+            source.costWholeReflectionProfile source.costWholeLanguage targetFree
             boundary.boundary.targetSupport boundary.boundary.targetType := by
           refine ⟨(head.normalize
             (normalizeStatic := normalizeStatic)).pattern, ?_⟩
-          exact ⟨by simpa only [List.append_nil] using
-              (head.normalize (normalizeStatic := normalizeStatic)).typed,
-            (head.normalize
-              (normalizeStatic := normalizeStatic)).canonicalBinderMetadata
-              boundary.contentCanonicalBinderMetadata,
-            (head.normalize
-              (normalizeStatic := normalizeStatic)).objectPattern
-                boundary.contentObjectPattern,
+          exact ⟨⟨by simpa only [List.append_nil] using
+                (head.normalize (normalizeStatic := normalizeStatic)).typed,
+              (head.normalize
+                (normalizeStatic := normalizeStatic)).canonicalBinderMetadata
+                boundary.contentCanonicalBinderMetadata,
+              (head.normalize
+                (normalizeStatic := normalizeStatic)).objectPattern
+                  boundary.contentObjectPattern,
+              by
+                change (head.normalize
+                  (normalizeStatic := normalizeStatic)).pattern.isWellScopedAt
+                    boundary.boundary.targetSupport.length = true
+                simpa only [List.append_nil] using
+                  (head.normalize (normalizeStatic := normalizeStatic)).typed.isWellScopedAt⟩,
             by
               intro presentation membership
               exact (head.normalize
@@ -323,7 +349,8 @@ mutual
                   (boundary.contentReflectiveScopeSafe
                     presentation membership)⟩
         have headEquivalent : ∀ shift,
-            EquationSemantics.EquationEquiv defaultBasePremises
+            ReflectiveEquationSemantics.ReflectiveEquationEquiv
+              source.costWholeReflectionProfile defaultBasePremises
               source.costWholeLanguage
               (liftBVars 0 shift value.1)
               (liftBVars 0 shift boundary.boundary.content) := by
@@ -359,7 +386,8 @@ theorem CostRegionTree.normalizeWithStatic_overlap_equivalent
     {available outer : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
     (first second : CostRegionTree source targetFree available outer pattern
       type) :
-    EquationSemantics.EquationEquiv defaultBasePremises
+    ReflectiveEquationSemantics.ReflectiveEquationEquiv
+      source.costWholeReflectionProfile defaultBasePremises
       source.costWholeLanguage
       (first.normalize (normalizeStatic := normalizeStatic)).pattern
       (second.normalize (normalizeStatic := normalizeStatic)).pattern := by
@@ -367,7 +395,7 @@ theorem CostRegionTree.normalizeWithStatic_overlap_equivalent
     first.normalizeWithStatic_equationEquiv normalizeStatic laws
   have secondToInput :=
     second.normalizeWithStatic_equationEquiv normalizeStatic laws
-  unfold EquationSemantics.EquationEquiv at firstToInput secondToInput ⊢
+  unfold ReflectiveEquationSemantics.ReflectiveEquationEquiv at firstToInput secondToInput ⊢
   exact Relation.EqvGen.trans _ _ _ firstToInput
     (Relation.EqvGen.symm _ _ secondToInput)
 
@@ -381,8 +409,8 @@ def CostStaticRegionNormalizerCompactCoherent
   ∀ {targetFree : WellSorted.FreeTypeContext}
     {targetBound : List TypeExpr}
     {targetSort : LangSort source.costWholeLanguage}
-    (term : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
-      targetSort)
+    (term : ReflectiveWellSorted.OpenTerm source.costWholeReflectionProfile
+      source.costWholeLanguage targetFree targetBound targetSort)
     (first second : CostOpenElaboration source term),
     (first.tree.normalize (normalizeStatic := normalizeStatic)).pattern =
       (second.tree.normalize (normalizeStatic := normalizeStatic)).pattern

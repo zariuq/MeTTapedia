@@ -970,7 +970,7 @@ literally \code{prestrict(full\_space, prefix\_selector)}.
   \item Incremental reasoning over a stable background theory
 \end{itemize}
 
-This is a \textbf{roadmap item}, not current implementation.  The surface
+This is a \textbf{roadmap item}, not current implementation.  Source-syntax
 elaboration and backend separation from Phase~1f must stabilize first.
 The prefix view builds on top as an optimization layer.
 
@@ -1185,7 +1185,7 @@ Because it stresses reflection, multiset matching, channel/name
 capabilities, and concurrency semantics, a future \code{--lang
 rhocalc} may be the more revealing test of whether the shared search
 waist is genuinely dialect-parametric rather than merely tolerant of
-surface syntax variation.
+concrete syntax variation.
 
 \subsection{PLN/ATP as Optional Lanes}
 
@@ -1525,19 +1525,19 @@ The mature vision for \CeTTa{} connects to a \textbf{Lean-style dual-target
 elaborator} architecture formalized in \code{papers/PureMeTTa.tex} and
 implemented across \code{Mettapedia/Languages/MeTTa/}.
 
-\subsection{Surface → Elaborated → Pure + Runtime}
+\subsection{Source Syntax → Elaborated → Pure + Runtime}
 
-The architecture mirrors Lean's pipeline: surface language elaborates to
+The architecture mirrors Lean's pipeline: source language elaborates to
 a shared typed core, which then compiles to two targets:
 
 \begin{center}
 \begin{tikzpicture}[node distance=1.2cm and 2.5cm]
-  \node[neutralbox] (surface) {Surface MeTTa};
-  \node[sharedbox, below=of surface] (core) {Elaborated MeTTa-Core};
+  \node[neutralbox] (syntax) {Source MeTTa};
+  \node[sharedbox, below=of syntax] (core) {Elaborated MeTTa-Core};
   \node[proofbox, below left=1cm and 1.5cm of core] (pure) {MeTTa-Pure};
   \node[rtbox, below right=1cm and 1.5cm of core] (runtime) {\CeTTa{} RuntimeExec};
 
-  \draw[arrw] (surface) -- node[right,font=\small] {elaborate} (core);
+  \draw[arrw] (syntax) -- node[right,font=\small] {elaborate} (core);
   \draw[arrw] (core) -- node[left,font=\small] {proof} (pure);
   \draw[arrw] (core) -- node[right,font=\small] {exec} (runtime);
 \end{tikzpicture}
@@ -1592,7 +1592,7 @@ valid MATT from day one.
 The traditional trade-off---beauty vs.\ efficiency---dissolves:
 
 \begin{itemize}
-\item \textbf{Write once, verify and execute}: Surface code elaborates to
+\item \textbf{Write once, verify and execute}: Source code elaborates to
   both targets.  You don't maintain separate ``proof code'' and ``fast code.''
 \item \textbf{Proven semantics, optimized execution}: Pure provides
   confluence and type preservation theorems; Runtime provides hash-consing

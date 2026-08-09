@@ -79,13 +79,13 @@ theorem oslf_atom_ntt_wm_triangle
     _ = e := hAtomEq
 
 /--
-Categorical-surface wrapper: same atom-level endpoint, with explicit
-WM categorical endpoint surface argument to align with WM bridge APIs.
+Categorical wrapper: same atom-level endpoint, with an explicit
+WM categorical endpoint contract to align with WM bridge APIs.
 -/
 theorem oslf_atom_ntt_wm_triangle_categorical
     (H : Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelHyperdoctrine.WMHyperdoctrine State)
     (_hcat :
-      Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelCategoricalBridge.WMHyperdoctrine.EndpointSurface (H := H))
+      Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelCategoricalBridge.WMHyperdoctrine.EndpointContract (H := H))
     {XH : H.Obj} (_φc : H.query XH)
     (relEnv : MeTTaIL.Engine.RelationEnv)
     (W : State)
@@ -268,7 +268,7 @@ section FormulaCategoricalEndpoint
 variable {State : Type*}
 variable [EvidenceType State] [BinaryWorldModel State Pattern]
 
-/-- Formula-level endpoint surface reused by categorical wrappers. -/
+/-- Formula-level endpoint reused by categorical wrappers. -/
 abbrev FormulaGraphEndpoint
     (relEnv : MeTTaIL.Engine.RelationEnv)
     (W : State)
@@ -304,7 +304,7 @@ Formula-level unified categorical endpoint:
 
 1. OSLF formula evidence agrees with the NTT evidence component and carries the
    explicit reduction-graph witness transport for `◇`.
-2. The same state/query surface satisfies the WM institution+Beck-Chevalley
+2. The same state/query interface satisfies the WM institution+Beck-Chevalley
    endpoint statement.
 -/
 theorem oslf_formula_ntt_graph_triangle_categorical

@@ -433,8 +433,18 @@ def costPresentationSymbols (symbols : PresentationSymbols) :
   relation := id
   equation := mapCostEquationName symbols.equation
   rewrite := id
-  reflective := mapCostReflectiveName symbols.reflective
-  reflectiveRule := mapCostReflectiveRuleName symbols.reflectiveRule
+
+/-- Extend a reflective symbol map independently of the five-field Cost
+signature action. -/
+def costReflectiveSymbols
+    (symbols : ReflectionExtension.ReflectiveSymbols) :
+    ReflectionExtension.ReflectiveSymbols where
+  toPresentationSymbols :=
+    costPresentationSymbols symbols.toPresentationSymbols
+  reflection :=
+    { presentation :=
+        mapCostReflectiveName symbols.reflection.presentation
+      rule := mapCostReflectiveRuleName symbols.reflection.rule }
 
 @[simp]
 theorem costPresentationSymbols_sort_base
@@ -482,28 +492,33 @@ theorem costPresentationSymbols_equation_wrapped
   exact mapCostEquationName_wrapped symbols.equation equation
 
 @[simp]
-theorem costPresentationSymbols_reflective_base
-    (symbols : PresentationSymbols) (presentation : String) :
-    (costPresentationSymbols symbols).reflective
+theorem costReflectiveSymbols_presentation_base
+    (symbols : ReflectionExtension.ReflectiveSymbols)
+    (presentation : String) :
+    (costReflectiveSymbols symbols).reflection.presentation
         (costBaseReflectiveName presentation) =
-      costBaseReflectiveName (symbols.reflective presentation) := by
-  exact mapCostReflectiveName_base symbols.reflective presentation
+      costBaseReflectiveName
+        (symbols.reflection.presentation presentation) := by
+  exact mapCostReflectiveName_base symbols.reflection.presentation presentation
 
 @[simp]
-theorem costPresentationSymbols_reflective_wrapped
-    (symbols : PresentationSymbols) (presentation : String) :
-    (costPresentationSymbols symbols).reflective
+theorem costReflectiveSymbols_presentation_wrapped
+    (symbols : ReflectionExtension.ReflectiveSymbols)
+    (presentation : String) :
+    (costReflectiveSymbols symbols).reflection.presentation
         (costWrappedReflectiveName presentation) =
-      costWrappedReflectiveName (symbols.reflective presentation) := by
-  exact mapCostReflectiveName_wrapped symbols.reflective presentation
+      costWrappedReflectiveName
+        (symbols.reflection.presentation presentation) := by
+  exact mapCostReflectiveName_wrapped symbols.reflection.presentation presentation
 
 @[simp]
-theorem costPresentationSymbols_reflectiveRule_base
-    (symbols : PresentationSymbols) (declaration : String) :
-    (costPresentationSymbols symbols).reflectiveRule
+theorem costReflectiveSymbols_rule_base
+    (symbols : ReflectionExtension.ReflectiveSymbols)
+    (declaration : String) :
+    (costReflectiveSymbols symbols).reflection.rule
         (costBaseReflectiveRuleName declaration) =
-      costBaseReflectiveRuleName (symbols.reflectiveRule declaration) := by
-  exact mapCostReflectiveRuleName_base symbols.reflectiveRule declaration
+      costBaseReflectiveRuleName (symbols.reflection.rule declaration) := by
+  exact mapCostReflectiveRuleName_base symbols.reflection.rule declaration
 
 @[simp]
 theorem costPresentationSymbols_rewrite_fixed
@@ -542,8 +557,7 @@ theorem costPresentationSymbols_id :
       PresentationSymbols.id := by
   ext name <;>
     simp [costPresentationSymbols, PresentationSymbols.id,
-      mapCostConstructorName_id, mapCostEquationName_id,
-      mapCostReflectiveName_id, mapCostReflectiveRuleName_id]
+      mapCostConstructorName_id, mapCostEquationName_id]
 
 theorem costPresentationSymbols_comp
     (first second : PresentationSymbols) :
@@ -553,8 +567,7 @@ theorem costPresentationSymbols_comp
   ext name <;>
     simp [costPresentationSymbols, PresentationSymbols.comp,
       mapTaggedName_comp, mapCostConstructorName_comp,
-      mapCostEquationName_comp, mapCostReflectiveName_comp,
-      mapCostReflectiveRuleName_comp]
+      mapCostEquationName_comp]
 
 /-! ## Type-profile naturality -/
 
@@ -1190,12 +1203,6 @@ def continuationRetypingStructural {source target : CIGSLT}
   mapsRewrites rewrite membership := by
     change List.Mem rewrite [] at membership
     exact (List.not_mem_nil membership).elim
-  mapsReflectivePresentations declaration membership := by
-    change List.Mem declaration [] at membership
-    exact (List.not_mem_nil membership).elim
-  mapsReflectiveRules declaration membership := by
-    change List.Mem declaration [] at membership
-    exact (List.not_mem_nil membership).elim
 
 /-! ## Conservative extension by the fixed Cost apparatus -/
 
@@ -1286,12 +1293,6 @@ def costCoreStructural {source target : CIGSLT}
     exact (List.not_mem_nil membership).elim
   mapsRewrites rewrite membership := by
     change List.Mem rewrite [] at membership
-    exact (List.not_mem_nil membership).elim
-  mapsReflectivePresentations declaration membership := by
-    change List.Mem declaration [] at membership
-    exact (List.not_mem_nil membership).elim
-  mapsReflectiveRules declaration membership := by
-    change List.Mem declaration [] at membership
     exact (List.not_mem_nil membership).elim
 
 end CIGSLT.Morphism

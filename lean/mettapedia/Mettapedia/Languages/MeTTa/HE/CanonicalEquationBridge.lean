@@ -564,7 +564,7 @@ theorem freshenEquation_alphaEq_snd
           canonicalizeVars_renameVars_of_injOn_vars hinj
 
 /-- The two independent freshening conventions already agree at the canonical
-surface on the translated LHS: LeaTTa's runtime `freshenRule` and HE's
+interface on the translated LHS: LeaTTa's runtime `freshenRule` and HE's
 `freshenEquation` may choose different concrete names, but they land in the
 same alpha-class. -/
 theorem freshenRule_alphaEq_freshenEquation_fst
@@ -724,7 +724,7 @@ where
           toLeaTTaAtom_applyAtomTotal_eq_renBy r e]
 
 /-- Any injective HE variable renaming is invisible to LeaTTa's canonical
-surface after translation: the renamed HE atom is alpha-equivalent to the
+interface after translation: the renamed HE atom is alpha-equivalent to the
 original one. This is the free-metavariable half of the canonical-hub story,
 separate from the binder-level de Bruijn layer. -/
 private theorem alphaEq_toLeaTTaAtom_applyAtomTotal_of_injective
@@ -762,7 +762,7 @@ values are fixed by the key renaming, then that same runtime item is already a
 visible successor for the original HE witness up to α-equivalence. This keeps
 the later repaired transport theorem honest: the remaining work is precisely to
 construct the key-renamed runtime witness and prove the value-fix side
-condition on the repaired visible-avoid surface. -/
+condition on the repaired visible-avoid interface. -/
 theorem visible_successor_of_keyRenamed_instantiated_item
     {rhs : OSLFCore.Atom} {qb qb' : Bindings} {fuel : Nat} {prev : Metta.Minimal.Stack}
     {items : List Metta.Minimal.Item}

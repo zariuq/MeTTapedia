@@ -463,16 +463,16 @@ because the abstract tree for "the cat sleeps" reduces (via grammar rules)
 to expose the lexical item "cat".
 
 This gives us a formal, computational notion of entailment that
-goes beyond surface string matching.
+goes beyond linearized string matching.
 -/
 
 /-- If a tree contains a lexical item (reachable via ◇), then
     the item is semantically present — it cannot be removed by
-    changing the surface realization.
+    changing the concrete realization.
 
-    This is because ◇ is defined on abstract trees, not surface strings.
+    This is because ◇ is defined on abstract trees, not linearized strings.
     A French translation of "the cat sleeps" would have a different
-    surface form but the SAME abstract tree, so ◇(is_cat) still holds. -/
+    source form but the SAME abstract tree, so ◇(is_cat) still holds. -/
 theorem semantic_presence_is_structural (tree : AbstractNode) (name : String)
     (h : langDiamond gfLegacySemanticLanguageDef
       (fun p => p = .fvar name) (gfAbstractToPattern tree)) :
@@ -557,7 +557,7 @@ theorem frege_strong (f : FunctionSig)
 
 /-! ### Ambiguity as Type Multiplicity
 
-A surface string is *ambiguous* iff it has multiple abstract trees.
+A linearized string is *ambiguous* iff it has multiple abstract trees.
 Each abstract tree lives in a unique type fiber (by `apply_unique_constructor_type`).
 Therefore: **the number of readings = the number of type fibers**.
 

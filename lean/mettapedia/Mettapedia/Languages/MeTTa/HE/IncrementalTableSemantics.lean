@@ -125,7 +125,7 @@ def TableEntry.populateExact (rs : RevisionedSpace) (q : Atom) (fuel : Nat) :
     answers := queryEquations rs.space q fuel, status := .completed }
 
 /-- Historical simpleMatch-based population model retained only for the legacy
-variant-key cache theorem. The repaired public query surface is
+variant-key cache theorem. The repaired public query interface is
 `TableEntry.populateExact`. -/
 def TableEntry.populateExactLegacy (rs : RevisionedSpace) (q : Atom) (fuel : Nat) :
     TableEntry :=

@@ -307,20 +307,23 @@ def rhoCutOrderBaseSelectedNameSort :
 
 /-- Checked left endpoint of the selected base-colour cell. -/
 def rhoCutOrderBaseSelectedLeft :
-    OpenTerm rhoCIGSLT.costWholeLanguage rhoCutOrderFree []
-      rhoCutOrderBaseSelectedNameSort :=
-  WellSorted.OpenTerm.reindex rfl rhoCutOrderBaseRedexNode_targetBound rfl
-    rhoCutOrderBaseRedexNode.term
+    ReflectiveWellSorted.OpenTerm rhoCIGSLT.costWholeReflectionProfile
+      rhoCIGSLT.costWholeLanguage rhoCutOrderFree []
+        rhoCutOrderBaseSelectedNameSort :=
+  ReflectiveWellSorted.OpenTerm.reindex rfl
+    rhoCutOrderBaseRedexNode_targetBound rfl
+    rhoCutOrderBaseRedexNode.termReflective
 
 /-- Checked structural right endpoint of the selected base-colour cell. -/
 def rhoCutOrderBaseSelectedRight :
-    OpenTerm rhoCIGSLT.costWholeLanguage rhoCutOrderFree []
-      rhoCutOrderBaseSelectedNameSort := by
+    ReflectiveWellSorted.OpenTerm rhoCIGSLT.costWholeReflectionProfile
+      rhoCIGSLT.costWholeLanguage rhoCutOrderFree []
+        rhoCutOrderBaseSelectedNameSort := by
   have sortName : rhoCutOrderBaseSelectedNameSort.1 =
       costBaseSortName "Name" := by
     exact TypeExpr.base.inj rhoCutOrderBaseRedexNode_resultType
   refine ⟨.fvar "0", ?_⟩
-  refine ⟨.fvar ?_, rfl, rfl, ?_⟩
+  refine ⟨⟨.fvar ?_, rfl, rfl, rfl⟩, ?_⟩
   · simp [rhoCutOrderFree, FreeTypeContext.ofList, sortName]
   · intro declaration membership
     rfl
@@ -328,8 +331,10 @@ def rhoCutOrderBaseSelectedRight :
 @[simp]
 theorem rhoCutOrderBaseSelectedLeft_pattern :
     rhoCutOrderBaseSelectedLeft.1 = rhoCutOrderRedex := by
-  simpa [rhoCutOrderBaseSelectedLeft] using
-    rhoCutOrderBaseRedexNode_term_pattern
+  rw [rhoCutOrderBaseSelectedLeft,
+    ReflectiveWellSorted.OpenTerm.reindex_pattern]
+  change rhoCutOrderBaseRedexNode.term.1 = rhoCutOrderRedex
+  exact rhoCutOrderBaseRedexNode_term_pattern
 
 @[simp]
 theorem rhoCutOrderBaseSelectedRight_pattern :
@@ -339,23 +344,22 @@ theorem rhoCutOrderBaseSelectedRight_pattern :
 /-- The exact outer occurrence restricts to its retained Quote/Drop redex
 without reconstructing declaration identity from proposition-valued support. -/
 def rhoCutOrderBaseSelectedGeneratorWitness :
-    EquationSemantics.AuthoredGeneratorWitness defaultBasePremises
+    ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness
+      rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
       rhoCIGSLT.costWholeLanguage rhoCutOrderBaseSelectedLeft.1
         rhoCutOrderBaseSelectedRight.1 := by
-  rw [rhoCutOrderBaseSelectedLeft_pattern,
-    rhoCutOrderBaseSelectedRight_pattern]
-  have redex : rhoCutOrderGeneratorWitness.redex = rhoCutOrderRedex := by
-    rfl
-  have contractum : rhoCutOrderGeneratorWitness.contractum = .fvar "0" := by
-    rfl
-  simpa only [redex, contractum] using rhoCutOrderGeneratorWitness.atRedex
+  change ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness
+    rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
+      rhoCIGSLT.costWholeLanguage rhoCutOrderRedex (.fvar "0")
+  exact rhoCutOrderGeneratorWitness.atRedex
 
 /-- Any absorber for a retained base-tagged Quote/Drop cell has the base
 declaration colour; the wrapped declaration cannot collapse those exact
 constructors. -/
 theorem rhoCutOrderAbsorption_color_of_redex
     {left right : Pattern}
-    {witness : EquationSemantics.AuthoredGeneratorWitness defaultBasePremises
+    {witness : ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness
+      rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
       rhoCIGSLT.costWholeLanguage left right}
     (redex : witness.redex = rhoCutOrderRedex)
     (contractum : witness.contractum = .fvar "0")
@@ -370,8 +374,8 @@ theorem rhoCutOrderAbsorption_color_of_redex
       simp [rhoCutOrderRedex, rhoCutOrderBaseQuote, rhoCutOrderBaseDrop,
         costStaticReflectivePresentationDecl,
         costWrappedReflectivePresentationDecl,
-        Mettapedia.GSLT.LanguageDef.mapReflectivePresentation,
-        costWrappedStaticSymbols,
+        ReflectionExtension.mapReflectivePresentation,
+        costWrappedStaticReflectiveSymbols, costWrappedStaticSymbols,
         rhoReflectivePresentation,
         Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize,
         Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeList,
@@ -388,8 +392,10 @@ theorem rhoCutOrderBaseSelectedAbsorption_color
 
 /-- Support erasure of the retained selected-root occurrence. -/
 theorem rhoCutOrderBaseSelected_generator :
-    openEquationGenerator rhoCIGSLT.costIGSLT rhoCutOrderFree []
-      rhoCutOrderBaseSelectedNameSort rhoCutOrderBaseSelectedLeft
+    ReflectiveEquationSemantics.reflectiveOpenPatternEquationGenerator
+      rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
+      rhoCIGSLT.costWholeLanguage rhoCutOrderFree []
+      (.base rhoCutOrderBaseSelectedNameSort.1) rhoCutOrderBaseSelectedLeft
         rhoCutOrderBaseSelectedRight :=
   rhoCutOrderBaseSelectedGeneratorWitness.erase
 
@@ -1527,14 +1533,16 @@ theorem rhoCutOrder_commonRestoredCanonicalSemanticFrames_eq :
     let rightEnvironment :=
       CostStaticAtomEnvironment.ofInventory rightInventory
     let cospan := leftEnvironment.semanticKeyCospan rightEnvironment
-    ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeLanguage
+    ReflectiveContextSupport.substituteAt
+      rhoCIGSLT.costWholeReflectionProfile
         cospan.commonSupport cospan.commonAssignment
         rhoCutOrderLeftNode.targetBound.length
         (cospan.reifyWith leftEnvironment.lookupAtom? cospan.leftSlot
           (rhoCutOrderLeftNode.canonicalizeReifiedTargetFrame leftEnvironment
             (costStaticReflectivePresentationDecl rhoCIGSLT .wrapped
               rhoReflectivePresentation))) =
-      ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeLanguage
+      ReflectiveContextSupport.substituteAt
+        rhoCIGSLT.costWholeReflectionProfile
         cospan.commonSupport cospan.commonAssignment
         rhoCutOrderLeftNode.targetBound.length
         (cospan.reifyWith rightEnvironment.lookupAtom? cospan.rightSlot
@@ -1562,7 +1570,8 @@ theorem rhoCutOrder_commonRestoredCanonicalSemanticFrames_eq :
         (costStaticReflectivePresentationDecl rhoCIGSLT .wrapped
           rhoReflectivePresentation)) at frames
   exact congrArg
-    (ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeLanguage
+    (ReflectiveContextSupport.substituteAt
+      rhoCIGSLT.costWholeReflectionProfile
       cospan.commonSupport cospan.commonAssignment
       rhoCutOrderLeftNode.targetBound.length) frames
 
@@ -1712,13 +1721,15 @@ tables agrees exactly, because both evaluations factor through the common
 semantic frame and the common support/value assignment.  This is the local
 root-crossing square beneath the already-proved hereditary tree span. -/
 theorem rhoCutOrder_commonSemanticRestoration_eq :
-    ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeLanguage
+    ReflectiveContextSupport.substituteAt
+      rhoCIGSLT.costWholeReflectionProfile
         rhoCutOrderLeftNode.boundaryTable.restorationSupport
         ((rhoCutOrderLeftChildren.normalizeValues
           (normalizeStatic := rhoHereditaryStaticNormalizer)).assignment
             rhoCutOrderLeftNode.boundaryTable)
         0 rhoCutOrderLeftNode.mappedThickenedSkeleton.1 =
-      ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeLanguage
+      ReflectiveContextSupport.substituteAt
+        rhoCIGSLT.costWholeReflectionProfile
         rhoCutOrderRightNode.boundaryTable.restorationSupport
         ((rhoCutOrderRightChildren.normalizeValues
           (normalizeStatic := rhoHereditaryStaticNormalizer)).assignment
@@ -1731,7 +1742,8 @@ theorem rhoCutOrder_commonSemanticRestoration_eq :
 wrapped frame.  This is the endpoint factor of the semantic-atom square,
 separate from hereditary canonicalization. -/
 theorem rhoCutOrderRight_commonSemanticRestoration_pattern :
-    ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeLanguage
+    ReflectiveContextSupport.substituteAt
+      rhoCIGSLT.costWholeReflectionProfile
         rhoCutOrderRightNode.boundaryTable.restorationSupport
         ((rhoCutOrderRightChildren.normalizeValues
           (normalizeStatic := rhoHereditaryStaticNormalizer)).assignment
@@ -1741,6 +1753,7 @@ theorem rhoCutOrderRight_commonSemanticRestoration_pattern :
   rw [rhoCutOrderRightNode.mappedThickenedSkeleton_pattern,
     CostStaticBinderThinning.thickenAmbientBVars_eq_self_of_targetBound_eq_nil
       rhoCutOrderRightNode.thinning rfl,
+    ReflectiveWellSorted.OpenTerm.toCore_pattern,
     rhoCutOrderRightNode_skeleton_pattern]
   simp [ReflectiveContextSupport.substituteAt,
     hereditaryValues_assignment_sourceVariable,
@@ -1797,7 +1810,7 @@ noncomputable def rhoCutOrderStaticEvaluationBridge :
     calc
       _ = rhoCutOrderRightPattern := rhoCutOrderLeftNode_normalizeHereditary
       _ = ReflectiveContextSupport.substituteAt
-          rhoCIGSLT.costWholeLanguage
+          rhoCIGSLT.costWholeReflectionProfile
           rhoCutOrderRightNode.boundaryTable.restorationSupport
           ((rhoCutOrderRightChildren.normalizeValues
             (normalizeStatic := rhoHereditaryStaticNormalizer)).assignment
@@ -1946,7 +1959,7 @@ noncomputable def rhoCutOrderNormalizationSpan :
   rhoCutOrderGeneratorTreeNormalizationAlignment.toNormalizationLift.span
 
 /-- The span retains the exact generated reflective occurrence before its
-support projection to `openEquationGenerator`. -/
+support projection to the proposition-valued reflective generator relation. -/
 noncomputable def rhoCutOrderGeneratorNormalizationLift :
     CostGeneratorNormalizationLift rhoCIGSLT
       rhoHereditaryStaticNormalizer rhoCutOrder_generator :=
@@ -1996,9 +2009,10 @@ theorem rhoCutOrder_costNormalizeOpenHereditary_eq :
 /-- The repaired exact collapse is tied to the actual authored generator,
 not merely to two independently chosen example terms. -/
 theorem rhoCutOrder_hereditary_generator_canary :
-    openEquationGenerator rhoCIGSLT.costIGSLT
-        rhoCutOrderFree [] rhoCutOrderWrappedProcSort
-        rhoCutOrderLeft rhoCutOrderRight ∧
+    ReflectiveEquationSemantics.reflectiveOpenPatternEquationGenerator
+        rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
+        rhoCIGSLT.costWholeLanguage rhoCutOrderFree []
+        (.base rhoCutOrderWrappedProcSort.1) rhoCutOrderLeft rhoCutOrderRight ∧
       rhoCostNormalizeOpenHereditary rhoCutOrderLeft =
         rhoCostNormalizeOpenHereditary rhoCutOrderRight :=
   ⟨rhoCutOrder_generator, rhoCutOrder_costNormalizeOpenHereditary_eq⟩

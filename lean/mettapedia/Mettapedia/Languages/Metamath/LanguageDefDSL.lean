@@ -7,8 +7,8 @@ import Mettapedia.Languages.Metamath.MMLean4Bridge
 
 Authored in the unified DSL; grounded to `mm-lean4` bridge semantics.
 (A `mettail-rust/languages/src/metamath.rs` twin existed historically but is no
-longer in the live tree; the `exportedRustSurface` gates below check the render
-surface itself, with no in-tree Rust consumer.)
+longer in the live tree; the `exportedRustSyntax` gates below check the rendered
+syntax itself, with no in-tree Rust consumer.)
 -/
 
 namespace Mettapedia.Languages.Metamath.LanguageDefDSL
@@ -381,8 +381,6 @@ def metamathCore : LanguageDef :=
 
       CompileLinearizeDone . |- (CompileAfterLinearize (LinearizeDone prog)) ~> (CompileDone prog);
     }
-    logic { }
-    oracles { }
   }
 
 abbrev metamathLanguageDef : LanguageDef := metamathCore
@@ -391,7 +389,7 @@ abbrev metamathLanguageDef : LanguageDef := metamathCore
 
 The `![label]/![raw]/![proofTok]/![path]` carriers above are lexical classes;
 these predicates pin their character-level meaning per the Metamath spec (the
-book §4.1; mmverify.py as algorithm reference). Two consequences the surface
+book §4.1; mmverify.py as algorithm reference). Two consequences the source
 grammar silently relies on, stated here so they are checkable rather than
 folklore: math symbols never contain `$`, so `$.`/`$=`/`$}` are hard statement
 separators; labels never contain `(`, so `)` terminates a compressed-proof
@@ -436,7 +434,7 @@ def isIncludePathToken (s : String) : Bool :=
 #guard isProofToken "AB?C"   -- mixed chunk: legal in incomplete proofs
 #guard !(isProofToken "$.") && !(isProofToken "(")
 
-def exportedRustSurface : String :=
+def exportedRustSyntax : String :=
   renderLanguageWithUserSyntax metamathCore
 
 private def hasTypeCarrier (nm : String) (carrier : CarrierKind) : Bool :=
@@ -463,12 +461,12 @@ example : bridgeKeyOfTypeName "Sym" = some .specSym := rfl
 example : bridgeKeyOfTypeName "ProofTok" = some .proofTok := rfl
 example : bridgeKeyOfTypeName "IncludePath" = some .includePath := rfl
 
--- Export-surface smoke checks: RUN gates over the rendered string (evaluation,
--- not proof — the rendered surface is far too large for kernel reduction).
-#guard hasSubstring "name: Metamath" exportedRustSurface
-#guard hasSubstring "ConstDecl . syms:MathString |- \"$c\" syms \"$.\" : Stmt;" exportedRustSurface
-#guard hasSubstring "BeginLower . |- (Lower db) ~> (LowerDb db KDone);" exportedRustSurface
-#guard hasSubstring "CompileLinearizeDone . |- (CompileAfterLinearize (LinearizeDone prog)) ~> (CompileDone prog);" exportedRustSurface
+-- Export-syntax smoke checks: RUN gates over the rendered string (evaluation,
+-- not proof — the rendered syntax is far too large for kernel reduction).
+#guard hasSubstring "name: Metamath" exportedRustSyntax
+#guard hasSubstring "ConstDecl . syms:MathString |- \"$c\" syms \"$.\" : Stmt;" exportedRustSyntax
+#guard hasSubstring "BeginLower . |- (Lower db) ~> (LowerDb db KDone);" exportedRustSyntax
+#guard hasSubstring "CompileLinearizeDone . |- (CompileAfterLinearize (LinearizeDone prog)) ~> (CompileDone prog);" exportedRustSyntax
 
 example
     (rt : RuntimeState) (sp : SpecState)

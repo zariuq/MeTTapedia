@@ -14,6 +14,6 @@ export Mettapedia.DocText.OSLFReadmeCompositional
     anchor_outcome anchor_not_proof
     allOSLFClaims parseOSLFClaimLine? parseSelectedStructuredOSLFLine?
     selectedStructuredOSLFLines oslfHardAuditPasses oslf_hard_audit
-    claimSurfaceBuckets ambiguousClaimSurfaces )
+    claimRenderedBuckets ambiguousClaimRenderings )
 
 end Mettapedia.Languages.GF.Examples.OSLFReadmeCompositional

@@ -47,7 +47,7 @@ def encTerm : LF.Term → AST
   | .lam A b => Lam (encTerm A) (encTerm b)
   | .app f a => App (encTerm f) (encTerm a)
 
-/-- Encode a surface token. -/
+/-- Encode a source token. -/
 def encTok : LF.Tok → AST
   | .pi    => tPI
   | .lam   => tLAM

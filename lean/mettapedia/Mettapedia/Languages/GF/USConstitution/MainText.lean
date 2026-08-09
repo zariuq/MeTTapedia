@@ -25,7 +25,7 @@ structure ConstitutionDomain where
   Bill : Type u
   Office : Type u
 
-/-- A clause whose surface fragment has at least one accepted GF parse witness. -/
+/-- A clause whose source fragment has at least one accepted GF parse witness. -/
 structure GroundedClause where
   id : ClauseId
   accepted : 0 < acceptedParseCount id

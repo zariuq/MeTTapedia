@@ -115,7 +115,7 @@ deriving Repr, DecidableEq, BEq
 
 /-- Structural eligibility conditions for executable lanes.
 
-These do not assign ownership of a surface head forever. They describe when a
+These do not assign ownership of a source head forever. They describe when a
 particular execution lane may fire.
 
 Positive example:
@@ -188,7 +188,7 @@ deriving Repr, DecidableEq, BEq
 /-- First contract lane: a lookup/query optimization certificate. -/
 structure LookupQueryContract where
   head : String
-  surfaceHead : Option String := none
+  sourceHead : Option String := none
   arity : Nat
   lookupFamily : LookupFamilyPlan
   owner : ExecutionOwner
@@ -238,7 +238,7 @@ structure RelationPremiseContract where
 deriving Repr, DecidableEq, BEq
 
 /-- Space-effect payload certificates make the payload lane explicit instead of
-forcing Rust to guess from surface syntax. -/
+forcing Rust to guess from concrete syntax. -/
 structure SpaceEffectPayloadContract where
   head : String
   arity : Nat
@@ -279,7 +279,7 @@ structure IntrinsicBuiltinContract where
 deriving Repr, DecidableEq, BEq
 
 /-- Fourth contract lane: host-grounded builtins that are not currently exposed
-through the MM2 intrinsic surface.
+through the MM2 intrinsic interface.
 
 Positive example:
 - integer comparisons such as `<` can be certified here as pure, deterministic,

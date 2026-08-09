@@ -571,7 +571,7 @@ noncomputable def coveringFactors (fg : FactorGraph V K)
     [Fintype V] [One K] : List (Factor fg) :=
   (Finset.univ : Finset V).toList.map (fun v => Factor.unitVar (fg := fg) v)
 
-/-- The explicit factor list used by the operational VE query surface:
+/-- The explicit factor list used by the operational VE query interface:
 constraint indicators, user factors, and neutral scope-covering unary factors. -/
 noncomputable def veFactorList
     (fg : FactorGraph V K)
@@ -1013,20 +1013,20 @@ noncomputable def linkProbVECond (cpt : bn.DiscreteCPT)
     let den := veQueryWeight fg constraints
     exact if den = 0 then 0 else num / den
 
-/-- Preferred honest name for the exact semantic probability query surface. -/
+/-- Preferred honest name for the exact semantic probability query. -/
 noncomputable def propProbSemantic (cpt : bn.DiscreteCPT) (v : V) (val : bn.stateSpace v)
     [DecidableRel bn.graph.edges]
     [∀ v, Fintype (bn.stateSpace v)] [∀ v, DecidableEq (bn.stateSpace v)] : ENNReal :=
   propProbVE (bn := bn) cpt v val
 
-/-- Preferred honest name for the exact semantic binary conditional query surface. -/
+/-- Preferred honest name for the exact semantic binary conditional query. -/
 noncomputable def linkProbSemantic (cpt : bn.DiscreteCPT)
     (a b : V) (valA : bn.stateSpace a) (valB : bn.stateSpace b)
     [DecidableRel bn.graph.edges]
     [∀ v, Fintype (bn.stateSpace v)] [∀ v, DecidableEq (bn.stateSpace v)] : ENNReal :=
   linkProbVE (bn := bn) cpt a b valA valB
 
-/-- Preferred honest name for the exact semantic constrained conditional query surface. -/
+/-- Preferred honest name for the exact semantic constrained conditional query. -/
 noncomputable def linkProbSemanticCond (cpt : bn.DiscreteCPT)
     (constraints : List (Σ v : V, bn.stateSpace v)) (b : Σ v : V, bn.stateSpace v)
     [DecidableRel bn.graph.edges]

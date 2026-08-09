@@ -140,7 +140,7 @@ theorem simpleMatch_varVar_not_sound_for_matchRel :
 
 /-- Query-orientation form of the keystone failure: the retired query path
 matches the equation LHS against the query atom, but the faithful public query
-surface is specified by `MatchRel query lhs _`.  On two variables, the retired
+interface is specified by `MatchRel query lhs _`.  On two variables, the retired
 oriented assignment therefore cannot be a faithful HE query match. -/
 theorem varVar_simpleMatchAssignment_not_queryMatchRel (pattern query : String) :
     ¬ MatchRel (.var query) (.var pattern)
@@ -611,7 +611,7 @@ private theorem matchAtomsList_cons_of_head_tail
 /-! ## §7  No-variable-values implies no loop
 
 This isolates the semantic shape of the remaining completeness crux.  The top
-level `matchAtoms` surface filters out looped bindings, so any future
+level `matchAtoms` interface filters out looped bindings, so any future
 `MatchRel -> hasLoop = false` theorem will naturally factor through the more
 structural statement that successful bindings never map a variable directly to
 another variable. -/
@@ -1705,7 +1705,7 @@ theorem matchAtoms_complete {l r : Atom} {b : Bindings}
   matchRel_completeWitness h
 
 /-- Completeness of the expression/list matcher from the public empty-seed
-    surface. This is the list companion to `matchAtoms_complete`. -/
+    interface. This is the list companion to `matchAtoms_complete`. -/
 theorem matchAtomsList_complete {ls rs : List Atom} {b : Bindings}
     (h : MatchListRel ls rs b) :
     ∃ fuel, b ∈ matchAtomsList ls rs [Bindings.empty] fuel :=
@@ -1745,7 +1745,7 @@ theorem matchAtomsList_mono
       b ∈ matchAtomsList ls rs acc (fuel + extra) :=
   fun h => matchAtomsList_mono_add ls rs acc fuel extra _ h
 
-/-- Additive fuel monotonicity for the executable merge surface, exported for
+/-- Additive fuel monotonicity for the executable merge interface, exported for
     the declarative merge completeness proofs. -/
 theorem mergeBindings_mono
     (left right : Bindings) (fuel extra : Nat) :

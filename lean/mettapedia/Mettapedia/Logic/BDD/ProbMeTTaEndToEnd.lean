@@ -4,14 +4,14 @@ import Mettapedia.Logic.BDD.ProbMeTTaPresentation
 import Mettapedia.Logic.BDD.ProbMeTTaADRuntimeCore
 
 /-!
-# ProbMeTTa End-to-End Theorem Surface
+# ProbMeTTa End-to-End Theorem Collection
 
 This file states the honest end-to-end theorem chain for the now-formalized
 literal ProbMeTTa layers:
 
 - explicit literal state (`ProbMeTTaSpaceState`)
 - literal nonground head selection (`ProbMeTTaLiteralMatching`)
-- exact source semantics (`ProbMeTTaSourceSurface`)
+- exact source semantics (`ProbMeTTaSourceSyntax`)
 - runtime/BDD bridge (`ProbMeTTaRuntimeCore` / `ProbMeTTaBridge`)
 - literal top-level rounding (`ProbMeTTaPresentation`)
 

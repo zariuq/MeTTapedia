@@ -24,6 +24,7 @@ open Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical
 open Mettapedia.OSLF.MeTTaIL.ScopedPattern
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open WellSorted
+open ReflectionExtension
 
 /-- Compact-syntax evidence that one endpoint must be elaborated as a static
 region.  Applications retain the decoded declaration and its exact colour;
@@ -48,7 +49,7 @@ theorem CostStaticRootShape.of_costStatic_collapsingRoot
     (source : CIGSLT) (declarationColor : CostStaticColor)
     (declaration : ReflectivePresentationDecl)
     (membership : declaration ∈
-      source.theory.presentation.presentation.language.reflectivePresentations)
+      source.reflection.1.presentations)
     {pattern : Pattern} {category : String}
     (collapsing : CollapsingRoot
       (costStaticReflectivePresentationDecl source declarationColor declaration)
@@ -217,9 +218,9 @@ def CostCanonicalStaticPairClosed
     (declaration : ReflectivePresentationDecl) : Prop :=
   ∀ {targetFree : FreeTypeContext} {available outer : List TypeExpr}
     {leftPattern rightPattern : Pattern} {type : TypeExpr},
-    OpenPatternWellSorted source.costWholeLanguage targetFree available type
+    ReflectiveWellSorted.OpenPatternWellSorted source.costWholeReflectionProfile source.costWholeLanguage targetFree available type
       leftPattern →
-    OpenPatternWellSorted source.costWholeLanguage targetFree available type
+    ReflectiveWellSorted.OpenPatternWellSorted source.costWholeReflectionProfile source.costWholeLanguage targetFree available type
       rightPattern →
     canonicalize declaration leftPattern = canonicalize declaration rightPattern →
     (CostStaticRootShape source leftPattern type ∨
@@ -241,9 +242,9 @@ def CostCanonicalCollapsingPairClosed
     (declaration : ReflectivePresentationDecl) : Prop :=
   ∀ {targetFree : FreeTypeContext} {available outer : List TypeExpr}
     {leftPattern rightPattern : Pattern} {type : TypeExpr},
-    OpenPatternWellSorted source.costWholeLanguage targetFree available type
+    ReflectiveWellSorted.OpenPatternWellSorted source.costWholeReflectionProfile source.costWholeLanguage targetFree available type
       leftPattern →
-    OpenPatternWellSorted source.costWholeLanguage targetFree available type
+    ReflectiveWellSorted.OpenPatternWellSorted source.costWholeReflectionProfile source.costWholeLanguage targetFree available type
       rightPattern →
     canonicalize declaration leftPattern = canonicalize declaration rightPattern →
     (CollapsingRoot declaration leftPattern ∨
@@ -262,9 +263,9 @@ def CostCanonicalStaticRootBridgeClosed
     {leftPattern rightPattern : Pattern} {type : TypeExpr}
     (leftTree : CostRegionTree source targetFree available outer leftPattern type)
     (rightTree : CostRegionTree source targetFree available outer rightPattern type),
-    OpenPatternWellSorted source.costWholeLanguage targetFree available type
+    ReflectiveWellSorted.OpenPatternWellSorted source.costWholeReflectionProfile source.costWholeLanguage targetFree available type
         leftPattern →
-      OpenPatternWellSorted source.costWholeLanguage targetFree available type
+      ReflectiveWellSorted.OpenPatternWellSorted source.costWholeReflectionProfile source.costWholeLanguage targetFree available type
         rightPattern →
       canonicalize declaration leftPattern = canonicalize declaration rightPattern →
       (CostStaticRootShape source leftPattern type ∨
@@ -319,9 +320,9 @@ theorem CostCanonicalArgumentPairElaboration.nonempty_of_wellSorted
     (declaration : ReflectivePresentationDecl) (parent : Pattern)
     (alignChild : ∀ {available outer : List TypeExpr}
       {leftPattern rightPattern : Pattern} {type : TypeExpr},
-      OpenPatternWellSorted source.costWholeLanguage targetFree available type
+      ReflectiveWellSorted.OpenPatternWellSorted source.costWholeReflectionProfile source.costWholeLanguage targetFree available type
           leftPattern →
-        OpenPatternWellSorted source.costWholeLanguage targetFree available type
+        ReflectiveWellSorted.OpenPatternWellSorted source.costWholeReflectionProfile source.costWholeLanguage targetFree available type
           rightPattern →
         canonicalize declaration leftPattern = canonicalize declaration rightPattern →
         sizeOf leftPattern < sizeOf parent →
@@ -338,10 +339,10 @@ theorem CostCanonicalArgumentPairElaboration.nonempty_of_wellSorted
       Pattern.hasCanonicalBinderMetadataList rightArguments = true →
       isObjectPatternList leftArguments = true →
       isObjectPatternList rightArguments = true →
-      (∀ presentation ∈ source.costWholeLanguage.reflectivePresentations,
+      (∀ presentation ∈ source.costWholeReflectionProfile.presentations,
         binderSafeListAt presentation.quoteConstructor available.length
           leftArguments = true) →
-      (∀ presentation ∈ source.costWholeLanguage.reflectivePresentations,
+      (∀ presentation ∈ source.costWholeReflectionProfile.presentations,
         binderSafeListAt presentation.quoteConstructor available.length
           rightArguments = true) →
       (∀ argument ∈ leftArguments, sizeOf argument < sizeOf parent) →
@@ -389,20 +390,20 @@ theorem CostCanonicalArgumentPairElaboration.nonempty_of_wellSorted
                 simpa [isObjectPatternList] using rightObjects :
                   isObjectPattern rightArgument = true ∧
                     isObjectPatternList rightArguments = true)
-              have leftHeadScope : ReflectiveScopeSafeAt
-                  source.costWholeLanguage available.length leftArgument := by
+              have leftHeadScope : ReflectiveWellSorted.ReflectiveScopeSafeAt
+                  source.costWholeReflectionProfile available.length leftArgument := by
                 intro presentation membership
                 have spine := leftScope presentation membership
                 simp only [binderSafeListAt, Bool.and_eq_true] at spine
                 exact spine.1
-              have rightHeadScope : ReflectiveScopeSafeAt
-                  source.costWholeLanguage available.length rightArgument := by
+              have rightHeadScope : ReflectiveWellSorted.ReflectiveScopeSafeAt
+                  source.costWholeReflectionProfile available.length rightArgument := by
                 intro presentation membership
                 have spine := rightScope presentation membership
                 simp only [binderSafeListAt, Bool.and_eq_true] at spine
                 exact spine.1
               have leftTailScope : ∀ presentation ∈
-                  source.costWholeLanguage.reflectivePresentations,
+                  source.costWholeReflectionProfile.presentations,
                   binderSafeListAt presentation.quoteConstructor
                     available.length leftArguments = true := by
                 intro presentation membership
@@ -410,7 +411,7 @@ theorem CostCanonicalArgumentPairElaboration.nonempty_of_wellSorted
                 simp only [binderSafeListAt, Bool.and_eq_true] at spine
                 exact spine.2
               have rightTailScope : ∀ presentation ∈
-                  source.costWholeLanguage.reflectivePresentations,
+                  source.costWholeReflectionProfile.presentations,
                   binderSafeListAt presentation.quoteConstructor
                     available.length rightArguments = true := by
                 intro presentation membership
@@ -418,10 +419,10 @@ theorem CostCanonicalArgumentPairElaboration.nonempty_of_wellSorted
                 simp only [binderSafeListAt, Bool.and_eq_true] at spine
                 exact spine.2
               obtain ⟨headPair⟩ := alignChild
-                ⟨leftHeadTyped, leftCanonicalParts.1, leftObjectParts.1,
-                  leftHeadScope⟩
-                ⟨rightHeadTyped, rightCanonicalParts.1, rightObjectParts.1,
-                  rightHeadScope⟩ headCanonical
+                ⟨⟨leftHeadTyped, leftCanonicalParts.1, leftObjectParts.1,
+                    leftHeadTyped.isWellScopedAt⟩, leftHeadScope⟩
+                ⟨⟨rightHeadTyped, rightCanonicalParts.1, rightObjectParts.1,
+                    rightHeadTyped.isWellScopedAt⟩, rightHeadScope⟩ headCanonical
                 (leftArgumentsSmaller leftArgument (by simp))
               obtain ⟨tailPair⟩ := inductionHypothesis leftTailTyped
                 rightTailTyped leftCanonicalParts.2 rightCanonicalParts.2
@@ -445,9 +446,9 @@ theorem CostCanonicalElementPairElaboration.nonempty_of_wellSorted
     (declaration : ReflectivePresentationDecl) (parent : Pattern)
     (alignChild : ∀ {available outer : List TypeExpr}
       {leftPattern rightPattern : Pattern} {type : TypeExpr},
-      OpenPatternWellSorted source.costWholeLanguage targetFree available type
+      ReflectiveWellSorted.OpenPatternWellSorted source.costWholeReflectionProfile source.costWholeLanguage targetFree available type
           leftPattern →
-        OpenPatternWellSorted source.costWholeLanguage targetFree available type
+        ReflectiveWellSorted.OpenPatternWellSorted source.costWholeReflectionProfile source.costWholeLanguage targetFree available type
           rightPattern →
         canonicalize declaration leftPattern = canonicalize declaration rightPattern →
         sizeOf leftPattern < sizeOf parent →
@@ -463,10 +464,10 @@ theorem CostCanonicalElementPairElaboration.nonempty_of_wellSorted
       Pattern.hasCanonicalBinderMetadataList rightElements = true →
       isObjectPatternList leftElements = true →
       isObjectPatternList rightElements = true →
-      (∀ presentation ∈ source.costWholeLanguage.reflectivePresentations,
+      (∀ presentation ∈ source.costWholeReflectionProfile.presentations,
         binderSafeListAt presentation.quoteConstructor available.length
           leftElements = true) →
-      (∀ presentation ∈ source.costWholeLanguage.reflectivePresentations,
+      (∀ presentation ∈ source.costWholeReflectionProfile.presentations,
         binderSafeListAt presentation.quoteConstructor available.length
           rightElements = true) →
       (∀ element ∈ leftElements, sizeOf element < sizeOf parent) →
@@ -507,20 +508,20 @@ theorem CostCanonicalElementPairElaboration.nonempty_of_wellSorted
                 simpa [isObjectPatternList] using rightObjects :
                   isObjectPattern rightElement = true ∧
                     isObjectPatternList rightElements = true)
-              have leftHeadScope : ReflectiveScopeSafeAt
-                  source.costWholeLanguage available.length leftElement := by
+              have leftHeadScope : ReflectiveWellSorted.ReflectiveScopeSafeAt
+                  source.costWholeReflectionProfile available.length leftElement := by
                 intro presentation membership
                 have spine := leftScope presentation membership
                 simp only [binderSafeListAt, Bool.and_eq_true] at spine
                 exact spine.1
-              have rightHeadScope : ReflectiveScopeSafeAt
-                  source.costWholeLanguage available.length rightElement := by
+              have rightHeadScope : ReflectiveWellSorted.ReflectiveScopeSafeAt
+                  source.costWholeReflectionProfile available.length rightElement := by
                 intro presentation membership
                 have spine := rightScope presentation membership
                 simp only [binderSafeListAt, Bool.and_eq_true] at spine
                 exact spine.1
               have leftTailScope : ∀ presentation ∈
-                  source.costWholeLanguage.reflectivePresentations,
+                  source.costWholeReflectionProfile.presentations,
                   binderSafeListAt presentation.quoteConstructor
                     available.length leftElements = true := by
                 intro presentation membership
@@ -528,7 +529,7 @@ theorem CostCanonicalElementPairElaboration.nonempty_of_wellSorted
                 simp only [binderSafeListAt, Bool.and_eq_true] at spine
                 exact spine.2
               have rightTailScope : ∀ presentation ∈
-                  source.costWholeLanguage.reflectivePresentations,
+                  source.costWholeReflectionProfile.presentations,
                   binderSafeListAt presentation.quoteConstructor
                     available.length rightElements = true := by
                 intro presentation membership
@@ -536,10 +537,10 @@ theorem CostCanonicalElementPairElaboration.nonempty_of_wellSorted
                 simp only [binderSafeListAt, Bool.and_eq_true] at spine
                 exact spine.2
               obtain ⟨headPair⟩ := alignChild
-                ⟨leftHeadTyped, leftCanonicalParts.1, leftObjectParts.1,
-                  leftHeadScope⟩
-                ⟨rightHeadTyped, rightCanonicalParts.1, rightObjectParts.1,
-                  rightHeadScope⟩ headCanonical
+                ⟨⟨leftHeadTyped, leftCanonicalParts.1, leftObjectParts.1,
+                    leftHeadTyped.isWellScopedAt⟩, leftHeadScope⟩
+                ⟨⟨rightHeadTyped, rightCanonicalParts.1, rightObjectParts.1,
+                    rightHeadTyped.isWellScopedAt⟩, rightHeadScope⟩ headCanonical
                 (leftElementsSmaller leftElement (by simp))
               obtain ⟨tailPair⟩ := inductionHypothesis leftTailTyped
                 rightTailTyped leftCanonicalParts.2 rightCanonicalParts.2
@@ -564,17 +565,17 @@ theorem CostCanonicalPairElaboration.nonempty_of_aligned
     (staticClosed : CostCanonicalStaticPairClosed source kernel declaration)
     (alignChild : ∀ {childAvailable childOuter : List TypeExpr}
       {leftChild rightChild : Pattern} {childType : TypeExpr},
-      OpenPatternWellSorted source.costWholeLanguage targetFree childAvailable
+      ReflectiveWellSorted.OpenPatternWellSorted source.costWholeReflectionProfile source.costWholeLanguage targetFree childAvailable
           childType leftChild →
-        OpenPatternWellSorted source.costWholeLanguage targetFree childAvailable
+        ReflectiveWellSorted.OpenPatternWellSorted source.costWholeReflectionProfile source.costWholeLanguage targetFree childAvailable
           childType rightChild →
         canonicalize declaration leftChild = canonicalize declaration rightChild →
         sizeOf leftChild < sizeOf leftPattern →
         Nonempty (CostCanonicalPairElaboration source kernel targetFree
           childAvailable childOuter leftChild rightChild childType))
-    (leftWellSorted : OpenPatternWellSorted source.costWholeLanguage targetFree
+    (leftWellSorted : ReflectiveWellSorted.OpenPatternWellSorted source.costWholeReflectionProfile source.costWholeLanguage targetFree
       available type leftPattern)
-    (rightWellSorted : OpenPatternWellSorted source.costWholeLanguage targetFree
+    (rightWellSorted : ReflectiveWellSorted.OpenPatternWellSorted source.costWholeReflectionProfile source.costWholeLanguage targetFree
       available type rightPattern)
     (canonical : canonicalize declaration leftPattern =
       canonicalize declaration rightPattern)
@@ -583,7 +584,7 @@ theorem CostCanonicalPairElaboration.nonempty_of_aligned
       outer leftPattern rightPattern type) := by
   cases aligned with
   | bvar index =>
-      cases leftWellSorted.1 with
+      cases leftWellSorted.1.1 with
       | bvar lookup =>
           have inside : index < available.length :=
             (List.getElem?_eq_some_iff.mp lookup).1
@@ -593,7 +594,7 @@ theorem CostCanonicalPairElaboration.nonempty_of_aligned
               (.bvar index) type := .bvar extendedLookup
           exact ⟨⟨tree, tree, .refl tree⟩⟩
   | fvar name =>
-      cases leftWellSorted.1 with
+      cases leftWellSorted.1.1 with
       | fvar lookup =>
           let tree : CostRegionTree source targetFree available outer
               (.fvar name) type := .fvar lookup
@@ -602,7 +603,7 @@ theorem CostCanonicalPairElaboration.nonempty_of_aligned
       obtain ⟨rule, membership, labelEq, notBare, typeEq, leftArgumentsTyped,
           rightArgumentsTyped⟩ :=
         hasType_apply_pair source.costWholeLanguage_labelDeterministic
-          leftWellSorted.1 rightWellSorted.1
+          leftWellSorted.1.1 rightWellSorted.1.1
       subst constructorLabel
       subst type
       have coreMembership : rule ∈ source.costCoreLanguage.terms := by
@@ -611,14 +612,14 @@ theorem CostCanonicalPairElaboration.nonempty_of_aligned
         source.exists_declaredCostConstructor_of_mem rule coreMembership
       have canonicalLeft :
           Pattern.hasCanonicalBinderMetadataList leftArguments = true := by
-        simpa [Pattern.hasCanonicalBinderMetadata] using leftWellSorted.2.1
+        simpa [Pattern.hasCanonicalBinderMetadata] using leftWellSorted.1.2.1
       have canonicalRight :
           Pattern.hasCanonicalBinderMetadataList rightArguments = true := by
-        simpa [Pattern.hasCanonicalBinderMetadata] using rightWellSorted.2.1
+        simpa [Pattern.hasCanonicalBinderMetadata] using rightWellSorted.1.2.1
       have objectsLeft : isObjectPatternList leftArguments = true := by
-        simpa [isObjectPattern] using leftWellSorted.2.2.1
+        simpa [isObjectPattern] using leftWellSorted.1.2.2.1
       have objectsRight : isObjectPatternList rightArguments = true := by
-        simpa [isObjectPattern] using rightWellSorted.2.2.1
+        simpa [isObjectPattern] using rightWellSorted.1.2.2.1
       cases role : source.declaredCostConstructorRole constructor with
       | static color =>
           exact staticClosed leftWellSorted rightWellSorted canonical
@@ -633,15 +634,19 @@ theorem CostCanonicalPairElaboration.nonempty_of_aligned
                 source.declaredCostConstructorRole constructor =
                   .apparatus kind := Or.inl role
           by_cases quoted : ReflectiveContextSupport.isQuoteConstructor
-              source.costWholeLanguage rule.label = true
+              source.costWholeReflectionProfile rule.label = true
           · have leftAtZero :=
               isWellScopedListAt_zero_of_typed_quote
-                source.costWholeLanguage_validate membership leftArgumentsTyped
-                  quoted leftWellSorted.2.2.2
+                source.costWholeLanguage_validate
+                  source.costWholeReflectionProfile_validate membership
+                    leftArgumentsTyped
+                  quoted leftWellSorted.2
             have rightAtZero :=
               isWellScopedListAt_zero_of_typed_quote
-                source.costWholeLanguage_validate membership rightArgumentsTyped
-                  quoted rightWellSorted.2.2.2
+                source.costWholeLanguage_validate
+                  source.costWholeReflectionProfile_validate membership
+                    rightArgumentsTyped
+                  quoted rightWellSorted.2
             have leftTypedAtZero : ArgumentsHaveTypes
                 source.costWholeLanguage targetFree [] leftArguments
                   rule.params := by
@@ -654,12 +659,16 @@ theorem CostCanonicalPairElaboration.nonempty_of_aligned
                 (inner := []) (outer := available) rightAtZero
             have leftReflectiveAtZero :=
               reflectiveScopeSafeListAt_zero_of_typed_quote
-                source.costWholeLanguage_validate membership leftArgumentsTyped
-                  quoted leftWellSorted.2.2.2
+                source.costWholeLanguage_validate
+                  source.costWholeReflectionProfile_validate membership
+                    leftArgumentsTyped
+                  quoted leftWellSorted.2
             have rightReflectiveAtZero :=
               reflectiveScopeSafeListAt_zero_of_typed_quote
-                source.costWholeLanguage_validate membership rightArgumentsTyped
-                  quoted rightWellSorted.2.2.2
+                source.costWholeLanguage_validate
+                  source.costWholeReflectionProfile_validate membership
+                    rightArgumentsTyped
+                  quoted rightWellSorted.2
             obtain ⟨argumentPair⟩ :=
               CostCanonicalArgumentPairElaboration.nonempty_of_wellSorted
                 (available := []) (outer := available ++ outer)
@@ -682,14 +691,14 @@ theorem CostCanonicalPairElaboration.nonempty_of_aligned
                 materializes neutral quoted argumentPair.leftTrees
                   argumentPair.rightTrees argumentPair.alignment⟩⟩
           · have ordinary : ReflectiveContextSupport.isQuoteConstructor
-                source.costWholeLanguage rule.label = false :=
+              source.costWholeReflectionProfile rule.label = false :=
               Bool.eq_false_of_not_eq_true quoted
             have leftReflective :=
               reflectiveScopeSafeListAt_of_nonquote ordinary
-                leftWellSorted.2.2.2
+                leftWellSorted.2
             have rightReflective :=
               reflectiveScopeSafeListAt_of_nonquote ordinary
-                rightWellSorted.2.2.2
+                rightWellSorted.2
             obtain ⟨argumentPair⟩ :=
               CostCanonicalArgumentPairElaboration.nonempty_of_wellSorted
                 (available := available) (outer := outer)
@@ -717,15 +726,19 @@ theorem CostCanonicalPairElaboration.nonempty_of_aligned
                 source.declaredCostConstructorRole constructor =
                   .apparatus actualKind := Or.inr ⟨kind, role⟩
           by_cases quoted : ReflectiveContextSupport.isQuoteConstructor
-              source.costWholeLanguage rule.label = true
+              source.costWholeReflectionProfile rule.label = true
           · have leftAtZero :=
               isWellScopedListAt_zero_of_typed_quote
-                source.costWholeLanguage_validate membership leftArgumentsTyped
-                  quoted leftWellSorted.2.2.2
+                source.costWholeLanguage_validate
+                  source.costWholeReflectionProfile_validate membership
+                    leftArgumentsTyped
+                  quoted leftWellSorted.2
             have rightAtZero :=
               isWellScopedListAt_zero_of_typed_quote
-                source.costWholeLanguage_validate membership rightArgumentsTyped
-                  quoted rightWellSorted.2.2.2
+                source.costWholeLanguage_validate
+                  source.costWholeReflectionProfile_validate membership
+                    rightArgumentsTyped
+                  quoted rightWellSorted.2
             have leftTypedAtZero : ArgumentsHaveTypes
                 source.costWholeLanguage targetFree [] leftArguments
                   rule.params := by
@@ -738,12 +751,16 @@ theorem CostCanonicalPairElaboration.nonempty_of_aligned
                 (inner := []) (outer := available) rightAtZero
             have leftReflectiveAtZero :=
               reflectiveScopeSafeListAt_zero_of_typed_quote
-                source.costWholeLanguage_validate membership leftArgumentsTyped
-                  quoted leftWellSorted.2.2.2
+                source.costWholeLanguage_validate
+                  source.costWholeReflectionProfile_validate membership
+                    leftArgumentsTyped
+                  quoted leftWellSorted.2
             have rightReflectiveAtZero :=
               reflectiveScopeSafeListAt_zero_of_typed_quote
-                source.costWholeLanguage_validate membership rightArgumentsTyped
-                  quoted rightWellSorted.2.2.2
+                source.costWholeLanguage_validate
+                  source.costWholeReflectionProfile_validate membership
+                    rightArgumentsTyped
+                  quoted rightWellSorted.2
             obtain ⟨argumentPair⟩ :=
               CostCanonicalArgumentPairElaboration.nonempty_of_wellSorted
                 (available := []) (outer := available ++ outer)
@@ -766,14 +783,14 @@ theorem CostCanonicalPairElaboration.nonempty_of_aligned
                 materializes neutral quoted argumentPair.leftTrees
                   argumentPair.rightTrees argumentPair.alignment⟩⟩
           · have ordinary : ReflectiveContextSupport.isQuoteConstructor
-                source.costWholeLanguage rule.label = false :=
+              source.costWholeReflectionProfile rule.label = false :=
               Bool.eq_false_of_not_eq_true quoted
             have leftReflective :=
               reflectiveScopeSafeListAt_of_nonquote ordinary
-                leftWellSorted.2.2.2
+                leftWellSorted.2
             have rightReflective :=
               reflectiveScopeSafeListAt_of_nonquote ordinary
-                rightWellSorted.2.2.2
+                rightWellSorted.2
             obtain ⟨argumentPair⟩ :=
               CostCanonicalArgumentPairElaboration.nonempty_of_wellSorted
                 (available := available) (outer := outer)
@@ -796,43 +813,44 @@ theorem CostCanonicalPairElaboration.nonempty_of_aligned
                 materializes neutral ordinary argumentPair.leftTrees
                   argumentPair.rightTrees argumentPair.alignment⟩⟩
   | @lambda binder leftBody rightBody bodyCanonical =>
-      cases leftWellSorted.1 with
+      cases leftWellSorted.1.1 with
       | lambda leftBodyTyped =>
-          cases rightWellSorted.1 with
+          cases rightWellSorted.1.1 with
           | lambda rightBodyTyped =>
               rename_i domain codomain
               have leftCanonicalParts := (by
                 simpa [Pattern.hasCanonicalBinderMetadata] using
-                  leftWellSorted.2.1 :
+                  leftWellSorted.1.2.1 :
                     binder.isNone = true ∧
                       leftBody.hasCanonicalBinderMetadata = true)
               have rightCanonicalParts := (by
                 simpa [Pattern.hasCanonicalBinderMetadata] using
-                  rightWellSorted.2.1 :
+                  rightWellSorted.1.2.1 :
                     binder.isNone = true ∧
                       rightBody.hasCanonicalBinderMetadata = true)
               have leftBodyObject : isObjectPattern leftBody = true := by
-                simpa [isObjectPattern] using leftWellSorted.2.2.1
+                simpa [isObjectPattern] using leftWellSorted.1.2.2.1
               have rightBodyObject : isObjectPattern rightBody = true := by
-                simpa [isObjectPattern] using rightWellSorted.2.2.1
-              have leftBodyScope : ReflectiveScopeSafeAt
-                  source.costWholeLanguage (domain :: available).length
+                simpa [isObjectPattern] using rightWellSorted.1.2.2.1
+              have leftBodyScope : ReflectiveWellSorted.ReflectiveScopeSafeAt
+                  source.costWholeReflectionProfile (domain :: available).length
                     leftBody := by
                 intro presentation membership
-                have parent := leftWellSorted.2.2.2 presentation membership
+                have parent := leftWellSorted.2 presentation membership
                 simpa [binderSafeAt, Nat.add_comm] using parent
-              have rightBodyScope : ReflectiveScopeSafeAt
-                  source.costWholeLanguage (domain :: available).length
+              have rightBodyScope : ReflectiveWellSorted.ReflectiveScopeSafeAt
+                  source.costWholeReflectionProfile (domain :: available).length
                     rightBody := by
                 intro presentation membership
-                have parent := rightWellSorted.2.2.2 presentation membership
+                have parent := rightWellSorted.2 presentation membership
                 simpa [binderSafeAt, Nat.add_comm] using parent
               obtain ⟨bodyPair⟩ := alignChild
                 (childAvailable := domain :: available) (childOuter := outer)
-                ⟨leftBodyTyped, leftCanonicalParts.2, leftBodyObject,
-                  leftBodyScope⟩
-                ⟨rightBodyTyped, rightCanonicalParts.2, rightBodyObject,
-                  rightBodyScope⟩ bodyCanonical (by simp_wf)
+                ⟨⟨leftBodyTyped, leftCanonicalParts.2, leftBodyObject,
+                    leftBodyTyped.isWellScopedAt⟩, leftBodyScope⟩
+                ⟨⟨rightBodyTyped, rightCanonicalParts.2, rightBodyObject,
+                    rightBodyTyped.isWellScopedAt⟩, rightBodyScope⟩
+                  bodyCanonical (by simp_wf)
               let leftTree := CostRegionTree.lambda (binder := binder)
                 bodyPair.leftTree
               let rightTree := CostRegionTree.lambda (binder := binder)
@@ -841,49 +859,50 @@ theorem CostCanonicalPairElaboration.nonempty_of_aligned
                 .lambda bodyPair.leftTree bodyPair.rightTree
                   bodyPair.alignment⟩⟩
   | @multiLambda arity binders leftBody rightBody bodyCanonical =>
-      cases leftWellSorted.1 with
+      cases leftWellSorted.1.1 with
       | multiLambda leftBodyTyped =>
-          cases rightWellSorted.1 with
+          cases rightWellSorted.1.1 with
           | multiLambda rightBodyTyped =>
               rename_i binderType codomain
               have leftCanonicalParts := (by
                 simpa [Pattern.hasCanonicalBinderMetadata] using
-                  leftWellSorted.2.1 :
+                  leftWellSorted.1.2.1 :
                     binders.isEmpty = true ∧
                       leftBody.hasCanonicalBinderMetadata = true)
               have rightCanonicalParts := (by
                 simpa [Pattern.hasCanonicalBinderMetadata] using
-                  rightWellSorted.2.1 :
+                  rightWellSorted.1.2.1 :
                     binders.isEmpty = true ∧
                       rightBody.hasCanonicalBinderMetadata = true)
               have leftBodyObject : isObjectPattern leftBody = true := by
-                simpa [isObjectPattern] using leftWellSorted.2.2.1
+                simpa [isObjectPattern] using leftWellSorted.1.2.2.1
               have rightBodyObject : isObjectPattern rightBody = true := by
-                simpa [isObjectPattern] using rightWellSorted.2.2.1
-              have leftBodyScope : ReflectiveScopeSafeAt
-                  source.costWholeLanguage
+                simpa [isObjectPattern] using rightWellSorted.1.2.2.1
+              have leftBodyScope : ReflectiveWellSorted.ReflectiveScopeSafeAt
+                  source.costWholeReflectionProfile
                     (List.replicate arity binderType ++ available).length
                       leftBody := by
                 intro presentation membership
-                have parent := leftWellSorted.2.2.2 presentation membership
+                have parent := leftWellSorted.2 presentation membership
                 simpa [binderSafeAt, List.length_append, List.length_replicate,
                   Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using parent
-              have rightBodyScope : ReflectiveScopeSafeAt
-                  source.costWholeLanguage
+              have rightBodyScope : ReflectiveWellSorted.ReflectiveScopeSafeAt
+                  source.costWholeReflectionProfile
                     (List.replicate arity binderType ++ available).length
                       rightBody := by
                 intro presentation membership
-                have parent := rightWellSorted.2.2.2 presentation membership
+                have parent := rightWellSorted.2 presentation membership
                 simpa [binderSafeAt, List.length_append, List.length_replicate,
                   Nat.add_comm, Nat.add_left_comm, Nat.add_assoc] using parent
               obtain ⟨bodyPair⟩ := alignChild
                 (childAvailable :=
                   List.replicate arity binderType ++ available)
                 (childOuter := outer)
-                ⟨leftBodyTyped, leftCanonicalParts.2, leftBodyObject,
-                  leftBodyScope⟩
-                ⟨rightBodyTyped, rightCanonicalParts.2, rightBodyObject,
-                  rightBodyScope⟩ bodyCanonical (by simp_wf)
+                ⟨⟨leftBodyTyped, leftCanonicalParts.2, leftBodyObject,
+                    leftBodyTyped.isWellScopedAt⟩, leftBodyScope⟩
+                ⟨⟨rightBodyTyped, rightCanonicalParts.2, rightBodyObject,
+                    rightBodyTyped.isWellScopedAt⟩, rightBodyScope⟩
+                  bodyCanonical (by simp_wf)
               let leftTree := CostRegionTree.multiLambda (arity := arity)
                 (binders := binders) bodyPair.leftTree
               let rightTree := CostRegionTree.multiLambda (arity := arity)
@@ -892,7 +911,7 @@ theorem CostCanonicalPairElaboration.nonempty_of_aligned
                 .multiLambda bodyPair.leftTree bodyPair.rightTree
                   bodyPair.alignment⟩⟩
   | subst bodyCanonical replacementCanonical =>
-      have impossible := leftWellSorted.2.2.1
+      have impossible := leftWellSorted.1.2.2.1
       simp [isObjectPattern] at impossible
   | @collection collectionType ne leftElements rightElements
       childrenCanonical =>
@@ -901,36 +920,36 @@ theorem CostCanonicalPairElaboration.nonempty_of_aligned
           exact staticClosed leftWellSorted rightWellSorted canonical
             (Or.inl CostStaticRootShape.baseCollection)
       | collection actual elementType =>
-          cases leftWellSorted.1 with
+          cases leftWellSorted.1.1 with
           | collection leftElementsTyped =>
-              cases rightWellSorted.1 with
+              cases rightWellSorted.1.1 with
               | collection rightElementsTyped =>
                   have canonicalLeft :
                       Pattern.hasCanonicalBinderMetadataList leftElements = true := by
                     simpa [Pattern.hasCanonicalBinderMetadata] using
-                      leftWellSorted.2.1
+                      leftWellSorted.1.2.1
                   have canonicalRight :
                       Pattern.hasCanonicalBinderMetadataList rightElements = true := by
                     simpa [Pattern.hasCanonicalBinderMetadata] using
-                      rightWellSorted.2.1
+                      rightWellSorted.1.2.1
                   have objectLeft : isObjectPatternList leftElements = true := by
-                    simpa [isObjectPattern] using leftWellSorted.2.2.1
+                    simpa [isObjectPattern] using leftWellSorted.1.2.2.1
                   have objectRight : isObjectPatternList rightElements = true := by
-                    simpa [isObjectPattern] using rightWellSorted.2.2.1
+                    simpa [isObjectPattern] using rightWellSorted.1.2.2.1
                   have reflectiveLeft : ∀ presentation ∈
-                      source.costWholeLanguage.reflectivePresentations,
+                      source.costWholeReflectionProfile.presentations,
                       binderSafeListAt presentation.quoteConstructor
                         available.length leftElements = true := by
                     intro presentation membership
                     simpa [binderSafeAt] using
-                      leftWellSorted.2.2.2 presentation membership
+                      leftWellSorted.2 presentation membership
                   have reflectiveRight : ∀ presentation ∈
-                      source.costWholeLanguage.reflectivePresentations,
+                      source.costWholeReflectionProfile.presentations,
                       binderSafeListAt presentation.quoteConstructor
                         available.length rightElements = true := by
                     intro presentation membership
                     simpa [binderSafeAt] using
-                      rightWellSorted.2.2.2 presentation membership
+                      rightWellSorted.2 presentation membership
                   obtain ⟨elementPair⟩ :=
                     CostCanonicalElementPairElaboration.nonempty_of_wellSorted
                       (available := available) (outer := outer)
@@ -953,10 +972,10 @@ theorem CostCanonicalPairElaboration.nonempty_of_aligned
                   exact ⟨⟨leftTree, rightTree,
                     .collection elementPair.leftTrees elementPair.rightTrees
                       elementPair.alignment⟩⟩
-      | arrow domain codomain => cases leftWellSorted.1
-      | multiBinder domain => cases leftWellSorted.1
+      | arrow domain codomain => cases leftWellSorted.1.1
+      | multiBinder domain => cases leftWellSorted.1.1
   | collectionRest collectionType rest childrenCanonical =>
-      have impossible := leftWellSorted.2.2.1
+      have impossible := leftWellSorted.1.2.2.1
       simp [isObjectPattern] at impossible
 
 /-- Exhaustive one-layer paired elaboration for one generated static image.
@@ -970,15 +989,15 @@ theorem CostCanonicalPairElaboration.nonempty_of_rootCases
     (declarationColor : CostStaticColor)
     (sourceDeclaration : ReflectivePresentationDecl)
     (membership : sourceDeclaration ∈
-      source.theory.presentation.presentation.language.reflectivePresentations)
+      source.reflection.1.presentations)
     (staticClosed : CostCanonicalStaticPairClosed source kernel
       (costStaticReflectivePresentationDecl source declarationColor
         sourceDeclaration))
     (alignChild : ∀ {childAvailable childOuter : List TypeExpr}
       {leftChild rightChild : Pattern} {childType : TypeExpr},
-      OpenPatternWellSorted source.costWholeLanguage targetFree childAvailable
+      ReflectiveWellSorted.OpenPatternWellSorted source.costWholeReflectionProfile source.costWholeLanguage targetFree childAvailable
           childType leftChild →
-        OpenPatternWellSorted source.costWholeLanguage targetFree childAvailable
+        ReflectiveWellSorted.OpenPatternWellSorted source.costWholeReflectionProfile source.costWholeLanguage targetFree childAvailable
           childType rightChild →
         canonicalize
             (costStaticReflectivePresentationDecl source declarationColor
@@ -989,9 +1008,9 @@ theorem CostCanonicalPairElaboration.nonempty_of_rootCases
         sizeOf leftChild < sizeOf leftPattern →
         Nonempty (CostCanonicalPairElaboration source kernel targetFree
           childAvailable childOuter leftChild rightChild childType))
-    (leftWellSorted : OpenPatternWellSorted source.costWholeLanguage targetFree
+    (leftWellSorted : ReflectiveWellSorted.OpenPatternWellSorted source.costWholeReflectionProfile source.costWholeLanguage targetFree
       available (.base category) leftPattern)
-    (rightWellSorted : OpenPatternWellSorted source.costWholeLanguage targetFree
+    (rightWellSorted : ReflectiveWellSorted.OpenPatternWellSorted source.costWholeReflectionProfile source.costWholeLanguage targetFree
       available (.base category) rightPattern)
     (canonical : canonicalize
         (costStaticReflectivePresentationDecl source declarationColor
@@ -1029,17 +1048,17 @@ theorem CostCanonicalPairElaboration.nonempty_of_cases
       CostCanonicalCollapsingPairClosed source kernel declaration)
     (alignChild : ∀ {childAvailable childOuter : List TypeExpr}
       {leftChild rightChild : Pattern} {childType : TypeExpr},
-      OpenPatternWellSorted source.costWholeLanguage targetFree childAvailable
+      ReflectiveWellSorted.OpenPatternWellSorted source.costWholeReflectionProfile source.costWholeLanguage targetFree childAvailable
           childType leftChild →
-        OpenPatternWellSorted source.costWholeLanguage targetFree childAvailable
+        ReflectiveWellSorted.OpenPatternWellSorted source.costWholeReflectionProfile source.costWholeLanguage targetFree childAvailable
           childType rightChild →
         canonicalize declaration leftChild = canonicalize declaration rightChild →
         sizeOf leftChild < sizeOf leftPattern →
         Nonempty (CostCanonicalPairElaboration source kernel targetFree
           childAvailable childOuter leftChild rightChild childType))
-    (leftWellSorted : OpenPatternWellSorted source.costWholeLanguage targetFree
+    (leftWellSorted : ReflectiveWellSorted.OpenPatternWellSorted source.costWholeReflectionProfile source.costWholeLanguage targetFree
       available type leftPattern)
-    (rightWellSorted : OpenPatternWellSorted source.costWholeLanguage targetFree
+    (rightWellSorted : ReflectiveWellSorted.OpenPatternWellSorted source.costWholeReflectionProfile source.costWholeLanguage targetFree
       available type rightPattern)
     (canonical : canonicalize declaration leftPattern =
       canonicalize declaration rightPattern) :
@@ -1071,9 +1090,9 @@ noncomputable def CostCanonicalPairElaboration.nonempty_of_canonical
       CostCanonicalCollapsingPairClosed source kernel declaration)
     {available outer : List TypeExpr} {leftPattern rightPattern : Pattern}
     {type : TypeExpr}
-    (leftWellSorted : OpenPatternWellSorted source.costWholeLanguage targetFree
+    (leftWellSorted : ReflectiveWellSorted.OpenPatternWellSorted source.costWholeReflectionProfile source.costWholeLanguage targetFree
       available type leftPattern)
-    (rightWellSorted : OpenPatternWellSorted source.costWholeLanguage targetFree
+    (rightWellSorted : ReflectiveWellSorted.OpenPatternWellSorted source.costWholeReflectionProfile source.costWholeLanguage targetFree
       available type rightPattern)
     (canonical : canonicalize declaration leftPattern =
       canonicalize declaration rightPattern) :

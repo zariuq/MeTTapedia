@@ -399,8 +399,6 @@ theorem openEquationSetoid_iff_eq_of_no_generators
     (theory : IGSLT)
     (equationsEmpty :
       theory.presentation.presentation.language.equations = [])
-    (reflectiveEmpty :
-      theory.presentation.presentation.language.reflectivePresentations = [])
     {free : WellSorted.FreeTypeContext} {bound : List TypeExpr}
     {sort : LangSort theory.presentation.presentation.language}
     (left right : OpenTerm theory free bound sort) :
@@ -412,7 +410,7 @@ theorem openEquationSetoid_iff_eq_of_no_generators
     | rel left right step =>
         apply Subtype.ext
         exact (EquationSemantics.equationEquiv_iff_eq_of_no_generators
-          equationsEmpty reflectiveEmpty left.1 right.1).mp
+          equationsEmpty left.1 right.1).mp
             (Relation.EqvGen.rel _ _ step)
     | refl term => rfl
     | symm left right relation inductionHypothesis =>
@@ -429,12 +427,11 @@ def closedTermToOpen {theory : IGSLT}
     OpenTerm theory WellSorted.FreeTypeContext.empty []
       theory.presentation.interactingLangSort :=
   ⟨term.1, term.2.1, term.2.2.2.1, term.2.2.2.2.1,
-    term.2.2.2.2.2.2⟩
+    term.2.2.2.2.2⟩
 
 /-- At empty free and bound contexts, sorting supplies ordinary de Bruijn
-scope and the open carrier's reflective condition supplies quotation scope.
-Hence every open object term in that fiber is already a closed semantic
-term; groundness is derived rather than stored twice. -/
+scope. Hence every open object term in that fiber is already a closed
+semantic term; groundness is derived rather than stored twice. -/
 def openTermEmptyToClosed {theory : IGSLT}
     {sort : LangSort theory.presentation.presentation.language}
     (term : OpenTerm theory WellSorted.FreeTypeContext.empty [] sort) :
@@ -444,7 +441,7 @@ def openTermEmptyToClosed {theory : IGSLT}
     simpa using term.2.1.isWellScopedAt
   have scopeSafe : WellSorted.ScopeSafe
       theory.presentation.presentation.language term.1 :=
-    ⟨ordinaryScope, term.2.2.2.2⟩
+    ordinaryScope
   exact ⟨term.1, term.2.1,
     WellSorted.ground_of_closed_sorting term.2.1 term.2.2.2.1 scopeSafe,
     term.2.2.1, term.2.2.2.1, scopeSafe⟩
@@ -795,13 +792,6 @@ structure ComputableContextualOpenSection (theory : IGSLT)
           targetFree name = some freeType),
     (normalize (term.recontextualizeFree preserves)).1 =
       (normalize term).1
-  preservesReflectiveSupport : ∀ {free bound sort}
-      (term : OpenTerm theory free bound sort)
-      (support : ContextSupport.Support) (available : List TypeExpr)
-      (binderImage : TypeExpr → TypeExpr),
-    term.2.1.ReflectiveSupportSafeAt support available binderImage →
-      (normalize term).2.1.ReflectiveSupportSafeAt support available
-        binderImage
 
 namespace ComputableContextualOpenSection
 

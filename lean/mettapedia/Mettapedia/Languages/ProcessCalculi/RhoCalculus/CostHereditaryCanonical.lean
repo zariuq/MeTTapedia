@@ -21,6 +21,7 @@ symbol map and the certified ambient-binder thinning.
 namespace Mettapedia.Languages.ProcessCalculi.RhoCalculus
 
 open Mettapedia.GSLT.LanguageDef
+open Mettapedia.GSLT.LanguageDef.ReflectionExtension
 open Mettapedia.GSLT.LanguageDef.WellSorted
 open Mettapedia.GSLT.LanguageDef.CostHereditaryCanonical
 open Mettapedia.OSLF.Framework.ConstructorCategory
@@ -167,7 +168,8 @@ theorem rhoCanonicalizeByDepths_hasTypeWithConstructors
     (typed : HasTypeWithConstructors rhoCalc
       (· ∈ rhoContinuationRetyping.wrappedLabels)
       free bound pattern type)
-    (safe : typed.toHasType.ReflectiveSupportSafeAt support available
+    (safe : typed.toHasType.ReflectiveSupportSafeAt rhoReflectionProfile
+      support available
       binderImage)
     (canonicalizable : CanonicalizableRhoType type)
     (object : isObjectPattern pattern = true) :
@@ -176,7 +178,8 @@ theorem rhoCanonicalizeByDepths_hasTypeWithConstructors
         free bound
         (canonicalizeByDepths key rhoReflectivePresentation available.length
           scopeDepth pattern) type,
-      normalizedTyped.toHasType.ReflectiveSupportSafeAt support available
+      normalizedTyped.toHasType.ReflectiveSupportSafeAt rhoReflectionProfile
+        support available
         binderImage := by
   obtain ⟨normalizedTyped, normalizedSafe⟩ :=
     canonicalizeByDepths_supportSafe key scopeDepth typed.toHasType safe
@@ -296,17 +299,19 @@ theorem canonicalizeReifiedTargetFrame_supportSafe
           (costStaticReflectivePresentationDecl rhoCIGSLT color
             rhoReflectivePresentation))
         (.base (color.mapLangSort rhoCIGSLT node.sourceSort).1),
-      targetTyped.ReflectiveSupportSafeAt environment.restorationSupport
+      targetTyped.ReflectiveSupportSafeAt
+        rhoCIGSLT.costWholeReflectionProfile environment.restorationSupport
         node.targetBound := by
   let sourceSupported := node.reifiedSourceFrame_supported environment
   have sourceSafe : sourceSupported.toHasType.ReflectiveSupportSafeAt
-      environment.sourceAtomSupport node.targetBound
+      rhoReflectionProfile environment.sourceAtomSupport node.targetBound
       (mapTypeExpr (color.symbols rhoCIGSLT)) :=
     (node.reifiedSourceFrame_supportSafe environment).castTyping
   obtain ⟨sourceNormalized, sourceNormalizedSafe⟩ :=
     rhoCanonicalizeByDepths_hasTypeWithConstructors
       (sourceSemanticPatternKeyAt node environment) 0 sourceSupported
-      sourceSafe (by trivial) (node.reifiedSourceFrame environment).2.2.2.1
+      sourceSafe (by trivial)
+        (node.reifiedSourceFrame environment).2.1.2.2.1
   obtain ⟨mappedTypedRaw, mappedSafeRaw⟩ :=
     sourceNormalizedSafe.mapCostStatic rhoCIGSLT color
       sourceNormalized.constructorsWithin
@@ -317,7 +322,8 @@ theorem canonicalizeReifiedTargetFrame_supportSafe
       typeMap
   rw [← contextEquality]
   have mappedSafe : mappedTypedRaw.ReflectiveSupportSafeAt
-      environment.restorationSupport node.targetBound := by
+      rhoCIGSLT.costWholeReflectionProfile environment.restorationSupport
+      node.targetBound := by
     rw [← environment.sourceAtomSupport_eq_restorationSupport]
     exact mappedSafeRaw
   have thickenedTypedRaw := mappedTypedRaw.thickenAmbientBVars
@@ -336,7 +342,8 @@ theorem canonicalizeReifiedTargetFrame_supportSafe
     simpa only [List.nil_append, List.length_nil, mapTypeExpr,
       CostStaticColor.mapLangSort_name] using thickenedTypedRaw
   have thickenedSafe : thickenedTyped.ReflectiveSupportSafeAt
-      environment.restorationSupport node.targetBound :=
+      rhoCIGSLT.costWholeReflectionProfile environment.restorationSupport
+      node.targetBound :=
     thickenedSafeRaw.castTyping
   rw [canonicalizeReifiedTargetFrame_eq_map_sourceCanonicalize node
     environment]
@@ -361,6 +368,7 @@ theorem canonicalizeReifiedTargetFrame_ofInventory_supportSafe
             rhoReflectivePresentation))
         (.base (color.mapLangSort rhoCIGSLT node.sourceSort).1),
       targetTyped.ReflectiveSupportSafeAt
+        rhoCIGSLT.costWholeReflectionProfile
         (CostStaticAtomEnvironment.ofInventory inventory).restorationSupport
         node.targetBound :=
   canonicalizeReifiedTargetFrame_supportSafe node
@@ -377,7 +385,8 @@ def canonicalizeReifiedTargetFrame_openTerm
       node.boundaryTable)
     (inventory : CostStaticParameterInventory rhoCIGSLT color targetFree
       node.boundaryTable values node.skeleton.1) :
-    OpenTerm rhoCIGSLT.costWholeLanguage
+    ReflectiveWellSorted.OpenTerm rhoCIGSLT.costWholeReflectionProfile
+      rhoCIGSLT.costWholeLanguage
       (CostStaticAtomEnvironment.ofInventory inventory).atomFreeContext
       node.targetBound (color.mapLangSort rhoCIGSLT node.sourceSort) := by
   let environment := CostStaticAtomEnvironment.ofInventory inventory
@@ -387,24 +396,24 @@ def canonicalizeReifiedTargetFrame_openTerm
   obtain ⟨targetTyped, targetSafe⟩ :=
     canonicalizeReifiedTargetFrame_ofInventory_supportSafe node values
       inventory
-  refine ⟨targetTyped, ?_, ?_, ?_⟩
+  refine ⟨⟨targetTyped, ?_, ?_, targetTyped.isWellScopedAt⟩, ?_⟩
   · exact canonicalizeByAt_hasCanonicalBinderMetadata
       (CostStaticRegionNode.semanticPatternKeyAt environment) declaration
       node.targetBound.length (node.reifyTargetFrame environment)
       (by simpa only [CostStaticRegionNode.reifiedTargetFrame_pattern] using
-        (node.reifiedTargetFrame environment).2.2.1)
+        (node.reifiedTargetFrame environment).2.1.2.1)
   · exact canonicalizeByAt_isObjectPattern
       (CostStaticRegionNode.semanticPatternKeyAt environment) declaration
       node.targetBound.length (node.reifyTargetFrame environment)
       (by simpa only [CostStaticRegionNode.reifiedTargetFrame_pattern] using
-        (node.reifiedTargetFrame environment).2.2.2.1)
+        (node.reifiedTargetFrame environment).2.1.2.2.1)
   · intro presentation membership
     exact canonicalizeByAt_binderSafeAt
       (CostStaticRegionNode.semanticPatternKeyAt environment) declaration
       presentation.quoteConstructor node.targetBound.length
       node.targetBound.length (node.reifyTargetFrame environment)
       (by simpa only [CostStaticRegionNode.reifiedTargetFrame_pattern] using
-        (node.reifiedTargetFrame environment).2.2.2.2 presentation membership)
+        (node.reifiedTargetFrame environment).2.2 presentation membership)
 
 /-- The full open target frame retains the restoration-support certificate
 proved by the rho source action. -/
@@ -416,13 +425,54 @@ theorem canonicalizeReifiedTargetFrame_openTerm_supportSafe
     (inventory : CostStaticParameterInventory rhoCIGSLT color targetFree
       node.boundaryTable values node.skeleton.1) :
     (canonicalizeReifiedTargetFrame_openTerm node values inventory
-      ).2.1.ReflectiveSupportSafeAt
+      ).2.1.1.ReflectiveSupportSafeAt
+        rhoCIGSLT.costWholeReflectionProfile
         (CostStaticAtomEnvironment.ofInventory inventory).restorationSupport
         node.targetBound := by
   obtain ⟨targetTyped, targetSafe⟩ :=
     canonicalizeReifiedTargetFrame_ofInventory_supportSafe node values
       inventory
   exact targetSafe.castTyping
+
+/-- Rename one typed hereditary target frame into a common semantic-key
+namespace.  Both the generated result type and the exact reflective support
+travel through the cospan leg; the common frame is not reconstructed by a
+second syntax checker. -/
+theorem canonicalizeReifiedTargetFrame_toCommon_supportSafe
+    {color : CostStaticColor} {targetFree : FreeTypeContext}
+    (node : CostStaticRegionNode rhoCIGSLT color targetFree)
+    (values : TypedCostRegionBoundaryTable.Values rhoCIGSLT color targetFree
+      node.boundaryTable)
+    (inventory : CostStaticParameterInventory rhoCIGSLT color targetFree
+      node.boundaryTable values node.skeleton.1)
+    {leftCount rightCount : Nat}
+    {leftKey : Fin leftCount → CostStaticAtomKey}
+    {rightKey : Fin rightCount → CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey)
+    (leg : Fin (CostStaticAtomEnvironment.ofInventory inventory).atomCount →
+      Fin cospan.commonKeys.length)
+    (commutes : ∀ slot,
+      cospan.commonKeys.get (leg slot) =
+        ((CostStaticAtomEnvironment.ofInventory inventory).atomValue slot).key) :
+    ∃ targetTyped : HasType rhoCIGSLT.costWholeLanguage
+        cospan.commonTargetFreeContext node.targetBound
+        (cospan.reifyWith
+          (CostStaticAtomEnvironment.ofInventory inventory).lookupAtom? leg
+          (node.canonicalizeReifiedTargetFrame
+            (CostStaticAtomEnvironment.ofInventory inventory)
+            (costStaticReflectivePresentationDecl rhoCIGSLT color
+              rhoReflectivePresentation)))
+        (.base (color.mapLangSort rhoCIGSLT node.sourceSort).1),
+      targetTyped.ReflectiveSupportSafeAt
+        rhoCIGSLT.costWholeReflectionProfile cospan.commonSupport
+        node.targetBound := by
+  let environment := CostStaticAtomEnvironment.ofInventory inventory
+  obtain ⟨targetTyped, targetSafe⟩ :=
+    canonicalizeReifiedTargetFrame_ofInventory_supportSafe node values
+      inventory
+  have renamed := environment.reifyWith_targetReflectiveSupportSafeAt
+    cospan leg commutes targetSafe
+  simpa only [environment] using renamed
 
 /-- Every free name in the selected canonical target frame resolves to one
 slot of the finite semantic-atom environment.  This follows from the frame's
@@ -445,7 +495,8 @@ theorem canonicalizeReifiedTargetFrame_atomCovered
   let term := canonicalizeReifiedTargetFrame_openTerm node values inventory
   have termMembership : name ∈ term.1.freeFvarNames := by
     exact membership
-  obtain ⟨type, lookup⟩ := term.freeType_of_mem_freeFvarNames termMembership
+  obtain ⟨type, lookup⟩ :=
+    term.toCore.freeType_of_mem_freeFvarNames termMembership
   let environment := CostStaticAtomEnvironment.ofInventory inventory
   change environment.atomFreeContext name = some type at lookup
   simp only [CostStaticAtomEnvironment.atomFreeContext] at lookup
@@ -529,13 +580,15 @@ def canonicalAtomRestorationAlignmentOfCommonEquality
       let rightEnvironment :=
         CostStaticAtomEnvironment.ofInventory rightInventory
       let cospan := leftEnvironment.semanticKeyCospan rightEnvironment
-      ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeLanguage
+      ReflectiveContextSupport.substituteAt
+          rhoCIGSLT.costWholeReflectionProfile
           cospan.commonSupport cospan.commonAssignment availableDepth
           (cospan.reifyWith leftEnvironment.lookupAtom? cospan.leftSlot
             (leftNode.canonicalizeReifiedTargetFrame leftEnvironment
               (costStaticReflectivePresentationDecl rhoCIGSLT leftColor
                 rhoReflectivePresentation))) =
-        ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeLanguage
+        ReflectiveContextSupport.substituteAt
+          rhoCIGSLT.costWholeReflectionProfile
           cospan.commonSupport cospan.commonAssignment availableDepth
           (cospan.reifyWith rightEnvironment.lookupAtom? cospan.rightSlot
             (rightNode.canonicalizeReifiedTargetFrame rightEnvironment
@@ -576,11 +629,12 @@ def normalizeHereditaryWithInventory
       node.boundaryTable)
     (inventory : CostStaticParameterInventory rhoCIGSLT color targetFree
       node.boundaryTable values node.skeleton.1) :
-    OpenTerm rhoCIGSLT.costWholeLanguage targetFree node.targetBound
+    ReflectiveWellSorted.OpenTerm rhoCIGSLT.costWholeReflectionProfile
+      rhoCIGSLT.costWholeLanguage targetFree node.targetBound
       (color.mapLangSort rhoCIGSLT node.sourceSort) :=
   let environment := CostStaticAtomEnvironment.ofInventory inventory
-  (canonicalizeReifiedTargetFrame_openTerm node values inventory
-    ).substituteReflectiveSupported
+  ReflectiveWellSorted.OpenTerm.substituteReflectiveSupported
+    (canonicalizeReifiedTargetFrame_openTerm node values inventory)
       environment.restorationSupportedOpenAssignment
       (canonicalizeReifiedTargetFrame_openTerm_supportSafe node values
         inventory)
@@ -811,14 +865,16 @@ def normalizeHereditaryWithInventoryPackedRestorationBridgeOfCommonEquality
       let rightEnvironment :=
         CostStaticAtomEnvironment.ofInventory rightInventory
       let cospan := leftEnvironment.semanticKeyCospan rightEnvironment
-      ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeLanguage
+      ReflectiveContextSupport.substituteAt
+          rhoCIGSLT.costWholeReflectionProfile
           cospan.commonSupport cospan.commonAssignment
           leftNode.targetBound.length
           (cospan.reifyWith leftEnvironment.lookupAtom? cospan.leftSlot
             (leftNode.canonicalizeReifiedTargetFrame leftEnvironment
               (costStaticReflectivePresentationDecl rhoCIGSLT leftColor
                 rhoReflectivePresentation))) =
-        ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeLanguage
+        ReflectiveContextSupport.substituteAt
+          rhoCIGSLT.costWholeReflectionProfile
           cospan.commonSupport cospan.commonAssignment
           leftNode.targetBound.length
           (cospan.reifyWith rightEnvironment.lookupAtom? cospan.rightSlot
@@ -843,7 +899,8 @@ def normalizeHereditary
     (node : CostStaticRegionNode rhoCIGSLT color targetFree)
     (values : TypedCostRegionBoundaryTable.Values rhoCIGSLT color targetFree
       node.boundaryTable) :
-    OpenTerm rhoCIGSLT.costWholeLanguage targetFree node.targetBound
+    ReflectiveWellSorted.OpenTerm rhoCIGSLT.costWholeReflectionProfile
+      rhoCIGSLT.costWholeLanguage targetFree node.targetBound
       (color.mapLangSort rhoCIGSLT node.sourceSort) :=
   let packed := node.semanticAtomEnvironment values
   normalizeHereditaryWithInventory node values packed.1
@@ -865,7 +922,8 @@ theorem sourceSemanticCanonicalize_action_equationEquiv
       mapTypeExpr (color.symbols rhoCIGSLT)
           (environment.atomValue slot).key.sourceType =
         (environment.atomValue slot).key.targetType) :
-    EquationSemantics.EquationEquiv defaultBasePremises
+    ReflectiveEquationSemantics.ReflectiveEquationEquiv
+      rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
       rhoCIGSLT.costWholeLanguage
       (rhoCostStaticActionAt node.thinning
         environment.restorationSupportedOpenAssignment [] node.targetBound
@@ -879,18 +937,18 @@ theorem sourceSemanticCanonicalize_action_equationEquiv
   let sourceFrame := node.reifiedSourceFrame environment
   have sourceSupported := node.reifiedSourceFrame_supported environment
   have sourceSafe : sourceSupported.toHasType.ReflectiveSupportSafeAt
-      environment.sourceAtomSupport node.targetBound
+      rhoReflectionProfile environment.sourceAtomSupport node.targetBound
       (mapTypeExpr (color.symbols rhoCIGSLT)) :=
     (node.reifiedSourceFrame_supportSafe environment).castTyping
   obtain ⟨normalizedSupported, normalizedSafe⟩ :=
     rhoCanonicalizeByDepths_hasTypeWithConstructors sourceKey 0
-      sourceSupported sourceSafe (by trivial) sourceFrame.2.2.2.1
+      sourceSupported sourceSafe (by trivial) sourceFrame.2.1.2.2.1
   have normalizedObject :
       isObjectPattern
           (canonicalizeByDepths sourceKey rhoReflectivePresentation
             node.targetBound.length 0 sourceFrame.1) = true :=
     canonicalizeByDepths_isObjectPattern sourceKey rhoReflectivePresentation
-      node.targetBound.length 0 sourceFrame.1 sourceFrame.2.2.2.1
+      node.targetBound.length 0 sourceFrame.1 sourceFrame.2.1.2.2.1
   have contextEquality :
       environment.sourceAtomFreeContext.map (color.symbols rhoCIGSLT) =
         environment.atomFreeContext :=
@@ -908,7 +966,7 @@ theorem sourceSemanticCanonicalize_action_equationEquiv
       environment.restorationSupportedOpenAssignment contextEquality
       environment.sourceAtomSupport_eq_restorationSupport
       sourceSupported.toHasType sourceSafe sourceSupported.constructorsWithin
-      sourceFrame.2.2.2.1
+      sourceFrame.2.1.2.2.1
   have absorption :
       canonicalize rhoReflectivePresentation
           (canonicalizeByDepths sourceKey rhoReflectivePresentation
@@ -1035,7 +1093,8 @@ def quoteDropParameterSemanticAtomJoinWithInventory
             ).atomName slot)]]) :
     PackedCostSemanticAtomJoin rhoCIGSLT
       (normalizeHereditaryWithInventory node values inventory).1
-      (ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeLanguage
+      (ReflectiveContextSupport.substituteAt
+        rhoCIGSLT.costWholeReflectionProfile
         node.boundaryTable.restorationSupport (values.assignment
           node.boundaryTable) node.targetBound.length
         (.fvar parameter.fvarOccurrence.name)) where
@@ -1396,7 +1455,8 @@ theorem normalizeHereditaryRawWithInventory_equationEquiv
       node.boundaryTable)
     (inventory : CostStaticParameterInventory rhoCIGSLT color targetFree
       node.boundaryTable values node.skeleton.1) :
-    EquationSemantics.EquationEquiv defaultBasePremises
+    ReflectiveEquationSemantics.ReflectiveEquationEquiv
+      rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
       rhoCIGSLT.costWholeLanguage
       (node.normalizeHereditaryRawWithInventory values inventory
         (costStaticReflectivePresentationDecl rhoCIGSLT color
@@ -1418,7 +1478,8 @@ theorem normalizeHereditary_equationEquiv
     (node : CostStaticRegionNode rhoCIGSLT color targetFree)
     (values : TypedCostRegionBoundaryTable.Values rhoCIGSLT color targetFree
       node.boundaryTable) :
-    EquationSemantics.EquationEquiv defaultBasePremises
+    ReflectiveEquationSemantics.ReflectiveEquationEquiv
+      rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
       rhoCIGSLT.costWholeLanguage
       (normalizeHereditary node values).1
       (values.restoreSupportedSkeleton node.boundaryTable node.targetBound
@@ -1523,10 +1584,10 @@ theorem rhoCommonSourceAction_canonicalize_eq
   have actionEquality :=
     rhoCostStaticActionAt_canonicalize_eq_of_canonicalize_eq
       (inner := []) (available := leftNode.targetBound) leftNode.thinning
-      assignment freeContext rfl leftCommon.term.2.1 rightCommon.term.2.1
+      assignment freeContext rfl leftCommon.term.2.1.1 rightCommon.term.2.1.1
       leftCommon.safe rightCommon.safe leftCommon.supported.constructorsWithin
-      rightCommon.supported.constructorsWithin leftCommon.term.2.2.2.1
-      rightCommon.term.2.2.2.1 (by
+      rightCommon.supported.constructorsWithin leftCommon.term.2.1.2.2.1
+      rightCommon.term.2.1.2.2.1 (by
         simpa [leftCommon, rightCommon,
           CostStaticRegionNode.CostStaticSourceTerm.reindex_pattern,
           CostStaticRegionNode.reifiedSourceTerm,
@@ -1648,14 +1709,16 @@ noncomputable def rhoStaticRootBridgeOfCommonRestoredCanonicalFrame
       let rightEnvironment :=
         CostStaticAtomEnvironment.ofInventory rightInventory
       let cospan := leftEnvironment.semanticKeyCospan rightEnvironment
-      ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeLanguage
+      ReflectiveContextSupport.substituteAt
+        rhoCIGSLT.costWholeReflectionProfile
           cospan.commonSupport cospan.commonAssignment
           leftNode.targetBound.length
           (cospan.reifyWith leftEnvironment.lookupAtom? cospan.leftSlot
             (leftNode.canonicalizeReifiedTargetFrame leftEnvironment
               (costStaticReflectivePresentationDecl rhoCIGSLT leftColor
                 rhoReflectivePresentation))) =
-        ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeLanguage
+        ReflectiveContextSupport.substituteAt
+          rhoCIGSLT.costWholeReflectionProfile
           cospan.commonSupport cospan.commonAssignment
           leftNode.targetBound.length
           (cospan.reifyWith rightEnvironment.lookupAtom? cospan.rightSlot
@@ -2061,7 +2124,8 @@ noncomputable def rhoStaticRootBridgeOfCommonRestoredParallelContentsPerm
           (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeListByAt
             (cospan.commonSemanticPatternKeyAt rhoCIGSLT) declaration
             leftNode.targetBound.length leftContents)).map
-              (ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeLanguage
+              (ReflectiveContextSupport.substituteAt
+                rhoCIGSLT.costWholeReflectionProfile
                 cospan.commonSupport cospan.commonAssignment
                 leftNode.targetBound.length))
         ((Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.parallelContents
@@ -2069,7 +2133,8 @@ noncomputable def rhoStaticRootBridgeOfCommonRestoredParallelContentsPerm
           (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeListByAt
             (cospan.commonSemanticPatternKeyAt rhoCIGSLT) declaration
             leftNode.targetBound.length rightContents)).map
-              (ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeLanguage
+              (ReflectiveContextSupport.substituteAt
+                rhoCIGSLT.costWholeReflectionProfile
                 cospan.commonSupport cospan.commonAssignment
                 leftNode.targetBound.length))) :
     CostRegionRootNormalizationBridge rhoCIGSLT
@@ -2098,7 +2163,8 @@ noncomputable def rhoStaticRootBridgeOfCommonRestoredParallelContentsPerm
     intro name membership
     exact rightNode.reifyTargetFrame_atomCovered rightEnvironment name
       membership
-  change ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeLanguage
+  change ReflectiveContextSupport.substituteAt
+      rhoCIGSLT.costWholeReflectionProfile
       cospan.commonSupport cospan.commonAssignment
       leftNode.targetBound.length
       (cospan.reifyWith leftEnvironment.lookupAtom? cospan.leftSlot
@@ -2106,7 +2172,8 @@ noncomputable def rhoStaticRootBridgeOfCommonRestoredParallelContentsPerm
           (CostStaticRegionNode.semanticPatternKeyAt leftEnvironment)
           declaration leftNode.targetBound.length
           (leftNode.reifyTargetFrame leftEnvironment))) =
-    ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeLanguage
+    ReflectiveContextSupport.substituteAt
+      rhoCIGSLT.costWholeReflectionProfile
       cospan.commonSupport cospan.commonAssignment
       leftNode.targetBound.length
       (cospan.reifyWith rightEnvironment.lookupAtom? cospan.rightSlot
@@ -2161,7 +2228,8 @@ theorem normalizeHereditary_equationEquiv
     {targetFree : FreeTypeContext}
     {available outer : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
     (tree : CostRegionTree rhoCIGSLT targetFree available outer pattern type) :
-    EquationSemantics.EquationEquiv defaultBasePremises
+    ReflectiveEquationSemantics.ReflectiveEquationEquiv
+      rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
       rhoCIGSLT.costWholeLanguage (normalizeHereditary tree).pattern pattern := by
   simpa only [normalizeHereditary] using
     tree.normalizeWithStatic_equationEquiv rhoHereditaryStaticNormalizer
@@ -2174,7 +2242,8 @@ theorem normalizeHereditary_overlap_equivalent
     {available outer : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
     (first second : CostRegionTree rhoCIGSLT targetFree available outer pattern
       type) :
-    EquationSemantics.EquationEquiv defaultBasePremises
+    ReflectiveEquationSemantics.ReflectiveEquationEquiv
+      rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
       rhoCIGSLT.costWholeLanguage (normalizeHereditary first).pattern
         (normalizeHereditary second).pattern := by
   simpa only [normalizeHereditary] using
@@ -2191,8 +2260,9 @@ theorem normalizeHereditary_eq_buildOpenTerm
     {targetFree : FreeTypeContext}
     {targetBound : List TypeExpr}
     {targetSort : LangSort rhoCIGSLT.costWholeLanguage}
-    (term : OpenTerm rhoCIGSLT.costWholeLanguage targetFree targetBound
-      targetSort)
+    (term : ReflectiveWellSorted.OpenTerm
+      rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
+      targetFree targetBound targetSort)
     (tree : CostRegionTree rhoCIGSLT targetFree targetBound [] term.1
       (.base targetSort.1)) :
     (normalizeHereditary tree).pattern =
@@ -2218,10 +2288,10 @@ def normalizeHereditaryOpen
     (tree : CostRegionTree rhoCIGSLT targetFree available outer pattern type)
     (canonical : pattern.hasCanonicalBinderMetadata = true)
     (object : isObjectPattern pattern = true)
-    (scope : ReflectiveScopeSafeAt rhoCIGSLT.costWholeLanguage
-      available.length pattern) :
-    OpenPattern rhoCIGSLT.costWholeLanguage targetFree (available ++ outer)
-      type :=
+    (scope : ReflectiveWellSorted.ReflectiveScopeSafeAt
+      rhoCIGSLT.costWholeReflectionProfile available.length pattern) :
+    ReflectiveWellSorted.OpenPattern rhoCIGSLT.costWholeReflectionProfile
+      rhoCIGSLT.costWholeLanguage targetFree (available ++ outer) type :=
   (normalizeHereditary tree).toOpenPattern canonical object scope
 
 @[simp]
@@ -2231,8 +2301,8 @@ theorem normalizeHereditaryOpen_pattern
     (tree : CostRegionTree rhoCIGSLT targetFree available outer pattern type)
     (canonical : pattern.hasCanonicalBinderMetadata = true)
     (object : isObjectPattern pattern = true)
-    (scope : ReflectiveScopeSafeAt rhoCIGSLT.costWholeLanguage
-      available.length pattern) :
+    (scope : ReflectiveWellSorted.ReflectiveScopeSafeAt
+      rhoCIGSLT.costWholeReflectionProfile available.length pattern) :
     (normalizeHereditaryOpen tree canonical object scope).1 =
       (normalizeHereditary tree).pattern :=
   rfl
@@ -2245,23 +2315,27 @@ frames, then erase the final typed normal form. -/
 def rhoCostNormalizeOpenHereditary
     {targetFree : FreeTypeContext} {targetBound : List TypeExpr}
     {targetSort : LangSort rhoCIGSLT.costWholeLanguage}
-    (term : OpenTerm rhoCIGSLT.costWholeLanguage targetFree targetBound
-      targetSort) :
-    OpenTerm rhoCIGSLT.costWholeLanguage targetFree targetBound targetSort := by
+    (term : ReflectiveWellSorted.OpenTerm
+      rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
+      targetFree targetBound targetSort) :
+    ReflectiveWellSorted.OpenTerm rhoCIGSLT.costWholeReflectionProfile
+      rhoCIGSLT.costWholeLanguage targetFree targetBound targetSort := by
   let tree := CostRegionTree.buildOpenTerm (source := rhoCIGSLT) term
-  let normalized := CostRegionTree.normalizeHereditaryOpen tree term.2.2.1
-    term.2.2.2.1 term.2.2.2.2
+  let normalized := CostRegionTree.normalizeHereditaryOpen tree term.2.1.2.1
+    term.2.1.2.2.1 term.2.2
   refine ⟨normalized.1, ?_⟩
-  change OpenPatternWellSorted rhoCIGSLT.costWholeLanguage targetFree
-    targetBound (.base targetSort.1) normalized.1
+  change ReflectiveWellSorted.OpenPatternWellSorted
+    rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage targetFree
+      targetBound (.base targetSort.1) normalized.1
   simpa using normalized.2
 
 @[simp]
 theorem rhoCostNormalizeOpenHereditary_pattern
     {targetFree : FreeTypeContext} {targetBound : List TypeExpr}
     {targetSort : LangSort rhoCIGSLT.costWholeLanguage}
-    (term : OpenTerm rhoCIGSLT.costWholeLanguage targetFree targetBound
-      targetSort) :
+    (term : ReflectiveWellSorted.OpenTerm
+      rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
+      targetFree targetBound targetSort) :
     (rhoCostNormalizeOpenHereditary term).1 =
       (CostRegionTree.normalizeHereditary
         (CostRegionTree.buildOpenTerm (source := rhoCIGSLT) term)).pattern :=
@@ -2283,9 +2357,11 @@ term, independently of the compiler's internal decomposition choices. -/
 theorem rhoCostNormalizeOpenHereditary_equationEquiv
     {targetFree : FreeTypeContext} {targetBound : List TypeExpr}
     {targetSort : LangSort rhoCIGSLT.costWholeLanguage}
-    (term : OpenTerm rhoCIGSLT.costWholeLanguage targetFree targetBound
-      targetSort) :
-    EquationSemantics.EquationEquiv defaultBasePremises
+    (term : ReflectiveWellSorted.OpenTerm
+      rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
+      targetFree targetBound targetSort) :
+    ReflectiveEquationSemantics.ReflectiveEquationEquiv
+      rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
       rhoCIGSLT.costWholeLanguage (rhoCostNormalizeOpenHereditary term).1
         term.1 := by
   rw [rhoCostNormalizeOpenHereditary_pattern]

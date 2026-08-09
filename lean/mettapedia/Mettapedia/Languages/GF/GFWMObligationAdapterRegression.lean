@@ -3,7 +3,7 @@ import Mettapedia.Languages.GF.GFWMObligationAdapter
 /-!
 # GF → WM Obligation Adapter Regression
 
-Concrete fixtures that consume the pure-interface-aligned GF adapter surface.
+Concrete fixtures that consume the pure-interface-aligned GF adapter interface.
 -/
 
 namespace Mettapedia.Languages.GF.GFWMObligationAdapterRegression
@@ -75,7 +75,7 @@ theorem canary_endToEnd_gfRule_to_pureStyleObligation (W : TestState) :
     (I := testPureInterface) (f := hAB) (W := W) hW
 
 /-- Frege-strong wrapper endpoint is consumable on the pure-style WM obligation
-surface. -/
+interface. -/
 theorem canary_fregeStrong_to_pureStyleObligation (W : TestState) :
     let rule :=
       wmConsequenceRuleOn_of_fregeStrong_viaPureInterface

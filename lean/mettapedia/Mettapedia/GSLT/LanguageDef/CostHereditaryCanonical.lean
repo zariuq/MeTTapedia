@@ -19,6 +19,7 @@ namespace Mettapedia.GSLT.LanguageDef
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution
 open Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical
+open ReflectionExtension
 
 namespace CostHereditaryCanonical
 
@@ -187,7 +188,8 @@ theorem mapPattern_parallelContents
         (patterns.map (mapPattern (color.symbols source))) := by
   unfold parallelContents
   simp only [costStaticReflectivePresentationDecl_eq_map,
-    mapReflectivePresentation]
+    mapReflectivePresentation,
+    CostStaticColor.reflectiveSymbols_constructor]
   rw [mapPattern_filter_ne_parallelUnit]
   rw [List.map_flatMap, List.flatMap_map]
   apply congrArg
@@ -380,7 +382,7 @@ theorem mapPattern_canonicalizeByDepths
               simpa [costStaticReflectivePresentationDecl_eq_map,
                 mapReflectivePresentation] using isParallel
             have mappedTargetDifferent : collectionType ≠
-                (mapReflectivePresentation (color.symbols source)
+                (mapReflectivePresentation (color.reflectiveSymbols source)
                   declaration).parallelCollection := by
               simpa [mapReflectivePresentation] using isParallel
             simpa [canonicalizeByDepths, sourceNotParallel,

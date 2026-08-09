@@ -6,7 +6,7 @@ import Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelCategorical
 /-!
 # GF → WM Obligation Adapter (Pure-Interface Aligned)
 
-This module aligns GF transport endpoints with the same obligation surface used by
+This module aligns GF transport endpoints with the same obligation interface used by
 `PureJudgmentWMInterface`, without modifying Pure kernel semantics.
 
 It provides:
@@ -53,7 +53,7 @@ theorem gfSyntaxHom_to_wmStrengthObligation
     exact hEq ▸ Relation.ReflTransGen.refl
   exact I.profileStepStar_sound hW hstar
 
-/-- Tree-pattern equality endpoint on the same pure-interface obligation surface. -/
+/-- Tree-pattern equality endpoint on the same pure-interface obligation interface. -/
 theorem gfTreePatternEq_to_wmStrengthObligation
     (I : PureJudgmentWMInterface State Query)
     {t₁ t₂ : AbstractNode}
@@ -68,7 +68,7 @@ theorem gfTreePatternEq_to_wmStrengthObligation
       (f := syntaxHom_of_treePatternEq (hPat := hPat)) (W := W) hW)
 
 /-- Package a GF syntactic transport as a state-indexed WM consequence rule using
-the same interface surface as Pure-bridge wrappers. -/
+the same interface as Pure-bridge wrappers. -/
 def wmConsequenceRuleOn_of_gfSyntaxHom_viaPureInterface
     (I : PureJudgmentWMInterface State Query)
     {A B : GFSyntaxObj} (f : A ⟶ B) :
@@ -113,7 +113,7 @@ variable [EvidenceType State] [BinaryWorldModel State Query]
 2) the institution+Beck-Chevalley categorical endpoint theorem.
 
 This gives one theorem-level entry point from GF adapter obligations into the
-categorical WM endpoint surface. -/
+categorical WM endpoint interface. -/
 theorem gfSyntaxHom_and_institution_beckChevalley_endpoint
     (H : Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelHyperdoctrine.WMHyperdoctrine State)
     {P Aobj Bobj D : H.Obj}

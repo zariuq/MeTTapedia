@@ -49,7 +49,7 @@ def normalizeDefaultBackendSpaceRef : ILPattern → ILPattern
   | .apply "&mork" [] => .apply "&self" []
   | p => p
 
-/-- Normalize the currently supported default-space surface forms. This is a
+/-- Normalize the currently supported default-space source forms. This is a
 backend compatibility translation, not a general PeTTa evaluator. -/
 def normalizeDefaultBackendSpaceExpr : ILPattern → ILPattern
   | .apply "match" [spaceRef, pat, tmpl] =>

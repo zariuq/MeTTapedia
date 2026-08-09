@@ -2001,8 +2001,11 @@ theorem projectSourcePrefix?_insert_assert {db : RuntimeDB}
     intro x hx heq
     apply hnotin
     have hv := hvalidBefore
-    simp only [sourceStateValid, Bool.and_eq_true] at hv
-    have hall := hv.1.1.1.2
+    rw [sourceStateValid, Bool.and_eq_true] at hv
+    have hprojection := hv.1
+    unfold sourceStateProjectionValid at hprojection
+    simp only [Bool.and_eq_true] at hprojection
+    have hall := hprojection.1.1.1.2
     rw [List.all_eq_true] at hall
     have hxl := hall x.label (List.mem_map_of_mem hx)
     unfold SourceState.objectNames
@@ -2362,22 +2365,39 @@ theorem projectSourcePrefix?_popScope {db : RuntimeDB}
   have popEq : db.popScope pos =
       { db with
         frame := db.frame.shrink (ScopeBoundary.runtimeSize boundary)
-        scopes := db.scopes.pop } := by
+        scopes := db.scopes.pop
+        activeVars := db.activeVars.filter
+          (fun entry => entry.2 ≤ db.scopes.size - 1) } := by
     simp [Metamath.Verify.DB.popScope, hback]
-  rw [popEq]
+  have popProjection : projectSourcePrefix? (db.popScope pos) =
+      projectPrefix?
+        { projectionDB db with
+          frame := db.frame.shrink
+            (ScopeBoundary.runtimeSize boundary) } := by
+    unfold projectSourcePrefix?
+    rw [popEq]
+    change projectPrefix?
+        { projectionDB db with
+          frame := db.frame.shrink
+            (ScopeBoundary.runtimeSize boundary)
+          activeVars := db.activeVars.filter
+            (fun entry => entry.2 ≤ db.scopes.size - 1) } = _
+    simpa only using
+      (projectPrefix?_with_activeVars
+        ({ projectionDB db with
+          frame := db.frame.shrink
+            (ScopeBoundary.runtimeSize boundary) } : RuntimeDB)
+        (db.activeVars.filter
+          (fun entry => entry.2 ≤ db.scopes.size - 1)))
+  rw [popProjection]
   have hproj := agreement.projection
-  unfold projectSourcePrefix? at hproj ⊢
+  unfold projectSourcePrefix? at hproj
   obtain ⟨h1, h2, h3, h4, h5, h6, hyps₀, hhyps, h7, asserts₀,
     hasserts, -, hrec⟩ := projectPrefix?_ok_inv hproj
   have hhypsB : hyps₀ = before.activeHypotheses := by
     have := congrArg PrefixProjection.activeHypotheses hrec
     simpa [SourcePrefix.toProjection, runtimePrefix] using this.symm
   subst hhypsB
-  -- the popped projection database, with only the frame changed
-  show projectPrefix?
-    { projectionDB db with
-      frame := db.frame.shrink (ScopeBoundary.runtimeSize boundary) }
-    = _
   -- frame-side alignments
   have hlabels : (db.frame.shrink
       (ScopeBoundary.runtimeSize boundary)).hyps.toList =
@@ -2748,10 +2768,12 @@ set_option maxHeartbeats 4000000 in
 frame push projects to the canonical after-view. -/
 theorem projectSourcePrefix?_insertHyp {db : RuntimeDB}
     {before after : SourceState} {view : HypothesisView}
+    {variableTypecodes : List (String × String)}
     (agreement : RuntimeDBAgrees db before)
     (hfresh : db.find? view.label = none)
     (hafter : after =
       { before with
+        variableTypecodes := variableTypecodes
         usedLabels := before.usedLabels ++ [view.label]
         activeHypotheses := before.activeHypotheses ++ [view] })
     (hvalid : sourceStateValid after = true) :
@@ -3069,10 +3091,12 @@ theorem runtimeNamespaceAfterInsert' {db : RuntimeDB}
 hypothesis insertion plus frame push preserves complete agreement. -/
 theorem RuntimeDBAgrees.insertHyp' {db : RuntimeDB}
     {before after : SourceState} {view : HypothesisView}
+    {variableTypecodes : List (String × String)}
     (agreement : RuntimeDBAgrees db before)
     (hfresh : db.find? view.label = none)
     (hafter : after =
       { before with
+        variableTypecodes := variableTypecodes
         usedLabels := before.usedLabels ++ [view.label]
         activeHypotheses := before.activeHypotheses ++ [view] })
     (hvalid : sourceStateValid after = true) :
@@ -3094,6 +3118,7 @@ theorem RuntimeDBAgrees.insertHyp' {db : RuntimeDB}
         projectSourcePrefix?_insertHyp agreement hfresh hafter hvalid
       objectNamespace := ?_
       rawFrame := ⟨?_, ?_⟩
+      activeVariables := ?_
       scopeStack := ?_ }
   · have hbase := runtimeNamespaceAfterInsert'
       (obj := .hyp (hypothesisEssentialBit view)
@@ -3107,6 +3132,8 @@ theorem RuntimeDBAgrees.insertHyp' {db : RuntimeDB}
     rw [Array.toList_push, agreement.rawFrame.2, hafter,
       List.map_append]
     rfl
+  · rw [hafter]
+    exact agreement.activeVariables
   · show db.scopes.toList = runtimeScopeSizes after
     rw [agreement.scopeStack]
     unfold runtimeScopeSizes
@@ -3364,6 +3391,7 @@ theorem RuntimeDBAgrees.declareDisjoint' {db : RuntimeDB}
         projectSourcePrefix?_declareDisjoint agreement hdecl
       objectNamespace := ?_
       rawFrame := ⟨?_, ?_⟩
+      activeVariables := ?_
       scopeStack := ?_ }
   · refine ⟨agreement.objectNamespace.errorFree, ?_⟩
     intro label
@@ -3378,6 +3406,8 @@ theorem RuntimeDBAgrees.declareDisjoint' {db : RuntimeDB}
   · show db.frame.hyps.toList =
       after.activeHypotheses.map HypothesisView.label
     rw [agreement.rawFrame.2, hafter]
+  · rw [hafter]
+    exact agreement.activeVariables
   · show db.scopes.toList = runtimeScopeSizes after
     rw [agreement.scopeStack, hafter]
     rfl
@@ -3906,7 +3936,8 @@ theorem projectSourcePrefix?_insertVar {db : RuntimeDB}
     (agreement : RuntimeDBAgrees db before)
     (hfresh : db.find? name = none)
     (hafter : after = { before with
-      declaredVariables := before.declaredVariables ++ [name] })
+      declaredVariables := before.declaredVariables ++ [name]
+      activeVariables := before.activeVariables ++ [name] })
     (hvalid : sourceStateValid after = true) :
     projectSourcePrefix?
         (insertObj db name (.var name)) =
@@ -4174,6 +4205,7 @@ theorem RuntimeDBAgrees.insertConst' {db : RuntimeDB}
         projectSourcePrefix?_insertConst agreement hfresh hafter hvalid
       objectNamespace := ?_
       rawFrame := ⟨?_, ?_⟩
+      activeVariables := ?_
       scopeStack := ?_ }
   · refine runtimeNamespaceAfterInsertMem agreement ?_
     intro candidate
@@ -4188,6 +4220,8 @@ theorem RuntimeDBAgrees.insertConst' {db : RuntimeDB}
   · show db.frame.hyps.toList =
       after.activeHypotheses.map HypothesisView.label
     rw [agreement.rawFrame.2, hafter]
+  · rw [hafter]
+    exact agreement.activeVariables
   · show db.scopes.toList = runtimeScopeSizes after
     rw [agreement.scopeStack, hafter]
     rfl
@@ -4199,28 +4233,49 @@ theorem RuntimeDBAgrees.insertVar' {db : RuntimeDB}
     (agreement : RuntimeDBAgrees db before)
     (hfresh : db.find? name = none)
     (hafter : after = { before with
-      declaredVariables := before.declaredVariables ++ [name] })
+      declaredVariables := before.declaredVariables ++ [name]
+      activeVariables := before.activeVariables ++ [name] })
     (hvalid : sourceStateValid after = true) :
-    RuntimeDBAgrees (insertObj db name (.var name)) after := by
+    RuntimeDBAgrees
+      ({ insertObj db name (.var name) with
+        activeVars := db.activeVars.push (name, db.scopes.size) } :
+        RuntimeDB) after := by
+  have scopeDepth : db.scopes.size = before.scopes.length := by
+    calc
+      db.scopes.size = db.scopes.toList.length := by simp
+      _ = (runtimeScopeSizes before).length :=
+        congrArg List.length agreement.scopeStack
+      _ = before.scopes.length := by simp [runtimeScopeSizes]
   refine
     { projection :=
-        projectSourcePrefix?_insertVar agreement hfresh hafter hvalid
+        (by
+          rw [projectSourcePrefix?_with_activeVars]
+          exact projectSourcePrefix?_insertVar agreement hfresh hafter hvalid)
       objectNamespace := ?_
       rawFrame := ⟨?_, ?_⟩
+      activeVariables := ?_
       scopeStack := ?_ }
-  · refine runtimeNamespaceAfterInsertMem agreement ?_
-    intro candidate
-    rw [hafter]
-    show candidate ∈ before.declaredConstants ++
-      (before.declaredVariables ++ [name]) ++ before.usedLabels ↔ _
-    rw [SourceState.objectNames]
-    simp only [List.mem_append, List.mem_singleton]
-    tauto
+  · have hbase : RuntimeObjectNamespaceAgrees
+        (insertObj db name (.var name)) after := by
+      refine runtimeNamespaceAfterInsertMem agreement ?_
+      intro candidate
+      rw [hafter]
+      show candidate ∈ before.declaredConstants ++
+        (before.declaredVariables ++ [name]) ++ before.usedLabels ↔ _
+      rw [SourceState.objectNames]
+      simp only [List.mem_append, List.mem_singleton]
+      tauto
+    exact
+      { errorFree := hbase.errorFree
+        occupied_iff := hbase.occupied_iff }
   · show db.frame.dj.toList = after.activeDistinctVariables
     rw [agreement.rawFrame.1, hafter]
   · show db.frame.hyps.toList =
       after.activeHypotheses.map HypothesisView.label
     rw [agreement.rawFrame.2, hafter]
+  · rw [hafter]
+    simpa [Array.toList_push, scopeDepth] using
+      agreement.activeVariables.activate name
   · show db.scopes.toList = runtimeScopeSizes after
     rw [agreement.scopeStack, hafter]
     rfl
@@ -4228,8 +4283,8 @@ theorem RuntimeDBAgrees.insertVar' {db : RuntimeDB}
 /-! ### The shipped per-symbol insertions
 
 `DB.insert` is the real implementation operation for `$c`/`$v` tokens.
-On the success path it reduces to `insertObj`; re-declaring an existing
-variable as a variable is the shipped no-op branch. -/
+On a variable success path it also appends the declaration to the
+scope-sensitive activity stack. -/
 
 /-- Symbol classification is authored into formulas, so declaration
 membership checks are monotone in both declaration lists. -/
@@ -4282,21 +4337,100 @@ theorem insert_const_eq_insertObj {db : RuntimeDB}
       insertObj db name (.const name) := by
   simp [DB.insert, DB.error, herr, hscopes, hfresh, insertObj]
 
-/-- Shipped variable insertion on the fresh success path. -/
-theorem insert_var_eq_insertObj {db : RuntimeDB}
+/-- Shipped variable insertion on the fresh success path registers the object
+and activates it at the current scope depth. -/
+theorem insert_var_eq_insertObj_activate {db : RuntimeDB}
     (herr : db.error? = none)
     {name : String} (hfresh : db.find? name = none) (pos : Pos) :
     db.insert pos name (fun l => .var l) =
-      insertObj db name (.var name) := by
+      ({ insertObj db name (.var name) with
+        activeVars := db.activeVars.push (name, db.scopes.size) } :
+        RuntimeDB) := by
   simp [DB.insert, DB.error, herr, hfresh, insertObj]
 
-/-- Shipped variable re-declaration is the accepted no-op branch. -/
-theorem insert_var_eq_self_of_var {db : RuntimeDB}
+/-- Re-declaring an inactive registered variable reactivates it without
+changing the global object registry. -/
+theorem insert_var_eq_activate_of_inactive_var {db : RuntimeDB}
     (herr : db.error? = none)
     {name existing : String}
-    (hfound : db.find? name = some (.var existing)) (pos : Pos) :
-    db.insert pos name (fun l => .var l) = db := by
-  simp [DB.insert, DB.error, herr, hfound]
+    (hfound : db.find? name = some (.var existing))
+    (hinactive : db.isActiveVar name = false) (pos : Pos) :
+    db.insert pos name (fun l => .var l) =
+      { db with
+        activeVars := db.activeVars.push (name, db.scopes.size) } := by
+  simp [DB.insert, DB.error, herr, hfound, hinactive]
+
+/-- The runtime activity stack contains exactly the source-active variable
+names. -/
+theorem activeVars_any_name_eq_true_iff {db : RuntimeDB}
+    {before : SourceState} (agreement : RuntimeDBAgrees db before)
+    (name : String) :
+    db.activeVars.any (fun entry => entry.1 == name) = true ↔
+      name ∈ before.activeVariables := by
+  rw [← Array.any_toList, List.any_eq_true]
+  constructor
+  · rintro ⟨entry, hentry, hname⟩
+    have hmapped : entry.1 ∈ db.activeVars.toList.map Prod.fst :=
+      List.mem_map_of_mem hentry
+    rw [agreement.activeVariables.names_eq] at hmapped
+    simpa [beq_iff_eq.mp hname] using hmapped
+  · intro hname
+    have hmapped : name ∈ db.activeVars.toList.map Prod.fst := by
+      rw [agreement.activeVariables.names_eq]
+      exact hname
+    obtain ⟨entry, hentry, heq⟩ := List.mem_map.mp hmapped
+    exact ⟨entry, hentry, by simp [heq]⟩
+
+theorem isActiveVar_eq_false_of_not_sourceActive {db : RuntimeDB}
+    {before : SourceState} (agreement : RuntimeDBAgrees db before)
+    {name : String} (hinactive : name ∉ before.activeVariables) :
+    db.isActiveVar name = false := by
+  unfold DB.isActiveVar
+  have hany : db.activeVars.any (fun entry => entry.1 == name) = false := by
+    rw [← Bool.not_eq_true]
+    exact fun htrue => hinactive
+      ((activeVars_any_name_eq_true_iff agreement name).mp htrue)
+  simp [hany]
+
+/-- Runtime/source agreement after reactivating an already registered
+variable. -/
+theorem RuntimeDBAgrees.activateVar {db : RuntimeDB}
+    {before after : SourceState} {name : String}
+    (agreement : RuntimeDBAgrees db before)
+    (hafter : after = { before with
+      activeVariables := before.activeVariables ++ [name] }) :
+    RuntimeDBAgrees
+      { db with
+        activeVars := db.activeVars.push (name, db.scopes.size) }
+      after := by
+  have scopeDepth : db.scopes.size = before.scopes.length := by
+    calc
+      db.scopes.size = db.scopes.toList.length := by simp
+      _ = (runtimeScopeSizes before).length :=
+        congrArg List.length agreement.scopeStack
+      _ = before.scopes.length := by simp [runtimeScopeSizes]
+  refine
+    { projection := ?_
+      objectNamespace := ?_
+      rawFrame := ?_
+      activeVariables := ?_
+      scopeStack := ?_ }
+  · rw [projectSourcePrefix?_with_activeVars]
+    simpa [hafter, runtimePrefix, SourceState.callerFrame,
+      SourceState.proofDistinctVariables,
+      SourceState.activeFloatingVariables] using agreement.projection
+  · exact
+      { errorFree := agreement.objectNamespace.errorFree
+        occupied_iff := by
+          intro label
+          simpa [hafter, SourceState.objectNames,
+            Metamath.Verify.DB.find?] using
+              agreement.objectNamespace.occupied_iff label }
+  · simpa [hafter] using agreement.rawFrame
+  · rw [hafter]
+    simpa [Array.toList_push, scopeDepth] using
+      agreement.activeVariables.activate name
+  · simpa [hafter, runtimeScopeSizes] using agreement.scopeStack
 
 /-- Declared variables resolve to their own variable object. -/
 theorem find?_var_of_mem_declaredVariables {db : RuntimeDB}
@@ -4473,28 +4607,46 @@ theorem sourceStateValid_between_dc {s : SourceState}
     (hsubl : dcMid.Sublist dcBig) :
     sourceStateValid
       ({ s with declaredConstants := dcMid } : SourceState) = true := by
-  rw [sourceStateValid] at hvb hva ⊢
-  simp only [Bool.and_eq_true] at hvb hva ⊢
-  obtain ⟨⟨⟨⟨⟨⟨⟨hpvB, hlabB⟩, hnodB⟩, hhcB⟩, hacB⟩, -⟩, hpairB⟩,
-    hbndB⟩ := hvb
-  obtain ⟨⟨⟨⟨⟨⟨⟨hpvA, -⟩, -⟩, -⟩, -⟩, honA⟩, -⟩, -⟩ := hva
-  refine ⟨⟨⟨⟨⟨⟨⟨?_, hlabB⟩, hnodB⟩, hhcB⟩, hacB⟩, ?_⟩, hpairB⟩,
-    hbndB⟩
-  · rw [toSourcePrefix_setDC]
-    refine sourcePrefixValid_between_dc hpvB ?_ hup hsubl
-    rw [← toSourcePrefix_setDC]
-    exact hpvA
-  · rw [objectNames_setDC]
-    rw [objectNames_setDC] at honA
-    have hbig : (dcBig ++ s.declaredVariables ++
-        s.usedLabels).Nodup :=
-      nodup_of_eraseDups_length_eq _ (beq_iff_eq.mp honA)
-    have hsub : (dcMid ++ s.declaredVariables ++
-        s.usedLabels).Sublist
-        (dcBig ++ s.declaredVariables ++ s.usedLabels) :=
-      (hsubl.append_right _).append_right _
-    exact beq_iff_eq.mpr
-      (eraseDups_length_eq_of_nodup _ (hbig.sublist hsub))
+  rw [sourceStateValid, Bool.and_eq_true] at hvb hva ⊢
+  refine ⟨?_, ?_⟩
+  · have hpvB := hvb.1
+    have hpvA := hva.1
+    unfold sourceStateProjectionValid at hpvB hpvA ⊢
+    simp only [Bool.and_eq_true] at hpvB hpvA ⊢
+    obtain ⟨⟨⟨⟨⟨⟨⟨hprefixB, hlabB⟩, hnodB⟩, hhcB⟩, hacB⟩, -⟩,
+      hpairB⟩, hbndB⟩ := hpvB
+    obtain ⟨⟨⟨⟨⟨⟨⟨hprefixA, -⟩, -⟩, -⟩, -⟩, honA⟩, -⟩, -⟩ := hpvA
+    refine ⟨⟨⟨⟨⟨⟨⟨?_, hlabB⟩, hnodB⟩, hhcB⟩, hacB⟩, ?_⟩,
+      hpairB⟩, hbndB⟩
+    · rw [toSourcePrefix_setDC]
+      refine sourcePrefixValid_between_dc hprefixB ?_ hup hsubl
+      rw [← toSourcePrefix_setDC]
+      exact hprefixA
+    · rw [objectNames_setDC]
+      rw [objectNames_setDC] at honA
+      have hbig : (dcBig ++ s.declaredVariables ++
+          s.usedLabels).Nodup :=
+        nodup_of_eraseDups_length_eq _ (beq_iff_eq.mp honA)
+      have hsub : (dcMid ++ s.declaredVariables ++
+          s.usedLabels).Sublist
+          (dcBig ++ s.declaredVariables ++ s.usedLabels) :=
+        (hsubl.append_right _).append_right _
+      exact beq_iff_eq.mpr
+        (eraseDups_length_eq_of_nodup _ (hbig.sublist hsub))
+  · have hactivity := hvb.2
+    unfold sourceActivityValid at hactivity ⊢
+    simp only [Bool.and_eq_true] at hactivity ⊢
+    obtain ⟨⟨⟨⟨hactiveNodup, hactiveDeclared⟩, htypecodes⟩,
+      hactiveHypotheses⟩, hactiveDistinct⟩ := hactivity
+    refine ⟨⟨⟨⟨hactiveNodup, hactiveDeclared⟩, ?_⟩,
+      hactiveHypotheses⟩, hactiveDistinct⟩
+    unfold variableTypecodesValid at htypecodes ⊢
+    simp only [Bool.and_eq_true, List.all_eq_true] at htypecodes ⊢
+    refine ⟨htypecodes.1, ?_⟩
+    intro binding hbinding
+    have hold := htypecodes.2 binding hbinding
+    simp only [List.contains_iff_mem] at hold ⊢
+    exact ⟨hold.1, hup _ hold.2⟩
 
 theorem sourceStateValid_between_dv {s : SourceState}
     {dvMid dvBig : List String}
@@ -4505,39 +4657,181 @@ theorem sourceStateValid_between_dv {s : SourceState}
     (hsubl : dvMid.Sublist dvBig) :
     sourceStateValid
       ({ s with declaredVariables := dvMid } : SourceState) = true := by
-  rw [sourceStateValid] at hvb hva ⊢
-  simp only [Bool.and_eq_true] at hvb hva ⊢
-  obtain ⟨⟨⟨⟨⟨⟨⟨hpvB, hlabB⟩, hnodB⟩, hhcB⟩, hacB⟩, -⟩, hpairB⟩,
-    hbndB⟩ := hvb
-  obtain ⟨⟨⟨⟨⟨⟨⟨hpvA, -⟩, -⟩, -⟩, -⟩, honA⟩, -⟩, -⟩ := hva
-  refine ⟨⟨⟨⟨⟨⟨⟨?_, hlabB⟩, hnodB⟩, hhcB⟩, hacB⟩, ?_⟩, ?_⟩,
-    hbndB⟩
-  · rw [toSourcePrefix_setDV]
-    refine sourcePrefixValid_between_dv hpvB ?_ hup hsubl
-    rw [← toSourcePrefix_setDV]
-    exact hpvA
-  · rw [objectNames_setDV]
-    rw [objectNames_setDV] at honA
-    have hbig : (s.declaredConstants ++ dvBig ++
-        s.usedLabels).Nodup :=
-      nodup_of_eraseDups_length_eq _ (beq_iff_eq.mp honA)
-    have hsub : (s.declaredConstants ++ dvMid ++
-        s.usedLabels).Sublist
-        (s.declaredConstants ++ dvBig ++ s.usedLabels) :=
-      ((hsubl.append_left _).append_right _)
-    exact beq_iff_eq.mpr
-      (eraseDups_length_eq_of_nodup _ (hbig.sublist hsub))
-  · rw [List.all_eq_true] at hpairB ⊢
-    intro pair hmem
-    have hb := hpairB pair hmem
-    simp only [Bool.and_eq_true] at hb ⊢
-    refine ⟨⟨hb.1.1, ?_⟩, ?_⟩
-    · have := hb.1.2
-      rw [List.contains_eq_mem, decide_eq_true_iff] at this ⊢
-      exact hup _ this
-    · have := hb.2
-      rw [List.contains_eq_mem, decide_eq_true_iff] at this ⊢
-      exact hup _ this
+  rw [sourceStateValid, Bool.and_eq_true] at hvb hva ⊢
+  refine ⟨?_, ?_⟩
+  · have hpvB := hvb.1
+    have hpvA := hva.1
+    unfold sourceStateProjectionValid at hpvB hpvA ⊢
+    simp only [Bool.and_eq_true] at hpvB hpvA ⊢
+    obtain ⟨⟨⟨⟨⟨⟨⟨hprefixB, hlabB⟩, hnodB⟩, hhcB⟩, hacB⟩, -⟩,
+      hpairB⟩, hbndB⟩ := hpvB
+    obtain ⟨⟨⟨⟨⟨⟨⟨hprefixA, -⟩, -⟩, -⟩, -⟩, honA⟩, -⟩, -⟩ := hpvA
+    refine ⟨⟨⟨⟨⟨⟨⟨?_, hlabB⟩, hnodB⟩, hhcB⟩, hacB⟩, ?_⟩, ?_⟩,
+      hbndB⟩
+    · rw [toSourcePrefix_setDV]
+      refine sourcePrefixValid_between_dv hprefixB ?_ hup hsubl
+      rw [← toSourcePrefix_setDV]
+      exact hprefixA
+    · rw [objectNames_setDV]
+      rw [objectNames_setDV] at honA
+      have hbig : (s.declaredConstants ++ dvBig ++
+          s.usedLabels).Nodup :=
+        nodup_of_eraseDups_length_eq _ (beq_iff_eq.mp honA)
+      have hsub : (s.declaredConstants ++ dvMid ++
+          s.usedLabels).Sublist
+          (s.declaredConstants ++ dvBig ++ s.usedLabels) :=
+        ((hsubl.append_left _).append_right _)
+      exact beq_iff_eq.mpr
+        (eraseDups_length_eq_of_nodup _ (hbig.sublist hsub))
+    · rw [List.all_eq_true] at hpairB ⊢
+      intro pair hmem
+      have hb := hpairB pair hmem
+      simp only [Bool.and_eq_true] at hb ⊢
+      refine ⟨⟨hb.1.1, ?_⟩, ?_⟩
+      · have hold := hb.1.2
+        rw [List.contains_eq_mem, decide_eq_true_iff] at hold ⊢
+        exact hup _ hold
+      · have hold := hb.2
+        rw [List.contains_eq_mem, decide_eq_true_iff] at hold ⊢
+        exact hup _ hold
+  · have hactivity := hvb.2
+    unfold sourceActivityValid at hactivity ⊢
+    simp only [Bool.and_eq_true] at hactivity ⊢
+    obtain ⟨⟨⟨⟨hactiveNodup, hactiveDeclared⟩, htypecodes⟩,
+      hactiveHypotheses⟩, hactiveDistinct⟩ := hactivity
+    refine ⟨⟨⟨⟨hactiveNodup, ?_⟩, ?_⟩,
+      hactiveHypotheses⟩, hactiveDistinct⟩
+    · rw [List.all_eq_true] at hactiveDeclared ⊢
+      intro variableName hactive
+      have hold := hactiveDeclared variableName hactive
+      rw [List.contains_eq_mem, decide_eq_true_iff] at hold ⊢
+      exact hup _ hold
+    · unfold variableTypecodesValid at htypecodes ⊢
+      simp only [Bool.and_eq_true, List.all_eq_true] at htypecodes ⊢
+      refine ⟨htypecodes.1, ?_⟩
+      intro binding hbinding
+      have hold := htypecodes.2 binding hbinding
+      simp only [List.contains_iff_mem] at hold ⊢
+      exact ⟨hup _ hold.1, hold.2⟩
+
+/-- Validity of an intermediate variable-declaration prefix.  The proof uses
+the old state for invariants carried by existing declarations and the final
+state for duplicate-freedom of the growing global and active lists. -/
+theorem sourceStateValid_between_variable_extensions {s : SourceState}
+    {dvMid dvBig avMid avBig : List String}
+    (hvb : sourceStateValid s = true)
+    (hva : sourceStateValid
+      ({ s with
+        declaredVariables := dvBig
+        activeVariables := avBig } : SourceState) = true)
+    (hdvOld : s.declaredVariables.Sublist dvMid)
+    (hdvMid : dvMid.Sublist dvBig)
+    (havOld : s.activeVariables.Sublist avMid)
+    (havMid : avMid.Sublist avBig)
+    (hactiveDeclared : ∀ name ∈ avMid, name ∈ dvMid) :
+    sourceStateValid
+      ({ s with
+        declaredVariables := dvMid
+        activeVariables := avMid } : SourceState) = true := by
+  rw [sourceStateValid, Bool.and_eq_true] at hvb hva ⊢
+  refine ⟨?_, ?_⟩
+  · have hpvB := hvb.1
+    have hpvA := hva.1
+    unfold sourceStateProjectionValid at hpvB hpvA ⊢
+    simp only [Bool.and_eq_true] at hpvB hpvA ⊢
+    obtain ⟨⟨⟨⟨⟨⟨⟨hprefixB, hlabB⟩, hnodB⟩, hhcB⟩, hacB⟩, -⟩,
+      hpairB⟩, hbndB⟩ := hpvB
+    obtain ⟨⟨⟨⟨⟨⟨⟨hprefixA, -⟩, -⟩, -⟩, -⟩, honA⟩, -⟩, -⟩ := hpvA
+    refine ⟨⟨⟨⟨⟨⟨⟨?_, hlabB⟩, hnodB⟩, hhcB⟩, hacB⟩, ?_⟩, ?_⟩, ?_⟩
+    · have hprefixA' : sourcePrefixValid
+          ({ s.toSourcePrefix with declaredVariables := dvBig } :
+            SourcePrefix) = true := by
+        simpa [SourceState.toSourcePrefix, SourceState.callerFrame,
+          SourceState.proofDistinctVariables,
+          SourceState.activeFloatingVariables] using hprefixA
+      have hmid := sourcePrefixValid_between_dv hprefixB hprefixA'
+        hdvOld.subset hdvMid
+      simpa [SourceState.toSourcePrefix, SourceState.callerFrame,
+        SourceState.proofDistinctVariables,
+        SourceState.activeFloatingVariables] using hmid
+    · have honA' :
+          (s.declaredConstants ++ dvBig ++ s.usedLabels).eraseDups.length ==
+            (s.declaredConstants ++ dvBig ++ s.usedLabels).length := by
+        simpa [SourceState.objectNames] using honA
+      have hbig : (s.declaredConstants ++ dvBig ++
+          s.usedLabels).Nodup :=
+        nodup_of_eraseDups_length_eq _ (beq_iff_eq.mp honA')
+      have hsub : (s.declaredConstants ++ dvMid ++
+          s.usedLabels).Sublist
+          (s.declaredConstants ++ dvBig ++ s.usedLabels) :=
+        (hdvMid.append_left _).append_right _
+      apply beq_iff_eq.mpr
+      simpa [SourceState.objectNames] using
+        eraseDups_length_eq_of_nodup _ (hbig.sublist hsub)
+    · rw [List.all_eq_true] at hpairB ⊢
+      intro pair hmem
+      have hold := hpairB pair hmem
+      simp only [Bool.and_eq_true] at hold ⊢
+      refine ⟨⟨hold.1.1, ?_⟩, ?_⟩
+      · have hdeclared := hold.1.2
+        rw [List.contains_eq_mem, decide_eq_true_iff] at hdeclared ⊢
+        exact hdvOld.subset hdeclared
+      · have hdeclared := hold.2
+        rw [List.contains_eq_mem, decide_eq_true_iff] at hdeclared ⊢
+        exact hdvOld.subset hdeclared
+    · change s.scopes.all (fun boundary =>
+          boundary.activeVariableLength ≤ avMid.length &&
+            boundary.activeHypothesisLength ≤ s.activeHypotheses.length &&
+              boundary.activeDistinctLength ≤
+                s.activeDistinctVariables.length) = true
+      change s.scopes.all (fun boundary =>
+          boundary.activeVariableLength ≤ s.activeVariables.length &&
+            boundary.activeHypothesisLength ≤ s.activeHypotheses.length &&
+              boundary.activeDistinctLength ≤
+                s.activeDistinctVariables.length) = true at hbndB
+      rw [List.all_eq_true] at hbndB ⊢
+      intro boundary hboundary
+      have hold := hbndB boundary hboundary
+      simp only [Bool.and_eq_true, decide_eq_true_eq] at hold ⊢
+      exact ⟨⟨Nat.le_trans hold.1.1 havOld.length_le, hold.1.2⟩,
+        hold.2⟩
+  · have hactivityB := hvb.2
+    have hactivityA := hva.2
+    unfold sourceActivityValid at hactivityB hactivityA ⊢
+    simp only [Bool.and_eq_true] at hactivityB hactivityA ⊢
+    have hactiveNodupA : avBig.eraseDups.length == avBig.length :=
+      hactivityA.1.1.1.1
+    obtain ⟨⟨⟨⟨-, -⟩, htypecodesB⟩,
+      hactiveHypothesesB⟩, hactiveDistinctB⟩ := hactivityB
+    refine ⟨⟨⟨⟨?_, ?_⟩, ?_⟩, ?_⟩, ?_⟩
+    · have hbig : avBig.Nodup :=
+        nodup_of_eraseDups_length_eq _ (beq_iff_eq.mp hactiveNodupA)
+      exact beq_iff_eq.mpr
+        (eraseDups_length_eq_of_nodup _ (hbig.sublist havMid))
+    · rw [List.all_eq_true]
+      intro name hname
+      exact List.contains_iff_mem.mpr (hactiveDeclared name hname)
+    · unfold variableTypecodesValid at htypecodesB ⊢
+      simp only [Bool.and_eq_true, List.all_eq_true] at htypecodesB ⊢
+      refine ⟨htypecodesB.1, ?_⟩
+      intro binding hbinding
+      have hold := htypecodesB.2 binding hbinding
+      simp only [List.contains_iff_mem] at hold ⊢
+      exact ⟨hdvOld.subset hold.1, hold.2⟩
+    · rw [List.all_eq_true] at hactiveHypothesesB ⊢
+      intro hypothesis hhypothesis
+      have hold := hactiveHypothesesB hypothesis hhypothesis
+      cases hypothesis with
+      | essential label formula => exact hold
+      | floating label typecode variableName =>
+          simp only [activeHypothesisValid, Bool.and_eq_true,
+            List.contains_iff_mem] at hold ⊢
+          exact ⟨havOld.subset hold.1, hold.2⟩
+    · rw [List.all_eq_true] at hactiveDistinctB ⊢
+      intro pair hpair
+      have hold := hactiveDistinctB pair hpair
+      simp only [Bool.and_eq_true, List.contains_iff_mem] at hold ⊢
+      exact ⟨havOld.subset hold.1, havOld.subset hold.2⟩
 
 /-! ### The multi-name statement composites
 
@@ -4713,37 +5007,112 @@ private theorem foldVars_agrees (pos : Pos) :
     ∀ {names : List String} {db : RuntimeDB} {before : SourceState},
       RuntimeDBAgrees db before →
       sourceStateValid before = true →
-      sourceStateValid ({ before with declaredVariables :=
-        (names.foldl addVariableName before.declaredVariables) }
+      sourceStateValid ({ before with
+        declaredVariables :=
+          (names.foldl addVariableName before.declaredVariables)
+        activeVariables := before.activeVariables ++ names }
           : SourceState) = true →
+      names.Nodup →
+      (∀ n ∈ names, n ∉ before.activeVariables) →
       (∀ n ∈ names, n ∉ before.declaredConstants ∧
         n ∉ before.usedLabels) →
       RuntimeDBAgrees
         (names.foldl
           (fun d n => d.insert pos n (fun l => .var l)) db)
-        ({ before with declaredVariables :=
-          (names.foldl addVariableName before.declaredVariables) }
+        ({ before with
+          declaredVariables :=
+            (names.foldl addVariableName before.declaredVariables)
+          activeVariables := before.activeVariables ++ names }
             : SourceState)
-  | [], db, before, agreement, _, _, _ => by
-      rw [List.foldl_nil]
-      exact agreement
-  | v :: rest, db, before, agreement, hvb, hva, hfreshAll => by
-      simp only [List.foldl_cons] at hva ⊢
+  | [], db, before, agreement, _, _, _, _, _ => by
+      simpa using agreement
+  | v :: rest, db, before, agreement, hvb, hva, hnodup,
+      hactiveFreshAll, hfreshAll => by
+      have hactiveFresh : v ∉ before.activeVariables :=
+        hactiveFreshAll v (by simp)
+      have hdvOld : before.declaredVariables.Sublist
+          (addVariableName before.declaredVariables v) := by
+        simpa using
+          (sublist_foldl_addVariableName [v] before.declaredVariables)
+      have hdvMid : (addVariableName before.declaredVariables v).Sublist
+          (rest.foldl addVariableName
+            (addVariableName before.declaredVariables v)) :=
+        sublist_foldl_addVariableName rest _
+      have havOld : before.activeVariables.Sublist
+          (before.activeVariables ++ [v]) :=
+        List.sublist_append_left _ _
+      have havMid : (before.activeVariables ++ [v]).Sublist
+          (before.activeVariables ++ (v :: rest)) := by
+        rw [show before.activeVariables ++ (v :: rest) =
+          (before.activeVariables ++ [v]) ++ rest by
+            simp [List.append_assoc]]
+        exact List.sublist_append_left _ _
+      have hactiveDeclared : ∀ name ∈ before.activeVariables ++ [v],
+          name ∈ addVariableName before.declaredVariables v := by
+        intro name hname
+        rcases List.mem_append.mp hname with hold | hnew
+        · exact hdvOld.subset
+            (activeVariable_declared_of_sourceStateValid hvb hold)
+        · have hvAdded : v ∈ addVariableName
+              before.declaredVariables v := by
+            have hmem := mem_foldl_addVariableName
+              (names := [v]) before.declaredVariables (n := v) (by simp)
+            simpa using hmem
+          simpa using (List.mem_singleton.mp hnew ▸ hvAdded)
+      have hmidValid : sourceStateValid
+          ({ before with
+            declaredVariables := addVariableName before.declaredVariables v
+            activeVariables := before.activeVariables ++ [v] } :
+            SourceState) = true :=
+        sourceStateValid_between_variable_extensions hvb hva
+          hdvOld hdvMid havOld havMid hactiveDeclared
+      have hactiveFreshRest : ∀ n ∈ rest,
+          n ∉ before.activeVariables ++ [v] := by
+        intro n hn hmem
+        rcases List.mem_append.mp hmem with hold | hnew
+        · exact hactiveFreshAll n (List.mem_cons_of_mem _ hn) hold
+        · have hne : n ≠ v := by
+            intro heq
+            exact (List.nodup_cons.mp hnodup).1 (heq ▸ hn)
+          exact hne (List.mem_singleton.mp hnew)
+      have hfreshRest : ∀ n ∈ rest,
+          n ∉ before.declaredConstants ∧ n ∉ before.usedLabels :=
+        fun n hn => hfreshAll n (List.mem_cons_of_mem _ hn)
       by_cases hv : v ∈ before.declaredVariables
       · have haVN : addVariableName before.declaredVariables v =
             before.declaredVariables := by
           simp [addVariableName, hv]
-        have hstep : db.insert pos v (fun l => .var l) = db :=
-          insert_var_eq_self_of_var agreement.errorFree
-            (find?_var_of_mem_declaredVariables agreement hv) pos
-        rw [haVN] at hva ⊢
-        rw [hstep]
-        exact foldVars_agrees pos agreement hvb hva
-          (fun n hn => hfreshAll n (List.mem_cons_of_mem _ hn))
+        have hinactiveRuntime : db.isActiveVar v = false :=
+          isActiveVar_eq_false_of_not_sourceActive agreement hactiveFresh
+        have hstep : db.insert pos v (fun l => .var l) =
+            { db with activeVars :=
+              db.activeVars.push (v, db.scopes.size) } :=
+          insert_var_eq_activate_of_inactive_var agreement.errorFree
+            (find?_var_of_mem_declaredVariables agreement hv)
+            hinactiveRuntime pos
+        have hagreeMid : RuntimeDBAgrees
+            { db with activeVars :=
+              db.activeVars.push (v, db.scopes.size) }
+            ({ before with
+              declaredVariables := addVariableName before.declaredVariables v
+              activeVariables := before.activeVariables ++ [v] } :
+              SourceState) := by
+          rw [haVN]
+          exact RuntimeDBAgrees.activateVar agreement rfl
+        have hrec := foldVars_agrees pos (names := rest) hagreeMid
+          hmidValid (by simpa [List.append_assoc] using hva)
+          (List.nodup_cons.mp hnodup).2 hactiveFreshRest hfreshRest
+        rw [List.foldl_cons, hstep]
+        simpa [List.append_assoc] using hrec
       · have haVN : addVariableName before.declaredVariables v =
             before.declaredVariables ++ [v] := by
           simp [addVariableName, hv]
-        rw [haVN] at hva ⊢
+        have hmidValidAppend : sourceStateValid
+            ({ before with
+              declaredVariables := before.declaredVariables ++ [v]
+              activeVariables := before.activeVariables ++ [v] } :
+              SourceState) = true := by
+          simpa only [haVN] using hmidValid
         have hfr : db.find? v = none := by
           have hmemN : v ∉ before.objectNames := by
             rw [SourceState.objectNames]
@@ -4759,29 +5128,30 @@ private theorem foldVars_agrees (pos : Pos) :
               exact absurd
                 ((agreement.objectNamespace.occupied_iff v).mp
                   (by simp [hcase])) hmemN
-        have hmidValid : sourceStateValid
-            ({ before with declaredVariables :=
-              before.declaredVariables ++ [v] } : SourceState) =
-              true :=
-          sourceStateValid_between_dv hvb hva
-            (fun x hx => List.mem_append_left _ hx)
-            (sublist_foldl_addVariableName rest _)
         have hstep : db.insert pos v (fun l => .var l) =
-            insertObj db v (.var v) :=
-          insert_var_eq_insertObj agreement.errorFree hfr pos
-        have hagreeMid : RuntimeDBAgrees (insertObj db v (.var v))
-            ({ before with declaredVariables :=
-              before.declaredVariables ++ [v] } : SourceState) :=
-          RuntimeDBAgrees.insertVar' agreement hfr rfl hmidValid
+            ({ insertObj db v (.var v) with
+              activeVars := db.activeVars.push (v, db.scopes.size) } :
+              RuntimeDB) :=
+          insert_var_eq_insertObj_activate agreement.errorFree hfr pos
+        have hagreeMid : RuntimeDBAgrees
+            ({ insertObj db v (.var v) with
+              activeVars := db.activeVars.push (v, db.scopes.size) } :
+              RuntimeDB)
+            ({ before with
+              declaredVariables := addVariableName before.declaredVariables v
+              activeVariables := before.activeVariables ++ [v] } :
+              SourceState) := by
+          rw [haVN]
+          exact RuntimeDBAgrees.insertVar' agreement hfr rfl hmidValidAppend
         have hrec := foldVars_agrees pos (names := rest)
-          hagreeMid hmidValid hva
-          (fun n hn => hfreshAll n (List.mem_cons_of_mem _ hn))
-        rw [hstep]
-        exact hrec
+          hagreeMid hmidValid (by simpa [List.append_assoc] using hva)
+          (List.nodup_cons.mp hnodup).2 hactiveFreshRest hfreshRest
+        rw [List.foldl_cons, hstep]
+        simpa [List.append_assoc] using hrec
 
 /-- **`$v` statement co-evolution**: the shipped per-token variable
-insertions (including accepted re-declaration no-ops) co-evolve with
-the single accepted multi-name source step. -/
+insertions and reactivations co-evolve with the single accepted multi-name
+source step. -/
 theorem RuntimeDBAgrees.declareVariables' {db : RuntimeDB}
     {before after : SourceState} {names : List String}
     (agreement : RuntimeDBAgrees db before)
@@ -4793,20 +5163,34 @@ theorem RuntimeDBAgrees.declareVariables' {db : RuntimeDB}
       after := by
   obtain ⟨hvb, hva, hshape⟩ := declareVariables?_inv hdecl
   subst hshape
-  refine foldVars_agrees pos agreement hvb hva ?_
-  intro n hn
-  have hnFold : n ∈ names.foldl addVariableName
-      before.declaredVariables :=
-    mem_foldl_addVariableName _ hn
-  have hon := objectNames_nodup_of_sourceStateValid _ hva
-  rw [objectNames_setDV] at hon
-  obtain ⟨h12, hlab, hdisj3⟩ := List.nodup_append.mp hon
-  obtain ⟨hdc, hdv, hdisj2⟩ := List.nodup_append.mp h12
-  refine ⟨?_, ?_⟩
-  · intro hmem
-    exact hdisj2 n hmem n hnFold rfl
-  · intro hmem
-    exact hdisj3 n (List.mem_append_right _ hnFold) n hmem rfl
+  have hactivity := hva
+  rw [sourceStateValid, Bool.and_eq_true] at hactivity
+  unfold sourceActivityValid at hactivity
+  simp only [Bool.and_eq_true] at hactivity
+  have hactiveNodup : (before.activeVariables ++ names).Nodup :=
+    nodup_of_eraseDups_length_eq _
+      (beq_iff_eq.mp hactivity.2.1.1.1.1)
+  obtain ⟨-, hnamesNodup, hactiveDisjoint⟩ :=
+    List.nodup_append.mp hactiveNodup
+  refine foldVars_agrees pos agreement hvb hva hnamesNodup ?_ ?_
+  · intro n hn hactive
+    exact hactiveDisjoint n hactive n hn rfl
+  · intro n hn
+    have hnFold : n ∈ names.foldl addVariableName
+        before.declaredVariables :=
+      mem_foldl_addVariableName _ hn
+    have hon : (before.declaredConstants ++
+        names.foldl addVariableName before.declaredVariables ++
+          before.usedLabels).Nodup := by
+      simpa [SourceState.objectNames] using
+        objectNames_nodup_of_sourceStateValid _ hva
+    obtain ⟨h12, hlab, hdisj3⟩ := List.nodup_append.mp hon
+    obtain ⟨hdc, hdv, hdisj2⟩ := List.nodup_append.mp h12
+    refine ⟨?_, ?_⟩
+    · intro hmem
+      exact hdisj2 n hmem n hnFold rfl
+    · intro hmem
+      exact hdisj3 n (List.mem_append_right _ hnFold) n hmem rfl
 
 end SymLane
 
@@ -4901,9 +5285,11 @@ theorem floatVarOccursInFrame_iff {db : RuntimeDB}
 declaration. -/
 theorem insertHypChecks_eq_self {db : RuntimeDB}
     {before after : SourceState} {view : HypothesisView}
+    {variableTypecodes : List (String × String)}
     (agreement : RuntimeDBAgrees db before)
     (hafter : after =
       { before with
+        variableTypecodes := variableTypecodes
         usedLabels := before.usedLabels ++ [view.label]
         activeHypotheses := before.activeHypotheses ++ [view] })
     (hvalid : sourceStateValid after = true) (pos : Pos) :
@@ -4988,10 +5374,12 @@ theorem insertHypChecks_eq_self {db : RuntimeDB}
 composite on the accepted path. -/
 theorem insertHyp_eq_composite {db : RuntimeDB}
     {before after : SourceState} {view : HypothesisView}
+    {variableTypecodes : List (String × String)}
     (agreement : RuntimeDBAgrees db before)
     (hfresh : db.find? view.label = none)
     (hafter : after =
       { before with
+        variableTypecodes := variableTypecodes
         usedLabels := before.usedLabels ++ [view.label]
         activeHypotheses := before.activeHypotheses ++ [view] })
     (hvalid : sourceStateValid after = true) (pos : Pos) :
@@ -5010,9 +5398,11 @@ theorem insertHyp_eq_composite {db : RuntimeDB}
 /-- Freshness of a label appended by an accepted declaration. -/
 theorem fresh_of_label_append {db : RuntimeDB}
     {before : SourceState} {label : String} {view : HypothesisView}
+    {variableTypecodes : List (String × String)}
     (agreement : RuntimeDBAgrees db before)
     (hva : sourceStateValid
       ({ before with
+        variableTypecodes := variableTypecodes
         usedLabels := before.usedLabels ++ [label]
         activeHypotheses := before.activeHypotheses ++ [view] }
           : SourceState) = true) :
@@ -5020,6 +5410,7 @@ theorem fresh_of_label_append {db : RuntimeDB}
   have hmemN : label ∉ before.objectNames := by
     have hon := objectNames_nodup_of_sourceStateValid _ hva
     rw [show ({ before with
+        variableTypecodes := variableTypecodes
         usedLabels := before.usedLabels ++ [label]
         activeHypotheses := before.activeHypotheses ++ [view] }
           : SourceState).objectNames =
@@ -6284,7 +6675,12 @@ theorem runtimeInsert_eq_of_errorFree (db : RuntimeDB) (left right : Pos)
         | some existing =>
             cases existing with
             | var existingName =>
-                simp [DB.insert, objectShape, existingError, existingObject]
+                by_cases active : db.isActiveVar label = true
+                · simp [DB.insert, objectShape, existingError,
+                    existingObject, active, DB.mkErrorFromEvidence,
+                    DB.mkErrorWithEvidence] at success
+                · simp [DB.insert, objectShape, existingError,
+                    existingObject, active]
             | const existingName =>
                 simp [DB.insert, objectShape, existingError, existingObject,
                   DB.mkErrorFromEvidence, DB.mkErrorWithEvidence] at success

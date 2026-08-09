@@ -98,7 +98,7 @@ inductive IntArithOp where
 
 namespace IntArithOp
 
-/-- Surface head string used by the runtime dispatcher. -/
+/-- Source head string used by the runtime dispatcher. -/
 def head : IntArithOp → String
   | .add => "i+"
   | .sub => "i-"
@@ -185,7 +185,7 @@ inductive FloatArithOp where
 
 namespace FloatArithOp
 
-/-- Surface head string used by the runtime dispatcher. -/
+/-- Source head string used by the runtime dispatcher. -/
 def head : FloatArithOp → String
   | .add => "f+"
   | .sub => "f-"
@@ -305,7 +305,7 @@ inductive CmpMode where
 
 namespace CmpMode
 
-/-- Surface head string used by the runtime source dispatcher. -/
+/-- Source head string used by the runtime source dispatcher. -/
 def head : CmpMode → String
   | .eq => "=="
   | .neq => "!="

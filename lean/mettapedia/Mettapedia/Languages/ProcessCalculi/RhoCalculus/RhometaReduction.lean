@@ -3086,7 +3086,7 @@ theorem ioCount_deferredPayload_zero (payload : Atom) :
 
 /-- A certified top-level HE result for a deferred Rhometta payload.
 
-Bindings are existential here because the current Rhometta runtime surface
+Bindings are existential here because the current Rhometta runtime interface
 returns top-level atoms after the HE evaluator drops bindings at the edge. -/
 def CertifiedPayloadResult
     (space : Space) (dispatch : GroundedDispatch)
@@ -10623,7 +10623,7 @@ The current Rhometta operational relation steps in the already reified residual 
 payload evaluation returns an atom, and the COMM residual carries it as `rho:val`.  These helpers
 package that live operational carrier as a transactional payload over trivial delta/empty-export
 observables, so the B7 bridge can talk directly to the current relation without pretending the
-richer Ω object has already been split out of the runtime surface. -/
+richer Ω object has already been split out of the runtime interface. -/
 section OperationalReification
 
 local instance : CommMonoid Unit where

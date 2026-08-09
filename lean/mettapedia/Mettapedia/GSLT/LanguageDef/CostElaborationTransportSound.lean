@@ -44,11 +44,13 @@ def ArgumentFiberEquation
       WellSorted.parameterType? parameter = some rightType)
     (leftCanonical : leftPattern.hasCanonicalBinderMetadata = true)
     (leftObject : WellSorted.isObjectPattern leftPattern = true)
-    (leftScope : WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
+    (leftScope : ReflectiveWellSorted.ReflectiveScopeSafeAt
+      source.costWholeReflectionProfile
       leftAvailable.length leftPattern)
     (rightCanonical : rightPattern.hasCanonicalBinderMetadata = true)
     (rightObject : WellSorted.isObjectPattern rightPattern = true)
-    (rightScope : WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
+    (rightScope : ReflectiveWellSorted.ReflectiveScopeSafeAt
+      source.costWholeReflectionProfile
       rightAvailable.length rightPattern),
     let fiber := transport.sameFiber
     (WellSorted.AvailableOpenArgument.equationSetoid
@@ -81,11 +83,13 @@ theorem simpleArgument_of_fiberEquation
       WellSorted.parameterType? (.simple name declared) = some rightType)
     (leftCanonical : leftPattern.hasCanonicalBinderMetadata = true)
     (leftObject : WellSorted.isObjectPattern leftPattern = true)
-    (leftScope : WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
+    (leftScope : ReflectiveWellSorted.ReflectiveScopeSafeAt
+      source.costWholeReflectionProfile
       leftAvailable.length leftPattern)
     (rightCanonical : rightPattern.hasCanonicalBinderMetadata = true)
     (rightObject : WellSorted.isObjectPattern rightPattern = true)
-    (rightScope : WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
+    (rightScope : ReflectiveWellSorted.ReflectiveScopeSafeAt
+      source.costWholeReflectionProfile
       rightAvailable.length rightPattern) :
     let fiber := transport.sameFiber
     (WellSorted.AvailableOpenArgument.equationSetoid
@@ -98,13 +102,15 @@ theorem simpleArgument_of_fiberEquation
         ).reindexFiber fiber.1.symm fiber.2.1.symm fiber.2.2.symm) := by
   let fiber := transport.sameFiber
   let pack := fun
-      (term : WellSorted.AvailableOpenPattern source.costWholeLanguage
-        targetFree leftAvailable leftOuter leftType) =>
+      (term : WellSorted.AvailableOpenPattern
+        source.costWholeReflectionProfile source.costWholeLanguage
+          targetFree leftAvailable leftOuter leftType) =>
     ({ term := term
        representation := True.intro
        parameterType := leftParameterType } :
-      WellSorted.AvailableOpenArgument source.costWholeLanguage targetFree
-        leftAvailable leftOuter (.simple name declared) leftType)
+      WellSorted.AvailableOpenArgument source.costWholeReflectionProfile
+        source.costWholeLanguage targetFree leftAvailable leftOuter
+          (.simple name declared) leftType)
   have packed :=
     WellSorted.AvailableOpenArgument.equationSetoid_of_term_map pack
       (by
@@ -183,18 +189,19 @@ def FiberEquations
       Pattern.hasCanonicalBinderMetadataList leftArguments = true)
     (leftObjects : WellSorted.isObjectPatternList leftArguments = true)
     (leftScope : ∀ presentation ∈
-        source.costWholeLanguage.reflectivePresentations,
+        source.costWholeReflectionProfile.presentations,
       binderSafeListAt presentation.quoteConstructor available.length
         leftArguments = true)
     (rightCanonical :
       Pattern.hasCanonicalBinderMetadataList rightArguments = true)
     (rightObjects : WellSorted.isObjectPatternList rightArguments = true)
     (rightScope : ∀ presentation ∈
-        source.costWholeLanguage.reflectivePresentations,
+        source.costWholeReflectionProfile.presentations,
       binderSafeListAt presentation.quoteConstructor available.length
         rightArguments = true),
     WellSorted.AvailableOpenArguments.EquationForall₂
-      source.costWholeLanguage targetFree available outer
+      source.costWholeReflectionProfile source.costWholeLanguage targetFree
+        available outer
       (left.originalAvailable leftCanonical leftObjects leftScope)
       (right.originalAvailable rightCanonical rightObjects rightScope)
 
@@ -219,18 +226,19 @@ def FiberEquations
       Pattern.hasCanonicalBinderMetadataList leftElements = true)
     (leftObjects : WellSorted.isObjectPatternList leftElements = true)
     (leftScope : ∀ presentation ∈
-        source.costWholeLanguage.reflectivePresentations,
+        source.costWholeReflectionProfile.presentations,
       binderSafeListAt presentation.quoteConstructor available.length
         leftElements = true)
     (rightCanonical :
       Pattern.hasCanonicalBinderMetadataList rightElements = true)
     (rightObjects : WellSorted.isObjectPatternList rightElements = true)
     (rightScope : ∀ presentation ∈
-        source.costWholeLanguage.reflectivePresentations,
+        source.costWholeReflectionProfile.presentations,
       binderSafeListAt presentation.quoteConstructor available.length
         rightElements = true),
     WellSorted.AvailableOpenElements.EquationForall₂
-      source.costWholeLanguage targetFree available outer elementType
+      source.costWholeReflectionProfile source.costWholeLanguage targetFree
+        available outer elementType
       (left.originalAvailable leftCanonical leftObjects leftScope)
       (right.originalAvailable rightCanonical rightObjects rightScope)
 
@@ -316,7 +324,7 @@ theorem neutralApplicationOrdinary_semanticEquations
         ∃ kind, source.declaredCostConstructorRole constructor =
           .apparatus kind)
     (ordinary : ReflectiveContextSupport.isQuoteConstructor
-      source.costWholeLanguage rule.label = false)
+      source.costWholeReflectionProfile rule.label = false)
     (leftChildren : CostRegionArgumentTrees source targetFree available outer
       leftArguments rule.params)
     (rightChildren : CostRegionArgumentTrees source targetFree available outer
@@ -348,14 +356,14 @@ theorem neutralApplicationOrdinary_semanticEquations
         WellSorted.isObjectPatternList rightArguments = true := by
       simpa [WellSorted.isObjectPattern] using rightObject
     have leftArgumentScope : ∀ presentation ∈
-        source.costWholeLanguage.reflectivePresentations,
+        source.costWholeReflectionProfile.presentations,
         binderSafeListAt presentation.quoteConstructor available.length
           leftArguments = true := by
       intro presentation presentationMembership
       have notThisQuote : rule.label ≠ presentation.quoteConstructor := by
         intro labelEquality
         have detected : ReflectiveContextSupport.isQuoteConstructor
-            source.costWholeLanguage rule.label = true := by
+            source.costWholeReflectionProfile rule.label = true := by
           unfold ReflectiveContextSupport.isQuoteConstructor
           rw [List.any_eq_true]
           exact ⟨presentation, presentationMembership,
@@ -367,14 +375,14 @@ theorem neutralApplicationOrdinary_semanticEquations
           leftArguments notThisQuote
             (leftScope presentation presentationMembership)
     have rightArgumentScope : ∀ presentation ∈
-        source.costWholeLanguage.reflectivePresentations,
+        source.costWholeReflectionProfile.presentations,
         binderSafeListAt presentation.quoteConstructor available.length
           rightArguments = true := by
       intro presentation presentationMembership
       have notThisQuote : rule.label ≠ presentation.quoteConstructor := by
         intro labelEquality
         have detected : ReflectiveContextSupport.isQuoteConstructor
-            source.costWholeLanguage rule.label = true := by
+            source.costWholeReflectionProfile rule.label = true := by
           unfold ReflectiveContextSupport.isQuoteConstructor
           rw [List.any_eq_true]
           exact ⟨presentation, presentationMembership,
@@ -459,7 +467,7 @@ theorem neutralApplicationQuote_semanticEquations
         ∃ kind, source.declaredCostConstructorRole constructor =
           .apparatus kind)
     (quoted : ReflectiveContextSupport.isQuoteConstructor
-      source.costWholeLanguage rule.label = true)
+      source.costWholeReflectionProfile rule.label = true)
     (leftChildren : CostRegionArgumentTrees source targetFree []
       (available ++ outer) leftArguments rule.params)
     (rightChildren : CostRegionArgumentTrees source targetFree []
@@ -491,13 +499,15 @@ theorem neutralApplicationQuote_semanticEquations
         WellSorted.isObjectPatternList rightArguments = true := by
       simpa [WellSorted.isObjectPattern] using rightObject
     have leftParentScopeAtBound :
-        WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
+        ReflectiveWellSorted.ReflectiveScopeSafeAt
+          source.costWholeReflectionProfile
           (available ++ outer).length (.apply rule.label leftArguments) := by
       intro presentation presentationMembership
       exact binderSafeAt_mono presentation.quoteConstructor
         (leftScope presentation presentationMembership) (by simp)
     have rightParentScopeAtBound :
-        WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
+        ReflectiveWellSorted.ReflectiveScopeSafeAt
+          source.costWholeReflectionProfile
           (available ++ outer).length (.apply rule.label rightArguments) := by
       intro presentation presentationMembership
       exact binderSafeAt_mono presentation.quoteConstructor
@@ -512,12 +522,14 @@ theorem neutralApplicationQuote_semanticEquations
       simpa only [List.nil_append] using rightChildren.originalTyped
     have leftArgumentScope :=
       WellSorted.reflectiveScopeSafeListAt_zero_of_typed_quote
-        source.costWholeLanguage_validate membership leftArgumentsTyped quoted
-          leftParentScopeAtBound
+        source.costWholeLanguage_validate
+          source.costWholeReflectionProfile_validate membership
+            leftArgumentsTyped quoted leftParentScopeAtBound
     have rightArgumentScope :=
       WellSorted.reflectiveScopeSafeListAt_zero_of_typed_quote
-        source.costWholeLanguage_validate membership rightArgumentsTyped quoted
-          rightParentScopeAtBound
+        source.costWholeLanguage_validate
+          source.costWholeReflectionProfile_validate membership
+            rightArgumentsTyped quoted rightParentScopeAtBound
     have assembled :=
       (argumentsSound leftArgumentCanonical leftArgumentObjects
         leftArgumentScope rightArgumentCanonical rightArgumentObjects
@@ -609,13 +621,15 @@ theorem lambda_semanticEquations
     have rightBodyObject : WellSorted.isObjectPattern rightBody = true := by
       simpa [WellSorted.isObjectPattern] using rightObject
     have leftBodyScope :
-        WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
+        ReflectiveWellSorted.ReflectiveScopeSafeAt
+          source.costWholeReflectionProfile
           (domain :: available).length leftBody := by
       intro presentation presentationMembership
       simpa [binderSafeAt, List.length_cons] using
         leftScope presentation presentationMembership
     have rightBodyScope :
-        WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
+        ReflectiveWellSorted.ReflectiveScopeSafeAt
+          source.costWholeReflectionProfile
           (domain :: available).length rightBody := by
       intro presentation presentationMembership
       simpa [binderSafeAt, List.length_cons] using
@@ -676,13 +690,15 @@ theorem lambda_semanticEquations
               WellSorted.isObjectPattern rightBody = true := by
             simpa [WellSorted.isObjectPattern] using rightObject
           have leftBodyScope :
-              WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
+              ReflectiveWellSorted.ReflectiveScopeSafeAt
+                source.costWholeReflectionProfile
                 (domain :: available).length leftBody := by
             intro presentation presentationMembership
             simpa [binderSafeAt, List.length_cons] using
               leftScope presentation presentationMembership
           have rightBodyScope :
-              WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
+              ReflectiveWellSorted.ReflectiveScopeSafeAt
+                source.costWholeReflectionProfile
                 (domain :: available).length rightBody := by
             intro presentation presentationMembership
             simpa [binderSafeAt, List.length_cons] using
@@ -691,20 +707,21 @@ theorem lambda_semanticEquations
             leftBodyScope rightBodyCanonical rightBodyObject rightBodyScope
           let pack := fun
               (term : WellSorted.AvailableOpenPattern
-                source.costWholeLanguage targetFree (domain :: available)
-                  outer codomain) =>
+                source.costWholeReflectionProfile source.costWholeLanguage
+                  targetFree (domain :: available) outer codomain) =>
             ({ term := term.lambda none rfl
                representation := True.intro
                parameterType := leftParameterType } :
-              WellSorted.AvailableOpenArgument source.costWholeLanguage
-                targetFree available outer
+              WellSorted.AvailableOpenArgument
+                source.costWholeReflectionProfile source.costWholeLanguage
+                  targetFree available outer
                   (.abstractionNamed binderName bodyName declared)
                     (.arrow domain codomain))
           have packed :=
             WellSorted.AvailableOpenArgument.equationSetoid_of_term_map pack
               (by
                 intro first second generator
-                exact EquationSemantics.equationContextStep_fill
+                exact EquationSemantics.reflectiveEquationContextStep_fill
                   (.lambda none .hole) generator)
               bodyStep
           have leftEndpoint :
@@ -781,13 +798,15 @@ theorem multiLambda_semanticEquations
     have rightBodyObject : WellSorted.isObjectPattern rightBody = true := by
       simpa [WellSorted.isObjectPattern] using rightObject
     have leftBodyScope :
-        WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
+        ReflectiveWellSorted.ReflectiveScopeSafeAt
+          source.costWholeReflectionProfile
           (List.replicate arity domain ++ available).length leftBody := by
       intro presentation presentationMembership
       simpa [binderSafeAt, List.length_append, List.length_replicate,
         Nat.add_comm] using leftScope presentation presentationMembership
     have rightBodyScope :
-        WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
+        ReflectiveWellSorted.ReflectiveScopeSafeAt
+          source.costWholeReflectionProfile
           (List.replicate arity domain ++ available).length rightBody := by
       intro presentation presentationMembership
       simpa [binderSafeAt, List.length_append, List.length_replicate,
@@ -852,7 +871,8 @@ theorem multiLambda_semanticEquations
               WellSorted.isObjectPattern rightBody = true := by
             simpa [WellSorted.isObjectPattern] using rightObject
           have leftBodyScope :
-              WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
+              ReflectiveWellSorted.ReflectiveScopeSafeAt
+                source.costWholeReflectionProfile
                 (List.replicate arity domain ++ available).length
                   leftBody := by
             intro presentation presentationMembership
@@ -860,7 +880,8 @@ theorem multiLambda_semanticEquations
               Nat.add_comm] using
                 leftScope presentation presentationMembership
           have rightBodyScope :
-              WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
+              ReflectiveWellSorted.ReflectiveScopeSafeAt
+                source.costWholeReflectionProfile
                 (List.replicate arity domain ++ available).length
                   rightBody := by
             intro presentation presentationMembership
@@ -871,21 +892,22 @@ theorem multiLambda_semanticEquations
             leftBodyScope rightBodyCanonical rightBodyObject rightBodyScope
           let pack := fun
               (term : WellSorted.AvailableOpenPattern
-                source.costWholeLanguage targetFree
-                  (List.replicate arity domain ++ available) outer
+                source.costWholeReflectionProfile source.costWholeLanguage
+                  targetFree (List.replicate arity domain ++ available) outer
                     codomain) =>
             ({ term := term.multiLambda arity [] rfl
                representation := True.intro
                parameterType := leftParameterType } :
-              WellSorted.AvailableOpenArgument source.costWholeLanguage
-                targetFree available outer
+              WellSorted.AvailableOpenArgument
+                source.costWholeReflectionProfile source.costWholeLanguage
+                  targetFree available outer
                   (.multiAbstractionNamed binderNames bodyName declared)
                     (.arrow (.multiBinder domain) codomain))
           have packed :=
             WellSorted.AvailableOpenArgument.equationSetoid_of_term_map pack
               (by
                 intro first second generator
-                exact EquationSemantics.equationContextStep_fill
+                exact EquationSemantics.reflectiveEquationContextStep_fill
                   (.multiLambda arity [] .hole) generator)
               bodyStep
           have leftEndpoint :
@@ -1018,14 +1040,14 @@ theorem collection_semanticEquations
             WellSorted.isObjectPatternList rightElements = true := by
           simpa [WellSorted.isObjectPattern] using rightObject
         have leftElementScope : ∀ presentation ∈
-            source.costWholeLanguage.reflectivePresentations,
+            source.costWholeReflectionProfile.presentations,
             binderSafeListAt presentation.quoteConstructor available.length
               leftElements = true := by
           intro presentation presentationMembership
           simpa [binderSafeAt] using
             leftScope presentation presentationMembership
         have rightElementScope : ∀ presentation ∈
-            source.costWholeLanguage.reflectivePresentations,
+            source.costWholeReflectionProfile.presentations,
             binderSafeListAt presentation.quoteConstructor available.length
               rightElements = true := by
           intro presentation presentationMembership
@@ -1088,8 +1110,9 @@ theorem nil_fiberEquations
   intro leftCanonical leftObjects leftScope rightCanonical rightObjects
     rightScope
   let empty :=
-    WellSorted.AvailableOpenArguments.nil source.costWholeLanguage targetFree
-      available outer
+    WellSorted.AvailableOpenArguments.nil
+      (profile := source.costWholeReflectionProfile)
+        source.costWholeLanguage targetFree available outer
   have leftEndpoint :
       (CostRegionArgumentTrees.nil (source := source)
         (targetFree := targetFree)).originalAvailable leftCanonical leftObjects
@@ -1158,7 +1181,8 @@ theorem cons_fiberEquations
         WellSorted.isObjectPatternList rightArguments = true := by
     simpa [WellSorted.isObjectPatternList] using rightObjects
   have leftHeadScope :
-      WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
+      ReflectiveWellSorted.ReflectiveScopeSafeAt
+        source.costWholeReflectionProfile
         available.length leftArgument := by
     intro presentation presentationMembership
     have parts :
@@ -1170,7 +1194,8 @@ theorem cons_fiberEquations
         leftScope presentation presentationMembership
     exact parts.1
   have rightHeadScope :
-      WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
+      ReflectiveWellSorted.ReflectiveScopeSafeAt
+        source.costWholeReflectionProfile
         available.length rightArgument := by
     intro presentation presentationMembership
     have parts :
@@ -1182,7 +1207,7 @@ theorem cons_fiberEquations
         rightScope presentation presentationMembership
     exact parts.1
   have leftTailScope : ∀ presentation ∈
-      source.costWholeLanguage.reflectivePresentations,
+      source.costWholeReflectionProfile.presentations,
       binderSafeListAt presentation.quoteConstructor available.length
         leftArguments = true := by
     intro presentation presentationMembership
@@ -1195,7 +1220,7 @@ theorem cons_fiberEquations
         leftScope presentation presentationMembership
     exact parts.2
   have rightTailScope : ∀ presentation ∈
-      source.costWholeLanguage.reflectivePresentations,
+      source.costWholeReflectionProfile.presentations,
       binderSafeListAt presentation.quoteConstructor available.length
         rightArguments = true := by
     intro presentation presentationMembership
@@ -1259,7 +1284,8 @@ theorem nil_fiberEquations
   intro leftCanonical leftObjects leftScope rightCanonical rightObjects
     rightScope
   let empty := WellSorted.AvailableOpenElements.nil
-    source.costWholeLanguage targetFree available outer elementType
+    (profile := source.costWholeReflectionProfile)
+      source.costWholeLanguage targetFree available outer elementType
   have leftEndpoint :
       (CostRegionElementTrees.nil (source := source) (targetFree := targetFree)
         available outer elementType).originalAvailable leftCanonical
@@ -1320,7 +1346,8 @@ theorem cons_fiberEquations
         WellSorted.isObjectPatternList rightElements = true := by
     simpa [WellSorted.isObjectPatternList] using rightObjects
   have leftHeadScope :
-      WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
+      ReflectiveWellSorted.ReflectiveScopeSafeAt
+        source.costWholeReflectionProfile
         available.length leftElement := by
     intro presentation presentationMembership
     have parts :
@@ -1332,7 +1359,8 @@ theorem cons_fiberEquations
         leftScope presentation presentationMembership
     exact parts.1
   have rightHeadScope :
-      WellSorted.ReflectiveScopeSafeAt source.costWholeLanguage
+      ReflectiveWellSorted.ReflectiveScopeSafeAt
+        source.costWholeReflectionProfile
         available.length rightElement := by
     intro presentation presentationMembership
     have parts :
@@ -1344,7 +1372,7 @@ theorem cons_fiberEquations
         rightScope presentation presentationMembership
     exact parts.1
   have leftTailScope : ∀ presentation ∈
-      source.costWholeLanguage.reflectivePresentations,
+      source.costWholeReflectionProfile.presentations,
       binderSafeListAt presentation.quoteConstructor available.length
         leftElements = true := by
     intro presentation presentationMembership
@@ -1357,7 +1385,7 @@ theorem cons_fiberEquations
         leftScope presentation presentationMembership
     exact parts.2
   have rightTailScope : ∀ presentation ∈
-      source.costWholeLanguage.reflectivePresentations,
+      source.costWholeReflectionProfile.presentations,
       binderSafeListAt presentation.quoteConstructor available.length
         rightElements = true := by
     intro presentation presentationMembership
@@ -1572,8 +1600,9 @@ theorem reindex_act_ofTarget
         secondTargetBound) secondTargetBound secondSort)
     (targetBoundEq : firstTargetBound = secondTargetBound)
     (sortEq : firstSort = secondSort)
-    (assignment : WellSorted.SupportedOpenAssignment source.costWholeLanguage
-      assignmentFree targetFree assignmentSupport) :
+    (assignment : WellSorted.SupportedOpenAssignment
+      source.costWholeReflectionProfile source.costWholeLanguage
+        assignmentFree targetFree assignmentSupport) :
     (term.reindex
         (congrArg
           (CostStaticBinderThinning.sourceContextOfTarget source color)
@@ -1608,12 +1637,16 @@ def sourceActionTermIn
     node.plan.abstractPattern_supportedSafe globalTable entriesSubset
   let supported := Classical.choose supportedSafe
   let safe := Classical.choose_spec supportedSafe
+  let core : WellSorted.OpenTerm
+      source.theory.presentation.presentation.language
+      globalTable.sourceFreeContext node.sourceBound node.sourceSort :=
+    ⟨node.plan.abstractPattern, supported.toHasType,
+      node.plan.abstractPattern_canonicalBinderMetadata node.term.2.2.1,
+      node.plan.abstractPattern_object node.term.2.2.2.1,
+      supported.toHasType.isWellScopedAt⟩
   exact
-    { term :=
-        ⟨node.plan.abstractPattern, supported.toHasType,
-          node.plan.abstractPattern_canonicalBinderMetadata node.term.2.2.1,
-          node.plan.abstractPattern_object node.term.2.2.2.1,
-          node.plan.abstractPattern_reflectiveScopeSafeAt⟩
+    { term := ⟨core.1, core.2,
+        node.plan.abstractPattern_reflectiveScopeSafeAt⟩
       supported := supported
       safe := safe }
 
@@ -1640,13 +1673,13 @@ theorem restoreMappedAbstractPatternIn_eq_term
     (globalTable : TypedCostRegionBoundaryTable source color targetFree
       globalOccurrences)
     (entriesSubset : node.boundaryTable.entries ⊆ globalTable.entries) :
-    ReflectiveContextSupport.substituteAt source.costWholeLanguage
+    ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
         globalTable.restorationSupport globalTable.restorationAssignment
         node.targetBound.length
         (node.thinning.thickenAmbientBVars 0
           (mapPattern (color.symbols source) node.plan.abstractPattern)) =
       node.term.1 := by
-  change ReflectiveContextSupport.substituteAt source.costWholeLanguage
+  change ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
       globalTable.restorationSupport globalTable.restorationAssignment
       node.targetBound.length
       ((CostStaticBinderThinning.ofTargetThinning source color
@@ -1720,7 +1753,6 @@ theorem costStaticRegionTransportSound_of_mappedGeneratorFiberAction
       CostStaticRegionNode.CostStaticSourceTerm.generator leftSource
         rightSource := by
     unfold CostStaticRegionNode.CostStaticSourceTerm.generator
-      openEquationGenerator
     simpa only [leftSource, rightSource, rightSourceRaw,
       CostStaticRegionNode.CostStaticSourceTerm.reindex_pattern,
       CostStaticRegionNode.sourceActionTermIn_pattern,
@@ -1730,25 +1762,26 @@ theorem costStaticRegionTransportSound_of_mappedGeneratorFiberAction
   have localPath := stable leftNode.thinning assignment
     globalTransport.freeContext globalTransport.reflectiveSupport sourceGenerator
   have openPathRaw :=
-    WellSorted.AvailableOpenPattern.equationSetoid_to_openPatternEquationSetoid
+    WellSorted.AvailableOpenPattern.equationSetoid_to_reflectiveOpenPatternEquationSetoid
       localPath
-  have openPath := WellSorted.openPatternEquationSetoid_reindexBound
+  have openPath :=
+    ReflectiveWellSorted.reflectiveOpenPatternEquationSetoid_reindexBound
     (List.append_nil leftNode.targetBound) openPathRaw
   have lifted :=
-    WellSorted.AvailableOpenPattern.openPatternEquationSetoid_to_availableWithOuter
+    WellSorted.AvailableOpenPattern.reflectiveOpenPatternEquationSetoid_to_availableWithOuter
       outer openPath
   have leftEndpoint :
       WellSorted.AvailableOpenPattern.ofOpenPatternWithOuter
           ((leftSource.actAvailable leftNode.thinning assignment
             globalTransport.freeContext globalTransport.reflectiveSupport
-            ).toOpenPattern.reindexBound
+            ).toReflectiveOpenPattern.reindexBound
               (List.append_nil leftNode.targetBound)) outer =
         (CostRegionTree.static leftNode leftChildren
           ).originalAvailableOpenPattern leftCanonical leftObject leftScope := by
     apply WellSorted.AvailableOpenPattern.ext
     simp only [WellSorted.AvailableOpenPattern.ofOpenPatternWithOuter_pattern,
-      WellSorted.OpenPattern.reindexBound_pattern,
-      WellSorted.AvailableOpenPattern.toOpenPattern_pattern,
+      ReflectiveWellSorted.OpenPattern.reindexBound_pattern,
+      WellSorted.AvailableOpenPattern.toReflectiveOpenPattern_pattern,
       CostStaticRegionNode.CostStaticSourceTerm.actAvailable_pattern,
       CostRegionTree.originalAvailableOpenPattern_pattern]
     simpa [leftSource, CostStaticRegionNode.CostStaticSourceTerm.act,
@@ -1760,15 +1793,15 @@ theorem costStaticRegionTransportSound_of_mappedGeneratorFiberAction
       WellSorted.AvailableOpenPattern.ofOpenPatternWithOuter
           ((rightSource.actAvailable leftNode.thinning assignment
             globalTransport.freeContext globalTransport.reflectiveSupport
-            ).toOpenPattern.reindexBound
+            ).toReflectiveOpenPattern.reindexBound
               (List.append_nil leftNode.targetBound)) outer =
         ((CostRegionTree.static rightNode rightChildren
           ).originalAvailableOpenPattern rightCanonical rightObject rightScope
           ).reindexFiber targetBoundEq.symm rfl targetTypeEq.symm := by
     apply WellSorted.AvailableOpenPattern.ext
     simp only [WellSorted.AvailableOpenPattern.ofOpenPatternWithOuter_pattern,
-      WellSorted.OpenPattern.reindexBound_pattern,
-      WellSorted.AvailableOpenPattern.toOpenPattern_pattern,
+      ReflectiveWellSorted.OpenPattern.reindexBound_pattern,
+      WellSorted.AvailableOpenPattern.toReflectiveOpenPattern_pattern,
       CostStaticRegionNode.CostStaticSourceTerm.actAvailable_pattern,
       WellSorted.AvailableOpenPattern.reindexFiber_pattern,
       CostRegionTree.originalAvailableOpenPattern_pattern]
@@ -1794,34 +1827,37 @@ theorem costStructuralTransportSound_of_static
   intro targetFree targetBound targetSort left right transport
   have splitPath :=
     (CostRegionTreeTransport.semanticEquations staticSound transport).1
-      left.1.2.2.1 left.1.2.2.2.1 left.1.2.2.2.2
-      right.1.2.2.1 right.1.2.2.2.1 right.1.2.2.2.2
+      left.1.2.1.2.1 left.1.2.1.2.2.1 left.1.2.2
+      right.1.2.1.2.1 right.1.2.1.2.2.1 right.1.2.2
   have openPath :=
-    WellSorted.AvailableOpenPattern.equationSetoid_to_openPatternEquationSetoid
+    WellSorted.AvailableOpenPattern.equationSetoid_to_reflectiveOpenPatternEquationSetoid
       splitPath
-  have transported := WellSorted.openPatternEquationSetoid_reindexBound
-    (List.append_nil targetBound) openPath
+  have transported :=
+    ReflectiveWellSorted.reflectiveOpenPatternEquationSetoid_reindexBound
+      (List.append_nil targetBound) openPath
   have leftEndpoint :
-      (left.2.tree.originalAvailableOpenPattern left.1.2.2.1
-        left.1.2.2.2.1 left.1.2.2.2.2).toOpenPattern.reindexBound
+      (left.2.tree.originalAvailableOpenPattern left.1.2.1.2.1
+        left.1.2.1.2.2.1 left.1.2.2).toReflectiveOpenPattern.reindexBound
           (List.append_nil targetBound) = left.1 := by
     apply Subtype.ext
     simp [CostRegionTree.originalAvailableOpenPattern_pattern,
-      WellSorted.OpenPattern.reindexBound_pattern,
-      WellSorted.AvailableOpenPattern.toOpenPattern_pattern]
+      ReflectiveWellSorted.OpenPattern.reindexBound_pattern,
+      WellSorted.AvailableOpenPattern.toReflectiveOpenPattern_pattern]
   have rightEndpoint :
-      (((right.2.tree.originalAvailableOpenPattern right.1.2.2.1
-        right.1.2.2.2.1 right.1.2.2.2.2).reindexFiber
+      (((right.2.tree.originalAvailableOpenPattern right.1.2.1.2.1
+        right.1.2.1.2.2.1 right.1.2.2).reindexFiber
           transport.sameFiber.1.symm transport.sameFiber.2.1.symm
-            transport.sameFiber.2.2.symm).toOpenPattern.reindexBound
+            transport.sameFiber.2.2.symm).toReflectiveOpenPattern.reindexBound
               (List.append_nil targetBound)) = right.1 := by
     apply Subtype.ext
     simp [WellSorted.AvailableOpenPattern.reindexFiber_pattern,
       CostRegionTree.originalAvailableOpenPattern_pattern,
-      WellSorted.OpenPattern.reindexBound_pattern,
-      WellSorted.AvailableOpenPattern.toOpenPattern_pattern]
-  change (openEquationSetoid source.costIGSLT targetFree targetBound
-    targetSort).r left.1 right.1
+      ReflectiveWellSorted.OpenPattern.reindexBound_pattern,
+      WellSorted.AvailableOpenPattern.toReflectiveOpenPattern_pattern]
+  change (ReflectiveEquationSemantics.reflectiveOpenPatternEquationSetoid
+    source.costWholeReflectionProfile defaultBasePremises
+      source.costWholeLanguage targetFree targetBound (.base targetSort.1)).r
+        left.1 right.1
   rw [leftEndpoint, rightEndpoint] at transported
   exact transported
 

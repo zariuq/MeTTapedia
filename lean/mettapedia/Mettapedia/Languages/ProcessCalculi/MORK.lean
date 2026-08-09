@@ -7,9 +7,9 @@ import Mettapedia.Languages.ProcessCalculi.MORK.WorkQueueOrder
 import Mettapedia.Languages.ProcessCalculi.MORK.ThreePhaseRefinement
 import Mettapedia.Languages.ProcessCalculi.MORK.Conformance
 import Mettapedia.Languages.ProcessCalculi.MORK.ArithmeticExtension
-import Mettapedia.Languages.ProcessCalculi.MORK.BridgeWorkspaceSurfaceRefinement
-import Mettapedia.Languages.ProcessCalculi.MORK.BridgeCursorSurfaceRefinement
-import Mettapedia.Languages.ProcessCalculi.MORK.BridgeAlgebraSurfaceRefinement
+import Mettapedia.Languages.ProcessCalculi.MORK.BridgeWorkspaceInterfaceRefinement
+import Mettapedia.Languages.ProcessCalculi.MORK.BridgeCursorInterfaceRefinement
+import Mettapedia.Languages.ProcessCalculi.MORK.BridgeAlgebraInterfaceRefinement
 import Mettapedia.Languages.ProcessCalculi.MORK.PathOfAtomEncodingContract
 import Mettapedia.Languages.ProcessCalculi.MORK.ExecutionBoundary
 
@@ -32,9 +32,9 @@ MORK/
   ThreePhaseRefinement.lean — Phase steps ↔ scheduler steps; applySubst_nil identity
   Conformance.lean         — 27 kernel-checked conformance + correspondence theorems
   ArithmeticExtension.lean — Int/float sink lowering + `CmpSource` packaging
-  BridgeWorkspaceSurfaceRefinement.lean — Live insert/match/step workspace surface
-  BridgeCursorSurfaceRefinement.lean — Bridge cursor API ↔ PathMap cursor semantics
-  BridgeAlgebraSurfaceRefinement.lean — Live stepping vs structural export boundary
+  BridgeWorkspaceInterfaceRefinement.lean — Live insert/match/step workspace interface
+  BridgeCursorInterfaceRefinement.lean — Bridge cursor API ↔ PathMap cursor semantics
+  BridgeAlgebraInterfaceRefinement.lean — Live stepping vs structural export boundary
   PathOfAtomEncodingContract.lean — `path-of-atom` render/parse/traverse contract
   MORKCommBridge.lean  — Bridge: MORK binary fold ↔ MQ-calculus CommReduction
   PathMapBridge.lean   — Bridge: MORK space transitions ↔ PathMap lattice ops

@@ -3,7 +3,7 @@ import Mettapedia.Languages.MeTTa.ExecutionContract
 /-!
 # MeTTa Scope Contract
 
-Shared local-scope contract surface for MeTTa-family runtimes.
+Shared local-scope contract interface for MeTTa-family runtimes.
 
 This artifact is deliberately separate from the execution contract. It governs
 free-variable analysis and local binder scope for compiler/runtime plumbing,
@@ -16,7 +16,7 @@ Positive example:
 
 Negative example:
 - this file does not describe MM2 text, and it does not assign executable
-  backend ownership to surface heads.
+  backend ownership to source heads.
 -/
 
 namespace Mettapedia.Languages.MeTTa.ScopeContract
@@ -34,7 +34,7 @@ inductive ScopeKind where
   | sourceRulePayload
 deriving Repr, DecidableEq, BEq
 
-/-- Structural scope contract for one surface head. -/
+/-- Structural scope contract for one source head. -/
 structure ScopeContractEntry where
   head : String
   arity : Nat

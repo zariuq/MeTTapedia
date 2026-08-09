@@ -407,10 +407,6 @@ theorem costCoreLanguage_validate (source : CIGSLT) :
   apply LanguageDef.validate_eq_nil_of_constructorOnly
   · rfl
   · rfl
-  · rfl
-  · rfl
-  · rfl
-  · rfl
   · exact costCoreTypeNames_nodup source
   · exact costCoreConstructorLabels_nodup source
   · exact costCoreTerm_category_mem source

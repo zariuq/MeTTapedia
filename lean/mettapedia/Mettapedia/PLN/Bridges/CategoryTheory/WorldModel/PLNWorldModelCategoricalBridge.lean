@@ -58,7 +58,7 @@ def singletonWorldModelSigma (X : H.Obj) :
     letI : WorldModelSigma State H.Obj H.query := H.worldModel
     exact WorldModelSigma.evidence_zero ⟨X, q.2⟩
 
-/-- Categorical endpoint surface combining institution transport and
+/-- Categorical endpoint contract combining institution transport and
 Beck-Chevalley transport. -/
 abbrev EndpointStatement
     {P A B D : H.Obj}
@@ -81,9 +81,9 @@ abbrev EndpointStatement
   H.interpret (H.reindexQuery f (H.existsQuery g φ)) =
     H.interpret (H.existsQuery π₁ (H.reindexQuery π₂ φ))
 
-/-- Categorical endpoint surface combining institution transport and
+/-- Categorical endpoint contract combining institution transport and
 Beck-Chevalley transport. -/
-abbrev EndpointSurface (H : WMHyperdoctrine State) : Prop :=
+abbrev EndpointContract (H : WMHyperdoctrine State) : Prop :=
   ∀ {P A B D : H.Obj}
     (π₁ : P ⟶ A) (π₂ : P ⟶ B) (f : A ⟶ D) (g : B ⟶ D)
     (_hpb : IsPullback π₁ π₂ f g)
@@ -115,11 +115,11 @@ theorem institution_beckChevalley_endpoint
         ⟨PUnit.unit, H.existsQuery g φ⟩)
   · simpa using H.beckChevalley_transport_exists π₁ π₂ f g hpb φ
 
-/-- The new categorical endpoint surface is derivable directly from the unified
+/-- The new categorical endpoint contract is derivable directly from the unified
 endpoint theorem. -/
-theorem endpointSurface_of_hyperdoctrine
+theorem endpointContract_of_hyperdoctrine
     (H : WMHyperdoctrine State) :
-    EndpointSurface (H := H) :=
+    EndpointContract (H := H) :=
   institution_beckChevalley_endpoint (H := H)
 
 end WMHyperdoctrine

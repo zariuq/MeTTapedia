@@ -54,7 +54,7 @@ theorem evalc_environment_remembers_named_context :
   simp [evalEnvForSpace, spaceName, resolveTok, defaultEnv,
     MinEnv.ofAtomsGT, contextSpaceAtom]
 
-/-- Opaque space handles keep the familiar surface spelling without becoming
+/-- Opaque space handles keep the familiar source spelling without becoming
 symbols internally. -/
 theorem default_context_pretty :
     Metta.Pretty.atom (contextSpaceAtom "&self") = "&self" := by

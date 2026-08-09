@@ -73,13 +73,13 @@ theorem let_collapse_get_atoms_bulk_transfer_sound (dst src : Space) :
   simpa [evalLetCollapseGetAtomsAddAtoms, collapseGetAtoms, optimizedBulkTransfer]
     using evalAddAtomsRows_eq_addMany dst (logicalRows src)
 
-inductive TransferSurface where
+inductive TransferBackend where
   | generic
   | mork
   deriving DecidableEq, Repr
 
 structure RoutedSpace where
-  surface : TransferSurface
+  backend : TransferBackend
   space : Space
   deriving Repr
 
@@ -98,13 +98,13 @@ theorem routed_bulk_transfer_sound (dst src : RoutedSpace) :
   simp [evalRoutedTransfer, optimizedRoutedTransfer, routedRows,
     evalAddAtomsRows_eq_addMany]
 
-inductive AddSurface where
+inductive AddOperation where
   | addAtoms
   | morkAddAtoms
   | custom (name : String)
   deriving DecidableEq, Repr
 
-inductive SourceSurface where
+inductive SourceOperation where
   | getAtoms
   | morkGetAtoms
   | custom (name : String)
@@ -117,17 +117,17 @@ inductive AddAtomsEquation where
 
 inductive AddAtomsInputShape where
   | literalRows
-  | getAtomsDirect (source : SourceSurface)
-  | collapseGetAtoms (source : SourceSurface)
+  | getAtomsDirect (source : SourceOperation)
+  | collapseGetAtoms (source : SourceOperation)
   | other
   deriving DecidableEq, Repr
 
-def AddSurface.isDefault : AddSurface → Bool
+def AddOperation.isDefault : AddOperation → Bool
   | .addAtoms => true
   | .morkAddAtoms => true
   | .custom _ => false
 
-def SourceSurface.isDefault : SourceSurface → Bool
+def SourceOperation.isDefault : SourceOperation → Bool
   | .getAtoms => true
   | .morkGetAtoms => true
   | .custom _ => false
@@ -144,7 +144,7 @@ def allDefaultFold : List AddAtomsEquation → Bool
   | [] => true
   | eq :: rest => eq.isDefaultFold && allDefaultFold rest
 
-def publicSurfaceHasOnlyDefault
+def publicEquationsHaveOnlyDefault
     (visible : List AddAtomsEquation) : Bool :=
   hasDefaultFold visible && allDefaultFold visible
 
@@ -157,7 +157,7 @@ def AddAtomsInputShape.hasDefaultSource : AddAtomsInputShape → Bool
 def recognizePublicAddAtomsShortcut
     (visible : List AddAtomsEquation)
     (input : AddAtomsInputShape) : Option Unit :=
-  if publicSurfaceHasOnlyDefault visible && input.hasDefaultSource then
+  if publicEquationsHaveOnlyDefault visible && input.hasDefaultSource then
     some ()
   else
     none
@@ -175,10 +175,10 @@ def decidePublicAddAtoms
   | none => .ordinaryEquationSearch
 
 def recognizeBulkTransfer
-    (addSurface : AddSurface) (sourceSurface : SourceSurface)
+    (addOperation : AddOperation) (sourceOperation : SourceOperation)
     (collapsed : Bool) : Option Unit :=
   let routeIsSupported := collapsed || !collapsed
-  if addSurface.isDefault && sourceSurface.isDefault && routeIsSupported then
+  if addOperation.isDefault && sourceOperation.isDefault && routeIsSupported then
     some ()
   else
     none
@@ -224,9 +224,9 @@ example :
 theorem public_shortcut_implies_visible_default
     (visible : List AddAtomsEquation) (input : AddAtomsInputShape)
     (h : recognizePublicAddAtomsShortcut visible input = some ()) :
-    publicSurfaceHasOnlyDefault visible = true := by
+    publicEquationsHaveOnlyDefault visible = true := by
   unfold recognizePublicAddAtomsShortcut at h
-  by_cases hv : publicSurfaceHasOnlyDefault visible
+  by_cases hv : publicEquationsHaveOnlyDefault visible
   · exact hv
   · simp [hv] at h
 
@@ -235,7 +235,7 @@ theorem public_shortcut_implies_default_source
     (h : recognizePublicAddAtomsShortcut visible input = some ()) :
     input.hasDefaultSource = true := by
   unfold recognizePublicAddAtomsShortcut at h
-  by_cases hv : publicSurfaceHasOnlyDefault visible
+  by_cases hv : publicEquationsHaveOnlyDefault visible
   · by_cases hi : input.hasDefaultSource
     · exact hi
     · simp [hv, hi] at h
@@ -248,11 +248,11 @@ theorem visible_custom_same_head_blocks_shortcut
   cases input <;> rfl
 
 example :
-    AddSurface.isDefault .addAtoms = true := by
+    AddOperation.isDefault .addAtoms = true := by
   rfl
 
 example :
-    AddSurface.isDefault (.custom "add-atoms") = false := by
+    AddOperation.isDefault (.custom "add-atoms") = false := by
   rfl
 
 example :
@@ -353,11 +353,11 @@ theorem default_endpoint_input_sound
   | getAtomsDirect source =>
       cases source <;>
         simp [AddAtomsInputShape.hasDefaultSource, evalDefaultEndpointInput,
-          SourceSurface.isDefault, get_atoms_direct_bulk_transfer_sound] at h ⊢
+          SourceOperation.isDefault, get_atoms_direct_bulk_transfer_sound] at h ⊢
   | collapseGetAtoms source =>
       cases source <;>
         simp [AddAtomsInputShape.hasDefaultSource, evalDefaultEndpointInput,
-          SourceSurface.isDefault, collapse_get_atoms_bulk_transfer_sound] at h ⊢
+          SourceOperation.isDefault, collapse_get_atoms_bulk_transfer_sound] at h ⊢
 
 theorem recognized_endpoint_transfer_sound
     (visible : List AddAtomsEquation)
@@ -396,7 +396,7 @@ example :
         some ({ atoms := [Atom.symbol "src", Atom.symbol "dst"] },
               [{ count := 1, exactContext := false }]) := by
   simp [endpointTransferSemantics, evalDefaultEndpointInput,
-    SourceSurface.isDefault, evalAddAtomsCollapseGetAtoms,
+    SourceOperation.isDefault, evalAddAtomsCollapseGetAtoms,
     evalAddAtomsRows_eq_addMany, collapseGetAtoms, logicalRows,
     transferContractMatrix, EndpointStorage.admitRow, Space.addMany]
 

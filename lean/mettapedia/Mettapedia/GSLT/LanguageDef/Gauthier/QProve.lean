@@ -3,7 +3,7 @@ import Mettapedia.GSLT.LanguageDef.Gauthier.E1
 /-!
 # Gauthier OEIS qprove syntax
 
-The SML qprove surface exposes an operator table and formula syntax, but the
+The SML qprove syntax defines an operator table and formula syntax, but the
 checkout does not contain a qprove program evaluator analogous to the integer
 and list evaluators.  This file therefore records exactly the syntax-level
 languageDef data: operator names, arities, higher-order arities, and formula
@@ -159,7 +159,7 @@ def progFormulaArity? : Nat -> Option Nat
 def logicFormulaArity? : Nat -> Option Nat
   | 0 => some 1
   | 1 => some 2
-  -- The SML syntax names `forall`; the SMT S-expression surface uses
+  -- The SML syntax names `forall`; the SMT S-expression syntax uses
   -- the binary `(forall vars body)` shape.  This remains syntax only.
   | 2 => some 2
   | 3 => some 2

@@ -397,7 +397,7 @@ inductive MettaCall (space : Space) (dispatch : GroundedDispatch) :
       (h_not_error : isErrorAtom atom = false)
       (h_empty : unifySuccessResults target pattern thenBranch b fuel = []) :
       MettaCall space dispatch atom type_ b (elseBranch, b)
-  /-- Primitive `unify`: wrong arity is surfaced as the
+  /-- Primitive `unify`: wrong arity is reported as the
       hyperon-experimental minimal-instruction parser message. -/
   | unify_bad_arity (atom type_ : Atom) (b : Bindings)
       (tail : List Atom)
@@ -419,8 +419,8 @@ inductive MettaCall (space : Space) (dispatch : GroundedDispatch) :
       (h_not_error : isErrorAtom atom = false)
       (h_result : finalResult ∈ switchMinimalResults scrut branches b fuel) :
       MettaCall space dispatch atom type_ b finalResult
-  /-- `switch-minimal`: any non-canonical surface form (wrong arity or
-      non-expression cases argument) is surfaced as
+  /-- `switch-minimal`: any non-canonical source form (wrong arity or
+      non-expression cases argument) is reported as
       `IncorrectNumberOfArguments`, matching the executable evaluator's
       direct pattern split. -/
   | switch_minimal_bad_shape (atom type_ : Atom) (b : Bindings)

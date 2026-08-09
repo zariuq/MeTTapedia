@@ -38,6 +38,7 @@ open Mettapedia.Languages.Metamath.SourceGSLTRuntimeStateAgreement
 open Mettapedia.Languages.Metamath.SourceGSLTRuntimeCoEvolution
 open Mettapedia.Languages.Metamath.SourceGSLTRuntimeProofTransport
 open Mettapedia.Languages.Metamath.SourceGSLTRuntimeCompressedTransport
+open Mettapedia.Languages.Metamath.ByteSliceForInSupport
 open Mettapedia.Languages.Metamath.SourceGSLTCompressedExecutionMMLean4
 open Mettapedia.Languages.Metamath.SourceGSLTCompressedParserComposition
 open Mettapedia.Languages.Metamath.ByteSliceForInSupport
@@ -1253,7 +1254,7 @@ theorem toMath_eq_fold (token : ByteSlice) :
       by_cases valid : Metamath.Verify.isMathChar byte = true
       · rw [if_pos valid, if_pos valid]
       · rw [if_neg valid, if_neg (by simpa using valid)]),
-    ← sliceBytes_eq_sliceList]
+    ← SourceGSLTCompressedMMLean4.sliceBytes_eq_sliceList]
 
 theorem mathFold_fst (bytes : List UInt8) :
     ∀ (initialValid : Bool) (initialText : String),
@@ -1526,7 +1527,9 @@ theorem retainedCall_mathDeclaredSymbol
     (charset : NameCharset mathBytesValid name)
     (lookup : db.find? name.name =
       if isConstant then some (.const name.name)
-      else some (.var name.name)) :
+      else some (.var name.name))
+    (active : isConstant = false →
+      db.isActiveVar name.name = true) :
     parserObservedState call.after =
       ⟨db, .math (symbols.push
         (if isConstant then .const name.name else .var name.name)) parser⟩ := by
@@ -1576,13 +1579,22 @@ theorem retainedCall_mathDeclaredSymbol
       obtain ⟨beforeDb, beforeMode⟩ :=
         call_before_fields_of_observed significant before_eq
       rw [call.after_eq]
-      cases isConstant <;>
-        simp [ParserState.feedToken, ParserState.withMath, beforeDb,
-          beforeMode, notComment, notInclude, notDelimiter, lexed, lookup,
-          parserObservedState, observedSemanticState, parserSemanticState,
-          logicalTokenMode] <;>
-        change db = db ∧ _ = _ <;>
-        exact ⟨rfl, rfl⟩
+      cases isConstant with
+      | false =>
+          have active' := active rfl
+          simp [ParserState.feedToken, ParserState.withMath, beforeDb,
+            beforeMode, notComment, notInclude, notDelimiter, lexed, lookup,
+            active', parserObservedState, observedSemanticState,
+            parserSemanticState, logicalTokenMode]
+          change db = db ∧ _ = _
+          exact ⟨rfl, rfl⟩
+      | true =>
+          simp [ParserState.feedToken, ParserState.withMath, beforeDb,
+            beforeMode, notComment, notInclude, notDelimiter, lexed, lookup,
+            parserObservedState, observedSemanticState, parserSemanticState,
+            logicalTokenMode]
+          change db = db ∧ _ = _
+          exact ⟨rfl, rfl⟩
 
 theorem retainedCall_mathConstant
     {fileId : String} {call : TokenCall}
@@ -1597,7 +1609,7 @@ theorem retainedCall_mathConstant
     parserObservedState call.after =
       ⟨db, .math (symbols.push (.const name.name)) parser⟩ := by
   simpa using retainedCall_mathDeclaredSymbol true significant before_eq
-    spelling charset lookup
+    spelling charset lookup (by simp)
 
 theorem retainedCall_mathVariable
     {fileId : String} {call : TokenCall}
@@ -1608,11 +1620,12 @@ theorem retainedCall_mathVariable
       ⟨db, .math symbols parser⟩)
     (spelling : tokenText entry.1.bytes = name.name)
     (charset : NameCharset mathBytesValid name)
-    (lookup : db.find? name.name = some (.var name.name)) :
+    (lookup : db.find? name.name = some (.var name.name))
+    (active : db.isActiveVar name.name = true) :
     parserObservedState call.after =
       ⟨db, .math (symbols.push (.var name.name)) parser⟩ := by
   simpa using retainedCall_mathDeclaredSymbol false significant before_eq
-    spelling charset lookup
+    spelling charset lookup (by simpa)
 
 /-! ## Fixed statement-boundary transitions -/
 
@@ -1632,8 +1645,8 @@ theorem retainedCall_startCommand
       | '{' => ⟨db.pushScope, .start⟩
       | '}' =>
           ⟨db.popScope (call.before.mkPos call.origin.parserOffset), .start⟩
-      | 'c' => ⟨db, .const⟩
-      | 'v' => ⟨db, .var⟩
+      | 'c' => ⟨db, .const false⟩
+      | 'v' => ⟨db, .var false⟩
       | 'd' => ⟨db, .djvars #[]⟩
       | _ => parserObservedState
           (call.before.label (call.before.mkPos call.origin.parserOffset)
@@ -2020,7 +2033,7 @@ theorem retainedCall_constKeyword
     (significant : significantLocatedEntry? fileId call = some entry)
     (before_eq : parserObservedState call.before = ⟨db, .start⟩)
     (spelling : tokenText entry.1.bytes = "$c") :
-    parserObservedState call.after = ⟨db, .const⟩ := by
+    parserObservedState call.after = ⟨db, .const false⟩ := by
   have entryBytes : entry.1.bytes = constKeywordBytes :=
     retainedBytes_eq_of_spelling spelling (by rfl)
   have entryPair : entry.1.bytes = [36, 99] := by
@@ -2038,7 +2051,7 @@ theorem retainedCall_varKeyword
     (significant : significantLocatedEntry? fileId call = some entry)
     (before_eq : parserObservedState call.before = ⟨db, .start⟩)
     (spelling : tokenText entry.1.bytes = "$v") :
-    parserObservedState call.after = ⟨db, .var⟩ := by
+    parserObservedState call.after = ⟨db, .var false⟩ := by
   have entryBytes : entry.1.bytes = varKeywordBytes :=
     retainedBytes_eq_of_spelling spelling (by rfl)
   have entryPair : entry.1.bytes = [36, 118] := by
@@ -2248,13 +2261,15 @@ theorem LocatedSignificantCallTrace.scopeClose_final
 theorem SourceParserPrefixAgrees.openScope
     {fileId : String} {source next : SourceState}
     {site : LocatedByteSpan}
+    {obligations : List TheoremObligation}
     {initial final : ParserObservedState}
     {entries : List (LocatedToken × TokenCall)}
     (agreement : SourceParserPrefixAgrees source initial)
     (trace : LocatedSignificantCallTrace fileId initial entries final)
     (text_eq : ["${"] =
       entries.map (fun entry => tokenText entry.1.bytes))
-    (applied : applyStatement source (.openScope site) = .ok (next, [])) :
+    (applied : applyStatement source (.openScope site) =
+      .ok (next, obligations)) :
     SourceParserPrefixAgrees next final := by
   rcases initial with ⟨db, mode⟩
   cases agreement.mode_eq
@@ -2282,13 +2297,15 @@ the source-only block-completion marker. -/
 theorem SourceParserPrefixAgrees.closeScope
     {fileId : String} {source next : SourceState}
     {site : LocatedByteSpan}
+    {obligations : List TheoremObligation}
     {initial final : ParserObservedState}
     {entries : List (LocatedToken × TokenCall)}
     (agreement : SourceParserPrefixAgrees source initial)
     (trace : LocatedSignificantCallTrace fileId initial entries final)
     (text_eq : ["$}"] =
       entries.map (fun entry => tokenText entry.1.bytes))
-    (applied : applyStatement source (.closeScope site) = .ok (next, [])) :
+    (applied : applyStatement source (.closeScope site) =
+      .ok (next, obligations)) :
     SourceParserPrefixAgrees next final := by
   rcases initial with ⟨db, mode⟩
   cases agreement.mode_eq
@@ -2614,6 +2631,7 @@ theorem SpelledCallTrace.mathSymbols_final
     (trace : SpelledCallTrace fileId ⟨db, .math initialSymbols parser⟩
       (names.map LocatedName.name) entries final)
     (agreement : RuntimeDBAgrees db source)
+    (sourceValid : sourceStateValid source = true)
     (charsets : ∀ name ∈ names, NameCharset mathBytesValid name)
     (tagged_eq : tagBody source names = .ok tagged) :
     final = ⟨db, .math (appendMathSymbols initialSymbols tagged) parser⟩ := by
@@ -2649,7 +2667,7 @@ theorem SpelledCallTrace.mathSymbols_final
                   cases symbol with
                   | const embedded =>
                       have variableAbsent :
-                          source.declaredVariables.contains name.name ≠ true := by
+                          source.activeVariables.contains name.name ≠ true := by
                         intro variablePresent
                         unfold tagSymbol at symbol_eq
                         rw [if_pos variablePresent] at symbol_eq
@@ -2680,10 +2698,10 @@ theorem SpelledCallTrace.mathSymbols_final
                       simpa [appendMathSymbols] using finalEq
                   | var embedded =>
                       have variablePresent :
-                          source.declaredVariables.contains name.name = true := by
+                          source.activeVariables.contains name.name = true := by
                         unfold tagSymbol at symbol_eq
                         by_cases present :
-                            source.declaredVariables.contains name.name = true
+                            source.activeVariables.contains name.name = true
                         · exact present
                         · rw [if_neg present] at symbol_eq
                           by_cases constantPresent :
@@ -2698,11 +2716,25 @@ theorem SpelledCallTrace.mathSymbols_final
                         exact Sym.var.inj
                           (FoldResult.ok.inj symbol_eq).symm
                       subst embedded
+                      have activeMem :
+                          name.name ∈ source.activeVariables := by
+                        simpa [List.contains_iff_mem] using variablePresent
                       have lookup := find?_var_of_mem_declaredVariables
-                        agreement (by
-                          simpa [List.contains_iff_mem] using variablePresent)
+                        agreement
+                          (activeVariable_declared_of_sourceStateValid
+                            sourceValid activeMem)
+                      have runtimeActive : db.isActiveVar name.name = true := by
+                        unfold DB.isActiveVar
+                        have isVar : db.isVar name.name = true := by
+                          simp [DB.isVar, lookup]
+                        have activeStack :
+                            db.activeVars.any
+                              (fun entry => entry.1 == name.name) = true :=
+                          (activeVars_any_name_eq_true_iff agreement
+                            name.name).2 activeMem
+                        simp [isVar, activeStack]
                       have headFinal := retainedCall_mathVariable significant
-                        before_eq spelling nameCharset lookup
+                        before_eq spelling nameCharset lookup runtimeActive
                       have tail' := tail.reindexInitial headFinal
                       have finalEq := ih tail' restCharsets rest_eq
                       simpa [appendMathSymbols] using finalEq
@@ -3168,6 +3200,7 @@ private noncomputable def SpelledCallTrace.provableFormulaAnchorCore
         (typecode :: body).map LocatedName.name ++ ["$="])
       entries final)
     (agreement : RuntimeDBAgrees db source)
+    (sourceValid : sourceStateValid source = true)
     (labelCharset : NameCharset labelBytesValid label)
     (typecodeCharset : NameCharset mathBytesValid typecode)
     (bodyCharsets :
@@ -3211,7 +3244,7 @@ private noncomputable def SpelledCallTrace.provableFormulaAnchorCore
     · exact typecodeCharset
     · exact bodyCharsets name member
   have afterFormula_eq := formulaTrace'.mathSymbols_final agreement
-    formulaCharsets taggedFormula
+    sourceValid formulaCharsets taggedFormula
   have afterFormula_eq' : afterFormula =
       ⟨db, .math
         (ConstantHeadedFormula.toRuntime ⟨typecode.name, bodySymbols⟩)
@@ -3286,6 +3319,7 @@ noncomputable def SpelledCallTrace.verifiedNormalStatement
       (entries.take formulaPrefix.length) proofInitial := by
     simpa [formulaPrefix] using formulaTrace
   let anchored := formulaTrace'.provableFormulaAnchorCore agreement
+    (insertAssertion?_valid_before inserted)
     labelCharset typecodeCharset bodyCharsets taggedFormula
   let anchor := anchored.2
   have proofTrace' : SpelledCallTrace fileId proofInitial
@@ -3652,6 +3686,75 @@ noncomputable def SpelledCallTrace.compressedClose_final
                 beforePreload (by simpa using isClose)
           rw [feed.observed_eq, after_eq]
 
+/-- The authored compressed-word byte class contains exactly bytes for which
+the invalid-byte policy is observationally irrelevant. -/
+theorem compressedWordByte_upper_or_question (byte : UInt8)
+    (valid : compressedWordByte byte = true) :
+    ('A'.toUInt8 ≤ byte ∧ byte ≤ 'Z'.toUInt8) ∨
+      byte = '?'.toUInt8 := by
+  have exhaustive : ∀ index : Fin 256,
+      compressedWordByte (UInt8.ofNat index.val) = true →
+        ('A'.toUInt8 ≤ UInt8.ofNat index.val ∧
+          UInt8.ofNat index.val ≤ 'Z'.toUInt8) ∨
+        UInt8.ofNat index.val = '?'.toUInt8 := by
+    set_option maxRecDepth 100000 in
+      decide
+  have byte_lt : byte.toNat < 256 := byte.toBitVec.isLt
+  have valid' :
+      compressedWordByte (UInt8.ofNat byte.toNat) = true := by
+    simpa [UInt8.ofNat_toNat] using valid
+  simpa [UInt8.ofNat_toNat] using
+    exhaustive ⟨byte.toNat, byte_lt⟩ valid'
+
+/-- On an authored compressed-word byte, every configured decoder policy
+executes the same step as the rejecting, specification-faithful policy. -/
+theorem decodeCompressedStep_policy_eq_of_compressedWordByte
+    (policy : CompressedInvalidBytePolicy)
+    (initial : MProd (List ParserState.CompressedAction) Nat)
+    (byte : UInt8) (valid : compressedWordByte byte = true) :
+    decodeCompressedStep policy initial byte =
+      decodeCompressedStep .reject initial byte := by
+  rcases compressedWordByte_upper_or_question byte valid with
+      uppercase | question
+  · rcases uppercase with ⟨lower, upper⟩
+    simp [decodeCompressedStep, lower, upper]
+  · subst byte
+    simp [decodeCompressedStep]
+
+/-- A whole authored compressed word has policy-independent fold semantics. -/
+theorem decodeFold_policy_eq_of_all_compressedWordByte
+    (policy : CompressedInvalidBytePolicy) (bytes : List UInt8)
+    (valid : bytes.all compressedWordByte = true)
+    (initial : MProd (List ParserState.CompressedAction) Nat) :
+    bytes.foldlM (decodeCompressedStep policy) initial =
+      bytes.foldlM (decodeCompressedStep .reject) initial := by
+  induction bytes generalizing initial with
+  | nil => rfl
+  | cons byte bytes ih =>
+      simp only [List.all_cons, Bool.and_eq_true] at valid
+      simp only [List.foldlM_cons]
+      rw [decodeCompressedStep_policy_eq_of_compressedWordByte
+        policy initial byte valid.1]
+      cases head : decodeCompressedStep .reject initial byte with
+      | error error => rfl
+      | ok next => exact ih valid.2 next
+
+/-- For a source-valid compressed word, the reader configuration cannot
+change decoding.  This is the exact bridge needed when reflecting a live
+reader run back into the authored rejecting decoder. -/
+theorem decodeCompressed_policy_eq_of_compressedWordValid
+    (tk : ByteSlice) (accumulator : Nat)
+    (policy : CompressedInvalidBytePolicy)
+    (valid : compressedWordValid (sliceBytes tk) = true) :
+    ParserState.decodeCompressed tk accumulator policy =
+      ParserState.decodeCompressed tk accumulator := by
+  have valid' := valid
+  rw [SourceGSLTCompressedMMLean4.sliceBytes_eq_sliceList] at valid'
+  simp only [compressedWordValid, Bool.and_eq_true] at valid'
+  rw [decodeCompressed_eq_fold, decodeCompressed_eq_fold]
+  rw [decodeFold_policy_eq_of_all_compressedWordByte
+    policy (sliceList tk) valid'.2]
+
 /-- The actual compressed-body calls, retained as one fused inner-parser run
 and tied to the exact authored word bytes. -/
 structure ReaderCompressedBody
@@ -3665,6 +3768,7 @@ structure ReaderCompressedBody
       (entries.map (fun entry => entry.2.origin.token)) before = .ok after
   bytes_eq :
     (entries.map (fun entry => entry.2.origin.token)).map sliceBytes = words
+  valid : ∀ word ∈ words, compressedWordValid word = true
   final_observed : final = ⟨db, .proof after⟩
 
 /-- Retained compressed-word calls compose to the implementation's fused
@@ -3686,6 +3790,7 @@ noncomputable def SpelledCallTrace.compressedBody :
         { after := before
           execution := rfl
           bytes_eq := rfl
+          valid := by simp
           final_observed := rfl }
   | fileId, db, before, word :: rest, _, final, anchor, anchorDb,
       trace, charsets => by
@@ -3745,6 +3850,11 @@ noncomputable def SpelledCallTrace.compressedBody :
               bytes_eq := by
                 simp only [List.map_cons]
                 rw [headBytes, restResult.bytes_eq]
+              valid := by
+                intro bytes member
+                rcases List.mem_cons.mp member with rfl | tailMember
+                · exact valid
+                · exact restResult.valid bytes tailMember
               final_observed := restResult.final_observed }
 
 /-- Converse of compressed-token fusion.  A successful token-by-token inner
@@ -3754,6 +3864,8 @@ theorem runCompressedTokenGo_reflect
     (parser : ParserState) :
     ∀ (tokens : List ByteSlice) (accumulator : Nat)
       (initial final : RuntimeProofState),
+      (∀ token ∈ tokens,
+        compressedWordValid (sliceBytes token) = true) →
       runCompressedTokenGo parser tokens
           { initial with ptp := .compressed accumulator } = .ok final →
       ∃ (actions : List ParserState.CompressedAction)
@@ -3766,7 +3878,7 @@ theorem runCompressedTokenGo_reflect
   intro tokens
   induction tokens with
   | nil =>
-      intro accumulator initial final execution
+      intro accumulator initial final _ execution
       simp only [runCompressedTokenGo, List.foldlM_nil, pure,
         Except.pure] at execution
       have finalEq := Except.ok.inj execution
@@ -3779,11 +3891,22 @@ theorem runCompressedTokenGo_reflect
       exact ⟨[], accumulator, initial, by simp [decodeCompressedTokens],
         emptyApplied, rfl⟩
   | cons token tokens ih =>
-      intro accumulator initial final execution
+      intro accumulator initial final valid execution
+      have tokenValid :
+          compressedWordValid (sliceBytes token) = true :=
+        valid token (by simp)
+      have tailValid : ∀ next ∈ tokens,
+          compressedWordValid (sliceBytes next) = true := by
+        intro next member
+        exact valid next (by simp [member])
+      have policyEq :=
+        decodeCompressed_policy_eq_of_compressedWordValid token accumulator
+          parser.db.config.compressedInvalidBytes tokenValid
       cases decoded : ParserState.decodeCompressed token accumulator with
       | error error =>
           simp only [runCompressedTokenGo, List.foldlM_cons,
-            ParserState.feedProof.go, decoded, bind, Except.bind] at execution
+            ParserState.feedProof.go, policyEq, decoded, bind,
+            Except.bind] at execution
           cases execution
       | ok decodedResult =>
           obtain ⟨headActions, nextAccumulator⟩ := decodedResult
@@ -3791,7 +3914,7 @@ theorem runCompressedTokenGo_reflect
               { initial with ptp := .compressed accumulator } headActions with
           | error error =>
               simp only [runCompressedTokenGo, List.foldlM_cons,
-                ParserState.feedProof.go, decoded, applied, bind,
+                ParserState.feedProof.go, policyEq, decoded, applied, bind,
                 Except.bind] at execution
               cases execution
           | ok middle =>
@@ -3800,7 +3923,7 @@ theorem runCompressedTokenGo_reflect
                       { middle with ptp := .compressed nextAccumulator } =
                     .ok final := by
                 simpa only [runCompressedTokenGo, List.foldlM_cons,
-                  ParserState.feedProof.go, decoded, applied, bind,
+                  ParserState.feedProof.go, policyEq, decoded, applied, bind,
                   Except.bind, Functor.map, Except.map, pure,
                   Except.pure] using execution
               let middleCore : RuntimeProofState :=
@@ -3819,7 +3942,7 @@ theorem runCompressedTokenGo_reflect
                 simpa [middleCore] using tailExecution
               obtain ⟨tailActions, finalAccumulator, result,
                 tailDecoded, tailApplied, final_eq⟩ :=
-                ih nextAccumulator middleCore final tailExecution'
+                ih nextAccumulator middleCore final tailValid tailExecution'
               refine ⟨headActions ++ tailActions, finalAccumulator, result,
                 ?_, ?_, final_eq⟩
               · simp [decodeCompressedTokens, decoded, tailDecoded,
@@ -3845,11 +3968,13 @@ structure CompressedTokenGoReflection
 noncomputable def compressedTokenGoReflection
     (parser : ParserState) (tokens : List ByteSlice)
     (accumulator : Nat) (initial final : RuntimeProofState)
+    (valid : ∀ token ∈ tokens,
+      compressedWordValid (sliceBytes token) = true)
     (execution : runCompressedTokenGo parser tokens
       { initial with ptp := .compressed accumulator } = .ok final) :
     CompressedTokenGoReflection parser tokens accumulator initial final := by
   let witness := runCompressedTokenGo_reflect parser tokens accumulator
-    initial final execution
+    initial final valid execution
   let actions := Classical.choose witness
   let witness₁ := Classical.choose_spec witness
   let finalAccumulator := Classical.choose witness₁
@@ -3945,8 +4070,15 @@ noncomputable def ReaderCompressedBody.reflectProgram
       (parser.finishProof body.after).db.error? = none) :
     ReaderReflectedCompressedProgram parser initial words body.after := by
   let tokens := entries.map (fun entry => entry.2.origin.token)
+  have tokensValid : ∀ token ∈ tokens,
+      compressedWordValid (sliceBytes token) = true := by
+    intro token member
+    have bytesMember : sliceBytes token ∈ tokens.map sliceBytes :=
+      List.mem_map_of_mem member
+    rw [body.bytes_eq] at bytesMember
+    exact body.valid (sliceBytes token) bytesMember
   let reflected := compressedTokenGoReflection parser tokens 0 initial
-    body.after (by simpa [tokens] using body.execution)
+    body.after tokensValid (by simpa [tokens] using body.execution)
   have finishConditions :=
     Metamath.ParserAnyModeEquivalence.finishProof_success_stack_conditions
       parser body.after finishSuccess
@@ -4204,6 +4336,7 @@ noncomputable def SpelledCallTrace.acceptedCompressedStatement
       (entries.take formulaPrefix.length) proofInitial := by
     simpa [formulaPrefix] using formulaTrace
   let anchored := formulaTrace'.provableFormulaAnchorCore agreement
+    (insertAssertion?_valid_before inserted)
     labelCharset typecodeCharset bodyCharsets taggedFormula
   let labelPos := anchored.1
   let anchor := anchored.2
@@ -4386,19 +4519,24 @@ noncomputable def SpelledCallTrace.acceptedCompressedStatement
     anchor.state bodyRun.after finished.finish_success
   have finishDB :
       (anchor.state.finishProof bodyRun.after).db =
-        db.insert bodyRun.after.pos label.name
+        (db.insert bodyRun.after.pos label.name
           (.assert formula.toRuntime
-            (mandatoryFrame before formula).toRuntime) := by
+            (mandatoryFrame before formula).toRuntime)).recordIncomplete
+              bodyRun.after.incomplete label.name := by
     calc
       (anchor.state.finishProof bodyRun.after).db =
-          anchor.state.db.insert bodyRun.after.pos bodyRun.after.label
-            (.assert bodyRun.after.fmla bodyRun.after.frame) := finishInsert.1
-      _ = db.insert bodyRun.after.pos label.name
+          (anchor.state.db.insert bodyRun.after.pos bodyRun.after.label
+            (.assert bodyRun.after.fmla bodyRun.after.frame)).recordIncomplete
+              bodyRun.after.incomplete bodyRun.after.label := finishInsert.1
+      _ = (db.insert bodyRun.after.pos label.name
           (.assert formula.toRuntime
-            (mandatoryFrame before formula).toRuntime) := by
+            (mandatoryFrame before formula).toRuntime)).recordIncomplete
+              bodyRun.after.incomplete label.name := by
         rw [anchor.database_eq, bodyLabel, bodyFormula, bodyFrame]
   have nextAgreement := RuntimeDBAgrees.insertAssertion agreement inserted
     bodyRun.after.pos
+  have recordedAgreement := nextAgreement.recordIncomplete
+    bodyRun.after.incomplete label.name
   let runtimeProgram := program.toRuntimeEvidence db anchor.database_eq
     runtimeFinalStack
   refine
@@ -4417,10 +4555,11 @@ noncomputable def SpelledCallTrace.acceptedCompressedStatement
       database := ?_
       interrupt_eq := ?_ }
   rw [finishDB]
-  exact nextAgreement
+  exact recordedAgreement
   rw [finishDB]
-  exact (runtimeInsert_interrupt db bodyRun.after.pos label.name _).trans
-    interruptEq
+  simpa using
+    (runtimeInsert_interrupt db bodyRun.after.pos label.name _).trans
+      interruptEq
 
 /-- Promote common reader acceptance to proof-producing acceptance only after
 the decoded words supply a non-vacuous verified-program witness. -/
@@ -4617,6 +4756,7 @@ noncomputable def SpelledCallTrace.provableFormula_parserAnchor
         (typecode :: body).map LocatedName.name ++ ["$="])
       entries final)
     (agreement : RuntimeDBAgrees db source)
+    (sourceValid : sourceStateValid source = true)
     (labelCharset : NameCharset labelBytesValid label)
     (typecodeCharset : NameCharset mathBytesValid typecode)
     (bodyCharsets :
@@ -4627,8 +4767,8 @@ noncomputable def SpelledCallTrace.provableFormula_parserAnchor
       ParserProofAnchor db
         (ConstantHeadedFormula.toRuntime ⟨typecode.name, bodySymbols⟩)
         labelPos label.name final :=
-  trace.provableFormulaAnchorCore agreement labelCharset typecodeCharset
-    bodyCharsets taggedFormula
+  trace.provableFormulaAnchorCore agreement sourceValid labelCharset
+    typecodeCharset bodyCharsets taggedFormula
 
 /-- Proposition-valued projection of `provableFormula_parserAnchor`. -/
 theorem SpelledCallTrace.provableFormula_anchor
@@ -4642,6 +4782,7 @@ theorem SpelledCallTrace.provableFormula_anchor
         (typecode :: body).map LocatedName.name ++ ["$="])
       entries final)
     (agreement : RuntimeDBAgrees db source)
+    (sourceValid : sourceStateValid source = true)
     (labelCharset : NameCharset labelBytesValid label)
     (typecodeCharset : NameCharset mathBytesValid typecode)
     (bodyCharsets :
@@ -4656,8 +4797,8 @@ theorem SpelledCallTrace.provableFormula_anchor
           (db.mkProofState labelPos label.name
             (ConstantHeadedFormula.toRuntime
               ⟨typecode.name, bodySymbols⟩) frame)⟩ := by
-  let result := trace.provableFormula_parserAnchor agreement labelCharset
-    typecodeCharset bodyCharsets taggedFormula
+  let result := trace.provableFormula_parserAnchor agreement sourceValid
+    labelCharset typecodeCharset bodyCharsets taggedFormula
   let anchor := result.2
   refine ⟨result.1, anchor.frame, anchor.trim, ?_⟩
   calc

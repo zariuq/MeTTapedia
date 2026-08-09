@@ -4,7 +4,7 @@ import Mettapedia.Logic.BDD.FirstOrderProbMeTTaBridge
 /-!
 # First-Order Annotated Disjunctions via Grounding
 
-This file adds a first-order annotated-disjunction surface layer and reduces it
+This file adds a first-order annotated-disjunction source-language layer and reduces it
 to the existing ground AD translation by explicit grounding.
 
 Positive example:
@@ -111,18 +111,18 @@ def GroundedFirstOrderWeightedADInstance.toGroundAD {σ : LPSignature}
     (inst : GroundedFirstOrderWeightedADInstance σ) : AnnotatedDisjunction σ :=
   inst.toGroundWeightedAD.toAnnotatedDisjunction
 
-/-- A first-order ProbLog surface with both normal rules and annotated
+/-- A first-order ProbLog source language with both normal rules and annotated
     disjunctions. -/
 structure FirstOrderADProbLogProgram (σ : LPSignature) (n : ℕ)
     extends FirstOrderNormalProbLogProgram σ n where
   annotatedDisjunctions : List (FirstOrderAnnotatedDisjunction σ)
 
-/-- A first-order ProbLog surface with weighted annotated disjunctions. -/
+/-- A first-order ProbLog source language with weighted annotated disjunctions. -/
 structure FirstOrderWeightedADProbLogProgram (σ : LPSignature) (n : ℕ)
     extends FirstOrderNormalProbLogProgram σ n where
   annotatedDisjunctions : List (FirstOrderWeightedAnnotatedDisjunction σ)
 
-/-- Forget the AD surface and keep only the first-order normal-rule layer. -/
+/-- Forget the AD source language and keep only the first-order normal-rule layer. -/
 def FirstOrderADProbLogProgram.toFirstOrderNormalProgram
     {σ : LPSignature} {n : ℕ}
     (prog : FirstOrderADProbLogProgram σ n) : FirstOrderNormalProbLogProgram σ n where
@@ -132,7 +132,7 @@ def FirstOrderADProbLogProgram.toFirstOrderNormalProgram
   facts_injective := prog.facts_injective
   normalRules := prog.normalRules
 
-/-- Forget the weighted AD surface and keep only the first-order normal-rule
+/-- Forget the weighted AD source language and keep only the first-order normal-rule
     layer. -/
 def FirstOrderWeightedADProbLogProgram.toFirstOrderNormalProgram
     {σ : LPSignature} {n : ℕ}
@@ -144,7 +144,7 @@ def FirstOrderWeightedADProbLogProgram.toFirstOrderNormalProgram
   facts_injective := prog.facts_injective
   normalRules := prog.normalRules
 
-/-- Forget the AD probabilities and reuse the existing first-order AD surface. -/
+/-- Forget the AD probabilities and reuse the existing first-order AD source language. -/
 def FirstOrderWeightedADProbLogProgram.toUnweightedFirstOrderADProgram
     {σ : LPSignature} {n : ℕ}
     (prog : FirstOrderWeightedADProbLogProgram σ n) :
@@ -195,7 +195,7 @@ noncomputable def FirstOrderADProbLogProgram.expandGroundedADInstances
   prog.groundedADInstances.flatMap fun inst =>
     expandAD inst.toGroundAD (auxAtoms inst)
 
-/-- Ground and expand the first-order AD surface into the existing ground
+/-- Ground and expand the first-order AD source language into the existing ground
     normal-program layer. -/
 noncomputable def FirstOrderADProbLogProgram.toGroundExpandedNormalProgram
     {σ : LPSignature} {n : ℕ}
@@ -224,7 +224,7 @@ def FirstOrderADProbLogProgram.GroundedExpandedStratified
     (s : Stratification σ) : Prop :=
   ∀ c ∈ (prog.toGroundExpandedNormalProgram auxAtoms).normalRules, respectsStratification c s
 
-/-- Query semantics for the first-order AD surface: ground and expand, then use
+/-- Query semantics for the first-order AD source language: ground and expand, then use
     the existing ground normal-program semantics. -/
 noncomputable def queryHoldsGroundedADA
     {σ : LPSignature} {n : ℕ}
@@ -236,7 +236,7 @@ noncomputable def queryHoldsGroundedADA
     (s : Stratification σ) (q : GroundAtom σ) (a : Fin n → Bool) : Prop :=
   queryHoldsNormalA (prog.toGroundExpandedNormalProgram auxAtoms) s q a
 
-/-- Goal-literal interpretation for the grounded-expanded AD surface. -/
+/-- Goal-literal interpretation for the grounded-expanded AD source language. -/
 noncomputable def GoalLit.holdsGroundedAD
     {σ : LPSignature} {n : ℕ}
     [Fintype σ.vars] [DecidableEq σ.vars]
@@ -248,7 +248,7 @@ noncomputable def GoalLit.holdsGroundedAD
   GoalLit.holdsNormal (prog.toGroundExpandedNormalProgram auxAtoms) s a
 
 /-- First-order goal-literal interpretation for the grounded-expanded AD
-    surface. -/
+    representation. -/
 noncomputable def FirstOrderGoalLit.holdsGroundedAD
     {σ : LPSignature} {n : ℕ}
     [Fintype σ.vars] [DecidableEq σ.vars]
@@ -296,7 +296,7 @@ noncomputable def FirstOrderGoalLit.holdsGroundedAD
 
 /-- **First-order AD ProbLog equivalence via grounding and expansion.**
 
-    This is the first-order surface lift of the current ground AD/normal crown
+    This is the first-order source-level lift of the current ground AD/normal crown
     theorem: first ground the normal rules and ADs, expand the ADs into normal
     clauses, then apply the existing ground theorem. -/
 theorem problog_functionFree_ad_equivalence {σ : LPSignature} {n : ℕ}
@@ -327,12 +327,12 @@ theorem problog_functionFree_ad_equivalence {σ : LPSignature} {n : ℕ}
     (problog_full_ground_equivalence
       (prog.toGroundExpandedNormalProgram auxAtoms) s goalsQ goalsE env henv hEpos)
 
-/-- **First-order AD ProbLog surface equivalence via grounding and expansion.**
+/-- **First-order AD ProbLog source equivalence via grounding and expansion.**
 
     This lifts `problog_functionFree_ad_equivalence` to first-order query and
     evidence goals by grounding those goals explicitly before invoking the
     existing ground AD/normal bridge. -/
-theorem problog_functionFree_ad_surface_equivalence {σ : LPSignature} {n : ℕ}
+theorem problog_functionFree_ad_source_equivalence {σ : LPSignature} {n : ℕ}
     [IsEmpty σ.functionSymbols] [Nonempty (GroundTerm σ)]
     [Fintype σ.vars] [DecidableEq σ.vars]
     [Fintype σ.constants] [DecidableEq σ.constants]
@@ -479,7 +479,7 @@ noncomputable def FirstOrderWeightedADProbLogProgram.expandGroundedWeightedADIns
   prog.groundedWeightedADInstances.flatMap fun inst =>
     expandAD inst.toGroundAD (FirstOrderWeightedADCompilation.auxAtom comp inst)
 
-/-- Ground and expand the weighted first-order AD surface into the existing
+/-- Ground and expand the weighted first-order AD source language into the existing
     ground normal-program layer using the switches chosen by `comp`. -/
 noncomputable def FirstOrderWeightedADProbLogProgram.toGroundExpandedNormalProgram
     {σ : LPSignature} {n : ℕ}
@@ -834,13 +834,13 @@ noncomputable def FirstOrderGoalLit.holdsCompiledWeightedADProgram
       FirstOrderGoalLit.holdsCompiledWeightedAD
         prog compiled.comp goalGrounding compiled.stratification a g := rfl
 
-/-- **Operational weighted first-order AD surface theorem.**
+/-- **Operational weighted first-order AD source theorem.**
 
     This is the strongest current user-facing theorem: a function-free
     first-order program with weighted AD syntax, first-order queries/evidence,
     and a bundled switch compilation witness reduces to the proved ground
     AD/normal bridge using the program's own probabilistic fact weights. -/
-theorem problog_functionFree_weighted_ad_surface_equivalence
+theorem problog_functionFree_weighted_ad_source_equivalence
     {σ : LPSignature} {n : ℕ}
     [IsEmpty σ.functionSymbols] [Nonempty (GroundTerm σ)]
     [Fintype σ.vars] [DecidableEq σ.vars]
@@ -941,10 +941,10 @@ theorem problog_functionFree_weighted_ad_surface_equivalence
     programs.**
 
     This is the same theorem as
-    `problog_functionFree_weighted_ad_surface_equivalence`, but phrased around a
+    `problog_functionFree_weighted_ad_source_equivalence`, but phrased around a
     compiled program object so downstream callers do not need to thread the
     compilation witness and stratification proof separately. -/
-theorem FirstOrderWeightedADCompiledProgram.surface_equivalence
+theorem FirstOrderWeightedADCompiledProgram.source_equivalence
     {σ : LPSignature} {n : ℕ}
     [IsEmpty σ.functionSymbols] [Nonempty (GroundTerm σ)]
     [Fintype σ.vars] [DecidableEq σ.vars]
@@ -978,7 +978,7 @@ theorem FirstOrderWeightedADCompiledProgram.surface_equivalence
         assignmentWeight prog.probs a ≠ 0 := by
     simpa [FirstOrderGoalLit.holdsCompiledWeightedADProgram_eq] using hEpos
   obtain ⟨fQE, fE, hordQE, hordE, hwmcE, hratio, hiffQE, hiffE⟩ :=
-    problog_functionFree_weighted_ad_surface_equivalence
+    problog_functionFree_weighted_ad_source_equivalence
       prog compiled.comp compiled.stratification compiled.groundedExpandedStratified
       goalGrounding goalsQ goalsE hprobs hEpos'
   refine ⟨fQE, fE, hordQE, hordE, hwmcE, hratio, ?_, ?_⟩
@@ -993,7 +993,7 @@ theorem FirstOrderWeightedADCompiledProgram.surface_equivalence
     This packages the grounded normal stratification and the structured
     grounded-AD stratification separately, then recovers the ordinary compiled
     program bridge automatically. -/
-theorem FirstOrderWeightedADStructuredCompiledProgram.surface_equivalence
+theorem FirstOrderWeightedADStructuredCompiledProgram.source_equivalence
     {σ : LPSignature} {n : ℕ}
     [IsEmpty σ.functionSymbols] [Nonempty (GroundTerm σ)]
     [Fintype σ.vars] [DecidableEq σ.vars]
@@ -1023,7 +1023,7 @@ theorem FirstOrderWeightedADStructuredCompiledProgram.surface_equivalence
           FirstOrderGoalLit.holdsCompiledWeightedADProgram
             compiled.toCompiledProgram goalGrounding a g) := by
   simpa using
-    (FirstOrderWeightedADCompiledProgram.surface_equivalence
+    (FirstOrderWeightedADCompiledProgram.source_equivalence
       (compiled := compiled.toCompiledProgram)
       goalGrounding goalsQ goalsE hprobs hEpos)
 
@@ -1125,8 +1125,8 @@ def FirstOrderWeightedADSourceStructuredCompilation.toStructuredCompiledProgram
   structuredGroundedADStratification := data.structuredGroundedADStratification
 
 /-- Source-level structured compilation data suffices to invoke the full
-    weighted first-order AD surface theorem. -/
-theorem FirstOrderWeightedADSourceStructuredCompilation.surface_equivalence
+    weighted first-order AD source theorem. -/
+theorem FirstOrderWeightedADSourceStructuredCompilation.source_equivalence
     {σ : LPSignature} {n : ℕ}
     [IsEmpty σ.functionSymbols] [Nonempty (GroundTerm σ)]
     [Fintype σ.vars] [DecidableEq σ.vars]
@@ -1156,7 +1156,7 @@ theorem FirstOrderWeightedADSourceStructuredCompilation.surface_equivalence
           FirstOrderGoalLit.holdsCompiledWeightedADProgram
             data.toStructuredCompiledProgram.toCompiledProgram goalGrounding a g) := by
   simpa using
-    (FirstOrderWeightedADStructuredCompiledProgram.surface_equivalence
+    (FirstOrderWeightedADStructuredCompiledProgram.source_equivalence
       (compiled := data.toStructuredCompiledProgram)
       goalGrounding goalsQ goalsE hprobs hEpos)
 
@@ -1185,8 +1185,8 @@ def FirstOrderWeightedADProbLogProgram.SourceStructuredEvidenceSatisfiable
           data.toStructuredCompiledProgram.toCompiledProgram goalGrounding a g) ∧
       assignmentWeight prog.probs a ≠ 0
 
-/-- Existence-style source-level structured surface theorem. -/
-theorem exists_surface_equivalence_of_sourceStructuredEvidenceSatisfiable
+/-- Existence-style source-level structured source theorem. -/
+theorem exists_source_equivalence_of_sourceStructuredEvidenceSatisfiable
     {σ : LPSignature} {n : ℕ}
     [IsEmpty σ.functionSymbols] [Nonempty (GroundTerm σ)]
     [Fintype σ.vars] [DecidableEq σ.vars]
@@ -1213,7 +1213,7 @@ theorem exists_surface_equivalence_of_sourceStructuredEvidenceSatisfiable
               data.toStructuredCompiledProgram.toCompiledProgram goalGrounding a g) := by
   rcases hsat with ⟨data, a, haE, haw⟩
   obtain ⟨fQE, fE, hordQE, hordE, hwmcE, hratio, hiffQE, hiffE⟩ :=
-    data.surface_equivalence goalGrounding goalsQ goalsE hprobs ⟨a, haE, haw⟩
+    data.source_equivalence goalGrounding goalsQ goalsE hprobs ⟨a, haE, haw⟩
   exact ⟨data, fQE, fE, hordQE, hordE, hwmcE, hratio, hiffQE, hiffE⟩
 
 /-- A grounded weighted AD instance is locally structurably compilable at `s`
@@ -1313,7 +1313,7 @@ noncomputable def FirstOrderWeightedADProbLogProgram.chooseSourceStructuredCompi
 /-- Operational weighted first-order AD theorem driven by local per-instance
     compilability assumptions; the global source-structured compilation witness
     is constructed automatically by choice. -/
-theorem FirstOrderWeightedADProbLogProgram.surface_equivalence_of_locallyStructurablyCompilable
+theorem FirstOrderWeightedADProbLogProgram.source_equivalence_of_locallyStructurablyCompilable
     {σ : LPSignature} {n : ℕ}
     [IsEmpty σ.functionSymbols] [Nonempty (GroundTerm σ)]
     [Nonempty (Fin n)]
@@ -1347,7 +1347,7 @@ theorem FirstOrderWeightedADProbLogProgram.surface_equivalence_of_locallyStructu
             ((prog.chooseSourceStructuredCompilation hcomp).toStructuredCompiledProgram.toCompiledProgram)
             goalGrounding a g) := by
   simpa using
-    (FirstOrderWeightedADSourceStructuredCompilation.surface_equivalence
+    (FirstOrderWeightedADSourceStructuredCompilation.source_equivalence
       (data := prog.chooseSourceStructuredCompilation hcomp)
       goalGrounding goalsQ goalsE hprobs hEpos)
 
@@ -1370,7 +1370,7 @@ def FirstOrderWeightedADProbLogProgram.LocallyStructuredEvidenceSatisfiable
       assignmentWeight prog.probs a ≠ 0
 
 /-- Highest-level existence theorem for the automatic local-choice route. -/
-theorem exists_surface_equivalence_of_locallyStructuredEvidenceSatisfiable
+theorem exists_source_equivalence_of_locallyStructuredEvidenceSatisfiable
     {σ : LPSignature} {n : ℕ}
     [IsEmpty σ.functionSymbols] [Nonempty (GroundTerm σ)]
     [Nonempty (Fin n)]
@@ -1399,7 +1399,7 @@ theorem exists_surface_equivalence_of_locallyStructuredEvidenceSatisfiable
   rcases hsat with ⟨hcomp, a, haE, haw⟩
   let data := prog.chooseSourceStructuredCompilation hcomp
   obtain ⟨fQE, fE, hordQE, hordE, hwmcE, hratio, hiffQE, hiffE⟩ :=
-    prog.surface_equivalence_of_locallyStructurablyCompilable
+    prog.source_equivalence_of_locallyStructurablyCompilable
       hcomp goalGrounding goalsQ goalsE hprobs ⟨a, haE, haw⟩
   exact ⟨data, fQE, fE, hordQE, hordE, hwmcE, hratio, hiffQE, hiffE⟩
 
@@ -1427,13 +1427,13 @@ def FirstOrderWeightedADProbLogProgram.StructuredEvidenceSatisfiable
           compiled.toCompiledProgram goalGrounding a g) ∧
       assignmentWeight prog.probs a ≠ 0
 
-/-- **Existence-style weighted first-order AD surface theorem.**
+/-- **Existence-style weighted first-order AD source theorem.**
 
-    If a weighted first-order AD surface program admits some compiled witness,
+    If a weighted first-order AD source language program admits some compiled witness,
     then there exist BDDs realising the corresponding query/evidence semantics.
     This hides the witness from theorem consumers while remaining honest about
     the need for a valid compilation. -/
-theorem exists_surface_equivalence_of_exists_compiled
+theorem exists_source_equivalence_of_exists_compiled
     {σ : LPSignature} {n : ℕ}
     [IsEmpty σ.functionSymbols] [Nonempty (GroundTerm σ)]
     [Fintype σ.vars] [DecidableEq σ.vars]
@@ -1463,17 +1463,17 @@ theorem exists_surface_equivalence_of_exists_compiled
             FirstOrderGoalLit.holdsCompiledWeightedADProgram compiled goalGrounding a g) := by
   rcases hexists with ⟨compiled, a, haE, haw⟩
   obtain ⟨fQE, fE, hordQE, hordE, hwmcE, hratio, hiffQE, hiffE⟩ :=
-    compiled.surface_equivalence goalGrounding goalsQ goalsE hprobs ⟨a, haE, haw⟩
+    compiled.source_equivalence goalGrounding goalsQ goalsE hprobs ⟨a, haE, haw⟩
   exact ⟨compiled, fQE, fE, hordQE, hordE, hwmcE, hratio, hiffQE, hiffE⟩
 
-/-- **Existence-style weighted first-order AD surface theorem for the
+/-- **Existence-style weighted first-order AD source theorem for the
     compositional compiled-program interface.**
 
     This is the highest-level honest wrapper currently available for the
     compositional route: assume evidence is satisfiable under some structured
     compilation witness, then obtain BDDs realising the query/evidence
     semantics for that witness. -/
-theorem exists_surface_equivalence_of_structuredEvidenceSatisfiable
+theorem exists_source_equivalence_of_structuredEvidenceSatisfiable
     {σ : LPSignature} {n : ℕ}
     [IsEmpty σ.functionSymbols] [Nonempty (GroundTerm σ)]
     [Fintype σ.vars] [DecidableEq σ.vars]
@@ -1500,7 +1500,7 @@ theorem exists_surface_equivalence_of_structuredEvidenceSatisfiable
               compiled.toCompiledProgram goalGrounding a g) := by
   rcases hsat with ⟨compiled, a, haE, haw⟩
   obtain ⟨fQE, fE, hordQE, hordE, hwmcE, hratio, hiffQE, hiffE⟩ :=
-    compiled.surface_equivalence goalGrounding goalsQ goalsE hprobs ⟨a, haE, haw⟩
+    compiled.source_equivalence goalGrounding goalsQ goalsE hprobs ⟨a, haE, haw⟩
   exact ⟨compiled, fQE, fE, hordQE, hordE, hwmcE, hratio, hiffQE, hiffE⟩
 
 /-- **Operational weighted first-order AD theorem from decomposed
@@ -1509,7 +1509,7 @@ theorem exists_surface_equivalence_of_structuredEvidenceSatisfiable
     This theorem avoids proving stratification of the fully expanded program in
     one shot: it is enough to prove stratification of the grounded normal layer
     and of the grounded AD expansions separately. -/
-theorem surface_equivalence_of_parts
+theorem source_equivalence_of_parts
     {σ : LPSignature} {n : ℕ}
     [IsEmpty σ.functionSymbols] [Nonempty (GroundTerm σ)]
     [Fintype σ.vars] [DecidableEq σ.vars]
@@ -1545,7 +1545,7 @@ theorem surface_equivalence_of_parts
             (FirstOrderWeightedADCompiledProgram.ofParts comp s hnormal hAD)
             goalGrounding a g) := by
   simpa using
-    (FirstOrderWeightedADCompiledProgram.surface_equivalence
+    (FirstOrderWeightedADCompiledProgram.source_equivalence
       (compiled :=
         FirstOrderWeightedADCompiledProgram.ofParts comp s hnormal hAD)
       goalGrounding goalsQ goalsE hprobs hEpos)
@@ -1557,7 +1557,7 @@ theorem surface_equivalence_of_parts
     layer is stratified, and separately prove that each grounded AD instance has
     body atoms below all heads and switches strictly below all heads. The full
     AD-expanded bridge then follows automatically. -/
-theorem surface_equivalence_of_structured
+theorem source_equivalence_of_structured
     {σ : LPSignature} {n : ℕ}
     [IsEmpty σ.functionSymbols] [Nonempty (GroundTerm σ)]
     [Fintype σ.vars] [DecidableEq σ.vars]
@@ -1596,7 +1596,7 @@ theorem surface_equivalence_of_structured
               (comp.groundedADRulesRespectStratification_of_structured s hstructured))
             goalGrounding a g) := by
   simpa using
-    (surface_equivalence_of_parts prog comp s hnormal
+    (source_equivalence_of_parts prog comp s hnormal
       (comp.groundedADRulesRespectStratification_of_structured s hstructured)
       goalGrounding goalsQ goalsE hprobs hEpos)
 

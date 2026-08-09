@@ -1410,7 +1410,6 @@ theorem languageStep_implies_mork_fireSourceRule
     (relEnv : ILRelEnv) (lang : ILDL) (p q : ILP)
     (step : Mettapedia.OSLF.MeTTaIL.ContextualStep.Step
       (Mettapedia.OSLF.MeTTaIL.ContextualStep.engineBasePremises relEnv) lang p q)
-    (hplain : lang.reflectivePresentations = [])
     (noncontextual : ∀ rule, rule ∈ lang.rewrites →
       Mettapedia.OSLF.MeTTaIL.ContextualStep.NoncontextualPremises rule.premises)
     (hlhs : ∀ rule ∈ lang.rewrites,
@@ -1436,9 +1435,9 @@ theorem languageStep_implies_mork_fireSourceRule
       noncontextual).mp step
   obtain ⟨rule, ruleMember, initial, matched, final, premises, targetEq⟩ := root
   have matched' : initial ∈ ilMatchPattern rule.left p := by
-    simpa [hplain] using matched
+    simpa using matched
   have targetEq' : ilApplyBindings final rule.right = q := by
-    simpa [hplain] using targetEq
+    simpa using targetEq
   obtain ⟨name, leftEq⟩ := hlhs rule ruleMember
   obtain ⟨witnesses, chain, nodup, disjoint⟩ :=
     hchain rule ruleMember initial matched' final premises
@@ -1456,7 +1455,6 @@ theorem languageStep_implies_mork_fireSourceRuleExt
     (relEnv : ILRelEnv) (lang : ILDL) (p q : ILP)
     (step : Mettapedia.OSLF.MeTTaIL.ContextualStep.Step
       (Mettapedia.OSLF.MeTTaIL.ContextualStep.engineBasePremises relEnv) lang p q)
-    (hplain : lang.reflectivePresentations = [])
     (noncontextual : ∀ rule, rule ∈ lang.rewrites →
       Mettapedia.OSLF.MeTTaIL.ContextualStep.NoncontextualPremises rule.premises)
     (hlhs : ∀ rule ∈ lang.rewrites,
@@ -1484,9 +1482,9 @@ theorem languageStep_implies_mork_fireSourceRuleExt
       noncontextual).mp step
   obtain ⟨rule, ruleMember, initial, matched, final, premises, targetEq⟩ := root
   have matched' : initial ∈ ilMatchPattern rule.left p := by
-    simpa [hplain] using matched
+    simpa using matched
   have targetEq' : ilApplyBindings final rule.right = q := by
-    simpa [hplain] using targetEq
+    simpa using targetEq
   obtain ⟨name, leftEq⟩ := hlhs rule ruleMember
   obtain ⟨witnesses, chain, nodup, disjoint, guards⟩ :=
     hchain rule ruleMember initial matched' final premises

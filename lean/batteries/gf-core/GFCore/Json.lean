@@ -9,7 +9,7 @@ JSON format for RawTerm (matches GF PGF export):
   {"fun": "PredVP", "cat": "S", "args": [...]}   -- with optional cat hint
 
 JSON format for ParseCandidate:
-  {"language": "Eng", "surface": "...", "prob": 1.5, "tree": {...}}
+  {"language": "Eng", "text": "...", "prob": 1.5, "tree": {...}}
 -/
 
 import Lean.Data.Json
@@ -52,7 +52,7 @@ instance : ToJson ParseCandidate where
   toJson pc :=
     let fields : List (String × Json) := [
       ("language", toJson pc.language),
-      ("surface", toJson pc.surface),
+      ("text", toJson pc.text),
       ("tree", toJson pc.tree)
     ]
     let fields := match pc.prob? with
@@ -63,10 +63,10 @@ instance : ToJson ParseCandidate where
 instance : FromJson ParseCandidate where
   fromJson? j := do
     let language ← j.getObjValAs? String "language"
-    let surface ← j.getObjValAs? String "surface"
+    let text ← j.getObjValAs? String "text"
     let prob? : Option Float := (j.getObjValAs? Float "prob").toOption
     let tree ← j.getObjValAs? RawTerm "tree"
-    pure { language, surface, prob?, tree }
+    pure { language, text, prob?, tree }
 
 -- ============================================================
 -- FunDecl JSON
@@ -214,17 +214,17 @@ instance : ToJson Analysis where
     | .exact _expr source => Json.mkObj [
         ("status", "exact"), ("source", toJson source)]
         -- Note: CheckedExpr not serialized (it's reconstructed from RawTerm + sig)
-    | .opaque surface reason => Json.mkObj [
-        ("status", "opaque"), ("surface", toJson surface), ("reason", toJson reason)]
+    | .opaque text reason => Json.mkObj [
+        ("status", "opaque"), ("text", toJson text), ("reason", toJson reason)]
 
 instance : FromJson Analysis where
   fromJson? j := do
     let status ← j.getObjValAs? String "status"
     match status with
     | "opaque" => do
-      let surface ← j.getObjValAs? String "surface"
+      let text ← j.getObjValAs? String "text"
       let reason ← j.getObjValAs? FailureClass "reason"
-      pure (.opaque surface reason)
+      pure (.opaque text reason)
     | _ => throw "Analysis.exact cannot be deserialized (needs GrammarSig + RawTerm)"
 
 end GFCore

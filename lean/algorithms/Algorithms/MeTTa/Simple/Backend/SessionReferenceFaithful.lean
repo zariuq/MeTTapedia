@@ -9,7 +9,7 @@ abbrev SessionWF : Session → Prop := Session.WF
 abbrev Status := Session.FuelResult
 
 /-- Public fuel policy for the faithful status-based reference backend.
-    We reuse the same policy as `SessionReferenceTotal` so the two surfaces can be
+    We reuse the same policy as `SessionReferenceTotal` so the two interfaces can be
     related directly on covered fragments. -/
 def referenceFuel (s : Session) : Nat :=
   SessionReferenceTotal.referenceFuel s

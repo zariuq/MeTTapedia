@@ -257,9 +257,43 @@ def sourceAssertionRule (callerFrame : SourceFrame)
             resultFormula ]
     conclusion := proves resultFormula }
 
+@[simp] theorem sourceAssertionRule_id_value
+    (callerFrame : SourceFrame) (assertion : SourceAssertion) :
+    (sourceAssertionRule callerFrame assertion).id.value = assertion.label := by
+  rfl
+
 def sourceGeneratedRules (source : SourcePrefix) : List SourceRuleSchema :=
   source.activeHypotheses.map activeHypothesisRule ++
     source.assertions.map (sourceAssertionRule source.callerFrame)
+
+/-- Generated rule identifiers retain exactly the authored active-hypothesis
+and assertion label order. -/
+@[simp] theorem sourceGeneratedRuleIdValues (source : SourcePrefix) :
+    (sourceGeneratedRules source).map (fun rule => rule.id.value) =
+      sourcePrefixRuleLabels source := by
+  have activeId : ∀ hypothesis : HypothesisView,
+      (activeHypothesisRule hypothesis).id.value = hypothesis.label := by
+    intro hypothesis
+    rfl
+  have assertionId : ∀ assertion : SourceAssertion,
+      (sourceAssertionRule source.callerFrame assertion).id.value =
+        assertion.label := by
+    intro assertion
+    rfl
+  simp only [sourceGeneratedRules, sourcePrefixRuleLabels,
+    List.map_append, List.map_map]
+  have activeMap :
+      source.activeHypotheses.map
+          ((fun rule => rule.id.value) ∘ activeHypothesisRule) =
+        source.activeHypotheses.map HypothesisView.label :=
+    List.map_congr_left fun hypothesis _ => activeId hypothesis
+  have assertionMap :
+      source.assertions.map
+          ((fun rule => rule.id.value) ∘
+            sourceAssertionRule source.callerFrame) =
+        source.assertions.map SourceAssertion.label :=
+    List.map_congr_left fun assertion _ => assertionId assertion
+  rw [activeMap, assertionMap]
 
 @[simp] theorem sourceAssertionSubstitution_eq_runtime
     (assertion : SourceAssertion) :
@@ -293,10 +327,10 @@ def presentationOfSourcePrefix? (source : SourcePrefix) :
   guard (sourceRuleIdsDisjoint
     (sourceRules.map Mettapedia.OSLF.MeTTaIL.Syntax.RuleSchema.id))
   some
-    { language :=
-        { languageWithSourceVocabulary vocabulary with
-          judgments := judgmentDecls ++ [provesDecl]
-          inferenceRules := sideRules ++ sourceRules } }
+    { language := languageWithSourceVocabulary vocabulary
+      calculus :=
+        { judgments := judgmentDecls ++ [provesDecl]
+          rules := sideRules ++ sourceRules } }
 
 /-- The source-owned and runtime-projection presentation generators agree
 extensionally, although their input authority and frame representations are

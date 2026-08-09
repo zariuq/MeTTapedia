@@ -1,4 +1,4 @@
-import Mettapedia.Logic.BDD.ProbMeTTaSourceSurface
+import Mettapedia.Logic.BDD.ProbMeTTaSourceSyntax
 import Mettapedia.Logic.LP.Matching
 
 /-!
@@ -96,7 +96,7 @@ abbrev ProbMeTTaSourceProgram.LiteralHeadWitness {σ : LPSignature} {n : ℕ}
     (goal : Atom σ) := { head : GroundAtom σ // head ∈ prog.literalMatchingHeads goal }
 
 /-- Any literal match witness induces a rule-head witness in the older
-normalized source surface. -/
+normalized source syntax. -/
 def ProbMeTTaSourceProgram.literalWitnessToHeadWitness
     {σ : LPSignature} {n : ℕ}
     [DecidableEq σ.vars] [DecidableEq σ.constants]

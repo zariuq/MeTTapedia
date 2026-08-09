@@ -10,7 +10,7 @@ namespace Mettapedia.Languages.MeTTa.DTTTutorialStatus
 
 inductive AxisStatus where
   | proved
-  | surface
+  | syntaxSupport
   | represented
   | partialSupport
   | openIssue
@@ -43,15 +43,15 @@ def boolNatStatus : LadderCaseStatus :=
     pureKernel := .proved
     mettail := .represented
     mm2 := .represented
-    hePrime := .surface
-    nextObligation := "keep constants aligned across declaration specs and surface annotations" }
+    hePrime := .syntaxSupport
+    nextObligation := "keep constants aligned across declaration specs and syntax annotations" }
 
 def finVecStatus : LadderCaseStatus :=
   { caseName := "Fin-indexed Vec safe indexing"
     pureKernel := .openIssue
     mettail := .represented
     mm2 := .openIssue
-    hePrime := .surface
+    hePrime := .syntaxSupport
     nextObligation := "add indexed-family declaration/elaboration proof path" }
 
 def equalityCongStatus : LadderCaseStatus :=
@@ -59,23 +59,23 @@ def equalityCongStatus : LadderCaseStatus :=
     pureKernel := .proved
     mettail := .represented
     mm2 := .openIssue
-    hePrime := .surface
-    nextObligation := "connect surface equality proofs to PureKernel Id terms" }
+    hePrime := .syntaxSupport
+    nextObligation := "connect source equality proofs to PureKernel Id terms" }
 
 def dependentPairStatus : LadderCaseStatus :=
   { caseName := "Dependent pair/proof packaging"
     pureKernel := .proved
     mettail := .represented
     mm2 := .openIssue
-    hePrime := .surface
-    nextObligation := "expose Sigma packaging through the surface elaborator" }
+    hePrime := .syntaxSupport
+    nextObligation := "expose Sigma packaging through the syntax elaborator" }
 
 def capabilityStatus : LadderCaseStatus :=
   { caseName := "Capability-indexed proof objects"
     pureKernel := .proved
     mettail := .represented
     mm2 := .openIssue
-    hePrime := .surface
+    hePrime := .syntaxSupport
     nextObligation := "connect capability proof objects to runtime authority checks" }
 
 def unitRecOracleStatus : LadderCaseStatus :=
@@ -83,7 +83,7 @@ def unitRecOracleStatus : LadderCaseStatus :=
     pureKernel := .proved
     mettail := .represented
     mm2 := .openIssue
-    hePrime := .surface
+    hePrime := .syntaxSupport
     nextObligation := "generalize the one-example bridge only when NatRec or Vec forces it" }
 
 def natRecStatus : LadderCaseStatus :=
@@ -91,7 +91,7 @@ def natRecStatus : LadderCaseStatus :=
     pureKernel := .partialSupport
     mettail := .represented
     mm2 := .openIssue
-    hePrime := .surface
+    hePrime := .syntaxSupport
     nextObligation := "derive Nat iota rules from inductive declarations and cross-check runtime reduction" }
 
 def tutorialLadderStatus : List LadderCaseStatus :=
@@ -112,7 +112,7 @@ theorem natRec_is_the_partial_case :
   ⟨rfl, rfl⟩
 
 theorem unitRec_has_runtime_oracle_bridge :
-    unitRecOracleStatus.pureKernel = .proved ∧ unitRecOracleStatus.hePrime = .surface :=
+    unitRecOracleStatus.pureKernel = .proved ∧ unitRecOracleStatus.hePrime = .syntaxSupport :=
   ⟨rfl, rfl⟩
 
 theorem capability_has_pureKernel_seed :
@@ -124,7 +124,7 @@ theorem finVec_needs_indexed_family_oracle :
   rfl
 
 def capacitySpecLedger : List CapacitySpecLedgerCase :=
-  [ { caseName := "UnitRec surface/oracle seed"
+  [ { caseName := "UnitRec syntax/oracle seed"
       relation := .capacityGap
       note := "he-prime emits the UnitRec certificate atom; PureKernel checks the exact shape; general trace bridge is still narrow" }
   , { caseName := "Capability forged read"

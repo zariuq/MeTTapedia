@@ -1,5 +1,5 @@
 import Mettapedia.GSLT.LanguageDef.CostHereditaryTreeNormalization
-import Mettapedia.GSLT.LanguageDef.EquationOccurrence
+import Mettapedia.GSLT.LanguageDef.ReflectiveEquationOccurrence
 
 /-!
 # Proof-relevant normalization spans for Cost generators
@@ -30,12 +30,13 @@ structure CostNormalizationSpan
     (source : CIGSLT) (normalizeStatic : CostStaticRegionNormalizer source)
     {targetFree : FreeTypeContext} {targetBound : List TypeExpr}
     {targetSort : LangSort source.costWholeLanguage}
-    (left right : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
-      targetSort) where
+    (left right : ReflectiveWellSorted.OpenTerm
+      source.costWholeReflectionProfile source.costWholeLanguage targetFree
+      targetBound targetSort) where
   leftElaboration : CostOpenElaboration source left
   rightElaboration : CostOpenElaboration source right
-  normal : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
-    targetSort
+  normal : ReflectiveWellSorted.OpenTerm source.costWholeReflectionProfile
+    source.costWholeLanguage targetFree targetBound targetSort
   leftEvaluates :
     (leftElaboration.tree.normalize
       (normalizeStatic := normalizeStatic)).pattern = normal.1
@@ -50,8 +51,9 @@ theorem evaluations_eq
     {source : CIGSLT} {normalizeStatic : CostStaticRegionNormalizer source}
     {targetFree : FreeTypeContext} {targetBound : List TypeExpr}
     {targetSort : LangSort source.costWholeLanguage}
-    {left right : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
-      targetSort}
+    {left right : ReflectiveWellSorted.OpenTerm
+      source.costWholeReflectionProfile source.costWholeLanguage targetFree
+      targetBound targetSort}
     (span : CostNormalizationSpan source normalizeStatic left right) :
     (span.leftElaboration.tree.normalize
         (normalizeStatic := normalizeStatic)).pattern =
@@ -68,8 +70,9 @@ theorem compiledPatterns_eq
       normalizeStatic)
     {targetFree : FreeTypeContext} {targetBound : List TypeExpr}
     {targetSort : LangSort source.costWholeLanguage}
-    {left right : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
-      targetSort}
+    {left right : ReflectiveWellSorted.OpenTerm
+      source.costWholeReflectionProfile source.costWholeLanguage targetFree
+      targetBound targetSort}
     (span : CostNormalizationSpan source normalizeStatic left right) :
     ((CostOpenElaboration.compile source left).tree.normalize
         (normalizeStatic := normalizeStatic)).pattern =
@@ -100,12 +103,16 @@ structure CostGeneratorNormalizationLift
     (source : CIGSLT) (normalizeStatic : CostStaticRegionNormalizer source)
     {targetFree : FreeTypeContext} {targetBound : List TypeExpr}
     {targetSort : LangSort source.costWholeLanguage}
-    {left right : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
-      targetSort}
-    (generator : openEquationGenerator source.costIGSLT targetFree targetBound
-      targetSort left right) where
-  occurrence : EquationSemantics.AuthoredGeneratorWitness
-    defaultBasePremises source.costWholeLanguage left.1 right.1
+    {left right : ReflectiveWellSorted.OpenTerm
+      source.costWholeReflectionProfile source.costWholeLanguage targetFree
+      targetBound targetSort}
+    (generator : ReflectiveEquationSemantics.reflectiveOpenPatternEquationGenerator
+      source.costWholeReflectionProfile defaultBasePremises
+      source.costWholeLanguage targetFree targetBound (.base targetSort.1)
+      left right) where
+  occurrence : ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness
+    source.costWholeReflectionProfile defaultBasePremises
+      source.costWholeLanguage left.1 right.1
   erasesTo : occurrence.erase = generator
   span : CostNormalizationSpan source normalizeStatic left right
 
@@ -117,29 +124,35 @@ def CostOpenGeneratorSpanLiftable
     Prop :=
   ∀ {targetFree : FreeTypeContext} {targetBound : List TypeExpr}
     {targetSort : LangSort source.costWholeLanguage}
-    {left right : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
-      targetSort}
-    (generator : openEquationGenerator source.costIGSLT targetFree targetBound
-      targetSort left right),
+    {left right : ReflectiveWellSorted.OpenTerm
+      source.costWholeReflectionProfile source.costWholeLanguage targetFree
+      targetBound targetSort}
+    (generator : ReflectiveEquationSemantics.reflectiveOpenPatternEquationGenerator
+      source.costWholeReflectionProfile defaultBasePremises
+      source.costWholeLanguage targetFree targetBound (.base targetSort.1)
+      left right),
     Nonempty (CostGeneratorNormalizationLift source normalizeStatic generator)
 
 /-- A polymorphic checked compact normalizer over all exact open fibers. -/
 abbrev CostOpenNormalizer (source : CIGSLT) :=
   {targetFree : FreeTypeContext} → {targetBound : List TypeExpr} →
     {targetSort : LangSort source.costWholeLanguage} →
-    WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
-      targetSort →
-      WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
-        targetSort
+    ReflectiveWellSorted.OpenTerm source.costWholeReflectionProfile
+      source.costWholeLanguage targetFree targetBound targetSort →
+      ReflectiveWellSorted.OpenTerm source.costWholeReflectionProfile
+        source.costWholeLanguage targetFree targetBound targetSort
 
 /-- Exact generator invariance for a chosen checked Cost normalizer. -/
 def CostOpenGeneratorInvariantFor (source : CIGSLT)
     (normalizeOpen : CostOpenNormalizer source) : Prop :=
   ∀ {targetFree : FreeTypeContext} {targetBound : List TypeExpr}
     {targetSort : LangSort source.costWholeLanguage}
-    {left right : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
-      targetSort},
-    openEquationGenerator source.costIGSLT targetFree targetBound targetSort
+    {left right : ReflectiveWellSorted.OpenTerm
+      source.costWholeReflectionProfile source.costWholeLanguage targetFree
+      targetBound targetSort},
+    ReflectiveEquationSemantics.reflectiveOpenPatternEquationGenerator
+        source.costWholeReflectionProfile defaultBasePremises
+        source.costWholeLanguage targetFree targetBound (.base targetSort.1)
         left right →
       @normalizeOpen targetFree targetBound targetSort left =
         @normalizeOpen targetFree targetBound targetSort right
@@ -151,8 +164,8 @@ def CostOpenNormalizerAgreesWithStatic
     (normalizeOpen : CostOpenNormalizer source) : Prop :=
   ∀ {targetFree : FreeTypeContext} {targetBound : List TypeExpr}
     {targetSort : LangSort source.costWholeLanguage}
-    (term : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
-      targetSort),
+    (term : ReflectiveWellSorted.OpenTerm source.costWholeReflectionProfile
+      source.costWholeLanguage targetFree targetBound targetSort),
     (@normalizeOpen targetFree targetBound targetSort term).1 =
       ((CostOpenElaboration.compile source term).tree.normalize
         (normalizeStatic := normalizeStatic)).pattern

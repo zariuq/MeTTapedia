@@ -203,7 +203,7 @@ theorem checkedChurchRosserDeclKernel_sound_confluent_and_injective_of_all_none
 non-unfolding signatures.
 
 This is the strongest fully discharged declaration-aware interface currently
-available: typed kernel surface, star-level subject reduction, confluence via
+available: typed kernel interface, star-level subject reduction, confluence via
 common reducts, Pi/Sigma injectivity, and normalization-backed conversion
 soundness. It is intentionally restricted to the all-none slice. -/
 structure CheckedNoValuesDeclKernelBoundary
@@ -253,7 +253,7 @@ structure CheckedNoValuesDeclKernelBoundary
 explicit declaration-aware Church-Rosser hypothesis.
 
 This is the current strongest generic value-bearing interface we can state
-honestly: typed kernel surface, star-level subject reduction, confluence via
+honestly: typed kernel interface, star-level subject reduction, confluence via
 common reducts, and Pi/Sigma injectivity. Normalization-backed conversion is
 intentionally not bundled here, because that layer is only discharged on the
 all-none slice at present. -/

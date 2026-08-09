@@ -44,17 +44,17 @@ partial def checkedExprToAbstractNode (e : GFCore.CheckedExpr) : AbstractNode :=
 partial def rawTreeToExported (t : GFCore.RawTerm) : ExportedTree :=
   .node t.funName (t.args.toList.map rawTreeToExported)
 
-structure SurfaceWitness where
+structure LinearizationWitness where
   label : String
   language : String
-  surface : String
+  text : String
   parses : List ExportedTree
   deriving Repr
 
 structure WitnessBundle where
   grammar : String
   usedFunctions : List String
-  witnesses : List SurfaceWitness
+  witnesses : List LinearizationWitness
   deriving Repr
 
 namespace ExportedTree
@@ -96,19 +96,19 @@ def functionNames : ExportedTree → List String
 
 end ExportedTree
 
-namespace SurfaceWitness
+namespace LinearizationWitness
 
 /-- Successfully recovered abstract trees from the exported parse list. -/
-def recoveredParses (w : SurfaceWitness) : List AbstractNode :=
+def recoveredParses (w : LinearizationWitness) : List AbstractNode :=
   w.parses.filterMap ExportedTree.toAbstractNode?
 
-end SurfaceWitness
+end LinearizationWitness
 
 namespace WitnessBundle
 
 /-- Successfully recovered abstract trees from all witnesses in the bundle. -/
 def recoveredParses (b : WitnessBundle) : List (String × String × String × List AbstractNode) :=
-  b.witnesses.map fun w => (w.label, w.language, w.surface, w.recoveredParses)
+  b.witnesses.map fun w => (w.label, w.language, w.text, w.recoveredParses)
 
 end WitnessBundle
 

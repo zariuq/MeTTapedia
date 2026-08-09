@@ -47,7 +47,7 @@ theorem zf_bottom_to_top_rule_singleton_fixture
 consume the categorical set-theory provability wrapper endpoint. -/
 theorem zf_bottom_to_top_categorical_singleton_fixture
     (H : WMHyperdoctrine SetState)
-    (hcat : WMCategoricalEndpointSurface (H := H))
+    (hcat : WMCategoricalEndpointContract (H := H))
     {X : H.Obj} (φc : H.query X)
     (S : SetPointed)
     (hS : S ⊧* 𝗭𝗙) :
@@ -107,7 +107,7 @@ theorem zf_outside_scope_top_bottom_counterexample_fixture
       hNotModel hTop hBot)
 
 /-- Unified endpoint fixture:
-provability transport plus categorical endpoint surface in one theorem call. -/
+provability transport plus categorical endpoint contract in one theorem call. -/
 theorem zf_provable_to_multiset_and_endpoint_surface_fixture
     (H : WMHyperdoctrine SetState)
     (φ ψ : SetQuery)
@@ -116,7 +116,7 @@ theorem zf_provable_to_multiset_and_endpoint_surface_fixture
       BinaryWorldModel.queryStrength (State := SetState) (Query := SetQuery) W φ ≤
         BinaryWorldModel.queryStrength (State := SetState) (Query := SetQuery) W ψ)
     ∧
-    EndpointSurface (H := H) := by
+    EndpointContract (H := H) := by
   simpa [stateModelsZF] using
     (provable_imp_to_multiset_and_endpoint_surface
       (H := H) (T := 𝗭𝗙) (φ := φ) (ψ := ψ) hprov)

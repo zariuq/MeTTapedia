@@ -201,67 +201,67 @@ Proof
 QED
 
 Datatype:
-  bridge_surface_atom =
+  bridge_syntax_atom =
     BSym mlstring
   | BVar num
   | BInt int
   | BStr num
-  | BExpr (bridge_surface_atom list)
+  | BExpr (bridge_syntax_atom list)
 End
 
-Definition bridge_import_surface_atom_def:
-  bridge_import_surface_atom (BSym s) =
+Definition bridge_import_syntax_atom_def:
+  bridge_import_syntax_atom (BSym s) =
     (case bridge_symbol_intern s of
      | SOME n => SOME (metta_m1$Sym n)
      | NONE => NONE) ∧
-  bridge_import_surface_atom (BVar v) = SOME (metta_m1$Var v) ∧
-  bridge_import_surface_atom (BInt i) = SOME (metta_m1$IntLit i) ∧
-  bridge_import_surface_atom (BStr s) = SOME (metta_m1$StrLit s) ∧
-  bridge_import_surface_atom (BExpr xs) =
-    (case bridge_import_surface_atom_list xs of
+  bridge_import_syntax_atom (BVar v) = SOME (metta_m1$Var v) ∧
+  bridge_import_syntax_atom (BInt i) = SOME (metta_m1$IntLit i) ∧
+  bridge_import_syntax_atom (BStr s) = SOME (metta_m1$StrLit s) ∧
+  bridge_import_syntax_atom (BExpr xs) =
+    (case bridge_import_syntax_atom_list xs of
      | SOME ys => SOME (metta_m1$Expr ys)
      | NONE => NONE) ∧
-  bridge_import_surface_atom_list [] = SOME [] ∧
-  bridge_import_surface_atom_list (x :: xs) =
-    (case bridge_import_surface_atom x of
+  bridge_import_syntax_atom_list [] = SOME [] ∧
+  bridge_import_syntax_atom_list (x :: xs) =
+    (case bridge_import_syntax_atom x of
      | SOME y =>
-         (case bridge_import_surface_atom_list xs of
+         (case bridge_import_syntax_atom_list xs of
           | SOME ys => SOME (y :: ys)
           | NONE => NONE)
      | NONE => NONE)
 End
 
-Definition bridge_export_surface_atom_def:
-  bridge_export_surface_atom (metta_m1$Sym n) =
+Definition bridge_export_syntax_atom_def:
+  bridge_export_syntax_atom (metta_m1$Sym n) =
     (case bridge_symbol_name n of
      | SOME s => SOME (BSym s)
      | NONE => NONE) ∧
-  bridge_export_surface_atom (metta_m1$Var v) = SOME (BVar v) ∧
-  bridge_export_surface_atom (metta_m1$IntLit i) = SOME (BInt i) ∧
-  bridge_export_surface_atom (metta_m1$StrLit s) = SOME (BStr s) ∧
-  bridge_export_surface_atom (metta_m1$Expr xs) =
-    (case bridge_export_surface_atom_list xs of
+  bridge_export_syntax_atom (metta_m1$Var v) = SOME (BVar v) ∧
+  bridge_export_syntax_atom (metta_m1$IntLit i) = SOME (BInt i) ∧
+  bridge_export_syntax_atom (metta_m1$StrLit s) = SOME (BStr s) ∧
+  bridge_export_syntax_atom (metta_m1$Expr xs) =
+    (case bridge_export_syntax_atom_list xs of
      | SOME ys => SOME (BExpr ys)
      | NONE => NONE) ∧
-  bridge_export_surface_atom_list [] = SOME [] ∧
-  bridge_export_surface_atom_list (x :: xs) =
-    (case bridge_export_surface_atom x of
+  bridge_export_syntax_atom_list [] = SOME [] ∧
+  bridge_export_syntax_atom_list (x :: xs) =
+    (case bridge_export_syntax_atom x of
      | SOME y =>
-         (case bridge_export_surface_atom_list xs of
+         (case bridge_export_syntax_atom_list xs of
           | SOME ys => SOME (y :: ys)
           | NONE => NONE)
      | NONE => NONE)
 End
 
 Theorem bridge_import_known_symbol_example:
-  bridge_import_surface_atom (BSym (strlit"+")) =
+  bridge_import_syntax_atom (BSym (strlit"+")) =
   SOME (metta_m1$Sym 11)
 Proof
   EVAL_TAC
 QED
 
 Theorem bridge_import_unknown_symbol_example:
-  bridge_import_surface_atom (BSym (strlit"not-a-core-symbol")) = NONE
+  bridge_import_syntax_atom (BSym (strlit"not-a-core-symbol")) = NONE
 Proof
   EVAL_TAC
 QED
@@ -470,158 +470,158 @@ Proof
   >- EVAL_TAC
 QED
 
-Definition bridge_import_surface_atom_with_env_def:
-  bridge_import_surface_atom_with_env env (BSym s) =
+Definition bridge_import_syntax_atom_with_env_def:
+  bridge_import_syntax_atom_with_env env (BSym s) =
     (case bridge_import_symbol_with_env env s of
      | SOME n => SOME (metta_m1$Sym n)
      | NONE => NONE) ∧
-  bridge_import_surface_atom_with_env env (BVar v) = SOME (metta_m1$Var v) ∧
-  bridge_import_surface_atom_with_env env (BInt i) = SOME (metta_m1$IntLit i) ∧
-  bridge_import_surface_atom_with_env env (BStr s) = SOME (metta_m1$StrLit s) ∧
-  bridge_import_surface_atom_with_env env (BExpr xs) =
-    (case bridge_import_surface_atom_list_with_env env xs of
+  bridge_import_syntax_atom_with_env env (BVar v) = SOME (metta_m1$Var v) ∧
+  bridge_import_syntax_atom_with_env env (BInt i) = SOME (metta_m1$IntLit i) ∧
+  bridge_import_syntax_atom_with_env env (BStr s) = SOME (metta_m1$StrLit s) ∧
+  bridge_import_syntax_atom_with_env env (BExpr xs) =
+    (case bridge_import_syntax_atom_list_with_env env xs of
      | SOME ys => SOME (metta_m1$Expr ys)
      | NONE => NONE) ∧
-  bridge_import_surface_atom_list_with_env env [] = SOME [] ∧
-  bridge_import_surface_atom_list_with_env env (x :: xs) =
-    (case bridge_import_surface_atom_with_env env x of
+  bridge_import_syntax_atom_list_with_env env [] = SOME [] ∧
+  bridge_import_syntax_atom_list_with_env env (x :: xs) =
+    (case bridge_import_syntax_atom_with_env env x of
      | SOME y =>
-         (case bridge_import_surface_atom_list_with_env env xs of
+         (case bridge_import_syntax_atom_list_with_env env xs of
           | SOME ys => SOME (y :: ys)
           | NONE => NONE)
      | NONE => NONE)
 End
 
-Definition bridge_export_surface_atom_with_env_def:
-  bridge_export_surface_atom_with_env env (metta_m1$Sym n) =
+Definition bridge_export_syntax_atom_with_env_def:
+  bridge_export_syntax_atom_with_env env (metta_m1$Sym n) =
     (case bridge_export_symbol_with_env env n of
      | SOME s => SOME (BSym s)
      | NONE => NONE) ∧
-  bridge_export_surface_atom_with_env env (metta_m1$Var v) = SOME (BVar v) ∧
-  bridge_export_surface_atom_with_env env (metta_m1$IntLit i) = SOME (BInt i) ∧
-  bridge_export_surface_atom_with_env env (metta_m1$StrLit s) = SOME (BStr s) ∧
-  bridge_export_surface_atom_with_env env (metta_m1$Expr xs) =
-    (case bridge_export_surface_atom_list_with_env env xs of
+  bridge_export_syntax_atom_with_env env (metta_m1$Var v) = SOME (BVar v) ∧
+  bridge_export_syntax_atom_with_env env (metta_m1$IntLit i) = SOME (BInt i) ∧
+  bridge_export_syntax_atom_with_env env (metta_m1$StrLit s) = SOME (BStr s) ∧
+  bridge_export_syntax_atom_with_env env (metta_m1$Expr xs) =
+    (case bridge_export_syntax_atom_list_with_env env xs of
      | SOME ys => SOME (BExpr ys)
      | NONE => NONE) ∧
-  bridge_export_surface_atom_list_with_env env [] = SOME [] ∧
-  bridge_export_surface_atom_list_with_env env (x :: xs) =
-    (case bridge_export_surface_atom_with_env env x of
+  bridge_export_syntax_atom_list_with_env env [] = SOME [] ∧
+  bridge_export_syntax_atom_list_with_env env (x :: xs) =
+    (case bridge_export_syntax_atom_with_env env x of
      | SOME y =>
-         (case bridge_export_surface_atom_list_with_env env xs of
+         (case bridge_export_syntax_atom_list_with_env env xs of
           | SOME ys => SOME (y :: ys)
           | NONE => NONE)
      | NONE => NONE)
 End
 
-Theorem bridge_import_surface_atom_with_env_reserved_example:
-  bridge_import_surface_atom_with_env [(strlit"Foo", 1000)] (BSym (strlit"+")) =
+Theorem bridge_import_syntax_atom_with_env_reserved_example:
+  bridge_import_syntax_atom_with_env [(strlit"Foo", 1000)] (BSym (strlit"+")) =
   SOME (metta_m1$Sym 11)
 Proof
   EVAL_TAC
 QED
 
-Theorem bridge_import_surface_atom_with_env_dynamic_example:
-  bridge_import_surface_atom_with_env [(strlit"Foo", 1000)] (BSym (strlit"Foo")) =
+Theorem bridge_import_syntax_atom_with_env_dynamic_example:
+  bridge_import_syntax_atom_with_env [(strlit"Foo", 1000)] (BSym (strlit"Foo")) =
   SOME (metta_m1$Sym 1000)
 Proof
   EVAL_TAC
 QED
 
-Theorem bridge_import_surface_atom_with_env_unknown_example:
-  bridge_import_surface_atom_with_env [] (BSym (strlit"Foo")) = NONE
+Theorem bridge_import_syntax_atom_with_env_unknown_example:
+  bridge_import_syntax_atom_with_env [] (BSym (strlit"Foo")) = NONE
 Proof
   EVAL_TAC
 QED
 
-Theorem bridge_import_surface_with_env_export_roundtrip:
+Theorem bridge_import_syntax_with_env_export_roundtrip:
   ∀env.
     bridge_dyn_env_ok env ⇒
     (∀sa a.
-       bridge_import_surface_atom_with_env env sa = SOME a ⇒
-       bridge_export_surface_atom_with_env env a = SOME sa) ∧
+       bridge_import_syntax_atom_with_env env sa = SOME a ⇒
+       bridge_export_syntax_atom_with_env env a = SOME sa) ∧
     (∀sas atoms.
-       bridge_import_surface_atom_list_with_env env sas = SOME atoms ⇒
-       bridge_export_surface_atom_list_with_env env atoms = SOME sas)
+       bridge_import_syntax_atom_list_with_env env sas = SOME atoms ⇒
+       bridge_export_syntax_atom_list_with_env env atoms = SOME sas)
 Proof
   ntac 2 strip_tac \\
   irule (CONV_RULE (DEPTH_CONV BETA_CONV) (Q.SPECL
     [‘λsa.
         ∀a.
-          bridge_import_surface_atom_with_env env sa = SOME a ⇒
-          bridge_export_surface_atom_with_env env a = SOME sa’,
+          bridge_import_syntax_atom_with_env env sa = SOME a ⇒
+          bridge_export_syntax_atom_with_env env a = SOME sa’,
      ‘λsas.
         ∀atoms.
-          bridge_import_surface_atom_list_with_env env sas = SOME atoms ⇒
-          bridge_export_surface_atom_list_with_env env atoms = SOME sas’]
-    (fetch "-" "bridge_surface_atom_induction"))) \\
-  rw[bridge_import_surface_atom_with_env_def,
-     bridge_export_surface_atom_with_env_def] \\
-  gvs[AllCaseEqs(), bridge_export_surface_atom_with_env_def] \\
+          bridge_import_syntax_atom_list_with_env env sas = SOME atoms ⇒
+          bridge_export_syntax_atom_list_with_env env atoms = SOME sas’]
+    (fetch "-" "bridge_syntax_atom_induction"))) \\
+  rw[bridge_import_syntax_atom_with_env_def,
+     bridge_export_syntax_atom_with_env_def] \\
+  gvs[AllCaseEqs(), bridge_export_syntax_atom_with_env_def] \\
   metis_tac[bridge_import_export_symbol_with_env_roundtrip]
 QED
 
-Theorem bridge_import_surface_atom_with_env_export_roundtrip:
+Theorem bridge_import_syntax_atom_with_env_export_roundtrip:
   ∀env sa a.
     bridge_dyn_env_ok env ∧
-    bridge_import_surface_atom_with_env env sa = SOME a ⇒
-    bridge_export_surface_atom_with_env env a = SOME sa
+    bridge_import_syntax_atom_with_env env sa = SOME a ⇒
+    bridge_export_syntax_atom_with_env env a = SOME sa
 Proof
-  metis_tac[bridge_import_surface_with_env_export_roundtrip]
+  metis_tac[bridge_import_syntax_with_env_export_roundtrip]
 QED
 
-Theorem bridge_import_surface_atom_list_with_env_export_roundtrip:
+Theorem bridge_import_syntax_atom_list_with_env_export_roundtrip:
   ∀env sas atoms.
     bridge_dyn_env_ok env ∧
-    bridge_import_surface_atom_list_with_env env sas = SOME atoms ⇒
-    bridge_export_surface_atom_list_with_env env atoms = SOME sas
+    bridge_import_syntax_atom_list_with_env env sas = SOME atoms ⇒
+    bridge_export_syntax_atom_list_with_env env atoms = SOME sas
 Proof
-  metis_tac[bridge_import_surface_with_env_export_roundtrip]
+  metis_tac[bridge_import_syntax_with_env_export_roundtrip]
 QED
 
-Theorem bridge_export_surface_with_env_import_roundtrip:
+Theorem bridge_export_syntax_with_env_import_roundtrip:
   ∀env.
     bridge_dyn_env_ok env ⇒
     (∀a sa.
-       bridge_export_surface_atom_with_env env a = SOME sa ⇒
-       bridge_import_surface_atom_with_env env sa = SOME a) ∧
+       bridge_export_syntax_atom_with_env env a = SOME sa ⇒
+       bridge_import_syntax_atom_with_env env sa = SOME a) ∧
     (∀atoms sas.
-       bridge_export_surface_atom_list_with_env env atoms = SOME sas ⇒
-       bridge_import_surface_atom_list_with_env env sas = SOME atoms)
+       bridge_export_syntax_atom_list_with_env env atoms = SOME sas ⇒
+       bridge_import_syntax_atom_list_with_env env sas = SOME atoms)
 Proof
   ntac 2 strip_tac \\
   irule (CONV_RULE (DEPTH_CONV BETA_CONV) (Q.SPECL
     [‘λa.
         ∀sa.
-          bridge_export_surface_atom_with_env env a = SOME sa ⇒
-          bridge_import_surface_atom_with_env env sa = SOME a’,
+          bridge_export_syntax_atom_with_env env a = SOME sa ⇒
+          bridge_import_syntax_atom_with_env env sa = SOME a’,
      ‘λatoms.
         ∀sas.
-          bridge_export_surface_atom_list_with_env env atoms = SOME sas ⇒
-          bridge_import_surface_atom_list_with_env env sas = SOME atoms’]
+          bridge_export_syntax_atom_list_with_env env atoms = SOME sas ⇒
+          bridge_import_syntax_atom_list_with_env env sas = SOME atoms’]
     (fetch "metta_m1" "atom_induction"))) \\
-  rw[bridge_import_surface_atom_with_env_def,
-     bridge_export_surface_atom_with_env_def] \\
-  gvs[AllCaseEqs(), bridge_import_surface_atom_with_env_def] \\
+  rw[bridge_import_syntax_atom_with_env_def,
+     bridge_export_syntax_atom_with_env_def] \\
+  gvs[AllCaseEqs(), bridge_import_syntax_atom_with_env_def] \\
   metis_tac[bridge_export_import_symbol_with_env_roundtrip]
 QED
 
-Theorem bridge_export_surface_atom_with_env_import_roundtrip:
+Theorem bridge_export_syntax_atom_with_env_import_roundtrip:
   ∀env a sa.
     bridge_dyn_env_ok env ∧
-    bridge_export_surface_atom_with_env env a = SOME sa ⇒
-    bridge_import_surface_atom_with_env env sa = SOME a
+    bridge_export_syntax_atom_with_env env a = SOME sa ⇒
+    bridge_import_syntax_atom_with_env env sa = SOME a
 Proof
-  metis_tac[bridge_export_surface_with_env_import_roundtrip]
+  metis_tac[bridge_export_syntax_with_env_import_roundtrip]
 QED
 
-Theorem bridge_export_surface_atom_list_with_env_import_roundtrip:
+Theorem bridge_export_syntax_atom_list_with_env_import_roundtrip:
   ∀env atoms sas.
     bridge_dyn_env_ok env ∧
-    bridge_export_surface_atom_list_with_env env atoms = SOME sas ⇒
-    bridge_import_surface_atom_list_with_env env sas = SOME atoms
+    bridge_export_syntax_atom_list_with_env env atoms = SOME sas ⇒
+    bridge_import_syntax_atom_list_with_env env sas = SOME atoms
 Proof
-  metis_tac[bridge_export_surface_with_env_import_roundtrip]
+  metis_tac[bridge_export_syntax_with_env_import_roundtrip]
 QED
 
 Datatype:
@@ -629,7 +629,7 @@ Datatype:
     BTokLParen
   | BTokRParen
   | BTokBang
-  | BTokAtom bridge_surface_atom
+  | BTokAtom bridge_syntax_atom
 End
 
 Definition bridge_parse_atom_token_def:
@@ -668,7 +668,7 @@ QED
 
 Datatype:
   bridge_atom_token_parse_result =
-    BAtomTokenParsed bridge_surface_atom (bridge_token list)
+    BAtomTokenParsed bridge_syntax_atom (bridge_token list)
   | BAtomTokenParseError num
 End
 
@@ -717,7 +717,7 @@ Definition bridge_import_parsed_atom_token_def:
   bridge_import_parsed_atom_token toks =
     case bridge_parse_atom_token toks of
     | SOME (atom, rest) =>
-        (case bridge_import_surface_atom atom of
+        (case bridge_import_syntax_atom atom of
          | SOME imported => SOME (imported, rest)
          | NONE => NONE)
     | NONE => NONE
@@ -727,7 +727,7 @@ Definition bridge_import_parsed_atom_token_with_env_def:
   bridge_import_parsed_atom_token_with_env env toks =
     case bridge_parse_atom_token toks of
     | SOME (atom, rest) =>
-        (case bridge_import_surface_atom_with_env env atom of
+        (case bridge_import_syntax_atom_with_env env atom of
          | SOME imported => SOME (imported, rest)
          | NONE => NONE)
     | NONE => NONE
@@ -758,7 +758,7 @@ QED
 
 Datatype:
   bridge_full_atom_parse_result =
-    BFullAtomParsed bridge_surface_atom (bridge_token list)
+    BFullAtomParsed bridge_syntax_atom (bridge_token list)
   | BFullAtomParseError num
 End
 
@@ -794,7 +794,7 @@ Definition bridge_import_parsed_atom_tokens_with_env_def:
   bridge_import_parsed_atom_tokens_with_env env fuel toks =
     case bridge_parse_atom_tokens_fuel fuel toks of
     | BFullAtomParsed atom rest =>
-        (case bridge_import_surface_atom_with_env env atom of
+        (case bridge_import_syntax_atom_with_env env atom of
          | SOME imported => SOME (imported, rest)
          | NONE => NONE)
     | BFullAtomParseError n => NONE
@@ -815,8 +815,8 @@ End
 Definition bridge_import_parsed_atom_tokens_result_with_env_def:
   bridge_import_parsed_atom_tokens_result_with_env env fuel toks =
     case bridge_parse_atom_tokens_fuel fuel toks of
-    | BFullAtomParsed surface rest =>
-        (case bridge_import_surface_atom_with_env env surface of
+    | BFullAtomParsed syntax rest =>
+        (case bridge_import_syntax_atom_with_env env syntax of
          | SOME imported => BImportedAtomParsed imported rest
          | NONE => BImportedAtomImportError)
     | BFullAtomParseError n => BImportedAtomParseError n
@@ -857,10 +857,10 @@ Theorem bridge_import_parsed_atom_tokens_with_env_sound:
   ∀env fuel toks imported rest.
     bridge_import_parsed_atom_tokens_with_env env fuel toks =
       SOME (imported, rest) ⇒
-    ∃surface.
+    ∃syntax.
       bridge_parse_atom_tokens_fuel fuel toks =
-        BFullAtomParsed surface rest ∧
-      bridge_import_surface_atom_with_env env surface = SOME imported
+        BFullAtomParsed syntax rest ∧
+      bridge_import_syntax_atom_with_env env syntax = SOME imported
 Proof
   rw[bridge_import_parsed_atom_tokens_with_env_def] \\
   gvs[AllCaseEqs()]
@@ -871,17 +871,17 @@ Theorem bridge_import_parsed_atom_tokens_with_env_export_sound:
     bridge_dyn_env_ok env ∧
     bridge_import_parsed_atom_tokens_with_env env fuel toks =
       SOME (imported, rest) ⇒
-    ∃surface.
+    ∃syntax.
       bridge_parse_atom_tokens_fuel fuel toks =
-        BFullAtomParsed surface rest ∧
-      bridge_export_surface_atom_with_env env imported = SOME surface
+        BFullAtomParsed syntax rest ∧
+      bridge_export_syntax_atom_with_env env imported = SOME syntax
 Proof
   rw[] \\
   drule bridge_import_parsed_atom_tokens_with_env_sound \\
   rw[] \\
-  qexists_tac ‘surface’ \\
+  qexists_tac ‘syntax’ \\
   rw[] \\
-  metis_tac[bridge_import_surface_atom_with_env_export_roundtrip]
+  metis_tac[bridge_import_syntax_atom_with_env_export_roundtrip]
 QED
 
 Theorem bridge_parse_atom_tokens_full_expr_import_example:
@@ -928,197 +928,197 @@ Proof
   EVAL_TAC
 QED
 
-Theorem bridge_import_surface_export_roundtrip:
+Theorem bridge_import_syntax_export_roundtrip:
   (∀sa a.
-     bridge_import_surface_atom sa = SOME a ⇒
-     bridge_export_surface_atom a = SOME sa) ∧
+     bridge_import_syntax_atom sa = SOME a ⇒
+     bridge_export_syntax_atom a = SOME sa) ∧
   (∀sas atoms.
-     bridge_import_surface_atom_list sas = SOME atoms ⇒
-     bridge_export_surface_atom_list atoms = SOME sas)
+     bridge_import_syntax_atom_list sas = SOME atoms ⇒
+     bridge_export_syntax_atom_list atoms = SOME sas)
 Proof
   irule (CONV_RULE (DEPTH_CONV BETA_CONV) (Q.SPECL
     [‘λsa.
         ∀a.
-          bridge_import_surface_atom sa = SOME a ⇒
-          bridge_export_surface_atom a = SOME sa’,
+          bridge_import_syntax_atom sa = SOME a ⇒
+          bridge_export_syntax_atom a = SOME sa’,
      ‘λsas.
         ∀atoms.
-          bridge_import_surface_atom_list sas = SOME atoms ⇒
-          bridge_export_surface_atom_list atoms = SOME sas’]
-    (fetch "-" "bridge_surface_atom_induction"))) \\
-  rw[bridge_import_surface_atom_def,
-    bridge_export_surface_atom_def] \\
-  gvs[AllCaseEqs(), bridge_export_surface_atom_def] \\
+          bridge_import_syntax_atom_list sas = SOME atoms ⇒
+          bridge_export_syntax_atom_list atoms = SOME sas’]
+    (fetch "-" "bridge_syntax_atom_induction"))) \\
+  rw[bridge_import_syntax_atom_def,
+    bridge_export_syntax_atom_def] \\
+  gvs[AllCaseEqs(), bridge_export_syntax_atom_def] \\
   metis_tac[bridge_symbol_name_intern_roundtrip]
 QED
 
-Theorem bridge_import_surface_atom_export_roundtrip:
+Theorem bridge_import_syntax_atom_export_roundtrip:
   ∀sa a.
-    bridge_import_surface_atom sa = SOME a ⇒
-    bridge_export_surface_atom a = SOME sa
+    bridge_import_syntax_atom sa = SOME a ⇒
+    bridge_export_syntax_atom a = SOME sa
 Proof
-  metis_tac[bridge_import_surface_export_roundtrip]
+  metis_tac[bridge_import_syntax_export_roundtrip]
 QED
 
-Theorem bridge_import_surface_atom_list_export_roundtrip:
+Theorem bridge_import_syntax_atom_list_export_roundtrip:
   ∀sas atoms.
-    bridge_import_surface_atom_list sas = SOME atoms ⇒
-    bridge_export_surface_atom_list atoms = SOME sas
+    bridge_import_syntax_atom_list sas = SOME atoms ⇒
+    bridge_export_syntax_atom_list atoms = SOME sas
 Proof
-  metis_tac[bridge_import_surface_export_roundtrip]
+  metis_tac[bridge_import_syntax_export_roundtrip]
 QED
 
-Theorem bridge_export_surface_import_roundtrip_full:
+Theorem bridge_export_syntax_import_roundtrip_full:
   (∀a sa.
-     bridge_export_surface_atom a = SOME sa ⇒
-     bridge_import_surface_atom sa = SOME a) ∧
+     bridge_export_syntax_atom a = SOME sa ⇒
+     bridge_import_syntax_atom sa = SOME a) ∧
   (∀atoms sas.
-     bridge_export_surface_atom_list atoms = SOME sas ⇒
-     bridge_import_surface_atom_list sas = SOME atoms)
+     bridge_export_syntax_atom_list atoms = SOME sas ⇒
+     bridge_import_syntax_atom_list sas = SOME atoms)
 Proof
   irule (CONV_RULE (DEPTH_CONV BETA_CONV) (Q.SPECL
     [‘λa.
         ∀sa.
-          bridge_export_surface_atom a = SOME sa ⇒
-          bridge_import_surface_atom sa = SOME a’,
+          bridge_export_syntax_atom a = SOME sa ⇒
+          bridge_import_syntax_atom sa = SOME a’,
      ‘λatoms.
         ∀sas.
-          bridge_export_surface_atom_list atoms = SOME sas ⇒
-          bridge_import_surface_atom_list sas = SOME atoms’]
+          bridge_export_syntax_atom_list atoms = SOME sas ⇒
+          bridge_import_syntax_atom_list sas = SOME atoms’]
     (fetch "metta_m1" "atom_induction"))) \\
-  rw[bridge_import_surface_atom_def,
-    bridge_export_surface_atom_def] \\
-  gvs[AllCaseEqs(), bridge_import_surface_atom_def] \\
+  rw[bridge_import_syntax_atom_def,
+    bridge_export_syntax_atom_def] \\
+  gvs[AllCaseEqs(), bridge_import_syntax_atom_def] \\
   metis_tac[bridge_symbol_intern_name_roundtrip]
 QED
 
-Theorem bridge_export_surface_import_roundtrip:
+Theorem bridge_export_syntax_import_roundtrip:
   ∀a sa.
-    bridge_export_surface_atom a = SOME sa ⇒
-    bridge_import_surface_atom sa = SOME a
+    bridge_export_syntax_atom a = SOME sa ⇒
+    bridge_import_syntax_atom sa = SOME a
 Proof
-  metis_tac[bridge_export_surface_import_roundtrip_full]
+  metis_tac[bridge_export_syntax_import_roundtrip_full]
 QED
 
-Theorem bridge_export_surface_atom_list_import_roundtrip:
+Theorem bridge_export_syntax_atom_list_import_roundtrip:
   ∀atoms sas.
-    bridge_export_surface_atom_list atoms = SOME sas ⇒
-    bridge_import_surface_atom_list sas = SOME atoms
+    bridge_export_syntax_atom_list atoms = SOME sas ⇒
+    bridge_import_syntax_atom_list sas = SOME atoms
 Proof
-  metis_tac[bridge_export_surface_import_roundtrip_full]
+  metis_tac[bridge_export_syntax_import_roundtrip_full]
 QED
 
-Definition bridge_surface_is_return_symbol_def:
-  bridge_surface_is_return_symbol s ⇔ s = strlit"return"
+Definition bridge_syntax_is_return_symbol_def:
+  bridge_syntax_is_return_symbol s ⇔ s = strlit"return"
 End
 
-Definition bridge_surface_eval_return_fragment_core_def:
-  bridge_surface_eval_return_fragment_core atom =
+Definition bridge_syntax_eval_return_fragment_core_def:
+  bridge_syntax_eval_return_fragment_core atom =
     case atom of
     | BExpr [BSym s; value] =>
-        if bridge_surface_is_return_symbol s then
+        if bridge_syntax_is_return_symbol s then
           [BExpr [BSym (strlit"return"); value]]
         else [atom]
     | _ => [atom]
 End
 
-Theorem bridge_surface_eval_return_fragment_core_import_expr:
+Theorem bridge_syntax_eval_return_fragment_core_import_expr:
   ∀xs ys.
-    bridge_import_surface_atom_list xs = SOME ys ⇒
-    bridge_import_surface_atom_list
-      (bridge_surface_eval_return_fragment_core (BExpr xs)) =
+    bridge_import_syntax_atom_list xs = SOME ys ⇒
+    bridge_import_syntax_atom_list
+      (bridge_syntax_eval_return_fragment_core (BExpr xs)) =
     SOME (eval_return_fragment (metta_m1$Expr ys))
 Proof
-  rw[bridge_surface_eval_return_fragment_core_def,
-     bridge_surface_is_return_symbol_def,
-     bridge_import_surface_atom_def, eval_return_fragment_def] \\
+  rw[bridge_syntax_eval_return_fragment_core_def,
+     bridge_syntax_is_return_symbol_def,
+     bridge_import_syntax_atom_def, eval_return_fragment_def] \\
   every_case_tac \\
-  gvs[bridge_surface_eval_return_fragment_core_def,
-      bridge_surface_is_return_symbol_def,
-      bridge_import_surface_atom_def, eval_return_fragment_def,
+  gvs[bridge_syntax_eval_return_fragment_core_def,
+      bridge_syntax_is_return_symbol_def,
+      bridge_import_syntax_atom_def, eval_return_fragment_def,
       bridge_symbol_intern_return_iff]
 QED
 
-Theorem bridge_surface_eval_return_fragment_core_import:
-  ∀surface atom.
-    bridge_import_surface_atom surface = SOME atom ⇒
-    bridge_import_surface_atom_list
-      (bridge_surface_eval_return_fragment_core surface) =
+Theorem bridge_syntax_eval_return_fragment_core_import:
+  ∀syntax atom.
+    bridge_import_syntax_atom syntax = SOME atom ⇒
+    bridge_import_syntax_atom_list
+      (bridge_syntax_eval_return_fragment_core syntax) =
     SOME (eval_return_fragment atom)
 Proof
-  Cases_on ‘surface’
-  >- (rw[bridge_surface_eval_return_fragment_core_def,
-         bridge_import_surface_atom_def, eval_return_fragment_def] \\
+  Cases_on ‘syntax’
+  >- (rw[bridge_syntax_eval_return_fragment_core_def,
+         bridge_import_syntax_atom_def, eval_return_fragment_def] \\
       gvs[AllCaseEqs()])
-  >- (rw[bridge_surface_eval_return_fragment_core_def,
-         bridge_import_surface_atom_def, eval_return_fragment_def] \\
+  >- (rw[bridge_syntax_eval_return_fragment_core_def,
+         bridge_import_syntax_atom_def, eval_return_fragment_def] \\
       gvs[AllCaseEqs()])
-  >- (rw[bridge_surface_eval_return_fragment_core_def,
-         bridge_import_surface_atom_def, eval_return_fragment_def] \\
+  >- (rw[bridge_syntax_eval_return_fragment_core_def,
+         bridge_import_syntax_atom_def, eval_return_fragment_def] \\
       gvs[AllCaseEqs()])
-  >- (rw[bridge_surface_eval_return_fragment_core_def,
-         bridge_import_surface_atom_def, eval_return_fragment_def] \\
+  >- (rw[bridge_syntax_eval_return_fragment_core_def,
+         bridge_import_syntax_atom_def, eval_return_fragment_def] \\
       gvs[AllCaseEqs()]) \\
-  rw[bridge_import_surface_atom_def] \\
-  Cases_on ‘bridge_import_surface_atom_list l’ \\
+  rw[bridge_import_syntax_atom_def] \\
+  Cases_on ‘bridge_import_syntax_atom_list l’ \\
   gvs[] \\
   qspecl_then [‘l’, ‘x’] mp_tac
-    bridge_surface_eval_return_fragment_core_import_expr \\
+    bridge_syntax_eval_return_fragment_core_import_expr \\
   rw[]
 QED
 
-Theorem bridge_surface_eval_return_fragment_core_import_with_env_expr:
+Theorem bridge_syntax_eval_return_fragment_core_import_with_env_expr:
   ∀env xs ys.
     bridge_dyn_env_ok env ∧
-    bridge_import_surface_atom_list_with_env env xs = SOME ys ⇒
-    bridge_import_surface_atom_list_with_env env
-      (bridge_surface_eval_return_fragment_core (BExpr xs)) =
+    bridge_import_syntax_atom_list_with_env env xs = SOME ys ⇒
+    bridge_import_syntax_atom_list_with_env env
+      (bridge_syntax_eval_return_fragment_core (BExpr xs)) =
     SOME (eval_return_fragment (metta_m1$Expr ys))
 Proof
-  rw[bridge_surface_eval_return_fragment_core_def,
-     bridge_surface_is_return_symbol_def,
-     bridge_import_surface_atom_with_env_def,
+  rw[bridge_syntax_eval_return_fragment_core_def,
+     bridge_syntax_is_return_symbol_def,
+     bridge_import_syntax_atom_with_env_def,
      eval_return_fragment_def] \\
   every_case_tac \\
-  gvs[bridge_surface_eval_return_fragment_core_def,
-      bridge_surface_is_return_symbol_def,
-      bridge_import_surface_atom_with_env_def,
+  gvs[bridge_syntax_eval_return_fragment_core_def,
+      bridge_syntax_is_return_symbol_def,
+      bridge_import_syntax_atom_with_env_def,
       eval_return_fragment_def,
       bridge_import_symbol_with_env_return_iff]
 QED
 
-Theorem bridge_surface_eval_return_fragment_core_import_with_env:
-  ∀env surface atom.
+Theorem bridge_syntax_eval_return_fragment_core_import_with_env:
+  ∀env syntax atom.
     bridge_dyn_env_ok env ∧
-    bridge_import_surface_atom_with_env env surface = SOME atom ⇒
-    bridge_import_surface_atom_list_with_env env
-      (bridge_surface_eval_return_fragment_core surface) =
+    bridge_import_syntax_atom_with_env env syntax = SOME atom ⇒
+    bridge_import_syntax_atom_list_with_env env
+      (bridge_syntax_eval_return_fragment_core syntax) =
     SOME (eval_return_fragment atom)
 Proof
-  Cases_on ‘surface’
-  >- (rw[bridge_surface_eval_return_fragment_core_def,
-         bridge_import_surface_atom_with_env_def, eval_return_fragment_def] \\
+  Cases_on ‘syntax’
+  >- (rw[bridge_syntax_eval_return_fragment_core_def,
+         bridge_import_syntax_atom_with_env_def, eval_return_fragment_def] \\
       gvs[AllCaseEqs()])
-  >- (rw[bridge_surface_eval_return_fragment_core_def,
-         bridge_import_surface_atom_with_env_def, eval_return_fragment_def] \\
+  >- (rw[bridge_syntax_eval_return_fragment_core_def,
+         bridge_import_syntax_atom_with_env_def, eval_return_fragment_def] \\
       gvs[AllCaseEqs()])
-  >- (rw[bridge_surface_eval_return_fragment_core_def,
-         bridge_import_surface_atom_with_env_def, eval_return_fragment_def] \\
+  >- (rw[bridge_syntax_eval_return_fragment_core_def,
+         bridge_import_syntax_atom_with_env_def, eval_return_fragment_def] \\
       gvs[AllCaseEqs()])
-  >- (rw[bridge_surface_eval_return_fragment_core_def,
-         bridge_import_surface_atom_with_env_def, eval_return_fragment_def] \\
+  >- (rw[bridge_syntax_eval_return_fragment_core_def,
+         bridge_import_syntax_atom_with_env_def, eval_return_fragment_def] \\
       gvs[AllCaseEqs()]) \\
-  rw[bridge_import_surface_atom_with_env_def] \\
-  Cases_on ‘bridge_import_surface_atom_list_with_env env l’ \\
+  rw[bridge_import_syntax_atom_with_env_def] \\
+  Cases_on ‘bridge_import_syntax_atom_list_with_env env l’ \\
   gvs[] \\
   qspecl_then [‘env’, ‘l’, ‘x’] mp_tac
-    bridge_surface_eval_return_fragment_core_import_with_env_expr \\
+    bridge_syntax_eval_return_fragment_core_import_with_env_expr \\
   rw[]
 QED
 
-Theorem bridge_surface_eval_return_fragment_core_positive_example:
-  bridge_import_surface_atom_list
-    (bridge_surface_eval_return_fragment_core
+Theorem bridge_syntax_eval_return_fragment_core_positive_example:
+  bridge_import_syntax_atom_list
+    (bridge_syntax_eval_return_fragment_core
       (BExpr [BSym (strlit"return"); BInt 7])) =
   SOME
     (eval_return_fragment
@@ -1127,9 +1127,9 @@ Proof
   EVAL_TAC
 QED
 
-Theorem bridge_surface_eval_return_fragment_core_negative_example:
-  bridge_import_surface_atom_list
-    (bridge_surface_eval_return_fragment_core
+Theorem bridge_syntax_eval_return_fragment_core_negative_example:
+  bridge_import_syntax_atom_list
+    (bridge_syntax_eval_return_fragment_core
       (BExpr [BSym (strlit"not-return"); BInt 7])) = NONE
 Proof
   EVAL_TAC
@@ -1144,23 +1144,23 @@ Datatype:
   | SrcExpr (bridge_source_atom list)
 End
 
-Definition bridge_source_surface_rel_def:
-  bridge_source_surface_rel var_env str_env (SrcSym s) (BSym t) =
+Definition bridge_source_syntax_rel_def:
+  bridge_source_syntax_rel var_env str_env (SrcSym s) (BSym t) =
     (s = t) ∧
-  bridge_source_surface_rel var_env str_env (SrcVar v) (BVar n) =
+  bridge_source_syntax_rel var_env str_env (SrcVar v) (BVar n) =
     (ALOOKUP var_env v = SOME n) ∧
-  bridge_source_surface_rel var_env str_env (SrcInt i) (BInt j) =
+  bridge_source_syntax_rel var_env str_env (SrcInt i) (BInt j) =
     (i = j) ∧
-  bridge_source_surface_rel var_env str_env (SrcStr s) (BStr n) =
+  bridge_source_syntax_rel var_env str_env (SrcStr s) (BStr n) =
     (ALOOKUP str_env s = SOME n) ∧
-  bridge_source_surface_rel var_env str_env (SrcExpr xs) (BExpr ys) =
-    bridge_source_surface_rel_list var_env str_env xs ys ∧
-  bridge_source_surface_rel var_env str_env _ _ = F ∧
-  bridge_source_surface_rel_list var_env str_env [] [] = T ∧
-  bridge_source_surface_rel_list var_env str_env (x :: xs) (y :: ys) =
-    (bridge_source_surface_rel var_env str_env x y ∧
-     bridge_source_surface_rel_list var_env str_env xs ys) ∧
-  bridge_source_surface_rel_list var_env str_env _ _ = F
+  bridge_source_syntax_rel var_env str_env (SrcExpr xs) (BExpr ys) =
+    bridge_source_syntax_rel_list var_env str_env xs ys ∧
+  bridge_source_syntax_rel var_env str_env _ _ = F ∧
+  bridge_source_syntax_rel_list var_env str_env [] [] = T ∧
+  bridge_source_syntax_rel_list var_env str_env (x :: xs) (y :: ys) =
+    (bridge_source_syntax_rel var_env str_env x y ∧
+     bridge_source_syntax_rel_list var_env str_env xs ys) ∧
+  bridge_source_syntax_rel_list var_env str_env _ _ = F
 End
 
 Definition bridge_source_eval_return_fragment_core_def:
@@ -1173,54 +1173,54 @@ Definition bridge_source_eval_return_fragment_core_def:
     | _ => [atom]
 End
 
-Theorem bridge_source_surface_rel_return_symbol:
+Theorem bridge_source_syntax_rel_return_symbol:
   ∀var_env str_env s t.
-    bridge_source_surface_rel var_env str_env (SrcSym s) (BSym t) ⇒
-    (s = strlit"return" ⇔ bridge_surface_is_return_symbol t)
+    bridge_source_syntax_rel var_env str_env (SrcSym s) (BSym t) ⇒
+    (s = strlit"return" ⇔ bridge_syntax_is_return_symbol t)
 Proof
-  rw[bridge_source_surface_rel_def,
-     bridge_surface_is_return_symbol_def]
+  rw[bridge_source_syntax_rel_def,
+     bridge_syntax_is_return_symbol_def]
 QED
 
-Theorem bridge_source_eval_return_fragment_core_refines_surface_expr:
+Theorem bridge_source_eval_return_fragment_core_refines_syntax_expr:
   ∀var_env str_env xs ys.
-    bridge_source_surface_rel_list var_env str_env xs ys ⇒
-    bridge_source_surface_rel_list var_env str_env
+    bridge_source_syntax_rel_list var_env str_env xs ys ⇒
+    bridge_source_syntax_rel_list var_env str_env
       (bridge_source_eval_return_fragment_core (SrcExpr xs))
-      (bridge_surface_eval_return_fragment_core (BExpr ys))
+      (bridge_syntax_eval_return_fragment_core (BExpr ys))
 Proof
   rw[bridge_source_eval_return_fragment_core_def,
-     bridge_surface_eval_return_fragment_core_def,
-     bridge_surface_is_return_symbol_def] \\
+     bridge_syntax_eval_return_fragment_core_def,
+     bridge_syntax_is_return_symbol_def] \\
   every_case_tac \\
   gvs[bridge_source_eval_return_fragment_core_def,
-      bridge_surface_eval_return_fragment_core_def,
-      bridge_surface_is_return_symbol_def,
-      bridge_source_surface_rel_def]
+      bridge_syntax_eval_return_fragment_core_def,
+      bridge_syntax_is_return_symbol_def,
+      bridge_source_syntax_rel_def]
 QED
 
-Theorem bridge_source_eval_return_fragment_core_refines_surface:
-  ∀var_env str_env source surface.
-    bridge_source_surface_rel var_env str_env source surface ⇒
-    bridge_source_surface_rel_list var_env str_env
+Theorem bridge_source_eval_return_fragment_core_refines_syntax:
+  ∀var_env str_env source syntax.
+    bridge_source_syntax_rel var_env str_env source syntax ⇒
+    bridge_source_syntax_rel_list var_env str_env
       (bridge_source_eval_return_fragment_core source)
-      (bridge_surface_eval_return_fragment_core surface)
+      (bridge_syntax_eval_return_fragment_core syntax)
 Proof
   Cases_on ‘source’ \\
-  Cases_on ‘surface’ \\
+  Cases_on ‘syntax’ \\
   rw[bridge_source_eval_return_fragment_core_def,
-     bridge_surface_eval_return_fragment_core_def,
-     bridge_surface_is_return_symbol_def,
-     bridge_source_surface_rel_def] \\
+     bridge_syntax_eval_return_fragment_core_def,
+     bridge_syntax_is_return_symbol_def,
+     bridge_source_syntax_rel_def] \\
   every_case_tac \\
   gvs[bridge_source_eval_return_fragment_core_def,
-      bridge_surface_eval_return_fragment_core_def,
-      bridge_surface_is_return_symbol_def,
-      bridge_source_surface_rel_def]
+      bridge_syntax_eval_return_fragment_core_def,
+      bridge_syntax_is_return_symbol_def,
+      bridge_source_syntax_rel_def]
 QED
 
-Theorem bridge_source_surface_rel_positive_example:
-  bridge_source_surface_rel
+Theorem bridge_source_syntax_rel_positive_example:
+  bridge_source_syntax_rel
     [(strlit"x", 0)] [(strlit"hello", 0)]
     (SrcExpr [SrcSym (strlit"return"); SrcVar (strlit"x")])
     (BExpr [BSym (strlit"return"); BVar 0])
@@ -1228,8 +1228,8 @@ Proof
   EVAL_TAC
 QED
 
-Theorem bridge_source_surface_rel_negative_example:
-  ¬bridge_source_surface_rel [] []
+Theorem bridge_source_syntax_rel_negative_example:
+  ¬bridge_source_syntax_rel [] []
     (SrcExpr [SrcSym (strlit"return"); SrcVar (strlit"x")])
     (BExpr [BSym (strlit"return"); BVar 0])
 Proof
@@ -1873,53 +1873,53 @@ Proof
   EVAL_TAC
 QED
 
-Definition bridge_source_surface_token_rel_def:
-  bridge_source_surface_token_rel var_env str_env source_tok surface_tok =
+Definition bridge_source_syntax_token_rel_def:
+  bridge_source_syntax_token_rel var_env str_env source_tok syntax_tok =
     case source_tok of
     | BSrcTokLParen =>
-        (case surface_tok of BTokLParen => T | _ => F)
+        (case syntax_tok of BTokLParen => T | _ => F)
     | BSrcTokRParen =>
-        (case surface_tok of BTokRParen => T | _ => F)
+        (case syntax_tok of BTokRParen => T | _ => F)
     | BSrcTokBang =>
-        (case surface_tok of BTokBang => T | _ => F)
+        (case syntax_tok of BTokBang => T | _ => F)
     | BSrcTokAtom source =>
-        (case surface_tok of
-         | BTokAtom surface =>
-             bridge_source_surface_rel var_env str_env source surface
+        (case syntax_tok of
+         | BTokAtom syntax =>
+             bridge_source_syntax_rel var_env str_env source syntax
          | _ => F)
 End
 
-Definition bridge_source_surface_token_rel_list_def:
-  bridge_source_surface_token_rel_list var_env str_env [] [] = T ∧
-  bridge_source_surface_token_rel_list var_env str_env
+Definition bridge_source_syntax_token_rel_list_def:
+  bridge_source_syntax_token_rel_list var_env str_env [] [] = T ∧
+  bridge_source_syntax_token_rel_list var_env str_env
     (x :: xs) (y :: ys) =
-      (bridge_source_surface_token_rel var_env str_env x y ∧
-       bridge_source_surface_token_rel_list var_env str_env xs ys) ∧
-  bridge_source_surface_token_rel_list var_env str_env _ _ = F
+      (bridge_source_syntax_token_rel var_env str_env x y ∧
+       bridge_source_syntax_token_rel_list var_env str_env xs ys) ∧
+  bridge_source_syntax_token_rel_list var_env str_env _ _ = F
 End
 
-Theorem bridge_source_surface_token_rel_list_nil_cons:
+Theorem bridge_source_syntax_token_rel_list_nil_cons:
   ∀var_env str_env (tok:bridge_token) toks.
-    ¬bridge_source_surface_token_rel_list var_env str_env [] (tok :: toks)
+    ¬bridge_source_syntax_token_rel_list var_env str_env [] (tok :: toks)
 Proof
-  rw[bridge_source_surface_token_rel_list_def]
+  rw[bridge_source_syntax_token_rel_list_def]
 QED
 
-Theorem bridge_source_surface_token_rel_list_cons_nil:
+Theorem bridge_source_syntax_token_rel_list_cons_nil:
   ∀var_env str_env (tok:bridge_source_token) toks.
-    ¬bridge_source_surface_token_rel_list var_env str_env (tok :: toks) []
+    ¬bridge_source_syntax_token_rel_list var_env str_env (tok :: toks) []
 Proof
-  rw[bridge_source_surface_token_rel_list_def]
+  rw[bridge_source_syntax_token_rel_list_def]
 QED
 
-Theorem bridge_source_surface_token_rel_list_cons_lparen:
+Theorem bridge_source_syntax_token_rel_list_cons_lparen:
   ∀var_env str_env xs ys.
-    bridge_source_surface_token_rel_list var_env str_env xs ys ⇒
-    bridge_source_surface_token_rel_list var_env str_env
+    bridge_source_syntax_token_rel_list var_env str_env xs ys ⇒
+    bridge_source_syntax_token_rel_list var_env str_env
       (BSrcTokLParen :: xs) (BTokLParen :: ys)
 Proof
-  rw[bridge_source_surface_token_rel_def,
-     bridge_source_surface_token_rel_list_def]
+  rw[bridge_source_syntax_token_rel_def,
+     bridge_source_syntax_token_rel_list_def]
 QED
 
 Definition bridge_parse_source_atom_token_def:
@@ -2182,34 +2182,34 @@ Proof
   metis_tac[bridge_parse_proto_source_tokens_fuel_related]
 QED
 
-Theorem bridge_source_surface_rel_list_snoc:
-  ∀var_env str_env source_items surface_items source surface.
-    bridge_source_surface_rel_list var_env str_env
-      source_items surface_items ∧
-    bridge_source_surface_rel var_env str_env source surface ⇒
-    bridge_source_surface_rel_list var_env str_env
-      (source_items ++ [source]) (surface_items ++ [surface])
+Theorem bridge_source_syntax_rel_list_snoc:
+  ∀var_env str_env source_items syntax_items source syntax.
+    bridge_source_syntax_rel_list var_env str_env
+      source_items syntax_items ∧
+    bridge_source_syntax_rel var_env str_env source syntax ⇒
+    bridge_source_syntax_rel_list var_env str_env
+      (source_items ++ [source]) (syntax_items ++ [syntax])
 Proof
   Induct_on ‘source_items’ \\
-  Cases_on ‘surface_items’ \\
-  rw[bridge_source_surface_rel_def]
+  Cases_on ‘syntax_items’ \\
+  rw[bridge_source_syntax_rel_def]
 QED
 
-Definition bridge_source_surface_parse_result_rel_def:
-  bridge_source_surface_parse_result_rel var_env str_env
+Definition bridge_source_syntax_parse_result_rel_def:
+  bridge_source_syntax_parse_result_rel var_env str_env
     (BSourceFullAtomParsed source rest_source)
-    (BFullAtomParsed surface rest_surface) =
-      (bridge_source_surface_rel var_env str_env source surface ∧
-       bridge_source_surface_token_rel_list var_env str_env
-         rest_source rest_surface) ∧
-  bridge_source_surface_parse_result_rel var_env str_env
+    (BFullAtomParsed syntax rest_syntax) =
+      (bridge_source_syntax_rel var_env str_env source syntax ∧
+       bridge_source_syntax_token_rel_list var_env str_env
+         rest_source rest_syntax) ∧
+  bridge_source_syntax_parse_result_rel var_env str_env
     (BSourceFullAtomParseError n) (BFullAtomParseError m) =
       (n = m) ∧
-  bridge_source_surface_parse_result_rel var_env str_env _ _ = F
+  bridge_source_syntax_parse_result_rel var_env str_env _ _ = F
 End
 
-Theorem bridge_parse_source_surface_full_expr_positive_example:
-  ∃source surface rest_source rest_surface.
+Theorem bridge_parse_source_syntax_full_expr_positive_example:
+  ∃source syntax rest_source rest_syntax.
     bridge_parse_source_atom_tokens_fuel 10
       [BSrcTokLParen;
        BSrcTokAtom (SrcSym (strlit"return"));
@@ -2221,11 +2221,11 @@ Theorem bridge_parse_source_surface_full_expr_positive_example:
        BTokAtom (BSym (strlit"return"));
        BTokAtom (BVar 0);
        BTokRParen] =
-      BFullAtomParsed surface rest_surface ∧
-    bridge_source_surface_rel [(strlit"x", 0)] []
-      source surface ∧
-    bridge_source_surface_token_rel_list [(strlit"x", 0)] []
-      rest_source rest_surface
+      BFullAtomParsed syntax rest_syntax ∧
+    bridge_source_syntax_rel [(strlit"x", 0)] []
+      source syntax ∧
+    bridge_source_syntax_token_rel_list [(strlit"x", 0)] []
+      rest_source rest_syntax
 Proof
   qexists_tac ‘SrcExpr [SrcSym (strlit"return"); SrcVar (strlit"x")]’ \\
   qexists_tac ‘BExpr [BSym (strlit"return"); BVar 0]’ \\
@@ -2234,41 +2234,41 @@ Proof
   EVAL_TAC
 QED
 
-Theorem bridge_parse_atom_token_source_surface_related:
-  ∀var_env str_env source_toks surface_toks source rest_source surface rest_surface.
-    bridge_source_surface_token_rel_list var_env str_env
-      source_toks surface_toks ∧
+Theorem bridge_parse_atom_token_source_syntax_related:
+  ∀var_env str_env source_toks syntax_toks source rest_source syntax rest_syntax.
+    bridge_source_syntax_token_rel_list var_env str_env
+      source_toks syntax_toks ∧
     bridge_parse_source_atom_token source_toks =
       SOME (source, rest_source) ∧
-    bridge_parse_atom_token surface_toks =
-      SOME (surface, rest_surface) ⇒
-    bridge_source_surface_rel var_env str_env source surface ∧
-    bridge_source_surface_token_rel_list var_env str_env
-      rest_source rest_surface
+    bridge_parse_atom_token syntax_toks =
+      SOME (syntax, rest_syntax) ⇒
+    bridge_source_syntax_rel var_env str_env source syntax ∧
+    bridge_source_syntax_token_rel_list var_env str_env
+      rest_source rest_syntax
 Proof
   Cases_on ‘source_toks’ \\
-  Cases_on ‘surface_toks’ \\
+  Cases_on ‘syntax_toks’ \\
   rw[bridge_parse_source_atom_token_def,
      bridge_parse_atom_token_def,
-     bridge_source_surface_token_rel_def,
-     bridge_source_surface_token_rel_list_def] \\
+     bridge_source_syntax_token_rel_def,
+     bridge_source_syntax_token_rel_list_def] \\
   Cases_on ‘h’ \\
   Cases_on ‘h'’ \\
   gvs[bridge_parse_source_atom_token_def,
       bridge_parse_atom_token_def,
-      bridge_source_surface_token_rel_def,
-      bridge_source_surface_token_rel_list_def]
+      bridge_source_syntax_token_rel_def,
+      bridge_source_syntax_token_rel_list_def]
 QED
 
-Theorem bridge_parse_atom_token_source_surface_positive_example:
-  ∃source surface rest_source rest_surface.
+Theorem bridge_parse_atom_token_source_syntax_positive_example:
+  ∃source syntax rest_source rest_syntax.
     bridge_parse_source_atom_token
       [BSrcTokAtom (SrcSym (strlit"return"))] =
       SOME (source, rest_source) ∧
     bridge_parse_atom_token [BTokAtom (BSym (strlit"return"))] =
-      SOME (surface, rest_surface) ∧
-    bridge_source_surface_rel [] [] source surface ∧
-    bridge_source_surface_token_rel_list [] [] rest_source rest_surface
+      SOME (syntax, rest_syntax) ∧
+    bridge_source_syntax_rel [] [] source syntax ∧
+    bridge_source_syntax_token_rel_list [] [] rest_source rest_syntax
 Proof
   qexists_tac ‘SrcSym (strlit"return")’ \\
   qexists_tac ‘BSym (strlit"return")’ \\
@@ -2277,103 +2277,103 @@ Proof
   EVAL_TAC
 QED
 
-Theorem bridge_parse_atom_token_source_surface_negative_example:
-  ¬bridge_source_surface_token_rel_list [] []
+Theorem bridge_parse_atom_token_source_syntax_negative_example:
+  ¬bridge_source_syntax_token_rel_list [] []
     [BSrcTokAtom (SrcVar (strlit"x"))]
     [BTokAtom (BVar 0)]
 Proof
   EVAL_TAC
 QED
 
-Theorem bridge_parse_source_surface_tokens_fuel_related:
+Theorem bridge_parse_source_syntax_tokens_fuel_related:
   ∀fuel.
-    (∀var_env str_env source_toks surface_toks.
-      bridge_source_surface_token_rel_list var_env str_env
-        source_toks surface_toks ⇒
-      bridge_source_surface_parse_result_rel var_env str_env
+    (∀var_env str_env source_toks syntax_toks.
+      bridge_source_syntax_token_rel_list var_env str_env
+        source_toks syntax_toks ⇒
+      bridge_source_syntax_parse_result_rel var_env str_env
         (bridge_parse_source_atom_tokens_fuel fuel source_toks)
-        (bridge_parse_atom_tokens_fuel fuel surface_toks)) ∧
-    (∀var_env str_env source_items surface_items source_toks surface_toks.
-      bridge_source_surface_rel_list var_env str_env
-        source_items surface_items ∧
-      bridge_source_surface_token_rel_list var_env str_env
-        source_toks surface_toks ⇒
-      bridge_source_surface_parse_result_rel var_env str_env
+        (bridge_parse_atom_tokens_fuel fuel syntax_toks)) ∧
+    (∀var_env str_env source_items syntax_items source_toks syntax_toks.
+      bridge_source_syntax_rel_list var_env str_env
+        source_items syntax_items ∧
+      bridge_source_syntax_token_rel_list var_env str_env
+        source_toks syntax_toks ⇒
+      bridge_source_syntax_parse_result_rel var_env str_env
         (bridge_parse_source_expr_items_fuel
           fuel source_items source_toks)
         (bridge_parse_expr_items_fuel
-          fuel surface_items surface_toks))
+          fuel syntax_items syntax_toks))
 Proof
   Induct_on ‘fuel’
   >- rw[bridge_parse_source_atom_tokens_fuel_def,
         bridge_parse_atom_tokens_fuel_def,
-        bridge_source_surface_parse_result_rel_def] \\
+        bridge_source_syntax_parse_result_rel_def] \\
   rw[]
   >- (
     Cases_on ‘source_toks’ \\
-    Cases_on ‘surface_toks’ \\
+    Cases_on ‘syntax_toks’ \\
     gvs[bridge_parse_source_atom_tokens_fuel_def,
         bridge_parse_atom_tokens_fuel_def,
-        bridge_source_surface_token_rel_def,
-        bridge_source_surface_token_rel_list_def,
-        bridge_source_surface_parse_result_rel_def] \\
+        bridge_source_syntax_token_rel_def,
+        bridge_source_syntax_token_rel_list_def,
+        bridge_source_syntax_parse_result_rel_def] \\
     every_case_tac \\
     gvs[bridge_parse_source_atom_tokens_fuel_def,
         bridge_parse_atom_tokens_fuel_def,
-        bridge_source_surface_token_rel_def,
-        bridge_source_surface_token_rel_list_def,
-        bridge_source_surface_parse_result_rel_def] \\
+        bridge_source_syntax_token_rel_def,
+        bridge_source_syntax_token_rel_list_def,
+        bridge_source_syntax_parse_result_rel_def] \\
     TRY (
       rename1
-        ‘bridge_source_surface_token_rel_list var_env str_env
-          source_rest surface_rest’ \\
+        ‘bridge_source_syntax_token_rel_list var_env str_env
+          source_rest syntax_rest’ \\
       qpat_x_assum
-        ‘∀var_env str_env source_items surface_items source_toks surface_toks. _’
+        ‘∀var_env str_env source_items syntax_items source_toks syntax_toks. _’
         (qspecl_then
           [‘var_env’, ‘str_env’, ‘[]’, ‘[]’,
-           ‘source_rest’, ‘surface_rest’] mp_tac) \\
-      rw[bridge_source_surface_rel_def]) \\
-    metis_tac[bridge_source_surface_rel_def])
+           ‘source_rest’, ‘syntax_rest’] mp_tac) \\
+      rw[bridge_source_syntax_rel_def]) \\
+    metis_tac[bridge_source_syntax_rel_def])
   >- (
-    qpat_x_assum ‘∀var_env str_env source_toks surface_toks. _’
+    qpat_x_assum ‘∀var_env str_env source_toks syntax_toks. _’
       (qspecl_then
-        [‘var_env’, ‘str_env’, ‘source_toks’, ‘surface_toks’] mp_tac) \\
+        [‘var_env’, ‘str_env’, ‘source_toks’, ‘syntax_toks’] mp_tac) \\
     impl_tac
-    >- gvs[bridge_source_surface_token_rel_list_def] \\
+    >- gvs[bridge_source_syntax_token_rel_list_def] \\
     strip_tac \\
     Cases_on ‘source_toks’ \\
-    Cases_on ‘surface_toks’ \\
+    Cases_on ‘syntax_toks’ \\
     gvs[bridge_parse_source_atom_tokens_fuel_def,
         bridge_parse_atom_tokens_fuel_def,
-        bridge_source_surface_token_rel_def,
-        bridge_source_surface_token_rel_list_def,
-        bridge_source_surface_parse_result_rel_def] \\
+        bridge_source_syntax_token_rel_def,
+        bridge_source_syntax_token_rel_list_def,
+        bridge_source_syntax_parse_result_rel_def] \\
     every_case_tac \\
     gvs[bridge_parse_source_atom_tokens_fuel_def,
         bridge_parse_atom_tokens_fuel_def,
-        bridge_source_surface_token_rel_def,
-        bridge_source_surface_token_rel_list_def,
-        bridge_source_surface_parse_result_rel_def,
-        bridge_source_surface_rel_def] \\
-    metis_tac[bridge_source_surface_rel_list_snoc,
-              bridge_source_surface_rel_def])
+        bridge_source_syntax_token_rel_def,
+        bridge_source_syntax_token_rel_list_def,
+        bridge_source_syntax_parse_result_rel_def,
+        bridge_source_syntax_rel_def] \\
+    metis_tac[bridge_source_syntax_rel_list_snoc,
+              bridge_source_syntax_rel_def])
 QED
 
-Theorem bridge_parse_source_surface_full_tokens_related:
-  ∀fuel var_env str_env source_toks surface_toks.
-    bridge_source_surface_token_rel_list var_env str_env
-      source_toks surface_toks ⇒
-    bridge_source_surface_parse_result_rel var_env str_env
+Theorem bridge_parse_source_syntax_full_tokens_related:
+  ∀fuel var_env str_env source_toks syntax_toks.
+    bridge_source_syntax_token_rel_list var_env str_env
+      source_toks syntax_toks ⇒
+    bridge_source_syntax_parse_result_rel var_env str_env
       (bridge_parse_source_atom_tokens_fuel fuel source_toks)
-      (bridge_parse_atom_tokens_fuel fuel surface_toks)
+      (bridge_parse_atom_tokens_fuel fuel syntax_toks)
 Proof
-  metis_tac[bridge_parse_source_surface_tokens_fuel_related]
+  metis_tac[bridge_parse_source_syntax_tokens_fuel_related]
 QED
 
 Datatype:
   bridge_command =
-    BCmdAdd bridge_surface_atom
-  | BCmdRun bridge_surface_atom
+    BCmdAdd bridge_syntax_atom
+  | BCmdRun bridge_syntax_atom
 End
 
 Datatype:
@@ -2396,11 +2396,11 @@ End
 
 Definition bridge_import_command_with_env_def:
   bridge_import_command_with_env env (BCmdAdd atom) =
-    (case bridge_import_surface_atom_with_env env atom of
+    (case bridge_import_syntax_atom_with_env env atom of
      | SOME imported => SOME (BNumCmdAdd imported)
      | NONE => NONE) ∧
   bridge_import_command_with_env env (BCmdRun atom) =
-    (case bridge_import_surface_atom_with_env env atom of
+    (case bridge_import_syntax_atom_with_env env atom of
      | SOME imported => SOME (BNumCmdRun imported)
      | NONE => NONE)
 End
@@ -2418,12 +2418,12 @@ End
 
 Definition bridge_export_command_with_env_def:
   bridge_export_command_with_env env (BNumCmdAdd atom) =
-    (case bridge_export_surface_atom_with_env env atom of
-     | SOME surface => SOME (BCmdAdd surface)
+    (case bridge_export_syntax_atom_with_env env atom of
+     | SOME syntax => SOME (BCmdAdd syntax)
      | NONE => NONE) ∧
   bridge_export_command_with_env env (BNumCmdRun atom) =
-    (case bridge_export_surface_atom_with_env env atom of
-     | SOME surface => SOME (BCmdRun surface)
+    (case bridge_export_syntax_atom_with_env env atom of
+     | SOME syntax => SOME (BCmdRun syntax)
      | NONE => NONE)
 End
 
@@ -2431,9 +2431,9 @@ Definition bridge_export_command_list_with_env_def:
   bridge_export_command_list_with_env env [] = SOME [] ∧
   bridge_export_command_list_with_env env (cmd :: cmds) =
     (case bridge_export_command_with_env env cmd of
-     | SOME surface =>
+     | SOME syntax =>
          (case bridge_export_command_list_with_env env cmds of
-          | SOME rest => SOME (surface :: rest)
+          | SOME rest => SOME (syntax :: rest)
           | NONE => NONE)
      | NONE => NONE)
 End
@@ -2448,7 +2448,7 @@ Proof
   rw[bridge_import_command_with_env_def] \\
   every_case_tac \\
   gvs[bridge_export_command_with_env_def] \\
-  drule_all bridge_import_surface_atom_with_env_export_roundtrip \\
+  drule_all bridge_import_syntax_atom_with_env_export_roundtrip \\
   rw[]
 QED
 
@@ -2489,7 +2489,7 @@ Proof
   rw[bridge_export_command_with_env_def] \\
   every_case_tac \\
   gvs[bridge_import_command_with_env_def] \\
-  drule_all bridge_export_surface_atom_with_env_import_roundtrip \\
+  drule_all bridge_export_syntax_atom_with_env_import_roundtrip \\
   rw[]
 QED
 
@@ -2507,8 +2507,8 @@ Proof
   Cases_on ‘bridge_export_command_list_with_env env imported’
   >- gvs[] \\
   gvs[] \\
-  rename1 ‘bridge_export_command_with_env env cmd = SOME surface_cmd’ \\
-  rename1 ‘bridge_export_command_list_with_env env imported = SOME surface_cmds’ \\
+  rename1 ‘bridge_export_command_with_env env cmd = SOME syntax_cmd’ \\
+  rename1 ‘bridge_export_command_list_with_env env imported = SOME syntax_cmds’ \\
   drule_all bridge_export_command_with_env_import_roundtrip \\
   strip_tac \\
   qpat_x_assum
@@ -2516,7 +2516,7 @@ Proof
        bridge_dyn_env_ok env ∧
        bridge_export_command_list_with_env env imported = SOME cmds ⇒
        bridge_import_command_list_with_env env cmds = SOME imported’
-    (qspecl_then [‘env’, ‘surface_cmds’] mp_tac) \\
+    (qspecl_then [‘env’, ‘syntax_cmds’] mp_tac) \\
   rw[bridge_import_command_list_with_env_def]
 QED
 
@@ -2633,10 +2633,10 @@ Theorem bridge_import_parsed_command_tokens_with_env_export_sound:
     bridge_dyn_env_ok env ∧
     bridge_import_parsed_command_tokens_with_env env fuel toks =
       SOME (imported, rest) ⇒
-    ∃surface.
+    ∃syntax.
       bridge_parse_command_tokens_fuel fuel toks =
-        BCommandParsed surface rest ∧
-      bridge_export_command_with_env env imported = SOME surface
+        BCommandParsed syntax rest ∧
+      bridge_export_command_with_env env imported = SOME syntax
 Proof
   rw[bridge_import_parsed_command_tokens_with_env_def] \\
   gvs[AllCaseEqs()] \\
@@ -2648,9 +2648,9 @@ Theorem bridge_import_parsed_program_tokens_with_env_export_sound:
     bridge_dyn_env_ok env ∧
     bridge_import_parsed_program_tokens_with_env env fuel toks =
       SOME imported ⇒
-    ∃surface.
-      bridge_parse_program_tokens_fuel fuel toks = BProgramParsed surface ∧
-      bridge_export_command_list_with_env env imported = SOME surface
+    ∃syntax.
+      bridge_parse_program_tokens_fuel fuel toks = BProgramParsed syntax ∧
+      bridge_export_command_list_with_env env imported = SOME syntax
 Proof
   rw[bridge_import_parsed_program_tokens_with_env_def] \\
   gvs[AllCaseEqs()] \\
@@ -5056,242 +5056,242 @@ Proof
   EVAL_TAC
 QED
 
-Definition bridge_source_surface_command_rel_def:
-  bridge_source_surface_command_rel var_env str_env
-    (BSrcCmdAdd source) (BCmdAdd surface) =
-      bridge_source_surface_rel var_env str_env source surface ∧
-  bridge_source_surface_command_rel var_env str_env
-    (BSrcCmdRun source) (BCmdRun surface) =
-      bridge_source_surface_rel var_env str_env source surface ∧
-  bridge_source_surface_command_rel var_env str_env _ _ = F
+Definition bridge_source_syntax_command_rel_def:
+  bridge_source_syntax_command_rel var_env str_env
+    (BSrcCmdAdd source) (BCmdAdd syntax) =
+      bridge_source_syntax_rel var_env str_env source syntax ∧
+  bridge_source_syntax_command_rel var_env str_env
+    (BSrcCmdRun source) (BCmdRun syntax) =
+      bridge_source_syntax_rel var_env str_env source syntax ∧
+  bridge_source_syntax_command_rel var_env str_env _ _ = F
 End
 
-Definition bridge_source_surface_command_rel_list_def:
-  bridge_source_surface_command_rel_list var_env str_env [] [] = T ∧
-  bridge_source_surface_command_rel_list var_env str_env
+Definition bridge_source_syntax_command_rel_list_def:
+  bridge_source_syntax_command_rel_list var_env str_env [] [] = T ∧
+  bridge_source_syntax_command_rel_list var_env str_env
     (x :: xs) (y :: ys) =
-      (bridge_source_surface_command_rel var_env str_env x y ∧
-       bridge_source_surface_command_rel_list var_env str_env xs ys) ∧
-  bridge_source_surface_command_rel_list var_env str_env _ _ = F
+      (bridge_source_syntax_command_rel var_env str_env x y ∧
+       bridge_source_syntax_command_rel_list var_env str_env xs ys) ∧
+  bridge_source_syntax_command_rel_list var_env str_env _ _ = F
 End
 
-Definition bridge_source_surface_command_parse_result_rel_def:
-  bridge_source_surface_command_parse_result_rel var_env str_env
+Definition bridge_source_syntax_command_parse_result_rel_def:
+  bridge_source_syntax_command_parse_result_rel var_env str_env
     (BSourceCommandParsed source rest_source)
-    (BCommandParsed surface rest_surface) =
-      (bridge_source_surface_command_rel var_env str_env source surface ∧
-       bridge_source_surface_token_rel_list var_env str_env
-         rest_source rest_surface) ∧
-  bridge_source_surface_command_parse_result_rel var_env str_env
+    (BCommandParsed syntax rest_syntax) =
+      (bridge_source_syntax_command_rel var_env str_env source syntax ∧
+       bridge_source_syntax_token_rel_list var_env str_env
+         rest_source rest_syntax) ∧
+  bridge_source_syntax_command_parse_result_rel var_env str_env
     (BSourceCommandParseError n) (BCommandParseError m) =
       (n = m) ∧
-  bridge_source_surface_command_parse_result_rel var_env str_env _ _ = F
+  bridge_source_syntax_command_parse_result_rel var_env str_env _ _ = F
 End
 
-Definition bridge_source_surface_program_parse_result_rel_def:
-  bridge_source_surface_program_parse_result_rel var_env str_env
-    (BSourceProgramParsed source_cmds) (BProgramParsed surface_cmds) =
-      bridge_source_surface_command_rel_list var_env str_env
-        source_cmds surface_cmds ∧
-  bridge_source_surface_program_parse_result_rel var_env str_env
+Definition bridge_source_syntax_program_parse_result_rel_def:
+  bridge_source_syntax_program_parse_result_rel var_env str_env
+    (BSourceProgramParsed source_cmds) (BProgramParsed syntax_cmds) =
+      bridge_source_syntax_command_rel_list var_env str_env
+        source_cmds syntax_cmds ∧
+  bridge_source_syntax_program_parse_result_rel var_env str_env
     (BSourceProgramParseError n) (BProgramParseError m) =
       (n = m) ∧
-  bridge_source_surface_program_parse_result_rel var_env str_env _ _ = F
+  bridge_source_syntax_program_parse_result_rel var_env str_env _ _ = F
 End
 
 Theorem bridge_parse_command_add_case_related:
-  ∀fuel var_env str_env source_toks surface_toks.
-    bridge_source_surface_token_rel_list var_env str_env
-      source_toks surface_toks ⇒
-    bridge_source_surface_command_parse_result_rel var_env str_env
+  ∀fuel var_env str_env source_toks syntax_toks.
+    bridge_source_syntax_token_rel_list var_env str_env
+      source_toks syntax_toks ⇒
+    bridge_source_syntax_command_parse_result_rel var_env str_env
       (case bridge_parse_source_atom_tokens_fuel fuel source_toks of
        | BSourceFullAtomParsed atom rest =>
            BSourceCommandParsed (BSrcCmdAdd atom) rest
        | BSourceFullAtomParseError n => BSourceCommandParseError n)
-      (case bridge_parse_atom_tokens_fuel fuel surface_toks of
+      (case bridge_parse_atom_tokens_fuel fuel syntax_toks of
        | BFullAtomParsed atom rest => BCommandParsed (BCmdAdd atom) rest
        | BFullAtomParseError n => BCommandParseError n)
 Proof
   rw[] \\
   qspecl_then
-    [‘fuel’, ‘var_env’, ‘str_env’, ‘source_toks’, ‘surface_toks’]
-    mp_tac bridge_parse_source_surface_full_tokens_related \\
+    [‘fuel’, ‘var_env’, ‘str_env’, ‘source_toks’, ‘syntax_toks’]
+    mp_tac bridge_parse_source_syntax_full_tokens_related \\
   rw[] \\
   every_case_tac \\
-  gvs[bridge_source_surface_parse_result_rel_def,
-      bridge_source_surface_command_parse_result_rel_def,
-      bridge_source_surface_command_rel_def]
+  gvs[bridge_source_syntax_parse_result_rel_def,
+      bridge_source_syntax_command_parse_result_rel_def,
+      bridge_source_syntax_command_rel_def]
 QED
 
 Theorem bridge_parse_command_run_case_related:
-  ∀fuel var_env str_env source_toks surface_toks.
-    bridge_source_surface_token_rel_list var_env str_env
-      source_toks surface_toks ⇒
-    bridge_source_surface_command_parse_result_rel var_env str_env
+  ∀fuel var_env str_env source_toks syntax_toks.
+    bridge_source_syntax_token_rel_list var_env str_env
+      source_toks syntax_toks ⇒
+    bridge_source_syntax_command_parse_result_rel var_env str_env
       (case bridge_parse_source_atom_tokens_fuel fuel source_toks of
        | BSourceFullAtomParsed atom rest =>
            BSourceCommandParsed (BSrcCmdRun atom) rest
        | BSourceFullAtomParseError n => BSourceCommandParseError n)
-      (case bridge_parse_atom_tokens_fuel fuel surface_toks of
+      (case bridge_parse_atom_tokens_fuel fuel syntax_toks of
        | BFullAtomParsed atom rest => BCommandParsed (BCmdRun atom) rest
        | BFullAtomParseError n => BCommandParseError n)
 Proof
   rw[] \\
   qspecl_then
-    [‘fuel’, ‘var_env’, ‘str_env’, ‘source_toks’, ‘surface_toks’]
-    mp_tac bridge_parse_source_surface_full_tokens_related \\
+    [‘fuel’, ‘var_env’, ‘str_env’, ‘source_toks’, ‘syntax_toks’]
+    mp_tac bridge_parse_source_syntax_full_tokens_related \\
   rw[] \\
   every_case_tac \\
-  gvs[bridge_source_surface_parse_result_rel_def,
-      bridge_source_surface_command_parse_result_rel_def,
-      bridge_source_surface_command_rel_def]
+  gvs[bridge_source_syntax_parse_result_rel_def,
+      bridge_source_syntax_command_parse_result_rel_def,
+      bridge_source_syntax_command_rel_def]
 QED
 
-Theorem bridge_parse_command_source_surface_tokens_fuel_related:
-  ∀fuel var_env str_env source_toks surface_toks.
-    bridge_source_surface_token_rel_list var_env str_env
-      source_toks surface_toks ⇒
-    bridge_source_surface_command_parse_result_rel var_env str_env
+Theorem bridge_parse_command_source_syntax_tokens_fuel_related:
+  ∀fuel var_env str_env source_toks syntax_toks.
+    bridge_source_syntax_token_rel_list var_env str_env
+      source_toks syntax_toks ⇒
+    bridge_source_syntax_command_parse_result_rel var_env str_env
       (bridge_parse_source_command_tokens_fuel fuel source_toks)
-      (bridge_parse_command_tokens_fuel fuel surface_toks)
+      (bridge_parse_command_tokens_fuel fuel syntax_toks)
 Proof
   rw[] \\
   Cases_on ‘source_toks’
   >- (
-    Cases_on ‘surface_toks’
+    Cases_on ‘syntax_toks’
     >- (
       rw[bridge_parse_source_command_tokens_fuel_def,
          bridge_parse_command_tokens_fuel_def] \\
       irule bridge_parse_command_add_case_related \\
-      rw[bridge_source_surface_token_rel_list_def]) \\
-    gvs[bridge_source_surface_token_rel_list_def]) \\
-  Cases_on ‘surface_toks’
-  >- gvs[bridge_source_surface_token_rel_list_def] \\
+      rw[bridge_source_syntax_token_rel_list_def]) \\
+    gvs[bridge_source_syntax_token_rel_list_def]) \\
+  Cases_on ‘syntax_toks’
+  >- gvs[bridge_source_syntax_token_rel_list_def] \\
   Cases_on ‘h’ \\
   Cases_on ‘h'’ \\
   gvs[bridge_parse_source_command_tokens_fuel_def,
       bridge_parse_command_tokens_fuel_def,
-      bridge_source_surface_token_rel_list_def,
-      bridge_source_surface_token_rel_def] \\
+      bridge_source_syntax_token_rel_list_def,
+      bridge_source_syntax_token_rel_def] \\
   TRY (
     irule bridge_parse_command_run_case_related \\
-    gvs[bridge_source_surface_token_rel_list_def]) \\
+    gvs[bridge_source_syntax_token_rel_list_def]) \\
   TRY (
     irule bridge_parse_command_add_case_related \\
-    gvs[bridge_source_surface_token_rel_list_def,
-        bridge_source_surface_token_rel_def]) \\
-  gvs[bridge_source_surface_token_rel_list_def,
-      bridge_source_surface_token_rel_def]
+    gvs[bridge_source_syntax_token_rel_list_def,
+        bridge_source_syntax_token_rel_def]) \\
+  gvs[bridge_source_syntax_token_rel_list_def,
+      bridge_source_syntax_token_rel_def]
 QED
 
-Theorem bridge_parse_program_source_surface_tokens_fuel_related:
-  ∀fuel var_env str_env source_toks surface_toks.
-    bridge_source_surface_token_rel_list var_env str_env
-      source_toks surface_toks ⇒
-    bridge_source_surface_program_parse_result_rel var_env str_env
+Theorem bridge_parse_program_source_syntax_tokens_fuel_related:
+  ∀fuel var_env str_env source_toks syntax_toks.
+    bridge_source_syntax_token_rel_list var_env str_env
+      source_toks syntax_toks ⇒
+    bridge_source_syntax_program_parse_result_rel var_env str_env
       (bridge_parse_source_program_tokens_fuel fuel source_toks)
-      (bridge_parse_program_tokens_fuel fuel surface_toks)
+      (bridge_parse_program_tokens_fuel fuel syntax_toks)
 Proof
   Induct_on ‘fuel’
   >- (
     Cases_on ‘source_toks’ \\
-    Cases_on ‘surface_toks’ \\
+    Cases_on ‘syntax_toks’ \\
     rw[bridge_parse_source_program_tokens_fuel_def,
        bridge_parse_program_tokens_fuel_def,
-       bridge_source_surface_token_rel_list_def,
-       bridge_source_surface_program_parse_result_rel_def,
-       bridge_source_surface_command_rel_list_def]) \\
+       bridge_source_syntax_token_rel_list_def,
+       bridge_source_syntax_program_parse_result_rel_def,
+       bridge_source_syntax_command_rel_list_def]) \\
   rw[] \\
   Cases_on ‘source_toks’ \\
-  Cases_on ‘surface_toks’ \\
+  Cases_on ‘syntax_toks’ \\
   gvs[bridge_parse_source_program_tokens_fuel_def,
       bridge_parse_program_tokens_fuel_def,
-      bridge_source_surface_token_rel_list_def,
-      bridge_source_surface_program_parse_result_rel_def,
-      bridge_source_surface_command_rel_list_def] \\
+      bridge_source_syntax_token_rel_list_def,
+      bridge_source_syntax_program_parse_result_rel_def,
+      bridge_source_syntax_command_rel_list_def] \\
   qspecl_then
     [‘SUC fuel’, ‘var_env’, ‘str_env’, ‘h :: t’, ‘h' :: t'’]
     mp_tac
-    bridge_parse_command_source_surface_tokens_fuel_related \\
+    bridge_parse_command_source_syntax_tokens_fuel_related \\
   impl_tac
-  >- gvs[bridge_source_surface_token_rel_list_def] \\
+  >- gvs[bridge_source_syntax_token_rel_list_def] \\
   strip_tac \\
   Cases_on ‘bridge_parse_source_command_tokens_fuel (SUC fuel) (h::t)’ \\
   Cases_on ‘bridge_parse_command_tokens_fuel (SUC fuel) (h'::t')’ \\
-  gvs[bridge_source_surface_command_parse_result_rel_def,
-      bridge_source_surface_program_parse_result_rel_def] \\
+  gvs[bridge_source_syntax_command_parse_result_rel_def,
+      bridge_source_syntax_program_parse_result_rel_def] \\
   first_x_assum drule \\
   strip_tac \\
   every_case_tac \\
-  gvs[bridge_source_surface_program_parse_result_rel_def,
-      bridge_source_surface_command_rel_list_def]
+  gvs[bridge_source_syntax_program_parse_result_rel_def,
+      bridge_source_syntax_command_rel_list_def]
 QED
 
-Theorem bridge_source_surface_token_list_parser_simulation:
-  ∀fuel var_env str_env source_toks surface_toks.
-    bridge_source_surface_token_rel_list var_env str_env
-      source_toks surface_toks ⇒
-    bridge_source_surface_parse_result_rel var_env str_env
+Theorem bridge_source_syntax_token_list_parser_simulation:
+  ∀fuel var_env str_env source_toks syntax_toks.
+    bridge_source_syntax_token_rel_list var_env str_env
+      source_toks syntax_toks ⇒
+    bridge_source_syntax_parse_result_rel var_env str_env
       (bridge_parse_source_atom_tokens_fuel fuel source_toks)
-      (bridge_parse_atom_tokens_fuel fuel surface_toks) ∧
-    bridge_source_surface_command_parse_result_rel var_env str_env
+      (bridge_parse_atom_tokens_fuel fuel syntax_toks) ∧
+    bridge_source_syntax_command_parse_result_rel var_env str_env
       (bridge_parse_source_command_tokens_fuel fuel source_toks)
-      (bridge_parse_command_tokens_fuel fuel surface_toks) ∧
-    bridge_source_surface_program_parse_result_rel var_env str_env
+      (bridge_parse_command_tokens_fuel fuel syntax_toks) ∧
+    bridge_source_syntax_program_parse_result_rel var_env str_env
       (bridge_parse_source_program_tokens_fuel fuel source_toks)
-      (bridge_parse_program_tokens_fuel fuel surface_toks)
+      (bridge_parse_program_tokens_fuel fuel syntax_toks)
 Proof
-  metis_tac[bridge_parse_source_surface_full_tokens_related,
-            bridge_parse_command_source_surface_tokens_fuel_related,
-            bridge_parse_program_source_surface_tokens_fuel_related]
+  metis_tac[bridge_parse_source_syntax_full_tokens_related,
+            bridge_parse_command_source_syntax_tokens_fuel_related,
+            bridge_parse_program_source_syntax_tokens_fuel_related]
 QED
 
 Theorem bridge_source_token_to_bridge_token_full_parser_simulation:
   ∀fuel var_env str_env source_toks bridge_toks.
-    bridge_source_surface_token_rel_list var_env str_env
+    bridge_source_syntax_token_rel_list var_env str_env
       source_toks bridge_toks ⇒
-    bridge_source_surface_parse_result_rel var_env str_env
+    bridge_source_syntax_parse_result_rel var_env str_env
       (bridge_parse_source_atom_tokens_fuel fuel source_toks)
       (bridge_parse_atom_tokens_fuel fuel bridge_toks) ∧
-    bridge_source_surface_command_parse_result_rel var_env str_env
+    bridge_source_syntax_command_parse_result_rel var_env str_env
       (bridge_parse_source_command_tokens_fuel fuel source_toks)
       (bridge_parse_command_tokens_fuel fuel bridge_toks) ∧
-    bridge_source_surface_program_parse_result_rel var_env str_env
+    bridge_source_syntax_program_parse_result_rel var_env str_env
       (bridge_parse_source_program_tokens_fuel fuel source_toks)
       (bridge_parse_program_tokens_fuel fuel bridge_toks)
 Proof
-  metis_tac[bridge_source_surface_token_list_parser_simulation]
+  metis_tac[bridge_source_syntax_token_list_parser_simulation]
 QED
 
-Theorem bridge_source_chars_to_surface_program_parser_related:
-  ∀lex_fuel parse_fuel chars source_toks surface_toks var_env str_env.
+Theorem bridge_source_chars_to_syntax_program_parser_related:
+  ∀lex_fuel parse_fuel chars source_toks syntax_toks var_env str_env.
     bridge_tokenize_source_chars_fuel lex_fuel chars =
       BSourceLexed source_toks ∧
-    bridge_source_surface_token_rel_list var_env str_env
-      source_toks surface_toks ⇒
-    bridge_source_surface_program_parse_result_rel var_env str_env
+    bridge_source_syntax_token_rel_list var_env str_env
+      source_toks syntax_toks ⇒
+    bridge_source_syntax_program_parse_result_rel var_env str_env
       (bridge_parse_source_program_chars_fuel
         lex_fuel parse_fuel chars)
-      (bridge_parse_program_tokens_fuel parse_fuel surface_toks)
+      (bridge_parse_program_tokens_fuel parse_fuel syntax_toks)
 Proof
   rw[bridge_parse_source_program_chars_fuel_def] \\
-  metis_tac[bridge_parse_program_source_surface_tokens_fuel_related]
+  metis_tac[bridge_parse_program_source_syntax_tokens_fuel_related]
 QED
 
-Theorem bridge_source_string_to_surface_program_parser_related:
-  ∀lex_fuel parse_fuel text source_toks surface_toks var_env str_env.
+Theorem bridge_source_string_to_syntax_program_parser_related:
+  ∀lex_fuel parse_fuel text source_toks syntax_toks var_env str_env.
     bridge_tokenize_source_string_fuel lex_fuel text =
       BSourceLexed source_toks ∧
-    bridge_source_surface_token_rel_list var_env str_env
-      source_toks surface_toks ⇒
-    bridge_source_surface_program_parse_result_rel var_env str_env
+    bridge_source_syntax_token_rel_list var_env str_env
+      source_toks syntax_toks ⇒
+    bridge_source_syntax_program_parse_result_rel var_env str_env
       (bridge_parse_source_program_string_fuel
         lex_fuel parse_fuel text)
-      (bridge_parse_program_tokens_fuel parse_fuel surface_toks)
+      (bridge_parse_program_tokens_fuel parse_fuel syntax_toks)
 Proof
   rw[bridge_tokenize_source_string_fuel_def,
      bridge_parse_source_program_string_fuel_def] \\
-  metis_tac[bridge_source_chars_to_surface_program_parser_related]
+  metis_tac[bridge_source_chars_to_syntax_program_parser_related]
 QED
 
 Theorem bridge_parse_source_program_chars_fuel_positive_example:
@@ -5334,8 +5334,8 @@ Proof
   EVAL_TAC
 QED
 
-Theorem bridge_parse_command_source_surface_positive_example:
-  bridge_source_surface_command_parse_result_rel [(strlit"x", 0)] []
+Theorem bridge_parse_command_source_syntax_positive_example:
+  bridge_source_syntax_command_parse_result_rel [(strlit"x", 0)] []
     (bridge_parse_source_command_tokens_fuel 10
       [BSrcTokBang;
        BSrcTokLParen;
@@ -5352,8 +5352,8 @@ Proof
   EVAL_TAC
 QED
 
-Theorem bridge_parse_program_source_surface_positive_example:
-  bridge_source_surface_program_parse_result_rel [(strlit"x", 0)] []
+Theorem bridge_parse_program_source_syntax_positive_example:
+  bridge_source_syntax_program_parse_result_rel [(strlit"x", 0)] []
     (bridge_parse_source_program_tokens_fuel 20
       [BSrcTokAtom (SrcSym (strlit"A"));
        BSrcTokBang;
@@ -5372,8 +5372,8 @@ Proof
   EVAL_TAC
 QED
 
-Theorem bridge_parse_program_source_surface_negative_example:
-  ¬bridge_source_surface_program_parse_result_rel [] []
+Theorem bridge_parse_program_source_syntax_negative_example:
+  ¬bridge_source_syntax_program_parse_result_rel [] []
     (bridge_parse_source_program_tokens_fuel 20
       [BSrcTokAtom (SrcVar (strlit"x"))])
     (bridge_parse_program_tokens_fuel 20
@@ -5493,155 +5493,155 @@ Proof
      bridge_eval_int_add_values_args2_matches_rec_add_values]
 QED
 
-Definition bridge_surface_eval_add_values_wrapper_def:
-  bridge_surface_eval_add_values_wrapper surface_original surface_xs surface_ys =
-    case bridge_import_surface_atom surface_original of
+Definition bridge_syntax_eval_add_values_wrapper_def:
+  bridge_syntax_eval_add_values_wrapper syntax_original syntax_xs syntax_ys =
+    case bridge_import_syntax_atom syntax_original of
     | NONE => []
     | SOME original =>
-        (case bridge_import_surface_atom_list surface_xs of
+        (case bridge_import_syntax_atom_list syntax_xs of
          | NONE => []
          | SOME xs =>
-             (case bridge_import_surface_atom_list surface_ys of
+             (case bridge_import_syntax_atom_list syntax_ys of
               | NONE => []
               | SOME ys => bridge_eval_add_values_fragment original xs ys))
 End
 
-Definition bridge_surface_eval_add_evaluated_args_wrapper_def:
-  bridge_surface_eval_add_evaluated_args_wrapper
-    surface_original surface_xs surface_ys =
-      bridge_surface_eval_add_values_wrapper
-        surface_original surface_xs surface_ys
+Definition bridge_syntax_eval_add_evaluated_args_wrapper_def:
+  bridge_syntax_eval_add_evaluated_args_wrapper
+    syntax_original syntax_xs syntax_ys =
+      bridge_syntax_eval_add_values_wrapper
+        syntax_original syntax_xs syntax_ys
 End
 
-Definition bridge_surface_eval_add_values_wrapper_with_env_def:
-  bridge_surface_eval_add_values_wrapper_with_env
-    env surface_original surface_xs surface_ys =
-    case bridge_import_surface_atom_with_env env surface_original of
+Definition bridge_syntax_eval_add_values_wrapper_with_env_def:
+  bridge_syntax_eval_add_values_wrapper_with_env
+    env syntax_original syntax_xs syntax_ys =
+    case bridge_import_syntax_atom_with_env env syntax_original of
     | NONE => []
     | SOME original =>
-        (case bridge_import_surface_atom_list_with_env env surface_xs of
+        (case bridge_import_syntax_atom_list_with_env env syntax_xs of
          | NONE => []
          | SOME xs =>
-             (case bridge_import_surface_atom_list_with_env env surface_ys of
+             (case bridge_import_syntax_atom_list_with_env env syntax_ys of
               | NONE => []
               | SOME ys => bridge_eval_add_values_fragment original xs ys))
 End
 
-Definition bridge_surface_eval_add_evaluated_args_wrapper_with_env_def:
-  bridge_surface_eval_add_evaluated_args_wrapper_with_env
-    env surface_original surface_xs surface_ys =
-      bridge_surface_eval_add_values_wrapper_with_env
-        env surface_original surface_xs surface_ys
+Definition bridge_syntax_eval_add_evaluated_args_wrapper_with_env_def:
+  bridge_syntax_eval_add_evaluated_args_wrapper_with_env
+    env syntax_original syntax_xs syntax_ys =
+      bridge_syntax_eval_add_values_wrapper_with_env
+        env syntax_original syntax_xs syntax_ys
 End
 
-Theorem bridge_surface_eval_add_values_wrapper_import:
-  ∀surface_original surface_xs surface_ys original xs ys.
-    bridge_import_surface_atom surface_original = SOME original ∧
-    bridge_import_surface_atom_list surface_xs = SOME xs ∧
-    bridge_import_surface_atom_list surface_ys = SOME ys ⇒
-    bridge_surface_eval_add_values_wrapper
-      surface_original surface_xs surface_ys =
+Theorem bridge_syntax_eval_add_values_wrapper_import:
+  ∀syntax_original syntax_xs syntax_ys original xs ys.
+    bridge_import_syntax_atom syntax_original = SOME original ∧
+    bridge_import_syntax_atom_list syntax_xs = SOME xs ∧
+    bridge_import_syntax_atom_list syntax_ys = SOME ys ⇒
+    bridge_syntax_eval_add_values_wrapper
+      syntax_original syntax_xs syntax_ys =
     bridge_eval_add_values_fragment original xs ys
 Proof
-  rw[bridge_surface_eval_add_values_wrapper_def]
+  rw[bridge_syntax_eval_add_values_wrapper_def]
 QED
 
-Theorem bridge_surface_eval_add_evaluated_args_wrapper_import:
-  ∀surface_original surface_xs surface_ys original xs ys.
-    bridge_import_surface_atom surface_original = SOME original ∧
-    bridge_import_surface_atom_list surface_xs = SOME xs ∧
-    bridge_import_surface_atom_list surface_ys = SOME ys ⇒
-    bridge_surface_eval_add_evaluated_args_wrapper
-      surface_original surface_xs surface_ys =
+Theorem bridge_syntax_eval_add_evaluated_args_wrapper_import:
+  ∀syntax_original syntax_xs syntax_ys original xs ys.
+    bridge_import_syntax_atom syntax_original = SOME original ∧
+    bridge_import_syntax_atom_list syntax_xs = SOME xs ∧
+    bridge_import_syntax_atom_list syntax_ys = SOME ys ⇒
+    bridge_syntax_eval_add_evaluated_args_wrapper
+      syntax_original syntax_xs syntax_ys =
     bridge_eval_add_values_fragment original xs ys
 Proof
-  rw[bridge_surface_eval_add_evaluated_args_wrapper_def,
-     bridge_surface_eval_add_values_wrapper_import]
+  rw[bridge_syntax_eval_add_evaluated_args_wrapper_def,
+     bridge_syntax_eval_add_values_wrapper_import]
 QED
 
-Theorem bridge_surface_eval_add_values_wrapper_with_env_import:
-  ∀env surface_original surface_xs surface_ys original xs ys.
-    bridge_import_surface_atom_with_env env surface_original =
+Theorem bridge_syntax_eval_add_values_wrapper_with_env_import:
+  ∀env syntax_original syntax_xs syntax_ys original xs ys.
+    bridge_import_syntax_atom_with_env env syntax_original =
       SOME original ∧
-    bridge_import_surface_atom_list_with_env env surface_xs = SOME xs ∧
-    bridge_import_surface_atom_list_with_env env surface_ys = SOME ys ⇒
-    bridge_surface_eval_add_values_wrapper_with_env
-      env surface_original surface_xs surface_ys =
+    bridge_import_syntax_atom_list_with_env env syntax_xs = SOME xs ∧
+    bridge_import_syntax_atom_list_with_env env syntax_ys = SOME ys ⇒
+    bridge_syntax_eval_add_values_wrapper_with_env
+      env syntax_original syntax_xs syntax_ys =
     bridge_eval_add_values_fragment original xs ys
 Proof
-  rw[bridge_surface_eval_add_values_wrapper_with_env_def]
+  rw[bridge_syntax_eval_add_values_wrapper_with_env_def]
 QED
 
-Theorem bridge_surface_eval_add_evaluated_args_wrapper_with_env_import:
-  ∀env surface_original surface_xs surface_ys original xs ys.
-    bridge_import_surface_atom_with_env env surface_original =
+Theorem bridge_syntax_eval_add_evaluated_args_wrapper_with_env_import:
+  ∀env syntax_original syntax_xs syntax_ys original xs ys.
+    bridge_import_syntax_atom_with_env env syntax_original =
       SOME original ∧
-    bridge_import_surface_atom_list_with_env env surface_xs = SOME xs ∧
-    bridge_import_surface_atom_list_with_env env surface_ys = SOME ys ⇒
-    bridge_surface_eval_add_evaluated_args_wrapper_with_env
-      env surface_original surface_xs surface_ys =
+    bridge_import_syntax_atom_list_with_env env syntax_xs = SOME xs ∧
+    bridge_import_syntax_atom_list_with_env env syntax_ys = SOME ys ⇒
+    bridge_syntax_eval_add_evaluated_args_wrapper_with_env
+      env syntax_original syntax_xs syntax_ys =
     bridge_eval_add_values_fragment original xs ys
 Proof
-  rw[bridge_surface_eval_add_evaluated_args_wrapper_with_env_def,
-     bridge_surface_eval_add_values_wrapper_with_env_import]
+  rw[bridge_syntax_eval_add_evaluated_args_wrapper_with_env_def,
+     bridge_syntax_eval_add_values_wrapper_with_env_import]
 QED
 
-Theorem bridge_surface_eval_add_values_wrapper_matches_rec_add_values:
-  ∀surface_original surface_xs surface_ys original xs ys.
-    bridge_import_surface_atom surface_original = SOME original ∧
-    bridge_import_surface_atom_list surface_xs = SOME xs ∧
-    bridge_import_surface_atom_list surface_ys = SOME ys ⇒
-    bridge_surface_eval_add_values_wrapper
-      surface_original surface_xs surface_ys =
+Theorem bridge_syntax_eval_add_values_wrapper_matches_rec_add_values:
+  ∀syntax_original syntax_xs syntax_ys original xs ys.
+    bridge_import_syntax_atom syntax_original = SOME original ∧
+    bridge_import_syntax_atom_list syntax_xs = SOME xs ∧
+    bridge_import_syntax_atom_list syntax_ys = SOME ys ⇒
+    bridge_syntax_eval_add_values_wrapper
+      syntax_original syntax_xs syntax_ys =
     rec_add_values original xs ys
 Proof
-  gvs[bridge_surface_eval_add_values_wrapper_def,
+  gvs[bridge_syntax_eval_add_values_wrapper_def,
       bridge_eval_add_values_fragment_matches_rec_add_values]
 QED
 
-Theorem bridge_surface_eval_add_evaluated_args_wrapper_matches_rec_add_values:
-  ∀surface_original surface_xs surface_ys original xs ys.
-    bridge_import_surface_atom surface_original = SOME original ∧
-    bridge_import_surface_atom_list surface_xs = SOME xs ∧
-    bridge_import_surface_atom_list surface_ys = SOME ys ⇒
-    bridge_surface_eval_add_evaluated_args_wrapper
-      surface_original surface_xs surface_ys =
+Theorem bridge_syntax_eval_add_evaluated_args_wrapper_matches_rec_add_values:
+  ∀syntax_original syntax_xs syntax_ys original xs ys.
+    bridge_import_syntax_atom syntax_original = SOME original ∧
+    bridge_import_syntax_atom_list syntax_xs = SOME xs ∧
+    bridge_import_syntax_atom_list syntax_ys = SOME ys ⇒
+    bridge_syntax_eval_add_evaluated_args_wrapper
+      syntax_original syntax_xs syntax_ys =
     rec_add_values original xs ys
 Proof
-  rw[bridge_surface_eval_add_evaluated_args_wrapper_def,
-     bridge_surface_eval_add_values_wrapper_matches_rec_add_values]
+  rw[bridge_syntax_eval_add_evaluated_args_wrapper_def,
+     bridge_syntax_eval_add_values_wrapper_matches_rec_add_values]
 QED
 
-Theorem bridge_surface_eval_add_values_wrapper_with_env_matches_rec_add_values:
-  ∀env surface_original surface_xs surface_ys original xs ys.
-    bridge_import_surface_atom_with_env env surface_original =
+Theorem bridge_syntax_eval_add_values_wrapper_with_env_matches_rec_add_values:
+  ∀env syntax_original syntax_xs syntax_ys original xs ys.
+    bridge_import_syntax_atom_with_env env syntax_original =
       SOME original ∧
-    bridge_import_surface_atom_list_with_env env surface_xs = SOME xs ∧
-    bridge_import_surface_atom_list_with_env env surface_ys = SOME ys ⇒
-    bridge_surface_eval_add_values_wrapper_with_env
-      env surface_original surface_xs surface_ys =
+    bridge_import_syntax_atom_list_with_env env syntax_xs = SOME xs ∧
+    bridge_import_syntax_atom_list_with_env env syntax_ys = SOME ys ⇒
+    bridge_syntax_eval_add_values_wrapper_with_env
+      env syntax_original syntax_xs syntax_ys =
     rec_add_values original xs ys
 Proof
-  gvs[bridge_surface_eval_add_values_wrapper_with_env_def,
+  gvs[bridge_syntax_eval_add_values_wrapper_with_env_def,
       bridge_eval_add_values_fragment_matches_rec_add_values]
 QED
 
-Theorem bridge_surface_eval_add_evaluated_args_wrapper_with_env_matches_rec_add_values:
-  ∀env surface_original surface_xs surface_ys original xs ys.
-    bridge_import_surface_atom_with_env env surface_original =
+Theorem bridge_syntax_eval_add_evaluated_args_wrapper_with_env_matches_rec_add_values:
+  ∀env syntax_original syntax_xs syntax_ys original xs ys.
+    bridge_import_syntax_atom_with_env env syntax_original =
       SOME original ∧
-    bridge_import_surface_atom_list_with_env env surface_xs = SOME xs ∧
-    bridge_import_surface_atom_list_with_env env surface_ys = SOME ys ⇒
-    bridge_surface_eval_add_evaluated_args_wrapper_with_env
-      env surface_original surface_xs surface_ys =
+    bridge_import_syntax_atom_list_with_env env syntax_xs = SOME xs ∧
+    bridge_import_syntax_atom_list_with_env env syntax_ys = SOME ys ⇒
+    bridge_syntax_eval_add_evaluated_args_wrapper_with_env
+      env syntax_original syntax_xs syntax_ys =
     rec_add_values original xs ys
 Proof
-  rw[bridge_surface_eval_add_evaluated_args_wrapper_with_env_def,
-     bridge_surface_eval_add_values_wrapper_with_env_matches_rec_add_values]
+  rw[bridge_syntax_eval_add_evaluated_args_wrapper_with_env_def,
+     bridge_syntax_eval_add_values_wrapper_with_env_matches_rec_add_values]
 QED
 
-Theorem bridge_surface_eval_add_values_wrapper_positive_example:
-  bridge_surface_eval_add_values_wrapper
+Theorem bridge_syntax_eval_add_values_wrapper_positive_example:
+  bridge_syntax_eval_add_values_wrapper
     (BExpr [BSym (strlit"+"); BInt 2; BInt 3])
     [BInt 2] [BInt 3] =
   [metta_m1$IntLit 5]
@@ -5649,8 +5649,8 @@ Proof
   EVAL_TAC
 QED
 
-Theorem bridge_surface_eval_add_evaluated_args_wrapper_positive_example:
-  bridge_surface_eval_add_evaluated_args_wrapper
+Theorem bridge_syntax_eval_add_evaluated_args_wrapper_positive_example:
+  bridge_syntax_eval_add_evaluated_args_wrapper
     (BExpr [BSym (strlit"+"); BInt 2; BInt 3])
     [BInt 2] [BInt 3] =
   [metta_m1$IntLit 5]
@@ -5658,8 +5658,8 @@ Proof
   EVAL_TAC
 QED
 
-Theorem bridge_surface_eval_add_evaluated_args_wrapper_with_env_dynamic_example:
-  bridge_surface_eval_add_evaluated_args_wrapper_with_env
+Theorem bridge_syntax_eval_add_evaluated_args_wrapper_with_env_dynamic_example:
+  bridge_syntax_eval_add_evaluated_args_wrapper_with_env
     [(strlit"Foo", 1000)]
     (BExpr [BSym (strlit"Foo"); BInt 2; BInt 3])
     [BInt 2] [BInt 3] =
@@ -5668,8 +5668,8 @@ Proof
   EVAL_TAC
 QED
 
-Theorem bridge_surface_eval_add_values_wrapper_negative_example:
-  bridge_surface_eval_add_values_wrapper
+Theorem bridge_syntax_eval_add_values_wrapper_negative_example:
+  bridge_syntax_eval_add_values_wrapper
     (BExpr [BSym (strlit"not-a-core-symbol"); BInt 2; BInt 3])
     [BInt 2] [BInt 3] =
   []
@@ -5677,8 +5677,8 @@ Proof
   EVAL_TAC
 QED
 
-Theorem bridge_surface_eval_add_evaluated_args_wrapper_negative_example:
-  bridge_surface_eval_add_evaluated_args_wrapper
+Theorem bridge_syntax_eval_add_evaluated_args_wrapper_negative_example:
+  bridge_syntax_eval_add_evaluated_args_wrapper
     (BExpr [BSym (strlit"not-a-core-symbol"); BInt 2; BInt 3])
     [BInt 2] [BInt 3] =
   []
@@ -5686,8 +5686,8 @@ Proof
   EVAL_TAC
 QED
 
-Theorem bridge_surface_eval_add_evaluated_args_wrapper_with_env_negative_example:
-  bridge_surface_eval_add_evaluated_args_wrapper_with_env []
+Theorem bridge_syntax_eval_add_evaluated_args_wrapper_with_env_negative_example:
+  bridge_syntax_eval_add_evaluated_args_wrapper_with_env []
     (BExpr [BSym (strlit"Foo"); BInt 2; BInt 3])
     [BInt 2] [BInt 3] =
   []
@@ -5978,34 +5978,34 @@ Proof
      bridge_eval_not_values_matches_rec_not_values]
 QED
 
-Definition bridge_surface_eval_lt_values_wrapper_def:
-  bridge_surface_eval_lt_values_wrapper surface_original surface_xs surface_ys =
-    case bridge_import_surface_atom surface_original of
+Definition bridge_syntax_eval_lt_values_wrapper_def:
+  bridge_syntax_eval_lt_values_wrapper syntax_original syntax_xs syntax_ys =
+    case bridge_import_syntax_atom syntax_original of
     | NONE => []
     | SOME original =>
-        (case bridge_import_surface_atom_list surface_xs of
+        (case bridge_import_syntax_atom_list syntax_xs of
          | NONE => []
          | SOME xs =>
-             (case bridge_import_surface_atom_list surface_ys of
+             (case bridge_import_syntax_atom_list syntax_ys of
               | NONE => []
               | SOME ys => bridge_eval_lt_values_fragment original xs ys))
 End
 
-Theorem bridge_surface_eval_lt_values_wrapper_matches_rec_lt_values:
-  ∀surface_original surface_xs surface_ys original xs ys.
-    bridge_import_surface_atom surface_original = SOME original ∧
-    bridge_import_surface_atom_list surface_xs = SOME xs ∧
-    bridge_import_surface_atom_list surface_ys = SOME ys ⇒
-    bridge_surface_eval_lt_values_wrapper
-      surface_original surface_xs surface_ys =
+Theorem bridge_syntax_eval_lt_values_wrapper_matches_rec_lt_values:
+  ∀syntax_original syntax_xs syntax_ys original xs ys.
+    bridge_import_syntax_atom syntax_original = SOME original ∧
+    bridge_import_syntax_atom_list syntax_xs = SOME xs ∧
+    bridge_import_syntax_atom_list syntax_ys = SOME ys ⇒
+    bridge_syntax_eval_lt_values_wrapper
+      syntax_original syntax_xs syntax_ys =
     rec_lt_values original xs ys
 Proof
-  gvs[bridge_surface_eval_lt_values_wrapper_def,
+  gvs[bridge_syntax_eval_lt_values_wrapper_def,
       bridge_eval_lt_values_fragment_matches_rec_lt_values]
 QED
 
-Theorem bridge_surface_eval_lt_values_wrapper_positive_example:
-  bridge_surface_eval_lt_values_wrapper
+Theorem bridge_syntax_eval_lt_values_wrapper_positive_example:
+  bridge_syntax_eval_lt_values_wrapper
     (BExpr [BSym (strlit"<"); BInt 2; BInt 3])
     [BInt 2] [BInt 3] =
   [metta_m1$Sym 8]
@@ -6013,8 +6013,8 @@ Proof
   EVAL_TAC
 QED
 
-Theorem bridge_surface_eval_lt_values_wrapper_negative_example:
-  bridge_surface_eval_lt_values_wrapper
+Theorem bridge_syntax_eval_lt_values_wrapper_negative_example:
+  bridge_syntax_eval_lt_values_wrapper
     (BExpr [BSym (strlit"not-a-core-symbol"); BInt 2; BInt 3])
     [BInt 2] [BInt 3] =
   []
@@ -6022,34 +6022,34 @@ Proof
   EVAL_TAC
 QED
 
-Definition bridge_surface_eval_eq_values_wrapper_def:
-  bridge_surface_eval_eq_values_wrapper surface_original surface_xs surface_ys =
-    case bridge_import_surface_atom surface_original of
+Definition bridge_syntax_eval_eq_values_wrapper_def:
+  bridge_syntax_eval_eq_values_wrapper syntax_original syntax_xs syntax_ys =
+    case bridge_import_syntax_atom syntax_original of
     | NONE => []
     | SOME original =>
-        (case bridge_import_surface_atom_list surface_xs of
+        (case bridge_import_syntax_atom_list syntax_xs of
          | NONE => []
          | SOME xs =>
-             (case bridge_import_surface_atom_list surface_ys of
+             (case bridge_import_syntax_atom_list syntax_ys of
               | NONE => []
               | SOME ys => bridge_eval_eq_values_fragment original xs ys))
 End
 
-Theorem bridge_surface_eval_eq_values_wrapper_matches_rec_eq_values:
-  ∀surface_original surface_xs surface_ys original xs ys.
-    bridge_import_surface_atom surface_original = SOME original ∧
-    bridge_import_surface_atom_list surface_xs = SOME xs ∧
-    bridge_import_surface_atom_list surface_ys = SOME ys ⇒
-    bridge_surface_eval_eq_values_wrapper
-      surface_original surface_xs surface_ys =
+Theorem bridge_syntax_eval_eq_values_wrapper_matches_rec_eq_values:
+  ∀syntax_original syntax_xs syntax_ys original xs ys.
+    bridge_import_syntax_atom syntax_original = SOME original ∧
+    bridge_import_syntax_atom_list syntax_xs = SOME xs ∧
+    bridge_import_syntax_atom_list syntax_ys = SOME ys ⇒
+    bridge_syntax_eval_eq_values_wrapper
+      syntax_original syntax_xs syntax_ys =
     rec_eq_values original xs ys
 Proof
-  gvs[bridge_surface_eval_eq_values_wrapper_def,
+  gvs[bridge_syntax_eval_eq_values_wrapper_def,
       bridge_eval_eq_values_fragment_matches_rec_eq_values]
 QED
 
-Theorem bridge_surface_eval_eq_values_wrapper_positive_example:
-  bridge_surface_eval_eq_values_wrapper
+Theorem bridge_syntax_eval_eq_values_wrapper_positive_example:
+  bridge_syntax_eval_eq_values_wrapper
     (BExpr [BSym (strlit"=="); BInt 2; BInt 2])
     [BInt 2] [BInt 2] =
   [metta_m1$Sym 8]
@@ -6057,8 +6057,8 @@ Proof
   EVAL_TAC
 QED
 
-Theorem bridge_surface_eval_eq_values_wrapper_negative_example:
-  bridge_surface_eval_eq_values_wrapper
+Theorem bridge_syntax_eval_eq_values_wrapper_negative_example:
+  bridge_syntax_eval_eq_values_wrapper
     (BExpr [BSym (strlit"not-a-core-symbol"); BInt 2; BInt 2])
     [BInt 2] [BInt 2] =
   []
@@ -6066,34 +6066,34 @@ Proof
   EVAL_TAC
 QED
 
-Definition bridge_surface_eval_and_values_wrapper_def:
-  bridge_surface_eval_and_values_wrapper surface_original surface_xs surface_ys =
-    case bridge_import_surface_atom surface_original of
+Definition bridge_syntax_eval_and_values_wrapper_def:
+  bridge_syntax_eval_and_values_wrapper syntax_original syntax_xs syntax_ys =
+    case bridge_import_syntax_atom syntax_original of
     | NONE => []
     | SOME original =>
-        (case bridge_import_surface_atom_list surface_xs of
+        (case bridge_import_syntax_atom_list syntax_xs of
          | NONE => []
          | SOME xs =>
-             (case bridge_import_surface_atom_list surface_ys of
+             (case bridge_import_syntax_atom_list syntax_ys of
               | NONE => []
               | SOME ys => bridge_eval_and_values_fragment original xs ys))
 End
 
-Theorem bridge_surface_eval_and_values_wrapper_matches_rec_and_values:
-  ∀surface_original surface_xs surface_ys original xs ys.
-    bridge_import_surface_atom surface_original = SOME original ∧
-    bridge_import_surface_atom_list surface_xs = SOME xs ∧
-    bridge_import_surface_atom_list surface_ys = SOME ys ⇒
-    bridge_surface_eval_and_values_wrapper
-      surface_original surface_xs surface_ys =
+Theorem bridge_syntax_eval_and_values_wrapper_matches_rec_and_values:
+  ∀syntax_original syntax_xs syntax_ys original xs ys.
+    bridge_import_syntax_atom syntax_original = SOME original ∧
+    bridge_import_syntax_atom_list syntax_xs = SOME xs ∧
+    bridge_import_syntax_atom_list syntax_ys = SOME ys ⇒
+    bridge_syntax_eval_and_values_wrapper
+      syntax_original syntax_xs syntax_ys =
     rec_and_values original xs ys
 Proof
-  gvs[bridge_surface_eval_and_values_wrapper_def,
+  gvs[bridge_syntax_eval_and_values_wrapper_def,
       bridge_eval_and_values_fragment_matches_rec_and_values]
 QED
 
-Theorem bridge_surface_eval_and_values_wrapper_positive_example:
-  bridge_surface_eval_and_values_wrapper
+Theorem bridge_syntax_eval_and_values_wrapper_positive_example:
+  bridge_syntax_eval_and_values_wrapper
     (BExpr [BSym (strlit"and"); BSym (strlit"True");
             BSym (strlit"False")])
     [BSym (strlit"True")] [BSym (strlit"False")] =
@@ -6102,8 +6102,8 @@ Proof
   EVAL_TAC
 QED
 
-Theorem bridge_surface_eval_and_values_wrapper_negative_example:
-  bridge_surface_eval_and_values_wrapper
+Theorem bridge_syntax_eval_and_values_wrapper_negative_example:
+  bridge_syntax_eval_and_values_wrapper
     (BExpr [BSym (strlit"not-a-core-symbol"); BSym (strlit"True");
             BSym (strlit"False")])
     [BSym (strlit"True")] [BSym (strlit"False")] =
@@ -6112,34 +6112,34 @@ Proof
   EVAL_TAC
 QED
 
-Definition bridge_surface_eval_or_values_wrapper_def:
-  bridge_surface_eval_or_values_wrapper surface_original surface_xs surface_ys =
-    case bridge_import_surface_atom surface_original of
+Definition bridge_syntax_eval_or_values_wrapper_def:
+  bridge_syntax_eval_or_values_wrapper syntax_original syntax_xs syntax_ys =
+    case bridge_import_syntax_atom syntax_original of
     | NONE => []
     | SOME original =>
-        (case bridge_import_surface_atom_list surface_xs of
+        (case bridge_import_syntax_atom_list syntax_xs of
          | NONE => []
          | SOME xs =>
-             (case bridge_import_surface_atom_list surface_ys of
+             (case bridge_import_syntax_atom_list syntax_ys of
               | NONE => []
               | SOME ys => bridge_eval_or_values_fragment original xs ys))
 End
 
-Theorem bridge_surface_eval_or_values_wrapper_matches_rec_or_values:
-  ∀surface_original surface_xs surface_ys original xs ys.
-    bridge_import_surface_atom surface_original = SOME original ∧
-    bridge_import_surface_atom_list surface_xs = SOME xs ∧
-    bridge_import_surface_atom_list surface_ys = SOME ys ⇒
-    bridge_surface_eval_or_values_wrapper
-      surface_original surface_xs surface_ys =
+Theorem bridge_syntax_eval_or_values_wrapper_matches_rec_or_values:
+  ∀syntax_original syntax_xs syntax_ys original xs ys.
+    bridge_import_syntax_atom syntax_original = SOME original ∧
+    bridge_import_syntax_atom_list syntax_xs = SOME xs ∧
+    bridge_import_syntax_atom_list syntax_ys = SOME ys ⇒
+    bridge_syntax_eval_or_values_wrapper
+      syntax_original syntax_xs syntax_ys =
     rec_or_values original xs ys
 Proof
-  gvs[bridge_surface_eval_or_values_wrapper_def,
+  gvs[bridge_syntax_eval_or_values_wrapper_def,
       bridge_eval_or_values_fragment_matches_rec_or_values]
 QED
 
-Theorem bridge_surface_eval_or_values_wrapper_positive_example:
-  bridge_surface_eval_or_values_wrapper
+Theorem bridge_syntax_eval_or_values_wrapper_positive_example:
+  bridge_syntax_eval_or_values_wrapper
     (BExpr [BSym (strlit"or"); BSym (strlit"True");
             BSym (strlit"False")])
     [BSym (strlit"True")] [BSym (strlit"False")] =
@@ -6148,8 +6148,8 @@ Proof
   EVAL_TAC
 QED
 
-Theorem bridge_surface_eval_or_values_wrapper_negative_example:
-  bridge_surface_eval_or_values_wrapper
+Theorem bridge_syntax_eval_or_values_wrapper_negative_example:
+  bridge_syntax_eval_or_values_wrapper
     (BExpr [BSym (strlit"not-a-core-symbol"); BSym (strlit"True");
             BSym (strlit"False")])
     [BSym (strlit"True")] [BSym (strlit"False")] =
@@ -6158,29 +6158,29 @@ Proof
   EVAL_TAC
 QED
 
-Definition bridge_surface_eval_not_values_wrapper_def:
-  bridge_surface_eval_not_values_wrapper surface_original surface_xs =
-    case bridge_import_surface_atom surface_original of
+Definition bridge_syntax_eval_not_values_wrapper_def:
+  bridge_syntax_eval_not_values_wrapper syntax_original syntax_xs =
+    case bridge_import_syntax_atom syntax_original of
     | NONE => []
     | SOME original =>
-        (case bridge_import_surface_atom_list surface_xs of
+        (case bridge_import_syntax_atom_list syntax_xs of
          | NONE => []
          | SOME xs => bridge_eval_not_values_fragment original xs)
 End
 
-Theorem bridge_surface_eval_not_values_wrapper_matches_rec_not_values:
-  ∀surface_original surface_xs original xs.
-    bridge_import_surface_atom surface_original = SOME original ∧
-    bridge_import_surface_atom_list surface_xs = SOME xs ⇒
-    bridge_surface_eval_not_values_wrapper surface_original surface_xs =
+Theorem bridge_syntax_eval_not_values_wrapper_matches_rec_not_values:
+  ∀syntax_original syntax_xs original xs.
+    bridge_import_syntax_atom syntax_original = SOME original ∧
+    bridge_import_syntax_atom_list syntax_xs = SOME xs ⇒
+    bridge_syntax_eval_not_values_wrapper syntax_original syntax_xs =
     rec_not_values original xs
 Proof
-  gvs[bridge_surface_eval_not_values_wrapper_def,
+  gvs[bridge_syntax_eval_not_values_wrapper_def,
       bridge_eval_not_values_fragment_matches_rec_not_values]
 QED
 
-Theorem bridge_surface_eval_not_values_wrapper_positive_example:
-  bridge_surface_eval_not_values_wrapper
+Theorem bridge_syntax_eval_not_values_wrapper_positive_example:
+  bridge_syntax_eval_not_values_wrapper
     (BExpr [BSym (strlit"not"); BSym (strlit"False")])
     [BSym (strlit"False")] =
   [metta_m1$Sym 8]
@@ -6188,8 +6188,8 @@ Proof
   EVAL_TAC
 QED
 
-Theorem bridge_surface_eval_not_values_wrapper_negative_example:
-  bridge_surface_eval_not_values_wrapper
+Theorem bridge_syntax_eval_not_values_wrapper_negative_example:
+  bridge_syntax_eval_not_values_wrapper
     (BExpr [BSym (strlit"not-a-core-symbol"); BSym (strlit"False")])
     [BSym (strlit"False")] =
   []
@@ -6197,144 +6197,144 @@ Proof
   EVAL_TAC
 QED
 
-Definition bridge_surface_eval_lt_values_wrapper_with_env_def:
-  bridge_surface_eval_lt_values_wrapper_with_env
-    env surface_original surface_xs surface_ys =
-    case bridge_import_surface_atom_with_env env surface_original of
+Definition bridge_syntax_eval_lt_values_wrapper_with_env_def:
+  bridge_syntax_eval_lt_values_wrapper_with_env
+    env syntax_original syntax_xs syntax_ys =
+    case bridge_import_syntax_atom_with_env env syntax_original of
     | NONE => []
     | SOME original =>
-        (case bridge_import_surface_atom_list_with_env env surface_xs of
+        (case bridge_import_syntax_atom_list_with_env env syntax_xs of
          | NONE => []
          | SOME xs =>
-             (case bridge_import_surface_atom_list_with_env env surface_ys of
+             (case bridge_import_syntax_atom_list_with_env env syntax_ys of
               | NONE => []
               | SOME ys => bridge_eval_lt_values_fragment original xs ys))
 End
 
-Theorem bridge_surface_eval_lt_values_wrapper_with_env_matches_rec_lt_values:
-  ∀env surface_original surface_xs surface_ys original xs ys.
-    bridge_import_surface_atom_with_env env surface_original =
+Theorem bridge_syntax_eval_lt_values_wrapper_with_env_matches_rec_lt_values:
+  ∀env syntax_original syntax_xs syntax_ys original xs ys.
+    bridge_import_syntax_atom_with_env env syntax_original =
       SOME original ∧
-    bridge_import_surface_atom_list_with_env env surface_xs = SOME xs ∧
-    bridge_import_surface_atom_list_with_env env surface_ys = SOME ys ⇒
-    bridge_surface_eval_lt_values_wrapper_with_env
-      env surface_original surface_xs surface_ys =
+    bridge_import_syntax_atom_list_with_env env syntax_xs = SOME xs ∧
+    bridge_import_syntax_atom_list_with_env env syntax_ys = SOME ys ⇒
+    bridge_syntax_eval_lt_values_wrapper_with_env
+      env syntax_original syntax_xs syntax_ys =
     rec_lt_values original xs ys
 Proof
-  gvs[bridge_surface_eval_lt_values_wrapper_with_env_def,
+  gvs[bridge_syntax_eval_lt_values_wrapper_with_env_def,
       bridge_eval_lt_values_fragment_matches_rec_lt_values]
 QED
 
-Definition bridge_surface_eval_eq_values_wrapper_with_env_def:
-  bridge_surface_eval_eq_values_wrapper_with_env
-    env surface_original surface_xs surface_ys =
-    case bridge_import_surface_atom_with_env env surface_original of
+Definition bridge_syntax_eval_eq_values_wrapper_with_env_def:
+  bridge_syntax_eval_eq_values_wrapper_with_env
+    env syntax_original syntax_xs syntax_ys =
+    case bridge_import_syntax_atom_with_env env syntax_original of
     | NONE => []
     | SOME original =>
-        (case bridge_import_surface_atom_list_with_env env surface_xs of
+        (case bridge_import_syntax_atom_list_with_env env syntax_xs of
          | NONE => []
          | SOME xs =>
-             (case bridge_import_surface_atom_list_with_env env surface_ys of
+             (case bridge_import_syntax_atom_list_with_env env syntax_ys of
               | NONE => []
               | SOME ys => bridge_eval_eq_values_fragment original xs ys))
 End
 
-Theorem bridge_surface_eval_eq_values_wrapper_with_env_matches_rec_eq_values:
-  ∀env surface_original surface_xs surface_ys original xs ys.
-    bridge_import_surface_atom_with_env env surface_original =
+Theorem bridge_syntax_eval_eq_values_wrapper_with_env_matches_rec_eq_values:
+  ∀env syntax_original syntax_xs syntax_ys original xs ys.
+    bridge_import_syntax_atom_with_env env syntax_original =
       SOME original ∧
-    bridge_import_surface_atom_list_with_env env surface_xs = SOME xs ∧
-    bridge_import_surface_atom_list_with_env env surface_ys = SOME ys ⇒
-    bridge_surface_eval_eq_values_wrapper_with_env
-      env surface_original surface_xs surface_ys =
+    bridge_import_syntax_atom_list_with_env env syntax_xs = SOME xs ∧
+    bridge_import_syntax_atom_list_with_env env syntax_ys = SOME ys ⇒
+    bridge_syntax_eval_eq_values_wrapper_with_env
+      env syntax_original syntax_xs syntax_ys =
     rec_eq_values original xs ys
 Proof
-  gvs[bridge_surface_eval_eq_values_wrapper_with_env_def,
+  gvs[bridge_syntax_eval_eq_values_wrapper_with_env_def,
       bridge_eval_eq_values_fragment_matches_rec_eq_values]
 QED
 
-Definition bridge_surface_eval_and_values_wrapper_with_env_def:
-  bridge_surface_eval_and_values_wrapper_with_env
-    env surface_original surface_xs surface_ys =
-    case bridge_import_surface_atom_with_env env surface_original of
+Definition bridge_syntax_eval_and_values_wrapper_with_env_def:
+  bridge_syntax_eval_and_values_wrapper_with_env
+    env syntax_original syntax_xs syntax_ys =
+    case bridge_import_syntax_atom_with_env env syntax_original of
     | NONE => []
     | SOME original =>
-        (case bridge_import_surface_atom_list_with_env env surface_xs of
+        (case bridge_import_syntax_atom_list_with_env env syntax_xs of
          | NONE => []
          | SOME xs =>
-             (case bridge_import_surface_atom_list_with_env env surface_ys of
+             (case bridge_import_syntax_atom_list_with_env env syntax_ys of
               | NONE => []
               | SOME ys => bridge_eval_and_values_fragment original xs ys))
 End
 
-Theorem bridge_surface_eval_and_values_wrapper_with_env_matches_rec_and_values:
-  ∀env surface_original surface_xs surface_ys original xs ys.
-    bridge_import_surface_atom_with_env env surface_original =
+Theorem bridge_syntax_eval_and_values_wrapper_with_env_matches_rec_and_values:
+  ∀env syntax_original syntax_xs syntax_ys original xs ys.
+    bridge_import_syntax_atom_with_env env syntax_original =
       SOME original ∧
-    bridge_import_surface_atom_list_with_env env surface_xs = SOME xs ∧
-    bridge_import_surface_atom_list_with_env env surface_ys = SOME ys ⇒
-    bridge_surface_eval_and_values_wrapper_with_env
-      env surface_original surface_xs surface_ys =
+    bridge_import_syntax_atom_list_with_env env syntax_xs = SOME xs ∧
+    bridge_import_syntax_atom_list_with_env env syntax_ys = SOME ys ⇒
+    bridge_syntax_eval_and_values_wrapper_with_env
+      env syntax_original syntax_xs syntax_ys =
     rec_and_values original xs ys
 Proof
-  gvs[bridge_surface_eval_and_values_wrapper_with_env_def,
+  gvs[bridge_syntax_eval_and_values_wrapper_with_env_def,
       bridge_eval_and_values_fragment_matches_rec_and_values]
 QED
 
-Definition bridge_surface_eval_or_values_wrapper_with_env_def:
-  bridge_surface_eval_or_values_wrapper_with_env
-    env surface_original surface_xs surface_ys =
-    case bridge_import_surface_atom_with_env env surface_original of
+Definition bridge_syntax_eval_or_values_wrapper_with_env_def:
+  bridge_syntax_eval_or_values_wrapper_with_env
+    env syntax_original syntax_xs syntax_ys =
+    case bridge_import_syntax_atom_with_env env syntax_original of
     | NONE => []
     | SOME original =>
-        (case bridge_import_surface_atom_list_with_env env surface_xs of
+        (case bridge_import_syntax_atom_list_with_env env syntax_xs of
          | NONE => []
          | SOME xs =>
-             (case bridge_import_surface_atom_list_with_env env surface_ys of
+             (case bridge_import_syntax_atom_list_with_env env syntax_ys of
               | NONE => []
               | SOME ys => bridge_eval_or_values_fragment original xs ys))
 End
 
-Theorem bridge_surface_eval_or_values_wrapper_with_env_matches_rec_or_values:
-  ∀env surface_original surface_xs surface_ys original xs ys.
-    bridge_import_surface_atom_with_env env surface_original =
+Theorem bridge_syntax_eval_or_values_wrapper_with_env_matches_rec_or_values:
+  ∀env syntax_original syntax_xs syntax_ys original xs ys.
+    bridge_import_syntax_atom_with_env env syntax_original =
       SOME original ∧
-    bridge_import_surface_atom_list_with_env env surface_xs = SOME xs ∧
-    bridge_import_surface_atom_list_with_env env surface_ys = SOME ys ⇒
-    bridge_surface_eval_or_values_wrapper_with_env
-      env surface_original surface_xs surface_ys =
+    bridge_import_syntax_atom_list_with_env env syntax_xs = SOME xs ∧
+    bridge_import_syntax_atom_list_with_env env syntax_ys = SOME ys ⇒
+    bridge_syntax_eval_or_values_wrapper_with_env
+      env syntax_original syntax_xs syntax_ys =
     rec_or_values original xs ys
 Proof
-  gvs[bridge_surface_eval_or_values_wrapper_with_env_def,
+  gvs[bridge_syntax_eval_or_values_wrapper_with_env_def,
       bridge_eval_or_values_fragment_matches_rec_or_values]
 QED
 
-Definition bridge_surface_eval_not_values_wrapper_with_env_def:
-  bridge_surface_eval_not_values_wrapper_with_env
-    env surface_original surface_xs =
-    case bridge_import_surface_atom_with_env env surface_original of
+Definition bridge_syntax_eval_not_values_wrapper_with_env_def:
+  bridge_syntax_eval_not_values_wrapper_with_env
+    env syntax_original syntax_xs =
+    case bridge_import_syntax_atom_with_env env syntax_original of
     | NONE => []
     | SOME original =>
-        (case bridge_import_surface_atom_list_with_env env surface_xs of
+        (case bridge_import_syntax_atom_list_with_env env syntax_xs of
          | NONE => []
          | SOME xs => bridge_eval_not_values_fragment original xs)
 End
 
-Theorem bridge_surface_eval_not_values_wrapper_with_env_matches_rec_not_values:
-  ∀env surface_original surface_xs original xs.
-    bridge_import_surface_atom_with_env env surface_original =
+Theorem bridge_syntax_eval_not_values_wrapper_with_env_matches_rec_not_values:
+  ∀env syntax_original syntax_xs original xs.
+    bridge_import_syntax_atom_with_env env syntax_original =
       SOME original ∧
-    bridge_import_surface_atom_list_with_env env surface_xs = SOME xs ⇒
-    bridge_surface_eval_not_values_wrapper_with_env
-      env surface_original surface_xs =
+    bridge_import_syntax_atom_list_with_env env syntax_xs = SOME xs ⇒
+    bridge_syntax_eval_not_values_wrapper_with_env
+      env syntax_original syntax_xs =
     rec_not_values original xs
 Proof
-  gvs[bridge_surface_eval_not_values_wrapper_with_env_def,
+  gvs[bridge_syntax_eval_not_values_wrapper_with_env_def,
       bridge_eval_not_values_fragment_matches_rec_not_values]
 QED
 
-Theorem bridge_surface_eval_lt_values_wrapper_with_env_dynamic_example:
-  bridge_surface_eval_lt_values_wrapper_with_env [(strlit"Foo", 1000)]
+Theorem bridge_syntax_eval_lt_values_wrapper_with_env_dynamic_example:
+  bridge_syntax_eval_lt_values_wrapper_with_env [(strlit"Foo", 1000)]
     (BExpr [BSym (strlit"Foo"); BInt 2; BInt 3])
     [BInt 2] [BInt 3] =
   [metta_m1$Sym 8]
@@ -6342,8 +6342,8 @@ Proof
   EVAL_TAC
 QED
 
-Theorem bridge_surface_eval_eq_values_wrapper_with_env_dynamic_example:
-  bridge_surface_eval_eq_values_wrapper_with_env [(strlit"Foo", 1000)]
+Theorem bridge_syntax_eval_eq_values_wrapper_with_env_dynamic_example:
+  bridge_syntax_eval_eq_values_wrapper_with_env [(strlit"Foo", 1000)]
     (BExpr [BSym (strlit"Foo"); BInt 2; BInt 2])
     [BInt 2] [BInt 2] =
   [metta_m1$Sym 8]
@@ -6351,8 +6351,8 @@ Proof
   EVAL_TAC
 QED
 
-Theorem bridge_surface_eval_and_values_wrapper_with_env_dynamic_example:
-  bridge_surface_eval_and_values_wrapper_with_env [(strlit"Foo", 1000)]
+Theorem bridge_syntax_eval_and_values_wrapper_with_env_dynamic_example:
+  bridge_syntax_eval_and_values_wrapper_with_env [(strlit"Foo", 1000)]
     (BExpr [BSym (strlit"Foo"); BSym (strlit"True");
             BSym (strlit"False")])
     [BSym (strlit"True")] [BSym (strlit"False")] =
@@ -6361,8 +6361,8 @@ Proof
   EVAL_TAC
 QED
 
-Theorem bridge_surface_eval_or_values_wrapper_with_env_dynamic_example:
-  bridge_surface_eval_or_values_wrapper_with_env [(strlit"Foo", 1000)]
+Theorem bridge_syntax_eval_or_values_wrapper_with_env_dynamic_example:
+  bridge_syntax_eval_or_values_wrapper_with_env [(strlit"Foo", 1000)]
     (BExpr [BSym (strlit"Foo"); BSym (strlit"True");
             BSym (strlit"False")])
     [BSym (strlit"True")] [BSym (strlit"False")] =
@@ -6371,8 +6371,8 @@ Proof
   EVAL_TAC
 QED
 
-Theorem bridge_surface_eval_not_values_wrapper_with_env_dynamic_example:
-  bridge_surface_eval_not_values_wrapper_with_env [(strlit"Foo", 1000)]
+Theorem bridge_syntax_eval_not_values_wrapper_with_env_dynamic_example:
+  bridge_syntax_eval_not_values_wrapper_with_env [(strlit"Foo", 1000)]
     (BExpr [BSym (strlit"Foo"); BSym (strlit"False")])
     [BSym (strlit"False")] =
   [metta_m1$Sym 8]
@@ -6380,8 +6380,8 @@ Proof
   EVAL_TAC
 QED
 
-Theorem bridge_surface_eval_lt_values_wrapper_with_env_negative_example:
-  bridge_surface_eval_lt_values_wrapper_with_env []
+Theorem bridge_syntax_eval_lt_values_wrapper_with_env_negative_example:
+  bridge_syntax_eval_lt_values_wrapper_with_env []
     (BExpr [BSym (strlit"Foo"); BInt 2; BInt 3])
     [BInt 2] [BInt 3] =
   []
@@ -6389,8 +6389,8 @@ Proof
   EVAL_TAC
 QED
 
-Theorem bridge_surface_eval_eq_values_wrapper_with_env_negative_example:
-  bridge_surface_eval_eq_values_wrapper_with_env []
+Theorem bridge_syntax_eval_eq_values_wrapper_with_env_negative_example:
+  bridge_syntax_eval_eq_values_wrapper_with_env []
     (BExpr [BSym (strlit"Foo"); BInt 2; BInt 2])
     [BInt 2] [BInt 2] =
   []
@@ -6398,8 +6398,8 @@ Proof
   EVAL_TAC
 QED
 
-Theorem bridge_surface_eval_and_values_wrapper_with_env_negative_example:
-  bridge_surface_eval_and_values_wrapper_with_env []
+Theorem bridge_syntax_eval_and_values_wrapper_with_env_negative_example:
+  bridge_syntax_eval_and_values_wrapper_with_env []
     (BExpr [BSym (strlit"Foo"); BSym (strlit"True");
             BSym (strlit"False")])
     [BSym (strlit"True")] [BSym (strlit"False")] =
@@ -6408,8 +6408,8 @@ Proof
   EVAL_TAC
 QED
 
-Theorem bridge_surface_eval_or_values_wrapper_with_env_negative_example:
-  bridge_surface_eval_or_values_wrapper_with_env []
+Theorem bridge_syntax_eval_or_values_wrapper_with_env_negative_example:
+  bridge_syntax_eval_or_values_wrapper_with_env []
     (BExpr [BSym (strlit"Foo"); BSym (strlit"True");
             BSym (strlit"False")])
     [BSym (strlit"True")] [BSym (strlit"False")] =
@@ -6418,8 +6418,8 @@ Proof
   EVAL_TAC
 QED
 
-Theorem bridge_surface_eval_not_values_wrapper_with_env_negative_example:
-  bridge_surface_eval_not_values_wrapper_with_env []
+Theorem bridge_syntax_eval_not_values_wrapper_with_env_negative_example:
+  bridge_syntax_eval_not_values_wrapper_with_env []
     (BExpr [BSym (strlit"Foo"); BSym (strlit"False")])
     [BSym (strlit"False")] =
   []
@@ -6473,62 +6473,62 @@ Proof
   rw[bridge_eval_add_fragment_def, bridge_eval_add_values_fragment_def]
 QED
 
-Definition bridge_surface_eval_add_fragment_wrapper_def:
-  bridge_surface_eval_add_fragment_wrapper fuel surface_space surface_atom =
-    case bridge_import_surface_atom_list surface_space of
+Definition bridge_syntax_eval_add_fragment_wrapper_def:
+  bridge_syntax_eval_add_fragment_wrapper fuel syntax_space syntax_atom =
+    case bridge_import_syntax_atom_list syntax_space of
     | NONE => []
     | SOME space =>
-        (case bridge_import_surface_atom surface_atom of
+        (case bridge_import_syntax_atom syntax_atom of
          | NONE => []
          | SOME atom => bridge_eval_add_fragment fuel space atom)
 End
 
-Theorem bridge_surface_eval_add_fragment_wrapper_agrees_with_eval_m1_rec:
-  ∀fuel surface_space a b space atom_a atom_b.
-    bridge_import_surface_atom_list surface_space = SOME space ∧
-    bridge_import_surface_atom a = SOME atom_a ∧
-    bridge_import_surface_atom b = SOME atom_b ⇒
-    bridge_surface_eval_add_fragment_wrapper fuel surface_space
+Theorem bridge_syntax_eval_add_fragment_wrapper_agrees_with_eval_m1_rec:
+  ∀fuel syntax_space a b space atom_a atom_b.
+    bridge_import_syntax_atom_list syntax_space = SOME space ∧
+    bridge_import_syntax_atom a = SOME atom_a ∧
+    bridge_import_syntax_atom b = SOME atom_b ⇒
+    bridge_syntax_eval_add_fragment_wrapper fuel syntax_space
       (BExpr [BSym (strlit"+"); a; b]) =
       eval_m1_rec (SUC fuel) space
         (metta_m1$Expr [metta_m1$Sym 11; atom_a; atom_b])
 Proof
-  rw[bridge_surface_eval_add_fragment_wrapper_def,
-     bridge_import_surface_atom_def, bridge_symbol_intern_def,
+  rw[bridge_syntax_eval_add_fragment_wrapper_def,
+     bridge_import_syntax_atom_def, bridge_symbol_intern_def,
      bridge_symbol_table_def] \\
   gvs[AllCaseEqs()] \\
   rw[bridge_eval_add_fragment_agrees_with_eval_m1_rec]
 QED
 
-Theorem bridge_surface_eval_add_fragment_wrapper_via_values:
-  ∀fuel surface_space a b space atom_a atom_b.
-    bridge_import_surface_atom_list surface_space = SOME space ∧
-    bridge_import_surface_atom a = SOME atom_a ∧
-    bridge_import_surface_atom b = SOME atom_b ⇒
-    bridge_surface_eval_add_fragment_wrapper fuel surface_space
+Theorem bridge_syntax_eval_add_fragment_wrapper_via_values:
+  ∀fuel syntax_space a b space atom_a atom_b.
+    bridge_import_syntax_atom_list syntax_space = SOME space ∧
+    bridge_import_syntax_atom a = SOME atom_a ∧
+    bridge_import_syntax_atom b = SOME atom_b ⇒
+    bridge_syntax_eval_add_fragment_wrapper fuel syntax_space
       (BExpr [BSym (strlit"+"); a; b]) =
     bridge_eval_add_values_fragment
       (metta_m1$Expr [metta_m1$Sym 11; atom_a; atom_b])
       (eval_m1_rec fuel space atom_a)
       (eval_m1_rec fuel space atom_b)
 Proof
-  rw[bridge_surface_eval_add_fragment_wrapper_def,
-     bridge_import_surface_atom_def, bridge_symbol_intern_def,
+  rw[bridge_syntax_eval_add_fragment_wrapper_def,
+     bridge_import_syntax_atom_def, bridge_symbol_intern_def,
      bridge_symbol_table_def] \\
   gvs[AllCaseEqs()] \\
   rw[bridge_eval_add_fragment_via_values_fragment]
 QED
 
-Theorem bridge_surface_eval_add_fragment_wrapper_positive_example:
-  bridge_surface_eval_add_fragment_wrapper 1 []
+Theorem bridge_syntax_eval_add_fragment_wrapper_positive_example:
+  bridge_syntax_eval_add_fragment_wrapper 1 []
     (BExpr [BSym (strlit"+"); BInt 2; BInt 3]) =
   [metta_m1$IntLit 5]
 Proof
   EVAL_TAC
 QED
 
-Theorem bridge_surface_eval_add_fragment_wrapper_evaluated_arg_example:
-  bridge_surface_eval_add_fragment_wrapper 2 []
+Theorem bridge_syntax_eval_add_fragment_wrapper_evaluated_arg_example:
+  bridge_syntax_eval_add_fragment_wrapper 2 []
     (BExpr
       [BSym (strlit"+");
        BExpr [BSym (strlit"+"); BInt 1; BInt 2];
@@ -6538,8 +6538,8 @@ Proof
   EVAL_TAC
 QED
 
-Theorem bridge_surface_eval_add_fragment_wrapper_negative_example:
-  bridge_surface_eval_add_fragment_wrapper 1 []
+Theorem bridge_syntax_eval_add_fragment_wrapper_negative_example:
+  bridge_syntax_eval_add_fragment_wrapper 1 []
     (BExpr [BSym (strlit"not-a-core-symbol"); BInt 2; BInt 3]) =
   []
 Proof
@@ -6581,43 +6581,43 @@ Proof
   rw[bridge_eval_lt_fragment_def, bridge_eval_lt_values_fragment_def]
 QED
 
-Definition bridge_surface_eval_lt_fragment_wrapper_def:
-  bridge_surface_eval_lt_fragment_wrapper fuel surface_space surface_atom =
-    case bridge_import_surface_atom_list surface_space of
+Definition bridge_syntax_eval_lt_fragment_wrapper_def:
+  bridge_syntax_eval_lt_fragment_wrapper fuel syntax_space syntax_atom =
+    case bridge_import_syntax_atom_list syntax_space of
     | NONE => []
     | SOME space =>
-        (case bridge_import_surface_atom surface_atom of
+        (case bridge_import_syntax_atom syntax_atom of
          | NONE => []
          | SOME atom => bridge_eval_lt_fragment fuel space atom)
 End
 
-Theorem bridge_surface_eval_lt_fragment_wrapper_agrees_with_eval_m1_rec:
-  ∀fuel surface_space a b space atom_a atom_b.
-    bridge_import_surface_atom_list surface_space = SOME space ∧
-    bridge_import_surface_atom a = SOME atom_a ∧
-    bridge_import_surface_atom b = SOME atom_b ⇒
-    bridge_surface_eval_lt_fragment_wrapper fuel surface_space
+Theorem bridge_syntax_eval_lt_fragment_wrapper_agrees_with_eval_m1_rec:
+  ∀fuel syntax_space a b space atom_a atom_b.
+    bridge_import_syntax_atom_list syntax_space = SOME space ∧
+    bridge_import_syntax_atom a = SOME atom_a ∧
+    bridge_import_syntax_atom b = SOME atom_b ⇒
+    bridge_syntax_eval_lt_fragment_wrapper fuel syntax_space
       (BExpr [BSym (strlit"<"); a; b]) =
       eval_m1_rec (SUC fuel) space
         (metta_m1$Expr [metta_m1$Sym 12; atom_a; atom_b])
 Proof
-  rw[bridge_surface_eval_lt_fragment_wrapper_def,
-     bridge_import_surface_atom_def, bridge_symbol_intern_def,
+  rw[bridge_syntax_eval_lt_fragment_wrapper_def,
+     bridge_import_syntax_atom_def, bridge_symbol_intern_def,
      bridge_symbol_table_def] \\
   gvs[AllCaseEqs()] \\
   rw[bridge_eval_lt_fragment_agrees_with_eval_m1_rec]
 QED
 
-Theorem bridge_surface_eval_lt_fragment_wrapper_positive_example:
-  bridge_surface_eval_lt_fragment_wrapper 1 []
+Theorem bridge_syntax_eval_lt_fragment_wrapper_positive_example:
+  bridge_syntax_eval_lt_fragment_wrapper 1 []
     (BExpr [BSym (strlit"<"); BInt 2; BInt 3]) =
   [metta_m1$Sym 8]
 Proof
   EVAL_TAC
 QED
 
-Theorem bridge_surface_eval_lt_fragment_wrapper_negative_example:
-  bridge_surface_eval_lt_fragment_wrapper 1 []
+Theorem bridge_syntax_eval_lt_fragment_wrapper_negative_example:
+  bridge_syntax_eval_lt_fragment_wrapper 1 []
     (BExpr [BSym (strlit"not-a-core-symbol"); BInt 2; BInt 3]) =
   []
 Proof
@@ -6659,43 +6659,43 @@ Proof
   rw[bridge_eval_eq_fragment_def, bridge_eval_eq_values_fragment_def]
 QED
 
-Definition bridge_surface_eval_eq_fragment_wrapper_def:
-  bridge_surface_eval_eq_fragment_wrapper fuel surface_space surface_atom =
-    case bridge_import_surface_atom_list surface_space of
+Definition bridge_syntax_eval_eq_fragment_wrapper_def:
+  bridge_syntax_eval_eq_fragment_wrapper fuel syntax_space syntax_atom =
+    case bridge_import_syntax_atom_list syntax_space of
     | NONE => []
     | SOME space =>
-        (case bridge_import_surface_atom surface_atom of
+        (case bridge_import_syntax_atom syntax_atom of
          | NONE => []
          | SOME atom => bridge_eval_eq_fragment fuel space atom)
 End
 
-Theorem bridge_surface_eval_eq_fragment_wrapper_agrees_with_eval_m1_rec:
-  ∀fuel surface_space a b space atom_a atom_b.
-    bridge_import_surface_atom_list surface_space = SOME space ∧
-    bridge_import_surface_atom a = SOME atom_a ∧
-    bridge_import_surface_atom b = SOME atom_b ⇒
-    bridge_surface_eval_eq_fragment_wrapper fuel surface_space
+Theorem bridge_syntax_eval_eq_fragment_wrapper_agrees_with_eval_m1_rec:
+  ∀fuel syntax_space a b space atom_a atom_b.
+    bridge_import_syntax_atom_list syntax_space = SOME space ∧
+    bridge_import_syntax_atom a = SOME atom_a ∧
+    bridge_import_syntax_atom b = SOME atom_b ⇒
+    bridge_syntax_eval_eq_fragment_wrapper fuel syntax_space
       (BExpr [BSym (strlit"=="); a; b]) =
       eval_m1_rec (SUC fuel) space
         (metta_m1$Expr [metta_m1$Sym 47; atom_a; atom_b])
 Proof
-  rw[bridge_surface_eval_eq_fragment_wrapper_def,
-     bridge_import_surface_atom_def, bridge_symbol_intern_def,
+  rw[bridge_syntax_eval_eq_fragment_wrapper_def,
+     bridge_import_syntax_atom_def, bridge_symbol_intern_def,
      bridge_symbol_table_def] \\
   gvs[AllCaseEqs()] \\
   rw[bridge_eval_eq_fragment_agrees_with_eval_m1_rec]
 QED
 
-Theorem bridge_surface_eval_eq_fragment_wrapper_positive_example:
-  bridge_surface_eval_eq_fragment_wrapper 1 []
+Theorem bridge_syntax_eval_eq_fragment_wrapper_positive_example:
+  bridge_syntax_eval_eq_fragment_wrapper 1 []
     (BExpr [BSym (strlit"=="); BInt 2; BInt 2]) =
   [metta_m1$Sym 8]
 Proof
   EVAL_TAC
 QED
 
-Theorem bridge_surface_eval_eq_fragment_wrapper_negative_example:
-  bridge_surface_eval_eq_fragment_wrapper 1 []
+Theorem bridge_syntax_eval_eq_fragment_wrapper_negative_example:
+  bridge_syntax_eval_eq_fragment_wrapper 1 []
     (BExpr [BSym (strlit"not-a-core-symbol"); BInt 2; BInt 2]) =
   []
 Proof
@@ -6737,35 +6737,35 @@ Proof
   rw[bridge_eval_and_fragment_def, bridge_eval_and_values_fragment_def]
 QED
 
-Definition bridge_surface_eval_and_fragment_wrapper_def:
-  bridge_surface_eval_and_fragment_wrapper fuel surface_space surface_atom =
-    case bridge_import_surface_atom_list surface_space of
+Definition bridge_syntax_eval_and_fragment_wrapper_def:
+  bridge_syntax_eval_and_fragment_wrapper fuel syntax_space syntax_atom =
+    case bridge_import_syntax_atom_list syntax_space of
     | NONE => []
     | SOME space =>
-        (case bridge_import_surface_atom surface_atom of
+        (case bridge_import_syntax_atom syntax_atom of
          | NONE => []
          | SOME atom => bridge_eval_and_fragment fuel space atom)
 End
 
-Theorem bridge_surface_eval_and_fragment_wrapper_agrees_with_eval_m1_rec:
-  ∀fuel surface_space a b space atom_a atom_b.
-    bridge_import_surface_atom_list surface_space = SOME space ∧
-    bridge_import_surface_atom a = SOME atom_a ∧
-    bridge_import_surface_atom b = SOME atom_b ⇒
-    bridge_surface_eval_and_fragment_wrapper fuel surface_space
+Theorem bridge_syntax_eval_and_fragment_wrapper_agrees_with_eval_m1_rec:
+  ∀fuel syntax_space a b space atom_a atom_b.
+    bridge_import_syntax_atom_list syntax_space = SOME space ∧
+    bridge_import_syntax_atom a = SOME atom_a ∧
+    bridge_import_syntax_atom b = SOME atom_b ⇒
+    bridge_syntax_eval_and_fragment_wrapper fuel syntax_space
       (BExpr [BSym (strlit"and"); a; b]) =
       eval_m1_rec (SUC fuel) space
         (metta_m1$Expr [metta_m1$Sym 31; atom_a; atom_b])
 Proof
-  rw[bridge_surface_eval_and_fragment_wrapper_def,
-     bridge_import_surface_atom_def, bridge_symbol_intern_def,
+  rw[bridge_syntax_eval_and_fragment_wrapper_def,
+     bridge_import_syntax_atom_def, bridge_symbol_intern_def,
      bridge_symbol_table_def] \\
   gvs[AllCaseEqs()] \\
   rw[bridge_eval_and_fragment_agrees_with_eval_m1_rec]
 QED
 
-Theorem bridge_surface_eval_and_fragment_wrapper_positive_example:
-  bridge_surface_eval_and_fragment_wrapper 1 []
+Theorem bridge_syntax_eval_and_fragment_wrapper_positive_example:
+  bridge_syntax_eval_and_fragment_wrapper 1 []
     (BExpr [BSym (strlit"and"); BSym (strlit"True");
             BSym (strlit"False")]) =
   [metta_m1$Sym 9]
@@ -6773,8 +6773,8 @@ Proof
   EVAL_TAC
 QED
 
-Theorem bridge_surface_eval_and_fragment_wrapper_negative_example:
-  bridge_surface_eval_and_fragment_wrapper 1 []
+Theorem bridge_syntax_eval_and_fragment_wrapper_negative_example:
+  bridge_syntax_eval_and_fragment_wrapper 1 []
     (BExpr [BSym (strlit"not-a-core-symbol"); BSym (strlit"True");
             BSym (strlit"False")]) =
   []
@@ -6817,35 +6817,35 @@ Proof
   rw[bridge_eval_or_fragment_def, bridge_eval_or_values_fragment_def]
 QED
 
-Definition bridge_surface_eval_or_fragment_wrapper_def:
-  bridge_surface_eval_or_fragment_wrapper fuel surface_space surface_atom =
-    case bridge_import_surface_atom_list surface_space of
+Definition bridge_syntax_eval_or_fragment_wrapper_def:
+  bridge_syntax_eval_or_fragment_wrapper fuel syntax_space syntax_atom =
+    case bridge_import_syntax_atom_list syntax_space of
     | NONE => []
     | SOME space =>
-        (case bridge_import_surface_atom surface_atom of
+        (case bridge_import_syntax_atom syntax_atom of
          | NONE => []
          | SOME atom => bridge_eval_or_fragment fuel space atom)
 End
 
-Theorem bridge_surface_eval_or_fragment_wrapper_agrees_with_eval_m1_rec:
-  ∀fuel surface_space a b space atom_a atom_b.
-    bridge_import_surface_atom_list surface_space = SOME space ∧
-    bridge_import_surface_atom a = SOME atom_a ∧
-    bridge_import_surface_atom b = SOME atom_b ⇒
-    bridge_surface_eval_or_fragment_wrapper fuel surface_space
+Theorem bridge_syntax_eval_or_fragment_wrapper_agrees_with_eval_m1_rec:
+  ∀fuel syntax_space a b space atom_a atom_b.
+    bridge_import_syntax_atom_list syntax_space = SOME space ∧
+    bridge_import_syntax_atom a = SOME atom_a ∧
+    bridge_import_syntax_atom b = SOME atom_b ⇒
+    bridge_syntax_eval_or_fragment_wrapper fuel syntax_space
       (BExpr [BSym (strlit"or"); a; b]) =
       eval_m1_rec (SUC fuel) space
         (metta_m1$Expr [metta_m1$Sym 32; atom_a; atom_b])
 Proof
-  rw[bridge_surface_eval_or_fragment_wrapper_def,
-     bridge_import_surface_atom_def, bridge_symbol_intern_def,
+  rw[bridge_syntax_eval_or_fragment_wrapper_def,
+     bridge_import_syntax_atom_def, bridge_symbol_intern_def,
      bridge_symbol_table_def] \\
   gvs[AllCaseEqs()] \\
   rw[bridge_eval_or_fragment_agrees_with_eval_m1_rec]
 QED
 
-Theorem bridge_surface_eval_or_fragment_wrapper_positive_example:
-  bridge_surface_eval_or_fragment_wrapper 1 []
+Theorem bridge_syntax_eval_or_fragment_wrapper_positive_example:
+  bridge_syntax_eval_or_fragment_wrapper 1 []
     (BExpr [BSym (strlit"or"); BSym (strlit"True");
             BSym (strlit"False")]) =
   [metta_m1$Sym 8]
@@ -6853,8 +6853,8 @@ Proof
   EVAL_TAC
 QED
 
-Theorem bridge_surface_eval_or_fragment_wrapper_negative_example:
-  bridge_surface_eval_or_fragment_wrapper 1 []
+Theorem bridge_syntax_eval_or_fragment_wrapper_negative_example:
+  bridge_syntax_eval_or_fragment_wrapper 1 []
     (BExpr [BSym (strlit"not-a-core-symbol"); BSym (strlit"True");
             BSym (strlit"False")]) =
   []
@@ -6892,42 +6892,42 @@ Proof
   rw[bridge_eval_not_fragment_def, bridge_eval_not_values_fragment_def]
 QED
 
-Definition bridge_surface_eval_not_fragment_wrapper_def:
-  bridge_surface_eval_not_fragment_wrapper fuel surface_space surface_atom =
-    case bridge_import_surface_atom_list surface_space of
+Definition bridge_syntax_eval_not_fragment_wrapper_def:
+  bridge_syntax_eval_not_fragment_wrapper fuel syntax_space syntax_atom =
+    case bridge_import_syntax_atom_list syntax_space of
     | NONE => []
     | SOME space =>
-        (case bridge_import_surface_atom surface_atom of
+        (case bridge_import_syntax_atom syntax_atom of
          | NONE => []
          | SOME atom => bridge_eval_not_fragment fuel space atom)
 End
 
-Theorem bridge_surface_eval_not_fragment_wrapper_agrees_with_eval_m1_rec:
-  ∀fuel surface_space a space atom_a.
-    bridge_import_surface_atom_list surface_space = SOME space ∧
-    bridge_import_surface_atom a = SOME atom_a ⇒
-    bridge_surface_eval_not_fragment_wrapper fuel surface_space
+Theorem bridge_syntax_eval_not_fragment_wrapper_agrees_with_eval_m1_rec:
+  ∀fuel syntax_space a space atom_a.
+    bridge_import_syntax_atom_list syntax_space = SOME space ∧
+    bridge_import_syntax_atom a = SOME atom_a ⇒
+    bridge_syntax_eval_not_fragment_wrapper fuel syntax_space
       (BExpr [BSym (strlit"not"); a]) =
       eval_m1_rec (SUC fuel) space
         (metta_m1$Expr [metta_m1$Sym 33; atom_a])
 Proof
-  rw[bridge_surface_eval_not_fragment_wrapper_def,
-     bridge_import_surface_atom_def, bridge_symbol_intern_def,
+  rw[bridge_syntax_eval_not_fragment_wrapper_def,
+     bridge_import_syntax_atom_def, bridge_symbol_intern_def,
      bridge_symbol_table_def] \\
   gvs[AllCaseEqs()] \\
   rw[bridge_eval_not_fragment_agrees_with_eval_m1_rec]
 QED
 
-Theorem bridge_surface_eval_not_fragment_wrapper_positive_example:
-  bridge_surface_eval_not_fragment_wrapper 1 []
+Theorem bridge_syntax_eval_not_fragment_wrapper_positive_example:
+  bridge_syntax_eval_not_fragment_wrapper 1 []
     (BExpr [BSym (strlit"not"); BSym (strlit"False")]) =
   [metta_m1$Sym 8]
 Proof
   EVAL_TAC
 QED
 
-Theorem bridge_surface_eval_not_fragment_wrapper_negative_example:
-  bridge_surface_eval_not_fragment_wrapper 1 []
+Theorem bridge_syntax_eval_not_fragment_wrapper_negative_example:
+  bridge_syntax_eval_not_fragment_wrapper 1 []
     (BExpr [BSym (strlit"not-a-core-symbol"); BSym (strlit"False")]) =
   []
 Proof
@@ -6950,34 +6950,34 @@ Proof
      eval_eval_fragment_agrees_with_eval_m1_rec]
 QED
 
-Definition bridge_surface_eval_eval_fragment_wrapper_def:
-  bridge_surface_eval_eval_fragment_wrapper fuel surface_space surface_atom =
-    case bridge_import_surface_atom_list surface_space of
+Definition bridge_syntax_eval_eval_fragment_wrapper_def:
+  bridge_syntax_eval_eval_fragment_wrapper fuel syntax_space syntax_atom =
+    case bridge_import_syntax_atom_list syntax_space of
     | NONE => []
     | SOME space =>
-        (case bridge_import_surface_atom surface_atom of
+        (case bridge_import_syntax_atom syntax_atom of
          | NONE => []
          | SOME atom => bridge_eval_eval_fragment fuel space atom)
 End
 
-Theorem bridge_surface_eval_eval_fragment_wrapper_agrees_with_eval_m1_rec:
-  ∀fuel surface_space body space body_atom.
-    bridge_import_surface_atom_list surface_space = SOME space ∧
-    bridge_import_surface_atom body = SOME body_atom ⇒
-    bridge_surface_eval_eval_fragment_wrapper fuel surface_space
+Theorem bridge_syntax_eval_eval_fragment_wrapper_agrees_with_eval_m1_rec:
+  ∀fuel syntax_space body space body_atom.
+    bridge_import_syntax_atom_list syntax_space = SOME space ∧
+    bridge_import_syntax_atom body = SOME body_atom ⇒
+    bridge_syntax_eval_eval_fragment_wrapper fuel syntax_space
       (BExpr [BSym (strlit"eval"); body]) =
       eval_m1_rec (SUC fuel) space
         (metta_m1$Expr [metta_m1$Sym 20; body_atom])
 Proof
-  rw[bridge_surface_eval_eval_fragment_wrapper_def,
-     bridge_import_surface_atom_def, bridge_symbol_intern_def,
+  rw[bridge_syntax_eval_eval_fragment_wrapper_def,
+     bridge_import_syntax_atom_def, bridge_symbol_intern_def,
      bridge_symbol_table_def] \\
   gvs[AllCaseEqs()] \\
   rw[bridge_eval_eval_fragment_agrees_with_eval_m1_rec]
 QED
 
-Theorem bridge_surface_eval_eval_fragment_wrapper_positive_example:
-  bridge_surface_eval_eval_fragment_wrapper 2 []
+Theorem bridge_syntax_eval_eval_fragment_wrapper_positive_example:
+  bridge_syntax_eval_eval_fragment_wrapper 2 []
     (BExpr [BSym (strlit"eval");
             BExpr [BSym (strlit"+"); BInt 2; BInt 3]]) =
   [metta_m1$IntLit 5]
@@ -6985,8 +6985,8 @@ Proof
   EVAL_TAC
 QED
 
-Theorem bridge_surface_eval_eval_fragment_wrapper_negative_example:
-  bridge_surface_eval_eval_fragment_wrapper 1 []
+Theorem bridge_syntax_eval_eval_fragment_wrapper_negative_example:
+  bridge_syntax_eval_eval_fragment_wrapper 1 []
     (BExpr [BSym (strlit"not-a-core-symbol"); BInt 2]) =
   []
 Proof
@@ -7009,36 +7009,36 @@ Proof
      eval_case_fragment_agrees_with_eval_m1_rec]
 QED
 
-Definition bridge_surface_eval_case_fragment_wrapper_def:
-  bridge_surface_eval_case_fragment_wrapper fuel surface_space surface_atom =
-    case bridge_import_surface_atom_list surface_space of
+Definition bridge_syntax_eval_case_fragment_wrapper_def:
+  bridge_syntax_eval_case_fragment_wrapper fuel syntax_space syntax_atom =
+    case bridge_import_syntax_atom_list syntax_space of
     | NONE => []
     | SOME space =>
-        (case bridge_import_surface_atom surface_atom of
+        (case bridge_import_syntax_atom syntax_atom of
          | NONE => []
          | SOME atom => bridge_eval_case_fragment fuel space atom)
 End
 
-Theorem bridge_surface_eval_case_fragment_wrapper_agrees_with_eval_m1_rec:
-  ∀fuel surface_space scrut branches space scrut_atom branch_atoms.
-    bridge_import_surface_atom_list surface_space = SOME space ∧
-    bridge_import_surface_atom scrut = SOME scrut_atom ∧
-    bridge_import_surface_atom_list branches = SOME branch_atoms ⇒
-    bridge_surface_eval_case_fragment_wrapper fuel surface_space
+Theorem bridge_syntax_eval_case_fragment_wrapper_agrees_with_eval_m1_rec:
+  ∀fuel syntax_space scrut branches space scrut_atom branch_atoms.
+    bridge_import_syntax_atom_list syntax_space = SOME space ∧
+    bridge_import_syntax_atom scrut = SOME scrut_atom ∧
+    bridge_import_syntax_atom_list branches = SOME branch_atoms ⇒
+    bridge_syntax_eval_case_fragment_wrapper fuel syntax_space
       (BExpr [BSym (strlit"case"); scrut; BExpr branches]) =
       eval_m1_rec (SUC fuel) space
         (metta_m1$Expr
           [metta_m1$Sym 54; scrut_atom; metta_m1$Expr branch_atoms])
 Proof
-  rw[bridge_surface_eval_case_fragment_wrapper_def,
-     bridge_import_surface_atom_def, bridge_symbol_intern_def,
+  rw[bridge_syntax_eval_case_fragment_wrapper_def,
+     bridge_import_syntax_atom_def, bridge_symbol_intern_def,
      bridge_symbol_table_def] \\
   gvs[AllCaseEqs()] \\
   rw[bridge_eval_case_fragment_agrees_with_eval_m1_rec]
 QED
 
-Theorem bridge_surface_eval_case_fragment_wrapper_positive_example:
-  bridge_surface_eval_case_fragment_wrapper 1 []
+Theorem bridge_syntax_eval_case_fragment_wrapper_positive_example:
+  bridge_syntax_eval_case_fragment_wrapper 1 []
     (BExpr
       [BSym (strlit"case"); BSym (strlit"True");
        BExpr
@@ -7049,8 +7049,8 @@ Proof
   EVAL_TAC
 QED
 
-Theorem bridge_surface_eval_case_fragment_wrapper_negative_example:
-  bridge_surface_eval_case_fragment_wrapper 1 []
+Theorem bridge_syntax_eval_case_fragment_wrapper_negative_example:
+  bridge_syntax_eval_case_fragment_wrapper 1 []
     (BExpr
       [BSym (strlit"not-a-core-symbol"); BSym (strlit"True");
        BExpr [BExpr [BSym (strlit"True"); BInt 1]]]) =
@@ -7079,36 +7079,36 @@ Proof
   rw[bridge_eval_switch_fragment_def, eval_m1_rec_def]
 QED
 
-Definition bridge_surface_eval_switch_fragment_wrapper_def:
-  bridge_surface_eval_switch_fragment_wrapper fuel surface_space surface_atom =
-    case bridge_import_surface_atom_list surface_space of
+Definition bridge_syntax_eval_switch_fragment_wrapper_def:
+  bridge_syntax_eval_switch_fragment_wrapper fuel syntax_space syntax_atom =
+    case bridge_import_syntax_atom_list syntax_space of
     | NONE => []
     | SOME space =>
-        (case bridge_import_surface_atom surface_atom of
+        (case bridge_import_syntax_atom syntax_atom of
          | NONE => []
          | SOME atom => bridge_eval_switch_fragment fuel space atom)
 End
 
-Theorem bridge_surface_eval_switch_fragment_wrapper_agrees_with_eval_m1_rec:
-  ∀fuel surface_space scrut branches space scrut_atom branch_atoms.
-    bridge_import_surface_atom_list surface_space = SOME space ∧
-    bridge_import_surface_atom scrut = SOME scrut_atom ∧
-    bridge_import_surface_atom_list branches = SOME branch_atoms ⇒
-    bridge_surface_eval_switch_fragment_wrapper fuel surface_space
+Theorem bridge_syntax_eval_switch_fragment_wrapper_agrees_with_eval_m1_rec:
+  ∀fuel syntax_space scrut branches space scrut_atom branch_atoms.
+    bridge_import_syntax_atom_list syntax_space = SOME space ∧
+    bridge_import_syntax_atom scrut = SOME scrut_atom ∧
+    bridge_import_syntax_atom_list branches = SOME branch_atoms ⇒
+    bridge_syntax_eval_switch_fragment_wrapper fuel syntax_space
       (BExpr [BSym (strlit"switch"); scrut; BExpr branches]) =
       eval_m1_rec (SUC fuel) space
         (metta_m1$Expr
           [metta_m1$Sym 55; scrut_atom; metta_m1$Expr branch_atoms])
 Proof
-  rw[bridge_surface_eval_switch_fragment_wrapper_def,
-     bridge_import_surface_atom_def, bridge_symbol_intern_def,
+  rw[bridge_syntax_eval_switch_fragment_wrapper_def,
+     bridge_import_syntax_atom_def, bridge_symbol_intern_def,
      bridge_symbol_table_def] \\
   gvs[AllCaseEqs()] \\
   rw[bridge_eval_switch_fragment_agrees_with_eval_m1_rec]
 QED
 
-Theorem bridge_surface_eval_switch_fragment_wrapper_positive_example:
-  bridge_surface_eval_switch_fragment_wrapper 1 []
+Theorem bridge_syntax_eval_switch_fragment_wrapper_positive_example:
+  bridge_syntax_eval_switch_fragment_wrapper 1 []
     (BExpr
       [BSym (strlit"switch"); BSym (strlit"True");
        BExpr
@@ -7119,8 +7119,8 @@ Proof
   EVAL_TAC
 QED
 
-Theorem bridge_surface_eval_switch_fragment_wrapper_negative_example:
-  bridge_surface_eval_switch_fragment_wrapper 1 []
+Theorem bridge_syntax_eval_switch_fragment_wrapper_negative_example:
+  bridge_syntax_eval_switch_fragment_wrapper 1 []
     (BExpr
       [BSym (strlit"not-a-core-symbol"); BSym (strlit"True");
        BExpr [BExpr [BSym (strlit"True"); BInt 1]]]) =
@@ -7148,36 +7148,36 @@ Proof
   rw[bridge_eval_let_star_fragment_def, eval_m1_rec_def]
 QED
 
-Definition bridge_surface_eval_let_star_fragment_wrapper_def:
-  bridge_surface_eval_let_star_fragment_wrapper fuel surface_space surface_atom =
-    case bridge_import_surface_atom_list surface_space of
+Definition bridge_syntax_eval_let_star_fragment_wrapper_def:
+  bridge_syntax_eval_let_star_fragment_wrapper fuel syntax_space syntax_atom =
+    case bridge_import_syntax_atom_list syntax_space of
     | NONE => []
     | SOME space =>
-        (case bridge_import_surface_atom surface_atom of
+        (case bridge_import_syntax_atom syntax_atom of
          | NONE => []
          | SOME atom => bridge_eval_let_star_fragment fuel space atom)
 End
 
-Theorem bridge_surface_eval_let_star_fragment_wrapper_agrees_with_eval_m1_rec:
-  ∀fuel surface_space bindings body space binding_atoms body_atom.
-    bridge_import_surface_atom_list surface_space = SOME space ∧
-    bridge_import_surface_atom_list bindings = SOME binding_atoms ∧
-    bridge_import_surface_atom body = SOME body_atom ⇒
-    bridge_surface_eval_let_star_fragment_wrapper fuel surface_space
+Theorem bridge_syntax_eval_let_star_fragment_wrapper_agrees_with_eval_m1_rec:
+  ∀fuel syntax_space bindings body space binding_atoms body_atom.
+    bridge_import_syntax_atom_list syntax_space = SOME space ∧
+    bridge_import_syntax_atom_list bindings = SOME binding_atoms ∧
+    bridge_import_syntax_atom body = SOME body_atom ⇒
+    bridge_syntax_eval_let_star_fragment_wrapper fuel syntax_space
       (BExpr [BSym (strlit"let*"); BExpr bindings; body]) =
       eval_m1_rec (SUC fuel) space
         (metta_m1$Expr
           [metta_m1$Sym 56; metta_m1$Expr binding_atoms; body_atom])
 Proof
-  rw[bridge_surface_eval_let_star_fragment_wrapper_def,
-     bridge_import_surface_atom_def, bridge_symbol_intern_def,
+  rw[bridge_syntax_eval_let_star_fragment_wrapper_def,
+     bridge_import_syntax_atom_def, bridge_symbol_intern_def,
      bridge_symbol_table_def] \\
   gvs[AllCaseEqs()] \\
   rw[bridge_eval_let_star_fragment_agrees_with_eval_m1_rec]
 QED
 
-Theorem bridge_surface_eval_let_star_fragment_wrapper_positive_example:
-  bridge_surface_eval_let_star_fragment_wrapper 2 []
+Theorem bridge_syntax_eval_let_star_fragment_wrapper_positive_example:
+  bridge_syntax_eval_let_star_fragment_wrapper 2 []
     (BExpr
       [BSym (strlit"let*");
        BExpr [BExpr [BVar 0; BInt 2]];
@@ -7187,8 +7187,8 @@ Proof
   EVAL_TAC
 QED
 
-Theorem bridge_surface_eval_let_star_fragment_wrapper_negative_example:
-  bridge_surface_eval_let_star_fragment_wrapper 1 []
+Theorem bridge_syntax_eval_let_star_fragment_wrapper_negative_example:
+  bridge_syntax_eval_let_star_fragment_wrapper 1 []
     (BExpr
       [BSym (strlit"not-a-core-symbol");
        BExpr [BExpr [BVar 0; BInt 2]];
@@ -7416,31 +7416,31 @@ Proof
   EVAL_TAC
 QED
 
-Definition bridge_surface_eval_match_fragment_rel_def:
-  bridge_surface_eval_match_fragment_rel surface_space surface_atom numeric_outs ⇔
+Definition bridge_syntax_eval_match_fragment_rel_def:
+  bridge_syntax_eval_match_fragment_rel syntax_space syntax_atom numeric_outs ⇔
     ∃space atom.
-      bridge_import_surface_atom_list surface_space = SOME space ∧
-      bridge_import_surface_atom surface_atom = SOME atom ∧
+      bridge_import_syntax_atom_list syntax_space = SOME space ∧
+      bridge_import_syntax_atom syntax_atom = SOME atom ∧
       numeric_outs = bridge_eval_match_fragment space atom
 End
 
-Theorem bridge_surface_eval_match_fragment_rel_sound:
-  ∀surface_space surface_atom numeric_outs.
-    bridge_surface_eval_match_fragment_rel surface_space surface_atom numeric_outs ⇒
+Theorem bridge_syntax_eval_match_fragment_rel_sound:
+  ∀syntax_space syntax_atom numeric_outs.
+    bridge_syntax_eval_match_fragment_rel syntax_space syntax_atom numeric_outs ⇒
     ∃space atom.
-      bridge_import_surface_atom_list surface_space = SOME space ∧
-      bridge_import_surface_atom surface_atom = SOME atom ∧
+      bridge_import_syntax_atom_list syntax_space = SOME space ∧
+      bridge_import_syntax_atom syntax_atom = SOME atom ∧
       numeric_outs = bridge_eval_match_fragment space atom
 Proof
-  rw[bridge_surface_eval_match_fragment_rel_def]
+  rw[bridge_syntax_eval_match_fragment_rel_def]
 QED
 
-Theorem bridge_surface_eval_match_fragment_rel_agrees_with_eval_m1_rec:
-  ∀fuel surface_space pattern templ space pattern_atom templ_atom numeric_outs.
-    bridge_import_surface_atom_list surface_space = SOME space ∧
-    bridge_import_surface_atom pattern = SOME pattern_atom ∧
-    bridge_import_surface_atom templ = SOME templ_atom ∧
-    bridge_surface_eval_match_fragment_rel surface_space
+Theorem bridge_syntax_eval_match_fragment_rel_agrees_with_eval_m1_rec:
+  ∀fuel syntax_space pattern templ space pattern_atom templ_atom numeric_outs.
+    bridge_import_syntax_atom_list syntax_space = SOME space ∧
+    bridge_import_syntax_atom pattern = SOME pattern_atom ∧
+    bridge_import_syntax_atom templ = SOME templ_atom ∧
+    bridge_syntax_eval_match_fragment_rel syntax_space
       (BExpr [BSym (strlit"match"); BSym (strlit"&self");
               pattern; templ])
       numeric_outs ⇒
@@ -7449,15 +7449,15 @@ Theorem bridge_surface_eval_match_fragment_rel_agrees_with_eval_m1_rec:
         (metta_m1$Expr
           [metta_m1$Sym 4; metta_m1$Sym 5; pattern_atom; templ_atom])
 Proof
-  rw[bridge_surface_eval_match_fragment_rel_def,
-     bridge_import_surface_atom_def, bridge_symbol_intern_def,
+  rw[bridge_syntax_eval_match_fragment_rel_def,
+     bridge_import_syntax_atom_def, bridge_symbol_intern_def,
      bridge_symbol_table_def] \\
   gvs[AllCaseEqs()] \\
   rw[bridge_eval_match_fragment_agrees_with_eval_m1_rec]
 QED
 
-Theorem bridge_surface_eval_match_fragment_rel_positive_example:
-  bridge_surface_eval_match_fragment_rel
+Theorem bridge_syntax_eval_match_fragment_rel_positive_example:
+  bridge_syntax_eval_match_fragment_rel
     [BExpr [BSym (strlit"Person"); BSym (strlit"True")];
      BExpr [BSym (strlit"Person"); BSym (strlit"False")]]
     (BExpr
@@ -7467,7 +7467,7 @@ Theorem bridge_surface_eval_match_fragment_rel_positive_example:
     [metta_m1$Expr [metta_m1$Sym 19; metta_m1$Sym 8];
      metta_m1$Expr [metta_m1$Sym 19; metta_m1$Sym 9]]
 Proof
-  rw[bridge_surface_eval_match_fragment_rel_def] \\
+  rw[bridge_syntax_eval_match_fragment_rel_def] \\
   qexists_tac
     ‘[metta_m1$Expr [metta_m1$Sym 50; metta_m1$Sym 8];
        metta_m1$Expr [metta_m1$Sym 50; metta_m1$Sym 9]]’ \\
@@ -7479,8 +7479,8 @@ Proof
   EVAL_TAC
 QED
 
-Theorem bridge_surface_eval_match_fragment_rel_negative_example:
-  ¬bridge_surface_eval_match_fragment_rel
+Theorem bridge_syntax_eval_match_fragment_rel_negative_example:
+  ¬bridge_syntax_eval_match_fragment_rel
     [BExpr [BSym (strlit"Person"); BSym (strlit"True")]]
     (BExpr
       [BSym (strlit"match"); BSym (strlit"&self");
@@ -7492,49 +7492,49 @@ Proof
   rw[]
 QED
 
-Definition bridge_surface_eval_match_fragment_wrapper_def:
-  bridge_surface_eval_match_fragment_wrapper surface_space surface_atom =
-    case bridge_import_surface_atom_list surface_space of
+Definition bridge_syntax_eval_match_fragment_wrapper_def:
+  bridge_syntax_eval_match_fragment_wrapper syntax_space syntax_atom =
+    case bridge_import_syntax_atom_list syntax_space of
     | NONE => []
     | SOME space =>
-        (case bridge_import_surface_atom surface_atom of
+        (case bridge_import_syntax_atom syntax_atom of
          | NONE => []
          | SOME atom => bridge_eval_match_fragment space atom)
 End
 
-Theorem bridge_surface_eval_match_fragment_wrapper_rel:
-  ∀surface_space surface_atom numeric_outs.
-    bridge_surface_eval_match_fragment_rel
-      surface_space surface_atom numeric_outs ⇒
-    bridge_surface_eval_match_fragment_wrapper surface_space surface_atom =
+Theorem bridge_syntax_eval_match_fragment_wrapper_rel:
+  ∀syntax_space syntax_atom numeric_outs.
+    bridge_syntax_eval_match_fragment_rel
+      syntax_space syntax_atom numeric_outs ⇒
+    bridge_syntax_eval_match_fragment_wrapper syntax_space syntax_atom =
       numeric_outs
 Proof
-  rw[bridge_surface_eval_match_fragment_rel_def,
-     bridge_surface_eval_match_fragment_wrapper_def] \\
+  rw[bridge_syntax_eval_match_fragment_rel_def,
+     bridge_syntax_eval_match_fragment_wrapper_def] \\
   gvs[]
 QED
 
-Theorem bridge_surface_eval_match_fragment_wrapper_agrees_with_eval_m1_rec:
-  ∀fuel surface_space pattern templ space pattern_atom templ_atom.
-    bridge_import_surface_atom_list surface_space = SOME space ∧
-    bridge_import_surface_atom pattern = SOME pattern_atom ∧
-    bridge_import_surface_atom templ = SOME templ_atom ⇒
-    bridge_surface_eval_match_fragment_wrapper surface_space
+Theorem bridge_syntax_eval_match_fragment_wrapper_agrees_with_eval_m1_rec:
+  ∀fuel syntax_space pattern templ space pattern_atom templ_atom.
+    bridge_import_syntax_atom_list syntax_space = SOME space ∧
+    bridge_import_syntax_atom pattern = SOME pattern_atom ∧
+    bridge_import_syntax_atom templ = SOME templ_atom ⇒
+    bridge_syntax_eval_match_fragment_wrapper syntax_space
       (BExpr [BSym (strlit"match"); BSym (strlit"&self");
               pattern; templ]) =
       eval_m1_rec (SUC fuel) space
         (metta_m1$Expr
           [metta_m1$Sym 4; metta_m1$Sym 5; pattern_atom; templ_atom])
 Proof
-  rw[bridge_surface_eval_match_fragment_wrapper_def,
-     bridge_import_surface_atom_def, bridge_symbol_intern_def,
+  rw[bridge_syntax_eval_match_fragment_wrapper_def,
+     bridge_import_syntax_atom_def, bridge_symbol_intern_def,
      bridge_symbol_table_def] \\
   gvs[AllCaseEqs()] \\
   rw[bridge_eval_match_fragment_agrees_with_eval_m1_rec]
 QED
 
-Theorem bridge_surface_eval_match_fragment_wrapper_positive_example:
-  bridge_surface_eval_match_fragment_wrapper
+Theorem bridge_syntax_eval_match_fragment_wrapper_positive_example:
+  bridge_syntax_eval_match_fragment_wrapper
     [BExpr [BSym (strlit"Person"); BSym (strlit"True")];
      BExpr [BSym (strlit"Person"); BSym (strlit"False")]]
     (BExpr
@@ -7547,8 +7547,8 @@ Proof
   EVAL_TAC
 QED
 
-Theorem bridge_surface_eval_match_fragment_wrapper_negative_example:
-  bridge_surface_eval_match_fragment_wrapper
+Theorem bridge_syntax_eval_match_fragment_wrapper_negative_example:
+  bridge_syntax_eval_match_fragment_wrapper
     [BExpr [BSym (strlit"Person"); BSym (strlit"True")]]
     (BExpr
       [BSym (strlit"match"); BSym (strlit"&self");
@@ -7559,37 +7559,37 @@ Proof
   EVAL_TAC
 QED
 
-Definition bridge_surface_eval_match_fragment_rel_with_env_def:
-  bridge_surface_eval_match_fragment_rel_with_env
-    env surface_space surface_atom numeric_outs ⇔
+Definition bridge_syntax_eval_match_fragment_rel_with_env_def:
+  bridge_syntax_eval_match_fragment_rel_with_env
+    env syntax_space syntax_atom numeric_outs ⇔
     ∃space atom.
-      bridge_import_surface_atom_list_with_env env surface_space =
+      bridge_import_syntax_atom_list_with_env env syntax_space =
         SOME space ∧
-      bridge_import_surface_atom_with_env env surface_atom = SOME atom ∧
+      bridge_import_syntax_atom_with_env env syntax_atom = SOME atom ∧
       numeric_outs = bridge_eval_match_fragment space atom
 End
 
-Theorem bridge_surface_eval_match_fragment_rel_with_env_sound:
-  ∀env surface_space surface_atom numeric_outs.
-    bridge_surface_eval_match_fragment_rel_with_env
-      env surface_space surface_atom numeric_outs ⇒
+Theorem bridge_syntax_eval_match_fragment_rel_with_env_sound:
+  ∀env syntax_space syntax_atom numeric_outs.
+    bridge_syntax_eval_match_fragment_rel_with_env
+      env syntax_space syntax_atom numeric_outs ⇒
     ∃space atom.
-      bridge_import_surface_atom_list_with_env env surface_space =
+      bridge_import_syntax_atom_list_with_env env syntax_space =
         SOME space ∧
-      bridge_import_surface_atom_with_env env surface_atom = SOME atom ∧
+      bridge_import_syntax_atom_with_env env syntax_atom = SOME atom ∧
       numeric_outs = bridge_eval_match_fragment space atom
 Proof
-  rw[bridge_surface_eval_match_fragment_rel_with_env_def]
+  rw[bridge_syntax_eval_match_fragment_rel_with_env_def]
 QED
 
-Theorem bridge_surface_eval_match_fragment_rel_with_env_agrees_with_eval_m1_rec:
-  ∀fuel env surface_space pattern templ space pattern_atom templ_atom
+Theorem bridge_syntax_eval_match_fragment_rel_with_env_agrees_with_eval_m1_rec:
+  ∀fuel env syntax_space pattern templ space pattern_atom templ_atom
      numeric_outs.
-    bridge_import_surface_atom_list_with_env env surface_space =
+    bridge_import_syntax_atom_list_with_env env syntax_space =
       SOME space ∧
-    bridge_import_surface_atom_with_env env pattern = SOME pattern_atom ∧
-    bridge_import_surface_atom_with_env env templ = SOME templ_atom ∧
-    bridge_surface_eval_match_fragment_rel_with_env env surface_space
+    bridge_import_syntax_atom_with_env env pattern = SOME pattern_atom ∧
+    bridge_import_syntax_atom_with_env env templ = SOME templ_atom ∧
+    bridge_syntax_eval_match_fragment_rel_with_env env syntax_space
       (BExpr [BSym (strlit"match"); BSym (strlit"&self");
               pattern; templ])
       numeric_outs ⇒
@@ -7598,8 +7598,8 @@ Theorem bridge_surface_eval_match_fragment_rel_with_env_agrees_with_eval_m1_rec:
         (metta_m1$Expr
           [metta_m1$Sym 4; metta_m1$Sym 5; pattern_atom; templ_atom])
 Proof
-  rw[bridge_surface_eval_match_fragment_rel_with_env_def,
-     bridge_import_surface_atom_with_env_def,
+  rw[bridge_syntax_eval_match_fragment_rel_with_env_def,
+     bridge_import_syntax_atom_with_env_def,
      bridge_import_symbol_with_env_def,
      bridge_symbol_intern_def,
      bridge_symbol_table_def] \\
@@ -7607,45 +7607,45 @@ Proof
   rw[bridge_eval_match_fragment_agrees_with_eval_m1_rec]
 QED
 
-Definition bridge_surface_eval_match_fragment_wrapper_with_env_def:
-  bridge_surface_eval_match_fragment_wrapper_with_env
-    env surface_space surface_atom =
-    case bridge_import_surface_atom_list_with_env env surface_space of
+Definition bridge_syntax_eval_match_fragment_wrapper_with_env_def:
+  bridge_syntax_eval_match_fragment_wrapper_with_env
+    env syntax_space syntax_atom =
+    case bridge_import_syntax_atom_list_with_env env syntax_space of
     | NONE => []
     | SOME space =>
-        (case bridge_import_surface_atom_with_env env surface_atom of
+        (case bridge_import_syntax_atom_with_env env syntax_atom of
          | NONE => []
          | SOME atom => bridge_eval_match_fragment space atom)
 End
 
-Theorem bridge_surface_eval_match_fragment_wrapper_with_env_rel:
-  ∀env surface_space surface_atom numeric_outs.
-    bridge_surface_eval_match_fragment_rel_with_env
-      env surface_space surface_atom numeric_outs ⇒
-    bridge_surface_eval_match_fragment_wrapper_with_env
-      env surface_space surface_atom =
+Theorem bridge_syntax_eval_match_fragment_wrapper_with_env_rel:
+  ∀env syntax_space syntax_atom numeric_outs.
+    bridge_syntax_eval_match_fragment_rel_with_env
+      env syntax_space syntax_atom numeric_outs ⇒
+    bridge_syntax_eval_match_fragment_wrapper_with_env
+      env syntax_space syntax_atom =
       numeric_outs
 Proof
-  rw[bridge_surface_eval_match_fragment_rel_with_env_def,
-     bridge_surface_eval_match_fragment_wrapper_with_env_def] \\
+  rw[bridge_syntax_eval_match_fragment_rel_with_env_def,
+     bridge_syntax_eval_match_fragment_wrapper_with_env_def] \\
   gvs[]
 QED
 
-Theorem bridge_surface_eval_match_fragment_wrapper_with_env_agrees_with_eval_m1_rec:
-  ∀fuel env surface_space pattern templ space pattern_atom templ_atom.
-    bridge_import_surface_atom_list_with_env env surface_space =
+Theorem bridge_syntax_eval_match_fragment_wrapper_with_env_agrees_with_eval_m1_rec:
+  ∀fuel env syntax_space pattern templ space pattern_atom templ_atom.
+    bridge_import_syntax_atom_list_with_env env syntax_space =
       SOME space ∧
-    bridge_import_surface_atom_with_env env pattern = SOME pattern_atom ∧
-    bridge_import_surface_atom_with_env env templ = SOME templ_atom ⇒
-    bridge_surface_eval_match_fragment_wrapper_with_env env surface_space
+    bridge_import_syntax_atom_with_env env pattern = SOME pattern_atom ∧
+    bridge_import_syntax_atom_with_env env templ = SOME templ_atom ⇒
+    bridge_syntax_eval_match_fragment_wrapper_with_env env syntax_space
       (BExpr [BSym (strlit"match"); BSym (strlit"&self");
               pattern; templ]) =
       eval_m1_rec (SUC fuel) space
         (metta_m1$Expr
           [metta_m1$Sym 4; metta_m1$Sym 5; pattern_atom; templ_atom])
 Proof
-  rw[bridge_surface_eval_match_fragment_wrapper_with_env_def,
-     bridge_import_surface_atom_with_env_def,
+  rw[bridge_syntax_eval_match_fragment_wrapper_with_env_def,
+     bridge_import_syntax_atom_with_env_def,
      bridge_import_symbol_with_env_def,
      bridge_symbol_intern_def,
      bridge_symbol_table_def] \\
@@ -7653,8 +7653,8 @@ Proof
   rw[bridge_eval_match_fragment_agrees_with_eval_m1_rec]
 QED
 
-Theorem bridge_surface_eval_match_fragment_wrapper_with_env_dynamic_example:
-  bridge_surface_eval_match_fragment_wrapper_with_env [(strlit"Foo", 1000)]
+Theorem bridge_syntax_eval_match_fragment_wrapper_with_env_dynamic_example:
+  bridge_syntax_eval_match_fragment_wrapper_with_env [(strlit"Foo", 1000)]
     [BExpr [BSym (strlit"Foo"); BSym (strlit"True")];
      BExpr [BSym (strlit"Foo"); BSym (strlit"False")]]
     (BExpr
@@ -7667,8 +7667,8 @@ Proof
   EVAL_TAC
 QED
 
-Theorem bridge_surface_eval_match_fragment_wrapper_with_env_negative_example:
-  bridge_surface_eval_match_fragment_wrapper_with_env []
+Theorem bridge_syntax_eval_match_fragment_wrapper_with_env_negative_example:
+  bridge_syntax_eval_match_fragment_wrapper_with_env []
     [BExpr [BSym (strlit"Foo"); BSym (strlit"True")]]
     (BExpr
       [BSym (strlit"match"); BSym (strlit"&self");
@@ -7879,95 +7879,95 @@ Proof
   EVAL_TAC
 QED
 
-Definition bridge_surface_switch_payloads_wrapper_def:
-  bridge_surface_switch_payloads_wrapper surface_scrut surface_branches =
-    case bridge_import_surface_atom surface_scrut of
+Definition bridge_syntax_switch_payloads_wrapper_def:
+  bridge_syntax_switch_payloads_wrapper syntax_scrut syntax_branches =
+    case bridge_import_syntax_atom syntax_scrut of
     | NONE => []
     | SOME scrut =>
-        (case bridge_import_surface_atom_list surface_branches of
+        (case bridge_import_syntax_atom_list syntax_branches of
          | NONE => []
          | SOME branches => bridge_first_branch_payloads scrut branches)
 End
 
-Definition bridge_surface_case_payloads_wrapper_def:
-  bridge_surface_case_payloads_wrapper surface_values surface_branches =
-    case bridge_import_surface_atom_list surface_values of
+Definition bridge_syntax_case_payloads_wrapper_def:
+  bridge_syntax_case_payloads_wrapper syntax_values syntax_branches =
+    case bridge_import_syntax_atom_list syntax_values of
     | NONE => []
     | SOME values =>
-        (case bridge_import_surface_atom_list surface_branches of
+        (case bridge_import_syntax_atom_list syntax_branches of
          | NONE => []
          | SOME branches => bridge_branch_values_payloads values branches)
 End
 
-Definition bridge_surface_switch_payloads_wrapper_with_env_def:
-  bridge_surface_switch_payloads_wrapper_with_env
-    env surface_scrut surface_branches =
-    case bridge_import_surface_atom_with_env env surface_scrut of
+Definition bridge_syntax_switch_payloads_wrapper_with_env_def:
+  bridge_syntax_switch_payloads_wrapper_with_env
+    env syntax_scrut syntax_branches =
+    case bridge_import_syntax_atom_with_env env syntax_scrut of
     | NONE => []
     | SOME scrut =>
-        (case bridge_import_surface_atom_list_with_env env
-                surface_branches of
+        (case bridge_import_syntax_atom_list_with_env env
+                syntax_branches of
          | NONE => []
          | SOME branches => bridge_first_branch_payloads scrut branches)
 End
 
-Definition bridge_surface_case_payloads_wrapper_with_env_def:
-  bridge_surface_case_payloads_wrapper_with_env
-    env surface_values surface_branches =
-    case bridge_import_surface_atom_list_with_env env surface_values of
+Definition bridge_syntax_case_payloads_wrapper_with_env_def:
+  bridge_syntax_case_payloads_wrapper_with_env
+    env syntax_values syntax_branches =
+    case bridge_import_syntax_atom_list_with_env env syntax_values of
     | NONE => []
     | SOME values =>
-        (case bridge_import_surface_atom_list_with_env env
-                surface_branches of
+        (case bridge_import_syntax_atom_list_with_env env
+                syntax_branches of
          | NONE => []
          | SOME branches => bridge_branch_values_payloads values branches)
 End
 
-Theorem bridge_surface_switch_payloads_wrapper_import:
-  ∀surface_scrut surface_branches scrut branches.
-    bridge_import_surface_atom surface_scrut = SOME scrut ∧
-    bridge_import_surface_atom_list surface_branches = SOME branches ⇒
-    bridge_surface_switch_payloads_wrapper
-      surface_scrut surface_branches =
+Theorem bridge_syntax_switch_payloads_wrapper_import:
+  ∀syntax_scrut syntax_branches scrut branches.
+    bridge_import_syntax_atom syntax_scrut = SOME scrut ∧
+    bridge_import_syntax_atom_list syntax_branches = SOME branches ⇒
+    bridge_syntax_switch_payloads_wrapper
+      syntax_scrut syntax_branches =
     bridge_first_branch_payloads scrut branches
 Proof
-  rw[bridge_surface_switch_payloads_wrapper_def]
+  rw[bridge_syntax_switch_payloads_wrapper_def]
 QED
 
-Theorem bridge_surface_case_payloads_wrapper_import:
-  ∀surface_values surface_branches values branches.
-    bridge_import_surface_atom_list surface_values = SOME values ∧
-    bridge_import_surface_atom_list surface_branches = SOME branches ⇒
-    bridge_surface_case_payloads_wrapper
-      surface_values surface_branches =
+Theorem bridge_syntax_case_payloads_wrapper_import:
+  ∀syntax_values syntax_branches values branches.
+    bridge_import_syntax_atom_list syntax_values = SOME values ∧
+    bridge_import_syntax_atom_list syntax_branches = SOME branches ⇒
+    bridge_syntax_case_payloads_wrapper
+      syntax_values syntax_branches =
     bridge_branch_values_payloads values branches
 Proof
-  rw[bridge_surface_case_payloads_wrapper_def]
+  rw[bridge_syntax_case_payloads_wrapper_def]
 QED
 
-Theorem bridge_surface_switch_payloads_wrapper_with_env_import:
-  ∀env surface_scrut surface_branches scrut branches.
-    bridge_import_surface_atom_with_env env surface_scrut = SOME scrut ∧
-    bridge_import_surface_atom_list_with_env env surface_branches =
+Theorem bridge_syntax_switch_payloads_wrapper_with_env_import:
+  ∀env syntax_scrut syntax_branches scrut branches.
+    bridge_import_syntax_atom_with_env env syntax_scrut = SOME scrut ∧
+    bridge_import_syntax_atom_list_with_env env syntax_branches =
       SOME branches ⇒
-    bridge_surface_switch_payloads_wrapper_with_env
-      env surface_scrut surface_branches =
+    bridge_syntax_switch_payloads_wrapper_with_env
+      env syntax_scrut syntax_branches =
     bridge_first_branch_payloads scrut branches
 Proof
-  rw[bridge_surface_switch_payloads_wrapper_with_env_def]
+  rw[bridge_syntax_switch_payloads_wrapper_with_env_def]
 QED
 
-Theorem bridge_surface_case_payloads_wrapper_with_env_import:
-  ∀env surface_values surface_branches values branches.
-    bridge_import_surface_atom_list_with_env env surface_values =
+Theorem bridge_syntax_case_payloads_wrapper_with_env_import:
+  ∀env syntax_values syntax_branches values branches.
+    bridge_import_syntax_atom_list_with_env env syntax_values =
       SOME values ∧
-    bridge_import_surface_atom_list_with_env env surface_branches =
+    bridge_import_syntax_atom_list_with_env env syntax_branches =
       SOME branches ⇒
-    bridge_surface_case_payloads_wrapper_with_env
-      env surface_values surface_branches =
+    bridge_syntax_case_payloads_wrapper_with_env
+      env syntax_values syntax_branches =
     bridge_branch_values_payloads values branches
 Proof
-  rw[bridge_surface_case_payloads_wrapper_with_env_def]
+  rw[bridge_syntax_case_payloads_wrapper_with_env_def]
 QED
 
 Theorem bridge_chain_concat_results_member:
@@ -8062,89 +8062,89 @@ Proof
      bridge_evalc_checked_values_def]
 QED
 
-Definition bridge_surface_eval_payload_result_wrapper_def:
-  bridge_surface_eval_payload_result_wrapper surface_body surface_rs =
-    case bridge_import_surface_atom surface_body of
+Definition bridge_syntax_eval_payload_result_wrapper_def:
+  bridge_syntax_eval_payload_result_wrapper syntax_body syntax_rs =
+    case bridge_import_syntax_atom syntax_body of
     | NONE => []
     | SOME body =>
-        (case bridge_import_surface_atom_list surface_rs of
+        (case bridge_import_syntax_atom_list syntax_rs of
          | NONE => []
          | SOME rs => bridge_eval_payload_result body rs)
 End
 
-Definition bridge_surface_evalc_checked_values_wrapper_def:
-  bridge_surface_evalc_checked_values_wrapper
-    surface_space surface_term surface_expected surface_vals =
-    case bridge_import_surface_atom_list surface_space of
+Definition bridge_syntax_evalc_checked_values_wrapper_def:
+  bridge_syntax_evalc_checked_values_wrapper
+    syntax_space syntax_term syntax_expected syntax_vals =
+    case bridge_import_syntax_atom_list syntax_space of
     | NONE => []
     | SOME space =>
-        (case bridge_import_surface_atom surface_term of
+        (case bridge_import_syntax_atom syntax_term of
          | NONE => []
          | SOME term =>
-             (case bridge_import_surface_atom surface_expected of
+             (case bridge_import_syntax_atom syntax_expected of
               | NONE => []
               | SOME expected =>
-                  (case bridge_import_surface_atom_list surface_vals of
+                  (case bridge_import_syntax_atom_list syntax_vals of
                    | NONE => []
                    | SOME vals =>
                        bridge_evalc_checked_values
                          space term expected vals)))
 End
 
-Theorem bridge_surface_eval_payload_result_wrapper_import:
-  ∀surface_body surface_rs body rs.
-    bridge_import_surface_atom surface_body = SOME body ∧
-    bridge_import_surface_atom_list surface_rs = SOME rs ⇒
-    bridge_surface_eval_payload_result_wrapper surface_body surface_rs =
+Theorem bridge_syntax_eval_payload_result_wrapper_import:
+  ∀syntax_body syntax_rs body rs.
+    bridge_import_syntax_atom syntax_body = SOME body ∧
+    bridge_import_syntax_atom_list syntax_rs = SOME rs ⇒
+    bridge_syntax_eval_payload_result_wrapper syntax_body syntax_rs =
     bridge_eval_payload_result body rs
 Proof
-  rw[bridge_surface_eval_payload_result_wrapper_def]
+  rw[bridge_syntax_eval_payload_result_wrapper_def]
 QED
 
-Theorem bridge_surface_evalc_checked_values_wrapper_import:
-  ∀surface_space surface_term surface_expected surface_vals
+Theorem bridge_syntax_evalc_checked_values_wrapper_import:
+  ∀syntax_space syntax_term syntax_expected syntax_vals
      space term expected vals.
-    bridge_import_surface_atom_list surface_space = SOME space ∧
-    bridge_import_surface_atom surface_term = SOME term ∧
-    bridge_import_surface_atom surface_expected = SOME expected ∧
-    bridge_import_surface_atom_list surface_vals = SOME vals ⇒
-    bridge_surface_evalc_checked_values_wrapper
-      surface_space surface_term surface_expected surface_vals =
+    bridge_import_syntax_atom_list syntax_space = SOME space ∧
+    bridge_import_syntax_atom syntax_term = SOME term ∧
+    bridge_import_syntax_atom syntax_expected = SOME expected ∧
+    bridge_import_syntax_atom_list syntax_vals = SOME vals ⇒
+    bridge_syntax_evalc_checked_values_wrapper
+      syntax_space syntax_term syntax_expected syntax_vals =
     bridge_evalc_checked_values space term expected vals
 Proof
-  rw[bridge_surface_evalc_checked_values_wrapper_def]
+  rw[bridge_syntax_evalc_checked_values_wrapper_def]
 QED
 
-Theorem bridge_surface_eval_payload_result_wrapper_eval_fragment:
-  ∀fuel space surface_body surface_rs body.
-    bridge_import_surface_atom surface_body = SOME body ∧
-    bridge_import_surface_atom_list surface_rs =
+Theorem bridge_syntax_eval_payload_result_wrapper_eval_fragment:
+  ∀fuel space syntax_body syntax_rs body.
+    bridge_import_syntax_atom syntax_body = SOME body ∧
+    bridge_import_syntax_atom_list syntax_rs =
       SOME (eval_m1_rec fuel space body) ⇒
-    bridge_surface_eval_payload_result_wrapper surface_body surface_rs =
+    bridge_syntax_eval_payload_result_wrapper syntax_body syntax_rs =
     bridge_eval_eval_fragment fuel space
       (metta_m1$Expr [metta_m1$Sym 20; body])
 Proof
-  rw[bridge_surface_eval_payload_result_wrapper_import,
+  rw[bridge_syntax_eval_payload_result_wrapper_import,
      bridge_eval_eval_fragment_decomposes]
 QED
 
-Theorem bridge_surface_evalc_checked_values_wrapper_evalc_fragment:
-  ∀fuel surface_space surface_term surface_expected surface_vals
+Theorem bridge_syntax_evalc_checked_values_wrapper_evalc_fragment:
+  ∀fuel syntax_space syntax_term syntax_expected syntax_vals
      space term expected.
-    bridge_import_surface_atom_list surface_space = SOME space ∧
-    bridge_import_surface_atom surface_term = SOME term ∧
-    bridge_import_surface_atom surface_expected = SOME expected ∧
-    bridge_import_surface_atom_list surface_vals =
+    bridge_import_syntax_atom_list syntax_space = SOME space ∧
+    bridge_import_syntax_atom syntax_term = SOME term ∧
+    bridge_import_syntax_atom syntax_expected = SOME expected ∧
+    bridge_import_syntax_atom_list syntax_vals =
       SOME
         (if hol_typed_add_bad space term
          then [error_atom term (metta_m1$Sym 10)]
          else eval_m1_rec fuel space term) ⇒
-    bridge_surface_evalc_checked_values_wrapper
-      surface_space surface_term surface_expected surface_vals =
+    bridge_syntax_evalc_checked_values_wrapper
+      syntax_space syntax_term syntax_expected syntax_vals =
     eval_evalc_fragment fuel space
       (metta_m1$Expr [metta_m1$Sym 57; term; expected])
 Proof
-  rw[bridge_surface_evalc_checked_values_wrapper_import,
+  rw[bridge_syntax_evalc_checked_values_wrapper_import,
      bridge_eval_evalc_fragment_decomposes]
 QED
 
@@ -8699,41 +8699,41 @@ Proof
   metis_tac[]
 QED
 
-Definition bridge_surface_eval_chain_fragment_wrapper_def:
-  bridge_surface_eval_chain_fragment_wrapper fuel surface_space surface_atom =
-    case bridge_import_surface_atom_list surface_space of
+Definition bridge_syntax_eval_chain_fragment_wrapper_def:
+  bridge_syntax_eval_chain_fragment_wrapper fuel syntax_space syntax_atom =
+    case bridge_import_syntax_atom_list syntax_space of
     | NONE => []
     | SOME space =>
-        (case bridge_import_surface_atom surface_atom of
+        (case bridge_import_syntax_atom syntax_atom of
          | NONE => []
          | SOME atom => bridge_eval_chain_fragment fuel space atom)
 End
 
-Theorem bridge_surface_eval_chain_fragment_wrapper_agrees_with_eval_m1_rec:
-  ∀fuel surface_space nested v templ space nested_atom templ_atom.
-    bridge_import_surface_atom_list surface_space = SOME space ∧
-    bridge_import_surface_atom nested = SOME nested_atom ∧
-    bridge_import_surface_atom templ = SOME templ_atom ⇒
-    bridge_surface_eval_chain_fragment_wrapper fuel surface_space
+Theorem bridge_syntax_eval_chain_fragment_wrapper_agrees_with_eval_m1_rec:
+  ∀fuel syntax_space nested v templ space nested_atom templ_atom.
+    bridge_import_syntax_atom_list syntax_space = SOME space ∧
+    bridge_import_syntax_atom nested = SOME nested_atom ∧
+    bridge_import_syntax_atom templ = SOME templ_atom ⇒
+    bridge_syntax_eval_chain_fragment_wrapper fuel syntax_space
       (BExpr [BSym (strlit"chain"); nested; BVar v; templ]) =
       eval_m1_rec (SUC fuel) space
         (metta_m1$Expr
           [metta_m1$Sym 21; nested_atom; metta_m1$Var v; templ_atom])
 Proof
-  rw[bridge_surface_eval_chain_fragment_wrapper_def,
-     bridge_import_surface_atom_def, bridge_symbol_intern_def,
+  rw[bridge_syntax_eval_chain_fragment_wrapper_def,
+     bridge_import_syntax_atom_def, bridge_symbol_intern_def,
      bridge_symbol_table_def] \\
   gvs[AllCaseEqs()] \\
   rw[bridge_eval_chain_fragment_agrees_with_eval_m1_rec]
 QED
 
-Theorem bridge_surface_eval_chain_fragment_wrapper_member_uses_subst_payload:
-  ∀fuel surface_space nested v templ space nested_atom templ_atom out.
-    bridge_import_surface_atom_list surface_space = SOME space ∧
-    bridge_import_surface_atom nested = SOME nested_atom ∧
-    bridge_import_surface_atom templ = SOME templ_atom ∧
+Theorem bridge_syntax_eval_chain_fragment_wrapper_member_uses_subst_payload:
+  ∀fuel syntax_space nested v templ space nested_atom templ_atom out.
+    bridge_import_syntax_atom_list syntax_space = SOME space ∧
+    bridge_import_syntax_atom nested = SOME nested_atom ∧
+    bridge_import_syntax_atom templ = SOME templ_atom ∧
     MEM out
-      (bridge_surface_eval_chain_fragment_wrapper fuel surface_space
+      (bridge_syntax_eval_chain_fragment_wrapper fuel syntax_space
         (BExpr [BSym (strlit"chain"); nested; BVar v; templ])) ⇒
     ∃substituted.
       MEM substituted
@@ -8741,8 +8741,8 @@ Theorem bridge_surface_eval_chain_fragment_wrapper_member_uses_subst_payload:
           (eval_m1_rec fuel space nested_atom) templ_atom) ∧
       MEM out (eval_m1_rec fuel space substituted)
 Proof
-  rw[bridge_surface_eval_chain_fragment_wrapper_def,
-     bridge_import_surface_atom_def, bridge_symbol_intern_def,
+  rw[bridge_syntax_eval_chain_fragment_wrapper_def,
+     bridge_import_syntax_atom_def, bridge_symbol_intern_def,
      bridge_symbol_table_def] \\
   gvs[AllCaseEqs()] \\
   drule bridge_eval_chain_fragment_member_uses_subst_payload \\
@@ -9717,8 +9717,8 @@ Proof
   metis_tac[bridge_eval_m1_rec_split_fallback_fuller_sound]
 QED
 
-Theorem bridge_surface_eval_chain_fragment_wrapper_positive_example:
-  bridge_surface_eval_chain_fragment_wrapper 1
+Theorem bridge_syntax_eval_chain_fragment_wrapper_positive_example:
+  bridge_syntax_eval_chain_fragment_wrapper 1
     [BExpr [BSym (strlit"Person"); BSym (strlit"True")]]
     (BExpr
       [BSym (strlit"chain");
@@ -9733,8 +9733,8 @@ Proof
   EVAL_TAC
 QED
 
-Theorem bridge_surface_eval_chain_fragment_wrapper_negative_example:
-  bridge_surface_eval_chain_fragment_wrapper 1 []
+Theorem bridge_syntax_eval_chain_fragment_wrapper_negative_example:
+  bridge_syntax_eval_chain_fragment_wrapper 1 []
     (BExpr
       [BSym (strlit"not-a-core-symbol"); BInt 1; BVar 0; BVar 0]) =
   []
@@ -9742,29 +9742,29 @@ Proof
   EVAL_TAC
 QED
 
-Definition bridge_surface_eval_eval_fragment_wrapper_with_env_def:
-  bridge_surface_eval_eval_fragment_wrapper_with_env
-    fuel env surface_space surface_atom =
-    case bridge_import_surface_atom_list_with_env env surface_space of
+Definition bridge_syntax_eval_eval_fragment_wrapper_with_env_def:
+  bridge_syntax_eval_eval_fragment_wrapper_with_env
+    fuel env syntax_space syntax_atom =
+    case bridge_import_syntax_atom_list_with_env env syntax_space of
     | NONE => []
     | SOME space =>
-        (case bridge_import_surface_atom_with_env env surface_atom of
+        (case bridge_import_syntax_atom_with_env env syntax_atom of
          | NONE => []
          | SOME atom => bridge_eval_eval_fragment fuel space atom)
 End
 
-Theorem bridge_surface_eval_eval_fragment_wrapper_with_env_agrees_with_eval_m1_rec:
-  ∀fuel env surface_space body space body_atom.
-    bridge_import_surface_atom_list_with_env env surface_space =
+Theorem bridge_syntax_eval_eval_fragment_wrapper_with_env_agrees_with_eval_m1_rec:
+  ∀fuel env syntax_space body space body_atom.
+    bridge_import_syntax_atom_list_with_env env syntax_space =
       SOME space ∧
-    bridge_import_surface_atom_with_env env body = SOME body_atom ⇒
-    bridge_surface_eval_eval_fragment_wrapper_with_env fuel env surface_space
+    bridge_import_syntax_atom_with_env env body = SOME body_atom ⇒
+    bridge_syntax_eval_eval_fragment_wrapper_with_env fuel env syntax_space
       (BExpr [BSym (strlit"eval"); body]) =
       eval_m1_rec (SUC fuel) space
         (metta_m1$Expr [metta_m1$Sym 20; body_atom])
 Proof
-  rw[bridge_surface_eval_eval_fragment_wrapper_with_env_def,
-     bridge_import_surface_atom_with_env_def,
+  rw[bridge_syntax_eval_eval_fragment_wrapper_with_env_def,
+     bridge_import_syntax_atom_with_env_def,
      bridge_import_symbol_with_env_def,
      bridge_symbol_intern_def,
      bridge_symbol_table_def] \\
@@ -9772,32 +9772,32 @@ Proof
   rw[bridge_eval_eval_fragment_agrees_with_eval_m1_rec]
 QED
 
-Definition bridge_surface_eval_case_fragment_wrapper_with_env_def:
-  bridge_surface_eval_case_fragment_wrapper_with_env
-    fuel env surface_space surface_atom =
-    case bridge_import_surface_atom_list_with_env env surface_space of
+Definition bridge_syntax_eval_case_fragment_wrapper_with_env_def:
+  bridge_syntax_eval_case_fragment_wrapper_with_env
+    fuel env syntax_space syntax_atom =
+    case bridge_import_syntax_atom_list_with_env env syntax_space of
     | NONE => []
     | SOME space =>
-        (case bridge_import_surface_atom_with_env env surface_atom of
+        (case bridge_import_syntax_atom_with_env env syntax_atom of
          | NONE => []
          | SOME atom => bridge_eval_case_fragment fuel space atom)
 End
 
-Theorem bridge_surface_eval_case_fragment_wrapper_with_env_agrees_with_eval_m1_rec:
-  ∀fuel env surface_space scrut branches space scrut_atom branch_atoms.
-    bridge_import_surface_atom_list_with_env env surface_space =
+Theorem bridge_syntax_eval_case_fragment_wrapper_with_env_agrees_with_eval_m1_rec:
+  ∀fuel env syntax_space scrut branches space scrut_atom branch_atoms.
+    bridge_import_syntax_atom_list_with_env env syntax_space =
       SOME space ∧
-    bridge_import_surface_atom_with_env env scrut = SOME scrut_atom ∧
-    bridge_import_surface_atom_list_with_env env branches =
+    bridge_import_syntax_atom_with_env env scrut = SOME scrut_atom ∧
+    bridge_import_syntax_atom_list_with_env env branches =
       SOME branch_atoms ⇒
-    bridge_surface_eval_case_fragment_wrapper_with_env fuel env surface_space
+    bridge_syntax_eval_case_fragment_wrapper_with_env fuel env syntax_space
       (BExpr [BSym (strlit"case"); scrut; BExpr branches]) =
       eval_m1_rec (SUC fuel) space
         (metta_m1$Expr
           [metta_m1$Sym 54; scrut_atom; metta_m1$Expr branch_atoms])
 Proof
-  rw[bridge_surface_eval_case_fragment_wrapper_with_env_def,
-     bridge_import_surface_atom_with_env_def,
+  rw[bridge_syntax_eval_case_fragment_wrapper_with_env_def,
+     bridge_import_syntax_atom_with_env_def,
      bridge_import_symbol_with_env_def,
      bridge_symbol_intern_def,
      bridge_symbol_table_def] \\
@@ -9805,32 +9805,32 @@ Proof
   rw[bridge_eval_case_fragment_agrees_with_eval_m1_rec]
 QED
 
-Definition bridge_surface_eval_switch_fragment_wrapper_with_env_def:
-  bridge_surface_eval_switch_fragment_wrapper_with_env
-    fuel env surface_space surface_atom =
-    case bridge_import_surface_atom_list_with_env env surface_space of
+Definition bridge_syntax_eval_switch_fragment_wrapper_with_env_def:
+  bridge_syntax_eval_switch_fragment_wrapper_with_env
+    fuel env syntax_space syntax_atom =
+    case bridge_import_syntax_atom_list_with_env env syntax_space of
     | NONE => []
     | SOME space =>
-        (case bridge_import_surface_atom_with_env env surface_atom of
+        (case bridge_import_syntax_atom_with_env env syntax_atom of
          | NONE => []
          | SOME atom => bridge_eval_switch_fragment fuel space atom)
 End
 
-Theorem bridge_surface_eval_switch_fragment_wrapper_with_env_agrees_with_eval_m1_rec:
-  ∀fuel env surface_space scrut branches space scrut_atom branch_atoms.
-    bridge_import_surface_atom_list_with_env env surface_space =
+Theorem bridge_syntax_eval_switch_fragment_wrapper_with_env_agrees_with_eval_m1_rec:
+  ∀fuel env syntax_space scrut branches space scrut_atom branch_atoms.
+    bridge_import_syntax_atom_list_with_env env syntax_space =
       SOME space ∧
-    bridge_import_surface_atom_with_env env scrut = SOME scrut_atom ∧
-    bridge_import_surface_atom_list_with_env env branches =
+    bridge_import_syntax_atom_with_env env scrut = SOME scrut_atom ∧
+    bridge_import_syntax_atom_list_with_env env branches =
       SOME branch_atoms ⇒
-    bridge_surface_eval_switch_fragment_wrapper_with_env fuel env surface_space
+    bridge_syntax_eval_switch_fragment_wrapper_with_env fuel env syntax_space
       (BExpr [BSym (strlit"switch"); scrut; BExpr branches]) =
       eval_m1_rec (SUC fuel) space
         (metta_m1$Expr
           [metta_m1$Sym 55; scrut_atom; metta_m1$Expr branch_atoms])
 Proof
-  rw[bridge_surface_eval_switch_fragment_wrapper_with_env_def,
-     bridge_import_surface_atom_with_env_def,
+  rw[bridge_syntax_eval_switch_fragment_wrapper_with_env_def,
+     bridge_import_syntax_atom_with_env_def,
      bridge_import_symbol_with_env_def,
      bridge_symbol_intern_def,
      bridge_symbol_table_def] \\
@@ -9838,32 +9838,32 @@ Proof
   rw[bridge_eval_switch_fragment_agrees_with_eval_m1_rec]
 QED
 
-Definition bridge_surface_eval_let_star_fragment_wrapper_with_env_def:
-  bridge_surface_eval_let_star_fragment_wrapper_with_env
-    fuel env surface_space surface_atom =
-    case bridge_import_surface_atom_list_with_env env surface_space of
+Definition bridge_syntax_eval_let_star_fragment_wrapper_with_env_def:
+  bridge_syntax_eval_let_star_fragment_wrapper_with_env
+    fuel env syntax_space syntax_atom =
+    case bridge_import_syntax_atom_list_with_env env syntax_space of
     | NONE => []
     | SOME space =>
-        (case bridge_import_surface_atom_with_env env surface_atom of
+        (case bridge_import_syntax_atom_with_env env syntax_atom of
          | NONE => []
          | SOME atom => bridge_eval_let_star_fragment fuel space atom)
 End
 
-Theorem bridge_surface_eval_let_star_fragment_wrapper_with_env_agrees_with_eval_m1_rec:
-  ∀fuel env surface_space bindings body space binding_atoms body_atom.
-    bridge_import_surface_atom_list_with_env env surface_space =
+Theorem bridge_syntax_eval_let_star_fragment_wrapper_with_env_agrees_with_eval_m1_rec:
+  ∀fuel env syntax_space bindings body space binding_atoms body_atom.
+    bridge_import_syntax_atom_list_with_env env syntax_space =
       SOME space ∧
-    bridge_import_surface_atom_list_with_env env bindings =
+    bridge_import_syntax_atom_list_with_env env bindings =
       SOME binding_atoms ∧
-    bridge_import_surface_atom_with_env env body = SOME body_atom ⇒
-    bridge_surface_eval_let_star_fragment_wrapper_with_env fuel env surface_space
+    bridge_import_syntax_atom_with_env env body = SOME body_atom ⇒
+    bridge_syntax_eval_let_star_fragment_wrapper_with_env fuel env syntax_space
       (BExpr [BSym (strlit"let*"); BExpr bindings; body]) =
       eval_m1_rec (SUC fuel) space
         (metta_m1$Expr
           [metta_m1$Sym 56; metta_m1$Expr binding_atoms; body_atom])
 Proof
-  rw[bridge_surface_eval_let_star_fragment_wrapper_with_env_def,
-     bridge_import_surface_atom_with_env_def,
+  rw[bridge_syntax_eval_let_star_fragment_wrapper_with_env_def,
+     bridge_import_syntax_atom_with_env_def,
      bridge_import_symbol_with_env_def,
      bridge_symbol_intern_def,
      bridge_symbol_table_def] \\
@@ -9871,31 +9871,31 @@ Proof
   rw[bridge_eval_let_star_fragment_agrees_with_eval_m1_rec]
 QED
 
-Definition bridge_surface_eval_chain_fragment_wrapper_with_env_def:
-  bridge_surface_eval_chain_fragment_wrapper_with_env
-    fuel env surface_space surface_atom =
-    case bridge_import_surface_atom_list_with_env env surface_space of
+Definition bridge_syntax_eval_chain_fragment_wrapper_with_env_def:
+  bridge_syntax_eval_chain_fragment_wrapper_with_env
+    fuel env syntax_space syntax_atom =
+    case bridge_import_syntax_atom_list_with_env env syntax_space of
     | NONE => []
     | SOME space =>
-        (case bridge_import_surface_atom_with_env env surface_atom of
+        (case bridge_import_syntax_atom_with_env env syntax_atom of
          | NONE => []
          | SOME atom => bridge_eval_chain_fragment fuel space atom)
 End
 
-Theorem bridge_surface_eval_chain_fragment_wrapper_with_env_agrees_with_eval_m1_rec:
-  ∀fuel env surface_space nested v templ space nested_atom templ_atom.
-    bridge_import_surface_atom_list_with_env env surface_space =
+Theorem bridge_syntax_eval_chain_fragment_wrapper_with_env_agrees_with_eval_m1_rec:
+  ∀fuel env syntax_space nested v templ space nested_atom templ_atom.
+    bridge_import_syntax_atom_list_with_env env syntax_space =
       SOME space ∧
-    bridge_import_surface_atom_with_env env nested = SOME nested_atom ∧
-    bridge_import_surface_atom_with_env env templ = SOME templ_atom ⇒
-    bridge_surface_eval_chain_fragment_wrapper_with_env fuel env surface_space
+    bridge_import_syntax_atom_with_env env nested = SOME nested_atom ∧
+    bridge_import_syntax_atom_with_env env templ = SOME templ_atom ⇒
+    bridge_syntax_eval_chain_fragment_wrapper_with_env fuel env syntax_space
       (BExpr [BSym (strlit"chain"); nested; BVar v; templ]) =
       eval_m1_rec (SUC fuel) space
         (metta_m1$Expr
           [metta_m1$Sym 21; nested_atom; metta_m1$Var v; templ_atom])
 Proof
-  rw[bridge_surface_eval_chain_fragment_wrapper_with_env_def,
-     bridge_import_surface_atom_with_env_def,
+  rw[bridge_syntax_eval_chain_fragment_wrapper_with_env_def,
+     bridge_import_syntax_atom_with_env_def,
      bridge_import_symbol_with_env_def,
      bridge_symbol_intern_def,
      bridge_symbol_table_def] \\
@@ -9903,15 +9903,15 @@ Proof
   rw[bridge_eval_chain_fragment_agrees_with_eval_m1_rec]
 QED
 
-Theorem bridge_surface_eval_chain_fragment_wrapper_with_env_member_uses_subst_payload:
-  ∀fuel env surface_space nested v templ space nested_atom templ_atom out.
-    bridge_import_surface_atom_list_with_env env surface_space =
+Theorem bridge_syntax_eval_chain_fragment_wrapper_with_env_member_uses_subst_payload:
+  ∀fuel env syntax_space nested v templ space nested_atom templ_atom out.
+    bridge_import_syntax_atom_list_with_env env syntax_space =
       SOME space ∧
-    bridge_import_surface_atom_with_env env nested = SOME nested_atom ∧
-    bridge_import_surface_atom_with_env env templ = SOME templ_atom ∧
+    bridge_import_syntax_atom_with_env env nested = SOME nested_atom ∧
+    bridge_import_syntax_atom_with_env env templ = SOME templ_atom ∧
     MEM out
-      (bridge_surface_eval_chain_fragment_wrapper_with_env
-        fuel env surface_space
+      (bridge_syntax_eval_chain_fragment_wrapper_with_env
+        fuel env syntax_space
         (BExpr [BSym (strlit"chain"); nested; BVar v; templ])) ⇒
     ∃substituted.
       MEM substituted
@@ -9919,8 +9919,8 @@ Theorem bridge_surface_eval_chain_fragment_wrapper_with_env_member_uses_subst_pa
           (eval_m1_rec fuel space nested_atom) templ_atom) ∧
       MEM out (eval_m1_rec fuel space substituted)
 Proof
-  rw[bridge_surface_eval_chain_fragment_wrapper_with_env_def,
-     bridge_import_surface_atom_with_env_def,
+  rw[bridge_syntax_eval_chain_fragment_wrapper_with_env_def,
+     bridge_import_syntax_atom_with_env_def,
      bridge_import_symbol_with_env_def,
      bridge_symbol_intern_def,
      bridge_symbol_table_def] \\
@@ -9929,8 +9929,8 @@ Proof
   rw[]
 QED
 
-Theorem bridge_surface_eval_eval_fragment_wrapper_with_env_dynamic_example:
-  bridge_surface_eval_eval_fragment_wrapper_with_env 2
+Theorem bridge_syntax_eval_eval_fragment_wrapper_with_env_dynamic_example:
+  bridge_syntax_eval_eval_fragment_wrapper_with_env 2
     [(strlit"Foo", 1000)] []
     (BExpr [BSym (strlit"eval");
             BExpr [BSym (strlit"+"); BInt 2; BInt 3]]) =
@@ -9939,8 +9939,8 @@ Proof
   EVAL_TAC
 QED
 
-Theorem bridge_surface_eval_case_fragment_wrapper_with_env_dynamic_example:
-  bridge_surface_eval_case_fragment_wrapper_with_env 1
+Theorem bridge_syntax_eval_case_fragment_wrapper_with_env_dynamic_example:
+  bridge_syntax_eval_case_fragment_wrapper_with_env 1
     [(strlit"Foo", 1000)] []
     (BExpr
       [BSym (strlit"case"); BSym (strlit"Foo");
@@ -9950,8 +9950,8 @@ Proof
   EVAL_TAC
 QED
 
-Theorem bridge_surface_eval_switch_fragment_wrapper_with_env_dynamic_example:
-  bridge_surface_eval_switch_fragment_wrapper_with_env 1
+Theorem bridge_syntax_eval_switch_fragment_wrapper_with_env_dynamic_example:
+  bridge_syntax_eval_switch_fragment_wrapper_with_env 1
     [(strlit"Foo", 1000)] []
     (BExpr
       [BSym (strlit"switch"); BSym (strlit"Foo");
@@ -9961,8 +9961,8 @@ Proof
   EVAL_TAC
 QED
 
-Theorem bridge_surface_eval_let_star_fragment_wrapper_with_env_dynamic_example:
-  bridge_surface_eval_let_star_fragment_wrapper_with_env 2
+Theorem bridge_syntax_eval_let_star_fragment_wrapper_with_env_dynamic_example:
+  bridge_syntax_eval_let_star_fragment_wrapper_with_env 2
     [(strlit"Foo", 1000)] []
     (BExpr
       [BSym (strlit"let*");
@@ -9973,8 +9973,8 @@ Proof
   EVAL_TAC
 QED
 
-Theorem bridge_surface_eval_chain_fragment_wrapper_with_env_dynamic_example:
-  bridge_surface_eval_chain_fragment_wrapper_with_env 1
+Theorem bridge_syntax_eval_chain_fragment_wrapper_with_env_dynamic_example:
+  bridge_syntax_eval_chain_fragment_wrapper_with_env 1
     [(strlit"Foo", 1000)]
     [BExpr [BSym (strlit"Foo"); BSym (strlit"True")]]
     (BExpr
@@ -9990,16 +9990,16 @@ Proof
   EVAL_TAC
 QED
 
-Theorem bridge_surface_eval_eval_fragment_wrapper_with_env_negative_example:
-  bridge_surface_eval_eval_fragment_wrapper_with_env 1 [] []
+Theorem bridge_syntax_eval_eval_fragment_wrapper_with_env_negative_example:
+  bridge_syntax_eval_eval_fragment_wrapper_with_env 1 [] []
     (BExpr [BSym (strlit"not-a-core-symbol"); BInt 2]) =
   []
 Proof
   EVAL_TAC
 QED
 
-Theorem bridge_surface_eval_case_fragment_wrapper_with_env_negative_example:
-  bridge_surface_eval_case_fragment_wrapper_with_env 1 [] []
+Theorem bridge_syntax_eval_case_fragment_wrapper_with_env_negative_example:
+  bridge_syntax_eval_case_fragment_wrapper_with_env 1 [] []
     (BExpr
       [BSym (strlit"case"); BSym (strlit"Foo");
        BExpr [BExpr [BSym (strlit"Foo"); BInt 7]]]) =
@@ -10008,8 +10008,8 @@ Proof
   EVAL_TAC
 QED
 
-Theorem bridge_surface_eval_switch_fragment_wrapper_with_env_negative_example:
-  bridge_surface_eval_switch_fragment_wrapper_with_env 1 [] []
+Theorem bridge_syntax_eval_switch_fragment_wrapper_with_env_negative_example:
+  bridge_syntax_eval_switch_fragment_wrapper_with_env 1 [] []
     (BExpr
       [BSym (strlit"switch"); BSym (strlit"Foo");
        BExpr [BExpr [BSym (strlit"Foo"); BInt 7]]]) =
@@ -10018,8 +10018,8 @@ Proof
   EVAL_TAC
 QED
 
-Theorem bridge_surface_eval_let_star_fragment_wrapper_with_env_negative_example:
-  bridge_surface_eval_let_star_fragment_wrapper_with_env 1 [] []
+Theorem bridge_syntax_eval_let_star_fragment_wrapper_with_env_negative_example:
+  bridge_syntax_eval_let_star_fragment_wrapper_with_env 1 [] []
     (BExpr
       [BSym (strlit"let*");
        BExpr [BExpr [BVar 0; BSym (strlit"Foo")]];
@@ -10029,8 +10029,8 @@ Proof
   EVAL_TAC
 QED
 
-Theorem bridge_surface_eval_chain_fragment_wrapper_with_env_negative_example:
-  bridge_surface_eval_chain_fragment_wrapper_with_env 1 [] []
+Theorem bridge_syntax_eval_chain_fragment_wrapper_with_env_negative_example:
+  bridge_syntax_eval_chain_fragment_wrapper_with_env 1 [] []
     (BExpr
       [BSym (strlit"chain"); BSym (strlit"Foo"); BVar 0; BVar 0]) =
   []
@@ -10077,12 +10077,12 @@ val bridge_import_symbol_with_env_v_thm =
   translate bridge_import_symbol_with_env_def;
 val bridge_export_symbol_with_env_v_thm =
   translate bridge_export_symbol_with_env_def;
-val bridge_import_surface_atom_v_thm =
-  translate bridge_import_surface_atom_def;
-val bridge_import_surface_atom_with_env_v_thm =
-  translate bridge_import_surface_atom_with_env_def;
-val bridge_export_surface_atom_with_env_v_thm =
-  translate bridge_export_surface_atom_with_env_def;
+val bridge_import_syntax_atom_v_thm =
+  translate bridge_import_syntax_atom_def;
+val bridge_import_syntax_atom_with_env_v_thm =
+  translate bridge_import_syntax_atom_with_env_def;
+val bridge_export_syntax_atom_with_env_v_thm =
+  translate bridge_export_syntax_atom_with_env_def;
 val bridge_source_char_is_space_v_thm =
   translate bridge_source_char_is_space_def;
 val bridge_source_char_is_delim_v_thm =
@@ -10258,14 +10258,14 @@ val bridge_eval_args2_v_thm = translate bridge_eval_args2_def;
 val bridge_eval_int_add_values_v_thm = translate bridge_eval_int_add_values_def;
 val bridge_eval_add_values_fragment_v_thm =
   translate bridge_eval_add_values_fragment_def;
-val bridge_surface_eval_add_values_wrapper_v_thm =
-  translate bridge_surface_eval_add_values_wrapper_def;
-val bridge_surface_eval_add_evaluated_args_wrapper_v_thm =
-  translate bridge_surface_eval_add_evaluated_args_wrapper_def;
-val bridge_surface_eval_add_values_wrapper_with_env_v_thm =
-  translate bridge_surface_eval_add_values_wrapper_with_env_def;
-val bridge_surface_eval_add_evaluated_args_wrapper_with_env_v_thm =
-  translate bridge_surface_eval_add_evaluated_args_wrapper_with_env_def;
+val bridge_syntax_eval_add_values_wrapper_v_thm =
+  translate bridge_syntax_eval_add_values_wrapper_def;
+val bridge_syntax_eval_add_evaluated_args_wrapper_v_thm =
+  translate bridge_syntax_eval_add_evaluated_args_wrapper_def;
+val bridge_syntax_eval_add_values_wrapper_with_env_v_thm =
+  translate bridge_syntax_eval_add_values_wrapper_with_env_def;
+val bridge_syntax_eval_add_evaluated_args_wrapper_with_env_v_thm =
+  translate bridge_syntax_eval_add_evaluated_args_wrapper_with_env_def;
 val bridge_eval_lt_values_v_thm = translate bridge_eval_lt_values_def;
 val bridge_eval_lt_values_fragment_v_thm =
   translate bridge_eval_lt_values_fragment_def;
@@ -10281,26 +10281,26 @@ val bridge_eval_or_values_fragment_v_thm =
 val bridge_eval_not_values_v_thm = translate bridge_eval_not_values_def;
 val bridge_eval_not_values_fragment_v_thm =
   translate bridge_eval_not_values_fragment_def;
-val bridge_surface_eval_lt_values_wrapper_v_thm =
-  translate bridge_surface_eval_lt_values_wrapper_def;
-val bridge_surface_eval_eq_values_wrapper_v_thm =
-  translate bridge_surface_eval_eq_values_wrapper_def;
-val bridge_surface_eval_and_values_wrapper_v_thm =
-  translate bridge_surface_eval_and_values_wrapper_def;
-val bridge_surface_eval_or_values_wrapper_v_thm =
-  translate bridge_surface_eval_or_values_wrapper_def;
-val bridge_surface_eval_not_values_wrapper_v_thm =
-  translate bridge_surface_eval_not_values_wrapper_def;
-val bridge_surface_eval_lt_values_wrapper_with_env_v_thm =
-  translate bridge_surface_eval_lt_values_wrapper_with_env_def;
-val bridge_surface_eval_eq_values_wrapper_with_env_v_thm =
-  translate bridge_surface_eval_eq_values_wrapper_with_env_def;
-val bridge_surface_eval_and_values_wrapper_with_env_v_thm =
-  translate bridge_surface_eval_and_values_wrapper_with_env_def;
-val bridge_surface_eval_or_values_wrapper_with_env_v_thm =
-  translate bridge_surface_eval_or_values_wrapper_with_env_def;
-val bridge_surface_eval_not_values_wrapper_with_env_v_thm =
-  translate bridge_surface_eval_not_values_wrapper_with_env_def;
+val bridge_syntax_eval_lt_values_wrapper_v_thm =
+  translate bridge_syntax_eval_lt_values_wrapper_def;
+val bridge_syntax_eval_eq_values_wrapper_v_thm =
+  translate bridge_syntax_eval_eq_values_wrapper_def;
+val bridge_syntax_eval_and_values_wrapper_v_thm =
+  translate bridge_syntax_eval_and_values_wrapper_def;
+val bridge_syntax_eval_or_values_wrapper_v_thm =
+  translate bridge_syntax_eval_or_values_wrapper_def;
+val bridge_syntax_eval_not_values_wrapper_v_thm =
+  translate bridge_syntax_eval_not_values_wrapper_def;
+val bridge_syntax_eval_lt_values_wrapper_with_env_v_thm =
+  translate bridge_syntax_eval_lt_values_wrapper_with_env_def;
+val bridge_syntax_eval_eq_values_wrapper_with_env_v_thm =
+  translate bridge_syntax_eval_eq_values_wrapper_with_env_def;
+val bridge_syntax_eval_and_values_wrapper_with_env_v_thm =
+  translate bridge_syntax_eval_and_values_wrapper_with_env_def;
+val bridge_syntax_eval_or_values_wrapper_with_env_v_thm =
+  translate bridge_syntax_eval_or_values_wrapper_with_env_def;
+val bridge_syntax_eval_not_values_wrapper_with_env_v_thm =
+  translate bridge_syntax_eval_not_values_wrapper_with_env_def;
 val eval_return_fragment_v_thm = translate eval_return_fragment_def;
 val bridge_source_eval_return_fragment_core_v_thm =
   translate bridge_source_eval_return_fragment_core_def;
@@ -10313,14 +10313,14 @@ val bridge_first_branch_payloads_v_thm =
   translate bridge_first_branch_payloads_def;
 val bridge_branch_values_payloads_v_thm =
   translate bridge_branch_values_payloads_def;
-val bridge_surface_switch_payloads_wrapper_v_thm =
-  translate bridge_surface_switch_payloads_wrapper_def;
-val bridge_surface_case_payloads_wrapper_v_thm =
-  translate bridge_surface_case_payloads_wrapper_def;
-val bridge_surface_switch_payloads_wrapper_with_env_v_thm =
-  translate bridge_surface_switch_payloads_wrapper_with_env_def;
-val bridge_surface_case_payloads_wrapper_with_env_v_thm =
-  translate bridge_surface_case_payloads_wrapper_with_env_def;
+val bridge_syntax_switch_payloads_wrapper_v_thm =
+  translate bridge_syntax_switch_payloads_wrapper_def;
+val bridge_syntax_case_payloads_wrapper_v_thm =
+  translate bridge_syntax_case_payloads_wrapper_def;
+val bridge_syntax_switch_payloads_wrapper_with_env_v_thm =
+  translate bridge_syntax_switch_payloads_wrapper_with_env_def;
+val bridge_syntax_case_payloads_wrapper_with_env_v_thm =
+  translate bridge_syntax_case_payloads_wrapper_with_env_def;
 val bridge_eval_payload_result_v_thm =
   translate bridge_eval_payload_result_def;
 val default_types_v_thm = translate default_types_def;
@@ -10333,10 +10333,10 @@ val hol_any_type_match_v_thm = translate hol_any_type_match_def;
 val evalc_values_v_thm = translate evalc_values_def;
 val bridge_evalc_checked_values_v_thm =
   translate bridge_evalc_checked_values_def;
-val bridge_surface_eval_payload_result_wrapper_v_thm =
-  translate bridge_surface_eval_payload_result_wrapper_def;
-val bridge_surface_evalc_checked_values_wrapper_v_thm =
-  translate bridge_surface_evalc_checked_values_wrapper_def;
+val bridge_syntax_eval_payload_result_wrapper_v_thm =
+  translate bridge_syntax_eval_payload_result_wrapper_def;
+val bridge_syntax_evalc_checked_values_wrapper_v_thm =
+  translate bridge_syntax_evalc_checked_values_wrapper_def;
 val let_binding_pair_v_thm = translate let_binding_pair_def;
 val bridge_subst_binding_pair_v_thm =
   translate bridge_subst_binding_pair_def;
@@ -10348,10 +10348,10 @@ val bridge_match_space_payload_v_thm =
   translate bridge_match_space_payload_def;
 val bridge_eval_match_fragment_v_thm =
   translate bridge_eval_match_fragment_def;
-val bridge_surface_eval_match_fragment_wrapper_v_thm =
-  translate bridge_surface_eval_match_fragment_wrapper_def;
-val bridge_surface_eval_match_fragment_wrapper_with_env_v_thm =
-  translate bridge_surface_eval_match_fragment_wrapper_with_env_def;
+val bridge_syntax_eval_match_fragment_wrapper_v_thm =
+  translate bridge_syntax_eval_match_fragment_wrapper_def;
+val bridge_syntax_eval_match_fragment_wrapper_with_env_v_thm =
+  translate bridge_syntax_eval_match_fragment_wrapper_with_env_def;
 val bridge_chain_concat_results_v_thm =
   translate bridge_chain_concat_results_def;
 val bridge_chain_subst_values_v_thm =
@@ -10374,12 +10374,12 @@ Theorem bridge_import_symbol_with_env_v_certificate =
   bridge_import_symbol_with_env_v_thm
 Theorem bridge_export_symbol_with_env_v_certificate =
   bridge_export_symbol_with_env_v_thm
-Theorem bridge_import_surface_atom_v_certificate =
-  bridge_import_surface_atom_v_thm
-Theorem bridge_import_surface_atom_with_env_v_certificate =
-  bridge_import_surface_atom_with_env_v_thm
-Theorem bridge_export_surface_atom_with_env_v_certificate =
-  bridge_export_surface_atom_with_env_v_thm
+Theorem bridge_import_syntax_atom_v_certificate =
+  bridge_import_syntax_atom_v_thm
+Theorem bridge_import_syntax_atom_with_env_v_certificate =
+  bridge_import_syntax_atom_with_env_v_thm
+Theorem bridge_export_syntax_atom_with_env_v_certificate =
+  bridge_export_syntax_atom_with_env_v_thm
 Theorem bridge_source_char_is_space_v_certificate =
   bridge_source_char_is_space_v_thm
 Theorem bridge_source_char_is_delim_v_certificate =
@@ -10543,14 +10543,14 @@ Theorem bridge_add_atom_result_v_certificate = bridge_add_atom_result_v_thm
 Theorem bridge_add_ground_atom_v_certificate = bridge_add_ground_atom_v_thm
 Theorem bridge_eval_add_values_fragment_v_certificate =
   bridge_eval_add_values_fragment_v_thm
-Theorem bridge_surface_eval_add_values_wrapper_v_certificate =
-  bridge_surface_eval_add_values_wrapper_v_thm
-Theorem bridge_surface_eval_add_evaluated_args_wrapper_v_certificate =
-  bridge_surface_eval_add_evaluated_args_wrapper_v_thm
-Theorem bridge_surface_eval_add_values_wrapper_with_env_v_certificate =
-  bridge_surface_eval_add_values_wrapper_with_env_v_thm
-Theorem bridge_surface_eval_add_evaluated_args_wrapper_with_env_v_certificate =
-  bridge_surface_eval_add_evaluated_args_wrapper_with_env_v_thm
+Theorem bridge_syntax_eval_add_values_wrapper_v_certificate =
+  bridge_syntax_eval_add_values_wrapper_v_thm
+Theorem bridge_syntax_eval_add_evaluated_args_wrapper_v_certificate =
+  bridge_syntax_eval_add_evaluated_args_wrapper_v_thm
+Theorem bridge_syntax_eval_add_values_wrapper_with_env_v_certificate =
+  bridge_syntax_eval_add_values_wrapper_with_env_v_thm
+Theorem bridge_syntax_eval_add_evaluated_args_wrapper_with_env_v_certificate =
+  bridge_syntax_eval_add_evaluated_args_wrapper_with_env_v_thm
 Theorem bridge_eval_lt_values_fragment_v_certificate =
   bridge_eval_lt_values_fragment_v_thm
 Theorem bridge_eval_eq_values_fragment_v_certificate =
@@ -10561,26 +10561,26 @@ Theorem bridge_eval_or_values_fragment_v_certificate =
   bridge_eval_or_values_fragment_v_thm
 Theorem bridge_eval_not_values_fragment_v_certificate =
   bridge_eval_not_values_fragment_v_thm
-Theorem bridge_surface_eval_lt_values_wrapper_v_certificate =
-  bridge_surface_eval_lt_values_wrapper_v_thm
-Theorem bridge_surface_eval_eq_values_wrapper_v_certificate =
-  bridge_surface_eval_eq_values_wrapper_v_thm
-Theorem bridge_surface_eval_and_values_wrapper_v_certificate =
-  bridge_surface_eval_and_values_wrapper_v_thm
-Theorem bridge_surface_eval_or_values_wrapper_v_certificate =
-  bridge_surface_eval_or_values_wrapper_v_thm
-Theorem bridge_surface_eval_not_values_wrapper_v_certificate =
-  bridge_surface_eval_not_values_wrapper_v_thm
-Theorem bridge_surface_eval_lt_values_wrapper_with_env_v_certificate =
-  bridge_surface_eval_lt_values_wrapper_with_env_v_thm
-Theorem bridge_surface_eval_eq_values_wrapper_with_env_v_certificate =
-  bridge_surface_eval_eq_values_wrapper_with_env_v_thm
-Theorem bridge_surface_eval_and_values_wrapper_with_env_v_certificate =
-  bridge_surface_eval_and_values_wrapper_with_env_v_thm
-Theorem bridge_surface_eval_or_values_wrapper_with_env_v_certificate =
-  bridge_surface_eval_or_values_wrapper_with_env_v_thm
-Theorem bridge_surface_eval_not_values_wrapper_with_env_v_certificate =
-  bridge_surface_eval_not_values_wrapper_with_env_v_thm
+Theorem bridge_syntax_eval_lt_values_wrapper_v_certificate =
+  bridge_syntax_eval_lt_values_wrapper_v_thm
+Theorem bridge_syntax_eval_eq_values_wrapper_v_certificate =
+  bridge_syntax_eval_eq_values_wrapper_v_thm
+Theorem bridge_syntax_eval_and_values_wrapper_v_certificate =
+  bridge_syntax_eval_and_values_wrapper_v_thm
+Theorem bridge_syntax_eval_or_values_wrapper_v_certificate =
+  bridge_syntax_eval_or_values_wrapper_v_thm
+Theorem bridge_syntax_eval_not_values_wrapper_v_certificate =
+  bridge_syntax_eval_not_values_wrapper_v_thm
+Theorem bridge_syntax_eval_lt_values_wrapper_with_env_v_certificate =
+  bridge_syntax_eval_lt_values_wrapper_with_env_v_thm
+Theorem bridge_syntax_eval_eq_values_wrapper_with_env_v_certificate =
+  bridge_syntax_eval_eq_values_wrapper_with_env_v_thm
+Theorem bridge_syntax_eval_and_values_wrapper_with_env_v_certificate =
+  bridge_syntax_eval_and_values_wrapper_with_env_v_thm
+Theorem bridge_syntax_eval_or_values_wrapper_with_env_v_certificate =
+  bridge_syntax_eval_or_values_wrapper_with_env_v_thm
+Theorem bridge_syntax_eval_not_values_wrapper_with_env_v_certificate =
+  bridge_syntax_eval_not_values_wrapper_with_env_v_thm
 Theorem eval_return_fragment_v_certificate =
   eval_return_fragment_v_thm
 Theorem bridge_source_eval_return_fragment_core_v_certificate =
@@ -10599,24 +10599,24 @@ Theorem bridge_first_branch_payloads_v_certificate =
   bridge_first_branch_payloads_v_thm
 Theorem bridge_branch_values_payloads_v_certificate =
   bridge_branch_values_payloads_v_thm
-Theorem bridge_surface_switch_payloads_wrapper_v_certificate =
-  bridge_surface_switch_payloads_wrapper_v_thm
-Theorem bridge_surface_case_payloads_wrapper_v_certificate =
-  bridge_surface_case_payloads_wrapper_v_thm
-Theorem bridge_surface_switch_payloads_wrapper_with_env_v_certificate =
-  bridge_surface_switch_payloads_wrapper_with_env_v_thm
-Theorem bridge_surface_case_payloads_wrapper_with_env_v_certificate =
-  bridge_surface_case_payloads_wrapper_with_env_v_thm
+Theorem bridge_syntax_switch_payloads_wrapper_v_certificate =
+  bridge_syntax_switch_payloads_wrapper_v_thm
+Theorem bridge_syntax_case_payloads_wrapper_v_certificate =
+  bridge_syntax_case_payloads_wrapper_v_thm
+Theorem bridge_syntax_switch_payloads_wrapper_with_env_v_certificate =
+  bridge_syntax_switch_payloads_wrapper_with_env_v_thm
+Theorem bridge_syntax_case_payloads_wrapper_with_env_v_certificate =
+  bridge_syntax_case_payloads_wrapper_with_env_v_thm
 Theorem bridge_eval_payload_result_v_certificate =
   bridge_eval_payload_result_v_thm
 Theorem evalc_values_v_certificate =
   evalc_values_v_thm
 Theorem bridge_evalc_checked_values_v_certificate =
   bridge_evalc_checked_values_v_thm
-Theorem bridge_surface_eval_payload_result_wrapper_v_certificate =
-  bridge_surface_eval_payload_result_wrapper_v_thm
-Theorem bridge_surface_evalc_checked_values_wrapper_v_certificate =
-  bridge_surface_evalc_checked_values_wrapper_v_thm
+Theorem bridge_syntax_eval_payload_result_wrapper_v_certificate =
+  bridge_syntax_eval_payload_result_wrapper_v_thm
+Theorem bridge_syntax_evalc_checked_values_wrapper_v_certificate =
+  bridge_syntax_evalc_checked_values_wrapper_v_thm
 Theorem let_binding_pair_v_certificate =
   let_binding_pair_v_thm
 Theorem bridge_subst_binding_pair_v_certificate =
@@ -10629,10 +10629,10 @@ Theorem bridge_match_space_payload_v_certificate =
   bridge_match_space_payload_v_thm
 Theorem bridge_eval_match_fragment_v_certificate =
   bridge_eval_match_fragment_v_thm
-Theorem bridge_surface_eval_match_fragment_wrapper_v_certificate =
-  bridge_surface_eval_match_fragment_wrapper_v_thm
-Theorem bridge_surface_eval_match_fragment_wrapper_with_env_v_certificate =
-  bridge_surface_eval_match_fragment_wrapper_with_env_v_thm
+Theorem bridge_syntax_eval_match_fragment_wrapper_v_certificate =
+  bridge_syntax_eval_match_fragment_wrapper_v_thm
+Theorem bridge_syntax_eval_match_fragment_wrapper_with_env_v_certificate =
+  bridge_syntax_eval_match_fragment_wrapper_with_env_v_thm
 Theorem bridge_chain_concat_results_v_certificate =
   bridge_chain_concat_results_v_thm
 Theorem bridge_chain_subst_values_v_certificate =
@@ -10825,18 +10825,18 @@ val bridge_eval_int_add_values_v_app_spec =
 val bridge_eval_add_values_fragment_v_app_spec =
   cfAppLib.app_of_Arrow_rule ``:'ffi``
     bridge_eval_add_values_fragment_v_thm;
-val bridge_surface_eval_add_values_wrapper_v_app_spec =
+val bridge_syntax_eval_add_values_wrapper_v_app_spec =
   cfAppLib.app_of_Arrow_rule ``:'ffi``
-    bridge_surface_eval_add_values_wrapper_v_thm;
-val bridge_surface_eval_add_evaluated_args_wrapper_v_app_spec =
+    bridge_syntax_eval_add_values_wrapper_v_thm;
+val bridge_syntax_eval_add_evaluated_args_wrapper_v_app_spec =
   cfAppLib.app_of_Arrow_rule ``:'ffi``
-    bridge_surface_eval_add_evaluated_args_wrapper_v_thm;
-val bridge_surface_eval_add_values_wrapper_with_env_v_app_spec =
+    bridge_syntax_eval_add_evaluated_args_wrapper_v_thm;
+val bridge_syntax_eval_add_values_wrapper_with_env_v_app_spec =
   cfAppLib.app_of_Arrow_rule ``:'ffi``
-    bridge_surface_eval_add_values_wrapper_with_env_v_thm;
-val bridge_surface_eval_add_evaluated_args_wrapper_with_env_v_app_spec =
+    bridge_syntax_eval_add_values_wrapper_with_env_v_thm;
+val bridge_syntax_eval_add_evaluated_args_wrapper_with_env_v_app_spec =
   cfAppLib.app_of_Arrow_rule ``:'ffi``
-    bridge_surface_eval_add_evaluated_args_wrapper_with_env_v_thm;
+    bridge_syntax_eval_add_evaluated_args_wrapper_with_env_v_thm;
 val bridge_eval_lt_values_v_app_spec =
   cfAppLib.app_of_Arrow_rule ``:'ffi`` bridge_eval_lt_values_v_thm;
 val bridge_eval_lt_values_fragment_v_app_spec =
@@ -10862,36 +10862,36 @@ val bridge_eval_not_values_v_app_spec =
 val bridge_eval_not_values_fragment_v_app_spec =
   cfAppLib.app_of_Arrow_rule ``:'ffi``
     bridge_eval_not_values_fragment_v_thm;
-val bridge_surface_eval_lt_values_wrapper_v_app_spec =
+val bridge_syntax_eval_lt_values_wrapper_v_app_spec =
   cfAppLib.app_of_Arrow_rule ``:'ffi``
-    bridge_surface_eval_lt_values_wrapper_v_thm;
-val bridge_surface_eval_eq_values_wrapper_v_app_spec =
+    bridge_syntax_eval_lt_values_wrapper_v_thm;
+val bridge_syntax_eval_eq_values_wrapper_v_app_spec =
   cfAppLib.app_of_Arrow_rule ``:'ffi``
-    bridge_surface_eval_eq_values_wrapper_v_thm;
-val bridge_surface_eval_and_values_wrapper_v_app_spec =
+    bridge_syntax_eval_eq_values_wrapper_v_thm;
+val bridge_syntax_eval_and_values_wrapper_v_app_spec =
   cfAppLib.app_of_Arrow_rule ``:'ffi``
-    bridge_surface_eval_and_values_wrapper_v_thm;
-val bridge_surface_eval_or_values_wrapper_v_app_spec =
+    bridge_syntax_eval_and_values_wrapper_v_thm;
+val bridge_syntax_eval_or_values_wrapper_v_app_spec =
   cfAppLib.app_of_Arrow_rule ``:'ffi``
-    bridge_surface_eval_or_values_wrapper_v_thm;
-val bridge_surface_eval_not_values_wrapper_v_app_spec =
+    bridge_syntax_eval_or_values_wrapper_v_thm;
+val bridge_syntax_eval_not_values_wrapper_v_app_spec =
   cfAppLib.app_of_Arrow_rule ``:'ffi``
-    bridge_surface_eval_not_values_wrapper_v_thm;
-val bridge_surface_eval_lt_values_wrapper_with_env_v_app_spec =
+    bridge_syntax_eval_not_values_wrapper_v_thm;
+val bridge_syntax_eval_lt_values_wrapper_with_env_v_app_spec =
   cfAppLib.app_of_Arrow_rule ``:'ffi``
-    bridge_surface_eval_lt_values_wrapper_with_env_v_thm;
-val bridge_surface_eval_eq_values_wrapper_with_env_v_app_spec =
+    bridge_syntax_eval_lt_values_wrapper_with_env_v_thm;
+val bridge_syntax_eval_eq_values_wrapper_with_env_v_app_spec =
   cfAppLib.app_of_Arrow_rule ``:'ffi``
-    bridge_surface_eval_eq_values_wrapper_with_env_v_thm;
-val bridge_surface_eval_and_values_wrapper_with_env_v_app_spec =
+    bridge_syntax_eval_eq_values_wrapper_with_env_v_thm;
+val bridge_syntax_eval_and_values_wrapper_with_env_v_app_spec =
   cfAppLib.app_of_Arrow_rule ``:'ffi``
-    bridge_surface_eval_and_values_wrapper_with_env_v_thm;
-val bridge_surface_eval_or_values_wrapper_with_env_v_app_spec =
+    bridge_syntax_eval_and_values_wrapper_with_env_v_thm;
+val bridge_syntax_eval_or_values_wrapper_with_env_v_app_spec =
   cfAppLib.app_of_Arrow_rule ``:'ffi``
-    bridge_surface_eval_or_values_wrapper_with_env_v_thm;
-val bridge_surface_eval_not_values_wrapper_with_env_v_app_spec =
+    bridge_syntax_eval_or_values_wrapper_with_env_v_thm;
+val bridge_syntax_eval_not_values_wrapper_with_env_v_app_spec =
   cfAppLib.app_of_Arrow_rule ``:'ffi``
-    bridge_surface_eval_not_values_wrapper_with_env_v_thm;
+    bridge_syntax_eval_not_values_wrapper_with_env_v_thm;
 val eval_return_fragment_v_app_spec =
   cfAppLib.app_of_Arrow_rule ``:'ffi`` eval_return_fragment_v_thm;
 val bridge_source_eval_return_fragment_core_v_app_spec =
@@ -10906,30 +10906,30 @@ val bridge_first_branch_payloads_v_app_spec =
 val bridge_branch_values_payloads_v_app_spec =
   cfAppLib.app_of_Arrow_rule ``:'ffi``
     bridge_branch_values_payloads_v_thm;
-val bridge_surface_switch_payloads_wrapper_v_app_spec =
+val bridge_syntax_switch_payloads_wrapper_v_app_spec =
   cfAppLib.app_of_Arrow_rule ``:'ffi``
-    bridge_surface_switch_payloads_wrapper_v_thm;
-val bridge_surface_case_payloads_wrapper_v_app_spec =
+    bridge_syntax_switch_payloads_wrapper_v_thm;
+val bridge_syntax_case_payloads_wrapper_v_app_spec =
   cfAppLib.app_of_Arrow_rule ``:'ffi``
-    bridge_surface_case_payloads_wrapper_v_thm;
-val bridge_surface_switch_payloads_wrapper_with_env_v_app_spec =
+    bridge_syntax_case_payloads_wrapper_v_thm;
+val bridge_syntax_switch_payloads_wrapper_with_env_v_app_spec =
   cfAppLib.app_of_Arrow_rule ``:'ffi``
-    bridge_surface_switch_payloads_wrapper_with_env_v_thm;
-val bridge_surface_case_payloads_wrapper_with_env_v_app_spec =
+    bridge_syntax_switch_payloads_wrapper_with_env_v_thm;
+val bridge_syntax_case_payloads_wrapper_with_env_v_app_spec =
   cfAppLib.app_of_Arrow_rule ``:'ffi``
-    bridge_surface_case_payloads_wrapper_with_env_v_thm;
+    bridge_syntax_case_payloads_wrapper_with_env_v_thm;
 val bridge_eval_payload_result_v_app_spec =
   cfAppLib.app_of_Arrow_rule ``:'ffi``
     bridge_eval_payload_result_v_thm;
 val bridge_evalc_checked_values_v_app_spec =
   cfAppLib.app_of_Arrow_rule ``:'ffi``
     bridge_evalc_checked_values_v_thm;
-val bridge_surface_eval_payload_result_wrapper_v_app_spec =
+val bridge_syntax_eval_payload_result_wrapper_v_app_spec =
   cfAppLib.app_of_Arrow_rule ``:'ffi``
-    bridge_surface_eval_payload_result_wrapper_v_thm;
-val bridge_surface_evalc_checked_values_wrapper_v_app_spec =
+    bridge_syntax_eval_payload_result_wrapper_v_thm;
+val bridge_syntax_evalc_checked_values_wrapper_v_app_spec =
   cfAppLib.app_of_Arrow_rule ``:'ffi``
-    bridge_surface_evalc_checked_values_wrapper_v_thm;
+    bridge_syntax_evalc_checked_values_wrapper_v_thm;
 val bridge_let_star_step_payloads_v_app_spec =
   cfAppLib.app_of_Arrow_rule ``:'ffi``
     bridge_let_star_step_payloads_v_thm;
@@ -10939,12 +10939,12 @@ val bridge_match_space_payload_v_app_spec =
 val bridge_eval_match_fragment_v_app_spec =
   cfAppLib.app_of_Arrow_rule ``:'ffi``
     bridge_eval_match_fragment_v_thm;
-val bridge_surface_eval_match_fragment_wrapper_v_app_spec =
+val bridge_syntax_eval_match_fragment_wrapper_v_app_spec =
   cfAppLib.app_of_Arrow_rule ``:'ffi``
-    bridge_surface_eval_match_fragment_wrapper_v_thm;
-val bridge_surface_eval_match_fragment_wrapper_with_env_v_app_spec =
+    bridge_syntax_eval_match_fragment_wrapper_v_thm;
+val bridge_syntax_eval_match_fragment_wrapper_with_env_v_app_spec =
   cfAppLib.app_of_Arrow_rule ``:'ffi``
-    bridge_surface_eval_match_fragment_wrapper_with_env_v_thm;
+    bridge_syntax_eval_match_fragment_wrapper_with_env_v_thm;
 val bridge_chain_concat_results_v_app_spec =
   cfAppLib.app_of_Arrow_rule ``:'ffi``
     bridge_chain_concat_results_v_thm;
@@ -11075,14 +11075,14 @@ Theorem bridge_add_ground_atom_v_app_spec_certificate =
   bridge_add_ground_atom_v_app_spec
 Theorem bridge_eval_add_values_fragment_v_app_spec_certificate =
   bridge_eval_add_values_fragment_v_app_spec
-Theorem bridge_surface_eval_add_values_wrapper_v_app_spec_certificate =
-  bridge_surface_eval_add_values_wrapper_v_app_spec
-Theorem bridge_surface_eval_add_evaluated_args_wrapper_v_app_spec_certificate =
-  bridge_surface_eval_add_evaluated_args_wrapper_v_app_spec
-Theorem bridge_surface_eval_add_values_wrapper_with_env_v_app_spec_certificate =
-  bridge_surface_eval_add_values_wrapper_with_env_v_app_spec
-Theorem bridge_surface_eval_add_evaluated_args_wrapper_with_env_v_app_spec_certificate =
-  bridge_surface_eval_add_evaluated_args_wrapper_with_env_v_app_spec
+Theorem bridge_syntax_eval_add_values_wrapper_v_app_spec_certificate =
+  bridge_syntax_eval_add_values_wrapper_v_app_spec
+Theorem bridge_syntax_eval_add_evaluated_args_wrapper_v_app_spec_certificate =
+  bridge_syntax_eval_add_evaluated_args_wrapper_v_app_spec
+Theorem bridge_syntax_eval_add_values_wrapper_with_env_v_app_spec_certificate =
+  bridge_syntax_eval_add_values_wrapper_with_env_v_app_spec
+Theorem bridge_syntax_eval_add_evaluated_args_wrapper_with_env_v_app_spec_certificate =
+  bridge_syntax_eval_add_evaluated_args_wrapper_with_env_v_app_spec
 Theorem bridge_eval_lt_values_fragment_v_app_spec_certificate =
   bridge_eval_lt_values_fragment_v_app_spec
 Theorem bridge_eval_eq_values_fragment_v_app_spec_certificate =
@@ -11093,26 +11093,26 @@ Theorem bridge_eval_or_values_fragment_v_app_spec_certificate =
   bridge_eval_or_values_fragment_v_app_spec
 Theorem bridge_eval_not_values_fragment_v_app_spec_certificate =
   bridge_eval_not_values_fragment_v_app_spec
-Theorem bridge_surface_eval_lt_values_wrapper_v_app_spec_certificate =
-  bridge_surface_eval_lt_values_wrapper_v_app_spec
-Theorem bridge_surface_eval_eq_values_wrapper_v_app_spec_certificate =
-  bridge_surface_eval_eq_values_wrapper_v_app_spec
-Theorem bridge_surface_eval_and_values_wrapper_v_app_spec_certificate =
-  bridge_surface_eval_and_values_wrapper_v_app_spec
-Theorem bridge_surface_eval_or_values_wrapper_v_app_spec_certificate =
-  bridge_surface_eval_or_values_wrapper_v_app_spec
-Theorem bridge_surface_eval_not_values_wrapper_v_app_spec_certificate =
-  bridge_surface_eval_not_values_wrapper_v_app_spec
-Theorem bridge_surface_eval_lt_values_wrapper_with_env_v_app_spec_certificate =
-  bridge_surface_eval_lt_values_wrapper_with_env_v_app_spec
-Theorem bridge_surface_eval_eq_values_wrapper_with_env_v_app_spec_certificate =
-  bridge_surface_eval_eq_values_wrapper_with_env_v_app_spec
-Theorem bridge_surface_eval_and_values_wrapper_with_env_v_app_spec_certificate =
-  bridge_surface_eval_and_values_wrapper_with_env_v_app_spec
-Theorem bridge_surface_eval_or_values_wrapper_with_env_v_app_spec_certificate =
-  bridge_surface_eval_or_values_wrapper_with_env_v_app_spec
-Theorem bridge_surface_eval_not_values_wrapper_with_env_v_app_spec_certificate =
-  bridge_surface_eval_not_values_wrapper_with_env_v_app_spec
+Theorem bridge_syntax_eval_lt_values_wrapper_v_app_spec_certificate =
+  bridge_syntax_eval_lt_values_wrapper_v_app_spec
+Theorem bridge_syntax_eval_eq_values_wrapper_v_app_spec_certificate =
+  bridge_syntax_eval_eq_values_wrapper_v_app_spec
+Theorem bridge_syntax_eval_and_values_wrapper_v_app_spec_certificate =
+  bridge_syntax_eval_and_values_wrapper_v_app_spec
+Theorem bridge_syntax_eval_or_values_wrapper_v_app_spec_certificate =
+  bridge_syntax_eval_or_values_wrapper_v_app_spec
+Theorem bridge_syntax_eval_not_values_wrapper_v_app_spec_certificate =
+  bridge_syntax_eval_not_values_wrapper_v_app_spec
+Theorem bridge_syntax_eval_lt_values_wrapper_with_env_v_app_spec_certificate =
+  bridge_syntax_eval_lt_values_wrapper_with_env_v_app_spec
+Theorem bridge_syntax_eval_eq_values_wrapper_with_env_v_app_spec_certificate =
+  bridge_syntax_eval_eq_values_wrapper_with_env_v_app_spec
+Theorem bridge_syntax_eval_and_values_wrapper_with_env_v_app_spec_certificate =
+  bridge_syntax_eval_and_values_wrapper_with_env_v_app_spec
+Theorem bridge_syntax_eval_or_values_wrapper_with_env_v_app_spec_certificate =
+  bridge_syntax_eval_or_values_wrapper_with_env_v_app_spec
+Theorem bridge_syntax_eval_not_values_wrapper_with_env_v_app_spec_certificate =
+  bridge_syntax_eval_not_values_wrapper_with_env_v_app_spec
 Theorem eval_return_fragment_v_app_spec_certificate =
   eval_return_fragment_v_app_spec
 Theorem bridge_source_eval_return_fragment_core_v_app_spec_certificate =
@@ -11123,32 +11123,32 @@ Theorem bridge_first_branch_payloads_v_app_spec_certificate =
   bridge_first_branch_payloads_v_app_spec
 Theorem bridge_branch_values_payloads_v_app_spec_certificate =
   bridge_branch_values_payloads_v_app_spec
-Theorem bridge_surface_switch_payloads_wrapper_v_app_spec_certificate =
-  bridge_surface_switch_payloads_wrapper_v_app_spec
-Theorem bridge_surface_case_payloads_wrapper_v_app_spec_certificate =
-  bridge_surface_case_payloads_wrapper_v_app_spec
-Theorem bridge_surface_switch_payloads_wrapper_with_env_v_app_spec_certificate =
-  bridge_surface_switch_payloads_wrapper_with_env_v_app_spec
-Theorem bridge_surface_case_payloads_wrapper_with_env_v_app_spec_certificate =
-  bridge_surface_case_payloads_wrapper_with_env_v_app_spec
+Theorem bridge_syntax_switch_payloads_wrapper_v_app_spec_certificate =
+  bridge_syntax_switch_payloads_wrapper_v_app_spec
+Theorem bridge_syntax_case_payloads_wrapper_v_app_spec_certificate =
+  bridge_syntax_case_payloads_wrapper_v_app_spec
+Theorem bridge_syntax_switch_payloads_wrapper_with_env_v_app_spec_certificate =
+  bridge_syntax_switch_payloads_wrapper_with_env_v_app_spec
+Theorem bridge_syntax_case_payloads_wrapper_with_env_v_app_spec_certificate =
+  bridge_syntax_case_payloads_wrapper_with_env_v_app_spec
 Theorem bridge_eval_payload_result_v_app_spec_certificate =
   bridge_eval_payload_result_v_app_spec
 Theorem bridge_evalc_checked_values_v_app_spec_certificate =
   bridge_evalc_checked_values_v_app_spec
-Theorem bridge_surface_eval_payload_result_wrapper_v_app_spec_certificate =
-  bridge_surface_eval_payload_result_wrapper_v_app_spec
-Theorem bridge_surface_evalc_checked_values_wrapper_v_app_spec_certificate =
-  bridge_surface_evalc_checked_values_wrapper_v_app_spec
+Theorem bridge_syntax_eval_payload_result_wrapper_v_app_spec_certificate =
+  bridge_syntax_eval_payload_result_wrapper_v_app_spec
+Theorem bridge_syntax_evalc_checked_values_wrapper_v_app_spec_certificate =
+  bridge_syntax_evalc_checked_values_wrapper_v_app_spec
 Theorem bridge_let_star_step_payloads_v_app_spec_certificate =
   bridge_let_star_step_payloads_v_app_spec
 Theorem bridge_match_space_payload_v_app_spec_certificate =
   bridge_match_space_payload_v_app_spec
 Theorem bridge_eval_match_fragment_v_app_spec_certificate =
   bridge_eval_match_fragment_v_app_spec
-Theorem bridge_surface_eval_match_fragment_wrapper_v_app_spec_certificate =
-  bridge_surface_eval_match_fragment_wrapper_v_app_spec
-Theorem bridge_surface_eval_match_fragment_wrapper_with_env_v_app_spec_certificate =
-  bridge_surface_eval_match_fragment_wrapper_with_env_v_app_spec
+Theorem bridge_syntax_eval_match_fragment_wrapper_v_app_spec_certificate =
+  bridge_syntax_eval_match_fragment_wrapper_v_app_spec
+Theorem bridge_syntax_eval_match_fragment_wrapper_with_env_v_app_spec_certificate =
+  bridge_syntax_eval_match_fragment_wrapper_with_env_v_app_spec
 Theorem bridge_chain_concat_results_v_app_spec_certificate =
   bridge_chain_concat_results_v_app_spec
 
@@ -11422,76 +11422,76 @@ fun bridge_proto_eval_return_fragment_core_shipped_hand atom =
 fun bridge_source_eval_return_fragment_core_hand atom =
   bridge_source_eval_return_fragment_core atom;
 
-fun bridge_surface_eval_add_values_wrapper_hand original xs ys =
-  bridge_surface_eval_add_values_wrapper original xs ys;
+fun bridge_syntax_eval_add_values_wrapper_hand original xs ys =
+  bridge_syntax_eval_add_values_wrapper original xs ys;
 
-fun bridge_surface_eval_add_evaluated_args_wrapper_hand original xs ys =
-  bridge_surface_eval_add_evaluated_args_wrapper original xs ys;
+fun bridge_syntax_eval_add_evaluated_args_wrapper_hand original xs ys =
+  bridge_syntax_eval_add_evaluated_args_wrapper original xs ys;
 
-fun bridge_surface_eval_add_values_wrapper_with_env_hand env original xs ys =
-  bridge_surface_eval_add_values_wrapper_with_env env original xs ys;
+fun bridge_syntax_eval_add_values_wrapper_with_env_hand env original xs ys =
+  bridge_syntax_eval_add_values_wrapper_with_env env original xs ys;
 
-fun bridge_surface_eval_add_evaluated_args_wrapper_with_env_hand
+fun bridge_syntax_eval_add_evaluated_args_wrapper_with_env_hand
   env original xs ys =
-  bridge_surface_eval_add_evaluated_args_wrapper_with_env env original xs ys;
+  bridge_syntax_eval_add_evaluated_args_wrapper_with_env env original xs ys;
 
-fun bridge_surface_eval_lt_values_wrapper_hand original xs ys =
-  bridge_surface_eval_lt_values_wrapper original xs ys;
+fun bridge_syntax_eval_lt_values_wrapper_hand original xs ys =
+  bridge_syntax_eval_lt_values_wrapper original xs ys;
 
-fun bridge_surface_eval_eq_values_wrapper_hand original xs ys =
-  bridge_surface_eval_eq_values_wrapper original xs ys;
+fun bridge_syntax_eval_eq_values_wrapper_hand original xs ys =
+  bridge_syntax_eval_eq_values_wrapper original xs ys;
 
-fun bridge_surface_eval_and_values_wrapper_hand original xs ys =
-  bridge_surface_eval_and_values_wrapper original xs ys;
+fun bridge_syntax_eval_and_values_wrapper_hand original xs ys =
+  bridge_syntax_eval_and_values_wrapper original xs ys;
 
-fun bridge_surface_eval_or_values_wrapper_hand original xs ys =
-  bridge_surface_eval_or_values_wrapper original xs ys;
+fun bridge_syntax_eval_or_values_wrapper_hand original xs ys =
+  bridge_syntax_eval_or_values_wrapper original xs ys;
 
-fun bridge_surface_eval_not_values_wrapper_hand original xs =
-  bridge_surface_eval_not_values_wrapper original xs;
+fun bridge_syntax_eval_not_values_wrapper_hand original xs =
+  bridge_syntax_eval_not_values_wrapper original xs;
 
-fun bridge_surface_eval_lt_values_wrapper_with_env_hand env original xs ys =
-  bridge_surface_eval_lt_values_wrapper_with_env env original xs ys;
+fun bridge_syntax_eval_lt_values_wrapper_with_env_hand env original xs ys =
+  bridge_syntax_eval_lt_values_wrapper_with_env env original xs ys;
 
-fun bridge_surface_eval_eq_values_wrapper_with_env_hand env original xs ys =
-  bridge_surface_eval_eq_values_wrapper_with_env env original xs ys;
+fun bridge_syntax_eval_eq_values_wrapper_with_env_hand env original xs ys =
+  bridge_syntax_eval_eq_values_wrapper_with_env env original xs ys;
 
-fun bridge_surface_eval_and_values_wrapper_with_env_hand env original xs ys =
-  bridge_surface_eval_and_values_wrapper_with_env env original xs ys;
+fun bridge_syntax_eval_and_values_wrapper_with_env_hand env original xs ys =
+  bridge_syntax_eval_and_values_wrapper_with_env env original xs ys;
 
-fun bridge_surface_eval_or_values_wrapper_with_env_hand env original xs ys =
-  bridge_surface_eval_or_values_wrapper_with_env env original xs ys;
+fun bridge_syntax_eval_or_values_wrapper_with_env_hand env original xs ys =
+  bridge_syntax_eval_or_values_wrapper_with_env env original xs ys;
 
-fun bridge_surface_eval_not_values_wrapper_with_env_hand env original xs =
-  bridge_surface_eval_not_values_wrapper_with_env env original xs;
+fun bridge_syntax_eval_not_values_wrapper_with_env_hand env original xs =
+  bridge_syntax_eval_not_values_wrapper_with_env env original xs;
 
-fun bridge_surface_eval_match_fragment_wrapper_hand surface_space surface_atom =
-  bridge_surface_eval_match_fragment_wrapper surface_space surface_atom;
+fun bridge_syntax_eval_match_fragment_wrapper_hand syntax_space syntax_atom =
+  bridge_syntax_eval_match_fragment_wrapper syntax_space syntax_atom;
 
-fun bridge_surface_eval_match_fragment_wrapper_with_env_hand
-  env surface_space surface_atom =
-  bridge_surface_eval_match_fragment_wrapper_with_env
-    env surface_space surface_atom;
+fun bridge_syntax_eval_match_fragment_wrapper_with_env_hand
+  env syntax_space syntax_atom =
+  bridge_syntax_eval_match_fragment_wrapper_with_env
+    env syntax_space syntax_atom;
 
-fun bridge_surface_eval_payload_result_wrapper_hand body rs =
-  bridge_surface_eval_payload_result_wrapper body rs;
+fun bridge_syntax_eval_payload_result_wrapper_hand body rs =
+  bridge_syntax_eval_payload_result_wrapper body rs;
 
-fun bridge_surface_evalc_checked_values_wrapper_hand
-  surface_space term expected vals =
-  bridge_surface_evalc_checked_values_wrapper
-    surface_space term expected vals;
+fun bridge_syntax_evalc_checked_values_wrapper_hand
+  syntax_space term expected vals =
+  bridge_syntax_evalc_checked_values_wrapper
+    syntax_space term expected vals;
 
-fun bridge_surface_switch_payloads_wrapper_hand scrut branches =
-  bridge_surface_switch_payloads_wrapper scrut branches;
+fun bridge_syntax_switch_payloads_wrapper_hand scrut branches =
+  bridge_syntax_switch_payloads_wrapper scrut branches;
 
-fun bridge_surface_case_payloads_wrapper_hand values branches =
-  bridge_surface_case_payloads_wrapper values branches;
+fun bridge_syntax_case_payloads_wrapper_hand values branches =
+  bridge_syntax_case_payloads_wrapper values branches;
 
-fun bridge_surface_switch_payloads_wrapper_with_env_hand env scrut branches =
-  bridge_surface_switch_payloads_wrapper_with_env env scrut branches;
+fun bridge_syntax_switch_payloads_wrapper_with_env_hand env scrut branches =
+  bridge_syntax_switch_payloads_wrapper_with_env env scrut branches;
 
-fun bridge_surface_case_payloads_wrapper_with_env_hand env values branches =
-  bridge_surface_case_payloads_wrapper_with_env env values branches;
+fun bridge_syntax_case_payloads_wrapper_with_env_hand env values branches =
+  bridge_syntax_case_payloads_wrapper_with_env env values branches;
 
 fun bridge_parse_atom_token_hand toks =
   bridge_parse_atom_token toks;
@@ -11641,7 +11641,7 @@ fun bridge_parse_source_command_string_shipped_bound_hand text =
 fun bridge_parse_source_program_string_shipped_bound_hand text =
   bridge_parse_source_program_string_shipped_bound text;
 
-fun bridge_surface_is_return_symbol_hand s =
+fun bridge_syntax_is_return_symbol_hand s =
   s = "return";
 End
 
@@ -12113,166 +12113,166 @@ Proof
   xsimpl
 QED
 
-Theorem bridge_surface_eval_add_values_wrapper_hand_spec:
+Theorem bridge_syntax_eval_add_values_wrapper_hand_spec:
   ∀ffi_p original originalv xs xsv ys ysv.
-    METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE original originalv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE xs xsv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE ys ysv ⇒
+    METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE original originalv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE xs xsv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE ys ysv ⇒
     app (ffi_p:'ffi ffi_proj)
-      ^(fetch_v "bridge_surface_eval_add_values_wrapper_hand"
+      ^(fetch_v "bridge_syntax_eval_add_values_wrapper_hand"
           bridge_eval_fragment_hand_st)
       [originalv; xsv; ysv] emp
       (POSTv v. &LIST_TYPE METTA_M1_ATOM_TYPE
-        (bridge_surface_eval_add_values_wrapper original xs ys) v)
+        (bridge_syntax_eval_add_values_wrapper original xs ys) v)
 Proof
   rw[] \\
-  xcf "bridge_surface_eval_add_values_wrapper_hand"
+  xcf "bridge_syntax_eval_add_values_wrapper_hand"
     bridge_eval_fragment_hand_st \\
-  xapp_spec bridge_surface_eval_add_values_wrapper_v_app_spec \\
+  xapp_spec bridge_syntax_eval_add_values_wrapper_v_app_spec \\
   xsimpl
 QED
 
-Theorem bridge_surface_eval_add_evaluated_args_wrapper_hand_spec:
+Theorem bridge_syntax_eval_add_evaluated_args_wrapper_hand_spec:
   ∀ffi_p original originalv xs xsv ys ysv.
-    METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE original originalv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE xs xsv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE ys ysv ⇒
+    METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE original originalv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE xs xsv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE ys ysv ⇒
     app (ffi_p:'ffi ffi_proj)
-      ^(fetch_v "bridge_surface_eval_add_evaluated_args_wrapper_hand"
+      ^(fetch_v "bridge_syntax_eval_add_evaluated_args_wrapper_hand"
           bridge_eval_fragment_hand_st)
       [originalv; xsv; ysv] emp
       (POSTv v. &LIST_TYPE METTA_M1_ATOM_TYPE
-        (bridge_surface_eval_add_evaluated_args_wrapper original xs ys) v)
+        (bridge_syntax_eval_add_evaluated_args_wrapper original xs ys) v)
 Proof
   rw[] \\
-  xcf "bridge_surface_eval_add_evaluated_args_wrapper_hand"
+  xcf "bridge_syntax_eval_add_evaluated_args_wrapper_hand"
     bridge_eval_fragment_hand_st \\
-  xapp_spec bridge_surface_eval_add_evaluated_args_wrapper_v_app_spec \\
+  xapp_spec bridge_syntax_eval_add_evaluated_args_wrapper_v_app_spec \\
   xsimpl
 QED
 
-Theorem bridge_surface_eval_add_evaluated_args_wrapper_hand_rec_add_spec:
-  ∀ffi_p surface_original originalv surface_xs xsv surface_ys ysv
+Theorem bridge_syntax_eval_add_evaluated_args_wrapper_hand_rec_add_spec:
+  ∀ffi_p syntax_original originalv syntax_xs xsv syntax_ys ysv
      original xs ys.
-    METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_original originalv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_xs xsv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_ys ysv ∧
-    bridge_import_surface_atom surface_original = SOME original ∧
-    bridge_import_surface_atom_list surface_xs = SOME xs ∧
-    bridge_import_surface_atom_list surface_ys = SOME ys ⇒
+    METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_original originalv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_xs xsv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_ys ysv ∧
+    bridge_import_syntax_atom syntax_original = SOME original ∧
+    bridge_import_syntax_atom_list syntax_xs = SOME xs ∧
+    bridge_import_syntax_atom_list syntax_ys = SOME ys ⇒
     app (ffi_p:'ffi ffi_proj)
-      ^(fetch_v "bridge_surface_eval_add_evaluated_args_wrapper_hand"
+      ^(fetch_v "bridge_syntax_eval_add_evaluated_args_wrapper_hand"
           bridge_eval_fragment_hand_st)
       [originalv; xsv; ysv] emp
       (POSTv v. &LIST_TYPE METTA_M1_ATOM_TYPE
         (rec_add_values original xs ys) v)
 Proof
   rw[] \\
-  ‘bridge_surface_eval_add_evaluated_args_wrapper
-      surface_original surface_xs surface_ys =
+  ‘bridge_syntax_eval_add_evaluated_args_wrapper
+      syntax_original syntax_xs syntax_ys =
     rec_add_values original xs ys’
     by metis_tac[
-      bridge_surface_eval_add_evaluated_args_wrapper_matches_rec_add_values] \\
+      bridge_syntax_eval_add_evaluated_args_wrapper_matches_rec_add_values] \\
   pop_assum (fn th => rw[GSYM th]) \\
-  irule bridge_surface_eval_add_evaluated_args_wrapper_hand_spec \\
+  irule bridge_syntax_eval_add_evaluated_args_wrapper_hand_spec \\
   rw[]
 QED
 
-Theorem bridge_surface_eval_add_values_wrapper_with_env_hand_spec:
+Theorem bridge_syntax_eval_add_values_wrapper_with_env_hand_spec:
   ∀ffi_p env envv original originalv xs xsv ys ysv.
     LIST_TYPE (PAIR_TYPE STRING_TYPE NUM) env envv ∧
-    METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE original originalv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE xs xsv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE ys ysv ⇒
+    METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE original originalv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE xs xsv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE ys ysv ⇒
     app (ffi_p:'ffi ffi_proj)
-      ^(fetch_v "bridge_surface_eval_add_values_wrapper_with_env_hand"
+      ^(fetch_v "bridge_syntax_eval_add_values_wrapper_with_env_hand"
           bridge_eval_fragment_hand_st)
       [envv; originalv; xsv; ysv] emp
       (POSTv v. &LIST_TYPE METTA_M1_ATOM_TYPE
-        (bridge_surface_eval_add_values_wrapper_with_env
+        (bridge_syntax_eval_add_values_wrapper_with_env
           env original xs ys) v)
 Proof
   rw[] \\
-  xcf "bridge_surface_eval_add_values_wrapper_with_env_hand"
+  xcf "bridge_syntax_eval_add_values_wrapper_with_env_hand"
     bridge_eval_fragment_hand_st \\
-  xapp_spec bridge_surface_eval_add_values_wrapper_with_env_v_app_spec \\
+  xapp_spec bridge_syntax_eval_add_values_wrapper_with_env_v_app_spec \\
   xsimpl
 QED
 
-Theorem bridge_surface_eval_add_evaluated_args_wrapper_with_env_hand_spec:
+Theorem bridge_syntax_eval_add_evaluated_args_wrapper_with_env_hand_spec:
   ∀ffi_p env envv original originalv xs xsv ys ysv.
     LIST_TYPE (PAIR_TYPE STRING_TYPE NUM) env envv ∧
-    METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE original originalv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE xs xsv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE ys ysv ⇒
+    METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE original originalv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE xs xsv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE ys ysv ⇒
     app (ffi_p:'ffi ffi_proj)
-      ^(fetch_v "bridge_surface_eval_add_evaluated_args_wrapper_with_env_hand"
+      ^(fetch_v "bridge_syntax_eval_add_evaluated_args_wrapper_with_env_hand"
           bridge_eval_fragment_hand_st)
       [envv; originalv; xsv; ysv] emp
       (POSTv v. &LIST_TYPE METTA_M1_ATOM_TYPE
-        (bridge_surface_eval_add_evaluated_args_wrapper_with_env
+        (bridge_syntax_eval_add_evaluated_args_wrapper_with_env
           env original xs ys) v)
 Proof
   rw[] \\
-  xcf "bridge_surface_eval_add_evaluated_args_wrapper_with_env_hand"
+  xcf "bridge_syntax_eval_add_evaluated_args_wrapper_with_env_hand"
     bridge_eval_fragment_hand_st \\
   xapp_spec
-    bridge_surface_eval_add_evaluated_args_wrapper_with_env_v_app_spec \\
+    bridge_syntax_eval_add_evaluated_args_wrapper_with_env_v_app_spec \\
   xsimpl
 QED
 
-Theorem bridge_surface_eval_add_evaluated_args_wrapper_with_env_hand_rec_add_spec:
-  ∀ffi_p env envv surface_original originalv surface_xs xsv surface_ys ysv
+Theorem bridge_syntax_eval_add_evaluated_args_wrapper_with_env_hand_rec_add_spec:
+  ∀ffi_p env envv syntax_original originalv syntax_xs xsv syntax_ys ysv
      original xs ys.
     LIST_TYPE (PAIR_TYPE STRING_TYPE NUM) env envv ∧
-    METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_original originalv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_xs xsv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_ys ysv ∧
-    bridge_import_surface_atom_with_env env surface_original =
+    METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_original originalv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_xs xsv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_ys ysv ∧
+    bridge_import_syntax_atom_with_env env syntax_original =
       SOME original ∧
-    bridge_import_surface_atom_list_with_env env surface_xs = SOME xs ∧
-    bridge_import_surface_atom_list_with_env env surface_ys = SOME ys ⇒
+    bridge_import_syntax_atom_list_with_env env syntax_xs = SOME xs ∧
+    bridge_import_syntax_atom_list_with_env env syntax_ys = SOME ys ⇒
     app (ffi_p:'ffi ffi_proj)
-      ^(fetch_v "bridge_surface_eval_add_evaluated_args_wrapper_with_env_hand"
+      ^(fetch_v "bridge_syntax_eval_add_evaluated_args_wrapper_with_env_hand"
           bridge_eval_fragment_hand_st)
       [envv; originalv; xsv; ysv] emp
       (POSTv v. &LIST_TYPE METTA_M1_ATOM_TYPE
         (rec_add_values original xs ys) v)
 Proof
   rw[] \\
-  ‘bridge_surface_eval_add_evaluated_args_wrapper_with_env
-      env surface_original surface_xs surface_ys =
+  ‘bridge_syntax_eval_add_evaluated_args_wrapper_with_env
+      env syntax_original syntax_xs syntax_ys =
     rec_add_values original xs ys’
     by metis_tac[
-      bridge_surface_eval_add_evaluated_args_wrapper_with_env_matches_rec_add_values] \\
+      bridge_syntax_eval_add_evaluated_args_wrapper_with_env_matches_rec_add_values] \\
   pop_assum (fn th => rw[GSYM th]) \\
-  irule bridge_surface_eval_add_evaluated_args_wrapper_with_env_hand_spec \\
+  irule bridge_syntax_eval_add_evaluated_args_wrapper_with_env_hand_spec \\
   rw[]
 QED
 
-Theorem bridge_surface_eval_add_evaluated_args_wrapper_hand_eval_add_fragment_spec:
-  ∀ffi_p surface_original originalv surface_xs xsv surface_ys ysv
+Theorem bridge_syntax_eval_add_evaluated_args_wrapper_hand_eval_add_fragment_spec:
+  ∀ffi_p syntax_original originalv syntax_xs xsv syntax_ys ysv
      fuel space a b.
-    METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_original originalv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_xs xsv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_ys ysv ∧
-    bridge_import_surface_atom surface_original =
+    METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_original originalv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_xs xsv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_ys ysv ∧
+    bridge_import_syntax_atom syntax_original =
       SOME (metta_m1$Expr [metta_m1$Sym 11; a; b]) ∧
-    bridge_import_surface_atom_list surface_xs =
+    bridge_import_syntax_atom_list syntax_xs =
       SOME (eval_m1_rec fuel space a) ∧
-    bridge_import_surface_atom_list surface_ys =
+    bridge_import_syntax_atom_list syntax_ys =
       SOME (eval_m1_rec fuel space b) ⇒
     app (ffi_p:'ffi ffi_proj)
-      ^(fetch_v "bridge_surface_eval_add_evaluated_args_wrapper_hand"
+      ^(fetch_v "bridge_syntax_eval_add_evaluated_args_wrapper_hand"
           bridge_eval_fragment_hand_st)
       [originalv; xsv; ysv] emp
       (POSTv v. &LIST_TYPE METTA_M1_ATOM_TYPE
@@ -12280,37 +12280,37 @@ Theorem bridge_surface_eval_add_evaluated_args_wrapper_hand_eval_add_fragment_sp
           (metta_m1$Expr [metta_m1$Sym 11; a; b])) v)
 Proof
   rw[] \\
-  ‘bridge_surface_eval_add_evaluated_args_wrapper
-      surface_original surface_xs surface_ys =
+  ‘bridge_syntax_eval_add_evaluated_args_wrapper
+      syntax_original syntax_xs syntax_ys =
     bridge_eval_add_fragment fuel space
       (metta_m1$Expr [metta_m1$Sym 11; a; b])’
-    by rw[bridge_surface_eval_add_evaluated_args_wrapper_def,
-          bridge_surface_eval_add_values_wrapper_def,
+    by rw[bridge_syntax_eval_add_evaluated_args_wrapper_def,
+          bridge_syntax_eval_add_values_wrapper_def,
           bridge_eval_add_fragment_def,
           bridge_eval_add_values_fragment_def] \\
   pop_assum (fn th => rw[GSYM th]) \\
-  irule bridge_surface_eval_add_evaluated_args_wrapper_hand_spec \\
+  irule bridge_syntax_eval_add_evaluated_args_wrapper_hand_spec \\
   rw[]
 QED
 
-Theorem bridge_surface_eval_add_evaluated_args_wrapper_with_env_hand_eval_add_fragment_spec:
-  ∀ffi_p env envv surface_original originalv surface_xs xsv surface_ys ysv
+Theorem bridge_syntax_eval_add_evaluated_args_wrapper_with_env_hand_eval_add_fragment_spec:
+  ∀ffi_p env envv syntax_original originalv syntax_xs xsv syntax_ys ysv
      fuel space a b.
     LIST_TYPE (PAIR_TYPE STRING_TYPE NUM) env envv ∧
-    METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_original originalv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_xs xsv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_ys ysv ∧
-    bridge_import_surface_atom_with_env env surface_original =
+    METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_original originalv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_xs xsv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_ys ysv ∧
+    bridge_import_syntax_atom_with_env env syntax_original =
       SOME (metta_m1$Expr [metta_m1$Sym 11; a; b]) ∧
-    bridge_import_surface_atom_list_with_env env surface_xs =
+    bridge_import_syntax_atom_list_with_env env syntax_xs =
       SOME (eval_m1_rec fuel space a) ∧
-    bridge_import_surface_atom_list_with_env env surface_ys =
+    bridge_import_syntax_atom_list_with_env env syntax_ys =
       SOME (eval_m1_rec fuel space b) ⇒
     app (ffi_p:'ffi ffi_proj)
-      ^(fetch_v "bridge_surface_eval_add_evaluated_args_wrapper_with_env_hand"
+      ^(fetch_v "bridge_syntax_eval_add_evaluated_args_wrapper_with_env_hand"
           bridge_eval_fragment_hand_st)
       [envv; originalv; xsv; ysv] emp
       (POSTv v. &LIST_TYPE METTA_M1_ATOM_TYPE
@@ -12318,535 +12318,535 @@ Theorem bridge_surface_eval_add_evaluated_args_wrapper_with_env_hand_eval_add_fr
           (metta_m1$Expr [metta_m1$Sym 11; a; b])) v)
 Proof
   rw[] \\
-  ‘bridge_surface_eval_add_evaluated_args_wrapper_with_env
-      env surface_original surface_xs surface_ys =
+  ‘bridge_syntax_eval_add_evaluated_args_wrapper_with_env
+      env syntax_original syntax_xs syntax_ys =
     bridge_eval_add_fragment fuel space
       (metta_m1$Expr [metta_m1$Sym 11; a; b])’
-    by rw[bridge_surface_eval_add_evaluated_args_wrapper_with_env_def,
-          bridge_surface_eval_add_values_wrapper_with_env_def,
+    by rw[bridge_syntax_eval_add_evaluated_args_wrapper_with_env_def,
+          bridge_syntax_eval_add_values_wrapper_with_env_def,
           bridge_eval_add_fragment_def,
           bridge_eval_add_values_fragment_def] \\
   pop_assum (fn th => rw[GSYM th]) \\
-  irule bridge_surface_eval_add_evaluated_args_wrapper_with_env_hand_spec \\
+  irule bridge_syntax_eval_add_evaluated_args_wrapper_with_env_hand_spec \\
   rw[]
 QED
 
-Theorem bridge_surface_eval_lt_values_wrapper_hand_spec:
+Theorem bridge_syntax_eval_lt_values_wrapper_hand_spec:
   ∀ffi_p original originalv xs xsv ys ysv.
-    METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE original originalv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE xs xsv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE ys ysv ⇒
+    METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE original originalv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE xs xsv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE ys ysv ⇒
     app (ffi_p:'ffi ffi_proj)
-      ^(fetch_v "bridge_surface_eval_lt_values_wrapper_hand"
+      ^(fetch_v "bridge_syntax_eval_lt_values_wrapper_hand"
           bridge_eval_fragment_hand_st)
       [originalv; xsv; ysv] emp
       (POSTv v. &LIST_TYPE METTA_M1_ATOM_TYPE
-        (bridge_surface_eval_lt_values_wrapper original xs ys) v)
+        (bridge_syntax_eval_lt_values_wrapper original xs ys) v)
 Proof
   rw[] \\
-  xcf "bridge_surface_eval_lt_values_wrapper_hand"
+  xcf "bridge_syntax_eval_lt_values_wrapper_hand"
     bridge_eval_fragment_hand_st \\
-  xapp_spec bridge_surface_eval_lt_values_wrapper_v_app_spec \\
+  xapp_spec bridge_syntax_eval_lt_values_wrapper_v_app_spec \\
   xsimpl
 QED
 
-Theorem bridge_surface_eval_lt_values_wrapper_hand_rec_lt_spec:
-  ∀ffi_p surface_original originalv surface_xs xsv surface_ys ysv
+Theorem bridge_syntax_eval_lt_values_wrapper_hand_rec_lt_spec:
+  ∀ffi_p syntax_original originalv syntax_xs xsv syntax_ys ysv
      original xs ys.
-    METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_original originalv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_xs xsv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_ys ysv ∧
-    bridge_import_surface_atom surface_original = SOME original ∧
-    bridge_import_surface_atom_list surface_xs = SOME xs ∧
-    bridge_import_surface_atom_list surface_ys = SOME ys ⇒
+    METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_original originalv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_xs xsv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_ys ysv ∧
+    bridge_import_syntax_atom syntax_original = SOME original ∧
+    bridge_import_syntax_atom_list syntax_xs = SOME xs ∧
+    bridge_import_syntax_atom_list syntax_ys = SOME ys ⇒
     app (ffi_p:'ffi ffi_proj)
-      ^(fetch_v "bridge_surface_eval_lt_values_wrapper_hand"
+      ^(fetch_v "bridge_syntax_eval_lt_values_wrapper_hand"
           bridge_eval_fragment_hand_st)
       [originalv; xsv; ysv] emp
       (POSTv v. &LIST_TYPE METTA_M1_ATOM_TYPE
         (rec_lt_values original xs ys) v)
 Proof
   rw[] \\
-  ‘bridge_surface_eval_lt_values_wrapper
-      surface_original surface_xs surface_ys =
+  ‘bridge_syntax_eval_lt_values_wrapper
+      syntax_original syntax_xs syntax_ys =
     rec_lt_values original xs ys’
     by metis_tac[
-      bridge_surface_eval_lt_values_wrapper_matches_rec_lt_values] \\
+      bridge_syntax_eval_lt_values_wrapper_matches_rec_lt_values] \\
   pop_assum (fn th => rw[GSYM th]) \\
-  irule bridge_surface_eval_lt_values_wrapper_hand_spec \\
+  irule bridge_syntax_eval_lt_values_wrapper_hand_spec \\
   rw[]
 QED
 
-Theorem bridge_surface_eval_eq_values_wrapper_hand_spec:
+Theorem bridge_syntax_eval_eq_values_wrapper_hand_spec:
   ∀ffi_p original originalv xs xsv ys ysv.
-    METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE original originalv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE xs xsv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE ys ysv ⇒
+    METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE original originalv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE xs xsv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE ys ysv ⇒
     app (ffi_p:'ffi ffi_proj)
-      ^(fetch_v "bridge_surface_eval_eq_values_wrapper_hand"
+      ^(fetch_v "bridge_syntax_eval_eq_values_wrapper_hand"
           bridge_eval_fragment_hand_st)
       [originalv; xsv; ysv] emp
       (POSTv v. &LIST_TYPE METTA_M1_ATOM_TYPE
-        (bridge_surface_eval_eq_values_wrapper original xs ys) v)
+        (bridge_syntax_eval_eq_values_wrapper original xs ys) v)
 Proof
   rw[] \\
-  xcf "bridge_surface_eval_eq_values_wrapper_hand"
+  xcf "bridge_syntax_eval_eq_values_wrapper_hand"
     bridge_eval_fragment_hand_st \\
-  xapp_spec bridge_surface_eval_eq_values_wrapper_v_app_spec \\
+  xapp_spec bridge_syntax_eval_eq_values_wrapper_v_app_spec \\
   xsimpl
 QED
 
-Theorem bridge_surface_eval_eq_values_wrapper_hand_rec_eq_spec:
-  ∀ffi_p surface_original originalv surface_xs xsv surface_ys ysv
+Theorem bridge_syntax_eval_eq_values_wrapper_hand_rec_eq_spec:
+  ∀ffi_p syntax_original originalv syntax_xs xsv syntax_ys ysv
      original xs ys.
-    METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_original originalv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_xs xsv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_ys ysv ∧
-    bridge_import_surface_atom surface_original = SOME original ∧
-    bridge_import_surface_atom_list surface_xs = SOME xs ∧
-    bridge_import_surface_atom_list surface_ys = SOME ys ⇒
+    METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_original originalv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_xs xsv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_ys ysv ∧
+    bridge_import_syntax_atom syntax_original = SOME original ∧
+    bridge_import_syntax_atom_list syntax_xs = SOME xs ∧
+    bridge_import_syntax_atom_list syntax_ys = SOME ys ⇒
     app (ffi_p:'ffi ffi_proj)
-      ^(fetch_v "bridge_surface_eval_eq_values_wrapper_hand"
+      ^(fetch_v "bridge_syntax_eval_eq_values_wrapper_hand"
           bridge_eval_fragment_hand_st)
       [originalv; xsv; ysv] emp
       (POSTv v. &LIST_TYPE METTA_M1_ATOM_TYPE
         (rec_eq_values original xs ys) v)
 Proof
   rw[] \\
-  ‘bridge_surface_eval_eq_values_wrapper
-      surface_original surface_xs surface_ys =
+  ‘bridge_syntax_eval_eq_values_wrapper
+      syntax_original syntax_xs syntax_ys =
     rec_eq_values original xs ys’
     by metis_tac[
-      bridge_surface_eval_eq_values_wrapper_matches_rec_eq_values] \\
+      bridge_syntax_eval_eq_values_wrapper_matches_rec_eq_values] \\
   pop_assum (fn th => rw[GSYM th]) \\
-  irule bridge_surface_eval_eq_values_wrapper_hand_spec \\
+  irule bridge_syntax_eval_eq_values_wrapper_hand_spec \\
   rw[]
 QED
 
-Theorem bridge_surface_eval_and_values_wrapper_hand_spec:
+Theorem bridge_syntax_eval_and_values_wrapper_hand_spec:
   ∀ffi_p original originalv xs xsv ys ysv.
-    METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE original originalv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE xs xsv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE ys ysv ⇒
+    METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE original originalv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE xs xsv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE ys ysv ⇒
     app (ffi_p:'ffi ffi_proj)
-      ^(fetch_v "bridge_surface_eval_and_values_wrapper_hand"
+      ^(fetch_v "bridge_syntax_eval_and_values_wrapper_hand"
           bridge_eval_fragment_hand_st)
       [originalv; xsv; ysv] emp
       (POSTv v. &LIST_TYPE METTA_M1_ATOM_TYPE
-        (bridge_surface_eval_and_values_wrapper original xs ys) v)
+        (bridge_syntax_eval_and_values_wrapper original xs ys) v)
 Proof
   rw[] \\
-  xcf "bridge_surface_eval_and_values_wrapper_hand"
+  xcf "bridge_syntax_eval_and_values_wrapper_hand"
     bridge_eval_fragment_hand_st \\
-  xapp_spec bridge_surface_eval_and_values_wrapper_v_app_spec \\
+  xapp_spec bridge_syntax_eval_and_values_wrapper_v_app_spec \\
   xsimpl
 QED
 
-Theorem bridge_surface_eval_and_values_wrapper_hand_rec_and_spec:
-  ∀ffi_p surface_original originalv surface_xs xsv surface_ys ysv
+Theorem bridge_syntax_eval_and_values_wrapper_hand_rec_and_spec:
+  ∀ffi_p syntax_original originalv syntax_xs xsv syntax_ys ysv
      original xs ys.
-    METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_original originalv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_xs xsv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_ys ysv ∧
-    bridge_import_surface_atom surface_original = SOME original ∧
-    bridge_import_surface_atom_list surface_xs = SOME xs ∧
-    bridge_import_surface_atom_list surface_ys = SOME ys ⇒
+    METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_original originalv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_xs xsv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_ys ysv ∧
+    bridge_import_syntax_atom syntax_original = SOME original ∧
+    bridge_import_syntax_atom_list syntax_xs = SOME xs ∧
+    bridge_import_syntax_atom_list syntax_ys = SOME ys ⇒
     app (ffi_p:'ffi ffi_proj)
-      ^(fetch_v "bridge_surface_eval_and_values_wrapper_hand"
+      ^(fetch_v "bridge_syntax_eval_and_values_wrapper_hand"
           bridge_eval_fragment_hand_st)
       [originalv; xsv; ysv] emp
       (POSTv v. &LIST_TYPE METTA_M1_ATOM_TYPE
         (rec_and_values original xs ys) v)
 Proof
   rw[] \\
-  ‘bridge_surface_eval_and_values_wrapper
-      surface_original surface_xs surface_ys =
+  ‘bridge_syntax_eval_and_values_wrapper
+      syntax_original syntax_xs syntax_ys =
     rec_and_values original xs ys’
     by metis_tac[
-      bridge_surface_eval_and_values_wrapper_matches_rec_and_values] \\
+      bridge_syntax_eval_and_values_wrapper_matches_rec_and_values] \\
   pop_assum (fn th => rw[GSYM th]) \\
-  irule bridge_surface_eval_and_values_wrapper_hand_spec \\
+  irule bridge_syntax_eval_and_values_wrapper_hand_spec \\
   rw[]
 QED
 
-Theorem bridge_surface_eval_or_values_wrapper_hand_spec:
+Theorem bridge_syntax_eval_or_values_wrapper_hand_spec:
   ∀ffi_p original originalv xs xsv ys ysv.
-    METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE original originalv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE xs xsv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE ys ysv ⇒
+    METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE original originalv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE xs xsv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE ys ysv ⇒
     app (ffi_p:'ffi ffi_proj)
-      ^(fetch_v "bridge_surface_eval_or_values_wrapper_hand"
+      ^(fetch_v "bridge_syntax_eval_or_values_wrapper_hand"
           bridge_eval_fragment_hand_st)
       [originalv; xsv; ysv] emp
       (POSTv v. &LIST_TYPE METTA_M1_ATOM_TYPE
-        (bridge_surface_eval_or_values_wrapper original xs ys) v)
+        (bridge_syntax_eval_or_values_wrapper original xs ys) v)
 Proof
   rw[] \\
-  xcf "bridge_surface_eval_or_values_wrapper_hand"
+  xcf "bridge_syntax_eval_or_values_wrapper_hand"
     bridge_eval_fragment_hand_st \\
-  xapp_spec bridge_surface_eval_or_values_wrapper_v_app_spec \\
+  xapp_spec bridge_syntax_eval_or_values_wrapper_v_app_spec \\
   xsimpl
 QED
 
-Theorem bridge_surface_eval_or_values_wrapper_hand_rec_or_spec:
-  ∀ffi_p surface_original originalv surface_xs xsv surface_ys ysv
+Theorem bridge_syntax_eval_or_values_wrapper_hand_rec_or_spec:
+  ∀ffi_p syntax_original originalv syntax_xs xsv syntax_ys ysv
      original xs ys.
-    METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_original originalv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_xs xsv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_ys ysv ∧
-    bridge_import_surface_atom surface_original = SOME original ∧
-    bridge_import_surface_atom_list surface_xs = SOME xs ∧
-    bridge_import_surface_atom_list surface_ys = SOME ys ⇒
+    METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_original originalv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_xs xsv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_ys ysv ∧
+    bridge_import_syntax_atom syntax_original = SOME original ∧
+    bridge_import_syntax_atom_list syntax_xs = SOME xs ∧
+    bridge_import_syntax_atom_list syntax_ys = SOME ys ⇒
     app (ffi_p:'ffi ffi_proj)
-      ^(fetch_v "bridge_surface_eval_or_values_wrapper_hand"
+      ^(fetch_v "bridge_syntax_eval_or_values_wrapper_hand"
           bridge_eval_fragment_hand_st)
       [originalv; xsv; ysv] emp
       (POSTv v. &LIST_TYPE METTA_M1_ATOM_TYPE
         (rec_or_values original xs ys) v)
 Proof
   rw[] \\
-  ‘bridge_surface_eval_or_values_wrapper
-      surface_original surface_xs surface_ys =
+  ‘bridge_syntax_eval_or_values_wrapper
+      syntax_original syntax_xs syntax_ys =
     rec_or_values original xs ys’
     by metis_tac[
-      bridge_surface_eval_or_values_wrapper_matches_rec_or_values] \\
+      bridge_syntax_eval_or_values_wrapper_matches_rec_or_values] \\
   pop_assum (fn th => rw[GSYM th]) \\
-  irule bridge_surface_eval_or_values_wrapper_hand_spec \\
+  irule bridge_syntax_eval_or_values_wrapper_hand_spec \\
   rw[]
 QED
 
-Theorem bridge_surface_eval_not_values_wrapper_hand_spec:
+Theorem bridge_syntax_eval_not_values_wrapper_hand_spec:
   ∀ffi_p original originalv xs xsv.
-    METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE original originalv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE xs xsv ⇒
+    METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE original originalv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE xs xsv ⇒
     app (ffi_p:'ffi ffi_proj)
-      ^(fetch_v "bridge_surface_eval_not_values_wrapper_hand"
+      ^(fetch_v "bridge_syntax_eval_not_values_wrapper_hand"
           bridge_eval_fragment_hand_st)
       [originalv; xsv] emp
       (POSTv v. &LIST_TYPE METTA_M1_ATOM_TYPE
-        (bridge_surface_eval_not_values_wrapper original xs) v)
+        (bridge_syntax_eval_not_values_wrapper original xs) v)
 Proof
   rw[] \\
-  xcf "bridge_surface_eval_not_values_wrapper_hand"
+  xcf "bridge_syntax_eval_not_values_wrapper_hand"
     bridge_eval_fragment_hand_st \\
-  xapp_spec bridge_surface_eval_not_values_wrapper_v_app_spec \\
+  xapp_spec bridge_syntax_eval_not_values_wrapper_v_app_spec \\
   xsimpl
 QED
 
-Theorem bridge_surface_eval_not_values_wrapper_hand_rec_not_spec:
-  ∀ffi_p surface_original originalv surface_xs xsv original xs.
-    METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_original originalv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_xs xsv ∧
-    bridge_import_surface_atom surface_original = SOME original ∧
-    bridge_import_surface_atom_list surface_xs = SOME xs ⇒
+Theorem bridge_syntax_eval_not_values_wrapper_hand_rec_not_spec:
+  ∀ffi_p syntax_original originalv syntax_xs xsv original xs.
+    METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_original originalv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_xs xsv ∧
+    bridge_import_syntax_atom syntax_original = SOME original ∧
+    bridge_import_syntax_atom_list syntax_xs = SOME xs ⇒
     app (ffi_p:'ffi ffi_proj)
-      ^(fetch_v "bridge_surface_eval_not_values_wrapper_hand"
+      ^(fetch_v "bridge_syntax_eval_not_values_wrapper_hand"
           bridge_eval_fragment_hand_st)
       [originalv; xsv] emp
       (POSTv v. &LIST_TYPE METTA_M1_ATOM_TYPE
         (rec_not_values original xs) v)
 Proof
   rw[] \\
-  ‘bridge_surface_eval_not_values_wrapper surface_original surface_xs =
+  ‘bridge_syntax_eval_not_values_wrapper syntax_original syntax_xs =
     rec_not_values original xs’
     by metis_tac[
-      bridge_surface_eval_not_values_wrapper_matches_rec_not_values] \\
+      bridge_syntax_eval_not_values_wrapper_matches_rec_not_values] \\
   pop_assum (fn th => rw[GSYM th]) \\
-  irule bridge_surface_eval_not_values_wrapper_hand_spec \\
+  irule bridge_syntax_eval_not_values_wrapper_hand_spec \\
   rw[]
 QED
 
-Theorem bridge_surface_eval_lt_values_wrapper_with_env_hand_spec:
+Theorem bridge_syntax_eval_lt_values_wrapper_with_env_hand_spec:
   ∀ffi_p env envv original originalv xs xsv ys ysv.
     LIST_TYPE (PAIR_TYPE STRING_TYPE NUM) env envv ∧
-    METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE original originalv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE xs xsv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE ys ysv ⇒
+    METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE original originalv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE xs xsv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE ys ysv ⇒
     app (ffi_p:'ffi ffi_proj)
-      ^(fetch_v "bridge_surface_eval_lt_values_wrapper_with_env_hand"
+      ^(fetch_v "bridge_syntax_eval_lt_values_wrapper_with_env_hand"
           bridge_eval_fragment_hand_st)
       [envv; originalv; xsv; ysv] emp
       (POSTv v. &LIST_TYPE METTA_M1_ATOM_TYPE
-        (bridge_surface_eval_lt_values_wrapper_with_env
+        (bridge_syntax_eval_lt_values_wrapper_with_env
           env original xs ys) v)
 Proof
   rw[] \\
-  xcf "bridge_surface_eval_lt_values_wrapper_with_env_hand"
+  xcf "bridge_syntax_eval_lt_values_wrapper_with_env_hand"
     bridge_eval_fragment_hand_st \\
-  xapp_spec bridge_surface_eval_lt_values_wrapper_with_env_v_app_spec \\
+  xapp_spec bridge_syntax_eval_lt_values_wrapper_with_env_v_app_spec \\
   xsimpl
 QED
 
-Theorem bridge_surface_eval_lt_values_wrapper_with_env_hand_rec_lt_spec:
-  ∀ffi_p env envv surface_original originalv surface_xs xsv surface_ys ysv
+Theorem bridge_syntax_eval_lt_values_wrapper_with_env_hand_rec_lt_spec:
+  ∀ffi_p env envv syntax_original originalv syntax_xs xsv syntax_ys ysv
      original xs ys.
     LIST_TYPE (PAIR_TYPE STRING_TYPE NUM) env envv ∧
-    METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_original originalv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_xs xsv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_ys ysv ∧
-    bridge_import_surface_atom_with_env env surface_original =
+    METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_original originalv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_xs xsv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_ys ysv ∧
+    bridge_import_syntax_atom_with_env env syntax_original =
       SOME original ∧
-    bridge_import_surface_atom_list_with_env env surface_xs = SOME xs ∧
-    bridge_import_surface_atom_list_with_env env surface_ys = SOME ys ⇒
+    bridge_import_syntax_atom_list_with_env env syntax_xs = SOME xs ∧
+    bridge_import_syntax_atom_list_with_env env syntax_ys = SOME ys ⇒
     app (ffi_p:'ffi ffi_proj)
-      ^(fetch_v "bridge_surface_eval_lt_values_wrapper_with_env_hand"
+      ^(fetch_v "bridge_syntax_eval_lt_values_wrapper_with_env_hand"
           bridge_eval_fragment_hand_st)
       [envv; originalv; xsv; ysv] emp
       (POSTv v. &LIST_TYPE METTA_M1_ATOM_TYPE
         (rec_lt_values original xs ys) v)
 Proof
   rw[] \\
-  ‘bridge_surface_eval_lt_values_wrapper_with_env
-      env surface_original surface_xs surface_ys =
+  ‘bridge_syntax_eval_lt_values_wrapper_with_env
+      env syntax_original syntax_xs syntax_ys =
     rec_lt_values original xs ys’
     by metis_tac[
-      bridge_surface_eval_lt_values_wrapper_with_env_matches_rec_lt_values] \\
+      bridge_syntax_eval_lt_values_wrapper_with_env_matches_rec_lt_values] \\
   pop_assum (fn th => rw[GSYM th]) \\
-  irule bridge_surface_eval_lt_values_wrapper_with_env_hand_spec \\
+  irule bridge_syntax_eval_lt_values_wrapper_with_env_hand_spec \\
   rw[]
 QED
 
-Theorem bridge_surface_eval_eq_values_wrapper_with_env_hand_spec:
+Theorem bridge_syntax_eval_eq_values_wrapper_with_env_hand_spec:
   ∀ffi_p env envv original originalv xs xsv ys ysv.
     LIST_TYPE (PAIR_TYPE STRING_TYPE NUM) env envv ∧
-    METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE original originalv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE xs xsv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE ys ysv ⇒
+    METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE original originalv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE xs xsv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE ys ysv ⇒
     app (ffi_p:'ffi ffi_proj)
-      ^(fetch_v "bridge_surface_eval_eq_values_wrapper_with_env_hand"
+      ^(fetch_v "bridge_syntax_eval_eq_values_wrapper_with_env_hand"
           bridge_eval_fragment_hand_st)
       [envv; originalv; xsv; ysv] emp
       (POSTv v. &LIST_TYPE METTA_M1_ATOM_TYPE
-        (bridge_surface_eval_eq_values_wrapper_with_env
+        (bridge_syntax_eval_eq_values_wrapper_with_env
           env original xs ys) v)
 Proof
   rw[] \\
-  xcf "bridge_surface_eval_eq_values_wrapper_with_env_hand"
+  xcf "bridge_syntax_eval_eq_values_wrapper_with_env_hand"
     bridge_eval_fragment_hand_st \\
-  xapp_spec bridge_surface_eval_eq_values_wrapper_with_env_v_app_spec \\
+  xapp_spec bridge_syntax_eval_eq_values_wrapper_with_env_v_app_spec \\
   xsimpl
 QED
 
-Theorem bridge_surface_eval_eq_values_wrapper_with_env_hand_rec_eq_spec:
-  ∀ffi_p env envv surface_original originalv surface_xs xsv surface_ys ysv
+Theorem bridge_syntax_eval_eq_values_wrapper_with_env_hand_rec_eq_spec:
+  ∀ffi_p env envv syntax_original originalv syntax_xs xsv syntax_ys ysv
      original xs ys.
     LIST_TYPE (PAIR_TYPE STRING_TYPE NUM) env envv ∧
-    METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_original originalv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_xs xsv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_ys ysv ∧
-    bridge_import_surface_atom_with_env env surface_original =
+    METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_original originalv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_xs xsv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_ys ysv ∧
+    bridge_import_syntax_atom_with_env env syntax_original =
       SOME original ∧
-    bridge_import_surface_atom_list_with_env env surface_xs = SOME xs ∧
-    bridge_import_surface_atom_list_with_env env surface_ys = SOME ys ⇒
+    bridge_import_syntax_atom_list_with_env env syntax_xs = SOME xs ∧
+    bridge_import_syntax_atom_list_with_env env syntax_ys = SOME ys ⇒
     app (ffi_p:'ffi ffi_proj)
-      ^(fetch_v "bridge_surface_eval_eq_values_wrapper_with_env_hand"
+      ^(fetch_v "bridge_syntax_eval_eq_values_wrapper_with_env_hand"
           bridge_eval_fragment_hand_st)
       [envv; originalv; xsv; ysv] emp
       (POSTv v. &LIST_TYPE METTA_M1_ATOM_TYPE
         (rec_eq_values original xs ys) v)
 Proof
   rw[] \\
-  ‘bridge_surface_eval_eq_values_wrapper_with_env
-      env surface_original surface_xs surface_ys =
+  ‘bridge_syntax_eval_eq_values_wrapper_with_env
+      env syntax_original syntax_xs syntax_ys =
     rec_eq_values original xs ys’
     by metis_tac[
-      bridge_surface_eval_eq_values_wrapper_with_env_matches_rec_eq_values] \\
+      bridge_syntax_eval_eq_values_wrapper_with_env_matches_rec_eq_values] \\
   pop_assum (fn th => rw[GSYM th]) \\
-  irule bridge_surface_eval_eq_values_wrapper_with_env_hand_spec \\
+  irule bridge_syntax_eval_eq_values_wrapper_with_env_hand_spec \\
   rw[]
 QED
 
-Theorem bridge_surface_eval_and_values_wrapper_with_env_hand_spec:
+Theorem bridge_syntax_eval_and_values_wrapper_with_env_hand_spec:
   ∀ffi_p env envv original originalv xs xsv ys ysv.
     LIST_TYPE (PAIR_TYPE STRING_TYPE NUM) env envv ∧
-    METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE original originalv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE xs xsv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE ys ysv ⇒
+    METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE original originalv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE xs xsv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE ys ysv ⇒
     app (ffi_p:'ffi ffi_proj)
-      ^(fetch_v "bridge_surface_eval_and_values_wrapper_with_env_hand"
+      ^(fetch_v "bridge_syntax_eval_and_values_wrapper_with_env_hand"
           bridge_eval_fragment_hand_st)
       [envv; originalv; xsv; ysv] emp
       (POSTv v. &LIST_TYPE METTA_M1_ATOM_TYPE
-        (bridge_surface_eval_and_values_wrapper_with_env
+        (bridge_syntax_eval_and_values_wrapper_with_env
           env original xs ys) v)
 Proof
   rw[] \\
-  xcf "bridge_surface_eval_and_values_wrapper_with_env_hand"
+  xcf "bridge_syntax_eval_and_values_wrapper_with_env_hand"
     bridge_eval_fragment_hand_st \\
-  xapp_spec bridge_surface_eval_and_values_wrapper_with_env_v_app_spec \\
+  xapp_spec bridge_syntax_eval_and_values_wrapper_with_env_v_app_spec \\
   xsimpl
 QED
 
-Theorem bridge_surface_eval_and_values_wrapper_with_env_hand_rec_and_spec:
-  ∀ffi_p env envv surface_original originalv surface_xs xsv surface_ys ysv
+Theorem bridge_syntax_eval_and_values_wrapper_with_env_hand_rec_and_spec:
+  ∀ffi_p env envv syntax_original originalv syntax_xs xsv syntax_ys ysv
      original xs ys.
     LIST_TYPE (PAIR_TYPE STRING_TYPE NUM) env envv ∧
-    METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_original originalv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_xs xsv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_ys ysv ∧
-    bridge_import_surface_atom_with_env env surface_original =
+    METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_original originalv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_xs xsv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_ys ysv ∧
+    bridge_import_syntax_atom_with_env env syntax_original =
       SOME original ∧
-    bridge_import_surface_atom_list_with_env env surface_xs = SOME xs ∧
-    bridge_import_surface_atom_list_with_env env surface_ys = SOME ys ⇒
+    bridge_import_syntax_atom_list_with_env env syntax_xs = SOME xs ∧
+    bridge_import_syntax_atom_list_with_env env syntax_ys = SOME ys ⇒
     app (ffi_p:'ffi ffi_proj)
-      ^(fetch_v "bridge_surface_eval_and_values_wrapper_with_env_hand"
+      ^(fetch_v "bridge_syntax_eval_and_values_wrapper_with_env_hand"
           bridge_eval_fragment_hand_st)
       [envv; originalv; xsv; ysv] emp
       (POSTv v. &LIST_TYPE METTA_M1_ATOM_TYPE
         (rec_and_values original xs ys) v)
 Proof
   rw[] \\
-  ‘bridge_surface_eval_and_values_wrapper_with_env
-      env surface_original surface_xs surface_ys =
+  ‘bridge_syntax_eval_and_values_wrapper_with_env
+      env syntax_original syntax_xs syntax_ys =
     rec_and_values original xs ys’
     by metis_tac[
-      bridge_surface_eval_and_values_wrapper_with_env_matches_rec_and_values] \\
+      bridge_syntax_eval_and_values_wrapper_with_env_matches_rec_and_values] \\
   pop_assum (fn th => rw[GSYM th]) \\
-  irule bridge_surface_eval_and_values_wrapper_with_env_hand_spec \\
+  irule bridge_syntax_eval_and_values_wrapper_with_env_hand_spec \\
   rw[]
 QED
 
-Theorem bridge_surface_eval_or_values_wrapper_with_env_hand_spec:
+Theorem bridge_syntax_eval_or_values_wrapper_with_env_hand_spec:
   ∀ffi_p env envv original originalv xs xsv ys ysv.
     LIST_TYPE (PAIR_TYPE STRING_TYPE NUM) env envv ∧
-    METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE original originalv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE xs xsv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE ys ysv ⇒
+    METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE original originalv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE xs xsv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE ys ysv ⇒
     app (ffi_p:'ffi ffi_proj)
-      ^(fetch_v "bridge_surface_eval_or_values_wrapper_with_env_hand"
+      ^(fetch_v "bridge_syntax_eval_or_values_wrapper_with_env_hand"
           bridge_eval_fragment_hand_st)
       [envv; originalv; xsv; ysv] emp
       (POSTv v. &LIST_TYPE METTA_M1_ATOM_TYPE
-        (bridge_surface_eval_or_values_wrapper_with_env
+        (bridge_syntax_eval_or_values_wrapper_with_env
           env original xs ys) v)
 Proof
   rw[] \\
-  xcf "bridge_surface_eval_or_values_wrapper_with_env_hand"
+  xcf "bridge_syntax_eval_or_values_wrapper_with_env_hand"
     bridge_eval_fragment_hand_st \\
-  xapp_spec bridge_surface_eval_or_values_wrapper_with_env_v_app_spec \\
+  xapp_spec bridge_syntax_eval_or_values_wrapper_with_env_v_app_spec \\
   xsimpl
 QED
 
-Theorem bridge_surface_eval_or_values_wrapper_with_env_hand_rec_or_spec:
-  ∀ffi_p env envv surface_original originalv surface_xs xsv surface_ys ysv
+Theorem bridge_syntax_eval_or_values_wrapper_with_env_hand_rec_or_spec:
+  ∀ffi_p env envv syntax_original originalv syntax_xs xsv syntax_ys ysv
      original xs ys.
     LIST_TYPE (PAIR_TYPE STRING_TYPE NUM) env envv ∧
-    METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_original originalv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_xs xsv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_ys ysv ∧
-    bridge_import_surface_atom_with_env env surface_original =
+    METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_original originalv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_xs xsv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_ys ysv ∧
+    bridge_import_syntax_atom_with_env env syntax_original =
       SOME original ∧
-    bridge_import_surface_atom_list_with_env env surface_xs = SOME xs ∧
-    bridge_import_surface_atom_list_with_env env surface_ys = SOME ys ⇒
+    bridge_import_syntax_atom_list_with_env env syntax_xs = SOME xs ∧
+    bridge_import_syntax_atom_list_with_env env syntax_ys = SOME ys ⇒
     app (ffi_p:'ffi ffi_proj)
-      ^(fetch_v "bridge_surface_eval_or_values_wrapper_with_env_hand"
+      ^(fetch_v "bridge_syntax_eval_or_values_wrapper_with_env_hand"
           bridge_eval_fragment_hand_st)
       [envv; originalv; xsv; ysv] emp
       (POSTv v. &LIST_TYPE METTA_M1_ATOM_TYPE
         (rec_or_values original xs ys) v)
 Proof
   rw[] \\
-  ‘bridge_surface_eval_or_values_wrapper_with_env
-      env surface_original surface_xs surface_ys =
+  ‘bridge_syntax_eval_or_values_wrapper_with_env
+      env syntax_original syntax_xs syntax_ys =
     rec_or_values original xs ys’
     by metis_tac[
-      bridge_surface_eval_or_values_wrapper_with_env_matches_rec_or_values] \\
+      bridge_syntax_eval_or_values_wrapper_with_env_matches_rec_or_values] \\
   pop_assum (fn th => rw[GSYM th]) \\
-  irule bridge_surface_eval_or_values_wrapper_with_env_hand_spec \\
+  irule bridge_syntax_eval_or_values_wrapper_with_env_hand_spec \\
   rw[]
 QED
 
-Theorem bridge_surface_eval_not_values_wrapper_with_env_hand_spec:
+Theorem bridge_syntax_eval_not_values_wrapper_with_env_hand_spec:
   ∀ffi_p env envv original originalv xs xsv.
     LIST_TYPE (PAIR_TYPE STRING_TYPE NUM) env envv ∧
-    METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE original originalv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE xs xsv ⇒
+    METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE original originalv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE xs xsv ⇒
     app (ffi_p:'ffi ffi_proj)
-      ^(fetch_v "bridge_surface_eval_not_values_wrapper_with_env_hand"
+      ^(fetch_v "bridge_syntax_eval_not_values_wrapper_with_env_hand"
           bridge_eval_fragment_hand_st)
       [envv; originalv; xsv] emp
       (POSTv v. &LIST_TYPE METTA_M1_ATOM_TYPE
-        (bridge_surface_eval_not_values_wrapper_with_env
+        (bridge_syntax_eval_not_values_wrapper_with_env
           env original xs) v)
 Proof
   rw[] \\
-  xcf "bridge_surface_eval_not_values_wrapper_with_env_hand"
+  xcf "bridge_syntax_eval_not_values_wrapper_with_env_hand"
     bridge_eval_fragment_hand_st \\
-  xapp_spec bridge_surface_eval_not_values_wrapper_with_env_v_app_spec \\
+  xapp_spec bridge_syntax_eval_not_values_wrapper_with_env_v_app_spec \\
   xsimpl
 QED
 
-Theorem bridge_surface_eval_not_values_wrapper_with_env_hand_rec_not_spec:
-  ∀ffi_p env envv surface_original originalv surface_xs xsv original xs.
+Theorem bridge_syntax_eval_not_values_wrapper_with_env_hand_rec_not_spec:
+  ∀ffi_p env envv syntax_original originalv syntax_xs xsv original xs.
     LIST_TYPE (PAIR_TYPE STRING_TYPE NUM) env envv ∧
-    METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_original originalv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_xs xsv ∧
-    bridge_import_surface_atom_with_env env surface_original =
+    METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_original originalv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_xs xsv ∧
+    bridge_import_syntax_atom_with_env env syntax_original =
       SOME original ∧
-    bridge_import_surface_atom_list_with_env env surface_xs = SOME xs ⇒
+    bridge_import_syntax_atom_list_with_env env syntax_xs = SOME xs ⇒
     app (ffi_p:'ffi ffi_proj)
-      ^(fetch_v "bridge_surface_eval_not_values_wrapper_with_env_hand"
+      ^(fetch_v "bridge_syntax_eval_not_values_wrapper_with_env_hand"
           bridge_eval_fragment_hand_st)
       [envv; originalv; xsv] emp
       (POSTv v. &LIST_TYPE METTA_M1_ATOM_TYPE
         (rec_not_values original xs) v)
 Proof
   rw[] \\
-  ‘bridge_surface_eval_not_values_wrapper_with_env
-      env surface_original surface_xs =
+  ‘bridge_syntax_eval_not_values_wrapper_with_env
+      env syntax_original syntax_xs =
     rec_not_values original xs’
     by metis_tac[
-      bridge_surface_eval_not_values_wrapper_with_env_matches_rec_not_values] \\
+      bridge_syntax_eval_not_values_wrapper_with_env_matches_rec_not_values] \\
   pop_assum (fn th => rw[GSYM th]) \\
-  irule bridge_surface_eval_not_values_wrapper_with_env_hand_spec \\
+  irule bridge_syntax_eval_not_values_wrapper_with_env_hand_spec \\
   rw[]
 QED
 
-Theorem bridge_surface_eval_lt_values_wrapper_hand_eval_lt_fragment_spec:
-  ∀ffi_p surface_original originalv surface_xs xsv surface_ys ysv
+Theorem bridge_syntax_eval_lt_values_wrapper_hand_eval_lt_fragment_spec:
+  ∀ffi_p syntax_original originalv syntax_xs xsv syntax_ys ysv
      fuel space a b.
-    METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_original originalv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_xs xsv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_ys ysv ∧
-    bridge_import_surface_atom surface_original =
+    METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_original originalv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_xs xsv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_ys ysv ∧
+    bridge_import_syntax_atom syntax_original =
       SOME (metta_m1$Expr [metta_m1$Sym 12; a; b]) ∧
-    bridge_import_surface_atom_list surface_xs =
+    bridge_import_syntax_atom_list syntax_xs =
       SOME (eval_m1_rec fuel space a) ∧
-    bridge_import_surface_atom_list surface_ys =
+    bridge_import_syntax_atom_list syntax_ys =
       SOME (eval_m1_rec fuel space b) ⇒
     app (ffi_p:'ffi ffi_proj)
-      ^(fetch_v "bridge_surface_eval_lt_values_wrapper_hand"
+      ^(fetch_v "bridge_syntax_eval_lt_values_wrapper_hand"
           bridge_eval_fragment_hand_st)
       [originalv; xsv; ysv] emp
       (POSTv v. &LIST_TYPE METTA_M1_ATOM_TYPE
@@ -12854,35 +12854,35 @@ Theorem bridge_surface_eval_lt_values_wrapper_hand_eval_lt_fragment_spec:
           (metta_m1$Expr [metta_m1$Sym 12; a; b])) v)
 Proof
   rw[] \\
-  ‘bridge_surface_eval_lt_values_wrapper
-      surface_original surface_xs surface_ys =
+  ‘bridge_syntax_eval_lt_values_wrapper
+      syntax_original syntax_xs syntax_ys =
     bridge_eval_lt_fragment fuel space
       (metta_m1$Expr [metta_m1$Sym 12; a; b])’
-    by rw[bridge_surface_eval_lt_values_wrapper_def,
+    by rw[bridge_syntax_eval_lt_values_wrapper_def,
           bridge_eval_lt_fragment_def,
           bridge_eval_lt_values_fragment_def] \\
   pop_assum (fn th => rw[GSYM th]) \\
-  irule bridge_surface_eval_lt_values_wrapper_hand_spec \\
+  irule bridge_syntax_eval_lt_values_wrapper_hand_spec \\
   rw[]
 QED
 
-Theorem bridge_surface_eval_eq_values_wrapper_hand_eval_eq_fragment_spec:
-  ∀ffi_p surface_original originalv surface_xs xsv surface_ys ysv
+Theorem bridge_syntax_eval_eq_values_wrapper_hand_eval_eq_fragment_spec:
+  ∀ffi_p syntax_original originalv syntax_xs xsv syntax_ys ysv
      fuel space a b.
-    METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_original originalv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_xs xsv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_ys ysv ∧
-    bridge_import_surface_atom surface_original =
+    METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_original originalv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_xs xsv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_ys ysv ∧
+    bridge_import_syntax_atom syntax_original =
       SOME (metta_m1$Expr [metta_m1$Sym 47; a; b]) ∧
-    bridge_import_surface_atom_list surface_xs =
+    bridge_import_syntax_atom_list syntax_xs =
       SOME (eval_m1_rec fuel space a) ∧
-    bridge_import_surface_atom_list surface_ys =
+    bridge_import_syntax_atom_list syntax_ys =
       SOME (eval_m1_rec fuel space b) ⇒
     app (ffi_p:'ffi ffi_proj)
-      ^(fetch_v "bridge_surface_eval_eq_values_wrapper_hand"
+      ^(fetch_v "bridge_syntax_eval_eq_values_wrapper_hand"
           bridge_eval_fragment_hand_st)
       [originalv; xsv; ysv] emp
       (POSTv v. &LIST_TYPE METTA_M1_ATOM_TYPE
@@ -12890,35 +12890,35 @@ Theorem bridge_surface_eval_eq_values_wrapper_hand_eval_eq_fragment_spec:
           (metta_m1$Expr [metta_m1$Sym 47; a; b])) v)
 Proof
   rw[] \\
-  ‘bridge_surface_eval_eq_values_wrapper
-      surface_original surface_xs surface_ys =
+  ‘bridge_syntax_eval_eq_values_wrapper
+      syntax_original syntax_xs syntax_ys =
     bridge_eval_eq_fragment fuel space
       (metta_m1$Expr [metta_m1$Sym 47; a; b])’
-    by rw[bridge_surface_eval_eq_values_wrapper_def,
+    by rw[bridge_syntax_eval_eq_values_wrapper_def,
           bridge_eval_eq_fragment_def,
           bridge_eval_eq_values_fragment_def] \\
   pop_assum (fn th => rw[GSYM th]) \\
-  irule bridge_surface_eval_eq_values_wrapper_hand_spec \\
+  irule bridge_syntax_eval_eq_values_wrapper_hand_spec \\
   rw[]
 QED
 
-Theorem bridge_surface_eval_and_values_wrapper_hand_eval_and_fragment_spec:
-  ∀ffi_p surface_original originalv surface_xs xsv surface_ys ysv
+Theorem bridge_syntax_eval_and_values_wrapper_hand_eval_and_fragment_spec:
+  ∀ffi_p syntax_original originalv syntax_xs xsv syntax_ys ysv
      fuel space a b.
-    METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_original originalv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_xs xsv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_ys ysv ∧
-    bridge_import_surface_atom surface_original =
+    METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_original originalv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_xs xsv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_ys ysv ∧
+    bridge_import_syntax_atom syntax_original =
       SOME (metta_m1$Expr [metta_m1$Sym 31; a; b]) ∧
-    bridge_import_surface_atom_list surface_xs =
+    bridge_import_syntax_atom_list syntax_xs =
       SOME (eval_m1_rec fuel space a) ∧
-    bridge_import_surface_atom_list surface_ys =
+    bridge_import_syntax_atom_list syntax_ys =
       SOME (eval_m1_rec fuel space b) ⇒
     app (ffi_p:'ffi ffi_proj)
-      ^(fetch_v "bridge_surface_eval_and_values_wrapper_hand"
+      ^(fetch_v "bridge_syntax_eval_and_values_wrapper_hand"
           bridge_eval_fragment_hand_st)
       [originalv; xsv; ysv] emp
       (POSTv v. &LIST_TYPE METTA_M1_ATOM_TYPE
@@ -12926,35 +12926,35 @@ Theorem bridge_surface_eval_and_values_wrapper_hand_eval_and_fragment_spec:
           (metta_m1$Expr [metta_m1$Sym 31; a; b])) v)
 Proof
   rw[] \\
-  ‘bridge_surface_eval_and_values_wrapper
-      surface_original surface_xs surface_ys =
+  ‘bridge_syntax_eval_and_values_wrapper
+      syntax_original syntax_xs syntax_ys =
     bridge_eval_and_fragment fuel space
       (metta_m1$Expr [metta_m1$Sym 31; a; b])’
-    by rw[bridge_surface_eval_and_values_wrapper_def,
+    by rw[bridge_syntax_eval_and_values_wrapper_def,
           bridge_eval_and_fragment_def,
           bridge_eval_and_values_fragment_def] \\
   pop_assum (fn th => rw[GSYM th]) \\
-  irule bridge_surface_eval_and_values_wrapper_hand_spec \\
+  irule bridge_syntax_eval_and_values_wrapper_hand_spec \\
   rw[]
 QED
 
-Theorem bridge_surface_eval_or_values_wrapper_hand_eval_or_fragment_spec:
-  ∀ffi_p surface_original originalv surface_xs xsv surface_ys ysv
+Theorem bridge_syntax_eval_or_values_wrapper_hand_eval_or_fragment_spec:
+  ∀ffi_p syntax_original originalv syntax_xs xsv syntax_ys ysv
      fuel space a b.
-    METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_original originalv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_xs xsv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_ys ysv ∧
-    bridge_import_surface_atom surface_original =
+    METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_original originalv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_xs xsv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_ys ysv ∧
+    bridge_import_syntax_atom syntax_original =
       SOME (metta_m1$Expr [metta_m1$Sym 32; a; b]) ∧
-    bridge_import_surface_atom_list surface_xs =
+    bridge_import_syntax_atom_list syntax_xs =
       SOME (eval_m1_rec fuel space a) ∧
-    bridge_import_surface_atom_list surface_ys =
+    bridge_import_syntax_atom_list syntax_ys =
       SOME (eval_m1_rec fuel space b) ⇒
     app (ffi_p:'ffi ffi_proj)
-      ^(fetch_v "bridge_surface_eval_or_values_wrapper_hand"
+      ^(fetch_v "bridge_syntax_eval_or_values_wrapper_hand"
           bridge_eval_fragment_hand_st)
       [originalv; xsv; ysv] emp
       (POSTv v. &LIST_TYPE METTA_M1_ATOM_TYPE
@@ -12962,30 +12962,30 @@ Theorem bridge_surface_eval_or_values_wrapper_hand_eval_or_fragment_spec:
           (metta_m1$Expr [metta_m1$Sym 32; a; b])) v)
 Proof
   rw[] \\
-  ‘bridge_surface_eval_or_values_wrapper
-      surface_original surface_xs surface_ys =
+  ‘bridge_syntax_eval_or_values_wrapper
+      syntax_original syntax_xs syntax_ys =
     bridge_eval_or_fragment fuel space
       (metta_m1$Expr [metta_m1$Sym 32; a; b])’
-    by rw[bridge_surface_eval_or_values_wrapper_def,
+    by rw[bridge_syntax_eval_or_values_wrapper_def,
           bridge_eval_or_fragment_def,
           bridge_eval_or_values_fragment_def] \\
   pop_assum (fn th => rw[GSYM th]) \\
-  irule bridge_surface_eval_or_values_wrapper_hand_spec \\
+  irule bridge_syntax_eval_or_values_wrapper_hand_spec \\
   rw[]
 QED
 
-Theorem bridge_surface_eval_not_values_wrapper_hand_eval_not_fragment_spec:
-  ∀ffi_p surface_original originalv surface_xs xsv fuel space a.
-    METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_original originalv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_xs xsv ∧
-    bridge_import_surface_atom surface_original =
+Theorem bridge_syntax_eval_not_values_wrapper_hand_eval_not_fragment_spec:
+  ∀ffi_p syntax_original originalv syntax_xs xsv fuel space a.
+    METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_original originalv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_xs xsv ∧
+    bridge_import_syntax_atom syntax_original =
       SOME (metta_m1$Expr [metta_m1$Sym 33; a]) ∧
-    bridge_import_surface_atom_list surface_xs =
+    bridge_import_syntax_atom_list syntax_xs =
       SOME (eval_m1_rec fuel space a) ⇒
     app (ffi_p:'ffi ffi_proj)
-      ^(fetch_v "bridge_surface_eval_not_values_wrapper_hand"
+      ^(fetch_v "bridge_syntax_eval_not_values_wrapper_hand"
           bridge_eval_fragment_hand_st)
       [originalv; xsv] emp
       (POSTv v. &LIST_TYPE METTA_M1_ATOM_TYPE
@@ -12993,36 +12993,36 @@ Theorem bridge_surface_eval_not_values_wrapper_hand_eval_not_fragment_spec:
           (metta_m1$Expr [metta_m1$Sym 33; a])) v)
 Proof
   rw[] \\
-  ‘bridge_surface_eval_not_values_wrapper
-      surface_original surface_xs =
+  ‘bridge_syntax_eval_not_values_wrapper
+      syntax_original syntax_xs =
     bridge_eval_not_fragment fuel space
       (metta_m1$Expr [metta_m1$Sym 33; a])’
-    by rw[bridge_surface_eval_not_values_wrapper_def,
+    by rw[bridge_syntax_eval_not_values_wrapper_def,
           bridge_eval_not_fragment_def,
           bridge_eval_not_values_fragment_def] \\
   pop_assum (fn th => rw[GSYM th]) \\
-  irule bridge_surface_eval_not_values_wrapper_hand_spec \\
+  irule bridge_syntax_eval_not_values_wrapper_hand_spec \\
   rw[]
 QED
 
-Theorem bridge_surface_eval_lt_values_wrapper_with_env_hand_eval_lt_fragment_spec:
-  ∀ffi_p env envv surface_original originalv surface_xs xsv surface_ys ysv
+Theorem bridge_syntax_eval_lt_values_wrapper_with_env_hand_eval_lt_fragment_spec:
+  ∀ffi_p env envv syntax_original originalv syntax_xs xsv syntax_ys ysv
      fuel space a b.
     LIST_TYPE (PAIR_TYPE STRING_TYPE NUM) env envv ∧
-    METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_original originalv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_xs xsv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_ys ysv ∧
-    bridge_import_surface_atom_with_env env surface_original =
+    METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_original originalv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_xs xsv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_ys ysv ∧
+    bridge_import_syntax_atom_with_env env syntax_original =
       SOME (metta_m1$Expr [metta_m1$Sym 12; a; b]) ∧
-    bridge_import_surface_atom_list_with_env env surface_xs =
+    bridge_import_syntax_atom_list_with_env env syntax_xs =
       SOME (eval_m1_rec fuel space a) ∧
-    bridge_import_surface_atom_list_with_env env surface_ys =
+    bridge_import_syntax_atom_list_with_env env syntax_ys =
       SOME (eval_m1_rec fuel space b) ⇒
     app (ffi_p:'ffi ffi_proj)
-      ^(fetch_v "bridge_surface_eval_lt_values_wrapper_with_env_hand"
+      ^(fetch_v "bridge_syntax_eval_lt_values_wrapper_with_env_hand"
           bridge_eval_fragment_hand_st)
       [envv; originalv; xsv; ysv] emp
       (POSTv v. &LIST_TYPE METTA_M1_ATOM_TYPE
@@ -13030,36 +13030,36 @@ Theorem bridge_surface_eval_lt_values_wrapper_with_env_hand_eval_lt_fragment_spe
           (metta_m1$Expr [metta_m1$Sym 12; a; b])) v)
 Proof
   rw[] \\
-  ‘bridge_surface_eval_lt_values_wrapper_with_env
-      env surface_original surface_xs surface_ys =
+  ‘bridge_syntax_eval_lt_values_wrapper_with_env
+      env syntax_original syntax_xs syntax_ys =
     bridge_eval_lt_fragment fuel space
       (metta_m1$Expr [metta_m1$Sym 12; a; b])’
-    by rw[bridge_surface_eval_lt_values_wrapper_with_env_def,
+    by rw[bridge_syntax_eval_lt_values_wrapper_with_env_def,
           bridge_eval_lt_fragment_def,
           bridge_eval_lt_values_fragment_def] \\
   pop_assum (fn th => rw[GSYM th]) \\
-  irule bridge_surface_eval_lt_values_wrapper_with_env_hand_spec \\
+  irule bridge_syntax_eval_lt_values_wrapper_with_env_hand_spec \\
   rw[]
 QED
 
-Theorem bridge_surface_eval_eq_values_wrapper_with_env_hand_eval_eq_fragment_spec:
-  ∀ffi_p env envv surface_original originalv surface_xs xsv surface_ys ysv
+Theorem bridge_syntax_eval_eq_values_wrapper_with_env_hand_eval_eq_fragment_spec:
+  ∀ffi_p env envv syntax_original originalv syntax_xs xsv syntax_ys ysv
      fuel space a b.
     LIST_TYPE (PAIR_TYPE STRING_TYPE NUM) env envv ∧
-    METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_original originalv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_xs xsv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_ys ysv ∧
-    bridge_import_surface_atom_with_env env surface_original =
+    METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_original originalv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_xs xsv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_ys ysv ∧
+    bridge_import_syntax_atom_with_env env syntax_original =
       SOME (metta_m1$Expr [metta_m1$Sym 47; a; b]) ∧
-    bridge_import_surface_atom_list_with_env env surface_xs =
+    bridge_import_syntax_atom_list_with_env env syntax_xs =
       SOME (eval_m1_rec fuel space a) ∧
-    bridge_import_surface_atom_list_with_env env surface_ys =
+    bridge_import_syntax_atom_list_with_env env syntax_ys =
       SOME (eval_m1_rec fuel space b) ⇒
     app (ffi_p:'ffi ffi_proj)
-      ^(fetch_v "bridge_surface_eval_eq_values_wrapper_with_env_hand"
+      ^(fetch_v "bridge_syntax_eval_eq_values_wrapper_with_env_hand"
           bridge_eval_fragment_hand_st)
       [envv; originalv; xsv; ysv] emp
       (POSTv v. &LIST_TYPE METTA_M1_ATOM_TYPE
@@ -13067,36 +13067,36 @@ Theorem bridge_surface_eval_eq_values_wrapper_with_env_hand_eval_eq_fragment_spe
           (metta_m1$Expr [metta_m1$Sym 47; a; b])) v)
 Proof
   rw[] \\
-  ‘bridge_surface_eval_eq_values_wrapper_with_env
-      env surface_original surface_xs surface_ys =
+  ‘bridge_syntax_eval_eq_values_wrapper_with_env
+      env syntax_original syntax_xs syntax_ys =
     bridge_eval_eq_fragment fuel space
       (metta_m1$Expr [metta_m1$Sym 47; a; b])’
-    by rw[bridge_surface_eval_eq_values_wrapper_with_env_def,
+    by rw[bridge_syntax_eval_eq_values_wrapper_with_env_def,
           bridge_eval_eq_fragment_def,
           bridge_eval_eq_values_fragment_def] \\
   pop_assum (fn th => rw[GSYM th]) \\
-  irule bridge_surface_eval_eq_values_wrapper_with_env_hand_spec \\
+  irule bridge_syntax_eval_eq_values_wrapper_with_env_hand_spec \\
   rw[]
 QED
 
-Theorem bridge_surface_eval_and_values_wrapper_with_env_hand_eval_and_fragment_spec:
-  ∀ffi_p env envv surface_original originalv surface_xs xsv surface_ys ysv
+Theorem bridge_syntax_eval_and_values_wrapper_with_env_hand_eval_and_fragment_spec:
+  ∀ffi_p env envv syntax_original originalv syntax_xs xsv syntax_ys ysv
      fuel space a b.
     LIST_TYPE (PAIR_TYPE STRING_TYPE NUM) env envv ∧
-    METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_original originalv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_xs xsv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_ys ysv ∧
-    bridge_import_surface_atom_with_env env surface_original =
+    METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_original originalv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_xs xsv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_ys ysv ∧
+    bridge_import_syntax_atom_with_env env syntax_original =
       SOME (metta_m1$Expr [metta_m1$Sym 31; a; b]) ∧
-    bridge_import_surface_atom_list_with_env env surface_xs =
+    bridge_import_syntax_atom_list_with_env env syntax_xs =
       SOME (eval_m1_rec fuel space a) ∧
-    bridge_import_surface_atom_list_with_env env surface_ys =
+    bridge_import_syntax_atom_list_with_env env syntax_ys =
       SOME (eval_m1_rec fuel space b) ⇒
     app (ffi_p:'ffi ffi_proj)
-      ^(fetch_v "bridge_surface_eval_and_values_wrapper_with_env_hand"
+      ^(fetch_v "bridge_syntax_eval_and_values_wrapper_with_env_hand"
           bridge_eval_fragment_hand_st)
       [envv; originalv; xsv; ysv] emp
       (POSTv v. &LIST_TYPE METTA_M1_ATOM_TYPE
@@ -13104,36 +13104,36 @@ Theorem bridge_surface_eval_and_values_wrapper_with_env_hand_eval_and_fragment_s
           (metta_m1$Expr [metta_m1$Sym 31; a; b])) v)
 Proof
   rw[] \\
-  ‘bridge_surface_eval_and_values_wrapper_with_env
-      env surface_original surface_xs surface_ys =
+  ‘bridge_syntax_eval_and_values_wrapper_with_env
+      env syntax_original syntax_xs syntax_ys =
     bridge_eval_and_fragment fuel space
       (metta_m1$Expr [metta_m1$Sym 31; a; b])’
-    by rw[bridge_surface_eval_and_values_wrapper_with_env_def,
+    by rw[bridge_syntax_eval_and_values_wrapper_with_env_def,
           bridge_eval_and_fragment_def,
           bridge_eval_and_values_fragment_def] \\
   pop_assum (fn th => rw[GSYM th]) \\
-  irule bridge_surface_eval_and_values_wrapper_with_env_hand_spec \\
+  irule bridge_syntax_eval_and_values_wrapper_with_env_hand_spec \\
   rw[]
 QED
 
-Theorem bridge_surface_eval_or_values_wrapper_with_env_hand_eval_or_fragment_spec:
-  ∀ffi_p env envv surface_original originalv surface_xs xsv surface_ys ysv
+Theorem bridge_syntax_eval_or_values_wrapper_with_env_hand_eval_or_fragment_spec:
+  ∀ffi_p env envv syntax_original originalv syntax_xs xsv syntax_ys ysv
      fuel space a b.
     LIST_TYPE (PAIR_TYPE STRING_TYPE NUM) env envv ∧
-    METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_original originalv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_xs xsv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_ys ysv ∧
-    bridge_import_surface_atom_with_env env surface_original =
+    METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_original originalv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_xs xsv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_ys ysv ∧
+    bridge_import_syntax_atom_with_env env syntax_original =
       SOME (metta_m1$Expr [metta_m1$Sym 32; a; b]) ∧
-    bridge_import_surface_atom_list_with_env env surface_xs =
+    bridge_import_syntax_atom_list_with_env env syntax_xs =
       SOME (eval_m1_rec fuel space a) ∧
-    bridge_import_surface_atom_list_with_env env surface_ys =
+    bridge_import_syntax_atom_list_with_env env syntax_ys =
       SOME (eval_m1_rec fuel space b) ⇒
     app (ffi_p:'ffi ffi_proj)
-      ^(fetch_v "bridge_surface_eval_or_values_wrapper_with_env_hand"
+      ^(fetch_v "bridge_syntax_eval_or_values_wrapper_with_env_hand"
           bridge_eval_fragment_hand_st)
       [envv; originalv; xsv; ysv] emp
       (POSTv v. &LIST_TYPE METTA_M1_ATOM_TYPE
@@ -13141,31 +13141,31 @@ Theorem bridge_surface_eval_or_values_wrapper_with_env_hand_eval_or_fragment_spe
           (metta_m1$Expr [metta_m1$Sym 32; a; b])) v)
 Proof
   rw[] \\
-  ‘bridge_surface_eval_or_values_wrapper_with_env
-      env surface_original surface_xs surface_ys =
+  ‘bridge_syntax_eval_or_values_wrapper_with_env
+      env syntax_original syntax_xs syntax_ys =
     bridge_eval_or_fragment fuel space
       (metta_m1$Expr [metta_m1$Sym 32; a; b])’
-    by rw[bridge_surface_eval_or_values_wrapper_with_env_def,
+    by rw[bridge_syntax_eval_or_values_wrapper_with_env_def,
           bridge_eval_or_fragment_def,
           bridge_eval_or_values_fragment_def] \\
   pop_assum (fn th => rw[GSYM th]) \\
-  irule bridge_surface_eval_or_values_wrapper_with_env_hand_spec \\
+  irule bridge_syntax_eval_or_values_wrapper_with_env_hand_spec \\
   rw[]
 QED
 
-Theorem bridge_surface_eval_not_values_wrapper_with_env_hand_eval_not_fragment_spec:
-  ∀ffi_p env envv surface_original originalv surface_xs xsv fuel space a.
+Theorem bridge_syntax_eval_not_values_wrapper_with_env_hand_eval_not_fragment_spec:
+  ∀ffi_p env envv syntax_original originalv syntax_xs xsv fuel space a.
     LIST_TYPE (PAIR_TYPE STRING_TYPE NUM) env envv ∧
-    METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_original originalv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_xs xsv ∧
-    bridge_import_surface_atom_with_env env surface_original =
+    METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_original originalv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_xs xsv ∧
+    bridge_import_syntax_atom_with_env env syntax_original =
       SOME (metta_m1$Expr [metta_m1$Sym 33; a]) ∧
-    bridge_import_surface_atom_list_with_env env surface_xs =
+    bridge_import_syntax_atom_list_with_env env syntax_xs =
       SOME (eval_m1_rec fuel space a) ⇒
     app (ffi_p:'ffi ffi_proj)
-      ^(fetch_v "bridge_surface_eval_not_values_wrapper_with_env_hand"
+      ^(fetch_v "bridge_syntax_eval_not_values_wrapper_with_env_hand"
           bridge_eval_fragment_hand_st)
       [envv; originalv; xsv] emp
       (POSTv v. &LIST_TYPE METTA_M1_ATOM_TYPE
@@ -13173,112 +13173,112 @@ Theorem bridge_surface_eval_not_values_wrapper_with_env_hand_eval_not_fragment_s
           (metta_m1$Expr [metta_m1$Sym 33; a])) v)
 Proof
   rw[] \\
-  ‘bridge_surface_eval_not_values_wrapper_with_env
-      env surface_original surface_xs =
+  ‘bridge_syntax_eval_not_values_wrapper_with_env
+      env syntax_original syntax_xs =
     bridge_eval_not_fragment fuel space
       (metta_m1$Expr [metta_m1$Sym 33; a])’
-    by rw[bridge_surface_eval_not_values_wrapper_with_env_def,
+    by rw[bridge_syntax_eval_not_values_wrapper_with_env_def,
           bridge_eval_not_fragment_def,
           bridge_eval_not_values_fragment_def] \\
   pop_assum (fn th => rw[GSYM th]) \\
-  irule bridge_surface_eval_not_values_wrapper_with_env_hand_spec \\
+  irule bridge_syntax_eval_not_values_wrapper_with_env_hand_spec \\
   rw[]
 QED
 
-Theorem bridge_surface_eval_match_fragment_wrapper_hand_spec:
-  ∀ffi_p surface_space surface_spacev surface_atom surface_atomv.
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_space surface_spacev ∧
-    METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_atom surface_atomv ⇒
+Theorem bridge_syntax_eval_match_fragment_wrapper_hand_spec:
+  ∀ffi_p syntax_space syntax_spacev syntax_atom syntax_atomv.
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_space syntax_spacev ∧
+    METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_atom syntax_atomv ⇒
     app (ffi_p:'ffi ffi_proj)
-      ^(fetch_v "bridge_surface_eval_match_fragment_wrapper_hand"
+      ^(fetch_v "bridge_syntax_eval_match_fragment_wrapper_hand"
           bridge_eval_fragment_hand_st)
-      [surface_spacev; surface_atomv] emp
+      [syntax_spacev; syntax_atomv] emp
       (POSTv v. &LIST_TYPE METTA_M1_ATOM_TYPE
-        (bridge_surface_eval_match_fragment_wrapper
-          surface_space surface_atom) v)
+        (bridge_syntax_eval_match_fragment_wrapper
+          syntax_space syntax_atom) v)
 Proof
   rw[] \\
-  xcf "bridge_surface_eval_match_fragment_wrapper_hand"
+  xcf "bridge_syntax_eval_match_fragment_wrapper_hand"
     bridge_eval_fragment_hand_st \\
-  xapp_spec bridge_surface_eval_match_fragment_wrapper_v_app_spec \\
+  xapp_spec bridge_syntax_eval_match_fragment_wrapper_v_app_spec \\
   xsimpl
 QED
 
-Theorem bridge_surface_eval_match_fragment_wrapper_with_env_hand_spec:
-  ∀ffi_p env envv surface_space surface_spacev surface_atom surface_atomv.
+Theorem bridge_syntax_eval_match_fragment_wrapper_with_env_hand_spec:
+  ∀ffi_p env envv syntax_space syntax_spacev syntax_atom syntax_atomv.
     LIST_TYPE (PAIR_TYPE STRING_TYPE NUM) env envv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_space surface_spacev ∧
-    METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_atom surface_atomv ⇒
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_space syntax_spacev ∧
+    METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_atom syntax_atomv ⇒
     app (ffi_p:'ffi ffi_proj)
-      ^(fetch_v "bridge_surface_eval_match_fragment_wrapper_with_env_hand"
+      ^(fetch_v "bridge_syntax_eval_match_fragment_wrapper_with_env_hand"
           bridge_eval_fragment_hand_st)
-      [envv; surface_spacev; surface_atomv] emp
+      [envv; syntax_spacev; syntax_atomv] emp
       (POSTv v. &LIST_TYPE METTA_M1_ATOM_TYPE
-        (bridge_surface_eval_match_fragment_wrapper_with_env
-          env surface_space surface_atom) v)
+        (bridge_syntax_eval_match_fragment_wrapper_with_env
+          env syntax_space syntax_atom) v)
 Proof
   rw[] \\
-  xcf "bridge_surface_eval_match_fragment_wrapper_with_env_hand"
+  xcf "bridge_syntax_eval_match_fragment_wrapper_with_env_hand"
     bridge_eval_fragment_hand_st \\
-  xapp_spec bridge_surface_eval_match_fragment_wrapper_with_env_v_app_spec \\
+  xapp_spec bridge_syntax_eval_match_fragment_wrapper_with_env_v_app_spec \\
   xsimpl
 QED
 
-Theorem bridge_surface_eval_payload_result_wrapper_hand_spec:
+Theorem bridge_syntax_eval_payload_result_wrapper_hand_spec:
   ∀ffi_p body bodyv rs rsv.
-    METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE body bodyv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE rs rsv ⇒
+    METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE body bodyv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE rs rsv ⇒
     app (ffi_p:'ffi ffi_proj)
-      ^(fetch_v "bridge_surface_eval_payload_result_wrapper_hand"
+      ^(fetch_v "bridge_syntax_eval_payload_result_wrapper_hand"
           bridge_eval_fragment_hand_st)
       [bodyv; rsv] emp
       (POSTv v. &LIST_TYPE METTA_M1_ATOM_TYPE
-        (bridge_surface_eval_payload_result_wrapper body rs) v)
+        (bridge_syntax_eval_payload_result_wrapper body rs) v)
 Proof
   rw[] \\
-  xcf "bridge_surface_eval_payload_result_wrapper_hand"
+  xcf "bridge_syntax_eval_payload_result_wrapper_hand"
     bridge_eval_fragment_hand_st \\
-  xapp_spec bridge_surface_eval_payload_result_wrapper_v_app_spec \\
+  xapp_spec bridge_syntax_eval_payload_result_wrapper_v_app_spec \\
   xsimpl
 QED
 
-Theorem bridge_surface_evalc_checked_values_wrapper_hand_spec:
-  ∀ffi_p surface_space spacev term termv expected expectedv vals valsv.
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_space spacev ∧
-    METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE term termv ∧
-    METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE expected expectedv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE vals valsv ⇒
+Theorem bridge_syntax_evalc_checked_values_wrapper_hand_spec:
+  ∀ffi_p syntax_space spacev term termv expected expectedv vals valsv.
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_space spacev ∧
+    METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE term termv ∧
+    METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE expected expectedv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE vals valsv ⇒
     app (ffi_p:'ffi ffi_proj)
-      ^(fetch_v "bridge_surface_evalc_checked_values_wrapper_hand"
+      ^(fetch_v "bridge_syntax_evalc_checked_values_wrapper_hand"
           bridge_eval_fragment_hand_st)
       [spacev; termv; expectedv; valsv] emp
       (POSTv v. &LIST_TYPE METTA_M1_ATOM_TYPE
-        (bridge_surface_evalc_checked_values_wrapper
-          surface_space term expected vals) v)
+        (bridge_syntax_evalc_checked_values_wrapper
+          syntax_space term expected vals) v)
 Proof
   rw[] \\
-  xcf "bridge_surface_evalc_checked_values_wrapper_hand"
+  xcf "bridge_syntax_evalc_checked_values_wrapper_hand"
     bridge_eval_fragment_hand_st \\
-  xapp_spec bridge_surface_evalc_checked_values_wrapper_v_app_spec \\
+  xapp_spec bridge_syntax_evalc_checked_values_wrapper_v_app_spec \\
   xsimpl
 QED
 
-Theorem bridge_surface_eval_payload_result_wrapper_hand_eval_fragment_spec:
-  ∀ffi_p surface_body bodyv surface_rs rsv fuel space body.
-    METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_body bodyv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_rs rsv ∧
-    bridge_import_surface_atom surface_body = SOME body ∧
-    bridge_import_surface_atom_list surface_rs =
+Theorem bridge_syntax_eval_payload_result_wrapper_hand_eval_fragment_spec:
+  ∀ffi_p syntax_body bodyv syntax_rs rsv fuel space body.
+    METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_body bodyv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_rs rsv ∧
+    bridge_import_syntax_atom syntax_body = SOME body ∧
+    bridge_import_syntax_atom_list syntax_rs =
       SOME (eval_m1_rec fuel space body) ⇒
     app (ffi_p:'ffi ffi_proj)
-      ^(fetch_v "bridge_surface_eval_payload_result_wrapper_hand"
+      ^(fetch_v "bridge_syntax_eval_payload_result_wrapper_hand"
           bridge_eval_fragment_hand_st)
       [bodyv; rsv] emp
       (POSTv v. &LIST_TYPE METTA_M1_ATOM_TYPE
@@ -13286,26 +13286,26 @@ Theorem bridge_surface_eval_payload_result_wrapper_hand_eval_fragment_spec:
           (metta_m1$Expr [metta_m1$Sym 20; body])) v)
 Proof
   rw[] \\
-  ‘bridge_surface_eval_payload_result_wrapper surface_body surface_rs =
+  ‘bridge_syntax_eval_payload_result_wrapper syntax_body syntax_rs =
     bridge_eval_eval_fragment fuel space
       (metta_m1$Expr [metta_m1$Sym 20; body])’
-    by metis_tac[bridge_surface_eval_payload_result_wrapper_eval_fragment] \\
+    by metis_tac[bridge_syntax_eval_payload_result_wrapper_eval_fragment] \\
   pop_assum (fn th => rw[GSYM th]) \\
-  irule bridge_surface_eval_payload_result_wrapper_hand_spec \\
+  irule bridge_syntax_eval_payload_result_wrapper_hand_spec \\
   rw[]
 QED
 
-Theorem bridge_surface_eval_payload_result_wrapper_hand_eval_m1_rec_spec:
-  ∀ffi_p surface_body bodyv surface_rs rsv fuel space body.
-    METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_body bodyv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_rs rsv ∧
-    bridge_import_surface_atom surface_body = SOME body ∧
-    bridge_import_surface_atom_list surface_rs =
+Theorem bridge_syntax_eval_payload_result_wrapper_hand_eval_m1_rec_spec:
+  ∀ffi_p syntax_body bodyv syntax_rs rsv fuel space body.
+    METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_body bodyv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_rs rsv ∧
+    bridge_import_syntax_atom syntax_body = SOME body ∧
+    bridge_import_syntax_atom_list syntax_rs =
       SOME (eval_m1_rec fuel space body) ⇒
     app (ffi_p:'ffi ffi_proj)
-      ^(fetch_v "bridge_surface_eval_payload_result_wrapper_hand"
+      ^(fetch_v "bridge_syntax_eval_payload_result_wrapper_hand"
           bridge_eval_fragment_hand_st)
       [bodyv; rsv] emp
       (POSTv v. &LIST_TYPE METTA_M1_ATOM_TYPE
@@ -13313,39 +13313,39 @@ Theorem bridge_surface_eval_payload_result_wrapper_hand_eval_m1_rec_spec:
           (metta_m1$Expr [metta_m1$Sym 20; body])) v)
 Proof
   rw[] \\
-  ‘bridge_surface_eval_payload_result_wrapper surface_body surface_rs =
+  ‘bridge_syntax_eval_payload_result_wrapper syntax_body syntax_rs =
     eval_m1_rec (SUC fuel) space
       (metta_m1$Expr [metta_m1$Sym 20; body])’
     by metis_tac[
-      bridge_surface_eval_payload_result_wrapper_eval_fragment,
+      bridge_syntax_eval_payload_result_wrapper_eval_fragment,
       bridge_eval_eval_fragment_agrees_with_eval_m1_rec] \\
   pop_assum (fn th => rw[GSYM th]) \\
-  irule bridge_surface_eval_payload_result_wrapper_hand_spec \\
+  irule bridge_syntax_eval_payload_result_wrapper_hand_spec \\
   rw[]
 QED
 
-Theorem bridge_surface_evalc_checked_values_wrapper_hand_evalc_fragment_spec:
-  ∀ffi_p surface_space spacev surface_term termv
-     surface_expected expectedv surface_vals valsv
+Theorem bridge_syntax_evalc_checked_values_wrapper_hand_evalc_fragment_spec:
+  ∀ffi_p syntax_space spacev syntax_term termv
+     syntax_expected expectedv syntax_vals valsv
      fuel space term expected.
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_space spacev ∧
-    METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_term termv ∧
-    METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_expected expectedv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_vals valsv ∧
-    bridge_import_surface_atom_list surface_space = SOME space ∧
-    bridge_import_surface_atom surface_term = SOME term ∧
-    bridge_import_surface_atom surface_expected = SOME expected ∧
-    bridge_import_surface_atom_list surface_vals =
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_space spacev ∧
+    METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_term termv ∧
+    METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_expected expectedv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_vals valsv ∧
+    bridge_import_syntax_atom_list syntax_space = SOME space ∧
+    bridge_import_syntax_atom syntax_term = SOME term ∧
+    bridge_import_syntax_atom syntax_expected = SOME expected ∧
+    bridge_import_syntax_atom_list syntax_vals =
       SOME
         (if hol_typed_add_bad space term
          then [error_atom term (metta_m1$Sym 10)]
          else eval_m1_rec fuel space term) ⇒
     app (ffi_p:'ffi ffi_proj)
-      ^(fetch_v "bridge_surface_evalc_checked_values_wrapper_hand"
+      ^(fetch_v "bridge_syntax_evalc_checked_values_wrapper_hand"
           bridge_eval_fragment_hand_st)
       [spacev; termv; expectedv; valsv] emp
       (POSTv v. &LIST_TYPE METTA_M1_ATOM_TYPE
@@ -13353,39 +13353,39 @@ Theorem bridge_surface_evalc_checked_values_wrapper_hand_evalc_fragment_spec:
           (metta_m1$Expr [metta_m1$Sym 57; term; expected])) v)
 Proof
   rw[] \\
-  ‘bridge_surface_evalc_checked_values_wrapper
-      surface_space surface_term surface_expected surface_vals =
+  ‘bridge_syntax_evalc_checked_values_wrapper
+      syntax_space syntax_term syntax_expected syntax_vals =
     eval_evalc_fragment fuel space
       (metta_m1$Expr [metta_m1$Sym 57; term; expected])’
     by metis_tac[
-      bridge_surface_evalc_checked_values_wrapper_evalc_fragment] \\
+      bridge_syntax_evalc_checked_values_wrapper_evalc_fragment] \\
   pop_assum (fn th => rw[GSYM th]) \\
-  irule bridge_surface_evalc_checked_values_wrapper_hand_spec \\
+  irule bridge_syntax_evalc_checked_values_wrapper_hand_spec \\
   rw[]
 QED
 
-Theorem bridge_surface_evalc_checked_values_wrapper_hand_eval_m1_rec_spec:
-  ∀ffi_p surface_space spacev surface_term termv
-     surface_expected expectedv surface_vals valsv
+Theorem bridge_syntax_evalc_checked_values_wrapper_hand_eval_m1_rec_spec:
+  ∀ffi_p syntax_space spacev syntax_term termv
+     syntax_expected expectedv syntax_vals valsv
      fuel space term expected.
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_space spacev ∧
-    METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_term termv ∧
-    METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_expected expectedv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_vals valsv ∧
-    bridge_import_surface_atom_list surface_space = SOME space ∧
-    bridge_import_surface_atom surface_term = SOME term ∧
-    bridge_import_surface_atom surface_expected = SOME expected ∧
-    bridge_import_surface_atom_list surface_vals =
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_space spacev ∧
+    METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_term termv ∧
+    METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_expected expectedv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_vals valsv ∧
+    bridge_import_syntax_atom_list syntax_space = SOME space ∧
+    bridge_import_syntax_atom syntax_term = SOME term ∧
+    bridge_import_syntax_atom syntax_expected = SOME expected ∧
+    bridge_import_syntax_atom_list syntax_vals =
       SOME
         (if hol_typed_add_bad space term
          then [error_atom term (metta_m1$Sym 10)]
          else eval_m1_rec fuel space term) ⇒
     app (ffi_p:'ffi ffi_proj)
-      ^(fetch_v "bridge_surface_evalc_checked_values_wrapper_hand"
+      ^(fetch_v "bridge_syntax_evalc_checked_values_wrapper_hand"
           bridge_eval_fragment_hand_st)
       [spacev; termv; expectedv; valsv] emp
       (POSTv v. &LIST_TYPE METTA_M1_ATOM_TYPE
@@ -13393,161 +13393,161 @@ Theorem bridge_surface_evalc_checked_values_wrapper_hand_eval_m1_rec_spec:
           (metta_m1$Expr [metta_m1$Sym 57; term; expected])) v)
 Proof
   rw[] \\
-  ‘bridge_surface_evalc_checked_values_wrapper
-      surface_space surface_term surface_expected surface_vals =
+  ‘bridge_syntax_evalc_checked_values_wrapper
+      syntax_space syntax_term syntax_expected syntax_vals =
     eval_m1_rec (SUC fuel) space
       (metta_m1$Expr [metta_m1$Sym 57; term; expected])’
     by metis_tac[
-      bridge_surface_evalc_checked_values_wrapper_evalc_fragment,
+      bridge_syntax_evalc_checked_values_wrapper_evalc_fragment,
       eval_evalc_fragment_agrees_with_eval_m1_rec] \\
   pop_assum (fn th => rw[GSYM th]) \\
-  irule bridge_surface_evalc_checked_values_wrapper_hand_spec \\
+  irule bridge_syntax_evalc_checked_values_wrapper_hand_spec \\
   rw[]
 QED
 
-Theorem bridge_surface_switch_payloads_wrapper_hand_spec:
+Theorem bridge_syntax_switch_payloads_wrapper_hand_spec:
   ∀ffi_p scrut scrutv branches branchesv.
-    METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE scrut scrutv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
+    METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE scrut scrutv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
       branches branchesv ⇒
     app (ffi_p:'ffi ffi_proj)
-      ^(fetch_v "bridge_surface_switch_payloads_wrapper_hand"
+      ^(fetch_v "bridge_syntax_switch_payloads_wrapper_hand"
           bridge_eval_fragment_hand_st)
       [scrutv; branchesv] emp
       (POSTv v. &LIST_TYPE METTA_M1_ATOM_TYPE
-        (bridge_surface_switch_payloads_wrapper scrut branches) v)
+        (bridge_syntax_switch_payloads_wrapper scrut branches) v)
 Proof
   rw[] \\
-  xcf "bridge_surface_switch_payloads_wrapper_hand"
+  xcf "bridge_syntax_switch_payloads_wrapper_hand"
     bridge_eval_fragment_hand_st \\
-  xapp_spec bridge_surface_switch_payloads_wrapper_v_app_spec \\
+  xapp_spec bridge_syntax_switch_payloads_wrapper_v_app_spec \\
   xsimpl
 QED
 
-Theorem bridge_surface_case_payloads_wrapper_hand_spec:
+Theorem bridge_syntax_case_payloads_wrapper_hand_spec:
   ∀ffi_p values valuesv branches branchesv.
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
       values valuesv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
       branches branchesv ⇒
     app (ffi_p:'ffi ffi_proj)
-      ^(fetch_v "bridge_surface_case_payloads_wrapper_hand"
+      ^(fetch_v "bridge_syntax_case_payloads_wrapper_hand"
           bridge_eval_fragment_hand_st)
       [valuesv; branchesv] emp
       (POSTv v. &LIST_TYPE METTA_M1_ATOM_TYPE
-        (bridge_surface_case_payloads_wrapper values branches) v)
+        (bridge_syntax_case_payloads_wrapper values branches) v)
 Proof
   rw[] \\
-  xcf "bridge_surface_case_payloads_wrapper_hand"
+  xcf "bridge_syntax_case_payloads_wrapper_hand"
     bridge_eval_fragment_hand_st \\
-  xapp_spec bridge_surface_case_payloads_wrapper_v_app_spec \\
+  xapp_spec bridge_syntax_case_payloads_wrapper_v_app_spec \\
   xsimpl
 QED
 
-Theorem bridge_surface_switch_payloads_wrapper_with_env_hand_spec:
+Theorem bridge_syntax_switch_payloads_wrapper_with_env_hand_spec:
   ∀ffi_p env envv scrut scrutv branches branchesv.
     LIST_TYPE (PAIR_TYPE STRING_TYPE NUM) env envv ∧
-    METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE scrut scrutv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
+    METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE scrut scrutv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
       branches branchesv ⇒
     app (ffi_p:'ffi ffi_proj)
-      ^(fetch_v "bridge_surface_switch_payloads_wrapper_with_env_hand"
+      ^(fetch_v "bridge_syntax_switch_payloads_wrapper_with_env_hand"
           bridge_eval_fragment_hand_st)
       [envv; scrutv; branchesv] emp
       (POSTv v. &LIST_TYPE METTA_M1_ATOM_TYPE
-        (bridge_surface_switch_payloads_wrapper_with_env
+        (bridge_syntax_switch_payloads_wrapper_with_env
           env scrut branches) v)
 Proof
   rw[] \\
-  xcf "bridge_surface_switch_payloads_wrapper_with_env_hand"
+  xcf "bridge_syntax_switch_payloads_wrapper_with_env_hand"
     bridge_eval_fragment_hand_st \\
-  xapp_spec bridge_surface_switch_payloads_wrapper_with_env_v_app_spec \\
+  xapp_spec bridge_syntax_switch_payloads_wrapper_with_env_v_app_spec \\
   xsimpl
 QED
 
-Theorem bridge_surface_case_payloads_wrapper_with_env_hand_spec:
+Theorem bridge_syntax_case_payloads_wrapper_with_env_hand_spec:
   ∀ffi_p env envv values valuesv branches branchesv.
     LIST_TYPE (PAIR_TYPE STRING_TYPE NUM) env envv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
       values valuesv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
       branches branchesv ⇒
     app (ffi_p:'ffi ffi_proj)
-      ^(fetch_v "bridge_surface_case_payloads_wrapper_with_env_hand"
+      ^(fetch_v "bridge_syntax_case_payloads_wrapper_with_env_hand"
           bridge_eval_fragment_hand_st)
       [envv; valuesv; branchesv] emp
       (POSTv v. &LIST_TYPE METTA_M1_ATOM_TYPE
-        (bridge_surface_case_payloads_wrapper_with_env
+        (bridge_syntax_case_payloads_wrapper_with_env
           env values branches) v)
 Proof
   rw[] \\
-  xcf "bridge_surface_case_payloads_wrapper_with_env_hand"
+  xcf "bridge_syntax_case_payloads_wrapper_with_env_hand"
     bridge_eval_fragment_hand_st \\
-  xapp_spec bridge_surface_case_payloads_wrapper_with_env_v_app_spec \\
+  xapp_spec bridge_syntax_case_payloads_wrapper_with_env_v_app_spec \\
   xsimpl
 QED
 
-Theorem bridge_surface_switch_payloads_wrapper_hand_payload_spec:
-  ∀ffi_p surface_scrut scrutv surface_branches branchesv scrut branches.
-    METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_scrut scrutv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_branches branchesv ∧
-    bridge_import_surface_atom surface_scrut = SOME scrut ∧
-    bridge_import_surface_atom_list surface_branches = SOME branches ⇒
+Theorem bridge_syntax_switch_payloads_wrapper_hand_payload_spec:
+  ∀ffi_p syntax_scrut scrutv syntax_branches branchesv scrut branches.
+    METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_scrut scrutv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_branches branchesv ∧
+    bridge_import_syntax_atom syntax_scrut = SOME scrut ∧
+    bridge_import_syntax_atom_list syntax_branches = SOME branches ⇒
     app (ffi_p:'ffi ffi_proj)
-      ^(fetch_v "bridge_surface_switch_payloads_wrapper_hand"
+      ^(fetch_v "bridge_syntax_switch_payloads_wrapper_hand"
           bridge_eval_fragment_hand_st)
       [scrutv; branchesv] emp
       (POSTv v. &LIST_TYPE METTA_M1_ATOM_TYPE
         (bridge_first_branch_payloads scrut branches) v)
 Proof
   rw[] \\
-  ‘bridge_surface_switch_payloads_wrapper
-      surface_scrut surface_branches =
+  ‘bridge_syntax_switch_payloads_wrapper
+      syntax_scrut syntax_branches =
     bridge_first_branch_payloads scrut branches’
-    by metis_tac[bridge_surface_switch_payloads_wrapper_import] \\
+    by metis_tac[bridge_syntax_switch_payloads_wrapper_import] \\
   pop_assum (fn th => rw[GSYM th]) \\
-  irule bridge_surface_switch_payloads_wrapper_hand_spec \\
+  irule bridge_syntax_switch_payloads_wrapper_hand_spec \\
   rw[]
 QED
 
-Theorem bridge_surface_case_payloads_wrapper_hand_payload_spec:
-  ∀ffi_p surface_values valuesv surface_branches branchesv values branches.
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_values valuesv ∧
-    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
-      surface_branches branchesv ∧
-    bridge_import_surface_atom_list surface_values = SOME values ∧
-    bridge_import_surface_atom_list surface_branches = SOME branches ⇒
+Theorem bridge_syntax_case_payloads_wrapper_hand_payload_spec:
+  ∀ffi_p syntax_values valuesv syntax_branches branchesv values branches.
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_values valuesv ∧
+    LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
+      syntax_branches branchesv ∧
+    bridge_import_syntax_atom_list syntax_values = SOME values ∧
+    bridge_import_syntax_atom_list syntax_branches = SOME branches ⇒
     app (ffi_p:'ffi ffi_proj)
-      ^(fetch_v "bridge_surface_case_payloads_wrapper_hand"
+      ^(fetch_v "bridge_syntax_case_payloads_wrapper_hand"
           bridge_eval_fragment_hand_st)
       [valuesv; branchesv] emp
       (POSTv v. &LIST_TYPE METTA_M1_ATOM_TYPE
         (bridge_branch_values_payloads values branches) v)
 Proof
   rw[] \\
-  ‘bridge_surface_case_payloads_wrapper
-      surface_values surface_branches =
+  ‘bridge_syntax_case_payloads_wrapper
+      syntax_values syntax_branches =
     bridge_branch_values_payloads values branches’
-    by metis_tac[bridge_surface_case_payloads_wrapper_import] \\
+    by metis_tac[bridge_syntax_case_payloads_wrapper_import] \\
   pop_assum (fn th => rw[GSYM th]) \\
-  irule bridge_surface_case_payloads_wrapper_hand_spec \\
+  irule bridge_syntax_case_payloads_wrapper_hand_spec \\
   rw[]
 QED
 
-Theorem bridge_surface_is_return_symbol_hand_spec:
+Theorem bridge_syntax_is_return_symbol_hand_spec:
   ∀ffi_p s sv.
     STRING_TYPE s sv ⇒
     app (ffi_p:'ffi ffi_proj)
-      ^(fetch_v "bridge_surface_is_return_symbol_hand"
+      ^(fetch_v "bridge_syntax_is_return_symbol_hand"
           bridge_eval_fragment_hand_st)
       [sv] emp
-      (POSTv v. &BOOL (bridge_surface_is_return_symbol s) v)
+      (POSTv v. &BOOL (bridge_syntax_is_return_symbol s) v)
 Proof
-  rw[bridge_surface_is_return_symbol_def] \\
-  xcf "bridge_surface_is_return_symbol_hand" bridge_eval_fragment_hand_st \\
+  rw[bridge_syntax_is_return_symbol_def] \\
+  xcf "bridge_syntax_is_return_symbol_hand" bridge_eval_fragment_hand_st \\
   xapp
   >- (qexists_tac ‘STRING_TYPE’ \\
       rw[EqualityType_NUM_BOOL] \\
@@ -13563,7 +13563,7 @@ Theorem bridge_parse_atom_token_hand_spec:
           bridge_eval_fragment_hand_st)
       [toksv] emp
       (POSTv v. &OPTION_TYPE
-        (PAIR_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SURFACE_ATOM_TYPE
+        (PAIR_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_SYNTAX_ATOM_TYPE
           (LIST_TYPE METTA_M1_CAKE_BRIDGE_BRIDGE_TOKEN_TYPE))
         (bridge_parse_atom_token toks) v)
 Proof

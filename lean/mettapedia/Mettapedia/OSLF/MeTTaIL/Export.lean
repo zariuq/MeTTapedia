@@ -1,4 +1,4 @@
-import Mettapedia.OSLF.MeTTaIL.Syntax
+import Mettapedia.GSLT.LanguageDef.LogicExtension
 
 /-!
 # MeTTaIL Macro Export
@@ -10,6 +10,7 @@ act as the source-of-truth for language definitions consumed by `mettail-rust`.
 namespace Mettapedia.OSLF.MeTTaIL.Export
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
+open Mettapedia.GSLT.LanguageDef.LogicExtension
 
 private def quote (s : String) : String :=
   "\"" ++ (s.replace "\\" "\\\\").replace "\"" "\\\"" ++ "\""
@@ -299,13 +300,16 @@ private def renderDatalogClause (dc : DatalogClause) : String :=
     let body := String.intercalate ", " (dc.body.map renderDatalogAtom)
     s!"        {head} :- {body}."
 
-/-- Render a LogicDecl to Ascent-compatible syntax. -/
-private def renderLogicDecl : LogicDecl → Option String
+/-- Render one typed logic-extension declaration. -/
+private def renderLogicDeclaration : LogicDeclaration → String
   | .relation sig =>
     let types := String.intercalate ", " (sig.argTypes.map renderTypeExpr)
-    some s!"        relation {sig.name}({types});"
-  | .ruleText t => some s!"        {t}"
-  | .datalogClause dc => some (renderDatalogClause dc)
+    s!"        relation {sig.name}({types});"
+  | .clause dc => renderDatalogClause dc
+
+/-- Render a typed logic extension independently of its base language. -/
+def renderLogicProgram (program : LogicProgram) : String :=
+  renderSection "logic" (program.map renderLogicDeclaration)
 
 def renderLanguage (lang : LanguageDef) : String :=
   let overloaded := overloadedRelations lang
@@ -313,7 +317,6 @@ def renderLanguage (lang : LanguageDef) : String :=
   let termLines := lang.terms.map renderGrammarRule
   let eqLines := (indexed lang.equations).map (fun (idx, eqn) => renderEquation overloaded idx eqn)
   let rwLines := (indexed lang.rewrites).map (fun (idx, rw) => renderRewrite overloaded idx rw)
-  let logicLines := lang.logic.filterMap renderLogicDecl
   let sections :=
     [ "language! {"
     , s!"    name: {lang.name},"
@@ -325,11 +328,7 @@ def renderLanguage (lang : LanguageDef) : String :=
     , renderSection "equations" eqLines ++ ","
     , ""
     , renderSection "rewrites" rwLines ++ ","
-    ] ++ (if logicLines.isEmpty then [] else
-    [ ""
-    , renderSection "logic" logicLines ++ ","
-    ]) ++
-    [ "}" ]
+    , "}" ]
   String.intercalate "\n" sections
 
 /-- Render a Lean `LanguageDef` into Rust `language! { ... }` macro text,

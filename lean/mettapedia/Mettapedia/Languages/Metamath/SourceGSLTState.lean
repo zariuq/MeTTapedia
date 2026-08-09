@@ -10,38 +10,25 @@ module gives the local environment operations their source-owned state
 semantics.  It does not use the `mm-lean4` runtime database.
 
 The state keeps global object identities separately from the active frame.
-Closing a scope therefore removes active hypotheses and disjointness
-conditions without making their labels reusable.  Assertion frames are
-trimmed from the active source frame according to the Metamath mandatory
-hypothesis law.
+Closing a scope therefore removes active variables, hypotheses, and
+disjointness conditions without making their names reusable as a different
+kind of object.  Assertion frames are trimmed from the active source frame
+according to the Metamath mandatory hypothesis law.
 
 Proof checking and include resolution are deliberately separate indexed
 stages.  They consume the same `SourceOperation` identities, but are not
 mistaken for local declaration updates.
 
-## Declared reading: hoisted declarations ([MM §4.2.10] Frames Revisited)
+`declaredVariables` is the hoisted historical vocabulary needed by stored
+assertions and generated inference presentations.  `activeVariables` is the
+raw [MM §4.2.8] scope-sensitive vocabulary used to admit new statements.
+Thus an inactive variable may be redeclared as a variable, but an active one
+may not; `$d`, `$f`, and formula tokens must use active variables.  The
+historical `variableTypecodes` table enforces the global `$f` type assignment
+when a variable is legally reactivated in a later scope.
 
-The gates implement the book's hoisted-database image — "we collect all
-constant and variable (`$c` and `$v`) declarations in the database,
-ignoring duplicate declarations of the same variable in different
-scopes" — exactly as `mm-lean4` does, not the raw [MM §4.2.8] scoping of
-declarations themselves:
-
-* variables are never deactivated by `closeScope?`, and redeclaring an
-  already-declared variable is a silent no-op (`addVariable`), where raw
-  [MM §4.1.3]/[MM §4.2.8] would reject an active redeclaration;
-* the [MM §4.1.3] rule that the typecode a `$f` assigns to a variable is
-  global across scopes is not enforced here — nor by `mm-lean4`, whose
-  float-uniqueness check also inspects only the active frame;
-* token-charset legality ([MM §4.1.1]) is owned by the parser lane; the
-  gates accept any globally fresh string, and `validRuleLabel` checks
-  only nonemptiness and the (book-unreachable, `$`-headed) reserved
-  rule-namespace prefix.
-
-Label retention across scope exit is the book's own rule (the global
-label-uniqueness sentence of [MM §4.1.3]); the hyps/`$d` rollback with
-retained global names matches `mm-lean4`'s single global object map with
-frame truncation.
+Token-charset legality ([MM §4.1.1]) is owned by the parser lane.  Label
+retention across scope exit is the book's global label-uniqueness rule.
 -/
 
 namespace Mettapedia.Languages.Metamath.SourceGSLTState
@@ -60,6 +47,7 @@ deriving instance DecidableEq for SourceAssertion
 /-- A block boundary remembers the active-frame prefix lengths.  Global
 declarations, used labels, and assertions are intentionally not rolled back. -/
 structure ScopeBoundary where
+  activeVariableLength : Nat
   activeHypothesisLength : Nat
   activeDistinctLength : Nat
 deriving DecidableEq, Repr
@@ -68,6 +56,8 @@ deriving DecidableEq, Repr
 structure SourceState where
   declaredConstants : List String
   declaredVariables : List String
+  activeVariables : List String
+  variableTypecodes : List (String × String)
   usedLabels : List String
   activeHypotheses : List HypothesisView
   activeDistinctVariables : List (String × String)
@@ -79,6 +69,8 @@ deriving DecidableEq
 def initialState : SourceState :=
   { declaredConstants := []
     declaredVariables := []
+    activeVariables := []
+    variableTypecodes := []
     usedLabels := []
     activeHypotheses := []
     activeDistinctVariables := []
@@ -121,12 +113,44 @@ private def validRuleLabel (label : String) : Bool :=
 
 private def boundaryValid (state : SourceState)
     (boundary : ScopeBoundary) : Bool :=
-  boundary.activeHypothesisLength ≤ state.activeHypotheses.length &&
+  boundary.activeVariableLength ≤ state.activeVariables.length &&
+    boundary.activeHypothesisLength ≤ state.activeHypotheses.length &&
     boundary.activeDistinctLength ≤ state.activeDistinctVariables.length
 
-/-- Complete local state invariant.  In particular, the object namespace is
-global even when hypotheses leave the active frame. -/
-def sourceStateValid (state : SourceState) : Bool :=
+/-- The historical `$f` table is functional and refers only to globally
+declared variables and constants. -/
+def variableTypecodesValid (state : SourceState) : Bool :=
+  (state.variableTypecodes.map Prod.fst).eraseDups.length ==
+      state.variableTypecodes.length &&
+    state.variableTypecodes.all fun binding =>
+      state.declaredVariables.contains binding.1 &&
+        state.declaredConstants.contains binding.2
+
+/-- Scope-sensitive validity of one active hypothesis.  This predicate is
+public because runtime-refinement proofs must preserve the same admission
+condition without reimplementing it. -/
+def activeHypothesisValid (state : SourceState) :
+    HypothesisView → Bool
+  | .floating _ typecode variableName =>
+      state.activeVariables.contains variableName &&
+        state.variableTypecodes.contains (variableName, typecode)
+  | .essential _ _ => true
+
+/-- Scope-sensitive admission invariants omitted by the proof-facing
+`SourcePrefix`: active variables are unique historical variables, active
+floating hypotheses use those variables with their global typecodes, and
+active `$d` pairs mention only active variables. -/
+def sourceActivityValid (state : SourceState) : Bool :=
+  state.activeVariables.eraseDups.length == state.activeVariables.length &&
+    state.activeVariables.all state.declaredVariables.contains &&
+    variableTypecodesValid state &&
+    state.activeHypotheses.all (activeHypothesisValid state) &&
+    state.activeDistinctVariables.all fun pair =>
+      state.activeVariables.contains pair.1 &&
+        state.activeVariables.contains pair.2
+
+/-- Proof-facing, namespace, and boundary validity. -/
+def sourceStateProjectionValid (state : SourceState) : Bool :=
   sourcePrefixValid state.toSourcePrefix &&
     state.usedLabels.all validRuleLabel &&
     state.usedLabels.eraseDups.length == state.usedLabels.length &&
@@ -141,6 +165,11 @@ def sourceStateValid (state : SourceState) : Bool :=
         state.declaredVariables.contains pair.2) &&
     state.scopes.all (boundaryValid state)
 
+/-- Complete local source-state invariant, including the scope-sensitive
+admission data that is intentionally absent from `SourcePrefix`. -/
+def sourceStateValid (state : SourceState) : Bool :=
+  sourceStateProjectionValid state && sourceActivityValid state
+
 def sourceStateComplete (state : SourceState) : Bool :=
   sourceStateValid state &&
     state.scopes.isEmpty &&
@@ -149,7 +178,8 @@ def sourceStateComplete (state : SourceState) : Bool :=
 theorem sourcePrefixValid_of_sourceStateValid
     (state : SourceState) (valid : sourceStateValid state = true) :
     sourcePrefixValid state.toSourcePrefix = true := by
-  simp only [sourceStateValid, Bool.and_eq_true] at valid
+  simp only [sourceStateValid, sourceStateProjectionValid,
+    Bool.and_eq_true] at valid
   aesop
 
 /-- A valid source state gives every declared constant and variable a
@@ -172,8 +202,20 @@ theorem objectNames_nodup_of_sourceStateValid
     (state : SourceState) (valid : sourceStateValid state = true) :
     state.objectNames.Nodup := by
   apply nodup_of_eraseDups_length_eq
-  simp only [sourceStateValid, Bool.and_eq_true] at valid
+  simp only [sourceStateValid, sourceStateProjectionValid,
+    Bool.and_eq_true] at valid
   aesop
+
+/-- Every currently active variable has a historical variable declaration. -/
+theorem activeVariable_declared_of_sourceStateValid
+    {state : SourceState} (valid : sourceStateValid state = true)
+    {variableName : String} (active : variableName ∈ state.activeVariables) :
+    variableName ∈ state.declaredVariables := by
+  rw [sourceStateValid, Bool.and_eq_true] at valid
+  unfold sourceActivityValid at valid
+  simp only [Bool.and_eq_true, List.all_eq_true,
+    List.contains_iff_mem] at valid
+  exact valid.2.1.1.1.2 variableName active
 
 private def acceptUpdate (before after : SourceState) :
     Option SourceState := do
@@ -560,7 +602,8 @@ def openScope? (state : SourceState) : Option SourceState := do
   acceptUpdate state
     { state with
       scopes :=
-        { activeHypothesisLength := state.activeHypotheses.length
+        { activeVariableLength := state.activeVariables.length
+          activeHypothesisLength := state.activeHypotheses.length
           activeDistinctLength := state.activeDistinctVariables.length } ::
           state.scopes }
 
@@ -572,7 +615,8 @@ theorem openScope?_eq_some_shape {state after : SourceState}
     after =
       { state with
         scopes :=
-          { activeHypothesisLength := state.activeHypotheses.length
+          { activeVariableLength := state.activeVariables.length
+            activeHypothesisLength := state.activeHypotheses.length
             activeDistinctLength := state.activeDistinctVariables.length } ::
             state.scopes } := by
   simp [openScope?, acceptUpdate] at opened
@@ -584,6 +628,8 @@ def closeScope? (state : SourceState) : Option SourceState := do
   let boundary ← state.scopes.head?
   acceptUpdate state
     { state with
+      activeVariables :=
+        state.activeVariables.take boundary.activeVariableLength
       activeHypotheses :=
         state.activeHypotheses.take boundary.activeHypothesisLength
       activeDistinctVariables :=
@@ -600,6 +646,8 @@ theorem closeScope?_eq_some_shape {state after : SourceState}
       state.scopes = boundary :: rest ∧
       after =
         { state with
+          activeVariables :=
+            state.activeVariables.take boundary.activeVariableLength
           activeHypotheses :=
             state.activeHypotheses.take boundary.activeHypothesisLength
           activeDistinctVariables :=
@@ -655,9 +703,12 @@ def declareVariables? (state : SourceState)
     (names : List String) : Option SourceState := do
   guard (readyForLocalUpdate state)
   guard (!names.isEmpty)
+  guard (names.eraseDups.length == names.length)
+  guard (names.all fun name => !(state.activeVariables.contains name))
   acceptUpdate state
     { state with
-      declaredVariables := names.foldl addVariable state.declaredVariables }
+      declaredVariables := names.foldl addVariable state.declaredVariables
+      activeVariables := state.activeVariables ++ names }
 
 private def canonicalPair (left right : String) : String × String :=
   if left < right then (left, right) else (right, left)
@@ -769,7 +820,7 @@ def declareDisjoint? (state : SourceState)
   guard (readyForLocalUpdate state)
   guard (2 ≤ names.length)
   guard (names.eraseDups.length == names.length)
-  guard (names.all state.declaredVariables.contains)
+  guard (names.all state.activeVariables.contains)
   acceptUpdate state
     { state with
       activeDistinctVariables :=
@@ -804,12 +855,182 @@ theorem declareDisjoint?_sourceAssertion_eq_of_optional
   exact sourceAssertion_append_optional_distincts
     state assertionLabel formula (allDistinctPairs names) hoptional
 
+/-! ## Executable uniqueness helpers -/
+
+/-- Converse executable-uniqueness bridge. -/
+theorem eraseDups_length_eq_of_nodup :
+    (values : List String) → values.Nodup →
+      values.eraseDups.length = values.length
+  | [], _ => rfl
+  | value :: values, hnodup => by
+      rw [List.eraseDups_cons]
+      simp only [List.length_cons]
+      have hhead : value ∉ values := (List.nodup_cons.mp hnodup).1
+      have htail : values.Nodup := (List.nodup_cons.mp hnodup).2
+      have hfilter :
+          (values.filter fun candidate => !candidate == value) = values := by
+        apply List.filter_eq_self.mpr
+        intro candidate hmem
+        simp only [Bool.not_eq_eq_eq_not, Bool.not_true,
+          beq_eq_false_iff_ne, ne_eq]
+        intro heq
+        exact hhead (heq ▸ hmem)
+      rw [hfilter, eraseDups_length_eq_of_nodup values htail]
+
+/-- The executable uniqueness test survives appending one fresh name. -/
+theorem eraseDups_length_append_fresh {values : List String}
+    {name : String}
+    (hlen : values.eraseDups.length = values.length)
+    (hfresh : name ∉ values) :
+    (values ++ [name]).eraseDups.length = (values ++ [name]).length := by
+  apply eraseDups_length_eq_of_nodup
+  have hnodup := nodup_of_eraseDups_length_eq values hlen
+  exact List.Nodup.append hnodup (List.nodup_singleton name)
+    (fun a ha hax => hfresh ((List.mem_singleton.mp hax) ▸ ha))
+
+/-! ## Historical floating-hypothesis type assignments -/
+
+def variableTypecode? (bindings : List (String × String))
+    (variableName : String) : Option String :=
+  match bindings.find? (fun binding => binding.1 == variableName) with
+  | some binding => some binding.2
+  | none => none
+
+def variableTypecodeCompatible (bindings : List (String × String))
+    (variableName typecode : String) : Bool :=
+  match variableTypecode? bindings variableName with
+  | some prior => prior == typecode
+  | none => true
+
+def recordVariableTypecode (bindings : List (String × String))
+    (variableName typecode : String) : List (String × String) :=
+  match variableTypecode? bindings variableName with
+  | some _ => bindings
+  | none => bindings ++ [(variableName, typecode)]
+
+theorem variableTypecode?_eq_some_mem {bindings : List (String × String)}
+    {variableName typecode : String}
+    (h : variableTypecode? bindings variableName = some typecode) :
+    (variableName, typecode) ∈ bindings := by
+  unfold variableTypecode? at h
+  cases hfind : bindings.find? (fun binding => binding.1 == variableName) with
+  | none => simp [hfind] at h
+  | some binding =>
+      have hpredicate := List.find?_some hfind
+      have hmem := List.mem_of_find?_eq_some hfind
+      simp only [hfind, Option.some.injEq] at h
+      rcases binding with ⟨name, prior⟩
+      simp only at h hpredicate hmem
+      have hname : name = variableName := beq_iff_eq.mp hpredicate
+      subst name
+      subst prior
+      exact hmem
+
+/-- A globally fresh variable has no historical `$f` binding in a valid
+source state. -/
+theorem variableTypecode?_eq_none_of_sourceStateValid
+    {state : SourceState} (valid : sourceStateValid state = true)
+    {variableName : String}
+    (fresh : variableName ∉ state.declaredVariables) :
+    variableTypecode? state.variableTypecodes variableName = none := by
+  rw [sourceStateValid, Bool.and_eq_true] at valid
+  have hactivity := valid.2
+  unfold sourceActivityValid at hactivity
+  simp only [Bool.and_eq_true] at hactivity
+  have hbindings := hactivity.1.1.2
+  unfold variableTypecodesValid at hbindings
+  simp only [Bool.and_eq_true, List.all_eq_true] at hbindings
+  unfold variableTypecode?
+  cases hfind : state.variableTypecodes.find?
+      (fun binding => binding.1 == variableName) with
+  | none => rfl
+  | some binding =>
+      have hmem := List.mem_of_find?_eq_some hfind
+      have hdeclared := (hbindings.2 binding hmem).1
+      have hpredicate := List.find?_some hfind
+      apply False.elim
+      apply fresh
+      have hname : binding.1 = variableName := beq_iff_eq.mp hpredicate
+      simpa [hname, List.contains_iff_mem] using hdeclared
+
+theorem mem_recordVariableTypecode_of_mem
+    {bindings : List (String × String)} {binding : String × String}
+    {variableName typecode : String} (h : binding ∈ bindings) :
+    binding ∈ recordVariableTypecode bindings variableName typecode := by
+  unfold recordVariableTypecode
+  cases variableTypecode? bindings variableName <;> simp [h]
+
+theorem pair_mem_recordVariableTypecode_of_compatible
+    {bindings : List (String × String)} {variableName typecode : String}
+    (hcompatible : variableTypecodeCompatible bindings variableName
+      typecode = true) :
+    (variableName, typecode) ∈
+      recordVariableTypecode bindings variableName typecode := by
+  unfold variableTypecodeCompatible at hcompatible
+  cases hlookup : variableTypecode? bindings variableName with
+  | none => simp [recordVariableTypecode, hlookup]
+  | some prior =>
+      have hmem := variableTypecode?_eq_some_mem hlookup
+      rw [hlookup] at hcompatible
+      have heq : prior = typecode := beq_iff_eq.mp hcompatible
+      subst prior
+      simpa [recordVariableTypecode, hlookup] using hmem
+
+theorem variableTypecodesValid_recordVariableTypecode
+    {state : SourceState} {variableName typecode : String}
+    (hvalid : variableTypecodesValid state = true)
+    (hvariable : variableName ∈ state.declaredVariables)
+    (htypecode : typecode ∈ state.declaredConstants) :
+    variableTypecodesValid
+      { state with
+        variableTypecodes := recordVariableTypecode state.variableTypecodes
+          variableName typecode } = true := by
+  cases hlookup : variableTypecode? state.variableTypecodes variableName with
+  | some prior =>
+      simpa [recordVariableTypecode, hlookup] using hvalid
+  | none =>
+      have hfind : state.variableTypecodes.find?
+          (fun binding => binding.1 == variableName) = none := by
+        unfold variableTypecode? at hlookup
+        split at hlookup
+        · contradiction
+        · assumption
+      have hfresh : variableName ∉ state.variableTypecodes.map Prod.fst := by
+        intro hmem
+        obtain ⟨binding, hbinding, heq⟩ := List.mem_map.mp hmem
+        have habsent := List.find?_eq_none.mp hfind binding hbinding
+        apply habsent
+        simpa using heq
+      unfold variableTypecodesValid at hvalid ⊢
+      simp only [Bool.and_eq_true, List.all_eq_true] at hvalid ⊢
+      constructor
+      · simp only [recordVariableTypecode, hlookup, List.map_append,
+          List.map_cons, List.map_nil]
+        have hkeys :
+            (state.variableTypecodes.map Prod.fst).eraseDups.length =
+              (state.variableTypecodes.map Prod.fst).length := by
+          simpa using beq_iff_eq.mp hvalid.1
+        have happend := eraseDups_length_append_fresh hkeys hfresh
+        apply beq_iff_eq.mpr
+        simpa using happend
+      · simp only [recordVariableTypecode, hlookup, List.mem_append,
+          List.mem_singleton]
+        intro binding hmem
+        rcases hmem with hold | rfl
+        · exact hvalid.2 binding hold
+        · simp [hvariable, htypecode]
+
 def declareFloating? (state : SourceState)
     (label typecode variableName : String) : Option SourceState := do
   guard (readyForLocalUpdate state)
+  guard (state.activeVariables.contains variableName)
+  guard (variableTypecodeCompatible state.variableTypecodes
+    variableName typecode)
   let hypothesis := HypothesisView.floating label typecode variableName
   acceptUpdate state
     { state with
+      variableTypecodes := recordVariableTypecode state.variableTypecodes
+        variableName typecode
       usedLabels := state.usedLabels ++ [label]
       activeHypotheses := state.activeHypotheses ++ [hypothesis] }
 
@@ -826,7 +1047,7 @@ theorem declareFloating?_sourceAssertion_eq_of_optional
     sourceAssertion after assertionLabel formula =
       sourceAssertion state assertionLabel formula := by
   simp [declareFloating?, acceptUpdate] at declared
-  rcases declared with ⟨_, _, _, rfl⟩
+  rcases declared with ⟨_, _, _, _, _, rfl⟩
   exact sourceAssertion_append_optional_floating
     state assertionLabel formula label typecode variableName hoptional
 
@@ -999,7 +1220,8 @@ theorem nonlocalOperations_absent :
 private def declarationsState : SourceState :=
   { initialState with
     declaredConstants := ["wff"]
-    declaredVariables := ["x", "y"] }
+    declaredVariables := ["x", "y"]
+    activeVariables := ["x", "y"] }
 
 /-- Appendix E permits a disjoint declaration before the corresponding
 floating hypotheses.  The source state retains it while the proof-facing
@@ -1013,11 +1235,62 @@ theorem disjointBeforeFloating_admitted :
       activeDistinctVariables := [("x", "y")] }, ?_⟩
   decide
 
+/-- [MM §4.2.8] An active variable cannot be declared a second time. -/
+theorem activeVariable_redeclaration_rejected :
+    declareVariables? declarationsState ["x"] = none := by
+  decide
+
+private def closedLocalVariableState : SourceState :=
+  { initialState with
+    declaredConstants := ["wff", "class"]
+    declaredVariables := ["y", "x"]
+    activeVariables := ["y"] }
+
+/-- [MM §4.2.8] A variable whose declaring block has ended is unavailable to
+new disjoint-variable declarations. -/
+theorem inactiveVariable_disjoint_rejected :
+    declareDisjoint? closedLocalVariableState ["x", "y"] = none := by
+  decide
+
+/-- [MM §4.2.8] A variable whose declaring block has ended is unavailable to
+new floating hypotheses. -/
+theorem inactiveVariable_floating_rejected :
+    declareFloating? closedLocalVariableState "wx" "wff" "x" = none := by
+  decide
+
+/-- [MM §4.2.8] Once its declaring block has ended, the same token may be
+reactivated as a variable without duplicating its historical identity. -/
+theorem inactiveVariable_redeclaration_admitted :
+    declareVariables? closedLocalVariableState ["x"] =
+      some { closedLocalVariableState with
+        activeVariables := ["y", "x"] } := by
+  decide
+
+private def reactivatedTypedVariableState : SourceState :=
+  { closedLocalVariableState with
+    activeVariables := ["y", "x"]
+    variableTypecodes := [("x", "wff")] }
+
+/-- [MM §4.1.3] Reactivating a variable does not permit changing the typecode
+previously assigned by a floating hypothesis. -/
+theorem reactivatedVariable_typecode_change_rejected :
+    declareFloating? reactivatedTypedVariableState "cx" "class" "x" = none := by
+  decide
+
+/-- The matching historical typecode remains admissible after reactivation. -/
+theorem reactivatedVariable_same_typecode_admitted :
+    declareFloating? reactivatedTypedVariableState "wx2" "wff" "x" =
+      some { reactivatedTypedVariableState with
+        usedLabels := ["wx2"]
+        activeHypotheses := [.floating "wx2" "wff" "x"] } := by
+  decide
+
 /-- Closing and completing a block restores the active frame but preserves a
 label in the global object namespace. -/
 theorem scopedLabel_notReusable :
     let floated :=
       { declarationsState with
+        variableTypecodes := [("x", "wff")]
         usedLabels := ["wx"]
         activeHypotheses := [.floating "wx" "wff" "x"] }
     ∃ opened closed completed,
@@ -1029,15 +1302,19 @@ theorem scopedLabel_notReusable :
   dsimp
   refine ⟨
     { declarationsState with
+      variableTypecodes := [("x", "wff")]
       usedLabels := ["wx"]
       activeHypotheses := [.floating "wx" "wff" "x"]
-      scopes := [{ activeHypothesisLength := 1
+      scopes := [{ activeVariableLength := 2
+                   activeHypothesisLength := 1
                    activeDistinctLength := 0 }] },
     { declarationsState with
+      variableTypecodes := [("x", "wff")]
       usedLabels := ["wx"]
       activeHypotheses := [.floating "wx" "wff" "x"]
       pendingBlockCompletions := 1 },
     { declarationsState with
+      variableTypecodes := [("x", "wff")]
       usedLabels := ["wx"]
       activeHypotheses := [.floating "wx" "wff" "x"] },
     ?_⟩
@@ -1070,9 +1347,10 @@ theorem declareVariables?_singleton_inv {state after : SourceState}
           declaredVariables :=
             if variableName ∈ state.declaredVariables then
               state.declaredVariables
-            else state.declaredVariables ++ [variableName] } := by
+            else state.declaredVariables ++ [variableName]
+          activeVariables := state.activeVariables ++ [variableName] } := by
   simp [declareVariables?, acceptUpdate, addVariable] at h
-  obtain ⟨hready, hbefore, hafter, hshape⟩ := h
+  obtain ⟨_, _, _, hbefore, hafter, hshape⟩ := h
   exact ⟨hbefore, hshape ▸ hafter, hshape.symm⟩
 
 /-- Inversion for an accepted `$f` declaration. -/
@@ -1083,12 +1361,24 @@ theorem declareFloating?_inv {state after : SourceState}
       sourceStateValid after = true ∧
       after =
         { state with
+          variableTypecodes := recordVariableTypecode
+            state.variableTypecodes variableName typecode
           usedLabels := state.usedLabels ++ [label]
           activeHypotheses := state.activeHypotheses ++
             [HypothesisView.floating label typecode variableName] } := by
   simp [declareFloating?, acceptUpdate] at h
-  obtain ⟨hready, hbefore, hafter, hshape⟩ := h
+  obtain ⟨_, _, _, hbefore, hafter, hshape⟩ := h
   exact ⟨hbefore, hshape ▸ hafter, hshape.symm⟩
+
+/-- The variable named by an accepted `$f` declaration is active in the
+incoming source state. -/
+theorem declareFloating?_variable_active {state after : SourceState}
+    {label typecode variableName : String}
+    (h : declareFloating? state label typecode variableName = some after) :
+    variableName ∈ state.activeVariables := by
+  simp [declareFloating?, acceptUpdate] at h
+  obtain ⟨_, hactive, _, _, _, _⟩ := h
+  simpa [List.contains_iff_mem] using hactive
 
 /-- The two mathematical symbols named by an accepted `$f` declaration were
 already declared with their required kinds in the incoming source state. -/
@@ -1173,37 +1463,6 @@ theorem addVariable_eq_addVariableName :
 Sufficient freshness conditions under which the declaration gates accept.
 Validity of the updated state is proved, not assumed. -/
 
-/-- Converse executable-uniqueness bridge. -/
-theorem eraseDups_length_eq_of_nodup :
-    (values : List String) → values.Nodup →
-      values.eraseDups.length = values.length
-  | [], _ => rfl
-  | value :: values, hnodup => by
-      rw [List.eraseDups_cons]
-      simp only [List.length_cons]
-      have hhead : value ∉ values := (List.nodup_cons.mp hnodup).1
-      have htail : values.Nodup := (List.nodup_cons.mp hnodup).2
-      have hfilter :
-          (values.filter fun candidate => !candidate == value) = values := by
-        apply List.filter_eq_self.mpr
-        intro candidate hmem
-        simp only [Bool.not_eq_eq_eq_not, Bool.not_true,
-          beq_eq_false_iff_ne, ne_eq]
-        intro heq
-        exact hhead (heq ▸ hmem)
-      rw [hfilter, eraseDups_length_eq_of_nodup values htail]
-
-/-- The executable uniqueness test survives appending one fresh name. -/
-theorem eraseDups_length_append_fresh {values : List String}
-    {name : String}
-    (hlen : values.eraseDups.length = values.length)
-    (hfresh : name ∉ values) :
-    (values ++ [name]).eraseDups.length = (values ++ [name]).length := by
-  apply eraseDups_length_eq_of_nodup
-  have hnodup := nodup_of_eraseDups_length_eq values hlen
-  exact List.Nodup.append hnodup (List.nodup_singleton name)
-    (fun a ha hax => hfresh ((List.mem_singleton.mp hax) ▸ ha))
-
 /-- Declaration respect is monotone in the declared-variable list. -/
 theorem formulaSymbolsRespectDeclarations_mono_vars
     {declaredConstants declaredVariables declaredVariables' : List String}
@@ -1245,11 +1504,13 @@ theorem declareVariables?_accepts (state : SourceState)
     (variableName : String)
     (hvalid : sourceStateValid state = true)
     (hready : state.pendingBlockCompletions = 0)
-    (hfresh : variableName ∉ state.objectNames) :
+    (hfresh : variableName ∉ state.objectNames)
+    (hactiveFresh : variableName ∉ state.activeVariables) :
     declareVariables? state [variableName] =
       some { state with
         declaredVariables :=
-          state.declaredVariables ++ [variableName] } := by
+          state.declaredVariables ++ [variableName]
+        activeVariables := state.activeVariables ++ [variableName] } := by
   have hfreshConsts : variableName ∉ state.declaredConstants := fun h =>
     hfresh (by simp [SourceState.objectNames, h])
   have hfreshVars : variableName ∉ state.declaredVariables := fun h =>
@@ -1261,11 +1522,15 @@ theorem declareVariables?_accepts (state : SourceState)
       sourceStateValid
         { state with
           declaredVariables :=
-            state.declaredVariables ++ [variableName] } = true := by
-    unfold sourceStateValid at hvalid ⊢
-    simp only [Bool.and_eq_true] at hvalid ⊢
+            state.declaredVariables ++ [variableName]
+          activeVariables := state.activeVariables ++ [variableName] } = true := by
+    rw [sourceStateValid, Bool.and_eq_true] at hvalid ⊢
+    obtain ⟨hprojection, hactivity⟩ := hvalid
+    refine ⟨?_, ?_⟩
+    unfold sourceStateProjectionValid at hprojection ⊢
+    simp only [Bool.and_eq_true] at hprojection ⊢
     obtain ⟨⟨⟨⟨⟨⟨⟨hprefix, hlabelsOk⟩, hlabelsNodup⟩, hactiveSub⟩,
-      hassertSub⟩, hobjNodup⟩, hdv⟩, hscopes⟩ := hvalid
+      hassertSub⟩, hobjNodup⟩, hdv⟩, hscopes⟩ := hprojection
     refine ⟨⟨⟨⟨⟨⟨⟨?_, hlabelsOk⟩, hlabelsNodup⟩, hactiveSub⟩,
       hassertSub⟩, ?_⟩, ?_⟩, ?_⟩
     · -- prefix validity
@@ -1345,12 +1610,52 @@ theorem declareVariables?_accepts (state : SourceState)
         simp only [List.contains_iff_mem, List.mem_append] at * <;>
         [exact Or.inl h1; exact Or.inl h2]
     · -- scope boundaries reference untouched lengths
-      simpa [boundaryValid] using hscopes
+      simp only [List.all_eq_true] at hscopes ⊢
+      intro boundary hmem
+      have hold := hscopes boundary hmem
+      simp only [boundaryValid, Bool.and_eq_true, decide_eq_true_eq,
+        List.length_append] at hold ⊢
+      exact ⟨⟨Nat.le_trans hold.1.1 (Nat.le_add_right _ _), hold.1.2⟩,
+        hold.2⟩
+    unfold sourceActivityValid at hactivity ⊢
+    simp only [Bool.and_eq_true] at hactivity ⊢
+    obtain ⟨⟨⟨⟨hactiveNodup, hactiveDeclared⟩, htypecodes⟩,
+      hactiveHypotheses⟩, hactiveDistinct⟩ := hactivity
+    refine ⟨⟨⟨⟨?_, ?_⟩, ?_⟩, ?_⟩, ?_⟩
+    · have hold := eraseDups_length_append_fresh
+        (beq_iff_eq.mp hactiveNodup) hactiveFresh
+      exact beq_iff_eq.mpr hold
+    · simp only [List.all_eq_true, List.contains_iff_mem] at hactiveDeclared ⊢
+      intro name hmem
+      rcases List.mem_append.mp hmem with hold | hnew
+      · exact List.mem_append_left _ (hactiveDeclared name hold)
+      · exact List.mem_append_right _ hnew
+    · unfold variableTypecodesValid at htypecodes ⊢
+      simp only [Bool.and_eq_true, List.all_eq_true] at htypecodes ⊢
+      refine ⟨htypecodes.1, ?_⟩
+      intro binding hmem
+      have hold := htypecodes.2 binding hmem
+      simp only [List.contains_iff_mem] at hold ⊢
+      exact ⟨List.mem_append_left _ hold.1, hold.2⟩
+    · simp only [List.all_eq_true] at hactiveHypotheses ⊢
+      intro hypothesis hmem
+      have hold := hactiveHypotheses hypothesis hmem
+      cases hypothesis with
+      | floating label typecode activeName =>
+          simp only [activeHypothesisValid, Bool.and_eq_true,
+            List.contains_iff_mem] at hold ⊢
+          exact ⟨List.mem_append_left _ hold.1, hold.2⟩
+      | essential label formula => exact hold
+    · simp only [List.all_eq_true] at hactiveDistinct ⊢
+      intro pair hmem
+      have hold := hactiveDistinct pair hmem
+      simp only [Bool.and_eq_true, List.contains_iff_mem] at hold ⊢
+      exact ⟨List.mem_append_left _ hold.1,
+        List.mem_append_left _ hold.2⟩
   unfold declareVariables?
   simp [guard, readyForLocalUpdate, hready, acceptUpdate, hvalid,
-    addVariable, hfreshVars]
-  rw [← hready]
-  exact hvalidAfter
+    addVariable, hfreshVars, hactiveFresh]
+  exact ⟨rfl, by simpa [hready] using hvalidAfter⟩
 
 
 /-- Floating-variable names distribute over an appended floating
@@ -1433,10 +1738,15 @@ theorem declareFloating?_accepts (state : SourceState)
     (hlabelNonempty : label ≠ "")
     (hlabelPrefix : ¬ label.startsWith reservedRulePrefix = true)
     (hvarDeclared : variableName ∈ state.declaredVariables)
+    (hvarActive : variableName ∈ state.activeVariables)
     (hvarNoFloat : variableName ∉ state.activeFloatingVariables)
-    (htype : typecode ∈ state.declaredConstants) :
+    (htype : typecode ∈ state.declaredConstants)
+    (htypeCompatible : variableTypecodeCompatible state.variableTypecodes
+      variableName typecode = true) :
     declareFloating? state label typecode variableName =
       some { state with
+        variableTypecodes := recordVariableTypecode state.variableTypecodes
+          variableName typecode
         usedLabels := state.usedLabels ++ [label]
         activeHypotheses := state.activeHypotheses ++
           [HypothesisView.floating label typecode variableName] } := by
@@ -1450,14 +1760,19 @@ theorem declareFloating?_accepts (state : SourceState)
   have hvalidAfter :
       sourceStateValid
         { state with
+          variableTypecodes := recordVariableTypecode state.variableTypecodes
+            variableName typecode
           usedLabels := state.usedLabels ++ [label]
           activeHypotheses := state.activeHypotheses ++
             [HypothesisView.floating label typecode variableName] } =
         true := by
-    unfold sourceStateValid at hvalid ⊢
-    simp only [Bool.and_eq_true] at hvalid ⊢
+    rw [sourceStateValid, Bool.and_eq_true] at hvalid ⊢
+    obtain ⟨hprojection, hactivity⟩ := hvalid
+    refine ⟨?_, ?_⟩
+    unfold sourceStateProjectionValid at hprojection ⊢
+    simp only [Bool.and_eq_true] at hprojection ⊢
     obtain ⟨⟨⟨⟨⟨⟨⟨hprefix, hlabelsOk⟩, hlabelsNodup⟩, hactiveSub⟩,
-      hassertSub⟩, hobjNodup⟩, hdv⟩, hscopes⟩ := hvalid
+      hassertSub⟩, hobjNodup⟩, hdv⟩, hscopes⟩ := hprojection
     have hdisjCV : ∀ c ∈ state.declaredConstants,
         c ∉ state.declaredVariables := by
       have hp := hprefix
@@ -1637,10 +1952,36 @@ theorem declareFloating?_accepts (state : SourceState)
       have := hscopes boundary hmem
       simp only [boundaryValid, Bool.and_eq_true,
         decide_eq_true_eq, List.length_append] at this ⊢
-      exact ⟨Nat.le_trans this.1 (Nat.le_add_right _ _), this.2⟩
+      exact ⟨⟨this.1.1,
+        Nat.le_trans this.1.2 (Nat.le_add_right _ _)⟩, this.2⟩
+    unfold sourceActivityValid at hactivity ⊢
+    simp only [Bool.and_eq_true] at hactivity ⊢
+    obtain ⟨⟨⟨⟨hactiveNodup, hactiveDeclared⟩, htypecodes⟩,
+      hactiveHypotheses⟩, hactiveDistinct⟩ := hactivity
+    refine ⟨⟨⟨⟨hactiveNodup, hactiveDeclared⟩, ?_⟩, ?_⟩,
+      hactiveDistinct⟩
+    · exact variableTypecodesValid_recordVariableTypecode
+        htypecodes hvarDeclared htype
+    · simp only [List.all_eq_true] at hactiveHypotheses ⊢
+      intro hypothesis hmem
+      rcases List.mem_append.mp hmem with hold | hnew
+      · have hvalidHypothesis := hactiveHypotheses hypothesis hold
+        cases hypothesis with
+        | floating activeLabel activeTypecode activeName =>
+            simp only [activeHypothesisValid, Bool.and_eq_true] at hvalidHypothesis ⊢
+            exact ⟨hvalidHypothesis.1,
+              by
+                simpa [List.contains_iff_mem] using
+                  mem_recordVariableTypecode_of_mem
+                    (by simpa [List.contains_iff_mem] using
+                      hvalidHypothesis.2)⟩
+        | essential activeLabel formula => exact hvalidHypothesis
+      · rcases List.mem_singleton.mp hnew with rfl
+        simp [activeHypothesisValid, hvarActive,
+          pair_mem_recordVariableTypecode_of_compatible htypeCompatible]
   unfold declareFloating?
-  simp [guard, readyForLocalUpdate, hready, acceptUpdate, hvalid]
-  rw [← hready]
+  simp [guard, readyForLocalUpdate, hready, hvarActive,
+    htypeCompatible, acceptUpdate, hvalid]
   exact hvalidAfter
 
 /-! ## Uniform acceptance-validity (for the raw-source composition)
@@ -1733,6 +2074,17 @@ theorem declareConstants?_inv {state after : SourceState}
   cases Option.some.inj h
   exact ⟨hbefore, hafter, by simpa using hscopes, rfl⟩
 
+/-- Every accepted `$c` declaration contains at least one name. -/
+theorem declareConstants?_names_nonempty {state after : SourceState}
+    {names : List String}
+    (h : declareConstants? state names = some after) : names ≠ [] := by
+  unfold declareConstants? at h
+  obtain ⟨-, h⟩ := bind_guard_some h
+  obtain ⟨hnames, -⟩ := bind_guard_some h
+  intro empty
+  subst names
+  simp at hnames
+
 /-- Inversion for an accepted `$v` declaration: both endpoints are
 valid and the variables extend by the deduplicated name fold. -/
 theorem declareVariables?_inv {state after : SourceState}
@@ -1740,9 +2092,14 @@ theorem declareVariables?_inv {state after : SourceState}
     (h : declareVariables? state names = some after) :
     sourceStateValid state = true ∧
       sourceStateValid after = true ∧
-      after = { state with declaredVariables :=
-        (names.foldl addVariableName state.declaredVariables) } := by
+      after =
+        { state with
+          declaredVariables :=
+            names.foldl addVariableName state.declaredVariables
+          activeVariables := state.activeVariables ++ names } := by
   unfold declareVariables? at h
+  obtain ⟨-, h⟩ := bind_guard_some h
+  obtain ⟨-, h⟩ := bind_guard_some h
   obtain ⟨-, h⟩ := bind_guard_some h
   obtain ⟨-, h⟩ := bind_guard_some h
   unfold acceptUpdate at h
@@ -1751,6 +2108,17 @@ theorem declareVariables?_inv {state after : SourceState}
   cases Option.some.inj h
   rw [addVariable_eq_addVariableName] at hafter ⊢
   exact ⟨hbefore, hafter, rfl⟩
+
+/-- Every accepted `$v` declaration contains at least one name. -/
+theorem declareVariables?_names_nonempty {state after : SourceState}
+    {names : List String}
+    (h : declareVariables? state names = some after) : names ≠ [] := by
+  unfold declareVariables? at h
+  obtain ⟨-, h⟩ := bind_guard_some h
+  obtain ⟨hnames, -⟩ := bind_guard_some h
+  intro empty
+  subst names
+  simp at hnames
 
 /-- Every accepted local payload application yields a valid state. -/
 theorem applyLocalPayload?_valid {payload : LocalPayload}
@@ -1777,6 +2145,8 @@ theorem applyLocalPayload?_valid {payload : LocalPayload}
       unfold applyLocalPayload? declareVariables? at h
       obtain ⟨-, h⟩ := bind_guard_some h
       obtain ⟨-, h⟩ := bind_guard_some h
+      obtain ⟨-, h⟩ := bind_guard_some h
+      obtain ⟨-, h⟩ := bind_guard_some h
       exact acceptUpdate_valid h
   | declareDisjoint names =>
       unfold applyLocalPayload? declareDisjoint? at h
@@ -1787,6 +2157,8 @@ theorem applyLocalPayload?_valid {payload : LocalPayload}
       exact acceptUpdate_valid h
   | declareFloating label typecode variableName =>
       unfold applyLocalPayload? declareFloating? at h
+      obtain ⟨-, h⟩ := bind_guard_some h
+      obtain ⟨-, h⟩ := bind_guard_some h
       obtain ⟨-, h⟩ := bind_guard_some h
       exact acceptUpdate_valid h
   | declareEssential label formula =>
@@ -1870,6 +2242,8 @@ theorem declareVariables?_scopes_pending {state after : SourceState}
   unfold declareVariables? at h
   obtain ⟨-, h⟩ := bind_guard_some h
   obtain ⟨-, h⟩ := bind_guard_some h
+  obtain ⟨-, h⟩ := bind_guard_some h
+  obtain ⟨-, h⟩ := bind_guard_some h
   rw [acceptUpdate_eq h]
   exact ⟨rfl, rfl⟩
 
@@ -1891,6 +2265,8 @@ theorem declareFloating?_scopes_pending {state after : SourceState}
     after.scopes = state.scopes ∧
       after.pendingBlockCompletions = state.pendingBlockCompletions := by
   unfold declareFloating? at h
+  obtain ⟨-, h⟩ := bind_guard_some h
+  obtain ⟨-, h⟩ := bind_guard_some h
   obtain ⟨-, h⟩ := bind_guard_some h
   rw [acceptUpdate_eq h]
   exact ⟨rfl, rfl⟩

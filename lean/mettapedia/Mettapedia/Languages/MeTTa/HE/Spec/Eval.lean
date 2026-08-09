@@ -408,7 +408,7 @@ theorem FunctionCandidateScanRel.of_first_success
   apply FunctionCandidateScanRel.prepend_failures_to_success failures
   exact FunctionCandidateScanRel.functionSuccess isFunction success
 
-/-- The exact type surface consumed by the six evaluator judgments.  One
+/-- The exact type interface consumed by the six evaluator judgments.  One
 service supplies both positive and negative premises; mixing a permissive
 positive layer with a different negative candidate set is unrepresentable.
 

@@ -2352,7 +2352,7 @@ private theorem matchAtoms_ground_canon
 
 /-- On the ground-query fragment, every official matcher result has only ground
 assignment values and no equality constraints. This is exactly the bounded
-surface G3 needs: equalities can only arise when the queried atom itself still
+the G3 interface needs: equalities can only arise when the queried atom itself still
 contains variables. -/
 theorem matchAtoms_ground_bindings
     {left right : Atom} {result : Bindings} {n : Nat}
@@ -4134,10 +4134,10 @@ the official *instruction-level* behavior.  The remaining sugar-rule
 certifications need one more handoff: the live HE evaluator must actually
 realize those `unify` instructions at the `EvalAtom` entry point under the
 active dispatch.  We state that boundary explicitly instead of folding it into
-the later surface-rule theorems. -/
+the later source-rule theorems. -/
 
 /-- Executable raw-branch realization needed to spend the matcher bridge inside
-surface sugar proofs.
+syntax sugar proofs.
 
 Positive example:
 - a successful coarse ground match makes the evaluator stably return the
@@ -4301,7 +4301,7 @@ theorem evalAtom_realizes_let_subst_ground_seeded
   evalAtom_realizes_unify_match_ground_seeded hReal hground hmatch hmerge h_no_loop
 
 /-- Realized evaluator form of the `let` substitution half on the ground
-fragment.  This is the first surface-sugar consumer of the explicit `unify`
+fragment.  This is the first syntax-sugar consumer of the explicit `unify`
 realization boundary. -/
 theorem evalAtom_realizes_let_subst_ground
     {space : Space} {d : GroundedDispatch}
@@ -4379,7 +4379,7 @@ private def unifyFunctionType : Atom :=
   .expression [.symbol "->", Atom.atomType, Atom.atomType,
     Atom.atomType, Atom.atomType, Atom.undefinedType]
 
-/-- Surface `unify` atom in the upstream stdlib shape. -/
+/-- Source-syntax `unify` atom in the upstream stdlib shape. -/
 private def unifyExpr (target pattern thenBranch elseBranch : Atom) : Atom :=
   .expression [.symbol "unify", target, pattern, thenBranch, elseBranch]
 
@@ -4388,7 +4388,7 @@ private def letFunctionType : Atom :=
   .expression [.symbol "->", Atom.atomType, Atom.undefinedType,
     Atom.atomType, Atom.undefinedType]
 
-/-- Surface `let` atom in the upstream stdlib shape. -/
+/-- Source-syntax `let` atom in the upstream stdlib shape. -/
 private def letExpr (pt value body : Atom) : Atom :=
   .expression [.symbol "let", pt, value, body]
 
@@ -4556,7 +4556,7 @@ private theorem interpretArgs_unify_self_seeded
   exact isEmptyOrError_expr_false (thenBranch :: [elseBranch]) h_pattern_nerr
 
 /-- The official typed function-path shell for the verbatim upstream `unify`
-surface form on the self-evaluating Atom-typed fragment. -/
+source form on the self-evaluating Atom-typed fragment. -/
 private theorem interpretFunction_unify_self_seeded
     {space : Space} {d : GroundedDispatch}
     {target pattern thenBranch elseBranch : Atom} {seed : Bindings}
@@ -4856,7 +4856,7 @@ private theorem interpretArgs_let_self_seeded
   exact isEmptyOrError_expr_false [body] h_value_nerr
 
 /-- The official typed function-path shell for the verbatim upstream `let`
-surface form on the certified fragment.  This is the outer function wrapper
+source form on the certified fragment.  This is the outer function wrapper
 that the later `HES_Let` theorem will spend before taking the equation-match
 step into the `unify` rhs. -/
 theorem interpretFunction_let_self
@@ -4887,7 +4887,7 @@ theorem interpretFunction_let_self
     rfl rfl h_head rfl h_tail ?_
   exact isEmptyOrError_expr_false (value :: [body]) h_pt_nerr
 
-/-- Seeded typed function-path shell for the verbatim upstream `let` surface
+/-- Seeded typed function-path shell for the verbatim upstream `let` syntax
 form.  This is the incoming-bindings companion to `interpretFunction_let_self`
 that the source-progress side of `HES_Let` will need after the value
 evaluation has already produced a non-empty bindings thread. -/
@@ -5008,10 +5008,10 @@ private theorem interpretFunction_let_of_value_eval_bad
     (pt, Bindings.empty) valueResult
     h_pt (Or.inr rfl) h_tail_value h_value_bad
 
-/-- Generic equation-call wrapper for the verbatim upstream `let` surface
+/-- Generic equation-call wrapper for the verbatim upstream `let` syntax
 form.  Once the typed function-path shell is in place, any official evaluation
 of the matched rhs composes into an official `MettaCall` of the original
-surface `let`. -/
+source `let`. -/
 theorem mettaCall_absorbs_let_equation
     {space : Space} {d : GroundedDispatch}
     {pt value body rhs : Atom} {qb merged : Bindings}
@@ -5032,7 +5032,7 @@ theorem mettaCall_absorbs_let_equation
       · simp)
     h_query h_merge h_no_loop h_eval
 
-/-- Seeded equation-call wrapper for the verbatim upstream `let` surface
+/-- Seeded equation-call wrapper for the verbatim upstream `let` syntax
 form.  Once the typed function-path shell has already threaded some incoming
 bindings through the value evaluation, the same equation-match packaging
 still applies at that seed. -/
@@ -5106,7 +5106,7 @@ theorem evalAtom_absorbs_let_shell_of_interp
 
 /-- The outer official `let` shell, relative to the explicit typed-function
 path and equation-match hypotheses.  This theorem packages the exact remaining
-boundary around the already-proven `unify` core: once the surface `let`
+boundary around the already-proven `unify` core: once the source `let`
 function path and its equation-call are supplied, the full official
 `EvalAtom` judgment follows. -/
 theorem evalAtom_absorbs_let_shell
@@ -5175,7 +5175,7 @@ theorem evalAtom_absorbs_let_shell_error
 
 /-- Source-progress shell for `let` on the non-empty/non-error value-result
 fragment.  Once the bound value has an official evaluation result and the
-continuation `let` surface at that result is officially callable, the whole
+continuation `let` form at that result is officially callable, the whole
 original `let` expression officially evaluates to the same final result. -/
 theorem evalAtom_absorbs_let_value_eval_ok
     {space : Space} {d : GroundedDispatch}
@@ -5246,7 +5246,7 @@ theorem evalAtom_absorbs_let_value_eval_bad
 /-- Source-progress half of `HES_Let`, non-error fragment: if the bound value
 takes a certified fragment step, any official evaluation of the successor
 value can be lifted back to an official evaluation of the original `let`
-provided the continuation `let` surface at the evaluated value is officially
+provided the continuation `let` form at the evaluated value is officially
 callable. -/
 theorem evalAtom_absorbs_let_source_frag_ok
     {space : Space} {d : GroundedDispatch}
@@ -5351,7 +5351,7 @@ changed Empty/Error fragment.
 
 This ties `evalAtom_absorbs_let_source_frag_bad` back to the coarse
 `HESmallStep.let_source` rule.  If the lifted value evaluation already
-produces a changed Empty/Error result, the original surface `let` propagates
+produces a changed Empty/Error result, the original source `let` propagates
 that result immediately. -/
 theorem evalAtom_absorbs_let_source_frag_rule_bad
     {space : Space} {d : GroundedDispatch}
@@ -5390,7 +5390,7 @@ This theorem spends:
 - the seeded `unify` realization boundary, and
 - the body-side non-interference lemma for query-local fresh variables.
 
-It is the honest substitution-half certification theorem for surface `let`
+It is the honest substitution-half certification theorem for source `let`
 on the stated fragment: the outer query bindings may be non-empty, but they
 must not affect the user body's actual variables. -/
 theorem evalAtom_absorbs_let_subst_ground_shell
@@ -5542,7 +5542,7 @@ without pretending the source-progress half of `let` is already certified.
 Positive example:
 - a coarse `let_subst` step with a ground quiescent value and an irrelevant
   query-local binding layer yields the official evaluation of the whole
-  surface `let` to the substituted body result.
+  source `let` to the substituted body result.
 
 Negative example:
 - if the query-local bindings can affect variables actually occurring in the
@@ -5805,7 +5805,7 @@ theorem selectSwitchTemplateCoarse_notReducible_of_index_fail
 /-- Positive selector-to-coarse-step bridge: the indexed witness carried by
 `HESmallStep.switch_minimal_match` produces a coarse step whose result is
 exactly the primitive first-match selector result.  This keeps later
-`switch-minimal` packaging aligned with the primitive selector surface rather
+`switch-minimal` packaging aligned with the primitive selector interface rather
 than only the raw `mb.applyDefault template` witness. -/
 theorem step_switchMinimal_to_selector_of_index_match
     {space : Space} {d : GroundedDispatch} {fuel : Nat}
@@ -6109,7 +6109,7 @@ theorem switchMinimalResults_mem_of_index_match
 
 The matcher bridge and `unify` realization now give us the branch-local core
 of `switch-internal`. The next honest outer layer is the typed/equational
-surface shell shared by `switch-minimal` and `switch-internal`: both are
+source-syntax shell shared by `switch-minimal` and `switch-internal`: both are
 stdlib equations whose heads carry the same binary function type
 `(-> Atom Expression Atom)`. We expose that shell explicitly so the later
 recursive branch proof can spend real interface theorems rather than rebuild
@@ -6120,11 +6120,11 @@ the function/equation plumbing ad hoc. -/
 private def switchBinaryFunctionType : Atom :=
   .expression [.symbol "->", Atom.atomType, Atom.expressionType, Atom.atomType]
 
-/-- Surface `switch-minimal` atom in the upstream stdlib shape. -/
+/-- Source-syntax `switch-minimal` atom in the upstream stdlib shape. -/
 private def switchMinimalExpr (scrut : Atom) (branches : List Atom) : Atom :=
   .expression [.symbol "switch-minimal", scrut, .expression branches]
 
-/-- Surface `switch-internal` atom in the upstream stdlib shape. -/
+/-- Source-syntax `switch-internal` atom in the upstream stdlib shape. -/
 private def switchInternalExpr (scrut headBranch : Atom) (tail : List Atom) : Atom :=
   .expression [.symbol "switch-internal", scrut,
     .expression [headBranch, .expression tail]]
@@ -6150,7 +6150,7 @@ private def switchInternalBody
 
 /-- Alpha-renamed variant of the recursive else-branch used by
 `switch-internal`: the local chain binder may be any fresh variable name,
-not just the unsuffixed surface spelling.  This matches the real
+not just the unsuffixed source spelling.  This matches the real
 `queryEquations` route, which freshens all equation-local variables. -/
 private def switchInternalElseChainVar
     (retVar : String) (scrut : Atom) (tail : List Atom) : Atom :=
@@ -6260,7 +6260,7 @@ private theorem interpretArgs_switch_binary_self
   exact isEmptyOrError_expr_false [] (by simp)
 
 /-- Typed function-path shell for the verbatim upstream `switch-minimal`
-surface form on the fragment where the raw-cases expression is non-empty and
+source form on the fragment where the raw-cases expression is non-empty and
 not error-shaped. -/
 theorem interpretFunction_switchMinimal_self
     {space : Space} {d : GroundedDispatch}
@@ -6291,7 +6291,7 @@ theorem interpretFunction_switchMinimal_self
   exact isEmptyOrError_expr_false [.expression (headBranch :: tail)] h_scrut_nerr
 
 /-- Typed function-path shell for the verbatim upstream `switch-internal`
-surface form on the fragment where the deconsed head branch is itself not the
+source form on the fragment where the deconsed head branch is itself not the
 bare `Error` symbol.  In the intended use that head is a branch pair
 expression, so this side condition is immediate. -/
 theorem interpretFunction_switchInternal_self
@@ -6323,7 +6323,7 @@ theorem interpretFunction_switchInternal_self
   exact isEmptyOrError_expr_false [.expression [headBranch, .expression tail]] h_scrut_nerr
 
 /-- Direct `MettaCall` wrapper for the exact-shape upstream
-`switch-minimal` surface form.  After the evaluator-side refactor,
+`switch-minimal` source form.  After the evaluator-side refactor,
 `switch-minimal` no longer reaches the generic equation lane; its official
 observable behavior is the dedicated `switchMinimalResults` kernel. -/
 theorem mettaCall_absorbs_switchMinimal_direct
@@ -6339,7 +6339,7 @@ theorem mettaCall_absorbs_switchMinimal_direct
     h_result
 
 /-- Generic equation-call wrapper for the verbatim upstream `switch-internal`
-surface form. -/
+source form. -/
 theorem mettaCall_absorbs_switchInternal_equation
     {space : Space} {d : GroundedDispatch}
     {scrut headBranch : Atom} {tail : List Atom}
@@ -6363,7 +6363,7 @@ theorem mettaCall_absorbs_switchInternal_equation
 
 /-- Outer official shell for `switch-minimal`, relative to the explicit typed
 function-path and equation-call hypotheses.  This isolates the remaining
-recursive branch-selection content from the already-settled surface
+recursive branch-selection content from the already-settled source-syntax
 typed/equational plumbing. -/
 theorem evalAtom_absorbs_switchMinimal_shell
     {space : Space} {d : GroundedDispatch}
@@ -6397,7 +6397,7 @@ theorem evalAtom_absorbs_switchMinimal_shell
     · decide
 
 /-- Honest direct outer shell for exact-shape `switch-minimal`: once the
-typed function-path checks have admitted the surface form, any executable
+typed function-path checks have admitted the source form, any executable
 result already present in `switchMinimalResults` is an official `EvalAtom`
 result of the whole call.  This is the dedicated executable route that
 replaces the old equation-wrapper fiction. -/
@@ -6484,7 +6484,7 @@ theorem evalAtom_absorbs_switchMinimal_match_ground_rule
 /-- Outer official shell for `switch-internal`, relative to the explicit
 typed function-path and equation-call hypotheses.  This isolates the
 recursive head-hit/head-miss proof from the already-settled typed/equational
-surface layer. -/
+syntax layer. -/
 theorem evalAtom_absorbs_switchInternal_shell
     {space : Space} {d : GroundedDispatch}
     {scrut headBranch : Atom} {tail : List Atom} {final : ResultPair}
@@ -6521,7 +6521,7 @@ theorem evalAtom_absorbs_switchInternal_shell
 
 The `unify` realization is now explicit, but the recursive `switch-internal`
 helper also depends on three other minimal control operators in the live
-evaluator: `eval`, `chain`, and `function/return`.  We surface exactly that
+evaluator: `eval`, `chain`, and `function/return`.  We expose exactly that
 boundary here rather than silently smuggling those behaviors into the later
 branch-selection proof. -/
 
@@ -7067,7 +7067,7 @@ an Atom-typed equation body is returned *raw* at the shell boundary.
 This is not the final `switch-internal` certification theorem we eventually
 want for `switch-minimal`; it records the current evaluator behavior exactly.
 The recursive body-follow-through theorems above therefore need a more direct
-surface/control route than this typed equation shell, because the shell itself
+syntax/control route than this typed equation shell, because the shell itself
 stops at the applied body expression when the return type is `Atom`. -/
 theorem evalAtom_absorbs_switchInternal_raw_body_shell
     {space : Space} {d : GroundedDispatch}

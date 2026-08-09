@@ -12,7 +12,9 @@ only ordinary constructor applications in disjoint schema namespaces.
 namespace Mettapedia.GSLT.LanguageDef
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
+open Mettapedia.OSLF.MeTTaIL.Reflection
 open StructuralMorphism
+open ReflectionExtension
 open WellSorted
 open ContinuationRetypingPlan
 
@@ -585,9 +587,13 @@ def costWholeLanguage (source : CIGSLT) : LanguageDef :=
     name := "$cost:interaction:" ++
       source.theory.presentation.presentation.language.name
     equations := source.costStaticEquations
-    rewrites := [source.costWholeRedexRewrite]
-    reflectivePresentations := source.costStaticReflectivePresentations
-    reflectiveRules := source.costInteractionReflectiveRules }
+    rewrites := [source.costWholeRedexRewrite] }
+
+/-- The reflective interpretation generated for the Cost language.  It is an
+extension over the five-field core, never a field of that core. -/
+def costWholeReflectionProfile (source : CIGSLT) : ReflectionProfile :=
+  { presentations := source.costStaticReflectivePresentations
+    rules := source.costInteractionReflectiveRules }
 
 @[simp]
 theorem costWholeLanguage_terms (source : CIGSLT) :
@@ -606,13 +612,13 @@ theorem costWholeLanguage_equations (source : CIGSLT) :
     source.costWholeLanguage.equations = source.costStaticEquations := rfl
 
 @[simp]
-theorem costWholeLanguage_reflectivePresentations (source : CIGSLT) :
-    source.costWholeLanguage.reflectivePresentations =
+theorem costWholeReflectionProfile_presentations (source : CIGSLT) :
+    source.costWholeReflectionProfile.presentations =
       source.costStaticReflectivePresentations := rfl
 
 @[simp]
-theorem costWholeLanguage_reflectiveRules (source : CIGSLT) :
-    source.costWholeLanguage.reflectiveRules =
+theorem costWholeReflectionProfile_rules (source : CIGSLT) :
+    source.costWholeReflectionProfile.rules =
       source.costInteractionReflectiveRules := rfl
 
 private theorem generatedTerms_mem_costWhole (source : CIGSLT)
@@ -685,15 +691,15 @@ theorem costStaticReflectivePresentationNames_nodup (source : CIGSLT) :
   rw [costStaticReflectivePresentations, List.map_append, List.map_map,
     List.map_map, List.nodup_append]
   have sourceNodup :=
-    LanguageDef.reflectivePresentationNames_nodup_of_validate_eq_nil
-      source.theory.presentation.presentation.language
-      source.theory.presentation.presentation.valid
+    presentationNames_nodup_of_validate_eq_nil source.reflection.2
   refine ⟨?_, ?_, ?_⟩
   · simpa [Function.comp_def, costBaseReflectivePresentationDecl,
-      costBaseStaticSymbols, mapReflectivePresentation] using
+      costBaseStaticSymbols, costBaseStaticReflectiveSymbols,
+      mapReflectivePresentation] using
       sourceNodup.map costBaseReflectiveName_injective
   · simpa [Function.comp_def, costWrappedReflectivePresentationDecl,
-      costWrappedStaticSymbols, mapReflectivePresentation] using
+      costWrappedStaticSymbols, costWrappedStaticReflectiveSymbols,
+      mapReflectivePresentation] using
       sourceNodup.map costWrappedReflectiveName_injective
   · intro baseName baseMembership wrappedName wrappedMembership equality
     rcases List.mem_map.mp baseMembership with
@@ -728,11 +734,10 @@ injective base tag preserves duplicate freedom. -/
 theorem costInteractionReflectiveRuleNames_nodup (source : CIGSLT) :
     (source.costInteractionReflectiveRules.map (·.name)).Nodup := by
   rw [costInteractionReflectiveRules, List.map_map]
-  have sourceNodup := LanguageDef.reflectiveRuleNames_nodup_of_validate_eq_nil
-    source.theory.presentation.presentation.language
-    source.theory.presentation.presentation.valid
+  have sourceNodup :=
+    ruleNames_nodup_of_validate_eq_nil source.reflection.2
   have filteredNodup :
-      ((source.theory.presentation.presentation.language.reflectiveRules.filter
+      ((source.reflection.1.rules.filter
           fun declaration => declaration.rewriteRule ==
             source.theory.presentation.interactionRewrite.1.name).map
         (·.name)).Nodup := by
@@ -913,20 +918,20 @@ substituting in the wrapped presentation. -/
 theorem costInteractionReflectiveRule_validate (source : CIGSLT)
     (declaration : ReflectiveRuleDecl)
     (membership : declaration ∈ source.costInteractionReflectiveRules) :
-    source.costWholeLanguage.validateReflectiveRule declaration = [] := by
+    source.costWholeLanguage.validateReflectiveRule
+      source.costStaticReflectivePresentations declaration = [] := by
   rw [costInteractionReflectiveRules] at membership
   rcases List.mem_map.mp membership with
     ⟨sourceDeclaration, selectedMembership, rfl⟩
   have sourceMembership := (List.mem_filter.mp selectedMembership).1
-  have sourceValid := LanguageDef.reflectiveRule_validate_of_validate_eq_nil
-    source.theory.presentation.presentation.language
-    source.theory.presentation.presentation.valid sourceDeclaration
-    sourceMembership
+  have sourceValid := rule_validate_eq_nil_of_validate_eq_nil
+    source.reflection.2 sourceMembership
   rcases LanguageDef.reflectiveRuleWitness_of_validate_eq_nil
-      source.theory.presentation.presentation.language sourceDeclaration
+      source.theory.presentation.presentation.language
+      source.reflection.1.presentations sourceDeclaration
       sourceValid with ⟨witness⟩
   have matchingFiltered : witness.matchingPresentation ∈
-      source.theory.presentation.presentation.language.reflectivePresentations.filter
+      source.reflection.1.presentations.filter
         (fun candidate =>
           candidate.name == sourceDeclaration.matchingPresentation) := by
     rw [witness.matchingUnique]
@@ -936,7 +941,7 @@ theorem costInteractionReflectiveRule_validate (source : CIGSLT)
       sourceDeclaration.matchingPresentation :=
     beq_iff_eq.mp (List.mem_filter.mp matchingFiltered).2
   have substitutionFiltered : witness.substitutionPresentation ∈
-      source.theory.presentation.presentation.language.reflectivePresentations.filter
+      source.reflection.1.presentations.filter
         (fun candidate =>
           candidate.name == sourceDeclaration.substitutionPresentation) := by
     rw [witness.substitutionUnique]
@@ -962,37 +967,39 @@ theorem costInteractionReflectiveRule_validate (source : CIGSLT)
     exact List.mem_map.mpr ⟨witness.substitutionPresentation,
       substitutionMembership, rfl⟩
   have presentationNamesNodup :
-      (source.costWholeLanguage.reflectivePresentations.map (·.name)).Nodup := by
-    simpa only [costWholeLanguage_reflectivePresentations] using
+      (source.costWholeReflectionProfile.presentations.map (·.name)).Nodup := by
+    simpa only [costWholeReflectionProfile_presentations] using
       source.costStaticReflectivePresentationNames_nodup
   have matchingUnique :
-      source.costWholeLanguage.reflectivePresentations.filter
+      source.costWholeReflectionProfile.presentations.filter
           (fun candidate => candidate.name == costBaseReflectiveName
             sourceDeclaration.matchingPresentation) =
         [basePresentation] := by
     have unique := LanguageDef.filter_by_string_key_eq_singleton
       (fun candidate : ReflectivePresentationDecl => candidate.name)
-      source.costWholeLanguage.reflectivePresentations basePresentation
+      source.costWholeReflectionProfile.presentations basePresentation
       presentationNamesNodup
-      (by simpa only [costWholeLanguage_reflectivePresentations] using
+      (by simpa only [costWholeReflectionProfile_presentations] using
         baseMembership)
     simpa [basePresentation, costInteractionReflectiveRuleDecl,
       costBaseReflectivePresentationDecl, mapReflectivePresentation,
-      costBaseStaticSymbols, matchingName] using unique
+      costBaseStaticSymbols, costBaseStaticReflectiveSymbols,
+      matchingName] using unique
   have substitutionUnique :
-      source.costWholeLanguage.reflectivePresentations.filter
+      source.costWholeReflectionProfile.presentations.filter
           (fun candidate => candidate.name == costWrappedReflectiveName
             sourceDeclaration.substitutionPresentation) =
         [wrappedPresentation] := by
     have unique := LanguageDef.filter_by_string_key_eq_singleton
       (fun candidate : ReflectivePresentationDecl => candidate.name)
-      source.costWholeLanguage.reflectivePresentations wrappedPresentation
+      source.costWholeReflectionProfile.presentations wrappedPresentation
       presentationNamesNodup
-      (by simpa only [costWholeLanguage_reflectivePresentations] using
+      (by simpa only [costWholeReflectionProfile_presentations] using
         wrappedMembership)
     simpa [wrappedPresentation, costInteractionReflectiveRuleDecl,
       costWrappedReflectivePresentationDecl, mapReflectivePresentation,
-      costWrappedStaticSymbols, substitutionName] using unique
+      costWrappedStaticSymbols, costWrappedStaticReflectiveSymbols,
+      substitutionName] using unique
   have rewriteUnique :
       source.costWholeLanguage.rewrites.filter
           (fun candidate => candidate.name == costWholeRedexRewriteName) =
@@ -1007,6 +1014,7 @@ theorem costInteractionReflectiveRule_validate (source : CIGSLT)
        matchingUnique := matchingUnique
        substitutionUnique := substitutionUnique } :
       LanguageDef.ReflectiveRuleWitness source.costWholeLanguage
+        source.costStaticReflectivePresentations
         (costInteractionReflectiveRuleDecl sourceDeclaration)))
 
 /-- The final collision-free base equation image is sorted in the complete
@@ -1780,7 +1788,7 @@ theorem costBaseEquationDecl_validate (source : CIGSLT)
       source.costCoreLanguage source.costCoreLanguage_validate
   unfold LanguageDef.validateEquation
   simp only [List.append_eq_nil_iff]
-  refine ⟨⟨⟨⟨⟨?_, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩
+  refine ⟨⟨⟨⟨?_, ?_⟩, ?_⟩, ?_⟩, ?_⟩
   · apply List.flatMap_eq_nil_iff.mpr
     intro entry entryMembership
     exact LanguageDef.validateTypeExpr_eq_nil_of_baseNames
@@ -1788,8 +1796,6 @@ theorem costBaseEquationDecl_validate (source : CIGSLT)
       s!"equation {(costBaseEquationDecl equation).name}" entry.2
       (source.costBaseEquationDecl_typeContext_baseName_mem equation
         equationMembership entry entryMembership)
-  · simp [LanguageDef.validatePremises, costBaseEquationDecl_premises,
-      premisesEmpty]
   · exact leftTyped.validatePatternConstructors_eq_nil labelsNodup
       (s!"equation {(costBaseEquationDecl equation).name}" ++ " lhs")
   · exact rightTyped.validatePatternConstructors_eq_nil labelsNodup
@@ -1821,7 +1827,7 @@ theorem costWrappedEquationDecl_validate (source : CIGSLT)
       source.costCoreLanguage source.costCoreLanguage_validate
   unfold LanguageDef.validateEquation
   simp only [List.append_eq_nil_iff]
-  refine ⟨⟨⟨⟨⟨?_, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩
+  refine ⟨⟨⟨⟨?_, ?_⟩, ?_⟩, ?_⟩, ?_⟩
   · apply List.flatMap_eq_nil_iff.mpr
     intro entry entryMembership
     exact LanguageDef.validateTypeExpr_eq_nil_of_baseNames
@@ -1830,8 +1836,6 @@ theorem costWrappedEquationDecl_validate (source : CIGSLT)
       entry.2
       (source.costWrappedEquationDecl_typeContext_baseName_mem equation
         equationMembership entry entryMembership)
-  · simp [LanguageDef.validatePremises, costWrappedEquationDecl_premises,
-      premisesEmpty]
   · exact leftTyped.validatePatternConstructors_eq_nil labelsNodup
       (s!"equation {(costWrappedEquationDecl source.theory equation).name}" ++
         " lhs")
@@ -1908,14 +1912,13 @@ theorem costWholeRedexRewrite_validate (source : CIGSLT) :
       source.costCoreLanguage source.costCoreLanguage_validate
   unfold LanguageDef.validateRewrite
   simp only [costWholeRedexRewrite, List.append_eq_nil_iff]
-  refine ⟨⟨⟨⟨⟨?_, ?_⟩, ?_⟩, ?_⟩, ?_⟩, ?_⟩
+  refine ⟨⟨⟨⟨?_, ?_⟩, ?_⟩, ?_⟩, ?_⟩
   · apply List.flatMap_eq_nil_iff.mpr
     intro entry membership
     exact LanguageDef.validateTypeExpr_eq_nil_of_baseNames
       source.costWholeLanguage.typeNames
       s!"rewrite {source.costWholeRedexRewrite.name}" entry.2
       (source.costWholeRedexTypeContext_baseName_mem entry membership)
-  · rfl
   · simpa [costWholeLanguage_terms, costWholeRedexRewriteName] using
       source.costWholeRedexSource_hasType.validatePatternConstructors_eq_nil
         labelsNodup
@@ -1932,9 +1935,7 @@ presentation: its only reduction authority is the generated whole-redex
 rewrite over the already validated Cost signature. -/
 theorem costWholeLanguage_validate (source : CIGSLT) :
     source.costWholeLanguage.validate = [] := by
-  apply LanguageDef.validate_eq_nil_of_constructorEquationsRewritesAndReflective
-  · rfl
-  · rfl
+  apply LanguageDef.validate_eq_nil_of_constructorEquationsAndRewrites
   · simpa only [costWholeLanguage_typeNames] using
       LanguageDef.typeNames_nodup_of_validate_eq_nil
         source.costCoreLanguage source.costCoreLanguage_validate
@@ -1944,8 +1945,6 @@ theorem costWholeLanguage_validate (source : CIGSLT) :
   · exact source.costStaticEquationNames_nodup
   · simp only [costWholeLanguage_rewrites, List.map_singleton,
       List.nodup_singleton]
-  · exact source.costStaticReflectivePresentationNames_nodup
-  · exact source.costInteractionReflectiveRuleNames_nodup
   · intro term membership
     exact LanguageDef.termCategory_mem_of_validate_eq_nil
       source.costCoreLanguage source.costCoreLanguage_validate term
@@ -1966,13 +1965,33 @@ theorem costWholeLanguage_validate (source : CIGSLT) :
     simp only [costWholeLanguage_rewrites, List.mem_singleton] at membership
     subst rewrite
     exact source.costWholeRedexRewrite_validate
-  · intro declaration membership
+
+/-- The generated reflective interpretation validates independently against
+the generated five-field Cost language. -/
+theorem costWholeReflectionProfile_validate (source : CIGSLT) :
+    Mettapedia.OSLF.MeTTaIL.Reflection.validate source.costWholeLanguage
+      source.costWholeReflectionProfile = [] := by
+  unfold Mettapedia.OSLF.MeTTaIL.Reflection.validate
+  simp only [costWholeReflectionProfile,
+    source.costStaticReflectivePresentationNames_nodup,
+    source.costInteractionReflectiveRuleNames_nodup, if_true,
+    List.nil_append, List.append_eq_nil_iff]
+  constructor
+  · apply List.flatMap_eq_nil_iff.mpr
+    intro declaration membership
     exact source.costStaticReflectivePresentation_validate declaration
-      (by simpa only [costWholeLanguage_reflectivePresentations] using
+      (by simpa only [costWholeReflectionProfile_presentations] using
         membership)
-  · intro declaration membership
+  · apply List.flatMap_eq_nil_iff.mpr
+    intro declaration membership
     exact source.costInteractionReflectiveRule_validate declaration
-      (by simpa only [costWholeLanguage_reflectiveRules] using membership)
+      (by simpa only [costWholeReflectionProfile_rules] using membership)
+
+/-- The admitted reflection fibre over the generated Cost core. -/
+def costWholeAdmittedReflection (source : CIGSLT) :
+    ReflectionExtension.AdmittedProfile source.costWholeLanguage :=
+  ⟨source.costWholeReflectionProfile,
+    source.costWholeReflectionProfile_validate⟩
 
 /-- The validated structural output of the generic Cost interaction layer. -/
 def costWholePresentation (source : CIGSLT) : ValidatedLanguageDef where
@@ -2023,26 +2042,6 @@ def costWholeStructural {source target : CIGSLT}
         rw [morphism.map_costWholeRedexRewrite]
         exact List.Mem.head _
     | tail _ impossible => cases impossible
-  mapsReflectivePresentations declaration membership := by
-    change List.Mem declaration
-      source.costStaticReflectivePresentations at membership
-    change List.Mem
-      (mapReflectivePresentation
-        (costPresentationSymbols
-          morphism.underlying.structural.structural.symbols) declaration)
-      target.costStaticReflectivePresentations
-    exact morphism.mapsCostStaticReflectivePresentations
-      declaration membership
-  mapsReflectiveRules declaration membership := by
-    change List.Mem declaration
-      source.costInteractionReflectiveRules at membership
-    change List.Mem
-      (mapReflectiveRule
-        (costPresentationSymbols
-          morphism.underlying.structural.structural.symbols) declaration)
-      target.costInteractionReflectiveRules
-    exact morphism.mapsCostInteractionReflectiveRules
-      declaration membership
 
 end Morphism
 

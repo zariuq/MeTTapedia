@@ -5,7 +5,7 @@ import MeTTailCore.Crypto.SHA256
 /-!
 # MeTTa Search Policy Contract
 
-Shared contract surface for search-policy metadata in the MeTTa family.
+Shared contract for search-policy metadata in the MeTTa family.
 
 This artifact is deliberately separate from:
 - runtime semantics (`RuntimeSpec`)
@@ -52,7 +52,7 @@ inductive RankingSignal where
   | modelScore
 deriving Repr, DecidableEq, BEq
 
-/-- Result-order control exposed to surface consumers. -/
+/-- Result-order control exposed to policy consumers. -/
 inductive EmissionOrder where
   | native
   | reverse
@@ -60,8 +60,8 @@ inductive EmissionOrder where
   | shortLex
 deriving Repr, DecidableEq, BEq
 
-/-- External interchange surfaces for search/oracle collaboration. -/
-inductive InterchangeSurface where
+/-- External interchange formats for search/oracle collaboration. -/
+inductive InterchangeFormat where
   | none
   | tptpFOF
   | tptpTFF
@@ -85,7 +85,7 @@ structure SearchPolicyEntry where
   searchKind : SearchKernelKind
   frontier : FrontierPolicy
   rankingSignals : List RankingSignal := []
-  interchange : InterchangeSurface := .none
+  interchange : InterchangeFormat := .none
   resultKind : SearchResultKind
   defaultOrder : EmissionOrder := .native
   supportsReverseOrder : Bool := false
@@ -168,7 +168,7 @@ private def renderRankingSignal : RankingSignal → String
   | .premiseScore => "premise_score"
   | .modelScore => "model_score"
 
-private def renderInterchangeSurface : InterchangeSurface → String
+private def renderInterchangeFormat : InterchangeFormat → String
   | .none => "none"
   | .tptpFOF => "tptp_fof"
   | .tptpTFF => "tptp_tff"
@@ -199,7 +199,7 @@ private def renderEntry (e : SearchPolicyEntry) : String :=
     ++ "\"frontier\":" ++ jsonStr (renderFrontierPolicy e.frontier) ++ ","
     ++ "\"ranking_signals\":"
         ++ jsonStrList (e.rankingSignals.map renderRankingSignal) ++ ","
-    ++ "\"interchange\":" ++ jsonStr (renderInterchangeSurface e.interchange) ++ ","
+    ++ "\"interchange\":" ++ jsonStr (renderInterchangeFormat e.interchange) ++ ","
     ++ "\"result_kind\":" ++ jsonStr (renderSearchResultKind e.resultKind) ++ ","
     ++ "\"default_order\":" ++ jsonStr (renderEmissionOrder e.defaultOrder) ++ ","
     ++ "\"supports_reverse_order\":" ++ jsonBool e.supportsReverseOrder ++ ","

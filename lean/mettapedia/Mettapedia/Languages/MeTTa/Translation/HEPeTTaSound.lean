@@ -410,7 +410,7 @@ base case `let tailVar actual (__tr-raw-apply1 tailVar applyArg)`.
 
 Negative example: when `prefixElems` is nonempty, the generated `case` branch
 used to leave the bridge. The current shape instead binds the deconstruction
-result to a fresh variable and peels it through symbol-headed helper surfaces
+result to a fresh variable and peels it through symbol-headed helper interfaces
 (`first-from-pair`, `second-from-pair`). -/
 def appendSuffixHeadBinder : Atom → Atom
   | .var v => .var (v ++ "_head")
@@ -636,7 +636,7 @@ theorem buildAppendSuffixHeadExtension_cons_pureTranslatable
 
 This mirrors the narrow operational translator extension used for structural
 function-call inversion under PeTTa `let`-patterns once the body has already been
-rawified into explicit HE helper surfaces.
+rawified into explicit HE helper interfaces.
 -/
 
 /-- Proof-oriented builder for the append-suffix `let`-pattern extension. -/

@@ -117,7 +117,7 @@ theorem pathmap_query_refinement_not_exec_authority
     {S : Type*} [SpaceQuerySupport S] {heSpace : HESpace}
     (_ref : SharedQueryRefinement S SpaceEngine.pathmap heSpace) :
     EngineCapability.execStep ∉ SpaceEngine.pathmap.capabilities := by
-  exact pathmap_query_surface_only
+  exact pathmap_query_only
 
 theorem pathmap_query_refinement_not_runtime_rule_lane
     {S : Type*} [SpaceQuerySupport S] {heSpace : HESpace}
@@ -136,13 +136,13 @@ theorem mork_query_refinement_carries_exec_authority
 theorem act_attachment_stays_query_only :
     EngineCapability.equationQuery ∈ SpaceEngine.pathmap.capabilities ∧
     EngineCapability.execStep ∉ SpaceEngine.pathmap.capabilities ∧
-    ArtifactSurface.act.grantsExec = false := by
-  exact ⟨by decide, pathmap_query_surface_only, act_artifact_not_exec_authority⟩
+    ArtifactFormat.act.grantsExec = false := by
+  exact ⟨by decide, pathmap_query_only, act_artifact_not_exec_authority⟩
 
 /-- HE runtime queries live on the shared query seam and therefore may be
 served by native, PathMap, or MORK backends. -/
 theorem heRuntimeQuery_uses_shared_query_seam (pattern : Pattern) :
-    SurfaceNode.abstractMachineLane (SurfaceNode.heRuntimeQuery pattern) =
+    SyntaxNode.abstractMachineLane (SyntaxNode.heRuntimeQuery pattern) =
       AbstractMachineLane.runtimeQueryLane ∧
     AbstractMachineLane.supportedByEngine
       AbstractMachineLane.runtimeQueryLane SpaceEngine.native = true ∧
@@ -157,7 +157,7 @@ theorem heRuntimeQuery_uses_shared_query_seam (pattern : Pattern) :
 
 /-- PeTTa runtime queries share the same query seam as HE runtime queries. -/
 theorem pettaRuntimeQuery_uses_shared_query_seam (pattern : Pattern) :
-    SurfaceNode.abstractMachineLane (SurfaceNode.pettaRuntimeQuery pattern) =
+    SyntaxNode.abstractMachineLane (SyntaxNode.pettaRuntimeQuery pattern) =
       AbstractMachineLane.runtimeQueryLane ∧
     AbstractMachineLane.supportedByEngine
       AbstractMachineLane.runtimeQueryLane SpaceEngine.native = true ∧
@@ -173,7 +173,7 @@ theorem pettaRuntimeQuery_uses_shared_query_seam (pattern : Pattern) :
 /-- HE runtime rules are not merely shared-query operations: they require the
 MORK execution lane. -/
 theorem heRuntimeRule_requires_mork_exec (pattern : Pattern) :
-    SurfaceNode.abstractMachineLane (SurfaceNode.heRuntimeRule pattern) =
+    SyntaxNode.abstractMachineLane (SyntaxNode.heRuntimeRule pattern) =
       AbstractMachineLane.runtimeRuleLane ∧
     AbstractMachineLane.supportedByEngine
       AbstractMachineLane.runtimeRuleLane SpaceEngine.pathmap = false ∧
@@ -185,7 +185,7 @@ theorem heRuntimeRule_requires_mork_exec (pattern : Pattern) :
 
 /-- PeTTa runtime rules share the same execution requirement. -/
 theorem pettaRuntimeRule_requires_mork_exec (pattern : Pattern) :
-    SurfaceNode.abstractMachineLane (SurfaceNode.pettaRuntimeRule pattern) =
+    SyntaxNode.abstractMachineLane (SyntaxNode.pettaRuntimeRule pattern) =
       AbstractMachineLane.runtimeRuleLane ∧
     AbstractMachineLane.supportedByEngine
       AbstractMachineLane.runtimeRuleLane SpaceEngine.pathmap = false ∧

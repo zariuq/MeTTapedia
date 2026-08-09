@@ -1117,7 +1117,7 @@ def commonSemanticPatternKeyAt
     (source : CIGSLT) (cospan : CostStaticAtomKeyCospan leftKey rightKey)
     (availableDepth : Nat) (pattern : Pattern) : Nat :=
   Mettapedia.OSLF.MeTTaIL.PatternCode.patternCode
-    (ReflectiveContextSupport.substituteAt source.costWholeLanguage
+    (ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
       cospan.commonSupport cospan.commonAssignment availableDepth pattern)
 
 /-- Equality of common semantic keys is exactly equality after restoration at
@@ -1131,9 +1131,9 @@ theorem commonSemanticPatternKeyAt_eq_iff
     (availableDepth : Nat) (left right : Pattern) :
     cospan.commonSemanticPatternKeyAt source availableDepth left =
         cospan.commonSemanticPatternKeyAt source availableDepth right ↔
-      ReflectiveContextSupport.substituteAt source.costWholeLanguage
+      ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
           cospan.commonSupport cospan.commonAssignment availableDepth left =
-        ReflectiveContextSupport.substituteAt source.costWholeLanguage
+        ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
           cospan.commonSupport cospan.commonAssignment availableDepth right := by
   constructor
   · intro equal
@@ -1156,24 +1156,24 @@ theorem map_sortPatternsBy_commonSemanticPatternKeyAt
     (Mettapedia.OSLF.MeTTaIL.PatternCode.sortPatternsBy
         (cospan.commonSemanticPatternKeyAt source availableDepth)
         patterns).map
-          (ReflectiveContextSupport.substituteAt source.costWholeLanguage
+          (ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
             cospan.commonSupport cospan.commonAssignment availableDepth) =
       Mettapedia.OSLF.MeTTaIL.PatternCode.sortPatterns
         (patterns.map
-          (ReflectiveContextSupport.substituteAt source.costWholeLanguage
+          (ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
             cospan.commonSupport cospan.commonAssignment
             availableDepth)) := by
   change
     (Mettapedia.OSLF.MeTTaIL.PatternCode.sortPatternsBy
         (fun pattern => Mettapedia.OSLF.MeTTaIL.PatternCode.patternCode
-          (ReflectiveContextSupport.substituteAt source.costWholeLanguage
+          (ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
             cospan.commonSupport cospan.commonAssignment availableDepth
             pattern)) patterns).map
-          (ReflectiveContextSupport.substituteAt source.costWholeLanguage
+          (ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
             cospan.commonSupport cospan.commonAssignment availableDepth) = _
   simpa using
     (CostHereditaryCanonical.map_sortPatternsBy
-      (f := ReflectiveContextSupport.substituteAt source.costWholeLanguage
+      (f := ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
         cospan.commonSupport cospan.commonAssignment availableDepth)
       Mettapedia.OSLF.MeTTaIL.PatternCode.patternCode patterns)
 
@@ -1190,12 +1190,12 @@ theorem map_normalizeParallelElementsBy_commonSemanticPatternKeyAt
     (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.normalizeParallelElementsBy
         (cospan.commonSemanticPatternKeyAt source availableDepth)
         declaration patterns).map
-          (ReflectiveContextSupport.substituteAt source.costWholeLanguage
+          (ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
             cospan.commonSupport cospan.commonAssignment availableDepth) =
       Mettapedia.OSLF.MeTTaIL.PatternCode.sortPatterns
         ((Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.parallelContents
           declaration patterns).map
-            (ReflectiveContextSupport.substituteAt source.costWholeLanguage
+            (ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
               cospan.commonSupport cospan.commonAssignment
               availableDepth)) := by
   unfold Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.normalizeParallelElementsBy
@@ -1217,21 +1217,21 @@ theorem map_normalizeParallelElementsBy_commonSemanticPatternKeyAt_eq_of_perm
     (permutation : List.Perm
       ((Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.parallelContents
         declaration leftPatterns).map
-          (ReflectiveContextSupport.substituteAt source.costWholeLanguage
+          (ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
             cospan.commonSupport cospan.commonAssignment availableDepth))
       ((Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.parallelContents
         declaration rightPatterns).map
-          (ReflectiveContextSupport.substituteAt source.costWholeLanguage
+          (ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
             cospan.commonSupport cospan.commonAssignment availableDepth))) :
     (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.normalizeParallelElementsBy
         (cospan.commonSemanticPatternKeyAt source availableDepth)
         declaration leftPatterns).map
-          (ReflectiveContextSupport.substituteAt source.costWholeLanguage
+          (ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
             cospan.commonSupport cospan.commonAssignment availableDepth) =
       (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.normalizeParallelElementsBy
         (cospan.commonSemanticPatternKeyAt source availableDepth)
         declaration rightPatterns).map
-          (ReflectiveContextSupport.substituteAt source.costWholeLanguage
+          (ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
             cospan.commonSupport cospan.commonAssignment availableDepth) := by
   rw [cospan.map_normalizeParallelElementsBy_commonSemanticPatternKeyAt source,
     cospan.map_normalizeParallelElementsBy_commonSemanticPatternKeyAt source]
@@ -1247,13 +1247,13 @@ theorem substituteAt_collapseParallel
     (source : CIGSLT) (cospan : CostStaticAtomKeyCospan leftKey rightKey)
     (availableDepth : Nat) (declaration : ReflectivePresentationDecl) :
     forall patterns : List Pattern,
-    ReflectiveContextSupport.substituteAt source.costWholeLanguage
+    ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
         cospan.commonSupport cospan.commonAssignment availableDepth
         (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.collapseParallel
           declaration patterns) =
       Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.collapseParallel declaration
         (patterns.map
-          (ReflectiveContextSupport.substituteAt source.costWholeLanguage
+          (ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
             cospan.commonSupport cospan.commonAssignment availableDepth))
   | [] => by
       simp [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.collapseParallel,
@@ -1275,7 +1275,7 @@ theorem substituteAt_collapseParallel_normalizeParallelElementsBy_commonSemantic
     (source : CIGSLT) (cospan : CostStaticAtomKeyCospan leftKey rightKey)
     (availableDepth : Nat) (declaration : ReflectivePresentationDecl)
     (patterns : List Pattern) :
-    ReflectiveContextSupport.substituteAt source.costWholeLanguage
+    ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
         cospan.commonSupport cospan.commonAssignment availableDepth
         (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.collapseParallel
           declaration
@@ -1286,7 +1286,7 @@ theorem substituteAt_collapseParallel_normalizeParallelElementsBy_commonSemantic
         (Mettapedia.OSLF.MeTTaIL.PatternCode.sortPatterns
           ((Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.parallelContents
             declaration patterns).map
-              (ReflectiveContextSupport.substituteAt source.costWholeLanguage
+              (ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
                 cospan.commonSupport cospan.commonAssignment
                 availableDepth))) := by
   rw [cospan.substituteAt_collapseParallel source availableDepth declaration]
@@ -1305,20 +1305,20 @@ theorem substituteAt_collapseParallel_normalizeParallelElementsBy_commonSemantic
     (permutation : List.Perm
       ((Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.parallelContents
         declaration leftPatterns).map
-          (ReflectiveContextSupport.substituteAt source.costWholeLanguage
+          (ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
             cospan.commonSupport cospan.commonAssignment availableDepth))
       ((Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.parallelContents
         declaration rightPatterns).map
-          (ReflectiveContextSupport.substituteAt source.costWholeLanguage
+          (ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
             cospan.commonSupport cospan.commonAssignment availableDepth))) :
-    ReflectiveContextSupport.substituteAt source.costWholeLanguage
+    ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
         cospan.commonSupport cospan.commonAssignment availableDepth
         (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.collapseParallel
           declaration
           (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.normalizeParallelElementsBy
             (cospan.commonSemanticPatternKeyAt source availableDepth)
             declaration leftPatterns)) =
-      ReflectiveContextSupport.substituteAt source.costWholeLanguage
+      ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
         cospan.commonSupport cospan.commonAssignment availableDepth
         (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.collapseParallel
           declaration
@@ -1353,22 +1353,22 @@ theorem substituteAt_canonicalizeByAt_parallel_eq_of_perm
         (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeListByAt
           (cospan.commonSemanticPatternKeyAt source) declaration
           availableDepth leftPatterns)).map
-            (ReflectiveContextSupport.substituteAt source.costWholeLanguage
+            (ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
               cospan.commonSupport cospan.commonAssignment availableDepth))
       ((Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.parallelContents
         declaration
         (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeListByAt
           (cospan.commonSemanticPatternKeyAt source) declaration
           availableDepth rightPatterns)).map
-            (ReflectiveContextSupport.substituteAt source.costWholeLanguage
+            (ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
               cospan.commonSupport cospan.commonAssignment availableDepth))) :
-    ReflectiveContextSupport.substituteAt source.costWholeLanguage
+    ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
         cospan.commonSupport cospan.commonAssignment availableDepth
         (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeByAt
           (cospan.commonSemanticPatternKeyAt source) declaration
           availableDepth
           (.collection declaration.parallelCollection leftPatterns none)) =
-      ReflectiveContextSupport.substituteAt source.costWholeLanguage
+      ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
         cospan.commonSupport cospan.commonAssignment availableDepth
         (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeByAt
           (cospan.commonSemanticPatternKeyAt source) declaration
@@ -1534,19 +1534,114 @@ theorem reifyWith_sourceReflectiveSupportSafeAt
       source.theory.presentation.presentation.language
       environment.sourceAtomFreeContext bound pattern type}
     {available : List TypeExpr} {binderImage : TypeExpr -> TypeExpr}
-    (safe : typed.ReflectiveSupportSafeAt environment.sourceAtomSupport
-      available binderImage) :
+    (safe : typed.ReflectiveSupportSafeAt source.reflection.1
+      environment.sourceAtomSupport available binderImage) :
     exists retyped : WellSorted.HasType
         source.theory.presentation.presentation.language
         cospan.commonSourceFreeContext bound
         (cospan.reifyWith environment.lookupAtom? leg pattern) type,
-      retyped.ReflectiveSupportSafeAt cospan.commonSupport available
-        binderImage := by
+      retyped.ReflectiveSupportSafeAt source.reflection.1
+        cospan.commonSupport available binderImage := by
   simpa only [sourceReificationRenaming,
     environment.renameFVars_sourceReificationName_eq_reifyWith
       cospan leg pattern] using
     safe.renameFVars
       (environment.sourceReificationRenaming cospan leg commutes)
+
+/-- The same endpoint-to-common name action preserves generated target
+typing.  This is distinct from `sourceReificationRenaming`: atom keys retain
+both authored source types and generated target types, and the hereditary
+frame being compared lives in the latter fibre. -/
+def targetReificationRenaming
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    {table : TypedCostRegionBoundaryTable source color targetFree occurrences}
+    {values : TypedCostRegionBoundaryTable.Values source color targetFree table}
+    {root : Pattern}
+    {inventory : CostStaticParameterInventory source color targetFree table
+      values root}
+    (environment : CostStaticAtomEnvironment source color targetFree inventory)
+    {leftCount rightCount : Nat}
+    {leftKey : Fin leftCount → CostStaticAtomKey}
+    {rightKey : Fin rightCount → CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey)
+    (leg : Fin environment.atomCount → Fin cospan.commonKeys.length)
+    (commutes : ∀ slot,
+      cospan.commonKeys.get (leg slot) = (environment.atomValue slot).key) :
+    ReflectiveFVarRenaming environment.atomFreeContext
+      cospan.commonTargetFreeContext environment.restorationSupport
+      cospan.commonSupport where
+  name := environment.sourceReificationName cospan leg
+  mapsLookup := by
+    intro name type lookup
+    cases selected : environment.lookupAtom? name with
+    | none =>
+        change (environment.lookupAtom? name).map
+          (fun slot => (environment.atomValue slot).key.targetType) =
+            some type at lookup
+        simp [selected] at lookup
+    | some slot =>
+        change (environment.lookupAtom? name).map
+          (fun slot => (environment.atomValue slot).key.targetType) =
+            some type at lookup
+        rw [selected] at lookup
+        have targetTypeEq : (environment.atomValue slot).key.targetType =
+            type := Option.some.inj lookup
+        simp only [sourceReificationName, selected,
+          cospan.commonTargetFreeContext_commonAtomName]
+        rw [congrArg CostStaticAtomKey.targetType (commutes slot),
+          targetTypeEq]
+  mapsSupport := by
+    intro name type lookup
+    cases selected : environment.lookupAtom? name with
+    | none =>
+        change (environment.lookupAtom? name).map
+          (fun slot => (environment.atomValue slot).key.targetType) =
+            some type at lookup
+        simp [selected] at lookup
+    | some slot =>
+        simp only [sourceReificationName, selected,
+          cospan.commonSupport_commonAtomName]
+        rw [congrArg CostStaticAtomKey.targetSupport (commutes slot)]
+        simp [CostStaticAtomEnvironment.restorationSupport, selected]
+
+/-- Common-cospan reification preserves generated target typing and its exact
+reflective support.  This supplies typed common-namespace endpoints for the
+recursive restoration-apex construction; raw syntax is never re-parsed. -/
+theorem reifyWith_targetReflectiveSupportSafeAt
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    {table : TypedCostRegionBoundaryTable source color targetFree occurrences}
+    {values : TypedCostRegionBoundaryTable.Values source color targetFree table}
+    {root : Pattern}
+    {inventory : CostStaticParameterInventory source color targetFree table
+      values root}
+    (environment : CostStaticAtomEnvironment source color targetFree inventory)
+    {leftCount rightCount : Nat}
+    {leftKey : Fin leftCount → CostStaticAtomKey}
+    {rightKey : Fin rightCount → CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey)
+    (leg : Fin environment.atomCount → Fin cospan.commonKeys.length)
+    (commutes : ∀ slot,
+      cospan.commonKeys.get (leg slot) = (environment.atomValue slot).key)
+    {bound : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
+    {typed : WellSorted.HasType source.costWholeLanguage
+      environment.atomFreeContext bound pattern type}
+    {available : List TypeExpr} {binderImage : TypeExpr → TypeExpr}
+    (safe : typed.ReflectiveSupportSafeAt source.costWholeReflectionProfile
+      environment.restorationSupport available binderImage) :
+    ∃ retyped : WellSorted.HasType source.costWholeLanguage
+        cospan.commonTargetFreeContext bound
+        (cospan.reifyWith environment.lookupAtom? leg pattern) type,
+      retyped.ReflectiveSupportSafeAt source.costWholeReflectionProfile
+        cospan.commonSupport available binderImage := by
+  simpa only [targetReificationRenaming,
+    environment.renameFVars_sourceReificationName_eq_reifyWith
+      cospan leg pattern] using
+    safe.renameFVars
+      (environment.targetReificationRenaming cospan leg commutes)
 
 /-- Move a complete source static term into the common semantic namespace.
 Typing, constructor-fragment evidence, object admissibility, binder metadata,
@@ -1594,19 +1689,19 @@ noncomputable def reifySourceTermToCommon
           term.term.1).hasCanonicalBinderMetadata = true := by
     rw [← patternEquality,
       Pattern.hasCanonicalBinderMetadata_renameFVars]
-    exact term.term.2.2.1
+    exact term.term.2.1.2.1
   have objectPattern : WellSorted.isObjectPattern
       (cospan.reifyWith environment.lookupAtom? leg term.term.1) = true := by
     rw [← patternEquality, WellSorted.isObjectPattern_renameFVars]
-    exact term.term.2.2.2.1
-  have reflectiveScope : WellSorted.ReflectiveScopeSafeAt
-      source.theory.presentation.presentation.language sourceBound.length
+    exact term.term.2.1.2.2.1
+  have reflectiveScope : ReflectiveWellSorted.ReflectiveScopeSafeAt
+      source.reflection.1 sourceBound.length
       (cospan.reifyWith environment.lookupAtom? leg term.term.1) := by
     rw [← patternEquality]
     exact (WellSorted.reflectiveScopeSafeAt_renameFVars
-      source.theory.presentation.presentation.language
+      source.reflection.1
       (environment.sourceReificationName cospan leg) sourceBound.length
-      term.term.1).mpr term.term.2.2.2.2
+      term.term.1).mpr term.term.2.2
   have rawSupport : ConstructorsWithin
       (· ∈ source.continuationRetyping.wrappedLabels)
       (cospan.reifyWith environment.lookupAtom? leg term.term.1) := by
@@ -1617,7 +1712,8 @@ noncomputable def reifySourceTermToCommon
     source.bareCollectionConstructorsWrapped
   exact
     { term := ⟨cospan.reifyWith environment.lookupAtom? leg term.term.1,
-        retyped, canonicalBinderMetadata, objectPattern, reflectiveScope⟩
+        ⟨⟨retyped, canonicalBinderMetadata, objectPattern,
+          retyped.isWellScopedAt⟩, reflectiveScope⟩⟩
       supported := supported
       safe := retypedSafe }
 
@@ -1832,10 +1928,10 @@ theorem substituteAt_atomName_eq_substituteAt_occurrence
     (slot : Fin environment.atomCount)
     (selected : environment.slotOfName? occurrence.name = some slot)
     (availableDepth : Nat) :
-    ReflectiveContextSupport.substituteAt source.costWholeLanguage
+    ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
         environment.restorationSupport environment.restorationAssignment
         availableDepth (.fvar (environment.atomName slot)) =
-      ReflectiveContextSupport.substituteAt source.costWholeLanguage
+      ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
         table.restorationSupport (values.assignment table) availableDepth
         (.fvar occurrence.name) := by
   have supportEquality :=
@@ -1979,7 +2075,7 @@ def semanticKeyCospanSupportedOpenAssignment
     (left : CostStaticAtomEnvironment source leftColor targetFree leftInventory)
     (right : CostStaticAtomEnvironment source rightColor targetFree
       rightInventory) :
-    WellSorted.SupportedOpenAssignment source.costWholeLanguage
+    WellSorted.SupportedOpenAssignment source.costWholeReflectionProfile source.costWholeLanguage
       (left.semanticKeyCospan right).commonTargetFreeContext targetFree
       (left.semanticKeyCospan right).commonSupport where
   assignment := (left.semanticKeyCospan right).commonAssignment
@@ -2094,6 +2190,7 @@ def sourceReificationSupportedOpenAssignment
     (commutes : ∀ slot,
       cospan.commonKeys.get (leg slot) = (environment.atomValue slot).key) :
     WellSorted.SupportedOpenAssignment
+      source.reflection.1
       source.theory.presentation.presentation.language
       environment.sourceAtomFreeContext cospan.commonSourceFreeContext
   environment.sourceAtomSupport where
@@ -2160,7 +2257,7 @@ theorem sourceReificationSupportedOpenAssignment_substituteAt
       cospan.commonKeys.get (leg slot) = (environment.atomValue slot).key)
     (availableDepth : Nat) (pattern : Pattern) :
     ReflectiveContextSupport.substituteAt
-        source.theory.presentation.presentation.language
+        source.reflection.1
         environment.sourceAtomSupport
         (environment.sourceReificationSupportedOpenAssignment cospan leg
           commutes).assignment availableDepth pattern =
@@ -2363,10 +2460,10 @@ theorem substituteAt_reifyAtomsWith_eq_restoreAt
     (availableDepth : Nat) (pattern : Pattern)
     (covered : ∀ name, name ∈ pattern.freeFvarNames →
       ∃ slot, environment.lookupAtom? name = some slot) :
-    ReflectiveContextSupport.substituteAt source.costWholeLanguage
+    ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
         cospan.commonSupport cospan.commonAssignment availableDepth
         (cospan.reifyWith environment.lookupAtom? leg pattern) =
-      ReflectiveContextSupport.substituteAt source.costWholeLanguage
+      ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
         environment.restorationSupport environment.restorationAssignment
         availableDepth pattern := by
   induction pattern using Pattern.inductionOn generalizing availableDepth with
@@ -2954,22 +3051,22 @@ theorem commonRestoredCanonicalFrames_eq_of_parallelFrames_of_perm
         (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeListByAt
           (cospan.commonSemanticPatternKeyAt source) declaration
           availableDepth leftPatterns)).map
-            (ReflectiveContextSupport.substituteAt source.costWholeLanguage
+            (ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
               cospan.commonSupport cospan.commonAssignment availableDepth))
       ((Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.parallelContents
         declaration
         (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeListByAt
           (cospan.commonSemanticPatternKeyAt source) declaration
           availableDepth rightPatterns)).map
-            (ReflectiveContextSupport.substituteAt source.costWholeLanguage
+            (ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
               cospan.commonSupport cospan.commonAssignment availableDepth))) :
-    ReflectiveContextSupport.substituteAt source.costWholeLanguage
+    ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
         cospan.commonSupport cospan.commonAssignment availableDepth
         (cospan.reifyWith left.lookupAtom? cospan.leftSlot
           (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeByAt
             (CostStaticRegionNode.semanticPatternKeyAt left) declaration
             availableDepth leftFrame)) =
-      ReflectiveContextSupport.substituteAt source.costWholeLanguage
+      ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
         cospan.commonSupport cospan.commonAssignment availableDepth
         (cospan.reifyWith right.lookupAtom? cospan.rightSlot
           (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeByAt
@@ -3013,10 +3110,10 @@ theorem substituteAt_reifyWith_eq_substituteAt
     (covered : ∀ name, name ∈ pattern.freeFvarNames →
       ∃ occurrence : CostStaticFVarOccurrence root,
         occurrence.name = name) :
-    ReflectiveContextSupport.substituteAt source.costWholeLanguage
+    ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
         cospan.commonSupport cospan.commonAssignment availableDepth
         (cospan.reifyWith environment.slotOfName? leg pattern) =
-      ReflectiveContextSupport.substituteAt source.costWholeLanguage
+      ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
         table.restorationSupport (values.assignment table) availableDepth
         pattern := by
   induction pattern using Pattern.inductionOn generalizing availableDepth with
@@ -3130,11 +3227,11 @@ theorem substituteAt_reifyLeft_eq_substituteAt
     (covered : ∀ name, name ∈ pattern.freeFvarNames →
       ∃ occurrence : CostStaticFVarOccurrence leftRoot,
         occurrence.name = name) :
-    ReflectiveContextSupport.substituteAt source.costWholeLanguage
+    ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
         (left.semanticKeyCospan right).commonSupport
         (left.semanticKeyCospan right).commonAssignment availableDepth
         ((left.semanticKeyCospan right).reifyLeft left.slotOfName? pattern) =
-      ReflectiveContextSupport.substituteAt source.costWholeLanguage
+      ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
         leftTable.restorationSupport (leftValues.assignment leftTable)
         availableDepth pattern := by
   exact substituteAt_reifyWith_eq_substituteAt left
@@ -3166,11 +3263,11 @@ theorem substituteAt_reifyRight_eq_substituteAt
     (covered : ∀ name, name ∈ pattern.freeFvarNames →
       ∃ occurrence : CostStaticFVarOccurrence rightRoot,
         occurrence.name = name) :
-    ReflectiveContextSupport.substituteAt source.costWholeLanguage
+    ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
         (left.semanticKeyCospan right).commonSupport
         (left.semanticKeyCospan right).commonAssignment availableDepth
         ((left.semanticKeyCospan right).reifyRight right.slotOfName? pattern) =
-      ReflectiveContextSupport.substituteAt source.costWholeLanguage
+      ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
         rightTable.restorationSupport (rightValues.assignment rightTable)
         availableDepth pattern := by
   exact substituteAt_reifyWith_eq_substituteAt right
@@ -3344,10 +3441,10 @@ theorem restoredFrames_eq
     {leftFrame rightFrame : Pattern}
     (alignment : CostStaticAtomFrameAlignment left right leftFrame rightFrame)
     (availableDepth : Nat) :
-    ReflectiveContextSupport.substituteAt source.costWholeLanguage
+    ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
         leftTable.restorationSupport (leftValues.assignment leftTable)
         availableDepth leftFrame =
-      ReflectiveContextSupport.substituteAt source.costWholeLanguage
+      ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
         rightTable.restorationSupport (rightValues.assignment rightTable)
         availableDepth rightFrame := by
   have leftFactor :=
@@ -3361,18 +3458,18 @@ theorem restoredFrames_eq
       alignment.cospan.rightCommutes availableDepth rightFrame
       alignment.rightCovered
   calc
-    _ = ReflectiveContextSupport.substituteAt source.costWholeLanguage
+    _ = ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
           alignment.cospan.commonSupport alignment.cospan.commonAssignment
           availableDepth
           (alignment.cospan.reifyWith left.slotOfName?
             alignment.cospan.leftSlot leftFrame) := leftFactor.symm
-    _ = ReflectiveContextSupport.substituteAt source.costWholeLanguage
+    _ = ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
           alignment.cospan.commonSupport alignment.cospan.commonAssignment
           availableDepth
           (alignment.cospan.reifyWith right.slotOfName?
             alignment.cospan.rightSlot rightFrame) := by
       exact congrArg
-        (ReflectiveContextSupport.substituteAt source.costWholeLanguage
+        (ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
           alignment.cospan.commonSupport alignment.cospan.commonAssignment
           availableDepth)
         alignment.reifiedFrames_eq
@@ -3410,11 +3507,11 @@ structure CostStaticAtomEvaluationBridge
     (alignment : CostStaticAtomFrameAlignment left right leftFrame rightFrame)
     (availableDepth : Nat) (leftResult rightResult : Pattern) where
   leftFactors : leftResult =
-    ReflectiveContextSupport.substituteAt source.costWholeLanguage
+    ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
       leftTable.restorationSupport (leftValues.assignment leftTable)
       availableDepth leftFrame
   rightFactors : rightResult =
-    ReflectiveContextSupport.substituteAt source.costWholeLanguage
+    ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
       rightTable.restorationSupport (rightValues.assignment rightTable)
       availableDepth rightFrame
 
@@ -3723,10 +3820,10 @@ theorem restoredFrames_eq
     (alignment : CostStaticCanonicalAtomFrameAlignment left right leftFrame
       rightFrame)
     (availableDepth : Nat) :
-    ReflectiveContextSupport.substituteAt source.costWholeLanguage
+    ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
         left.restorationSupport left.restorationAssignment availableDepth
         leftFrame =
-      ReflectiveContextSupport.substituteAt source.costWholeLanguage
+      ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
         right.restorationSupport right.restorationAssignment availableDepth
         rightFrame := by
   have leftFactor :=
@@ -3740,18 +3837,18 @@ theorem restoredFrames_eq
       alignment.cospan.rightCommutes availableDepth rightFrame
       alignment.rightCovered
   calc
-    _ = ReflectiveContextSupport.substituteAt source.costWholeLanguage
+    _ = ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
           alignment.cospan.commonSupport alignment.cospan.commonAssignment
           availableDepth
           (alignment.cospan.reifyWith left.lookupAtom?
             alignment.cospan.leftSlot leftFrame) := leftFactor.symm
-    _ = ReflectiveContextSupport.substituteAt source.costWholeLanguage
+    _ = ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
           alignment.cospan.commonSupport alignment.cospan.commonAssignment
           availableDepth
           (alignment.cospan.reifyWith right.lookupAtom?
             alignment.cospan.rightSlot rightFrame) := by
       exact congrArg
-        (ReflectiveContextSupport.substituteAt source.costWholeLanguage
+        (ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
           alignment.cospan.commonSupport alignment.cospan.commonAssignment
           availableDepth)
         alignment.reifiedFrames_eq
@@ -3803,10 +3900,10 @@ structure CostStaticCanonicalAtomRestorationAlignment
   rightCovered : forall name, name ∈ rightFrame.freeFvarNames ->
     exists slot, right.lookupAtom? name = some slot
   commonRestorations_eq :
-    ReflectiveContextSupport.substituteAt source.costWholeLanguage
+    ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
         cospan.commonSupport cospan.commonAssignment availableDepth
         (cospan.reifyWith left.lookupAtom? cospan.leftSlot leftFrame) =
-      ReflectiveContextSupport.substituteAt source.costWholeLanguage
+      ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
         cospan.commonSupport cospan.commonAssignment availableDepth
         (cospan.reifyWith right.lookupAtom? cospan.rightSlot rightFrame)
 
@@ -3876,10 +3973,10 @@ theorem restoredFrames_eq
     {availableDepth : Nat} {leftFrame rightFrame : Pattern}
     (alignment : CostStaticCanonicalAtomRestorationAlignment left right
       availableDepth leftFrame rightFrame) :
-    ReflectiveContextSupport.substituteAt source.costWholeLanguage
+    ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
         left.restorationSupport left.restorationAssignment availableDepth
         leftFrame =
-      ReflectiveContextSupport.substituteAt source.costWholeLanguage
+      ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
         right.restorationSupport right.restorationAssignment availableDepth
         rightFrame := by
   have leftFactor :=
@@ -3924,11 +4021,11 @@ structure CostStaticCanonicalAtomRestorationEvaluationBridge
       availableDepth leftFrame rightFrame)
     (leftResult rightResult : Pattern) where
   leftFactors : leftResult =
-    ReflectiveContextSupport.substituteAt source.costWholeLanguage
+    ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
       left.restorationSupport left.restorationAssignment availableDepth
       leftFrame
   rightFactors : rightResult =
-    ReflectiveContextSupport.substituteAt source.costWholeLanguage
+    ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
       right.restorationSupport right.restorationAssignment availableDepth
       rightFrame
 
@@ -4152,11 +4249,11 @@ structure CostStaticCanonicalAtomEvaluationBridge
       rightFrame)
     (availableDepth : Nat) (leftResult rightResult : Pattern) where
   leftFactors : leftResult =
-    ReflectiveContextSupport.substituteAt source.costWholeLanguage
+    ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
       left.restorationSupport left.restorationAssignment availableDepth
       leftFrame
   rightFactors : rightResult =
-    ReflectiveContextSupport.substituteAt source.costWholeLanguage
+    ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
       right.restorationSupport right.restorationAssignment availableDepth
       rightFrame
 

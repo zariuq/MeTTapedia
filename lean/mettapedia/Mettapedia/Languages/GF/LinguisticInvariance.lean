@@ -16,7 +16,7 @@ property of the formalism.
    semantic content but never removes what was already there
 4. **Garden-path semantic profiles** — the two readings of "the old
    man …" have provably different lexical content
-5. **Cross-linguistic invariance** — English and Czech surface forms
+5. **Cross-linguistic invariance** — English and Czech source forms
    differ, but lexical content and OSLF types are identical
 6. **Subcategorization as entailment** — V2 verbs entail their
    objects; V verbs don't
@@ -214,7 +214,7 @@ private def gp_parse2 := mkApp2 "PredVP" "NP" "VP" "Cl"
     content: Parse 1 contains "walk" but not "boat"; Parse 2
     contains "boat" but not "walk".
 
-    Both contain "old", "man", and "the_Det" — the shared surface
+    Both contain "old", "man", and "the_Det" — the shared lexical inventory
     material. The disambiguation is in the NON-SHARED lexical items. -/
 theorem garden_path_lexical_disambiguation :
     -- Parse 1 has "walk" but not "boat"
@@ -235,26 +235,26 @@ theorem garden_path_lexical_disambiguation :
 /-! ## 4. Cross-Linguistic Invariance
 
 English and Czech share GF abstract syntax but produce different
-surface strings.  OSLF types and lexical containment are computed
+linearized strings.  OSLF types and lexical containment are computed
 from the abstract tree, so they are invariant under translation.
 
 The trivial proof IS the content: it shows the GF architecture
 guarantees translation preserves meaning by construction.
 -/
 
-/-- A cross-linguistic pair: same meaning, different surface forms. -/
+/-- A cross-linguistic pair: same meaning, different source forms. -/
 structure CrossLingPair where
   tree : AbstractNode
-  englishSurface : String
-  czechSurface : String
+  englishText : String
+  czechText : String
 
-/-- "the cat" / "kočka" — same abstract tree, different surfaces. -/
+/-- "the cat" / "kočka" — same abstract tree, different linearizations. -/
 def theCat_pair : CrossLingPair :=
   { tree := mkApp2 "DetCN" "Det" "CN" "NP"
       (mkLeaf "the_Det" "Det")
       (mkApp1 "UseN" "N" "CN" (mkLeaf "cat" "N"))
-  , englishSurface := "the cat"
-  , czechSurface := "kočka" }
+  , englishText := "the cat"
+  , czechText := "kočka" }
 
 /-- "the big house" / "velký dům" -/
 def theBigHouse_pair : CrossLingPair :=
@@ -263,13 +263,13 @@ def theBigHouse_pair : CrossLingPair :=
       (mkApp2 "AdjCN" "AP" "CN" "CN"
         (mkApp1 "PositA" "A" "AP" (mkLeaf "big" "A"))
         (mkApp1 "UseN" "N" "CN" (mkLeaf "house" "N")))
-  , englishSurface := "the big house"
-  , czechSurface := "velký dům" }
+  , englishText := "the big house"
+  , czechText := "velký dům" }
 
-/-- Surface forms differ across languages. -/
-theorem cross_ling_surfaces_differ :
-    theCat_pair.englishSurface ≠ theCat_pair.czechSurface ∧
-    theBigHouse_pair.englishSurface ≠ theBigHouse_pair.czechSurface := by
+/-- Source forms differ across languages. -/
+theorem cross_ling_texts_differ :
+    theCat_pair.englishText ≠ theCat_pair.czechText ∧
+    theBigHouse_pair.englishText ≠ theBigHouse_pair.czechText := by
   constructor <;> decide
 
 /-- Lexical containment is language-independent: it depends only on the
@@ -356,12 +356,6 @@ theorem english_czech_reduces_iff (p q : Pattern) :
       (rulesNoncontextual := gf_rewrites_noncontextual englishGFLanguageDef rfl),
     Mettapedia.OSLF.MeTTaIL.ContextualStep.step_iff_rootStep_of_noncontextualRules
       (rulesNoncontextual := gf_rewrites_noncontextual czechGFLanguageDef rfl)]
-  have samePresentations :
-      englishGFLanguageDef.reflectivePresentations =
-        czechGFLanguageDef.reflectivePresentations := rfl
-  have sameReflectiveRules :
-      englishGFLanguageDef.reflectiveRules =
-        czechGFLanguageDef.reflectiveRules := rfl
   constructor
   · rintro ⟨rule, ruleMember, initialBindings, matched,
       finalBindings, premises, targetEq⟩
@@ -371,14 +365,12 @@ theorem english_czech_reduces_iff (p q : Pattern) :
     have premisesNil := gf_rule_premises_eq_nil englishGFLanguageDef rfl
       rule ruleMember
     refine ⟨rule, ruleMember', initialBindings, ?_, finalBindings, ?_, ?_⟩
-    · simpa only [
-        Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule_eq_of_reflectiveData_eq
-          samePresentations sameReflectiveRules] using matched
+    · simpa [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule]
+        using matched
     · simpa [premisesNil, Mettapedia.OSLF.MeTTaIL.Engine.applyPremisesWithEnv]
         using premises
-    · simpa only [
-        Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule_eq_of_reflectiveData_eq
-          samePresentations sameReflectiveRules] using targetEq
+    · simpa [Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule]
+        using targetEq
   · rintro ⟨rule, ruleMember, initialBindings, matched,
       finalBindings, premises, targetEq⟩
     have ruleMember' : rule ∈ englishGFLanguageDef.rewrites := by
@@ -387,14 +379,12 @@ theorem english_czech_reduces_iff (p q : Pattern) :
     have premisesNil := gf_rule_premises_eq_nil czechGFLanguageDef rfl
       rule ruleMember
     refine ⟨rule, ruleMember', initialBindings, ?_, finalBindings, ?_, ?_⟩
-    · simpa only [
-        Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule_eq_of_reflectiveData_eq
-          samePresentations.symm sameReflectiveRules.symm] using matched
+    · simpa [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.matchPatternForRule]
+        using matched
     · simpa [premisesNil, Mettapedia.OSLF.MeTTaIL.Engine.applyPremisesWithEnv]
         using premises
-    · simpa only [
-        Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule_eq_of_reflectiveData_eq
-          samePresentations.symm sameReflectiveRules.symm] using targetEq
+    · simpa [Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.applyBindingsForRule]
+        using targetEq
 
 theorem english_czech_diamond_eq (φ : Pattern → Prop) :
     langDiamond englishGFLanguageDef φ =
@@ -475,12 +465,12 @@ These theorems capture four genuine linguistic insights:
    enriches content monotonically.
 
 2. **Ambiguity has semantic signatures**: Different parses of the
-   same surface string have provably different lexical profiles.
+   same linearized string have provably different lexical profiles.
    The type system doesn't just detect structural differences —
    it reveals WHAT WORDS MEAN DIFFERENTLY in each reading.
 
 3. **Translation preserves meaning**: Because OSLF types live on
-   abstract trees (not surface strings), any two languages sharing
+   abstract trees (not linearized strings), any two languages sharing
    GF abstract syntax automatically share all semantic properties.
 
 4. **Argument structure determines entailment**: Subcategorization

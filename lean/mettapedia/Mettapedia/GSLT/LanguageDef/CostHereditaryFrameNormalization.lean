@@ -386,10 +386,10 @@ theorem reify_eq_substituteAt
     {inventory : CostStaticParameterInventory source color targetFree table
       values root}
     (environment : CostStaticAtomEnvironment source color targetFree inventory)
-    {language : LanguageDef}
+    {profile : Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile}
     (availableDepth : Nat) (pattern : Pattern) :
     environment.reify pattern =
-      ReflectiveContextSupport.substituteAt language
+      ReflectiveContextSupport.substituteAt profile
         (fun _ => []) environment.reificationAssignment availableDepth
         pattern := by
   induction pattern using Pattern.inductionOn generalizing availableDepth with
@@ -436,7 +436,7 @@ def restoreAt {source : CIGSLT} {color : CostStaticColor}
       values root}
     (environment : CostStaticAtomEnvironment source color targetFree inventory)
     (availableDepth : Nat) (pattern : Pattern) : Pattern :=
-  ReflectiveContextSupport.substituteAt source.costWholeLanguage
+  ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
     environment.restorationSupport environment.restorationAssignment
     availableDepth pattern
 
@@ -452,6 +452,101 @@ def restore {source : CIGSLT} {color : CostStaticColor}
     (environment : CostStaticAtomEnvironment source color targetFree inventory)
     (bound : List TypeExpr) (pattern : Pattern) : Pattern :=
   environment.restoreAt bound.length pattern
+
+/-- A binder-closed semantic atom restores to its stored normalized value at
+every ambient depth.  The support component may be nonempty: closedness makes
+the weakening selected by that support observationally inert. -/
+theorem restoreAt_atomName_eq_normal_of_scoped
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    {table : TypedCostRegionBoundaryTable source color targetFree occurrences}
+    {values : TypedCostRegionBoundaryTable.Values source color targetFree table}
+    {root : Pattern}
+    {inventory : CostStaticParameterInventory source color targetFree table
+      values root}
+    (environment : CostStaticAtomEnvironment source color targetFree inventory)
+    (slot : Fin environment.atomCount)
+    (normalScoped :
+      (environment.atomValue slot).key.normal.isWellScopedAt 0 = true)
+    (depth : Nat) :
+    environment.restoreAt depth (.fvar (environment.atomName slot)) =
+      (environment.atomValue slot).key.normal := by
+  simp only [CostStaticAtomEnvironment.restoreAt,
+    ReflectiveContextSupport.substituteAt,
+    environment.restorationSupport_atomName,
+    environment.restorationAssignment_atomName]
+  exact Mettapedia.OSLF.MeTTaIL.Substitution.liftBVars_eq_self_of_isWellScopedAt
+    normalScoped
+
+/-- A semantic atom whose retained target-support length is exactly the
+ambient restoration depth restores to its normalized value without any
+closedness premise.  This is the ordinary, non-quote boundary case: the
+weakening offset is definitionally zero, so bound indices are preserved. -/
+theorem restoreAt_atomName_eq_normal_of_support_length_eq
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    {table : TypedCostRegionBoundaryTable source color targetFree occurrences}
+    {values : TypedCostRegionBoundaryTable.Values source color targetFree table}
+    {root : Pattern}
+    {inventory : CostStaticParameterInventory source color targetFree table
+      values root}
+    (environment : CostStaticAtomEnvironment source color targetFree inventory)
+    (slot : Fin environment.atomCount) (depth : Nat)
+    (supportLength :
+      (environment.atomValue slot).key.targetSupport.length = depth) :
+    environment.restoreAt depth (.fvar (environment.atomName slot)) =
+      (environment.atomValue slot).key.normal := by
+  simp only [CostStaticAtomEnvironment.restoreAt,
+    ReflectiveContextSupport.substituteAt,
+    environment.restorationSupport_atomName,
+    environment.restorationAssignment_atomName]
+  rw [supportLength]
+  rw [Nat.sub_self]
+  exact Mettapedia.OSLF.MeTTaIL.Substitution.liftBVars_zero
+    (environment.atomValue slot).key.normal 0
+
+/-- Bound-context wrapper around
+`CostStaticAtomEnvironment.restoreAt_atomName_eq_normal_of_scoped`. -/
+theorem restore_atomName_eq_normal_of_scoped
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    {table : TypedCostRegionBoundaryTable source color targetFree occurrences}
+    {values : TypedCostRegionBoundaryTable.Values source color targetFree table}
+    {root : Pattern}
+    {inventory : CostStaticParameterInventory source color targetFree table
+      values root}
+    (environment : CostStaticAtomEnvironment source color targetFree inventory)
+    (slot : Fin environment.atomCount)
+    (normalScoped :
+      (environment.atomValue slot).key.normal.isWellScopedAt 0 = true)
+    (bound : List TypeExpr) :
+    environment.restore bound (.fvar (environment.atomName slot)) =
+      (environment.atomValue slot).key.normal :=
+  environment.restoreAt_atomName_eq_normal_of_scoped slot normalScoped
+    bound.length
+
+/-- Bound-context wrapper around
+`CostStaticAtomEnvironment.restoreAt_atomName_eq_normal_of_support_length_eq`. -/
+theorem restore_atomName_eq_normal_of_support_length_eq
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    {table : TypedCostRegionBoundaryTable source color targetFree occurrences}
+    {values : TypedCostRegionBoundaryTable.Values source color targetFree table}
+    {root : Pattern}
+    {inventory : CostStaticParameterInventory source color targetFree table
+      values root}
+    (environment : CostStaticAtomEnvironment source color targetFree inventory)
+    (slot : Fin environment.atomCount) (bound : List TypeExpr)
+    (supportLength :
+      (environment.atomValue slot).key.targetSupport.length = bound.length) :
+    environment.restore bound (.fvar (environment.atomName slot)) =
+      (environment.atomValue slot).key.normal :=
+  environment.restoreAt_atomName_eq_normal_of_support_length_eq slot
+    bound.length supportLength
 
 /-- Free typing context of a reified frame.  Only canonical atom names are
 accepted; original boundary/source spellings have no authority after
@@ -604,7 +699,8 @@ def restorationSupportedOpenAssignment
     {inventory : CostStaticParameterInventory source color targetFree table
       values root}
     (environment : CostStaticAtomEnvironment source color targetFree inventory) :
-    WellSorted.SupportedOpenAssignment source.costWholeLanguage
+    WellSorted.SupportedOpenAssignment source.costWholeReflectionProfile
+      source.costWholeLanguage
       environment.atomFreeContext targetFree environment.restorationSupport
     where
   assignment := environment.restorationAssignment
@@ -660,6 +756,7 @@ private theorem reifySupportSafeAux
     {inventory : CostStaticParameterInventory source color targetFree table
       values root}
     (environment : CostStaticAtomEnvironment source color targetFree inventory)
+    {profile : Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile}
     {language : LanguageDef}
     {sourceFree atomFree : WellSorted.FreeTypeContext}
     {sourceSupport atomSupport : ContextSupport.Support}
@@ -677,14 +774,14 @@ private theorem reifySupportSafeAux
     {typed : WellSorted.HasType language
       sourceFree bound pattern type}
     {available : List TypeExpr} {binderImage : TypeExpr → TypeExpr}
-    (safe : typed.ReflectiveSupportSafeAt sourceSupport
+    (safe : typed.ReflectiveSupportSafeAt profile sourceSupport
       available binderImage)
     (covered : ∀ name, name ∈ pattern.freeFvarNames →
       ∃ occurrence : CostStaticFVarOccurrence root,
         occurrence.name = name) :
     ∃ retyped : WellSorted.HasType language
         atomFree bound (environment.reify pattern) type,
-      retyped.ReflectiveSupportSafeAt atomSupport
+      retyped.ReflectiveSupportSafeAt profile atomSupport
         available binderImage := by
   exact WellSorted.HasType.ReflectiveSupportSafeAt.rec
     (motive_1 := fun {bound pattern type} typed available currentImage _ =>
@@ -693,7 +790,7 @@ private theorem reifySupportSafeAux
           occurrence.name = name) →
       ∃ retyped : WellSorted.HasType language
           atomFree bound (environment.reify pattern) type,
-        retyped.ReflectiveSupportSafeAt atomSupport
+        retyped.ReflectiveSupportSafeAt profile atomSupport
           available currentImage)
     (motive_2 := fun {bound arguments parameters} typed available
         currentImage _ =>
@@ -703,7 +800,7 @@ private theorem reifySupportSafeAux
       ∃ retyped : WellSorted.ArgumentsHaveTypes language
           atomFree bound
           (arguments.map environment.reify) parameters,
-        retyped.ReflectiveSupportSafeAt atomSupport
+        retyped.ReflectiveSupportSafeAt profile atomSupport
           available currentImage)
     (motive_3 := fun {bound elements elementType} typed available
         currentImage _ =>
@@ -713,7 +810,7 @@ private theorem reifySupportSafeAux
       ∃ retyped : WellSorted.ElementsHaveType language
           atomFree bound
           (elements.map environment.reify) elementType,
-        retyped.ReflectiveSupportSafeAt atomSupport
+        retyped.ReflectiveSupportSafeAt profile atomSupport
           available currentImage)
     (by
       intro bound index type lookup available currentImage _covered
@@ -743,7 +840,7 @@ private theorem reifySupportSafeAux
       let retyped := WellSorted.HasType.fvar
         (language := language) (bound := bound) atomLookup
       have retypedSafe : retyped.ReflectiveSupportSafeAt
-          atomSupport available currentImage := by
+          profile atomSupport available currentImage := by
         refine .fvar atomLookup available ⟨inner, ?_⟩
         simpa [supportEquality] using availableShape
       simpa [reify, reifyName, selected] using ⟨retyped, retypedSafe⟩)
@@ -859,9 +956,10 @@ private theorem reifySupportSafeAux
       have reifiedRepresentation :
           WellSorted.MatchesParameterRepresentation parameter
             (environment.reify argument) := by
-        rw [environment.reify_eq_substituteAt available.length argument]
+        rw [environment.reify_eq_substituteAt (profile := profile)
+          available.length argument]
         exact WellSorted.MatchesParameterRepresentation.substituteReflectiveAt
-          language parameter argument (fun _ => [])
+          profile parameter argument (fun _ => [])
             environment.reificationAssignment available.length representation
       let result := WellSorted.ArgumentsHaveTypes.cons reifiedRepresentation
         parameterType retypedArgument retypedArguments
@@ -911,14 +1009,16 @@ theorem reify_reflectiveSupportSafeAt
     {typed : WellSorted.HasType source.costWholeLanguage
       table.mappedFreeContext bound pattern type}
     {available : List TypeExpr} {binderImage : TypeExpr → TypeExpr}
-    (safe : typed.ReflectiveSupportSafeAt table.restorationSupport
+    (safe : typed.ReflectiveSupportSafeAt source.costWholeReflectionProfile
+      table.restorationSupport
       available binderImage)
     (covered : ∀ name, name ∈ pattern.freeFvarNames →
       ∃ occurrence : CostStaticFVarOccurrence root,
         occurrence.name = name) :
     ∃ retyped : WellSorted.HasType source.costWholeLanguage
         environment.atomFreeContext bound (environment.reify pattern) type,
-      retyped.ReflectiveSupportSafeAt environment.restorationSupport
+      retyped.ReflectiveSupportSafeAt source.costWholeReflectionProfile
+        environment.restorationSupport
         available binderImage :=
   reifySupportSafeAux environment
     (by
@@ -956,7 +1056,8 @@ theorem reify_sourceReflectiveSupportSafeAt
       source.theory.presentation.presentation.language
       table.sourceFreeContext bound pattern type}
     {available : List TypeExpr} {binderImage : TypeExpr → TypeExpr}
-    (safe : typed.ReflectiveSupportSafeAt table.sourceSupport
+    (safe : typed.ReflectiveSupportSafeAt source.reflection.1
+      table.sourceSupport
       available binderImage)
     (covered : ∀ name, name ∈ pattern.freeFvarNames →
       ∃ occurrence : CostStaticFVarOccurrence root,
@@ -965,7 +1066,8 @@ theorem reify_sourceReflectiveSupportSafeAt
         source.theory.presentation.presentation.language
         environment.sourceAtomFreeContext bound (environment.reify pattern)
         type,
-      retyped.ReflectiveSupportSafeAt environment.sourceAtomSupport
+      retyped.ReflectiveSupportSafeAt source.reflection.1
+        environment.sourceAtomSupport
         available binderImage := by
   exact reifySupportSafeAux environment
     (by
@@ -1144,10 +1246,10 @@ mutual
             WellSorted.MatchesParameterRepresentation parameter
               (environment.reify argument) := by
           rw [environment.reify_eq_substituteAt
-            (language := source.theory.presentation.presentation.language)
+            (profile := source.reflection.1)
             0 argument]
           exact WellSorted.MatchesParameterRepresentation.substituteReflectiveAt
-            source.theory.presentation.presentation.language parameter argument
+            source.reflection.1 parameter argument
               (fun _ => [])
               environment.reificationAssignment 0 representation
         exact .cons reifiedRepresentation parameterType retypedArgument
@@ -1236,7 +1338,7 @@ theorem restoreAt_reify_eq_substituteAt
       ∃ occurrence : CostStaticFVarOccurrence root,
         occurrence.name = name) :
     environment.restoreAt availableDepth (environment.reify pattern) =
-      ReflectiveContextSupport.substituteAt source.costWholeLanguage
+      ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
         table.restorationSupport (values.assignment table) availableDepth
         pattern := by
   induction pattern using Pattern.inductionOn generalizing availableDepth with
@@ -1350,7 +1452,8 @@ theorem buildSemanticAtomEnvironment?_isSome
       node.boundaryTable) :
     (node.buildSemanticAtomEnvironment? values).isSome = true := by
   exact CostStaticAtomEnvironment.build?_isSome_of_typed
-    node.boundaryTable values node.skeleton.2.1 node.skeleton.2.2.2.1
+    node.boundaryTable values node.skeleton.2.1.1
+      node.skeleton.2.1.2.2.1
 
 /-- Deterministically recover the complete proof-relevant semantic-atom
 environment for an admitted static node.  Totality comes from the node's
@@ -1418,7 +1521,7 @@ theorem skeleton_fvar_covered
     ∃ occurrence : CostStaticFVarOccurrence node.skeleton.1,
       occurrence.name = name :=
   CostStaticFVarOccurrence.exists_of_mem_freeFvarNames_of_object membership
-    node.skeleton.2.2.2.1
+    node.skeleton.2.1.2.2.1
 
 /-- The authored skeleton with each finite external parameter replaced by
 its semantic atom.  This remains an object of the original authored theory;
@@ -1432,16 +1535,24 @@ def reifiedSourceFrame
     {inventory : CostStaticParameterInventory source color targetFree
       node.boundaryTable values node.skeleton.1}
     (environment : CostStaticAtomEnvironment source color targetFree inventory) :
-    WellSorted.OpenTerm source.theory.presentation.presentation.language
+    ReflectiveWellSorted.OpenTerm source.reflection.1
+      source.theory.presentation.presentation.language
       environment.sourceAtomFreeContext node.sourceBound node.sourceSort := by
   let supported := environment.reify_sourceHasTypeWithConstructors
     node.supported node.skeleton_fvar_covered
-  refine ⟨environment.reify node.skeleton.1, supported.toHasType, ?_, ?_, ?_⟩
-  · simpa using node.skeleton.2.2.1
-  · simpa using node.skeleton.2.2.2.1
-  · intro declaration membership
-    rw [environment.binderSafeAt_reify]
-    exact node.skeleton.2.2.2.2 declaration membership
+  let core : WellSorted.OpenTerm
+      source.theory.presentation.presentation.language
+      environment.sourceAtomFreeContext node.sourceBound node.sourceSort := by
+    refine ⟨environment.reify node.skeleton.1, supported.toHasType,
+      ?_, ?_, supported.toHasType.isWellScopedAt⟩
+    · rw [environment.hasCanonicalBinderMetadata_reify]
+      exact node.skeleton.2.1.2.1
+    · rw [environment.isObjectPattern_reify]
+      exact node.skeleton.2.1.2.2.1
+  refine ⟨core.1, core.2, ?_⟩
+  intro declaration membership
+  rw [environment.binderSafeAt_reify]
+  exact node.skeleton.2.2 declaration membership
 
 @[simp]
 theorem reifiedSourceFrame_pattern
@@ -1468,7 +1579,8 @@ theorem reifiedSourceFrame_supportSafe
     {inventory : CostStaticParameterInventory source color targetFree
       node.boundaryTable values node.skeleton.1}
     (environment : CostStaticAtomEnvironment source color targetFree inventory) :
-    (node.reifiedSourceFrame environment).2.1.ReflectiveSupportSafeAt
+    (node.reifiedSourceFrame environment).2.1.1.ReflectiveSupportSafeAt
+      source.reflection.1
       environment.sourceAtomSupport node.targetBound
       (mapTypeExpr (color.symbols source)) := by
   obtain ⟨_retyped, safe⟩ :=
@@ -1477,6 +1589,7 @@ theorem reifiedSourceFrame_supportSafe
   let supported := environment.reify_sourceHasTypeWithConstructors
     node.supported node.skeleton_fvar_covered
   have aligned : supported.toHasType.ReflectiveSupportSafeAt
+      source.reflection.1
       environment.sourceAtomSupport node.targetBound
       (mapTypeExpr (color.symbols source)) := safe.castTyping
   exact aligned
@@ -1578,11 +1691,12 @@ def restrictedTargetFrame
     {source : CIGSLT} {color : CostStaticColor}
     {targetFree : WellSorted.FreeTypeContext}
     (node : CostStaticRegionNode source color targetFree) :
-    WellSorted.OpenTerm source.costWholeLanguage
+    ReflectiveWellSorted.OpenTerm source.costWholeReflectionProfile
+      source.costWholeLanguage
       (node.boundaryTable.mappedFreeContext.restrictTo
         node.mappedThickenedSkeleton.1.freeFvarNames)
       node.targetBound (color.mapLangSort source node.sourceSort) :=
-  node.mappedThickenedSkeleton.restrictFreeContext
+  node.mappedThickenedReflectiveSkeleton.restrictFreeContext
 
 /-- Atom reification as a typed open assignment on the exact finite source
 context of one frame.  Each used original name is resolved through a genuine
@@ -1597,7 +1711,8 @@ def reificationSupportedOpenAssignment
     {inventory : CostStaticParameterInventory source color targetFree
       node.boundaryTable values node.skeleton.1}
     (environment : CostStaticAtomEnvironment source color targetFree inventory) :
-    WellSorted.SupportedOpenAssignment source.costWholeLanguage
+    WellSorted.SupportedOpenAssignment source.costWholeReflectionProfile
+      source.costWholeLanguage
       (node.boundaryTable.mappedFreeContext.restrictTo
         node.mappedThickenedSkeleton.1.freeFvarNames)
       environment.atomFreeContext (fun _ => []) where
@@ -1617,7 +1732,7 @@ def reificationSupportedOpenAssignment
       simpa using membership
     obtain ⟨occurrence, occurrenceName⟩ :=
       CostStaticFVarOccurrence.exists_of_mem_freeFvarNames_of_object
-        sourceMembership node.skeleton.2.2.2.1
+        sourceMembership node.skeleton.2.1.2.2.1
     obtain ⟨slot, selectedOccurrence⟩ := Option.isSome_iff_exists.mp
       (environment.slotOfName?_isSome_of_occurrence occurrence)
     have selected : environment.slotOfName? name = some slot := by
@@ -1664,18 +1779,24 @@ def reifiedTargetFrame
     {inventory : CostStaticParameterInventory source color targetFree
       node.boundaryTable values node.skeleton.1}
     (environment : CostStaticAtomEnvironment source color targetFree inventory) :
-    WellSorted.OpenTerm source.costWholeLanguage environment.atomFreeContext
+    ReflectiveWellSorted.OpenTerm source.costWholeReflectionProfile
+      source.costWholeLanguage environment.atomFreeContext
       node.targetBound (color.mapLangSort source node.sourceSort) := by
   let restricted := node.restrictedTargetFrame
   let assignment := node.reificationSupportedOpenAssignment environment
-  let safe := restricted.2.1.reflectiveSupportSafeAt_empty node.targetBound
-  let substituted := restricted.substituteReflectiveSupported assignment safe
+  let safe := restricted.2.1.1.reflectiveSupportSafeAt_empty
+    (profile := source.costWholeReflectionProfile) node.targetBound
+  let substituted :=
+    WellSorted.ReflectiveWellSorted.OpenTerm.substituteReflectiveSupported
+      restricted assignment safe
   have patternEquality : substituted.1 = node.reifyTargetFrame environment := by
-    change ReflectiveContextSupport.substituteAt source.costWholeLanguage
+    change ReflectiveContextSupport.substituteAt
+        source.costWholeReflectionProfile
         (fun _ => []) environment.reificationAssignment
           node.targetBound.length node.mappedThickenedSkeleton.1 =
       environment.reify node.mappedThickenedSkeleton.1
-    exact (environment.reify_eq_substituteAt node.targetBound.length
+    exact (environment.reify_eq_substituteAt
+      (profile := source.costWholeReflectionProfile) node.targetBound.length
       node.mappedThickenedSkeleton.1).symm
   refine ⟨node.reifyTargetFrame environment, ?_⟩
   rw [← patternEquality]
@@ -1712,8 +1833,9 @@ theorem reifyTargetFrame_atomCovered
     exists slot, environment.lookupAtom? name = some slot := by
   let term := node.reifiedTargetFrame environment
   have termMembership : name ∈ term.1.freeFvarNames := by
-    exact membership
-  obtain ⟨type, lookup⟩ := term.freeType_of_mem_freeFvarNames termMembership
+    simpa only [term, node.reifiedTargetFrame_pattern] using membership
+  obtain ⟨type, lookup⟩ :=
+    term.toCore.freeType_of_mem_freeFvarNames termMembership
   change environment.atomFreeContext name = some type at lookup
   simp only [CostStaticAtomEnvironment.atomFreeContext] at lookup
   cases selected : environment.lookupAtom? name with
@@ -1733,7 +1855,8 @@ theorem reifiedTargetFrame_supportSafe
     {inventory : CostStaticParameterInventory source color targetFree
       node.boundaryTable values node.skeleton.1}
     (environment : CostStaticAtomEnvironment source color targetFree inventory) :
-    (node.reifiedTargetFrame environment).2.1.ReflectiveSupportSafeAt
+    (node.reifiedTargetFrame environment).2.1.1.ReflectiveSupportSafeAt
+      source.costWholeReflectionProfile
       environment.restorationSupport node.targetBound := by
   obtain ⟨retyped, safe⟩ := environment.reify_reflectiveSupportSafeAt
     node.mappedThickenedSkeleton_supportSafe (by
@@ -1741,8 +1864,9 @@ theorem reifiedTargetFrame_supportSafe
       have sourceMembership : name ∈ node.skeleton.1.freeFvarNames := by
         simpa using membership
       exact CostStaticFVarOccurrence.exists_of_mem_freeFvarNames_of_object
-        sourceMembership node.skeleton.2.2.2.1)
-  exact safe.castTyping
+        sourceMembership node.skeleton.2.1.2.2.1)
+  simpa only [node.reifiedTargetFrame_pattern, reifyTargetFrame] using
+    safe.castTyping
 
 /-- Local exactness of semantic-atom reification.  Restoring the atomized
 target frame agrees definitionally with the established finite-value
@@ -1767,7 +1891,7 @@ theorem restore_reifyTargetFrame
       have sourceMembership : name ∈ node.skeleton.1.freeFvarNames := by
         simpa using membership
       exact CostStaticFVarOccurrence.exists_of_mem_freeFvarNames_of_object
-        sourceMembership node.skeleton.2.2.2.1)
+        sourceMembership node.skeleton.2.1.2.2.1)
   simpa [CostStaticAtomEnvironment.restore,
     reifyTargetFrame,
     TypedCostRegionBoundaryTable.Values.restoreSupportedSkeleton,
@@ -1822,31 +1946,25 @@ theorem canonicalizeReifiedTargetFrame_equationEquiv
     (environment : CostStaticAtomEnvironment source color targetFree inventory)
     (declaration : ReflectivePresentationDecl)
     (membership : declaration ∈
-      source.costWholeLanguage.reflectivePresentations) :
-    EquationSemantics.EquationEquiv defaultBasePremises
+      source.costWholeReflectionProfile.presentations) :
+    ReflectiveEquationSemantics.ReflectiveEquationEquiv
+      source.costWholeReflectionProfile defaultBasePremises
       source.costWholeLanguage
       (node.canonicalizeReifiedTargetFrame environment declaration)
       (node.reifyTargetFrame environment) := by
   have declarationValid :=
-    LanguageDef.reflectivePresentation_validate_of_validate_eq_nil
-      source.costWholeLanguage source.costWholeLanguage_validate declaration
-      membership
+    Mettapedia.OSLF.MeTTaIL.Reflection.presentation_validate_eq_nil_of_validate_eq_nil
+      source.costWholeAdmittedReflection.2 membership
   have quote_ne_drop :=
     Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.quoteConstructor_ne_dropConstructor_of_validate
       source.costWholeLanguage declaration declarationValid
   apply Relation.EqvGen.rel
-  apply EquationSemantics.EquationContextStep.reflectiveInContext .hole
-    membership
-  change Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize declaration
-      (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeByAt
-        (semanticPatternKeyAt environment) declaration node.targetBound.length
-          (node.reifiedTargetFrame environment).1) =
-    Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize declaration
-      (node.reifiedTargetFrame environment).1
-  exact
+  apply ReflectiveEquationSemantics.ReflectiveEquationContextStep.reflectiveInContext
+    .hole membership
+  simpa only [reifyTargetFrame] using
     Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize_canonicalizeByAt
       (semanticPatternKeyAt environment) declaration quote_ne_drop
-      node.targetBound.length (node.reifiedTargetFrame environment).1
+      node.targetBound.length (node.reifyTargetFrame environment)
 
 /-- Raw hereditary factorization for one explicit finite occurrence
 inventory.  Typing and equation soundness are established separately for a
@@ -1890,7 +2008,8 @@ theorem normalizeHereditaryRaw?_isSome
     (declaration : ReflectivePresentationDecl) :
     (node.normalizeHereditaryRaw? values declaration).isSome = true := by
   have inventoryTotal := CostStaticParameterInventory.build?_isSome_of_typed
-    node.boundaryTable values node.skeleton.2.1 node.skeleton.2.2.2.1
+    node.boundaryTable values node.skeleton.2.1.1
+      node.skeleton.2.1.2.2.1
   unfold normalizeHereditaryRaw?
   cases built : CostStaticParameterInventory.build? node.boundaryTable values
       node.skeleton.1 with

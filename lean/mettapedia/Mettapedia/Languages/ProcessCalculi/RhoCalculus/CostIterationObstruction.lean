@@ -63,9 +63,10 @@ private def rhoBaseEmptyPlan :
 
 /-- The empty parallel in the first generated base-process fiber. -/
 private def rhoBaseEmpty :
-    OpenTerm rhoCIGSLT.costWholeLanguage FreeTypeContext.empty []
+    ReflectiveWellSorted.OpenTerm rhoCIGSLT.costWholeReflectionProfile
+      rhoCIGSLT.costWholeLanguage FreeTypeContext.empty []
       (CostStaticColor.base.mapLangSort rhoCIGSLT rhoProc) := by
-  refine ⟨.collection .hashBag [] none, ?_, rfl, rfl, ?_⟩
+  refine ⟨.collection .hashBag [] none, ⟨?_, rfl, rfl, rfl⟩, ?_⟩
   · apply HasType.collectionConstructor
       (rule := costBaseConstructor rhoCIGSLT.cut rhoCalc.terms[3])
       (parameterName := "ps")
@@ -79,7 +80,7 @@ private def rhoBaseEmpty :
 
 private def rhoBaseEmptyNode :
     CostStaticRegionNode rhoCIGSLT .base FreeTypeContext.empty :=
-  CostStaticRegionNode.ofPlan rhoBaseEmpty rhoBaseEmptyPlan rfl
+  CostStaticRegionNode.ofPlan rhoBaseEmpty.toCore rhoBaseEmptyPlan rfl
 
 private def rhoBaseEmptyTree :
     CostRegionTree rhoCIGSLT FreeTypeContext.empty [] []
@@ -292,11 +293,13 @@ private theorem emptyParallel_typed
 
 private def emptyParallel
     (laws : CIGSLT.CostOneObjectLaws rhoCIGSLT) :
-    OpenTerm (rhoCostOne laws).costWholeLanguage FreeTypeContext.empty []
+    ReflectiveWellSorted.OpenTerm
+      (rhoCostOne laws).costWholeReflectionProfile
+      (rhoCostOne laws).costWholeLanguage FreeTypeContext.empty []
       (CostStaticColor.base.mapLangSort
         (rhoCostOne laws) (sourceSort laws)) := by
-  refine ⟨.collection .hashBag [] none, emptyParallel_typed laws,
-    rfl, rfl, ?_⟩
+  refine ⟨.collection .hashBag [] none,
+    ⟨emptyParallel_typed laws, rfl, rfl, rfl⟩, ?_⟩
   intro declaration membership
   rfl
 
@@ -311,21 +314,24 @@ private theorem colorOverlap
 
 private def wrappedEmptyParallel
     (laws : CIGSLT.CostOneObjectLaws rhoCIGSLT) :
-    OpenTerm (rhoCostOne laws).costWholeLanguage FreeTypeContext.empty []
+    ReflectiveWellSorted.OpenTerm
+      (rhoCostOne laws).costWholeReflectionProfile
+      (rhoCostOne laws).costWholeLanguage FreeTypeContext.empty []
       (CostStaticColor.wrapped.mapLangSort
         (rhoCostOne laws) (sourceSort laws)) :=
-  OpenTerm.reindex rfl rfl (colorOverlap laws) (emptyParallel laws)
+  ReflectiveWellSorted.OpenTerm.reindex rfl rfl (colorOverlap laws)
+    (emptyParallel laws)
 
 private def baseNode
     (laws : CIGSLT.CostOneObjectLaws rhoCIGSLT) :
     CostStaticRegionNode (rhoCostOne laws) .base FreeTypeContext.empty :=
-  CostStaticRegionNode.ofPlan (emptyParallel laws) (basePlan laws) rfl
+  CostStaticRegionNode.ofPlan (emptyParallel laws).toCore (basePlan laws) rfl
 
 private def wrappedNode
     (laws : CIGSLT.CostOneObjectLaws rhoCIGSLT) :
     CostStaticRegionNode (rhoCostOne laws) .wrapped FreeTypeContext.empty :=
   CostStaticRegionNode.ofPlan
-    (wrappedEmptyParallel laws) (wrappedPlan laws) rfl
+    (wrappedEmptyParallel laws).toCore (wrappedPlan laws) rfl
 
 private theorem baseNode_sourceSort
     (laws : CIGSLT.CostOneObjectLaws rhoCIGSLT) :
@@ -423,8 +429,7 @@ private def rhoBaseEmptyAt
         rhoParallelRule_mem
     · exact rho_costBaseParallelConstructor_params
     · exact .nil _ _
-  · intro presentation membership
-    rfl
+  · rfl
 
 private def rhoBaseEmptyNodeAt
     {color : CostStaticColor}

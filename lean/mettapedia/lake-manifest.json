@@ -13,7 +13,7 @@
    "name": "«mm-lean4»",
    "manifestFile": "lake-manifest.json",
    "inherited": false,
-   "dir": "../externals/mm-lean4",
+   "dir": "../standalone/mm-lean4",
    "configFile": "lakefile.lean"},
   {"type": "path",
    "scope": "",

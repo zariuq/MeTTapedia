@@ -12,7 +12,7 @@ Fresh Codex-side paper layer for Henkin (1950).
 Design choice:
 - reuse the trusted HOL metalayer for typed terms, contexts, substitutions,
   and closed-theory notions;
-- expose Henkin's paper-specific surface as a thin front-end with its own
+- expose Henkin's paper-specific syntax as a thin front-end with its own
   base sort and description operator.
 -/
 

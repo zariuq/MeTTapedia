@@ -129,7 +129,7 @@ mutual
             ∃ kind, source.declaredCostConstructorRole constructor =
               .apparatus kind)
         (ordinary : ReflectiveContextSupport.isQuoteConstructor
-          source.costWholeLanguage rule.label = false)
+          source.costWholeReflectionProfile rule.label = false)
         (leftChildren : CostRegionArgumentTrees source targetFree available
           outer leftArguments rule.params)
         (rightChildren : CostRegionArgumentTrees source targetFree available
@@ -155,7 +155,7 @@ mutual
             ∃ kind, source.declaredCostConstructorRole constructor =
               .apparatus kind)
         (quoted : ReflectiveContextSupport.isQuoteConstructor
-          source.costWholeLanguage rule.label = true)
+          source.costWholeReflectionProfile rule.label = true)
         (leftChildren : CostRegionArgumentTrees source targetFree []
           (available ++ outer) leftArguments rule.params)
         (rightChildren : CostRegionArgumentTrees source targetFree []
@@ -854,12 +854,16 @@ structure CostGeneratorTreeNormalizationRoute
     (source : CIGSLT) (kernel : CostStaticNormalizationKernel source)
     {targetFree : FreeTypeContext} {targetBound : List TypeExpr}
     {targetSort : LangSort source.costWholeLanguage}
-    {left right : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
-      targetSort}
-    (generator : openEquationGenerator source.costIGSLT targetFree targetBound
-      targetSort left right) where
-  occurrence : EquationSemantics.AuthoredGeneratorWitness defaultBasePremises
-    source.costWholeLanguage left.1 right.1
+    {left right : ReflectiveWellSorted.OpenTerm
+      source.costWholeReflectionProfile source.costWholeLanguage targetFree
+      targetBound targetSort}
+    (generator : ReflectiveEquationSemantics.reflectiveOpenPatternEquationGenerator
+      source.costWholeReflectionProfile defaultBasePremises
+      source.costWholeLanguage targetFree targetBound (.base targetSort.1)
+      left right) where
+  occurrence : ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness
+    source.costWholeReflectionProfile defaultBasePremises
+      source.costWholeLanguage left.1 right.1
   erasesTo : occurrence.erase = generator
   leftElaboration : CostOpenElaboration source left
   rightElaboration : CostOpenElaboration source right
@@ -875,10 +879,13 @@ theorem localization_inner_fill_eq_activePatterns
     {source : CIGSLT} {kernel : CostStaticNormalizationKernel source}
     {targetFree : FreeTypeContext} {targetBound : List TypeExpr}
     {targetSort : LangSort source.costWholeLanguage}
-    {left right : WellSorted.OpenTerm source.costWholeLanguage targetFree
+    {left right : ReflectiveWellSorted.OpenTerm
+      source.costWholeReflectionProfile source.costWholeLanguage targetFree
       targetBound targetSort}
-    {generator : openEquationGenerator source.costIGSLT targetFree targetBound
-      targetSort left right}
+    {generator : ReflectiveEquationSemantics.reflectiveOpenPatternEquationGenerator
+      source.costWholeReflectionProfile defaultBasePremises
+      source.costWholeLanguage targetFree targetBound (.base targetSort.1)
+      left right}
     (route : CostGeneratorTreeNormalizationRoute source kernel generator) :
     route.localization.inner.fill route.occurrence.redex =
         route.route.activePatterns.1 ∧
@@ -893,10 +900,13 @@ def toAlignment
     {source : CIGSLT} {kernel : CostStaticNormalizationKernel source}
     {targetFree : FreeTypeContext} {targetBound : List TypeExpr}
     {targetSort : LangSort source.costWholeLanguage}
-    {left right : WellSorted.OpenTerm source.costWholeLanguage targetFree targetBound
-      targetSort}
-    {generator : openEquationGenerator source.costIGSLT targetFree targetBound
-      targetSort left right}
+    {left right : ReflectiveWellSorted.OpenTerm
+      source.costWholeReflectionProfile source.costWholeLanguage targetFree
+      targetBound targetSort}
+    {generator : ReflectiveEquationSemantics.reflectiveOpenPatternEquationGenerator
+      source.costWholeReflectionProfile defaultBasePremises
+      source.costWholeLanguage targetFree targetBound (.base targetSort.1)
+      left right}
     (route : CostGeneratorTreeNormalizationRoute source kernel generator) :
     CostGeneratorTreeNormalizationAlignment source kernel generator where
   occurrence := route.occurrence
@@ -914,10 +924,13 @@ def CostOpenGeneratorRoutable
     (source : CIGSLT) (kernel : CostStaticNormalizationKernel source) : Prop :=
   ∀ {targetFree : FreeTypeContext} {targetBound : List TypeExpr}
     {targetSort : LangSort source.costWholeLanguage}
-    {left right : WellSorted.OpenTerm source.costWholeLanguage targetFree
+    {left right : ReflectiveWellSorted.OpenTerm
+      source.costWholeReflectionProfile source.costWholeLanguage targetFree
       targetBound targetSort}
-    (generator : openEquationGenerator source.costIGSLT targetFree targetBound
-      targetSort left right),
+    (generator : ReflectiveEquationSemantics.reflectiveOpenPatternEquationGenerator
+      source.costWholeReflectionProfile defaultBasePremises
+      source.costWholeLanguage targetFree targetBound (.base targetSort.1)
+      left right),
     Nonempty (CostGeneratorTreeNormalizationRoute source kernel generator)
 
 namespace CostOpenGeneratorRoutable

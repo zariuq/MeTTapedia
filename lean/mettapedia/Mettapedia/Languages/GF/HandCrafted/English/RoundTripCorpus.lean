@@ -1,13 +1,13 @@
 import Mettapedia.Languages.GF.HandCrafted.English.Examples
 
 /-!
-# English Surface Roundtrip Corpus
+# English Linearization Roundtrip Corpus
 
 Restricted roundtrip over the full proven English example corpus currently in
-`English/Examples.lean` (18 theorem-backed surfaces).
+`English/Examples.lean` (18 theorem-backed linearizations).
 
 This is intentionally corpus-restricted: parse succeeds exactly on the known
-validated surfaces and is proved complete/sound for this corpus.
+validated linearizations and is proved complete/sound for this corpus.
 -/
 
 namespace Mettapedia.Languages.GF.HandCrafted.English.RoundTripCorpus
@@ -15,7 +15,7 @@ namespace Mettapedia.Languages.GF.HandCrafted.English.RoundTripCorpus
 open Mettapedia.Languages.GF.HandCrafted.English
 open Nouns Verbs Adjectives Syntax Pronouns Relatives
 
-inductive ExampleSurface where
+inductive ExampleTree where
   | theCat
   | aDog
   | anApple
@@ -57,7 +57,7 @@ private def heWalksWhenSheSleeps :=
   linUseCl .Pres .Simul .CPos (linPredVP he_Pron (advVP (predV walk_V) whenSheSleeps))
 
 /-- Grammar-level linearization for each validated corpus example. -/
-def linearizeSurface : ExampleSurface → String
+def linearizeExample : ExampleTree → String
   | .theCat => catNP.s (.NCase .Nom)
   | .aDog => (linDetCN aIndefArt (linUseN dog_N)).s (.NCase .Nom)
   | .anApple => (linDetCN aIndefArt (linUseN (regN "apple"))).s (.NCase .Nom)
@@ -73,14 +73,14 @@ def linearizeSurface : ExampleSurface → String
   | .heLooksAtCat => linUseCl .Pres .Simul .CPos (linPredVP he_Pron (complV2 lookAt_V2 catNP))
   | .catThatWalks => catThatWalksNP.s (.NCase .Nom)
   | .manSheLoves => manSheLovesNP.s (.NCase .Nom)
-  | .telescopeNPAttachment => Examples.telescopeNPAttachmentSurface
-  | .telescopeVPAttachment => Examples.telescopeVPAttachmentSurface
-  | .annaNPAttachment => Examples.annaNPAttachmentSurface
-  | .annaVPAttachment => Examples.annaVPAttachmentSurface
+  | .telescopeNPAttachment => Examples.telescopeNPAttachmentText
+  | .telescopeVPAttachment => Examples.telescopeVPAttachmentText
+  | .annaNPAttachment => Examples.annaNPAttachmentText
+  | .annaVPAttachment => Examples.annaVPAttachmentText
   | .heWalksWhenSheSleeps => heWalksWhenSheSleeps
 
 /-- Full curated English corpus used by the roundtrip parser. -/
-def allExamples : List ExampleSurface :=
+def allExamples : List ExampleTree :=
   [ .theCat
   , .aDog
   , .anApple
@@ -103,46 +103,46 @@ def allExamples : List ExampleSurface :=
   , .heWalksWhenSheSleeps
   ]
 
-/-- Every surface constructor appears in the curated corpus list. -/
-theorem mem_allExamples (e : ExampleSurface) : e ∈ allExamples := by
+/-- Every example constructor appears in the curated corpus list. -/
+theorem mem_allExamples (e : ExampleTree) : e ∈ allExamples := by
   cases e <;> simp [allExamples]
 
 /-- Canonical parser for the validated corpus (returns all matching analyses). -/
-def parseSurface : String → List ExampleSurface
-  | s => allExamples.filter (fun e => linearizeSurface e = s)
+def parseLinearization : String → List ExampleTree
+  | s => allExamples.filter (fun e => linearizeExample e = s)
 
 /-- Corpus completeness: parsing linearization recovers the source analysis. -/
-theorem parse_linearize_complete (e : ExampleSurface) :
-    e ∈ parseSurface (linearizeSurface e) := by
+theorem parse_linearize_complete (e : ExampleTree) :
+    e ∈ parseLinearization (linearizeExample e) := by
   refine List.mem_filter.mpr ?_
   exact ⟨mem_allExamples e, by simp⟩
 
-/-- Corpus soundness: any parsed analysis linearizes back to the input surface. -/
-theorem parse_sound (s : String) (e : ExampleSurface) :
-    e ∈ parseSurface s → linearizeSurface e = s := by
+/-- Corpus soundness: any parsed analysis linearizes back to the input text. -/
+theorem parse_sound (s : String) (e : ExampleTree) :
+    e ∈ parseLinearization s → linearizeExample e = s := by
   intro h
   simpa using (List.mem_filter.mp h).2
 
-/-- Negative example: unknown surface has no analysis in this corpus parser. -/
-theorem parse_unknown_empty : parseSurface "nonsense input" = [] := by
+/-- Negative example: unknown text has no analysis in this corpus parser. -/
+theorem parse_unknown_empty : parseLinearization "nonsense input" = [] := by
   decide
 
-/-- Selected surface cardinalities in the curated corpus parser. -/
-theorem selected_surface_cardinalities :
-    (parseSurface "he walks").length = 1 ∧
-    (parseSurface "John sees the man with the telescope").length = 2 ∧
-    (parseSurface "Anna dresses the baby in the crib").length = 2 := by
+/-- Selected parse cardinalities in the curated corpus parser. -/
+theorem selected_linearization_cardinalities :
+    (parseLinearization "he walks").length = 1 ∧
+    (parseLinearization "John sees the man with the telescope").length = 2 ∧
+    (parseLinearization "Anna dresses the baby in the crib").length = 2 := by
   decide
 
 /-- The curated corpus parser recovers both telescope-attachment analyses. -/
-theorem telescope_surface_ambiguous_in_corpus :
-    parseSurface "John sees the man with the telescope" =
+theorem telescope_text_ambiguous_in_corpus :
+    parseLinearization "John sees the man with the telescope" =
       [.telescopeNPAttachment, .telescopeVPAttachment] := by
   decide
 
 /-- The curated corpus parser recovers both Anna attachment analyses. -/
-theorem anna_surface_ambiguous_in_corpus :
-    parseSurface "Anna dresses the baby in the crib" =
+theorem anna_text_ambiguous_in_corpus :
+    parseLinearization "Anna dresses the baby in the crib" =
       [.annaNPAttachment, .annaVPAttachment] := by
   decide
 

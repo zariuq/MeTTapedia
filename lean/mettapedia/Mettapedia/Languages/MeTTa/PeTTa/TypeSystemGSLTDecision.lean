@@ -547,7 +547,7 @@ deriving Repr, DecidableEq
 
 /-- The decision function.  A returned certificate is CHECKED before it is
 trusted; a certificate the checker rejects is an infrastructure fault
-surfaced as `incomplete`, never a silent verdict.  Exhaustion is its own
+reported as `incomplete`, never a silent verdict.  Exhaustion is its own
 verdict by construction. -/
 def decide (fuel : Nat) (env : Env) (value : Option Val) (formal : Ty)
     (mode : Mode) : Verdict :=
@@ -684,7 +684,6 @@ theorem union_disagreement_canary :
       Verdict.undetermined := by
   constructor
   · simp [checkRaw, checkRawChildren, TypeSystemGSLT.checked,
-      TypeSystemGSLT.presentation, TypeSystemGSLT.language,
       canaryUnionProof,
       consistentRefl, consistentDynLeft, consistentDynRight,
       consistentUnionRight, consistentUnionLeft, consistentBrand,

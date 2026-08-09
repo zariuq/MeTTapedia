@@ -129,7 +129,7 @@ Retained, but demoted: a sufficient condition that does not mention any
 derivation.  It is genuinely stronger than a certificate, as the prelude
 witness below shows. -/
 
-/-- Environment-level closure: every producer surface is state-operation-free.
+/-- Environment-level closure: every producer interface is state-operation-free.
 This is derivation-INDEPENDENT, hence checkable once per environment — its
 only advantage over a certificate, and the reason to keep it. -/
 structure StrictGlobalProfile (env : MinEnv) : Prop where

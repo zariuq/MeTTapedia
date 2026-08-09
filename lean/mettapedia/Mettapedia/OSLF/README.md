@@ -258,7 +258,7 @@ This is the core "derive a type system from operational semantics" path.
 
 ### Native-type endpoints
 
-`Mettapedia/OSLF/NativeType/` formalizes the strict NTT claim surface.
+`Mettapedia/OSLF/NativeType/` formalizes the strict NTT claim scope.
 `Mettapedia/OSLF/Framework/NTTClaimTracker.lean` is the authoritative tracker.
 The scope is tracked-claim parity.
 The scope isn't blanket future-work parity.
@@ -320,7 +320,7 @@ lake build Mettapedia.OSLF.Main
 
 ## OSLF limit
 
-- It isn't a parser or a surface syntax standard.
+- It isn't a parser or a concrete syntax standard.
 - It isn't a proof of "all desired properties".
 - It isn't a substitute for a concrete semantics implementation.
 

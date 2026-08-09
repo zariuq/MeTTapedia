@@ -100,7 +100,7 @@ theorem canary_fregeStrong_rule_fixture (W : TestState) :
   intro rule
   exact rule.sound (W := W) trivial
 
-/-- Negative canary endpoint remains available in the regression surface. -/
+/-- Negative canary endpoint remains available in the regression API. -/
 theorem canary_gardenPath_not_collapsed :
     ∃ p q : Pattern, p ≠ q :=
   canary_gardenPath_patterns_distinct

@@ -3,7 +3,7 @@ import Mettapedia.Logic.MarkovTransitionXi
 /-!
 # Examples and Consumer Theorems for Direct Markov Xi Transition Atoms
 
-This file gives small concrete examples for the direct Markov Xi query surface
+This file gives small concrete examples for the direct Markov Xi query interface
 and packages the main semantics as user-facing WM query judgments.
 -/
 

@@ -1,7 +1,7 @@
 ; ============================================================================
 ; kernel_signature_hol_recognizer_bridge_v0.metta
 ;
-; HOL/STT `hol-core-g` surface -> verified recognizer twin -> LF kernel-check.
+; HOL/STT `hol-core-g` syntax -> verified recognizer twin -> LF kernel-check.
 ;
 ; Source anchors: HOL is an object logic encoded as an LF signature in the HHP
 ; methodology, with Assaf-Burel HOL-to-Dedukti as the translation comparison.
@@ -39,7 +39,7 @@
      (((Ok $prop) (kernel-check (good-sig) $prop (Con o)))
       ((Err $e) (Err (prop-parse-failed $e))))))
 
-; ---------- parse -> kernel-check: implication proofs through HOL surface ----
+; ---------- parse -> kernel-check: implication proofs through HOL syntax ----
 !(assertEqual
   (hol-prove (ht-self-imp-proof) (ht-self-imp))
   (Ok (CheckedPrf ANil

@@ -100,7 +100,7 @@ private theorem toValuation_val_arbitraryConfig_eq_evalConst
         valuationFullAssign_empty_eq_emptyAssign]
 
 /-- The bundled scoped-valuation query lane computes the same exact weight as
-the operational VE query surface. -/
+the operational VE query interface. -/
 theorem scopedWeight_eq_weight
     (W : WMSource fg)
     (constraints : List (Σ v : V, fg.stateSpace v))

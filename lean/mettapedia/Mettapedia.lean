@@ -324,6 +324,7 @@ import Mettapedia.Computability.PNP.WeightedFiberNeutralityObstruction
 -- code needed no fix; `InteractiveGSLT` / `InteractiveCostBridge` each needed the
 -- `simpa using! h` transparency churn-fix at the defeq-closing sites.
 import Mettapedia.GSLT.Core.GSLT
+import Mettapedia.GSLT.Core.BranchingTemporal
 import Mettapedia.GSLT.Core.LambdaTheoryCategory
 import Mettapedia.GSLT.Core.Web
 import Mettapedia.GSLT.Core.ChangeOfBase
@@ -354,6 +355,13 @@ import Mettapedia.GSLT.Dynamics.StoreReachability
 import Mettapedia.GSLT.Dynamics.StoreCollectionAdvanced
 import Mettapedia.GSLT.Dynamics.DialectTranslation
 import Mettapedia.GSLT.Dynamics.DialectObstructions
+import Mettapedia.GSLT.Dynamics.SpaceGuardedReflection
+import Mettapedia.GSLT.LanguageDef.RuleMachineCompilation
+import Mettapedia.GSLT.LanguageDef.MatchDecisionContract
+import Mettapedia.GSLT.LanguageDef.SequentialBindingDiscipline
+import Mettapedia.GSLT.LanguageDef.ForeignCapabilityLightcone
+import Mettapedia.GSLT.LanguageDef.ErrorObservationCoherence
+import Mettapedia.GSLT.LanguageDef.EmptyDemandCoherence
 import Mettapedia.GSLT.Dynamics.ProofDeterminedGeneralization
 import Mettapedia.GSLT.Synthesis.MainConservation
 import Mettapedia.GSLT.Meredith.GSLT

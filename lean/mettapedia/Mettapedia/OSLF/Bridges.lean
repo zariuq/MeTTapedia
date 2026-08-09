@@ -4,5 +4,5 @@ import Mettapedia.OSLF.Bridges.Foundation
 /-!
 # OSLF Bridges
 
-Bridge surfaces connecting OSLF semantics to external formal libraries.
+Bridges connecting OSLF semantics to external formal libraries.
 -/

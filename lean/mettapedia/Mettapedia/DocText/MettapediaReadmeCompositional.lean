@@ -400,22 +400,22 @@ theorem mettapedia_heading_image_witness
     parseMettapediaHeadingLine? renderMettapediaHeading mettapediaReadmeBlocks
     mettapedia_heading_images hMem
 
-private def insertSurfaceBucket (acc : List (String × List MettapediaClaim)) (surface : String)
+private def insertRenderedBucket (acc : List (String × List MettapediaClaim)) (rendered : String)
     (c : MettapediaClaim) : List (String × List MettapediaClaim) :=
   match acc with
-  | [] => [(surface, [c])]
+  | [] => [(rendered, [c])]
   | (k, cs) :: rest =>
-      if k = surface then
+      if k = rendered then
         (k, c :: cs) :: rest
       else
-        (k, cs) :: insertSurfaceBucket rest surface c
+        (k, cs) :: insertRenderedBucket rest rendered c
 
-def claimSurfaceBuckets : List (String × List MettapediaClaim) :=
+def claimRenderedBuckets : List (String × List MettapediaClaim) :=
   allMettapediaClaims.foldl
-    (fun acc c => insertSurfaceBucket acc (renderMettapediaClaim c) c) []
+    (fun acc c => insertRenderedBucket acc (renderMettapediaClaim c) c) []
 
-def ambiguousClaimSurfaces : List (String × List MettapediaClaim) :=
-  claimSurfaceBuckets.filter (fun p => p.snd.length > 1)
+def ambiguousClaimRenderings : List (String × List MettapediaClaim) :=
+  claimRenderedBuckets.filter (fun p => p.snd.length > 1)
 
 #eval
   let fails := allMettapediaClaims.filter (fun c =>
@@ -443,9 +443,9 @@ def ambiguousClaimSurfaces : List (String × List MettapediaClaim) :=
     s!"Mettapedia structured parse failures: {repr fails}"
 
 #eval
-  if ambiguousClaimSurfaces.isEmpty then
-    "Mettapedia ambiguity diagnostic: no duplicate surfaces across distinct claims"
+  if ambiguousClaimRenderings.isEmpty then
+    "Mettapedia ambiguity diagnostic: no duplicate renderings across distinct claims"
   else
-    s!"Mettapedia ambiguity diagnostic: duplicate surfaces found: {repr ambiguousClaimSurfaces}"
+    s!"Mettapedia ambiguity diagnostic: duplicate renderings found: {repr ambiguousClaimRenderings}"
 
 end Mettapedia.DocText.MettapediaReadmeCompositional

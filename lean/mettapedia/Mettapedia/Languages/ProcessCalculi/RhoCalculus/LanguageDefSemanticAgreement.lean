@@ -1,4 +1,5 @@
 import Mettapedia.GSLT.LanguageDef.SemanticCategory
+import Mettapedia.GSLT.LanguageDef.ReflectiveSemanticCategory
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CanonicalMatch
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.ClosedCarrierAgreement
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefGSLT
@@ -19,6 +20,8 @@ open CategoryTheory
 open Mettapedia.GSLT
 open Mettapedia.GSLT.LanguageDef
 open Mettapedia.GSLT.LanguageDef.EquationSemantics
+open Mettapedia.GSLT.LanguageDef.ReflectiveEquationSemantics
+open Mettapedia.GSLT.LanguageDef.ReflectionExtension
 open Mettapedia.GSLT.LanguageDef.WellSorted
 open Mettapedia.OSLF.Framework.ConstructorCategory
 open Mettapedia.OSLF.MeTTaIL.ContextualStep
@@ -34,14 +37,21 @@ open Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedContextualStep
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefGSLT
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefRewriteSystem
 
+/-- Rho's behavioral semantics with its separately admitted reflection
+profile interpreted explicitly. -/
+def rhoReflectiveGSLT : GSLT :=
+  Mettapedia.GSLT.LanguageDef.ReflectiveSemanticCategory.presentedGSLT
+    defaultBasePremises rhoInteractivePresentation
+      rhoCalcValidatedReflective.admittedReflection
+
 /-- The generic and established closed process carriers coincide without
 changing their underlying raw patterns. -/
 def presentedRhoProcessEquiv :
-    rhoIGSLT.toGSLT.Term ≃ rhoLanguageDefGSLT.Term :=
+    rhoReflectiveGSLT.Term ≃ rhoLanguageDefGSLT.Term :=
   closedProcessEquiv
 
 @[simp]
-theorem presentedRhoProcessEquiv_pattern (term : rhoIGSLT.toGSLT.Term) :
+theorem presentedRhoProcessEquiv_pattern (term : rhoReflectiveGSLT.Term) :
     (presentedRhoProcessEquiv term).1 = term.1 :=
   rfl
 
@@ -112,10 +122,13 @@ established canonical representative.  The semantic setoid uses this theorem
 only with closed, well-sorted endpoints. -/
 theorem rhoEquationContextStep_canonicalize_eq
     {left right : Pattern}
-    (generator : EquationContextStep defaultBasePremises rhoCalc left right) :
+    (generator : ReflectiveEquationContextStep rhoReflectionProfile
+      defaultBasePremises rhoCalc left right) :
     Canonical.canonicalize left = Canonical.canonicalize right := by
   cases generator with
-  | @inContext context redex contractum equationWitness =>
+  | core coreGenerator =>
+    cases coreGenerator with
+    | @inContext context redex contractum equationWitness =>
       obtain ⟨fuel, bounded⟩ := equationWitness
       have rootCanonical := rhoEquationInstanceAt_canonicalize_eq bounded
       have rootReflective :
@@ -140,12 +153,14 @@ theorem rhoEquationContextStep_canonicalize_eq
 /-- Soundness of the typed generic rho equation closure for the established
 canonical process equations. -/
 theorem presentedRhoEquations_sound
-    {left right : rhoIGSLT.toGSLT.Term}
-    (equivalent : rhoIGSLT.toGSLT.equations.r left right) :
+    {left right : rhoReflectiveGSLT.Term}
+    (equivalent : rhoReflectiveGSLT.equations.r left right) :
     rhoProcessEquations.r
       (presentedRhoProcessEquiv left) (presentedRhoProcessEquiv right) := by
   change Relation.EqvGen
-    (presentedEquationGenerator defaultBasePremises rhoInteractivePresentation)
+    (Mettapedia.GSLT.LanguageDef.ReflectiveSemanticCategory.presentedEquationGenerator
+      defaultBasePremises rhoInteractivePresentation
+        rhoCalcValidatedReflective.admittedReflection)
       left right at equivalent
   change Canonical.canonicalize left.1 = Canonical.canonicalize right.1
   induction equivalent with
@@ -160,10 +175,10 @@ theorem presentedRhoEquations_sound
 /-- Completeness: equality of the established canonical representatives is
 already one typed reflective-equation generator at the root context. -/
 theorem presentedRhoEquations_complete
-    {left right : rhoIGSLT.toGSLT.Term}
+    {left right : rhoReflectiveGSLT.Term}
     (equivalent : rhoProcessEquations.r
       (presentedRhoProcessEquiv left) (presentedRhoProcessEquiv right)) :
-    rhoIGSLT.toGSLT.equations.r left right := by
+    rhoReflectiveGSLT.equations.r left right := by
   change Canonical.canonicalize left.1 =
     Canonical.canonicalize right.1 at equivalent
   have reflectiveEquality :
@@ -172,19 +187,19 @@ theorem presentedRhoEquations_complete
     simpa only [derivedCanonicalize_eq] using equivalent
   have membership :
       List.Mem rhoReflectivePresentation.toReflectivePresentationDecl
-        rhoCalc.reflectivePresentations := by
+        rhoReflectionProfile.presentations := by
     change List.Mem rhoReflectivePresentation.toReflectivePresentationDecl
       [rhoReflectivePresentation.toReflectivePresentationDecl]
     exact .head _
   apply Relation.EqvGen.rel left right
-  exact EquationContextStep.reflectiveInContext .hole membership
+  exact ReflectiveEquationContextStep.reflectiveInContext .hole membership
     reflectiveEquality
 
 /-- The generic one-root equation semantics and the established sorted rho
 equations coincide exactly under the carrier equivalence. -/
 theorem presentedRhoEquations_iff
-    (left right : rhoIGSLT.toGSLT.Term) :
-    rhoIGSLT.toGSLT.equations.r left right ↔
+    (left right : rhoReflectiveGSLT.Term) :
+    rhoReflectiveGSLT.equations.r left right ↔
       rhoProcessEquations.r
         (presentedRhoProcessEquiv left) (presentedRhoProcessEquiv right) :=
   ⟨presentedRhoEquations_sound, presentedRhoEquations_complete⟩
@@ -192,9 +207,10 @@ theorem presentedRhoEquations_iff
 /-- The generic primitive step is definitionally the same least relation
 compiled from `rhoCalc` as the established closed rho rewrite system. -/
 theorem presentedRhoPrimitiveStep_iff
-    (source target : rhoIGSLT.toGSLT.Term) :
-    presentedPrimitiveStep defaultBasePremises rhoInteractivePresentation
-        source target ↔
+    (source target : rhoReflectiveGSLT.Term) :
+    Mettapedia.GSLT.LanguageDef.ReflectiveSemanticCategory.presentedPrimitiveStep
+        defaultBasePremises rhoInteractivePresentation
+          rhoCalcValidatedReflective.admittedReflection source target ↔
       rhoRewriteSystem.Reduces
         (presentedRhoProcessEquiv source) (presentedRhoProcessEquiv target) :=
   Iff.rfl
@@ -202,8 +218,8 @@ theorem presentedRhoPrimitiveStep_iff
 /-- Soundness of the generic equation-saturated rho step under the exact
 carrier equivalence. -/
 theorem presentedRhoStep_sound
-    {source target : rhoIGSLT.toGSLT.Term}
-    (step : rhoIGSLT.toGSLT.Step source target) :
+    {source target : rhoReflectiveGSLT.Term}
+    (step : rhoReflectiveGSLT.Step source target) :
     rhoLanguageDefGSLT.Step
       (presentedRhoProcessEquiv source) (presentedRhoProcessEquiv target) := by
   obtain ⟨redex, contractum, sourceEquation, primitive, targetEquation⟩ := step
@@ -216,14 +232,14 @@ theorem presentedRhoStep_sound
 /-- Completeness of the generic equation-saturated rho step under the exact
 carrier equivalence. -/
 theorem presentedRhoStep_complete
-    {source target : rhoIGSLT.toGSLT.Term}
+    {source target : rhoReflectiveGSLT.Term}
     (step : rhoLanguageDefGSLT.Step
       (presentedRhoProcessEquiv source) (presentedRhoProcessEquiv target)) :
-    rhoIGSLT.toGSLT.Step source target := by
+    rhoReflectiveGSLT.Step source target := by
   obtain ⟨redex, contractum, sourceEquation, primitive, targetEquation⟩ := step
-  let genericRedex : rhoIGSLT.toGSLT.Term :=
+  let genericRedex : rhoReflectiveGSLT.Term :=
     presentedRhoProcessEquiv.symm redex
-  let genericContractum : rhoIGSLT.toGSLT.Term :=
+  let genericContractum : rhoReflectiveGSLT.Term :=
     presentedRhoProcessEquiv.symm contractum
   have sourceEquation' : rhoProcessEquations.r
       (presentedRhoProcessEquiv source)
@@ -245,8 +261,8 @@ theorem presentedRhoStep_complete
 /-- The generic one-root rho step and the established rho GSLT step coincide
 exactly under the carrier equivalence. -/
 theorem presentedRhoStep_iff
-    (source target : rhoIGSLT.toGSLT.Term) :
-    rhoIGSLT.toGSLT.Step source target ↔
+    (source target : rhoReflectiveGSLT.Term) :
+    rhoReflectiveGSLT.Step source target ↔
       rhoLanguageDefGSLT.Step
         (presentedRhoProcessEquiv source) (presentedRhoProcessEquiv target) :=
   ⟨presentedRhoStep_sound, presentedRhoStep_complete⟩
@@ -254,30 +270,30 @@ theorem presentedRhoStep_iff
 /-! ## Executable boundary controls transported through the exact agreement -/
 
 /-- The closed COMM source in the generic one-root carrier. -/
-def presentedClosedCommSource : rhoIGSLT.toGSLT.Term :=
+def presentedClosedCommSource : rhoReflectiveGSLT.Term :=
   presentedRhoProcessEquiv.symm closedCommSource
 
 /-- The corresponding closed COMM contractum in the generic carrier. -/
-def presentedClosedCommTarget : rhoIGSLT.toGSLT.Term :=
+def presentedClosedCommTarget : rhoReflectiveGSLT.Term :=
   presentedRhoProcessEquiv.symm closedCommTarget
 
 /-- Positive control: the authored COMM rule fires in the generic semantics. -/
 theorem presentedClosedCommSource_step :
-    rhoIGSLT.toGSLT.Step
+    rhoReflectiveGSLT.Step
       presentedClosedCommSource presentedClosedCommTarget := by
   apply presentedRhoStep_complete
   simpa [presentedClosedCommSource, presentedClosedCommTarget] using
     closedCommSource_step
 
 /-- The closed free-Drop process in the generic carrier. -/
-def presentedClosedFreeDrop : rhoIGSLT.toGSLT.Term :=
+def presentedClosedFreeDrop : rhoReflectiveGSLT.Term :=
   presentedRhoProcessEquiv.symm closedFreeDrop
 
 /-- Negative control: deriving the semantics from `rhoCalc` does not add an
 executable free-Drop rule. -/
 theorem presentedClosedFreeDrop_irreducible
-    (target : rhoIGSLT.toGSLT.Term) :
-    ¬ rhoIGSLT.toGSLT.Step presentedClosedFreeDrop target := by
+    (target : rhoReflectiveGSLT.Term) :
+    ¬ rhoReflectiveGSLT.Step presentedClosedFreeDrop target := by
   intro step
   apply closedFreeDrop_irreducible_in_gslt
     (presentedRhoProcessEquiv target)
@@ -286,7 +302,7 @@ theorem presentedClosedFreeDrop_irreducible
 /-- Negative carrier control: quotation seals a process and therefore a COMM
 redex under quotation cannot inhabit the interacting process fiber. -/
 theorem presentedQuotedComm_not_process :
-    ¬∃ term : rhoIGSLT.toGSLT.Term, term.1 = commUnderQuote := by
+    ¬∃ term : rhoReflectiveGSLT.Term, term.1 = commUnderQuote := by
   rintro ⟨term, termPattern⟩
   apply quotedComm_not_process
   rw [← termPattern]
@@ -295,7 +311,7 @@ theorem presentedQuotedComm_not_process :
 /-- Negative carrier control: the pure rho root authors no finite-set
 process constructor, so generic semantics cannot acquire set-context descent. -/
 theorem presentedFiniteSetContext_not_process :
-    ¬∃ term : rhoIGSLT.toGSLT.Term, term.1 = commUnderSet := by
+    ¬∃ term : rhoReflectiveGSLT.Term, term.1 = commUnderSet := by
   rintro ⟨term, termPattern⟩
   apply finiteSet_context_not_process
   rw [← termPattern]
@@ -304,8 +320,8 @@ theorem presentedFiniteSetContext_not_process :
 /-- Map a finite generic rho rewrite path to the established rho GSLT without
 changing any raw process representative. -/
 def mapPresentedRhoRewritePath
-    {source target : rhoIGSLT.toGSLT.Term} :
-    rhoIGSLT.toGSLT.RewritePath source target →
+    {source target : rhoReflectiveGSLT.Term} :
+    rhoReflectiveGSLT.RewritePath source target →
       rhoLanguageDefGSLT.RewritePath
         (presentedRhoProcessEquiv source) (presentedRhoProcessEquiv target)
   | .nil term => .nil (presentedRhoProcessEquiv term)
@@ -317,7 +333,7 @@ semantics. -/
 def mapEstablishedRhoRewritePath
     {source target : rhoLanguageDefGSLT.Term} :
     rhoLanguageDefGSLT.RewritePath source target →
-      rhoIGSLT.toGSLT.RewritePath
+      rhoReflectiveGSLT.RewritePath
         (presentedRhoProcessEquiv.symm source)
         (presentedRhoProcessEquiv.symm target)
   | .nil term => .nil (presentedRhoProcessEquiv.symm term)
@@ -327,8 +343,8 @@ def mapEstablishedRhoRewritePath
 
 @[simp]
 theorem mapPresentedRhoRewritePath_length
-    {source target : rhoIGSLT.toGSLT.Term}
-    (path : rhoIGSLT.toGSLT.RewritePath source target) :
+    {source target : rhoReflectiveGSLT.Term}
+    (path : rhoReflectiveGSLT.RewritePath source target) :
     (mapPresentedRhoRewritePath path).length = path.length := by
   induction path with
   | nil => rfl
@@ -350,8 +366,8 @@ theorem mapEstablishedRhoRewritePath_length
 /-- Reflexive-transitive reduction also coincides exactly under the carrier
 equivalence. -/
 theorem presentedRhoMultiStep_iff
-    (source target : rhoIGSLT.toGSLT.Term) :
-    rhoIGSLT.toGSLT.MultiStep source target ↔
+    (source target : rhoReflectiveGSLT.Term) :
+    rhoReflectiveGSLT.MultiStep source target ↔
       rhoLanguageDefGSLT.MultiStep
         (presentedRhoProcessEquiv source) (presentedRhoProcessEquiv target) := by
   constructor
@@ -363,7 +379,7 @@ theorem presentedRhoMultiStep_iff
   · intro path
     have lift : ∀ {left right : rhoLanguageDefGSLT.Term},
         rhoLanguageDefGSLT.MultiStep left right →
-          rhoIGSLT.toGSLT.MultiStep
+          rhoReflectiveGSLT.MultiStep
             (presentedRhoProcessEquiv.symm left)
             (presentedRhoProcessEquiv.symm right) := by
       intro left right derivation
@@ -378,8 +394,8 @@ theorem presentedRhoMultiStep_iff
 /-- Strong bisimilarity is transported from the generic semantics to the
 established rho semantics by exact one-step correspondence. -/
 theorem presentedRhoBisimilar_sound
-    {left right : rhoIGSLT.toGSLT.Term}
-    (equivalent : rhoIGSLT.toGSLT.Bisimilar left right) :
+    {left right : rhoReflectiveGSLT.Term}
+    (equivalent : rhoReflectiveGSLT.Bisimilar left right) :
     rhoLanguageDefGSLT.Bisimilar
       (presentedRhoProcessEquiv left) (presentedRhoProcessEquiv right) :=
   GSLT.bisimilar_map_of_step_iff presentedRhoProcessEquiv
@@ -389,11 +405,11 @@ theorem presentedRhoBisimilar_sound
 theorem establishedRhoBisimilar_to_presented
     {left right : rhoLanguageDefGSLT.Term}
     (equivalent : rhoLanguageDefGSLT.Bisimilar left right) :
-    rhoIGSLT.toGSLT.Bisimilar
+    rhoReflectiveGSLT.Bisimilar
       (presentedRhoProcessEquiv.symm left)
       (presentedRhoProcessEquiv.symm right) := by
   apply GSLT.bisimilar_map_of_step_iff presentedRhoProcessEquiv.symm
-    (source := rhoLanguageDefGSLT) (target := rhoIGSLT.toGSLT) ?_ equivalent
+    (source := rhoLanguageDefGSLT) (target := rhoReflectiveGSLT) ?_ equivalent
   intro source target
   simpa using
     (presentedRhoStep_iff
@@ -402,7 +418,7 @@ theorem establishedRhoBisimilar_to_presented
 
 /-- The behavioral GSLT derived generically from `rhoCalc` is isomorphic to
 the established sorted rho GSLT. -/
-def rhoSemanticIso : rhoIGSLT.toGSLT ≅ rhoLanguageDefGSLT where
+def rhoSemanticIso : rhoReflectiveGSLT ≅ rhoLanguageDefGSLT where
   hom :=
     { toFun := presentedRhoProcessEquiv
       preserves_bisim := presentedRhoBisimilar_sound }

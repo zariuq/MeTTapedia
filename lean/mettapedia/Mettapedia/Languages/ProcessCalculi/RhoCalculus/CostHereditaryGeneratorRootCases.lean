@@ -31,8 +31,9 @@ collapsing arm returns an actual static-root certificate for the supplied
 tree. -/
 theorem RhoCostGeneratorAbsorption.typedRootCases
     {left right : Pattern}
-    {witness : EquationSemantics.AuthoredGeneratorWitness
-      defaultBasePremises rhoCIGSLT.costWholeLanguage left right}
+    {witness : ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness
+      rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
+      rhoCIGSLT.costWholeLanguage left right}
     (absorption : RhoCostGeneratorAbsorption witness)
     {targetFree : FreeTypeContext} {leftAvailable leftOuter : List TypeExpr}
     {rightAvailable rightOuter : List TypeExpr} {category : String}
@@ -72,8 +73,9 @@ canonical equalities.  This is the exact entry condition for multi-child
 structural descent. -/
 theorem RhoCostGeneratorAbsorption.typedStructuralRootAligned
     {left right : Pattern}
-    {witness : EquationSemantics.AuthoredGeneratorWitness
-      defaultBasePremises rhoCIGSLT.costWholeLanguage left right}
+    {witness : ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness
+      rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
+      rhoCIGSLT.costWholeLanguage left right}
     (absorption : RhoCostGeneratorAbsorption witness)
     {targetFree : FreeTypeContext} {leftAvailable leftOuter : List TypeExpr}
     {rightAvailable rightOuter : List TypeExpr} {category : String}

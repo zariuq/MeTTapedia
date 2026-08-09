@@ -39,6 +39,7 @@ namespace Mettapedia.Languages.MeTTa.PeTTa.TypeSystemGSLTGuard
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Substitution
+open Mettapedia.GSLT.LanguageDef
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
 open Mettapedia.Languages.MeTTa.PeTTa.TypeSystemGSLT
 
@@ -464,7 +465,7 @@ private def fixtureSymDecls : RuleSchema :=
     conclusion :=
       envDeclaredList symA (dCons (declOf symA tStr) dNil) }
 
-/-! ## The guard language: core presentation extended -/
+/-! ## The guard language: one extended definition -/
 
 def newTerms : List GrammarRule :=
   [ termConstructor "FZ" 0, termConstructor "FS" 1,
@@ -510,48 +511,60 @@ def exportRules : List RuleSchema :=
 private def fixtureRules : List RuleSchema :=
   [ fixtureNomNewtype, fixtureNomAlias, fixtureSymDecls ]
 
-/-- The EXPORT presentation: what the artifact generator consumes. -/
-def guardLanguage : LanguageDef :=
-  { corePresentation.language with
+/-- The complete EXPORT definition consumed by the artifact generator.  The
+core grammar and calculus grow together in one flat record. -/
+abbrev guardDefinition : CalculusLanguageDef :=
+  { TypeSystemGSLT.definition with
     name := "petta-typecheck-v2-guard"
-    terms := corePresentation.language.terms ++ newTerms
-    judgments := corePresentation.language.judgments ++ newJudgments
-    inferenceRules :=
-      corePresentation.language.inferenceRules ++ exportRules }
+    terms := TypeSystemGSLT.definition.terms ++ newTerms
+    judgments := TypeSystemGSLT.definition.judgments ++ newJudgments
+    rules := TypeSystemGSLT.definition.rules ++ exportRules }
 
-/-- The RECEIPT presentation: export plus environment fixtures. -/
-private def receiptLanguage : LanguageDef :=
-  { guardLanguage with
-    inferenceRules := guardLanguage.inferenceRules ++ fixtureRules }
+/-- Object-language view retained for existing consumers. -/
+abbrev guardLanguage : LanguageDef := guardDefinition.toLanguageDef
 
-def guardPresentation : Presentation := { language := guardLanguage }
-private def receiptPresentation : Presentation := { language := receiptLanguage }
+/-- Calculus view retained for existing consumers. -/
+abbrev guardCalculus :
+    Mettapedia.GSLT.LanguageDef.InferenceExtension.ProofCalculus :=
+  guardDefinition.toCalculus
+
+/-- The RECEIPT definition adds only the environment fixtures. -/
+private abbrev receiptDefinition : CalculusLanguageDef :=
+  { guardDefinition with
+    rules := guardDefinition.rules ++ fixtureRules }
+
+private abbrev receiptLanguage : LanguageDef :=
+  receiptDefinition.toLanguageDef
+
+private abbrev receiptCalculus :
+    Mettapedia.GSLT.LanguageDef.InferenceExtension.ProofCalculus :=
+  receiptDefinition.toCalculus
+
+abbrev guardPresentation : Presentation := guardDefinition.toNested
+private abbrev receiptPresentation : Presentation := receiptDefinition.toNested
 
 /-! ## Receipts -/
 
 theorem guard_language_validate : guardLanguage.validate = [] := by
   apply LanguageDef.validate_eq_nil_of_constructorOnly guardLanguage <;>
-    simp [guardLanguage, newTerms, corePresentation, presentation,
-      language, termType,
+    simp [newTerms, termType,
       termConstructor, LanguageDef.typeNames, TypeDecl.plain,
       TermParam.typeExpr, TypeExpr.baseNames]
 
 theorem receipt_language_validate : receiptLanguage.validate = [] := by
   apply LanguageDef.validate_eq_nil_of_constructorOnly receiptLanguage <;>
-    simp [receiptLanguage, guardLanguage, newTerms, fixtureRules,
-      corePresentation, presentation, language, termType, termConstructor,
+    simp [newTerms, termType, termConstructor,
       LanguageDef.typeNames, TypeDecl.plain, TermParam.typeExpr,
       TypeExpr.baseNames]
 
 /-- The export rule list is literally a prefix of the receipt rule list;
 the delta is exactly the three environment fixtures. -/
 theorem export_rules_are_receipt_prefix :
-    receiptLanguage.inferenceRules =
-      guardLanguage.inferenceRules ++ fixtureRules := by rfl
+    receiptCalculus.rules = guardCalculus.rules ++ fixtureRules := by rfl
 
 /-- Inventory pins. -/
 theorem guard_constructor_count : guardLanguage.terms.length = 43 := by decide
-theorem guard_rule_count : guardLanguage.inferenceRules.length = 72 := by decide
+theorem guard_rule_count : guardCalculus.rules.length = 72 := by decide
 
 set_option maxRecDepth 32768 in
 set_option synthInstance.maxSize 4096 in
@@ -559,7 +572,7 @@ set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
 theorem guard_presentation_valid : guardPresentation.isValidV2 = true := by
   have hvalidate : guardPresentation.language.validate = [] := by
-    simpa [guardPresentation] using guard_language_validate
+    exact guard_language_validate
   unfold Presentation.isValidV2 Presentation.isValidV1
   rw [hvalidate]
   simp [guardPresentation,
@@ -576,8 +589,7 @@ theorem guard_presentation_valid : guardPresentation.isValidV2 = true := by
     Pattern.hasCanonicalBinderMetadata,
     Pattern.hasCanonicalBinderMetadataList, Pattern.zipHead, Pattern.mapHead,
     Pattern.evalHead,
-    guardLanguage, newTerms, newJudgments, exportRules,
-    corePresentation, presentation, language, termType,
+    newTerms, newJudgments, exportRules, termType,
     termConstructor, consistentRefl, consistentDynLeft,
     consistentDynRight, consistentUnionRight, consistentUnionLeft,
     consistentBrand, consistentArrow, consistentListNil,
@@ -607,13 +619,28 @@ theorem guard_presentation_valid : guardPresentation.isValidV2 = true := by
     ruleId]
   decide
 
+/-- Admission stated on the one flat definition rather than its derived
+checker view. -/
+theorem guard_definition_admitted : guardDefinition.isAdmitted = true :=
+  guard_presentation_valid
+
+/-- The complete guard language as one GSLT. -/
+def guardTotalTheory : Mettapedia.GSLT.GSLT :=
+  guardDefinition.toGSLTOfNoEquations guard_definition_admitted rfl
+
+/-- The total carrier contains authored object patterns and proof-obligation
+states. -/
+theorem guardTotalTheory_Term :
+    guardTotalTheory.Term = (Pattern ⊕ List Pattern) :=
+  rfl
+
 set_option maxRecDepth 32768 in
 set_option synthInstance.maxSize 4096 in
 set_option synthInstance.maxHeartbeats 1000000 in
 set_option maxHeartbeats 2000000 in
 theorem receipt_presentation_valid : receiptPresentation.isValidV2 = true := by
   have hvalidate : receiptPresentation.language.validate = [] := by
-    simpa [receiptPresentation] using receipt_language_validate
+    exact receipt_language_validate
   unfold Presentation.isValidV2 Presentation.isValidV1
   rw [hvalidate]
   simp [receiptPresentation,
@@ -630,8 +657,7 @@ theorem receipt_presentation_valid : receiptPresentation.isValidV2 = true := by
     Pattern.hasCanonicalBinderMetadata,
     Pattern.hasCanonicalBinderMetadataList, Pattern.zipHead, Pattern.mapHead,
     Pattern.evalHead,
-    guardLanguage, receiptLanguage, newTerms, newJudgments, exportRules,
-    fixtureRules, corePresentation, presentation, language, termType,
+    newTerms, newJudgments, exportRules, fixtureRules, termType,
     termConstructor, consistentRefl, consistentDynLeft,
     consistentDynRight, consistentUnionRight, consistentUnionLeft,
     consistentBrand, consistentArrow, consistentListNil,
@@ -683,8 +709,7 @@ theorem string_literal_mismatches_number :
     checkRaw receiptChecked (definiteMismatch (fs fz) vStr tNum)
       strNotNumProof = true := by
   simp [checkRaw, checkRawChildren, receiptChecked, receiptPresentation,
-    receiptLanguage, guardLanguage, exportRules, fixtureRules, newTerms,
-    newJudgments, corePresentation, presentation, language,
+    exportRules, fixtureRules,
     strNotNumProof, baseStrProof, consistentRefl,
     consistentDynLeft, consistentDynRight, consistentUnionRight,
     consistentUnionLeft, consistentBrand, consistentArrow,
@@ -732,8 +757,7 @@ theorem literal_never_constructor_shaped :
     checkRaw receiptChecked (definiteMismatch (fs fz) vNum (tCtor nomA (fs fz)))
       literalCtorProof = true := by
   simp [checkRaw, checkRawChildren, receiptChecked, receiptPresentation,
-    receiptLanguage, guardLanguage, exportRules, fixtureRules, newTerms,
-    newJudgments, corePresentation, presentation, language,
+    exportRules, fixtureRules,
     literalCtorProof, baseNumProof, consistentRefl, consistentDynLeft,
     consistentDynRight, consistentUnionRight, consistentUnionLeft,
     consistentBrand, consistentArrow, consistentListNil,
@@ -801,8 +825,7 @@ theorem union_all_members_mismatch :
     checkRaw receiptChecked (definiteMismatch (fs (fs fz)) vNum (tUnion unionMembers))
       unionAllProof = true := by
   simp [checkRaw, checkRawChildren, receiptChecked, receiptPresentation,
-    receiptLanguage, guardLanguage, exportRules, fixtureRules, newTerms,
-    newJudgments, corePresentation, presentation, language, unionAllProof,
+    exportRules, fixtureRules, unionAllProof,
     unionMembers, numStrMismatchProof, numBoolMismatchProof, maTailProof,
     baseNumProof, consistentRefl, consistentDynLeft, consistentDynRight,
     consistentUnionRight, consistentUnionLeft, consistentBrand,
@@ -851,8 +874,7 @@ theorem newtype_resolves_before_judging :
     checkRaw receiptChecked (definiteMismatch (fs (fs fz)) vStr (tNominal nomA))
       newtypeResolvedProof = true := by
   simp [checkRaw, checkRawChildren, receiptChecked, receiptPresentation,
-    receiptLanguage, guardLanguage, exportRules, fixtureRules, newTerms,
-    newJudgments, corePresentation, presentation, language,
+    exportRules, fixtureRules,
     newtypeResolvedProof, fixtureNewtypeProof, strNotNumProof,
     baseStrProof, consistentRefl, consistentDynLeft, consistentDynRight,
     consistentUnionRight, consistentUnionLeft, consistentBrand,
@@ -908,8 +930,7 @@ theorem declared_symbol_conflict :
     checkRaw receiptChecked (definiteMismatch (fs fz) (vSym symA) tNum)
       declaredSymbolProof = true := by
   simp [checkRaw, checkRawChildren, receiptChecked, receiptPresentation,
-    receiptLanguage, guardLanguage, exportRules, fixtureRules, newTerms,
-    newJudgments, corePresentation, presentation, language,
+    exportRules, fixtureRules,
     declaredSymbolProof, fixtureSymProof, symDeclConflictProof,
     consistentRefl, consistentDynLeft, consistentDynRight,
     consistentUnionRight, consistentUnionLeft, consistentBrand,
@@ -952,8 +973,7 @@ theorem committed_bool_requires_bound :
     checkRaw receiptChecked (boundnessRefuted mDet tBool)
       boundnessProof = true := by
   simp [checkRaw, checkRawChildren, receiptChecked, receiptPresentation,
-    receiptLanguage, guardLanguage, exportRules, fixtureRules, newTerms,
-    newJudgments, corePresentation, presentation, language,
+    exportRules, fixtureRules,
     boundnessProof, consistentRefl, consistentDynLeft, consistentDynRight,
     consistentUnionRight, consistentUnionLeft, consistentBrand,
     consistentArrow, consistentListNil, consistentListCons,
@@ -1000,8 +1020,7 @@ theorem undeclared_nominal_stays_open :
     checkRaw receiptChecked (definiteMismatch (fs fz) vNum (tNominal nomB))
       undeclaredNominalCandidate = false := by
   simp [checkRaw, checkRawChildren, receiptChecked, receiptPresentation,
-    receiptLanguage, guardLanguage, exportRules, fixtureRules, newTerms,
-    newJudgments, corePresentation, presentation, language,
+    exportRules, fixtureRules,
     undeclaredNominalCandidate, consistentRefl, consistentDynLeft,
     consistentDynRight, consistentUnionRight, consistentUnionLeft,
     consistentBrand, consistentArrow, consistentListNil,
@@ -1046,8 +1065,7 @@ theorem same_base_sort_never_mismatches :
     checkRaw receiptChecked (definiteMismatch (fs fz) vNum tNum)
       sameBaseCandidate = false := by
   simp [checkRaw, checkRawChildren, receiptChecked, receiptPresentation,
-    receiptLanguage, guardLanguage, exportRules, fixtureRules, newTerms,
-    newJudgments, corePresentation, presentation, language,
+    exportRules, fixtureRules,
     sameBaseCandidate, consistentRefl, consistentDynLeft,
     consistentDynRight, consistentUnionRight, consistentUnionLeft,
     consistentBrand, consistentArrow, consistentListNil,
@@ -1093,8 +1111,7 @@ theorem unplaceable_declaration_vetoes :
     checkRaw receiptChecked (declaredConflictSome fz (dCons (declOf symA tUndefined) dNil) tNum)
       vetoCandidate = false := by
   simp [checkRaw, checkRawChildren, receiptChecked, receiptPresentation,
-    receiptLanguage, guardLanguage, exportRules, fixtureRules, newTerms,
-    newJudgments, corePresentation, presentation, language, vetoCandidate,
+    exportRules, fixtureRules, vetoCandidate,
     consistentRefl, consistentDynLeft, consistentDynRight,
     consistentUnionRight, consistentUnionLeft, consistentBrand,
     consistentArrow, consistentListNil, consistentListCons,
@@ -1128,43 +1145,43 @@ theorem unplaceable_declaration_vetoes :
     Pattern.isGroundListAt, Pattern.hasCanonicalBinderMetadata,
     Pattern.hasCanonicalBinderMetadataList]
 
-/-! ## Surface-mapping tables (root-carried; the exporter GENERATES the
-runtime reifier from these, so surface-to-algebra bridging is data of the
+/-! ## Syntax-mapping tables (root-carried; the exporter GENERATES the
+runtime reifier from these, so syntax-to-algebra bridging is data of the
 presentation, never hand-written runtime semantics) -/
 
-/-- Base surface type names and their root constructors. -/
-def surfaceBaseTypeTable : List (String × String) :=
+/-- Base syntax type names and their root constructors. -/
+def syntaxBaseTypeTable : List (String × String) :=
   [("Number", "TNum"), ("String", "TStr"), ("Bool", "TBool"),
    ("%Undefined%", "TUndefined")]
 
-/-- Surface arrow heads and their root mode atoms
+/-- Source arrow heads and their root mode atoms
 (`flags_arrows.pl:72-92`). -/
-def surfaceModeTable : List (String × String) :=
+def syntaxModeTable : List (String × String) :=
   [("->", "MPlain"), ("-[det]->", "MDet"), ("-[semidet]->", "MSemidet"),
    ("-[nondet]->", "MNondet")]
 
-theorem surface_base_table_length : surfaceBaseTypeTable.length = 4 := by
+theorem syntax_base_table_length : syntaxBaseTypeTable.length = 4 := by
   decide
-theorem surface_mode_table_length : surfaceModeTable.length = 4 := by decide
+theorem syntax_mode_table_length : syntaxModeTable.length = 4 := by decide
 
 /-- Every base-table target is a declared 0-ary constructor of the guard
 language: the lexical table is CONNECTED to the presentation, not adjacent
 to it. -/
-theorem surface_base_targets_are_constructors :
-    surfaceBaseTypeTable.all (fun entry =>
+theorem syntax_base_targets_are_constructors :
+    syntaxBaseTypeTable.all (fun entry =>
       guardLanguage.terms.any (fun term =>
         term.label == entry.2 && term.params.length == 0)) = true := by
   decide
 
 /-- Every mode-table target is a declared 0-ary constructor of the guard
 language. -/
-theorem surface_mode_targets_are_constructors :
-    surfaceModeTable.all (fun entry =>
+theorem syntax_mode_targets_are_constructors :
+    syntaxModeTable.all (fun entry =>
       guardLanguage.terms.any (fun term =>
         term.label == entry.2 && term.params.length == 0)) = true := by
   decide
 
-/-! ## Audit surface: receipt presentation + sample derivations for the
+/-! ## Audit interface: receipt presentation + sample derivations for the
 operational generic checker (the guard-level GIC projection) -/
 
 def auditPresentation : Presentation := receiptPresentation

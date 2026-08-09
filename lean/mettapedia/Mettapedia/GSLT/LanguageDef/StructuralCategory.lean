@@ -8,9 +8,9 @@ import Mettapedia.OSLF.MeTTaIL.DerivedContexts
 
 This module keeps the authored `LanguageDef` as the sole presentation root.
 Objects pair that exact value with its existing validation result.  Morphisms
-are structural maps of the operational theory: they map sort and constructor
-symbols, preserve binder and collection shape, and carry authored equations,
-rewrite schemas, and reflective declarations into declarations of the target.
+are structural maps of the five-field operational theory: they map sort and
+constructor symbols, preserve binder and collection shape, and carry authored
+equations and rewrite schemas into declarations of the target.
 
 These maps are deliberately distinct from behavioral `GSLT.Morphism`s and
 from operational simulations between languages.  Parsing notation, backend
@@ -44,8 +44,6 @@ structure PresentationSymbols where
   relation : String → String
   equation : String → String
   rewrite : String → String
-  reflective : String → String
-  reflectiveRule : String → String
 
 namespace PresentationSymbols
 
@@ -56,8 +54,6 @@ def id : PresentationSymbols where
   relation := _root_.id
   equation := _root_.id
   rewrite := _root_.id
-  reflective := _root_.id
-  reflectiveRule := _root_.id
 
 /-- Apply `first` and then `second`. -/
 def comp (first second : PresentationSymbols) : PresentationSymbols where
@@ -66,8 +62,6 @@ def comp (first second : PresentationSymbols) : PresentationSymbols where
   relation := second.relation ∘ first.relation
   equation := second.equation ∘ first.equation
   rewrite := second.rewrite ∘ first.rewrite
-  reflective := second.reflective ∘ first.reflective
-  reflectiveRule := second.reflectiveRule ∘ first.reflectiveRule
 
 end PresentationSymbols
 
@@ -95,7 +89,7 @@ def mapTermParam (symbols : PresentationSymbols) : TermParam → TermParam
   | .multiAbstractionNamed binders body type =>
       .multiAbstractionNamed binders body (mapTypeExpr symbols type)
 
-/-- Map a constructor declaration.  Surface notation and evaluation policy
+/-- Map a constructor declaration.  Authored notation and evaluation policy
 are retained; the algebraic label, result sort, and parameter sorts are mapped. -/
 def mapGrammarRule (symbols : PresentationSymbols)
     (rule : GrammarRule) : GrammarRule :=
@@ -175,31 +169,6 @@ def mapRewriteRule (symbols : PresentationSymbols)
     premises := rewrite.premises.map (mapPremise symbols)
     left := mapPattern symbols rewrite.left
     right := mapPattern symbols rewrite.right }
-
-/-- Map a reflective compiler declaration together with all of its references
-back into the same authored language definition. -/
-def mapReflectivePresentation (symbols : PresentationSymbols)
-    (declaration : ReflectivePresentationDecl) : ReflectivePresentationDecl :=
-  { name := symbols.reflective declaration.name
-    processSort := symbols.sort declaration.processSort
-    nameSort := symbols.sort declaration.nameSort
-    quoteConstructor := symbols.constructor declaration.quoteConstructor
-    dropConstructor := symbols.constructor declaration.dropConstructor
-    parallelCollection := declaration.parallelCollection
-    parallelUnitConstructor :=
-      symbols.constructor declaration.parallelUnitConstructor
-    quoteDropEquation := symbols.equation declaration.quoteDropEquation }
-
-/-- Map a rule-local selection while keeping matching and substitution roles
-distinct. -/
-def mapReflectiveRule (symbols : PresentationSymbols)
-    (declaration : ReflectiveRuleDecl) : ReflectiveRuleDecl :=
-  { name := symbols.reflectiveRule declaration.name
-    rewriteRule := symbols.rewrite declaration.rewriteRule
-    matchingPresentation :=
-      symbols.reflective declaration.matchingPresentation
-    substitutionPresentation :=
-      symbols.reflective declaration.substitutionPresentation }
 
 /-! ## Identity and composition laws for the induced action -/
 
@@ -505,39 +474,12 @@ end CIGSLT
   rw [mapPattern_comp, mapPattern_comp]
   rfl
 
-@[simp] theorem mapReflectivePresentation_id
-    (declaration : ReflectivePresentationDecl) :
-    mapReflectivePresentation PresentationSymbols.id declaration = declaration := by
-  cases declaration
-  rfl
-
-@[simp] theorem mapReflectivePresentation_comp
-    (first second : PresentationSymbols)
-    (declaration : ReflectivePresentationDecl) :
-    mapReflectivePresentation (first.comp second) declaration =
-      mapReflectivePresentation second
-        (mapReflectivePresentation first declaration) := by
-  cases declaration
-  rfl
-
-@[simp] theorem mapReflectiveRule_id (declaration : ReflectiveRuleDecl) :
-    mapReflectiveRule PresentationSymbols.id declaration = declaration := by
-  cases declaration
-  rfl
-
-@[simp] theorem mapReflectiveRule_comp
-    (first second : PresentationSymbols) (declaration : ReflectiveRuleDecl) :
-    mapReflectiveRule (first.comp second) declaration =
-      mapReflectiveRule second (mapReflectiveRule first declaration) := by
-  cases declaration
-  rfl
-
 /-! ## Signature and structural morphisms -/
 
 /-- The weakest map needed by the declaration-derived typing judgment.
 Constructor profiles are preserved, while parser notation and host evaluator
-metadata may change or disappear.  Equations, rewrites, and reflective
-declarations are deliberately outside this interface. -/
+metadata may change or disappear.  Equations and rewrites are deliberately
+outside this interface. -/
 structure TypingMorphism (source target : ValidatedLanguageDef) where
   symbols : PresentationSymbols
   mapsTypes : ∀ declaration, List.Mem declaration source.language.types →
@@ -602,8 +544,7 @@ end TypingMorphism
 
 /-- A map of the full typed signature underlying a validated presentation.
 It preserves complete authored sort and constructor declarations, including
-surface metadata, but says nothing about equations, rewrites, or reflective
-declarations. -/
+concrete-syntax metadata, but says nothing about equations or rewrites. -/
 structure SignatureMorphism (source target : ValidatedLanguageDef) where
   symbols : PresentationSymbols
   mapsTypes : ∀ declaration, List.Mem declaration source.language.types →
@@ -674,20 +615,10 @@ structure StructuralMorphism (source target : ValidatedLanguageDef) where
     List.Mem (mapEquation symbols equation) target.language.equations
   mapsRewrites : ∀ rewrite, List.Mem rewrite source.language.rewrites →
     List.Mem (mapRewriteRule symbols rewrite) target.language.rewrites
-  mapsReflectivePresentations :
-    ∀ declaration,
-      List.Mem declaration source.language.reflectivePresentations →
-      List.Mem (mapReflectivePresentation symbols declaration)
-        target.language.reflectivePresentations
-  mapsReflectiveRules :
-    ∀ declaration,
-      List.Mem declaration source.language.reflectiveRules →
-      List.Mem (mapReflectiveRule symbols declaration)
-        target.language.reflectiveRules
 
 namespace StructuralMorphism
 
-/-- Forget equation, rewrite, and reflective preservation while retaining
+/-- Forget equation and rewrite preservation while retaining
 the exact typed-signature action of a structural presentation map. -/
 def toSignature {source target : ValidatedLanguageDef}
     (morphism : StructuralMorphism source target) :
@@ -719,19 +650,6 @@ abbrev AuthoredEquation (presentation : ValidatedLanguageDef) :=
 /-- A rewrite selected from the exact authored declaration list. -/
 abbrev AuthoredRewrite (presentation : ValidatedLanguageDef) :=
   { declaration : RewriteRule // List.Mem declaration presentation.language.rewrites }
-
-/-- A reflective presentation selected from the exact authored declaration
-list. -/
-abbrev AuthoredReflectivePresentation
-    (presentation : ValidatedLanguageDef) :=
-  { declaration : ReflectivePresentationDecl //
-      List.Mem declaration presentation.language.reflectivePresentations }
-
-/-- A rule-local reflective selection from the exact authored declaration
-list. -/
-abbrev AuthoredReflectiveRule (presentation : ValidatedLanguageDef) :=
-  { declaration : ReflectiveRuleDecl //
-      List.Mem declaration presentation.language.reflectiveRules }
 
 /-- Validation makes the name projection from authored carrier sorts
 injective, so a typed generated namespace may retain declaration identity
@@ -774,26 +692,6 @@ def mapRewrite {source target : ValidatedLanguageDef}
   ⟨mapRewriteRule morphism.symbols rewrite.1,
     morphism.mapsRewrites rewrite.1 rewrite.2⟩
 
-/-- Structural maps carry authored reflective declarations to authored
-reflective declarations. -/
-def mapReflectivePresentation {source target : ValidatedLanguageDef}
-    (morphism : StructuralMorphism source target)
-    (declaration : AuthoredReflectivePresentation source) :
-    AuthoredReflectivePresentation target :=
-  ⟨Mettapedia.GSLT.LanguageDef.mapReflectivePresentation
-      morphism.symbols declaration.1,
-    morphism.mapsReflectivePresentations declaration.1 declaration.2⟩
-
-/-- Structural maps carry rule-local reflective selections to selections in
-the target language. -/
-def mapReflectiveRule {source target : ValidatedLanguageDef}
-    (morphism : StructuralMorphism source target)
-    (declaration : AuthoredReflectiveRule source) :
-    AuthoredReflectiveRule target :=
-  ⟨Mettapedia.GSLT.LanguageDef.mapReflectiveRule
-      morphism.symbols declaration.1,
-    morphism.mapsReflectiveRules declaration.1 declaration.2⟩
-
 /-- Equality of structural morphisms is determined by their symbol action;
 all declaration-preservation fields are proofs. -/
 @[ext]
@@ -820,12 +718,6 @@ def id (language : ValidatedLanguageDef) : StructuralMorphism language language 
   mapsRewrites rewrite membership := by
     rw [mapRewriteRule_id]
     exact membership
-  mapsReflectivePresentations declaration membership := by
-    rw [mapReflectivePresentation_id]
-    exact membership
-  mapsReflectiveRules declaration membership := by
-    rw [mapReflectiveRule_id]
-    exact membership
 
 /-- Composition of structural maps. -/
 def comp {first second third : ValidatedLanguageDef}
@@ -845,14 +737,6 @@ def comp {first second third : ValidatedLanguageDef}
   mapsRewrites rewrite membership := by
     rw [mapRewriteRule_comp]
     exact right.mapsRewrites _ (left.mapsRewrites rewrite membership)
-  mapsReflectivePresentations declaration membership := by
-    rw [mapReflectivePresentation_comp]
-    exact right.mapsReflectivePresentations _
-      (left.mapsReflectivePresentations declaration membership)
-  mapsReflectiveRules declaration membership := by
-    rw [mapReflectiveRule_comp]
-    exact right.mapsReflectiveRules _
-      (left.mapsReflectiveRules declaration membership)
 
 @[simp] theorem mapSort_id (presentation : ValidatedLanguageDef)
     (sort : AuthoredSort presentation) :
@@ -914,43 +798,6 @@ def comp {first second third : ValidatedLanguageDef}
       right.mapRewrite (left.mapRewrite rewrite) := by
   apply Subtype.ext
   exact mapRewriteRule_comp left.symbols right.symbols rewrite.1
-
-@[simp] theorem mapReflectivePresentation_id
-    (presentation : ValidatedLanguageDef)
-    (declaration : AuthoredReflectivePresentation presentation) :
-    (id presentation).mapReflectivePresentation declaration = declaration := by
-  apply Subtype.ext
-  exact Mettapedia.GSLT.LanguageDef.mapReflectivePresentation_id declaration.1
-
-@[simp] theorem mapReflectivePresentation_comp
-    {first second third : ValidatedLanguageDef}
-    (left : StructuralMorphism first second)
-    (right : StructuralMorphism second third)
-    (declaration : AuthoredReflectivePresentation first) :
-    (comp left right).mapReflectivePresentation declaration =
-      right.mapReflectivePresentation
-        (left.mapReflectivePresentation declaration) := by
-  apply Subtype.ext
-  exact Mettapedia.GSLT.LanguageDef.mapReflectivePresentation_comp
-    left.symbols right.symbols declaration.1
-
-@[simp] theorem mapReflectiveRule_id
-    (presentation : ValidatedLanguageDef)
-    (declaration : AuthoredReflectiveRule presentation) :
-    (id presentation).mapReflectiveRule declaration = declaration := by
-  apply Subtype.ext
-  exact Mettapedia.GSLT.LanguageDef.mapReflectiveRule_id declaration.1
-
-@[simp] theorem mapReflectiveRule_comp
-    {first second third : ValidatedLanguageDef}
-    (left : StructuralMorphism first second)
-    (right : StructuralMorphism second third)
-    (declaration : AuthoredReflectiveRule first) :
-    (comp left right).mapReflectiveRule declaration =
-      right.mapReflectiveRule (left.mapReflectiveRule declaration) := by
-  apply Subtype.ext
-  exact Mettapedia.GSLT.LanguageDef.mapReflectiveRule_comp
-    left.symbols right.symbols declaration.1
 
 end StructuralMorphism
 

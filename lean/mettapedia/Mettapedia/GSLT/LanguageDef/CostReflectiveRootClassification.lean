@@ -21,6 +21,7 @@ open Mettapedia.OSLF.Framework.ConstructorCategory
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical
 open WellSorted
+open ReflectionExtension
 
 /-- Every collapsing root of a generated static reflective declaration is a
 genuine static root in the checked Cost tree.  The returned colour is the
@@ -30,7 +31,7 @@ theorem CostRegionTree.nonempty_staticRootColor_of_costStatic_collapsingRoot
     (source : CIGSLT) (declarationColor : CostStaticColor)
     (declaration : ReflectivePresentationDecl)
     (membership : declaration ∈
-      source.theory.presentation.presentation.language.reflectivePresentations)
+      source.reflection.1.presentations)
     {targetFree : FreeTypeContext} {available outer : List TypeExpr}
     {pattern : Pattern} {category : String}
     (tree : CostRegionTree source targetFree available outer pattern
@@ -71,7 +72,7 @@ theorem CostRegionTree.rootIsStatic_of_costStatic_collapsingRoot
     (source : CIGSLT) (declarationColor : CostStaticColor)
     (declaration : ReflectivePresentationDecl)
     (membership : declaration ∈
-      source.theory.presentation.presentation.language.reflectivePresentations)
+      source.reflection.1.presentations)
     {targetFree : FreeTypeContext} {available outer : List TypeExpr}
     {pattern : Pattern} {category : String}
     (tree : CostRegionTree source targetFree available outer pattern

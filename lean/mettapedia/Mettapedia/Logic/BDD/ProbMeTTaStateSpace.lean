@@ -1,4 +1,4 @@
-import Mettapedia.Logic.BDD.ProbMeTTaSourceSurface
+import Mettapedia.Logic.BDD.ProbMeTTaSourceSyntax
 
 /-!
 # ProbMeTTa Literal State Space
@@ -14,7 +14,7 @@ This file models the explicit mutable spaces used by
 The state layer is still pure Lean: operations return a new state instead of
 mutating a MeTTa space in place. The important point is that the source-level
 containers are explicit now, so the top-level runtime no longer jumps directly
-from surface syntax to a normalized `ProbMeTTaSourceProgram`.
+from concrete syntax to a normalized `ProbMeTTaSourceProgram`.
 
 Positive example:
 - `addRegisteredProbFact` really appends a new `(id, prob, atom)` entry to the
@@ -48,7 +48,7 @@ structure ProbMeTTaSpaceState (σ : LPSignature) where
   applyCacheCleared : Bool
 
 /-- Forget the literal spaces down to the normalized semantic program used by
-the already-proved ProbMeTTa source surface. -/
+the already-proved ProbMeTTa source syntax. -/
 def ProbMeTTaSpaceState.toSourceProgram {σ : LPSignature}
     (state : ProbMeTTaSpaceState σ) :
     ProbMeTTaSourceProgram σ state.numProbFacts where

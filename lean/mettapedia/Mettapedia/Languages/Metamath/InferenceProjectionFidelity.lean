@@ -18,14 +18,6 @@ open Mettapedia.Languages.Metamath.InferenceProjectionParserBridge
 
 /-! ## Fidelity of the partial decoders -/
 
-private theorem proposition_of_guard_success {proposition : Prop}
-    [Decidable proposition]
-    (hsuccess : ∃ value, _root_.guard proposition = some value) :
-    proposition := by
-  obtain ⟨value, hvalue⟩ := hsuccess
-  by_contra hfalse
-  simp [_root_.guard, hfalse] at hvalue
-
 /-- The runtime hypothesis discriminator represented by a projected view. -/
 def hypothesisEssentialBit : HypothesisView → Bool
   | .floating _ _ _ => false
@@ -69,8 +61,6 @@ theorem projectHypothesis?_eq_some_fidelity
                           | var variableName =>
                               simp [hformula] at hdecode
                               obtain ⟨hembedded, hview⟩ := hdecode
-                              have heq : embeddedLabel = label :=
-                                proposition_of_guard_success hembedded
                               subst embeddedLabel
                               subst hypothesis
                               exact ⟨runtimeFormula, hfind, hformula, rfl⟩
@@ -80,8 +70,6 @@ theorem projectHypothesis?_eq_some_fidelity
           | some formula =>
               simp [hformula] at hdecode
               obtain ⟨hembedded, hview⟩ := hdecode
-              have heq : embeddedLabel = label :=
-                proposition_of_guard_success hembedded
               subst embeddedLabel
               subst hypothesis
               exact ⟨runtimeFormula, hfind, hformula, rfl⟩
@@ -142,13 +130,13 @@ theorem projectAssertion?_eq_some_fidelity
         some assertion.formula ∧
       projectHypotheses? db frame.hyps.toList = some assertion.hypotheses ∧
       assertion.label = label ∧ assertion.frame = frame := by
-  simp [projectAssertion?] at hproject
-  obtain ⟨⟨guardValue, hembedded⟩, formula, hformula, hypotheses,
-    hhypotheses, _hframe, _hformulaFrame, hassertion⟩ := hproject
-  subst assertion
   have heq : embeddedLabel = label := by
     by_contra hne
-    simp [_root_.guard, hne] at hembedded
+    simp [projectAssertion?, hne] at hproject
+  simp [projectAssertion?, heq] at hproject
+  obtain ⟨formula, hformula, hypotheses, hhypotheses,
+    _hframe, _hformulaFrame, hassertion⟩ := hproject
+  subst assertion
   exact ⟨heq, hformula, hhypotheses, rfl, rfl⟩
 
 /-- Every assertion emitted by the entry traversal came from an assertion

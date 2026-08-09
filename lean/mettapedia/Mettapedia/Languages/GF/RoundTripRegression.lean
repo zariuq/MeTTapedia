@@ -15,26 +15,26 @@ English and Czech roundtrip corpora.
 namespace Mettapedia.Languages.GF.RoundTripRegression
 
 /-- English roundtrip counterexamples in the curated corpus. -/
-def englishFailures : List Mettapedia.Languages.GF.HandCrafted.English.RoundTripCorpus.ExampleSurface :=
+def englishFailures : List Mettapedia.Languages.GF.HandCrafted.English.RoundTripCorpus.ExampleTree :=
   Mettapedia.Languages.GF.HandCrafted.English.RoundTripCorpus.allExamples.filter
     (fun e => decide
-      (e ∉ Mettapedia.Languages.GF.HandCrafted.English.RoundTripCorpus.parseSurface
-        (Mettapedia.Languages.GF.HandCrafted.English.RoundTripCorpus.linearizeSurface e)))
+      (e ∉ Mettapedia.Languages.GF.HandCrafted.English.RoundTripCorpus.parseLinearization
+        (Mettapedia.Languages.GF.HandCrafted.English.RoundTripCorpus.linearizeExample e)))
 
 /-- Czech roundtrip counterexamples in the curated corpus. -/
-def czechFailures : List Mettapedia.Languages.GF.HandCrafted.Czech.RoundTripCorpus.ExampleSurface :=
+def czechFailures : List Mettapedia.Languages.GF.HandCrafted.Czech.RoundTripCorpus.ExampleTree :=
   Mettapedia.Languages.GF.HandCrafted.Czech.RoundTripCorpus.allExamples.filter
     (fun e => decide
-      (e ∉ Mettapedia.Languages.GF.HandCrafted.Czech.RoundTripCorpus.parseSurface
-        (Mettapedia.Languages.GF.HandCrafted.Czech.RoundTripCorpus.linearizeSurface e)))
+      (e ∉ Mettapedia.Languages.GF.HandCrafted.Czech.RoundTripCorpus.parseLinearization
+        (Mettapedia.Languages.GF.HandCrafted.Czech.RoundTripCorpus.linearizeExample e)))
 
 /-- English harness soundness: no failures in the current corpus. -/
 theorem englishFailures_empty : englishFailures = [] := by
   apply (List.filter_eq_nil_iff).2
   intro e he
   have hOk :
-      e ∈ Mettapedia.Languages.GF.HandCrafted.English.RoundTripCorpus.parseSurface
-        (Mettapedia.Languages.GF.HandCrafted.English.RoundTripCorpus.linearizeSurface e) :=
+      e ∈ Mettapedia.Languages.GF.HandCrafted.English.RoundTripCorpus.parseLinearization
+        (Mettapedia.Languages.GF.HandCrafted.English.RoundTripCorpus.linearizeExample e) :=
     Mettapedia.Languages.GF.HandCrafted.English.RoundTripCorpus.parse_linearize_complete e
   simp [hOk]
 
@@ -43,8 +43,8 @@ theorem czechFailures_empty : czechFailures = [] := by
   apply (List.filter_eq_nil_iff).2
   intro e he
   have hOk :
-      e ∈ Mettapedia.Languages.GF.HandCrafted.Czech.RoundTripCorpus.parseSurface
-        (Mettapedia.Languages.GF.HandCrafted.Czech.RoundTripCorpus.linearizeSurface e) :=
+      e ∈ Mettapedia.Languages.GF.HandCrafted.Czech.RoundTripCorpus.parseLinearization
+        (Mettapedia.Languages.GF.HandCrafted.Czech.RoundTripCorpus.linearizeExample e) :=
     Mettapedia.Languages.GF.HandCrafted.Czech.RoundTripCorpus.parse_linearize_complete e
   simp [hOk]
 

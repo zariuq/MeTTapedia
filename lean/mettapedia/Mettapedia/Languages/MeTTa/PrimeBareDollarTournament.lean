@@ -132,22 +132,22 @@ def eval (term : Term) (bindings : Bindings) : Option Value :=
       let extended ← matchPattern pattern sourceValue bindings
       eval body extended
 
-inductive SurfacePattern where
-  | dollar : SurfacePattern
-  | named : Nat → SurfacePattern
-  | structural : Nat → SurfacePattern
-  | literal : Value → SurfacePattern
-  | pair : SurfacePattern → SurfacePattern → SurfacePattern
+inductive SyntaxPattern where
+  | dollar : SyntaxPattern
+  | named : Nat → SyntaxPattern
+  | structural : Nat → SyntaxPattern
+  | literal : Value → SyntaxPattern
+  | pair : SyntaxPattern → SyntaxPattern → SyntaxPattern
 deriving Repr
 
-inductive SurfaceTerm where
-  | dollar : SurfaceTerm
-  | named : Nat → SurfaceTerm
-  | structural : Nat → SurfaceTerm
-  | value : Value → SurfaceTerm
-  | pair : SurfaceTerm → SurfaceTerm → SurfaceTerm
-  | letE : SurfacePattern → SurfaceTerm → SurfaceTerm → SurfaceTerm
-  | quoteDollar : SurfaceTerm
+inductive SyntaxTerm where
+  | dollar : SyntaxTerm
+  | named : Nat → SyntaxTerm
+  | structural : Nat → SyntaxTerm
+  | value : Value → SyntaxTerm
+  | pair : SyntaxTerm → SyntaxTerm → SyntaxTerm
+  | letE : SyntaxPattern → SyntaxTerm → SyntaxTerm → SyntaxTerm
+  | quoteDollar : SyntaxTerm
 deriving Repr
 
 inductive BareDollarPolicy where
@@ -158,7 +158,7 @@ inductive BareDollarPolicy where
 deriving Repr
 
 def elaboratePattern (policy : BareDollarPolicy) :
-    SurfacePattern → Nat → Pattern × Nat
+    SyntaxPattern → Nat → Pattern × Nat
   | .dollar, next =>
       match policy with
       | .literal => (.literal (.symbol dollarSymbol), next)
@@ -173,7 +173,7 @@ def elaboratePattern (policy : BareDollarPolicy) :
       (.pair leftResult.1 rightResult.1, rightResult.2)
 
 def elaborateTerm (policy : BareDollarPolicy) :
-    SurfaceTerm → List VarKey → Nat → Term × Nat
+    SyntaxTerm → List VarKey → Nat → Term × Nat
   | .dollar, scope, next =>
       match policy with
       | .literal => (.value (.symbol dollarSymbol), next)
@@ -210,7 +210,7 @@ def elaborateTerm (policy : BareDollarPolicy) :
           (.letE patternResult.1 sourceResult.1 bodyResult.1, bodyResult.2)
   | .quoteDollar, _, next => (.value .quotedDollar, next)
 
-def elaborateClosed (policy : BareDollarPolicy) (term : SurfaceTerm) : Term :=
+def elaborateClosed (policy : BareDollarPolicy) (term : SyntaxTerm) : Term :=
   (elaborateTerm policy term [] 0).1
 
 def namedProjection (bindings : Bindings) (name : Nat) : Option Value :=
@@ -271,7 +271,7 @@ theorem literal_pair_has_no_variable_keys :
 
 /-! ## Binder-sensitive laws -/
 
-def passReference (referenceName : Nat) : SurfaceTerm :=
+def passReference (referenceName : Nat) : SyntaxTerm :=
   .letE .dollar (.value (.reference referenceName)) .dollar
 
 theorem root_binder_passes_reference (name : Nat) :
@@ -292,7 +292,7 @@ theorem literal_dollar_does_not_match_reference (name : Nat) :
     eval (elaborateClosed .literal (passReference name)) emptyBindings = none := by
   rfl
 
-def structuredDiscard (left right : Value) : SurfaceTerm :=
+def structuredDiscard (left right : Value) : SyntaxTerm :=
   .letE (.pair .dollar .dollar) (.value (.pair left right))
     (.value (.symbol acceptedSymbol))
 
@@ -309,7 +309,7 @@ theorem shared_dollar_overconstrains_structured_discards
   simp [structuredDiscard, elaborateClosed, elaborateTerm, elaboratePattern,
     eval, matchPattern, bind, lookup, keyEq, setBinding, emptyBindings, h]
 
-def nestedRootBinders : SurfaceTerm :=
+def nestedRootBinders : SyntaxTerm :=
   .letE .dollar (.value (.symbol outerSymbol))
     (.pair
       (.letE .dollar (.value (.symbol innerSymbol)) .dollar)
@@ -320,7 +320,7 @@ theorem nested_root_binders_shadow :
       some (.pair (.symbol innerSymbol) (.symbol outerSymbol)) := by
   rfl
 
-def quotedRootBinder (referenceName : Nat) : SurfaceTerm :=
+def quotedRootBinder (referenceName : Nat) : SyntaxTerm :=
   .letE .dollar (.value (.reference referenceName)) .quoteDollar
 
 theorem quotation_is_a_scope_barrier (name : Nat) :

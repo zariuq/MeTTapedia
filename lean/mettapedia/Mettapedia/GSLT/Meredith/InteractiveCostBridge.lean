@@ -979,7 +979,7 @@ theorem continuedTwoStepDirectSpentTrace_eq_traceSteps :
 This gathers the full path-level spent-trace semantic facts at the concrete path
 so nearby projection lemmas do not depend directly on the generic source theorem. -/
 theorem continuedTwoStepDirectSpentTraceFullSemanticBridge :
-    (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).SurfaceLike ∧
+    (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).CanonicalShape ∧
       (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).toLedger =
         totalAction rhoIntrinsicLedgerAction continuedTwoStepPath ∧
       (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).toPublicPattern =
@@ -1014,7 +1014,7 @@ theorem continuedTwoStepDirectSpentTraceFullSemanticBridge :
       rhoSpentSyntaxTicks
         (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).toPattern =
           continuedTwoStepPath.length := by
-  exact ⟨rhoIntrinsicDirectSpentTrace_surfaceLike continuedTwoStepPath,
+  exact ⟨rhoIntrinsicDirectSpentTrace_canonicalShape continuedTwoStepPath,
     rhoIntrinsicDirectSpentTrace_toLedger continuedTwoStepPath,
     rhoIntrinsicDirectSpentTrace_toPublicPattern_eq_publicSpentSyntax continuedTwoStepPath,
     rhoIntrinsicDirectSpentTrace_traceCoherent continuedTwoStepPath,
@@ -1148,7 +1148,7 @@ theorem continuedTwoStepPublicSpentSyntax_semantics :
   exact continuedTwoStepPublicSpentSyntaxFullSemanticBridge
 
 theorem continuedTwoStepDirectSpentTrace_semantics :
-    (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).SurfaceLike ∧
+    (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).CanonicalShape ∧
       (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).toLedger =
         totalAction rhoIntrinsicLedgerAction continuedTwoStepPath ∧
       (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).toPublicPattern =
@@ -1269,7 +1269,7 @@ theorem continuedTwoStepNativeSemanticBundle :
         totalCost rhoIntrinsicCostMap continuedTwoStepPath 1 ∧
     rhoLedgerShadow (totalAction rhoIntrinsicLedgerAction continuedTwoStepPath) =
       traceAccount (S := rhoGSLT) (A := Nat) (k := 2) continuedTwoStepTrace ∧
-    (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).SurfaceLike ∧
+    (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).CanonicalShape ∧
     (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).toLedger =
       totalAction rhoIntrinsicLedgerAction continuedTwoStepPath ∧
     (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).toPublicPattern =
@@ -1345,7 +1345,7 @@ theorem continuedTwoStepNativeSemanticBundle :
       (rhoLedgerToSpentSyntax (totalAction rhoIntrinsicLedgerAction continuedTwoStepPath)) =
         2 ∧
     RhoLedger.TraceCoherent (totalAction rhoIntrinsicLedgerAction continuedTwoStepPath) ∧
-    (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).SurfaceLike ∧
+    (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).CanonicalShape ∧
     (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).toLedger =
       totalAction rhoIntrinsicLedgerAction continuedTwoStepPath ∧
     (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).toPublicPattern =
@@ -1469,7 +1469,7 @@ theorem continuedTwoStepNativeConcatSemanticBridge :
       (rhoLedgerToSpentSyntax (totalAction rhoIntrinsicLedgerAction continuedTwoStepPath)) =
         2 ∧
     RhoLedger.TraceCoherent (totalAction rhoIntrinsicLedgerAction continuedTwoStepPath) ∧
-    (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).SurfaceLike ∧
+    (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).CanonicalShape ∧
     (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).toLedger =
       totalAction rhoIntrinsicLedgerAction continuedTwoStepPath ∧
     (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).toPublicPattern =
@@ -1571,7 +1571,7 @@ theorem continuedTwoStepPublicSpentSyntaxConcatSemanticBridge :
 two-step bridge. This gives the `reducesN_concat` direct wrappers a local owner
 theorem built from the earlier path-level direct owners. -/
 theorem continuedTwoStepDirectSpentTraceConcatSemanticBridge :
-    (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).SurfaceLike ∧
+    (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).CanonicalShape ∧
       (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).toLedger =
         totalAction rhoIntrinsicLedgerAction continuedTwoStepPath ∧
       (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).toPublicPattern =
@@ -1809,7 +1809,7 @@ theorem continuedTwoStepPublicSpentSyntax_semantics_reducesN_concat :
   exact continuedTwoStepPublicSpentSyntaxConcatSemanticBridge
 
 theorem continuedTwoStepDirectSpentTrace_semantics_reducesN_concat :
-    (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).SurfaceLike ∧
+    (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).CanonicalShape ∧
       (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).toLedger =
         totalAction rhoIntrinsicLedgerAction continuedTwoStepPath ∧
       (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).toPublicPattern =
@@ -1971,7 +1971,7 @@ local owner theorem instead of repeated direct calls into the generic source
 layer. -/
 theorem continuedTwoStepDirectSpentTraceFullSemanticBridge_reducesN :
     (rhoIntrinsicDirectSpentTrace
-      (rhoRewritePathOfReducesN continuedTwoStepReducesN)).SurfaceLike ∧
+      (rhoRewritePathOfReducesN continuedTwoStepReducesN)).CanonicalShape ∧
       (rhoIntrinsicDirectSpentTrace
         (rhoRewritePathOfReducesN continuedTwoStepReducesN)).toLedger =
           totalAction rhoIntrinsicLedgerAction
@@ -2099,7 +2099,7 @@ theorem continuedTwoStepPublicSpentSyntax_semantics_reducesN :
 
 theorem continuedTwoStepDirectSpentTrace_semantics_reducesN :
     (rhoIntrinsicDirectSpentTrace
-      (rhoRewritePathOfReducesN continuedTwoStepReducesN)).SurfaceLike ∧
+      (rhoRewritePathOfReducesN continuedTwoStepReducesN)).CanonicalShape ∧
       (rhoIntrinsicDirectSpentTrace
         (rhoRewritePathOfReducesN continuedTwoStepReducesN)).toLedger =
           totalAction rhoIntrinsicLedgerAction
@@ -2177,7 +2177,7 @@ theorem continuedTwoStepNativeSemanticBridge :
         totalCost rhoIntrinsicCostMap continuedTwoStepPath 1 ∧
     rhoLedgerShadow (totalAction rhoIntrinsicLedgerAction continuedTwoStepPath) =
       traceAccount (S := rhoGSLT) (A := Nat) (k := 2) continuedTwoStepTrace ∧
-    (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).SurfaceLike ∧
+    (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).CanonicalShape ∧
     (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).toLedger =
       totalAction rhoIntrinsicLedgerAction continuedTwoStepPath ∧
     (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).toPublicPattern =
@@ -2237,7 +2237,7 @@ theorem continuedTwoStepNativeFullSemanticBridge :
         totalCost rhoIntrinsicCostMap continuedTwoStepPath 1 ∧
     rhoLedgerShadow (totalAction rhoIntrinsicLedgerAction continuedTwoStepPath) =
       traceAccount (S := rhoGSLT) (A := Nat) (k := 2) continuedTwoStepTrace ∧
-    (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).SurfaceLike ∧
+    (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).CanonicalShape ∧
     (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).toLedger =
       totalAction rhoIntrinsicLedgerAction continuedTwoStepPath ∧
     (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).toPublicPattern =
@@ -2313,7 +2313,7 @@ theorem continuedTwoStepNativeFullSemanticBridge :
       (rhoLedgerToSpentSyntax (totalAction rhoIntrinsicLedgerAction continuedTwoStepPath)) =
         2 ∧
     RhoLedger.TraceCoherent (totalAction rhoIntrinsicLedgerAction continuedTwoStepPath) ∧
-    (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).SurfaceLike ∧
+    (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).CanonicalShape ∧
     (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).toLedger =
       totalAction rhoIntrinsicLedgerAction continuedTwoStepPath ∧
     (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).toPublicPattern =
@@ -2373,7 +2373,7 @@ theorem continuedTwoStepCombinedFullSemanticBridge :
         totalCost rhoIntrinsicCostMap continuedTwoStepPath 1 ∧
     rhoLedgerShadow (totalAction rhoIntrinsicLedgerAction continuedTwoStepPath) =
       traceAccount (S := rhoGSLT) (A := Nat) (k := 2) continuedTwoStepTrace ∧
-    (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).SurfaceLike ∧
+    (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).CanonicalShape ∧
     (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).toLedger =
       totalAction rhoIntrinsicLedgerAction continuedTwoStepPath ∧
     (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).toPublicPattern =
@@ -2449,7 +2449,7 @@ theorem continuedTwoStepCombinedFullSemanticBridge :
       (rhoLedgerToSpentSyntax (totalAction rhoIntrinsicLedgerAction continuedTwoStepPath)) =
         2 ∧
     RhoLedger.TraceCoherent (totalAction rhoIntrinsicLedgerAction continuedTwoStepPath) ∧
-    (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).SurfaceLike ∧
+    (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).CanonicalShape ∧
     (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).toLedger =
       totalAction rhoIntrinsicLedgerAction continuedTwoStepPath ∧
     (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).toPublicPattern =
@@ -2705,7 +2705,7 @@ theorem continuedTwoStepDirectFullSemanticBridge :
       rhoSpentSyntaxTicks
         (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).toPattern =
           totalCost rhoIntrinsicCostMap continuedTwoStepPath 1 ∧
-      (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).SurfaceLike ∧
+      (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).CanonicalShape ∧
       (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).toLedger =
         totalAction rhoIntrinsicLedgerAction continuedTwoStepPath ∧
       (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).toPublicPattern =
@@ -2952,7 +2952,7 @@ theorem continuedTwoStepSemanticBridge :
             2 ∧
       RhoLedger.TraceCoherent
         (totalAction rhoIntrinsicLedgerAction continuedTwoStepPath) ∧
-      (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).SurfaceLike ∧
+      (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).CanonicalShape ∧
       (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).toLedger =
         totalAction rhoIntrinsicLedgerAction continuedTwoStepPath ∧
       (rhoIntrinsicDirectSpentTrace continuedTwoStepPath).toPublicPattern =

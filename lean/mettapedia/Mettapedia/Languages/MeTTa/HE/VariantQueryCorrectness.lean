@@ -11,11 +11,11 @@ tabling. The core theorem (`simpleMatch_rename_bisim`) is a bisimulation
 argument: two parallel executions of `simpleMatch` — one with target `t`,
 one with target `applyAtomTotal r t` — step in lockstep.
 
-After G3, the public equation-query surface in `Space.lean` is the faithful
-`matchAtoms` / `mergeBindings` surface, not the historical one-way
-`simpleMatch` surface.  This module therefore proves the variant-cache result
+After G3, the public equation-query interface in `Space.lean` is the faithful
+`matchAtoms` / `mergeBindings` interface, not the historical one-way
+`simpleMatch` interface.  This module therefore proves the variant-cache result
 only for the legacy model used by older table-cache sketches.  A theorem for
-the repaired public `queryEquations` surface is a separate faithful-matcher
+the repaired public `queryEquations` interface is a separate faithful-matcher
 invariance problem, not something to smuggle through this simpleMatch proof.
 
 ## Key Results (proved, no proof holes)
@@ -27,15 +27,15 @@ invariance problem, not something to smuggle through this simpleMatch proof.
 - `simpleMatch_rename_bisim` — THE bisimulation mutual induction
 - `simpleMatch_isSome_rename_empty` — isSome preserved (corollary)
 
-## Key Result (proved, legacy surface only)
+## Key Result (proved, legacy interface only)
 
 - `variant_legacy_queries_same_rhs` — via matchStep extraction + List.map_filterMap
 
 ## Boundary
 
 This is not an SR runtime certificate and not a theorem about the public G3
-query surface.  It is retained as the honest legacy cache proof while the MIK /
-LeaTTa runtime line uses the faithful query surface directly.
+query interface.  It is retained as the honest legacy cache proof while the MIK /
+LeaTTa runtime line uses the faithful query interface directly.
 -/
 
 namespace Mettapedia.Languages.MeTTa.HE
@@ -548,7 +548,7 @@ private theorem filterMap_map_fst_eq {α β γ : Type*}
                 (fun x hx => hfst x (List.mem_cons_of_mem a hx))
 
 /-- The legacy inner matching step: match freshened lhs against query, return
-(rhs, bindings) through the historical one-way `simpleMatch` surface. -/
+(rhs, bindings) through the historical one-way `simpleMatch` interface. -/
 private def legacyMatchStep (atom : Atom) (fuel : Nat) (lhs' rhs' : Atom) :
     Option (Atom × Bindings) :=
   match simpleMatch lhs' atom Bindings.empty fuel with
@@ -582,7 +582,7 @@ private theorem legacyMatchStep_fst_agree
     intro h₁ h₂ <;> simp_all
 
 /-- The historical equation-query helper, kept only to state the old
-simpleMatch-based cache theorem honestly after the public surface moved to
+simpleMatch-based cache theorem honestly after the public interface moved to
 `matchAtoms`/`mergeBindings`. -/
 def variantLegacyQueryEquations (space : Space) (atom : Atom) (fuel : Nat) :
     List (Atom × Bindings) :=
@@ -611,7 +611,7 @@ private theorem variantLegacyQueryEquations_matchStep
 
 This is the old table-cache theorem at its true abstraction layer.  It should
 not be read as a theorem about public `queryEquations`, whose repaired faithful
-matcher surface is intentionally stronger and can expose equality-threading. -/
+matcher interface is intentionally stronger and can expose equality-threading. -/
 theorem variant_legacy_queries_same_rhs
     (space : Space) (q₁ q₂ : Atom) (hvar : VariantEquiv q₁ q₂) (fuel : Nat) :
     (variantLegacyQueryEquations space q₁ fuel).map Prod.fst =
@@ -644,7 +644,7 @@ theorem canonical_legacy_cache_reusable
     (variantLegacyQueryEquations space q₂ fuel).map Prod.fst :=
   variant_legacy_queries_same_rhs space q₁ q₂ hvar fuel
 
-/-! The pre-G3 public-surface theorem had the following shape:
+/-! The pre-G3 public-interface theorem had the following shape:
 
 ```
 theorem variant_queries_same_rhs
@@ -654,7 +654,7 @@ theorem variant_queries_same_rhs
 ```
 
 That statement cannot be recovered from this legacy simpleMatch proof after
-`queryEquations` moved to the faithful `matchAtoms`/`mergeBindings` surface.
+`queryEquations` moved to the faithful `matchAtoms`/`mergeBindings` interface.
 It belongs to the later faithful-matcher invariance/equality-threading tranche.
 -/
 

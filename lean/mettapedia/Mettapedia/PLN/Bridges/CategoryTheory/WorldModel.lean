@@ -5,5 +5,5 @@ import Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelHyperdoctri
 /-!
 # PLN world-model bridges to category theory
 
-Hyperdoctrine and categorical endpoint surfaces for PLN world-model semantics.
+Hyperdoctrine and categorical endpoint contracts for PLN world-model semantics.
 -/

@@ -6,7 +6,7 @@ import Mathlib.Data.List.Dedup
 /-!
 # The proof-carrying collapse algebra
 
-One surface operation, `collapse-with algebra expression`, subsumes counting,
+One language operation, `collapse-with algebra expression`, subsumes counting,
 existence, bags, costed folds, and provenance — provided the algebra says,
 checkably, which optimizations it admits.  This module is that contract.
 

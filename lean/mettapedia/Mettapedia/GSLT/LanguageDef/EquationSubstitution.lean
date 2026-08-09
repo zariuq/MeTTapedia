@@ -1,4 +1,5 @@
 import Mettapedia.GSLT.LanguageDef.CanonicalSection
+import Mettapedia.GSLT.LanguageDef.ReflectiveEquationSemantics
 
 /-!
 # Supported substitution for authored contextual equations
@@ -16,7 +17,32 @@ open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Substitution
 open Mettapedia.OSLF.MeTTaIL.ScopedPattern
 open Mettapedia.OSLF.MeTTaIL.DerivedContexts
+open Mettapedia.OSLF.MeTTaIL.Reflection
 open EquationSemantics
+open ReflectiveEquationSemantics
+
+variable {profile : ReflectionProfile}
+
+/-- A core fibre-stability proof lifts unchanged when the attached reflection
+profile selects no canonical-equality generators.  This is the exact positive
+boundary paired with counterexamples showing that nonempty reflection does
+not preserve typed fibres automatically. -/
+theorem ReflectiveOpenEquationFiberStable.of_presentations_empty
+    {language : LanguageDef}
+    (empty : profile.presentations = [])
+    (stable : OpenEquationFiberStable language) :
+    ReflectiveOpenEquationFiberStable
+      profile defaultBasePremises language := by
+  intro free bound type left right step
+  cases step with
+  | core coreStep =>
+      have preserved := stable (free := free) (bound := bound)
+        (type := type) coreStep
+      simp [ReflectiveWellSorted.OpenPatternWellSorted,
+        ReflectiveWellSorted.ReflectiveScopeSafeAt, empty, preserved]
+  | @reflectiveInContext context declaration left right membership representatives =>
+      rw [empty] at membership
+      cases membership
 
 namespace ReflectiveContextSupport
 
@@ -24,65 +50,65 @@ namespace ReflectiveContextSupport
 substitution.  The second component is the exact quotation-aware binder depth
 at the transported hole.  Keeping that depth as output is load-bearing:
 quotation resets it, whereas ordinary binders extend it. -/
-def substituteContextAt (language : LanguageDef)
+def substituteContextAt (profile : ReflectionProfile)
     (support : ContextSupport.Support)
     (assignment : ContextSupport.Assignment) :
     Nat → OneHoleContext → OneHoleContext × Nat
   | availableDepth, .hole => (.hole, availableDepth)
   | availableDepth, .apply constructor before inner after =>
       let childDepth :=
-        if isQuoteConstructor language constructor then 0 else availableDepth
-      let transported := substituteContextAt language support assignment
+        if isQuoteConstructor profile constructor then 0 else availableDepth
+      let transported := substituteContextAt profile support assignment
         childDepth inner
       (.apply constructor
-          (before.map (substituteAt language support assignment childDepth))
+          (before.map (substituteAt profile support assignment childDepth))
           transported.1
-          (after.map (substituteAt language support assignment childDepth)),
+          (after.map (substituteAt profile support assignment childDepth)),
         transported.2)
   | availableDepth, .lambda binder inner =>
-      let transported := substituteContextAt language support assignment
+      let transported := substituteContextAt profile support assignment
         (availableDepth + 1) inner
       (.lambda binder transported.1, transported.2)
   | availableDepth, .multiLambda arity binders inner =>
-      let transported := substituteContextAt language support assignment
+      let transported := substituteContextAt profile support assignment
         (availableDepth + arity) inner
       (.multiLambda arity binders transported.1, transported.2)
   | availableDepth, .substBody inner replacement =>
-      let transported := substituteContextAt language support assignment
+      let transported := substituteContextAt profile support assignment
         (availableDepth + 1) inner
       (.substBody transported.1
-          (substituteAt language support assignment availableDepth replacement),
+          (substituteAt profile support assignment availableDepth replacement),
         transported.2)
   | availableDepth, .substReplacement body inner =>
-      let transported := substituteContextAt language support assignment
+      let transported := substituteContextAt profile support assignment
         availableDepth inner
       (.substReplacement
-          (substituteAt language support assignment (availableDepth + 1) body)
+          (substituteAt profile support assignment (availableDepth + 1) body)
           transported.1,
         transported.2)
   | availableDepth, .collection collectionType before inner after rest =>
-      let transported := substituteContextAt language support assignment
+      let transported := substituteContextAt profile support assignment
         availableDepth inner
       (.collection collectionType
           (before.map
-            (substituteAt language support assignment availableDepth))
+            (substituteAt profile support assignment availableDepth))
           transported.1
           (after.map
-            (substituteAt language support assignment availableDepth)) rest,
+            (substituteAt profile support assignment availableDepth)) rest,
         transported.2)
 
 /-- Substitution through a filled context is exactly filling the transported
 context with the hole term substituted at the transported hole depth. -/
-theorem substituteAt_fill (language : LanguageDef)
+theorem substituteAt_fill (profile : ReflectionProfile)
     (support : ContextSupport.Support)
     (assignment : ContextSupport.Assignment) (availableDepth : Nat)
     (context : OneHoleContext) (pattern : Pattern) :
-    substituteAt language support assignment availableDepth
+    substituteAt profile support assignment availableDepth
         (context.fill pattern) =
       let transported :=
-        substituteContextAt language support assignment availableDepth context
+        substituteContextAt profile support assignment availableDepth context
       transported.1.fill
-        (substituteAt language support assignment transported.2 pattern) := by
+        (substituteAt profile support assignment transported.2 pattern) := by
   induction context generalizing availableDepth with
   | hole => rfl
   | apply constructor before inner after inductionHypothesis =>
@@ -115,15 +141,20 @@ private theorem equationContextStep_fillDirect
     {base : Mettapedia.OSLF.MeTTaIL.ContextualStep.BasePremiseEvaluator}
     {language : LanguageDef} (context : OneHoleContext)
     {left right : Pattern}
-    (step : EquationContextStep base language left right) :
-    EquationContextStep base language (context.fill left) (context.fill right) := by
+    (step : ReflectiveEquationContextStep profile base language left right) :
+    ReflectiveEquationContextStep profile base language (context.fill left) (context.fill right) := by
   cases step with
-  | inContext inner equationWitness =>
-      simpa [OneHoleContext.fill_comp] using
-        (EquationContextStep.inContext (context.comp inner) equationWitness)
+  | core coreStep =>
+      cases coreStep with
+      | inContext inner equationWitness =>
+          exact .core (by
+            simpa [OneHoleContext.fill_comp] using
+              (EquationContextStep.inContext (context.comp inner)
+                equationWitness))
   | reflectiveInContext inner membership representatives =>
       simpa [OneHoleContext.fill_comp] using
-        (EquationContextStep.reflectiveInContext (context.comp inner)
+        (ReflectiveEquationContextStep.reflectiveInContext
+          (context.comp inner)
           membership representatives)
 
 /-- If both root generator families survive support-aware substitution as
@@ -136,40 +167,42 @@ theorem equationContextStep_substituteAt_of_generatorRoots
     {assignment : ContextSupport.Assignment}
     (equationInstancePreserves : ∀ availableDepth {left right},
       EquationInstance base language left right →
-        EquationContextStep base language
-          (ReflectiveContextSupport.substituteAt language support assignment
+        ReflectiveEquationContextStep profile base language
+          (ReflectiveContextSupport.substituteAt profile support assignment
             availableDepth left)
-          (ReflectiveContextSupport.substituteAt language support assignment
+          (ReflectiveContextSupport.substituteAt profile support assignment
             availableDepth right))
     (reflectivePreserves : ∀ availableDepth
       {declaration : ReflectivePresentationDecl} {left right},
-      declaration ∈ language.reflectivePresentations →
+      declaration ∈ profile.presentations →
       Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
           declaration left =
         Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
           declaration right →
-        EquationContextStep base language
-          (ReflectiveContextSupport.substituteAt language support assignment
+        ReflectiveEquationContextStep profile base language
+          (ReflectiveContextSupport.substituteAt profile support assignment
             availableDepth left)
-          (ReflectiveContextSupport.substituteAt language support assignment
+          (ReflectiveContextSupport.substituteAt profile support assignment
             availableDepth right))
     (availableDepth : Nat) {left right : Pattern}
-    (step : EquationContextStep base language left right) :
-    EquationContextStep base language
-      (ReflectiveContextSupport.substituteAt language support assignment
+    (step : ReflectiveEquationContextStep profile base language left right) :
+    ReflectiveEquationContextStep profile base language
+      (ReflectiveContextSupport.substituteAt profile support assignment
         availableDepth left)
-      (ReflectiveContextSupport.substituteAt language support assignment
+      (ReflectiveContextSupport.substituteAt profile support assignment
         availableDepth right) := by
   cases step with
-  | @inContext context redex contractum equationWitness =>
-      let transported := ReflectiveContextSupport.substituteContextAt
-        language support assignment availableDepth context
-      have root := equationInstancePreserves transported.2 equationWitness
-      have filled := equationContextStep_fillDirect transported.1 root
-      simpa only [ReflectiveContextSupport.substituteAt_fill] using filled
+  | core coreStep =>
+      cases coreStep with
+      | @inContext context redex contractum equationWitness =>
+          let transported := ReflectiveContextSupport.substituteContextAt
+            profile support assignment availableDepth context
+          have root := equationInstancePreserves transported.2 equationWitness
+          have filled := equationContextStep_fillDirect transported.1 root
+          simpa only [ReflectiveContextSupport.substituteAt_fill] using filled
   | @reflectiveInContext context declaration left right membership representatives =>
       let transported := ReflectiveContextSupport.substituteContextAt
-        language support assignment availableDepth context
+        profile support assignment availableDepth context
       have root := reflectivePreserves transported.2 membership representatives
       have filled := equationContextStep_fillDirect transported.1 root
       simpa only [ReflectiveContextSupport.substituteAt_fill] using filled
@@ -186,42 +219,46 @@ theorem equationContextStep_substituteAt_of_root
     {assignment : ContextSupport.Assignment}
     (equationInstancePreserves : ∀ availableDepth {left right},
       EquationInstance base language left right →
-        EquationEquiv base language
-          (ReflectiveContextSupport.substituteAt language support assignment
+        ReflectiveEquationEquiv profile base language
+          (ReflectiveContextSupport.substituteAt profile support assignment
             availableDepth left)
-          (ReflectiveContextSupport.substituteAt language support assignment
+          (ReflectiveContextSupport.substituteAt profile support assignment
             availableDepth right))
     (reflectivePreserves : ∀ availableDepth
       {declaration : ReflectivePresentationDecl} {left right},
-      declaration ∈ language.reflectivePresentations →
+      declaration ∈ profile.presentations →
       Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
           declaration left =
         Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
           declaration right →
-        EquationEquiv base language
-          (ReflectiveContextSupport.substituteAt language support assignment
+        ReflectiveEquationEquiv profile base language
+          (ReflectiveContextSupport.substituteAt profile support assignment
             availableDepth left)
-          (ReflectiveContextSupport.substituteAt language support assignment
+          (ReflectiveContextSupport.substituteAt profile support assignment
             availableDepth right))
     (availableDepth : Nat) {left right : Pattern}
-    (step : EquationContextStep base language left right) :
-    EquationEquiv base language
-      (ReflectiveContextSupport.substituteAt language support assignment
+    (step : ReflectiveEquationContextStep profile base language left right) :
+    ReflectiveEquationEquiv profile base language
+      (ReflectiveContextSupport.substituteAt profile support assignment
         availableDepth left)
-      (ReflectiveContextSupport.substituteAt language support assignment
+      (ReflectiveContextSupport.substituteAt profile support assignment
         availableDepth right) := by
   cases step with
-  | @inContext context redex contractum equationWitness =>
-      let transported := ReflectiveContextSupport.substituteContextAt
-        language support assignment availableDepth context
-      have root := equationInstancePreserves transported.2 equationWitness
-      have filled := equationEquiv_fill transported.1 root
-      simpa only [ReflectiveContextSupport.substituteAt_fill] using filled
+  | core coreStep =>
+      cases coreStep with
+      | @inContext context redex contractum equationWitness =>
+          let transported := ReflectiveContextSupport.substituteContextAt
+            profile support assignment availableDepth context
+          have root := equationInstancePreserves transported.2 equationWitness
+          have filled := ReflectiveEquationSemantics.equationEquiv_fill
+            transported.1 root
+          simpa only [ReflectiveContextSupport.substituteAt_fill] using filled
   | @reflectiveInContext context declaration left right membership representatives =>
       let transported := ReflectiveContextSupport.substituteContextAt
-        language support assignment availableDepth context
+        profile support assignment availableDepth context
       have root := reflectivePreserves transported.2 membership representatives
-      have filled := equationEquiv_fill transported.1 root
+      have filled := ReflectiveEquationSemantics.equationEquiv_fill
+        transported.1 root
       simpa only [ReflectiveContextSupport.substituteAt_fill] using filled
 
 /-- Generator preservation at every quotation-aware depth lifts to the full
@@ -233,32 +270,32 @@ theorem equationEquiv_substituteAt_of_root
     {assignment : ContextSupport.Assignment}
     (equationInstancePreserves : ∀ availableDepth {left right},
       EquationInstance base language left right →
-        EquationEquiv base language
-          (ReflectiveContextSupport.substituteAt language support assignment
+        ReflectiveEquationEquiv profile base language
+          (ReflectiveContextSupport.substituteAt profile support assignment
             availableDepth left)
-          (ReflectiveContextSupport.substituteAt language support assignment
+          (ReflectiveContextSupport.substituteAt profile support assignment
             availableDepth right))
     (reflectivePreserves : ∀ availableDepth
       {declaration : ReflectivePresentationDecl} {left right},
-      declaration ∈ language.reflectivePresentations →
+      declaration ∈ profile.presentations →
       Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
           declaration left =
         Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
           declaration right →
-        EquationEquiv base language
-          (ReflectiveContextSupport.substituteAt language support assignment
+        ReflectiveEquationEquiv profile base language
+          (ReflectiveContextSupport.substituteAt profile support assignment
             availableDepth left)
-          (ReflectiveContextSupport.substituteAt language support assignment
+          (ReflectiveContextSupport.substituteAt profile support assignment
             availableDepth right))
     (availableDepth : Nat) {left right : Pattern}
-    (equivalent : EquationEquiv base language left right) :
-    EquationEquiv base language
-      (ReflectiveContextSupport.substituteAt language support assignment
+    (equivalent : ReflectiveEquationEquiv profile base language left right) :
+    ReflectiveEquationEquiv profile base language
+      (ReflectiveContextSupport.substituteAt profile support assignment
         availableDepth left)
-      (ReflectiveContextSupport.substituteAt language support assignment
+      (ReflectiveContextSupport.substituteAt profile support assignment
         availableDepth right) := by
-  exact equationEquiv_map_of_contextStep
-    (ReflectiveContextSupport.substituteAt language support assignment
+  exact ReflectiveEquationSemantics.equationEquiv_map_of_contextStep
+    (ReflectiveContextSupport.substituteAt profile support assignment
       availableDepth)
     (equationContextStep_substituteAt_of_root equationInstancePreserves
       reflectivePreserves availableDepth)
@@ -266,12 +303,12 @@ theorem equationEquiv_substituteAt_of_root
 
 /-- One contextual generator remains a single generator after composition
 with another syntax-derived context. -/
-theorem equationContextStep_fill
+theorem reflectiveEquationContextStep_fill
     {base : Mettapedia.OSLF.MeTTaIL.ContextualStep.BasePremiseEvaluator}
     {language : LanguageDef} (context : OneHoleContext)
     {left right : Pattern}
-    (step : EquationContextStep base language left right) :
-    EquationContextStep base language (context.fill left) (context.fill right) := by
+    (step : ReflectiveEquationContextStep profile base language left right) :
+    ReflectiveEquationContextStep profile base language (context.fill left) (context.fill right) := by
   exact equationContextStep_fillDirect context step
 
 end EquationSemantics
@@ -289,13 +326,12 @@ mutual
       {bound : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
       (typed : HasType language free bound pattern type)
       (available : List TypeExpr) :
-      typed.ReflectiveSupportSafeAt (fun _ => []) available := by
+      typed.ReflectiveSupportSafeAt profile (fun _ => []) available := by
     cases typed with
     | bvar lookup => exact .bvar lookup available
     | fvar lookup => exact .fvar lookup available ⟨available, by simp⟩
     | @constructor bound rule arguments membership notBare argumentsTyped =>
-        by_cases quoted : ReflectiveContextSupport.isQuoteConstructor
-            language rule.label = true
+        by_cases quoted : ReflectiveContextSupport.isQuoteConstructor profile rule.label = true
         · exact .constructorQuote (membership := membership)
             (notBare := notBare) quoted
             (argumentsTyped.reflectiveSupportSafeAt_empty [])
@@ -329,7 +365,7 @@ mutual
       {parameters : List TermParam}
       (typed : ArgumentsHaveTypes language free bound arguments parameters)
       (available : List TypeExpr) :
-      typed.ReflectiveSupportSafeAt (fun _ => []) available := by
+      typed.ReflectiveSupportSafeAt profile (fun _ => []) available := by
     cases typed with
     | nil => exact .nil _ available
     | cons representation parameterType argumentTyped argumentsTyped =>
@@ -345,7 +381,7 @@ mutual
       {elementType : TypeExpr}
       (typed : ElementsHaveType language free bound elements elementType)
       (available : List TypeExpr) :
-      typed.ReflectiveSupportSafeAt (fun _ => []) available := by
+      typed.ReflectiveSupportSafeAt profile (fun _ => []) available := by
     cases typed with
     | nil => exact .nil _ _ available
     | cons elementTyped elementsTyped =>
@@ -415,7 +451,7 @@ in which an ordinary constructor returns a name while one of its arguments
 introduces another equal-typed name binder. -/
 def ReflectiveNameResultSealed (language : LanguageDef) : Prop :=
   ∀ (declaration : ReflectivePresentationDecl),
-    declaration ∈ language.reflectivePresentations →
+    declaration ∈ profile.presentations →
       ∀ (rule : GrammarRule), rule ∈ language.terms →
         rule.category = declaration.nameSort →
           rule.label = declaration.quoteConstructor ∧
@@ -431,10 +467,10 @@ a non-interacting name sort, while both labels remain genuine quotation
 boundaries. -/
 def ReflectiveNameResultsQuoted (language : LanguageDef) : Prop :=
   ∀ (declaration : ReflectivePresentationDecl),
-    declaration ∈ language.reflectivePresentations →
+    declaration ∈ profile.presentations →
       ∀ (rule : GrammarRule), rule ∈ language.terms →
         rule.category = declaration.nameSort →
-          ReflectiveContextSupport.isQuoteConstructor language rule.label =
+          ReflectiveContextSupport.isQuoteConstructor profile rule.label =
               true ∧
             ¬ UsesBareCollection rule
 
@@ -445,26 +481,26 @@ needed by Quote/Drop substitution: it does not require canonicalization to
 preserve arbitrary collection-typed terms. -/
 def ReflectiveDropCanonicalSupportStable (language : LanguageDef) : Prop :=
   ∀ (declaration : ReflectivePresentationDecl),
-    declaration ∈ language.reflectivePresentations →
+    declaration ∈ profile.presentations →
       ∀ {free : FreeTypeContext} {support : ContextSupport.Support}
         {bound available : List TypeExpr} {pattern name : Pattern}
         {binderImage : TypeExpr → TypeExpr}
         (typed : HasType language free bound pattern
           (.base declaration.processSort)),
-        typed.ReflectiveSupportSafeAt support available binderImage →
+        typed.ReflectiveSupportSafeAt profile support available binderImage →
         isObjectPattern pattern = true →
         Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize declaration
             pattern = .apply declaration.dropConstructor [name] →
           ∃ nameTyped : HasType language free bound name
               (.base declaration.nameSort),
-            nameTyped.ReflectiveSupportSafeAt support available binderImage ∧
+            nameTyped.ReflectiveSupportSafeAt profile support available binderImage ∧
               isObjectPattern name = true
 
 /-- The single-declaration sealing condition implies the language-wide quote
 boundary condition. -/
 theorem ReflectiveNameResultSealed.resultsQuoted
-    {language : LanguageDef} (sealed : ReflectiveNameResultSealed language) :
-    ReflectiveNameResultsQuoted language := by
+    {language : LanguageDef} (sealed : ReflectiveNameResultSealed (profile := profile) language) :
+    ReflectiveNameResultsQuoted (profile := profile) language := by
   intro declaration declarationMembership rule ruleMembership categoryEquality
   have sealedRule := sealed declaration declarationMembership rule
     ruleMembership categoryEquality
@@ -477,23 +513,25 @@ constructor while keeping its reflective-support witness attached to the
 typing derivation it certifies. -/
 theorem ArgumentsHaveTypes.selectedQuoteArgument
     {language : LanguageDef} (valid : language.validate = [])
+    (profileValid : Mettapedia.OSLF.MeTTaIL.Reflection.validate
+      language profile = [])
     {free : FreeTypeContext} {support : ContextSupport.Support}
     {bound available : List TypeExpr} {binderImage : TypeExpr → TypeExpr}
     {declaration : ReflectivePresentationDecl}
-    (declarationMembership : declaration ∈ language.reflectivePresentations)
+    (declarationMembership : declaration ∈ profile.presentations)
     {rule : GrammarRule} {arguments : List Pattern}
     (membership : rule ∈ language.terms)
     (selected : rule.label = declaration.quoteConstructor)
     (typed : ArgumentsHaveTypes language free bound arguments rule.params)
-    (safe : typed.ReflectiveSupportSafeAt support available binderImage) :
+    (safe : typed.ReflectiveSupportSafeAt profile support available binderImage) :
     ∃ (argument : Pattern)
         (argumentTyped : HasType language free bound argument
           (.base declaration.processSort)),
       arguments = [argument] ∧
-        argumentTyped.ReflectiveSupportSafeAt support available binderImage := by
+        argumentTyped.ReflectiveSupportSafeAt profile support available binderImage := by
   have declarationValid :=
-    LanguageDef.reflectivePresentation_validate_of_validate_eq_nil language
-      valid declaration declarationMembership
+    presentation_validate_eq_nil_of_validate_eq_nil
+        profileValid declarationMembership
   obtain ⟨witness⟩ :=
     LanguageDef.reflectivePresentationWitness_of_validate_eq_nil language
       declaration declarationValid
@@ -523,7 +561,7 @@ theorem ArgumentsHaveTypes.selectedQuoteArgument
   have exactTyped : ArgumentsHaveTypes language free bound [argument]
       [.simple witness.quoteParameter (.base declaration.processSort)] := by
     simpa only [parameterShape] using typed
-  have exactSafe : exactTyped.ReflectiveSupportSafeAt support available
+  have exactSafe : exactTyped.ReflectiveSupportSafeAt profile support available
       binderImage := by
     apply ArgumentsHaveTypes.ReflectiveSupportSafeAt.castTyping
     simpa only [parameterShape] using safe
@@ -537,7 +575,7 @@ theorem ArgumentsHaveTypes.selectedQuoteArgument
       let emptyTyped : ArgumentsHaveTypes language free bound [] [] := .nil
       let exactSpine := ArgumentsHaveTypes.cons representation parameterType
         argumentTyped emptyTyped
-      have exactSpineSafe : exactSpine.ReflectiveSupportSafeAt support available
+      have exactSpineSafe : exactSpine.ReflectiveSupportSafeAt profile support available
           binderImage :=
         ArgumentsHaveTypes.ReflectiveSupportSafeAt.castTyping
           (target := exactSpine) exactSafe
@@ -553,19 +591,21 @@ argument is checked beneath the quotation reset, so its support witness is
 returned at the empty available context. -/
 theorem HasType.selectedQuoteArgument
     {language : LanguageDef} (valid : language.validate = [])
+    (profileValid : Mettapedia.OSLF.MeTTaIL.Reflection.validate
+      language profile = [])
     {free : FreeTypeContext} {support : ContextSupport.Support}
     {bound available : List TypeExpr} {binderImage : TypeExpr → TypeExpr}
     {declaration : ReflectivePresentationDecl}
-    (declarationMembership : declaration ∈ language.reflectivePresentations)
+    (declarationMembership : declaration ∈ profile.presentations)
     {arguments : List Pattern} {type : TypeExpr}
     (typed : HasType language free bound
       (.apply declaration.quoteConstructor arguments) type)
-    (safe : typed.ReflectiveSupportSafeAt support available binderImage) :
+    (safe : typed.ReflectiveSupportSafeAt profile support available binderImage) :
     ∃ (argument : Pattern)
         (argumentTyped : HasType language free bound argument
           (.base declaration.processSort)),
       arguments = [argument] ∧
-        argumentTyped.ReflectiveSupportSafeAt support [] binderImage := by
+        argumentTyped.ReflectiveSupportSafeAt profile support [] binderImage := by
   exact HasType.ReflectiveSupportSafeAt.rec
     (motive_1 := fun {bound pattern type} typed available binderImage safe =>
       ∀ requestedArguments,
@@ -574,7 +614,7 @@ theorem HasType.selectedQuoteArgument
               (argumentTyped : HasType language free bound argument
                 (.base declaration.processSort)),
             requestedArguments = [argument] ∧
-              argumentTyped.ReflectiveSupportSafeAt support [] binderImage)
+              argumentTyped.ReflectiveSupportSafeAt profile support [] binderImage)
     (motive_2 := fun _ _ _ _ => True)
     (motive_3 := fun _ _ _ _ => True)
     (by
@@ -591,7 +631,8 @@ theorem HasType.selectedQuoteArgument
         requestedArguments patternEquality
       injection patternEquality with labelEquality argumentsEquality
       obtain ⟨argument, argumentTyped, actualShape, argumentSafe⟩ :=
-        argumentsTyped.selectedQuoteArgument valid declarationMembership
+        argumentsTyped.selectedQuoteArgument valid profileValid
+          declarationMembership
           membership labelEquality argumentsSafe
       exact ⟨argument, argumentTyped,
         argumentsEquality.symm.trans actualShape, argumentSafe⟩)
@@ -600,7 +641,7 @@ theorem HasType.selectedQuoteArgument
         sourceAvailable currentImage ordinary argumentsSafe argumentsIH
         requestedArguments patternEquality
       injection patternEquality with labelEquality argumentsEquality
-      have quoted : ReflectiveContextSupport.isQuoteConstructor language
+      have quoted : ReflectiveContextSupport.isQuoteConstructor profile
           rule.label = true := by
         simp only [ReflectiveContextSupport.isQuoteConstructor,
           List.any_eq_true]
@@ -642,23 +683,25 @@ constructor while keeping its reflective-support witness attached to the
 typing derivation it certifies. -/
 theorem ArgumentsHaveTypes.selectedDropArgument
     {language : LanguageDef} (valid : language.validate = [])
+    (profileValid : Mettapedia.OSLF.MeTTaIL.Reflection.validate
+      language profile = [])
     {free : FreeTypeContext} {support : ContextSupport.Support}
     {bound available : List TypeExpr} {binderImage : TypeExpr → TypeExpr}
     {declaration : ReflectivePresentationDecl}
-    (declarationMembership : declaration ∈ language.reflectivePresentations)
+    (declarationMembership : declaration ∈ profile.presentations)
     {rule : GrammarRule} {arguments : List Pattern}
     (membership : rule ∈ language.terms)
     (selected : rule.label = declaration.dropConstructor)
     (typed : ArgumentsHaveTypes language free bound arguments rule.params)
-    (safe : typed.ReflectiveSupportSafeAt support available binderImage) :
+    (safe : typed.ReflectiveSupportSafeAt profile support available binderImage) :
     ∃ (argument : Pattern)
         (argumentTyped : HasType language free bound argument
           (.base declaration.nameSort)),
       arguments = [argument] ∧
-        argumentTyped.ReflectiveSupportSafeAt support available binderImage := by
+        argumentTyped.ReflectiveSupportSafeAt profile support available binderImage := by
   have declarationValid :=
-    LanguageDef.reflectivePresentation_validate_of_validate_eq_nil language
-      valid declaration declarationMembership
+    presentation_validate_eq_nil_of_validate_eq_nil
+        profileValid declarationMembership
   obtain ⟨witness⟩ :=
     LanguageDef.reflectivePresentationWitness_of_validate_eq_nil language
       declaration declarationValid
@@ -688,7 +731,7 @@ theorem ArgumentsHaveTypes.selectedDropArgument
   have exactTyped : ArgumentsHaveTypes language free bound [argument]
       [.simple witness.dropParameter (.base declaration.nameSort)] := by
     simpa only [parameterShape] using typed
-  have exactSafe : exactTyped.ReflectiveSupportSafeAt support available
+  have exactSafe : exactTyped.ReflectiveSupportSafeAt profile support available
       binderImage := by
     apply ArgumentsHaveTypes.ReflectiveSupportSafeAt.castTyping
     simpa only [parameterShape] using safe
@@ -702,7 +745,7 @@ theorem ArgumentsHaveTypes.selectedDropArgument
       let emptyTyped : ArgumentsHaveTypes language free bound [] [] := .nil
       let exactSpine := ArgumentsHaveTypes.cons representation parameterType
         argumentTyped emptyTyped
-      have exactSpineSafe : exactSpine.ReflectiveSupportSafeAt support available
+      have exactSpineSafe : exactSpine.ReflectiveSupportSafeAt profile support available
           binderImage :=
         ArgumentsHaveTypes.ReflectiveSupportSafeAt.castTyping
           (target := exactSpine) exactSafe
@@ -718,21 +761,23 @@ ordinary-constructor premise records the only fact needed to retain the
 ambient available context while descending to the Drop argument. -/
 theorem HasType.selectedOrdinaryDropArgument
     {language : LanguageDef} (valid : language.validate = [])
+    (profileValid : Mettapedia.OSLF.MeTTaIL.Reflection.validate
+      language profile = [])
     {free : FreeTypeContext} {support : ContextSupport.Support}
     {bound available : List TypeExpr} {binderImage : TypeExpr → TypeExpr}
     {declaration : ReflectivePresentationDecl}
-    (declarationMembership : declaration ∈ language.reflectivePresentations)
-    (dropOrdinary : ReflectiveContextSupport.isQuoteConstructor language
+    (declarationMembership : declaration ∈ profile.presentations)
+    (dropOrdinary : ReflectiveContextSupport.isQuoteConstructor profile
       declaration.dropConstructor = false)
     {arguments : List Pattern} {type : TypeExpr}
     (typed : HasType language free bound
       (.apply declaration.dropConstructor arguments) type)
-    (safe : typed.ReflectiveSupportSafeAt support available binderImage) :
+    (safe : typed.ReflectiveSupportSafeAt profile support available binderImage) :
     ∃ (argument : Pattern)
         (argumentTyped : HasType language free bound argument
           (.base declaration.nameSort)),
       arguments = [argument] ∧
-        argumentTyped.ReflectiveSupportSafeAt support available binderImage := by
+        argumentTyped.ReflectiveSupportSafeAt profile support available binderImage := by
   exact HasType.ReflectiveSupportSafeAt.rec
     (motive_1 := fun {bound pattern type} typed available binderImage safe =>
       ∀ requestedArguments,
@@ -741,7 +786,7 @@ theorem HasType.selectedOrdinaryDropArgument
               (argumentTyped : HasType language free bound argument
                 (.base declaration.nameSort)),
             requestedArguments = [argument] ∧
-              argumentTyped.ReflectiveSupportSafeAt support available binderImage)
+              argumentTyped.ReflectiveSupportSafeAt profile support available binderImage)
     (motive_2 := fun _ _ _ _ => True)
     (motive_3 := fun _ _ _ _ => True)
     (by
@@ -757,7 +802,7 @@ theorem HasType.selectedOrdinaryDropArgument
         sourceAvailable currentImage quoted argumentsSafe argumentsIH
         requestedArguments patternEquality
       injection patternEquality with labelEquality argumentsEquality
-      have selectedQuoted : ReflectiveContextSupport.isQuoteConstructor language
+      have selectedQuoted : ReflectiveContextSupport.isQuoteConstructor profile
           declaration.dropConstructor = true := by
         simpa [labelEquality] using quoted
       rw [dropOrdinary] at selectedQuoted
@@ -768,7 +813,8 @@ theorem HasType.selectedOrdinaryDropArgument
         requestedArguments patternEquality
       injection patternEquality with labelEquality argumentsEquality
       obtain ⟨argument, argumentTyped, actualShape, argumentSafe⟩ :=
-        argumentsTyped.selectedDropArgument valid declarationMembership
+        argumentsTyped.selectedDropArgument valid profileValid
+          declarationMembership
           membership labelEquality argumentsSafe
       exact ⟨argument, argumentTyped,
         argumentsEquality.symm.trans actualShape, argumentSafe⟩)
@@ -810,18 +856,18 @@ theorem nameResult_substituteAt_eq_of_safeAt_zero_of_resultsQuoted
     {support : ContextSupport.Support}
     {bound : List TypeExpr} {pattern : Pattern} {resultType : TypeExpr}
     {binderImage : TypeExpr → TypeExpr}
-    (quotedResults : ReflectiveNameResultsQuoted language)
-    (assignment : SupportedOpenAssignment language source target support)
+    (quotedResults : ReflectiveNameResultsQuoted (profile := profile) language)
+    (assignment : SupportedOpenAssignment profile language source target support)
     (declaration : ReflectivePresentationDecl)
-    (declarationMembership : declaration ∈ language.reflectivePresentations)
+    (declarationMembership : declaration ∈ profile.presentations)
     (typed : HasType language source bound pattern resultType)
     (resultType_eq : resultType = .base declaration.nameSort)
-    (safeAtZero : typed.ReflectiveSupportSafeAt support [] binderImage)
+    (safeAtZero : typed.ReflectiveSupportSafeAt profile support [] binderImage)
     (object : isObjectPattern pattern = true)
     (availableDepth : Nat) :
-    ReflectiveContextSupport.substituteAt language support
+    ReflectiveContextSupport.substituteAt profile support
         assignment.assignment 0 pattern =
-      ReflectiveContextSupport.substituteAt language support
+      ReflectiveContextSupport.substituteAt profile support
         assignment.assignment availableDepth pattern := by
   cases typed with
   | @bvar bound index type lookup =>
@@ -878,18 +924,18 @@ theorem nameResult_substituteAt_eq_of_safeAt_zero
     {support : ContextSupport.Support}
     {bound : List TypeExpr} {pattern : Pattern} {resultType : TypeExpr}
     {binderImage : TypeExpr → TypeExpr}
-    (sealed : ReflectiveNameResultSealed language)
-    (assignment : SupportedOpenAssignment language source target support)
+    (sealed : ReflectiveNameResultSealed (profile := profile) language)
+    (assignment : SupportedOpenAssignment profile language source target support)
     (declaration : ReflectivePresentationDecl)
-    (declarationMembership : declaration ∈ language.reflectivePresentations)
+    (declarationMembership : declaration ∈ profile.presentations)
     (typed : HasType language source bound pattern resultType)
     (resultType_eq : resultType = .base declaration.nameSort)
-    (safeAtZero : typed.ReflectiveSupportSafeAt support [] binderImage)
+    (safeAtZero : typed.ReflectiveSupportSafeAt profile support [] binderImage)
     (object : isObjectPattern pattern = true)
     (availableDepth : Nat) :
-    ReflectiveContextSupport.substituteAt language support
+    ReflectiveContextSupport.substituteAt profile support
         assignment.assignment 0 pattern =
-      ReflectiveContextSupport.substituteAt language support
+      ReflectiveContextSupport.substituteAt profile support
         assignment.assignment availableDepth pattern := by
   exact nameResult_substituteAt_eq_of_safeAt_zero_of_resultsQuoted
     sealed.resultsQuoted assignment declaration declarationMembership typed
@@ -906,41 +952,41 @@ theorem quoteDrop_substituteAt_canonicalize_eq_of_resultsQuoted
     {support : ContextSupport.Support}
     {bound : List TypeExpr} {name : Pattern} {resultType : TypeExpr}
     {binderImage : TypeExpr → TypeExpr}
-    (quotedResults : ReflectiveNameResultsQuoted language)
-    (assignment : SupportedOpenAssignment language source target support)
+    (quotedResults : ReflectiveNameResultsQuoted (profile := profile) language)
+    (assignment : SupportedOpenAssignment profile language source target support)
     (declaration : ReflectivePresentationDecl)
-    (declarationMembership : declaration ∈ language.reflectivePresentations)
+    (declarationMembership : declaration ∈ profile.presentations)
     (quote_ne_drop : declaration.quoteConstructor ≠
       declaration.dropConstructor)
     (typed : HasType language source bound name resultType)
     (resultType_eq : resultType = .base declaration.nameSort)
-    (safeAtZero : typed.ReflectiveSupportSafeAt support [] binderImage)
+    (safeAtZero : typed.ReflectiveSupportSafeAt profile support [] binderImage)
     (object : isObjectPattern name = true)
     (availableDepth : Nat) :
     Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize declaration
-        (ReflectiveContextSupport.substituteAt language support
+        (ReflectiveContextSupport.substituteAt profile support
           assignment.assignment availableDepth
           (.apply declaration.quoteConstructor
             [.apply declaration.dropConstructor [name]])) =
       Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize declaration
-        (ReflectiveContextSupport.substituteAt language support
+        (ReflectiveContextSupport.substituteAt profile support
           assignment.assignment availableDepth name) := by
   have depthIndependent :=
     nameResult_substituteAt_eq_of_safeAt_zero_of_resultsQuoted quotedResults
       assignment declaration declarationMembership typed resultType_eq
       safeAtZero object availableDepth
-  have quoteStatus : ReflectiveContextSupport.isQuoteConstructor language
+  have quoteStatus : ReflectiveContextSupport.isQuoteConstructor profile
       declaration.quoteConstructor = true := by
     simp only [ReflectiveContextSupport.isQuoteConstructor, List.any_eq_true]
     exact ⟨declaration, declarationMembership, by simp⟩
   have leftSubstitution :
-      ReflectiveContextSupport.substituteAt language support
+      ReflectiveContextSupport.substituteAt profile support
           assignment.assignment availableDepth
           (.apply declaration.quoteConstructor
             [.apply declaration.dropConstructor [name]]) =
         .apply declaration.quoteConstructor
           [.apply declaration.dropConstructor
-            [ReflectiveContextSupport.substituteAt language support
+            [ReflectiveContextSupport.substituteAt profile support
               assignment.assignment 0 name]] := by
     simp [ReflectiveContextSupport.substituteAt, quoteStatus]
   rw [leftSubstitution]
@@ -962,25 +1008,25 @@ theorem quoteDrop_substituteAt_equationContextStep_of_resultsQuoted
     {support : ContextSupport.Support}
     {bound : List TypeExpr} {name : Pattern} {resultType : TypeExpr}
     {binderImage : TypeExpr → TypeExpr}
-    (quotedResults : ReflectiveNameResultsQuoted language)
-    (assignment : SupportedOpenAssignment language source target support)
+    (quotedResults : ReflectiveNameResultsQuoted (profile := profile) language)
+    (assignment : SupportedOpenAssignment profile language source target support)
     (declaration : ReflectivePresentationDecl)
-    (declarationMembership : declaration ∈ language.reflectivePresentations)
+    (declarationMembership : declaration ∈ profile.presentations)
     (quote_ne_drop : declaration.quoteConstructor ≠
       declaration.dropConstructor)
     (typed : HasType language source bound name resultType)
     (resultType_eq : resultType = .base declaration.nameSort)
-    (safeAtZero : typed.ReflectiveSupportSafeAt support [] binderImage)
+    (safeAtZero : typed.ReflectiveSupportSafeAt profile support [] binderImage)
     (object : isObjectPattern name = true)
     (availableDepth : Nat) :
-    EquationContextStep defaultBasePremises language
-      (ReflectiveContextSupport.substituteAt language support
+    ReflectiveEquationContextStep profile defaultBasePremises language
+      (ReflectiveContextSupport.substituteAt profile support
         assignment.assignment availableDepth
         (.apply declaration.quoteConstructor
           [.apply declaration.dropConstructor [name]]))
-      (ReflectiveContextSupport.substituteAt language support
+      (ReflectiveContextSupport.substituteAt profile support
         assignment.assignment availableDepth name) := by
-  exact EquationContextStep.reflectiveInContext .hole declarationMembership
+  exact ReflectiveEquationContextStep.reflectiveInContext .hole declarationMembership
     (quoteDrop_substituteAt_canonicalize_eq_of_resultsQuoted quotedResults
       assignment declaration declarationMembership quote_ne_drop typed
       resultType_eq safeAtZero object availableDepth)
@@ -991,23 +1037,23 @@ theorem quoteDrop_substituteAt_equationEquiv_of_resultsQuoted
     {support : ContextSupport.Support}
     {bound : List TypeExpr} {name : Pattern} {resultType : TypeExpr}
     {binderImage : TypeExpr → TypeExpr}
-    (quotedResults : ReflectiveNameResultsQuoted language)
-    (assignment : SupportedOpenAssignment language source target support)
+    (quotedResults : ReflectiveNameResultsQuoted (profile := profile) language)
+    (assignment : SupportedOpenAssignment profile language source target support)
     (declaration : ReflectivePresentationDecl)
-    (declarationMembership : declaration ∈ language.reflectivePresentations)
+    (declarationMembership : declaration ∈ profile.presentations)
     (quote_ne_drop : declaration.quoteConstructor ≠
       declaration.dropConstructor)
     (typed : HasType language source bound name resultType)
     (resultType_eq : resultType = .base declaration.nameSort)
-    (safeAtZero : typed.ReflectiveSupportSafeAt support [] binderImage)
+    (safeAtZero : typed.ReflectiveSupportSafeAt profile support [] binderImage)
     (object : isObjectPattern name = true)
     (availableDepth : Nat) :
-    EquationEquiv defaultBasePremises language
-      (ReflectiveContextSupport.substituteAt language support
+    ReflectiveEquationEquiv profile defaultBasePremises language
+      (ReflectiveContextSupport.substituteAt profile support
         assignment.assignment availableDepth
         (.apply declaration.quoteConstructor
           [.apply declaration.dropConstructor [name]]))
-      (ReflectiveContextSupport.substituteAt language support
+      (ReflectiveContextSupport.substituteAt profile support
         assignment.assignment availableDepth name) := by
   exact Relation.EqvGen.rel _ _
     (quoteDrop_substituteAt_equationContextStep_of_resultsQuoted quotedResults
@@ -1026,87 +1072,87 @@ commutation with deterministic sorting is neither assumed nor true. -/
 namespace ReflectiveParallelSubstitution
 
 private theorem equivalentRefl {language : LanguageDef} (pattern : Pattern) :
-    EquationEquiv defaultBasePremises language pattern pattern :=
+    ReflectiveEquationEquiv profile defaultBasePremises language pattern pattern :=
   Relation.EqvGen.refl pattern
 
 private theorem equivalentSymm {language : LanguageDef} {left right : Pattern}
-    (equivalent : EquationEquiv defaultBasePremises language left right) :
-    EquationEquiv defaultBasePremises language right left :=
+    (equivalent : ReflectiveEquationEquiv profile defaultBasePremises language left right) :
+    ReflectiveEquationEquiv profile defaultBasePremises language right left :=
   Relation.EqvGen.symm _ _ equivalent
 
 private theorem equivalentTrans {language : LanguageDef}
     {left middle right : Pattern}
-    (first : EquationEquiv defaultBasePremises language left middle)
-    (second : EquationEquiv defaultBasePremises language middle right) :
-    EquationEquiv defaultBasePremises language left right :=
+    (first : ReflectiveEquationEquiv profile defaultBasePremises language left middle)
+    (second : ReflectiveEquationEquiv profile defaultBasePremises language middle right) :
+    ReflectiveEquationEquiv profile defaultBasePremises language left right :=
   Relation.EqvGen.trans _ _ _ first second
 
 private theorem rootEquivalent
     {language : LanguageDef} {declaration : ReflectivePresentationDecl}
-    (membership : declaration ∈ language.reflectivePresentations)
+    (membership : declaration ∈ profile.presentations)
     {left right : Pattern}
     (representatives :
       Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize declaration
           left =
         Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize declaration
           right) :
-    EquationEquiv defaultBasePremises language left right :=
+    ReflectiveEquationEquiv profile defaultBasePremises language left right :=
   reflective_fill_equivalent membership .hole representatives
 
 private theorem permutationEquivalent
     {language : LanguageDef} {declaration : ReflectivePresentationDecl}
-    (membership : declaration ∈ language.reflectivePresentations)
+    (membership : declaration ∈ profile.presentations)
     {left right : List Pattern} (permutation : left.Perm right) :
-    EquationEquiv defaultBasePremises language
+    ReflectiveEquationEquiv profile defaultBasePremises language
       (.collection declaration.parallelCollection left none)
       (.collection declaration.parallelCollection right none) := by
-  apply rootEquivalent membership
+  apply rootEquivalent (language := language) membership
   exact
     Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize_parallel_permutation
       declaration permutation
 
 private theorem flattenEquivalent
     {language : LanguageDef} {declaration : ReflectivePresentationDecl}
-    (membership : declaration ∈ language.reflectivePresentations)
+    (membership : declaration ∈ profile.presentations)
     (leading nested : List Pattern) :
-    EquationEquiv defaultBasePremises language
+    ReflectiveEquationEquiv profile defaultBasePremises language
       (.collection declaration.parallelCollection
         (leading ++
           [.collection declaration.parallelCollection nested none]) none)
       (.collection declaration.parallelCollection (leading ++ nested) none) := by
-  apply rootEquivalent membership
+  apply rootEquivalent (language := language) membership
   exact
     Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize_parallel_flatten
       declaration leading nested
 
 private theorem collapseEquivalent
     {language : LanguageDef} {declaration : ReflectivePresentationDecl}
-    (membership : declaration ∈ language.reflectivePresentations)
+    (membership : declaration ∈ profile.presentations)
     (patterns : List Pattern) :
-    EquationEquiv defaultBasePremises language
+    ReflectiveEquationEquiv profile defaultBasePremises language
       (.collection declaration.parallelCollection patterns none)
       (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.collapseParallel
         declaration patterns) := by
-  apply rootEquivalent membership
+  apply rootEquivalent (language := language) membership
   exact
     Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize_parallel_collapse
       declaration patterns
 
 private theorem consEquivalent
     {language : LanguageDef} {declaration : ReflectivePresentationDecl}
-    (membership : declaration ∈ language.reflectivePresentations)
+    (membership : declaration ∈ profile.presentations)
     (head : Pattern) {left right : List Pattern}
-    (tailEquivalent : EquationEquiv defaultBasePremises language
+    (tailEquivalent : ReflectiveEquationEquiv profile defaultBasePremises language
       (.collection declaration.parallelCollection left none)
       (.collection declaration.parallelCollection right none)) :
-    EquationEquiv defaultBasePremises language
+    ReflectiveEquationEquiv profile defaultBasePremises language
       (.collection declaration.parallelCollection (head :: left) none)
       (.collection declaration.parallelCollection (head :: right) none) := by
-  have lifted := equationEquiv_fill
+  have lifted := ReflectiveEquationSemantics.equationEquiv_fill
     (.collection declaration.parallelCollection [head] .hole [] none)
     tailEquivalent
-  have flattenLeft := flattenEquivalent membership [head] left
-  have flattenRight := flattenEquivalent membership [head] right
+  have flattenLeft := flattenEquivalent (language := language) membership [head] left
+  have flattenRight := flattenEquivalent (language := language) membership [head] right
   exact equivalentTrans
     (equivalentSymm flattenLeft)
     (equivalentTrans
@@ -1114,28 +1160,28 @@ private theorem consEquivalent
 
 private theorem spliceHeadEquivalent
     {language : LanguageDef} {declaration : ReflectivePresentationDecl}
-    (membership : declaration ∈ language.reflectivePresentations)
+    (membership : declaration ∈ profile.presentations)
     (nested rest : List Pattern) :
-    EquationEquiv defaultBasePremises language
+    ReflectiveEquationEquiv profile defaultBasePremises language
       (.collection declaration.parallelCollection
         (.collection declaration.parallelCollection nested none :: rest) none)
       (.collection declaration.parallelCollection (nested ++ rest) none) := by
-  have moveNestedRight : EquationEquiv defaultBasePremises language
+  have moveNestedRight : ReflectiveEquationEquiv profile defaultBasePremises language
       (.collection declaration.parallelCollection
         (.collection declaration.parallelCollection nested none :: rest) none)
       (.collection declaration.parallelCollection
         (rest ++ [.collection declaration.parallelCollection nested none])
           none) := by
-    apply permutationEquivalent membership
+    apply permutationEquivalent (language := language) membership
     simpa using
       (List.perm_append_comm
         (l₁ := [.collection declaration.parallelCollection nested none])
         (l₂ := rest))
-  have flatten := flattenEquivalent membership rest nested
-  have restoreOrder : EquationEquiv defaultBasePremises language
+  have flatten := flattenEquivalent (language := language) membership rest nested
+  have restoreOrder : ReflectiveEquationEquiv profile defaultBasePremises language
       (.collection declaration.parallelCollection (rest ++ nested) none)
       (.collection declaration.parallelCollection (nested ++ rest) none) := by
-    apply permutationEquivalent membership
+    apply permutationEquivalent (language := language) membership
     exact List.perm_append_comm (l₁ := rest) (l₂ := nested)
   exact equivalentTrans moveNestedRight
     (equivalentTrans flatten restoreOrder)
@@ -1143,7 +1189,7 @@ private theorem spliceHeadEquivalent
 private theorem flattenMapEquivalentBetween
     {language : LanguageDef}
     {sourceDeclaration targetDeclaration : ReflectivePresentationDecl}
-    (membership : targetDeclaration ∈ language.reflectivePresentations)
+    (membership : targetDeclaration ∈ profile.presentations)
     (mapPattern : Pattern → Pattern)
     (mapParallel : ∀ patterns,
       mapPattern
@@ -1151,7 +1197,7 @@ private theorem flattenMapEquivalentBetween
         .collection targetDeclaration.parallelCollection
           (patterns.map mapPattern) none) :
     ∀ patterns : List Pattern,
-      EquationEquiv defaultBasePremises language
+      ReflectiveEquationEquiv profile defaultBasePremises language
         (.collection targetDeclaration.parallelCollection
           (patterns.map mapPattern) none)
         (.collection targetDeclaration.parallelCollection
@@ -1160,14 +1206,14 @@ private theorem flattenMapEquivalentBetween
               sourceDeclaration)).map mapPattern) none)
   | [] => equivalentRefl _
   | pattern :: patterns => by
-      have tailEquivalent := consEquivalent membership (mapPattern pattern)
-        (flattenMapEquivalentBetween membership mapPattern mapParallel patterns)
+      have tailEquivalent := consEquivalent (language := language) membership (mapPattern pattern)
+        (flattenMapEquivalentBetween (language := language) membership mapPattern mapParallel patterns)
       by_cases isParallel : ∃ nested,
           pattern =
             .collection sourceDeclaration.parallelCollection nested none
       · obtain ⟨nested, rfl⟩ := isParallel
         rw [mapParallel] at tailEquivalent
-        have spliced := spliceHeadEquivalent membership
+        have spliced := spliceHeadEquivalent (language := language) membership
           (nested.map mapPattern)
           ((patterns.flatMap
             (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.parallelSplice
@@ -1187,13 +1233,13 @@ private theorem flattenMapEquivalentBetween
 private theorem filterUnitMapEquivalentBetween
     {language : LanguageDef}
     {sourceDeclaration targetDeclaration : ReflectivePresentationDecl}
-    (membership : targetDeclaration ∈ language.reflectivePresentations)
+    (membership : targetDeclaration ∈ profile.presentations)
     (mapPattern : Pattern → Pattern)
     (mapUnit :
       mapPattern (.apply sourceDeclaration.parallelUnitConstructor []) =
         .apply targetDeclaration.parallelUnitConstructor []) :
     ∀ patterns : List Pattern,
-      EquationEquiv defaultBasePremises language
+      ReflectiveEquationEquiv profile defaultBasePremises language
         (.collection targetDeclaration.parallelCollection
           (patterns.map mapPattern) none)
         (.collection targetDeclaration.parallelCollection
@@ -1202,13 +1248,13 @@ private theorem filterUnitMapEquivalentBetween
               mapPattern) none)
   | [] => equivalentRefl _
   | pattern :: patterns => by
-      have tailEquivalent := consEquivalent membership (mapPattern pattern)
-        (filterUnitMapEquivalentBetween membership mapPattern mapUnit patterns)
+      have tailEquivalent := consEquivalent (language := language) membership (mapPattern pattern)
+        (filterUnitMapEquivalentBetween (language := language) membership mapPattern mapUnit patterns)
       by_cases isUnit :
           pattern = .apply sourceDeclaration.parallelUnitConstructor []
       · subst pattern
         rw [mapUnit] at tailEquivalent
-        have removeHead : EquationEquiv defaultBasePremises language
+        have removeHead : ReflectiveEquationEquiv profile defaultBasePremises language
             (.collection targetDeclaration.parallelCollection
               (.apply targetDeclaration.parallelUnitConstructor [] ::
                 ((patterns.filter fun pattern =>
@@ -1222,8 +1268,8 @@ private theorem filterUnitMapEquivalentBetween
             pattern ≠ .apply sourceDeclaration.parallelUnitConstructor []).map
               mapPattern
           have unitToEmpty := equivalentSymm
-            (collapseEquivalent membership [])
-          have lifted := equationEquiv_fill
+            (collapseEquivalent (language := language) membership [])
+          have lifted := ReflectiveEquationSemantics.equationEquiv_fill
             (.collection targetDeclaration.parallelCollection [] .hole tail none)
               unitToEmpty
           exact equivalentTrans
@@ -1231,21 +1277,21 @@ private theorem filterUnitMapEquivalentBetween
               simpa [tail, OneHoleContext.fill,
                 Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.collapseParallel]
                 using lifted)
-            (by simpa [tail] using spliceHeadEquivalent membership [] tail)
+            (by simpa [tail] using spliceHeadEquivalent (language := language) membership [] tail)
         simpa [mapUnit] using equivalentTrans tailEquivalent removeHead
       · simpa [isUnit] using tailEquivalent
 
 private theorem sortMapEquivalent
     {language : LanguageDef} {declaration : ReflectivePresentationDecl}
-    (membership : declaration ∈ language.reflectivePresentations)
+    (membership : declaration ∈ profile.presentations)
     (mapPattern : Pattern → Pattern) (patterns : List Pattern) :
-    EquationEquiv defaultBasePremises language
+    ReflectiveEquationEquiv profile defaultBasePremises language
       (.collection declaration.parallelCollection
         (patterns.map mapPattern) none)
       (.collection declaration.parallelCollection
         ((Mettapedia.OSLF.MeTTaIL.PatternCode.sortPatterns patterns).map
           mapPattern) none) := by
-  apply permutationEquivalent membership
+  apply permutationEquivalent (language := language) membership
   exact
     ((Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.sortPatterns_perm
       patterns).map mapPattern).symm
@@ -1253,7 +1299,7 @@ private theorem sortMapEquivalent
 private theorem collapseMapEquivalentBetween
     {language : LanguageDef}
     {sourceDeclaration targetDeclaration : ReflectivePresentationDecl}
-    (membership : targetDeclaration ∈ language.reflectivePresentations)
+    (membership : targetDeclaration ∈ profile.presentations)
     (mapPattern : Pattern → Pattern)
     (mapParallel : ∀ patterns,
       mapPattern
@@ -1264,7 +1310,7 @@ private theorem collapseMapEquivalentBetween
       mapPattern (.apply sourceDeclaration.parallelUnitConstructor []) =
         .apply targetDeclaration.parallelUnitConstructor [])
     (patterns : List Pattern) :
-    EquationEquiv defaultBasePremises language
+    ReflectiveEquationEquiv profile defaultBasePremises language
       (.collection targetDeclaration.parallelCollection
         (patterns.map mapPattern) none)
       (mapPattern
@@ -1286,7 +1332,7 @@ private theorem collapseMapEquivalentBetween
             simpa [Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.collapseParallel]
               using mapParallel (first :: second :: tail)
   rw [collapseMap]
-  exact collapseEquivalent membership (patterns.map mapPattern)
+  exact collapseEquivalent (language := language) membership (patterns.map mapPattern)
 
 /-- Full ACU normalization of a source reflective parallel collection is
 transported by a constructor-homomorphic map into the target declaration's
@@ -1297,7 +1343,7 @@ theorem normalizationMapEquivalentBetween
     {language : LanguageDef}
     (sourceDeclaration : ReflectivePresentationDecl)
     {targetDeclaration : ReflectivePresentationDecl}
-    (membership : targetDeclaration ∈ language.reflectivePresentations)
+    (membership : targetDeclaration ∈ profile.presentations)
     (mapPattern : Pattern → Pattern)
     (mapParallel : ∀ patterns,
       mapPattern
@@ -1308,7 +1354,7 @@ theorem normalizationMapEquivalentBetween
       mapPattern (.apply sourceDeclaration.parallelUnitConstructor []) =
         .apply targetDeclaration.parallelUnitConstructor [])
     (patterns : List Pattern) :
-    EquationEquiv defaultBasePremises language
+    ReflectiveEquationEquiv profile defaultBasePremises language
       (.collection targetDeclaration.parallelCollection
         (patterns.map mapPattern) none)
       (mapPattern
@@ -1321,12 +1367,12 @@ theorem normalizationMapEquivalentBetween
       sourceDeclaration)
   let filtered := flattened.filter fun pattern =>
     pattern ≠ .apply sourceDeclaration.parallelUnitConstructor []
-  have flatten := flattenMapEquivalentBetween membership mapPattern mapParallel
+  have flatten := flattenMapEquivalentBetween (language := language) membership mapPattern mapParallel
     patterns
-  have filter := filterUnitMapEquivalentBetween membership mapPattern mapUnit
+  have filter := filterUnitMapEquivalentBetween (language := language) membership mapPattern mapUnit
     flattened
-  have sort := sortMapEquivalent membership mapPattern filtered
-  have collapse := collapseMapEquivalentBetween membership mapPattern
+  have sort := sortMapEquivalent (language := language) membership mapPattern filtered
+  have collapse := collapseMapEquivalentBetween (language := language) membership mapPattern
     mapParallel mapUnit
       (Mettapedia.OSLF.MeTTaIL.PatternCode.sortPatterns filtered)
   exact equivalentTrans flatten
@@ -1350,7 +1396,7 @@ private theorem consMapCanonicalizeEq
         (.collection declaration.parallelCollection (head :: left) none) =
       Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize declaration
         (.collection declaration.parallelCollection (head :: right) none) := by
-  have lifted := EquationSemantics.canonicalize_fill_congr declaration
+  have lifted := ReflectiveEquationSemantics.canonicalize_fill_congr declaration
     (.collection declaration.parallelCollection [head] .hole [] none)
       tailEquality
   have flattenLeft :=
@@ -1473,7 +1519,7 @@ private theorem filterUnitMapCanonicalizeEqBetween
         have unitToEmpty :=
           (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize_parallel_collapse
             targetDeclaration []).symm
-        have lifted := EquationSemantics.canonicalize_fill_congr
+        have lifted := ReflectiveEquationSemantics.canonicalize_fill_congr
           targetDeclaration
           (.collection targetDeclaration.parallelCollection [] .hole
             ((patterns.filter fun pattern =>
@@ -1622,7 +1668,7 @@ theorem normalizationMapCanonicalizeEqBetween
 up to that same authored reflective equation relation. -/
 theorem normalizationMapEquivalent
     {language : LanguageDef} {declaration : ReflectivePresentationDecl}
-    (membership : declaration ∈ language.reflectivePresentations)
+    (membership : declaration ∈ profile.presentations)
     (mapPattern : Pattern → Pattern)
     (mapParallel : ∀ patterns,
       mapPattern (.collection declaration.parallelCollection patterns none) =
@@ -1632,7 +1678,7 @@ theorem normalizationMapEquivalent
       mapPattern (.apply declaration.parallelUnitConstructor []) =
         .apply declaration.parallelUnitConstructor [])
     (patterns : List Pattern) :
-    EquationEquiv defaultBasePremises language
+    ReflectiveEquationEquiv profile defaultBasePremises language
       (.collection declaration.parallelCollection
         (patterns.map mapPattern) none)
       (mapPattern
@@ -1647,10 +1693,10 @@ end ReflectiveParallelSubstitution
 
 private theorem equationEquivTrans {language : LanguageDef}
     {left middle right : Pattern}
-    (first : EquationEquiv defaultBasePremises language left middle)
-    (second : EquationEquiv defaultBasePremises language middle right) :
-    EquationEquiv defaultBasePremises language left right := by
-  unfold EquationEquiv at first second ⊢
+    (first : ReflectiveEquationEquiv profile defaultBasePremises language left middle)
+    (second : ReflectiveEquationEquiv profile defaultBasePremises language middle right) :
+    ReflectiveEquationEquiv profile defaultBasePremises language left right := by
+  unfold ReflectiveEquationEquiv at first second ⊢
   exact Relation.EqvGen.trans _ _ _ first second
 
 private theorem finishNormalizeReflectiveApply_quote_eq_of_not_drop
@@ -1687,31 +1733,33 @@ whose name results are quote-sealed and whose exposed Drop arguments preserve
 their exact support fiber. -/
 theorem substituteAt_canonicalize_equationEquiv_of_resultsQuoted
     (language : LanguageDef) (valid : language.validate = [])
-    (quotedResults : ReflectiveNameResultsQuoted language)
-    (dropSupport : ReflectiveDropCanonicalSupportStable language)
+    (profileValid : Mettapedia.OSLF.MeTTaIL.Reflection.validate
+      language profile = [])
+    (quotedResults : ReflectiveNameResultsQuoted (profile := profile) language)
+    (dropSupport : ReflectiveDropCanonicalSupportStable (profile := profile) language)
     {source target : FreeTypeContext} {support : ContextSupport.Support}
     {bound available : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
     {binderImage : TypeExpr → TypeExpr}
-    (assignment : SupportedOpenAssignment language source target support)
+    (assignment : SupportedOpenAssignment profile language source target support)
     (declaration : ReflectivePresentationDecl)
-    (declarationMembership : declaration ∈ language.reflectivePresentations)
+    (declarationMembership : declaration ∈ profile.presentations)
     (typed : HasType language source bound pattern type)
-    (safe : typed.ReflectiveSupportSafeAt support available binderImage)
+    (safe : typed.ReflectiveSupportSafeAt profile support available binderImage)
     (object : isObjectPattern pattern = true) :
-    EquationEquiv defaultBasePremises language
-      (ReflectiveContextSupport.substituteAt language support
+    ReflectiveEquationEquiv profile defaultBasePremises language
+      (ReflectiveContextSupport.substituteAt profile support
         assignment.assignment available.length pattern)
-      (ReflectiveContextSupport.substituteAt language support
+      (ReflectiveContextSupport.substituteAt profile support
         assignment.assignment available.length
         (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize declaration
           pattern)) := by
   have declarationValid :=
-    LanguageDef.reflectivePresentation_validate_of_validate_eq_nil language
-      valid declaration declarationMembership
+    presentation_validate_eq_nil_of_validate_eq_nil
+        profileValid declarationMembership
   have quoteNeDrop :=
     Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.quoteConstructor_ne_dropConstructor_of_validate
       language declaration declarationValid
-  have chosenQuote : ReflectiveContextSupport.isQuoteConstructor language
+  have chosenQuote : ReflectiveContextSupport.isQuoteConstructor profile
       declaration.quoteConstructor = true := by
     simp only [ReflectiveContextSupport.isQuoteConstructor, List.any_eq_true]
     exact ⟨declaration, declarationMembership, by simp⟩
@@ -1720,12 +1768,12 @@ theorem substituteAt_canonicalize_equationEquiv_of_resultsQuoted
       (typed : HasType language source bound pattern type)
       (available : List TypeExpr)
       (currentImage : TypeExpr → TypeExpr)
-      (_ : typed.ReflectiveSupportSafeAt support available currentImage) =>
+      (_ : typed.ReflectiveSupportSafeAt profile support available currentImage) =>
       isObjectPattern pattern = true →
-      EquationEquiv defaultBasePremises language
-        (ReflectiveContextSupport.substituteAt language support
+      ReflectiveEquationEquiv profile defaultBasePremises language
+        (ReflectiveContextSupport.substituteAt profile support
           assignment.assignment available.length pattern)
-        (ReflectiveContextSupport.substituteAt language support
+        (ReflectiveContextSupport.substituteAt profile support
           assignment.assignment available.length
           (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize declaration
             pattern)))
@@ -1733,27 +1781,27 @@ theorem substituteAt_canonicalize_equationEquiv_of_resultsQuoted
       (typed : ArgumentsHaveTypes language source bound arguments parameters)
       (available : List TypeExpr)
       (currentImage : TypeExpr → TypeExpr)
-      (_ : typed.ReflectiveSupportSafeAt support available currentImage) =>
+      (_ : typed.ReflectiveSupportSafeAt profile support available currentImage) =>
       isObjectPatternList arguments = true →
-      List.Forall₂ (EquationEquiv defaultBasePremises language)
-        (arguments.map (ReflectiveContextSupport.substituteAt language support
+      List.Forall₂ (ReflectiveEquationEquiv profile defaultBasePremises language)
+        (arguments.map (ReflectiveContextSupport.substituteAt profile support
           assignment.assignment available.length))
         ((Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeList
             declaration arguments).map
-          (ReflectiveContextSupport.substituteAt language support
+          (ReflectiveContextSupport.substituteAt profile support
             assignment.assignment available.length)))
     (motive_3 := fun {bound elements elementType}
       (typed : ElementsHaveType language source bound elements elementType)
       (available : List TypeExpr)
       (currentImage : TypeExpr → TypeExpr)
-      (_ : typed.ReflectiveSupportSafeAt support available currentImage) =>
+      (_ : typed.ReflectiveSupportSafeAt profile support available currentImage) =>
       isObjectPatternList elements = true →
-      List.Forall₂ (EquationEquiv defaultBasePremises language)
-        (elements.map (ReflectiveContextSupport.substituteAt language support
+      List.Forall₂ (ReflectiveEquationEquiv profile defaultBasePremises language)
+        (elements.map (ReflectiveContextSupport.substituteAt profile support
           assignment.assignment available.length))
         ((Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeList
             declaration elements).map
-          (ReflectiveContextSupport.substituteAt language support
+          (ReflectiveContextSupport.substituteAt profile support
             assignment.assignment available.length)))
     (by
       intro bound index resultType lookup sourceAvailable currentImage
@@ -1773,19 +1821,19 @@ theorem substituteAt_canonicalize_equationEquiv_of_resultsQuoted
       have lifted := equationEquiv_apply_of_forall₂ rule.label pointwise
       by_cases selected : rule.label = declaration.quoteConstructor
       · obtain ⟨argument, argumentTyped, rfl, argumentSafe⟩ :=
-          argumentsTyped.selectedQuoteArgument valid declarationMembership
-            membership selected argumentsSafe
+          argumentsTyped.selectedQuoteArgument valid profileValid
+            declarationMembership membership selected argumentsSafe
         have argumentObject : isObjectPattern argument = true := by
           simpa [isObjectPatternList] using argumentsObject
         cases pointwise with
         | @cons _ _ _ _ argumentEquivalent tailPointwise =>
             cases tailPointwise
-            have lifted' : EquationEquiv defaultBasePremises language
+            have lifted' : ReflectiveEquationEquiv profile defaultBasePremises language
                 (.apply declaration.quoteConstructor
-                  [ReflectiveContextSupport.substituteAt language support
+                  [ReflectiveContextSupport.substituteAt profile support
                     assignment.assignment 0 argument])
                 (.apply declaration.quoteConstructor
-                  [ReflectiveContextSupport.substituteAt language support
+                  [ReflectiveContextSupport.substituteAt profile support
                     assignment.assignment 0
                     (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
                       declaration argument)]) := by
@@ -1806,20 +1854,20 @@ theorem substituteAt_canonicalize_equationEquiv_of_resultsQuoted
                     quoteNeDrop nameTyped rfl nameSafe nameObject
                       sourceAvailable.length
               rw [canonicalEquality] at lifted'
-              have cancellation' : EquationEquiv defaultBasePremises language
+              have cancellation' : ReflectiveEquationEquiv profile defaultBasePremises language
                   (.apply declaration.quoteConstructor
-                    [ReflectiveContextSupport.substituteAt language support
+                    [ReflectiveContextSupport.substituteAt profile support
                       assignment.assignment 0
                       (.apply declaration.dropConstructor [name])])
-                  (ReflectiveContextSupport.substituteAt language support
+                  (ReflectiveContextSupport.substituteAt profile support
                     assignment.assignment sourceAvailable.length name) := by
                 have leftSubstitution :
-                    ReflectiveContextSupport.substituteAt language support
+                    ReflectiveContextSupport.substituteAt profile support
                         assignment.assignment sourceAvailable.length
                         (.apply declaration.quoteConstructor
                           [.apply declaration.dropConstructor [name]]) =
                       .apply declaration.quoteConstructor
-                        [ReflectiveContextSupport.substituteAt language support
+                        [ReflectiveContextSupport.substituteAt profile support
                           assignment.assignment 0
                           (.apply declaration.dropConstructor [name])] := by
                   simp only [ReflectiveContextSupport.substituteAt, chosenQuote,
@@ -1857,7 +1905,7 @@ theorem substituteAt_canonicalize_equationEquiv_of_resultsQuoted
       have lifted := equationEquiv_apply_of_forall₂ rule.label pointwise
       have selected : rule.label ≠ declaration.quoteConstructor := by
         intro equality
-        have chosenQuote : ReflectiveContextSupport.isQuoteConstructor language
+        have chosenQuote : ReflectiveContextSupport.isQuoteConstructor profile
             declaration.quoteConstructor = true := by
           simp only [ReflectiveContextSupport.isQuoteConstructor,
             List.any_eq_true]
@@ -1876,7 +1924,7 @@ theorem substituteAt_canonicalize_equationEquiv_of_resultsQuoted
         currentImage bodySafe bodyIH resultObject
       have bodyObject : isObjectPattern body = true := by
         simpa [isObjectPattern] using resultObject
-      have lifted := equationEquiv_fill (.lambda binder .hole)
+      have lifted := ReflectiveEquationSemantics.equationEquiv_fill (.lambda binder .hole)
         (bodyIH bodyObject)
       simpa [ReflectiveContextSupport.substituteAt,
         Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize,
@@ -1886,7 +1934,7 @@ theorem substituteAt_canonicalize_equationEquiv_of_resultsQuoted
         currentImage bodySafe bodyIH resultObject
       have bodyObject : isObjectPattern body = true := by
         simpa [isObjectPattern] using resultObject
-      have lifted := equationEquiv_fill
+      have lifted := ReflectiveEquationSemantics.equationEquiv_fill
         (.multiLambda arity binders .hole) (bodyIH bodyObject)
       simpa [ReflectiveContextSupport.substituteAt,
         Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize,
@@ -1908,7 +1956,7 @@ theorem substituteAt_canonicalize_equationEquiv_of_resultsQuoted
       by_cases parallelShape :
           collectionType = declaration.parallelCollection
       · subst collectionType
-        let mapPattern := ReflectiveContextSupport.substituteAt language support
+        let mapPattern := ReflectiveContextSupport.substituteAt profile support
           assignment.assignment sourceAvailable.length
         have mapParallel : ∀ patterns,
             mapPattern
@@ -1923,17 +1971,18 @@ theorem substituteAt_canonicalize_equationEquiv_of_resultsQuoted
           simp [mapPattern, ReflectiveContextSupport.substituteAt]
         have normalized :=
           ReflectiveParallelSubstitution.normalizationMapEquivalent
-            declarationMembership mapPattern mapParallel mapUnit
+            (language := language) declarationMembership mapPattern
+              mapParallel mapUnit
               (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeList
                 declaration elements)
-        have lifted' : EquationEquiv defaultBasePremises language
+        have lifted' : ReflectiveEquationEquiv profile defaultBasePremises language
             (mapPattern
               (.collection declaration.parallelCollection elements none))
             (.collection declaration.parallelCollection
               ((Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeList
                 declaration elements).map mapPattern) none) := by
           simpa [mapPattern, ReflectiveContextSupport.substituteAt] using lifted
-        have normalized' : EquationEquiv defaultBasePremises language
+        have normalized' : ReflectiveEquationEquiv profile defaultBasePremises language
             (.collection declaration.parallelCollection
               ((Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeList
                 declaration elements).map mapPattern) none)
@@ -1968,7 +2017,7 @@ theorem substituteAt_canonicalize_equationEquiv_of_resultsQuoted
       by_cases parallelShape :
           collectionType = declaration.parallelCollection
       · subst collectionType
-        let mapPattern := ReflectiveContextSupport.substituteAt language support
+        let mapPattern := ReflectiveContextSupport.substituteAt profile support
           assignment.assignment sourceAvailable.length
         have mapParallel : ∀ patterns,
             mapPattern
@@ -1983,17 +2032,18 @@ theorem substituteAt_canonicalize_equationEquiv_of_resultsQuoted
           simp [mapPattern, ReflectiveContextSupport.substituteAt]
         have normalized :=
           ReflectiveParallelSubstitution.normalizationMapEquivalent
-            declarationMembership mapPattern mapParallel mapUnit
+            (language := language) declarationMembership mapPattern
+              mapParallel mapUnit
               (Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeList
                 declaration elements)
-        have lifted' : EquationEquiv defaultBasePremises language
+        have lifted' : ReflectiveEquationEquiv profile defaultBasePremises language
             (mapPattern
               (.collection declaration.parallelCollection elements none))
             (.collection declaration.parallelCollection
               ((Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeList
                 declaration elements).map mapPattern) none) := by
           simpa [mapPattern, ReflectiveContextSupport.substituteAt] using lifted
-        have normalized' : EquationEquiv defaultBasePremises language
+        have normalized' : ReflectiveEquationEquiv profile defaultBasePremises language
             (.collection declaration.parallelCollection
               ((Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeList
                 declaration elements).map mapPattern) none)
@@ -2045,11 +2095,12 @@ particular structural substitution being considered.  The raw pattern,
 typing judgment, and equation generators remain those of the sole authored
 `LanguageDef`; this structure only prevents an equivalence chain from passing
 through an intermediate vertex at which that substitution is not licensed. -/
-structure SupportSafeOpenPattern (language : LanguageDef)
+structure SupportSafeOpenPattern (profile : ReflectionProfile)
+    (language : LanguageDef)
     (free : FreeTypeContext) (support : ContextSupport.Support)
     (bound : List TypeExpr) (type : TypeExpr) where
-  term : OpenPattern language free bound type
-  safe : term.2.1.ReflectiveSupportSafeAt support bound
+  term : ReflectiveWellSorted.OpenPattern profile language free bound type
+  safe : term.2.1.1.ReflectiveSupportSafeAt profile support bound
 
 namespace SupportSafeOpenPattern
 
@@ -2057,15 +2108,15 @@ namespace SupportSafeOpenPattern
 def equationGenerator {language : LanguageDef}
     {free : FreeTypeContext} {support : ContextSupport.Support}
     {bound : List TypeExpr} {type : TypeExpr}
-    (left right : SupportSafeOpenPattern language free support bound type) : Prop :=
-  EquationContextStep defaultBasePremises language left.term.1 right.term.1
+    (left right : SupportSafeOpenPattern profile language free support bound type) : Prop :=
+  ReflectiveEquationContextStep profile defaultBasePremises language left.term.1 right.term.1
 
 /-- Least authored contextual equivalence whose every intermediate vertex is
 typed and safe for the same support-indexed substitution. -/
 def equationSetoid (language : LanguageDef) (free : FreeTypeContext)
     (support : ContextSupport.Support) (bound : List TypeExpr)
     (type : TypeExpr) :
-    Setoid (SupportSafeOpenPattern language free support bound type) where
+    Setoid (SupportSafeOpenPattern profile language free support bound type) where
   r := Relation.EqvGen equationGenerator
   iseqv :=
     { refl := Relation.EqvGen.refl
@@ -2074,14 +2125,15 @@ def equationSetoid (language : LanguageDef) (free : FreeTypeContext)
 
 /-- Forgetting the support witness maps the restricted relation into the
 ordinary typed open equation relation generated by the same authored edges. -/
-theorem equationSetoid_to_openPatternEquationSetoid
+theorem equationSetoid_to_reflectiveOpenPatternEquationSetoid
     {language : LanguageDef} {free : FreeTypeContext}
     {support : ContextSupport.Support} {bound : List TypeExpr}
     {type : TypeExpr}
-    {left right : SupportSafeOpenPattern language free support bound type}
+    {left right : SupportSafeOpenPattern profile language free support bound type}
     (equivalent :
       (equationSetoid language free support bound type).r left right) :
-    (openPatternEquationSetoid language free bound type).r
+    (ReflectiveEquationSemantics.reflectiveOpenPatternEquationSetoid
+      profile defaultBasePremises language free bound type).r
       left.term right.term := by
   induction equivalent with
   | rel left right generator =>
@@ -2099,30 +2151,31 @@ theorem equationSetoid_to_equationEquiv
     {language : LanguageDef} {free : FreeTypeContext}
     {support : ContextSupport.Support} {bound : List TypeExpr}
     {type : TypeExpr}
-    {left right : SupportSafeOpenPattern language free support bound type}
+    {left right : SupportSafeOpenPattern profile language free support bound type}
     (equivalent :
       (equationSetoid language free support bound type).r left right) :
-    EquationEquiv defaultBasePremises language left.term.1 right.term.1 :=
-  openPatternEquationSetoid_to_equationEquiv
-    (equationSetoid_to_openPatternEquationSetoid equivalent)
+    ReflectiveEquationEquiv profile defaultBasePremises language left.term.1 right.term.1 :=
+  ReflectiveEquationSemantics.reflectiveOpenPatternEquationSetoid_to_equiv
+    (equationSetoid_to_reflectiveOpenPatternEquationSetoid equivalent)
 
 /-- Apply a support-certified structural assignment to the stored open term. -/
 def substitute {language : LanguageDef} {source target : FreeTypeContext}
     {support : ContextSupport.Support} {bound : List TypeExpr}
     {type : TypeExpr}
-    (pattern : SupportSafeOpenPattern language source support bound type)
-    (assignment : SupportedOpenAssignment language source target support) :
-    OpenPattern language target bound type :=
-  pattern.term.substituteReflectiveSupported assignment pattern.safe
+    (pattern : SupportSafeOpenPattern profile language source support bound type)
+    (assignment : SupportedOpenAssignment profile language source target support) :
+    ReflectiveWellSorted.OpenPattern profile language target bound type :=
+  ReflectiveWellSorted.OpenPattern.substituteReflectiveSupported
+    pattern.term assignment pattern.safe
 
 @[simp]
 theorem substitute_pattern {language : LanguageDef}
     {source target : FreeTypeContext} {support : ContextSupport.Support}
     {bound : List TypeExpr} {type : TypeExpr}
-    (pattern : SupportSafeOpenPattern language source support bound type)
-    (assignment : SupportedOpenAssignment language source target support) :
-    (pattern.substitute assignment).1 =
-      ReflectiveContextSupport.substitute language support
+    (pattern : SupportSafeOpenPattern profile language source support bound type)
+    (assignment : SupportedOpenAssignment profile language source target support) :
+    (SupportSafeOpenPattern.substitute pattern assignment).1 =
+      ReflectiveContextSupport.substitute profile support
         assignment.assignment bound pattern.term.1 :=
   rfl
 
@@ -2141,24 +2194,24 @@ authored presentation. -/
 def ReflectiveEquationSubstitutionStable (language : LanguageDef) : Prop :=
   ∀ {source target : FreeTypeContext} {support : ContextSupport.Support}
     {bound : List TypeExpr} {type : TypeExpr}
-    (assignment : SupportedOpenAssignment language source target support)
+    (assignment : SupportedOpenAssignment profile language source target support)
     {declaration : ReflectivePresentationDecl},
-    declaration ∈ language.reflectivePresentations →
+    declaration ∈ profile.presentations →
     ∀ (left right :
-      SupportSafeOpenPattern language source support bound type),
+      SupportSafeOpenPattern profile language source support bound type),
       Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
           declaration left.term.1 =
         Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
           declaration right.term.1 →
-      EquationEquiv defaultBasePremises language
+      ReflectiveEquationEquiv profile defaultBasePremises language
         (left.substitute assignment).1 (right.substitute assignment).1
 
 /-- Constructor-only presentations satisfy reflective substitution stability
 because they contain no reflective equality generator. -/
 theorem reflectiveEquationSubstitutionStable_of_empty
     {language : LanguageDef}
-    (empty : language.reflectivePresentations = []) :
-    ReflectiveEquationSubstitutionStable language := by
+    (empty : profile.presentations = []) :
+    ReflectiveEquationSubstitutionStable (profile := profile) language := by
   intro source target support bound type assignment declaration membership
     left right representatives
   rw [empty] at membership
@@ -2173,20 +2226,20 @@ the definition. -/
 def AuthoredEquationSubstitutionStable (language : LanguageDef) : Prop :=
   ∀ {source target : FreeTypeContext} {support : ContextSupport.Support}
     {bound : List TypeExpr} {type : TypeExpr}
-    (assignment : SupportedOpenAssignment language source target support)
-    (left right : SupportSafeOpenPattern language source support bound type),
+    (assignment : SupportedOpenAssignment profile language source target support)
+    (left right : SupportSafeOpenPattern profile language source support bound type),
     (∃ (context : OneHoleContext) (redex contractum : Pattern),
       EquationInstance defaultBasePremises language redex contractum ∧
         left.term.1 = context.fill redex ∧
         right.term.1 = context.fill contractum) →
-      EquationEquiv defaultBasePremises language
+      ReflectiveEquationEquiv profile defaultBasePremises language
         (left.substitute assignment).1 (right.substitute assignment).1
 
 /-- Exact language-level boundary needed to transport every generator of the
 support-safe contextual equation relation. -/
 def SupportedEquationSubstitutionStable (language : LanguageDef) : Prop :=
-  AuthoredEquationSubstitutionStable language ∧
-    ReflectiveEquationSubstitutionStable language
+  AuthoredEquationSubstitutionStable (profile := profile) language ∧
+    ReflectiveEquationSubstitutionStable (profile := profile) language
 
 /-! ## Naturality under ambient binder embeddings
 
@@ -2696,7 +2749,7 @@ def AuthoredEquationAmbientRenamingStable (language : LanguageDef) : Prop :=
   ∀ (rename : Nat → Nat), StrictMono rename → ∀ (depth : Nat)
     (context : OneHoleContext) {redex contractum : Pattern},
     EquationInstance defaultBasePremises language redex contractum →
-      EquationEquiv defaultBasePremises language
+      ReflectiveEquationEquiv profile defaultBasePremises language
         (ContextSubstitution.renameAmbientBVarsAt rename depth
           (context.fill redex))
         (ContextSubstitution.renameAmbientBVarsAt rename depth
@@ -2710,12 +2763,12 @@ def ReflectiveEquationAmbientRenamingStable (language : LanguageDef) : Prop :=
   ∀ (rename : Nat → Nat), StrictMono rename → ∀ (depth : Nat)
     (context : OneHoleContext) {declaration : ReflectivePresentationDecl}
     {left right : Pattern},
-    declaration ∈ language.reflectivePresentations →
+    declaration ∈ profile.presentations →
     Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
         declaration left =
       Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
         declaration right →
-      EquationEquiv defaultBasePremises language
+      ReflectiveEquationEquiv profile defaultBasePremises language
         (ContextSubstitution.renameAmbientBVarsAt rename depth
           (context.fill left))
         (ContextSubstitution.renameAmbientBVarsAt rename depth
@@ -2726,15 +2779,17 @@ ambient binder embedding.  The transported one-hole context records the
 binder depth at its hole, while the canonical factor law absorbs any change
 in deterministic parallel ordering. -/
 theorem reflectiveEquationContextStep_renameAmbientBVarsAt_of_validate_eq_nil
-    (language : LanguageDef) (valid : language.validate = []) :
+    (language : LanguageDef) (_valid : language.validate = [])
+    (profileValid : Mettapedia.OSLF.MeTTaIL.Reflection.validate
+      language profile = []) :
     ∀ (rename : Nat → Nat) (depth : Nat) (context : OneHoleContext)
       {declaration : ReflectivePresentationDecl} {left right : Pattern},
-      declaration ∈ language.reflectivePresentations →
+      declaration ∈ profile.presentations →
       Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
           declaration left =
         Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
           declaration right →
-      EquationContextStep defaultBasePremises language
+      ReflectiveEquationContextStep profile defaultBasePremises language
         (ContextSubstitution.renameAmbientBVarsAt rename depth
           (context.fill left))
         (ContextSubstitution.renameAmbientBVarsAt rename depth
@@ -2743,8 +2798,8 @@ theorem reflectiveEquationContextStep_renameAmbientBVarsAt_of_validate_eq_nil
   let transported :=
     ContextSubstitution.renameAmbientContextAt rename depth context
   have declarationValid :=
-    LanguageDef.reflectivePresentation_validate_of_validate_eq_nil
-      language valid declaration membership
+    presentation_validate_eq_nil_of_validate_eq_nil
+        profileValid membership
   have quote_ne_drop :=
     Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.quoteConstructor_ne_dropConstructor_of_validate
       language declaration declarationValid
@@ -2767,12 +2822,12 @@ theorem reflectiveEquationContextStep_renameAmbientBVarsAt_of_validate_eq_nil
       _ = _ :=
           (canonicalize_renameAmbientBVarsAt_factor declaration quote_ne_drop
             rename transported.2 right).symm
-  have transportedStep : EquationContextStep defaultBasePremises language
+  have transportedStep : ReflectiveEquationContextStep profile defaultBasePremises language
       (transported.1.fill
         (ContextSubstitution.renameAmbientBVarsAt rename transported.2 left))
       (transported.1.fill
         (ContextSubstitution.renameAmbientBVarsAt rename transported.2 right)) :=
-    EquationContextStep.reflectiveInContext transported.1 membership
+    ReflectiveEquationContextStep.reflectiveInContext transported.1 membership
       transportedRepresentatives
   simpa only [ContextSubstitution.renameAmbientBVarsAt_fill] using
     transportedStep
@@ -2782,34 +2837,38 @@ Canonicalization need not commute syntactically with renaming: the factor law
 shows that re-canonicalization absorbs any change in deterministic ordering,
 and transported one-hole contexts supply the contextual closure. -/
 theorem reflectiveEquationAmbientRenamingStable_of_validate_eq_nil
-    (language : LanguageDef) (valid : language.validate = []) :
-    ReflectiveEquationAmbientRenamingStable language := by
+    (language : LanguageDef) (valid : language.validate = [])
+    (profileValid : Mettapedia.OSLF.MeTTaIL.Reflection.validate
+      language profile = []) :
+    ReflectiveEquationAmbientRenamingStable (profile := profile) language := by
   intro rename _strict depth context declaration left right membership
     representatives
   exact Relation.EqvGen.rel _ _
     (reflectiveEquationContextStep_renameAmbientBVarsAt_of_validate_eq_nil
-      language valid rename depth context membership representatives)
+      language valid profileValid rename depth context membership representatives)
 
 /-- Exact pair of generator obligations making the authored contextual
 equation setoid natural under ambient binder embeddings. -/
 def SupportedEquationAmbientRenamingStable (language : LanguageDef) : Prop :=
-  AuthoredEquationAmbientRenamingStable language ∧
-    ReflectiveEquationAmbientRenamingStable language
+  AuthoredEquationAmbientRenamingStable (profile := profile) language ∧
+    ReflectiveEquationAmbientRenamingStable (profile := profile) language
 
 /-- The two ambient-renaming obligations cover exactly the constructors of
 one authored contextual equation generator. -/
 theorem equationContextStep_renameAmbientBVarsAt
     {language : LanguageDef}
-    (stable : SupportedEquationAmbientRenamingStable language)
+    (stable : SupportedEquationAmbientRenamingStable (profile := profile) language)
     (rename : Nat → Nat) (strict : StrictMono rename) (depth : Nat)
     {left right : Pattern}
-    (step : EquationContextStep defaultBasePremises language left right) :
-    EquationEquiv defaultBasePremises language
+    (step : ReflectiveEquationContextStep profile defaultBasePremises language left right) :
+    ReflectiveEquationEquiv profile defaultBasePremises language
       (ContextSubstitution.renameAmbientBVarsAt rename depth left)
       (ContextSubstitution.renameAmbientBVarsAt rename depth right) := by
   cases step with
-  | inContext context equationWitness =>
-      exact stable.1 rename strict depth context equationWitness
+  | core coreStep =>
+      cases coreStep with
+      | inContext context equationWitness =>
+          exact stable.1 rename strict depth context equationWitness
   | reflectiveInContext context membership representatives =>
       exact stable.2 rename strict depth context membership representatives
 
@@ -2817,11 +2876,11 @@ theorem equationContextStep_renameAmbientBVarsAt
 certified ambient binder embedding. -/
 theorem equationEquiv_renameAmbientBVarsAt
     {language : LanguageDef}
-    (stable : SupportedEquationAmbientRenamingStable language)
+    (stable : SupportedEquationAmbientRenamingStable (profile := profile) language)
     (rename : Nat → Nat) (strict : StrictMono rename) (depth : Nat)
     {left right : Pattern}
-    (equivalent : EquationEquiv defaultBasePremises language left right) :
-    EquationEquiv defaultBasePremises language
+    (equivalent : ReflectiveEquationEquiv profile defaultBasePremises language left right) :
+    ReflectiveEquationEquiv profile defaultBasePremises language
       (ContextSubstitution.renameAmbientBVarsAt rename depth left)
       (ContextSubstitution.renameAmbientBVarsAt rename depth right) := by
   exact equationEquiv_map_of_contextStep
@@ -2836,10 +2895,10 @@ assignments, whose semantic agreement must persist under every extra binder
 inserted by a surrounding skeleton. -/
 theorem equationEquiv_liftBVars
     {language : LanguageDef}
-    (stable : SupportedEquationAmbientRenamingStable language)
+    (stable : SupportedEquationAmbientRenamingStable (profile := profile) language)
     (cutoff shift : Nat) {left right : Pattern}
-    (equivalent : EquationEquiv defaultBasePremises language left right) :
-    EquationEquiv defaultBasePremises language
+    (equivalent : ReflectiveEquationEquiv profile defaultBasePremises language left right) :
+    ReflectiveEquationEquiv profile defaultBasePremises language
       (liftBVars cutoff shift left) (liftBVars cutoff shift right) := by
   have strict : StrictMono (fun index : Nat => index + shift) := by
     intro first second order
@@ -2870,12 +2929,8 @@ def OpenPattern.weakenRoot
       (inner := []) (outer := bound) (inserted := inner)
   · simpa using pattern.2.2.1
   · simpa using pattern.2.2.2.1
-  · intro presentation membership
-    have lifted := ContextSubstitution.binderSafeAt_liftBVars
-      presentation.quoteConstructor
-      (ambient := bound.length) (cutoff := 0) (shift := inner.length)
-      (pattern.2.2.2.2 presentation membership)
-    simpa only [List.length_append, Nat.add_zero, Nat.add_comm] using lifted
+  · exact (pattern.2.1.liftBVars_insert
+      (inner := []) (outer := bound) (inserted := inner)).isWellScopedAt
 
 @[simp]
 theorem OpenPattern.weakenRoot_pattern
@@ -2897,9 +2952,7 @@ def OpenPattern.extendOuter
     OpenPattern language free (bound ++ outer) type := by
   refine ⟨pattern.1, pattern.2.1.extendOuter outer,
     pattern.2.2.1, pattern.2.2.2.1, ?_⟩
-  intro presentation membership
-  exact binderSafeAt_mono presentation.quoteConstructor
-    (pattern.2.2.2.2 presentation membership) (by simp)
+  exact (pattern.2.1.extendOuter outer).isWellScopedAt
 
 @[simp]
 theorem OpenPattern.extendOuter_pattern
@@ -3008,18 +3061,16 @@ def OpenPattern.substituteReflectiveSupportedAt
     {bound available sealed : List TypeExpr} {type : TypeExpr}
     (pattern : OpenPattern language source bound type)
     (boundShape : bound = available ++ sealed)
-    (assignment : SupportedOpenAssignment language source target support)
-    (safe : pattern.2.1.ReflectiveSupportSafeAt support available) :
+    (assignment : SupportedOpenAssignment profile language source target support)
+    (safe : pattern.2.1.ReflectiveSupportSafeAt profile support available) :
     OpenPattern language target bound type := by
-  refine ⟨ReflectiveContextSupport.substituteAt language support
+  refine ⟨ReflectiveContextSupport.substituteAt profile support
       assignment.assignment available.length pattern.1, ?_, ?_, ?_, ?_⟩
   · exact safe.substitute boundShape assignment.toSupportedAssignment
   · exact safe.substituteCanonicalBinderMetadata assignment pattern.2.2.1
   · exact safe.substituteObjectPattern assignment pattern.2.2.2.1
-  · intro presentation membership
-    exact safe.substituteBinderSafeAt assignment presentation membership
-      (by rw [boundShape]; simp)
-      (pattern.2.2.2.2 presentation membership)
+  · exact (safe.substitute boundShape
+      assignment.toSupportedAssignment).isWellScopedAt
 
 @[simp]
 theorem OpenPattern.substituteReflectiveSupportedAt_pattern
@@ -3028,10 +3079,10 @@ theorem OpenPattern.substituteReflectiveSupportedAt_pattern
     {bound available sealed : List TypeExpr} {type : TypeExpr}
     (pattern : OpenPattern language source bound type)
     (boundShape : bound = available ++ sealed)
-    (assignment : SupportedOpenAssignment language source target support)
-    (safe : pattern.2.1.ReflectiveSupportSafeAt support available) :
+    (assignment : SupportedOpenAssignment profile language source target support)
+    (safe : pattern.2.1.ReflectiveSupportSafeAt profile support available) :
     (pattern.substituteReflectiveSupportedAt boundShape assignment safe).1 =
-      ReflectiveContextSupport.substituteAt language support
+      ReflectiveContextSupport.substituteAt profile support
         assignment.assignment available.length pattern.1 :=
   rfl
 
@@ -3045,14 +3096,15 @@ Its equation generator is still exactly the authored `LanguageDef` generator.
 
 /-- A well-sorted open object whose binder context is split into the prefix
 visible since the nearest quote and the sealed outer suffix. -/
-structure AvailableOpenPattern (language : LanguageDef)
+structure AvailableOpenPattern (profile : ReflectionProfile)
+    (language : LanguageDef)
     (free : FreeTypeContext) (available outer : List TypeExpr)
     (type : TypeExpr) where
   pattern : Pattern
   typed : HasType language free (available ++ outer) pattern type
   canonicalBinderMetadata : pattern.hasCanonicalBinderMetadata = true
   objectPattern : isObjectPattern pattern = true
-  reflectiveScope : ReflectiveScopeSafeAt language available.length pattern
+  reflectiveScope : ReflectiveWellSorted.ReflectiveScopeSafeAt profile available.length pattern
 
 namespace AvailableOpenPattern
 
@@ -3064,9 +3116,9 @@ def ofCertificates
     (typed : HasType language free (available ++ outer) pattern type)
     (canonical : pattern.hasCanonicalBinderMetadata = true)
     (objectPattern : isObjectPattern pattern = true)
-    (reflectiveScope : ReflectiveScopeSafeAt language available.length
+    (reflectiveScope : ReflectiveWellSorted.ReflectiveScopeSafeAt profile available.length
       pattern) :
-    AvailableOpenPattern language free available outer type :=
+    AvailableOpenPattern profile language free available outer type :=
   ⟨pattern, typed, canonical, objectPattern, reflectiveScope⟩
 
 @[simp]
@@ -3076,7 +3128,7 @@ theorem ofCertificates_pattern
     (typed : HasType language free (available ++ outer) pattern type)
     (canonical : pattern.hasCanonicalBinderMetadata = true)
     (objectPattern : isObjectPattern pattern = true)
-    (reflectiveScope : ReflectiveScopeSafeAt language available.length
+    (reflectiveScope : ReflectiveWellSorted.ReflectiveScopeSafeAt profile available.length
       pattern) :
     (ofCertificates typed canonical objectPattern reflectiveScope).pattern =
       pattern :=
@@ -3086,7 +3138,7 @@ theorem ofCertificates_pattern
 theorem ext
     {language : LanguageDef} {free : FreeTypeContext}
     {available outer : List TypeExpr} {type : TypeExpr}
-    {left right : AvailableOpenPattern language free available outer type}
+    {left right : AvailableOpenPattern profile language free available outer type}
     (patterns : left.pattern = right.pattern) : left = right := by
   cases left
   cases right
@@ -3100,8 +3152,8 @@ def castFree
     {language : LanguageDef} {sourceFree targetFree : FreeTypeContext}
     {available outer : List TypeExpr} {type : TypeExpr}
     (freeEquality : sourceFree = targetFree)
-    (term : AvailableOpenPattern language sourceFree available outer type) :
-    AvailableOpenPattern language targetFree available outer type := by
+    (term : AvailableOpenPattern profile language sourceFree available outer type) :
+    AvailableOpenPattern profile language targetFree available outer type := by
   cases freeEquality
   exact term
 
@@ -3117,9 +3169,9 @@ def reindexFiber
     (availableEquality : sourceAvailable = targetAvailable)
     (outerEquality : sourceOuter = targetOuter)
     (typeEquality : sourceType = targetType)
-    (term : AvailableOpenPattern language free sourceAvailable sourceOuter
+    (term : AvailableOpenPattern profile language free sourceAvailable sourceOuter
       sourceType) :
-    AvailableOpenPattern language free targetAvailable targetOuter targetType := by
+    AvailableOpenPattern profile language free targetAvailable targetOuter targetType := by
   cases availableEquality
   cases outerEquality
   cases typeEquality
@@ -3133,7 +3185,7 @@ theorem reindexFiber_pattern
     (availableEquality : sourceAvailable = targetAvailable)
     (outerEquality : sourceOuter = targetOuter)
     (typeEquality : sourceType = targetType)
-    (term : AvailableOpenPattern language free sourceAvailable sourceOuter
+    (term : AvailableOpenPattern profile language free sourceAvailable sourceOuter
       sourceType) :
     (term.reindexFiber availableEquality outerEquality typeEquality).pattern =
       term.pattern := by
@@ -3147,7 +3199,7 @@ theorem castFree_pattern
     {language : LanguageDef} {sourceFree targetFree : FreeTypeContext}
     {available outer : List TypeExpr} {type : TypeExpr}
     (freeEquality : sourceFree = targetFree)
-    (term : AvailableOpenPattern language sourceFree available outer type) :
+    (term : AvailableOpenPattern profile language sourceFree available outer type) :
     (term.castFree freeEquality).pattern = term.pattern := by
   cases freeEquality
   rfl
@@ -3159,42 +3211,46 @@ theorem castFree_supportSafe
     {support : ContextSupport.Support}
     {available outer : List TypeExpr} {type : TypeExpr}
     (freeEquality : sourceFree = targetFree)
-    (term : AvailableOpenPattern language sourceFree available outer type)
-    (safe : term.typed.ReflectiveSupportSafeAt support available) :
-    (term.castFree freeEquality).typed.ReflectiveSupportSafeAt support
+    (term : AvailableOpenPattern profile language sourceFree available outer type)
+    (safe : term.typed.ReflectiveSupportSafeAt profile support available) :
+    (term.castFree freeEquality).typed.ReflectiveSupportSafeAt profile support
       available := by
   cases freeEquality
   exact safe
 
 /-- Forget only the binder split.  Reflective scope weakens monotonically
 from the visible prefix to the complete lexical binder context. -/
-def toOpenPattern
+def toReflectiveOpenPattern
     {language : LanguageDef} {free : FreeTypeContext}
     {available outer : List TypeExpr} {type : TypeExpr}
-    (pattern : AvailableOpenPattern language free available outer type) :
-    OpenPattern language free (available ++ outer) type :=
-  ⟨pattern.pattern, pattern.typed, pattern.canonicalBinderMetadata,
-    pattern.objectPattern, by
+    (pattern : AvailableOpenPattern profile language free available outer type) :
+    ReflectiveWellSorted.OpenPattern profile language free
+      (available ++ outer) type :=
+  ⟨pattern.pattern,
+    ⟨pattern.typed, pattern.canonicalBinderMetadata,
+      pattern.objectPattern, pattern.typed.isWellScopedAt⟩,
+    by
       intro presentation membership
       exact binderSafeAt_mono presentation.quoteConstructor
         (pattern.reflectiveScope presentation membership) (by simp)⟩
 
 @[simp]
-theorem toOpenPattern_pattern
+theorem toReflectiveOpenPattern_pattern
     {language : LanguageDef} {free : FreeTypeContext}
     {available outer : List TypeExpr} {type : TypeExpr}
-    (pattern : AvailableOpenPattern language free available outer type) :
-    pattern.toOpenPattern.1 = pattern.pattern :=
+    (pattern : AvailableOpenPattern profile language free available outer type) :
+    pattern.toReflectiveOpenPattern.1 = pattern.pattern :=
   rfl
 
 /-- An ordinary open pattern is the specialization with no sealed suffix. -/
 def ofOpenPattern
     {language : LanguageDef} {free : FreeTypeContext}
     {bound : List TypeExpr} {type : TypeExpr}
-    (pattern : OpenPattern language free bound type) :
-    AvailableOpenPattern language free bound [] type :=
-  ⟨pattern.1, by simpa using pattern.2.1, pattern.2.2.1,
-    pattern.2.2.2.1, pattern.2.2.2.2⟩
+    (pattern : ReflectiveWellSorted.OpenPattern
+      profile language free bound type) :
+    AvailableOpenPattern profile language free bound [] type :=
+  ⟨pattern.1, by simpa using pattern.2.1.1, pattern.2.1.2.1,
+    pattern.2.1.2.2.1, pattern.2.2⟩
 
 /-- Retain an open pattern's visible binder prefix while adjoining a sealed
 outer suffix.  The raw term is unchanged and the new binders are strictly
@@ -3202,20 +3258,22 @@ outside every existing de Bruijn occurrence. -/
 def ofOpenPatternWithOuter
     {language : LanguageDef} {free : FreeTypeContext}
     {available : List TypeExpr} {type : TypeExpr}
-    (pattern : OpenPattern language free available type)
+    (pattern : ReflectiveWellSorted.OpenPattern
+      profile language free available type)
     (outer : List TypeExpr) :
-    AvailableOpenPattern language free available outer type where
+    AvailableOpenPattern profile language free available outer type where
   pattern := pattern.1
-  typed := pattern.2.1.extendOuter outer
-  canonicalBinderMetadata := pattern.2.2.1
-  objectPattern := pattern.2.2.2.1
-  reflectiveScope := pattern.2.2.2.2
+  typed := pattern.2.1.1.extendOuter outer
+  canonicalBinderMetadata := pattern.2.1.2.1
+  objectPattern := pattern.2.1.2.2.1
+  reflectiveScope := pattern.2.2
 
 @[simp]
 theorem ofOpenPatternWithOuter_pattern
     {language : LanguageDef} {free : FreeTypeContext}
     {available : List TypeExpr} {type : TypeExpr}
-    (pattern : OpenPattern language free available type)
+    (pattern : ReflectiveWellSorted.OpenPattern
+      profile language free available type)
     (outer : List TypeExpr) :
     (ofOpenPatternWithOuter pattern outer).pattern = pattern.1 :=
   rfl
@@ -3224,7 +3282,8 @@ theorem ofOpenPatternWithOuter_pattern
 theorem ofOpenPattern_pattern
     {language : LanguageDef} {free : FreeTypeContext}
     {bound : List TypeExpr} {type : TypeExpr}
-    (pattern : OpenPattern language free bound type) :
+    (pattern : ReflectiveWellSorted.OpenPattern
+      profile language free bound type) :
     (ofOpenPattern pattern).pattern = pattern.1 :=
   rfl
 
@@ -3232,50 +3291,53 @@ theorem ofOpenPattern_pattern
 def equationGenerator
     {language : LanguageDef} {free : FreeTypeContext}
     {available outer : List TypeExpr} {type : TypeExpr}
-    (left right : AvailableOpenPattern language free available outer type) :
+    (left right : AvailableOpenPattern profile language free available outer type) :
     Prop :=
-  EquationContextStep defaultBasePremises language left.pattern right.pattern
+  ReflectiveEquationContextStep profile defaultBasePremises language left.pattern right.pattern
 
 /-- Least authored contextual equivalence retaining the quote-visible binder
 prefix at every intermediate vertex. -/
 def equationSetoid (language : LanguageDef) (free : FreeTypeContext)
     (available outer : List TypeExpr) (type : TypeExpr) :
-    Setoid (AvailableOpenPattern language free available outer type) where
+    Setoid (AvailableOpenPattern profile language free available outer type) where
   r := Relation.EqvGen equationGenerator
   iseqv :=
     { refl := Relation.EqvGen.refl
       symm := fun relation => Relation.EqvGen.symm _ _ relation
       trans := fun first second => Relation.EqvGen.trans _ _ _ first second }
 
-/-- Forgetting the binder split maps the refined relation into the ordinary
-typed open relation without changing a single authored generator. -/
-theorem equationSetoid_to_openPatternEquationSetoid
+/-- Forgetting the binder split maps the refined relation into the reflective
+typed-open relation without changing a single authored generator. -/
+theorem equationSetoid_to_reflectiveOpenPatternEquationSetoid
     {language : LanguageDef} {free : FreeTypeContext}
     {available outer : List TypeExpr} {type : TypeExpr}
-    {left right : AvailableOpenPattern language free available outer type}
+    {left right : AvailableOpenPattern profile language free available outer type}
     (equivalent :
       (equationSetoid language free available outer type).r left right) :
-    (openPatternEquationSetoid language free (available ++ outer) type).r
-      left.toOpenPattern right.toOpenPattern := by
+    (reflectiveOpenPatternEquationSetoid profile defaultBasePremises language
+      free (available ++ outer) type).r
+      left.toReflectiveOpenPattern right.toReflectiveOpenPattern := by
   induction equivalent with
   | rel left right generator =>
       exact Relation.EqvGen.rel _ _ generator
   | refl pattern =>
-      exact Relation.EqvGen.refl pattern.toOpenPattern
+      exact Relation.EqvGen.refl pattern.toReflectiveOpenPattern
   | symm left right relation inductionHypothesis =>
       exact Relation.EqvGen.symm _ _ inductionHypothesis
   | trans left middle right first second firstIH secondIH =>
       exact Relation.EqvGen.trans _ _ _ firstIH secondIH
 
-/-- Adjoining the same sealed outer suffix maps a typed open equation path
+/-- Adjoining the same sealed outer suffix maps a reflective typed-open equation path
 into the split binder carrier without altering any authored generator. -/
-theorem openPatternEquationSetoid_to_availableWithOuter
+theorem reflectiveOpenPatternEquationSetoid_to_availableWithOuter
     {language : LanguageDef} {free : FreeTypeContext}
     {available : List TypeExpr} {type : TypeExpr}
-    {left right : OpenPattern language free available type}
+    {left right : ReflectiveWellSorted.OpenPattern
+      profile language free available type}
     (outer : List TypeExpr)
     (equivalent :
-      (openPatternEquationSetoid language free available type).r left right) :
+      (reflectiveOpenPatternEquationSetoid profile defaultBasePremises language
+        free available type).r left right) :
     (equationSetoid language free available outer type).r
       (ofOpenPatternWithOuter left outer)
       (ofOpenPatternWithOuter right outer) := by
@@ -3296,13 +3358,13 @@ theorem equationSetoid_map
     {sourceFree targetFree : FreeTypeContext}
     {sourceAvailable sourceOuter targetAvailable targetOuter : List TypeExpr}
     {sourceType targetType : TypeExpr}
-    (map : AvailableOpenPattern language sourceFree sourceAvailable sourceOuter
+    (map : AvailableOpenPattern profile language sourceFree sourceAvailable sourceOuter
         sourceType →
-      AvailableOpenPattern language targetFree targetAvailable targetOuter
+      AvailableOpenPattern profile language targetFree targetAvailable targetOuter
         targetType)
     (preserves : ∀ {left right}, equationGenerator left right →
       equationGenerator (map left) (map right))
-    {left right : AvailableOpenPattern language sourceFree sourceAvailable
+    {left right : AvailableOpenPattern profile language sourceFree sourceAvailable
       sourceOuter sourceType}
     (equivalent :
       (equationSetoid language sourceFree sourceAvailable sourceOuter
@@ -3328,13 +3390,13 @@ theorem equationSetoid_fill_congr
     {sourceAvailable sourceOuter targetAvailable targetOuter : List TypeExpr}
     {sourceType targetType : TypeExpr}
     (context : OneHoleContext)
-    (fill : AvailableOpenPattern language sourceFree sourceAvailable sourceOuter
+    (fill : AvailableOpenPattern profile language sourceFree sourceAvailable sourceOuter
         sourceType →
-      AvailableOpenPattern language targetFree targetAvailable targetOuter
+      AvailableOpenPattern profile language targetFree targetAvailable targetOuter
         targetType)
     (fill_pattern : ∀ pattern,
       (fill pattern).pattern = context.fill pattern.pattern)
-    {left right : AvailableOpenPattern language sourceFree sourceAvailable
+    {left right : AvailableOpenPattern profile language sourceFree sourceAvailable
       sourceOuter sourceType}
     (equivalent :
       (equationSetoid language sourceFree sourceAvailable sourceOuter
@@ -3345,16 +3407,16 @@ theorem equationSetoid_fill_congr
   intro first second generator
   unfold equationGenerator at generator ⊢
   simpa only [fill_pattern] using
-    EquationSemantics.equationContextStep_fill context generator
+    EquationSemantics.reflectiveEquationContextStep_fill context generator
 
 /-- Enclose one split-fiber object in an ordinary single binder. -/
 def lambda
     {language : LanguageDef} {free : FreeTypeContext}
     {available outer : List TypeExpr} {domain codomain : TypeExpr}
     (binder : Option String) (binderCanonical : binder.isNone = true)
-    (body : AvailableOpenPattern language free (domain :: available) outer
+    (body : AvailableOpenPattern profile language free (domain :: available) outer
       codomain) :
-    AvailableOpenPattern language free available outer
+    AvailableOpenPattern profile language free available outer
       (.arrow domain codomain) where
   pattern := .lambda binder body.pattern
   typed := .lambda body.typed
@@ -3373,7 +3435,7 @@ theorem lambda_pattern
     {language : LanguageDef} {free : FreeTypeContext}
     {available outer : List TypeExpr} {domain codomain : TypeExpr}
     (binder : Option String) (binderCanonical : binder.isNone = true)
-    (body : AvailableOpenPattern language free (domain :: available) outer
+    (body : AvailableOpenPattern profile language free (domain :: available) outer
       codomain) :
     (body.lambda binder binderCanonical).pattern = .lambda binder body.pattern :=
   rfl
@@ -3383,7 +3445,7 @@ theorem equationSetoid_lambda_congr
     {language : LanguageDef} {free : FreeTypeContext}
     {available outer : List TypeExpr} {domain codomain : TypeExpr}
     (binder : Option String) (binderCanonical : binder.isNone = true)
-    {left right : AvailableOpenPattern language free (domain :: available)
+    {left right : AvailableOpenPattern profile language free (domain :: available)
       outer codomain}
     (equivalent :
       (equationSetoid language free (domain :: available) outer codomain).r
@@ -3399,9 +3461,9 @@ def multiLambda
     {language : LanguageDef} {free : FreeTypeContext}
     {available outer : List TypeExpr} {domain codomain : TypeExpr}
     (arity : Nat) (binders : List String) (bindersCanonical : binders = [])
-    (body : AvailableOpenPattern language free
+    (body : AvailableOpenPattern profile language free
       (List.replicate arity domain ++ available) outer codomain) :
-    AvailableOpenPattern language free available outer
+    AvailableOpenPattern profile language free available outer
       (.arrow (.multiBinder domain) codomain) where
   pattern := .multiLambda arity binders body.pattern
   typed := .multiLambda (by
@@ -3421,7 +3483,7 @@ theorem multiLambda_pattern
     {language : LanguageDef} {free : FreeTypeContext}
     {available outer : List TypeExpr} {domain codomain : TypeExpr}
     (arity : Nat) (binders : List String) (bindersCanonical : binders = [])
-    (body : AvailableOpenPattern language free
+    (body : AvailableOpenPattern profile language free
       (List.replicate arity domain ++ available) outer codomain) :
     (body.multiLambda arity binders bindersCanonical).pattern =
       .multiLambda arity binders body.pattern :=
@@ -3432,7 +3494,7 @@ theorem equationSetoid_multiLambda_congr
     {language : LanguageDef} {free : FreeTypeContext}
     {available outer : List TypeExpr} {domain codomain : TypeExpr}
     (arity : Nat) (binders : List String) (bindersCanonical : binders = [])
-    {left right : AvailableOpenPattern language free
+    {left right : AvailableOpenPattern profile language free
       (List.replicate arity domain ++ available) outer codomain}
     (equivalent :
       (equationSetoid language free
@@ -3451,11 +3513,11 @@ def substitute
     {language : LanguageDef} {source target : FreeTypeContext}
     {support : ContextSupport.Support}
     {available outer : List TypeExpr} {type : TypeExpr}
-    (pattern : AvailableOpenPattern language source available outer type)
-    (assignment : SupportedOpenAssignment language source target support)
-    (safe : pattern.typed.ReflectiveSupportSafeAt support available) :
-    AvailableOpenPattern language target available outer type where
-  pattern := ReflectiveContextSupport.substituteAt language support
+    (pattern : AvailableOpenPattern profile language source available outer type)
+    (assignment : SupportedOpenAssignment profile language source target support)
+    (safe : pattern.typed.ReflectiveSupportSafeAt profile support available) :
+    AvailableOpenPattern profile language target available outer type where
+  pattern := ReflectiveContextSupport.substituteAt profile support
     assignment.assignment available.length pattern.pattern
   typed := safe.substitute rfl assignment.toSupportedAssignment
   canonicalBinderMetadata :=
@@ -3473,11 +3535,11 @@ theorem substitute_pattern
     {language : LanguageDef} {source target : FreeTypeContext}
     {support : ContextSupport.Support}
     {available outer : List TypeExpr} {type : TypeExpr}
-    (pattern : AvailableOpenPattern language source available outer type)
-    (assignment : SupportedOpenAssignment language source target support)
-    (safe : pattern.typed.ReflectiveSupportSafeAt support available) :
+    (pattern : AvailableOpenPattern profile language source available outer type)
+    (assignment : SupportedOpenAssignment profile language source target support)
+    (safe : pattern.typed.ReflectiveSupportSafeAt profile support available) :
     (pattern.substitute assignment safe).pattern =
-      ReflectiveContextSupport.substituteAt language support
+      ReflectiveContextSupport.substituteAt profile support
         assignment.assignment available.length pattern.pattern :=
   rfl
 
@@ -3493,10 +3555,10 @@ representation discipline while reusing the same contextual generator.
 
 /-- One typed argument in the exact representation required by an authored
 constructor parameter. -/
-structure AvailableOpenArgument (language : LanguageDef)
+structure AvailableOpenArgument (profile : ReflectionProfile) (language : LanguageDef)
     (free : FreeTypeContext) (available outer : List TypeExpr)
     (parameter : TermParam) (expected : TypeExpr) where
-  term : AvailableOpenPattern language free available outer expected
+  term : AvailableOpenPattern profile language free available outer expected
   representation : MatchesParameterRepresentation parameter term.pattern
   parameterType : parameterType? parameter = some expected
 
@@ -3512,9 +3574,9 @@ def reindexFiber
     (availableEquality : sourceAvailable = targetAvailable)
     (outerEquality : sourceOuter = targetOuter)
     (expectedEquality : sourceExpected = targetExpected)
-    (argument : AvailableOpenArgument language free sourceAvailable sourceOuter
+    (argument : AvailableOpenArgument profile language free sourceAvailable sourceOuter
       parameter sourceExpected) :
-    AvailableOpenArgument language free targetAvailable targetOuter parameter
+    AvailableOpenArgument profile language free targetAvailable targetOuter parameter
       targetExpected := by
   cases availableEquality
   cases outerEquality
@@ -3529,7 +3591,7 @@ theorem reindexFiber_pattern
     (availableEquality : sourceAvailable = targetAvailable)
     (outerEquality : sourceOuter = targetOuter)
     (expectedEquality : sourceExpected = targetExpected)
-    (argument : AvailableOpenArgument language free sourceAvailable sourceOuter
+    (argument : AvailableOpenArgument profile language free sourceAvailable sourceOuter
       parameter sourceExpected) :
     (argument.reindexFiber availableEquality outerEquality expectedEquality
       ).term.pattern = argument.term.pattern := by
@@ -3543,7 +3605,7 @@ theorem ext
     {language : LanguageDef} {free : FreeTypeContext}
     {available outer : List TypeExpr} {parameter : TermParam}
     {expected : TypeExpr}
-    {left right : AvailableOpenArgument language free available outer parameter
+    {left right : AvailableOpenArgument profile language free available outer parameter
       expected}
     (patterns : left.term.pattern = right.term.pattern) : left = right := by
   cases left with
@@ -3559,15 +3621,15 @@ def equationGenerator
     {language : LanguageDef} {free : FreeTypeContext}
     {available outer : List TypeExpr} {parameter : TermParam}
     {expected : TypeExpr}
-    (left right : AvailableOpenArgument language free available outer parameter
+    (left right : AvailableOpenArgument profile language free available outer parameter
       expected) : Prop :=
-  EquationContextStep defaultBasePremises language
+  ReflectiveEquationContextStep profile defaultBasePremises language
     left.term.pattern right.term.pattern
 
 def equationSetoid (language : LanguageDef) (free : FreeTypeContext)
     (available outer : List TypeExpr) (parameter : TermParam)
     (expected : TypeExpr) :
-    Setoid (AvailableOpenArgument language free available outer parameter
+    Setoid (AvailableOpenArgument profile language free available outer parameter
       expected) where
   r := Relation.EqvGen equationGenerator
   iseqv :=
@@ -3581,7 +3643,7 @@ theorem equationSetoid_to_available
     {language : LanguageDef} {free : FreeTypeContext}
     {available outer : List TypeExpr} {parameter : TermParam}
     {expected : TypeExpr}
-    {left right : AvailableOpenArgument language free available outer parameter
+    {left right : AvailableOpenArgument profile language free available outer parameter
       expected}
     (equivalent :
       (equationSetoid language free available outer parameter expected).r
@@ -3605,13 +3667,13 @@ theorem equationSetoid_mapAvailable
     {sourceFree targetFree : FreeTypeContext}
     {sourceAvailable sourceOuter targetAvailable targetOuter : List TypeExpr}
     {parameter : TermParam} {expected targetType : TypeExpr}
-    (map : AvailableOpenArgument language sourceFree sourceAvailable sourceOuter
+    (map : AvailableOpenArgument profile language sourceFree sourceAvailable sourceOuter
         parameter expected →
-      AvailableOpenPattern language targetFree targetAvailable targetOuter
+      AvailableOpenPattern profile language targetFree targetAvailable targetOuter
         targetType)
     (preserves : ∀ {left right}, equationGenerator left right →
       AvailableOpenPattern.equationGenerator (map left) (map right))
-    {left right : AvailableOpenArgument language sourceFree sourceAvailable
+    {left right : AvailableOpenArgument profile language sourceFree sourceAvailable
       sourceOuter parameter expected}
     (equivalent :
       (equationSetoid language sourceFree sourceAvailable sourceOuter parameter
@@ -3637,14 +3699,14 @@ theorem equationSetoid_of_term_map
     {sourceFree targetFree : FreeTypeContext}
     {sourceAvailable sourceOuter targetAvailable targetOuter : List TypeExpr}
     {parameter : TermParam} {sourceType expected : TypeExpr}
-    (map : AvailableOpenPattern language sourceFree sourceAvailable sourceOuter
+    (map : AvailableOpenPattern profile language sourceFree sourceAvailable sourceOuter
         sourceType →
-      AvailableOpenArgument language targetFree targetAvailable targetOuter
+      AvailableOpenArgument profile language targetFree targetAvailable targetOuter
         parameter expected)
     (preserves : ∀ {left right},
       AvailableOpenPattern.equationGenerator left right →
         equationGenerator (map left) (map right))
-    {left right : AvailableOpenPattern language sourceFree sourceAvailable
+    {left right : AvailableOpenPattern profile language sourceFree sourceAvailable
       sourceOuter sourceType}
     (equivalent :
       (AvailableOpenPattern.equationSetoid language sourceFree sourceAvailable
@@ -3667,15 +3729,15 @@ def substitute
     {support : ContextSupport.Support}
     {available outer : List TypeExpr} {parameter : TermParam}
     {expected : TypeExpr}
-    (argument : AvailableOpenArgument language source available outer parameter
+    (argument : AvailableOpenArgument profile language source available outer parameter
       expected)
-    (assignment : SupportedOpenAssignment language source target support)
-    (safe : argument.term.typed.ReflectiveSupportSafeAt support available) :
-    AvailableOpenArgument language target available outer parameter expected where
+    (assignment : SupportedOpenAssignment profile language source target support)
+    (safe : argument.term.typed.ReflectiveSupportSafeAt profile support available) :
+    AvailableOpenArgument profile language target available outer parameter expected where
   term := argument.term.substitute assignment safe
   representation :=
     MatchesParameterRepresentation.substituteReflectiveAt
-      language parameter argument.term.pattern support assignment.assignment
+      profile parameter argument.term.pattern support assignment.assignment
         available.length argument.representation
   parameterType := argument.parameterType
 
@@ -3685,12 +3747,12 @@ theorem substitute_pattern
     {support : ContextSupport.Support}
     {available outer : List TypeExpr} {parameter : TermParam}
     {expected : TypeExpr}
-    (argument : AvailableOpenArgument language source available outer parameter
+    (argument : AvailableOpenArgument profile language source available outer parameter
       expected)
-    (assignment : SupportedOpenAssignment language source target support)
-    (safe : argument.term.typed.ReflectiveSupportSafeAt support available) :
+    (assignment : SupportedOpenAssignment profile language source target support)
+    (safe : argument.term.typed.ReflectiveSupportSafeAt profile support available) :
     (argument.substitute assignment safe).term.pattern =
-      ReflectiveContextSupport.substituteAt language support
+      ReflectiveContextSupport.substituteAt profile support
         assignment.assignment available.length argument.term.pattern :=
   rfl
 
@@ -3698,7 +3760,7 @@ end AvailableOpenArgument
 
 /-- An authored constructor argument list whose typing, representation,
 object, metadata, and quote-visible scope certificates travel together. -/
-structure AvailableOpenArguments (language : LanguageDef)
+structure AvailableOpenArguments (profile : ReflectionProfile) (language : LanguageDef)
     (free : FreeTypeContext) (available outer : List TypeExpr)
     (parameters : List TermParam) where
   patterns : List Pattern
@@ -3707,7 +3769,7 @@ structure AvailableOpenArguments (language : LanguageDef)
   canonicalBinderMetadata :
     Pattern.hasCanonicalBinderMetadataList patterns = true
   objectPatterns : isObjectPatternList patterns = true
-  reflectiveScope : ∀ presentation ∈ language.reflectivePresentations,
+  reflectiveScope : ∀ presentation ∈ profile.presentations,
     binderSafeListAt presentation.quoteConstructor available.length
       patterns = true
 
@@ -3723,10 +3785,10 @@ def ofCertificates
       parameters)
     (canonical : Pattern.hasCanonicalBinderMetadataList patterns = true)
     (objects : isObjectPatternList patterns = true)
-    (scope : ∀ presentation ∈ language.reflectivePresentations,
+    (scope : ∀ presentation ∈ profile.presentations,
       binderSafeListAt presentation.quoteConstructor available.length
         patterns = true) :
-    AvailableOpenArguments language free available outer parameters :=
+    AvailableOpenArguments profile language free available outer parameters :=
   ⟨patterns, typed, canonical, objects, scope⟩
 
 @[simp]
@@ -3738,7 +3800,7 @@ theorem ofCertificates_patterns
       parameters)
     (canonical : Pattern.hasCanonicalBinderMetadataList patterns = true)
     (objects : isObjectPatternList patterns = true)
-    (scope : ∀ presentation ∈ language.reflectivePresentations,
+    (scope : ∀ presentation ∈ profile.presentations,
       binderSafeListAt presentation.quoteConstructor available.length
         patterns = true) :
     (ofCertificates typed canonical objects scope).patterns = patterns :=
@@ -3748,7 +3810,7 @@ theorem ofCertificates_patterns
 theorem ext
     {language : LanguageDef} {free : FreeTypeContext}
     {available outer : List TypeExpr} {parameters : List TermParam}
-    {left right : AvailableOpenArguments language free available outer
+    {left right : AvailableOpenArguments profile language free available outer
       parameters}
     (patterns : left.patterns = right.patterns) : left = right := by
   cases left
@@ -3758,7 +3820,7 @@ theorem ext
 
 def nil (language : LanguageDef) (free : FreeTypeContext)
     (available outer : List TypeExpr) :
-    AvailableOpenArguments language free available outer [] where
+    AvailableOpenArguments profile language free available outer [] where
   patterns := []
   typed := .nil
   canonicalBinderMetadata := by simp [Pattern.hasCanonicalBinderMetadataList]
@@ -3768,7 +3830,7 @@ def nil (language : LanguageDef) (free : FreeTypeContext)
 @[simp]
 theorem nil_patterns (language : LanguageDef) (free : FreeTypeContext)
     (available outer : List TypeExpr) :
-    (nil language free available outer).patterns = [] :=
+    (nil (profile := profile) language free available outer).patterns = [] :=
   rfl
 
 def cons
@@ -3776,10 +3838,10 @@ def cons
     {available outer : List TypeExpr}
     {parameter : TermParam} {parameters : List TermParam}
     {expected : TypeExpr}
-    (head : AvailableOpenArgument language free available outer parameter
+    (head : AvailableOpenArgument profile language free available outer parameter
       expected)
-    (tail : AvailableOpenArguments language free available outer parameters) :
-    AvailableOpenArguments language free available outer
+    (tail : AvailableOpenArguments profile language free available outer parameters) :
+    AvailableOpenArguments profile language free available outer
       (parameter :: parameters) where
   patterns := head.term.pattern :: tail.patterns
   typed := .cons head.representation head.parameterType head.term.typed
@@ -3800,9 +3862,9 @@ theorem cons_patterns
     {available outer : List TypeExpr}
     {parameter : TermParam} {parameters : List TermParam}
     {expected : TypeExpr}
-    (head : AvailableOpenArgument language free available outer parameter
+    (head : AvailableOpenArgument profile language free available outer parameter
       expected)
-    (tail : AvailableOpenArguments language free available outer parameters) :
+    (tail : AvailableOpenArguments profile language free available outer parameters) :
     (cons head tail).patterns = head.term.pattern :: tail.patterns :=
   rfl
 
@@ -3850,10 +3912,10 @@ def append
     {language : LanguageDef} {free : FreeTypeContext}
     {available outer : List TypeExpr}
     {leftParameters rightParameters : List TermParam}
-    (left : AvailableOpenArguments language free available outer leftParameters)
-    (right : AvailableOpenArguments language free available outer
+    (left : AvailableOpenArguments profile language free available outer leftParameters)
+    (right : AvailableOpenArguments profile language free available outer
       rightParameters) :
-    AvailableOpenArguments language free available outer
+    AvailableOpenArguments profile language free available outer
       (leftParameters ++ rightParameters) where
   patterns := left.patterns ++ right.patterns
   typed := left.typed.append right.typed
@@ -3872,8 +3934,8 @@ theorem append_patterns
     {language : LanguageDef} {free : FreeTypeContext}
     {available outer : List TypeExpr}
     {leftParameters rightParameters : List TermParam}
-    (left : AvailableOpenArguments language free available outer leftParameters)
-    (right : AvailableOpenArguments language free available outer
+    (left : AvailableOpenArguments profile language free available outer leftParameters)
+    (right : AvailableOpenArguments profile language free available outer
       rightParameters) :
     (left.append right).patterns = left.patterns ++ right.patterns :=
   rfl
@@ -3885,9 +3947,9 @@ def reindexParameters
     {available outer : List TypeExpr}
     {sourceParameters targetParameters : List TermParam}
     (equality : sourceParameters = targetParameters)
-    (arguments : AvailableOpenArguments language free available outer
+    (arguments : AvailableOpenArguments profile language free available outer
       sourceParameters) :
-    AvailableOpenArguments language free available outer targetParameters := by
+    AvailableOpenArguments profile language free available outer targetParameters := by
   subst targetParameters
   exact arguments
 
@@ -3897,7 +3959,7 @@ theorem reindexParameters_patterns
     {available outer : List TypeExpr}
     {sourceParameters targetParameters : List TermParam}
     (equality : sourceParameters = targetParameters)
-    (arguments : AvailableOpenArguments language free available outer
+    (arguments : AvailableOpenArguments profile language free available outer
       sourceParameters) :
     (arguments.reindexParameters equality).patterns = arguments.patterns := by
   subst targetParameters
@@ -3908,26 +3970,27 @@ head path lives in the representation-preserving argument carrier; hence
 every hybrid list produced by a one-position proof remains a valid authored
 application. -/
 inductive EquationForall₂
-    (language : LanguageDef) (free : FreeTypeContext)
+    (profile : ReflectionProfile) (language : LanguageDef)
+    (free : FreeTypeContext)
     (available outer : List TypeExpr) :
     {parameters : List TermParam} →
-      AvailableOpenArguments language free available outer parameters →
-      AvailableOpenArguments language free available outer parameters →
+      AvailableOpenArguments profile language free available outer parameters →
+      AvailableOpenArguments profile language free available outer parameters →
       Prop where
-  | nil : EquationForall₂ language free available outer
+  | nil : EquationForall₂ profile language free available outer
       (AvailableOpenArguments.nil language free available outer)
       (AvailableOpenArguments.nil language free available outer)
   | cons
       {parameter : TermParam} {parameters : List TermParam}
       {expected : TypeExpr}
-      {leftHead rightHead : AvailableOpenArgument language free available outer
+      {leftHead rightHead : AvailableOpenArgument profile language free available outer
         parameter expected}
-      {leftTail rightTail : AvailableOpenArguments language free available outer
+      {leftTail rightTail : AvailableOpenArguments profile language free available outer
         parameters} :
       (AvailableOpenArgument.equationSetoid language free available outer
         parameter expected).r leftHead rightHead →
-      EquationForall₂ language free available outer leftTail rightTail →
-      EquationForall₂ language free available outer
+      EquationForall₂ profile language free available outer leftTail rightTail →
+      EquationForall₂ profile language free available outer
         (AvailableOpenArguments.cons leftHead leftTail)
         (AvailableOpenArguments.cons rightHead rightTail)
 
@@ -3942,16 +4005,16 @@ theorem EquationForall₂.assembleWithPrefix
       List TypeExpr}
     {resultType : TypeExpr} {constructor : String}
     {parameters prefixParameters fullParameters : List TermParam}
-    {left right : AvailableOpenArguments language argumentFree
+    {left right : AvailableOpenArguments profile language argumentFree
       argumentAvailable argumentOuter parameters}
-    (equivalent : EquationForall₂ language argumentFree argumentAvailable
+    (equivalent : EquationForall₂ profile language argumentFree argumentAvailable
       argumentOuter left right)
-    (leading : AvailableOpenArguments language argumentFree argumentAvailable
+    (leading : AvailableOpenArguments profile language argumentFree argumentAvailable
       argumentOuter prefixParameters)
     (parameterShape : prefixParameters ++ parameters = fullParameters)
-    (assemble : AvailableOpenArguments language argumentFree argumentAvailable
+    (assemble : AvailableOpenArguments profile language argumentFree argumentAvailable
         argumentOuter fullParameters →
-      AvailableOpenPattern language resultFree resultAvailable resultOuter
+      AvailableOpenPattern profile language resultFree resultAvailable resultOuter
         resultType)
     (assemble_pattern : ∀ arguments,
       (assemble arguments).pattern = .apply constructor arguments.patterns) :
@@ -3965,7 +4028,7 @@ theorem EquationForall₂.assembleWithPrefix
   | @cons parameter parameters expected leftHead rightHead leftTail rightTail
       headEquivalent tailEquivalent inductionHypothesis =>
       let headMap := fun
-          (middle : AvailableOpenArgument language argumentFree
+          (middle : AvailableOpenArgument profile language argumentFree
             argumentAvailable argumentOuter parameter expected) =>
         assemble
           ((leading.append (AvailableOpenArguments.cons middle leftTail)
@@ -3982,7 +4045,7 @@ theorem EquationForall₂.assembleWithPrefix
         rw [assemble_pattern, assemble_pattern]
         simp only [reindexParameters_patterns, append_patterns, cons_patterns]
         simpa [OneHoleContext.fill, List.append_assoc] using
-          EquationSemantics.equationContextStep_fill
+          EquationSemantics.reflectiveEquationContextStep_fill
             (.apply constructor leading.patterns .hole leftTail.patterns)
             generator
       let singleton := AvailableOpenArguments.cons rightHead
@@ -4051,11 +4114,11 @@ def applyOrdinary
     {available outer : List TypeExpr} {rule : GrammarRule}
     (membership : rule ∈ language.terms)
     (notBare : ¬ UsesBareCollection rule)
-    (ordinary : ReflectiveContextSupport.isQuoteConstructor language
+    (ordinary : ReflectiveContextSupport.isQuoteConstructor profile
       rule.label = false)
-    (arguments : AvailableOpenArguments language free available outer
+    (arguments : AvailableOpenArguments profile language free available outer
       rule.params) :
-    AvailableOpenPattern language free available outer
+    AvailableOpenPattern profile language free available outer
       (.base rule.category) where
   pattern := .apply rule.label arguments.patterns
   typed := .constructor membership notBare arguments.typed
@@ -4068,7 +4131,7 @@ def applyOrdinary
     intro presentation presentationMembership
     have notThisQuote : rule.label ≠ presentation.quoteConstructor := by
       intro equality
-      have detected : ReflectiveContextSupport.isQuoteConstructor language
+      have detected : ReflectiveContextSupport.isQuoteConstructor profile
           rule.label = true := by
         unfold ReflectiveContextSupport.isQuoteConstructor
         rw [List.any_eq_true]
@@ -4086,9 +4149,9 @@ theorem applyOrdinary_pattern
     {available outer : List TypeExpr} {rule : GrammarRule}
     (membership : rule ∈ language.terms)
     (notBare : ¬ UsesBareCollection rule)
-    (ordinary : ReflectiveContextSupport.isQuoteConstructor language
+    (ordinary : ReflectiveContextSupport.isQuoteConstructor profile
       rule.label = false)
-    (arguments : AvailableOpenArguments language free available outer
+    (arguments : AvailableOpenArguments profile language free available outer
       rule.params) :
     (arguments.applyOrdinary membership notBare ordinary).pattern =
       .apply rule.label arguments.patterns :=
@@ -4102,11 +4165,11 @@ def applyQuote
     {available outer : List TypeExpr} {rule : GrammarRule}
     (membership : rule ∈ language.terms)
     (notBare : ¬ UsesBareCollection rule)
-    (_quoted : ReflectiveContextSupport.isQuoteConstructor language
+    (_quoted : ReflectiveContextSupport.isQuoteConstructor profile
       rule.label = true)
-    (arguments : AvailableOpenArguments language free [] (available ++ outer)
+    (arguments : AvailableOpenArguments profile language free [] (available ++ outer)
       rule.params) :
-    AvailableOpenPattern language free available outer
+    AvailableOpenPattern profile language free available outer
       (.base rule.category) where
   pattern := .apply rule.label arguments.patterns
   typed := .constructor membership notBare (by
@@ -4130,9 +4193,9 @@ theorem applyQuote_pattern
     {available outer : List TypeExpr} {rule : GrammarRule}
     (membership : rule ∈ language.terms)
     (notBare : ¬ UsesBareCollection rule)
-    (quoted : ReflectiveContextSupport.isQuoteConstructor language
+    (quoted : ReflectiveContextSupport.isQuoteConstructor profile
       rule.label = true)
-    (arguments : AvailableOpenArguments language free [] (available ++ outer)
+    (arguments : AvailableOpenArguments profile language free [] (available ++ outer)
       rule.params) :
     (arguments.applyQuote membership notBare quoted).pattern =
       .apply rule.label arguments.patterns :=
@@ -4143,12 +4206,12 @@ authored constructor. -/
 theorem EquationForall₂.assembleOrdinary
     {language : LanguageDef} {free : FreeTypeContext}
     {available outer : List TypeExpr} {rule : GrammarRule}
-    {left right : AvailableOpenArguments language free available outer
+    {left right : AvailableOpenArguments profile language free available outer
       rule.params}
-    (equivalent : EquationForall₂ language free available outer left right)
+    (equivalent : EquationForall₂ profile language free available outer left right)
     (membership : rule ∈ language.terms)
     (notBare : ¬ UsesBareCollection rule)
-    (ordinary : ReflectiveContextSupport.isQuoteConstructor language
+    (ordinary : ReflectiveContextSupport.isQuoteConstructor profile
       rule.label = false) :
     (AvailableOpenPattern.equationSetoid language free available outer
       (.base rule.category)).r
@@ -4166,13 +4229,13 @@ constructor; the argument paths retain the reset visible prefix. -/
 theorem EquationForall₂.assembleQuote
     {language : LanguageDef} {free : FreeTypeContext}
     {available outer : List TypeExpr} {rule : GrammarRule}
-    {left right : AvailableOpenArguments language free [] (available ++ outer)
+    {left right : AvailableOpenArguments profile language free [] (available ++ outer)
       rule.params}
-    (equivalent : EquationForall₂ language free [] (available ++ outer)
+    (equivalent : EquationForall₂ profile language free [] (available ++ outer)
       left right)
     (membership : rule ∈ language.terms)
     (notBare : ¬ UsesBareCollection rule)
-    (quoted : ReflectiveContextSupport.isQuoteConstructor language
+    (quoted : ReflectiveContextSupport.isQuoteConstructor profile
       rule.label = true) :
     (AvailableOpenPattern.equationSetoid language free available outer
       (.base rule.category)).r
@@ -4192,13 +4255,13 @@ def substitute
     {language : LanguageDef} {source target : FreeTypeContext}
     {support : ContextSupport.Support}
     {available outer : List TypeExpr} {parameters : List TermParam}
-    (arguments : AvailableOpenArguments language source available outer
+    (arguments : AvailableOpenArguments profile language source available outer
       parameters)
-    (assignment : SupportedOpenAssignment language source target support)
-    (safe : arguments.typed.ReflectiveSupportSafeAt support available) :
-    AvailableOpenArguments language target available outer parameters where
+    (assignment : SupportedOpenAssignment profile language source target support)
+    (safe : arguments.typed.ReflectiveSupportSafeAt profile support available) :
+    AvailableOpenArguments profile language target available outer parameters where
   patterns := arguments.patterns.map
-    (ReflectiveContextSupport.substituteAt language support
+    (ReflectiveContextSupport.substituteAt profile support
       assignment.assignment available.length)
   typed := safe.substitute rfl assignment.toSupportedAssignment
   canonicalBinderMetadata := safe.substituteCanonicalBinderMetadata assignment
@@ -4216,13 +4279,13 @@ theorem substitute_patterns
     {language : LanguageDef} {source target : FreeTypeContext}
     {support : ContextSupport.Support}
     {available outer : List TypeExpr} {parameters : List TermParam}
-    (arguments : AvailableOpenArguments language source available outer
+    (arguments : AvailableOpenArguments profile language source available outer
       parameters)
-    (assignment : SupportedOpenAssignment language source target support)
-    (safe : arguments.typed.ReflectiveSupportSafeAt support available) :
+    (assignment : SupportedOpenAssignment profile language source target support)
+    (safe : arguments.typed.ReflectiveSupportSafeAt profile support available) :
     (arguments.substitute assignment safe).patterns =
       arguments.patterns.map
-        (ReflectiveContextSupport.substituteAt language support
+        (ReflectiveContextSupport.substituteAt profile support
           assignment.assignment available.length) :=
   rfl
 
@@ -4243,7 +4306,7 @@ theorem ElementsHaveType.append
 
 /-- A homogeneous bare-collection spine whose typing and quote-visible scope
 certificates travel with its raw elements. -/
-structure AvailableOpenElements (language : LanguageDef)
+structure AvailableOpenElements (profile : ReflectionProfile) (language : LanguageDef)
     (free : FreeTypeContext) (available outer : List TypeExpr)
     (elementType : TypeExpr) where
   patterns : List Pattern
@@ -4252,7 +4315,7 @@ structure AvailableOpenElements (language : LanguageDef)
   canonicalBinderMetadata :
     Pattern.hasCanonicalBinderMetadataList patterns = true
   objectPatterns : isObjectPatternList patterns = true
-  reflectiveScope : ∀ presentation ∈ language.reflectivePresentations,
+  reflectiveScope : ∀ presentation ∈ profile.presentations,
     binderSafeListAt presentation.quoteConstructor available.length patterns =
       true
 
@@ -4267,10 +4330,10 @@ def ofCertificates
       elementType)
     (canonical : Pattern.hasCanonicalBinderMetadataList patterns = true)
     (objects : isObjectPatternList patterns = true)
-    (scope : ∀ presentation ∈ language.reflectivePresentations,
+    (scope : ∀ presentation ∈ profile.presentations,
       binderSafeListAt presentation.quoteConstructor available.length
         patterns = true) :
-    AvailableOpenElements language free available outer elementType :=
+    AvailableOpenElements profile language free available outer elementType :=
   ⟨patterns, typed, canonical, objects, scope⟩
 
 @[simp]
@@ -4282,7 +4345,7 @@ theorem ofCertificates_patterns
       elementType)
     (canonical : Pattern.hasCanonicalBinderMetadataList patterns = true)
     (objects : isObjectPatternList patterns = true)
-    (scope : ∀ presentation ∈ language.reflectivePresentations,
+    (scope : ∀ presentation ∈ profile.presentations,
       binderSafeListAt presentation.quoteConstructor available.length
         patterns = true) :
     (ofCertificates typed canonical objects scope).patterns = patterns :=
@@ -4292,7 +4355,7 @@ theorem ofCertificates_patterns
 theorem ext
     {language : LanguageDef} {free : FreeTypeContext}
     {available outer : List TypeExpr} {elementType : TypeExpr}
-    {left right : AvailableOpenElements language free available outer
+    {left right : AvailableOpenElements profile language free available outer
       elementType}
     (patterns : left.patterns = right.patterns) : left = right := by
   cases left
@@ -4302,7 +4365,7 @@ theorem ext
 
 def nil (language : LanguageDef) (free : FreeTypeContext)
     (available outer : List TypeExpr) (elementType : TypeExpr) :
-    AvailableOpenElements language free available outer elementType where
+    AvailableOpenElements profile language free available outer elementType where
   patterns := []
   typed := .nil _ _
   canonicalBinderMetadata := by simp [Pattern.hasCanonicalBinderMetadataList]
@@ -4312,15 +4375,15 @@ def nil (language : LanguageDef) (free : FreeTypeContext)
 @[simp]
 theorem nil_patterns (language : LanguageDef) (free : FreeTypeContext)
     (available outer : List TypeExpr) (elementType : TypeExpr) :
-    (nil language free available outer elementType).patterns = [] :=
+    (nil (profile := profile) language free available outer elementType).patterns = [] :=
   rfl
 
 def cons
     {language : LanguageDef} {free : FreeTypeContext}
     {available outer : List TypeExpr} {elementType : TypeExpr}
-    (head : AvailableOpenPattern language free available outer elementType)
-    (tail : AvailableOpenElements language free available outer elementType) :
-    AvailableOpenElements language free available outer elementType where
+    (head : AvailableOpenPattern profile language free available outer elementType)
+    (tail : AvailableOpenElements profile language free available outer elementType) :
+    AvailableOpenElements profile language free available outer elementType where
   patterns := head.pattern :: tail.patterns
   typed := .cons head.typed tail.typed
   canonicalBinderMetadata := by
@@ -4337,8 +4400,8 @@ def cons
 theorem cons_patterns
     {language : LanguageDef} {free : FreeTypeContext}
     {available outer : List TypeExpr} {elementType : TypeExpr}
-    (head : AvailableOpenPattern language free available outer elementType)
-    (tail : AvailableOpenElements language free available outer elementType) :
+    (head : AvailableOpenPattern profile language free available outer elementType)
+    (tail : AvailableOpenElements profile language free available outer elementType) :
     (cons head tail).patterns = head.pattern :: tail.patterns :=
   rfl
 
@@ -4346,9 +4409,9 @@ theorem cons_patterns
 def append
     {language : LanguageDef} {free : FreeTypeContext}
     {available outer : List TypeExpr} {elementType : TypeExpr}
-    (left right : AvailableOpenElements language free available outer
+    (left right : AvailableOpenElements profile language free available outer
       elementType) :
-    AvailableOpenElements language free available outer elementType where
+    AvailableOpenElements profile language free available outer elementType where
   patterns := left.patterns ++ right.patterns
   typed := left.typed.append right.typed
   canonicalBinderMetadata :=
@@ -4367,7 +4430,7 @@ def append
 theorem append_patterns
     {language : LanguageDef} {free : FreeTypeContext}
     {available outer : List TypeExpr} {elementType : TypeExpr}
-    (left right : AvailableOpenElements language free available outer
+    (left right : AvailableOpenElements profile language free available outer
       elementType) :
     (left.append right).patterns = left.patterns ++ right.patterns :=
   rfl
@@ -4376,7 +4439,7 @@ theorem append_patterns
 theorem nil_append
     {language : LanguageDef} {free : FreeTypeContext}
     {available outer : List TypeExpr} {elementType : TypeExpr}
-    (elements : AvailableOpenElements language free available outer
+    (elements : AvailableOpenElements profile language free available outer
       elementType) :
     (nil language free available outer elementType).append elements =
       elements := by
@@ -4388,9 +4451,9 @@ def collection
     {language : LanguageDef} {free : FreeTypeContext}
     {available outer : List TypeExpr} {elementType : TypeExpr}
     (collectionType : CollType)
-    (elements : AvailableOpenElements language free available outer
+    (elements : AvailableOpenElements profile language free available outer
       elementType) :
-    AvailableOpenPattern language free available outer
+    AvailableOpenPattern profile language free available outer
       (.collection collectionType elementType) where
   pattern := .collection collectionType elements.patterns none
   typed := .collection elements.typed
@@ -4409,7 +4472,7 @@ theorem collection_pattern
     {language : LanguageDef} {free : FreeTypeContext}
     {available outer : List TypeExpr} {elementType : TypeExpr}
     (collectionType : CollType)
-    (elements : AvailableOpenElements language free available outer
+    (elements : AvailableOpenElements profile language free available outer
       elementType) :
     (elements.collection collectionType).pattern =
       .collection collectionType elements.patterns none :=
@@ -4425,9 +4488,9 @@ def collectionConstructor
     (membership : rule ∈ language.terms)
     (parameterShape : rule.params =
       [.simple parameterName (.collection collectionType elementType)])
-    (elements : AvailableOpenElements language free available outer
+    (elements : AvailableOpenElements profile language free available outer
       elementType) :
-    AvailableOpenPattern language free available outer
+    AvailableOpenPattern profile language free available outer
       (.base rule.category) where
   pattern := .collection collectionType elements.patterns none
   typed := .collectionConstructor membership parameterShape elements.typed
@@ -4450,7 +4513,7 @@ theorem collectionConstructor_pattern
     (membership : rule ∈ language.terms)
     (parameterShape : rule.params =
       [.simple parameterName (.collection collectionType elementType)])
-    (elements : AvailableOpenElements language free available outer
+    (elements : AvailableOpenElements profile language free available outer
       elementType) :
     (elements.collectionConstructor membership parameterShape).pattern =
       .collection collectionType elements.patterns none :=
@@ -4458,24 +4521,25 @@ theorem collectionConstructor_pattern
 
 /-- Pointwise authored equation paths through a homogeneous element spine. -/
 inductive EquationForall₂
-    (language : LanguageDef) (free : FreeTypeContext)
+    (profile : ReflectionProfile) (language : LanguageDef)
+    (free : FreeTypeContext)
     (available outer : List TypeExpr) (elementType : TypeExpr) :
-    AvailableOpenElements language free available outer elementType →
-      AvailableOpenElements language free available outer elementType → Prop
+    AvailableOpenElements profile language free available outer elementType →
+      AvailableOpenElements profile language free available outer elementType → Prop
   where
-  | nil : EquationForall₂ language free available outer elementType
+  | nil : EquationForall₂ profile language free available outer elementType
       (nil language free available outer elementType)
       (nil language free available outer elementType)
   | cons
-      {leftHead rightHead : AvailableOpenPattern language free available outer
+      {leftHead rightHead : AvailableOpenPattern profile language free available outer
         elementType}
-      {leftTail rightTail : AvailableOpenElements language free available outer
+      {leftTail rightTail : AvailableOpenElements profile language free available outer
         elementType} :
       (AvailableOpenPattern.equationSetoid language free available outer
         elementType).r leftHead rightHead →
-      EquationForall₂ language free available outer elementType leftTail
+      EquationForall₂ profile language free available outer elementType leftTail
         rightTail →
-      EquationForall₂ language free available outer elementType
+      EquationForall₂ profile language free available outer elementType
         (cons leftHead leftTail) (cons rightHead rightTail)
 
 /-- Fold pointwise element paths through any typed package whose raw syntax is
@@ -4485,17 +4549,17 @@ theorem EquationForall₂.assembleWithPrefix
     {language : LanguageDef} {sourceFree targetFree : FreeTypeContext}
     {sourceAvailable sourceOuter targetAvailable targetOuter : List TypeExpr}
     {elementType targetType : TypeExpr}
-    {left right : AvailableOpenElements language sourceFree sourceAvailable
+    {left right : AvailableOpenElements profile language sourceFree sourceAvailable
       sourceOuter
       elementType}
-    (equivalent : EquationForall₂ language sourceFree sourceAvailable
+    (equivalent : EquationForall₂ profile language sourceFree sourceAvailable
       sourceOuter elementType left right)
     (collectionType : CollType)
-    (leading : AvailableOpenElements language sourceFree sourceAvailable
+    (leading : AvailableOpenElements profile language sourceFree sourceAvailable
       sourceOuter elementType)
-    (assemble : AvailableOpenElements language sourceFree sourceAvailable
+    (assemble : AvailableOpenElements profile language sourceFree sourceAvailable
         sourceOuter elementType →
-      AvailableOpenPattern language targetFree targetAvailable targetOuter
+      AvailableOpenPattern profile language targetFree targetAvailable targetOuter
         targetType)
     (assemble_pattern : ∀ elements,
       (assemble elements).pattern =
@@ -4509,7 +4573,7 @@ theorem EquationForall₂.assembleWithPrefix
   | @cons leftHead rightHead leftTail rightTail headEquivalent tailEquivalent
       inductionHypothesis =>
       let headMap := fun
-          (middle : AvailableOpenPattern language sourceFree sourceAvailable
+          (middle : AvailableOpenPattern profile language sourceFree sourceAvailable
             sourceOuter
             elementType) =>
         assemble (leading.append (AvailableOpenElements.cons middle leftTail))
@@ -4551,9 +4615,9 @@ collection. -/
 theorem EquationForall₂.assemble
     {language : LanguageDef} {free : FreeTypeContext}
     {available outer : List TypeExpr} {elementType : TypeExpr}
-    {left right : AvailableOpenElements language free available outer
+    {left right : AvailableOpenElements profile language free available outer
       elementType}
-    (equivalent : EquationForall₂ language free available outer elementType
+    (equivalent : EquationForall₂ profile language free available outer elementType
       left right)
     (collectionType : CollType) :
     (AvailableOpenPattern.equationSetoid language free available outer
@@ -4571,9 +4635,9 @@ theorem EquationForall₂.assembleConstructor
     {available outer : List TypeExpr} {elementType : TypeExpr}
     {rule : GrammarRule} {parameterName : String}
     {collectionType : CollType}
-    {left right : AvailableOpenElements language free available outer
+    {left right : AvailableOpenElements profile language free available outer
       elementType}
-    (equivalent : EquationForall₂ language free available outer elementType
+    (equivalent : EquationForall₂ profile language free available outer elementType
       left right)
     (membership : rule ∈ language.terms)
     (parameterShape : rule.params =
@@ -4593,13 +4657,13 @@ def substitute
     {language : LanguageDef} {source target : FreeTypeContext}
     {support : ContextSupport.Support}
     {available outer : List TypeExpr} {elementType : TypeExpr}
-    (elements : AvailableOpenElements language source available outer
+    (elements : AvailableOpenElements profile language source available outer
       elementType)
-    (assignment : SupportedOpenAssignment language source target support)
-    (safe : elements.typed.ReflectiveSupportSafeAt support available) :
-    AvailableOpenElements language target available outer elementType where
+    (assignment : SupportedOpenAssignment profile language source target support)
+    (safe : elements.typed.ReflectiveSupportSafeAt profile support available) :
+    AvailableOpenElements profile language target available outer elementType where
   patterns := elements.patterns.map
-    (ReflectiveContextSupport.substituteAt language support
+    (ReflectiveContextSupport.substituteAt profile support
       assignment.assignment available.length)
   typed := safe.substitute rfl assignment.toSupportedAssignment
   canonicalBinderMetadata := safe.substituteCanonicalBinderMetadata assignment
@@ -4617,13 +4681,13 @@ theorem substitute_patterns
     {language : LanguageDef} {source target : FreeTypeContext}
     {support : ContextSupport.Support}
     {available outer : List TypeExpr} {elementType : TypeExpr}
-    (elements : AvailableOpenElements language source available outer
+    (elements : AvailableOpenElements profile language source available outer
       elementType)
-    (assignment : SupportedOpenAssignment language source target support)
-    (safe : elements.typed.ReflectiveSupportSafeAt support available) :
+    (assignment : SupportedOpenAssignment profile language source target support)
+    (safe : elements.typed.ReflectiveSupportSafeAt profile support available) :
     (elements.substitute assignment safe).patterns =
       elements.patterns.map
-        (ReflectiveContextSupport.substituteAt language support
+        (ReflectiveContextSupport.substituteAt profile support
           assignment.assignment available.length) :=
   rfl
 
@@ -4640,16 +4704,23 @@ def OpenPatternEquationWeakeningStable (language : LanguageDef) : Prop :=
         (openPatternEquationSetoid language free (inner ++ bound) type).r
           (left.weakenRoot inner) (right.weakenRoot inner)
 
-/-- Strong, directly checkable sufficient condition for typed root weakening:
-each authored contextual generator remains one generator after inserting an
-arbitrary number of binders at the root.  This property is intentionally
-separate from raw `EquationEquiv` naturality, which need not retain typed
-intermediate vertices. -/
+/-- Strong, directly checkable sufficient condition for core typed root
+weakening: each authored equation generator remains one generator after
+inserting binders at the root. -/
 def EquationContextStepRootWeakeningStable (language : LanguageDef) : Prop :=
   ∀ {left right : Pattern},
     EquationContextStep defaultBasePremises language left right →
       ∀ shift : Nat,
         EquationContextStep defaultBasePremises language
+          (liftBVars 0 shift left) (liftBVars 0 shift right)
+
+/-- Reflection-aware root weakening is a distinct extension obligation. -/
+def ReflectiveEquationContextStepRootWeakeningStable
+    (profile : ReflectionProfile) (language : LanguageDef) : Prop :=
+  ∀ {left right : Pattern},
+    ReflectiveEquationContextStep profile defaultBasePremises language left right →
+      ∀ shift : Nat,
+        ReflectiveEquationContextStep profile defaultBasePremises language
           (liftBVars 0 shift left) (liftBVars 0 shift right)
 
 /-- Generator-level root weakening maps the complete least typed equation
@@ -4672,15 +4743,19 @@ inner binders and retain it in the arbitrary-type open carrier. -/
 def SupportedOpenAssignment.weakenedValue
     {language : LanguageDef} {source target : FreeTypeContext}
     {support : ContextSupport.Support}
-    (assignment : SupportedOpenAssignment language source target support)
+    (assignment : SupportedOpenAssignment profile language source target support)
     {name : String} {type : TypeExpr} (lookup : source name = some type)
     (inner : List TypeExpr) :
-    OpenPattern language target (inner ++ support name) type := by
-  refine ⟨liftBVars 0 inner.length (assignment.assignment name), ?_, ?_, ?_, ?_⟩
+    ReflectiveWellSorted.OpenPattern profile language target
+      (inner ++ support name) type := by
+  refine ⟨liftBVars 0 inner.length (assignment.assignment name),
+    ⟨?_, ?_, ?_, ?_⟩, ?_⟩
   · simpa using (assignment.typed lookup).liftBVars_insert
       (inner := []) (outer := support name) (inserted := inner)
   · simpa using assignment.canonicalBinderMetadata lookup
   · simpa using assignment.objectPattern lookup
+  · exact (assignment.typed lookup).liftBVars_insert
+      (inner := []) (outer := support name) (inserted := inner) |>.isWellScopedAt
   · intro presentation membership
     have lifted := ContextSubstitution.binderSafeAt_liftBVars
       presentation.quoteConstructor
@@ -4693,7 +4768,7 @@ def SupportedOpenAssignment.weakenedValue
 theorem SupportedOpenAssignment.weakenedValue_pattern
     {language : LanguageDef} {source target : FreeTypeContext}
     {support : ContextSupport.Support}
-    (assignment : SupportedOpenAssignment language source target support)
+    (assignment : SupportedOpenAssignment profile language source target support)
     {name : String} {type : TypeExpr} (lookup : source name = some type)
     (inner : List TypeExpr) :
     (assignment.weakenedValue lookup inner).1 =
@@ -4712,10 +4787,10 @@ load-bearing: equivalence at the declared support alone does not justify the
 def SupportedOpenAssignment.Equivalent
     {language : LanguageDef} {source target : FreeTypeContext}
     {support : ContextSupport.Support}
-    (first second : SupportedOpenAssignment language source target support) :
+    (first second : SupportedOpenAssignment profile language source target support) :
     Prop :=
   ∀ {name type}, source name = some type → ∀ shift,
-    EquationEquiv defaultBasePremises language
+    ReflectiveEquationEquiv profile defaultBasePremises language
       (liftBVars 0 shift (first.assignment name))
       (liftBVars 0 shift (second.assignment name))
 
@@ -4724,7 +4799,7 @@ namespace SupportedOpenAssignment.Equivalent
 theorem refl
     {language : LanguageDef} {source target : FreeTypeContext}
     {support : ContextSupport.Support}
-    (assignment : SupportedOpenAssignment language source target support) :
+    (assignment : SupportedOpenAssignment profile language source target support) :
     assignment.Equivalent assignment := by
   intro name type lookup shift
   exact Relation.EqvGen.refl
@@ -4733,7 +4808,7 @@ theorem refl
 theorem symm
     {language : LanguageDef} {source target : FreeTypeContext}
     {support : ContextSupport.Support}
-    {first second : SupportedOpenAssignment language source target support}
+    {first second : SupportedOpenAssignment profile language source target support}
     (equivalent : first.Equivalent second) : second.Equivalent first := by
   intro name type lookup shift
   exact Relation.EqvGen.symm _ _ (equivalent lookup shift)
@@ -4741,7 +4816,7 @@ theorem symm
 theorem trans
     {language : LanguageDef} {source target : FreeTypeContext}
     {support : ContextSupport.Support}
-    {first second third : SupportedOpenAssignment language source target
+    {first second third : SupportedOpenAssignment profile language source target
       support}
     (firstEquivalent : first.Equivalent second)
     (secondEquivalent : second.Equivalent third) : first.Equivalent third := by
@@ -4757,11 +4832,11 @@ vertex in the exact arbitrary-type open carrier after each weakening. -/
 def SupportedOpenAssignment.FiberEquivalent
     {language : LanguageDef} {source target : FreeTypeContext}
     {support : ContextSupport.Support}
-    (first second : SupportedOpenAssignment language source target support) :
+    (first second : SupportedOpenAssignment profile language source target support) :
     Prop :=
   ∀ {name type} (lookup : source name = some type) (inner : List TypeExpr),
-    (openPatternEquationSetoid language target
-      (inner ++ support name) type).r
+    (reflectiveOpenPatternEquationSetoid profile defaultBasePremises language
+      target (inner ++ support name) type).r
         (first.weakenedValue lookup inner)
         (second.weakenedValue lookup inner)
 
@@ -4770,7 +4845,7 @@ namespace SupportedOpenAssignment.FiberEquivalent
 theorem refl
     {language : LanguageDef} {source target : FreeTypeContext}
     {support : ContextSupport.Support}
-    (assignment : SupportedOpenAssignment language source target support) :
+    (assignment : SupportedOpenAssignment profile language source target support) :
     assignment.FiberEquivalent assignment := by
   intro name type lookup inner
   exact Relation.EqvGen.refl _
@@ -4778,24 +4853,24 @@ theorem refl
 theorem symm
     {language : LanguageDef} {source target : FreeTypeContext}
     {support : ContextSupport.Support}
-    {first second : SupportedOpenAssignment language source target support}
+    {first second : SupportedOpenAssignment profile language source target support}
     (equivalent : first.FiberEquivalent second) :
     second.FiberEquivalent first := by
   intro name type lookup inner
-  exact (openPatternEquationSetoid language target
-    (inner ++ support name) type).iseqv.symm (equivalent lookup inner)
+  exact (reflectiveOpenPatternEquationSetoid profile defaultBasePremises language
+    target (inner ++ support name) type).iseqv.symm (equivalent lookup inner)
 
 theorem trans
     {language : LanguageDef} {source target : FreeTypeContext}
     {support : ContextSupport.Support}
-    {first second third : SupportedOpenAssignment language source target
+    {first second third : SupportedOpenAssignment profile language source target
       support}
     (firstEquivalent : first.FiberEquivalent second)
     (secondEquivalent : second.FiberEquivalent third) :
     first.FiberEquivalent third := by
   intro name type lookup inner
-  exact (openPatternEquationSetoid language target
-    (inner ++ support name) type).iseqv.trans
+  exact (reflectiveOpenPatternEquationSetoid profile defaultBasePremises language
+    target (inner ++ support name) type).iseqv.trans
       (firstEquivalent lookup inner) (secondEquivalent lookup inner)
 
 /-- Fiberwise agreement implies the raw all-weakening relation used by the
@@ -4803,13 +4878,13 @@ structural congruence theorem. -/
 theorem toEquivalent
     {language : LanguageDef} {source target : FreeTypeContext}
     {support : ContextSupport.Support}
-    {first second : SupportedOpenAssignment language source target support}
+    {first second : SupportedOpenAssignment profile language source target support}
     (equivalent : first.FiberEquivalent second) : first.Equivalent second := by
   intro name type lookup shift
   have fiberEquivalent :=
     equivalent lookup (List.replicate shift type)
   have rawEquivalent :=
-    openPatternEquationSetoid_to_equationEquiv fiberEquivalent
+    reflectiveOpenPatternEquationSetoid_to_equiv fiberEquivalent
   simpa only [SupportedOpenAssignment.weakenedValue_pattern,
     List.length_replicate] using rawEquivalent
 
@@ -4850,14 +4925,16 @@ end
 mutual
   theorem HasType.ReflectiveSupportSafeAt.availableEquationSetoid_substitute_pointwise
       {language : LanguageDef} (valid : language.validate = [])
+      (profileValid : Mettapedia.OSLF.MeTTaIL.Reflection.validate
+        language profile = [])
       {source target : FreeTypeContext} {support : ContextSupport.Support}
       {available outer : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
       {typed : HasType language source (available ++ outer) pattern type}
-      (safe : typed.ReflectiveSupportSafeAt support available)
+      (safe : typed.ReflectiveSupportSafeAt profile support available)
       (canonical : pattern.hasCanonicalBinderMetadata = true)
       (objectPattern : isObjectPattern pattern = true)
-      (scope : ReflectiveScopeSafeAt language available.length pattern)
-      (first second : SupportedOpenAssignment language source target support)
+      (scope : ReflectiveWellSorted.ReflectiveScopeSafeAt profile available.length pattern)
+      (first second : SupportedOpenAssignment profile language source target support)
       (equivalent : first.FiberEquivalent second) :
       let term := AvailableOpenPattern.ofCertificates typed canonical
         objectPattern scope
@@ -4881,7 +4958,7 @@ mutual
         obtain ⟨inner, availableShape⟩ := shape
         subst available
         have path :=
-          AvailableOpenPattern.openPatternEquationSetoid_to_availableWithOuter
+          AvailableOpenPattern.reflectiveOpenPatternEquationSetoid_to_availableWithOuter
             outer (equivalent lookup inner)
         have leftEndpoint : sourceTerm.substitute first sourceSafe =
             AvailableOpenPattern.ofOpenPatternWithOuter
@@ -4914,23 +4991,23 @@ mutual
           simpa [Pattern.hasCanonicalBinderMetadata] using canonical
         have objectArguments : isObjectPatternList arguments = true := by
           simpa [isObjectPattern] using objectPattern
-        have fullScope : ReflectiveScopeSafeAt language
+        have fullScope : ReflectiveWellSorted.ReflectiveScopeSafeAt profile
             (available ++ outer).length (.apply rule.label arguments) := by
           intro presentation presentationMembership
           exact binderSafeAt_mono presentation.quoteConstructor
             (scope presentation presentationMembership) (by simp)
         have resetScope := reflectiveScopeSafeListAt_zero_of_typed_quote
-          valid membership argumentsTyped quoted fullScope
-        let argumentsTerm : AvailableOpenArguments language source []
+          valid profileValid membership argumentsTyped quoted fullScope
+        let argumentsTerm : AvailableOpenArguments profile language source []
             (available ++ outer) rule.params :=
           AvailableOpenArguments.ofCertificates (by
             simpa only [List.nil_append] using argumentsTyped)
             canonicalArguments objectArguments resetScope
         have argumentsSafe' :
-            argumentsTerm.typed.ReflectiveSupportSafeAt support [] :=
+            argumentsTerm.typed.ReflectiveSupportSafeAt profile support [] :=
           argumentsSafe.castTyping
         have argumentsEquivalent :=
-          argumentsSafe'.availableEquationForall₂_substitute_pointwise valid
+          argumentsSafe'.availableEquationForall₂_substitute_pointwise valid profileValid
             canonicalArguments objectArguments resetScope first second
               equivalent
         have assembled := argumentsEquivalent.assembleQuote membership notBare
@@ -4960,15 +5037,15 @@ mutual
           simpa [isObjectPattern] using objectPattern
         have argumentScope := reflectiveScopeSafeListAt_of_nonquote ordinary
           scope
-        let argumentsTerm : AvailableOpenArguments language source available
+        let argumentsTerm : AvailableOpenArguments profile language source available
             outer rule.params :=
           AvailableOpenArguments.ofCertificates argumentsTyped
             canonicalArguments objectArguments argumentScope
         have argumentsSafe' :
-            argumentsTerm.typed.ReflectiveSupportSafeAt support available :=
+            argumentsTerm.typed.ReflectiveSupportSafeAt profile support available :=
           argumentsSafe.castTyping
         have argumentsEquivalent :=
-          argumentsSafe'.availableEquationForall₂_substitute_pointwise valid
+          argumentsSafe'.availableEquationForall₂_substitute_pointwise valid profileValid
             canonicalArguments objectArguments argumentScope first second
               equivalent
         have assembled := argumentsEquivalent.assembleOrdinary membership
@@ -4996,7 +5073,7 @@ mutual
           simpa [Pattern.hasCanonicalBinderMetadata] using canonical
         have bodyObject : isObjectPattern body = true := by
           simpa [isObjectPattern] using objectPattern
-        have bodyScope : ReflectiveScopeSafeAt language
+        have bodyScope : ReflectiveWellSorted.ReflectiveScopeSafeAt profile
             (domain :: available).length body := by
           intro presentation presentationMembership
           simpa [binderSafeAt, List.length_cons] using
@@ -5004,10 +5081,10 @@ mutual
         have bodyTyped' : HasType language source
             ((domain :: available) ++ outer) body codomain := by
           simpa only [List.cons_append] using bodyTyped
-        have bodySafe' : bodyTyped'.ReflectiveSupportSafeAt support
+        have bodySafe' : bodyTyped'.ReflectiveSupportSafeAt profile support
             (domain :: available) := bodySafe.castTyping
         have bodyEquivalent :=
-          bodySafe'.availableEquationSetoid_substitute_pointwise valid
+          bodySafe'.availableEquationSetoid_substitute_pointwise valid profileValid
             canonicalParts.2 bodyObject bodyScope first second equivalent
         have assembled := AvailableOpenPattern.equationSetoid_lambda_congr
           binder canonicalParts.1 bodyEquivalent
@@ -5032,7 +5109,7 @@ mutual
           simpa [Pattern.hasCanonicalBinderMetadata] using canonical
         have bodyObject : isObjectPattern body = true := by
           simpa [isObjectPattern] using objectPattern
-        have bodyScope : ReflectiveScopeSafeAt language
+        have bodyScope : ReflectiveWellSorted.ReflectiveScopeSafeAt profile
             (List.replicate arity domain ++ available).length body := by
           intro presentation presentationMembership
           simpa [binderSafeAt, List.length_append, List.length_replicate,
@@ -5041,11 +5118,11 @@ mutual
             ((List.replicate arity domain ++ available) ++ outer) body
               codomain := by
           simpa only [List.append_assoc] using bodyTyped
-        have bodySafe' : bodyTyped'.ReflectiveSupportSafeAt support
+        have bodySafe' : bodyTyped'.ReflectiveSupportSafeAt profile support
             (List.replicate arity domain ++ available) :=
           by simpa using bodySafe.castTyping
         have bodyEquivalent :=
-          bodySafe'.availableEquationSetoid_substitute_pointwise valid
+          bodySafe'.availableEquationSetoid_substitute_pointwise valid profileValid
             canonicalParts.2 bodyObject bodyScope first second equivalent
         have assembled :=
           AvailableOpenPattern.equationSetoid_multiLambda_congr arity binders
@@ -5080,26 +5157,26 @@ mutual
             have objectElements : isObjectPatternList elements = true := by
               simpa [isObjectPattern] using objectPattern
             have elementScope : ∀ presentation ∈
-                language.reflectivePresentations,
+                profile.presentations,
                 binderSafeListAt presentation.quoteConstructor
                   available.length elements = true := by
               intro presentation presentationMembership
               simpa [binderSafeAt] using
                 scope presentation presentationMembership
-            let elementsTerm : AvailableOpenElements language source available
+            let elementsTerm : AvailableOpenElements profile language source available
                 outer elementType :=
               AvailableOpenElements.ofCertificates elementsTyped
                 canonicalElements objectElements elementScope
             have elementsSafe' :
-                elementsTerm.typed.ReflectiveSupportSafeAt support available :=
+                elementsTerm.typed.ReflectiveSupportSafeAt profile support available :=
               elementsSafe.castTyping
             have elementsEquivalent :
-                AvailableOpenElements.EquationForall₂ language target
+                AvailableOpenElements.EquationForall₂ profile language target
                   available outer elementType
                   (elementsTerm.substitute first elementsSafe')
                   (elementsTerm.substitute second elementsSafe') :=
               ElementsHaveType.ReflectiveSupportSafeAt.availableEquationForall₂_substitute_pointwise
-                  (language := language) valid
+                  (language := language) valid profileValid
                   (source := source) (target := target) (support := support)
                   (available := available) (outer := outer)
                   (sourceElements := elements) (elementType := elementType)
@@ -5133,26 +5210,26 @@ mutual
             have objectElements : isObjectPatternList elements = true := by
               simpa [isObjectPattern] using objectPattern
             have elementScope : ∀ presentation ∈
-                language.reflectivePresentations,
+                profile.presentations,
                 binderSafeListAt presentation.quoteConstructor
                   available.length elements = true := by
               intro presentation presentationMembership
               simpa [binderSafeAt] using
                 scope presentation presentationMembership
-            let elementsTerm : AvailableOpenElements language source available
+            let elementsTerm : AvailableOpenElements profile language source available
                 outer elementType :=
               AvailableOpenElements.ofCertificates elementsTyped
                 canonicalElements objectElements elementScope
             have elementsSafe' :
-                elementsTerm.typed.ReflectiveSupportSafeAt support available :=
+                elementsTerm.typed.ReflectiveSupportSafeAt profile support available :=
               elementsSafe.castTyping
             have elementsEquivalent :
-                AvailableOpenElements.EquationForall₂ language target
+                AvailableOpenElements.EquationForall₂ profile language target
                   available outer elementType
                   (elementsTerm.substitute first elementsSafe')
                   (elementsTerm.substitute second elementsSafe') :=
               ElementsHaveType.ReflectiveSupportSafeAt.availableEquationForall₂_substitute_pointwise
-                  (language := language) valid
+                  (language := language) valid profileValid
                   (source := source) (target := target) (support := support)
                   (available := available) (outer := outer)
                   (sourceElements := elements) (elementType := elementType)
@@ -5186,13 +5263,15 @@ mutual
 
   theorem AvailableOpenArgument.equationSetoid_substitute_pointwise
       {language : LanguageDef} (valid : language.validate = [])
+      (profileValid : Mettapedia.OSLF.MeTTaIL.Reflection.validate
+        language profile = [])
       {source target : FreeTypeContext} {support : ContextSupport.Support}
       {available outer : List TypeExpr} {parameter : TermParam}
       {expected : TypeExpr}
-      (argument : AvailableOpenArgument language source available outer
+      (argument : AvailableOpenArgument profile language source available outer
         parameter expected)
-      (safe : argument.term.typed.ReflectiveSupportSafeAt support available)
-      (first second : SupportedOpenAssignment language source target support)
+      (safe : argument.term.typed.ReflectiveSupportSafeAt profile support available)
+      (first second : SupportedOpenAssignment profile language source target support)
       (equivalent : first.FiberEquivalent second) :
       (AvailableOpenArgument.equationSetoid language target available outer
         parameter expected).r
@@ -5204,15 +5283,15 @@ mutual
             cases parameter with
             | simple parameterName parameterTypeExpression =>
                 have termEquivalent :=
-                  safe.availableEquationSetoid_substitute_pointwise valid
+                  safe.availableEquationSetoid_substitute_pointwise valid profileValid
                     canonical objectPattern scope first second equivalent
                 let pack := fun
-                    (term : AvailableOpenPattern language target available outer
+                    (term : AvailableOpenPattern profile language target available outer
                       expected) =>
                   ({ term := term
                      representation := True.intro
                      parameterType := parameterType } :
-                    AvailableOpenArgument language target available outer
+                    AvailableOpenArgument profile language target available outer
                       (.simple parameterName parameterTypeExpression) expected)
                 have packed := AvailableOpenArgument.equationSetoid_of_term_map
                   pack (by
@@ -5225,7 +5304,7 @@ mutual
                             canonical objectPattern scope
                          representation := True.intro
                          parameterType := parameterType } :
-                        AvailableOpenArgument language source available outer
+                        AvailableOpenArgument profile language source available outer
                           (.simple parameterName parameterTypeExpression)
                             expected).substitute first safe := by
                   apply AvailableOpenArgument.ext
@@ -5237,7 +5316,7 @@ mutual
                             canonical objectPattern scope
                          representation := True.intro
                          parameterType := parameterType } :
-                        AvailableOpenArgument language source available outer
+                        AvailableOpenArgument profile language source available outer
                           (.simple parameterName parameterTypeExpression)
                             expected).substitute second safe := by
                   apply AvailableOpenArgument.ext
@@ -5266,7 +5345,7 @@ mutual
                         simpa [Pattern.hasCanonicalBinderMetadata] using canonical
                       have bodyObject : isObjectPattern body = true := by
                         simpa [isObjectPattern] using objectPattern
-                      have bodyScope : ReflectiveScopeSafeAt language
+                      have bodyScope : ReflectiveWellSorted.ReflectiveScopeSafeAt profile
                           (domain :: available).length body := by
                         intro presentation presentationMembership
                         simpa [binderSafeAt, List.length_cons] using
@@ -5275,17 +5354,17 @@ mutual
                           ((domain :: available) ++ outer) body codomain := by
                         simpa only [List.cons_append] using bodyTyped
                       have bodySafe' :
-                          bodyTyped'.ReflectiveSupportSafeAt support
+                          bodyTyped'.ReflectiveSupportSafeAt profile support
                             (domain :: available) := bodySafe.castTyping
                       have bodyEquivalent :=
                         bodySafe'.availableEquationSetoid_substitute_pointwise
-                          valid bodyCanonical bodyObject bodyScope first second
+                          valid profileValid bodyCanonical bodyObject bodyScope first second
                             equivalent
                       let pack := fun term =>
                         ({ term := AvailableOpenPattern.lambda none rfl term
                            representation := True.intro
                            parameterType := parameterType } :
-                          AvailableOpenArgument language target available outer
+                          AvailableOpenArgument profile language target available outer
                             (.abstractionNamed binderName bodyName
                               parameterTypeExpression)
                                 (.arrow domain codomain))
@@ -5293,12 +5372,12 @@ mutual
                         AvailableOpenArgument.equationSetoid_of_term_map pack
                           (by
                             intro left right generator
-                            exact EquationSemantics.equationContextStep_fill
+                            exact EquationSemantics.reflectiveEquationContextStep_fill
                               (.lambda none .hole) generator)
                           bodyEquivalent
                       let bodyTerm := AvailableOpenPattern.ofCertificates
                         bodyTyped' bodyCanonical bodyObject bodyScope
-                      let sourceArgument : AvailableOpenArgument language source
+                      let sourceArgument : AvailableOpenArgument profile language source
                           available outer
                           (.abstractionNamed binderName bodyName
                             parameterTypeExpression) (.arrow domain codomain) :=
@@ -5307,7 +5386,7 @@ mutual
                           parameterType := parameterType }
                       have sourceSafe :
                           sourceArgument.term.typed.ReflectiveSupportSafeAt
-                            support available := by
+                            profile support available := by
                         exact originalSafe.castTyping
                       have leftEndpoint :
                           pack (bodyTerm.substitute first bodySafe') =
@@ -5339,7 +5418,7 @@ mutual
                         simpa [Pattern.hasCanonicalBinderMetadata] using canonical
                       have bodyObject : isObjectPattern body = true := by
                         simpa [isObjectPattern] using objectPattern
-                      have bodyScope : ReflectiveScopeSafeAt language
+                      have bodyScope : ReflectiveWellSorted.ReflectiveScopeSafeAt profile
                           (List.replicate arity domain ++ available).length
                             body := by
                         intro presentation presentationMembership
@@ -5351,19 +5430,19 @@ mutual
                             body codomain := by
                         simpa only [List.append_assoc] using bodyTyped
                       have bodySafe' :
-                          bodyTyped'.ReflectiveSupportSafeAt support
+                          bodyTyped'.ReflectiveSupportSafeAt profile support
                             (List.replicate arity domain ++ available) := by
                         simpa using bodySafe.castTyping
                       have bodyEquivalent :=
                         bodySafe'.availableEquationSetoid_substitute_pointwise
-                          valid bodyCanonical bodyObject bodyScope first second
+                          valid profileValid bodyCanonical bodyObject bodyScope first second
                             equivalent
                       let pack := fun term =>
                         ({ term := AvailableOpenPattern.multiLambda arity [] rfl
                               term
                            representation := True.intro
                            parameterType := parameterType } :
-                          AvailableOpenArgument language target available outer
+                          AvailableOpenArgument profile language target available outer
                             (.multiAbstractionNamed binderNames bodyName
                               parameterTypeExpression)
                                 (.arrow (.multiBinder domain) codomain))
@@ -5371,12 +5450,12 @@ mutual
                         AvailableOpenArgument.equationSetoid_of_term_map pack
                           (by
                             intro left right generator
-                            exact EquationSemantics.equationContextStep_fill
+                            exact EquationSemantics.reflectiveEquationContextStep_fill
                               (.multiLambda arity [] .hole) generator)
                           bodyEquivalent
                       let bodyTerm := AvailableOpenPattern.ofCertificates
                         bodyTyped' bodyCanonical bodyObject bodyScope
-                      let sourceArgument : AvailableOpenArgument language source
+                      let sourceArgument : AvailableOpenArgument profile language source
                           available outer
                           (.multiAbstractionNamed binderNames bodyName
                             parameterTypeExpression)
@@ -5387,7 +5466,7 @@ mutual
                           parameterType := parameterType }
                       have sourceSafe :
                           sourceArgument.term.typed.ReflectiveSupportSafeAt
-                            support available := by
+                            profile support available := by
                         exact originalSafe.castTyping
                       have leftEndpoint :
                           pack (bodyTerm.substitute first bodySafe') =
@@ -5413,28 +5492,30 @@ mutual
 
   theorem ArgumentsHaveTypes.ReflectiveSupportSafeAt.availableEquationForall₂_substitute_pointwise
       {language : LanguageDef} (valid : language.validate = [])
+      (profileValid : Mettapedia.OSLF.MeTTaIL.Reflection.validate
+        language profile = [])
       {source target : FreeTypeContext} {support : ContextSupport.Support}
       {available outer : List TypeExpr} {sourceArguments : List Pattern}
       {parameters : List TermParam}
       {typed : ArgumentsHaveTypes language source (available ++ outer)
         sourceArguments parameters}
-      (safe : typed.ReflectiveSupportSafeAt support available)
+      (safe : typed.ReflectiveSupportSafeAt profile support available)
       (canonical :
         Pattern.hasCanonicalBinderMetadataList sourceArguments = true)
       (objects : isObjectPatternList sourceArguments = true)
-      (scope : ∀ presentation ∈ language.reflectivePresentations,
+      (scope : ∀ presentation ∈ profile.presentations,
         binderSafeListAt presentation.quoteConstructor available.length
           sourceArguments = true)
-      (first second : SupportedOpenAssignment language source target support)
+      (first second : SupportedOpenAssignment profile language source target support)
       (equivalent : first.FiberEquivalent second) :
       let spine := AvailableOpenArguments.ofCertificates typed canonical
         objects scope
-      AvailableOpenArguments.EquationForall₂ language target available outer
+      AvailableOpenArguments.EquationForall₂ profile language target available outer
         (spine.substitute first safe) (spine.substitute second safe) := by
     let sourceSpine := AvailableOpenArguments.ofCertificates typed canonical
       objects scope
     let sourceSafe := safe
-    change AvailableOpenArguments.EquationForall₂ language target available
+    change AvailableOpenArguments.EquationForall₂ profile language target available
       outer (sourceSpine.substitute first sourceSafe)
         (sourceSpine.substitute second sourceSafe)
     cases safe with
@@ -5458,7 +5539,7 @@ mutual
         have objectParts : isObjectPattern argument = true ∧
             isObjectPatternList arguments = true := by
           simpa [isObjectPatternList] using objects
-        have argumentScope : ReflectiveScopeSafeAt language available.length
+        have argumentScope : ReflectiveWellSorted.ReflectiveScopeSafeAt profile available.length
             argument := by
           intro presentation presentationMembership
           have full := scope presentation presentationMembership
@@ -5469,7 +5550,7 @@ mutual
                     available.length arguments = true := by
             simpa [binderSafeListAt] using full
           exact parts.1
-        have tailScope : ∀ presentation ∈ language.reflectivePresentations,
+        have tailScope : ∀ presentation ∈ profile.presentations,
             binderSafeListAt presentation.quoteConstructor available.length
               arguments = true := by
           intro presentation presentationMembership
@@ -5486,27 +5567,27 @@ mutual
         let tailTerm := AvailableOpenArguments.ofCertificates argumentsTyped
           canonicalParts.2 objectParts.2 tailScope
         have argumentSafe' :
-            argumentTerm.typed.ReflectiveSupportSafeAt support available :=
+            argumentTerm.typed.ReflectiveSupportSafeAt profile support available :=
           argumentSafe.castTyping
-        let sourceArgument : AvailableOpenArgument language source available
+        let sourceArgument : AvailableOpenArgument profile language source available
             outer parameter expected :=
           { term := argumentTerm
             representation := by simpa [argumentTerm] using representation
             parameterType := parameterType }
         have sourceArgumentSafe :
-            sourceArgument.term.typed.ReflectiveSupportSafeAt support
+            sourceArgument.term.typed.ReflectiveSupportSafeAt profile support
               available := argumentSafe.castTyping
         have tailEquivalent :=
           ArgumentsHaveTypes.ReflectiveSupportSafeAt.availableEquationForall₂_substitute_pointwise
-            valid (available := available) (outer := outer) argumentsSafe
+            valid profileValid (available := available) (outer := outer) argumentsSafe
             canonicalParts.2 objectParts.2 tailScope first second equivalent
         have headEquivalent :=
-          AvailableOpenArgument.equationSetoid_substitute_pointwise valid
+          AvailableOpenArgument.equationSetoid_substitute_pointwise valid profileValid
             sourceArgument sourceArgumentSafe first second equivalent
-        let leftHead : AvailableOpenArgument language target available outer
+        let leftHead : AvailableOpenArgument profile language target available outer
             parameter expected :=
           sourceArgument.substitute first sourceArgumentSafe
-        let rightHead : AvailableOpenArgument language target available outer
+        let rightHead : AvailableOpenArgument profile language target available outer
             parameter expected :=
           sourceArgument.substitute second sourceArgumentSafe
         have combined := AvailableOpenArguments.EquationForall₂.cons
@@ -5534,29 +5615,31 @@ mutual
 
   theorem ElementsHaveType.ReflectiveSupportSafeAt.availableEquationForall₂_substitute_pointwise
       {language : LanguageDef} (valid : language.validate = [])
+      (profileValid : Mettapedia.OSLF.MeTTaIL.Reflection.validate
+        language profile = [])
       {source target : FreeTypeContext} {support : ContextSupport.Support}
       {available outer : List TypeExpr} {sourceElements : List Pattern}
       {elementType : TypeExpr}
       {typed : ElementsHaveType language source (available ++ outer)
         sourceElements elementType}
-      (safe : typed.ReflectiveSupportSafeAt support available)
+      (safe : typed.ReflectiveSupportSafeAt profile support available)
       (canonical :
         Pattern.hasCanonicalBinderMetadataList sourceElements = true)
       (objects : isObjectPatternList sourceElements = true)
-      (scope : ∀ presentation ∈ language.reflectivePresentations,
+      (scope : ∀ presentation ∈ profile.presentations,
         binderSafeListAt presentation.quoteConstructor available.length
           sourceElements = true)
-      (first second : SupportedOpenAssignment language source target support)
+      (first second : SupportedOpenAssignment profile language source target support)
       (equivalent : first.FiberEquivalent second) :
       let spine := AvailableOpenElements.ofCertificates typed canonical objects
         scope
-      AvailableOpenElements.EquationForall₂ language target available outer
+      AvailableOpenElements.EquationForall₂ profile language target available outer
         elementType (spine.substitute first safe)
           (spine.substitute second safe) := by
     let sourceSpine := AvailableOpenElements.ofCertificates typed canonical
       objects scope
     let sourceSafe := safe
-    change AvailableOpenElements.EquationForall₂ language target available
+    change AvailableOpenElements.EquationForall₂ profile language target available
       outer elementType (sourceSpine.substitute first sourceSafe)
         (sourceSpine.substitute second sourceSafe)
     cases safe with
@@ -5581,7 +5664,7 @@ mutual
         have objectParts : isObjectPattern element = true ∧
             isObjectPatternList elements = true := by
           simpa [isObjectPatternList] using objects
-        have elementScope : ReflectiveScopeSafeAt language available.length
+        have elementScope : ReflectiveWellSorted.ReflectiveScopeSafeAt profile available.length
             element := by
           intro presentation presentationMembership
           have full := scope presentation presentationMembership
@@ -5592,7 +5675,7 @@ mutual
                     available.length elements = true := by
             simpa [binderSafeListAt] using full
           exact parts.1
-        have tailScope : ∀ presentation ∈ language.reflectivePresentations,
+        have tailScope : ∀ presentation ∈ profile.presentations,
             binderSafeListAt presentation.quoteConstructor available.length
               elements = true := by
           intro presentation presentationMembership
@@ -5609,11 +5692,11 @@ mutual
         let tailTerm := AvailableOpenElements.ofCertificates elementsTyped
           canonicalParts.2 objectParts.2 tailScope
         have elementEquivalent :=
-          elementSafe.availableEquationSetoid_substitute_pointwise valid
+          elementSafe.availableEquationSetoid_substitute_pointwise valid profileValid
             canonicalParts.1 objectParts.1 elementScope first second equivalent
         have tailEquivalent :=
           ElementsHaveType.ReflectiveSupportSafeAt.availableEquationForall₂_substitute_pointwise
-            valid (available := available) (outer := outer) elementsSafe
+            valid profileValid (available := available) (outer := outer) elementsSafe
             canonicalParts.2 objectParts.2 tailScope first second equivalent
         have combined := AvailableOpenElements.EquationForall₂.cons
           elementEquivalent tailEquivalent
@@ -5647,16 +5730,18 @@ as the endpoints instead of exposing the internally reconstructed
 certificate bundle used by the mutual induction. -/
 theorem AvailableOpenPattern.equationSetoid_substitute_pointwise
     {language : LanguageDef} (valid : language.validate = [])
+    (profileValid : Mettapedia.OSLF.MeTTaIL.Reflection.validate
+      language profile = [])
     {source target : FreeTypeContext} {support : ContextSupport.Support}
     {available outer : List TypeExpr} {type : TypeExpr}
-    (pattern : AvailableOpenPattern language source available outer type)
-    (safe : pattern.typed.ReflectiveSupportSafeAt support available)
-    (first second : SupportedOpenAssignment language source target support)
+    (pattern : AvailableOpenPattern profile language source available outer type)
+    (safe : pattern.typed.ReflectiveSupportSafeAt profile support available)
+    (first second : SupportedOpenAssignment profile language source target support)
     (equivalent : first.FiberEquivalent second) :
     (AvailableOpenPattern.equationSetoid language target available outer
       type).r (pattern.substitute first safe)
         (pattern.substitute second safe) := by
-  have path := safe.availableEquationSetoid_substitute_pointwise valid
+  have path := safe.availableEquationSetoid_substitute_pointwise valid profileValid
     pattern.canonicalBinderMetadata pattern.objectPattern
       pattern.reflectiveScope first second equivalent
   let reconstructed := AvailableOpenPattern.ofCertificates pattern.typed
@@ -5685,18 +5770,19 @@ mutual
       {support : ContextSupport.Support}
       {bound : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
       (typed : HasType language source bound pattern type)
-      (first second : SupportedOpenAssignment language source target support)
+      (first second : SupportedOpenAssignment profile language source target support)
       (equivalent : first.Equivalent second) (availableDepth : Nat) :
-      EquationEquiv defaultBasePremises language
-        (ReflectiveContextSupport.substituteAt language support
+      ReflectiveEquationEquiv profile defaultBasePremises language
+        (ReflectiveContextSupport.substituteAt profile support
           first.assignment availableDepth pattern)
-        (ReflectiveContextSupport.substituteAt language support
+        (ReflectiveContextSupport.substituteAt profile support
           second.assignment availableDepth pattern) := by
     cases typed with
     | @bvar bound index type lookup =>
-        simpa only [ReflectiveContextSupport.substituteAt, EquationEquiv] using
+        simpa only [ReflectiveContextSupport.substituteAt,
+          ReflectiveEquationEquiv] using
           (Relation.EqvGen.refl
-            (r := EquationContextStep defaultBasePremises language)
+            (r := ReflectiveEquationContextStep profile defaultBasePremises language)
             (.bvar index))
     | @fvar bound name type lookup =>
         simpa only [ReflectiveContextSupport.substituteAt] using
@@ -5705,7 +5791,7 @@ mutual
         have argumentsEquivalent :=
           argumentsTyped.equationEquiv_substituteAt_pointwise first second
             equivalent
-            (if ReflectiveContextSupport.isQuoteConstructor language rule.label
+            (if ReflectiveContextSupport.isQuoteConstructor profile rule.label
               then 0 else availableDepth)
         simpa only [ReflectiveContextSupport.substituteAt] using
           equationEquiv_apply_of_forall₂ rule.label argumentsEquivalent
@@ -5714,13 +5800,13 @@ mutual
           bodyTyped.equationEquiv_substituteAt_pointwise first second
             equivalent (availableDepth + 1)
         simpa only [ReflectiveContextSupport.substituteAt, OneHoleContext.fill]
-          using equationEquiv_fill (.lambda binder .hole) bodyEquivalent
+          using ReflectiveEquationSemantics.equationEquiv_fill (.lambda binder .hole) bodyEquivalent
     | @multiLambda bound arity binders body domain codomain bodyTyped =>
         have bodyEquivalent :=
           bodyTyped.equationEquiv_substituteAt_pointwise first second
             equivalent (availableDepth + arity)
         simpa only [ReflectiveContextSupport.substituteAt, OneHoleContext.fill]
-          using equationEquiv_fill
+          using ReflectiveEquationSemantics.equationEquiv_fill
             (.multiLambda arity binders .hole) bodyEquivalent
     | @subst bound body replacement domain codomain bodyTyped replacementTyped =>
         have bodyEquivalent :=
@@ -5729,23 +5815,23 @@ mutual
         have replacementEquivalent :=
           replacementTyped.equationEquiv_substituteAt_pointwise first second
             equivalent availableDepth
-        have bodyStep := equationEquiv_fill
+        have bodyStep := ReflectiveEquationSemantics.equationEquiv_fill
           (.substBody .hole
-            (ReflectiveContextSupport.substituteAt language support
+            (ReflectiveContextSupport.substituteAt profile support
               first.assignment availableDepth replacement))
           bodyEquivalent
-        have replacementStep := equationEquiv_fill
+        have replacementStep := ReflectiveEquationSemantics.equationEquiv_fill
           (.substReplacement
-            (ReflectiveContextSupport.substituteAt language support
+            (ReflectiveContextSupport.substituteAt profile support
               second.assignment (availableDepth + 1) body) .hole)
           replacementEquivalent
         change Relation.EqvGen
-          (EquationContextStep defaultBasePremises language) _ _
+          (ReflectiveEquationContextStep profile defaultBasePremises language) _ _
         exact Relation.EqvGen.trans _ _ _
           (by simpa only [ReflectiveContextSupport.substituteAt,
-              OneHoleContext.fill, EquationEquiv] using bodyStep)
+              OneHoleContext.fill, ReflectiveEquationEquiv] using bodyStep)
           (by simpa only [ReflectiveContextSupport.substituteAt,
-              OneHoleContext.fill, EquationEquiv] using replacementStep)
+              OneHoleContext.fill, ReflectiveEquationEquiv] using replacementStep)
     | @collection bound collectionType elements rest elementType elementsTyped =>
         have elementsEquivalent :=
           elementsTyped.equationEquiv_substituteAt_pointwise first second
@@ -5770,12 +5856,12 @@ mutual
       {bound : List TypeExpr} {arguments : List Pattern}
       {parameters : List TermParam}
       (typed : ArgumentsHaveTypes language source bound arguments parameters)
-      (first second : SupportedOpenAssignment language source target support)
+      (first second : SupportedOpenAssignment profile language source target support)
       (equivalent : first.Equivalent second) (availableDepth : Nat) :
-      List.Forall₂ (EquationEquiv defaultBasePremises language)
-        (arguments.map (ReflectiveContextSupport.substituteAt language support
+      List.Forall₂ (ReflectiveEquationEquiv profile defaultBasePremises language)
+        (arguments.map (ReflectiveContextSupport.substituteAt profile support
           first.assignment availableDepth))
-        (arguments.map (ReflectiveContextSupport.substituteAt language support
+        (arguments.map (ReflectiveContextSupport.substituteAt profile support
           second.assignment availableDepth)) := by
     cases typed with
     | nil => exact .nil
@@ -5794,12 +5880,12 @@ mutual
       {bound : List TypeExpr} {elements : List Pattern}
       {elementType : TypeExpr}
       (typed : ElementsHaveType language source bound elements elementType)
-      (first second : SupportedOpenAssignment language source target support)
+      (first second : SupportedOpenAssignment profile language source target support)
       (equivalent : first.Equivalent second) (availableDepth : Nat) :
-      List.Forall₂ (EquationEquiv defaultBasePremises language)
-        (elements.map (ReflectiveContextSupport.substituteAt language support
+      List.Forall₂ (ReflectiveEquationEquiv profile defaultBasePremises language)
+        (elements.map (ReflectiveContextSupport.substituteAt profile support
           first.assignment availableDepth))
-        (elements.map (ReflectiveContextSupport.substituteAt language support
+        (elements.map (ReflectiveContextSupport.substituteAt profile support
           second.assignment availableDepth)) := by
     cases typed with
     | nil => exact .nil
@@ -5818,12 +5904,12 @@ theorem HasType.equationEquiv_substitute_pointwise
     {support : ContextSupport.Support}
     {bound : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
     (typed : HasType language source bound pattern type)
-    (first second : SupportedOpenAssignment language source target support)
+    (first second : SupportedOpenAssignment profile language source target support)
     (equivalent : first.Equivalent second) :
-    EquationEquiv defaultBasePremises language
-      (ReflectiveContextSupport.substitute language support first.assignment
+    ReflectiveEquationEquiv profile defaultBasePremises language
+      (ReflectiveContextSupport.substitute profile support first.assignment
         bound pattern)
-      (ReflectiveContextSupport.substitute language support second.assignment
+      (ReflectiveContextSupport.substitute profile support second.assignment
         bound pattern) := by
   simpa only [ReflectiveContextSupport.substitute] using
     typed.equationEquiv_substituteAt_pointwise first second equivalent
@@ -5831,19 +5917,21 @@ theorem HasType.equationEquiv_substitute_pointwise
 
 /-- Fiberwise-equivalent assignments act identically up to the sole authored
 contextual equation relation on any support-safe open object. -/
-theorem OpenPattern.equationEquiv_substituteReflectiveSupported_pointwise
+theorem ReflectiveWellSorted.OpenPattern.equationEquiv_substituteReflectiveSupported_pointwise
     {language : LanguageDef} {source target : FreeTypeContext}
     {support : ContextSupport.Support} {bound : List TypeExpr}
     {type : TypeExpr}
-    (pattern : OpenPattern language source bound type)
-    (first second : SupportedOpenAssignment language source target support)
-    (safe : pattern.2.1.ReflectiveSupportSafeAt support bound)
+    (pattern : ReflectiveWellSorted.OpenPattern profile language source bound type)
+    (first second : SupportedOpenAssignment profile language source target support)
+    (safe : pattern.2.1.1.ReflectiveSupportSafeAt profile support bound)
     (equivalent : first.FiberEquivalent second) :
-    EquationEquiv defaultBasePremises language
-      (pattern.substituteReflectiveSupported first safe).1
-      (pattern.substituteReflectiveSupported second safe).1 := by
-  simpa only [OpenPattern.substituteReflectiveSupported_pattern] using
-    pattern.2.1.equationEquiv_substitute_pointwise first second
+    ReflectiveEquationEquiv profile defaultBasePremises language
+      (ReflectiveWellSorted.OpenPattern.substituteReflectiveSupported
+        pattern first safe).1
+      (ReflectiveWellSorted.OpenPattern.substituteReflectiveSupported
+        pattern second safe).1 := by
+  simpa only [ReflectiveWellSorted.OpenPattern.substituteReflectiveSupported_pattern] using
+    pattern.2.1.1.equationEquiv_substitute_pointwise first second
       equivalent.toEquivalent
 
 namespace SupportSafeOpenPattern
@@ -5852,21 +5940,23 @@ private theorem equationContextStep_substitute_of_eq
     {language : LanguageDef} {source target : FreeTypeContext}
     {support : ContextSupport.Support} {bound : List TypeExpr}
     {type : TypeExpr}
-    (stable : SupportedEquationSubstitutionStable language)
-    (assignment : SupportedOpenAssignment language source target support)
-    (left right : SupportSafeOpenPattern language source support bound type)
+    (stable : SupportedEquationSubstitutionStable (profile := profile) language)
+    (assignment : SupportedOpenAssignment profile language source target support)
+    (left right : SupportSafeOpenPattern profile language source support bound type)
     {leftPattern rightPattern : Pattern}
     (leftEquality : left.term.1 = leftPattern)
     (rightEquality : right.term.1 = rightPattern)
-    (generator : EquationContextStep defaultBasePremises language
+    (generator : ReflectiveEquationContextStep profile defaultBasePremises language
       leftPattern rightPattern) :
-    EquationEquiv defaultBasePremises language
+    ReflectiveEquationEquiv profile defaultBasePremises language
       (left.substitute assignment).1 (right.substitute assignment).1 := by
   cases generator with
-  | @inContext context redex contractum equationWitness =>
-      apply stable.1 assignment left right
-      exact ⟨context, redex, contractum, equationWitness,
-        leftEquality, rightEquality⟩
+  | core coreStep =>
+      cases coreStep with
+      | @inContext context redex contractum equationWitness =>
+          apply stable.1 assignment left right
+          exact ⟨context, redex, contractum, equationWitness,
+            leftEquality, rightEquality⟩
   | @reflectiveInContext context declaration reflectedLeft reflectedRight
       membership representatives =>
       apply stable.2 assignment membership left right
@@ -5880,11 +5970,11 @@ theorem equationGenerator_substitute
     {language : LanguageDef} {source target : FreeTypeContext}
     {support : ContextSupport.Support} {bound : List TypeExpr}
     {type : TypeExpr}
-    (stable : SupportedEquationSubstitutionStable language)
-    (assignment : SupportedOpenAssignment language source target support)
-    (left right : SupportSafeOpenPattern language source support bound type)
+    (stable : SupportedEquationSubstitutionStable (profile := profile) language)
+    (assignment : SupportedOpenAssignment profile language source target support)
+    (left right : SupportSafeOpenPattern profile language source support bound type)
     (generator : equationGenerator left right) :
-    EquationEquiv defaultBasePremises language
+    ReflectiveEquationEquiv profile defaultBasePremises language
       (left.substitute assignment).1 (right.substitute assignment).1 := by
   exact equationContextStep_substitute_of_eq stable assignment left right
     rfl rfl generator
@@ -5895,12 +5985,12 @@ theorem equationSetoid_substitute
     {language : LanguageDef} {source target : FreeTypeContext}
     {support : ContextSupport.Support} {bound : List TypeExpr}
     {type : TypeExpr}
-    (stable : SupportedEquationSubstitutionStable language)
-    (assignment : SupportedOpenAssignment language source target support)
-    {left right : SupportSafeOpenPattern language source support bound type}
+    (stable : SupportedEquationSubstitutionStable (profile := profile) language)
+    (assignment : SupportedOpenAssignment profile language source target support)
+    {left right : SupportSafeOpenPattern profile language source support bound type}
     (equivalent : (equationSetoid language source support bound type).r
       left right) :
-    EquationEquiv defaultBasePremises language
+    ReflectiveEquationEquiv profile defaultBasePremises language
       (left.substitute assignment).1 (right.substitute assignment).1 := by
   induction equivalent with
   | rel left right generator =>
@@ -5919,20 +6009,20 @@ theorem equationSetoid_substitute_bivariant
     {language : LanguageDef} {source target : FreeTypeContext}
     {support : ContextSupport.Support} {bound : List TypeExpr}
     {type : TypeExpr}
-    (stable : SupportedEquationSubstitutionStable language)
-    (first second : SupportedOpenAssignment language source target support)
+    (stable : SupportedEquationSubstitutionStable (profile := profile) language)
+    (first second : SupportedOpenAssignment profile language source target support)
     (assignmentsEquivalent : first.Equivalent second)
-    {left right : SupportSafeOpenPattern language source support bound type}
+    {left right : SupportSafeOpenPattern profile language source support bound type}
     (patternsEquivalent :
       (equationSetoid language source support bound type).r left right) :
-    EquationEquiv defaultBasePremises language
+    ReflectiveEquationEquiv profile defaultBasePremises language
       (left.substitute first).1 (right.substitute second).1 := by
   have patternStep := equationSetoid_substitute stable first patternsEquivalent
   have assignmentStep :=
-    right.term.2.1.equationEquiv_substitute_pointwise first second
+    right.term.2.1.1.equationEquiv_substitute_pointwise first second
       assignmentsEquivalent
   exact Relation.EqvGen.trans _ _ _ patternStep (by
-    simpa only [substitute_pattern, EquationEquiv] using assignmentStep)
+    simpa only [substitute_pattern, ReflectiveEquationEquiv] using assignmentStep)
 
 end SupportSafeOpenPattern
 

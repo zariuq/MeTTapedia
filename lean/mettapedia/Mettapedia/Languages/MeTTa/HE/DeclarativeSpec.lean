@@ -6,7 +6,7 @@ import Mettapedia.Languages.MeTTa.HE.Properties
 /-!
 # HE MeTTa Declarative Core Spec (Grammar-Style)
 
-This module provides the **unified declarative spec surface** for HE MeTTa,
+This module provides the **unified declarative spec interface** for HE MeTTa,
 mirroring the style of `PeTTa/DeclarativeSpec.lean`. It is simultaneously:
 
 1. a readable declarative specification artifact (spec pseudocode in comments), and

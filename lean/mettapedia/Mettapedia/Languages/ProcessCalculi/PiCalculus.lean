@@ -20,7 +20,7 @@ import Mettapedia.Languages.ProcessCalculi.PiCalculus.PiCalcInstance
 
 Language-focused facade for the π-calculus formalization.
 
-This module provides the full π-calculus surface (syntax through encoding and
+This module provides the full π-calculus development (syntax through encoding and
 forward-simulation artifacts) under `Mettapedia.Languages.ProcessCalculi.*`.
 
 `RhoEncodingCorrectness.lean` is intentionally excluded from this facade while

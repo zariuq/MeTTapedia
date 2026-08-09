@@ -1134,17 +1134,17 @@ theorem conditional_filters_definite_presup
 /-! ## Section 14: Scope Ambiguity via Two Quantifier Readings
 
 "Every man loves some woman" has two readings:
-1. **Surface scope (wide ∀)**: ∀x. man(x) → ∃y. woman(y) ∧ loves(x,y)
+1. **Source-order scope (wide ∀)**: ∀x. man(x) → ∃y. woman(y) ∧ loves(x,y)
    "For every man, there exists SOME woman he loves" (different women OK)
 2. **Inverse scope (wide ∃)**: ∃y. woman(y) ∧ ∀x. man(x) → loves(x,y)
    "There is ONE specific woman that every man loves"
 
-The inverse scope is STRONGER: it entails the surface scope, but not vice versa.
+The inverse scope is STRONGER: it entails the source-order scope, but not vice versa.
 This is the fundamental scope ordering from quantifier theory.
 
 ### GF representation
 
-In GF RGL, the surface form is a single parse tree:
+In GF RGL, the source form is a single parse tree:
   `UseCl(TTAnt(TPres, ASimul), PPos,
     PredVP(DetCN(every_Det, UseN(man)),
       ComplSlash(SlashV2a(love), DetCN(someSg_Det, UseN(woman)))))`
@@ -1163,10 +1163,10 @@ section ScopeAmbiguity
 
 open Mettapedia.OSLF.QuantifiedFormula
 
-/-- Surface scope reading of "every man loves some woman":
+/-- Source-order scope reading of "every man loves some woman":
     ∀x. man(x) → ∃y. woman(y) ∧ loves(x,y)
     Each man may love a different woman. -/
-def surfaceScopeReading : QFormula :=
+def sourceOrderScopeReading : QFormula :=
   .qforall "x" (.qimp (.base (.atom "is_man"))
     (.qexists "y" (.qand (.base (.atom "is_woman")) (.base (.atom "loves")))))
 
@@ -1177,7 +1177,7 @@ def inverseScopeReading : QFormula :=
   .qexists "y" (.qand (.base (.atom "is_woman"))
     (.qforall "x" (.qimp (.base (.atom "is_man")) (.base (.atom "loves")))))
 
-/-- **Key theorem**: Inverse scope entails surface scope (abstract lattice level).
+/-- **Key theorem**: Inverse scope entails source-order scope (abstract lattice level).
 
     For any complete lattice and any family `f : ι → κ → α`,
     `⨆ j, ⨅ i, f i j ≤ ⨅ i, ⨆ j, f i j`
@@ -1186,7 +1186,7 @@ def inverseScopeReading : QFormula :=
     Instantiates to BinaryEvidence via `CompleteLattice BinaryEvidence`.
 
     Proved in `QuantifiedFormula.lean` as `iSup_iInf_le_iInf_iSup`. -/
-theorem inverse_scope_le_surface_scope_evidence {ι κ : Type*}
+theorem inverse_scope_le_source_order_scope_evidence {ι κ : Type*}
     (f : ι → κ → BinaryEvidence) :
     (⨆ j, ⨅ i, f i j) ≤ (⨅ i, ⨆ j, f i j) :=
   iSup_iInf_le_iInf_iSup f

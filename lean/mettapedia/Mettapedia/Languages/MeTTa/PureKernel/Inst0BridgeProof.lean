@@ -8,7 +8,7 @@ import Mettapedia.OSLF.MeTTaIL.Substitution
 This module contains the internal proof core for the theoremic default-binder
 `inst0` bridge.
 
-It is not the user-facing API surface. The durable public theorems live in
+It is not the user-facing API interface. The durable public theorems live in
 `PatternBridge` and `Inst0BridgeDerived`. This file keeps the ambient/distinct
 proof family and its support lemmas in one place so downstream modules can rely
 on a stable theoremic interface without threading bridge assumptions.

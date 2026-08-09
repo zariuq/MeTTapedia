@@ -2,7 +2,7 @@ import Mettapedia.Languages.MeTTa.PeTTa.TypeSystemGSLTGuard
 import Mettapedia.GSLT.LanguageDef.InferencePresentationExtension
 
 /-!
-# The PeTTa typing tower as a validated presentation extension
+# The PeTTa typing tower as a validated definition extension
 
 The guard layer is no longer an ad-hoc list append: it is a first-class
 `ValidatedExtension` of the core presentation — delta as data, executable
@@ -15,6 +15,7 @@ the same tower next.
 namespace Mettapedia.Languages.MeTTa.PeTTa.TypeSystemGSLTComposition
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
+open Mettapedia.GSLT.LanguageDef
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
 open Mettapedia.GSLT.LanguageDef.InferencePresentationExtension
 open Mettapedia.Languages.MeTTa.PeTTa.TypeSystemGSLT
@@ -29,7 +30,14 @@ def guardExtension : PresentationExtension :=
 
 /-- The composition IS the guard language, definitionally. -/
 theorem guard_language_is_composition :
-    guardExtension.apply corePresentation.language = guardLanguage := by
+    (guardExtension.apply corePresentation).language = guardLanguage := by
+  rfl
+
+/-- Reassembling the validated extension as the flat authoring type recovers
+the one guard definition exactly. -/
+theorem guard_definition_is_composition :
+    CalculusLanguageDef.ofNested (guardExtension.apply corePresentation) =
+      guardDefinition := by
   rfl
 
 /-- Core → guard as a validated extension: disjoint identifiers, the

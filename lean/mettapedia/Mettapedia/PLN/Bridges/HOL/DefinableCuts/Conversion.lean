@@ -22,7 +22,7 @@ directed full-inheritance cut.
 
 At threshold `1`, predicate similarity is represented by HOL predicate
 equivalence, hence it entails the forward predicate-implication formula.  The
-result is packaged as an implication cut so downstream PLN rule surfaces can
+result is packaged as an implication cut so downstream PLN rule families can
 consume the conversion without duplicating the similarity semantics. -/
 theorem predicateVocabularySimilarityGeOneCut_forwardInheritanceRuleImpCut_lower_eq_one
     {T : ClosedTheorySet (WithParams Const)}

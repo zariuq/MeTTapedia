@@ -97,8 +97,6 @@ def costClosureSymbols (source : CIGSLT) : PresentationSymbols where
   relation := id
   equation := id
   rewrite := id
-  reflective := id
-  reflectiveRule := id
 
 /-- Negative canary for a tempting but false uniform-transport proof:
 closure retyping sends the non-principal signed apparatus to the wrapped
@@ -1727,7 +1725,8 @@ theorem costStaticReflectivePresentation_constructorLabels_mem
 validator-based hereditary retyping obligation required by another Cost
 layer. -/
 theorem costReflectivePresentationsRetypable (source : CIGSLT) :
-    ReflectivePresentationsRetypable source.costContinuationRetyping := by
+    ReflectivePresentationsRetypable source.costContinuationRetyping
+      source.costWholeReflectionProfile := by
   intro declaration membership
   change declaration ∈ source.costStaticReflectivePresentations at membership
   have labels :=
@@ -1938,7 +1937,9 @@ structure CostOneObjectLaws (source : CIGSLT) : Prop
   preservesWrappedConstructorTyping :
     ∀ {free : WellSorted.FreeTypeContext} {bound : List TypeExpr}
       {sort : LangSort source.costWholeLanguage}
-      (term : WellSorted.OpenTerm source.costWholeLanguage free bound sort),
+      (term : ReflectiveWellSorted.OpenTerm
+        source.costWholeReflectionProfile source.costWholeLanguage free bound
+          sort),
     WellSorted.HasTypeWithConstructors source.costWholeLanguage
         (· ∈ source.costContinuationRetyping.wrappedLabels)
         free bound term.1 (.base sort.1) →
@@ -1962,6 +1963,7 @@ explicit law of the strict Cost₁ object domain. -/
 def costCIGSLT (source : CIGSLT) (laws : CostOneObjectLaws source) :
     CIGSLT where
   theory := source.costIGSLT
+  reflection := source.costWholeAdmittedReflection
   cut := source.costInteractionCut
   openCanonical :=
     source.costContextualOpenSection laws.toCostOpenSectionLaws
@@ -2025,7 +2027,7 @@ canonical-key action is monotone for the collision-free structural order. -/
 structure Morphism (source target : OrderedCIGSLT) where
   underlying : CIGSLT.Morphism source.toCIGSLT target.toCIGSLT
   canonicalKeyMonotone :
-    Monotone (CIGSLT.canonicalKeyMap underlying.underlying)
+    Monotone (CIGSLT.Morphism.canonicalKeyMap underlying)
 
 namespace Morphism
 
@@ -2045,11 +2047,6 @@ def id (source : OrderedCIGSLT) : Morphism source source where
   underlying := CIGSLT.Morphism.id source.toCIGSLT
   canonicalKeyMonotone := by
     intro first second lessOrEqual
-    change
-      CIGSLT.canonicalKeyMap
-          (IGSLT.Morphism.id source.toCIGSLT.theory) first ≤
-        CIGSLT.canonicalKeyMap
-          (IGSLT.Morphism.id source.toCIGSLT.theory) second
     rw [CIGSLT.Morphism.canonicalKeyMap_id,
       CIGSLT.Morphism.canonicalKeyMap_id]
     exact lessOrEqual
@@ -2065,12 +2062,10 @@ def comp {first second third : OrderedCIGSLT}
       right.canonicalKeyMonotone
         (left.canonicalKeyMonotone lessOrEqual)
     change
-      CIGSLT.canonicalKeyMap
-          (IGSLT.Morphism.comp left.underlying.underlying
-            right.underlying.underlying) firstKey ≤
-        CIGSLT.canonicalKeyMap
-          (IGSLT.Morphism.comp left.underlying.underlying
-            right.underlying.underlying) secondKey
+      CIGSLT.Morphism.canonicalKeyMap
+          (CIGSLT.Morphism.comp left.underlying right.underlying) firstKey ≤
+        CIGSLT.Morphism.canonicalKeyMap
+          (CIGSLT.Morphism.comp left.underlying right.underlying) secondKey
     rw [CIGSLT.Morphism.canonicalKeyMap_comp left.underlying right.underlying,
       CIGSLT.Morphism.canonicalKeyMap_comp left.underlying right.underlying]
     exact mapped
@@ -2084,15 +2079,18 @@ instance : CategoryTheory.Category OrderedCIGSLT where
   id_comp morphism := by
     apply Morphism.ext
     apply CIGSLT.Morphism.ext
-    rfl
+    · rfl
+    · rfl
   comp_id morphism := by
     apply Morphism.ext
     apply CIGSLT.Morphism.ext
-    rfl
+    · rfl
+    · rfl
   assoc first second third := by
     apply Morphism.ext
     apply CIGSLT.Morphism.ext
-    rfl
+    · rfl
+    · rfl
 
 /-- Forget only the canonical-order preservation proof. -/
 def forget : CategoryTheory.Functor OrderedCIGSLT CIGSLT where

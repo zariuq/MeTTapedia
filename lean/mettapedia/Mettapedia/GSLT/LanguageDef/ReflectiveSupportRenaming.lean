@@ -19,6 +19,7 @@ namespace Mettapedia.GSLT.LanguageDef
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.ScopedPattern
+open Mettapedia.OSLF.MeTTaIL.Reflection
 
 namespace Pattern
 
@@ -139,7 +140,7 @@ theorem MatchesParameterRepresentation.renameFVars
 /-- Fibre-preserving free-variable renaming preserves typing and the full
 constructor-facing reflective-support certificate for any binder image. -/
 theorem HasType.ReflectiveSupportSafeAt.renameFVars
-    {language : LanguageDef}
+    {profile : ReflectionProfile} {language : LanguageDef}
     {sourceFree targetFree : FreeTypeContext}
     {sourceSupport targetSupport : ContextSupport.Support}
     (mapping : ReflectiveFVarRenaming sourceFree targetFree
@@ -147,29 +148,29 @@ theorem HasType.ReflectiveSupportSafeAt.renameFVars
     {bound : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
     {typed : HasType language sourceFree bound pattern type}
     {available : List TypeExpr} {binderImage : TypeExpr -> TypeExpr}
-    (safe : typed.ReflectiveSupportSafeAt sourceSupport available
+    (safe : typed.ReflectiveSupportSafeAt profile sourceSupport available
       binderImage) :
     exists renamedTyped : HasType language targetFree bound
         (Pattern.renameFVars mapping.name pattern) type,
-      renamedTyped.ReflectiveSupportSafeAt targetSupport available
+      renamedTyped.ReflectiveSupportSafeAt profile targetSupport available
         binderImage := by
   exact HasType.ReflectiveSupportSafeAt.rec
     (motive_1 := fun {bound pattern type} _ available currentImage _ =>
       exists renamedTyped : HasType language targetFree bound
           (Pattern.renameFVars mapping.name pattern) type,
-        renamedTyped.ReflectiveSupportSafeAt targetSupport available
+        renamedTyped.ReflectiveSupportSafeAt profile targetSupport available
           currentImage)
     (motive_2 := fun {bound arguments parameters} _ available
         currentImage _ =>
       exists renamedTyped : ArgumentsHaveTypes language targetFree bound
           (arguments.map (Pattern.renameFVars mapping.name)) parameters,
-        renamedTyped.ReflectiveSupportSafeAt targetSupport available
+        renamedTyped.ReflectiveSupportSafeAt profile targetSupport available
           currentImage)
     (motive_3 := fun {bound elements elementType} _ available
         currentImage _ =>
       exists renamedTyped : ElementsHaveType language targetFree bound
           (elements.map (Pattern.renameFVars mapping.name)) elementType,
-        renamedTyped.ReflectiveSupportSafeAt targetSupport available
+        renamedTyped.ReflectiveSupportSafeAt profile targetSupport available
           currentImage)
     (by
       intro bound index type lookup available currentImage
@@ -184,8 +185,8 @@ theorem HasType.ReflectiveSupportSafeAt.renameFVars
       obtain ⟨inner, availableShape⟩ := shape
       let renamedTyped := HasType.fvar
         (language := language) (bound := bound) renamedLookup
-      have renamedSafe : renamedTyped.ReflectiveSupportSafeAt targetSupport
-          available currentImage := by
+      have renamedSafe : renamedTyped.ReflectiveSupportSafeAt
+          profile targetSupport available currentImage := by
         refine .fvar renamedLookup available ⟨inner, ?_⟩
         simpa [mapping.mapsSupport lookup] using availableShape
       simpa [Pattern.renameFVars] using ⟨renamedTyped, renamedSafe⟩)
@@ -468,10 +469,11 @@ namespace WellSorted
 
 @[simp]
 theorem reflectiveScopeSafeAt_renameFVars
-    (language : LanguageDef) (rename : String -> String)
+    (profile : ReflectionProfile) (rename : String -> String)
     (depth : Nat) (pattern : Pattern) :
-    ReflectiveScopeSafeAt language depth (Pattern.renameFVars rename pattern) <->
-      ReflectiveScopeSafeAt language depth pattern := by
+    ReflectiveWellSorted.ReflectiveScopeSafeAt profile depth
+        (Pattern.renameFVars rename pattern) <->
+      ReflectiveWellSorted.ReflectiveScopeSafeAt profile depth pattern := by
   constructor <;> intro safe presentation membership
   · simpa only [binderSafeAt_renameFVars] using safe presentation membership
   · simpa only [binderSafeAt_renameFVars] using safe presentation membership

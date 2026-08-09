@@ -10,7 +10,7 @@ inspect and rewrite its own rules — but it also makes "what does this program
 *mean*?" a genuinely subtle question, because the same atom can be a value, a
 function, or a rewrite rule depending on context.
 
-This directory pins that meaning down in Lean. The same surface language admits
+This directory pins that meaning down in Lean. The same source language admits
 several complementary readings, so it is formalized in **layers**, each with its
 own notion of "running a program" and its own trust model:
 
@@ -43,7 +43,7 @@ scope (files whose nearest README is this one) is 54.
 
 Supporting modules and data:
 - `PureKernel/` — declaration kernel (inductive types as MeTTa atoms)
-- `Translation/` — HE-to-PeTTa lowering and validated-surface conformance fixtures
+- `Translation/` — HE-to-PeTTa lowering and validated-fragment conformance fixtures
 - `SuiteBase/` — shared test-suite base
 - `TensorDSL/` — tensor-operation layer
 - `HEPrime/` — `Telescope.lean`, a single telescope-IR module
@@ -67,7 +67,7 @@ a couple of profile/seed proofs. These compile-evaluate rather than kernel-check
 they enlarge the trusted base (they trust the Lean compiler) and are flagged for
 migration to kernel `decide`:
 
-- `Translation/HEPeTTaValidatedSurface.lean` — 31
+- `Translation/HEPeTTaValidatedFragment.lean` — 31
 - `Translation/HEPeTTaNativeLoweringContracts.lean` — 12
 - `DTTSeedProofPath.lean` — 4
 - `CoreProfile.lean` — 1

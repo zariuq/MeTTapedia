@@ -1,5 +1,5 @@
 /-
-# LF checker simulation surface
+# LF checker simulation interface
 
 This layer fixes the verdict relation used by E2c-2 and seals the composed
 parser-plus-checker corpus against the E2c-1 reference checker.  The universal

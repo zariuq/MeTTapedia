@@ -97,6 +97,64 @@ theorem normalFeedProof_extracts_step
     simpa [hnormal] using hgo
   exact goNormal_extracts_stepNormal s token initial final hgoNormal hnotUnknown
 
+set_option maxHeartbeats 6400000 in
+private theorem stepNormal_preserves_incomplete
+    (db : DB) (pr pr' : ProofState) (label : String)
+    (hOk : db.stepNormal pr label = .ok pr') :
+    pr'.incomplete = pr.incomplete := by
+  obtain ⟨pos, theoremLabel, formula, frame, heap, stack, mode, incomplete⟩ := pr
+  unfold DB.stepNormal at hOk
+  cases hFind : db.find? label with
+  | none => simp [hFind] at hOk
+  | some object =>
+    simp only [hFind] at hOk
+    cases object with
+    | const _ => simp at hOk
+    | var _ => simp at hOk
+    | hyp essential hypothesis _ =>
+      by_cases hActive : label ∈ db.frame.hyps.toList
+      · simp only [hActive, ↓reduceIte] at hOk
+        cases essential with
+        | true =>
+          simp only [↓reduceIte] at hOk
+          split at hOk
+          · exact absurd hOk nofun
+          · simp only [pure, Except.pure, Except.ok.injEq] at hOk
+            subst hOk
+            rfl
+        | false =>
+          simp only [Bool.false_eq_true, ite_false] at hOk
+          split at hOk
+          · exact absurd hOk nofun
+          · simp only [pure, Except.pure, Except.ok.injEq] at hOk
+            subst hOk
+            rfl
+      · simp [hActive] at hOk
+    | assert assertion assertionFrame _ =>
+      simp only [DB.stepAssert] at hOk
+      split at hOk
+      · split at hOk
+        · exact absurd hOk nofun
+        · split at hOk
+          · exact absurd hOk nofun
+          · simp only [bind, Except.bind] at hOk
+            cases hCheck : db.checkHyp assertionFrame.hyps stack
+                ⟨stack.size - assertionFrame.hyps.size, by omega⟩ 0 ∅ with
+            | error error => simp [hCheck] at hOk
+            | ok substitution =>
+              simp only [hCheck] at hOk
+              cases hDV : DB.dvCheck (db.frameFloatVars db.frame)
+                  db.frame.dj assertionFrame.dj substitution with
+              | error error => simp [hDV] at hOk
+              | ok _ =>
+                simp only [hDV] at hOk
+                split at hOk
+                · simp only [pure, Except.pure, Except.ok.injEq] at hOk
+                  subst hOk
+                  rfl
+                · exact absurd hOk nofun
+      · exact absurd hOk nofun
+
 private theorem ExactNormalParserTrace.first_stepNormal
     {s : ParserState} {pos : Pos} {targetLabel : String}
     {targetFormula : RuntimeFormula} {targetFrame : RuntimeFrame}
@@ -183,12 +241,13 @@ private theorem normalTokensOK_preserves_core
     final.label = initial.label ∧
       final.fmla = initial.fmla ∧
       final.frame = initial.frame ∧
-      final.ptp = initial.ptp := by
+      final.ptp = initial.ptp ∧
+      final.incomplete = initial.incomplete := by
   induction tokens generalizing initial with
   | nil =>
       unfold NormalTokensOK at htrace
       subst final
-      exact ⟨rfl, rfl, rfl, rfl⟩
+      exact ⟨rfl, rfl, rfl, rfl, rfl⟩
   | cons token rest ih =>
       unfold NormalTokensOK at htrace
       obtain ⟨middle, hsuccess, hresult, hnormal, hnotUnknown, hrest⟩ := htrace
@@ -203,12 +262,17 @@ private theorem normalTokensOK_preserves_core
           s.db initial middle (toLabel token).2 hstep
       have hheadMode :=
         stepNormal_preserves_ptp s.db initial middle (toLabel token).2 hstep
-      obtain ⟨htailLabel, htailFormula, htailFrame, htailMode⟩ :=
+      have hheadIncomplete :=
+        stepNormal_preserves_incomplete s.db initial middle
+          (toLabel token).2 hstep
+      obtain ⟨htailLabel, htailFormula, htailFrame, htailMode,
+          htailIncomplete⟩ :=
         ih middle hrest
       exact ⟨htailLabel.trans hheadLabel,
         htailFormula.trans hheadCore.1,
         htailFrame.trans hheadCore.2,
-        htailMode.trans hheadMode⟩
+        htailMode.trans hheadMode,
+        htailIncomplete.trans hheadIncomplete⟩
 
 /-- Exact extraction for a complete parser-origin trace.  The left-to-right
 token order is observable in `submittedNormalLabels`, and both fold endpoints
@@ -264,7 +328,8 @@ theorem ExactNormalParserTrace.final_target_core
     final.label = targetLabel ∧
       final.fmla = targetFormula ∧
       final.frame = targetFrame ∧
-      final.ptp = .normal := by
+      final.ptp = .normal ∧
+      final.incomplete = false := by
   have hfirstLabel := stepNormal_preserves_label s.db
     {initial with ptp := .normal} afterFirst (toLabel firstToken).2
       trace.first_stepNormal
@@ -274,7 +339,11 @@ theorem ExactNormalParserTrace.final_target_core
   have hfirstMode := stepNormal_preserves_ptp s.db
     {initial with ptp := .normal} afterFirst (toLabel firstToken).2
       trace.first_stepNormal
-  obtain ⟨hrestLabel, hrestFormula, hrestFrame, hrestMode⟩ :=
+  have hfirstIncomplete := stepNormal_preserves_incomplete s.db
+    {initial with ptp := .normal} afterFirst (toLabel firstToken).2
+      trace.first_stepNormal
+  obtain ⟨hrestLabel, hrestFormula, hrestFrame, hrestMode,
+      hrestIncomplete⟩ :=
     normalTokensOK_preserves_core s remainingTokens afterFirst final trace.remaining
   constructor
   · rw [hrestLabel, hfirstLabel, trace.initial_eq]
@@ -285,7 +354,10 @@ theorem ExactNormalParserTrace.final_target_core
   constructor
   · rw [hrestFrame, hfirstCore.2, trace.initial_eq]
     rfl
+  constructor
   · rw [hrestMode, hfirstMode]
+  · rw [hrestIncomplete, hfirstIncomplete, trace.initial_eq]
+    rfl
 
 /-- A successful normal `finishProof` leaves exactly the claimed theorem
 formula as the singleton runtime stack. -/
@@ -326,7 +398,8 @@ theorem ExactNormalParserTrace.accepted_prefix_boundary
         s.db.insert final.pos targetLabel (.assert targetFormula targetFrame) ∧
       s.db.find? targetLabel = none ∧
       targetLabel ∉ submittedNormalLabels firstToken remainingTokens := by
-  obtain ⟨hfinalLabel, hfinalFormula, hfinalFrame, hfinalMode⟩ :=
+  obtain ⟨hfinalLabel, hfinalFormula, hfinalFrame, hfinalMode,
+      hfinalComplete⟩ :=
     trace.final_target_core
   have hfinalStack := trace.final_stack_eq_singleton hfinish
   have hprefix : s.db.error? = none := by
@@ -341,7 +414,8 @@ theorem ExactNormalParserTrace.accepted_prefix_boundary
   have hpost :
       (s.finishProof final).db =
         s.db.insert final.pos targetLabel (.assert targetFormula targetFrame) := by
-    simpa [hfinalLabel, hfinalFormula, hfinalFrame] using hinsert
+    simpa [hfinalLabel, hfinalFormula, hfinalFrame, hfinalComplete,
+      DB.recordIncomplete] using hinsert
   have hnoSelf : targetLabel ∉
       submittedNormalLabels firstToken remainingTokens := by
     intro hmember

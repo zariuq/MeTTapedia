@@ -39,21 +39,23 @@ inductive SourceGeneratorDeclaration : Type where
   | equation (declaration : Equation)
   | reflective (declaration : ReflectivePresentationDecl)
 
-namespace EquationSemantics.AuthoredGeneratorWitness
+namespace ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness
 
 /-- Extract the exact authored declaration used by a proof-relevant
 generator witness. -/
-def sourceDeclaration {base : BasePremiseEvaluator} {language : LanguageDef}
+def sourceDeclaration
+    {profile : Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile}
+    {base : BasePremiseEvaluator} {language : LanguageDef}
     {left right : Pattern} :
-    EquationSemantics.AuthoredGeneratorWitness base language left right →
-      SourceGeneratorDeclaration
-  | .equation _ instanceWitness =>
+    ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness
+        profile base language left right → SourceGeneratorDeclaration
+  | .core (.equation _ instanceWitness) =>
       match instanceWitness with
       | .forward _ used _ _ _ _ _ => .equation used.1
       | .reverse _ used _ _ _ _ _ => .equation used.1
   | .reflective _ used _ => .reflective used.1
 
-end EquationSemantics.AuthoredGeneratorWitness
+end ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness
 
 namespace CostStaticPlanEntryEmbedding
 
@@ -206,9 +208,10 @@ def rootGeneratorWitness
     (pair : CostStaticPlanContextPair source color targetFree edge
       leftPayload rightPayload leftRootAbstract rightRootAbstract leftEntries
       rightEntries) :
-    EquationSemantics.AuthoredGeneratorWitness defaultBasePremises
+    ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness
+      source.reflection.1 defaultBasePremises
       source.theory.presentation.presentation.language leftRootAbstract
-      rightRootAbstract := by
+        rightRootAbstract := by
   rw [← pair.leftRoot_eq, ← pair.rightRoot_eq]
   exact edge.generatorWitness
 
@@ -453,8 +456,9 @@ cells, but this carrier deliberately supplies neither coverage nor a proof
 that a cell-level edge erases to the enclosing occurrence. -/
 structure CostStaticPlanGeneratorPairCandidates (source : CIGSLT)
     (targetFree : FreeTypeContext) {left right : Pattern}
-    (occurrence : EquationSemantics.AuthoredGeneratorWitness
-      defaultBasePremises source.costWholeLanguage left right) : Type where
+    (occurrence : ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness
+      source.costWholeReflectionProfile defaultBasePremises
+      source.costWholeLanguage left right) : Type where
   cells : List (CostStaticPlanSiblingPairCell source targetFree)
 
 namespace CostStaticPlanGeneratorPairCandidates
@@ -464,8 +468,9 @@ is not yet a generator alignment or a coverage certificate; the next layer
 must tie cells to the enclosing occurrence and prove coverage. -/
 def empty (source : CIGSLT) (targetFree : FreeTypeContext)
     {left right : Pattern}
-    (occurrence : EquationSemantics.AuthoredGeneratorWitness
-      defaultBasePremises source.costWholeLanguage left right) :
+    (occurrence : ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness
+      source.costWholeReflectionProfile defaultBasePremises
+      source.costWholeLanguage left right) :
     CostStaticPlanGeneratorPairCandidates source targetFree occurrence where
   cells := []
 

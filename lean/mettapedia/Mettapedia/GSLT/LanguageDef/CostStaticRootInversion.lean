@@ -22,6 +22,7 @@ namespace Mettapedia.GSLT.LanguageDef
 open Mettapedia.OSLF.Framework.ConstructorCategory
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open WellSorted
+open ReflectionExtension
 
 /-- Executable observation of whether the retained tree constructor is a
 static region.  This inspects proof-relevant tree data, not compact syntax or
@@ -292,5 +293,56 @@ theorem decodeDeclaredCostStaticConstructor_symbols_of_wrappedLabel
   exact decodeDeclaredCostStaticConstructor_symbols_of_wrapped source color
     constructor.1 constructor.2
       (List.mem_map.mpr ⟨constructor, membership, rfl⟩)
+
+/-- Every declared quotation boundary of the generated Cost language belongs
+to one of the two static constructor images.  The proof follows the retained
+reflective-declaration origin and intrinsic constructor decoder; no wire-name
+prefix test or second declaration scan is introduced. -/
+theorem CIGSLT.exists_static_role_of_isQuoteConstructor_of_decode
+    (source : CIGSLT) {wireName : String}
+    (constructor : source.DeclaredCostConstructor)
+    (decoded : source.decodeDeclaredCostConstructor wireName = some constructor)
+    (quoted : ReflectiveContextSupport.isQuoteConstructor
+      source.costWholeReflectionProfile wireName = true) :
+    ∃ color, source.declaredCostConstructorRole constructor = .static color := by
+  simp only [ReflectiveContextSupport.isQuoteConstructor,
+    List.any_eq_true] at quoted
+  obtain ⟨targetDeclaration, targetMembership, targetQuote⟩ := quoted
+  have targetStaticMembership : targetDeclaration ∈
+      source.costStaticReflectivePresentations := by
+    simpa only [source.costWholeReflectionProfile_presentations] using
+      targetMembership
+  obtain ⟨color, sourceDeclaration, sourceMembership, targetEq⟩ :=
+    (mem_costStaticReflectivePresentations_iff_exists_source source).1
+      targetStaticMembership
+  subst targetDeclaration
+  have wrapped :=
+    (source.reflectivePresentationsRetypable sourceDeclaration
+      sourceMembership).constructorLabels_mem_wrapped.1
+  have staticDecodedAtQuote :=
+    decodeDeclaredCostStaticConstructor_symbols_of_wrappedLabel source color
+      sourceDeclaration.quoteConstructor wrapped
+  have quoteEq :
+      (costStaticReflectivePresentationDecl source color sourceDeclaration
+        ).quoteConstructor =
+        (color.symbols source).constructor
+          sourceDeclaration.quoteConstructor := by
+    simp [costStaticReflectivePresentationDecl_eq_map,
+      mapReflectivePresentation]
+  have targetQuoteEq :
+      (costStaticReflectivePresentationDecl source color sourceDeclaration
+        ).quoteConstructor = wireName :=
+    beq_iff_eq.mp targetQuote
+  have staticDecoded : decodeDeclaredCostStaticConstructor source color
+      wireName = some sourceDeclaration.quoteConstructor := by
+    rw [← targetQuoteEq, quoteEq]
+    exact staticDecodedAtQuote
+  obtain ⟨staticConstructor, staticConstructorDecoded, staticRole⟩ :=
+    exists_declaredCostConstructor_of_static_decode source color wireName
+      sourceDeclaration.quoteConstructor staticDecoded
+  have constructorEq : constructor = staticConstructor :=
+    Option.some.inj (decoded.symm.trans staticConstructorDecoded)
+  subst staticConstructor
+  exact ⟨color, staticRole⟩
 
 end Mettapedia.GSLT.LanguageDef

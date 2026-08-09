@@ -39,7 +39,7 @@ In GF, each abstract category maps to a concrete type:
 /-- A Czech common noun in concrete syntax is a CzechNoun (paradigm + lemma) -/
 abbrev CzechCN := CzechNoun
 
-/-- A Czech NP in concrete syntax: a function from case to surface form.
+/-- A Czech NP in concrete syntax: a function from case to source form.
     "Once a determiner fixes the number, the NP just needs case from context." -/
 abbrev CzechNP := Case → String
 
@@ -57,7 +57,7 @@ These implement the GF abstract→concrete mapping for Czech.
 def linDetCN (cn : CzechCN) (det : CzechDet) : CzechNP :=
   fun c => declineFull cn ⟨c, det⟩
 
-/-- Linearize an NP to a surface string by providing case from context -/
+/-- Linearize an NP to a linearized string by providing case from context -/
 def linNP (np : CzechNP) (c : Case) : String := np c
 
 /-- Linearize a CN directly to a specific case×number form -/
@@ -79,7 +79,7 @@ structure CzechLinEnv where
   lookupCN : String → Option CzechCN
 
 /-- Linearize a leaf node to Czech in a given case context.
-    Returns the surface form string, or the leaf name if not in environment. -/
+    Returns the source form string, or the leaf name if not in environment. -/
 def linearizeLeaf (env : CzechLinEnv) (name : String) (c : Case) (n : Number) : String :=
   match env.lookupCN name with
   | some cn => linCN cn c n
@@ -156,13 +156,13 @@ theorem nodeEquiv_implies_string_eq (env : CzechLinEnv) (n₁ n₂ : AbstractNod
 Concrete types for adjectives, verbs, pronouns, and numerals.
 -/
 
-/-- A Czech adjective in concrete syntax: dispatches AdjParams to surface form -/
+/-- A Czech adjective in concrete syntax: dispatches AdjParams to source form -/
 abbrev CzechAdj := AdjParams → String
 
-/-- A Czech verb phrase: dispatches agreement + polarity to surface form -/
+/-- A Czech verb phrase: dispatches agreement + polarity to source form -/
 abbrev CzechVP := Agr → Bool → String
 
-/-- A Czech pronoun in concrete syntax: dispatches case to surface form -/
+/-- A Czech pronoun in concrete syntax: dispatches case to source form -/
 abbrev CzechPron := Case → String
 
 /-! ## Extended Linearization Functions -/
@@ -189,7 +189,7 @@ def linDetCNNum (cn : CzechCN) (det : Numerals.Determiner) (c : Case) : String :
   let detStr := det.s cn.gender c
   detStr ++ " " ++ nounForm
 
-/-- Linearize a personal pronoun to a surface form given case context -/
+/-- Linearize a personal pronoun to a source form given case context -/
 def linPron (pf : PronForms) (c : Case) : String :=
   match c with
   | .Nom => pf.nom

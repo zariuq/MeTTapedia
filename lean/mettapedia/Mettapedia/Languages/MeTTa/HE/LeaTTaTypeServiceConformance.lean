@@ -6166,7 +6166,7 @@ theorem preparedTypeCast_runtime
 
 /-- The repaired runtime service at the package boundary.  Lookup, type cast,
 and expected-aware candidate selection are all the exact prepared relations;
-no caller may mix them with a weaker positive or negative candidate surface. -/
+no caller may mix them with a weaker positive or negative candidate interface. -/
 def preparedPackageTypeService
     (oracle : TypePreparationOracle) :
     EvalTypeService :=

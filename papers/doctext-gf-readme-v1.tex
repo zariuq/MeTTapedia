@@ -343,8 +343,8 @@ ritual imposed from outside.
   semantically misaligned---is a V2 concern.
 
 \item \textbf{Grammar coverage for all prose.}  The V1 parseback grammar is
-  surface-derived from the current generated set.  Sentences outside that
-  surface space would fail parseback, not pass it incorrectly.
+  generated-text-derived from the current generated set.  Sentences outside that
+  generated-text language would fail parseback, not pass it incorrectly.
   A shared structured semantic grammar (subject/predicate/object families) is V2.
 \end{itemize}
 
@@ -439,7 +439,7 @@ When a new module needs vocabulary not in the shared helpers
 
 \begin{enumerate}
 \item \textbf{Shared semantic claim grammar.}
-  Replace the surface-derived parseback grammar with a structured grammar over
+  Replace the generated-text-derived parseback grammar with a structured grammar over
   subject/predicate/object families.  This will detect paraphrase drift: a sentence
   that is syntactically valid GF but semantically wrong for the module.
 
@@ -510,9 +510,9 @@ Class & Definition \\
 \code{lint\_agreement} & Grammar lint found a blocking agreement/format issue. \\
 \code{parse\_zero} & GF runtime produced zero parses for a claim line. \\
 \code{parse\_ambiguous} & GF runtime produced more than one parse tree. \\
-\code{roundtrip\_mismatch} & Parsed tree linearized to a different surface from the original. \\
+\code{roundtrip\_mismatch} & Parsed tree linearized to a different text from the original. \\
 \code{coverage\_gap} & Claim-like line is outside the current parseback claim family. \\
-\code{semantic\_gap} & Surface passes parseback but fails shared semantic-grammar alignment (V2). \\
+\code{semantic\_gap} & Source text passes parseback but fails shared semantic-grammar alignment (V2). \\
 \bottomrule
 \end{longtable}
 

@@ -1,5 +1,5 @@
 import Mettapedia.Languages.MeTTa.Translation.HEPeTTaTranslateCore
-import Mettapedia.Languages.MeTTa.Translation.HEPeTTaValidatedSurface
+import Mettapedia.Languages.MeTTa.Translation.HEPeTTaValidatedFragment
 
 /-!
 # Stable-Common Fixed-Point Theorems

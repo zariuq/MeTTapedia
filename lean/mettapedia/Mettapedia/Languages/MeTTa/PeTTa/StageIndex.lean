@@ -24,7 +24,7 @@ namespace Mettapedia.Languages.MeTTa.PeTTa.StageIndex
 
 /-- The 4-stage PeTTa refinement chain.
 
-    Each stage adds semantic surface area while sharing the same `LanguageDef`.
+    Each stage adds semantic scope while sharing the same `LanguageDef`.
     The ordering is: `sourceCore ≤ queryCore ≤ statefulCore ≤ boundaryAware`. -/
 inductive PeTTaStage where
   | sourceCore

@@ -1,4 +1,4 @@
-import Mettapedia.GSLT.LanguageDef.CanonicalSection
+import Mettapedia.GSLT.LanguageDef.ReflectiveCanonicalSection
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefSemanticAgreement
 
 /-!
@@ -14,6 +14,8 @@ choice.
 namespace Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefCanonicalSection
 
 open Mettapedia.GSLT.LanguageDef
+open Mettapedia.GSLT.LanguageDef.ReflectionExtension
+open Mettapedia.GSLT.LanguageDef.ReflectiveEquationSemantics
 open Mettapedia.GSLT.LanguageDef.WellSorted
 open Mettapedia.OSLF.Framework.ConstructorCategory
 open Mettapedia.OSLF.MeTTaIL
@@ -781,17 +783,19 @@ theorem rhoLangSort_eq_proc_or_name (sort : LangSort rhoCalc) :
 declared by the sole authored language root. -/
 theorem canonicalize_reflectiveScopeSafeAt
     {depth : Nat} {pattern : Pattern}
-    (safe : ReflectiveScopeSafeAt rhoCalc depth pattern) :
-    ReflectiveScopeSafeAt rhoCalc depth (canonicalize pattern) := by
+    (safe : ReflectiveWellSorted.ReflectiveScopeSafeAt
+      rhoReflectionProfile depth pattern) :
+    ReflectiveWellSorted.ReflectiveScopeSafeAt
+      rhoReflectionProfile depth (canonicalize pattern) := by
   intro presentation membership
   have presentationEquality :
       presentation =
         rhoReflectivePresentation.toReflectivePresentationDecl := by
-    simpa [rhoCalc] using membership
+    simpa [rhoReflectionProfile] using membership
   subst presentation
   exact CanonicalTyping.canonicalize_binderSafeAt pattern depth
     (safe rhoReflectivePresentation.toReflectivePresentationDecl (by
-      simp [rhoCalc]))
+      simp [rhoReflectionProfile]))
 
 /-- Rho's canonicalizer acts within every open object-language fiber derived
 from the exact `rhoCalc` presentation. -/
@@ -801,12 +805,13 @@ def rhoCanonicalizeOpenTerm {free : FreeTypeContext}
     OpenTerm rhoIGSLT free bound sort := by
   refine ⟨canonicalize term.1, ?_⟩
   rcases term.2 with ⟨typed, canonical, object, safe⟩
-  refine ⟨?_, canonicalize_hasCanonicalBinderMetadata canonical,
-    canonicalize_isObjectPattern object,
-    canonicalize_reflectiveScopeSafeAt safe⟩
   rcases rhoLangSort_eq_proc_or_name sort with rfl | rfl
-  · exact canonicalize_proc_hasSort typed object
-  · exact canonicalize_name_hasSort typed object
+  · let normalizedTyped := canonicalize_proc_hasSort typed object
+    exact ⟨normalizedTyped, canonicalize_hasCanonicalBinderMetadata canonical,
+      canonicalize_isObjectPattern object, normalizedTyped.isWellScopedAt⟩
+  · let normalizedTyped := canonicalize_name_hasSort typed object
+    exact ⟨normalizedTyped, canonicalize_hasCanonicalBinderMetadata canonical,
+      canonicalize_isObjectPattern object, normalizedTyped.isWellScopedAt⟩
 
 @[simp]
 theorem rhoCanonicalizeOpenTerm_pattern {free : FreeTypeContext}
@@ -817,19 +822,78 @@ theorem rhoCanonicalizeOpenTerm_pattern {free : FreeTypeContext}
 
 /-- The one-root rho presentation has a computable canonical section on all
 open authored-sort fibers, not merely on the closed process carrier. -/
-def rhoOpenSection : ComputableOpenSection rhoIGSLT where
+def rhoOpenSection : ComputableReflectiveOpenSection rhoIGSLT
+    rhoCalcValidatedReflective.admittedReflection where
   normalize := rhoCanonicalizeOpenTerm
   equivalent := by
     intro free bound sort term
     have membership :
         List.Mem rhoReflectivePresentation.toReflectivePresentationDecl
-          rhoCalc.reflectivePresentations := by
+          rhoReflectionProfile.presentations := by
       change List.Mem rhoReflectivePresentation.toReflectivePresentationDecl
         [rhoReflectivePresentation.toReflectivePresentationDecl]
       exact .head _
     apply Relation.EqvGen.rel
-    apply EquationSemantics.EquationContextStep.reflectiveInContext .hole
+    apply ReflectiveEquationContextStep.reflectiveInContext .hole
       membership
+    change
+      ReflectiveCanonical.canonicalize rhoReflectivePresentation
+          (Canonical.canonicalize term.1) =
+        ReflectiveCanonical.canonicalize rhoReflectivePresentation term.1
+    simpa only [derivedCanonicalize_eq] using
+      Canonical.canonicalize_idempotent term.1
+  complete := by
+    intro free bound sort left right equivalent
+    induction equivalent with
+    | rel left right generator =>
+        apply Subtype.ext
+        exact rhoEquationContextStep_canonicalize_eq generator
+    | refl term => rfl
+    | symm left right relation inductionHypothesis =>
+        exact inductionHypothesis.symm
+    | trans left middle right first second firstIH secondIH =>
+        exact firstIH.trans secondIH
+  preservesReflectiveScope := by
+    intro free bound sort term safe
+    exact canonicalize_reflectiveScopeSafeAt safe
+
+/-- Restrict the same rho canonicalizer to the exact admitted reflective
+fibre.  The raw normalizer is still `rhoCanonicalizeOpenTerm`; this
+construction only retains the quote-safety evidence in the carrier. -/
+def rhoCanonicalizeReflectiveOpenTerm {free : FreeTypeContext}
+    {bound : List TypeExpr} {sort : LangSort rhoCalc}
+    (term : ReflectiveWellSorted.OpenTerm rhoReflectionProfile rhoCalc free
+      bound sort) :
+    ReflectiveWellSorted.OpenTerm rhoReflectionProfile rhoCalc free bound
+      sort :=
+  ⟨(rhoCanonicalizeOpenTerm term.toCore).1,
+    (rhoCanonicalizeOpenTerm term.toCore).2,
+    canonicalize_reflectiveScopeSafeAt term.2.2⟩
+
+@[simp]
+theorem rhoCanonicalizeReflectiveOpenTerm_pattern
+    {free : FreeTypeContext} {bound : List TypeExpr}
+    {sort : LangSort rhoCalc}
+    (term : ReflectiveWellSorted.OpenTerm rhoReflectionProfile rhoCalc free
+      bound sort) :
+    (rhoCanonicalizeReflectiveOpenTerm term).1 = canonicalize term.1 :=
+  rfl
+
+/-- The rho canonical section on exactly the quote-safe fibre selected by
+the admitted reflection extension. -/
+def rhoFiberOpenSection : ComputableReflectiveFiberSection rhoIGSLT
+    rhoCalcValidatedReflective.admittedReflection where
+  normalize := rhoCanonicalizeReflectiveOpenTerm
+  equivalent := by
+    intro free bound sort term
+    have membership :
+        List.Mem rhoReflectivePresentation.toReflectivePresentationDecl
+          rhoReflectionProfile.presentations := by
+      change List.Mem rhoReflectivePresentation.toReflectivePresentationDecl
+        [rhoReflectivePresentation.toReflectivePresentationDecl]
+      exact .head _
+    apply Relation.EqvGen.rel
+    apply ReflectiveEquationContextStep.reflectiveInContext .hole membership
     change
       ReflectiveCanonical.canonicalize rhoReflectivePresentation
           (Canonical.canonicalize term.1) =
@@ -851,72 +915,44 @@ def rhoOpenSection : ComputableOpenSection rhoIGSLT where
 /-- Rho normalization transported through the exact generic/established
 closed-carrier equivalence. -/
 def rhoNormalize (term : rhoIGSLT.toGSLT.Term) : rhoIGSLT.toGSLT.Term :=
-  presentedRhoProcessEquiv.symm
-    (RhoClosedTerm.canonicalize (presentedRhoProcessEquiv term))
+  openTermEmptyToClosed (rhoOpenSection.normalize (closedTermToOpen term))
 
 @[simp]
 theorem rhoNormalize_pattern (term : rhoIGSLT.toGSLT.Term) :
     (rhoNormalize term).1 = Canonical.canonicalize term.1 :=
   rfl
 
-/-- Rho's established canonicalizer characterizes the complete contextual
-equation relation on raw patterns, including open terms beneath binders.  Its
-restriction to the closed process fiber is the previously established
-semantic section. -/
-def rhoContextualSection : ComputableContextualSection rhoIGSLT where
-  normalize := Canonical.canonicalize
-  mapsClosed := by
-    intro term
-    exact (rhoNormalize term).2
-  equivalent := by
-    intro pattern
-    have membership :
-        List.Mem rhoReflectivePresentation.toReflectivePresentationDecl
-          rhoCalc.reflectivePresentations := by
-      change List.Mem rhoReflectivePresentation.toReflectivePresentationDecl
-        [rhoReflectivePresentation.toReflectivePresentationDecl]
-      exact .head _
-    apply EquationSemantics.reflective_fill_equivalent membership .hole
-    simpa only [derivedCanonicalize_eq] using
-      Canonical.canonicalize_idempotent pattern
-  complete := by
-    intro left right equivalent
-    induction equivalent with
-    | rel left right generator =>
-        exact rhoEquationContextStep_canonicalize_eq generator
-    | refl term => rfl
-    | symm left right relation inductionHypothesis =>
-        exact inductionHypothesis.symm
-    | trans left middle right first second firstIH secondIH =>
-        exact firstIH.trans secondIH
-  equivalentClosed := by
-    intro term
-    apply presentedRhoEquations_complete
-    change Canonical.canonicalize (Canonical.canonicalize term.1) =
-      Canonical.canonicalize term.1
-    exact Canonical.canonicalize_idempotent term.1
-
 /-- The paper-facing closed canonical section is the restriction of rho's
-contextual section, rather than an independently authored normalizer. -/
-def rhoCanonicalSection : ComputableCanonicalSection rhoIGSLT :=
-  rhoContextualSection.toComputableCanonicalSection
+reflection-indexed open section.  Its relation is explicitly the one selected
+by the admitted rho reflection fibre, not the five-field core relation. -/
+def rhoCanonicalSection : ComputableReflectiveCanonicalSection rhoIGSLT
+    rhoCalcValidatedReflective.admittedReflection :=
+  rhoOpenSection.toCanonicalSection
 
 /-- Generic rho canonical equality is computed by the established rho
 canonicalizer on raw patterns. -/
 theorem rho_equivalent_iff_canonicalize_eq
     (left right : rhoIGSLT.toGSLT.Term) :
-    rhoIGSLT.toGSLT.equations.r left right ↔
+    (reflectiveClosedEquationSetoid rhoIGSLT
+      rhoCalcValidatedReflective.admittedReflection).r left right ↔
       Canonical.canonicalize left.1 = Canonical.canonicalize right.1 := by
-  rw [rhoCanonicalSection.equivalent_iff_normalize_eq]
-  exact Subtype.ext_iff
+  constructor
+  · intro equivalent
+    exact congrArg Subtype.val (rhoCanonicalSection.complete equivalent)
+  · intro representatives
+    apply Relation.EqvGen.rel
+    apply ReflectiveEquationContextStep.reflectiveInContext .hole
+    · change List.Mem rhoReflectivePresentation.toReflectivePresentationDecl
+        [rhoReflectivePresentation.toReflectivePresentationDecl]
+      exact .head _
+    · simpa only [derivedCanonicalize_eq] using representatives
 
 /-- The quotient representative computes the same raw canonical pattern as
 normalizing an explicit generic rho term. -/
 @[simp]
 theorem rhoRepresentative_mk_pattern (term : rhoIGSLT.toGSLT.Term) :
-    (rhoCanonicalSection.representative
-      (Quotient.mk rhoIGSLT.toGSLT.equations term)).1 =
-        Canonical.canonicalize term.1 :=
+    (rhoCanonicalSection.normalize term).1 =
+      Canonical.canonicalize term.1 :=
   rfl
 
 /-- A closed process containing one static quote/drop cancellation beneath
@@ -932,7 +968,8 @@ def closedQuoteDropShell : RhoClosedTerm rhoProc :=
 without granting free Drop an executable step. -/
 theorem rhoCanonicalSection_quote_drop :
     let process : rhoIGSLT.toGSLT.Term :=
-      presentedRhoProcessEquiv.symm closedQuoteDropShell
+      ReflectiveWellSorted.ClosedTerm.toCore
+        (presentedRhoProcessEquiv.symm closedQuoteDropShell)
     (rhoCanonicalSection.normalize process).1 =
       .apply "PDrop" [.apply "NQuote" [.apply "PZero" []]] := by
   rfl

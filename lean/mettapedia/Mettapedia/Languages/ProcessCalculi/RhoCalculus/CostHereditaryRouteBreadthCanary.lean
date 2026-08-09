@@ -183,38 +183,48 @@ def rhoBreadthBaseProcSort : LangSort rhoCIGSLT.costWholeLanguage :=
   CostStaticColor.base.mapLangSort rhoCIGSLT rhoProc
 
 /-- Checked left endpoint. -/
-def rhoBreadthLeft : OpenTerm rhoCIGSLT.costWholeLanguage rhoCutOrderFree []
-    rhoBreadthBaseProcSort := by
-  exact ⟨rhoBreadthLeftPattern, rhoBreadthLeft_typed, rfl, rfl, by
+def rhoBreadthLeft :
+    ReflectiveWellSorted.OpenTerm rhoCIGSLT.costWholeReflectionProfile
+      rhoCIGSLT.costWholeLanguage rhoCutOrderFree [] rhoBreadthBaseProcSort := by
+  exact ⟨rhoBreadthLeftPattern,
+    ⟨⟨rhoBreadthLeft_typed, rfl, rfl, rhoBreadthLeft_typed.isWellScopedAt⟩, by
     intro declaration membership
     simp [rhoBreadthLeftPattern, rhoBreadthLeftProcess,
       rhoBreadthOutputName, rhoCutOrderRedex, rhoCutOrderBaseQuote,
       rhoCutOrderBaseDrop, rhoCutOrderWrappedDrop, binderSafeAt,
-      binderSafeListAt]⟩
+      binderSafeListAt]⟩⟩
 
 /-- Checked right endpoint. -/
-def rhoBreadthRight : OpenTerm rhoCIGSLT.costWholeLanguage rhoCutOrderFree []
-    rhoBreadthBaseProcSort := by
-  exact ⟨rhoBreadthRightPattern, rhoBreadthRight_typed, rfl, rfl, by
+def rhoBreadthRight :
+    ReflectiveWellSorted.OpenTerm rhoCIGSLT.costWholeReflectionProfile
+      rhoCIGSLT.costWholeLanguage rhoCutOrderFree [] rhoBreadthBaseProcSort := by
+  exact ⟨rhoBreadthRightPattern,
+    ⟨⟨rhoBreadthRight_typed, rfl, rfl, rhoBreadthRight_typed.isWellScopedAt⟩, by
     intro declaration membership
     simp [rhoBreadthRightPattern, rhoBreadthRightProcess,
       rhoBreadthOutputName, rhoCutOrderWrappedDrop, binderSafeAt,
-      binderSafeListAt]⟩
+      binderSafeListAt]⟩⟩
 
 /-- Two independently canonicalized sibling collapses beneath one neutral
 frame form a single authored reflective occurrence. -/
 def rhoBreadthGeneratorWitness :
-    EquationSemantics.AuthoredGeneratorWitness defaultBasePremises
+    ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness
+      rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
       rhoCIGSLT.costWholeLanguage rhoBreadthLeft.1 rhoBreadthRight.1 := by
   let declaration := costStaticReflectivePresentationDecl rhoCIGSLT .base
     rhoReflectivePresentation.toReflectivePresentationDecl
+  have sourceMembership :
+      rhoReflectivePresentation.toReflectivePresentationDecl ∈
+        rhoCIGSLT.reflection.1.presentations := by
+    change rhoReflectivePresentation.toReflectivePresentationDecl ∈
+      ReflectionExtension.rhoReflectionProfile.presentations
+    simp [ReflectionExtension.rhoReflectionProfile]
   have membership : declaration ∈
-      rhoCIGSLT.costWholeLanguage.reflectivePresentations := by
+      rhoCIGSLT.costWholeReflectionProfile.presentations := by
     simpa [declaration] using
       costStaticReflectivePresentationDecl_mem rhoCIGSLT .base
         rhoReflectivePresentation.toReflectivePresentationDecl
-        (by simp [rhoCIGSLT, rhoIGSLT, rhoInteractivePresentation,
-          rhoValidatedLanguageDef, rhoCalc])
+        sourceMembership
   have representatives :
       Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize declaration
           rhoBreadthLeftPattern =
@@ -227,17 +237,19 @@ def rhoBreadthGeneratorWitness :
       Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize,
       Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeList,
       Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.finishNormalizeReflectiveApply,
-      Mettapedia.GSLT.LanguageDef.mapReflectivePresentation,
+      ReflectionExtension.mapReflectivePresentation,
       rhoReflectivePresentation, CostStaticColor.constructorTag,
       costBaseConstructorName, costBaseConstructorTag,
       costWrappedConstructorName, costWrappedConstructorTag]
-  exact EquationSemantics.AuthoredGeneratorWitness.reflective .hole
+  exact ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness.reflective .hole
     ⟨declaration, membership⟩ representatives
 
 /-- The breadth witness is a genuine generated edge in its typed fibre. -/
 theorem rhoBreadth_generator :
-    openEquationGenerator rhoCIGSLT.costIGSLT rhoCutOrderFree []
-      rhoBreadthBaseProcSort rhoBreadthLeft rhoBreadthRight :=
+    ReflectiveEquationSemantics.reflectiveOpenPatternEquationGenerator
+      rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
+      rhoCIGSLT.costWholeLanguage rhoCutOrderFree []
+      (.base rhoBreadthBaseProcSort.1) rhoBreadthLeft rhoBreadthRight :=
   rhoBreadthGeneratorWitness.erase
 
 /-- A single-active-child spine route through a two-argument frame forces at
@@ -435,27 +447,34 @@ private theorem rhoBreadthRedexA_typed :
   rhoBreadthBaseQuote_typed _ (rhoBreadthBaseDrop_typed _ rhoBreadthA_typed)
 
 private theorem rhoBreadthRedexA_wellSorted :
-    OpenPatternWellSorted rhoCIGSLT.costWholeLanguage rhoCutOrderFree []
+    ReflectiveWellSorted.OpenPatternWellSorted
+      rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
+      rhoCutOrderFree []
       (mapTypeExpr (CostStaticColor.wrapped.symbols rhoCIGSLT)
         (.base "Name"))
       rhoBreadthRedexA := by
-  refine ⟨?_, rfl, rfl, ?_⟩
-  · simpa [mapTypeExpr, CostStaticColor.symbols,
+  have typed : HasType rhoCIGSLT.costWholeLanguage rhoCutOrderFree []
+      rhoBreadthRedexA
+        (mapTypeExpr (CostStaticColor.wrapped.symbols rhoCIGSLT)
+          (.base "Name")) := by
+    simpa [mapTypeExpr, CostStaticColor.symbols,
       costWrappedStaticSymbols, rhoCIGSLT, rhoIGSLT,
       rhoInteractivePresentation, rhoCalc, TypeDecl.plain,
       show "Name" ≠ "Proc" by decide] using rhoBreadthRedexA_typed
-  · intro declaration membership
-    simp [rhoBreadthRedexA, rhoCutOrderBaseQuote, rhoCutOrderBaseDrop,
-      binderSafeAt, binderSafeListAt]
+  refine ⟨⟨typed, rfl, rfl, typed.isWellScopedAt⟩, ?_⟩
+  intro declaration membership
+  simp [rhoBreadthRedexA, rhoCutOrderBaseQuote, rhoCutOrderBaseDrop,
+    binderSafeAt, binderSafeListAt]
 
 private def rhoBreadthRedexATerm :
-    OpenTerm rhoCIGSLT.costWholeLanguage rhoCutOrderFree []
+    ReflectiveWellSorted.OpenTerm rhoCIGSLT.costWholeReflectionProfile
+      rhoCIGSLT.costWholeLanguage rhoCutOrderFree []
       rhoBreadthBaseNameSort :=
   ⟨rhoBreadthRedexA, rhoBreadthRedexA_wellSorted⟩
 
 def rhoBreadthBaseRedexANode :
     CostStaticRegionNode rhoCIGSLT .base rhoCutOrderFree :=
-  CostStaticRegionNode.ofPlan rhoBreadthRedexATerm rhoBreadthBaseRedexAPlan
+  CostStaticRegionNode.ofPlan rhoBreadthRedexATerm.toCore rhoBreadthBaseRedexAPlan
     (by unfold rhoBreadthBaseRedexAPlan; rfl)
 
 def rhoBreadthBaseRedexAChildren :
@@ -679,23 +698,27 @@ private theorem rhoBreadthWrappedProc_wellSorted (process : Pattern)
     (typed : HasType rhoCIGSLT.costWholeLanguage rhoCutOrderFree [] process
       (.base costWrappedSortName))
     (scope : ∀ declaration ∈
-      rhoCIGSLT.costWholeLanguage.reflectivePresentations,
+      rhoCIGSLT.costWholeReflectionProfile.presentations,
       binderSafeAt declaration.quoteConstructor 0 process = true)
     (canonical : process.hasCanonicalBinderMetadata = true)
     (object : isObjectPattern process = true) :
-    OpenPatternWellSorted rhoCIGSLT.costWholeLanguage rhoCutOrderFree []
+    ReflectiveWellSorted.OpenPatternWellSorted
+      rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
+      rhoCutOrderFree []
       (mapTypeExpr (CostStaticColor.wrapped.symbols rhoCIGSLT)
         (.base "Proc"))
       process := by
-  refine ⟨?_, canonical, object, ?_⟩
-  · simpa [mapTypeExpr, CostStaticColor.symbols,
+  have mappedTyped : HasType rhoCIGSLT.costWholeLanguage rhoCutOrderFree []
+      process (mapTypeExpr (CostStaticColor.wrapped.symbols rhoCIGSLT)
+        (.base "Proc")) := by
+    simpa [mapTypeExpr, CostStaticColor.symbols,
       costWrappedStaticSymbols, rhoCIGSLT, rhoIGSLT,
       rhoInteractivePresentation, rhoCalc, TypeDecl.plain] using typed
-  · intro declaration membership
-    exact scope declaration membership
+  exact ⟨⟨mappedTyped, canonical, object, mappedTyped.isWellScopedAt⟩, scope⟩
 
 private def rhoBreadthLeftProcessTerm :
-    OpenTerm rhoCIGSLT.costWholeLanguage rhoCutOrderFree []
+    ReflectiveWellSorted.OpenTerm rhoCIGSLT.costWholeReflectionProfile
+      rhoCIGSLT.costWholeLanguage rhoCutOrderFree []
       (CostStaticColor.wrapped.mapLangSort rhoCIGSLT rhoProc) :=
   ⟨rhoBreadthLeftProcess,
     rhoBreadthWrappedProc_wellSorted _
@@ -708,7 +731,8 @@ private def rhoBreadthLeftProcessTerm :
       rfl rfl⟩
 
 private def rhoBreadthRightProcessTerm :
-    OpenTerm rhoCIGSLT.costWholeLanguage rhoCutOrderFree []
+    ReflectiveWellSorted.OpenTerm rhoCIGSLT.costWholeReflectionProfile
+      rhoCIGSLT.costWholeLanguage rhoCutOrderFree []
       (CostStaticColor.wrapped.mapLangSort rhoCIGSLT rhoProc) :=
   ⟨rhoBreadthRightProcess,
     rhoBreadthWrappedProc_wellSorted _
@@ -721,13 +745,13 @@ private def rhoBreadthRightProcessTerm :
 
 noncomputable def rhoBreadthLeftProcessNode :
     CostStaticRegionNode rhoCIGSLT .wrapped rhoCutOrderFree :=
-  CostStaticRegionNode.ofPlan rhoBreadthLeftProcessTerm
+  CostStaticRegionNode.ofPlan rhoBreadthLeftProcessTerm.toCore
     rhoBreadthLeftProcessPlan
     (by unfold rhoBreadthLeftProcessPlan; rfl)
 
 def rhoBreadthRightProcessNode :
     CostStaticRegionNode rhoCIGSLT .wrapped rhoCutOrderFree :=
-  CostStaticRegionNode.ofPlan rhoBreadthRightProcessTerm
+  CostStaticRegionNode.ofPlan rhoBreadthRightProcessTerm.toCore
     rhoBreadthRightProcessPlan
     (by unfold rhoBreadthRightProcessPlan; rfl)
 
@@ -890,7 +914,7 @@ theorem rhoBreadth_process_commonRestoredCanonicalFrames_eq :
     let rightEnvironment :=
       CostStaticAtomEnvironment.ofInventory rightInventory
     let cospan := leftEnvironment.semanticKeyCospan rightEnvironment
-    ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeLanguage
+    ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeReflectionProfile
         cospan.commonSupport cospan.commonAssignment
         rhoBreadthLeftProcessNode.targetBound.length
         (cospan.reifyWith leftEnvironment.lookupAtom? cospan.leftSlot
@@ -898,7 +922,7 @@ theorem rhoBreadth_process_commonRestoredCanonicalFrames_eq :
             leftEnvironment
             (costStaticReflectivePresentationDecl rhoCIGSLT .wrapped
               rhoReflectivePresentation))) =
-      ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeLanguage
+      ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeReflectionProfile
         cospan.commonSupport cospan.commonAssignment
         rhoBreadthLeftProcessNode.targetBound.length
         (cospan.reifyWith rightEnvironment.lookupAtom? cospan.rightSlot
@@ -990,7 +1014,7 @@ theorem rhoBreadth_process_commonRestoredCanonicalFrames_eq :
       cospan.rightCommutes rightSlot]
     exact rightNormal
   calc
-    ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeLanguage
+    ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeReflectionProfile
         cospan.commonSupport cospan.commonAssignment
         rhoBreadthLeftProcessNode.targetBound.length
         (cospan.reifyWith leftEnvironment.lookupAtom? cospan.leftSlot
@@ -1004,7 +1028,7 @@ theorem rhoBreadth_process_commonRestoredCanonicalFrames_eq :
         ReflectiveContextSupport.substituteAt, leftCommonValue,
         show rhoBreadthLeftProcessNode.targetBound.length = 0 from rfl,
         Mettapedia.OSLF.MeTTaIL.Substitution.liftBVars_zero]
-    _ = ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeLanguage
+    _ = ReflectiveContextSupport.substituteAt rhoCIGSLT.costWholeReflectionProfile
         cospan.commonSupport cospan.commonAssignment
         rhoBreadthLeftProcessNode.targetBound.length
         (cospan.reifyWith rightEnvironment.lookupAtom? cospan.rightSlot
@@ -1084,7 +1108,7 @@ theorem rhoBreadthOutputRole :
   exact rhoInteractionCut_environment_constructor_value.symm
 
 theorem rhoBreadthOutput_notQuote :
-    ReflectiveContextSupport.isQuoteConstructor rhoCIGSLT.costWholeLanguage
+    ReflectiveContextSupport.isQuoteConstructor rhoCIGSLT.costWholeReflectionProfile
       rhoBreadthOutputRule.label = false := by
   decide
 
@@ -1207,8 +1231,10 @@ theorem rhoBreadth_costNormalizeOpenHereditary_eq :
 /-- The repaired exact collapse is tied to the actual two-sibling authored
 generator, not to two independently chosen example terms. -/
 theorem rhoBreadth_hereditary_generator_canary :
-    openEquationGenerator rhoCIGSLT.costIGSLT
-        rhoCutOrderFree [] rhoBreadthBaseProcSort
+    ReflectiveEquationSemantics.reflectiveOpenPatternEquationGenerator
+        rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
+        rhoCIGSLT.costWholeLanguage rhoCutOrderFree []
+        (.base rhoBreadthBaseProcSort.1)
         rhoBreadthLeft rhoBreadthRight ∧
       rhoCostNormalizeOpenHereditary rhoBreadthLeft =
         rhoCostNormalizeOpenHereditary rhoBreadthRight :=

@@ -1,6 +1,7 @@
 import Mettapedia.OSLF.Framework.PiRhoCanonicalBridge
 import Mettapedia.OSLF.NativeType.Construction
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefAdequacy
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedContextualStep
 
 /-!
 # Assumption-Necessity Counterexamples
@@ -13,12 +14,15 @@ namespace Mettapedia.OSLF.Framework.AssumptionNecessity
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Match
+open Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical
 open Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution
 open Mettapedia.OSLF.Framework.PiRhoCanonicalBridge
 open Mettapedia.OSLF.Framework.CategoryBridge
 open Mettapedia.OSLF.Framework.ConstructorCategory
+open Mettapedia.GSLT.LanguageDef.ReflectionExtension
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.CanonicalMatch
+open Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedContextualStep
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.StructuralCongruence
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Reduction
 
@@ -180,7 +184,7 @@ theorem not_global_hImageFinite_rhoDerivedStarRel :
   rcases rhoDerivedStarRel_not_imageFinite with ⟨p, hp⟩
   exact hp (h p)
 
-/-! ## Predecessor-Finiteness Necessity for Canonical `langReduces rhoCalc`
+/-! ## Predecessor-Finiteness Necessity for Explicitly Interpreted Rho Reduction
 
 The ρ-calculus COMM rule erases the channel name from the reduct:
   { n!(q) | for(<-n){p} | rest } ~> { p[@q] | rest }
@@ -235,58 +239,61 @@ theorem commPredSource_injective : Function.Injective commPredSource := by
 
     The witness uses the single authored `rhoCommRewrite`; no second copy of
     COMM is introduced for this counterexample. -/
-theorem commPredSourceGeneric_langReduces (channel : Pattern) :
-    langReduces rhoCalc (commPredSourceGeneric channel) commPredTarget := by
-  show Mettapedia.OSLF.MeTTaIL.ContextualStep.Step
-    (Mettapedia.OSLF.MeTTaIL.ContextualStep.engineBasePremises RelationEnv.empty)
-    rhoCalc (commPredSourceGeneric channel) commPredTarget
+theorem commPredSourceGeneric_rhoStep (channel : Pattern) :
+    RhoStep (commPredSourceGeneric channel) commPredTarget := by
+  show Mettapedia.OSLF.MeTTaIL.InterpretedContextualStep.Step
+    rhoRuleInterpretation rhoBasePremises rhoCalc
+    (commPredSourceGeneric channel) commPredTarget
   let commBindings : Bindings :=
     [("q", zeroPat), ("rest", .collection .hashBag [] none),
      ("p", .bvar 0), ("n", channel)]
-  refine ⟨1, Mettapedia.OSLF.MeTTaIL.ContextualStep.StepAt.rule
+  refine ⟨1, Mettapedia.OSLF.MeTTaIL.InterpretedContextualStep.StepAt.rule
     (rule := rhoCommRewrite) (initialBindings := commBindings)
     (finalBindings := commBindings) ?_ ?_ (.nil commBindings) ?_⟩
   · exact Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefAdequacy.rhoCommRewrite_mem
-  · rw [Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefAdequacy.matchPatternForRule_rhoComm]
+  · change commBindings ∈
+      matchPatternForRuleUsing rhoReflectionProfile rhoCommRewrite
+        (commPredSourceGeneric channel)
+    rw [Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefAdequacy.matchPatternForRule_rhoComm]
     simp [commPredSourceGeneric, zeroPat,
       rhoCommRewrite, matchPatternWith, matchBagWith, matchArgsWith,
       mergeBindingsWith, rhoCanonicalEquivalent,
       Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalEquivalent,
       commBindings]
-  · show applyBindingsForRule rhoCalc rhoCommRewrite
+  · show applyBindingsForRuleUsing rhoReflectionProfile rhoCommRewrite
       [("q", zeroPat), ("rest", Pattern.collection .hashBag [] none),
        ("p", Pattern.bvar 0), ("n", channel)] = commPredTarget
-    rw [applyBindingsForRule,
-      Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefAdequacy.rhoComm_declaration_selected]
+    rw [applyBindingsForRuleUsing,
+      Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefAdequacy.rhoComm_substitutionPresentation_selected]
     simp [rhoCommRewrite, commPredTarget, zeroPat, applyBindingsReflective,
       applyBindingsReflectiveList, normalizeReflectiveReplacement,
       substituteReflective, normalizeReflective, normalizeReflectiveList,
       finishNormalizeReflectiveApply, rhoReflectivePresentation]
 
-theorem commPredSource_langReduces (n : Nat) :
-    langReduces rhoCalc (commPredSource n) commPredTarget :=
-  commPredSourceGeneric_langReduces (.apply "NQuote" [addRightZeroNest n])
+theorem commPredSource_rhoStep (n : Nat) :
+    RhoStep (commPredSource n) commPredTarget :=
+  commPredSourceGeneric_rhoStep (.apply "NQuote" [addRightZeroNest n])
 
-theorem infinite_predecessors_langReduces_rhoCalc :
-    Set.Infinite {p : Pattern | langReduces rhoCalc p commPredTarget} := by
+theorem infinite_predecessors_rhoStep :
+    Set.Infinite {p : Pattern | RhoStep p commPredTarget} := by
   have hInfRange : Set.Infinite (Set.range commPredSource) :=
     Set.infinite_range_of_injective commPredSource_injective
   exact hInfRange.mono (fun p hp => by
     rcases hp with ⟨n, rfl⟩
-    exact commPredSource_langReduces n)
+    exact commPredSource_rhoStep n)
 
-/-- Concrete witness: canonical one-step `langReduces rhoCalc` is not
+/-- Concrete witness: explicitly interpreted one-step rho reduction is not
     predecessor-finite. -/
-theorem langReduces_rhoCalc_not_predFinite :
-    ∃ p : Pattern, ¬ Set.Finite {q : Pattern | langReduces rhoCalc q p} :=
-  ⟨commPredTarget, infinite_predecessors_langReduces_rhoCalc.not_finite⟩
+theorem rhoStep_not_predFinite :
+    ∃ p : Pattern, ¬ Set.Finite {q : Pattern | RhoStep q p} :=
+  ⟨commPredTarget, infinite_predecessors_rhoStep.not_finite⟩
 
-/-- Therefore the canonical Theorem-1 predecessor-finiteness assumption cannot
-    be discharged globally for `langReduces rhoCalc`. -/
-theorem not_global_hPredFinite_langReduces_rhoCalc :
-    ¬ (∀ p : Pattern, Set.Finite {q : Pattern | langReduces rhoCalc q p}) := by
+/-- Therefore predecessor finiteness cannot be discharged globally for the
+explicitly interpreted rho relation. -/
+theorem not_global_hPredFinite_rhoStep :
+    ¬ (∀ p : Pattern, Set.Finite {q : Pattern | RhoStep q p}) := by
   intro h
-  exact infinite_predecessors_langReduces_rhoCalc.not_finite (h commPredTarget)
+  exact infinite_predecessors_rhoStep.not_finite (h commPredTarget)
 
 end PredFiniteNecessity
 

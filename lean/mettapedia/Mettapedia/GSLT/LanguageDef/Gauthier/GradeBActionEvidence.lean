@@ -144,7 +144,7 @@ def sharedPositiveHistory : HistoricalProgram :=
     verdict := .provablyTotal
     sourceLineage := 10 }
 
-/-- Minimal certified provenance surface for the executable canary.  The
+/-- Minimal certified provenance interface for the executable canary.  The
 constant class is conservative: it can discard independence but cannot
 manufacture it.  Production callers supply their authenticated manifest
 certificate instead. -/

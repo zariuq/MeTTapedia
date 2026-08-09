@@ -152,22 +152,22 @@ theorem categoricalLogic_heading_image_witness
     parseCatLogicHeadingLine? renderCatLogicHeading categoricalLogicReadmeBlocks
     categoricalLogic_heading_images hMem
 
-private def insertSurfaceBucket (acc : List (String × List CatLogicClaim)) (surface : String)
+private def insertRenderedBucket (acc : List (String × List CatLogicClaim)) (rendered : String)
     (c : CatLogicClaim) : List (String × List CatLogicClaim) :=
   match acc with
-  | [] => [(surface, [c])]
+  | [] => [(rendered, [c])]
   | (k, cs) :: rest =>
-      if k = surface then
+      if k = rendered then
         (k, c :: cs) :: rest
       else
-        (k, cs) :: insertSurfaceBucket rest surface c
+        (k, cs) :: insertRenderedBucket rest rendered c
 
-def claimSurfaceBuckets : List (String × List CatLogicClaim) :=
+def claimRenderedBuckets : List (String × List CatLogicClaim) :=
   allCatLogicClaims.foldl
-    (fun acc c => insertSurfaceBucket acc (renderCatLogicClaim c) c) []
+    (fun acc c => insertRenderedBucket acc (renderCatLogicClaim c) c) []
 
-def ambiguousClaimSurfaces : List (String × List CatLogicClaim) :=
-  claimSurfaceBuckets.filter (fun p => p.snd.length > 1)
+def ambiguousClaimRenderings : List (String × List CatLogicClaim) :=
+  claimRenderedBuckets.filter (fun p => p.snd.length > 1)
 
 #eval
   let fails := allCatLogicClaims.filter (fun c =>
@@ -195,9 +195,9 @@ def ambiguousClaimSurfaces : List (String × List CatLogicClaim) :=
     s!"CategoricalLogic structured parse failures: {repr fails}"
 
 #eval
-  if ambiguousClaimSurfaces.isEmpty then
-    "CategoricalLogic ambiguity diagnostic: no duplicate surfaces across distinct claims"
+  if ambiguousClaimRenderings.isEmpty then
+    "CategoricalLogic ambiguity diagnostic: no duplicate renderings across distinct claims"
   else
-    s!"CategoricalLogic ambiguity diagnostic: duplicate surfaces found: {repr ambiguousClaimSurfaces}"
+    s!"CategoricalLogic ambiguity diagnostic: duplicate renderings found: {repr ambiguousClaimRenderings}"
 
 end Mettapedia.DocText.CategoricalLogicReadmeCompositional

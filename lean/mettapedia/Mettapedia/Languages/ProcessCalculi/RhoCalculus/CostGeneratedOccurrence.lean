@@ -54,7 +54,7 @@ reflective process declaration. -/
 theorem nonempty_rhoCostReflectiveDeclarationOrigin_of_mem
     {target : ReflectivePresentationDecl}
     (membership : target ∈
-      rhoCIGSLT.costWholeLanguage.reflectivePresentations) :
+      rhoCIGSLT.costWholeReflectionProfile.presentations) :
     Nonempty (RhoCostReflectiveDeclarationOrigin target) := by
   obtain ⟨origin⟩ :=
     nonempty_costReflectiveDeclarationOrigin_of_mem rhoCIGSLT membership
@@ -111,10 +111,12 @@ theorem nonempty_rhoCostEquationInstanceOrigin
 /-- Equation and reflection classification for one proof-relevant generated
 rho Cost occurrence. -/
 def RhoCostAuthoredGeneratorOrigin {left right : Pattern}
-    (witness : EquationSemantics.AuthoredGeneratorWitness
-      defaultBasePremises rhoCIGSLT.costWholeLanguage left right) : Type :=
+    (witness :
+      ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness
+        rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
+          rhoCIGSLT.costWholeLanguage left right) : Type :=
   match witness with
-  | .equation _ instanceWitness =>
+  | .core (.equation _ instanceWitness) =>
       RhoCostEquationInstanceOrigin instanceWitness
   | .reflective _ declaration _ =>
       RhoCostReflectiveDeclarationOrigin declaration.1
@@ -123,23 +125,29 @@ def RhoCostAuthoredGeneratorOrigin {left right : Pattern}
 image of rho's sole equation or sole reflective declaration. -/
 theorem nonempty_rhoCostAuthoredGeneratorOrigin
     {left right : Pattern}
-    (witness : EquationSemantics.AuthoredGeneratorWitness
-      defaultBasePremises rhoCIGSLT.costWholeLanguage left right) :
+    (witness :
+      ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness
+        rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
+          rhoCIGSLT.costWholeLanguage left right) :
     Nonempty (RhoCostAuthoredGeneratorOrigin witness) := by
   cases witness with
-  | equation context instanceWitness =>
-      exact nonempty_rhoCostEquationInstanceOrigin instanceWitness
+  | core witness =>
+      cases witness with
+      | equation context instanceWitness =>
+          exact nonempty_rhoCostEquationInstanceOrigin instanceWitness
   | reflective context declaration representatives =>
       exact nonempty_rhoCostReflectiveDeclarationOrigin_of_mem declaration.2
 
 /-- Static colour retained by the unique rho generated-declaration origin. -/
 def RhoCostAuthoredGeneratorOrigin.color
     {left right : Pattern}
-    {witness : EquationSemantics.AuthoredGeneratorWitness
-      defaultBasePremises rhoCIGSLT.costWholeLanguage left right} :
+    {witness :
+      ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness
+        rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
+          rhoCIGSLT.costWholeLanguage left right} :
     RhoCostAuthoredGeneratorOrigin witness → CostStaticColor :=
   match witness with
-  | .equation _ instanceWitness =>
+  | .core (.equation _ instanceWitness) =>
       match instanceWitness with
       | .forward _ _ _ _ _ _ _ => fun origin =>
           RhoCostEquationDeclarationOrigin.color origin
@@ -155,12 +163,16 @@ structure RhoCostTypedGeneratorOccurrence
     {targetFree : WellSorted.FreeTypeContext}
     {targetBound : List TypeExpr}
     {targetSort : LangSort rhoCIGSLT.costWholeLanguage}
-    {left right : WellSorted.OpenTerm rhoCIGSLT.costWholeLanguage targetFree
-      targetBound targetSort}
-    (generator : openEquationGenerator rhoCIGSLT.costIGSLT targetFree
-      targetBound targetSort left right) where
-  witness : EquationSemantics.AuthoredGeneratorWitness defaultBasePremises
-    rhoCIGSLT.costWholeLanguage left.1 right.1
+    {left right : ReflectiveWellSorted.OpenTerm
+      rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
+      targetFree targetBound targetSort}
+    (generator : ReflectiveEquationSemantics.reflectiveOpenPatternEquationGenerator
+      rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
+      rhoCIGSLT.costWholeLanguage targetFree targetBound (.base targetSort.1)
+      left right) where
+  witness : ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness
+    rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
+      rhoCIGSLT.costWholeLanguage left.1 right.1
   erasesTo : witness.erase = generator
   origin : RhoCostAuthoredGeneratorOrigin witness
 
@@ -170,13 +182,17 @@ theorem nonempty_rhoCostTypedGeneratorOccurrence
     {targetFree : WellSorted.FreeTypeContext}
     {targetBound : List TypeExpr}
     {targetSort : LangSort rhoCIGSLT.costWholeLanguage}
-    {left right : WellSorted.OpenTerm rhoCIGSLT.costWholeLanguage targetFree
-      targetBound targetSort}
-    (generator : openEquationGenerator rhoCIGSLT.costIGSLT targetFree
-      targetBound targetSort left right) :
+    {left right : ReflectiveWellSorted.OpenTerm
+      rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
+      targetFree targetBound targetSort}
+    (generator : ReflectiveEquationSemantics.reflectiveOpenPatternEquationGenerator
+      rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
+      rhoCIGSLT.costWholeLanguage targetFree targetBound (.base targetSort.1)
+      left right) :
     Nonempty (RhoCostTypedGeneratorOccurrence generator) := by
   obtain ⟨witness, erasesTo⟩ :=
-    EquationSemantics.AuthoredGeneratorWitness.exists_erasing_to generator
+    ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness.exists_erasing_to
+      generator
   obtain ⟨origin⟩ := nonempty_rhoCostAuthoredGeneratorOrigin witness
   exact ⟨⟨witness, erasesTo, origin⟩⟩
 
@@ -187,10 +203,13 @@ def declarationColor
     {targetFree : WellSorted.FreeTypeContext}
     {targetBound : List TypeExpr}
     {targetSort : LangSort rhoCIGSLT.costWholeLanguage}
-    {left right : WellSorted.OpenTerm rhoCIGSLT.costWholeLanguage targetFree
-      targetBound targetSort}
-    {generator : openEquationGenerator rhoCIGSLT.costIGSLT targetFree
-      targetBound targetSort left right}
+    {left right : ReflectiveWellSorted.OpenTerm
+      rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
+      targetFree targetBound targetSort}
+    {generator : ReflectiveEquationSemantics.reflectiveOpenPatternEquationGenerator
+      rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
+      rhoCIGSLT.costWholeLanguage targetFree targetBound (.base targetSort.1)
+      left right}
     (occurrence : RhoCostTypedGeneratorOccurrence generator) :
     CostStaticColor := occurrence.origin.color
 

@@ -1,4 +1,5 @@
 import Mettapedia.GSLT.LanguageDef.ContinuationRetyping
+import Mettapedia.GSLT.LanguageDef.ReflectiveStructuralCategory
 import Mettapedia.GSLT.LanguageDef.SchemaTyping
 import Mettapedia.OSLF.MeTTaIL.Match
 
@@ -22,8 +23,10 @@ namespace Mettapedia.GSLT.LanguageDef
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Match
+open Mettapedia.OSLF.MeTTaIL.Reflection
 open StructuralMorphism
 open WellSorted
+open ReflectionExtension
 
 /-- The two declaration-derived copies of an authored static theory. -/
 inductive CostStaticColor where
@@ -162,9 +165,14 @@ theorem costWrappedReflectiveName_ne_base (wrapped base : String) :
 /-- Uniform symbol action for the unchanged base copy of the static theory. -/
 def costBaseStaticSymbols : PresentationSymbols :=
   { costBasePresentationSymbols with
-    equation := costBaseEquationName
-    reflective := costBaseReflectiveName
-    reflectiveRule := costBaseReflectiveRuleName }
+    equation := costBaseEquationName }
+
+/-- Reflection-namespace action paired with the base static symbol action. -/
+def costBaseStaticReflectiveSymbols : ReflectiveSymbols where
+  toPresentationSymbols := costBaseStaticSymbols
+  reflection :=
+    { presentation := costBaseReflectiveName
+      rule := costBaseReflectiveRuleName }
 
 /-- Uniform symbol action for the hereditary wrapped copy of the static
 theory.  Its sort action agrees exactly with `costWrappedTypeExpr`. -/
@@ -178,8 +186,14 @@ def costWrappedStaticSymbols (theory : IGSLT) : PresentationSymbols where
   relation := id
   equation := costWrappedEquationName
   rewrite := id
-  reflective := costWrappedReflectiveName
-  reflectiveRule := costWrappedReflectiveRuleName
+
+/-- Reflection-namespace action paired with the wrapped static symbol action. -/
+def costWrappedStaticReflectiveSymbols (theory : IGSLT) :
+    ReflectiveSymbols where
+  toPresentationSymbols := costWrappedStaticSymbols theory
+  reflection :=
+    { presentation := costWrappedReflectiveName
+      rule := costWrappedReflectiveRuleName }
 
 @[simp]
 theorem mapTypeExpr_costBaseStaticSymbols (type : TypeExpr) :
@@ -229,14 +243,15 @@ def costWrappedEquation (theory : IGSLT) (equation : Equation) : Equation :=
 def costBaseReflectivePresentationDecl
     (declaration : ReflectivePresentationDecl) :
     ReflectivePresentationDecl :=
-  mapReflectivePresentation costBaseStaticSymbols declaration
+  mapReflectivePresentation costBaseStaticReflectiveSymbols declaration
 
 /-- Hereditary wrapped-fiber image of one authored reflective static
 presentation. -/
 def costWrappedReflectivePresentationDecl (theory : IGSLT)
     (declaration : ReflectivePresentationDecl) :
     ReflectivePresentationDecl :=
-  mapReflectivePresentation (costWrappedStaticSymbols theory) declaration
+  mapReflectivePresentation (costWrappedStaticReflectiveSymbols theory)
+    declaration
 
 /-- Exact intermediate language used to validate reflective static transport.
 It adds no Cost apparatus or reduction: only the two declaration-derived
@@ -249,12 +264,7 @@ def reflectiveRetypingLanguage {theory : IGSLT}
       theory.presentation.presentation.language.equations.map
           costBaseEquation ++
         theory.presentation.presentation.language.equations.map
-          (costWrappedEquation theory)
-    reflectivePresentations :=
-      theory.presentation.presentation.language.reflectivePresentations.map
-          costBaseReflectivePresentationDecl ++
-        theory.presentation.presentation.language.reflectivePresentations.map
-          (costWrappedReflectivePresentationDecl theory) }
+          (costWrappedEquation theory) }
 
 mutual
   /-- A schema contains no open collection-tail metavariable.  Such tails
@@ -462,9 +472,9 @@ def ReflectivePresentationRetypable {theory : IGSLT}
 hereditary continuation retyping. -/
 def ReflectivePresentationsRetypable {theory : IGSLT}
     {cut : InteractionCutPresentation theory}
-    (plan : ContinuationRetypingPlan cut) : Prop :=
-  ∀ declaration ∈
-      theory.presentation.presentation.language.reflectivePresentations,
+    (plan : ContinuationRetypingPlan cut)
+    (profile : ReflectionProfile) : Prop :=
+  ∀ declaration ∈ profile.presentations,
     ReflectivePresentationRetypable plan declaration
 
 /-- Base-copy equation transport commutes with erasing the reserved symbol

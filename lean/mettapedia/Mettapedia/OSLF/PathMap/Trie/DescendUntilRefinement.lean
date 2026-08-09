@@ -13,7 +13,7 @@ The Rust behavior in `PathMap/src/zipper.rs` is:
 - after descending, stop as soon as a value is encountered
 - otherwise keep flowing down the unique-child chain
 
-The key point for the public `mork:` expert surface is that the stopping point
+The key point for the public `mork:` expert interface is that the stopping point
 may be an **internal prefix value**, not only a leaf.
 -/
 

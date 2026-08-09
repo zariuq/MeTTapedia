@@ -355,7 +355,7 @@ def rhoSpentSyntaxAccount (spent : Pattern) : RhoCostAccount :=
         rhoTemporalUnits (1 + rhoSpentSyntaxTicks tail) := by
   rfl
 
-/-- Direct Lean signature syntax matching the CeTTa cost surface:
+/-- Direct Lean signature syntax matching the CeTTa cost encoding:
 ground atoms, binary signature products, and the internal unit. -/
 inductive RhoDirectSignature where
   | unit
@@ -373,7 +373,7 @@ structure RhoDirectSigned where
   body : Pattern
   sig : RhoDirectSignature
 
-/-- Direct Lean costed rho terms matching the CeTTa surface:
+/-- Direct Lean costed rho terms matching the CeTTa cost encoding:
 signed fragments, costed parallel composition, and token stacks. -/
 inductive RhoDirectTerm where
   | signed (body : Pattern) (sig : RhoDirectSignature)
@@ -407,10 +407,10 @@ private def RhoDirectSignature.ofPatternList : List Pattern → RhoDirectSignatu
 noncomputable def RhoDirectSignature.ofSignature (sig : RhoSignature) : RhoDirectSignature :=
   RhoDirectSignature.ofPatternList sig.toList
 
-def RhoDirectSignature.SurfaceLike : RhoDirectSignature → Prop
+def RhoDirectSignature.CanonicalShape : RhoDirectSignature → Prop
   | .unit => True
   | .atom p => rhoSignatureSyntaxWidth p = 1
-  | .mul left right => left.SurfaceLike ∧ right.SurfaceLike
+  | .mul left right => left.CanonicalShape ∧ right.CanonicalShape
 
 def RhoDirectStack.toLedger : RhoDirectStack → RhoLedger
   | .empty => 0
@@ -442,9 +442,9 @@ def RhoDirectStack.spatialSignature : RhoDirectStack → RhoSignature
   | .empty => 0
   | .cons sig rest => sig.toSignature + rest.spatialSignature
 
-def RhoDirectStack.SurfaceLike : RhoDirectStack → Prop
+def RhoDirectStack.CanonicalShape : RhoDirectStack → Prop
   | .empty => True
-  | .cons sig rest => sig.SurfaceLike ∧ rest.SurfaceLike
+  | .cons sig rest => sig.CanonicalShape ∧ rest.CanonicalShape
 
 def RhoDirectStack.toTerm : RhoDirectStack → RhoDirectTerm :=
   .stack
@@ -538,22 +538,22 @@ private theorem rhoSignatureOfList_eq_coe (ps : List Pattern) :
   | cons p rest ih =>
       simp [rhoSignatureOfList, ih]
 
-private theorem RhoDirectSignature_ofPatternList_surfaceLike
+private theorem RhoDirectSignature_ofPatternList_canonicalShape
     (ps : List Pattern)
     (hall : ∀ q ∈ ps, rhoSignatureSyntaxWidth q = 1) :
-    (RhoDirectSignature.ofPatternList ps).SurfaceLike := by
+    (RhoDirectSignature.ofPatternList ps).CanonicalShape := by
   induction ps with
   | nil =>
-      simp [RhoDirectSignature.ofPatternList, RhoDirectSignature.SurfaceLike]
+      simp [RhoDirectSignature.ofPatternList, RhoDirectSignature.CanonicalShape]
   | cons p rest ih =>
       cases rest with
       | nil =>
-          simp [RhoDirectSignature.ofPatternList, RhoDirectSignature.SurfaceLike, hall p (by simp)]
+          simp [RhoDirectSignature.ofPatternList, RhoDirectSignature.CanonicalShape, hall p (by simp)]
       | cons q rest' =>
           have hrest : ∀ r ∈ q :: rest', rhoSignatureSyntaxWidth r = 1 := by
             intro r hr
             exact hall r (by simp [hr])
-          simp [RhoDirectSignature.ofPatternList, RhoDirectSignature.SurfaceLike,
+          simp [RhoDirectSignature.ofPatternList, RhoDirectSignature.CanonicalShape,
             hall p (by simp), ih hrest]
 
 @[simp] theorem RhoDirectSignature_toSignature_ofSignature
@@ -563,12 +563,12 @@ private theorem RhoDirectSignature_ofPatternList_surfaceLike
     (RhoDirectSignature_toSignature_ofPatternList sig.toList).trans
       (rhoSignatureOfList_eq_coe sig.toList)
 
-theorem RhoDirectSignature_ofSignature_surfaceLike
+theorem RhoDirectSignature_ofSignature_canonicalShape
     (sig : RhoSignature)
     (hall : ∀ q ∈ sig, rhoSignatureSyntaxWidth q = 1) :
-    (RhoDirectSignature.ofSignature sig).SurfaceLike := by
+    (RhoDirectSignature.ofSignature sig).CanonicalShape := by
   unfold RhoDirectSignature.ofSignature
-  apply RhoDirectSignature_ofPatternList_surfaceLike
+  apply RhoDirectSignature_ofPatternList_canonicalShape
   intro q hq
   exact hall q (by simpa using hq)
 
@@ -743,16 +743,16 @@ theorem RhoDirectSignature_ofSignature_surfaceLike
   | cons sig rest ih =>
       simp [RhoDirectStack.append, RhoDirectStack.toLedger, ih, add_assoc]
 
-@[simp] theorem RhoDirectStack_surfaceLike_append
+@[simp] theorem RhoDirectStack_canonicalShape_append
     {left right : RhoDirectStack}
-    (hleft : left.SurfaceLike) (hright : right.SurfaceLike) :
-    (RhoDirectStack.append left right).SurfaceLike := by
+    (hleft : left.CanonicalShape) (hright : right.CanonicalShape) :
+    (RhoDirectStack.append left right).CanonicalShape := by
   induction left with
   | empty =>
-      simpa [RhoDirectStack.append, RhoDirectStack.SurfaceLike] using hright
+      simpa [RhoDirectStack.append, RhoDirectStack.CanonicalShape] using hright
   | cons sig rest ih =>
       rcases hleft with ⟨hsig, hrest⟩
-      simp [RhoDirectStack.append, RhoDirectStack.SurfaceLike, hsig, ih hrest]
+      simp [RhoDirectStack.append, RhoDirectStack.CanonicalShape, hsig, ih hrest]
 
 @[simp] theorem RhoDirectStack_ofTrace_append
     (left right : RhoTemporalTrace) :
@@ -764,19 +764,19 @@ theorem RhoDirectSignature_ofSignature_surfaceLike
   | cons sig rest ih =>
       simp [RhoDirectStack.ofTrace, ih]
 
-theorem RhoDirectStack_ofTrace_surfaceLike
+theorem RhoDirectStack_ofTrace_canonicalShape
     (trace : RhoTemporalTrace)
     (hall : ∀ sig ∈ trace, ∀ q ∈ sig, rhoSignatureSyntaxWidth q = 1) :
-    (RhoDirectStack.ofTrace trace).SurfaceLike := by
+    (RhoDirectStack.ofTrace trace).CanonicalShape := by
   induction trace with
   | nil =>
-      simp [RhoDirectStack.ofTrace, RhoDirectStack.SurfaceLike]
+      simp [RhoDirectStack.ofTrace, RhoDirectStack.CanonicalShape]
   | cons sig rest ih =>
       have hrest : ∀ sig' ∈ rest, ∀ q ∈ sig', rhoSignatureSyntaxWidth q = 1 := by
         intro sig' hsig' q hq
         exact hall sig' (by simp [hsig']) q hq
-      simp [RhoDirectStack.ofTrace, RhoDirectStack.SurfaceLike,
-        RhoDirectSignature_ofSignature_surfaceLike sig (hall sig (by simp)),
+      simp [RhoDirectStack.ofTrace, RhoDirectStack.CanonicalShape,
+        RhoDirectSignature_ofSignature_canonicalShape sig (hall sig (by simp)),
         ih hrest]
 
 @[simp] theorem RhoDirectSigned_ofWrapped_body
@@ -834,7 +834,7 @@ theorem RhoDirectCutWitness_ofAccountedStep_spent_ledger
 
 @[simp] theorem RhoDirectSignature_toPattern_width_eq_card
     (sig : RhoDirectSignature)
-    (h : sig.SurfaceLike) :
+    (h : sig.CanonicalShape) :
     rhoSignatureSyntaxWidth sig.toPattern = sig.toSignature.card := by
   induction sig with
   | unit =>
@@ -857,7 +857,7 @@ theorem RhoDirectCutWitness_ofAccountedStep_spent_ledger
 
 @[simp] theorem RhoDirectStack_toPattern_width_eq_spatial_card
     (stack : RhoDirectStack)
-    (h : stack.SurfaceLike) :
+    (h : stack.CanonicalShape) :
     rhoSpentSyntaxWidth stack.toPattern = stack.spatialSignature.card := by
   induction stack with
   | empty =>
@@ -869,7 +869,7 @@ theorem RhoDirectCutWitness_ofAccountedStep_spent_ledger
 
 @[simp] theorem RhoDirectStack_toPattern_account_eq_shadow
     (stack : RhoDirectStack) :
-    stack.SurfaceLike →
+    stack.CanonicalShape →
     rhoSpentSyntaxAccount stack.toPattern = rhoLedgerShadow stack.toLedger := by
   intro h
   funext i
@@ -1021,7 +1021,7 @@ theorem rhoLedgerToSpentSyntax_shadow_of_traceCoherent
 
 theorem RhoDirectStack_toPattern_account_eq_publicSpentSyntax
     (stack : RhoDirectStack)
-    (h : stack.SurfaceLike) :
+    (h : stack.CanonicalShape) :
     rhoSpentSyntaxAccount stack.toPattern =
       rhoSpentSyntaxAccount (rhoLedgerToSpentSyntax stack.toLedger) := by
   calc
@@ -1035,7 +1035,7 @@ theorem RhoDirectStack_toPattern_account_eq_publicSpentSyntax
 
 theorem RhoDirectStack_toPattern_width_eq_publicSpentSyntax_width
     (stack : RhoDirectStack)
-    (h : stack.SurfaceLike) :
+    (h : stack.CanonicalShape) :
     rhoSpentSyntaxWidth stack.toPattern =
       rhoSpentSyntaxWidth (rhoLedgerToSpentSyntax stack.toLedger) := by
   have hacc := RhoDirectStack_toPattern_account_eq_publicSpentSyntax stack h
@@ -1046,7 +1046,7 @@ theorem RhoDirectStack_toPattern_width_eq_publicSpentSyntax_width
 
 theorem RhoDirectStack_toPattern_ticks_eq_publicSpentSyntax_ticks
     (stack : RhoDirectStack)
-    (h : stack.SurfaceLike) :
+    (h : stack.CanonicalShape) :
     rhoSpentSyntaxTicks stack.toPattern =
       rhoSpentSyntaxTicks (rhoLedgerToSpentSyntax stack.toLedger) := by
   have hacc := RhoDirectStack_toPattern_account_eq_publicSpentSyntax stack h
@@ -1684,11 +1684,11 @@ theorem rhoIntrinsicLedgerTotalAction_temporal_mem_width_one
     · exact rhoIntrinsicStepLedger_temporal_mem_width_one h hsig hatom
     · exact ih hsig hatom
 
-theorem rhoIntrinsicDirectSpentStack_surfaceLike
+theorem rhoIntrinsicDirectSpentStack_canonicalShape
     {t u : Pattern} (path : rhoGSLT.RewritePath t u) :
-    (rhoIntrinsicDirectSpentStack path).SurfaceLike := by
+    (rhoIntrinsicDirectSpentStack path).CanonicalShape := by
   unfold rhoIntrinsicDirectSpentStack
-  apply RhoDirectStack_ofTrace_surfaceLike
+  apply RhoDirectStack_ofTrace_canonicalShape
   intro sig hsig atom hatom
   exact rhoIntrinsicLedgerTotalAction_temporal_mem_width_one path hsig hatom
 
@@ -1698,7 +1698,7 @@ theorem rhoIntrinsicDirectSpentStack_spentSyntax_eq_totalCost
       totalCost rhoIntrinsicCostMap path := by
   rw [RhoDirectStack_toPattern_account_eq_shadow
       (rhoIntrinsicDirectSpentStack path)
-      (rhoIntrinsicDirectSpentStack_surfaceLike path)]
+      (rhoIntrinsicDirectSpentStack_canonicalShape path)]
   exact rhoIntrinsicDirectSpentStack_shadow_eq_totalCost path
 
 theorem rhoIntrinsicDirectSpentStack_ticks_eq_length
@@ -1710,7 +1710,7 @@ theorem rhoIntrinsicDirectSpentStack_ticks_eq_length
 
 theorem rhoIntrinsicDirectSpentStack_semantics
     {t u : Pattern} (path : rhoGSLT.RewritePath t u) :
-    (rhoIntrinsicDirectSpentStack path).SurfaceLike ∧
+    (rhoIntrinsicDirectSpentStack path).CanonicalShape ∧
       (rhoIntrinsicDirectSpentStack path).toLedger =
         totalAction rhoIntrinsicLedgerAction path ∧
       rhoLedgerShadow ((rhoIntrinsicDirectSpentStack path).toLedger) =
@@ -1721,7 +1721,7 @@ theorem rhoIntrinsicDirectSpentStack_semantics
       rhoSpentSyntaxTicks (rhoIntrinsicDirectSpentStack path).toPattern =
         path.length := by
   constructor
-  · exact rhoIntrinsicDirectSpentStack_surfaceLike path
+  · exact rhoIntrinsicDirectSpentStack_canonicalShape path
   · constructor
     · exact rhoIntrinsicDirectSpentStack_toLedger path
     · constructor
@@ -1761,11 +1761,11 @@ noncomputable def rhoIntrinsicDirectStepSpent
   symm
   exact rhoIntrinsicDirectSpentStack_oneStepPath step
 
-@[simp] theorem rhoIntrinsicDirectStepSpent_surfaceLike
+@[simp] theorem rhoIntrinsicDirectStepSpent_canonicalShape
     {t u : Pattern} (step : rhoGSLT.Step t u) :
-    (rhoIntrinsicDirectStepSpent step).SurfaceLike := by
+    (rhoIntrinsicDirectStepSpent step).CanonicalShape := by
   rw [rhoIntrinsicDirectStepSpent_eq_oneStepPath]
-  exact rhoIntrinsicDirectSpentStack_surfaceLike (oneStepPath (S := rhoGSLT) step)
+  exact rhoIntrinsicDirectSpentStack_canonicalShape (oneStepPath (S := rhoGSLT) step)
 
 @[simp] theorem rhoIntrinsicDirectStepSpent_spentSyntax_eq_stepCost
     {t u : Pattern} (step : rhoGSLT.Step t u) :
@@ -1931,11 +1931,11 @@ theorem rhoIntrinsicDirectSpentTrace_traceCoherent
   rw [rhoIntrinsicDirectSpentTrace_toLedger]
   exact rhoIntrinsicLedgerTotalAction_traceCoherent path
 
-theorem rhoIntrinsicDirectSpentTrace_surfaceLike
+theorem rhoIntrinsicDirectSpentTrace_canonicalShape
     {t u : Pattern} (path : rhoGSLT.RewritePath t u) :
-    (rhoIntrinsicDirectSpentTrace path).SurfaceLike := by
+    (rhoIntrinsicDirectSpentTrace path).CanonicalShape := by
   rw [rhoIntrinsicDirectSpentTrace_eq_stack]
-  exact rhoIntrinsicDirectSpentStack_surfaceLike path
+  exact rhoIntrinsicDirectSpentStack_canonicalShape path
 
 theorem rhoIntrinsicDirectSpentTrace_shadow_eq_totalCost
     {t u : Pattern} (path : rhoGSLT.RewritePath t u) :
@@ -1966,12 +1966,12 @@ theorem rhoIntrinsicDirectSpentTrace_ticks_eq_length
 
 theorem rhoIntrinsicDirectSpentTrace_preserves_spent_coherence
     {t u : Pattern} (path : rhoGSLT.RewritePath t u) :
-    (rhoIntrinsicDirectSpentTrace path).SurfaceLike ∧
+    (rhoIntrinsicDirectSpentTrace path).CanonicalShape ∧
       (rhoIntrinsicDirectSpentTrace path).toLedger =
         totalAction rhoIntrinsicLedgerAction path ∧
       RhoLedger.TraceCoherent ((rhoIntrinsicDirectSpentTrace path).toLedger) := by
   constructor
-  · exact rhoIntrinsicDirectSpentTrace_surfaceLike path
+  · exact rhoIntrinsicDirectSpentTrace_canonicalShape path
   · constructor
     · exact rhoIntrinsicDirectSpentTrace_toLedger path
     · exact rhoIntrinsicDirectSpentTrace_traceCoherent path
@@ -1984,7 +1984,7 @@ theorem rhoIntrinsicDirectSpentTrace_account_eq_publicSpentSyntax
   rw [← rhoIntrinsicDirectSpentTrace_toLedger]
   exact RhoDirectStack_toPattern_account_eq_publicSpentSyntax
     (rhoIntrinsicDirectSpentTrace path)
-    (rhoIntrinsicDirectSpentTrace_surfaceLike path)
+    (rhoIntrinsicDirectSpentTrace_canonicalShape path)
 
 theorem rhoIntrinsicDirectSpentTrace_width_eq_publicSpentSyntax_width
     {t u : Pattern} (path : rhoGSLT.RewritePath t u) :
@@ -1994,7 +1994,7 @@ theorem rhoIntrinsicDirectSpentTrace_width_eq_publicSpentSyntax_width
   rw [← rhoIntrinsicDirectSpentTrace_toLedger]
   exact RhoDirectStack_toPattern_width_eq_publicSpentSyntax_width
     (rhoIntrinsicDirectSpentTrace path)
-    (rhoIntrinsicDirectSpentTrace_surfaceLike path)
+    (rhoIntrinsicDirectSpentTrace_canonicalShape path)
 
 theorem rhoIntrinsicDirectSpentTrace_ticks_eq_publicSpentSyntax_ticks
     {t u : Pattern} (path : rhoGSLT.RewritePath t u) :
@@ -2004,7 +2004,7 @@ theorem rhoIntrinsicDirectSpentTrace_ticks_eq_publicSpentSyntax_ticks
   rw [← rhoIntrinsicDirectSpentTrace_toLedger]
   exact RhoDirectStack_toPattern_ticks_eq_publicSpentSyntax_ticks
     (rhoIntrinsicDirectSpentTrace path)
-    (rhoIntrinsicDirectSpentTrace_surfaceLike path)
+    (rhoIntrinsicDirectSpentTrace_canonicalShape path)
 
 theorem rhoIntrinsicDirectSpentStack_toPublicPattern_eq_publicSpentSyntax
     {t u : Pattern} (path : rhoGSLT.RewritePath t u) :
@@ -2085,7 +2085,7 @@ theorem rhoIntrinsicLedgerPublicSpentSyntax_semantics
 
 theorem rhoIntrinsicDirectSpentTrace_semantics
     {t u : Pattern} (path : rhoGSLT.RewritePath t u) :
-    (rhoIntrinsicDirectSpentTrace path).SurfaceLike ∧
+    (rhoIntrinsicDirectSpentTrace path).CanonicalShape ∧
       (rhoIntrinsicDirectSpentTrace path).toLedger =
         totalAction rhoIntrinsicLedgerAction path ∧
       (rhoIntrinsicDirectSpentTrace path).toPublicPattern =
@@ -2109,7 +2109,7 @@ theorem rhoIntrinsicDirectSpentTrace_semantics
       rhoSpentSyntaxTicks (rhoIntrinsicDirectSpentTrace path).toPattern =
         path.length := by
   constructor
-  · exact rhoIntrinsicDirectSpentTrace_surfaceLike path
+  · exact rhoIntrinsicDirectSpentTrace_canonicalShape path
   · constructor
     · exact rhoIntrinsicDirectSpentTrace_toLedger path
     · constructor
@@ -2404,7 +2404,7 @@ theorem rhoIntrinsicDirectSpentTrace_semantics_rewritePathAppend
     {t u v : Pattern}
     (left : rhoGSLT.RewritePath t u)
     (right : rhoGSLT.RewritePath u v) :
-    (rhoIntrinsicDirectSpentTrace (rewritePathAppend left right)).SurfaceLike ∧
+    (rhoIntrinsicDirectSpentTrace (rewritePathAppend left right)).CanonicalShape ∧
       (rhoIntrinsicDirectSpentTrace (rewritePathAppend left right)).toLedger =
         totalAction rhoIntrinsicLedgerAction (rewritePathAppend left right) ∧
       (rhoIntrinsicDirectSpentTrace (rewritePathAppend left right)).toPublicPattern =
@@ -2669,7 +2669,7 @@ theorem rhoIntrinsicDirectSpentTrace_modulus_reducesN
 
 theorem rhoIntrinsicDirectSpentTrace_semantics_reducesN
     {n : Nat} {p q : Pattern} (h : ReducesN n p q) :
-    (rhoIntrinsicDirectSpentTrace (rhoRewritePathOfReducesN h)).SurfaceLike ∧
+    (rhoIntrinsicDirectSpentTrace (rhoRewritePathOfReducesN h)).CanonicalShape ∧
       (rhoIntrinsicDirectSpentTrace (rhoRewritePathOfReducesN h)).toLedger =
         totalAction rhoIntrinsicLedgerAction (rhoRewritePathOfReducesN h) ∧
       (rhoIntrinsicDirectSpentTrace (rhoRewritePathOfReducesN h)).toPublicPattern =
