@@ -117,13 +117,17 @@ def conversionTierOf (presentation : Presentation) : ConversionTier :=
 theorem conversionTierOf_none {presentation : Presentation}
     (noConversion : presentation.conversion = none) :
     conversionTierOf presentation = ConversionTier.syntactic := by
-  simp [conversionTierOf, noConversion]
+  change presentation.calculus.conversion = none at noConversion
+  unfold conversionTierOf Presentation.conversion
+  rw [noConversion]
 
 theorem conversionTierOf_some {presentation : Presentation}
     {declaration : ConversionDecl}
     (declared : presentation.conversion = some declaration) :
     conversionTierOf presentation = ConversionTier.certified := by
-  simp [conversionTierOf, declared]
+  change presentation.calculus.conversion = some declaration at declared
+  unfold conversionTierOf Presentation.conversion
+  rw [declared]
 
 /-- **The conversion declaration is inert in the present checker.**  Two
 presentations differing only in their conversion interface accept exactly

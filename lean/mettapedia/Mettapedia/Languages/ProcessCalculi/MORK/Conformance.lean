@@ -93,13 +93,12 @@ namespace Computable
 def cmatchPattern (σ : Subst) (s : CSpace) (p : Pattern) :
     List (Subst × List Atom) :=
   let rec go : List Atom → Subst → List Atom → List (Subst × List Atom)
-    | [], σ', consumed => [(σ', consumed)]
-    | pat :: rest, σ', consumed =>
-        let available := s.filter (!consumed.contains ·)
-        let found := available.filterMap fun a =>
+    | [], σ', witnesses => [(σ', witnesses)]
+    | pat :: rest, σ', witnesses =>
+        let found := s.filterMap fun a =>
           (cmatchAtom σ' pat a).map (·, a)
         found.flatMap fun (σ'', a) =>
-          go rest σ'' (a :: consumed)
+          go rest σ'' (a :: witnesses)
   go p.atoms σ []
 
 /-- Computable: apply sinks to a list space. -/
@@ -111,9 +110,14 @@ def capplySinks (s : CSpace) (σ : Subst) (tmpl : Template) : CSpace :=
       if isGroundAtom a' then s' ++ [a'] else s'
     | .remove a =>
       s'.erase (applySubst σ a)
-    | .head a =>
+    | .head count a =>
       let a' := applySubst σ a
-      if isGroundAtom a' then
+      if count > 0 && isGroundAtom a' then
+        if s'.contains a' then s' else s' ++ [a']
+      else s'
+    | .tail count a =>
+      let a' := applySubst σ a
+      if count > 0 && isGroundAtom a' then
         if s'.contains a' then s' else s' ++ [a']
       else s'
   ) s
@@ -158,12 +162,11 @@ def cmatchSourceFactors (σ : Subst) (s : CSpace) (factors : List SourceFactor) 
     List (Subst × List Atom) :=
   let rec go : List SourceFactor → Subst → List Atom →
       List (Subst × List Atom)
-    | [], σ', consumed => [(σ', consumed)]
-    | src :: rest, σ', consumed =>
-        let available := s.filter (!consumed.contains ·)
-        let found := cmatchSourceFactor σ' available src
+    | [], σ', witnesses => [(σ', witnesses)]
+    | src :: rest, σ', witnesses =>
+        let found := cmatchSourceFactor σ' s src
         found.flatMap fun (σ'', a) =>
-          go rest σ'' (a :: consumed)
+          go rest σ'' (a :: witnesses)
   go factors σ []
 
 /-- Computable: match an `InputSpec` against a list space. -/
@@ -536,22 +539,35 @@ theorem capplySink_add_toFinset (s : List Atom) (σ : Subst) (a : Atom) :
   · simp [List.toFinset_append]
   · rfl
 
-/-- Applying a single `head` sink on a list and projecting to `Finset` equals
-    the spec-level `applySink` on the `Finset` projection.
-    No preconditions needed: `head` is idempotent on lists, and `∪` is
-    idempotent on `Finset`. -/
-theorem capplySink_head_toFinset (s : List Atom) (σ : Subst) (a : Atom) :
-    (if isGroundAtom (applySubst σ a) then
+/-- Applying a `head` sink to one row and projecting to `Finset` agrees with
+the singleton-row specification. -/
+theorem capplySink_head_toFinset (s : List Atom) (σ : Subst) (count : Nat)
+    (a : Atom) :
+    (if count > 0 && isGroundAtom (applySubst σ a) then
        if s.contains (applySubst σ a) then s else s ++ [applySubst σ a]
-     else s).toFinset = applySink s.toFinset σ (.head a) := by
+     else s).toFinset = applySink s.toFinset σ (.head count a) := by
   simp only [applySink]
-  split_ifs with hg hc
-  · -- ground, already contains: s.toFinset = s.toFinset ∪ {a'}
+  split_ifs with hready hc
+  · -- selected singleton, already contains
     symm; rw [Finset.union_eq_left]
     exact Finset.singleton_subset_iff.mpr
       (List.mem_toFinset.mpr (List.contains_iff_mem.mp hc))
-  · -- ground, not contains: (s ++ [a']).toFinset = s.toFinset ∪ {a'}
+  · -- selected singleton, not already present
     rw [List.toFinset_append]; simp
+  · rfl
+
+/-- The singleton-row `tail` projection obeys the same support law. -/
+theorem capplySink_tail_toFinset (s : List Atom) (σ : Subst) (count : Nat)
+    (a : Atom) :
+    (if count > 0 && isGroundAtom (applySubst σ a) then
+       if s.contains (applySubst σ a) then s else s ++ [applySubst σ a]
+     else s).toFinset = applySink s.toFinset σ (.tail count a) := by
+  simp only [applySink]
+  split_ifs with hready hc
+  · symm; rw [Finset.union_eq_left]
+    exact Finset.singleton_subset_iff.mpr
+      (List.mem_toFinset.mpr (List.contains_iff_mem.mp hc))
+  · rw [List.toFinset_append]; simp
   · rfl
 
 /-- For `remove` sinks, the `Nodup` hypothesis guarantees that `List.erase`
@@ -580,9 +596,14 @@ def capplySinkStep (σ : Subst) (s' : CSpace) (sink : Sink) : CSpace :=
     if isGroundAtom a' then s' ++ [a'] else s'
   | .remove a =>
     s'.erase (applySubst σ a)
-  | .head a =>
+  | .head count a =>
     let a' := applySubst σ a
-    if isGroundAtom a' then
+    if count > 0 && isGroundAtom a' then
+      if s'.contains a' then s' else s' ++ [a']
+    else s'
+  | .tail count a =>
+    let a' := applySubst σ a
+    if count > 0 && isGroundAtom a' then
       if s'.contains a' then s' else s' ++ [a']
     else s'
 
@@ -614,9 +635,17 @@ theorem capplySinkStep_toFinset_add (s : List Atom) (σ : Subst) (a : Atom) :
     (capplySinkStep σ s (.add a)).toFinset = applySink s.toFinset σ (.add a) :=
   capplySink_add_toFinset s σ a
 
-theorem capplySinkStep_toFinset_head (s : List Atom) (σ : Subst) (a : Atom) :
-    (capplySinkStep σ s (.head a)).toFinset = applySink s.toFinset σ (.head a) :=
-  capplySink_head_toFinset s σ a
+theorem capplySinkStep_toFinset_head (s : List Atom) (σ : Subst)
+    (count : Nat) (a : Atom) :
+    (capplySinkStep σ s (.head count a)).toFinset =
+      applySink s.toFinset σ (.head count a) :=
+  capplySink_head_toFinset s σ count a
+
+theorem capplySinkStep_toFinset_tail (s : List Atom) (σ : Subst)
+    (count : Nat) (a : Atom) :
+    (capplySinkStep σ s (.tail count a)).toFinset =
+      applySink s.toFinset σ (.tail count a) :=
+  capplySink_tail_toFinset s σ count a
 
 theorem capplySinkStep_toFinset_remove (s : List Atom) (hnd : s.Nodup) (σ : Subst) (a : Atom) :
     (capplySinkStep σ s (.remove a)).toFinset = applySink s.toFinset σ (.remove a) :=
@@ -639,8 +668,12 @@ theorem capplySinks_toFinset_no_remove (s : List Atom) (σ : Subst) (tmpl : Temp
         | .add a => let a' := applySubst σ a
                     if isGroundAtom a' then s' ++ [a'] else s'
         | .remove a => s'.erase (applySubst σ a)
-        | .head a => let a' := applySubst σ a
-                     if isGroundAtom a' then
+        | .head count a => let a' := applySubst σ a
+                     if count > 0 && isGroundAtom a' then
+                       if s'.contains a' then s' else s' ++ [a']
+                     else s'
+        | .tail count a => let a' := applySubst σ a
+                     if count > 0 && isGroundAtom a' then
                        if s'.contains a' then s' else s' ++ [a']
                      else s'
       ) acc).toFinset = sinks.foldl (applySink · σ) acc.toFinset by
@@ -659,8 +692,12 @@ theorem capplySinks_toFinset_no_remove (s : List Atom) (σ : Subst) (tmpl : Temp
       have hstep := capplySink_add_toFinset acc σ a
       conv_rhs => rw [← hstep]
       exact ih _ hrest
-    | head a =>
-      have hstep := capplySink_head_toFinset acc σ a
+    | head count a =>
+      have hstep := capplySink_head_toFinset acc σ count a
+      conv_rhs => rw [← hstep]
+      exact ih _ hrest
+    | tail count a =>
+      have hstep := capplySink_tail_toFinset acc σ count a
       conv_rhs => rw [← hstep]
       exact ih _ hrest
     | remove _ => simp [Sink.isRemove] at hsink
@@ -691,7 +728,8 @@ theorem capplySinks_toFinset_safe (s : List Atom) (σ : Subst) (tmpl : Template)
         applySink acc.toFinset σ sink := by
       cases sink with
       | add a => exact capplySink_add_toFinset acc σ a
-      | head a => exact capplySink_head_toFinset acc σ a
+      | head count a => exact capplySink_head_toFinset acc σ count a
+      | tail count a => exact capplySink_tail_toFinset acc σ count a
       | remove a =>
         have hnd : acc.Nodup := by
           have := hsafe_local ⟨0, by simp [List.length]⟩
@@ -798,13 +836,12 @@ theorem cmatchPattern_consumed_subset (σ₀ : Subst) (s : CSpace) (p : Pattern)
     intro a ha
     simp only [List.mem_cons] at ha
     rcases ha with rfl | ha
-    · -- a_matched came from available.filterMap
+    · -- a_matched came from the support relation
       rw [List.mem_filterMap] at hmem_found
       obtain ⟨a', ha'_mem, ha'_map⟩ := hmem_found
-      simp only [List.mem_filter] at ha'_mem
       simp only [Option.map_eq_some_iff] at ha'_map
       obtain ⟨_, _, heq⟩ := ha'_map
-      exact (Prod.mk.inj heq).2 ▸ ha'_mem.1
+      exact (Prod.mk.inj heq).2 ▸ ha'_mem
     · exact hprev a ha
 
 /-! ### Match-pattern substitution extension -/
@@ -884,7 +921,7 @@ theorem cmatchPattern_toFinset_sound (σ₀ : Subst) (s : CSpace) (p : Pattern)
     simp only [cmatchPattern.go] at hmem
     rw [List.mem_flatMap] at hmem
     obtain ⟨⟨σ_mid, a⟩, hmem_found, hmem_go⟩ := hmem
-    -- Extract: a came from the available list, cmatchAtom matched
+    -- Extract: a came from the support relation, cmatchAtom matched
     rw [List.mem_filterMap] at hmem_found
     obtain ⟨a', ha'_avail, ha'_match⟩ := hmem_found
     simp only [Option.map_eq_some_iff] at ha'_match
@@ -892,19 +929,13 @@ theorem cmatchPattern_toFinset_sound (σ₀ : Subst) (s : CSpace) (p : Pattern)
     -- heq : (σ_mid', a') = (σ_mid, a)
     cases heq
     -- Now a' = a and σ_mid' = σ_mid in the context
-    -- a ∈ s.filter (not in consumed_in) → a ∈ s.toFinset \ consumed_fs
-    rw [List.mem_filter] at ha'_avail
-    have ha_in_sdiff : a ∈ s.toFinset \ consumed_fs := by
-      rw [Finset.mem_sdiff]
-      refine ⟨List.mem_toFinset.mpr ha'_avail.1, ?_⟩
-      rw [hfs]; intro h
-      simp at ha'_avail
-      exact ha'_avail.2 (List.mem_toFinset.mp h)
+    have ha_in_support : a ∈ s.toFinset :=
+      List.mem_toFinset.mpr ha'_avail
     -- matchAtom correspondence
     rw [cmatchAtom_eq_matchAtom] at hcmatch
-    -- (σ_mid, a) ∈ matchOneInSpace σ_in pat (s.toFinset \ consumed_fs)
+    -- (σ_mid, a) ∈ matchOneInSpace σ_in pat s.toFinset
     have hmatch_spec := Mettapedia.Languages.ProcessCalculi.MORK.matchOneInSpace_mem
-      σ_in pat (s.toFinset \ consumed_fs) a ha_in_sdiff σ_mid hcmatch
+      σ_in pat s.toFinset a ha_in_support σ_mid hcmatch
     -- Consumed correspondence: (a :: consumed_in).toFinset = consumed_fs ∪ {a}
     have hcons_fs : consumed_fs ∪ {a} = (a :: consumed_in).toFinset := by
       simp [List.toFinset_cons, hfs]
@@ -972,27 +1003,18 @@ theorem matchPattern_toFinset_complete (σ₀ : Subst) (s : CSpace) (p : Pattern
     simp only [matchPattern.go] at hmem
     rw [List.mem_flatMap] at hmem
     obtain ⟨⟨σ_mid, a⟩, hmatch_one, hmem_go⟩ := hmem
-    -- Extract: a ∈ s.toFinset \ consumed_fs_in, matchAtom σ_in pat a = some σ_mid
+    -- Extract: a ∈ s.toFinset, matchAtom σ_in pat a = some σ_mid
     have ⟨ha_avail, hm⟩ := Mettapedia.Languages.ProcessCalculi.MORK.matchOneInSpace_spec
-      σ_in pat (s.toFinset \ consumed_fs_in) σ_mid a hmatch_one
-    rw [Finset.mem_sdiff] at ha_avail
+      σ_in pat s.toFinset σ_mid a hmatch_one
     -- a ∈ s (via toFinset)
-    have ha_in_s : a ∈ s := List.mem_toFinset.mp ha_avail.1
-    -- a ∉ consumed_in (via toFinset bridge)
-    have ha_not_consumed : a ∉ consumed_in := by
-      intro h_in
-      exact ha_avail.2 (hfs ▸ List.mem_toFinset.mpr h_in)
-    -- So a appears in the computable available list
-    have ha_filter : a ∈ s.filter (!consumed_in.contains ·) := by
-      rw [List.mem_filter]
-      exact ⟨ha_in_s, by simp [ha_not_consumed]⟩
+    have ha_in_s : a ∈ s := List.mem_toFinset.mp ha_avail
     -- cmatchAtom = matchAtom, so match succeeds
     rw [← cmatchAtom_eq_matchAtom] at hm
     -- (σ_mid, a) is found by computable filterMap
-    have hfound : (σ_mid, a) ∈ (s.filter (!consumed_in.contains ·)).filterMap
+    have hfound : (σ_mid, a) ∈ s.filterMap
         (fun a' => (cmatchAtom σ_in pat a').map (·, a')) := by
       rw [List.mem_filterMap]
-      exact ⟨a, ha_filter, by simp [hm]⟩
+      exact ⟨a, ha_in_s, by simp [hm]⟩
     -- Consumed correspondence for IH
     have hcons_fs : consumed_fs_in ∪ {a} = (a :: consumed_in).toFinset := by
       simp [List.toFinset_cons, hfs]
@@ -1108,25 +1130,8 @@ theorem cmatchSourceFactors_toFinset_sound (σ₀ : Subst) (s : CSpace)
     simp only [cmatchSourceFactors.go] at hmem
     rw [List.mem_flatMap] at hmem
     obtain ⟨⟨σ_mid, a⟩, hmem_found, hmem_go⟩ := hmem
-    -- cmatchSourceFactor on the filtered list
-    have ha_in_avail := hmem_found
-    -- The available list is s.filter (!ci.contains ·)
-    -- We need: a ∈ matchSourceFactor σ_in (s.toFinset \ cf) src
-    -- From cmatchSourceFactor σ_in (available) src
-    -- available = s.filter (!ci.contains ·) whose toFinset = s.toFinset \ ci.toFinset = s.toFinset \ cf
-    have hfilt_nd : (s.filter (!ci.contains ·)).Nodup := hnd.filter _
-    have havail_sound : ∀ (σ' : Subst) (b : Atom),
-        (σ', b) ∈ cmatchSourceFactor σ_in (s.filter (!ci.contains ·)) src →
-        (σ', b) ∈ matchSourceFactor σ_in (s.toFinset \ cf) src := by
-      intro σ' b hm
-      have hsub := cmatchSourceFactor_sound σ_in (s.filter (!ci.contains ·)) src
-        hfilt_nd σ' b hm
-      have hfilt_eq : (s.filter (!ci.contains ·)).toFinset = s.toFinset \ cf := by
-        subst hfs; ext x
-        simp only [List.toFinset_filter, Finset.mem_filter, List.mem_toFinset,
-          Finset.mem_sdiff, Bool.not_eq_true', List.contains_eq_mem, decide_eq_false_iff_not]
-      rw [hfilt_eq] at hsub; exact hsub
-    have hspec := havail_sound σ_mid a ha_in_avail
+    have hspec := cmatchSourceFactor_sound σ_in s src hnd
+      σ_mid a hmem_found
     simp only at hmem_go
     have hcons_fs : cf ∪ {a} = (a :: ci).toFinset := by
       simp [List.toFinset_cons, hfs]
@@ -1220,7 +1225,7 @@ theorem cmatchSourceFactor_complete (σ : Subst) (s : CSpace) (src : SourceFacto
 /-- Backward completeness for source factors: every `matchSourceFactors` result
     has a computable counterpart in `cmatchSourceFactors`. -/
 theorem cmatchSourceFactors_toFinset_complete (σ₀ : Subst) (s : CSpace)
-    (hnd : s.Nodup)
+    (_hnd : s.Nodup)
     (factors : List SourceFactor) (σ : Subst) (consumed_fs : Finset Atom)
     (hmatch : (σ, consumed_fs) ∈ matchSourceFactors σ₀ s.toFinset factors) :
     ∃ consumed : List Atom, (σ, consumed) ∈ cmatchSourceFactors σ₀ s factors ∧
@@ -1247,18 +1252,8 @@ theorem cmatchSourceFactors_toFinset_complete (σ₀ : Subst) (s : CSpace)
     simp only [matchSourceFactors.go] at hmem
     rw [List.mem_flatMap] at hmem
     obtain ⟨⟨σ_mid, a⟩, hmatch_one, hmem_go⟩ := hmem
-    -- a ∈ matchSourceFactor σ_in (s.toFinset \ cf) src
-    -- Need: a ∈ cmatchSourceFactor σ_in (s.filter (!ci.contains ·)) src
-    have hfilt_eq : (s.filter (!ci.contains ·)).toFinset = s.toFinset \ cf := by
-      subst hfs; ext x
-      simp only [List.toFinset_filter, Finset.mem_filter, List.mem_toFinset,
-        Finset.mem_sdiff, Bool.not_eq_true', List.contains_eq_mem, decide_eq_false_iff_not]
-    have hfilt_nd : (s.filter (!ci.contains ·)).Nodup := hnd.filter _
-    have hmatch_comp : (σ_mid, a) ∈ cmatchSourceFactor σ_in (s.filter (!ci.contains ·)) src := by
-      have hsound := cmatchSourceFactor_complete σ_in (s.filter (!ci.contains ·)) src
-        σ_mid a
-      rw [hfilt_eq] at hsound
-      exact hsound hmatch_one
+    have hmatch_comp : (σ_mid, a) ∈ cmatchSourceFactor σ_in s src :=
+      cmatchSourceFactor_complete σ_in s src σ_mid a hmatch_one
     -- Consumed correspondence for IH
     have hcons_fs : cf ∪ {a} = (a :: ci).toFinset := by
       simp [List.toFinset_cons, hfs]
@@ -1340,14 +1335,20 @@ theorem applySinks_flat_template :
 
 /-! ## Aggregator conformance
 
-These tests verify `applyAggregator` matches MORK's `finalize()` semantics
-from `sinks.rs`. They duplicate the canaries in `ThreePhaseExec.lean` but
-live here as conformance artifacts. -/
+These tests verify the support-level fragment of `applyAggregator` against
+MORK's private-`PathMap<()>` staging in `sinks.rs`. In particular, duplicate
+instantiated output paths are reduced once. -/
 
 /-- count aggregator: 3 sub-results → 3. -/
 theorem conformance_aggregator_count_3 :
     applyAggregator .count [.symbol "a", .symbol "b", .symbol "c"] =
       some (.grounded (.int 3)) := rfl
+
+/-- Count is cardinality of distinct staged paths, not occurrence count. -/
+theorem conformance_aggregator_count_distinct :
+    applyAggregator .count
+      [.symbol "red", .symbol "red", .symbol "purple"] =
+      some (.grounded (.int 2)) := by decide
 
 /-- sum aggregator: 10 + 20 + 5 = 35. -/
 theorem conformance_aggregator_sum_ints :
@@ -1355,27 +1356,33 @@ theorem conformance_aggregator_sum_ints :
       [.grounded (.int 10), .grounded (.int 20), .grounded (.int 5)] =
       some (.grounded (.int 35)) := rfl
 
+/-- Sum reduces each distinct staged integer path once. -/
+theorem conformance_aggregator_sum_distinct :
+    applyAggregator .sum
+      [.grounded (.int 5), .grounded (.int 5), .grounded (.int 7)] =
+      some (.grounded (.int 12)) := by decide
+
 /-- selectFirst picks head. -/
 theorem conformance_aggregator_selectFirst :
     applyAggregator .selectFirst [.symbol "first", .symbol "second"] =
       some (.symbol "first") := rfl
 
-/-! ## Head-sink conformance
+/-! ## Singleton-row head projection
 
-The `head` sink performs idempotent add: if the atom is already present,
-no duplicate is introduced. This matches MORK's Finset-model semantics. -/
+The work-queue batch canaries live in `WorkQueueExec.lean`.  Here a single
+matching row verifies the common one-row projection of `(head 1 ...)`. -/
 
 private def head_rule : ExecRule :=
   mkExecRule 0 "head-test"
     (mkPattern [.expression [.symbol "trigger"]])
-    (mkTemplate [mkHead (.symbol "result")])
+    (mkTemplate [mkHead 1 (.symbol "result")])
 
 /-- Head sink: first fire adds the atom. -/
 theorem conformance_head_first_add :
     cfireRule [.expression [.symbol "trigger"]] head_rule =
       [[.expression [.symbol "trigger"], .symbol "result"]] := rfl
 
-/-- Head sink: second fire is idempotent (atom already present). -/
+/-- Support insertion remains idempotent when the selected atom is present. -/
 theorem conformance_head_idempotent :
     cfireRule [.expression [.symbol "trigger"], .symbol "result"] head_rule =
       [[.expression [.symbol "trigger"], .symbol "result"]] := rfl
@@ -1605,7 +1612,11 @@ theorem source_test6_neq :
     cfireSourceRule source_test6_space source_test6_rule =
       [[.expression [.symbol "item", .symbol "a"],
         .expression [.symbol "keep",
-          .expression [.symbol "item", .symbol "b"]]]] := rfl
+          .expression [.symbol "item", .symbol "b"]]],
+       [.expression [.symbol "item", .symbol "a"],
+        .expression [.symbol "item", .symbol "b"],
+        .expression [.symbol "keep",
+          .expression [.symbol "exclude", .symbol "a"]]]] := rfl
 
 /-! ### Test S7: != source (no remaining matches)
 

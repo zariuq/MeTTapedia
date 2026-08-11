@@ -133,30 +133,6 @@ def CostOpenGeneratorSpanLiftable
       left right),
     Nonempty (CostGeneratorNormalizationLift source normalizeStatic generator)
 
-/-- A polymorphic checked compact normalizer over all exact open fibers. -/
-abbrev CostOpenNormalizer (source : CIGSLT) :=
-  {targetFree : FreeTypeContext} → {targetBound : List TypeExpr} →
-    {targetSort : LangSort source.costWholeLanguage} →
-    ReflectiveWellSorted.OpenTerm source.costWholeReflectionProfile
-      source.costWholeLanguage targetFree targetBound targetSort →
-      ReflectiveWellSorted.OpenTerm source.costWholeReflectionProfile
-        source.costWholeLanguage targetFree targetBound targetSort
-
-/-- Exact generator invariance for a chosen checked Cost normalizer. -/
-def CostOpenGeneratorInvariantFor (source : CIGSLT)
-    (normalizeOpen : CostOpenNormalizer source) : Prop :=
-  ∀ {targetFree : FreeTypeContext} {targetBound : List TypeExpr}
-    {targetSort : LangSort source.costWholeLanguage}
-    {left right : ReflectiveWellSorted.OpenTerm
-      source.costWholeReflectionProfile source.costWholeLanguage targetFree
-      targetBound targetSort},
-    ReflectiveEquationSemantics.reflectiveOpenPatternEquationGenerator
-        source.costWholeReflectionProfile defaultBasePremises
-        source.costWholeLanguage targetFree targetBound (.base targetSort.1)
-        left right →
-      @normalizeOpen targetFree targetBound targetSort left =
-        @normalizeOpen targetFree targetBound targetSort right
-
 /-- The checked executor erases the deterministic elaboration normalized by
 the selected static kernel. -/
 def CostOpenNormalizerAgreesWithStatic
@@ -169,6 +145,16 @@ def CostOpenNormalizerAgreesWithStatic
     (@normalizeOpen targetFree targetBound targetSort term).1 =
       ((CostOpenElaboration.compile source term).tree.normalize
         (normalizeStatic := normalizeStatic)).pattern
+
+/-- The generic hereditary executor agrees definitionally with the static
+kernel used to construct it.  This closes the implementation-facing side of
+the invariance theorem without introducing another normalizer. -/
+theorem CIGSLT.costNormalizeOpenWithStatic_agreesWithStatic
+    (source : CIGSLT) (normalizeStatic : CostStaticRegionNormalizer source) :
+    CostOpenNormalizerAgreesWithStatic source normalizeStatic
+      (fun term => source.costNormalizeOpenWithStatic normalizeStatic term) := by
+  intro targetFree targetBound targetSort term
+  rfl
 
 namespace CostOpenGeneratorInvariantFor
 

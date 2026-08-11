@@ -10,7 +10,7 @@ Core syntax/rewrites for the symmetric reflective MeTTa-calculus.
 
 This formalization follows the calculus specification in:
 
-- `/home/zar/claude/hyperon/rho4u/metta-calculus/metta-calculus.core.tex`
+- the F1R3FLY MeTTa-calculus manuscript, `metta-calculus.core.tex`
 
 especially the `COMM` and `REFL` rules in the "A symmetric reflective
 higher order concurrent calculus with backchaining" section.
@@ -55,7 +55,7 @@ infixl:60 " ∥ " => par
 
 /-! ## Rewrite rules -/
 
-private def commSymRule : RewriteRule := {
+def commSymRule : RewriteRule := {
   name := "CommSym"
   typeContext := [("t", .base "Term"), ("u", .base "Term"), ("x", .base "Name"),
                   ("p", .base "Proc"), ("q", .base "Proc"),
@@ -98,6 +98,10 @@ def mettaCalc : LanguageDef := {
   terms := [
     { label := "MZero", category := "Proc", params := [],
       syntaxPattern := [.terminal "0"] },
+    { label := "MPar", category := "Proc",
+      params := [.simple "ps" (.collection .hashBag (.base "Proc"))],
+      syntaxPattern := [.terminal "{", .nonTerminal "ps", .separator "|",
+                        .terminal "}"] },
     { label := "MFor", category := "Proc",
       params := [.simple "t" (.base "Term"), .simple "x" (.base "Name"),
                  .simple "k" (.base "Proc")],
@@ -133,6 +137,23 @@ def mettaCalc : LanguageDef := {
   ]
   rewrites := [commSymRule, reflRule, parCongRule]
 }
+
+/-- The authored MeTTa-calculus definition passes the five-field structural
+validation gate. -/
+theorem mettaCalc_validate_eq_nil : mettaCalc.validate = [] := by
+  simp [LanguageDef.validate, mettaCalc, commSymRule, reflRule, parCongRule,
+    LanguageDef.duplicateErrors, LanguageDef.duplicateErrorsAux,
+    LanguageDef.validateEquation, LanguageDef.validateRewrite,
+    LanguageDef.validatePatternConstructors,
+    LanguageDef.validateRulePatterns,
+    LanguageDef.typeNames, TypeDecl.plain, TypeExpr.baseNames,
+    TermParam.bodyName, TermParam.binderNames, TermParam.typeExpr,
+    LanguageDef.patternFvarNames, LanguageDef.patternBinderNames,
+    LanguageDef.premiseProducedFvarNames, LanguageDef.premisePatterns,
+    LanguageDef.premiseFvarNames, LanguageDef.premiseForAllParams,
+    Pattern.constructorRefs, Pattern.constructorRefsList,
+    Pattern.freeFvarNames, Pattern.isWellScoped, Pattern.isWellScopedAt,
+    Pattern.isWellScopedListAt]
 
 /-- COMM-only fragment (used to define one-step reflection premises without
 self-reference through REFL). -/

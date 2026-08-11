@@ -40,46 +40,6 @@ def atRedex
 
 end ReflectiveEquationSemantics.ReflectiveAuthoredGeneratorWitness
 
-namespace CostOpenElaboration
-
-/-- Normalize one retained elaboration with an explicit static kernel and
-repackage the result in the same checked open fibre. -/
-def normalizeWithStaticErasure
-    {source : CIGSLT} (normalizeStatic : CostStaticRegionNormalizer source)
-    {targetFree : FreeTypeContext} {targetBound : List TypeExpr}
-    {targetSort : LangSort source.costWholeLanguage}
-    {term : ReflectiveWellSorted.OpenTerm source.costWholeReflectionProfile
-      source.costWholeLanguage targetFree targetBound targetSort}
-    (elaboration : CostOpenElaboration source term) :
-    ReflectiveWellSorted.OpenTerm source.costWholeReflectionProfile
-      source.costWholeLanguage targetFree targetBound targetSort := by
-  let normalized := elaboration.tree.normalize
-    (normalizeStatic := normalizeStatic)
-  refine ⟨normalized.pattern, ?_⟩
-  refine ⟨⟨?_, normalized.canonicalBinderMetadata term.2.1.2.1,
-    normalized.objectPattern term.2.1.2.2.1, ?_⟩, ?_⟩
-  · simpa only [List.append_nil] using normalized.typed
-  · change normalized.pattern.isWellScopedAt targetBound.length = true
-    simpa only [List.append_nil] using normalized.typed.isWellScopedAt
-  · intro presentation membership
-    exact normalized.reflectiveScope presentation membership
-      (Nat.le_refl targetBound.length) (term.2.2 presentation membership)
-
-@[simp]
-theorem normalizeWithStaticErasure_pattern
-    {source : CIGSLT} (normalizeStatic : CostStaticRegionNormalizer source)
-    {targetFree : FreeTypeContext} {targetBound : List TypeExpr}
-    {targetSort : LangSort source.costWholeLanguage}
-    {term : ReflectiveWellSorted.OpenTerm source.costWholeReflectionProfile
-      source.costWholeLanguage targetFree targetBound targetSort}
-    (elaboration : CostOpenElaboration source term) :
-    (elaboration.normalizeWithStaticErasure normalizeStatic).1 =
-      (elaboration.tree.normalize
-        (normalizeStatic := normalizeStatic)).pattern :=
-  rfl
-
-end CostOpenElaboration
-
 /-- An exact authored generator occurrence whose two retained elaborations
 are related by the root-aware hereditary alignment.
 
@@ -183,6 +143,19 @@ theorem ofTreeAlignable
     CostOpenGeneratorInvariantFor source normalizeOpen :=
   CostOpenGeneratorInvariantFor.ofSpanLiftable alignable.spanLiftable coherent
     agrees
+
+/-- Generic hereditary Cost crown: root-aware alignment and compact
+coherence imply exact generator invariance for the sole executor obtained by
+normalizing the compiled proof-relevant tree with that static kernel. -/
+theorem forCostNormalizeOpenWithStatic
+    {source : CIGSLT} {kernel : CostStaticNormalizationKernel source}
+    (alignable : CostOpenGeneratorTreeAlignable source kernel)
+    (coherent : CostStaticRegionNormalizerCompactCoherent source
+      kernel.normalize) :
+    CostOpenGeneratorInvariantFor source
+      (fun term => source.costNormalizeOpenWithStatic kernel.normalize term) :=
+  CostOpenGeneratorInvariantFor.ofTreeAlignable alignable coherent
+    (source.costNormalizeOpenWithStatic_agreesWithStatic kernel.normalize)
 
 end CostOpenGeneratorInvariantFor
 

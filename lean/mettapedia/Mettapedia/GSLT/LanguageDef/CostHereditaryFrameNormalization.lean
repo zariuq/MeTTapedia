@@ -59,6 +59,41 @@ theorem freeFvarNames_thickenAmbientBVars
       rw [List.flatMap_congr fun element membership =>
         inductionHypothesis element membership depth]
 
+/-- Ambient binder insertion changes only bound-variable indices and hence
+preserves every constructor fragment.  This is the constructor-side companion
+to `freeFvarNames_thickenAmbientBVars`; together they isolate the two pieces of
+syntax used by semantic-atom reification. -/
+theorem constructorsWithin_thickenAmbientBVars
+    {source : CIGSLT} {color : CostStaticColor}
+    {sourceBound targetBound : List TypeExpr}
+    (thinning : CostStaticBinderThinning source color sourceBound targetBound)
+    {allowed : String -> Prop} {pattern : Pattern}
+    (supported : ConstructorsWithin allowed pattern) (depth : Nat) :
+    ConstructorsWithin allowed (thinning.thickenAmbientBVars depth pattern) := by
+  induction pattern using Pattern.inductionOn generalizing depth with
+  | hbvar index => simp [thickenAmbientBVars]
+  | hfvar name => simp [thickenAmbientBVars]
+  | happly constructor arguments inductionHypothesis =>
+      simp only [thickenAmbientBVars, constructorsWithin_apply]
+      exact ⟨supported.1, supported.2.map fun argument membership =>
+        inductionHypothesis argument membership
+          (supported.2.of_mem membership) depth⟩
+  | hlambda binder body inductionHypothesis =>
+      simpa only [thickenAmbientBVars, constructorsWithin_lambda] using
+        inductionHypothesis supported (depth + 1)
+  | hmultiLambda arity binders body inductionHypothesis =>
+      simpa only [thickenAmbientBVars, constructorsWithin_multiLambda] using
+        inductionHypothesis supported (depth + arity)
+  | hsubst body replacement bodyInduction replacementInduction =>
+      simpa only [thickenAmbientBVars, constructorsWithin_subst] using
+        And.intro (bodyInduction supported.1 (depth + 1))
+          (replacementInduction supported.2 depth)
+  | hcollection collectionType elements rest inductionHypothesis =>
+      simp only [thickenAmbientBVars, constructorsWithin_collection]
+      exact supported.map fun element membership =>
+        inductionHypothesis element membership
+          (supported.of_mem membership) depth
+
 end CostStaticBinderThinning
 
 namespace CostStaticAtomEnvironment
@@ -1815,6 +1850,37 @@ theorem reifiedTargetFrame_pattern
     (node.reifiedTargetFrame environment).1 =
       node.reifyTargetFrame environment := by
   rfl
+
+/-- Every constructor retained in an atomized target frame belongs to the
+single static Cost namespace selected by the region plan.  Foreign-colour
+static subtrees have already become semantic atoms, while binder insertion and
+atom-name reification preserve constructor labels. -/
+theorem reifiedTargetFrame_constructorsWithinColor
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    (node : CostStaticRegionNode source color targetFree)
+    {values : TypedCostRegionBoundaryTable.Values source color targetFree
+      node.boundaryTable}
+    {inventory : CostStaticParameterInventory source color targetFree
+      node.boundaryTable values node.skeleton.1}
+    (environment : CostStaticAtomEnvironment source color targetFree inventory) :
+    ConstructorsWithin
+      (fun constructor => exists sourceConstructor,
+        decodeCostStaticConstructor color constructor = some sourceConstructor)
+      (node.reifiedTargetFrame environment).1 := by
+  have mapped : ConstructorsWithin
+      (fun constructor => exists sourceConstructor,
+        decodeCostStaticConstructor color constructor = some sourceConstructor)
+      (mapPattern (color.symbols source)
+        (node.reifiedSourceFrame environment).1) := by
+    apply constructorsWithin_mapPattern (color.symbols source)
+    · intro constructor _membership
+      exact ⟨constructor,
+        decodeCostStaticConstructor_symbols source color constructor⟩
+    · exact (node.reifiedSourceFrame_supported environment).constructorsWithin
+  rw [node.reifiedTargetFrame_pattern,
+    node.reifyTargetFrame_eq_map_reifiedSourceFrame environment]
+  exact node.thinning.constructorsWithin_thickenAmbientBVars mapped 0
 
 /-- Every free name in the atomized target frame resolves to its finite
 semantic-atom slot.  The proof reads the frame's typed open carrier; it does

@@ -124,6 +124,11 @@ non-BP credit direction on two seeds (median raw cosines $0.0979$ and $0.0930$),
 adds verified solved-set marginals despite trailing BP in total synthetic held-out
 coverage; unchanged incremental PC fails to learn. Mechanism separation and task
 efficacy are therefore measured independently.
+A separate two-round fresh-start comparison adds an architecture-conditioned warning:
+Unified PC covers more verified targets than its BP control in round two ($95$ versus
+$82$), but uses fewer fresh program identities ($71$ versus $79$), and one previously
+known program accounts for $36$ exclusive target relations. Credit geometry, proposal
+novelty and target coverage are therefore distinct endpoints.
 \end{abstract}
 
 \paragraph{Open artifacts.}
@@ -1444,6 +1449,71 @@ map between them, which is the unrolled recurrence. The failure is
 gradient-amplification-through-time, and no reformulation of the objective addresses it;
 the repair is a matter of conditioning or of parametrization.
 
+\subsection{Round two: architecture modifies the search effect of credit}
+\label{sec:fresh-round-two-architecture}
+
+A separate fresh-start experiment crossed BP and prospective PC within two carriers:
+the coarse recurrent AC--NMT graph and the finer Unified graph. Let
+$Y_s(a,u)$ be endpoint $s$ for architecture $a$ and update rule $u$, and define
+\[
+ I_s =
+ \bigl(Y_s(\mathrm{Unified},\mathrm{PC})
+       -Y_s(\mathrm{Unified},\mathrm{BP})\bigr)
+ -
+ \bigl(Y_s(\mathrm{AC},\mathrm{PC})
+       -Y_s(\mathrm{AC},\mathrm{BP})\bigr).
+\]
+The formal estimator is endpoint-parametric
+(\leanname{architectureUpdateInteractionBy}); it also proves that changing the
+projection can change the interaction
+(\leanname{architectureInteraction\_changes\_with\_endpoint\_projection}).
+The observed contrasts are:
+
+\begin{center}\small
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+round and endpoint & AC: PC--BP & Unified: PC--BP & $I_s$ \\
+\midrule
+round 1 verified facts & $-355$ & $+8$ & $363$ \\
+round 1 program identities & $-277$ & $+6$ & $283$ \\
+round 1 targets & $-302$ & $+3$ & $305$ \\
+round 1 fresh program identities & $-78$ & $+5$ & $83$ \\
+\midrule
+round 2 verified facts & $-206$ & $+10$ & $216$ \\
+round 2 program identities & $-194$ & $-24$ & $170$ \\
+round 2 targets & $-198$ & $+13$ & $211$ \\
+round 2 fresh program identities & $-78$ & $-8$ & $70$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The endpoint distinction changes the scientific reading. In round two, Unified PC
+covers $95$ targets against BP's $82$, yet has fewer distinct program identities
+($89$ against $113$) and fewer fresh identities ($71$ against $79$). The target
+advantage decomposes exactly as
+\[
+ 13=(-17)\ \text{same-target reuse}
+       +35\ \text{cross-target reuse}
+       -5\ \text{fresh support},
+\]
+with equal same/fresh overlap. One previously known Unified-PC program has target
+degree $36$ and exclusive target contribution $36$; deleting it changes PC coverage
+from $95$ to $59$, whereas deleting the most essential BP program changes $82$ to
+$80$. Thus the ordinary $+13$ contrast becomes $-21$ under this registered
+leave-one-program-out stress test. The exact decomposition and its degree bound are
+machine-checked
+(\leanname{targetCoverage\_withoutProgram\_add\_exclusive},
+\leanname{exclusiveTargetContribution\_le\_programTargetDegree}).
+The proposed-program rate of new-target support is also lower for Unified PC:
+$89/15{,}136$ for PC against $113/17{,}133$ for BP.
+
+This does not erase the credit-geometry result. AC--PC's healthy-update credit cosine
+lies in $0.16$--$0.41$ while its round-two target contrast is $-198$; non-BP credit is
+not by itself useful credit. Unified PC remains BP-like at cosine about $0.992$, yet
+its target contrast changes from $+3$ to $+13$; BP resemblance is not behavioral
+identity. The architecture bundle was not randomized, so $I_s$ is a descriptive
+architecture-conditioned interaction rather than a causal architecture effect.
+
 \section{Certified finite settling and authenticated checkpoint geometry}
 \label{sec:finite-settling}
 
@@ -1658,6 +1728,13 @@ no evidential weight on the from-scratch question%
   total synthetic coverage. This licenses continued evaluation alongside an
   independent-BP opportunity control; it does not license replacing BP. Incremental PC
   failed this promotion test unchanged.
+\item \emph{Architecture-conditioned relational reuse, with a robustness debit.}
+  Section~\ref{sec:fresh-round-two-architecture} records a two-round fresh-start
+  comparison in which Unified PC improves target coverage but not fresh-program
+  production, while AC--PC regresses on both. The positive Unified contrast is
+  dominated by one high-degree reused program and reverses under a
+  leave-one-program-out stress test. Continued study is licensed as an associative
+  reuse mechanism, not as a robust aggregate advantage.
 \item \emph{Second-order geometry, with the bar set by Theorem~\ref{thm:mode}.} The
   preconditioning failures are exactly characterized, so the cure is exactly specified:
   a metric whose departure from the identity is a contraction, $\rho(I-P)<1$, on the modes

@@ -2,7 +2,14 @@ import Mettapedia.Languages.MeTTa.HE
 import Mettapedia.Languages.MeTTa.OSLFCore
 import Mettapedia.Languages.MeTTa.MeTTaZero
 import Mettapedia.Languages.MeTTa.MeTTaZeroAnswerAlgebra
+import Mettapedia.Languages.MeTTa.MeTTaZeroWorkClosure
+import Mettapedia.Languages.MeTTa.MeTTaZeroUV
+import Mettapedia.Languages.MeTTa.MeTTaInteraction
+import Mettapedia.Languages.MeTTa.MeTTaInteractionBind
+import Mettapedia.Languages.MeTTa.MeTTaRevisionedQueryBindEval
+import Mettapedia.Languages.MeTTa.MeTTaSupportIndexedABTWire
 import Mettapedia.Languages.MeTTa.MeTTaZeroLanguageAdequacy
+import Mettapedia.Languages.MeTTa.MeTTaZeroStagedAdequacy
 import Mettapedia.Languages.MeTTa.MeTTaZeroHornFragment
 import Mettapedia.Languages.MeTTa.MeTTaZeroCertifiedPlanning
 import Mettapedia.Languages.MeTTa.PeTTa
@@ -40,6 +47,10 @@ import Mettapedia.Languages.MeTTa.Prime.FragmentAdequacyV1
 import Mettapedia.Languages.MeTTa.Prime.CertificateBoundaryV1
 import Mettapedia.Languages.MeTTa.Prime.PeTTaChainerDAGReplayV1
 import Mettapedia.Languages.MeTTa.PrimeNeedWorlds
+import Mettapedia.Languages.MeTTa.PrimeNeedInferenceControl
+import Mettapedia.Languages.MeTTa.PrimeNeedProtocolBridge
+import Mettapedia.Languages.MeTTa.PrimeNeedInteractionAuthority
+import Mettapedia.Languages.MeTTa.PrimeNeedInteractionValuation
 import Mettapedia.Languages.MeTTa.PrimeDemandBoundary
 import Mettapedia.Languages.MeTTa.PrimeCallSharingTournament
 import Mettapedia.Languages.MeTTa.PrimeEquationCallSemantics

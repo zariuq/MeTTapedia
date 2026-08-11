@@ -278,7 +278,7 @@ lemma consistency_implies_complement_bound
     -- Also (pB + pC - 1)/pB = (pB + pC - 1)/pB ≤ pB/pB = 1 (since pC ≤ 1)
     -- So max evaluates to the min, which is (pB + pC - 1)/pB
     -- Therefore (pB + pC - 1)/pB ≤ sBC, so pB + pC - 1 ≤ pB*sBC
-    push_neg at h_case
+    push Not at h_case
     -- Extract the bound from consistency
     have h_from_consist : (pB + pC - 1) / pB ≤ sBC := by
       unfold smallestIntersectionProbability at h_lower

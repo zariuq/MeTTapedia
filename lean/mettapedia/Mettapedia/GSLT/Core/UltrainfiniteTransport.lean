@@ -163,4 +163,46 @@ theorem map_toBisimClass_eq {source target : GSLT}
 
 end BisimulationWitness
 
+namespace StepCover
+
+/-- Local step coverage is exactly the additional condition needed to turn
+step preservation into preservation of ordinary strong bisimilarity. -/
+theorem preservesBisimilar {source target : GSLT}
+    {mapTerm : source.Term → target.Term}
+    (cover : StepCover source target mapTerm)
+    {left right : source.Term} (related : source.Bisimilar left right) :
+    target.Bisimilar (mapTerm left) (mapTerm right) := by
+  obtain ⟨relation, ⟨forward, backward⟩, initial⟩ := related
+  let imageRelation : target.Term → target.Term → Prop :=
+    fun first second => ∃ sourceFirst sourceSecond,
+      first = mapTerm sourceFirst ∧ second = mapTerm sourceSecond ∧
+        relation sourceFirst sourceSecond
+  refine ⟨imageRelation, ⟨?_, ?_⟩, ?_⟩
+  · rintro first second
+      ⟨sourceFirst, sourceSecond, rfl, rfl, sourceRelated⟩
+      next firstStep
+    obtain ⟨sourceNext, sourceStep, rfl⟩ := cover.liftStep firstStep
+    obtain ⟨secondNext, secondStep, nextRelated⟩ :=
+      forward sourceRelated sourceStep
+    exact ⟨mapTerm secondNext, cover.mapStep secondStep,
+      sourceNext, secondNext, rfl, rfl, nextRelated⟩
+  · rintro first second
+      ⟨sourceFirst, sourceSecond, rfl, rfl, sourceRelated⟩
+      next secondStep
+    obtain ⟨sourceNext, sourceStep, rfl⟩ := cover.liftStep secondStep
+    obtain ⟨firstNext, firstStep, nextRelated⟩ :=
+      backward sourceRelated sourceStep
+    exact ⟨mapTerm firstNext, cover.mapStep firstStep,
+      firstNext, sourceNext, rfl, rfl, nextRelated⟩
+  · exact ⟨left, right, rfl, rfl, initial⟩
+
+/-- A locally covered step map is therefore a behavioral GSLT morphism. -/
+def toMorphism {source target : GSLT}
+    {mapTerm : source.Term → target.Term}
+    (cover : StepCover source target mapTerm) : source ⟶ target where
+  toFun := mapTerm
+  preserves_bisim := cover.preservesBisimilar
+
+end StepCover
+
 end Mettapedia.GSLT.Ultrainfinite

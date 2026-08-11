@@ -42,3 +42,6 @@ require «ks-foundations-of-inference-lean» from "../standalone/ks-foundations-
 @[default_target] lean_lib Mettapedia
 
 lean_exe mettapedia where root := `Main
+
+lean_exe metamathNIKAudit where
+  root := `Mettapedia.Languages.Metamath.DatabaseNIKAudit

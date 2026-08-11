@@ -13,6 +13,7 @@ derived from that carrier and the authored contextual rules.
 namespace Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefGSLTBridge
 
 open Mettapedia.GSLT
+open Mettapedia.GSLT.LanguageDef.ReflectionExtension
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.DerivedPresentationSyntax
 open Mettapedia.OSLF.MeTTaIL.ScopedPattern
@@ -48,7 +49,7 @@ theorem compiledRhoComm_step
         .collection .hashBag
           ([.apply "PInput" [channel, .lambda none body],
             .apply "POutput" [channel, payload]] ++ rest) none ∧
-      target.1 = applyBindingsForRule rhoCalc rhoCommRewrite
+      target.1 = applyBindingsForRuleUsing rhoReflectionProfile rhoCommRewrite
         (rhoCommBindings channel body payload rest) ∧
       rhoLanguageDefGSLT.Step source target := by
   have sourceTyped :
@@ -77,7 +78,7 @@ theorem compiledRhoComm_step
     exact RhoStep.comm channel body payload rest bodyTyped payloadTyped
   let target : RhoProcess := source.stepTarget rawStep
   have targetAgreement :
-      target.1 = applyBindingsForRule rhoCalc rhoCommRewrite
+      target.1 = applyBindingsForRuleUsing rhoReflectionProfile rhoCommRewrite
         (rhoCommBindings channel body payload rest) := by
     rw [applyBindingsForRule_rhoComm_agrees_derived
       bodyTyped payloadTyped channel rest]
@@ -93,7 +94,7 @@ theorem compiledRhoComm_nil_step :
         .collection .hashBag
           [.apply "PInput" [closedNilName.1, .lambda none (.apply "PZero" [])],
            .apply "POutput" [closedNilName.1, .apply "PZero" []]] none ∧
-      target.1 = applyBindingsForRule rhoCalc rhoCommRewrite
+      target.1 = applyBindingsForRuleUsing rhoReflectionProfile rhoCommRewrite
         (rhoCommBindings closedNilName.1
           (.apply "PZero" []) (.apply "PZero" []) []) ∧
       rhoLanguageDefGSLT.Step source target := by
@@ -112,7 +113,7 @@ does not turn a free dropped quotation into an execution step. -/
 theorem compiledRhoComm_preserves_freeDrop_inertness
     (channel : Pattern) (rest : List Pattern) :
     let freeDrop := .apply "PDrop" [.apply "NQuote" [.apply "PZero" []]]
-    applyBindingsForRule rhoCalc rhoCommRewrite
+    applyBindingsForRuleUsing rhoReflectionProfile rhoCommRewrite
         (rhoCommBindings channel freeDrop (.apply "PZero" []) rest) =
       .collection .hashBag
         (semanticCommSubst freeDrop (.apply "PZero" []) :: rest) none := by

@@ -34,7 +34,7 @@ namespace Mettapedia.GSLT
 
 universe uBase uSource uPrefix uArtifactLeft uArtifactMiddle uArtifactRight
   uObservation uObservationMiddle uObservationCoarse uDeclaration uValue
-  uOutput
+  uOutput uState
 
 /-! ## Observation refinement -/
 
@@ -292,6 +292,288 @@ def selectToRight {Base : Type uBase}
     exact (agreement base source).symm)
 
 end ObservationCell
+
+/-! ## Proof-producing compilation traces
+
+A compiler trace is a path through one language-visible state carrier.  Source
+documents, admitted declarations, plans, and serialized artifacts should be
+constructors of that carrier rather than private phases known only to the
+compiler.  The certificate producer is untrusted: only the independent
+checker and its soundness theorem authorize a transition.
+
+This interface deliberately does not prescribe a wire format or a fixed list
+of stages.  A concrete V1 pipeline may use four stages; later compilers may
+refine or replace them without changing the trace theorem. -/
+
+/-- An independent checker for one compiler-state transition.  Evidence is
+ordinary untrusted data.  Acceptance proves preservation of the explicitly
+named observation; rejection proves only that this evidence did not establish
+the transition. -/
+structure CompilationTraceChecker (State : Type uState)
+    (Observation : Type uObservation) where
+  Evidence : State → State → Type uState
+  check : ∀ source target, Evidence source target → Bool
+  observe : State → Observation
+  sound : ∀ {source target} (evidence : Evidence source target),
+    check source target evidence = true →
+      observe target = observe source
+
+namespace CompilationTraceChecker
+
+variable {State : Type uState} {Observation : Type uObservation}
+    (checker : CompilationTraceChecker State Observation)
+
+/-- A linked, finite trace.  Its endpoints are indexed so a producer cannot
+silently omit the connection between adjacent stages.  Individual evidence
+items remain untrusted until `check` accepts them. -/
+inductive Trace : State → State → Type uState where
+  | refl (state : State) : Trace state state
+  | step {source middle target : State}
+      (evidence : checker.Evidence source middle)
+      (tail : Trace middle target) : Trace source target
+
+namespace Trace
+
+/-- Replay every local certificate in order. -/
+def check : {source target : State} → checker.Trace source target → Bool
+  | _, _, .refl _ => true
+  | _, _, .step evidence tail =>
+      checker.check _ _ evidence && tail.check
+
+@[simp] theorem check_refl (state : State) :
+    (Trace.refl state : checker.Trace state state).check = true :=
+  rfl
+
+@[simp] theorem check_step {source middle target : State}
+    (evidence : checker.Evidence source middle)
+    (tail : checker.Trace middle target) :
+    (Trace.step evidence tail).check =
+      (checker.check source middle evidence && tail.check) :=
+  rfl
+
+/-- An accepted trace preserves the named observation from its first state to
+its last state. -/
+theorem observation_preserved {source target : State}
+    (trace : checker.Trace source target) (accepted : trace.check = true) :
+    checker.observe target = checker.observe source := by
+  induction trace with
+  | refl state => rfl
+  | @step source middle target evidence tail inductionHypothesis =>
+      simp only [check, Bool.and_eq_true] at accepted
+      exact (inductionHypothesis accepted.2).trans
+        (checker.sound evidence accepted.1)
+
+end Trace
+
+/-- The GSLT induced by independently accepted compiler transitions.  This is
+the trace theory itself, not yet a claim that a particular native compiler
+implements an authored language semantics. -/
+def toGSLT : GSLT where
+  Term := State
+  equations := ⟨Eq, ⟨Eq.refl, Eq.symm, Eq.trans⟩⟩
+  rewrites := fun source target =>
+    ∃ evidence : checker.Evidence source target,
+      checker.check source target evidence = true
+  rewrites_resp_left := by
+    intro source source' target equal step
+    cases equal
+    exact ⟨target, step, rfl⟩
+  rewrites_resp_right := by
+    intro source target target' step equal
+    cases equal
+    exact step
+
+namespace Trace
+
+/-- Successful replay supplies exactly a path in the checker-induced trace
+theory. -/
+theorem toMultiStep {source target : State}
+    (trace : checker.Trace source target) (accepted : trace.check = true) :
+    checker.toGSLT.MultiStep source target := by
+  induction trace with
+  | refl state =>
+      exact @GSLT.MultiStep.refl checker.toGSLT state
+  | @step source middle target evidence tail inductionHypothesis =>
+      simp only [check, Bool.and_eq_true] at accepted
+      exact @GSLT.MultiStep.step checker.toGSLT source middle target
+        ⟨evidence, accepted.1⟩ (inductionHypothesis accepted.2)
+
+end Trace
+
+/-- A trace together with successful independent replay. -/
+structure AcceptedTrace (checker : CompilationTraceChecker State Observation)
+    (source target : State) where
+  trace : Trace checker source target
+  accepted : trace.check = true
+
+namespace AcceptedTrace
+
+/-- Every accepted trace is a path in the checker-induced GSLT. -/
+theorem toMultiStep {source target : State}
+    (trace : AcceptedTrace checker source target) :
+    checker.toGSLT.MultiStep source target :=
+  Trace.toMultiStep checker trace.trace trace.accepted
+
+/-- Accepted trace endpoints preserve the checker's named observation. -/
+theorem observation_preserved {source target : State}
+    (trace : AcceptedTrace checker source target) :
+    checker.observe target = checker.observe source :=
+  Trace.observation_preserved checker trace.trace trace.accepted
+
+end AcceptedTrace
+
+/-- A proof-producing compiler emits an accepted trace from each input to the
+artifact it selects.  The checker remains absent from the ordinary compile
+function. -/
+structure ProofProducingCompilation
+    (checker : CompilationTraceChecker State Observation) where
+  compile : State → State
+  certificate : ∀ source, Trace checker source (compile source)
+  accepted : ∀ source, (certificate source).check = true
+
+namespace ProofProducingCompilation
+
+/-- Forget certificate production and obtain the ordinary certified
+realization. -/
+def toRealization (compiler : ProofProducingCompilation checker) :
+    SimpleRealization State State Observation where
+  compile := fun _ source => compiler.compile source
+  observeSource := fun _ source => checker.observe source
+  observeArtifact := fun _ artifact => checker.observe artifact
+  adequate := by
+    intro _ source
+    exact Trace.observation_preserved checker (compiler.certificate source)
+      (compiler.accepted source)
+
+/-- Certification erasure leaves the compiler itself definitionally
+unchanged.  Normal execution need not invoke the checker or retain evidence. -/
+@[simp] theorem toRealization_compile
+    (compiler : ProofProducingCompilation checker) (source : State) :
+    compiler.toRealization.compile () source = compiler.compile source :=
+  rfl
+
+end ProofProducingCompilation
+
+end CompilationTraceChecker
+
+/-! ### Positive and negative trace canaries -/
+
+namespace CompilationTraceCanary
+
+open CompilationTraceChecker
+
+/-- One carrier containing all stages of a small four-pass compiler. -/
+inductive State where
+  | authored (payload : Nat)
+  | selected (payload : Nat)
+  | admitted (payload : Nat)
+  | planned (payload : Nat)
+  | serialized (payload : Nat)
+deriving DecidableEq, Repr
+
+inductive Stage where
+  | sourceSelection
+  | sourceAdmission
+  | planCompilation
+  | artifactSerialization
+deriving DecidableEq, Repr
+
+/-- Raw evidence may lie about either the stage or the payload. -/
+structure Evidence where
+  stage : Stage
+  claimedPayload : Nat
+deriving DecidableEq, Repr
+
+def observe : State → Nat
+  | .authored payload
+  | .selected payload
+  | .admitted payload
+  | .planned payload
+  | .serialized payload => payload
+
+def checkEvidence (source target : State) (evidence : Evidence) : Bool :=
+  match source, target, evidence.stage with
+  | .authored sourcePayload, .selected targetPayload,
+      .sourceSelection =>
+        decide (sourcePayload = targetPayload ∧
+          evidence.claimedPayload = sourcePayload)
+  | .selected sourcePayload, .admitted targetPayload,
+      .sourceAdmission =>
+        decide (sourcePayload = targetPayload ∧
+          evidence.claimedPayload = sourcePayload)
+  | .admitted sourcePayload, .planned targetPayload,
+      .planCompilation =>
+        decide (sourcePayload = targetPayload ∧
+          evidence.claimedPayload = sourcePayload)
+  | .planned sourcePayload, .serialized targetPayload,
+      .artifactSerialization =>
+        decide (sourcePayload = targetPayload ∧
+          evidence.claimedPayload = sourcePayload)
+  | _, _, _ => false
+
+def checker : CompilationTraceChecker State Nat where
+  Evidence := fun _ _ => Evidence
+  check := checkEvidence
+  observe := observe
+  sound := by
+    intro source target evidence accepted
+    rcases evidence with ⟨stage, claimedPayload⟩
+    cases source <;> cases target <;> cases stage <;>
+      simp_all [checkEvidence, observe]
+
+def goodTrace : checker.Trace (.authored 7) (.serialized 7) :=
+  Trace.step (checker := checker) (source := State.authored 7)
+    (middle := State.selected 7)
+    ({ stage := .sourceSelection, claimedPayload := 7 } : Evidence)
+    (Trace.step (checker := checker) (source := State.selected 7)
+      (middle := State.admitted 7)
+      ({ stage := .sourceAdmission, claimedPayload := 7 } : Evidence)
+      (Trace.step (checker := checker) (source := State.admitted 7)
+        (middle := State.planned 7)
+        ({ stage := .planCompilation, claimedPayload := 7 } : Evidence)
+        (Trace.step (checker := checker) (source := State.planned 7)
+          (middle := State.serialized 7)
+          ({ stage := .artifactSerialization, claimedPayload := 7 } : Evidence)
+          (.refl _))))
+
+/-- Positive: all four linked stages replay successfully. -/
+theorem goodTrace_accepted : goodTrace.check = true := by
+  decide
+
+/-- Positive: the accepted trace is a four-step path in its induced GSLT. -/
+theorem goodTrace_reachable :
+    checker.toGSLT.MultiStep (.authored 7) (.serialized 7) :=
+  (⟨goodTrace, goodTrace_accepted⟩ :
+    AcceptedTrace checker (.authored 7) (.serialized 7)).toMultiStep
+
+def payloadTamperTrace : checker.Trace (.authored 7) (.serialized 8) :=
+  Trace.step (checker := checker) (source := State.authored 7)
+    (middle := State.selected 8)
+    ({ stage := .sourceSelection, claimedPayload := 7 } : Evidence)
+    (Trace.step (checker := checker) (source := State.selected 8)
+      (middle := State.admitted 8)
+      ({ stage := .sourceAdmission, claimedPayload := 8 } : Evidence)
+      (Trace.step (checker := checker) (source := State.admitted 8)
+        (middle := State.planned 8)
+        ({ stage := .planCompilation, claimedPayload := 8 } : Evidence)
+        (Trace.step (checker := checker) (source := State.planned 8)
+          (middle := State.serialized 8)
+          ({ stage := .artifactSerialization, claimedPayload := 8 } : Evidence)
+          (.refl _))))
+
+/-- Negative: changing the selected payload rejects at the first pass. -/
+theorem payloadTamperTrace_rejected : payloadTamperTrace.check = false := by
+  decide
+
+/-- Negative: no alternative accepted evidence can launder a changed final
+observation through this checker. -/
+theorem noAcceptedPayloadTamper :
+    ¬ Nonempty (AcceptedTrace checker (.authored 7) (.serialized 8)) := by
+  rintro ⟨trace⟩
+  have preserved := trace.observation_preserved
+  simp [checker, observe] at preserved
+
+end CompilationTraceCanary
 
 /-! ## Conditionally admitted realizations with certified fallback -/
 

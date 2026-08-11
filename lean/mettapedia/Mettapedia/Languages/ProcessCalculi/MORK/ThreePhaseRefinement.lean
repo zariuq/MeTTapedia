@@ -2,14 +2,14 @@ import Mettapedia.Languages.ProcessCalculi.MORK.WorkQueueExec
 import Mettapedia.Languages.ProcessCalculi.MORK.ThreePhaseExec
 
 /-!
-# MORK: Three-Phase ↔ Work-Queue Refinement
+# Authored Three-Phase Protocol → MM2 Work Queue
 
 Connects the two execution layers of the MORK formalization:
 
 - **ThreePhaseExec.lean**: Abstract phase steps (`applyUnfold`, `applyBase`, `applyFold`)
   operating directly on `Space` via `Finset.erase` / `Finset.union`.
 
-- **WorkQueueExec.lean**: Faithful work-queue scheduler (`fireExecFact`, `workQueueStep`)
+- **WorkQueueExec.lean**: valid-exec work-queue core (`fireExecFact`, `workQueueStep`)
   operating via pattern matching against a read copy + sink application.
 
 ## Key Result
@@ -34,11 +34,11 @@ namespace Mettapedia.Languages.ProcessCalculi.MORK
 
 open Mettapedia.Languages.MeTTa.OSLFCore (Atom)
 
-/-! ## Phase-band preservation
+/-! ## Phase-band arithmetic
 
-When the scheduler selects an exec fact, its priority determines which phase
-band it belongs to. If all exec facts in a space have priorities in a single
-phase band, the scheduler respects that band. -/
+The authored protocol assigns numeric priority fields to disjoint phase bands.
+The following results compare those numeric fields. They do not establish raw
+PathMap selection order, which depends on the complete serialized location. -/
 
 /-- An exec fact's priority falls within a phase band. -/
 def ExecFact.inPhase (ef : ExecFact) (ph : Phase) : Prop :=
@@ -97,30 +97,13 @@ theorem applyBase_mem_result (s : Space) (step : BaseStep) :
     step.result ∈ applyBase s step := by
   simp [applyBase]
 
-/-! ## Phase band → scheduler selection order
+/-! ## What phase arithmetic does not prove
 
-The scheduler selects exec facts by `atomKey`-based lexicographic order.
-Since `atomKey` begins with the location term encoding, and the location
-term `(priority name)` encodes priority as the first child, lower
-priorities are selected first.
-
-This means:
-- All unfold-band exec facts fire before any base-band exec fact
-- All base-band exec facts fire before any fold-band exec fact
-
-This is the key structural property that makes the three-phase protocol
-a restricted view of the scheduler. -/
-
-/-- In a space where some exec facts have unfold-band priorities and others
-    have base-band priorities, the scheduler selects an unfold fact first
-    (assuming the `atomKey` ordering reflects numeric priority). -/
-theorem unfold_selected_before_base
-    (ef_u ef_b : ExecFact)
-    (hu : ef_u.inPhase .unfold) (hb : ef_b.inPhase .base)
-    (_hloc_u : ef_u.loc = .expression [.symbol (toString ef_u.rule.priority), .symbol ef_u.rule.name])
-    (_hloc_b : ef_b.loc = .expression [.symbol (toString ef_b.rule.priority), .symbol ef_b.rule.name]) :
-    ef_u.rule.priority < ef_b.rule.priority :=
-  unfold_lt_base ef_u.rule.priority ef_b.rule.priority hu hb
+Raw PathMap selection is byte-lexicographic over the complete serialized exec
+atom. Numeric phase ordering becomes scheduler ordering only after a separate
+encoding-refinement theorem for the chosen location fragment. No such theorem
+is smuggled in here through unused location hypotheses.
+-/
 
 /-! ## Self-respawn / bootstrap theorems
 
@@ -155,7 +138,12 @@ theorem applySink_mem_of_mem (s : Space) (σ : Subst) (sink : Sink) (b : Atom)
     simp only [applySink]
     rw [Finset.mem_erase]
     exact ⟨(hne a rfl).symm, hb⟩
-  | .head a =>
+  | .head count a =>
+    simp only [applySink]
+    split_ifs with hg
+    · exact Finset.mem_union_left _ hb
+    · exact hb
+  | .tail count a =>
     simp only [applySink]
     split_ifs with hg
     · exact Finset.mem_union_left _ hb
@@ -205,9 +193,8 @@ against the original space with sinks applied to the consumed space. -/
 theorem fireExecFact_readCopy_simplify (s : Space) (ef : ExecFact)
     (hm : ef.atom ∈ s) :
     fireExecFact s ef =
-      (matchPattern [] s ef.rule.pat).foldl
-        (fun acc (σ, _consumed) => applySinks acc σ ef.rule.tmpl)
-        (consumeExec s ef) := by
+      applyMorkSinkBatch (consumeExec s ef)
+        ((matchPattern [] s ef.rule.pat).map Prod.fst) ef.rule.tmpl := by
   unfold fireExecFact
   rw [readCopy_eq_of_mem s ef hm]
 
@@ -219,7 +206,6 @@ section Canaries
 #check @execFact_unfold_lt_base
 #check @execFact_base_lt_fold
 #check @applyBase_eq_applySinks
-#check @unfold_selected_before_base
 #check @applySink_add_ground_mem
 #check @applySinks_mem_of_mem
 #check @foldl_add_persists
@@ -280,7 +266,8 @@ theorem base_step_exactness (s : Space) (ef : ExecFact) (step : BaseStep)
     toBaseStep?_sinks_eq ef step hstep
   -- Simplify fireExecFact via readCopy + unique match
   rw [fireExecFact_readCopy_simplify s ef hm, hunique]
-  simp only [List.foldl_cons, List.foldl_nil]
+  simp only [List.map_singleton]
+  rw [applyMorkSinkBatch_singleton]
   -- applySinks (consumeExec s ef) [] ef.rule.tmpl = applyBase (consumeExec s ef) step
   simp only [applySinks, htmpl_eq, List.foldl_cons, List.foldl_nil,
     applySink, applySubst_nil, hg_result, ite_true, applyBase]
@@ -352,7 +339,8 @@ theorem unfold_step_exactness (s : Space) (ef : ExecFact) (step : UnfoldStep)
     (hunique : matchPattern [] s ef.rule.pat = [([], consumed)]) :
     fireExecFact s ef = applyUnfold (consumeExec s ef) step := by
   rw [fireExecFact_readCopy_simplify s ef hm, hunique]
-  simp only [List.foldl_cons, List.foldl_nil]
+  simp only [List.map_singleton]
+  rw [applyMorkSinkBatch_singleton]
   -- Unfold applySinks with the template hypothesis
   simp only [applySinks, htmpl, List.foldl_append, List.foldl_cons, List.foldl_nil]
   -- The first sink: .remove step.qid with empty subst = erase qid
@@ -381,7 +369,8 @@ theorem fold_step_exactness (s : Space) (ef : ExecFact) (step : FoldStep)
     (hunique : matchPattern [] s ef.rule.pat = [([], consumed)]) :
     fireExecFact s ef = applyFold (consumeExec s ef) step := by
   rw [fireExecFact_readCopy_simplify s ef hm, hunique]
-  simp only [List.foldl_cons, List.foldl_nil]
+  simp only [List.map_singleton]
+  rw [applyMorkSinkBatch_singleton]
   simp only [applySinks, htmpl, List.foldl_append, List.foldl_cons, List.foldl_nil]
   -- The first sink: .remove step.waitAtom
   rw [show applySink (consumeExec s ef) [] (.remove step.waitAtom) =
@@ -405,7 +394,9 @@ commutes with `\ {a}`. This underlies the scheduler's exec-fact consumption:
 
 /-- No sink in the list produces atom `a` via addition after substitution. -/
 def SinksDontProduce (a : Atom) (σ : Subst) (sinks : List Sink) : Prop :=
-  ∀ s ∈ sinks, ∀ c, (s = .add c ∨ s = .head c) → applySubst σ c ≠ a
+  ∀ s ∈ sinks, ∀ c,
+    (s = .add c ∨ (∃ count, s = .head count c ∨ s = .tail count c)) →
+      applySubst σ c ≠ a
 
 /-- `Finset.erase` commutes with `Finset.sdiff` singleton. -/
 private theorem erase_sdiff_singleton_comm (s : Finset Atom) (a b : Atom) :
@@ -431,7 +422,9 @@ private theorem union_singleton_sdiff_comm (s : Finset Atom) (a c : Atom) (hne :
 
 /-- Single sink commutes with `\ {a}` when the sink doesn't produce `a`. -/
 private theorem applySink_sdiff_comm (acc : Space) (σ : Subst) (a : Atom) (snk : Sink)
-    (h : ∀ c, (snk = .add c ∨ snk = .head c) → applySubst σ c ≠ a) :
+    (h : ∀ c,
+      (snk = .add c ∨ (∃ count, snk = .head count c ∨ snk = .tail count c)) →
+        applySubst σ c ≠ a) :
     applySink (acc \ {a}) σ snk = (applySink acc σ snk) \ {a} := by
   cases snk with
   | remove b =>
@@ -442,16 +435,25 @@ private theorem applySink_sdiff_comm (acc : Space) (σ : Subst) (a : Atom) (snk 
     split
     · exact union_singleton_sdiff_comm acc a (applySubst σ c) (h c (Or.inl rfl))
     · rfl
-  | head c =>
+  | head count c =>
     simp only [applySink]
     split
-    · exact union_singleton_sdiff_comm acc a (applySubst σ c) (h c (Or.inr rfl))
+    · exact union_singleton_sdiff_comm acc a (applySubst σ c)
+        (h c (Or.inr ⟨count, Or.inl rfl⟩))
+    · rfl
+  | tail count c =>
+    simp only [applySink]
+    split
+    · exact union_singleton_sdiff_comm acc a (applySubst σ c)
+        (h c (Or.inr ⟨count, Or.inr rfl⟩))
     · rfl
 
 /-- `applySinks` fold commutes with `\ {a}` when no sink produces `a`. -/
 private theorem foldl_applySink_sdiff_comm' (sinks : List Sink) (acc : Space)
     (σ : Subst) (a : Atom)
-    (h : ∀ s ∈ sinks, ∀ c, (s = .add c ∨ s = .head c) → applySubst σ c ≠ a) :
+    (h : ∀ s ∈ sinks, ∀ c,
+      (s = .add c ∨ (∃ count, s = .head count c ∨ s = .tail count c)) →
+        applySubst σ c ≠ a) :
     sinks.foldl (applySink · σ) (acc \ {a}) =
       (sinks.foldl (applySink · σ) acc) \ {a} := by
   induction sinks generalizing acc with
@@ -491,7 +493,8 @@ theorem fireExecFact_eq_applySinks_sdiff (s : Space) (ef : ExecFact)
     (hndp : SinksDontProduce ef.atom σ ef.rule.tmpl.sinks) :
     fireExecFact s ef = (applySinks s σ ef.rule.tmpl) \ {ef.atom} := by
   rw [fireExecFact_readCopy_simplify s ef hm, hunique]
-  simp only [List.foldl_cons, List.foldl_nil]
+  simp only [List.map_singleton]
+  rw [applyMorkSinkBatch_singleton]
   rw [consumeExec_eq_sdiff]
   exact applySinks_sdiff_comm s σ ef.rule.tmpl ef.atom hndp
 

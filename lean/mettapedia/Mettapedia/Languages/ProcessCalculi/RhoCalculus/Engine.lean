@@ -138,6 +138,17 @@ theorem emptyBag_reduceStep_nil (fuel : Nat) :
   | succ n =>
     simp [reduceStep, findAllComm, reduceElemsAux]
 
+private theorem reduceElemsAux_const_nil (elems : List Pattern) :
+    reduceElemsAux (fun _ => []) elems = [] := by
+  simp [reduceElemsAux]
+
+/-- With one unit of fuel, a flat parallel bag exposes exactly its top-level
+COMM frontier.  Recursive PAR exploration receives zero fuel and therefore
+contributes no additional reducts. -/
+theorem reduceStep_bag_one_eq_findAllComm (elems : List Pattern) :
+    reduceStep (.collection .hashBag elems none) 1 = findAllComm elems := by
+  simp [reduceStep, reduceElemsAux_const_nil]
+
 /-- Reduce to normal form using a deterministic strategy (pick first reduct). -/
 def reduceToNormalForm (p : Pattern) (fuel : Nat := 1000) : Pattern :=
   match fuel with
@@ -391,8 +402,9 @@ private theorem comm_at_positions (elems : List Pattern) (i : Nat) (j : Nat)
   have hcomm := @Reduces.comm n q body ((elems.eraseIdx i).eraseIdx j)
   exact ⟨Reduces.equiv hsc1 hcomm (StructuralCongruence.refl _)⟩
 
-/-- findAllComm specification -/
-private theorem findAllComm_spec {elems : List Pattern} {r : Pattern}
+/-- Every executable top-level COMM candidate exposes the two consumed
+occurrences, their normalized channel agreement, and its exact residual. -/
+theorem findAllComm_spec {elems : List Pattern} {r : Pattern}
     (hr : r ∈ findAllComm elems) :
     ∃ (i : Nat) (hi : i < elems.length) (j : Nat) (hj : j < (elems.eraseIdx i).length)
       (nOut q nIn : Pattern) (body : Pattern),

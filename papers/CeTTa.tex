@@ -48,7 +48,8 @@
 MeTTa is a reflective, non-deterministic meta-language with three
 actively maintained runtimes: Hyperon Experimental (\HE{}, Rust),
 \PeTTa{} (Prolog), and \CeTTa{} (C).  This paper describes \CeTTa{},
-a direct C implementation of the \HE{} MeTTa evaluator that passes a
+a direct C implementation of the \HE{} MeTTa evaluator (current development
+line 1.4.0-dev) that passes a
 535-test MeTTa regression suite (a 539-row manifest): 405 passed /
 0 failed on the default build and 401 passed / 0 failed on the
 MORK-bridge build, plus a heavy-golden lane at 17 passed / 0 failed
@@ -88,11 +89,15 @@ pipeline proven in Lean, and the first rule classes (grounded dispatch,
 argument congruence, equation matching) are welded to a reflectable
 small-step rule table whose rule-removal tests prove the engine
 genuinely depends on the declared rules.
-Two further pillars extend the architecture: parsers
+Three further pillars extend the architecture: parsers
 \emph{generated from the authored grammars themselves} (per-language
 LanguageDefs compiled to native readers with differential, mutation, and
 purity gates --- the pipeline caught two defects in the authored grammars
-before execution), and \code{--lang prime}, a \emph{distinct} lazy
+before execution); \code{--lang zero}, a query-first occurrence-bag kernel
+whose semantics is carried through OSLF to native spatial/behavioral types,
+checked ProofGSLT articles, MeTTa inference-kernel (MIK) authority, and
+native inference-kernel (NIK) replay obligations; and
+\code{--lang prime}, a \emph{distinct} lazy
 sibling language (branch-local call-by-need with call-time choice,
 opaque Need-cell capabilities, occurrence-bag results, and a
 policy-neutral certified search-control layer), whose living
@@ -120,7 +125,13 @@ large-scale genomic inference and a cross-engine chaining suite, a
 freshness-first performance re-audit and triage, a specification gap
 analysis, and a three-machine architecture (local search, indexed
 shared-space, type elaboration) informed by GPT-5.4~Pro architectural
-review.
+review.  A second answer-first audit on 2026-08-09 validates the current
+native and counted-\PathMap{} routes under the full normal and sanitizer
+portfolios, removes an effectively complete candidate scan and a
+quadratic mutation/index-rebuild loop, and adds dialect-honest
+\PeTTa{}--SWI comparisons.  On the audited HexLife conjunction,
+\PathMap{} is slightly faster than native space in Prime and at parity in
+\PeTTa{}, while exact answer bags agree throughout.
 \end{abstract}
 
 %% ────────────────────────────────────────────────────────────────────
@@ -135,7 +146,8 @@ Three implementations exist:
   implementation with Python bindings and a large standard library.
 \item[\PeTTa{}] Prolog-based MeTTa (SWI-Prolog).  Leverages Prolog's
   SLD resolution for backward chaining and pattern matching.
-\item[\CeTTa{}] Direct C evaluator (this work).  Targets the \HE{} spec
+\item[\CeTTa{}] Direct C evaluator (this work; current development line
+  1.4.0-dev).  Targets the \HE{} spec
   with arena allocation, discrimination-trie indexing, and tail-call
   optimization.
 \end{description}
@@ -196,6 +208,24 @@ Three implementations exist:
   canonical payload-evaluation process equals its
   structural-congruence-observed outcome set, with no certification witness in
   the carrier (Section~\ref{sec:rho-lean}).
+\item A revision-pinned machine substrate: candidate-only
+  \code{MatchDecision} programs followed by authoritative rematching, an
+  explicit heap-based \PeTTa{} choice/continuation machine, prepared pure
+  programs, bounded \code{RuleMachine} artifacts, and observer-safe
+  substitution fusion.  Prime additionally separates computational zero
+  from the inert \code{Empty} datum and exposes an exact ordered outcome bag
+  with completion status before compatibility projections.
+\item A counted-\PathMap{} query realization whose Rust-backed occurrence
+  store remains authoritative while a synchronized native discrimination
+  view supplies derived candidate coordinates.  Logical-update snapshots,
+  authored order, and multiplicity remain observable; append-only index
+  maintenance removes the former rebuild-per-write behavior.
+\item A fail-closed, tool-isolated MM2-to-MeTTa prototype plus a curated
+  corpus gate.  The corpus records 43 programs (40 status agreements,
+  three explicit fork skips); 21 admitted programs are compared as exact
+  encoded atom multisets against native MM2 across HE, Prime, and \PeTTa{},
+  over both native and \PathMap{} spaces.  Unsupported MM2 semantics are
+  rejected rather than approximated (Section~\ref{sec:mm2-integration}).
 \end{enumerate}
 
 %% ────────────────────────────────────────────────────────────────────
@@ -248,6 +278,22 @@ rule-table entries and \emph{requires} the witnesses to fail
 (Section~\ref{sec:specdriven}), and the semantic conformance suite
 re-runs 23 curated \HE{} I/O fixtures live against upstream \HE{}
 (Section~\ref{sec:conformance}).
+
+The integration audit on combined candidate \code{3cd05c2} (2026-08-09) is
+a separate, newer receipt rather than a retroactive change to those July
+counts.  It composes the generic matching/\PathMap{}/MM2 hardening of
+\code{b53c1a8} with Zero's runner and compilation-certificate tranche from
+\code{a9d7764}.  Its default Python/module gate reports
+\textbf{419 passed, 0 failed}; focused MORK-build Zero, MM2 translator, and
+43-program corpus gates also pass.  The full normal and
+AddressSanitizer/UndefinedBehaviorSanitizer portfolios,
+Prime/heavy/\PathMap{}/MM2/ABI/mutation/differential lanes, and the
+answer-first performance portfolio all pass.  Test and probe products are
+now named by their complete build configuration, so optimized, sanitizer,
+runtime-statistics, and bridge products cannot overwrite one another.
+Configuration stamps are remade before dependency files are read, so a
+version or profile change cannot relink stale objects; unchanged focused
+targets reuse their binaries instead of recursively relinking \CeTTa{}.
 
 %% ────────────────────────────────────────────────────────────────────
 \section{Specification-Driven Semantics: Profiles, Conformance, and the
@@ -1670,12 +1716,17 @@ occurrences in the query result.  Thus \PathMap{} agreement is not merely
 cardinality agreement: \CeTTa{}'s counted encoding preserves the language's
 bag contract.
 
-The command-line \code{--space-engine pathmap} configuration presently
-stores the bootstrap portion in \PathMap{} and then falls back to the
-ordinary evaluator space.  It is useful for whole-program conformance but
-is not claimed as a pure backend performance result.  All \PathMap{}
-timings below use an explicit \code{(new-space pathmap)} and therefore
-exercise the backend itself.
+At the pinned \code{7707cef} candidate, the command-line
+\code{--space-engine pathmap} route stored only the bootstrap portion in
+\PathMap{} and then fell back to the ordinary evaluator space.  The tables
+in this historical subsection therefore used explicit
+\code{(new-space pathmap)} objects.  This limitation no longer describes
+the current 1.4 development line: \code{--space-engine pathmap} now makes a
+counted \PathMap{} inside the Rust bridge's MORK \code{Space} container the
+primary occurrence store for generic MeTTa queries.  It uses MORK expression
+bytes as trie keys but does \emph{not} run those queries through MM2's
+\code{space\_step}; raw MM2 stepping and generic counted queries are distinct
+modes over related substrate.
 
 \paragraph{One-million-fact space lifecycle.}
 The Roman/friend matrix performs one million insertions, one exact hit,
@@ -1709,8 +1760,9 @@ store for each query.}
 The table does not support ``always outsource to MORK.''  \PeTTa{}'s
 ordinary indexed space wins the complete lifecycle, while resident MORK
 offers \CeTTa{} the smallest footprint among its million-fact lanes.
-\CeTTa{}'s explicit \PathMap{} exact-hit cost is dominated by the current
-single-pattern adapter and result reconstruction, not by trie lookup.
+At that candidate, \CeTTa{}'s explicit \PathMap{} exact-hit cost was
+dominated by its single-pattern adapter and result reconstruction, not by
+trie lookup.
 Conversely, transferring a native store before a query loses both time and
 memory.  The engineering implication is local: retain resident indexed
 stores, push conjunction and folds into their query algebra, and stream or
@@ -1723,9 +1775,9 @@ conjunctive fast path 797\,ms.  MeTTa-on-MORK's product-zipper query took
 819\,ms at the same scale.  These close values have different internal
 profiles: MeTTa-on-MORK prunes a multi-pattern product during trie descent,
 while \CeTTa{} still reconstructs candidate bindings around a shared
-evaluator.  At smaller explicit-store sizes, native \CeTTa{} remains
-faster than its present \PathMap{} adapter (31.3\,ms versus 73.6\,ms at
-20{,}000 edges).  The appropriate adoption path is therefore to expose
+evaluator.  At smaller explicit-store sizes on that candidate, native
+\CeTTa{} was faster than its then-current \PathMap{} adapter (31.3\,ms
+versus 73.6\,ms at 20{,}000 edges).  The appropriate adoption path is to expose
 multi-pattern cursor traversal and bounded row batches through \CeTTa{}'s
 backend interface, not to copy data across an FFI boundary for every join.
 
@@ -1777,6 +1829,112 @@ result: they are the measured obligations for the experimental Need-machine
 work---linear administrative cost within a demand path, followed by sound
 ground-call sharing across repeated pure calls.
 
+\subsection{August 9 Answer-First Backend and Dialect Audit}
+\label{sec:august-backend-audit}
+
+The current 1.4 development line was audited again after the revision-pinned
+machine and \PathMap{} work.  Every timed row below was admitted only after
+the exact answer bag, multiplicity, and boundary answers were checked.
+Values are single whole-process observations on the audit workstation, not
+publication-quality medians; they are retained as structural regression
+evidence and are intentionally kept separate from the five-run tables above.
+
+\paragraph{Counted \PathMap{} conjunction.}
+The HexLife witness joins two \code{alive} relations around one
+\code{neighbors} relation over triangular boards.
+All four configurations return the same normalized pair bag at each scale.
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{rrlrr}
+\toprule
+Cells & Result pairs & Lane & Native & \PathMap{} \\
+\midrule
+1{,}891 & 10{,}980 & Prime & 0.36\,s / 138{,}512\,kB & 0.34\,s / 135{,}316\,kB \\
+1{,}891 & 10{,}980 & \PeTTa{} & 1.84\,s / 328{,}688\,kB & 1.84\,s / 331{,}264\,kB \\
+7{,}381 & 43{,}560 & Prime & 2.89\,s / 876{,}992\,kB & 2.53\,s / 851{,}424\,kB \\
+7{,}381 & 43{,}560 & \PeTTa{} & 22.21\,s / 2{,}447{,}440\,kB & 22.71\,s / 2{,}452{,}192\,kB \\
+\bottomrule
+\end{tabular}
+\caption{Answer-checked HexLife conjunction on current native and counted
+\PathMap{} spaces.  Each cell is wall time / peak RSS for one process.}
+\label{tab:hexlife-pathmap-current}
+\end{table}
+
+Earlier in the audit the \PathMap{} route exposed an effectively complete
+candidate scan.  The repair gives the counted trie one synchronized native
+discrimination view for candidate coordinates, while the counted \PathMap{}
+remains the occurrence authority.  This is why the current table measures a
+real index rather than storage followed by a full native unifier scan.
+\PathMap{} crosses over slightly on Prime and reaches \PeTTa{} parity on this
+trie-suitable join; the large remaining \PeTTa{} time at the higher scale is
+therefore a control-machine obligation rather than evidence that \PathMap{}
+queries are intrinsically slow.
+
+\paragraph{Logical update under mutation.}
+A second witness consumes a two-hop match frontier over 5{,}000 edges and
+adds one derived path per answer.  Both execution orders derive exactly
+4{,}999 paths, including the first and last expected paths.
+
+\begin{table}[htbp]
+\centering
+\begin{tabular}{lrr}
+\toprule
+Execution order & Native & \PathMap{} \\
+\midrule
+Stream each \code{add-atom} over the frozen frontier
+  & 0.05\,s / 27{,}216\,kB & 0.06\,s / 31{,}196\,kB \\
+Collapse the frontier, then fold the writes
+  & 0.06\,s / 31{,}660\,kB & 0.08\,s / 35{,}332\,kB \\
+\bottomrule
+\end{tabular}
+\caption{PeTTa logical-update mutation witness at 5{,}000 edges.}
+\label{tab:petta-pathmap-logical-update}
+\end{table}
+
+Before repair the streaming \PathMap{} form took approximately 5.2\,s and
+grew approximately quadratically.  The matcher had already captured the
+correct logical-update candidate snapshot; the defect was physical.  Every
+append invalidated the derived index, and the next choice point rebuilt it
+over the growing space.  Append-only updates now extend the live
+discrimination and substitution indexes incrementally.  Retraction remains
+the conservative invalidation boundary.  Thus the repair changes index
+maintenance, not which occurrences a running match may observe, and avoids
+forcing Prime to materialize an entire answer bag merely to protect a reader
+from its own writes.
+
+\paragraph{Dialect-honest \PeTTa{} comparison.}
+Table~\ref{tab:petta-swi-current} runs the same authored source in \CeTTa{}'s
+\PeTTa{} lane and SWI-\PeTTa{}.  HE, Prime, and MM2 cells are deliberately
+absent: on these programs they are different language routes, not alternative
+implementations of the same dialect contract.
+
+\begin{table}[htbp]
+\centering
+\resizebox{\textwidth}{!}{%
+\begin{tabular}{lrrr}
+\toprule
+Workload and checked answer & \CeTTa{} native & \CeTTa{} \PathMap{} & SWI-\PeTTa{} \\
+\midrule
+Ackermann$(3,9)=4{,}093$ & 1.35\,s / 78{,}292\,kB & 1.34\,s / 78{,}480\,kB & 1.29\,s / 20{,}448\,kB \\
+Na\"ive reverse$(3{,}000)$, length $3{,}000$ & 0.45\,s / 209{,}508\,kB & 0.45\,s / 209{,}612\,kB & 0.32\,s / 21{,}332\,kB \\
+Symbolic derivative, depth 12: $2{,}142{,}147$ & 0.49\,s / 281{,}324\,kB & 0.49\,s / 281{,}908\,kB & 0.62\,s / 313{,}508\,kB \\
+Roman PLN assertion & 0.50\,s / 108{,}216\,kB & 0.48\,s / 108{,}740\,kB & 0.21\,s / 24{,}452\,kB \\
+\bottomrule
+\end{tabular}%
+}
+\caption{Same-source, answer-checked \PeTTa{} audit rows.  Cells are wall
+time / peak RSS for one process.}
+\label{tab:petta-swi-current}
+\end{table}
+
+There is no catastrophic broad slowdown in this compact portfolio:
+\CeTTa{} is near SWI on Ackermann and faster on the symbolic derivative.
+Roman remains about $2.3\times$ slower, while reverse and Roman retain much
+larger memory footprints.  Those are honest remaining control/allocation
+targets; the table is not evidence that every \PeTTa{} program should be
+optimized through the Prime machine or through \PathMap{}.
+
 \section{Performance Analysis}
 
 \subsection{Asymptotic properties}
@@ -1788,11 +1946,15 @@ slope checks) rather than by review.  The load-bearing facts, with the
 algorithms in Appendix~\ref{app:algorithms}:
 
 \begin{itemize}
-\item \textbf{Interning is cluster-free.}  Stored record hashes and the
-  slot indices derived from them are distinct roles; an avalanche
-  finalizer at the slot boundary prevents structural name families from
-  degenerating into shared probe clusters, keeping bulk ingestion
-  $O(N)$.
+\item \textbf{Intern probing is full-cycle and tail-gated.}  Stored record
+  hashes and slot indices are distinct roles.  An avalanche finalizer fixes
+  the low-bit structural families that originally made bulk insertion
+  quadratic, but the August adversarial family showed that ordinary linear
+  probing could still form a 71-slot primary cluster.  Lookup and insertion
+  now share an odd hash-derived stride over the power-of-two table, so every
+  probe sequence visits the full capacity before exhaustion.  The gate uses
+  a workload-scaled tail bound rather than imposing an arbitrary 64-slot
+  runtime limit.
 \item \textbf{Judgment recording is constant per step.}  Prime's
   evidence machinery appends at $O(1)$ per evaluation step, so budgeted
   judgments scale linearly with the runs they observe.
@@ -1804,6 +1966,12 @@ algorithms in Appendix~\ref{app:algorithms}:
   counting flows through the backend visitor seam at the evaluation
   site, never through per-engine fast paths in grounded dispatch;
   cross-engine golden tests pin the uniformity.
+\item \textbf{PathMap logical update is not rebuild-per-write.}  A running
+  \PeTTa{} match consumes the candidate snapshot captured at entry, while
+  append-only writes incrementally update the derived discrimination view
+  for later matches.  Removal takes the conservative dirty/rebuild path.
+  This separates snapshot visibility from index invalidation and removes
+  the measured quadratic mutation loop without materializing the frontier.
 \item \textbf{Deterministic-tail loops are flat.}  Unbounded
   tail-recursive effect loops (the classic bulk \code{add-atom}
   pattern) run with constant frames and per-iteration arena reset.  The
@@ -1975,17 +2143,28 @@ not share mutable state:
 \begin{enumerate}
 \item \textbf{Local search machine.}
   Branch-local bindings, trail/rollback, choice frames, scratch arenas.
-  WAM-inspired: cheap undo via watermarks, not clone/free churn.
-  This is the next implementation priority.
+  WAM-inspired: cheap undo via watermarks, not clone/free churn.  This is
+  no longer merely the next priority: \code{PettaSearchMachine} owns an
+  explicit heap of clauses, environments, continuations, choice points,
+  rollback marks, and answer projection, while \code{SearchContext}
+  supplies the shared binding/scratch save protocol.  Remaining work is
+  structural dispatch and retention reduction, not inventing the seam.
 
 \item \textbf{Indexed shared-space machine.}
-  Persistent PathMap/MORK-backed spaces, snapshot/epoch discipline,
-  conjunction query planning, leapfrog triejoin.
-  Deterministic and committed---no backtracking through the index.
+  Counted PathMap/MORK-backed spaces, snapshot/epoch discipline,
+  conjunction query planning, and eventually product-cursor triejoin.
+  The current engine has backend-primary counted storage plus a derived
+  native candidate view; direct trie descent remains the route that can
+  retire that dual representation.  The index is deterministic and
+  committed---no backtracking through its physical state.
 
-\item \textbf{Type/elaboration machine} (future).
+\item \textbf{Type/elaboration machine} (partially realized).
   Scoped binders, metavariables, constraint solving, delayed
-  assignments.  Separate from runtime bindings.
+  assignments, separate from runtime bindings.  \PeTTa{}'s
+  \code{typecheck-v2} already crosses a provider-neutral
+  \code{PettaAnalysisService} boundary carrying provider/ABI/policy
+  identity and mutable authority; the fully generic constraint machine is
+  still future work.
 \end{enumerate}
 
 Language profiles (\code{he\_compat}, \code{he\_extended},
@@ -2024,6 +2203,26 @@ This yields a practical division of labor for the PathMap/MORK backend:
 \item count metadata, not trie-key distortion, carries bag semantics.
 \end{enumerate}
 
+\paragraph{Current realization and logical-update boundary.}
+The current generic \code{pathmap} engine is a counted \PathMap{} inside
+the Rust bridge's MORK \code{Space} container.  That counted store is the
+occurrence authority.  A synchronized native AtomId array and discrimination
+trie are a \emph{derived candidate accelerator}, not an independently
+writable space: private candidate order may differ, but public iteration,
+authored order where the dialect observes it, multiplicity, removal, and
+destructive replacement are answered at the authority boundary.  \PeTTa{}
+captures candidate coordinates at match entry, giving a logical-update view;
+new assertions extend the derived indexes incrementally for subsequent
+queries, while removals conservatively dirty them.  This split both preserves
+the running snapshot and avoids the former invalidate/rebuild cycle.
+
+The synchronized view is intentionally a transitional realization.  It
+avoids row-granular bridge translation and supplies ordered candidates today,
+but costs a second resident representation and an invalidation proof.  The
+durable \PathMap{} route is trie-native candidate and product-cursor descent,
+with decoding only for surviving bindings and native fallback whenever the
+declared observer cannot be preserved.
+
 \paragraph{Verified runtime contracts.}
 Recent Lean work extends the backend correctness story with three new contract files:
 \begin{itemize}
@@ -2051,14 +2250,58 @@ story, including the variant-query and binding-cache lemmas; the present
 paper uses those results to justify the architecture of \CeTTa{}'s indexed
 shared-space machine.
 
+\subsection{Open Realization Laws for Heterogeneous Backends}
+\label{sec:operator-realization}
+
+The corresponding Lean development deliberately specifies an open law
+interface rather than freezing a final Prime or \CeTTa{} ABI.  Its semantic
+waist is
+\[
+  \mathsf{snapshot}\times\mathsf{operator\ plan}
+    \longrightarrow \mathsf{delta}\times\mathsf{receipt}.
+\]
+Plans, occurrence identities, deltas, and receipts are revision-scoped; a
+receipt binds the named observer, plan identity, delta identity, source and
+target endpoints, execution mode, and exact ordered occurrence lists.  Stale
+plans and receipts are rejected.  If semantic commutation permits parallel
+execution but a backend's resource algebra declines it, the admitted
+realization serializes the same operator rather than changing its answer.
+Lossless native-to-\PathMap{}-to-native transfer composes only at matching
+backend/revision boundaries and retains every intermediate delta and receipt.
+
+This distinguishes two questions that a universal ``parallelizable'' flag
+would conflate: whether two events commute under the language's named
+observer, and whether a particular backend can coexecute them with its
+physical resources.  Native space may admit fine-grained mutable occurrence
+plans; \PathMap{} may admit persistent-root, bulk-monotone, and structural
+merge plans.  Both realize one MeTTa semantics, and both must serialize or
+fall back when their physical algebra cannot preserve it.  Richer cost,
+provenance, capability, observer, and backend evidence may refine the current
+records provided accepted evidence erases to these laws.  This is sufficient
+guidance for current realizations, not a claim of minimality, completeness,
+initiality, or generated-C adequacy.
+
+The proof layers are separated accordingly.  \code{QueryRevision} supplies
+proof-relevant histories, snapshots, and literal versus observer-relative
+commuting squares; \code{EventValuation} separates behavioral commutation from
+resource compatibility and permits sound backends with different admitted
+plan inventories; \code{QueryRevisionBridge} instantiates evidence revision
+and located MeTTa access modes; and \code{OperatorRealization} checks the
+revisioned plan/delta/receipt boundary and its open refinements.  These are
+mathematical principles and separating examples.  Native and \PathMap{}
+refinement instances, OS-thread lowering, reclamation safety, and generated-C
+execution adequacy remain explicit obligations.
+
 \subsection{MM2 Integration}
+\label{sec:mm2-integration}
 
 MM2 is a deterministic, priority-scheduled, forward-chaining term rewriting
-language implemented by MORK\@.  Its programs are not a separate execution
-layer---they are atoms in MORK-backed spaces, stepped by MeTTa via
-\code{step!}.  The hybrid interaction requires no special protocol: MeTTa
-creates spaces, adds data, steps MM2 rules, and reads results through ordinary
-\code{match}.
+language implemented by MORK\@.  On the native bridge route its programs are
+atoms in MORK-backed spaces and \code{step!} invokes MORK's scheduler over
+them; ordinary MeTTa evaluation does not silently interpret an \code{exec}
+atom.  The hybrid interaction requires no special protocol: MeTTa creates
+spaces, adds data, explicitly steps MM2 rules, and reads results through
+ordinary \code{match}.
 
 \begin{verbatim}
 !(bind! &ws (new-space mork))
@@ -2089,6 +2332,58 @@ source syntax$\leftrightarrow$IR lowering
 \code{,}$\leftrightarrow$\code{mm2\_pattern\_and}, etc.), preserving
 round-trip fidelity between MM2 concrete syntax and \CeTTa{}'s internal
 representation.
+
+\paragraph{An indexed MM2 GSLT rather than one overloaded boundary.}
+The Lean model now packages deterministic MM2 work queues through one
+\code{ExecutionProfile $\to$ GSLT} construction over a shared carrier of
+finite support-valued spaces.  The historical comma-pattern core is one
+member.  A strict source-aware member admits comma or \code{I} inputs and
+comma or \code{O} outputs only when every source factor and sink belongs to
+the modeled vocabulary; it rejects an entire directive instead of filtering
+unknown children.  Its boundary is then selected explicitly:
+\code{leaveInert} excludes unsupported directives from scheduling, whereas
+\code{consume} selects the raw four-field \code{exec} shell and erases it if
+the selected interpreter declines it.  A closed canary proves that a concrete
+malformed input is a normal form in the former profile and an erasing step in
+the latter.  This captures remove-before-interpret without declaring that
+factory cases absent from Lean are absent from upstream MORK.
+
+All members are deterministic, and their canonical drivers have only unit
+private state: pending work and scheduling locations remain atoms in the
+space.  Bounded runs carry the residual space and distinguish quiescent
+completion from live expiration.  On an explicitly shared compatible
+candidate, source-aware and historical firing are proved equal; full
+candidate-set equality remains conditional on completing the parser and
+byte-order refinements for arbitrary locations.  Finally, the generic OSLF
+construction maps each profile to predicate-valued native types, and exact
+target inhabitation is proved equivalent to one step of that same profile.
+The corresponding native claim is already in the generic ProofGSLT authority
+form.  A concrete MM2 wire presentation and native checker lowering remain
+realization obligations, not a second semantics.
+
+\paragraph{Fail-closed hosted translation (work in progress).}
+Alongside that native route, \code{tools/mm2\_to\_metta.py} structurally
+translates a deliberately bounded MM2 fragment for execution by a
+tool-isolated MeTTa engine.  It renames MM2's \code{+}/\code{-} sinks so they
+cannot collide with MeTTa arithmetic, normalizes variadic output templates,
+and orders static rules by MORK's encoded expression key.  The admitted
+fragment covers ground static \code{exec} locations, comma queries,
+add/remove/comma outputs, and one guarded distinct-count form.  Dynamic or
+reflective \code{exec}, \code{I} sources, non-ground program data, unbound
+outputs, mixed unsupported sinks, and unimplemented reductions fail
+translation rather than receiving an approximation.
+
+The native corpus gate records 43 programs: 40 reproduce their recorded
+run/panic status, three examples pinned to a different MORK fork are explicit
+skips, and none differ or disappear.  Of those, 21 are admitted by the hosted
+translator.  Each admitted program is compared with native MM2 as a multiset
+of canonical MORK-encoded atoms across HE, Prime, and \PeTTa{}, on both native
+and \PathMap{} spaces.  This is strong basic differential evidence, not a
+general MM2 compiler claim.  The queue is compiled statically and does not
+yet model runtime \code{exec} creation or consumption; the distinct-count
+path still groups quadratically; and upstream source/sink coverage remains
+incomplete.  The prototype therefore remains under \code{tools/}, with no
+new unnamespaced standard-library surface.
 
 %% ────────────────────────────────────────────────────────────────────
 \section{The MeTTa Dialect Landscape}
@@ -2778,6 +3073,145 @@ statement only once the same-presentation binding, per-\code{\$p}
 discharge, and prefix simulation land, as itemized in the preceding
 paragraph.
 
+\subsection{MeTTa Zero: a two-operation kernel with native proof evidence}
+\label{sec:zero-oslf-nik}
+
+MeTTa Zero is the compact executable specimen for extending the preceding
+programme from parsing to language semantics and compilation.  Assuming
+s-expressions with variables, an occurrence bag $S$, matching with
+substitution, and a declared grounding capability, its kernel has only two
+public semantic operations.  Write $v$ for a fresh wildcard and abbreviate
+the interpreted result bag by $R_S(x)$:
+
+\begin{align}
+\mathsf{query}_S(p,t)
+  &= \biguplus_{a\in S}
+       \{\,t\theta \mid \theta\in\mathsf{match}(p,a)\,\},
+       \label{eq:zero-query}\\
+R_S(x)
+  &= \left(\biguplus_{(=\,l\,r)\in\mathsf{query}_S(v,v)}
+       \{\,r\theta \mid \theta\in\mathsf{match}(l,x)\,\}\right)
+       \uplus \mathsf{ground}(x),
+       \label{eq:zero-results}\\
+\mathsf{eval}_S(x)
+  &= \begin{cases}
+       R_S(x), & R_S(x)\neq\varnothing,\\
+       \{x\},  & R_S(x)=\varnothing.
+     \end{cases}
+     \label{eq:zero-eval}
+\end{align}
+
+Equations are therefore ordinary queryable atoms, not entries in a private
+rule store; evaluation obtains them through the same public query as user
+programs.  Grounding is a declared library capability, and a capability's
+decline leaves an uninterpreted subject inert rather than turning ignorance
+into an empty result.  The coproducts are occurrence coproducts: duplicate
+facts, rules, matches, and answers remain distinct.  A recursive semantic
+runner, continuations, pending work, and \code{reify} compose over this
+kernel; they are not silently folded into Equations~\ref{eq:zero-query}--
+\ref{eq:zero-eval}.  The current runner is consequently retained as a
+versioned experimental profile while its abstract laws and cross-dialect
+interpretations are established.
+
+\paragraph{One semantic root, three derived uses of native types.}
+The Lean development sends Zero's actual composed
+\code{ExtendedLanguageDef} and relation environment through OSLF, rather
+than constructing a parallel transition relation:
+
+\begin{center}
+$\text{Zero language definition}
+  \longrightarrow \text{relation-backed OSLF span}
+  \longrightarrow \text{native types and certificates}$
+\end{center}
+
+\noindent
+The resulting information has three distinct, proved uses.
+
+\begin{enumerate}
+\item \textbf{Spatial classification.}  Generated headed types recognize
+  equation atoms and the exact query/evaluation request and answer
+  constructors.  The constructor list is computed from the language term
+  grammar (\code{zero\_constructorTypes}), rather than maintained as a
+  second inventory.
+\item \textbf{Behavioral evidence.}  Exact query and evaluation diamond
+  theorems identify the OSLF diamond with existence of an answer in the
+  corresponding Zero occurrence bag.
+  Proof-relevant finite certificates are sound and complete for this
+  admitted fragment.  Generic predecessor-universal \code{box} evidence
+  deliberately fails closed until finite predecessor enumeration, an
+  invariant, or coinductive evidence is supplied.
+\item \textbf{Compilation analysis.}  Constructor/arity head signatures
+  select the query or evaluation production without inspecting every rule.
+  Unsupported forms take the complete rule-table fallback.  The selected
+  plan is proved equal both to the generic executor and to the authored
+  Zero interpreter under the exact occurrence-bag observer
+  (\code{executeAuthoredNativePlanned\_eq},
+  \code{nativePlanned\_eq\_authored}).  Thus the analysis establishes a
+  safe shape for generated native dispatch; exporting that index into the
+  C plan ABI is an implementation step, not a new semantic decision.
+\end{enumerate}
+
+The distinction between the second and third uses is load-bearing.  A
+diamond records that at least one suitable transition exists; it does not
+record how many occurrences produced it.  The negative theorem
+\code{diamond\_equal\_but\_edge\_counts\_differ} exhibits two spans with
+the same diamond observation and different edge multiplicities.  Native
+types may therefore guide dispatch and justify existence claims, but they
+cannot replace Zero's bag observer.
+
+The generic native-type construction is in
+\href{https://github.com/zariuq/MeTTapedia/blob/main/lean/mettapedia/Mettapedia/OSLF/Framework/NativeTypeTheory.lean}{\code{OSLF/Framework/NativeTypeTheory.lean}};
+the concrete Zero theorems are in
+\href{https://github.com/zariuq/MeTTapedia/blob/main/lean/mettapedia/Mettapedia/Languages/MeTTa/MeTTaZeroLanguageAdequacy.lean}{\code{MeTTaZeroLanguageAdequacy.lean}}.
+
+\paragraph{From a trace to an independently replayed proof.}
+ProofGSLT's open derivations now carry an ordered context of explicit
+premises, with a generic semantic-induction theorem: if every local rule
+application preserves meaning and every open premise has its declared
+meaning, the derived conclusion has its meaning.  Zero instantiates this
+interface with one admitted eight-rule presentation: six spatial rules and
+two behavioral liveness rules.  A liveness rule cannot mint an answer edge
+by itself; it requires a query-row or evaluation-row premise tied to an
+actual occurrence in the interpreted Zero relation.
+
+The bridge in
+\href{https://github.com/zariuq/MeTTapedia/blob/main/lean/mettapedia/Mettapedia/OSLF/Framework/NativeTypeProofGSLT.lean}{\code{OSLF/Framework/NativeTypeProofGSLT.lean}}
+turns an accepted open \code{WireArticle} into MIK semantic authority and
+exposes the corresponding checked-lowering obligation for a native NIK.
+All eight Zero rule schemas have local semantic-preservation proofs.  A
+positive article plus its true row premise entails the OSLF behavioral
+claim; the negative canary changes the article to an out-of-range premise
+reference and is rejected.  This is proof-producing compilation structure,
+not merely a diagnostic trace.
+
+\paragraph{The current C boundary.}
+The executable Zero compiler separately emits a deterministic, hash-linked
+build certificate for
+
+\begin{center}
+$\text{authored sources}\longrightarrow
+  \text{admitted rules}\longrightarrow
+  \text{CGP1 plan}\longrightarrow
+  \text{generated C/H bytes}$.
+\end{center}
+
+\noindent
+An independent build-time C checker rereads the sources, replays admission,
+compares every compiled rule structurally, and checks the exact generated
+artifacts; tampering and nondeterministic regeneration are gated.  This
+checker is not linked into the ordinary \CeTTa{} executable, so normal
+execution pays no certificate-parsing or trace-retention cost.  The claim is
+nevertheless bounded: the certificate proves structural chain of custody,
+not yet that executing CGP1 or the generated C realizes all authored Zero
+observations.  The open row premises above are not yet closed by
+authenticated C execution receipts, and the C checker is not yet generated
+from the single ProofGSLT acceptance predicate.  These are the remaining
+seams between the working build attestation and end-to-end NIK replay.  The
+C checker is independent of the Python producer, but deliberately reuses the
+generic C parser, admission path, and plan decoder; the resulting common-mode
+boundary is another reason the ProofGSLT replay correspondence remains
+necessary.
+
 \section{MeTTa Prime: A Lazy Sibling Language}
 \label{sec:prime}
 
@@ -2808,6 +3242,14 @@ the living specification; the highlights are:
   explicit structural observers inspect a fault atom as data, so
   error-conditional programming is a deliberate boundary rather than an
   accident of evaluation order.
+\item \textbf{Exact outcome carrier.}  Prime's computational zero is the
+  absence of occurrences; the symbol \code{Empty} is ordinary inert data,
+  and the empty expression \code{()} remains a unit datum rather than choice
+  zero.  The internal \code{EvalOutcome} carries the ordered occurrence bag
+  (ordinary values and fault occurrences together), completion reason, and
+  budget state before any compatibility projection.  Its derived zero
+  observation distinguishes complete zero, nonzero, and pending zero, so an
+  incomplete frontier cannot be laundered into a proof of absence.
 \item \textbf{Anonymous variables.}  Bare \code{\$} is a fresh anonymous
   variable per occurrence (it matches any term and binds nothing
   referenceable); named variables retain co-reference.  This is
@@ -2912,6 +3354,28 @@ depends on the declared rules rather than on duplicate hidden branches.
 The congruence bug that motivated this weld---an argument-congruence
 rule silently missing from the one-step relation on three branches at
 once---is exactly the drift class this architecture eliminates.
+MeTTa Zero makes the staged version of the same discipline concrete
+(Section~\ref{sec:zero-oslf-nik}): its public query and query-derived
+evaluator generate one relation-backed OSLF span; native types provide
+checked behavioral evidence and safe constructor-indexed planning; and
+open ProofGSLT articles cross into MIK authority and NIK replay without
+discarding their semantic row obligations.  The negative multiplicity
+theorem prevents that modal analysis from being mistaken for the exact-bag
+semantics it accelerates.
+
+The 1.4 development line also turns much of the earlier machine roadmap into
+runtime structure: revision-pinned \code{MatchDecision} and bounded
+\code{RuleMachine} artifacts, an explicit \PeTTa{} heap machine, exact Prime
+outcomes, and observer-safe substitution fusion.  Its counted \PathMap{}
+backend is now a real generic query route rather than a bootstrap-only store.
+The answer-first August audit found and removed both an effectively complete
+candidate scan and a quadratic mutation/index-rebuild loop; at 7{,}381
+HexLife cells Prime improves from 2.89\,s native to 2.53\,s on \PathMap{},
+while \PeTTa{} remains near backend parity (22.21 versus 22.71\,s).  The
+dialect-honest SWI table shows no broad performance collapse, but preserves
+two important open targets: \PeTTa{} control/allocation overhead on reverse
+and Roman, and high-cardinality \PeTTa{} control even after storage lookup is
+no longer the bottleneck.
 
 Tilepuzzle is settled capacity evidence again, but not a \CeTTa{} speed
 win.  The normalized contract counts 181{,}440 reachable boards
@@ -2936,8 +3400,16 @@ hidden---not global, ambient, or user-visible.}
 \item \textbf{\code{--compile-langdef} codegen:} a generator emitting
   both the reflectable pack and specialized C for the hot evaluator
   under one shared source digest, extending the
-  \code{--compile-stdlib} blob precedent; an
-  evaluate-by-iterating-one-step mode as reference oracle.
+  \code{--compile-stdlib} blob precedent; export Zero's proved native
+  head/dependency index into that plan ABI, retain the complete-table
+  fallback, and keep an evaluate-by-iterating-one-step mode as reference
+  oracle.
+\item \textbf{Zero NIK closure:} generate the native checker from the one
+  ProofGSLT acceptance predicate; define authenticated query-row and
+  capability-receipt codecs that discharge open articles; prove native
+  codec/replay correspondence; then compose the compilation certificate
+  with a separate execution receipt.  Proof machinery remains a build-time
+  or on-demand surface, absent from the ordinary runtime hot path.
 \item \textbf{Small-step / official-HE correspondence:} the
   \code{HESmallStep} relation and its OSLF span exist in Lean
   (proven; zero sorries); the remaining climb is the delimited
@@ -2947,26 +3419,38 @@ hidden---not global, ambient, or user-visible.}
   \code{reachable-within} ($\Diamond^{\le k}$) and
   \code{invariant-within} ($\Box^{\le k}$) over the now-faithful
   one-step relation.
-\item \textbf{Local search machine:} trail/watermark rollback,
-  \code{BindingsBuilder}, arena mark/reset for scratch atoms.
-  Target: materially improve search-heavy workloads such as
-  tilepuzzle; the state-count contract is settled and the earlier
-  arena-growth regression is closed by the evaluation-arena garbage
-  collector, so this is now an optimization opportunity rather than a
-  correctness or capacity blocker.
-\item \textbf{Indexed shared-space engine:} leapfrog triejoin
-  (from Vandervorst's \code{trie\_synth.py}), conjunction query
-  planning, SpaceEngine boundary (formalized in
+\item \textbf{Complete the local search-machine transition:} the explicit
+  \PeTTa{} heap, choice, continuation, and rollback core is working.  Next
+  move mode/relation clause discrimination into the outer loop, compact
+  activation environments and shared continuations, and remove Prime's
+  retained per-result Need/receipt state on large materialized bags.  Keep
+  tilepuzzle and the same-source SWI portfolio as answer-first gates.
+\item \textbf{Versioned heterogeneous realization:} implement the open
+  $\mathsf{snapshot}\times\mathsf{operator\ plan}\to
+  \mathsf{delta}\times\mathsf{receipt}$ boundary with exact occurrence
+  evidence, stale-receipt rejection, backend-specific parallel admission,
+  and mandatory serialization fallback.  OS-thread lowering follows
+  semantic commutation \emph{and} backend resource compatibility; neither
+  native nor \PathMap{} physics becomes language semantics.
+\item \textbf{Indexed shared-space engine:} replace the synchronized native
+  candidate view, where admitted, with direct \PathMap{} descent and product
+  cursors; add leapfrog triejoin, grouped aggregation, and persistent
+  snapshot/fork experiments.  Preserve the SpaceEngine boundary (formalized in
   \code{SpaceEngineBoundary.lean}: native $\subset$ pathmap $\subset$ mork,
   with ACT as artifact-only surface; \code{ACTArtifactBoundary.lean}
   classifies \code{open-act}/\code{load-act!}/\code{dump!} as storage seams).
-  Target: 10--100$\times$ on large-KB multi-pattern conjunctions.
+  Retain authoritative native fallback wherever a direct route cannot preserve
+  the named observer.
 \item \textbf{MM2 as MeTTa data (working):} MM2 exec rules are atoms in
   MORK-backed spaces.  MeTTa creates, inspects, rewrites, and steps them
   through the ordinary space API\@.  \code{step!} is the execution interface;
   \code{.mm2} files import via \code{include}/\code{import!}.  MeTTa can
   pattern-match over MM2 code to analyze or transform programs---the
-  meta-language relationship is native.
+  meta-language relationship is native.  The separate fail-closed hosted
+  translator is useful but incomplete: add runtime priority-queue semantics
+  with explicit \code{exec} consumption, replace quadratic distinct-count
+  grouping with one grouped pass/backend operator, and extend source/sink
+  coverage only under exact differential witnesses.
 \item \textbf{\PathMap{} algebra (working):}  \CeTTa{} already exposes MORK's
   \PathMap{} substrate through the \code{mork:} surface: the lattice
   operations \code{mork:join}, \code{mork:meet}, \code{mork:subtract}, and
@@ -3150,10 +3634,11 @@ enough to be attacked next rather than smudged into the oracle story.
 \emph{This appendix is explicitly experimental.  It captures design
 exploration from ongoing discussions (April~2026) between the authors
 and external reviewers (GPT-5.4 Pro), concerning the
-post-phase-1f abstract-machine layer for \CeTTa{}.  Nothing here is yet
-implemented or committed architecture.  It is recorded to preserve
-design rationale; the authoritative implementation plan remains
-\code{implementation\_plan.tex}.}
+post-phase-1f abstract-machine layer for \CeTTa{}.  The original proposal is
+retained because it records the design pressure, but the blanket statement
+that nothing is implemented is no longer true: several machine components
+landed during August~2026.  They do not yet constitute a final universal MAM,
+and proposed names or categorical readings below remain revisable.}
 
 \subsection{Motivation}
 
@@ -3228,7 +3713,7 @@ current feature set are both free to evolve without renaming.
 \toprule
 \textbf{Concept} & \textbf{Name} \\
 \midrule
-Machine family & \code{MAM} (Quantale Abstract Machine) \\
+Machine family & \code{MAM} (MeTTa Abstract Machine) \\
 Formal description & Quantale-enriched traced profunctor \\
 Engine 1 (goal-directed, Kleisli/effect) & \code{Chainer} \\
 \quad first realization (native) & \code{native\_chainer} \\
@@ -3312,10 +3797,11 @@ normalized object, never raw source atoms.
 
 \subsection{The seven-type vocabulary}
 
-Seven types are proposed to land together before the first real
-backend optimization (counted-answer variant table, \PathMap{}-native
-conjunction, native exact-match index).  Landing them simultaneously
-prevents the "first optimization forces a rewrite" pathology.
+The original proposal used the following seven-type vocabulary.  The
+implementation did not land this table literally: narrower, falsifiable
+objects such as \code{PettaSearchMachine}, \code{MatchDecision},
+\code{PreparedPureProgram}, and \code{RuleMachineCoreV1} emerged first.
+The table remains a useful comparison vocabulary, not a frozen C ABI.
 
 \begin{center}
 \begin{tabular}{ll}
@@ -3333,9 +3819,58 @@ prevents the "first optimization forces a rewrite" pathology.
 \end{tabular}
 \end{center}
 
-Implementation-actual \code{SUSPEND/RESUME} behavior, cancellation
-tokens, snapshot-token machinery, and per-\code{--lang} registration
-remain explicitly deferred.
+General implementation-level \code{SUSPEND/RESUME}, cancellation tokens,
+backend-independent snapshot handles, and a single per-\code{--lang} MAM
+registration surface remain deferred; individual machines already carry
+narrower instances of several of these concerns.
+
+\subsection{Implemented machine substrate (August 2026)}
+
+The landed components answer several of the proposal's original questions
+without pretending that one universal machine has been completed:
+
+\begin{description}
+\item[Choice and continuation ownership.]
+  \code{PettaSearchMachine} owns an explicit heap of clause activations,
+  environments, continuations, choice frontiers, binding rollback, and answer
+  projection.  Its host callback surface supplies language services but does
+  not own the \PeTTa{} choice point.  \code{SearchContext} retains the small
+  shared bindings/scratch save-and-rollback protocol.
+\item[Revision-pinned candidate programs.]
+  \code{MatchDecision} compiles sparse weak-head clause discrimination and
+  callable caches under language, profile, presentation, compiler, and space
+  identity.  It may omit only structurally impossible clauses and returns a
+  candidate superset; selected open equations are standardized apart under a
+  fresh epoch and rechecked by the authoritative matcher.  Indexing therefore
+  cannot become binding authority.
+\item[Prepared and compiled fragments.]
+  \code{PreparedPureProgram} admits a deterministic, effect-free closed
+  equation fragment with explicit heap control and conservative fallback.
+  \code{RuleMachineCoreV1} executes bounded admitted rule packages and
+  inspectable bytecode blocks under revision-pinned publication.  These are
+  compiled fragments with mutation/staleness gates, not a claim that arbitrary
+  MeTTa has been compiled.
+\item[Observer-safe substitution fusion.]
+  Ordinary clause activation previously traversed a result to apply its local
+  substitution and then traversed it again for the enclosing environment.
+  The current matcher can compose these substitutions and traverse once, but
+  only when \code{clause\_result\_payload\_observed} is false.  If an observer
+  may inspect the intermediate payload, the two-stage path remains
+  authoritative.  Observer visibility, rather than benchmark identity, is the
+  optimization license.
+\item[Analysis-provider isolation.]
+  The \PeTTa{} \code{typecheck-v2} profile enters through
+  \code{PettaAnalysisService}, whose identity, ABI, policy, mutable authority,
+  judgments, reasons, and ready-call validation are explicit.  The search
+  machine no longer names the Roman-derived checker; a genuinely generic type
+  and elaboration machine remains open.
+\end{description}
+
+The result is a family of interoperating machine components over shared term,
+space, and observation contracts.  Compact activation environments,
+mode/relation-indexed clause dispatch, generic tabling, and a unified episode
+protocol remain structural work; the implementation evidence no longer
+supports describing the whole layer as a mere callback proposal.
 
 \subsection{Reference base}
 
@@ -3384,16 +3919,19 @@ language lines require distinct control cores over a shared substrate,
 and demand-restricted evaluation is sound and complete for
 goal-reaching by theorem rather than folklore.
 
-This appendix otherwise records design rationale; it does not commit
-implementation.  Reasoned design review converged on $\sim$0.88
-confidence on MAM naming and two-engine strategy.  The concrete
-implementation plan (phase~2 seam; phase~3 tabling plugin;
-phase~4 backend parity) is the authoritative schedule and is
-unchanged by this appendix.
+The August runtime now supplies concrete local-search, candidate-program,
+prepared-pure, bounded-rule-machine, and analysis-provider seams, and the
+counted \PathMap{} backend supplies a working indexed-space pressure case.
+The two-engine strategy therefore survives as an architectural direction,
+while the proposed seven-record API and the claim that implementation had not
+begun are retired.  What remains genuinely experimental is the universal
+composition: tabled suspension/resumption, direct \PathMap{} product-cursor
+planning, versioned operator/delta/receipt exchange, and one open refinement
+interface spanning HE, Prime, \PeTTa{}, Zero, and future engines.
 
-\emph{This text should be revisited at each phase boundary and
-revised as implementation reveals which proposals held and which
-did not.}
+\emph{This text remains a living design record.  Implemented behavior is named
+explicitly; provisional categorical readings and future interfaces do not
+bind Prime or \CeTTa{} development.}
 
 %% ════════════════════════════════════════════════════════════════════
 
@@ -3913,6 +4451,17 @@ a store obligation: constant carving reach in \emph{shape} and in
 \emph{constant} --- an access path whose cost grows with sibling count
 is a defect even when memory stays linear.
 
+The avalanche boundary repairs the average distribution but does not by
+itself rule out primary clustering.  A later adversarial structural family
+formed a 71-slot chain under linear probing despite a healthy mean.  The
+current table derives a second hash from the finalized key, forces its stride
+odd, and advances by that stride modulo the power-of-two capacity.  Because
+an odd stride is coprime to the capacity, lookup, insertion, and rehash share
+a full-cycle probe rather than a fixed 64-slot escape hatch.  The regression
+checks both exact lookup/rehash equivalence and a tail bound scaled to the
+workload; table capacity, structural equality, and stored hashes are
+unchanged.
+
 \subsection{Match indexing and selectivity}
 
 Pattern queries route through a backend seam (candidates, query, and a
@@ -3993,6 +4542,7 @@ The remaining engineering frontier is a constant factor against the
 reference Prolog engine's assert path, under active reduction via the
 compiled-view work; no super-linear behaviour is currently known on the
 covered workload families.
+
 
 \begin{thebibliography}{9}
 \bibitem{metta}

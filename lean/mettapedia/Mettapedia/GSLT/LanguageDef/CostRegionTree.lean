@@ -19069,6 +19069,18 @@ theorem erase_normalizeTerm (source : CIGSLT)
 
 end CostOpenElaboration
 
+/-- A polymorphic checked Cost normalizer over every exact open fibre of the
+generated language.  This is the implementation-independent semantic
+interface shared by compact and proof-relevant Cost executors. -/
+abbrev CostOpenNormalizer (source : CIGSLT) :=
+  {targetFree : WellSorted.FreeTypeContext} →
+    {targetBound : List TypeExpr} →
+    {targetSort : LangSort source.costWholeLanguage} →
+    ReflectiveWellSorted.OpenTerm source.costWholeReflectionProfile
+      source.costWholeLanguage targetFree targetBound targetSort →
+      ReflectiveWellSorted.OpenTerm source.costWholeReflectionProfile
+        source.costWholeLanguage targetFree targetBound targetSort
+
 /-- Executable normalization on the exact typed open carrier of the generated
 Cost presentation.  The computation first performs the total proof-relevant
 elaboration and then normalizes children before their enclosing static
@@ -19145,12 +19157,11 @@ theorem CostOpenElaboration.normalizeErasure_eq_costNormalizeOpen
     elaboration.normalizeErasure = source.costNormalizeOpen term :=
   coherent term elaboration (CostOpenElaboration.compile source term)
 
-/-- Exact local obligation for the Cost normalizer: the two endpoints of one
-authored typed equation generator receive definitionally equal canonical
-representatives.  Proving this property requires the ordinary transported
-equation and reflective-canonical cases; no closure bureaucracy is included
-in the statement. -/
-def CostOpenGeneratorInvariant (source : CIGSLT) : Prop :=
+/-- Exact invariance of a selected Cost normalizer under every authored open
+equation generator.  The normalizer remains explicit so the semantic law does
+not privilege the compact reference executor. -/
+def CostOpenGeneratorInvariantFor (source : CIGSLT)
+    (normalizeOpen : CostOpenNormalizer source) : Prop :=
   ∀ {targetFree : WellSorted.FreeTypeContext}
     {targetBound : List TypeExpr} {targetSort : LangSort source.costWholeLanguage}
     {left right : ReflectiveWellSorted.OpenTerm
@@ -19160,7 +19171,14 @@ def CostOpenGeneratorInvariant (source : CIGSLT) : Prop :=
       source.costWholeReflectionProfile defaultBasePremises
         source.costWholeLanguage targetFree targetBound (.base targetSort.1)
           left right →
-      source.costNormalizeOpen left = source.costNormalizeOpen right
+      @normalizeOpen targetFree targetBound targetSort left =
+        @normalizeOpen targetFree targetBound targetSort right
+
+/-- Exact local obligation for the compact reference normalizer.  This is the
+specialization of the implementation-independent generator law, not a second
+semantic interface. -/
+abbrev CostOpenGeneratorInvariant (source : CIGSLT) : Prop :=
+  CostOpenGeneratorInvariantFor source source.costNormalizeOpen
 
 /-- If recursive children reproduce their original boundary values, the
 full static-tree normalizer agrees exactly with the established certified

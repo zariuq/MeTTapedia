@@ -18,7 +18,7 @@ Executable one-step semantics for the symmetric MeTTa-calculus:
 
 Semantics follows:
 
-- `/home/zar/claude/hyperon/rho4u/metta-calculus/metta-calculus.core.tex`
+- the F1R3FLY MeTTa-calculus manuscript, `metta-calculus.core.tex`
 
 especially:
 
@@ -100,6 +100,13 @@ private def unifyLoop : Nat → List (Pattern × Pattern) → Bindings → Optio
 def unifyPattern? (lhs rhs : Pattern) : Option Bindings :=
   -- Fixed fuel keeps this executable even when `Pattern.sizeOf` is noncomputable.
   unifyLoop 256 [(lhs, rhs)] []
+
+/-- Reflexivity of the executable unifier, proved by unfolding its first
+work-list step.  This is a kernel-checked fact, independent of executable
+regression fixtures. -/
+theorem unifyPattern_self (term : Pattern) :
+    unifyPattern? term term = some [] := by
+  simp [unifyPattern?, unifyLoop]
 
 /-- Dot-substitution from the paper:
 turn variable-to-term bindings into variable-to-name bindings by quoting RHS. -/

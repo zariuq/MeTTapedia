@@ -989,15 +989,14 @@ private theorem premiseChain_matchSourceFactors_go_aux {relEnv : ILRelEnv} {lang
     obtain ⟨f, hf⟩ := Option.isSome_iff_exists.mp htrans_head
     rw [premisesToSourceFactors_cons_translatable prem prems' f hf]
     simp only [matchSourceFactors.go]
-    -- Factor f matches witness a in s \ consumed
+    -- Factors form a relational product, so witness a is matched in the full support.
     have hmatch_factor : (bindingsToSubst bs_mid', a) ∈
-        matchSourceFactor (bindingsToSubst bs0') (s \ consumed) f := by
+        matchSourceFactor (bindingsToSubst bs0') s f := by
       cases prem with
       | relationQuery rel args =>
         simp [premiseToSourceFactor] at hf; rw [← hf]
         simp only [matchSourceFactor, matchOneInSpace, List.mem_filterMap]
-        exact ⟨a, Finset.mem_toList.mpr (Finset.mem_sdiff.mpr
-          ⟨ha_in, hwit_not_consumed a List.mem_cons_self⟩),
+        exact ⟨a, Finset.mem_toList.mpr ha_in,
           by simp [premiseToAtomTotal] at ha_match; simp [ha_match]⟩
       | _ => simp [premiseToSourceFactor] at hf
     -- Recurse with consumed ∪ {a}
@@ -1086,11 +1085,10 @@ private theorem premiseChain_matchSourceFactorsExt_go_aux {relEnv : ILRelEnv} {l
       rw [premisesToSourceFactorsExt_cons_relationQuery]
       simp only [matchSourceFactors.go]
       have hmatch_factor : (bindingsToSubst bs_mid', a) ∈
-          matchSourceFactor (bindingsToSubst bs0') (s \ consumed)
+          matchSourceFactor (bindingsToSubst bs0') s
             (.btm (morkPatternToAtom (.apply rel args))) := by
         simp only [matchSourceFactor, matchOneInSpace, List.mem_filterMap]
-        exact ⟨a, Finset.mem_toList.mpr (Finset.mem_sdiff.mpr
-          ⟨ha_in, hwit_not_consumed a List.mem_cons_self⟩),
+        exact ⟨a, Finset.mem_toList.mpr ha_in,
           by simp [premiseToAtomTotal] at ha_match; simp [ha_match]⟩
       have ⟨c', hc'⟩ := ih htrans_rest hnodup_rest (consumed ∪ {a})
         (fun a' ha' => by
@@ -1192,9 +1190,9 @@ theorem matchedRule_noPremise_fvar_mork_fireSourceRule
     1. The input pattern `morkPatternToAtom p` (for the LHS match)
     2. An atom that matches the premise pattern (for the premise factor match)
 
-    The `WorkspaceRepresentsPremise` hypothesis ensures (2). The `hdisjoint`
-    hypothesis ensures the premise atom is distinct from the LHS atom (so it
-    won't be filtered out by consumed-atom tracking). -/
+    The `WorkspaceRepresentsPremise` hypothesis ensures (2).  Distinctness is
+    retained as part of the existing bridge interface, although MM2's support
+    product permits one atom to witness more than one conjunctive factor. -/
 theorem matchedRule_singlePremise_fvar_mork_fireSourceRule
     (p q : ILP) (x : String)
     (r : ILRRule) (relEnv : ILRelEnv) (lang : ILDL)
@@ -1212,7 +1210,7 @@ theorem matchedRule_singlePremise_fvar_mork_fireSourceRule
     -- Workspace faithfulness: there exists a matching atom for the premise
     (a_prem : Atom)
     (ha_in : a_prem ∈ s)
-    (ha_ne : a_prem ≠ morkPatternToAtom p)
+    (_ha_ne : a_prem ≠ morkPatternToAtom p)
     (ha_match : matchAtom (bindingsToSubst bs0)
         (morkPatternToAtom (.apply rel args)) a_prem = some (bindingsToSubst bs)) :
     applySinks s (bindingsToSubst bs) (rewriteRuleToSourceExecRule r).tmpl ∈
@@ -1237,14 +1235,12 @@ theorem matchedRule_singlePremise_fvar_mork_fireSourceRule
       refine ⟨morkPatternToAtom p, ?_, ?_⟩
       · exact Finset.mem_toList.mpr (by simp [hp_in])
       · simp [matchAtom_var_fresh]
-    · -- Second factor: btm premAtom → match against a_prem in s \ {lhs_atom}
+    · -- Second factor: btm premAtom may reuse any atom in the full support.
       apply List.mem_flatMap.mpr
       refine ⟨(bindingsToSubst bs, a_prem), ?_, ?_⟩
       · simp only [List.mem_filterMap]
         refine ⟨a_prem, ?_, ?_⟩
-        · -- a_prem ∈ (s \ {morkPatternToAtom p}).toList
-          exact Finset.mem_toList.mpr (Finset.mem_sdiff.mpr
-            ⟨ha_in, by simp [ha_ne]⟩)
+        · exact Finset.mem_toList.mpr ha_in
         · -- matchAtom succeeds
           rw [hbs0_eq, bindingsToSubst_singleton] at ha_match
           simpa [morkPatternToAtom] using ha_match

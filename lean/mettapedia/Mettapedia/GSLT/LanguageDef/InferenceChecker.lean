@@ -1,5 +1,6 @@
 import Mettapedia.GSLT.LanguageDef.InferenceExtension
 import Mettapedia.OSLF.MeTTaIL.Substitution
+import Mettapedia.Util.LinearHash
 
 /-!
 # Generic inference-rule checker
@@ -225,10 +226,24 @@ def Presentation.judgmentHeads (presentation : Presentation) : List String :=
 all inference-rule identifiers and schemas satisfy the V1 binding boundary.
 This does not validate inference-judgment constructor names against a separate
 judgment signature; V1 intentionally has no such signature yet. -/
+def Presentation.isValidV1Fast (presentation : Presentation) : Bool :=
+  presentation.language.validate.isEmpty &&
+    presentation.rules.all RuleSchema.isValidV1 &&
+    Mettapedia.Util.LinearHash.allDistinct presentation.ruleIds
+
+@[implemented_by Presentation.isValidV1Fast]
 def Presentation.isValidV1 (presentation : Presentation) : Bool :=
   presentation.language.validate.isEmpty &&
     presentation.rules.all RuleSchema.isValidV1 &&
     (presentation.ruleIds.eraseDups.length == presentation.ruleIds.length)
+
+/-- Hash-indexed V1 validation is extensionally identical to the structural
+specification. -/
+theorem Presentation.isValidV1Fast_eq_isValidV1
+    (presentation : Presentation) :
+    presentation.isValidV1Fast = presentation.isValidV1 := by
+  simp only [Presentation.isValidV1Fast, Presentation.isValidV1]
+  rw [Mettapedia.Util.LinearHash.allDistinct_eq_eraseDupsLength]
 
 /-- Fail-closed lookup of a data constructor at an exact arity.  Although a
 validated `LanguageDef` already has unique constructor labels, this helper is

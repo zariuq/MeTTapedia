@@ -296,24 +296,22 @@ inductive CommonRestorationApex
       CommonRestorationApex source cospan declaration depth
         (.collection collectionType leftElements rest)
         (.collection collectionType rightElements rest)
-  /-- Bare parallel canonicalization is compared after recursive
-  canonicalization, flattening, unit deletion, and common restoration.  The
-  remaining datum is exactly a finite permutation; no stable-tie order is
-  promoted to semantics. -/
-  | parallel {depth : Nat} {leftElements rightElements : List Pattern}
-      (permutation : List.Perm
-        ((parallelContents declaration
+  /-- Bare parallel canonicalization retains recursive evidence for every
+  frontier occurrence before a final finite reordering.  The intermediate
+  list separates semantic alignment from scheduling order, so duplicate
+  occurrences remain distinct and no stable-tie order becomes semantics. -/
+  | parallel {depth : Nat} {leftElements rightElements middle : List Pattern}
+      (aligned : CommonRestorationApexList source cospan declaration depth
+        (parallelContents declaration
           (canonicalizeListByAt
             (cospan.commonSemanticPatternKeyAt source) declaration depth
-            leftElements)).map
-              (ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
-                cospan.commonSupport cospan.commonAssignment depth))
-        ((parallelContents declaration
+            leftElements))
+        middle)
+      (permutation : List.Perm middle
+        (parallelContents declaration
           (canonicalizeListByAt
             (cospan.commonSemanticPatternKeyAt source) declaration depth
-            rightElements)).map
-              (ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
-                cospan.commonSupport cospan.commonAssignment depth))) :
+            rightElements))) :
       CommonRestorationApex source cospan declaration depth
         (canonicalizeByAt (cospan.commonSemanticPatternKeyAt source)
           declaration depth
@@ -393,10 +391,55 @@ theorem leaf_of_key_eq
     (cospan.commonSemanticPatternKeyAt_eq_iff source currentDepth left right).mp
       (keysEqual currentDepth)))
 
+/-- Pointwise reflexive evidence for an occurrence list. -/
+def reflList
+    {source : CIGSLT} {leftCount rightCount : Nat}
+    {leftKey : Fin leftCount → CostStaticAtomKey}
+    {rightKey : Fin rightCount → CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey)
+    (declaration : ReflectivePresentationDecl) (depth : Nat) :
+    ∀ patterns : List Pattern,
+      CommonRestorationApexList source cospan declaration depth patterns patterns
+  | [] => .nil depth
+  | pattern :: patterns =>
+      .cons (refl cospan declaration depth pattern)
+        (reflList cospan declaration depth patterns)
+
+private def commonRestorationApexList_toForall₂
+    {source : CIGSLT} {leftCount rightCount : Nat}
+    {leftKey : Fin leftCount → CostStaticAtomKey}
+    {rightKey : Fin rightCount → CostStaticAtomKey}
+    {cospan : CostStaticAtomKeyCospan leftKey rightKey}
+    {declaration : ReflectivePresentationDecl}
+    {depth : Nat} {left right : List Pattern}
+    (alignment : CommonRestorationApexList source cospan declaration depth
+      left right) :
+    List.Forall₂
+      (CommonRestorationApex source cospan declaration depth) left right :=
+  match alignment with
+  | .nil _ => .nil
+  | .cons head tail =>
+      .cons head (commonRestorationApexList_toForall₂ tail)
+
+private def commonRestorationApexList_ofForall₂
+    {source : CIGSLT} {leftCount rightCount : Nat}
+    {leftKey : Fin leftCount → CostStaticAtomKey}
+    {rightKey : Fin rightCount → CostStaticAtomKey}
+    {cospan : CostStaticAtomKeyCospan leftKey rightKey}
+    {declaration : ReflectivePresentationDecl}
+    {depth : Nat} {left right : List Pattern}
+    (alignment : List.Forall₂
+      (CommonRestorationApex source cospan declaration depth) left right) :
+    CommonRestorationApexList source cospan declaration depth left right :=
+  match alignment with
+  | .nil => .nil depth
+  | .cons head tail =>
+      .cons head (commonRestorationApexList_ofForall₂ tail)
+
 mutual
   /-- Reverse a common restoration apex.  The parallel terminal reverses its
   finite permutation; every other constructor reverses recursively. -/
-  def symm
+  noncomputable def symm
       {source : CIGSLT} {leftCount rightCount : Nat}
       {leftKey : Fin leftCount → CostStaticAtomKey}
       {rightKey : Fin rightCount → CostStaticAtomKey}
@@ -417,10 +460,18 @@ mutual
     | .subst body replacement => .subst (symm body) (symm replacement)
     | .collection collectionType rest elements =>
         .collection collectionType rest (symmList elements)
-    | .parallel permutation => .parallel permutation.symm
+    | .parallel aligned permutation => by
+        let reversed := symmList aligned
+        let evidence := List.perm_comp_forall₂ permutation.symm
+          (commonRestorationApexList_toForall₂ reversed)
+        let reverseMiddle := Classical.choose evidence
+        have reverseSpec := Classical.choose_spec evidence
+        exact .parallel
+          (commonRestorationApexList_ofForall₂ reverseSpec.1)
+          reverseSpec.2
 
   /-- Listwise companion of `CommonRestorationApex.symm`. -/
-  def symmList
+  noncomputable def symmList
       {source : CIGSLT} {leftCount rightCount : Nat}
       {leftKey : Fin leftCount → CostStaticAtomKey}
       {rightKey : Fin rightCount → CostStaticAtomKey}
@@ -450,6 +501,32 @@ structure Permutation
   aligned : CommonRestorationApexList source cospan declaration depth
     left middle
   permutation : List.Perm middle right
+
+/-- Reindex both finite endpoints of an aligned permutation.  The operation
+keeps occurrence order and semantic alignment separate: the left permutation
+is transported through the pointwise relation, while the right permutation
+is composed only after that alignment has been retained. -/
+noncomputable def Permutation.of_endpoint_perms
+    {source : CIGSLT} {leftCount rightCount : Nat}
+    {leftKey : Fin leftCount → CostStaticAtomKey}
+    {rightKey : Fin rightCount → CostStaticAtomKey}
+    {cospan : CostStaticAtomKeyCospan leftKey rightKey}
+    {declaration : ReflectivePresentationDecl} {depth : Nat}
+    {left left' right right' : List Pattern}
+    (alignment : Permutation (source := source) cospan declaration depth
+      left right)
+    (leftPermutation : List.Perm left' left)
+    (rightPermutation : List.Perm right' right) :
+    Permutation (source := source) cospan declaration depth left' right' := by
+  let evidence := List.perm_comp_forall₂ leftPermutation
+    (commonRestorationApexList_toForall₂ alignment.aligned)
+  let middle' := Classical.choose evidence
+  have middleSpec := Classical.choose_spec evidence
+  exact
+    { middle := middle'
+      aligned := commonRestorationApexList_ofForall₂ middleSpec.1
+      permutation := middleSpec.2.trans
+        (alignment.permutation.trans rightPermutation.symm) }
 
 /- Eliminate a recursive apex into exact equality after common restoration.
 
@@ -491,9 +568,16 @@ mutual
         exact congrArg (fun patterns =>
           Pattern.collection collectionType patterns rest)
             (restoredList_eq elements)
-    | .parallel permutation =>
-        cospan.substituteAt_canonicalizeByAt_parallel_eq_of_perm source
-          depth declaration permutation
+    | .parallel aligned permutation => by
+        let restore := ReflectiveContextSupport.substituteAt
+          source.costWholeReflectionProfile cospan.commonSupport
+          cospan.commonAssignment depth
+        have restoredAlignment := restoredList_eq aligned
+        have restoredPermutation : List.Perm
+            (_root_.List.map restore _) (_root_.List.map restore _) :=
+          (List.Perm.of_eq restoredAlignment).trans (permutation.map restore)
+        exact cospan.substituteAt_canonicalizeByAt_parallel_eq_of_perm source
+          depth declaration restoredPermutation
 
   /-- Listwise elimination for rigid congruence constructors. -/
   def restoredList_eq
@@ -563,7 +647,7 @@ theorem parallel_of_permutation
       (canonicalizeByAt (cospan.commonSemanticPatternKeyAt source)
         declaration depth
         (.collection declaration.parallelCollection rightElements none)) :=
-  .parallel alignment.restored_perm
+  .parallel alignment.aligned alignment.permutation
 
 /-- A permutation of ordinary canonical images can be pulled back to an
 occurrence-preserving permutation of the original right list, aligned
@@ -594,8 +678,9 @@ theorem exists_forall₂_canonical_eq_of_map_perm
   simpa only [List.forall₂_map_left_iff] using aligned
 
 /-- Lift a permutation of ordinary canonical classes through a local
-common-apex constructor.  The supplied constructor is the recursive-call
-interface used by the well-founded canonical-pair proof; multiplicities and
+common-apex constructor.  The callback receives membership in both original
+endpoint lists, so typing, support, size descent, provenance, and occurrence
+evidence can be recovered before recursive closure.  Multiplicities and
 discarded positional identities are retained by the intermediate list. -/
 noncomputable def Permutation.of_canonical_map_perm
     {source : CIGSLT} {leftCount rightCount : Nat}
@@ -608,6 +693,7 @@ noncomputable def Permutation.of_canonical_map_perm
       (left.map (canonicalize declaration))
       (right.map (canonicalize declaration)))
     (close : ∀ {leftPattern rightPattern},
+      leftPattern ∈ left → rightPattern ∈ right →
       canonicalize declaration leftPattern =
           canonicalize declaration rightPattern →
         CommonRestorationApex source cospan declaration depth
@@ -634,16 +720,26 @@ noncomputable def Permutation.of_canonical_map_perm
             canonicalize declaration leftPattern =
               canonicalize declaration rightPattern)
           leftPatterns rightPatterns →
+        (∀ pattern ∈ leftPatterns, pattern ∈ left) →
+        (∀ pattern ∈ rightPatterns, pattern ∈ right) →
         CommonRestorationApexList source cospan declaration depth
           (leftPatterns.map normalize) (rightPatterns.map normalize) := by
-    intro leftPatterns rightPatterns relation
+    intro leftPatterns rightPatterns relation leftMembership rightMembership
     induction relation with
     | nil => exact .nil depth
     | cons related _ inductionHypothesis =>
-        exact .cons (close related) inductionHypothesis
+        exact .cons
+          (close (leftMembership _ (by simp))
+            (rightMembership _ (by simp)) related)
+          (inductionHypothesis
+            (fun pattern membership =>
+              leftMembership pattern (by simp [membership]))
+            (fun pattern membership =>
+              rightMembership pattern (by simp [membership])))
   have normalizedAligned : CommonRestorationApexList source cospan declaration
       depth (left.map normalize) (middle.map normalize) :=
-    liftAligned aligned
+    liftAligned aligned (fun _ membership => membership)
+      (fun pattern membership => reordered.mem_iff.mp membership)
   refine
     { middle := middle.map normalize
       aligned := ?_
@@ -840,9 +936,9 @@ theorem parallel_swap_bvars
         (.collection declaration.parallelCollection
           [.bvar second, .bvar first] none)) := by
   apply CommonRestorationApex.parallel
-  simpa [canonicalizeListByAt, canonicalizeByAt, parallelContents,
-    parallelSplice,
-    ReflectiveContextSupport.substituteAt] using
+  · exact reflList cospan declaration depth _
+  · simpa [canonicalizeListByAt, canonicalizeByAt, parallelContents,
+      parallelSplice] using
       (List.Perm.swap (Pattern.bvar second) (Pattern.bvar first) [])
 
 /-- A nested parallel permutation reaches the same spliced frontier on both
@@ -887,76 +983,68 @@ theorem parallel_nested_reassociation_bvars
     simpa [normalizeParallelElementsBy, parallelSplice] using
       permutation.length_eq
   apply CommonRestorationApex.parallel
-  simp only [canonicalizeListByAt, canonicalizeByAt]
-  rw [show collapseParallel declaration
-      (normalizeParallelElementsBy key declaration [.bvar 1, .bvar 2]) =
-        .collection declaration.parallelCollection
-          (normalizeParallelElementsBy key declaration
-            [.bvar 1, .bvar 2]) none by
-        exact collapseParallel_eq_collection_of_length_ge_two declaration
-          (by omega),
-    show collapseParallel declaration
-      (normalizeParallelElementsBy key declaration [.bvar 0, .bvar 1]) =
-        .collection declaration.parallelCollection
-          (normalizeParallelElementsBy key declaration
-            [.bvar 0, .bvar 1]) none by
-        exact collapseParallel_eq_collection_of_length_ge_two declaration
-          (by omega)]
-  simp [parallelContents, parallelSplice, key]
-  have twelvePermutation : List.Perm
-      (normalizeParallelElementsBy key declaration [.bvar 1, .bvar 2])
-      [.bvar 1, .bvar 2] := by
-    simpa [normalizeParallelElementsBy, parallelSplice] using
-      (Mettapedia.OSLF.MeTTaIL.PatternCode.sortPatternsBy_perm key
-        [.bvar 1, .bvar 2])
-  have zeroOnePermutation : List.Perm
-      (normalizeParallelElementsBy key declaration [.bvar 0, .bvar 1])
-      [.bvar 0, .bvar 1] := by
-    simpa [normalizeParallelElementsBy, parallelSplice] using
-      (Mettapedia.OSLF.MeTTaIL.PatternCode.sortPatternsBy_perm key
-        [.bvar 0, .bvar 1])
-  have twelveNoUnit :
-      (normalizeParallelElementsBy key declaration
-        [.bvar 1, .bvar 2]).filter
-          (fun pattern => !decide
-            (pattern = .apply declaration.parallelUnitConstructor [])) =
-        normalizeParallelElementsBy key declaration [.bvar 1, .bvar 2] := by
-    apply List.filter_eq_self.mpr
-    intro pattern membership
-    have rawMembership := twelvePermutation.mem_iff.mp membership
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at rawMembership
-    rcases rawMembership with rfl | rfl <;> simp
-  have zeroOneNoUnit :
-      (normalizeParallelElementsBy key declaration
-        [.bvar 0, .bvar 1]).filter
-          (fun pattern => !decide
-            (pattern = .apply declaration.parallelUnitConstructor [])) =
-        normalizeParallelElementsBy key declaration [.bvar 0, .bvar 1] := by
-    apply List.filter_eq_self.mpr
-    intro pattern membership
-    have rawMembership := zeroOnePermutation.mem_iff.mp membership
-    simp only [List.mem_cons, List.not_mem_nil, or_false] at rawMembership
-    rcases rawMembership with rfl | rfl <;> simp
-  rw [twelveNoUnit, zeroOneNoUnit]
-  have restoredTwelve := twelvePermutation.map
-    (ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
-      cospan.commonSupport cospan.commonAssignment depth)
-  have restoredZeroOne := zeroOnePermutation.map
-    (ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
-      cospan.commonSupport cospan.commonAssignment depth)
-  simp only [ReflectiveContextSupport.substituteAt, List.map_cons,
-    List.map_nil] at restoredTwelve restoredZeroOne
-  have leftPermutation := List.Perm.cons (Pattern.bvar 0) restoredTwelve
-  have rightToRotated := List.Perm.cons (Pattern.bvar 2) restoredZeroOne
-  have rotatedToCommon : List.Perm
-      [Pattern.bvar 2, Pattern.bvar 0, Pattern.bvar 1]
-      [Pattern.bvar 0, Pattern.bvar 1, Pattern.bvar 2] :=
-    (List.Perm.swap (Pattern.bvar 0) (Pattern.bvar 2)
-      [Pattern.bvar 1]).trans
-      (List.Perm.cons (Pattern.bvar 0)
-        (List.Perm.swap (Pattern.bvar 1) (Pattern.bvar 2) []))
-  simpa only [ReflectiveContextSupport.substituteAt] using
-    leftPermutation.trans (rightToRotated.trans rotatedToCommon).symm
+  · exact reflList cospan declaration depth _
+  · simp only [canonicalizeListByAt, canonicalizeByAt]
+    rw [show collapseParallel declaration
+        (normalizeParallelElementsBy key declaration [.bvar 1, .bvar 2]) =
+          .collection declaration.parallelCollection
+            (normalizeParallelElementsBy key declaration
+              [.bvar 1, .bvar 2]) none by
+          exact collapseParallel_eq_collection_of_length_ge_two declaration
+            (by omega),
+      show collapseParallel declaration
+        (normalizeParallelElementsBy key declaration [.bvar 0, .bvar 1]) =
+          .collection declaration.parallelCollection
+            (normalizeParallelElementsBy key declaration
+              [.bvar 0, .bvar 1]) none by
+          exact collapseParallel_eq_collection_of_length_ge_two declaration
+            (by omega)]
+    simp [parallelContents, parallelSplice, key]
+    have twelvePermutation : List.Perm
+        (normalizeParallelElementsBy key declaration [.bvar 1, .bvar 2])
+        [.bvar 1, .bvar 2] := by
+      simpa [normalizeParallelElementsBy, parallelSplice] using
+        (Mettapedia.OSLF.MeTTaIL.PatternCode.sortPatternsBy_perm key
+          [.bvar 1, .bvar 2])
+    have zeroOnePermutation : List.Perm
+        (normalizeParallelElementsBy key declaration [.bvar 0, .bvar 1])
+        [.bvar 0, .bvar 1] := by
+      simpa [normalizeParallelElementsBy, parallelSplice] using
+        (Mettapedia.OSLF.MeTTaIL.PatternCode.sortPatternsBy_perm key
+          [.bvar 0, .bvar 1])
+    have twelveNoUnit :
+        (normalizeParallelElementsBy key declaration
+          [.bvar 1, .bvar 2]).filter
+            (fun pattern => !decide
+              (pattern = .apply declaration.parallelUnitConstructor [])) =
+          normalizeParallelElementsBy key declaration [.bvar 1, .bvar 2] := by
+      apply List.filter_eq_self.mpr
+      intro pattern membership
+      have rawMembership := twelvePermutation.mem_iff.mp membership
+      simp only [List.mem_cons, List.not_mem_nil, or_false] at rawMembership
+      rcases rawMembership with rfl | rfl <;> simp
+    have zeroOneNoUnit :
+        (normalizeParallelElementsBy key declaration
+          [.bvar 0, .bvar 1]).filter
+            (fun pattern => !decide
+              (pattern = .apply declaration.parallelUnitConstructor [])) =
+          normalizeParallelElementsBy key declaration [.bvar 0, .bvar 1] := by
+      apply List.filter_eq_self.mpr
+      intro pattern membership
+      have rawMembership := zeroOnePermutation.mem_iff.mp membership
+      simp only [List.mem_cons, List.not_mem_nil, or_false] at rawMembership
+      rcases rawMembership with rfl | rfl <;> simp
+    rw [twelveNoUnit, zeroOneNoUnit]
+    have leftPermutation := List.Perm.cons (Pattern.bvar 0) twelvePermutation
+    have rightToRotated := List.Perm.cons (Pattern.bvar 2) zeroOnePermutation
+    have rotatedToCommon : List.Perm
+        [Pattern.bvar 2, Pattern.bvar 0, Pattern.bvar 1]
+        [Pattern.bvar 0, Pattern.bvar 1, Pattern.bvar 2] :=
+      (List.Perm.swap (Pattern.bvar 0) (Pattern.bvar 2)
+        [Pattern.bvar 1]).trans
+        (List.Perm.cons (Pattern.bvar 0)
+          (List.Perm.swap (Pattern.bvar 1) (Pattern.bvar 2) []))
+    exact leftPermutation.trans (rightToRotated.trans rotatedToCommon).symm
 
 /-- Positional leaf alignment cannot express even the flat rigid swap that
 the restoration apex admits.  The semantic leaf escape hatch does not help:

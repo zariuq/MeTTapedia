@@ -276,6 +276,24 @@ theorem ofAligned {declaration : ReflectivePresentationDecl}
     ParallelOrderAgnosticPermutation declaration left right :=
   ⟨right, related, .refl right⟩
 
+/-- Forget an order-agnostic correspondence to a permutation of ordinary
+canonical images.  Hereditary parallel reordering remains occurrence
+preserving: duplicate entries are mapped, not quotiented. -/
+theorem canonicalize_perm {declaration : ReflectivePresentationDecl}
+    {left right : List Pattern}
+    (related : ParallelOrderAgnosticPermutation declaration left right) :
+    List.Perm
+      (left.map (canonicalize declaration))
+      (right.map (canonicalize declaration)) := by
+  obtain ⟨middle, aligned, reordered⟩ := related
+  have alignedCanonical :
+      left.map (canonicalize declaration) =
+        middle.map (canonicalize declaration) := by
+    simpa [canonicalizeList_eq_map] using
+      ParallelOrderAgnostic.canonicalizeList_eq aligned
+  exact (List.Perm.of_eq alignedCanonical).trans
+    (reordered.map (canonicalize declaration))
+
 /-- Correspondences up to permutation compose under concatenation. -/
 theorem append {declaration : ReflectivePresentationDecl}
     {left₁ right₁ left₂ right₂ : List Pattern}
@@ -668,6 +686,405 @@ theorem canonicalizeByAt_parallelOrderAgnostic
             simpa [canonicalizeByAt, canonicalize, selectedFalse] using
               (ParallelOrderAgnostic.collection collectionType none
                 elementsRelated)
+
+private theorem parallelContents_collapseParallel_eq_of_flat
+    (declaration : ReflectivePresentationDecl) (patterns : List Pattern)
+    (noUnit : ∀ element ∈ patterns,
+      element ≠ .apply declaration.parallelUnitConstructor [])
+    (noParallel : ∀ element ∈ patterns, ∀ nested,
+      element ≠ .collection declaration.parallelCollection nested none) :
+    parallelContents declaration [collapseParallel declaration patterns] =
+      patterns := by
+  cases patterns with
+  | nil => simp [parallelContents, collapseParallel, parallelSplice]
+  | cons first remaining =>
+      cases remaining with
+      | nil =>
+          have firstNotUnit := noUnit first (by simp)
+          have firstNotParallel := noParallel first (by simp)
+          have splice : parallelSplice declaration first = [first] :=
+            parallelSplice_eq_singleton_of_not_parallel declaration first
+              firstNotParallel
+          simp [collapseParallel, parallelContents, splice, firstNotUnit]
+      | cons second tail =>
+          have filterFixed :
+              (first :: second :: tail).filter
+                  (fun element =>
+                    element ≠ .apply declaration.parallelUnitConstructor []) =
+                first :: second :: tail :=
+            List.filter_eq_self.mpr (fun element membership =>
+              by simpa using noUnit element membership)
+          simp only [collapseParallel, parallelContents, List.flatMap_cons,
+            List.flatMap_nil, parallelSplice, beq_self_eq_true, if_true,
+            List.append_nil]
+          exact filterFixed
+
+private theorem parallelOrderAgnosticList_noUnit_of_right
+    {declaration : ReflectivePresentationDecl}
+    {left right : List Pattern}
+    (related : ParallelOrderAgnosticList declaration left right)
+    (rightNoUnit : ∀ element ∈ right,
+      element ≠ .apply declaration.parallelUnitConstructor []) :
+    ∀ element ∈ left,
+      element ≠ .apply declaration.parallelUnitConstructor [] := by
+  let rec go {left right : List Pattern}
+      (related : ParallelOrderAgnosticList declaration left right)
+      (rightNoUnit : ∀ element ∈ right,
+        element ≠ .apply declaration.parallelUnitConstructor []) :
+      ∀ element ∈ left,
+        element ≠ .apply declaration.parallelUnitConstructor [] :=
+    match related with
+    | .nil => by simp
+    | .cons head tail => by
+        intro element membership
+        rcases List.mem_cons.mp membership with rfl | inTail
+        · intro leftUnit
+          have rightUnit := head.unit_iff.mp leftUnit
+          exact rightNoUnit _ (by simp) rightUnit
+        · exact go tail (fun candidate candidateMembership =>
+            rightNoUnit candidate (by simp [candidateMembership])) element
+              inTail
+  exact go related rightNoUnit
+
+private theorem parallelOrderAgnosticList_noParallel_of_right
+    {declaration : ReflectivePresentationDecl}
+    {left right : List Pattern}
+    (related : ParallelOrderAgnosticList declaration left right)
+    (rightNoParallel : ∀ element ∈ right, ∀ nested,
+      element ≠ .collection declaration.parallelCollection nested none) :
+    ∀ element ∈ left, ∀ nested,
+      element ≠ .collection declaration.parallelCollection nested none := by
+  let rec go {left right : List Pattern}
+      (related : ParallelOrderAgnosticList declaration left right)
+      (rightNoParallel : ∀ element ∈ right, ∀ nested,
+        element ≠ .collection declaration.parallelCollection nested none) :
+      ∀ element ∈ left, ∀ nested,
+        element ≠ .collection declaration.parallelCollection nested none :=
+    match related with
+    | .nil => by simp
+    | .cons head tail => by
+        intro element membership nested
+        rcases List.mem_cons.mp membership with rfl | inTail
+        · intro leftParallel
+          rcases head.bareParallel_cases with parallel | rigid
+          · obtain ⟨leftElements, middleElements, rightElements, leftEq,
+                rightEq, pointwise, permutation⟩ := parallel
+            exact rightNoParallel _ (by simp) rightElements rightEq
+          · exact rigid.1 nested leftParallel
+        · exact go tail (fun candidate candidateMembership candidateNested =>
+            rightNoParallel candidate (by simp [candidateMembership])
+              candidateNested) element inTail nested
+  exact go related rightNoParallel
+
+private theorem parallelOrderAgnosticPermutation_noUnit_of_right
+    {declaration : ReflectivePresentationDecl}
+    {left right : List Pattern}
+    (related : ParallelOrderAgnostic.ParallelOrderAgnosticPermutation
+      declaration left right)
+    (rightNoUnit : ∀ element ∈ right,
+      element ≠ .apply declaration.parallelUnitConstructor []) :
+    ∀ element ∈ left,
+      element ≠ .apply declaration.parallelUnitConstructor [] := by
+  obtain ⟨middle, aligned, reordered⟩ := related
+  apply parallelOrderAgnosticList_noUnit_of_right aligned
+  intro element membership
+  exact rightNoUnit element (reordered.mem_iff.mp membership)
+
+private theorem parallelOrderAgnosticPermutation_noParallel_of_right
+    {declaration : ReflectivePresentationDecl}
+    {left right : List Pattern}
+    (related : ParallelOrderAgnostic.ParallelOrderAgnosticPermutation
+      declaration left right)
+    (rightNoParallel : ∀ element ∈ right, ∀ nested,
+      element ≠ .collection declaration.parallelCollection nested none) :
+    ∀ element ∈ left, ∀ nested,
+      element ≠ .collection declaration.parallelCollection nested none := by
+  obtain ⟨middle, aligned, reordered⟩ := related
+  apply parallelOrderAgnosticList_noParallel_of_right aligned
+  intro element membership
+  exact rightNoParallel element (reordered.mem_iff.mp membership)
+
+private theorem keyedParallelFrontier_noUnit
+    {Key : Type} [LinearOrder Key] (key : Nat → Pattern → Key)
+    (declaration : ReflectivePresentationDecl) (availableDepth : Nat)
+    (patterns : List Pattern) :
+    ∀ element ∈ parallelContents declaration
+        (canonicalizeListByAt key declaration availableDepth patterns),
+      element ≠ .apply declaration.parallelUnitConstructor [] := by
+  have elementsRelated : ParallelOrderAgnosticList declaration
+      (canonicalizeListByAt key declaration availableDepth patterns)
+      (canonicalizeList declaration patterns) := by
+    rw [canonicalizeListByAt_eq_map, canonicalizeList_eq_map]
+    exact ParallelOrderAgnostic.ParallelOrderAgnosticList.mapPair
+      (fun pattern membership =>
+        canonicalizeByAt_parallelOrderAgnostic key declaration
+          availableDepth pattern)
+  have spliced :=
+    ParallelOrderAgnostic.ParallelOrderAgnosticPermutation.flatMapParallelSplice
+      elementsRelated
+  have filtered :=
+    ParallelOrderAgnostic.ParallelOrderAgnosticPermutation.filterNotUnit
+      spliced
+  change ∀ element ∈
+      ((canonicalizeListByAt key declaration availableDepth patterns).flatMap
+        (parallelSplice declaration)).filter
+          (fun pattern =>
+            pattern ≠ .apply declaration.parallelUnitConstructor []),
+    element ≠ .apply declaration.parallelUnitConstructor []
+  apply parallelOrderAgnosticPermutation_noUnit_of_right filtered
+  intro element membership
+  exact of_decide_eq_true (List.mem_filter.mp membership).2
+
+private theorem keyedParallelFrontier_noParallel
+    {Key : Type} [LinearOrder Key] (key : Nat → Pattern → Key)
+    (declaration : ReflectivePresentationDecl) (availableDepth : Nat)
+    (patterns : List Pattern) :
+    ∀ element ∈ parallelContents declaration
+        (canonicalizeListByAt key declaration availableDepth patterns),
+      ∀ nested,
+        element ≠ .collection declaration.parallelCollection nested none := by
+  have elementsRelated : ParallelOrderAgnosticList declaration
+      (canonicalizeListByAt key declaration availableDepth patterns)
+      (canonicalizeList declaration patterns) := by
+    rw [canonicalizeListByAt_eq_map, canonicalizeList_eq_map]
+    exact ParallelOrderAgnostic.ParallelOrderAgnosticList.mapPair
+      (fun pattern membership =>
+        canonicalizeByAt_parallelOrderAgnostic key declaration
+          availableDepth pattern)
+  have spliced :=
+    ParallelOrderAgnostic.ParallelOrderAgnosticPermutation.flatMapParallelSplice
+      elementsRelated
+  have filtered :=
+    ParallelOrderAgnostic.ParallelOrderAgnosticPermutation.filterNotUnit
+      spliced
+  change ∀ element ∈
+      ((canonicalizeListByAt key declaration availableDepth patterns).flatMap
+        (parallelSplice declaration)).filter
+          (fun pattern =>
+            pattern ≠ .apply declaration.parallelUnitConstructor []),
+    ∀ nested,
+      element ≠ .collection declaration.parallelCollection nested none
+  apply parallelOrderAgnosticPermutation_noParallel_of_right filtered
+  intro element membership nested
+  have canonicalElements : IsCanonicalList declaration
+      (canonicalizeList declaration patterns) :=
+    canonicalizeList_isCanonical declaration patterns
+  have inNormalized : element ∈ normalizeParallelElements declaration
+      (canonicalizeList declaration patterns) :=
+    (sortPatterns_perm
+      (parallelContents declaration
+        (canonicalizeList declaration patterns))).mem_iff.mpr membership
+  exact normalizeParallelElements_no_nested canonicalElements inNormalized
+    nested
+
+@[simp] private theorem canonicalizeByAt_parallelUnit
+    {Key : Type} [LinearOrder Key] (key : Nat → Pattern → Key)
+    (declaration : ReflectivePresentationDecl) (availableDepth : Nat) :
+    canonicalizeByAt key declaration availableDepth
+        (.apply declaration.parallelUnitConstructor []) =
+      .apply declaration.parallelUnitConstructor [] := by
+  simp [canonicalizeByAt, canonicalizeListByAt,
+    ReflectiveSubstitution.finishNormalizeReflectiveApply]
+
+/-- Removing raw parallel units before keyed canonicalization does not change
+the exposed parallel frontier.  The equality is occurrence-sensitive: it
+removes only occurrences of the distinguished unit constructor. -/
+theorem parallelContents_canonicalizeListByAt_filter_unit
+    {Key : Type} [LinearOrder Key] (key : Nat → Pattern → Key)
+    (declaration : ReflectivePresentationDecl) (availableDepth : Nat) :
+    ∀ patterns : List Pattern,
+    parallelContents declaration
+        (canonicalizeListByAt key declaration availableDepth
+          (patterns.filter fun pattern =>
+            pattern ≠ .apply declaration.parallelUnitConstructor [])) =
+      parallelContents declaration
+        (canonicalizeListByAt key declaration availableDepth patterns)
+  | [] => rfl
+  | pattern :: patterns => by
+      by_cases isUnit :
+          pattern = .apply declaration.parallelUnitConstructor []
+      · subst pattern
+        simpa [canonicalizeListByAt, parallelContents, parallelSplice,
+          List.filter_append] using
+            (parallelContents_canonicalizeListByAt_filter_unit key
+              declaration availableDepth patterns)
+      · have inductionHypothesis :=
+          parallelContents_canonicalizeListByAt_filter_unit key declaration
+            availableDepth patterns
+        have prefixed := congrArg
+          (fun tail =>
+            parallelContents declaration
+                [canonicalizeByAt key declaration availableDepth pattern] ++
+              tail)
+          inductionHypothesis
+        simpa [isUnit, canonicalizeListByAt, parallelContents,
+          List.filter_append] using prefixed
+
+/-- One raw generator contributes the same keyed canonical frontier as
+keyed-canonicalizing its one-step flattened contribution.  This is the
+singleton induction step for occurrence-preserving nested parallel
+expansion; it does not identify or discard equal entries. -/
+theorem parallelContents_canonicalizeByAt_singleton_perm
+    {Key : Type} [LinearOrder Key] (key : Nat → Pattern → Key)
+    (declaration : ReflectivePresentationDecl)
+    (availableDepth : Nat) (pattern : Pattern) :
+    List.Perm
+      (parallelContents declaration
+        [canonicalizeByAt key declaration availableDepth pattern])
+      (parallelContents declaration
+        (canonicalizeListByAt key declaration availableDepth
+          (parallelContents declaration [pattern]))) := by
+  by_cases isParallel : ∃ elements,
+      pattern = .collection declaration.parallelCollection elements none
+  · obtain ⟨elements, rfl⟩ := isParallel
+    let canonicalElements :=
+      canonicalizeListByAt key declaration availableDepth elements
+    let normalized := normalizeParallelElementsBy
+      (key availableDepth) declaration canonicalElements
+    have normalizedNoUnit : ∀ element ∈ normalized,
+        element ≠ .apply declaration.parallelUnitConstructor [] := by
+      intro element membership
+      have sourceMembership :=
+        (PatternCode.sortPatternsBy_perm (key availableDepth)
+          (parallelContents declaration canonicalElements)).mem_iff.mp
+          membership
+      exact keyedParallelFrontier_noUnit key declaration availableDepth
+        elements element sourceMembership
+    have normalizedNoParallel : ∀ element ∈ normalized, ∀ nested,
+        element ≠ .collection declaration.parallelCollection nested none := by
+      intro element membership nested
+      have sourceMembership :=
+        (PatternCode.sortPatternsBy_perm (key availableDepth)
+          (parallelContents declaration canonicalElements)).mem_iff.mp
+          membership
+      exact keyedParallelFrontier_noParallel key declaration availableDepth
+        elements element sourceMembership nested
+    have exposed : parallelContents declaration
+        [collapseParallel declaration normalized] = normalized :=
+      parallelContents_collapseParallel_eq_of_flat declaration normalized
+        normalizedNoUnit normalizedNoParallel
+    have normalizedPerm : List.Perm normalized
+        (parallelContents declaration canonicalElements) :=
+      PatternCode.sortPatternsBy_perm (key availableDepth)
+        (parallelContents declaration canonicalElements)
+    rw [show canonicalizeByAt key declaration availableDepth
+          (.collection declaration.parallelCollection elements none) =
+        collapseParallel declaration normalized by
+      simp [canonicalizeByAt, canonicalElements, normalized]]
+    rw [exposed]
+    have filtered :=
+      parallelContents_canonicalizeListByAt_filter_unit key declaration
+        availableDepth elements
+    simpa [parallelContents, parallelSplice, canonicalElements] using
+      normalizedPerm.trans (List.Perm.of_eq filtered.symm)
+  · have splice : parallelSplice declaration pattern = [pattern] :=
+      parallelSplice_eq_singleton_of_not_parallel declaration pattern (by
+        intro elements equality
+        exact isParallel ⟨elements, equality⟩)
+    by_cases isUnit : pattern =
+        .apply declaration.parallelUnitConstructor []
+    · subst pattern
+      simp [parallelContents, parallelSplice, canonicalizeListByAt]
+    · simp [parallelContents, splice, isUnit, canonicalizeListByAt]
+
+/-- Keyed recursive canonicalization commutes with exposing a bare-parallel
+frontier up to an occurrence-preserving permutation.  In particular,
+flattening, unit deletion, singleton collapse, nested parallel splicing, and
+equal-key duplicates are all retained exactly. -/
+theorem parallelContents_canonicalizeListByAt_perm
+    {Key : Type} [LinearOrder Key] (key : Nat → Pattern → Key)
+    (declaration : ReflectivePresentationDecl) (availableDepth : Nat) :
+    ∀ patterns : List Pattern,
+    List.Perm
+      (parallelContents declaration
+        (canonicalizeListByAt key declaration availableDepth patterns))
+      (parallelContents declaration
+        (canonicalizeListByAt key declaration availableDepth
+          (parallelContents declaration patterns)))
+  | [] => by simp [parallelContents, canonicalizeListByAt]
+  | pattern :: patterns => by
+      rw [show pattern :: patterns = [pattern] ++ patterns by rfl,
+        parallelContents_append,
+        canonicalizeListByAt_eq_map, List.map_append,
+        parallelContents_append,
+        canonicalizeListByAt_eq_map, List.map_append,
+        parallelContents_append]
+      apply List.Perm.append
+      · simpa [canonicalizeListByAt_eq_map] using
+          (parallelContents_canonicalizeByAt_singleton_perm key declaration
+            availableDepth pattern)
+      · simpa [canonicalizeListByAt_eq_map] using
+          (parallelContents_canonicalizeListByAt_perm key declaration
+            availableDepth patterns)
+
+/-- Exposing a keyed canonical parallel frontier and exposing the ordinary
+canonical frontier of the same input produce the same multiset of ordinary
+canonical classes.  This theorem retains the intermediate occurrences and
+does not assert that keyed canonicalization is a fixed point. -/
+theorem canonicalize_parallelContents_keyed_plain_perm
+    {Key : Type} [LinearOrder Key] (key : Nat → Pattern → Key)
+    (declaration : ReflectivePresentationDecl) (availableDepth : Nat)
+    (patterns : List Pattern) :
+    List.Perm
+      ((parallelContents declaration
+          (canonicalizeListByAt key declaration availableDepth patterns)).map
+        (canonicalize declaration))
+      ((parallelContents declaration
+          (canonicalizeList declaration patterns)).map
+        (canonicalize declaration)) := by
+  have elementsRelated : ParallelOrderAgnosticList declaration
+      (canonicalizeListByAt key declaration availableDepth patterns)
+      (canonicalizeList declaration patterns) := by
+    rw [canonicalizeListByAt_eq_map, canonicalizeList_eq_map]
+    exact ParallelOrderAgnostic.ParallelOrderAgnosticList.mapPair
+      (fun pattern membership =>
+        canonicalizeByAt_parallelOrderAgnostic key declaration
+          availableDepth pattern)
+  have spliced :=
+    ParallelOrderAgnostic.ParallelOrderAgnosticPermutation.flatMapParallelSplice
+      elementsRelated
+  have filtered :=
+    ParallelOrderAgnostic.ParallelOrderAgnosticPermutation.filterNotUnit
+      spliced
+  simpa [parallelContents] using
+    ParallelOrderAgnostic.ParallelOrderAgnosticPermutation.canonicalize_perm
+      filtered
+
+/-- Equal ordinary canonical parallel terms induce a permutation between the
+ordinary-canonical classes of their keyed, flattened frontiers.  This is the
+maximal syntax-only inversion used by the restoration proof: turning each
+matched class into exact common-restoration evidence remains a typed client
+obligation. -/
+theorem canonicalize_parallelContents_keyed_perm_of_equal
+    {Key : Type} [LinearOrder Key] (key : Nat → Pattern → Key)
+    (declaration : ReflectivePresentationDecl) (availableDepth : Nat)
+    {left right : List Pattern}
+    (equal : canonicalize declaration
+        (.collection declaration.parallelCollection left none) =
+      canonicalize declaration
+        (.collection declaration.parallelCollection right none)) :
+    List.Perm
+      ((parallelContents declaration
+          (canonicalizeListByAt key declaration availableDepth left)).map
+        (canonicalize declaration))
+      ((parallelContents declaration
+          (canonicalizeListByAt key declaration availableDepth right)).map
+        (canonicalize declaration)) := by
+  have leftPlain := canonicalize_parallelContents_keyed_plain_perm key
+    declaration availableDepth left
+  have rightPlain := canonicalize_parallelContents_keyed_plain_perm key
+    declaration availableDepth right
+  have plain : List.Perm
+      ((parallelContents declaration
+          (canonicalizeList declaration left)).map
+        (canonicalize declaration))
+      ((parallelContents declaration
+          (canonicalizeList declaration right)).map
+        (canonicalize declaration)) := by
+    have frontier := canonicalize_parallel_inj_contents_perm declaration equal
+    simpa [canonicalizeList_eq_map] using
+      frontier.map (canonicalize declaration)
+  exact leftPlain.trans (plain.trans rightPlain.symm)
 
 /-- Re-canonicalizing a keyed representative erases its semantic-key order
 choice, without requiring the quote and drop constructor names to be

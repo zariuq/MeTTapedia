@@ -45,6 +45,58 @@ inductive OpenDerivationList (presentation : ValidatedPresentation)
 
 end
 
+/-! ## Generic semantic interpretation -/
+
+mutual
+
+/-- An interpretation that holds for every context occurrence and is closed
+under every admitted rule application holds for every open derivation. -/
+theorem OpenDerivation.sound_of_ruleApplications
+    {presentation : ValidatedPresentation} {context : List Pattern}
+    (meaning : Pattern → Prop)
+    (ruleSound : ∀ ruleInstance premises conclusion,
+      RuleApplication presentation ruleInstance premises conclusion →
+        (∀ premise ∈ premises, meaning premise) → meaning conclusion)
+    (contextSound : ∀ premise ∈ context, meaning premise)
+    {goal : Pattern} (derivation : OpenDerivation presentation context goal) :
+    meaning goal := by
+  cases derivation with
+  | assumption index =>
+      exact contextSound (context.get index) (List.get_mem context index)
+  | byRule ruleInstance application children =>
+      exact ruleSound ruleInstance _ _ application
+        (OpenDerivationList.all_meaning meaning ruleSound contextSound children)
+termination_by sizeOf derivation
+
+/-- Ordered open derivation lists satisfy an interpretation pointwise. -/
+theorem OpenDerivationList.all_meaning
+    {presentation : ValidatedPresentation} {context : List Pattern}
+    (meaning : Pattern → Prop)
+    (ruleSound : ∀ ruleInstance premises conclusion,
+      RuleApplication presentation ruleInstance premises conclusion →
+        (∀ premise ∈ premises, meaning premise) → meaning conclusion)
+    (contextSound : ∀ premise ∈ context, meaning premise)
+    {premises : List Pattern}
+    (derivations : OpenDerivationList presentation context premises) :
+    ∀ premise ∈ premises, meaning premise := by
+  cases derivations with
+  | nil => simp
+  | cons head tail =>
+      intro premise membership
+      simp only [List.mem_cons] at membership
+      rcases membership with equality | membership
+      · exact equality ▸
+          OpenDerivation.sound_of_ruleApplications meaning ruleSound
+            contextSound head
+      · exact OpenDerivationList.all_meaning meaning ruleSound contextSound
+          tail premise membership
+termination_by sizeOf derivations
+
+decreasing_by
+  all_goals simp_all <;> omega
+
+end
+
 namespace OpenDerivationList
 
 /-- Select the derivation at an ordered premise position. -/

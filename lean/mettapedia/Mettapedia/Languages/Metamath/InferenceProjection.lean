@@ -1,4 +1,5 @@
 import Mettapedia.Languages.Metamath.InferenceSideConditions
+import Mettapedia.Util.LinearHash
 
 /-!
 # Metamath prefix inference projection
@@ -148,16 +149,40 @@ def projectHypotheses? (db : RuntimeDB) (labels : List String) :
 def floatingVariableNames (hypotheses : List HypothesisView) : List String :=
   hypotheses.filterMap HypothesisView.floatingVariable?
 
+def hasUniqueLabelsFast (hypotheses : List HypothesisView) : Bool :=
+  Mettapedia.Util.LinearHash.allDistinct
+    (hypotheses.map HypothesisView.label)
+
+@[implemented_by hasUniqueLabelsFast]
 def hasUniqueLabels (hypotheses : List HypothesisView) : Bool :=
   let labels := hypotheses.map HypothesisView.label
   labels.eraseDups.length == labels.length
 
+theorem hasUniqueLabelsFast_eq_hasUniqueLabels
+    (hypotheses : List HypothesisView) :
+    hasUniqueLabelsFast hypotheses = hasUniqueLabels hypotheses := by
+  simp only [hasUniqueLabelsFast, hasUniqueLabels]
+  rw [Mettapedia.Util.LinearHash.allDistinct_eq_eraseDupsLength]
+
 /-- The syntactically generated finite substitution has one binding for each
 floating mandatory hypothesis, so its relational lookup is unambiguous only
 under this gate. -/
+def hasUniqueFloatingVariablesFast
+    (hypotheses : List HypothesisView) : Bool :=
+  Mettapedia.Util.LinearHash.allDistinct
+    (floatingVariableNames hypotheses)
+
+@[implemented_by hasUniqueFloatingVariablesFast]
 def hasUniqueFloatingVariables (hypotheses : List HypothesisView) : Bool :=
   let names := floatingVariableNames hypotheses
   names.eraseDups.length == names.length
+
+theorem hasUniqueFloatingVariablesFast_eq_hasUniqueFloatingVariables
+    (hypotheses : List HypothesisView) :
+    hasUniqueFloatingVariablesFast hypotheses =
+      hasUniqueFloatingVariables hypotheses := by
+  simp only [hasUniqueFloatingVariablesFast, hasUniqueFloatingVariables]
+  rw [Mettapedia.Util.LinearHash.allDistinct_eq_eraseDupsLength]
 
 def formulaVariablesKnown (floatingVariables : List String)
     (formula : ConstantHeadedFormula) : Bool :=
@@ -293,6 +318,27 @@ def projectAssertion? (db : RuntimeDB) (label : String)
   guard (formulaSymbolsRespectFrame (floatingVariableNames hypotheses) formula)
   some { label, formula, frame, hypotheses }
 
+private def projectAssertionsFromEntriesFastAux? (db : RuntimeDB) :
+    List (String × Metamath.Verify.Object) → List AssertionView →
+      Option (List AssertionView)
+  | [], reversed => some reversed.reverse
+  | (label, .assert runtimeFormula frame embeddedLabel) :: entries,
+      reversed => do
+      let assertion ←
+        projectAssertion? db label runtimeFormula frame embeddedLabel
+      projectAssertionsFromEntriesFastAux? db entries
+        (assertion :: reversed)
+  | _ :: entries, reversed =>
+      projectAssertionsFromEntriesFastAux? db entries reversed
+
+/-- Stack-safe executable projection.  The accumulator is reversed so the
+compiled loop is tail recursive while preserving authored object order. -/
+def projectAssertionsFromEntriesFast? (db : RuntimeDB)
+    (entries : List (String × Metamath.Verify.Object)) :
+    Option (List AssertionView) :=
+  projectAssertionsFromEntriesFastAux? db entries []
+
+@[implemented_by projectAssertionsFromEntriesFast?]
 def projectAssertionsFromEntries? (db : RuntimeDB) :
     List (String × Metamath.Verify.Object) → Option (List AssertionView)
   | [] => some []
@@ -303,14 +349,73 @@ def projectAssertionsFromEntries? (db : RuntimeDB) :
       some (assertion :: assertions)
   | _ :: entries => projectAssertionsFromEntries? db entries
 
+private theorem projectAssertionsFromEntriesFastAux?_eq
+    (db : RuntimeDB) (entries : List (String × Metamath.Verify.Object))
+    (reversed : List AssertionView) :
+    projectAssertionsFromEntriesFastAux? db entries reversed =
+      (projectAssertionsFromEntries? db entries).map
+        (fun assertions => reversed.reverse ++ assertions) := by
+  induction entries generalizing reversed with
+  | nil => simp [projectAssertionsFromEntriesFastAux?,
+      projectAssertionsFromEntries?]
+  | cons entry entries ih =>
+      rcases entry with ⟨label, object⟩
+      cases object with
+      | const constantName =>
+          simpa [projectAssertionsFromEntriesFastAux?,
+            projectAssertionsFromEntries?] using ih reversed
+      | var variableName =>
+          simpa [projectAssertionsFromEntriesFastAux?,
+            projectAssertionsFromEntries?] using ih reversed
+      | hyp essential formula embeddedLabel =>
+          simpa [projectAssertionsFromEntriesFastAux?,
+            projectAssertionsFromEntries?] using ih reversed
+      | assert runtimeFormula frame embeddedLabel =>
+          cases projected :
+              projectAssertion? db label runtimeFormula frame embeddedLabel with
+          | none =>
+              simp [projectAssertionsFromEntriesFastAux?,
+                projectAssertionsFromEntries?, projected]
+          | some assertion =>
+              simp only [projectAssertionsFromEntriesFastAux?, projected,
+                projectAssertionsFromEntries?, Option.bind_eq_bind,
+                Option.bind_some]
+              rw [ih]
+              cases tailProjection :
+                  projectAssertionsFromEntries? db entries with
+              | none => simp
+              | some assertions =>
+                  simp [List.reverse_cons, List.append_assoc]
+
+/-- The tail-recursive implementation is extensionally identical to the
+structural specification used by all projection proofs. -/
+theorem projectAssertionsFromEntriesFast?_eq
+    (db : RuntimeDB) (entries : List (String × Metamath.Verify.Object)) :
+    projectAssertionsFromEntriesFast? db entries =
+      projectAssertionsFromEntries? db entries := by
+  simpa [projectAssertionsFromEntriesFast?] using
+    projectAssertionsFromEntriesFastAux?_eq db entries []
+
 def sourceRuleLabels (projection : PrefixProjection) : List String :=
   projection.activeHypotheses.map HypothesisView.label ++
     projection.assertions.map AssertionView.label
 
+def sourceRuleLabelsValidFast (labels : List String) : Bool :=
+  labels.all (fun label =>
+      label != "" && !(label.startsWith reservedRulePrefix)) &&
+    Mettapedia.Util.LinearHash.allDistinct labels
+
+@[implemented_by sourceRuleLabelsValidFast]
 def sourceRuleLabelsValid (labels : List String) : Bool :=
   labels.all (fun label =>
       label != "" && !(label.startsWith reservedRulePrefix)) &&
     labels.eraseDups.length == labels.length
+
+theorem sourceRuleLabelsValidFast_eq_sourceRuleLabelsValid
+    (labels : List String) :
+    sourceRuleLabelsValidFast labels = sourceRuleLabelsValid labels := by
+  simp only [sourceRuleLabelsValidFast, sourceRuleLabelsValid]
+  rw [Mettapedia.Util.LinearHash.allDistinct_eq_eraseDupsLength]
 
 /-- Recheck the semantic invariants of an inspectable assertion snapshot. -/
 def assertionViewValid (declaredConstants declaredVariables : List String)
@@ -326,6 +431,21 @@ def assertionViewValid (declaredConstants declaredVariables : List String)
 
 /-- Public snapshots are inspectable data rather than proof-carrying subtypes,
 so presentation generation repeats their structural gates. -/
+def prefixProjectionValidFast (projection : PrefixProjection) : Bool :=
+  Mettapedia.Util.LinearHash.allDistinct projection.declaredConstants &&
+    Mettapedia.Util.LinearHash.allDistinct projection.declaredVariables &&
+    Mettapedia.Util.LinearHash.allAbsent projection.declaredConstants
+      projection.declaredVariables &&
+    frameProjectionValid projection.callerFrame projection.activeHypotheses &&
+    projection.activeHypotheses.all
+      (formulaSymbolsRespectDeclarations projection.declaredConstants
+        projection.declaredVariables ∘ HypothesisView.formula) &&
+    projection.assertions.all
+      (assertionViewValid projection.declaredConstants
+        projection.declaredVariables) &&
+    sourceRuleLabelsValidFast (sourceRuleLabels projection)
+
+@[implemented_by prefixProjectionValidFast]
 def prefixProjectionValid (projection : PrefixProjection) : Bool :=
   projection.declaredConstants.eraseDups.length ==
       projection.declaredConstants.length &&
@@ -341,6 +461,15 @@ def prefixProjectionValid (projection : PrefixProjection) : Bool :=
       (assertionViewValid projection.declaredConstants
         projection.declaredVariables) &&
     sourceRuleLabelsValid (sourceRuleLabels projection)
+
+theorem prefixProjectionValidFast_eq_prefixProjectionValid
+    (projection : PrefixProjection) :
+    prefixProjectionValidFast projection = prefixProjectionValid projection := by
+  simp only [prefixProjectionValidFast, prefixProjectionValid]
+  rw [Mettapedia.Util.LinearHash.allDistinct_eq_eraseDupsLength,
+    Mettapedia.Util.LinearHash.allDistinct_eq_eraseDupsLength,
+    Mettapedia.Util.LinearHash.allAbsent_eq,
+    sourceRuleLabelsValidFast_eq_sourceRuleLabelsValid]
 
 /-- Proof-facing caller frame for a live parser prefix.  The raw frame keeps
 all active `$d` pairs for scope restoration, including legal pairs declared
@@ -420,8 +549,18 @@ theorem mem_sortStrings_iff (target : String) (values : List String) :
     target ∈ sortStrings values ↔ target ∈ values := by
   exact (List.mergeSort_perm values _).mem_iff
 
+/-- Hash-indexed executable source vocabulary retaining the exact canonical
+ordering of the structural specification. -/
+def sourceVocabularyFast (projection : PrefixProjection) : List String :=
+  (stringsOfFrame projection.callerFrame ++
+      projection.activeHypotheses.flatMap stringsOfHypothesis ++
+      projection.assertions.flatMap stringsOfAssertion)
+    |> Mettapedia.Util.LinearHash.eraseDupsFast
+    |> sortStrings
+
 /-- Deduplicated source strings occurring in projected rule identifiers or in
 an encoded formula, frame, or substitution binding. -/
+@[implemented_by sourceVocabularyFast]
 def sourceVocabulary (projection : PrefixProjection) : List String :=
   (stringsOfFrame projection.callerFrame ++
       projection.activeHypotheses.flatMap stringsOfHypothesis ++
@@ -429,17 +568,38 @@ def sourceVocabulary (projection : PrefixProjection) : List String :=
     |>.eraseDups
     |> sortStrings
 
+theorem sourceVocabularyFast_eq_sourceVocabulary
+    (projection : PrefixProjection) :
+    sourceVocabularyFast projection = sourceVocabulary projection := by
+  simp only [sourceVocabularyFast, sourceVocabulary]
+  rw [Mettapedia.Util.LinearHash.eraseDupsFast_eq]
+
 def reservedProjectionHeads : List String :=
   dataTypeName :: provesHead ::
     (reservedInternalHeads ++
       [Pattern.zipHead, Pattern.mapHead, Pattern.evalHead])
 
+def sourceVocabularyValidFast (sourceHeads : List String) : Bool :=
+  sourceHeads.all (fun head =>
+      head != "" &&
+        !(head.startsWith reservedRulePrefix) &&
+        !(reservedProjectionHeads.contains head)) &&
+    Mettapedia.Util.LinearHash.allDistinct sourceHeads
+
+@[implemented_by sourceVocabularyValidFast]
 def sourceVocabularyValid (sourceHeads : List String) : Bool :=
   sourceHeads.all (fun head =>
       head != "" &&
         !(head.startsWith reservedRulePrefix) &&
         !(reservedProjectionHeads.contains head)) &&
     sourceHeads.eraseDups.length == sourceHeads.length
+
+theorem sourceVocabularyValidFast_eq_sourceVocabularyValid
+    (sourceHeads : List String) :
+    sourceVocabularyValidFast sourceHeads =
+      sourceVocabularyValid sourceHeads := by
+  simp only [sourceVocabularyValidFast, sourceVocabularyValid]
+  rw [Mettapedia.Util.LinearHash.allDistinct_eq_eraseDupsLength]
 
 /-- Extend only the term-constructor vocabulary; the side-condition language
 and its carrier type remain unchanged. -/

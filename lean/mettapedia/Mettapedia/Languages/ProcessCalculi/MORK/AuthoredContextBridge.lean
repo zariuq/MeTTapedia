@@ -220,7 +220,7 @@ private theorem compiledContextRule_fires
     {target} ∈ fireRule {source} (compiledContextRule source target) := by
   simp only [fireRule, compiledContextRule, List.mem_map]
   refine ⟨([], {source}), ?_, ?_⟩
-  · simp only [matchPattern, mkPattern, matchPattern.go, Finset.sdiff_empty,
+  · simp only [matchPattern, mkPattern, matchPattern.go,
       List.mem_flatMap, matchOneInSpace, List.mem_filterMap]
     refine ⟨([], source), ?_, by simp⟩
     exact ⟨source, Finset.mem_toList.mpr (by simp),
@@ -277,7 +277,7 @@ private theorem compiledContextSourceRule_fires
   rw [List.mem_map]
   refine ⟨([], {source}), ?_, ?_⟩
   · simp only [compiledContextSourceRule, matchInputSpec, matchSourceFactors,
-      matchSourceFactors.go, Finset.sdiff_empty, matchSourceFactor,
+      matchSourceFactors.go, matchSourceFactor,
       List.mem_flatMap]
     exact ⟨([], source),
       groundAtom_matchOneInSpace [] source sourceGround workspace sourceMember,

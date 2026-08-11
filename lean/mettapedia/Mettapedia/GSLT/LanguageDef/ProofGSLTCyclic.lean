@@ -113,14 +113,16 @@ private def nuUnfold : RuleSchema :=
   { id := ⟨"cy-nu-unfold"⟩
     metavariables := []
     premises := [holds nuFormula]
-    conclusion := holds (body nuFormula) }
+    conclusion := holds (body nuFormula)
+    sideConditions := [] }
 
 /-- Greatest-fixed-point folding. -/
 private def nuFold : RuleSchema :=
   { id := ⟨"cy-nu-fold"⟩
     metavariables := []
     premises := [holds (body nuFormula)]
-    conclusion := holds nuFormula }
+    conclusion := holds nuFormula
+    sideConditions := [] }
 
 /-- Least-fixed-point unfolding.  Structurally identical to its greatest
 counterpart, and on a cycle it licenses nothing. -/
@@ -128,14 +130,16 @@ private def muUnfold : RuleSchema :=
   { id := ⟨"cy-mu-unfold"⟩
     metavariables := []
     premises := [holds muFormula]
-    conclusion := holds (body muFormula) }
+    conclusion := holds (body muFormula)
+    sideConditions := [] }
 
 /-- Least-fixed-point folding. -/
 private def muFold : RuleSchema :=
   { id := ⟨"cy-mu-fold"⟩
     metavariables := []
     premises := [holds (body muFormula)]
-    conclusion := holds muFormula }
+    conclusion := holds muFormula
+    sideConditions := [] }
 
 private def cyclicLanguage : LanguageDef :=
   { name := "cyclic-fixed-point"
@@ -214,7 +218,7 @@ theorem no_closed_derivation {goal : Pattern}
       have ruleCases : rule = nuUnfold ∨ rule = nuFold ∨
           rule = muUnfold ∨ rule = muFold := by
         have member := List.mem_of_find?_eq_some lookup
-        simpa [cyclicValidated, cyclic, cyclicLanguage] using member
+        simpa [cyclicValidated, cyclic, cyclicCalculus, cyclicLanguage] using member
       rcases ruleCases with rfl | rfl | rfl | rfl <;>
         simp [nuUnfold, nuFold, muUnfold, muFold,
           RuleSchema.sideConditionsHold, instantiateSchemas?,
@@ -254,7 +258,7 @@ private theorem nuUnfold_instantiates :
     instantiateRule? cyclicValidated nuUnfoldInstance =
       some ([holds nuFormula], holds (body nuFormula)) := by
   simp [instantiateRule?, cyclicValidated, cyclic, cyclicLanguage,
-    nuUnfoldInstance, nuUnfold, nuFold, muUnfold, muFold,
+    cyclicCalculus, nuUnfoldInstance, nuUnfold, nuFold, muUnfold, muFold,
     Presentation.lookupRule?, argumentsValidAt, RuleSchema.sideConditionsHold,
     instantiateSchemas?, instantiateSchema?, instantiateSchemasAt?,
     instantiateSchemaAt?, holds, body, nuFormula]
@@ -263,7 +267,7 @@ private theorem nuFold_instantiates :
     instantiateRule? cyclicValidated nuFoldInstance =
       some ([holds (body nuFormula)], holds nuFormula) := by
   simp [instantiateRule?, cyclicValidated, cyclic, cyclicLanguage,
-    nuFoldInstance, nuUnfold, nuFold, muUnfold, muFold,
+    cyclicCalculus, nuFoldInstance, nuUnfold, nuFold, muUnfold, muFold,
     Presentation.lookupRule?, argumentsValidAt, RuleSchema.sideConditionsHold,
     instantiateSchemas?, instantiateSchema?, instantiateSchemasAt?,
     instantiateSchemaAt?, holds, body, nuFormula]
@@ -272,7 +276,7 @@ private theorem muUnfold_instantiates :
     instantiateRule? cyclicValidated muUnfoldInstance =
       some ([holds muFormula], holds (body muFormula)) := by
   simp [instantiateRule?, cyclicValidated, cyclic, cyclicLanguage,
-    muUnfoldInstance, nuUnfold, nuFold, muUnfold, muFold,
+    cyclicCalculus, muUnfoldInstance, nuUnfold, nuFold, muUnfold, muFold,
     Presentation.lookupRule?, argumentsValidAt, RuleSchema.sideConditionsHold,
     instantiateSchemas?, instantiateSchema?, instantiateSchemasAt?,
     instantiateSchemaAt?, holds, body, muFormula]
@@ -281,7 +285,7 @@ private theorem muFold_instantiates :
     instantiateRule? cyclicValidated muFoldInstance =
       some ([holds (body muFormula)], holds muFormula) := by
   simp [instantiateRule?, cyclicValidated, cyclic, cyclicLanguage,
-    muFoldInstance, nuUnfold, nuFold, muUnfold, muFold,
+    cyclicCalculus, muFoldInstance, nuUnfold, nuFold, muUnfold, muFold,
     Presentation.lookupRule?, argumentsValidAt, RuleSchema.sideConditionsHold,
     instantiateSchemas?, instantiateSchema?, instantiateSchemasAt?,
     instantiateSchemaAt?, holds, body, muFormula]

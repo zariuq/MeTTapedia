@@ -1,32 +1,43 @@
 import Mettapedia.Languages.ProcessCalculi.MORK.Conformance
 
 /-!
-# MORK: Work-Queue Location Ordering
+# MORK: Work-Queue Compact-Expression Ordering
 
-Defines a structural ordering on `Atom` that approximates the PathMap byte order
-used by the real MORK runtime to schedule exec facts.
+Defines both the exact compact-expression encoding used by MORK and an older
+structural approximation retained for proofs about authored location bands.
+The executable MM2 scheduler uses the exact full-directive key.
 
 ## PathMap byte ordering (reference)
 
 PathMap is a 256-radix trie. Tag bytes determine the first level of ordering:
 - `[n]` (Arity tag, byte < 0x40) — expressions
-- `<n>` (SymbolSize tag, byte 0x40–0x7F) — symbols
-- `$` (NewVar tag, byte 0xC0) — variables
 - `&i` (VarRef tag, byte 0x80–0xBF) — variable references
+- `$` (NewVar tag, byte 0xC0) — a variable's first occurrence
+- `<n>` (SymbolSize tag, byte 0xC1–0xFF) — nonempty symbols
 
-This means expressions sort before symbols, symbols before variables.
+This means expressions sort before variable references, which sort before a
+new variable and then nonempty symbols.
 Within symbols, shorter names sort before longer (smaller SymbolSize tag byte).
 Within the same length, lexicographic by raw ASCII bytes.
 
-## Approximation
+## Exact physical key
+
+`morkCompactKey?` implements the parser/`Expr` representation used by MORK:
+expressions carry one arity byte, symbols carry one byte-length tag followed by
+UTF-8 bytes, and variables are encoded by first-occurrence indices scoped to a
+single top-level atom.  Grounded host values have no MM2 compact-expression
+encoding and are rejected.
+
+## Historical location approximation
 
 `atomKey : Atom → List ℕ` assigns a `List ℕ` key that preserves the relative
 ordering of the PathMap byte representation for the common cases:
 - `(N name)` location tuples with numeric or symbolic priorities
 - Nested tuple priorities like `($p (1 (0)))`
 
-This is NOT byte-identical to PathMap serialization. A future refinement module
-can connect `atomKey` to exact byte encoding.
+This is not byte-identical to PathMap serialization and is not used to select
+physical MM2 work.  It remains useful for the explicitly authored location
+fragment and its phase-order lemmas.
 -/
 
 namespace Mettapedia.Languages.ProcessCalculi.MORK
@@ -45,6 +56,113 @@ def lexLt : List ℕ → List ℕ → Bool
     else if x > y then false
     else lexLt xs ys
 
+/-! ## Exact MORK compact-expression encoding -/
+
+/-- Index of the first occurrence of a variable name.  MORK's bytestring
+parser assigns indices in first-occurrence order within each top-level atom. -/
+def compactVariableIndex (name : String) : List String → Option Nat
+  | [] => none
+  | candidate :: rest =>
+      if name = candidate then some 0
+      else (compactVariableIndex name rest).map Nat.succ
+
+/-- Kernel-reducible UTF-8 bytes used by the compact encoder. -/
+def morkUtf8Bytes (name : String) : List UInt8 :=
+  name.toList.flatMap String.utf8EncodeChar
+
+/-- The reducible byte list is extensionally the byte representation carried
+by Lean strings, so the encoder does not silently replace UTF-8 with a
+character-code approximation. -/
+theorem morkUtf8Bytes_toByteArray (name : String) :
+    (morkUtf8Bytes name).toByteArray = name.toUTF8 := by
+  simpa [morkUtf8Bytes, List.utf8Encode, String.toUTF8_eq_toByteArray] using
+    (String.utf8Encode_toList (b := name))
+
+/-- Exact compact-expression bytes for the MM2-representable fragment of
+`Atom`, together with the updated first-occurrence variable environment.
+
+The returned naturals are bytes in `0..255`.  This uses the tag layout from
+`mork_expr::item_byte`: arity `a`, variable reference `0x80+i`, new variable
+`0xC0`, and symbol size `0xC0+n`. -/
+def morkCompactEncodeAtom (environment : List String) :
+    Atom → Option (List Nat × List String)
+  | .var name =>
+      match compactVariableIndex name environment with
+      | some index =>
+          if index < 64 then some ([0x80 + index], environment) else none
+      | none =>
+          if environment.length < 64 then
+            some ([0xC0], environment ++ [name])
+          else none
+  | .symbol name =>
+      let bytes := (morkUtf8Bytes name).map UInt8.toNat
+      if 0 < bytes.length ∧ bytes.length < 64 then
+        some ((0xC0 + bytes.length) :: bytes, environment)
+      else none
+  | .grounded _ => none
+  | .expression children =>
+      if children.length < 64 then
+        match morkCompactEncodeAtom.encodeList environment children with
+        | some (bytes, environment') =>
+            some (children.length :: bytes, environment')
+        | none => none
+      else none
+where
+  encodeList (environment : List String) :
+      List Atom → Option (List Nat × List String)
+    | [] => some ([], environment)
+    | atom :: rest =>
+        match morkCompactEncodeAtom environment atom with
+        | none => none
+        | some (headBytes, environment') =>
+            match encodeList environment' rest with
+            | none => none
+            | some (tailBytes, environment'') =>
+                some (headBytes ++ tailBytes, environment'')
+
+/-- Exact compact-expression key for one top-level MM2 atom.  Variable names
+are deliberately erased to first-occurrence indices, matching the parser. -/
+def morkCompactKey? (atom : Atom) : Option (List Nat) :=
+  (morkCompactEncodeAtom [] atom).map Prod.fst
+
+/-- Physical representability of an `Atom` by MORK's compact expression. -/
+def MorkCompactRepresentable (atom : Atom) : Prop :=
+  ∃ key, morkCompactKey? atom = some key
+
+section CompactEncodingCanaries
+
+/-- Positive encoding canary: `(f a)` is arity, then two sized UTF-8 symbols. -/
+theorem compact_key_f_a :
+    morkCompactKey?
+      (.expression [.symbol "f", .symbol "a"]) =
+      some [2, 0xC1, 0x66, 0xC1, 0x61] := by decide
+
+/-- Variable spelling is not physical identity: alpha-renaming preserves the
+compact key, including a repeated reference. -/
+theorem compact_key_alpha_invariant :
+    morkCompactKey?
+      (.expression [.symbol "pair", .var "x", .var "x"]) =
+    morkCompactKey?
+      (.expression [.symbol "pair", .var "renamed", .var "renamed"]) := by decide
+
+/-- Negative encoding canary: host-grounded values are not MM2 syntax. -/
+theorem compact_key_rejects_grounded :
+    morkCompactKey? (.grounded (.int 7)) = none := rfl
+
+/-- Full-directive ordering observes pattern bytes even when locations agree. -/
+theorem compact_key_orders_same_location_by_pattern :
+    lexLt
+      ((morkCompactKey?
+        (.expression [.symbol "exec", .symbol "0",
+          .expression [.symbol ",", .symbol "a"],
+          .expression [.symbol ",", .symbol "z"]])).getD [])
+      ((morkCompactKey?
+        (.expression [.symbol "exec", .symbol "0",
+          .expression [.symbol ",", .symbol "b"],
+          .expression [.symbol ",", .symbol "a"]])).getD []) = true := by decide
+
+end CompactEncodingCanaries
+
 /-! ## Atom key for ordering -/
 
 /-- Convert a `GroundedValue` to a string representation for key generation. -/
@@ -58,8 +176,8 @@ private def groundedToChars : GroundedValue → List Char
 
     Key prefix encodes the tag-byte ordering:
     - `0` → expression (Arity tag, byte < 0x40)
-    - `1` → symbol / grounded (SymbolSize tag, byte 0x40+)
-    - `3` → variable (NewVar/VarRef tag, byte 0x80+)
+    - `1` → symbol / grounded (historical approximation)
+    - `3` → variable (historical approximation)
 
     For symbols: length then char values (mirrors SymbolSize then raw bytes).
     For expressions: arity then recursive keys of children. -/

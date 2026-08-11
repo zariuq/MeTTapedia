@@ -95,14 +95,16 @@ theorem rhoQuoteDropBVar_canonical :
 /-- The outer name binder is sealed by `NQuote`; hence the typable collapse is
 not an admitted open object. -/
 theorem rhoQuoteDropBVar_not_reflectiveScopeSafe :
-    ¬ ReflectiveScopeSafeAt rhoCIGSLT.costWholeLanguage
+    ¬ ReflectiveWellSorted.ReflectiveScopeSafeAt
+      rhoCIGSLT.costWholeReflectionProfile
       rhoRigidNameBound.length rhoQuoteDropBVarLeft := by
   intro safe
   have sourceMembership :
     rhoReflectivePresentation.toReflectivePresentationDecl ∈
         rhoCIGSLT.reflection.1.presentations := by
-    simp [rhoCIGSLT, rhoIGSLT, rhoInteractivePresentation,
-      rhoValidatedLanguageDef, rhoCalc]
+    change rhoReflectivePresentation.toReflectivePresentationDecl ∈
+      ReflectionExtension.rhoReflectionProfile.presentations
+    simp [ReflectionExtension.rhoReflectionProfile]
   have membership : rhoRigidBaseDeclaration ∈
       rhoCIGSLT.costWholeReflectionProfile.presentations := by
     simpa only [CIGSLT.costWholeReflectionProfile_presentations,
@@ -117,11 +119,12 @@ theorem rhoQuoteDropBVar_not_reflectiveScopeSafe :
   simp [rhoQuoteDropBVarLeft, binderSafeAt, binderSafeListAt] at checked
 
 theorem rhoQuoteDropBVar_not_wellSorted :
-    ¬ OpenPatternWellSorted rhoCIGSLT.costWholeLanguage rhoRigidLeafFree
-      rhoRigidNameBound (.base (costBaseSortName "Name"))
-      rhoQuoteDropBVarLeft := by
+    ¬ ReflectiveWellSorted.OpenPatternWellSorted
+      rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
+      rhoRigidLeafFree rhoRigidNameBound
+      (.base (costBaseSortName "Name")) rhoQuoteDropBVarLeft := by
   intro admitted
-  exact rhoQuoteDropBVar_not_reflectiveScopeSafe admitted.2.2.2
+  exact rhoQuoteDropBVar_not_reflectiveScopeSafe admitted.2
 
 /-! ## Admitted parallel-singleton collapse with no semantic atom -/
 
@@ -152,7 +155,13 @@ theorem rhoParallelSingletonBVarLeft_wellSorted :
     OpenPatternWellSorted rhoCIGSLT.costWholeLanguage rhoRigidLeafFree
       rhoRigidProcBound (.base (costBaseSortName "Proc"))
       rhoParallelSingletonBVarLeft := by
-  refine ⟨rhoParallelSingletonBVarLeft_typed, rfl, rfl, ?_⟩
+  exact ⟨rhoParallelSingletonBVarLeft_typed, rfl, rfl,
+    rhoParallelSingletonBVarLeft_typed.isWellScopedAt⟩
+
+private theorem rhoParallelSingletonBVarLeft_reflectiveScopeSafe :
+    ReflectiveWellSorted.ReflectiveScopeSafeAt
+      rhoCIGSLT.costWholeReflectionProfile rhoRigidProcBound.length
+      rhoParallelSingletonBVarLeft := by
   intro declaration membership
   simp [rhoParallelSingletonBVarLeft, rhoRigidProcBound,
     binderSafeAt, binderSafeListAt]
@@ -161,16 +170,24 @@ theorem rhoParallelSingletonBVarRight_wellSorted :
     OpenPatternWellSorted rhoCIGSLT.costWholeLanguage rhoRigidLeafFree
       rhoRigidProcBound (.base (costBaseSortName "Proc"))
       rhoParallelSingletonBVarRight := by
-  refine ⟨rhoParallelSingletonBVarRight_typed, rfl, rfl, ?_⟩
+  exact ⟨rhoParallelSingletonBVarRight_typed, rfl, rfl,
+    rhoParallelSingletonBVarRight_typed.isWellScopedAt⟩
+
+private theorem rhoParallelSingletonBVarRight_reflectiveScopeSafe :
+    ReflectiveWellSorted.ReflectiveScopeSafeAt
+      rhoCIGSLT.costWholeReflectionProfile rhoRigidProcBound.length
+      rhoParallelSingletonBVarRight := by
   intro declaration membership
   simp [rhoParallelSingletonBVarRight, rhoRigidProcBound, binderSafeAt]
 
 /-- Checked open term used to exercise the production region-tree compiler. -/
 def rhoParallelSingletonBVarTerm :
-    OpenTerm rhoCIGSLT.costWholeLanguage rhoRigidLeafFree rhoRigidProcBound
+    ReflectiveWellSorted.OpenTerm rhoCIGSLT.costWholeReflectionProfile
+      rhoCIGSLT.costWholeLanguage rhoRigidLeafFree rhoRigidProcBound
       (CostStaticColor.base.mapLangSort rhoCIGSLT rhoProc) :=
-  ⟨rhoParallelSingletonBVarLeft, rhoParallelSingletonBVarLeft_typed, rfl, rfl,
-    rhoParallelSingletonBVarLeft_wellSorted.2.2.2⟩
+  ⟨rhoParallelSingletonBVarLeft,
+    rhoParallelSingletonBVarLeft_wellSorted,
+    rhoParallelSingletonBVarLeft_reflectiveScopeSafe⟩
 
 private def rhoRigidParallelChoice : CostCollectionTypingChoice :=
   .bare rhoCalc.terms[3] (.base "Proc")
@@ -239,7 +256,7 @@ private def rhoParallelSingletonBVarPlan :
 
 private def rhoParallelSingletonBVarNode :
     CostStaticRegionNode rhoCIGSLT .base rhoRigidLeafFree :=
-  CostStaticRegionNode.ofPlan rhoParallelSingletonBVarTerm
+  CostStaticRegionNode.ofPlan rhoParallelSingletonBVarTerm.toCore
     rhoParallelSingletonBVarPlan rfl
 
 private def rhoParallelSingletonBVarChildren :

@@ -1,9 +1,10 @@
 import Mettapedia.Languages.ProcessCalculi.MORK.Space
 
 /-!
-# MORK: Three-Phase Execution Protocol
+# Authored Three-Phase Protocol over MORK
 
-MORK's execution uses priority-scheduled exec rules with a three-phase protocol:
+This module defines one authored priority protocol that can be realized by MM2
+exec atoms:
 
 ```
 Phase 1 — UNFOLD  (priorities  0..31):  Spawn N sub-queries + wait token
@@ -11,20 +12,21 @@ Phase 2 — BASE    (priorities 32..63):  Resolve leaf queries directly
 Phase 3 — FOLD    (priorities 64..95):  Wait + all N sub-results → assembled result
 ```
 
-This file formalises the phase structure and the three canonical step types.
+It formalises the phase structure and its three canonical step types.
 The bridge to MQ-calculus COMM is in `MORKCommBridge.lean`.
 
 ## Spec warning
 
-MORK is an evolving system. This formalization captures the current (2026-02)
-three-phase protocol as described in `mork_backend.rs`. Future versions may:
+This is not the raw MM2 scheduler semantics. Upstream MORK selects the first
+serialized `exec` path in PathMap order and does not assign semantic meaning to
+the numeric bands below. The bands are an authored convention of a hosted
+query protocol. Future protocol realizations may:
 - Change priority bands or introduce more phases
 - Change how sub-query IDs are constructed (`sub-0-$qid` vs `(sub $k $qid)`)
 - Extend the fold protocol to support streaming/incremental results
 
-**Canary theorems** at the bottom of this file will FAIL TO COMPILE if the
-stated invariants are violated by a future change to this file.  Update the
-spec here AND in `MORKCommBridge.lean` whenever MORK evolves.
+**Canary theorems** at the bottom of this file fail to compile if this authored
+protocol changes. They are not conformance canaries for raw upstream MORK.
 -/
 
 namespace Mettapedia.Languages.ProcessCalculi.MORK
@@ -217,9 +219,10 @@ theorem applyAggregator_selectFirst (rs : List Atom) (a : Atom) (htl : List Atom
     applyAggregator .selectFirst rs = some a := by
   simp [applyAggregator, hrs]
 
-/-- `count` returns the list length as a grounded integer. -/
+/-- `count` returns the cardinality of staged result support. -/
 theorem applyAggregator_count (rs : List Atom) :
-    applyAggregator .count rs = some (.grounded (.int rs.length)) := by
+    applyAggregator .count rs =
+      some (.grounded (.int (resultSupport rs).card)) := by
   simp [applyAggregator]
 
 /-- `selectAll` returns the first sub-result (same as selectFirst at this level;
@@ -237,27 +240,29 @@ theorem applyAggregator_sum_nil :
 theorem applyAggregator_count_nil :
     applyAggregator .count [] = some (.grounded (.int 0)) := rfl
 
-/-- `count` is permutation-invariant: reordering matches doesn't change the count. -/
+/-- `count` is permutation-invariant: reordering staged rows does not change support. -/
 theorem applyAggregator_count_perm (rs rs' : List Atom) (hp : rs.Perm rs') :
     applyAggregator .count rs = applyAggregator .count rs' := by
-  simp [applyAggregator, hp.length_eq]
+  simp [applyAggregator, resultSupport, List.toFinset_eq_of_perm rs rs' hp]
 
-/-- `sum` on a cons list: unfold one step. -/
-theorem applyAggregator_sum_cons (a : Atom) (rs : List Atom) :
-    applyAggregator .sum (a :: rs) = some (.grounded (.int
-      ((a :: rs).filterMap extractInt |>.foldl (· + ·) 0))) := by
-  simp [applyAggregator]
+/-- Repeating an already staged row does not change support count. -/
+theorem applyAggregator_count_cons_of_mem (a : Atom) (rs : List Atom)
+    (hmem : a ∈ rs) :
+    applyAggregator .count (a :: rs) = applyAggregator .count rs := by
+  simp [applyAggregator, resultSupport, hmem]
+
+/-- Repeating an already staged row does not change support sum. -/
+theorem applyAggregator_sum_cons_of_mem (a : Atom) (rs : List Atom)
+    (hmem : a ∈ rs) :
+    applyAggregator .sum (a :: rs) = applyAggregator .sum rs := by
+  simp [applyAggregator, supportIntSum, resultSupport, hmem]
 
 /-- `sum` is permutation-invariant: reordering matches doesn't change the sum.
     (Int addition is commutative, and filterMap preserves permutations.) -/
 theorem applyAggregator_sum_perm (rs rs' : List Atom) (hp : rs.Perm rs') :
     applyAggregator .sum rs = applyAggregator .sum rs' := by
-  simp only [applyAggregator]
-  congr 3
-  have hfm : (rs.filterMap extractInt).Perm (rs'.filterMap extractInt) :=
-    hp.filterMap extractInt
-  exact @List.Perm.foldl_op_eq Int (· + ·) ⟨fun a b c => by omega⟩ ⟨fun a b => by omega⟩
-    _ _ _ hfm
+  simp [applyAggregator, supportIntSum, resultSupport,
+    List.toFinset_eq_of_perm rs rs' hp]
 
 /-- Default aggregator is `selectAll`. -/
 theorem foldStep_default_aggregator (fold : FoldStep)
@@ -295,18 +300,19 @@ theorem aggregatorConsistent_selectFirst (fold : FoldStep)
     AggregatorConsistent fold := by
   simp [AggregatorConsistent, hagg, applyAggregator, List.head?_eq_some_head hne, hassm]
 
-/-- `count` consistency: assembled = grounded int of length. -/
+/-- `count` consistency: assembled = grounded cardinality of result support. -/
 theorem aggregatorConsistent_count (fold : FoldStep)
     (hagg : fold.aggregator = .count)
-    (hassm : fold.assembled = .grounded (.int fold.subResults.length)) :
+    (hassm : fold.assembled =
+      .grounded (.int (resultSupport fold.subResults).card)) :
     AggregatorConsistent fold := by
   simp [AggregatorConsistent, hagg, applyAggregator, hassm]
 
-/-- `sum` consistency: assembled = grounded int of sum of extractable ints. -/
+/-- `sum` consistency: assembled = grounded sum of distinct integer results. -/
 theorem aggregatorConsistent_sum (fold : FoldStep)
     (hagg : fold.aggregator = .sum)
     (hassm : fold.assembled = .grounded (.int
-      (fold.subResults.filterMap extractInt |>.foldl (· + ·) 0))) :
+      (supportIntSum fold.subResults))) :
     AggregatorConsistent fold := by
   simp [AggregatorConsistent, hagg, applyAggregator, hassm]
 
@@ -338,9 +344,10 @@ theorem aggregatorConsistent_exists (agg : FoldAggregator) (rs : List Atom) (hne
   | selectFirst =>
     exact ⟨rs.head hne, by simp [AggregatorConsistent, applyAggregator, List.head?_eq_some_head hne]⟩
   | count =>
-    exact ⟨.grounded (.int rs.length), by simp [AggregatorConsistent, applyAggregator]⟩
+    exact ⟨.grounded (.int (resultSupport rs).card),
+      by simp [AggregatorConsistent, applyAggregator]⟩
   | sum =>
-    exact ⟨.grounded (.int (rs.filterMap extractInt |>.foldl (· + ·) 0)),
+    exact ⟨.grounded (.int (supportIntSum rs)),
            by simp [AggregatorConsistent, applyAggregator]⟩
 
 /-- `AggregatorConsistent` is decidable (uses `LawfulBEq Atom`). -/
@@ -372,6 +379,16 @@ example : applyAggregator .sum
 example : applyAggregator .sum
     [.grounded (.int 10), .symbol "x", .grounded (.int 5)] =
     some (.grounded (.int 15)) := rfl
+
+-- count stages support: three occurrences at two distinct paths = 2
+example : applyAggregator .count
+    [.symbol "a", .symbol "a", .symbol "b"] =
+    some (.grounded (.int 2)) := by decide
+
+-- sum stages support: duplicate integer paths are reduced once
+example : applyAggregator .sum
+    [.grounded (.int 5), .grounded (.int 5), .grounded (.int 7)] =
+    some (.grounded (.int 12)) := by decide
 
 -- selectAll on empty = none
 example : applyAggregator .selectAll ([] : List Atom) = none := rfl

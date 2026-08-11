@@ -1560,6 +1560,455 @@ Bayesian conjugate updating with a Beta prior:
 Revision is addition because it is the algebraic shadow of Bayesian
 conjugate updating.
 
+\section{The Atomic Event Space Comes First}
+\label{sec:atomic-event-space}
+
+The additive law above has a condition that is easy to omit and costly to
+omit: one must first say what counts as one observation.  Evidence is not a
+bare number.  It is a valuation of a declared event space.  Changing the
+event identity changes the valuation, even when the underlying records are
+unchanged.
+
+Let $E$ be a finite set of authenticated atomic records and let
+$\pi:E\to F$ be a projection to the feature being counted.  Define
+\[
+  V_\pi(A) = |\pi[A]|,\qquad A\subseteq E.
+\]
+Typical choices of $\pi$ include source record, program identity, target
+identity, test obligation, proof conclusion, or provenance root.  Each gives
+a valid count, but they answer different questions.
+
+\begin{theorem}[Projected valuation law (\claimCore{})]
+\label{thm:projected-valuation-law}
+For finite event sets $A,B\subseteq E$,
+\[
+  V_\pi(A\cup B)+|\pi[A]\cap\pi[B]|=V_\pi(A)+V_\pi(B).
+\]
+Consequently,
+\[
+  V_\pi(A\cup B)=V_\pi(A)+V_\pi(B)
+  \quad\Longleftrightarrow\quad
+  \pi[A]\cap\pi[B]=\varnothing.
+\]
+Disjointness of $A$ and $B$ is not sufficient: two distinct source records
+may collide after projection.
+\end{theorem}
+
+This is ordinary finite inclusion--exclusion, but placing the projection in
+the theorem changes the statistical discipline.  ``Independent files,''
+``different model runs,'' and ``different proofs'' do not by themselves
+license additive evidence for program identities, targets, conclusions, or
+causal roots.  Additivity is tested in the space whose cardinality is being
+reported.
+
+The Lean development uses Mathlib's \code{Finset.image} and finite
+inclusion--exclusion directly.  The generic results are
+\code{projectedSet\_union},
+\code{projected\_inclusion\_exclusion},
+\code{projected\_union\_eq\_sum\_iff}, and
+\code{projected\_not\_disjoint\_of\_collision}.%
+\footnote{Formalized in
+\codepath{Mettapedia/MachineLearning/SearchGuidance/ProgramDiscovery/Accounting.lean}.}
+
+\paragraph{Knuth--Skilling interpretation.}
+A Knuth--Skilling valuation is additive on disjoint joins in its chosen
+lattice.  The theorem above identifies the often-hidden modeling decision:
+which quotient or projection determines that lattice.  The valuation theorem
+does not choose an atom for us.  If raw records are quotiented by program
+identity, source lineage, or semantic target, the join and its overlap must be
+computed after that quotient.  Thus event identity is logically prior to the
+numeric valuation.
+
+\subsection{A general identifiability boundary}
+
+Let $O:W\to X$ be an observation map and $\theta:W\to Y$ an estimand.  If
+there exist worlds $w_1,w_2$ such that
+$O(w_1)=O(w_2)$ but $\theta(w_1)\ne\theta(w_2)$, then no function
+$g:X\to Y$ uniformly recovers $\theta$ from $O$.  This elementary
+observation-collision argument is formalized once as
+\code{no\_uniform\_recovery\_of\_observation\_collision} and reused below.
+It is the finite, constructive form of a broad warning: a selected table,
+aggregate count, or projected marginal cannot identify information it has
+erased.
+
+\subsection{Relational novelty: facts are not objects}
+
+Program discovery naturally produces a finite relation
+\[
+  R\subseteq \mathsf{Program}\times\mathsf{Target}.
+\]
+It therefore has at least three non-equivalent cardinalities:
+\[
+  |R|,\qquad |\pi_{\mathsf P}[R]|,\qquad
+  |\pi_{\mathsf T}[R]|.
+\]
+These are, respectively, verified program--target facts, distinct program
+identities, and covered targets.  Neither program count nor target count is a
+denominator for the other.
+
+Relative to a known relation $K$, a new edge $(p,t)\in R\setminus K$ has two
+different novelty questions:
+\begin{enumerate}
+\item Is $(p,t)$ a new fact?
+\item Is $p$ a new program identity, or is a known program being re-attributed
+  to another target?
+\end{enumerate}
+The Lean partition
+\code{reusedProgramNewEdges}/\code{freshProgramNewEdges} is disjoint and
+exhaustive, and
+\code{programSet\_freshProgramNewEdges} proves that projection of the fresh
+edge class is exactly the fresh program-identity set.  A positive fixture has
+three new facts---one reuse fact and two fresh-program facts---but only one
+fresh program identity.  This is the smallest example showing why ``new
+facts'' and ``new objects'' cannot be reported interchangeably.
+
+\subsection{Selected representatives are views, not ledgers}
+
+Choosing one shortest or fastest witness per target can preserve target
+coverage while destroying edge multiplicity and program diversity.  For a
+selected subrelation $S\subseteq R$, exact program-diversity preservation is
+equivalent to
+\[
+  \pi_{\mathsf P}[S]=\pi_{\mathsf P}[R],
+\]
+not to target completeness.  The Lean theorem
+\code{programCoverage\_eq\_iff\_programSet\_eq} gives the exact condition;
+\code{selected\_program\_diversity\_not\_cap\_invariant} supplies the negative
+fixture.%
+\footnote{Formalized in
+\codepath{Mettapedia/MachineLearning/SearchGuidance/ProgramDiscovery/CapInvariance.lean}.}
+
+This distinction matters for every ``best representative'' report.  A table
+with one row per target is suitable for target coverage and for properties of
+the chosen representative.  It is not a census of all verified programs,
+all verified facts, or their provenance.
+
+\subsection{Registered binary trials}
+
+A Bernoulli summary $(s,n-s)$ is well typed only when the successes are a
+subset of one declared trial set $T$:
+\[
+  S\subseteq T,\qquad s=|S|,\quad n=|T|.
+\]
+The structure \code{FiniteBinarySample} stores exactly this witness and maps
+it into the existing \code{BernoulliObservations} carrier.  For two samples,
+\code{merge\_total\_additive\_iff} proves that total-trial addition is valid
+exactly when their trial identities are disjoint.  The corresponding PLN
+evidence addition theorem is
+\code{evidence\_merge\_of\_disjoint}.  Merging the same registered trial with
+itself retains one trial, whereas blind Bernoulli combination reports two;
+\code{repeated\_trial\_is\_not\_fresh\_evidence} is the explicit negative
+example.%
+\footnote{Formalized in
+\codepath{Mettapedia/MachineLearning/SearchGuidance/ProgramDiscovery/EvidenceBridge.lean}.}
+
+This typing rule does not assert IID sampling.  It establishes only that the
+finite count pair has one coherent atom.  Exchangeability, random sampling,
+or a finite-population design is an additional model license.  In particular,
+a Beta posterior placed over fixed benchmark tasks is hypothetical until one
+states the population or exchangeability claim that makes those tasks trials
+from a common process.
+
+\subsection{Unit tests and coverage}
+
+Testing has the same relational form:
+\[
+  C\subseteq \mathsf{Test}\times\mathsf{Obligation}.
+\]
+The number of tests, the number of covered obligations, and the number of
+test--obligation edges are different projections.  One integration test may
+cover many obligations; many tests may cover the same obligation.  The
+\code{TestCoverage.Relation} bridge reuses the program-discovery accounting
+unchanged, and
+\code{obligationCoverage\_union\_eq\_sum\_iff} says that suite coverage is
+additive exactly when the obligation footprints are disjoint.  A negative
+fixture exhibits two suites with equal obligation coverage and different
+numbers of contributing tests.
+
+Consequently, ``$90\%$ of tests passed'' and ``$90\%$ of obligations are
+covered'' are not two presentations of one probability.  The first uses tests
+as trials; the second is a finite coverage fraction over registered
+obligations.  Mutation kills, branch obligations, requirements, and theorem
+statements can each be legitimate atoms, but the atom must be named.
+
+\subsection{ProbLog explanations and MLN groundings}
+
+The event-space rule also clarifies the probabilistic-programming bridges.
+In ProbLog, distinct derivations of a query may overlap in possible worlds.
+Adding explanation probabilities computes bag semantics; distribution
+semantics computes the probability of their union.  The existing formal
+theorem \code{bag\_set\_separation} proves strict over-counting when at least
+two positive mechanisms contribute, while \code{noisyOr\_le\_sum} gives the
+Boole bound.%
+\footnote{Formalized in
+\codepath{Mettapedia/PLN/Bridges/Languages/ProbLog/Compilation.lean}.}
+In the present language, explanations are source objects, worlds are the
+projection space, and explanation overlap is a projection collision.
+
+For an MLN, ground clause occurrences are factors in a Gibbs model.  They are
+not automatically independent Bernoulli observations: groundings can share
+atoms and are evaluated in the same possible world.  The correct WM import
+therefore retains the factor graph and queries its normalized world mass.
+The grounding theorems
+\code{compileToGroundMLN\_worldWeight\_eq} and
+\code{clauseWM\_queryStrength\_eq\_queryProb} justify that path.  Treating
+the satisfied-grounding count as independent evidence would discard precisely
+the dependence the factor graph was built to represent.
+
+\subsection{Gaussian learning and provenance-aware sufficient statistics}
+
+The rule is not special to count evidence.  A Gaussian contribution in
+precision/natural-parameter coordinates is
+\[
+  e_i=(\Lambda_i,\eta_i),\qquad
+  e_A=\left(\sum_{i\in A}\Lambda_i,
+             \sum_{i\in A}\eta_i\right).
+\]
+For distinct registered events,
+\[
+  e_{A\cup B}+e_{A\cap B}=e_A+e_B.
+\]
+The Lean theorem
+\code{aggregateDistinctGaussian\_inclusion\_exclusion} proves this
+coordinatewise using Mathlib's finite-sum inclusion--exclusion.
+\code{aggregateProjectedGaussian\_inclusion\_exclusion} strengthens it:
+the correction is the overlap after projection to the declared identity.
+The earlier
+\code{GaussianEvidence.reused\_contribution\_exact\_excess} shows the failure
+mode exactly---reprocessing one causal contribution adds one extra precision
+matrix and one extra natural-parameter vector.%
+\footnote{Formalized in
+\codepath{Mettapedia/MachineLearning/ContinualLearning/EvidenceLedger.lean}
+and the program-discovery evidence bridge.}
+
+Two measurements with the same numeric value may be distinct evidence if
+they are distinct measurement events.  Conversely, two files containing the
+same causal measurement are one event for provenance-aware revision.  Values
+do not determine identity; authenticated occurrence and causal root do.
+
+\subsection{Clustered uncertainty and capture--recapture}
+
+Deduplication prevents exact double counting but does not manufacture
+independence.  For trial variables $X_i$, Mathlib's covariance expansion gives
+\[
+  \operatorname{Var}\!\left(\sum_i X_i\right)
+    =\sum_i\sum_j\operatorname{Cov}(X_i,X_j).
+\]
+Only under pairwise independence does this reduce to
+$\sum_i\operatorname{Var}(X_i)$.  Both statements are exposed as
+\code{registered\_sum\_variance\_eq\_covariance\_sum} and
+\code{registered\_sum\_variance\_of\_pairwise\_independent}.
+For an exchangeable cluster of size $n$, marginal variance $v$, and positive
+pair covariance $c$, the variance is
+\[
+  nv+n(n-1)c>nv\qquad(n\ge2,c>0),
+\]
+formally proving that an independent-trial error bar is too small.
+
+Capture--recapture has a complementary identifiability problem.  Two lists
+determine $|A|$, $|B|$, and $|A\cap B|$, but do not reveal individuals in
+neither list.  The Lean fixture
+\code{summary\_does\_not\_identify\_populationSize} constructs two finite
+populations with identical capture summaries and different sizes.  A complete
+census is a positive exact case; otherwise homogeneous catchability,
+stratification, or another sampling model is load-bearing.  Estimating the
+universe from the same overlap and then reporting that overlap as an
+independence test is circular.
+
+\subsection{Case study: complete relational accounting of two search rounds}
+
+The four-arm program-discovery campaign provides a concrete example.  A new
+hash-bound analyzer reconstructs every verified
+$(\mathit{program},\mathit{target})$ witness from the sealed checker maps,
+rather than only the selected representative for each target.  Table
+\ref{tab:relational-rounds12} reports the three principal projections and the
+number of program identities absent from the catalog before each round.
+
+\begin{table}[htbp]
+\centering
+\caption{Witness-complete relational accounting.  ``Edges'' are verified
+program--target facts; programs and targets are their two projections; fresh
+programs are identities absent from the pre-search catalog.}
+\label{tab:relational-rounds12}
+\small
+\begin{tabular}{clrrrr}
+\toprule
+Round & Arm & Edges & Programs & Targets & Fresh programs \\
+\midrule
+1 & AC-BP       & 393 & 312 & 336 & 110 \\
+1 & AC-PC       &  38 &  35 &  34 &  32 \\
+1 & Unified-BP  &  96 &  95 &  70 &  69 \\
+1 & Unified-PC  & 104 & 101 &  73 &  74 \\
+\midrule
+2 & AC-BP       & 224 & 211 & 215 &  93 \\
+2 & AC-PC       &  18 &  17 &  17 &  15 \\
+2 & Unified-BP  & 115 & 113 &  82 &  79 \\
+2 & Unified-PC  & 125 &  89 &  95 &  71 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The selected union is target-complete but not relation-complete.  In Round~1
+it retains 493 of 612 union edges and 445 of 525 program identities while
+preserving all 493 targets.  In Round~2 it retains 396 of 470 edges and 346 of
+418 programs while preserving all 396 targets.  The selected table is
+therefore valid for target coverage and invalid as a program or edge census.
+
+The Round~2 Unified comparison becomes especially sharp after projecting the
+complete relation by identity class:
+
+\begin{table}[htbp]
+\centering
+\caption{Round~2 Unified target support by witness identity class.  Columns
+overlap: six targets in each arm have both a same-target catalog witness and a
+fresh-program witness, so inclusion--exclusion yields the final union.}
+\label{tab:unified-relational-decomposition}
+\small
+\begin{tabular}{lrrrrr}
+\toprule
+Arm & Same-target catalog & Cross-target reuse & Fresh-program support
+    & Same$\cap$fresh & Target union \\
+\midrule
+Unified-BP & 34 & 0  & 54 & 6 & 82 \\
+Unified-PC & 17 & 35 & 49 & 6 & 95 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+Thus Unified-PC's $+13$ target advantage decomposes as $-17$ same-target
+catalog recall, $+35$ cross-target transfer, $-5$ fresh-program-supported
+coverage, with the same six-target overlap correction.  At the program level,
+Unified-BP actually has more fresh identities (79 versus 71).  The appropriate
+claim is therefore not ``PC generated more novel programs.''  It is that this
+round's PC arm converted known program structure into more new
+program--target facts, while generating slightly fewer fresh identities.
+
+The analyzer also emits coherent binary summaries only where success and
+trial atoms agree: direct hits per 240 registered queries, checker-covered
+programs per distinct proposed program, and new-target-covering programs per
+distinct proposed program.  Beta$(1,1)$ summaries are included only as
+hypothetical IID views; the fixed benchmark and shared training ancestry do
+not themselves license IID or source-independence claims.
+
+\subsection{Architecture is an effect modifier, but the Round~2 gain is
+hub-sensitive}
+
+The four cells also support a finite architecture-by-credit interaction for
+every registered scalar endpoint $s$:
+\[
+ I_s =
+   \bigl[s(\text{Unified-PC})-s(\text{Unified-BP})\bigr]
+   -\bigl[s(\text{AC-PC})-s(\text{AC-BP})\bigr].
+\]
+This is a difference in differences.  It asks whether the observed PC--BP
+contrast changes with architecture; it is not an architecture main effect.
+The definition \code{architectureUpdateInteractionBy} makes the endpoint an
+explicit argument.  The fixture
+\code{architectureInteraction\_changes\_with\_endpoint\_projection} proves
+that the same four relation-valued cells can have zero target interaction and
+positive program-diversity interaction.  There is therefore no unqualified
+``architecture interaction'' before the projection has been named.%
+\footnote{Formalized in
+\codepath{Mettapedia/MachineLearning/SearchGuidance/ProgramDiscovery/PairedDesignEstimands.lean}.}
+
+\begin{table}[htbp]
+\centering
+\caption{Endpoint-specific PC--BP contrasts and their architecture
+difference in differences.  Positive interaction means that the PC contrast
+is more favorable under Unified than under AC; it need not mean that PC is
+positive in either architecture.}
+\label{tab:architecture-relational-interactions}
+\small
+\begin{tabular}{clrrr}
+\toprule
+Round & Endpoint & AC: PC$-$BP & Unified: PC$-$BP & Interaction \\
+\midrule
+1 & Edge facts                 & $-355$ & $  8$ & 363 \\
+1 & Program identities         & $-277$ & $  6$ & 283 \\
+1 & Target identities          & $-302$ & $  3$ & 305 \\
+1 & Fresh program identities   & $ -78$ & $  5$ &  83 \\
+1 & Cross-target reuse facts   & $  -1$ & $  0$ &   1 \\
+\midrule
+2 & Edge facts                 & $-206$ & $ 10$ & 216 \\
+2 & Program identities         & $-194$ & $-24$ & 170 \\
+2 & Target identities          & $-198$ & $ 13$ & 211 \\
+2 & Fresh program identities   & $ -78$ & $ -8$ &  70 \\
+2 & Cross-target reuse facts   & $  -5$ & $ 35$ &  40 \\
+\bottomrule
+\end{tabular}
+\end{table}
+
+The sign pattern repeats across both rounds: PC is severely negative under
+AC and near-neutral or positive for relation and target coverage under
+Unified.  Thus architecture is a replicated \emph{observed effect modifier}
+for these fixed rounds.  However, the mechanism changes.  In Round~1 the
+Unified interaction is carried by modest gains in edges, programs, and
+targets.  In Round~2, Unified-PC has fewer distinct and fresh programs than
+Unified-BP but more targets, with 35 cross-target reuse facts.
+
+To measure concentration, for a program $p$ define its target degree and
+exclusive contribution by
+\[
+ d_R(p)=|\{t:(p,t)\in R\}|,
+ \qquad
+ e_R(p)=|\pi_{\mathsf T}(R)\setminus
+          \pi_{\mathsf T}(R\setminus(\{p\}\times\mathsf T))|.
+\]
+The Lean results \code{targetCoverage\_withoutProgram\_add\_exclusive} and
+\code{exclusiveTargetContribution\_le\_programTargetDegree} prove
+\[
+ |\pi_{\mathsf T}(R\setminus p)|+e_R(p)=|\pi_{\mathsf T}(R)|,
+ \qquad e_R(p)\le d_R(p).
+\]
+The inequality can be strict: two programs may witness the same targets.  A
+formal negative fixture gives equal degree two to a program in two relations,
+but exclusive contributions two and zero, respectively.
+
+This robustness statistic exposes the Round~2 mechanism.  One known
+Unified-PC program has degree 36: it is a same-target catalog witness for one
+target and a cross-target reuse witness for 35 others.  All 36 targets are
+exclusive to it.  Removing that single identity changes Unified-PC target
+coverage from 95 to 59; removing the most essential Unified-BP program changes
+82 to 80.  The Unified PC--BP target contrast therefore changes from $+13$ to
+$-21$ under the deterministic leave-one-program-out sensitivity analysis.
+The architecture interaction remains positive---176 instead of 211---because
+AC-PC remains much weaker, but the within-Unified headline is not diffuse.
+
+This also resolves an apparent rate puzzle.  In Round~2 the fraction of
+distinct proposed programs that cover a new target is
+$113/17133\approx0.00660$ for Unified-BP and
+$89/15136\approx0.00588$ for Unified-PC.  PC does not improve broad
+program-level hit rate.  It obtains more target coverage because one reusable
+program has unusually high target multiplicity.  Conversely, Round~1 AC-BP
+contains two degree-35 programs whose exclusive contributions are zero: high
+degree need not imply fragility when witnesses are redundant.
+
+These observations motivate, but do not prove, an architectural mechanism.
+The Unified carrier may make structured cross-target reuse accessible to PC
+credit, while AC's recurrent decoder may turn the same credit rule into broad
+proposal degradation.  The present design bundles carrier, decoder, and
+representation, so it identifies the four-cell endpoint contrast but not a
+causal effect of an isolated architectural component.  A decisive follow-up
+uses a common proposal/checker interface, crosses carrier with credit rule,
+and preregisters both ordinary coverage and concentration-robust endpoints:
+fresh identities, cross-target facts, maximum exclusive contribution, and
+leave-one-program-out target coverage.  Multiple authenticated seeds or
+worlds are then needed for a population claim.
+
+\paragraph{Implementation contract.}
+For evidence-producing systems, the safe order is:
+\begin{enumerate}
+\item register the atomic event key, including provenance needed for causal
+  deduplication;
+\item retain the witness-complete relation or multiset of occurrences;
+\item declare each projection used by a reported statistic;
+\item correct overlap in the projected space;
+\item distinguish arithmetic aggregation from independence, exchangeability,
+  and sampling-model licenses;
+\item treat selected representatives and scalar truth values as views, never
+  as replacements for the carried evidence state.
+\end{enumerate}
+
 \section{Information Ordering}
 
 Not all evidence values are equal.  Some contain strictly more
@@ -7119,7 +7568,7 @@ established above provides the regime-specific validation infrastructure.
 
 \paragraph{Regime-aware selective invocation.}
 The benchmark results from Sections~\ref{sec:distrib-empirical}
-and~\ref{sec:creative-distributional-policy} suggest that the main
+and~\ref{sec:distrib-decision} suggest that the main
 operational question is not whether distributional inference can help in
 principle, but how to control \emph{when} it is invoked.  The regime
 and motif structure of the inference graph---source-target topology,
@@ -9458,7 +9907,7 @@ The construction is parameterized by a value monoid~$V$ via
 \texttt{GSLTEvidenceAssignment}.  When $V = \mathsf{Evidence}$
 (non-negative pairs), this gives Bayesian counting.  When
 $V = \mathbb{C}$, this gives L.~Gregory Meredith's weight
-map~\cite{MeredithCCC2026}---complex amplitudes assigned to
+map~\cite{Meredith2026CCCPractical}---complex amplitudes assigned to
 rewrite steps, whose squared modulus is the transition probability.%
 \footnote{Formalized in \codepath{Mettapedia/OSLF/Framework/GSLTEvidence.lean}.}
 
@@ -9533,7 +9982,7 @@ parts.
 \label{sec:mln-subsumption}
 
 A \emph{Markov Logic Network}
-(MLN)~\cite{richardson2006markov} is a set of weighted first-order
+(MLN)~\cite{RichardsonDomingos2006} is a set of weighted first-order
 clauses $\{(w_i, C_i)\}$.  Given a finite domain~$\mathrm{Dom}$, the
 MLN defines a probability distribution over possible worlds
 $W : \mathrm{GroundAtom} \to \mathrm{Bool}$ via the Gibbs measure:
@@ -9850,7 +10299,7 @@ pairs have an advising relationship, given predicates such as
 \texttt{student}, \texttt{professor}, \texttt{publication},
 \texttt{taughtBy}, and \texttt{inPhase}.
 
-The UW-CSE benchmark~\cite{richardson2006markov} provides the primary
+The UW-CSE benchmark~\cite{RichardsonDomingos2006} provides the primary
 empirical validation.  The Python reference engine parses all 94 clauses
 (66~universal $+$ 6~existential $+$ 22~unit), learns weights via
 pseudo-likelihood, and scores test candidates via local-conditional
@@ -10331,7 +10780,7 @@ with 20~kernel-checked conformance tests
 \section{PLN-NARS Bridge}
 \label{sec:pln-nars-bridge}
 
-NARS (Non-Axiomatic Reasoning System)~\cite{Wang2013NARS} is a
+NARS (Non-Axiomatic Reasoning System)~\cite{Wang2006NARS} is a
 separate uncertain-reasoning framework that uses \emph{experience-based}
 truth values: a frequency $f$ (analogous to PLN strength) and a
 confidence $c$ derived from evidence weight $w = c \cdot k / (1 - c)$,
@@ -10627,7 +11076,7 @@ and \codepath{Mettapedia/OSLF/Framework/WMCalculusFOLBridge.lean}
 The PPLBench refresh (Appendix~\ref{ch:pplbench}) demonstrates that the
 WM-PLN evidence-state machinery can serve as a \emph{probabilistic
 programming backend}: nine benchmark lanes from the PPLBench
-suite~\cite{Lao2021PPLBench} are implemented with WM-PLN
+suite~\cite{Kulkarni2020PPLBench} are implemented with WM-PLN
 evidence carriers (Normal-Gamma, Dirichlet, Beta, log-likelihood
 messages) and compared against reference Stan implementations.
 Each lane carries explicit sufficient statistics revised by addition

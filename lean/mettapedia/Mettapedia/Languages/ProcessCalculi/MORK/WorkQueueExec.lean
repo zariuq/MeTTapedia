@@ -1,9 +1,10 @@
 import Mettapedia.Languages.ProcessCalculi.MORK.WorkQueueOrder
 
 /-!
-# MORK: Work-Queue Scheduler Semantics
+# MM2 Work-Queue Core
 
-The faithful abstract semantics of MORK's `metta_calculus(steps)` scheduler.
+An executable abstraction of MORK's valid-exec work queue, with read-copy
+matching and support-valued updates.
 
 ## Real runtime behaviour (from Rust `metta_calculus` + `transform_multi_multi_o`)
 
@@ -12,13 +13,15 @@ The faithful abstract semantics of MORK's `metta_calculus(steps)` scheduler.
 3. **Read copy**: `live_after_remove ∪ {exec_fact}` — re-insert so the rule can match itself
 4. **Match** the pattern against the read copy (all matches simultaneously)
 5. **Apply** template outputs (add/remove) to live space (NOT to read copy)
-6. **Repeat** until no more exec facts or step limit reached
+6. **Repeat** until no more exec facts or the selected fuel observer stops
 
 ## Design decisions
 
-- **Abstract scheduler key**: we parameterize exec-fact ordering by a `SchedulerKey` function
-  rather than committing to exact byte-level PathMap serialization.  A future refinement
-  file can connect the abstract key to the concrete shortlex/PathMap order.
+- **Exact scheduler key**: this module orders the complete `(exec ...)` atom by
+  `morkCompactKey?`, the byte-exact compact-expression encoding.  This matches
+  selection under MORK's `exec` PathMap prefix.  The fallback applies only to
+  abstract atoms that cannot occur in a physical MM2 space; physical adequacy
+  is stated on `MorkCompactRepresentable` spaces.
 
 - **`ExecFact`**: an exec fact is just an `Atom` in the space that happens to be an
   `(exec loc pattern template)` expression.  We define `ExecFact` as a structured
@@ -29,10 +32,11 @@ The faithful abstract semantics of MORK's `metta_calculus(steps)` scheduler.
 
 ## Relationship to ThreePhaseExec
 
-`ThreePhaseExec.lean` defines a phase-band abstraction (priority ranges 0..31 / 32..63 /
-64..95) that is a RESTRICTED VIEW of the scheduler.  The scheduler is the more fundamental
-semantic layer.  A future refinement theorem should show that three-phase stepping is a
-special case of work-queue execution with phase-aligned priorities.
+`ThreePhaseExec.lean` defines an authored phase-band protocol (priority ranges
+0..31 / 32..63 / 64..95). The work queue is the more fundamental MM2 layer;
+`ThreePhaseRefinement.lean` proves restricted firing correspondences under
+explicit pattern, template, and grounding hypotheses. It does not assert that
+raw MORK assigns phase semantics to those bands.
 -/
 
 namespace Mettapedia.Languages.ProcessCalculi.MORK
@@ -67,6 +71,25 @@ private def parseNatAux : List Char → Nat → Nat
 /-- Parse a numeric string to ℕ (returns 0 on failure). -/
 private def parseNat (s : String) : Nat := parseNatAux s.toList 0
 
+/-- Parse the positive decimal count required by MORK's `head` and `tail`
+sinks.  Their runtime constructors reject zero and non-decimal counts. -/
+private def parsePositiveNat? (s : String) : Option Nat :=
+  if s.isEmpty then none
+  else if s.toList.all fun c =>
+      c = '0' || c = '1' || c = '2' || c = '3' || c = '4' ||
+      c = '5' || c = '6' || c = '7' || c = '8' || c = '9' then
+    let count := parseNat s
+    if count = 0 then none else some count
+  else none
+
+/-- Parse a physical two-argument extrema sink. -/
+private def parseExtremaSink (isHead : Bool) (count body : Atom) : Option Sink :=
+  match count with
+  | .symbol digits => do
+      let limit ← parsePositiveNat? digits
+      if isHead then pure (.head limit body) else pure (.tail limit body)
+  | _ => none
+
 /-- Try to extract an `ExecFact` from an atom.
     Recognises the shape `(exec (priority name) (, p₁ ... pₙ) (O s₁ ... sₙ))`.
 
@@ -91,7 +114,10 @@ def extractExecFact (a : Atom) : Option ExecFact :=
         rest.filterMap fun s => match s with
           | .expression [.symbol "+", body] => some (.add body)
           | .expression [.symbol "-", body] => some (.remove body)
-          | .expression [.symbol "head", body] => some (.head body)
+          | .expression [.symbol "head", count, body] =>
+              parseExtremaSink true count body
+          | .expression [.symbol "tail", count, body] =>
+              parseExtremaSink false count body
           | _ => none
       | _ => []
     some {
@@ -111,6 +137,28 @@ structure SourceExecFact where
   rule : SourceExecRule
   deriving Repr, DecidableEq
 
+/-- The scheduler-visible shell of an MM2 directive.
+
+This is deliberately weaker than a successfully interpreted directive.  The
+upstream loop selects every atom with the four-field `(exec ...)` shell,
+removes it, and only then asks the interpreter whether its input and output
+forms are supported.  Keeping the shell separate lets the formalization state
+both the lawful supported fragment and that remove-before-interpret boundary
+without pretending that an unknown source or sink has known semantics. -/
+structure RawExecFact where
+  atom : Atom
+  loc : Atom
+  inputExpr : Atom
+  templateExpr : Atom
+  deriving Repr, DecidableEq
+
+/-- Recognize exactly the scheduler-visible four-field `(exec ...)` shell. -/
+def extractRawExecFact (a : Atom) : Option RawExecFact :=
+  match a with
+  | .expression [.symbol "exec", loc, inputExpr, templateExpr] =>
+      some ⟨a, loc, inputExpr, templateExpr⟩
+  | _ => none
+
 /-- Parse a list of source factors from `(I src₁ src₂ ...)` body. -/
 def parseSourceFactors (args : List Atom) : List SourceFactor :=
   args.filterMap fun arg => match arg with
@@ -126,12 +174,95 @@ def parseSinks (tplExpr : Atom) : List Sink :=
     rest.filterMap fun s => match s with
       | .expression [.symbol "+", body] => some (.add body)
       | .expression [.symbol "-", body] => some (.remove body)
-      | .expression [.symbol "head", body] => some (.head body)
+      | .expression [.symbol "head", count, body] =>
+          parseExtremaSink true count body
+      | .expression [.symbol "tail", count, body] =>
+          parseExtremaSink false count body
       | _ => none
   | _ => match tplExpr with
     | .expression (.symbol "," :: rest) =>
       rest.map (.add ·)
     | _ => []
+
+/-! ## Strict parser for the modeled source/sink fragment
+
+The older compatibility parser above is intentionally permissive: it filters
+unknown factors and sinks so bridge experiments can project a larger surface
+onto the small Lean model.  It must not decide whether an MM2 directive is
+well formed.  The option-valued parser below rejects the whole directive when
+any source or sink is outside the explicitly modeled vocabulary. -/
+
+/-- Parse one source factor supported by the current Lean semantics. -/
+def parseSupportedSourceFactor : Atom → Option SourceFactor
+  | .expression [.symbol "BTM", pat] => some (.btm pat)
+  | .expression [.symbol "==", pat, witness] =>
+      some (.eqConstraint pat witness)
+  | .expression [.symbol "!=", pat, witness] =>
+      some (.neqConstraint pat witness)
+  | _ => none
+
+/-- Parse every source factor, failing rather than dropping an unknown one. -/
+def parseSupportedSourceFactors : List Atom → Option (List SourceFactor)
+  | [] => some []
+  | factor :: rest => do
+      let parsed ← parseSupportedSourceFactor factor
+      let parsedRest ← parseSupportedSourceFactors rest
+      pure (parsed :: parsedRest)
+
+/-- Parse one sink supported by the current Lean semantics. -/
+def parseSupportedSink : Atom → Option Sink
+  | .expression [.symbol "+", body] => some (.add body)
+  | .expression [.symbol "-", body] => some (.remove body)
+  | .expression [.symbol "head", count, body] =>
+      parseExtremaSink true count body
+  | .expression [.symbol "tail", count, body] =>
+      parseExtremaSink false count body
+  | _ => none
+
+/-- Parse every explicit sink, failing rather than dropping an unknown one. -/
+def parseSupportedSinkList : List Atom → Option (List Sink)
+  | [] => some []
+  | sink :: rest => do
+      let parsed ← parseSupportedSink sink
+      let parsedRest ← parseSupportedSinkList rest
+      pure (parsed :: parsedRest)
+
+/-- Parse the two input modes whose behavior is modeled in `Space.lean`. -/
+def parseSupportedInput : Atom → Option InputSpec
+  | .expression (.symbol "," :: patterns) =>
+      some (.compat (mkPattern patterns))
+  | .expression (.symbol "I" :: factors) => do
+      pure (.explicit (← parseSupportedSourceFactors factors))
+  | _ => none
+
+/-- Parse the two output modes whose behavior is modeled in `Space.lean`.
+
+Comma output is the pure multi-add form; `O` is the explicit sink form. -/
+def parseSupportedTemplate : Atom → Option Template
+  | .expression (.symbol "," :: outputs) =>
+      some (mkTemplate (outputs.map Sink.add))
+  | .expression (.symbol "O" :: sinks) => do
+      pure (mkTemplate (← parseSupportedSinkList sinks))
+  | _ => none
+
+/-- Decode a raw scheduler shell only when all of its input and output
+vocabulary has semantics in the current Lean model. -/
+def decodeSupportedSourceExec (raw : RawExecFact) : Option SourceExecFact := do
+  let input ← parseSupportedInput raw.inputExpr
+  let tmpl ← parseSupportedTemplate raw.templateExpr
+  let (priority, name) := match raw.loc with
+    | .expression [.grounded (.int p), .symbol n] => (p.toNat, n)
+    | .expression [.symbol p, .symbol n] => (parseNat p, n)
+    | _ => (0, "unnamed")
+  pure {
+    atom := raw.atom
+    loc := raw.loc
+    rule := ⟨priority, name, input, [], tmpl⟩
+  }
+
+/-- Strictly decode a supported source-exec atom. -/
+def extractSupportedSourceExecFact (a : Atom) : Option SourceExecFact := do
+  decodeSupportedSourceExec (← extractRawExecFact a)
 
 /-- Try to extract a `SourceExecFact` from an atom.
     Recognises both compat-mode `(exec loc (, ...) (O ...))` and
@@ -171,20 +302,208 @@ def SourceExecFact.toExecFact? (sef : SourceExecFact) : Option ExecFact :=
 class SchedulerKey (α : Type) where
   key : α → List ℕ
 
-/-- Location-based scheduler key: uses `atomKey` on the raw location term.
-    Approximates PathMap byte ordering (expressions < symbols < variables,
-    shorter before longer, then lexicographic). -/
+/-- Total extension of MORK's exact compact-expression key.
+
+Representable MM2 atoms use their exact physical bytes.  The `0x100` fallback
+is outside the byte range and gives abstract, non-MM2 host atoms a deterministic
+order without pretending that they have a PathMap representation. -/
+def totalMorkCompactKey (atom : Atom) : List Nat :=
+  (morkCompactKey? atom).getD (0x100 :: atomKey atom)
+
+/-! ## The built-in support sink provider -/
+
+/-- Insert one atom into a list presentation of finite support. -/
+def insertSupport (support : List Atom) (atom : Atom) : List Atom :=
+  if atom ∈ support then support else support ++ [atom]
+
+/-- Instantiate and stage one successful match for a built-in MM2 sink.
+
+The stage is support-valued, mirroring the private `PathMap<()>` used by MORK
+sinks.  This admitted fragment requires produced insertion/extrema values to be
+ground.  Removing a value retains the historical exact-key behavior of the
+support model. -/
+def stageSupportSink (sink : Sink) (staged : List Atom) (substitution : Subst) :
+    List Atom :=
+  let instantiated := applySubst substitution sink.atom
+  match sink with
+  | .remove _ => insertSupport staged instantiated
+  | .add _ | .head _ _ | .tail _ _ =>
+      if isGroundAtom instantiated then insertSupport staged instantiated
+      else staged
+
+/-- Sort staged support by the exact compact-expression key.  `head` keeps the
+least paths and `tail` the greatest paths, matching MORK's extrema sink. -/
+def compactExtremaList (least : Bool) (count : Nat) (staged : List Atom) :
+    List Atom :=
+  let ordered := staged.mergeSort fun left right =>
+    if least then
+      lexLt (totalMorkCompactKey left) (totalMorkCompactKey right)
+    else
+      lexLt (totalMorkCompactKey right) (totalMorkCompactKey left)
+  ordered.take count
+
+/-- Finite-support view of `compactExtremaList`. -/
+def compactExtrema (least : Bool) (count : Nat) (staged : List Atom) :
+    Finset Atom :=
+  (compactExtremaList least count staged).toFinset
+
+/-- Finalize one independently staged built-in sink into the live space. -/
+def finalizeSupportSink (sink : Sink) (staged : List Atom) (space : Space) :
+    Space :=
+  match sink with
+  | .add _ => space ∪ staged.toFinset
+  | .remove _ => space \ staged.toFinset
+  | .head count _ => space ∪ compactExtrema true count staged
+  | .tail count _ => space ∪ compactExtrema false count staged
+
+/-- The exact batched provider for the currently admitted, support-valued MM2
+sink fragment.  Native Rust and C realizations may use different data
+structures; adequacy depends only on these stage/finalize operations. -/
+def morkSupportSinkProvider : BatchSinkProvider Sink where
+  Stage := fun _ => List Atom
+  init := fun _ => []
+  stage := stageSupportSink
+  finalize := finalizeSupportSink
+
+/-- Apply every authored sink after staging all match substitutions. -/
+def applyMorkSinkBatch (space : Space) (rows : List Subst)
+    (template : Template) : Space :=
+  morkSupportSinkProvider.run rows space template.sinks
+
+/-- Duplicate rows do not duplicate a support-valued staged result. -/
+theorem stageSupportSink_duplicate (sink : Sink) (substitution : Subst) :
+    stageSupportSink sink
+        (stageSupportSink sink [] substitution) substitution =
+      stageSupportSink sink [] substitution := by
+  cases sink <;> simp [stageSupportSink, insertSupport]
+
+/-- Positive ordering canary used by physical `head`: `a` precedes `b`. -/
+theorem compact_symbol_order_canary :
+    lexLt (totalMorkCompactKey (.symbol "a"))
+      (totalMorkCompactKey (.symbol "b")) = true := by
+  decide
+
+/-- A singleton head batch retains its one staged path. -/
+theorem compactExtrema_singleton_canary :
+    compactExtrema true 1 [.symbol "a"] =
+      ({.symbol "a"} : Finset Atom) := by
+  simp [compactExtrema, compactExtremaList]
+
+/-- A zero-sized extrema request retains no paths.  The strict physical parser
+rejects this case; the semantic totalization remains explicit. -/
+theorem compactExtrema_zero_canary (least : Bool) (staged : List Atom) :
+    compactExtrema least 0 staged = ∅ := by
+  simp [compactExtrema, compactExtremaList]
+
+@[simp] theorem compactExtrema_nil (least : Bool) (count : Nat) :
+    compactExtrema least count [] = ∅ := by
+  simp [compactExtrema, compactExtremaList]
+
+/-- Extrema over one staged value retain that value exactly when the requested
+count is positive. -/
+theorem compactExtrema_singleton (least : Bool) (count : Nat) (atom : Atom) :
+    compactExtrema least count [atom] =
+      if count = 0 then ∅ else {atom} := by
+  cases count with
+  | zero => simp [compactExtrema, compactExtremaList]
+  | succ count => simp [compactExtrema, compactExtremaList]
+
+/-- Staging and finalizing one row agrees with the historical one-row sink
+projection. -/
+theorem finalizeSupportSink_singleton (space : Space) (substitution : Subst)
+    (sink : Sink) :
+    finalizeSupportSink sink (stageSupportSink sink [] substitution) space =
+      applySink space substitution sink := by
+  cases sink with
+  | add atom =>
+      by_cases ground : isGroundAtom (applySubst substitution atom) = true
+      · simp [stageSupportSink, finalizeSupportSink, insertSupport, applySink,
+          Sink.atom, ground]
+      · simp [stageSupportSink, finalizeSupportSink, applySink,
+          Sink.atom, ground]
+  | remove atom =>
+      ext candidate
+      simp [stageSupportSink, finalizeSupportSink, insertSupport, applySink,
+        Sink.atom, and_comm]
+  | head count atom =>
+      cases count with
+      | zero =>
+          simp [stageSupportSink, finalizeSupportSink, applySink,
+            Sink.atom, compactExtrema_zero_canary]
+      | succ count =>
+          cases ground : isGroundAtom (applySubst substitution atom) <;>
+            simp [stageSupportSink, finalizeSupportSink, applySink, Sink.atom,
+              ground, insertSupport, compactExtrema_singleton,
+              compactExtrema_nil]
+  | tail count atom =>
+      cases count with
+      | zero =>
+          simp [stageSupportSink, finalizeSupportSink, applySink,
+            Sink.atom, compactExtrema_zero_canary]
+      | succ count =>
+          cases ground : isGroundAtom (applySubst substitution atom) <;>
+            simp [stageSupportSink, finalizeSupportSink, applySink, Sink.atom,
+              ground, insertSupport, compactExtrema_singleton,
+              compactExtrema_nil]
+
+/-- A whole singleton-row batch agrees with row-local `applySinks`. -/
+theorem applyMorkSinkBatch_singleton (space : Space) (substitution : Subst)
+    (template : Template) :
+    applyMorkSinkBatch space [substitution] template =
+      applySinks space substitution template := by
+  unfold applyMorkSinkBatch applySinks
+  induction template.sinks generalizing space with
+  | nil => rfl
+  | cons sink rest induction =>
+      simp only [BatchSinkProvider.run_cons, List.foldl_cons]
+      rw [show morkSupportSinkProvider.stageAll sink [substitution] =
+          stageSupportSink sink [] substitution from rfl]
+      rw [show morkSupportSinkProvider.finalize sink
+          (stageSupportSink sink [] substitution) space =
+          finalizeSupportSink sink (stageSupportSink sink [] substitution) space from rfl]
+      rw [finalizeSupportSink_singleton]
+      exact induction (applySink space substitution sink)
+
+/-- With no matching rows, every built-in staged state is empty and the batch
+leaves the live space unchanged. -/
+theorem applyMorkSinkBatch_empty (space : Space) (template : Template) :
+    applyMorkSinkBatch space [] template = space := by
+  unfold applyMorkSinkBatch
+  induction template.sinks generalizing space with
+  | nil => rfl
+  | cons sink rest induction =>
+      simp only [BatchSinkProvider.run_cons]
+      have emptyFinalize : morkSupportSinkProvider.finalize sink
+          (morkSupportSinkProvider.stageAll sink []) space = space := by
+        cases sink <;> simp [morkSupportSinkProvider,
+          BatchSinkProvider.stageAll, finalizeSupportSink, compactExtrema,
+          compactExtremaList]
+      rw [emptyFinalize]
+      exact induction space
+
 instance : SchedulerKey ExecFact where
-  key ef := atomKey ef.loc
+  key ef := totalMorkCompactKey ef.atom
+
+instance : SchedulerKey SourceExecFact where
+  key ef := totalMorkCompactKey ef.atom
+
+instance : SchedulerKey RawExecFact where
+  key ef := totalMorkCompactKey ef.atom
+
+/-- Generic least-key selection used by the source-aware and raw envelopes. -/
+def selectNextScheduled [SchedulerKey α] (facts : List α) : Option α :=
+  facts.foldl (fun best fact =>
+    match best with
+    | none => some fact
+    | some current =>
+      if lexLt (SchedulerKey.key fact) (SchedulerKey.key current)
+      then some fact
+      else some current
+  ) none
 
 /-- Select the minimum exec fact from a list by scheduler key. -/
 def selectNextExec (facts : List ExecFact) : Option ExecFact :=
-  facts.foldl (fun best ef =>
-    match best with
-    | none => some ef
-    | some b =>
-      if lexLt (SchedulerKey.key ef) (SchedulerKey.key b) then some ef else some b
-  ) none
+  selectNextScheduled facts
 
 /-! ## Work-queue step -/
 
@@ -192,6 +511,15 @@ def selectNextExec (facts : List ExecFact) : Option ExecFact :=
     Scans all atoms, returns those successfully parsed as exec facts. -/
 noncomputable def execFactsOfSpace (s : Space) : List ExecFact :=
   s.toList.filterMap extractExecFact
+
+/-- Strictly supported source-aware directives in a space. -/
+noncomputable def supportedSourceExecFactsOfSpace (s : Space) :
+    List SourceExecFact :=
+  s.toList.filterMap extractSupportedSourceExecFact
+
+/-- All scheduler-visible raw exec shells in a space. -/
+noncomputable def rawExecFactsOfSpace (s : Space) : List RawExecFact :=
+  s.toList.filterMap extractRawExecFact
 
 /-- Remove an atom from the space (consume the exec fact from live). -/
 def consumeExec (s : Space) (ef : ExecFact) : Space :=
@@ -216,10 +544,7 @@ noncomputable def fireExecFact (s : Space) (ef : ExecFact) : Space :=
   let live := consumeExec s ef
   let rc := readCopy s ef
   let ms := matchPattern [] rc ef.rule.pat
-  -- Apply all match results to the live space
-  ms.foldl (fun acc (σ, _consumed) =>
-    applySinks acc σ ef.rule.tmpl
-  ) live
+  applyMorkSinkBatch live (ms.map Prod.fst) ef.rule.tmpl
 
 /-- One step of the work-queue scheduler:
     1. Extract exec facts from the space
@@ -235,9 +560,13 @@ noncomputable def workQueueStep (s : Space) : Option Space :=
   | none => none
   | some ef => some (fireExecFact s ef)
 
-/-- Fuel-bounded work-queue execution.
-    Mirrors `metta_calculus(steps)` in the Rust runtime.
-    Returns `(final_space, steps_taken)`. -/
+/-- Lawful exact-fuel work-queue execution.
+
+    `workQueueRunN fuel` interprets at most `fuel` exec facts, and zero fuel is
+    the identity. This is the intended bounded observer used by the GSLT
+    theory. It does **not** identify the current upstream Rust loop, which
+    checks its bound after interpreting a candidate; that implementation is
+    represented separately by `upstreamMettaCalculusRunN` below. -/
 noncomputable def workQueueRunN : ℕ → Space → Space × ℕ
   | 0, s => (s, 0)
   | fuel + 1, s =>
@@ -265,9 +594,123 @@ noncomputable def fireSourceExecFact (s : Space) (sef : SourceExecFact) : Space 
   let live := consumeAtom s sef.atom
   let rc := readCopyAtom s sef.atom
   let ms := matchInputSpec [] rc sef.rule.input
-  ms.foldl (fun acc (σ, _consumed) =>
-    applySinks acc σ sef.rule.tmpl
-  ) live
+  applyMorkSinkBatch live (ms.map Prod.fst) sef.rule.tmpl
+
+/-- Source-aware firing restricts exactly to compatible firing whenever the
+source directive has a compatible `ExecFact` projection. -/
+theorem fireSourceExecFact_eq_fireExecFact_of_toExecFact
+    (s : Space) (sourceFact : SourceExecFact) (execFact : ExecFact)
+    (projected : sourceFact.toExecFact? = some execFact) :
+    fireSourceExecFact s sourceFact = fireExecFact s execFact := by
+  rcases sourceFact with ⟨atom, loc, rule⟩
+  rcases rule with ⟨priority, name, input, guards, tmpl⟩
+  cases input with
+  | compat pattern =>
+      simp only [SourceExecFact.toExecFact?, Option.some.injEq] at projected
+      subst execFact
+      rfl
+  | explicit factors =>
+      simp [SourceExecFact.toExecFact?] at projected
+
+/-! ## Source-aware execution profiles -/
+
+/-- What the work queue does with a scheduler-visible directive that the
+selected interpreter does not understand.
+
+`leaveInert` is the open-world language policy: unknown atoms remain data and
+are not scheduled.  `consume` applies the current upstream boundary shape to
+the selected Lean interpreter: the raw shell is selected and removed before
+interpretation, so failed interpretation does not restore it.  It does not
+assert that source/sink cases absent from the Lean decoder are also absent
+from upstream's larger factory. -/
+inductive UnsupportedExecPolicy where
+  | leaveInert
+  | consume
+  deriving Repr, DecidableEq
+
+/-- One source-aware MM2 work-queue step, indexed by its unsupported-directive
+policy.  Both profiles use the same source/sink interpreter and scheduler key.
+They differ only in whether scheduler selection ranges over supported
+directives or over all raw exec shells. -/
+noncomputable def sourceWorkQueueStep
+    (policy : UnsupportedExecPolicy) (s : Space) : Option Space :=
+  match policy with
+  | .leaveInert =>
+      match selectNextScheduled (supportedSourceExecFactsOfSpace s) with
+      | none => none
+      | some directive => some (fireSourceExecFact s directive)
+  | .consume =>
+      match selectNextScheduled (rawExecFactsOfSpace s) with
+      | none => none
+      | some raw =>
+          match decodeSupportedSourceExec raw with
+          | some directive => some (fireSourceExecFact s directive)
+          | none => some (s.erase raw.atom)
+
+/-- Exact-fuel source-aware execution for either unsupported-directive
+policy.  Zero fuel is the identity and the returned counter is the number of
+successful profile steps. -/
+noncomputable def sourceWorkQueueRunN (policy : UnsupportedExecPolicy) :
+    Nat → Space → Space × Nat
+  | 0, space => (space, 0)
+  | fuel + 1, space =>
+      match sourceWorkQueueStep policy space with
+      | none => (space, 0)
+      | some next =>
+          let (final, used) := sourceWorkQueueRunN policy fuel next
+          (final, used + 1)
+
+/-- The open-world profile is quiescent exactly when no supported source-exec
+directive can be selected. -/
+theorem sourceWorkQueueStep_leaveInert_none_iff (s : Space) :
+    sourceWorkQueueStep .leaveInert s = none ↔
+      selectNextScheduled (supportedSourceExecFactsOfSpace s) = none := by
+  cases selected : selectNextScheduled (supportedSourceExecFactsOfSpace s) <;>
+    simp [sourceWorkQueueStep, selected]
+
+/-- The consuming profile is quiescent exactly when no raw exec shell exists.
+This distinguishes absence of work from failed interpretation. -/
+theorem sourceWorkQueueStep_consume_none_iff (s : Space) :
+    sourceWorkQueueStep .consume s = none ↔
+      selectNextScheduled (rawExecFactsOfSpace s) = none := by
+  cases selected : selectNextScheduled (rawExecFactsOfSpace s) with
+  | none => simp [sourceWorkQueueStep, selected]
+  | some raw =>
+      cases decoded : decodeSupportedSourceExec raw <;>
+        simp [sourceWorkQueueStep, selected, decoded]
+
+/-- A selected supported directive fires normally at the consuming boundary. -/
+theorem sourceWorkQueueStep_consume_supported
+    {s : Space} {raw : RawExecFact} {directive : SourceExecFact}
+    (selected : selectNextScheduled (rawExecFactsOfSpace s) = some raw)
+    (decoded : decodeSupportedSourceExec raw = some directive) :
+    sourceWorkQueueStep .consume s = some (fireSourceExecFact s directive) := by
+  simp [sourceWorkQueueStep, selected, decoded]
+
+/-- A selected unsupported raw shell is consumed and nothing else is
+interpreted.  This is the exact remove-before-interpret behavior of the
+modeled upstream boundary. -/
+theorem sourceWorkQueueStep_consume_unsupported
+    {s : Space} {raw : RawExecFact}
+    (selected : selectNextScheduled (rawExecFactsOfSpace s) = some raw)
+    (unsupported : decodeSupportedSourceExec raw = none) :
+    sourceWorkQueueStep .consume s = some (s.erase raw.atom) := by
+  simp [sourceWorkQueueStep, selected, unsupported]
+
+/-- On a selected compatible directive, the strict source-aware profile and
+the historical compatible profile take the same step.  The two selection
+hypotheses expose the remaining parser/scheduler-fragment obligation rather
+than silently identifying their candidate sets. -/
+theorem sourceWorkQueueStep_leaveInert_eq_workQueueStep_of_selected
+    {s : Space} {sourceFact : SourceExecFact} {execFact : ExecFact}
+    (sourceSelected :
+      selectNextScheduled (supportedSourceExecFactsOfSpace s) = some sourceFact)
+    (execSelected : selectNextExec (execFactsOfSpace s) = some execFact)
+    (projected : sourceFact.toExecFact? = some execFact) :
+    sourceWorkQueueStep .leaveInert s = workQueueStep s := by
+  simp only [sourceWorkQueueStep, sourceSelected, workQueueStep, execSelected]
+  rw [fireSourceExecFact_eq_fireExecFact_of_toExecFact s sourceFact execFact
+    projected]
 
 /-! ## Basic structural lemmas -/
 
@@ -321,6 +764,48 @@ theorem workQueueStep_none_iff (s : Space) :
 theorem workQueueRunN_zero (s : Space) :
     workQueueRunN 0 s = (s, 0) := rfl
 
+/-! ## Pinned upstream post-check fuel behavior -/
+
+/-- Current upstream `Space::metta_calculus(steps)` on the valid-exec fragment.
+
+    The Rust loop interprets a selected exec in its `while` condition and only
+    then tests `done < steps`. Hence it may change the space `steps + 1` times
+    while reporting at most `steps`. This definition records that behavior
+    without weakening the lawful exact-fuel observer above.
+
+    The model is restricted to valid exec facts accepted by `workQueueStep`.
+    Upstream's separate remove-before-parse behavior for malformed `exec`
+    atoms remains outside this fragment. -/
+noncomputable def upstreamMettaCalculusRunN (steps : ℕ) (s : Space) : Space × ℕ :=
+  let run := workQueueRunN (steps + 1) s
+  (run.1, min run.2 steps)
+
+/-- Upstream state is the exact-fuel state after one additional allowance. -/
+theorem upstreamMettaCalculusRunN_state (steps : ℕ) (s : Space) :
+    (upstreamMettaCalculusRunN steps s).1 =
+      (workQueueRunN (steps + 1) s).1 := rfl
+
+/-- Upstream's reported counter remains bounded by its argument even though
+    the state may have taken one additional step. -/
+theorem upstreamMettaCalculusRunN_reported_le (steps : ℕ) (s : Space) :
+    (upstreamMettaCalculusRunN steps s).2 ≤ steps := by
+  simp [upstreamMettaCalculusRunN]
+
+/-- With zero requested steps, an available exec is nevertheless interpreted
+    once while the returned counter remains zero. -/
+theorem upstreamMettaCalculusRunN_zero_of_step (s s' : Space)
+    (hstep : workQueueStep s = some s') :
+    upstreamMettaCalculusRunN 0 s = (s', 0) := by
+  simp [upstreamMettaCalculusRunN, workQueueRunN, hstep]
+
+/-- A changing first step separates upstream post-check behavior from the
+    lawful zero-fuel observer. -/
+theorem upstream_zero_differs_from_exact_fuel (s s' : Space)
+    (hstep : workQueueStep s = some s') (hne : s' ≠ s) :
+    upstreamMettaCalculusRunN 0 s ≠ workQueueRunN 0 s := by
+  rw [upstreamMettaCalculusRunN_zero_of_step s s' hstep, workQueueRunN_zero]
+  simp [hne]
+
 /-! ## Cardinality lemmas -/
 
 /-- Consuming an exec fact strictly decreases space cardinality. -/
@@ -354,40 +839,43 @@ theorem applySinks_removeOnly_card_le (s : Space) (σ : Subst) (sinks : List Sin
           ih _ (fun sink hs => hro sink (List.mem_cons_of_mem _ hs))
       _ ≤ s.card := applySink_remove_card_le s σ a
 
+/-- Batched support finalization of a remove-only sink list is
+cardinality-nonincreasing. -/
+theorem applyMorkSinkBatch_removeOnly_card_le (rows : List Subst)
+    (space : Space) (sinks : List Sink)
+    (removeOnly : ∀ sink ∈ sinks, ∃ atom, sink = .remove atom) :
+    (morkSupportSinkProvider.run rows space sinks).card ≤ space.card := by
+  induction sinks generalizing space with
+  | nil => simp
+  | cons sink rest induction =>
+      obtain ⟨atom, equal⟩ := removeOnly sink (by simp)
+      subst sink
+      simp only [BatchSinkProvider.run_cons, morkSupportSinkProvider,
+        BatchSinkProvider.stageAll, finalizeSupportSink]
+      exact le_trans
+        (induction (space \ (rows.foldl (stageSupportSink (.remove atom)) []).toFinset)
+          (fun candidate present =>
+            removeOnly candidate (List.mem_cons_of_mem _ present)))
+        (Finset.card_le_card (Finset.sdiff_subset))
+
 /-! ## Termination under remove-only templates -/
 
 /-- Under remove-only templates, `fireExecFact` strictly decreases cardinality.
     This guarantees scheduler termination: the space shrinks at every step,
     so the scheduler must halt within `s.card` steps.
 
-    The proof combines:
-    - `consumeExec_card_lt`: consuming the exec fact strictly decreases cardinality
-    - `applySinks_removeOnly_card_le`: remove-only sinks cannot increase cardinality
-    - The foldl over matches only applies `applySinks`, which is also non-increasing -/
+    The proof combines exec consumption with the batched provider's
+    remove-only monotonicity. -/
 theorem fireExecFact_card_lt_of_removeOnly (s : Space) (ef : ExecFact)
     (hm : ef.atom ∈ s)
     (hro : Template.isRemoveOnly ef.rule.tmpl) :
     (fireExecFact s ef).card < s.card := by
-  simp only [fireExecFact]
-  -- The live space after consuming ef has strictly smaller cardinality
-  have hlive : (consumeExec s ef).card < s.card := consumeExec_card_lt s ef hm
-  -- Each applySinks with remove-only sinks is non-increasing
-  suffices h : ∀ (ms : List (Subst × Finset Atom)) (acc : Space),
-      acc.card ≤ (consumeExec s ef).card →
-      (ms.foldl (fun a (σ, _) => applySinks a σ ef.rule.tmpl) acc).card ≤
-        (consumeExec s ef).card by
-    exact Nat.lt_of_le_of_lt (h _ _ le_rfl) hlive
-  intro ms
-  induction ms with
-  | nil => intro acc hacc; simpa
-  | cons m rest ih =>
-    intro acc hacc
-    simp only [List.foldl_cons]
-    apply ih
-    calc (applySinks acc m.1 ef.rule.tmpl).card
-        = (ef.rule.tmpl.sinks.foldl (applySink · m.1) acc).card := by rfl
-      _ ≤ acc.card := applySinks_removeOnly_card_le acc m.1 ef.rule.tmpl.sinks hro
-      _ ≤ (consumeExec s ef).card := hacc
+  simp only [fireExecFact, applyMorkSinkBatch]
+  exact Nat.lt_of_le_of_lt
+    (applyMorkSinkBatch_removeOnly_card_le
+      ((matchPattern [] (readCopy s ef) ef.rule.pat).map Prod.fst)
+      (consumeExec s ef) ef.rule.tmpl.sinks hro)
+    (consumeExec_card_lt s ef hm)
 
 /-- `workQueueRunN` takes at most `fuel` steps (general bound). -/
 theorem workQueueRunN_steps_le_fuel (fuel : ℕ) (s : Space) :
@@ -412,6 +900,40 @@ namespace WQComputable
 open Conformance.Computable (CSpace cmatchPattern capplySinks cmatchAtom cmatchAtomList
   cmatchInputSpec)
 
+/-- Union staged support into a computable list-space without introducing
+duplicate occurrences. -/
+def cUnionSupport : List Atom → List Atom → List Atom
+  | space, [] => space
+  | space, atom :: rest => cUnionSupport (insertSupport space atom) rest
+
+/-- Remove every staged support atom from a computable list-space. -/
+def cSubtractSupport (space staged : List Atom) : List Atom :=
+  space.filter fun atom => atom ∉ staged
+
+/-- Computable list realization of one support-sink finalization. -/
+def cFinalizeSupportSink (sink : Sink) (staged : List Atom)
+    (space : List Atom) : List Atom :=
+  match sink with
+  | .add _ => cUnionSupport space staged
+  | .remove _ => cSubtractSupport space staged
+  | .head count _ =>
+      cUnionSupport space (compactExtremaList true count staged)
+  | .tail count _ =>
+      cUnionSupport space (compactExtremaList false count staged)
+
+/-- Computable batched support-sink realization. -/
+def cApplyMorkSinkBatch (rows : List Subst) : List Atom → List Sink → List Atom
+  | space, [] => space
+  | space, sink :: rest =>
+      let staged := rows.foldl (stageSupportSink sink) []
+      cApplyMorkSinkBatch rows (cFinalizeSupportSink sink staged space) rest
+
+/-- Apply a computable template through the same stage-all/finalize-left-to-
+right boundary as the mathematical provider. -/
+def cApplyMorkTemplate (space : List Atom) (rows : List Subst)
+    (template : Template) : List Atom :=
+  cApplyMorkSinkBatch rows space template.sinks
+
 /-- Extract exec facts from a computable (List Atom) space. -/
 def cExecFacts (s : List Atom) : List ExecFact :=
   s.filterMap extractExecFact
@@ -430,9 +952,7 @@ def cFireExecFact (s : List Atom) (ef : ExecFact) : List Atom :=
   let live := cConsumeExec s ef
   let rc := cReadCopy s ef
   let ms := cmatchPattern [] rc ef.rule.pat
-  ms.foldl (fun acc (σ, _consumed) =>
-    capplySinks acc σ ef.rule.tmpl
-  ) live
+  cApplyMorkTemplate live (ms.map Prod.fst) ef.rule.tmpl
 
 /-- One computable work-queue step. -/
 def cWorkQueueStep (s : List Atom) : Option (List Atom) :=
@@ -454,14 +974,49 @@ def cWorkQueueRunN : ℕ → List Atom → List Atom × ℕ
 def cSourceExecFacts (s : List Atom) : List SourceExecFact :=
   s.filterMap extractSourceExecFact
 
+/-- Computable strict candidate set: only fully supported source/sink
+directives. -/
+def cSupportedSourceExecFacts (s : List Atom) : List SourceExecFact :=
+  s.filterMap extractSupportedSourceExecFact
+
+/-- Computable raw candidate set: every four-field `exec` shell. -/
+def cRawExecFacts (s : List Atom) : List RawExecFact :=
+  s.filterMap extractRawExecFact
+
 /-- Computable: fire a source-exec-fact against the read copy. -/
 def cFireSourceExecFact (s : List Atom) (sef : SourceExecFact) : List Atom :=
   let live := s.erase sef.atom
   let rc := sef.atom :: live
   let ms := cmatchInputSpec [] rc sef.rule.input
-  ms.foldl (fun acc (σ, _consumed) =>
-    capplySinks acc σ sef.rule.tmpl
-  ) live
+  cApplyMorkTemplate live (ms.map Prod.fst) sef.rule.tmpl
+
+/-- Computable source-aware queue step for either unsupported-directive
+policy. -/
+def cSourceWorkQueueStep (policy : UnsupportedExecPolicy)
+    (space : List Atom) : Option (List Atom) :=
+  match policy with
+  | .leaveInert =>
+      match selectNextScheduled (cSupportedSourceExecFacts space) with
+      | none => none
+      | some directive => some (cFireSourceExecFact space directive)
+  | .consume =>
+      match selectNextScheduled (cRawExecFacts space) with
+      | none => none
+      | some raw =>
+          match decodeSupportedSourceExec raw with
+          | some directive => some (cFireSourceExecFact space directive)
+          | none => some (space.erase raw.atom)
+
+/-- Exact-fuel computable source-aware execution. -/
+def cSourceWorkQueueRunN (policy : UnsupportedExecPolicy) :
+    Nat → List Atom → List Atom × Nat
+  | 0, space => (space, 0)
+  | fuel + 1, space =>
+      match cSourceWorkQueueStep policy space with
+      | none => (space, 0)
+      | some next =>
+          let (final, used) := cSourceWorkQueueRunN policy fuel next
+          (final, used + 1)
 
 end WQComputable
 
@@ -476,27 +1031,34 @@ section SchedulerCorrespondence
 
 open WQComputable
 
-/-- Key injectivity: no two distinct exec facts share the same scheduler key. -/
-def KeyInjective (l : List ExecFact) : Prop :=
+/-- Key injectivity: no two distinct scheduled values share a scheduler key. -/
+def KeyInjective {α : Type} [SchedulerKey α] (l : List α) : Prop :=
   ∀ a b, a ∈ l → b ∈ l → SchedulerKey.key a = SchedulerKey.key b → a = b
 
-/-- The fold step function for `selectNextExec`. -/
-private def sneFold (best : Option ExecFact) (ef : ExecFact) : Option ExecFact :=
+/-- The generic fold step used by `selectNextScheduled`. -/
+private def sneFold {α : Type} [SchedulerKey α]
+    (best : Option α) (candidate : α) : Option α :=
   match best with
-  | none => some ef
-  | some b => if lexLt (SchedulerKey.key ef) (SchedulerKey.key b) then some ef else some b
+  | none => some candidate
+  | some current =>
+      if lexLt (SchedulerKey.key candidate) (SchedulerKey.key current)
+      then some candidate else some current
 
-@[simp] private theorem sneFold_none (ef : ExecFact) : sneFold none ef = some ef := rfl
-@[simp] private theorem sneFold_some (b ef : ExecFact) :
-    sneFold (some b) ef = if lexLt (SchedulerKey.key ef) (SchedulerKey.key b) then some ef else some b := rfl
+@[simp] private theorem sneFold_none {α : Type} [SchedulerKey α]
+    (candidate : α) : sneFold none candidate = some candidate := rfl
+@[simp] private theorem sneFold_some {α : Type} [SchedulerKey α]
+    (current candidate : α) :
+    sneFold (some current) candidate =
+      if lexLt (SchedulerKey.key candidate) (SchedulerKey.key current)
+      then some candidate else some current := rfl
 
 /-- Helper: the foldl step picks the minimum by lexLt. Two adjacent elements
     can be swapped without changing the result, provided distinct keys.
 
     This is the key commutativity lemma for permutation invariance of `selectNextExec`. -/
-private theorem sneFold_comm (x y : ExecFact)
+private theorem sneFold_comm {α : Type} [SchedulerKey α] (x y : α)
     (hdist : SchedulerKey.key x ≠ SchedulerKey.key y ∨ x = y)
-    (init : Option ExecFact) :
+    (init : Option α) :
     sneFold (sneFold init x) y = sneFold (sneFold init y) x := by
   cases init with
   | none =>
@@ -520,10 +1082,10 @@ private theorem sneFold_comm (x y : ExecFact)
     | (exact hdist.elim (absurd (lexLt_eq_of_not_both _ _ hxy hyx)) id)
 
 /-- Helper: foldl with `sneFold` is permutation-invariant under key injectivity. -/
-private theorem selectNextExec_foldl_perm_aux
-    (l₁ l₂ : List ExecFact) (hp : l₁.Perm l₂)
+private theorem selectNextScheduled_foldl_perm_aux {α : Type} [SchedulerKey α]
+    (l₁ l₂ : List α) (hp : l₁.Perm l₂)
     (hinj : KeyInjective l₁)
-    (init : Option ExecFact) :
+    (init : Option α) :
     l₁.foldl sneFold init = l₂.foldl sneFold init := by
   induction hp generalizing init with
   | nil => rfl
@@ -547,22 +1109,45 @@ private theorem selectNextExec_foldl_perm_aux
       exact hinj a b (hp1.mem_iff.mpr ha) (hp1.mem_iff.mpr hb)
     exact (ih1 hinj init).trans (ih2 hinj_mid init)
 
-/-- `selectNextExec` is permutation-invariant under key injectivity:
-    reordering the input list does not change which exec fact is selected,
-    provided all exec facts have distinct scheduler keys. -/
+/-- Generic least-key selection is permutation-invariant under key
+injectivity. -/
+theorem selectNextScheduled_perm {α : Type} [SchedulerKey α]
+    (l₁ l₂ : List α) (hp : l₁.Perm l₂)
+    (hinj : KeyInjective l₁) :
+    selectNextScheduled l₁ = selectNextScheduled l₂ := by
+  unfold selectNextScheduled
+  exact selectNextScheduled_foldl_perm_aux l₁ l₂ hp hinj none
+
+/-- Compatibility wrapper for exec-fact selection. -/
 theorem selectNextExec_perm (l₁ l₂ : List ExecFact) (hp : l₁.Perm l₂)
     (hinj : KeyInjective l₁) :
     selectNextExec l₁ = selectNextExec l₂ := by
-  unfold selectNextExec
-  exact selectNextExec_foldl_perm_aux l₁ l₂ hp hinj none
+  exact selectNextScheduled_perm l₁ l₂ hp hinj
+
+/-- Filtering a duplicate-free list presentation and filtering the canonical
+finite-support presentation produce the same candidates up to permutation. -/
+theorem filterMap_toFinset_perm (s : List Atom) (hnd : s.Nodup)
+    (decode : Atom → Option α) :
+    (s.filterMap decode).Perm (s.toFinset.toList.filterMap decode) := by
+  exact (List.toFinset_toList hnd).filterMap decode |>.symm
 
 /-- Under `Nodup`, the computable exec-fact list is a permutation of the
     spec-level exec-fact list.  This bridges `cExecFacts s` (computable) with
     `execFactsOfSpace s.toFinset` (noncomputable, uses `Finset.toList`). -/
 theorem cExecFacts_perm_execFacts (s : List Atom) (hnd : s.Nodup) :
     (cExecFacts s).Perm (execFactsOfSpace s.toFinset) := by
-  unfold cExecFacts execFactsOfSpace
-  exact (List.toFinset_toList hnd).filterMap extractExecFact |>.symm
+  exact filterMap_toFinset_perm s hnd extractExecFact
+
+/-- Strictly supported source candidates agree up to presentation order. -/
+theorem cSupportedSourceExecFacts_perm (s : List Atom) (hnd : s.Nodup) :
+    (cSupportedSourceExecFacts s).Perm
+      (supportedSourceExecFactsOfSpace s.toFinset) := by
+  exact filterMap_toFinset_perm s hnd extractSupportedSourceExecFact
+
+/-- Raw scheduler-visible exec shells agree up to presentation order. -/
+theorem cRawExecFacts_perm (s : List Atom) (hnd : s.Nodup) :
+    (cRawExecFacts s).Perm (rawExecFactsOfSpace s.toFinset) := by
+  exact filterMap_toFinset_perm s hnd extractRawExecFact
 
 /-- The computable scheduler selects the same exec fact as the spec-level
     scheduler, provided the input space has no duplicates and all exec facts
@@ -571,6 +1156,22 @@ theorem cWorkQueueStep_selectExec_eq (s : List Atom) (hnd : s.Nodup)
     (hinj : KeyInjective (cExecFacts s)) :
     selectNextExec (cExecFacts s) = selectNextExec (execFactsOfSpace s.toFinset) := by
   exact selectNextExec_perm _ _ (cExecFacts_perm_execFacts s hnd) hinj
+
+/-- The native list scheduler and support-level scheduler select the same
+strictly supported source directive. -/
+theorem cSourceWorkQueueStep_selectSupported_eq (s : List Atom) (hnd : s.Nodup)
+    (hinj : KeyInjective (cSupportedSourceExecFacts s)) :
+    selectNextScheduled (cSupportedSourceExecFacts s) =
+      selectNextScheduled (supportedSourceExecFactsOfSpace s.toFinset) := by
+  exact selectNextScheduled_perm _ _ (cSupportedSourceExecFacts_perm s hnd) hinj
+
+/-- The native list scheduler and support-level scheduler select the same raw
+exec shell under the consuming policy. -/
+theorem cSourceWorkQueueStep_selectRaw_eq (s : List Atom) (hnd : s.Nodup)
+    (hinj : KeyInjective (cRawExecFacts s)) :
+    selectNextScheduled (cRawExecFacts s) =
+      selectNextScheduled (rawExecFactsOfSpace s.toFinset) := by
+  exact selectNextScheduled_perm _ _ (cRawExecFacts_perm s hnd) hinj
 
 /-- `extractExecFact` preserves the original atom in the `.atom` field. -/
 theorem extractExecFact_atom (a : Atom) (ef : ExecFact)
@@ -586,12 +1187,89 @@ theorem extractExecFact_injective (a₁ a₂ : Atom) (ef : ExecFact)
     a₁ = a₂ :=
   (extractExecFact_atom a₁ ef h1).symm.trans (extractExecFact_atom a₂ ef h2)
 
+/-! ## Batched support-provider correspondence -/
+
+/-- `insertSupport` realizes finite-set insertion. -/
+theorem insertSupport_toFinset (space : List Atom) (atom : Atom) :
+    (insertSupport space atom).toFinset = insert atom space.toFinset := by
+  unfold insertSupport
+  split_ifs with present
+  · ext candidate
+    simp only [List.mem_toFinset, Finset.mem_insert]
+    constructor
+    · exact Or.inr
+    · intro membership
+      rcases membership with rfl | membership
+      · exact present
+      · exact membership
+  · rw [List.toFinset_append]
+    ext candidate
+    simp
+
+/-- Computable support union realizes finite-set union. -/
+theorem cUnionSupport_toFinset (space staged : List Atom) :
+    (cUnionSupport space staged).toFinset =
+      space.toFinset ∪ staged.toFinset := by
+  induction staged generalizing space with
+  | nil => simp [cUnionSupport]
+  | cons atom rest induction =>
+      simp only [cUnionSupport]
+      rw [induction, insertSupport_toFinset]
+      ext candidate
+      simp only [Finset.mem_union, Finset.mem_insert, List.mem_toFinset,
+        List.mem_cons]
+      aesop
+
+/-- Computable support subtraction realizes finite-set difference. -/
+theorem cSubtractSupport_toFinset (space staged : List Atom) :
+    (cSubtractSupport space staged).toFinset =
+      space.toFinset \ staged.toFinset := by
+  ext candidate
+  simp [cSubtractSupport]
+
+/-- Each computable sink finalization realizes its provider-level
+finalization. -/
+theorem cFinalizeSupportSink_toFinset (sink : Sink) (staged space : List Atom) :
+    (cFinalizeSupportSink sink staged space).toFinset =
+      finalizeSupportSink sink staged space.toFinset := by
+  cases sink with
+  | add atom =>
+      exact cUnionSupport_toFinset space staged
+  | remove atom =>
+      exact cSubtractSupport_toFinset space staged
+  | head count atom =>
+      simpa [cFinalizeSupportSink, finalizeSupportSink, compactExtrema] using
+        cUnionSupport_toFinset space (compactExtremaList true count staged)
+  | tail count atom =>
+      simpa [cFinalizeSupportSink, finalizeSupportSink, compactExtrema] using
+        cUnionSupport_toFinset space (compactExtremaList false count staged)
+
+/-- The computable list implementation and mathematical batch provider agree
+for any row sequence and sink sequence. -/
+theorem cApplyMorkSinkBatch_toFinset (rows : List Subst)
+    (space : List Atom) (sinks : List Sink) :
+    (cApplyMorkSinkBatch rows space sinks).toFinset =
+      morkSupportSinkProvider.run rows space.toFinset sinks := by
+  induction sinks generalizing space with
+  | nil => rfl
+  | cons sink rest induction =>
+      simp only [cApplyMorkSinkBatch, BatchSinkProvider.run_cons]
+      rw [induction, cFinalizeSupportSink_toFinset]
+      rfl
+
+/-- Template-level form of batched support-provider adequacy. -/
+theorem cApplyMorkTemplate_toFinset (space : List Atom) (rows : List Subst)
+    (template : Template) :
+    (cApplyMorkTemplate space rows template).toFinset =
+      applyMorkSinkBatch space.toFinset rows template := by
+  exact cApplyMorkSinkBatch_toFinset rows space template.sinks
+
 /-! ## cConsumeExec / cReadCopy correspondence -/
 
-/-- List erase = Finset erase under Nodup. -/
-theorem cConsumeExec_toFinset (s : List Atom) (ef : ExecFact) (hnd : s.Nodup) :
-    (cConsumeExec s ef).toFinset = consumeExec s.toFinset ef := by
-  simp only [cConsumeExec, consumeExec]
+/-- List erasure realizes finite-support erasure when the list presentation
+contains no duplicate occurrences. -/
+theorem listErase_toFinset (s : List Atom) (atom : Atom) (hnd : s.Nodup) :
+    (s.erase atom).toFinset = s.toFinset.erase atom := by
   ext x
   simp only [List.mem_toFinset, Finset.mem_erase]
   constructor
@@ -601,6 +1279,12 @@ theorem cConsumeExec_toFinset (s : List Atom) (ef : ExecFact) (hnd : s.Nodup) :
   · intro ⟨hne, hx_mem⟩
     exact (List.mem_erase_of_ne hne).mpr hx_mem
 
+/-- Consuming an exec fact in the list realization implements support
+erasure. -/
+theorem cConsumeExec_toFinset (s : List Atom) (ef : ExecFact) (hnd : s.Nodup) :
+    (cConsumeExec s ef).toFinset = consumeExec s.toFinset ef := by
+  exact listErase_toFinset s ef.atom hnd
+
 /-- Computable read copy = spec read copy under Nodup. -/
 theorem cReadCopy_toFinset (s : List Atom) (ef : ExecFact) (hnd : s.Nodup) :
     (cReadCopy s ef).toFinset = readCopy s.toFinset ef := by
@@ -608,18 +1292,18 @@ theorem cReadCopy_toFinset (s : List Atom) (ef : ExecFact) (hnd : s.Nodup) :
   rw [List.toFinset_cons, cConsumeExec_toFinset s ef hnd]
   ext x; simp [Finset.mem_insert]
 
-/-! ## cFireExecFact correspondence (single-match case)
+/-- The source-aware list read copy realizes the mathematical read copy. -/
+theorem cReadCopyAtom_toFinset (s : List Atom) (atom : Atom) (hnd : s.Nodup) :
+    (atom :: s.erase atom).toFinset = readCopyAtom s.toFinset atom := by
+  simp only [readCopyAtom, consumeAtom, List.toFinset_cons]
+  rw [listErase_toFinset s atom hnd]
+  ext candidate
+  simp [Finset.mem_insert]
 
-The general multi-match case requires tracking `NodupSafe` through each foldl
-step (the accumulator changes after each sink application) and aligning the
-order of match results between computable and spec levels.  The single-match
-case avoids both issues: foldl over a singleton is just one application.
+/-! ## Batched firing correspondence -/
 
-This covers the common case in MORK: a rule with a conjunctive pattern that
-matches at most one way against the space. -/
-
-open Conformance.Computable (cmatchPattern capplySinks)
-open Conformance (NodupSafe FoldNodupSafe foldl_capplySinks_toFinset)
+open Conformance.Computable (cmatchPattern cmatchInputSpec capplySinks)
+open Conformance (NodupSafe FoldNodupSafe)
 
 /-- Single-match correspondence: when the computable matcher returns exactly one
     result, `cFireExecFact` and `fireExecFact` agree at the `toFinset` level.
@@ -632,17 +1316,14 @@ theorem cFireExecFact_toFinset_single (s : List Atom) (ef : ExecFact)
     (hnd : s.Nodup) (hm : ef.atom ∈ s)
     (σ : Subst) (consumed : List Atom)
     (hmatch_c : cmatchPattern [] (cReadCopy s ef) ef.rule.pat = [(σ, consumed)])
-    (hmatch_spec_eq : matchPattern [] s.toFinset ef.rule.pat = [(σ, consumed.toFinset)])
-    (hsafe : NodupSafe (cConsumeExec s ef) σ ef.rule.tmpl.sinks) :
+    (hmatch_spec_eq : matchPattern [] s.toFinset ef.rule.pat = [(σ, consumed.toFinset)]) :
     (cFireExecFact s ef).toFinset = fireExecFact s.toFinset ef := by
   simp only [cFireExecFact, fireExecFact]
-  rw [hmatch_c, List.foldl_cons, List.foldl_nil]
+  rw [hmatch_c]
   rw [readCopy_eq_of_mem s.toFinset ef (by rwa [List.mem_toFinset])]
-  rw [hmatch_spec_eq, List.foldl_cons, List.foldl_nil]
-  -- Goal: (capplySinks (cConsumeExec s ef) σ ef.rule.tmpl).toFinset =
-  --       applySinks (consumeExec s.toFinset ef) σ ef.rule.tmpl
-  have h := Conformance.capplySinks_toFinset_safe (cConsumeExec s ef) σ ef.rule.tmpl hsafe
-  rw [h, cConsumeExec_toFinset s ef hnd]
+  rw [hmatch_spec_eq, cApplyMorkTemplate_toFinset,
+    cConsumeExec_toFinset s ef hnd]
+  rfl
 
 /-- No-match case: when the computable matcher returns no results,
     both `cFireExecFact` and `fireExecFact` reduce to consuming the exec fact. -/
@@ -652,40 +1333,59 @@ theorem cFireExecFact_toFinset_empty (s : List Atom) (ef : ExecFact)
     (hmatch_spec_eq : matchPattern [] s.toFinset ef.rule.pat = []) :
     (cFireExecFact s ef).toFinset = fireExecFact s.toFinset ef := by
   simp only [cFireExecFact, fireExecFact]
-  rw [hmatch_c, List.foldl_nil]
+  rw [hmatch_c]
   rw [readCopy_eq_of_mem s.toFinset ef (by rwa [List.mem_toFinset])]
-  rw [hmatch_spec_eq, List.foldl_nil]
-  exact cConsumeExec_toFinset s ef hnd
+  rw [hmatch_spec_eq, cApplyMorkTemplate_toFinset,
+    cConsumeExec_toFinset s ef hnd]
+  rfl
 
 /-! ## General multi-match cFireExecFact correspondence
 
-The general case lifts the single-match theorem to arbitrarily many match results,
-requiring explicit alignment of match results (`hcorr`) and `FoldNodupSafe`
-throughout the fold.  This covers all MORK rule patterns. -/
+The general case lifts the single-match theorem to arbitrarily many match
+results.  Because every sink stages into private support before finalization,
+no row-by-row `NodupSafe` premise is needed. -/
 
-/-- General multi-match `cFireExecFact` correspondence.
-    Requires that computable and spec matchers return corresponding substitutions
-    in the same order, and that `FoldNodupSafe` holds throughout the fold. -/
+/-- General multi-match `cFireExecFact` correspondence.  The only matcher
+alignment required by the batch executor is equality of its substitution rows. -/
 theorem cFireExecFact_toFinset (s : List Atom) (ef : ExecFact)
     (hnd : s.Nodup) (hm : ef.atom ∈ s)
     (hcorr : let cms := cmatchPattern [] (cReadCopy s ef) ef.rule.pat
              let sms := matchPattern [] s.toFinset ef.rule.pat
              cms.length = sms.length ∧
              ∀ (i : ℕ) (hi_c : i < cms.length) (hi_s : i < sms.length),
-               cms[i].1 = sms[i].1)
-    (hsafe : FoldNodupSafe (cConsumeExec s ef)
-               (cmatchPattern [] (cReadCopy s ef) ef.rule.pat) ef.rule.tmpl) :
+               cms[i].1 = sms[i].1) :
     (cFireExecFact s ef).toFinset = fireExecFact s.toFinset ef := by
+  have rowEquality :
+      (cmatchPattern [] (cReadCopy s ef) ef.rule.pat).map Prod.fst =
+        (matchPattern [] s.toFinset ef.rule.pat).map Prod.fst := by
+    apply List.ext_getElem
+    · simpa using hcorr.1
+    · intro index computableBound specificationBound
+      simp only [List.getElem_map]
+      exact hcorr.2 index (by simpa using computableBound)
+        (by simpa using specificationBound)
   simp only [cFireExecFact, fireExecFact]
   rw [readCopy_eq_of_mem s.toFinset ef (by rwa [List.mem_toFinset])]
-  exact foldl_capplySinks_toFinset
-    (cConsumeExec s ef) (consumeExec s.toFinset ef) ef.rule.tmpl
-    (cmatchPattern [] (cReadCopy s ef) ef.rule.pat)
-    (matchPattern [] s.toFinset ef.rule.pat)
-    (cConsumeExec_toFinset s ef hnd)
-    hcorr.1
-    hcorr.2
-    hsafe
+  rw [cApplyMorkTemplate_toFinset, cConsumeExec_toFinset s ef hnd,
+    rowEquality]
+
+/-- Source-aware batched firing correspondence.  The matcher obligation is
+stated on substitution rows because consumed-witness bookkeeping is not an
+input to MM2 sink finalization. -/
+theorem cFireSourceExecFact_toFinset (s : List Atom) (sef : SourceExecFact)
+    (hnd : s.Nodup)
+    (rowAlignment :
+      (cmatchInputSpec [] (sef.atom :: s.erase sef.atom) sef.rule.input).map
+          Prod.fst =
+        (matchInputSpec [] (readCopyAtom s.toFinset sef.atom)
+          sef.rule.input).map Prod.fst) :
+    (cFireSourceExecFact s sef).toFinset =
+      fireSourceExecFact s.toFinset sef := by
+  simp only [cFireSourceExecFact, fireSourceExecFact]
+  rw [cApplyMorkTemplate_toFinset]
+  rw [listErase_toFinset s sef.atom hnd]
+  rw [rowAlignment]
+  rfl
 
 /-! ## Work-queue step correspondence -/
 
@@ -699,9 +1399,7 @@ theorem cWorkQueueStep_toFinset (s : List Atom) (hnd : s.Nodup)
        let sms := matchPattern [] s.toFinset ef.rule.pat
        cms.length = sms.length ∧
        ∀ (i : ℕ) (hi_c : i < cms.length) (hi_s : i < sms.length),
-         cms[i].1 = sms[i].1) ∧
-      FoldNodupSafe (cConsumeExec s ef)
-        (cmatchPattern [] (cReadCopy s ef) ef.rule.pat) ef.rule.tmpl) :
+         cms[i].1 = sms[i].1)) :
     (cWorkQueueStep s).map List.toFinset = workQueueStep s.toFinset := by
   simp only [cWorkQueueStep, workQueueStep]
   rw [← cWorkQueueStep_selectExec_eq s hnd hinj]
@@ -709,8 +1407,63 @@ theorem cWorkQueueStep_toFinset (s : List Atom) (hnd : s.Nodup)
   | none => simp
   | some ef =>
     simp only [Option.map]
-    obtain ⟨hm, hcorr, hsafe⟩ := hfire ef h
-    exact congrArg some (cFireExecFact_toFinset s ef hnd hm ⟨hcorr.1, hcorr.2⟩ hsafe)
+    obtain ⟨hm, hcorr⟩ := hfire ef h
+    exact congrArg some (cFireExecFact_toFinset s ef hnd hm ⟨hcorr.1, hcorr.2⟩)
+
+/-! ## Source-aware work-queue correspondence -/
+
+/-- The exact matcher obligation needed by source-aware batched firing.  It
+mentions only substitution rows: witness collections are observationally
+irrelevant to the declared support-sink provider. -/
+def SourceRowAlignment (s : List Atom) (sef : SourceExecFact) : Prop :=
+  (cmatchInputSpec [] (sef.atom :: s.erase sef.atom) sef.rule.input).map
+      Prod.fst =
+    (matchInputSpec [] (readCopyAtom s.toFinset sef.atom)
+      sef.rule.input).map Prod.fst
+
+/-- One source-aware native list step refines the corresponding support-level
+MM2 step for either unsupported-directive policy.  The two alignment premises
+cover the distinct candidate domains without pretending that an unsupported
+raw shell has source semantics. -/
+theorem cSourceWorkQueueStep_toFinset
+    (policy : UnsupportedExecPolicy) (s : List Atom) (hnd : s.Nodup)
+    (supportedKeyInj : KeyInjective (cSupportedSourceExecFacts s))
+    (rawKeyInj : KeyInjective (cRawExecFacts s))
+    (supportedAlignment : ∀ sef,
+      selectNextScheduled (cSupportedSourceExecFacts s) = some sef →
+      SourceRowAlignment s sef)
+    (rawAlignment : ∀ raw sef,
+      selectNextScheduled (cRawExecFacts s) = some raw →
+      decodeSupportedSourceExec raw = some sef →
+      SourceRowAlignment s sef) :
+    (cSourceWorkQueueStep policy s).map List.toFinset =
+      sourceWorkQueueStep policy s.toFinset := by
+  cases policy with
+  | leaveInert =>
+      simp only [cSourceWorkQueueStep, sourceWorkQueueStep]
+      rw [← cSourceWorkQueueStep_selectSupported_eq s hnd supportedKeyInj]
+      cases selected : selectNextScheduled (cSupportedSourceExecFacts s) with
+      | none => rfl
+      | some sef =>
+          simp only [Option.map]
+          exact congrArg some
+            (cFireSourceExecFact_toFinset s sef hnd
+              (supportedAlignment sef selected))
+  | consume =>
+      simp only [cSourceWorkQueueStep, sourceWorkQueueStep]
+      rw [← cSourceWorkQueueStep_selectRaw_eq s hnd rawKeyInj]
+      cases selected : selectNextScheduled (cRawExecFacts s) with
+      | none => rfl
+      | some raw =>
+          cases decoded : decodeSupportedSourceExec raw with
+          | none =>
+              simp only [decoded, Option.map]
+              exact congrArg some (listErase_toFinset s raw.atom hnd)
+          | some sef =>
+              simp only [decoded, Option.map]
+              exact congrArg some
+                (cFireSourceExecFact_toFinset s sef hnd
+                  (rawAlignment raw sef selected decoded))
 
 /-! ## Work-queue bounded-run correspondence -/
 
@@ -725,9 +1478,7 @@ structure WorkQueueInvariant (s : List Atom) : Prop where
      let sms := matchPattern [] s.toFinset ef.rule.pat
      cms.length = sms.length ∧
      ∀ (i : ℕ) (hi_c : i < cms.length) (hi_s : i < sms.length),
-       cms[i].1 = sms[i].1) ∧
-    FoldNodupSafe (cConsumeExec s ef)
-      (cmatchPattern [] (cReadCopy s ef) ef.rule.pat) ef.rule.tmpl
+       cms[i].1 = sms[i].1)
 
 /-- The set of list-spaces reachable from `s₀` in at most `fuel` computable steps. -/
 inductive CReachable : ℕ → List Atom → List Atom → Prop where
@@ -765,6 +1516,72 @@ theorem cWorkQueueRunN_toFinset (fuel : ℕ) (s : List Atom)
         fun s'' hreach => hinv s'' (.step hc hreach)
       obtain ⟨h1, h2⟩ := ih s' hinv'
       exact ⟨h1, congrArg (· + 1) h2⟩
+
+/-! ## Source-aware bounded-run correspondence -/
+
+/-- Per-state obligations for the source-aware native realization.  Keeping
+supported and raw scheduler invariants separate is essential: the open-world
+profile never assigns semantics to an unsupported raw shell. -/
+structure SourceWorkQueueInvariant (s : List Atom) : Prop where
+  nodup : s.Nodup
+  supportedKeyInj : KeyInjective (cSupportedSourceExecFacts s)
+  rawKeyInj : KeyInjective (cRawExecFacts s)
+  supportedAlignment : ∀ sef,
+    selectNextScheduled (cSupportedSourceExecFacts s) = some sef →
+    SourceRowAlignment s sef
+  rawAlignment : ∀ raw sef,
+    selectNextScheduled (cRawExecFacts s) = some raw →
+    decodeSupportedSourceExec raw = some sef →
+    SourceRowAlignment s sef
+
+/-- List states reachable by at most the stated number of source-aware
+computable steps. -/
+inductive CSourceReachable (policy : UnsupportedExecPolicy) :
+    Nat → List Atom → List Atom → Prop where
+  | refl : CSourceReachable policy fuel s s
+  | step {fuel s s' s''} :
+      cSourceWorkQueueStep policy s = some s' →
+      CSourceReachable policy fuel s' s'' →
+      CSourceReachable policy (fuel + 1) s s''
+
+/-- Exact-fuel native/source-GSLT correspondence.  Invariant maintenance is
+required at every reachable residual, so adequacy cannot silently assume that
+generated atoms remain canonical or matcher-aligned. -/
+theorem cSourceWorkQueueRunN_toFinset
+    (policy : UnsupportedExecPolicy) (fuel : Nat) (s : List Atom)
+    (invariant : ∀ s', CSourceReachable policy fuel s s' →
+      SourceWorkQueueInvariant s') :
+    (cSourceWorkQueueRunN policy fuel s).1.toFinset =
+        (sourceWorkQueueRunN policy fuel s.toFinset).1 ∧
+      (cSourceWorkQueueRunN policy fuel s).2 =
+        (sourceWorkQueueRunN policy fuel s.toFinset).2 := by
+  induction fuel generalizing s with
+  | zero => simp [cSourceWorkQueueRunN, sourceWorkQueueRunN]
+  | succ fuel induction =>
+      simp only [cSourceWorkQueueRunN, sourceWorkQueueRunN]
+      have current := invariant s .refl
+      have stepAgreement := cSourceWorkQueueStep_toFinset policy s
+        current.nodup current.supportedKeyInj current.rawKeyInj
+        current.supportedAlignment current.rawAlignment
+      cases nativeStep : cSourceWorkQueueStep policy s with
+      | none =>
+          simp only [nativeStep] at stepAgreement
+          simp only [Option.map] at stepAgreement ⊢
+          rw [← stepAgreement]
+          exact ⟨rfl, rfl⟩
+      | some next =>
+          simp only [nativeStep, Option.map] at stepAgreement
+          have semanticStep :
+              sourceWorkQueueStep policy s.toFinset = some next.toFinset := by
+            rw [← stepAgreement]
+          simp only [semanticStep]
+          have nextInvariant : ∀ residual,
+              CSourceReachable policy fuel next residual →
+              SourceWorkQueueInvariant residual :=
+            fun residual reachable => invariant residual (.step nativeStep reachable)
+          obtain ⟨termAgreement, countAgreement⟩ :=
+            induction next nextInvariant
+          exact ⟨termAgreement, congrArg (· + 1) countAgreement⟩
 
 end SchedulerCorrespondence
 
@@ -961,21 +1778,21 @@ theorem canary3_readcopy_contains_exec :
     | ef :: _ => (cReadCopy canary3_space ef).contains ef.atom = true
     | [] => True := rfl
 
-/-! ### Canary 7: Location-based ordering via atomKey
+/-! ### Canary 7: Exact full-directive ordering
 
-Verify that the scheduler selects exec facts by `atomKey` on the location term,
-producing the same results as the old priority-based ordering. -/
+The physical scheduler key is the complete compact encoding of the selected
+`exec` atom.  Locations remain available as authored data, but do not replace
+the remaining pattern and template bytes in the physical order. -/
 
 /-- Extracted exec fact preserves the raw location term. -/
 theorem canary1_loc :
     (extractExecFact canary1_exec).map (·.loc) =
       some (.expression [.symbol "0", .symbol "process"]) := rfl
 
-/-- Priority ordering still works under location-based keys:
-    `atomKey (0 first)` < `atomKey (1 second)`. -/
-theorem canary4_loc_order :
-    lexLt (atomKey (.expression [.symbol "0", .symbol "first"]))
-          (atomKey (.expression [.symbol "1", .symbol "second"])) = true := rfl
+/-- The complete compact key selects the first directive in the canary pair. -/
+theorem canary4_full_directive_order :
+    lexLt (totalMorkCompactKey canary4_rule0)
+          (totalMorkCompactKey canary4_rule1) = true := by decide
 
 /-! ### Canary 8: Ground self-respawn
 

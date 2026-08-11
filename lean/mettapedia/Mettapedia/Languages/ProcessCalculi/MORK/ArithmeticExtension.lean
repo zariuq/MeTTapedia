@@ -163,12 +163,12 @@ example : IntArithOp.ofHead? "i/" = none := rfl
 example :
     intArithResultAtom .mul (.expression [.symbol "product"]) 6 7 =
       .expression [.symbol "product", .symbol "42"] := by
-  native_decide
+  decide
 
 example :
     intArithResultAtom .eq (.expression [.symbol "equal"]) 5 4 =
       .expression [.symbol "equal", .symbol "0"] := by
-  native_decide
+  decide
 
 /-! ## Float arithmetic sinks -/
 
@@ -256,10 +256,13 @@ theorem eval_eq_false_of_separated (a b : Float)
     eval .eq a b = 0.0 := by
   simp [eval, h]
 
-theorem eval_div_zero_branch (a : Float) :
+/-- The division provider takes its zero branch whenever the host float
+comparison classifies the divisor as zero.  Lean's built-in `Float.beq` is an
+opaque runtime primitive, so its concrete classification is kept as the
+provider premise instead of being discharged by native evaluation. -/
+theorem eval_div_zero_branch (a : Float)
+    (hzero : ((0.0 : Float) != 0.0) = false) :
     eval .div a 0.0 = 0.0 / 0.0 := by
-  have hzero : ((0.0 : Float) != 0.0) = false := by
-    native_decide
   simp [eval, hzero]
 
 end FloatArithOp

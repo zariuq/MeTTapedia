@@ -399,6 +399,172 @@ theorem CostRegionTree.normalizeWithStatic_overlap_equivalent
   exact Relation.EqvGen.trans _ _ _ firstToInput
     (Relation.EqvGen.symm _ _ secondToInput)
 
+namespace CostOpenElaboration
+
+/-- Normalize one retained elaboration with an explicit static kernel and
+repackage the result in the same checked open fibre.  This is the generic
+hereditary executor core; a concrete language supplies only the static
+normalizer and its local laws. -/
+def normalizeWithStaticErasure
+    {source : CIGSLT} (normalizeStatic : CostStaticRegionNormalizer source)
+    {targetFree : FreeTypeContext} {targetBound : List TypeExpr}
+    {targetSort : LangSort source.costWholeLanguage}
+    {term : ReflectiveWellSorted.OpenTerm source.costWholeReflectionProfile
+      source.costWholeLanguage targetFree targetBound targetSort}
+    (elaboration : CostOpenElaboration source term) :
+    ReflectiveWellSorted.OpenTerm source.costWholeReflectionProfile
+      source.costWholeLanguage targetFree targetBound targetSort := by
+  let normalized := elaboration.tree.normalize
+    (normalizeStatic := normalizeStatic)
+  refine ⟨normalized.pattern, ?_⟩
+  refine ⟨⟨?_, normalized.canonicalBinderMetadata term.2.1.2.1,
+    normalized.objectPattern term.2.1.2.2.1, ?_⟩, ?_⟩
+  · simpa only [List.append_nil] using normalized.typed
+  · change normalized.pattern.isWellScopedAt targetBound.length = true
+    simpa only [List.append_nil] using normalized.typed.isWellScopedAt
+  · intro presentation membership
+    exact normalized.reflectiveScope presentation membership
+      (Nat.le_refl targetBound.length) (term.2.2 presentation membership)
+
+@[simp]
+theorem normalizeWithStaticErasure_pattern
+    {source : CIGSLT} (normalizeStatic : CostStaticRegionNormalizer source)
+    {targetFree : FreeTypeContext} {targetBound : List TypeExpr}
+    {targetSort : LangSort source.costWholeLanguage}
+    {term : ReflectiveWellSorted.OpenTerm source.costWholeReflectionProfile
+      source.costWholeLanguage targetFree targetBound targetSort}
+    (elaboration : CostOpenElaboration source term) :
+    (elaboration.normalizeWithStaticErasure normalizeStatic).1 =
+      (elaboration.tree.normalize
+        (normalizeStatic := normalizeStatic)).pattern :=
+  rfl
+
+/-- Typed unary soundness of the generic hereditary executor.  The proof
+retains every intermediate equation vertex in the exact open fibre; it uses
+only the local typed static-frame law and structural weakening. -/
+theorem normalizeWithStaticErasure_typed_openEquationSetoid
+    {source : CIGSLT} (normalizeStatic : CostStaticRegionNormalizer source)
+    (laws : CostTypedStaticRegionNormalizerLaws source normalizeStatic)
+    {targetFree : FreeTypeContext} {targetBound : List TypeExpr}
+    {targetSort : LangSort source.costWholeLanguage}
+    {term : ReflectiveWellSorted.OpenTerm source.costWholeReflectionProfile
+      source.costWholeLanguage targetFree targetBound targetSort}
+    (elaboration : CostOpenElaboration source term) :
+    (ReflectiveEquationSemantics.reflectiveOpenPatternEquationSetoid
+      source.costWholeReflectionProfile defaultBasePremises
+        source.costWholeLanguage targetFree targetBound
+          (.base targetSort.1)).r
+      (elaboration.normalizeWithStaticErasure normalizeStatic) term := by
+  have split := elaboration.tree.normalizeWithStatic_equationSetoid
+    normalizeStatic laws term.2.1.2.1 term.2.1.2.2.1 term.2.2
+  have openSplit :=
+    WellSorted.AvailableOpenPattern.equationSetoid_to_reflectiveOpenPatternEquationSetoid
+      split
+  have transported :=
+    ReflectiveWellSorted.reflectiveOpenPatternEquationSetoid_reindexBound
+      (List.append_nil targetBound) openSplit
+  have leftEndpoint :
+      ((elaboration.tree.normalizedAvailable term.2.1.2.1 term.2.1.2.2.1
+        term.2.2 (normalizeStatic := normalizeStatic)
+          ).toReflectiveOpenPattern.reindexBound
+            (List.append_nil targetBound)) =
+        elaboration.normalizeWithStaticErasure normalizeStatic := by
+    apply Subtype.ext
+    simp [CostOpenElaboration.normalizeWithStaticErasure,
+      CostRegionTree.normalizedAvailable_pattern,
+      ReflectiveWellSorted.OpenPattern.reindexBound_pattern,
+      WellSorted.AvailableOpenPattern.toReflectiveOpenPattern_pattern]
+  have rightEndpoint :
+      ((elaboration.tree.originalAvailableOpenPattern term.2.1.2.1
+        term.2.1.2.2.1 term.2.2).toReflectiveOpenPattern.reindexBound
+          (List.append_nil targetBound)) = term := by
+    apply Subtype.ext
+    simp [CostRegionTree.originalAvailableOpenPattern_pattern,
+      ReflectiveWellSorted.OpenPattern.reindexBound_pattern,
+      WellSorted.AvailableOpenPattern.toReflectiveOpenPattern_pattern]
+  rw [leftEndpoint, rightEndpoint] at transported
+  exact transported
+
+end CostOpenElaboration
+
+/-- Generic checked hereditary Cost normalizer.  The construction is
+language-independent: it compiles one admitted open term into its retained
+Cost tree, normalizes children before static parents, and erases only the
+proof-relevant decomposition. -/
+def CIGSLT.costNormalizeOpenWithStatic (source : CIGSLT)
+    (normalizeStatic : CostStaticRegionNormalizer source)
+    {targetFree : FreeTypeContext} {targetBound : List TypeExpr}
+    {targetSort : LangSort source.costWholeLanguage}
+    (term : ReflectiveWellSorted.OpenTerm source.costWholeReflectionProfile
+      source.costWholeLanguage targetFree targetBound targetSort) :
+    ReflectiveWellSorted.OpenTerm source.costWholeReflectionProfile
+      source.costWholeLanguage targetFree targetBound targetSort :=
+  (CostOpenElaboration.compile source term).normalizeWithStaticErasure
+    normalizeStatic
+
+@[simp]
+theorem CIGSLT.costNormalizeOpenWithStatic_pattern (source : CIGSLT)
+    (normalizeStatic : CostStaticRegionNormalizer source)
+    {targetFree : FreeTypeContext} {targetBound : List TypeExpr}
+    {targetSort : LangSort source.costWholeLanguage}
+    (term : ReflectiveWellSorted.OpenTerm source.costWholeReflectionProfile
+      source.costWholeLanguage targetFree targetBound targetSort) :
+    (source.costNormalizeOpenWithStatic normalizeStatic term).1 =
+      ((CostOpenElaboration.compile source term).tree.normalize
+        (normalizeStatic := normalizeStatic)).pattern :=
+  rfl
+
+/-- The previously established compact executor is exactly the generic
+hereditary executor instantiated by its original mapped-action static
+normalizer.  This definitional compatibility is the anti-duplication seam:
+parameterization adds no second execution semantics. -/
+theorem CIGSLT.costNormalizeOpenWithStatic_default_eq
+    (source : CIGSLT)
+    {targetFree : FreeTypeContext} {targetBound : List TypeExpr}
+    {targetSort : LangSort source.costWholeLanguage}
+    (term : ReflectiveWellSorted.OpenTerm source.costWholeReflectionProfile
+      source.costWholeLanguage targetFree targetBound targetSort) :
+    source.costNormalizeOpenWithStatic
+        (fun node values => node.normalizeWithReflective values) term =
+      source.costNormalizeOpen term := by
+  apply Subtype.ext
+  rfl
+
+/-- Every lawful static kernel yields a unary-sound generic hereditary Cost
+normalizer.  Exact generator invariance is deliberately separate: it needs
+the two-endpoint alignment proved below the eventual language instance. -/
+theorem CIGSLT.costNormalizeOpenWithStatic_equationEquiv
+    (source : CIGSLT) (normalizeStatic : CostStaticRegionNormalizer source)
+    (laws : CostStaticRegionNormalizerLaws source normalizeStatic)
+    {targetFree : FreeTypeContext} {targetBound : List TypeExpr}
+    {targetSort : LangSort source.costWholeLanguage}
+    (term : ReflectiveWellSorted.OpenTerm source.costWholeReflectionProfile
+      source.costWholeLanguage targetFree targetBound targetSort) :
+    ReflectiveEquationSemantics.ReflectiveEquationEquiv
+      source.costWholeReflectionProfile defaultBasePremises
+      source.costWholeLanguage
+      (source.costNormalizeOpenWithStatic normalizeStatic term).1 term.1 := by
+  rw [source.costNormalizeOpenWithStatic_pattern]
+  exact (CostOpenElaboration.compile source term).tree
+    |>.normalizeWithStatic_equationEquiv normalizeStatic laws
+
+/-- Every locally typed static kernel yields a typed, unary-sound hereditary
+Cost normalizer over arbitrary ciGSLTs. -/
+theorem CIGSLT.costNormalizeOpenWithStatic_typed_openEquationSetoid
+    (source : CIGSLT) (normalizeStatic : CostStaticRegionNormalizer source)
+    (laws : CostTypedStaticRegionNormalizerLaws source normalizeStatic)
+    {targetFree : FreeTypeContext} {targetBound : List TypeExpr}
+    {targetSort : LangSort source.costWholeLanguage}
+    (term : ReflectiveWellSorted.OpenTerm source.costWholeReflectionProfile
+      source.costWholeLanguage targetFree targetBound targetSort) :
+    (ReflectiveEquationSemantics.reflectiveOpenPatternEquationSetoid
+      source.costWholeReflectionProfile defaultBasePremises
+        source.costWholeLanguage targetFree targetBound
+          (.base targetSort.1)).r
+      (source.costNormalizeOpenWithStatic normalizeStatic term) term :=
+  (CostOpenElaboration.compile source term
+    ).normalizeWithStaticErasure_typed_openEquationSetoid normalizeStatic laws
+
 /-- Exact erasure coherence for an arbitrary proof-relevant static kernel.
 Unlike unary equation soundness, this property states that two certified
 decompositions of the same compact term erase to one identical normalized

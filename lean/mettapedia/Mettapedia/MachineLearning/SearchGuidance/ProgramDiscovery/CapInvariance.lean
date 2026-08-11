@@ -29,6 +29,21 @@ theorem programsFor_mono [DecidableEq Program] [DecidableEq Target]
   rcases hprogram with ⟨edge, ⟨hedge, htarget⟩, rfl⟩
   exact ⟨edge, ⟨hsubset hedge, htarget⟩, rfl⟩
 
+/-- For a finite selected subrelation, exact program-diversity preservation is
+equivalent to retaining the entire projected program footprint.  Target
+coverage completeness alone does not provide this condition. -/
+theorem programCoverage_eq_iff_programSet_eq
+    [DecidableEq Program] [DecidableEq Target]
+    {selected raw : SolveRelation Program Target} (hsubset : selected ⊆ raw) :
+    programCoverage selected = programCoverage raw ↔
+      programSet selected = programSet raw := by
+  constructor
+  · intro hcard
+    exact Finset.eq_of_subset_of_card_le (programSet_mono hsubset)
+      (Nat.le_of_eq hcard.symm)
+  · intro hsets
+    exact congrArg Finset.card hsets
+
 /-- Retaining every raw shortest program is sufficient to preserve the exact
 shortest-program set. -/
 theorem shortestPrograms_eq_of_subset_of_retains
@@ -222,6 +237,11 @@ def CuratedView.ParetoSound
     ParetoSoundSelection (programsFor view.rawRelation target)
       (programsFor view.selected target) cost
 
+/-- Completeness for program-identity statistics, separately from the existing
+target-coverage contract. -/
+def CuratedView.ProgramComplete (view : ViewT) : Prop :=
+  programSet view.selected = programSet view.rawRelation
+
 /-- The exact representative contract sufficient for every cost summary. -/
 structure CuratedView.RepresentativeComplete
     (view : ViewT) (cost : Program → ProgramCost) : Prop where
@@ -243,6 +263,12 @@ theorem curated_solved_iff_raw_solved
     (view : ViewT) (hcomplete : view.CoverageComplete) (target : Target) :
     target ∈ targetSet view.selected ↔ target ∈ coveredTargets view.raw := by
   rw [hcomplete]
+
+theorem curated_programCoverage_preserved_iff
+    (view : ViewT) :
+    programCoverage view.selected = programCoverage view.rawRelation ↔
+      view.ProgramComplete := by
+  exact programCoverage_eq_iff_programSet_eq view.selected_subset_raw
 
 theorem curated_shortestPrograms_preserved
     (view : ViewT) (cost : Program → ProgramCost)

@@ -1,4 +1,6 @@
 import Mettapedia.Languages.MeTTa.MeTTaZero
+import Mettapedia.Languages.MeTTa.MeTTaZeroLanguageAdequacy
+import Mettapedia.GSLT.Core.ClosureCriteria
 
 /-!
 # Staged semantic adequacy for query-first MeTTa Zero
@@ -18,8 +20,11 @@ observer adds the inert result only after exact completed emptiness.
 namespace Mettapedia.Languages.MeTTa.MeTTaZeroStagedAdequacy
 
 open Mettapedia.Languages.MeTTa.MeTTaZero
+open Mettapedia.Languages.MeTTa.MeTTaZeroLanguageAdequacy
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Match
+open Mettapedia.GSLT
+open Mettapedia.GSLT.Core.ClosureCriteria
 
 /-- The two public request forms after the authored classification stage. -/
 inductive ClassifiedRequest (model : Model) where
@@ -120,9 +125,7 @@ def run (model : Model) (request : ClassifiedRequest model) :
 @[simp] theorem groundProduced_results (model : Model) (subject : Pattern) :
     (groundProduced model subject).map ProducedOccurrence.result =
       model.groundApply subject := by
-  unfold groundProduced
-  rw [Multiset.map_map]
-  rfl
+  simp [groundProduced, Multiset.map_map]
 
 /-- Erasing evidence from equation production recovers the query-derived
 equation semantics exactly. -/
@@ -158,10 +161,10 @@ theorem equationProduced_results (model : Model) (space : model.Space)
           apply Multiset.bind_congr
           intro queried _
           cases equationView : viewEquation? queried.result with
-          | none => simp [equationView]
+          | none => simp
           | some equation =>
               obtain ⟨left, right⟩ := equation
-              simp [equationView, Multiset.map_map]
+              simp [Multiset.map_map]
     _ = ((queryProduced model space (.fvar allAtomsVariable)
             (.fvar allAtomsVariable)).map QueryOccurrence.result).bind
           (fun candidate =>
@@ -209,7 +212,18 @@ one-step evaluator exactly, including its inert default. -/
     (subject : Pattern) :
     run model (.evaluate space subject) =
       evaluateOne model space subject := by
-  simp [run, observe, evaluateOne, produce_evaluate_results]
+  have production_empty :
+      produce model (.evaluate space subject) = 0 ↔
+        interpretedResults model space subject = 0 := by
+    rw [← produce_evaluate_results, Multiset.map_eq_zero]
+  unfold run evaluateOne
+  change
+    (if produce model (.evaluate space subject) = 0 then {subject}
+     else (produce model (.evaluate space subject)).map
+       ProducedOccurrence.result) =
+      (if interpretedResults model space subject = 0 then {subject}
+       else interpretedResults model space subject)
+  simp only [production_empty, produce_evaluate_results]
 
 /-- Negative boundary: an empty query stays empty; the inert default belongs
 only to evaluation observation. -/
@@ -228,5 +242,274 @@ theorem positive_evaluation_has_no_inert_fallback (model : Model)
       interpretedResults model space subject := by
   rw [run_evaluate]
   exact evaluateOne_of_interpreted model space subject positive
+
+/-! ## The staged pipeline as a control GSLT -/
+
+/-- The complete language-visible state of Zero's semantic pipeline after a
+request has been classified.  Produced evidence and the final occurrence bag
+remain terms of the control theory rather than private driver state. -/
+inductive PipelineControl (model : Model) where
+  | classified (request : ClassifiedRequest model)
+  | produced (request : ClassifiedRequest model)
+      (occurrences : Multiset ProducedOccurrence)
+  | observed (request : ClassifiedRequest model)
+      (occurrences : Multiset ProducedOccurrence)
+      (answers : Multiset Pattern)
+
+/-- The two semantic stage transitions.  Production is positive; observation
+is the only stage allowed to add the inert result after completed emptiness. -/
+inductive PipelineStep (model : Model) :
+    PipelineControl model → PipelineControl model → Prop where
+  | produce (request : ClassifiedRequest model) :
+      PipelineStep model (.classified request)
+        (.produced request (MeTTaZeroStagedAdequacy.produce model request))
+  | observe (request : ClassifiedRequest model)
+      (occurrences : Multiset ProducedOccurrence) :
+      PipelineStep model (.produced request occurrences)
+        (.observed request occurrences
+          (MeTTaZeroStagedAdequacy.observe request occurrences))
+
+/-- Zero's classified-request pipeline as a genuine GSLT of control terms. -/
+def pipelineControlGSLT (model : Model) : GSLT where
+  Term := PipelineControl model
+  equations := ⟨Eq, ⟨Eq.refl, Eq.symm, Eq.trans⟩⟩
+  rewrites := PipelineStep model
+  rewrites_resp_left := by
+    intro source source' target equal step
+    subst source'
+    exact ⟨target, step, rfl⟩
+  rewrites_resp_right := by
+    intro source target target' step equal
+    subst target'
+    exact step
+
+/-- The exact answer bag associated with every intermediate control term.
+Stage transitions preserve this observer. -/
+def PipelineControl.answers {model : Model} :
+    PipelineControl model → Multiset Pattern
+  | .classified request => run model request
+  | .produced request occurrences => observe request occurrences
+  | .observed _ _ answers => answers
+
+/-- Production and observation preserve the exact occurrence-bag answer. -/
+theorem PipelineStep.answers_preserved {model : Model}
+    {source target : PipelineControl model}
+    (step : PipelineStep model source target) :
+    source.answers = target.answers := by
+  cases step <;> rfl
+
+/-! ### Exact bridge to the authored five-field realization -/
+
+/-- Forget only the surface encoding of the space argument and recover the
+classified semantic request carried by the staged pipeline. -/
+def classifiedRequest {model : Model} :
+    KernelRequest model → ClassifiedRequest model
+  | .query space _ pattern template => .query space pattern template
+  | .evaluate space _ subject => .evaluate space subject
+
+/-- Reapply the public answer constructor selected by a classified request.
+The staged pipeline internally carries raw answers; the authored five-field
+root exposes these two explicit result forms. -/
+def ClassifiedRequest.publicAnswers {model : Model}
+    (request : ClassifiedRequest model) (answers : Multiset Pattern) :
+    Multiset Pattern :=
+  match request with
+  | .query .. => answers.map queryAnswerPattern
+  | .evaluate .. => answers.map evaluationAnswerPattern
+
+/-- Observe any intermediate pipeline term through the authored root's public
+answer constructors. -/
+def PipelineControl.publicAnswers {model : Model}
+    (control : PipelineControl model) : Multiset Pattern :=
+  match control with
+  | .classified request => request.publicAnswers (run model request)
+  | .produced request occurrences =>
+      request.publicAnswers (observe request occurrences)
+  | .observed request _ answers => request.publicAnswers answers
+
+/-- Public occurrence-bag observation is invariant across both staged
+transitions. -/
+theorem PipelineStep.publicAnswers_preserved {model : Model}
+    {source target : PipelineControl model}
+    (step : PipelineStep model source target) :
+    source.publicAnswers = target.publicAnswers := by
+  cases step <;> rfl
+
+/-- The completed semantic artifact produced from one authored-root request. -/
+def completedPipelineArtifact {model : Model} (request : KernelRequest model) :
+    PipelineControl model :=
+  let classified := classifiedRequest request
+  .observed classified (produce model classified) (run model classified)
+
+/-- The staged control GSLT is a certified realization of the same source
+observation as the generic interpreter over Zero's authored five-field root. -/
+def stagedRealization (model : Model) :
+    SimpleRealization (KernelRequest model) (PipelineControl model)
+      (Multiset Pattern) where
+  compile := fun _ request => completedPipelineArtifact request
+  observeSource := fun _ request => semanticAnswers request
+  observeArtifact := fun _ artifact => artifact.publicAnswers
+  adequate := by
+    intro _ request
+    cases request with
+    | query space spaceTerm pattern template =>
+        simp [completedPipelineArtifact, classifiedRequest,
+          PipelineControl.publicAnswers, ClassifiedRequest.publicAnswers,
+          semanticAnswers, run_query]
+    | evaluate space spaceTerm subject =>
+        simp [completedPipelineArtifact, classifiedRequest,
+          PipelineControl.publicAnswers, ClassifiedRequest.publicAnswers,
+          semanticAnswers, run_evaluate]
+
+/-- The staged control realization and the generic authored-root interpreter
+agree exactly for every request, including occurrence multiplicity. -/
+theorem stagedRealization_agrees_with_authored (model : Model)
+    (request : KernelRequest model) :
+    (stagedRealization model).observeArtifact ()
+        ((stagedRealization model).compile () request) =
+      (authoredRealization model).compile () request := by
+  rw [(stagedRealization model).adequate]
+  exact ((authoredRealization model).adequate () request).symm
+
+/-- A deterministic driver for the staged semantic pipeline.  Its private
+state is `Unit`: every semantically relevant control component is already in
+`PipelineControl`. -/
+def pipelineDriver (model : Model) : HostedDriver (pipelineControlGSLT model) where
+  State := Unit
+  step := fun control _ =>
+    match control with
+    | .classified request =>
+        some (.produced request (produce model request), ())
+    | .produced request occurrences =>
+        some (.observed request occurrences (observe request occurrences), ())
+    | .observed _ _ _ => none
+  sound := by
+    intro control state next state' moved
+    cases state
+    cases control with
+    | classified request =>
+        cases moved
+        exact PipelineStep.produce request
+    | produced request occurrences =>
+        cases moved
+        exact PipelineStep.observe request occurrences
+    | observed request occurrences answers =>
+        simp at moved
+
+/-- Removing the vacuous `Unit` component gives an equivalence between whole
+driver configurations and Zero's own control terms. -/
+def pipelineConfigurationEquiv (model : Model) :
+    (PipelineControl model × Unit) ≃ PipelineControl model where
+  toFun := Prod.fst
+  invFun := fun control => (control, ())
+  left_inv := by
+    intro configuration
+    rcases configuration with ⟨control, ⟨⟩⟩
+    rfl
+  right_inv := by
+    intro control
+    rfl
+
+/-- Strong control closure for Zero's semantic pipeline: the language-visible
+control GSLT contains exactly every driver configuration and exactly every
+driver move. -/
+def pipelineControlReification (model : Model) :
+    ControlReification (pipelineDriver model) (pipelineControlGSLT model) where
+  configuration := pipelineConfigurationEquiv model
+  step_iff := by
+    intro source target
+    rcases source with ⟨source, ⟨⟩⟩
+    rcases target with ⟨target, ⟨⟩⟩
+    change PipelineStep model source target ↔
+      (pipelineDriver model).step source () = some (target, ())
+    cases source with
+    | classified request =>
+        constructor
+        · intro step
+          cases step
+          rfl
+        · intro moved
+          cases moved
+          exact PipelineStep.produce request
+    | produced request occurrences =>
+        constructor
+        · intro step
+          cases step
+          rfl
+        · intro moved
+          cases moved
+          exact PipelineStep.observe request occurrences
+    | observed request occurrences answers =>
+        constructor
+        · intro step
+          cases step
+        · intro moved
+          simp [pipelineDriver] at moved
+
+/-- The private driver state cannot affect any bounded observation.  This is
+the observation-indexed criterion, not an assertion that all possible
+schedulers or observers are interchangeable. -/
+theorem pipelineDriver_privateStateInvariant (model : Model)
+    {Observation : Type*}
+    (observer : BoundedRunReport (PipelineControl model) Unit → Observation) :
+    PrivateStateObservationInvariant (pipelineDriver model)
+      (fun _ _ => True) observer :=
+  privateStateObservationInvariant_of_subsingleton
+    (pipelineDriver model) (fun first second => by cases first; cases second; rfl)
+    (fun _ _ => True) observer
+
+/-! ## Honest bounded execution and resumption -/
+
+@[simp] theorem pipeline_runReport_zero (model : Model)
+    (request : ClassifiedRequest model) :
+    (pipelineDriver model).runReport (.classified request) () 0 =
+      .expired (.classified request) () :=
+  rfl
+
+@[simp] theorem pipeline_runReport_one (model : Model)
+    (request : ClassifiedRequest model) :
+    (pipelineDriver model).runReport (.classified request) () 1 =
+      .expired (.produced request (produce model request)) () :=
+  rfl
+
+@[simp] theorem pipeline_runReport_two (model : Model)
+    (request : ClassifiedRequest model) :
+    (pipelineDriver model).runReport (.classified request) () 2 =
+      .completed
+        (.observed request (produce model request) (run model request)) () :=
+  rfl
+
+/-- Expiration and completion are observably different even though the
+residual produced term already determines the eventual answer bag. -/
+theorem one_step_report_ne_completed (model : Model)
+    (request : ClassifiedRequest model) :
+    (pipelineDriver model).runReport (.classified request) () 1 ≠
+      .completed (.produced request (produce model request)) () := by
+  simp
+
+/-- An expired Zero computation resumes from its retained classified control
+term and reaches the same completed occurrence bag. -/
+theorem pipeline_resume_from_zero (model : Model)
+    (request : ClassifiedRequest model) :
+    (pipelineDriver model).resume
+        ((pipelineDriver model).runReport (.classified request) () 0) 2 =
+      .completed
+        (.observed request (produce model request) (run model request)) () := by
+  simp
+
+/-- Running the reified control pipeline to completion and observing its
+public result agrees exactly with the generic interpreter over the authored
+five-field Zero root. -/
+theorem completed_runReport_agrees_with_authored (model : Model)
+    (request : KernelRequest model) :
+    let classified := classifiedRequest request
+    ((pipelineDriver model).runReport (.classified classified) () 2).term
+        |>.publicAnswers =
+      (authoredRealization model).compile () request := by
+  dsimp only
+  rw [pipeline_runReport_two]
+  simpa [completedPipelineArtifact, stagedRealization,
+    PipelineControl.publicAnswers] using
+    stagedRealization_agrees_with_authored model request
 
 end Mettapedia.Languages.MeTTa.MeTTaZeroStagedAdequacy

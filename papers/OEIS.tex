@@ -96,6 +96,12 @@ state carriers and five update rules adds a complementary empirical result: $1{,
 new A-numbers in union, with prospective predictive coding contributing the largest
 rule union ($968$) and exclusive marginal ($299$), but not winning every carrier--seed
 cell and remaining substantially more expensive than backpropagation.
+A separate two-round fresh-start comparison shows why target counts must be read through
+the full program--target relation: in round two Unified-PC covers $95$ targets against
+Unified-BP's $82$ while producing fewer fresh program identities ($71$ against $79$),
+and one known program exclusively carries $36$ of those targets. A one-program-per-target
+selected table preserves target coverage but omits $74$ verified edges and $72$ program
+identities in that round.
 \ifoeisterminalfacts
 A subsequent mis-specified branch (footnoted in Section~\ref{sec:roadmap}) added
 \oeisTerminalCumulativeUnion{} further verified A-numbers to the pool; its
@@ -728,6 +734,91 @@ trailing on strictly catalog-new sequences ($4$ against $6$). Its training cost 
 $3.83$ times higher: $36.25$ hours against $9.46$. This is a single seed and a
 descriptive result, not an efficacy claim; we record it because the matched-work
 condition makes it interpretable and the cost ratio makes it consequential.
+
+\subsection{Round two: facts, programs, targets, and one essential hub}
+\label{sec:fresh-round-two-relational}
+
+The same four lineages continued for a second fixed round. The external checker again
+searched every proposed program against every eligible OEIS target. Per-arm new-target
+coverage was recurrent BP $215$, recurrent PC $17$, Unified-BP $82$, and Unified-PC
+$95$; directly requested hits were $4$, $0$, $5$, and $8$ of $240$. The recurrent
+PC regression is therefore broad, whereas the Unified PC arm leads its matched BP arm
+on both registered target endpoints.
+
+Target count is only one projection of what the checker certifies. Let
+$R\subseteq\mathsf{Program}\times\mathsf{Target}$ be the complete finite relation of
+verified new facts. Then $|R|$, $|\pi_{\mathsf P}R|$, and
+$|\pi_{\mathsf T}R|$ count facts, program identities, and target identities,
+respectively. They are not interchangeable Bernoulli atoms. For any projection $\pi$,
+the exact finite law is
+\[
+ |\pi[A\cup B]|+|\pi[A]\cap\pi[B]|=|\pi[A]|+|\pi[B]|,
+\]
+and projected evidence is additive exactly when the projected footprints are disjoint
+(\leanname{projected\_inclusion\_exclusion},
+\leanname{projected\_union\_eq\_sum\_iff}). Distinct source records are not enough:
+they may collide after projection to one program, target, or provenance root.
+
+Reconstructing every checker witness gives:
+
+\begin{center}\small
+\begin{tabular}{@{}clrrrr@{}}
+\toprule
+round & arm & facts & programs & targets & fresh programs \\
+\midrule
+1 & recurrent BP & 393 & 312 & 336 & 110 \\
+1 & recurrent PC &  38 &  35 &  34 &  32 \\
+1 & Unified-BP   &  96 &  95 &  70 &  69 \\
+1 & Unified-PC   & 104 & 101 &  73 &  74 \\
+\midrule
+2 & recurrent BP & 224 & 211 & 215 &  93 \\
+2 & recurrent PC &  18 &  17 &  17 &  15 \\
+2 & Unified-BP   & 115 & 113 &  82 &  79 \\
+2 & Unified-PC   & 125 &  89 &  95 &  71 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The one-representative-per-target union is a view, not this ledger. In round one it
+retains $493$ of $612$ facts and $445$ of $525$ programs while preserving all $493$
+targets. In round two it retains $396$ of $470$ facts and $346$ of $418$ programs while
+preserving all $396$ targets. The exact completeness criterion is program-set equality,
+not target completeness
+(\leanname{curated\_programCoverage\_preserved\_iff}).
+
+The complete round-two Unified relation localizes the apparent PC gain. Unified-BP's
+$82$ targets are supported by $34$ same-target catalog witnesses, no cross-target reuse,
+and $54$ fresh-program witnesses, with six targets in both the first and third classes.
+Unified-PC's $95$ consist of $17$ same-target catalog, $35$ cross-target reuse, and $49$
+fresh-program-supported targets, again with six in the overlap. Thus the $+13$ target
+contrast decomposes as $-17+35-5$ with equal overlap correction. Unified-PC does not
+generate more fresh program identities; it reuses known structure across more targets.
+
+That reuse is concentrated. One known Unified-PC program has target degree $36$---one
+same-target catalog fact and $35$ cross-target facts---and every one of those targets is
+exclusive to it. Removing the identity changes Unified-PC coverage from $95$ to $59$;
+removing the most essential Unified-BP identity changes $82$ to $80$. Formally, if
+$e_R(p)$ is the number of targets lost on removing program $p$, then
+\[
+ |\pi_{\mathsf T}(R\setminus p)|+e_R(p)=|\pi_{\mathsf T}R|,
+ \qquad e_R(p)\leq |\{t:(p,t)\in R\}|,
+\]
+with both identities machine checked
+(\leanname{targetCoverage\_withoutProgram\_add\_exclusive},
+\leanname{exclusiveTargetContribution\_le\_programTargetDegree}). The inequality can be
+strict: round-one recurrent BP contains two degree-$35$ programs with zero exclusive
+contribution because their targets have redundant witnesses.
+
+The program-trial rate agrees with the concentration diagnosis. Round-two new-target
+covering programs are $113/17133=0.006595$ for Unified-BP and
+$89/15136=0.005880$ for Unified-PC. The registered target gain is real, but it is a
+high-multiplicity reuse event rather than a broad increase in program-level hit rate.
+The witness-complete summary has SHA-256
+{\scriptsize\ttfamily
+44ac419d92ab625bce23b0356ba52b7bff8c7e516f93cba370495906ea7cee63};
+the architecture sensitivity summary has SHA-256
+{\scriptsize\ttfamily
+9dd87c6c740f0301b56260c13882332082a556c4d548f12936777ce70c23619e}.
 
 \section{From coverage to proof: adjudicating discoveries against their definitions}
 \label{sec:adjudication}

@@ -93,6 +93,9 @@ that control on synthetic held-out coverage. We assemble the architectural alter
 into one unified carrier:
 a recurrent controller, typed workspace, evidence metadata and routed operator bank
 share a product state while the checked waist remains unchanged.
+A separate two-round relational audit shows that this waist must retain the verified
+fact relation rather than only one selected witness per target: selection can preserve
+target coverage while discarding program multiplicity, reuse structure and robustness.
 \end{abstract}
 
 \paragraph{Open artifacts.}
@@ -1015,6 +1018,47 @@ supporting compositional roles rather than one interchangeable state mechanism. 
 authoritative isolated verifier passes all $749$ checks; its SHA-256 is
 {\scriptsize\ttfamily
 3f08e6c3a57ba3e13a0e387737bbb31cfd990221a7b3b331214b4f9cab47bc7f}.
+
+\subsection{A selected witness is not the discovery state}
+\label{sec:relational-discovery-state}
+
+A separate fresh-start campaign crossed prospective PC and BP in a Unified graph and
+a coarse recurrent graph, with one external checker defining acceptance. It does not
+identify an effect of the typed waist, because architecture, decoder and graph structure
+are bundled. It does, however, reveal a representation requirement for the waist.
+The primitive result is an authenticated finite relation
+\[
+ R\subseteq \mathrm{Program}\times\mathrm{Target},
+\]
+not a table containing one preferred program for every target.
+
+In round one the witness-complete relation contained $612$ verified edges, $525$
+program identities and $493$ targets. The selected union table retained $493$ edges,
+$445$ programs and all $493$ targets. In round two the full relation contained $470$
+edges, $418$ programs and $396$ targets; selection retained $396$ edges, $346$
+programs and all $396$ targets. Thus selection omitted $119$ then $74$ valid facts and
+$80$ then $72$ program identities while leaving target coverage unchanged. The formal
+criterion states that a curated subrelation preserves program coverage exactly when
+every program in the original relation retains at least one selected witness
+(\leanname{curated\_programCoverage\_preserved\_iff}).
+
+The omitted relation structure changes the experimental conclusion. In round two the
+Unified-PC arm covers $95$ targets through $89$ program identities, whereas Unified BP
+covers $82$ through $113$. One previously known PC program supports $36$ targets
+exclusively: one same-target reproduction and $35$ cross-target reuses. Removing it
+changes PC coverage from $95$ to $59$ and reverses the ordinary PC--BP contrast from
+$+13$ to $-21$; the most consequential BP removal changes $82$ to $80$. The exact
+leave-one-program-out identity and its degree bound are machine-checked
+(\leanname{targetCoverage\_withoutProgram\_add\_exclusive},
+\leanname{exclusiveTargetContribution\_le\_programTargetDegree}).
+
+The waist consequence is structural. A selected representative is a derived report,
+not the discovery state. The checked record should expose at least authenticated facts,
+their program and target projections, fresh-versus-known program provenance,
+program degree, exclusive target contribution and causal root. This retains enough
+information for relational novelty, overlap correction and leave-one-source-out
+robustness without changing the checker-owned acceptance boundary.
+
 The unified carrier of Section~\ref{sec:unified} subsequently entered a registered
 three-round branch\footnote{A botched experiment that nonetheless adds data. It was
 intended as a from-scratch comparison; it was mis-specified and executed as a

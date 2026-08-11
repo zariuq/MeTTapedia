@@ -1745,6 +1745,149 @@ theorem reifySourceTermToCommon_pattern
       cospan.reifyWith environment.lookupAtom? leg term.term.1 := by
   rfl
 
+/-- Move a complete generated target term into the common semantic namespace.
+The returned subtype retains the exact reflective-support certificate used by
+hereditary restoration.  In particular, this is transport of the existing
+typed carrier through a finite-key cospan, not a second syntax-directed type
+checker. -/
+noncomputable def reifyTargetTermToCommon
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    {table : TypedCostRegionBoundaryTable source color targetFree occurrences}
+    {values : TypedCostRegionBoundaryTable.Values source color targetFree table}
+    {root : Pattern}
+    {inventory : CostStaticParameterInventory source color targetFree table
+      values root}
+    (environment : CostStaticAtomEnvironment source color targetFree inventory)
+    {leftCount rightCount : Nat}
+    {leftKey : Fin leftCount -> CostStaticAtomKey}
+    {rightKey : Fin rightCount -> CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey)
+    (leg : Fin environment.atomCount -> Fin cospan.commonKeys.length)
+    (commutes : forall slot,
+      cospan.commonKeys.get (leg slot) = (environment.atomValue slot).key)
+    {bound : List TypeExpr}
+    {sort : Mettapedia.OSLF.Framework.ConstructorCategory.LangSort
+      source.costWholeLanguage}
+    (term : ReflectiveWellSorted.OpenTerm
+      source.costWholeReflectionProfile source.costWholeLanguage
+      environment.atomFreeContext bound sort)
+    {available : List TypeExpr} {binderImage : TypeExpr -> TypeExpr}
+    (safe : term.2.1.1.ReflectiveSupportSafeAt
+      source.costWholeReflectionProfile environment.restorationSupport
+      available binderImage) :
+    { commonTerm : ReflectiveWellSorted.OpenTerm
+        source.costWholeReflectionProfile source.costWholeLanguage
+        cospan.commonTargetFreeContext bound sort //
+      commonTerm.2.1.1.ReflectiveSupportSafeAt
+        source.costWholeReflectionProfile cospan.commonSupport available
+        binderImage } := by
+  classical
+  let renamedEvidence :=
+    environment.reifyWith_targetReflectiveSupportSafeAt cospan leg commutes safe
+  let retyped := Classical.choose renamedEvidence
+  have retypedSafe := Classical.choose_spec renamedEvidence
+  have patternEquality :
+      Pattern.renameFVars (environment.sourceReificationName cospan leg)
+          term.1 =
+        cospan.reifyWith environment.lookupAtom? leg term.1 :=
+    environment.renameFVars_sourceReificationName_eq_reifyWith
+      cospan leg term.1
+  have canonicalBinderMetadata :
+      (cospan.reifyWith environment.lookupAtom? leg
+          term.1).hasCanonicalBinderMetadata = true := by
+    rw [<- patternEquality,
+      Pattern.hasCanonicalBinderMetadata_renameFVars]
+    exact term.2.1.2.1
+  have objectPattern : WellSorted.isObjectPattern
+      (cospan.reifyWith environment.lookupAtom? leg term.1) = true := by
+    rw [<- patternEquality, WellSorted.isObjectPattern_renameFVars]
+    exact term.2.1.2.2.1
+  have reflectiveScope : ReflectiveWellSorted.ReflectiveScopeSafeAt
+      source.costWholeReflectionProfile bound.length
+      (cospan.reifyWith environment.lookupAtom? leg term.1) := by
+    rw [<- patternEquality]
+    exact (WellSorted.reflectiveScopeSafeAt_renameFVars
+      source.costWholeReflectionProfile
+      (environment.sourceReificationName cospan leg) bound.length term.1).mpr
+        term.2.2
+  exact
+    ⟨⟨cospan.reifyWith environment.lookupAtom? leg term.1,
+        ⟨⟨retyped, canonicalBinderMetadata, objectPattern,
+          retyped.isWellScopedAt⟩, reflectiveScope⟩⟩,
+      retypedSafe⟩
+
+@[simp]
+theorem reifyTargetTermToCommon_pattern
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    {table : TypedCostRegionBoundaryTable source color targetFree occurrences}
+    {values : TypedCostRegionBoundaryTable.Values source color targetFree table}
+    {root : Pattern}
+    {inventory : CostStaticParameterInventory source color targetFree table
+      values root}
+    (environment : CostStaticAtomEnvironment source color targetFree inventory)
+    {leftCount rightCount : Nat}
+    {leftKey : Fin leftCount -> CostStaticAtomKey}
+    {rightKey : Fin rightCount -> CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey)
+    (leg : Fin environment.atomCount -> Fin cospan.commonKeys.length)
+    (commutes : forall slot,
+      cospan.commonKeys.get (leg slot) = (environment.atomValue slot).key)
+    {bound : List TypeExpr}
+    {sort : Mettapedia.OSLF.Framework.ConstructorCategory.LangSort
+      source.costWholeLanguage}
+    (term : ReflectiveWellSorted.OpenTerm
+      source.costWholeReflectionProfile source.costWholeLanguage
+      environment.atomFreeContext bound sort)
+    {available : List TypeExpr} {binderImage : TypeExpr -> TypeExpr}
+    (safe : term.2.1.1.ReflectiveSupportSafeAt
+      source.costWholeReflectionProfile environment.restorationSupport
+      available binderImage) :
+    (environment.reifyTargetTermToCommon cospan leg commutes term safe).1.1 =
+      cospan.reifyWith environment.lookupAtom? leg term.1 := by
+  rfl
+
+/-- Common-cospan transport changes only semantic-atom names and therefore
+preserves any constructor-fragment certificate carried by the target term. -/
+theorem reifyTargetTermToCommon_constructorsWithin
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    {table : TypedCostRegionBoundaryTable source color targetFree occurrences}
+    {values : TypedCostRegionBoundaryTable.Values source color targetFree table}
+    {root : Pattern}
+    {inventory : CostStaticParameterInventory source color targetFree table
+      values root}
+    (environment : CostStaticAtomEnvironment source color targetFree inventory)
+    {leftCount rightCount : Nat}
+    {leftKey : Fin leftCount -> CostStaticAtomKey}
+    {rightKey : Fin rightCount -> CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey)
+    (leg : Fin environment.atomCount -> Fin cospan.commonKeys.length)
+    (commutes : forall slot,
+      cospan.commonKeys.get (leg slot) = (environment.atomValue slot).key)
+    {bound : List TypeExpr}
+    {sort : Mettapedia.OSLF.Framework.ConstructorCategory.LangSort
+      source.costWholeLanguage}
+    (term : ReflectiveWellSorted.OpenTerm
+      source.costWholeReflectionProfile source.costWholeLanguage
+      environment.atomFreeContext bound sort)
+    {available : List TypeExpr} {binderImage : TypeExpr -> TypeExpr}
+    (safe : term.2.1.1.ReflectiveSupportSafeAt
+      source.costWholeReflectionProfile environment.restorationSupport
+      available binderImage)
+    {allowed : String -> Prop}
+    (supported : ConstructorsWithin allowed term.1) :
+    ConstructorsWithin allowed
+      (environment.reifyTargetTermToCommon cospan leg commutes term safe).1.1 := by
+  rw [environment.reifyTargetTermToCommon_pattern cospan leg commutes term safe,
+    <- environment.renameFVars_sourceReificationName_eq_reifyWith cospan leg
+      term.1]
+  exact supported.renameFVars _
+
 /-- A canonical frame is covered when every free name resolves to a slot in
 its proof-relevant finite semantic-atom environment. -/
 def Covers

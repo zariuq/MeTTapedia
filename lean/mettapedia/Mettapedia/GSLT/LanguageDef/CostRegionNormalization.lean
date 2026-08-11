@@ -190,6 +190,51 @@ structure CostTypedUnaryNormalizationLaws (source : CIGSLT) : Prop where
     source.costWholeReflectionProfile source.costWholeLanguage
   canonicalPathSafe : CostStaticCanonicalPathSafe source
 
+/-- Local typed laws for an arbitrary static-region normalizer.
+
+The frame law is deliberately stated at one static node and its current
+finite boundary vector.  It is therefore strong enough to drive the
+structural tree proof, but is not a conclusion-shaped assumption about a
+complete Cost program. -/
+structure CostTypedStaticRegionNormalizerLaws
+    (source : CIGSLT) (normalizeStatic : CostStaticRegionNormalizer source) :
+    Prop where
+  weakeningStable : ReflectiveOpenPatternEquationWeakeningStable
+    source.costWholeReflectionProfile source.costWholeLanguage
+  normalizesCurrentFrame : ∀
+    {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+    (node : CostStaticRegionNode source color targetFree)
+    (values : TypedCostRegionBoundaryTable.Values source color targetFree
+      node.boundaryTable),
+    (values.supportedOpenAssignment node.boundaryTable).FiberEquivalent
+        ((TypedCostRegionBoundaryTable.Values.original node.boundaryTable
+          ).supportedOpenAssignment node.boundaryTable) →
+      (WellSorted.AvailableOpenPattern.equationSetoid
+        (profile := source.costWholeReflectionProfile)
+        source.costWholeLanguage targetFree node.targetBound []
+          (.base (color.mapLangSort source node.sourceSort).1)).r
+        (WellSorted.AvailableOpenPattern.ofOpenPattern
+          (normalizeStatic node values))
+        node.termAvailable
+
+namespace CostTypedUnaryNormalizationLaws
+
+/-- The original mapped-action laws instantiate the arbitrary-normalizer
+interface for the established static-frame normalizer. -/
+def toStaticRegionNormalizerLaws {source : CIGSLT}
+    (laws : CostTypedUnaryNormalizationLaws source) :
+    CostTypedStaticRegionNormalizerLaws source
+      (fun node values => node.normalizeWithReflective values) where
+  weakeningStable := laws.weakeningStable
+  normalizesCurrentFrame := by
+    intro color targetFree node values valuesEquivalent
+    simpa only [CostStaticRegionNode.normalizeWithAvailable] using
+      node.normalizeWithAvailable_equationSetoid
+        laws.mappedGeneratorFiberAction values valuesEquivalent
+          (laws.canonicalPathSafe node)
+
+end CostTypedUnaryNormalizationLaws
+
 namespace CostRegionTree
 
 /-- The proof-relevant tree index is the exact original compact pattern. -/
@@ -217,10 +262,13 @@ def normalizedAvailable {source : CIGSLT}
     (object : WellSorted.isObjectPattern pattern = true)
     (scope : ReflectiveWellSorted.ReflectiveScopeSafeAt
       source.costWholeReflectionProfile
-      available.length pattern) :
+      available.length pattern)
+    (normalizeStatic : CostStaticRegionNormalizer source :=
+      fun node values => node.normalizeWithReflective values) :
     WellSorted.AvailableOpenPattern source.costWholeReflectionProfile
       source.costWholeLanguage targetFree available outer type :=
-  tree.normalize.toAvailableOpenPattern canonical object scope
+  (tree.normalize (normalizeStatic := normalizeStatic)).toAvailableOpenPattern
+    canonical object scope
 
 @[simp]
 theorem normalizedAvailable_pattern {source : CIGSLT}
@@ -231,9 +279,12 @@ theorem normalizedAvailable_pattern {source : CIGSLT}
     (object : WellSorted.isObjectPattern pattern = true)
     (scope : ReflectiveWellSorted.ReflectiveScopeSafeAt
       source.costWholeReflectionProfile
-      available.length pattern) :
-    (tree.normalizedAvailable canonical object scope).pattern =
-      tree.normalize.pattern :=
+      available.length pattern)
+    (normalizeStatic : CostStaticRegionNormalizer source :=
+      fun node values => node.normalizeWithReflective values) :
+    (tree.normalizedAvailable canonical object scope
+      (normalizeStatic := normalizeStatic)).pattern =
+      (tree.normalize (normalizeStatic := normalizeStatic)).pattern :=
   rfl
 
 /-- Package one tree as the original endpoint of an authored constructor
@@ -271,12 +322,16 @@ def normalizedArgument {source : CIGSLT}
     (object : WellSorted.isObjectPattern pattern = true)
     (scope : ReflectiveWellSorted.ReflectiveScopeSafeAt
       source.costWholeReflectionProfile
-      available.length pattern) :
+      available.length pattern)
+    (normalizeStatic : CostStaticRegionNormalizer source :=
+      fun node values => node.normalizeWithReflective values) :
     WellSorted.AvailableOpenArgument source.costWholeReflectionProfile
       source.costWholeLanguage targetFree available outer parameter type where
   term := tree.normalizedAvailable canonical object scope
+    (normalizeStatic := normalizeStatic)
   representation :=
-    tree.normalize.matchesParameterRepresentation parameter representation
+    (tree.normalize (normalizeStatic := normalizeStatic)
+      ).matchesParameterRepresentation parameter representation
   parameterType := parameterType
 
 @[simp]
@@ -310,9 +365,12 @@ theorem normalizedArgument_pattern {source : CIGSLT}
     (object : WellSorted.isObjectPattern pattern = true)
     (scope : ReflectiveWellSorted.ReflectiveScopeSafeAt
       source.costWholeReflectionProfile
-      available.length pattern) :
+      available.length pattern)
+    (normalizeStatic : CostStaticRegionNormalizer source :=
+      fun node values => node.normalizeWithReflective values) :
     (tree.normalizedArgument parameter representation parameterType canonical
-      object scope).term.pattern = tree.normalize.pattern :=
+      object scope (normalizeStatic := normalizeStatic)).term.pattern =
+        (tree.normalize (normalizeStatic := normalizeStatic)).pattern :=
   rfl
 
 end CostRegionTree
@@ -350,14 +408,17 @@ def normalizedAvailable {source : CIGSLT}
     (scope : ∀ presentation ∈
         source.costWholeReflectionProfile.presentations,
       binderSafeListAt presentation.quoteConstructor available.length
-        arguments = true) :
+        arguments = true)
+    (normalizeStatic : CostStaticRegionNormalizer source :=
+      fun node values => node.normalizeWithReflective values) :
     WellSorted.AvailableOpenArguments source.costWholeReflectionProfile
       source.costWholeLanguage targetFree available outer parameters :=
-  WellSorted.AvailableOpenArguments.ofCertificates trees.normalize.typed
-    (trees.normalize.canonicalBinderMetadata canonical)
-    (trees.normalize.objectPatterns objects)
+  let normalized := trees.normalize (normalizeStatic := normalizeStatic)
+  WellSorted.AvailableOpenArguments.ofCertificates normalized.typed
+    (normalized.canonicalBinderMetadata canonical)
+    (normalized.objectPatterns objects)
     (fun presentation membership =>
-      trees.normalize.reflectiveScope presentation membership
+      normalized.reflectiveScope presentation membership
         (Nat.le_refl available.length) (scope presentation membership))
 
 @[simp]
@@ -388,9 +449,12 @@ theorem normalizedAvailable_patterns {source : CIGSLT}
     (scope : ∀ presentation ∈
         source.costWholeReflectionProfile.presentations,
       binderSafeListAt presentation.quoteConstructor available.length
-        arguments = true) :
-    (trees.normalizedAvailable canonical objects scope).patterns =
-      trees.normalize.patterns :=
+        arguments = true)
+    (normalizeStatic : CostStaticRegionNormalizer source :=
+      fun node values => node.normalizeWithReflective values) :
+    (trees.normalizedAvailable canonical objects scope
+      (normalizeStatic := normalizeStatic)).patterns =
+      (trees.normalize (normalizeStatic := normalizeStatic)).patterns :=
   rfl
 
 end CostRegionArgumentTrees
@@ -427,14 +491,17 @@ def normalizedAvailable {source : CIGSLT}
     (scope : ∀ presentation ∈
         source.costWholeReflectionProfile.presentations,
       binderSafeListAt presentation.quoteConstructor available.length
-        elements = true) :
+        elements = true)
+    (normalizeStatic : CostStaticRegionNormalizer source :=
+      fun node values => node.normalizeWithReflective values) :
     WellSorted.AvailableOpenElements source.costWholeReflectionProfile
       source.costWholeLanguage targetFree available outer elementType :=
-  WellSorted.AvailableOpenElements.ofCertificates trees.normalize.typed
-    (trees.normalize.canonicalBinderMetadata canonical)
-    (trees.normalize.objectPatterns objects)
+  let normalized := trees.normalize (normalizeStatic := normalizeStatic)
+  WellSorted.AvailableOpenElements.ofCertificates normalized.typed
+    (normalized.canonicalBinderMetadata canonical)
+    (normalized.objectPatterns objects)
     (fun presentation membership =>
-      trees.normalize.reflectiveScope presentation membership
+      normalized.reflectiveScope presentation membership
         (Nat.le_refl available.length) (scope presentation membership))
 
 @[simp]
@@ -465,9 +532,12 @@ theorem normalizedAvailable_patterns {source : CIGSLT}
     (scope : ∀ presentation ∈
         source.costWholeReflectionProfile.presentations,
       binderSafeListAt presentation.quoteConstructor available.length
-        elements = true) :
-    (trees.normalizedAvailable canonical objects scope).patterns =
-      trees.normalize.patterns :=
+        elements = true)
+    (normalizeStatic : CostStaticRegionNormalizer source :=
+      fun node values => node.normalizeWithReflective values) :
+    (trees.normalizedAvailable canonical objects scope
+      (normalizeStatic := normalizeStatic)).patterns =
+      (trees.normalize (normalizeStatic := normalizeStatic)).patterns :=
   rfl
 
 end CostRegionElementTrees
@@ -645,16 +715,19 @@ theorem simpleArgument_equationSetoid
     (scope : ReflectiveWellSorted.ReflectiveScopeSafeAt
       source.costWholeReflectionProfile
       available.length pattern)
+    (normalizeStatic : CostStaticRegionNormalizer source)
     (equivalent :
       (WellSorted.AvailableOpenPattern.equationSetoid
         source.costWholeLanguage targetFree available outer type).r
-        (tree.normalizedAvailable canonical object scope)
+        (tree.normalizedAvailable canonical object scope
+          (normalizeStatic := normalizeStatic))
         (tree.originalAvailableOpenPattern canonical object scope)) :
     (WellSorted.AvailableOpenArgument.equationSetoid
       source.costWholeLanguage targetFree available outer
         (.simple parameterName parameterTypeExpression) type).r
       (tree.normalizedArgument (.simple parameterName parameterTypeExpression)
-        True.intro parameterType canonical object scope)
+        True.intro parameterType canonical object scope
+          (normalizeStatic := normalizeStatic))
       (tree.originalArgument (.simple parameterName parameterTypeExpression)
         True.intro parameterType canonical object scope) := by
   let pack := fun
@@ -674,9 +747,11 @@ theorem simpleArgument_equationSetoid
         exact generator)
       equivalent
   have leftEndpoint :
-      pack (tree.normalizedAvailable canonical object scope) =
+      pack (tree.normalizedAvailable canonical object scope
+        (normalizeStatic := normalizeStatic)) =
         tree.normalizedArgument (.simple parameterName parameterTypeExpression)
-          True.intro parameterType canonical object scope := by
+          True.intro parameterType canonical object scope
+            (normalizeStatic := normalizeStatic) := by
     apply WellSorted.AvailableOpenArgument.ext
     rfl
   have rightEndpoint :
@@ -699,8 +774,9 @@ fiber carried by the corresponding tree index. -/
 mutual
   /-- Child-first normalization of one complete region tree is an authored
   equation path in its exact split binder and typing fiber. -/
-  theorem CostRegionTree.normalize_equationSetoid
-      {source : CIGSLT} (laws : CostTypedUnaryNormalizationLaws source)
+  theorem CostRegionTree.normalizeWithStatic_equationSetoid
+      {source : CIGSLT} (normalizeStatic : CostStaticRegionNormalizer source)
+      (laws : CostTypedStaticRegionNormalizerLaws source normalizeStatic)
       {targetFree : WellSorted.FreeTypeContext}
       {available outer : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
       (tree : CostRegionTree source targetFree available outer pattern type) :
@@ -712,7 +788,8 @@ mutual
         available.length pattern),
       (WellSorted.AvailableOpenPattern.equationSetoid
         source.costWholeLanguage targetFree available outer type).r
-        (tree.normalizedAvailable canonical object scope)
+        (tree.normalizedAvailable canonical object scope
+          (normalizeStatic := normalizeStatic))
         (tree.originalAvailableOpenPattern canonical object scope) :=
     match tree with
     | @CostRegionTree.bvar source targetFree available outer index type lookup =>
@@ -720,7 +797,7 @@ mutual
         have endpoint :
             (CostRegionTree.bvar (source := source)
               (targetFree := targetFree) lookup).normalizedAvailable canonical
-                object scope =
+                object scope (normalizeStatic := normalizeStatic) =
               (CostRegionTree.bvar (source := source)
                 (targetFree := targetFree) lookup
                 ).originalAvailableOpenPattern canonical object scope := by
@@ -734,9 +811,9 @@ mutual
       fun canonical object scope => by
         have endpoint :
             (CostRegionTree.fvar (source := source)
-              (targetFree := targetFree) (available := available)
+                (targetFree := targetFree) (available := available)
                 (outer := outer) lookup).normalizedAvailable canonical object
-                  scope =
+                  scope (normalizeStatic := normalizeStatic) =
               (CostRegionTree.fvar (source := source)
                 (targetFree := targetFree) (available := available)
                   (outer := outer) lookup
@@ -749,17 +826,19 @@ mutual
         exact Relation.EqvGen.refl _
     | @CostRegionTree.static source targetFree color outer node children =>
       fun canonical object scope => by
+        let values := children.normalizeValues
+          (normalizeStatic := normalizeStatic)
         have valuesEquivalent :
-            (children.normalizeValues.supportedOpenAssignment
+            (values.supportedOpenAssignment
               node.finiteBoundaryTable).FiberEquivalent
               ((TypedCostRegionBoundaryTable.Values.original
                 node.finiteBoundaryTable).supportedOpenAssignment
                   node.finiteBoundaryTable) := by
           intro name type lookup inner
-          exact children.normalizeValues_fiberEquivalent laws lookup inner
-        have localStep := node.normalizeWithAvailable_equationSetoid
-          laws.mappedGeneratorFiberAction children.normalizeValues
-            valuesEquivalent (laws.canonicalPathSafe node)
+          exact children.normalizeValuesWithStatic_fiberEquivalent
+            normalizeStatic laws lookup inner
+        have localStep := laws.normalizesCurrentFrame node values
+          valuesEquivalent
         have openStepRaw :=
           WellSorted.AvailableOpenPattern.equationSetoid_to_reflectiveOpenPatternEquationSetoid
             localStep
@@ -771,20 +850,20 @@ mutual
             outer openStep
         have leftEndpoint :
             WellSorted.AvailableOpenPattern.ofOpenPatternWithOuter
-                ((node.normalizeWithAvailable
-                  children.normalizeValues).toReflectiveOpenPattern.reindexBound
-                    (List.append_nil node.targetBound)) outer =
+                ((WellSorted.AvailableOpenPattern.ofOpenPattern
+                  (normalizeStatic node values)
+                    ).toReflectiveOpenPattern.reindexBound
+                      (List.append_nil node.targetBound)) outer =
               (CostRegionTree.static node children).normalizedAvailable
-                canonical object scope := by
+                canonical object scope (normalizeStatic := normalizeStatic) := by
           apply WellSorted.AvailableOpenPattern.ext
           simp only [
             WellSorted.AvailableOpenPattern.ofOpenPatternWithOuter_pattern,
             ReflectiveWellSorted.OpenPattern.reindexBound_pattern,
             WellSorted.AvailableOpenPattern.toReflectiveOpenPattern_pattern,
             CostRegionTree.normalizedAvailable_pattern]
-          simp only [CostStaticRegionNode.normalizeWithAvailable,
-            WellSorted.AvailableOpenPattern.ofOpenPattern_pattern,
-            CostRegionTree.normalize]
+          simp only [WellSorted.AvailableOpenPattern.ofOpenPattern_pattern,
+            CostRegionTree.normalize, values]
         have rightEndpoint :
             WellSorted.AvailableOpenPattern.ofOpenPatternWithOuter
                 (node.termAvailable.toReflectiveOpenPattern.reindexBound
@@ -830,17 +909,19 @@ mutual
             presentation.quoteConstructor rule.label available.length
               arguments notThisQuote (scope presentation
                 presentationMembership)
-        have argumentsStep := children.normalize_equationForall₂ laws
+        have argumentsStep := children.normalizeWithStatic_equationForall₂ normalizeStatic laws
           argumentCanonical argumentObjects argumentScope
         have assembled := argumentsStep.assembleOrdinary membership
           notBareCollection ordinary
         have leftEndpoint :
             (children.normalizedAvailable argumentCanonical argumentObjects
-              argumentScope).applyOrdinary membership notBareCollection
+              argumentScope (normalizeStatic := normalizeStatic)
+                ).applyOrdinary membership notBareCollection
                 ordinary =
               (CostRegionTree.neutralApplicationOrdinary membership
                 notBareCollection constructor materializes neutral ordinary
-                  children).normalizedAvailable canonical object scope := by
+                  children).normalizedAvailable canonical object scope
+                    (normalizeStatic := normalizeStatic) := by
           apply WellSorted.AvailableOpenPattern.ext
           simp [CostRegionArgumentTrees.normalizedAvailable_patterns,
             CostRegionTree.normalizedAvailable_pattern,
@@ -882,16 +963,18 @@ mutual
             source.costWholeLanguage_validate
               source.costWholeReflectionProfile_validate membership
                 argumentsTyped quoted parentScopeAtBound
-        have argumentsStep := children.normalize_equationForall₂ laws
+        have argumentsStep := children.normalizeWithStatic_equationForall₂ normalizeStatic laws
           argumentCanonical argumentObjects argumentScope
         have assembled := argumentsStep.assembleQuote membership
           notBareCollection quoted
         have leftEndpoint :
             (children.normalizedAvailable argumentCanonical argumentObjects
-              argumentScope).applyQuote membership notBareCollection quoted =
+              argumentScope (normalizeStatic := normalizeStatic)).applyQuote
+                membership notBareCollection quoted =
               (CostRegionTree.neutralApplicationQuote membership
                 notBareCollection constructor materializes neutral quoted
-                  children).normalizedAvailable canonical object scope := by
+                  children).normalizedAvailable canonical object scope
+                    (normalizeStatic := normalizeStatic) := by
           apply WellSorted.AvailableOpenPattern.ext
           simp [CostRegionArgumentTrees.normalizedAvailable_patterns,
             CostRegionTree.normalizedAvailable_pattern,
@@ -922,16 +1005,17 @@ mutual
           intro presentation presentationMembership
           simpa [binderSafeAt, List.length_cons] using
             scope presentation presentationMembership
-        have bodyStep := bodyTree.normalize_equationSetoid laws
+        have bodyStep := bodyTree.normalizeWithStatic_equationSetoid normalizeStatic laws
           canonicalParts.2 bodyObject bodyScope
         have assembled :=
           WellSorted.AvailableOpenPattern.equationSetoid_lambda_congr binder
             canonicalParts.1 bodyStep
         have leftEndpoint :
             (bodyTree.normalizedAvailable canonicalParts.2 bodyObject bodyScope
-              ).lambda binder canonicalParts.1 =
+              (normalizeStatic := normalizeStatic)).lambda binder
+                canonicalParts.1 =
               (CostRegionTree.lambda bodyTree).normalizedAvailable canonical
-                object scope := by
+                object scope (normalizeStatic := normalizeStatic) := by
           apply WellSorted.AvailableOpenPattern.ext
           simp [WellSorted.AvailableOpenPattern.lambda_pattern,
             CostRegionTree.normalizedAvailable_pattern,
@@ -962,16 +1046,17 @@ mutual
           intro presentation presentationMembership
           simpa [binderSafeAt, List.length_append, List.length_replicate,
             Nat.add_comm] using scope presentation presentationMembership
-        have bodyStep := bodyTree.normalize_equationSetoid laws
+        have bodyStep := bodyTree.normalizeWithStatic_equationSetoid normalizeStatic laws
           canonicalParts.2 bodyObject bodyScope
         have assembled :=
           WellSorted.AvailableOpenPattern.equationSetoid_multiLambda_congr
             arity binders bindersCanonical bodyStep
         have leftEndpoint :
             (bodyTree.normalizedAvailable canonicalParts.2 bodyObject bodyScope
-              ).multiLambda arity binders bindersCanonical =
+              (normalizeStatic := normalizeStatic)).multiLambda arity binders
+                bindersCanonical =
               (CostRegionTree.multiLambda bodyTree).normalizedAvailable
-                canonical object scope := by
+                canonical object scope (normalizeStatic := normalizeStatic) := by
           apply WellSorted.AvailableOpenPattern.ext
           simp [WellSorted.AvailableOpenPattern.multiLambda_pattern,
             CostRegionTree.normalizedAvailable_pattern,
@@ -1007,14 +1092,16 @@ mutual
               intro presentation presentationMembership
               simpa [binderSafeAt] using
                 scope presentation presentationMembership
-            have elementsStep := children.normalize_equationForall₂ laws
+            have elementsStep := children.normalizeWithStatic_equationForall₂ normalizeStatic laws
               elementCanonical elementObjects elementScope
             have assembled := elementsStep.assemble collectionType
             have leftEndpoint :
                 (children.normalizedAvailable elementCanonical elementObjects
-                  elementScope).collection collectionType =
+                  elementScope (normalizeStatic := normalizeStatic)).collection
+                    collectionType =
                   (CostRegionTree.collection children).normalizedAvailable
-                    canonical object scope := by
+                    canonical object scope
+                      (normalizeStatic := normalizeStatic) := by
               apply WellSorted.AvailableOpenPattern.ext
               simp [WellSorted.AvailableOpenElements.collection_pattern,
                 CostRegionElementTrees.normalizedAvailable_patterns,
@@ -1036,8 +1123,9 @@ mutual
 
   /-- Normalization of one constructor argument retains the authored
   parameter representation at every intermediate equation vertex. -/
-  theorem CostRegionTree.normalize_argument_equationSetoid
-      {source : CIGSLT} (laws : CostTypedUnaryNormalizationLaws source)
+  theorem CostRegionTree.normalizeArgumentWithStatic_equationSetoid
+      {source : CIGSLT} (normalizeStatic : CostStaticRegionNormalizer source)
+      (laws : CostTypedStaticRegionNormalizerLaws source normalizeStatic)
       {targetFree : WellSorted.FreeTypeContext}
       {available outer : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
       (tree : CostRegionTree source targetFree available outer pattern type) :
@@ -1053,7 +1141,7 @@ mutual
       (WellSorted.AvailableOpenArgument.equationSetoid
         source.costWholeLanguage targetFree available outer parameter type).r
         (tree.normalizedArgument parameter representation parameterType
-          canonical object scope)
+          canonical object scope (normalizeStatic := normalizeStatic))
         (tree.originalArgument parameter representation parameterType
           canonical object scope) :=
     match tree with
@@ -1063,7 +1151,8 @@ mutual
         | simple name declared =>
             exact (CostRegionTree.bvar lookup).simpleArgument_equationSetoid
               name declared parameterType canonical object scope
-                ((CostRegionTree.bvar lookup).normalize_equationSetoid laws
+                (normalizeStatic := normalizeStatic)
+                ((CostRegionTree.bvar lookup).normalizeWithStatic_equationSetoid normalizeStatic laws
                   canonical object scope)
         | abstractionNamed binderName bodyName declared =>
             simp [WellSorted.MatchesParameterRepresentation] at representation
@@ -1075,7 +1164,8 @@ mutual
         | simple parameterName declared =>
             exact (CostRegionTree.fvar lookup).simpleArgument_equationSetoid
               parameterName declared parameterType canonical object scope
-                ((CostRegionTree.fvar lookup).normalize_equationSetoid laws
+                (normalizeStatic := normalizeStatic)
+                ((CostRegionTree.fvar lookup).normalizeWithStatic_equationSetoid normalizeStatic laws
                   canonical object scope)
         | abstractionNamed binderName bodyName declared =>
             simp [WellSorted.MatchesParameterRepresentation] at representation
@@ -1087,9 +1177,10 @@ mutual
         | simple name declared =>
             exact (CostRegionTree.static node children
               ).simpleArgument_equationSetoid name declared parameterType
-                canonical object scope
-                  ((CostRegionTree.static node children).normalize_equationSetoid
-                    laws canonical object scope)
+                canonical object scope (normalizeStatic := normalizeStatic)
+                  ((CostRegionTree.static node children
+                    ).normalizeWithStatic_equationSetoid normalizeStatic laws
+                      canonical object scope)
         | abstractionNamed binderName bodyName declared =>
             cases declared <;>
               simp [WellSorted.parameterType?] at parameterType
@@ -1114,9 +1205,10 @@ mutual
               notBareCollection constructor materializes neutral ordinary
                 children).simpleArgument_equationSetoid name declared
                   parameterType canonical object scope
+                    (normalizeStatic := normalizeStatic)
                     ((CostRegionTree.neutralApplicationOrdinary membership
                       notBareCollection constructor materializes neutral
-                        ordinary children).normalize_equationSetoid laws
+                        ordinary children).normalizeWithStatic_equationSetoid normalizeStatic laws
                           canonical object scope)
         | abstractionNamed binderName bodyName declared =>
             simp [WellSorted.MatchesParameterRepresentation] at representation
@@ -1132,10 +1224,11 @@ mutual
               notBareCollection constructor materializes neutral quoted
                 children).simpleArgument_equationSetoid name declared
                   parameterType canonical object scope
+                    (normalizeStatic := normalizeStatic)
                     ((CostRegionTree.neutralApplicationQuote membership
                       notBareCollection constructor materializes neutral quoted
-                        children).normalize_equationSetoid laws canonical object
-                          scope)
+                        children).normalizeWithStatic_equationSetoid
+                          normalizeStatic laws canonical object scope)
         | abstractionNamed binderName bodyName declared =>
             simp [WellSorted.MatchesParameterRepresentation] at representation
         | multiAbstractionNamed binderNames bodyName declared =>
@@ -1147,9 +1240,10 @@ mutual
         | simple name declared =>
             exact (CostRegionTree.lambda bodyTree
               ).simpleArgument_equationSetoid name declared parameterType
-                canonical object scope
-                  ((CostRegionTree.lambda bodyTree).normalize_equationSetoid
-                    laws canonical object scope)
+                canonical object scope (normalizeStatic := normalizeStatic)
+                  ((CostRegionTree.lambda bodyTree
+                    ).normalizeWithStatic_equationSetoid normalizeStatic laws
+                      canonical object scope)
         | abstractionNamed binderName bodyName declared =>
             cases binder with
             | some display =>
@@ -1167,7 +1261,7 @@ mutual
                   intro presentation presentationMembership
                   simpa [binderSafeAt, List.length_cons] using
                     scope presentation presentationMembership
-                have bodyStep := bodyTree.normalize_equationSetoid laws
+                have bodyStep := bodyTree.normalizeWithStatic_equationSetoid normalizeStatic laws
                   bodyCanonical bodyObject bodyScope
                 let pack := fun
                     (term : WellSorted.AvailableOpenPattern
@@ -1192,11 +1286,11 @@ mutual
                     bodyStep
                 have leftEndpoint :
                     pack (bodyTree.normalizedAvailable bodyCanonical bodyObject
-                      bodyScope) =
+                      bodyScope (normalizeStatic := normalizeStatic)) =
                       (CostRegionTree.lambda bodyTree).normalizedArgument
                         (.abstractionNamed binderName bodyName declared)
                           representation parameterType canonical object
-                            scope := by
+                            scope (normalizeStatic := normalizeStatic) := by
                   apply WellSorted.AvailableOpenArgument.ext
                   simp [pack, CostRegionTree.normalizedArgument_pattern,
                     CostRegionTree.normalize]
@@ -1220,9 +1314,10 @@ mutual
         | simple name declared =>
             exact (CostRegionTree.multiLambda bodyTree
               ).simpleArgument_equationSetoid name declared parameterType
-                canonical object scope
+                canonical object scope (normalizeStatic := normalizeStatic)
                   ((CostRegionTree.multiLambda bodyTree
-                    ).normalize_equationSetoid laws canonical object scope)
+                    ).normalizeWithStatic_equationSetoid normalizeStatic laws
+                      canonical object scope)
         | abstractionNamed binderName bodyName declared =>
             simp [WellSorted.MatchesParameterRepresentation] at representation
         | multiAbstractionNamed binderNames bodyName declared =>
@@ -1244,7 +1339,7 @@ mutual
                   simpa [binderSafeAt, List.length_append,
                     List.length_replicate, Nat.add_comm] using
                       scope presentation presentationMembership
-                have bodyStep := bodyTree.normalize_equationSetoid laws
+                have bodyStep := bodyTree.normalizeWithStatic_equationSetoid normalizeStatic laws
                   bodyCanonical bodyObject bodyScope
                 let pack := fun
                     (term : WellSorted.AvailableOpenPattern
@@ -1270,11 +1365,11 @@ mutual
                     bodyStep
                 have leftEndpoint :
                     pack (bodyTree.normalizedAvailable bodyCanonical bodyObject
-                      bodyScope) =
+                      bodyScope (normalizeStatic := normalizeStatic)) =
                       (CostRegionTree.multiLambda bodyTree).normalizedArgument
                         (.multiAbstractionNamed binderNames bodyName declared)
                           representation parameterType canonical object
-                            scope := by
+                            scope (normalizeStatic := normalizeStatic) := by
                   apply WellSorted.AvailableOpenArgument.ext
                   simp [pack, CostRegionTree.normalizedArgument_pattern,
                     CostRegionTree.normalize]
@@ -1300,9 +1395,10 @@ mutual
         | simple name declared =>
             exact (CostRegionTree.collection children
               ).simpleArgument_equationSetoid name declared parameterType
-                canonical object scope
+                canonical object scope (normalizeStatic := normalizeStatic)
                   ((CostRegionTree.collection children
-                    ).normalize_equationSetoid laws canonical object scope)
+                    ).normalizeWithStatic_equationSetoid normalizeStatic laws
+                      canonical object scope)
         | abstractionNamed binderName bodyName declared =>
             simp [WellSorted.MatchesParameterRepresentation] at representation
         | multiAbstractionNamed binderNames bodyName declared =>
@@ -1314,8 +1410,9 @@ mutual
 
   /-- Constructor argument spines normalize pointwise in their exact authored
   parameter carriers. -/
-  theorem CostRegionArgumentTrees.normalize_equationForall₂
-      {source : CIGSLT} (laws : CostTypedUnaryNormalizationLaws source)
+  theorem CostRegionArgumentTrees.normalizeWithStatic_equationForall₂
+      {source : CIGSLT} (normalizeStatic : CostStaticRegionNormalizer source)
+      (laws : CostTypedStaticRegionNormalizerLaws source normalizeStatic)
       {targetFree : WellSorted.FreeTypeContext}
       {available outer : List TypeExpr} {arguments : List Pattern}
       {parameters : List TermParam}
@@ -1331,7 +1428,8 @@ mutual
       WellSorted.AvailableOpenArguments.EquationForall₂
         source.costWholeReflectionProfile source.costWholeLanguage targetFree
           available outer
-        (trees.normalizedAvailable canonical objects scope)
+        (trees.normalizedAvailable canonical objects scope
+          (normalizeStatic := normalizeStatic))
         (trees.originalAvailable canonical objects scope) :=
     match trees with
     | @CostRegionArgumentTrees.nil source targetFree available outer =>
@@ -1343,7 +1441,7 @@ mutual
         have leftEndpoint :
             (CostRegionArgumentTrees.nil (source := source)
               (targetFree := targetFree)).normalizedAvailable canonical objects
-                scope = empty := by
+                scope (normalizeStatic := normalizeStatic) = empty := by
           apply WellSorted.AvailableOpenArguments.ext
           simp [empty, CostRegionArgumentTrees.normalizedAvailable_patterns,
             CostRegionArgumentTrees.normalize]
@@ -1391,10 +1489,10 @@ mutual
             simpa [binderSafeListAt] using
               scope presentation presentationMembership
           exact parts.2
-        have headStep := head.normalize_argument_equationSetoid laws parameter
+        have headStep := head.normalizeArgumentWithStatic_equationSetoid normalizeStatic laws parameter
           representation parameterType canonicalParts.1 objectParts.1
             headScope
-        have tailStep := tail.normalize_equationForall₂ laws canonicalParts.2
+        have tailStep := tail.normalizeWithStatic_equationForall₂ normalizeStatic laws canonicalParts.2
           objectParts.2 tailScope
         have combined :=
           WellSorted.AvailableOpenArguments.EquationForall₂.cons
@@ -1402,11 +1500,13 @@ mutual
         have leftEndpoint :
             WellSorted.AvailableOpenArguments.cons
                 (head.normalizedArgument parameter representation parameterType
-                  canonicalParts.1 objectParts.1 headScope)
+                  canonicalParts.1 objectParts.1 headScope
+                    (normalizeStatic := normalizeStatic))
                 (tail.normalizedAvailable canonicalParts.2 objectParts.2
-                  tailScope) =
+                  tailScope (normalizeStatic := normalizeStatic)) =
               (CostRegionArgumentTrees.cons representation parameterType head
-                tail).normalizedAvailable canonical objects scope := by
+                tail).normalizedAvailable canonical objects scope
+                  (normalizeStatic := normalizeStatic) := by
           apply WellSorted.AvailableOpenArguments.ext
           simp [CostRegionArgumentTrees.normalizedAvailable_patterns,
             CostRegionArgumentTrees.normalize]
@@ -1429,8 +1529,9 @@ mutual
 
   /-- Homogeneous collection spines normalize pointwise in their exact
   element fiber. -/
-  theorem CostRegionElementTrees.normalize_equationForall₂
-      {source : CIGSLT} (laws : CostTypedUnaryNormalizationLaws source)
+  theorem CostRegionElementTrees.normalizeWithStatic_equationForall₂
+      {source : CIGSLT} (normalizeStatic : CostStaticRegionNormalizer source)
+      (laws : CostTypedStaticRegionNormalizerLaws source normalizeStatic)
       {targetFree : WellSorted.FreeTypeContext}
       {available outer : List TypeExpr} {elements : List Pattern}
       {elementType : TypeExpr}
@@ -1446,7 +1547,8 @@ mutual
       WellSorted.AvailableOpenElements.EquationForall₂
         source.costWholeReflectionProfile source.costWholeLanguage targetFree
           available outer elementType
-        (trees.normalizedAvailable canonical objects scope)
+        (trees.normalizedAvailable canonical objects scope
+          (normalizeStatic := normalizeStatic))
         (trees.originalAvailable canonical objects scope) :=
     match trees with
     | @CostRegionElementTrees.nil source targetFree available outer elementType =>
@@ -1458,7 +1560,8 @@ mutual
         have leftEndpoint :
             (CostRegionElementTrees.nil (source := source)
               (targetFree := targetFree) available outer elementType
-              ).normalizedAvailable canonical objects scope = empty := by
+              ).normalizedAvailable canonical objects scope
+                (normalizeStatic := normalizeStatic) = empty := by
           apply WellSorted.AvailableOpenElements.ext
           simp [empty, CostRegionElementTrees.normalizedAvailable_patterns,
             CostRegionElementTrees.normalize]
@@ -1505,9 +1608,9 @@ mutual
             simpa [binderSafeListAt] using
               scope presentation presentationMembership
           exact parts.2
-        have headStep := head.normalize_equationSetoid laws canonicalParts.1
+        have headStep := head.normalizeWithStatic_equationSetoid normalizeStatic laws canonicalParts.1
           objectParts.1 headScope
-        have tailStep := tail.normalize_equationForall₂ laws canonicalParts.2
+        have tailStep := tail.normalizeWithStatic_equationForall₂ normalizeStatic laws canonicalParts.2
           objectParts.2 tailScope
         have combined :=
           WellSorted.AvailableOpenElements.EquationForall₂.cons
@@ -1515,11 +1618,12 @@ mutual
         have leftEndpoint :
             WellSorted.AvailableOpenElements.cons
                 (head.normalizedAvailable canonicalParts.1 objectParts.1
-                  headScope)
+                  headScope (normalizeStatic := normalizeStatic))
                 (tail.normalizedAvailable canonicalParts.2 objectParts.2
-                  tailScope) =
+                  tailScope (normalizeStatic := normalizeStatic)) =
               (CostRegionElementTrees.cons head tail).normalizedAvailable
-                canonical objects scope := by
+                canonical objects scope
+                  (normalizeStatic := normalizeStatic) := by
           apply WellSorted.AvailableOpenElements.ext
           simp [CostRegionElementTrees.normalizedAvailable_patterns,
             CostRegionElementTrees.normalize]
@@ -1542,13 +1646,15 @@ mutual
 
   /-- Normalized finite boundary values are fiberwise equivalent to their
   exact source occurrences under every later binder weakening. -/
-  theorem CostRegionBoundaryTrees.normalizeValues_fiberEquivalent
-      {source : CIGSLT} (laws : CostTypedUnaryNormalizationLaws source)
+  theorem CostRegionBoundaryTrees.normalizeValuesWithStatic_fiberEquivalent
+      {source : CIGSLT} (normalizeStatic : CostStaticRegionNormalizer source)
+      (laws : CostTypedStaticRegionNormalizerLaws source normalizeStatic)
       {targetFree : WellSorted.FreeTypeContext} {color : CostStaticColor}
       {occurrences : List CostRegionOccurrence}
       {table : TypedCostRegionBoundaryTable source color targetFree occurrences}
       (trees : CostRegionBoundaryTrees source targetFree color table) :
-      (trees.normalizeValues.supportedOpenAssignment table).FiberEquivalent
+      ((trees.normalizeValues (normalizeStatic := normalizeStatic)
+        ).supportedOpenAssignment table).FiberEquivalent
         ((TypedCostRegionBoundaryTable.Values.original table
           ).supportedOpenAssignment table) :=
     match trees with
@@ -1559,7 +1665,7 @@ mutual
         exact Relation.EqvGen.refl _
     | @CostRegionBoundaryTrees.cons source targetFree color occurrence occurrences boundary
         content tail head children => by
-        let normalizedHead := head.normalize
+        let normalizedHead := head.normalize (normalizeStatic := normalizeStatic)
         let value :
             ReflectiveWellSorted.OpenPattern
               source.costWholeReflectionProfile source.costWholeLanguage
@@ -1580,7 +1686,7 @@ mutual
               exact normalizedHead.reflectiveScope presentation membership
                 (Nat.le_refl boundary.boundary.targetSupport.length)
                 (boundary.contentReflectiveScopeSafe presentation membership)⟩
-        have headSplitStep := head.normalize_equationSetoid laws
+        have headSplitStep := head.normalizeWithStatic_equationSetoid normalizeStatic laws
           boundary.contentCanonicalBinderMetadata
             boundary.contentObjectPattern
               boundary.contentReflectiveScopeSafe
@@ -1602,7 +1708,9 @@ mutual
               ((head.normalizedAvailable
                 boundary.contentCanonicalBinderMetadata
                   boundary.contentObjectPattern
-                    boundary.contentReflectiveScopeSafe).toReflectiveOpenPattern
+                    boundary.contentReflectiveScopeSafe
+                      (normalizeStatic := normalizeStatic)
+                  ).toReflectiveOpenPattern
                 ).reindexBound
                   (List.append_nil boundary.boundary.targetSupport) =
                 value := by
@@ -1639,21 +1747,126 @@ mutual
           intro inner
           exact laws.weakeningStable headOpen inner
         have tailEquivalent :
-            (children.normalizeValues.supportedOpenAssignment
+            ((children.normalizeValues (normalizeStatic := normalizeStatic)
+              ).supportedOpenAssignment
               tail).FiberEquivalent
               ((TypedCostRegionBoundaryTable.Values.original tail
                 ).supportedOpenAssignment tail) := by
           intro name type lookup inner
-          exact children.normalizeValues_fiberEquivalent laws lookup inner
+          exact children.normalizeValuesWithStatic_fiberEquivalent
+            normalizeStatic laws lookup inner
         simpa only [CostRegionBoundaryTrees.normalizeValues, value,
           normalizedHead] using
           (TypedCostRegionBoundaryTable.Values.supportedOpenAssignment_cons_fiberEquivalent
-            value children.normalizeValues headEquivalent tailEquivalent)
+            value (children.normalizeValues (normalizeStatic := normalizeStatic))
+              headEquivalent tailEquivalent)
   termination_by 8 * trees.weight + 1
   decreasing_by
     all_goals simp [CostRegionBoundaryTrees.weight]
     all_goals omega
 end
+
+/-- Compatibility specialization of typed tree normalization to the
+established mapped-action static normalizer. -/
+theorem CostRegionTree.normalize_equationSetoid
+    {source : CIGSLT} (laws : CostTypedUnaryNormalizationLaws source)
+    {targetFree : WellSorted.FreeTypeContext}
+    {available outer : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
+    (tree : CostRegionTree source targetFree available outer pattern type)
+    (canonical : pattern.hasCanonicalBinderMetadata = true)
+    (object : WellSorted.isObjectPattern pattern = true)
+    (scope : ReflectiveWellSorted.ReflectiveScopeSafeAt
+      source.costWholeReflectionProfile available.length pattern) :
+    (WellSorted.AvailableOpenPattern.equationSetoid
+      source.costWholeLanguage targetFree available outer type).r
+      (tree.normalizedAvailable canonical object scope)
+      (tree.originalAvailableOpenPattern canonical object scope) :=
+  tree.normalizeWithStatic_equationSetoid
+    (fun node values => node.normalizeWithReflective values)
+    laws.toStaticRegionNormalizerLaws canonical object scope
+
+/-- Compatibility specialization for one authored constructor argument. -/
+theorem CostRegionTree.normalize_argument_equationSetoid
+    {source : CIGSLT} (laws : CostTypedUnaryNormalizationLaws source)
+    {targetFree : WellSorted.FreeTypeContext}
+    {available outer : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
+    (tree : CostRegionTree source targetFree available outer pattern type)
+    (parameter : TermParam)
+    (representation :
+      WellSorted.MatchesParameterRepresentation parameter pattern)
+    (parameterType : WellSorted.parameterType? parameter = some type)
+    (canonical : pattern.hasCanonicalBinderMetadata = true)
+    (object : WellSorted.isObjectPattern pattern = true)
+    (scope : ReflectiveWellSorted.ReflectiveScopeSafeAt
+      source.costWholeReflectionProfile available.length pattern) :
+    (WellSorted.AvailableOpenArgument.equationSetoid
+      source.costWholeLanguage targetFree available outer parameter type).r
+      (tree.normalizedArgument parameter representation parameterType
+        canonical object scope)
+      (tree.originalArgument parameter representation parameterType
+        canonical object scope) :=
+  tree.normalizeArgumentWithStatic_equationSetoid
+    (fun node values => node.normalizeWithReflective values)
+    laws.toStaticRegionNormalizerLaws parameter representation parameterType
+      canonical object scope
+
+/-- Compatibility specialization for constructor argument spines. -/
+theorem CostRegionArgumentTrees.normalize_equationForall₂
+    {source : CIGSLT} (laws : CostTypedUnaryNormalizationLaws source)
+    {targetFree : WellSorted.FreeTypeContext}
+    {available outer : List TypeExpr} {arguments : List Pattern}
+    {parameters : List TermParam}
+    (trees : CostRegionArgumentTrees source targetFree available outer
+      arguments parameters)
+    (canonical : Pattern.hasCanonicalBinderMetadataList arguments = true)
+    (objects : WellSorted.isObjectPatternList arguments = true)
+    (scope : ∀ presentation ∈ source.costWholeReflectionProfile.presentations,
+      binderSafeListAt presentation.quoteConstructor available.length
+        arguments = true) :
+    WellSorted.AvailableOpenArguments.EquationForall₂
+      source.costWholeReflectionProfile source.costWholeLanguage targetFree
+        available outer
+      (trees.normalizedAvailable canonical objects scope)
+      (trees.originalAvailable canonical objects scope) :=
+  trees.normalizeWithStatic_equationForall₂
+    (fun node values => node.normalizeWithReflective values)
+    laws.toStaticRegionNormalizerLaws canonical objects scope
+
+/-- Compatibility specialization for homogeneous element spines. -/
+theorem CostRegionElementTrees.normalize_equationForall₂
+    {source : CIGSLT} (laws : CostTypedUnaryNormalizationLaws source)
+    {targetFree : WellSorted.FreeTypeContext}
+    {available outer : List TypeExpr} {elements : List Pattern}
+    {elementType : TypeExpr}
+    (trees : CostRegionElementTrees source targetFree available outer elements
+      elementType)
+    (canonical : Pattern.hasCanonicalBinderMetadataList elements = true)
+    (objects : WellSorted.isObjectPatternList elements = true)
+    (scope : ∀ presentation ∈ source.costWholeReflectionProfile.presentations,
+      binderSafeListAt presentation.quoteConstructor available.length
+        elements = true) :
+    WellSorted.AvailableOpenElements.EquationForall₂
+      source.costWholeReflectionProfile source.costWholeLanguage targetFree
+        available outer elementType
+      (trees.normalizedAvailable canonical objects scope)
+      (trees.originalAvailable canonical objects scope) :=
+  trees.normalizeWithStatic_equationForall₂
+    (fun node values => node.normalizeWithReflective values)
+    laws.toStaticRegionNormalizerLaws canonical objects scope
+
+/-- Compatibility specialization for finite boundary vectors. -/
+theorem CostRegionBoundaryTrees.normalizeValues_fiberEquivalent
+    {source : CIGSLT} (laws : CostTypedUnaryNormalizationLaws source)
+    {targetFree : WellSorted.FreeTypeContext} {color : CostStaticColor}
+    {occurrences : List CostRegionOccurrence}
+    {table : TypedCostRegionBoundaryTable source color targetFree occurrences}
+    (trees : CostRegionBoundaryTrees source targetFree color table) :
+    (trees.normalizeValues.supportedOpenAssignment table).FiberEquivalent
+      ((TypedCostRegionBoundaryTable.Values.original table
+        ).supportedOpenAssignment table) :=
+  trees.normalizeValuesWithStatic_fiberEquivalent
+    (fun node values => node.normalizeWithReflective values)
+    laws.toStaticRegionNormalizerLaws
 
 /-- Forget the quote-visible binder split while retaining every typed
 intermediate vertex of the child-first normalization path. -/
@@ -1784,6 +1997,65 @@ theorem CIGSLT.costNormalizeOpen_typed_openEquationSetoid
 
 /-! ## Exact contextual typed canonical sections -/
 
+/-- Contextual laws for an explicitly selected Cost normalizer.  They are
+independent of unary equation soundness and of the algorithm used to obtain
+the representative. -/
+structure CostContextualOpenLawsFor (source : CIGSLT)
+    (normalizeOpen : CostOpenNormalizer source) : Prop where
+  preservesFreeVariableSupport : ∀
+      {free : WellSorted.FreeTypeContext} {bound : List TypeExpr}
+      {sort : LangSort source.costWholeLanguage}
+      (term : ReflectiveWellSorted.OpenTerm
+        source.costWholeReflectionProfile source.costWholeLanguage free bound
+          sort)
+      {name : String},
+    name ∈ (@normalizeOpen free bound sort term).1.freeFvarNames →
+      name ∈ term.1.freeFvarNames
+  normalizeRecontextualizeFree :
+    ∀ {sourceFree targetFree : WellSorted.FreeTypeContext}
+      {bound : List TypeExpr}
+      {sort : LangSort source.costWholeLanguage}
+      (term : ReflectiveWellSorted.OpenTerm
+        source.costWholeReflectionProfile source.costWholeLanguage sourceFree
+          bound sort)
+      (preserves : ∀ {name freeType},
+        name ∈ term.1.freeFvarNames →
+        sourceFree name = some freeType →
+          targetFree name = some freeType),
+    (@normalizeOpen targetFree bound sort
+      (term.recontextualizeFree preserves)).1 =
+      (@normalizeOpen sourceFree bound sort term).1
+  preservesReflectiveSupport :
+    ∀ {free : WellSorted.FreeTypeContext} {bound : List TypeExpr}
+      {sort : LangSort source.costWholeLanguage}
+      (term : ReflectiveWellSorted.OpenTerm
+        source.costWholeReflectionProfile source.costWholeLanguage free bound
+          sort)
+      (support : ContextSupport.Support) (available : List TypeExpr)
+      (binderImage : TypeExpr → TypeExpr),
+    term.2.1.1.ReflectiveSupportSafeAt
+        source.costWholeReflectionProfile support available binderImage →
+      (@normalizeOpen free bound sort term).2.1.1.ReflectiveSupportSafeAt
+        source.costWholeReflectionProfile support available binderImage
+
+/-- Complete semantic laws needed for an explicitly selected normalizer to
+supply the Cost open section.  `equivalent` rules out vacuous completeness;
+`generatorInvariant` then extends to every finite equation path. -/
+structure CostOpenSectionLawsFor (source : CIGSLT)
+    (normalizeOpen : CostOpenNormalizer source) : Prop
+    extends CostContextualOpenLawsFor source normalizeOpen where
+  equivalent : ∀
+      {free : WellSorted.FreeTypeContext} {bound : List TypeExpr}
+      {sort : LangSort source.costWholeLanguage}
+      (term : ReflectiveWellSorted.OpenTerm
+        source.costWholeReflectionProfile source.costWholeLanguage free bound
+          sort),
+    (ReflectiveEquationSemantics.reflectiveOpenPatternEquationSetoid
+      source.costWholeReflectionProfile defaultBasePremises
+      source.costWholeLanguage free bound (.base sort.1)).r
+      (@normalizeOpen free bound sort term) term
+  generatorInvariant : CostOpenGeneratorInvariantFor source normalizeOpen
+
 /-- Contextual laws needed for the generated Cost open section and its next
 continued-interaction layer.
 
@@ -1843,6 +2115,28 @@ structure CostOpenSectionLaws (source : CIGSLT) : Prop
       CostContextualOpenLaws source where
   generatorInvariant : CostOpenGeneratorInvariant source
 
+/-- The established compact-executor laws instantiate the generic
+normalizer-parameterized section laws.  This is a compatibility theorem, not
+a second semantic authority: both bundles name the same executor. -/
+def CostOpenSectionLaws.toCostOpenSectionLawsFor
+    {source : CIGSLT} (laws : CostOpenSectionLaws source) :
+    CostOpenSectionLawsFor source source.costNormalizeOpen where
+  equivalent := by
+    intro free bound sort term
+    exact source.costNormalizeOpen_typed_openEquationSetoid
+      laws.toCostTypedUnaryNormalizationLaws term
+  generatorInvariant := laws.generatorInvariant
+  preservesFreeVariableSupport := by
+    intro free bound sort term name membership
+    exact laws.preservesFreeVariableSupport term membership
+  normalizeRecontextualizeFree := by
+    intro sourceFree targetFree bound sort term preserves
+    exact laws.normalizeRecontextualizeFree term preserves
+  preservesReflectiveSupport := by
+    intro free bound sort term support available binderImage safe
+    exact laws.preservesReflectiveSupport term support available binderImage
+      safe
+
 /-- Additional compact-factorization law.
 
 This says every proof-relevant elaboration of one compact term erases to the
@@ -1869,27 +2163,26 @@ def costCanonicalObjectsForget :
     CategoryTheory.Functor CostCanonicalObjects CIGSLT :=
   CostCanonicalObjectProperty.ι
 
-/-- Exact computable section of every typed open Cost fiber.  Soundness comes
-from proof-relevant tree normalization; completeness is generated solely from
-exact invariance under the authored open-equation generators. -/
-def CIGSLT.costOpenSection (source : CIGSLT)
-    (laws : CostOpenSectionLaws source) :
+/-- Exact computable section for an explicitly selected lawful Cost
+normalizer.  The section is generic in the source ciGSLT and in the
+normalization algorithm. -/
+def CIGSLT.costOpenSectionWith (source : CIGSLT)
+    (normalizeOpen : CostOpenNormalizer source)
+    (laws : CostOpenSectionLawsFor source normalizeOpen) :
     ComputableReflectiveFiberSection source.costIGSLT
       source.costWholeAdmittedReflection :=
-  ComputableReflectiveFiberSection.ofGeneratorInvariant
-    source.costNormalizeOpen
-    (fun term => source.costNormalizeOpen_typed_openEquationSetoid
-      laws.toCostTypedUnaryNormalizationLaws term)
+  ComputableReflectiveFiberSection.ofGeneratorInvariant normalizeOpen
+    (fun term => laws.equivalent term)
     (fun generator => laws.generatorInvariant generator)
 
-/-- Exact contextual open section of the generated Cost presentation.
-Every additional field is supplied by the Cost₁ object law rather than
-inferred from equation equivalence. -/
-def CIGSLT.costContextualOpenSection (source : CIGSLT)
-    (laws : CostOpenSectionLaws source) :
+/-- Contextual Cost section for an explicitly selected lawful normalizer. -/
+def CIGSLT.costContextualOpenSectionWith (source : CIGSLT)
+    (normalizeOpen : CostOpenNormalizer source)
+    (laws : CostOpenSectionLawsFor source normalizeOpen) :
     ComputableReflectiveFiberContextualSection source.costIGSLT
       source.costWholeAdmittedReflection where
-  toComputableReflectiveFiberSection := source.costOpenSection laws
+  toComputableReflectiveFiberSection :=
+    source.costOpenSectionWith normalizeOpen laws
   preservesFreeVariableSupport := by
     intro free bound sort term name membership
     exact laws.preservesFreeVariableSupport term membership
@@ -1900,6 +2193,26 @@ def CIGSLT.costContextualOpenSection (source : CIGSLT)
     intro free bound sort term support available binderImage safe
     exact laws.preservesReflectiveSupport term support available binderImage
       safe
+
+/-- Exact computable section of every typed open Cost fiber.  Soundness comes
+from proof-relevant tree normalization; completeness is generated solely from
+exact invariance under the authored open-equation generators. -/
+def CIGSLT.costOpenSection (source : CIGSLT)
+    (laws : CostOpenSectionLaws source) :
+    ComputableReflectiveFiberSection source.costIGSLT
+      source.costWholeAdmittedReflection :=
+  source.costOpenSectionWith source.costNormalizeOpen
+    laws.toCostOpenSectionLawsFor
+
+/-- Exact contextual open section of the generated Cost presentation.
+Every additional field is supplied by the Cost₁ object law rather than
+inferred from equation equivalence. -/
+def CIGSLT.costContextualOpenSection (source : CIGSLT)
+    (laws : CostOpenSectionLaws source) :
+    ComputableReflectiveFiberContextualSection source.costIGSLT
+      source.costWholeAdmittedReflection :=
+  source.costContextualOpenSectionWith source.costNormalizeOpen
+    laws.toCostOpenSectionLawsFor
 
 /-- Exact representative independence on every typed open Cost equation
 path.  This theorem is downstream of the local generator law. -/

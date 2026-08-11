@@ -213,7 +213,7 @@ theorem solomonoffPathEvidence_strength (sm : Semimeasure)
     `instance {α} [DecidableEq α] : PathMapWorldModel (Finset α) (Finset α)`.
     To use a specific weight, call `weightedPathMapWorldModel w` explicitly
     (e.g. `haveI := weightedPathMapWorldModel w`). -/
-noncomputable def weightedPathMapWorldModel {α : Type*} [DecidableEq α]
+@[reducible] noncomputable def weightedPathMapWorldModel {α : Type*} [DecidableEq α]
     (w : α → ℝ≥0∞) : PathMapWorldModel (Finset α) (Finset α) where
   extract W q := weightedPathEvidence w W q
   pjoin_disjoint_additive W₁ W₂ q hMeetNone := by

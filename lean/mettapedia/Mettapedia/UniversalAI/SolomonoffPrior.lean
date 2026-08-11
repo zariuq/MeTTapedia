@@ -303,7 +303,7 @@ theorem prefixFree_implies_disjoint (S : Finset BinString) (hpf : PrefixFree ↑
       have := hpf t (Finset.mem_coe.mpr ht) s (Finset.mem_coe.mpr hs) (Ne.symm hst)
       exact this hts_prefix
   · -- Neither is prefix of the other: they diverge at some position
-    push_neg at h_prefix
+    push Not at h_prefix
     -- Get the divergence point
     obtain ⟨pre, bs, bt, hne, hpres, hpret⟩ := incomparable_diverge s t h_prefix.1 h_prefix.2
     -- The intervals are in different halves after the common prefix
@@ -801,7 +801,7 @@ theorem cylinder_partition (x : BinString) :
           _ = ω x.length := hb.symm
           _ = ω i.val := by rw [heq]
     · right
-      push_neg at hb
+      push Not at hb
       have h' : ω x.length = true := Bool.eq_true_of_not_eq_false hb
       intro i
       by_cases hi' : i.val < x.length

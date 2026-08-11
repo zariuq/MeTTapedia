@@ -15,6 +15,9 @@ import Mettapedia.GSLT.Core.Ultrainfinite
 import Mettapedia.GSLT.Core.UltrainfiniteTransport
 import Mettapedia.GSLT.LanguageDef.ProofGSLTUltrainfiniteInstances
 import Mettapedia.GSLT.LanguageDef.ProofGSLTSearchAuthority
+import Mettapedia.GSLT.LanguageDef.ProofGSLTJudgmentAuthority
+import Mettapedia.GSLT.LanguageDef.ProofGSLTFiniteTraceAuthority
+import Mettapedia.GSLT.LanguageDef.ProofGSLTRecurrentTraceAuthority
 import Mettapedia.GSLT.LanguageDef.ProofGSLTRuleJoin
 import Mettapedia.GSLT.LanguageDef.ProofGSLTFeatureLinkage
 import Mettapedia.GSLT.LanguageDef.ProofGSLTConstructibleDuality
@@ -42,6 +45,13 @@ step-covered embeddings, and certified search pruning is stated against an
 authority's semantic meaning rather than a producer score.  Authority-indexed finite certificates for
 infinitary recurrence are one application, with an explicit
 local-legality/global-progress boundary and checked native lowering.  The
+same authority interface covers arbitrary semantic judgments and generates
+finite reachability checking freely from any sound local OSLF edge checker;
+open query, decomposition, substitution, and capability obligations remain
+explicit premises until a separately sound discharger closes them.  For
+infinite executions, the same checked edges combine with a separate Büchi
+progress measure, yielding genuine GSLT execution plus recurrence rather than
+mistaking a cyclic finite prefix for liveness.  The
 framework also includes fixed-core binary coproducts of strict rule theories
 and paired certificate verdicts with both Belnap orders.  Optional affine feature
 linkage is kept as a separate interface algebra: it does not restrict the

@@ -23,6 +23,7 @@ namespace Mettapedia.Languages.ProcessCalculi.RhoCalculus
 open Mettapedia.GSLT.LanguageDef
 open Mettapedia.GSLT.LanguageDef.ReflectionExtension
 open Mettapedia.GSLT.LanguageDef.WellSorted
+open Mettapedia.GSLT.LanguageDef.CostStaticRegionNode
 open Mettapedia.GSLT.LanguageDef.CostHereditaryCanonical
 open Mettapedia.OSLF.Framework.ConstructorCategory
 open Mettapedia.OSLF.MeTTaIL.DerivedContexts
@@ -905,6 +906,116 @@ def normalizeHereditary
   let packed := node.semanticAtomEnvironment values
   normalizeHereditaryWithInventory node values packed.1
 
+/-- The semantic-key representative of one atomized rho frame, retained in
+the exact constructor and reflective-support fibre consumed by the generic
+same-colour Cost action. -/
+def semanticCanonicalizedSourceTerm
+    {color : CostStaticColor} {targetFree : FreeTypeContext}
+    (node : CostStaticRegionNode rhoCIGSLT color targetFree)
+    {values : TypedCostRegionBoundaryTable.Values rhoCIGSLT color targetFree
+      node.boundaryTable}
+    {inventory : CostStaticParameterInventory rhoCIGSLT color targetFree
+      node.boundaryTable values node.skeleton.1}
+    (environment : CostStaticAtomEnvironment rhoCIGSLT color targetFree
+      inventory) :
+    CostStaticSourceTerm rhoCIGSLT color environment.sourceAtomFreeContext
+      environment.sourceAtomSupport node.sourceBound node.targetBound
+      node.sourceSort := by
+  let sourceKey := sourceSemanticPatternKeyAt node environment
+  let sourceFrame := node.reifiedSourceFrame environment
+  let sourceSupported := node.reifiedSourceFrame_supported environment
+  have sourceSafe : sourceSupported.toHasType.ReflectiveSupportSafeAt
+      rhoReflectionProfile environment.sourceAtomSupport node.targetBound
+      (mapTypeExpr (color.symbols rhoCIGSLT)) :=
+    (node.reifiedSourceFrame_supportSafe environment).castTyping
+  let normalizedEvidence :=
+    rhoCanonicalizeByDepths_hasTypeWithConstructors sourceKey 0
+      sourceSupported sourceSafe (by trivial) sourceFrame.2.1.2.2.1
+  let normalizedSupported := Classical.choose normalizedEvidence
+  let normalizedSafe := Classical.choose_spec normalizedEvidence
+  let normalizedPattern := canonicalizeByDepths sourceKey
+    rhoReflectivePresentation node.targetBound.length 0 sourceFrame.1
+  have normalizedCanonical : normalizedPattern.hasCanonicalBinderMetadata =
+      true := by
+    exact canonicalizeByDepths_hasCanonicalBinderMetadata sourceKey
+      rhoReflectivePresentation node.targetBound.length 0 sourceFrame.1
+        sourceFrame.2.1.2.1
+  have normalizedObject : isObjectPattern normalizedPattern = true := by
+    exact canonicalizeByDepths_isObjectPattern sourceKey
+      rhoReflectivePresentation node.targetBound.length 0 sourceFrame.1
+        sourceFrame.2.1.2.2.1
+  have normalizedScope : ReflectiveWellSorted.ReflectiveScopeSafeAt
+      rhoCIGSLT.reflection.1 node.sourceBound.length normalizedPattern := by
+    intro declaration membership
+    exact canonicalizeByDepths_binderSafeAt sourceKey
+      rhoReflectivePresentation declaration.quoteConstructor
+      node.targetBound.length 0 node.sourceBound.length sourceFrame.1
+        (sourceFrame.2.2 declaration membership)
+  let normalizedTerm : ReflectiveWellSorted.OpenTerm rhoCIGSLT.reflection.1
+      rhoCalc environment.sourceAtomFreeContext node.sourceBound
+      node.sourceSort :=
+    ⟨normalizedPattern,
+      ⟨normalizedSupported.toHasType, normalizedCanonical,
+        normalizedObject, normalizedSupported.toHasType.isWellScopedAt⟩,
+      normalizedScope⟩
+  exact
+    { term := normalizedTerm
+      supported := normalizedSupported
+      safe := normalizedSafe }
+
+@[simp]
+theorem semanticCanonicalizedSourceTerm_pattern
+    {color : CostStaticColor} {targetFree : FreeTypeContext}
+    (node : CostStaticRegionNode rhoCIGSLT color targetFree)
+    {values : TypedCostRegionBoundaryTable.Values rhoCIGSLT color targetFree
+      node.boundaryTable}
+    {inventory : CostStaticParameterInventory rhoCIGSLT color targetFree
+      node.boundaryTable values node.skeleton.1}
+    (environment : CostStaticAtomEnvironment rhoCIGSLT color targetFree
+      inventory) :
+    (semanticCanonicalizedSourceTerm node environment).term.1 =
+      canonicalizeByDepths (sourceSemanticPatternKeyAt node environment)
+        rhoReflectivePresentation node.targetBound.length 0
+        (node.reifiedSourceFrame environment).1 := by
+  rfl
+
+/-- Keyed rho canonicalization is one source-authored reflective edge in the
+exact atomized static fibre.  The ordinary rho canonical form absorbs the
+semantic ordering key, so no generated target equation is postulated. -/
+theorem semanticCanonicalizedSourceTerm_equationSetoid
+    {color : CostStaticColor} {targetFree : FreeTypeContext}
+    (node : CostStaticRegionNode rhoCIGSLT color targetFree)
+    {values : TypedCostRegionBoundaryTable.Values rhoCIGSLT color targetFree
+      node.boundaryTable}
+    {inventory : CostStaticParameterInventory rhoCIGSLT color targetFree
+      node.boundaryTable values node.skeleton.1}
+    (environment : CostStaticAtomEnvironment rhoCIGSLT color targetFree
+      inventory) :
+    (CostStaticSourceTerm.equationSetoid rhoCIGSLT color
+      environment.sourceAtomFreeContext environment.sourceAtomSupport
+      node.sourceBound node.targetBound node.sourceSort).r
+        (semanticCanonicalizedSourceTerm node environment)
+        (node.reifiedSourceTerm environment) := by
+  apply Relation.EqvGen.rel _ _
+  unfold CostStaticSourceTerm.generator
+  apply
+    ReflectiveEquationSemantics.ReflectiveEquationContextStep.reflectiveInContext
+      .hole (declaration := rhoReflectivePresentation.toReflectivePresentationDecl)
+  · change List.Mem rhoReflectivePresentation.toReflectivePresentationDecl
+      [rhoReflectivePresentation.toReflectivePresentationDecl]
+    exact .head _
+  · change canonicalize rhoReflectivePresentation
+        (canonicalizeByDepths
+          (sourceSemanticPatternKeyAt node environment)
+          rhoReflectivePresentation node.targetBound.length 0
+          (node.reifiedSourceFrame environment).1) =
+      canonicalize rhoReflectivePresentation
+        (node.reifiedSourceFrame environment).1
+    exact canonicalize_canonicalizeByDepths
+      (sourceSemanticPatternKeyAt node environment) rhoReflectivePresentation
+      (by decide) node.targetBound.length 0
+        (node.reifiedSourceFrame environment).1
+
 /-- The source-rho action of the semantic-key representative remains in the
 same generated authored-equation class as the unnormalized semantic-atom
 frame.  This deliberately uses rho's source-typed action theorem rather than
@@ -1488,6 +1599,119 @@ theorem normalizeHereditary_equationEquiv
   rw [normalizeHereditaryWithInventory_pattern]
   exact normalizeHereditaryRawWithInventory_equationEquiv node values
     (node.semanticAtomEnvironment values).1
+
+/-- The hereditary rho static normalizer remains in the exact split typing
+fibre of its input.  The proof first maps the source-authored semantic-key
+edge, then changes only the finite boundary assignment.  It never invokes
+the false mixed-colour substitution-closure principle. -/
+theorem normalizeHereditary_available_equationSetoid
+    {color : CostStaticColor} {targetFree : FreeTypeContext}
+    (node : CostStaticRegionNode rhoCIGSLT color targetFree)
+    (values : TypedCostRegionBoundaryTable.Values rhoCIGSLT color targetFree
+      node.boundaryTable)
+    (valuesEquivalent :
+      (values.supportedOpenAssignment node.boundaryTable).FiberEquivalent
+        ((TypedCostRegionBoundaryTable.Values.original node.boundaryTable
+          ).supportedOpenAssignment node.boundaryTable)) :
+    (WellSorted.AvailableOpenPattern.equationSetoid
+      (profile := rhoCIGSLT.costWholeReflectionProfile)
+      rhoCIGSLT.costWholeLanguage targetFree node.targetBound []
+        (.base (color.mapLangSort rhoCIGSLT node.sourceSort).1)).r
+      (WellSorted.AvailableOpenPattern.ofOpenPattern
+        (normalizeHereditary node values))
+      node.termAvailable := by
+  let inventory := (node.semanticAtomEnvironment values).1
+  let environment := CostStaticAtomEnvironment.ofInventory inventory
+  have typeMap : ∀ slot,
+      mapTypeExpr (color.symbols rhoCIGSLT)
+          (environment.atomValue slot).key.sourceType =
+        (environment.atomValue slot).key.targetType :=
+    node.semanticAtom_typeMap values inventory
+  have contextEquality :
+      environment.sourceAtomFreeContext.map (color.symbols rhoCIGSLT) =
+        environment.atomFreeContext :=
+    environment.sourceAtomFreeContext_map_eq_atomFreeContext typeMap
+  have sourceStep := CostStaticSourceTerm.equationSetoid_actAvailable
+    rho_costStaticMappedGeneratorFiberAction node.thinning
+      environment.restorationSupportedOpenAssignment contextEquality
+      environment.sourceAtomSupport_eq_restorationSupport
+      (semanticCanonicalizedSourceTerm_equationSetoid node environment)
+  let valuesAssignment := values.supportedOpenAssignment node.boundaryTable
+  let originalAssignment :=
+    (TypedCostRegionBoundaryTable.Values.original node.boundaryTable
+      ).supportedOpenAssignment node.boundaryTable
+  let mappedAvailableRaw :=
+    node.sourceActionTerm.mappedThickenedAvailable node.thinning
+  let mappedAvailable := mappedAvailableRaw.castFree
+    node.transport.freeContext
+  have mappedAvailableSafe :
+      mappedAvailable.typed.ReflectiveSupportSafeAt
+        rhoCIGSLT.costWholeReflectionProfile
+        node.boundaryTable.restorationSupport node.targetBound :=
+    mappedAvailableRaw.castFree_supportSafe node.transport.freeContext
+      (node.sourceActionTerm.mappedThickenedAvailable_supportSafe
+        node.thinning)
+  have assignmentStep := mappedAvailable.equationSetoid_substitute_pointwise
+    rhoCIGSLT.costWholeLanguage_validate
+      rhoCIGSLT.costWholeReflectionProfile_validate mappedAvailableSafe
+      valuesAssignment originalAssignment valuesEquivalent
+  have leftEndpoint :
+      (semanticCanonicalizedSourceTerm node environment).actAvailable
+          node.thinning environment.restorationSupportedOpenAssignment
+            contextEquality environment.sourceAtomSupport_eq_restorationSupport =
+        WellSorted.AvailableOpenPattern.ofOpenPattern
+          (normalizeHereditary node values) := by
+    apply WellSorted.AvailableOpenPattern.ext
+    rw [CostStaticSourceTerm.actAvailable_pattern,
+      WellSorted.AvailableOpenPattern.ofOpenPattern_pattern]
+    have hereditaryPattern : (normalizeHereditary node values).1 =
+        rhoCostStaticActionAt node.thinning
+          environment.restorationSupportedOpenAssignment [] node.targetBound
+          (canonicalizeByDepths
+            (sourceSemanticPatternKeyAt node environment)
+            rhoReflectivePresentation node.targetBound.length 0
+            (node.reifiedSourceFrame environment).1) := by
+      unfold normalizeHereditary
+      rw [normalizeHereditaryWithInventory_pattern]
+      exact normalizeHereditaryRawWithInventory_eq_sourceAction node values
+        inventory
+    rw [hereditaryPattern]
+    unfold CostStaticSourceTerm.act rhoCostStaticActionAt
+      ReflectiveContextSupport.substitute
+    rw [semanticCanonicalizedSourceTerm_pattern]
+    simp only [List.length_nil]
+  have middleEndpoint :
+      (node.reifiedSourceTerm environment).actAvailable node.thinning
+          environment.restorationSupportedOpenAssignment contextEquality
+            environment.sourceAtomSupport_eq_restorationSupport =
+        mappedAvailable.substitute valuesAssignment mappedAvailableSafe := by
+    apply WellSorted.AvailableOpenPattern.ext
+    rw [CostStaticSourceTerm.actAvailable_pattern,
+      WellSorted.AvailableOpenPattern.substitute_pattern,
+      WellSorted.AvailableOpenPattern.castFree_pattern,
+      CostStaticSourceTerm.mappedThickenedAvailable_pattern]
+    change rhoCostStaticActionAt node.thinning
+        environment.restorationSupportedOpenAssignment [] node.targetBound
+        (node.reifiedSourceFrame environment).1 =
+      values.restoreSupportedSkeleton node.boundaryTable node.targetBound
+        node.mappedThickenedSkeleton.1
+    exact sourceAction_eq_restoreSupportedSkeleton node values inventory
+  have rightEndpoint :
+      mappedAvailable.substitute originalAssignment mappedAvailableSafe =
+        node.termAvailable := by
+    apply WellSorted.AvailableOpenPattern.ext
+    rw [WellSorted.AvailableOpenPattern.substitute_pattern,
+      WellSorted.AvailableOpenPattern.castFree_pattern,
+      CostStaticSourceTerm.mappedThickenedAvailable_pattern]
+    change
+      (TypedCostRegionBoundaryTable.Values.original node.boundaryTable
+        ).restoreSupportedSkeleton node.boundaryTable node.targetBound
+          node.mappedThickenedSkeleton.1 = node.term.1
+    rw [TypedCostRegionBoundaryTable.Values.restoreSupportedSkeleton_original]
+    exact node.restore_mappedThickenedSkeleton_eq_term
+  rw [leftEndpoint, middleEndpoint] at sourceStep
+  rw [rightEndpoint] at assignmentStep
+  exact Relation.EqvGen.trans _ _ _ sourceStep assignmentStep
 
 end CostStaticRegionNode
 
@@ -2200,6 +2424,20 @@ theorem rhoHereditaryStaticNormalizerLaws :
     simpa only [rhoHereditaryStaticNormalizer] using
       CostStaticRegionNode.normalizeHereditary_equationEquiv node values
 
+/-- Rho also discharges the stronger split-fibre interface consumed by the
+generic typed Cost executor.  The hereditary normalizer is therefore a
+literal instance of the language-independent theorem rather than a parallel
+rho-only semantics. -/
+theorem rhoHereditaryTypedStaticNormalizerLaws :
+    CostTypedStaticRegionNormalizerLaws rhoCIGSLT
+      rhoHereditaryStaticNormalizer where
+  weakeningStable := rho_costOpenPatternEquationWeakeningStable
+  normalizesCurrentFrame := by
+    intro color targetFree node values valuesEquivalent
+    simpa only [rhoHereditaryStaticNormalizer] using
+      CostStaticRegionNode.normalizeHereditary_available_equationSetoid
+        node values valuesEquivalent
+
 /-- Every proof-relevant rho decomposition of one compact Cost term erases to
 the same hereditary normalized pattern.  This exact chooser-independence is
 strictly stronger than the unary authored-equation theorem. -/
@@ -2311,7 +2549,8 @@ end CostRegionTree
 
 /-- The repaired compact rho Cost executor: elaborate once into the complete
 proof-relevant alternating tree, normalize children before their parent
-frames, then erase the final typed normal form. -/
+frames, then erase the final typed normal form.  This is the rho instance of
+the generic hereditary GSLT executor, not a second implementation. -/
 def rhoCostNormalizeOpenHereditary
     {targetFree : FreeTypeContext} {targetBound : List TypeExpr}
     {targetSort : LangSort rhoCIGSLT.costWholeLanguage}
@@ -2319,15 +2558,8 @@ def rhoCostNormalizeOpenHereditary
       rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
       targetFree targetBound targetSort) :
     ReflectiveWellSorted.OpenTerm rhoCIGSLT.costWholeReflectionProfile
-      rhoCIGSLT.costWholeLanguage targetFree targetBound targetSort := by
-  let tree := CostRegionTree.buildOpenTerm (source := rhoCIGSLT) term
-  let normalized := CostRegionTree.normalizeHereditaryOpen tree term.2.1.2.1
-    term.2.1.2.2.1 term.2.2
-  refine ⟨normalized.1, ?_⟩
-  change ReflectiveWellSorted.OpenPatternWellSorted
-    rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage targetFree
-      targetBound (.base targetSort.1) normalized.1
-  simpa using normalized.2
+      rhoCIGSLT.costWholeLanguage targetFree targetBound targetSort :=
+  rhoCIGSLT.costNormalizeOpenWithStatic rhoHereditaryStaticNormalizer term
 
 @[simp]
 theorem rhoCostNormalizeOpenHereditary_pattern
@@ -2348,9 +2580,9 @@ participates. -/
 theorem rhoCostNormalizeOpenHereditary_agreesWithStatic :
     CostOpenNormalizerAgreesWithStatic rhoCIGSLT
       rhoHereditaryStaticNormalizer
-      (fun term => rhoCostNormalizeOpenHereditary term) := by
-  intro targetFree targetBound targetSort term
-  rfl
+      (fun term => rhoCostNormalizeOpenHereditary term) :=
+  rhoCIGSLT.costNormalizeOpenWithStatic_agreesWithStatic
+    rhoHereditaryStaticNormalizer
 
 /-- The repaired compact executor is unary-sound for every admitted rho Cost
 term, independently of the compiler's internal decomposition choices. -/
@@ -2363,9 +2595,24 @@ theorem rhoCostNormalizeOpenHereditary_equationEquiv
     ReflectiveEquationSemantics.ReflectiveEquationEquiv
       rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
       rhoCIGSLT.costWholeLanguage (rhoCostNormalizeOpenHereditary term).1
-        term.1 := by
-  rw [rhoCostNormalizeOpenHereditary_pattern]
-  exact CostRegionTree.normalizeHereditary_equationEquiv
-    (CostRegionTree.buildOpenTerm (source := rhoCIGSLT) term)
+        term.1 :=
+  rhoCIGSLT.costNormalizeOpenWithStatic_equationEquiv
+    rhoHereditaryStaticNormalizer rhoHereditaryStaticNormalizerLaws term
+
+/-- The same executor is sound in the exact typed open-equation fibre.  This
+is the generic hereditary theorem instantiated by rho's local static law. -/
+theorem rhoCostNormalizeOpenHereditary_typed_openEquationSetoid
+    {targetFree : FreeTypeContext} {targetBound : List TypeExpr}
+    {targetSort : LangSort rhoCIGSLT.costWholeLanguage}
+    (term : ReflectiveWellSorted.OpenTerm
+      rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
+      targetFree targetBound targetSort) :
+    (ReflectiveEquationSemantics.reflectiveOpenPatternEquationSetoid
+      rhoCIGSLT.costWholeReflectionProfile defaultBasePremises
+        rhoCIGSLT.costWholeLanguage targetFree targetBound
+          (.base targetSort.1)).r
+      (rhoCostNormalizeOpenHereditary term) term :=
+  rhoCIGSLT.costNormalizeOpenWithStatic_typed_openEquationSetoid
+    rhoHereditaryStaticNormalizer rhoHereditaryTypedStaticNormalizerLaws term
 
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus

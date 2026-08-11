@@ -110,6 +110,10 @@ dependent-proof screen then starts every credit rule at update zero: prospective
 reproducibly departs from BP and contributes held-out marginal solutions, while BP keeps
 higher total coverage. This motivates cost-aware composition rather than winner-take-all
 selection.
+A separate two-round fresh-start audit then shows why architecture and credit must be
+analyzed relationally: the Unified PC arm improves target coverage over its BP control
+while using fewer fresh program identities, and the advantage reverses when one
+high-degree reused program is removed.
 \end{abstract}
 
 \paragraph{Open artifacts.}
@@ -2734,8 +2738,178 @@ model of multi-site settling near an equilibrium, the following are proved.
 \emph{Solver substitution cannot move an equilibrium.} A single global rate, per-block
 rates, and Levenberg-style damping have identical stationary sets
 (\leanname{stationary\_set\_shared}). Changing how one settles therefore changes the path
-and not the destination, which is what licenses a solver swap as the same dynamics rather
-than a new one.
+and not the destination. This is an equilibrium statement only: it does not by itself
+license a solver swap at the finite settling depth used by a trainer.
+
+The finite-depth license can now be stated exactly. Let $F$ and $G$ be contractions with
+factors $q_F,q_G\in[0,1)$ and a shared fixed point $z$. For initial states $x_F,x_G$,
+settling depths $T_F,T_G$, and a credit readout $R$ that is $K$-Lipschitz about $z$,
+the machine-checked bound is
+\[
+ \left\|R(G^{T_G}x_G)-R(F^{T_F}x_F)\right\|
+ \leq K\left(
+ q_G^{T_G}\|x_G-z\|+q_F^{T_F}\|x_F-z\|
+ \right).
+\]
+Thus solvers, initializers, and work budgets may all differ, but every difference is
+charged to the finite-credit budget
+(\leanname{finiteSolver\_credit\_difference\_le}). If that budget is below a registered
+tolerance, substitution is admitted
+(\leanname{finiteSolver\_credit\_difference\_le\_tolerance}); if it is smaller than the
+observed candidate-credit norm, the candidate remains positively aligned with the
+reference finite credit
+(\leanname{finiteSolver\_positiveAlignment}). This is the finite-$T$ statement required
+by an actual boundary amendment. The nonlinear version makes the basin premise explicit:
+each solver supplies an invariant local-contraction neighborhood containing the shared
+target and its own initializer
+(\leanname{localFiniteSolver\_credit\_difference\_le}).
+
+Warm starting has the sharper same-solver bound
+\[
+ \left\|R(F^T x_{\mathrm{warm}})-R(F^T x_{\mathrm{cold}})\right\|
+ \leq Kq^T\|x_{\mathrm{warm}}-x_{\mathrm{cold}}\|.
+\]
+Moreover, if the warm initializer is already $q^s$ times closer to the fixed point, then
+$T$ warm-started steps have no larger certified credit-error budget than $T+s$
+cold-started steps
+(\leanname{warmStart\_credit\_difference\_le},
+\leanname{warmInitializer\_savesSteps\_creditBudget}). This licenses a reduction in
+inference work only when the initializer-distance certificate is supplied; state reuse
+alone is not the certificate.
+
+The comparison can be made sharper still for the finite endpoint that a trainer actually
+registers. Suppose the warm proposal runs for $m$ steps while the cold reference runs for
+$m+s$ steps under the same $q$-contractive solver. Pairwise $K$-Lipschitz continuity of
+the readout gives the fixed-point-free bound
+\[
+ \left\|R(F^m x_{\mathrm{warm}})-R(F^{m+s}x_{\mathrm{cold}})\right\|
+ \leq Kq^m\left(
+   \|x_{\mathrm{warm}}-x_{\mathrm{cold}}\|+
+   \left(\sum_{j=0}^{s-1}q^j\right)
+     \|x_{\mathrm{cold}}-F x_{\mathrm{cold}}\|
+ \right).
+\]
+The first term transports the initializer mismatch; the second charges exactly the cold
+tail omitted by early stopping, using its observable first-step residual. No exact fixed
+point and no claim of stationarity is needed
+(\leanname{warmShort\_credit\_difference\_to\_coldLong\_le}). For a nonlinear solver,
+the same statement requires the warm and cold initializers to inhabit one invariant
+local-contraction neighborhood
+(\leanname{local\_warmShort\_credit\_difference\_to\_coldLong\_le}). This is the
+appropriate same-basin obligation for comparing a short warm solve directly with the
+registered longer cold solve.
+
+Execution adds a second boundary. If the realized warm and cold credits lie within
+$\epsilon_w$ and $\epsilon_c$ of their exact-real readouts, respectively, then the complete
+realized-credit error is at most
+\[
+ \epsilon_w + Kq^m\left(
+   \|x_{\mathrm{warm}}-x_{\mathrm{cold}}\|+
+   \left(\sum_{j=0}^{s-1}q^j\right)
+     \|x_{\mathrm{cold}}-F x_{\mathrm{cold}}\|
+ \right)+\epsilon_c.
+\]
+This composition is machine checked
+(\leanname{local\_realized\_warmShort\_credit\_difference\_to\_coldLong\_le}); the
+precision terms must be supplied by endpoint replay certificates rather than inferred
+from solver telemetry.
+
+The solver map itself must also match the implementation. In the registered multi-site
+settle, the error gradient is divided by row masses before stepping and the proposed
+rate is selected by a finite monotone-energy backtracking search. Let $P$ be the fixed
+inverse-mass linear map, $J_0$ the raw gradient Jacobian at an audited center, and suppose
+the raw Jacobian varies by at most $\delta$ throughout the declared ball. If $PJ_0$ has
+strong-monotonicity modulus $\mu$, then preconditioning spends at most $\|P\|\delta$ of
+that margin. The exact regional conditions are
+\[
+ \|P\|\delta<\mu,
+ \qquad
+ \eta\bigl(\|PJ_0\|+\|P\|\delta\bigr)^2
+ <2\bigl(\mu-\|P\|\delta\bigr),
+\]
+together with the audited center-displacement admission bound. Under them the fixed
+proposal $x\mapsto x-\eta P\nabla E(x)$ supplies the local contraction consumed above
+(\leanname{PreconditionedJacobianEnclosure.\allowbreak{}toLocalContractionCertificate}).
+
+That fixed-map certificate transfers to the executable backtracking map only if the
+initial proposal passes the monotone-energy predicate at every point of the admitted
+ball. This branch-stability obligation is explicit and machine checked
+(\leanname{PreconditionedJacobianEnclosure.\allowbreak{}toMonotoneBacktrackingCertificate}). It cannot
+be replaced by ``no backtracks were observed'' at a few telemetry points. For the scalar
+square energy, rate $3$ sends $1$ to $-2$ and is rejected, while one half-rate retry sends
+$1$ to $-1/2$ and is accepted; hence backtracking and the nominal fixed-rate map genuinely
+differ when the initial branch is not stable
+(\leanname{monotoneBacktracking\_rejects\_unstable\_initial}). Exact-real energies are
+finite by construction; a floating-point realization must additionally reject non-finite
+values and bind its endpoint to the separate precision budget.
+
+For the block-quadratic model the comparison is not merely bounded. On block $i$, the
+global and damped finite states differ exactly by
+\[
+ \left[
+ (1-\eta\kappa_i)^T-
+ \left(\frac{\lambda}{\kappa_i+\lambda}\right)^T
+ \right](x_i-z_i),
+\]
+and a linear credit readout multiplies this expression by its block weight
+(\leanname{global\_damped\_iterate\_difference},
+\leanname{coordinateCredit\_global\_damped\_difference}). The hypotheses are necessary:
+the half-step and quarter-step scalar solvers have exactly the same stationary set but
+different one-step credit
+(\leanname{shared\_stationary\_set\_not\_finiteStep\_license}).
+
+Finite-credit proximity is still not the scientific objective. The accelerated credit
+must preserve whatever conditional advantage justified the cold predictive direction.
+Let $d_c$ be the authenticated cold finite credit, $d_w$ the candidate warm credit,
+$b$ the comparison direction, and $g$ the retention-weighted gradient. If
+$\|d_w-d_c\|\leq\varepsilon$, then the cold advantage survives whenever
+\[
+ \|g\|\varepsilon
+ < \langle g,d_c\rangle-\langle g,b\rangle.
+\]
+For finite parameter steps the gate additionally charges the difference between the
+candidate and baseline directional-curvature bounds. Both versions are machine checked
+(\leanname{finiteSolver\_preserves\_retentionAdvantage},
+\leanname{finiteSolver\_preserves\_decreaseLowerAdvantage}). A fail-closed selector uses
+the candidate only on admission and otherwise returns the cold reference exactly; its
+advantage theorem requires the candidate gate only on the admitted branch
+(\leanname{guardedFiniteSolver\_preserves\_retentionAdvantage}).
+The finite-trajectory form composes the same-basin, omitted-tail, and two endpoint
+precision budgets directly with this fail-closed advantage gate
+(\leanname{guardedLocalWarmShort\_preserves\_retentionAdvantage}).
+Recomputing the complete cold endpoint merely to evaluate the admitted branch can erase
+the proposed saving. A sharper form therefore accepts a certified lower bound $M$ on the
+exact-real cold endpoint's advantage. If the warm trajectory and its one-sided replay
+budget give $\|d_w-d_c\|\leq\varepsilon$ and $\|g\|\varepsilon<M$, then the warm
+candidate is admitted without executing $d_c$. Rejection still computes and returns an
+authenticated cold fallback
+(\leanname{guardedLocalWarmShort\_withoutAdmittedColdReplay}). The lower bound $M$ is a
+real certificate obligation; historical average advantage or a sampled cold score cannot
+replace it.
+
+Finally, fewer sweeps are not yet less work. Write
+\[
+ W_p=W_{\mathrm{init}}+W_{\mathrm{cert}}+W_{\mathrm{fp}}+W_{\mathrm{audit}}
+       +cT_w,
+ \qquad
+ W_c=W_{\mathrm{cold,fixed}}+cT_c
+\]
+for proposal and cold-reference work. An admitted proposal accelerates exactly when
+$W_p<W_c$; a rejected proposal costs $W_p+W_c$ and therefore cannot accelerate that
+update. Across $A$ admissions and $R$ rejections, the exact threshold is
+\[
+ (A+R)W_p+RW_c < (A+R)W_c
+ \quad\Longleftrightarrow\quad
+ (A+R)W_p < AW_c
+\]
+(\leanname{admitted\_guardedWork\_lt\_coldWork\_iff},
+\leanname{rejected\_guardedWork\_not\_lt\_coldWork},
+\leanname{batchGuardedWork\_lt\_coldWork\_iff}). In the executable fixture, four saved
+sweeps remain beneficial with two units of certification overhead, but the same sweep
+saving loses once overhead reaches five; with one rejection, three admissions merely
+break even and four are needed for strict net saving. Thus safe fallback and acceleration
+are separate claims: the former protects the experiment, while only complete work
+accounting establishes the latter.
 
 \emph{A single global rate is defeated by spread.} Any rate above $2/L$ for the stiffest
 block amplifies that block's error at every step
@@ -2971,6 +3145,76 @@ all $749$ checks. Its SHA-256 is
 This establishes the reported finite-corpus coverage under the checker, not full-domain
 correctness of the discovered programs and not efficacy of the still-untested unified
 carrier.
+
+\subsection{A fresh-start architecture--credit relation audit}
+\label{sec:fresh-architecture-relation}
+
+A separate matched experiment started BP and prospective PC from the same initialization
+within each of two architectures: the coarse recurrent AC--NMT carrier and the finer
+Unified carrier. Every proposed program was adjudicated by the same external checker.
+For endpoint $s$, define the descriptive interaction
+\[
+ I_s =
+ \bigl(Y_s(\mathrm{Unified},\mathrm{PC})
+       -Y_s(\mathrm{Unified},\mathrm{BP})\bigr)
+ -
+ \bigl(Y_s(\mathrm{AC},\mathrm{PC})
+       -Y_s(\mathrm{AC},\mathrm{BP})\bigr).
+\]
+
+\begin{center}\small
+\begin{tabular}{@{}lrrr@{}}
+\toprule
+round and endpoint & AC: PC--BP & Unified: PC--BP & $I_s$ \\
+\midrule
+round 1 verified facts & $-355$ & $+8$ & $363$ \\
+round 1 program identities & $-277$ & $+6$ & $283$ \\
+round 1 targets & $-302$ & $+3$ & $305$ \\
+round 1 fresh program identities & $-78$ & $+5$ & $83$ \\
+\midrule
+round 2 verified facts & $-206$ & $+10$ & $216$ \\
+round 2 program identities & $-194$ & $-24$ & $170$ \\
+round 2 targets & $-198$ & $+13$ & $211$ \\
+round 2 fresh program identities & $-78$ & $-8$ & $70$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The interaction is endpoint-specific by construction, and the formal development
+contains an executable witness in which changing only the endpoint projection changes
+its value
+(\leanname{architectureUpdateInteractionBy},
+\leanname{architectureInteraction\_changes\_with\_endpoint\_projection}).
+The table therefore does not define one scalar architecture effect. Nor does it
+identify a causal effect of carrier architecture: architecture is bundled with decoder
+and graph structure rather than randomized.
+
+Round two exposes the mechanism behind the superficially favorable Unified target
+contrast. Unified PC covers $95$ targets against BP's $82$, but represents only $89$
+program identities against $113$, including $71$ versus $79$ fresh identities. For a
+relation $R$ between programs and targets, let $d_R(p)$ be the target degree of program
+$p$ and let $e_R(p)$ be its exclusive contribution, the number of targets supported
+only by $p$. The exact deletion identity and bound are
+\[
+ |\mathrm{targets}(R\setminus p)|+e_R(p)=|\mathrm{targets}(R)|,
+ \qquad e_R(p)\le d_R(p),
+\]
+formalized as
+\leanname{targetCoverage\_withoutProgram\_add\_exclusive} and
+\leanname{exclusiveTargetContribution\_le\_programTargetDegree}. A negative fixture
+shows that equal program degree need not imply equal exclusive contribution
+(\leanname{equal\_program\_degree\_different\_exclusive\_target\_contribution}).
+
+The observed Unified-PC relation contains one previously known program with
+$d_R=e_R=36$: one exact same-target reproduction and $35$ cross-target reuses.
+Removing it changes PC target coverage from $95$ to $59$; the most consequential
+single BP removal changes $82$ to $80$. Consequently the ordinary PC--BP target
+contrast of $+13$ becomes $-21$ under leave-one-program-out stress. This is evidence
+for an architecture-conditioned associative reuse channel, but evidence against
+calling the aggregate advantage robust. Future architecture comparisons should report
+the authenticated fact relation, program and target projections, fresh identities,
+program-degree and exclusive-contribution distributions, and the maximum
+leave-one-program-out change.
 
 \subsection{A dependent-proof credit screen}
 \label{sec:dtt-credit-screen}

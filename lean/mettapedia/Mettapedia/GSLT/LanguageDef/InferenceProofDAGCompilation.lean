@@ -24,7 +24,6 @@ open Mettapedia.GSLT.LanguageDef.InferenceChecker
 open Mettapedia.GSLT.LanguageDef.InferenceCheckerDAG
 open Mettapedia.GSLT.LanguageDef.InferenceMeTTaRender
 
-deriving instance Hashable for RuleId
 deriving instance Hashable for CollType
 deriving instance Hashable for Pattern
 

@@ -117,7 +117,8 @@ noncomputable def evidenceProfileHom :
   map_add' W₁ W₂ := funext (BinaryWorldModel.evidence_add W₁ W₂)
 
 /-- Construct a `BinaryWorldModel` from a profile homomorphism (inverse direction). -/
-noncomputable def ofProfileHom (F : AddMonoidHom State (Query → BinaryEvidence)) :
+@[reducible] noncomputable def ofProfileHom
+    (F : AddMonoidHom State (Query → BinaryEvidence)) :
     BinaryWorldModel State Query where
   evidence W q := F W q
   evidence_add W₁ W₂ q := congrFun (F.map_add W₁ W₂) q
@@ -614,7 +615,7 @@ end WMStrengthRuleSigma
 /-! ## Interop Adapters -/
 
 /-- Every typed WM induces an untyped WM over `Sigma Query`. -/
-def toWorldModelSigma
+@[reducible] def toWorldModelSigma
     (State : Type*) (Srt : Type*) (Query : Srt → Type*)
     [EvidenceType State] [WorldModelSigma State Srt Query] :
     BinaryWorldModel State (Sigma Query) where
@@ -623,7 +624,7 @@ def toWorldModelSigma
   evidence_zero := WorldModelSigma.evidence_zero
 
 /-- Any untyped WM over `Sigma Query` can be viewed as a typed WM. -/
-def ofWorldModelSigma
+@[reducible] def ofWorldModelSigma
     (State : Type*) (Srt : Type*) (Query : Srt → Type*)
     [EvidenceType State] [BinaryWorldModel State (Sigma Query)] :
     WorldModelSigma State Srt Query where
@@ -632,7 +633,7 @@ def ofWorldModelSigma
   evidence_zero := BinaryWorldModel.evidence_zero
 
 /-- Any untyped WM can be trivially typed with one sort (`PUnit`). -/
-def ofWorldModelUnit
+@[reducible] def ofWorldModelUnit
     (State : Type*) (Query : Type*)
     [EvidenceType State] [BinaryWorldModel State Query] :
     WorldModelSigma State PUnit (fun _ => Query) where

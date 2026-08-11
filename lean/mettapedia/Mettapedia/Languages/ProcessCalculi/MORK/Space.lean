@@ -164,20 +164,28 @@ noncomputable def matchOneInSpace (σ : Subst) (pat : Atom) (s : Space) :
     (matchAtom σ pat a).map (·, a)
 
 /-- Try to match ALL pattern atoms simultaneously against the space.
-    Returns list of (substitution, consumed-atoms) pairs. -/
+    Returns list of (substitution, witness-support) pairs.
+
+    Factors form a relational product: the same support atom may witness more
+    than one factor when the threaded substitution permits it.  The returned
+    support records which atoms witnessed the row; it is not a linear-use set. -/
 noncomputable def matchPattern (σ : Subst) (s : Space) (p : Pattern) :
     List (Subst × Finset Atom) :=
   let rec go : List Atom → Subst → Finset Atom → List (Subst × Finset Atom)
-    | [], σ', consumed => [(σ', consumed)]
-    | pat :: rest, σ', consumed =>
-        let available := s \ consumed
-        (matchOneInSpace σ' pat available).flatMap fun (σ'', a) =>
-          go rest σ'' (consumed ∪ {a})
+    | [], σ', witnesses => [(σ', witnesses)]
+    | pat :: rest, σ', witnesses =>
+        (matchOneInSpace σ' pat s).flatMap fun (σ'', a) =>
+          go rest σ'' (witnesses ∪ {a})
   go p.atoms σ ∅
 
 /-! ## Sink application -/
 
-/-- Apply a single sink to a space under substitution `σ`. -/
+/-- Apply one instantiated row of a sink to a space.
+
+For `head` and `tail`, a singleton batch selects its only ground value whenever
+the requested count is positive.  Multi-row work-queue execution uses
+`BatchSinkProvider` below; applying this function repeatedly is not the MM2
+batch semantics of those reductions. -/
 def applySink (s : Space) (σ : Subst) (sink : Sink) : Space :=
   match sink with
   | .add a    =>
@@ -185,15 +193,67 @@ def applySink (s : Space) (σ : Subst) (sink : Sink) : Space :=
     if isGroundAtom a' then s ∪ {a'} else s
   | .remove a =>
     s.erase (applySubst σ a)
-  | .head a   =>
-    -- Idempotent add: same as add in the Finset model (union is idempotent).
-    -- The distinction matters in the computable evaluator (list-level).
+  | .head count a =>
     let a' := applySubst σ a
-    if isGroundAtom a' then s ∪ {a'} else s
+    if count > 0 && isGroundAtom a' then s ∪ {a'} else s
+  | .tail count a =>
+    let a' := applySubst σ a
+    if count > 0 && isGroundAtom a' then s ∪ {a'} else s
 
 /-- Apply all sinks of a template to a space. -/
 def applySinks (s : Space) (σ : Subst) (tmpl : Template) : Space :=
   tmpl.sinks.foldl (applySink · σ) s
+
+/-! ## Batched sink-provider interface -/
+
+/-- A semantic provider for one family of authored sink declarations.
+
+MM2 creates one private state per authored sink, stages every successful match
+into that state, and finalizes each sink once.  The dependent `Stage` carrier
+allows insertion, extrema, aggregation, files, solvers, and future plugins to
+use different state without putting host implementations in the language.
+`finalize` returns only the new mathematical space; authorization, faults, and
+receipts belong to the foreign-capability envelope layered over this core. -/
+structure BatchSinkProvider (Operator : Type*) where
+  Stage : Operator → Type*
+  init : (operator : Operator) → Stage operator
+  stage : (operator : Operator) → Stage operator → Subst → Stage operator
+  finalize : (operator : Operator) → Stage operator → Space → Space
+
+namespace BatchSinkProvider
+
+/-- Stage every match row for one authored sink before any finalization. -/
+def stageAll {Operator : Type*} (provider : BatchSinkProvider Operator)
+    (operator : Operator) (rows : List Subst) : provider.Stage operator :=
+  rows.foldl (provider.stage operator) (provider.init operator)
+
+/-- Finalize authored sinks from left to right after independently staging all
+match rows for each sink.  This is the semantic batching boundary implemented
+by MORK's `transform_multi_multi_io`. -/
+def run {Operator : Type*} (provider : BatchSinkProvider Operator)
+    (rows : List Subst) : Space → List Operator → Space
+  | space, [] => space
+  | space, operator :: rest =>
+      run provider rows
+        (provider.finalize operator (provider.stageAll operator rows) space)
+        rest
+
+@[simp] theorem run_nil {Operator : Type*}
+    (provider : BatchSinkProvider Operator) (rows : List Subst)
+    (space : Space) :
+    provider.run rows space [] = space :=
+  rfl
+
+@[simp] theorem run_cons {Operator : Type*}
+    (provider : BatchSinkProvider Operator) (rows : List Subst)
+    (space : Space) (operator : Operator) (rest : List Operator) :
+    provider.run rows space (operator :: rest) =
+      provider.run rows
+        (provider.finalize operator (provider.stageAll operator rows) space)
+        rest :=
+  rfl
+
+end BatchSinkProvider
 
 /-! ## Rule firing -/
 
@@ -232,17 +292,17 @@ noncomputable def matchSourceFactor (σ : Subst) (s : Space) (src : SourceFactor
     matchOneInSpace σ witness remaining
 
 /-- Match a list of explicit source factors against a space.
-    Like `matchPattern`, threads substitution through factors and tracks
-    consumed atoms to prevent double-matching. -/
+    Like `matchPattern`, this is a relational product.  Factors may reuse the
+    same support atom; the accumulated finite set records witnesses but does
+    not impose linear consumption. -/
 noncomputable def matchSourceFactors (σ : Subst) (s : Space)
     (factors : List SourceFactor) : List (Subst × Finset Atom) :=
   let rec go : List SourceFactor → Subst → Finset Atom →
       List (Subst × Finset Atom)
-    | [], σ', consumed => [(σ', consumed)]
-    | src :: rest, σ', consumed =>
-        let available := s \ consumed
-        (matchSourceFactor σ' available src).flatMap fun (σ'', a) =>
-          go rest σ'' (consumed ∪ {a})
+    | [], σ', witnesses => [(σ', witnesses)]
+    | src :: rest, σ', witnesses =>
+        (matchSourceFactor σ' s src).flatMap fun (σ'', a) =>
+          go rest σ'' (witnesses ∪ {a})
   go factors σ ∅
 
 /-- Match an `InputSpec` against a space.
@@ -319,12 +379,21 @@ theorem applySink_add_mem (s : Space) (σ : Subst) (a b : Atom)
   · exact Finset.mem_union_left _ hm
   · exact hm
 
-/-- Applying a head-sink keeps original atoms (same as add in Finset model). -/
-theorem applySink_head_mem (s : Space) (σ : Subst) (a b : Atom)
+/-- Applying a head sink to one row keeps original atoms. -/
+theorem applySink_head_mem (s : Space) (σ : Subst) (count : Nat) (a b : Atom)
     (hm : b ∈ s) :
-    b ∈ applySink s σ (.head a) := by
+    b ∈ applySink s σ (.head count a) := by
   simp only [applySink]
-  split_ifs with hg
+  split_ifs with hready
+  · exact Finset.mem_union_left _ hm
+  · exact hm
+
+/-- Applying a tail sink to one row keeps original atoms. -/
+theorem applySink_tail_mem (s : Space) (σ : Subst) (count : Nat) (a b : Atom)
+    (hm : b ∈ s) :
+    b ∈ applySink s σ (.tail count a) := by
+  simp only [applySink]
+  split_ifs with hready
   · exact Finset.mem_union_left _ hm
   · exact hm
 

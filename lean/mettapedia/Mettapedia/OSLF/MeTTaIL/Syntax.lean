@@ -1,5 +1,6 @@
 import Mathlib.Data.List.Basic
 import Mathlib.Data.String.Basic
+import Mettapedia.Util.LinearHash
 
 /-!
 # MeTTaIL Language Definition Syntax (Locally Nameless)
@@ -831,7 +832,7 @@ through a separate validated presentation rather than stored in
 /-- Stable external identifier for one inference rule. -/
 structure RuleId where
   value : String
-deriving Repr, DecidableEq
+deriving Repr, DecidableEq, Hashable
 
 /-- Structural declaration of one proof-judgment form. -/
 structure JudgmentDecl where
@@ -1220,8 +1221,90 @@ def duplicateErrorsAux
         tailErrors
 termination_by remaining.length
 
+private def duplicateErrorsFastAux
+    (context what : String) (seen : Std.HashSet String) :
+    List String -> List ValidationError -> List ValidationError
+  | [], reversedErrors => reversedErrors.reverse
+  | name :: rest, reversedErrors =>
+      let nextErrors :=
+        if seen.contains name then
+          mkValidationError context s!"duplicate {what} `{name}`" ::
+            reversedErrors
+        else
+          reversedErrors
+      duplicateErrorsFastAux context what (seen.insert name) rest nextErrors
+
+/-- Hash-indexed executable duplicate scan retaining the exact diagnostic
+order and payloads of `duplicateErrorsAux`. -/
+def duplicateErrorsFast
+    (context what : String) (names : List String) : List ValidationError :=
+  duplicateErrorsFastAux context what {} names []
+
+private theorem duplicateErrorsFastAux_eq
+    (context what : String) (seenSet : Std.HashSet String)
+    (seenList remaining : List String) (reversedErrors : List ValidationError)
+    (sameMembers : forall name, name ∈ seenSet <-> name ∈ seenList) :
+    duplicateErrorsFastAux context what seenSet remaining reversedErrors =
+      reversedErrors.reverse ++
+        duplicateErrorsAux context what seenList remaining := by
+  induction remaining generalizing seenSet seenList reversedErrors with
+  | nil => simp [duplicateErrorsFastAux, duplicateErrorsAux]
+  | cons name rest inductionHypothesis =>
+      have nextMembers : forall candidate,
+          candidate ∈ seenSet.insert name <-> candidate ∈ name :: seenList := by
+        intro candidate
+        constructor
+        · intro inserted
+          rcases Std.HashSet.mem_insert.mp inserted with equal | oldMember
+          · exact List.mem_cons.mpr
+              (Or.inl (LawfulBEq.eq_of_beq equal).symm)
+          · exact List.mem_cons.mpr
+              (Or.inr ((sameMembers candidate).mp oldMember))
+        · intro member
+          rcases List.mem_cons.mp member with equal | oldMember
+          · subst candidate
+            exact Std.HashSet.mem_insert_self
+          · exact Std.HashSet.mem_insert.mpr
+              (Or.inr ((sameMembers candidate).mpr oldMember))
+      by_cases repeated : name ∈ seenList
+      · have observed : seenSet.contains name = true :=
+          Std.HashSet.mem_iff_contains.mp ((sameMembers name).mpr repeated)
+        simp only [duplicateErrorsFastAux, observed, ↓reduceIte,
+          duplicateErrorsAux, repeated]
+        rw [inductionHypothesis (seenSet := seenSet.insert name)
+          (seenList := name :: seenList)
+          (reversedErrors :=
+            mkValidationError context s!"duplicate {what} `{name}`" ::
+              reversedErrors) nextMembers]
+        simp [List.reverse_cons, List.append_assoc]
+      · have unobserved : seenSet.contains name = false := by
+          cases equality : seenSet.contains name with
+          | false => rfl
+          | true =>
+              exact (repeated ((sameMembers name).mp
+                (Std.HashSet.mem_iff_contains.mpr equality))).elim
+        simp only [duplicateErrorsFastAux, unobserved, Bool.false_eq_true,
+          ↓reduceIte, duplicateErrorsAux, repeated]
+        exact inductionHypothesis (seenSet := seenSet.insert name)
+          (seenList := name :: seenList) (reversedErrors := reversedErrors)
+          nextMembers
+
+theorem duplicateErrorsFast_eq
+    (context what : String) (names : List String) :
+    duplicateErrorsFast context what names =
+      duplicateErrorsAux context what [] names := by
+  simpa [duplicateErrorsFast] using
+    duplicateErrorsFastAux_eq context what {} [] names [] (by simp)
+
+@[implemented_by duplicateErrorsFast]
 def duplicateErrors (context what : String) (names : List String) : List ValidationError :=
   duplicateErrorsAux context what [] names
+
+theorem duplicateErrorsFast_eq_duplicateErrors
+    (context what : String) (names : List String) :
+    duplicateErrorsFast context what names =
+      duplicateErrors context what names :=
+  duplicateErrorsFast_eq context what names
 
 private theorem duplicateErrorsAux_eq_nil_of_nodup
     (context what : String) (seen remaining : List String)

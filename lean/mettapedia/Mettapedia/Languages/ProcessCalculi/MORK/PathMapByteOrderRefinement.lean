@@ -1,20 +1,21 @@
 import Mettapedia.Languages.ProcessCalculi.MORK.WorkQueueOrder
 
 /-!
-# PathMap Byte-Order Refinement
+# Historical Location-Key Refinement
 
-Connects the abstract `atomKey : Atom → List ℕ` from `WorkQueueOrder.lean`
-to the concrete byte encoding used by the Rust PathMap runtime.
+Records the abstract `atomKey : Atom → List ℕ` fragment from
+`WorkQueueOrder.lean` beside the corresponding tag-level encoding used by the
+Rust PathMap runtime.
 
 ## The Gap
 
 `WorkQueueOrder.lean` line 28 says:
 "This is NOT byte-identical to PathMap serialization."
 
-This file closes that gap for the scheduler exec-location fragment:
-it defines the concrete serialization, proves ordering agreement, and
-shows the abstract work-queue scheduler matches the Rust `metta_calculus`
-pop order.
+This file refines the older `atomKey` approximation on a two-symbol location
+fragment.  It does not establish full MM2 scheduler adequacy: the physical
+queue orders complete `exec` atoms, and the active scheduler model now uses
+`morkCompactKey?` on that complete directive.
 
 ## PathMap Tag Encoding (from Rust `expr/src/lib.rs`)
 
@@ -25,19 +26,21 @@ Tag::SymbolSize(s) → 0xC0 | s     (byte 0xC0–0xFF, s ∈ 0..63)
 Tag::NewVar        → 0xC0 | 0     (byte 0xC0)
 ```
 
-## Key Theorems
+## Results
 
-- `serializeAtom` — concrete byte-level serialization matching Rust
-- `serializeAtom_order_matches_atomKey` — byte order = atomKey order on fragment
-- `scheduler_byte_faithful` — work-queue pop order = PathMap trie traversal order
+- `symbolSizeTag_nat_mono` — symbol-size tag monotonicity below the 64-byte bound
+- `ascii_byte_order` — ASCII character order agrees with its encoded byte order
+- `schedulerLocFragment_pair` — symbol pairs inhabit the historical fragment
+- `atomKey_order_eq_locLt_on_fragment` — the authored approximation agrees with
+  `locLt` on that fragment
 
 ## CeTTa/MORK Mapping
 
 | Lean | Rust |
 |------|------|
-| `serializeAtom` | `item_byte(Tag) + raw_bytes` in `expr/src/lib.rs` |
+| `serializeSymbol` / `serializeLocFragment` | `item_byte(Tag) + raw_bytes` in `expr/src/lib.rs` |
 | byte-order comparison | `to_next_val()` in `space.rs:2582` |
-| `scheduler_byte_faithful` | `metta_calculus` pop order in `space.rs:2567` |
+| `atomKey_order_eq_locLt_on_fragment` | historical location projection only |
 -/
 
 namespace Mettapedia.Languages.ProcessCalculi.MORK.ByteOrderRefinement
@@ -86,10 +89,12 @@ def serializeSymbol (s : String) : List UInt8 :=
 def serializeLocFragment (priority name : String) : List UInt8 :=
   arityTag 2 :: (serializeSymbol priority ++ serializeSymbol name)
 
-/-! ## §3: Byte Order = Abstract Key Order on Fragment
+/-! ## §3: Encoding Components
 
-The key theorem: on the scheduler fragment, comparing serialized byte paths
-lexicographically gives the same result as comparing `atomKey` values. -/
+The definitions below model the two tag components used by the historical
+fragment.  The active full-directive encoder and its scheduler proofs live in
+`WorkQueueOrder.lean`; this file does not claim that `atomKey` is byte-identical
+to `serializeLocFragment`. -/
 
 /-- Arity tag for 2-element expression is 0x02. -/
 theorem arityTag_two : arityTag 2 = ⟨2⟩ := rfl
@@ -115,96 +120,64 @@ theorem ascii_byte_order (c₁ c₂ : Char)
   · intro h; simp [UInt8.lt_iff_toNat_lt_toNat, UInt8.toNat] at h; omega
   · intro h; simp [UInt8.lt_iff_toNat_lt_toNat, UInt8.toNat]; omega
 
-/-! ## §4: Fragment Ordering Agreement
+/-! ## §4: Fragment Membership
 
-The concrete byte-level comparison of two serialized locations agrees with
-the abstract `locLt` ordering.
+The examples below show how symbol-pair locations are serialized.  No theorem
+in this section identifies that byte order with the older `atomKey` order.
 
 Positive example: `("0" "a")` serializes to `[0x02, 0xC1, 0x30, 0xC1, 0x61]`,
-`("0" "b")` to `[0x02, 0xC1, 0x30, 0xC1, 0x62]`. Byte comparison at position 4:
-0x61 < 0x62 (ASCII 'a' < 'b'). Matches `locLt` which compares name strings.
+`("0" "b")` to `[0x02, 0xC1, 0x30, 0xC1, 0x62]`. Their byte comparison first
+differs at the final byte: 0x61 < 0x62.
 
 Negative example: `("1" "a")` vs `("0" "b")`. Byte comparison at position 2:
 0xC1 = 0xC1 (same length), then position 3: 0x31 > 0x30 (ASCII '1' > '0').
-So `("1" "a")` > `("0" "b")`. Matches `locLt` which compares priority first. -/
+So `("1" "a")` > `("0" "b")`. -/
 
-/-- For the scheduler fragment, the serialized byte key and the abstract
-    `atomKey` agree on ordering direction.
+/-- Two symbol pairs are members of the historical location fragment.
 
-    The abstract `atomKey` uses `List ℕ` with tags {0, 1, 3} and lengths as naturals.
-    The concrete serialization uses `List UInt8` with tags {Arity, SymbolSize, VarRef}.
-
-    On the scheduler fragment (two-symbol expressions), both encode as:
-    - Abstract: `[0, 2, 1, len(p), ...chars_p..., 1, len(n), ...chars_n...]`
-    - Concrete: `[0x02, 0xC0+len(p), ...bytes_p..., 0xC0+len(n), ...bytes_n...]`
-
-    The orderings AGREE because:
-    - The leading `[0, 2]` / `[0x02]` is constant (same for all locations)
-    - Within the symbol encoding, both use length-then-content order
-    - SymbolSize tag 0xC0+len is monotone in len (proven by `symbolSizeTag_mono`)
-    - Raw bytes match Char.toNat for ASCII (proven by `ascii_byte_order`)
-
-    The structural proof: `atomKey_order_on_fragment` already proved that
-    `lexLt ∘ atomKey = locLt` on the fragment. This theorem adds that the
-    concrete byte ordering also equals `locLt` on the fragment. -/
-theorem serializeLocFragment_order_agrees (p₁ n₁ p₂ n₂ : String)
-    (_hp₁ : p₁.length < 64) (_hn₁ : n₁.length < 64)
-    (_hp₂ : p₂.length < 64) (_hn₂ : n₂.length < 64)
-    (_hascii_p₁ : ∀ c ∈ p₁.toList, c.toNat < 128)
-    (_hascii_n₁ : ∀ c ∈ n₁.toList, c.toNat < 128)
-    (_hascii_p₂ : ∀ c ∈ p₂.toList, c.toNat < 128)
-    (_hascii_n₂ : ∀ c ∈ n₂.toList, c.toNat < 128) :
+This theorem deliberately states only fragment membership.  Physical byte
+ordering is handled by the exact full-directive key in `WorkQueueOrder.lean`. -/
+theorem schedulerLocFragment_pair (p₁ n₁ p₂ n₂ : String) :
     let loc₁ := Atom.expression [.symbol p₁, .symbol n₁]
     let loc₂ := Atom.expression [.symbol p₂, .symbol n₂]
     schedulerLocFragment loc₁ ∧ schedulerLocFragment loc₂ :=
   ⟨⟨p₁, n₁, rfl⟩, ⟨p₂, n₂, rfl⟩⟩
 
-/-! ## §5: Scheduler Byte-Faithfulness
+/-! ## §5: Historical Authored Location Order
 
-The main deliverable: the abstract work-queue scheduler from
-`WorkQueueExec.lean` matches the concrete MORK `metta_calculus` pop order
-on the supported exec-location fragment.
+The result below relates `atomKey` and `locLt` for the supported location
+fragment.  It must not be lifted to a claim about work-queue pop order, because
+two complete directives with the same location may differ later in their
+compact-expression bytes.
 
-The proof chain:
-1. `atomKey_order_on_fragment` (WorkQueueOrder.lean): `lexLt ∘ atomKey = locLt`
-2. Serialization preserves ordering direction (this file, §4)
-3. `FTrie` child lists are sorted by `UInt8` (FiniteTrie.lean)
-4. PathMap trie DFS traversal visits children in ascending byte order
-5. Therefore: `metta_calculus`'s `to_next_val()` pops in `locLt` order -/
+The theorem below is exactly the first, authored link:
+`atomKey_order_on_fragment` from `WorkQueueOrder.lean` states
+`lexLt ∘ atomKey = locLt`.  This section deliberately does not promote it to a
+physical PathMap traversal theorem. -/
 
-/-- **Scheduler byte-faithfulness on the fragment:**
-    the abstract scheduler ordering (`locLt`) is the same ordering that
-    the Rust `metta_calculus` uses when popping exec facts from the PathMap.
+/-- **Historical location-key faithfulness on the fragment:**
+    the location approximation agrees with `locLt`.
 
-    This holds because:
-    - `locLt` = `lexLt ∘ atomKey` on the fragment (proved in WorkQueueOrder)
-    - `atomKey` ordering matches concrete byte ordering (this file)
-    - Concrete byte ordering = PathMap trie traversal order (by sorted children)
-    - PathMap trie traversal = `to_next_val()` = `metta_calculus` pop order
+    This is `locLt = lexLt ∘ atomKey` on the fragment, as proved in
+    `WorkQueueOrder.lean`.  It says nothing about the physical bytes of a
+    complete directive.
 
-    Positive example: exec facts `(exec ("0" "a") ...)` and `(exec ("0" "b") ...)`
-    are popped in order "a" before "b" (both abstract and concrete agree).
+    Positive example: the authored approximation orders locations
+    `("0" "a")` before `("0" "b")`.
 
     Negative example: if the fragment restriction is dropped (e.g., nested
-    expressions or grounded values in location tuples), the `atomKey`
-    approximation may not match the concrete byte encoding. This theorem
-    does NOT cover those cases. -/
-theorem scheduler_byte_faithful (loc₁ loc₂ : Atom)
+    expressions or grounded values in location tuples), this theorem does not
+    apply. -/
+theorem atomKey_order_eq_locLt_on_fragment (loc₁ loc₂ : Atom)
     (h₁ : schedulerLocFragment loc₁)
     (h₂ : schedulerLocFragment loc₂) :
-    -- On the fragment, abstract ordering = concrete ordering
-    -- (both agree with locLt, which is the semantic ordering)
+    -- On the fragment, the two authored orderings agree.
     lexLt (atomKey loc₁) (atomKey loc₂) = locLt loc₁ loc₂ :=
   atomKey_order_on_fragment loc₁ loc₂ h₁ h₂
 
-/-- **Scheduler pop monotonicity:** if loc₁ < loc₂ in the abstract ordering,
-    then the Rust runtime pops loc₁ before loc₂.
-
-    This is the theorem a maintainer cites to say:
-    "the Lean work-queue scheduler is not just abstractly plausible;
-    on the supported exec fragment, it matches the concrete PathMap/MORK
-    byte-order traversal used by the Rust runtime." -/
-theorem scheduler_pop_order_correct (loc₁ loc₂ : Atom)
+/-- Location-projection monotonicity on the two-symbol fragment.  This is not
+a theorem about complete-directive pop order. -/
+theorem atomKey_order_true_of_locLt_on_fragment (loc₁ loc₂ : Atom)
     (h₁ : schedulerLocFragment loc₁)
     (h₂ : schedulerLocFragment loc₂)
     (hlt : locLt loc₁ loc₂ = true) :
@@ -213,36 +186,35 @@ theorem scheduler_pop_order_correct (loc₁ loc₂ : Atom)
 
 /-! ## §6: Unsupported Remainder
 
-The serialization and ordering proofs above cover ONLY the scheduler
-exec-location fragment: `(priority_string name_string)` where both
-children are symbols with ASCII content and length < 64.
+The tag lemmas, serialization definitions, and authored `atomKey`/`locLt`
+agreement above concern only the location fragment
+`(priority_string name_string)`.  They do not constitute a physical scheduler
+refinement.
 
-**NOT covered** (must fall back to runtime behavior without formal guarantee):
+**NOT covered by this historical projection:**
 - Nested expression locations: `((1 (0)) name)` — common in MM2 scheduling
 - Grounded value locations: `(42 name)` where 42 is a `GroundedValue.int`
 - Variable locations: `($x name)` — unusual but syntactically valid
 - Non-ASCII symbol content: UTF-8 multibyte characters in priority/name
 - Symbols longer than 63 bytes: exceeds SymbolSize tag capacity
 
-These are real limitations. The scheduler abstraction in `WorkQueueOrder.lean`
-handles them via `atomKey` which assigns arbitrary natural-number keys,
-but the byte-order faithfulness is only proved for the fragment above.
+The active work-queue semantics instead uses `morkCompactKey?` on complete
+representable directives; `atomKey` remains only an authored approximation.
 -/
 
 /-! ## §7: Summary
 
-**0 sorries. 0 warnings.**
-
 Key theorems:
-- `symbolSizeTag_mono` — shorter symbols have smaller tag bytes
+- `symbolSizeTag_nat_mono` — shorter supported symbols have smaller tag bytes
 - `ascii_byte_order` — byte comparison = char comparison for ASCII
-- `scheduler_byte_faithful` — abstract ordering = byte ordering on fragment
-- `scheduler_pop_order_correct` — abstract < implies concrete pop-before
+- `schedulerLocFragment_pair` — symbol pairs inhabit the historical fragment
+- `atomKey_order_eq_locLt_on_fragment` — `atomKey` ordering = `locLt` on the fragment
+- `atomKey_order_true_of_locLt_on_fragment` — location-projection monotonicity
 
 Maps to CeTTa/MORK runtime:
 - `serializeSymbol` → `item_byte(Tag::SymbolSize)` + raw bytes
 - `serializeLocFragment` → byte path under `exec` prefix
-- `scheduler_byte_faithful` → `metta_calculus` in `space.rs:2567`
+- full `metta_calculus` order → `morkCompactKey?` in `WorkQueueOrder.lean`
 -/
 
 end Mettapedia.Languages.ProcessCalculi.MORK.ByteOrderRefinement

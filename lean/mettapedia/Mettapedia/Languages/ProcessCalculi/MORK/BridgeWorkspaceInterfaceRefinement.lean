@@ -118,7 +118,7 @@ theorem liveMatchPattern_ground_singleton_mem (s : LiveWorkspace) (a : Atom)
     (hg : isGroundAtom a = true) (ha : a ∈ s) :
     ([], ({a} : Finset Atom)) ∈ liveMatchPattern s (mkPattern [a]) := by
   simp only [liveMatchPattern, matchPattern, mkPattern]
-  simp only [matchPattern.go, Finset.sdiff_empty]
+  simp only [matchPattern.go]
   rw [List.mem_flatMap]
   refine ⟨([], a), ?_, ?_⟩
   · simpa [liveMatchAtom] using groundAtom_matchOneInSpace [] a hg s ha

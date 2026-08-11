@@ -3,7 +3,11 @@ import Mettapedia.OSLF.CoreMain
 import Mettapedia.OSLF.Bridges
 import Mettapedia.OSLF.PathMap
 import Mettapedia.OSLF.SpecIndex
+import Mettapedia.OSLF.Framework.ReductionSpanTypeSynthesis
+import Mettapedia.OSLF.Framework.GSLTTypeSynthesis
 import Mettapedia.OSLF.Framework.NativeTypeTheory
+import Mettapedia.OSLF.Framework.OSLFProofGSLTAuthority
+import Mettapedia.OSLF.Framework.NativeTypeProofGSLT
 
 /-!
 # OSLF
@@ -17,4 +21,6 @@ This module gathers the stable OSLF hubs:
 * `Mettapedia.OSLF.Bridges` for links to external formal libraries.
 * `Mettapedia.OSLF.PathMap` for PathMap/ZAM-backed OSLF infrastructure.
 * `Mettapedia.OSLF.SpecIndex` for the review-facing specification index.
+* The framework authority modules for GSLT/span synthesis, rich native
+  judgments, finite readable native syntax, and ProofGSLT replay.
 -/

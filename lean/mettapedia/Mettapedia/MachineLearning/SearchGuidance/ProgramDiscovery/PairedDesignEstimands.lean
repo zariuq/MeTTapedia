@@ -198,6 +198,28 @@ def architectureUpdateInteraction
   ((architectureTwoUpdate : ℤ) - architectureTwoBaseline) -
     ((architectureOneUpdate : ℤ) - architectureOneBaseline)
 
+/-- Register the scalar endpoint before computing an architecture-by-update
+interaction.  Target coverage, program diversity, and relational fact count
+therefore yield distinct, well-typed interaction estimands. -/
+def architectureUpdateInteractionBy
+    {Program : Type uP} {Target : Type uT}
+    (score : SolveRelation Program Target → ℕ)
+    (architectureOneBaseline architectureOneUpdate
+      architectureTwoBaseline architectureTwoUpdate :
+        SolveRelation Program Target) : ℤ :=
+  architectureUpdateInteraction
+    (score architectureOneBaseline) (score architectureOneUpdate)
+    (score architectureTwoBaseline) (score architectureTwoUpdate)
+
+/-- Longitudinal change in a registered two-by-two interaction.  A nonzero
+value is a three-way round-by-architecture-by-update contrast, not a main
+effect of any one factor. -/
+def architectureUpdateInteractionChange
+    (roundOneA₀ roundOneA₁ roundOneB₀ roundOneB₁
+      roundTwoA₀ roundTwoA₁ roundTwoB₀ roundTwoB₁ : ℕ) : ℤ :=
+  architectureUpdateInteraction roundTwoA₀ roundTwoA₁ roundTwoB₀ roundTwoB₁ -
+    architectureUpdateInteraction roundOneA₀ roundOneA₁ roundOneB₀ roundOneB₁
+
 def portfolioMarginalEffect
     {Program : Type uP} {Target : Type uT}
     [DecidableEq Program] [DecidableEq Target]
@@ -221,6 +243,17 @@ theorem architectureUpdateInteraction_eq_zero_iff
     architectureUpdateInteraction a₀ a₁ b₀ b₁ = 0 ↔
       (b₁ : ℤ) - b₀ = (a₁ : ℤ) - a₀ := by
   unfold architectureUpdateInteraction
+  omega
+
+theorem architectureUpdateInteractionChange_eq_zero_iff
+    (roundOneA₀ roundOneA₁ roundOneB₀ roundOneB₁
+      roundTwoA₀ roundTwoA₁ roundTwoB₀ roundTwoB₁ : ℕ) :
+    architectureUpdateInteractionChange
+        roundOneA₀ roundOneA₁ roundOneB₀ roundOneB₁
+        roundTwoA₀ roundTwoA₁ roundTwoB₀ roundTwoB₁ = 0 ↔
+      architectureUpdateInteraction roundTwoA₀ roundTwoA₁ roundTwoB₀ roundTwoB₁ =
+        architectureUpdateInteraction roundOneA₀ roundOneA₁ roundOneB₀ roundOneB₁ := by
+  unfold architectureUpdateInteractionChange
   omega
 
 /-- Additive architecture and update contributions have no interaction. -/
@@ -254,6 +287,18 @@ theorem architectureUpdateInteraction_positive_example :
 theorem architectureUpdateInteraction_zero_example :
     architectureUpdateInteraction 10 12 13 15 = 0 := by
   norm_num [architectureUpdateInteraction]
+
+/-- Architecture interactions depend on the registered event projection.
+Here target coverage has zero interaction while program diversity has a
+positive interaction on the very same four relation-valued cells. -/
+theorem architectureInteraction_changes_with_endpoint_projection :
+    architectureUpdateInteractionBy targetCoverage
+        AccountingFixtures.spreadPrograms AccountingFixtures.sharedProgram
+        ∅ ∅ = 0 ∧
+      architectureUpdateInteractionBy programCoverage
+        AccountingFixtures.spreadPrograms AccountingFixtures.sharedProgram
+        ∅ ∅ = 1 := by
+  decide +kernel
 
 /-! ## Population scope boundary -/
 
@@ -311,9 +356,11 @@ theorem exists_agree_on_pair_ne_at_third
 #print axioms exists_eq_unpairedResponses_ne_treatmentEffect
 #print axioms architectureUpdateInteraction_eq_zero_iff
 #print axioms architectureUpdateInteraction_additive_eq_zero
+#print axioms architectureUpdateInteractionChange_eq_zero_iff
 #print axioms three_cells_do_not_identify_architectureUpdateInteraction
 #print axioms architectureUpdateInteraction_positive_example
 #print axioms architectureUpdateInteraction_zero_example
+#print axioms architectureInteraction_changes_with_endpoint_projection
 #print axioms exists_eqOn_finset_ne_at
 
 end Mettapedia.MachineLearning.SearchGuidance.ProgramDiscovery

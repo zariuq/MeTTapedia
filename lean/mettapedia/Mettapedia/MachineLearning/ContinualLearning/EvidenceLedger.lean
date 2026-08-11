@@ -98,6 +98,60 @@ theorem GaussianEvidence.reused_naturalParameter_exact {Index : Type*}
   simp [GaussianEvidence.update, GaussianEvidence.add]
   module
 
+/-! ## Distinct-event Gaussian aggregation
+
+The additive coordinates above become an evidence valuation only after the
+atomic event identity has been fixed.  A `Finset Event` makes deduplication at
+that identity explicit; inclusion--exclusion then gives the exact correction
+when two batches share events.
+-/
+
+/-- Aggregate one Gaussian contribution per distinct atomic event. -/
+noncomputable def aggregateDistinctGaussian {Event Index : Type*}
+    (events : Finset Event) (contribution : Event → GaussianEvidence Index) :
+    GaussianEvidence Index where
+  precision i j := ∑ event ∈ events, (contribution event).precision i j
+  naturalParameter i := ∑ event ∈ events, (contribution event).naturalParameter i
+
+/-- Gaussian evidence obeys inclusion--exclusion at the declared event
+identity.  This is the additive analogue of overlap correction for counts. -/
+theorem aggregateDistinctGaussian_inclusion_exclusion
+    {Event Index : Type*} [DecidableEq Event]
+    (left right : Finset Event) (contribution : Event → GaussianEvidence Index) :
+    (aggregateDistinctGaussian (left ∪ right) contribution).add
+        (aggregateDistinctGaussian (left ∩ right) contribution) =
+      (aggregateDistinctGaussian left contribution).add
+        (aggregateDistinctGaussian right contribution) := by
+  apply GaussianEvidence.extensionality
+  · ext i j
+    simpa [aggregateDistinctGaussian, GaussianEvidence.add] using
+      (Finset.sum_union_inter
+        (s₁ := left) (s₂ := right)
+        (f := fun event ↦ (contribution event).precision i j))
+  · funext i
+    simpa [aggregateDistinctGaussian, GaussianEvidence.add] using
+      (Finset.sum_union_inter
+        (s₁ := left) (s₂ := right)
+        (f := fun event ↦ (contribution event).naturalParameter i))
+
+/-- Disjoint event batches may be added without an overlap correction. -/
+theorem aggregateDistinctGaussian_union_of_disjoint
+    {Event Index : Type*} [DecidableEq Event]
+    (left right : Finset Event) (contribution : Event → GaussianEvidence Index)
+    (hdisjoint : Disjoint left right) :
+    aggregateDistinctGaussian (left ∪ right) contribution =
+      (aggregateDistinctGaussian left contribution).add
+        (aggregateDistinctGaussian right contribution) := by
+  apply GaussianEvidence.extensionality
+  · ext i j
+    simpa [aggregateDistinctGaussian, GaussianEvidence.add] using
+      (Finset.sum_union hdisjoint
+        (f := fun event ↦ (contribution event).precision i j))
+  · funext i
+    simpa [aggregateDistinctGaussian, GaussianEvidence.add] using
+      (Finset.sum_union hdisjoint
+        (f := fun event ↦ (contribution event).naturalParameter i))
+
 noncomputable def zeroScalarEvidence : GaussianEvidence (Fin 1) where
   precision := 0
   naturalParameter := 0

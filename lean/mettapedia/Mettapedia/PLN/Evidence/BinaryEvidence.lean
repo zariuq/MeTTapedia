@@ -411,7 +411,7 @@ theorem le_himp_iff (a b c : BinaryEvidence) : a ≤ himp b c ↔ a ⊓ b ≤ c 
         -- We have h_pos : min a.pos b.pos ≤ c.pos
         -- Since min a.pos b.pos ≤ c.pos < b.pos, min must equal a.pos
         -- Therefore a.pos ≤ c.pos
-        push_neg at hbc_pos
+        push Not at hbc_pos
         have h_min_lt : min a.pos b.pos < b.pos := lt_of_le_of_lt h_pos hbc_pos
         have h_min_eq : min a.pos b.pos = a.pos := by
           by_contra h_neq
@@ -425,7 +425,7 @@ theorem le_himp_iff (a b c : BinaryEvidence) : a ≤ himp b c ↔ a ⊓ b ≤ c 
         exact le_top
       · simp only [hbc_neg, ite_false]
         -- Same reasoning for the negative component
-        push_neg at hbc_neg
+        push Not at hbc_neg
         have h_min_lt : min a.neg b.neg < b.neg := lt_of_le_of_lt h_neg hbc_neg
         have h_min_eq : min a.neg b.neg = a.neg := by
           by_contra h_neq

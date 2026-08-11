@@ -12,6 +12,11 @@ import Mettapedia.Languages.ProcessCalculi.MORK.BridgeCursorInterfaceRefinement
 import Mettapedia.Languages.ProcessCalculi.MORK.BridgeAlgebraInterfaceRefinement
 import Mettapedia.Languages.ProcessCalculi.MORK.PathOfAtomEncodingContract
 import Mettapedia.Languages.ProcessCalculi.MORK.ExecutionBoundary
+import Mettapedia.Languages.ProcessCalculi.MORK.CapabilityProfile
+import Mettapedia.Languages.ProcessCalculi.MORK.GSLTSemantics
+import Mettapedia.Languages.ProcessCalculi.MORK.GSLTNativeTypes
+import Mettapedia.Languages.ProcessCalculi.MORK.ProviderExtension
+import Mettapedia.Languages.ProcessCalculi.MORK.MeTTaZeroBoundary
 
 /-!
 # MORK: Minimal Model 2 (MM2) Formalization
@@ -26,10 +31,10 @@ correspondence with the MQ-calculus COMM rule.
 MORK/
   Syntax.lean          — MM2 atoms, exec rules, patterns, templates, sinks, FoldAggregator
   Space.lean           — Space = Finset Atom; firing semantics; matchAtom/applySubst
-  ThreePhaseExec.lean  — Phase protocol: unfold (0–31), base (32–63), fold (64–95)
-  WorkQueueOrder.lean      — Location-based exec ordering (atomKey, lexLt)
-  WorkQueueExec.lean       — Faithful work-queue scheduler with read-copy semantics
-  ThreePhaseRefinement.lean — Phase steps ↔ scheduler steps; applySubst_nil identity
+  ThreePhaseExec.lean  — Authored hosted protocol: unfold/base/fold priority bands
+  WorkQueueOrder.lean      — Exact full compact-expression scheduler key
+  WorkQueueExec.lean       — Compatible/source-aware queues, explicit failure policy, exact fuel
+  ThreePhaseRefinement.lean — Hosted phase steps → work-queue firing under hypotheses
   Conformance.lean         — 27 kernel-checked conformance + correspondence theorems
   ArithmeticExtension.lean — Int/float sink lowering + `CmpSource` packaging
   BridgeWorkspaceInterfaceRefinement.lean — Live insert/match/step workspace interface
@@ -41,6 +46,11 @@ MORK/
   MatchSpec.lean       — Relational spec of atom matching (sound/complete fragment)
   MeTTaILBridge.lean   — Authored-rule and premise-to-source execution bridges
   ExecutionBoundary.lean — Packages the proven morkTranslatable execution boundary
+  CapabilityProfile.lean — Native support strengths and faithful-encoding obstruction
+  GSLTSemantics.lean   — Indexed MM2 GSLTs, control reification, honest bounded reports
+  GSLTNativeTypes.lean — OSLF/ProofGSLT native judgments generated from the family
+  ProviderExtension.lean — Authored source/sink interfaces and realization laws
+  MeTTaZeroBoundary.lean — Internal work-closure separation from bare Zero
 ```
 
 ## Key Results
@@ -65,10 +75,10 @@ MORK/
 - `nary_fold_all_outcomes_exist`: N-ary fold generalizes binary non-determinism
 - `applyBase_eq_applySinks`: phase step = scheduler sink application
 - `applySubst_nil`: empty substitution is identity on all atoms
-- `applyAggregator_count`: fold count aggregator returns list length as grounded int
+- `applyAggregator_count`: count returns cardinality of staged support
 - `applyAggregator_selectFirst`: fold selectFirst aggregator returns first sub-result
 - `applyAggregator_count_perm`: count is permutation-invariant (match order irrelevant)
-- `applyAggregator_sum_cons`: sum unfolds one step on cons list
+- `applyAggregator_sum_cons_of_mem`: duplicate staged rows do not change support sum
 - `applyAggregator_sum_perm`: sum is permutation-invariant (match order irrelevant)
 - `applySinks_mem_of_mem`: atoms persist through sink pipelines if never removed
 - `canary8_ground_self_respawn`: ground self-respawn rule fires and re-adds exec fact
@@ -112,6 +122,8 @@ MORK/
 - `FoldNodupSafe`: NodupSafe at every step of the outer foldl over match results
 - `cWorkQueueStep_toFinset`: work-queue step correspondence (computable = spec)
 - `cWorkQueueRunN_toFinset`: bounded-run correspondence (computable = spec under invariant)
+- `cSourceWorkQueueStep_GSLT_adequate`: native source-aware step → authored GSLT step
+- `cSourceWorkQueueRunN_GSLT_adequate`: native exact-fuel run → GSLT reachability
 - `WorkQueueInvariant`: per-step invariant bundle (Nodup + KeyInjective + firing alignment)
 - `CReachable`: computable reachability predicate for bounded-run
 - `fireExecFact_readCopy_simplify`: fireExecFact simplifies when exec fact is in space
@@ -150,31 +162,62 @@ MORK/
 - `structuralSubtrieExport_lookup_nil`: structural subtrie export clears the focused root value
 - `fireExecFact_card_lt_of_removeOnly`: remove-only templates → cardinality strictly decreases
 - `workQueueRunN_steps_le_fuel`: scheduler takes at most `fuel` steps
+- `upstream_zero_differs_from_exact_fuel`: upstream post-check fuel is observably distinct
+- `count_support_invariant`, `sum_support_invariant`: native reductions factor through support
+- `selectFirst_not_support_invariant`: authored first choice does not factor through support
+- `explicit_count_spaces_injective`: explicit counts remain representable as atoms
+- `no_faithful_bag_choice_encoding_into_support_union`: faithful bag choice cannot retain native union
+- `validExecGSLT_step_iff`: the MM2 GSLT rewrite is exactly one valid queue step
+- `validExecControlReification`: pending work and scheduler configuration are language-visible
+- `runReport_completed_normalForm`: completion certifies quiescence
+- `runReport_expired_has_step`: expiration certifies retained pending work
+- `unsupported_exec_separates_source_profiles`: inert and consuming boundaries differ explicitly
+- `malformed_exec_canary_separates`: a concrete malformed exec distinguishes those profiles
+- `sourceExecStepNativeClaim_meaning_iff_step`: generated OSLF/ProofGSLT claim means one MM2 step
+- `cSourceContractFor_refines`: list source provider realizes its authored contract
+- `cSinkContractFor_refines`: staged list sink realizes its authored batch contract
+- `evaluationStatus_not_factors_through_answers`: Zero answer bags erase runner status
+- `no_authoredMM2_embedding_into_bareZero`: MM2 generated work cannot embed directly into one-step Zero
 
 ## Spec status
 
-This is a CORE MORK formalization capturing the stable 2026-02 semantics.
-The spec intentionally covers:
-- The three-phase protocol (stable)
+This is a layered MM2/MORK formalization. It distinguishes the raw valid-exec
+work queue, pinned implementation behavior, and authored hosted protocols.
+The spec currently covers:
+- A support-valued raw MM2 space and an indexed deterministic work-queue family
+- Exact-fuel execution plus the current upstream post-check behavior
+- The three-phase protocol as an authored hosted convention, not a raw MM2 law
 - Binary non-determinism (the fundamental quantum-inspired structure)
 - Connection to MQ-calculus COMM (the theoretical foundation)
-- Work-queue scheduler with read-copy semantics (the actual runtime model)
-- Conformance testing against `mork run` CLI (ground truth)
-- Fold-level aggregation (`FoldAggregator`: selectAll, selectFirst, count, sum)
-- Per-match `head` sink (idempotent add in Finset model)
+- Work-queue firing with read-copy semantics on the formalized valid-exec fragment
+- Support-staged count and sum matching upstream reduction-sink staging
+- Authored fold aggregation (`selectAll`, `selectFirst`) kept distinct from raw sinks
+- Batch `head` / `tail` reductions over staged support in compact-expression order
 - Sink persistence through pipelines (`applySinks_mem_of_mem`)
 - Ground self-respawn (`canary8_ground_self_respawn`)
 - Source-side input: `(I (BTM pat) (== pat witness) ...)` with `SourceFactor`/`InputSpec`
 - Source-side conformance: 5 kernel-checked `rfl` tests for BTM and `==` constraints
-- Source-side work-queue: 6 canary tests for extraction + firing through scheduler
+- Strict source-side decoding: unknown factors and sinks reject the whole directive
+- Source-side GSLTs for open-world inertness and remove-before-interpret consumption
+- Automatic OSLF native types and ProofGSLT claims generated from each GSLT member
+- Catalog-indexed provider declarations, typed oracle projections, and
+  observation-indexed native source/sink realization laws
 - Arithmetic/comparison extension surface: int/float sink lowerings and explicit `CmpSource` packaging
 
-Details likely to change in future MORK versions (NOT formalized here):
+Explicit current boundaries:
+- The active scheduler uses the full exact compact-expression key.  The older
+  `PathMapByteOrderRefinement.lean` remains a theorem about a historical
+  location projection and must not be cited as full-directive adequacy
+- Remove-before-interpret is modeled relative to the strict Lean decoder and
+  separated from the open-world member; full upstream source/sink factory
+  classification remains a declared realization obligation
+
+Details likely to change in future MORK versions (not formalized here):
 - Exact sub-query naming convention (`(sub-k qid)` format)
 - MAX_DEPTH constant (32 by default)
 - Sink priority refinements (streaming/partial-fold)
 - MM2 bytecode instruction set extensions
 
-**Canary theorems** in `MORKCommBridge.lean` and `ThreePhaseExec.lean` will
-fail to compile if the stable invariants change.
+Canaries in `ThreePhaseExec.lean` pin the authored hosted protocol. They are not
+claims that upstream MORK itself gives semantic meaning to those phase bands.
 -/

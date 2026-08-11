@@ -1,5 +1,5 @@
 import Mettapedia.GSLT.LanguageDef.CostContinued
-import Mettapedia.GSLT.LanguageDef.CostRegionNormalization
+import Mettapedia.GSLT.LanguageDef.CostGeneratorHereditaryAlignment
 import Mettapedia.GSLT.LanguageDef.CostSemanticErasure
 import Mettapedia.OSLF.MeTTaIL.PatternCode
 
@@ -1923,6 +1923,138 @@ theorem costEquationsRetypable (source : CIGSLT) :
         costWrappedEquation, mapEquation] using
           sourceRetypable.rightMatchCorrect
 
+/-- Exact object laws for one explicitly selected Cost normalizer.
+
+The inherited bundle supplies a sound and complete contextual section.  The
+additional field states preservation of the constructor fragment needed by
+the next continuation layer.  Neither the source calculus nor the
+normalization algorithm is fixed by this interface. -/
+structure CostOneObjectLawsFor (source : CIGSLT)
+    (normalizeOpen : CostOpenNormalizer source) : Prop
+    extends CostOpenSectionLawsFor source normalizeOpen where
+  preservesWrappedConstructorTyping :
+    ∀ {free : WellSorted.FreeTypeContext} {bound : List TypeExpr}
+      {sort : LangSort source.costWholeLanguage}
+      (term : ReflectiveWellSorted.OpenTerm
+        source.costWholeReflectionProfile source.costWholeLanguage free bound
+          sort),
+    WellSorted.HasTypeWithConstructors source.costWholeLanguage
+        (· ∈ source.costContinuationRetyping.wrappedLabels)
+        free bound term.1 (.base sort.1) →
+      WellSorted.HasTypeWithConstructors source.costWholeLanguage
+        (· ∈ source.costContinuationRetyping.wrappedLabels)
+        free bound (@normalizeOpen free bound sort term).1 (.base sort.1)
+
+/-- Assemble the complete one-step Cost object law around one static kernel.
+
+The executor is fixed by the generic child-first tree traversal.  Unary
+soundness comes from one-frame normalization plus weakening, while exact
+generator invariance comes from proof-relevant endpoint alignment and compact
+chooser coherence.  Contextuality and preservation of the next wrapped
+constructor fibre remain separate whole-executor obligations because neither
+follows from the local equation law. -/
+def CostOneObjectLawsFor.ofStaticKernel
+    {source : CIGSLT} (kernel : CostStaticNormalizationKernel source)
+    (typed : CostTypedStaticRegionNormalizerLaws source kernel.normalize)
+    (contextual : CostContextualOpenLawsFor source
+      (fun term => source.costNormalizeOpenWithStatic kernel.normalize term))
+    (alignable : CostOpenGeneratorTreeAlignable source kernel)
+    (coherent : CostStaticRegionNormalizerCompactCoherent source
+      kernel.normalize)
+    (preservesWrappedConstructorTyping :
+      ∀ {free : WellSorted.FreeTypeContext} {bound : List TypeExpr}
+        {sort : LangSort source.costWholeLanguage}
+        (term : ReflectiveWellSorted.OpenTerm
+          source.costWholeReflectionProfile source.costWholeLanguage free bound
+            sort),
+      WellSorted.HasTypeWithConstructors source.costWholeLanguage
+          (· ∈ source.costContinuationRetyping.wrappedLabels)
+          free bound term.1 (.base sort.1) →
+        WellSorted.HasTypeWithConstructors source.costWholeLanguage
+          (· ∈ source.costContinuationRetyping.wrappedLabels)
+          free bound
+            (source.costNormalizeOpenWithStatic kernel.normalize term).1
+            (.base sort.1)) :
+    CostOneObjectLawsFor source
+      (fun term => source.costNormalizeOpenWithStatic kernel.normalize term) where
+  toCostOpenSectionLawsFor :=
+    { toCostContextualOpenLawsFor := contextual
+      equivalent := by
+        intro free bound sort term
+        exact source.costNormalizeOpenWithStatic_typed_openEquationSetoid
+          kernel.normalize typed term
+      generatorInvariant :=
+        CostOpenGeneratorInvariantFor.forCostNormalizeOpenWithStatic alignable
+          coherent }
+  preservesWrappedConstructorTyping := preservesWrappedConstructorTyping
+
+/-- A parameterized Cost section preserves the continuation constructor
+fragment exactly when its object law says it does. -/
+theorem costContextualOpenSectionWith_preservesWrappedConstructorTyping
+    (source : CIGSLT) (normalizeOpen : CostOpenNormalizer source)
+    (laws : CostOneObjectLawsFor source normalizeOpen) :
+    (source.costContextualOpenSectionWith normalizeOpen
+      laws.toCostOpenSectionLawsFor).PreservesTypedConstructors
+        (· ∈ source.costContinuationRetyping.wrappedLabels) := by
+  intro free bound sort term supported
+  exact laws.preservesWrappedConstructorTyping term supported
+
+/-- One application of Cost over an arbitrary lawful normalizer.  All
+generated syntax and structural fields still come from the sole declaration
+construction; only the open-section implementation is parameterized. -/
+def costCIGSLTWith (source : CIGSLT)
+    (normalizeOpen : CostOpenNormalizer source)
+    (laws : CostOneObjectLawsFor source normalizeOpen) : CIGSLT where
+  theory := source.costIGSLT
+  reflection := source.costWholeAdmittedReflection
+  cut := source.costInteractionCut
+  openCanonical :=
+    source.costContextualOpenSectionWith normalizeOpen
+      laws.toCostOpenSectionLawsFor
+  continuationRetyping := source.costContinuationRetyping
+  bareCollectionConstructorsWrapped :=
+    source.costBareCollectionConstructorsWrapped
+  openCanonicalPreservesWrappedConstructorTyping :=
+    source.costContextualOpenSectionWith_preservesWrappedConstructorTyping
+      normalizeOpen laws
+  equationsRetypable := source.costEquationsRetypable
+  reflectivePresentationsRetypable :=
+    source.costReflectivePresentationsRetypable
+  sourceEnvelopeStable := source.costSourceEnvelopeStable
+  redexRetypable := source.costRedexRetypable
+  wrappable := source.costWrappable
+
+/-- Build the continued Cost object directly from a lawful static kernel.
+This is the generic construction used by concrete languages: no rho syntax,
+normalizer, or canonicalization theorem occurs in the definition. -/
+def costCIGSLTOfStaticKernel
+    (source : CIGSLT) (kernel : CostStaticNormalizationKernel source)
+    (typed : CostTypedStaticRegionNormalizerLaws source kernel.normalize)
+    (contextual : CostContextualOpenLawsFor source
+      (fun term => source.costNormalizeOpenWithStatic kernel.normalize term))
+    (alignable : CostOpenGeneratorTreeAlignable source kernel)
+    (coherent : CostStaticRegionNormalizerCompactCoherent source
+      kernel.normalize)
+    (preservesWrappedConstructorTyping :
+      ∀ {free : WellSorted.FreeTypeContext} {bound : List TypeExpr}
+        {sort : LangSort source.costWholeLanguage}
+        (term : ReflectiveWellSorted.OpenTerm
+          source.costWholeReflectionProfile source.costWholeLanguage free bound
+            sort),
+      WellSorted.HasTypeWithConstructors source.costWholeLanguage
+          (· ∈ source.costContinuationRetyping.wrappedLabels)
+          free bound term.1 (.base sort.1) →
+        WellSorted.HasTypeWithConstructors source.costWholeLanguage
+          (· ∈ source.costContinuationRetyping.wrappedLabels)
+          free bound
+            (source.costNormalizeOpenWithStatic kernel.normalize term).1
+            (.base sort.1)) :
+    CIGSLT :=
+  source.costCIGSLTWith
+    (fun term => source.costNormalizeOpenWithStatic kernel.normalize term)
+    (CostOneObjectLawsFor.ofStaticKernel kernel typed contextual alignable
+      coherent preservesWrappedConstructorTyping)
+
 /-- Exact object laws for the initial strict Cost₁ domain.
 
 The inherited bundle supplies typed unary soundness, an exact section for the
@@ -1947,6 +2079,17 @@ structure CostOneObjectLaws (source : CIGSLT) : Prop
         (· ∈ source.costContinuationRetyping.wrappedLabels)
         free bound (source.costNormalizeOpen term).1 (.base sort.1)
 
+/-- The established compact-executor object law is the specialization of the
+generic object law to `costNormalizeOpen`. -/
+def CostOneObjectLaws.toCostOneObjectLawsFor
+    {source : CIGSLT} (laws : CostOneObjectLaws source) :
+    CostOneObjectLawsFor source source.costNormalizeOpen where
+  toCostOpenSectionLawsFor :=
+    laws.toCostOpenSectionLaws.toCostOpenSectionLawsFor
+  preservesWrappedConstructorTyping := by
+    intro free bound sort term supported
+    exact laws.preservesWrappedConstructorTyping term supported
+
 /-- The generated contextual section preserves the exact hereditary
 constructor fragment selected by the next continuation retyping plan. -/
 theorem costContextualOpenSection_preservesWrappedConstructorTyping
@@ -1954,30 +2097,16 @@ theorem costContextualOpenSection_preservesWrappedConstructorTyping
     (source.costContextualOpenSection laws.toCostOpenSectionLaws
       ).PreservesTypedConstructors
         (· ∈ source.costContinuationRetyping.wrappedLabels) := by
-  intro free bound sort term supported
-  exact laws.preservesWrappedConstructorTyping term supported
+  exact source.costContextualOpenSectionWith_preservesWrappedConstructorTyping
+    source.costNormalizeOpen laws.toCostOneObjectLawsFor
 
 /-- One application of Cost as a genuine continued interactive GSLT.
 Every field is either derived from the sole generated `LanguageDef` or is an
 explicit law of the strict Cost₁ object domain. -/
 def costCIGSLT (source : CIGSLT) (laws : CostOneObjectLaws source) :
-    CIGSLT where
-  theory := source.costIGSLT
-  reflection := source.costWholeAdmittedReflection
-  cut := source.costInteractionCut
-  openCanonical :=
-    source.costContextualOpenSection laws.toCostOpenSectionLaws
-  continuationRetyping := source.costContinuationRetyping
-  bareCollectionConstructorsWrapped :=
-    source.costBareCollectionConstructorsWrapped
-  openCanonicalPreservesWrappedConstructorTyping :=
-    source.costContextualOpenSection_preservesWrappedConstructorTyping laws
-  equationsRetypable := source.costEquationsRetypable
-  reflectivePresentationsRetypable :=
-    source.costReflectivePresentationsRetypable
-  sourceEnvelopeStable := source.costSourceEnvelopeStable
-  redexRetypable := source.costRedexRetypable
-  wrappable := source.costWrappable
+    CIGSLT :=
+  source.costCIGSLTWith source.costNormalizeOpen
+    laws.toCostOneObjectLawsFor
 
 end CIGSLT
 

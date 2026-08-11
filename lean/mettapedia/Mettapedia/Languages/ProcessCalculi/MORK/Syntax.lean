@@ -1,4 +1,6 @@
 import Mettapedia.Languages.MeTTa.OSLFCore.Atom
+import Mathlib.Data.Finset.Card
+import Mathlib.Algebra.BigOperators.Group.Finset.Basic
 
 /-!
 # MORK: MM2 Syntax
@@ -14,7 +16,8 @@ Pattern   ::= (, Atom₁ ... Atomₙ)          -- simultaneous match
 Template  ::= (O Sink₁ ... Sinkₙ)          -- output
 Sink      ::= (+ Atom)                      -- add atom to space
             | (- Atom)                      -- remove atom from space
-            | (head Atom)                   -- idempotent add (first-wins)
+            | (head PositiveNat Atom)       -- retain least N staged paths
+            | (tail PositiveNat Atom)       -- retain greatest N staged paths
 ```
 
 ## Reuse
@@ -42,17 +45,21 @@ structure Pattern where
   atoms : List Atom
   deriving Repr, DecidableEq
 
-/-- A space-mutation sink.
-    `(+ a)` inserts atom `a`; `(- a)` removes atom `a`;
-    `(head a)` inserts atom `a` idempotently (no-op if already present). -/
+/-- A support-valued MM2 space-mutation sink.
+
+`(+ a)` inserts `a`, `(- a)` removes `a`, and `(head n a)` / `(tail n a)`
+stage all instantiated `a` values before retaining the least / greatest `n`
+compact-expression paths.  Head and tail are therefore batch reductions, not
+aliases for insertion. -/
 inductive Sink where
   | add    : Atom → Sink   -- (+ a)
   | remove : Atom → Sink   -- (- a)
-  | head   : Atom → Sink   -- (head a) — idempotent add (first-wins)
+  | head   : Nat → Atom → Sink   -- (head n a)
+  | tail   : Nat → Atom → Sink   -- (tail n a)
   deriving Repr, DecidableEq
 
-/-- An output template `(O sink₁ sink₂ ... sinkₙ)`:
-    a list of sinks applied simultaneously when the pattern fires. -/
+/-- An output template `(O sink₁ sink₂ ... sinkₙ)`.  Each sink stages every
+matching row; sink finalizers then run from left to right. -/
 structure Template where
   sinks : List Sink
   deriving Repr, DecidableEq
@@ -130,8 +137,11 @@ def mkRemove (a : Atom) : Sink := .remove a
 /-- Build a pattern from a list of atoms. -/
 def mkPattern (atoms : List Atom) : Pattern := ⟨atoms⟩
 
-/-- Build a head-sink atom: `(head a)`. -/
-def mkHead (a : Atom) : Sink := .head a
+/-- Build a head sink: `(head n a)`. -/
+def mkHead (count : Nat) (a : Atom) : Sink := .head count a
+
+/-- Build a tail sink: `(tail n a)`. -/
+def mkTail (count : Nat) (a : Atom) : Sink := .tail count a
 
 /-- Build a template from a list of sinks. -/
 def mkTemplate (sinks : List Sink) : Template := ⟨sinks⟩
@@ -147,25 +157,36 @@ def mkExecRule (priority : ℕ) (name : String)
 def Sink.isAdd : Sink → Bool
   | .add _    => true
   | .remove _ => false
-  | .head _   => false
+  | .head _ _ => false
+  | .tail _ _ => false
 
 /-- A sink is a remove operation. -/
 def Sink.isRemove : Sink → Bool
   | .add _    => false
   | .remove _ => true
-  | .head _   => false
+  | .head _ _ => false
+  | .tail _ _ => false
 
-/-- A sink is a head (idempotent add) operation. -/
+/-- A sink is a least-path batch reduction. -/
 def Sink.isHead : Sink → Bool
   | .add _    => false
   | .remove _ => false
-  | .head _   => true
+  | .head _ _ => true
+  | .tail _ _ => false
+
+/-- A sink is a tail reduction. -/
+def Sink.isTail : Sink → Bool
+  | .add _    => false
+  | .remove _ => false
+  | .head _ _ => false
+  | .tail _ _ => true
 
 /-- Extract the atom from a sink. -/
 def Sink.atom : Sink → Atom
   | .add a    => a
   | .remove a => a
-  | .head a   => a
+  | .head _ a => a
+  | .tail _ a => a
 
 /-- All atoms added by a template (before variable substitution). -/
 def Template.addAtoms (t : Template) : List Atom :=
@@ -251,19 +272,26 @@ def InputSpec.toPattern? : InputSpec → Option Pattern
   | .compat p => some p
   | .explicit _ => none
 
-/-! ## Fold-level aggregation -/
+/-! ## Reduction-sink support aggregation -/
 
-/-- Fold-level aggregation strategy for assembling sub-results.
+/-- Reduction strategy for assembling staged result paths.
 
-    During the fold phase, a query's sub-results are combined into a single
-    assembled result. The aggregator determines HOW:
+    Upstream MORK's `CountSink` and `SumSink` first stage their instantiated
+    output paths in a private `PathMap<()>`. Consequently those reductions see
+    finite support, not an occurrence bag. The list accepted by
+    `applyAggregator` is an executable presentation of those paths; `count`
+    and `sum` explicitly quotient it to support before reducing.
+
+    The aggregator determines HOW:
 
     - `selectAll`: Non-deterministic (any sub-result is a valid outcome).
       This is the current/default behavior modeled by `NaryFoldPicksSubResult`.
     - `selectFirst`: Deterministic: take the first sub-result only (head).
-    - `count`: Assembled result = `(.grounded (.int N))` where N = number of sub-results.
-    - `sum`: Assembled result = `(.grounded (.int (Σ values)))` where values are
-      extracted from sub-results that are `.grounded (.int _)`. -/
+    - `count`: number of distinct staged result paths.
+    - `sum`: sum of the distinct staged integer result paths.
+
+    `selectAll` and `selectFirst` belong to the authored three-phase protocol;
+    they are not claims about MORK's count/sum sink implementation. -/
 inductive FoldAggregator where
   | selectAll   : FoldAggregator
   | selectFirst : FoldAggregator
@@ -276,16 +304,27 @@ def extractInt : Atom → Option Int
   | .grounded (.int n) => some n
   | _ => none
 
-/-- Apply a fold aggregator to a list of sub-results, producing the assembled atom.
-    Returns `none` if the sub-results list is empty (no valid aggregation). -/
+/-- The finite support staged by a support-valued MORK reduction sink. -/
+def resultSupport (subResults : List Atom) : Finset Atom :=
+  subResults.toFinset
+
+/-- Sum the distinct integer atoms in a staged result support.
+    Non-integer atoms contribute zero, preserving the partial integer
+    projection while making duplicate insensitivity explicit. -/
+def supportIntSum (subResults : List Atom) : Int :=
+  (resultSupport subResults).sum fun result => (extractInt result).getD 0
+
+/-- Apply a reduction to staged sub-results, producing the assembled atom.
+
+    `count` and `sum` factor through `resultSupport`, matching the private
+    `PathMap<()>` used by upstream MORK reduction sinks. `selectAll` and
+    `selectFirst` retain their authored-protocol list behavior. -/
 def applyAggregator (agg : FoldAggregator) (subResults : List Atom) : Option Atom :=
   match agg with
   | .selectAll   => subResults.head?
   | .selectFirst => subResults.head?
-  | .count       => some (.grounded (.int subResults.length))
-  | .sum         =>
-    let vals := subResults.filterMap extractInt
-    some (.grounded (.int (vals.foldl (· + ·) 0)))
+  | .count       => some (.grounded (.int (resultSupport subResults).card))
+  | .sum         => some (.grounded (.int (supportIntSum subResults)))
 
 /-! ## Canary tests -/
 

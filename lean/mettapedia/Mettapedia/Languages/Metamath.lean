@@ -1,4 +1,5 @@
 import Mettapedia.Languages.Metamath.MMLean4Bridge
+import Mettapedia.Languages.Metamath.ModeInterpretationOrder
 import Mettapedia.Languages.Metamath.GroundedSemantics
 import Mettapedia.Languages.Metamath.LanguageDefDSL
 import Mettapedia.Languages.Metamath.BridgeConformance
@@ -25,6 +26,9 @@ import Mettapedia.Languages.Metamath.InferenceNormalByteReflection
 import Mettapedia.Languages.Metamath.InferenceNormalProvabilitySoundness
 import Mettapedia.Languages.Metamath.InferenceSourceAdmission
 import Mettapedia.Languages.Metamath.SourceInferenceDeclarativeAdequacy
+import Mettapedia.Languages.Metamath.NIKAuthority
+import Mettapedia.Languages.Metamath.NIKDefault
+import Mettapedia.Languages.Metamath.DatabaseNIKAuthority
 import Mettapedia.Languages.Metamath.SourceGSLTOperations
 import Mettapedia.Languages.Metamath.SourceGSLTState
 import Mettapedia.Languages.Metamath.SourceGSLTNormalTheorem

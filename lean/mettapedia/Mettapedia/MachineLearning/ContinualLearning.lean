@@ -84,6 +84,7 @@ import Mettapedia.MachineLearning.ContinualLearning.SemanticDriftCompensation
 import Mettapedia.MachineLearning.ContinualLearning.LinearRepresentationDiscrepancy
 import Mettapedia.MachineLearning.ContinualLearning.HadamardLieGroupUpdate
 import Mettapedia.MachineLearning.ContinualLearning.StreamingRegularizedDiscriminant
+import Mettapedia.MachineLearning.ContinualLearning.VirtuallyAddressedParameterMemory
 
 /-!
 # Continual-learning theory
@@ -420,4 +421,15 @@ simultaneous peak disarms the gate and cannot repeat; a later peak rearms it.
 A threshold-order theorem excludes overlap, while an executable fixture shows
 that overlapping independent `if` tests can consolidate and immediately
 rearm on the same observation.
+Virtually addressed parameter memory then separates immutable stored
+competence from mutable accessibility. Positive temperature scaling preserves
+hard winners while candidate insertion dilutes every old softmax weight and
+can displace an old hard route. Resource-bounded recall carries an explicit
+address-cost and optimization debit, and its exact regularization path trades
+raw task energy monotonically for cheaper addresses. Functional success is
+formalized as an input--memory competence relation, connected to the existing
+projection-aware WM-PLN accounting and its exact leave-one-witness coverage
+decomposition. Frozen PathNet evaluation and low-rank consolidation instantiate
+the shared storage-invariance interface, while an executable example proves
+that accessibility can remain strictly below availability.
 -/
