@@ -8,7 +8,7 @@ import Mettapedia.PLN.Core.PLNProofCalculus
 import Mettapedia.PLN.Core.SoundnessCompleteness
 
 /-!
-# PLN core surfaces
+# PLN core interfaces
 
 Stable PLN entrypoints and public summaries that are native to the PLN room.
 -/

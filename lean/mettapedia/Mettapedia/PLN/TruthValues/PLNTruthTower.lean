@@ -12,7 +12,7 @@ import KnuthSkilling.Core.TotalityImprecision
 # PLN Truth Tower
 
 This module assembles the currently separate PLN truth-value layers into a
-small integration surface:
+small integration interface:
 
 * finite binary evidence counts are the load-bearing state;
 * strength plus a confidence-like coordinate is a reversible view only when
@@ -1259,55 +1259,55 @@ theorem worldModel_queryConfidence_forced_by_evidence
         (State := State) (Query := Query) κ W₂ q :=
   Mettapedia.PLN.TruthValues.PLNForcedQueries.queryConfidence_eq_of_same_evidence κ h
 
-/-- Categorical sufficient-statistic surface query means are forced by the
+/-- Categorical sufficient-statistic interface query means are forced by the
 aggregate `MultiEvidence`: two observation multisets with the same aggregate
 evidence cannot differ in the selected category's empirical mean. -/
-theorem categoricalSurface_queryMean_forced_by_aggregate
+theorem categoricalEncoder_queryMean_forced_by_aggregate
     {Obs Query : Type*} {k : ℕ}
     (S :
-      Mettapedia.PLN.WorldModel.SufficientStatisticSurface Obs Query
+      Mettapedia.PLN.WorldModel.SufficientStatisticEncoder Obs Query
         (Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceDirichlet.MultiEvidence k))
     {σ₁ σ₂ : Multiset Obs} {q : Query} (i : Fin k)
     (h :
-      Mettapedia.PLN.WorldModel.SufficientStatisticSurface.aggregate S σ₁ q =
-        Mettapedia.PLN.WorldModel.SufficientStatisticSurface.aggregate S σ₂ q) :
-    ((Mettapedia.PLN.WorldModel.SufficientStatisticSurface.aggregate S σ₁ q).counts i : ℝ) /
-        ((Mettapedia.PLN.WorldModel.SufficientStatisticSurface.aggregate S σ₁ q).total : ℝ) =
-      ((Mettapedia.PLN.WorldModel.SufficientStatisticSurface.aggregate S σ₂ q).counts i : ℝ) /
-        ((Mettapedia.PLN.WorldModel.SufficientStatisticSurface.aggregate S σ₂ q).total : ℝ) :=
-  Mettapedia.PLN.TruthValues.PLNForcedQueries.categoricalSurface_mean_eq_of_same_aggregate
+      Mettapedia.PLN.WorldModel.SufficientStatisticEncoder.aggregate S σ₁ q =
+        Mettapedia.PLN.WorldModel.SufficientStatisticEncoder.aggregate S σ₂ q) :
+    ((Mettapedia.PLN.WorldModel.SufficientStatisticEncoder.aggregate S σ₁ q).counts i : ℝ) /
+        ((Mettapedia.PLN.WorldModel.SufficientStatisticEncoder.aggregate S σ₁ q).total : ℝ) =
+      ((Mettapedia.PLN.WorldModel.SufficientStatisticEncoder.aggregate S σ₂ q).counts i : ℝ) /
+        ((Mettapedia.PLN.WorldModel.SufficientStatisticEncoder.aggregate S σ₂ q).total : ℝ) :=
+  Mettapedia.PLN.TruthValues.PLNForcedQueries.categoricalEncoder_mean_eq_of_same_aggregate
     S i h
 
 /-- Categorical IDM lower, upper, and width projections are forced by the
 aggregate `MultiEvidence` once the IDM context and category are chosen. -/
-theorem categoricalSurface_idmEnvelope_forced_by_aggregate
+theorem categoricalEncoder_idmEnvelope_forced_by_aggregate
     {Obs Query : Type*} {k : ℕ}
     (S :
-      Mettapedia.PLN.WorldModel.SufficientStatisticSurface Obs Query
+      Mettapedia.PLN.WorldModel.SufficientStatisticEncoder Obs Query
         (Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceDirichlet.MultiEvidence k))
     (ctx : Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceDirichlet.IDMPredictiveContext)
     {σ₁ σ₂ : Multiset Obs} {q : Query} (i : Fin k)
     (h :
-      Mettapedia.PLN.WorldModel.SufficientStatisticSurface.aggregate S σ₁ q =
-        Mettapedia.PLN.WorldModel.SufficientStatisticSurface.aggregate S σ₂ q) :
+      Mettapedia.PLN.WorldModel.SufficientStatisticEncoder.aggregate S σ₁ q =
+        Mettapedia.PLN.WorldModel.SufficientStatisticEncoder.aggregate S σ₂ q) :
     Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceDirichlet.idmLower ctx
-        (Mettapedia.PLN.WorldModel.SufficientStatisticSurface.aggregate S σ₁ q) i =
+        (Mettapedia.PLN.WorldModel.SufficientStatisticEncoder.aggregate S σ₁ q) i =
         Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceDirichlet.idmLower ctx
-          (Mettapedia.PLN.WorldModel.SufficientStatisticSurface.aggregate S σ₂ q) i ∧
+          (Mettapedia.PLN.WorldModel.SufficientStatisticEncoder.aggregate S σ₂ q) i ∧
       Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceDirichlet.idmUpper ctx
-        (Mettapedia.PLN.WorldModel.SufficientStatisticSurface.aggregate S σ₁ q) i =
+        (Mettapedia.PLN.WorldModel.SufficientStatisticEncoder.aggregate S σ₁ q) i =
         Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceDirichlet.idmUpper ctx
-          (Mettapedia.PLN.WorldModel.SufficientStatisticSurface.aggregate S σ₂ q) i ∧
+          (Mettapedia.PLN.WorldModel.SufficientStatisticEncoder.aggregate S σ₂ q) i ∧
       Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceDirichlet.idmWidth ctx
-        (Mettapedia.PLN.WorldModel.SufficientStatisticSurface.aggregate S σ₁ q) =
+        (Mettapedia.PLN.WorldModel.SufficientStatisticEncoder.aggregate S σ₁ q) =
         Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceDirichlet.idmWidth ctx
-          (Mettapedia.PLN.WorldModel.SufficientStatisticSurface.aggregate S σ₂ q) :=
+          (Mettapedia.PLN.WorldModel.SufficientStatisticEncoder.aggregate S σ₂ q) :=
   ⟨
-    Mettapedia.PLN.TruthValues.PLNForcedQueries.categoricalSurface_idmLower_eq_of_same_aggregate
+    Mettapedia.PLN.TruthValues.PLNForcedQueries.categoricalEncoder_idmLower_eq_of_same_aggregate
       S ctx i h,
-    Mettapedia.PLN.TruthValues.PLNForcedQueries.categoricalSurface_idmUpper_eq_of_same_aggregate
+    Mettapedia.PLN.TruthValues.PLNForcedQueries.categoricalEncoder_idmUpper_eq_of_same_aggregate
       S ctx i h,
-    Mettapedia.PLN.TruthValues.PLNForcedQueries.categoricalSurface_idmWidth_eq_of_same_aggregate
+    Mettapedia.PLN.TruthValues.PLNForcedQueries.categoricalEncoder_idmWidth_eq_of_same_aggregate
       S ctx h
   ⟩
 

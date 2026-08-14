@@ -7,7 +7,7 @@ This file packages one explicit "PLN-style rule firing" story in the corrected W
 
 - The semantic truthmaker is a small binary factor graph / BN.
 - Each derived step is a local contraction with explicit Sigma obligations and provenance.
-- The exact fragment matches the existing chain/fork theorem surface.
+- The exact fragment matches the existing chain/fork theorem family.
 - Two negative controls show why the gate matters:
   a soft-gated perturbation and a collider abduction counterexample.
 
@@ -23,7 +23,7 @@ open Finset
 open Mettapedia.PLN.Core
 open Mettapedia.PLN.RuleFamilies.FirstOrder.PLNDerivation
 
-/-! ## Provenance Surface -/
+/-! ## Provenance Interface -/
 
 /-- Small proof-carrying object for the demo.
 

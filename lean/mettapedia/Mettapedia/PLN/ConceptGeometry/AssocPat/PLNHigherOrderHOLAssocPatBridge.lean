@@ -545,7 +545,7 @@ theorem predicateVocabularyWeightedPairOrderRankScore_mono
       hRightWeight)
 
 /-- Unit weights recover the original unweighted finite-vocabulary order-rank
-score. This pins the richer score family to the already-tested score surface
+score. This pins the richer score family to the already-tested score interface
 instead of creating a parallel ASSOC/PAT channel. -/
 theorem predicateVocabularyWeightedPairOrderRankScore_one_one
     (M : HenkinModel.{u, v, w} Base Const)

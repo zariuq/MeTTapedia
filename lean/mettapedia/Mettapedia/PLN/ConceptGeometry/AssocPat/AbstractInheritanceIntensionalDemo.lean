@@ -12,10 +12,10 @@ import Mathlib.Tactic
 This module instantiates the abstract subset theorems on a concrete, finite
 ontology fragment:
 
-- the object/concept membership surface is the WM-backed toy ontology;
+- the object/concept membership interface is the WM-backed toy ontology;
 - ASSOC/PAT scores are derived from the abstract extent/intent interpretation;
 - the Chapter-12 monotonicity theorems are exercised through
-  `AbstractExtentPairSubsetRel`, not just the generic theorem surface.
+  `AbstractExtentPairSubsetRel`, not just the generic theorem family.
 -/
 
 namespace Mettapedia.PLN.ConceptGeometry.AssocPat.AbstractInheritanceIntensionalDemo
@@ -695,7 +695,7 @@ theorem mixBaseEvidence_birdBird_le_penguinBird :
   · simp [mixBaseEvidence, BinaryEvidence.hplus_def, scoreToEvidenceNNReal]
 
 /-- The concrete mixed semantic-layer channel also carries the `penguin ≤ bird`
-witness.  This exercises the extensional+ASSOC+PAT surface without collapsing it
+witness.  This exercises the extensional+ASSOC+PAT interface without collapsing it
 to either intensional channel alone. -/
 theorem semanticLayerMixedEvidence_birdBird_le_penguinBird :
     InheritanceQueryBuilder.semanticLayerEvidence
@@ -750,7 +750,7 @@ theorem assocBaseScore_birdBird_lt_patBaseScore_birdBird :
   exact extentCard_bird_pos
 
 /-- The ASSOC and PAT query channels are separated at the rule-facing
-`InheritanceQueryBuilder` evidence surface too, not just at the raw score
+`InheritanceQueryBuilder` evidence interface too, not just at the raw score
 definitions. -/
 theorem assocEvidence_birdBird_ne_patEvidence_birdBird :
     InheritanceQueryBuilder.intensionalAssocEvidence
@@ -1064,7 +1064,7 @@ theorem birdBirdStampedEvidence_correctedInternalRevision_eq_self :
   exact DualConcept.correctedMerge_eq_of_guardedRevise_eq_some
     _ _ birdBirdStampedEvidence_guardedInternalRevision_eq_some
 
-/- The overlap-aware Revision surface is now visible at the concept-geometry
+/- The overlap-aware Revision interface is now visible at the concept-geometry
 consumer boundary: internal positive/negative witness packets agree with the
 guarded finite-inheritance construction, while the cross-premise merge remains
 blocked by shared provenance. -/
@@ -1180,7 +1180,7 @@ theorem assoc_pat_dual_channel_provenance_canary :
       premiseStampedEvidence_guardedRevise_eq_none_of_extensional_overlap⟩
 
 /-- The same provenance-overlap fact scales to the generic multi-packet
-Revision surface: the two premise packets are not a pairwise-disjoint family,
+Revision interface: the two premise packets are not a pairwise-disjoint family,
 so guarded list Revision rejects the aggregate rather than double-counting. -/
 theorem assoc_pat_guardedListRevise_eq_none_of_dual_channel_overlap :
     StampedBinaryEvidence.guardedListRevise

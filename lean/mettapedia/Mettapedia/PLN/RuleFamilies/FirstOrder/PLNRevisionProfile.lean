@@ -4,7 +4,7 @@ import Mettapedia.PLN.RuleFamilies.FirstOrder.PLNRevision
 # Revision Rule-Family Profile
 
 This file exposes a compact proof-carrying handle for the current Revision
-rule-family surface.  It does not add new revision semantics: finite PLN
+rule-family interface.  It does not add new revision semantics: finite PLN
 Revision continues to be the `BinaryEvidence` additive evidence-count rule.
 
 The profile also carries the duplicate-source negative canary, so callers do
@@ -70,7 +70,7 @@ structure RevisionRuleFamilyProfile where
     ∀ e₁ e₂ e₃ : BinaryEvidence,
       e₁ * (revision e₂ e₃) = revision (e₁ * e₂) (e₁ * e₃)
 
-/-- Compact public handle for the finite binary-evidence Revision surface. -/
+/-- Compact public handle for the finite binary-evidence Revision interface. -/
 noncomputable def revisionRuleFamilyProfile : RevisionRuleFamilyProfile where
   binaryComm := revision_comm
   binaryAssoc := revision_assoc

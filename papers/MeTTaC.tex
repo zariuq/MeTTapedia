@@ -143,7 +143,7 @@ The command \code{make test} runs each \code{.metta} test file on both
 \CeTTa{} and \HE{}, comparing output.  Current status: \textbf{244
 passed, 0 failed, 3 skipped} on the oracle suite, plus 36 profile
 tests covering module imports, foreign (Python) function dispatch,
-and extension surfaces.
+and extension builtins.
 
 %% ────────────────────────────────────────────────────────────────────
 \section{Verified \HE{}$\leftrightarrow$\PeTTa{} Translation}
@@ -891,7 +891,7 @@ ambient, or user-visible.}
   planning, SpaceEngine boundary.  Target: 10--100$\times$ on
   large-KB multi-pattern conjunctions.
 \item \textbf{MORK/PathMap bridge:} \code{lib/mork.metta} as
-  primary user surface, stable C ABI with space/program/context
+  primary user API, stable C ABI with space/program/context
   families, orthogonal discipline$\times$engine axes.
 \item \textbf{HO search engine:} Lash-inspired SAT-driven proof
   search for PLN and type-directed synthesis.  PicoSAT as

@@ -10,7 +10,7 @@ One plausible reply to the locality/counting obstructions is:
 > subclass of local rules is relevant."
 
 This file shows that this is false without a much stronger restriction.  If the
-post-switch input surface has `n` visible bits, then *every* local Boolean rule
+post-switch input data domain has `n` visible bits, then *every* local Boolean rule
 on those `n` bits can be hard-wired by a truth table of length `2^n`.  Thus a
 polynomial-size global description already suffices to realize the full local
 rule class whenever `n = O(log m)`.

@@ -33,16 +33,16 @@ theorem altered_occurrence_id_rejected :
       (corruptFirstId oneStepResult.receipt) oneStepResult.residual = false := by
   decide
 
-def corruptFirstFundingSurface : RawReceipt → RawReceipt
+def corruptFirstFundingLocation : RawReceipt → RawReceipt
   | [] => []
   | event :: rest =>
       let funding := event.funding.map fun contribution =>
-        { contribution with surface := wrong }
+        { contribution with location := wrong }
       { event with funding } :: rest
 
 theorem altered_location_rejected :
     validateReceipt wholeCompoundSplit
-      (corruptFirstFundingSurface oneStepResult.receipt)
+      (corruptFirstFundingLocation oneStepResult.receipt)
       oneStepResult.residual = false := by
   decide
 

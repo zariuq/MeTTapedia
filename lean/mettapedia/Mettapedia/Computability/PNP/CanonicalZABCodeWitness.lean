@@ -19,7 +19,7 @@ section
 
 variable {Z : Type*} {r k : ℕ} {Index : Type*}
 
-/-- The exact-surface switched family induced by one exact `(zfeat(z), a, b)`
+/-- The exact-data domain switched family induced by one exact `(zfeat(z), a, b)`
 decision-list code for each index. -/
 noncomputable def canonicalZABCodeFamily
     (zfeat : Z → BitVec r)
@@ -73,7 +73,7 @@ theorem canonicalZABCodeFamily_recoveryLowerBound
     [Fintype Z]
     (zfeat : Z → BitVec r)
     (codes : Index → SharedAffineDecisionListCode (r + (k + k)))
-    (μ : PMF (ExactVisiblePostSwitchSurface Z k))
+    (μ : PMF (ExactVisiblePostSwitchData Z k))
     (i : Index) (m : ℕ)
     {q : ℝ≥0∞}
     (hq :

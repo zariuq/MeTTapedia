@@ -93,7 +93,7 @@ assuming the observation law induced by the chosen action stream is
 lower semicomputable.
 
 This computability hypothesis is a genuine domain condition: the current
-`ControlledFiniteHMMParam` surface allows arbitrary probability measures, so
+`ControlledFiniteHMMParam` interface allows arbitrary probability measures, so
 lower semicomputability is not automatic from the raw parameter record alone.
 -/
 theorem relEntropy_le_log_inv_controlledM₂

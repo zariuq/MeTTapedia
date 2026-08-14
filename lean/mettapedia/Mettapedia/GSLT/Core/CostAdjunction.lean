@@ -9,8 +9,11 @@ import Mettapedia.GSLT.Core.NonFactorization
 A minimal dialect observes a bag of answers.  A cost-aware dialect observes a
 bag of answers each carrying a weight.  The relationship between them is not
 initial-and-terminal — in an algebraic setting the terminal object is the
-*collapsed* one, so "richest" is never terminality.  It is an adjunction, and
-its content is the asymmetry of the two round trips.
+*collapsed* one, so "richest" is never terminality.  It is a
+section–retraction pair, and its content is the asymmetry of the two round
+trips.  (No categorical adjunction is constructed here; the results below
+are elementary facts about `Multiset`, stated so a later categorical
+packaging has exact targets.)
 
 ```
                  erase   (forget the weights)
@@ -27,15 +30,17 @@ its content is the asymmetry of the two round trips.
   answers recovers them.
 * `enrich_erase_eq_iff` — the round trip is the identity **exactly** on
   observations whose weights are all the unit.  So the fixed points of the
-  comonad are precisely the dialects where cost carries no information, which
-  is the honest sense in which the base dialect sits inside the enriched one.
+  round trip are precisely the dialects where cost carries no information,
+  which is the honest sense in which the base dialect sits inside the
+  enriched one.
 * `erase_surjective` — every base observation is the erasure of some costed
   one, so the base is the *image*, not a separate thing.
 
 Together: the base dialect is the image of the cost-aware one under erasure,
-and the fibres of that map are exactly the cost structures.  That is a
-fibration, and it is what "minimal and maximal ends of one spectrum" means
-precisely.
+and the fibres of that one map carry exactly the cost structures.  (No
+fibration structure — no cartesian lifts, no universal property — is
+constructed or claimed here.)  That map is what "minimal and maximal ends of
+one spectrum" means precisely.
 -/
 
 namespace Mettapedia.GSLT.Core.CostAdjunction

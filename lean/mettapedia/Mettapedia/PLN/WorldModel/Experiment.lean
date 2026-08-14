@@ -7,6 +7,6 @@ import Mettapedia.PLN.WorldModel.Experiment.PLNWorldModelExperimentStochasticReg
 /-!
 # PLN world-model experiment package
 
-Blackwell experiment-channel and stochastic-discovery surfaces for the PLN
+Blackwell experiment-channel and stochastic-discovery interfaces for the PLN
 world-model layer.
 -/

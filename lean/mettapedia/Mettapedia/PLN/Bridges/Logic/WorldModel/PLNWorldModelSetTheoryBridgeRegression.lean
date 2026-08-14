@@ -108,7 +108,7 @@ theorem zf_outside_scope_top_bottom_counterexample_fixture
 
 /-- Unified endpoint fixture:
 provability transport plus categorical endpoint contract in one theorem call. -/
-theorem zf_provable_to_multiset_and_endpoint_surface_fixture
+theorem zf_provable_to_multiset_and_endpoint_contract_fixture
     (H : WMHyperdoctrine SetState)
     (φ ψ : SetQuery)
     (hprov : 𝗭𝗙 ⊢ (φ ➝ ψ)) :
@@ -118,7 +118,7 @@ theorem zf_provable_to_multiset_and_endpoint_surface_fixture
     ∧
     EndpointContract (H := H) := by
   simpa [stateModelsZF] using
-    (provable_imp_to_multiset_and_endpoint_surface
+    (provable_imp_to_multiset_and_endpoint_contract
       (H := H) (T := 𝗭𝗙) (φ := φ) (ψ := ψ) hprov)
 
 end Mettapedia.PLN.Bridges.Logic.WorldModel.PLNWorldModelSetTheoryBridgeRegression

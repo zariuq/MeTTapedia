@@ -355,9 +355,9 @@ theorem finishProof_db_eq_of_db_eq
           { left with tokp := .start } { right with tokp := .start }
           pos (.theoremFinality
             (.theoremMoreThanOneStackElement stack.size)) hdb
-  | compressed count =>
-      cases count with
-      | zero =>
+  | compressed phase =>
+      cases phase with
+      | betweenSteps | justCompletedStep =>
           simp only [Id.run]
           split
           · split
@@ -370,7 +370,7 @@ theorem finishProof_db_eq_of_db_eq
               { left with tokp := .start } { right with tokp := .start }
               pos (.theoremFinality
                 (.theoremMoreThanOneStackElement stack.size)) hdb
-      | succ count =>
+      | openIndex accumulator =>
           exact mkErrorFromEvidence_db_eq_of_db_eq
             { left with tokp := .start } { right with tokp := .start }
             pos (.proofCheck .proofParseError) hdb

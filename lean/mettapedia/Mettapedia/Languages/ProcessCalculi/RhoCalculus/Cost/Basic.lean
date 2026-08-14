@@ -86,7 +86,7 @@ mutual
     | .signed proc sig => proc.RuntimeSupported ∧ sig.RuntimeValid
     | .par left right => left.RuntimeSupported ∧ right.RuntimeSupported
     | .drop name => name.RuntimeSupported
-    | .purse surface stack => surface.RuntimeSupported ∧ stack.RuntimeSupported
+    | .purse location stack => location.RuntimeSupported ∧ stack.RuntimeSupported
 
   /-- The temporal stacks accepted by the current concrete cost-profile validator. -/
   def CostStack.RuntimeSupported {Ground : Type u} : CostStack Ground → Prop
@@ -122,7 +122,7 @@ mutual
     | .signed proc sig => .signed (proc.lift amount cutoff) sig
     | .par left right => .par (left.lift amount cutoff) (right.lift amount cutoff)
     | .drop name => .drop (name.lift amount cutoff)
-    | .purse surface stack => .purse (surface.lift amount cutoff) stack
+    | .purse location stack => .purse (location.lift amount cutoff) stack
 end
 
 mutual
@@ -182,9 +182,9 @@ mutual
         else
           .drop (.bvar index)
     | .drop name => .drop name
-    | .purse surface stack =>
+    | .purse location stack =>
         .purse
-          (CostName.substitute (replacement := replacement) (depth := depth) surface)
+          (CostName.substitute (replacement := replacement) (depth := depth) location)
           stack
 end
 

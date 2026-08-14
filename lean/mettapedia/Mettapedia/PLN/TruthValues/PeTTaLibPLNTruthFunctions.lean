@@ -21,7 +21,7 @@ as mirrored from the local PeTTa checkout inspected during this update:
 
 * `/home/zar/claude/hyperon/PeTTa` HEAD `6f734e33533cde865d50bfe5eb449b439235ae89`
 
-This file is intentionally a mirror of that library surface. It is **not** the
+This file is intentionally a mirror of that library interface. It is **not** the
 place where canonicity or world-model justification is decided. For the
 theorem-backed WM/evidence account, see
 `Mettapedia.PLN.TruthValues.WMPLNJustifiedTruthFunctions`.

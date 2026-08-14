@@ -12,7 +12,7 @@ import Mettapedia.PLN.TruthValues.PLNBugAnalysis
 
 This module groups PLN diagnostic and counterexample tracks that are still
 under active refinement. It is intentionally separated from the stable PLN core
-surface.
+interface.
 -/
 
 namespace Mettapedia.PLN.Core.PLNExperimental

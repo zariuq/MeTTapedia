@@ -2,7 +2,7 @@ import Mettapedia.Languages.OpenTheory.Substitution
 import Mettapedia.Languages.OpenTheory.CoreRules
 
 /-!
-# OpenTheory bridge surface
+# OpenTheory bridge interface
 
 This module currently exposes provenance-sensitive typed syntax, the pinned
 source-compatible substitution model, typed alpha-canonical sequents, and an

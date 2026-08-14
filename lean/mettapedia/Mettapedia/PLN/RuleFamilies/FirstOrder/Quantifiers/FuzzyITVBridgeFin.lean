@@ -5,7 +5,7 @@ import Mettapedia.PLN.RuleFamilies.FirstOrder.Quantifiers.FuzzyQuantifierSemanti
 # Finite ITV Fuzzy Quantifier Bridge
 
 Finite/counting ITV-coordinate bridge for Chapter-11 fuzzy quantifier semantics.
-This is the explicit finite-domain ITV surface; the arbitrary-domain fuzzy layer
+This is the explicit finite-domain ITV interface; the arbitrary-domain fuzzy layer
 now lives in `FuzzyQuantifierSemanticsInf`.
 -/
 

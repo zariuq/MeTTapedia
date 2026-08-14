@@ -543,7 +543,7 @@ def renderOSLFClaim : OSLFClaim → String
       let subj := properNameNP "It"
       let parserNP := linDetCN aIndefArt (linUseN parser_N)
       let standardNP := linDetCN aIndefArt
-        (linAdjCN (linPositA (compoundA "surface"))
+        (linAdjCN (linPositA (compoundA "syntax"))
           (linAdjCN (linPositA (compoundA "syntax"))
             (linUseN standard_N)))
       let coordCompl := linConjNP or_Conj [parserNP, standardNP]

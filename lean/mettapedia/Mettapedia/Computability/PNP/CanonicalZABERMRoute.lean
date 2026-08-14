@@ -24,7 +24,7 @@ variable {Z : Type*} {r k : ℕ} {Index : Type*}
 sample. -/
 noncomputable def canonicalZABDecisionListERMCode
     (zfeat : Z → BitVec r)
-    (samples : Index → Sample (ExactVisiblePostSwitchSurface Z k) Bool) :
+    (samples : Index → Sample (ExactVisiblePostSwitchData Z k) Bool) :
     Index → SharedAffineDecisionListCode (r + (k + k)) :=
   fun i =>
     (sharedAffineDecisionListCodeEquivBitCode (r + (k + k))).symm
@@ -32,7 +32,7 @@ noncomputable def canonicalZABDecisionListERMCode
 
 theorem exactZABDecisionListERMFamily_eq_canonicalZABCodeFamily
     (zfeat : Z → BitVec r)
-    (samples : Index → Sample (ExactVisiblePostSwitchSurface Z k) Bool) :
+    (samples : Index → Sample (ExactVisiblePostSwitchData Z k) Bool) :
     exactZABDecisionListERMFamily (Z := Z) (r := r) (k := k) zfeat samples =
       canonicalZABCodeFamily
         (Z := Z) (r := r) (k := k) zfeat
@@ -47,7 +47,7 @@ theorem exactZABDecisionListERMFamily_eq_canonicalZABCodeFamily
 
 theorem canonicalZABDecisionListERMCandidateData
     (zfeat : Z → BitVec r)
-    (samples : Index → Sample (ExactVisiblePostSwitchSurface Z k) Bool) :
+    (samples : Index → Sample (ExactVisiblePostSwitchData Z k) Bool) :
     CanonicalZABDecisionListCandidateData
       (Z := Z) (r := r) (k := k) (Index := Index)
       zfeat
@@ -61,7 +61,7 @@ theorem canonicalZABDecisionListERMCandidateData
 
 theorem canonicalZABDecisionListERMCompressionTarget
     (zfeat : Z → BitVec r)
-    (samples : Index → Sample (ExactVisiblePostSwitchSurface Z k) Bool) :
+    (samples : Index → Sample (ExactVisiblePostSwitchData Z k) Bool) :
     ExactVisibleCompressionTarget
       (Z := Z) (k := k) (Index := Index)
       (exactZABDecisionListERMFamily (Z := Z) (r := r) (k := k) zfeat samples)
@@ -75,9 +75,9 @@ section
 variable [Fintype Z]
 
 noncomputable def canonicalZABDecisionListERMRecoveryData
-    (μ : PMF (ExactVisiblePostSwitchSurface Z k))
+    (μ : PMF (ExactVisiblePostSwitchData Z k))
     (zfeat : Z → BitVec r)
-    (samples : Index → Sample (ExactVisiblePostSwitchSurface Z k) Bool)
+    (samples : Index → Sample (ExactVisiblePostSwitchData Z k) Bool)
     (q : ℝ≥0∞)
     (hq :
       ∀ i,
@@ -102,9 +102,9 @@ noncomputable def canonicalZABDecisionListERMRecoveryData
   ⟩
 
 theorem canonicalZABDecisionListERMRecoveryLowerBound
-    (μ : PMF (ExactVisiblePostSwitchSurface Z k))
+    (μ : PMF (ExactVisiblePostSwitchData Z k))
     (zfeat : Z → BitVec r)
-    (samples : Index → Sample (ExactVisiblePostSwitchSurface Z k) Bool)
+    (samples : Index → Sample (ExactVisiblePostSwitchData Z k) Bool)
     (q : ℝ≥0∞)
     (hq :
       ∀ i,

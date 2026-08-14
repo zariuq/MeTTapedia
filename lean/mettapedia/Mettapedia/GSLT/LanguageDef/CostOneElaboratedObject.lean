@@ -1,5 +1,6 @@
 import Mettapedia.GSLT.LanguageDef.CostElaboratedSection
 import Mettapedia.GSLT.LanguageDef.CostEndofunctor
+import Mettapedia.GSLT.LanguageDef.CostSemanticErasure
 
 /-!
 # The proof-relevant object boundary for Cost₁
@@ -25,25 +26,35 @@ open Mettapedia.OSLF.Framework.ConstructorCategory
 /-- Data required to apply strict Cost₁ to one ordered continued
 specification without identifying proof-relevant elaborations.
 
-`compactLaws` constructs the checked raw continued output.  `semanticLaws`
-prove the exact section for the fixed child-first normalizer on retained Cost
-evidence. -/
+The compact normalizer is explicit object data.  `compactLaws` proves that
+this selected executor constructs the checked continued output;
+`semanticLaws` separately constructs the exact in-place section on retained
+semantic Cost trees.  Agreement with an erase-and-recompile implementation is
+optional comparison data rather than an object prerequisite. -/
 structure CostOneDomainObject where
   source : OrderedCIGSLT
-  compactLaws : CIGSLT.CostOneObjectLaws source.toCIGSLT
-  semanticLaws : CostElaboratedNormalizationLaws source.toCIGSLT
+  normalizeOpen : CostOpenNormalizer source.toCIGSLT
+  compactLaws : CIGSLT.CostOneObjectLawsFor source.toCIGSLT normalizeOpen
+  semanticLaws : CostTypedUnaryNormalizationLaws source.toCIGSLT
 
 namespace CostOneDomainObject
 
-/-- Exact section data derived from the fixed proof-relevant Cost normalizer,
-not chosen independently by the object. -/
-def semanticSection (object : CostOneDomainObject) :
-    CostElaboratedSectionData object.source.toCIGSLT :=
-  object.semanticLaws.sectionData
-
 /-- The checked compact continued specification produced by one Cost layer. -/
 def compactOutput (object : CostOneDomainObject) : OrderedCIGSLT :=
-  ⟨object.source.toCIGSLT.costCIGSLT object.compactLaws⟩
+  ⟨object.source.toCIGSLT.costCIGSLTWith object.normalizeOpen
+    object.compactLaws⟩
+
+/-- Embed the original raw Cost executor into the normalizer-indexed object
+boundary.  This constructor is intentionally named: it cannot be confused
+with a hereditary object whose selected executor differs from the raw one. -/
+def ofRawNormalizer (source : OrderedCIGSLT)
+    (compactLaws : CIGSLT.CostReferenceOneObjectLaws source.toCIGSLT)
+    (semanticLaws : CostTypedUnaryNormalizationLaws source.toCIGSLT) :
+    CostOneDomainObject where
+  source := source
+  normalizeOpen := source.toCIGSLT.costNormalizeOpen
+  compactLaws := compactLaws.toCostOneObjectLawsFor
+  semanticLaws := semanticLaws
 
 @[simp]
 theorem compactOutput_theory (object : CostOneDomainObject) :
@@ -53,35 +64,46 @@ theorem compactOutput_theory (object : CostOneDomainObject) :
 
 /-- The proof-relevant semantic output over the exact same generated authored
 presentation as the compact continued object. -/
-def elaboratedOutput (object : CostOneDomainObject) : ElaboratedOpenTheory where
-  theory := object.compactOutput.toCIGSLT.theory
-  carrier := object.source.toCIGSLT.costOpenElaborationCarrier
-  semantics := object.semanticSection.semantics
-  canonical := object.semanticSection.canonicalSection
+def elaboratedOutput (object : CostOneDomainObject) :
+    ReflectiveElaboratedOpenTheory :=
+  object.source.toCIGSLT.costSemanticElaboratedOpenTheory
+    object.semanticLaws
 
-/-- The semantic/compact normalization square commutes after erasure.
+@[simp]
+theorem elaboratedOutput_theory (object : CostOneDomainObject) :
+    object.elaboratedOutput.theory =
+      object.compactOutput.toCIGSLT.theory :=
+  rfl
 
-The upper computation normalizes retained declarations, colours, collection
-choices, and boundary evidence.  The lower computation is the independently
-defined checked compact executor installed as the output `ciGSLT` section. -/
-theorem normalize_erase_commutes (object : CostOneDomainObject)
-    (coherent : CompactCostNormalizationCoherent object.source.toCIGSLT)
+/-- Optional agreement between the erase-and-recompile implementation and the
+selected compact normalizer.
+
+This theorem is deliberately not an object field: the object semantic carrier
+normalizes retained frames in place, while this comparison concerns the
+separate executable `CostRegionTree` carrier. -/
+theorem operationalNormalize_erase_commutes (object : CostOneDomainObject)
+    (operationalLaws : CostElaboratedNormalizationLaws
+      object.source.toCIGSLT)
+    (compactification : CostElaboratedCompactificationFor
+      operationalLaws.sectionData object.normalizeOpen)
     {targetFree : WellSorted.FreeTypeContext}
     {targetBound : List TypeExpr}
     {targetSort : LangSort object.source.toCIGSLT.costWholeLanguage}
     (term : CostElabTerm object.source.toCIGSLT targetFree targetBound
       targetSort) :
-    CostOpenElaboration.erase (object.semanticSection.normalize term) =
+    CostOpenElaboration.erase (operationalLaws.sectionData.normalize term) =
       object.compactOutput.toCIGSLT.openCanonical.normalize
         (CostOpenElaboration.erase term) :=
-  (CostElaboratedCompactification.ofCompactCoherent object.semanticLaws
-    coherent).erases_normalize term
+  compactification.erases_normalize term
 
-/-- Compact execution may merge observations while the exact semantic output
-retains distinct root fibres. -/
-theorem sameCompact_but_distinctSemanticNormalForms
+/-- On the optional operational carrier, compact execution may merge
+observations while exact normalization retains distinct root fibres. -/
+theorem sameCompact_but_distinctOperationalNormalForms
     (object : CostOneDomainObject)
-    (coherent : CompactCostNormalizationCoherent object.source.toCIGSLT)
+    (operationalLaws : CostElaboratedNormalizationLaws
+      object.source.toCIGSLT)
+    (compactification : CostElaboratedCompactificationFor
+      operationalLaws.sectionData object.normalizeOpen)
     {targetFree : WellSorted.FreeTypeContext}
     {targetBound : List TypeExpr}
     {targetSort : LangSort object.source.toCIGSLT.costWholeLanguage}
@@ -91,12 +113,13 @@ theorem sameCompact_but_distinctSemanticNormalForms
       CostOpenElaboration.erase right)
     (different : left.decoration.rootIdentity ≠
       right.decoration.rootIdentity) :
-    CostOpenElaboration.erase (object.semanticSection.normalize left) =
-        CostOpenElaboration.erase (object.semanticSection.normalize right) ∧
-      object.semanticSection.normalize left ≠
-        object.semanticSection.normalize right :=
-  (CostElaboratedCompactification.ofCompactCoherent object.semanticLaws
-    coherent).sameCompact_but_distinctNormalForms sameErasure different
+    CostOpenElaboration.erase
+        (operationalLaws.sectionData.normalize left) =
+        CostOpenElaboration.erase
+          (operationalLaws.sectionData.normalize right) ∧
+      operationalLaws.sectionData.normalize left ≠
+        operationalLaws.sectionData.normalize right :=
+  compactification.sameCompact_but_distinctNormalForms sameErasure different
 
 end CostOneDomainObject
 

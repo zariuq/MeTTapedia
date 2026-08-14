@@ -111,7 +111,7 @@ def renderCategoryTheoryClaim : CategoryTheoryClaim → String
         (complV2 (mkV2 (regV "prove")) (properNameNP "Hausdorff moment uniqueness links"))
   | .deFinettiPerNDiagramFileRole =>
       mkPresPos (properNameNP "DeFinettiPerNDiagram.lean")
-        (complV2 (mkV2 (regV "define")) (properNameNP "per-n permutation diagram surfaces"))
+        (complV2 (mkV2 (regV "define")) (properNameNP "per-n permutation diagram interfaces"))
   | .deFinettiGlobalFinitaryDiagramFileRole =>
       mkPresPos (properNameNP "DeFinettiGlobalFinitaryDiagram.lean")
         (complV2 (mkV2 (regV "define")) (properNameNP "global finitary-permutation indexing"))
@@ -132,7 +132,7 @@ def renderCategoryTheoryClaim : CategoryTheoryClaim → String
         (complV2 (mkV2 (regV "provide")) (properNameNP "stable alias exports"))
   | .deFinettiExportsFileRole =>
       mkPresPos (properNameNP "DeFinettiExports.lean")
-        (complV2 (mkV2 (regV "provide")) (properNameNP "the recommended import surface"))
+        (complV2 (mkV2 (regV "provide")) (properNameNP "the recommended import interface"))
   | .fuzzyFrameFileRole =>
       mkPresPos (properNameNP "FuzzyFrame.lean")
         (complV2 (mkV2 (regV "formalize")) (properNameNP "the unit interval frame for PLN truth values"))

@@ -62,7 +62,7 @@ Audit provenance:
 - public upstream-main reference:
   `https://github.com/trueagi-io/PeTTa/blob/main/lib/lib_pln.metta`
 
-Preferred discussion surface:
+Preferred discussion interface:
 
 - transparent mirror: `Mettapedia.PLN.TruthValues.PeTTaLibPLNTruthFunctions`
 - justified WM theory: `Mettapedia.PLN.TruthValues.WMPLNJustifiedTruthFunctions`
@@ -70,7 +70,7 @@ Preferred discussion surface:
 
 Rule-status dashboard:
 
-| Family | Current public Lean surface | Status |
+| Family | Current public Lean interface | Status |
 |--------|-----------------------------|--------|
 | Revision | `truthRevision` | exact WM-backed |
 | Induction | `truthInduction` | exact WM-backed |
@@ -92,7 +92,7 @@ Selected WM-backed additions not present in current upstream PeTTa main:
   - analysis hooks:
     `PeTTaLibPLNFormalAnalysis.predictiveImplication_conf_le_inputs`
 - `truthConjunctionConditionalConservative`
-  - exact conditional-conjunction strength surface plus conservative confidence
+  - exact conditional-conjunction strength interface plus conservative confidence
   - WM lift:
     `WMPLNJustifiedTruthFunctions.truthConjunctionConditional_strength_lifts_to_wm`
   - analysis hooks:
@@ -147,7 +147,7 @@ Lean mirror: `Mettapedia.PLN.Comparisons.NARS.NARSMettaTruthFunctions`
   - `Mettapedia.PLN.RuleFamilies.FirstOrder.PLNDerivation` also contains a *paper-focused* PLN↔NARS power comparison
     (arXiv:2412.19524) in `PLNDerivation.lean`; it is intentionally separate from the PeTTa mirror.
 
-## Distribution-backed WM surfaces
+## Distribution-backed WM interfaces
 
 Primary Lean entry point:
 
@@ -155,7 +155,7 @@ Primary Lean entry point:
 
 Distributional dashboard:
 
-| Regime | Current public Lean surface | Status |
+| Regime | Current public Lean interface | Status |
 |--------|-----------------------------|--------|
 | Dirichlet over worlds (prop STV) | `truthDirichletOverWorldsPropSTV` | exact view wrapper |
 | Dirichlet over worlds (prop WTV) | `truthDirichletOverWorldsPropWTV` | exact view wrapper |

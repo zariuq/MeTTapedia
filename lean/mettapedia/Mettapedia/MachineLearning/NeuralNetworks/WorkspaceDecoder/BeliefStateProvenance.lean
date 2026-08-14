@@ -58,10 +58,10 @@ def beliefWorkspaceContributions :
       [ ⟨.directLift, "Gaussian fusion", "GaussianFusion"⟩
       , ⟨.directLift, "conditional posterior mean", "LinearGaussianChain"⟩
       , ⟨.directLift, "weighted PLN revision", "GaussianRevisionBridge"⟩
-      , ⟨.directLift, "conjugate observation count", "ConjugateEvidenceSurface"⟩
+      , ⟨.directLift, "conjugate observation count", "ConjugateEvidenceCore"⟩
       , ⟨.newContent, "precision interpolation algebra", "BeliefState"⟩
       , ⟨.newContent, "mean-precision belief slot", "BeliefState"⟩
-      , ⟨.newContent, "five-surface unification crown", "BeliefState"⟩
+      , ⟨.newContent, "five-interface unification crown", "BeliefState"⟩
       , ⟨.scopeBoundary, "zero-precision proposal freezes", "BeliefState"⟩ ]
   | .selectivity =>
       [ ⟨.directLift, "precision-variance gain coordinates", "KalmanCorrespondence"⟩

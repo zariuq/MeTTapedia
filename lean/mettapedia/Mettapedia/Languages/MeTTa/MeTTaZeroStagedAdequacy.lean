@@ -300,7 +300,7 @@ theorem PipelineStep.answers_preserved {model : Model}
 
 /-! ### Exact bridge to the authored five-field realization -/
 
-/-- Forget only the surface encoding of the space argument and recover the
+/-- Forget only the syntax encoding of the space argument and recover the
 classified semantic request carried by the staged pipeline. -/
 def classifiedRequest {model : Model} :
     KernelRequest model → ClassifiedRequest model

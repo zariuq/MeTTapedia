@@ -15,7 +15,7 @@ namespace Mettapedia.PLN.Bridges.KR
 
 universe u
 
-/-- Proof-carrying package for the current PLN/KR bridge surface.
+/-- Proof-carrying package for the current PLN/KR bridge interface.
 
 The package keeps concept formation, formed-concept closure, de Finetti
 readouts, control canaries, and stamped-provenance Revision guards visible as

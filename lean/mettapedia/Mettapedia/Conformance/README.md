@@ -11,7 +11,7 @@ definitional equality rather than by a passing test that might not be
 re-run.
 
 The directory pins the formal side of Mettapedia against four runtime
-surfaces: the `Simple` finite-state backend, the PeTTa engine, the HE
+interfaces: the `Simple` finite-state backend, the PeTTa engine, the HE
 parser/interpreter, and the book's "Maple Court" world-model example.
 
 ## Core Idea

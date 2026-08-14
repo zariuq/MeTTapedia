@@ -3,7 +3,7 @@ import Mettapedia.KR.ConceptOntology.WMBridge
 /-!
 # AtomQuery Ontology Canary
 
-This module instantiates the ontology bridge on the live `AtomQuery` surface:
+This module instantiates the ontology bridge on the live `AtomQuery` interface:
 
 - membership is encoded by `AtomQuery.prop`
 - extensional inheritance links are encoded by `AtomQuery.link`

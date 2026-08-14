@@ -5,14 +5,14 @@ import Mettapedia.Logic.HOL.Semantics.KripkeHenkinCanonical
 # Kripke-Henkin Bridge Package
 
 Public citation handle for the bridge between the substitutional
-Kripke-Henkin presentation and the supported canonical membership surface.
+Kripke-Henkin presentation and the supported canonical membership interface.
 
 This module re-exports:
 
 - `HeytingSem.ofKripkeHenkin`, the embedding of every substitutional
   `KripkeHenkin` model into the Heyting-valued semantics;
 - `KripkeHenkin.SupportedCanonicalFrame.SupportedMembershipConsequence` and
-  the `Provable ↔ SupportedMembershipConsequence` surfaces;
+  the `Provable ↔ SupportedMembershipConsequence` interfaces;
 - the provider-dispatched successor clauses
   `forces_imp_level_provider`, `forces_not_level_provider`, and
   `forces_all_level_provider`.

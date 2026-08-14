@@ -5,7 +5,7 @@ import Mettapedia.PLN.Bridges.Languages.WorldModel.PLNWorldModelRuntimeBridge
 # HE Premise-Core Fragment -> WM Bridge
 
 Composes the first explicit premise-bearing `HE` runtime fragment through the
-existing runtime-to-WM consequence surface.
+existing runtime-to-WM consequence interface.
 
 This bridge deliberately remains fragment-specific: it exposes the
 premise-core execution judgment directly, while `HEJudgmentWMInterface`

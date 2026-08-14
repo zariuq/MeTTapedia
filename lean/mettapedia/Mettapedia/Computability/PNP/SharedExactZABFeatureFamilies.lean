@@ -29,7 +29,7 @@ variable {Z : Type*} {p r k : ℕ}
 def exactZABAffineFeatureSummary
     (zfeat : Z → BitVec r)
     (features : Fin p → AffineColumnCode (r + (k + k))) :
-    ExactVisiblePostSwitchSurface Z k → BitVec p :=
+    ExactVisiblePostSwitchData Z k → BitVec p :=
   fun u => affineFeatureVector features (exactZABVisibleData (Z := Z) (r := r) (k := k) zfeat u)
 
 /-- Arbitrary truth-table combiner on the shared `(zfeat(z), a, b)` feature basis. -/
@@ -37,7 +37,7 @@ noncomputable def sharedExactZABAffineFeaturePredict
     (zfeat : Z → BitVec r)
     (features : Fin p → AffineColumnCode (r + (k + k)))
     (table : BitCode (2 ^ p))
-    (u : ExactVisiblePostSwitchSurface Z k) : Bool :=
+    (u : ExactVisiblePostSwitchData Z k) : Bool :=
   table ((Fintype.equivFinOfCardEq (by simp [BitVec] : Fintype.card (BitVec p) = 2 ^ p))
     (exactZABAffineFeatureSummary (Z := Z) (p := p) (r := r) (k := k) zfeat features u))
 
@@ -46,7 +46,7 @@ noncomputable def sharedExactZABSparseThresholdAffinePredict
     (zfeat : Z → BitVec r)
     (features : Fin p → AffineColumnCode (r + (k + k)))
     (code : SharedSparseThresholdCode p)
-    (u : ExactVisiblePostSwitchSurface Z k) : Bool :=
+    (u : ExactVisiblePostSwitchData Z k) : Bool :=
   decide (thresholdCodeValue (r := p) code.2 ≤
     maskedAffineFeatureCount (k := r + (k + k)) features code.1
       (exactZABVisibleData (Z := Z) (r := r) (k := k) zfeat u))
@@ -56,7 +56,7 @@ noncomputable def sharedExactZABAffineDecisionListPredict
     (zfeat : Z → BitVec r)
     (features : Fin p → AffineColumnCode (r + (k + k)))
     (code : SharedAffineDecisionListCode p)
-    (u : ExactVisiblePostSwitchSurface Z k) : Bool :=
+    (u : ExactVisiblePostSwitchData Z k) : Bool :=
   match firstActiveFeature?
       (exactZABAffineFeatureSummary (Z := Z) (p := p) (r := r) (k := k) zfeat features u) with
   | some j => code.1 j
@@ -66,7 +66,7 @@ noncomputable def sharedExactZABAffineDecisionListPredict
 noncomputable def sharedExactZABAffineFeatureBitFamily
     (Z : Type*) (zfeat : Z → BitVec r)
     (features : Fin p → AffineColumnCode (r + (k + k))) :
-    BitEncodedClassifierFamily (ExactVisiblePostSwitchSurface Z k) (2 ^ p) where
+    BitEncodedClassifierFamily (ExactVisiblePostSwitchData Z k) (2 ^ p) where
   decode table := sharedExactZABAffineFeaturePredict (Z := Z) (p := p) (r := r) (k := k)
     zfeat features table
 
@@ -74,7 +74,7 @@ noncomputable def sharedExactZABAffineFeatureBitFamily
 noncomputable def sharedExactZABSparseThresholdAffineBitFamily
     (Z : Type*) (zfeat : Z → BitVec r)
     (features : Fin p → AffineColumnCode (r + (k + k))) :
-    BitEncodedClassifierFamily (ExactVisiblePostSwitchSurface Z k) (2 * p) where
+    BitEncodedClassifierFamily (ExactVisiblePostSwitchData Z k) (2 * p) where
   decode raw u :=
     let code := (sharedSparseThresholdCodeEquivBitCode p).symm raw
     sharedExactZABSparseThresholdAffinePredict (Z := Z) (p := p) (r := r) (k := k)
@@ -84,7 +84,7 @@ noncomputable def sharedExactZABSparseThresholdAffineBitFamily
 noncomputable def sharedExactZABAffineDecisionListBitFamily
     (Z : Type*) (zfeat : Z → BitVec r)
     (features : Fin p → AffineColumnCode (r + (k + k))) :
-    BitEncodedClassifierFamily (ExactVisiblePostSwitchSurface Z k) (p + 1) where
+    BitEncodedClassifierFamily (ExactVisiblePostSwitchData Z k) (p + 1) where
   decode raw u :=
     let code := (sharedAffineDecisionListCodeEquivBitCode p).symm raw
     sharedExactZABAffineDecisionListPredict (Z := Z) (p := p) (r := r) (k := k)
@@ -120,7 +120,7 @@ noncomputable def sharedExactZABAffineDecisionListBitFamily
   funext u
   simp [sharedExactZABAffineDecisionListBitFamily, sharedAffineDecisionListCodeEquivBitCode]
 
-/-- Exact-surface family with one shared `(zfeat(z), a, b)` affine basis and an
+/-- Exact-data domain family with one shared `(zfeat(z), a, b)` affine basis and an
 arbitrary truth-table combiner. -/
 def RealizedBySharedExactZABAffineFeatureFamily
     {Index : Type*}
@@ -132,7 +132,7 @@ def RealizedBySharedExactZABAffineFeatureFamily
       sharedExactZABAffineFeaturePredict (Z := Z) (p := p) (r := r) (k := k)
         zfeat features table
 
-/-- Exact-surface family with one shared `(zfeat(z), a, b)` affine basis and a
+/-- Exact-data domain family with one shared `(zfeat(z), a, b)` affine basis and a
 sparse-threshold combiner. -/
 def RealizedBySharedExactZABSparseThresholdAffineFamily
     {Index : Type*}
@@ -144,7 +144,7 @@ def RealizedBySharedExactZABSparseThresholdAffineFamily
       sharedExactZABSparseThresholdAffinePredict (Z := Z) (p := p) (r := r) (k := k)
         zfeat features code
 
-/-- Exact-surface family with one shared `(zfeat(z), a, b)` affine basis and a
+/-- Exact-data domain family with one shared `(zfeat(z), a, b)` affine basis and a
 fixed-order decision-list combiner. -/
 def RealizedBySharedExactZABAffineDecisionListFamily
     {Index : Type*}
@@ -208,8 +208,8 @@ theorem sharedExactZABAffineFeatureRecoveryLowerBound
     [Fintype Z]
     (zfeat : Z → BitVec r)
     (features : Fin p → AffineColumnCode (r + (k + k)))
-    (μ : PMF (ExactVisiblePostSwitchSurface Z k))
-    (target : ExactVisiblePostSwitchSurface Z k → Bool) (m : ℕ)
+    (μ : PMF (ExactVisiblePostSwitchData Z k))
+    (target : ExactVisiblePostSwitchData Z k → Bool) (m : ℕ)
     (htarget : ∃ table : BitCode (2 ^ p),
       target = sharedExactZABAffineFeaturePredict (Z := Z) (p := p) (r := r) (k := k)
         zfeat features table)
@@ -233,8 +233,8 @@ theorem sharedExactZABSparseThresholdAffineRecoveryLowerBound
     [Fintype Z]
     (zfeat : Z → BitVec r)
     (features : Fin p → AffineColumnCode (r + (k + k)))
-    (μ : PMF (ExactVisiblePostSwitchSurface Z k))
-    (target : ExactVisiblePostSwitchSurface Z k → Bool) (m : ℕ)
+    (μ : PMF (ExactVisiblePostSwitchData Z k))
+    (target : ExactVisiblePostSwitchData Z k → Bool) (m : ℕ)
     (htarget : ∃ code : SharedSparseThresholdCode p,
       target = sharedExactZABSparseThresholdAffinePredict (Z := Z) (p := p) (r := r) (k := k)
         zfeat features code)
@@ -262,8 +262,8 @@ theorem sharedExactZABAffineDecisionListRecoveryLowerBound
     [Fintype Z]
     (zfeat : Z → BitVec r)
     (features : Fin p → AffineColumnCode (r + (k + k)))
-    (μ : PMF (ExactVisiblePostSwitchSurface Z k))
-    (target : ExactVisiblePostSwitchSurface Z k → Bool) (m : ℕ)
+    (μ : PMF (ExactVisiblePostSwitchData Z k))
+    (target : ExactVisiblePostSwitchData Z k → Bool) (m : ℕ)
     (htarget : ∃ code : SharedAffineDecisionListCode p,
       target = sharedExactZABAffineDecisionListPredict (Z := Z) (p := p) (r := r) (k := k)
         zfeat features code)

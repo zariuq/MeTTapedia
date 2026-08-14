@@ -376,6 +376,90 @@ def satisfies (lts : LTS S Act) : Env S n → Formula Act n → S → Prop
 def sat (lts : LTS S Act) (ρ : Env S n) (φ : Formula Act n) : Set S :=
   { s | satisfies lts ρ φ s }
 
+/-- Extending pointwise-equivalent environments with the same fixed-point
+candidate preserves pointwise membership. -/
+theorem Env.extend_congr {ρ ρ' : Env S n}
+    (equivalent : ∀ index state, state ∈ ρ index ↔ state ∈ ρ' index)
+    (candidate : Set S) :
+    ∀ index state,
+      state ∈ ρ.extend candidate index ↔
+        state ∈ ρ'.extend candidate index := by
+  intro index state
+  unfold Env.extend
+  split
+  · rfl
+  · exact equivalent _ _
+
+/-- Satisfaction depends only on the pointwise transition relation and
+environment, not on their record or function representation. -/
+theorem satisfies_congr
+    {lts lts' : LTS S Act} {ρ ρ' : Env S n}
+    (transitions : ∀ source action target,
+      lts.trans source action target ↔ lts'.trans source action target)
+    (environment : ∀ index state,
+      state ∈ ρ index ↔ state ∈ ρ' index)
+    (formula : Formula Act n) (state : S) :
+    satisfies lts ρ formula state ↔ satisfies lts' ρ' formula state := by
+  induction formula generalizing state with
+  | tt => rfl
+  | ff => rfl
+  | neg formula inductionHypothesis =>
+      exact not_congr (inductionHypothesis environment state)
+  | conj left right leftHypothesis rightHypothesis =>
+      exact and_congr (leftHypothesis environment state)
+        (rightHypothesis environment state)
+  | disj left right leftHypothesis rightHypothesis =>
+      exact or_congr (leftHypothesis environment state)
+        (rightHypothesis environment state)
+  | diamond action formula inductionHypothesis =>
+      simp only [satisfies, LTS.successors, Set.mem_setOf_eq]
+      constructor
+      · rintro ⟨target, transition, satisfied⟩
+        exact ⟨target, (transitions _ _ _).mp transition,
+          (inductionHypothesis environment target).mp satisfied⟩
+      · rintro ⟨target, transition, satisfied⟩
+        exact ⟨target, (transitions _ _ _).mpr transition,
+          (inductionHypothesis environment target).mpr satisfied⟩
+  | box action formula inductionHypothesis =>
+      simp only [satisfies, LTS.successors, Set.mem_setOf_eq]
+      constructor
+      · intro allTargets target transition
+        exact (inductionHypothesis environment target).mp
+          (allTargets target ((transitions _ _ _).mpr transition))
+      · intro allTargets target transition
+        exact (inductionHypothesis environment target).mpr
+          (allTargets target ((transitions _ _ _).mp transition))
+  | mu body inductionHypothesis =>
+      simp only [satisfies]
+      constructor
+      · intro least candidate preFixed
+        apply least candidate
+        intro target satisfied
+        exact preFixed target
+          ((inductionHypothesis
+            (Env.extend_congr environment candidate) target).mp satisfied)
+      · intro least candidate preFixed
+        apply least candidate
+        intro target satisfied
+        exact preFixed target
+          ((inductionHypothesis
+            (Env.extend_congr environment candidate) target).mpr satisfied)
+  | nu body inductionHypothesis =>
+      simp only [satisfies]
+      constructor
+      · rintro ⟨candidate, member, postFixed⟩
+        exact ⟨candidate, member, fun target targetMember =>
+          (inductionHypothesis
+            (Env.extend_congr environment candidate) target).mp
+              (postFixed target targetMember)⟩
+      · rintro ⟨candidate, member, postFixed⟩
+        exact ⟨candidate, member, fun target targetMember =>
+          (inductionHypothesis
+            (Env.extend_congr environment candidate) target).mpr
+              (postFixed target targetMember)⟩
+  | var index =>
+      exact environment index state
+
 /-! ## Properties of Satisfaction -/
 
 /-- Diamond and box are duals -/

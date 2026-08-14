@@ -6,7 +6,7 @@ import Mettapedia.PLN.Evidence.EvidenceQuantale
 BinaryEvidence-quality and support/confidence preorders for the PLN world-model layer.
 
 These live here (rather than in governance modules) so that the core Logic/WM
-theorem surface can use them without pulling in governance dependencies.
+theorem family can use them without pulling in governance dependencies.
 
 ## Contents
 

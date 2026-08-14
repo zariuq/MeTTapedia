@@ -1725,6 +1725,41 @@ theorem ofInventory_occurrenceSlot_eq_iff
       inventory.occurrenceAtom left = inventory.occurrenceAtom right :=
   (ofInventory inventory).extensional left right
 
+/-- Every semantic slot in the executable quotient has a positional
+occurrence representative.  Deduplication removes repeated values but never
+introduces a value that was absent from the occurrence inventory. -/
+theorem ofInventory_occurrenceSlot_surjective
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    {table : TypedCostRegionBoundaryTable source color targetFree occurrences}
+    {values : TypedCostRegionBoundaryTable.Values source color targetFree table}
+    {root : Pattern}
+    (inventory : CostStaticParameterInventory source color targetFree table
+      values root) :
+    Function.Surjective (ofInventory inventory).occurrenceSlot := by
+  intro slot
+  have slotMembership : inventory.semanticAtoms.get slot ∈
+      inventory.semanticAtoms := List.get_mem _ _
+  have occurrenceMembership : inventory.semanticAtoms.get slot ∈
+      inventory.entries.map CostStaticParameterOccurrence.atom := by
+    exact List.mem_dedup.mp slotMembership
+  obtain ⟨parameter, parameterMembership, parameterValue⟩ :=
+    List.mem_map.mp occurrenceMembership
+  obtain ⟨position, positionValue⟩ :=
+    List.mem_iff_get.mp parameterMembership
+  refine ⟨position, Fin.ext ?_⟩
+  change List.idxOf (inventory.occurrenceAtom position)
+      inventory.semanticAtoms = slot
+  have occurrenceValue : inventory.occurrenceAtom position =
+      inventory.semanticAtoms.get slot := by
+    change (inventory.entries.get position).atom =
+      inventory.semanticAtoms.get slot
+    rw [positionValue]
+    exact parameterValue
+  rw [occurrenceValue]
+  exact List.get_idxOf inventory.semanticAtoms_nodup slot
+
 /-- Negative quotient law: differing typed semantic values cannot be merged
 merely because their origins or compact payloads look similar. -/
 theorem ofInventory_occurrenceSlot_ne_of_atom_ne

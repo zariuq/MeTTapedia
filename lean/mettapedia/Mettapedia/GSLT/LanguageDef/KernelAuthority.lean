@@ -1,5 +1,6 @@
 import Mathlib.Algebra.Group.Defs
 import Mathlib.Algebra.Group.Nat.Defs
+import Mathlib.Computability.Halting
 import Mathlib.Data.Fintype.Basic
 import Mettapedia.GSLT.Core.GSLT
 import Mettapedia.GSLT.Core.NonFactorization
@@ -39,7 +40,8 @@ universe uClaim uCertificate uJudgment uAxiom uConversion
 
 /-! ## Executable replay and exact authority -/
 
-/-- A structurally total executable checker for untrusted evidence. -/
+/-- A structurally total executable checker at an explicit trust boundary:
+the claim and untrusted certificate are inputs, and acceptance is Boolean. -/
 structure Checker (Claim : Type uClaim) (Certificate : Type uCertificate) where
   check : Claim -> Certificate -> Bool
 
@@ -58,7 +60,8 @@ def CertificateComplete {Claim : Type uClaim}
   forall claim, Meaning claim ->
     exists certificate, checker.check claim certificate = true
 
-/-- Exact replay authority is the two-sided certificate-existence law. -/
+/-- Exact trust-boundary replay authority is the two-sided
+certificate-existence law. -/
 structure Authority {Claim : Type uClaim} {Certificate : Type uCertificate}
     (checker : Checker Claim Certificate) (Meaning : Claim -> Prop) : Prop where
   sound : checker.Sound Meaning
@@ -75,6 +78,127 @@ theorem Authority.meaning_iff_exists_certificate
   · exact authority.complete claim
   · rintro ⟨certificate, accepted⟩
     exact authority.sound claim certificate accepted
+
+/-! ## Doctrine: eliminating evidence, and when evidence is necessary
+
+Typing and other native judgments should use direct computation whenever the
+semantic predicate is computable.  Trust-boundary evidence is orthogonal: it
+can establish a recursively enumerable predicate even when no computable
+direct decision exists.  The pair below states both directions without the
+classically false claim that a noncomputable predicate has no set-theoretic
+Boolean decider. -/
+
+/-- A kernel which directly decides a semantic judgment. -/
+structure DecisionKernel (Claim : Type uClaim) (Meaning : Claim -> Prop) where
+  decide : Claim -> Bool
+  correct : forall claim, decide claim = true <-> Meaning claim
+
+/-- A decision kernel can be viewed at a trust boundary with trivial evidence.
+This representation intentionally carries no proof details. -/
+def DecisionKernel.toChecker {Claim : Type uClaim} {Meaning : Claim -> Prop}
+    (kernel : DecisionKernel Claim Meaning) : Checker Claim Unit where
+  check := fun claim _ => kernel.decide claim
+
+/-- Direct decision eliminates informative boundary evidence without losing
+exact authority. -/
+theorem DecisionKernel.authority
+    {Claim : Type uClaim} {Meaning : Claim -> Prop}
+    (kernel : DecisionKernel Claim Meaning) :
+    kernel.toChecker.Authority Meaning where
+  sound := by
+    intro claim _ accepted
+    exact (kernel.correct claim).mp accepted
+  complete := by
+    intro claim meaningful
+    exact ⟨(), (kernel.correct claim).mpr meaningful⟩
+
+/-- The fixed-input halting predicate used to show that computable
+trust-boundary evidence is sometimes strictly more general than direct
+computable decision. -/
+def HaltingMeaning (code : Nat.Partrec.Code) : Prop :=
+  (Nat.Partrec.Code.eval code 0).Dom
+
+/-- A step budget is untrusted boundary evidence that a partial-recursive code
+halts on input zero.  The checker recomputes bounded evaluation. -/
+def haltingTrustBoundaryChecker : Checker Nat.Partrec.Code Nat where
+  check := fun code budget => (Nat.Partrec.Code.evaln budget code 0).isSome
+
+/-- The bounded-evaluation trust-boundary checker is a computable function of
+the code and proposed step budget. -/
+theorem haltingTrustBoundaryChecker_computable :
+    Computable (fun input : Nat.Partrec.Code × Nat =>
+      haltingTrustBoundaryChecker.check input.1 input.2) := by
+  exact
+    (Primrec.option_isSome.comp
+      (Nat.Partrec.Code.primrec_evaln.comp
+        ((Primrec.snd.pair Primrec.fst).pair (Primrec.const 0)))).to_comp
+
+/-- Accepted bounded evaluation is sound for actual termination. -/
+theorem haltingTrustBoundaryChecker_sound :
+    haltingTrustBoundaryChecker.Sound HaltingMeaning := by
+  intro code budget accepted
+  cases evaluated : Nat.Partrec.Code.evaln budget code 0 with
+  | none => simp [haltingTrustBoundaryChecker, evaluated] at accepted
+  | some result =>
+      apply Part.dom_iff_mem.mpr
+      refine ⟨result, Nat.Partrec.Code.evaln_sound (k := budget) ?_⟩
+      simpa [Option.mem_def] using evaluated
+
+/-- Every terminating computation has some finite budget accepted by the
+bounded-evaluation trust-boundary checker. -/
+theorem haltingTrustBoundaryChecker_complete :
+    haltingTrustBoundaryChecker.CertificateComplete HaltingMeaning := by
+  intro code halts
+  obtain ⟨result, resultMem⟩ := Part.dom_iff_mem.mp halts
+  obtain ⟨budget, bounded⟩ :=
+    Nat.Partrec.Code.evaln_complete.mp resultMem
+  refine ⟨budget, ?_⟩
+  have evaluated : Nat.Partrec.Code.evaln budget code 0 = some result := by
+    simpa [Option.mem_def] using bounded
+  simp [haltingTrustBoundaryChecker, evaluated]
+
+/-- The same computable checker is sound and certificate-complete. -/
+def haltingTrustBoundaryAuthority :
+    haltingTrustBoundaryChecker.Authority HaltingMeaning where
+  sound := haltingTrustBoundaryChecker_sound
+  complete := haltingTrustBoundaryChecker_complete
+
+/-- Fixed-input halting is not a computable predicate. -/
+theorem haltingMeaning_not_computable :
+    ¬ ComputablePred HaltingMeaning := by
+  change ¬ ComputablePred
+    (fun code : Nat.Partrec.Code => (Nat.Partrec.Code.eval code 0).Dom)
+  exact ComputablePred.halting_problem 0
+
+/-- Consequently there is no *computable* direct decision kernel for this
+meaning.  The computability qualifier is essential: classical choice can
+produce a noncomputable Boolean characteristic function. -/
+theorem no_computableDecisionKernel_for_halting :
+    ¬ ∃ kernel : DecisionKernel Nat.Partrec.Code HaltingMeaning,
+      Computable kernel.decide := by
+  rintro ⟨kernel, kernelComputable⟩
+  apply haltingMeaning_not_computable
+  rw [ComputablePred.computable_iff]
+  refine ⟨kernel.decide, kernelComputable, ?_⟩
+  funext code
+  exact propext (kernel.correct code).symm
+
+/-- Doctrine pair: computable exact boundary checking can require finite
+evidence even when computable direct decision is impossible. -/
+theorem computable_certificate_authority_without_computable_decision :
+    (∃ checker : Checker Nat.Partrec.Code Nat,
+      Computable (fun input : Nat.Partrec.Code × Nat =>
+        checker.check input.1 input.2) ∧
+      checker.Sound HaltingMeaning ∧
+      checker.CertificateComplete HaltingMeaning) ∧
+    ¬ ∃ kernel : DecisionKernel Nat.Partrec.Code HaltingMeaning,
+      Computable kernel.decide := by
+  exact
+    ⟨⟨haltingTrustBoundaryChecker,
+      haltingTrustBoundaryChecker_computable,
+      haltingTrustBoundaryChecker_sound,
+      haltingTrustBoundaryChecker_complete⟩,
+    no_computableDecisionKernel_for_halting⟩
 
 /-! ## Composing independent checker obligations -/
 
@@ -263,7 +387,7 @@ theorem Sound.map
 
 /-! ## Exact certificate scopes and semantic projections -/
 
-/-- A certificate language may be exact for a declared semantic scope while
+/-- A trust-boundary certificate language may be exact for a declared semantic scope while
 that scope only projects soundly into a broader guest-language meaning.  This
 is the reusable shape for finite global witnesses whose completeness at the
 broader meaning has not been established. -/
@@ -358,7 +482,7 @@ def AuthorityProjection.sum
 
 /-! ## Transporting semantic certificates to a finite wire carrier -/
 
-/-- A fail-closed wire codec.  Decoding need only be partial, but every
+/-- A fail-closed trust-boundary wire codec.  Decoding need only be partial, but every
 canonical encoding must decode to the original certificate. -/
 structure PartialCodec (Certificate : Type uCertificate)
     (Wire : Type uJudgment) where
@@ -459,30 +583,7 @@ theorem rejectAll_not_authority
   obtain ⟨certificate, accepted⟩ := authority.complete claim meaningful
   simp [rejectAll] at accepted
 
-/-! ## Authority is not automatically decision -/
-
-/-- A kernel which directly decides a semantic judgment. -/
-structure DecisionKernel (Claim : Type uClaim) (Meaning : Claim -> Prop) where
-  decide : Claim -> Bool
-  correct : forall claim, decide claim = true <-> Meaning claim
-
-/-- A decision kernel can be viewed as a replay checker with a trivial
-certificate.  This representation intentionally carries no proof details. -/
-def DecisionKernel.toChecker {Claim : Type uClaim} {Meaning : Claim -> Prop}
-    (kernel : DecisionKernel Claim Meaning) : Checker Claim Unit where
-  check := fun claim _ => kernel.decide claim
-
-/-- Every decision kernel induces exact certificate authority. -/
-theorem DecisionKernel.authority
-    {Claim : Type uClaim} {Meaning : Claim -> Prop}
-    (kernel : DecisionKernel Claim Meaning) :
-    kernel.toChecker.Authority Meaning where
-  sound := by
-    intro claim _ accepted
-    exact (kernel.correct claim).mp accepted
-  complete := by
-    intro claim meaningful
-    exact ⟨(), (kernel.correct claim).mpr meaningful⟩
+/-! ## Bounded evidence search and producing algorithms -/
 
 /-- Exhaustive certificate search is available when the whole certificate
 space is finite.  This is much stronger than saying that each individual
@@ -515,9 +616,9 @@ def decisionKernelOfFiniteCertificateSpace
     rw [exhaustiveCheck_eq_true_iff]
     exact authority.meaning_iff_exists_certificate claim |>.symm
 
-/-- A producer is complete when every meaningful claim causes it to emit
-accepted evidence.  It may emit rejected evidence on other inputs; replay,
-not producer trust, determines acceptance. -/
+/-- A trust-boundary producer is complete when every meaningful claim causes
+it to emit accepted evidence.  It may emit rejected evidence on other inputs;
+replay, not producer trust, determines acceptance. -/
 structure CompleteProducer
     {Claim : Type uClaim} {Certificate : Type uCertificate}
     (checker : Checker Claim Certificate) (Meaning : Claim -> Prop) where
@@ -1025,5 +1126,16 @@ theorem no_straddling_authority
     (largeMeaning : larger claim) (notSmall : ¬ smaller claim) : False := by
   obtain ⟨certificate, accepted⟩ := completeForLarger claim largeMeaning
   exact notSmall (soundForSmaller claim certificate accepted)
+
+/-! ## Axiom audit for the elimination/necessity doctrine -/
+
+#print axioms Checker.DecisionKernel.authority
+#print axioms Checker.haltingTrustBoundaryChecker_computable
+#print axioms Checker.haltingTrustBoundaryChecker_sound
+#print axioms Checker.haltingTrustBoundaryChecker_complete
+#print axioms Checker.haltingTrustBoundaryAuthority
+#print axioms Checker.haltingMeaning_not_computable
+#print axioms Checker.no_computableDecisionKernel_for_halting
+#print axioms Checker.computable_certificate_authority_without_computable_decision
 
 end Mettapedia.GSLT.LanguageDef.KernelAuthority

@@ -438,6 +438,23 @@ theorem pureConv_substFVar {x : String} {u : Pattern}
   | congSnd _ ih => simpa using PureConv.congSnd ih
   | congRefl _ ih => simpa using PureConv.congRefl ih
 
+/-- A conversion between two terms opened with one fresh name can be
+transported to any other opening name.  This is the cofinite-name principle
+needed by locally nameless congruence rules; it follows from substitution
+rather than from an additional alpha-equivalence relation. -/
+theorem pureConv_openBVar_change_name
+    {left right : Pattern} {old fresh : String}
+    (hconv : PureConv (openBVar 0 (.fvar old) left)
+      (openBVar 0 (.fvar old) right))
+    (holdLeft : isFresh old left = true)
+    (holdRight : isFresh old right = true) :
+    PureConv (openBVar 0 (.fvar fresh) left)
+      (openBVar 0 (.fvar fresh) right) := by
+  have hsubst := pureConv_substFVar (x := old) (u := .fvar fresh)
+    (by simp [lc_at]) (.fvar fresh) hconv
+  rw [substFVar_intro left holdLeft 0, substFVar_intro right holdRight 0] at hsubst
+  exact hsubst
+
 /-! ## Context helpers for substitution -/
 
 def ctxNames (Γ : PureCtx) : List String := Γ.map Prod.fst
@@ -1082,6 +1099,50 @@ theorem typing_type_lc {Γ : PureCtx} {t A : Pattern}
   | conv _ _ _ _ _ hconv ih =>
       -- ih : lc_at 0 A; hconv : PureConv A B; need lc_at 0 B
       exact (Mettapedia.Languages.MeTTa.Pure.Confluence.PureConv_preserves_lc_both hconv).1 ih
+
+/-- Transport a typing derivation from one opened binder name to another.
+
+The proof inserts the target assumption behind the source assumption, then
+uses the ordinary typing-substitution theorem to remove the source name.  The
+`fresh ≠ old` premise prevents the substitution from deleting the target
+assumption. -/
+theorem typing_openBVar_change_name
+    {Γ : PureCtx} {A body B : Pattern} {old fresh : String}
+    (hApure : PureTmPattern A)
+    (hAlc : lc_at 0 A = true)
+    (hbody : PureHasType ((old, A) :: Γ)
+      (openBVar 0 (.fvar old) body) (openBVar 0 (.fvar old) B))
+    (holdΓ : old ∉ ctxNames Γ)
+    (holdA : isFresh old A = true)
+    (holdCtx : ctxFresh old Γ)
+    (holdBody : isFresh old body = true)
+    (holdB : isFresh old B = true)
+    (hne : fresh ≠ old) :
+    PureHasType ((fresh, A) :: Γ)
+      (openBVar 0 (.fvar fresh) body) (openBVar 0 (.fvar fresh) B) := by
+  have hvar : PureHasType ((fresh, A) :: Γ) (.fvar fresh) A :=
+    .fvar _ fresh A (by simp) hApure hAlc
+  have hlifted : PureHasType ((old, A) :: (fresh, A) :: Γ)
+      (openBVar 0 (.fvar old) body) (openBVar 0 (.fvar old) B) := by
+    apply context_monotone (ht := hbody)
+    intro y T hy
+    rcases List.mem_cons.mp hy with hhead | htail
+    · exact List.mem_cons.mpr (Or.inl hhead)
+    · exact List.mem_cons.mpr (Or.inr (List.mem_cons.mpr (Or.inr htail)))
+  have holdTarget : old ∉ ctxNames ((fresh, A) :: Γ) := by
+    simp only [ctxNames_cons, List.mem_cons, not_or]
+    exact ⟨Ne.symm hne, holdΓ⟩
+  have holdTargetFresh : ctxFresh old ((fresh, A) :: Γ) := by
+    intro y T hy
+    rcases List.mem_cons.mp hy with hhead | htail
+    · cases hhead
+      exact holdA
+    · exact holdCtx y T htail
+  have hsubst := typing_subst hvar (by simp [lc_at]) holdTarget holdA
+    holdTargetFresh hlifted (Δ := []) rfl (by simp [ctxNames])
+  simp only [substCtx_nil, List.nil_append] at hsubst
+  rw [substFVar_intro body holdBody 0, substFVar_intro B holdB 0] at hsubst
+  exact hsubst
 
 /-! ## Context conversion -/
 

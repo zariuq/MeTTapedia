@@ -239,7 +239,7 @@ theorem infiniteMLN_symmetricGridZeroField_originPhaseCoexistenceReduction :
 
 /-- Focused, paper-facing endpoint for the confidence-formula characterization.
 
-This deliberately packages only the proved surface:
+This deliberately packages only the proved theorem collection:
 
 * finite DOF/forcing characterization, including the DoF7 distinction/credal
   boundary through `credalProjectionTowerBoundary`, with both the generic
@@ -473,7 +473,7 @@ noncomputable def confidenceCharacterizationEndpointProfile :
 /-- External runtime parity metadata for the arithmetic/provenance mirror.
 This is not a proof object; the corresponding commands are run by the build
 agent. -/
-structure RuntimeParitySurface where
+structure RuntimeParityManifest where
   projectionTowerPeTTaPath : String
   projectionTowerCeTTaPath : String
   projectionTowerExpectedChecks : Nat
@@ -487,10 +487,10 @@ structure RuntimeParitySurface where
   strengthPriorCeTTaPath : String
   strengthPriorExpectedChecks : Nat
 
-/-- Current PeTTa/CeTTa parity surface for the projection-tower canary,
+/-- Current PeTTa/CeTTa parity manifest for the projection-tower canary,
 ITV/IDM arithmetic, typed bridge/provenance mirrors, PeTTa truth-function
 confidence audit, and strength-prior canaries. -/
-def plnITVIDMRuntimeParitySurface : RuntimeParitySurface where
+def plnITVIDMRuntimeParityManifest : RuntimeParityManifest where
   projectionTowerPeTTaPath :=
     "/home/zar/claude/hyperon/PeTTa/examples/pln_projection_tower_bool_canary.metta"
   projectionTowerCeTTaPath :=

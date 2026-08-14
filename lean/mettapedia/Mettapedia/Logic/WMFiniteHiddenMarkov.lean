@@ -1,5 +1,5 @@
 import Mettapedia.ProbabilityTheory.HiddenMarkovModels.FiniteHiddenMarkovModel
-import Mettapedia.PLN.WorldModel.SufficientStatisticSurface
+import Mettapedia.PLN.WorldModel.SufficientStatisticEncoder
 import Mettapedia.Logic.WMMarkov
 
 /-!
@@ -33,7 +33,7 @@ open Mettapedia.ProbabilityTheory.HiddenMarkovModels.FiniteHiddenMarkovModel
 open Mettapedia.PLN.WorldModel.PLNWorldModelAdditive
 open Mettapedia.PLN.WorldModel.PLNWorldModelGeneric
 open Mettapedia.PLN.WorldModel
-open Mettapedia.PLN.WorldModel.SufficientStatisticSurface
+open Mettapedia.PLN.WorldModel.SufficientStatisticEncoder
 open Mettapedia.UniversalAI.UniversalPrediction
 
 open scoped ENNReal
@@ -60,7 +60,7 @@ def emissionRowEvidenceOfWord : List (EmissionObservation latent obs) → Fin la
       (if z.1 = q then categoricalObservation (k := obs) z.2 else 0) +
         emissionRowEvidenceOfWord (latent := latent) (obs := obs) zs q := rfl
 
-/-- Atomic emission observation encoder for the additive WM surface. -/
+/-- Atomic emission observation encoder for the additive WM interface. -/
 def emissionObservationEvidence
     (z : EmissionObservation latent obs) (q : Fin latent) : MultiEvidence obs :=
   if z.1 = q then categoricalObservation (k := obs) z.2 else 0
@@ -78,7 +78,7 @@ def emissionObservationEvidence
 
 /-- Query-indexed emission row statistic for complete-data HMM observations. -/
 def emissionRowStatistic :
-    SufficientStatisticSurface (EmissionObservation latent obs) (Fin latent) (MultiEvidence obs) where
+    SufficientStatisticEncoder (EmissionObservation latent obs) (Fin latent) (MultiEvidence obs) where
   observe z q := emissionObservationEvidence (latent := latent) (obs := obs) z q
 
 /-- The canonical multiset of complete-data emission observations is just the
@@ -129,10 +129,10 @@ noncomputable def emissionRowExtract
     (W : Multiset (EmissionObservation latent obs)) (q : Fin latent) :
     emissionRowExtract (latent := latent) (obs := obs) W q =
       aggregate (emissionRowStatistic (latent := latent) (obs := obs)) W q := by
-  rw [emissionRowExtract, SufficientStatisticSurface.inducedWorldModel_evidence_eq_aggregate]
+  rw [emissionRowExtract, SufficientStatisticEncoder.inducedWorldModel_evidence_eq_aggregate]
 
 /-- The WM emission-row extractor on a paired word is exactly the complete-data
-emission count surface. -/
+emission count interface. -/
 theorem emissionRowExtract_emissionMultiset_eq_emissionRowEvidenceOfWord
     (zs : List (EmissionObservation latent obs)) (q : Fin latent) :
     emissionRowExtract (latent := latent) (obs := obs)
@@ -190,7 +190,7 @@ theorem latentTransitionMultiset_eq_transitionMultiset_latentWord :
         transitionMultiset, transitionMultisetAux,
         latentTransitionMultiset_eq_transitionMultiset_latentWord (z₁ :: zs)]
 
-/-- The latent transition WM surface of a paired word factors through the
+/-- The latent transition WM interface of a paired word factors through the
 ordinary first-order Markov WM bridge on the latent projection. -/
 theorem latentRowEvidence_of_pairedWord_summary
     {zs : List (EmissionObservation latent obs)}

@@ -6,5 +6,5 @@ import Mettapedia.ProbabilityTheory.HiddenMarkovModels.ControlledFiniteHiddenMar
 /-!
 # Hidden Markov models
 
-Finite and controlled hidden Markov model probability surfaces.
+Finite and controlled hidden Markov model probability interfaces.
 -/

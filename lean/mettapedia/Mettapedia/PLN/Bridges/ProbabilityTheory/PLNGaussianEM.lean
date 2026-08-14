@@ -3,7 +3,7 @@ import Mathlib.Analysis.SpecialFunctions.Exp
 import Mathlib.Analysis.SpecialFunctions.Pow.Real
 import Mathlib.Data.Fintype.Basic
 import Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceWeightedNormalGamma
-import Mettapedia.PLN.Bridges.ProbabilityTheory.WeightedNormalGammaSurface
+import Mettapedia.PLN.Bridges.ProbabilityTheory.WeightedNormalGammaAdapter
 
 /-!
 # Finite Gaussian-Mixture E/M Layer over Weighted WM BinaryEvidence
@@ -25,8 +25,8 @@ namespace Mettapedia.PLN.Bridges.ProbabilityTheory.PLNGaussianEM
 
 open scoped BigOperators
 open Mettapedia.PLN.WorldModel
-open Mettapedia.PLN.WorldModel.SufficientStatisticSurface
-open Mettapedia.PLN.Bridges.ProbabilityTheory.WeightedNormalGammaSurface
+open Mettapedia.PLN.WorldModel.SufficientStatisticEncoder
+open Mettapedia.PLN.Bridges.ProbabilityTheory.WeightedNormalGammaAdapter
 
 abbrev NGPrior := Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceNormalGamma.NormalGammaPrior
 abbrev WNGE := Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceWeightedNormalGamma.WeightedNormalGammaEvidence
@@ -163,26 +163,26 @@ theorem responsibilityNNReal_sum_coe (S : GaussianMixtureState ι) (x : ℝ) :
   change ∑ i, S.responsibility x i = 1
   exact S.responsibility_sum x
 
-/-- The weighted sufficient-statistic surface induced by the E-step. -/
-noncomputable def mStepSurface (S : GaussianMixtureState ι) :
-    Mettapedia.PLN.WorldModel.SufficientStatisticSurface ℝ ι WNGE :=
+/-- The weighted sufficient-statistic interface induced by the E-step. -/
+noncomputable def mStepEncoder (S : GaussianMixtureState ι) :
+    Mettapedia.PLN.WorldModel.SufficientStatisticEncoder ℝ ι WNGE :=
   weightedGaussianStatistic (fun x i => S.responsibilityNNReal x i) (fun x _ => x)
 
 /-- Component evidence accumulated in the M-step. -/
 noncomputable def mStepEvidence (S : GaussianMixtureState ι) (σ : Multiset ℝ) (i : ι) : WNGE :=
-  aggregate (S.mStepSurface) σ i
+  aggregate (S.mStepEncoder) σ i
 
 /-- The M-step evidence count is exactly the aggregated responsibility mass for
 the component. This is the direct WM/sufficient-statistics connection. -/
 theorem mStepEvidence_observationCount (S : GaussianMixtureState ι)
     (σ : Multiset ℝ) (i : ι) :
-    Mettapedia.PLN.Bridges.ProbabilityTheory.ConjugateEvidenceSurface.ConjugateEvidence.observationCount
+    Mettapedia.PLN.Bridges.ProbabilityTheory.ConjugateEvidenceCore.ConjugateEvidence.observationCount
         (S.mStepEvidence σ i) =
       Mettapedia.PLN.WorldModel.PLNWorldModelAdditive.genAdditiveExtension
         (Ev := ENNReal)
         (fun x j => (S.responsibilityNNReal x j : ENNReal)) σ i := by
-  simpa [mStepEvidence, mStepSurface] using
-    (Mettapedia.PLN.Bridges.ProbabilityTheory.WeightedNormalGammaSurface.weightedGaussianStatistic_aggregate_observationCount
+  simpa [mStepEvidence, mStepEncoder] using
+    (Mettapedia.PLN.Bridges.ProbabilityTheory.WeightedNormalGammaAdapter.weightedGaussianStatistic_aggregate_observationCount
       (responsibility := fun x j => S.responsibilityNNReal x j)
       (value := fun x _ => x)
       (σ := σ) (q := i))
@@ -197,13 +197,13 @@ noncomputable def mStepPosterior (S : GaussianMixtureState ι) (σ : Multiset �
     S.mStepEvidence (0 : Multiset ℝ) i = 0 := by
   unfold mStepEvidence
   exact
-    (Mettapedia.PLN.WorldModel.SufficientStatisticSurface.aggregate_zero (S := S.mStepSurface) i)
+    (Mettapedia.PLN.WorldModel.SufficientStatisticEncoder.aggregate_zero (S := S.mStepEncoder) i)
 
 theorem mStepEvidence_cons (S : GaussianMixtureState ι) (x : ℝ) (σ : Multiset ℝ) (i : ι) :
-    S.mStepEvidence (x ::ₘ σ) i = S.mStepSurface.observe x i + S.mStepEvidence σ i := by
+    S.mStepEvidence (x ::ₘ σ) i = S.mStepEncoder.observe x i + S.mStepEvidence σ i := by
   unfold mStepEvidence
   exact
-    (Mettapedia.PLN.WorldModel.SufficientStatisticSurface.aggregate_cons (S := S.mStepSurface) x σ i)
+    (Mettapedia.PLN.WorldModel.SufficientStatisticEncoder.aggregate_cons (S := S.mStepEncoder) x σ i)
 
 theorem mStepEvidence_weight_sum_card (S : GaussianMixtureState ι) (σ : Multiset ℝ) :
     ∑ i, (S.mStepEvidence σ i).weight = σ.card := by
@@ -214,13 +214,13 @@ theorem mStepEvidence_weight_sum_card (S : GaussianMixtureState ι) (σ : Multis
   | cons x σ ih =>
       simp_rw [S.mStepEvidence_cons x σ]
       calc
-        ∑ i, ((S.mStepSurface.observe x i) + S.mStepEvidence σ i).weight
-            = ∑ i, (S.mStepSurface.observe x i).weight + ∑ i, (S.mStepEvidence σ i).weight := by
+        ∑ i, ((S.mStepEncoder.observe x i) + S.mStepEvidence σ i).weight
+            = ∑ i, (S.mStepEncoder.observe x i).weight + ∑ i, (S.mStepEvidence σ i).weight := by
                 simp [Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceWeightedNormalGamma.WeightedNormalGammaEvidence.hplus_weight,
                   Finset.sum_add_distrib]
         _ = ∑ i, (S.responsibilityNNReal x i : ℝ) + σ.card := by
-              simp [mStepSurface, ih,
-                Mettapedia.PLN.Bridges.ProbabilityTheory.WeightedNormalGammaSurface.weightedGaussianStatistic]
+              simp [mStepEncoder, ih,
+                Mettapedia.PLN.Bridges.ProbabilityTheory.WeightedNormalGammaAdapter.weightedGaussianStatistic]
         _ = 1 + σ.card := by rw [S.responsibilityNNReal_sum_coe x]
         _ = (x ::ₘ σ).card := by
               norm_num [Multiset.card_cons, Nat.cast_add, add_comm, add_left_comm, add_assoc]
@@ -304,7 +304,7 @@ theorem mStepPosterior_unit_eq_gaussian
       Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceNormalGamma.posterior
         (S.basePrior ()) (aggregate (gaussianStatistic (fun x (_ : Unit) => x)) σ ()) := by
   unfold GaussianMixtureState.mStepPosterior GaussianMixtureState.mStepEvidence
-    GaussianMixtureState.mStepSurface
+    GaussianMixtureState.mStepEncoder
   have hagg :
       aggregate
         (weightedGaussianStatistic
@@ -316,8 +316,8 @@ theorem mStepPosterior_unit_eq_gaussian
     | empty =>
         simp
     | @cons x σ ih =>
-        rw [Mettapedia.PLN.WorldModel.SufficientStatisticSurface.aggregate_cons,
-          Mettapedia.PLN.WorldModel.SufficientStatisticSurface.aggregate_cons, ih]
+        rw [Mettapedia.PLN.WorldModel.SufficientStatisticEncoder.aggregate_cons,
+          Mettapedia.PLN.WorldModel.SufficientStatisticEncoder.aggregate_cons, ih]
         congr 1
         change
           Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceWeightedNormalGamma.WeightedNormalGammaEvidence.single

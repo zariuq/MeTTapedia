@@ -5,7 +5,7 @@ import Mathlib.Data.Nat.Nth
 import Mathlib.Topology.Basic
 
 /-!
-# Markov de Finetti: Fortini-Style Bridge (Active Minimal Surface)
+# Markov de Finetti: Fortini-Style Bridge (Active Minimal Interface)
 
 Minimal Fortini-facing abstractions and adapters, with no archive imports.
 -/

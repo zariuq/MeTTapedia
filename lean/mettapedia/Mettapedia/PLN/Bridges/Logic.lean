@@ -10,5 +10,5 @@ import Mettapedia.PLN.Bridges.Logic.WorldModel
 # PLN bridges to logic
 
 PLN-facing bridges that turn logical semantics into world-model/evidence
-surfaces.
+interfaces.
 -/

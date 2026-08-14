@@ -19,8 +19,8 @@ Layering:
 - B: kernel theory reduction (`Red`)
 - C: profile theory closure (`PureProfileTheoryStep`)
 
-This file consumes the canonical A/B/C bridge surface from `CoreEmbedding` and
-lands on the same WM obligation surface that the generic formula-side closure
+This file consumes the canonical A/B/C bridge interface from `CoreEmbedding` and
+lands on the same WM obligation interface that the generic formula-side closure
 modules package in:
 - `OSLFNTTWMBridge`
 - `OSLFNTTTheoryClosure`
@@ -44,22 +44,22 @@ open Mettapedia.Languages.MeTTa.PureKernel.CoreEmbedding
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open scoped ENNReal
 
-/-- Closed A -> C1 bridge alias from the canonical PureKernel A/B/C surface. -/
+/-- Closed A -> C1 bridge alias from the canonical PureKernel A/B/C interface. -/
 abbrev PureClosedOperationalBridge : Prop :=
   ∀ {t u : PureTm 0}, PureOpStep t u →
     PureProfileTheoryStep (quoteClosedTm t) (quoteClosedTm u)
 
-/-- Closed A* -> C1* bridge alias from the canonical PureKernel A/B/C surface. -/
+/-- Closed A* -> C1* bridge alias from the canonical PureKernel A/B/C interface. -/
 abbrev PureClosedOperationalBridgeStar : Prop :=
   ∀ {t u : PureTm 0}, PureOpStepStar t u →
     PureProfileTheoryStepStar (quoteClosedTm t) (quoteClosedTm u)
 
-/-- Closed B -> C1 bridge alias from the canonical PureKernel A/B/C surface. -/
+/-- Closed B -> C1 bridge alias from the canonical PureKernel A/B/C interface. -/
 abbrev PureClosedTheoryBridge : Prop :=
   ∀ {t u : PureTm 0}, Red t u →
     PureProfileTheoryStep (quoteClosedTm t) (quoteClosedTm u)
 
-/-- Closed B* -> C1* bridge alias from the canonical PureKernel A/B/C surface. -/
+/-- Closed B* -> C1* bridge alias from the canonical PureKernel A/B/C interface. -/
 abbrev PureClosedTheoryBridgeStar : Prop :=
   ∀ {t u : PureTm 0}, RedStar t u →
     PureProfileTheoryStepStar (quoteClosedTm t) (quoteClosedTm u)
@@ -269,7 +269,7 @@ theorem checkedNoValuesDeclKernelBoundary_closedSubjectReduction_and_wmBridge
 
 /-- Closed declaration conversion on the strongest assumption-free slice yields
 an explicit quoted common reduct that both endpoints strengthen to in the WM
-surface.
+interface.
 
 This packages the no-values refinement into the same endpoint shape used by the
 generic closed Pure bridge, while keeping the value-bearing delta case honest
@@ -306,7 +306,7 @@ theorem checkedNoValuesDeclKernelBoundary_closedCommonReduct_wmBridge
     ⟩
 
 /-- Categorical-aligned wrapper:
-same Pure one-step WM obligation transport, with explicit endpoint-surface input. -/
+same Pure one-step WM obligation transport, with explicit endpoint-interface input. -/
 theorem pureTheoryStep_to_wmStrengthObligation_categorical
     (I : PureJudgmentWMInterface State Query)
     (H : Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelHyperdoctrine.WMHyperdoctrine State)
@@ -366,7 +366,7 @@ theorem pureTheoryStepStar_to_wmStrengthObligation_default
   pureTheoryStepStar_to_wmStrengthObligation I pureClosedTheoryBridge_default hW hred
 
 /-- Categorical-aligned wrapper:
-same Pure star WM obligation transport, with explicit endpoint-surface input. -/
+same Pure star WM obligation transport, with explicit endpoint-interface input. -/
 theorem pureTheoryStepStar_to_wmStrengthObligation_categorical
     (I : PureJudgmentWMInterface State Query)
     (H : Mettapedia.PLN.Bridges.CategoryTheory.WorldModel.PLNWorldModelHyperdoctrine.WMHyperdoctrine State)

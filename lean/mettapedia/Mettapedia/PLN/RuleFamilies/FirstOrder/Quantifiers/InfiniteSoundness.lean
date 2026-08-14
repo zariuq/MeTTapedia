@@ -5,7 +5,7 @@ import Mettapedia.PLN.Bridges.Logic.PLNIntuitionisticBridge
 # Soundness Theorems for Arbitrary-Domain PLN Quantifiers
 
 This module promotes the arbitrary-domain quantifier layer from
-`PLNFirstOrder.Infinite` into a theorem surface parallel to the finite one,
+`PLNFirstOrder.Infinite` into a theorem family parallel to the finite one,
 without reintroducing any finiteness assumptions.
 -/
 
@@ -24,7 +24,7 @@ theorem main_theorem_1_forAll_is_weakness_inf
     forAllEvalInf S μ = weaknessInf μ (SatisfyingSetInf.diagonal S) :=
   rfl
 
-/-- Alias matching the finite soundness surface inside the infinitary namespace. -/
+/-- Alias matching the finite soundness interface inside the infinitary namespace. -/
 theorem main_theorem_1_forAll_is_weakness
     (S : SatisfyingSetInf U) (μ : WeightFunctionInf U BinaryEvidence) :
     forAllEvalInf S μ = weaknessInf μ (SatisfyingSetInf.diagonal S) :=
@@ -57,7 +57,7 @@ theorem main_theorem_2_monotonicity_inf
       exact mul_le_mul' h1.2 h2.2
   exact le_trans hmul (le_sSup ⟨uv, huv, rfl⟩)
 
-/-- Alias matching the finite soundness surface inside the infinitary namespace. -/
+/-- Alias matching the finite soundness interface inside the infinitary namespace. -/
 theorem main_theorem_2_monotonicity
     (S : SatisfyingSetInf U)
     (μ₁ μ₂ : WeightFunctionInf U BinaryEvidence)
@@ -80,7 +80,7 @@ theorem main_theorem_3_de_morgan_inf
     BinaryEvidence.compl (forAllEvalInf (SatisfyingSetInf.neg S) μ) :=
   thereExistsEvalInf_deMorgan S μ
 
-/-- Alias matching the finite soundness surface inside the infinitary namespace. -/
+/-- Alias matching the finite soundness interface inside the infinitary namespace. -/
 theorem main_theorem_3_de_morgan
     (S : SatisfyingSetInf U) (μ : WeightFunctionInf U BinaryEvidence) :
     thereExistsEvalInf S μ =
@@ -139,7 +139,7 @@ theorem main_theorem_5_functoriality_inf
     rcases he with ⟨uv, huv, rfl⟩
     exact ⟨μ.μ uv.1 * μ.μ uv.2, ⟨uv, huv, rfl⟩, by rw [f.map_mul']⟩
 
-/-- Alias matching the finite soundness surface inside the infinitary namespace. -/
+/-- Alias matching the finite soundness interface inside the infinitary namespace. -/
 theorem main_theorem_5_functoriality
     {Q : Type*} [CommMonoid Q] [CompleteLattice Q] [IsCommQuantale Q]
     (f : QuantaleHom BinaryEvidence Q)
@@ -169,7 +169,7 @@ theorem forAllEvalInf_constantTrue_eq_sup_all
     sSup { e | ∃ (u : U) (v : U), e = μ.μ u * μ.μ v } :=
   forAllEvalInf_constantTrue μ
 
-/-- Alias matching the finite weakness-connection surface inside the infinitary namespace. -/
+/-- Alias matching the finite weakness-connection interface inside the infinitary namespace. -/
 theorem forAll_constantTrue_eq_sup_all
     (μ : WeightFunctionInf U BinaryEvidence) :
     forAllEvalInf SatisfyingSetInf.constantTrue μ =
@@ -182,7 +182,7 @@ theorem forAllEvalInf_constantFalse_eq_bot
     forAllEvalInf SatisfyingSetInf.constantFalse μ = ⊥ :=
   forAllEvalInf_constantFalse μ
 
-/-- Alias matching the finite weakness-connection surface inside the infinitary namespace. -/
+/-- Alias matching the finite weakness-connection interface inside the infinitary namespace. -/
 theorem forAll_constantFalse_eq_bot
     (μ : WeightFunctionInf U BinaryEvidence) :
     forAllEvalInf SatisfyingSetInf.constantFalse μ = ⊥ :=

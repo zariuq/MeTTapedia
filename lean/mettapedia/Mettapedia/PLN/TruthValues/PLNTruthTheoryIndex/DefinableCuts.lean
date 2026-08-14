@@ -2050,7 +2050,7 @@ abbrev definable_cut_all_modus_ponens
     (Base := Base) (Const := Const) (T := T)
 
 /-- Public theorem-index name for certified-cut modus tollens over the same
-generic implication-cut surface. -/
+generic implication-cut interface. -/
 abbrev definable_cut_modus_tollens
     {Base : Type u} {Const : Ty Base → Type v}
     {T : ClosedTheorySet (WithParams Const)} :=
@@ -2068,7 +2068,7 @@ abbrev definable_cut_implication_refuted_of_premise_certain_of_conclusion_refute
 /-! ### Compact definable-cut tightness profile -/
 
 /-- Proof-carrying profile for the definable-cut tightness spine.  The profile
-keeps the reader-facing surface compact: generic endpoint tightness and width
+keeps the reader-facing interface compact: generic endpoint tightness and width
 collapse, one Boolean-indicator representative, three representative numeric
 cut families (QFM counting, counting capacity, and Sugeno counting), and the
 certified-cut composition / modus-ponens consumers. -/
@@ -2341,7 +2341,7 @@ structure DefinableCutTightnessProfile where
           (D.intervalOfConsistent enum henum hCons hT0 hEM).lower = 1
 
 /-- Compact proof-carrying handle for the current definable-cut tightness
-surface. -/
+interface. -/
 def definableCutTightnessProfile : DefinableCutTightnessProfile where
   genericLowerEndpoint := ExtensionalDefinableCut.lower_eq_one_iff_provable
   genericWidthCollapse := ExtensionalDefinableCut.width_eq_zero_iff_decides

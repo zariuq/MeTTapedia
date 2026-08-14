@@ -478,7 +478,7 @@ theorem ProofNode.runtimeFormula_respects
 
 def headerRuntimeLabel : HeaderItem → String
   | .mandatory hypothesis => hypothesis.label
-  | .explicit label => label
+  | .explicit _ label => label
 
 /-- Empty source and implementation machines agree over any fixed non-stack
 runtime proof context. -/
@@ -553,7 +553,8 @@ noncomputable def headerStep_runtimePreserved
       · simp [Metamath.Verify.ProofState.pushHeap, agreement.heap_eq]
       · simpa [Metamath.Verify.ProofState.pushHeap] using
           agreement.stackRespects
-  | explicitHypothesis before label hypothesis member label_eq =>
+  | explicitHypothesis before mandatory label hypothesis member
+      nonmandatory label_eq =>
       subst label
       have hmemberRuntime :
           hypothesis ∈ source.toProjection.activeHypotheses := member
@@ -594,7 +595,8 @@ noncomputable def headerStep_runtimePreserved
       · simp [Metamath.Verify.ProofState.pushHeap, agreement.heap_eq]
       · simpa [Metamath.Verify.ProofState.pushHeap] using
           agreement.stackRespects
-  | explicitAssertion before label assertion member label_eq =>
+  | explicitAssertion before mandatory label assertion member
+      nonmandatory label_eq =>
       subst label
       have hmemberRuntime :
           assertion.toProjectionView ∈ source.toProjection.assertions := by

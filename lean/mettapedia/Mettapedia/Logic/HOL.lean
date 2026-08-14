@@ -43,7 +43,7 @@ import Mettapedia.Logic.HOL.TermModel.HenkinCompleteness
 /-!
 # Higher-Order Logic Core
 
-Public surface for HOL: the trusted substrate plus the completed **classical Henkin
+Public interface for HOL: the trusted substrate plus the completed **classical Henkin
 completeness** development.
 
 Substrate:
@@ -66,5 +66,5 @@ Completeness (Henkin 1950 for the theory of types — sorry-free, axiom-clean):
   general model satisfying the theory itself.
 
 Legacy `WorldModelCompleteness.lean` (hypothesis-parameterised) is retained but is not
-the active completeness surface.
+the active completeness interface.
 -/

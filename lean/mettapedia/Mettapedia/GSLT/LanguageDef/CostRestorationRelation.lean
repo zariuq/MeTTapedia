@@ -1,6 +1,7 @@
 import Mettapedia.GSLT.LanguageDef.CostSemanticAtomAlignment
 import Mettapedia.GSLT.LanguageDef.CostSemanticAtomReifyCongruence
 import Mettapedia.OSLF.MeTTaIL.ReflectiveCanonicalRootDichotomy
+import Mettapedia.OSLF.MeTTaIL.DerivedContexts
 
 /-!
 # Depth-uniform restoration equality
@@ -235,6 +236,359 @@ their common apex.
 namespace CostStaticAtomKeyCospan
 
 open Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical
+open Mettapedia.OSLF.MeTTaIL.DerivedContexts
+
+/-- Binder depth visible at the hole of a one-hole context.
+
+Ordinary application and collection frames preserve depth, binders extend
+it, and reflective quote constructors reset it.  This is the unique depth
+index at which an apex for the hole may be lifted back through the context. -/
+def restorationDepthThroughContext (source : CIGSLT) :
+    Nat → OneHoleContext → Nat
+  | depth, .hole => depth
+  | depth, .apply constructor _ inner _ =>
+      restorationDepthThroughContext source
+        (if ReflectiveContextSupport.isQuoteConstructor
+            source.costWholeReflectionProfile constructor then 0 else depth)
+        inner
+  | depth, .lambda _ inner =>
+      restorationDepthThroughContext source (depth + 1) inner
+  | depth, .multiLambda arity _ inner =>
+      restorationDepthThroughContext source (depth + arity) inner
+  | depth, .substBody inner _ =>
+      restorationDepthThroughContext source (depth + 1) inner
+  | depth, .substReplacement _ inner =>
+      restorationDepthThroughContext source depth inner
+  | depth, .collection _ _ inner _ _ =>
+      restorationDepthThroughContext source depth inner
+
+/-- The depth index used by common-restoration contexts is exactly the depth
+computed by operational reflective substitution.  The support and assignment
+can change the transported fixed syntax, but cannot change the quotation and
+binder path leading to the hole. -/
+@[simp]
+theorem restorationDepthThroughContext_eq_substituteContextAt_snd
+    (source : CIGSLT) (support : ContextSupport.Support)
+    (assignment : ContextSupport.Assignment) (depth : Nat)
+    (context : OneHoleContext) :
+    restorationDepthThroughContext source depth context =
+      (ReflectiveContextSupport.substituteContextAt
+        source.costWholeReflectionProfile support assignment depth context).2 := by
+  induction context generalizing depth with
+  | hole => rfl
+  | apply constructor before inner after inductionHypothesis =>
+      simp only [restorationDepthThroughContext,
+        ReflectiveContextSupport.substituteContextAt]
+      exact inductionHypothesis _
+  | lambda binder inner inductionHypothesis =>
+      simp only [restorationDepthThroughContext,
+        ReflectiveContextSupport.substituteContextAt]
+      exact inductionHypothesis _
+  | multiLambda arity binders inner inductionHypothesis =>
+      simp only [restorationDepthThroughContext,
+        ReflectiveContextSupport.substituteContextAt]
+      exact inductionHypothesis _
+  | substBody inner replacement inductionHypothesis =>
+      simp only [restorationDepthThroughContext,
+        ReflectiveContextSupport.substituteContextAt]
+      exact inductionHypothesis _
+  | substReplacement body inner inductionHypothesis =>
+      simp only [restorationDepthThroughContext,
+        ReflectiveContextSupport.substituteContextAt]
+      exact inductionHypothesis _
+  | collection collectionType before inner after rest inductionHypothesis =>
+      simp only [restorationDepthThroughContext,
+        ReflectiveContextSupport.substituteContextAt]
+      exact inductionHypothesis _
+
+/-- Reify every fixed pattern of a one-hole context through one endpoint leg.
+The hole itself remains distinguished, so an independently reified selected
+occurrence can be inserted afterwards. -/
+def reifyContextWith
+    {leftCount rightCount endpointCount : Nat}
+    {leftKey : Fin leftCount → CostStaticAtomKey}
+    {rightKey : Fin rightCount → CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey)
+    (resolve : String → Option (Fin endpointCount))
+    (leg : Fin endpointCount → Fin cospan.commonKeys.length) :
+    OneHoleContext → OneHoleContext
+  | .hole => .hole
+  | .apply constructor before inner after =>
+      .apply constructor (before.map (cospan.reifyWith resolve leg))
+        (reifyContextWith cospan resolve leg inner)
+        (after.map (cospan.reifyWith resolve leg))
+  | .lambda binder inner =>
+      .lambda binder (reifyContextWith cospan resolve leg inner)
+  | .multiLambda arity binders inner =>
+      .multiLambda arity binders
+        (reifyContextWith cospan resolve leg inner)
+  | .substBody inner replacement =>
+      .substBody (reifyContextWith cospan resolve leg inner)
+        (cospan.reifyWith resolve leg replacement)
+  | .substReplacement body inner =>
+      .substReplacement (cospan.reifyWith resolve leg body)
+        (reifyContextWith cospan resolve leg inner)
+  | .collection collectionType before inner after rest =>
+      .collection collectionType (before.map (cospan.reifyWith resolve leg))
+        (reifyContextWith cospan resolve leg inner)
+        (after.map (cospan.reifyWith resolve leg)) rest
+
+/-- Context reification commutes with filling its unique occurrence. -/
+theorem reifyContextWith_fill
+    {leftCount rightCount endpointCount : Nat}
+    {leftKey : Fin leftCount → CostStaticAtomKey}
+    {rightKey : Fin rightCount → CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey)
+    (resolve : String → Option (Fin endpointCount))
+    (leg : Fin endpointCount → Fin cospan.commonKeys.length)
+    (context : OneHoleContext) (pattern : Pattern) :
+    (reifyContextWith cospan resolve leg context).fill
+        (cospan.reifyWith resolve leg pattern) =
+      cospan.reifyWith resolve leg (context.fill pattern) := by
+  induction context with
+  | hole => rfl
+  | apply constructor before inner after inductionHypothesis =>
+      simp [reifyContextWith, OneHoleContext.fill,
+        CostStaticAtomKeyCospan.reifyWith, List.map_append,
+        inductionHypothesis]
+  | lambda binder inner inductionHypothesis =>
+      simp [reifyContextWith, OneHoleContext.fill,
+        CostStaticAtomKeyCospan.reifyWith, inductionHypothesis]
+  | multiLambda arity binders inner inductionHypothesis =>
+      simp [reifyContextWith, OneHoleContext.fill,
+        CostStaticAtomKeyCospan.reifyWith, inductionHypothesis]
+  | substBody inner replacement inductionHypothesis =>
+      simp [reifyContextWith, OneHoleContext.fill,
+        CostStaticAtomKeyCospan.reifyWith, inductionHypothesis]
+  | substReplacement body inner inductionHypothesis =>
+      simp [reifyContextWith, OneHoleContext.fill,
+        CostStaticAtomKeyCospan.reifyWith, inductionHypothesis]
+  | collection collectionType before inner after rest inductionHypothesis =>
+      simp [reifyContextWith, OneHoleContext.fill,
+        CostStaticAtomKeyCospan.reifyWith, List.map_append,
+        inductionHypothesis]
+
+/-- The free-variable spelling selected by one endpoint-to-common cospan
+leg.  This is the name-level component of `reifyWith`; keeping it explicit
+allows an occurrence zipper to be transported without recovering its leaf
+from the reified term by equality search. -/
+def reifyNameWith
+    {leftCount rightCount endpointCount : Nat}
+    {leftKey : Fin leftCount → CostStaticAtomKey}
+    {rightKey : Fin rightCount → CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey)
+    (resolve : String → Option (Fin endpointCount))
+    (leg : Fin endpointCount → Fin cospan.commonKeys.length)
+    (name : String) : String :=
+  match resolve name with
+  | some slot => cospan.commonAtomName (leg slot)
+  | none => name
+
+@[simp]
+theorem reifyWith_fvar
+    {leftCount rightCount endpointCount : Nat}
+    {leftKey : Fin leftCount → CostStaticAtomKey}
+    {rightKey : Fin rightCount → CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey)
+    (resolve : String → Option (Fin endpointCount))
+    (leg : Fin endpointCount → Fin cospan.commonKeys.length)
+    (name : String) :
+    cospan.reifyWith resolve leg (.fvar name) =
+      .fvar (cospan.reifyNameWith resolve leg name) := by
+  cases selected : resolve name <;>
+    simp [CostStaticAtomKeyCospan.reifyWith, reifyNameWith, selected]
+
+/-- Transport one exact free-variable occurrence through a chosen common-key
+leg.  The selected leaf is renamed, while the complete one-hole zipper is
+mapped structurally and remains proof-relevant. -/
+noncomputable def reifyOccurrenceWith
+    {leftCount rightCount endpointCount : Nat}
+    {leftKey : Fin leftCount → CostStaticAtomKey}
+    {rightKey : Fin rightCount → CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey)
+    (resolve : String → Option (Fin endpointCount))
+    (leg : Fin endpointCount → Fin cospan.commonKeys.length)
+    {root : Pattern} (occurrence : CostStaticFVarOccurrence root) :
+    CostStaticFVarOccurrence (cospan.reifyWith resolve leg root) :=
+  { name := cospan.reifyNameWith resolve leg occurrence.name
+    context := cospan.reifyContextWith resolve leg occurrence.context
+    selected := by
+      have filled :
+          (cospan.reifyContextWith resolve leg occurrence.context).fill
+              (.fvar (cospan.reifyNameWith resolve leg occurrence.name)) =
+            cospan.reifyWith resolve leg root := by
+        calc
+          (cospan.reifyContextWith resolve leg occurrence.context).fill
+                (.fvar (cospan.reifyNameWith resolve leg occurrence.name)) =
+              (cospan.reifyContextWith resolve leg occurrence.context).fill
+                (cospan.reifyWith resolve leg
+                  (.fvar occurrence.name)) := by
+            rw [cospan.reifyWith_fvar]
+          _ = cospan.reifyWith resolve leg
+                (occurrence.context.fill (.fvar occurrence.name)) :=
+            cospan.reifyContextWith_fill resolve leg occurrence.context
+              (.fvar occurrence.name)
+          _ = cospan.reifyWith resolve leg root :=
+            congrArg (cospan.reifyWith resolve leg)
+              occurrence.selected.fill_eq
+      rw [← filled]
+      exact Selects.of_fill
+        (cospan.reifyContextWith resolve leg occurrence.context)
+        (.fvar (cospan.reifyNameWith resolve leg occurrence.name)) }
+
+@[simp]
+theorem reifyOccurrenceWith_name
+    {leftCount rightCount endpointCount : Nat}
+    {leftKey : Fin leftCount → CostStaticAtomKey}
+    {rightKey : Fin rightCount → CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey)
+    (resolve : String → Option (Fin endpointCount))
+    (leg : Fin endpointCount → Fin cospan.commonKeys.length)
+    {root : Pattern} (occurrence : CostStaticFVarOccurrence root) :
+    (cospan.reifyOccurrenceWith resolve leg occurrence).name =
+      cospan.reifyNameWith resolve leg occurrence.name := rfl
+
+@[simp]
+theorem reifyOccurrenceWith_context
+    {leftCount rightCount endpointCount : Nat}
+    {leftKey : Fin leftCount → CostStaticAtomKey}
+    {rightKey : Fin rightCount → CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey)
+    (resolve : String → Option (Fin endpointCount))
+    (leg : Fin endpointCount → Fin cospan.commonKeys.length)
+    {root : Pattern} (occurrence : CostStaticFVarOccurrence root) :
+    (cospan.reifyOccurrenceWith resolve leg occurrence).context =
+      cospan.reifyContextWith resolve leg occurrence.context := rfl
+
+/-- Reify a source-level context through its endpoint semantic-atom
+environment and then through one leg of a common semantic-key cospan.
+
+The two stages are intentionally explicit.  The environment identifies the
+frame's original rigid-parameter names with its proof-relevant atom slots;
+the cospan then changes only those internal atom names into the common
+comparison namespace. -/
+def reifyEnvironmentContext
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    {table : TypedCostRegionBoundaryTable source color targetFree occurrences}
+    {values : TypedCostRegionBoundaryTable.Values source color targetFree table}
+    {root : Pattern}
+    {inventory : CostStaticParameterInventory source color targetFree table
+      values root}
+    {leftCount rightCount : Nat}
+    {leftKey : Fin leftCount → CostStaticAtomKey}
+    {rightKey : Fin rightCount → CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey)
+    (environment : CostStaticAtomEnvironment source color targetFree inventory)
+    (leg : Fin environment.atomCount → Fin cospan.commonKeys.length)
+    (context : OneHoleContext) : OneHoleContext :=
+  cospan.reifyContextWith environment.lookupAtom? leg
+    (environment.reifyContext context)
+
+/-- Two-stage context reification commutes with filling.  In particular, a
+selected occurrence and the fixed frame around it cannot be transported by
+different naming conventions. -/
+theorem reifyEnvironmentContext_fill
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    {table : TypedCostRegionBoundaryTable source color targetFree occurrences}
+    {values : TypedCostRegionBoundaryTable.Values source color targetFree table}
+    {root : Pattern}
+    {inventory : CostStaticParameterInventory source color targetFree table
+      values root}
+    {leftCount rightCount : Nat}
+    {leftKey : Fin leftCount → CostStaticAtomKey}
+    {rightKey : Fin rightCount → CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey)
+    (environment : CostStaticAtomEnvironment source color targetFree inventory)
+    (leg : Fin environment.atomCount → Fin cospan.commonKeys.length)
+    (context : OneHoleContext) (pattern : Pattern) :
+    (cospan.reifyEnvironmentContext environment leg context).fill
+        (cospan.reifyWith environment.lookupAtom? leg
+          (environment.reify pattern)) =
+      cospan.reifyWith environment.lookupAtom? leg
+        (environment.reify (context.fill pattern)) := by
+  rw [reifyEnvironmentContext, cospan.reifyContextWith_fill,
+    environment.reifyContext_fill]
+
+/-- Carry one endpoint occurrence through both naming stages used by common
+restoration: first into the endpoint semantic-atom namespace, then through
+the chosen cospan leg.  Neither stage searches for the occurrence again. -/
+noncomputable def reifyEnvironmentOccurrence
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    {table : TypedCostRegionBoundaryTable source color targetFree occurrences}
+    {values : TypedCostRegionBoundaryTable.Values source color targetFree table}
+    {root : Pattern}
+    {inventory : CostStaticParameterInventory source color targetFree table
+      values root}
+    {leftCount rightCount : Nat}
+    {leftKey : Fin leftCount → CostStaticAtomKey}
+    {rightKey : Fin rightCount → CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey)
+    (environment : CostStaticAtomEnvironment source color targetFree inventory)
+    (leg : Fin environment.atomCount → Fin cospan.commonKeys.length)
+    (occurrence : CostStaticFVarOccurrence root) :
+    CostStaticFVarOccurrence
+      (cospan.reifyWith environment.lookupAtom? leg
+        (environment.reify root)) :=
+  cospan.reifyOccurrenceWith environment.lookupAtom? leg
+    (environment.reifyOccurrence occurrence)
+
+@[simp]
+theorem reifyEnvironmentOccurrence_context
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    {table : TypedCostRegionBoundaryTable source color targetFree occurrences}
+    {values : TypedCostRegionBoundaryTable.Values source color targetFree table}
+    {root : Pattern}
+    {inventory : CostStaticParameterInventory source color targetFree table
+      values root}
+    {leftCount rightCount : Nat}
+    {leftKey : Fin leftCount → CostStaticAtomKey}
+    {rightKey : Fin rightCount → CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey)
+    (environment : CostStaticAtomEnvironment source color targetFree inventory)
+    (leg : Fin environment.atomCount → Fin cospan.commonKeys.length)
+    (occurrence : CostStaticFVarOccurrence root) :
+    (cospan.reifyEnvironmentOccurrence environment leg occurrence).context =
+      cospan.reifyEnvironmentContext environment leg occurrence.context := rfl
+
+/-- A source occurrence selected by endpoint slot `slot` becomes exactly the
+common atom name at `leg slot`.  This is the point at which positional cause
+may be projected to a semantic key; the occurrence zipper itself is retained
+by `reifyEnvironmentOccurrence`. -/
+theorem reifyEnvironmentOccurrence_name_eq_commonAtomName
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    {table : TypedCostRegionBoundaryTable source color targetFree occurrences}
+    {values : TypedCostRegionBoundaryTable.Values source color targetFree table}
+    {root : Pattern}
+    {inventory : CostStaticParameterInventory source color targetFree table
+      values root}
+    {leftCount rightCount : Nat}
+    {leftKey : Fin leftCount → CostStaticAtomKey}
+    {rightKey : Fin rightCount → CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey)
+    (environment : CostStaticAtomEnvironment source color targetFree inventory)
+    (leg : Fin environment.atomCount → Fin cospan.commonKeys.length)
+    (occurrence : CostStaticFVarOccurrence root)
+    (slot : Fin environment.atomCount)
+    (selected : environment.slotOfName? occurrence.name = some slot) :
+    (cospan.reifyEnvironmentOccurrence environment leg occurrence).name =
+      cospan.commonAtomName (leg slot) := by
+  simp only [reifyEnvironmentOccurrence, reifyOccurrenceWith_name,
+    CostStaticAtomEnvironment.reifyOccurrence_name]
+  have reifiedName : environment.reifyName occurrence.name =
+      environment.atomName slot := by
+    simp [CostStaticAtomEnvironment.reifyName, selected]
+  rw [reifiedName]
+  simp [reifyNameWith, environment.lookupAtom?_atomName]
 
 /- Recursive equality evidence at a common semantic restoration apex.
 
@@ -404,6 +758,258 @@ def reflList
   | pattern :: patterns =>
       .cons (refl cospan declaration depth pattern)
         (reflList cospan declaration depth patterns)
+
+/-- Concatenate two pointwise apex lists without changing occurrence order. -/
+def appendList
+    {source : CIGSLT} {leftCount rightCount : Nat}
+    {leftKey : Fin leftCount → CostStaticAtomKey}
+    {rightKey : Fin rightCount → CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey)
+    (declaration : ReflectivePresentationDecl) {depth : Nat} :
+    ∀ {leftPrefix rightPrefix leftSuffix rightSuffix : List Pattern},
+      CommonRestorationApexList source cospan declaration depth
+          leftPrefix rightPrefix →
+        CommonRestorationApexList source cospan declaration depth
+          leftSuffix rightSuffix →
+        CommonRestorationApexList source cospan declaration depth
+          (leftPrefix ++ leftSuffix) (rightPrefix ++ rightSuffix)
+  | [], [], _, _, .nil _, suffix => suffix
+  | _ :: _, _ :: _, _, _, .cons head tail, suffix =>
+      .cons head (appendList cospan declaration tail suffix)
+
+/-! ## Paired one-hole contexts
+
+Static plans on two canonically aligned endpoints need not retain literally
+the same one-hole context.  Their fixed siblings may have distinct semantic
+atom spellings, and the selected occurrence may sit below binders or a quote
+reset.  `Context` records the structural correspondence of the two contexts
+while retaining common-restoration evidence for every fixed sibling.  Its two
+depth indices make the root-to-hole depth transport explicit.
+-/
+
+/-- A pair of one-hole contexts whose fixed pieces meet at the same semantic
+restoration apex.
+
+The first depth is visible at the roots and the second at the holes.  Matching
+constructors are part of the data, so this relation cannot identify distinct
+operational shells. -/
+inductive Context
+    {source : CIGSLT} {leftCount rightCount : Nat}
+    {leftKey : Fin leftCount → CostStaticAtomKey}
+    {rightKey : Fin rightCount → CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey)
+    (declaration : ReflectivePresentationDecl) :
+    Nat → Nat → OneHoleContext → OneHoleContext → Prop where
+  | hole (depth : Nat) :
+      Context (source := source) cospan declaration depth depth .hole .hole
+  | apply {depth holeDepth : Nat} (constructor : String)
+      {leftBefore rightBefore leftAfter rightAfter : List Pattern}
+      {leftInner rightInner : OneHoleContext}
+      (before : CommonRestorationApexList source cospan declaration
+        (if ReflectiveContextSupport.isQuoteConstructor
+            source.costWholeReflectionProfile constructor then 0 else depth)
+        leftBefore rightBefore)
+      (inner : Context (source := source) cospan declaration
+        (if ReflectiveContextSupport.isQuoteConstructor
+            source.costWholeReflectionProfile constructor then 0 else depth)
+        holeDepth leftInner rightInner)
+      (after : CommonRestorationApexList source cospan declaration
+        (if ReflectiveContextSupport.isQuoteConstructor
+            source.costWholeReflectionProfile constructor then 0 else depth)
+        leftAfter rightAfter) :
+      Context (source := source) cospan declaration depth holeDepth
+        (.apply constructor leftBefore leftInner leftAfter)
+        (.apply constructor rightBefore rightInner rightAfter)
+  | lambda {depth holeDepth : Nat} (binder : Option String)
+      {leftInner rightInner : OneHoleContext}
+      (inner : Context (source := source) cospan declaration
+        (depth + 1) holeDepth
+        leftInner rightInner) :
+      Context (source := source) cospan declaration depth holeDepth
+        (.lambda binder leftInner) (.lambda binder rightInner)
+  | multiLambda {depth holeDepth arity : Nat} (binders : List String)
+      {leftInner rightInner : OneHoleContext}
+      (inner : Context (source := source) cospan declaration
+        (depth + arity) holeDepth
+        leftInner rightInner) :
+      Context (source := source) cospan declaration depth holeDepth
+        (.multiLambda arity binders leftInner)
+        (.multiLambda arity binders rightInner)
+  | substBody {depth holeDepth : Nat}
+      {leftInner rightInner : OneHoleContext}
+      {leftReplacement rightReplacement : Pattern}
+      (inner : Context (source := source) cospan declaration
+        (depth + 1) holeDepth
+        leftInner rightInner)
+      (replacement : CommonRestorationApex source cospan declaration depth
+        leftReplacement rightReplacement) :
+      Context (source := source) cospan declaration depth holeDepth
+        (.substBody leftInner leftReplacement)
+        (.substBody rightInner rightReplacement)
+  | substReplacement {depth holeDepth : Nat}
+      {leftBody rightBody : Pattern}
+      {leftInner rightInner : OneHoleContext}
+      (body : CommonRestorationApex source cospan declaration (depth + 1)
+        leftBody rightBody)
+      (inner : Context (source := source) cospan declaration depth holeDepth
+        leftInner rightInner) :
+      Context (source := source) cospan declaration depth holeDepth
+        (.substReplacement leftBody leftInner)
+        (.substReplacement rightBody rightInner)
+  | collection {depth holeDepth : Nat} (collectionType : CollType)
+      (rest : Option String)
+      {leftBefore rightBefore leftAfter rightAfter : List Pattern}
+      {leftInner rightInner : OneHoleContext}
+      (before : CommonRestorationApexList source cospan declaration depth
+        leftBefore rightBefore)
+      (inner : Context (source := source) cospan declaration depth holeDepth
+        leftInner rightInner)
+      (after : CommonRestorationApexList source cospan declaration depth
+        leftAfter rightAfter) :
+      Context (source := source) cospan declaration depth holeDepth
+        (.collection collectionType leftBefore leftInner leftAfter rest)
+        (.collection collectionType rightBefore rightInner rightAfter rest)
+
+namespace Context
+
+/-- A context is aligned with itself at exactly its computed hole depth. -/
+def refl
+    {source : CIGSLT} {leftCount rightCount : Nat}
+    {leftKey : Fin leftCount → CostStaticAtomKey}
+    {rightKey : Fin rightCount → CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey)
+    (declaration : ReflectivePresentationDecl) :
+    ∀ (depth : Nat) (context : OneHoleContext),
+      CommonRestorationApex.Context (source := source) cospan declaration depth
+        (restorationDepthThroughContext source depth context) context context
+  | depth, .hole => .hole depth
+  | depth, .apply constructor before inner after =>
+      let childDepth :=
+        if ReflectiveContextSupport.isQuoteConstructor
+            source.costWholeReflectionProfile constructor then 0 else depth
+      .apply constructor
+        (CommonRestorationApex.reflList cospan declaration childDepth before)
+        (refl cospan declaration childDepth inner)
+        (CommonRestorationApex.reflList cospan declaration childDepth after)
+  | depth, .lambda binder inner =>
+      .lambda binder (refl cospan declaration (depth + 1) inner)
+  | depth, .multiLambda arity binders inner =>
+      .multiLambda binders
+        (refl cospan declaration (depth + arity) inner)
+  | depth, .substBody inner replacement =>
+      .substBody (refl cospan declaration (depth + 1) inner)
+        (CommonRestorationApex.refl cospan declaration depth replacement)
+  | depth, .substReplacement body inner =>
+      .substReplacement
+        (CommonRestorationApex.refl cospan declaration (depth + 1) body)
+        (refl cospan declaration depth inner)
+  | depth, .collection collectionType before inner after rest =>
+      .collection collectionType rest
+        (CommonRestorationApex.reflList cospan declaration depth before)
+        (refl cospan declaration depth inner)
+        (CommonRestorationApex.reflList cospan declaration depth after)
+
+/-- Fill two aligned contexts with one apex at their common hole depth. -/
+def fill
+    {source : CIGSLT} {leftCount rightCount : Nat}
+    {leftKey : Fin leftCount → CostStaticAtomKey}
+    {rightKey : Fin rightCount → CostStaticAtomKey}
+    {cospan : CostStaticAtomKeyCospan leftKey rightKey}
+    {declaration : ReflectivePresentationDecl} :
+    ∀ {depth holeDepth : Nat} {leftContext rightContext : OneHoleContext},
+      CommonRestorationApex.Context (source := source) cospan declaration
+        depth holeDepth leftContext rightContext →
+      ∀ {left right : Pattern},
+        CommonRestorationApex source cospan declaration holeDepth left right →
+        CommonRestorationApex source cospan declaration depth
+          (leftContext.fill left) (rightContext.fill right)
+  | _, _, _, _, .hole _, _, _, apex => apex
+  | _, _, _, _, .apply constructor before inner after, _, _, apex =>
+      .apply constructor
+        (CommonRestorationApex.appendList cospan declaration before
+          (.cons (fill inner apex) after))
+  | _, _, _, _, .lambda binder inner, _, _, apex =>
+      .lambda binder (fill inner apex)
+  | _, _, _, _, .multiLambda binders inner, _, _, apex =>
+      .multiLambda binders (fill inner apex)
+  | _, _, _, _, .substBody inner replacement, _, _, apex =>
+      .subst (fill inner apex) replacement
+  | _, _, _, _, .substReplacement body inner, _, _, apex =>
+      .subst body (fill inner apex)
+  | _, _, _, _, .collection collectionType rest before inner after, _, _,
+      apex =>
+      .collection collectionType rest
+        (CommonRestorationApex.appendList cospan declaration before
+          (.cons (fill inner apex) after))
+
+/-- Negative canary: paired contexts cannot change an application shell into
+a lambda shell. -/
+theorem not_apply_lambda
+    {source : CIGSLT} {leftCount rightCount : Nat}
+    {leftKey : Fin leftCount → CostStaticAtomKey}
+    {rightKey : Fin rightCount → CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey)
+    (declaration : ReflectivePresentationDecl)
+    {depth holeDepth : Nat} {constructor : String}
+    {before after : List Pattern} {leftInner rightInner : OneHoleContext}
+    {binder : Option String} :
+    ¬ CommonRestorationApex.Context (source := source) cospan declaration
+      depth holeDepth
+      (.apply constructor before leftInner after) (.lambda binder rightInner) := by
+  intro aligned
+  cases aligned
+
+end Context
+
+/-- Lift a common-restoration apex through the same one-hole context on both
+endpoints.
+
+The hole evidence is required at the context-computed depth.  The result is
+therefore valid through arbitrary ordinary binders, reflective quote resets,
+substitution positions, and collection/application spines without adding a
+new semantic equality premise. -/
+noncomputable def throughContext
+    {source : CIGSLT} {leftCount rightCount : Nat}
+    {leftKey : Fin leftCount → CostStaticAtomKey}
+    {rightKey : Fin rightCount → CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey)
+    (declaration : ReflectivePresentationDecl) :
+    ∀ (context : OneHoleContext) (depth : Nat) {left right : Pattern},
+      CommonRestorationApex source cospan declaration
+          (restorationDepthThroughContext source depth context) left right →
+        CommonRestorationApex source cospan declaration depth
+          (context.fill left) (context.fill right)
+  | .hole, _, _, _, apex => apex
+  | .apply constructor before inner after, depth, left, right, apex => by
+      let childDepth :=
+        if ReflectiveContextSupport.isQuoteConstructor
+            source.costWholeReflectionProfile constructor then 0 else depth
+      let middle := throughContext cospan declaration inner childDepth apex
+      let arguments := appendList cospan declaration
+        (reflList cospan declaration childDepth before)
+        (.cons middle (reflList cospan declaration childDepth after))
+      exact .apply constructor arguments
+  | .lambda binder inner, depth, left, right, apex =>
+      .lambda binder
+        (throughContext cospan declaration inner (depth + 1) apex)
+  | .multiLambda arity binders inner, depth, left, right, apex =>
+      .multiLambda binders
+        (throughContext cospan declaration inner (depth + arity) apex)
+  | .substBody inner replacement, depth, left, right, apex =>
+      .subst
+        (throughContext cospan declaration inner (depth + 1) apex)
+        (refl cospan declaration depth replacement)
+  | .substReplacement body inner, depth, left, right, apex =>
+      .subst
+        (refl cospan declaration (depth + 1) body)
+        (throughContext cospan declaration inner depth apex)
+  | .collection collectionType before inner after rest, depth, left, right,
+      apex => by
+      let middle := throughContext cospan declaration inner depth apex
+      let elements := appendList cospan declaration
+        (reflList cospan declaration depth before)
+        (.cons middle (reflList cospan declaration depth after))
+      exact .collection collectionType rest elements
 
 private def commonRestorationApexList_toForall₂
     {source : CIGSLT} {leftCount rightCount : Nat}
@@ -600,6 +1206,41 @@ mutual
     | .cons head tail =>
         congrArg₂ List.cons (restored_eq head) (restoredList_eq tail)
 end
+
+/-- A family of restoration apexes indexed by every ambient depth is exactly
+the uniform equality required at a semantic leaf.  This bridge keeps the two
+quantifiers distinct: one apex witnesses one depth, while `RestoresTogether`
+requires the entire depth-indexed family. -/
+theorem restoresTogether_of_forall_apex
+    {source : CIGSLT} {leftCount rightCount : Nat}
+    {leftKey : Fin leftCount → CostStaticAtomKey}
+    {rightKey : Fin rightCount → CostStaticAtomKey}
+    {cospan : CostStaticAtomKeyCospan leftKey rightKey}
+    {declaration : ReflectivePresentationDecl}
+    {left right : Pattern}
+    (apex : ∀ depth,
+      CommonRestorationApex source cospan declaration depth left right) :
+    ReflectiveContextSupport.RestoresTogether
+      source.costWholeReflectionProfile cospan.commonSupport
+        cospan.commonAssignment left right := by
+  intro depth
+  exact restored_eq (apex depth)
+
+/-- Uniform recursive apex evidence may be compressed to one semantic leaf
+at any requested outer depth.  The premise deliberately remains
+depth-indexed; equality at one selected depth is insufficient. -/
+theorem leafAligned_of_forall_apex
+    {source : CIGSLT} {leftCount rightCount : Nat}
+    {leftKey : Fin leftCount → CostStaticAtomKey}
+    {rightKey : Fin rightCount → CostStaticAtomKey}
+    {cospan : CostStaticAtomKeyCospan leftKey rightKey}
+    {declaration : ReflectivePresentationDecl}
+    {left right : Pattern}
+    (apex : ∀ depth,
+      CommonRestorationApex source cospan declaration depth left right)
+    (depth : Nat) :
+    CommonRestorationApex source cospan declaration depth left right :=
+  .leafAligned (.leaf (restoresTogether_of_forall_apex apex))
 
 /-- Forget a proof-relevant aligned permutation to the permutation of its
 restored compact meanings. -/

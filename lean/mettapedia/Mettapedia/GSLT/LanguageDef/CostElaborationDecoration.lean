@@ -83,6 +83,30 @@ def boundaries {source : CIGSLT} :
     CostStaticPlanDecoration source → List CostRegionBoundary
   | .mk _ _ _ _ _ _ boundaries _ => boundaries
 
+/-- Proof-relevant structural choice retained by a plan decoration. -/
+def node {source : CIGSLT} :
+    CostStaticPlanDecoration source → CostStaticPlanDecorationNode source
+  | .mk _ _ _ _ _ _ _ node => node
+
+/-- Two complete plan decorations are equal when all retained data agree. -/
+@[ext]
+theorem ext {source : CIGSLT}
+    {left right : CostStaticPlanDecoration source}
+    (sourceBound_eq : left.sourceBound = right.sourceBound)
+    (targetBound_eq : left.targetBound = right.targetBound)
+    (sourceAvailable_eq : left.sourceAvailable = right.sourceAvailable)
+    (outer_eq : left.outer = right.outer)
+    (pattern_eq : left.pattern = right.pattern)
+    (sourceType_eq : left.sourceType = right.sourceType)
+    (boundaries_eq : left.boundaries = right.boundaries)
+    (node_eq : left.node = right.node) :
+    left = right := by
+  cases left
+  cases right
+  simp only [sourceBound, targetBound, sourceAvailable, outer, pattern,
+    sourceType, boundaries, node] at *
+  simp_all
+
 end CostStaticPlanDecoration
 
 mutual
@@ -419,6 +443,26 @@ def pattern {source : CIGSLT} : CostTreeDecoration source → Pattern
 
 def type {source : CIGSLT} : CostTreeDecoration source → TypeExpr
   | .mk _ _ _ type _ => type
+
+/-- Proof-relevant structural choice retained by a tree decoration. -/
+def node {source : CIGSLT} :
+    CostTreeDecoration source → CostTreeDecorationNode source
+  | .mk _ _ _ _ node => node
+
+/-- Two complete tree decorations are equal when all retained data agree. -/
+@[ext]
+theorem ext {source : CIGSLT}
+    {left right : CostTreeDecoration source}
+    (available_eq : left.available = right.available)
+    (outer_eq : left.outer = right.outer)
+    (pattern_eq : left.pattern = right.pattern)
+    (type_eq : left.type = right.type)
+    (node_eq : left.node = right.node) :
+    left = right := by
+  cases left
+  cases right
+  simp only [available, outer, pattern, type, node] at *
+  simp_all
 
 end CostTreeDecoration
 

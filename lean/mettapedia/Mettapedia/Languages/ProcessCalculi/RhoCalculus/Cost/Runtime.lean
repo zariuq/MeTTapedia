@@ -14,7 +14,7 @@ namespace Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost
 /-- One spendable located purse occurrence in a normalized component list. -/
 structure RawIndexedPurse where
   index : Nat
-  surface : RawCostName
+  location : RawCostName
   head : RawCostSig
   tail : RawCostStack
   deriving Repr, DecidableEq
@@ -24,7 +24,7 @@ abbrev RawSelectedPurse := RawIndexedPurse
 
 structure RawWholeRedex where
   index : Nat
-  surface : RawCostName
+  location : RawCostName
   body : RawCostTerm
   payload : RawCostTerm
   sig : RawCostSig
@@ -32,14 +32,14 @@ structure RawWholeRedex where
 
 structure RawRecvEndpoint where
   index : Nat
-  surface : RawCostName
+  location : RawCostName
   body : RawCostTerm
   sig : RawCostSig
   deriving Repr, DecidableEq
 
 structure RawSendEndpoint where
   index : Nat
-  surface : RawCostName
+  location : RawCostName
   payload : RawCostTerm
   sig : RawCostSig
   deriving Repr, DecidableEq
@@ -53,7 +53,7 @@ inductive RawStepShape where
 /-- A raw executable candidate before public successor deduplication. -/
 structure RawRuntimeStep where
   shape : RawStepShape
-  surface : RawCostName
+  location : RawCostName
   spend : RawCostSig
   participantIndices : List Nat
   selectedPurses : List RawSelectedPurse
@@ -66,21 +66,21 @@ def collectPursesAux : List RawCostTerm → Nat → List RawIndexedPurse
   | term :: rest, index =>
       let tail := collectPursesAux rest (index + 1)
       match term with
-      | .purse surface (head :: stackTail) =>
-          { index, surface, head, tail := stackTail } :: tail
+      | .purse location (head :: stackTail) =>
+          { index, location, head, tail := stackTail } :: tail
       | _ => tail
 
 def RawCostConfig.purses (config : RawCostConfig) : List RawIndexedPurse :=
   collectPursesAux config 0
 
 def wholeAt? (index : Nat) : RawCostTerm → Option RawWholeRedex
-  | .signed (.par (.recv recvSurface body) (.send sendSurface payload)) sig =>
-      if recvSurface.normalize = sendSurface.normalize then
-        some ⟨index, recvSurface.normalize, body, payload, sig.normalize⟩
+  | .signed (.par (.recv recvLocation body) (.send sendLocation payload)) sig =>
+      if recvLocation.normalize = sendLocation.normalize then
+        some ⟨index, recvLocation.normalize, body, payload, sig.normalize⟩
       else none
-  | .signed (.par (.send sendSurface payload) (.recv recvSurface body)) sig =>
-      if recvSurface.normalize = sendSurface.normalize then
-        some ⟨index, recvSurface.normalize, body, payload, sig.normalize⟩
+  | .signed (.par (.send sendLocation payload) (.recv recvLocation body)) sig =>
+      if recvLocation.normalize = sendLocation.normalize then
+        some ⟨index, recvLocation.normalize, body, payload, sig.normalize⟩
       else none
   | _ => none
 
@@ -95,13 +95,13 @@ def RawCostConfig.wholeRedexes (config : RawCostConfig) : List RawWholeRedex :=
   collectWholesAux config 0
 
 def recvAt? (index : Nat) : RawCostTerm → Option RawRecvEndpoint
-  | .signed (.recv surface body) sig =>
-      some ⟨index, surface.normalize, body, sig.normalize⟩
+  | .signed (.recv location body) sig =>
+      some ⟨index, location.normalize, body, sig.normalize⟩
   | _ => none
 
 def sendAt? (index : Nat) : RawCostTerm → Option RawSendEndpoint
-  | .signed (.send surface payload) sig =>
-      some ⟨index, surface.normalize, payload, sig.normalize⟩
+  | .signed (.send location payload) sig =>
+      some ⟨index, location.normalize, payload, sig.normalize⟩
   | _ => none
 
 def collectRecvsAux : List RawCostTerm → Nat → List RawRecvEndpoint
@@ -144,9 +144,9 @@ def exactPurseCovers (demand : RawCostSig) (purses : List RawIndexedPurse) :
     List (List RawIndexedPurse) :=
   exactPurseCoversAux purses demand
 
-def matchingPurses (surface : RawCostName)
+def matchingPurses (location : RawCostName)
     (purses : List RawIndexedPurse) : List RawIndexedPurse :=
-  purses.filter fun purse => decide (purse.surface.normalize = surface.normalize)
+  purses.filter fun purse => decide (purse.location.normalize = location.normalize)
 
 def eraseIndices (config : RawCostConfig) (indices : List Nat) : RawCostConfig :=
   (config.zipIdx.filter fun entry => decide (entry.2 ∉ indices)).map Prod.fst
@@ -155,21 +155,21 @@ def residualFor (config : RawCostConfig) (participants : List Nat)
     (selected : List RawSelectedPurse) (contractum : RawCostTerm) : RawCostTerm :=
   let selectedIndices := selected.map RawIndexedPurse.index
   let retained := eraseIndices config (participants ++ selectedIndices)
-  let tails := selected.map fun purse => RawCostTerm.purse purse.surface purse.tail
+  let tails := selected.map fun purse => RawCostTerm.purse purse.location purse.tail
   RawCostTerm.fromComponents (retained ++ contractum.normalize.components ++ tails)
     |>.normalize
 
 def wholeCandidates (config : RawCostConfig)
     (purses : List RawIndexedPurse) (redex : RawWholeRedex) :
     List RawRuntimeStep :=
-  let available := matchingPurses redex.surface purses
+  let available := matchingPurses redex.location purses
   (exactPurseCovers redex.sig available).map fun cover =>
     let contractum := RawCostTerm.commSubst redex.body redex.payload |>.normalize
     { shape :=
         match config[redex.index]? with
         | some (.signed (.par (.send _ _) (.recv _ _)) _) => .wholeSendRecv
         | _ => .wholeRecvSend
-      surface := redex.surface
+      location := redex.location
       spend := redex.sig
       participantIndices := [redex.index]
       selectedPurses := cover
@@ -179,13 +179,13 @@ def wholeCandidates (config : RawCostConfig)
 def splitCandidates (config : RawCostConfig)
     (purses : List RawIndexedPurse) (recv : RawRecvEndpoint)
     (send : RawSendEndpoint) : List RawRuntimeStep :=
-  if recv.surface.normalize = send.surface.normalize then
+  if recv.location.normalize = send.location.normalize then
     let spend := (recv.sig ++ send.sig).normalize
-    let available := matchingPurses recv.surface purses
+    let available := matchingPurses recv.location purses
     (exactPurseCovers spend available).map fun cover =>
       let contractum := RawCostTerm.commSubst recv.body send.payload |>.normalize
       { shape := .split
-        surface := recv.surface
+        location := recv.location
         spend
         participantIndices := [recv.index, send.index]
         selectedPurses := cover
@@ -229,7 +229,7 @@ structure RawTraceComponent where
   deriving Repr, DecidableEq
 
 structure RawFundingContribution where
-  surface : RawCostName
+  location : RawCostName
   spend : RawCostSig
   deriving Repr, DecidableEq
 
@@ -266,7 +266,7 @@ def eventFor (components : List RawTraceComponent)
     causes := (step.participantIndices ++ step.selectedPurses.map RawIndexedPurse.index).filterMap
       (producerAt? components)
     funding := step.selectedPurses.map fun purse =>
-      ⟨purse.surface, purse.head⟩
+      ⟨purse.location, purse.head⟩
     rawSpend := step.spend }
 
 def applyTracedStep (components : List RawTraceComponent)
@@ -278,7 +278,7 @@ def applyTracedStep (components : List RawTraceComponent)
   let contractum := step.contractum.normalize.components.map fun term =>
     { term, producer := some eventId }
   let tails := step.selectedPurses.map fun purse =>
-    { term := RawCostTerm.purse purse.surface purse.tail,
+    { term := RawCostTerm.purse purse.location purse.tail,
       producer := some eventId }
   sortTraceComponents (retained ++ contractum ++ tails)
 
@@ -318,11 +318,11 @@ def boundedCausalPrefix (fuel : Nat) (term : RawCostTerm) : Option RawCausalPref
 namespace CostWire
 
 def encodeFunding (funding : RawFundingContribution) : CostWire :=
-  .node "funding" [encodeName funding.surface, encodeSig funding.spend]
+  .node "funding" [encodeName funding.location, encodeSig funding.spend]
 
 def decodeFunding : CostWire → Option RawFundingContribution
-  | .node "funding" [surface, spend] =>
-      RawFundingContribution.mk <$> decodeName surface <*> decodeSig spend
+  | .node "funding" [location, spend] =>
+      RawFundingContribution.mk <$> decodeName location <*> decodeSig spend
   | _ => none
 
 def encodeEvent (event : RawEmittedEvent) : CostWire :=
@@ -376,7 +376,7 @@ def decodePrefix : CostWire → Option RawCausalPrefix
 
 end CostWire
 
-/- Reducible evaluator surface for kernel-checked closed conformance cases. -/
+/- Reducible evaluator location for kernel-checked closed conformance cases. -/
 attribute [reducible]
   collectPursesAux RawCostConfig.purses wholeAt? collectWholesAux
   RawCostConfig.wholeRedexes recvAt? sendAt? collectRecvsAux collectSendsAux

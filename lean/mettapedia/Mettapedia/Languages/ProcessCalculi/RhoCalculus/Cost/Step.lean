@@ -26,7 +26,7 @@ def CostTerm.components {Ground : Type u} : CostTerm Ground → CostConfig Groun
 
 /-- One nominally located temporal purse. -/
 structure LocatedPurse (Ground : Type u) where
-  surface : CostName Ground
+  location : CostName Ground
   stack : CostStack Ground
   deriving DecidableEq
 
@@ -34,7 +34,7 @@ namespace LocatedPurse
 
 /-- Embed a purse into the concrete wrapped-term syntax. -/
 def toTerm {Ground : Type u} (purse : LocatedPurse Ground) : CostTerm Ground :=
-  .purse purse.surface purse.stack
+  .purse purse.location purse.stack
 
 /-- Embed a multiset of located purses into a top-level configuration. -/
 def configComponents {Ground : Type u}
@@ -53,20 +53,20 @@ structure SelectedPurseHead (Ground : Type u) where
 /-- Evidence that selected located purse heads exactly fund a demand.
 
 `available` contains every purse before the step.  `chosen` records one head
-and tail for each selected purse at `surface`; `untouched` records every
-unselected purse, including purses at other surfaces.  `residual` exposes the
-selected tails at the same surface and retains all untouched purses.
+and tail for each selected purse at `location`; `untouched` records every
+unselected purse, including purses at other locations.  `residual` exposes the
+selected tails at the same location and retains all untouched purses.
 -/
-structure LocatedTokenCover {Ground : Type u} (surface : CostName Ground)
+structure LocatedTokenCover {Ground : Type u} (location : CostName Ground)
     (demand : CostSig Ground)
     (available residual : Multiset (LocatedPurse Ground)) : Type u where
   chosen : Multiset (SelectedPurseHead Ground)
   untouched : Multiset (LocatedPurse Ground)
   available_eq :
     available = chosen.map (fun choice =>
-      ⟨surface, CostStack.cons choice.head choice.tail⟩) + untouched
+      ⟨location, CostStack.cons choice.head choice.tail⟩) + untouched
   residual_eq :
-    residual = chosen.map (fun choice => ⟨surface, choice.tail⟩) + untouched
+    residual = chosen.map (fun choice => ⟨location, choice.tail⟩) + untouched
   demand_eq : demand = (chosen.map SelectedPurseHead.head).sum
 
 /-- One labelled, token-funded reduction of a normalized cost configuration. -/

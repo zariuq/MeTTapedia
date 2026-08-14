@@ -5,7 +5,7 @@ import Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLSimilarityBridge
 /-!
 # Higher-Order HOL Deduction Bridge
 
-This file connects the higher-order ProbHOL strength surface to the
+This file connects the higher-order ProbHOL strength interface to the
 no-independence PLN deduction interval.  It does not introduce another
 deduction semantics: the traditional point formula is transported through the
 five HOL premise strengths, then checked against the full admissible-allocation

@@ -8,6 +8,6 @@ import Mettapedia.PLN.Bridges.ProbabilityTheory.BayesNet.PLNColliderSingletonBri
 /-!
 # PLN bridges to Bayesian-network probability theory
 
-Compilation, local-Markov package, and singleton bridge surfaces connecting PLN
+Compilation, local-Markov package, and singleton bridge interfaces connecting PLN
 rule-family queries to Bayesian-network semantics.
 -/

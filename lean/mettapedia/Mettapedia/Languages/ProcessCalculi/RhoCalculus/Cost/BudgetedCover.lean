@@ -723,13 +723,13 @@ theorem CoverCursor.seek_initial_noCover
 
 /-! ## Positive and negative executable examples -/
 
-private def exampleSurface : RawCostName := .signature ["site"]
+private def exampleLocation : RawCostName := .signature ["site"]
 
 private def examplePurse0 : RawIndexedPurse :=
-  ⟨0, exampleSurface, ["a"], []⟩
+  ⟨0, exampleLocation, ["a"], []⟩
 
 private def examplePurse1 : RawIndexedPurse :=
-  ⟨1, exampleSurface, ["a"], []⟩
+  ⟨1, exampleLocation, ["a"], []⟩
 
 /-- Equal-valued heads at distinct occurrence indices yield two covers, not
 one deduplicated cover. -/

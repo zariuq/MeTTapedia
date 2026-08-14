@@ -7,7 +7,7 @@ open Mettapedia.Logic.HOL
 
 /-!
 Minimal theorem-facing bridge from the paper-faithful class semantics already
-surfaced in Codex to Henkin's paper-facing `GeneralModel` notion.
+exposed in Codex to Henkin's paper-facing `GeneralModel` notion.
 
 The current development has reached Theorem 1 as genuine class-model
 satisfiability. What still remains is to connect that class-based truth
@@ -126,7 +126,7 @@ theorem satisfiable_of_classSatisfiable_of_sentenceSoundBridge
       hCMClass
       (classSentenceSoundBridge_of_sentenceSoundBridge CM (hBridge CM rfl))
 
-/-- Paper-facing Theorem 1 from the currently surfaced canonical class-model
+/-- Paper-facing Theorem 1 from the currently exposed canonical class-model
 endpoint plus the minimal sentence-soundness bridge to a chosen general model.
 This isolates the exact remaining step from the pp. 86-88 canonical semantics
 to Henkin's stated satisfiability conclusion. -/

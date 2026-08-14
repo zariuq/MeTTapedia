@@ -1,4 +1,5 @@
 import Mettapedia.GSLT.LanguageDef.CostCanonicalReachablePairAlignment
+import Mettapedia.GSLT.LanguageDef.CostCanonicalTypeRoute
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostFillDeterminism
 
 /-!
@@ -344,6 +345,50 @@ def rhoCanonicalRecursiveTypeDomain :
       parameterTyped
     exact rho_generatedParameter_reachable membership notBare
       parameterMembership parameterTyped
+
+/-- Every rho bare-collection parameter is an admissible base fibre.  The
+classification theorem shows that the only possibilities are the base and
+wrapped parallel declarations; neither can expose a structural collection
+type to recursive descent. -/
+theorem rho_bareCollectionAdmissible (color : CostStaticColor) :
+    CostCanonicalTypeRoute.BareCollectionAdmissible
+      (color := color) rhoCanonicalRecursiveTypeDomain := by
+  intro rule membership _wrapped parameterName collectionType elementType
+    parameterShape
+  change rule ∈ [rhoCalc.terms[0], rhoCalc.terms[1], rhoCalc.terms[2],
+    rhoCalc.terms[3], rhoCalc.terms[4], rhoCalc.terms[5]] at membership
+  simp only [List.mem_cons, List.not_mem_nil, or_false] at membership
+  rcases membership with first | second | third | fourth | fifth | sixth
+  · subst rule
+    simp [rhoCalc, TypeExpr.name, TypeExpr.proc, TypeExpr.bag,
+      TypeExpr.baseType] at parameterShape
+  · subst rule
+    simp [rhoCalc, TypeExpr.name, TypeExpr.proc, TypeExpr.bag,
+      TypeExpr.baseType] at parameterShape
+  · subst rule
+    simp [rhoCalc, TypeExpr.name, TypeExpr.proc, TypeExpr.bag,
+      TypeExpr.baseType] at parameterShape
+  · subst rule
+    simp [rhoCalc, TypeExpr.name, TypeExpr.proc, TypeExpr.bag,
+      TypeExpr.baseType] at parameterShape
+    have elementEq : elementType = .base "Proc" := parameterShape.2.2.symm
+    subst elementType
+    exact rhoCanonicalRecursiveTypeDomain.base _
+  · subst rule
+    simp [rhoCalc, TypeExpr.name, TypeExpr.proc, TypeExpr.bag,
+      TypeExpr.baseType] at parameterShape
+  · subst rule
+    simp [rhoCalc, TypeExpr.name, TypeExpr.proc, TypeExpr.bag,
+      TypeExpr.baseType] at parameterShape
+
+/-- Interpret a generic proof-relevant Cost type route in rho's reachable
+recursive domain. -/
+theorem CostCanonicalTypeRoute.rho_admissible
+    {color : CostStaticColor} {root endpoint : TypeExpr}
+    (route : CostCanonicalTypeRoute rhoCIGSLT color root endpoint)
+    (rootAdmissible : rhoCanonicalRecursiveTypeDomain.Admissible root) :
+    rhoCanonicalRecursiveTypeDomain.Admissible endpoint :=
+  route.admissible (rho_bareCollectionAdmissible color) rootAdmissible
 
 /-- Positive boundary: the wrapped sort fibre is admissible. -/
 example : rhoCanonicalRecursiveTypeDomain.Admissible

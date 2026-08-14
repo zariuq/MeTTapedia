@@ -4545,7 +4545,7 @@ theorem rowSuccessorMatrixInvariance_directingRowKernel_iff_startCoupledProduct
                     exact wordProb_rowKernelToMarkovParam_eq_indicator_stepProd
                       (k := k) (directingRowKernel (k := k) P) ω a b tail
 
-/-- Same-surface constructor for exact public G2 from the corrected rider
+/-- Same-interface constructor for exact public G2 from the corrected rider
 target: once bare successor-matrix PE gives the start-coupled product identity,
 the canonical directing row kernel supplies the public minimal payload. -/
 theorem existsRowKernel_hEval_and_rowSuccessorMatrixInvariance_of_successorMatrixPE_of_startCoupledProduct
@@ -4686,7 +4686,7 @@ theorem successorMatrixStartRidingInvariant_iff_stableUnderStartRestriction :
 /-- If successor-matrix PE is stable under conditioning on the initial state,
 then the original bare-PE Crux payload follows. This isolates the exact missing
 bridge needed to discharge the public `ExistsRowKernel...of_successorMatrixPE`
-surface without changing its statement. -/
+interface without changing its statement. -/
 theorem existsRowKernel_hEval_and_rowSuccessorMatrixInvariance_of_successorMatrixPE_of_start_restrict
     (hStart : SuccessorMatrixPEStableUnderStartRestriction k) :
     ExistsRowKernel_hEval_and_rowSuccessorMatrixInvariance_of_successorMatrixPE k := by
@@ -4697,7 +4697,7 @@ theorem existsRowKernel_hEval_and_rowSuccessorMatrixInvariance_of_successorMatri
       (k := k) P hPE (hStart P hP hPE)
 
 /-- A start-riding invariant is enough to discharge the public bare-PE payload
-surface. This theorem deliberately exposes the extra bridge rather than hiding
+interface. This theorem deliberately exposes the extra bridge rather than hiding
 it in the row-kernel construction. -/
 theorem existsRowKernel_hEval_and_rowSuccessorMatrixInvariance_of_successorMatrixPE_of_startRiding
     (hRide : SuccessorMatrixStartRidingInvariant k) :
@@ -5826,7 +5826,7 @@ variable {k : ℕ}
 variable {μ : FiniteAlphabet.PrefixMeasure (Fin k)}
 
 /-- Public constructor for the proved strong-recurrence Markov de Finetti
-surface. It packages the closed Fortini endpoint into the `MarkovMixture` API. -/
+interface. It packages the closed Fortini endpoint into the `MarkovMixture` API. -/
 noncomputable def of_markovExchangeable_strongRecurrence
     (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
     (P : Measure (ℕ → Fin k)) [hP : IsProbabilityMeasure P]

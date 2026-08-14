@@ -40,7 +40,7 @@ Quick map for readers:
   - `truthDeductionConservative`
   - `truthModusPonensConservative`
   - `truthSymmetricModusPonensConservative`
-* Additional WM-backed TV surfaces not present in current upstream PeTTa main:
+* Additional WM-backed TV interfaces not present in current upstream PeTTa main:
   - `truthPredictiveImplicationConservative`
   - `truthConjunctionConditionalConservative`
   - `truthConjunctionIndependentEvidenceStyle`
@@ -531,7 +531,7 @@ theorem truthConjunctionConditional_conf_le_inputs
 The mirrored PeTTa/OpenCog-style rules below are not promoted as fully justified
 truth-value rules yet, but the Lean development already contains stronger formal
 analogues for their *strength* components.  These are the constructive WM-facing
-surfaces that the comparison file can use.
+interfaces that the comparison file can use.
 
 The reasons they stay out of the fully justified TV layer are not uniform:
 

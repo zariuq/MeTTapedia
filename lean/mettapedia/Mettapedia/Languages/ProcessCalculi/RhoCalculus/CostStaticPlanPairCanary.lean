@@ -124,10 +124,65 @@ theorem rhoPair_collapse_pair_root :
   rhoPairCollapseEdge.nonempty_contextPair rhoBreadthBaseRedexAPlan
     rhoPairFvarAPlan rfl rfl .hole .hole rfl rfl
 
-/-- Quote-reset configuration: the left view descends through the quote
-frame, whose plan spine resets the reflective availability index, while the
-right view stays at the collapsed root.  The pair exists with different
-context shapes on the two endpoints. -/
+/-- The exact left reached state of the Quote/Drop collapse pair.  Its quote
+frame resets reflective availability while exposing the process-typed drop
+sub-plan. -/
+def rhoPairQuoteResetLeftReached :
+    CostStaticPlanReached rhoCIGSLT .base rhoCutOrderFree
+      (rhoCutOrderBaseDrop (.fvar "a"))
+      rhoBreadthBaseRedexAPlan.abstractPattern where
+  sourceBound := _
+  targetBound := []
+  thinning := _
+  sourceAvailable := []
+  outer := OneHoleContext.hole.comp
+    (.apply (costBaseConstructorName "NQuote") [] .hole [])
+  sourceType := .base "Proc"
+  plan := rhoBreadthBaseDropAPlan _
+  skeletonContext := .apply "NQuote" [] .hole []
+  abstract_eq := by
+    unfold rhoBreadthBaseRedexAPlan
+    simp only [CostStaticRegionPlan.abstractPattern,
+      CostStaticArgumentPlan.abstractPatterns, OneHoleContext.fill,
+      rhoBreadthBaseQuotePreimage, costStaticConstructorPreimage,
+      rhoBreadthBaseQuoteDeclared, rhoCalc, List.nil_append]
+    rfl
+
+/-- The exact right reached state of the Quote/Drop collapse pair. -/
+def rhoPairQuoteResetRightReached :
+    CostStaticPlanReached rhoCIGSLT .base rhoCutOrderFree (.fvar "a")
+      rhoPairFvarAPlan.abstractPattern where
+  sourceBound := _
+  targetBound := []
+  thinning := _
+  sourceAvailable := []
+  outer := .hole
+  sourceType := .base "Name"
+  plan := rhoPairFvarAPlan
+  skeletonContext := .hole
+  abstract_eq := rfl
+
+/-- The Quote/Drop pair with both reached states exposed rather than hidden
+behind existential total-decomposition choices.  This is the smallest
+executable witness for the heterogeneous reached-child boundary below. -/
+def rhoPairCollapseQuoteResetPair :
+    CostStaticPlanContextPair rhoCIGSLT .base rhoCutOrderFree
+      rhoPairCollapseEdge (rhoCutOrderBaseDrop (.fvar "a")) (.fvar "a")
+      rhoBreadthBaseRedexAPlan.abstractPattern
+      rhoPairFvarAPlan.abstractPattern
+      rhoBreadthBaseRedexAPlan.boundaryTable.entries
+      rhoPairFvarAPlan.boundaryTable.entries where
+  left :=
+    { view := .reached rhoPairQuoteResetLeftReached
+      entryEmbedding := CostStaticPlanEntryEmbedding.refl _ }
+  right :=
+    { view := .reached rhoPairQuoteResetRightReached
+      entryEmbedding := CostStaticPlanEntryEmbedding.refl _ }
+  leftRoot_eq := rhoBreadthBaseRedexAPlan.decoration_abstractPattern
+  rightRoot_eq := rhoPairFvarAPlan.decoration_abstractPattern
+  leftTable_eq := rfl
+  rightTable_eq := rfl
+
 theorem rhoPair_collapse_pair_quoteReset :
     Nonempty (CostStaticPlanContextPair rhoCIGSLT .base rhoCutOrderFree
       rhoPairCollapseEdge (rhoCutOrderBaseDrop (.fvar "a")) (.fvar "a")
@@ -135,9 +190,63 @@ theorem rhoPair_collapse_pair_quoteReset :
       rhoPairFvarAPlan.abstractPattern
       rhoBreadthBaseRedexAPlan.boundaryTable.entries
       rhoPairFvarAPlan.boundaryTable.entries) :=
-  rhoPairCollapseEdge.nonempty_contextPair rhoBreadthBaseRedexAPlan
-    rhoPairFvarAPlan rfl rfl
-    (.apply (costBaseConstructorName "NQuote") [] .hole []) .hole rfl rfl
+  ⟨rhoPairCollapseQuoteResetPair⟩
+
+/-- A lawful Quote/Drop context pair may reach children in different typed
+fibres.  Consequently, root same-fibre evidence cannot be projected to the
+shared-type premise of a direct child call to the total restoration-apex
+theorem.  The heterogeneous collapse must remain visible at the parent root. -/
+theorem rhoPairQuoteReset_reached_mappedSourceTypes_ne :
+    mapTypeExpr (CostStaticColor.base.symbols rhoCIGSLT)
+        rhoPairQuoteResetLeftReached.sourceType ≠
+      mapTypeExpr (CostStaticColor.base.symbols rhoCIGSLT)
+        rhoPairQuoteResetRightReached.sourceType := by
+  change (.base (costBaseSortName "Proc") : TypeExpr) ≠
+    .base (costBaseSortName "Name")
+  intro equality
+  exact (show "Proc" ≠ "Name" by decide)
+    (costBaseSortName_injective (TypeExpr.base.inj equality))
+
+/-- The same lawful pair also refutes cancellation of root canonical
+equality through its unequal contexts.  After the complete source-to-static
+map and binder reinsertion, the reached children are still `PDrop a` and
+`a`; only the enclosing `NQuote` makes the root endpoints canonical-equal. -/
+theorem rhoPairQuoteReset_reached_childCanonical_ne :
+    Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+        (costStaticReflectivePresentationDecl rhoCIGSLT .base
+          rhoReflectivePresentation.toReflectivePresentationDecl)
+        (rhoPairQuoteResetLeftReached.thinning.thickenAmbientBVars 0
+          (mapPattern (CostStaticColor.base.symbols rhoCIGSLT)
+            rhoPairQuoteResetLeftReached.plan.abstractPattern)) ≠
+      Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize
+        (costStaticReflectivePresentationDecl rhoCIGSLT .base
+          rhoReflectivePresentation.toReflectivePresentationDecl)
+        (rhoPairQuoteResetRightReached.thinning.thickenAmbientBVars 0
+          (mapPattern (CostStaticColor.base.symbols rhoCIGSLT)
+            rhoPairQuoteResetRightReached.plan.abstractPattern)) := by
+  rw [show rhoPairQuoteResetLeftReached.plan.abstractPattern =
+      .apply "PDrop" [.fvar (costRegionSourceVariableName "a")] by
+        exact (by
+          change (rhoBreadthBaseDropAPlan _).abstractPattern = _
+          unfold rhoBreadthBaseDropAPlan rhoBreadthBaseFvarAPlan
+          simp [CostStaticRegionPlan.abstractPattern,
+            CostStaticArgumentPlan.abstractPatterns,
+            rhoBreadthBaseDropPreimage, costStaticConstructorPreimage,
+            rhoBreadthBaseDropDeclared, rhoCalc]),
+    show rhoPairQuoteResetRightReached.plan.abstractPattern =
+      .fvar (costRegionSourceVariableName "a") by
+        change rhoPairFvarAPlan.abstractPattern = _
+        simp [rhoPairFvarAPlan, CostStaticRegionPlan.abstractPattern]]
+  rw [rhoPairQuoteResetLeftReached.thinning.thickenAmbientBVars_eq_self_of_targetBound_eq_nil
+      (by rfl) 0,
+    rhoPairQuoteResetRightReached.thinning.thickenAmbientBVars_eq_self_of_targetBound_eq_nil
+      (by rfl) 0]
+  simp [mapPattern, CostStaticColor.symbols, costBaseStaticSymbols,
+    costBasePresentationSymbols, costStaticReflectivePresentationDecl,
+    costBaseReflectivePresentationDecl,
+    Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalize,
+    Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical.canonicalizeList,
+    Mettapedia.OSLF.MeTTaIL.ReflectiveSubstitution.finishNormalizeReflectiveApply]
 
 /-! ## Boundary-carrying edge and the stopped pair with pullback -/
 
@@ -197,6 +306,7 @@ noncomputable def rhoPairStoppedView :
       boundaryType := _
       content := rhoBreadthRedexA
       certified := rhoBreadthBoundaryWitnessA
+      certifies := rhoBreadthBoundaryWitnessA_spec
       residual := .apply (costBaseConstructorName "NQuote") [] .hole []
       content_eq := rfl
       skeletonContext := .apply "PDrop" [] .hole []

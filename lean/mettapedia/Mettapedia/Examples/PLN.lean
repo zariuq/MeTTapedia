@@ -34,5 +34,5 @@ import Mettapedia.Examples.PLN.WMUWCSEGateDemo
 /-!
 # PLN examples
 
-Worked examples and small demonstrations for PLN and WM-PLN surfaces.
+Worked examples and small demonstrations for PLN and WM-PLN interfaces.
 -/

@@ -11,7 +11,7 @@ import Mettapedia.KR.ConceptGeometry.IntensionalInheritanceAll
 /-!
 # Concept Geometry
 
-Generic concept-geometry surfaces for abstract inheritance, intensional
+Generic concept-geometry theorem sets for abstract inheritance, intensional
 inheritance, extensional/intensional divergence, empirical concept evidence,
 and bridges to neighboring mathematical rooms.
 -/

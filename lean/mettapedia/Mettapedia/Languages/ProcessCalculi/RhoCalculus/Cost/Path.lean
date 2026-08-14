@@ -111,7 +111,7 @@ theorem applyTracedStep_wellFormed
     intro component member
     obtain ⟨purse, purse_member, rfl⟩ := List.mem_map.mp member
     exact List.forall_iff_forall_mem.mp tails_ok
-      (RawCostTerm.purse purse.surface purse.tail)
+      (RawCostTerm.purse purse.location purse.tail)
       (List.mem_map.mpr ⟨purse, purse_member, rfl⟩)
 
 /-- A finite sequence of actual occurrence-sensitive runtime firings. -/
@@ -319,7 +319,7 @@ def RawRuntimeStep.selectedFundingContribution
     (purse : { purse // purse ∈ step.selectedPurses }) :
     FundingContribution String RawCostName :=
   let purse_ok := step.selectedPurse_wellFormed config_ok enabled purse.property
-  { surface := purse.val.surface
+  { location := purse.val.location
     spend := purse.val.head.toMultiset
     spend_valid :=
       (RawCostSig.valid_iff_toMultiset_ne_zero purse.val.head).mp purse_ok.head }

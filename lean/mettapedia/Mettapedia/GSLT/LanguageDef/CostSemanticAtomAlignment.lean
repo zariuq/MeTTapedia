@@ -894,6 +894,77 @@ theorem reifyWith_mapPattern
       exact ⟨List.map_congr_left fun element membership =>
         inductionHypothesis element membership, trivial⟩
 
+/-- Common semantic-atom reification commutes with ambient-binder
+reinsertion.  The two operations act on disjoint coordinates of the shared
+pattern carrier: endpoint reification changes free names, while thinning
+changes only de Bruijn indices. -/
+@[simp]
+theorem reifyWith_thickenAmbientBVars
+    {source : CIGSLT} {color : CostStaticColor}
+    {sourceBound targetBound : List TypeExpr}
+    {leftCount rightCount endpointCount : Nat}
+    {leftKey : Fin leftCount -> CostStaticAtomKey}
+    {rightKey : Fin rightCount -> CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey)
+    (resolve : String -> Option (Fin endpointCount))
+    (leg : Fin endpointCount -> Fin cospan.commonKeys.length)
+    (thinning : CostStaticBinderThinning source color sourceBound targetBound)
+    (depth : Nat) (pattern : Pattern) :
+    cospan.reifyWith resolve leg
+        (thinning.thickenAmbientBVars depth pattern) =
+      thinning.thickenAmbientBVars depth
+        (cospan.reifyWith resolve leg pattern) := by
+  induction pattern using Pattern.inductionOn generalizing depth with
+  | hbvar index =>
+      simp [CostStaticBinderThinning.thickenAmbientBVars, reifyWith]
+  | hfvar name =>
+      cases selected : resolve name <;>
+        simp [CostStaticBinderThinning.thickenAmbientBVars, reifyWith,
+          selected]
+  | happly constructor arguments inductionHypothesis =>
+      simp only [CostStaticBinderThinning.thickenAmbientBVars, reifyWith,
+        List.map_map, Pattern.apply.injEq, true_and]
+      apply List.map_congr_left
+      intro argument membership
+      exact inductionHypothesis argument membership depth
+  | hlambda binder body inductionHypothesis =>
+      simp [CostStaticBinderThinning.thickenAmbientBVars, reifyWith,
+        inductionHypothesis]
+  | hmultiLambda arity binders body inductionHypothesis =>
+      simp [CostStaticBinderThinning.thickenAmbientBVars, reifyWith,
+        inductionHypothesis]
+  | hsubst body replacement bodyInduction replacementInduction =>
+      simp [CostStaticBinderThinning.thickenAmbientBVars, reifyWith,
+        bodyInduction, replacementInduction]
+  | hcollection collectionType elements rest inductionHypothesis =>
+      simp only [CostStaticBinderThinning.thickenAmbientBVars, reifyWith,
+        List.map_map, Pattern.collection.injEq, true_and]
+      exact ⟨List.map_congr_left (fun element membership =>
+        inductionHypothesis element membership depth), trivial⟩
+
+/-- Reification commutes with the complete source-to-static target action on
+a raw plan slice: first map the source symbols, then reinsert the target-only
+ambient binders. -/
+theorem reifyWith_mappedThickened
+    {source : CIGSLT} {color : CostStaticColor}
+    {sourceBound targetBound : List TypeExpr}
+    {leftCount rightCount endpointCount : Nat}
+    {leftKey : Fin leftCount -> CostStaticAtomKey}
+    {rightKey : Fin rightCount -> CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey)
+    (resolve : String -> Option (Fin endpointCount))
+    (leg : Fin endpointCount -> Fin cospan.commonKeys.length)
+    (thinning : CostStaticBinderThinning source color sourceBound targetBound)
+    (depth : Nat) (pattern : Pattern) :
+    cospan.reifyWith resolve leg
+        (thinning.thickenAmbientBVars depth
+          (mapPattern (color.symbols source) pattern)) =
+      thinning.thickenAmbientBVars depth
+        (mapPattern (color.symbols source)
+          (cospan.reifyWith resolve leg pattern)) := by
+  rw [cospan.reifyWith_thickenAmbientBVars resolve leg thinning,
+    cospan.reifyWith_mapPattern]
+
 /-- Independently sourced endpoint names receive the same common atom
 spelling whenever their selected positional atoms have the same complete
 typed semantic key. -/

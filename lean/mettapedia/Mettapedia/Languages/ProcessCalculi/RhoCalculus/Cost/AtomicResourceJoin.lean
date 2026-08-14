@@ -31,7 +31,7 @@ variable {Ground : Type u} {source target : CostConfig Ground}
 
 /-- An atomic resource join is an ordinary funded cost step. -/
 theorem toCostStep (join : AtomicResourceJoin source event target) :
-    CostStep source event.surface event.spend target := by
+    CostStep source event.location event.spend target := by
   obtain ⟨frame, source_eq, target_eq⟩ := join
   rw [source_eq, target_eq]
   exact event.toCostStepIn frame
@@ -69,34 +69,34 @@ end AtomicResourceJoin
 decomposition.  This direction reconstructs the local event and moves only
 the cover's untouched purse occurrences into the frame. -/
 theorem CostStep.exists_atomicResourceJoin
-    {source : CostConfig Ground} {surface : CostName Ground}
+    {source : CostConfig Ground} {location : CostName Ground}
     {spend : CostSig Ground} {target : CostConfig Ground}
-    (step : CostStep source surface spend target) :
+    (step : CostStep source location spend target) :
     ∃ event : CostedEvent Ground,
-      event.surface = surface ∧ event.spend = spend ∧
+      event.location = location ∧ event.spend = spend ∧
         AtomicResourceJoin source event target := by
   cases step with
   | @wholeRecvSend context available residual channel body payload outerSig
       signature_valid cover =>
-      let funding : FundingSelection Ground surface spend :=
+      let funding : FundingSelection Ground location spend :=
         ⟨cover.chosen, cover.demand_eq⟩
-      let event := CostedEvent.wholeRecvSend surface body payload spend
+      let event := CostedEvent.wholeRecvSend location body payload spend
         signature_valid funding
       refine ⟨event, rfl, rfl, ?_⟩
       refine ⟨context + LocatedPurse.configComponents cover.untouched, ?_, ?_⟩
       · calc
           context +
-                (.signed (.par (.recv surface body) (.send surface payload))
+                (.signed (.par (.recv location body) (.send location payload))
                   spend ::ₘ 0) +
               LocatedPurse.configComponents available =
               context +
-                (.signed (.par (.recv surface body) (.send surface payload))
+                (.signed (.par (.recv location body) (.send location payload))
                   spend ::ₘ 0) +
                 LocatedPurse.configComponents
                   (cover.selectedBefore + cover.untouched) :=
             congrArg (fun purses =>
               context +
-                (.signed (.par (.recv surface body) (.send surface payload))
+                (.signed (.par (.recv location body) (.send location payload))
                   spend ::ₘ 0) + LocatedPurse.configComponents purses)
               cover.available_decomposition
           _ = context + LocatedPurse.configComponents cover.untouched +
@@ -125,25 +125,25 @@ theorem CostStep.exists_atomicResourceJoin
             ac_rfl
   | @wholeSendRecv context available residual channel body payload outerSig
       signature_valid cover =>
-      let funding : FundingSelection Ground surface spend :=
+      let funding : FundingSelection Ground location spend :=
         ⟨cover.chosen, cover.demand_eq⟩
-      let event := CostedEvent.wholeSendRecv surface body payload spend
+      let event := CostedEvent.wholeSendRecv location body payload spend
         signature_valid funding
       refine ⟨event, rfl, rfl, ?_⟩
       refine ⟨context + LocatedPurse.configComponents cover.untouched, ?_, ?_⟩
       · calc
           context +
-                (.signed (.par (.send surface payload) (.recv surface body))
+                (.signed (.par (.send location payload) (.recv location body))
                   spend ::ₘ 0) +
               LocatedPurse.configComponents available =
               context +
-                (.signed (.par (.send surface payload) (.recv surface body))
+                (.signed (.par (.send location payload) (.recv location body))
                   spend ::ₘ 0) +
                 LocatedPurse.configComponents
                   (cover.selectedBefore + cover.untouched) :=
             congrArg (fun purses =>
               context +
-                (.signed (.par (.send surface payload) (.recv surface body))
+                (.signed (.par (.send location payload) (.recv location body))
                   spend ::ₘ 0) + LocatedPurse.configComponents purses)
               cover.available_decomposition
           _ = context + LocatedPurse.configComponents cover.untouched +
@@ -172,23 +172,23 @@ theorem CostStep.exists_atomicResourceJoin
             ac_rfl
   | @split context available residual channel body payload recvSeal sendSeal
       recv_seal_valid send_seal_valid cover =>
-      let funding : FundingSelection Ground surface (recvSeal + sendSeal) :=
+      let funding : FundingSelection Ground location (recvSeal + sendSeal) :=
         ⟨cover.chosen, cover.demand_eq⟩
-      let event := CostedEvent.split surface body payload recvSeal sendSeal recv_seal_valid
+      let event := CostedEvent.split location body payload recvSeal sendSeal recv_seal_valid
         send_seal_valid funding
       refine ⟨event, rfl, rfl, ?_⟩
       refine ⟨context + LocatedPurse.configComponents cover.untouched, ?_, ?_⟩
       · calc
-          context + (.signed (.recv surface body) recvSeal ::ₘ 0) +
-                (.signed (.send surface payload) sendSeal ::ₘ 0) +
+          context + (.signed (.recv location body) recvSeal ::ₘ 0) +
+                (.signed (.send location payload) sendSeal ::ₘ 0) +
               LocatedPurse.configComponents available =
-              context + (.signed (.recv surface body) recvSeal ::ₘ 0) +
-                (.signed (.send surface payload) sendSeal ::ₘ 0) +
+              context + (.signed (.recv location body) recvSeal ::ₘ 0) +
+                (.signed (.send location payload) sendSeal ::ₘ 0) +
                 LocatedPurse.configComponents
                   (cover.selectedBefore + cover.untouched) :=
             congrArg (fun purses =>
-              context + (.signed (.recv surface body) recvSeal ::ₘ 0) +
-                (.signed (.send surface payload) sendSeal ::ₘ 0) +
+              context + (.signed (.recv location body) recvSeal ::ₘ 0) +
+                (.signed (.send location payload) sendSeal ::ₘ 0) +
                 LocatedPurse.configComponents purses)
               cover.available_decomposition
           _ = context + LocatedPurse.configComponents cover.untouched +
@@ -219,11 +219,11 @@ theorem CostStep.exists_atomicResourceJoin
 /-- The atomic located-resource join and the declarative cost step have
 exactly the same labelled transition relation. -/
 theorem costStep_iff_exists_atomicResourceJoin
-    {source : CostConfig Ground} {surface : CostName Ground}
+    {source : CostConfig Ground} {location : CostName Ground}
     {spend : CostSig Ground} {target : CostConfig Ground} :
-    CostStep source surface spend target ↔
+    CostStep source location spend target ↔
       ∃ event : CostedEvent Ground,
-        event.surface = surface ∧ event.spend = spend ∧
+        event.location = location ∧ event.spend = spend ∧
           AtomicResourceJoin source event target := by
   constructor
   · exact CostStep.exists_atomicResourceJoin

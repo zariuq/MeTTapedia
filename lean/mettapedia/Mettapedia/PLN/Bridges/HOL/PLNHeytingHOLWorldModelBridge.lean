@@ -11,12 +11,12 @@ substitutional models carrying a distinguished evidence value, satisfaction is
 "the evidence lies below the formula's value", and WM query strength is the
 generic crisp specialization over multisets of such states.
 
-The headline readout mirrors the FO surface honestly: EM-free derivability of
+The headline readout mirrors the FO interface honestly: EM-free derivability of
 an implication over a parameter-free theory coincides with singleton
 WM-strength consequence over all theory-modelling Heyting evidence states.
 The completeness direction is carried by the Lindenbaum model pointed at the
 antecedent itself.  As in the FO bridge, this is an implication-fragment
-readout surface, not a further metatheoretic completeness claim.
+readout interface, not a further metatheoretic completeness claim.
 -/
 
 namespace Mettapedia.PLN.Bridges.HOL.HeytingWorldModel
@@ -153,10 +153,10 @@ theorem provable_imp_iff_pointwiseImpliesOnTheory
         (Set.mem_insert _ _))
     exact provable_imp_of_insert (Const := WithParams Const) hpoint
 
-/-- **The WM readout surface**: EM-free derivability of an implication over a
+/-- **The WM readout interface**: EM-free derivability of an implication over a
 parameter-free theory coincides with singleton WM-strength consequence over
 all Heyting evidence states modelling the theory — the higher-order,
-intuitionistic mirror of the first-order WM bridge surface. -/
+intuitionistic mirror of the first-order WM bridge interface. -/
 theorem provable_imp_iff_singletonStrengthLEOnTheory
     {T : ClosedTheorySet (WithParams Const)}
     (hT0 : ∀ ψ ∈ T, ∀ (σ : Ty Base) (k : Nat),

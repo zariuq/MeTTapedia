@@ -4,14 +4,14 @@ import Mettapedia.PLN.WorldModel.WorldModel
 /-!
 # Canonical Markov WM Endpoints
 
-Small public surface for the Markov row-conditioned sufficient-statistic bridge.
+Small public interface for the Markov row-conditioned sufficient-statistic bridge.
 
 This file intentionally stays narrow:
 
 * observation carrier: adjacent transitions,
 * additive evidence: outgoing transition counts for the queried row,
 * posterior family: Dirichlet row posteriors,
-* key theorem surface: WM extraction and posterior means match the
+* key theorem family: WM extraction and posterior means match the
   Markov-Dirichlet summary semantics.
 -/
 
@@ -53,7 +53,7 @@ abbrev markov_transitionObservation :=
 
 /-- The source state selected by a Markov transition query.
 
-For the XiPLN transition-facing surface, `.link i j` is the intended query form.
+For the XiPLN transition-facing interface, `.link i j` is the intended query form.
 The `.prop` / `.linkCond` cases are totalized by reusing the target atom as the
 default row anchor so the adapter remains a genuine `AtomQuery` consumer. -/
 def markov_transitionQuerySource {k : ℕ} :
@@ -159,8 +159,8 @@ noncomputable def markov_rowExtract {k : ℕ}
 @[simp] theorem markov_rowExtract_zero {k : ℕ}
     (prev : Fin k) :
     markov_rowExtract (0 : MarkovTransitionWMState k) prev = 0 := by
-  rw [markov_rowExtract, SufficientStatisticSurface.inducedWorldModel_evidence_eq_aggregate]
-  exact SufficientStatisticSurface.aggregate_zero (S := MarkovRowStatistic (k := k)) prev
+  rw [markov_rowExtract, SufficientStatisticEncoder.inducedWorldModel_evidence_eq_aggregate]
+  exact SufficientStatisticEncoder.aggregate_zero (S := MarkovRowStatistic (k := k)) prev
 
 /-- Query-indexed binary projection of the Markov row evidence. -/
 noncomputable def markov_queryBinaryProjection {k : ℕ}
@@ -252,13 +252,13 @@ theorem markov_linkEvidence_transitionMultiset_eq_of_summary
     markov_transitionQuerySource, markov_transitionQueryTarget] using
     markov_queryBinaryEvidence_transitionMultiset_eq_of_summary (k := k) hsum (.link prev next)
 
-noncomputable abbrev MarkovRowConjugatePosteriorSurface :=
-  @Mettapedia.UniversalAI.UniversalPrediction.markovRowConjugatePosteriorSurface
+noncomputable abbrev MarkovRowConjugatePosteriorModel :=
+  @Mettapedia.UniversalAI.UniversalPrediction.markovRowConjugatePosteriorModel
 
-abbrev markov_rowConjugatePosteriorSurface_evidence_eq_rowEvidence_of_summary :=
-  @Mettapedia.UniversalAI.UniversalPrediction.markovRowConjugatePosteriorSurface_evidence_eq_rowEvidence_of_summary
+abbrev markov_rowConjugatePosteriorModel_evidence_eq_rowEvidence_of_summary :=
+  @Mettapedia.UniversalAI.UniversalPrediction.markovRowConjugatePosteriorModel_evidence_eq_rowEvidence_of_summary
 
-abbrev markov_rowConjugatePosteriorSurface_posteriorMean_eq_stepProb_of_summary :=
-  @Mettapedia.UniversalAI.UniversalPrediction.markovRowConjugatePosteriorSurface_posteriorMean_eq_stepProb_of_summary
+abbrev markov_rowConjugatePosteriorModel_posteriorMean_eq_stepProb_of_summary :=
+  @Mettapedia.UniversalAI.UniversalPrediction.markovRowConjugatePosteriorModel_posteriorMean_eq_stepProb_of_summary
 
 end Mettapedia.Logic.WMMarkovCanonical

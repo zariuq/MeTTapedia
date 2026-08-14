@@ -183,10 +183,10 @@ than to either of the following extremes:
     {\MORK{}/MM2 backend\\
      \footnotesize scheduler $+$ source rules};
 
-  % WM surface
+  % WM API
   \node[sharedbox, minimum width=6cm,
         below=4.2cm of elab] (wm)
-    {WM consequence / obligation surface\\
+    {WM consequence / obligation API\\
      \footnotesize\leanref{wmConsequenceRuleOn}};
 
   % Arrows
@@ -216,7 +216,7 @@ The important present facts are:
   \item \code{RuntimeExec} is real and theorem-level strong over the current
   \MORK{}/MM2 seam.
   \item The current strongest shared semantic meeting point is the WM
-  consequence / obligation surface.
+  consequence / obligation API.
   \item The elaborated core classifies overlap honestly:\\
   \leanref{OverlapClass.artifactOnly} vs.\
   \leanref{OverlapClass.directExec}.
@@ -465,7 +465,7 @@ The runtime branch passes through three layers:
 DialectProfile / RuntimeSpec $\;\to\;$ RuntimeExec $\;\to\;$ \MORK{}/MM2 seam
 \end{center}
 
-\paragraph{Three runtime surfaces.}
+\paragraph{Three runtime interfaces.}
 The central type is \leanref{MeTTaRuntimeExecInterface}
 (\codepath{RuntimeExec.lean}), a structure with 8~fields including an
 \emph{embedded proof}:
@@ -489,12 +489,12 @@ $R_{\mathrm{exec}_0}$ & \leanref{morkRuntimeExec0} &
 $R_{\mathrm{exec}_0}$Ext & \leanref{morkRuntimeExec0Ext} &
   Multi-premise + guarded bridge \\
 QuerySeam & \leanref{morkRuntimeQueryExec0} &
-  Query surface with \emph{soundness + completeness} proofs \\
+  Query interface with \emph{soundness + completeness} proofs \\
 \bottomrule
 \end{tabular}
 \end{center}
 
-\paragraph{Query surface detail.}
+\paragraph{Query interface detail.}
 \leanref{MeTTaRuntimeQueryInterface}
 carries bidirectional correctness:
 \begin{itemize}[nosep]
@@ -507,7 +507,7 @@ carries bidirectional correctness:
 \paragraph{Primary files.}
 \begin{itemize}
   \item \codepath{Mettapedia/Languages/MeTTa/RuntimeExec.lean} (269~lines)
-  --- surfaces, instances.
+  --- interfaces, instances.
   \item \codepath{Mettapedia/Languages/ProcessCalculi/MORK/ExecutionBoundary.lean}
   (509~lines) --- 160+ re-exported theorems including
   \leanref{fireCorrespondence}, \leanref{schedulerProgress}.
@@ -851,7 +851,7 @@ The currently formalized query seam includes:
 \end{itemize}
 
 \noindent
-The query surface \leanref{morkRuntimeQueryExec0}
+The query interface \leanref{morkRuntimeQueryExec0}
 (\codepath{RuntimeExec.lean}) carries bidirectional correctness:
 soundness and completeness of computable matching against the spec-level
 semantics.
@@ -965,7 +965,7 @@ Proved by structural induction over all 12~constructors
 
 \begin{itemize}
   \item \leanref{PureCertificate} --- fields: \code{term} (closed
-  \leanref{PureTm\;0}), \code{artifact}, \code{abcSurface}.
+  \leanref{PureTm\;0}), \code{artifact}, \code{artifact\_eq}.
   \item \leanref{SharedPureOverlapCertificate} --- the first real
   dual-view object: source term, trusted Pure term, shared artifact,
   all proved to agree.
@@ -1356,7 +1356,7 @@ The Pure/runtime frontier is now theorem-level classified in
 
 The current runtime-real fragments are intentionally narrow.
 Each lands on both the \MORK{}/MM2 execution seam and the WM consequence
-surface.
+API.
 
 \subsection{Rule Lane}
 
@@ -1418,7 +1418,7 @@ surface.
 
 \subsection{WM Landing}
 
-All three lanes land on the WM consequence surface:
+All three lanes land on the WM consequence API:
 
 \begin{itemize}[nosep]
   \item \leanref{wmConsequenceRuleOn\_of\_pettaCoreStep}
@@ -1510,7 +1510,7 @@ reduction and MORK/MM2 pattern-rewriting agree on the same output.
 \paragraph{Lockstep rule.}
 Every widening step must add one honest semantic object, one explicit service
 or lowering target, and one honesty classification: does it extend the
-PureKernel waist, the runtime surface, or both? Is the overlap currently
+PureKernel waist, the runtime interface, or both? Is the overlap currently
 \code{artifactOnly}, canonical agreement only, or \code{directExec}?
 
 %% ====================================================================
@@ -2053,7 +2053,7 @@ The current \HE-style operational semantics thus behaves like a dynamically
 threaded binding environment whose successful bindings are merged outward
 from nested evaluations, rather than a lexically sealed local substitution
 context.  This is confirmed at the formal level by the
-\leanref{RuntimeSpec} surface
+\leanref{RuntimeSpec} interface
 (\codepath{Mettapedia/Languages/MeTTa/RuntimeSpec.lean}), which records:
 
 \begin{center}

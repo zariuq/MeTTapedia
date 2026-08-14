@@ -1,5 +1,6 @@
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostCanonicalLaws
 import Mettapedia.GSLT.LanguageDef.ReflectiveEquationOccurrence
+import Mettapedia.GSLT.LanguageDef.CostEndofunctor
 
 /-!
 # A cross-boundary ordering canary for compact rho Cost normalization
@@ -1099,10 +1100,28 @@ theorem rhoCutOrder_costNormalizeOpen_ne :
   exact congrArg (fun term => term.1) equality
 
 /-- Exact compact generator invariance is false even for pure rho. -/
-theorem not_rho_costOpenGeneratorInvariant :
-    ¬ CostOpenGeneratorInvariant rhoCIGSLT := by
+theorem not_rho_costReferenceOpenGeneratorInvariant :
+    ¬ CostReferenceOpenGeneratorInvariant rhoCIGSLT := by
   intro invariant
   exact rhoCutOrder_costNormalizeOpen_ne (invariant rhoCutOrder_generator)
+
+/-- Consequently rho cannot inhabit the reference-executor open-section domain.
+The contradiction uses the exact generator field rather than an unrelated
+normalization property. -/
+theorem not_rho_costReferenceOpenSectionLaws :
+    ¬ CostReferenceOpenSectionLaws rhoCIGSLT := by
+  intro laws
+  exact not_rho_costReferenceOpenGeneratorInvariant laws.generatorInvariant
+
+/-- Rho also cannot inhabit the reference-executor Cost₁ object bundle.  A
+rho Cost object must therefore name a repaired normalizer through
+`CostOneObjectLawsFor`; accepting the reference bundle would make every
+downstream construction vacuous. -/
+theorem not_rho_costReferenceOneObjectLaws :
+    ¬ CIGSLT.CostReferenceOneObjectLaws rhoCIGSLT := by
+  intro laws
+  exact not_rho_costReferenceOpenSectionLaws
+    laws.toCostReferenceOpenSectionLaws
 
 /-- The proof-relevant left decomposition used by the exactness
 counterexample.  Exposing the witness lets successor normalizers demonstrate

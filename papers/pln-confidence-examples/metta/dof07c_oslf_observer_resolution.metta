@@ -44,5 +44,5 @@
 
 ; POSITIVE: preserve observer resolution when width comes from not-yet-made
 ;   distinctions among patterns.
-; NEGATIVE: if we collapse coarse and sharp observation into one surface number,
+; NEGATIVE: if we collapse coarse and sharp observation into one summary number,
 ;   we hide whether the width is evidence-limited or distinction-limited.

@@ -21,7 +21,7 @@ namespace Mettapedia.PLN.WorldModel.GenericWorldModelForgetting
 
 open scoped ENNReal
 open Mettapedia.PLN.Evidence.EvidenceClass
-open Mettapedia.PLN.Bridges.ProbabilityTheory.ConjugateEvidenceSurface
+open Mettapedia.PLN.Bridges.ProbabilityTheory.ConjugateEvidenceCore
 open Mettapedia.PLN.WorldModel.PLNWorldModelGeneric
 
 variable {State Query Ev : Type*}

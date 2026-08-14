@@ -26,7 +26,7 @@ open Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHigherOrder
 open Mettapedia.PLN.WorldModel.PLNWorldModelAdditive
 open Mettapedia.PLN.WorldModel.PLNWorldModelGeneric
 open Mettapedia.PLN.WorldModel
-open Mettapedia.PLN.WorldModel.SufficientStatisticSurface
+open Mettapedia.PLN.WorldModel.SufficientStatisticEncoder
 
 open scoped ENNReal
 
@@ -87,7 +87,7 @@ def higherOrderObservationEvidence
 
 /-- Query-indexed higher-order row statistic. -/
 def higherOrderRowStatistic :
-    SufficientStatisticSurface (HigherOrderObservation k m) (Context k m) (MultiEvidence k) where
+    SufficientStatisticEncoder (HigherOrderObservation k m) (Context k m) (MultiEvidence k) where
   observe obs q := higherOrderObservationEvidence (k := k) (m := m) obs q
 
 /-- Recursively collect higher-order observations from the future symbol tail
@@ -254,8 +254,8 @@ noncomputable def rowExtract
 omit [Fact (0 < m)] in
 @[simp] theorem rowExtract_zero (ctx : Context k m) :
     rowExtract (k := k) (m := m) (0 : Multiset (HigherOrderObservation k m)) ctx = 0 := by
-  rw [rowExtract, SufficientStatisticSurface.inducedWorldModel_evidence_eq_aggregate]
-  exact SufficientStatisticSurface.aggregate_zero (S := higherOrderRowStatistic (k := k) (m := m)) ctx
+  rw [rowExtract, SufficientStatisticEncoder.inducedWorldModel_evidence_eq_aggregate]
+  exact SufficientStatisticEncoder.aggregate_zero (S := higherOrderRowStatistic (k := k) (m := m)) ctx
 
 omit [Fact (0 < m)] in
 @[simp] theorem rowExtract_add
@@ -298,10 +298,10 @@ omit [Fact (0 < m)] in
     (⟨prior ctx, rowEvidence (k := k) (m := m) c ctx⟩ : EvidenceDirichletParams k).posteriorMean hk a =
       higherOrderStepProb (k := k) (m := m) hk prior c ctx a := rfl
 
-/-- Higher-order row posterior surface: batches of `(m+1)`-gram observations
+/-- Higher-order row posterior interface: batches of `(m+1)`-gram observations
 update the Dirichlet evidence of the queried context row. -/
-noncomputable def higherOrderRowConjugatePosteriorSurface :
-    ConjugatePosteriorSurface
+noncomputable def higherOrderRowConjugatePosteriorModel :
+    ConjugatePosteriorModel
       (HigherOrderObservation k m) (Context k m) (MultiEvidence k) (EvidenceDirichletParams k) where
   stat := higherOrderRowStatistic (k := k) (m := m)
   posterior params σ q :=
@@ -317,13 +317,13 @@ noncomputable def higherOrderRowConjugatePosteriorSurface :
     simp [add_assoc]
 
 omit [Fact (0 < m)] in
-/-- Under the higher-order WM row posterior surface, observing a word updates
+/-- Under the higher-order WM row posterior interface, observing a word updates
 the queried context row to exactly the higher-order summary row. -/
-theorem higherOrderRowConjugatePosteriorSurface_evidence_eq_rowEvidence_of_summary
+theorem higherOrderRowConjugatePosteriorModel_evidence_eq_rowEvidence_of_summary
     {xs : List (Fin k)} {c : GramCounts k m} {last : Context k m}
     (hsum : summary (k := k) (m := m) xs = some (c, last))
     (prior : DirichletParams k) (ctx : Context k m) :
-    ((higherOrderRowConjugatePosteriorSurface (k := k) (m := m)).posterior
+    ((higherOrderRowConjugatePosteriorModel (k := k) (m := m)).posterior
       ⟨prior, (0 : MultiEvidence k)⟩
       (observationMultiset (k := k) (m := m) xs) ctx).evidence =
       rowEvidence (k := k) (m := m) c ctx := by
@@ -340,18 +340,18 @@ omit [Fact (0 < m)] in
 /-- The WM/PLN-side posterior mean for a queried context row matches the
 Dirichlet posterior predictive probability computed from the higher-order
 summary. -/
-theorem higherOrderRowConjugatePosteriorSurface_posteriorMean_eq_stepProb_of_summary
+theorem higherOrderRowConjugatePosteriorModel_posteriorMean_eq_stepProb_of_summary
     (hk : 0 < k)
     {xs : List (Fin k)} {c : GramCounts k m} {last : Context k m}
     (hsum : summary (k := k) (m := m) xs = some (c, last))
     (prior : Context k m → DirichletParams k) (a : Fin k) :
     let params :=
-      (higherOrderRowConjugatePosteriorSurface (k := k) (m := m)).posterior
+      (higherOrderRowConjugatePosteriorModel (k := k) (m := m)).posterior
         ⟨prior last, (0 : MultiEvidence k)⟩
         (observationMultiset (k := k) (m := m) xs) last
     params.posteriorMean hk a =
       higherOrderStepProb (k := k) (m := m) hk prior c last a := by
-  dsimp [higherOrderRowConjugatePosteriorSurface]
+  dsimp [higherOrderRowConjugatePosteriorModel]
   change
     (⟨prior last,
         (0 : MultiEvidence k) +

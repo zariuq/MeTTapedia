@@ -24,7 +24,7 @@ theorem alice_whole_redex_is_atomic :
   exact ⟨0, by simp [aliceSource], by simp [aliceTarget]⟩
 
 theorem alice_whole_redex_is_cost_step :
-    CostStep aliceSource aliceEvent.surface aliceEvent.spend aliceTarget :=
+    CostStep aliceSource aliceEvent.location aliceEvent.spend aliceTarget :=
   alice_whole_redex_is_atomic.toCostStep
 
 def combinedSelection :

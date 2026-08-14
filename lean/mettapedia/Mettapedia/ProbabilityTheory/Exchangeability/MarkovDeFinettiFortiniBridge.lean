@@ -5,5 +5,5 @@ import Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiFortiniBridge
 # Markov de Finetti: Fortini-Style Bridge
 
 Compatibility wrapper that preserves the historical import path while exposing
-the canonical theorem surface by default.
+the canonical theorem family by default.
 -/

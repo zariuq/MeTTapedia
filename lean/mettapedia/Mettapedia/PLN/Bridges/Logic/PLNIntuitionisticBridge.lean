@@ -499,7 +499,7 @@ values with `diagonal`, and `diagonal x = ⊤` exactly when `x = ⊤`.
 
 What this does **not** by itself prove is the converse completeness statement
 `BinaryEvidence ⊧ φ → LC ⊢ φ`.  The available HOL Gödel-Dummett completeness
-surface is `provableLC_of_prelinearHeytingConsequence`, which quantifies over
+interface is `provableLC_of_prelinearHeytingConsequence`, which quantifies over
 all prelinear Heyting-valued models.  The missing, not-declared bridge is
 `ennrealGodelUniversallyValid_implies_prelinearHeytingConsequence`: validity in
 the `ℝ≥0∞` Gödel chain would have to imply consequence over all prelinear
@@ -938,7 +938,7 @@ The relationship to standard logics is:
 - `universallyValid_iff_ennrealGodelUniversallyValid` shows
   BinaryEvidence ⊧ φ iff the single `ℝ≥0∞` Gödel chain validates φ
 
-**Remaining LC exactness bridge**: the current HOL/LO surface proves completeness
+**Remaining LC exactness bridge**: the current HOL/LO interface proves completeness
 for all-prelinear Heyting consequence via
 `provableLC_of_prelinearHeytingConsequence`; it does not currently provide
 single-chain completeness.  The missing bridge is

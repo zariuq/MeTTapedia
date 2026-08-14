@@ -107,8 +107,8 @@ mutual
         "signed(" ++ proc.key ++ "," ++ rawCostSigKey sig ++ ")"
     | .par left right => "tpar(" ++ left.key ++ "|" ++ right.key ++ ")"
     | .drop name => "drop(" ++ name.key ++ ")"
-    | .purse surface stack =>
-        "purse(" ++ surface.key ++ "," ++
+    | .purse location stack =>
+        "purse(" ++ location.key ++ "," ++
           String.intercalate ";"
             (stack.map rawCostSigKey) ++ ")"
 end
@@ -171,8 +171,8 @@ mutual
           stableKeySort RawCostTerm.key <|
             left.normalize.components ++ right.normalize.components
     | .drop name => .drop name.normalize
-    | .purse surface stack =>
-        .purse surface.normalize (stack.map RawCostSig.normalize)
+    | .purse location stack =>
+        .purse location.normalize (stack.map RawCostSig.normalize)
 end
 
 /-- Canonical top-level component list. -/
@@ -196,8 +196,8 @@ mutual
     | .signed proc sig => proc.wellFormed && sig.valid
     | .par left right => left.wellFormed && right.wellFormed
     | .drop name => name.wellFormed
-    | .purse surface stack =>
-        surface.wellFormed && stack.all RawCostSig.valid
+    | .purse location stack =>
+        location.wellFormed && stack.all RawCostSig.valid
 end
 
 mutual
@@ -258,7 +258,7 @@ mutual
     | .par left right =>
         left.runtimeBinderSafeAt depth && right.runtimeBinderSafeAt depth
     | .drop name => name.runtimeBinderSafeAt depth
-    | .purse surface _ => surface.runtimeBinderSafeAt depth
+    | .purse location _ => location.runtimeBinderSafeAt depth
 end
 
 /-- Top-level whole-object runtime scope check. -/
@@ -303,7 +303,7 @@ mutual
     | .signed proc sig => .signed (proc.lift amount cutoff) sig
     | .par left right => .par (left.lift amount cutoff) (right.lift amount cutoff)
     | .drop name => .drop (name.lift amount cutoff)
-    | .purse surface stack => .purse (surface.lift amount cutoff) stack
+    | .purse location stack => .purse (location.lift amount cutoff) stack
 end
 
 mutual
@@ -341,7 +341,7 @@ mutual
         else if depth < index then .drop (.bvar (index - 1))
         else .drop (.bvar index)
     | .drop name => .drop name
-    | .purse surface stack => .purse (surface.substitute replacement depth) stack
+    | .purse location stack => .purse (location.substitute replacement depth) stack
 end
 
 def RawCostTerm.commSubst (body payload : RawCostTerm) : RawCostTerm :=
@@ -371,7 +371,7 @@ mutual
     | .signed proc sig => .signed (encodeCostProc proc) (encodeCostSig sig)
     | .par left right => .par (encodeCostTerm left) (encodeCostTerm right)
     | .drop name => .drop (encodeCostName name)
-    | .purse surface stack => .purse (encodeCostName surface) (encodeCostStack stack)
+    | .purse location stack => .purse (encodeCostName location) (encodeCostStack stack)
 
   def encodeCostStack : CostStack String → RawCostStack
     | .empty => []
@@ -395,7 +395,7 @@ mutual
     | .signed proc sig => .signed (decodeCostProc proc) (decodeCostSig sig)
     | .par left right => .par (decodeCostTerm left) (decodeCostTerm right)
     | .drop name => .drop (decodeCostName name)
-    | .purse surface stack => .purse (decodeCostName surface) (decodeCostStack stack)
+    | .purse location stack => .purse (decodeCostName location) (decodeCostStack stack)
 
   def decodeCostStack : RawCostStack → CostStack String
     | [] => .empty
@@ -443,8 +443,8 @@ mutual
     | .signed proc sig => .node "signed" [encodeProc proc, encodeSig sig]
     | .par left right => .node "term-par" [encodeTerm left, encodeTerm right]
     | .drop name => .node "drop" [encodeName name]
-    | .purse surface stack =>
-        .node "purse" [encodeName surface,
+    | .purse location stack =>
+        .node "purse" [encodeName location,
           .node "stack" (stack.map encodeSig)]
 
   def decodeName : CostWire → Option RawCostName
@@ -467,8 +467,8 @@ mutual
         .signed <$> decodeProc proc <*> decodeSig sig
     | .node "term-par" [left, right] => .par <$> decodeTerm left <*> decodeTerm right
     | .node "drop" [name] => .drop <$> decodeName name
-    | .node "purse" [surface, .node "stack" stack] =>
-        .purse <$> decodeName surface <*> stack.mapM decodeSig
+    | .node "purse" [location, .node "stack" stack] =>
+        .purse <$> decodeName location <*> stack.mapM decodeSig
     | _ => none
 end
 

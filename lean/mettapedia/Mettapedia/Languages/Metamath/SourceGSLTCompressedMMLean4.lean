@@ -17,6 +17,9 @@ namespace Mettapedia.Languages.Metamath.SourceGSLTCompressedMMLean4
 open Mettapedia.Languages.Metamath.SourceGSLTCompressedTheorem
 open Metamath.Verify
 
+abbrev SourceCompressedPhase :=
+  Mettapedia.Languages.Metamath.SourceGSLTCompressedTheorem.CompressedPhase
+
 def toMMLean4Action :
     CompressedAction → ParserState.CompressedAction
   | .step index => .step index
@@ -28,142 +31,190 @@ theorem toMMLean4Action_injective :
   intro left right equal
   cases left <;> cases right <;> simp_all [toMMLean4Action]
 
+def toMMLean4Phase :
+    SourceCompressedPhase →
+      Metamath.Verify.CompressedPhase
+  | .betweenSteps => .betweenSteps
+  | .openIndex accumulator => .openIndex accumulator
+  | .justCompletedStep => .justCompletedStep
+
+theorem toMMLean4Phase_accumulator (phase : SourceCompressedPhase) :
+    (toMMLean4Phase phase).accumulator = phase.accumulator := by
+  cases phase <;> rfl
+
 def toMMLean4DecodeResult
-    (result : Option (List CompressedAction × Nat)) :
+    (result : Option (List CompressedAction ×
+      SourceCompressedPhase)) :
     Except ProofCheckFail
-      (List ParserState.CompressedAction × Nat) :=
+      (List ParserState.CompressedAction ×
+        Metamath.Verify.CompressedPhase) :=
   match result with
   | some (actions, accumulator) =>
-      .ok (actions.map toMMLean4Action, accumulator)
+      .ok (actions.map toMMLean4Action, toMMLean4Phase accumulator)
   | none =>
       .error (.proofCheck .proofParseError)
 
 def toMMLean4StepResult
     (reversedPrefix : List ParserState.CompressedAction)
-    (result : Option (List CompressedAction × Nat)) :
+    (result : Option (List CompressedAction ×
+      SourceCompressedPhase)) :
     Except ProofCheckFail
-      (List ParserState.CompressedAction × Nat) :=
+      (List ParserState.CompressedAction ×
+        Metamath.Verify.CompressedPhase) :=
   match result with
   | some (actions, accumulator) =>
-      .ok (actions.reverse.map toMMLean4Action ++ reversedPrefix, accumulator)
+      .ok (actions.reverse.map toMMLean4Action ++ reversedPrefix,
+        toMMLean4Phase accumulator)
   | none =>
       .error (.proofCheck .proofParseError)
 
 def toMMLean4MProdStepResult
     (reversedPrefix : List ParserState.CompressedAction)
-    (result : Option (List CompressedAction × Nat)) :
+    (result : Option (List CompressedAction ×
+      SourceCompressedPhase)) :
     Except ProofCheckFail
-      (MProd (List ParserState.CompressedAction) Nat) :=
+      (MProd (List ParserState.CompressedAction)
+        Metamath.Verify.CompressedPhase) :=
   match result with
   | some (actions, accumulator) =>
       .ok ⟨actions.reverse.map toMMLean4Action ++ reversedPrefix,
-        accumulator⟩
+        toMMLean4Phase accumulator⟩
   | none => .error (.proofCheck .proofParseError)
 
 /-- One desugared iteration of the shipped decoder. Keeping this step
 separate exposes the exact fold computed by the implementation without
 making it a second decoding authority. -/
 def decodeCompressedStep
-    (policy : CompressedInvalidBytePolicy)
-    (state : MProd (List ParserState.CompressedAction) Nat)
+    (invalidPolicy : CompressedInvalidBytePolicy)
+    (savePlacement : CompressedSavePlacement)
+    (state : MProd (List ParserState.CompressedAction)
+      Metamath.Verify.CompressedPhase)
     (byte : UInt8) :
     Except ProofCheckFail
-      (MProd (List ParserState.CompressedAction) Nat) := do
+      (MProd (List ParserState.CompressedAction)
+        Metamath.Verify.CompressedPhase) := do
   let acts := state.fst
-  let accumulator := state.snd
+  let phase := state.snd
   if 'A'.toUInt8 ≤ byte && byte ≤ 'Z'.toUInt8 then
     if byte ≤ 'T'.toUInt8 then
       let index :=
-        20 * accumulator + (byte - 'A'.toUInt8).toNat
-      pure ⟨ParserState.CompressedAction.step index :: acts, 0⟩
+        20 * phase.accumulator + (byte - 'A'.toUInt8).toNat
+      pure ⟨ParserState.CompressedAction.step index :: acts,
+        .justCompletedStep⟩
     else if byte < 'Z'.toUInt8 then
       pure ⟨acts,
-        5 * accumulator + (byte - 'T'.toUInt8).toNat⟩
+        .openIndex (5 * phase.accumulator +
+          (byte - 'T'.toUInt8).toNat)⟩
     else
-      pure ⟨ParserState.CompressedAction.save :: acts, 0⟩
+      match phase with
+      | .justCompletedStep =>
+          let next := match savePlacement with
+            | .immediatelyAfterUse => .betweenSteps
+            | .repeatableAfterUse => .justCompletedStep
+          pure ⟨ParserState.CompressedAction.save :: acts, next⟩
+      | .betweenSteps | .openIndex _ =>
+          throw (.proofCheck .proofParseError)
   else if byte = '?'.toUInt8 then
-    pure ⟨ParserState.CompressedAction.unknown :: acts, 0⟩
+    match phase with
+    | .openIndex _ => throw (.proofCheck .proofParseError)
+    | .betweenSteps | .justCompletedStep =>
+        pure ⟨ParserState.CompressedAction.unknown :: acts,
+          .betweenSteps⟩
   else
-    match policy with
+    match invalidPolicy with
     | .reject => throw (.proofCheck .proofParseError)
-    | .ignore => pure ⟨acts, accumulator⟩
+    | .ignore => pure ⟨acts, phase⟩
 
 /-- The exact `ForInStep` body produced by desugaring the mutable loop in
 `ParserState.decodeCompressed`. -/
 def decodeCompressedForInStep
-    (policy : CompressedInvalidBytePolicy) (byte : UInt8)
-    (state : MProd (List ParserState.CompressedAction) Nat) :
+    (invalidPolicy : CompressedInvalidBytePolicy)
+    (savePlacement : CompressedSavePlacement) (byte : UInt8)
+    (state : MProd (List ParserState.CompressedAction)
+      Metamath.Verify.CompressedPhase) :
     Except ProofCheckFail
-      (ForInStep (MProd (List ParserState.CompressedAction) Nat)) :=
+      (ForInStep (MProd (List ParserState.CompressedAction)
+        Metamath.Verify.CompressedPhase)) :=
   let acts := state.fst
-  let accumulator := state.snd
+  let phase := state.snd
   if (decide ('A'.toUInt8 ≤ byte) &&
       decide (byte ≤ 'Z'.toUInt8)) = true then
     if byte ≤ 'T'.toUInt8 then
-      let index :=
-        20 * accumulator + (byte - 'A'.toUInt8).toNat
-      let acts := ParserState.CompressedAction.step index :: acts
-      let accumulator := 0
+      let index := 20 * phase.accumulator +
+        (byte - 'A'.toUInt8).toNat
       do
         pure PUnit.unit
-        pure (ForInStep.yield ⟨acts, accumulator⟩)
+        pure (.yield ⟨ParserState.CompressedAction.step index :: acts,
+          .justCompletedStep⟩)
     else if byte < 'Z'.toUInt8 then
-      let accumulator :=
-        5 * accumulator + (byte - 'T'.toUInt8).toNat
       do
         pure PUnit.unit
-        pure (ForInStep.yield ⟨acts, accumulator⟩)
+        pure (.yield ⟨acts, .openIndex
+          (5 * phase.accumulator + (byte - 'T'.toUInt8).toNat)⟩)
     else
-      let acts := ParserState.CompressedAction.save :: acts
-      let accumulator := 0
-      do
-        pure PUnit.unit
-        pure (ForInStep.yield ⟨acts, accumulator⟩)
+      match phase with
+      | .justCompletedStep =>
+          let next := match savePlacement with
+            | .immediatelyAfterUse => .betweenSteps
+            | .repeatableAfterUse => .justCompletedStep
+          do
+            pure PUnit.unit
+            pure (.yield ⟨ParserState.CompressedAction.save :: acts,
+              next⟩)
+      | .betweenSteps | .openIndex _ => do
+          throw (.proofCheck .proofParseError)
+          pure (.yield ⟨acts, phase⟩)
   else if byte = '?'.toUInt8 then
-    let acts := ParserState.CompressedAction.unknown :: acts
-    let accumulator := 0
-    do
-      pure PUnit.unit
-      pure (ForInStep.yield ⟨acts, accumulator⟩)
+    match phase with
+    | .openIndex _ => do
+        throw (.proofCheck .proofParseError)
+        pure (.yield ⟨acts, phase⟩)
+    | .betweenSteps | .justCompletedStep => do
+        pure PUnit.unit
+        pure (.yield ⟨ParserState.CompressedAction.unknown :: acts,
+          .betweenSteps⟩)
   else
-    match policy with
+    match invalidPolicy with
     | .reject => do
         throw (.proofCheck .proofParseError)
-        pure (ForInStep.yield ⟨acts, accumulator⟩)
+        pure (.yield ⟨acts, phase⟩)
     | .ignore => do
         pure ()
-        pure (ForInStep.yield ⟨acts, accumulator⟩)
+        pure (.yield ⟨acts, phase⟩)
 
 open Mettapedia.Languages.Metamath.ByteSliceForInSupport
 
 /-- The shipped imperative decoder is exactly an exception-aware fold of
 its desugared byte step. -/
 theorem decodeCompressed_eq_fold
-    (tk : ByteSlice) (accumulator : Nat)
-    (policy : CompressedInvalidBytePolicy) :
-    ParserState.decodeCompressed tk accumulator policy = (do
+    (tk : ByteSlice) (phase : Metamath.Verify.CompressedPhase)
+    (invalidPolicy : CompressedInvalidBytePolicy)
+    (savePlacement : CompressedSavePlacement) :
+    ParserState.decodeCompressed tk phase invalidPolicy savePlacement = (do
       let result ← (sliceList tk).foldlM
-        (decodeCompressedStep policy) ⟨[], accumulator⟩
+        (decodeCompressedStep invalidPolicy savePlacement) ⟨[], phase⟩
       pure (result.fst.reverse, result.snd)) := by
   unfold ParserState.decodeCompressed
   change (do
     let result ← ByteSlice.forIn tk
-      (⟨[], accumulator⟩ :
-        MProd (List ParserState.CompressedAction) Nat)
-      (decodeCompressedForInStep policy)
+      (⟨[], phase⟩ : MProd (List ParserState.CompressedAction)
+        Metamath.Verify.CompressedPhase)
+      (decodeCompressedForInStep invalidPolicy savePlacement)
     pure (result.fst.reverse, result.snd)) = _
   rw [byteSlice_forIn_except_yield tk _
-    (decodeCompressedStep policy)]
+    (decodeCompressedStep invalidPolicy savePlacement)]
   intro byte state
   rcases state with ⟨acts, current⟩
   unfold decodeCompressedForInStep decodeCompressedStep
   split <;> rename_i hAZ
   · split <;> rename_i hAT
     · rfl
-    · split <;> rfl
+    · split <;> rename_i hZ
+      · rfl
+      · cases current <;> cases savePlacement <;> rfl
   · split <;> rename_i hQ
-    · rfl
-    · cases policy <;> rfl
+    · cases current <;> rfl
+    · cases invalidPolicy <;> rfl
 
 theorem subA_toNat (byte : UInt8) (h : 65 ≤ byte.toNat) :
     (byte - 'A'.toUInt8).toNat = byte.toNat - 65 := by
@@ -185,11 +236,11 @@ theorem subT_toNat (byte : UInt8) (h : 84 ≤ byte.toNat) :
 every incoming reverse-action prefix and numeric accumulator. -/
 theorem decodeByte_mmLean4_agrees
     (reversedPrefix : List ParserState.CompressedAction)
-    (accumulator : Nat) (byte : UInt8) :
-    decodeCompressedStep .reject
-        ⟨reversedPrefix, accumulator⟩ byte =
+    (phase : SourceCompressedPhase) (byte : UInt8) :
+    decodeCompressedStep .reject .immediatelyAfterUse
+        ⟨reversedPrefix, toMMLean4Phase phase⟩ byte =
       toMMLean4MProdStepResult reversedPrefix
-        (decodeByte accumulator byte) := by
+        (decodeByte phase byte) := by
   have hA : 'A'.toUInt8.toNat = 65 := by decide
   have hT : 'T'.toUInt8.toNat = 84 := by decide
   have hZ : 'Z'.toUInt8.toNat = 90 := by decide
@@ -203,8 +254,10 @@ theorem decodeByte_mmLean4_agrees
     have hIT : byte ≤ 'T'.toUInt8 :=
       UInt8.le_iff_toNat_le.mpr (by simpa [hT] using hAT.2)
     simp [decodeCompressedStep, toMMLean4MProdStepResult, decodeByte,
-      hAT, hAZ.1, hAZ.2, hIT, toMMLean4Action,
-      subA_toNat byte hAT.1, pure, Except.pure]
+      hAT, hAZ.1, hAZ.2, hIT, toMMLean4Action, toMMLean4Phase,
+      subA_toNat byte hAT.1,
+      pure, Except.pure]
+    exact toMMLean4Phase_accumulator phase
   · by_cases hUY : 85 ≤ byte.toNat ∧ byte.toNat ≤ 89
     · have hAZ : 'A'.toUInt8 ≤ byte ∧ byte ≤ 'Z'.toUInt8 := by
         constructor
@@ -219,8 +272,10 @@ theorem decodeByte_mmLean4_agrees
         simpa only [UInt8.lt_iff_toNat_lt, hZ] using
           (show byte.toNat < 90 by omega)
       simp [decodeCompressedStep, toMMLean4MProdStepResult, decodeByte,
-        hAT, hUY, hAZ.1, hAZ.2, hnT, hIZ,
-        subT_toNat byte (by omega), pure, Except.pure]
+        hAT, hUY, hAZ.1, hAZ.2, hnT, hIZ, toMMLean4Phase,
+        subT_toNat byte (by omega),
+        pure, Except.pure]
+      exact toMMLean4Phase_accumulator phase
     · by_cases hCodeZ : byte.toNat = 90
       · have hAZ : 'A'.toUInt8 ≤ byte ∧ byte ≤ 'Z'.toUInt8 := by
           constructor <;>
@@ -232,22 +287,27 @@ theorem decodeByte_mmLean4_agrees
         have hnZ : ¬ byte < 'Z'.toUInt8 := by
           simpa only [UInt8.lt_iff_toNat_lt, hZ, hCodeZ] using
             (show ¬ 90 < 90 by omega)
-        simp [decodeCompressedStep, toMMLean4MProdStepResult, decodeByte,
-          hCodeZ, hAZ.1, hAZ.2, hnT, hnZ, toMMLean4Action,
-          pure, Except.pure]
+        cases phase <;>
+          simp [decodeCompressedStep, toMMLean4MProdStepResult,
+            decodeByte, hCodeZ, hAZ.1, hAZ.2, hnT, hnZ,
+            toMMLean4Action, toMMLean4Phase, pure, Except.pure] <;>
+          rfl
       · by_cases hUnknown : byte.toNat = 63
         · have hnAZ : ¬ ('A'.toUInt8 ≤ byte) := by
             simpa only [UInt8.le_iff_toNat_le, hA, hUnknown] using
               (show ¬ 65 ≤ 63 by omega)
           have hByteQ : byte = '?'.toUInt8 := by
             exact UInt8.toNat_inj.mp (by simpa [hQ] using hUnknown)
-          unfold decodeCompressedStep
-          split
-          · rename_i hAZ
-            simp only [Bool.and_eq_true, decide_eq_true_eq] at hAZ
-            exact (hnAZ hAZ.1).elim
-          · simp [toMMLean4MProdStepResult, decodeByte, hUnknown,
-              toMMLean4Action, pure, Except.pure]
+          subst byte
+          cases phase with
+          | betweenSteps | justCompletedStep =>
+              simp [decodeCompressedStep, toMMLean4MProdStepResult,
+                decodeByte, hUnknown, hnAZ, toMMLean4Action,
+                toMMLean4Phase, pure, Except.pure]
+          | openIndex accumulator =>
+              simp [decodeCompressedStep, toMMLean4MProdStepResult,
+                decodeByte, hUnknown, hnAZ, toMMLean4Phase]
+              rfl
         · have hNotQ : byte ≠ '?'.toUInt8 := by
             intro h
             apply hUnknown
@@ -334,18 +394,19 @@ maintaining the implementation's reverse-action accumulator. -/
 theorem decodeFold_mmLean4_agrees
     (bytes : List UInt8)
     (reversedPrefix : List ParserState.CompressedAction)
-    (accumulator : Nat) :
-    bytes.foldlM (decodeCompressedStep .reject)
-        ⟨reversedPrefix, accumulator⟩ =
+    (phase : SourceCompressedPhase) :
+    bytes.foldlM
+        (decodeCompressedStep .reject .immediatelyAfterUse)
+        ⟨reversedPrefix, toMMLean4Phase phase⟩ =
       toMMLean4MProdStepResult reversedPrefix
-        (decodeWord bytes accumulator) := by
-  induction bytes generalizing reversedPrefix accumulator with
+        (decodeWord bytes phase) := by
+  induction bytes generalizing reversedPrefix phase with
   | nil =>
       simp [decodeWord, toMMLean4MProdStepResult, pure, Except.pure]
   | cons byte bytes ih =>
       simp only [List.foldlM_cons, decodeWord]
       rw [decodeByte_mmLean4_agrees]
-      cases headDecoded : decodeByte accumulator byte with
+      cases headDecoded : decodeByte phase byte with
       | none =>
           simp [toMMLean4MProdStepResult, bind, Except.bind]
       | some headResult =>
@@ -366,14 +427,14 @@ theorem decodeFold_mmLean4_agrees
 the independent source decoder return exactly corresponding actions,
 accumulator, and failure verdict for every byte slice. -/
 theorem decodeCompressed_mmLean4_agrees
-    (tk : ByteSlice) (accumulator : Nat) :
-    ParserState.decodeCompressed tk accumulator =
+    (tk : ByteSlice) (phase : SourceCompressedPhase) :
+    ParserState.decodeCompressed tk (toMMLean4Phase phase) =
       toMMLean4DecodeResult
-        (decodeWord (sliceBytes tk) accumulator) := by
+        (decodeWord (sliceBytes tk) phase) := by
   rw [sliceBytes_eq_sliceList]
   rw [decodeCompressed_eq_fold]
   rw [decodeFold_mmLean4_agrees]
-  cases decoded : decodeWord (sliceList tk) accumulator with
+  cases decoded : decodeWord (sliceList tk) phase with
   | none =>
       simp [toMMLean4MProdStepResult, toMMLean4DecodeResult]
   | some result =>
@@ -385,10 +446,13 @@ theorem decodeCompressed_mmLean4_agrees
 irrelevant for that step. -/
 theorem decodeCompressedStep_policy_of_reject_ok
     (policy : CompressedInvalidBytePolicy)
-    (initial next : MProd (List ParserState.CompressedAction) Nat)
+    (initial next : MProd (List ParserState.CompressedAction)
+      Metamath.Verify.CompressedPhase)
     (byte : UInt8)
-    (accepted : decodeCompressedStep .reject initial byte = .ok next) :
-    decodeCompressedStep policy initial byte = .ok next := by
+    (accepted : decodeCompressedStep .reject .immediatelyAfterUse
+      initial byte = .ok next) :
+    decodeCompressedStep policy .immediatelyAfterUse initial byte =
+      .ok next := by
   cases policy with
   | reject => exact accepted
   | ignore =>
@@ -410,15 +474,20 @@ theorem decodeCompressedStep_policy_of_reject_ok
 policy computes the same successful fold. -/
 theorem decodeFold_policy_of_reject_ok
     (policy : CompressedInvalidBytePolicy) (bytes : List UInt8)
-    (initial next : MProd (List ParserState.CompressedAction) Nat)
-    (accepted : bytes.foldlM (decodeCompressedStep .reject) initial =
+    (initial next : MProd (List ParserState.CompressedAction)
+      Metamath.Verify.CompressedPhase)
+    (accepted : bytes.foldlM
+      (decodeCompressedStep .reject .immediatelyAfterUse) initial =
       .ok next) :
-    bytes.foldlM (decodeCompressedStep policy) initial = .ok next := by
+    bytes.foldlM
+      (decodeCompressedStep policy .immediatelyAfterUse) initial =
+      .ok next := by
   induction bytes generalizing initial with
   | nil => simpa using accepted
   | cons byte bytes ih =>
       simp only [List.foldlM_cons] at accepted ⊢
-      cases headAccepted : decodeCompressedStep .reject initial byte with
+      cases headAccepted : decodeCompressedStep .reject
+          .immediatelyAfterUse initial byte with
       | error error =>
           rw [headAccepted] at accepted
           simp only [bind, Except.bind] at accepted
@@ -433,53 +502,56 @@ theorem decodeFold_policy_of_reject_ok
 /-- If the spec-faithful decoder accepts a token, every invalid-byte policy
 returns that same result; the policy only affects otherwise-invalid bytes. -/
 theorem decodeCompressed_policy_of_reject_ok
-    (tk : ByteSlice) (accumulator : Nat)
+    (tk : ByteSlice) (phase : Metamath.Verify.CompressedPhase)
     (policy : CompressedInvalidBytePolicy)
-    (result : List ParserState.CompressedAction × Nat)
-    (accepted : ParserState.decodeCompressed tk accumulator = .ok result) :
-    ParserState.decodeCompressed tk accumulator policy = .ok result := by
+    (result : List ParserState.CompressedAction ×
+      Metamath.Verify.CompressedPhase)
+    (accepted : ParserState.decodeCompressed tk phase = .ok result) :
+    ParserState.decodeCompressed tk phase policy .immediatelyAfterUse =
+      .ok result := by
   rw [decodeCompressed_eq_fold] at accepted ⊢
   cases foldAccepted : (sliceList tk).foldlM
-      (decodeCompressedStep .reject)
-      (⟨[], accumulator⟩ :
-        MProd (List ParserState.CompressedAction) Nat) with
+      (decodeCompressedStep .reject .immediatelyAfterUse)
+      (⟨[], phase⟩ : MProd (List ParserState.CompressedAction)
+        Metamath.Verify.CompressedPhase) with
   | error error => simp [foldAccepted] at accepted
   | ok final =>
       have foldPolicy := decodeFold_policy_of_reject_ok policy
-        (sliceList tk) ⟨[], accumulator⟩ final foldAccepted
+        (sliceList tk) ⟨[], phase⟩ final foldAccepted
       rw [foldPolicy]
       simpa [foldAccepted] using accepted
 
 /-- Decode a complete sequence of compressed proof tokens while threading the
 numeric prefix accumulator between token boundaries. -/
 def decodeCompressedTokens :
-    List ByteSlice → Nat →
+    List ByteSlice → Metamath.Verify.CompressedPhase →
       Except ProofCheckFail
-        (List ParserState.CompressedAction × Nat)
-  | [], accumulator => .ok ([], accumulator)
-  | token :: tokens, accumulator => do
-      let (headActions, nextAccumulator) ←
-        ParserState.decodeCompressed token accumulator
-      let (tailActions, finalAccumulator) ←
-        decodeCompressedTokens tokens nextAccumulator
-      pure (headActions ++ tailActions, finalAccumulator)
+        (List ParserState.CompressedAction ×
+          Metamath.Verify.CompressedPhase)
+  | [], phase => .ok ([], phase)
+  | token :: tokens, phase => do
+      let (headActions, nextPhase) ←
+        ParserState.decodeCompressed token phase
+      let (tailActions, finalPhase) ←
+        decodeCompressedTokens tokens nextPhase
+      pure (headActions ++ tailActions, finalPhase)
 
 /-- Universal multi-token preservation and reflection. The implementation
 threads exactly the same prefix accumulator and emits exactly the image of
 the source action sequence, including identical failure behavior. -/
 theorem decodeCompressedTokens_mmLean4_agrees
-    (tokens : List ByteSlice) (accumulator : Nat) :
-    decodeCompressedTokens tokens accumulator =
+    (tokens : List ByteSlice) (phase : SourceCompressedPhase) :
+    decodeCompressedTokens tokens (toMMLean4Phase phase) =
       toMMLean4DecodeResult
-        (decodeWords (tokens.map sliceBytes) accumulator) := by
-  induction tokens generalizing accumulator with
+        (decodeWords (tokens.map sliceBytes) phase) := by
+  induction tokens generalizing phase with
   | nil =>
       simp [decodeCompressedTokens, decodeWords,
         toMMLean4DecodeResult]
   | cons token tokens ih =>
       simp only [decodeCompressedTokens, List.map_cons, decodeWords]
       rw [decodeCompressed_mmLean4_agrees]
-      cases decodeWord (sliceBytes token) accumulator with
+      cases decodeWord (sliceBytes token) phase with
       | none =>
           simp [toMMLean4DecodeResult, bind, Except.bind]
       | some headResult =>
@@ -510,13 +582,12 @@ may cross lexical token boundaries, but it may not remain unfinished at the
 end of the compressed proof. -/
 def decodeCompressedProgram (tokens : List ByteSlice) :
     Except ProofCheckFail (List ParserState.CompressedAction) :=
-  match decodeCompressedTokens tokens 0 with
+  match decodeCompressedTokens tokens .betweenSteps with
   | .error error => .error error
-  | .ok (actions, accumulator) =>
-      if accumulator = 0 then
-        .ok actions
-      else
-        .error (.proofCheck .proofParseError)
+  | .ok (actions, phase) =>
+      match phase with
+      | .openIndex _ => .error (.proofCheck .proofParseError)
+      | .betweenSteps | .justCompletedStep => .ok actions
 
 /-- Complete-program preservation and reflection, including rejection of an
 unfinished numeric prefix at end of input. -/
@@ -525,18 +596,20 @@ theorem decodeCompressedProgram_mmLean4_agrees
     decodeCompressedProgram tokens =
       toMMLean4ProgramResult
         (decodeProgram (tokens.map sliceBytes)) := by
-  rw [decodeCompressedProgram, decodeCompressedTokens_mmLean4_agrees]
+  have tokenAgreement :=
+    decodeCompressedTokens_mmLean4_agrees tokens
+      (SourceGSLTCompressedTheorem.CompressedPhase.betweenSteps)
+  simp only [toMMLean4Phase] at tokenAgreement
+  rw [decodeCompressedProgram, tokenAgreement]
   unfold decodeProgram
-  cases decoded : decodeWords (List.map sliceBytes tokens) 0 with
+  cases decoded : decodeWords (List.map sliceBytes tokens) .betweenSteps with
   | none =>
       simp [toMMLean4DecodeResult, toMMLean4ProgramResult]
   | some result =>
-      rcases result with ⟨actions, accumulator⟩
-      by_cases finished : accumulator = 0
-      · simp [finished, toMMLean4DecodeResult,
-          toMMLean4ProgramResult]
-      · simp [finished, toMMLean4DecodeResult,
-          toMMLean4ProgramResult]
+      rcases result with ⟨actions, phase⟩
+      cases phase <;>
+        simp [toMMLean4DecodeResult, toMMLean4ProgramResult,
+          toMMLean4Phase]
 
 /-- A concrete implementation token sequence representing an authored source
 program decodes to exactly the mapped source actions, including the final
@@ -567,38 +640,48 @@ theorem decodeCompressedTokens_eq_of_program_ok
     (tokens : List ByteSlice)
     (actions : List ParserState.CompressedAction)
     (decoded : decodeCompressedProgram tokens = .ok actions) :
-    decodeCompressedTokens tokens 0 = .ok (actions, 0) := by
+    ∃ finalPhase,
+      decodeCompressedTokens tokens .betweenSteps =
+        .ok (actions, finalPhase) ∧
+      (finalPhase = .betweenSteps ∨
+        finalPhase = .justCompletedStep) := by
   unfold decodeCompressedProgram at decoded
-  cases tokensDecoded : decodeCompressedTokens tokens 0 with
+  cases tokensDecoded : decodeCompressedTokens tokens .betweenSteps with
   | error error => simp [tokensDecoded] at decoded
   | ok result =>
-      rcases result with ⟨decodedActions, accumulator⟩
-      by_cases finished : accumulator = 0
-      · subst accumulator
-        simp only [tokensDecoded, ↓reduceIte, Except.ok.injEq] at decoded
-        subst decodedActions
-        rfl
-      · simp [tokensDecoded, finished] at decoded
+      rcases result with ⟨decodedActions, finalPhase⟩
+      cases finalPhase with
+      | betweenSteps =>
+          simp only [tokensDecoded, Except.ok.injEq] at decoded
+          subst decodedActions
+          exact ⟨.betweenSteps, rfl, Or.inl rfl⟩
+      | openIndex accumulator =>
+          simp [tokensDecoded] at decoded
+      | justCompletedStep =>
+          simp only [tokensDecoded, Except.ok.injEq] at decoded
+          subst decodedActions
+          exact ⟨.justCompletedStep, rfl, Or.inr rfl⟩
 
 /-- Decoding and applying an entire token sequence at once is exactly the
 same transition as the implementation's token-by-token compressed phase,
 including the numeric accumulator threaded across token boundaries. -/
 theorem runCompressedTokenGo_eq_of_decoded
     (parser : ParserState) (tokens : List ByteSlice)
-    (accumulator finalAccumulator : Nat)
+    (phase finalPhase : Metamath.Verify.CompressedPhase)
     (initial result : ProofState)
     (actions : List ParserState.CompressedAction)
+    (savePlacement : parser.db.config.compressedSavePlacement =
+      .immediatelyAfterUse)
     (decoded :
-      decodeCompressedTokens tokens accumulator =
-        .ok (actions, finalAccumulator))
+      decodeCompressedTokens tokens phase =
+        .ok (actions, finalPhase))
     (applied :
       ParserState.applyCompressedActions parser.db initial actions =
         .ok result) :
     runCompressedTokenGo parser tokens
-        { initial with ptp := .compressed accumulator } =
-      .ok { result with ptp := .compressed finalAccumulator } := by
-  induction tokens generalizing accumulator initial actions
-      finalAccumulator result with
+        { initial with ptp := .compressed phase } =
+      .ok { result with ptp := .compressed finalPhase } := by
+  induction tokens generalizing phase initial actions finalPhase result with
   | nil =>
       simp [decodeCompressedTokens] at decoded
       rcases decoded with ⟨rfl, rfl⟩
@@ -608,7 +691,7 @@ theorem runCompressedTokenGo_eq_of_decoded
       rfl
   | cons token tokens ih =>
       simp only [decodeCompressedTokens, bind, Except.bind] at decoded
-      cases headDecoded : ParserState.decodeCompressed token accumulator with
+      cases headDecoded : ParserState.decodeCompressed token phase with
       | error error => simp [headDecoded] at decoded
       | ok headResult =>
           rcases headResult with ⟨headActions, nextAccumulator⟩
@@ -653,24 +736,26 @@ theorem runCompressedTokenGo_eq_of_decoded
                   have phaseHeadExecution :
                       ParserState.applyCompressedActions parser.db
                           { initial with
-                            ptp := .compressed accumulator }
+                            ptp := .compressed phase }
                           headActions =
                         .ok { middle with
-                          ptp := .compressed accumulator } :=
+                          ptp := .compressed phase } :=
                     Metamath.PrefixTraceCompressed.applyCA_ptp_ok
                       parser.db initial headActions
-                        (.compressed accumulator) middle headExecution
+                        (.compressed phase) middle headExecution
                   have firstToken :
                       ParserState.feedProof.go parser token
                           { initial with
-                          ptp := .compressed accumulator } =
+                          ptp := .compressed phase } =
                         .ok { middle with
                           ptp := .compressed nextAccumulator } := by
                     have headDecodedConfigured :
-                        ParserState.decodeCompressed token accumulator
-                            parser.db.config.compressedInvalidBytes =
+                        ParserState.decodeCompressed token phase
+                            parser.db.config.compressedInvalidBytes
+                            parser.db.config.compressedSavePlacement =
                           .ok (headActions, nextAccumulator) :=
-                      decodeCompressed_policy_of_reject_ok token accumulator
+                      savePlacement ▸
+                        decodeCompressed_policy_of_reject_ok token phase
                         parser.db.config.compressedInvalidBytes
                         (headActions, nextAccumulator) headDecoded
                     unfold ParserState.feedProof.go
@@ -688,38 +773,52 @@ theorem runCompressedTokenGo_eq_of_program_ok
     (parser : ParserState) (tokens : List ByteSlice)
     (initial result : ProofState)
     (actions : List ParserState.CompressedAction)
+    (savePlacement : parser.db.config.compressedSavePlacement =
+      .immediatelyAfterUse)
     (decoded : decodeCompressedProgram tokens = .ok actions)
     (applied :
       ParserState.applyCompressedActions parser.db initial actions =
         .ok result) :
-    runCompressedTokenGo parser tokens
-        { initial with ptp := .compressed 0 } =
-      .ok { result with ptp := .compressed 0 } := by
-  exact runCompressedTokenGo_eq_of_decoded parser tokens 0 0
-    initial result actions
-      (decodeCompressedTokens_eq_of_program_ok tokens actions decoded)
-      applied
+    ∃ finalPhase,
+      (finalPhase = .betweenSteps ∨
+        finalPhase = .justCompletedStep) ∧
+      runCompressedTokenGo parser tokens
+          { initial with ptp := .compressed .betweenSteps } =
+        .ok { result with ptp := .compressed finalPhase } := by
+  obtain ⟨finalPhase, tokenDecode, finalAllowed⟩ :=
+    decodeCompressedTokens_eq_of_program_ok tokens actions decoded
+  exact ⟨finalPhase, finalAllowed,
+    runCompressedTokenGo_eq_of_decoded parser tokens .betweenSteps
+      finalPhase initial result actions savePlacement tokenDecode applied⟩
 
 /-- Positive cross-implementation witness covering a base-five prefix,
 termination, save, and a later proof index. -/
 theorem decodeCompressed_ordering_witness
     (tk : ByteSlice)
     (hbytes : sliceBytes tk = [85, 65, 90, 66]) :
-    ParserState.decodeCompressed tk 0 =
+    ParserState.decodeCompressed tk .betweenSteps =
       .ok
         ([ParserState.CompressedAction.step 20,
           ParserState.CompressedAction.save,
-          ParserState.CompressedAction.step 1], 0) := by
-  rw [decodeCompressed_mmLean4_agrees, hbytes]
+          ParserState.CompressedAction.step 1], .justCompletedStep) := by
+  have agreement :=
+    decodeCompressed_mmLean4_agrees tk
+      (SourceGSLTCompressedTheorem.CompressedPhase.betweenSteps)
+  simp only [toMMLean4Phase] at agreement
+  rw [agreement, hbytes]
   rfl
 
 /-- Negative cross-implementation witness: a non-code byte is rejected at
 the same boundary by the source decoder and mm-lean4. -/
 theorem decodeCompressed_invalid_witness
     (tk : ByteSlice) (hbytes : sliceBytes tk = [97]) :
-    ParserState.decodeCompressed tk 0 =
+    ParserState.decodeCompressed tk .betweenSteps =
       .error (.proofCheck .proofParseError) := by
-  rw [decodeCompressed_mmLean4_agrees, hbytes]
+  have agreement :=
+    decodeCompressed_mmLean4_agrees tk
+      (SourceGSLTCompressedTheorem.CompressedPhase.betweenSteps)
+  simp only [toMMLean4Phase] at agreement
+  rw [agreement, hbytes]
   rfl
 
 /-- Negative reflection witness: an implementation action sequence cannot be

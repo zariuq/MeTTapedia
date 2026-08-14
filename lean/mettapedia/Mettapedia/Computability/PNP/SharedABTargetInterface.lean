@@ -7,11 +7,11 @@ This file packages the current route bottleneck in one explicit interface style.
 
 The mathematical burden is now cleanly separated:
 
-* quotient invariance under the reduced raw visible surface `(a, b)`,
-* one fixed shared affine basis on that reduced surface,
+* quotient invariance under the reduced raw visible data domain `(a, b)`,
+* one fixed shared affine basis on that reduced data domain,
 * one combiner class on the resulting shared feature vector.
 
-Once those hypotheses are packaged, the exact-surface compression target follows
+Once those hypotheses are packaged, the exact-data domain compression target follows
 immediately with the corresponding budget.
 -/
 

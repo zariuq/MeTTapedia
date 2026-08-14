@@ -7,7 +7,7 @@ import Mettapedia.PLN.TruthValues.PeTTaLibPLNTruthFunctions
 # PLN Bug Analysis: Formal Proofs and Corrections
 
 This file formally proves historical confidence bugs in MeTTa-style PLN
-formula surfaces and provides computationally tractable corrections.
+formula interfaces and provides computationally tractable corrections.
 
 ## Summary of Bugs
 
@@ -17,7 +17,7 @@ formula surfaces and provides computationally tractable corrections.
 
 ## References
 
-- historical/raw-min MeTTa implementation surface, retained here as a
+- historical/raw-min MeTTa implementation interface, retained here as a
   bug witness after the local PeTTa mirror moved to the corrected
   weight-space-min formula
 - Lean PLN BinaryEvidence: `Mettapedia.PLN.Evidence.EvidenceQuantale`

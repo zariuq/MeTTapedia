@@ -1390,7 +1390,7 @@ theorem continuedTwoStepNativeSemanticBundle :
   rcases continuedTwoStepStepAppendPublicSemanticBridge with
     ⟨hPublicAccAppend, hPublicWidthAppend, hPublicTicksAppend⟩
   rcases continuedTwoStepDirectSpentTraceFullSemanticBridge with
-    ⟨hDirectSurface, hDirectLedger, hDirectPublic, hDirectCoherent,
+    ⟨hDirectSubject, hDirectLedger, hDirectPublic, hDirectCoherent,
       hDirectAccPublic, hDirectAccCost, hDirectWidthPublic, hDirectWidthCost,
       hDirectTicksPublic, hDirectTicksCost, hDirectTicksLen⟩
   rcases continuedTwoStepStepAppendDirectTraceSemanticBridge with
@@ -1418,12 +1418,12 @@ theorem continuedTwoStepNativeSemanticBundle :
         simp [continuedTwoStepPath, rewritePathAppend, GSLT.RewritePath.length, oneStepPath]
   exact
     ⟨⟨hTrace, hShadowCost, hPublicAccCost, hPublicWidthSpatial, hPublicTicksLen,
-        hPublicWidthCost, hPublicTicksCost, hShadowTrace, hDirectSurface,
+        hPublicWidthCost, hPublicTicksCost, hShadowTrace, hDirectSubject,
         hDirectLedger, hDirectPublic, hDirectCoherent, hDirectAccPublic,
         hDirectAccCost, hDirectWidthPublic, hDirectWidthCost, hDirectTicksPublic,
         hDirectTicksCost, hDirectTicksLen⟩,
       ⟨hTrace, hShadowCost, hShadowTrace, hPublicAccAppend, hPublicWidthAppend,
-        hPublicTicksAppend, hPublicTicksTwo, hPublicCoherent, hDirectSurface,
+        hPublicTicksAppend, hPublicTicksTwo, hPublicCoherent, hDirectSubject,
         hDirectLedger, hDirectPublic, hDirectCoherent, hDirectAccAppend,
         hDirectWidthAppend, hDirectTicksAppend, hDirectTicksTwo⟩⟩
 
@@ -2669,7 +2669,7 @@ theorem continuedTwoStepPublicFullSemanticBridge :
 
 /-- Concrete direct-spent semantic package for the continued two-step bridge.
 This gathers the direct-stack step-append facts together with the direct spent-trace
-surface, modulus, and additive two-step no-leak facts. -/
+interface, modulus, and additive two-step no-leak facts. -/
 theorem continuedTwoStepDirectFullSemanticBridge :
     continuedTwoStepDirectSpent.toLedger =
       totalAction rhoIntrinsicLedgerAction continuedTwoStepPath ∧
@@ -2745,7 +2745,7 @@ theorem continuedTwoStepDirectFullSemanticBridge :
       hStepDirectTicksLen, hStepDirectAppendStack, hStepDirectAppendSteps,
       hStepTraceAppend⟩
   rcases continuedTwoStepDirectSpentTraceFullSemanticBridge with
-    ⟨hDirectSurface, hDirectLedger, hDirectPublicPattern, hDirectCoherent,
+    ⟨hDirectSubject, hDirectLedger, hDirectPublicPattern, hDirectCoherent,
       hDirectAccPublic, _, _, hDirectWidthCost, _, hDirectTicksCost, hDirectTicksLen⟩
   rcases continuedTwoStepStepAppendDirectTraceSemanticBridge with
     ⟨hConcatDirectAcc, hConcatDirectWidth, hConcatDirectTicks, _⟩
@@ -2762,7 +2762,7 @@ theorem continuedTwoStepDirectFullSemanticBridge :
   exact ⟨hStepDirectLedger, hStepDirectShadow, hStepDirectDepth, hStepDirectAccCost,
     hStepDirectTicksLen, hStepDirectAppendStack, hStepDirectAppendSteps,
     hStepTraceAppend, hDirectAccPublic, hDirectWidthCost, hDirectTicksCost,
-    hDirectSurface, hDirectLedger, hDirectPublicPattern, hDirectCoherent,
+    hDirectSubject, hDirectLedger, hDirectPublicPattern, hDirectCoherent,
     hConcatDirectAcc, hConcatDirectWidth, hConcatDirectTicks,
     hConcatDirectTicksTwo⟩
 
@@ -3006,7 +3006,7 @@ theorem continuedTwoStepSemanticBridge :
       _, _, hDirectWidthCost, _, hDirectTicksCost, _⟩
   rcases hnativeConcat with
     ⟨_, _, _, hStepPublicAcc, hStepPublicWidth, hStepPublicTicks,
-      hConcatPublicTicksTwo, hConcatPublicCoherent, hDirectSurface, hDirectLedger,
+      hConcatPublicTicksTwo, hConcatPublicCoherent, hDirectSubject, hDirectLedger,
       hDirectPublicPattern, hDirectCoherent, hStepDirectAccAppend,
       hStepDirectWidthAppend, hStepDirectTicksAppend, hConcatDirectTicksTwo⟩
   rcases hstepAppendSemantic with
@@ -3082,7 +3082,7 @@ theorem continuedTwoStepSemanticBridge :
                                                             · constructor
                                                               · exact hConcatPublicCoherent
                                                               · constructor
-                                                                · exact hDirectSurface
+                                                                · exact hDirectSubject
                                                                 · constructor
                                                                   · exact hDirectLedger
                                                                   · constructor

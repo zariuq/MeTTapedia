@@ -1,4 +1,4 @@
-import Mettapedia.GSLT.LanguageDef.GSLTILSurface
+import Mettapedia.GSLT.LanguageDef.GSLTILSyntax
 
 /-!
 # Executable canaries for the finite GSLT-IL boundary
@@ -32,13 +32,16 @@ private def growthRoute := symbol "grow-0-1"
 private def missingRoute := symbol "missing-route"
 
 private def sourceRevision : FibreRow :=
-  { stage := stage0, source := ready, target := done }
+  { occurrence := symbol "source-revision"
+    stage := stage0, source := ready, target := done }
 
 private def targetRevision : FibreRow :=
-  { stage := stage1, source := mappedReady, target := mappedDone }
+  { occurrence := symbol "target-revision"
+    stage := stage1, source := mappedReady, target := mappedDone }
 
 private def readyTransport : TransportRow :=
-  { kind := exactKind
+  { occurrence := symbol "ready-transport"
+    kind := exactKind
     route := growthRoute
     sourceStage := stage0
     targetStage := stage1
@@ -46,7 +49,8 @@ private def readyTransport : TransportRow :=
     target := mappedReady }
 
 private def doneTransport : TransportRow :=
-  { kind := exactKind
+  { occurrence := symbol "done-transport"
+    kind := exactKind
     route := growthRoute
     sourceStage := stage0
     targetStage := stage1
@@ -155,10 +159,10 @@ theorem repeated_rows_preserve_occurrences :
 
 end Mettapedia.GSLT.LanguageDef.GSLTIL.Canary
 
-namespace Mettapedia.GSLT.LanguageDef.GSLTIL.Surface.Canary
+namespace Mettapedia.GSLT.LanguageDef.GSLTIL.Syntax.Canary
 
 open Mettapedia.GSLT.LanguageDef.GSLTIL
-open Mettapedia.GSLT.LanguageDef.GSLTIL.Surface
+open Mettapedia.GSLT.LanguageDef.GSLTIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Syntax
 
 private def atom (name : String) : Pattern := .apply name []
@@ -381,4 +385,4 @@ theorem missing_route_is_inert :
 #print axioms endpoints_do_not_imply_composition
 #print axioms missing_route_is_inert
 
-end Mettapedia.GSLT.LanguageDef.GSLTIL.Surface.Canary
+end Mettapedia.GSLT.LanguageDef.GSLTIL.Syntax.Canary

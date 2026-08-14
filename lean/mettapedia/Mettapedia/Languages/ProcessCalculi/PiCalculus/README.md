@@ -62,7 +62,7 @@ Full encoding into the ρ-calculus via a name-server approach.
 | `RhoEncoding.lean` | Encoding function with Lybech-style name server |
 | `ForwardSimulation.lean` | Forward simulation for the restriction-free fragment (`forward_comm_rf`, `forward_single_step_rf`, `forward_multi_step_rf`) |
 | `EncodingMorphism.lean` | Encoding as a structured `LanguageMorphism` |
-| `RhoEncodingCorrectness.lean` | Clean restriction-free forward-correctness surface |
+| `RhoEncodingCorrectness.lean` | Clean restriction-free forward-correctness interface |
 | `NameServerLemmas.lean` | Name-server operational lemmas |
 | `WeakBisim.lean` | Weak N-restricted barbed bisimilarity (`WeakRestrictedBisim`) |
 | `WeakBisimDerived.lean` | Weak bisimilarity with derived reductions |

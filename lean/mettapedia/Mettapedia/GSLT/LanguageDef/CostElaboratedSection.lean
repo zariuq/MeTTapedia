@@ -183,57 +183,39 @@ theorem normalize_ne_of_rootIdentity_ne {source : CIGSLT}
 
 end CostElaboratedSectionData
 
-/-- Agreement between semantic normalization and the independently defined
+/-- Agreement between semantic normalization and one explicitly selected
 compact Cost executor.
 
-This is an erasure theorem, not semantic faithfulness: different elaborated
-normal forms may erase to the same compact result. -/
-structure CostElaboratedCompactification {source : CIGSLT}
-    (data : CostElaboratedSectionData source) : Prop where
+The normalizer is part of the statement.  This is essential for hereditary
+Cost objects: a language may reject the reference executor while admitting
+a repaired normalizer.  The law is still only an erasure theorem, not semantic
+faithfulness: different elaborated normal forms may erase to the same compact
+result. -/
+structure CostElaboratedCompactificationFor {source : CIGSLT}
+    (data : CostElaboratedSectionData source)
+    (normalizeOpen : CostOpenNormalizer source) : Prop where
   erases_normalize : ∀ {targetFree : WellSorted.FreeTypeContext}
     {targetBound : List TypeExpr}
     {targetSort : LangSort source.costWholeLanguage}
     (term : CostElabTerm source targetFree targetBound targetSort),
     CostOpenElaboration.erase (data.normalize term) =
-      source.costNormalizeOpen (CostOpenElaboration.erase term)
+      normalizeOpen (CostOpenElaboration.erase term)
 
-namespace CostElaboratedCompactification
+/-- Compatibility specialization to the original reference Cost executor.  New
+Cost objects should expose their selected normalizer and use
+`CostElaboratedCompactificationFor` directly. -/
+abbrev CostReferenceElaboratedCompactification {source : CIGSLT}
+    (data : CostElaboratedSectionData source) : Prop :=
+  CostElaboratedCompactificationFor data source.costNormalizeOpen
 
-/-- Exact compact normalization agreement is optional additional structure.
-It follows on the compact-coherent subcategory, but is deliberately not part
-of the general Cost₁ object because the rho Cost² overlap refutes it. -/
-def ofCompactCoherent {source : CIGSLT}
-    (laws : CostElaboratedNormalizationLaws source)
-    (coherent : CompactCostNormalizationCoherent source) :
-    CostElaboratedCompactification laws.sectionData where
-  erases_normalize := by
-    intro targetFree targetBound targetSort term
-    exact term.2.normalizeErasure_eq_costNormalizeOpen coherent
+namespace CostElaboratedCompactificationFor
 
-/-- For the fixed child-first normalizer, a global normalization-commuting
-compactifier exists exactly on the already identified compact-coherent
-subcategory.  Thus the extra square cannot be hidden inside general Cost₁
-closure. -/
-theorem iff_compactCostNormalizationCoherent {source : CIGSLT}
-    (laws : CostElaboratedNormalizationLaws source) :
-    CostElaboratedCompactification laws.sectionData ↔
-      CompactCostNormalizationCoherent source := by
-  constructor
-  · intro compactification targetFree targetBound targetSort term first second
-    let firstTerm : CostElabTerm source targetFree targetBound targetSort :=
-      ⟨term, first⟩
-    let secondTerm : CostElabTerm source targetFree targetBound targetSort :=
-      ⟨term, second⟩
-    have firstAgreement := compactification.erases_normalize firstTerm
-    have secondAgreement := compactification.erases_normalize secondTerm
-    exact firstAgreement.trans secondAgreement.symm
-  · exact ofCompactCoherent laws
-
-/-- Equal compact inputs have equal compact normal forms, even when their
-proof-relevant semantic normal forms remain distinct. -/
+/-- Equal compact inputs have equal compact normal forms for any explicitly
+selected compact executor. -/
 theorem normalizedErasure_eq_of_erase_eq {source : CIGSLT}
     {data : CostElaboratedSectionData source}
-    (compactification : CostElaboratedCompactification data)
+    {normalizeOpen : CostOpenNormalizer source}
+    (compactification : CostElaboratedCompactificationFor data normalizeOpen)
     {targetFree : WellSorted.FreeTypeContext}
     {targetBound : List TypeExpr}
     {targetSort : LangSort source.costWholeLanguage}
@@ -245,11 +227,12 @@ theorem normalizedErasure_eq_of_erase_eq {source : CIGSLT}
   rw [compactification.erases_normalize,
     compactification.erases_normalize, sameErasure]
 
-/-- The compactifier may intentionally merge observations without collapsing
-the proof-relevant semantic fibres that produced them. -/
+/-- The selected compactifier may intentionally merge observations without
+collapsing the proof-relevant semantic fibres that produced them. -/
 theorem sameCompact_but_distinctNormalForms {source : CIGSLT}
     {data : CostElaboratedSectionData source}
-    (compactification : CostElaboratedCompactification data)
+    {normalizeOpen : CostOpenNormalizer source}
+    (compactification : CostElaboratedCompactificationFor data normalizeOpen)
     {targetFree : WellSorted.FreeTypeContext}
     {targetBound : List TypeExpr}
     {targetSort : LangSort source.costWholeLanguage}
@@ -264,6 +247,40 @@ theorem sameCompact_but_distinctNormalForms {source : CIGSLT}
   ⟨compactification.normalizedErasure_eq_of_erase_eq sameErasure,
     data.normalize_ne_of_rootIdentity_ne different⟩
 
-end CostElaboratedCompactification
+end CostElaboratedCompactificationFor
+
+namespace CostReferenceElaboratedCompactification
+
+/-- Exact compact normalization agreement is optional additional structure.
+It follows on the compact-coherent subcategory, but is deliberately not part
+of the general Cost₁ object because the rho Cost² overlap refutes it. -/
+def ofCompactCoherent {source : CIGSLT}
+    (laws : CostElaboratedNormalizationLaws source)
+    (coherent : CompactCostNormalizationCoherent source) :
+    CostReferenceElaboratedCompactification laws.sectionData where
+  erases_normalize := by
+    intro targetFree targetBound targetSort term
+    exact term.2.normalizeErasure_eq_costNormalizeOpen coherent
+
+/-- For the fixed child-first normalizer, a global normalization-commuting
+compactifier exists exactly on the already identified compact-coherent
+subcategory.  Thus the extra square cannot be hidden inside general Cost₁
+closure. -/
+theorem iff_compactCostNormalizationCoherent {source : CIGSLT}
+    (laws : CostElaboratedNormalizationLaws source) :
+    CostReferenceElaboratedCompactification laws.sectionData ↔
+      CompactCostNormalizationCoherent source := by
+  constructor
+  · intro compactification targetFree targetBound targetSort term first second
+    let firstTerm : CostElabTerm source targetFree targetBound targetSort :=
+      ⟨term, first⟩
+    let secondTerm : CostElabTerm source targetFree targetBound targetSort :=
+      ⟨term, second⟩
+    have firstAgreement := compactification.erases_normalize firstTerm
+    have secondAgreement := compactification.erases_normalize secondTerm
+    exact firstAgreement.trans secondAgreement.symm
+  · exact ofCompactCoherent laws
+
+end CostReferenceElaboratedCompactification
 
 end Mettapedia.GSLT.LanguageDef

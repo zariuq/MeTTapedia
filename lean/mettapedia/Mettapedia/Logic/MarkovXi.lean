@@ -6,7 +6,7 @@ import Mettapedia.Logic.MarkovTransitionXiExamples
 import Mettapedia.Logic.MarkovPredictiveChaining
 
 /-!
-# Narrow Public Surface for Markov WM / Xi / Predictive Chaining
+# Narrow Public Interface for Markov WM / Xi / Predictive Chaining
 
 This file is a small import-and-alias facade for the current Markov WM/PLN
 integration work:

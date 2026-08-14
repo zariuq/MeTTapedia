@@ -13,12 +13,12 @@ the proof of the semantic join.
 namespace Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost
 
 /-- A raw runtime candidate denotes one atomic located-resource join with the
-same decoded surface and spend, and its residual represents the join target. -/
+same decoded location and spend, and its residual represents the join target. -/
 def RuntimeAtomicResourceJoinSound (config : RawCostConfig)
     (step : RawRuntimeStep) : Prop :=
   ∃ target : CostConfig String, ∃ event : CostedEvent String,
     AtomicResourceJoin (decodeRawConfig config) event target ∧
-      event.surface = decodeCostName step.surface ∧
+      event.location = decodeCostName step.location ∧
       event.spend = decodeCostSig step.spend ∧
       step.residual.normalizeConfig.StructurallyRepresents target ∧
       (∀ (signatureName : SignatureNameEncoding String)
@@ -41,9 +41,9 @@ theorem atomicResourceJoin_sound_runtime
     RuntimeAtomicResourceJoinSound config step := by
   obtain ⟨target, declarative, represented, erasure, scopeSafe⟩ :=
     costStep_sound_runtime canonical config_ok enabled
-  obtain ⟨event, surface_eq, spend_eq, join⟩ :=
+  obtain ⟨event, location_eq, spend_eq, join⟩ :=
     declarative.exists_atomicResourceJoin
-  exact ⟨target, event, join, surface_eq, spend_eq, represented, erasure,
+  exact ⟨target, event, join, location_eq, spend_eq, represented, erasure,
     scopeSafe⟩
 
 /-- Every atomic resource join over a canonical supported raw configuration
@@ -55,7 +55,7 @@ theorem atomicResourceJoin_complete_runtime_up_to_struct
     (config_ok : config.Forall (fun term => term.wellFormed = true))
     {event : CostedEvent String} {target : CostConfig String}
     (join : AtomicResourceJoin (decodeRawConfig config) event target) :
-    RuntimeCostStepComplete config event.surface event.spend target :=
+    RuntimeCostStepComplete config event.location event.spend target :=
   costStep_complete_runtime_up_to_struct canonical encoding config_ok
     join.toCostStep
 
@@ -66,7 +66,7 @@ theorem runtimeAtomicResourceJoin_complete_up_to_struct
     {event : CostedEvent String} {target : CostConfig String}
     (join : AtomicResourceJoin
       (decodeRawConfig term.normalizeConfig) event target) :
-    RuntimeCostStepComplete term.normalizeConfig event.surface event.spend target :=
+    RuntimeCostStepComplete term.normalizeConfig event.location event.spend target :=
   runtimeCostCandidates_complete_up_to_struct supported join.toCostStep
 
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost

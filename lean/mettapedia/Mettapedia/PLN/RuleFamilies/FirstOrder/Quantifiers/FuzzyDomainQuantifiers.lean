@@ -3,7 +3,7 @@ import Mettapedia.PLN.RuleFamilies.FirstOrder.Quantifiers.GradedQuantifierSpecia
 /-!
 # Fuzzy Domain Quantifiers
 
-Fuzzy-domain lift for the infinitary `[0,1]`-valued quantifier surface.
+Fuzzy-domain lift for the infinitary `[0,1]`-valued quantifier interface.
 
 The basic idea follows the Dvorak-Holcapek fuzzy-universe/fuzzy-domain line:
 the quantifier acts over a pair `(M, C)`, where `C` is a fuzzy domain profile on

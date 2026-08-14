@@ -8,8 +8,8 @@ fully concrete raw-bit route.
 
 The shared-basis route asks for:
 
-* quotient invariance under the reduced raw visible surface `(a, b)`,
-* one shared affine basis on that reduced surface,
+* quotient invariance under the reduced raw visible data domain `(a, b)`,
+* one shared affine basis on that reduced data domain,
 * realization by one downstream combiner class.
 
 Here we specialize the shared basis to the canonical coordinate basis on the raw

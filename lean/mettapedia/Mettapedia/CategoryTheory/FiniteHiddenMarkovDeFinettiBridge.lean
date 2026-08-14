@@ -6,7 +6,7 @@ import Mathlib.MeasureTheory.Measure.DiracProba
 /-!
 # Finite Hidden Markov Models at the de Finetti Boundary
 
-This file packages the finite-state/finitely-emitting HMM surface in the same
+This file packages the finite-state/finitely-emitting HMM interface in the same
 spirit as the Borel-side Markov bridge:
 
 * the latent parameter law is a Borel probability measure on `MarkovParam`;
@@ -351,7 +351,7 @@ theorem binaryCopyHMM_observedCylinder_1 :
 
 end BinaryExamples
 
-/-- Prefix-measure surface carried by a fixed latent Markov parameter and a
+/-- Prefix-measure interface carried by a fixed latent Markov parameter and a
 fixed emission kernel, defined from the observed sequence law on cylinders. -/
 noncomputable def observedCylinderPrefixMeasure
     (emission : Fin latent → ProbabilityMeasure (Fin obs))

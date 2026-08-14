@@ -26,7 +26,7 @@ def authority : CostSig Ground := {()}
 theorem authority_valid : authority.RuntimeValid := by
   simp [CostSig.RuntimeValid, authority]
 
-def surface : CostName Ground := .signature authority
+def location : CostName Ground := .signature authority
 
 def selectedHead : SelectedPurseHead Ground where
   head := authority
@@ -42,13 +42,13 @@ def demand (n : Nat) : CostSig Ground :=
 theorem demand_valid (n : Nat) : (demand n).RuntimeValid := by
   simp [CostSig.RuntimeValid, demand, selectedHead, authority]
 
-def selection (n : Nat) : FundingSelection Ground surface (demand n) where
+def selection (n : Nat) : FundingSelection Ground location (demand n) where
   chosen := Multiset.replicate (n + 1) selectedHead
   demand_eq := rfl
 
 /-- A single whole-redex event funded by `n + 1` purse occurrences. -/
 def event (n : Nat) : CostedEvent Ground :=
-  .wholeRecvSend surface .nil .nil (demand n) (demand_valid n) (selection n)
+  .wholeRecvSend location .nil .nil (demand n) (demand_valid n) (selection n)
 
 /-- The event owns one whole-redex endpoint component and `n + 1` selected
 purse occurrences. -/

@@ -5,7 +5,7 @@ import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.Receipt
 # Located purse covers
 
 This module derives locality and funding facts from the proof-relevant purse
-decomposition used by a concrete cost-rho firing.  Surfaces are rho names;
+decomposition used by a concrete cost-rho firing.  Locations are rho names;
 signatures remain a distinct multiset type.
 -/
 
@@ -13,18 +13,18 @@ namespace Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost
 
 universe u
 
-/-- Funding surfaces in the concrete pure-rho profile are rho names. -/
-abbrev CostSurface (Ground : Type u) := CostName Ground
+/-- Funding locations in the concrete pure-rho profile are rho names. -/
+abbrev CostLocation (Ground : Type u) := CostName Ground
 
 /-- Nominal nearness on normalized names. -/
 def near {Ground : Type u} [DecidableEq Ground]
-    (left right : CostSurface Ground) : Option (CostSurface Ground) :=
+    (left right : CostLocation Ground) : Option (CostLocation Ground) :=
   if left = right then some left else none
 
 @[simp]
 theorem near_eq_some_iff {Ground : Type u} [DecidableEq Ground]
-    {left right surface : CostSurface Ground} :
-    near left right = some surface ↔ left = right ∧ surface = left := by
+    {left right location : CostLocation Ground} :
+    near left right = some location ↔ left = right ∧ location = left := by
   unfold near
   split_ifs with same
   · constructor
@@ -36,78 +36,78 @@ theorem near_eq_some_iff {Ground : Type u} [DecidableEq Ground]
 
 @[simp]
 theorem near_self {Ground : Type u} [DecidableEq Ground]
-    (surface : CostSurface Ground) : near surface surface = some surface := by
+    (location : CostLocation Ground) : near location location = some location := by
   simp [near]
 
 theorem near_eq_none_of_ne {Ground : Type u} [DecidableEq Ground]
-    {left right : CostSurface Ground} (different : left ≠ right) :
+    {left right : CostLocation Ground} (different : left ≠ right) :
     near left right = none := by
   simp [near, different]
 
 namespace LocatedTokenCover
 
-variable {Ground : Type u} {surface : CostName Ground} {demand : CostSig Ground}
+variable {Ground : Type u} {location : CostName Ground} {demand : CostSig Ground}
   {available residual : Multiset (LocatedPurse Ground)}
 
 /-- Selected purse occurrences before head consumption. -/
 def selectedBefore
-    (cover : LocatedTokenCover surface demand available residual) :
+    (cover : LocatedTokenCover location demand available residual) :
     Multiset (LocatedPurse Ground) :=
   cover.chosen.map fun choice =>
-    ⟨surface, .cons choice.head choice.tail⟩
+    ⟨location, .cons choice.head choice.tail⟩
 
 /-- Selected purse occurrences after exposing their tails. -/
 def selectedAfter
-    (cover : LocatedTokenCover surface demand available residual) :
+    (cover : LocatedTokenCover location demand available residual) :
     Multiset (LocatedPurse Ground) :=
-  cover.chosen.map fun choice => ⟨surface, choice.tail⟩
+  cover.chosen.map fun choice => ⟨location, choice.tail⟩
 
 /-- One receipt contribution for every selected purse head. -/
 def fundingContributions
-    (cover : LocatedTokenCover surface demand available residual) :
-    Multiset (FundingContribution Ground (CostSurface Ground)) :=
+    (cover : LocatedTokenCover location demand available residual) :
+    Multiset (FundingContribution Ground (CostLocation Ground)) :=
   cover.chosen.map fun choice =>
-    ⟨surface, choice.head, choice.head_valid⟩
+    ⟨location, choice.head, choice.head_valid⟩
 
 theorem available_decomposition
-    (cover : LocatedTokenCover surface demand available residual) :
+    (cover : LocatedTokenCover location demand available residual) :
     available = cover.selectedBefore + cover.untouched := by
   exact cover.available_eq
 
 theorem residual_decomposition
-    (cover : LocatedTokenCover surface demand available residual) :
+    (cover : LocatedTokenCover location demand available residual) :
     residual = cover.selectedAfter + cover.untouched := by
   exact cover.residual_eq
 
-/-- Every selected purse before firing lies at the interaction surface. -/
-theorem selected_before_surface
-    (cover : LocatedTokenCover surface demand available residual)
+/-- Every selected purse before firing lies at the interaction location. -/
+theorem selected_before_location
+    (cover : LocatedTokenCover location demand available residual)
     {purse : LocatedPurse Ground} (selected : purse ∈ cover.selectedBefore) :
-    purse.surface = surface := by
+    purse.location = location := by
   simp only [selectedBefore, Multiset.mem_map] at selected
   obtain ⟨choice, _membership, rfl⟩ := selected
   rfl
 
-/-- Every exposed selected tail remains at the interaction surface. -/
-theorem selected_tail_surface
-    (cover : LocatedTokenCover surface demand available residual)
+/-- Every exposed selected tail remains at the interaction location. -/
+theorem selected_tail_location
+    (cover : LocatedTokenCover location demand available residual)
     {purse : LocatedPurse Ground} (selected : purse ∈ cover.selectedAfter) :
-    purse.surface = surface := by
+    purse.location = location := by
   simp only [selectedAfter, Multiset.mem_map] at selected
   obtain ⟨choice, _membership, rfl⟩ := selected
   rfl
 
-/-- A purse at a different surface cannot be among the selected occurrences. -/
+/-- A purse at a different location cannot be among the selected occurrences. -/
 theorem wrong_location_not_selected
-    (cover : LocatedTokenCover surface demand available residual)
-    {purse : LocatedPurse Ground} (wrong : purse.surface ≠ surface) :
+    (cover : LocatedTokenCover location demand available residual)
+    {purse : LocatedPurse Ground} (wrong : purse.location ≠ location) :
     purse ∉ cover.selectedBefore := by
   intro selected
-  exact wrong (cover.selected_before_surface selected)
+  exact wrong (cover.selected_before_location selected)
 
 /-- Every untouched occurrence is present in the source configuration. -/
 theorem untouched_le_available
-    (cover : LocatedTokenCover surface demand available residual) :
+    (cover : LocatedTokenCover location demand available residual) :
     cover.untouched ≤ available := by
   apply Multiset.le_iff_exists_add.mpr
   refine ⟨cover.selectedBefore, ?_⟩
@@ -118,7 +118,7 @@ theorem untouched_le_available
 
 /-- Every untouched occurrence is present in the residual configuration. -/
 theorem untouched_le_residual
-    (cover : LocatedTokenCover surface demand available residual) :
+    (cover : LocatedTokenCover location demand available residual) :
     cover.untouched ≤ residual := by
   apply Multiset.le_iff_exists_add.mpr
   refine ⟨cover.selectedAfter, ?_⟩
@@ -130,23 +130,23 @@ theorem untouched_le_residual
 /-- Funding records are occurrence preserving: their cardinality is exactly
 the number of selected purse heads. -/
 theorem funding_contributions_card
-    (cover : LocatedTokenCover surface demand available residual) :
+    (cover : LocatedTokenCover location demand available residual) :
     cover.fundingContributions.card = cover.chosen.card := by
   simp [fundingContributions]
 
-/-- Every funding contribution reports the actual COMM surface. -/
-theorem funding_contribution_surface
-    (cover : LocatedTokenCover surface demand available residual)
-    {contribution : FundingContribution Ground (CostSurface Ground)}
+/-- Every funding contribution reports the actual COMM location. -/
+theorem funding_contribution_location
+    (cover : LocatedTokenCover location demand available residual)
+    {contribution : FundingContribution Ground (CostLocation Ground)}
     (member : contribution ∈ cover.fundingContributions) :
-    contribution.surface = surface := by
+    contribution.location = location := by
   simp only [fundingContributions, Multiset.mem_map] at member
   obtain ⟨choice, _membership, rfl⟩ := member
   rfl
 
 /-- The raw sum of emitted contributions is the demanded signature exactly. -/
 theorem funding_contributions_eq_selected_heads
-    (cover : LocatedTokenCover surface demand available residual) :
+    (cover : LocatedTokenCover location demand available residual) :
     (cover.fundingContributions.map FundingContribution.spend).sum = demand := by
   calc
     (cover.fundingContributions.map FundingContribution.spend).sum =
@@ -156,7 +156,7 @@ theorem funding_contributions_eq_selected_heads
 
 /-- Nonzero demand cannot be funded without an available purse occurrence. -/
 theorem no_ambient_funding
-    (cover : LocatedTokenCover surface demand available residual)
+    (cover : LocatedTokenCover location demand available residual)
     (demand_valid : demand.RuntimeValid) : available ≠ 0 := by
   intro available_empty
   have selected_empty : cover.selectedBefore = 0 := by

@@ -311,28 +311,30 @@ noncomputable def runtimeHeaderStepToSource
             runtimeHeapEntryToSource]
         exact runtimePrefixTreeToSource_active runtimePresentation
           sourcePresentation hypothesis member sourceMember
-    | explicitHypothesis before label hypothesis member label_eq =>
+    | explicitHypothesis before mandatory label hypothesis member
+        nonmandatory label_eq =>
         let sourceMember :
             hypothesis ∈ state.toSourcePrefix.activeHypotheses := by
           simpa [runtimePrefix, SourceState.toSourcePrefix] using member
         have canonical := HeaderStep.explicitHypothesis
           (runtimeMachineToSource runtimePresentation sourcePresentation
             before)
-          label hypothesis sourceMember label_eq
+          mandatory label hypothesis sourceMember nonmandatory label_eq
         convert canonical using 1
         all_goals
           simp [runtimeMachineToSource, runtimeProofNodeToSource,
             runtimeHeapEntryToSource]
         exact runtimePrefixTreeToSource_active runtimePresentation
           sourcePresentation hypothesis member sourceMember
-    | explicitAssertion before label assertion member label_eq =>
+    | explicitAssertion before mandatory label assertion member
+        nonmandatory label_eq =>
         simpa [runtimeMachineToSource, runtimeHeapEntryToSource] using
           (HeaderStep.explicitAssertion
             (runtimeMachineToSource runtimePresentation sourcePresentation
               before)
-            label assertion
+            mandatory label assertion
             ((runtimePrefix_assertion_mem_iff state assertion).mp member)
-            label_eq)
+            nonmandatory label_eq)
 
 /-- Ordered header builds transport without changing their item list. -/
 noncomputable def runtimeHeaderBuildToSource

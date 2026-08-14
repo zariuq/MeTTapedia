@@ -70,7 +70,7 @@ theorem branch_le_conservative [DecidableEq Cell]
 def contributionCell {Ground : Type u}
     (contribution : FundingContribution Ground (CostName Ground)) :
     FundingCell Ground :=
-  (contribution.surface, contribution.spend)
+  (contribution.location, contribution.spend)
 
 /-- Exact located token-cell demand of one already analyzed concrete event. -/
 def eventDemand {Ground : Type u} (event : CostedEvent Ground) :

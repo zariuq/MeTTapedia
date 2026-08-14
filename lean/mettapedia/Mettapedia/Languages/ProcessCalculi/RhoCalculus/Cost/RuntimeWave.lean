@@ -65,17 +65,17 @@ theorem exists_of_enabled {config : RawCostConfig}
       List.mem_map.mp step_member
     subst step
     have funding := runtimeCostCandidatesFromConfig_funding_valid enabled
-    have surface_fixed := wholeAt?_surface_normalized found
-    have located := selectedPurses_surface_eq canonical funding surface_fixed
+    have location_fixed := wholeAt?_location_normalized found
+    have located := selectedPurses_location_eq canonical funding location_fixed
     have selected_valid : selected.Forall RawIndexedPurse.WellFormed := by
       rw [List.forall_iff_forall_mem]
       intro purse purse_member
       exact RawRuntimeStep.selectedPurse_wellFormed config_ok enabled purse_member
     have redex_ok := List.forall_iff_forall_mem.mp
       (config.wholeRedexes_forall_wellFormed config_ok) redex redex_member
-    let cover := decodedSelectedCover redex.surface redex.sig selected
+    let cover := decodedSelectedCover redex.location redex.sig selected
       selected_valid funding.exact_spend
-    let selection : FundingSelection String (decodeCostName redex.surface)
+    let selection : FundingSelection String (decodeCostName redex.location)
         (decodeCostSig redex.sig) :=
       ⟨decodeSelectedHeads selected selected_valid, by
         simpa [cover, decodedSelectedCover] using cover.demand_eq⟩
@@ -88,17 +88,17 @@ theorem exists_of_enabled {config : RawCostConfig}
           selected_member
     have selected_components :
         LocatedPurse.configComponents
-            (decodedSelectedAvailable redex.surface selected selected_valid) =
+            (decodedSelectedAvailable redex.location selected selected_valid) =
           (selected.map (decodeCostTerm ∘ RawIndexedPurse.toTerm) :
             Multiset (CostTerm String)) :=
-      decodedSelectedAvailable_components redex.surface selected selected_valid
+      decodedSelectedAvailable_components redex.location selected selected_valid
         located
     have source_normalized :=
       RawCostConfig.normalized_of_mem_zipIdx canonical source_mem
     rcases wholeAt?_decode_source_of_normalized source_normalized found with
       source_recv_send | source_send_recv
     · let event := CostedEvent.wholeRecvSend
-        (decodeCostName redex.surface) (decodeCostTerm redex.body)
+        (decodeCostName redex.location) (decodeCostTerm redex.body)
         (decodeCostTerm redex.payload) (decodeCostSig redex.sig)
         (decodeCostSig_runtimeValid redex_ok.sig) selection
       refine ⟨{
@@ -120,7 +120,7 @@ theorem exists_of_enabled {config : RawCostConfig}
               Function.comp_def]
           _ = {decodeCostTerm source} +
               LocatedPurse.configComponents
-                (decodedSelectedAvailable redex.surface selected
+                (decodedSelectedAvailable redex.location selected
                   selected_valid) := by
             rw [selected_components]
           _ = event.consumed := by
@@ -129,7 +129,7 @@ theorem exists_of_enabled {config : RawCostConfig}
               CostedEvent.fundingBefore, FundingSelection.before,
               decodedSelectedAvailable]
     · let event := CostedEvent.wholeSendRecv
-        (decodeCostName redex.surface) (decodeCostTerm redex.body)
+        (decodeCostName redex.location) (decodeCostTerm redex.body)
         (decodeCostTerm redex.payload) (decodeCostSig redex.sig)
         (decodeCostSig_runtimeValid redex_ok.sig) selection
       refine ⟨{
@@ -151,7 +151,7 @@ theorem exists_of_enabled {config : RawCostConfig}
               Function.comp_def]
           _ = {decodeCostTerm source} +
               LocatedPurse.configComponents
-                (decodedSelectedAvailable redex.surface selected
+                (decodedSelectedAvailable redex.location selected
                   selected_valid) := by
             rw [selected_components]
           _ = event.consumed := by
@@ -161,13 +161,13 @@ theorem exists_of_enabled {config : RawCostConfig}
               decodedSelectedAvailable]
   · unfold splitCandidates at step_member
     split at step_member
-    next surfaces_match =>
+    next locations_match =>
       obtain ⟨selected, _selected_member, step_eq⟩ :=
         List.mem_map.mp step_member
       subst step
       have funding := runtimeCostCandidatesFromConfig_funding_valid enabled
-      have surface_fixed := recvAt?_surface_normalized recv_found
-      have located := selectedPurses_surface_eq canonical funding surface_fixed
+      have location_fixed := recvAt?_location_normalized recv_found
+      have located := selectedPurses_location_eq canonical funding location_fixed
       have selected_valid : selected.Forall RawIndexedPurse.WellFormed := by
         rw [List.forall_iff_forall_mem]
         intro purse purse_member
@@ -184,15 +184,15 @@ theorem exists_of_enabled {config : RawCostConfig}
           (recv.sig : Multiset String) + (send.sig : Multiset String)
         rw [RawCostSig.normalize_toMultiset]
         rfl
-      let runtimeCover := decodedSelectedCover recv.surface spend selected
+      let runtimeCover := decodedSelectedCover recv.location spend selected
         selected_valid funding.exact_spend
-      let selection : FundingSelection String (decodeCostName recv.surface)
+      let selection : FundingSelection String (decodeCostName recv.location)
           (decodeCostSig recv.sig + decodeCostSig send.sig) :=
         ⟨decodeSelectedHeads selected selected_valid, by
           rw [← decoded_spend]
           simpa [runtimeCover, decodedSelectedCover] using
             runtimeCover.demand_eq⟩
-      let event := CostedEvent.split (decodeCostName recv.surface)
+      let event := CostedEvent.split (decodeCostName recv.location)
         (decodeCostTerm recv.body) (decodeCostTerm send.payload)
         (decodeCostSig recv.sig) (decodeCostSig send.sig)
         (decodeCostSig_runtimeValid recv_ok.sig)
@@ -209,10 +209,10 @@ theorem exists_of_enabled {config : RawCostConfig}
               entry selected_member
       have selected_components :
           LocatedPurse.configComponents
-              (decodedSelectedAvailable recv.surface selected selected_valid) =
+              (decodedSelectedAvailable recv.location selected selected_valid) =
             (selected.map (decodeCostTerm ∘ RawIndexedPurse.toTerm) :
               Multiset (CostTerm String)) :=
-        decodedSelectedAvailable_components recv.surface selected
+        decodedSelectedAvailable_components recv.location selected
           selected_valid located
       have recv_normalized :=
         RawCostConfig.normalized_of_mem_zipIdx canonical recv_mem
@@ -222,12 +222,12 @@ theorem exists_of_enabled {config : RawCostConfig}
         recvAt?_decode_source_of_normalized recv_normalized recv_found
       have send_source :=
         sendAt?_decode_source_of_normalized send_normalized send_found
-      have send_surface_fixed := sendAt?_surface_normalized send_found
-      have surfaces_eq : send.surface = recv.surface := by
+      have send_location_fixed := sendAt?_location_normalized send_found
+      have locations_eq : send.location = recv.location := by
         calc
-          send.surface = send.surface.normalize := send_surface_fixed.symm
-          _ = recv.surface.normalize := surfaces_match.symm
-          _ = recv.surface := surface_fixed
+          send.location = send.location.normalize := send_location_fixed.symm
+          _ = recv.location.normalize := locations_match.symm
+          _ = recv.location := location_fixed
       refine ⟨{
         step := _
         enabled := enabled
@@ -247,12 +247,12 @@ theorem exists_of_enabled {config : RawCostConfig}
               Function.comp_def]
           _ = {decodeCostTerm recvSource} + {decodeCostTerm sendSource} +
               LocatedPurse.configComponents
-                (decodedSelectedAvailable recv.surface selected
+                (decodedSelectedAvailable recv.location selected
                   selected_valid) := by
             rw [selected_components]
           _ = event.consumed := by
             simp [event, selection,
-              recv_source, send_source, surfaces_eq,
+              recv_source, send_source, locations_eq,
               CostedEvent.consumed, CostedEvent.endpoints,
               CostedEvent.fundingBefore, FundingSelection.before,
               decodedSelectedAvailable]

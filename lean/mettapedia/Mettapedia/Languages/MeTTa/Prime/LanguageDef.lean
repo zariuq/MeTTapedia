@@ -196,41 +196,175 @@ def language : LanguageDef :=
       [evaluationDemandRewrite, needRewrite, needReturnRewrite,
        reflectedDemandRewrite] }
 
-set_option maxHeartbeats 2000000 in
+set_option maxHeartbeats 1000000 in
+attribute [-simp] isolated Fin.Fin1.eq_one
+  LO.LogicalConnective.AndOrClosed.falsum
+  LO.LogicalConnective.AndOrClosed.verum in
 theorem language_validate : language.validate = [] := by
   apply LanguageDef.validate_eq_nil_of_constructorEquationsAndRewrites
-  all_goals
-    simp (config := { maxSteps := 500000 })
-      [language, MeTTaZero.language, MeTTaZero.definition, nameType, receiptType,
-        unitConstructor, quoteConstructor, dropConstructor,
-        evaluateNameConstructor,
-        needRequestConstructor, needAnswerConstructor, needKeyConstructor,
+  case htypes =>
+    simp [language, MeTTaZero.language, MeTTaZero.definition, nameType,
+      receiptType, MeTTaZero.atomType, MeTTaZero.spaceType,
+      MeTTaZero.processType, MeTTaZero.alternativesType,
+      LanguageDef.typeNames, TypeDecl.plain]
+  case hconstructors =>
+    simp [language, MeTTaZero.language, MeTTaZero.definition,
+      unitConstructor, quoteConstructor, dropConstructor,
+      evaluateNameConstructor, needRequestConstructor, needAnswerConstructor,
+      needKeyConstructor, requestDependencyConstructor,
+      spaceAtomDependencyConstructor, capabilityDependencyConstructor,
+      inertDependencyConstructor, receiptConstructor, constructor,
+      zeroEquationConstructor, zeroQueryRequestConstructor,
+      zeroQueryAnswerConstructor, zeroEvaluationRequestConstructor,
+      zeroEvaluationAnswerConstructor]
+  case hequations =>
+    simp [language, MeTTaZero.language, MeTTaZero.definition,
+      quoteDropEquation]
+  case hrewrites =>
+    simp [language, MeTTaZero.language, MeTTaZero.definition,
+      MeTTaZero.queryRewrite, MeTTaZero.evaluationRewrite,
+      evaluationDemandRewrite, needRewrite, needReturnRewrite,
+      reflectedDemandRewrite]
+  case hcategory =>
+    intro term membership
+    change term ∈ MeTTaZero.language.terms ++
+      [unitConstructor, quoteConstructor, dropConstructor,
+       evaluateNameConstructor, needRequestConstructor, needAnswerConstructor,
+       needKeyConstructor, requestDependencyConstructor,
+       spaceAtomDependencyConstructor, capabilityDependencyConstructor,
+       inertDependencyConstructor, receiptConstructor] at membership
+    rw [List.mem_append] at membership
+    rcases membership with baseMember | addedMember
+    · have baseCategory := LanguageDef.termCategory_mem_of_validate_eq_nil
+        MeTTaZero.language MeTTaZero.language_validate term baseMember
+      have extendedCategory :
+          term.category ∈ MeTTaZero.language.typeNames ++
+            ["PrimeName", "PrimeReceipt"] :=
+        List.mem_append_left _ baseCategory
+      simpa [language, nameType, receiptType, LanguageDef.typeNames,
+        TypeDecl.plain] using extendedCategory
+    · simp only [List.mem_cons, List.mem_nil_iff, or_false] at addedMember
+      rcases addedMember with rfl | rfl | rfl | rfl | rfl | rfl | rfl |
+        rfl | rfl | rfl | rfl | rfl <;>
+        simp_all [language, MeTTaZero.language, MeTTaZero.definition,
+          nameType, receiptType, unitConstructor, quoteConstructor,
+          dropConstructor, evaluateNameConstructor, needRequestConstructor,
+          needAnswerConstructor, needKeyConstructor,
+          requestDependencyConstructor, spaceAtomDependencyConstructor,
+          capabilityDependencyConstructor, inertDependencyConstructor,
+          receiptConstructor, constructor, MeTTaZero.atomType,
+          MeTTaZero.spaceType, MeTTaZero.processType,
+          MeTTaZero.alternativesType, LanguageDef.typeNames, TypeDecl.plain]
+  case hparams =>
+    intro term termMember parameter parameterMember typeName typeNameMember
+    change term ∈ MeTTaZero.language.terms ++
+      [unitConstructor, quoteConstructor, dropConstructor,
+       evaluateNameConstructor, needRequestConstructor, needAnswerConstructor,
+       needKeyConstructor, requestDependencyConstructor,
+       spaceAtomDependencyConstructor, capabilityDependencyConstructor,
+       inertDependencyConstructor, receiptConstructor] at termMember
+    rw [List.mem_append] at termMember
+    rcases termMember with baseMember | addedMember
+    · have baseName := LanguageDef.termParam_baseName_mem_of_validate_eq_nil
+        MeTTaZero.language MeTTaZero.language_validate term baseMember
+        parameter parameterMember typeName typeNameMember
+      have extendedName :
+          typeName ∈ MeTTaZero.language.typeNames ++
+            ["PrimeName", "PrimeReceipt"] :=
+        List.mem_append_left _ baseName
+      simpa [language, nameType, receiptType, LanguageDef.typeNames,
+        TypeDecl.plain] using extendedName
+    · simp only [List.mem_cons, List.mem_nil_iff, or_false] at addedMember
+      rcases addedMember with rfl | rfl | rfl | rfl | rfl | rfl | rfl |
+        rfl | rfl | rfl | rfl | rfl <;>
+        simp_all [language, MeTTaZero.language, MeTTaZero.definition,
+          nameType, receiptType, unitConstructor, quoteConstructor,
+          dropConstructor, evaluateNameConstructor, needRequestConstructor,
+          needAnswerConstructor, needKeyConstructor,
+          requestDependencyConstructor, spaceAtomDependencyConstructor,
+          capabilityDependencyConstructor, inertDependencyConstructor,
+          receiptConstructor, constructor, MeTTaZero.atomType,
+          MeTTaZero.spaceType, MeTTaZero.processType,
+          MeTTaZero.alternativesType, LanguageDef.typeNames, TypeDecl.plain,
+          TermParam.typeExpr, TypeExpr.baseNames]
+      all_goals
+        rcases parameterMember with rfl | rfl <;>
+          simp_all [TypeExpr.baseNames]
+  case hsyntax =>
+    intro term membership
+    change term ∈ MeTTaZero.language.terms ++
+      [unitConstructor, quoteConstructor, dropConstructor,
+       evaluateNameConstructor, needRequestConstructor, needAnswerConstructor,
+       needKeyConstructor, requestDependencyConstructor,
+       spaceAtomDependencyConstructor, capabilityDependencyConstructor,
+       inertDependencyConstructor, receiptConstructor] at membership
+    rw [List.mem_append] at membership
+    rcases membership with baseMember | addedMember
+    · change term ∈
+        [MeTTaZero.equationConstructor, MeTTaZero.queryRequestConstructor,
+         MeTTaZero.queryAnswerConstructor,
+         MeTTaZero.evaluationRequestConstructor,
+         MeTTaZero.evaluationAnswerConstructor] at baseMember
+      simp only [List.mem_cons, List.mem_nil_iff, or_false] at baseMember
+      rcases baseMember with rfl | rfl | rfl | rfl | rfl <;>
+        exact Or.inl rfl
+    · simp only [List.mem_cons, List.mem_nil_iff, or_false] at addedMember
+      rcases addedMember with rfl | rfl | rfl | rfl | rfl | rfl | rfl |
+        rfl | rfl | rfl | rfl | rfl <;>
+        exact Or.inl rfl
+  case hequationValid =>
+    intro equation membership
+    have equationEq : equation = quoteDropEquation := by
+      simpa [language, MeTTaZero.language, MeTTaZero.definition] using membership
+    subst equation
+    simp [language, MeTTaZero.language, MeTTaZero.definition,
+      quoteDropEquation, LanguageDef.validateEquation,
+      LanguageDef.validatePatternConstructors,
+      LanguageDef.validateRulePatterns, LanguageDef.patternFvarNames,
+      LanguageDef.patternBinderNames, Pattern.constructorRefs,
+      Pattern.constructorRefsList, Pattern.freeFvarNames,
+      Pattern.isWellScoped, Pattern.isWellScopedAt,
+      Pattern.isWellScopedListAt, nameType, receiptType,
+      MeTTaZero.atomType, MeTTaZero.spaceType, MeTTaZero.processType,
+      MeTTaZero.alternativesType, unitConstructor, quoteConstructor,
+      dropConstructor, evaluateNameConstructor, needRequestConstructor,
+      needAnswerConstructor, needKeyConstructor,
+      requestDependencyConstructor, spaceAtomDependencyConstructor,
+      capabilityDependencyConstructor, inertDependencyConstructor,
+      receiptConstructor, constructor, LanguageDef.typeNames, TypeDecl.plain,
+      TypeExpr.baseNames]
+  case hrewriteValid =>
+    intro rewrite membership
+    change rewrite ∈
+      [MeTTaZero.queryRewrite, MeTTaZero.evaluationRewrite,
+       evaluationDemandRewrite, needRewrite, needReturnRewrite,
+       reflectedDemandRewrite] at membership
+    simp only [List.mem_cons, List.mem_nil_iff, or_false] at membership
+    rcases membership with rfl | rfl | rfl | rfl | rfl | rfl <;>
+      simp [language, MeTTaZero.language, MeTTaZero.definition,
+        MeTTaZero.queryRewrite, MeTTaZero.evaluationRewrite,
+        MeTTaZero.queryRequestPattern, MeTTaZero.queryAnswerPattern,
+        MeTTaZero.evaluationRequestPattern,
+        MeTTaZero.evaluationAnswerPattern, MeTTaZero.metavariable,
+        evaluationDemandRewrite, needRewrite, needReturnRewrite,
+        reflectedDemandRewrite, LanguageDef.validateRewrite,
+        LanguageDef.validatePatternConstructors,
+        LanguageDef.validateRulePatterns, LanguageDef.patternFvarNames,
+        LanguageDef.patternBinderNames, LanguageDef.premisePatterns,
+        LanguageDef.premiseFvarNames,
+        LanguageDef.premiseProducedFvarNames,
+        LanguageDef.premiseForAllParams, Pattern.constructorRefs,
+        Pattern.constructorRefsList, Pattern.freeFvarNames,
+        Pattern.isWellScoped, Pattern.isWellScopedAt,
+        Pattern.isWellScopedListAt, nameType, receiptType,
+        MeTTaZero.atomType, MeTTaZero.spaceType, MeTTaZero.processType,
+        MeTTaZero.alternativesType, unitConstructor, quoteConstructor,
+        dropConstructor, evaluateNameConstructor, needRequestConstructor,
+        needAnswerConstructor, needKeyConstructor,
         requestDependencyConstructor, spaceAtomDependencyConstructor,
         capabilityDependencyConstructor, inertDependencyConstructor,
-        receiptConstructor,
-        quoteDropEquation, evaluationDemandRewrite, needRewrite,
-        needReturnRewrite, reflectedDemandRewrite, constructor,
-        MeTTaZero.atomType, MeTTaZero.spaceType, MeTTaZero.processType,
-        MeTTaZero.alternativesType, MeTTaZero.queryRewrite,
-        MeTTaZero.evaluationRewrite, MeTTaZero.queryRequestPattern,
-        MeTTaZero.queryAnswerPattern, MeTTaZero.evaluationRequestPattern,
-        MeTTaZero.evaluationAnswerPattern, MeTTaZero.metavariable,
-        LanguageDef.typeNames, TypeDecl.plain, LanguageDef.validateEquation,
-        LanguageDef.validateRewrite,
-        LanguageDef.validatePatternConstructors,
-        LanguageDef.validateRulePatterns,
-        LanguageDef.patternFvarNames, LanguageDef.patternBinderNames,
-        LanguageDef.premisePatterns, LanguageDef.premiseFvarNames,
-        LanguageDef.premiseProducedFvarNames,
-        LanguageDef.premiseForAllParams,
-        Pattern.constructorRefs, Pattern.constructorRefsList,
-        Pattern.freeFvarNames,
-        Pattern.isWellScoped, Pattern.isWellScopedAt,
-        Pattern.isWellScopedListAt, TermParam.typeExpr, TypeExpr.baseNames,
-        zeroEquationConstructor, zeroQueryRequestConstructor,
-        zeroQueryAnswerConstructor, zeroEvaluationRequestConstructor,
-        zeroEvaluationAnswerConstructor]
-  all_goals aesop
+        receiptConstructor, constructor, LanguageDef.typeNames, TypeDecl.plain,
+        TypeExpr.baseNames]
 
 /-- The authored three-rule route corresponding to Prime's lazy semantic
 path: enter Need, compute one admitted answer, then return to the extensional
@@ -263,15 +397,24 @@ theorem quoted_term_not_reflected_demand_source (term : Pattern) :
     Pattern.apply "prime-quote" [term] ≠ reflectedDemandRewrite.left := by
   simp [reflectedDemandRewrite]
 
-def validated : ValidatedLanguageDef := ⟨language, language_validate⟩
+/-- The authored-presentation specification region is the existing category
+of validated five-field definitions and structural declaration maps. -/
+abbrev PresentationRegion := ValidatedLanguageDef
 
-def zeroValidated : ValidatedLanguageDef :=
+/-- Today's authored Prime presentation is one point of the presentation region;
+it is not the definition of every admissible future Prime presentation. -/
+def currentPrimePresentation : PresentationRegion :=
+  ⟨language, language_validate⟩
+
+/-- Today's authored query-first Zero presentation is another named point. -/
+def currentZeroPresentation : PresentationRegion :=
   ⟨MeTTaZero.language, MeTTaZero.language_validate⟩
 
 /-- The identity symbol action includes every authored Zero declaration into
 Prime.  This states preservation at the level of all five fields, not merely
 at the level of names or observed examples. -/
-def zeroInclusion : StructuralMorphism zeroValidated validated where
+def currentZeroToPrimePresentation :
+    StructuralMorphism currentZeroPresentation currentPrimePresentation where
   symbols := PresentationSymbols.id
   mapsTypes declaration membership := by
     rw [mapTypeDecl_id]
@@ -306,7 +449,8 @@ def zeroInclusion : StructuralMorphism zeroValidated validated where
 /-- Prime's new quotation constructor witnesses that the inclusion is proper:
 there is no identity-symbol structural map erasing Prime back to Zero. -/
 theorem no_identity_symbol_retraction :
-    ¬ ∃ retraction : StructuralMorphism validated zeroValidated,
+    ¬ ∃ retraction :
+        StructuralMorphism currentPrimePresentation currentZeroPresentation,
       retraction.symbols = PresentationSymbols.id := by
   rintro ⟨retraction, symbols⟩
   have quoteMember : List.Mem quoteConstructor language.terms := by
@@ -322,7 +466,7 @@ theorem no_identity_symbol_retraction :
   have mapped := retraction.mapsTerms quoteConstructor quoteMember
   have mapped' : List.Mem quoteConstructor MeTTaZero.language.terms := by
     rw [symbols] at mapped
-    simpa only [mapGrammarRule_id, zeroValidated] using mapped
+    simpa only [mapGrammarRule_id, currentZeroPresentation] using mapped
   have labelMember :
       List.Mem quoteConstructor.label
         (MeTTaZero.language.terms.map GrammarRule.label) :=

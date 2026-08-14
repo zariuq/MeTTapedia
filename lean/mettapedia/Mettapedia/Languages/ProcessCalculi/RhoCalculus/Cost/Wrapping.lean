@@ -57,9 +57,9 @@ mutual
           CostTerm.runtimeSupported_lift amount cutoff right supported.2⟩
     | .drop name, supported => by
         exact CostName.runtimeSupported_lift amount cutoff name supported
-    | .purse surface stack, supported => by
+    | .purse location stack, supported => by
         exact ⟨
-          CostName.runtimeSupported_lift amount cutoff surface supported.1,
+          CostName.runtimeSupported_lift amount cutoff location supported.1,
           supported.2⟩
 end
 
@@ -130,10 +130,10 @@ mutual
         simpa [CostTerm.substitute, CostTerm.RuntimeSupported] using supported
     | .drop (.signature sig), supported => by
         simpa [CostTerm.substitute, CostTerm.RuntimeSupported] using supported
-    | .purse surface stack, supported => by
+    | .purse location stack, supported => by
         exact ⟨
           CostName.runtimeSupported_substitute replacement replacement_supported depth
-            surface supported.1,
+            location supported.1,
           supported.2⟩
 end
 

@@ -11,5 +11,5 @@ import Mettapedia.PLN.Comparisons.NARS.SemanticsDecisionTree
 # NARS comparisons for PLN
 
 Rule-level mirrors and comparison theorems relating PLN truth-value machinery to
-NARS evidence and truth-function surfaces.
+NARS evidence and truth-function interfaces.
 -/

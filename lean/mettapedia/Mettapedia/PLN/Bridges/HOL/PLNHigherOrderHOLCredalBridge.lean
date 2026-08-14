@@ -735,7 +735,7 @@ theorem credalHOLFormulaValue_eq_toReal_sentenceProb_kyburg_join
 applications to Kyburg/Giry-joined sentence probabilities in that completion.
 
 This is the theoremic bridge between the old Kyburg flattening lane and the
-live HO-PLN multi-join surface: product, noisy-OR, and later rule operators all
+live HO-PLN multi-join interface: product, noisy-OR, and later rule operators all
 consume the flattened predictive measure of each hierarchical state before the
 credal envelope is taken across states. -/
 theorem credalHOLFormulaFiniteRuleValue_eq_rule_on_kyburg_join
@@ -779,7 +779,7 @@ theorem binaryRuleAsFinite2_monotone_on_unit
 /-- Concrete product multi-join over a finite vector of strength coordinates.
 
 This is the first named n-ary rule operator above the generic finite-rule
-surface: it acts like the same-completion product/conjunction fold on
+interface: it acts like the same-completion product/conjunction fold on
 probability-strength inputs. -/
 noncomputable def productMultiJoin {n : ℕ} (xs : Fin n → ℝ) : ℝ :=
   ∏ j, xs j
@@ -2995,7 +2995,7 @@ theorem credalPredicateVocabularyPureIntensionalSimilarityInterval_eq_const_one_
 collapses the pure-intensional predicate-similarity interval to certainty.
 This is the model-family form of the PAT/ASSOC target: establish equality of
 the pattern/intension attribute sets, then reuse the common HO-PLN similarity
-surface. -/
+interface. -/
 theorem credalPredicateVocabularyPureIntensionalSimilarityInterval_eq_const_one_of_pointwise_sameIntent
     {ι : Type y} [Nonempty ι]
     (Ms : ι → HenkinModel.{u, v, w} Base Const)

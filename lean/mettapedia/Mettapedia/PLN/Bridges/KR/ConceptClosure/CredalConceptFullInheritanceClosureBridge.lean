@@ -816,7 +816,7 @@ full-inheritance closure bridge.
 This is the PLN/KR closure layer beneath the ASSOC/PAT semantic-layer
 consumer: robust lower seeds, permissive upper seeds, and determined
 upper-to-lower reclassification all route through the same WM closure and
-threshold-validity surface. -/
+threshold-validity interface. -/
 structure CredalConceptFullInheritanceClosureBridgeProfile where
   lowerClosureThresholdValid :
     ∀ {State Query Obj Attr Q Gate : Type}

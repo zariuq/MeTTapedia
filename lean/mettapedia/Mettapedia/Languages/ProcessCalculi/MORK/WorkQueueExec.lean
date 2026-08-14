@@ -187,7 +187,7 @@ def parseSinks (tplExpr : Atom) : List Sink :=
 /-! ## Strict parser for the modeled source/sink fragment
 
 The older compatibility parser above is intentionally permissive: it filters
-unknown factors and sinks so bridge experiments can project a larger surface
+unknown factors and sinks so bridge experiments can project a larger interface
 onto the small Lean model.  It must not decide whether an MM2 directive is
 well formed.  The option-valued parser below rejects the whole directive when
 any source or sink is outside the explicitly modeled vocabulary. -/

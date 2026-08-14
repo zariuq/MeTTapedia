@@ -4,16 +4,22 @@ import Provenance.Util.ValueTypeString
 import Init.Data.List.Lemmas
 
 /-!
-# CeTTa Explicit Substitution Bridge Prototype
+# CeTTa Explicit Substitution Bridge
 
 Builds a Pattern-side support model for a future relation between CeTTa's
 runtime representation (skeleton + slot_env) and explicit-substitution
 closures.
 
-This file currently proves the carrier definitions and several key support
-lemmas, including slot-name injectivity. The full bridge theorems
-(`materialize (canonicalize p) = p`, substitution-composition laws, and the
-strongest runtime correspondence statements) still need to be completed.
+Proved here, on the Pattern-side model:
+- `applySubst_untouched`: a substitution whose domain misses every free
+  variable of a subst-free pattern is the identity on it. This is the
+  general-environment form of `applySubst_fresh_single`.
+- `materialize_untouched` / `materialize_trivial`: the closure-level
+  corollaries.
+- slot-name injectivity and the `enumFrom` support lemmas.
+
+No Lean/C correspondence theorem is claimed anywhere in this file; the C
+runtime names below are comparison targets only.
 
 ## CeTTa Runtime Analogy
 
@@ -46,7 +52,8 @@ namespace Mettapedia.Bridge.CeTTaExplicitSubst
 
 open Mettapedia.OSLF.MeTTaIL.Syntax (Pattern)
 open Mettapedia.OSLF.MeTTaIL.Substitution
-  (SubstEnv applySubst freeVars)
+  (SubstEnv applySubst freeVars noExplicitSubst allNoExplicitSubst
+   allNoExplicitSubst_mem subst_empty)
 
 /-! ## §1: Explicit Closure (Layer 3 Representation)
 
@@ -76,8 +83,7 @@ end ExplicitClosure
 
 /-! ## §2: Materialize (Substitution Application)
 
-Materialization applies the model's environment to its skeleton. In this
-Pattern-side model, that operation is defined as `applySubst`.
+Materialization applies the model's environment to its skeleton.
 
 CeTTa's `variant_shape_materialize()` is the intended comparison target; no
 Lean/C correspondence theorem is claimed here. -/
@@ -89,17 +95,73 @@ Lean/C correspondence theorem is claimed here. -/
 def materialize (c : ExplicitClosure) : Pattern :=
   applySubst c.env c.skeleton
 
-/-- Unfolding the Pattern-side definition of materialization yields
-    `applySubst`. This definitional equality does not establish equivalence
-    with CeTTa's C implementation. -/
-theorem materialize_eq_applySubst (c : ExplicitClosure) :
-    materialize c = applySubst c.env c.skeleton := rfl
+private theorem list_map_eq_self' {α : Type*} {f : α → α} {l : List α}
+    (h : ∀ a ∈ l, f a = a) : l.map f = l := by
+  induction l with
+  | nil => rfl
+  | cons a as ih =>
+    simp only [List.map_cons]
+    rw [h a (List.mem_cons.mpr (Or.inl rfl)),
+        ih fun b hb => h b (List.mem_cons.mpr (Or.inr hb))]
 
-/-- Materializing the trivial closure delegates to `applySubst` with an empty
-    outer environment. It need not be syntactic identity when `p` itself
-    contains an explicit-substitution node. -/
-theorem materialize_trivial (p : Pattern) :
-    materialize (ExplicitClosure.trivial p) = applySubst SubstEnv.empty p := rfl
+/-- **A substitution that touches none of a pattern's free variables is the
+    identity on it** (for subst-free patterns).
+
+    This is the general-environment form of `applySubst_fresh_single`, and it
+    is the Pattern-side statement of the "does σ touch M?" rejection test: if
+    a conservative variable-summary intersection is empty, the substitution
+    walk may be skipped and the original shared node returned.
+
+    `noExplicitSubst` is required because `applySubst` executes `.subst`
+    nodes via binder-eliminating `instantiateBVar`, changing term structure
+    even when the environment has no effect. -/
+theorem applySubst_untouched {env : SubstEnv} {p : Pattern}
+    (hnes : noExplicitSubst p = true)
+    (hdisj : ∀ name ∈ freeVars p, env.find name = none) :
+    applySubst env p = p := by
+  induction p using Pattern.inductionOn with
+  | hbvar _ => simp [applySubst]
+  | hfvar name =>
+    simp only [applySubst, hdisj name (by simp [freeVars])]
+  | happly c args ih =>
+    simp only [applySubst]; congr 1
+    exact list_map_eq_self' fun a ha =>
+      ih a ha (allNoExplicitSubst_mem (by exact hnes) ha)
+        (fun name hn => hdisj name
+          (by simp only [freeVars]; exact List.mem_flatMap.mpr ⟨a, ha, hn⟩))
+  | hlambda _ body ih =>
+    simp only [applySubst]; congr 1
+    simp only [freeVars] at hdisj
+    exact ih (by exact hnes) hdisj
+  | hmultiLambda _ _ body ih =>
+    simp only [applySubst]; congr 1
+    simp only [freeVars] at hdisj
+    exact ih (by exact hnes) hdisj
+  | hsubst body repl _ _ =>
+    have : noExplicitSubst (.subst body repl) = false := rfl
+    rw [this] at hnes; exact absurd hnes Bool.false_ne_true
+  | hcollection ct elems rest ih =>
+    simp only [applySubst]; congr 1
+    exact list_map_eq_self' fun a ha =>
+      ih a ha (allNoExplicitSubst_mem (by exact hnes) ha)
+        (fun name hn => hdisj name
+          (by simp only [freeVars]; exact List.mem_flatMap.mpr ⟨a, ha, hn⟩))
+
+/-- Closure-level corollary: a closure whose environment misses every free
+    variable of its (subst-free) skeleton materializes to the skeleton
+    itself — the shared original node, unchanged. -/
+theorem materialize_untouched {c : ExplicitClosure}
+    (hnes : noExplicitSubst c.skeleton = true)
+    (hdisj : ∀ name ∈ freeVars c.skeleton, c.env.find name = none) :
+    materialize c = c.skeleton :=
+  applySubst_untouched hnes hdisj
+
+/-- Materializing the trivial closure of a subst-free pattern is the
+    identity. The `noExplicitSubst` hypothesis is necessary: with a `.subst`
+    node present, even the empty environment changes term structure. -/
+theorem materialize_trivial (p : Pattern) (hnes : noExplicitSubst p = true) :
+    materialize (ExplicitClosure.trivial p) = p :=
+  subst_empty p hnes
 
 /-! ## §3: Canonicalize (Closure Creation)
 
@@ -211,17 +273,7 @@ def canonicalize (p : Pattern) : ExplicitClosure :=
   let skeleton := applySubst reverseMap p
   ⟨skeleton, slotEnv⟩
 
-/-! ## §4: Substitution Composition
-
-Layer 3 operations compose: applying one closure's env, then another's,
-is equivalent to composing the environments. -/
-
-/-- Compose two substitution environments.
-    `(σ₁ ∘ σ₂)(x) = σ₁(σ₂(x))` -/
-def composeEnv (env1 env2 : SubstEnv) : SubstEnv :=
-  env2.map fun (x, t) => (x, applySubst env1 t)
-
-/-! ## §5: Candidate Skeleton Relation
+/-! ## §4: Candidate Skeleton Relation
 
 The relation below classifies patterns by equality of the candidate
 canonical skeleton. Its equivalence laws follow from equality. This section
@@ -243,17 +295,7 @@ theorem skeletonEquiv_trans (p q r : Pattern)
     (hpq : skeletonEquiv p q) (hqr : skeletonEquiv q r) : skeletonEquiv p r :=
   hpq.trans hqr
 
-/-! ## §6: Internal Model Facts
-
-These theorems concern only the Lean definitions above. They are candidate
-facts for a future CeTTa bridge, not verified C runtime contracts. -/
-
-/-- **Internal fact**: Empty outer-environment materialization unfolds to
-    `applySubst` with an empty environment.
-    `materialize(⟨p, ∅⟩) = applySubst ∅ p`
-    This statement is not the syntactic identity law `= p`. -/
-theorem materialize_empty_env (p : Pattern) :
-    materialize ⟨p, SubstEnv.empty⟩ = applySubst SubstEnv.empty p := rfl
+/-! ## §5: Internal Model Facts -/
 
 /-- Ground patterns (no free variables) canonicalize to trivial closures. -/
 theorem canonicalize_ground (p : Pattern) (h : freeVars p = []) :
@@ -261,22 +303,21 @@ theorem canonicalize_ground (p : Pattern) (h : freeVars p = []) :
   simp only [canonicalize, buildSlotMaps, h, List.eraseDups_nil, enumFrom, List.map_nil]
   rfl
 
-/-- Trivial closure materialization is just the skeleton. -/
-theorem materialize_trivial_closure (p : Pattern) :
-    materialize (ExplicitClosure.trivial p) = applySubst SubstEnv.empty p := rfl
+/-! ## §6: Deferred Bridge Theorems
 
-/-! ## §7: Deferred Bridge Theorems
+Intentionally omitted until actually proved:
 
-The full bridge theorems are intentionally omitted until they are actually
-proved. In particular, this file does not yet claim:
-
-- `materialize (canonicalize p) = p`
-- substitution-composition compatibility for `composeEnv`
-- the strongest runtime correspondence statements tying these definitions back
-  to CeTTa's C implementation contracts
-
-What remains here is the support layer that already compiles cleanly:
-carrier definitions, materialization/canonicalization functions, slot-name
-injectivity, and basic structural contracts. -/
+- the round-trip law `materialize (canonicalize p) = p` (needs subst-free and
+  slot-name-freshness hypotheses: it is false if `p` contains a `.subst` node
+  or a free variable literally named `_slot_i`);
+- a substitution-composition operator and its law. A previous `composeEnv`
+  defined as `env2.map (fun (x, t) => (x, applySubst env1 t))` was removed:
+  it drops `env1`'s bindings outside `dom env2`, so the intended law
+  `applySubst (composeEnv e1 e2) p = applySubst e1 (applySubst e2 p)` is
+  false for it (take `x ∈ dom e1 \ dom e2`). A correct operator must append
+  `env1`'s residual bindings;
+- any correspondence statement tying these definitions to CeTTa's C
+  implementation contracts.
+-/
 
 end Mettapedia.Bridge.CeTTaExplicitSubst

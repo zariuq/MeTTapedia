@@ -1,4 +1,4 @@
-import Mettapedia.PLN.Bridges.ProbabilityTheory.ConjugateEvidenceSurface
+import Mettapedia.PLN.Bridges.ProbabilityTheory.ConjugateEvidenceCore
 import Mettapedia.PLN.Bridges.ProbabilityTheory.CategoricalNuPLNBridge
 import Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceBeta
 import Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceDirichlet
@@ -6,7 +6,7 @@ import Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceDirichletQuantale
 import Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceNormalGamma
 import Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceNormalGammaLattice
 import Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceWeightedNormalGamma
-import Mettapedia.PLN.Bridges.ProbabilityTheory.WeightedNormalGammaSurface
+import Mettapedia.PLN.Bridges.ProbabilityTheory.WeightedNormalGammaAdapter
 import Mettapedia.PLN.Bridges.ProbabilityTheory.PLNGaussianEM
 import Mettapedia.PLN.Bridges.ProbabilityTheory.PLNGaussianEMExtension
 import Mettapedia.PLN.Bridges.ProbabilityTheory.PLNKyburgReduction

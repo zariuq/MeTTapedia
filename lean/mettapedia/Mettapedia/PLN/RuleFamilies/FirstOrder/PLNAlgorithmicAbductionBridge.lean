@@ -176,7 +176,7 @@ theorem priorWeightedIntervalStrictlyRanks_point_lt
 
 /-- Universal-mixture prior-weighted lower endpoint.  This is the hook from
 algorithmic/intensional explanation priors into the already-built abduction
-interval surface. -/
+interval interface. -/
 noncomputable def universalMixtureAbductionLower
     (ξ : Mettapedia.KR.ConceptGeometry.IntensionalInheritance.Semimeasure)
     (ctx hypothesis : Mettapedia.KR.ConceptGeometry.IntensionalInheritance.BinString)
@@ -227,7 +227,7 @@ selected point inside the ranked intervals.
 
 This is the load-bearing Solomonoff-facing version of the ranking discipline:
 the prior comes from `priorFromConditional`, but the uncertainty calculus is
-still the existing abduction ITV surface. -/
+still the existing abduction ITV interface. -/
 theorem universalMixtureAbduction_interval_rank_point_lt
     {ξ : Mettapedia.KR.ConceptGeometry.IntensionalInheritance.Semimeasure}
     {ctx betterHypothesis worseHypothesis :
@@ -254,7 +254,7 @@ theorem universalMixtureAbduction_interval_rank_point_lt
 /-- Canonical geometric-mixture specialization of
 `universalMixtureAbduction_interval_rank_point_lt`.
 
-This is the concrete Chapter-3 mixture surface: the ranking prior is no longer
+This is the concrete Chapter-3 mixture interface: the ranking prior is no longer
 an abstract `ξ`, but the geometric universal mixture `xiGeomSemimeasure`. -/
 theorem xiGeomAbduction_interval_rank_point_lt
     {ν : ℕ → Mettapedia.KR.ConceptGeometry.IntensionalInheritance.Semimeasure}
@@ -288,7 +288,7 @@ theorem xiGeomAbduction_interval_rank_point_lt
 /-- Prefix-complexity universal-mixture specialization of
 `universalMixtureAbduction_interval_rank_point_lt`.
 
-This is the machine-indexed Solomonoff-facing surface using the `2^{-Kpf}`
+This is the machine-indexed Solomonoff-facing interface using the `2^{-Kpf}`
 mixture.  Machine-independence constants live in `UniversalPrediction`; this
 theorem only states the robust ranking rule once the chosen `xiKpf` prior
 separates the candidate intervals. -/
@@ -334,7 +334,7 @@ constants.
 
 This is intentionally weaker than a ranking-invariance theorem.  It consumes
 the raw `xiKpfSemimeasure_mul_le_of_invariance` theorem at the conditional
-prior surface and says that changing universal machines rescales the
+prior interface and says that changing universal machines rescales the
 conditional prior by a bounded multiplicative factor.  A robust abduction
 ranking across machines still needs an explicit separation margin large enough
 to absorb that factor. -/
@@ -493,7 +493,7 @@ conditional priors across universal prefix-free machines.
 
 This is the `priorFromConditional` readout of
 `xiKpfConditionalENN_mul_le_of_invariance`, so it is the version consumed by the
-real-valued abduction-ranking surface. -/
+real-valued abduction-ranking interface. -/
 theorem xiKpfPriorFromConditional_mul_le_of_invariance
     (U V : Mettapedia.UniversalAI.SolomonoffPrior.PrefixFreeMachine)
     [Mettapedia.UniversalAI.SolomonoffPrior.UniversalPFM U]

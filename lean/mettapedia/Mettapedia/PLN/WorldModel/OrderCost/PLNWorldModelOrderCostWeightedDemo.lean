@@ -4,7 +4,7 @@ import Mettapedia.PLN.WorldModel.OrderCost.PLNWorldModelOrderCostBounds
 /-!
 # Weighted Numeric Order-Cost Demo (WM-PLN)
 
-Concrete numeric variant of the order-cost surface using weighted evidence:
+Concrete numeric variant of the order-cost interface using weighted evidence:
 
 - state: query-indexed `WeightedNormalGammaEvidence`,
 - merge policy: right-biased (`latest-wins`),
@@ -18,7 +18,7 @@ namespace Mettapedia.PLN.WorldModel.OrderCost
 
 open scoped ENNReal
 open Mettapedia.PLN.Evidence.EvidenceClass
-open Mettapedia.PLN.Bridges.ProbabilityTheory.ConjugateEvidenceSurface
+open Mettapedia.PLN.Bridges.ProbabilityTheory.ConjugateEvidenceCore
 open Mettapedia.PLN.WorldModel.PLNWorldModelGeneric
 open Mettapedia.PLN.WorldModel.WorldModelOverlap
 open Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceWeightedNormalGamma

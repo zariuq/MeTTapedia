@@ -360,7 +360,7 @@ theorem CostTerm.eraseCanonical_components_structural
       CostConfig.eraseCanonical_singleton_structural signatureName signaturePure _
   | .drop name =>
       CostConfig.eraseCanonical_singleton_structural signatureName signaturePure _
-  | .purse surface stack =>
+  | .purse location stack =>
       CostConfig.eraseCanonical_singleton_structural signatureName signaturePure _
 
 private theorem fundedTarget_toPureCommTarget

@@ -51,7 +51,7 @@ The coordinates and interval theorem are supplied by
 `PLNHigherOrderHOLDeductionBridge`; this structure only records the planner
 query label, provenance, admissibility proof, and chosen credibility coordinate.
 It is intentionally generic so benchmark/regime wrappers can consume the same
-surface without inventing a benchmark-specific deduction semantics. -/
+interface without inventing a benchmark-specific deduction semantics. -/
 structure HODeductionPlannerShadow (xs : Fin 5 → ℝ) where
   query : String
   provenance : List String

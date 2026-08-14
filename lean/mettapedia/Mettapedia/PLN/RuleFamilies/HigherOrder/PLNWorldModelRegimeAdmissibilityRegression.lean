@@ -25,7 +25,7 @@ open Mettapedia.PLN.WorldModel.PLNWorldModel
 open Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointClosure
 open Mettapedia.PLN.RuleFamilies.HigherOrder.PLNWorldModelRegimeAdmissibility
 open Mettapedia.PLN.WorldModel
-open Mettapedia.PLN.WorldModel.SufficientStatisticSurface
+open Mettapedia.PLN.WorldModel.SufficientStatisticEncoder
 open Mettapedia.Hyperseed
 open Mettapedia.Hyperseed.Regression
 open scoped ENNReal
@@ -38,9 +38,9 @@ def groundedStatefulQueryPerspective :
   reaches _ := groundedQueryPerspective.reaches
   effort _ := groundedQueryPerspective.effort
 
-theorem agentSurface_aggregate_eq_card_unitPositiveEvidence
+theorem agentEncoder_aggregate_eq_card_unitPositiveEvidence
     (σ : Multiset AgentObservation) (q : AgentQuery) :
-    aggregate agentSurface σ q = { pos := σ.card, neg := 0 } := by
+    aggregate agentEncoder σ q = { pos := σ.card, neg := 0 } := by
   induction σ using Multiset.induction_on with
   | empty =>
       rw [aggregate_zero]
@@ -53,9 +53,9 @@ theorem agentSurface_aggregate_eq_card_unitPositiveEvidence
       rw [aggregate_cons]
       rw [ih]
       apply BinaryEvidence.ext'
-      · simp [agentSurface, SufficientStatisticSurface.ofObservationMap,
+      · simp [agentEncoder, SufficientStatisticEncoder.ofObservationMap,
           unitPositiveEvidence, BinaryEvidence.hplus_def, add_comm]
-      · simp [agentSurface, SufficientStatisticSurface.ofObservationMap,
+      · simp [agentEncoder, SufficientStatisticEncoder.ofObservationMap,
           unitPositiveEvidence, BinaryEvidence.hplus_def]
 
 theorem agentWorldModel_queryStrength_eq_zero_of_empty
@@ -65,7 +65,7 @@ theorem agentWorldModel_queryStrength_eq_zero_of_empty
         (0 : Multiset AgentObservation) q = 0 := by
   unfold BinaryWorldModel.queryStrength
   rw [agentWorldModel_evidence_eq_aggregate]
-  rw [agentSurface_aggregate_eq_card_unitPositiveEvidence]
+  rw [agentEncoder_aggregate_eq_card_unitPositiveEvidence]
   simp [BinaryEvidence.toStrength, BinaryEvidence.total]
 
 theorem agentWorldModel_queryStrength_eq_one_of_nonempty
@@ -76,7 +76,7 @@ theorem agentWorldModel_queryStrength_eq_one_of_nonempty
         σ q = 1 := by
   unfold BinaryWorldModel.queryStrength
   rw [agentWorldModel_evidence_eq_aggregate]
-  rw [agentSurface_aggregate_eq_card_unitPositiveEvidence]
+  rw [agentEncoder_aggregate_eq_card_unitPositiveEvidence]
   have hcard : (σ.card : ℝ≥0∞) ≠ 0 := by
     have hcardNat : σ.card ≠ 0 := by
       simpa [Multiset.card_eq_zero] using hσ
@@ -212,7 +212,7 @@ theorem awareReady_in_closure_but_regime_sensitive_for_wm_admissibility
     {σ : Multiset AgentObservation}
     (hσ : σ ≠ 0) :
     AgentQuery.awareReady ∈
-        closureFromTrace agentSurface agentFrontier agentRules σ ∧
+        closureFromTrace agentEncoder agentFrontier agentRules σ ∧
       AgentQuery.awareReady ∉
         wmAdmissibleRegionAt
           (State := Multiset AgentObservation) (Query := AgentQuery)

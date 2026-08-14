@@ -5,7 +5,7 @@ import Mettapedia.PLN.Core.PLNCore
 
 Compatibility entrypoint requested by project workflow.
 
-This currently aliases the curated theorem-complete PLN surface exposed by `PLNCore`.
+This currently aliases the curated theorem-complete PLN interface exposed by `PLNCore`.
 -/
 
 namespace Mettapedia.PLN.Core.PLNCOMPLETE

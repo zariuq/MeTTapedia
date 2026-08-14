@@ -4,7 +4,7 @@ import Mettapedia.PLN.Bridges.HOL.LogicalInduction.EmpiricalSpecialCase
 import Mettapedia.PLN.Bridges.HOL.PLNWorldModelHOLCore
 
 /-!
-# Regression Surface for the PLN/HOL Logical-Induction Bridge
+# Regression Interface for the PLN/HOL Logical-Induction Bridge
 
 This module packages the main positive and negative toy fixtures for the
 PLN/HOL logical-induction bridge into one explicit regression target.

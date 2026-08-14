@@ -94,7 +94,7 @@ def CategoricalBorelHigherOrderLongWordFactorization
     ∀ xs : List (Fin k), ∀ hxs : m ≤ xs.length,
       μ xs = higherOrderLongWordWeightViaProbMarkov (k := k) (m := m) π xs hxs
 
-/-- Public Borel-side mixture object for the higher-order long-word surface. -/
+/-- Public Borel-side mixture object for the higher-order long-word interface. -/
 structure BorelHigherOrderLongWordMixture
     (k m : ℕ) [Fact (0 < m)]
     (μ : Mettapedia.UniversalAI.UniversalPrediction.FiniteAlphabet.PrefixMeasure (Fin k)) where
@@ -207,7 +207,7 @@ local instance instHigherOrderFiniteDiscreteMixtureIndexMeasurableSpace :
 local instance instHigherOrderFiniteDiscreteMixtureIndexMeasurableSingletonClass :
     MeasurableSingletonClass (Fin n) := ⟨fun _ => by simp⟩
 
-/-- Prefix-measure surface carried by a genuine higher-order parameter, defined
+/-- Prefix-measure interface carried by a genuine higher-order parameter, defined
 by its raw sequence law on cylinders. -/
 noncomputable def higherOrderCylinderPrefixMeasure
     (θ : HigherOrderMarkovParam k m) :
@@ -316,7 +316,7 @@ noncomputable def higherOrderCylinderPrefixMeasure
 
 /-- Finite discrete law on higher-order parameters, pushed forward to the
 encoded context-state parameter space. This is the first honest non-Dirac
-mixture surface for the higher-order bridge. -/
+mixture interface for the higher-order bridge. -/
 noncomputable def finiteHigherOrderEncodedMixingLaw
     (w : Fin n → ℝ≥0∞) (hw : ∑ i : Fin n, w i = 1)
     (Θ : Fin n → HigherOrderMarkovParam k m) :

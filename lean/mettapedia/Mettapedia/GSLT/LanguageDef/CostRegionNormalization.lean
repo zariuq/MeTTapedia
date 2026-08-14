@@ -83,6 +83,37 @@ theorem OpenPattern.reindexBound_pattern
   cases boundEquality
   rfl
 
+/-- Recontextualize a reflection-certified open pattern when the target free
+context preserves every lookup used by its syntax.  This is the arbitrary-
+type companion of `OpenTerm.recontextualizeFree`. -/
+def OpenPattern.recontextualizeFree
+    {profile : Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile}
+    {language : LanguageDef}
+    {sourceFree targetFree : WellSorted.FreeTypeContext}
+    {bound : List TypeExpr} {type : TypeExpr}
+    (pattern : OpenPattern profile language sourceFree bound type)
+    (preserves : ∀ {name freeType},
+      name ∈ pattern.1.freeFvarNames →
+      sourceFree name = some freeType → targetFree name = some freeType) :
+    OpenPattern profile language targetFree bound type :=
+  ⟨pattern.1,
+    ⟨pattern.2.1.1.recontextualizeFree preserves,
+      pattern.2.1.2.1, pattern.2.1.2.2.1, pattern.2.1.2.2.2⟩,
+    pattern.2.2⟩
+
+@[simp]
+theorem OpenPattern.recontextualizeFree_pattern
+    {profile : Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile}
+    {language : LanguageDef}
+    {sourceFree targetFree : WellSorted.FreeTypeContext}
+    {bound : List TypeExpr} {type : TypeExpr}
+    (pattern : OpenPattern profile language sourceFree bound type)
+    (preserves : ∀ {name freeType},
+      name ∈ pattern.1.freeFvarNames →
+      sourceFree name = some freeType → targetFree name = some freeType) :
+    (pattern.recontextualizeFree preserves).1 = pattern.1 :=
+  rfl
+
 /-- Insert a block of inner binders while retaining both the five-field
 typing certificate and quote-sensitive scope. -/
 def OpenPattern.weakenRoot
@@ -136,6 +167,46 @@ theorem reflectiveOpenPatternEquationSetoid_reindexBound
       (left.reindexBound boundEquality) (right.reindexBound boundEquality) := by
   cases boundEquality
   exact equivalent
+
+/-- A typed reflective equation path can be recontextualized along a
+pointwise extension of its free-variable typing context.  Every intermediate
+vertex retains its own typing certificate; the raw authored generator is
+unchanged. -/
+theorem reflectiveOpenPatternEquationSetoid_recontextualizeFree
+    {profile : Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile}
+    {language : LanguageDef}
+    {sourceFree targetFree : WellSorted.FreeTypeContext}
+    {bound : List TypeExpr} {type : TypeExpr}
+    (preservesLookup : ∀ {name freeType},
+      sourceFree name = some freeType → targetFree name = some freeType)
+    {left right : OpenPattern profile language sourceFree bound type}
+    (equivalent :
+      (ReflectiveEquationSemantics.reflectiveOpenPatternEquationSetoid
+        profile defaultBasePremises language sourceFree bound type).r
+        left right) :
+    (ReflectiveEquationSemantics.reflectiveOpenPatternEquationSetoid
+      profile defaultBasePremises language targetFree bound type).r
+      (left.recontextualizeFree
+        (fun _membership lookup => preservesLookup lookup))
+      (right.recontextualizeFree
+        (fun _membership lookup => preservesLookup lookup)) := by
+  let map := fun pattern : OpenPattern profile language sourceFree bound type =>
+    pattern.recontextualizeFree
+      (fun _membership lookup => preservesLookup lookup)
+  change (ReflectiveEquationSemantics.reflectiveOpenPatternEquationSetoid
+    profile defaultBasePremises language targetFree bound type).r
+    (map left) (map right)
+  induction equivalent with
+  | rel left right generator =>
+      exact Relation.EqvGen.rel _ _ (by
+        unfold ReflectiveEquationSemantics.reflectiveOpenPatternEquationGenerator
+          at generator ⊢
+        simpa [map] using generator)
+  | refl pattern => exact Relation.EqvGen.refl (map pattern)
+  | symm left right relation inductionHypothesis =>
+      exact Relation.EqvGen.symm _ _ inductionHypothesis
+  | trans left middle right first second firstIH secondIH =>
+      exact Relation.EqvGen.trans _ _ _ firstIH secondIH
 
 end ReflectiveWellSorted
 
@@ -1997,6 +2068,124 @@ theorem CIGSLT.costNormalizeOpen_typed_openEquationSetoid
 
 /-! ## Exact contextual typed canonical sections -/
 
+/-- A Cost normalizer factors through the finite free-variable support of its
+input when unused entries of the ambient free context cannot affect the raw
+normal form.  The restriction retains the exact lookup of every occurring
+free name, so this property is weaker than independence from used typing
+information and stronger than mere preservation of output free names. -/
+def CostOpenNormalizerFactorsThroughFreeSupport (source : CIGSLT)
+    (normalizeOpen : CostOpenNormalizer source) : Prop :=
+  ∀ {free : WellSorted.FreeTypeContext} {bound : List TypeExpr}
+    {sort : LangSort source.costWholeLanguage}
+    (term : ReflectiveWellSorted.OpenTerm
+      source.costWholeReflectionProfile source.costWholeLanguage free bound
+        sort),
+    (@normalizeOpen
+      (free.restrictTo term.1.freeFvarNames) bound sort
+      term.restrictFreeContext).1 =
+      (@normalizeOpen free bound sort term).1
+
+/-- Reindexing the free-context parameter of an open normalizer along an
+equality changes no raw output.  This is dependent transport only; unlike
+finite-support factorization below, it states no semantic naturality across
+distinct contexts. -/
+theorem CostOpenNormalizer.reindexFree_pattern
+    {source : CIGSLT} (normalizeOpen : CostOpenNormalizer source)
+    {sourceFree targetFree : WellSorted.FreeTypeContext}
+    {bound : List TypeExpr} {sort : LangSort source.costWholeLanguage}
+    (freeEquality : sourceFree = targetFree)
+    (term : ReflectiveWellSorted.OpenTerm
+      source.costWholeReflectionProfile source.costWholeLanguage sourceFree
+        bound sort) :
+    (@normalizeOpen targetFree bound sort
+      (term.reindex freeEquality rfl rfl)).1 =
+      (@normalizeOpen sourceFree bound sort term).1 := by
+  cases freeEquality
+  rfl
+
+/-- Finite-support factorization supplies exact naturality under extension or
+replacement of unused ambient free-context entries.  The proof compares both
+executions in their common finite restriction; it never asks the two ambient
+contexts themselves to be extensionally equal. -/
+theorem CostOpenNormalizerFactorsThroughFreeSupport.normalizeRecontextualizeFree
+    {source : CIGSLT} {normalizeOpen : CostOpenNormalizer source}
+    (factors : CostOpenNormalizerFactorsThroughFreeSupport source
+      normalizeOpen)
+    {sourceFree targetFree : WellSorted.FreeTypeContext}
+    {bound : List TypeExpr} {sort : LangSort source.costWholeLanguage}
+    (term : ReflectiveWellSorted.OpenTerm
+      source.costWholeReflectionProfile source.costWholeLanguage sourceFree
+        bound sort)
+    (preserves : ∀ {name freeType},
+      name ∈ term.1.freeFvarNames →
+      sourceFree name = some freeType →
+        targetFree name = some freeType) :
+    (@normalizeOpen targetFree bound sort
+      (term.recontextualizeFree preserves)).1 =
+      (@normalizeOpen sourceFree bound sort term).1 := by
+  have restrictedContexts :
+      sourceFree.restrictTo term.1.freeFvarNames =
+        targetFree.restrictTo term.1.freeFvarNames :=
+    term.toCore.restrictTo_freeFvarNames_eq_of_preserves preserves
+  have targetFactor := factors (term.recontextualizeFree preserves)
+  have sourceFactor := factors term
+  let targetRestricted :=
+    (term.recontextualizeFree preserves).restrictFreeContext
+  let sourceRestricted := term.restrictFreeContext
+  have restrictedTerms :
+      targetRestricted.reindex restrictedContexts.symm rfl rfl =
+        sourceRestricted := by
+    apply Subtype.ext
+    simp [targetRestricted, sourceRestricted]
+  have restrictedOutputs :
+      (@normalizeOpen
+        (targetFree.restrictTo term.1.freeFvarNames) bound sort
+        targetRestricted).1 =
+      (@normalizeOpen
+        (sourceFree.restrictTo term.1.freeFvarNames) bound sort
+        sourceRestricted).1 := by
+    calc
+      (@normalizeOpen
+          (targetFree.restrictTo term.1.freeFvarNames) bound sort
+          targetRestricted).1 =
+          (@normalizeOpen
+            (sourceFree.restrictTo term.1.freeFvarNames) bound sort
+            (targetRestricted.reindex restrictedContexts.symm rfl rfl)).1 :=
+        (CostOpenNormalizer.reindexFree_pattern normalizeOpen
+          restrictedContexts.symm targetRestricted).symm
+      _ = (@normalizeOpen
+            (sourceFree.restrictTo term.1.freeFvarNames) bound sort
+            sourceRestricted).1 := by
+        exact congrArg
+          (fun restricted : ReflectiveWellSorted.OpenTerm
+              source.costWholeReflectionProfile source.costWholeLanguage
+              (sourceFree.restrictTo term.1.freeFvarNames) bound sort =>
+            (@normalizeOpen
+              (sourceFree.restrictTo term.1.freeFvarNames) bound sort
+              restricted).1)
+          restrictedTerms
+  calc
+    (@normalizeOpen targetFree bound sort
+        (term.recontextualizeFree preserves)).1 =
+        (@normalizeOpen
+          (targetFree.restrictTo term.1.freeFvarNames) bound sort
+          (term.recontextualizeFree preserves).restrictFreeContext).1 := by
+      exact targetFactor.symm
+    _ = (@normalizeOpen
+          (sourceFree.restrictTo term.1.freeFvarNames) bound sort
+          term.restrictFreeContext).1 := by
+      exact restrictedOutputs
+    _ = (@normalizeOpen sourceFree bound sort term).1 := sourceFactor
+
+/-- Positive control: the identity open normalizer factors through finite
+free support.  This witnesses that the factorization interface itself adds
+no hidden inhabitance or global-context premise. -/
+theorem costIdentityOpenNormalizer_factorsThroughFreeSupport
+    (source : CIGSLT) :
+    CostOpenNormalizerFactorsThroughFreeSupport source (fun term => term) := by
+  intro free bound sort term
+  rfl
+
 /-- Contextual laws for an explicitly selected Cost normalizer.  They are
 independent of unary equation soundness and of the algorithm used to obtain
 the representative. -/
@@ -2065,7 +2254,7 @@ entries, introduces no new free names, preserves arbitrary reflective support,
 and therefore supplies the contextual fields independently of equation
 soundness.  Preservation of the *next* continuation fragment is defined later,
 after that continuation plan itself exists. -/
-structure CostContextualOpenLaws (source : CIGSLT) : Prop where
+structure CostReferenceContextualOpenLaws (source : CIGSLT) : Prop where
   preservesFreeVariableSupport : ∀
       {free : WellSorted.FreeTypeContext} {bound : List TypeExpr}
       {sort : LangSort source.costWholeLanguage}
@@ -2110,16 +2299,16 @@ generator.  The contextual extension carries the independent support laws
 required to inhabit `CIGSLT`.  No claim is made here that all proof-relevant
 elaborations erase to the same normal form; that strictly stronger property
 is separated below because it is not hereditary under Cost iteration. -/
-structure CostOpenSectionLaws (source : CIGSLT) : Prop
+structure CostReferenceOpenSectionLaws (source : CIGSLT) : Prop
     extends CostTypedUnaryNormalizationLaws source,
-      CostContextualOpenLaws source where
-  generatorInvariant : CostOpenGeneratorInvariant source
+      CostReferenceContextualOpenLaws source where
+  generatorInvariant : CostReferenceOpenGeneratorInvariant source
 
 /-- The established compact-executor laws instantiate the generic
 normalizer-parameterized section laws.  This is a compatibility theorem, not
 a second semantic authority: both bundles name the same executor. -/
-def CostOpenSectionLaws.toCostOpenSectionLawsFor
-    {source : CIGSLT} (laws : CostOpenSectionLaws source) :
+def CostReferenceOpenSectionLaws.toCostOpenSectionLawsFor
+    {source : CIGSLT} (laws : CostReferenceOpenSectionLaws source) :
     CostOpenSectionLawsFor source source.costNormalizeOpen where
   equivalent := by
     intro free bound sort term
@@ -2143,25 +2332,26 @@ This says every proof-relevant elaboration of one compact term erases to the
 same exact representative.  It is useful when true, but it is intentionally
 not required to construct the next continued Cost object: distinct semantic
 fibres may share one compact observation at higher Cost layers. -/
-structure CostOpenCanonicalLaws (source : CIGSLT) : Prop
-    extends CostOpenSectionLaws source where
+structure CostReferenceOpenCanonicalLaws (source : CIGSLT) : Prop
+    extends CostReferenceOpenSectionLaws source where
   compactCoherent : CompactCostNormalizationCoherent source
 
 /-- Object property selecting the ciGSLTs on which the proof-relevant Cost
 normalizer additionally factors through one exact compact representative. -/
-def CostCanonicalObjectProperty : CategoryTheory.ObjectProperty CIGSLT :=
-  CostOpenCanonicalLaws
+def CostReferenceCanonicalObjectProperty :
+    CategoryTheory.ObjectProperty CIGSLT :=
+  CostReferenceOpenCanonicalLaws
 
 /-- Full subcategory of ciGSLTs carrying the exact typed Cost laws.  The
 eventual Cost₁ category further restricts morphisms to maps preserving the
 generated structural data and canonical-key order. -/
-abbrev CostCanonicalObjects :=
-  CostCanonicalObjectProperty.FullSubcategory
+abbrev CostReferenceCanonicalObjects :=
+  CostReferenceCanonicalObjectProperty.FullSubcategory
 
 /-- Forget exact Cost canonical laws while retaining the underlying ciGSLT. -/
-def costCanonicalObjectsForget :
-    CategoryTheory.Functor CostCanonicalObjects CIGSLT :=
-  CostCanonicalObjectProperty.ι
+def costReferenceCanonicalObjectsForget :
+    CategoryTheory.Functor CostReferenceCanonicalObjects CIGSLT :=
+  CostReferenceCanonicalObjectProperty.ι
 
 /-- Exact computable section for an explicitly selected lawful Cost
 normalizer.  The section is generic in the source ciGSLT and in the
@@ -2197,8 +2387,8 @@ def CIGSLT.costContextualOpenSectionWith (source : CIGSLT)
 /-- Exact computable section of every typed open Cost fiber.  Soundness comes
 from proof-relevant tree normalization; completeness is generated solely from
 exact invariance under the authored open-equation generators. -/
-def CIGSLT.costOpenSection (source : CIGSLT)
-    (laws : CostOpenSectionLaws source) :
+def CIGSLT.costReferenceOpenSection (source : CIGSLT)
+    (laws : CostReferenceOpenSectionLaws source) :
     ComputableReflectiveFiberSection source.costIGSLT
       source.costWholeAdmittedReflection :=
   source.costOpenSectionWith source.costNormalizeOpen
@@ -2207,8 +2397,8 @@ def CIGSLT.costOpenSection (source : CIGSLT)
 /-- Exact contextual open section of the generated Cost presentation.
 Every additional field is supplied by the Cost₁ object law rather than
 inferred from equation equivalence. -/
-def CIGSLT.costContextualOpenSection (source : CIGSLT)
-    (laws : CostOpenSectionLaws source) :
+def CIGSLT.costReferenceContextualOpenSection (source : CIGSLT)
+    (laws : CostReferenceOpenSectionLaws source) :
     ComputableReflectiveFiberContextualSection source.costIGSLT
       source.costWholeAdmittedReflection :=
   source.costContextualOpenSectionWith source.costNormalizeOpen
@@ -2216,8 +2406,8 @@ def CIGSLT.costContextualOpenSection (source : CIGSLT)
 
 /-- Exact representative independence on every typed open Cost equation
 path.  This theorem is downstream of the local generator law. -/
-theorem CIGSLT.costNormalizeOpen_complete (source : CIGSLT)
-    (laws : CostOpenSectionLaws source)
+theorem CIGSLT.costReferenceNormalizeOpen_complete (source : CIGSLT)
+    (laws : CostReferenceOpenSectionLaws source)
     {targetFree : WellSorted.FreeTypeContext}
     {targetBound : List TypeExpr}
     {targetSort : LangSort source.costWholeLanguage}
@@ -2230,13 +2420,13 @@ theorem CIGSLT.costNormalizeOpen_complete (source : CIGSLT)
           source.costWholeLanguage targetFree targetBound
             (.base targetSort.1)).r left right) :
     source.costNormalizeOpen left = source.costNormalizeOpen right :=
-  (source.costOpenSection laws).complete equivalent
+  (source.costReferenceOpenSection laws).complete equivalent
 
 /-- Canonical section for compact observations of proof-relevant Cost
 elaborations.  The observation relation deliberately forgets elaboration
 identity; the elaborated semantic carrier itself retains it. -/
-def CIGSLT.costCompactObservationSection (source : CIGSLT)
-    (laws : CostOpenCanonicalLaws source)
+def CIGSLT.costReferenceCompactObservationSection (source : CIGSLT)
+    (laws : CostReferenceOpenCanonicalLaws source)
     (targetFree : WellSorted.FreeTypeContext) (targetBound : List TypeExpr)
     (targetSort : LangSort source.costWholeLanguage) :
     ComputableSetoidSection
@@ -2251,7 +2441,7 @@ def CIGSLT.costCompactObservationSection (source : CIGSLT)
         source.costWholeLanguage targetFree targetBound
           (.base targetSort.1)).r term.2.normalizeErasure term.1
     exact term.2.normalizeErasure_typed_openEquationSetoid
-      laws.toCostOpenSectionLaws.toCostTypedUnaryNormalizationLaws
+      laws.toCostReferenceOpenSectionLaws.toCostTypedUnaryNormalizationLaws
   complete := by
     intro left right equivalent
     change (ReflectiveEquationSemantics.reflectiveOpenPatternEquationSetoid
@@ -2263,21 +2453,24 @@ def CIGSLT.costCompactObservationSection (source : CIGSLT)
       CostOpenElaboration.compileTerm source right.2.normalizeErasure
     apply congrArg (CostOpenElaboration.compileTerm source)
     exact (left.2.normalizeErasure_eq_costNormalizeOpen laws.compactCoherent
-      ).trans ((source.costNormalizeOpen_complete laws.toCostOpenSectionLaws
+      ).trans ((source.costReferenceNormalizeOpen_complete
+        laws.toCostReferenceOpenSectionLaws
         equivalent).trans
         (right.2.normalizeErasure_eq_costNormalizeOpen
           laws.compactCoherent).symm)
 
 /-- Erasing the semantic representative of any elaboration agrees exactly
 with the executable compact normalizer. -/
-theorem CIGSLT.costCompactObservationSection_normalize_erase (source : CIGSLT)
-    (laws : CostOpenCanonicalLaws source)
+theorem CIGSLT.costReferenceCompactObservationSection_normalize_erase
+    (source : CIGSLT)
+    (laws : CostReferenceOpenCanonicalLaws source)
     {targetFree : WellSorted.FreeTypeContext}
     {targetBound : List TypeExpr}
     {targetSort : LangSort source.costWholeLanguage}
     (term : CostElabTerm source targetFree targetBound targetSort) :
     CostOpenElaboration.erase
-        ((source.costCompactObservationSection laws targetFree targetBound
+        ((source.costReferenceCompactObservationSection laws targetFree
+          targetBound
           targetSort).normalize term) =
       source.costNormalizeOpen term.1 := by
   change term.2.normalizeErasure = source.costNormalizeOpen term.1
@@ -2286,7 +2479,7 @@ theorem CIGSLT.costCompactObservationSection_normalize_erase (source : CIGSLT)
 /-- Exact chooser independence for one admitted typed compact term, derived
 only from the explicit compact-coherence law. -/
 theorem CostRegionTree.normalize_overlap_exact
-    {source : CIGSLT} (laws : CostOpenCanonicalLaws source)
+    {source : CIGSLT} (laws : CostReferenceOpenCanonicalLaws source)
     {targetFree : WellSorted.FreeTypeContext}
     {targetBound : List TypeExpr}
     {targetSort : LangSort source.costWholeLanguage}

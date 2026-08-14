@@ -136,7 +136,7 @@ after it supplies the same observation-preservation and comparison evidence. -/
 def evaluationRoutePlanV1 (model : Model) (space : model.Space)
     (subject result : Pattern) (occurrence : Nat)
     (copy : occurrence < Multiset.count result
-      (MeTTaZero.evaluateOne model.toModel space subject)) :
+      (model.base.source.occurrences space subject)) :
     FinitelySupportedPlan CandidatePlanningInputV1 Nat
       (Route (CarriedStep model)
         ((evaluationKernelEmbedding model).toFun (.request space subject))
@@ -152,7 +152,7 @@ def evaluationRoutePlanV1 (model : Model) (space : model.Space)
 @[simp] theorem evaluationRoutePlanV1_support (model : Model)
     (space : model.Space) (subject result : Pattern) (occurrence : Nat)
     (copy : occurrence < Multiset.count result
-      (MeTTaZero.evaluateOne model.toModel space subject)) :
+      (model.base.source.occurrences space subject)) :
     (evaluationRoutePlanV1 model space subject result occurrence copy).support =
       {.evaluationRoute} :=
   rfl
@@ -163,7 +163,7 @@ routes or their input representation. -/
 theorem selected_route_v1_preserves_meaning (model : Model)
     (space : model.Space) (subject result : Pattern) (occurrence : Nat)
     (copy : occurrence < Multiset.count result
-      (MeTTaZero.evaluateOne model.toModel space subject))
+      (model.base.source.occurrences space subject))
     (environment : CandidatePlanningInputV1 → Nat) :
     (kernelElaboration model).elaborate
         ((evaluationKernelEmbedding model).toFun (.request space subject)) =
@@ -180,7 +180,7 @@ an analogous comparison; backend identity alone is insufficient. -/
 def selectedRouteV1ToLazyCell (model : Model)
     (space : model.Space) (subject result : Pattern) (occurrence : Nat)
     (copy : occurrence < Multiset.count result
-      (MeTTaZero.evaluateOne model.toModel space subject))
+      (model.base.source.occurrences space subject))
     (environment : CandidatePlanningInputV1 → Nat) :
     GeneratedTwoCell (EvaluationCell model)
       ((evaluationRoutePlanV1 model space subject result occurrence copy).run
@@ -205,7 +205,7 @@ depends only on the evaluation-route choice. -/
 theorem matching_policy_change_preserves_route_v1 (model : Model)
     (space : model.Space) (subject result : Pattern) (occurrence : Nat)
     (copy : occurrence < Multiset.count result
-      (MeTTaZero.evaluateOne model.toModel space subject)) :
+      (model.base.source.occurrences space subject)) :
     (evaluationRoutePlanV1 model space subject result occurrence copy).run
         zeroEnvironmentV1 =
       (evaluationRoutePlanV1 model space subject result occurrence copy).run
@@ -222,7 +222,7 @@ objects even though their semantic observations agree. -/
 theorem route_policy_change_changes_route_v1 (model : Model)
     (space : model.Space) (subject result : Pattern) (occurrence : Nat)
     (copy : occurrence < Multiset.count result
-      (MeTTaZero.evaluateOne model.toModel space subject)) :
+      (model.base.source.occurrences space subject)) :
     (evaluationRoutePlanV1 model space subject result occurrence copy).run
         zeroEnvironmentV1 ≠
       (evaluationRoutePlanV1 model space subject result occurrence copy).run

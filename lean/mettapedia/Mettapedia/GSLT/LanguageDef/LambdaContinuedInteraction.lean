@@ -80,7 +80,7 @@ def lambdaProgramOperand :
       hasInteractingResult := by rfl }
   continuationPattern := .lambda none (.fvar "body")
   continuationVariable := .abstraction none "body"
-  surface := .absent
+  subject := .absent
   form := .introduced (by
       simp [RepresentedBy, UsesBareCollection,
         lambdaAbstractionConstructor, lambdaCalc]) (by rfl)
@@ -98,7 +98,7 @@ def lambdaEnvironmentOperand :
       hasInteractingResult := by rfl }
   continuationPattern := .fvar "arg"
   continuationVariable := .plain "arg"
-  surface := .absent
+  subject := .absent
   form := .direct rfl
 
 /-- Application remains the ordered interaction core. -/
@@ -133,7 +133,7 @@ def lambdaInteractionCut : InteractionCutPresentation lambdaIGSLT where
   sourceEnvelopeInSignature := .hole "Term"
   interactionPremisesEmpty := rfl
   residual := .substitution (.fvar "body") (.fvar "arg")
-  surfacesAgree := .structural rfl (by
+  subjectsAgree := .structural rfl (by
     intro equation membership
     simp [lambdaIGSLT, lambdaInteractivePresentation,
       lambdaValidatedLanguageDef, lambdaCalc] at membership)

@@ -495,6 +495,151 @@ product at unit rate.
 The tolerance statement is deliberately not called floating-point underflow. It is an
 exact real-number decay theorem plus an explicit external detection policy.
 
+\section{Cycles: unroll first, refine what remains}
+\label{sec:epc-refinement}
+
+Error coordinates make the acyclic part of a predictive-coding graph directly
+solvable, but a back-edge leaves a cyclic correction.  After linearization, write the
+cycle equation as
+\[
+  y-Ay=b.
+\]
+There are then two finite approximations.  Unrolling $U$ traversals gives the truncated
+Neumann correction
+\[
+  y_U=\sum_{k<U}A^k b,
+\]
+whereas $R$ damped refinement steps with fraction $\alpha$ use
+\[
+  B_\alpha=(1-\alpha)I+\alpha A,
+  \qquad
+  y_R=\alpha\sum_{k<R}B_\alpha^k b.
+\]
+
+\begin{theorem}[One resolvent, two finite paths]\label{thm:cyclepaths}
+If $y-Ay=b$, then $y$ is also the fixed point of the damped iteration and
+\[
+  y-y_U=A^U y,
+  \qquad
+  y-y_R=B_\alpha^R y.
+\]
+At $\alpha=1$ the two finite solvers coincide at equal depth.  They need not coincide
+when $\alpha\ne1$: for $A=\tfrac12 I$, $b=\tfrac12$, and $\alpha=\tfrac12$, one
+unrolled traversal returns $\tfrac12$ while one refinement step returns $\tfrac14$.
+\end{theorem}
+
+This corrects a tempting but false identification.  Unrolling and damped refinement
+target the same resolvent; they are not generally truncations of the same finite series.
+If $\|Ax\|\le q\|x\|$, with $0\le q<1$ and $0\le\alpha\le1$, then
+\[
+  \|B_\alpha x\|\le q_\alpha\|x\|,
+  \qquad q_\alpha=(1-\alpha)+\alpha q,
+\]
+and hence
+\[
+  \|y_U-y\|\le q^U\|y\|,
+  \qquad
+  \|y_R-y\|\le q_\alpha^R\|y\|.
+\]
+For $\|y\|>0$, the certified error budgets cross precisely when
+$q_\alpha^R\le q^U$.  Thus a refine-versus-unroll crossover is analytically
+predictable once a concrete cycle operator, damping fraction, norm, and regional
+linearization certificate have been supplied.  Telemetry alone does not supply these
+hypotheses.
+
+The same error bound becomes a scientific admission gate.  The pairwise discrepancy
+between the two finite paths is at most $(q^U+q_\alpha^R)\|y\|$, and a refinement bound
+strictly below the observed refined-credit norm guarantees positive inner product with
+the exact credit.  Componentwise numerical tolerance is neither necessary nor
+sufficient for this directional property: a positive rescaling of a credit vector can
+fail a tight relative tolerance, while a small non-collinear rotation can pass a loose
+absolute tolerance.  An equivalence harness should therefore report state/energy
+agreement and credit direction as separate gates.
+
+An energy-decrement stopping rule is sound only after four additional bridges are
+charged.  If one step decreases energy by at least $c\|x-Fx\|^2$, $F$ contracts by
+$q<1$ to $z$, the credit readout is $K$-Lipschitz at $z$, and its equilibrium mismatch
+from the reference credit is $m$, then
+\[
+  E(x)-E(Fx)\le\tau
+  \quad\Longrightarrow\quad
+  \|R(x)-g_*\|
+  \le \frac{K\sqrt{\tau/c}}{1-q}+m.
+\]
+Without the decrease coefficient, contraction margin, readout sensitivity, and
+equilibrium mismatch, a small energy decrement does not certify small credit error.
+
+Work decides which finite path is useful.  We charge the primary solve, every unrolled
+cycle traversal, the refinement frontier, and certificate overhead separately.  In the
+$A=\tfrac12 I$ fixture, five half-damped refinements are more accurate than two
+unrolled traversals.  They are also cheaper when each refinement touches a small active
+frontier, but become more expensive when that frontier is dense.  Likewise, a fixed
+budget should be spent on the primary solver when only its initialization error remains,
+and on refinement when only cycle-handoff error remains.  There is therefore no
+architecture-independent optimal split.
+
+Finally, an analytic matrix-multiplication count is a workload coordinate, not a
+wall-time lower bound.  Unmeasured compilation, launch, synchronization, packing,
+certificate, and memory costs can reverse the ordering induced by matrix multiplications
+alone.  Both the analytic count and total charged execution cost must be reported.  Our
+own arms bracket that gap from both sides: at an identical eight settling steps, for
+which the analytic ratio is $(2T+1)/3=5.67$, the Unified pair measured $1.87\times$ and
+the recurrent pair $29.8\times$ in wall-clock.  A single analytic coordinate is
+consistent with a sixteen-fold spread in charged cost.
+
+\subsection{When the norm certificate does not contract}
+\label{sec:expanding-cycle}
+
+Every geometric bound above assumes a particular sufficient certificate:
+$\|Ax\|\le q\|x\|$ with $0\le q<1$.  If the available bound instead has $q\ge1$, then
+the triangle-inequality construction gives
+\[
+  q_\alpha=1+\alpha(q-1)\ge1
+  \qquad(\alpha\ge0).
+\]
+This proves only that this \emph{derived upper bound} cannot certify contraction
+(\leanname{dampedContractionFactor\_one\_le\_of\_one\_le},
+\leanname{refinementErrorBudget\_not\_below\_exact\_of\_one\_le}).  It does not prove
+that the exact damped operator fails to contract.
+
+The distinction is sharp.  Let $A=-2I$ and $\alpha=1/3$.  The undamped operator has
+norm factor $2$, so the triangle construction returns $q_\alpha=4/3$.  Yet
+\[
+  (1-\alpha)I+\alpha A=0,
+\]
+a perfect contraction
+(\leanname{triangleBound\_above\_one\_does\_not\_imply\_damped\_noncontraction}).
+Signed spectrum can therefore make damping succeed exactly where a norm-only upper bound
+is inconclusive.
+
+A genuine no-rescue theorem needs a directional hypothesis.  If a nonzero vector $v$
+satisfies $Av=\lambda v$ with a positive real eigenvalue $\lambda\ge1$, then the damped
+map has multiplier $1+\alpha(\lambda-1)\ge1$ along $v$.  No global norm-contraction
+factor below one can then exist
+(\leanname{no\_strict\_contraction\_of\_positive\_expanding\_eigenvector}).  This
+positive expanding mode, or an equivalent lower-bound witness, is the missing premise in
+any claim that damping cannot rescue a cycle.
+
+Our recurrent telemetry does not supply that premise.  Latent gradients of order
+$10^7$, credit cosine plateauing at $0.270$ from depths $32$ through $160$, and continuing
+energy descent are compatible with expansion, but also with large forcing, a sensitive
+credit readout, or non-normal transient amplification.  They motivate extracting the
+actual linearized operator; they do not identify its uniform norm or signed spectrum.
+Likewise, fitting a depth sweep estimates a trajectory-specific effective decay rate.  A
+certified regional $q_\alpha$ still requires an operator-norm or Jacobian-enclosure bound
+together with invariance of the declared region.
+
+A finer graph cut remains a well-motivated candidate because it replaces long products of
+transition sensitivities by local ones.  The successor arm's median credit cosine rose
+$0.888\to0.9842\to0.9972\to0.9987\to0.9993\to0.9996$ over six thousand updates, while
+median relative credit error fell $0.46\to0.028$.  These are training-time observations,
+not an operator certificate or a behavioral endpoint.  Under the additional uniform-
+curvature hypothesis, exact settled credit is a positive multiple of the reference credit
+(\leanname{settledCredit\_eq\_smul\_carrierBPCredit}); without that hypothesis, cosine
+near one alone does not predict verified-discovery parity.  The proposal that the
+successor lands near its backpropagation twin is therefore a timestamped pre-checker
+hypothesis, not a sealed preregistered prediction.
+
 \section{The cost of depth}
 \label{sec:depth}
 
@@ -1137,7 +1282,7 @@ each parent and world, five update rules start from identical model state, data 
 minibatch order and search budget: ordinary BP, an independent BP replication, deep
 error-coordinate PC, incremental PC, and prospective PC. Generation ten continues each
 generation-nine adapter and optimizer exactly; it does not reinitialize or pass through a
-BP-pretraining phase. The registered surface is two worlds, four carriers, five rules
+BP-pretraining phase. The registered configuration is two worlds, four carriers, five rules
 and two continuation generations. Every proposed program is checked against the whole
 OEIS.
 
@@ -1409,10 +1554,11 @@ whose inference gradients are entirely ordinary. The departure is therefore not 
 numerical artifact: it is present at healthy conditioning and persists across batches.
 The unified arm, by contrast, terminates at cosine $0.992$---effectively BP. Two
 otherwise comparable predictive-coding arms thus sit at opposite ends of the departure
-scale, and the variable that distinguishes them is where the graph is cut: the unified
-carrier's fine multi-site cut leaves little for settling to recover, while the coarse
-recurrent cut discards a great deal. We record cut granularity as the candidate control
-variable for departure and do not yet claim the relation is causal.
+scale. The distinguishing treatment bundle includes where independent inference
+coordinates are exposed and how they are scheduled. We record this shooting structure
+as a candidate control variable for departure and do not claim the relation is causal;
+in particular, the exact state/error change of coordinates is not itself a change of
+objective.
 
 The same instrumentation exhibits the boundary of the useful regime. Approaching a
 settling failure the cosine falls to $0.0008$: credit essentially orthogonal to the BP
@@ -1426,17 +1572,18 @@ already orthogonal. The admissible criterion is a floor on credit cosine, which 
 credit-unit stationarity condition that a bare gradient-norm tolerance provably cannot
 supply.
 
-\paragraph{Settling depth saturates well before the energy does.}
-Settling the same state to fifty times the production depth moves the credit cosine from
-$0.241$ at depth five to $0.270$, after which it is immobile to three figures from depth
-$32$ through depth $160$---while the energy continues to fall by a further $26\%$
-throughout. Roughly nine tenths of all available transport occurs in the first five
-steps. Energy descent and credit transport are therefore decoupled: the solver goes on
-doing genuine work on the objective and that work buys no further credit. The
-consequence for design is immediate and negative---a faster or more stable inference
-solver cannot recover credit the graph cut never carried---and the consequence for
-theory is a target we state as open: predict the saturation depth from the spectrum
-rather than discovering it empirically.
+\paragraph{Replication locates a transport reservoir beyond production depth.}
+The first single-update curve was misleading when its absolute cosine was interpreted as
+transport: credit already had a large nonzero cosine at depth zero. Four deterministic
+curves at updates $8550,8650,8750,8800$ instead measure the increment above depth zero.
+Production depth five captures between $-24.6\%$ and $31.0\%$ of that eventual
+increment; at one update the first five steps move temporarily away from BP. Depth $32$
+captures $90.9\%$--$97.5\%$, and successive credit directions are stable by about depth
+$64$, even while energy continues to decrease. Thus energy descent and credit transport
+are decoupled, but the corrected conclusion is positive: AC has a reproducible transport
+reservoir between depths five and roughly $32$--$64$. The repair target is to reach that
+reservoir safely and economically, not to stabilize the largely irrelevant tail near
+depth $176$.
 
 \paragraph{Where the recurrent arm's instability comes from.}
 The recurrent arm's settling failures are not an ill-conditioned objective. Decomposing
@@ -1448,6 +1595,104 @@ outputs appearing as tens of millions at the latents locates the amplification i
 map between them, which is the unrolled recurrence. The failure is
 gradient-amplification-through-time, and no reformulation of the objective addresses it;
 the repair is a matter of conditioning or of parametrization.
+
+\paragraph{The shooting correspondence fixes what AC-v2 is allowed to change.}
+Classical single shooting condenses a trajectory into an initial state and hence exposes
+products of transition sensitivities; multiple shooting exposes intermediate states and
+local matching rows, then enforces consistency across them
+\cite{bockplitt1984,mattheij1982,massaroli2021,prabhu2025shooting}. The analogy explains
+AC's observed coordinate pathology, but it has a crucial boundary. The implemented
+reduced-error and local-state AC energies are related by an invertible triangular
+coordinate map, not by replacing one objective with another. The finite ranked-DAG
+formalization proves both inverse laws, exact energy equality, occurrencewise detached
+credit equality, and preservation and reflection of critical differentials
+(\leanname{rankedDAGStateToError\_errorToState},
+\leanname{rankedDAGErrorEnergy\_eq\_stateEnergy},
+\leanname{rankedDAG\_detachedCredit\_transport},
+\leanname{rankedDAG\_criticalDifferential\_iff}). Therefore local-state AC-v2 may change
+the finite solver path and schedule, but it does not acquire permission to change the
+stationary objective.
+
+The corresponding shooting model makes the algorithmic trade exact. A condensed
+terminal gradient contains the complete ordered Jacobian product
+(\leanname{coarseTerminalEnergy\_hasDerivAt\_initial}), whereas each lifted residual is
+a one-edge stencil (\leanname{liftedResidual\_eq\_of\_incident\_eq}). Simultaneous
+nearest-neighbour updates carry no nonzero terminal credit beyond $T$ edges after $T$
+phases (\leanname{synchronousCredit\_eq\_zero\_of\_time\_lt\_depth}); an ordered
+output-to-input sweep recovers the exact reverse derivative
+(\leanname{orderedSweepCredit\_eq\_backpropChainCredit}), but its sequential span is the
+path depth. This is the formal locality cost also exposed by exact graph-scheduled
+reverse differentiation \cite{salvatori2021reverse}.
+
+Two tempting stronger claims are false. First, a bound on the norm of the recurrent
+Jacobian product is not a condition-number bound: at depth eight, two diagonal chains
+can have the same product norm $256$ while their normal-equation condition proxies are
+$1$ and $65536$ (\leanname{equal\_depth\_product\_norm\_different\_condition}). Local
+lifting also has a nonzero zero-energy direction until anchoring or coercivity is
+supplied. Second, adding more ordered local contributions need not move cosine
+monotonically toward BP: an exact signed-cancellation fixture has squared cosine
+$1,1/2,1$ (\leanname{sweep\_completeness\_cosine\_not\_monotone}). Monotonicity is
+recovered under a stated orthogonal nonnegative-capture hypothesis
+(\leanname{orthogonalCapturedFraction\_mono}), which is a measurable condition rather
+than a default property of the sweep.
+
+This condition now has an exact realized-credit form, not only a scalar proxy.  Let
+$c_e$ be the parameter-credit vector delivered by schedule unit $e$, let
+$C_A=\sum_{e\in A}c_e$ be the credit available after a prefix, and let
+$C=\sum_e c_e$ be complete BP credit.  If the $c_e$ are pairwise orthogonal and
+$\lVert C\rVert^2>0$, then
+\[
+  \cos^2(C_A,C)=\frac{\sum_{e\in A}\lVert c_e\rVert^2}
+                         {\sum_e\lVert c_e\rVert^2},
+\]
+so prefix inclusion implies monotone squared cosine
+(\leanname{prefix\_innerSquaredCosine\_eq\_capturedEnergyFraction},
+\leanname{prefix\_innerSquaredCosine\_mono}).  The theorem is realized through the
+existing DAG arrival schedule and AC sweep-count record.  A legal two-edge orthogonal
+DAG has values $1/2,1$, whereas a legal tied-parameter signed DAG explicitly violates
+orthogonality and has $1,4/5,1$: alignment first worsens and then recovers through
+cancellation
+(\leanname{positiveDAG\_prefix\_cosine\_values},
+\leanname{cancellationDAGContribution\_not\_pairwiseOrthogonal},
+\leanname{cancellationDAG\_prefix\_decreases\_then\_recovers}).
+
+There is also a tensor-level endpoint theorem with an explicit semantic boundary.  On
+a frozen forward state, summing the transposed ranked-DAG transition powers through
+the nilpotence horizon equals the complete reverse force and hence every BP
+occurrence-credit entry
+(\leanname{rankedDAGFrozenCompleteReverseSweep\_eq\_completeReverseForce},
+\leanname{rankedDAG\_frozen\_completeReverseSweep\_creditVector\_eq\_bp}).  This is
+not an identity for an arbitrary latent-state settling sweep.  Agreement of the actual
+reverse-ranked state sweep requires both preservation of the forward state and a
+complete realized local force; any mismatch crosses at least one of those boundaries
+(\leanname{rankedDAG\_reverseRankStateSweep\_departure\_requires\_boundary\_crossing}).
+The executable four-node chain makes the distinction numerical: the moved-state local
+credit is $-1/4$, while frozen BP credit is $-1$
+(\leanname{rankedTensorChain4\_actualStateSweep\_ne\_frozenBP}).
+
+Soft multiple-shooting relaxation is a different transformation and is kept separate.
+On the exact matching manifold the lifted and condensed trajectory energies agree, but
+Schur elimination of a two-segment soft matching energy introduces the factor
+$1/(1+b^2)$; if the downstream gain $b$ is learned, that parameter-dependent metric can
+add a stationary point absent from the naive coarse loss
+(\leanname{twoSegmentFineEnergy\_eq\_condensed\_add\_square},
+\leanname{condensation\_can\_change\_parameter\_stationarity}). This negative result
+prevents a genuine objective relaxation from being smuggled into AC-v2 under the name of
+a coordinate repair.
+
+\paragraph{The carrier is not the deficit.}
+A separate control makes this attribution empirical rather than inferred. At the round-four
+budget the same recurrent carrier, trained by BP, produces $202$ new checked targets under
+continuation and $225$ when jointly retrained from the authenticated initial weights on the
+accumulated corpus; the coarse-cut PC arm on that carrier produces $10$, from $1637$ unique
+proposals. The carrier therefore supports discovery at roughly twenty times the coarse-cut
+PC rate under an update rule that transports credit through the whole unrolled recurrence,
+and its productivity is not exhausted---retraining raises it further. Whatever limits AC--PC
+is a property of the exposed coordinates and their schedule, not of the network, the
+tokenizer, the decoder, or the task. This is the empirical counterpart of the conditioning
+separation above, and it is the reason AC-v2 is scoped to the cut and the sweep while the
+historical carrier is held fixed: replacing the carrier would remove the control that makes
+the credit attribution readable.
 
 \subsection{Round two: architecture modifies the search effect of credit}
 \label{sec:fresh-round-two-architecture}
@@ -1514,6 +1759,54 @@ its target contrast changes from $+3$ to $+13$; BP resemblance is not behavioral
 identity. The architecture bundle was not randomized, so $I_s$ is a descriptive
 architecture-conditioned interaction rather than a causal architecture effect.
 
+\paragraph{Memory and PC require their own factorial.}
+The current Unified evidence table is an aggregate signature prior, not an addressable
+program memory.  Its keys retain hole signature and polarity but erase query, program,
+solved target, memory identity, and lineage.  The formal projection-collision results
+therefore prohibit recovering competence or accessibility from the aggregate table
+(\leanname{aggregateKey\_does\_not\_recover\_competence},
+\leanname{aggregateKey\_does\_not\_recover\_accessibility}).  Stored targets and routed
+targets coincide only when routing is witness-complete
+(\leanname{routedTargets\_eq\_availableTargets\_iff}); one high-degree program can
+otherwise make aggregate improvement look broad, as the leave-one-program-out result
+above demonstrates.
+
+For a fixed finite endpoint $Y$, let $M_0,M_1$ be two registered memory treatments---for
+example aggregate-only versus aggregate plus an addressable sidecar---and define
+\[
+ I_{M\times PC}=
+ [Y(PC,M_1)-Y(PC,M_0)]-[Y(BP,M_1)-Y(BP,M_0)].
+\]
+This is zero exactly when memory has the same finite effect under both credit rules, and
+every additive credit-plus-memory model has zero interaction
+(\leanname{memoryPCInteraction\_eq\_zero\_iff},
+\leanname{memoryPCInteraction\_additive\_eq\_zero}).  An abstract response-table witness
+takes a nonzero value, so the estimand is not algebraically vacuous
+(\leanname{selectiveAddressableResponse\_has\_nonzero\_interaction}); whether any realized
+Unified model exhibits a nonzero interaction is an empirical question that a constructed
+response table does not touch.  If each of the
+four realized cell credits lies within $\varepsilon$ of its declared ideal, the
+interaction error is at most $4\varepsilon$
+(\leanname{memoryPCInteraction\_error\_le}); this is where the finite solver and
+addressed-initializer bounds compose with the experimental estimand.
+
+All four cells are necessary: omitting any one admits two completed worlds with the same
+three observations and different interactions
+(\leanname{every\_missing\_cell\_is\_nonidentifying}).  Parameters and optimizer state
+must each be crossed as inherited versus reset, while data, initialization, search,
+checker, and work remain fixed in the registered boundary.  Consequently the existing
+continued-versus-joint-retraining comparison cannot identify a memory effect: data
+order, inherited parameters, and inherited optimizer move together, and equal observed
+totals can hide different allocations among them
+(\leanname{total\_does\_not\_recover\_parameter\_history}).  Finally, the credit
+interaction does not itself identify verified discovery without a declared
+credit-to-search bridge: two worlds differing in all four credit cells can share one
+interaction value while producing different program--target relations
+(\leanname{interaction\_does\_not\_uniformly\_recover\_discovery}).  The minimal future test
+is therefore a named $2\times2$ memory-off/on by BP/PC intervention with the same
+carrier, data, initialization, search, checker, and charged work, reporting credit and
+verified program--target endpoints separately.
+
 \section{Certified finite settling and authenticated checkpoint geometry}
 \label{sec:finite-settling}
 
@@ -1559,6 +1852,65 @@ favour eight one-sweep rounds over two four-sweep rounds
 while large fixed overhead reverses the comparison. These are guarantees about a declared
 loss model, not claims about verified OEIS yield; the latter still requires matched
 GPU-time experiments.
+
+\paragraph{A time constant is meaningful only relative to its vector field.}
+Writing an inference proposal as Euler integration with clock ratio
+$\alpha=dt/\tau_m$ gives
+\[
+ z_{k+1}=z_k-\alpha P\nabla E(z_k).
+\]
+If $P$, $E$, and the finite depth $T$ are fixed, equal ratios $dt/\tau_m$ give
+identical finite trajectories
+(\leanname{eulerIterate\_eq\_of\_rate\_eq}); multiplying both clock quantities by
+the same nonzero scale also leaves the ratio unchanged
+(\leanname{EulerClock.rate\_scale\_both}). Neither theorem licenses importing a
+bare value of $\alpha$ after changing the preconditioner or energy normalization.
+The regional certificate instead tests the preconditioned curvature through a
+condition of the form $\alpha L_P^2<2\mu_P$
+(\leanname{nondimensionalPreconditionedLocalCertificate}). For row-weighted
+residual energy, an exact inverse-row-mass preconditioner cancels the row mass but
+does not cancel residual precision
+(\leanname{preconditioned\_massWeightedResidualGradient}).
+
+The scalar boundary makes the finite-depth issue exact. For residual precision
+$\pi$, rate $\alpha$, and $T$ sweeps, define the nominal exposure
+$A=\pi\alpha T$. The registered AC stages preserve $A=1$, but the actual Euler
+response is
+\[
+  C_T=1-(1-\pi\alpha)^T,
+\]
+and the remaining residual is $|1-\pi\alpha|^T$. The affine settled-credit theorem
+proves that $C_T$ is also the exact multiplier of local parameter credit
+(\leanname{settledCredit\_eq\_finiteResponse\_smul\_carrierBPCredit}). The
+registered rational fixtures are:
+\[
+\begin{array}{c|c|c|c|c}
+\text{profile}&\pi&\alpha&T&C_T\\ \hline
+\text{AC ignition}&10000/3&3/10000&1&1\\
+\text{AC transition}&500&1/1000&2&3/4\\
+\text{AC transition}&250&1/1000&4&175/256\\
+\text{AC prospective}&200&1/1000&5&2101/3125\\
+\text{AC prospective}&125&1/1000&8&11012415/16777216\\
+\text{Unified prospective}&20&1/40&8&255/256
+\end{array}
+\]
+Thus constant $\pi\alpha T$ preserves neither the finite endpoint nor finite
+credit; in fact the five AC response values decrease strictly as staged depth
+increases (\leanname{acStage\_expectedResponses\_strictly\_decrease}). Unified
+leaves residual fraction $1/256$, whereas AC's eight-step residual-only fixture
+leaves $5764801/16777216$. These are exact local normalization facts, not a claim
+that the nonlinear architectures differ only by their residual channel.
+
+The cross-normalization counterexample is correspondingly sharp. The same raw
+$\alpha=1/20$ has contraction factor zero at curvature $20$ but factor $21/4$
+at curvature $125$, mapping unit error to $-21/4$ in one step
+(\leanname{oneTwentieth\_stable\_for\_twenty\_unstable\_for\_oneTwentyFive},
+\leanname{oneTwentieth\_acResidual\_oneStep\_expands}). Finally, a nonzero outer
+learning rate preserves any genuine finite-credit difference as a genuine
+parameter-update difference
+(\leanname{parameterUpdate\_ne\_of\_credit\_ne}). Hence $\alpha$, $T$, precision,
+and the outer learning rate are attributable parts of a finite treatment; a shared
+stationary set or nominal exposure does not make two schedules interchangeable.
 
 \paragraph{Affine acceleration is not a stability certificate.}
 The source-to-theorem atlas also isolates the normalization shared by extrapolation and
@@ -2138,6 +2490,12 @@ Thm~\ref{thm:wave}
   & ErrorState\-Reparameterization \\
   & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/ErrorStateReparameterization.lean}{185}{spcWavefront\_eventually\_below\_tolerance} & \\
   & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/ErrorStateReparameterization.lean}{209}{spcWavefront\_nonzero\_but\_below\_tolerance\_example} & (positive) \\
+Thm~\ref{thm:cyclepaths}
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/CyclicEPCRefinement.lean}{135}{dampedCycle\_exactSolution}
+  & CyclicEPC\-Refinement \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/CyclicEPCRefinement.lean}{148}{exact\_sub\_unrolled\_eq\_power} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/CyclicEPCRefinement.lean}{158}{exact\_sub\_refined\_eq\_power} & \\
+  & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/CreditTransport/CyclicEPCRefinement.lean}{613}{halfDamping\_oneStep\_ne\_unroll} & (negative fixture) \\
   & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/ErrorStateReparameterization.lean}{218}{spcWavefront\_unitRate\_not\_below\_small\_tolerance} & (boundary) \\
   & \leansource{lean/mettapedia/Mettapedia/MachineLearning/NeuralNetworks/PredictiveCoding/ErrorStateReparameterization.lean}{260}{epcOneStepParameterUpdate\_unitRate\_eq\_backprop} & \\
 Thm~\ref{thm:mupcdepth}
@@ -2279,6 +2637,14 @@ Sec.~\ref{sec:dtt-round0}
 
 \section*{Related work}
 
+The single-/multiple-shooting distinction and direct condensing originate in
+numerical boundary-value and optimal-control work
+\cite{mattheij1982,bockplitt1984}; differentiable multiple-shooting layers and
+neural-ODE condensing bring the same structural choice into modern learned dynamics
+\cite{massaroli2021,prabhu2025shooting}. Our use is narrower: it classifies the
+coordinate and schedule boundary of finite PC inference rather than treating a
+multiple-shooting layer as the learned architecture.
+
 Equivalence-in-the-limit results and their scope: \cite{whittington2017} (MLPs),
 \cite{millidge2020} (arbitrary graphs, including LSTMs at small scale), \cite{song2020}
 (exact scheduling), \cite{salvatori2022} (topological limits). Engineering of deep PC:
@@ -2309,8 +2675,31 @@ arXiv:2006.04182, 2020.
 \bibitem{salvatori2022} T.~Salvatori et al.
 Learning on arbitrary graph topologies via predictive coding. \emph{NeurIPS}, 2022.
 
+\bibitem{salvatori2021reverse} T.~Salvatori, Y.~Song, T.~Lukasiewicz,
+R.~Bogacz, and Z.~Xu.
+Reverse differentiation via predictive coding. arXiv:2103.04689, 2021.
+
+\bibitem{mattheij1982} R.~M.~M.~Mattheij.
+The conditioning of linear boundary value problems.
+\emph{SIAM Journal on Numerical Analysis}, 19(5):963--978, 1982.
+doi:10.1137/0719070.
+
+\bibitem{bockplitt1984} H.~G.~Bock and K.~J.~Plitt.
+A multiple shooting algorithm for direct solution of optimal control problems.
+\emph{IFAC Proceedings Volumes}, 17(2):1603--1608, 1984.
+doi:10.1016/S1474-6670(17)61205-9.
+
+\bibitem{massaroli2021} S.~Massaroli, M.~Poli, S.~Sonoda, T.~Suzuki,
+J.~Park, A.~Yamashita, and H.~Asama.
+Differentiable multiple shooting layers. arXiv:2106.03885, 2021.
+
+\bibitem{prabhu2025shooting} S.~Prabhu, S.~Rangarajan, and M.~Kothare.
+A condensing approach to multiple shooting neural ordinary differential equation.
+arXiv:2506.00724, 2025.
+
 \bibitem{goemaere2025} C.~Goemaere, G.~Oliviers, R.~Bogacz, and T.~Demeester.
-ePC: Fast and deep predictive coding in digital simulation. arXiv:2505.20137, 2025.
+ePC: Fast and deep predictive coding in digital simulation.
+\emph{ICML}, PMLR 306, 2026; arXiv:2505.20137v5.
 
 \bibitem{innocenti2025} F.~Innocenti, E.~M.~Achour, R.~Singh, and C.~L.~Buckley.
 Only strict saddles in the energy landscape of predictive coding networks?

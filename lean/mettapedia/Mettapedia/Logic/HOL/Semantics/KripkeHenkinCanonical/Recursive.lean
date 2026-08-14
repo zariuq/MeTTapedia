@@ -1525,7 +1525,7 @@ theorem recursiveForces_iff_forces_ex_supported
   · rintro ⟨t, ht⟩
     exact ⟨t, fun V hWV => (hBody V hWV t).mpr (ht V hWV)⟩
 
-/-! ## Closed recursive truth bridge surface -/
+/-! ## Closed recursive truth bridge interface -/
 
 /-- Closed truth bridge between recursive canonical forcing and carrier
 membership forcing at one supported presented world. -/
@@ -1544,7 +1544,7 @@ def ClosedTruthAbove
       ClosedTruthAt (Base := Base) (Const := Const) V φ
 
 /-- Closed truth bridge at every level-growing successor of a world.  This is
-the support-preserving successor surface used by disjunction and existential
+the support-preserving successor interface used by disjunction and existential
 truth clauses. -/
 def LevelClosedTruthAbove
     (W : ClosedTheorySet.SupportedPresentedIntuitionisticWorld (Base := Base) Const)

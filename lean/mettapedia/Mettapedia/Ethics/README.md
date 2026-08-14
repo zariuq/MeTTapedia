@@ -93,7 +93,7 @@ top of it.
 | `ChoicePoint.lean` | `ChoicePoint` and the four dilemma notions (value/deontic/utilitarian/virtue-target) with their equivalence lemmas (`deonticMoralDilemma_iff_valueMoralDilemma`, etc.) |
 | `StructuredSentence.lean` | `StructuredSentence` inductive, `map`/`Sat`/`semantics`, and `relLift`/`witnessedLift` plus `sat_map_iff` transport |
 | `StructuredParadigms.lean` | Structured imperative↔value atoms and `entails_structuredImperative_iff_entails_structuredValue` |
-| `CredalValueAttributionCaseTable.lean` | Reusable case-table interface for moral-value attribution over the credal concept-formation surface |
+| `CredalValueAttributionCaseTable.lean` | Reusable case-table interface for moral-value attribution over the credal concept-formation interface |
 | `CredalValueAttributionExample.lean` | Small worked example: lenient vs strict acceptance gates yield one stable attribution and one genuinely ambiguous one |
 | `Dignity.lean` | Placeholder only — no formal dignity theory is exported yet (earlier toy `True`/`False` definitions were deliberately removed as over-signaling); reserved for a future nontrivial formalization |
 

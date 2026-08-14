@@ -7,5 +7,5 @@ import Mettapedia.PLN.Bridges.Languages.ProbLog.Spec
 # PLN bridges for ProbLog
 
 ProbLog distribution-semantics and compilation correspondences routed through
-the PLN world-model and evidence surfaces.
+the PLN world-model and evidence interfaces.
 -/

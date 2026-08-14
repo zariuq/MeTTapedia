@@ -12,7 +12,7 @@ import Mathlib.MeasureTheory.Measure.ProbabilityMeasure
 import Mathlib.Order.Filter.CountableInter
 
 /-!
-# Markov de Finetti Hard Base (Active Minimal Surface)
+# Markov de Finetti Hard Base (Active Minimal Interface)
 
 Minimal definitions needed by active Fortini/anchor modules:
 `MarkovParam`, `stepProb`, `initProb`, and `wordProb`.

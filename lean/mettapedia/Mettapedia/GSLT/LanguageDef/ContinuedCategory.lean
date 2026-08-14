@@ -230,14 +230,14 @@ structure Morphism (source target : CIGSLT) where
     mapPattern underlying.structural.structural.symbols
         source.cut.environment.continuationPattern =
       target.cut.environment.continuationPattern
-  mapsProgramSurface :
+  mapsProgramSubject :
     mapOptionalPattern underlying.structural.structural.symbols
-        source.cut.program.surface.pattern =
-      target.cut.program.surface.pattern
-  mapsEnvironmentSurface :
+        source.cut.program.subject.pattern =
+      target.cut.program.subject.pattern
+  mapsEnvironmentSubject :
     mapOptionalPattern underlying.structural.structural.symbols
-        source.cut.environment.surface.pattern =
-      target.cut.environment.surface.pattern
+        source.cut.environment.subject.pattern =
+      target.cut.environment.subject.pattern
   /-- Canonicalization is natural on declaration-derived open sorted terms.
   Unlike a law on raw patterns, both sides retain the expected sort and the
   exact free and bound typing contexts. -/
@@ -484,10 +484,10 @@ def id (theory : CIGSLT) : Morphism theory theory where
   mapsEnvironmentContinuation := by
     change mapPattern PresentationSymbols.id _ = _
     exact mapPattern_id _
-  mapsProgramSurface := by
+  mapsProgramSubject := by
     change mapOptionalPattern PresentationSymbols.id _ = _
     exact mapOptionalPattern_id _
-  mapsEnvironmentSurface := by
+  mapsEnvironmentSubject := by
     change mapOptionalPattern PresentationSymbols.id _ = _
     exact mapOptionalPattern_id _
   mapsOpenCanonical := by
@@ -717,18 +717,18 @@ def comp {first second third : CIGSLT}
         right.underlying.structural.structural.symbols) _ = _
     rw [mapPattern_comp, left.mapsEnvironmentContinuation,
       right.mapsEnvironmentContinuation]
-  mapsProgramSurface := by
+  mapsProgramSubject := by
     change mapOptionalPattern
       (left.underlying.structural.structural.symbols.comp
         right.underlying.structural.structural.symbols) _ = _
-    rw [mapOptionalPattern_comp, left.mapsProgramSurface,
-      right.mapsProgramSurface]
-  mapsEnvironmentSurface := by
+    rw [mapOptionalPattern_comp, left.mapsProgramSubject,
+      right.mapsProgramSubject]
+  mapsEnvironmentSubject := by
     change mapOptionalPattern
       (left.underlying.structural.structural.symbols.comp
         right.underlying.structural.structural.symbols) _ = _
-    rw [mapOptionalPattern_comp, left.mapsEnvironmentSurface,
-      right.mapsEnvironmentSurface]
+    rw [mapOptionalPattern_comp, left.mapsEnvironmentSubject,
+      right.mapsEnvironmentSubject]
   mapsOpenCanonical := by
     intro free bound sort term
     let firstStructural := left.underlying.structural.structural

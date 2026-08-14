@@ -118,14 +118,14 @@ structure MembershipAtomEncoder (Obj : Type v) (Con : Type w) (Atom : Type x) wh
 namespace MembershipAtomEncoder
 
 /-- The real WM query-family instantiation for membership on the standard
-`AtomQuery` surface. -/
+`AtomQuery` interface. -/
 def toMembershipQueryBuilder
     (enc : MembershipAtomEncoder Obj Con Atom) :
     MembershipQueryBuilder Obj Con PUnit (fun _ : PUnit => AtomQuery Atom) :=
   MembershipQueryBuilder.ofUntyped (fun x c => AtomQuery.prop (enc.atomOf x c))
 
 /-- The corresponding evidence-valued membership context on the live WM query
-surface. -/
+interface. -/
 noncomputable def toEvidenceMembershipContext
     (enc : MembershipAtomEncoder Obj Con Atom) :
     EvidenceMembershipContext State Obj Con BinaryEvidence where

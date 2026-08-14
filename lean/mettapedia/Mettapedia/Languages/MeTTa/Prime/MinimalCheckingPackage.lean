@@ -20,6 +20,7 @@ set_option autoImplicit false
 namespace Mettapedia.Languages.MeTTa.Prime.MinimalCheckingPackage
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
+open Mettapedia.OSLF.MeTTaIL.Substitution
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
 
 private def symbol (value : Char) : String := String.singleton value
@@ -350,6 +351,8 @@ private def dttApp (function argument : Pattern) : Pattern :=
   app (symbol '@') [function, argument]
 private def dttHasType (context term type : Pattern) : Pattern :=
   app (symbol 'T') [context, term, type]
+private def dttReduces (function argument result : Pattern) : Pattern :=
+  app (symbol 'E') [function, argument, result]
 
 private def dttRuleZero : RuleSchema :=
   schema (symbol 'z') [] [] (dttHasType dttCtx dttZero dttNat)
@@ -369,7 +372,18 @@ private def dttRuleApp : RuleSchema :=
       (dttApp (pvar (symbol 'f')) (pvar (symbol 'x')))
       (pvar (symbol 'c')))
 
-def dttRules : List RuleSchema := [dttRuleZero, dttRuleId, dttRuleApp]
+private def dttRuleBeta : RuleSchema :=
+  { id := ⟨symbol 'b'⟩
+    metavariables :=
+      [(symbol 'u', 1), (symbol 'x', 0), (symbol 'v', 0)]
+    premises := []
+    conclusion :=
+      dttReduces (.lambda none (pvar (symbol 'u')))
+        (pvar (symbol 'x')) (pvar (symbol 'v'))
+    sideConditions := [.explicitSubstitution 0 0 1 2] }
+
+def dttRules : List RuleSchema :=
+  [dttRuleZero, dttRuleId, dttRuleApp, dttRuleBeta]
 
 private theorem collect_dtt_rule_zero :
     collectJudgments [] []
@@ -414,17 +428,35 @@ private theorem collect_dtt_rule_app :
       dttHasType, dttCtx, dttPi, dttApp, app, pvar, List.find?,
       Bind.bind, Pure.pure, Except.bind, Except.pure]
 
+private theorem collect_dtt_rule_beta :
+    collectJudgments
+        [(symbol 'C', 0), (symbol 'Z', 0), (symbol 'N', 0),
+         (symbol 'i', 0), (symbol 'F', 2), (symbol '@', 2)]
+        [(symbol 'T', 3)]
+        (dttRuleBeta.premises ++ [dttRuleBeta.conclusion]) =
+      .ok
+        ([(symbol 'C', 0), (symbol 'Z', 0), (symbol 'N', 0),
+          (symbol 'i', 0), (symbol 'F', 2), (symbol '@', 2)],
+         [(symbol 'T', 3), (symbol 'E', 3)]) := by
+  simp (config := { zetaDelta := true })
+    [dttRuleBeta, collectJudgments, collectJudgment,
+      collectFixedList, collectFixed, insertArity, lookupArity?,
+      dttReduces, app, pvar, List.find?, Bind.bind, Pure.pure,
+      Except.bind, Except.pure]
+
 /-- Independently written companion cache for the DTT-shaped package. -/
 def dttCache : Presentation :=
   cachePresentation
       [(symbol 'C', 0), (symbol 'Z', 0), (symbol 'N', 0),
        (symbol 'i', 0), (symbol 'F', 2), (symbol '@', 2)]
-    [{ head := symbol 'T', arity := 3 }] dttRules
+    [{ head := symbol 'T', arity := 3 },
+     { head := symbol 'E', arity := 3 }] dttRules
 
 theorem dtt_cache_exact : CacheAgrees dttRules dttCache := by
   simp [CacheAgrees, project, collectRules, dttRules,
     collect_dtt_rule_zero, collect_dtt_rule_id, collect_dtt_rule_app,
-    dttCache, Bind.bind, Pure.pure, Except.bind, Except.pure]
+    collect_dtt_rule_beta, dttCache, Bind.bind, Pure.pure, Except.bind,
+    Except.pure]
 
 private theorem dtt_cache_language_valid :
     dttCache.language.validate = [] := by
@@ -435,7 +467,8 @@ private theorem dtt_cache_language_valid :
 theorem dtt_cache_valid : dttCache.isValidV2 = true := by
   unfold Presentation.isValidV2 Presentation.isValidV1
   rw [dtt_cache_language_valid]
-  simp [dttCache, dttRules, dttRuleZero, dttRuleId, dttRuleApp, schema,
+  simp [dttCache, dttRules, dttRuleZero, dttRuleId, dttRuleApp,
+    dttRuleBeta, schema,
     cacheLanguage, dataConstructor,
     Presentation.ruleIds, RuleSchema.isValidV1,
     RuleSchema.metavariableNames, RuleSchema.occurrences,
@@ -449,7 +482,7 @@ theorem dtt_cache_valid : dttCache.isValidV2 = true := by
     Pattern.isWellScopedAt, Pattern.isWellScopedListAt,
     Pattern.hasCanonicalBinderMetadata,
     Pattern.hasCanonicalBinderMetadataList, dttHasType, dttCtx, dttZero,
-    dttNat, dttId, dttPi, dttApp, app, pvar, List.eraseDups,
+    dttNat, dttId, dttPi, dttApp, dttReduces, app, pvar, List.eraseDups,
     List.eraseDupsBy]
   norm_num [List.eraseDupsBy.loop]
   decide
@@ -469,6 +502,31 @@ def dttProofIdZero : RawProof :=
 
 def dttIdZeroGoal : Pattern :=
   dttHasType dttCtx (dttApp dttId dttZero) dttNat
+
+def dttProofBetaZero : RawProof :=
+  .node (ruleInstance (symbol 'b') [.bvar 0, dttZero, dttZero]) []
+
+def dttBetaZeroGoal : Pattern :=
+  dttReduces (.lambda none (.bvar 0)) dttZero dttZero
+
+private def dttStructuralBetaBody : Pattern :=
+  dttApp
+    (.multiLambda 2 [] (.bvar 2))
+    (.subst (.bvar 1) (.collection .vec [.bvar 0] none))
+
+private def dttStructuralBetaResult : Pattern :=
+  dttApp
+    (.multiLambda 2 [] dttZero)
+    (.subst dttZero (.collection .vec [dttZero] none))
+
+def dttProofStructuralBeta : RawProof :=
+  .node
+    (ruleInstance (symbol 'b')
+      [dttStructuralBetaBody, dttZero, dttStructuralBetaResult]) []
+
+def dttStructuralBetaGoal : Pattern :=
+  dttReduces (.lambda none dttStructuralBetaBody)
+    dttZero dttStructuralBetaResult
 
 theorem dtt_id_zero_accepted :
     checkRaw dttValidated dttIdZeroGoal dttProofIdZero = true := by
@@ -495,6 +553,52 @@ theorem dtt_wrong_goal_rejected :
     instantiateSchemasAt?, dttProofZero, dttHasType, dttCtx, dttZero,
     dttNat, dttId, app, pvar]
 
+theorem dtt_beta_zero_accepted :
+    checkRaw dttValidated dttBetaZeroGoal dttProofBetaZero = true := by
+  simp [dttValidated, dttCache, dttRules, dttRuleBeta, dttRuleZero,
+    dttRuleId, dttRuleApp, schema, ruleInstance, checkRaw,
+    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    argumentValidAt, instantiateSchema?, instantiateSchemaAt?,
+    instantiateSchemas?, instantiateSchemasAt?, lookupArgumentAt?,
+    Pattern.isGroundAt, Pattern.isGroundListAt,
+    Pattern.hasCanonicalBinderMetadata,
+    Pattern.hasCanonicalBinderMetadataList, RuleSchema.sideConditionsHold,
+    RuleSideCondition.holds, instantiateBVar, instantiateBVarAt, liftBVars,
+    dttBetaZeroGoal, dttProofBetaZero, dttReduces, dttZero, app, pvar]
+  simp [checkRawChildren]
+
+theorem dtt_beta_wrong_result_rejected :
+    checkRaw dttValidated
+      (dttReduces (.lambda none (.bvar 0)) dttZero dttNat)
+      (.node (ruleInstance (symbol 'b') [.bvar 0, dttZero, dttNat]) []) =
+        false := by
+  simp [dttValidated, dttCache, dttRules, dttRuleBeta, dttRuleZero,
+    dttRuleId, dttRuleApp, schema, ruleInstance, checkRaw,
+    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    argumentValidAt,
+    Pattern.isGroundAt, Pattern.isGroundListAt,
+    Pattern.hasCanonicalBinderMetadata,
+    Pattern.hasCanonicalBinderMetadataList, RuleSchema.sideConditionsHold,
+    instantiateBVar, instantiateBVarAt, liftBVars,
+    dttReduces, dttZero, dttNat, app, pvar]
+
+theorem dtt_structural_beta_accepted :
+    checkRaw dttValidated dttStructuralBetaGoal dttProofStructuralBeta =
+      true := by
+  simp [dttValidated, dttCache, dttRules, dttRuleBeta, dttRuleZero,
+    dttRuleId, dttRuleApp, schema, ruleInstance, checkRaw,
+    instantiateRule?, Presentation.lookupRule?, argumentsValidAt,
+    argumentValidAt, instantiateSchema?, instantiateSchemaAt?,
+    instantiateSchemas?, instantiateSchemasAt?, lookupArgumentAt?,
+    Pattern.isGroundAt, Pattern.isGroundListAt,
+    Pattern.hasCanonicalBinderMetadata,
+    Pattern.hasCanonicalBinderMetadataList, RuleSchema.sideConditionsHold,
+    RuleSideCondition.holds, instantiateBVar, instantiateBVarAt, liftBVars,
+    dttStructuralBetaGoal, dttProofStructuralBeta,
+    dttStructuralBetaBody, dttStructuralBetaResult, dttReduces, dttZero,
+    dttApp, app, pvar]
+  simp [checkRawChildren]
+
 /-! ## Native HOTG-shaped calibration package
 
 The vocabulary is set-theoretic rather than encoded as DTT terms.  These three
@@ -515,9 +619,9 @@ private def hotgProves (proposition : Pattern) : Pattern :=
   app (symbol 'H') [proposition]
 
 private def hotgRuleUniverseMember : RuleSchema :=
-  schema (symbol 'q') [(symbol 'n', 0)] []
+  schema (symbol 'q') [] []
     (hotgProves
-      (hotgIn (pvar (symbol 'n')) (hotgUnivOf (pvar (symbol 'n')))))
+      (hotgIn hotgN (hotgUnivOf hotgN)))
 
 private def hotgRuleUniverseClosed : RuleSchema :=
   schema (symbol 'r') [(symbol 'n', 0)] []
@@ -538,21 +642,22 @@ private theorem collect_hotg_rule_universe_member :
         (hotgRuleUniverseMember.premises ++
           [hotgRuleUniverseMember.conclusion]) =
       .ok
-        ([(symbol 'I', 2), (symbol 'U', 1)],
+        ([(symbol 'I', 2), (symbol 'n', 0), (symbol 'U', 1)],
          [(symbol 'H', 1)]) := by
   simp (config := { zetaDelta := true })
     [hotgRuleUniverseMember, schema, collectJudgments, collectJudgment,
       collectFixedList, collectFixed, insertArity, lookupArity?,
-      hotgProves, hotgIn, hotgUnivOf, app, pvar, List.find?, Bind.bind,
+      hotgProves, hotgIn, hotgUnivOf, hotgN, app, List.find?, Bind.bind,
       Pure.pure, Except.bind, Except.pure]
 
 private theorem collect_hotg_rule_universe_closed :
-    collectJudgments [(symbol 'I', 2), (symbol 'U', 1)]
+    collectJudgments [(symbol 'I', 2), (symbol 'n', 0), (symbol 'U', 1)]
         [(symbol 'H', 1)]
         (hotgRuleUniverseClosed.premises ++
           [hotgRuleUniverseClosed.conclusion]) =
       .ok
-        ([(symbol 'I', 2), (symbol 'U', 1), (symbol 'C', 1)],
+        ([(symbol 'I', 2), (symbol 'n', 0), (symbol 'U', 1),
+          (symbol 'C', 1)],
          [(symbol 'H', 1)]) := by
   simp (config := { zetaDelta := true })
     [hotgRuleUniverseClosed, schema, collectJudgments, collectJudgment,
@@ -562,13 +667,14 @@ private theorem collect_hotg_rule_universe_closed :
 
 private theorem collect_hotg_rule_power_closed :
     collectJudgments
-        [(symbol 'I', 2), (symbol 'U', 1), (symbol 'C', 1)]
+        [(symbol 'I', 2), (symbol 'n', 0), (symbol 'U', 1),
+          (symbol 'C', 1)]
         [(symbol 'H', 1)]
         (hotgRulePowerClosed.premises ++
           [hotgRulePowerClosed.conclusion]) =
       .ok
-        ([(symbol 'I', 2), (symbol 'U', 1), (symbol 'C', 1),
-          (symbol 'W', 1)],
+        ([(symbol 'I', 2), (symbol 'n', 0), (symbol 'U', 1),
+          (symbol 'C', 1), (symbol 'W', 1)],
          [(symbol 'H', 1)]) := by
   simp (config := { zetaDelta := true })
     [hotgRulePowerClosed, schema, collectJudgments, collectJudgment,
@@ -579,8 +685,8 @@ private theorem collect_hotg_rule_power_closed :
 /-- Independently written companion cache for the HOTG-shaped package. -/
 def hotgCache : Presentation :=
   cachePresentation
-      [(symbol 'I', 2), (symbol 'U', 1), (symbol 'C', 1),
-       (symbol 'W', 1)]
+      [(symbol 'I', 2), (symbol 'n', 0), (symbol 'U', 1),
+       (symbol 'C', 1), (symbol 'W', 1)]
     [{ head := symbol 'H', arity := 1 }] hotgRules
 
 theorem hotg_cache_exact : CacheAgrees hotgRules hotgCache := by
@@ -612,7 +718,7 @@ theorem hotg_cache_valid : hotgCache.isValidV2 = true := by
     Pattern.isWellScopedAt, Pattern.isWellScopedListAt,
     Pattern.hasCanonicalBinderMetadata,
     Pattern.hasCanonicalBinderMetadataList, hotgProves, hotgClosed,
-    hotgIn, hotgPower, hotgUnivOf, app, pvar, List.eraseDups,
+    hotgIn, hotgPower, hotgUnivOf, hotgN, app, pvar, List.eraseDups,
     List.eraseDupsBy]
   norm_num [List.eraseDupsBy.loop]
   decide
@@ -621,7 +727,7 @@ def hotgValidated : ValidatedPresentation :=
   ⟨hotgCache, hotg_cache_valid⟩
 
 private def hotgProofUniverseMember : RawProof :=
-  .node (ruleInstance (symbol 'q') [hotgN]) []
+  .node (ruleInstance (symbol 'q') []) []
 
 private def hotgProofUniverseClosed : RawProof :=
   .node (ruleInstance (symbol 'r') [hotgN]) []
@@ -662,7 +768,7 @@ theorem dtt_proof_rejected_by_hotg_package :
 theorem hotg_proof_rejected_by_dtt_package :
     checkRaw dttValidated dttIdZeroGoal hotgProofPower = false := by
   simp [dttValidated, dttCache, dttRules, dttRuleZero, dttRuleId,
-    dttRuleApp, schema, hotgProofPower, ruleInstance, checkRaw,
+    dttRuleApp, dttRuleBeta, schema, hotgProofPower, ruleInstance, checkRaw,
     instantiateRule?, Presentation.lookupRule?, List.find?]
 
 /-! ## Projection conflict calibration -/

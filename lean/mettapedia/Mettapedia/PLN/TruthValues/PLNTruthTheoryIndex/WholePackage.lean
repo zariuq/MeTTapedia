@@ -33,7 +33,7 @@ universe u v
 /-! ## Whole truth-theory package -/
 
 /-- Top-level package for the current confidence / strength / ITV theory
-surface.  The fields are theorem-profile values, so importing this package
+profile.  The fields are theorem-profile values, so importing this package
 gives a compact proof-carrying index of the current formal story. -/
 structure TruthTheoryPackage where
   confidenceCharacterizationEndpoint : ConfidenceCharacterizationEndpointProfile
@@ -85,10 +85,10 @@ structure TruthTheoryPackage where
   formulaCharacterization : FormulaCharacterizationProfile
   paperFacingSynthesis : PaperFacingDOFForcingSynthesisProfile
   didacticWitnesses : Mettapedia.PLN.TruthValues.PLNDidacticWitnesses.DidacticWitnessProfile
-  runtimeParity : RuntimeParitySurface
+  runtimeParity : RuntimeParityManifest
 
 /-- The current proof-carrying package for the confidence / strength / ITV
-theory surface. -/
+theory profile. -/
 noncomputable def plnTruthTheoryPackage : TruthTheoryPackage where
   confidenceCharacterizationEndpoint :=
     confidenceCharacterizationEndpointProfile
@@ -144,7 +144,7 @@ noncomputable def plnTruthTheoryPackage : TruthTheoryPackage where
   formulaCharacterization := formulaCharacterizationProfile
   paperFacingSynthesis := paperFacingDOFForcingSynthesisProfile
   didacticWitnesses := Mettapedia.PLN.TruthValues.PLNDidacticWitnesses.didacticWitnessProfile
-  runtimeParity := plnITVIDMRuntimeParitySurface
+  runtimeParity := plnITVIDMRuntimeParityManifest
 
 
 end Mettapedia.PLN.TruthValues.PLNTruthTheoryIndex

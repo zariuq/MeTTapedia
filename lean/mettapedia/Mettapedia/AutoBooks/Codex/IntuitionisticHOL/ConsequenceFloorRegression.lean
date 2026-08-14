@@ -14,15 +14,15 @@ deriving DecidableEq, Repr
 inductive TestConst : Ty TestBase → Type where
   | a : TestConst (.base .atom)
 
-theorem semilocalSurface_soundness_path
+theorem semilocalInterface_soundness_path
     {Γ : Ctx TestBase}
     {F : CompletenessFrontier TestConst Γ}
     (hDer : Derivable (Base := TestBase) (Const := TestConst) F.antecedents F.succedent) :
     CompletenessFrontier.SemilocalSemanticConsequence.{0, 0, u, v}
       (Base := TestBase) (Const := TestConst) F :=
-  F.semilocalSurface.consequence_of_goal hDer
+  F.semilocalInterface.consequence_of_goal hDer
 
-theorem semilocalSurface_consequence_excludes_counterexample_path
+theorem semilocalInterface_consequence_excludes_counterexample_path
     {Γ : Ctx TestBase}
     {F : CompletenessFrontier TestConst Γ}
     (hConsequence :
@@ -30,15 +30,15 @@ theorem semilocalSurface_consequence_excludes_counterexample_path
         (Base := TestBase) (Const := TestConst) F) :
     ¬ CompletenessFrontier.HasSemilocalTruthCounterexample.{0, 0, u, v}
       (Base := TestBase) (Const := TestConst) F :=
-  F.semilocalSurface.no_counterexample_of_consequence hConsequence
+  F.semilocalInterface.no_counterexample_of_consequence hConsequence
 
-theorem semilocalSurface_goal_excludes_counterexample_via_consequence_path
+theorem semilocalInterface_goal_excludes_counterexample_via_consequence_path
     {Γ : Ctx TestBase}
     {F : CompletenessFrontier TestConst Γ}
     (hDer : Derivable (Base := TestBase) (Const := TestConst) F.antecedents F.succedent) :
     ¬ CompletenessFrontier.HasSemilocalTruthCounterexample.{0, 0, u, v}
       (Base := TestBase) (Const := TestConst) F :=
-  F.semilocalSurface.no_counterexample_of_goal_via_consequence hDer
+  F.semilocalInterface.no_counterexample_of_goal_via_consequence hDer
 
 theorem derivation_exists_semantics_refutes_goal_path
     {Γ : Ctx TestBase}
@@ -134,25 +134,25 @@ theorem candidate_classified_exists_semantics_refutes_goal_path
   CompletenessFrontier.not_derivable_of_candidate_exists_candidateClosedHintikkaSemantics
     (Base := TestBase) (Const := TestConst) C hSem
 
-theorem closedWorldModelSurface_soundness_path
+theorem closedWorldModelInterface_soundness_path
     {F : CompletenessFrontier TestConst []}
     (hDer : Derivable (Base := TestBase) (Const := TestConst) F.antecedents F.succedent) :
     SingletonStrengthConsequence (Base := TestBase) (Const := TestConst) F :=
-  F.closedWorldModelSurface.consequence_of_goal hDer
+  F.closedWorldModelInterface.consequence_of_goal hDer
 
-theorem closedWorldModelSurface_counterexample_refutes_goal_path
+theorem closedWorldModelInterface_counterexample_refutes_goal_path
     {F : CompletenessFrontier TestConst []}
     (hCounter : Nonempty (SingletonWorldModelCounterexample (Const := TestConst) F)) :
     ¬ Derivable (Base := TestBase) (Const := TestConst) F.antecedents F.succedent :=
-  F.closedWorldModelSurface.counterexample_refutes_goal hCounter
+  F.closedWorldModelInterface.counterexample_refutes_goal hCounter
 
-theorem closedWorldModelSurface_consequence_excludes_counterexample_path
+theorem closedWorldModelInterface_consequence_excludes_counterexample_path
     {F : CompletenessFrontier TestConst []}
     (hConsequence : SingletonStrengthConsequence (Base := TestBase) (Const := TestConst) F) :
     ¬ Nonempty (SingletonWorldModelCounterexample (Const := TestConst) F) :=
-  F.closedWorldModelSurface.no_counterexample_of_consequence hConsequence
+  F.closedWorldModelInterface.no_counterexample_of_consequence hConsequence
 
-theorem closedWorldModelSurface_counterexample_of_quotientRealizationSemanticCounterexample_path
+theorem closedWorldModelInterface_counterexample_of_quotientRealizationSemanticCounterexample_path
     {F : CompletenessFrontier TestConst []}
     {M : HenkinModel TestBase TestConst}
     {W : ClosedTheorySet.World TestConst}
@@ -160,10 +160,10 @@ theorem closedWorldModelSurface_counterexample_of_quotientRealizationSemanticCou
     (hAnte : ∀ φ, φ ∈ F.antecedents → HenkinModel.models M φ)
     (hSucc : ¬ HenkinModel.models M F.succedent) :
     Nonempty (SingletonWorldModelCounterexample (Const := TestConst) F) :=
-  F.closedWorldModelSurface_counterexample_of_quotientRealizationSemanticCounterexample
+  F.closedWorldModelInterface_counterexample_of_quotientRealizationSemanticCounterexample
     (Base := TestBase) (Const := TestConst) R hAnte hSucc
 
-theorem closedWorldModelSurface_refutes_goal_of_quotientRealizationSemanticCounterexample_path
+theorem closedWorldModelInterface_refutes_goal_of_quotientRealizationSemanticCounterexample_path
     {F : CompletenessFrontier TestConst []}
     {M : HenkinModel TestBase TestConst}
     {W : ClosedTheorySet.World TestConst}
@@ -172,10 +172,10 @@ theorem closedWorldModelSurface_refutes_goal_of_quotientRealizationSemanticCount
     (hSucc : ¬ HenkinModel.models M F.succedent) :
     ¬ Derivable (Base := TestBase) (Const := TestConst)
         F.antecedents F.succedent :=
-  F.closedWorldModelSurface_refutes_goal_of_quotientRealizationSemanticCounterexample
+  F.closedWorldModelInterface_refutes_goal_of_quotientRealizationSemanticCounterexample
     (Base := TestBase) (Const := TestConst) R hAnte hSucc
 
-theorem closedWorldModelSurface_refutes_consequence_of_quotientRealizationSemanticCounterexample_path
+theorem closedWorldModelInterface_refutes_consequence_of_quotientRealizationSemanticCounterexample_path
     {F : CompletenessFrontier TestConst []}
     {M : HenkinModel TestBase TestConst}
     {W : ClosedTheorySet.World TestConst}
@@ -183,7 +183,7 @@ theorem closedWorldModelSurface_refutes_consequence_of_quotientRealizationSemant
     (hAnte : ∀ φ, φ ∈ F.antecedents → HenkinModel.models M φ)
     (hSucc : ¬ HenkinModel.models M F.succedent) :
     ¬ SingletonStrengthConsequence (Base := TestBase) (Const := TestConst) F :=
-  F.closedWorldModelSurface_refutes_consequence_of_quotientRealizationSemanticCounterexample
+  F.closedWorldModelInterface_refutes_consequence_of_quotientRealizationSemanticCounterexample
     (Base := TestBase) (Const := TestConst) R hAnte hSucc
 
 end Mettapedia.AutoBooks.Codex.IntuitionisticHOL.ConsequenceFloorRegression

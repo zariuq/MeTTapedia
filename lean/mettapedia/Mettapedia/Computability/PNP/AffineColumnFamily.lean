@@ -13,7 +13,7 @@ predictors land in this class.  It proves the next conditional:
 * then the whole family is encoded by `k + 1` bits.
 
 So a real algebraic rescue can now target a specific small class rather than the
-full Boolean rule space on the post-switch surface.
+full Boolean rule space on the post-switch data domain.
 -/
 
 namespace Mettapedia.Computability.PNP
@@ -123,7 +123,7 @@ abbrev RealizedByExactAffineColumnFamily
     {Z : Type*} {Index : Type*}
     (G : ExactVisibleSwitchedFamily Z k Index) : Prop :=
   RealizedByColumnViewAffineFamily (k := k)
-    (fun u : ExactVisiblePostSwitchSurface Z k => u.a) G
+    (fun u : ExactVisiblePostSwitchData Z k => u.a) G
 
 theorem exactVisibleCompressionTarget_of_realizedByExactAffineColumnFamily
     {Z : Type*} {Index : Type*}

@@ -3,7 +3,7 @@ import Mettapedia.PLN.Bridges.HOL.Probabilistic.EmpiricalSpecialCase
 import Mettapedia.Logic.HOL.Probabilistic.IndexedSpaces
 
 /-!
-# Regression Surface for Probabilistic HOL Semantics
+# Regression Interface for Probabilistic HOL Semantics
 
 This module packages the main positive and negative regression fixtures for the
 infinitary-first `ProbHOL` semantics.

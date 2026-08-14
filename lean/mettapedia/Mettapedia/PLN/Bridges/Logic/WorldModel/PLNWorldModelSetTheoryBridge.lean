@@ -183,7 +183,7 @@ theorem set_to_wm_expressivity_split
 /-- Unified endpoint pack:
 from set-theoretic provability, we get WM multiset consequence transfer and the
 categorical endpoint contract in one theorem. -/
-theorem provable_imp_to_multiset_and_endpoint_surface
+theorem provable_imp_to_multiset_and_endpoint_contract
     (H : WMHyperdoctrine SetState)
     (T : SetTheory) (φ ψ : SetQuery)
     (hprov : T ⊢ (φ ➝ ψ)) :
@@ -323,7 +323,7 @@ def wmConsequenceRuleOn_of_provable_imp_ZFC
 
 /-- Category-facing endpoint: set-theory WM hyperdoctrines satisfy the unified
 institution/Beck-Chevalley endpoint contract. -/
-theorem categorical_endpoint_surface
+theorem categorical_endpoint_contract
     (H : WMHyperdoctrine SetState) :
     EndpointContract (H := H) :=
   endpointContract_of_hyperdoctrine (H := H)

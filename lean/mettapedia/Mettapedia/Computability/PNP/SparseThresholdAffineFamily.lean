@@ -151,7 +151,7 @@ abbrev RealizedByExactSparseThresholdAffineFamily
     {Z : Type*} {Index : Type*}
     (G : ExactVisibleSwitchedFamily Z k Index) : Prop :=
   RealizedBySparseThresholdAffineFamily (r := r) (k := k)
-    (fun u : ExactVisiblePostSwitchSurface Z k => u.a) G
+    (fun u : ExactVisiblePostSwitchData Z k => u.a) G
 
 theorem exactVisibleCompressionTarget_of_realizedByExactSparseThresholdAffineFamily
     {Z : Type*} {Index : Type*}

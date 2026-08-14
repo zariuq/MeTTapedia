@@ -97,7 +97,7 @@ Main native files:
 - `CompletenessRegression`: clean canaries for the surviving completeness-side
   branch.
 - `SemanticConsequenceBridge`, `ConsequenceFloor`: generic HOL semantic
-  consequence, counterexample, and reusable consequence-surface packaging.
+  consequence, counterexample, and reusable consequence-interface packaging.
 - `ClosedTermQuotient`, `ClosedTermPreModelBridge`,
   `ClosedTermHenkinWorldBridge`: typed closed-term quotient carrier,
   pre-model bridge, and Henkin/countermodel extraction staging.

@@ -6,7 +6,7 @@ import Provenance.Semirings.Which
 /-!
 # Provenance→WM Support Bridge
 
-Bridge the LP provenance surface (`KRelation`, `Which`) to WM support-tracked
+Bridge the LP provenance interface (`KRelation`, `Which`) to WM support-tracked
 forgetting interfaces without changing core WM semantics.
 -/
 

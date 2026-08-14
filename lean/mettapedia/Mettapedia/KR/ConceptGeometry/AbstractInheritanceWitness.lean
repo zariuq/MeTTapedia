@@ -3,7 +3,7 @@ import Mettapedia.PLN.Comparisons.NARS.NARSInheritance
 /-!
 # Witness Geometry for Abstract Inheritance
 
-This module adds a shared witness surface to `AbstractInheritance`:
+This module adds a shared witness layer to `AbstractInheritance`:
 
 - positive/negative extensional witnesses
 - positive/negative intensional witnesses

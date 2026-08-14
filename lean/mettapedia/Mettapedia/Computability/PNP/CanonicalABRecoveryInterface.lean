@@ -24,7 +24,7 @@ variable {Z : Type*} {k : ℕ} {Index : Type*}
 
 structure CanonicalABDecisionListRecoveryData
     [Inhabited Z] [Fintype Z]
-    (μ : PMF (ExactVisiblePostSwitchSurface Z k))
+    (μ : PMF (ExactVisiblePostSwitchData Z k))
     (G : ExactVisibleSwitchedFamily Z k Index)
     (q : ℝ≥0∞) where
   codes : Index → SharedAffineDecisionListCode (k + k)
@@ -39,7 +39,7 @@ section
 variable [Inhabited Z] [Fintype Z]
 
 theorem CanonicalABDecisionListRecoveryData.candidateData
-    {μ : PMF (ExactVisiblePostSwitchSurface Z k)}
+    {μ : PMF (ExactVisiblePostSwitchData Z k)}
     {G : ExactVisibleSwitchedFamily Z k Index}
     {q : ℝ≥0∞}
     (h : CanonicalABDecisionListRecoveryData (Z := Z) (k := k) (Index := Index) μ G q) :
@@ -48,7 +48,7 @@ theorem CanonicalABDecisionListRecoveryData.candidateData
     (Z := Z) (k := k) (Index := Index) h.codes h.exact_family
 
 theorem CanonicalABDecisionListRecoveryData.compressionTarget
-    {μ : PMF (ExactVisiblePostSwitchSurface Z k)}
+    {μ : PMF (ExactVisiblePostSwitchData Z k)}
     {G : ExactVisibleSwitchedFamily Z k Index}
     {q : ℝ≥0∞}
     (h : CanonicalABDecisionListRecoveryData (Z := Z) (k := k) (Index := Index) μ G q) :
@@ -56,7 +56,7 @@ theorem CanonicalABDecisionListRecoveryData.compressionTarget
   exact (h.candidateData).compressionTarget
 
 theorem CanonicalABDecisionListRecoveryData.recoveryLowerBound
-    {μ : PMF (ExactVisiblePostSwitchSurface Z k)}
+    {μ : PMF (ExactVisiblePostSwitchData Z k)}
     {G : ExactVisibleSwitchedFamily Z k Index}
     {q : ℝ≥0∞}
     (h : CanonicalABDecisionListRecoveryData (Z := Z) (k := k) (Index := Index) μ G q)

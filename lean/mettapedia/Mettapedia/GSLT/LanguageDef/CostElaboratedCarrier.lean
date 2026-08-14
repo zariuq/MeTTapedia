@@ -15,6 +15,22 @@ namespace Mettapedia.GSLT.LanguageDef
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.Framework.ConstructorCategory
 
+/-- The complete typed-open index of one proof-relevant Cost term.  Bundling
+all three dependent indices is what permits the elaboration family to be a
+single ordinary `Type`-valued functor. -/
+structure CostElaborationIndex (source : CIGSLT) where
+  targetFree : WellSorted.FreeTypeContext
+  targetBound : List TypeExpr
+  targetSort : LangSort source.costWholeLanguage
+
+/-- The exact proof-relevant fibre over one Cost authority.  Its payload is
+the checked compact term together with its retained `CostRegionTree`; no
+normalizer, restoration theorem, or independently selected kernel is stored
+again in the fibre. -/
+abbrev CostElaborationFiber (source : CIGSLT) :=
+  Σ index : CostElaborationIndex source,
+    CostElabTerm source index.targetFree index.targetBound index.targetSort
+
 namespace CIGSLT
 
 /-- The complete Cost region elaboration as a proof-relevant carrier over the

@@ -29,6 +29,7 @@ namespace Mettapedia.Languages.MeTTa.MeTTaZeroUV
 
 open Mettapedia.GSLT
 open Mettapedia.GSLT.Core.BranchingTemporal
+open Mettapedia.GSLT.Core.ClosureCriteria
 open Mettapedia.GSLT.Core.InferenceControl
 open Mettapedia.GSLT.LanguageDef.ProofGSLT
 open Mettapedia.Languages.MeTTa.MeTTaZero
@@ -279,9 +280,12 @@ theorem chain_reaches_c :
 an internally composable pair of steps. -/
 theorem productiveZero_has_composable_steps :
     HasComposableSteps (productiveGSLT chainModel chainSpace) :=
-  ⟨a, b, c,
-    (show b ∈ interpretedResults chainModel chainSpace a by simp),
-    (show c ∈ interpretedResults chainModel chainSpace b by simp)⟩
+  ⟨
+    { source := a
+      middle := b
+      target := c
+      first := show b ∈ interpretedResults chainModel chainSpace a by simp
+      second := show c ∈ interpretedResults chainModel chainSpace b by simp }⟩
 
 /-- The carrier choice is semantically consequential: terminal answer
 envelopes forbid internal chaining, while direct re-entry restores it without

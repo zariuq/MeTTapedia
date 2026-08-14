@@ -34,9 +34,9 @@ import Mettapedia.PLN.RuleFamilies.HigherOrder.PLNWorldModelRegimeAdmissibilityR
 import Mettapedia.PLN.RuleFamilies.HigherOrder.Reduction
 
 /-!
-# Higher-order PLN rule-family surfaces
+# Higher-order PLN rule-family interfaces
 
 Higher-order PLN chaining, certification, decision, value-of-information, and
-variance/posterior update surfaces, together with their guarded admissibility,
-planner-shadow, regime-mixture, and no-go support surfaces.
+variance/posterior update interfaces, together with their guarded admissibility,
+planner-shadow, regime-mixture, and no-go support interfaces.
 -/

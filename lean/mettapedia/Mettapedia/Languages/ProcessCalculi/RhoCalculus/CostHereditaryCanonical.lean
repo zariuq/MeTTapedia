@@ -2,6 +2,7 @@ import Mettapedia.GSLT.LanguageDef.CostHereditaryCanonical
 import Mettapedia.GSLT.LanguageDef.CostHereditaryAlignment
 import Mettapedia.GSLT.LanguageDef.CostHereditaryContextRoute
 import Mettapedia.GSLT.LanguageDef.CostHereditaryTreeNormalization
+import Mettapedia.GSLT.LanguageDef.CostStaticHereditaryTyping
 import Mettapedia.GSLT.LanguageDef.CostElaborationTransportSound
 import Mettapedia.GSLT.LanguageDef.CostSemanticAtomReifyCongruence
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CanonicalSupport
@@ -1719,6 +1720,52 @@ end CostStaticRegionNode
 traversal. -/
 def rhoHereditaryStaticNormalizer : CostStaticRegionNormalizer rhoCIGSLT :=
   fun node values => CostStaticRegionNode.normalizeHereditary node values
+
+/-- Rho's hereditary static kernel preserves any constructor alphabet that
+contains both static constructor images.  Recursively normalized foreign
+boundaries enter only through the exact occurrence-indexed value vector, so
+their constructor support is an independent premise rather than an implicit
+identification of equal compact terms. -/
+theorem rhoHereditaryStaticNormalizer_preservesConstructorSupport_of
+    {allowed : String → Prop}
+    (imageAllowed : ∀ color label,
+      CostStaticColor.hereditaryConstructorImage rhoCIGSLT color label →
+        allowed label) :
+    CostStaticRegionNormalizerPreservesConstructorSupport rhoCIGSLT
+      rhoHereditaryStaticNormalizer allowed := by
+  intro color targetFree node values _nodeSupported valuesSupported
+  change ConstructorsWithin allowed
+    (CostStaticRegionNode.normalizeHereditary node values).1
+  let inventory := (node.semanticAtomEnvironment values).1
+  let environment := CostStaticAtomEnvironment.ofInventory inventory
+  have actionSupported : ConstructorsWithin allowed
+      ((CostStaticRegionNode.semanticCanonicalizedSourceTerm node environment
+        ).act node.thinning environment.restorationSupportedOpenAssignment) := by
+    apply CostStaticSourceTerm.act_constructorSupported
+    · exact imageAllowed color
+    · intro name
+      exact
+        CostStaticAtomEnvironment.ofInventory_restorationAssignment_constructorSupported
+          inventory valuesSupported name
+  have hereditaryPattern :
+      (CostStaticRegionNode.normalizeHereditary node values).1 =
+      rhoCostStaticActionAt node.thinning
+        environment.restorationSupportedOpenAssignment [] node.targetBound
+        (canonicalizeByDepths
+          (CostStaticRegionNode.sourceSemanticPatternKeyAt node environment)
+          rhoReflectivePresentation node.targetBound.length 0
+          (node.reifiedSourceFrame environment).1) := by
+    unfold CostStaticRegionNode.normalizeHereditary
+    rw [CostStaticRegionNode.normalizeHereditaryWithInventory_pattern]
+    exact
+      CostStaticRegionNode.normalizeHereditaryRawWithInventory_eq_sourceAction
+        node values inventory
+  rw [hereditaryPattern]
+  unfold CostStaticSourceTerm.act at actionSupported
+  unfold rhoCostStaticActionAt
+  unfold ReflectiveContextSupport.substitute at actionSupported
+  rw [CostStaticRegionNode.semanticCanonicalizedSourceTerm_pattern] at actionSupported
+  simpa only [List.length_nil] using actionSupported
 
 /-- Proof-relevant alignment kernel for rho's hereditary static normalizer. -/
 def rhoHereditaryNormalizationKernel :

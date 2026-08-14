@@ -94,7 +94,7 @@ concrete finite trie instance (\texttt{FTrie\,V}) satisfying
 semantics, a bridge to MQ-calculus COMM non-determinism,
 a Z3 oracle semantics module,
 an invertible compat-head fragment compiler for PeTTa evaluation-during-matching,
-and a direct-exec surface packaging scheduler-level exactness.
+and a direct-exec API packaging scheduler-level exactness.
 %
 The \PathMap{} library provides a six-class zipper typeclass hierarchy
 mirroring the Rust \texttt{pathmap::zipper} trait stack, with a Zipper Abstract
@@ -176,7 +176,7 @@ covering:
   \item An invertible compat-head fragment formalizing the compilation
         of PeTTa evaluation-during-matching to standard MORK three-phase
         execution via staged inverse compilation (\S\ref{sec:invertiblehead});
-  \item A direct-exec surface packaging scheduler-level exactness with
+  \item A direct-exec API packaging scheduler-level exactness with
         PeTTa eval fragment composition (\S\ref{sec:directexec});
   \item A conformance test suite verified against the \MORK{} CLI
         (\S\ref{sec:conformance});
@@ -1759,7 +1759,7 @@ excluded by the \texttt{InvertibleHead} predicate.
 \end{remark}
 
 %% ============================================================
-\section{Direct-Exec Surface}
+\section{Direct-Exec API}
 \label{sec:directexec}
 %% ============================================================
 
@@ -1934,7 +1934,7 @@ Conformance testing            & Kernel-checked theorems, 9+ MM2 tests & --- \\
 PLN routing witnesses          & 6 rules (transitivity, MP, abduction, guarded) & --- \\
 MQ bridge                      & Binary + N-ary fold $\leftrightarrow$ COMM & Real process witnesses \\
 Compat-head compilation        & Invertible fragment boundary, staged inverse, forward/reverse roundtrip (61 thms) & PeTTa Dispatch bridge, non-injective heads \\
-Direct-exec surface            & Scheduler exactness, PeTTa eval fragment & add-atom/remove-atom bridge, collection patterns, beta-reduction \\
+Direct-exec API            & Scheduler exactness, PeTTa eval fragment & add-atom/remove-atom bridge, collection patterns, beta-reduction \\
 Execution boundary             & \texttt{morkTranslatable} packaging, pattern normalization, \texttt{morkTranslatable\_applyBindings} & --- \\
 Runtime kernel packaging       & Effect-class bridge, classified fragments, memoization safety, resource descriptors (4 resources) & Named atomspace exec, ACT exec seam \\
 MM2 bridge round-trip          & \texttt{mm2\_raise\_lower}, \texttt{mm2\_lower\_injective}, \texttt{mm2\_raise\_surjective} (\texttt{Mm2BridgeRoundTrip.lean}, companion boundary result) & Context-sensitive lowering (ACT dual mapping) \\
@@ -2051,7 +2051,7 @@ MM2 bridge round-trip          & \texttt{mm2\_raise\_lower}, \texttt{mm2\_lower\
 %% ============================================================
 
 \texttt{ExecutionBoundary.lean} (510~lines) provides a thin re-export
-surface packaging the proven \texttt{morkTranslatable} execution boundary,
+module packaging the proven \texttt{morkTranslatable} execution boundary,
 the scheduler correspondence chain, the extended bridge infrastructure,
 the zipper/lens congruence infrastructure (\texttt{AtomZipper},
 \texttt{LensRel}, lens laws), the collection congruence bridge, and
@@ -2089,7 +2089,7 @@ and the extended bridge (\texttt{patternNormalize},
 \texttt{applyBindingsPreservesTranslatable},
 \texttt{extendedExecFire},
 \texttt{extendedSourceRuleFire})
-as public \texttt{abbrev}s, providing a stable API surface
+as public \texttt{abbrev}s, providing a stable public API
 for downstream consumers.
 
 %% ============================================================

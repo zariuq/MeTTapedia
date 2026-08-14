@@ -81,7 +81,7 @@ end
 
 structure SharedExactZABDecisionListRecoveryData
     [Fintype Z]
-    (μ : PMF (ExactVisiblePostSwitchSurface Z k))
+    (μ : PMF (ExactVisiblePostSwitchData Z k))
     (zfeat : Z → BitVec r)
     (features : Fin p → AffineColumnCode (r + (k + k)))
     (G : ExactVisibleSwitchedFamily Z k Index)
@@ -102,7 +102,7 @@ section
 variable [Fintype Z]
 
 theorem SharedExactZABDecisionListRecoveryData.targetData
-    {μ : PMF (ExactVisiblePostSwitchSurface Z k)}
+    {μ : PMF (ExactVisiblePostSwitchData Z k)}
     {zfeat : Z → BitVec r}
     {features : Fin p → AffineColumnCode (r + (k + k))}
     {G : ExactVisibleSwitchedFamily Z k Index}
@@ -117,7 +117,7 @@ theorem SharedExactZABDecisionListRecoveryData.targetData
   exact ⟨h.realized⟩
 
 theorem SharedExactZABDecisionListRecoveryData.compressionTarget
-    {μ : PMF (ExactVisiblePostSwitchSurface Z k)}
+    {μ : PMF (ExactVisiblePostSwitchData Z k)}
     {zfeat : Z → BitVec r}
     {features : Fin p → AffineColumnCode (r + (k + k))}
     {G : ExactVisibleSwitchedFamily Z k Index}
@@ -130,7 +130,7 @@ theorem SharedExactZABDecisionListRecoveryData.compressionTarget
   exact (h.targetData).compressionTarget
 
 theorem SharedExactZABDecisionListRecoveryData.recoveryLowerBound
-    {μ : PMF (ExactVisiblePostSwitchSurface Z k)}
+    {μ : PMF (ExactVisiblePostSwitchData Z k)}
     {zfeat : Z → BitVec r}
     {features : Fin p → AffineColumnCode (r + (k + k))}
     {G : ExactVisibleSwitchedFamily Z k Index}

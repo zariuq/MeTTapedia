@@ -1800,6 +1800,74 @@ Batch absorption is intentionally outside the causal interface because episode o
 changes the decay. The persistent feature is disabled by default until an experiment
 declares how episodes are ordered.
 
+The executable code exposes two persistence mechanisms that must not be conflated.  Its
+online episode operation is, cell by cell,
+\[
+ M_{r+1}(\sigma,\pm,j)=\delta M_r(\sigma,\pm,j)+I_r(\sigma,\pm,j),
+\]
+and hence after $n$ updates
+\[
+ M_n=\delta^nM_0+\sum_{r<n}\delta^{,n-1-r}I_r .
+\]
+The longitudinal Unified treatment instead reconstructs a cumulative table outside the
+model at a registered round boundary, normalizes it once, and replaces the table after
+loading both model and optimizer state.  In the abstract notation this has the form
+$\widehat M_n=a_n\sum_{r<n}I_r$, not the chronological decay above.  Exact agreement is
+proved at the no-decay, unit-normalization, zero-initial-state boundary
+(\leanname{online\_eq\_external\_of\_noDecay\_unitNormalization}); explicit fixtures
+separate the operations under decay, replay, and reordering
+(\leanname{decay\_separates\_online\_from\_external},
+\leanname{replay\_without\_identity\_dedup\_doubleCounts},
+\leanname{decay\_makes\_innovation\_order\_observable}).  Numeric addition does not
+provide exactly-once identity: that obligation remains with the causal innovation
+ledger.  Neither table is called a Bayesian posterior merely because it carries
+positive and negative evidence.
+
+\paragraph{Aggregate evidence is not addressable memory.}
+The aggregate table retains $(\sigma,\pm)$ and erases which memory, query, program,
+solved target, and lineage supplied the count.  The formal atomic record is therefore
+\[
+  (m,\sigma,q,p,t,\pm,\ell),
+\]
+with the current table as a many-to-one projection.  Projection collisions prove that
+the aggregate key cannot uniformly recover program identity, program--target
+competence, query--program accessibility, or lineage
+(\leanname{aggregateKey\_does\_not\_recover\_program},
+\leanname{aggregateKey\_does\_not\_recover\_competence},
+\leanname{aggregateKey\_does\_not\_recover\_accessibility},
+\leanname{aggregateKey\_does\_not\_recover\_lineage}).  The positive boundary is the
+matching universal property, and it is a characterization rather than a restatement of
+its own hypothesis: an estimand is recoverable from $(\sigma,\pm)$ \emph{exactly} when it
+assigns equal values to any two facts sharing that key, with the decoder constructed in
+the nontrivial direction
+(\leanname{recoverable\_iff\_respectsAggregateCollisions}).  Each negative result above is
+then its contrapositive at a single colliding pair.
+
+This yields four different coverage quantities: stored availability, routed
+availability, direct-target hits, and aggregate support.  Routed targets are always a
+subset of stored targets, with equality exactly for witness-complete routing
+(\leanname{routedTargets\_subset\_availableTargets},
+\leanname{routedTargets\_eq\_availableTargets\_iff}).  A system can therefore preserve
+competence while losing accessibility.  The minimal proposed extension is an
+\emph{addressable sidecar} beside the existing aggregate prior.  Forgetting the sidecar
+recovers the current aggregate treatment, and a disabled route returns the cold
+initializer with the original memory; both hold by construction of the proposed
+transition, so they are interface laws for the design and not measurements of any
+deployed implementation
+(\leanname{forgetSidecar\_eq\_aggregate},
+\leanname{sidecarRoutingTransition\_disabled\_eq\_cold\_original}).  Rejection is state
+preserving for an arbitrary acceptance predicate
+(\leanname{sidecarRoutingTransition\_rejected\_eq\_cold\_original}), and the router is
+fail-closed with content: whenever the acceptance predicate is sound for the existing
+certified set, every state the router can return is either the declared cold initializer
+or one carrying exact lineage, exact shape, and basin membership
+(\leanname{routedInitializer\_sound\_accept\_cold\_or\_certified}).  A contrasting
+mutating transition returns the cold initializer while changing the memory, so
+cold-output equality alone is not a storage-preservation certificate
+(\leanname{mutatingRouter\_changes\_storage\_fixture}).  This is a named future
+treatment, not a silent interpretation of the production carrier, which currently has
+no lineage-bound query-to-program sidecar.
+
 \paragraph{Continuous opinions retain uncertainty separately from prediction.}
 The $K$-class evidential chart of
 \href{https://arxiv.org/abs/1806.01768}{Sensoy, Kaplan, and
@@ -2726,6 +2794,76 @@ development as empirical targets, not theorems. And no repair touches the price:
 repaired dynamics remain an iterative relaxation, so ``matches backpropagation'' continues
 to mean matches its target, not its cost (\leanname{pcBPCompute\_crown}).
 
+\subsection{Acyclic primary solves and cyclic refinement}
+
+An error-coordinate primary solver changes this cost boundary for a DAG: it solves the
+acyclic dependency structure directly and leaves iterative settling only for back-edges
+\cite{goemaere2026epc}.  The cyclic remainder admits an exact finite theory.  For a
+linearized cycle equation $y-Ay=b$, $U$ explicit unrolls and $R$ damped refinements are
+\[
+ y_U=\sum_{k<U}A^k b,
+ \qquad
+ y_R=\alpha\sum_{k<R}((1-\alpha)I+\alpha A)^k b.
+\]
+Both target the same fixed point, but their finite paths agree automatically only at
+$\alpha=1$.  The exact errors are $A^Uy$ and
+$((1-\alpha)I+\alpha A)^Ry$ respectively
+(\leanname{exact\_sub\_unrolled\_eq\_power},
+\leanname{exact\_sub\_refined\_eq\_power}); a scalar counterexample separates one
+damped refinement from one unroll
+(\leanname{halfDamping\_oneStep\_ne\_unroll}).
+
+If $A$ contracts by $q<1$, the damped operator contracts by
+$q_\alpha=(1-\alpha)+\alpha q$.  Its certified error crosses the unroll error precisely
+when $q_\alpha^R\le q^U$
+(\leanname{refinementErrorBudget\_le\_unrollErrorBudget\_iff}).  This supplies a
+falsifiable refine-versus-unroll prediction once the actual graph supplies $A$, $q$,
+$\alpha$, and a valid linearization region.  It does not infer those quantities from a
+successful benchmark.
+
+The work result is deliberately conditional.  Five damped refinement steps can be both
+more accurate and cheaper than two unrolls when the cycle-local active frontier is small;
+the same accuracy ordering becomes more expensive when the refinement frontier is dense
+(\leanname{localRefinement\_wins\_work\_fixture},
+\leanname{denseRefinement\_loses\_work\_fixture}).  Certificate and non-matrix work must
+also be charged: matrix-multiplication ordering alone cannot order total execution cost
+(\leanname{matmul\_order\_does\_not\_determine\_chargedCost}).
+
+Nor may refinement stop on energy decrement alone.  A valid implication from decrement
+to credit error additionally requires a residual-decrease coefficient, a contraction
+margin, a Lipschitz credit readout, and an equilibrium-credit mismatch term
+(\leanname{energyDecrement\_creditError\_le}).  State/energy tolerance and credit geometry
+remain separate admission gates: exact positive rescaling can fail a raw numerical
+tolerance, while a non-collinear perturbation can pass one
+(\leanname{positiveScale\_fails\_tightTolerance},
+\leanname{tinyRotation\_passes\_tolerance\_not\_collinear}).
+
+Every bound above presumes a certified cycle factor $q<1$.  When only a norm upper bound
+$q\ge1$ is available, the derived triangle bound
+$q_\alpha=1+\alpha(q-1)\ge1$ merely fails to certify contraction; it does not show that
+the exact damped map is noncontractive.  The machine-checked counterexample is
+$A=-2I$, $\alpha=1/3$: the norm construction gives $q_\alpha=4/3$, while the exact damped
+operator is zero
+(\leanname{triangleBound\_above\_one\_does\_not\_imply\_damped\_noncontraction}).
+A true no-rescue conclusion follows when a nonzero positive real mode satisfies
+$Av=\lambda v$ with $\lambda\ge1$; damping retains multiplier
+$1+\alpha(\lambda-1)\ge1$ along that mode
+(\leanname{no\_strict\_contraction\_of\_positive\_expanding\_eigenvector}).
+
+The coarse recurrent observations---large latent gradients, cosine $0.270$ across depths
+$32$ to $160$, and a further $26\%$ energy decrease---do not establish that directional
+hypothesis.  Large forcing, readout sensitivity, and non-normal transient amplification
+remain alternatives.  A refinement-depth sweep likewise estimates a trajectory-specific
+effective decay, not a uniform regional $q_\alpha$; the latter needs an operator or
+Jacobian enclosure and an invariant region.
+
+The finer cut remains a plausible architectural repair and its median credit cosine rose
+from $0.888$ to $0.9996$ over six thousand updates.  That telemetry is neither a
+contraction certificate nor a behavioral result.  Predicting reference-like discovery
+behavior additionally requires the uniform-curvature collapse premise, and the resulting
+near-reference outcome was a timestamped pre-checker hypothesis rather than a sealed
+registration.
+
 \section{Curvature spread decides both the signal and the solver}
 \label{sec:block-settling}
 
@@ -2798,6 +2936,43 @@ local-contraction neighborhood
 (\leanname{local\_warmShort\_credit\_difference\_to\_coldLong\_le}). This is the
 appropriate same-basin obligation for comparing a short warm solve directly with the
 registered longer cold solve.
+
+There is a separate normalization boundary before any such solver comparison. An
+Euler clock enters a fixed preconditioned update only through
+$\alpha=dt/\tau_m$, but stability depends on the dimensionless preconditioned
+curvature $\alpha PH$, not on $\alpha$ by itself. Equal clock ratios give equal
+finite trajectories only when the vector field, preconditioner, and depth are held
+fixed (\leanname{eulerIterate\_eq\_of\_rate\_eq}); the regional sufficient
+condition is stated in the corresponding preconditioned strong-monotonicity and
+Lipschitz constants
+(\leanname{nondimensionalPreconditionedLocalCertificate}). Exact inverse row-mass
+preconditioning removes row duplication while leaving residual precision visible
+(\leanname{preconditioned\_massWeightedResidualGradient}).
+
+This distinction changes the reading of the registered scalar schedules. Every AC
+stage obeys the nominal invariant $\pi\alpha T=1$, yet its exact residual-channel
+response is $1-(1-\pi\alpha)^T$. Across depths $1,2,4,5,8$, the kernel-checked
+response values are respectively
+\[
+  1,\quad \frac34,\quad \frac{175}{256},\quad
+  \frac{2101}{3125},\quad \frac{11012415}{16777216},
+\]
+and they decrease strictly
+(\leanname{ACStage.nominalExposure\_eq\_one},
+\leanname{acStage\_expectedResponses\_strictly\_decrease}). Unified's registered
+eight-step residual fixture instead has response $255/256$ and remaining residual
+$1/256$. The same response multiplier transports exactly to affine local parameter
+credit, and any nonzero outer learning rate transports a credit difference to a
+parameter-update difference
+(\leanname{ACStage.settledCredit\_eq\_expected\_smul\_carrierBPCredit},
+\leanname{parameterUpdate\_ne\_of\_credit\_ne}). Thus preserving
+$\pi\alpha T$ is not preservation of a finite PC treatment. A concrete negative
+fixture makes cross-framework copying unsafe: $\alpha=0.05$ has factor zero under
+curvature $20$ but magnitude $21/4$ under curvature $125$, where one step maps unit
+error to $-21/4$
+(\leanname{oneTwentieth\_acResidual\_oneStep\_expands}). These are
+residual-only local identities; the full nonlinear carrier still requires its
+regional Jacobian and basin certificate.
 
 Execution adds a second boundary. If the realized warm and cold credits lie within
 $\epsilon_w$ and $\epsilon_c$ of their exact-real readouts, respectively, then the complete
@@ -2946,6 +3121,114 @@ What remains open is quantitative: a bound relating spread to attainable cosine,
 prediction of the depth at which transported credit saturates. The measurements in the
 companion experiments show that saturation occurring far earlier than energy convergence,
 which the block-diagonal model does not yet explain.
+
+\subsection{Recurrent cuts as shooting structures}
+
+The AC recurrent failure has the same computational shape as single shooting in
+boundary-value and optimal-control problems: a condensed coordinate exposes an ordered
+product of transition Jacobians. Multiple shooting introduces intermediate states and
+local matching rows, trading that long pullback for a larger sparse problem
+\cite{mattheij1982shooting,bockplitt1984shooting,massaroli2021shooting,
+prabhu2025shooting}. This analogy is useful only if two transformations are kept
+separate. The AC state and reduced-error implementations are an invertible triangular
+coordinate change of the same energy. Their two inverse laws, exact energy transport,
+detached local-credit transport, and critical-differential equivalence are already
+machine checked
+(\leanname{rankedDAGStateToError\_errorToState},
+\leanname{rankedDAGErrorEnergy\_eq\_stateEnergy},
+\leanname{rankedDAG\_detachedCredit\_transport},
+\leanname{rankedDAG\_criticalDifferential\_iff}). Moving AC-v2 to independent local
+states is therefore a solver-coordinate repair, not authority to change its stationary
+objective.
+
+The scalar shooting specialization proves the mechanism directly. The derivative of a
+condensed terminal mismatch contains the full prefix Jacobian product
+(\leanname{coarseTerminalEnergy\_hasDerivAt\_initial}); one lifted matching row depends
+only on its two incident states
+(\leanname{liftedResidual\_eq\_of\_incident\_eq}), and its midpoint force has an
+absolute bound involving only adjacent gains and states
+(\leanname{abs\_twoSegment\_midpointGradient\_le\_local}). Yet locality has a finite
+speed. A simultaneous nearest-neighbour schedule is identically zero beyond its
+$T$-edge causal frontier after $T$ phases, and reaches the exact reverse credit for the
+first time on the diagonal
+(\leanname{synchronousCredit\_eq\_zero\_of\_time\_lt\_depth},
+\leanname{synchronousCredit\_diagonal\_eq\_backprop}). An output-to-input ordered sweep
+recovers reverse-mode credit exactly, but has sequential span equal to the traversed
+depth (\leanname{orderedSweepCredit\_eq\_backpropChainCredit}). Thus an apparently
+one-sweep ranked solver does not provide one-step global locality; it packages a
+depth-many causal schedule, the same boundary exposed by exact scheduled predictive
+differentiation \cite{salvatori2021reverse}.
+
+The strongest initially tempting conditioning claim is false. Product norm is not
+condition number: two depth-eight diagonal recurrences have equal maximum product norm
+$256$ while their normal-equation condition proxies are $1$ and $65536$
+(\leanname{equal\_depth\_product\_norm\_different\_condition}). Nor does local lifting
+alone imply coercivity: the unanchored matching energy has a nonzero zero-energy
+direction (\leanname{liftedMatchingEnergy\_has\_nonzero\_zero\_direction}). Any global
+condition theorem therefore needs anchoring plus a genuine lower singular-value,
+dichotomy, or preconditioned-coercivity hypothesis; upper local Jacobian bounds alone
+cannot supply it.
+
+Sweep completeness is likewise not an unconditional ``PC-to-BP dial.'' An exact signed
+fixture has squared cosine $1,1/2,1$ over three successive prefixes
+(\leanname{sweep\_completeness\_cosine\_not\_monotone}). A monotone theorem is available
+when newly captured components are orthogonal and carry nonnegative energy
+(\leanname{orthogonalCapturedFraction\_mono}); otherwise the curve itself is an
+experimental observable. This agrees with exact reverse-differentiation results while
+preserving their locality caveat: the BP endpoint can be recovered by a strict reverse
+schedule, but doing so spends the global sequencing that ordinary simultaneous PC avoids.
+
+The vector-valued result is exact in realized parameter-credit space.  For pairwise
+orthogonal schedule contributions $c_e$, a prefix $A$ satisfies
+\[
+ \cos^2\!\left(\sum_{e\in A}c_e,\sum_e c_e\right)
+ =\frac{\sum_{e\in A}\lVert c_e\rVert^2}{\sum_e\lVert c_e\rVert^2},
+\]
+provided the complete energy is positive; prefix inclusion therefore gives monotone
+squared cosine
+(\leanname{prefix\_innerSquaredCosine\_eq\_capturedEnergyFraction},
+\leanname{prefix\_innerSquaredCosine\_mono}).  This is instantiated using the existing
+DAG edge-contribution and arrival types, not a postulated vector sequence.  A legal
+orthogonal fixture has squared cosines $1/2,1$.  A legal signed fixture ties two edge
+occurrences to the same parameter direction, formally violates orthogonality, and has
+$1,4/5,1$; cancellation makes the middle prefix worse and the complete prefix recover
+(\leanname{positiveDAG\_prefix\_cosine\_values},
+\leanname{cancellationDAGContribution\_not\_pairwiseOrthogonal},
+\leanname{cancellationDAG\_prefix\_decreases\_then\_recovers}).
+
+At the tensor level, the finite sum of transposed transition powers through the ranked
+DAG's nilpotence horizon equals its complete reverse force.  Reading occurrence credit
+from that force at the frozen feedforward state therefore reproduces the whole BP
+credit tensor
+(\leanname{rankedDAGFrozenCompleteReverseSweep\_eq\_completeReverseForce},
+\leanname{rankedDAG\_frozen\_completeReverseSweep\_creditVector\_eq\_bp}).  The
+machine-checked boundary is equally important: an actual reverse-ranked state-gradient
+sweep agrees only if it leaves the feedforward state fixed and realizes the complete
+force.  A departure implies state displacement or incomplete force, and the four-node
+chain exhibits the former with moved-state credit $-1/4$ versus frozen BP credit $-1$
+(\leanname{rankedDAG\_reverseRankStateSweep\_departure\_requires\_boundary\_crossing},
+\leanname{rankedTensorChain4\_actualStateSweep\_ne\_frozenBP}).
+
+Finally, soft matching is not the AC coordinate transform. Exact Schur elimination of a
+two-segment soft matching energy yields a parameter-dependent factor $1/(1+b^2)$, not
+the naive coarse penalty. When $b$ is learned that metric can introduce a stationary
+point absent from the naive objective
+(\leanname{twoSegmentFineEnergy\_eq\_condensed\_add\_square},
+\leanname{condensation\_can\_change\_parameter\_stationarity}). This negative theorem is
+the guardrail against silently changing the objective while calling the change a
+multiple-shooting coordinate repair.
+
+These results define the frozen-checkpoint admission test for AC-v2. First verify exact
+state/error energy and detached-credit parity. Then measure the local Jacobian and state
+quantities entering the product-free force bound; reject if the implementation violates
+it. Compare simultaneous, partial reverse, complete reverse, and symmetric
+reverse/forward schedules at fixed charged work, recording rankwise force support,
+per-block stationarity, exact energy, task descent, raw credit, and optimizer-transported
+credit. Do not preregister monotone cosine. The scalar half-factor schedule gives exact
+candidate rates $3/20000,1/1000,1/500,1/400,1/250$ for AC's five registered precisions
+(\leanname{acStage\_halfFactor\_candidate\_rates}); these are diagnostic starting points,
+not nonlinear licenses, and every candidate must still pass the regional curvature,
+branch-stability, basin, precision, and total-work gates above.
 
 \section{Forgetting has a metric side and a connection side}
 \label{sec:forgetting}
@@ -3216,6 +3499,57 @@ the authenticated fact relation, program and target projections, fresh identitie
 program-degree and exclusive-contribution distributions, and the maximum
 leave-one-program-out change.
 
+\subsection{Training history interacts with the carrier}
+\label{sec:training-history-interaction}
+
+Every arm above inherits its own weights across rounds, so none of them tests inheritance.
+A control fixes this for the BP credit rule on both carriers: a further model per carrier
+trained from the same authenticated initial weights on the frozen final cumulative
+population, for the cumulative update budget the continued lineage had spent, with its
+discoveries quarantined from the shared corpus. Both conditions are then adjudicated by the
+same external checker, so the outcome is verified program behaviour rather than a held-out
+proxy.
+
+The estimand is narrower than ``weights versus no weights.'' The retrained model sees the
+whole accumulated corpus from its first update, whereas the continued model met each round's
+evidence only as it arrived. Data schedule and weight history move together, so this measures
+offline joint retraining against streaming continuation. Intermediate budget-matched snapshots
+exist for the earlier rounds, but they are future-informed and only the terminal comparison is
+free of that advantage.
+
+Two projections of the checker's relation move in opposite directions. Novelty per unique
+proposed program favours retraining in all eight measured cells, by factors between $1.08$ and
+$1.45$. Retention---coverage of targets already known before the round---favours continuation
+in seven of eight, by up to $370$ targets. This is the stability--plasticity trade-off of
+\S\ref{sec:forgetting} read off verified artefacts rather than a loss curve: inheritance buys
+breadth over the known set, retraining buys efficiency per proposal, and neither dominates.
+
+Which one wins on new coverage depends on the carrier. Writing $\Delta$ for retrained minus
+continued new-target coverage, the coarse recurrent carrier gives $+23$ at the terminal budget
+and the Unified carrier $-12$, an interaction of $+35$ in the same difference-in-differences
+form as $I_s$ above and subject to the same endpoint-specificity caveat
+(\leanname{architectureInteraction\_changes\_with\_endpoint\_projection}). The earlier
+budget landmarks are consistent for the recurrent carrier ($+25$, $+89$, $+36$) and
+alternate in sign for Unified ($+7$, $-5$, $+8$), so the Unified direction rests on the one
+unbiased comparison. That direction is nonetheless the conservative one, because the
+landmarks' future information favours retraining, and the recurrent effect is correspondingly
+the weaker claim: its sign is what the bias alone would produce. One pair of training runs
+sampled at four budgets is not four replications.
+
+Two mechanisms predict this split and are not yet separated. The Unified objective is
+evidence-conditioned, so its inherited weights co-adapt with a retrieval prior defined over
+the growing corpus and remain relevant as that corpus grows; the recurrent carrier has no such
+conditioning, and inherited weights are then only prior optimization that retraining redoes on
+better data. The alternative is a plasticity loss specific to the recurrent carrier. The
+predictions differ---the first makes the effect follow the conditioning, the second makes it
+follow the recurrence---and distinguishing them requires the conditioning to be ablated
+rather than inferred, which no experiment here does.
+
+Robustness qualifies the Unified result rather than reversing it. With $e_R(p)$ as above,
+the worst single-program removal costs the retrained Unified model $7$ of its $64$ targets
+and the continued model $2$ of its $76$: the larger coverage is also the less
+hub-dependent. Both recurrent cells lose $2$.
+
 \subsection{A dependent-proof credit screen}
 \label{sec:dtt-credit-screen}
 
@@ -3377,6 +3711,33 @@ that snapshot. Crown theorems depend only on the standard logical basis
 declared axioms and no unproved placeholders.
 
 \begin{thebibliography}{99}
+
+\bibitem{goemaere2026epc} C.~Goemaere, G.~Oliviers, R.~Bogacz, and
+T.~Demeester.
+ePC: Fast and deep predictive coding in digital simulation.
+\emph{ICML}, PMLR 306, 2026; arXiv:2505.20137v5.
+
+\bibitem{mattheij1982shooting} R.~M.~M.~Mattheij.
+The conditioning of linear boundary value problems.
+\emph{SIAM Journal on Numerical Analysis}, 19(5):963--978, 1982.
+doi:10.1137/0719070.
+
+\bibitem{bockplitt1984shooting} H.~G.~Bock and K.~J.~Plitt.
+A multiple shooting algorithm for direct solution of optimal control problems.
+\emph{IFAC Proceedings Volumes}, 17(2):1603--1608, 1984.
+doi:10.1016/S1474-6670(17)61205-9.
+
+\bibitem{massaroli2021shooting} S.~Massaroli, M.~Poli, S.~Sonoda, T.~Suzuki,
+J.~Park, A.~Yamashita, and H.~Asama.
+Differentiable multiple shooting layers. arXiv:2106.03885, 2021.
+
+\bibitem{prabhu2025shooting} S.~Prabhu, S.~Rangarajan, and M.~Kothare.
+A condensing approach to multiple shooting neural ordinary differential equation.
+arXiv:2506.00724, 2025.
+
+\bibitem{salvatori2021reverse} T.~Salvatori, Y.~Song, T.~Lukasiewicz,
+R.~Bogacz, and Z.~Xu.
+Reverse differentiation via predictive coding. arXiv:2103.04689, 2021.
 
 \bibitem{lopezpaz2017} D.~Lopez-Paz and M.~Ranzato.
 Gradient episodic memory for continual learning. \emph{NeurIPS}, 2017;

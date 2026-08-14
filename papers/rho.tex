@@ -260,7 +260,7 @@ are the same account.
 What does a run return?  Not a number.  Here is a three-stage supply
 chain --- farm ships, roaster roasts, caf\'e brews --- on one channel
 with one purse holding one token per stage, run through the accounted
-trace surface (\cettafile{lib/lts/rho/cost.metta}{lts:rho:cost}):
+trace library (\cettafile{lib/lts/rho/cost.metta}{lts:rho:cost}):
 
 \begin{lstlisting}
 (lts:rho:cost:receipt
@@ -290,7 +290,7 @@ into a theorem.
 
 \subsection{Budgets that never lie}
 
-The exhaustive surfaces never truncate silently --- and that is a
+The exhaustive enumerations never truncate silently --- and that is a
 promise with teeth, because funding search is genuine exact cover: a
 demand of ten unit coins over twenty unit purses admits
 $\binom{20}{10} = 184{,}756$ distinct covers, and the unlimited frontier
@@ -951,9 +951,9 @@ can retain such an index underneath a quotation.  These values are useful as
 negative tests, but they are not rho terms.  Following the standard
 scope-safe-syntax discipline~\cite{allais-scope-safe}, the funded syntax has a
 derived \emph{binder-safe} judgment tailored exactly to pure erasure.  It checks
-all syntax observable after erasure; purse surfaces, which the pure projection
+all syntax observable after erasure; purse locations, which the pure projection
 removes, are deliberately outside this judgment.  A separate executable
-runtime-scope predicate checks every raw field, including purse surfaces, and
+runtime-scope predicate checks every raw field, including purse locations, and
 public admission requires it together with grammar validity.  Runtime scope is
 proved to imply the pure-erasure binder-safe judgment.  A quotation
 seals the surrounding binder,

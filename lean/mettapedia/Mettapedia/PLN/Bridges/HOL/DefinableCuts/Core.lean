@@ -907,7 +907,7 @@ theorem ExtensionalDefinableCut.allCut_upper_eq_zero_iff_forall_not_all_ge
 material implication from `allCut C Cs` to `D` is exactly universal preservation
 of the conclusion threshold whenever every certified premise threshold holds.
 
-This is the multi-premise rule-family surface: it composes already-certified
+This is the multi-premise rule-family interface: it composes already-certified
 threshold events, but it does not certify any numeric premise by itself. -/
 theorem ExtensionalDefinableCut.allCut_impCut_lower_eq_one_iff_forall_all_imp_ge
     {T : ClosedTheorySet (WithParams Const)}

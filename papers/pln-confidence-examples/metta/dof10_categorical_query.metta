@@ -10,7 +10,7 @@
 ;   about a rare subclass; forcing a single binary query erases that.
 ;
 ; Lean oracle: PLNTruthTower.TypedCategoricalTruth /
-;   categoricalSurface_idmEnvelope_forced_by_aggregate (the IDM envelope is
+;   categoricalEncoder_idmEnvelope_forced_by_aggregate (the IDM envelope is
 ;   forced category-wise by the aggregate concentration).
 ; Portable: self-contained, float literals -> CeTTa(HE) + PeTTa.
 ; ============================================================================

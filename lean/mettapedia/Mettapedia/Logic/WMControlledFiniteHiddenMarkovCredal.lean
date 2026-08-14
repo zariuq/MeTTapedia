@@ -154,7 +154,7 @@ theorem cycleCountCredibility_mem_unit
   exact Mettapedia.PLN.TruthValues.PLNWeightTV.WTV.w2c_bounds _ hw_nonneg
 
 /-- Generic bridge from the local controlled-HMM credal interval into the live
-PLN indefinite truth-value surface. -/
+PLN indefinite truth-value interface. -/
 noncomputable abbrev IndefiniteTruthValue.toPLNITV
     (tv : IndefiniteTruthValue)
     (credibility : ℝ)
@@ -480,7 +480,7 @@ noncomputable def oneStepQValueCredalTruthValue
   upper_le_one := upperOneStepQValue_le_one Θ zs a
 
 /-- One-step `qValue` envelope rendered as the live PLN indefinite truth-value
-surface. -/
+interface. -/
 noncomputable abbrev oneStepQValuePLNITV
     [Fintype ι] [Nonempty ι]
     (κ : ℝ)
@@ -616,7 +616,7 @@ noncomputable def oneStepOptimalValueCredalTruthValue
   upper_le_one := upperOneStepOptimalValue_le_one Θ zs
 
 /-- One-step optimal decision envelope as the live PLN indefinite truth-value
-surface. -/
+interface. -/
 noncomputable abbrev oneStepOptimalValuePLNITV
     [Fintype ι] [Nonempty ι] [Fintype Action]
     (κ : ℝ)

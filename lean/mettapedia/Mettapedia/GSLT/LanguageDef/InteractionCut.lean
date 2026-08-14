@@ -57,32 +57,32 @@ structure ContinuationPosition
     continuationResult? toConstructorParameter.parameter =
       some (.base presentation.interactingSort.1.name)
 
-/-- Select an ordinary constructor argument as an interaction surface, or
-record that the surface is structurally carried by the contact constructor. -/
-inductive SurfaceSelection
+/-- Select an ordinary constructor argument as an interaction subject, or
+record that the subject is structurally carried by the contact constructor. -/
+inductive SubjectSelection
     {presentation : ValidatedLanguageDef}
     (constructor : AuthoredConstructor presentation)
     (schemaTerm : Pattern) where
   | absent
   | argument
       (position : ConstructorParameter constructor)
-      (surface : Pattern)
+      (subject : Pattern)
       (selected : match schemaTerm with
-        | .apply _ arguments => arguments[position.index]? = some surface
+        | .apply _ arguments => arguments[position.index]? = some subject
         | _ => False)
 
-namespace SurfaceSelection
+namespace SubjectSelection
 
-/-- The selected nominal surface, when one is explicitly present. -/
+/-- The selected nominal subject, when one is explicitly present. -/
 def pattern
     {presentation : ValidatedLanguageDef}
     {constructor : AuthoredConstructor presentation}
     {schemaTerm : Pattern} :
-    SurfaceSelection constructor schemaTerm → Option Pattern
+    SubjectSelection constructor schemaTerm → Option Pattern
   | .absent => none
-  | .argument _ surface _ => some surface
+  | .argument _ subject _ => some subject
 
-end SurfaceSelection
+end SubjectSelection
 
 /-- The schema variable occupying a continuation slot.  A continuation is
 either a plain metavariable or that metavariable under the binder shape
@@ -199,7 +199,7 @@ structure InteractionOperandProfile
   continuation : ContinuationPosition presentation constructor
   continuationPattern : Pattern
   continuationVariable : ContinuationSchemaVariable continuationPattern
-  surface : SurfaceSelection constructor schemaTerm
+  subject : SubjectSelection constructor schemaTerm
   form : InteractionOperandForm constructor continuation schemaTerm
     continuationPattern
 
@@ -312,7 +312,7 @@ structure EnvelopedCutSource
   fillsSource : envelope.fill core = source
 
 /-- The contact constructor is free of authored static equations.  This is
-the structural-surface alternative to an explicit nominal surface match. -/
+the structural-subject alternative to an explicit nominal subject match. -/
 def ContactEquationFree (presentation : InteractivePresentation) : Prop :=
   ∀ equation ∈ presentation.presentation.language.equations,
     (presentation.contactConstructor.1.label,
@@ -322,20 +322,20 @@ def ContactEquationFree (presentation : InteractivePresentation) : Prop :=
         presentation.contactConstructor.1.params.length) ∉
         equation.right.constructorRefs
 
-/-- Surface matching is either nominal, with the same explicit schema term
+/-- Subject matching is either nominal, with the same explicit schema term
 selected on both ordered introductions, or structural, supplied by a free
 binary contact constructor. -/
-inductive SurfaceAgreement
+inductive SubjectAgreement
     {presentation : InteractivePresentation}
     (program environment : InteractionOperandProfile presentation) : Prop where
-  | nominal (surface : Pattern)
-      (programSurface : program.surface.pattern = some surface)
-      (environmentSurface : environment.surface.pattern = some surface) :
-      SurfaceAgreement program environment
+  | nominal (subject : Pattern)
+      (programSubject : program.subject.pattern = some subject)
+      (environmentSubject : environment.subject.pattern = some subject) :
+      SubjectAgreement program environment
   | structural
       (binaryContact : presentation.contactRepresentation = .binary)
       (equationFree : ContactEquationFree presentation) :
-      SurfaceAgreement program environment
+      SubjectAgreement program environment
 
 /-- Ordered interaction-cut data derived from one exact iGSLT presentation.
 `K` and the interaction rewrite are already selected by the underlying
@@ -368,7 +368,7 @@ structure InteractionCutPresentation (theory : IGSLT) where
   residual : ResidualRepresentation
     (presentation := theory.presentation.presentation)
     theory.presentation.interactionRewrite.1.right
-  surfacesAgree : SurfaceAgreement program environment
+  subjectsAgree : SubjectAgreement program environment
 
 namespace InteractionCutPresentation
 
@@ -535,7 +535,7 @@ private def rhoProgramIntroduction :
         rfl }
   continuationPattern := .lambda none (.fvar "p")
   continuationVariable := .abstraction none "p"
-  surface := .argument
+  subject := .argument
     { index := 0, inBounds := by simp [rhoInputConstructor, rhoCalc] }
     (.fvar "n") (by rfl)
   form := .introduced (by
@@ -553,7 +553,7 @@ private def rhoEnvironmentIntroduction :
         rfl }
   continuationPattern := .fvar "q"
   continuationVariable := .plain "q"
-  surface := .argument
+  subject := .argument
     { index := 0, inBounds := by simp [rhoOutputConstructor, rhoCalc] }
     (.fvar "n") (by rfl)
   form := .introduced (by
@@ -610,7 +610,7 @@ def rhoInteractionCut : InteractionCutPresentation rhoIGSLT where
       [TermParam.simple "ps" (.collection .hashBag (.base "Proc"))] =
         [TermParam.simple parameterName (.collection .hashBag elementType)]
     exact ⟨"ps", .base "Proc", rfl⟩)
-  surfacesAgree := .nominal (.fvar "n") rfl rfl
+  subjectsAgree := .nominal (.fvar "n") rfl rfl
 
 /-- Positive ordered control: the program side of rho's cut is input. -/
 theorem rhoInteractionCut_program_constructor :

@@ -24,7 +24,7 @@ own notion of "running a program" and its own trust model:
   used elsewhere in Mettapedia), kept as a state-indexed legacy view.
 
 Because these layers describe one language, the root of this directory also holds
-integration facades that wire them together into a single surface for the rest of
+integration facades that wire them together into a single interface for the rest of
 Mettapedia to import.
 
 This README owns the integration layer and the small modules directly under
@@ -51,7 +51,7 @@ Supporting modules and data:
 
 Root-level modules (`RuntimeSpec.lean`, `ExecutionContract.lean`,
 `ElaboratedCore.lean`, etc.) are integration facades — they wire the layers
-together and export a unified surface for the rest of Mettapedia.
+together and export a unified interface for the rest of Mettapedia.
 
 ## Formalization status
 

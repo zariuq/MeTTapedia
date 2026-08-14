@@ -853,11 +853,11 @@ noncomputable def finiteTableChapter12SourceProfile :
 source concepts. -/
 abbrev Chapter12Pattern := Mettapedia.OSLF.MeTTaIL.Syntax.Pattern
 
-/-- OSLF surface name for the feature concept in the finite-table canary. -/
+/-- OSLF interface name for the feature concept in the finite-table canary. -/
 def chapter12FeaturePattern : Chapter12Pattern :=
   .apply "chapter12-feature" []
 
-/-- OSLF surface name for the witness concept in the finite-table canary. -/
+/-- OSLF interface name for the witness concept in the finite-table canary. -/
 def chapter12WitnessPattern : Chapter12Pattern :=
   .apply "chapter12-witness" []
 
@@ -1025,7 +1025,7 @@ theorem chapter12PatternCoded_pairSubsetRel_transports_to_predicateVocabulary_of
       witnessFeature_pairSubsetRel_table_canary
 
 /-- Proof-carrying profile for the pattern-coded Chapter-12 finite-table
-surface.
+interface.
 
 The profile records that concrete OSLF pattern names select the same
 witness/feature source algebra already proven for the finite table.  It is a

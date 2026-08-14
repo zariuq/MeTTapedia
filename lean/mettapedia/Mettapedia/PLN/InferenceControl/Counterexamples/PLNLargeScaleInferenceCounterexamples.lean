@@ -6,7 +6,7 @@ import Mettapedia.PLN.InferenceControl.PremiseSelection.CoverageCounterexamples
 /-!
 # Large-Scale Inference Counterexample Index
 
-This module provides a clean theorem-facing surface for the Chapter-9 counterexample-first
+This module provides a clean theorem-facing interface for the Chapter-9 counterexample-first
 track. It re-exports stable aliases for the main negative and corrected-positive results:
 
 - Inclusion-exclusion identifiability limits (first two terms are insufficient).

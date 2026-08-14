@@ -508,6 +508,110 @@ theorem ReflectiveNameResultSealed.resultsQuoted
   simp only [ReflectiveContextSupport.isQuoteConstructor, List.any_eq_true]
   exact ⟨declaration, declarationMembership, by simp [sealedRule.1]⟩
 
+/-- A well-sorted object in a reflective name fibre that is support-safe at
+the empty quote-visible context remains support-safe at every ambient
+context, provided every constructor returning that name sort is an authored
+quotation boundary.  This is not unrestricted support weakening: the name
+fibre and quotation-reset hypotheses are essential. -/
+theorem HasType.ReflectiveSupportSafeAt.nameResult_of_nil
+    {language : LanguageDef}
+    (quotedResults :
+      ReflectiveNameResultsQuoted (profile := profile) language)
+    (declaration : ReflectivePresentationDecl)
+    (declarationMembership : declaration ∈ profile.presentations)
+    {free : FreeTypeContext} {bound : List TypeExpr}
+    {pattern : Pattern} {resultType : TypeExpr}
+    {support : ContextSupport.Support}
+    {binderImage : TypeExpr → TypeExpr}
+    (typed : HasType language free bound pattern resultType)
+    (resultType_eq : resultType = .base declaration.nameSort)
+    (safeAtNil : typed.ReflectiveSupportSafeAt profile support [] binderImage)
+    (object : isObjectPattern pattern = true)
+    (targetAvailable : List TypeExpr) :
+    typed.ReflectiveSupportSafeAt profile support targetAvailable
+      binderImage := by
+  exact HasType.ReflectiveSupportSafeAt.rec
+    (motive_1 := fun {bound pattern resultType}
+      (typed : HasType language free bound pattern resultType)
+      (sourceAvailable : List TypeExpr)
+      (currentImage : TypeExpr → TypeExpr)
+      (_ : typed.ReflectiveSupportSafeAt profile support sourceAvailable
+        currentImage) =>
+      resultType = .base declaration.nameSort →
+      sourceAvailable = [] →
+      isObjectPattern pattern = true →
+      ∀ targetAvailable,
+        typed.ReflectiveSupportSafeAt profile support targetAvailable
+          currentImage)
+    (motive_2 := fun _ _ _ _ => True)
+    (motive_3 := fun _ _ _ _ => True)
+    (by
+      intro bound index type lookup sourceAvailable currentImage
+        _typeEquality _sourceEquality _object targetAvailable
+      exact .bvar lookup targetAvailable)
+    (by
+      intro bound name type lookup sourceAvailable currentImage shape
+        _typeEquality sourceEquality _object targetAvailable
+      subst sourceAvailable
+      obtain ⟨inner, supportShape⟩ := shape
+      have supportNil : support name = [] :=
+        (List.append_eq_nil_iff.mp supportShape.symm).2
+      exact .fvar lookup targetAvailable
+        ⟨targetAvailable, by simp [supportNil]⟩)
+    (by
+      intro bound rule arguments membership notBare argumentsTyped
+        sourceAvailable currentImage quoted argumentsSafe _argumentsIH
+        typeEquality _sourceEquality _object targetAvailable
+      exact .constructorQuote (membership := membership)
+        (notBare := notBare) (argumentsTyped := argumentsTyped)
+        (available := targetAvailable) quoted argumentsSafe)
+    (by
+      intro bound rule arguments membership notBare argumentsTyped
+        sourceAvailable currentImage ordinary argumentsSafe _argumentsIH
+        typeEquality _sourceEquality _object _targetAvailable
+      have categoryEquality : rule.category = declaration.nameSort := by
+        exact TypeExpr.base.inj typeEquality
+      have quotedRule := quotedResults declaration declarationMembership rule
+        membership categoryEquality
+      rw [quotedRule.1] at ordinary
+      contradiction)
+    (by
+      intro bound binder body domain codomain bodyTyped sourceAvailable
+        currentImage bodySafe _bodyIH typeEquality _sourceEquality _object
+        _targetAvailable
+      cases typeEquality)
+    (by
+      intro bound arity binders body domain codomain bodyTyped sourceAvailable
+        currentImage bodySafe _bodyIH typeEquality _sourceEquality _object
+        _targetAvailable
+      cases typeEquality)
+    (by
+      intro bound body replacement domain codomain bodyTyped replacementTyped
+        sourceAvailable currentImage bodySafe replacementSafe _bodyIH
+        _replacementIH _typeEquality _sourceEquality object _targetAvailable
+      simp [isObjectPattern] at object)
+    (by
+      intro bound collectionType elements rest elementType elementsTyped
+        sourceAvailable currentImage elementsSafe _elementsIH typeEquality
+        _sourceEquality _object _targetAvailable
+      cases typeEquality)
+    (by
+      intro bound rule parameterName collectionType elements rest elementType
+        membership parameterShape elementsTyped sourceAvailable currentImage
+        elementsSafe _elementsIH typeEquality _sourceEquality _object
+        _targetAvailable
+      have categoryEquality : rule.category = declaration.nameSort := by
+        exact TypeExpr.base.inj typeEquality
+      have quotedRule := quotedResults declaration declarationMembership rule
+        membership categoryEquality
+      exact (quotedRule.2
+        ⟨parameterName, collectionType, elementType, parameterShape⟩).elim)
+    (by intros; trivial)
+    (by intros; trivial)
+    (by intros; trivial)
+    (by intros; trivial)
+    safeAtNil resultType_eq rfl object targetAvailable
+
 /-- Invert the exact unary process argument of one selected, validated quote
 constructor while keeping its reflective-support witness attached to the
 typing derivation it certifies. -/

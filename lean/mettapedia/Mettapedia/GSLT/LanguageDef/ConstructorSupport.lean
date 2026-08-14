@@ -290,6 +290,198 @@ mutual
         exact .cons element.toHasType elements.toElementsHaveType
 end
 
+/-- Invert a proof-relevant constructor-fragment typing judgment at an
+application while retaining the selected declaration witness. -/
+theorem hasTypeWithConstructors_apply_inversion
+    {language : LanguageDef} {allowed : String → Prop}
+    {free : FreeTypeContext} {bound : List TypeExpr}
+    {label : String} {arguments : List Pattern} {type : TypeExpr}
+    (typed : HasTypeWithConstructors language allowed free bound
+      (.apply label arguments) type) :
+    ∃ rule, allowed rule.label ∧ rule ∈ language.terms ∧
+      label = rule.label ∧ ¬ UsesBareCollection rule ∧
+      type = .base rule.category ∧
+      ArgumentsHaveTypesWithConstructors language allowed free bound
+        arguments rule.params := by
+  cases typed with
+  | constructor allowedRule membership notBare argumentsTyped =>
+      exact ⟨_, allowedRule, membership, rfl, notBare, rfl, argumentsTyped⟩
+
+/-- Invert a proof-relevant constructor-fragment typing judgment at a
+collection.  The second arm retains the otherwise syntax-invisible authored
+declaration used for a bare collection. -/
+theorem hasTypeWithConstructors_collection_inversion
+    {language : LanguageDef} {allowed : String → Prop}
+    {free : FreeTypeContext} {bound : List TypeExpr}
+    {collectionType : CollType} {elements : List Pattern}
+    {rest : Option String} {type : TypeExpr}
+    (typed : HasTypeWithConstructors language allowed free bound
+      (.collection collectionType elements rest) type) :
+    (∃ elementType,
+      type = .collection collectionType elementType ∧
+      ElementsHaveTypeWithConstructors language allowed free bound elements
+        elementType) ∨
+    (∃ rule parameterName elementType,
+      allowed rule.label ∧ rule ∈ language.terms ∧
+      rule.params =
+        [.simple parameterName (.collection collectionType elementType)] ∧
+      type = .base rule.category ∧
+      ElementsHaveTypeWithConstructors language allowed free bound elements
+        elementType) := by
+  cases typed with
+  | collection elementsTyped =>
+      exact Or.inl ⟨_, rfl, elementsTyped⟩
+  | collectionConstructor allowedRule membership parameterShape elementsTyped =>
+      exact Or.inr
+        ⟨_, _, _, allowedRule, membership, parameterShape, rfl, elementsTyped⟩
+
+/-- Invert proof-relevant typing of one unary binder. -/
+theorem hasTypeWithConstructors_lambda_inversion
+    {language : LanguageDef} {allowed : String → Prop}
+    {free : FreeTypeContext} {bound : List TypeExpr}
+    {binder : Option String} {body : Pattern} {type : TypeExpr}
+    (typed : HasTypeWithConstructors language allowed free bound
+      (.lambda binder body) type) :
+    ∃ domain codomain, type = .arrow domain codomain ∧
+      HasTypeWithConstructors language allowed free (domain :: bound) body
+        codomain := by
+  cases typed with
+  | lambda bodyTyped => exact ⟨_, _, rfl, bodyTyped⟩
+
+/-- Invert proof-relevant typing of one multi-binder. -/
+theorem hasTypeWithConstructors_multiLambda_inversion
+    {language : LanguageDef} {allowed : String → Prop}
+    {free : FreeTypeContext} {bound : List TypeExpr}
+    {arity : Nat} {binders : List String} {body : Pattern}
+    {type : TypeExpr}
+    (typed : HasTypeWithConstructors language allowed free bound
+      (.multiLambda arity binders body) type) :
+    ∃ domain codomain,
+      type = .arrow (.multiBinder domain) codomain ∧
+      HasTypeWithConstructors language allowed free
+        (List.replicate arity domain ++ bound) body codomain := by
+  cases typed with
+  | multiLambda bodyTyped => exact ⟨_, _, rfl, bodyTyped⟩
+
+/-- Proof-relevant typing transports across propositional equality of its
+bound context and result type without discarding constructor witnesses. -/
+theorem HasTypeWithConstructors.reindexBoundType
+    {language : LanguageDef} {allowed : String → Prop}
+    {free : FreeTypeContext} {sourceBound targetBound : List TypeExpr}
+    {pattern : Pattern} {sourceType targetType : TypeExpr}
+    (typed : HasTypeWithConstructors language allowed free sourceBound
+      pattern sourceType)
+    (boundEq : sourceBound = targetBound)
+    (typeEq : sourceType = targetType) :
+    HasTypeWithConstructors language allowed free targetBound pattern
+      targetType := by
+  subst targetBound
+  subst targetType
+  exact typed
+
+/-- Concatenation preserves proof-relevant collection-element typing. -/
+theorem ElementsHaveTypeWithConstructors.append
+    {language : LanguageDef} {allowed : String → Prop}
+    {free : FreeTypeContext} {bound : List TypeExpr}
+    {left right : List Pattern} {elementType : TypeExpr}
+    (leftTyped : ElementsHaveTypeWithConstructors language allowed free bound
+      left elementType)
+    (rightTyped : ElementsHaveTypeWithConstructors language allowed free bound
+      right elementType) :
+    ElementsHaveTypeWithConstructors language allowed free bound
+      (left ++ right) elementType := by
+  induction left with
+  | nil =>
+      cases leftTyped
+      exact rightTyped
+  | cons head tail inductionHypothesis =>
+      cases leftTyped with
+      | cons headTyped tailTyped =>
+          exact .cons headTyped (inductionHypothesis tailTyped)
+
+/-- Membership in a proof-relevant typed collection spine exposes the exact
+typing derivation of that occurrence. -/
+theorem ElementsHaveTypeWithConstructors.hasType_of_mem
+    {language : LanguageDef} {allowed : String → Prop}
+    {free : FreeTypeContext} {bound : List TypeExpr}
+    {elements : List Pattern} {elementType : TypeExpr}
+    (typed : ElementsHaveTypeWithConstructors language allowed free bound
+      elements elementType)
+    {element : Pattern} (membership : element ∈ elements) :
+    HasTypeWithConstructors language allowed free bound element elementType := by
+  induction elements with
+  | nil => simp at membership
+  | cons head tail inductionHypothesis =>
+      cases typed with
+      | cons headTyped tailTyped =>
+          rcases List.mem_cons.mp membership with rfl | inTail
+          · exact headTyped
+          · exact inductionHypothesis tailTyped inTail
+
+mutual
+  /-- Extending the declaration table preserves proof-relevant constructor
+  support.  The selected constructor predicate is unchanged; only the table
+  in which its witnessed declarations are looked up grows. -/
+  theorem HasTypeWithConstructors.weakenTerms
+      {sourceLanguage targetLanguage : LanguageDef}
+      {allowed : String → Prop} {free : FreeTypeContext}
+      {bound : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
+      (includes : ∀ rule, rule ∈ sourceLanguage.terms →
+        rule ∈ targetLanguage.terms)
+      (typed : HasTypeWithConstructors sourceLanguage allowed free bound
+        pattern type) :
+      HasTypeWithConstructors targetLanguage allowed free bound pattern type := by
+    cases typed with
+    | bvar lookup => exact .bvar lookup
+    | fvar lookup => exact .fvar lookup
+    | constructor allowed membership notBare arguments =>
+        exact .constructor allowed (includes _ membership) notBare
+          (arguments.weakenTerms includes)
+    | lambda body => exact .lambda (body.weakenTerms includes)
+    | multiLambda body => exact .multiLambda (body.weakenTerms includes)
+    | subst body replacement =>
+        exact .subst (body.weakenTerms includes)
+          (replacement.weakenTerms includes)
+    | collection elements => exact .collection (elements.weakenTerms includes)
+    | collectionConstructor allowed membership shape elements =>
+        exact .collectionConstructor allowed (includes _ membership) shape
+          (elements.weakenTerms includes)
+
+  theorem ArgumentsHaveTypesWithConstructors.weakenTerms
+      {sourceLanguage targetLanguage : LanguageDef}
+      {allowed : String → Prop} {free : FreeTypeContext}
+      {bound : List TypeExpr} {arguments : List Pattern}
+      {parameters : List TermParam}
+      (includes : ∀ rule, rule ∈ sourceLanguage.terms →
+        rule ∈ targetLanguage.terms)
+      (typed : ArgumentsHaveTypesWithConstructors sourceLanguage allowed free
+        bound arguments parameters) :
+      ArgumentsHaveTypesWithConstructors targetLanguage allowed free bound
+        arguments parameters := by
+    cases typed with
+    | nil => exact .nil
+    | cons representation parameterType argument arguments =>
+        exact .cons representation parameterType
+          (argument.weakenTerms includes) (arguments.weakenTerms includes)
+
+  theorem ElementsHaveTypeWithConstructors.weakenTerms
+      {sourceLanguage targetLanguage : LanguageDef}
+      {allowed : String → Prop} {free : FreeTypeContext}
+      {bound : List TypeExpr} {elements : List Pattern}
+      {elementType : TypeExpr}
+      (includes : ∀ rule, rule ∈ sourceLanguage.terms →
+        rule ∈ targetLanguage.terms)
+      (typed : ElementsHaveTypeWithConstructors sourceLanguage allowed free
+        bound elements elementType) :
+      ElementsHaveTypeWithConstructors targetLanguage allowed free bound
+        elements elementType := by
+    cases typed with
+    | nil => exact .nil _ _
+    | cons element elements =>
+        exact .cons (element.weakenTerms includes)
+          (elements.weakenTerms includes)
+end
+
 mutual
   /-- Typed constructor-fragment evidence implies the corresponding raw
   constructor support.  The reverse needs an explicit condition for bare
@@ -539,6 +731,43 @@ theorem ConstructorListWithin.map {allowed : String → Prop}
       exact ⟨mappedSupported pattern (by simp),
         inductionHypothesis supported.2
           (fun other membership => mappedSupported other (by simp [membership]))⟩
+
+/-- Constructor support is covariant in its admitted alphabet. -/
+theorem ConstructorsWithin.mono
+    {narrow broad : String → Prop} (includes : ∀ label, narrow label → broad label)
+    {pattern : Pattern} (supported : ConstructorsWithin narrow pattern) :
+    ConstructorsWithin broad pattern := by
+  induction pattern using Pattern.inductionOn with
+  | hbvar index => trivial
+  | hfvar name => trivial
+  | happly constructor arguments inductionHypothesis =>
+      refine ⟨includes constructor supported.1, ?_⟩
+      rw [constructorListWithin_iff_forall]
+      intro argument membership
+      exact inductionHypothesis argument membership
+        (supported.2.of_mem membership)
+  | hlambda binder body inductionHypothesis =>
+      exact inductionHypothesis supported
+  | hmultiLambda arity binders body inductionHypothesis =>
+      exact inductionHypothesis supported
+  | hsubst body replacement bodyInduction replacementInduction =>
+      exact ⟨bodyInduction supported.1, replacementInduction supported.2⟩
+  | hcollection collectionType elements rest inductionHypothesis =>
+      change ConstructorListWithin broad elements
+      rw [constructorListWithin_iff_forall]
+      intro element membership
+      exact inductionHypothesis element membership
+        (supported.of_mem membership)
+
+/-- List companion to `ConstructorsWithin.mono`. -/
+theorem ConstructorListWithin.mono
+    {narrow broad : String → Prop} (includes : ∀ label, narrow label → broad label)
+    {patterns : List Pattern} (supported : ConstructorListWithin narrow patterns) :
+    ConstructorListWithin broad patterns := by
+  induction patterns with
+  | nil => trivial
+  | cons head tail inductionHypothesis =>
+      exact ⟨supported.1.mono includes, inductionHypothesis supported.2⟩
 
 mutual
   /-- A presentation-symbol action preserves constructor support whenever it

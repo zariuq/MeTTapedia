@@ -5,7 +5,7 @@ import Mettapedia.PLN.Bridges.Languages.WorldModel.PLNWorldModelPeTTaRuntimeBrid
 # PeTTa Core Fragment -> WM Bridge
 
 Composes the first explicit `PeTTaCore` runtime fragment through the existing
-runtime-to-WM consequence surface.
+runtime-to-WM consequence interface.
 
 This is deliberately a composition result:
 - `PeTTaCoreStep` is a smaller runtime fragment

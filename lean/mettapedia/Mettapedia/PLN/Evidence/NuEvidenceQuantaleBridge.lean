@@ -78,7 +78,7 @@ theorem c2w_nonneg (c : ℝ) : 0 ≤ c2w c := by
   have hcc1pos : 0 < 1 - cc := by linarith
   simpa [cc] using div_nonneg hcc0 (le_of_lt hcc1pos)
 
-/-- Corrected revision surface used by the evidence bridge. This is the
+/-- Corrected revision interface used by the evidence bridge. This is the
 weight-sum / `w2c` view justified by BinaryEvidence addition, without the
 upstream-main confidence floor clamp. -/
 noncomputable def truthRevisionCorrected (t1 t2 : TV) : TV :=

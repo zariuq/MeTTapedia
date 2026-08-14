@@ -49,7 +49,7 @@ namespace Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost
 #print axioms costStep_complete_runtime_up_to_struct
 #print axioms runtimeCostCandidates_complete_up_to_struct
 #print axioms RawCostConfig.purse_indices_nodup
-#print axioms LocatedTokenCover.selected_tail_surface
+#print axioms LocatedTokenCover.selected_tail_location
 #print axioms LocatedTokenCover.wrong_location_not_selected
 #print axioms LocatedTokenCover.funding_contributions_eq_selected_heads
 #print axioms LocatedTokenCover.funding_contributions_card

@@ -137,6 +137,101 @@ theorem MatchesParameterRepresentation.renameFVars
               simp_all [MatchesParameterRepresentation]
       | _ => simp_all [MatchesParameterRepresentation]
 
+mutual
+  /-- Fibre-preserving free-variable renaming retains the exact authored
+  constructor witness used by proof-relevant typing.  In particular, the
+  syntax-invisible constructor selected for a bare collection is unchanged. -/
+  theorem HasTypeWithConstructors.renameFVars
+      {language : LanguageDef} {allowed : String -> Prop}
+      {sourceFree targetFree : FreeTypeContext}
+      {sourceSupport targetSupport : ContextSupport.Support}
+      (mapping : ReflectiveFVarRenaming sourceFree targetFree
+        sourceSupport targetSupport)
+      {bound : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
+      (typed : HasTypeWithConstructors language allowed sourceFree bound
+        pattern type) :
+      HasTypeWithConstructors language allowed targetFree bound
+        (Pattern.renameFVars mapping.name pattern) type := by
+    cases typed with
+    | bvar lookup =>
+        simpa [Pattern.renameFVars] using
+          (HasTypeWithConstructors.bvar
+            (language := language) (allowed := allowed)
+            (free := targetFree) lookup)
+    | fvar lookup =>
+        simpa [Pattern.renameFVars] using
+          (HasTypeWithConstructors.fvar
+            (language := language) (allowed := allowed)
+            (bound := bound) (mapping.mapsLookup lookup))
+    | constructor allowedRule membership notBare argumentsTyped =>
+        simpa [Pattern.renameFVars] using
+          (HasTypeWithConstructors.constructor allowedRule membership notBare
+            (argumentsTyped.renameFVars mapping))
+    | @lambda _ binder body domain codomain bodyTyped =>
+        simpa [Pattern.renameFVars] using
+          (HasTypeWithConstructors.lambda (binder := binder)
+            (bodyTyped.renameFVars mapping))
+    | @multiLambda _ arity binders body domain codomain bodyTyped =>
+        simpa [Pattern.renameFVars] using
+          (HasTypeWithConstructors.multiLambda (binders := binders)
+            (bodyTyped.renameFVars mapping))
+    | subst bodyTyped replacementTyped =>
+        simpa [Pattern.renameFVars] using
+          (HasTypeWithConstructors.subst
+            (bodyTyped.renameFVars mapping)
+            (replacementTyped.renameFVars mapping))
+    | @collection _ collectionType elements rest elementType elementsTyped =>
+        simpa [Pattern.renameFVars] using
+          (HasTypeWithConstructors.collection (rest := rest)
+            (elementsTyped.renameFVars mapping))
+    | @collectionConstructor _ rule parameterName collectionType elements rest
+        elementType allowedRule membership parameterShape elementsTyped =>
+        simpa [Pattern.renameFVars] using
+          (HasTypeWithConstructors.collectionConstructor
+            (rest := rest) allowedRule membership parameterShape
+            (elementsTyped.renameFVars mapping))
+
+  theorem ArgumentsHaveTypesWithConstructors.renameFVars
+      {language : LanguageDef} {allowed : String -> Prop}
+      {sourceFree targetFree : FreeTypeContext}
+      {sourceSupport targetSupport : ContextSupport.Support}
+      (mapping : ReflectiveFVarRenaming sourceFree targetFree
+        sourceSupport targetSupport)
+      {bound : List TypeExpr} {arguments : List Pattern}
+      {parameters : List TermParam}
+      (typed : ArgumentsHaveTypesWithConstructors language allowed sourceFree
+        bound arguments parameters) :
+      ArgumentsHaveTypesWithConstructors language allowed targetFree bound
+        (arguments.map (Pattern.renameFVars mapping.name)) parameters := by
+    cases typed with
+    | nil => exact .nil
+    | cons representation parameterType argumentTyped argumentsTyped =>
+        exact .cons
+          (representation.renameFVars mapping.name)
+          parameterType
+          (argumentTyped.renameFVars mapping)
+          (argumentsTyped.renameFVars mapping)
+
+  theorem ElementsHaveTypeWithConstructors.renameFVars
+      {language : LanguageDef} {allowed : String -> Prop}
+      {sourceFree targetFree : FreeTypeContext}
+      {sourceSupport targetSupport : ContextSupport.Support}
+      (mapping : ReflectiveFVarRenaming sourceFree targetFree
+        sourceSupport targetSupport)
+      {bound : List TypeExpr} {elements : List Pattern}
+      {elementType : TypeExpr}
+      (typed : ElementsHaveTypeWithConstructors language allowed sourceFree
+        bound elements elementType) :
+      ElementsHaveTypeWithConstructors language allowed targetFree bound
+        (elements.map (Pattern.renameFVars mapping.name)) elementType := by
+    cases typed with
+    | nil => exact .nil _ _
+    | cons elementTyped elementsTyped =>
+        exact .cons
+          (elementTyped.renameFVars mapping)
+          (elementsTyped.renameFVars mapping)
+end
+
 /-- Fibre-preserving free-variable renaming preserves typing and the full
 constructor-facing reflective-support certificate for any binder image. -/
 theorem HasType.ReflectiveSupportSafeAt.renameFVars

@@ -9,7 +9,7 @@ import Mathlib.GroupTheory.Perm.Basic
 /-!
 # Per-`n` Diagram and Cone API for Categorical de Finetti
 
-This file introduces a lightweight, per-`n` permutation diagram surface:
+This file introduces a lightweight, per-`n` permutation diagram interface:
 - a concrete prefix-law diagram object family,
 - a cone law over finite permutations,
 - and a lightweight `IsLimit`-style proposition that reuses the existing

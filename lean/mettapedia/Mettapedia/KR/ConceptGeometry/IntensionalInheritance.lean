@@ -7,7 +7,7 @@ import Mettapedia.KR.ConceptOntology.Basic
 import Mettapedia.InformationTheory.MutualInformation
 
 /-!
-# Intensional Inheritance: Semantic Base and Information-Theoretic Surface
+# Intensional Inheritance: Semantic Base and Information-Theoretic Scores
 
 This module now treats PLN-style inheritance as a specialization of the existing
 abstract inheritance stack:
@@ -244,7 +244,7 @@ end FiniteCounting
 
 end Interpretation
 
-/-! ## §3: Information-theoretic score surface
+/-! ## §3: Information-theoretic score functions
 
 The Chapter-12 scalar lives above the semantic base. It is the evidence-level
 log-ratio score relating an observed conditional term to a prior term.

@@ -6,7 +6,7 @@ import Mettapedia.PLN.RuleFamilies.FirstOrder.PLNMultiPathDependency
 /-!
 # Dependence-aware two-hop chain composition
 
-This module packages the first constructor-disciplined surface for composing
+This module packages the first constructor-disciplined interface for composing
 PLN strengths across two hops.  The strength envelope is derived before the
 candidate estimate is checked; confidence is kept as a separate coordinate.
 -/
@@ -413,7 +413,7 @@ theorem chainComposition_mem_credalEnvelope
     using noisyOrFrequency_mem_frechetUnionITV (pathChainMultiPathInput d)
 
 /-- List-level path products compose by append, giving the reusable algebraic
-associativity surface for path segmentation. -/
+associativity interface for path segmentation. -/
 def linkStrengthProductList (links : List ChainLinkCert) : ℝ :=
   (links.map fun link => link.strength).prod
 

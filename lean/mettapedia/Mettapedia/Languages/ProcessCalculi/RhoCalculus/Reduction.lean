@@ -380,7 +380,7 @@ theorem emptyBag_SC_irreducible {P Q : Pattern}
   have hpos : 0 < redWeight P := redWeight_pos_of_reduces hred
   omega
 
-/-! ### Empty-bag SC invariants (MVP surface)
+/-! ### Empty-bag SC invariants (MVP fragment)
 
 These are the minimal SC-facing lemmas retained for current use: they expose
 the canonical invariant (`ioCount = 0`) on the SC class of the empty bag.

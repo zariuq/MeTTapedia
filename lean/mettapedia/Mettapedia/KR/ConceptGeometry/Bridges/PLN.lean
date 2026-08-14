@@ -5,5 +5,5 @@ import Mettapedia.KR.ConceptGeometry.Bridges.PLN.InheritanceIntegration
 /-!
 # Concept Geometry ↔ PLN Bridges
 
-Bridge surfaces between generic concept geometry and the PLN/WM-PLN stack.
+Bridge interfaces between generic concept geometry and the PLN/WM-PLN stack.
 -/

@@ -1,9 +1,9 @@
 import Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiFortiniBridgeCore
 
 /-!
-# Markov de Finetti Fortini Bridge: Canonical Surface
+# Markov de Finetti Fortini Bridge: Canonical Interface
 
-This file is the default *public* Fortini surface.
+This file is the default *public* Fortini interface.
 It intentionally avoids importing `...BridgeCrux`.
 
 Canonical target: prove the literature-facing theorem directly from

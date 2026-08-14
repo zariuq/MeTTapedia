@@ -40,6 +40,68 @@ structure CostStaticPlanReached (source : CIGSLT) (color : CostStaticColor)
   skeletonContext : OneHoleContext
   abstract_eq : rootAbstract = skeletonContext.fill plan.abstractPattern
 
+namespace CostStaticPlanReached
+
+/-- The target-language context obtained by mapping a reached plan's source
+spine and transporting every ambient binder index through the reached
+thinning. -/
+def mappedThickenedSkeletonContextAt
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : FreeTypeContext} {payload rootAbstract : Pattern}
+    (state : CostStaticPlanReached source color targetFree payload rootAbstract)
+    (depth : Nat) : OneHoleContext :=
+  (ContextSubstitution.renameAmbientContextAt state.thinning.toTargetIndex
+    depth
+    (CIGSLT.mapOneHoleContext (color.symbols source)
+      state.skeletonContext)).1
+
+/-- Binder depth at the reached payload after the mapped source spine has
+been transported into the target binder context. -/
+def mappedThickenedHoleDepthAt
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : FreeTypeContext} {payload rootAbstract : Pattern}
+    (state : CostStaticPlanReached source color targetFree payload rootAbstract)
+    (depth : Nat) : Nat :=
+  (ContextSubstitution.renameAmbientContextAt state.thinning.toTargetIndex
+    depth
+    (CIGSLT.mapOneHoleContext (color.symbols source)
+      state.skeletonContext)).2
+
+/-- A reached source-plan factorization maps to an exact target-plan
+factorization before normalization or boundary restoration.  Both the outer
+context and the reached sub-plan use the same symbol map and binder thinning;
+the equality is therefore structural and cannot be obtained merely from
+equality of their eventual normal forms. -/
+theorem mappedThickenedRootAbstract_eq
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : FreeTypeContext} {payload rootAbstract : Pattern}
+    (state : CostStaticPlanReached source color targetFree payload rootAbstract)
+    (depth : Nat) :
+    state.thinning.thickenAmbientBVars depth
+        (mapPattern (color.symbols source) rootAbstract) =
+      (state.mappedThickenedSkeletonContextAt depth).fill
+        (state.thinning.thickenAmbientBVars
+          (state.mappedThickenedHoleDepthAt depth)
+          (mapPattern (color.symbols source) state.plan.abstractPattern)) := by
+  calc
+    state.thinning.thickenAmbientBVars depth
+          (mapPattern (color.symbols source) rootAbstract) =
+        state.thinning.thickenAmbientBVars depth
+          (mapPattern (color.symbols source)
+            (state.skeletonContext.fill state.plan.abstractPattern)) :=
+      congrArg
+        (fun pattern => state.thinning.thickenAmbientBVars depth
+          (mapPattern (color.symbols source) pattern)) state.abstract_eq
+    _ = (state.mappedThickenedSkeletonContextAt depth).fill
+          (state.thinning.thickenAmbientBVars
+            (state.mappedThickenedHoleDepthAt depth)
+            (mapPattern (color.symbols source)
+              state.plan.abstractPattern)) := by
+      exact state.thinning.thickenAmbientBVars_mapPattern_fill depth
+        state.skeletonContext state.plan.abstractPattern
+
+end CostStaticPlanReached
+
 /-- The traversal stopped at a certified foreign boundary that encloses the
 remaining context.  The residual context refills the boundary content from
 the payload, and the skeleton context factors the root abstract pattern
@@ -52,11 +114,37 @@ structure CostStaticPlanStopped (source : CIGSLT) (color : CostStaticColor)
   content : Pattern
   certified : CertifiedCostRegionBoundary source color targetFree
     boundarySupport boundaryType content
+  certifies : certifyCostRegionBoundary? source color targetFree
+    boundarySupport boundaryType content = some certified
   residual : OneHoleContext
   content_eq : content = residual.fill payload
   skeletonContext : OneHoleContext
   abstract_eq : rootAbstract = skeletonContext.fill
     (.fvar (costRegionBoundaryVariableName certified.typed.boundary))
+
+namespace CostStaticPlanReached
+
+/-- Exact boundary data exposed when a reached plan is itself a certified
+foreign boundary.  The view retains the singleton table equation as well as
+the indexed support, type, content, and abstract-pattern equations needed by
+semantic consumers.  It does not classify non-boundary plans. -/
+structure BoundaryView
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : FreeTypeContext} {payload rootAbstract : Pattern}
+    (state : CostStaticPlanReached source color targetFree payload
+      rootAbstract) : Type where
+  stopped : CostStaticPlanStopped source color targetFree payload rootAbstract
+  entries_eq : state.plan.boundaryTable.entries =
+    [stopped.certified.typed]
+  targetSupport_eq : stopped.certified.typed.boundary.targetSupport =
+    state.sourceAvailable
+  targetType_eq : stopped.certified.typed.boundary.targetType =
+    mapTypeExpr (color.symbols source) state.sourceType
+  content_eq : stopped.certified.typed.boundary.content = payload
+  abstract_eq : state.plan.abstractPattern =
+    .fvar (costRegionBoundaryVariableName stopped.certified.typed.boundary)
+
+end CostStaticPlanReached
 
 /-- One-sided context view of a static-region plan along one occurrence
 context. -/
@@ -90,6 +178,43 @@ def retainedEntries {source : CIGSLT} {color : CostStaticColor}
       List (TypedCostRegionBoundary source color targetFree)
   | .reached state => state.plan.boundaryTable.entries
   | .stopped state => [state.certified.typed]
+
+/-- Occurrence indices for the exact retained boundary table of a context
+view.  A reached view reuses its sub-plan indices.  A stopped view records
+the intercepted boundary as one local occurrence; its semantic identity is
+still carried by the typed boundary, not by this traversal address. -/
+def retainedOccurrences {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : FreeTypeContext} {payload rootAbstract : Pattern} :
+    CostStaticPlanContextView source color targetFree payload rootAbstract →
+      List CostRegionOccurrence
+  | .reached state => state.plan.occurrences
+  | .stopped state =>
+      [{ context := state.residual
+         content := state.certified.typed.boundary.content }]
+
+/-- The proof-relevant boundary table retained by a one-sided context view.
+This is stronger than `retainedEntries`: downstream recursive execution may
+now restrict an actual dependent child forest without rebuilding a table
+from its erased entry list. -/
+def retainedTable {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : FreeTypeContext} {payload rootAbstract : Pattern}
+    (view : CostStaticPlanContextView source color targetFree payload
+      rootAbstract) :
+    TypedCostRegionBoundaryTable source color targetFree
+      view.retainedOccurrences :=
+  match view with
+  | .reached state => state.plan.boundaryTable
+  | .stopped state => .cons state.certified.typed rfl .nil
+
+/-- The retained table exposes exactly the entry list already used by the
+context-view embedding. -/
+@[simp]
+theorem retainedTable_entries {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : FreeTypeContext} {payload rootAbstract : Pattern}
+    (view : CostStaticPlanContextView source color targetFree payload
+      rootAbstract) :
+    view.retainedTable.entries = view.retainedEntries := by
+  cases view <;> rfl
 
 /-- Erasure: every returned view denotes exactly the root plan's abstract
 pattern, so the view is a decomposition of the original plan, not a
@@ -248,6 +373,24 @@ structure CostStaticPlanContextInventoryView (source : CIGSLT)
   view : CostStaticPlanContextView source color targetFree payload rootAbstract
   entryEmbedding : CostStaticPlanEntryEmbedding source color targetFree
     view.retainedEntries rootEntries
+
+namespace CostStaticPlanContextInventoryView
+
+/-- Reindex the context view's replay path by its proof-relevant retained
+table.  The operation changes no keep/skip choice and therefore preserves
+the occurrence positions used by `entryEmbedding`. -/
+def tableEmbedding
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : FreeTypeContext} {payload rootAbstract : Pattern}
+    {rootEntries : List (TypedCostRegionBoundary source color targetFree)}
+    (view : CostStaticPlanContextInventoryView source color targetFree payload
+      rootAbstract rootEntries) :
+    CostStaticPlanEntryEmbedding source color targetFree
+      view.view.retainedTable.entries rootEntries := by
+  simpa only [CostStaticPlanContextView.retainedTable_entries] using
+    view.entryEmbedding
+
+end CostStaticPlanContextInventoryView
 
 /-- The active argument selected by a context split of one constructor
 spine: the head plan at the exact accumulated position, together with the
@@ -486,6 +629,7 @@ theorem CostStaticRegionPlan.nonempty_contextInventoryView
             { view := .stopped
                 { boundarySupport := _, boundaryType := _, content := _
                   certified := certified
+                  certifies := certifies
                   residual := .apply wireLabel before inner after
                   content_eq := fillEq
                   skeletonContext := .hole
@@ -593,6 +737,7 @@ theorem CostStaticRegionPlan.nonempty_contextInventoryView
             { view := .stopped
                 { boundarySupport := _, boundaryType := _, content := _
                   certified := certified
+                  certifies := certifies
                   residual :=
                     .collection collectionType before inner after rest
                   content_eq := fillEq

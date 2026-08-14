@@ -52,7 +52,7 @@ noncomputable def gradedTotalityValue
     (verdict : TotalityVerdict) (behavioral : BinaryCounts) : ℝ :=
   (pooledTotalityEvidence verdict behavioral).strength
 
-/-- The hard-mask comparison surface: only a statically proved-total verdict
+/-- The hard-mask comparison interface: only a statically proved-total verdict
 exposes a score.  In particular, undetermined evidence is discarded. -/
 noncomputable def hardMaskTotalityValue
     (verdict : TotalityVerdict) (behavioral : BinaryCounts) : ℝ :=

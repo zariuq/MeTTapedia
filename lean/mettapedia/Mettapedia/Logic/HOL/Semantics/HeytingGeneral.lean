@@ -714,7 +714,7 @@ theorem provable_iff_heytingConsequence_param_free
   ⟨heytingConsequence_of_provable (Base := Base),
     provable_of_heytingConsequence_param_free (Base := Base) hT0⟩
 
-/-- **The canonical countermodel surface**: the Lindenbaum model itself
+/-- **The canonical countermodel interface**: the Lindenbaum model itself
 refutes every non-theorem — the one model class carries completeness through
 its canonical member.  (The canonical KRIPKE model cannot inhabit the
 `KripkeHenkinGeneral` class: its `term_closed` obligation fails at low worlds
@@ -737,7 +737,7 @@ theorem lindenbaumModel_refutes_nontheorem
 
 Every substitutional Kripke-Henkin model induces a Heyting-valued
 substitutional model on the upsets of its frame, with forcing as valuation.
-This places the Kripke semantics (including the canonical surfaces and the
+This places the Kripke semantics (including the canonical interfaces and the
 excluded-middle countermodel world) under the algebraic completeness umbrella;
 the WorldModel/neighborhood instantiation is the named follow-on bridge. -/
 

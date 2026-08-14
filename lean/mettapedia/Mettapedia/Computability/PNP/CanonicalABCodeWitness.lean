@@ -19,7 +19,7 @@ section
 
 variable {Z : Type*} {k : ℕ} {Index : Type*}
 
-/-- The exact-surface switched family induced by one raw `(a, b)` decision-list
+/-- The exact-data domain switched family induced by one raw `(a, b)` decision-list
 code for each index. -/
 noncomputable def canonicalABCodeFamily
     (codes : Index → SharedAffineDecisionListCode (k + k)) :
@@ -79,7 +79,7 @@ theorem candidateData_of_eq_canonicalABCodeFamily
 theorem canonicalABCodeFamily_recoveryLowerBound
     [Fintype Z]
     (codes : Index → SharedAffineDecisionListCode (k + k))
-    (μ : PMF (ExactVisiblePostSwitchSurface Z k))
+    (μ : PMF (ExactVisiblePostSwitchData Z k))
     (i : Index) (m : ℕ)
     {q : ℝ≥0∞}
     (hq :

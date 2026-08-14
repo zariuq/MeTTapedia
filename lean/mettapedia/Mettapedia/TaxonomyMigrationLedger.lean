@@ -29,7 +29,7 @@ Facade deletion:
 - The migration-facade marker search is expected to return zero after this
   cluster.
 
-Verification surface:
+Verification scope:
 - Build the moved room: `lake build Mettapedia.KR.ConceptOntology`
 - Build representative consumers, including PLN-facing importers.
 - Check no old ConceptOntology namespace/path remains outside this ledger.
@@ -59,19 +59,19 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at the old Prolog path.
 
-Verification surface:
+Verification scope:
 - Build the moved room: `lake build Mettapedia.Languages.Prolog`
 - Build PeTTa consumers that import or open the Prolog runtime.
 - Check no old concrete Prolog namespace/path remains outside this ledger.
 - Check no migrated file gained an unfinished-proof marker or an axiom
   declaration.
 
-## Cluster 3: universal prediction and Solomonoff surfaces to `UniversalAI`
+## Cluster 3: universal prediction and Solomonoff scopes to `UniversalAI`
 
 Status: completed in the working tree.
 
 Moved paths:
-- The Solomonoff prior, induction, measure, and exchangeability surfaces moved
+- The Solomonoff prior, induction, measure, and exchangeability scopes moved
   from the logic attic to `Mettapedia/UniversalAI/*`.
 - The universal-prediction aggregator and subdirectory moved to
   `Mettapedia/UniversalAI/UniversalPrediction*`.
@@ -92,7 +92,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at an old universal-prediction path.
 
-Verification surface:
+Verification scope:
 - Build the moved room and doc-text generator:
   `lake build Mettapedia.UniversalAI Mettapedia.DocText.LogicReadmeCompositional`
 - Check no old universal-prediction or Solomonoff namespace/path remains outside
@@ -137,12 +137,12 @@ Facade deletion:
 - No compatibility module was left at an old probability, HMM, Walley, evidence,
   or universal-prediction bridge path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.ProbabilityTheory.Exchangeability Mettapedia.ProbabilityTheory.HiddenMarkovModels Mettapedia.ProbabilityTheory.ImpreciseProbability Mettapedia.PLN.Bridges.ProbabilityTheory Mettapedia.UniversalAI.ControlledFiniteHiddenMarkovUniversalPredictionBridge`
 - Check no old moved probability namespace/path remains outside this ledger.
 - Check no migration facade marker remains.
-- `git diff -G sorry` over the migrated probability surface shows no newly added
+- `git diff -G sorry` over the migrated probability scope shows no newly added
   unfinished-proof markers. Some moved Markov/HMM files retain pre-existing open
   proof obligations; this migration only moved and repointed them.
 
@@ -172,12 +172,12 @@ References repointed:
 - Lean imports and qualified names for the moved concept-geometry modules were
   repointed to the new KR and PLN rooms.
 - Papers and local project-status references for the moved concept-geometry and
-  ASSOC/PAT surfaces were repointed away from the old logic attic.
+  ASSOC/PAT scopes were repointed away from the old logic attic.
 
 Facade deletion:
 - No compatibility module was left at an old concept-geometry or ASSOC/PAT path.
 
-Verification surface:
+Verification scope:
 - Full build: `lake build Mettapedia`
 - Check no old moved concept-geometry namespace/path remains outside this ledger.
 - Check no migration facade marker remains.
@@ -191,9 +191,9 @@ Status: completed in the working tree.
 Moved paths:
 - Core evidence files (`EvidenceClass`, `EvidenceCounts`, `EvidenceKind`,
   `BinaryEvidence`, evidence quantales, proof-system views, crisp and joint
-  evidence surfaces, and related helpers) moved to `Mettapedia/PLN/Evidence/*`.
+  evidence scopes, and related helpers) moved to `Mettapedia/PLN/Evidence/*`.
 - PLN truth-value files (`PLNWeightTV`, distributional and indefinite truth,
-  confidence-weight surfaces, truth-function canaries, and WM-backed truth
+  confidence-weight scopes, truth-function canaries, and WM-backed truth
   function files) moved to `Mettapedia/PLN/TruthValues/*`.
 - Immediate bridge files moved to
   `Mettapedia/PLN/Bridges/{ProbabilityTheory,Languages}/*`.
@@ -215,7 +215,7 @@ Facade deletion:
 - No compatibility module was left at an old evidence, truth-value, or immediate
   bridge path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.Evidence Mettapedia.PLN.TruthValues Mettapedia.PLN.Bridges`
 - Full build: `lake build Mettapedia`
@@ -232,7 +232,7 @@ Status: completed in the working tree.
 Moved paths:
 - Binary and generic world-model cores moved to `Mettapedia/PLN/WorldModel/*`.
 - Additive, calculus, profile, preorder, ITV, institution, conservation,
-  overlap, support-forgetting, and crisp-specialization world-model surfaces
+  overlap, support-forgetting, and crisp-specialization world-model scopes
   moved to `Mettapedia/PLN/WorldModel/*`.
 - A new `Mettapedia/PLN/WorldModel.lean` hub imports the world-model room and is
   imported by `Mettapedia/PLN.lean`.
@@ -253,7 +253,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at an old world-model path.
 
-Verification surface:
+Verification scope:
 - Targeted build: `lake build Mettapedia.PLN.WorldModel`
 - Full build: `lake build Mettapedia`
 - Check no old moved world-model namespace/path remains outside this ledger.
@@ -270,7 +270,7 @@ Status: completed in the working tree.
 Moved paths:
 - First-order PLN rule files moved from the logic attic to
   `Mettapedia/PLN/RuleFamilies/FirstOrder/*`.
-- The moved surface includes deduction, Frechet bounds, conjunction,
+- The moved scope includes deduction, Frechet bounds, conjunction,
   disjunction, negation, noisy-OR, revision, induction/abduction, Bayes
   inversion, Bayes-net derived rules, XI rule registry, inference-rule helpers,
   and hierarchical-rule helpers.
@@ -290,14 +290,14 @@ References repointed:
   were repointed to the new PLN rule-family room.
 - Papers and local project-status references for those moved modules were
   repointed away from the old logic attic.
-- Downstream canonical/API surfaces that intentionally remain in `Logic/` now
+- Downstream canonical/APIs that intentionally remain in `Logic/` now
   open or qualify the moved evidence, world-model, and first-order namespaces
   explicitly.
 
 Facade deletion:
 - No compatibility module was left at an old first-order rule-family path.
 
-Verification surface:
+Verification scope:
 - Targeted build: `lake build Mettapedia.PLN.RuleFamilies.FirstOrder`
 - Canonical API build: `lake build Mettapedia.Logic.PLNCanonicalAPI`
 - Full build: `lake build Mettapedia`
@@ -344,7 +344,7 @@ Facade deletion:
 - No compatibility module was left at an old higher-order rule-family or HOL
   bridge path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.RuleFamilies.HigherOrder Mettapedia.PLN.Bridges.HOL`
 - Canonical API build: `lake build Mettapedia.Logic.PLNCanonicalAPI`
@@ -391,7 +391,7 @@ Facade deletion:
 - No compatibility module was left at an old quantale, measure-theoretic, or
   stratified PLN path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.RuleFamilies.QuantaleSemantics Mettapedia.PLN.RuleFamilies.MeasureTheoretic Mettapedia.PLN.RuleFamilies.Stratified Mettapedia.PLN.RuleFamilies`
 - Canonical API build: `lake build Mettapedia.Logic.PLNCanonicalAPI`
@@ -426,13 +426,13 @@ References repointed:
   were repointed to the new PLN comparison room.
 - Papers and local project-status references for the moved modules were
   repointed away from the old logic attic.
-- The canonical PLN API and parity/decision-tree surfaces now point at the new
+- The canonical PLN API and parity/decision-tree scopes now point at the new
   comparison namespace.
 
 Facade deletion:
 - No compatibility module was left at an old NARS comparison path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.Comparisons.NARS Mettapedia.PLN.Comparisons`
 - Canonical API build: `lake build Mettapedia.Logic.PLNCanonicalAPI`
@@ -445,7 +445,7 @@ Verification surface:
 - Spot-check moved theorem axiom footprints remain within the accepted project
   footprint.
 
-## Cluster 6c.5: PLN inference-control and selector-threshold surfaces
+## Cluster 6c.5: PLN inference-control and selector-threshold scopes
 
 Status: completed in the working tree.
 
@@ -477,7 +477,7 @@ Facade deletion:
 - No compatibility module was left at an old inference-control or
   selector/rewrite/threshold path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.InferenceControl.PremiseSelection Mettapedia.PLN.InferenceControl.SelectorRewriteThreshold Mettapedia.PLN.InferenceControl`
 - Canonical API build: `lake build Mettapedia.Logic.PLNCanonicalAPI`
@@ -504,7 +504,7 @@ Namespace:
 - Forced-query and chosen ITV-selector definitions now live under
   `Mettapedia.PLN.TruthValues.PLNForcedQueries`.
 - The moved file explicitly opens `Mettapedia.Logic` only for the still-genuine
-  logic-side `SufficientStatisticSurface` dependency; the PLN selector/evidence
+  logic-side `SufficientStatisticEncoder` dependency; the PLN selector/evidence
   definitions themselves live in the truth-value room.
 
 References repointed:
@@ -516,7 +516,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at the old `PLNForcedQueries` path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.TruthValues.PLNForcedQueries Mettapedia.PLN.TruthValues`
 - Canonical API build: `lake build Mettapedia.Logic.PLNCanonicalAPI`
@@ -555,7 +555,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at the old `PLNSubjectiveLogicBridge` path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.Bridges.ProbabilityTheory.PLNSubjectiveLogicBridge Mettapedia.PLN.Bridges.ProbabilityTheory Mettapedia.PLN.TruthValues.PLNTruthTheoryIndex`
 - Canonical API build: `lake build Mettapedia.Logic.PLNCanonicalAPI`
@@ -582,7 +582,7 @@ Namespace:
 - MeTTa-facing PLN semantic-evaluation definitions now live under
   `Mettapedia.PLN.Bridges.Languages.PLNMeTTaCore`.
 - The moved bridge still imports several still-unmigrated PLN calculus modules
-  from `Mettapedia.Logic`; those are later PLN campaign surfaces, not residual
+  from `Mettapedia.Logic`; those are later PLN campaign scopes, not residual
   MeTTaCore namespace debt.
 
 References repointed:
@@ -595,7 +595,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at the old `PLNMeTTaCore` path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.Bridges.Languages.PLNMeTTaCore Mettapedia.PLN.Bridges.Languages.PLNMeTTaCoreEvidence Mettapedia.PLN.Bridges.Languages Mettapedia.PLN.TruthValues.PLNTruthTheoryIndex`
 - Canonical API build: `lake build Mettapedia.Logic.PLNCanonicalAPI`
@@ -649,7 +649,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at any old first-order calculus-spine path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.RuleFamilies.FirstOrder.PLNDerivation Mettapedia.PLN.RuleFamilies.FirstOrder.PLNInferenceCalculus Mettapedia.PLN.RuleFamilies.FirstOrder.PLNLinkCalculus Mettapedia.PLN.RuleFamilies.FirstOrder.PLNLinkCalculusSoundness Mettapedia.PLN.RuleFamilies.FirstOrder.PLNConsistencyLemmas Mettapedia.PLN.RuleFamilies.FirstOrder Mettapedia.PLN.Bridges.Languages.PLNMeTTaCore`
 - Canonical API build: `lake build Mettapedia.Logic.PLNCanonicalAPI`
@@ -700,7 +700,7 @@ Facade deletion:
 - No compatibility module was left at `Logic/PLNFirstOrder.lean` or
   `Logic/PLNFirstOrder/`.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.RuleFamilies.FirstOrder.Quantifiers Mettapedia.PLN.RuleFamilies.FirstOrder Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLQuantifierBridge`
 - Canonical API build: `lake build Mettapedia.Logic.PLNCanonicalAPI`
@@ -747,7 +747,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at any old Bayesian-network PLN path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.WorldModel.BayesNet Mettapedia.PLN.Bridges.ProbabilityTheory.BayesNet Mettapedia.PLN.RuleFamilies.FirstOrder.PLNXiDerivedBNRules Mettapedia.PLN.InferenceControl.SelectorRewriteThreshold.PLNSelectorRewriteThresholdRegression`
 - Check no old `Mettapedia.Logic.PLNBNCompilation`,
@@ -799,7 +799,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at any old runtime world-model bridge path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.Bridges.Languages.WorldModel Mettapedia.PLN.Bridges.Languages Mettapedia.Languages.GF.GFWMObligationAdapter Mettapedia.Languages.MeTTa.PureRuntimeFrontier`
 - Check no old `Mettapedia.Logic.PLNWorldModelRuntimeBridge`,
@@ -835,7 +835,7 @@ Namespace:
   `Mettapedia.PLN.WorldModel.Fixpoint.*`.
 - The moved SP/SPN and policy bridge modules still import Kripke-weighted and
   damped-convergence support definitions from the logic attic; those support
-  surfaces are not part of this cluster.
+  scopes are not part of this cluster.
 
 References repointed:
 - Lean imports and qualified references for the moved fixpoint, cascade,
@@ -851,7 +851,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at any old world-model fixpoint path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.WorldModel.Fixpoint Mettapedia.PLN.WorldModel Mettapedia.Hyperseed.Basic Mettapedia.Hyperseed.Closure Mettapedia.OSLF.Framework.OSLFNTTWMCanonicalClosure Mettapedia.PLN.RuleFamilies.HigherOrder.PLNWorldModelRegimeAdmissibility`
 - Check no old `Mettapedia.Logic.PLNWorldModelFixpointClosure`,
@@ -867,7 +867,7 @@ Verification surface:
 - Spot-check moved theorem axiom footprints remain within the accepted project
   footprint.
 
-## Cluster 6c.14: PLN world-model order-cost and audit surfaces
+## Cluster 6c.14: PLN world-model order-cost and audit scopes
 
 Status: completed in the working tree.
 
@@ -886,7 +886,7 @@ Namespace:
   `Mettapedia.PLN.WorldModel.OrderCost.*`.
 - Audit definitions now live under `Mettapedia.PLN.WorldModel.Audit.*`.
 - The audit module still imports semitopology and provenance support from the
-  logic attic; those support surfaces are not part of this cluster.
+  logic attic; those support scopes are not part of this cluster.
 
 References repointed:
 - Lean imports and qualified references for the moved order-cost bounds,
@@ -905,7 +905,7 @@ Facade deletion:
 - No compatibility module was left at any old world-model order-cost or audit
   path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.WorldModel.OrderCost Mettapedia.PLN.WorldModel.Audit Mettapedia.PLN.WorldModel Mettapedia.Logic.PLNCanonicalAPI Mettapedia.Logic.PLNCore`
 - Check no old `Mettapedia.Logic.PLNWorldModelOrderCost*`,
@@ -959,7 +959,7 @@ Facade deletion:
 - No compatibility module was left at any old world-model logic-semantics or
   category-theory bridge path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.Bridges.Logic.WorldModel Mettapedia.PLN.Bridges.CategoryTheory.WorldModel Mettapedia.PLN.Bridges Mettapedia.Logic.PLNCanonicalAPI Mettapedia.Logic.PLNCore Mettapedia.OSLF.Framework.WMCalculusFOLBridge Mettapedia.OSLF.Framework.WMCalculusNeighborhoodBridge Mettapedia.OSLF.Framework.OSLFNTTWMBridge Mettapedia.Languages.GF.GFToFOLSetBridge Mettapedia.Languages.GF.GFWMObligationAdapter Mettapedia.PLN.WorldModel.Fixpoint`
 - Check no old `Mettapedia.Logic.WorldModelFOL`,
@@ -973,12 +973,12 @@ Verification surface:
 - Check no migration facade marker remains.
 - The moved logic-semantics and category-theory bridge proof-hole scan found
   no active unfinished-proof pattern.
-- `git diff --check` passes on the current migration surface after normalizing
+- `git diff --check` passes on the current migration scope after normalizing
   CRLF line endings in previously touched migration files.
 - Spot-check moved theorem axiom footprints remain within the accepted project
   footprint.
 
-## Cluster 6c.16: PLN world-model experiment and Blackwell-channel surfaces
+## Cluster 6c.16: PLN world-model experiment and Blackwell-channel scopes
 
 Status: completed in the working tree.
 
@@ -1010,7 +1010,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at any old world-model experiment path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.WorldModel.Experiment Mettapedia.PLN.WorldModel Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointClosureRegression Mettapedia`
 - Check no old `Mettapedia.Logic.PLNWorldModelExperiment*` namespace/path
@@ -1018,11 +1018,11 @@ Verification surface:
 - Check no migration facade marker remains.
 - The moved experiment proof-hole scan found no active unfinished-proof
   pattern.
-- `git diff --check` passes on the experiment migration surface.
+- `git diff --check` passes on the experiment migration scope.
 - Spot-check moved theorem axiom footprints remain within the accepted project
   footprint.
 
-## Cluster 6c.17: PLN world-model provenance and semitopology surfaces
+## Cluster 6c.17: PLN world-model provenance and semitopology scopes
 
 Status: completed in the working tree.
 
@@ -1064,7 +1064,7 @@ Facade deletion:
 - No compatibility module was left at any old provenance, scoped-tracked, or
   semitopology path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.WorldModel.Provenance Mettapedia.PLN.WorldModel.Semitopology Mettapedia.PLN.WorldModel Mettapedia.PLN.WorldModel.Audit Mettapedia.PLN.WorldModel.OrderCost.PLNWorldModelOrderCostProvenanceDemo Mettapedia.PLN.TruthValues.PLNClassicTruthFunctions Mettapedia.Logic.PLNCore Mettapedia.Logic.PLNCanonicalAPI Mettapedia.Logic.PLNDerivationTrackingDemoPropositional Mettapedia.Logic.WMDerivationTrackingDemo Mettapedia.Logic.PLNClassicExamples Mettapedia.Logic.TemporalChainingExample`
 - Check no old provenance, scoped-tracked, or semitopology namespace/path
@@ -1072,12 +1072,12 @@ Verification surface:
 - Check no migration facade marker remains.
 - The moved provenance and semitopology proof-hole scan found no active
   unfinished-proof pattern.
-- `git diff --check` passes on the provenance/semitopology migration surface
+- `git diff --check` passes on the provenance/semitopology migration scope
   after normalizing CRLF line endings in a touched truth-value consumer.
 - Spot-check moved theorem axiom footprints remain within the accepted project
   footprint.
 
-## Cluster 6c.18: PLN higher-order untrusted-oracle adapter surfaces
+## Cluster 6c.18: PLN higher-order untrusted-oracle adapter scopes
 
 Status: completed in the working tree.
 
@@ -1105,7 +1105,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at either old untrusted-oracle adapter path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.RuleFamilies.HigherOrder.PLNUntrustedOracleAdapters Mettapedia.PLN.RuleFamilies.HigherOrder.PLNUntrustedOracleAdapterRegression Mettapedia.PLN.RuleFamilies.HigherOrder Mettapedia.Logic.PLNCore Mettapedia.Logic.PLNCanonicalAPI`
 - Check no old `Mettapedia.Logic.PLNUntrustedOracle*` module path, old
@@ -1114,7 +1114,7 @@ Verification surface:
 - Check no migration facade marker remains.
 - The moved untrusted-oracle adapter proof-hole scan found no active
   unfinished-proof pattern.
-- `git diff --check` passes on the untrusted-oracle adapter migration surface.
+- `git diff --check` passes on the untrusted-oracle adapter migration scope.
 - Spot-check moved theorem axiom footprints remain within the accepted project
   footprint.
 
@@ -1146,7 +1146,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at either old path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.Bridges.ProbabilityTheory.PLNProbabilityBridge Mettapedia.PLN.Bridges.ProbabilityTheory Mettapedia.PLN.RuleFamilies.FirstOrder.PLNIndependencePointApproximation Mettapedia.PLN.RuleFamilies.FirstOrder Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOL`
 - Check no old `Mettapedia.Logic.PLNProbabilityBridge` or
@@ -1154,11 +1154,11 @@ Verification surface:
   outside this ledger.
 - Check no migration facade marker remains.
 - The moved proof-hole scan found no active unfinished-proof pattern.
-- `git diff --check` passes on the migration surface.
+- `git diff --check` passes on the migration scope.
 - Spot-check moved theorem axiom footprints remain within the accepted project
   footprint.
 
-## Cluster 6c.20: PLN core end-to-end stable surface
+## Cluster 6c.20: PLN core end-to-end stable scope
 
 Status: completed in the working tree.
 
@@ -1179,20 +1179,20 @@ References repointed:
   short provenance-facing names such as `PLNEndToEnd.colliderNotExact` still
   resolve through the new room.
 - Paper and ZarWiki scans found no old `Logic/PLNEndToEnd` path reference to
-  repoint; existing `PLNEndToEnd.*` mentions are theorem-surface names, not
+  repoint; existing `PLNEndToEnd.*` mentions are theorem API names, not
   stale module paths.
 
 Facade deletion:
 - No compatibility module was left at the old path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.Core.PLNEndToEnd Mettapedia.PLN.Core Mettapedia.PLN Mettapedia.PLN.RuleFamilies.HigherOrder.PLNProofCarryingContractionDemo Mettapedia.Logic.PLNCanonicalAPI`
 - Check no old `Mettapedia.Logic.PLNEndToEnd` namespace/path reference remains
   outside this ledger.
 - Check no migration facade marker remains.
 - The moved proof-hole scan found no active unfinished-proof pattern.
-- `git diff --check` passes on the migration surface.
+- `git diff --check` passes on the migration scope.
 - Spot-check end-to-end theorem/abbrev axiom footprints remain within the
   accepted project footprint.
 
@@ -1230,7 +1230,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at any old path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.Core.PLNProofCalculus Mettapedia.PLN.Bridges.Logic.PLNCalcBridge Mettapedia.PLN.Core.PLNExperimental Mettapedia.PLN.Core Mettapedia.PLN.Bridges.Logic Mettapedia.PLN`
 - Check no old `Mettapedia.Logic.PLNProofCalculus`,
@@ -1240,7 +1240,7 @@ Verification surface:
 - The moved proof-hole scan found no active unfinished-proof pattern; a
   diagnostic doc-comment was tightened to avoid treating proof debt as a
   feature.
-- `git diff --check` passes on the migration surface.
+- `git diff --check` passes on the migration scope.
 - Spot-check moved theorem axiom footprints remain within the accepted project
   footprint.
 
@@ -1268,7 +1268,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at the old path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.Evidence.PLN_KS_Bridge Mettapedia.PLN.Evidence Mettapedia.Implementation.PLNParityChecklist Mettapedia.OSLF.Framework.KSUnificationSketch Mettapedia.Logic.SemanticsDecisionTree Mettapedia.ProbabilityTheory.Hypercube.PLNEvidencePointer Mettapedia.ProbabilityTheory.Hypercube.Basic`
 - Check no old `Mettapedia.Logic.PLN_KS_Bridge`,
@@ -1278,7 +1278,7 @@ Verification surface:
 - The moved proof-hole scan found no active unfinished-proof pattern; one
   English doc-comment sentence was tightened to avoid a forbidden proof-token
   false positive.
-- `git diff --check` passes on the migration surface.
+- `git diff --check` passes on the migration scope.
 - Spot-check moved theorem axiom footprints remain within the accepted project
   footprint.
 
@@ -1305,7 +1305,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at the old path.
 
-Verification surface:
+Verification scope:
 - Targeted/root build:
   `lake build Mettapedia.PLN.Bridges.CategoryTheory.PLNEnrichedCategory Mettapedia.PLN.Bridges.CategoryTheory Mettapedia`
 - Check no old `Mettapedia.Logic.PLNEnrichedCategory`,
@@ -1313,7 +1313,7 @@ Verification surface:
   `Logic/PLNEnrichedCategory` reference remains outside this ledger.
 - Check no migration facade marker remains.
 - The moved proof-hole scan found no active unfinished-proof pattern.
-- `git diff --check` passes on the touched category-bridge surface. A separate
+- `git diff --check` passes on the touched category-bridge scope. A separate
   pre-existing `WorldModelProfiles.lean` whitespace diff was not touched in
   this cluster.
 - Spot-check moved theorem axiom footprints remain within the accepted project
@@ -1344,7 +1344,7 @@ Documentation hygiene:
 - A public-facing source doc-comment section that named advisory reviewers was
   removed while preserving the mathematical overview.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.Bridges.Logic.PLNIntuitionisticBridge Mettapedia.PLN.Bridges.Logic Mettapedia.PLN.Evidence.PLNCrispEvidence Mettapedia.PLN.RuleFamilies.FirstOrder.Quantifiers.Soundness Mettapedia.PLN.RuleFamilies.FirstOrder.Quantifiers.InfiniteSoundness Mettapedia.PLN.Evidence`
 - Check no old `Mettapedia.Logic.PLNIntuitionisticBridge`,
@@ -1354,7 +1354,7 @@ Verification surface:
 - The moved proof-hole scan found no active unfinished-proof pattern.
 - A source scan confirmed the removed public-facing reviewer-name section no
   longer appears in the moved module.
-- `git diff --check` passes on the migration surface.
+- `git diff --check` passes on the migration scope.
 - Spot-check moved theorem axiom footprints remain within the accepted project
   footprint.
 
@@ -1388,7 +1388,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at either old path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.TruthValues.PLNDistinctionCredalBridge Mettapedia.PLN.Bridges.Languages.PLNDistinctionCredalOSLFBridge Mettapedia.PLN.TruthValues.PLNTruthTheoryIndex Mettapedia.PLN.TruthValues Mettapedia.PLN.Bridges.Languages`
 - Check no old `Mettapedia.Logic.PLNDistinctionCredalBridge`,
@@ -1399,7 +1399,7 @@ Verification surface:
   `Logic/PLNDistinctionCredalOSLFBridge` reference remains outside this ledger.
 - Check no migration facade marker remains.
 - The moved proof-hole scan found no active unfinished-proof pattern.
-- `git diff --check` passes on the migration surface.
+- `git diff --check` passes on the migration scope.
 - Spot-check moved theorem axiom footprints remain within the accepted project
   footprint.
 
@@ -1436,7 +1436,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at any old example path.
 
-Verification surface:
+Verification scope:
 - Targeted/root build:
   `lake build Mettapedia.Examples.PLN Mettapedia`
 - Check no old `Mettapedia.Logic.PLNMapleCourtCoalitionDemo`,
@@ -1447,7 +1447,7 @@ Verification surface:
 - The moved proof-hole scan found no active unfinished-proof pattern; old
   scanner-noisy `0 sorry` doc-comment phrases were tightened to
   "All declarations are closed."
-- `git diff --check` passes on the migration surface.
+- `git diff --check` passes on the migration scope.
 - Spot-check moved example theorem axiom footprints remain within the accepted
   project footprint.
 
@@ -1485,7 +1485,7 @@ Repair note:
   repatched narrowly; the examples hub build caught the problem before ledgering
   or full-build certification.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.Examples.PLN`
 - Check no old `Mettapedia.Logic.PLNClassicExamples`,
@@ -1497,7 +1497,7 @@ Verification surface:
 - Check no migration facade marker remains.
 - The moved proof-hole scan found no active unfinished-proof pattern; old
   scanner-noisy `0 sorry` prose was tightened.
-- `git diff --check` passes on the migration surface.
+- `git diff --check` passes on the migration scope.
 - Spot-check classic-example theorem axiom footprints remain within the
   accepted project footprint.
 
@@ -1530,7 +1530,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at either old path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.Examples.PLN Mettapedia.Logic.WMGasSensorDriftDemo Mettapedia.Logic.WMSteelFaultDemo Mettapedia.PLN.WorldModel.OrderCost.PLNWorldModelOrderCostGasPolicyDemo`
 - Check no old `Mettapedia.Logic.PLNBrokenSensorDemo`,
@@ -1542,7 +1542,7 @@ Verification surface:
 - Check no migration facade marker remains.
 - The moved proof-hole scan found no active unfinished-proof pattern; old
   scanner-noisy `0 sorry` prose was tightened.
-- `git diff --check` passes on the migration surface.
+- `git diff --check` passes on the migration scope.
 - Spot-check moved demo theorem axiom footprints remain within the accepted
   project footprint.
 
@@ -1569,7 +1569,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at the old path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.Examples.PLN`
 - Check no old `Mettapedia.Logic.PLNDerivationTrackingDemoPropositional`,
@@ -1580,7 +1580,7 @@ Verification surface:
   ledger.
 - Check no migration facade marker remains.
 - The moved proof-hole scan found no active unfinished-proof pattern.
-- `git diff --check` passes on the migration surface.
+- `git diff --check` passes on the migration scope.
 - Spot-check derivation-tracking theorem axiom footprints remain within the
   accepted project footprint.
 
@@ -1610,7 +1610,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at the old path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.TruthValues.PLNBugAnalysis Mettapedia.PLN.TruthValues Mettapedia.PLN.Core.PLNExperimental Mettapedia.Logic.PLNErrorMagnificationGrounding Mettapedia.Logic.PeTTaLibPLNFormalAnalysis`
 - Check no old `Mettapedia.Logic.PLNBugAnalysis`,
@@ -1619,7 +1619,7 @@ Verification surface:
   remains outside this ledger.
 - Check no migration facade marker remains.
 - The moved proof-hole scan found no active unfinished-proof pattern.
-- `git diff --check` passes on the migration surface.
+- `git diff --check` passes on the migration scope.
 - Spot-check bug-analysis theorem axiom footprints remain within the accepted
   project footprint.
 
@@ -1650,7 +1650,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at either old path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.TruthValues.PLNSoundnessCounterexample Mettapedia.PLN.TruthValues.PLNSoundnessDiagnosis Mettapedia.PLN.TruthValues Mettapedia.PLN.Core.PLNExperimental`
 - Check no old `Mettapedia.Logic.PLNSoundnessCounterexample`,
@@ -1663,7 +1663,7 @@ Verification surface:
   reference remains outside this ledger.
 - Check no migration facade marker remains.
 - The moved proof-hole scan found no active unfinished-proof pattern.
-- `git diff --check` passes on the migration surface.
+- `git diff --check` passes on the migration scope.
 - Spot-check soundness-diagnostic theorem axiom footprints remain within the
   accepted project footprint.
 
@@ -1693,7 +1693,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at either old path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.TruthValues.PLNDistributionalChainDominance Mettapedia.PLN.TruthValues.PLNDistributionalConvergence Mettapedia.PLN.TruthValues`
 - Check no old `Mettapedia.Logic.PLNDistributionalChainDominance`,
@@ -1706,7 +1706,7 @@ Verification surface:
   `Logic/PLNDistributionalConvergence` reference remains outside this ledger.
 - Check no migration facade marker remains.
 - The moved proof-hole scan found no active unfinished-proof pattern.
-- `git diff --check` passes on the migration surface.
+- `git diff --check` passes on the migration scope.
 - Spot-check distributional dominance/convergence theorem axiom footprints
   remain within the accepted project footprint.
 
@@ -1746,7 +1746,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at either old path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.Bridges.Languages.PLNWMOSLFBridge Mettapedia.PLN.Bridges.Languages.PLNWMOSLFBridgeITV Mettapedia.PLN.Bridges.Languages Mettapedia.PLN.RuleFamilies.FirstOrder.PLNXiRuleRegistry Mettapedia.PLN.RuleFamilies.FirstOrder.PLNXiDerivedBNRules Mettapedia.OSLF.Framework.OSLFNTTWMBridge Mettapedia.Logic.PLNCanonicalAPI Mettapedia.Logic.PLNErrorMagnificationGrounding Mettapedia.PLN.InferenceControl.SelectorRewriteThreshold.PLNSelectorRewriteThresholdExamples Mettapedia.PLN.ConceptGeometry.AssocPat.PLNIntensionalAssocPatClosure Mettapedia.PLN.ConceptGeometry.AssocPat.PLNIntensionalCanary Mettapedia.Logic.MarkovTransitionXi Mettapedia.Logic.MarkovPathXi Mettapedia.Logic.PLNXiCarrierScreening`
 - Check no old `Mettapedia.Logic.PLNWMOSLFBridge`,
@@ -1761,7 +1761,7 @@ Verification surface:
   outside this ledger.
 - Check no migration facade marker remains.
 - The moved proof-hole scan found no active unfinished-proof pattern.
-- `git diff --check` passes on the migration surface.
+- `git diff --check` passes on the migration scope.
 - Spot-check WM/OSLF bridge theorem axiom footprints remain within the accepted
   project footprint.
 
@@ -1782,7 +1782,7 @@ Namespace:
 References repointed:
 - `PLNCore` and `PLNCanonicalAPI` import the moved module from
   `PLN/Bridges/Languages`.
-- The canonical alias surface continues to use the short
+- The canonical alias scope continues to use the short
   `PLNErrorMagnificationGrounding` prefix through the existing
   `open Mettapedia.PLN.Bridges.Languages` scope.
 - Paper references in `xiPLN.tex`, `pln-review.tex`, and `wm-pln-book.tex`
@@ -1793,7 +1793,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at the old path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.Bridges.Languages.PLNErrorMagnificationGrounding Mettapedia.PLN.Bridges.Languages Mettapedia.Logic.PLNCore Mettapedia.Logic.PLNCanonicalAPI`
 - Check no old `Mettapedia.Logic.PLNErrorMagnificationGrounding`,
@@ -1803,7 +1803,7 @@ Verification surface:
 - Check no migration facade marker remains.
 - The moved proof-hole scan found no active unfinished-proof pattern; broader
   consumer scans only hit pre-existing `0 sorry` prose in `PLNCore`.
-- `git diff --check` passes on the migration surface.
+- `git diff --check` passes on the migration scope.
 - Spot-check error-magnification theorem axiom footprints remain within the
   accepted project footprint.
 
@@ -1842,7 +1842,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at either old path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.InferenceControl.ProtocolDynamics.PLNTrailFreeDynamicsCounterexample Mettapedia.PLN.InferenceControl.ProtocolDynamics.PLNTrailFreeDampedConvergence Mettapedia.PLN.InferenceControl.ProtocolDynamics Mettapedia.PLN.InferenceControl Mettapedia.PLN.InferenceControl.SelectorRewriteThreshold.PLNSelectorRewriteThresholdRegression Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointSPNBridge Mettapedia.PLN.WorldModel.Fixpoint.PLNWorldModelFixpointSPNBridgeRegression Mettapedia.Logic.PLNLargeScaleInferenceCounterexamples Mettapedia.Logic.PLNCore`
 - Check no old `Mettapedia.Logic.PLNTrailFreeDynamicsCounterexample`,
@@ -1855,7 +1855,7 @@ Verification surface:
   `Logic/PLNTrailFreeDampedConvergence` reference remains outside this ledger.
 - Check no migration facade marker remains.
 - The moved proof-hole scan found no active unfinished-proof pattern.
-- `git diff --check` passes on the migration surface.
+- `git diff --check` passes on the migration scope.
 - Spot-check protocol-dynamics theorem axiom footprints are either empty or
   remain within the accepted project footprint.
 
@@ -1889,7 +1889,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at either old path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.InferenceControl.CertifiedChaining.PLNCoverageCollapseNoGo Mettapedia.PLN.InferenceControl.CertifiedChaining.PLNSensitivityNoGo Mettapedia.PLN.InferenceControl.CertifiedChaining Mettapedia.PLN.InferenceControl`
 - Check no old `Mettapedia.Logic.PLNCoverageCollapseNoGo`,
@@ -1900,7 +1900,7 @@ Verification surface:
   remains outside this ledger.
 - Check no migration facade marker remains.
 - The moved proof-hole scan found no active unfinished-proof pattern.
-- `git diff --check` passes on the migration surface.
+- `git diff --check` passes on the migration scope.
 - Spot-check certified-chaining no-go theorem axiom footprints remain within
   the accepted project footprint.
 
@@ -1931,7 +1931,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at the old path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.InferenceControl.Counterexamples.PLNLargeScaleInferenceCounterexamples Mettapedia.PLN.InferenceControl.Counterexamples Mettapedia.PLN.InferenceControl Mettapedia.Logic.PLNCore`
 - Check no old `Mettapedia.Logic.PLNLargeScaleInferenceCounterexamples`,
@@ -1941,7 +1941,7 @@ Verification surface:
   ledger.
 - Check no migration facade marker remains.
 - The moved proof-hole scan found no active unfinished-proof pattern.
-- `git diff --check` passes on the migration surface.
+- `git diff --check` passes on the migration scope.
 - Spot-check large-scale inference counterexample theorem axiom footprints
   remain within the accepted project footprint.
 
@@ -1973,7 +1973,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at the old path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.Bridges.ProbabilityTheory.PLNXiCarrierScreening Mettapedia.PLN.Bridges.ProbabilityTheory Mettapedia.Logic.PLNCanonicalAPI`
 - Check no old `Mettapedia.Logic.PLNXiCarrierScreening`,
@@ -1982,7 +1982,7 @@ Verification surface:
   `Logic/PLNXiCarrierScreening` reference remains outside this ledger.
 - Check no migration facade marker remains.
 - The moved proof-hole scan found no active unfinished-proof pattern.
-- `git diff --check` passes on the migration surface.
+- `git diff --check` passes on the migration scope.
 - Spot-check carrier-screening theorem axiom footprints remain within the
   accepted project footprint.
 
@@ -1991,8 +1991,8 @@ Verification surface:
 Status: completed in the working tree.
 
 Moved paths:
-- `WeightedNormalGammaSurface.lean` moved from the logic attic to
-  `Mettapedia/PLN/Bridges/ProbabilityTheory/WeightedNormalGammaSurface.lean`.
+- `WeightedNormalGammaAdapter.lean` moved from the logic attic to
+  `Mettapedia/PLN/Bridges/ProbabilityTheory/WeightedNormalGammaAdapter.lean`.
 - `PLNGaussianEM.lean` moved from the logic attic to
   `Mettapedia/PLN/Bridges/ProbabilityTheory/PLNGaussianEM.lean`.
 - `PLNGaussianEMExtension.lean` moved from the logic attic to
@@ -2002,13 +2002,13 @@ Moved paths:
 
 Namespace:
 - Weighted Normal-Gamma sufficient-statistic bridge declarations now live under
-  `Mettapedia.PLN.Bridges.ProbabilityTheory.WeightedNormalGammaSurface.*`.
+  `Mettapedia.PLN.Bridges.ProbabilityTheory.WeightedNormalGammaAdapter.*`.
 - Finite one-step Gaussian mixture E/M declarations now live under
   `Mettapedia.PLN.Bridges.ProbabilityTheory.PLNGaussianEM.*`.
 - The curated Gaussian extension aliases now live directly under
   `Mettapedia.PLN.Bridges.ProbabilityTheory.*`.
-- The generic `SufficientStatisticSurface` substrate remains in
-  `Mettapedia.Logic.SufficientStatisticSurface`; this cluster only moved the
+- The generic `SufficientStatisticEncoder` substrate remains in
+  `Mettapedia.Logic.SufficientStatisticEncoder`; this cluster only moved the
   weighted Normal-Gamma / Gaussian PLN bridge layer.
 
 References repointed:
@@ -2022,21 +2022,21 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at the old paths.
 
-Verification surface:
+Verification scope:
 - Targeted build:
-  `lake build Mettapedia.PLN.Bridges.ProbabilityTheory.WeightedNormalGammaSurface Mettapedia.PLN.Bridges.ProbabilityTheory.PLNGaussianEM Mettapedia.PLN.Bridges.ProbabilityTheory.PLNGaussianEMExtension Mettapedia.PLN.Bridges.ProbabilityTheory Mettapedia.Logic.PLNCore Mettapedia.Logic.PLNCanonicalAPI`
+  `lake build Mettapedia.PLN.Bridges.ProbabilityTheory.WeightedNormalGammaAdapter Mettapedia.PLN.Bridges.ProbabilityTheory.PLNGaussianEM Mettapedia.PLN.Bridges.ProbabilityTheory.PLNGaussianEMExtension Mettapedia.PLN.Bridges.ProbabilityTheory Mettapedia.Logic.PLNCore Mettapedia.Logic.PLNCanonicalAPI`
 - Check no old `Mettapedia.Logic.PLNGaussianEM`,
-  `Mettapedia.Logic.WeightedNormalGammaSurface`,
+  `Mettapedia.Logic.WeightedNormalGammaAdapter`,
   `import Mettapedia.Logic.PLNGaussianEM`,
-  `import Mettapedia.Logic.WeightedNormalGammaSurface`,
+  `import Mettapedia.Logic.WeightedNormalGammaAdapter`,
   `Mettapedia/Logic/PLNGaussianEM.lean`,
   `Mettapedia/Logic/PLNGaussianEMExtension.lean`, or
-  `Mettapedia/Logic/WeightedNormalGammaSurface.lean` reference remains outside
+  `Mettapedia/Logic/WeightedNormalGammaAdapter.lean` reference remains outside
   this ledger.
 - Check no migration facade marker remains.
 - The moved proof-hole scan found no active unfinished-proof pattern.
-- `git diff --check` passes on the migration surface.
-- Spot-check Gaussian E/M and weighted-surface theorem axiom footprints remain
+- `git diff --check` passes on the migration scope.
+- Spot-check Gaussian E/M and weighted-scope theorem axiom footprints remain
   within the accepted project footprint.
 
 ## Cluster 6c.40: temporal PLN rule families to `PLN/RuleFamilies/Temporal`
@@ -2067,14 +2067,14 @@ References repointed:
   `PLN/RuleFamilies/Temporal`.
 - Paper path references in the WM-PLN, xiPLN, and review papers now cite the
   `Mettapedia/PLN/RuleFamilies/Temporal/` paths.
-- Conceptual logic-side notes that mention the temporal PLN surface now name the
+- Conceptual logic-side notes that mention the temporal PLN scope now name the
   new namespace/path without importing the moved modules where they intentionally
   avoid notation conflicts.
 
 Facade deletion:
 - No compatibility module was left at the old paths.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.RuleFamilies.Temporal.PLNTemporal Mettapedia.PLN.RuleFamilies.Temporal.PLNProbabilisticEventCalculus Mettapedia.PLN.RuleFamilies.Temporal.PLNTemporalCausalInference Mettapedia.PLN.RuleFamilies.Temporal Mettapedia.PLN.RuleFamilies Mettapedia.Logic.ModalQueryEncoder Mettapedia.Logic.TemporalDeonticBridge Mettapedia.Logic.PLNCore Mettapedia.Logic.PLNCanonicalAPI`
 - Check no old `Mettapedia.Logic.PLNTemporal`,
@@ -2086,7 +2086,7 @@ Verification surface:
   file-path reference remains outside this ledger.
 - Check no migration facade marker remains.
 - The moved proof-hole scan found no active unfinished-proof pattern.
-- `git diff --check` passes on the migration surface.
+- `git diff --check` passes on the migration scope.
 - Spot-check temporal PLN theorem axiom footprints remain within the accepted
   project footprint.
 
@@ -2123,7 +2123,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at the old paths.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.Examples.PLN.BioHypothesisGeneration Mettapedia.Examples.PLN.BioIncrementalHyperseed Mettapedia.Examples.PLN.MapleCourtDemo Mettapedia.Examples.PLN Mettapedia.Logic.ProbLogCompilation Mettapedia.Conformance.MapleCourtConformance Mettapedia.Conformance.MapleCourtEvidenceConformance`
 - Check no old `Mettapedia.Logic.PLNBioHypothesisGeneration`,
@@ -2132,7 +2132,7 @@ Verification surface:
   file-path references remain outside this ledger.
 - Check no migration facade marker remains.
 - The moved proof-hole scan found no active unfinished-proof pattern.
-- `git diff --check` passes on the migration surface.
+- `git diff --check` passes on the migration scope.
 - Spot-check moved application-example theorem axiom footprints remain within
   the accepted project footprint.
 
@@ -2168,7 +2168,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at the old paths.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.Core.PLNCanonicalAPI Mettapedia.PLN.Core.PLNCore Mettapedia.PLN.Core.PLNCOMPLETE Mettapedia.PLN.Core Mettapedia.PLN Mettapedia.PLN.ConceptGeometry.AssocPat.PLNIntensionalAssocPatClosure Mettapedia.PLN.InferenceControl.SelectorRewriteThreshold.PLNSelectorRewriteThresholdExamples`
 - Check no old `Mettapedia.Logic.PLNCanonicalAPI`,
@@ -2178,7 +2178,7 @@ Verification surface:
 - Check no root-level `Mettapedia/Logic/PLN*.lean` file remains.
 - Check no migration facade marker remains.
 - The moved proof-hole scan found no active unfinished-proof pattern.
-- `git diff --check` passes on the migration surface, paper references, and
+- `git diff --check` passes on the migration scope, paper references, and
   local ZarWiki references.
 - Spot-check canonical API theorem-handle axiom footprints remain within the
   accepted project footprint.
@@ -2190,8 +2190,8 @@ Status: completed in the working tree.
 Moved paths:
 - `CompletePLN.lean` moved from the logic attic to
   `Mettapedia/PLN/Core/CompletePLN.lean`.
-- `SufficientStatisticSurface.lean` moved from the logic attic to
-  `Mettapedia/PLN/WorldModel/SufficientStatisticSurface.lean`.
+- `SufficientStatisticEncoder.lean` moved from the logic attic to
+  `Mettapedia/PLN/WorldModel/SufficientStatisticEncoder.lean`.
 - `WMCalculusSoundness.lean` moved from the logic attic to
   `Mettapedia/PLN/WorldModel/WMCalculusSoundness.lean`.
 - The `Mettapedia/PLN/Core.lean` and `Mettapedia/PLN/WorldModel.lean` hubs
@@ -2199,8 +2199,8 @@ Moved paths:
 
 Namespace:
 - Exact Bayesian PLN now lives under `Mettapedia.PLN.Core.CompletePLN`.
-- The sufficient-statistic surface now lives under
-  `Mettapedia.PLN.WorldModel.SufficientStatisticSurface`.
+- The sufficient-statistic scope now lives under
+  `Mettapedia.PLN.WorldModel.SufficientStatisticEncoder`.
 - The world-model calculus soundness interface now lives under
   `Mettapedia.PLN.WorldModel.WMCalculusSoundness`.
 
@@ -2217,11 +2217,11 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at the old paths.
 
-Verification surface:
+Verification scope:
 - Targeted build:
-  `lake build Mettapedia.PLN.Core.CompletePLN Mettapedia.PLN.WorldModel.SufficientStatisticSurface Mettapedia.PLN.WorldModel.WMCalculusSoundness Mettapedia.PLN.Core Mettapedia.PLN.WorldModel Mettapedia.PLN.Core.PLNCore Mettapedia.PLN.Core.PLNCanonicalAPI Mettapedia.Logic.ProbLogCompilation Mettapedia.Examples.PLN.BioHypothesisGeneration Mettapedia.Examples.PLN.ProofSystemShowcase Mettapedia.Hyperseed.Basic Mettapedia.PLN.Bridges.ProbabilityTheory.PLNGaussianEM Mettapedia.PLN.TruthValues.PLNTruthTheoryIndex`
+  `lake build Mettapedia.PLN.Core.CompletePLN Mettapedia.PLN.WorldModel.SufficientStatisticEncoder Mettapedia.PLN.WorldModel.WMCalculusSoundness Mettapedia.PLN.Core Mettapedia.PLN.WorldModel Mettapedia.PLN.Core.PLNCore Mettapedia.PLN.Core.PLNCanonicalAPI Mettapedia.Logic.ProbLogCompilation Mettapedia.Examples.PLN.BioHypothesisGeneration Mettapedia.Examples.PLN.ProofSystemShowcase Mettapedia.Hyperseed.Basic Mettapedia.PLN.Bridges.ProbabilityTheory.PLNGaussianEM Mettapedia.PLN.TruthValues.PLNTruthTheoryIndex`
 - Check no old `Mettapedia.Logic.CompletePLN`,
-  `Mettapedia.Logic.SufficientStatisticSurface`,
+  `Mettapedia.Logic.SufficientStatisticEncoder`,
   `Mettapedia.Logic.WMCalculusSoundness`, corresponding old imports, or old
   file-path references remain outside this ledger.
 - Check no migration facade marker remains.
@@ -2263,7 +2263,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at the old paths.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.Evidence.SourceReliability Mettapedia.PLN.RuleFamilies.FirstOrder.ResidualDeductionFormula Mettapedia.PLN.WorldModel.UniversalEnsembleWM Mettapedia.PLN.Evidence Mettapedia.PLN.RuleFamilies.FirstOrder Mettapedia.PLN.WorldModel Mettapedia.Examples.PLN.ProofSystemShowcase`
 - Check no old `Mettapedia.Logic.SourceReliability`,
@@ -2313,7 +2313,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at the old paths.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.Examples.PLN.TemporalChainingExample Mettapedia.Examples.PLN.WMDemandDemo Mettapedia.Examples.PLN.WMForkDemandDemo Mettapedia.Examples.PLN.WMDerivationTrackingDemo Mettapedia.Examples.PLN.WMGasSensorDriftDemo Mettapedia.Examples.PLN.WMSteelFaultDemo Mettapedia.Examples.PLN.WMNABSleepDemo Mettapedia.Examples.PLN.WMUWCSEGateDemo Mettapedia.Examples.PLN Mettapedia.PLN.WorldModel.OrderCost.PLNWorldModelOrderCostGasPolicyDemo`
 - Check no old `Mettapedia.Logic.*` namespace, corresponding old import, or old
@@ -2349,7 +2349,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at the old paths.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.Examples.PLN.AIOutcomesDemo Mettapedia.Examples.PLN.GJPForecastDemo Mettapedia.Examples.PLN`
 - Check no old `Mettapedia.Logic.AIOutcomesDemo` or
@@ -2389,7 +2389,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at the old paths.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.RuleFamilies.FirstOrder.RavenAbduction Mettapedia.PLN.RuleFamilies.FirstOrder.RavenAsymmetricInduction Mettapedia.PLN.RuleFamilies.FirstOrder.PLNRavenAbductionBridge Mettapedia.PLN.RuleFamilies.FirstOrder.PLNRavenInductionBridge Mettapedia.PLN.RuleFamilies.FirstOrder Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOL`
 - Check no old `Mettapedia.Logic.RavenAbduction` or
@@ -2421,7 +2421,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at the old path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.RuleFamilies.FirstOrder.BNTopologyRegression Mettapedia.PLN.RuleFamilies.FirstOrder.PLNXiDerivedBNRules Mettapedia.PLN.RuleFamilies.FirstOrder`
 - Check no old `Mettapedia.Logic.BNTopologyRegression`, corresponding old
@@ -2454,7 +2454,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at the old path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.Examples.PLN.WMPLNDistributionalExamples Mettapedia.Examples.PLN Mettapedia.Implementation.PLNParityChecklist Mettapedia.PLN.TruthValues.WMPLNDistributionalTruthFunctions`
 - Check no old `Mettapedia.Logic.WMPLNDistributionalExamples`, corresponding
@@ -2476,7 +2476,7 @@ Moved paths:
   `Mettapedia/PLN/InferenceControl/PremiseSelection/Coverage.lean`.
 - The `Mettapedia/PLN/InferenceControl/PremiseSelection.lean` hub now imports
   the selector substrate modules as well as the existing Chapter-13 regression
-  and chainer surfaces.
+  and chainer scopes.
 
 Namespace:
 - The main selector definitions now live under
@@ -2486,7 +2486,7 @@ Namespace:
 
 References repointed:
 - PLN core/API consumers, OSLF selector semantics, Chapter-13 inference-control
-  modules, DocText surfaces, papers, and local project-status references were
+  modules, DocText scopes, papers, and local project-status references were
   repointed away from the old logic attic paths and namespaces.
 - No old import path, qualified namespace, or old source path remains outside
   this ledger for the moved premise-selection modules.
@@ -2494,7 +2494,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at the old paths.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.InferenceControl.PremiseSelection Mettapedia.PLN.Core.PLNCore Mettapedia.PLN.Core.PLNCanonicalAPI Mettapedia.OSLF.Framework.PLNSelectorGSLT Mettapedia.OSLF.Framework.PLNSelectorLanguageDef Mettapedia.DocText.LogicReadmeCompositional`
 - Check no old `Mettapedia.Logic.PremiseSelection`, corresponding old imports,
@@ -2530,7 +2530,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at the old path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.Core.SoundnessCompleteness Mettapedia.PLN.Core.PLNCore Mettapedia.PLN.Core Mettapedia.DocText.LogicReadmeCompositional`
 - Check no old `Mettapedia.Logic.SoundnessCompleteness`, corresponding old
@@ -2580,7 +2580,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at the old paths.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.ProbabilityTheory.Moments Mettapedia.ProbabilityTheory.Exchangeability.CategoricalMixture Mettapedia.ProbabilityTheory.Exchangeability.DiaconisFreedmanFinite Mettapedia.ProbabilityTheory.Exchangeability Mettapedia.ProbabilityTheory.Exchangeability.DeFinetti Mettapedia.ProbabilityTheory.HigherOrderProbability.CategoricalConnection Mettapedia.PLN.InferenceControl.PremiseSelection.LocalMixtureBridge Mettapedia.CategoryTheory.DeFinettiHausdorffBridge`
 - Check no old `Mettapedia.Logic.{MomentSequences,HausdorffMoment,DiaconisFreedmanFinite,CategoricalMixture,CategoricalDeFinetti}`,
@@ -2608,7 +2608,7 @@ Moved paths:
 - The `Mettapedia/PLN/Evidence.lean` hub imports the evidence bridge and
   confidence-compounding theorem.
 - The new `Mettapedia/PLN/Comparisons/PeTTa.lean` hub imports the PeTTa
-  comparison surface, and `Mettapedia/PLN/Comparisons.lean` imports that hub.
+  comparison scope, and `Mettapedia/PLN/Comparisons.lean` imports that hub.
 
 Namespace:
 - The BinaryEvidence/MeTTa truth-value bridge now lives under
@@ -2624,14 +2624,14 @@ References repointed:
 - Unified probability consumers now import and open
   `PLN/Evidence/ConfidenceCompoundingTheorem`.
 - The implementation parity checklist now imports and cites the moved PeTTa
-  comparison surface.
+  comparison scope.
 - No old import path, qualified namespace, or old source path remains outside
   this ledger for the moved confidence/comparison modules.
 
 Facade deletion:
 - No compatibility module was left at the old paths.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.Evidence.NuEvidenceQuantaleBridge Mettapedia.PLN.Evidence.ConfidenceCompoundingTheorem Mettapedia.PLN.Comparisons.PeTTa.PeTTaLibPLNFormalAnalysis Mettapedia.PLN.Comparisons.PeTTa Mettapedia.PLN.Evidence Mettapedia.PLN.Comparisons Mettapedia.PLN.TruthValues.WMPLNJustifiedTruthFunctions Mettapedia.ProbabilityTheory.UnifiedProbabilityBridge Mettapedia.Implementation.PLNParityChecklist`
 - Check no old `Mettapedia.Logic.{NuPLNEvidenceBridge,NuEvidenceQuantaleBridge,ConfidenceCompoundingTheorem,PeTTaLibPLNFormalAnalysis}`,
@@ -2668,7 +2668,7 @@ Namespace:
   `Mettapedia.PLN.Bridges.Languages.ProbLog.Compilation`.
 - Infinite-product ProbLog distribution-semantics definitions now live under
   `Mettapedia.PLN.Bridges.Languages.ProbLog.Infinite`.
-- The ProbLog specification surface now lives under
+- The ProbLog specification scope now lives under
   `Mettapedia.PLN.Bridges.Languages.ProbLog.Spec`.
 
 References repointed:
@@ -2681,7 +2681,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at the old paths.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.Bridges.Languages.ProbLog.DistributionSemantics Mettapedia.PLN.Bridges.Languages.ProbLog.Compilation Mettapedia.PLN.Bridges.Languages.ProbLog.Infinite Mettapedia.PLN.Bridges.Languages.ProbLog.Spec Mettapedia.PLN.Bridges.Languages.ProbLog Mettapedia.PLN.Bridges.Languages Mettapedia.Logic.BDD.Compilation Mettapedia.Logic.BDD.ProbMeTTaBridge Mettapedia.Logic.BDD.WMPLNBridge Mettapedia.Examples.PLN.BioHypothesisGeneration Mettapedia.Examples.PLN.BioIncrementalHyperseed Mettapedia.Logic.LP.NormalGrounding Mettapedia.Logic.LP.Stratification`
 - Check no old `Mettapedia.Logic.{ProbLogDistributionSemantics,ProbLogCompilation,ProbLogInfinite,ProbLogSpec}`,
@@ -2716,7 +2716,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at the old path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.OSLF.Framework.ImageFinite Mettapedia.OSLF.Framework.PredFiniteSufficient Mettapedia.OSLF.Framework.PiRhoCanonicalBridge Mettapedia.OSLF.CoreMain Mettapedia.OSLF.SpecIndex`
 - Check no old `Mettapedia.Logic.OSLFImageFinite`, corresponding old import,
@@ -2751,7 +2751,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at the old path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.OSLF.Bridges.Foundation.Kripke Mettapedia.OSLF.Bridges.Foundation Mettapedia.OSLF.Bridges Mettapedia.OSLF.Framework.PiRhoCanonicalBridge Mettapedia.OSLF.CoreMain Mettapedia.OSLF.Main Mettapedia.OSLF`
 - Check no old `Mettapedia.Logic.OSLFKripkeBridge`, corresponding old import,
@@ -2778,7 +2778,7 @@ Namespace:
   `Mettapedia.OSLF.Bridges.CategoryTheory.OpenMap`.
 
 References repointed:
-- The mixed open-map regression surface now imports and opens the moved OSLF
+- The mixed open-map regression scope now imports and opens the moved OSLF
   bridge module from `Mettapedia.OSLF.Bridges.CategoryTheory.OpenMap`.
 - Logic and CategoryTheory README references to the old OSLF open-map bridge
   path now cite the new OSLF bridge path.
@@ -2788,7 +2788,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at the old path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.OSLF.Bridges.CategoryTheory.OpenMap Mettapedia.OSLF.Bridges.CategoryTheory Mettapedia.OSLF.Bridges Mettapedia.Logic.OpenMapBridgeRegression Mettapedia.OSLF`
 - Check no old `Mettapedia.Logic.OSLFOpenMapBridge`, corresponding old import,
@@ -2822,7 +2822,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at the old path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.Bridges.ProbabilityTheory.CategoricalNuPLNBridge Mettapedia.PLN.Bridges.ProbabilityTheory Mettapedia.CategoryTheory.DeFinettiExports`
 - Check no old `Mettapedia.Logic.CategoricalNuPLNBridge`, corresponding old
@@ -2855,7 +2855,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at the old path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.WorldModel.TerminalMeasureWorldModel Mettapedia.PLN.WorldModel Mettapedia.PLN.Evidence.KSEvidenceMeasureBridge`
 - Check no old `Mettapedia.Logic.TerminalMeasureWorldModel`, corresponding old
@@ -2891,7 +2891,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at the old path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.WorldModel.WMHypercubeClassification Mettapedia.PLN.WorldModel Mettapedia.Logic.GSLTWeightMapBridge Mettapedia.Logic.ModalProbabilityBridge Mettapedia.Examples.PLN.ProofSystemShowcase`
 - Check no old `Mettapedia.Logic.WMHypercubeClassification`, corresponding
@@ -2925,7 +2925,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at the old path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.Bridges.ProbabilityTheory.ModalProbabilityBridge Mettapedia.PLN.Bridges.ProbabilityTheory Mettapedia.Examples.PLN.ProofSystemShowcase`
 - Check no old `Mettapedia.Logic.ModalProbabilityBridge`, corresponding old
@@ -2964,7 +2964,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at the old path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.Algebra.TemporalQuantale Mettapedia.Logic.ModalQuantaleSemantics`
 - Check no old `Mettapedia.Logic.TemporalQuantale`, corresponding old import,
@@ -3007,7 +3007,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at the old path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.Comparisons.NARS.SemanticsDecisionTree Mettapedia.PLN.Comparisons.NARS Mettapedia.PLN.Core.PLNCore Mettapedia.DocText.LogicReadmeCompositional`
 - Check no old `Mettapedia.Logic.SemanticsDecisionTree`, corresponding old
@@ -3054,7 +3054,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at the old path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.Bridges.GSLT.WeightMapBridge Mettapedia.PLN.Bridges.GSLT Mettapedia.PLN.Bridges Mettapedia.Examples.PLN.ProofSystemShowcase Mettapedia.PLN.Bridges.ProbabilityTheory.ModalProbabilityBridge`
 - Check no old `Mettapedia.Logic.GSLTWeightMapBridge`, corresponding old
@@ -3094,7 +3094,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at the old path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.Algorithms.HardBESTQuantitativeAdapter`
 - Check no old `Mettapedia.Logic.HardBEST`, corresponding old import, or old
@@ -3143,7 +3143,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at the old path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.Evidence.EvidentialLedger Mettapedia.PLN.Evidence Mettapedia.Examples.PLN.GJPForecastDemo Mettapedia.Examples.PLN.AIOutcomesDemo Mettapedia.Examples.PLN.WMUWCSEGateDemo Mettapedia.PLN.WorldModel.WMCalculusSoundness Mettapedia.Logic.RuntimeSoundnessBridge Mettapedia.Languages.GF.SUMO.EvidenceModel Mettapedia.Languages.GF.SUMO.PainEvidenceWM`
 - Check no old `Mettapedia.Logic.EvidentialLedger`, corresponding old import,
@@ -3184,7 +3184,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at the old path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.Bridges.Languages.RuntimeSoundnessBridge Mettapedia.PLN.Bridges.Languages`
 - Check no old `Mettapedia.Logic.RuntimeSoundnessBridge`, corresponding old
@@ -3229,7 +3229,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at either old path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.Examples.PLN.HOLExampleLadder Mettapedia.Examples.PLN.HOLProbPLNExampleDemo Mettapedia.Examples.PLN`
 - Check no old `Mettapedia.Logic.HOLExampleLadder`,
@@ -3295,7 +3295,7 @@ Facade deletion:
 - No compatibility module was left at any old OSLF evidence or
   distinction-graph path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.OSLF.Framework.EvidenceSemantics Mettapedia.OSLF.Framework.KSUnificationSketch Mettapedia.OSLF.Framework.DistinctionGraph Mettapedia.OSLF.Framework.DistinctionGraph.Weighted Mettapedia.OSLF.Framework.DistinctionGraph.WorldModel Mettapedia.OSLF.Framework.DistinctionGraph.Entropy Mettapedia.OSLF.Main Mettapedia.OSLF.CoreMain Mettapedia.OSLF.QuantifiedFormula Mettapedia.OSLF.QuantifiedFormula2`
 - Check no old `Mettapedia.Logic.OSLFEvidenceSemantics`,
@@ -3355,7 +3355,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at either old path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.CategoryTheory.GeneralizedOpenMaps.Weighted Mettapedia.OSLF.Bridges.CategoryTheory.OpenMapRegression Mettapedia.OSLF.Bridges.CategoryTheory Mettapedia.OSLF.Bridges`
 - Check no old `Mettapedia.Logic.WeightedOpenMaps`,
@@ -3400,7 +3400,7 @@ References repointed:
   `Mettapedia/PLN/Bridges/KR/ConceptClosure.lean`, and the existing PLN bridge
   hub imports the KR bridge hub.
 - The root `Mettapedia.lean` aggregator imports the PLN/KR bridge hub so the
-  moved modules remain part of the top-level build surface.
+  moved modules remain part of the top-level build scope.
 - `Mettapedia/PLN/Core/PLNCanonicalAPI.lean` imports and `_root_` aliases now
   point at the moved modules.
 - The still-deferred ontology-growth bridges in `Logic/` import the moved
@@ -3413,7 +3413,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at any old path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.Bridges.KR.ConceptClosure Mettapedia.PLN.Bridges.KR Mettapedia.PLN.Bridges Mettapedia.Logic.FormedConceptOntologyGrowthBridge Mettapedia.Logic.CredalConceptOntologyGrowthBridge Mettapedia.PLN.Core.PLNCanonicalAPI`
 - Check no old `Mettapedia.Logic.FormedConceptFixpointClosureBridge`,
@@ -3457,7 +3457,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at the old path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.Bridges.Logic.BooleanHeytingBridge Mettapedia.PLN.Bridges.Logic Mettapedia.PLN.Bridges`
 - Check no old `Mettapedia.Logic.BooleanHeytingBridge`, corresponding old
@@ -3504,7 +3504,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at any old path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.Evidence.Convergence Mettapedia.PLN.Evidence Mettapedia.Logic.Comparison.OptimalityTheorems`
 - Check no old `Mettapedia.Logic.Convergence`, corresponding old import, or
@@ -3519,7 +3519,7 @@ Verification surface:
   `observationsToEvidence_strength`, and
   `pln_eventually_accurate`.
 
-## Cluster 6c.74: PLN comparison and optimality surfaces
+## Cluster 6c.74: PLN comparison and optimality scopes
 
 Status: completed in the working tree.
 
@@ -3549,7 +3549,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at any old path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.Comparisons.ErrorCharacterization Mettapedia.PLN.Comparisons.OptimalityTheorems Mettapedia.PLN.Comparisons.StructuralAdvantages Mettapedia.PLN.Comparisons Mettapedia.PLN.Core.SoundnessCompleteness Mettapedia.PLN.RuleFamilies.HigherOrder.PLNProbGuardedAdmissibility`
 - Check no old `Mettapedia.Logic.Comparison`, corresponding old import, or old
@@ -3594,7 +3594,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at the old path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.Bridges.ProbabilityTheory.PLNKyburgReduction Mettapedia.PLN.Bridges.ProbabilityTheory Mettapedia.PLN.Core.PLNCore Mettapedia.PLN.Core.PLNCanonicalAPI`
 - Check no old `Mettapedia.Logic.HigherOrder.PLNKyburgReduction`,
@@ -3640,7 +3640,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at the old path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.Bridges.Logic.HigherOrderInferenceRuleBridge Mettapedia.PLN.Bridges.Logic Mettapedia.Logic.HigherOrder`
 - Check no old `Mettapedia.Logic.HigherOrder.InferenceRuleBridge`,
@@ -3671,14 +3671,14 @@ References repointed:
 - The same consumer also opens
   `Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard` so the
   existing Fortini prefix-carrier definitions from its direct import are in
-  scope without relying on the removed compatibility surface.
+  scope without relying on the removed compatibility scope.
 - No old import path or old source path remains outside this ledger for the
   checker-reflection facade.
 
 Facade deletion:
 - The compatibility module was deleted; no replacement facade was left behind.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.Algorithms.FortiniFiniteCheckers Mettapedia.Algorithms.CheckerReflection`
 - Check no old `Mettapedia.Logic.Bridges.CheckerReflection`, corresponding old
@@ -3704,12 +3704,12 @@ References repointed:
 Facade deletion:
 - The compatibility module was deleted; no replacement facade was left behind.
 
-Verification surface:
+Verification scope:
 - Check no import or qualified reference to `Mettapedia.Logic.Datalog` remains.
 - Check no stale `Mettapedia/Logic/Datalog/` source-path reference remains.
 - Build `Mettapedia.Logic.LP` and the full `Mettapedia` target.
 
-## Cluster 6c.79: Higher-order PLN reduction surface
+## Cluster 6c.79: Higher-order PLN reduction scope
 
 Status: completed in the working tree.
 
@@ -3721,13 +3721,13 @@ Moved paths:
   `Mettapedia/PLN/RuleFamilies/HigherOrder/Reduction/`.
 
 Namespace:
-- The PLN-book HOI-to-FOI reduction surface now lives under
+- The PLN-book HOI-to-FOI reduction scope now lives under
   `Mettapedia.PLN.RuleFamilies.HigherOrder.Reduction`.
 
 Rationale:
-- The moved surface defines the PLN-book higher-order-to-first-order
+- The moved scope defines the PLN-book higher-order-to-first-order
   reduction over PLN quantifiers, PLN evidence, and quantale-weakness
-  semantics. It is therefore a PLN higher-order rule-family surface, not a
+  semantics. It is therefore a PLN higher-order rule-family scope, not a
   generic higher-order logic kernel.
 
 References repointed:
@@ -3739,12 +3739,12 @@ References repointed:
   `Mettapedia/PLN/Bridges/HOL/PLNWorldModelPredCodeConsequence.lean` now name
   the moved predicate-code namespace.
 - No old import path, qualified namespace, or old source path remains outside
-  this ledger for the moved higher-order reduction surface.
+  this ledger for the moved higher-order reduction scope.
 
 Facade deletion:
 - No compatibility module was left at the old path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.RuleFamilies.HigherOrder.Reduction
   Mettapedia.PLN.RuleFamilies.HigherOrder
@@ -3783,10 +3783,10 @@ Namespace:
 
 Rationale:
 - These files instantiate PLN `BinaryWorldModel` and world-model consequence
-  surfaces on Church/Henkin HOL semantics. Their definitions are bridge
+  scopes on Church/Henkin HOL semantics. Their definitions are bridge
   definitions between HOL and PLN world-model infrastructure, not standalone
   HOL proof/model theory. The existing public
-  `Mettapedia.PLN.Bridges.HOL.PLNWorldModelHOL*` alias surfaces now point at
+  `Mettapedia.PLN.Bridges.HOL.PLNWorldModelHOL*` alias scopes now point at
   the moved bridge cores instead of a logic-room implementation.
 
 References repointed:
@@ -3805,7 +3805,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at the old path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.Bridges.HOL.PLNWorldModelHOLCore
   Mettapedia.PLN.Bridges.HOL.PLNWorldModelHOLCompletenessCore
@@ -3835,16 +3835,16 @@ relocation.
 
 Remaining high-confidence keep-set:
 - The HOL, LP/Datalog, modal μ-calculus, modal
-  quantale semantics, and ProbHOL surfaces remain in the logic room because
+  quantale semantics, and ProbHOL scopes remain in the logic room because
   their definitions are still formal-system, proof/model-theoretic, or
   logic-programming infrastructure.
 
 Remaining explicit defer-set:
-- The Markov and WMMarkov surface, BDD surface, governance/DDLPlus surface,
-  metaphysics/gunk surface, and ontology-growth bridges remain below the
+- The Markov and WMMarkov scope, BDD scope, governance/DDLPlus scope,
+  metaphysics/gunk scope, and ontology-growth bridges remain below the
   migration confidence threshold for this run.
 - `ModalQueryEncoder.lean` and `TemporalDeonticBridge.lean` are bridge
-  surfaces whose clean home depends on a broader temporal/deontic/PLN policy
+  scopes whose clean home depends on a broader temporal/deontic/PLN policy
   decision, so they are not moved by filename alone.
 - `Bridges/RhoTemporal.lean` was left in place at this boundary, then
   re-inspected and moved in Cluster 6c.86 after its definitions were found to
@@ -3853,10 +3853,10 @@ Remaining explicit defer-set:
 - `Archive/PLNQuantaleConnectionLegacy.lean` is an archived implementation
   referenced only as historical source material by the live PLN compatibility
   module. At this boundary, relocating archived material was treated as an
-  archival-policy decision rather than a theorem-surface taxonomy move. It was
+  archival-policy decision rather than a theorem-scope taxonomy move. It was
   later re-inspected and moved in Cluster 6c.85.
 
-Verification surface for the boundary:
+Verification scope for the boundary:
 - `find Mettapedia/Logic -type f -name '*.lean'` shows the remaining logic
   room is dominated by the genuine logic keep-set plus the explicit defer-set.
 - No old checker-reflection, Datalog, higher-order reduction, or HOL
@@ -3904,7 +3904,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at the old path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.Bridges.HOL.ProbHOLWorldModelBridge
   Mettapedia.Logic.HOL.Probabilistic
@@ -3934,21 +3934,21 @@ relocation.
 
 Remaining high-confidence keep-set:
 - The core ProbHOL semantic, flattening, hierarchical-state, belief-process,
-  and regression surfaces remain in the logic/HOL room because their
+  and regression scopes remain in the logic/HOL room because their
   definitions are semantic or logical-induction comparison infrastructure,
   not standalone PLN evidence lenses.
-- The HOL, LP/Datalog, modal μ-calculus, and modal quantale semantics surfaces
+- The HOL, LP/Datalog, modal μ-calculus, and modal quantale semantics scopes
   remain in the logic room because their definitions are formal-system,
   proof/model-theoretic, or logic-programming infrastructure.
 
 Remaining explicit defer-set:
-- The Markov and WMMarkov surface, BDD surface, governance/DDLPlus surface,
-  metaphysics/gunk surface, and ontology-growth bridges remain below the
+- The Markov and WMMarkov scope, BDD scope, governance/DDLPlus scope,
+  metaphysics/gunk scope, and ontology-growth bridges remain below the
   migration confidence threshold for this run.
-- The remaining temporal/deontic/modal/OSLF bridge surfaces require a broader
+- The remaining temporal/deontic/modal/OSLF bridge scopes require a broader
   bridge-placement policy decision or decomposition before any safe move.
 
-Verification surface for the boundary:
+Verification scope for the boundary:
 - `find Mettapedia/Logic -type f -name '*.lean'` reports 212 files remaining
   in the logic room; `find Mettapedia/Logic -maxdepth 1 -type f -name '*.lean'`
   reports 80 root files.
@@ -3991,7 +3991,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at the old path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.Bridges.HOL.LogicalInductionWorldModelBridge
   Mettapedia.Logic.HOL.LogicalInduction
@@ -4022,21 +4022,21 @@ relocation.
 
 Remaining high-confidence keep-set:
 - The core logical-induction syntax, market, criterion, conditioning,
-  calibration, empirical, and regression surfaces remain in the logic/HOL room
+  calibration, empirical, and regression scopes remain in the logic/HOL room
   because their definitions are logical-induction infrastructure rather than
   the PLN evidence lens.
 - The core ProbHOL semantic, flattening, hierarchical-state, belief-process,
-  and regression surfaces remain in the logic/HOL room for the same semantic
+  and regression scopes remain in the logic/HOL room for the same semantic
   infrastructure reason.
 
 Remaining explicit defer-set:
-- The Markov and WMMarkov surface, BDD surface, governance/DDLPlus surface,
-  metaphysics/gunk surface, and ontology-growth bridges remain below the
+- The Markov and WMMarkov scope, BDD scope, governance/DDLPlus scope,
+  metaphysics/gunk scope, and ontology-growth bridges remain below the
   migration confidence threshold for this run.
-- The remaining temporal/deontic/modal/OSLF bridge surfaces require a broader
+- The remaining temporal/deontic/modal/OSLF bridge scopes require a broader
   bridge-placement policy decision or decomposition before any safe move.
 
-Verification surface for the boundary:
+Verification scope for the boundary:
 - `find Mettapedia/Logic -type f -name '*.lean'` reports 211 files remaining
   in the logic room; `find Mettapedia/Logic -maxdepth 1 -type f -name '*.lean'`
   reports 80 root files.
@@ -4077,7 +4077,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at the old path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.Bridges.Logic.LPWorldModelBridge
   Mettapedia.PLN.Bridges.Logic Mettapedia.Logic.LP
@@ -4121,7 +4121,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at the old path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.Languages.MeTTa.PeTTa.FunctionFreeLPBridge
   Mettapedia.Languages.MeTTa.PeTTa Mettapedia.TaxonomyMigrationLedger`
@@ -4168,7 +4168,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at the old path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.RuleFamilies.QuantaleSemantics.PLNQuantaleConnectionLegacy
   Mettapedia.PLN.RuleFamilies.QuantaleSemantics.PLNQuantaleConnection
@@ -4202,7 +4202,7 @@ Rationale:
   readouts.
 - Although its documentation relates these constructions to PLN temporal
   intuitions, the definitions themselves are process-calculus language
-  infrastructure, not PLN theorem surfaces and not core logic.
+  infrastructure, not PLN theorem families and not core logic.
 
 References repointed:
 - `Mettapedia/Languages/ProcessCalculi/RhoCalculus.lean` now imports the new
@@ -4213,7 +4213,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at the old path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.Languages.ProcessCalculi.RhoCalculus.Bridges.TemporalLogic
   Mettapedia.Languages.ProcessCalculi.RhoCalculus.Bridges
@@ -4262,7 +4262,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at the old path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.OSLF.MeTTaIL.LPBridge
   Mettapedia.Languages.MeTTa.PeTTa.LPSoundness
@@ -4314,7 +4314,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at the old path.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.OSLF.MeTTaIL.LPRelationEnvBridge
   Mettapedia.OSLF.SpecIndex Mettapedia.Logic.LP
@@ -4330,7 +4330,7 @@ Verification surface:
   `constToPattern_injective`, `leastHerbrandModelRelEnv_complete`, and
   `leastHerbrandModelRelEnv_sound`.
 
-## Cluster 6c.89: PLN-facing Probabilistic HOL bridge/regression surface
+## Cluster 6c.89: PLN-facing Probabilistic HOL bridge/regression scope
 
 Status: completed in the working tree.
 
@@ -4343,7 +4343,7 @@ Moved paths:
   `Mettapedia/PLN/Bridges/HOL/Probabilistic/`.
 
 Namespace:
-- The moved bridge/regression surface now lives under
+- The moved bridge/regression scope now lives under
   `Mettapedia.PLN.Bridges.HOL.Probabilistic`.
 
 Rationale:
@@ -4351,7 +4351,7 @@ Rationale:
   core: model spaces, sentence probabilities, indexed spaces, hierarchical
   states, and flattening.
 - The moved files are the PLN-facing empirical, benchmark, belief, and
-  regression surfaces. They import PLN world-model bridges or PLN guarded
+  regression scopes. They import PLN world-model bridges or PLN guarded
   higher-order semantics, and their definitions consume semantic ProbHOL as a
   bridge into PLN rule-family and benchmark machinery.
 - The split keeps the core HOL probability semantics in `Logic` while housing
@@ -4371,7 +4371,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at the old paths.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.Bridges.HOL.Probabilistic
   Mettapedia.PLN.Bridges.HOL Mettapedia.Logic.HOL.Probabilistic
@@ -4399,7 +4399,7 @@ Moved paths:
   `Mettapedia/PLN/Bridges/HOL/LogicalInduction/`.
 
 Namespace:
-- The moved empirical/regression surface now lives under
+- The moved empirical/regression scope now lives under
   `Mettapedia.PLN.Bridges.HOL.LogicalInduction`.
 
 Rationale:
@@ -4432,7 +4432,7 @@ References repointed:
 Facade deletion:
 - No compatibility module was left at the old paths.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.Bridges.HOL.LogicalInduction
   Mettapedia.PLN.Bridges.HOL Mettapedia.Logic.HOL.LogicalInduction
@@ -4473,7 +4473,7 @@ Rationale:
   empirical/benchmark/belief/regression consumers live under
   `Mettapedia.PLN.Bridges.HOL.Probabilistic`.
 - Therefore the Logic barrel should not re-export the PLN bridge. Removing that
-  import keeps the semantic core in Logic and the PLN consumer surface in PLN.
+  import keeps the semantic core in Logic and the PLN consumer scope in PLN.
 
 References repointed:
 - No external references needed repointing. PLN consumers import the bridge
@@ -4481,12 +4481,12 @@ References repointed:
   `Mettapedia.PLN.Bridges.HOL.Probabilistic`.
 - `Mettapedia/Logic/HOL/Probabilistic.lean` documentation now describes only
   the semantic core and points readers to the PLN bridge barrel for consumer
-  surfaces.
+  scopes.
 
 Facade deletion:
 - No compatibility module was left or needed.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.Logic.HOL.Probabilistic Mettapedia.Logic.ProbHOL
   Mettapedia.PLN.Bridges.HOL.Probabilistic Mettapedia.PLN.Core.PLNCanonicalAPI
@@ -4535,7 +4535,7 @@ References repointed:
 Facade deletion:
 - No compatibility declarations or modules were left at the old namespace.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.Bridges.HOL.Probabilistic.HierarchicalStrengthBridge
   Mettapedia.Logic.HOL.Probabilistic.Flattening
@@ -4592,7 +4592,7 @@ Facade deletion:
 - No compatibility declarations were left in
   `Mettapedia.PLN.Bridges.HOL.PLNWorldModelHOLCore`.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.Logic.HOL.Semantics.Satisfaction
   Mettapedia.Logic.HOL.Probabilistic.ModelSpace
@@ -4648,7 +4648,7 @@ Facade deletion:
 - No compatibility module or declaration was left at
   `Mettapedia.Logic.HOL.LogicalInduction.PureBridge`.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.Languages.MeTTa.PureKernel.HOLLogicalInductionBridge
   Mettapedia.Logic.HOL.LogicalInduction Mettapedia.Languages.MeTTa.PureKernel
@@ -4672,7 +4672,7 @@ Namespace:
 
 Rationale:
 - The moved file is not the modal μ-calculus or a core modal/deontic logic
-  kernel. It imports the PLN temporal event-calculus encoder surface and the
+  kernel. It imports the PLN temporal event-calculus encoder scope and the
   governance/deontic query encoder, then proves the shared modal-encoder
   interface between those already-existing structures.
 - `Mettapedia.Logic.ModalMuCalculus`, `Mettapedia.Logic.ModalQuantaleSemantics`,
@@ -4684,7 +4684,7 @@ References repointed:
 - No compatibility module or declaration was left at
   `Mettapedia.Logic.ModalQueryEncoder`.
 
-Verification surface:
+Verification scope:
 - Targeted build:
   `lake build Mettapedia.PLN.Bridges.Logic.ModalQueryEncoding
   Mettapedia.PLN.Bridges.Logic Mettapedia.TaxonomyMigrationLedger`

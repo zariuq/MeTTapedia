@@ -1,44 +1,53 @@
 import Mettapedia.Languages.MeTTa.MeTTaZeroLanguageAdequacy
 import Mettapedia.Languages.MeTTa.Prime.UniversalName
 import Mettapedia.Languages.MeTTa.PrimeNeedWorlds
+import Mettapedia.GSLT.Dynamics.ProofRelevantNeedProfile
 import Mettapedia.GSLT.LanguageDef.CalculusExtension
 
 /-!
 # The Prime language nucleus
 
 Prime is a lazy reflective MeTTa language, not a proof calculus and not a
-particular abstract machine.  This module isolates the smallest currently
-justified semantic nucleus:
+particular abstract machine.  This module isolates a modular semantic nucleus:
 
-* the public query and query-derived evaluation of MeTTa Zero;
-* revision-keyed call-by-need identity;
-* finite causal receipts for every returned occurrence; and
+* a selected occurrence source faithfully hosted by an operational base;
+* an independently selected revision-keyed call-by-need layer; and
 * structural quotation and drop.
 
-The three components form one GSLT by composition inside `(T,E,R)`.  Unlike a
-mere coproduct, the composite contains explicit crossings: an evaluation
-request may enter the Need component, a Need answer may return to the
-extensional evaluator, and evaluation of quoted syntax enters that same Need
-route.  Both the direct semantic step and the lazy route remain visible.  The
-Zero component nevertheless embeds faithfully because no crossing invents a
-new rewrite with two Zero endpoints.
+Today's query-first implementation additionally supplies finite causal
+receipts.  That source-specific evidence layer is kept separate from the
+generic Prime assembly.
 
-Need reduction is not a second evaluator: its steps are exactly Zero
-evaluation steps decorated with a stable revision key, and every such step
-admits a finite causal explanation.  `kernelElaboration` assigns every Zero,
-Need, and reflection state its complete occurrence-bag meaning and proves that
-all internal and cross rewrites preserve it.  Quotation exposes semantic
-syntax, never host continuations or heap addresses.
+The three components form one GSLT by composition inside `(T,E,R)`.  Unlike a
+mere coproduct, the composite contains explicit crossings: an occurrence
+request may enter the Need component, a Need answer may return to the selected
+base observation, and evaluation of quoted syntax enters that same Need route.
+Both the direct semantic step and the lazy route remain visible.  The selected
+base nevertheless embeds faithfully because no crossing invents a new rewrite
+with two base endpoints.
+
+Need reduction is not a second evaluator: its steps are exactly the selected
+occurrence steps decorated with a stable revision key.  At the current
+query-first point, every such step additionally admits a finite causal
+explanation.  `kernelElaboration` assigns every base, Need, and reflection
+state its complete occurrence-bag meaning and proves that all internal and
+cross rewrites preserve it.  Quotation exposes semantic syntax, never host
+continuations or heap addresses.
 
 Proof-GSLT authoring is composed separately at the end of the module.  This is
-intentional: Prime can host many proof calculi, while its lazy reflective
-evaluation remains fixed.  Runtime scheduling and compilation likewise belong
-to certified realizations rather than to the language nucleus.
+intentional: a Prime point can host many proof calculi, while the selected
+base and lazy reflective layer remain explicit parameters.  Runtime scheduling
+and compilation likewise belong to certified realizations rather than to the
+language nucleus.
 -/
 
 namespace Mettapedia.Languages.MeTTa.Prime.Language
 
 open Mettapedia.GSLT
+open Mettapedia.GSLT.Dynamics.OccurrenceSemantics
+open Mettapedia.GSLT.Dynamics.ProofRelevantNeed
+open Mettapedia.GSLT.Dynamics.OperationalRegion
+open Mettapedia.GSLT.IndexedOperational
 open Mettapedia.GSLT.LanguageDef.CalculusExtension
 open Mettapedia.Languages.MeTTa
 open Mettapedia.Languages.MeTTa.MeTTaZero
@@ -47,17 +56,56 @@ open Mettapedia.Languages.MeTTa.PrimeNeedWorlds
 open Mettapedia.OSLF.MeTTaIL.Match
 open Mettapedia.OSLF.MeTTaIL.Syntax
 
-/-! ## A revisioned Zero model -/
+/-! ## A modular Prime assembly -/
 
-/-- Prime adds revision identity to a lawful query-first Zero model.  The
-revision is semantic cache authority: two extensionally equal spaces may still
-belong to different theory revisions and must not share cached Need cells. -/
-structure Model extends MeTTaZero.Model where
+/-- Revision identity is an independently selected layer over a host's space.
+Two extensionally equal spaces may still belong to different theory revisions
+and must not share cached Need cells. -/
+structure RevisionAuthority (Space : Type) where
   Revision : Type
   revisionDecidableEq : DecidableEq Revision
   revision : Space → Revision
 
-attribute [instance] Model.revisionDecidableEq
+attribute [instance] RevisionAuthority.revisionDecidableEq
+
+/-- A Prime assembly selects an operational base point, its total bag
+observation, and a revision authority.  It does not inherit from, or require,
+the current query-first Zero implementation. -/
+structure Model where
+  base : OccurrencePoint Pattern Pattern
+  observation : OccurrencePoint.BagObservation base
+  revisionAuthority : RevisionAuthority base.Space
+
+abbrev Model.Space (model : Model) := model.base.Space
+abbrev Model.Revision (model : Model) := model.revisionAuthority.Revision
+abbrev Model.revision (model : Model) : model.Space → model.Revision :=
+  model.revisionAuthority.revision
+
+instance (model : Model) : DecidableEq model.Revision :=
+  model.revisionAuthority.revisionDecidableEq
+
+/-- The current query-first implementation data.  It is kept separate from
+the Prime assembly so source-specific causal receipts do not constrain the
+admissible operational region. -/
+structure QueryFirstModel where
+  zero : MeTTaZero.Model
+  revisionAuthority : RevisionAuthority zero.Space
+
+abbrev QueryFirstModel.Space (model : QueryFirstModel) := model.zero.Space
+abbrev QueryFirstModel.Revision (model : QueryFirstModel) :=
+  model.revisionAuthority.Revision
+abbrev QueryFirstModel.revision (model : QueryFirstModel) :
+    model.Space → model.Revision := model.revisionAuthority.revision
+
+instance (model : QueryFirstModel) : DecidableEq model.Revision :=
+  model.revisionAuthority.revisionDecidableEq
+
+/-- Select today's query-first Zero point and its bag observation as one Prime
+base assembly. -/
+def QueryFirstModel.toPrimeModel (model : QueryFirstModel) : Model where
+  base := MeTTaZero.currentOperationalPoint model.zero
+  observation := MeTTaZero.currentBagObservation model.zero
+  revisionAuthority := model.revisionAuthority
 
 /-- A Need cell is identified by the exact theory revision and demanded
 subject.  Allocation lineage and generation are supplied by a realization of
@@ -67,6 +115,12 @@ abbrev NeedKey (model : Model) := model.Revision × Pattern
 def needKey (model : Model) (space : model.Space) (subject : Pattern) :
     NeedKey model :=
   (model.revision space, subject)
+
+/-- The current revision policy as an independent keying component. -/
+def needRevisionKeying (model : Model) :
+    RevisionKeying model.Space Pattern where
+  Key := NeedKey model
+  key := needKey model
 
 @[simp] theorem needKey_fst (model : Model) (space : model.Space)
     (subject : Pattern) :
@@ -87,22 +141,22 @@ theorem needKey_ne_of_revision_ne (model : Model)
   intro equal
   exact different (congrArg Prod.fst equal)
 
-/-! ## Finite causal answer receipts -/
+/-! ## Current query-first causal answer receipts -/
 
 /-- Language-level dependencies recorded by a Prime answer.  A returned value
 depends on its requested Need key and on exactly one immediate cause: a stored
 space atom, a grounded capability result, or the open-world inert default. -/
-inductive Dependency (model : Model) where
-  | request (key : NeedKey model)
-  | spaceAtom (key : NeedKey model) (atom : Pattern)
-  | capability (key : NeedKey model) (result : Pattern)
-  | inert (key : NeedKey model)
+inductive Dependency (model : QueryFirstModel) where
+  | request (key : NeedKey model.toPrimeModel)
+  | spaceAtom (key : NeedKey model.toPrimeModel) (atom : Pattern)
+  | capability (key : NeedKey model.toPrimeModel) (result : Pattern)
+  | inert (key : NeedKey model.toPrimeModel)
 deriving DecidableEq
 
 /-- The causal support of an immediate answer cause includes the request that
 made it relevant.  Closing a receipt therefore restores demand provenance
 without storing the request redundantly in every root set. -/
-def dependencyBasis (model : Model) :
+def dependencyBasis (model : QueryFirstModel) :
     PrimeNeedWorlds.FiniteCausalBasis (Dependency model) where
   support
     | .request key => {.request key}
@@ -118,35 +172,72 @@ def dependencyBasis (model : Model) :
     all_goals rcases predecessorMember with rfl | rfl <;> simp
 
 /-- A proof-relevant immediate cause for one Zero evaluation result. -/
-inductive Cause (model : Model) (space : model.Space) (subject result : Pattern) :
+inductive Cause (model : QueryFirstModel) (space : model.Space)
+    (subject result : Pattern) :
     Type where
   | equation
       (candidate left right : Pattern) (bindings : Bindings)
-      (candidateMember : candidate ∈ queryAll model.toModel space)
+      (candidateMember : candidate ∈ queryAll model.zero space)
       (equationView : viewEquation? candidate = some (left, right))
-      (matching : bindings ∈ model.matchAtoms left subject)
+      (matching : bindings ∈ model.zero.matchAtoms left subject)
       (instantiates : applyBindings bindings right = result) :
       Cause model space subject result
   | capability
-      (member : result ∈ model.groundApply subject) :
+      (member : result ∈ model.zero.groundApply subject) :
       Cause model space subject result
   | inert
-      (unknown : interpretedResults model.toModel space subject = 0)
+      (unknown : interpretedResults model.zero space subject = 0)
       (unchanged : result = subject) :
       Cause model space subject result
 
+/-- Every authored immediate cause is sound for the exact occurrence bag. -/
+theorem cause_mem_evaluateOne (model : QueryFirstModel) (space : model.Space)
+    (subject result : Pattern) (cause : Cause model space subject result) :
+    result ∈ evaluateOne model.zero space subject := by
+  cases cause with
+  | equation candidate left right bindings candidateMember equationView
+      matching instantiates =>
+      have equationMember :
+          result ∈ equationResults model.zero space subject :=
+        (mem_equationResults_iff model.zero space subject result).2
+          ⟨candidate, candidateMember, left, right, equationView,
+            bindings, matching, instantiates⟩
+      have interpreted :
+          result ∈ interpretedResults model.zero space subject :=
+        Multiset.mem_add.mpr (Or.inl equationMember)
+      have nonempty :
+          interpretedResults model.zero space subject ≠ 0 := by
+        intro empty
+        rw [empty] at interpreted
+        exact (Multiset.notMem_zero result) interpreted
+      rw [evaluateOne_of_interpreted model.zero space subject nonempty]
+      exact interpreted
+  | capability member =>
+      have interpreted :
+          result ∈ interpretedResults model.zero space subject :=
+        Multiset.mem_add.mpr (Or.inr member)
+      have nonempty :
+          interpretedResults model.zero space subject ≠ 0 := by
+        intro empty
+        rw [empty] at interpreted
+        exact (Multiset.notMem_zero result) interpreted
+      rw [evaluateOne_of_interpreted model.zero space subject nonempty]
+      exact interpreted
+  | inert unknown unchanged =>
+      simp [evaluateOne, unknown, unchanged]
+
 /-- Every result returned by query-derived Zero evaluation has a finite Prime
 cause.  This is the semantic bridge from evaluation to receipts. -/
-theorem exists_cause_of_mem_evaluateOne (model : Model)
+theorem exists_cause_of_mem_evaluateOne (model : QueryFirstModel)
     (space : model.Space) (subject result : Pattern)
-    (member : result ∈ evaluateOne model.toModel space subject) :
+    (member : result ∈ evaluateOne model.zero space subject) :
     Nonempty (Cause model space subject result) := by
-  by_cases unknown : interpretedResults model.toModel space subject = 0
+  by_cases unknown : interpretedResults model.zero space subject = 0
   · have unchanged : result = subject := by
       simpa [evaluateOne, unknown] using member
     exact ⟨.inert unknown unchanged⟩
   · have interpreted :
-        result ∈ interpretedResults model.toModel space subject := by
+        result ∈ interpretedResults model.zero space subject := by
       simpa [evaluateOne, unknown] using member
     rcases Multiset.mem_add.mp interpreted with equationMember | capabilityMember
     · rw [mem_equationResults_iff] at equationMember
@@ -157,27 +248,40 @@ theorem exists_cause_of_mem_evaluateOne (model : Model)
         equationView matching instantiates⟩
     · exact ⟨.capability capabilityMember⟩
 
+/-- Today's query-derived Zero evaluator supplies one causal layer over the
+generic occurrence point. Future evaluators may supply a different evidence
+family without changing revision decoration. -/
+def evaluationCausalOccurrenceSource (model : QueryFirstModel) :
+    CausalOccurrenceSource
+      (MeTTaZero.evaluationOccurrenceSource model.zero) where
+  Cause := Cause model
+  sound := cause_mem_evaluateOne model _ _ _
+  complete := exists_cause_of_mem_evaluateOne model
+
 namespace Cause
 
 /-- The single direct dependency recorded for a cause.  Transitive demand
 support is recovered through `dependencyBasis.close`. -/
-def dependency {model : Model} {space : model.Space} {subject result : Pattern} :
+def dependency {model : QueryFirstModel} {space : model.Space}
+    {subject result : Pattern} :
     Cause model space subject result → Dependency model
   | .equation candidate _ _ _ _ _ _ _ =>
-      .spaceAtom (needKey model space subject) candidate
-  | .capability _ => .capability (needKey model space subject) result
-  | .inert _ _ => .inert (needKey model space subject)
+      .spaceAtom (needKey model.toPrimeModel space subject) candidate
+  | .capability _ =>
+      .capability (needKey model.toPrimeModel space subject) result
+  | .inert _ _ => .inert (needKey model.toPrimeModel space subject)
 
-def receipt {model : Model} {space : model.Space} {subject result : Pattern}
+def receipt {model : QueryFirstModel} {space : model.Space}
+    {subject result : Pattern}
     (cause : Cause model space subject result) :
     PrimeNeedWorlds.DependencyReceipt (Dependency model) :=
   { roots := {cause.dependency} }
 
 /-- Publishing a one-cause receipt always includes its originating request. -/
 theorem request_mem_closed_receipt
-    {model : Model} {space : model.Space} {subject result : Pattern}
+    {model : QueryFirstModel} {space : model.Space} {subject result : Pattern}
     (cause : Cause model space subject result) :
-    Dependency.request (needKey model space subject) ∈
+    Dependency.request (needKey model.toPrimeModel space subject) ∈
       (dependencyBasis model).close cause.receipt.roots := by
   apply (dependencyBasis model).mem_close_iff.mpr
   refine ⟨cause.dependency, by simp [receipt], ?_⟩
@@ -187,136 +291,98 @@ end Cause
 
 /-! ## Revision-keyed call-by-need as a GSLT -/
 
-inductive NeedTerm (model : Model) where
-  | request (space : model.Space) (subject : Pattern)
-  | answer (space : model.Space) (subject : Pattern)
-      (key : NeedKey model) (occurrence : Nat) (result : Pattern)
+/-- Current Need terms are generic revision-decorated occurrence terms at the
+selected evaluation source and revision policy. -/
+abbrev NeedTerm (model : Model) :=
+  RevisionedOccurrenceTerm
+    model.base.source
+    (needRevisionKeying model)
 
-inductive NeedStep (model : Model) : NeedTerm model → NeedTerm model → Prop where
-  | found {space subject occurrence result}
-      (copy : occurrence < Multiset.count result
-        (evaluateOne model.toModel space subject)) :
-      NeedStep model (.request space subject)
-        (.answer space subject (needKey model space subject) occurrence result)
+/-- Current Need steps are generated by the generic revision decoration. -/
+abbrev NeedStep (model : Model) :=
+  RevisionedOccurrenceStep
+    model.base.source
+    (needRevisionKeying model)
 
-def needGSLT (model : Model) : GSLT where
-  Term := NeedTerm model
-  equations := ⟨Eq, ⟨Eq.refl, Eq.symm, Eq.trans⟩⟩
-  rewrites := NeedStep model
-  rewrites_resp_left := by
-    intro source source' target equal step
-    subst source'
-    exact ⟨target, step, rfl⟩
-  rewrites_resp_right := by
-    intro source target target' step equal
-    subst target'
-    exact step
+/-- The current Need GSLT is an instance of the generic revision-decorated
+occurrence construction, rather than a second evaluator definition. -/
+def needGSLT (model : Model) : GSLT :=
+  revisionedOccurrenceGSLT
+    model.base.source
+    (needRevisionKeying model)
 
 @[simp] theorem needGSLT_step_iff (model : Model) (space : model.Space)
     (subject result : Pattern) (occurrence : Nat) :
     (needGSLT model).Step (.request space subject)
         (.answer space subject (needKey model space subject) occurrence result) ↔
       occurrence < Multiset.count result
-        (evaluateOne model.toModel space subject) := by
-  constructor
-  · intro step
-    cases step
-    assumption
-  · exact NeedStep.found
+        (model.base.source.occurrences space subject) :=
+  revisionedOccurrenceGSLT_step_iff
+    model.base.source
+    (needRevisionKeying model)
+    space subject result occurrence
 
-/-- Each lazy answer step has a finite causal receipt; laziness does not erase
-why the answer exists. -/
-theorem needStep_has_finite_cause (model : Model) {source target : NeedTerm model}
-    (step : (needGSLT model).Step source target) :
-    ∃ (space : model.Space) (subject result : Pattern)
-        (occurrence : Nat) (cause : Cause model space subject result),
+/-- At the current query-first point, each lazy answer step has a finite causal
+receipt.  The generic revision layer itself does not prescribe a cause
+vocabulary. -/
+theorem needStep_has_finite_cause (model : QueryFirstModel)
+    {source target : NeedTerm model.toPrimeModel}
+    (step : (needGSLT model.toPrimeModel).Step source target) :
+    ∃ (space : model.Space) (subject result : Pattern) (occurrence : Nat)
+        (cause : Cause model space subject result),
       source = .request space subject ∧
-      target = .answer space subject (needKey model space subject)
+      target = .answer space subject (needKey model.toPrimeModel space subject)
         occurrence result ∧
-      Dependency.request (needKey model space subject) ∈
+      Dependency.request (needKey model.toPrimeModel space subject) ∈
         (dependencyBasis model).close cause.receipt.roots := by
   cases step with
   | @found space subject occurrence result copy =>
-      have member : result ∈ evaluateOne model.toModel space subject :=
+      have member : result ∈ evaluateOne model.zero space subject :=
         Multiset.count_pos.mp (Nat.zero_lt_of_lt copy)
-      let cause := (exists_cause_of_mem_evaluateOne model space subject result member).some
+      let cause := ((evaluationCausalOccurrenceSource model).complete
+        space subject result member).some
       exact ⟨space, subject, result, occurrence, cause, rfl, rfl,
         cause.request_mem_closed_receipt⟩
 
-/-! ### Need is a decoration of Zero evaluation, not a rival semantics -/
+/-! ### Need decorates the selected occurrence source -/
 
 def evaluationToNeed (model : Model) :
-    EvaluationTerm model.toModel → NeedTerm model
-  | .request space subject => .request space subject
-  | .answer space subject occurrence result =>
-      .answer space subject (needKey model space subject) occurrence result
+    OccurrenceTerm model.base.source → NeedTerm model :=
+  decorateRevision model.base.source
+    (needRevisionKeying model)
 
-private theorem evaluationToNeed_injective (model : Model) :
-    Function.Injective (evaluationToNeed model) := by
-  intro source target equal
-  cases source <;> cases target <;> cases equal <;> rfl
-
-/-- Zero evaluation embeds faithfully into revision-keyed Need evaluation.
+/-- The selected occurrence theory embeds faithfully into revision-keyed Need.
 The extra key records cache authority but neither adds nor removes a step. -/
 def evaluationNeedEmbedding (model : Model) :
-    GSLT.Embedding (evaluationGSLT model.toModel) (needGSLT model) where
-  toFun := evaluationToNeed model
-  injective := evaluationToNeed_injective model
-  equiv_iff := by
-    intro source target
-    change evaluationToNeed model source = evaluationToNeed model target ↔
-      source = target
-    exact ⟨fun equal => evaluationToNeed_injective model equal, congrArg _⟩
-  step_iff := by
-    intro source target
-    cases source with
-    | request sourceSpace sourceSubject =>
-        cases target with
-        | request targetSpace targetSubject =>
-            constructor <;> intro step <;> cases step
-        | answer targetSpace targetSubject occurrence result =>
-            constructor
-            · intro step
-              cases step with
-              | found copy => exact EvaluationStep.found copy
-            · intro step
-              cases step with
-              | found copy => exact NeedStep.found copy
-    | answer sourceSpace sourceSubject sourceOccurrence sourceResult =>
-        cases target with
-        | request targetSpace targetSubject =>
-            constructor <;> intro step <;> cases step
-        | answer targetSpace targetSubject targetOccurrence targetResult =>
-            constructor <;> intro step <;> cases step
+    GSLT.Embedding (occurrenceGSLT model.base.source) (needGSLT model) :=
+  revisionDecorationEmbedding
+    model.base.source
+    (needRevisionKeying model)
 
 def needObservation (model : Model) :
-    NeedTerm model → EvaluationTerm model.toModel
-  | .request space subject => .request space subject
-  | .answer space subject _ occurrence result =>
-      .answer space subject occurrence result
+    NeedTerm model → OccurrenceTerm model.base.source :=
+  forgetRevision model.base.source
+    (needRevisionKeying model)
 
-/-- Forgetting the cache key recovers the exact Zero evaluation observation. -/
+/-- Forgetting the cache key recovers the exact occurrence observation. -/
 def evaluationNeedObserved (model : Model) :
-    GSLT.Embedding.Observed (evaluationGSLT model.toModel) (needGSLT model)
-      (EvaluationTerm model.toModel) where
-  toEmbedding := evaluationNeedEmbedding model
-  observeSource := id
-  observeTarget := needObservation model
-  preserves := by
-    intro term
-    cases term <;> rfl
+    GSLT.Embedding.Observed (occurrenceGSLT model.base.source) (needGSLT model)
+      (OccurrenceTerm model.base.source) :=
+  revisionDecorationObserved
+    model.base.source
+    (needRevisionKeying model)
 
-/-- Revision-keyed laziness is a certified realization of Zero evaluation
+/-- Revision-keyed laziness is a certified realization of occurrence-selection
 terms.  Its artifact retains the cache-authority key while its named
 observation forgets exactly that implementation-facing decoration. -/
 def evaluationNeedRealization (model : Model) :
     Mettapedia.GSLT.SimpleRealization
-      (EvaluationTerm model.toModel) (NeedTerm model)
-      (EvaluationTerm model.toModel) :=
+      (OccurrenceTerm model.base.source) (NeedTerm model)
+      (OccurrenceTerm model.base.source) :=
   (evaluationNeedObserved model).toRealization
 
 @[simp] theorem evaluationNeedRealization_compile (model : Model)
-    (term : EvaluationTerm model.toModel) :
+    (term : OccurrenceTerm model.base.source) :
     (evaluationNeedRealization model).compile () term =
       evaluationToNeed model term :=
   rfl
@@ -403,11 +469,12 @@ def reflectionMeaning (model : Model) :
   | .drop name => {Name.unquote name}
   | .value term => {term}
   | .evaluate space name =>
-      evaluateOne model.toModel space (Name.unquote name)
+      model.base.source.occurrences space (Name.unquote name)
 
-def needMeaning (model : Model) : NeedTerm model → Multiset Pattern
-  | .request space subject => evaluateOne model.toModel space subject
-  | .answer space subject _ _ _ => evaluateOne model.toModel space subject
+def needMeaning (model : Model) : NeedTerm model → Multiset Pattern :=
+  revisionedOccurrenceMeaning
+    model.base.source
+    (needRevisionKeying model)
 
 def reflectionElaboration (model : Model) :
     GSLT.Elaboration (reflectionGSLT model) (Multiset Pattern) where
@@ -422,16 +489,10 @@ def reflectionElaboration (model : Model) :
     rfl
 
 def needElaboration (model : Model) :
-    GSLT.Elaboration (needGSLT model) (Multiset Pattern) where
-  elaborate := fun term => some (needMeaning model term)
-  equation := by
-    intro source target equivalent
-    cases equivalent
-    rfl
-  rewrite := by
-    intro source target step
-    cases step
-    rfl
+    GSLT.Elaboration (needGSLT model) (Multiset Pattern) :=
+  revisionedOccurrenceElaboration
+    model.base.source
+    (needRevisionKeying model)
 
 /-- The reflection-to-Need interaction is semantically compositional: its
 crossing preserves the complete evaluation bag. -/
@@ -481,14 +542,6 @@ def needRuntimeEmbedding (model : Model) :
   GSLT.InteractingStep.leftToRight
     (ReflectionToNeed.evaluateQuote space term)
 
-private theorem zeroKernel_equiv_eq (model : Model)
-    {source target : (MeTTaZero.kernelGSLT model.toModel).Term}
-    (equivalent : (MeTTaZero.kernelGSLT model.toModel).Equiv source target) :
-    source = target := by
-  cases equivalent with
-  | left equivalent => cases equivalent; rfl
-  | right equivalent => cases equivalent; rfl
-
 private theorem runtime_equiv_eq (model : Model)
     {source target : (runtimeGSLT model).Term}
     (equivalent : (runtimeGSLT model).Equiv source target) : source = target := by
@@ -496,102 +549,123 @@ private theorem runtime_equiv_eq (model : Model)
   | left equivalent => cases equivalent; rfl
   | right equivalent => cases equivalent; rfl
 
-/-- An extensional Zero evaluation request may enter Prime's Need mechanism. -/
-inductive ZeroToRuntime (model : Model) :
-    (MeTTaZero.kernelGSLT model.toModel).Term →
-      (runtimeGSLT model).Term → Prop where
-  | demand (space : model.Space) (subject : Pattern) :
-      ZeroToRuntime model (.inr (.request space subject))
-        ((needRuntimeEmbedding model).toFun (.request space subject))
+/-- The base-to-runtime demand relation is the generic hosted-revision seam
+instantiated at the selected occurrence embedding. -/
+abbrev BaseToRuntime (model : Model) :=
+  HostedRevisionDemand
+    model.base.source
+    (needRevisionKeying model)
+    model.base.occurrenceEmbedding
+    (needRuntimeEmbedding model)
 
-/-- A Need answer returns to the corresponding extensional Zero observation. -/
-inductive RuntimeToZero (model : Model) :
-    (runtimeGSLT model).Term →
-      (MeTTaZero.kernelGSLT model.toModel).Term → Prop where
-  | answer (space : model.Space) (subject : Pattern) (occurrence : Nat)
-      (result : Pattern) :
-      RuntimeToZero model
-        ((needRuntimeEmbedding model).toFun
-          (.answer space subject (needKey model space subject) occurrence result))
-        (.inr (.answer space subject occurrence result))
+/-- The runtime-to-base return relation is the other direction of the same
+generic hosted-revision seam. -/
+abbrev RuntimeToBase (model : Model) :=
+  HostedRevisionReturn
+    model.base.source
+    (needRevisionKeying model)
+    model.base.occurrenceEmbedding
+    (needRuntimeEmbedding model)
 
-/-- The crossings between the extensional Zero specification and Prime's lazy
-runtime.  Their equation laws are inherited from the equality-based component
-presentations. -/
-def zeroRuntimeInteraction (model : Model) :
-    GSLT.Interaction (MeTTaZero.kernelGSLT model.toModel) (runtimeGSLT model) where
-  leftToRight := ZeroToRuntime model
-  rightToLeft := RuntimeToZero model
-  leftToRight_resp_left := by
-    intro source source' target equivalent crossing
-    have equal := zeroKernel_equiv_eq model equivalent
-    subst source'
-    exact ⟨target, crossing, (runtimeGSLT model).equations.refl target⟩
-  leftToRight_resp_right := by
-    intro source target target' crossing equivalent
-    have equal := runtime_equiv_eq model equivalent
-    subst target'
-    exact crossing
-  rightToLeft_resp_left := by
-    intro source source' target equivalent crossing
-    have equal := runtime_equiv_eq model equivalent
-    subst source'
-    exact ⟨target, crossing,
-      (MeTTaZero.kernelGSLT model.toModel).equations.refl target⟩
-  rightToLeft_resp_right := by
-    intro source target target' crossing equivalent
-    have equal := zeroKernel_equiv_eq model equivalent
-    subst target'
-    exact crossing
+/-- The crossings between the selected occurrence host and Prime's lazy
+runtime are assembled by the generic revision interaction. Today's query-first
+Zero kernel is one host instance, not part of the construction's definition. -/
+def baseRuntimeInteraction (model : Model) :
+    GSLT.Interaction model.base.host (runtimeGSLT model) :=
+  hostedRevisionInteraction
+    model.base.source
+    (needRevisionKeying model)
+    model.base.occurrenceEmbedding
+    (needRuntimeEmbedding model)
 
-/-- The extensional Zero kernel and Prime's lazy reflective runtime share one
-occurrence-bag interpretation, and both directions of their authored
-interaction preserve it. -/
-def zeroRuntimeElaboration (model : Model) :
-    GSLT.InteractionElaboration (zeroRuntimeInteraction model)
+/-- The selected base and Prime's lazy reflective runtime share one answer-bag
+interpretation, and both directions of their authored interaction preserve it. -/
+def baseRuntimeElaboration (model : Model) :
+    GSLT.InteractionElaboration (baseRuntimeInteraction model)
       (Multiset Pattern) where
-  left := MeTTaZero.kernelElaboration model.toModel
+  left := model.observation.elaboration
   right := runtimeElaboration model
   leftToRight := by
-    intro source target crossing
-    cases crossing
-    rfl
+    rintro source target
+      ⟨space, subject, sourceEquivalent, targetEquivalent⟩
+    cases runtime_equiv_eq model targetEquivalent
+    calc
+      model.observation.elaboration.elaborate source =
+          model.observation.elaboration.elaborate
+            (model.base.occurrenceEmbedding.toFun
+              (.request space subject)) :=
+        model.observation.elaboration.equation sourceEquivalent
+      _ = some (model.base.source.occurrences space subject) := by
+        rw [model.observation.elaborates,
+          model.observation.occurrenceMeaning]
+        rfl
+      _ = (runtimeElaboration model).elaborate
+          ((needRuntimeEmbedding model).toFun (.request space subject)) := by
+        rfl
   rightToLeft := by
-    intro source target crossing
-    cases crossing
-    rfl
+    rintro source target
+      ⟨space, subject, occurrence, result, sourceEquivalent,
+        targetEquivalent⟩
+    cases runtime_equiv_eq model sourceEquivalent
+    calc
+      (runtimeElaboration model).elaborate
+          ((needRuntimeEmbedding model).toFun
+            (.answer space subject (needKey model space subject)
+              occurrence result)) =
+          some (model.base.source.occurrences space subject) := by
+        rfl
+      _ = model.observation.elaboration.elaborate
+          (model.base.occurrenceEmbedding.toFun
+            (.answer space subject occurrence result)) := by
+        rw [model.observation.elaborates,
+          model.observation.occurrenceMeaning]
+        rfl
+      _ = model.observation.elaboration.elaborate target :=
+        model.observation.elaboration.equation
+          (model.base.host.equations.iseqv.symm targetEquivalent)
 
 /-! ## The composed Prime semantic GSLT -/
 
 /-- Prime's semantic nucleus is assembled inside `(T,E,R)` with explicit
-cross-rewrites between the extensional specification, lazy demand, and
+cross-rewrites between the selected base, lazy demand, and
 structural reflection. -/
 def kernelGSLT (model : Model) : GSLT :=
-  GSLT.interactingSum (MeTTaZero.kernelGSLT model.toModel) (runtimeGSLT model)
-    (zeroRuntimeInteraction model)
+  GSLT.interactingSum model.base.host (runtimeGSLT model)
+    (baseRuntimeInteraction model)
 
 /-- Prime's whole semantic nucleus has the occurrence-bag interpretation
-induced by Zero, Need, and reflection together with the two explicit crossing
-laws. -/
+induced by its selected base, Need, and reflection together with the two
+explicit crossing laws. -/
 def kernelElaboration (model : Model) :
     GSLT.Elaboration (kernelGSLT model) (Multiset Pattern) :=
-  (zeroRuntimeElaboration model).toElaboration
+  (baseRuntimeElaboration model).toElaboration
 
 def kernelMeaning (model : Model) :
     (kernelGSLT model).Term → Multiset Pattern :=
-  Sum.elim (MeTTaZero.kernelMeaning model.toModel) (runtimeMeaning model)
+  Sum.elim model.observation.meaning (runtimeMeaning model)
 
 @[simp] theorem kernelElaboration_elaborate (model : Model)
     (term : (kernelGSLT model).Term) :
     (kernelElaboration model).elaborate term =
       some (kernelMeaning model term) := by
   cases term with
-  | inl term => rfl
+  | inl term => exact model.observation.elaborates term
   | inr term => cases term <;> rfl
 
-def zeroEmbedding (model : Model) :
-    GSLT.Embedding (MeTTaZero.kernelGSLT model.toModel) (kernelGSLT model) :=
+def baseEmbedding (model : Model) :
+    GSLT.Embedding model.base.host (kernelGSLT model) :=
   GSLT.interactingSumLeft _ _ _
+
+/-- The selected base enters the Prime assembly by a typed forward
+operational arrow.  This preserves equations and steps; exact local coverage
+is deliberately a stronger claim and is refuted in `EvaluationCoherence`. -/
+def baseOperationalArrow (model : Model) :
+    OperationalTranslation model.base.host (kernelGSLT model) where
+  mapTerm := (baseEmbedding model).toFun
+  mapEquiv := fun equivalent =>
+    ((baseEmbedding model).equiv_iff _ _).2 equivalent
+  mapStep := fun step =>
+    ((baseEmbedding model).step_iff _ _).2 step
 
 def runtimeEmbedding (model : Model) :
     GSLT.Embedding (runtimeGSLT model) (kernelGSLT model) :=
@@ -606,19 +680,24 @@ def reflectionEmbedding (model : Model) :
   GSLT.Embedding.comp (runtimeEmbedding model)
     (reflectionRuntimeEmbedding model)
 
-/-- The extensional evaluation component embedded all the way into Prime. -/
+/-- The selected occurrence component embedded all the way into Prime. -/
 def evaluationKernelEmbedding (model : Model) :
-    GSLT.Embedding (evaluationGSLT model.toModel) (kernelGSLT model) :=
-  GSLT.Embedding.comp (zeroEmbedding model)
-    (MeTTaZero.evaluationEmbedding model.toModel)
+    GSLT.Embedding (occurrenceGSLT model.base.source) (kernelGSLT model) :=
+  GSLT.Embedding.comp (baseEmbedding model)
+    model.base.occurrenceEmbedding
 
-/-- A Zero evaluation request enters the revision-keyed Need component. -/
+/-- A selected occurrence request enters the revision-keyed Need component. -/
 theorem evaluation_enters_need (model : Model) (space : model.Space)
     (subject : Pattern) :
     (kernelGSLT model).Step
       ((evaluationKernelEmbedding model).toFun (.request space subject))
       ((needEmbedding model).toFun (.request space subject)) :=
-  GSLT.InteractingStep.leftToRight (ZeroToRuntime.demand space subject)
+  GSLT.InteractingStep.leftToRight
+    (hostedRevisionInteraction_demand
+      model.base.source
+      (needRevisionKeying model)
+      model.base.occurrenceEmbedding
+      (needRuntimeEmbedding model) space subject)
 
 /-- Returning from Need restores the exact extensional evaluation answer,
 including its occurrence identity. -/
@@ -630,10 +709,33 @@ theorem need_returns_evaluation (model : Model) (space : model.Space)
       ((evaluationKernelEmbedding model).toFun
         (.answer space subject occurrence result)) :=
   GSLT.InteractingStep.rightToLeft
-    (RuntimeToZero.answer space subject occurrence result)
+    (hostedRevisionInteraction_return
+      model.base.source
+      (needRevisionKeying model)
+      model.base.occurrenceEmbedding
+      (needRuntimeEmbedding model) space subject occurrence result)
+
+/-- Negative witness for the generic hosting seam: a base term outside every
+embedded request-equivalence class cannot demand a revisioned evaluation. -/
+theorem base_term_without_request_does_not_demand (model : Model)
+    (baseTerm : model.base.host.Term) (space : model.Space)
+    (subject : Pattern)
+    (notRequest : ∀ demandSpace demandSubject,
+      ¬ model.base.host.Equiv baseTerm
+        (model.base.occurrenceEmbedding.toFun
+          (.request demandSpace demandSubject))) :
+    ¬ (kernelGSLT model).Step
+      ((baseEmbedding model).toFun baseTerm)
+      ((needEmbedding model).toFun (.request space subject)) := by
+  intro step
+  cases step with
+  | leftToRight crossing =>
+      rcases crossing with
+        ⟨demandSpace, demandSubject, sourceEquivalent, targetEquivalent⟩
+      exact notRequest demandSpace demandSubject sourceEquivalent
 
 /-- **Every Prime kernel step preserves the shared occurrence-bag
-interpretation.**  This includes direct Zero steps, Need steps, quote/drop,
+interpretation.**  This includes direct base steps, Need steps, quote/drop,
 and every explicit crossing between the components. -/
 theorem kernel_step_preserves_meaning (model : Model)
     {source target : (kernelGSLT model).Term}
@@ -683,26 +785,27 @@ theorem quoted_name_does_not_demand (model : Model) (space : model.Space)
 def directEvaluationPath (model : Model) (space : model.Space)
     (subject result : Pattern) (occurrence : Nat)
     (copy : occurrence < Multiset.count result
-      (evaluateOne model.toModel space subject)) :
+      (model.base.source.occurrences space subject)) :
     (kernelGSLT model).RewritePath
       ((evaluationKernelEmbedding model).toFun (.request space subject))
       ((evaluationKernelEmbedding model).toFun
         (.answer space subject occurrence result)) :=
   .cons (((evaluationKernelEmbedding model).step_iff _ _).2
-    (EvaluationStep.found copy)) (.nil _)
+    (OccurrenceStep.found copy)) (.nil _)
 
 /-- The corresponding Prime route passes through a revision-keyed Need cell
 and returns to the same extensional answer. -/
 def lazyEvaluationPath (model : Model) (space : model.Space)
     (subject result : Pattern) (occurrence : Nat)
     (copy : occurrence < Multiset.count result
-      (evaluateOne model.toModel space subject)) :
+      (model.base.source.occurrences space subject)) :
     (kernelGSLT model).RewritePath
       ((evaluationKernelEmbedding model).toFun (.request space subject))
       ((evaluationKernelEmbedding model).toFun
         (.answer space subject occurrence result)) :=
   .cons (evaluation_enters_need model space subject)
-    (.cons (((needEmbedding model).step_iff _ _).2 (NeedStep.found copy))
+    (.cons (((needEmbedding model).step_iff _ _).2
+      (RevisionedOccurrenceStep.found copy))
       (.cons (need_returns_evaluation model space subject occurrence result)
         (.nil _)))
 
@@ -711,34 +814,35 @@ after the reflective crossing, the very same occurrence proof drives Need. -/
 def reflectedEvaluationPath (model : Model) (space : model.Space)
     (subject result : Pattern) (occurrence : Nat)
     (copy : occurrence < Multiset.count result
-      (evaluateOne model.toModel space subject)) :
+      (model.base.source.occurrences space subject)) :
     (kernelGSLT model).RewritePath
       ((reflectionEmbedding model).toFun
         (.evaluate space (Name.quote subject)))
       ((needEmbedding model).toFun
         (.answer space subject (needKey model space subject) occurrence result)) :=
   .cons (reflected_evaluation_enters_need model space subject)
-    (.cons (((needEmbedding model).step_iff _ _).2 (NeedStep.found copy))
+    (.cons (((needEmbedding model).step_iff _ _).2
+      (RevisionedOccurrenceStep.found copy))
       (.nil _))
 
 @[simp] theorem directEvaluationPath_length (model : Model)
     (space : model.Space) (subject result : Pattern) (occurrence : Nat)
     (copy : occurrence < Multiset.count result
-      (evaluateOne model.toModel space subject)) :
+      (model.base.source.occurrences space subject)) :
     (directEvaluationPath model space subject result occurrence copy).length = 1 :=
   rfl
 
 @[simp] theorem lazyEvaluationPath_length (model : Model)
     (space : model.Space) (subject result : Pattern) (occurrence : Nat)
     (copy : occurrence < Multiset.count result
-      (evaluateOne model.toModel space subject)) :
+      (model.base.source.occurrences space subject)) :
     (lazyEvaluationPath model space subject result occurrence copy).length = 3 :=
   rfl
 
 @[simp] theorem reflectedEvaluationPath_length (model : Model)
     (space : model.Space) (subject result : Pattern) (occurrence : Nat)
     (copy : occurrence < Multiset.count result
-      (evaluateOne model.toModel space subject)) :
+      (model.base.source.occurrences space subject)) :
     (reflectedEvaluationPath model space subject result occurrence copy).length = 2 :=
   rfl
 
@@ -763,7 +867,7 @@ structure EvaluationRouteComparison (model : Model) (space : model.Space)
 def evaluationRouteComparison (model : Model) (space : model.Space)
     (subject result : Pattern) (occurrence : Nat)
     (copy : occurrence < Multiset.count result
-      (evaluateOne model.toModel space subject)) :
+      (model.base.source.occurrences space subject)) :
     EvaluationRouteComparison model space subject result occurrence where
   direct := directEvaluationPath model space subject result occurrence copy
   lazy := lazyEvaluationPath model space subject result occurrence copy
@@ -772,80 +876,125 @@ def evaluationRouteComparison (model : Model) (space : model.Space)
   lazy_length := lazyEvaluationPath_length model space subject result
     occurrence copy
 
-/-- Zero observations are preserved explicitly; the embedding does not merely
+/-- Base observations are preserved explicitly; the embedding does not merely
 assert a generic notion of faithfulness. -/
-def zeroObservedEmbedding (model : Model) :
-    GSLT.Embedding.Observed (MeTTaZero.kernelGSLT model.toModel)
-      (kernelGSLT model) (Option (MeTTaZero.kernelGSLT model.toModel).Term) where
-  toEmbedding := zeroEmbedding model
+def baseObservedEmbedding (model : Model) :
+    GSLT.Embedding.Observed model.base.host
+      (kernelGSLT model) (Option model.base.host.Term) where
+  toEmbedding := baseEmbedding model
   observeSource := some
   observeTarget
     | .inl term => some term
     | .inr _ => none
   preserves := fun _ => rfl
 
-/-- The Zero inclusion into Prime preserves the exact occurrence-bag meaning,
+/-- The base inclusion into Prime preserves the exact occurrence-bag meaning,
 not merely the identity of the embedded term. -/
-def zeroMeaningObservedEmbedding (model : Model) :
-    GSLT.Embedding.Observed (MeTTaZero.kernelGSLT model.toModel)
+def baseMeaningObservedEmbedding (model : Model) :
+    GSLT.Embedding.Observed model.base.host
       (kernelGSLT model) (Multiset Pattern) where
-  toEmbedding := zeroEmbedding model
-  observeSource := MeTTaZero.kernelMeaning model.toModel
+  toEmbedding := baseEmbedding model
+  observeSource := model.observation.meaning
   observeTarget := kernelMeaning model
   preserves := fun _ => rfl
 
-/-- The direct evaluation-to-Prime inclusion inherits its observation law by
-composition through Zero. -/
-def evaluationMeaningObservedEmbedding (model : Model) :
-    GSLT.Embedding.Observed (MeTTaZero.evaluationGSLT model.toModel)
-      (kernelGSLT model) (Multiset Pattern) :=
-  (zeroMeaningObservedEmbedding model).comp
-    (MeTTaZero.evaluationObservedEmbedding model.toModel) rfl
+/-- Smallest cross-layer law: attaching Need and reflection does not change
+the selected base meaning on embedded terms.  This is preservation, not an
+identification of the base with the assembled Prime theory. -/
+@[simp] theorem baseEmbedding_preserves_meaning (model : Model)
+    (term : model.base.host.Term) :
+    kernelMeaning model ((baseEmbedding model).toFun term) =
+      model.observation.meaning term :=
+  (baseMeaningObservedEmbedding model).preserves term
 
-/-- Prime is a certified realization of the Zero semantic kernel at exact
+/-- The selected occurrence component embeds into its base while preserving
+the complete answer-bag observation. -/
+def occurrenceBaseMeaningObservedEmbedding (model : Model) :
+    GSLT.Embedding.Observed (occurrenceGSLT model.base.source)
+      model.base.host (Multiset Pattern) where
+  toEmbedding := model.base.occurrenceEmbedding
+  observeSource := occurrenceMeaning model.base.source
+  observeTarget := model.observation.meaning
+  preserves := model.observation.occurrenceMeaning
+
+/-- The occurrence-to-Prime inclusion inherits its observation law by
+composition through the selected base. -/
+def evaluationMeaningObservedEmbedding (model : Model) :
+    GSLT.Embedding.Observed (occurrenceGSLT model.base.source)
+      (kernelGSLT model) (Multiset Pattern) :=
+  (baseMeaningObservedEmbedding model).comp
+    (occurrenceBaseMeaningObservedEmbedding model) rfl
+
+/-- Prime is a certified realization of the selected base at exact
 occurrence-bag observation. -/
-def zeroMeaningRealization (model : Model) :
+def baseMeaningRealization (model : Model) :
     Mettapedia.GSLT.SimpleRealization
-      (MeTTaZero.kernelGSLT model.toModel).Term (kernelGSLT model).Term
+      model.base.host.Term (kernelGSLT model).Term
       (Multiset Pattern) :=
-  (zeroMeaningObservedEmbedding model).toRealization
+  (baseMeaningObservedEmbedding model).toRealization
 
 /-- The composed evaluation inclusion is likewise a certified realization. -/
 def evaluationMeaningRealization (model : Model) :
     Mettapedia.GSLT.SimpleRealization
-      (MeTTaZero.evaluationGSLT model.toModel).Term (kernelGSLT model).Term
+      (occurrenceGSLT model.base.source).Term (kernelGSLT model).Term
       (Multiset Pattern) :=
   (evaluationMeaningObservedEmbedding model).toRealization
 
-/-- Prime itself is a certified realization of every Zero kernel term at the
-explicit optional-Zero observation.  New Prime-only terms remain outside that
-observation rather than being confused with Zero behavior. -/
-def zeroKernelRealization (model : Model) :
+/-- Prime itself is a certified realization of every selected base term at the
+explicit optional-base observation.  New Prime-only terms remain outside that
+observation rather than being confused with selected-base behavior. -/
+def baseKernelRealization (model : Model) :
     Mettapedia.GSLT.SimpleRealization
-      (MeTTaZero.kernelGSLT model.toModel).Term (kernelGSLT model).Term
-      (Option (MeTTaZero.kernelGSLT model.toModel).Term) :=
-  (zeroObservedEmbedding model).toRealization
+      model.base.host.Term (kernelGSLT model).Term
+      (Option model.base.host.Term) :=
+  (baseObservedEmbedding model).toRealization
 
-@[simp] theorem zeroKernelRealization_compile (model : Model)
-    (term : (MeTTaZero.kernelGSLT model.toModel).Term) :
-    (zeroKernelRealization model).compile () term =
-      (zeroEmbedding model).toFun term :=
+@[simp] theorem baseKernelRealization_compile (model : Model)
+    (term : model.base.host.Term) :
+    (baseKernelRealization model).compile () term =
+      (baseEmbedding model).toFun term :=
   rfl
 
 /-- Reflection genuinely adds behavior: its drop step is not the image of any
-Zero step. -/
-theorem reflection_step_not_from_zero (model : Model) (term : Pattern) :
+selected base step. -/
+theorem reflection_step_not_from_base (model : Model) (term : Pattern) :
     (kernelGSLT model).Step
         ((reflectionEmbedding model).toFun (.drop (Name.quote term)))
         ((reflectionEmbedding model).toFun (.value term)) ∧
       ∀ source,
-        (zeroEmbedding model).toFun source ≠
+        (baseEmbedding model).toFun source ≠
           (reflectionEmbedding model).toFun (.drop (Name.quote term)) := by
   constructor
   · exact ((reflectionEmbedding model).step_iff _ _).2
       (reflection_drop_quote model term)
   · intro source equal
     cases equal
+
+/-! ### The Prime operational specification region -/
+
+/-- Admissible Prime operational points host a selected occurrence base and
+its revision decoration in one total theory. -/
+abbrev OperationalRegion := RevisionedPoint Pattern Pattern
+
+/-- Every modular Prime assembly determines one point of that region. -/
+def operationalPoint (model : Model) : OperationalRegion where
+  base := model.base
+  revision :=
+    { keying := needRevisionKeying model
+      keyDecidableEq := inferInstanceAs (DecidableEq (NeedKey model)) }
+  total := kernelGSLT model
+  baseEmbedding := baseEmbedding model
+  revisionEmbedding := needEmbedding model
+
+@[simp] theorem operationalPoint_base (model : Model) :
+    (operationalPoint model).base = model.base :=
+  rfl
+
+/-- Positive arrow witness: every Prime-region point has its typed identity
+arrow, retaining the base, revision, and total hosting squares. -/
+def operationalPointIdentity (model : Model) :
+    RevisionedPoint.Hom (operationalPoint model) (operationalPoint model) :=
+  RevisionedPoint.Hom.id (operationalPoint model)
 
 /-! ## Proof-GSLT authoring as a hosted service -/
 
@@ -870,18 +1019,21 @@ def calculusHostingEmbedding (model : Model) :
 abbrev VersionedSpace := Nat × Multiset Pattern
 
 def structuralModel
-    (groundApply : Pattern → Multiset Pattern := fun _ => 0) : Model where
-  Space := VersionedSpace
-  contents := Prod.snd
-  matchAtoms := fun pattern atom =>
-    (matchPattern pattern atom : List Bindings)
-  groundApply := groundApply
-  Revision := Nat
-  revisionDecidableEq := inferInstance
-  revision := Prod.fst
+    (groundApply : Pattern → Multiset Pattern := fun _ => 0) :
+    QueryFirstModel where
+  zero :=
+    { Space := VersionedSpace
+      contents := Prod.snd
+      matchAtoms := fun pattern atom =>
+        (matchPattern pattern atom : List Bindings)
+      groundApply := groundApply }
+  revisionAuthority :=
+    { Revision := Nat
+      revisionDecidableEq := inferInstance
+      revision := Prod.fst }
 
 theorem structuralModel_lawful (groundApply : Pattern → Multiset Pattern) :
-    MeTTaZero.Lawful (structuralModel groundApply).toModel := by
+    MeTTaZero.Lawful (structuralModel groundApply).zero := by
   constructor
   intro name atom
   simp [structuralModel, matchPattern]
@@ -890,14 +1042,42 @@ theorem structuralModel_lawful (groundApply : Pattern → Multiset Pattern) :
 different Prime Need identities. -/
 theorem revision_changes_authority_not_zero_answer
     (contents : Multiset Pattern) (subject : Pattern) :
-    evaluateOne (structuralModel (fun _ => 0)).toModel (0, contents) subject =
-        evaluateOne (structuralModel (fun _ => 0)).toModel (1, contents) subject ∧
-      needKey (structuralModel (fun _ => 0)) (0, contents) subject ≠
-        needKey (structuralModel (fun _ => 0)) (1, contents) subject := by
+    evaluateOne (structuralModel (fun _ => 0)).zero (0, contents) subject =
+        evaluateOne (structuralModel (fun _ => 0)).zero (1, contents) subject ∧
+      needKey (structuralModel (fun _ => 0)).toPrimeModel
+          (0, contents) subject ≠
+        needKey (structuralModel (fun _ => 0)).toPrimeModel
+          (1, contents) subject := by
   constructor
   · rfl
   · intro equal
     have impossible := congrArg Prod.fst equal
-    simp [needKey, structuralModel] at impossible
+    change (0 : Nat) = 1 at impossible
+    exact Nat.zero_ne_one impossible
+
+/-- The branded current query-first implementation is merely the point
+obtained by selecting its generic Prime assembly. -/
+def currentOperationalPoint (model : QueryFirstModel) : OperationalRegion :=
+  operationalPoint model.toPrimeModel
+
+/-- Today's Zero host enters today's Prime point through the generic selected
+base arrow; neither endpoint is built into the definition of `Model`. -/
+def currentZeroToPrimeOperationalArrow (model : QueryFirstModel) :
+    OperationalTranslation
+      (MeTTaZero.currentOperationalPoint model.zero).host
+      (currentOperationalPoint model).total :=
+  baseOperationalArrow model.toPrimeModel
+
+/-- Current-query negative witness: a public query request is outside every
+embedded evaluation-request class and therefore cannot cross into Need. -/
+theorem query_request_does_not_demand (model : QueryFirstModel)
+    (space : model.Space) (pattern template subject : Pattern) :
+    ¬ (kernelGSLT model.toPrimeModel).Step
+      ((baseEmbedding model.toPrimeModel).toFun
+        (.inl (.request space pattern template)))
+      ((needEmbedding model.toPrimeModel).toFun (.request space subject)) := by
+  apply base_term_without_request_does_not_demand model.toPrimeModel
+  intro demandSpace demandSubject equivalent
+  cases equivalent
 
 end Mettapedia.Languages.MeTTa.Prime.Language

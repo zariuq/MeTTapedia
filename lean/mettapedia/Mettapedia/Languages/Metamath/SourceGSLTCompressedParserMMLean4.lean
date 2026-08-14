@@ -439,12 +439,14 @@ noncomputable def mandatoryHeader_runtimePreserved
 
 /-! ## Complete parser-core execution -/
 
-@[simp] theorem map_headerRuntimeLabel_explicit (labels : List String) :
-    ((labels.map HeaderItem.explicit).map headerRuntimeLabel) = labels := by
+@[simp] theorem map_headerRuntimeLabel_explicit
+    (mandatoryItems : List HypothesisView) (labels : List String) :
+    ((labels.map (HeaderItem.explicit mandatoryItems)).map
+      headerRuntimeLabel) = labels := by
   induction labels with
   | nil => rfl
   | cons head tail ih =>
-      change head :: ((tail.map HeaderItem.explicit).map
+      change head :: ((tail.map (HeaderItem.explicit mandatoryItems)).map
         headerRuntimeLabel) = head :: tail
       rw [ih]
 
@@ -487,7 +489,10 @@ theorem preloadFold_preserves_identity
 implementation's assertion insertion branch. -/
 theorem finishProof_compressed_success
     (parser : ParserState) (proof : RuntimeProofState)
-    (mode : proof.ptp = .compressed 0)
+    (phase : Metamath.Verify.CompressedPhase)
+    (mode : proof.ptp = .compressed phase)
+    (phaseComplete : phase = .betweenSteps ∨
+      phase = .justCompletedStep)
     (singleton : proof.stack = #[proof.fmla])
     (complete : proof.incomplete = false)
     (inserted :
@@ -497,14 +502,25 @@ theorem finishProof_compressed_success
         parser.db.insert proof.pos proof.label
           (.assert proof.fmla proof.frame) ∧
       (parser.finishProof proof).db.error? = none := by
-  cases proof with
-  | mk pos label formula frame heap stack ptp incomplete =>
-      simp only at mode singleton complete inserted ⊢
-      subst ptp
-      subst stack
-      subst incomplete
-      simp [ParserState.finishProof, ParserState.withAt,
-        ParserState.withDB, Metamath.Verify.DB.recordIncomplete, inserted]
+  rcases phaseComplete with phaseComplete | phaseComplete
+  · subst phase
+    cases proof with
+    | mk pos label formula frame heap stack ptp incomplete =>
+        simp only at mode singleton complete inserted ⊢
+        subst ptp
+        subst stack
+        subst incomplete
+        simp [ParserState.finishProof, ParserState.withAt,
+          ParserState.withDB, Metamath.Verify.DB.recordIncomplete, inserted]
+  · subst phase
+    cases proof with
+    | mk pos label formula frame heap stack ptp incomplete =>
+        simp only at mode singleton complete inserted ⊢
+        subst ptp
+        subst stack
+        subst incomplete
+        simp [ParserState.finishProof, ParserState.withAt,
+          ParserState.withDB, Metamath.Verify.DB.recordIncomplete, inserted]
 
 /-! ## Concrete explicit-header tokens -/
 
@@ -782,6 +798,8 @@ theorem runPreloadTokenGo_eq_of_representation
     {tokens : List ByteSlice} {labels : List String}
     (representation : PreloadTokensRepresent tokens labels)
     (initial result : RuntimeProofState)
+    (checks : ∀ label ∈ labels,
+      parser.db.explicitCompressedHeaderLabelCheck initial label = .ok ())
     (execution : labels.foldlM (parser.db.preload) initial = .ok result) :
     runPreloadTokenGo parser tokens
         { initial with ptp := .preload } =
@@ -799,19 +817,35 @@ theorem runPreloadTokenGo_eq_of_representation
           cases execution
       | ok middle =>
           rw [first] at execution
+          have headCheck :
+              parser.db.explicitCompressedHeaderLabelCheck initial label =
+                .ok () := checks label (List.Mem.head _)
           have phaseExecution :=
             preload_withPtp parser.db initial middle label .preload first
+          have phaseCheck :
+              parser.db.explicitCompressedHeaderLabelCheck
+                  { initial with ptp := .preload } label = .ok () := by
+            simpa [Metamath.Verify.DB.explicitCompressedHeaderLabelCheck]
+              using headCheck
           have firstToken :
               ParserState.feedProof.go parser token
                   { initial with ptp := .preload } =
                 .ok { middle with ptp := .preload } := by
             unfold ParserState.feedProof.go
             rw [head.decoded]
-            simp [head.notClose, phaseExecution]
+            simp [head.notClose, phaseCheck, phaseExecution,
+              bind, Except.bind]
           simp only [runPreloadTokenGo, List.foldlM_cons,
             bind, Except.bind]
           rw [firstToken]
-          exact ih middle result execution
+          have core := Metamath.ParserOps.preload_ok_preserves_core
+            parser.db initial middle label first
+          exact ih middle result
+            (fun tailLabel member => by
+              have check := checks tailLabel (List.Mem.tail _ member)
+              simpa [Metamath.Verify.DB.explicitCompressedHeaderLabelCheck,
+                core.2] using check)
+            execution
 
 /-- Proof-relevant implementation witness for one complete source compressed
 theorem through the parser's actual mandatory-header function, its ordinary
@@ -827,6 +861,15 @@ structure CompressedParserExecutionPreservation
   runtimeMandatory : RuntimeProofState
   runtimeInitial : RuntimeProofState
   runtimeFinal : RuntimeProofState
+  sourceFinalPhase : SourceCompressedPhase
+  sourceDecoded :
+    decodeWords bodyWords .betweenSteps =
+      some (step.actions, sourceFinalPhase)
+  sourceFinalComplete :
+    sourceFinalPhase = .betweenSteps ∨
+      sourceFinalPhase = .justCompletedStep
+  savePlacement : db.config.compressedSavePlacement =
+    .immediatelyAfterUse
   mandatoryExecution :
     db.preloadMandatoryHyps
         (sourceProofStart db pos label before formula) =
@@ -834,6 +877,9 @@ structure CompressedParserExecutionPreservation
   explicitHeaderExecution :
     explicitHeaderLabels.foldlM (db.preload) runtimeMandatory =
       .ok runtimeInitial
+  explicitHeaderChecks : ∀ explicitLabel ∈ explicitHeaderLabels,
+    db.explicitCompressedHeaderLabelCheck runtimeMandatory explicitLabel =
+      .ok ()
   actionExecution :
     ParserState.applyCompressedActions db runtimeInitial
         (step.actions.map toMMLean4Action) =
@@ -921,16 +967,25 @@ theorem CompressedParserExecutionPreservation.bodyTokenGo
     (bodyTokens : List ByteSlice)
     (bytes : bodyTokens.map sliceBytes = bodyWords) :
     runCompressedTokenGo parser bodyTokens
-        { preservation.runtimeInitial with ptp := .compressed 0 } =
-      .ok { preservation.runtimeFinal with ptp := .compressed 0 } := by
+        { preservation.runtimeInitial with
+          ptp := .compressed .betweenSteps } =
+      .ok { preservation.runtimeFinal with
+        ptp := .compressed
+          (toMMLean4Phase preservation.sourceFinalPhase) } := by
   have decoded :
-      decodeCompressedProgram bodyTokens =
-        .ok (step.actions.map toMMLean4Action) :=
-    decodeCompressedProgram_eq_ok_of_sliceBytes bodyTokens bodyWords
-      step.actions bytes step.decoded
-  exact runCompressedTokenGo_eq_of_program_ok parser bodyTokens
+      decodeCompressedTokens bodyTokens .betweenSteps =
+        .ok (step.actions.map toMMLean4Action,
+          toMMLean4Phase preservation.sourceFinalPhase) := by
+    have agreement :=
+      decodeCompressedTokens_mmLean4_agrees bodyTokens
+        (SourceGSLTCompressedTheorem.CompressedPhase.betweenSteps)
+    simp only [toMMLean4Phase] at agreement
+    rw [agreement, bytes, preservation.sourceDecoded]
+    rfl
+  exact runCompressedTokenGo_eq_of_decoded parser bodyTokens
+    .betweenSteps (toMMLean4Phase preservation.sourceFinalPhase)
     preservation.runtimeInitial preservation.runtimeFinal
-      (step.actions.map toMMLean4Action) decoded
+      (step.actions.map toMMLean4Action) preservation.savePlacement decoded
       preservation.actionExecution
 
 /-- Concrete explicit-header tokens execute through the implementation's
@@ -954,7 +1009,7 @@ theorem CompressedParserExecutionPreservation.explicitHeaderTokenGo
       .ok { preservation.runtimeInitial with ptp := .preload } := by
   exact runPreloadTokenGo_eq_of_representation parser representation
     preservation.runtimeMandatory preservation.runtimeInitial
-      preservation.explicitHeaderExecution
+      preservation.explicitHeaderChecks preservation.explicitHeaderExecution
 
 /-- The opening delimiter executes the implementation's bulk mandatory
 preload and enters the preload phase. -/
@@ -977,7 +1032,7 @@ theorem CompressedParserExecutionPreservation.openTokenGo
   simp [sourceProofStart_mode, isOpen, preservation.mandatoryExecution]
 
 /-- The closing delimiter leaves the explicit-header preload phase and enters
-compressed decoding with a zero accumulator. -/
+compressed decoding between proof steps. -/
 theorem CompressedParserExecutionPreservation.closeTokenGo
     {before after : SourceState} {label : String}
     {formula : ConstantHeadedFormula}
@@ -992,7 +1047,8 @@ theorem CompressedParserExecutionPreservation.closeTokenGo
     (isClose : closeToken.eqArray ")".toAscii = true) :
     ParserState.feedProof.go parser closeToken
         { preservation.runtimeInitial with ptp := .preload } =
-      .ok { preservation.runtimeInitial with ptp := .compressed 0 } := by
+      .ok { preservation.runtimeInitial with
+        ptp := .compressed .betweenSteps } := by
   unfold ParserState.feedProof.go
   simp [isClose, pure, Except.pure]
 
@@ -1078,10 +1134,11 @@ theorem CompressedParserExecutionPreservation.closeFeedToken
     (errorFree : live.db.error? = none) :
     live.feedToken offset closeToken =
       { live with tokp :=
-          TokenParser.proof ({ preservation.runtimeInitial with ptp := .compressed 0 }) } := by
+          TokenParser.proof ({ preservation.runtimeInitial with
+            ptp := .compressed .betweenSteps }) } := by
   exact feedToken_proof_eq_of_go_ok live offset closeToken
     { preservation.runtimeInitial with ptp := .preload }
-    { preservation.runtimeInitial with ptp := .compressed 0 }
+    { preservation.runtimeInitial with ptp := .compressed .betweenSteps }
     parserMode dispatch.notComment dispatch.notInclude dispatch.notFinish
     errorFree (preservation.closeTokenGo
       (parser := { live with tokp := default }) closeToken isClose)
@@ -1102,17 +1159,21 @@ theorem CompressedParserExecutionPreservation.bodyFeedTokens
       CompressedParserExecutionPreservation live.db pos step)
     (tokens : List (Nat × ByteSlice))
     (parserMode : live.tokp =
-      .proof ({ preservation.runtimeInitial with ptp := .compressed 0 }))
+      .proof ({ preservation.runtimeInitial with
+        ptp := .compressed .betweenSteps }))
     (bytes : (tokens.map Prod.snd).map sliceBytes = bodyWords)
     (dispatch : ∀ located ∈ tokens,
       ProofTokenDispatchesToFeedProof located.2)
     (errorFree : live.db.error? = none) :
     runProofFeedTokens live tokens =
       { live with tokp :=
-          TokenParser.proof ({ preservation.runtimeFinal with ptp := .compressed 0 }) } := by
+          TokenParser.proof ({ preservation.runtimeFinal with
+            ptp := .compressed
+              (toMMLean4Phase preservation.sourceFinalPhase) }) } := by
   apply runProofFeedTokens_eq_of_goFold live tokens
-    { preservation.runtimeInitial with ptp := .compressed 0 }
-    { preservation.runtimeFinal with ptp := .compressed 0 }
+    { preservation.runtimeInitial with ptp := .compressed .betweenSteps }
+    { preservation.runtimeFinal with ptp :=
+        (.compressed (toMMLean4Phase preservation.sourceFinalPhase)) }
     parserMode dispatch errorFree
   have inner := preservation.bodyTokenGo
     (parser := { live with tokp := default })
@@ -1190,12 +1251,15 @@ noncomputable def CompressedTheoremStep.mmLean4ParserCorePreserved
     (db : RuntimeDB)
     (hproject :
       projectPrefix? db = some before.toSourcePrefix.toProjection)
+    (savePlacement : db.config.compressedSavePlacement =
+      .immediatelyAfterUse)
     (pos : Pos) :
     CompressedParserExecutionPreservation db pos step := by
   have fullHeader :
       HeaderBuild
         (((mandatoryHypotheses before formula).map HeaderItem.mandatory) ++
-          explicitHeaderLabels.map HeaderItem.explicit)
+          explicitHeaderLabels.map
+            (HeaderItem.explicit (mandatoryHypotheses before formula)))
         (emptyMachine before.toSourcePrefix step.target)
         step.initialState := by
     simpa [headerItems] using step.header
@@ -1221,16 +1285,59 @@ noncomputable def CompressedTheoremStep.mmLean4ParserCorePreserved
   have finalStack : runtimeFinal.stack = #[formula.toRuntime] := by
     rw [rootStack, step.rootFormula]
   have explicitLabels :
-      ((explicitHeaderLabels.map HeaderItem.explicit).map
+      ((explicitHeaderLabels.map
+          (HeaderItem.explicit (mandatoryHypotheses before formula))).map
         headerRuntimeLabel) = explicitHeaderLabels := by
-    exact map_headerRuntimeLabel_explicit explicitHeaderLabels
+    exact map_headerRuntimeLabel_explicit
+      (mandatoryHypotheses before formula) explicitHeaderLabels
   rw [explicitLabels] at explicitHeaderExecution
+  have mandatoryCore :=
+    Metamath.ParserOps.preloadMandatoryHyps_ok_preserves_core db
+      (sourceProofStart db pos label before formula) runtimeMandatory
+      mandatoryExecution
+  have mandatoryFrameEq :
+      runtimeMandatory.frame = (mandatoryFrame before formula).toRuntime := by
+    simpa [sourceProofStart, Metamath.Verify.DB.mkProofState] using
+      mandatoryCore.2
+  have explicitHeaderChecks : ∀ explicitLabel ∈ explicitHeaderLabels,
+      db.explicitCompressedHeaderLabelCheck runtimeMandatory explicitLabel =
+        .ok () := by
+    intro explicitLabel member
+    have admitted := explicitBuild.itemAdmitted
+      (HeaderItem.explicit (mandatoryHypotheses before formula) explicitLabel)
+      (List.mem_map.mpr ⟨explicitLabel, member, rfl⟩)
+    unfold HeaderItem.Admitted at admitted
+    unfold Metamath.Verify.DB.explicitCompressedHeaderLabelCheck
+    cases policy : db.config.compressedHeaderHypotheses with
+    | anyActive => rfl
+    | nonmandatoryOnly =>
+        rw [mandatoryFrameEq]
+        simp only [SourceFrame.toRuntime, mandatoryFrame]
+        by_cases hmember : explicitLabel ∈
+            (mandatoryHypotheses before formula).map HypothesisView.label
+        · exact (admitted hmember).elim
+        · simp [hmember, pure, Except.pure]
+  let sourceFinalPhase := decodedFinalPhase bodyWords
+  have sourceDecoded :
+      decodeWords bodyWords .betweenSteps =
+        some (step.actions, sourceFinalPhase) :=
+    decodeWords_eq_of_decodeProgram_eq_some' bodyWords step.actions
+      step.decoded
+  have sourceFinalComplete :
+      sourceFinalPhase = .betweenSteps ∨
+        sourceFinalPhase = .justCompletedStep :=
+    decodedFinalPhase_complete bodyWords step.actions step.decoded
   exact
     { runtimeMandatory
       runtimeInitial
       runtimeFinal
+      sourceFinalPhase
+      sourceDecoded
+      sourceFinalComplete
+      savePlacement
       mandatoryExecution := mandatoryExecution
       explicitHeaderExecution := explicitHeaderExecution
+      explicitHeaderChecks := explicitHeaderChecks
       actionExecution := actionExecution
       finalAgreement := finalAgreement
       finalStack := finalStack
@@ -1255,12 +1362,14 @@ structure CompressedParserFinishPreservation
   core : CompressedParserExecutionPreservation parser.db pos step
   finalProof : RuntimeProofState
   finalProof_eq :
-    finalProof = { core.runtimeFinal with ptp := .compressed 0 }
+    finalProof = { core.runtimeFinal with ptp :=
+      (.compressed (toMMLean4Phase core.sourceFinalPhase)) }
   finalIdentity :
     finalProof.label = label ∧
       finalProof.fmla = formula.toRuntime ∧
       finalProof.frame = (mandatoryFrame before formula).toRuntime
-  finalMode : finalProof.ptp = .compressed 0
+  finalMode : finalProof.ptp = .compressed
+    (toMMLean4Phase core.sourceFinalPhase)
   finalStack : finalProof.stack = #[formula.toRuntime]
   finishDB :
     (parser.finishProof finalProof).db =
@@ -1288,13 +1397,16 @@ noncomputable def CompressedTheoremStep.mmLean4FinishPreserved
       projectPrefix? parser.db =
         some before.toSourcePrefix.toProjection)
     (namespaceAgreement : RuntimeObjectNamespaceAgrees parser.db before)
+    (savePlacement : parser.db.config.compressedSavePlacement =
+      .immediatelyAfterUse)
     (pos : Pos) :
     CompressedParserFinishPreservation parser pos step := by
   let core :=
     CompressedTheoremStep.mmLean4ParserCorePreserved
-      step parser.db hproject pos
+      step parser.db hproject savePlacement pos
   let finalProof : RuntimeProofState :=
-    { core.runtimeFinal with ptp := .compressed 0 }
+    { core.runtimeFinal with ptp :=
+      (.compressed (toMMLean4Phase core.sourceFinalPhase)) }
   have coreIdentity := core.finalIdentity
   have finalIdentity :
       finalProof.label = label ∧
@@ -1315,7 +1427,14 @@ noncomputable def CompressedTheoremStep.mmLean4FinishPreserved
       CompressedTheoremStep.runtimeInsert_errorFree
         step namespaceAgreement finalProof.pos
   have finished :=
-    finishProof_compressed_success parser finalProof rfl singleton
+    finishProof_compressed_success parser finalProof
+      (toMMLean4Phase core.sourceFinalPhase) rfl
+      (by
+        rcases core.sourceFinalComplete with final | final
+        · left
+          simp [final, toMMLean4Phase]
+        · right
+          simp [final, toMMLean4Phase]) singleton
       finalIncomplete insertError
   have finishDB :
       (parser.finishProof finalProof).db =
@@ -1386,6 +1505,8 @@ noncomputable def CompressedTheoremStep.mmLean4FeedTokensPreserved
       projectPrefix? live.db =
         some before.toSourcePrefix.toProjection)
     (namespaceAgreement : RuntimeObjectNamespaceAgrees live.db before)
+    (savePlacement : live.db.config.compressedSavePlacement =
+      .immediatelyAfterUse)
     (tokens :
       CompressedProofLocatedTokens explicitHeaderLabels bodyWords) :
     CompressedFeedTokenPreservation live pos step tokens := by
@@ -1393,13 +1514,15 @@ noncomputable def CompressedTheoremStep.mmLean4FeedTokensPreserved
   let finish :=
     CompressedTheoremStep.mmLean4FinishPreserved
       step base (by simpa [base] using hproject)
-        (by simpa [base] using namespaceAgreement) pos
+        (by simpa [base] using namespaceAgreement)
+        (by simpa [base] using savePlacement) pos
   let openState : ParserState :=
     { live with tokp := TokenParser.proof ({ finish.core.runtimeMandatory with ptp := .preload }) }
   let headerState : ParserState :=
     { live with tokp := TokenParser.proof ({ finish.core.runtimeInitial with ptp := .preload }) }
   let closeState : ParserState :=
-    { live with tokp := TokenParser.proof ({ finish.core.runtimeInitial with ptp := .compressed 0 }) }
+    { live with tokp := TokenParser.proof ({ finish.core.runtimeInitial with
+        ptp := .compressed .betweenSteps }) }
   let bodyState : ParserState :=
     { live with tokp := TokenParser.proof finish.finalProof }
   have openExecution :

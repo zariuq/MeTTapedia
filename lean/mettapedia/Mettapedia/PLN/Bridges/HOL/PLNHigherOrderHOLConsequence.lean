@@ -39,9 +39,9 @@ abbrev HOLDerivableImpOnTheory
   Mettapedia.PLN.Bridges.HOL.PLNWorldModelHOLCompleteness.derivableImpOnTheory
     (Base := Base) (Const := Const) T φ ψ
 
-/-- The extensional closed-theory implication surface used by the classical HOL
+/-- The extensional closed-theory implication interface used by the classical HOL
 completeness development. This is stronger than the sound finite-derivation
-surface and should not be silently identified with it. -/
+interface and should not be silently identified with it. -/
 abbrev HOLExtensionalProvImpOnTheory
     (T : ClassicalHOLTheory (Base := Base) (Const := Const))
     (φ ψ : ClassicalHOLQuery (Base := Base) (Const := Const)) : Prop :=
@@ -139,7 +139,7 @@ noncomputable def wmConsequenceRuleOn_of_holDerivableImpOnTheory
     (Base := Base) (Const := Const) T φ ψ h
 
 /-- Classical singleton consequence on theory-model states yields provability in
-the extensional closed-theory implication surface used by HOL completeness. -/
+the extensional closed-theory implication interface used by HOL completeness. -/
 theorem classical_singletonConsequenceOnTheory_to_holExtensionalProvImpOnTheory
     {T : ClassicalHOLTheory (Base := Base) (Const := Const)}
     {φ ψ : ClassicalHOLQuery (Base := Base) (Const := Const)}

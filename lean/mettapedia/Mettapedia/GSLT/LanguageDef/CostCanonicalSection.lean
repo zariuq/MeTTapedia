@@ -94,6 +94,19 @@ theorem decodeCostStaticConstructor_symbols (source : CIGSLT)
   rw [CostStaticColor.symbols_constructor]
   exact decodeTaggedPayload_append _ _
 
+/-- Every constructor in the exact hereditary image decodes to its authored
+source constructor.  The converse deliberately retains the declaration
+membership premise carried by `hereditaryConstructorImage`. -/
+theorem CostStaticColor.hereditaryConstructorImage_decodes
+    (source : CIGSLT) (color : CostStaticColor) (targetConstructor : String)
+    (included : CostStaticColor.hereditaryConstructorImage source color
+      targetConstructor) :
+    ∃ sourceConstructor,
+      decodeCostStaticConstructor color targetConstructor = some sourceConstructor := by
+  rcases included with ⟨sourceConstructor, _membership, rfl⟩
+  exact ⟨sourceConstructor,
+    decodeCostStaticConstructor_symbols source color sourceConstructor⟩
+
 /-! ## Decoding the typed static fibers -/
 
 /-- Decode a sort name in the uniform base fiber. -/

@@ -10,6 +10,6 @@ import Mettapedia.PLN.Bridges.HOL.Probabilistic.BeliefRegression
 /-!
 # PLN-facing Probabilistic HOL bridges
 
-Empirical, benchmark, belief, and regression surfaces connecting the core
+Empirical, benchmark, belief, and regression interfaces connecting the core
 semantic `ProbHOL` layer to PLN world-model and rule-family consumers.
 -/

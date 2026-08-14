@@ -3,7 +3,7 @@ import Mettapedia.PLN.RuleFamilies.FirstOrder.PLNDerivation
 /-!
 # PLN Bayes / Inversion Bridge
 
-PLN's book-level "Inversion" surface has two nearby readings:
+PLN's book-level "Inversion" interface has two nearby readings:
 
 * the historical compiled-rule catalog keeps the implication strength unchanged;
 * the probabilistic WM-calc reading is Bayes inversion, using the base rates.

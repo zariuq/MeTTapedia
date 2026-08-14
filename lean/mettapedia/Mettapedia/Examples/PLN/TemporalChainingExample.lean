@@ -35,7 +35,7 @@ cannot express.
 
 namespace Mettapedia.Examples.PLN.TemporalChainingExample
 
-/-! ## Exact rational truth-value surface -/
+/-! ## Exact rational truth-value interface -/
 
 /-- A rational truth value used for exact example arithmetic. -/
 structure QTV where

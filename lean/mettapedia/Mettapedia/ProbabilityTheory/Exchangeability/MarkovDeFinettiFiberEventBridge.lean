@@ -4284,7 +4284,7 @@ lemma prefixPositiveTokenRootedArborescenceRatioReal_eq_prefixTokenRootedArbores
 count matches the token-rooted arborescence count times the full
 outdegree-factorial weight.
 
-This normalization is kept as a historical surface because downstream ratio
+This normalization is kept as a historical interface because downstream ratio
 lemmas still factor through it. It is not a valid global theorem target:
 `positiveTokenRootedBridgeCardEq_false_on_counterexample_0101` refutes the
 support-local version on an active state, and the same double-counting issue
@@ -4325,7 +4325,7 @@ def positiveTokenRootedBestWeight
 /-- Exact finite-state bridge input in cardinality form. If the Euler-trail
 count factors as token-rooted arborescences times the outdegree-factorial
 weight, then the normalized Euler correction is exactly the token-rooted
-arborescence count. This is the more concrete finite combinatorial surface
+arborescence count. This is the more concrete finite combinatorial interface
 behind the later bridge theorems. -/
 lemma normalizedEulerTrailCorrection_eq_tokenRootedArborescenceCount_of_card_eq
     {s : MarkovState k}
@@ -13838,7 +13838,7 @@ theorem fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProc
 
 /-- Intrinsic-row-Cesàro variant of the visit-based coordwise component builder.
 `hLocal` no longer carries `RowProcessCoordwiseCesaroLimit`; it is supplied once
-from `hRowCoord`. At this public intrinsic surface, `hLocal` also no longer
+from `hRowCoord`. At this public intrinsic interface, `hLocal` also no longer
 asks for positivity on the finite `prefixUsedTransitionSet`; it is enough to
 provide eventual prefix compatibility and the normalized Euler-trail correction
 limit. -/
@@ -14274,7 +14274,7 @@ theorem fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProc
 /-- Support-local bridge-facing intrinsic-row-Cesàro compatibility wrapper.
 The stronger no-extra-ratio path-local support-local builder now exists just
 above it, so this older interface keeps the explicit ratio-limit hypothesis
-only as a compatibility surface and factors through the smaller theorem by
+only as a compatibility interface and factors through the smaller theorem by
 deriving the needed eventual prefix compatibility from the induced normalized-
 Euler limit. -/
 theorem fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed_of_tendsto_prefixPositiveTokenRootedArborescenceRatioReal_of_pathLocalPositiveBridgeCardEqPair
@@ -14875,7 +14875,7 @@ theorem exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_visit_rowPro
 
 /-- Intrinsic-row-Cesàro variant of the markov-parameter reconstruction builder.
 `hLocal` omits `RowProcessCoordwiseCesaroLimit`; that component is supplied by
-`hRowCoord`. As above, the public intrinsic surface now uses eventual prefix
+`hRowCoord`. As above, the public intrinsic interface now uses eventual prefix
 compatibility plus the normalized Euler-trail correction limit rather than
 finite-used-transition positivity. -/
 theorem exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_visit_rowProcessCoordwise_component_builder_intrinsic
@@ -14956,7 +14956,7 @@ theorem exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_visit_rowPro
 normalized-Euler seam. As with the Fortini builder above, used-transition
 positivity plus the normalized-Euler limit are enough here; eventual prefix
 compatibility is derived internally rather than supplied at the theorem
-surface. -/
+interface. -/
 theorem exists_markovParamLaw_of_markovExchangeable_rowRecurrent_of_visit_rowProcessCoordwise_component_builder_intrinsic_of_prefixThetaPosUsed
     (hRowCoord :
       ∀ (P : Measure (ℕ → Fin k)) (_hP : IsProbabilityMeasure P)
@@ -15891,7 +15891,7 @@ has produced that local convergence input. The older token-rooted path-local
 and global bridge-facing Fortini / markov-parameter builders now also derive
 that local convergence input and then reuse the same plain intrinsic
 `hΘposUsed + hgraph` seam instead of standing as parallel public proof lanes.
-At the public builder surface, that bridge input is now exposed in the more concrete finite
+At the public builder interface, that bridge input is now exposed in the more concrete finite
 cardinality form saying that `eulerTrailFinset.card` equals the token-rooted
 arborescence count times the outdegree-factorial weight. More sharply, the
 public bridge-based route can now be phrased using only the eventual full and
@@ -15967,7 +15967,7 @@ push that one step further: in the mixed case branch where deleting one copy
 does not extinguish the source row, the active support and rootedness data now
 transport exactly across `deleteOneCopy`. The new weighted rewrite
 `positiveWeightedTargetRootedArborescenceCount_deleteOneCopy_eq_transportSum_of_source_stays_positive`
-then lifts that transport to the support-local finite counting surface itself:
+then lifts that transport to the support-local finite counting interface itself:
 in the same active-source branch, the delete-one-copy weighted count is now
 literally a sum over the original rooted support-local assignments with the
 updated edge multiplicities substituted into each term. The new active-source

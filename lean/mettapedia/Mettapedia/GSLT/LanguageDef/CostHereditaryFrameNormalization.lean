@@ -1,4 +1,5 @@
 import Mettapedia.GSLT.LanguageDef.CostSemanticAtom
+import Mettapedia.OSLF.MeTTaIL.DerivedContexts
 
 /-!
 # Hereditary semantic-atom normalization of Cost frames
@@ -21,6 +22,7 @@ namespace Mettapedia.GSLT.LanguageDef
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Substitution
 open Mettapedia.OSLF.MeTTaIL.ScopedPattern
+open Mettapedia.OSLF.MeTTaIL.DerivedContexts
 
 namespace CostStaticBinderThinning
 
@@ -156,6 +158,161 @@ def reify {source : CIGSLT} {color : CostStaticColor}
   | .collection collectionType elements rest =>
       .collection collectionType (elements.map environment.reify) rest
 termination_by pattern => sizeOf pattern
+
+/-- Reify every fixed pattern of a one-hole context through the finite
+semantic-atom environment while retaining the unique hole.  This is the
+context-level first stage of frame transport: original source names become
+endpoint atom names before a semantic-key cospan moves them to a common
+namespace. -/
+def reifyContext {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    {table : TypedCostRegionBoundaryTable source color targetFree occurrences}
+    {values : TypedCostRegionBoundaryTable.Values source color targetFree table}
+    {root : Pattern}
+    {inventory : CostStaticParameterInventory source color targetFree table
+      values root}
+    (environment : CostStaticAtomEnvironment source color targetFree inventory) :
+    OneHoleContext → OneHoleContext
+  | .hole => .hole
+  | .apply constructor before inner after =>
+      .apply constructor (before.map environment.reify)
+        (environment.reifyContext inner) (after.map environment.reify)
+  | .lambda binder inner =>
+      .lambda binder (environment.reifyContext inner)
+  | .multiLambda arity binders inner =>
+      .multiLambda arity binders (environment.reifyContext inner)
+  | .substBody inner replacement =>
+      .substBody (environment.reifyContext inner)
+        (environment.reify replacement)
+  | .substReplacement body inner =>
+      .substReplacement (environment.reify body)
+        (environment.reifyContext inner)
+  | .collection collectionType before inner after rest =>
+      .collection collectionType (before.map environment.reify)
+        (environment.reifyContext inner) (after.map environment.reify) rest
+
+/-- Environment reification commutes with filling a one-hole context.  The
+hole occurrence is therefore transported exactly once, independently of all
+fixed siblings retained by the context. -/
+theorem reifyContext_fill
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    {table : TypedCostRegionBoundaryTable source color targetFree occurrences}
+    {values : TypedCostRegionBoundaryTable.Values source color targetFree table}
+    {root : Pattern}
+    {inventory : CostStaticParameterInventory source color targetFree table
+      values root}
+    (environment : CostStaticAtomEnvironment source color targetFree inventory)
+    (context : OneHoleContext) (pattern : Pattern) :
+    (environment.reifyContext context).fill (environment.reify pattern) =
+      environment.reify (context.fill pattern) := by
+  induction context with
+  | hole => rfl
+  | apply constructor before inner after inductionHypothesis =>
+      simp [reifyContext, OneHoleContext.fill, reify, List.map_append,
+        inductionHypothesis]
+  | lambda binder inner inductionHypothesis =>
+      simp [reifyContext, OneHoleContext.fill, reify, inductionHypothesis]
+  | multiLambda arity binders inner inductionHypothesis =>
+      simp [reifyContext, OneHoleContext.fill, reify, inductionHypothesis]
+  | substBody inner replacement inductionHypothesis =>
+      simp [reifyContext, OneHoleContext.fill, reify, inductionHypothesis]
+  | substReplacement body inner inductionHypothesis =>
+      simp [reifyContext, OneHoleContext.fill, reify, inductionHypothesis]
+  | collection collectionType before inner after rest inductionHypothesis =>
+      simp [reifyContext, OneHoleContext.fill, reify, List.map_append,
+        inductionHypothesis]
+
+/-- Transport one exact free-variable occurrence through semantic-atom
+reification.  The zipper remains proof-relevant even when distinct source
+names later denote the same semantic atom; only the selected leaf name is
+reified. -/
+noncomputable def reifyOccurrence
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    {table : TypedCostRegionBoundaryTable source color targetFree occurrences}
+    {values : TypedCostRegionBoundaryTable.Values source color targetFree table}
+    {root : Pattern}
+    {inventory : CostStaticParameterInventory source color targetFree table
+      values root}
+    (environment : CostStaticAtomEnvironment source color targetFree inventory)
+    (occurrence : CostStaticFVarOccurrence root) :
+    CostStaticFVarOccurrence (environment.reify root) :=
+  { name := environment.reifyName occurrence.name
+    context := environment.reifyContext occurrence.context
+    selected := by
+      have filled :
+          (environment.reifyContext occurrence.context).fill
+              (.fvar (environment.reifyName occurrence.name)) =
+            environment.reify root := by
+        calc
+          (environment.reifyContext occurrence.context).fill
+                (.fvar (environment.reifyName occurrence.name)) =
+              (environment.reifyContext occurrence.context).fill
+                (environment.reify (.fvar occurrence.name)) := by
+            simp [reify]
+          _ = environment.reify
+                (occurrence.context.fill (.fvar occurrence.name)) :=
+            environment.reifyContext_fill occurrence.context
+              (.fvar occurrence.name)
+          _ = environment.reify root :=
+            congrArg environment.reify occurrence.selected.fill_eq
+      rw [← filled]
+      exact Selects.of_fill (environment.reifyContext occurrence.context)
+        (.fvar (environment.reifyName occurrence.name)) }
+
+@[simp]
+theorem reifyOccurrence_name
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    {table : TypedCostRegionBoundaryTable source color targetFree occurrences}
+    {values : TypedCostRegionBoundaryTable.Values source color targetFree table}
+    {root : Pattern}
+    {inventory : CostStaticParameterInventory source color targetFree table
+      values root}
+    (environment : CostStaticAtomEnvironment source color targetFree inventory)
+    (occurrence : CostStaticFVarOccurrence root) :
+    (environment.reifyOccurrence occurrence).name =
+      environment.reifyName occurrence.name := rfl
+
+@[simp]
+theorem reifyOccurrence_context
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    {table : TypedCostRegionBoundaryTable source color targetFree occurrences}
+    {values : TypedCostRegionBoundaryTable.Values source color targetFree table}
+    {root : Pattern}
+    {inventory : CostStaticParameterInventory source color targetFree table
+      values root}
+    (environment : CostStaticAtomEnvironment source color targetFree inventory)
+    (occurrence : CostStaticFVarOccurrence root) :
+    (environment.reifyOccurrence occurrence).context =
+      environment.reifyContext occurrence.context := rfl
+
+/-- If the original occurrence is represented by a concrete finite atom
+slot, its transported occurrence names exactly that slot.  This statement
+keeps the zipper and the quotient lookup separate. -/
+theorem reifyOccurrence_name_eq_atomName_of_slotOfName?_eq_some
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    {table : TypedCostRegionBoundaryTable source color targetFree occurrences}
+    {values : TypedCostRegionBoundaryTable.Values source color targetFree table}
+    {root : Pattern}
+    {inventory : CostStaticParameterInventory source color targetFree table
+      values root}
+    (environment : CostStaticAtomEnvironment source color targetFree inventory)
+    (occurrence : CostStaticFVarOccurrence root)
+    (slot : Fin environment.atomCount)
+    (selected : environment.slotOfName? occurrence.name = some slot) :
+    (environment.reifyOccurrence occurrence).name =
+      environment.atomName slot := by
+  simp [reifyName, selected]
 
 /-- Semantic-atom reification is natural with respect to every structural
 presentation-symbol map: the map changes constructors and sorts, while

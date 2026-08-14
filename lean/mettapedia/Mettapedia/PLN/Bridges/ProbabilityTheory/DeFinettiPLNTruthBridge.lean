@@ -883,7 +883,7 @@ theorem revisionMany_countPairEvidence_posteriorFamilyWidthComplementITV_readout
 width-complement ITV.  The typed readouts are the same Walley family-envelope
 readouts as the untyped ITV, with `midpoint` as the typed strength coordinate.
 
-This is the typed non-singleton Revision surface: it preserves the posterior
+This is the typed non-singleton Revision interface: it preserves the posterior
 family's credal width and records the projective-credal semantics in the
 `TypedITV` index. -/
 theorem revisionMany_countPairEvidence_posteriorFamilyTypedWidthComplementITV_readout

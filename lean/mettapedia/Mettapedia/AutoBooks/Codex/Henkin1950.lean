@@ -37,10 +37,10 @@ Current scope:
 - paper-specific types and constants,
 - standard/general model notions,
 - soundness and basic validity canaries.
-- surfaced class-model form of Theorem 1 under the exact pp. 86-88 packaged
+- exposed class-model form of Theorem 1 under the exact pp. 86-88 packaged
   maximal-theory hypotheses.
-- surfaced forward half of Theorem 2 in open-formula and closed-sentence form.
-- surfaced forward closed-theory direction of Theorem 3.
+- exposed forward half of Theorem 2 in open-formula and closed-sentence form.
+- exposed forward closed-theory direction of Theorem 3.
 - an explicit proof-theoretic bridge from the paper-facing extensional
   consistency notion to raw derivation consistency.
 - an extensional soundness layer for the closed-theory calculus under the
@@ -99,5 +99,5 @@ Current scope:
   `GeneralModel` interface already forces excluded middle.
 - exact general-validity and standard-validity characterizations of the
   proposition-bivalence sentence by ambient excluded middle.
-- regression canaries for the Theorem-1 bridge obstruction surface.
+- regression canaries for the Theorem-1 bridge obstruction interface.
 -/

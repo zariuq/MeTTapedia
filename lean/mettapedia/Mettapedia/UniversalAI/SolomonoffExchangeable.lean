@@ -28,7 +28,7 @@ When restricted to **Markov-exchangeable binary** sequences:
 
 1. One-step probabilities depend only on the transition-count summary `(counts,last)`.
 2. In the binary presentation this becomes `(ff,ft,tf,tt,lastBit)`.
-3. The file packages both the general `Fin 2` and explicit `Bool` surfaces.
+3. The file packages both the general `Fin 2` and explicit `Bool` interfaces.
 
 Note: The full measure-theoretic de Finetti representation theorem IS formalized in
 `Mettapedia.ProbabilityTheory.Exchangeability.DeFinetti` (with zero sorries), including the Hausdorff moment theorem.
@@ -107,7 +107,7 @@ def ProgramsExchangeable (U : MonotoneMachine) (programs : Finset BinString) : P
 /-! ### Markov de Finetti Bridge
 
 The theorem below packages the class-restricted row-process consequences already
-proved in the Markov de Finetti development at a surface that downstream
+proved in the Markov de Finetti development at a model that downstream
 Solomonoff-style predictor results can call directly.
 -/
 
@@ -265,12 +265,12 @@ theorem markovExchangeable_strongRecurrenceInClass_class_transition_structure
       markovExchangeable_strongRecurrenceInClass_restrictClass_rowLaw_factorizes
         (k := k) μ hμ P hExt C hStrRecC i hi m sel hsel
 
-/-- The class-restricted public Markov de Finetti surface supplies exactly the
+/-- The class-restricted public Markov de Finetti model supplies exactly the
 same downstream transition-structure package as the explicit theorem above,
 but without requiring callers to thread the extension law and recurrence proof
 manually. -/
-theorem classRestrictedMarkovMixtureSurface_class_transition_structure
-    (M : Mettapedia.ProbabilityTheory.Exchangeability.ClassRestrictedMarkovMixtureSurface k C μ) :
+theorem classRestrictedMarkovMixtureModel_class_transition_structure
+    (M : Mettapedia.ProbabilityTheory.Exchangeability.ClassRestrictedMarkovMixtureModel k C μ) :
     (∀ (xs ys : List (Fin k)) (hlen : xs.length = ys.length) (hx : 0 < xs.length)
       (_hstart : xs.get ⟨0, hx⟩ = ys.get ⟨0, by simpa [hlen] using hx⟩)
       (_hsum : TransCounts.summary (k := k) xs = TransCounts.summary (k := k) ys)
@@ -287,7 +287,7 @@ theorem classRestrictedMarkovMixtureSurface_class_transition_structure
             Measure.pi
               (fun _ : Fin m =>
                 (directingRowKernel (k := k) M.extensionLaw i r : Measure (Fin k))))) := by
-  exact Mettapedia.ProbabilityTheory.Exchangeability.ClassRestrictedMarkovMixtureSurface.class_transition_structure M
+  exact Mettapedia.ProbabilityTheory.Exchangeability.ClassRestrictedMarkovMixtureModel.class_transition_structure M
 
 end MarkovDeFinettiBridge
 
@@ -311,7 +311,7 @@ structure MarkovBinaryPLNDomainConditions
 /-- The explicit binary `(ff,ft,tf,tt,lastBit)` summary agrees exactly with the
 generic `Fin 2` transition-summary presentation. This is the equivalence handle
 for moving between the abstract Markov domain theorem and the binary νPLN-facing
-surface. -/
+model. -/
 theorem markovExchangeable_binary_summary_presentations_agree
     (xs ys : Mettapedia.UniversalAI.SolomonoffPrior.BinString) :
     binarySummary xs = binarySummary ys ↔
@@ -360,7 +360,7 @@ theorem markovExchangeable_binary_domain_characterization_fin2
 /-- The same binary Markov-domain characterization, but presented on `Bool`
 histories using the explicit state `(ff,ft,tf,tt,lastBit)`. Together with
 `markovExchangeable_binary_summary_presentations_agree`, this gives the νPLN-
-facing binary surface without changing the underlying theorem. -/
+facing binary model without changing the underlying theorem. -/
 theorem markovExchangeable_binary_domain_characterization_bool
     (μ : FiniteAlphabet.PrefixMeasure (Fin 2))
     (hμ : MarkovExchangeablePrefixMeasure (k := 2) μ)
@@ -583,14 +583,14 @@ theorem solomonoff_regret_bound
 end MarkovBinaryPLNDomainConditions
 
 /-- Packaged binary post-Markov domain conditions together with the honest
-class-restricted Markov de Finetti surface.
+class-restricted Markov de Finetti model.
 
 This extends the earlier binary domain package by adding exactly the extra
-class-recurrence data that is currently proved at the public surface level. -/
+class-recurrence data that is currently proved at the public model level. -/
 structure MarkovBinaryPLNDomainConditionsInClass
     (C : Set (Fin 2))
     (μ : FiniteAlphabet.PrefixMeasure (Fin 2)) where
-  surface : Mettapedia.ProbabilityTheory.Exchangeability.ClassRestrictedMarkovMixtureSurface 2 C μ
+  model : Mettapedia.ProbabilityTheory.Exchangeability.ClassRestrictedMarkovMixtureModel 2 C μ
   lowerSemicomputable :
     Mettapedia.UniversalAI.UniversalPrediction.FiniteAlphabet.LowerSemicomputablePrefixMeasure
       (α := Fin 2) μ
@@ -605,7 +605,7 @@ conditions package used for predictor and regret consequences. -/
 def toDomainConditions
     (hdom : MarkovBinaryPLNDomainConditionsInClass C μ) :
     MarkovBinaryPLNDomainConditions μ :=
-  ⟨hdom.surface.markovExchangeable, hdom.lowerSemicomputable, hdom.prior⟩
+  ⟨hdom.model.markovExchangeable, hdom.lowerSemicomputable, hdom.prior⟩
 
 /-- The generic `Fin 2` binary domain theorem remains available under the
 class-restricted package. -/
@@ -693,17 +693,17 @@ theorem restrictClass_rowLaw_factorizes_fin2
     Measure.map
         (fun r : ℕ → Fin 2 => fun j : Fin m => r (sel j))
         (Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.rowProcessLaw_restrictClass
-          (k := 2) C hdom.surface.extensionLaw i)
+          (k := 2) C hdom.model.extensionLaw i)
       =
     (Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.rowProcessLaw_restrictClass
-      (k := 2) C hdom.surface.extensionLaw i).bind
+      (k := 2) C hdom.model.extensionLaw i).bind
       (fun r =>
         Measure.pi
           (fun _ : Fin m =>
             (Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.directingRowKernel
-              (k := 2) hdom.surface.extensionLaw i r :
+              (k := 2) hdom.model.extensionLaw i r :
               Measure (Fin 2)))) := by
-  exact hdom.surface.restrictClass_rowLaw_factorizes i hi m sel hsel
+  exact hdom.model.restrictClass_rowLaw_factorizes i hi m sel hsel
 
 /-- Class-restricted row-law factorization in the explicit binary `Bool`
 presentation of the active row. -/
@@ -714,15 +714,15 @@ theorem restrictClass_rowLaw_factorizes_bool
     Measure.map
         (fun r : ℕ → Fin 2 => fun j : Fin m => r (sel j))
         (Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.rowProcessLaw_restrictClass
-          (k := 2) C hdom.surface.extensionLaw (boolToFin2 b))
+          (k := 2) C hdom.model.extensionLaw (boolToFin2 b))
       =
     (Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.rowProcessLaw_restrictClass
-      (k := 2) C hdom.surface.extensionLaw (boolToFin2 b)).bind
+      (k := 2) C hdom.model.extensionLaw (boolToFin2 b)).bind
       (fun r =>
         Measure.pi
           (fun _ : Fin m =>
             (Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.directingRowKernel
-              (k := 2) hdom.surface.extensionLaw (boolToFin2 b) r :
+              (k := 2) hdom.model.extensionLaw (boolToFin2 b) r :
               Measure (Fin 2)))) := by
   exact hdom.restrictClass_rowLaw_factorizes_fin2 (boolToFin2 b) hb m sel hsel
 
@@ -776,15 +776,15 @@ theorem class_transition_structure_fin2
         Measure.map
             (fun r : ℕ → Fin 2 => fun j : Fin m => r (sel j))
             (Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.rowProcessLaw_restrictClass
-              (k := 2) C hdom.surface.extensionLaw i)
+              (k := 2) C hdom.model.extensionLaw i)
           =
         (Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.rowProcessLaw_restrictClass
-          (k := 2) C hdom.surface.extensionLaw i).bind
+          (k := 2) C hdom.model.extensionLaw i).bind
           (fun r =>
             Measure.pi
               (fun _ : Fin m =>
                 (Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.directingRowKernel
-                  (k := 2) hdom.surface.extensionLaw i r :
+                  (k := 2) hdom.model.extensionLaw i r :
                   Measure (Fin 2))))) := by
   refine ⟨?_, ?_, ?_, ?_⟩
   · exact (MarkovBinaryPLNDomainConditionsInClass.domain_characterization_fin2 hdom).1
@@ -845,15 +845,15 @@ theorem class_transition_structure_bool
         Measure.map
             (fun r : ℕ → Fin 2 => fun j : Fin m => r (sel j))
             (Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.rowProcessLaw_restrictClass
-              (k := 2) C hdom.surface.extensionLaw (boolToFin2 b))
+              (k := 2) C hdom.model.extensionLaw (boolToFin2 b))
           =
         (Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.rowProcessLaw_restrictClass
-          (k := 2) C hdom.surface.extensionLaw (boolToFin2 b)).bind
+          (k := 2) C hdom.model.extensionLaw (boolToFin2 b)).bind
           (fun r =>
             Measure.pi
               (fun _ : Fin m =>
                 (Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.directingRowKernel
-                  (k := 2) hdom.surface.extensionLaw (boolToFin2 b) r :
+                  (k := 2) hdom.model.extensionLaw (boolToFin2 b) r :
                   Measure (Fin 2))))) := by
   refine ⟨?_, ?_, ?_, ?_⟩
   · exact (MarkovBinaryPLNDomainConditionsInClass.domain_characterization_bool hdom).1

@@ -134,43 +134,43 @@ theorem typed_itv_cross_semantics_conjunction_via_bridge_raw_value
 theorem categorical_query_mean_is_forced_by_aggregate
     {Obs Query : Type*} {k : ℕ}
     (S :
-      Mettapedia.PLN.WorldModel.SufficientStatisticSurface Obs Query
+      Mettapedia.PLN.WorldModel.SufficientStatisticEncoder Obs Query
         (Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceDirichlet.MultiEvidence k))
     {σ₁ σ₂ : Multiset Obs} {q : Query} (i : Fin k)
     (h :
-      Mettapedia.PLN.WorldModel.SufficientStatisticSurface.aggregate S σ₁ q =
-        Mettapedia.PLN.WorldModel.SufficientStatisticSurface.aggregate S σ₂ q) :
-    ((Mettapedia.PLN.WorldModel.SufficientStatisticSurface.aggregate S σ₁ q).counts i : ℝ) /
-        ((Mettapedia.PLN.WorldModel.SufficientStatisticSurface.aggregate S σ₁ q).total : ℝ) =
-      ((Mettapedia.PLN.WorldModel.SufficientStatisticSurface.aggregate S σ₂ q).counts i : ℝ) /
-        ((Mettapedia.PLN.WorldModel.SufficientStatisticSurface.aggregate S σ₂ q).total : ℝ) :=
-  categoricalSurface_queryMean_forced_by_aggregate S i h
+      Mettapedia.PLN.WorldModel.SufficientStatisticEncoder.aggregate S σ₁ q =
+        Mettapedia.PLN.WorldModel.SufficientStatisticEncoder.aggregate S σ₂ q) :
+    ((Mettapedia.PLN.WorldModel.SufficientStatisticEncoder.aggregate S σ₁ q).counts i : ℝ) /
+        ((Mettapedia.PLN.WorldModel.SufficientStatisticEncoder.aggregate S σ₁ q).total : ℝ) =
+      ((Mettapedia.PLN.WorldModel.SufficientStatisticEncoder.aggregate S σ₂ q).counts i : ℝ) /
+        ((Mettapedia.PLN.WorldModel.SufficientStatisticEncoder.aggregate S σ₂ q).total : ℝ) :=
+  categoricalEncoder_queryMean_forced_by_aggregate S i h
 
 /-- Categorical IDM interval endpoints and width are forced by the retained
 aggregate `MultiEvidence`, once the IDM context and category are chosen. -/
 theorem categorical_idm_envelope_is_forced_by_aggregate
     {Obs Query : Type*} {k : ℕ}
     (S :
-      Mettapedia.PLN.WorldModel.SufficientStatisticSurface Obs Query
+      Mettapedia.PLN.WorldModel.SufficientStatisticEncoder Obs Query
         (Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceDirichlet.MultiEvidence k))
     (ctx : Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceDirichlet.IDMPredictiveContext)
     {σ₁ σ₂ : Multiset Obs} {q : Query} (i : Fin k)
     (h :
-      Mettapedia.PLN.WorldModel.SufficientStatisticSurface.aggregate S σ₁ q =
-        Mettapedia.PLN.WorldModel.SufficientStatisticSurface.aggregate S σ₂ q) :
+      Mettapedia.PLN.WorldModel.SufficientStatisticEncoder.aggregate S σ₁ q =
+        Mettapedia.PLN.WorldModel.SufficientStatisticEncoder.aggregate S σ₂ q) :
     Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceDirichlet.idmLower ctx
-        (Mettapedia.PLN.WorldModel.SufficientStatisticSurface.aggregate S σ₁ q) i =
+        (Mettapedia.PLN.WorldModel.SufficientStatisticEncoder.aggregate S σ₁ q) i =
         Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceDirichlet.idmLower ctx
-          (Mettapedia.PLN.WorldModel.SufficientStatisticSurface.aggregate S σ₂ q) i ∧
+          (Mettapedia.PLN.WorldModel.SufficientStatisticEncoder.aggregate S σ₂ q) i ∧
       Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceDirichlet.idmUpper ctx
-        (Mettapedia.PLN.WorldModel.SufficientStatisticSurface.aggregate S σ₁ q) i =
+        (Mettapedia.PLN.WorldModel.SufficientStatisticEncoder.aggregate S σ₁ q) i =
         Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceDirichlet.idmUpper ctx
-          (Mettapedia.PLN.WorldModel.SufficientStatisticSurface.aggregate S σ₂ q) i ∧
+          (Mettapedia.PLN.WorldModel.SufficientStatisticEncoder.aggregate S σ₂ q) i ∧
       Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceDirichlet.idmWidth ctx
-        (Mettapedia.PLN.WorldModel.SufficientStatisticSurface.aggregate S σ₁ q) =
+        (Mettapedia.PLN.WorldModel.SufficientStatisticEncoder.aggregate S σ₁ q) =
       Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceDirichlet.idmWidth ctx
-          (Mettapedia.PLN.WorldModel.SufficientStatisticSurface.aggregate S σ₂ q) :=
-  categoricalSurface_idmEnvelope_forced_by_aggregate S ctx i h
+          (Mettapedia.PLN.WorldModel.SufficientStatisticEncoder.aggregate S σ₂ q) :=
+  categoricalEncoder_idmEnvelope_forced_by_aggregate S ctx i h
 
 /-! ## Sufficient-statistic strength and confidence queries -/
 
@@ -204,63 +204,63 @@ structure SufficientStatisticQueryProfile where
             (State := State) (Query := Query) κ W₁ q =
           Mettapedia.PLN.WorldModel.PLNWorldModel.BinaryWorldModel.queryConfidence
             (State := State) (Query := Query) κ W₂ q
-  binarySurfaceStrengthForced :
+  binaryEncoderStrengthForced :
     ∀ {Obs Query : Type}
       (S :
-        Mettapedia.PLN.WorldModel.SufficientStatisticSurface Obs Query
+        Mettapedia.PLN.WorldModel.SufficientStatisticEncoder Obs Query
           Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence)
       {σ₁ σ₂ : Multiset Obs} {q : Query},
-      Mettapedia.PLN.WorldModel.SufficientStatisticSurface.aggregate S σ₁ q =
-        Mettapedia.PLN.WorldModel.SufficientStatisticSurface.aggregate S σ₂ q →
+      Mettapedia.PLN.WorldModel.SufficientStatisticEncoder.aggregate S σ₁ q =
+        Mettapedia.PLN.WorldModel.SufficientStatisticEncoder.aggregate S σ₂ q →
         Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence.toStrength
-            (Mettapedia.PLN.WorldModel.SufficientStatisticSurface.aggregate S σ₁ q) =
+            (Mettapedia.PLN.WorldModel.SufficientStatisticEncoder.aggregate S σ₁ q) =
           Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence.toStrength
-            (Mettapedia.PLN.WorldModel.SufficientStatisticSurface.aggregate S σ₂ q)
-  binarySurfaceConfidenceForced :
+            (Mettapedia.PLN.WorldModel.SufficientStatisticEncoder.aggregate S σ₂ q)
+  binaryEncoderConfidenceForced :
     ∀ {Obs Query : Type}
       (S :
-        Mettapedia.PLN.WorldModel.SufficientStatisticSurface Obs Query
+        Mettapedia.PLN.WorldModel.SufficientStatisticEncoder Obs Query
           Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence)
       (κ : ℝ≥0∞) {σ₁ σ₂ : Multiset Obs} {q : Query},
-      Mettapedia.PLN.WorldModel.SufficientStatisticSurface.aggregate S σ₁ q =
-        Mettapedia.PLN.WorldModel.SufficientStatisticSurface.aggregate S σ₂ q →
+      Mettapedia.PLN.WorldModel.SufficientStatisticEncoder.aggregate S σ₁ q =
+        Mettapedia.PLN.WorldModel.SufficientStatisticEncoder.aggregate S σ₂ q →
         Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence.toConfidence κ
-            (Mettapedia.PLN.WorldModel.SufficientStatisticSurface.aggregate S σ₁ q) =
+            (Mettapedia.PLN.WorldModel.SufficientStatisticEncoder.aggregate S σ₁ q) =
           Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence.toConfidence κ
-            (Mettapedia.PLN.WorldModel.SufficientStatisticSurface.aggregate S σ₂ q)
+            (Mettapedia.PLN.WorldModel.SufficientStatisticEncoder.aggregate S σ₂ q)
   categoricalMeanForced :
     ∀ {Obs Query : Type} {k : ℕ}
       (S :
-        Mettapedia.PLN.WorldModel.SufficientStatisticSurface Obs Query
+        Mettapedia.PLN.WorldModel.SufficientStatisticEncoder Obs Query
           (Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceDirichlet.MultiEvidence k))
       {σ₁ σ₂ : Multiset Obs} {q : Query} (i : Fin k),
-      Mettapedia.PLN.WorldModel.SufficientStatisticSurface.aggregate S σ₁ q =
-        Mettapedia.PLN.WorldModel.SufficientStatisticSurface.aggregate S σ₂ q →
-        ((Mettapedia.PLN.WorldModel.SufficientStatisticSurface.aggregate S σ₁ q).counts i : ℝ) /
-            ((Mettapedia.PLN.WorldModel.SufficientStatisticSurface.aggregate S σ₁ q).total : ℝ) =
-          ((Mettapedia.PLN.WorldModel.SufficientStatisticSurface.aggregate S σ₂ q).counts i : ℝ) /
-            ((Mettapedia.PLN.WorldModel.SufficientStatisticSurface.aggregate S σ₂ q).total : ℝ)
+      Mettapedia.PLN.WorldModel.SufficientStatisticEncoder.aggregate S σ₁ q =
+        Mettapedia.PLN.WorldModel.SufficientStatisticEncoder.aggregate S σ₂ q →
+        ((Mettapedia.PLN.WorldModel.SufficientStatisticEncoder.aggregate S σ₁ q).counts i : ℝ) /
+            ((Mettapedia.PLN.WorldModel.SufficientStatisticEncoder.aggregate S σ₁ q).total : ℝ) =
+          ((Mettapedia.PLN.WorldModel.SufficientStatisticEncoder.aggregate S σ₂ q).counts i : ℝ) /
+            ((Mettapedia.PLN.WorldModel.SufficientStatisticEncoder.aggregate S σ₂ q).total : ℝ)
   categoricalIDMEnvelopeForced :
     ∀ {Obs Query : Type} {k : ℕ}
       (S :
-        Mettapedia.PLN.WorldModel.SufficientStatisticSurface Obs Query
+        Mettapedia.PLN.WorldModel.SufficientStatisticEncoder Obs Query
           (Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceDirichlet.MultiEvidence k))
       (ctx : Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceDirichlet.IDMPredictiveContext)
       {σ₁ σ₂ : Multiset Obs} {q : Query} (i : Fin k),
-      Mettapedia.PLN.WorldModel.SufficientStatisticSurface.aggregate S σ₁ q =
-        Mettapedia.PLN.WorldModel.SufficientStatisticSurface.aggregate S σ₂ q →
+      Mettapedia.PLN.WorldModel.SufficientStatisticEncoder.aggregate S σ₁ q =
+        Mettapedia.PLN.WorldModel.SufficientStatisticEncoder.aggregate S σ₂ q →
         Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceDirichlet.idmLower ctx
-            (Mettapedia.PLN.WorldModel.SufficientStatisticSurface.aggregate S σ₁ q) i =
+            (Mettapedia.PLN.WorldModel.SufficientStatisticEncoder.aggregate S σ₁ q) i =
             Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceDirichlet.idmLower ctx
-              (Mettapedia.PLN.WorldModel.SufficientStatisticSurface.aggregate S σ₂ q) i ∧
+              (Mettapedia.PLN.WorldModel.SufficientStatisticEncoder.aggregate S σ₂ q) i ∧
           Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceDirichlet.idmUpper ctx
-            (Mettapedia.PLN.WorldModel.SufficientStatisticSurface.aggregate S σ₁ q) i =
+            (Mettapedia.PLN.WorldModel.SufficientStatisticEncoder.aggregate S σ₁ q) i =
               Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceDirichlet.idmUpper ctx
-                (Mettapedia.PLN.WorldModel.SufficientStatisticSurface.aggregate S σ₂ q) i ∧
+                (Mettapedia.PLN.WorldModel.SufficientStatisticEncoder.aggregate S σ₂ q) i ∧
           Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceDirichlet.idmWidth ctx
-            (Mettapedia.PLN.WorldModel.SufficientStatisticSurface.aggregate S σ₁ q) =
+            (Mettapedia.PLN.WorldModel.SufficientStatisticEncoder.aggregate S σ₁ q) =
               Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceDirichlet.idmWidth ctx
-                (Mettapedia.PLN.WorldModel.SufficientStatisticSurface.aggregate S σ₂ q)
+                (Mettapedia.PLN.WorldModel.SufficientStatisticEncoder.aggregate S σ₂ q)
 
 /-- Sufficient-statistic query profile for strength, confidence, categorical
 means, and categorical IDM envelopes. -/
@@ -274,15 +274,15 @@ def sufficientStatisticQueryProfile : SufficientStatisticQueryProfile where
     exact
       Mettapedia.PLN.TruthValues.PLNForcedQueries.queryConfidence_eq_of_same_evidence
         κ h
-  binarySurfaceStrengthForced := by
+  binaryEncoderStrengthForced := by
     intro Obs Query S σ₁ σ₂ q h
     exact
-      Mettapedia.PLN.TruthValues.PLNForcedQueries.binarySurface_strength_eq_of_same_aggregate
+      Mettapedia.PLN.TruthValues.PLNForcedQueries.binaryEncoder_strength_eq_of_same_aggregate
         S h
-  binarySurfaceConfidenceForced := by
+  binaryEncoderConfidenceForced := by
     intro Obs Query S κ σ₁ σ₂ q h
     exact
-      Mettapedia.PLN.TruthValues.PLNForcedQueries.binarySurface_confidence_eq_of_same_aggregate
+      Mettapedia.PLN.TruthValues.PLNForcedQueries.binaryEncoder_confidence_eq_of_same_aggregate
         S κ h
   categoricalMeanForced := by
     intro Obs Query k S σ₁ σ₂ q i h

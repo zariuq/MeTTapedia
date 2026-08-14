@@ -2,7 +2,7 @@ import Mettapedia.PLN.RuleFamilies.FirstOrder.PLNXiDerivedBNRules
 import Mettapedia.PLN.WorldModel.PLNWorldModelCalculus
 
 /-!
-# PLN End-to-End (Stable Surface)
+# PLN End-to-End (Stable Interface)
 
 This module is intentionally thin: it exposes stable names for the proved
 BN ↔ WM ↔ OSLF links without introducing heavyweight wrapper theorems that

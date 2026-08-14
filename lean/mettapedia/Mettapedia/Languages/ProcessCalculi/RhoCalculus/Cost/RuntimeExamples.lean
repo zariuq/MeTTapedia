@@ -33,8 +33,8 @@ def whole (cost : RawCostSig) : RawCostTerm :=
 def recvEndpoint : RawCostTerm := .signed (.recv pay done) alice
 def sendEndpoint : RawCostTerm := .signed (.send pay payload) bob
 
-def purse (surface : RawCostName) (stack : RawCostStack) : RawCostTerm :=
-  .purse surface stack
+def purse (location : RawCostName) (stack : RawCostStack) : RawCostTerm :=
+  .purse location stack
 
 def parList (terms : List RawCostTerm) : RawCostTerm :=
   RawCostTerm.fromComponents terms
@@ -84,19 +84,19 @@ def wrongLocation : RawCostTerm :=
 def wrongSignature : RawCostTerm :=
   parList [whole alice, purse pay [bob]]
 
-def crossSurfacePartialCover : RawCostTerm :=
+def crossLocationPartialCover : RawCostTerm :=
   parList [whole aliceBob, purse pay [alice], purse wrong [bob]]
 
-theorem correct_signature_wrong_surface_blocks :
+theorem correct_signature_wrong_location_blocks :
     runtimeCostFrontier wrongLocation = some [] := by
   decide
 
-theorem wrong_signature_correct_surface_blocks :
+theorem wrong_signature_correct_location_blocks :
     runtimeCostFrontier wrongSignature = some [] := by
   decide
 
-theorem cross_surface_token_gathering_blocks :
-    runtimeCostFrontier crossSurfacePartialCover = some [] := by
+theorem cross_location_token_gathering_blocks :
+    runtimeCostFrontier crossLocationPartialCover = some [] := by
   decide
 
 /-! ## Contribution and residual fidelity -/
@@ -136,17 +136,17 @@ theorem unselected_purse_remains_unchanged :
         decide (term = RawCostTerm.purse pay [bob])) = some true := by
   decide
 
-/-! ## Occurrence identity and cross-surface independence -/
+/-! ## Occurrence identity and cross-location independence -/
 
-def wholeAt (surface : RawCostName) (cost : RawCostSig) : RawCostTerm :=
-  .signed (.par (.recv surface done) (.send surface payload)) cost
+def wholeAt (location : RawCostName) (cost : RawCostSig) : RawCostTerm :=
+  .signed (.par (.recv location done) (.send location payload)) cost
 
-def twoIndependentSurfaces : RawCostTerm :=
+def twoIndependentLocations : RawCostTerm :=
   parList [wholeAt pay alice, purse pay [alice],
     wholeAt wrong bob, purse wrong [bob]]
 
-theorem distinct_surfaces_form_two_independent_events :
-    (boundedCausalPrefix 2 twoIndependentSurfaces).map (fun result =>
+theorem distinct_locations_form_two_independent_events :
+    (boundedCausalPrefix 2 twoIndependentLocations).map (fun result =>
       (result.receipt.length, result.receipt.all (·.causes.isEmpty))) =
       some (2, true) := by
   decide

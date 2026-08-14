@@ -153,17 +153,17 @@ theorem exists_raw_zipIdx_of_mem_decodeRawConfig
 
 /-- Reconstruct the exact active purse term represented by a collector row. -/
 def RawIndexedPurse.toTerm (purse : RawIndexedPurse) : RawCostTerm :=
-  .purse purse.surface (purse.head :: purse.tail)
+  .purse purse.location (purse.head :: purse.tail)
 
 /-- Declarative view of one active purse collector row. -/
 def RawIndexedPurse.toLocated (purse : RawIndexedPurse) : LocatedPurse String :=
-  ⟨decodeCostName purse.surface,
+  ⟨decodeCostName purse.location,
     .cons (decodeCostSig purse.head) (decodeCostStack purse.tail)⟩
 
 /-- Extract exactly the active located purses from a declarative component.
 Depleted purses remain observable terms but cannot fund a firing. -/
 def CostTerm.activeLocatedPurse? : CostTerm String → Option (LocatedPurse String)
-  | .purse surface (.cons head tail) => some ⟨surface, .cons head tail⟩
+  | .purse location (.cons head tail) => some ⟨location, .cons head tail⟩
   | _ => none
 
 @[simp]
@@ -186,7 +186,7 @@ def LocatedPurse.exposeTail (purse : LocatedPurse String) :
     LocatedPurse String :=
   match purse.stack with
   | .empty => purse
-  | .cons _ tail => ⟨purse.surface, tail⟩
+  | .cons _ tail => ⟨purse.location, tail⟩
 
 /-- Active purses have a spendable head.  Depleted purses remain ordinary
 inert configuration components. -/
@@ -202,7 +202,7 @@ theorem collectPursesAux_map_toTerm :
   | term :: rest, start => by
       have tail := collectPursesAux_map_toTerm rest (start + 1)
       cases term with
-      | purse surface stack =>
+      | purse location stack =>
           cases stack with
           | nil => simpa [collectPursesAux, RawCostTerm.isActivePurse] using tail
           | cons head stackTail =>
@@ -227,7 +227,7 @@ theorem collectPursesAux_map_toLocated :
   | term :: rest, start => by
       have tail := collectPursesAux_map_toLocated rest (start + 1)
       cases term with
-      | purse surface stack =>
+      | purse location stack =>
           cases stack with
           | nil =>
               simpa [collectPursesAux, decodeRawConfig, decodeCostTerm,
@@ -236,7 +236,7 @@ theorem collectPursesAux_map_toLocated :
               have prefixed := congrArg
                 (fun purses : Multiset (LocatedPurse String) =>
                   RawIndexedPurse.toLocated
-                    ⟨start, surface, head, stackTail⟩ ::ₘ purses)
+                    ⟨start, location, head, stackTail⟩ ::ₘ purses)
                 tail
               simpa [collectPursesAux, decodeRawConfig, decodeCostTerm,
                 decodeCostStack, CostTerm.activeLocatedPurse?,
@@ -263,9 +263,9 @@ theorem RawCostConfig.purses_map_toLocated (config : RawCostConfig) :
 
 @[simp]
 theorem activeLocatedPurses_selectedBefore
-    {surface : CostName String} {demand : CostSig String}
+    {location : CostName String} {demand : CostSig String}
     {available residual : Multiset (LocatedPurse String)}
-    (cover : LocatedTokenCover surface demand available residual) :
+    (cover : LocatedTokenCover location demand available residual) :
     (LocatedPurse.configComponents cover.selectedBefore).filterMap
         CostTerm.activeLocatedPurse? =
       cover.selectedBefore := by
@@ -273,19 +273,19 @@ theorem activeLocatedPurses_selectedBefore
   rw [LocatedTokenCover.selectedBefore, Multiset.filterMap_map]
   change Multiset.filterMap
       (some ∘ fun choice : SelectedPurseHead String =>
-        LocatedPurse.mk surface (.cons choice.head choice.tail)) cover.chosen =
+        LocatedPurse.mk location (.cons choice.head choice.tail)) cover.chosen =
     Multiset.map
       (fun choice : SelectedPurseHead String =>
-        LocatedPurse.mk surface (.cons choice.head choice.tail)) cover.chosen
+        LocatedPurse.mk location (.cons choice.head choice.tail)) cover.chosen
   exact congrFun (Multiset.filterMap_eq_map _) cover.chosen
 
 /-- Every selected purse occurrence can be recovered from the active-purse
 projection of any source configuration containing the cover's availability. -/
 theorem LocatedTokenCover.selectedBefore_le_activePurses
-    {surface : CostName String} {demand : CostSig String}
+    {location : CostName String} {demand : CostSig String}
     {available residual : Multiset (LocatedPurse String)}
     {source : CostConfig String}
-    (cover : LocatedTokenCover surface demand available residual)
+    (cover : LocatedTokenCover location demand available residual)
     (available_le : LocatedPurse.configComponents available ≤
       source) :
     cover.selectedBefore ≤
@@ -309,10 +309,10 @@ theorem LocatedTokenCover.selectedBefore_le_activePurses
 /-- A declarative exact cover determines concrete raw purse occurrences in
 source order, with multiplicity retained. -/
 theorem exists_raw_selectedBefore
-    {config : RawCostConfig} {surface : CostName String}
+    {config : RawCostConfig} {location : CostName String}
     {demand : CostSig String}
     {available residual : Multiset (LocatedPurse String)}
-    (cover : LocatedTokenCover surface demand available residual)
+    (cover : LocatedTokenCover location demand available residual)
     (available_le : LocatedPurse.configComponents available ≤
       decodeRawConfig config) :
     ∃ selected : List RawSelectedPurse,
@@ -331,17 +331,17 @@ def LocatedPurse.headSpend (purse : LocatedPurse String) : CostSig String :=
   | .cons head _ => head
 
 theorem LocatedTokenCover.selectedBefore_headSpend_eq_demand
-    {surface : CostName String} {demand : CostSig String}
+    {location : CostName String} {demand : CostSig String}
     {available residual : Multiset (LocatedPurse String)}
-    (cover : LocatedTokenCover surface demand available residual) :
+    (cover : LocatedTokenCover location demand available residual) :
     (cover.selectedBefore.map LocatedPurse.headSpend).sum = demand := by
   rw [LocatedTokenCover.selectedBefore, Multiset.map_map]
   simpa [LocatedPurse.headSpend, Function.comp_def] using cover.demand_eq.symm
 
 theorem LocatedTokenCover.selectedBefore_exposeTail_eq_selectedAfter
-    {surface : CostName String} {demand : CostSig String}
+    {location : CostName String} {demand : CostSig String}
     {available residual : Multiset (LocatedPurse String)}
-    (cover : LocatedTokenCover surface demand available residual) :
+    (cover : LocatedTokenCover location demand available residual) :
     cover.selectedBefore.map LocatedPurse.exposeTail = cover.selectedAfter := by
   rw [LocatedTokenCover.selectedBefore, LocatedTokenCover.selectedAfter,
     Multiset.map_map]
@@ -358,9 +358,9 @@ theorem rawSelectedSpend_eq_toLocated_headSpend
 
 /-- Recovered purse occurrences spend the declarative demand exactly. -/
 theorem rawSelectedSpend_eq_demand
-    {surface : CostName String} {demand : CostSig String}
+    {location : CostName String} {demand : CostSig String}
     {available residual : Multiset (LocatedPurse String)}
-    (cover : LocatedTokenCover surface demand available residual)
+    (cover : LocatedTokenCover location demand available residual)
     {selected : List RawSelectedPurse}
     (selected_eq : (selected.map RawIndexedPurse.toLocated :
       Multiset (LocatedPurse String)) = cover.selectedBefore) :
@@ -369,9 +369,9 @@ theorem rawSelectedSpend_eq_demand
   exact cover.selectedBefore_headSpend_eq_demand
 
 theorem decodedSelectedTerms_eq_selectedBefore_components
-    {surface : CostName String} {demand : CostSig String}
+    {location : CostName String} {demand : CostSig String}
     {available residual : Multiset (LocatedPurse String)}
-    (cover : LocatedTokenCover surface demand available residual)
+    (cover : LocatedTokenCover location demand available residual)
     {selected : List RawSelectedPurse}
     (selected_eq : (selected.map RawIndexedPurse.toLocated :
       Multiset (LocatedPurse String)) = cover.selectedBefore) :
@@ -404,7 +404,7 @@ theorem collectPursesAux_indices_sublist :
   | term :: rest, start => by
       have tail := collectPursesAux_indices_sublist rest (start + 1)
       cases term with
-      | purse surface stack =>
+      | purse location stack =>
           cases stack with
           | nil =>
               simpa [collectPursesAux, List.zipIdx] using tail.cons start
@@ -475,7 +475,7 @@ theorem RawCostTerm.normalizeConfig_canonical (term : RawCostTerm) :
 
 /-- Canonicality data retained by an active purse occurrence. -/
 structure RawIndexedPurse.Normalized (purse : RawIndexedPurse) : Prop where
-  surface : purse.surface.normalize = purse.surface
+  location : purse.location.normalize = purse.location
   head : purse.head.normalize = purse.head
   tail : purse.tail.map RawCostSig.normalize = purse.tail
 
@@ -490,18 +490,18 @@ theorem collectPursesAux_forall_normalized :
       have tail_result :=
         collectPursesAux_forall_normalized rest (start + 1) rest_fixed
       cases term with
-      | purse surface stack =>
+      | purse location stack =>
           cases stack with
           | nil => simpa [collectPursesAux] using tail_result
           | cons head tail =>
-              change (RawCostTerm.purse surface (head :: tail)).normalize =
-                RawCostTerm.purse surface (head :: tail) at term_fixed
+              change (RawCostTerm.purse location (head :: tail)).normalize =
+                RawCostTerm.purse location (head :: tail) at term_fixed
               have purse_fixed := term_fixed
               simp only [RawCostTerm.normalize] at purse_fixed
               have parts := RawCostTerm.purse.inj purse_fixed
               have stack_parts := List.cons.inj parts.2
               exact (List.forall_cons RawIndexedPurse.Normalized
-                ⟨start, surface, head, tail⟩ _).mpr
+                ⟨start, location, head, tail⟩ _).mpr
                 ⟨⟨parts.1, stack_parts.1, stack_parts.2⟩, tail_result⟩
       | nil => simpa [collectPursesAux] using tail_result
       | signed proc sig => simpa [collectPursesAux] using tail_result
@@ -524,73 +524,73 @@ theorem selectedPurses_forall_normalized
     (RawCostConfig.purses_forall_normalized canonical) purse
     (selected_source.mem member)
 
-theorem selectedPurses_surface_eq
+theorem selectedPurses_location_eq
     {config : RawCostConfig} {step : RawRuntimeStep}
     (canonical : config.Canonical) (funding : step.FundingValidFor config)
-    (surface_fixed : step.surface.normalize = step.surface) :
-    ∀ purse ∈ step.selectedPurses, purse.surface = step.surface := by
+    (location_fixed : step.location.normalize = step.location) :
+    ∀ purse ∈ step.selectedPurses, purse.location = step.location := by
   intro purse member
   have selected_normalized := selectedPurses_forall_normalized canonical
     funding.selected_from_config
   have purse_fixed := List.forall_iff_forall_mem.mp selected_normalized purse member
   calc
-    purse.surface = purse.surface.normalize := purse_fixed.surface.symm
-    _ = step.surface.normalize := funding.selected_at_surface purse member
-    _ = step.surface := surface_fixed
+    purse.location = purse.location.normalize := purse_fixed.location.symm
+    _ = step.location.normalize := funding.selected_at_location purse member
+    _ = step.location := location_fixed
 
-theorem recoveredSelected_surface_eq
+theorem recoveredSelected_location_eq
     {config : RawCostConfig} (canonical : config.Canonical)
-    {surface : CostName String} {demand : CostSig String}
+    {location : CostName String} {demand : CostSig String}
     {available residual : Multiset (LocatedPurse String)}
-    (cover : LocatedTokenCover surface demand available residual)
+    (cover : LocatedTokenCover location demand available residual)
     {selected : List RawSelectedPurse}
     (selected_source : selected.Sublist config.purses)
     (selected_eq : (selected.map RawIndexedPurse.toLocated :
       Multiset (LocatedPurse String)) = cover.selectedBefore)
-    {rawSurface : RawCostName}
-    (raw_surface_fixed : rawSurface.normalize = rawSurface)
-    (decoded_surface : decodeCostName rawSurface = surface) :
-    ∀ purse ∈ selected, purse.surface = rawSurface := by
+    {rawLocation : RawCostName}
+    (raw_location_fixed : rawLocation.normalize = rawLocation)
+    (decoded_location : decodeCostName rawLocation = location) :
+    ∀ purse ∈ selected, purse.location = rawLocation := by
   intro purse purse_mem
   have purse_normalized := List.forall_iff_forall_mem.mp
     (selectedPurses_forall_normalized canonical selected_source) purse purse_mem
-  have purse_canonical : purse.surface.EncodingCanonical := by
-    rw [← purse_normalized.surface]
-    exact RawCostName.normalize_encodingCanonical purse.surface
-  have raw_surface_canonical : rawSurface.EncodingCanonical := by
-    rw [← raw_surface_fixed]
-    exact RawCostName.normalize_encodingCanonical rawSurface
+  have purse_canonical : purse.location.EncodingCanonical := by
+    rw [← purse_normalized.location]
+    exact RawCostName.normalize_encodingCanonical purse.location
+  have raw_location_canonical : rawLocation.EncodingCanonical := by
+    rw [← raw_location_fixed]
+    exact RawCostName.normalize_encodingCanonical rawLocation
   have mapped_mem : purse.toLocated ∈
       (selected.map RawIndexedPurse.toLocated :
         Multiset (LocatedPurse String)) := by
     simpa using List.mem_map.mpr ⟨purse, purse_mem, rfl⟩
   rw [selected_eq] at mapped_mem
-  have purse_surface := cover.selected_before_surface mapped_mem
-  change decodeCostName purse.surface = surface at purse_surface
+  have purse_location := cover.selected_before_location mapped_mem
+  change decodeCostName purse.location = location at purse_location
   exact RawCostName.decode_injective_of_encodingCanonical
-    purse_canonical raw_surface_canonical
-    (purse_surface.trans decoded_surface.symm)
+    purse_canonical raw_location_canonical
+    (purse_location.trans decoded_location.symm)
 
 theorem recoveredSelected_sublist_matching
     {config : RawCostConfig} (canonical : config.Canonical)
-    {surface : CostName String} {demand : CostSig String}
+    {location : CostName String} {demand : CostSig String}
     {available residual : Multiset (LocatedPurse String)}
-    (cover : LocatedTokenCover surface demand available residual)
+    (cover : LocatedTokenCover location demand available residual)
     {selected : List RawSelectedPurse}
     (selected_source : selected.Sublist config.purses)
     (selected_eq : (selected.map RawIndexedPurse.toLocated :
       Multiset (LocatedPurse String)) = cover.selectedBefore)
-    {rawSurface : RawCostName}
-    (raw_surface_fixed : rawSurface.normalize = rawSurface)
-    (decoded_surface : decodeCostName rawSurface = surface) :
-    selected.Sublist (matchingPurses rawSurface config.purses) := by
-  have located := recoveredSelected_surface_eq canonical cover selected_source
-    selected_eq raw_surface_fixed decoded_surface
+    {rawLocation : RawCostName}
+    (raw_location_fixed : rawLocation.normalize = rawLocation)
+    (decoded_location : decodeCostName rawLocation = location) :
+    selected.Sublist (matchingPurses rawLocation config.purses) := by
+  have located := recoveredSelected_location_eq canonical cover selected_source
+    selected_eq raw_location_fixed decoded_location
   have filtered := selected_source.filter fun purse =>
-    decide (purse.surface.normalize = rawSurface.normalize)
+    decide (purse.location.normalize = rawLocation.normalize)
   have selected_filter :
       selected.filter (fun purse =>
-        decide (purse.surface.normalize = rawSurface.normalize)) = selected := by
+        decide (purse.location.normalize = rawLocation.normalize)) = selected := by
     apply List.filter_eq_self.mpr
     intro purse purse_mem
     simp [located purse purse_mem]
@@ -646,9 +646,9 @@ mutual
     | .drop name => by
         simp only [decodeCostTerm, CostTerm.lift]
         rw [decodeCostName_lift amount cutoff name]
-    | .purse surface stack => by
+    | .purse location stack => by
         simp only [decodeCostTerm, CostTerm.lift]
-        rw [decodeCostName_lift amount cutoff surface]
+        rw [decodeCostName_lift amount cutoff location]
 end
 
 mutual
@@ -712,9 +712,9 @@ mutual
             · split <;> rfl
         | quote term => rfl
         | signature sig => rfl
-    | .purse surface stack => by
+    | .purse location stack => by
         simp only [decodeCostTerm, CostTerm.substitute]
-        rw [decodeCostName_substitute replacement depth surface]
+        rw [decodeCostName_substitute replacement depth location]
 end
 
 @[simp]
@@ -767,31 +767,31 @@ theorem decodeSelectedHeads_tails :
         (List.forall_cons RawIndexedPurse.WellFormed purse rest).mp valid
       simp [decodeSelectedHeads, decodeSelectedHeads_tails rest valid'.2]
 
-def decodedSelectedAvailable (surface : RawCostName)
+def decodedSelectedAvailable (location : RawCostName)
     (selected : List RawSelectedPurse)
     (valid : selected.Forall RawIndexedPurse.WellFormed) :
     Multiset (LocatedPurse String) :=
   (↑(decodeSelectedHeads selected valid) :
       Multiset (SelectedPurseHead String)).map fun choice =>
-    ⟨decodeCostName surface, .cons choice.head choice.tail⟩
+    ⟨decodeCostName location, .cons choice.head choice.tail⟩
 
-def decodedSelectedResidual (surface : RawCostName)
+def decodedSelectedResidual (location : RawCostName)
     (selected : List RawSelectedPurse)
     (valid : selected.Forall RawIndexedPurse.WellFormed) :
     Multiset (LocatedPurse String) :=
   (↑(decodeSelectedHeads selected valid) :
       Multiset (SelectedPurseHead String)).map fun choice =>
-    ⟨decodeCostName surface, choice.tail⟩
+    ⟨decodeCostName location, choice.tail⟩
 
 /-- The selected executable heads, viewed as a declarative exact cover at
-the candidate's canonical interaction surface. -/
-def decodedSelectedCover (surface : RawCostName) (demand : RawCostSig)
+the candidate's canonical interaction location. -/
+def decodedSelectedCover (location : RawCostName) (demand : RawCostSig)
     (selected : List RawSelectedPurse)
     (valid : selected.Forall RawIndexedPurse.WellFormed)
     (exact : rawSelectedSpend selected = demand.toMultiset) :
-    LocatedTokenCover (decodeCostName surface) (decodeCostSig demand)
-      (decodedSelectedAvailable surface selected valid)
-      (decodedSelectedResidual surface selected valid) where
+    LocatedTokenCover (decodeCostName location) (decodeCostSig demand)
+      (decodedSelectedAvailable location selected valid)
+      (decodedSelectedResidual location selected valid) where
   chosen := decodeSelectedHeads selected valid
   untouched := 0
   available_eq := by simp [decodedSelectedAvailable]
@@ -804,7 +804,7 @@ def decodedSelectedCover (surface : RawCostName) (demand : RawCostSig)
     simpa [rawSelectedSpend, RawCostSig.toMultiset] using exact.symm
 
 def RawIndexedPurse.toTailTerm (purse : RawIndexedPurse) : RawCostTerm :=
-  .purse purse.surface purse.tail
+  .purse purse.location purse.tail
 
 @[simp]
 theorem RawIndexedPurse.decode_toTailTerm (purse : RawIndexedPurse) :
@@ -813,9 +813,9 @@ theorem RawIndexedPurse.decode_toTailTerm (purse : RawIndexedPurse) :
     LocatedPurse.exposeTail, LocatedPurse.toTerm, decodeCostTerm]
 
 theorem decodedSelectedTailTerms_eq_selectedAfter_components
-    {surface : CostName String} {demand : CostSig String}
+    {location : CostName String} {demand : CostSig String}
     {available residual : Multiset (LocatedPurse String)}
-    (cover : LocatedTokenCover surface demand available residual)
+    (cover : LocatedTokenCover location demand available residual)
     {selected : List RawSelectedPurse}
     (selected_eq : (selected.map RawIndexedPurse.toLocated :
       Multiset (LocatedPurse String)) = cover.selectedBefore) :
@@ -838,73 +838,73 @@ theorem decodedSelectedTailTerms_eq_selectedAfter_components
       rw [cover.selectedBefore_exposeTail_eq_selectedAfter]
 
 theorem decodedSelectedAvailable_components :
-    ∀ (surface : RawCostName) (selected : List RawSelectedPurse)
+    ∀ (location : RawCostName) (selected : List RawSelectedPurse)
       (valid : selected.Forall RawIndexedPurse.WellFormed),
-      (∀ purse ∈ selected, purse.surface = surface) →
+      (∀ purse ∈ selected, purse.location = location) →
       LocatedPurse.configComponents
-          (decodedSelectedAvailable surface selected valid) =
+          (decodedSelectedAvailable location selected valid) =
         (selected.map (decodeCostTerm ∘ RawIndexedPurse.toTerm) :
           Multiset (CostTerm String))
   | _, [], _, _ => by
       simp [decodedSelectedAvailable, LocatedPurse.configComponents,
         decodeSelectedHeads]
-  | surface, purse :: rest, valid, located => by
+  | location, purse :: rest, valid, located => by
       have valid' :=
         (List.forall_cons RawIndexedPurse.WellFormed purse rest).mp valid
-      have purse_surface := located purse (by simp)
-      have rest_located : ∀ candidate ∈ rest, candidate.surface = surface := by
+      have purse_location := located purse (by simp)
+      have rest_located : ∀ candidate ∈ rest, candidate.location = location := by
         intro candidate member
         exact located candidate (by simp [member])
       rw [show valid = (List.forall_cons RawIndexedPurse.WellFormed purse rest).mpr
         valid' by rfl]
-      change ({CostTerm.purse (decodeCostName surface)
+      change ({CostTerm.purse (decodeCostName location)
             (.cons (decodeCostSig purse.head) (decodeCostStack purse.tail))} :
           Multiset (CostTerm String)) +
           LocatedPurse.configComponents
-            (decodedSelectedAvailable surface rest valid'.2) =
+            (decodedSelectedAvailable location rest valid'.2) =
         {decodeCostTerm purse.toTerm} +
           (rest.map (decodeCostTerm ∘ RawIndexedPurse.toTerm) :
             Multiset (CostTerm String))
-      rw [decodedSelectedAvailable_components surface rest valid'.2 rest_located]
+      rw [decodedSelectedAvailable_components location rest valid'.2 rest_located]
       simp [RawIndexedPurse.toTerm, decodeCostTerm, decodeCostStack,
-        purse_surface]
+        purse_location]
 
 theorem decodedSelectedResidual_components :
-    ∀ (surface : RawCostName) (selected : List RawSelectedPurse)
+    ∀ (location : RawCostName) (selected : List RawSelectedPurse)
       (valid : selected.Forall RawIndexedPurse.WellFormed),
-      (∀ purse ∈ selected, purse.surface = surface) →
+      (∀ purse ∈ selected, purse.location = location) →
       LocatedPurse.configComponents
-          (decodedSelectedResidual surface selected valid) =
+          (decodedSelectedResidual location selected valid) =
         (selected.map (decodeCostTerm ∘ RawIndexedPurse.toTailTerm) :
           Multiset (CostTerm String))
   | _, [], _, _ => by
       simp [decodedSelectedResidual, LocatedPurse.configComponents,
         decodeSelectedHeads]
-  | surface, purse :: rest, valid, located => by
+  | location, purse :: rest, valid, located => by
       have valid' :=
         (List.forall_cons RawIndexedPurse.WellFormed purse rest).mp valid
-      have purse_surface := located purse (by simp)
-      have rest_located : ∀ candidate ∈ rest, candidate.surface = surface := by
+      have purse_location := located purse (by simp)
+      have rest_located : ∀ candidate ∈ rest, candidate.location = location := by
         intro candidate member
         exact located candidate (by simp [member])
       rw [show valid = (List.forall_cons RawIndexedPurse.WellFormed purse rest).mpr
         valid' by rfl]
-      change ({CostTerm.purse (decodeCostName surface)
+      change ({CostTerm.purse (decodeCostName location)
             (decodeCostStack purse.tail)} : Multiset (CostTerm String)) +
           LocatedPurse.configComponents
-            (decodedSelectedResidual surface rest valid'.2) =
+            (decodedSelectedResidual location rest valid'.2) =
         {decodeCostTerm purse.toTailTerm} +
           (rest.map (decodeCostTerm ∘ RawIndexedPurse.toTailTerm) :
             Multiset (CostTerm String))
-      rw [decodedSelectedResidual_components surface rest valid'.2 rest_located]
-      simp [RawIndexedPurse.toTailTerm, decodeCostTerm, purse_surface]
+      rw [decodedSelectedResidual_components location rest valid'.2 rest_located]
+      simp [RawIndexedPurse.toTailTerm, decodeCostTerm, purse_location]
 
 /-! ## Occurrence provenance of the raw collectors -/
 
 theorem mem_collectPursesAux_zipIdx :
     ∀ {config : RawCostConfig} {start : Nat} {purse : RawIndexedPurse},
       purse ∈ collectPursesAux config start →
-        (RawCostTerm.purse purse.surface (purse.head :: purse.tail), purse.index) ∈
+        (RawCostTerm.purse purse.location (purse.head :: purse.tail), purse.index) ∈
           config.zipIdx start
   | [], _, _, member => by simp [collectPursesAux] at member
   | term :: rest, start, purse, member => by
@@ -913,7 +913,7 @@ theorem mem_collectPursesAux_zipIdx :
           entry ∈ (term :: rest).zipIdx start := by
         simp [List.zipIdx, tail_member]
       cases term with
-      | purse surface stack =>
+      | purse location stack =>
           cases stack with
           | nil =>
               exact lift_tail
@@ -1107,11 +1107,11 @@ theorem mem_collectSendsAux_of_mem_zipIdx :
         | none => simpa [collectSendsAux, head_found] using tail_result
         | some head => simp [collectSendsAux, head_found, tail_result]
 
-/-! ## Candidate origins and canonical surfaces -/
+/-! ## Candidate origins and canonical locations -/
 
-theorem wholeAt?_surface_normalized {index : Nat} {term : RawCostTerm}
+theorem wholeAt?_location_normalized {index : Nat} {term : RawCostTerm}
     {redex : RawWholeRedex} (found : wholeAt? index term = some redex) :
-    redex.surface.normalize = redex.surface := by
+    redex.location.normalize = redex.location := by
   cases term with
   | signed proc sig =>
       cases proc with
@@ -1121,17 +1121,17 @@ theorem wholeAt?_surface_normalized {index : Nat} {term : RawCostTerm}
       | _ => simp [wholeAt?] at found
   | _ => simp [wholeAt?] at found
 
-theorem recvAt?_surface_normalized {index : Nat} {term : RawCostTerm}
+theorem recvAt?_location_normalized {index : Nat} {term : RawCostTerm}
     {endpoint : RawRecvEndpoint} (found : recvAt? index term = some endpoint) :
-    endpoint.surface.normalize = endpoint.surface := by
+    endpoint.location.normalize = endpoint.location := by
   cases term <;> simp [recvAt?] at found
   rename_i proc sig
   cases proc <;> simp at found
   all_goals subst endpoint; simp
 
-theorem sendAt?_surface_normalized {index : Nat} {term : RawCostTerm}
+theorem sendAt?_location_normalized {index : Nat} {term : RawCostTerm}
     {endpoint : RawSendEndpoint} (found : sendAt? index term = some endpoint) :
-    endpoint.surface.normalize = endpoint.surface := by
+    endpoint.location.normalize = endpoint.location := by
   cases term <;> simp [sendAt?] at found
   rename_i proc sig
   cases proc <;> simp at found
@@ -1173,21 +1173,21 @@ theorem runtimeCostCandidatesFromConfig_origin
       send_member, recvSource_member, sendSource_member, recv_found,
       send_found, step_member⟩
 
-theorem runtimeCostCandidatesFromConfig_surface_normalized
+theorem runtimeCostCandidatesFromConfig_location_normalized
     {config : RawCostConfig} {step : RawRuntimeStep}
     (member : step ∈ runtimeCostCandidatesFromConfig config) :
-    step.surface.normalize = step.surface := by
+    step.location.normalize = step.location := by
   rcases runtimeCostCandidatesFromConfig_origin member with
     ⟨redex, source, _, _, found, step_member⟩ |
       ⟨recv, send, recvSource, sendSource, _, _, _, _, recv_found,
         send_found, step_member⟩
   · simp only [wholeCandidates] at step_member
     obtain ⟨cover, _, rfl⟩ := List.mem_map.mp step_member
-    exact wholeAt?_surface_normalized found
+    exact wholeAt?_location_normalized found
   · unfold splitCandidates at step_member
     split at step_member
     · obtain ⟨cover, _, rfl⟩ := List.mem_map.mp step_member
-      exact recvAt?_surface_normalized recv_found
+      exact recvAt?_location_normalized recv_found
     · contradiction
 
 def selectedSourceEntries (selected : List RawSelectedPurse) :
@@ -1434,9 +1434,9 @@ theorem whole_recovered_frame_eq_context
     (source_mem : (source, redex.index) ∈ config.zipIdx)
     (found : wholeAt? redex.index source = some redex)
     (selected_source : selected.Sublist config.purses)
-    {surface : CostName String} {demand : CostSig String}
+    {location : CostName String} {demand : CostSig String}
     {available residual : Multiset (LocatedPurse String)}
-    (cover : LocatedTokenCover surface demand available residual)
+    (cover : LocatedTokenCover location demand available residual)
     (selected_eq : (selected.map RawIndexedPurse.toLocated :
       Multiset (LocatedPurse String)) = cover.selectedBefore)
     {participant : CostTerm String}
@@ -1503,9 +1503,9 @@ theorem split_recovered_frame_eq_context
     (send_found : sendAt? send.index sendSource = some send)
     {selected : List RawSelectedPurse}
     (selected_source : selected.Sublist config.purses)
-    {surface : CostName String} {demand : CostSig String}
+    {location : CostName String} {demand : CostSig String}
     {available residual : Multiset (LocatedPurse String)}
-    (cover : LocatedTokenCover surface demand available residual)
+    (cover : LocatedTokenCover location demand available residual)
     (selected_eq : (selected.map RawIndexedPurse.toLocated :
       Multiset (LocatedPurse String)) = cover.selectedBefore)
     {recvParticipant sendParticipant : CostTerm String}
@@ -1664,19 +1664,19 @@ theorem wholeAt?_decode_source_of_normalized
     (found : wholeAt? index source = some redex) :
     decodeCostTerm source =
         .signed (.par
-          (.recv (decodeCostName redex.surface) (decodeCostTerm redex.body))
-          (.send (decodeCostName redex.surface) (decodeCostTerm redex.payload)))
+          (.recv (decodeCostName redex.location) (decodeCostTerm redex.body))
+          (.send (decodeCostName redex.location) (decodeCostTerm redex.payload)))
           (decodeCostSig redex.sig) ∨
       decodeCostTerm source =
         .signed (.par
-          (.send (decodeCostName redex.surface) (decodeCostTerm redex.payload))
-          (.recv (decodeCostName redex.surface) (decodeCostTerm redex.body)))
+          (.send (decodeCostName redex.location) (decodeCostTerm redex.payload))
+          (.recv (decodeCostName redex.location) (decodeCostTerm redex.body)))
           (decodeCostSig redex.sig) := by
   cases source with
   | nil => simp [wholeAt?] at found
   | par left right => simp [wholeAt?] at found
   | drop name => simp [wholeAt?] at found
-  | purse surface stack => simp [wholeAt?] at found
+  | purse location stack => simp [wholeAt?] at found
   | signed proc sig =>
       have signed_fixed := RawCostTerm.signed.inj normalized
       have proc_fixed := signed_fixed.1
@@ -1703,7 +1703,7 @@ theorem recvAt?_decode_source_of_normalized
     (normalized : source.Normalized)
     (found : recvAt? index source = some recv) :
     decodeCostTerm source =
-      .signed (.recv (decodeCostName recv.surface) (decodeCostTerm recv.body))
+      .signed (.recv (decodeCostName recv.location) (decodeCostTerm recv.body))
         (decodeCostSig recv.sig) := by
   cases source with
   | signed proc sig =>
@@ -1717,14 +1717,14 @@ theorem recvAt?_decode_source_of_normalized
   | nil => simp [recvAt?] at found
   | par left right => simp [recvAt?] at found
   | drop name => simp [recvAt?] at found
-  | purse surface stack => simp [recvAt?] at found
+  | purse location stack => simp [recvAt?] at found
 
 theorem sendAt?_decode_source_of_normalized
     {index : Nat} {source : RawCostTerm} {send : RawSendEndpoint}
     (normalized : source.Normalized)
     (found : sendAt? index source = some send) :
     decodeCostTerm source =
-      .signed (.send (decodeCostName send.surface) (decodeCostTerm send.payload))
+      .signed (.send (decodeCostName send.location) (decodeCostTerm send.payload))
         (decodeCostSig send.sig) := by
   cases source with
   | signed proc sig =>
@@ -1738,7 +1738,7 @@ theorem sendAt?_decode_source_of_normalized
   | nil => simp [sendAt?] at found
   | par left right => simp [sendAt?] at found
   | drop name => simp [sendAt?] at found
-  | purse surface stack => simp [sendAt?] at found
+  | purse location stack => simp [sendAt?] at found
 
 theorem wholeAt?_decoded_fields_recv_send
     {index : Nat} {source : RawCostTerm} {redex : RawWholeRedex}
@@ -1748,7 +1748,7 @@ theorem wholeAt?_decoded_fields_recv_send
     (found : wholeAt? index source = some redex)
     (decoded : decodeCostTerm source =
       .signed (.par (.recv channel body) (.send channel payload)) sig) :
-    decodeCostName redex.surface = channel ∧
+    decodeCostName redex.location = channel ∧
       decodeCostTerm redex.body = body ∧
       decodeCostTerm redex.payload = payload ∧
       decodeCostSig redex.sig = sig := by
@@ -1767,7 +1767,7 @@ theorem wholeAt?_decoded_fields_send_recv
     (found : wholeAt? index source = some redex)
     (decoded : decodeCostTerm source =
       .signed (.par (.send channel payload) (.recv channel body)) sig) :
-    decodeCostName redex.surface = channel ∧
+    decodeCostName redex.location = channel ∧
       decodeCostTerm redex.body = body ∧
       decodeCostTerm redex.payload = payload ∧
       decodeCostSig redex.sig = sig := by
@@ -1785,7 +1785,7 @@ theorem recvAt?_decoded_fields
     (normalized : source.Normalized)
     (found : recvAt? index source = some recv)
     (decoded : decodeCostTerm source = .signed (.recv channel body) sig) :
-    decodeCostName recv.surface = channel ∧
+    decodeCostName recv.location = channel ∧
       decodeCostTerm recv.body = body ∧ decodeCostSig recv.sig = sig := by
   have same := decoded.symm.trans
     (recvAt?_decode_source_of_normalized normalized found)
@@ -1798,7 +1798,7 @@ theorem sendAt?_decoded_fields
     (normalized : source.Normalized)
     (found : sendAt? index source = some send)
     (decoded : decodeCostTerm source = .signed (.send channel payload) sig) :
-    decodeCostName send.surface = channel ∧
+    decodeCostName send.location = channel ∧
       decodeCostTerm send.payload = payload ∧ decodeCostSig send.sig = sig := by
   have same := decoded.symm.trans
     (sendAt?_decode_source_of_normalized normalized found)
@@ -1868,9 +1868,9 @@ mutual
     | .drop name => by
         simp [encodeCostTerm, decodeCostTerm, RawCostTerm.structuralDenote,
           RawCostName.encode_decode_structuralDenote name]
-    | .purse surface stack => by
+    | .purse location stack => by
         simp [encodeCostTerm, decodeCostTerm, RawCostTerm.structuralDenote,
-          RawCostName.encode_decode_structuralDenote surface,
+          RawCostName.encode_decode_structuralDenote location,
           RawCostStack.encode_decode_structuralFrames stack]
 end
 
@@ -2072,13 +2072,13 @@ theorem residualFor_structurallyRepresents
 
 /-! ## Executable-to-declarative correspondence -/
 
-/-- A raw candidate has a declarative step with the same surface and spend;
+/-- A raw candidate has a declarative step with the same location and spend;
 its executable residual represents the declarative target structurally. -/
 def RuntimeCostStepSound (config : RawCostConfig)
     (step : RawRuntimeStep) : Prop :=
   ∃ target : CostConfig String,
     CostStep (decodeRawConfig config)
-        (decodeCostName step.surface) (decodeCostSig step.spend) target ∧
+        (decodeCostName step.location) (decodeCostSig step.spend) target ∧
       step.residual.normalizeConfig.StructurallyRepresents target ∧
       (∀ (signatureName : SignatureNameEncoding String)
           (signaturePure : ∀ signature,
@@ -2105,19 +2105,19 @@ private theorem wholeCandidate_sound
   obtain ⟨selected, selected_member, step_eq⟩ := List.mem_map.mp step_member
   subst step
   have funding := runtimeCostCandidatesFromConfig_funding_valid enabled
-  have surface_fixed := wholeAt?_surface_normalized found
-  have located := selectedPurses_surface_eq canonical funding surface_fixed
+  have location_fixed := wholeAt?_location_normalized found
+  have located := selectedPurses_location_eq canonical funding location_fixed
   have selected_valid : selected.Forall RawIndexedPurse.WellFormed := by
     rw [List.forall_iff_forall_mem]
     intro purse purse_member
     exact RawRuntimeStep.selectedPurse_wellFormed config_ok enabled purse_member
   have redex_ok := List.forall_iff_forall_mem.mp
     (config.wholeRedexes_forall_wellFormed config_ok) redex redex_member
-  let available := decodedSelectedAvailable redex.surface selected selected_valid
-  let residual := decodedSelectedResidual redex.surface selected selected_valid
-  let cover : LocatedTokenCover (decodeCostName redex.surface)
+  let available := decodedSelectedAvailable redex.location selected selected_valid
+  let residual := decodedSelectedResidual redex.location selected selected_valid
+  let cover : LocatedTokenCover (decodeCostName redex.location)
       (decodeCostSig redex.sig) available residual :=
-    decodedSelectedCover redex.surface redex.sig selected selected_valid
+    decodedSelectedCover redex.location redex.sig selected selected_valid
       funding.exact_spend
   let context := decodeRawConfig
     (eraseIndices config ([redex.index] ++ selected.map RawIndexedPurse.index))
@@ -2140,13 +2140,13 @@ private theorem wholeCandidate_sound
         (selected.map (decodeCostTerm ∘ RawIndexedPurse.toTerm) :
           Multiset (CostTerm String)) := by
     simpa [available] using decodedSelectedAvailable_components
-      redex.surface selected selected_valid located
+      redex.location selected selected_valid located
   have residual_components :
       LocatedPurse.configComponents residual =
         (selected.map (decodeCostTerm ∘ RawIndexedPurse.toTailTerm) :
           Multiset (CostTerm String)) := by
     simpa [residual] using decodedSelectedResidual_components
-      redex.surface selected selected_valid located
+      redex.location selected selected_valid located
   have source_normalized :=
     RawCostConfig.normalized_of_mem_zipIdx canonical source_mem
   rcases wholeAt?_decode_source_of_normalized source_normalized found with
@@ -2154,8 +2154,8 @@ private theorem wholeCandidate_sound
   · have source_eq :
         context +
             {CostTerm.signed (.par
-              (.recv (decodeCostName redex.surface) (decodeCostTerm redex.body))
-              (.send (decodeCostName redex.surface)
+              (.recv (decodeCostName redex.location) (decodeCostTerm redex.body))
+              (.send (decodeCostName redex.location)
                 (decodeCostTerm redex.payload)))
               (decodeCostSig redex.sig)} +
             LocatedPurse.configComponents available =
@@ -2165,22 +2165,22 @@ private theorem wholeCandidate_sound
     have declarative0 : CostStep
         (context +
           (.signed (.par
-            (.recv (decodeCostName redex.surface) (decodeCostTerm redex.body))
-            (.send (decodeCostName redex.surface)
+            (.recv (decodeCostName redex.location) (decodeCostTerm redex.body))
+            (.send (decodeCostName redex.location)
               (decodeCostTerm redex.payload)))
             (decodeCostSig redex.sig) ::ₘ 0) +
           LocatedPurse.configComponents available)
-        (decodeCostName redex.surface) (decodeCostSig redex.sig) target :=
+        (decodeCostName redex.location) (decodeCostSig redex.sig) target :=
       CostStep.wholeRecvSend (decodeCostSig_runtimeValid redex_ok.sig) cover
     change CostStep
       (context +
         {CostTerm.signed (.par
-          (.recv (decodeCostName redex.surface) (decodeCostTerm redex.body))
-          (.send (decodeCostName redex.surface)
+          (.recv (decodeCostName redex.location) (decodeCostTerm redex.body))
+          (.send (decodeCostName redex.location)
             (decodeCostTerm redex.payload)))
           (decodeCostSig redex.sig)} +
         LocatedPurse.configComponents available)
-      (decodeCostName redex.surface) (decodeCostSig redex.sig) target
+      (decodeCostName redex.location) (decodeCostSig redex.sig) target
       at declarative0
     rw [source_eq] at declarative0
     refine ⟨target, declarative0, ?_, ?_, ?_⟩
@@ -2205,9 +2205,9 @@ private theorem wholeCandidate_sound
   · have source_eq :
         context +
             {CostTerm.signed (.par
-              (.send (decodeCostName redex.surface)
+              (.send (decodeCostName redex.location)
                 (decodeCostTerm redex.payload))
-              (.recv (decodeCostName redex.surface) (decodeCostTerm redex.body)))
+              (.recv (decodeCostName redex.location) (decodeCostTerm redex.body)))
               (decodeCostSig redex.sig)} +
             LocatedPurse.configComponents available =
           decodeRawConfig config := by
@@ -2216,22 +2216,22 @@ private theorem wholeCandidate_sound
     have declarative0 : CostStep
         (context +
           (.signed (.par
-            (.send (decodeCostName redex.surface)
+            (.send (decodeCostName redex.location)
               (decodeCostTerm redex.payload))
-            (.recv (decodeCostName redex.surface) (decodeCostTerm redex.body)))
+            (.recv (decodeCostName redex.location) (decodeCostTerm redex.body)))
             (decodeCostSig redex.sig) ::ₘ 0) +
           LocatedPurse.configComponents available)
-        (decodeCostName redex.surface) (decodeCostSig redex.sig) target :=
+        (decodeCostName redex.location) (decodeCostSig redex.sig) target :=
       CostStep.wholeSendRecv (decodeCostSig_runtimeValid redex_ok.sig) cover
     change CostStep
       (context +
         {CostTerm.signed (.par
-          (.send (decodeCostName redex.surface)
+          (.send (decodeCostName redex.location)
             (decodeCostTerm redex.payload))
-          (.recv (decodeCostName redex.surface) (decodeCostTerm redex.body)))
+          (.recv (decodeCostName redex.location) (decodeCostTerm redex.body)))
           (decodeCostSig redex.sig)} +
         LocatedPurse.configComponents available)
-      (decodeCostName redex.surface) (decodeCostSig redex.sig) target
+      (decodeCostName redex.location) (decodeCostSig redex.sig) target
       at declarative0
     rw [source_eq] at declarative0
     refine ⟨target, declarative0, ?_, ?_, ?_⟩
@@ -2271,18 +2271,18 @@ private theorem splitCandidate_sound
     RuntimeCostStepSound config step := by
   unfold splitCandidates at step_member
   split at step_member
-  next surfaces_match =>
+  next locations_match =>
     obtain ⟨selected, selected_member, step_eq⟩ := List.mem_map.mp step_member
     subst step
     have funding := runtimeCostCandidatesFromConfig_funding_valid enabled
-    have surface_fixed := recvAt?_surface_normalized recv_found
-    have send_surface_fixed := sendAt?_surface_normalized send_found
-    have surfaces_eq : send.surface = recv.surface := by
+    have location_fixed := recvAt?_location_normalized recv_found
+    have send_location_fixed := sendAt?_location_normalized send_found
+    have locations_eq : send.location = recv.location := by
       calc
-        send.surface = send.surface.normalize := send_surface_fixed.symm
-        _ = recv.surface.normalize := surfaces_match.symm
-        _ = recv.surface := surface_fixed
-    have located := selectedPurses_surface_eq canonical funding surface_fixed
+        send.location = send.location.normalize := send_location_fixed.symm
+        _ = recv.location.normalize := locations_match.symm
+        _ = recv.location := location_fixed
+    have located := selectedPurses_location_eq canonical funding location_fixed
     have selected_valid : selected.Forall RawIndexedPurse.WellFormed := by
       rw [List.forall_iff_forall_mem]
       intro purse purse_member
@@ -2298,13 +2298,13 @@ private theorem splitCandidate_sound
         (recv.sig : Multiset String) + (send.sig : Multiset String)
       rw [RawCostSig.normalize_toMultiset]
       rfl
-    let available := decodedSelectedAvailable recv.surface selected selected_valid
-    let residual := decodedSelectedResidual recv.surface selected selected_valid
-    let runtimeCover : LocatedTokenCover (decodeCostName recv.surface)
+    let available := decodedSelectedAvailable recv.location selected selected_valid
+    let residual := decodedSelectedResidual recv.location selected selected_valid
+    let runtimeCover : LocatedTokenCover (decodeCostName recv.location)
         (decodeCostSig spend) available residual :=
-      decodedSelectedCover recv.surface spend selected selected_valid
+      decodedSelectedCover recv.location spend selected selected_valid
         funding.exact_spend
-    let cover : LocatedTokenCover (decodeCostName recv.surface)
+    let cover : LocatedTokenCover (decodeCostName recv.location)
         (decodeCostSig recv.sig + decodeCostSig send.sig) available residual := by
       rw [← decoded_spend]
       exact runtimeCover
@@ -2330,13 +2330,13 @@ private theorem splitCandidate_sound
           (selected.map (decodeCostTerm ∘ RawIndexedPurse.toTerm) :
             Multiset (CostTerm String)) := by
       simpa [available] using decodedSelectedAvailable_components
-        recv.surface selected selected_valid located
+        recv.location selected selected_valid located
     have residual_components :
         LocatedPurse.configComponents residual =
           (selected.map (decodeCostTerm ∘ RawIndexedPurse.toTailTerm) :
             Multiset (CostTerm String)) := by
       simpa [residual] using decodedSelectedResidual_components
-        recv.surface selected selected_valid located
+        recv.location selected selected_valid located
     have recv_normalized :=
       RawCostConfig.normalized_of_mem_zipIdx canonical recv_mem
     have send_normalized :=
@@ -2348,36 +2348,36 @@ private theorem splitCandidate_sound
     have source_eq :
         context +
             {CostTerm.signed
-              (.recv (decodeCostName recv.surface) (decodeCostTerm recv.body))
+              (.recv (decodeCostName recv.location) (decodeCostTerm recv.body))
               (decodeCostSig recv.sig)} +
             {CostTerm.signed
-              (.send (decodeCostName recv.surface) (decodeCostTerm send.payload))
+              (.send (decodeCostName recv.location) (decodeCostTerm send.payload))
               (decodeCostSig send.sig)} +
             LocatedPurse.configComponents available =
           decodeRawConfig config := by
       rw [available_components]
-      simpa [recv_source, send_source, surfaces_eq] using source_partition
+      simpa [recv_source, send_source, locations_eq] using source_partition
     have declarative0 : CostStep
         (context +
-          (.signed (.recv (decodeCostName recv.surface)
+          (.signed (.recv (decodeCostName recv.location)
             (decodeCostTerm recv.body)) (decodeCostSig recv.sig) ::ₘ 0) +
-          (.signed (.send (decodeCostName recv.surface)
+          (.signed (.send (decodeCostName recv.location)
             (decodeCostTerm send.payload)) (decodeCostSig send.sig) ::ₘ 0) +
           LocatedPurse.configComponents available)
-        (decodeCostName recv.surface)
+        (decodeCostName recv.location)
         (decodeCostSig recv.sig + decodeCostSig send.sig) target :=
       CostStep.split (decodeCostSig_runtimeValid recv_ok.sig)
         (decodeCostSig_runtimeValid send_ok.sig) cover
     change CostStep
       (context +
         {CostTerm.signed
-          (.recv (decodeCostName recv.surface) (decodeCostTerm recv.body))
+          (.recv (decodeCostName recv.location) (decodeCostTerm recv.body))
           (decodeCostSig recv.sig)} +
         {CostTerm.signed
-          (.send (decodeCostName recv.surface) (decodeCostTerm send.payload))
+          (.send (decodeCostName recv.location) (decodeCostTerm send.payload))
           (decodeCostSig send.sig)} +
         LocatedPurse.configComponents available)
-      (decodeCostName recv.surface)
+      (decodeCostName recv.location)
       (decodeCostSig recv.sig + decodeCostSig send.sig) target
       at declarative0
     rw [source_eq] at declarative0
@@ -2402,7 +2402,7 @@ private theorem splitCandidate_sound
             decodeCostTerm_commSubst, CostTerm.commSubst,
             RawIndexedPurse.toTailTerm, Function.comp_def] using targetSafe)
       simpa [RawCostTerm.normalize_idempotent] using residualSafe
-  next surfaces_mismatch => contradiction
+  next locations_mismatch => contradiction
 
 /-- Every occurrence-sensitive executable candidate is justified by the
 declarative located cost relation, modulo only structural normalization of
@@ -2501,11 +2501,11 @@ theorem located_forcing_locality
 matches its labels, relates its successor to the requested declarative target,
 and retains the untouched raw frame by occurrence identity. -/
 def RuntimeCostStepComplete (config : RawCostConfig)
-    (surface : CostName String) (spend : CostSig String)
+    (location : CostName String) (spend : CostSig String)
     (target : CostConfig String) : Prop :=
   ∃ step : RawRuntimeStep,
     step ∈ runtimeCostCandidatesFromConfig config ∧
-    decodeCostName step.surface = surface ∧
+    decodeCostName step.location = location ∧
     decodeCostSig step.spend = spend ∧
     step.residual.normalizeConfig.StructurallyRepresents target ∧
     step.FrameExactFor config
@@ -2593,7 +2593,7 @@ private theorem wholeRecvSend_complete
     mem_collectWholesAux_of_mem_zipIdx source_mem found
   have source_normalized :=
     RawCostConfig.normalized_of_mem_zipIdx canonical source_mem
-  obtain ⟨decoded_surface, decoded_body, decoded_payload, decoded_sig⟩ :=
+  obtain ⟨decoded_location, decoded_body, decoded_payload, decoded_sig⟩ :=
     wholeAt?_decoded_fields_recv_send source_normalized found decoded_source
   have available_le : LocatedPurse.configComponents available ≤
       decodeRawConfig config := by
@@ -2610,8 +2610,8 @@ private theorem wholeRecvSend_complete
       (selected_source.mem purse_mem)
     exact purse_ok.head
   have matching := recoveredSelected_sublist_matching canonical cover
-    selected_source selected_eq (wholeAt?_surface_normalized found)
-    decoded_surface
+    selected_source selected_eq (wholeAt?_location_normalized found)
+    decoded_location
   have exact_spend : rawSelectedSpend selected = redex.sig.toMultiset := by
     calc
       rawSelectedSpend selected = outerSig :=
@@ -2619,7 +2619,7 @@ private theorem wholeRecvSend_complete
       _ = decodeCostSig redex.sig := decoded_sig.symm
       _ = redex.sig.toMultiset := rfl
   have cover_member : selected ∈ exactPurseCovers redex.sig
-      (matchingPurses redex.surface config.purses) :=
+      (matchingPurses redex.location config.purses) :=
     exactPurseCovers_complete matching selected_valid exact_spend
   let contractum :=
     (RawCostTerm.commSubst redex.body redex.payload).normalize
@@ -2628,7 +2628,7 @@ private theorem wholeRecvSend_complete
         match config[redex.index]? with
         | some (.signed (.par (.send _ _) (.recv _ _)) _) => .wholeSendRecv
         | _ => .wholeRecvSend
-      surface := redex.surface
+      location := redex.location
       spend := redex.sig
       participantIndices := [redex.index]
       selectedPurses := selected
@@ -2673,7 +2673,7 @@ private theorem wholeRecvSend_complete
   rw [declarative_target] at represented
   refine ⟨runtimeStep, enabled, ?_, ?_, ?_,
     runtimeCostCandidatesFromConfig_frameExact enabled⟩
-  · simpa [runtimeStep] using decoded_surface
+  · simpa [runtimeStep] using decoded_location
   · simpa [runtimeStep] using decoded_sig
   · simpa [runtimeStep, contractum] using represented
 
@@ -2711,7 +2711,7 @@ private theorem wholeSendRecv_complete
     mem_collectWholesAux_of_mem_zipIdx source_mem found
   have source_normalized :=
     RawCostConfig.normalized_of_mem_zipIdx canonical source_mem
-  obtain ⟨decoded_surface, decoded_body, decoded_payload, decoded_sig⟩ :=
+  obtain ⟨decoded_location, decoded_body, decoded_payload, decoded_sig⟩ :=
     wholeAt?_decoded_fields_send_recv source_normalized found decoded_source
   have available_le : LocatedPurse.configComponents available ≤
       decodeRawConfig config := by
@@ -2728,8 +2728,8 @@ private theorem wholeSendRecv_complete
       (selected_source.mem purse_mem)
     exact purse_ok.head
   have matching := recoveredSelected_sublist_matching canonical cover
-    selected_source selected_eq (wholeAt?_surface_normalized found)
-    decoded_surface
+    selected_source selected_eq (wholeAt?_location_normalized found)
+    decoded_location
   have exact_spend : rawSelectedSpend selected = redex.sig.toMultiset := by
     calc
       rawSelectedSpend selected = outerSig :=
@@ -2737,7 +2737,7 @@ private theorem wholeSendRecv_complete
       _ = decodeCostSig redex.sig := decoded_sig.symm
       _ = redex.sig.toMultiset := rfl
   have cover_member : selected ∈ exactPurseCovers redex.sig
-      (matchingPurses redex.surface config.purses) :=
+      (matchingPurses redex.location config.purses) :=
     exactPurseCovers_complete matching selected_valid exact_spend
   let contractum :=
     (RawCostTerm.commSubst redex.body redex.payload).normalize
@@ -2746,7 +2746,7 @@ private theorem wholeSendRecv_complete
         match config[redex.index]? with
         | some (.signed (.par (.send _ _) (.recv _ _)) _) => .wholeSendRecv
         | _ => .wholeRecvSend
-      surface := redex.surface
+      location := redex.location
       spend := redex.sig
       participantIndices := [redex.index]
       selectedPurses := selected
@@ -2791,7 +2791,7 @@ private theorem wholeSendRecv_complete
   rw [declarative_target] at represented
   refine ⟨runtimeStep, enabled, ?_, ?_, ?_,
     runtimeCostCandidatesFromConfig_frameExact enabled⟩
-  · simpa [runtimeStep] using decoded_surface
+  · simpa [runtimeStep] using decoded_location
   · simpa [runtimeStep] using decoded_sig
   · simpa [runtimeStep, contractum] using represented
 
@@ -2845,24 +2845,24 @@ private theorem split_complete
     RawCostConfig.normalized_of_mem_zipIdx canonical recv_mem
   have send_normalized :=
     RawCostConfig.normalized_of_mem_zipIdx canonical send_mem
-  obtain ⟨decoded_recv_surface, decoded_body, decoded_recv_sig⟩ :=
+  obtain ⟨decoded_recv_location, decoded_body, decoded_recv_sig⟩ :=
     recvAt?_decoded_fields recv_normalized recv_found decoded_recvSource
-  obtain ⟨decoded_send_surface, decoded_payload, decoded_send_sig⟩ :=
+  obtain ⟨decoded_send_location, decoded_payload, decoded_send_sig⟩ :=
     sendAt?_decoded_fields send_normalized send_found decoded_sendSource
-  have recv_surface_fixed := recvAt?_surface_normalized recv_found
-  have send_surface_fixed := sendAt?_surface_normalized send_found
-  have recv_surface_canonical : recv.surface.EncodingCanonical := by
-    rw [← recv_surface_fixed]
-    exact RawCostName.normalize_encodingCanonical recv.surface
-  have send_surface_canonical : send.surface.EncodingCanonical := by
-    rw [← send_surface_fixed]
-    exact RawCostName.normalize_encodingCanonical send.surface
-  have surfaces_eq : send.surface = recv.surface :=
+  have recv_location_fixed := recvAt?_location_normalized recv_found
+  have send_location_fixed := sendAt?_location_normalized send_found
+  have recv_location_canonical : recv.location.EncodingCanonical := by
+    rw [← recv_location_fixed]
+    exact RawCostName.normalize_encodingCanonical recv.location
+  have send_location_canonical : send.location.EncodingCanonical := by
+    rw [← send_location_fixed]
+    exact RawCostName.normalize_encodingCanonical send.location
+  have locations_eq : send.location = recv.location :=
     RawCostName.decode_injective_of_encodingCanonical
-      send_surface_canonical recv_surface_canonical
-      (decoded_send_surface.trans decoded_recv_surface.symm)
-  have surfaces_match : recv.surface.normalize = send.surface.normalize := by
-    simp [surfaces_eq]
+      send_location_canonical recv_location_canonical
+      (decoded_send_location.trans decoded_recv_location.symm)
+  have locations_match : recv.location.normalize = send.location.normalize := by
+    simp [locations_eq]
   have available_le : LocatedPurse.configComponents available ≤
       decodeRawConfig config := by
     rw [source_eq]
@@ -2878,7 +2878,7 @@ private theorem split_complete
       (selected_source.mem purse_mem)
     exact purse_ok.head
   have matching := recoveredSelected_sublist_matching canonical cover
-    selected_source selected_eq recv_surface_fixed decoded_recv_surface
+    selected_source selected_eq recv_location_fixed decoded_recv_location
   let runtimeSpend := (recv.sig ++ send.sig).normalize
   have decoded_runtimeSpend : decodeCostSig runtimeSpend = recvSeal + sendSeal := by
     change ((recv.sig ++ send.sig).normalize : Multiset String) =
@@ -2893,13 +2893,13 @@ private theorem split_complete
       _ = decodeCostSig runtimeSpend := decoded_runtimeSpend.symm
       _ = runtimeSpend.toMultiset := rfl
   have cover_member : selected ∈ exactPurseCovers runtimeSpend
-      (matchingPurses recv.surface config.purses) :=
+      (matchingPurses recv.location config.purses) :=
     exactPurseCovers_complete matching selected_valid exact_spend
   let contractum :=
     (RawCostTerm.commSubst recv.body send.payload).normalize
   let runtimeStep : RawRuntimeStep :=
     { shape := .split
-      surface := recv.surface
+      location := recv.location
       spend := runtimeSpend
       participantIndices := [recv.index, send.index]
       selectedPurses := selected
@@ -2908,7 +2908,7 @@ private theorem split_complete
   have step_member : runtimeStep ∈
       splitCandidates config config.purses recv send := by
     unfold splitCandidates
-    rw [if_pos surfaces_match]
+    rw [if_pos locations_match]
     apply List.mem_map.mpr
     exact ⟨selected, cover_member, rfl⟩
   have enabled : runtimeStep ∈ runtimeCostCandidatesFromConfig config := by
@@ -2946,7 +2946,7 @@ private theorem split_complete
   rw [declarative_target] at represented
   refine ⟨runtimeStep, enabled, ?_, ?_, ?_,
     runtimeCostCandidatesFromConfig_frameExact enabled⟩
-  · simpa [runtimeStep] using decoded_recv_surface
+  · simpa [runtimeStep] using decoded_recv_location
   · simpa [runtimeStep] using decoded_runtimeSpend
   · simpa [runtimeStep, contractum] using represented
 
@@ -2958,29 +2958,29 @@ theorem costStep_complete_runtime_up_to_struct
     {config : RawCostConfig} (canonical : config.Canonical)
     (encoding : config.Forall RawCostTerm.EncodingCanonical)
     (config_ok : config.Forall (fun term => term.wellFormed = true))
-    {surface : CostName String} {spend : CostSig String}
+    {location : CostName String} {spend : CostSig String}
     {target : CostConfig String}
-    (declarative : CostStep (decodeRawConfig config) surface spend target) :
-    RuntimeCostStepComplete config surface spend target := by
+    (declarative : CostStep (decodeRawConfig config) location spend target) :
+    RuntimeCostStepComplete config location spend target := by
   rcases declarative.exists_shape with whole_recv | whole_send | split
   · obtain ⟨context, available, residual, channel, body, payload, outerSig,
-      _sig_valid, ⟨cover⟩, source_eq, surface_eq, spend_eq, target_eq⟩ :=
+      _sig_valid, ⟨cover⟩, source_eq, location_eq, spend_eq, target_eq⟩ :=
       whole_recv
-    subst surface
+    subst location
     subst spend
     exact wholeRecvSend_complete canonical encoding config_ok cover source_eq
       target_eq
   · obtain ⟨context, available, residual, channel, body, payload, outerSig,
-      _sig_valid, ⟨cover⟩, source_eq, surface_eq, spend_eq, target_eq⟩ :=
+      _sig_valid, ⟨cover⟩, source_eq, location_eq, spend_eq, target_eq⟩ :=
       whole_send
-    subst surface
+    subst location
     subst spend
     exact wholeSendRecv_complete canonical encoding config_ok cover source_eq
       target_eq
   · obtain ⟨context, available, residual, channel, body, payload,
       recvSeal, sendSeal, _recv_valid, _send_valid, ⟨cover⟩, source_eq,
-      surface_eq, spend_eq, target_eq⟩ := split
-    subst surface
+      location_eq, spend_eq, target_eq⟩ := split
+    subst location
     subst spend
     exact split_complete canonical encoding config_ok cover source_eq target_eq
 
@@ -2988,11 +2988,11 @@ theorem costStep_complete_runtime_up_to_struct
 well-formed executable input term. -/
 theorem runtimeCostCandidates_complete_up_to_struct
     {term : RawCostTerm} (supported : term.wellFormed = true)
-    {surface : CostName String} {spend : CostSig String}
+    {location : CostName String} {spend : CostSig String}
     {target : CostConfig String}
     (declarative : CostStep (decodeRawConfig term.normalizeConfig)
-      surface spend target) :
-    RuntimeCostStepComplete term.normalizeConfig surface spend target :=
+      location spend target) :
+    RuntimeCostStepComplete term.normalizeConfig location spend target :=
   costStep_complete_runtime_up_to_struct
     (RawCostTerm.normalizeConfig_canonical term)
     (RawCostTerm.normalizeConfig_forall_encodingCanonical term)

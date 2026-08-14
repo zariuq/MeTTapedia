@@ -618,6 +618,8 @@ noncomputable def SpelledCallTrace.compressedStatementOutcome
       entries final)
     (agreement : RuntimeDBAgrees db before)
     (interruptEq : db.interrupt = false)
+    (savePlacement : db.config.compressedSavePlacement =
+      .immediatelyAfterUse)
     (labelCharset : NameCharset labelBytesValid label)
     (typecodeCharset : NameCharset mathBytesValid typecode)
     (bodyCharsets :
@@ -642,8 +644,8 @@ noncomputable def SpelledCallTrace.compressedStatementOutcome
       (header.map LocatedName.name) (words.map (fun word => word.bytes))
       final := by
   let accepted := trace.acceptedCompressedStatement agreement interruptEq
-    labelCharset typecodeCharset bodyCharsets headerCharsets wordCharsets
-      taggedFormula inserted
+    savePlacement labelCharset typecodeCharset bodyCharsets headerCharsets
+      wordCharsets taggedFormula inserted
   cases decodedCompressedWords_verifiedOrIncomplete
       accepted.program.decoded with
   | inl verified =>

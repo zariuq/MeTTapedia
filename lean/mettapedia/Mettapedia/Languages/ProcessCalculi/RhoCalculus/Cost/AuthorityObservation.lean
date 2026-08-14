@@ -19,17 +19,17 @@ namespace ReceiptEmission
 /-- Forget event identity, causality, location, and funding factorisation,
 retaining only the commutative raw spend total. -/
 def aggregate
-    (receipt : ReceiptEmission EventId Ground Surface) : CostSig Ground :=
+    (receipt : ReceiptEmission EventId Ground Location) : CostSig Ground :=
   (receipt.map fun event => event.label.rawSpend).sum
 
 @[simp]
 theorem aggregate_nil :
-    aggregate ([] : ReceiptEmission EventId Ground Surface) = 0 :=
+    aggregate ([] : ReceiptEmission EventId Ground Location) = 0 :=
   rfl
 
 @[simp]
 theorem aggregate_append
-    (first second : ReceiptEmission EventId Ground Surface) :
+    (first second : ReceiptEmission EventId Ground Location) :
     aggregate (first ++ second) = aggregate first + aggregate second := by
   simp [aggregate, List.sum_append]
 
@@ -37,7 +37,7 @@ theorem aggregate_append
 opposite monoid to match categorical composition, to commutative raw spend.
 The homomorphism is intentionally not asserted to be injective. -/
 def aggregateOppositeMonoidHom :
-    MulOpposite (FreeMonoid (EmittedEvent EventId Ground Surface)) →*
+    MulOpposite (FreeMonoid (EmittedEvent EventId Ground Location)) →*
       Multiplicative (CostSig Ground) where
   toFun receipt :=
     Multiplicative.ofAdd (aggregate (FreeMonoid.toList receipt.unop))
@@ -141,7 +141,7 @@ theorem rawAccountFunctor_map_factors_through_authorityReceipt
     rawAccountFunctor.map transition =
       (authorityReceiptFunctor ⋙
         (ReceiptEmission.aggregateOppositeMonoidHom
-          (EventId := Nat) (Ground := String) (Surface := RawCostName)).toFunctor).map
+          (EventId := Nat) (Ground := String) (Location := RawCostName)).toFunctor).map
         transition := by
   change Multiplicative.ofAdd transition.rawAccount =
     Multiplicative.ofAdd transition.authorityReceipt.aggregate

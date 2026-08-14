@@ -804,7 +804,10 @@ private theorem parallelOrderAgnosticPermutation_noParallel_of_right
   intro element membership
   exact rightNoParallel element (reordered.mem_iff.mp membership)
 
-private theorem keyedParallelFrontier_noUnit
+/-- A keyed-canonical parallel frontier contains no surviving unit.  This is
+public because downstream typed normalizers use it to justify singleton
+absorption without assuming keyed canonicalization is globally idempotent. -/
+theorem keyedParallelFrontier_noUnit
     {Key : Type} [LinearOrder Key] (key : Nat → Pattern → Key)
     (declaration : ReflectivePresentationDecl) (availableDepth : Nat)
     (patterns : List Pattern) :
@@ -835,7 +838,10 @@ private theorem keyedParallelFrontier_noUnit
   intro element membership
   exact of_decide_eq_true (List.mem_filter.mp membership).2
 
-private theorem keyedParallelFrontier_noParallel
+/-- A keyed-canonical parallel frontier contains no nested bare parallel
+collection.  The statement is about the exposed frontier, not about arbitrary
+keyed outputs; it therefore remains valid across quote-visible depth resets. -/
+theorem keyedParallelFrontier_noParallel
     {Key : Type} [LinearOrder Key] (key : Nat → Pattern → Key)
     (declaration : ReflectivePresentationDecl) (availableDepth : Nat)
     (patterns : List Pattern) :

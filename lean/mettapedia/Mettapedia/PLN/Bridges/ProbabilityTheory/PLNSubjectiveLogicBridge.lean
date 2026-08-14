@@ -9,7 +9,7 @@ the already-formalized PLN evidence layer.  A binomial opinion with base rate
 `1/2` and evidence counts `(r, s)` has projected probability
 `b + a * u = (r + 1) / (r + s + 2)`, i.e. the Laplace/Beta posterior mean.
 
-The bridge is intentionally one-way as an integration surface: Subjective Logic
+The bridge is intentionally one-way as an integration interface: Subjective Logic
 is a coordinate presentation of the EvidenceBeta/Revision core, not a second
 truth-value semantics.
 -/
@@ -125,7 +125,7 @@ theorem laplaceOpinion_projected_eq_uniformPosteriorMean
   simp [Mettapedia.PLN.Evidence.EvidenceCounts.uniformPosteriorMean]
   ring_nf
 
-/-- Same dictionary theorem stated against the `EvidenceBetaParams` surface. -/
+/-- Same dictionary theorem stated against the `EvidenceBetaParams` interface. -/
 theorem laplaceOpinion_projected_eq_EvidenceBetaParams_posteriorMean
     (nPos nNeg : ℕ) :
     (laplaceOpinion nPos nNeg).projected =

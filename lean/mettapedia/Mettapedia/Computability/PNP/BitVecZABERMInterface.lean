@@ -1,4 +1,4 @@
-import Mettapedia.Computability.PNP.BitVecZABVisibleSurface
+import Mettapedia.Computability.PNP.BitVecZABVisibleState
 import Mettapedia.Computability.PNP.CanonicalZABERMInterface
 
 /-!
@@ -7,7 +7,7 @@ import Mettapedia.Computability.PNP.CanonicalZABERMInterface
 This file specializes the final exact `z+a+b` ERM interface to the concrete case
 `Z = BitVec r` and `zfeat = id`.
 
-So the remaining burden is now phrased on the raw full visible bit surface
+So the remaining burden is now phrased on the raw full visible bit data domain
 itself: one sample assignment, one equality to the ERM wrapper, and one
 agreement bound.
 -/
@@ -23,26 +23,26 @@ variable {r k : ℕ} {Index : Type*}
 /-- The identity extractor on bit-valued latent data. -/
 abbrev identityZExtractor : BitVec r → BitVec r := fun z => z
 
-/-- The exact ERM-selected family on the full raw visible bit surface
+/-- The exact ERM-selected family on the full raw visible bit data domain
 `(z, a, b)`. -/
 noncomputable def bitVecZABDecisionListERMFamily
-    (samples : Index → Sample (ExactVisiblePostSwitchSurface (BitVec r) k) Bool) :
+    (samples : Index → Sample (ExactVisiblePostSwitchData (BitVec r) k) Bool) :
     ExactVisibleSwitchedFamily (BitVec r) k Index :=
   exactZABDecisionListERMFamily
     (Z := BitVec r) (r := r) (k := k) identityZExtractor samples
 
 @[simp] theorem bitVecZABDecisionListERMFamily_eq
-    (samples : Index → Sample (ExactVisiblePostSwitchSurface (BitVec r) k) Bool) :
+    (samples : Index → Sample (ExactVisiblePostSwitchData (BitVec r) k) Bool) :
     bitVecZABDecisionListERMFamily (r := r) (k := k) samples =
       exactZABDecisionListERMFamily
         (Z := BitVec r) (r := r) (k := k) identityZExtractor samples := by
   rfl
 
 structure BitVecZABERMRecoveryData
-    (μ : PMF (ExactVisiblePostSwitchSurface (BitVec r) k))
+    (μ : PMF (ExactVisiblePostSwitchData (BitVec r) k))
     (G : ExactVisibleSwitchedFamily (BitVec r) k Index)
     (q : ℝ≥0∞) where
-  samples : Index → Sample (ExactVisiblePostSwitchSurface (BitVec r) k) Bool
+  samples : Index → Sample (ExactVisiblePostSwitchData (BitVec r) k) Bool
   exact_family : G = bitVecZABDecisionListERMFamily (r := r) (k := k) samples
   agreement_le :
     ∀ i,
@@ -56,7 +56,7 @@ section
 
 def BitVecZABERMRecoveryData.canonicalData
     [Fintype (BitVec r)]
-    {μ : PMF (ExactVisiblePostSwitchSurface (BitVec r) k)}
+    {μ : PMF (ExactVisiblePostSwitchData (BitVec r) k)}
     {G : ExactVisibleSwitchedFamily (BitVec r) k Index}
     {q : ℝ≥0∞}
     (h : BitVecZABERMRecoveryData (r := r) (k := k) (Index := Index) μ G q) :
@@ -68,7 +68,7 @@ def BitVecZABERMRecoveryData.canonicalData
 
 theorem BitVecZABERMRecoveryData.compressionTarget
     [Fintype (BitVec r)]
-    {μ : PMF (ExactVisiblePostSwitchSurface (BitVec r) k)}
+    {μ : PMF (ExactVisiblePostSwitchData (BitVec r) k)}
     {G : ExactVisibleSwitchedFamily (BitVec r) k Index}
     {q : ℝ≥0∞}
     (h : BitVecZABERMRecoveryData (r := r) (k := k) (Index := Index) μ G q) :
@@ -78,7 +78,7 @@ theorem BitVecZABERMRecoveryData.compressionTarget
 
 theorem BitVecZABERMRecoveryData.recoveryLowerBound
     [Fintype (BitVec r)]
-    {μ : PMF (ExactVisiblePostSwitchSurface (BitVec r) k)}
+    {μ : PMF (ExactVisiblePostSwitchData (BitVec r) k)}
     {G : ExactVisibleSwitchedFamily (BitVec r) k Index}
     {q : ℝ≥0∞}
     (h : BitVecZABERMRecoveryData (r := r) (k := k) (Index := Index) μ G q)

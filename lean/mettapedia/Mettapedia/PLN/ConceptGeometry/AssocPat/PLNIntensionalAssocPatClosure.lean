@@ -151,7 +151,7 @@ theorem intensional_mixed_assocPat_threshold_atom_of_interval_of_assocPatSemanti
 /-- Weighted finite-vocabulary HO predicate-score endpoint.
 
 This theorem is the downstream bridge from the HO predicate vocabulary to the
-OSLF threshold surface.  OSLF still ranges over concrete `Pattern`s, while
+OSLF threshold interface.  OSLF still ranges over concrete `Pattern`s, while
 `code` maps those patterns into a finite working predicate vocabulary.  The
 ASSOC and PAT scores are required to be nonnegatively weighted finite-vocabulary
 order-rank scores, so the theorem also returns the corresponding subset

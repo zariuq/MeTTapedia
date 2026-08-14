@@ -45,7 +45,7 @@ Every theorem below is either:
 * an interval-containment / unit-interval sanity fact, marked with names like
   `_bounds`, `_in_unit`, or `_width_nonneg`.
 
-Historical note: the older `Mettapedia.Logic.PLNMettaTruthFunctions` surface
+Historical note: the older `Mettapedia.Logic.PLNMettaTruthFunctions` interface
 has been retired. The classical mirrored/theorem-backed split now lives in
 `PeTTaLibPLNTruthFunctions`, `WMPLNJustifiedTruthFunctions`, and the
 distributional file imported here.
@@ -213,7 +213,7 @@ theorem hypergeometric_10_8_7_interval_credibility_in_unit :
 
 /-- Equal-tailed 95% CDF example with `n = 20`, `a = 10`, `b = 10`.
 
-This showcases the new quantile/CDF surface at a clean symmetric point. The
+This showcases the new quantile/CDF interface at a clean symmetric point. The
 current example package records the nominal 95% credibility and the fact that
 the resulting ITV stays inside `[0,1]`; a fully exact endpoint calculation can
 be added later as a dedicated arithmetic refinement.

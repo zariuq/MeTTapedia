@@ -12,7 +12,7 @@ Concrete, provenance-backed instantiation of the quantitative order-cost layer:
 - anomaly metric: count-level `SwapAnomalyCount` / `scheduleErrorCount`
   using a `Which` count view (`0` for `wbot`, `⊤` for any `wset _`).
 
-This gives a small but explicit application surface for the book:
+This gives a small but explicit application interface for the book:
 
 - positive example (stable): equal query evidence implies zero anomaly;
 - negative example (order-cost): two-step schedules can have top error under
@@ -23,7 +23,7 @@ namespace Mettapedia.PLN.WorldModel.OrderCost
 
 open scoped ENNReal
 open Mettapedia.PLN.Evidence.EvidenceClass
-open Mettapedia.PLN.Bridges.ProbabilityTheory.ConjugateEvidenceSurface
+open Mettapedia.PLN.Bridges.ProbabilityTheory.ConjugateEvidenceCore
 open Mettapedia.PLN.WorldModel.PLNWorldModelGeneric
 open Mettapedia.PLN.WorldModel.WorldModelOverlap
 open Mettapedia.Logic.LP

@@ -1,12 +1,12 @@
 import Mettapedia.PLN.Bridges.GSLT.WMQueryProofAuthority
-import Mettapedia.PLN.WorldModel.SufficientStatisticSurface
+import Mettapedia.PLN.WorldModel.SufficientStatisticEncoder
 
 /-!
 # Posterior-valued WM query authority
 
 The primary result of evidential chaining need not be a scalar truth value.
 This module instantiates the occurrence-exact WM query authority at an existing
-`ConjugatePosteriorSurface`: the checked observation is the posterior state
+`ConjugatePosteriorModel`: the checked observation is the posterior state
 itself.  A strength, confidence, expectation, or decision statistic is then a
 projection of that checked posterior.
 
@@ -25,7 +25,7 @@ open Mettapedia.PLN.Bridges.GSLT.WMQueryProofAuthority
 open Mettapedia.PLN.Evidence.EvidenceClass
 open Mettapedia.PLN.WorldModel
 open Mettapedia.PLN.WorldModel.PLNWorldModelAdditive
-open Mettapedia.PLN.WorldModel.SufficientStatisticSurface
+open Mettapedia.PLN.WorldModel.SufficientStatisticEncoder
 
 set_option autoImplicit false
 
@@ -40,53 +40,53 @@ local instance multisetStateEvidenceType {α : Type uObs} :
 
 /-- Query extraction whose observation is the complete posterior state. -/
 def posteriorObserve
-    (surface : ConjugatePosteriorSurface Obs Query Ev Prior)
+    (model : ConjugatePosteriorModel Obs Query Ev Prior)
     (prior : Prior) : Multiset Obs → Query → Prior :=
-  surface.posterior prior
+  model.posterior prior
 
 /-- NIK family for posterior-valued queries.  The checker for the posterior
 component is supplied independently, so this construction does not require
 decidable extensional equality on the posterior carrier. -/
 def posteriorFamily
     {ObservationCertificate : Type uCertificate}
-    (surface : ConjugatePosteriorSurface Obs Query Ev Prior)
+    (model : ConjugatePosteriorModel Obs Query Ev Prior)
     (prior : Prior) [DecidableEq Obs]
     (observationChecker :
       Checker (QueryClaim (Multiset Obs) Query Prior) ObservationCertificate)
     (observationAuthority : observationChecker.Authority
-      (ObservationMeaning (posteriorObserve surface prior))) :
+      (ObservationMeaning (posteriorObserve model prior))) :
     AuthorityFamily Unit :=
-  family (posteriorObserve surface prior) observationChecker
+  family (posteriorObserve model prior) observationChecker
     observationAuthority
 
 /-- Accepted posterior evidence states the exact posterior computed from the
 checked world revision and query. -/
 theorem accepted_implies_exact_posterior
     {ObservationCertificate : Type uCertificate}
-    (surface : ConjugatePosteriorSurface Obs Query Ev Prior)
+    (model : ConjugatePosteriorModel Obs Query Ev Prior)
     (prior : Prior) [DecidableEq Obs]
     (observationChecker :
       Checker (QueryClaim (Multiset Obs) Query Prior) ObservationCertificate)
     (observationAuthority : observationChecker.Authority
-      (ObservationMeaning (posteriorObserve surface prior)))
+      (ObservationMeaning (posteriorObserve model prior)))
     {claim : QueryClaim (Multiset Obs) Query Prior}
     {certificate : RevisionTree (Multiset Obs) × ObservationCertificate}
     (accepted :
       (replayChecker observationChecker).check claim certificate = true) :
-    claim.observation = surface.posterior prior claim.world claim.query := by
-  exact ((replayChecker_sound (posteriorObserve surface prior)
+    claim.observation = model.posterior prior claim.world claim.query := by
+  exact ((replayChecker_sound (posteriorObserve model prior)
     observationChecker observationAuthority) claim certificate accepted).2
 
 /-- For a binary revision-tree certificate, posterior-valued chaining is the
-surface's sequential posterior update law. -/
+model's sequential posterior update law. -/
 theorem accepted_revise_implies_sequential_posterior
     {ObservationCertificate : Type uCertificate}
-    (surface : ConjugatePosteriorSurface Obs Query Ev Prior)
+    (model : ConjugatePosteriorModel Obs Query Ev Prior)
     (prior : Prior) [DecidableEq Obs]
     (observationChecker :
       Checker (QueryClaim (Multiset Obs) Query Prior) ObservationCertificate)
     (observationAuthority : observationChecker.Authority
-      (ObservationMeaning (posteriorObserve surface prior)))
+      (ObservationMeaning (posteriorObserve model prior)))
     {claim : QueryClaim (Multiset Obs) Query Prior}
     {left right : RevisionTree (Multiset Obs)}
     {observationCertificate : ObservationCertificate}
@@ -94,8 +94,8 @@ theorem accepted_revise_implies_sequential_posterior
       (replayChecker observationChecker).check claim
         (.revise left right, observationCertificate) = true) :
     claim.observation =
-      surface.posterior
-        (surface.posterior prior left.result claim.query)
+      model.posterior
+        (model.posterior prior left.result claim.query)
         right.result claim.query := by
   have acceptedParts :
       (revisionChecker (State := Multiset Obs) (Query := Query)
@@ -108,38 +108,38 @@ theorem accepted_revise_implies_sequential_posterior
     simpa only [revisionChecker, Bool.and_eq_true, decide_eq_true_eq] using
       acceptedParts.1
   calc
-    claim.observation = surface.posterior prior claim.world claim.query :=
-      accepted_implies_exact_posterior surface prior observationChecker
+    claim.observation = model.posterior prior claim.world claim.query :=
+      accepted_implies_exact_posterior model prior observationChecker
         observationAuthority accepted
-    _ = surface.posterior prior
+    _ = model.posterior prior
           (RevisionTree.revise left right).result claim.query := by
       rw [identities.2]
-    _ = surface.posterior prior
+    _ = model.posterior prior
           (left.result + right.result) claim.query := rfl
-    _ = surface.posterior
-          (surface.posterior prior left.result claim.query)
+    _ = model.posterior
+          (model.posterior prior left.result claim.query)
           right.result claim.query :=
-      surface.posterior_add prior left.result right.result claim.query
+      model.posterior_add prior left.result right.result claim.query
 
 /-- Any scalar or finite-dimensional statistic is a lawful projection of an
 accepted posterior claim.  Its trust derives from the posterior authority and
 the declared view, not from replacing the posterior with the statistic. -/
 theorem accepted_implies_posterior_view
     {ObservationCertificate : Type uCertificate} {View : Type uView}
-    (surface : ConjugatePosteriorSurface Obs Query Ev Prior)
+    (model : ConjugatePosteriorModel Obs Query Ev Prior)
     (prior : Prior) [DecidableEq Obs]
     (observationChecker :
       Checker (QueryClaim (Multiset Obs) Query Prior) ObservationCertificate)
     (observationAuthority : observationChecker.Authority
-      (ObservationMeaning (posteriorObserve surface prior)))
+      (ObservationMeaning (posteriorObserve model prior)))
     (view : Prior → View)
     {claim : QueryClaim (Multiset Obs) Query Prior}
     {certificate : RevisionTree (Multiset Obs) × ObservationCertificate}
     (accepted :
       (replayChecker observationChecker).check claim certificate = true) :
     view claim.observation =
-      view (surface.posterior prior claim.world claim.query) :=
-  congrArg view (accepted_implies_exact_posterior surface prior
+      view (model.posterior prior claim.world claim.query) :=
+  congrArg view (accepted_implies_exact_posterior model prior
     observationChecker observationAuthority accepted)
 
 /-- A non-injective posterior view cannot reconstruct the posterior it erased.
@@ -162,12 +162,12 @@ theorem noninjective_view_has_no_global_recovery
 
 namespace Canary
 
-def natStatistic : SufficientStatisticSurface Nat Unit Nat :=
-  SufficientStatisticSurface.ofObservationMap id
+def natStatistic : SufficientStatisticEncoder Nat Unit Nat :=
+  SufficientStatisticEncoder.ofObservationMap id
 
-/-- A small conjugate-style surface: a prior count is updated by the observed
+/-- A small conjugate-style model: a prior count is updated by the observed
 batch size. -/
-def natPosterior : ConjugatePosteriorSurface Nat Unit Nat Nat where
+def natPosterior : ConjugatePosteriorModel Nat Unit Nat Nat where
   stat := natStatistic
   posterior prior observations _ := prior + observations.card
   posterior_zero prior _ := by simp

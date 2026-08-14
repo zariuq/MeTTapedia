@@ -463,7 +463,7 @@ theorem toStrength_evGrade_impE_top_loses_count
 
 Induction and abduction are not primitive HOL tree constructors in this
 readout.  The certificates below therefore use the existing rule-family ITV
-surface: the count readout is bounded by the concrete asymmetric intervals,
+interface: the count readout is bounded by the concrete asymmetric intervals,
 while explicit canaries prevent point-formula exactness from being claimed for
 the positive-count `evGrade` projection.
 -/

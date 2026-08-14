@@ -344,7 +344,7 @@ theorem markovExchangeable_summary_and_solomonoff_regret
 
 /-- For nonempty histories with the same transition-count summary, the
 Markov-Dirichlet predictor updates both histories through the same state
-`(counts,last)`. This is the finite-dimensional sufficient-statistic surface for
+`(counts,last)`. This is the finite-dimensional sufficient-statistic interface for
 the tractable Markov predictor family. -/
 theorem markovDirichlet_common_state_update_of_same_summary
     (hk : 0 < k)

@@ -764,9 +764,9 @@ theorem rho_input_continuation_retyped :
     TypeExpr.name, TypeExpr.proc, TypeExpr.funType, TypeExpr.baseType,
     costBaseSortName, costWrappedSortName]
 
-/-- Negative control: rho's channel/surface argument remains in the base name
-sort; continuation retyping does not seal or re-sort interaction surfaces. -/
-theorem rho_input_surface_not_retyped :
+/-- Negative control: rho's channel/subject argument remains in the base name
+sort; continuation retyping does not seal or re-sort interaction subjects. -/
+theorem rho_input_subject_not_retyped :
     (costBaseConstructor rhoInteractionCut rhoCalc.terms[5]).params[0]? =
       some (.simple "n" (.base (costBaseSortName "Name"))) := by
   simp [costBaseConstructor, costBaseParameter, isSelectedContinuation, rhoCalc,

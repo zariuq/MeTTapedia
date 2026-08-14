@@ -70,8 +70,8 @@ mutual
     | .par left right =>
         left.encodingCanonicalCheck && right.encodingCanonicalCheck
     | .drop name => name.encodingCanonicalCheck
-    | .purse surface stack =>
-        surface.encodingCanonicalCheck && stack.encodingCanonicalCheck
+    | .purse location stack =>
+        location.encodingCanonicalCheck && stack.encodingCanonicalCheck
 end
 
 theorem RawCostStack.encodingCanonicalCheck_true_iff
@@ -136,10 +136,10 @@ mutual
         simp [RawCostTerm.encodingCanonicalCheck,
           RawCostTerm.EncodingCanonical,
           RawCostName.encodingCanonicalCheck_true_iff name]
-    | .purse surface stack => by
+    | .purse location stack => by
         simp [RawCostTerm.encodingCanonicalCheck,
           RawCostTerm.EncodingCanonical,
-          RawCostName.encodingCanonicalCheck_true_iff surface,
+          RawCostName.encodingCanonicalCheck_true_iff location,
           RawCostStack.encodingCanonicalCheck_true_iff]
 end
 

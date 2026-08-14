@@ -345,7 +345,7 @@ structure InductionAbductionRuleFamilyProfile where
         (descriptionLengthPrior 2) (descriptionLengthPrior 1)
         abductionSearchBetterPointITV abductionSearchOpenITV
 
-/-- Compact public handle for the Induction/Abduction rule-family surface. -/
+/-- Compact public handle for the Induction/Abduction rule-family interface. -/
 noncomputable def inductionAbductionRuleFamilyProfile :
     InductionAbductionRuleFamilyProfile where
   inductionCatalogScopeCanary :=

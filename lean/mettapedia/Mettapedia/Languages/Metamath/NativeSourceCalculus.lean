@@ -87,7 +87,7 @@ def targetProofLabels : List String :=
 
 /-! ## Generated generic-checker presentation -/
 
-private def app (head : String) (arguments : List Pattern := []) : Pattern :=
+def app (head : String) (arguments : List Pattern := []) : Pattern :=
   .apply head arguments
 
 def atomPattern (value : String) : Pattern :=
@@ -162,7 +162,7 @@ def staticConstructors : List (String × Nat) :=
     ("__metamath.SourceIdentity", 2), ("__metamath.Binding", 2),
     ("__metamath.Substitution", 1), ("__metamath.Context", 2) ]
 
-private def rule (id : String) (premises : List Pattern)
+def rule (id : String) (premises : List Pattern)
     (conclusion : Pattern) : RuleSchema :=
   { id := ⟨id⟩, metavariables := [], premises, conclusion }
 

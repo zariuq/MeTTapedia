@@ -273,7 +273,7 @@ episode drives.
 \item Pull \code{search-policy} and \code{pragma!}\ table-mode
   interpretation out of \code{eval.c} into a
   \code{search\_request\_from\_surface(...)} builder.
-\item Route the streaming surfaces (\code{select}, \code{once},
+\item Route the streaming builtins (\code{select}, \code{once},
   \code{collect}, \code{fold}, \code{fold-by-key}) through the visitor
   seam.  The live glue currently sits around
   \code{eval.c:2797}--\code{eval.c:3375}.
@@ -338,7 +338,7 @@ both correct and faster.
 
 Frame-based suspension goes where it is actually needed: multi-result
 streaming, typed application, bounded consumers---i.e., exactly the
-surfaces routed through the Phase~2 visitor seam.  Positive example:
+builtins routed through the Phase~2 visitor seam.  Positive example:
 \code{select} / \code{fold} / \code{fold-by-key} calling
 \code{episode\_ops->visit\_query} with a \code{SearchVisitCtl} that
 may request \code{STOP} once demand is satisfied.  Negative example:
@@ -421,7 +421,7 @@ evaluator primitives or change semantics:
 \begin{itemize}
 \item Pure stdlib libraries (\code{lib\_array}, list/string utilities)
 \item REPL polish, CLI/help, docs, examples
-\item Benchmark harness, profiling surfaces
+\item Benchmark harness, profiling hooks
 \item Pretty-printing, parser ergonomics
 \item Test cleanup, expected-file maintenance
 \item \textbf{Scout libraries for the ASM seam} (anytime after

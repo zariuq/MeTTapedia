@@ -9,13 +9,13 @@ import Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiSequenceKerne
 This file packages an order-`m` finite-alphabet Markov law as an ordinary
 first-order Markov law on length-`m` context states.
 
-The key design choice is to keep the higher-order surface literal:
+The key design choice is to keep the higher-order interface literal:
 * the parameter stores an initial law on contexts and a next-symbol kernel,
 * `(m+1)`-gram evidence is summarized by context-to-symbol counts,
 * all sequence-law theorems are ported by reducing to `MarkovParam` on the
   finite context state space.
 
-We keep the theorem surface honest by reusing the existing first-order sequence
+We keep the theorem family honest by reusing the existing first-order sequence
 kernel, rather than re-proving trajectory measure facts from scratch.
 -/
 

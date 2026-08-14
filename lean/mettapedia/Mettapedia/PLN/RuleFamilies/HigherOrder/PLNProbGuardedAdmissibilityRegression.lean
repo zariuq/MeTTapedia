@@ -1,9 +1,9 @@
 import Mettapedia.PLN.RuleFamilies.HigherOrder.PLNProbGuardedAdmissibilityDemo
 
 /-!
-# Probabilistically Guarded Admissibility Regression Surface
+# Probabilistically Guarded Admissibility Regression Interface
 
-This file exposes a small stable surface for the clean, leaky, and collider
+This file exposes a small stable interface for the clean, leaky, and collider
 guarded-admissibility demos.
 -/
 

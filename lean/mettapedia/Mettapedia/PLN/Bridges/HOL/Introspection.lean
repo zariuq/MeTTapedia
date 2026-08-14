@@ -9,7 +9,7 @@ This module exposes a query interface over the existing
 `ClosedTheorySet.TreeWitness` carrier.  The interface keeps source provenance,
 numeric exactness needs, and cost readouts separate while reusing the already
 proved provenance, BinaryEvidence, estimator-envelope, and Heyting readout
-surfaces.
+interfaces.
 -/
 
 namespace Mettapedia.PLN.Bridges.HOL.Introspection

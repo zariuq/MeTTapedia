@@ -18,7 +18,7 @@ relations to first-order relations between sets.
 - `PLN.RuleFamilies.HigherOrder.Reduction.HigherOrderReduction`: Core HOI→FOI reduction theorems
 - `PLN.RuleFamilies.HigherOrder.Reduction.PredCode.Basic`: Predicate code definitions
 
-Bridges from this reduction surface to other PLN/HOL APIs live under
+Bridges from this reduction interface to other PLN/HOL APIs live under
 `Mettapedia.PLN.Bridges.Logic`.
 
 ## Status (Weeks 1-3 Complete, Week 4 Blocked)

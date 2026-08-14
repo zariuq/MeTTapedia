@@ -43,7 +43,7 @@ Three strands, 29 files in total:
 - **Categorical de Finetti** (the `DeFinetti*` files plus
   `FiniteHiddenMarkovDeFinettiBridge`) — exchangeability as a limit-cone
   universal property, plus Giry / Markov-category / Borel bridges, export
-  surfaces, a smoke test, and an explicit counterexample.
+  interfaces, a smoke test, and an explicit counterexample.
 - **Supporting structure** — the unit-interval fuzzy frame for PLN truth values,
   Meredith's theory of graphs, generalized open maps (bisimulation), and the
   Kripke-Joyal internal-language file.
@@ -89,7 +89,7 @@ Three strands, 29 files in total:
   - DeFinettiHausdorffBridge.lean proves Hausdorff moment uniqueness links
 
 - `DeFinettiPerNDiagram.lean`
-  - DeFinettiPerNDiagram.lean defines per-n permutation diagram surfaces
+  - DeFinettiPerNDiagram.lean defines per-n permutation diagram interfaces
 
 - `DeFinettiGlobalFinitaryDiagram.lean`
   - DeFinettiGlobalFinitaryDiagram.lean defines global finitary-permutation indexing
@@ -125,7 +125,7 @@ Three strands, 29 files in total:
   - DeFinettiStableExports.lean provides stable alias exports
 
 - `DeFinettiExports.lean`
-  - DeFinettiExports.lean provides the recommended import surface
+  - DeFinettiExports.lean provides the recommended import interface
 
 ### Other
 

@@ -2064,8 +2064,8 @@ normal form; that stronger factorization law is not hereditary under Cost
 iteration.  The additional field is placed here because it refers to the
 generated continuation plan, which is defined only after the region
 normalizer. -/
-structure CostOneObjectLaws (source : CIGSLT) : Prop
-    extends CostOpenSectionLaws source where
+structure CostReferenceOneObjectLaws (source : CIGSLT) : Prop
+    extends CostReferenceOpenSectionLaws source where
   preservesWrappedConstructorTyping :
     ∀ {free : WellSorted.FreeTypeContext} {bound : List TypeExpr}
       {sort : LangSort source.costWholeLanguage}
@@ -2081,20 +2081,21 @@ structure CostOneObjectLaws (source : CIGSLT) : Prop
 
 /-- The established compact-executor object law is the specialization of the
 generic object law to `costNormalizeOpen`. -/
-def CostOneObjectLaws.toCostOneObjectLawsFor
-    {source : CIGSLT} (laws : CostOneObjectLaws source) :
+def CostReferenceOneObjectLaws.toCostOneObjectLawsFor
+    {source : CIGSLT} (laws : CostReferenceOneObjectLaws source) :
     CostOneObjectLawsFor source source.costNormalizeOpen where
   toCostOpenSectionLawsFor :=
-    laws.toCostOpenSectionLaws.toCostOpenSectionLawsFor
+    laws.toCostReferenceOpenSectionLaws.toCostOpenSectionLawsFor
   preservesWrappedConstructorTyping := by
     intro free bound sort term supported
     exact laws.preservesWrappedConstructorTyping term supported
 
 /-- The generated contextual section preserves the exact hereditary
 constructor fragment selected by the next continuation retyping plan. -/
-theorem costContextualOpenSection_preservesWrappedConstructorTyping
-    (source : CIGSLT) (laws : CostOneObjectLaws source) :
-    (source.costContextualOpenSection laws.toCostOpenSectionLaws
+theorem costReferenceContextualOpenSection_preservesWrappedConstructorTyping
+    (source : CIGSLT) (laws : CostReferenceOneObjectLaws source) :
+    (source.costReferenceContextualOpenSection
+      laws.toCostReferenceOpenSectionLaws
       ).PreservesTypedConstructors
         (· ∈ source.costContinuationRetyping.wrappedLabels) := by
   exact source.costContextualOpenSectionWith_preservesWrappedConstructorTyping
@@ -2103,7 +2104,8 @@ theorem costContextualOpenSection_preservesWrappedConstructorTyping
 /-- One application of Cost as a genuine continued interactive GSLT.
 Every field is either derived from the sole generated `LanguageDef` or is an
 explicit law of the strict Cost₁ object domain. -/
-def costCIGSLT (source : CIGSLT) (laws : CostOneObjectLaws source) :
+def costCIGSLTReference (source : CIGSLT)
+    (laws : CostReferenceOneObjectLaws source) :
     CIGSLT :=
   source.costCIGSLTWith source.costNormalizeOpen
     laws.toCostOneObjectLawsFor
@@ -2229,18 +2231,19 @@ def forget : CategoryTheory.Functor OrderedCIGSLT CIGSLT where
   map_comp _ _ := rfl
 
 /-- Exact typed Cost objects inside the strict ordered continued category. -/
-def costOneObjectProperty : CategoryTheory.ObjectProperty OrderedCIGSLT :=
-  fun source => CIGSLT.CostOneObjectLaws source.toCIGSLT
+def costReferenceOneObjectProperty :
+    CategoryTheory.ObjectProperty OrderedCIGSLT :=
+  fun source => CIGSLT.CostReferenceOneObjectLaws source.toCIGSLT
 
 /-- The honest initial domain for strict Cost₁: arrows preserve key order by
 the ambient category, and objects carry the exact typed canonical laws. -/
-abbrev CostOneObjects :=
-  costOneObjectProperty.FullSubcategory
+abbrev CostReferenceOneObjects :=
+  costReferenceOneObjectProperty.FullSubcategory
 
 /-- Forget exact Cost laws and retain the ordered continued object. -/
-def costOneObjectsForget :
-    CategoryTheory.Functor CostOneObjects OrderedCIGSLT :=
-  costOneObjectProperty.ι
+def costReferenceOneObjectsForget :
+    CategoryTheory.Functor CostReferenceOneObjects OrderedCIGSLT :=
+  costReferenceOneObjectProperty.ι
 
 end OrderedCIGSLT
 

@@ -20,17 +20,17 @@ section
 
 variable {Z : Type*} {r k : ℕ} {Index : Type*}
 
-/-- The indexed exact-surface family obtained by running ERM inside the shared
+/-- The indexed exact-data domain family obtained by running ERM inside the shared
 `z+a+b` decision-list class. -/
 noncomputable def exactZABDecisionListERMFamily
     (zfeat : Z → BitVec r)
-    (samples : Index → Sample (ExactVisiblePostSwitchSurface Z k) Bool) :
+    (samples : Index → Sample (ExactVisiblePostSwitchData Z k) Bool) :
     ExactVisibleSwitchedFamily Z k Index :=
   (rawExactZABDecisionListBitFamily Z r k zfeat).indexedEmpiricalRiskFamily samples
 
 theorem exactZABDecisionListERMTargetData
     (zfeat : Z → BitVec r)
-    (samples : Index → Sample (ExactVisiblePostSwitchSurface Z k) Bool) :
+    (samples : Index → Sample (ExactVisiblePostSwitchData Z k) Bool) :
     ExactZABDecisionListTargetData
       (Z := Z) (r := r) (k := k) (Index := Index)
       zfeat
@@ -52,7 +52,7 @@ theorem exactZABDecisionListERMTargetData
 
 theorem exactZABDecisionListERMCompressionTarget
     (zfeat : Z → BitVec r)
-    (samples : Index → Sample (ExactVisiblePostSwitchSurface Z k) Bool) :
+    (samples : Index → Sample (ExactVisiblePostSwitchData Z k) Bool) :
     ExactVisibleCompressionTarget
       (Z := Z) (k := k) (Index := Index)
       (exactZABDecisionListERMFamily (Z := Z) (r := r) (k := k) zfeat samples)
@@ -63,7 +63,7 @@ theorem exactZABDecisionListERMCompressionTarget
 
 theorem exactZABDecisionListERMCompressionTarget_twoMul
     (zfeat : Z → BitVec r)
-    (samples : Index → Sample (ExactVisiblePostSwitchSurface Z k) Bool) :
+    (samples : Index → Sample (ExactVisiblePostSwitchData Z k) Bool) :
     ExactVisibleCompressionTarget
       (Z := Z) (k := k) (Index := Index)
       (exactZABDecisionListERMFamily (Z := Z) (r := r) (k := k) zfeat samples)
@@ -77,9 +77,9 @@ section
 variable [Fintype Z]
 
 theorem exactZABDecisionListERMRecoveryData
-    (μ : PMF (ExactVisiblePostSwitchSurface Z k))
+    (μ : PMF (ExactVisiblePostSwitchData Z k))
     (zfeat : Z → BitVec r)
-    (samples : Index → Sample (ExactVisiblePostSwitchSurface Z k) Bool)
+    (samples : Index → Sample (ExactVisiblePostSwitchData Z k) Bool)
     (q : ℝ≥0∞)
     (hq :
       ∀ i,
@@ -101,9 +101,9 @@ theorem exactZABDecisionListERMRecoveryData
       (Z := Z) (r := r) (k := k) (Index := Index) zfeat samples).realized
 
 theorem exactZABDecisionListERMRecoveryLowerBound
-    (μ : PMF (ExactVisiblePostSwitchSurface Z k))
+    (μ : PMF (ExactVisiblePostSwitchData Z k))
     (zfeat : Z → BitVec r)
-    (samples : Index → Sample (ExactVisiblePostSwitchSurface Z k) Bool)
+    (samples : Index → Sample (ExactVisiblePostSwitchData Z k) Bool)
     (q : ℝ≥0∞)
     (hq :
       ∀ i,
@@ -128,9 +128,9 @@ theorem exactZABDecisionListERMRecoveryLowerBound
       μ zfeat samples q hq).recoveryLowerBound i m
 
 theorem exactZABDecisionListERMRecoveryLowerBound_twoMul
-    (μ : PMF (ExactVisiblePostSwitchSurface Z k))
+    (μ : PMF (ExactVisiblePostSwitchData Z k))
     (zfeat : Z → BitVec r)
-    (samples : Index → Sample (ExactVisiblePostSwitchSurface Z k) Bool)
+    (samples : Index → Sample (ExactVisiblePostSwitchData Z k) Bool)
     (q : ℝ≥0∞)
     (hq :
       ∀ i,

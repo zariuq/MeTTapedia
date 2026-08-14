@@ -19,7 +19,7 @@ as part of the QED project to formalize all possible mathematical knowledge.
    spatial types, differential cohesion.
 -/
 
--- Live AutoBooks surface
+-- Live AutoBooks interface
 import Mettapedia.AutoBooks.Codex.Henkin1950
 import Mettapedia.AutoBooks.Codex.SevenSketches
 import Mettapedia.AutoBooks.Codex.Jacobs

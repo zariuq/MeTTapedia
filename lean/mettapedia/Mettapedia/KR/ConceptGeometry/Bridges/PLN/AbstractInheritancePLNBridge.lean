@@ -5,7 +5,7 @@ import Mettapedia.KR.ConceptOntology.WMBridge
 # Abstract Inheritance Bridge for WM-PLN
 
 This module makes the new `AbstractInheritance` spine explicit in the current
-WM-PLN / Chapter-12 surface:
+WM-PLN / Chapter-12 bridge:
 
 - typed WM membership evidence induces an abstract interpretation
 - crisp extensional inheritance is exactly full abstract inheritance for that

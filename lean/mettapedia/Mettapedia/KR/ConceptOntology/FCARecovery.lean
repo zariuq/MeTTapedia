@@ -3,7 +3,7 @@ import Mettapedia.KR.ConceptOntology.Formation
 /-!
 # FCA Recovery for Exact Concept Formation
 
-This module makes explicit that the exact finite concept-formation surface is
+This module makes explicit that the exact finite concept-formation interface is
 not a parallel notion beside classical FCA: it is equivalent to mathlib's
 formal-concept carrier for the same gated incidence relation.
 

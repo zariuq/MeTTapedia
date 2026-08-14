@@ -42,6 +42,7 @@ import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.PrimalDualConti
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.ContinuationTaskBias
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.DirectionalTaskDescent
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.TruncatedNeumannResidual
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.CyclicEPCRefinement
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.PhantomGradientAlignment
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.TransportedDirectionAlignment
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.ActiveFrontierSettling
@@ -81,12 +82,17 @@ import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.AmortizedCredit
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.WorkNormalizedTruncation
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.CarrierCutHybridDescent
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.SettledCreditClosedForm
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.NondimensionalSettlingSchedule
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.ShootingStructure
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.RealizedScheduledCredit
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.SettledCreditSpectralGeometry
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.BlockSettlingStability
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.FiniteSolverSubstitution
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.FiniteTrajectoryAcceleration
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.PreconditionedBranchStableContraction
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.GuardedFiniteAcceleration
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.RetrievalAddressedAcceleration
+import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.UnifiedMemoryInteraction
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.MetricDependentSteepestDescent
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.MinimumInterferenceCredit
 import Mettapedia.MachineLearning.NeuralNetworks.CreditTransport.ConditionalCreditAdvantage
@@ -220,6 +226,28 @@ per-sweep work. Positive and negative fixtures show respectively when extra
 cheap rounds improve the bound and when fixed overhead reverses that
 conclusion; neither theorem substitutes guaranteed loss decrease for realized
 verifier yield.
+For an error-coordinate primary solve followed by cycle-local refinement, a
+shared linearized resolvent now separates two finite paths.  Explicit cycle
+unrolling truncates the original transfer operator, whereas damped refinement
+truncates its convex combination with the identity.  They share the declared
+fixed point and coincide without damping, but an exact scalar fixture separates
+their damped finite iterates.  Omitted-power identities give the finite error
+crossover, pairwise credit budget, and positive-alignment gate.  An
+energy-decrement stop controls credit only after charging residual decrease,
+contraction margin, readout sensitivity, and equilibrium mismatch.  Active-
+frontier and dense-work fixtures reverse the refine-versus-unroll cost ordering;
+matrix-multiplication count alone likewise does not order charged execution
+cost.  Componentwise numerical tolerance and credit-direction equivalence are
+separated by counterexamples in both directions.
+The damping certificate is now explicitly one-sided.  A cycle norm bound at
+least one makes the derived convex-combination upper bound inconclusive; it
+does not prove the exact damped operator is noncontractive.  The signed scalar
+operator `-2 I` has norm factor two but becomes the zero map under one-third
+damping.  A genuine no-rescue theorem instead assumes a nonzero positive real
+eigenmode with eigenvalue at least one, which remains noncontractive under every
+nonnegative damping fraction.  Large gradients, flat trajectory credit, and a
+depth-fit decay rate are therefore telemetry rather than uniform operator
+certificates.
 Finite phantom-gradient readout now has a separate Hilbert-space certificate.
 Lower and upper transport bounds for the exact implicit Jacobian turn a
 pointwise inverse-approximation error into an explicit inner-product margin
@@ -543,6 +571,27 @@ exceeds `rho`: the final energy-gradient norm divided by `precision - rho`
 bounds equilibrium distance and the stationary state is unique.  A mildly
 concave fixture attains this corrected bound, while equality of precision and
 negative curvature leaves multiple stationary states.
+The shooting-structure layer separates coarse recurrent condensation from
+multi-site lifting.  It proves finite-speed support for simultaneous local
+credit, exact reverse credit for an output-to-input ordered sweep, and the
+matching-manifold equality between lifted and condensed trajectories.  Exact
+counterexamples show that local lifting alone does not imply global coercivity,
+operator norm does not determine conditioning, parameter-dependent Schur
+condensation can change stationary sets, and sweep completeness need not move
+cosine monotonically toward backpropagation.  A valid orthogonal-capture
+special case and exact staged AC residual schedules expose the hypotheses a
+frozen-checkpoint admission probe must measure.
+The realized-schedule layer lifts that scalar schedule theory to actual
+finite-parameter credit vectors.  Pairwise-orthogonal sweep contributions
+give an exact identity between squared cosine and captured credit energy, and
+therefore monotone prefix alignment.  Legal staggered DAG fixtures realize the
+positive law, while a signed-cancellation DAG proves that prefix cosine can
+decrease and later recover when orthogonality fails.  For ranked tensor DAGs,
+a complete frozen reverse-power sweep is exactly the finite BP resolvent and
+therefore reproduces every occurrence-level BP credit.  The corresponding
+moving-state reverse-rank sweep is deliberately kept separate: agreement is
+licensed only when the state stays frozen and the realized local force is
+complete, and an executable chain fixture crosses that boundary.
 The third-family admission layer keeps eight candidate mechanisms unnamed
 unless ten independent mathematical, implementation, prior-art, and empirical
 obligations are all confirmed.  Exact fixtures prove that chord escape can

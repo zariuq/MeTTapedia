@@ -7,6 +7,8 @@ import Mettapedia.Languages.MeTTa.PeTTa.LPSoundness
 import Mettapedia.Languages.MeTTa.PeTTa.FunctionFreeLPBridge
 import Mettapedia.Languages.MeTTa.PeTTa.Effects
 import Mettapedia.Languages.MeTTa.PeTTa.TypeSystem
+import Mettapedia.Languages.MeTTa.PeTTa.TypecheckV3Core
+import Mettapedia.Languages.MeTTa.PeTTa.TypecheckV3Seam
 import Mettapedia.Languages.MeTTa.PeTTa.TypeSystemGSLT
 import Mettapedia.Languages.MeTTa.PeTTa.TypeSystemGSLTLayers
 import Mettapedia.Languages.MeTTa.PeTTa.TypeSystemGSLTDeterminism
@@ -47,7 +49,7 @@ import Mettapedia.Languages.MeTTa.PeTTa.SemanticBundle
 /-!
 # PeTTa MeTTa Semantics
 
-Public import surface for the PeTTa semantic stack.
+Public import interface for the PeTTa semantic stack.
 
 ## Semantic Layers
 

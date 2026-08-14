@@ -16,7 +16,7 @@ namespace StaticDeploymentAnalysisExamples
 
 open StaticCallTree
 
-def surface : RawCostName := .signature ["pay"]
+def location : RawCostName := .signature ["pay"]
 def spend : RawCostSig := ["coin"]
 def done : RawCostTerm := .signed .nil ["done"]
 def payload : RawCostTerm := .signed .nil ["payload"]
@@ -25,10 +25,10 @@ def oneComm : RawCostTerm :=
   RawCostTerm.fromComponents
     [.signed
       (.par
-        (.recv surface done)
-        (.send surface payload))
+        (.recv location done)
+        (.send location payload))
       spend,
-     .purse surface [spend]]
+     .purse location [spend]]
 
 theorem oneComm_wellFormed : oneComm.wellFormed = true := by decide
 
@@ -41,7 +41,7 @@ occurrence that the static call tree accumulates. -/
 theorem oneComm_exact_frontier_demand :
     (runtimeCostCandidatesFromConfig
       ((initialTraceComponents oneComm).map RawTraceComponent.term)).map
-        RawRuntimeStep.fundingDemand = [[(surface, spend)]] := by
+        RawRuntimeStep.fundingDemand = [[(location, spend)]] := by
   decide
 
 /-- A live frontier at the depth bound is incomplete, never quiescent. -/

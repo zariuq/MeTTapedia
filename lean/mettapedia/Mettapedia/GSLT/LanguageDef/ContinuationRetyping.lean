@@ -42,6 +42,15 @@ def costBasePresentationSymbols : PresentationSymbols where
   equation := id
   rewrite := id
 
+@[simp]
+theorem costBasePresentationSymbols_sort (name : String) :
+    costBasePresentationSymbols.sort name = costBaseSortName name := rfl
+
+@[simp]
+theorem costBasePresentationSymbols_constructor (name : String) :
+    costBasePresentationSymbols.constructor name =
+      costBaseConstructorName name := rfl
+
 theorem costBaseSortName_injective : Function.Injective costBaseSortName := by
   intro left right equality
   exact (String.append_right_inj "$cost:base-sort:").mp equality

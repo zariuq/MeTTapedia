@@ -125,7 +125,7 @@ inductive LoopProperty where
   deriving DecidableEq, Repr, Fintype
 
 /-- A finite loop-benchmark population with order labels and property
-incidence. This matches the benchmark surface used by the Python loop miner:
+incidence. This matches the benchmark interface used by the Python loop miner:
 objects are finite loops, attributes are named loop identities, and gates are
 order-bounded samples of the same population. -/
 structure LoopBenchmarkContext where

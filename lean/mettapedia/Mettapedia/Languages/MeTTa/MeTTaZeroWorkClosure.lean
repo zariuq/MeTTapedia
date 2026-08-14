@@ -1,4 +1,4 @@
-import Mettapedia.GSLT.Core.NonFactorization
+import Mettapedia.GSLT.Core.ClosureCriteria
 import Mettapedia.Languages.MeTTa.MeTTaZero
 
 /-!
@@ -20,6 +20,8 @@ scheduler.
 namespace Mettapedia.Languages.MeTTa.MeTTaZero
 
 open Mettapedia.GSLT
+open Mettapedia.GSLT.Core.ClosureCriteria
+open Mettapedia.GSLT.Dynamics.OccurrenceSemantics
 open Mettapedia.GSLT.Core.NonFactorization
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Match
@@ -158,7 +160,7 @@ def statusCanaryReport : StatusCanary → EvaluationReport
       evaluateReported productiveStatusCanaryModel
         (0 : Multiset Pattern) statusCanarySubject
 
-/-- What the existing one-step Zero surface observes. -/
+/-- What the existing one-step Zero interface observes. -/
 def statusCanaryAnswers (canary : StatusCanary) : Multiset Pattern :=
   (statusCanaryReport canary).answers
 
@@ -201,35 +203,32 @@ theorem evaluationStatus_not_factors_through_answers :
 
 /-! ## Bare Zero has no internal re-entry -/
 
-/-- A transition system has internal re-entry when some result of a step can
-itself take another step. -/
-def HasComposableSteps (theory : GSLT) : Prop :=
-  ∃ source middle target,
-    theory.Step source middle ∧ theory.Step middle target
-
 /-- Every answer term of the bare one-step evaluation GSLT is quiescent. -/
 theorem evaluationAnswer_isNormalForm (model : Model) (space : model.Space)
     (subject : Pattern) (occurrence : Nat) (answer : Pattern) :
     (evaluationGSLT model).IsNormalForm
-      (.answer space subject occurrence answer) := by
-  rintro ⟨target, step⟩
-  cases step
+      (.answer space subject occurrence answer) :=
+  occurrenceAnswer_isNormalForm (evaluationOccurrenceSource model)
+    space subject occurrence answer
 
 /-- Every bare evaluation step ends at a quiescent answer term. -/
 theorem evaluationStep_target_isNormalForm (model : Model)
     {source target : (evaluationGSLT model).Term}
     (step : (evaluationGSLT model).Step source target) :
-    (evaluationGSLT model).IsNormalForm target := by
-  cases step
-  exact evaluationAnswer_isNormalForm model _ _ _ _
+    (evaluationGSLT model).IsNormalForm target :=
+  occurrenceStep_target_isNormalForm (evaluationOccurrenceSource model) step
+
+/-- Bare evaluation has the generic one-step-terminal capability: every
+selected occurrence is wrapped in a quiescent answer state. -/
+def evaluationOneStepTerminal (model : Model) :
+    OneStepTerminal (evaluationGSLT model) :=
+  occurrenceOneStepTerminal (evaluationOccurrenceSource model)
 
 /-- **Bare-Zero work-closure obstruction.**  The canonical evaluation GSLT
 has no composable pair of steps, for any model or space. -/
 theorem bareZero_has_no_composable_steps (model : Model) :
-    ¬ HasComposableSteps (evaluationGSLT model) := by
-  rintro ⟨source, middle, target, first, second⟩
-  exact (evaluationStep_target_isNormalForm model first) <| by
-    exact Exists.intro target second
+    ¬ HasComposableSteps (evaluationGSLT model) :=
+  occurrenceGSLT_not_hasComposableSteps (evaluationOccurrenceSource model)
 
 /-! ## The weakest status-aware re-entry runner -/
 
@@ -423,10 +422,12 @@ pair of evaluation steps.  Templated continuations are a stronger ergonomic
 and programming feature, not a prerequisite for this particular chain. -/
 theorem iterativeZero_has_composable_steps :
     HasComposableSteps (iterativeGSLT chainModel) := by
-  refine Exists.intro (.pending chainSpace chainA []) ?_
-  refine Exists.intro (.pending chainSpace chainB [0]) ?_
-  refine Exists.intro (.pending chainSpace chainC [0, 0]) ?_
-  constructor
+  refine ⟨
+    { source := .pending chainSpace chainA []
+      middle := .pending chainSpace chainB [0]
+      target := .pending chainSpace chainC [0, 0]
+      first := ?_
+      second := ?_ }⟩
   · apply IterativeStep.produced (answers := {chainB}) (occurrence := 0)
     · simp [evaluateReported]
     · simp

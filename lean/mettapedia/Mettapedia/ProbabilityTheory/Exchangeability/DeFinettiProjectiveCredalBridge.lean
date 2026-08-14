@@ -10,7 +10,7 @@ import Exchangeability.Probability.InfiniteProduct
 /-!
 # de Finetti Projective Credal Bridge
 
-This file adapts the existing de Finetti factorization surface to the shared
+This file adapts the existing de Finetti factorization interface to the shared
 projective credal abstraction.
 
 The bridge is intentionally explicit: a de Finetti mixture becomes a compatible
@@ -321,7 +321,7 @@ theorem posteriorBernoulliMixturePrefixPrevision_oneBitFalse_eq_countEvidenceMas
 
 /-- The vendored exchangeability library's `iidProduct` has the expected finite
 prefix product marginal.  This is the bridge point from the external
-Kolmogorov/i.i.d. construction into the projective-credal prefix surface. -/
+Kolmogorov/i.i.d. construction into the projective-credal prefix interface. -/
 theorem externalIIDProductPrefixMeasure_eq_product
     (ν : Measure Bool) [IsProbabilityMeasure ν] (n : ℕ) :
     (Exchangeability.Probability.iidProduct ν).map
@@ -3620,7 +3620,7 @@ theorem posteriorBernoulliMixturePrefixEnvelopeWidthComplement_eq_one
       rfl)
 
 /-- Posterior/update transport into the existing de Finetti projective
-finite-prefix surface.  This does not claim a new process carrier; it records
+finite-prefix interface.  This does not claim a new process carrier; it records
 that the normalized posterior mixture is already a singleton projective prefix
 system with compatible completions and determined finite-prefix intervals. -/
 structure PosteriorBernoulliMixturePrefixProjective
@@ -6285,7 +6285,7 @@ theorem bernoulliMixtureCanonicalProcessMeasure_represents
     ProbabilityTheory.Kernel.const_apply] using hRep'
 
 /-- A standard de Finetti representation by singleton finite-cylinder
-probabilities determines the full finite-prefix prevision surface.  This is the
+probabilities determines the full finite-prefix prevision interface.  This is the
 non-circular bridge from the older `Represents` predicate to the projective
 credal prefix adapter. -/
 theorem externalPathLawPrefixPrevision_eq_bernoulliMixturePrefixPrevision_of_represents
@@ -7785,7 +7785,7 @@ structure PosteriorBernoulliMixtureExternalCarrier
 
 /-- Once an external Boolean process realizes the posterior Bernoulli mixture,
 the compact bounded path-law carrier gives a precise posterior prefix process
-surface.  The remaining construction problem is therefore exactly the external
+interface.  The remaining construction problem is therefore exactly the external
 realization predicate, not the PLN readout layer. -/
 theorem posteriorBernoulliMixture_externalCarrier
     {Ω : Type*} [MeasurableSpace Ω]
@@ -8111,7 +8111,7 @@ theorem posteriorBernoulliMixture_externalCompactNaturalUpperEnvelope_prefix_eq_
 
 /-- Paper-facing posterior-update/external-carrier package.  This joins the
 Bayes-ratio update laws from `DeFinetti.lean` to the posterior singleton
-projective-prefix crown and to the external process-carrier surface.  The
+projective-prefix crown and to the external process-carrier interface.  The
 remaining infinite-process construction boundary is still explicit in
 `posteriorExternalRealization`. -/
 structure PosteriorBernoulliMixtureUpdateExternalCarrier
@@ -8338,7 +8338,7 @@ theorem posteriorBernoulliMixture_canonicalUpdateExternalCarrier
 projective/cylinder/external-envelope layer.
 
 Positive example: it packages the exact singleton posterior prefix/projective
-surface, the compatible cylinder completion with zero finite-cylinder width,
+interface, the compatible cylinder completion with zero finite-cylinder width,
 and an external process law whose bounded-measurable compact path carrier
 computes the same posterior prefix observables exactly.
 
@@ -9783,7 +9783,7 @@ theorem posteriorBernoulliMixture_conditionedTail_processCarrier_of_prefixTailFa
     (posteriorBernoulliMixturePrefixProcess_jointPrevisionsRealizedInCarrier_of_prefixTailFalseExtensionCarrierSubset
       M (countTrue obs) (countFalse obs) hZ carrier hSubset)
 
-/-! ## Profile surface -/
+/-! ## Profile interface -/
 
 /-- Proof-carrying profile for the de Finetti face of the shared projective
 credal abstraction. -/

@@ -1379,6 +1379,7 @@ theorem rhoBreadth_contextView_stopped :
             boundaryType := _
             content := rhoBreadthRedexA
             certified := rhoBreadthBoundaryWitnessA
+            certifies := rhoBreadthBoundaryWitnessA_spec
             residual := .apply (costBaseConstructorName "NQuote") [] .hole []
             content_eq := rfl
             skeletonContext := .apply "PDrop" [] .hole []

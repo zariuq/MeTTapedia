@@ -11,7 +11,7 @@ import Mettapedia.OSLF.MeTTaIL.Match
 This file states the current **backend compatibility normalization** for the
 real PeTTa-on-MORK/MM2 runtime:
 
-- `&self` is the proved default atomspace surface.
+- `&self` is the proved default atomspace interface.
 - `&mork` is treated as a compatibility alias for that same default backend
   atomspace.
 - arbitrary named spaces are **not** included in this theorem.
@@ -21,7 +21,7 @@ new core semantic law of PeTTa and not a change to the MORK model.
 
 Positive example:
 - `(match &mork pat tmpl)` normalizes to the already-proved `(match &self pat tmpl)`
-  backend surface.
+  backend interface.
 
 Negative example:
 - `(match &foo pat tmpl)` does not normalize through this theorem and remains
@@ -44,7 +44,7 @@ inductive DefaultBackendSpaceRef : ILPattern → Prop where
   | mork : DefaultBackendSpaceRef (.apply "&mork" [])
 
 /-- Normalize the current backend's default-space compatibility aliases onto the
-single proved default atomspace surface, `&self`. -/
+single proved default atomspace interface, `&self`. -/
 def normalizeDefaultBackendSpaceRef : ILPattern → ILPattern
   | .apply "&mork" [] => .apply "&self" []
   | p => p

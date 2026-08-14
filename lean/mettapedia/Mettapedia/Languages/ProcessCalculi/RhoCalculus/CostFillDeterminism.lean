@@ -24,6 +24,12 @@ theorem rho_costWholeLanguage_labelDeterministic :
     LabelDeterministic rhoCIGSLT.costWholeLanguage :=
   rhoCIGSLT.costWholeLanguage_labelDeterministic
 
+/-- Pure rho collection typing chooses one element type at a fixed
+collection constructor and result category. -/
+theorem rho_collectionChoiceDeterministic :
+    CollectionChoiceDeterministic rhoCalc :=
+  collectionChoiceDeterministic_of_check (by decide)
+
 /-- Every generated rho Cost rule with one bare-collection parameter is one
 of the two parallel copies, classified by its result category. -/
 theorem rho_collectionRule_cases {rule : GrammarRule}

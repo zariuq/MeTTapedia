@@ -12,5 +12,5 @@ import Mettapedia.PLN.ConceptGeometry.AssocPat.PLNTypedSemanticLayerBridge
 /-!
 # PLN ASSOC/PAT Concept Geometry
 
-Chapter-12 ASSOC/PAT and typed intensional-inheritance surfaces for WM-PLN.
+Chapter-12 ASSOC/PAT and typed intensional-inheritance interfaces for WM-PLN.
 -/

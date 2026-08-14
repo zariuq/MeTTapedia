@@ -6,7 +6,7 @@ import Mettapedia.ProbabilityTheory.FiniteMeasureSupport
 /-!
 # Controlled Finite Hidden Markov Models
 
-This file extends the finite-state finite-emission HMM surface with an action
+This file extends the finite-state finite-emission HMM interface with an action
 alphabet.
 
 We work at the cycle level:

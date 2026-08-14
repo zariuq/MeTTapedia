@@ -4,5 +4,5 @@ import Mettapedia.PLN.InferenceControl.ProtocolDynamics.PLNTrailFreeDynamicsCoun
 /-!
 # PLN protocol dynamics
 
-Counterexample and positive-control surfaces for PLN inference-protocol dynamics.
+Counterexample and positive-control interfaces for PLN inference-protocol dynamics.
 -/

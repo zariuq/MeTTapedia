@@ -12,7 +12,7 @@ The quantitative core is the threshold-capacity integral
 
 `∫_0^1 ν({u | t ≤ f u}) dt`.
 
-This file keeps the theorem surface intentionally compact:
+This file keeps the theorem family intentionally compact:
 
 - the Choquet integrand and score
 - bounds in `[0,1]`

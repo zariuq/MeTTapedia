@@ -5,7 +5,7 @@ import Mettapedia.PLN.Bridges.ProbabilityTheory.RevisionBayesianGrounding
 # Revision Credal-Envelope Profile
 
 This file packages the existing family-level de-Finetti / Walley envelope
-surface for PLN Revision.
+interface for PLN Revision.
 
 The profile deliberately separates the finite Beta-conjugate subfamily from the
 general posterior-family envelope: the former gives a point-valued sufficient

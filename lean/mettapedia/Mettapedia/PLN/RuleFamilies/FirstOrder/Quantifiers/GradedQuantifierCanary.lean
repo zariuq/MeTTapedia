@@ -8,7 +8,7 @@ Direct canaries for the shared graded quantifier specialization layer.
 
 These are intentionally stated against `GradedQuantifierSemantics` itself,
 rather than only through the Sugeno/Choquet fuzzy-domain wrappers, so that the
-generic graded spine is exercised as a first-class surface.
+generic graded spine is exercised as a first-class interface.
 -/
 
 namespace Mettapedia.PLN.RuleFamilies.FirstOrder.Quantifiers

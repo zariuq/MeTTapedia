@@ -114,7 +114,7 @@ theorem applyTracedStep_terms (components : List RawTraceComponent)
               step.selectedPurses.map RawIndexedPurse.index) ++
           step.contractum.normalize.components ++
           step.selectedPurses.map fun purse =>
-            RawCostTerm.purse purse.surface purse.tail) := by
+            RawCostTerm.purse purse.location purse.tail) := by
   unfold applyTracedStep sortTraceComponents
   rw [map_stableKeySort]
   simp only [List.map_append]
@@ -151,7 +151,7 @@ theorem applyTracedStep_canonical
   let retained := eraseIndices source consumed
   let contractum := step.contractum.normalize.components
   let tails := step.selectedPurses.map fun purse =>
-    RawCostTerm.purse purse.surface purse.tail
+    RawCostTerm.purse purse.location purse.tail
   let items := retained ++ contractum ++ tails
   have retainedComponents : retained.Forall RawCostTerm.IsComponent :=
     eraseIndices_forall canonical.terms consumed
@@ -176,7 +176,7 @@ theorem applyTracedStep_canonical
     have purseNormalized := List.forall_iff_forall_mem.mp selectedNormalized
       purse purseMember
     simp [RawCostTerm.Normalized, RawCostTerm.normalize,
-      purseNormalized.surface, purseNormalized.tail]
+      purseNormalized.location, purseNormalized.tail]
   have itemsComponents : items.Forall RawCostTerm.IsComponent := by
     simp only [items, List.forall_append]
     exact ⟨⟨retainedComponents, contractumComponents⟩, tailsComponents⟩
@@ -207,7 +207,7 @@ theorem applyTracedStep_toMultiset
   let retained := eraseIndices source consumed
   let contractum := step.contractum.normalize.components
   let tails := step.selectedPurses.map fun purse =>
-    RawCostTerm.purse purse.surface purse.tail
+    RawCostTerm.purse purse.location purse.tail
   let items := retained ++ contractum ++ tails
   have itemsComponents : items.Forall RawCostTerm.IsComponent := by
     have funding := runtimeCostCandidatesFromConfig_funding_valid enabled
@@ -233,7 +233,7 @@ theorem applyTracedStep_toMultiset
     have purseNormalized := List.forall_iff_forall_mem.mp selectedNormalized
       purse purseMember
     simp [RawCostTerm.Normalized, RawCostTerm.normalize,
-      purseNormalized.surface, purseNormalized.tail]
+      purseNormalized.location, purseNormalized.tail]
   rw [applyTracedStep_terms]
   rw [stableKeySort_toMultiset]
   have frame := runtimeCostCandidatesFromConfig_frameExact enabled

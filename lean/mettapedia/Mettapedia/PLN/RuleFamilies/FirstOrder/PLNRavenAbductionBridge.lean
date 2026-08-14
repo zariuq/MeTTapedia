@@ -7,7 +7,7 @@ import Mettapedia.PLN.RuleFamilies.FirstOrder.PLNAlgorithmicAbductionBridge
 `RavenAbduction.lean` is the book-facing worked example: base rates dominate a
 common feature, while a discriminating feature can flip the best explanation.
 
-This file welds that example to the generic WM-PLN abduction-ranking surface:
+This file welds that example to the generic WM-PLN abduction-ranking interface:
 the unnormalized hypothesis score is exactly `priorWeightedPoint`.  It does not
 claim interval tightness for the Raven example; the robust interval-ranking
 discipline remains in `PLNAlgorithmicAbductionBridge`.
@@ -32,7 +32,7 @@ theorem scoreBlackCroak_eq_priorWeightedPoint (h : Hypothesis) :
   ring
 
 /-- The book's `Black`-only abduction example, read through the generic
-prior-weighted point surface: Crow wins because the common feature does not
+prior-weighted point interface: Crow wins because the common feature does not
 overcome the base-rate prior. -/
 theorem raven_crow_black_priorWeightedPoint :
     priorWeightedPoint raven.prior raven.likeBlack <
@@ -57,7 +57,7 @@ theorem ravenAbduction_priorWeightedPoint_values_canary :
   norm_num [priorWeightedPoint, raven, crow]
 
 /-- The book's non-monotone best-explanation flip transported to the generic
-prior-weighted point surface. -/
+prior-weighted point interface. -/
 theorem ravenAbduction_priorWeightedPoint_flip_canary :
     priorWeightedPoint raven.prior raven.likeBlack <
         priorWeightedPoint crow.prior crow.likeBlack ∧

@@ -610,7 +610,7 @@ whole-OEIS checker. Thus the experiment measures a cumulative adapter lineage ra
 than replacing the original carrier campaign or the fresh-initialization compounding
 control.
 
-Across the sealed generation-nine/ten surface, the cross-world union contains $1{,}617$
+Across the sealed generation-nine/ten run set, the cross-world union contains $1{,}617$
 new A-numbers. The update-rule portfolios are:
 
 \begin{center}
@@ -819,6 +819,108 @@ The witness-complete summary has SHA-256
 the architecture sensitivity summary has SHA-256
 {\scriptsize\ttfamily
 9dd87c6c740f0301b56260c13882332082a556c4d548f12936777ce70c23619e}.
+
+\subsection{An equal-work joint-retraining control}
+\label{sec:joint-retraining-control}
+
+Four rounds compared credit rules under continuation: every arm inherited its own weights
+across rounds. Nothing in that design tests continuation itself. Two further lineages were
+therefore registered as observers, one per BP carrier, each trained from the authenticated
+initial weights on the frozen final cumulative population for $17{,}500$ updates---the
+cumulative budget the continued lineages had spent by round four. Observer proposals were
+searched and checked exactly as the registered arms are, and their discoveries were
+quarantined from the shared event sequence, so the control cannot alter the lineage it
+measures.
+
+The estimand needs stating precisely, because two things change together. The observer
+sees the final population from its first update, whereas the continued lineage saw each
+round's evidence only once that round produced it. The comparison is therefore between
+offline joint retraining on the accumulated corpus and streaming continuation over the
+same corpus, not between fresh and inherited weights with the data schedule held fixed.
+Snapshots at $10{,}000$, $12{,}500$, and $15{,}000$ updates match the cumulative budgets
+of rounds one through three, but they are future-informed budget landmarks rather than
+replicas of those rounds; only the terminal comparison is free of that advantage.
+
+Writing $J$ for joint retraining and $C$ for continuation, with every entry recomputed
+from the checker's own relation:
+
+\begin{center}\small
+\begin{tabular}{@{}clrrrrrr@{}}
+\toprule
+round & carrier & new $J/C$ & direct $J/C$ & existing $J/C$ & candidates $J/C$
+ & yield ratio & $|J\cap C|$ \\
+\midrule
+1 & recurrent & 361/336 & 4/6 & 629/870 & 2376/2564 & 1.16 & 109 \\
+1 & Unified & 77/70 & 4/8 & 1603/1549 & 14758/14431 & 1.08 & 9 \\
+\midrule
+2 & recurrent & 304/215 & 6/4 & 842/907 & 2582/2645 & 1.45 & 50 \\
+2 & Unified & 77/82 & 7/5 & 1388/1758 & 12967/17133 & 1.24 & 13 \\
+\midrule
+3 & recurrent & 228/192 & 7/7 & 882/1047 & 2595/2752 & 1.26 & 39 \\
+3 & Unified & 52/44 & 11/10 & 1689/1732 & 15710/16504 & 1.24 & 7 \\
+\midrule
+4 & recurrent & 225/202 & 8/6 & 959/1079 & 2814/2784 & 1.10 & 17 \\
+4 & Unified & 64/76 & 10/10 & 1567/1837 & 15244/19701 & 1.09 & 5 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The round-one evaluation predates the direct-hit field, so both round-one $C$ entries were
+recomputed from the generation and coverage relations under the same definition used
+elsewhere: a target counts as direct when a program proposed \emph{for} that target solves
+it.
+
+Three readings are stable across the eight cells, and one is not.
+
+New-target yield per unique proposed program favours $J$ in every cell, by a factor
+between $1.08$ and $1.45$. Joint retraining is the more efficient proposer per candidate
+emitted. Retention runs the other way: continuation covers more already-known targets in
+seven of eight cells, by $370$ and $270$ targets in the two widest Unified cells, and
+total support---new plus existing---favours continuation in six of eight. Efficiency and
+breadth are separated, and they point in opposite directions.
+
+Absolute new-target count is architecture-dependent, and this is where care is needed. For
+the recurrent carrier $J$ leads in every round, by $+25$, $+89$, $+36$, and $+23$. For the
+Unified carrier the sign alternates: $+7$, $-5$, $+8$, $-12$. Only round four is free of
+the observer's future-information advantage, and there the carriers disagree, $+23$ against
+$-12$, a difference in differences of $+35$. Because the landmark advantage favours $J$,
+the round-four Unified deficit is conservative, while the recurrent result is the weaker of
+the two, its sign being the one that bias would produce. Four checkpoints of one pair of
+training runs are not four replications, and nothing here is a population claim.
+
+Hub robustness separates the round-four results further. With $e_R(p)$ the exclusive
+contribution of program $p$ as above, the worst single-program removal costs joint-retrained
+Unified $7$ of its $64$ targets and continued Unified $2$ of its $76$; both recurrent cells
+lose $2$. Continued Unified's larger count is also the more distributed one, and the
+comparison would invert under a hub-discounted reading only for the smaller arm.
+
+Witness redundancy explains why removal costs so little on the recurrent side. Counting new
+targets supported by two or more distinct program identities, the round-four Unified cells
+carry $19$ of $64$ and $25$ of $76$---about a third---while the recurrent cells carry $14$ of
+$225$ and $10$ of $202$, near a twentieth. The recurrent carrier finds many targets each by a
+single route; the Unified carrier finds fewer, more often by several. Removing one identity is
+cheap in the first case because the targets are nearly disjoint across programs, and cheap in
+the second because the survivors re-cover what was removed---the same robustness arising from
+opposite relational structures, which is why the bare deletion number needs the redundancy
+distribution beside it to be read at all.
+
+The portfolio structure is the most robust feature of the table. The two conditions agree on
+very little---the Jaccard index of their new-target sets runs from $0.185$ down to $0.037$,
+falling monotonically for the recurrent carrier---so the union exceeds the better single
+condition by a factor between $1.54$ and $1.82$ in all eight cells: at round four, $410$
+recurrent targets against the best single $225$, and $135$ Unified against $76$. Treating the
+conditions as capture and recapture on the reachable undiscovered pool gives Lincoln--Petersen
+estimates of $2674$ and $973$ targets at round four. Shared architecture and shared corpus make
+the two draws positively dependent, so these are lower bounds on the reachable pool rather than
+estimates of it, and the projection caveats of
+\leanname{projected\_inclusion\_exclusion} apply to the union counts exactly as before.
+
+The machine-readable comparison has SHA-256
+{\scriptsize\ttfamily
+78ba544621388a32fa1b0d3e71fb650b55cdb75224f71430ceb27da46011f1f9};
+the independent recount from raw checker rows has SHA-256
+{\scriptsize\ttfamily
+9a85475b7de4301f324121d89f4b9ba6a168c452c3a27c9f307a595dc733ccbf}.
 
 \section{From coverage to proof: adjudicating discoveries against their definitions}
 \label{sec:adjudication}

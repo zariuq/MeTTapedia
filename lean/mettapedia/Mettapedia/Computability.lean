@@ -17,14 +17,14 @@ import Mettapedia.Computability.KolmogorovComplexity.Uncomputability
 import Mettapedia.Computability.OracleTMReal
 import Mettapedia.Computability.OracleTMRefined
 import Mettapedia.Computability.PNP.ABDecisionListRoute
-import Mettapedia.Computability.PNP.ABVisibleSurface
+import Mettapedia.Computability.PNP.ABVisibleState
 import Mettapedia.Computability.PNP.AffineColumnFamily
 import Mettapedia.Computability.PNP.AffineDecisionListFamily
 import Mettapedia.Computability.PNP.AffineFeatureFamily
 import Mettapedia.Computability.PNP.AsymmetryBudgetObstruction
 import Mettapedia.Computability.PNP.BitFamilyERM
 import Mettapedia.Computability.PNP.BitVecZABERMInterface
-import Mettapedia.Computability.PNP.BitVecZABVisibleSurface
+import Mettapedia.Computability.PNP.BitVecZABVisibleState
 import Mettapedia.Computability.PNP.CanonicalABCandidateInterface
 import Mettapedia.Computability.PNP.CanonicalABCodeWitness
 import Mettapedia.Computability.PNP.CanonicalABRecoveryInterface
@@ -86,7 +86,7 @@ import Mettapedia.Computability.PNP.SparseThresholdAffineFamily
 import Mettapedia.Computability.PNP.SymmetrizationObstruction
 import Mettapedia.Computability.PNP.TreeMessageObstruction
 import Mettapedia.Computability.PNP.TwoUniversalRhsIrrelevance
-import Mettapedia.Computability.PNP.VisiblePostSwitchSurface
+import Mettapedia.Computability.PNP.VisiblePostSwitchData
 import Mettapedia.Computability.PNP.WeightAsymmetryObstruction
 import Mettapedia.Computability.PNP.WeightedFiberNeutralityObstruction
 import Mettapedia.Computability.ProbabilisticTM

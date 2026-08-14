@@ -1196,9 +1196,9 @@ state-to-state transition occurred.  This suggests a ``Markov-PLN''
 where evidence consists of a transition count matrix rather than
 simple $(n^+, n^-)$ counts.
 
-\subsection{Fortini Bridge Interface (Current Lean Surface)}
+\subsection{Fortini Bridge Interface (Current Lean API)}
 In the current Lean development, we now separate the public theorem
-surface from internal proof plumbing.  The canonical path is:
+API from internal proof plumbing.  The canonical path is:
 \begin{enumerate}
 \item \texttt{BuildRowKernelOnRecurrentExtension}: on a recurrent extension
 $P$, construct a row-kernel family with the exact local data needed by

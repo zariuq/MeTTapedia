@@ -8,7 +8,7 @@ import Mathlib.Analysis.Complex.Trigonometric
 This module records the first formal bridge from ordinary PLN strength and
 confidence views to a possible amplitude/phase extension.
 
-The current theorem surface is intentionally conservative:
+The current theorem family is intentionally conservative:
 
 * ordinary PLN is recovered as the Born-shadow projection of a real binary
   amplitude together with the usual concentration/confidence link;

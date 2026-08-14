@@ -26,7 +26,7 @@ namespace RawRuntimeStep
 
 /-- Exact located purse-head demand of one executable candidate. -/
 def fundingDemand (step : RawRuntimeStep) : Multiset RawFundingCell :=
-  step.selectedPurses.map fun purse => (purse.surface, purse.head)
+  step.selectedPurses.map fun purse => (purse.location, purse.head)
 
 end RawRuntimeStep
 
@@ -34,7 +34,7 @@ namespace RawEmittedEvent
 
 /-- Erase causal metadata while retaining every emitted funding occurrence. -/
 def fundingDemand (event : RawEmittedEvent) : Multiset RawFundingCell :=
-  event.funding.map fun contribution => (contribution.surface, contribution.spend)
+  event.funding.map fun contribution => (contribution.location, contribution.spend)
 
 @[simp]
 theorem fundingDemand_eventFor (components : List RawTraceComponent)

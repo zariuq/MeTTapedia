@@ -1,4 +1,4 @@
-import Mettapedia.Computability.PNP.ABVisibleSurface
+import Mettapedia.Computability.PNP.ABVisibleState
 import Mettapedia.Computability.PNP.ExactABDecisionListFamily
 
 /-!
@@ -6,13 +6,13 @@ import Mettapedia.Computability.PNP.ExactABDecisionListFamily
 
 This file isolates one reusable route certificate:
 
-* start with a family on the reduced raw visible surface `(a, b)`,
+* start with a family on the reduced raw visible data domain `(a, b)`,
 * realize that reduced family by fixed-order decision lists on the raw bits,
-* pull it back along the projection from the exact surface `(z, a, b)`.
+* pull it back along the projection from the exact data domain `(z, a, b)`.
 
-Once those ingredients are supplied, the exact-surface compression and
+Once those ingredients are supplied, the exact-data domain compression and
 exact-recovery theorems follow immediately from the concrete raw-bit family
-already defined on the exact post-switch surface.
+already defined on the exact post-switch data domain.
 -/
 
 namespace Mettapedia.Computability.PNP
@@ -23,14 +23,14 @@ section
 
 variable {Z : Type*} {k : ℕ}
 
-/-- An indexed predictor family on the reduced raw visible surface `(a, b)`. -/
+/-- An indexed predictor family on the reduced raw visible data domain `(a, b)`. -/
 abbrev ABVisibleSwitchedFamily (k : ℕ) (Index : Type*) :=
-  IndexedPredictorFamily Index (ABVisibleSurface k)
+  IndexedPredictorFamily Index (ABVisibleState k)
 
-/-- Fixed-order decision-list prediction on the reduced raw visible surface. -/
+/-- Fixed-order decision-list prediction on the reduced raw visible data domain. -/
 noncomputable def abDecisionListPredict
     (code : SharedAffineDecisionListCode (k + k))
-    (x : ABVisibleSurface k) : Bool :=
+    (x : ABVisibleState k) : Bool :=
   match firstActiveFeature? (abVisibleBits (k := k) x) with
   | some j => code.1 j
   | none => code.2
@@ -52,7 +52,7 @@ theorem rawExactABDecisionListPredict_eq_abDecisionListPredict_comp_abVisibleDat
   cases u
   rfl
 
-/-- Reduced-surface family realized by fixed-order decision lists on the raw
+/-- Reduced-data domain family realized by fixed-order decision lists on the raw
 visible bits `(a, b)`. -/
 def RealizedByABDecisionListFamily
     {Index : Type*} (H : ABVisibleSwitchedFamily k Index) : Prop :=
@@ -70,15 +70,15 @@ variable [Inhabited Z]
 
 /-- A canonical section of the reduced raw visible projection, using a default
 latent datum. -/
-def abVisibleSection (x : ABVisibleSurface k) : ExactVisiblePostSwitchSurface Z k :=
+def abVisibleSection (x : ABVisibleState k) : ExactVisiblePostSwitchData Z k :=
   ⟨default, x.1, x.2⟩
 
-@[simp] theorem abVisibleData_section (x : ABVisibleSurface k) :
+@[simp] theorem abVisibleData_section (x : ABVisibleState k) :
     abVisibleData (abVisibleSection (Z := Z) (k := k) x) = x := by
   cases x
   rfl
 
-/-- Lift an exact-surface family to the reduced raw visible surface by choosing
+/-- Lift an exact-data domain family to the reduced raw visible data domain by choosing
 the canonical section. -/
 def liftToABVisibleFamily
     {Index : Type*} (G : ExactVisibleSwitchedFamily Z k Index) :
@@ -173,8 +173,8 @@ end Lift
 
 theorem rawExactABDecisionListRecoveryLowerBound_of_factorsThrough_ab
     [Fintype Z]
-    (μ : PMF (ExactVisiblePostSwitchSurface Z k))
-    (target : ExactVisiblePostSwitchSurface Z k → Bool) (m : ℕ)
+    (μ : PMF (ExactVisiblePostSwitchData Z k))
+    (target : ExactVisiblePostSwitchData Z k → Bool) (m : ℕ)
     (htarget : ∃ code : SharedAffineDecisionListCode (k + k),
       target = fun u => abDecisionListPredict (k := k) code (abVisibleData u))
     {q : ℝ≥0∞}
@@ -193,8 +193,8 @@ theorem rawExactABDecisionListRecoveryLowerBound_of_factorsThrough_ab
 
 theorem rawExactABDecisionListRecoveryLowerBound_of_factorsThrough_ab_twoMul
     [Fintype Z]
-    (μ : PMF (ExactVisiblePostSwitchSurface Z k))
-    (target : ExactVisiblePostSwitchSurface Z k → Bool) (m : ℕ)
+    (μ : PMF (ExactVisiblePostSwitchData Z k))
+    (target : ExactVisiblePostSwitchData Z k → Bool) (m : ℕ)
     (htarget : ∃ code : SharedAffineDecisionListCode (k + k),
       target = fun u => abDecisionListPredict (k := k) code (abVisibleData u))
     {q : ℝ≥0∞}

@@ -620,6 +620,30 @@ theorem OpenTerm.mem_of_restrictTo_freeFvarNames
   obtain ⟨type, lookup⟩ := term.freeType_of_mem_freeFvarNames membership
   exact FreeTypeContext.mem_of_restrictTo_eq_some lookup
 
+/-- Two free contexts that agree on every name used by one open object have
+the same finite restriction to that object's support.  This is the precise
+context equality behind naturality in unused ambient entries: no global
+extensional equality of the original contexts is required. -/
+theorem OpenTerm.restrictTo_freeFvarNames_eq_of_preserves
+    {language : LanguageDef} {source target : FreeTypeContext}
+    {bound : List TypeExpr} {sort : LangSort language}
+    (term : OpenTerm language source bound sort)
+    (preserves : ∀ {name freeType},
+      name ∈ term.1.freeFvarNames →
+      source name = some freeType → target name = some freeType) :
+    source.restrictTo term.1.freeFvarNames =
+      target.restrictTo term.1.freeFvarNames := by
+  funext name
+  by_cases membership : name ∈ term.1.freeFvarNames
+  · obtain ⟨freeType, sourceLookup⟩ :=
+      term.freeType_of_mem_freeFvarNames membership
+    rw [FreeTypeContext.restrictTo_apply_of_mem source
+      term.1.freeFvarNames name membership]
+    rw [FreeTypeContext.restrictTo_apply_of_mem target
+      term.1.freeFvarNames name membership]
+    exact sourceLookup.trans (preserves membership sourceLookup).symm
+  · simp [FreeTypeContext.restrictTo, membership]
+
 /-- A semantic term at an authored sort: it is sorted from the exact grammar,
 contains no schema metavariables or open collection tails, and respects the
 ordinary locally nameless binder discipline. -/

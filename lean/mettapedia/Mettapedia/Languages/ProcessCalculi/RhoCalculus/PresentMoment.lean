@@ -17,7 +17,7 @@ internally with itself."
 
 ## Definitions
 
-- `surfaceChannels` - surf(agent, environment): channels for external interaction
+- `externalChannels` - ext(agent, environment): channels for external interaction
 - `internalChannels` - int(agent, environment): channels for internal interaction
 - `presentMomentExt` - PMext(agent, environment): external interactions with context
 - `presentMomentInt` - PMint(agent, environment): internal self-interactions
@@ -26,7 +26,7 @@ internally with itself."
 
 ## Main Results
 
-- `surf_comm`: Surface channels are symmetric
+- `externalChannels_comm`: Surface channels are symmetric
 - `presentMoment_nonempty_iff`: Present moment nonempty iff interaction possible
 - `presentMoment_subset_futureStates`: Present moment is subset of 1-step future
 
@@ -41,12 +41,12 @@ open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Spice
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Substitution
 
-/-! ## Surface Channels (External Interactions) -/
+/-! ## External Channels (External Interactions) -/
 
 /-- Surface channels: where agent and environment can interact.
 
     Paper definition (Section 4.4.1, page 6):
-    surf(agent, environment) = {x ∈ FN(agent) ∩ FN(environment) : agent | environment ↓ₓ}
+    ext(agent, environment) = {x ∈ FN(agent) ∩ FN(environment) : agent | environment ⇅ₓ}
 
     "Surface channels are those channels that are in the free names of both the agent
      and the environment, and where the agent and environment can interact."
@@ -55,19 +55,24 @@ open Mettapedia.OSLF.MeTTaIL.Substitution
     that processes are considered up to structural congruence (which includes
     associativity: `(P|Q)|R ≡ P|Q|R`).
 -/
-def surfaceChannels (agent environment : Pattern) : Set Pattern :=
+/- Terminology: Meredith defines this set as the *surface* of an agent
+relative to an environment, `surf(agent, environment)` ("How the Agents Got
+Their Present Moment", 2026-01-15, MeTTaIL papers).  We use the
+external/internal naming (dual of `internalChannels`); the paper's word and
+notation are recorded here so the correspondence stays greppable. -/
+def externalChannels (agent environment : Pattern) : Set Pattern :=
   { x | x ∈ freeNames agent ∩ freeNames environment ∧
         canInteract (.collection .hashBag
           (parComponents agent ++ parComponents environment) none) x }
 
-notation:50 "surf(" a "," e ")" => surfaceChannels a e
+notation:50 "ext(" a "," e ")" => externalChannels a e
 
 /-! ## Internal Channels (Internal Interactions) -/
 
 /-- Internal channels: where agent can interact with itself.
 
     Paper definition (Section 4.4.1, page 7):
-    int(agent, environment) = {x ∈ N(agent) \ FN(environment) : agent ↓ₓ}
+    int(agent, environment) = {x ∈ N(agent) \ FN(environment) : agent ⇅ₓ}
 
     "Internal channels are those channels that are in all the names of the agent
      but not in the free names of the environment, and where the agent can interact."
@@ -84,13 +89,13 @@ notation:50 "int(" a "," e ")" => internalChannels a e
 
     Paper definition (Section 4.4.1, page 7):
     PMext(agent, environment) =
-      {K(x) : x ∈ surf(agent, environment), K = □ | environment, agent ↓K(x)}
+      {K(x) : x ∈ ext(agent, environment), K = □ | environment, agent ↓K(x)}
 
     The external present moment consists of all contexts where the agent can
     immediately interact with its environment.
 -/
 def presentMomentExt (agent environment : Pattern) : Set (EvalContext × Pattern) :=
-  { p | ∃ (x : Pattern), x ∈ surfaceChannels agent environment ∧
+  { p | ∃ (x : Pattern), x ∈ externalChannels agent environment ∧
         ∃ (k : EvalContext), k = EvalContext.par environment EvalContext.hole ∧
         p = ⟨k, x⟩ ∧
         ∃ (q : Pattern), Nonempty (LabeledTransition agent k q) }
@@ -171,9 +176,9 @@ def extractMemory : Pattern → AgentMemory
 
     Paper note: The intersection of free names is symmetric by definition.
 -/
-theorem surf_comm (a e : Pattern) :
-    surfaceChannels a e = surfaceChannels e a := by
-  unfold surfaceChannels
+theorem externalChannels_comm (a e : Pattern) :
+    externalChannels a e = externalChannels e a := by
+  unfold externalChannels
   ext x
   simp only [Set.mem_setOf, Set.mem_inter_iff]
   constructor
@@ -201,7 +206,7 @@ theorem int_disjoint_env (a e : Pattern) :
 -/
 theorem presentMoment_nonempty_iff {a e : Pattern} :
     (presentMoment a e).Nonempty ↔
-    (∃ x, x ∈ surfaceChannels a e) ∨ (∃ x, x ∈ internalChannels a e) := by
+    (∃ x, x ∈ externalChannels a e) ∨ (∃ x, x ∈ internalChannels a e) := by
   constructor
   · intro ⟨⟨k, x⟩, h⟩
     unfold presentMoment at h
@@ -226,9 +231,9 @@ theorem presentMoment_nonempty_iff {a e : Pattern} :
     -- For complex agents, we need to show the agent has the right structure
     cases h with
     | inl h_surf =>
-        -- External case: x ∈ surfaceChannels a e
+        -- External case: x ∈ externalChannels a e
         obtain ⟨x, hx_surf⟩ := h_surf
-        unfold surfaceChannels at hx_surf
+        unfold externalChannels at hx_surf
         simp only [Set.mem_setOf] at hx_surf
         obtain ⟨hx_free, hx_interact⟩ := hx_surf
         -- hx_interact: canInteract on flat bag (parComponents a ++ parComponents e)
@@ -253,8 +258,8 @@ theorem presentMoment_nonempty_iff {a e : Pattern} :
         left
         unfold presentMomentExt
         simp only [Set.mem_setOf]
-        have hx_surf_mem : x ∈ surfaceChannels a e := by
-          unfold surfaceChannels; simp only [Set.mem_setOf]
+        have hx_surf_mem : x ∈ externalChannels a e := by
+          unfold externalChannels; simp only [Set.mem_setOf]
           exact ⟨hx_free, hx_interact⟩
         exact ⟨x, hx_surf_mem, EvalContext.par e EvalContext.hole, rfl, rfl,
                q_flat, h_ltrans⟩
@@ -998,7 +1003,7 @@ theorem CommRecord.round_trip (r : CommRecord) :
 This file establishes the present moment formalization:
 
 **✅ COMPLETED**:
-1. `surfaceChannels` - surf(agent, environment) for external interaction
+1. `externalChannels` - ext(agent, environment) for external interaction
 2. `internalChannels` - int(agent, environment) for internal interaction
 3. `presentMomentExt` - external present moment with contexts
 4. `presentMomentInt` - internal present moment with contexts
@@ -1007,7 +1012,7 @@ This file establishes the present moment formalization:
 7. `extractMemory` - pattern decomposition into recipes/facts
 
 **All theorems PROVEN (0 sorries)**:
-- `surf_comm` - surface channels are symmetric
+- `externalChannels_comm` - external channels are symmetric
 - `int_disjoint_env` - internal channels disjoint from env free names
 - `presentMoment_nonempty_iff` - both external AND internal cases
 - `presentMoment_subset_futureStates` - both external AND internal cases

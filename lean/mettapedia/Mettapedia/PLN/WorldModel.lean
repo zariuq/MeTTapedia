@@ -28,7 +28,7 @@ import Mettapedia.PLN.WorldModel.WorldModelInstitution
 import Mettapedia.PLN.WorldModel.PLNWorldModelInstitution
 import Mettapedia.PLN.WorldModel.PLNWorldModelCrispSpecialization
 import Mettapedia.PLN.WorldModel.PLNWorldModelSupportForgetting
-import Mettapedia.PLN.WorldModel.SufficientStatisticSurface
+import Mettapedia.PLN.WorldModel.SufficientStatisticEncoder
 import Mettapedia.PLN.WorldModel.TerminalMeasureWorldModel
 import Mettapedia.PLN.WorldModel.UniversalEnsembleWM
 import Mettapedia.PLN.WorldModel.WMCalculusSoundness
@@ -45,5 +45,5 @@ import Mettapedia.PLN.WorldModel.Semitopology
 # PLN WorldModel Room
 
 Core world-model interfaces, additive/generic carriers, query calculus, and
-typed interval-world-model surfaces for the PLN stack.
+typed interval-world-model interfaces for the PLN stack.
 -/

@@ -31,11 +31,11 @@ def projectedZExtractor
 
 structure ProjectedZABERMRecoveryData
     [Fintype (BitVec n)]
-    (μ : PMF (ExactVisiblePostSwitchSurface (BitVec n) k))
+    (μ : PMF (ExactVisiblePostSwitchData (BitVec n) k))
     (coords : Fin r → Fin n)
     (G : ExactVisibleSwitchedFamily (BitVec n) k Index)
     (q : ℝ≥0∞) where
-  samples : Index → Sample (ExactVisiblePostSwitchSurface (BitVec n) k) Bool
+  samples : Index → Sample (ExactVisiblePostSwitchData (BitVec n) k) Bool
   exact_family :
     G = exactZABDecisionListERMFamily
           (Z := BitVec n) (r := r) (k := k)
@@ -55,7 +55,7 @@ section
 variable [Fintype (BitVec n)]
 
 def ProjectedZABERMRecoveryData.canonicalData
-    {μ : PMF (ExactVisiblePostSwitchSurface (BitVec n) k)}
+    {μ : PMF (ExactVisiblePostSwitchData (BitVec n) k)}
     {coords : Fin r → Fin n}
     {G : ExactVisibleSwitchedFamily (BitVec n) k Index}
     {q : ℝ≥0∞}
@@ -67,7 +67,7 @@ def ProjectedZABERMRecoveryData.canonicalData
   refine ⟨h.samples, h.exact_family, h.agreement_le⟩
 
 theorem ProjectedZABERMRecoveryData.compressionTarget
-    {μ : PMF (ExactVisiblePostSwitchSurface (BitVec n) k)}
+    {μ : PMF (ExactVisiblePostSwitchData (BitVec n) k)}
     {coords : Fin r → Fin n}
     {G : ExactVisibleSwitchedFamily (BitVec n) k Index}
     {q : ℝ≥0∞}
@@ -78,7 +78,7 @@ theorem ProjectedZABERMRecoveryData.compressionTarget
   exact (h.canonicalData).compressionTarget
 
 theorem ProjectedZABERMRecoveryData.recoveryLowerBound
-    {μ : PMF (ExactVisiblePostSwitchSurface (BitVec n) k)}
+    {μ : PMF (ExactVisiblePostSwitchData (BitVec n) k)}
     {coords : Fin r → Fin n}
     {G : ExactVisibleSwitchedFamily (BitVec n) k Index}
     {q : ℝ≥0∞}

@@ -533,6 +533,27 @@ theorem costPresentationSymbols_sort_wrapped
   simp [costPresentationSymbols, mapTaggedName, costBaseSortTag,
     costWrappedSortName, dropListPrefix?]
 
+/-- The generated wrapped carrier is a reflected fibre of every Cost symbol
+map.  A base-tagged source name cannot enter the disjoint wrapped namespace. -/
+theorem costPresentationSymbols_sort_eq_wrapped_iff
+    (symbols : PresentationSymbols) (name : String) :
+    (costPresentationSymbols symbols).sort name = costWrappedSortName ↔
+      name = costWrappedSortName := by
+  change mapTaggedName costBaseSortTag symbols.sort name =
+      costWrappedSortName ↔ name = costWrappedSortName
+  unfold mapTaggedName
+  split
+  next suffix tagged =>
+    constructor
+    · intro equality
+      exact False.elim
+        (costBaseSortName_ne_wrapped
+          (symbols.sort (String.ofList suffix)) equality)
+    · intro equality
+      subst name
+      simp [costBaseSortTag, costWrappedSortName, dropListPrefix?] at tagged
+  next => rfl
+
 @[simp]
 theorem costPresentationSymbols_sort_apparatus
     (symbols : PresentationSymbols) (sort : String) :
@@ -568,6 +589,41 @@ theorem costPresentationSymbols_comp
     simp [costPresentationSymbols, PresentationSymbols.comp,
       mapTaggedName_comp, mapCostConstructorName_comp,
       mapCostEquationName_comp]
+
+/-- Extending the identity reflective action through the Cost namespace is
+the identity on the generated namespace. -/
+@[simp]
+theorem costReflectiveSymbols_id :
+    costReflectiveSymbols ReflectionExtension.ReflectiveSymbols.id =
+      ReflectionExtension.ReflectiveSymbols.id := by
+  apply ReflectionExtension.ReflectiveSymbols.ext
+  · exact congrArg PresentationSymbols.sort costPresentationSymbols_id
+  · exact congrArg PresentationSymbols.constructor costPresentationSymbols_id
+  · exact congrArg PresentationSymbols.relation costPresentationSymbols_id
+  · exact congrArg PresentationSymbols.equation costPresentationSymbols_id
+  · exact congrArg PresentationSymbols.rewrite costPresentationSymbols_id
+  · apply ReflectionExtension.ReflectionSymbols.ext <;> funext name
+    · exact mapCostReflectiveName_id name
+    · exact mapCostReflectiveRuleName_id name
+
+/-- The Cost extension of reflective names is functorial. -/
+theorem costReflectiveSymbols_comp
+    (first second : ReflectionExtension.ReflectiveSymbols) :
+    costReflectiveSymbols (first.comp second) =
+      (costReflectiveSymbols first).comp (costReflectiveSymbols second) := by
+  have coreEquality := costPresentationSymbols_comp
+    first.toPresentationSymbols second.toPresentationSymbols
+  apply ReflectionExtension.ReflectiveSymbols.ext
+  · exact congrArg PresentationSymbols.sort coreEquality
+  · exact congrArg PresentationSymbols.constructor coreEquality
+  · exact congrArg PresentationSymbols.relation coreEquality
+  · exact congrArg PresentationSymbols.equation coreEquality
+  · exact congrArg PresentationSymbols.rewrite coreEquality
+  · apply ReflectionExtension.ReflectionSymbols.ext <;> funext name
+    · exact mapCostReflectiveName_comp first.reflection.presentation
+        second.reflection.presentation name
+    · exact mapCostReflectiveRuleName_comp first.reflection.rule
+        second.reflection.rule name
 
 /-! ## Type-profile naturality -/
 
@@ -633,6 +689,26 @@ theorem mapPattern_costBasePresentation_natural
       mapPattern costBasePresentationSymbols (mapPattern symbols pattern) := by
   simpa only [mapPattern_costBaseStaticSymbols] using
     mapPattern_costBaseStatic_natural symbols pattern
+
+namespace CIGSLT
+
+open Mettapedia.OSLF.MeTTaIL.DerivedContexts
+
+/-- Structural context translation commutes with formation of the base-fiber
+copy.  This is the contextual counterpart of
+`mapPattern_costBasePresentation_natural`. -/
+@[simp]
+theorem mapOneHoleContext_costBasePresentation_natural
+    (symbols : PresentationSymbols) (context : OneHoleContext) :
+    mapOneHoleContext (costPresentationSymbols symbols)
+        (mapOneHoleContext costBasePresentationSymbols context) =
+      mapOneHoleContext costBasePresentationSymbols
+        (mapOneHoleContext symbols context) := by
+  induction context <;>
+    simp_all [mapOneHoleContext, List.map_map,
+      mapPattern_costBasePresentation_natural]
+
+end CIGSLT
 
 /-- Structural term translation likewise commutes with the hereditary
 wrapped constructor copy. -/

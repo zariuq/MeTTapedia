@@ -5,6 +5,6 @@ import Mettapedia.PLN.Bridges.KR.ConceptClosure.CredalConceptFullInheritanceClos
 /-!
 # PLN ↔ KR concept-closure bridges
 
-Bridge surfaces transporting KR concept-formation obligations through PLN
+Bridge interfaces transporting KR concept-formation obligations through PLN
 world-model fixpoint closure.
 -/

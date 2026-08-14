@@ -14,7 +14,7 @@ NARS into one theorem-oriented package:
 - revision/evidence aggregation coherence
 - informativeness adjunction (`L ⊣ U`) for finite evidence
 
-The goal is a stable import surface for rule-by-rule comparison work.
+The goal is a stable import interface for rule-by-rule comparison work.
 -/
 
 namespace Mettapedia.PLN.Comparisons.NARS.PLNNARSRuleCorrespondence

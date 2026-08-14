@@ -6,7 +6,7 @@ import Mettapedia.PLN.WorldModel.WorldModelOverlap
 # Overlap Bridge for Stamped Abstract Inheritance
 
 This module connects the stamped witness packets from `AbstractInheritance` to the
-generic overlap-correction surface:
+generic overlap-correction interface:
 
 - stamped packets form an additive state by evidence-addition + stamp union
 - shared witness stamps induce a concrete overlap evidence
@@ -55,7 +55,7 @@ because overlap-aware code should not discover it accidentally via `+`. -/
 noncomputable def rawAdd : StampedBinaryEvidence Stamp → StampedBinaryEvidence Stamp → StampedBinaryEvidence Stamp :=
   revise
 
-/-- Raw stamped-packet zero for the explicit additive helper surface. -/
+/-- Raw stamped-packet zero for the explicit additive helpers. -/
 noncomputable def rawZero : StampedBinaryEvidence Stamp := empty
 
 @[simp] theorem rawAdd_evidence (x y : StampedBinaryEvidence Stamp) :

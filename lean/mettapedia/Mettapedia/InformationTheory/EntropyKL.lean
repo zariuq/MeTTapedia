@@ -39,7 +39,7 @@ The main equivalence glue lives in:
 - `Mettapedia.InformationTheory.shannonEntropy_eq_ks_shannonEntropy`
 - `Mettapedia.InformationTheory.klDivergenceVec` and `..._eq_klDiv` (measure bridge)
 
-This file intentionally does not re-export names; it is an "import surface" with a single,
+This file intentionally does not re-export names; it is an "import interface" with a single,
 stable path that other subprojects (Cox, Shore–Johnson, etc.) can depend on.
 -/
 

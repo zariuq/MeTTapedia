@@ -61,6 +61,32 @@ def comp {first middle last : GSLT}
 
 end StepCover
 
+/-! ## Explicit witnesses for failure of local coverage -/
+
+/-- A target step leaves the image of a proposed source map.  The witness
+retains the source image point, the exact target transition, and the proof
+that its target has no source preimage. -/
+structure ImageEscapingStep (source : GSLT.{uSource})
+    (target : GSLT.{uTarget}) (mapTerm : source.Term → target.Term) where
+  sourceTerm : source.Term
+  targetTerm : target.Term
+  step : target.Step (mapTerm sourceTerm) targetTerm
+  target_not_in_image : ∀ sourceTarget, mapTerm sourceTarget ≠ targetTerm
+
+namespace ImageEscapingStep
+
+/-- One image-escaping target step is a complete obstruction to local step
+coverage for the proposed map. -/
+theorem not_stepCover {source : GSLT.{uSource}}
+    {target : GSLT.{uTarget}} {mapTerm : source.Term → target.Term}
+    (escaping : ImageEscapingStep source target mapTerm) :
+    ¬ Nonempty (StepCover source target mapTerm) := by
+  rintro ⟨cover⟩
+  obtain ⟨sourceTarget, _, target_eq⟩ := cover.liftStep escaping.step
+  exact escaping.target_not_in_image sourceTarget target_eq
+
+end ImageEscapingStep
+
 /-- The transported relation keeps the two source preimages, their image
 equalities, and the original relation witness.  Target states without such
 preimages are intentionally absent. -/

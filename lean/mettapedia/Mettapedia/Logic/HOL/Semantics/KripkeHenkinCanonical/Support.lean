@@ -2513,7 +2513,7 @@ theorem closedTruthAbove_ex_of_levelOpenSupportedAbove
     (levelOpenSupportedAbove_mono (Base := Base) (Const := Const) hWVLevel hEx)
 
 /-- Supported implication truth above a world, packaged for the closed truth
-induction surface. -/
+induction interface. -/
 theorem closedTruthAbove_imp_of_support_raw_refutation
     (P : SchedulerProvider (Base := Base) Const)
     (hLeLevel : CarrierLevelMonotone (Base := Base) (Const := Const))
@@ -2529,7 +2529,7 @@ theorem closedTruthAbove_imp_of_support_raw_refutation
     (closedTruthAbove_of_support (Base := Base) (Const := Const) P hψ)
 
 /-- Supported universal truth above a world, packaged for the closed truth
-induction surface. -/
+induction interface. -/
 theorem closedTruthAbove_all_of_support_raw_refutation
     (P : SchedulerProvider (Base := Base) Const)
     (hLeLevel : CarrierLevelMonotone (Base := Base) (Const := Const))

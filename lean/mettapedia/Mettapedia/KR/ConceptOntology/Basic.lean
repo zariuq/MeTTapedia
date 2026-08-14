@@ -1,5 +1,5 @@
 import Mathlib.Order.GaloisConnection.Basic
-import Mettapedia.PLN.WorldModel.SufficientStatisticSurface
+import Mettapedia.PLN.WorldModel.SufficientStatisticEncoder
 import Mettapedia.Algebra.QuantaleWeakness
 
 /-!
@@ -12,7 +12,7 @@ This module isolates the core extensional-ontology data for WM-PLN:
 - evidence-valued extent/intent adjunction in a commutative quantale
 
 The observation layer is intentionally built as a thin specialization of the
-existing `SufficientStatisticSurface` machinery, with query type `Obj × Con`.
+existing `SufficientStatisticEncoder` machinery, with query type `Obj × Con`.
 -/
 
 namespace Mettapedia.KR.ConceptOntology
@@ -57,18 +57,18 @@ def toAdditiveWorldModel
 
 end EvidenceMembershipContext
 
-/-- Observation surfaces for ontology formation are just sufficient-statistic
-surfaces whose queries are object/concept pairs. -/
-abbrev ObservationSurface (Obs : Type u) (Obj : Type v) (Con : Type w) (Ev : Type x) :=
-  SufficientStatisticSurface Obs (Obj × Con) Ev
+/-- Observation interfaces for ontology formation are just sufficient-statistic
+interfaces whose queries are object/concept pairs. -/
+abbrev ObservationEncoder (Obs : Type u) (Obj : Type v) (Con : Type w) (Ev : Type x) :=
+  SufficientStatisticEncoder Obs (Obj × Con) Ev
 
-namespace ObservationSurface
+namespace ObservationEncoder
 
 variable {Obs : Type u} {Obj : Type v} {Con : Type w} {Ev : Type x}
 
-/-- Read the pair-indexed observation surface as object/concept membership
+/-- Read the pair-indexed observation interface as object/concept membership
 evidence. -/
-def observeAt (S : ObservationSurface Obs Obj Con Ev) (o : Obs) (x : Obj) (c : Con) : Ev :=
+def observeAt (S : ObservationEncoder Obs Obj Con Ev) (o : Obs) (x : Obj) (c : Con) : Ev :=
   S.observe o (x, c)
 
 section Additive
@@ -77,25 +77,25 @@ variable [AddCommMonoid Ev]
 
 /-- Aggregate observation evidence into object/concept membership evidence. -/
 noncomputable def aggregate
-    (S : ObservationSurface Obs Obj Con Ev)
+    (S : ObservationEncoder Obs Obj Con Ev)
     (σ : Multiset Obs) (x : Obj) (c : Con) : Ev :=
-  SufficientStatisticSurface.aggregate S σ (x, c)
+  SufficientStatisticEncoder.aggregate S σ (x, c)
 
 @[simp] theorem aggregate_zero
-    (S : ObservationSurface Obs Obj Con Ev) (x : Obj) (c : Con) :
+    (S : ObservationEncoder Obs Obj Con Ev) (x : Obj) (c : Con) :
     aggregate S 0 x c = 0 := by
   simp [aggregate]
 
 @[simp] theorem aggregate_singleton
-    (S : ObservationSurface Obs Obj Con Ev) (o : Obs) (x : Obj) (c : Con) :
+    (S : ObservationEncoder Obs Obj Con Ev) (o : Obs) (x : Obj) (c : Con) :
     aggregate S ({o} : Multiset Obs) x c = observeAt S o x c := by
   simp [aggregate, observeAt]
 
 theorem aggregate_add
-    (S : ObservationSurface Obs Obj Con Ev)
+    (S : ObservationEncoder Obs Obj Con Ev)
     (σ₁ σ₂ : Multiset Obs) (x : Obj) (c : Con) :
     aggregate S (σ₁ + σ₂) x c = aggregate S σ₁ x c + aggregate S σ₂ x c := by
-  simpa [aggregate] using SufficientStatisticSurface.aggregate_add S σ₁ σ₂ (x, c)
+  simpa [aggregate] using SufficientStatisticEncoder.aggregate_add S σ₁ σ₂ (x, c)
 
 /-- The curried additive-extension property for ontology membership evidence. -/
 def IsMembershipAdditiveExtension
@@ -106,27 +106,27 @@ def IsMembershipAdditiveExtension
     (fun σ q => E σ q.1 q.2)
 
 theorem aggregate_isMembershipAdditiveExtension
-    (S : ObservationSurface Obs Obj Con Ev) :
+    (S : ObservationEncoder Obs Obj Con Ev) :
     IsMembershipAdditiveExtension (observeAt S) (aggregate S) := by
   exact S.aggregate_isAdditiveExtension
 
 theorem aggregate_eq_of_isMembershipAdditiveExtension
-    (S : ObservationSurface Obs Obj Con Ev)
+    (S : ObservationEncoder Obs Obj Con Ev)
     {E : Multiset Obs → Obj → Con → Ev}
     (hE : IsMembershipAdditiveExtension (observeAt S) E) :
     E = aggregate S := by
   have hEq :
       (fun (σ : Multiset Obs) (q : Obj × Con) => E σ q.1 q.2) =
         fun (σ : Multiset Obs) (q : Obj × Con) =>
-          SufficientStatisticSurface.aggregate S σ q := by
-    exact SufficientStatisticSurface.aggregate_eq_of_isAdditiveExtension S hE
+          SufficientStatisticEncoder.aggregate S σ q := by
+    exact SufficientStatisticEncoder.aggregate_eq_of_isAdditiveExtension S hE
   funext σ x c
   exact congrFun (congrFun hEq σ) (x, c)
 
 /-- The canonical multiset-based evidence membership context induced by an
-observation surface. -/
+observation interface. -/
 noncomputable def inducedContext
-    (S : ObservationSurface Obs Obj Con Ev) :
+    (S : ObservationEncoder Obs Obj Con Ev) :
     letI : EvidenceType (Multiset Obs) := multisetEvidenceType Obs
     EvidenceMembershipContext (Multiset Obs) Obj Con Ev := by
   letI : EvidenceType (Multiset Obs) := multisetEvidenceType Obs
@@ -135,7 +135,7 @@ noncomputable def inducedContext
       memberEvidence_add := aggregate_add S }
 
 @[simp] theorem inducedContext_memberEvidence_eq_aggregate
-    (S : ObservationSurface Obs Obj Con Ev)
+    (S : ObservationEncoder Obs Obj Con Ev)
     (σ : Multiset Obs) (x : Obj) (c : Con) :
     letI : EvidenceType (Multiset Obs) := multisetEvidenceType Obs
     (S.inducedContext).memberEvidence σ x c = aggregate S σ x c := by
@@ -144,7 +144,7 @@ noncomputable def inducedContext
 
 end Additive
 
-end ObservationSurface
+end ObservationEncoder
 
 /-- Evidence-valued predicates used for extents and intents. -/
 abbrev Predicate (α : Type*) (Q : Type*) := α → Q

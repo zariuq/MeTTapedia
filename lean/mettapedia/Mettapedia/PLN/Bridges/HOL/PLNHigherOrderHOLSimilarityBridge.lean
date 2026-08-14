@@ -6,7 +6,7 @@ import Mettapedia.PLN.RuleFamilies.FirstOrder.PLNInferenceRules
 # Higher-Order HOL Predicate Similarity Bridge
 
 This file connects the crisp predicate-equivalence bridge to the existing PLN
-similarity formula surface. Predicate-level similarity is not a new relation:
+similarity formula interface. Predicate-level similarity is not a new relation:
 it is mutual abstract inheritance, with `twoInh2Sim` consuming the two directed
 crisp inheritance strengths in the collapsed 0/1 case.
 -/
@@ -526,7 +526,7 @@ noncomputable def predicateVocabularyPureExtensionalSimilarityStrength
 /-- Symmetric similarity built only from the pure intensional half of the
 predicate-vocabulary interpretation. This is the first explicit HO seam for
 predicate-pattern similarity; PAT/ASSOC-style evidence should refine this
-surface rather than create a separate predicate-similarity relation. -/
+interface rather than create a separate predicate-similarity relation. -/
 noncomputable def predicateVocabularyPureIntensionalSimilarityStrength
     (M : HenkinModel.{u, v, w} Base Const)
     (σ : Ty Base)

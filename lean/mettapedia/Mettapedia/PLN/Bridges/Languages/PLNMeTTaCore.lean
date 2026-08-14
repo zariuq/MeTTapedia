@@ -232,7 +232,7 @@ theorem complete_pln_soundness
 
 The theorem above reaches the raw PLN formula. The next theorem consumes the
 measure-theoretic derivation theorem, so the MeTTa-facing semantic deduction
-surface reaches the actual conditional probability under the explicit PLN
+interface reaches the actual conditional probability under the explicit PLN
 deduction context.
 -/
 
@@ -491,7 +491,7 @@ theorem negation_sound (tv : STV) :
 Revision combines independent evidence sources by adding the latent evidence
 weights decoded from their confidence coordinates.  This delegates to the
 canonical `PLNInferenceCalculus.revisionTV` rule, so the MeTTaCore operational
-surface remains a view of the shared evidence-addition semantics rather than a
+interface remains a view of the shared evidence-addition semantics rather than a
 parallel heuristic. -/
 
 /-- Semantic PLN Revision: combines two truth values via weighted averaging.

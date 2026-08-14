@@ -882,7 +882,7 @@ structure InformationGeometryLiftProfile where
 records the Hellinger circle embedding, Fisher metric positivity, KL
 self-zero, derivative-backed m/e geodesic velocities, m-flat revision,
 e-flat tensor/log-odds composition, and the mean/concentration coordinate
-surface. -/
+interface. -/
 noncomputable def informationGeometryLiftProfile : InformationGeometryLiftProfile where
   naturalToMeanPositive :=
     bernoulliNaturalToMean_pos

@@ -98,8 +98,8 @@ mutual
           CostTerm.lift_zero cutoff right]
     | .drop name => by
         simp [CostTerm.lift, CostName.lift_zero cutoff name]
-    | .purse surface stack => by
-        simp [CostTerm.lift, CostName.lift_zero cutoff surface]
+    | .purse location stack => by
+        simp [CostTerm.lift, CostName.lift_zero cutoff location]
 end
 
 mutual
@@ -193,8 +193,8 @@ theorem CostTerm.erase_commSubst_higher_index_differs {Ground : Type u}
 @[simp]
 theorem CostTerm.erase_purse {Ground : Type u}
     (signatureName : SignatureNameEncoding Ground)
-    (surface : CostName Ground) (stack : CostStack Ground) :
-    (CostTerm.purse surface stack).erase signatureName =
+    (location : CostName Ground) (stack : CostStack Ground) :
+    (CostTerm.purse location stack).erase signatureName =
       .collection .hashBag [] none :=
   rfl
 

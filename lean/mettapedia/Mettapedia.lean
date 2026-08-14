@@ -282,7 +282,7 @@ import Mettapedia.Computability.OracleTMReal
 import Mettapedia.Computability.OracleTMRefined
 import Mettapedia.Computability.ProbabilisticTM
 import Mettapedia.Computability.ProbabilisticTMRefined
-import Mettapedia.Computability.PNP.ABVisibleSurface
+import Mettapedia.Computability.PNP.ABVisibleState
 import Mettapedia.Computability.PNP.AsymmetryBudgetObstruction
 import Mettapedia.Computability.PNP.ConditioningObstruction
 import Mettapedia.Computability.PNP.FiberNeutralityObstruction
@@ -301,7 +301,7 @@ import Mettapedia.Computability.PNP.ResidualSymmetryObstruction
 import Mettapedia.Computability.PNP.RhsBiasIrrelevance
 import Mettapedia.Computability.PNP.SymmetrizationObstruction
 import Mettapedia.Computability.PNP.TwoUniversalRhsIrrelevance
-import Mettapedia.Computability.PNP.VisiblePostSwitchSurface
+import Mettapedia.Computability.PNP.VisiblePostSwitchData
 import Mettapedia.Computability.PNP.WeightAsymmetryObstruction
 import Mettapedia.Computability.PNP.WeightedFiberNeutralityObstruction
 

@@ -122,11 +122,11 @@ theorem secrecy_secret_not_in_env_freeNames :
     simp [hdisj]
   exact hnone this
 
-/-- The private channel does not appear as a surface/external channel. -/
-theorem secrecy_secret_not_surface :
-    secretChan ∉ surfaceChannels secrecyAgent secrecyEnv := by
+/-- The private channel does not appear as an external channel. -/
+theorem secrecy_secret_not_external :
+    secretChan ∉ externalChannels secrecyAgent secrecyEnv := by
   intro hsurf
-  unfold surfaceChannels at hsurf
+  unfold externalChannels at hsurf
   simp only [Set.mem_setOf, Set.mem_inter_iff] at hsurf
   exact secrecy_secret_not_in_env_freeNames hsurf.1.2
 
@@ -135,10 +135,10 @@ from environment-level observability. -/
 theorem secrecy_worked_example :
     secretChan ∈ internalChannels secrecyAgent secrecyEnv ∧
     secretChan ∉ Context.freeNames secrecyEnv ∧
-    secretChan ∉ surfaceChannels secrecyAgent secrecyEnv := by
+    secretChan ∉ externalChannels secrecyAgent secrecyEnv := by
   exact ⟨secrecy_secret_in_internalChannels,
     secrecy_secret_not_in_env_freeNames,
-    secrecy_secret_not_surface⟩
+    secrecy_secret_not_external⟩
 
 /-- Canonical bundle for OSLF paper §12 worked examples. -/
 theorem section12_worked_examples_bundle :
@@ -150,7 +150,7 @@ theorem section12_worked_examples_bundle :
       r₁ ≠ r₂) ∧
     (secretChan ∈ internalChannels secrecyAgent secrecyEnv ∧
       secretChan ∉ Context.freeNames secrecyEnv ∧
-      secretChan ∉ surfaceChannels secrecyAgent secrecyEnv) := by
+      secretChan ∉ externalChannels secrecyAgent secrecyEnv) := by
   exact ⟨compile_time_firewall_worked_example,
     race_detection_worked_example,
     secrecy_worked_example⟩

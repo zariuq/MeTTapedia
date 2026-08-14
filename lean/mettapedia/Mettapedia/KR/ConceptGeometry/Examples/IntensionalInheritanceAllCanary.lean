@@ -4,7 +4,7 @@ import Mettapedia.KR.ConceptOntology.Examples
 /-!
 # Intensional Inheritance Entry-Point Canary
 
-This file exercises the focused `IntensionalInheritanceAll` import surface by
+This file exercises the focused `IntensionalInheritanceAll` import interface by
 pulling the tiny empirical 2x2 inheritance object through the new factor-graph /
 VE / BP bridge theorems.
 -/
@@ -313,8 +313,8 @@ noncomputable abbrev toyBirdFlyTable :=
   Interpretation.toFiniteWitnessFeatureTable
     toySemanticInterpretation Concept.bird Concept.fly
 
-noncomputable def toyObservationSurface :
-    Mettapedia.KR.ConceptOntology.ObservationSurface
+noncomputable def toyObservationEncoder :
+    Mettapedia.KR.ConceptOntology.ObservationEncoder
       ToyMembershipObservation Creature Concept BinaryEvidence where
   observe o q :=
     match o with
@@ -338,7 +338,7 @@ noncomputable def toyObservationContext :
       (Multiset ToyMembershipObservation) Creature Concept BinaryEvidence := by
   letI : Mettapedia.PLN.Evidence.EvidenceClass.EvidenceType (Multiset ToyMembershipObservation) :=
     Mettapedia.PLN.WorldModel.PLNWorldModelAdditive.multisetEvidenceType ToyMembershipObservation
-  exact toyObservationSurface.inducedContext
+  exact toyObservationEncoder.inducedContext
 
 noncomputable def toyObservationInterpretation :
     letI : Mettapedia.PLN.Evidence.EvidenceClass.EvidenceType (Multiset ToyMembershipObservation) :=
@@ -489,8 +489,8 @@ theorem toyObservation_penguinBird_prior_eq_generated_ve_ratio :
   letI : Mettapedia.PLN.Evidence.EvidenceClass.EvidenceType (Multiset ToyMembershipObservation) :=
     Mettapedia.PLN.WorldModel.PLNWorldModelAdditive.multisetEvidenceType ToyMembershipObservation
   simpa [toyObservationContext, toyObservationInterpretation, toyObservationPenguinBirdTable] using
-    Mettapedia.KR.ConceptGeometry.IntensionalInheritance.ObservationSurfaceBridge.finitePriorProb_inducedContext_eq_veWeight_ratio
-      (S := toyObservationSurface)
+    Mettapedia.KR.ConceptGeometry.IntensionalInheritance.ObservationEncoderBridge.finitePriorProb_inducedContext_eq_veWeight_ratio
+      (S := toyObservationEncoder)
       (G := gate)
       (σ := toyObservationData)
       (feature := Concept.penguin)
@@ -513,8 +513,8 @@ theorem toyObservation_penguinBird_ext_eq_generated_bp_ratio :
   letI : Mettapedia.PLN.Evidence.EvidenceClass.EvidenceType (Multiset ToyMembershipObservation) :=
     Mettapedia.PLN.WorldModel.PLNWorldModelAdditive.multisetEvidenceType ToyMembershipObservation
   simpa [toyObservationContext, toyObservationInterpretation, toyObservationPenguinBirdTable] using
-    Mettapedia.KR.ConceptGeometry.IntensionalInheritance.ObservationSurfaceBridge.finiteExtensionalProb_inducedContext_eq_bp_ratio
-      (S := toyObservationSurface)
+    Mettapedia.KR.ConceptGeometry.IntensionalInheritance.ObservationEncoderBridge.finiteExtensionalProb_inducedContext_eq_bp_ratio
+      (S := toyObservationEncoder)
       (G := gate)
       (σ := toyObservationData)
       (feature := Concept.penguin)
@@ -546,8 +546,8 @@ theorem toyObservation_birdFly_score_eq_generated_ve_query_score :
   letI : Mettapedia.PLN.Evidence.EvidenceClass.EvidenceType (Multiset ToyMembershipObservation) :=
     Mettapedia.PLN.WorldModel.PLNWorldModelAdditive.multisetEvidenceType ToyMembershipObservation
   simpa [toyObservationContext, toyObservationInterpretation, toyObservationBirdFlyTable] using
-    Mettapedia.KR.ConceptGeometry.IntensionalInheritance.ObservationSurfaceBridge.finitePointwiseLogRatioBits_inducedContext_eq_ve_query_score
-      (S := toyObservationSurface)
+    Mettapedia.KR.ConceptGeometry.IntensionalInheritance.ObservationEncoderBridge.finitePointwiseLogRatioBits_inducedContext_eq_ve_query_score
+      (S := toyObservationEncoder)
       (G := gate)
       (σ := toyObservationData)
       (feature := Concept.bird)

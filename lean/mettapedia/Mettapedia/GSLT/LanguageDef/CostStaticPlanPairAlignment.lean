@@ -88,6 +88,45 @@ theorem position_get {source : CIGSLT} {color : CostStaticColor}
       | succ previous => exact position_get tail previous
   | _, _ :: _, .skip _ tail, index => position_get tail index
 
+/-- Positional replay respects composition of keep/skip embeddings.  This is
+the finite-index law that lets nested context views select the same original
+occurrence as one composed view, including when several retained entries have
+equal boundary values. -/
+theorem position_comp {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : FreeTypeContext}
+    {small middle large :
+      List (TypedCostRegionBoundary source color targetFree)}
+    (smallToMiddle : CostStaticPlanEntryEmbedding source color targetFree
+      small middle)
+    (middleToLarge : CostStaticPlanEntryEmbedding source color targetFree
+      middle large)
+    (index : Fin small.length) :
+    (smallToMiddle.comp middleToLarge).position index =
+      middleToLarge.position (smallToMiddle.position index) := by
+  induction middleToLarge generalizing small with
+  | nil largeEntries => exact Fin.elim0 (smallToMiddle.position index)
+  | @keep entry middleEntries largeEntries tail inductionHypothesis =>
+      cases smallToMiddle with
+      | nil => exact Fin.elim0 index
+      | keep smallTailToMiddle =>
+          induction index using Fin.cases with
+          | zero => rfl
+          | succ previous =>
+              exact congrArg Fin.succ
+                (inductionHypothesis smallTailToMiddle previous)
+      | skip skipped smallToMiddleTail =>
+          exact congrArg Fin.succ
+            (inductionHypothesis smallToMiddleTail index)
+  | @skip entry middleEntries largeEntries tail inductionHypothesis =>
+      cases smallToMiddle with
+      | nil => exact Fin.elim0 index
+      | keep smallTailToMiddle =>
+          exact congrArg Fin.succ
+            (inductionHypothesis (.keep smallTailToMiddle) index)
+      | skip skipped smallToMiddleTail =>
+          exact congrArg Fin.succ
+            (inductionHypothesis (.skip skipped smallToMiddleTail) index)
+
 /-- Strict monotonicity: distinct retained positions stay distinct in the
 large table even when the retained entry values are equal.  This is the
 machine-checked sufficiency answer for repeated equal typed boundary

@@ -146,7 +146,7 @@ def costBaseOperand (source : CIGSLT)
     InteractionOperandProfile source.costIGSLT.presentation := by
   rcases operand with
     ⟨constructor, schemaTerm, continuation, continuationPattern,
-      continuationWitness, surface, form⟩
+      continuationWitness, subject, form⟩
   have selectedContinuation :
       isSelectedContinuation source.cut constructor.1
         continuation.index = true := by
@@ -188,7 +188,7 @@ def costBaseOperand (source : CIGSLT)
               continuation := targetContinuation
               continuationPattern := costBaseSchemaPattern continuationPattern
               continuationVariable := continuationWitness.costBase
-              surface := .absent
+              subject := .absent
               form := .introduced (by
                   dsimp [targetConstructor, costBaseAuthoredConstructor]
                   simpa [costBaseSchemaPattern, costBasePresentationSymbols,
@@ -213,7 +213,7 @@ def costBaseOperand (source : CIGSLT)
           continuation := targetContinuation
           continuationPattern := costBaseSchemaPattern continuationPattern
           continuationVariable := continuationWitness.costBase
-          surface := .absent
+          subject := .absent
           form := .direct (congrArg costBaseSchemaPattern same) }
 
 /-- The transported program introduction retains the exact continuation
@@ -239,7 +239,7 @@ theorem costBaseOperand_schemaTerm (source : CIGSLT)
       costBaseSchemaPattern operand.schemaTerm := by
   rcases operand with
     ⟨constructor, schemaTerm, continuation, continuationPattern,
-      continuationWitness, surface, form⟩
+      continuationWitness, subject, form⟩
   cases form with
   | introduced represented selectedArgument =>
       cases schemaTerm with
@@ -256,6 +256,71 @@ theorem costBaseOperand_schemaTerm (source : CIGSLT)
   | direct same => simp [costBaseOperand]
 
 @[simp]
+theorem costBaseOperand_continuationPattern (source : CIGSLT)
+    (operand : InteractionOperandProfile source.theory.presentation)
+    (selected : isSelectedContinuation source.cut
+      operand.constructor.1 operand.continuation.index = true) :
+    (source.costBaseOperand operand selected).continuationPattern =
+      costBaseSchemaPattern operand.continuationPattern := by
+  rcases operand with
+    ⟨constructor, schemaTerm, continuation, continuationPattern,
+      continuationWitness, subject, form⟩
+  cases form with
+  | introduced represented selectedArgument =>
+      cases schemaTerm <;> try exact False.elim selectedArgument
+      simp [costBaseOperand]
+  | direct same => simp [costBaseOperand]
+
+@[simp]
+theorem costBaseOperand_subject_pattern (source : CIGSLT)
+    (operand : InteractionOperandProfile source.theory.presentation)
+    (selected : isSelectedContinuation source.cut
+      operand.constructor.1 operand.continuation.index = true) :
+    (source.costBaseOperand operand selected).subject.pattern = none := by
+  rcases operand with
+    ⟨constructor, schemaTerm, continuation, continuationPattern,
+      continuationWitness, subject, form⟩
+  cases form with
+  | introduced represented selectedArgument =>
+      cases schemaTerm <;> try exact False.elim selectedArgument
+      rfl
+  | direct same => rfl
+
+@[simp]
+theorem costProgramOperand_schemaTerm (source : CIGSLT) :
+    source.costProgramOperand.schemaTerm =
+      costBaseSchemaPattern source.cut.program.schemaTerm := by
+  simp [costProgramOperand]
+
+@[simp]
+theorem costEnvironmentOperand_schemaTerm (source : CIGSLT) :
+    source.costEnvironmentOperand.schemaTerm =
+      costBaseSchemaPattern source.cut.environment.schemaTerm := by
+  simp [costEnvironmentOperand]
+
+@[simp]
+theorem costProgramOperand_continuationPattern (source : CIGSLT) :
+    source.costProgramOperand.continuationPattern =
+      costBaseSchemaPattern source.cut.program.continuationPattern := by
+  simp [costProgramOperand]
+
+@[simp]
+theorem costEnvironmentOperand_continuationPattern (source : CIGSLT) :
+    source.costEnvironmentOperand.continuationPattern =
+      costBaseSchemaPattern source.cut.environment.continuationPattern := by
+  simp [costEnvironmentOperand]
+
+@[simp]
+theorem costProgramOperand_subject_pattern (source : CIGSLT) :
+    source.costProgramOperand.subject.pattern = none := by
+  simp [costProgramOperand]
+
+@[simp]
+theorem costEnvironmentOperand_subject_pattern (source : CIGSLT) :
+    source.costEnvironmentOperand.subject.pattern = none := by
+  simp [costEnvironmentOperand]
+
+@[simp]
 theorem costBaseOperand_constructor (source : CIGSLT)
     (operand : InteractionOperandProfile source.theory.presentation)
     (selected : isSelectedContinuation source.cut
@@ -264,7 +329,7 @@ theorem costBaseOperand_constructor (source : CIGSLT)
       source.costBaseAuthoredConstructor operand.constructor := by
   rcases operand with
     ⟨constructor, schemaTerm, continuation, continuationPattern,
-      continuationWitness, surface, form⟩
+      continuationWitness, subject, form⟩
   cases form with
   | introduced represented selectedArgument =>
       cases schemaTerm with
@@ -287,7 +352,7 @@ theorem costBaseOperand_continuation_index (source : CIGSLT)
       operand.continuation.index := by
   rcases operand with
     ⟨constructor, schemaTerm, continuation, continuationPattern,
-      continuationWitness, surface, form⟩
+      continuationWitness, subject, form⟩
   cases form with
   | introduced represented selectedArgument =>
       cases schemaTerm with
@@ -310,7 +375,7 @@ theorem costBaseOperand_continuationVariable_name (source : CIGSLT)
       costSourceSchemaName operand.continuationVariable.name := by
   rcases operand with
     ⟨constructor, schemaTerm, continuation, continuationPattern,
-      continuationWitness, surface, form⟩
+      continuationWitness, subject, form⟩
   cases form with
   | introduced represented selectedArgument =>
       cases schemaTerm with
@@ -332,7 +397,7 @@ theorem costBaseOperand_kind (source : CIGSLT)
     (source.costBaseOperand operand selected).kind = operand.kind := by
   rcases operand with
     ⟨constructor, schemaTerm, continuation, continuationPattern,
-      continuationWitness, surface, form⟩
+      continuationWitness, subject, form⟩
   cases form with
   | introduced represented selectedArgument =>
       cases schemaTerm with
@@ -347,6 +412,18 @@ theorem costBaseOperand_kind (source : CIGSLT)
           exact False.elim selectedArgument
   | direct same =>
       simp [costBaseOperand, InteractionOperandProfile.kind]
+
+@[simp]
+theorem costProgramOperand_kind (source : CIGSLT) :
+    source.costProgramOperand.kind = source.cut.program.kind := by
+  exact source.costBaseOperand_kind source.cut.program (by
+    simp [isSelectedContinuation])
+
+@[simp]
+theorem costEnvironmentOperand_kind (source : CIGSLT) :
+    source.costEnvironmentOperand.kind = source.cut.environment.kind := by
+  exact source.costBaseOperand_kind source.cut.environment (by
+    simp [isSelectedContinuation])
 
 /-- Base transport preserves the exact binary/collection representation of
 the source interaction core, including when a direct contact argument is
@@ -633,9 +710,9 @@ theorem generatedPattern_contactConstructor_absent (source : CIGSLT)
     labelEquality
 
 /-- The transported static equation theory is genuinely free of the new
-contact constructor on both surfaces.  Equations are retained exactly; their
+contact constructor on both subjects.  Equations are retained exactly; their
 prior sorting in the generated continuation signature supplies the exclusion
-witness required by structural surface matching. -/
+witness required by structural subject matching. -/
 theorem costStaticEquation_contactFree (source : CIGSLT)
     (equation : Equation) (membership : equation ∈ source.costStaticEquations) :
     (costContactConstructorName, costContactConstructor.params.length) ∉
@@ -739,7 +816,7 @@ def costInteractionCut (source : CIGSLT) :
     rw [costWholeRedexTarget_funding_tail]
     exact ⟨by simp [UsesBareCollection, costContactConstructor], rfl,
       by simp [costContactConstructor]⟩)
-  surfacesAgree := .structural rfl (by
+  subjectsAgree := .structural rfl (by
     intro equation membership
     exact source.costStaticEquation_contactFree equation membership)
 

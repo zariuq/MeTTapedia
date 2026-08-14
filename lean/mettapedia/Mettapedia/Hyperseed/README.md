@@ -33,7 +33,7 @@ Two pieces fit together:
 | `Basic.lean` | the Hyperseed front door: `ObservationEnvelope`, the `HyperseedKernel` interface, and trace-seeded helpers `traceSeed` / `closureFromTrace` / `cascadeFromTrace` (perspective-filtered, state-conditioned, and stage-filtered variants) over sufficient-statistic WMs |
 | `ObservationTrace.lean` | observation traces as lists plus the `traceState` fold that ingests a trace into WM state; `traceState_append` and the `simp` contracts |
 | `Closure.lean` | thin wrappers (`hyperseedClosure`, `hyperseedImmediateIter`, `hyperseedQueryStrength`) over `PLNWorldModelFixpointClosure`, specialized to a `HyperseedKernel` |
-| `OpenClawBridge.lean` | the OpenClaw-facing surface: `OpenClawObservation` envelopes and `appendObservation` / `appendObservationTrace`, with the trace-state extension lemma |
+| `OpenClawBridge.lean` | the OpenClaw-facing API: `OpenClawObservation` envelopes and `appendObservation` / `appendObservationTrace`, with the trace-state extension lemma |
 | `ConstructionBaseBridge.lean` | re-expresses perspective-filtered discovery in the `ConstructionBase` (FCA) vocabulary, so `thatsAllAt` / `openWorldAt` read directly on Hyperseed examples |
 | `Regression.lean` | concrete agent scenario: `AgentObservation` / `AgentQuery`, grounded vs expansive perspectives, regime-sensitive perspective, staged query accessibility (positive: nonempty trace discovers `awareReady`; negative: empty trace does not) |
 | `UltrainfinitismRegression.lean` | toy world (`ToyWorld.city` / `forest` / `hidden`): canary theorems for `observableUniverse`, `nearEurycosm`, `availableRegion` under grounded vs expanded perspectives and budget variation |

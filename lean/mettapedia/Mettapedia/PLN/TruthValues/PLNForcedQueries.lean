@@ -1,5 +1,5 @@
 import Mettapedia.PLN.TruthValues.PLNIndefiniteTruth
-import Mettapedia.PLN.WorldModel.SufficientStatisticSurface
+import Mettapedia.PLN.WorldModel.SufficientStatisticEncoder
 import Mettapedia.ProbabilityTheory.ImpreciseProbability.Basic
 import Mettapedia.ProbabilityTheory.ImpreciseProbability.DesirableGambles
 
@@ -292,28 +292,28 @@ section SufficientStatistic
 variable {Obs Query Ev Val : Type*}
 variable [AddCommMonoid Ev]
 
-/-- Any projection of a sufficient-statistic surface query is forced by the
+/-- Any projection of a sufficient-statistic interface query is forced by the
 canonical aggregate statistic for that query. -/
 noncomputable def aggregateProjectionForced
-    (S : SufficientStatisticSurface Obs Query Ev) (q : Query)
+    (S : SufficientStatisticEncoder Obs Query Ev) (q : Query)
     (project : Ev → Val) :
     ForcedByStatistic (Multiset Obs) Ev Val where
-  stat σ := SufficientStatisticSurface.aggregate S σ q
+  stat σ := SufficientStatisticEncoder.aggregate S σ q
   project := project
-  eval σ := project (SufficientStatisticSurface.aggregate S σ q)
+  eval σ := project (SufficientStatisticEncoder.aggregate S σ q)
   eval_eq_project_stat := by
     intro σ
     rfl
 
 /-- Equal aggregate statistics force equal projected values. -/
 theorem aggregateProjection_eq_of_same_aggregate
-    (S : SufficientStatisticSurface Obs Query Ev) (q : Query)
+    (S : SufficientStatisticEncoder Obs Query Ev) (q : Query)
     (project : Ev → Val) {σ₁ σ₂ : Multiset Obs}
     (h :
-      SufficientStatisticSurface.aggregate S σ₁ q =
-        SufficientStatisticSurface.aggregate S σ₂ q) :
-    project (SufficientStatisticSurface.aggregate S σ₁ q) =
-      project (SufficientStatisticSurface.aggregate S σ₂ q) :=
+      SufficientStatisticEncoder.aggregate S σ₁ q =
+        SufficientStatisticEncoder.aggregate S σ₂ q) :
+    project (SufficientStatisticEncoder.aggregate S σ₁ q) =
+      project (SufficientStatisticEncoder.aggregate S σ₂ q) :=
   ForcedByStatistic.eval_eq_of_same_stat
     (aggregateProjectionForced S q project) h
 
@@ -323,45 +323,45 @@ section BinarySufficientStatistic
 
 variable {Obs Query : Type*}
 
-/-- A binary sufficient-statistic surface's strength view is forced by the
+/-- A binary sufficient-statistic interface's strength view is forced by the
 aggregate `BinaryEvidence` for the selected query. -/
-noncomputable def binarySurfaceStrengthForcedByAggregate
-    (S : SufficientStatisticSurface Obs Query BinaryEvidence) (q : Query) :
+noncomputable def binaryEncoderStrengthForcedByAggregate
+    (S : SufficientStatisticEncoder Obs Query BinaryEvidence) (q : Query) :
     ForcedByStatistic (Multiset Obs) BinaryEvidence ℝ≥0∞ :=
   aggregateProjectionForced S q BinaryEvidence.toStrength
 
-/-- A binary sufficient-statistic surface's confidence view is forced by the
+/-- A binary sufficient-statistic interface's confidence view is forced by the
 aggregate `BinaryEvidence` and the chosen scale `κ`. -/
-noncomputable def binarySurfaceConfidenceForcedByAggregate
-    (S : SufficientStatisticSurface Obs Query BinaryEvidence)
+noncomputable def binaryEncoderConfidenceForcedByAggregate
+    (S : SufficientStatisticEncoder Obs Query BinaryEvidence)
     (κ : ℝ≥0∞) (q : Query) :
     ForcedByStatistic (Multiset Obs) BinaryEvidence ℝ≥0∞ :=
   aggregateProjectionForced S q (fun e => BinaryEvidence.toConfidence κ e)
 
-/-- Equal aggregate binary evidence forces equal surface strengths. -/
-theorem binarySurface_strength_eq_of_same_aggregate
-    (S : SufficientStatisticSurface Obs Query BinaryEvidence)
+/-- Equal aggregate binary evidence forces equal interface strengths. -/
+theorem binaryEncoder_strength_eq_of_same_aggregate
+    (S : SufficientStatisticEncoder Obs Query BinaryEvidence)
     {σ₁ σ₂ : Multiset Obs} {q : Query}
     (h :
-      SufficientStatisticSurface.aggregate S σ₁ q =
-        SufficientStatisticSurface.aggregate S σ₂ q) :
-    BinaryEvidence.toStrength (SufficientStatisticSurface.aggregate S σ₁ q) =
-      BinaryEvidence.toStrength (SufficientStatisticSurface.aggregate S σ₂ q) :=
+      SufficientStatisticEncoder.aggregate S σ₁ q =
+        SufficientStatisticEncoder.aggregate S σ₂ q) :
+    BinaryEvidence.toStrength (SufficientStatisticEncoder.aggregate S σ₁ q) =
+      BinaryEvidence.toStrength (SufficientStatisticEncoder.aggregate S σ₂ q) :=
   ForcedByStatistic.eval_eq_of_same_stat
-    (binarySurfaceStrengthForcedByAggregate S q) h
+    (binaryEncoderStrengthForcedByAggregate S q) h
 
-/-- Equal aggregate binary evidence forces equal surface confidences at the
+/-- Equal aggregate binary evidence forces equal interface confidences at the
 same scale `κ`. -/
-theorem binarySurface_confidence_eq_of_same_aggregate
-    (S : SufficientStatisticSurface Obs Query BinaryEvidence)
+theorem binaryEncoder_confidence_eq_of_same_aggregate
+    (S : SufficientStatisticEncoder Obs Query BinaryEvidence)
     (κ : ℝ≥0∞) {σ₁ σ₂ : Multiset Obs} {q : Query}
     (h :
-      SufficientStatisticSurface.aggregate S σ₁ q =
-        SufficientStatisticSurface.aggregate S σ₂ q) :
-    BinaryEvidence.toConfidence κ (SufficientStatisticSurface.aggregate S σ₁ q) =
-      BinaryEvidence.toConfidence κ (SufficientStatisticSurface.aggregate S σ₂ q) :=
+      SufficientStatisticEncoder.aggregate S σ₁ q =
+        SufficientStatisticEncoder.aggregate S σ₂ q) :
+    BinaryEvidence.toConfidence κ (SufficientStatisticEncoder.aggregate S σ₁ q) =
+      BinaryEvidence.toConfidence κ (SufficientStatisticEncoder.aggregate S σ₂ q) :=
   ForcedByStatistic.eval_eq_of_same_stat
-    (binarySurfaceConfidenceForcedByAggregate S κ q) h
+    (binaryEncoderConfidenceForcedByAggregate S κ q) h
 
 end BinarySufficientStatistic
 
@@ -371,26 +371,26 @@ open Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceDirichlet
 
 variable {Obs Query : Type*} {k : ℕ}
 
-/-- A categorical sufficient-statistic surface's category count view is forced
+/-- A categorical sufficient-statistic interface's category count view is forced
 by the aggregate `MultiEvidence` for the selected query. -/
-noncomputable def categoricalSurfaceCategoryCountForcedByAggregate
-    (S : SufficientStatisticSurface Obs Query (MultiEvidence k))
+noncomputable def categoricalEncoderCategoryCountForcedByAggregate
+    (S : SufficientStatisticEncoder Obs Query (MultiEvidence k))
     (q : Query) (i : Fin k) :
     ForcedByStatistic (Multiset Obs) (MultiEvidence k) ℕ :=
   aggregateProjectionForced S q (fun e => e.counts i)
 
-/-- A categorical sufficient-statistic surface's total-count view is forced by
+/-- A categorical sufficient-statistic interface's total-count view is forced by
 the aggregate `MultiEvidence` for the selected query. -/
-noncomputable def categoricalSurfaceTotalForcedByAggregate
-    (S : SufficientStatisticSurface Obs Query (MultiEvidence k))
+noncomputable def categoricalEncoderTotalForcedByAggregate
+    (S : SufficientStatisticEncoder Obs Query (MultiEvidence k))
     (q : Query) :
     ForcedByStatistic (Multiset Obs) (MultiEvidence k) ℕ :=
   aggregateProjectionForced S q MultiEvidence.total
 
-/-- A categorical sufficient-statistic surface's empirical category mean is
+/-- A categorical sufficient-statistic interface's empirical category mean is
 forced by the aggregate `MultiEvidence`. -/
-noncomputable def categoricalSurfaceMeanForcedByAggregate
-    (S : SufficientStatisticSurface Obs Query (MultiEvidence k))
+noncomputable def categoricalEncoderMeanForcedByAggregate
+    (S : SufficientStatisticEncoder Obs Query (MultiEvidence k))
     (q : Query) (i : Fin k) :
     ForcedByStatistic (Multiset Obs) (MultiEvidence k) ℝ :=
   aggregateProjectionForced S q
@@ -398,104 +398,104 @@ noncomputable def categoricalSurfaceMeanForcedByAggregate
 
 /-- A categorical IDM lower endpoint is forced by the aggregate
 `MultiEvidence` once the IDM context and queried category are chosen. -/
-noncomputable def categoricalSurfaceIDMLowerForcedByAggregate
-    (S : SufficientStatisticSurface Obs Query (MultiEvidence k))
+noncomputable def categoricalEncoderIDMLowerForcedByAggregate
+    (S : SufficientStatisticEncoder Obs Query (MultiEvidence k))
     (ctx : IDMPredictiveContext) (q : Query) (i : Fin k) :
     ForcedByStatistic (Multiset Obs) (MultiEvidence k) ℝ :=
   aggregateProjectionForced S q (fun e => idmLower ctx e i)
 
 /-- A categorical IDM upper endpoint is forced by the aggregate
 `MultiEvidence` once the IDM context and queried category are chosen. -/
-noncomputable def categoricalSurfaceIDMUpperForcedByAggregate
-    (S : SufficientStatisticSurface Obs Query (MultiEvidence k))
+noncomputable def categoricalEncoderIDMUpperForcedByAggregate
+    (S : SufficientStatisticEncoder Obs Query (MultiEvidence k))
     (ctx : IDMPredictiveContext) (q : Query) (i : Fin k) :
     ForcedByStatistic (Multiset Obs) (MultiEvidence k) ℝ :=
   aggregateProjectionForced S q (fun e => idmUpper ctx e i)
 
 /-- A categorical IDM width is forced by the aggregate `MultiEvidence` once the
 IDM context is chosen. -/
-noncomputable def categoricalSurfaceIDMWidthForcedByAggregate
-    (S : SufficientStatisticSurface Obs Query (MultiEvidence k))
+noncomputable def categoricalEncoderIDMWidthForcedByAggregate
+    (S : SufficientStatisticEncoder Obs Query (MultiEvidence k))
     (ctx : IDMPredictiveContext) (q : Query) :
     ForcedByStatistic (Multiset Obs) (MultiEvidence k) ℝ :=
   aggregateProjectionForced S q (fun e => idmWidth ctx e)
 
 /-- Equal aggregate categorical evidence forces equal category counts. -/
-theorem categoricalSurface_categoryCount_eq_of_same_aggregate
-    (S : SufficientStatisticSurface Obs Query (MultiEvidence k))
+theorem categoricalEncoder_categoryCount_eq_of_same_aggregate
+    (S : SufficientStatisticEncoder Obs Query (MultiEvidence k))
     {σ₁ σ₂ : Multiset Obs} {q : Query} (i : Fin k)
     (h :
-      SufficientStatisticSurface.aggregate S σ₁ q =
-        SufficientStatisticSurface.aggregate S σ₂ q) :
-    (SufficientStatisticSurface.aggregate S σ₁ q).counts i =
-      (SufficientStatisticSurface.aggregate S σ₂ q).counts i :=
+      SufficientStatisticEncoder.aggregate S σ₁ q =
+        SufficientStatisticEncoder.aggregate S σ₂ q) :
+    (SufficientStatisticEncoder.aggregate S σ₁ q).counts i =
+      (SufficientStatisticEncoder.aggregate S σ₂ q).counts i :=
   ForcedByStatistic.eval_eq_of_same_stat
-    (categoricalSurfaceCategoryCountForcedByAggregate S q i) h
+    (categoricalEncoderCategoryCountForcedByAggregate S q i) h
 
 /-- Equal aggregate categorical evidence forces equal total counts. -/
-theorem categoricalSurface_total_eq_of_same_aggregate
-    (S : SufficientStatisticSurface Obs Query (MultiEvidence k))
+theorem categoricalEncoder_total_eq_of_same_aggregate
+    (S : SufficientStatisticEncoder Obs Query (MultiEvidence k))
     {σ₁ σ₂ : Multiset Obs} {q : Query}
     (h :
-      SufficientStatisticSurface.aggregate S σ₁ q =
-        SufficientStatisticSurface.aggregate S σ₂ q) :
-    (SufficientStatisticSurface.aggregate S σ₁ q).total =
-      (SufficientStatisticSurface.aggregate S σ₂ q).total :=
+      SufficientStatisticEncoder.aggregate S σ₁ q =
+        SufficientStatisticEncoder.aggregate S σ₂ q) :
+    (SufficientStatisticEncoder.aggregate S σ₁ q).total =
+      (SufficientStatisticEncoder.aggregate S σ₂ q).total :=
   ForcedByStatistic.eval_eq_of_same_stat
-    (categoricalSurfaceTotalForcedByAggregate S q) h
+    (categoricalEncoderTotalForcedByAggregate S q) h
 
 /-- Equal aggregate categorical evidence forces equal empirical means for a
 chosen category. -/
-theorem categoricalSurface_mean_eq_of_same_aggregate
-    (S : SufficientStatisticSurface Obs Query (MultiEvidence k))
+theorem categoricalEncoder_mean_eq_of_same_aggregate
+    (S : SufficientStatisticEncoder Obs Query (MultiEvidence k))
     {σ₁ σ₂ : Multiset Obs} {q : Query} (i : Fin k)
     (h :
-      SufficientStatisticSurface.aggregate S σ₁ q =
-        SufficientStatisticSurface.aggregate S σ₂ q) :
-    ((SufficientStatisticSurface.aggregate S σ₁ q).counts i : ℝ) /
-        ((SufficientStatisticSurface.aggregate S σ₁ q).total : ℝ) =
-      ((SufficientStatisticSurface.aggregate S σ₂ q).counts i : ℝ) /
-        ((SufficientStatisticSurface.aggregate S σ₂ q).total : ℝ) :=
+      SufficientStatisticEncoder.aggregate S σ₁ q =
+        SufficientStatisticEncoder.aggregate S σ₂ q) :
+    ((SufficientStatisticEncoder.aggregate S σ₁ q).counts i : ℝ) /
+        ((SufficientStatisticEncoder.aggregate S σ₁ q).total : ℝ) =
+      ((SufficientStatisticEncoder.aggregate S σ₂ q).counts i : ℝ) /
+        ((SufficientStatisticEncoder.aggregate S σ₂ q).total : ℝ) :=
   ForcedByStatistic.eval_eq_of_same_stat
-    (categoricalSurfaceMeanForcedByAggregate S q i) h
+    (categoricalEncoderMeanForcedByAggregate S q i) h
 
 /-- Equal aggregate categorical evidence forces equal IDM lower endpoints. -/
-theorem categoricalSurface_idmLower_eq_of_same_aggregate
-    (S : SufficientStatisticSurface Obs Query (MultiEvidence k))
+theorem categoricalEncoder_idmLower_eq_of_same_aggregate
+    (S : SufficientStatisticEncoder Obs Query (MultiEvidence k))
     (ctx : IDMPredictiveContext) {σ₁ σ₂ : Multiset Obs} {q : Query}
     (i : Fin k)
     (h :
-      SufficientStatisticSurface.aggregate S σ₁ q =
-        SufficientStatisticSurface.aggregate S σ₂ q) :
-    idmLower ctx (SufficientStatisticSurface.aggregate S σ₁ q) i =
-      idmLower ctx (SufficientStatisticSurface.aggregate S σ₂ q) i :=
+      SufficientStatisticEncoder.aggregate S σ₁ q =
+        SufficientStatisticEncoder.aggregate S σ₂ q) :
+    idmLower ctx (SufficientStatisticEncoder.aggregate S σ₁ q) i =
+      idmLower ctx (SufficientStatisticEncoder.aggregate S σ₂ q) i :=
   ForcedByStatistic.eval_eq_of_same_stat
-    (categoricalSurfaceIDMLowerForcedByAggregate S ctx q i) h
+    (categoricalEncoderIDMLowerForcedByAggregate S ctx q i) h
 
 /-- Equal aggregate categorical evidence forces equal IDM upper endpoints. -/
-theorem categoricalSurface_idmUpper_eq_of_same_aggregate
-    (S : SufficientStatisticSurface Obs Query (MultiEvidence k))
+theorem categoricalEncoder_idmUpper_eq_of_same_aggregate
+    (S : SufficientStatisticEncoder Obs Query (MultiEvidence k))
     (ctx : IDMPredictiveContext) {σ₁ σ₂ : Multiset Obs} {q : Query}
     (i : Fin k)
     (h :
-      SufficientStatisticSurface.aggregate S σ₁ q =
-        SufficientStatisticSurface.aggregate S σ₂ q) :
-    idmUpper ctx (SufficientStatisticSurface.aggregate S σ₁ q) i =
-      idmUpper ctx (SufficientStatisticSurface.aggregate S σ₂ q) i :=
+      SufficientStatisticEncoder.aggregate S σ₁ q =
+        SufficientStatisticEncoder.aggregate S σ₂ q) :
+    idmUpper ctx (SufficientStatisticEncoder.aggregate S σ₁ q) i =
+      idmUpper ctx (SufficientStatisticEncoder.aggregate S σ₂ q) i :=
   ForcedByStatistic.eval_eq_of_same_stat
-    (categoricalSurfaceIDMUpperForcedByAggregate S ctx q i) h
+    (categoricalEncoderIDMUpperForcedByAggregate S ctx q i) h
 
 /-- Equal aggregate categorical evidence forces equal IDM widths. -/
-theorem categoricalSurface_idmWidth_eq_of_same_aggregate
-    (S : SufficientStatisticSurface Obs Query (MultiEvidence k))
+theorem categoricalEncoder_idmWidth_eq_of_same_aggregate
+    (S : SufficientStatisticEncoder Obs Query (MultiEvidence k))
     (ctx : IDMPredictiveContext) {σ₁ σ₂ : Multiset Obs} {q : Query}
     (h :
-      SufficientStatisticSurface.aggregate S σ₁ q =
-        SufficientStatisticSurface.aggregate S σ₂ q) :
-    idmWidth ctx (SufficientStatisticSurface.aggregate S σ₁ q) =
-      idmWidth ctx (SufficientStatisticSurface.aggregate S σ₂ q) :=
+      SufficientStatisticEncoder.aggregate S σ₁ q =
+        SufficientStatisticEncoder.aggregate S σ₂ q) :
+    idmWidth ctx (SufficientStatisticEncoder.aggregate S σ₁ q) =
+      idmWidth ctx (SufficientStatisticEncoder.aggregate S σ₂ q) :=
   ForcedByStatistic.eval_eq_of_same_stat
-    (categoricalSurfaceIDMWidthForcedByAggregate S ctx q) h
+    (categoricalEncoderIDMWidthForcedByAggregate S ctx q) h
 
 end CategoricalSufficientStatistic
 

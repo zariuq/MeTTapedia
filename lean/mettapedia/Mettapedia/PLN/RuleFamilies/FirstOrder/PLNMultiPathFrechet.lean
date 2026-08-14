@@ -502,7 +502,7 @@ theorem noisyOrFrequency_scaled_sub_linear_isLittleO {n : ℕ} (p : Fin n → �
   have h := hderiv.isLittleO
   simpa [noisyOrFrequency, sumFrequency] using h
 
-/-- ENNReal Boole upper bound, reused from the ProbLog compilation surface. -/
+/-- ENNReal Boole upper bound, reused from the ProbLog compilation interface. -/
 theorem noisyOrFrequencyENNReal_le_sum {n : ℕ} (p : Fin n → ℝ≥0∞)
     (hp : ∀ i, p i ≤ 1) :
     1 - Finset.univ.prod (fun i => 1 - p i) ≤ Finset.univ.sum p :=

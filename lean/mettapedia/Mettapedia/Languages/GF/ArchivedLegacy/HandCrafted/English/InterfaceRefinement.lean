@@ -114,7 +114,7 @@ theorem quotientMap_of_refinement_comp
 def lfObs (t : AbstractNode) : Pattern :=
   gfAbstractToPattern t
 
-/-- LF+PF observation (pattern + linearized English surface form). -/
+/-- LF+PF observation (pattern + linearized English syntax form). -/
 def lfPfObs (t : AbstractNode) : Pattern × String :=
   (gfAbstractToPattern t, linearizeTree {} t .Nom .Sg)
 

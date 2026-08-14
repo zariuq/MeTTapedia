@@ -122,6 +122,24 @@ theorem targetBound_length_eq_targetBound_length
     leftView.node.targetBound.length = rightView.node.targetBound.length :=
   congrArg List.length (leftView.targetBound_eq_targetBound rightView)
 
+/-- Two static roots of one colour in the same result-type fibre have the
+same authored source sort. -/
+theorem sourceSort_eq_sourceSort
+    {source : CIGSLT} {targetFree : FreeTypeContext}
+    {available leftOuter rightOuter : List TypeExpr}
+    {leftPattern rightPattern : Pattern} {type : TypeExpr}
+    {leftTree : CostRegionTree source targetFree available leftOuter
+      leftPattern type}
+    {rightTree : CostRegionTree source targetFree available rightOuter
+      rightPattern type}
+    {color : CostStaticColor}
+    (leftView : leftTree.StaticRootView color)
+    (rightView : rightTree.StaticRootView color) :
+    leftView.node.sourceSort = rightView.node.sourceSort := by
+  apply CostStaticColor.mapLangSort_injective source color
+  apply Subtype.ext
+  exact TypeExpr.base.inj (leftView.typeEq.trans rightView.typeEq.symm)
+
 /-- Transport a semantic root bridge built on two exposed static constructors
 back through the exact pattern, binder-context, and result-type indices of the
 original compiled trees.  No heterogeneous equality escapes this boundary. -/

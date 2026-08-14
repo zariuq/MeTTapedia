@@ -3,7 +3,7 @@ import Mettapedia.UniversalAI.ControlledFiniteHiddenMarkovUniversalPredictionBri
 import Mettapedia.UniversalAI.ControlledFiniteHiddenMarkovPlanningExamples
 
 /-!
-# Controlled Finite HMM Exports (Recommended Import Surface)
+# Controlled Finite HMM Exports (Recommended Import Interface)
 
 This is the single recommended import path for the current controlled finite
 HMM seam connecting:
@@ -15,11 +15,11 @@ HMM seam connecting:
 
 Positive example:
 * downstream users can import one file and access the controlled-HMM
-  environment bridge, history filtering surface, credal ITV bridge, and a small
+  environment bridge, history filtering interface, credal ITV bridge, and a small
   verified planning example.
 
 Negative example:
-* this export surface does not yet provide a full recursive credal planning
+* this export interface does not yet provide a full recursive credal planning
   theory or HMM Xi consumer semantics.
 -/
 
@@ -40,7 +40,7 @@ universe uA uI
 variable {Action : Type uA} {ι : Type uI} {latent obs : ℕ}
 
 /-- Recommended export: controlled finite HMM parameters as the structured
-POMDP-facing latent model surface. -/
+POMDP-facing latent model interface. -/
 abbrev controlledHMMParam (Action : Type uA) (latent obs : ℕ) :=
   ControlledFiniteHMMParam Action latent obs
 

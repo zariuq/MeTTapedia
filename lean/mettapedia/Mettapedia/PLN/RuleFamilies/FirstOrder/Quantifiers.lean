@@ -68,7 +68,7 @@ Complete formalization of PLN first-order quantifiers via:
   `choquetGradedQuantifierSemantics` - shared graded quantifier specialization
   layer with explicit Sugeno and Choquet instances
 - `GradedQuantifierCanary` / `GradedQuantifierRegression` - direct canary and
-  regression surfaces for the shared graded layer itself
+  regression interfaces for the shared graded layer itself
 - `domainRestrict` / `eqOnDomain` / `fuzzyAllOnDomainHoldsInf` /
   `choquetAllOnDomainHoldsInf` - fuzzy-domain restriction and relativization layer
 - `FuzzyQuantifierParamsFin` / `nearOneFractionFin` / `nearZeroFractionFin` /
@@ -80,13 +80,13 @@ Complete formalization of PLN first-order quantifiers via:
   - `main_theorem_5_functoriality` - Functoriality (✅ proven)
   - `main_theorem_1_forAll_is_weakness_inf` / `main_theorem_2_monotonicity_inf` /
     `main_theorem_3_de_morgan_inf` / `main_theorem_5_functoriality_inf` -
-    arbitrary-domain theorem surface
+    arbitrary-domain theorem family
   - `main_theorem_1_fuzzy_exists_is_nearOneMass_inf` /
     `main_theorem_2_fuzzy_monotonicity_inf` /
     `main_theorem_3_fuzzy_complement_transport_inf` -
-    arbitrary-domain fuzzy theorem surface
+    arbitrary-domain fuzzy theorem family
   - `choquetScoreInf_mono` / `choquetScoreInf_constantOne_eq_one` -
-    Choquet-style theorem surface
+    Choquet-style theorem family
   - `scoreOnDomain_eq_of_eqOnDomain` /
     `forAllOnDomainHolds_mono_of_pointwise` -
     shared graded specialization theorems
@@ -95,7 +95,7 @@ Complete formalization of PLN first-order quantifiers via:
     direct graded canaries for the shared Sugeno/Choquet spine
   - `fuzzyExistsOnDomainScoreInf_eq_of_eqOnDomain` /
     `choquetOnDomainScoreInf_eq_of_eqOnDomain` -
-    fuzzy-domain "living on the domain" theorem surface
+    fuzzy-domain "living on the domain" theorem family
   - `nearOneMassInf_counting_eq_nearOneFractionFin` /
     `fuzzyIntervalHoldsInf_counting_iff_fuzzyIntervalHoldsFin` -
     exact finite-to-infinitary reduction theorems for the counting instance
@@ -120,8 +120,8 @@ Complete formalization of PLN first-order quantifiers via:
 - Functoriality ✅
 - Basic properties (constantTrue, constantFalse) ✅
 - Empty-domain vacuity for extensional quantifiers ✅
-- Arbitrary-domain theorem/canary/regression surface ✅
-- Arbitrary-domain fuzzy theorem/canary/regression surface ✅
+- Arbitrary-domain theorem/canary/regression interface ✅
+- Arbitrary-domain fuzzy theorem/canary/regression interface ✅
 - Choquet infinitary fuzzy branch ✅
 - Shared graded specialization branch ✅
 - Fuzzy-domain restriction / relativization branch ✅

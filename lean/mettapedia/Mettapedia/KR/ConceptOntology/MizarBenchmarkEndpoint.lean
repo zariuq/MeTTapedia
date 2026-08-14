@@ -7,12 +7,12 @@ import Mettapedia.KR.ConceptGeometry.Bridges.ProbabilityTheory.EmpiricalIntensio
 This module packages the current public Crown 3 endpoint at three scales:
 
 * the concrete `conlat_1` witness, now joined to the credal inheritance
-  truth-coordinate surface through a self-inheritance query on the unstable
+  truth-coordinate interface through a self-inheritance query on the unstable
   `ObjectDerivation` concept;
 * the current 13-article threshold-gate pilot, recorded as a Lean summary
-  surface so the review-facing endpoint does not live only in external JSON.
+  interface so the review-facing endpoint does not live only in external JSON.
 * the current narrow duality-ghost scan, again recorded as a Lean summary
-  surface so the artifact-backed candidate list is part of the formal endpoint.
+  interface so the artifact-backed candidate list is part of the formal endpoint.
 -/
 
 namespace Mettapedia.KR.ConceptOntology
@@ -77,7 +77,7 @@ theorem objectDerivationLooseConcept_selfInheritance_midpoint :
       objectDerivationLooseConcept_selfInheritance_imprecise
 
 /-- Review-facing bridge between the single-concept Mizar witness and the
-credal inheritance truth-coordinate surface. -/
+credal inheritance truth-coordinate interface. -/
 structure ObjectDerivationCredalInheritanceBenchmark : Prop where
   benchmarkCrown : ObjectDerivationCredalBenchmark
   selfInheritanceImprecise :
@@ -114,7 +114,7 @@ theorem objectDerivationCredalInheritanceBenchmark :
     objectDerivationLooseConcept_selfInheritance_widthComplement
   selfInheritanceMidpointReadout := objectDerivationLooseConcept_selfInheritance_midpoint
 
-/-- Static Lean surface for the current 13-article lattice/FCA-family pilot
+/-- Static Lean interface for the current 13-article lattice/FCA-family pilot
 artifacts. This is intentionally a summary object, not a claim that the pilot
 already constitutes a benchmark result. -/
 inductive MizarFamilyPilotArticle where

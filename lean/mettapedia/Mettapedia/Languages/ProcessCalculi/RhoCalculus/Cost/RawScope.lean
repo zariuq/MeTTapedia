@@ -49,7 +49,7 @@ theorem RawCostTerm.components_forall_binderSafeAt (depth : Nat) :
       simpa [RawCostTerm.components] using safe
   | .drop name, safe => by
       simpa [RawCostTerm.components] using safe
-  | .purse surface stack, safe => by
+  | .purse location stack, safe => by
       simp
 
 /-- Binder safety of every flattened component reconstructs binder safety of
@@ -69,7 +69,7 @@ theorem RawCostTerm.binderSafeAt_of_components (depth : Nat) :
       simpa [RawCostTerm.components] using componentsSafe
   | .drop name, componentsSafe => by
       simpa [RawCostTerm.components] using componentsSafe
-  | .purse surface stack, _ => rfl
+  | .purse location stack, _ => rfl
 
 theorem RawCostProc.fromComponents_binderSafeAt (depth : Nat) :
     ∀ items : List RawCostProc,
@@ -129,7 +129,7 @@ mutual
             simpa [RawCostName.binderSafeAt] using normalizedSafe
         | par left right =>
             simpa [RawCostName.binderSafeAt] using normalizedSafe
-        | purse surface stack =>
+        | purse location stack =>
             rfl
     | .signature signature, _ => rfl
 
@@ -180,7 +180,7 @@ mutual
     | .drop name, safe => by
         simpa [RawCostTerm.normalize, RawCostTerm.binderSafeAt] using
           RawCostName.binderSafeAt_normalize depth name safe
-    | .purse surface stack, _ => rfl
+    | .purse location stack, _ => rfl
 end
 
 /-- Normalized top-level executable components remain in checked binder
@@ -207,7 +207,7 @@ theorem residualFor_forall_binderSafe
   let retained := eraseIndices config
     (participants ++ selected.map RawIndexedPurse.index)
   let tails := selected.map fun purse =>
-    RawCostTerm.purse purse.surface purse.tail
+    RawCostTerm.purse purse.location purse.tail
   let items := retained ++ contractum.normalize.components ++ tails
   have normalizedContractumSafe :=
     RawCostTerm.binderSafeAt_normalize 0 contractum contractumSafe
@@ -244,7 +244,7 @@ theorem residualFor_decode_binderSafe
         (decodeCostTerm contractum).components +
         (selected.map
           (fun purse =>
-            decodeCostTerm (.purse purse.surface purse.tail)) :
+            decodeCostTerm (.purse purse.location purse.tail)) :
             Multiset (CostTerm String)))) :
     CostConfig.BinderSafe
       (decodeRawConfig
@@ -252,14 +252,14 @@ theorem residualFor_decode_binderSafe
   let retained := eraseIndices config
     (participants ++ selected.map RawIndexedPurse.index)
   let tails := selected.map fun purse =>
-    RawCostTerm.purse purse.surface purse.tail
+    RawCostTerm.purse purse.location purse.tail
   let ingredients := retained ++ contractum.components ++ tails
   have decodedIngredients :
       decodeRawConfig ingredients =
         decodeRawConfig retained + (decodeCostTerm contractum).components +
           (selected.map
             (fun purse =>
-              decodeCostTerm (.purse purse.surface purse.tail)) :
+              decodeCostTerm (.purse purse.location purse.tail)) :
               Multiset (CostTerm String)) := by
     simp only [ingredients, tails, List.append_assoc,
       decodeRawConfig_append, decodeRawConfig_components]

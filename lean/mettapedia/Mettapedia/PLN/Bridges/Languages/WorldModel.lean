@@ -13,5 +13,5 @@ import Mettapedia.PLN.Bridges.Languages.WorldModel.PLNWorldModelPureKernelBridge
 # PLN world-model bridges to language runtimes
 
 Runtime-facing bridges from HE, PeTTa, and PureKernel fragments into the PLN
-world-model consequence surface.
+world-model consequence interface.
 -/

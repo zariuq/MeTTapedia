@@ -30,9 +30,9 @@ namespace CostStep
 
 /-- Every concrete cost-rho step has a strictly positive spend label. -/
 theorem spend_runtimeValid {Ground : Type u}
-    {source target : CostConfig Ground} {surface : CostName Ground}
+    {source target : CostConfig Ground} {location : CostName Ground}
     {spend : CostSig Ground}
-    (step : CostStep source surface spend target) : spend.RuntimeValid := by
+    (step : CostStep source location spend target) : spend.RuntimeValid := by
   cases step with
   | wholeRecvSend signature_valid _ =>
       exact signature_valid
@@ -47,8 +47,8 @@ theorem spend_runtimeValid {Ground : Type u}
 
 /-- The concrete positive fragment is not closed under a zero-spend step. -/
 theorem no_unit_spend {Ground : Type u}
-    (source target : CostConfig Ground) (surface : CostName Ground) :
-    ¬ CostStep source surface 0 target := by
+    (source target : CostConfig Ground) (location : CostName Ground) :
+    ¬ CostStep source location 0 target := by
   intro step
   exact CostSig.zero_not_runtimeValid (step.spend_runtimeValid)
 
@@ -58,8 +58,8 @@ namespace SpendEvent
 
 /-- Every concrete receipt event has nonempty aggregate raw spend. -/
 theorem rawSpend_runtimeValid
-    {Ground : Type u} {Surface : Type v}
-    (event : SpendEvent Ground Surface) : event.rawSpend.RuntimeValid := by
+    {Ground : Type u} {Location : Type v}
+    (event : SpendEvent Ground Location) : event.rawSpend.RuntimeValid := by
   obtain ⟨contribution, contribution_mem⟩ :=
     Multiset.exists_mem_of_ne_zero event.funding_nonempty
   obtain ⟨rest, funding_eq⟩ := Multiset.exists_cons_of_mem contribution_mem
@@ -74,8 +74,8 @@ theorem rawSpend_runtimeValid
 
 @[simp]
 theorem rawSpend_ne_zero
-    {Ground : Type u} {Surface : Type v}
-    (event : SpendEvent Ground Surface) : event.rawSpend ≠ 0 :=
+    {Ground : Type u} {Location : Type v}
+    (event : SpendEvent Ground Location) : event.rawSpend ≠ 0 :=
   event.rawSpend_runtimeValid
 
 end SpendEvent

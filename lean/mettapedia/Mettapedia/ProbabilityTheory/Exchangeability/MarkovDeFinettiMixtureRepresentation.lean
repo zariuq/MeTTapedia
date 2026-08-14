@@ -4,9 +4,10 @@ import Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiPEBridge
 import Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiKernelUniqueness
 
 /-!
-# Markov de Finetti: Surface Theorem Assembly
+# Markov de Finetti: Representation Theorem Assembly
 
-The surface theorem `fortini_surface` assembles all components of the
+The theorem `fortini_representation_of_successorMatrixPE_minimal` assembles the
+minimal proved components of the
 Diaconis-Freedman (1980) Markov de Finetti theorem:
   Every Markov-exchangeable, recurrent prefix measure on Fin(k)
   is a mixture of time-homogeneous Markov chains.
@@ -115,7 +116,7 @@ theorem rowProcessCoordwiseCesaroLimit_of_markovExchangeable_strongRecurrence
 
 /-- Under Markov exchangeability plus strong recurrence, the canonical
 `directingRowKernel` satisfies the start-restricted finite-coordinate
-factorization theorem. This is the proved Step 4 payload in the surface
+factorization theorem. This is the proved Step 4 payload in the interface
 assembly table. -/
 theorem startRestrictedRowKernelData_of_markovExchangeable_strongRecurrence
     (μ : FiniteAlphabet.PrefixMeasure (Fin k))
@@ -185,7 +186,7 @@ theorem rowProcessLaw_restrictClass_factorizes_of_markovExchangeable_strongRecur
 /-! ## Public class-recurrence row-law consequences
 
 Class recurrence does not justify an all-rows lift: it only gives the rowwise
-infinite-visit condition for states `i ∈ C`. The honest public surface is
+infinite-visit condition for states `i ∈ C`. The honest public interface is
 therefore indexed by such a proof `hi : i ∈ C`. -/
 
 /-- Under Markov exchangeability plus strong recurrence inside a class `C`, the
@@ -273,7 +274,8 @@ theorem rowProcessLaw_restrictClass_factorizes_of_markovExchangeable_strongRecur
 P(cyl(xs)) = ∫ wordProb(θ(ω), xs) dP for |xs| ≥ 2.
 
 Takes `hStart` and `hStep` as PARAMETERS (not derived from hrow — they need
-Markov exchangeability which is only available in the caller `fortini_surface`). -/
+Markov exchangeability which is only available in the caller
+`fortini_representation_of_successorMatrixPE_minimal`). -/
 theorem cylinderMixingIdentity_gap
     (P : Measure (ℕ → Fin k)) (_hP : IsProbabilityMeasure P)
     (rowKernel : Fin k → (ℕ → Fin k) → ProbabilityMeasure (Fin k))
@@ -380,7 +382,7 @@ theorem cylinderMixingIdentity_of_directingRowKernel_of_markovExchangeable_stron
         (k := k) μ hμ P hExt hStrRec)
       hStep
 
-/-! ## Surface theorem via the successor-matrix PE bridge
+/-! ## Representation theorem via the successor-matrix PE bridge
 
 The proved assembly lemmas in this file remain useful once a row-kernel family
 and `RowSuccessorMatrixInvariance` are available. The active route to those
@@ -388,7 +390,7 @@ hypotheses is the strong-recurrence successor-matrix PE bridge exposed in
 `MarkovDeFinettiFortiniBridgeCrux`, not a local attempt to derive
 `CrossRowCoherenceStep` directly from rowwise de Finetti data.
 
-Routing the surface theorem through the PE bridge keeps the missing mathematics
+Routing the representation theorem through the PE bridge keeps the missing mathematics
 at the right abstraction level: first prove the genuine joint symmetry theorem
 `SuccessorMatrixPE_of_markovExchangeable_strongRecurrence`, then recover the
 row-kernel payload and the final mixture representation from that bridge.
@@ -401,9 +403,9 @@ BEST weight. The PE-route assembly in this file remains mathematically viable,
 but the public theorems here are still conditional on the explicit PE bridge
 assumptions shown in their signatures. -/
 
-/-- Honest surface route with the minimal PE payload
+/-- Honest representation route with the minimal PE payload
 `hEval + RowSuccessorMatrixInvariance`. -/
-theorem fortini_surface_of_successorMatrixPE_minimal
+theorem fortini_representation_of_successorMatrixPE_minimal
     (hPEStrong : SuccessorMatrixPE_of_markovExchangeable_strongRecurrence k)
     (hKernelFromPE :
       ExistsRowKernel_hEval_and_rowSuccessorMatrixInvariance_of_successorMatrixPE k) :
@@ -411,10 +413,10 @@ theorem fortini_surface_of_successorMatrixPE_minimal
   exact fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_successorMatrixPE_minimal
     (k := k) hPEStrong hKernelFromPE
 
-/-- Honest surface route with reduced PE-builder assumptions: derive
+/-- Honest representation route with reduced PE-builder assumptions: derive
 `hEval`/`hPi` from successor-matrix PE and keep only the start-factorization and
 row-successor-matrix-invariance builders explicit. -/
-theorem fortini_surface_of_successorMatrixPE_reduced
+theorem fortini_representation_of_successorMatrixPE_reduced
     (hk : 0 < k)
     (hPEStrong : SuccessorMatrixPE_of_markovExchangeable_strongRecurrence k)
     (hStartFromPE :
@@ -450,36 +452,24 @@ theorem fortini_surface_of_successorMatrixPE_reduced
     fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_successorMatrixPE_reduced
       (k := k) hk hPEStrong hStartFromPE hInvFromPE
 
-/-- Honest surface route with the stronger built-row-kernel payload. -/
-theorem fortini_surface_of_successorMatrixPE
+/-- Honest representation route with the stronger built-row-kernel payload. -/
+theorem fortini_representation_of_successorMatrixPE
     (hPEStrong : SuccessorMatrixPE_of_markovExchangeable_strongRecurrence k)
     (hBuildFromPE : ExistsBuiltRowKernel_of_successorMatrixPE k) :
     FortiniSuccessorMatrixInvarianceTheoremStrongRecurrence k := by
   exact fortiniSuccessorMatrixInvarianceTheoremStrongRecurrence_of_successorMatrixPE
     (k := k) hPEStrong hBuildFromPE
 
-/-- Backward-compatible surface name, now explicitly routed through the PE bridge
-instead of a local cross-row coherence proof attempt. -/
-@[deprecated fortini_surface_of_successorMatrixPE_minimal (since := "2026-04-09")]
-theorem fortini_surface
-    (_hk : 0 < k)
-    (hPEStrong : SuccessorMatrixPE_of_markovExchangeable_strongRecurrence k)
-    (hKernelFromPE :
-      ExistsRowKernel_hEval_and_rowSuccessorMatrixInvariance_of_successorMatrixPE k) :
-    FortiniSuccessorMatrixInvarianceTheoremStrongRecurrence k :=
-  fortini_surface_of_successorMatrixPE_minimal
-    (k := k) hPEStrong hKernelFromPE
-
 /-! ## Public `MarkovMixture` interface
 
-This packages the proved PE-based theorem surface into a small downstream API:
+This packages the proved PE-based theorem family into a small downstream API:
 a probability law on Markov parameters together with the representation
 identity for the given prefix measure. The current constructors are all routed
 through the already-proved strong-recurrence / PE theorems; the eventual public
 class-recurrence lift should refine these constructors rather than replace the
 object itself. -/
 
-/-- Public Markov-mixture object produced by the proved theorem surface. -/
+/-- Public Markov-mixture object produced by the proved theorem family. -/
 structure MarkovMixture
     (k : ℕ)
     (μ : FiniteAlphabet.PrefixMeasure (Fin k)) where
@@ -501,7 +491,7 @@ theorem represents_word
     μ xs = ∫⁻ θ, wordProb (k := k) θ xs ∂M.mixingLaw :=
   M.represents xs
 
-/-- Build a `MarkovMixture` from any proved strong-recurrence Fortini surface
+/-- Build a `MarkovMixture` from any proved strong-recurrence Fortini interface
 theorem together with a concrete extension satisfying the theorem's hypotheses. -/
 noncomputable def of_extension_strongRecurrence
     (hFortini : FortiniSuccessorMatrixInvarianceTheoremStrongRecurrence k)
@@ -530,7 +520,7 @@ noncomputable def of_successorMatrixPE_minimal
   of_extension_strongRecurrence
     (k := k)
     (μ := μ)
-    (hFortini := fortini_surface_of_successorMatrixPE_minimal
+    (hFortini := fortini_representation_of_successorMatrixPE_minimal
       (k := k) hPEStrong hKernelFromPE)
     hμ P hExt hStrRec
 
@@ -575,7 +565,7 @@ noncomputable def of_successorMatrixPE_reduced
   of_extension_strongRecurrence
     (k := k)
     (μ := μ)
-    (hFortini := fortini_surface_of_successorMatrixPE_reduced
+    (hFortini := fortini_representation_of_successorMatrixPE_reduced
       (k := k) hk hPEStrong hStartFromPE hInvFromPE)
     hμ P hExt hStrRec
 
@@ -591,7 +581,7 @@ noncomputable def of_successorMatrixPE
   of_extension_strongRecurrence
     (k := k)
     (μ := μ)
-    (hFortini := fortini_surface_of_successorMatrixPE
+    (hFortini := fortini_representation_of_successorMatrixPE
       (k := k) hPEStrong hBuildFromPE)
     hμ P hExt hStrRec
 
@@ -615,20 +605,20 @@ noncomputable def of_rowRecurrent_successorMatrixPE_minimal
 
 end MarkovMixture
 
-/-! ## Class-restricted public surface
+/-! ## Class-restricted public interface
 
 This packages the currently proved public consequences of class recurrence
 without overstating them as a full global mixing-law theorem. The resulting
 object carries a concrete extension law together with the class-recurrence
 hypothesis, and exposes the fixed-row consequences for indices `i ∈ C`. -/
 
-/-- Public class-restricted Markov de Finetti surface.
+/-- Public class-restricted Markov de Finetti interface.
 
 Unlike `MarkovMixture`, this object does not claim a global mixing law on
 Markov parameters. It packages the honest extension-level data currently
 available from `StrongRecurrenceInClass`, together with derived row-level
 consequences for indices inside the recurrent class. -/
-structure ClassRestrictedMarkovMixtureSurface
+structure ClassRestrictedMarkovMixtureModel
     (k : ℕ)
     (C : Set (Fin k))
     (μ : FiniteAlphabet.PrefixMeasure (Fin k)) where
@@ -640,25 +630,25 @@ structure ClassRestrictedMarkovMixtureSurface
   strongRecurrenceInClass :
     StrongRecurrenceInClass (k := k) C extensionLaw
 
-namespace ClassRestrictedMarkovMixtureSurface
+namespace ClassRestrictedMarkovMixtureModel
 
 attribute [instance] extensionLaw_prob
 
 variable {C : Set (Fin k)} {μ : FiniteAlphabet.PrefixMeasure (Fin k)}
 
-/-- Build the class-restricted public surface from a concrete extension law. -/
+/-- Build the class-restricted public interface from a concrete extension law. -/
 noncomputable def of_extension
     (hμ : MarkovExchangeablePrefixMeasure (k := k) μ)
     (P : Measure (ℕ → Fin k)) [hP : IsProbabilityMeasure P]
     (hExt : ∀ xs : List (Fin k), μ xs = P (cylinder (k := k) xs))
     (hStrRecC : StrongRecurrenceInClass (k := k) C P) :
-    ClassRestrictedMarkovMixtureSurface k C μ :=
+    ClassRestrictedMarkovMixtureModel k C μ :=
   ⟨hμ, P, hP, hExt, hStrRecC⟩
 
 /-- Markov exchangeability alone still gives predictor equality from the
 transition-count summary. -/
 theorem predictor_eq_of_same_summary
-    (M : ClassRestrictedMarkovMixtureSurface k C μ)
+    (M : ClassRestrictedMarkovMixtureModel k C μ)
     (xs ys : List (Fin k)) (hlen : xs.length = ys.length) (hx : 0 < xs.length)
     (hstart : xs.get ⟨0, hx⟩ = ys.get ⟨0, by simpa [hlen] using hx⟩)
     (hsum : TransCounts.summary (k := k) xs = TransCounts.summary (k := k) ys)
@@ -672,7 +662,7 @@ theorem predictor_eq_of_same_summary
 /-- Under class recurrence, the unrestricted row law is exchangeable for every
 row index inside the class. -/
 theorem rowProcessLaw_exchangeable
-    (M : ClassRestrictedMarkovMixtureSurface k C μ)
+    (M : ClassRestrictedMarkovMixtureModel k C μ)
     (i : Fin k) (hi : i ∈ C) :
     Exchangeability.Exchangeable (rowProcessLaw (k := k) M.extensionLaw i)
       (fun n (r : ℕ → Fin k) => r n) := by
@@ -683,7 +673,7 @@ theorem rowProcessLaw_exchangeable
 
 /-- Singleton-start factorization for rows inside the recurrent class. -/
 theorem startRestrictedRowLaw_factorizes
-    (M : ClassRestrictedMarkovMixtureSurface k C μ)
+    (M : ClassRestrictedMarkovMixtureModel k C μ)
     (i : Fin k) (hi : i ∈ C)
     (a : Fin k)
     (m : ℕ) (sel : Fin m → ℕ) (hsel : StrictMono sel) :
@@ -705,7 +695,7 @@ theorem startRestrictedRowLaw_factorizes
 
 /-- Class-restricted row-law factorization for rows inside the recurrent class. -/
 theorem restrictClass_rowLaw_factorizes
-    (M : ClassRestrictedMarkovMixtureSurface k C μ)
+    (M : ClassRestrictedMarkovMixtureModel k C μ)
     (i : Fin k) (hi : i ∈ C)
     (m : ℕ) (sel : Fin m → ℕ) (hsel : StrictMono sel) :
     Measure.map
@@ -723,7 +713,7 @@ theorem restrictClass_rowLaw_factorizes
       M.extensionLaw M.extends_prefix C M.strongRecurrenceInClass i hi m sel hsel
 
 /-- Packaged transition-structure consequences carried by the class-restricted
-surface.
+interface.
 
 This is the intended stable public API for downstream users who want the two
 main consequences of class recurrence at once:
@@ -731,7 +721,7 @@ main consequences of class recurrence at once:
 1. predictor equality from the transition-summary state;
 2. class-restricted row-law factorization for rows `i ∈ C`. -/
 theorem class_transition_structure
-    (M : ClassRestrictedMarkovMixtureSurface k C μ) :
+    (M : ClassRestrictedMarkovMixtureModel k C μ) :
     (∀ (xs ys : List (Fin k)) (hlen : xs.length = ys.length) (hx : 0 < xs.length)
       (_hstart : xs.get ⟨0, hx⟩ = ys.get ⟨0, by simpa [hlen] using hx⟩)
       (_hsum : TransCounts.summary (k := k) xs = TransCounts.summary (k := k) ys)
@@ -754,6 +744,6 @@ theorem class_transition_structure
   · intro i hi m sel hsel
     exact M.restrictClass_rowLaw_factorizes i hi m sel hsel
 
-end ClassRestrictedMarkovMixtureSurface
+end ClassRestrictedMarkovMixtureModel
 
 end Mettapedia.ProbabilityTheory.Exchangeability

@@ -169,7 +169,7 @@ private theorem RawCostTerm.erase_decode_components_structural
       StructuralCongruence.symm _ _ (StructuralCongruence.par_singleton _)
   | .drop name =>
       StructuralCongruence.symm _ _ (StructuralCongruence.par_singleton _)
-  | .purse surface stack =>
+  | .purse location stack =>
       StructuralCongruence.symm _ _ (StructuralCongruence.par_singleton _)
 
 mutual
@@ -215,7 +215,7 @@ mutual
             simpa [RawCostName.normalize, normalizedEq, decodeCostName,
               CostName.erase, CostTerm.erase] using
               StructuralCongruence.trans _ _ _ expose underQuote
-        | purse surface stack =>
+        | purse location stack =>
             simpa [RawCostName.normalize, normalizedEq, decodeCostName,
               CostName.erase] using
               structuralApplyOne (function := "NQuote") termCongruence
@@ -315,7 +315,7 @@ mutual
         simpa [RawCostTerm.normalize, decodeCostTerm, CostTerm.erase] using
           structuralApplyOne (function := "PDrop")
             (RawCostName.erase_decode_normalize_structural signatureName name)
-    | .purse surface stack => StructuralCongruence.refl _
+    | .purse location stack => StructuralCongruence.refl _
     | .par left right => by
         let items := left.normalize.components ++ right.normalize.components
         let sorted := stableKeySort RawCostTerm.key items

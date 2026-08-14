@@ -259,7 +259,7 @@ variable {Carrier : Type u} {Obj : Type v} {Attr : Type w} [Fintype Obj]
 /-- The exact WM induction strength formula applies directly to inheritance truth
 values once they are viewed as `(strength, confidence)` pairs. This is the clean
 strength-side bridge from the new inheritance TV to the existing justified induction
-surface. -/
+theorem set. -/
 theorem inheritanceTV_truthInduction_strength_eq
     (a b c : TV)
     (I : Interpretation Carrier Obj Attr) (sub mid super : Carrier) :

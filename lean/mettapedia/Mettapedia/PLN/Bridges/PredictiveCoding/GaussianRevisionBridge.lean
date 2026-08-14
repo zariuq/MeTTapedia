@@ -8,7 +8,7 @@ import Mettapedia.PLN.TruthValues.PLNTruthTower
 
 This file is the PLN-side bridge for predictive coding: precision-weighted
 scalar Gaussian fusion agrees with existing PLN weighted revision on the shared
-unit-strength evidence surface. Pure predictive-coding theory lives under
+unit-strength evidence interface. Pure predictive-coding theory lives under
 `Mettapedia.MachineLearning.NeuralNetworks.PredictiveCoding`.
 -/
 

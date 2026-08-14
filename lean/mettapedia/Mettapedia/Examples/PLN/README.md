@@ -21,7 +21,7 @@ then gives both a positive instance and a negative or boundary instance.
    - Shows that revision can fall below the redundancy floor when dependence is
      ignored.
 4. `EstimatorEnvelopeCurriculum`
-   - Uses the certified-chaining estimator envelope surface.
+   - Uses the certified-chaining estimator envelope interface.
    - Shows calibrated selectors and out-of-envelope points.
 5. `WM4IntrospectionCurriculum`
    - Uses the HOL introspection bridge for source, strength, exactness, and

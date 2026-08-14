@@ -1,6 +1,6 @@
 import Mettapedia.MachineLearning.NeuralNetworks.WorkspaceDecoder.KalmanCorrespondence
 import Mettapedia.PLN.Bridges.PredictiveCoding.WorldModelConnection
-import Mettapedia.PLN.Bridges.ProbabilityTheory.ConjugateEvidenceSurface
+import Mettapedia.PLN.Bridges.ProbabilityTheory.ConjugateEvidenceCore
 
 /-!
 # Scalar belief-state workspace cell
@@ -22,7 +22,7 @@ open Set
 open scoped ENNReal
 open Mettapedia.MachineLearning.NeuralNetworks.PredictiveCoding
 open Mettapedia.PLN.Bridges.PredictiveCoding
-open Mettapedia.PLN.Bridges.ProbabilityTheory.ConjugateEvidenceSurface
+open Mettapedia.PLN.Bridges.ProbabilityTheory.ConjugateEvidenceCore
 open Mettapedia.PLN.Evidence.EvidenceQuantale
 open Mettapedia.PLN.TruthValues.PLNTruthTower
 open Mettapedia.PLN.TruthValues.PLNWeightTV

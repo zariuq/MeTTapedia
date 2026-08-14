@@ -843,6 +843,21 @@ theorem mapOneHoleContextSchemaNames_fill (mapName : String → String)
     simp_all [mapOneHoleContextSchemaNames, mapPatternSchemaNames,
       mapPatternListSchemaNames, OneHoleContext.fill]
 
+/-- Structural symbol transport and schema-local alpha-renaming commute on
+one-hole contexts, just as they do on the patterns stored in each frame. -/
+@[simp]
+theorem mapOneHoleContext_mapOneHoleContextSchemaNames
+    (symbols : PresentationSymbols) (mapName : String → String)
+    (context : OneHoleContext) :
+    CIGSLT.mapOneHoleContext symbols
+        (mapOneHoleContextSchemaNames mapName context) =
+      mapOneHoleContextSchemaNames mapName
+        (CIGSLT.mapOneHoleContext symbols context) := by
+  induction context <;>
+    simp_all [CIGSLT.mapOneHoleContext, mapOneHoleContextSchemaNames,
+      mapPattern_mapPatternSchemaNames,
+      mapPatternList_mapPatternListSchemaNames]
+
 /-- Schema alpha-renaming preserves the constructor-slot origin of a
 one-hole context.  Binder display names may change; binder shape and every
 constructor position remain fixed. -/
@@ -1245,6 +1260,62 @@ theorem costWholeRedexTarget_funding_tail (source : CIGSLT) :
   rfl
 
 namespace Morphism
+
+/-- Transport of the source interaction core commutes with its embedding in
+the collision-free Cost base namespace. -/
+theorem map_costBaseInteractionCore {source target : CIGSLT}
+    (morphism : source.Morphism target) :
+    mapPattern
+        (costPresentationSymbols
+          morphism.underlying.structural.structural.symbols)
+        source.costBaseInteractionCore =
+      target.costBaseInteractionCore := by
+  rw [costBaseInteractionCore, costBaseInteractionCore,
+    mapPattern_mapPatternSchemaNames,
+    mapPattern_costBasePresentation_natural,
+    morphism.mapsCorePattern]
+
+/-- Transport of the source cut envelope commutes with both the base-fibre
+embedding and the collision-free schema-name action. -/
+theorem map_costBaseSourceEnvelope {source target : CIGSLT}
+    (morphism : source.Morphism target) :
+    mapOneHoleContext
+        (costPresentationSymbols
+          morphism.underlying.structural.structural.symbols)
+        source.costBaseSourceEnvelope =
+      target.costBaseSourceEnvelope := by
+  rw [costBaseSourceEnvelope, costBaseSourceEnvelope,
+    mapOneHoleContext_mapOneHoleContextSchemaNames,
+    CIGSLT.mapOneHoleContext_costBasePresentation_natural,
+    morphism.mapsSourceEnvelope]
+
+/-- The signing and funding frames contain only fixed Cost apparatus
+constructors and administrative variables. -/
+theorem map_costFundingEnvelope {source target : CIGSLT}
+    (morphism : source.Morphism target) :
+    mapOneHoleContext
+        (costPresentationSymbols
+          morphism.underlying.structural.structural.symbols)
+        source.costFundingEnvelope =
+      target.costFundingEnvelope := by
+  simp [costFundingEnvelope, mapOneHoleContext, mapPattern,
+    costContactConstructorName, costSignedConstructorName,
+    costFundingConstructorName, costTokenStackConsConstructorName,
+    costSignatureVariable, costStackTailVariable]
+
+/-- The complete generated redex envelope is natural as a composition of
+the fixed administrative envelope and the transported source envelope. -/
+theorem map_costWholeRedexEnvelope {source target : CIGSLT}
+    (morphism : source.Morphism target) :
+    mapOneHoleContext
+        (costPresentationSymbols
+          morphism.underlying.structural.structural.symbols)
+        source.costWholeRedexEnvelope =
+      target.costWholeRedexEnvelope := by
+  rw [costWholeRedexEnvelope, costWholeRedexEnvelope,
+    CIGSLT.mapOneHoleContext_contextComp,
+    morphism.map_costFundingEnvelope,
+    morphism.map_costBaseSourceEnvelope]
 
 /-- Retyping the selected rewrite context commutes with a continued theory
 map.  The two continuation-variable names are structural invariants, while

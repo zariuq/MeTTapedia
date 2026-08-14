@@ -6,7 +6,7 @@ import KnuthSkilling.Probability.BooleanRepresentation
 # PLN Indefinite Truth Bridge
 
 This file bridges finite families of event-level K&S Boolean representations
-into the live PLN indefinite-truth-value surface.
+into the live PLN indefinite-truth-value interface.
 
 The bridge is conceptually PLN-facing: it packages lower/upper probability
 bounds as a `PLNIndefiniteTruth.ITV` with an explicit external credibility.

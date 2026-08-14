@@ -33,6 +33,64 @@ theorem sortPatternsBy_perm {Key : Type} [LinearOrder Key]
     List.Perm (sortPatternsBy key patterns) patterns := by
   exact List.mergeSort_perm patterns _
 
+/-- Stable sorting preserves any positional relation whose paired entries
+receive equal endpoint-local keys.  The proof sorts the zipped pairs once and
+then projects both endpoints, so duplicate equal-key occurrences retain their
+original pairing. -/
+theorem sortPatternsBy_forall₂
+    {Key : Type} [LinearOrder Key]
+    {relation : Pattern → Pattern → Prop}
+    (leftKey rightKey : Pattern → Key)
+    {left right : List Pattern}
+    (related : List.Forall₂ relation left right)
+    (keys : ∀ {leftPattern rightPattern},
+      relation leftPattern rightPattern →
+        leftKey leftPattern = rightKey rightPattern) :
+    List.Forall₂ relation
+      (sortPatternsBy leftKey left) (sortPatternsBy rightKey right) := by
+  let pairs := left.zip right
+  let pairKey : Pattern × Pattern → Key := fun pair => leftKey pair.1
+  let sortedPairs := pairs.mergeSort
+    (fun first second => decide (pairKey first ≤ pairKey second))
+  have firstProjection :
+      sortedPairs.map Prod.fst = sortPatternsBy leftKey left := by
+    unfold sortedPairs pairKey pairs sortPatternsBy
+    rw [List.map_mergeSort]
+    · rw [List.map_fst_zip (Nat.le_of_eq related.length_eq)]
+    · intro first firstMembership second secondMembership
+      rfl
+  have secondProjection :
+      sortedPairs.map Prod.snd = sortPatternsBy rightKey right := by
+    unfold sortedPairs pairKey pairs sortPatternsBy
+    rw [List.map_mergeSort]
+    · rw [List.map_snd_zip (Nat.le_of_eq related.length_eq.symm)]
+    · intro first firstMembership second secondMembership
+      have firstRelated : relation first.1 first.2 :=
+        List.forall₂_zip related firstMembership
+      have secondRelated : relation second.1 second.2 :=
+        List.forall₂_zip related secondMembership
+      rw [keys firstRelated, keys secondRelated]
+  have pairRelated : ∀ pair ∈ sortedPairs, relation pair.1 pair.2 := by
+    intro pair membership
+    apply List.forall₂_zip related
+    exact (List.mergeSort_perm pairs _).mem_iff.mp membership
+  have buildMappedRelated : ∀ pairs : List (Pattern × Pattern),
+      (∀ pair ∈ pairs, relation pair.1 pair.2) →
+      List.Forall₂ relation (pairs.map Prod.fst)
+        (pairs.map Prod.snd) := by
+    intro current allRelated
+    induction current with
+    | nil => exact .nil
+    | cons pair tail inductionHypothesis =>
+        simp only [List.map_cons]
+        exact .cons
+          (allRelated pair (by simp))
+          (inductionHypothesis fun other membership =>
+            allRelated other (by simp [membership]))
+  have mappedRelated := buildMappedRelated sortedPairs pairRelated
+  rw [firstProjection, secondProjection] at mappedRelated
+  exact mappedRelated
+
 /-- Stable key sorting is idempotent even when distinct patterns have equal
 keys.  Antisymmetry on patterns is neither available nor desirable here:
 equal-key occurrences retain their input order. -/

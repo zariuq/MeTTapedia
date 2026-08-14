@@ -3,7 +3,7 @@ import Mettapedia.PLN.Bridges.HOL.Probabilistic.HierarchicalStrengthBridge
 import Mettapedia.PLN.Bridges.HOL.Probabilistic.Regression
 
 /-!
-# Hierarchical Regression Surface for Probabilistic HOL
+# Hierarchical Regression Interface for Probabilistic HOL
 
 This module packages the first positive and negative regression fixtures for the
 hierarchical and infinite-order `ProbHOL` layer.

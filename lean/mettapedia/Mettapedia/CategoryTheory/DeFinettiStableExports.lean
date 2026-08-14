@@ -6,7 +6,7 @@ import Mettapedia.CategoryTheory.DeFinettiMarkovCategoryBridge
 import Mettapedia.CategoryTheory.DeFinettiUnrestrictedCounterexample
 
 /-!
-# Stable Export Surface for Categorical de Finetti
+# Stable Export Interface for Categorical de Finetti
 
 This file is an internal stable alias layer.
 Downstream modules should prefer importing

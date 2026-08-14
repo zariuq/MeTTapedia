@@ -1,7 +1,7 @@
 import Mettapedia.Computability.PNP.ExactAffineRecovery
 
 /-!
-# P vs NP grassroots: shared affine-feature families on the exact surface
+# P vs NP grassroots: shared affine-feature families on the exact data domain
 
 The previous affine candidate classes allowed each predictor to carry its own
 affine feature basis. This file isolates a sharper optimistic regime:
@@ -10,7 +10,7 @@ affine feature basis. This file isolates a sharper optimistic regime:
 * only the downstream combiner varies from predictor to predictor.
 
 Under that hypothesis the code budget drops from "features plus combiner" to
-"combiner only". On the exact post-switch surface this yields the explicit
+"combiner only". On the exact post-switch data domain this yields the explicit
 bounds:
 
 * arbitrary truth table on the shared feature vector: `2^r` bits,
@@ -18,7 +18,7 @@ bounds:
 * decision-list combiner on the shared feature vector: `r + 1` bits.
 
 The file proves both compression and weighted recovery interfaces for these
-shared-basis exact-surface families.
+shared-basis exact-data domain families.
 -/
 
 namespace Mettapedia.Computability.PNP
@@ -33,7 +33,7 @@ variable {Z : Type*} {r k : ℕ}
 of `r` affine column probes. -/
 def exactAffineFeatureSummary
     (features : Fin r → AffineColumnCode k) :
-    ExactVisiblePostSwitchSurface Z k → BitVec r :=
+    ExactVisiblePostSwitchData Z k → BitVec r :=
   fun u => affineFeatureVector features u.a
 
 /-- Evaluate an arbitrary truth-table combiner on the fixed exact affine
@@ -41,7 +41,7 @@ feature summary. -/
 noncomputable def sharedAffineFeaturePredict
     (features : Fin r → AffineColumnCode k)
     (table : BitCode (2 ^ r))
-    (u : ExactVisiblePostSwitchSurface Z k) : Bool :=
+    (u : ExactVisiblePostSwitchData Z k) : Bool :=
   table ((Fintype.equivFinOfCardEq (by simp [BitVec] : Fintype.card (BitVec r) = 2 ^ r))
     (exactAffineFeatureSummary (Z := Z) features u))
 
@@ -70,7 +70,7 @@ summary. -/
 noncomputable def sharedSparseThresholdAffinePredict
     (features : Fin r → AffineColumnCode k)
     (code : SharedSparseThresholdCode r)
-    (u : ExactVisiblePostSwitchSurface Z k) : Bool :=
+    (u : ExactVisiblePostSwitchData Z k) : Bool :=
   decide (thresholdCodeValue (r := r) code.2 ≤
     maskedAffineFeatureCount (k := k) features code.1 u.a)
 
@@ -95,32 +95,32 @@ summary. -/
 noncomputable def sharedAffineDecisionListPredict
     (features : Fin r → AffineColumnCode k)
     (code : SharedAffineDecisionListCode r)
-    (u : ExactVisiblePostSwitchSurface Z k) : Bool :=
+    (u : ExactVisiblePostSwitchData Z k) : Bool :=
   match firstActiveFeature? (exactAffineFeatureSummary (Z := Z) features u) with
   | some j => code.1 j
   | none => code.2
 
-/-- The concrete exact-surface truth-table family on one fixed affine feature
+/-- The concrete exact-data domain truth-table family on one fixed affine feature
 basis. -/
 noncomputable def sharedAffineFeatureBitFamily
     (Z : Type*) (features : Fin r → AffineColumnCode k) :
-    BitEncodedClassifierFamily (ExactVisiblePostSwitchSurface Z k) (2 ^ r) where
+    BitEncodedClassifierFamily (ExactVisiblePostSwitchData Z k) (2 ^ r) where
   decode table := sharedAffineFeaturePredict (Z := Z) features table
 
-/-- The concrete exact-surface sparse-threshold family on one fixed affine
+/-- The concrete exact-data domain sparse-threshold family on one fixed affine
 feature basis. -/
 noncomputable def sharedSparseThresholdAffineBitFamily
     (Z : Type*) (features : Fin r → AffineColumnCode k) :
-    BitEncodedClassifierFamily (ExactVisiblePostSwitchSurface Z k) (2 * r) where
+    BitEncodedClassifierFamily (ExactVisiblePostSwitchData Z k) (2 * r) where
   decode raw u :=
     let code := (sharedSparseThresholdCodeEquivBitCode r).symm raw
     sharedSparseThresholdAffinePredict (Z := Z) features code u
 
-/-- The concrete exact-surface decision-list family on one fixed affine feature
+/-- The concrete exact-data domain decision-list family on one fixed affine feature
 basis. -/
 noncomputable def sharedAffineDecisionListBitFamily
     (Z : Type*) (features : Fin r → AffineColumnCode k) :
-    BitEncodedClassifierFamily (ExactVisiblePostSwitchSurface Z k) (r + 1) where
+    BitEncodedClassifierFamily (ExactVisiblePostSwitchData Z k) (r + 1) where
   decode raw u :=
     let code := (sharedAffineDecisionListCodeEquivBitCode r).symm raw
     sharedAffineDecisionListPredict (Z := Z) features code u
@@ -146,7 +146,7 @@ noncomputable def sharedAffineDecisionListBitFamily
   funext u
   simp [sharedAffineDecisionListBitFamily, sharedAffineDecisionListCodeEquivBitCode]
 
-/-- Exact-surface family whose predictors all use the same affine feature basis
+/-- Exact-data domain family whose predictors all use the same affine feature basis
 and vary only by an arbitrary truth table on the resulting feature vector. -/
 def RealizedBySharedExactAffineFeatureFamily
     {Index : Type*} (features : Fin r → AffineColumnCode k)
@@ -154,7 +154,7 @@ def RealizedBySharedExactAffineFeatureFamily
   ∀ i, ∃ table : BitCode (2 ^ r),
     G.predict i = sharedAffineFeaturePredict (Z := Z) features table
 
-/-- Exact-surface family whose predictors all use the same affine feature basis
+/-- Exact-data domain family whose predictors all use the same affine feature basis
 and vary only by a sparse-threshold combiner. -/
 def RealizedBySharedExactSparseThresholdAffineFamily
     {Index : Type*} (features : Fin r → AffineColumnCode k)
@@ -162,7 +162,7 @@ def RealizedBySharedExactSparseThresholdAffineFamily
   ∀ i, ∃ code : BitCode r × BitCode r,
     G.predict i = sharedSparseThresholdAffinePredict (Z := Z) features code
 
-/-- Exact-surface family whose predictors all use the same affine feature basis
+/-- Exact-data domain family whose predictors all use the same affine feature basis
 and vary only by a fixed-order decision list on that shared feature vector. -/
 def RealizedBySharedExactAffineDecisionListFamily
     {Index : Type*} (features : Fin r → AffineColumnCode k)
@@ -210,8 +210,8 @@ theorem exactVisibleCompressionTarget_of_realizedBySharedExactAffineDecisionList
 theorem sharedExactAffineFeatureRecoveryLowerBound
     [Fintype Z]
     (features : Fin r → AffineColumnCode k)
-    (μ : PMF (ExactVisiblePostSwitchSurface Z k))
-    (target : ExactVisiblePostSwitchSurface Z k → Bool) (m : ℕ)
+    (μ : PMF (ExactVisiblePostSwitchData Z k))
+    (target : ExactVisiblePostSwitchData Z k → Bool) (m : ℕ)
     (htarget : ∃ table : BitCode (2 ^ r),
       target = sharedAffineFeaturePredict (Z := Z) features table)
     {q : ℝ≥0∞}
@@ -232,8 +232,8 @@ theorem sharedExactAffineFeatureRecoveryLowerBound
 theorem sharedExactSparseThresholdAffineRecoveryLowerBound
     [Fintype Z]
     (features : Fin r → AffineColumnCode k)
-    (μ : PMF (ExactVisiblePostSwitchSurface Z k))
-    (target : ExactVisiblePostSwitchSurface Z k → Bool) (m : ℕ)
+    (μ : PMF (ExactVisiblePostSwitchData Z k))
+    (target : ExactVisiblePostSwitchData Z k → Bool) (m : ℕ)
     (htarget : ∃ code : BitCode r × BitCode r,
       target = sharedSparseThresholdAffinePredict (Z := Z) features code)
     {q : ℝ≥0∞}
@@ -255,8 +255,8 @@ theorem sharedExactSparseThresholdAffineRecoveryLowerBound
 theorem sharedExactAffineDecisionListRecoveryLowerBound
     [Fintype Z]
     (features : Fin r → AffineColumnCode k)
-    (μ : PMF (ExactVisiblePostSwitchSurface Z k))
-    (target : ExactVisiblePostSwitchSurface Z k → Bool) (m : ℕ)
+    (μ : PMF (ExactVisiblePostSwitchData Z k))
+    (target : ExactVisiblePostSwitchData Z k → Bool) (m : ℕ)
     (htarget : ∃ code : SharedAffineDecisionListCode r,
       target = sharedAffineDecisionListPredict (Z := Z) features code)
     {q : ℝ≥0∞}

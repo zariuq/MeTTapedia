@@ -58,7 +58,7 @@ constructors: nil, par, input, output (async), restriction, replication
 | `RhoEncoding.lean` | Encoding function with Lybech-style name server |
 | `ForwardSimulation.lean` | Forward simulation for restriction-free fragment (proven) |
 | `EncodingMorphism.lean` | Encoding as structured LanguageMorphism |
-| `RhoEncodingCorrectness.lean` | Clean RF forward-correctness surface |
+| `RhoEncodingCorrectness.lean` | Clean RF forward-correctness interface |
 | `NameServerLemmas.lean` | Name server operational lemmas |
 | `WeakBisim.lean` | Weak N-restricted barbed bisimilarity |
 | `WeakBisimDerived.lean` | Weak bisimilarity with derived reductions |
@@ -89,7 +89,7 @@ via quoted names: `@(p)` (quote), `*(n)` (dereference), with the key equation
 | `SpiceRule.lean` | Spice calculus: n-step lookahead (Meredith 2026) |
 | `CommRule.lean` | COMM with n-step lookahead |
 | `Context.lean` | Evaluation contexts and labeled transitions |
-| `PresentMoment.lean` | Present moment: surface + internal channels |
+| `PresentMoment.lean` | Present moment: external + internal channels |
 | `Engine.lean` | Executable rewrite engine for the paper-faithful COMM/PAR core, proven sound |
 | `Soundness.lean` | Type preservation under substitution |
 

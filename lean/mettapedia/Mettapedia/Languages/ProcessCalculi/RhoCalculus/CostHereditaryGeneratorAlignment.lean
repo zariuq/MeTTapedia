@@ -72,7 +72,7 @@ a rho language sort is base-typed and closes through the ordinary static
 restoration theorem. -/
 theorem rhoCostOpenGeneratorTreeAlignable_of_staticClosures
     (staticClosed : ∀ color,
-      CostCanonicalStaticPairClosed rhoCIGSLT
+      CostCanonicalStaticPairClosedInDomain rhoCanonicalRecursiveTypeDomain
         rhoHereditaryNormalizationKernel
         (costStaticReflectivePresentationDecl rhoCIGSLT color
           rhoReflectivePresentation.toReflectivePresentationDecl)) :

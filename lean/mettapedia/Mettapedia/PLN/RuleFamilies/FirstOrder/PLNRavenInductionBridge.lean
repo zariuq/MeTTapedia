@@ -8,7 +8,7 @@ import Mettapedia.PLN.RuleFamilies.FirstOrder.PLNBayesInversionBridge
 observing black ravens confirms `Raven -> Black`, while the inverse
 `Black -> Raven` is diluted by all other black observations.
 
-This file welds that example to the generic WM-PLN Bayes/Inversion surface.  The
+This file welds that example to the generic WM-PLN Bayes/Inversion interface.  The
 inverse raven strength is exactly the Bayes inversion of the forward strength
 through the observed base rate, with the same explicit admissibility guard used
 by `PLNBayesInversionBridge`.  This is a point-strength bridge, not an interval

@@ -1,5 +1,6 @@
 import Mathlib.Data.Finset.Basic
 import Mettapedia.GSLT.Core.IndexedOperational
+import Mettapedia.GSLT.Dynamics.AnswerEffect
 import Mettapedia.GSLT.Dynamics.ProofRelevantNeed
 
 /-!
@@ -26,8 +27,537 @@ namespace Mettapedia.GSLT.Dynamics.ProofRelevantNeed
 open Mettapedia.GSLT
 open Mettapedia.GSLT.IndexedOperational
 open Mettapedia.GSLT.Core.InteractionEvent
+open Mettapedia.GSLT.Dynamics.OccurrenceSemantics
 
 universe uCell uOrigin uValue uStableFault uRetryableFault uRight uGuest
+  uSpace uRequest uAnswer uKey uCause
+
+/-! ## Revision decoration of occurrence sources -/
+
+variable {Space : Type uSpace} {Request : Type uRequest}
+  {Answer : Type uAnswer}
+
+/-- Revision identity is independent of occurrence enumeration.  A key may
+depend on both the space and the exact request. -/
+structure RevisionKeying (Space : Type uSpace) (Request : Type uRequest) where
+  Key : Type uKey
+  key : Space → Request → Key
+
+/-- Occurrence terms decorated with an explicit revision/cache key. -/
+inductive RevisionedOccurrenceTerm
+    (source : OccurrenceSource Space Request Answer)
+    (keying : RevisionKeying Space Request) where
+  | request (space : Space) (request : Request)
+  | answer (space : Space) (request : Request) (key : keying.Key)
+      (occurrence : Nat) (answer : Answer)
+
+/-- Revision decoration changes term identity but not occurrence admission:
+every generated answer carries the canonical key of its request. -/
+inductive RevisionedOccurrenceStep [DecidableEq Answer]
+    (source : OccurrenceSource Space Request Answer)
+    (keying : RevisionKeying Space Request) :
+    RevisionedOccurrenceTerm source keying →
+      RevisionedOccurrenceTerm source keying → Prop where
+  | found {space request occurrence answer}
+      (copy : occurrence < Multiset.count answer
+        (source.occurrences space request)) :
+      RevisionedOccurrenceStep source keying (.request space request)
+        (.answer space request (keying.key space request) occurrence answer)
+
+/-- The revision-decorated occurrence GSLT. -/
+def revisionedOccurrenceGSLT [DecidableEq Answer]
+    (source : OccurrenceSource Space Request Answer)
+    (keying : RevisionKeying Space Request) : GSLT where
+  Term := RevisionedOccurrenceTerm source keying
+  equations := ⟨Eq, ⟨Eq.refl, Eq.symm, Eq.trans⟩⟩
+  rewrites := RevisionedOccurrenceStep source keying
+  rewrites_resp_left := by
+    intro sourceTerm sourceTerm' target equal step
+    subst sourceTerm'
+    exact ⟨target, step, rfl⟩
+  rewrites_resp_right := by
+    intro sourceTerm target target' step equal
+    subst target'
+    exact step
+
+@[simp] theorem revisionedOccurrenceGSLT_step_iff [DecidableEq Answer]
+    (source : OccurrenceSource Space Request Answer)
+    (keying : RevisionKeying Space Request)
+    (space : Space) (request : Request) (answer : Answer)
+    (occurrence : Nat) :
+    (revisionedOccurrenceGSLT source keying).Step
+        (.request space request)
+        (.answer space request (keying.key space request) occurrence answer) ↔
+      occurrence < Multiset.count answer
+        (source.occurrences space request) := by
+  constructor
+  · intro step
+    cases step
+    assumption
+  · exact RevisionedOccurrenceStep.found
+
+/-- Add the canonical revision key to every unkeyed occurrence term. -/
+def decorateRevision
+    (source : OccurrenceSource Space Request Answer)
+    (keying : RevisionKeying Space Request) :
+    OccurrenceTerm source → RevisionedOccurrenceTerm source keying
+  | .request space request => .request space request
+  | .answer space request occurrence answer =>
+      .answer space request (keying.key space request) occurrence answer
+
+/-- Forget only the revision key while retaining request and occurrence
+identity. -/
+def forgetRevision
+    (source : OccurrenceSource Space Request Answer)
+    (keying : RevisionKeying Space Request) :
+    RevisionedOccurrenceTerm source keying → OccurrenceTerm source
+  | .request space request => .request space request
+  | .answer space request _ occurrence answer =>
+      .answer space request occurrence answer
+
+/-- Revision decoration retains the complete answer-bag meaning and changes
+only artifact identity. -/
+def revisionedOccurrenceMeaning
+    (source : OccurrenceSource Space Request Answer)
+    (keying : RevisionKeying Space Request) :
+    RevisionedOccurrenceTerm source keying → Multiset Answer :=
+  occurrenceMeaning source ∘ forgetRevision source keying
+
+/-- Revision-decorated occurrence selection preserves its underlying answer
+bag. -/
+def revisionedOccurrenceElaboration [DecidableEq Answer]
+    (source : OccurrenceSource Space Request Answer)
+    (keying : RevisionKeying Space Request) :
+    GSLT.Elaboration (revisionedOccurrenceGSLT source keying)
+      (Multiset Answer) where
+  elaborate := fun term => some (revisionedOccurrenceMeaning source keying term)
+  equation := by
+    intro first second equal
+    cases equal
+    rfl
+  rewrite := by
+    intro first second step
+    cases step
+    rfl
+
+@[simp] theorem forgetRevision_decorateRevision
+    (source : OccurrenceSource Space Request Answer)
+    (keying : RevisionKeying Space Request)
+    (term : OccurrenceTerm source) :
+    forgetRevision source keying (decorateRevision source keying term) = term := by
+  cases term <;> rfl
+
+theorem decorateRevision_injective
+    (source : OccurrenceSource Space Request Answer)
+    (keying : RevisionKeying Space Request) :
+    Function.Injective (decorateRevision source keying) := by
+  intro first second equal
+  have forgotten := congrArg (forgetRevision source keying) equal
+  simpa using forgotten
+
+/-- Revision decoration is a faithful structural embedding: it changes
+identity carried by answer artifacts without adding or removing occurrence
+steps between decorated source terms. -/
+def revisionDecorationEmbedding [DecidableEq Answer]
+    (source : OccurrenceSource Space Request Answer)
+    (keying : RevisionKeying Space Request) :
+    GSLT.Embedding (occurrenceGSLT source)
+      (revisionedOccurrenceGSLT source keying) where
+  toFun := decorateRevision source keying
+  injective := decorateRevision_injective source keying
+  equiv_iff := by
+    intro first second
+    change decorateRevision source keying first =
+        decorateRevision source keying second ↔ first = second
+    exact ⟨fun equal => decorateRevision_injective source keying equal,
+      congrArg _⟩
+  step_iff := by
+    intro first second
+    cases first with
+    | request firstSpace firstRequest =>
+        cases second with
+        | request secondSpace secondRequest =>
+            constructor <;> intro step <;> cases step
+        | answer secondSpace secondRequest occurrence answer =>
+            constructor
+            · intro step
+              cases step with
+              | found copy => exact OccurrenceStep.found copy
+            · intro step
+              cases step with
+              | found copy => exact RevisionedOccurrenceStep.found copy
+    | answer firstSpace firstRequest firstOccurrence firstAnswer =>
+        cases second with
+        | request secondSpace secondRequest =>
+            constructor <;> intro step <;> cases step
+        | answer secondSpace secondRequest secondOccurrence secondAnswer =>
+            constructor <;> intro step <;> cases step
+
+/-- The exact observation of revision decoration forgets the key and nothing
+else. -/
+def revisionDecorationObserved [DecidableEq Answer]
+    (source : OccurrenceSource Space Request Answer)
+    (keying : RevisionKeying Space Request) :
+    GSLT.Embedding.Observed (occurrenceGSLT source)
+      (revisionedOccurrenceGSLT source keying) (OccurrenceTerm source) where
+  toEmbedding := revisionDecorationEmbedding source keying
+  observeSource := id
+  observeTarget := forgetRevision source keying
+  preserves := forgetRevision_decorateRevision source keying
+
+/-- At the semantic observation, revision decoration preserves the entire
+answer bag. This is weaker than the exact artifact observation above and is
+named separately to keep those two claims distinct. -/
+def revisionDecorationBagObserved [DecidableEq Answer]
+    (source : OccurrenceSource Space Request Answer)
+    (keying : RevisionKeying Space Request) :
+    GSLT.Embedding.Observed (occurrenceGSLT source)
+      (revisionedOccurrenceGSLT source keying) (Multiset Answer) where
+  toEmbedding := revisionDecorationEmbedding source keying
+  observeSource := occurrenceMeaning source
+  observeTarget := revisionedOccurrenceMeaning source keying
+  preserves := by
+    intro term
+    cases term <;> rfl
+
+/-- A noncanonical keyed answer is outside the image of revision decoration.
+The target carrier may represent such artifacts even though the generated
+step relation only produces canonical keys. -/
+theorem noncanonical_answer_not_in_decoration_image
+    (source : OccurrenceSource Space Request Answer)
+    (keying : RevisionKeying Space Request)
+    (space : Space) (request : Request) (key : keying.Key)
+    (occurrence : Nat) (answer : Answer)
+    (noncanonical : key ≠ keying.key space request) :
+    ∀ term,
+      decorateRevision source keying term ≠
+        RevisionedOccurrenceTerm.answer space request key occurrence answer := by
+  intro term equal
+  cases term with
+  | request => cases equal
+  | answer =>
+      cases equal
+      exact noncanonical rfl
+
+/-- A stronger, independent layer supplies sound and complete explanations
+for admitted answer values. Enumeration alone does not choose this family or
+its evidence vocabulary. -/
+structure CausalOccurrenceSource [DecidableEq Answer]
+    (source : OccurrenceSource Space Request Answer) where
+  Cause : Space → Request → Answer → Type uCause
+  sound : ∀ {space request answer}, Cause space request answer →
+    answer ∈ source.occurrences space request
+  complete : ∀ space request answer,
+    answer ∈ source.occurrences space request →
+      Nonempty (Cause space request answer)
+
+/-- A sound causal layer cannot explain an answer absent from the selected
+occurrence bag. -/
+theorem CausalOccurrenceSource.no_cause_of_not_mem [DecidableEq Answer]
+    {source : OccurrenceSource Space Request Answer}
+    (causal : CausalOccurrenceSource source)
+    {space : Space} {request : Request} {answer : Answer}
+    (absent : answer ∉ source.occurrences space request) :
+    ¬ Nonempty (causal.Cause space request answer) := by
+  rintro ⟨cause⟩
+  exact absent (causal.sound cause)
+
+/-! ## Revisioned operational specification regions -/
+
+end Mettapedia.GSLT.Dynamics.ProofRelevantNeed
+
+namespace Mettapedia.GSLT.Dynamics.OperationalRegion
+
+open Mettapedia.GSLT
+open Mettapedia.GSLT.IndexedOperational
+open Mettapedia.GSLT.Dynamics.OccurrenceSemantics
+open Mettapedia.GSLT.Dynamics.ProofRelevantNeed
+
+/-- A revision layer is selected over an operational point, not baked into
+the definition of that point or its answer source. -/
+structure RevisionLayer {Request Answer : Type} [DecidableEq Answer]
+    (base : OccurrencePoint Request Answer) where
+  keying : RevisionKeying base.Space Request
+  keyDecidableEq : DecidableEq keying.Key
+
+attribute [instance] RevisionLayer.keyDecidableEq
+
+/-- A Prime-shaped operational point: an occurrence host, a selected revision
+decoration, and a total theory faithfully hosting both.  Reflection, causal
+evidence, presentation, and runtime realization remain independent layers. -/
+structure RevisionedPoint (Request Answer : Type) [DecidableEq Answer] where
+  base : OccurrencePoint Request Answer
+  revision : RevisionLayer base
+  total : GSLT
+  baseEmbedding : GSLT.Embedding base.host total
+  revisionEmbedding : GSLT.Embedding
+    (revisionedOccurrenceGSLT base.source revision.keying) total
+
+namespace RevisionedPoint
+
+/-- A typed arrow between revisioned points.  Besides the base square, it
+retains the revision and total-theory translations and both hosting squares. -/
+structure Hom {Request Answer : Type} [DecidableEq Answer]
+    (first second : RevisionedPoint Request Answer) where
+  base : OccurrencePoint.Hom first.base second.base
+  revision : OperationalTranslation
+    (revisionedOccurrenceGSLT first.base.source first.revision.keying)
+    (revisionedOccurrenceGSLT second.base.source second.revision.keying)
+  total : OperationalTranslation first.total second.total
+  decoration_commutes : ∀ term,
+    revision.mapTerm
+        (decorateRevision first.base.source first.revision.keying term) =
+      decorateRevision second.base.source second.revision.keying
+        (base.occurrence.mapTerm term)
+  base_commutes : ∀ term,
+    total.mapTerm (first.baseEmbedding.toFun term) =
+      second.baseEmbedding.toFun (base.host.mapTerm term)
+  revision_commutes : ∀ term,
+    total.mapTerm (first.revisionEmbedding.toFun term) =
+      second.revisionEmbedding.toFun (revision.mapTerm term)
+
+namespace Hom
+
+@[ext]
+theorem ext {Request Answer : Type} [DecidableEq Answer]
+    {first second : RevisionedPoint Request Answer}
+    {left right : Hom first second}
+    (base : left.base = right.base)
+    (revision : left.revision = right.revision)
+    (total : left.total = right.total) : left = right := by
+  cases left
+  cases right
+  cases base
+  cases revision
+  cases total
+  rfl
+
+/-- Identity preserves every selected layer and commuting square. -/
+def id {Request Answer : Type} [DecidableEq Answer]
+    (point : RevisionedPoint Request Answer) : Hom point point where
+  base := OccurrencePoint.Hom.id point.base
+  revision := OperationalTranslation.id _
+  total := OperationalTranslation.id _
+  decoration_commutes := by intro; rfl
+  base_commutes := by intro; rfl
+  revision_commutes := by intro; rfl
+
+/-- Revisioned operational arrows compose without discarding their layer
+squares. -/
+def comp {Request Answer : Type} [DecidableEq Answer]
+    {first middle last : RevisionedPoint Request Answer}
+    (earlier : Hom first middle) (later : Hom middle last) :
+    Hom first last where
+  base := earlier.base.comp later.base
+  revision := earlier.revision.comp later.revision
+  total := earlier.total.comp later.total
+  decoration_commutes := by
+    intro term
+    change later.revision.mapTerm
+        (earlier.revision.mapTerm
+          (decorateRevision first.base.source first.revision.keying term)) =
+      decorateRevision last.base.source last.revision.keying
+        (later.base.occurrence.mapTerm
+          (earlier.base.occurrence.mapTerm term))
+    rw [earlier.decoration_commutes, later.decoration_commutes]
+  base_commutes := by
+    intro term
+    change later.total.mapTerm
+        (earlier.total.mapTerm (first.baseEmbedding.toFun term)) =
+      last.baseEmbedding.toFun
+        (later.base.host.mapTerm (earlier.base.host.mapTerm term))
+    rw [earlier.base_commutes, later.base_commutes]
+  revision_commutes := by
+    intro term
+    change later.total.mapTerm
+        (earlier.total.mapTerm (first.revisionEmbedding.toFun term)) =
+      last.revisionEmbedding.toFun
+        (later.revision.mapTerm (earlier.revision.mapTerm term))
+    rw [earlier.revision_commutes, later.revision_commutes]
+
+end Hom
+
+instance {Request Answer : Type} [DecidableEq Answer] :
+    CategoryTheory.Category (RevisionedPoint Request Answer) where
+  Hom := Hom
+  id := Hom.id
+  comp := Hom.comp
+  id_comp morphism := by
+    apply Hom.ext
+    · apply OccurrencePoint.Hom.ext <;>
+        apply OperationalTranslation.ext <;> rfl
+    · apply OperationalTranslation.ext; rfl
+    · apply OperationalTranslation.ext; rfl
+  comp_id morphism := by
+    apply Hom.ext
+    · apply OccurrencePoint.Hom.ext <;>
+        apply OperationalTranslation.ext <;> rfl
+    · apply OperationalTranslation.ext; rfl
+    · apply OperationalTranslation.ext; rfl
+  assoc first second third := by
+    apply Hom.ext
+    · apply OccurrencePoint.Hom.ext <;>
+        apply OperationalTranslation.ext <;> rfl
+    · apply OperationalTranslation.ext; rfl
+    · apply OperationalTranslation.ext; rfl
+
+/-- Forgetting the selected revision and total host is a functor to the base
+operational region.  This is the proved relationship; no lifting universal
+property is asserted. -/
+def forgetBase {Request Answer : Type} [DecidableEq Answer] :
+    CategoryTheory.Functor (RevisionedPoint Request Answer)
+      (OccurrencePoint Request Answer) where
+  obj point := point.base
+  map morphism := morphism.base
+  map_id _ := rfl
+  map_comp _ _ := rfl
+
+end RevisionedPoint
+
+end Mettapedia.GSLT.Dynamics.OperationalRegion
+
+namespace Mettapedia.GSLT.Dynamics.ProofRelevantNeed
+
+open Mettapedia.GSLT
+open Mettapedia.GSLT.IndexedOperational
+open Mettapedia.GSLT.Core.InteractionEvent
+open Mettapedia.GSLT.Dynamics.OccurrenceSemantics
+
+variable {Space : Type uSpace} {Request : Type uRequest}
+  {Answer : Type uAnswer}
+
+/-! ## Hosting a revision layer over a selected operational point -/
+
+/-- A host term demands revisioned evaluation exactly when it is equivalent
+to an embedded occurrence request and the runtime target is equivalent to the
+corresponding embedded revisioned request. Equivalence closure makes this
+usable with nontrivial host equations. -/
+def HostedRevisionDemand [DecidableEq Answer]
+    (source : OccurrenceSource Space Request Answer)
+    (keying : RevisionKeying Space Request)
+    {host runtime : GSLT}
+    (hostOccurrence : GSLT.Embedding (occurrenceGSLT source) host)
+    (runtimeRevision : GSLT.Embedding
+      (revisionedOccurrenceGSLT source keying) runtime) :
+    host.Term → runtime.Term → Prop :=
+  fun hostTerm runtimeTerm =>
+    ∃ space request,
+      host.Equiv hostTerm
+          (hostOccurrence.toFun (.request space request)) ∧
+        runtime.Equiv runtimeTerm
+          (runtimeRevision.toFun (.request space request))
+
+/-- A revisioned answer returns to a host exactly at the underlying embedded
+occurrence answer. The key is canonical for the selected request. -/
+def HostedRevisionReturn [DecidableEq Answer]
+    (source : OccurrenceSource Space Request Answer)
+    (keying : RevisionKeying Space Request)
+    {host runtime : GSLT}
+    (hostOccurrence : GSLT.Embedding (occurrenceGSLT source) host)
+    (runtimeRevision : GSLT.Embedding
+      (revisionedOccurrenceGSLT source keying) runtime) :
+    runtime.Term → host.Term → Prop :=
+  fun runtimeTerm hostTerm =>
+    ∃ space request occurrence answer,
+      runtime.Equiv runtimeTerm
+          (runtimeRevision.toFun
+            (.answer space request (keying.key space request)
+              occurrence answer)) ∧
+        host.Equiv hostTerm
+          (hostOccurrence.toFun
+            (.answer space request occurrence answer))
+
+/-- Generic assembly seam between a selected occurrence-hosting theory and a
+runtime that hosts its revision decoration. No language name or evaluator
+backend occurs in this construction. -/
+def hostedRevisionInteraction [DecidableEq Answer]
+    (source : OccurrenceSource Space Request Answer)
+    (keying : RevisionKeying Space Request)
+    {host runtime : GSLT}
+    (hostOccurrence : GSLT.Embedding (occurrenceGSLT source) host)
+    (runtimeRevision : GSLT.Embedding
+      (revisionedOccurrenceGSLT source keying) runtime) :
+    GSLT.Interaction host runtime where
+  leftToRight := HostedRevisionDemand source keying
+    hostOccurrence runtimeRevision
+  rightToLeft := HostedRevisionReturn source keying
+    hostOccurrence runtimeRevision
+  leftToRight_resp_left := by
+    intro first second target equivalent crossing
+    rcases crossing with ⟨space, request, firstRequest, targetRequest⟩
+    refine ⟨target, ⟨space, request, ?_, targetRequest⟩,
+      runtime.equations.refl target⟩
+    exact host.equations.trans (host.equations.symm equivalent) firstRequest
+  leftToRight_resp_right := by
+    intro first target target' crossing equivalent
+    rcases crossing with ⟨space, request, firstRequest, targetRequest⟩
+    exact ⟨space, request, firstRequest,
+      runtime.equations.trans (runtime.equations.symm equivalent)
+        targetRequest⟩
+  rightToLeft_resp_left := by
+    intro first second target equivalent crossing
+    rcases crossing with
+      ⟨space, request, occurrence, answer, firstAnswer, targetAnswer⟩
+    refine ⟨target,
+      ⟨space, request, occurrence, answer, ?_, targetAnswer⟩,
+      host.equations.refl target⟩
+    exact runtime.equations.trans (runtime.equations.symm equivalent) firstAnswer
+  rightToLeft_resp_right := by
+    intro first target target' crossing equivalent
+    rcases crossing with
+      ⟨space, request, occurrence, answer, firstAnswer, targetAnswer⟩
+    exact ⟨space, request, occurrence, answer, firstAnswer,
+      host.equations.trans (host.equations.symm equivalent) targetAnswer⟩
+
+/-- Every embedded occurrence request has the generic demand crossing. -/
+theorem hostedRevisionInteraction_demand [DecidableEq Answer]
+    (source : OccurrenceSource Space Request Answer)
+    (keying : RevisionKeying Space Request)
+    {host runtime : GSLT}
+    (hostOccurrence : GSLT.Embedding (occurrenceGSLT source) host)
+    (runtimeRevision : GSLT.Embedding
+      (revisionedOccurrenceGSLT source keying) runtime)
+    (space : Space) (request : Request) :
+    (hostedRevisionInteraction source keying hostOccurrence runtimeRevision).leftToRight
+      (hostOccurrence.toFun (.request space request))
+      (runtimeRevision.toFun (.request space request)) :=
+  ⟨space, request, host.equations.refl _, runtime.equations.refl _⟩
+
+/-- Every canonical revisioned answer has the generic return crossing. -/
+theorem hostedRevisionInteraction_return [DecidableEq Answer]
+    (source : OccurrenceSource Space Request Answer)
+    (keying : RevisionKeying Space Request)
+    {host runtime : GSLT}
+    (hostOccurrence : GSLT.Embedding (occurrenceGSLT source) host)
+    (runtimeRevision : GSLT.Embedding
+      (revisionedOccurrenceGSLT source keying) runtime)
+    (space : Space) (request : Request) (occurrence : Nat)
+    (answer : Answer) :
+    (hostedRevisionInteraction source keying hostOccurrence runtimeRevision).rightToLeft
+      (runtimeRevision.toFun
+        (.answer space request (keying.key space request) occurrence answer))
+      (hostOccurrence.toFun (.answer space request occurrence answer)) :=
+  ⟨space, request, occurrence, answer,
+    runtime.equations.refl _, host.equations.refl _⟩
+
+/-- Negative boundary: a host term outside every embedded request-equivalence
+class cannot enter the revision runtime through this seam. -/
+theorem no_hostedRevisionDemand_of_no_request [DecidableEq Answer]
+    (source : OccurrenceSource Space Request Answer)
+    (keying : RevisionKeying Space Request)
+    {host runtime : GSLT}
+    (hostOccurrence : GSLT.Embedding (occurrenceGSLT source) host)
+    (runtimeRevision : GSLT.Embedding
+      (revisionedOccurrenceGSLT source keying) runtime)
+    (hostTerm : host.Term)
+    (notRequest : ∀ space request,
+      ¬ host.Equiv hostTerm
+        (hostOccurrence.toFun (.request space request))) :
+    ¬ ∃ runtimeTerm,
+      (hostedRevisionInteraction source keying
+        hostOccurrence runtimeRevision).leftToRight hostTerm runtimeTerm := by
+  rintro ⟨runtimeTerm, space, request, equivalent, targetEquivalent⟩
+  exact notRequest space request equivalent
 
 /-! ## Exact operator fragments -/
 

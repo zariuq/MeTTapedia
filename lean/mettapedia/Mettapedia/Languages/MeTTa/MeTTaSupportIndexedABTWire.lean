@@ -21,7 +21,7 @@ inward is ordinary weakening.
 
 The packet codec uses the existing canonical `WireTerm` and `Pattern` codec.
 Consequently the wire theorem is about the same rich pattern universe as the
-Lean semantics rather than a hand-picked surface fragment.
+Lean semantics rather than a hand-picked syntax fragment.
 -/
 
 namespace Mettapedia.Languages.MeTTa.MeTTaSupportIndexedABTWire

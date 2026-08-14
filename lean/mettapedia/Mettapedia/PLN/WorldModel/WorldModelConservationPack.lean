@@ -15,7 +15,7 @@ namespace Mettapedia.PLN.WorldModel.WorldModelConservationPack
 
 open scoped ENNReal
 open Mettapedia.PLN.Evidence.EvidenceClass
-open Mettapedia.PLN.Bridges.ProbabilityTheory.ConjugateEvidenceSurface
+open Mettapedia.PLN.Bridges.ProbabilityTheory.ConjugateEvidenceCore
 open Mettapedia.PLN.WorldModel.PLNWorldModelGeneric
 open Mettapedia.PLN.WorldModel.GenericWorldModelForgetting
 

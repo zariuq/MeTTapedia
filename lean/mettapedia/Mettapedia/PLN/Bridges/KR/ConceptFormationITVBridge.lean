@@ -5,7 +5,7 @@ import Mettapedia.PLN.TruthValues.PLNTruthTower
 # Credal Concept Formation as PLN Width-Complement ITVs
 
 This bridge turns the KR-side credal concept-formation gamble into the PLN
-interval-truth-value surface that uses credal width-complement as credibility.
+interval-truth-value interface that uses credal width-complement as credibility.
 
 It is deliberately finite and projective: the uncertainty is over the finite
 gate family already used by `gateCredalProjectiveSpec`. It does not assert a
@@ -24,7 +24,7 @@ attribute [local instance] Classical.propDecidable
 
 universe u v w x y z
 
-section ObservationSurface
+section ObservationEncoder
 
 variable {Obs : Type u} {Obj : Type v} {Attr : Type w} {Q : Type x} {Gate : Type y}
 variable [AddCommMonoid Q] [Preorder Q]
@@ -39,14 +39,14 @@ noncomputable def conceptFormationWidthComplementITVSourceOfSpec
     {Window : Type z} [LE Window]
     (spec : ProjectiveLocalCredalSpec Window Gate)
     (compatible : spec.hasCompatibleCompletion)
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     ProjectiveCredalWidthComplementITVSource Window Gate :=
   ProjectiveCredalWidthComplementITVSource.finite
     spec compatible
-    (ObservationSurface.conceptFormationGamble S Γ σ A)
-    (ObservationSurface.conceptFormationGamble_in_unit S Γ σ A)
+    (ObservationEncoder.conceptFormationGamble S Γ σ A)
+    (ObservationEncoder.conceptFormationGamble_in_unit S Γ σ A)
 
 /-- Untyped PLN ITV for a concept-formation gamble under an arbitrary
 finite-global projective credal specification. -/
@@ -54,7 +54,7 @@ noncomputable def conceptFormationWidthComplementITVOfSpec
     {Window : Type z} [LE Window]
     (spec : ProjectiveLocalCredalSpec Window Gate)
     (compatible : spec.hasCompatibleCompletion)
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) : ITV :=
   projectiveCredalWidthComplementITV
@@ -66,7 +66,7 @@ noncomputable def conceptFormationTypedWidthComplementITVOfSpec
     {Window : Type z} [LE Window]
     (spec : ProjectiveLocalCredalSpec Window Gate)
     (compatible : spec.hasCompatibleCompletion)
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     TypedITV (projectiveCredalWidthComplementITVSemantics Window Gate) :=
@@ -76,19 +76,19 @@ noncomputable def conceptFormationTypedWidthComplementITVOfSpec
 /-- Source data for the PLN width-complement ITV obtained from an
 observation-level credal concept-formation gamble. -/
 noncomputable def conceptFormationWidthComplementITVSource
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     ProjectiveCredalWidthComplementITVSource PUnit Gate :=
   ProjectiveCredalWidthComplementITVSource.finite
     (gateCredalProjectiveSpec (Gate := Gate))
     (gateCredalProjectiveSpec_hasCompatibleCompletion (Gate := Gate))
-    (ObservationSurface.conceptFormationGamble S Γ σ A)
-    (ObservationSurface.conceptFormationGamble_in_unit S Γ σ A)
+    (ObservationEncoder.conceptFormationGamble S Γ σ A)
+    (ObservationEncoder.conceptFormationGamble_in_unit S Γ σ A)
 
 /-- The untyped PLN ITV for a credal concept-formation gamble. -/
 noncomputable def conceptFormationWidthComplementITV
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) : ITV :=
   projectiveCredalWidthComplementITV
@@ -96,7 +96,7 @@ noncomputable def conceptFormationWidthComplementITV
 
 /-- The typed PLN ITV for a credal concept-formation gamble. -/
 noncomputable def conceptFormationTypedWidthComplementITV
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     TypedITV (projectiveCredalWidthComplementITVSemantics PUnit Gate) :=
@@ -104,66 +104,66 @@ noncomputable def conceptFormationTypedWidthComplementITV
     (conceptFormationWidthComplementITVSource S Γ σ A)
 
 @[simp] theorem conceptFormationWidthComplementITV_lower
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     (conceptFormationWidthComplementITV S Γ σ A).lower =
-      if A ∈ ObservationSurface.lowerConceptFamily S Γ σ then 1 else 0 := by
+      if A ∈ ObservationEncoder.lowerConceptFamily S Γ σ then 1 else 0 := by
   unfold conceptFormationWidthComplementITV conceptFormationWidthComplementITVSource
   rw [projectiveCredalWidthComplementITV_lower]
-  exact ObservationSurface.globalNaturalExtension_conceptFormationGamble_eq S Γ σ A
+  exact ObservationEncoder.globalNaturalExtension_conceptFormationGamble_eq S Γ σ A
 
 @[simp] theorem conceptFormationWidthComplementITV_upper
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     (conceptFormationWidthComplementITV S Γ σ A).upper =
-      if A ∈ ObservationSurface.upperConceptFamily S Γ σ then 1 else 0 := by
+      if A ∈ ObservationEncoder.upperConceptFamily S Γ σ then 1 else 0 := by
   unfold conceptFormationWidthComplementITV conceptFormationWidthComplementITVSource
   dsimp [projectiveCredalWidthComplementITV,
     ProjectiveCredalWidthComplementITVSource.finite]
   simpa [gateCredalProjectiveSpec,
-    ObservationSurface.conceptFormationGamble,
-    ObservationSurface.upperConceptFamily] using
-    ObservationSurface.upperEnvelope_conceptFormationGamble_eq S Γ σ A
+    ObservationEncoder.conceptFormationGamble,
+    ObservationEncoder.upperConceptFamily] using
+    ObservationEncoder.upperEnvelope_conceptFormationGamble_eq S Γ σ A
 
 @[simp] theorem conceptFormationWidthComplementITV_width
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     (conceptFormationWidthComplementITV S Γ σ A).width =
-      if A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-          A ∉ ObservationSurface.lowerConceptFamily S Γ σ then 1 else 0 := by
+      if A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+          A ∉ ObservationEncoder.lowerConceptFamily S Γ σ then 1 else 0 := by
   unfold conceptFormationWidthComplementITV conceptFormationWidthComplementITVSource
   rw [projectiveCredalWidthComplementITV_width]
-  exact ObservationSurface.globalEnvelopeWidth_conceptFormationGamble_eq S Γ σ A
+  exact ObservationEncoder.globalEnvelopeWidth_conceptFormationGamble_eq S Γ σ A
 
 @[simp] theorem conceptFormationWidthComplementITV_credibility
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     (conceptFormationWidthComplementITV S Γ σ A).credibility =
-      if A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-          A ∉ ObservationSurface.lowerConceptFamily S Γ σ then 0 else 1 := by
+      if A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+          A ∉ ObservationEncoder.lowerConceptFamily S Γ σ then 0 else 1 := by
   unfold conceptFormationWidthComplementITV conceptFormationWidthComplementITVSource
   rw [projectiveCredalWidthComplementITV_credibility]
-  exact ObservationSurface.globalEnvelopeWidthComplement_conceptFormationGamble_eq S Γ σ A
+  exact ObservationEncoder.globalEnvelopeWidthComplement_conceptFormationGamble_eq S Γ σ A
 
 @[simp] theorem conceptFormationWidthComplementITV_strength
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     (conceptFormationWidthComplementITV S Γ σ A).strength =
-      if A ∈ ObservationSurface.lowerConceptFamily S Γ σ then 1
-      else if A ∈ ObservationSurface.upperConceptFamily S Γ σ then (1 / 2 : ℝ) else 0 := by
+      if A ∈ ObservationEncoder.lowerConceptFamily S Γ σ then 1
+      else if A ∈ ObservationEncoder.upperConceptFamily S Γ σ then (1 / 2 : ℝ) else 0 := by
   unfold conceptFormationWidthComplementITV conceptFormationWidthComplementITVSource
   rw [projectiveCredalWidthComplementITV_strength]
-  exact ObservationSurface.globalEnvelopeMidpoint_conceptFormationGamble_eq S Γ σ A
+  exact ObservationEncoder.globalEnvelopeMidpoint_conceptFormationGamble_eq S Γ σ A
 
 /-- The concept-formation ITV uses the width-complement convention: uncertainty
 width plus displayed credibility is exactly one. -/
 theorem conceptFormationWidthComplementITV_width_add_credibility
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     (conceptFormationWidthComplementITV S Γ σ A).width +
@@ -178,12 +178,12 @@ theorem conceptFormationWidthComplementITVOfSpec_exact_of_determines
     {Window : Type z} [LE Window]
     (spec : ProjectiveLocalCredalSpec Window Gate)
     (compatible : spec.hasCompatibleCompletion)
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr)
     (hDet :
       spec.determinesGlobalGamble
-        (ObservationSurface.conceptFormationGamble S Γ σ A)) :
+        (ObservationEncoder.conceptFormationGamble S Γ σ A)) :
     (conceptFormationWidthComplementITVOfSpec spec compatible S Γ σ A).lower =
         (conceptFormationWidthComplementITVOfSpec spec compatible S Γ σ A).upper ∧
       (conceptFormationWidthComplementITVOfSpec spec compatible S Γ σ A).width = 0 ∧
@@ -247,12 +247,12 @@ theorem conceptFormationTypedWidthComplementITVOfSpec_exact_of_determines
     {Window : Type z} [LE Window]
     (spec : ProjectiveLocalCredalSpec Window Gate)
     (compatible : spec.hasCompatibleCompletion)
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr)
     (hDet :
       spec.determinesGlobalGamble
-        (ObservationSurface.conceptFormationGamble S Γ σ A)) :
+        (ObservationEncoder.conceptFormationGamble S Γ σ A)) :
     (conceptFormationTypedWidthComplementITVOfSpec spec compatible S Γ σ A).lower =
         (conceptFormationTypedWidthComplementITVOfSpec spec compatible S Γ σ A).upper ∧
       (conceptFormationTypedWidthComplementITVOfSpec spec compatible S Γ σ A).width = 0 ∧
@@ -323,12 +323,12 @@ theorem conceptFormationWidthComplementITVOfSpec_width_pos_of_strictWidth
     {Window : Type z} [LE Window]
     (spec : ProjectiveLocalCredalSpec Window Gate)
     (compatible : spec.hasCompatibleCompletion)
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr)
     (hStrict :
       spec.hasStrictGlobalWidth
-        (ObservationSurface.conceptFormationGamble S Γ σ A)) :
+        (ObservationEncoder.conceptFormationGamble S Γ σ A)) :
     0 < (conceptFormationWidthComplementITVOfSpec spec compatible S Γ σ A).width ∧
       (conceptFormationWidthComplementITVOfSpec spec compatible S Γ σ A).credibility < 1 := by
   let src := conceptFormationWidthComplementITVSourceOfSpec spec compatible S Γ σ A
@@ -355,12 +355,12 @@ theorem conceptFormationTypedWidthComplementITVOfSpec_width_pos_of_strictWidth
     {Window : Type z} [LE Window]
     (spec : ProjectiveLocalCredalSpec Window Gate)
     (compatible : spec.hasCompatibleCompletion)
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr)
     (hStrict :
       spec.hasStrictGlobalWidth
-        (ObservationSurface.conceptFormationGamble S Γ σ A)) :
+        (ObservationEncoder.conceptFormationGamble S Γ σ A)) :
     0 < (conceptFormationTypedWidthComplementITVOfSpec spec compatible S Γ σ A).width ∧
       (conceptFormationTypedWidthComplementITVOfSpec spec compatible S Γ σ A).credibility < 1 := by
   let src := conceptFormationWidthComplementITVSourceOfSpec spec compatible S Γ σ A
@@ -382,83 +382,83 @@ theorem conceptFormationTypedWidthComplementITVOfSpec_width_pos_of_strictWidth
   exact ⟨hWidthPos, hCredLt⟩
 
 @[simp] theorem conceptFormationTypedWidthComplementITV_lower
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     (conceptFormationTypedWidthComplementITV S Γ σ A).lower =
-      if A ∈ ObservationSurface.lowerConceptFamily S Γ σ then 1 else 0 := by
+      if A ∈ ObservationEncoder.lowerConceptFamily S Γ σ then 1 else 0 := by
   unfold conceptFormationTypedWidthComplementITV conceptFormationWidthComplementITVSource
   rw [TypedITV.fromProjectiveCredalWidthComplement_lower]
-  exact ObservationSurface.globalNaturalExtension_conceptFormationGamble_eq S Γ σ A
+  exact ObservationEncoder.globalNaturalExtension_conceptFormationGamble_eq S Γ σ A
 
 @[simp] theorem conceptFormationTypedWidthComplementITV_upper
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     (conceptFormationTypedWidthComplementITV S Γ σ A).upper =
-      if A ∈ ObservationSurface.upperConceptFamily S Γ σ then 1 else 0 := by
+      if A ∈ ObservationEncoder.upperConceptFamily S Γ σ then 1 else 0 := by
   unfold conceptFormationTypedWidthComplementITV conceptFormationWidthComplementITVSource
   dsimp [TypedITV.fromProjectiveCredalWidthComplement, TypedITV.upper,
     TypedITV.value, projectiveCredalWidthComplementITVSemantics,
     projectiveCredalWidthComplementITV,
     ProjectiveCredalWidthComplementITVSource.finite]
   simpa [gateCredalProjectiveSpec,
-    ObservationSurface.conceptFormationGamble,
-    ObservationSurface.upperConceptFamily] using
-    ObservationSurface.upperEnvelope_conceptFormationGamble_eq S Γ σ A
+    ObservationEncoder.conceptFormationGamble,
+    ObservationEncoder.upperConceptFamily] using
+    ObservationEncoder.upperEnvelope_conceptFormationGamble_eq S Γ σ A
 
 @[simp] theorem conceptFormationTypedWidthComplementITV_width
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     (conceptFormationTypedWidthComplementITV S Γ σ A).width =
-      if A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-          A ∉ ObservationSurface.lowerConceptFamily S Γ σ then 1 else 0 := by
+      if A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+          A ∉ ObservationEncoder.lowerConceptFamily S Γ σ then 1 else 0 := by
   unfold conceptFormationTypedWidthComplementITV conceptFormationWidthComplementITVSource
   rw [TypedITV.fromProjectiveCredalWidthComplement_width]
-  exact ObservationSurface.globalEnvelopeWidth_conceptFormationGamble_eq S Γ σ A
+  exact ObservationEncoder.globalEnvelopeWidth_conceptFormationGamble_eq S Γ σ A
 
 @[simp] theorem conceptFormationTypedWidthComplementITV_credibility
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     (conceptFormationTypedWidthComplementITV S Γ σ A).credibility =
-      if A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-          A ∉ ObservationSurface.lowerConceptFamily S Γ σ then 0 else 1 := by
+      if A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+          A ∉ ObservationEncoder.lowerConceptFamily S Γ σ then 0 else 1 := by
   unfold conceptFormationTypedWidthComplementITV conceptFormationWidthComplementITVSource
   rw [TypedITV.fromProjectiveCredalWidthComplement_credibility]
-  exact ObservationSurface.globalEnvelopeWidthComplement_conceptFormationGamble_eq S Γ σ A
+  exact ObservationEncoder.globalEnvelopeWidthComplement_conceptFormationGamble_eq S Γ σ A
 
 @[simp] theorem conceptFormationTypedWidthComplementITV_midpoint
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     (conceptFormationTypedWidthComplementITV S Γ σ A).midpoint =
-      if A ∈ ObservationSurface.lowerConceptFamily S Γ σ then 1
-      else if A ∈ ObservationSurface.upperConceptFamily S Γ σ then (1 / 2 : ℝ) else 0 := by
+      if A ∈ ObservationEncoder.lowerConceptFamily S Γ σ then 1
+      else if A ∈ ObservationEncoder.upperConceptFamily S Γ σ then (1 / 2 : ℝ) else 0 := by
   unfold conceptFormationTypedWidthComplementITV conceptFormationWidthComplementITVSource
   rw [TypedITV.fromProjectiveCredalWidthComplement_midpoint]
-  exact ObservationSurface.globalEnvelopeMidpoint_conceptFormationGamble_eq S Γ σ A
+  exact ObservationEncoder.globalEnvelopeMidpoint_conceptFormationGamble_eq S Γ σ A
 
 /-- One citation theorem for the untyped PLN readout of credal concept
 formation. -/
 theorem conceptFormationWidthComplementITV_readout
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     ((conceptFormationWidthComplementITV S Γ σ A).lower =
-        if A ∈ ObservationSurface.lowerConceptFamily S Γ σ then 1 else 0) ∧
+        if A ∈ ObservationEncoder.lowerConceptFamily S Γ σ then 1 else 0) ∧
       ((conceptFormationWidthComplementITV S Γ σ A).upper =
-        if A ∈ ObservationSurface.upperConceptFamily S Γ σ then 1 else 0) ∧
+        if A ∈ ObservationEncoder.upperConceptFamily S Γ σ then 1 else 0) ∧
       ((conceptFormationWidthComplementITV S Γ σ A).width =
-        if A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-            A ∉ ObservationSurface.lowerConceptFamily S Γ σ then 1 else 0) ∧
+        if A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+            A ∉ ObservationEncoder.lowerConceptFamily S Γ σ then 1 else 0) ∧
       ((conceptFormationWidthComplementITV S Γ σ A).credibility =
-        if A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-            A ∉ ObservationSurface.lowerConceptFamily S Γ σ then 0 else 1) ∧
+        if A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+            A ∉ ObservationEncoder.lowerConceptFamily S Γ σ then 0 else 1) ∧
       ((conceptFormationWidthComplementITV S Γ σ A).strength =
-        if A ∈ ObservationSurface.lowerConceptFamily S Γ σ then 1
-        else if A ∈ ObservationSurface.upperConceptFamily S Γ σ then (1 / 2 : ℝ) else 0) := by
+        if A ∈ ObservationEncoder.lowerConceptFamily S Γ σ then 1
+        else if A ∈ ObservationEncoder.upperConceptFamily S Γ σ then (1 / 2 : ℝ) else 0) := by
   exact ⟨conceptFormationWidthComplementITV_lower S Γ σ A,
     conceptFormationWidthComplementITV_upper S Γ σ A,
     conceptFormationWidthComplementITV_width S Γ σ A,
@@ -468,22 +468,22 @@ theorem conceptFormationWidthComplementITV_readout
 /-- One citation theorem for the typed PLN readout of credal concept
 formation. -/
 theorem conceptFormationTypedWidthComplementITV_readout
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     ((conceptFormationTypedWidthComplementITV S Γ σ A).lower =
-        if A ∈ ObservationSurface.lowerConceptFamily S Γ σ then 1 else 0) ∧
+        if A ∈ ObservationEncoder.lowerConceptFamily S Γ σ then 1 else 0) ∧
       ((conceptFormationTypedWidthComplementITV S Γ σ A).upper =
-        if A ∈ ObservationSurface.upperConceptFamily S Γ σ then 1 else 0) ∧
+        if A ∈ ObservationEncoder.upperConceptFamily S Γ σ then 1 else 0) ∧
       ((conceptFormationTypedWidthComplementITV S Γ σ A).width =
-        if A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-            A ∉ ObservationSurface.lowerConceptFamily S Γ σ then 1 else 0) ∧
+        if A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+            A ∉ ObservationEncoder.lowerConceptFamily S Γ σ then 1 else 0) ∧
       ((conceptFormationTypedWidthComplementITV S Γ σ A).credibility =
-        if A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-            A ∉ ObservationSurface.lowerConceptFamily S Γ σ then 0 else 1) ∧
+        if A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+            A ∉ ObservationEncoder.lowerConceptFamily S Γ σ then 0 else 1) ∧
       ((conceptFormationTypedWidthComplementITV S Γ σ A).midpoint =
-        if A ∈ ObservationSurface.lowerConceptFamily S Γ σ then 1
-        else if A ∈ ObservationSurface.upperConceptFamily S Γ σ then (1 / 2 : ℝ) else 0) := by
+        if A ∈ ObservationEncoder.lowerConceptFamily S Γ σ then 1
+        else if A ∈ ObservationEncoder.upperConceptFamily S Γ σ then (1 / 2 : ℝ) else 0) := by
   exact ⟨conceptFormationTypedWidthComplementITV_lower S Γ σ A,
     conceptFormationTypedWidthComplementITV_upper S Γ σ A,
     conceptFormationTypedWidthComplementITV_width S Γ σ A,
@@ -494,12 +494,12 @@ theorem conceptFormationTypedWidthComplementITV_readout
 untyped displayed PLN ITV is exact: lower and upper coincide, width is zero,
 credibility is one, and the displayed strength is the lower endpoint. -/
 theorem conceptFormationWidthComplementITV_exact_of_determines
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr)
     (hDet :
       (gateCredalProjectiveSpec (Gate := Gate)).determinesGlobalGamble
-        (ObservationSurface.conceptFormationGamble S Γ σ A)) :
+        (ObservationEncoder.conceptFormationGamble S Γ σ A)) :
     (conceptFormationWidthComplementITV S Γ σ A).lower =
         (conceptFormationWidthComplementITV S Γ σ A).upper ∧
       (conceptFormationWidthComplementITV S Γ σ A).width = 0 ∧
@@ -507,13 +507,13 @@ theorem conceptFormationWidthComplementITV_exact_of_determines
       (conceptFormationWidthComplementITV S Γ σ A).strength =
         (conceptFormationWidthComplementITV S Γ σ A).lower := by
   have hNoGap :
-      ¬ (A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-          A ∉ ObservationSurface.lowerConceptFamily S Γ σ) :=
-    (ObservationSurface.gateCredalProjectiveSpec_determinesGlobalGamble_conceptFormationGamble_iff
+      ¬ (A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+          A ∉ ObservationEncoder.lowerConceptFamily S Γ σ) :=
+    (ObservationEncoder.gateCredalProjectiveSpec_determinesGlobalGamble_conceptFormationGamble_iff
       S Γ σ A).mp hDet
-  by_cases hLower : A ∈ ObservationSurface.lowerConceptFamily S Γ σ
-  · have hUpper : A ∈ ObservationSurface.upperConceptFamily S Γ σ :=
-      ObservationSurface.lowerConceptFamily_subset_upperConceptFamily S Γ σ hLower
+  by_cases hLower : A ∈ ObservationEncoder.lowerConceptFamily S Γ σ
+  · have hUpper : A ∈ ObservationEncoder.upperConceptFamily S Γ σ :=
+      ObservationEncoder.lowerConceptFamily_subset_upperConceptFamily S Γ σ hLower
     refine ⟨?_, ?_, ?_, ?_⟩
     · simp [hLower, hUpper]
     · simp [hLower, hUpper]
@@ -521,7 +521,7 @@ theorem conceptFormationWidthComplementITV_exact_of_determines
     · rw [conceptFormationWidthComplementITV_strength,
         conceptFormationWidthComplementITV_lower]
       simp [hLower]
-  · have hUpper : A ∉ ObservationSurface.upperConceptFamily S Γ σ := by
+  · have hUpper : A ∉ ObservationEncoder.upperConceptFamily S Γ σ := by
       intro hUpper
       exact hNoGap ⟨hUpper, hLower⟩
     refine ⟨?_, ?_, ?_, ?_⟩
@@ -536,12 +536,12 @@ theorem conceptFormationWidthComplementITV_exact_of_determines
 typed displayed PLN ITV is exact: lower and upper coincide, width is zero,
 credibility is one, and the displayed midpoint is the lower endpoint. -/
 theorem conceptFormationTypedWidthComplementITV_exact_of_determines
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr)
     (hDet :
       (gateCredalProjectiveSpec (Gate := Gate)).determinesGlobalGamble
-        (ObservationSurface.conceptFormationGamble S Γ σ A)) :
+        (ObservationEncoder.conceptFormationGamble S Γ σ A)) :
     (conceptFormationTypedWidthComplementITV S Γ σ A).lower =
         (conceptFormationTypedWidthComplementITV S Γ σ A).upper ∧
       (conceptFormationTypedWidthComplementITV S Γ σ A).width = 0 ∧
@@ -549,13 +549,13 @@ theorem conceptFormationTypedWidthComplementITV_exact_of_determines
       (conceptFormationTypedWidthComplementITV S Γ σ A).midpoint =
         (conceptFormationTypedWidthComplementITV S Γ σ A).lower := by
   have hNoGap :
-      ¬ (A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-          A ∉ ObservationSurface.lowerConceptFamily S Γ σ) :=
-    (ObservationSurface.gateCredalProjectiveSpec_determinesGlobalGamble_conceptFormationGamble_iff
+      ¬ (A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+          A ∉ ObservationEncoder.lowerConceptFamily S Γ σ) :=
+    (ObservationEncoder.gateCredalProjectiveSpec_determinesGlobalGamble_conceptFormationGamble_iff
       S Γ σ A).mp hDet
-  by_cases hLower : A ∈ ObservationSurface.lowerConceptFamily S Γ σ
-  · have hUpper : A ∈ ObservationSurface.upperConceptFamily S Γ σ :=
-      ObservationSurface.lowerConceptFamily_subset_upperConceptFamily S Γ σ hLower
+  by_cases hLower : A ∈ ObservationEncoder.lowerConceptFamily S Γ σ
+  · have hUpper : A ∈ ObservationEncoder.upperConceptFamily S Γ σ :=
+      ObservationEncoder.lowerConceptFamily_subset_upperConceptFamily S Γ σ hLower
     refine ⟨?_, ?_, ?_, ?_⟩
     · simp [hLower, hUpper]
     · simp [hLower, hUpper]
@@ -563,7 +563,7 @@ theorem conceptFormationTypedWidthComplementITV_exact_of_determines
     · rw [conceptFormationTypedWidthComplementITV_midpoint,
         conceptFormationTypedWidthComplementITV_lower]
       simp [hLower]
-  · have hUpper : A ∉ ObservationSurface.upperConceptFamily S Γ σ := by
+  · have hUpper : A ∉ ObservationEncoder.upperConceptFamily S Γ σ := by
       intro hUpper
       exact hNoGap ⟨hUpper, hLower⟩
     refine ⟨?_, ?_, ?_, ?_⟩
@@ -579,7 +579,7 @@ process has no lower/upper formed-concept gap.  This is the negative canary for
 the bridge: a permissive-but-not-robust concept forces nonzero width, so exact
 readout cannot be claimed. -/
 theorem conceptFormationWidthComplementITV_exact_iff_noGap
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     ((conceptFormationWidthComplementITV S Γ σ A).lower =
@@ -588,15 +588,15 @@ theorem conceptFormationWidthComplementITV_exact_iff_noGap
       (conceptFormationWidthComplementITV S Γ σ A).credibility = 1 ∧
       (conceptFormationWidthComplementITV S Γ σ A).strength =
         (conceptFormationWidthComplementITV S Γ σ A).lower) ↔
-      ¬ (A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-          A ∉ ObservationSurface.lowerConceptFamily S Γ σ) := by
+      ¬ (A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+          A ∉ ObservationEncoder.lowerConceptFamily S Γ σ) := by
   classical
   constructor
   · intro hExact
     by_contra hNoGap
     have hGap :
-        A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-          A ∉ ObservationSurface.lowerConceptFamily S Γ σ :=
+        A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+          A ∉ ObservationEncoder.lowerConceptFamily S Γ σ :=
       hNoGap
     have hWidth := hExact.2.1
     rw [conceptFormationWidthComplementITV_width] at hWidth
@@ -604,15 +604,15 @@ theorem conceptFormationWidthComplementITV_exact_iff_noGap
   · intro hNoGap
     have hDet :
         (gateCredalProjectiveSpec (Gate := Gate)).determinesGlobalGamble
-          (ObservationSurface.conceptFormationGamble S Γ σ A) :=
-      (ObservationSurface.gateCredalProjectiveSpec_determinesGlobalGamble_conceptFormationGamble_iff
+          (ObservationEncoder.conceptFormationGamble S Γ σ A) :=
+      (ObservationEncoder.gateCredalProjectiveSpec_determinesGlobalGamble_conceptFormationGamble_iff
         S Γ σ A).mpr hNoGap
     exact conceptFormationWidthComplementITV_exact_of_determines S Γ σ A hDet
 
 /-- Typed counterpart of
 `conceptFormationWidthComplementITV_exact_iff_noGap`. -/
 theorem conceptFormationTypedWidthComplementITV_exact_iff_noGap
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     ((conceptFormationTypedWidthComplementITV S Γ σ A).lower =
@@ -621,15 +621,15 @@ theorem conceptFormationTypedWidthComplementITV_exact_iff_noGap
       (conceptFormationTypedWidthComplementITV S Γ σ A).credibility = 1 ∧
       (conceptFormationTypedWidthComplementITV S Γ σ A).midpoint =
         (conceptFormationTypedWidthComplementITV S Γ σ A).lower) ↔
-      ¬ (A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-          A ∉ ObservationSurface.lowerConceptFamily S Γ σ) := by
+      ¬ (A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+          A ∉ ObservationEncoder.lowerConceptFamily S Γ σ) := by
   classical
   constructor
   · intro hExact
     by_contra hNoGap
     have hGap :
-        A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-          A ∉ ObservationSurface.lowerConceptFamily S Γ σ :=
+        A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+          A ∉ ObservationEncoder.lowerConceptFamily S Γ σ :=
       hNoGap
     have hWidth := hExact.2.1
     rw [conceptFormationTypedWidthComplementITV_width] at hWidth
@@ -637,8 +637,8 @@ theorem conceptFormationTypedWidthComplementITV_exact_iff_noGap
   · intro hNoGap
     have hDet :
         (gateCredalProjectiveSpec (Gate := Gate)).determinesGlobalGamble
-          (ObservationSurface.conceptFormationGamble S Γ σ A) :=
-      (ObservationSurface.gateCredalProjectiveSpec_determinesGlobalGamble_conceptFormationGamble_iff
+          (ObservationEncoder.conceptFormationGamble S Γ σ A) :=
+      (ObservationEncoder.gateCredalProjectiveSpec_determinesGlobalGamble_conceptFormationGamble_iff
         S Γ σ A).mpr hNoGap
     exact conceptFormationTypedWidthComplementITV_exact_of_determines S Γ σ A hDet
 
@@ -647,12 +647,12 @@ some admissible gate but not robustly by all gates displays as the full
 semantic interval: lower `0`, upper `1`, width `1`, credibility `0`, and
 midpoint strength `1/2`. -/
 theorem conceptFormationWidthComplementITV_gap_readout
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr)
     (hGap :
-      A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-        A ∉ ObservationSurface.lowerConceptFamily S Γ σ) :
+      A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+        A ∉ ObservationEncoder.lowerConceptFamily S Γ σ) :
     (conceptFormationWidthComplementITV S Γ σ A).lower = 0 ∧
       (conceptFormationWidthComplementITV S Γ σ A).upper = 1 ∧
       (conceptFormationWidthComplementITV S Γ σ A).width = 1 ∧
@@ -666,12 +666,12 @@ theorem conceptFormationWidthComplementITV_gap_readout
 
 /-- Typed counterpart of `conceptFormationWidthComplementITV_gap_readout`. -/
 theorem conceptFormationTypedWidthComplementITV_gap_readout
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr)
     (hGap :
-      A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-        A ∉ ObservationSurface.lowerConceptFamily S Γ σ) :
+      A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+        A ∉ ObservationEncoder.lowerConceptFamily S Γ σ) :
     (conceptFormationTypedWidthComplementITV S Γ σ A).lower = 0 ∧
       (conceptFormationTypedWidthComplementITV S Γ σ A).upper = 1 ∧
       (conceptFormationTypedWidthComplementITV S Γ σ A).width = 1 ∧
@@ -689,7 +689,7 @@ full-width counterpart to `conceptFormationWidthComplementITV_exact_iff_noGap`:
 the display is `[0,1]` precisely when some gate forms the concept and another
 compatible gate does not. -/
 theorem conceptFormationWidthComplementITV_fullReadout_iff_gap
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     ((conceptFormationWidthComplementITV S Γ σ A).lower = 0 ∧
@@ -697,8 +697,8 @@ theorem conceptFormationWidthComplementITV_fullReadout_iff_gap
       (conceptFormationWidthComplementITV S Γ σ A).width = 1 ∧
       (conceptFormationWidthComplementITV S Γ σ A).credibility = 0 ∧
       (conceptFormationWidthComplementITV S Γ σ A).strength = (1 / 2 : ℝ)) ↔
-      A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-        A ∉ ObservationSurface.lowerConceptFamily S Γ σ := by
+      A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+        A ∉ ObservationEncoder.lowerConceptFamily S Γ σ := by
   constructor
   · intro hReadout
     rcases hReadout with ⟨_, _, hWidth, _, _⟩
@@ -712,7 +712,7 @@ theorem conceptFormationWidthComplementITV_fullReadout_iff_gap
 /-- Typed counterpart of
 `conceptFormationWidthComplementITV_fullReadout_iff_gap`. -/
 theorem conceptFormationTypedWidthComplementITV_fullReadout_iff_gap
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     ((conceptFormationTypedWidthComplementITV S Γ σ A).lower = 0 ∧
@@ -720,8 +720,8 @@ theorem conceptFormationTypedWidthComplementITV_fullReadout_iff_gap
       (conceptFormationTypedWidthComplementITV S Γ σ A).width = 1 ∧
       (conceptFormationTypedWidthComplementITV S Γ σ A).credibility = 0 ∧
       (conceptFormationTypedWidthComplementITV S Γ σ A).midpoint = (1 / 2 : ℝ)) ↔
-      A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-        A ∉ ObservationSurface.lowerConceptFamily S Γ σ := by
+      A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+        A ∉ ObservationEncoder.lowerConceptFamily S Γ σ := by
   constructor
   · intro hReadout
     rcases hReadout with ⟨_, _, hWidth, _, _⟩
@@ -735,13 +735,13 @@ theorem conceptFormationTypedWidthComplementITV_fullReadout_iff_gap
 /-- The untyped concept-formation ITV has positive displayed width (and
 credibility below `1`) exactly in the lower/upper concept-family gap case. -/
 theorem conceptFormationWidthComplementITV_width_pos_iff_gap
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     (0 < (conceptFormationWidthComplementITV S Γ σ A).width ∧
       (conceptFormationWidthComplementITV S Γ σ A).credibility < 1) ↔
-      A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-        A ∉ ObservationSurface.lowerConceptFamily S Γ σ := by
+      A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+        A ∉ ObservationEncoder.lowerConceptFamily S Γ σ := by
   constructor
   · intro hDisplay
     rcases hDisplay with ⟨hWidth, _⟩
@@ -757,13 +757,13 @@ theorem conceptFormationWidthComplementITV_width_pos_iff_gap
 /-- Typed counterpart of
 `conceptFormationWidthComplementITV_width_pos_iff_gap`. -/
 theorem conceptFormationTypedWidthComplementITV_width_pos_iff_gap
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     (0 < (conceptFormationTypedWidthComplementITV S Γ σ A).width ∧
       (conceptFormationTypedWidthComplementITV S Γ σ A).credibility < 1) ↔
-      A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-        A ∉ ObservationSurface.lowerConceptFamily S Γ σ := by
+      A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+        A ∉ ObservationEncoder.lowerConceptFamily S Γ σ := by
   constructor
   · intro hDisplay
     rcases hDisplay with ⟨hWidth, _⟩
@@ -781,7 +781,7 @@ point-valued: its lower endpoint, upper endpoint, and midpoint strength all
 equal the value assigned by any compatible precise completion to the
 concept-formation gamble. -/
 theorem conceptFormationWidthComplementITV_preciseCompletionReadout_of_determines
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr)
     (P : PrecisePrevision Gate)
@@ -789,17 +789,17 @@ theorem conceptFormationWidthComplementITV_preciseCompletionReadout_of_determine
       P ∈ (gateCredalProjectiveSpec (Gate := Gate)).projectiveLimitCredalSet)
     (hDet :
       (gateCredalProjectiveSpec (Gate := Gate)).determinesGlobalGamble
-        (ObservationSurface.conceptFormationGamble S Γ σ A)) :
+        (ObservationEncoder.conceptFormationGamble S Γ σ A)) :
     (conceptFormationWidthComplementITV S Γ σ A).lower =
-        P (ObservationSurface.conceptFormationGamble S Γ σ A) ∧
+        P (ObservationEncoder.conceptFormationGamble S Γ σ A) ∧
       (conceptFormationWidthComplementITV S Γ σ A).upper =
-        P (ObservationSurface.conceptFormationGamble S Γ σ A) ∧
+        P (ObservationEncoder.conceptFormationGamble S Γ σ A) ∧
       (conceptFormationWidthComplementITV S Γ σ A).width = 0 ∧
       (conceptFormationWidthComplementITV S Γ σ A).credibility = 1 ∧
       (conceptFormationWidthComplementITV S Γ σ A).strength =
-        P (ObservationSurface.conceptFormationGamble S Γ σ A) := by
+        P (ObservationEncoder.conceptFormationGamble S Γ σ A) := by
   let Spec := gateCredalProjectiveSpec (Gate := Gate)
-  let X := ObservationSurface.conceptFormationGamble S Γ σ A
+  let X := ObservationEncoder.conceptFormationGamble S Γ σ A
   have hBddBelow :
       BddBelow ((fun P' : PrecisePrevision Gate => P' X) ''
         Spec.projectiveLimitCredalSet) :=
@@ -875,7 +875,7 @@ theorem conceptFormationWidthComplementITV_preciseCompletionReadout_of_determine
 Under finite-gate determination, the typed PLN ITV endpoints and midpoint all
 read the same compatible precise-completion value. -/
 theorem conceptFormationTypedWidthComplementITV_preciseCompletionReadout_of_determines
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr)
     (P : PrecisePrevision Gate)
@@ -883,17 +883,17 @@ theorem conceptFormationTypedWidthComplementITV_preciseCompletionReadout_of_dete
       P ∈ (gateCredalProjectiveSpec (Gate := Gate)).projectiveLimitCredalSet)
     (hDet :
       (gateCredalProjectiveSpec (Gate := Gate)).determinesGlobalGamble
-        (ObservationSurface.conceptFormationGamble S Γ σ A)) :
+        (ObservationEncoder.conceptFormationGamble S Γ σ A)) :
     (conceptFormationTypedWidthComplementITV S Γ σ A).lower =
-        P (ObservationSurface.conceptFormationGamble S Γ σ A) ∧
+        P (ObservationEncoder.conceptFormationGamble S Γ σ A) ∧
       (conceptFormationTypedWidthComplementITV S Γ σ A).upper =
-        P (ObservationSurface.conceptFormationGamble S Γ σ A) ∧
+        P (ObservationEncoder.conceptFormationGamble S Γ σ A) ∧
       (conceptFormationTypedWidthComplementITV S Γ σ A).width = 0 ∧
       (conceptFormationTypedWidthComplementITV S Γ σ A).credibility = 1 ∧
       (conceptFormationTypedWidthComplementITV S Γ σ A).midpoint =
-        P (ObservationSurface.conceptFormationGamble S Γ σ A) := by
+        P (ObservationEncoder.conceptFormationGamble S Γ σ A) := by
   let Spec := gateCredalProjectiveSpec (Gate := Gate)
-  let X := ObservationSurface.conceptFormationGamble S Γ σ A
+  let X := ObservationEncoder.conceptFormationGamble S Γ σ A
   have hBddBelow :
       BddBelow ((fun P' : PrecisePrevision Gate => P' X) ''
         Spec.projectiveLimitCredalSet) :=
@@ -964,7 +964,7 @@ theorem conceptFormationTypedWidthComplementITV_preciseCompletionReadout_of_dete
           ProjectiveCredalWidthComplementITVSource.finite, Spec, X]
       _ = P X := hMid
 
-end ObservationSurface
+end ObservationEncoder
 
 /-! ## Proof-carrying profile -/
 
@@ -975,45 +975,45 @@ structure ConceptFormationITVBridgeProfile where
   untypedReadout :
     ∀ {Obs Obj Attr Q Gate : Type} [AddCommMonoid Q] [Preorder Q]
       [Fintype Gate] [Nonempty Gate] [Fintype Obj] [Fintype Attr],
-      (S : ObservationSurface Obs Obj Attr Q) →
+      (S : ObservationEncoder Obs Obj Attr Q) →
       (Γ : Gate → EvidenceGate Q) → (σ : Multiset Obs) →
       (A : DualConcept Obj Attr) →
       ((conceptFormationWidthComplementITV S Γ σ A).lower =
-          if A ∈ ObservationSurface.lowerConceptFamily S Γ σ then 1 else 0) ∧
+          if A ∈ ObservationEncoder.lowerConceptFamily S Γ σ then 1 else 0) ∧
         ((conceptFormationWidthComplementITV S Γ σ A).upper =
-          if A ∈ ObservationSurface.upperConceptFamily S Γ σ then 1 else 0) ∧
+          if A ∈ ObservationEncoder.upperConceptFamily S Γ σ then 1 else 0) ∧
         ((conceptFormationWidthComplementITV S Γ σ A).width =
-          if A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-              A ∉ ObservationSurface.lowerConceptFamily S Γ σ then 1 else 0) ∧
+          if A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+              A ∉ ObservationEncoder.lowerConceptFamily S Γ σ then 1 else 0) ∧
         ((conceptFormationWidthComplementITV S Γ σ A).credibility =
-          if A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-              A ∉ ObservationSurface.lowerConceptFamily S Γ σ then 0 else 1) ∧
+          if A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+              A ∉ ObservationEncoder.lowerConceptFamily S Γ σ then 0 else 1) ∧
         ((conceptFormationWidthComplementITV S Γ σ A).strength =
-          if A ∈ ObservationSurface.lowerConceptFamily S Γ σ then 1
-          else if A ∈ ObservationSurface.upperConceptFamily S Γ σ then (1 / 2 : ℝ) else 0)
+          if A ∈ ObservationEncoder.lowerConceptFamily S Γ σ then 1
+          else if A ∈ ObservationEncoder.upperConceptFamily S Γ σ then (1 / 2 : ℝ) else 0)
   typedReadout :
     ∀ {Obs Obj Attr Q Gate : Type} [AddCommMonoid Q] [Preorder Q]
       [Fintype Gate] [Nonempty Gate] [Fintype Obj] [Fintype Attr],
-      (S : ObservationSurface Obs Obj Attr Q) →
+      (S : ObservationEncoder Obs Obj Attr Q) →
       (Γ : Gate → EvidenceGate Q) → (σ : Multiset Obs) →
       (A : DualConcept Obj Attr) →
       ((conceptFormationTypedWidthComplementITV S Γ σ A).lower =
-          if A ∈ ObservationSurface.lowerConceptFamily S Γ σ then 1 else 0) ∧
+          if A ∈ ObservationEncoder.lowerConceptFamily S Γ σ then 1 else 0) ∧
         ((conceptFormationTypedWidthComplementITV S Γ σ A).upper =
-          if A ∈ ObservationSurface.upperConceptFamily S Γ σ then 1 else 0) ∧
+          if A ∈ ObservationEncoder.upperConceptFamily S Γ σ then 1 else 0) ∧
         ((conceptFormationTypedWidthComplementITV S Γ σ A).width =
-          if A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-              A ∉ ObservationSurface.lowerConceptFamily S Γ σ then 1 else 0) ∧
+          if A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+              A ∉ ObservationEncoder.lowerConceptFamily S Γ σ then 1 else 0) ∧
         ((conceptFormationTypedWidthComplementITV S Γ σ A).credibility =
-          if A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-              A ∉ ObservationSurface.lowerConceptFamily S Γ σ then 0 else 1) ∧
+          if A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+              A ∉ ObservationEncoder.lowerConceptFamily S Γ σ then 0 else 1) ∧
         ((conceptFormationTypedWidthComplementITV S Γ σ A).midpoint =
-          if A ∈ ObservationSurface.lowerConceptFamily S Γ σ then 1
-          else if A ∈ ObservationSurface.upperConceptFamily S Γ σ then (1 / 2 : ℝ) else 0)
+          if A ∈ ObservationEncoder.lowerConceptFamily S Γ σ then 1
+          else if A ∈ ObservationEncoder.upperConceptFamily S Γ σ then (1 / 2 : ℝ) else 0)
   widthAddCredibility :
     ∀ {Obs Obj Attr Q Gate : Type} [AddCommMonoid Q] [Preorder Q]
       [Fintype Gate] [Nonempty Gate] [Fintype Obj] [Fintype Attr],
-      (S : ObservationSurface Obs Obj Attr Q) →
+      (S : ObservationEncoder Obs Obj Attr Q) →
       (Γ : Gate → EvidenceGate Q) → (σ : Multiset Obs) →
       (A : DualConcept Obj Attr) →
       (conceptFormationWidthComplementITV S Γ σ A).width +
@@ -1021,12 +1021,12 @@ structure ConceptFormationITVBridgeProfile where
   untypedExactOfDetermines :
     ∀ {Obs Obj Attr Q Gate : Type} [AddCommMonoid Q] [Preorder Q]
       [Fintype Gate] [Nonempty Gate] [Fintype Obj] [Fintype Attr],
-      (S : ObservationSurface Obs Obj Attr Q) →
+      (S : ObservationEncoder Obs Obj Attr Q) →
       (Γ : Gate → EvidenceGate Q) → (σ : Multiset Obs) →
       (A : DualConcept Obj Attr) →
       (hDet :
         (gateCredalProjectiveSpec (Gate := Gate)).determinesGlobalGamble
-          (ObservationSurface.conceptFormationGamble S Γ σ A)) →
+          (ObservationEncoder.conceptFormationGamble S Γ σ A)) →
       (conceptFormationWidthComplementITV S Γ σ A).lower =
           (conceptFormationWidthComplementITV S Γ σ A).upper ∧
         (conceptFormationWidthComplementITV S Γ σ A).width = 0 ∧
@@ -1036,12 +1036,12 @@ structure ConceptFormationITVBridgeProfile where
   typedExactOfDetermines :
     ∀ {Obs Obj Attr Q Gate : Type} [AddCommMonoid Q] [Preorder Q]
       [Fintype Gate] [Nonempty Gate] [Fintype Obj] [Fintype Attr],
-      (S : ObservationSurface Obs Obj Attr Q) →
+      (S : ObservationEncoder Obs Obj Attr Q) →
       (Γ : Gate → EvidenceGate Q) → (σ : Multiset Obs) →
       (A : DualConcept Obj Attr) →
       (hDet :
         (gateCredalProjectiveSpec (Gate := Gate)).determinesGlobalGamble
-          (ObservationSurface.conceptFormationGamble S Γ σ A)) →
+          (ObservationEncoder.conceptFormationGamble S Γ σ A)) →
       (conceptFormationTypedWidthComplementITV S Γ σ A).lower =
           (conceptFormationTypedWidthComplementITV S Γ σ A).upper ∧
         (conceptFormationTypedWidthComplementITV S Γ σ A).width = 0 ∧
@@ -1051,7 +1051,7 @@ structure ConceptFormationITVBridgeProfile where
   untypedExactIffNoGap :
     ∀ {Obs Obj Attr Q Gate : Type} [AddCommMonoid Q] [Preorder Q]
       [Fintype Gate] [Nonempty Gate] [Fintype Obj] [Fintype Attr],
-      (S : ObservationSurface Obs Obj Attr Q) →
+      (S : ObservationEncoder Obs Obj Attr Q) →
       (Γ : Gate → EvidenceGate Q) → (σ : Multiset Obs) →
       (A : DualConcept Obj Attr) →
       ((conceptFormationWidthComplementITV S Γ σ A).lower =
@@ -1060,12 +1060,12 @@ structure ConceptFormationITVBridgeProfile where
         (conceptFormationWidthComplementITV S Γ σ A).credibility = 1 ∧
         (conceptFormationWidthComplementITV S Γ σ A).strength =
           (conceptFormationWidthComplementITV S Γ σ A).lower) ↔
-        ¬ (A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-          A ∉ ObservationSurface.lowerConceptFamily S Γ σ)
+        ¬ (A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+          A ∉ ObservationEncoder.lowerConceptFamily S Γ σ)
   typedExactIffNoGap :
     ∀ {Obs Obj Attr Q Gate : Type} [AddCommMonoid Q] [Preorder Q]
       [Fintype Gate] [Nonempty Gate] [Fintype Obj] [Fintype Attr],
-      (S : ObservationSurface Obs Obj Attr Q) →
+      (S : ObservationEncoder Obs Obj Attr Q) →
       (Γ : Gate → EvidenceGate Q) → (σ : Multiset Obs) →
       (A : DualConcept Obj Attr) →
       ((conceptFormationTypedWidthComplementITV S Γ σ A).lower =
@@ -1074,12 +1074,12 @@ structure ConceptFormationITVBridgeProfile where
         (conceptFormationTypedWidthComplementITV S Γ σ A).credibility = 1 ∧
         (conceptFormationTypedWidthComplementITV S Γ σ A).midpoint =
           (conceptFormationTypedWidthComplementITV S Γ σ A).lower) ↔
-        ¬ (A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-          A ∉ ObservationSurface.lowerConceptFamily S Γ σ)
+        ¬ (A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+          A ∉ ObservationEncoder.lowerConceptFamily S Γ σ)
   untypedFullReadoutIffGap :
     ∀ {Obs Obj Attr Q Gate : Type} [AddCommMonoid Q] [Preorder Q]
       [Fintype Gate] [Nonempty Gate] [Fintype Obj] [Fintype Attr],
-      (S : ObservationSurface Obs Obj Attr Q) →
+      (S : ObservationEncoder Obs Obj Attr Q) →
       (Γ : Gate → EvidenceGate Q) → (σ : Multiset Obs) →
       (A : DualConcept Obj Attr) →
       ((conceptFormationWidthComplementITV S Γ σ A).lower = 0 ∧
@@ -1087,12 +1087,12 @@ structure ConceptFormationITVBridgeProfile where
         (conceptFormationWidthComplementITV S Γ σ A).width = 1 ∧
         (conceptFormationWidthComplementITV S Γ σ A).credibility = 0 ∧
         (conceptFormationWidthComplementITV S Γ σ A).strength = (1 / 2 : ℝ)) ↔
-        A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-          A ∉ ObservationSurface.lowerConceptFamily S Γ σ
+        A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+          A ∉ ObservationEncoder.lowerConceptFamily S Γ σ
   typedFullReadoutIffGap :
     ∀ {Obs Obj Attr Q Gate : Type} [AddCommMonoid Q] [Preorder Q]
       [Fintype Gate] [Nonempty Gate] [Fintype Obj] [Fintype Attr],
-      (S : ObservationSurface Obs Obj Attr Q) →
+      (S : ObservationEncoder Obs Obj Attr Q) →
       (Γ : Gate → EvidenceGate Q) → (σ : Multiset Obs) →
       (A : DualConcept Obj Attr) →
       ((conceptFormationTypedWidthComplementITV S Γ σ A).lower = 0 ∧
@@ -1101,37 +1101,37 @@ structure ConceptFormationITVBridgeProfile where
         (conceptFormationTypedWidthComplementITV S Γ σ A).credibility = 0 ∧
         (conceptFormationTypedWidthComplementITV S Γ σ A).midpoint =
           (1 / 2 : ℝ)) ↔
-        A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-          A ∉ ObservationSurface.lowerConceptFamily S Γ σ
+        A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+          A ∉ ObservationEncoder.lowerConceptFamily S Γ σ
   untypedWidthPosIffGap :
     ∀ {Obs Obj Attr Q Gate : Type} [AddCommMonoid Q] [Preorder Q]
       [Fintype Gate] [Nonempty Gate] [Fintype Obj] [Fintype Attr],
-      (S : ObservationSurface Obs Obj Attr Q) →
+      (S : ObservationEncoder Obs Obj Attr Q) →
       (Γ : Gate → EvidenceGate Q) → (σ : Multiset Obs) →
       (A : DualConcept Obj Attr) →
       (0 < (conceptFormationWidthComplementITV S Γ σ A).width ∧
         (conceptFormationWidthComplementITV S Γ σ A).credibility < 1) ↔
-        A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-          A ∉ ObservationSurface.lowerConceptFamily S Γ σ
+        A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+          A ∉ ObservationEncoder.lowerConceptFamily S Γ σ
   typedWidthPosIffGap :
     ∀ {Obs Obj Attr Q Gate : Type} [AddCommMonoid Q] [Preorder Q]
       [Fintype Gate] [Nonempty Gate] [Fintype Obj] [Fintype Attr],
-      (S : ObservationSurface Obs Obj Attr Q) →
+      (S : ObservationEncoder Obs Obj Attr Q) →
       (Γ : Gate → EvidenceGate Q) → (σ : Multiset Obs) →
       (A : DualConcept Obj Attr) →
       (0 < (conceptFormationTypedWidthComplementITV S Γ σ A).width ∧
         (conceptFormationTypedWidthComplementITV S Γ σ A).credibility < 1) ↔
-        A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-          A ∉ ObservationSurface.lowerConceptFamily S Γ σ
+        A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+          A ∉ ObservationEncoder.lowerConceptFamily S Γ σ
   untypedGapReadout :
     ∀ {Obs Obj Attr Q Gate : Type} [AddCommMonoid Q] [Preorder Q]
       [Fintype Gate] [Nonempty Gate] [Fintype Obj] [Fintype Attr],
-      (S : ObservationSurface Obs Obj Attr Q) →
+      (S : ObservationEncoder Obs Obj Attr Q) →
       (Γ : Gate → EvidenceGate Q) → (σ : Multiset Obs) →
       (A : DualConcept Obj Attr) →
       (hGap :
-        A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-          A ∉ ObservationSurface.lowerConceptFamily S Γ σ) →
+        A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+          A ∉ ObservationEncoder.lowerConceptFamily S Γ σ) →
       (conceptFormationWidthComplementITV S Γ σ A).lower = 0 ∧
         (conceptFormationWidthComplementITV S Γ σ A).upper = 1 ∧
         (conceptFormationWidthComplementITV S Γ σ A).width = 1 ∧
@@ -1140,12 +1140,12 @@ structure ConceptFormationITVBridgeProfile where
   typedGapReadout :
     ∀ {Obs Obj Attr Q Gate : Type} [AddCommMonoid Q] [Preorder Q]
       [Fintype Gate] [Nonempty Gate] [Fintype Obj] [Fintype Attr],
-      (S : ObservationSurface Obs Obj Attr Q) →
+      (S : ObservationEncoder Obs Obj Attr Q) →
       (Γ : Gate → EvidenceGate Q) → (σ : Multiset Obs) →
       (A : DualConcept Obj Attr) →
       (hGap :
-        A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-          A ∉ ObservationSurface.lowerConceptFamily S Γ σ) →
+        A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+          A ∉ ObservationEncoder.lowerConceptFamily S Γ σ) →
       (conceptFormationTypedWidthComplementITV S Γ σ A).lower = 0 ∧
         (conceptFormationTypedWidthComplementITV S Γ σ A).upper = 1 ∧
         (conceptFormationTypedWidthComplementITV S Γ σ A).width = 1 ∧
@@ -1154,41 +1154,41 @@ structure ConceptFormationITVBridgeProfile where
   untypedPreciseCompletionReadoutOfDetermines :
     ∀ {Obs Obj Attr Q Gate : Type} [AddCommMonoid Q] [Preorder Q]
       [Fintype Gate] [Nonempty Gate] [Fintype Obj] [Fintype Attr],
-      (S : ObservationSurface Obs Obj Attr Q) →
+      (S : ObservationEncoder Obs Obj Attr Q) →
       (Γ : Gate → EvidenceGate Q) → (σ : Multiset Obs) →
       (A : DualConcept Obj Attr) →
       (P : PrecisePrevision Gate) →
       P ∈ (gateCredalProjectiveSpec (Gate := Gate)).projectiveLimitCredalSet →
       (hDet :
         (gateCredalProjectiveSpec (Gate := Gate)).determinesGlobalGamble
-          (ObservationSurface.conceptFormationGamble S Γ σ A)) →
+          (ObservationEncoder.conceptFormationGamble S Γ σ A)) →
       (conceptFormationWidthComplementITV S Γ σ A).lower =
-          P (ObservationSurface.conceptFormationGamble S Γ σ A) ∧
+          P (ObservationEncoder.conceptFormationGamble S Γ σ A) ∧
         (conceptFormationWidthComplementITV S Γ σ A).upper =
-          P (ObservationSurface.conceptFormationGamble S Γ σ A) ∧
+          P (ObservationEncoder.conceptFormationGamble S Γ σ A) ∧
         (conceptFormationWidthComplementITV S Γ σ A).width = 0 ∧
         (conceptFormationWidthComplementITV S Γ σ A).credibility = 1 ∧
         (conceptFormationWidthComplementITV S Γ σ A).strength =
-          P (ObservationSurface.conceptFormationGamble S Γ σ A)
+          P (ObservationEncoder.conceptFormationGamble S Γ σ A)
   typedPreciseCompletionReadoutOfDetermines :
     ∀ {Obs Obj Attr Q Gate : Type} [AddCommMonoid Q] [Preorder Q]
       [Fintype Gate] [Nonempty Gate] [Fintype Obj] [Fintype Attr],
-      (S : ObservationSurface Obs Obj Attr Q) →
+      (S : ObservationEncoder Obs Obj Attr Q) →
       (Γ : Gate → EvidenceGate Q) → (σ : Multiset Obs) →
       (A : DualConcept Obj Attr) →
       (P : PrecisePrevision Gate) →
       P ∈ (gateCredalProjectiveSpec (Gate := Gate)).projectiveLimitCredalSet →
       (hDet :
         (gateCredalProjectiveSpec (Gate := Gate)).determinesGlobalGamble
-          (ObservationSurface.conceptFormationGamble S Γ σ A)) →
+          (ObservationEncoder.conceptFormationGamble S Γ σ A)) →
       (conceptFormationTypedWidthComplementITV S Γ σ A).lower =
-          P (ObservationSurface.conceptFormationGamble S Γ σ A) ∧
+          P (ObservationEncoder.conceptFormationGamble S Γ σ A) ∧
         (conceptFormationTypedWidthComplementITV S Γ σ A).upper =
-          P (ObservationSurface.conceptFormationGamble S Γ σ A) ∧
+          P (ObservationEncoder.conceptFormationGamble S Γ σ A) ∧
         (conceptFormationTypedWidthComplementITV S Γ σ A).width = 0 ∧
         (conceptFormationTypedWidthComplementITV S Γ σ A).credibility = 1 ∧
         (conceptFormationTypedWidthComplementITV S Γ σ A).midpoint =
-          P (ObservationSurface.conceptFormationGamble S Γ σ A)
+          P (ObservationEncoder.conceptFormationGamble S Γ σ A)
 
 /-- Public profile for the finite/projective PLN ITV bridge over credal concept
 formation. -/

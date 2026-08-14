@@ -6,7 +6,7 @@ import Mettapedia.PLN.RuleFamilies.HigherOrder.PLNWorldModelRegimeAdmissibility
 /-!
 # Formed Concept ↔ Fixpoint Closure Bridge
 
-This module connects the new public formed-concept inheritance surface to the
+This module connects the new public formed-concept inheritance interface to the
 generic WM fixpoint-closure calculus.
 
 The bridge is intentionally narrow:

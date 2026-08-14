@@ -7,7 +7,7 @@ import KnuthSkilling.Bridges.ValuationAlgebra
 /-!
 # The KS-Evidence-Measure Triangle
 
-This file relates three nearby surfaces:
+This file relates three nearby interfaces:
 
 - nat-valued binary evidence counts,
 - an additive monotone total-evidence statistic, and
@@ -43,7 +43,7 @@ This file relates three nearby surfaces:
    `∑ q, Θ(extract W q) • δ_q` — the representation composed with Dirac.
 
 4. **The triangle commutes**: Additivity at the evidence, statistic,
-   and measure layers is tracked by the same counting surface.
+   and measure layers is tracked by the same counting interface.
 
 5. **σ-additivity boundary**: Full σ-additivity requires Scott continuity,
    proven non-derivable from base KS axioms alone in

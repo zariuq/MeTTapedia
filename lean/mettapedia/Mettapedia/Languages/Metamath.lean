@@ -62,7 +62,7 @@ import Mettapedia.Languages.Metamath.SourceGSLTParserStatementOutcomes
 import Mettapedia.Languages.Metamath.SourceGSLTParserStatementSimulation
 
 /-!
-# Metamath Bridge Surface
+# Metamath Bridge Interface
 
 Positive example:
 - this umbrella exposes the verified `mm-lean4` bridge layer used for rebuilding

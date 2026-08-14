@@ -2397,7 +2397,7 @@ Theorem: \code{markovTransitionAtom\_semE\_eq\_rowProjection}.
 The \code{markovWMPosteriorChain} (\codepath{MarkovPredictiveChaining.lean:32})
 computes $n$-step arrival probabilities via Chapman-Kolmogorov summation.
 
-\paragraph{Layer 3: Path atom surface.}
+\paragraph{Layer 3: Path atoms.}
 The \code{markov-transition*} atom family (\codepath{MarkovPathXi.lean:43})
 provides direct OSLF semantics for multi-step path queries with concrete
 binary examples (\code{bit001}, \code{bit011}).
@@ -2405,7 +2405,7 @@ binary examples (\code{bit001}, \code{bit011}).
 \paragraph{Key negative result.} PLN's additive deduction screening is
 \emph{unfillable} for Markov carriers. Transition composition requires
 matrix multiplication, not evidence addition. This validates the design
-choice of separate predictive surfaces over retrofitting additive carriers.
+choice of separate predictive models over retrofitting additive carriers.
 
 \subsection{Controlled Hidden Markov Models and Credal Planning}
 
@@ -2424,7 +2424,7 @@ observations.
 Three theorem families now matter operationally.
 
 \paragraph{Observed-only inference.}
-The controlled HMM surface provides exact filtering and smoothing
+The controlled HMM theorem set provides exact filtering and smoothing
 posteriors for completed action--observation traces, together with
 their normalization theorems.  This is the first honest
 observation-only belief-state layer for the finite controlled setting.%
@@ -2435,7 +2435,7 @@ observation-only belief-state layer for the finite controlled setting.%
 Observation-only additive evidence cannot in general determine hidden
 belief states.  The formalization proves a concrete obstruction theorem
 for observation-only carriers and replaces the impossible additive
-surface with a \emph{credal} one: lower and upper latent-state
+theorem set with a \emph{credal} one: lower and upper latent-state
 strengths are packaged as an indefinite truth value, and these bounds
 are propagated into lower and upper finite-horizon decision values.%
 \footnote{Formalized in
@@ -3145,7 +3145,7 @@ the tags, recovering ordinary evidence.  The composition equals
 ordinary extraction---provenance is a refinement, not a replacement.
 This is the same pattern as type erasure in programming languages or
 audit trails in accounting: the enriched representation supports
-richer operations (here, targeted forgetting), and the surface
+richer operations (here, targeted forgetting), and the theorem set
 representation is recovered by forgetting the enrichment.
 
 The concrete realization is \code{TrackedWhichState}: a state that
@@ -3987,7 +3987,7 @@ $s$ or $c$.}
 \end{figure}
 
 \noindent
-The bundled Lean surface
+The bundled Lean API
 \code{PaperFacingDOFForcingSynthesisProfile} collects this map in one
 place: strength as simplex direction, confidence as chart freedom,
 revision and Walley laws as PLN-chart selectors, Beta prior
@@ -4018,7 +4018,7 @@ These are formalized as derivative-backed geodesic handles, not just
 as endpoint identities.
 
 The amplitude boundary is now more than a metaphor.  In the formal
-surface, a complex phase factor is identified with $\exp(i\theta)$, a
+formalization, a complex phase factor is identified with $\exp(i\theta)$, a
 complex amplitude is identified with $r\exp(i\theta)$, and Born's rule
 erases the phase for a single path:
 \[
@@ -6225,7 +6225,7 @@ as any function of only the extensional and ASSOC values.%
 \noindent
 The book's binary mixture is not merely incomplete but false as a
 general law: the full three-channel model (extensional, ASSOC, PAT)
-is needed.  The corrected surface is a typed three-channel mixed
+is needed.  The corrected model is a typed three-channel mixed
 rule with selector-specialized endpoints.%
 \footnote{Formalized in
 \codepath{Mettapedia/Logic/PLNIntensionalAssocPatClosure.lean}
@@ -8067,7 +8067,7 @@ explicitly bounded.  The deontic/value lowering equivalence is proved through
 an explicit labeler-alignment hypothesis --- now instantiated on a live
 labeler/encoder pair with proved end-to-end deontic/value query equalities.
 The practical action-rendering bridges into the meaning/WM layer, and the
-public WM-grounding surface now covers three lanes, not just one: Gewirth PGC,
+public WM-grounding API now covers three lanes, not just one: Gewirth PGC,
 universal-duty/non-maleficence, and universal-duty/consent.  All five ethical
 grounds (asserted, Gewirth PGC, universal duty, care relation, consequentialist)
 now carry non-trivial witnesses via \code{Witnessed}\(_0\).%
@@ -8174,7 +8174,7 @@ demonstrates the ``beyond ProbLog'' value: combining two
 independent sensor sources via $\hplus$ produces correctly
 weighted evidence with increasing confidence.  The ground crown theorem is
 \code{problog\_full\_ground\_equivalence}; the first-order structured crown
-theorem is \code{surface\_equivalence\_of\_structured}; and the
+theorem is \code{source\_equivalence\_of\_structured}; and the
 ``beyond ProbLog'' WM behavior is demonstrated by
 \code{revision\_example} and \code{revision\_confidence\_increases}.%
 \footnote{Formalized in
@@ -8248,7 +8248,7 @@ The WM calculus adds two things:
 \paragraph{Status.}
 The core semantic chain is now complete: ProbLog distribution semantics,
 ProbMeTTa's BDD-WMC execution, and WM-PLN query strength are connected by
-kernel-checked theorems, and the first-order structured/AD surface is included
+kernel-checked theorems, and the structured/AD translation is included
 in the proved story.  What remains is not the semantics but the broader
 application pipeline.  Score-level parity between ProbLog's
 \code{prob\_lift/2} and the WM noisy-OR scorer has been verified on a chr16
@@ -8806,7 +8806,7 @@ However, the finite-alphabet Solomonoff layer and its controlled-HMM
 bridge are now theorem-grade and directly connected to the WM-facing
 development: the finite-alphabet universal mixture is concrete, the
 controlled fixed-action-stream regret theorem is proved, and the
-controlled-HMM export surface reuses it.  What remains open is the
+controlled-HMM export API reuses it.  What remains open is the
 genuinely action-aware universal mixture and the broader integration of
 the exploratory universal-prediction modules.  So the honest status is
 mixed: the core controlled-HMM/Solomonoff seam is now stable and
@@ -10650,8 +10650,8 @@ situation:
 \]
 where $g$ is geography/region, $t$ is horizon, $G$ is
 governance/auditability, $A$ is authoritarian/lock-in pressure,
-$I$ is the incident/harm surface, $U$ is the benefit-side
-capability surface, and $F$ is the forecast-target/reliability
+$I$ is the incident/harm component, $U$ is the benefit-side
+capability component, and $F$ is the forecast-target/reliability
 layer.  Given prior state $W_0$, evidence bundle $E$, and a
 declared scenario-regime scaffold $\mathcal{R}$:
 \[

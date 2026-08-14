@@ -2,10 +2,10 @@ import Mettapedia.Computability.PNP.SharedAffineFeatureFamilies
 import Mathlib.Data.Fin.Tuple.Basic
 
 /-!
-# P vs NP grassroots: a raw exact-surface decision-list family on `(a, b)`
+# P vs NP grassroots: a raw exact-data domain decision-list family on `(a, b)`
 
 This file makes the current shared-feature story fully concrete on the exact
-post-switch surface. The shared extractor is simply the raw visible bit vector
+post-switch data domain. The shared extractor is simply the raw visible bit vector
 obtained by concatenating the retained VV column bits `a` with the side-channel
 bits `b`.
 
@@ -16,7 +16,7 @@ On top of that fixed extractor we define the fixed-order decision-list family:
   to `j`,
 * otherwise return one default output bit.
 
-The resulting exact-surface family has explicit code budget `2k + 1`, and the
+The resulting exact-data domain family has explicit code budget `2k + 1`, and the
 weighted exact-recovery theorem applies to it immediately.
 -/
 
@@ -28,26 +28,26 @@ section
 
 variable {Z : Type*} {k : ℕ}
 
-/-- The canonical raw visible extractor on the exact post-switch surface:
+/-- The canonical raw visible extractor on the exact post-switch data domain:
 concatenate the retained VV column bits `a` with the side-channel bits `b`. -/
-def exactABVisibleData (u : ExactVisiblePostSwitchSurface Z k) : BitVec (k + k) :=
+def exactABVisibleData (u : ExactVisiblePostSwitchData Z k) : BitVec (k + k) :=
   Fin.append u.a u.b
 
-@[simp] theorem exactABVisibleData_tiInputMap (u : ExactVisiblePostSwitchSurface Z k) :
+@[simp] theorem exactABVisibleData_tiInputMap (u : ExactVisiblePostSwitchData Z k) :
     exactABVisibleData (tiInputMap u) = Fin.append u.a (vvToggle u.a u.b) := by
   rfl
 
 /-- Fixed-order decision-list prediction on the raw exact visible bits `(a, b)`. -/
 noncomputable def rawExactABDecisionListPredict
     (code : SharedAffineDecisionListCode (k + k))
-    (u : ExactVisiblePostSwitchSurface Z k) : Bool :=
+    (u : ExactVisiblePostSwitchData Z k) : Bool :=
   match firstActiveFeature? (exactABVisibleData u) with
   | some j => code.1 j
   | none => code.2
 
-/-- The corresponding raw-bit exact-surface family with budget `2k + 1`. -/
+/-- The corresponding raw-bit exact-data domain family with budget `2k + 1`. -/
 noncomputable def rawExactABDecisionListBitFamily (Z : Type*) (k : ℕ) :
-    BitEncodedClassifierFamily (ExactVisiblePostSwitchSurface Z k) (k + k + 1) where
+    BitEncodedClassifierFamily (ExactVisiblePostSwitchData Z k) (k + k + 1) where
   decode raw u :=
     let code := (sharedAffineDecisionListCodeEquivBitCode (k + k)).symm raw
     rawExactABDecisionListPredict code u
@@ -90,8 +90,8 @@ theorem exactVisibleCompressionTarget_of_realizedByRawExactABDecisionListFamily_
 
 theorem rawExactABDecisionListRecoveryLowerBound
     [Fintype Z]
-    (μ : PMF (ExactVisiblePostSwitchSurface Z k))
-    (target : ExactVisiblePostSwitchSurface Z k → Bool) (m : ℕ)
+    (μ : PMF (ExactVisiblePostSwitchData Z k))
+    (target : ExactVisiblePostSwitchData Z k → Bool) (m : ℕ)
     (htarget : ∃ code : SharedAffineDecisionListCode (k + k),
       target = rawExactABDecisionListPredict code)
     {q : ℝ≥0∞}
@@ -113,8 +113,8 @@ theorem rawExactABDecisionListRecoveryLowerBound
 
 theorem rawExactABDecisionListRecoveryLowerBound_twoMul
     [Fintype Z]
-    (μ : PMF (ExactVisiblePostSwitchSurface Z k))
-    (target : ExactVisiblePostSwitchSurface Z k → Bool) (m : ℕ)
+    (μ : PMF (ExactVisiblePostSwitchData Z k))
+    (target : ExactVisiblePostSwitchData Z k → Bool) (m : ℕ)
     (htarget : ∃ code : SharedAffineDecisionListCode (k + k),
       target = rawExactABDecisionListPredict code)
     {q : ℝ≥0∞}

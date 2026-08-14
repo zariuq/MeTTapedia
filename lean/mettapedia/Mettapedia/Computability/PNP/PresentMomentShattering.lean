@@ -2,24 +2,24 @@ import Mettapedia.Languages.ProcessCalculi.RhoCalculus.PresentMoment
 import Mathlib.Data.Finset.Dedup
 
 /-!
-# P vs NP crux: the current rho present-moment surface already realizes arbitrary finite slices
+# P vs NP crux: the current rho present-moment external channels already realizes arbitrary finite slices
 
-The current Meredith route wants a small per-instance observable surface.
-Before talking about compression, it is worth checking the exact surface
-already present in the rho `presentMoment` / `surfaceChannels` layer.
+The current Meredith route wants a small per-instance external-channel set.
+Before talking about compression, it is worth checking the exact external-channel set
+already present in the rho `presentMoment` / `externalChannels` layer.
 
 This file builds a simple finite probe family:
 
 * state `i` is a single output on channel `i`;
 * environment `S` is a flat bag of input guards on the channels in `S`.
 
-On this slice, the current surface is exact:
+On this slice, the current external-channel set is exact:
 
-* channel `i` is in `surfaceChannels(state i, env S)` iff `i ∈ S`;
+* channel `i` is in `externalChannels(state i, env S)` iff `i ∈ S`;
 * the concrete external-present-moment pair
   `(par (env S) hole, channel i)` is present iff `i ∈ S`.
 
-So even before the HML layer, the exact current per-instance observable surface
+So even before the HML layer, the exact current per-instance external-channel set
 already realizes arbitrary finite membership patterns.  Any same-route rescue
 therefore still needs a real compression theorem; it does not get one for free
 from the current Meredith present-moment machinery.
@@ -120,9 +120,9 @@ theorem canInteract_shardFill_iff {s : List Nat} {i : Nat} :
     · rw [List.mem_append]
       simp [shardOutput]
 
-theorem shardChan_mem_surfaceChannels_iff {s : List Nat} {i : Nat} :
-    shardChan i ∈ surfaceChannels (shardOutput i) (shardEnv s) ↔ i ∈ s := by
-  unfold surfaceChannels
+theorem shardChan_mem_externalChannels_iff {s : List Nat} {i : Nat} :
+    shardChan i ∈ externalChannels (shardOutput i) (shardEnv s) ↔ i ∈ s := by
+  unfold externalChannels
   constructor
   · intro h
     rcases h with ⟨_, hcan⟩
@@ -134,17 +134,17 @@ theorem shardChan_mem_surfaceChannels_iff {s : List Nat} {i : Nat} :
     · have hfill := (canInteract_shardFill_iff (s := s) (i := i)).2 hi
       exact (canInteract_perm List.perm_append_comm (shardChan i)).2 hfill
 
-theorem mem_surfaceChannels_shard_iff {s : List Nat} {i : Nat} {x : Pattern} :
-    x ∈ surfaceChannels (shardOutput i) (shardEnv s) ↔ x = shardChan i ∧ i ∈ s := by
+theorem mem_externalChannels_shard_iff {s : List Nat} {i : Nat} {x : Pattern} :
+    x ∈ externalChannels (shardOutput i) (shardEnv s) ↔ x = shardChan i ∧ i ∈ s := by
   constructor
   · intro h
     have hx : x = shardChan i := by
       have hxOut : x ∈ freeNames (shardOutput i) := h.1.1
       simpa [freeNames_shardOutput] using hxOut
     subst x
-    exact ⟨rfl, (shardChan_mem_surfaceChannels_iff (s := s) (i := i)).1 h⟩
+    exact ⟨rfl, (shardChan_mem_externalChannels_iff (s := s) (i := i)).1 h⟩
   · rintro ⟨rfl, hi⟩
-    exact (shardChan_mem_surfaceChannels_iff (s := s) (i := i)).2 hi
+    exact (shardChan_mem_externalChannels_iff (s := s) (i := i)).2 hi
 
 theorem shardExternalPair_mem_presentMomentExt_iff {s : List Nat} {i : Nat} :
     shardExternalPair s i ∈ presentMomentExt (shardOutput i) (shardEnv s) ↔ i ∈ s := by
@@ -156,10 +156,10 @@ theorem shardExternalPair_mem_presentMomentExt_iff {s : List Nat} {i : Nat} :
     have hx : x = shardChan i := by
       simpa [hK] using (congrArg Prod.snd hpair).symm
     subst hx
-    exact (shardChan_mem_surfaceChannels_iff (s := s) (i := i)).1 hxSurf
+    exact (shardChan_mem_externalChannels_iff (s := s) (i := i)).1 hxSurf
   · intro hi
-    have hSurf : shardChan i ∈ surfaceChannels (shardOutput i) (shardEnv s) :=
-      (shardChan_mem_surfaceChannels_iff (s := s) (i := i)).2 hi
+    have hSurf : shardChan i ∈ externalChannels (shardOutput i) (shardEnv s) :=
+      (shardChan_mem_externalChannels_iff (s := s) (i := i)).2 hi
     have hCan :
         canInteract
           (.collection .hashBag
@@ -199,11 +199,11 @@ theorem mem_shardFinEnvList_iff {n : Nat} {S : Finset (Fin n)} {i : Fin n} :
     rw [List.mem_map]
     exact ⟨i, Finset.mem_toList.mpr hi, rfl⟩
 
-theorem shardChan_mem_surfaceChannels_finset_iff {n : Nat}
+theorem shardChan_mem_externalChannels_finset_iff {n : Nat}
     {S : Finset (Fin n)} {i : Fin n} :
-    shardChan i.1 ∈ surfaceChannels (shardOutput i.1) (shardFinEnv S) ↔ i ∈ S := by
+    shardChan i.1 ∈ externalChannels (shardOutput i.1) (shardFinEnv S) ↔ i ∈ S := by
   unfold shardFinEnv
-  rw [shardChan_mem_surfaceChannels_iff]
+  rw [shardChan_mem_externalChannels_iff]
   exact mem_shardFinEnvList_iff
 
 theorem shardExternalPair_mem_presentMomentExt_finset_iff {n : Nat}
@@ -214,23 +214,23 @@ theorem shardExternalPair_mem_presentMomentExt_finset_iff {n : Nat}
   rw [shardExternalPair_mem_presentMomentExt_iff]
   exact mem_shardFinEnvList_iff
 
-/-- The exact present-moment surface signature realized by the finite probe set `S`. -/
-noncomputable def shardSurfaceSignature {n : Nat} (S : Finset (Fin n)) : Fin n → Prop :=
-  fun i => shardChan i.1 ∈ surfaceChannels (shardOutput i.1) (shardFinEnv S)
+/-- The exact present-moment external channels signature realized by the finite probe set `S`. -/
+noncomputable def shardExternalSignature {n : Nat} (S : Finset (Fin n)) : Fin n → Prop :=
+  fun i => shardChan i.1 ∈ externalChannels (shardOutput i.1) (shardFinEnv S)
 
-theorem shardSurfaceSignature_iff_mem {n : Nat}
+theorem shardExternalSignature_iff_mem {n : Nat}
     {S : Finset (Fin n)} {i : Fin n} :
-    shardSurfaceSignature S i ↔ i ∈ S :=
-  shardChan_mem_surfaceChannels_finset_iff
+    shardExternalSignature S i ↔ i ∈ S :=
+  shardChan_mem_externalChannels_finset_iff
 
-theorem shardSurfaceSignature_injective {n : Nat} :
-    Function.Injective (shardSurfaceSignature (n := n)) := by
+theorem shardExternalSignature_injective {n : Nat} :
+    Function.Injective (shardExternalSignature (n := n)) := by
   intro S T hST
   apply Finset.ext
   intro i
-  have hi : shardSurfaceSignature S i ↔ shardSurfaceSignature T i := by
+  have hi : shardExternalSignature S i ↔ shardExternalSignature T i := by
     simpa using congrArg (fun f : Fin n → Prop => f i) hST
-  exact (shardSurfaceSignature_iff_mem (S := S) (i := i)).symm.trans
-    (hi.trans (shardSurfaceSignature_iff_mem (S := T) (i := i)))
+  exact (shardExternalSignature_iff_mem (S := S) (i := i)).symm.trans
+    (hi.trans (shardExternalSignature_iff_mem (S := T) (i := i)))
 
 end Mettapedia.Computability.PNP

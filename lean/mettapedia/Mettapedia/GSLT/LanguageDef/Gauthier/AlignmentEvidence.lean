@@ -18,7 +18,7 @@ import Mettapedia.MachineLearning.SearchGuidance.ProgramDiscovery.EvidenceBridge
 import Mettapedia.MachineLearning.SearchGuidance.ProgramDiscovery.CommonAncestorIndependence
 import Mettapedia.MachineLearning.NeuralNetworks.UnifiedCarrier.CausalEvidenceTransport
 import Mettapedia.PLN.Bridges.PredictiveCoding.GradedTotalityRevision
-import Mettapedia.PLN.WorldModel.SufficientStatisticSurface
+import Mettapedia.PLN.WorldModel.SufficientStatisticEncoder
 
 namespace Mettapedia.GSLT.LanguageDef.GauthierAlignmentEvidence
 
@@ -128,7 +128,7 @@ structure ActionObservation where
   sourceRoot : Nat
   deriving DecidableEq, Repr
 
-/-- Causal identity for precision accounting.  Occurrence path, surface
+/-- Causal identity for precision accounting.  Occurrence path, syntax
 spelling, and descendant lineage are absent by design. -/
 structure ActionInnovationId where
   query : ActionQuery
@@ -152,10 +152,10 @@ def observationPacket (observation : ActionObservation) :
     InnovationPacket ActionInnovationId (GradedActionEvidence operatorCount) :=
   ⟨observation.innovationId, evidenceOfInnovation observation.innovationId⟩
 
-/-- The existing sufficient-statistic surface, specialized to aligned action
+/-- The existing sufficient-statistic encoder, specialized to aligned action
 observations. -/
-def actionEvidenceSurface :
-    SufficientStatisticSurface ActionObservation ActionQuery
+def actionEvidenceEncoder :
+    SufficientStatisticEncoder ActionObservation ActionQuery
       (GradedActionEvidence operatorCount) where
   observe observation query :=
     if observation.query = query then

@@ -3,10 +3,10 @@ import Mettapedia.PLN.Bridges.Languages.PLNWMOSLFBridge
 import Mettapedia.OSLF.Framework.EvidenceSemantics
 
 /-!
-# Direct Xi Surface for Markov Transition Atoms
+# Direct Xi Interface for Markov Transition Atoms
 
 This module packages the honest single-step Markov WM/PLN bridge into a small
-OSLF/Xi-facing surface.
+OSLF/Xi-facing interface.
 
 Design choice:
 
@@ -19,7 +19,7 @@ Positive example:
 * `link(i,j)` reads exactly the `i`-row evidence and projects to `j` vs not-`j`.
 
 Negative example:
-* this surface does not claim that `link(i,j)` and `link(j,m)` compose via the
+* this interface does not claim that `link(i,j)` and `link(j,m)` compose via the
   generic PLN additive screening rules.
 -/
 
@@ -38,7 +38,7 @@ open scoped ENNReal
 
 variable {k : ℕ} [NeZero k]
 
-/-- Fixed atom label for the direct Markov transition Xi surface. -/
+/-- Fixed atom label for the direct Markov transition Xi interface. -/
 def markovTransitionAtomName : String := "markov-transition"
 
 /-- Pattern payload for a single-step Markov transition query. -/
@@ -63,7 +63,7 @@ have special semantics. -/
 def markovTransitionFallbackQuery : MarkovTransitionQuery k :=
   .prop 0
 
-/-- Concrete OSLF atom encoder for the direct Markov Xi surface. -/
+/-- Concrete OSLF atom encoder for the direct Markov Xi interface. -/
 def markovTransitionQueryOfAtom :
     String → Pattern → MarkovTransitionQuery k
   | a, p =>

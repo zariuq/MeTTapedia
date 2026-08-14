@@ -187,20 +187,29 @@ The lambda-theory Th(D) induced by a graph model D is the set of
 -/
 structure LambdaEquation where
   /-- Left-hand side of the equation -/
-  lhs : String  -- Placeholder; would be LambdaTerm
+  lhs : String  -- Current external carrier; interpreted through `Semantics`.
   /-- Right-hand side of the equation -/
-  rhs : String  -- Placeholder; would be LambdaTerm
+  rhs : String
 
-/-- The lambda-theory induced by a graph model.
+/-- The semantic data needed to interpret the current external term carrier
+(`String`) in a graph model.  A future intrinsic lambda-term syntax can
+instantiate the same boundary with its own environment type and interpreter. -/
+structure GraphModel.Semantics (D : GraphModel) where
+  /-- Valuation environments for free variables. -/
+  Environment : Type*
+  /-- Interpretation of one external term under an environment. -/
+  interpret : String → Environment → D.Carrier
 
-    Th(D) = { M = N | ∀ρ. ⟦M⟧ρ = ⟦N⟧ρ in D }
+/-- The lambda-theory induced by a graph model and an explicit term
+interpretation.
 
-    For now, we define this abstractly as a set of equations.
+`Th(D) = { M = N | ∀ρ, ⟦M⟧ρ = ⟦N⟧ρ in D }`.
 -/
-def GraphModel.theory (_D : GraphModel) : Set LambdaEquation :=
-  by
-    -- TODO: Define an interpretation of lambda terms in `D` and define validity of equations.
-    sorry
+def GraphModel.theory (D : GraphModel) (semantics : D.Semantics) :
+    Set LambdaEquation :=
+  { equation | ∀ environment,
+      semantics.interpret equation.lhs environment =
+        semantics.interpret equation.rhs environment }
 
 /-! ## Properties of Graph Theories
 
@@ -214,20 +223,51 @@ Key properties from Bucciarelli-Salibra:
     Formally: Ω = I (or equivalently, Ω = λx.Ω)
     where Ω = (λx.xx)(λx.xx) is the paradigmatic unsolvable term.
 -/
-def LambdaTheorySensible (_T : Set LambdaEquation) : Prop :=
-  by
-    -- TODO: Formalize unsolvability for lambda terms and state sensibility accordingly.
-    sorry
+def LambdaTheorySensible (Unsolvable : String → Prop)
+    (T : Set LambdaEquation) : Prop :=
+  ∀ left right, Unsolvable left → Unsolvable right →
+    ({ lhs := left, rhs := right } : LambdaEquation) ∈ T
 
 /-- A lambda-theory is semisensible if unsolvable terms only equal unsolvables.
 
     This is weaker than sensibility: unsolvables form an equivalence class,
     but we don't require them all to be equal.
 -/
-def LambdaTheorySemisensible (_T : Set LambdaEquation) : Prop :=
-  by
-    -- TODO: Formalize "unsolvable terms only equal unsolvables".
-    sorry
+def LambdaTheorySemisensible (Unsolvable : String → Prop)
+    (T : Set LambdaEquation) : Prop :=
+  ∀ equation ∈ T, Unsolvable equation.lhs ↔ Unsolvable equation.rhs
+
+/-! ## Predicate controls -/
+
+/-- Every pair of unsolvable terms belongs to the total theory. -/
+example (Unsolvable : String → Prop) :
+    LambdaTheorySensible Unsolvable Set.univ := by
+  intro left right leftUnsolvable rightUnsolvable
+  simp
+
+/-- The empty theory is semisensible because it equates no terms. -/
+example (Unsolvable : String → Prop) :
+    LambdaTheorySemisensible Unsolvable ∅ := by
+  intro equation membership
+  cases membership
+
+/-- Sensibility is not automatic: the empty theory fails when an
+unsolvable term exists. -/
+example :
+    ¬ LambdaTheorySensible (fun term => term = "Omega") ∅ := by
+  intro sensible
+  have membership := sensible "Omega" "Omega" rfl rfl
+  simp at membership
+
+/-- Semisensibility is also substantive: the total theory equates an
+unsolvable term with a selected solvable one. -/
+example :
+    ¬ LambdaTheorySemisensible (fun term => term = "Omega") Set.univ := by
+  intro semisensible
+  have preserves := semisensible
+    ({ lhs := "Omega", rhs := "I" } : LambdaEquation) (by simp)
+  have : ("I" : String) = "Omega" := preserves.mp rfl
+  contradiction
 
 /-! ## Summary
 

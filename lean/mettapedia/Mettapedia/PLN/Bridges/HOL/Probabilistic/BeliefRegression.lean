@@ -2,7 +2,7 @@ import Mettapedia.PLN.Bridges.HOL.Probabilistic.BeliefBridge
 import Mettapedia.PLN.Bridges.HOL.Probabilistic.HierarchicalRegression
 
 /-!
-# Regression Surface for the Semantic-vs-Belief ProbHOL Bridge
+# Regression Interface for the Semantic-vs-Belief ProbHOL Bridge
 
 This module packages positive and negative fixtures for the bridge between:
 

@@ -9906,7 +9906,7 @@ private theorem noHashSet_semanticSubstName
 
 /-- `semanticSubstProc` preserves `NoHashSet`, given a `hashSet`-free
 `replacementName`.  The only externally supplied content is `replacementName`
-(substituted for a bound variable, or surfaced through a matched `PDrop`),
+(substituted for a bound variable, or exposed through a matched `PDrop`),
 and every emitted `collection` reuses the source's collection type. -/
 private theorem noHashSet_semanticSubstProc {repl : Pattern} (hr : NoHashSet repl) :
     ∀ {k : Nat} {p : Pattern}, NoHashSet p →
@@ -12789,7 +12789,7 @@ theorem evalDrop_quiescent_run_eq_certified_outcome_image
 /-- Pointwise form of `evalDrop_quiescent_run_eq_certified_outcome_image`: on the ready branch,
 one abstract quiescent accumulator appears iff it is witnessed by some certified quiescent
 operational outcome with the matching SC-aware singleton decoder result.  This is the exact-shell
-operational surface the eventual source-side SC inversion will simplify further by removing the
+operational semantics the eventual source-side SC inversion will simplify further by removing the
 explicit certified witness. -/
 theorem evalDrop_quiescent_run_mem_iff_certified_outcome
     {space : Space} {dispatch : GroundedDispatch}

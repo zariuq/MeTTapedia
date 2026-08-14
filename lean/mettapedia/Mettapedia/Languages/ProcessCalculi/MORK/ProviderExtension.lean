@@ -38,29 +38,29 @@ deriving Repr, DecidableEq
 
 /-- One language-visible source or sink declaration.
 
-`semanticId` names authored behavior, whereas `surface` is the spelling used
+`semanticId` names authored behavior, whereas `interface` is the spelling used
 inside an MM2 directive.  A native library registers against the former and
 must separately prove that it realizes the catalog meaning. -/
 structure ProviderDecl where
   role : ProviderRole
-  surface : String
+  interface : String
   arity : Nat
   semanticId : String
 deriving Repr, DecidableEq
 
 /-- Structural source syntax for provider declarations. -/
 inductive ProviderSyntax where
-  | declare (role : ProviderRole) (surface : String) (arity : Nat)
+  | declare (role : ProviderRole) (interface : String) (arity : Nat)
       (semanticId : String)
 deriving Repr, DecidableEq
 
 def encodeProvider (declaration : ProviderDecl) : ProviderSyntax :=
-  .declare declaration.role declaration.surface declaration.arity
+  .declare declaration.role declaration.interface declaration.arity
     declaration.semanticId
 
 def decodeProvider : ProviderSyntax → ProviderDecl
-  | .declare role surface arity semanticId =>
-      { role, surface, arity, semanticId }
+  | .declare role interface arity semanticId =>
+      { role, interface, arity, semanticId }
 
 @[simp] theorem decodeProvider_encodeProvider (declaration : ProviderDecl) :
     decodeProvider (encodeProvider declaration) = declaration := by
@@ -117,17 +117,17 @@ def ProviderDecl.catalogued (catalog : SemanticCatalog Fault)
 
 def ProviderDecl.admissibleFor (catalog : SemanticCatalog Fault)
     (declaration : ProviderDecl) : Bool :=
-  !declaration.surface.isEmpty &&
+  !declaration.interface.isEmpty &&
     !declaration.semanticId.isEmpty &&
     declaration.catalogued catalog
 
-/-- A provider library has unique surfaces on each side of the interaction
+/-- A provider library has unique interfaces on each side of the interaction
 boundary and every semantic identity is supplied by its catalog.  Source and
-sink surfaces may intentionally share a spelling, as comma input/output do. -/
+sink interfaces may intentionally share a spelling, as comma input/output do. -/
 def LibraryAdmissible (catalog : SemanticCatalog Fault)
     (declarations : List ProviderDecl) : Bool :=
   decide (declarations.map (fun declaration =>
-      (declaration.role, declaration.surface))).Nodup &&
+      (declaration.role, declaration.interface))).Nodup &&
     declarations.all (ProviderDecl.admissibleFor catalog)
 
 abbrev AdmittedLibrary (catalog : SemanticCatalog Fault) :=
@@ -187,8 +187,8 @@ def providerAbiLanguage : LanguageDef :=
 
 private def providerOracleName (declaration : ProviderDecl) : String :=
   match declaration.role with
-  | .source => "source/" ++ declaration.surface ++ "/" ++ declaration.semanticId
-  | .sink => "sink/" ++ declaration.surface ++ "/" ++ declaration.semanticId
+  | .source => "source/" ++ declaration.interface ++ "/" ++ declaration.semanticId
+  | .sink => "sink/" ++ declaration.interface ++ "/" ++ declaration.semanticId
 
 /-- Every provider declaration induces a typed oracle interface.  This is the
 projection consumed by a generic FFI generator; the richer provider layer
@@ -211,7 +211,7 @@ theorem toOracleDecl_admissible (declaration : ProviderDecl) :
     Mettapedia.GSLT.LanguageDef.OracleExtension.OracleDecl.admissibleFor
       providerAbiLanguage declaration.toOracleDecl = true := by
   cases declaration with
-  | mk role surface arity semanticId =>
+  | mk role interface arity semanticId =>
       cases role <;>
         simp [ProviderDecl.toOracleDecl, providerOracleName,
           Mettapedia.GSLT.LanguageDef.OracleExtension.OracleDecl.admissibleFor,
@@ -283,7 +283,7 @@ structure NativeSinkRealization (contract : SinkContract Fault)
       contract.run arguments rows (observe native)
 
 /-- Physical implementations are selected by semantic identity, role, and
-arity.  Surface spellings are deliberately absent: aliases are a property of
+arity.  Syntax spellings are deliberately absent: aliases are a property of
 the authored library, not a second implementation identity. -/
 structure NativeProviderKey where
   role : ProviderRole
@@ -323,7 +323,7 @@ structure NativeProviderFactory (catalog : SemanticCatalog Fault)
   unique : (providers.map NativeProviderWitness.nativeKey).Nodup
 
 /-- Every declaration in an authored library resolves to a native witness.
-Because factory keys omit surface spelling, one implementation may realize
+Because factory keys omit syntax spelling, one implementation may realize
 multiple authored aliases without changing their semantics. -/
 def NativeProviderFactory.Covers
     {catalog : SemanticCatalog Fault} {NativeSpace NativeRows : Type}
@@ -439,19 +439,19 @@ noncomputable def supportCoreCatalog : SemanticCatalog String where
     | _ => none
 
 def supportCoreDeclarations : List ProviderDecl :=
-  [ { role := .source, surface := "BTM", arity := 1,
+  [ { role := .source, interface := "BTM", arity := 1,
       semanticId := "support.snapshot-match.v1" }
-  , { role := .source, surface := "==", arity := 2,
+  , { role := .source, interface := "==", arity := 2,
       semanticId := "support.equal.v1" }
-  , { role := .source, surface := "!=", arity := 2,
+  , { role := .source, interface := "!=", arity := 2,
       semanticId := "support.not-equal.v1" }
-  , { role := .sink, surface := "+", arity := 1,
+  , { role := .sink, interface := "+", arity := 1,
       semanticId := "support.add.v1" }
-  , { role := .sink, surface := "-", arity := 1,
+  , { role := .sink, interface := "-", arity := 1,
       semanticId := "support.remove.v1" }
-  , { role := .sink, surface := "head", arity := 2,
+  , { role := .sink, interface := "head", arity := 2,
       semanticId := "support.head.v1" }
-  , { role := .sink, surface := "tail", arity := 2,
+  , { role := .sink, interface := "tail", arity := 2,
       semanticId := "support.tail.v1" } ]
 
 noncomputable def supportCoreLibrary : AdmittedLibrary supportCoreCatalog :=
@@ -633,9 +633,9 @@ theorem cSupportCoreFactory_covers :
       NativeProviderWitness.nativeKey, sourceContractFor, sinkContractFor]
 
 /-- Positive alias canary: physical selection is independent of the authored
-surface spelling. -/
+syntax spelling. -/
 noncomputable def supportAliasLibrary : AdmittedLibrary supportCoreCatalog :=
-  ⟨[{ role := .source, surface := "scan", arity := 1,
+  ⟨[{ role := .source, interface := "scan", arity := 1,
       semanticId := "support.snapshot-match.v1" }], by decide⟩
 
 theorem cSupportCoreFactory_covers_alias :
@@ -652,20 +652,20 @@ example :
       some supportCoreLibrary :=
   layer_elaborate_quote supportCoreCatalog supportCoreLibrary
 
-/-- Negative: a surface without a catalog meaning is rejected. -/
+/-- Negative: a interface without a catalog meaning is rejected. -/
 example :
     LibraryAdmissible supportCoreCatalog
-      [{ role := .sink, surface := "mystery", arity := 1,
+      [{ role := .sink, interface := "mystery", arity := 1,
          semanticId := "support.missing.v1" }] = false := by
   decide
 
-/-- Negative: duplicate source surfaces are rejected even when their semantic
+/-- Negative: duplicate source interfaces are rejected even when their semantic
 identities differ. -/
 example :
     LibraryAdmissible supportCoreCatalog
-      [{ role := .source, surface := "BTM", arity := 1,
+      [{ role := .source, interface := "BTM", arity := 1,
          semanticId := "support.snapshot-match.v1" },
-       { role := .source, surface := "BTM", arity := 2,
+       { role := .source, interface := "BTM", arity := 2,
          semanticId := "support.equal.v1" }] = false := by
   decide
 
@@ -673,7 +673,7 @@ example :
 the wrong arity. -/
 example :
     LibraryAdmissible supportCoreCatalog
-      [{ role := .source, surface := "BTM2", arity := 2,
+      [{ role := .source, interface := "BTM2", arity := 2,
          semanticId := "support.snapshot-match.v1" }] = false := by
   decide
 

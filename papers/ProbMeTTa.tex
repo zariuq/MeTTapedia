@@ -267,7 +267,7 @@ approximately 7{,}200 lines in the verified ProbMeTTa slice with zero
 is approximately 1{,}700 lines; extensions cover annotated disjunctions,
 first-order translation, the explicit runtime evaluation relation, the
 normalized source syntax, literal nonground matching, literal state-space and
-presentation layers, and the end-to-end theorem surface.
+presentation layers, and the end-to-end theorem set.
 
 \subsection{BDD Core (\texttt{Core.lean}, 169 lines)}
 
@@ -420,7 +420,7 @@ The normalization is explicit and intentional:
 
 The source nonground branch
 \verb|match &self (rule $goal $_) $goal|
-is now formalized against the existing LP matching layer. The formal surface
+is now formalized against the existing LP matching layer. The formal API
 returns the list of matching ground heads and the corresponding list of exact
 \texttt{?prob}/\texttt{?prob-given} values, which is closer to the source
 \texttt{match} nondeterminism than the earlier matched-head witness packaging.

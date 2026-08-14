@@ -8,7 +8,7 @@ import Mettapedia.Languages.ProcessCalculi.MORK.CollectionBridge
 # MORK Execution Boundary
 
 Packages the proven MORK execution boundary for the `morkTranslatable` fragment
-of MeTTaIL. This file is a documentation surface — it re-exports the key theorems
+of MeTTaIL. This file is a documentation interface — it re-exports the key theorems
 from `MeTTaILBridge.lean` and states precisely what MORK can and cannot execute.
 
 ## What MORK executes
@@ -47,7 +47,7 @@ The `morkTranslatable` predicate (a decidable `Bool` function) defines the fragm
 
 namespace Mettapedia.Languages.ProcessCalculi.MORK
 
-/-! ## Re-exported boundary surface
+/-! ## Re-exported boundary interface
 
 These are the key definitions and theorems that constitute the MORK execution
 boundary. They are defined in `MeTTaILBridge.lean`; this section makes

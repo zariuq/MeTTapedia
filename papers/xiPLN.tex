@@ -382,13 +382,13 @@ We formalize the correct algebra via \code{markovWMPosteriorChain}
 \end{enumerate}
 
 The \code{markov-transition*} atom family (\codepath{MarkovPathXi.lean:43})
-provides the OSLF surface with concrete binary examples proving end-to-end
+provides the OSLF API with concrete binary examples proving end-to-end
 correctness (\code{bit001\_queryStrength\_transitionMultiset\_eq\_of\_summary}).
 
 \subsection{Lesson for PLN Design}
 
 When evidence doesn't compose additively, don't force it through additive
-carriers. Design specialized surfaces with honest semantics. The PeTTaChainer
+carriers. Design specialized interfaces with honest semantics. The PeTTaChainer
 implementation validates this: its \code{MpFormula} uses strength multiplication
 $s_{AB} \cdot s_{BC}$, not addition---consistent with our mathematical finding.
 
@@ -879,7 +879,7 @@ Categorical WM transport layer (institution satisfaction + hyperdoctrine Beck-Ch
 \code{beckChevalley\_transport\_exists},
 \code{EndpointStatement},
 \code{institution\_beckChevalley\_endpoint},
-\code{endpointSurface\_of\_hyperdoctrine},
+\code{endpointContract\_of\_hyperdoctrine},
 \code{ch8\_institution\_beckChevalley\_endpoint\_id\_fixture},
 \code{ch8\_hol\_categorical\_wrapper\_bool\_fixture},
 \code{ch8\_fol\_categorical\_consequence\_singleton\_fixture} &
@@ -892,7 +892,7 @@ PureKernel closed-judgment $\rightarrow$ WM obligation interface (assumption-par
 \textit{Tags: [PLNBook-Ch8], [PureKernel], [WM], [bridge], [canary]} &
 \code{PureClosedTheoryBridge},
 \code{pureClosedTheoryBridge\_to\_star},
-\code{WMCategoricalEndpointSurface},
+\code{WMCategoricalEndpointContract},
 \code{PureJudgmentWMInterface.profileStepStar\_sound},
 \code{pureTheoryStep\_to\_wmStrengthObligation},
 \code{pureTheoryStep\_to\_wmStrengthObligation\_categorical},
@@ -1601,7 +1601,7 @@ Chapter 11 quantifier layer & Finite-model FO + fuzzy/QFM endpoint families with
 \code{qfm\_composedScore\_eq\_of\_signatureEq},
 \code{qfm\_composedInterval\_iff\_of\_signatureEq} \\
 \hline
-HOL/FOL consequence transfer into WM/PLN transport (categorical surface) & Besides concrete HOL/FOL categorical fixtures, FOL now has a full implication bridge \code{T |- (phi -> psi) <-> singleton consequence on T-models} & \code{multiset\_strength\_le\_of\_pointwise\_categorical},
+HOL/FOL consequence transfer into WM/PLN transport (categorical contract) & Besides concrete HOL/FOL categorical fixtures, FOL now has a full implication bridge \code{T |- (phi -> psi) <-> singleton consequence on T-models} & \code{multiset\_strength\_le\_of\_pointwise\_categorical},
 \code{provable\_imp\_iff\_singletonStrengthLEOnTheory},
 \code{ch8\_hol\_categorical\_wrapper\_bool\_fixture},
 \code{ch8\_fol\_categorical\_consequence\_singleton\_fixture} \\

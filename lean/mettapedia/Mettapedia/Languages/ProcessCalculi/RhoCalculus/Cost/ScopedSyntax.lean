@@ -70,8 +70,8 @@ mutual
     | drop {depth name} :
         CostName.BinderSafeAt depth name →
         CostTerm.BinderSafeAt depth (.drop name)
-    | purse {depth surface stack} :
-        CostTerm.BinderSafeAt depth (.purse surface stack)
+    | purse {depth location stack} :
+        CostTerm.BinderSafeAt depth (.purse location stack)
 end
 
 mutual
@@ -232,7 +232,7 @@ mutual
         · intro safe
           cases safe with
           | drop nameSafe => exact nameSafe
-    | .purse surface stack => by
+    | .purse location stack => by
         constructor
         · intro _; exact .purse
         · intro _; rfl
@@ -328,7 +328,7 @@ mutual
         intro checked
         exact RawCostName.runtimeBinderSafeAt_implies_binderSafeAt depth name
           checked
-    | .purse surface stack => by
+    | .purse location stack => by
         intro _
         rfl
 end
@@ -534,7 +534,7 @@ theorem CostTerm.BinderSafe.components {Ground : Type u} :
             (CostTerm.BinderSafe.components rightSafe)
   | .signed process signature, safe => safe.singleton
   | .drop name, safe => safe.singleton
-  | .purse surface stack, safe => safe.singleton
+  | .purse location stack, safe => safe.singleton
 
 /-- Located purse configurations erase computationally and are binder-safe
 regardless of their bookkeeping locations. -/

@@ -4,7 +4,7 @@ import Mettapedia.KR.ConceptGeometry.AbstractInheritance
 /-!
 # Finite Concept-Family Formation
 
-This module adds the first public finite concept-family surface on top of the
+This module adds the first public finite concept-family interface on top of the
 existing ontology foundations:
 
 - all closed dual concepts for a crisp relation
@@ -172,7 +172,7 @@ noncomputable def formedConceptInterpretationAt
 
 end Mettapedia.KR.ConceptOntology.EvidenceMembershipContext
 
-namespace Mettapedia.KR.ConceptOntology.ObservationSurface
+namespace Mettapedia.KR.ConceptOntology.ObservationEncoder
 
 open Mettapedia.KR.ConceptGeometry.AbstractInheritance
 
@@ -183,20 +183,20 @@ variable [AddCommMonoid Q] [Preorder Q] [Fintype Obj] [Fintype Con]
 
 /-- The carrier of formed concepts induced by aggregated observation evidence. -/
 abbrev FormedConcept
-    (S : ObservationSurface Obs Obj Con Q)
+    (S : ObservationEncoder Obs Obj Con Q)
     (G : EvidenceGate Q) (σ : Multiset Obs) :=
   Mettapedia.KR.ConceptGeometry.AbstractInheritance.FormedConcept G (aggregate S σ)
 
 /-- Finite concept family formed from aggregated observation evidence under a
 gate. -/
 noncomputable def finiteConceptFamily
-    (S : ObservationSurface Obs Obj Con Q)
+    (S : ObservationEncoder Obs Obj Con Q)
     (G : EvidenceGate Q) (σ : Multiset Obs) :
     Finset (Mettapedia.KR.ConceptGeometry.AbstractInheritance.DualConcept Obj Con) :=
   Mettapedia.KR.ConceptGeometry.AbstractInheritance.finiteConceptFamily G (aggregate S σ)
 
 @[simp] theorem mem_finiteConceptFamily_iff
-    (S : ObservationSurface Obs Obj Con Q)
+    (S : ObservationEncoder Obs Obj Con Q)
     (G : EvidenceGate Q) (σ : Multiset Obs)
     (A : Mettapedia.KR.ConceptGeometry.AbstractInheritance.DualConcept Obj Con) :
     A ∈ finiteConceptFamily S G σ ↔
@@ -207,7 +207,7 @@ noncomputable def finiteConceptFamily
     (Obj := Obj) (Attr := Con) (Q := Q) G (aggregate S σ) A
 
 @[simp] theorem not_mem_finiteConceptFamily_iff
-    (S : ObservationSurface Obs Obj Con Q)
+    (S : ObservationEncoder Obs Obj Con Q)
     (G : EvidenceGate Q) (σ : Multiset Obs)
     (A : Mettapedia.KR.ConceptGeometry.AbstractInheritance.DualConcept Obj Con) :
     A ∉ finiteConceptFamily S G σ ↔
@@ -218,15 +218,15 @@ noncomputable def finiteConceptFamily
 /-- Canonical interpretation of formed concepts induced by aggregated
 observations. -/
 noncomputable def formedConceptInterpretation
-    (S : ObservationSurface Obs Obj Con Q)
+    (S : ObservationEncoder Obs Obj Con Q)
     (G : EvidenceGate Q) (σ : Multiset Obs) :
     Mettapedia.KR.ConceptGeometry.AbstractInheritance.Interpretation (FormedConcept S G σ) Obj Con :=
   Mettapedia.KR.ConceptGeometry.AbstractInheritance.formedConceptInterpretation G (aggregate S σ)
 
 @[simp] theorem formedConceptInterpretation_meaning
-    (S : ObservationSurface Obs Obj Con Q)
+    (S : ObservationEncoder Obs Obj Con Q)
     (G : EvidenceGate Q) (σ : Multiset Obs)
     (A : FormedConcept S G σ) :
     (formedConceptInterpretation S G σ).meaning A = A.1 := rfl
 
-end Mettapedia.KR.ConceptOntology.ObservationSurface
+end Mettapedia.KR.ConceptOntology.ObservationEncoder

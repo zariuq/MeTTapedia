@@ -109,7 +109,7 @@ theorem rewriteRule_applyCtx_union_revise
     (WMJudgmentCtx.union_revise hW₁ hW₂)
 
 /-- The same union-context rule firing transported through the ITV judgment
-surface.  The interval value is still the existing ITV view of the derived
+interface.  The interval value is still the existing ITV view of the derived
 state; this theorem only supplies the missing context provenance. -/
 theorem rewriteRule_applyITVCtx_union_revise
     (sem : ITVSemantics Ctx) (ctx : Ctx)
@@ -193,7 +193,7 @@ theorem contextComplete_applyRewriteCtx_canary :
     demoRuleSide_ok
     (WMJudgmentCtx.base demoEvidence (by simp))
 
-/-- A context-complete rule application lifts through the existing ITV surface.
+/-- A context-complete rule application lifts through the existing ITV interface.
 This is the first guarded-rule firing canary: the rule is allowed to compute an
 ITV only because the state is derivable from the active context and the side
 condition has been checked. -/
@@ -307,7 +307,7 @@ theorem requiredContext_subset_applyRewriteCtx_canary :
     demoRuleSide_ok
     (WMJudgmentCtx.base demoEvidence (by simp))
 
-/-- The same required-context firing on the ITV surface. -/
+/-- The same required-context firing on the ITV interface. -/
 theorem requiredContext_subset_applyITVCtx_canary :
     BinaryWorldModel.WMITVJudgmentCtx
       (State := BinaryEvidence) (Query := ContextDemoQuery)
@@ -380,7 +380,7 @@ theorem requiredContext_missing_source_blocks_query_canary :
   rintro ⟨_, hq⟩
   exact requiredContext_missing_source_blocks_state_canary hq.1
 
-/-- The same wrong-source context blocks the ITV surface: there is no
+/-- The same wrong-source context blocks the ITV interface: there is no
 context-indexed ITV readout for a state that the context cannot derive. -/
 theorem requiredContext_missing_source_blocks_ITVCtx_canary :
     ¬ ∃ itv,

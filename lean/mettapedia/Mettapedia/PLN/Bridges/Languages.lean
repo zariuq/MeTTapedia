@@ -12,6 +12,6 @@ import Mettapedia.PLN.Bridges.Languages.WorldModel
 /-!
 # PLN bridges to language runtimes
 
-Interfaces between PLN-native evidence/truth-value surfaces and concrete
+Interfaces between PLN-native evidence/truth-value interfaces and concrete
 language-facing APIs.
 -/

@@ -63,7 +63,7 @@ noncomputable def guardedRevisionManyEvidence
     (xs : List (StampedBinaryEvidence Stamp)) : Option BinaryEvidence :=
   (StampedBinaryEvidence.guardedListRevise xs).map fun r => r.evidence
 
-/-- The guarded stamped-witness surface computes exactly raw finite PLN
+/-- The guarded stamped-witness interface computes exactly raw finite PLN
 Revision on the payloads iff the stamps are pairwise disjoint. -/
 theorem guardedRevisionManyEvidence_eq_some_revisionMany_iff_pairwise
     (xs : List (StampedBinaryEvidence Stamp)) :

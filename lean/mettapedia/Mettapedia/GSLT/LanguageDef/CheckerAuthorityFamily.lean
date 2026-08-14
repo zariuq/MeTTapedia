@@ -206,6 +206,41 @@ def sum
       (right.checker kind).check claim certificate :=
   rfl
 
+/-- Disjointly hosting a second authority family neither enlarges nor shrinks
+the exact certificate scope of a claim from the left family. -/
+theorem sum_left_certified_iff_exists_accepted
+    {LeftKind : Type uLeftKind} {RightKind : Type uRightKind}
+    [DecidableEq LeftKind] [DecidableEq RightKind]
+    (left : AuthorityFamily.{uLeftKind, uLeftClaim, uLeftCertificate}
+      LeftKind)
+    (right : AuthorityFamily.{uRightKind, uRightClaim, uRightCertificate}
+      RightKind)
+    (kind : LeftKind) (claim : left.Claim kind) :
+    left.Certified kind claim <->
+      exists certificate : (sum left right).PackedCertificate,
+        (sum left right).packedChecker.check
+          ⟨Sum.inl kind, ULift.up claim⟩ certificate = true := by
+  change (sum left right).packedCertified
+      (⟨Sum.inl kind, ULift.up claim⟩ : (sum left right).PackedClaim) <-> _
+  exact (sum left right).packedChecker_authority.meaning_iff_exists_certificate _
+
+/-- The same exact-scope preservation holds for claims from the right family. -/
+theorem sum_right_certified_iff_exists_accepted
+    {LeftKind : Type uLeftKind} {RightKind : Type uRightKind}
+    [DecidableEq LeftKind] [DecidableEq RightKind]
+    (left : AuthorityFamily.{uLeftKind, uLeftClaim, uLeftCertificate}
+      LeftKind)
+    (right : AuthorityFamily.{uRightKind, uRightClaim, uRightCertificate}
+      RightKind)
+    (kind : RightKind) (claim : right.Claim kind) :
+    right.Certified kind claim <->
+      exists certificate : (sum left right).PackedCertificate,
+        (sum left right).packedChecker.check
+          ⟨Sum.inr kind, ULift.up claim⟩ certificate = true := by
+  change (sum left right).packedCertified
+      (⟨Sum.inr kind, ULift.up claim⟩ : (sum left right).PackedClaim) <-> _
+  exact (sum left right).packedChecker_authority.meaning_iff_exists_certificate _
+
 end AuthorityFamily
 
 /-! ## A concrete cross-tag rejection canary -/

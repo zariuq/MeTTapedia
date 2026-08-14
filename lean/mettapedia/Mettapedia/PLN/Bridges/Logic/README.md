@@ -1,7 +1,7 @@
 # PLN bridges to logic
 
 This directory contains PLN-facing bridges from logical semantics into evidence
-and world-model surfaces.
+and world-model interfaces.
 
 ## Entry points
 
@@ -15,7 +15,7 @@ and world-model surfaces.
   - Relates Boolean and Heyting readouts where the algebraic structure permits
     it.
 - `WorldModel`
-  - Collects logic-to-world-model bridge surfaces.
+  - Collects logic-to-world-model bridge interfaces.
 
 ## LC status
 

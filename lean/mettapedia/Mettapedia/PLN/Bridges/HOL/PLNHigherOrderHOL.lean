@@ -26,6 +26,6 @@ Public entrypoint for the soundness-first HO PLN layer built on:
 - the real HOL world-model bridge,
 - the credal/QFM predicate-rule bridge for higher-order PLN truth values,
 - and the no-independence deduction interval transport from HOL strengths into
-  the shared PLN deduction ITV surface, including the source-rule and sink-rule
+  the shared PLN deduction ITV interface, including the source-rule and sink-rule
   induction/abduction interval lifts.
 -/

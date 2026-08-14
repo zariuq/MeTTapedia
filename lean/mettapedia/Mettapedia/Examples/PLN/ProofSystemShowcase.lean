@@ -150,7 +150,7 @@ PLN is a classical proof system with:
 - Universality (every typed observation space → unique world model)
 - Quantum extension (ℂ carrier at the orthomodular vertex)
 
-The theorem surfaces above are closed and avoid native-decision shortcuts or
+The theorem families above are closed and avoid native-decision shortcuts or
 extra axioms beyond the accepted Lean footprint. -/
 
 end Mettapedia.Examples.PLN.ProofSystemShowcase

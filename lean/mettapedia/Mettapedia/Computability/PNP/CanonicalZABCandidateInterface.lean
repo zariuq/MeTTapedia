@@ -3,7 +3,7 @@ import Mettapedia.Computability.PNP.CanonicalZABTargetRoute
 /-!
 # P vs NP grassroots: canonical exact `(zfeat(z), a, b)` candidate interface
 
-This file packages the most concrete manuscript-facing exact-surface route into
+This file packages the most concrete manuscript-facing exact-data domain route into
 one data object.
 
 The remaining burden is:
@@ -67,7 +67,7 @@ theorem CanonicalZABDecisionListCandidateData.recoveryLowerBound
     (h :
       CanonicalZABDecisionListCandidateData
         (Z := Z) (r := r) (k := k) (Index := Index) zfeat G)
-    (μ : PMF (ExactVisiblePostSwitchSurface Z k))
+    (μ : PMF (ExactVisiblePostSwitchData Z k))
     (i : Index) (m : ℕ)
     {q : ℝ≥0∞}
     (hq :

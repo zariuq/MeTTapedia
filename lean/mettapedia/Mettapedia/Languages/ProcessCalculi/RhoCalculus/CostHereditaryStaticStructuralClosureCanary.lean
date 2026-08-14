@@ -1,6 +1,7 @@
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryStaticStructuralClosure
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryRouteBreadthCanary
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryRestorationClosureCanary
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryStaticPairShapeCanary
 
 /-!
 # Canary for the rho static-to-structural atom terminal
@@ -24,6 +25,51 @@ open Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefContinuedInterac
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostGeneratorInvariantCounterexample
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryRouteBreadthCanary
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostStaticPlanPairCanary
+
+/-- The source variable inside the breadth Quote/Drop frame, selected by its
+exact two-layer zipper rather than by its spelling. -/
+def rhoBreadthBaseRedexAOccurrence : CostStaticFVarOccurrence
+    rhoBreadthBaseRedexANode.skeleton.1 where
+  name := costRegionSourceVariableName "a"
+  context := .apply "NQuote" [] (.apply "PDrop" [] .hole []) []
+  selected := by
+    rw [rhoBreadthBaseRedexANode_skeleton_pattern]
+    exact .apply (.apply .here)
+
+/-- Both semantic reification stages retain the selected occurrence zipper.
+The leaf name enters the common semantic namespace, but the causal position
+cannot collapse to the root occurrence. -/
+theorem rhoBreadthBaseRedexA_commonReification_preservesOccurrence :
+    let values := TypedCostRegionBoundaryTable.Values.original
+      rhoBreadthBaseRedexANode.finiteBoundaryTable
+    let environment := (rhoBreadthBaseRedexANode.semanticAtomEnvironment
+      values).2
+    let cospan := environment.semanticKeyCospan environment
+    ∃ slot : Fin environment.atomCount,
+      environment.slotOfName? rhoBreadthBaseRedexAOccurrence.name =
+          some slot ∧
+      (cospan.reifyEnvironmentOccurrence environment cospan.leftSlot
+          rhoBreadthBaseRedexAOccurrence).name =
+        cospan.commonAtomName (cospan.leftSlot slot) ∧
+      (cospan.reifyEnvironmentOccurrence environment cospan.leftSlot
+          rhoBreadthBaseRedexAOccurrence).context =
+        .apply "NQuote" [] (.apply "PDrop" [] .hole []) [] ∧
+      (cospan.reifyEnvironmentOccurrence environment cospan.leftSlot
+          rhoBreadthBaseRedexAOccurrence).context ≠ .hole := by
+  dsimp only
+  let values := TypedCostRegionBoundaryTable.Values.original
+    rhoBreadthBaseRedexANode.finiteBoundaryTable
+  let environment := (rhoBreadthBaseRedexANode.semanticAtomEnvironment
+    values).2
+  let cospan := environment.semanticKeyCospan environment
+  obtain ⟨slot, selected⟩ := Option.isSome_iff_exists.mp
+    (environment.slotOfName?_isSome_of_occurrence
+      rhoBreadthBaseRedexAOccurrence)
+  refine ⟨slot, selected, ?_, ?_, ?_⟩
+  · exact cospan.reifyEnvironmentOccurrence_name_eq_commonAtomName
+      environment cospan.leftSlot rhoBreadthBaseRedexAOccurrence slot selected
+  · rfl
+  · decide
 
 /-- The breadth Quote/Drop node's reified frame selects one source-variable
 atom for any complete value assignment. -/
@@ -324,20 +370,25 @@ private theorem rhoForeignBoundaryQuoteNode_skeleton :
             rhoBreadthBoundaryWitnessA.typed.boundary)]] :=
   rfl
 
+private noncomputable def rhoForeignBoundaryQuoteStopped :
+    CostStaticPlanStopped rhoCIGSLT .wrapped rhoCutOrderFree
+      rhoBreadthRedexA rhoForeignBoundaryQuoteNode.skeleton.1 where
+  boundarySupport := []
+  boundaryType := _
+  content := rhoBreadthRedexA
+  certified := rhoBreadthBoundaryWitnessA
+  certifies := rhoBreadthBoundaryWitnessA_spec
+  residual := .hole
+  content_eq := rfl
+  skeletonContext :=
+    .apply "NQuote" [] (.apply "PDrop" [] .hole []) []
+  abstract_eq := rhoForeignBoundaryQuoteNode_skeleton
+
 noncomputable def rhoForeignBoundaryQuoteView :
     CostStaticPlanContextInventoryView rhoCIGSLT .wrapped rhoCutOrderFree
       rhoBreadthRedexA rhoForeignBoundaryQuoteNode.skeleton.1
       rhoForeignBoundaryQuoteNode.finiteBoundaryTable.entries where
-  view := .stopped
-    { boundarySupport := []
-      boundaryType := _
-      content := rhoBreadthRedexA
-      certified := rhoBreadthBoundaryWitnessA
-      residual := .hole
-      content_eq := rfl
-      skeletonContext :=
-        .apply "NQuote" [] (.apply "PDrop" [] .hole []) []
-      abstract_eq := rhoForeignBoundaryQuoteNode_skeleton }
+  view := .stopped rhoForeignBoundaryQuoteStopped
   entryEmbedding := .keep (.nil [])
 
 noncomputable def rhoForeignBoundaryQuoteTree :
@@ -351,47 +402,31 @@ noncomputable def rhoForeignBoundaryQuoteBridge :
     CostRegionRootNormalizationBridge rhoCIGSLT
       rhoHereditaryNormalizationKernel rhoCutOrderFree
       rhoForeignBoundaryQuoteTree rhoBreadthFvarAStructuralTree := by
-  let environment := rhoForeignBoundaryQuoteNode.normalizationEnvironment
-    rhoHereditaryStaticNormalizer rhoForeignBoundaryQuoteChildren
-  have membership : costRegionBoundaryVariableName
-      rhoBreadthBoundaryWitnessA.typed.boundary ∈
-        rhoForeignBoundaryQuoteNode.skeleton.1.freeFvarNames := by
-    rw [rhoForeignBoundaryQuoteNode_skeleton]
-    simp [Pattern.freeFvarNames]
-  let occurrenceExists := rhoForeignBoundaryQuoteNode.skeleton_fvar_covered
-    _ membership
-  let occurrence := Classical.choose occurrenceExists
-  have occurrenceName := Classical.choose_spec occurrenceExists
-  let slotExists := Option.isSome_iff_exists.mp
-    (environment.slotOfName?_isSome_of_occurrence occurrence)
-  let slot := Classical.choose slotExists
-  have selected := Classical.choose_spec slotExists
-  have selectedBoundary : environment.slotOfName?
-      (costRegionBoundaryVariableName
-        rhoBreadthBoundaryWitnessA.typed.boundary) = some slot := by
-    rw [← occurrenceName]
-    exact selected
-  have reifiedFrame :
-      (rhoForeignBoundaryQuoteNode.reifiedSourceFrame environment).1 =
-        .apply rhoReflectivePresentation.quoteConstructor
-          [.apply rhoReflectivePresentation.dropConstructor
-            [.fvar (environment.atomName slot)]] := by
-    rw [rhoForeignBoundaryQuoteNode.reifiedSourceFrame_pattern]
-    change environment.reify
-      (.apply "NQuote"
-        [.apply "PDrop"
-          [.fvar (costRegionBoundaryVariableName
-            rhoBreadthBoundaryWitnessA.typed.boundary)]]) = _
-    simp [CostStaticAtomEnvironment.reify,
-      CostStaticAtomEnvironment.reifyName, selectedBoundary,
-      rhoReflectivePresentation]
-  let exposure := RhoCollapsingLeafExposure.boundarySourceVariable
+  have childAlignment : CostRegionTreeNormalizationAlignment rhoCIGSLT
+      rhoHereditaryNormalizationKernel rhoCutOrderFree
+      rhoBreadthBoundaryChildA rhoBreadthFvarAStructuralTree := by
+    refine .semanticAtom _ _ ?_
+    exact rhoBreadthBaseRedexANodeSemanticAtomJoin.transport (by
+        change (CostRegionTree.normalizeHereditary
+            rhoBreadthBoundaryChildA).pattern =
+          (CostStaticRegionNode.normalizeHereditary
+            rhoBreadthBaseRedexANode
+            (TypedCostRegionBoundaryTable.Values.original
+              rhoBreadthBaseRedexANode.finiteBoundaryTable)).1
+        exact rhoBreadthBoundaryChildA_normalizeHereditary.trans
+          rhoBreadthBaseRedexANode_normalizeHereditary.symm) (by
+        change (rhoBreadthFvarAStructuralTree.normalize
+            (normalizeStatic := rhoHereditaryStaticNormalizer)).pattern =
+          .fvar "a"
+        simp [rhoBreadthFvarAStructuralTree, CostRegionTree.normalize])
+  let exposure :=
+    RhoCollapsingLeafExposure.stoppedQuoteDropBoundaryElaborationAlignedSameSupport
     rhoForeignBoundaryQuoteNode rhoForeignBoundaryQuoteChildren
-    rhoForeignBoundaryQuoteView ⟨0, by decide⟩ occurrence
-    (by exact occurrenceName) "a" rhoBreadthFvarAStructuralTree slot selected
-    (CostStaticRegionNode.canonicalizeReifiedTargetFrame_quoteDrop_atom
-      rhoForeignBoundaryQuoteNode environment slot reifiedFrame)
-    rhoBreadthStoppedChildToFvarAlignment
+    rhoForeignBoundaryQuoteStopped (.keep (.nil [])) rfl
+    rhoBreadthBoundaryChildA rhoBreadthFvarAStructuralTree
+    rhoBreadthFvarAStructuralTree childAlignment rfl (by
+      rw [rhoForeignBoundaryQuoteStopped.certified.targetSupport_eq]
+      rfl)
   exact exposure.toRootBridge
 
 theorem rhoForeignBoundaryQuoteBridge_normalize_pattern_eq :
@@ -400,5 +435,228 @@ theorem rhoForeignBoundaryQuoteBridge_normalize_pattern_eq :
       (rhoBreadthFvarAStructuralTree.normalize
         (normalizeStatic := rhoHereditaryStaticNormalizer)).pattern :=
   rhoForeignBoundaryQuoteBridge.toTreeAlignment.normalize_pattern_eq
+
+/-- The foreign-boundary endpoint and its exposed base-colour Quote/Drop
+payload are genuinely different compact terms.  The pair below therefore
+cannot close through the diagonal elaboration base case. -/
+theorem rhoForeignBoundaryQuotePattern_ne_payload :
+    rhoForeignBoundaryQuotePattern ≠ rhoBreadthRedexA := by
+  intro equality
+  simp [rhoForeignBoundaryQuotePattern, rhoBreadthRedexA,
+    rhoBreadthLeftProcess, rhoCutOrderWrappedDrop, rhoCutOrderBaseQuote,
+    rhoCutOrderBaseDrop] at equality
+
+/-- A raw cross-colour static/static pair closes by replaying the exact
+foreign boundary occurrence and recursively closing its certified payload.
+
+The boundary child is paired with the exposed base-colour endpoint by the
+genuine diagonal constructor in the child fibre.  The enclosing pair is not
+diagonal: `stoppedQuoteDropPairElaboration` transports that child alignment
+through the wrapped Quote/Drop shell while retaining the stopped occurrence. -/
+noncomputable def rhoForeignBoundaryQuotePairElaboration :
+    CostCanonicalPairElaboration rhoCIGSLT
+      rhoHereditaryNormalizationKernel rhoCutOrderFree [] []
+      rhoForeignBoundaryQuotePattern rhoBreadthRedexA
+      (.base (costBaseSortName "Name")) := by
+  let leftView : rhoForeignBoundaryQuoteTree.StaticRootView .wrapped :=
+    { node := rhoForeignBoundaryQuoteNode
+      children := rhoForeignBoundaryQuoteChildren
+      patternEq := rfl
+      availableEq := rfl
+      typeEq := rfl
+      treeEq := rfl }
+  have boundaryWellSorted : ReflectiveWellSorted.OpenPatternWellSorted
+      rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
+      rhoCutOrderFree
+      rhoForeignBoundaryQuoteStopped.certified.typed.boundary.targetSupport
+      rhoForeignBoundaryQuoteStopped.certified.typed.boundary.targetType
+      rhoForeignBoundaryQuoteStopped.certified.typed.boundary.content :=
+    ⟨⟨rhoForeignBoundaryQuoteStopped.certified.typed.contentTyped,
+        rhoForeignBoundaryQuoteStopped.certified.typed.contentCanonicalBinderMetadata,
+        rhoForeignBoundaryQuoteStopped.certified.typed.contentObjectPattern,
+        rhoForeignBoundaryQuoteStopped.certified.typed.contentTyped.isWellScopedAt⟩,
+      rhoForeignBoundaryQuoteStopped.certified.typed.contentReflectiveScopeSafe⟩
+  let childPair := Classical.choice
+    (CostCanonicalPairElaboration.nonempty_of_pattern_eq
+      (kernel := rhoHereditaryNormalizationKernel) (outer := [])
+      boundaryWellSorted rhoBreadthBoundaryWitnessA.content_eq)
+  exact RhoCollapsingLeafExposure.stoppedQuoteDropPairElaboration
+    rhoForeignBoundaryQuoteTree rhoBreadthBaseRedexATree leftView rfl
+    rhoForeignBoundaryQuoteStopped (.keep (.nil [])) rfl
+    rhoBreadthBoundaryWitnessA.targetSupport_eq
+    (rhoBreadthBoundaryWitnessA.targetType_eq.trans
+      rhoForeignWrappedNameType.symm)
+    childPair
+
+theorem rhoForeignBoundaryQuotePairElaboration_normalize_pattern_eq :
+    (rhoForeignBoundaryQuotePairElaboration.leftTree.normalize
+        (normalizeStatic := rhoHereditaryStaticNormalizer)).pattern =
+      (rhoForeignBoundaryQuotePairElaboration.rightTree.normalize
+        (normalizeStatic := rhoHereditaryStaticNormalizer)).pattern :=
+  rhoForeignBoundaryQuotePairElaboration.normalize_pattern_eq
+
+/-! ## Certified singleton-parallel boundary control
+
+The static singleton below contains the neutral breadth process as one exact
+certified boundary occurrence.  Its recursive child is deliberately reused as
+the structural endpoint, so the only root-changing work left to the terminal
+is occurrence selection followed by bare-parallel singleton collapse.
+-/
+
+private theorem rhoSingletonBoundaryRule_mem (index : Nat)
+    (inBounds : index < 6) :
+    rhoCalc.terms[index]'(by simp [rhoCalc]; omega) ∈ rhoCalc.terms :=
+  List.getElem_mem _
+
+private def rhoSingletonBoundaryParallelChoice : CostCollectionTypingChoice :=
+  .bare rhoCalc.terms[3] (.base "Proc")
+
+private theorem rhoSingletonBoundaryParallelChoice_mem :
+    rhoSingletonBoundaryParallelChoice ∈
+      costStaticCollectionTypingChoices rhoCIGSLT .base rhoCutOrderFree []
+        .hashBag [rhoBreadthLeftPattern]
+        (mapTypeExpr (CostStaticColor.base.symbols rhoCIGSLT)
+          (.base "Proc")) := by
+  apply mem_costStaticCollectionTypingChoices_complete
+  right
+  refine ⟨rhoCalc.terms[3], .base "Proc", rfl,
+    rhoSingletonBoundaryRule_mem 3 (by omega), ?_, rfl, "ps", rfl, ?_⟩
+  · apply rhoCIGSLT.bareCollectionConstructorsWrapped _
+      (rhoSingletonBoundaryRule_mem 3 (by omega))
+    exact ⟨"ps", .hashBag, .base "Proc", rfl⟩
+  · apply WellSorted.checkElementsHaveType_complete_of_objects
+    · exact .cons (by
+        simpa [CostStaticColor.symbols, costBaseTypeExpr] using
+          rhoBreadthLeft_typed) (.nil [] _)
+    · simpa only [rhoBreadthLeft, WellSorted.isObjectPatternList,
+        Bool.and_eq_true, List.isEmpty_iff, decide_true, Bool.and_true] using
+          rhoBreadthLeft.2.1.2.2.1
+
+private theorem rhoSingletonBoundaryCertificate_exists :
+    ∃ certificate,
+      certifyCostRegionBoundary? rhoCIGSLT .base rhoCutOrderFree []
+          (mapTypeExpr (CostStaticColor.base.symbols rhoCIGSLT)
+            (.base "Proc"))
+          rhoBreadthLeftPattern =
+        some certificate := by
+  apply exists_certifyCostRegionBoundary?_eq_some
+  · exact ⟨.base "Proc", decodeCostStaticTypeExpr_mapTypeExpr _ _ _⟩
+  · exact rhoBreadthLeft.2
+
+noncomputable def rhoSingletonBoundaryCertificate :
+    CertifiedCostRegionBoundary rhoCIGSLT .base rhoCutOrderFree []
+      (mapTypeExpr (CostStaticColor.base.symbols rhoCIGSLT)
+        (.base "Proc"))
+      rhoBreadthLeftPattern :=
+  Classical.choose rhoSingletonBoundaryCertificate_exists
+
+theorem rhoSingletonBoundaryCertificate_spec :
+    certifyCostRegionBoundary? rhoCIGSLT .base rhoCutOrderFree []
+        (mapTypeExpr (CostStaticColor.base.symbols rhoCIGSLT)
+          (.base "Proc"))
+        rhoBreadthLeftPattern =
+      some rhoSingletonBoundaryCertificate :=
+  Classical.choose_spec rhoSingletonBoundaryCertificate_exists
+
+private noncomputable def rhoSingletonBoundaryElementPlan
+    (outer : OneHoleContext) :
+    CostStaticRegionPlan rhoCIGSLT .base rhoCutOrderFree
+      (CostStaticBinderThinning.sourceContextOfTarget rhoCIGSLT .base []) []
+      (CostStaticBinderThinning.ofTargetThinning rhoCIGSLT .base [])
+      [] outer rhoBreadthLeftPattern (.base "Proc") :=
+  .boundaryApplication rhoBreadthOutputDeclared rfl
+    (by rw [rhoBreadthOutputRole]; decide)
+    rhoSingletonBoundaryCertificate rhoSingletonBoundaryCertificate_spec
+
+private noncomputable def rhoSingletonBoundaryPlan :
+    CostStaticRegionPlan rhoCIGSLT .base rhoCutOrderFree
+      (CostStaticBinderThinning.sourceContextOfTarget rhoCIGSLT .base []) []
+      (CostStaticBinderThinning.ofTargetThinning rhoCIGSLT .base [])
+      [] .hole rhoStaticNeutralSingletonPattern (.base "Proc") := by
+  apply CostStaticRegionPlan.collection rhoSingletonBoundaryParallelChoice
+    rhoSingletonBoundaryParallelChoice_mem
+  exact .cons
+    (rhoSingletonBoundaryElementPlan
+      (.collection .hashBag [] .hole [] none))
+    .nil
+
+noncomputable def rhoSingletonBoundaryNode :
+    CostStaticRegionNode rhoCIGSLT .base rhoCutOrderFree :=
+  CostStaticRegionNode.ofPlan rhoStaticNeutralSingleton.toCore
+    rhoSingletonBoundaryPlan rfl
+
+noncomputable def rhoSingletonBoundaryChild :
+    CostRegionTree rhoCIGSLT rhoCutOrderFree
+      rhoSingletonBoundaryCertificate.typed.boundary.targetSupport []
+      rhoSingletonBoundaryCertificate.typed.boundary.content
+      rhoSingletonBoundaryCertificate.typed.boundary.targetType :=
+  CostRegionTree.reindexType
+    (by
+      simpa [CostStaticColor.symbols, costBaseTypeExpr] using
+        rhoSingletonBoundaryCertificate.targetType_eq.symm)
+    (CostRegionTree.reindexPattern
+      rhoSingletonBoundaryCertificate.content_eq.symm
+      (CostRegionTree.reindexAvailable
+        rhoSingletonBoundaryCertificate.targetSupport_eq.symm
+        rhoBreadthLeftTree))
+
+noncomputable def rhoSingletonBoundaryChildren :
+    CostRegionBoundaryTrees rhoCIGSLT rhoCutOrderFree .base
+      rhoSingletonBoundaryNode.finiteBoundaryTable :=
+  .cons rhoSingletonBoundaryChild .nil
+
+private theorem rhoSingletonBoundaryNode_targetBound :
+    rhoSingletonBoundaryNode.targetBound = [] := rfl
+
+private theorem rhoSingletonBoundaryNode_skeleton :
+    rhoSingletonBoundaryNode.skeleton.1 =
+      .collection rhoReflectivePresentation.parallelCollection
+        [.fvar (costRegionBoundaryVariableName
+          rhoSingletonBoundaryCertificate.typed.boundary)] none :=
+  rfl
+
+private noncomputable def rhoSingletonBoundaryStopped :
+    CostStaticPlanStopped rhoCIGSLT .base rhoCutOrderFree
+      rhoBreadthLeftPattern rhoSingletonBoundaryNode.skeleton.1 where
+  boundarySupport := []
+  boundaryType := _
+  content := rhoBreadthLeftPattern
+  certified := rhoSingletonBoundaryCertificate
+  certifies := rhoSingletonBoundaryCertificate_spec
+  residual := .hole
+  content_eq := rfl
+  skeletonContext := .collection rhoReflectivePresentation.parallelCollection
+    [] .hole [] none
+  abstract_eq := rhoSingletonBoundaryNode_skeleton
+
+/-- The singleton shell closes from an exact stopped occurrence and a
+recursive child alignment.  Neither the semantic-atom slot nor the collapsed
+canonical frame is selected by the fixture. -/
+noncomputable def rhoSingletonBoundaryBridge :
+    CostRegionRootNormalizationBridge rhoCIGSLT
+      rhoHereditaryNormalizationKernel rhoCutOrderFree
+      (CostRegionTree.static (outer := []) rhoSingletonBoundaryNode
+        rhoSingletonBoundaryChildren)
+      rhoSingletonBoundaryChild := by
+  let exposure :=
+    RhoCollapsingLeafExposure.stoppedParallelSingletonBoundaryElaborationAlignedSameSupport
+      rhoSingletonBoundaryNode rhoSingletonBoundaryChildren
+      rhoSingletonBoundaryStopped (.keep (.nil [])) rfl
+      rhoSingletonBoundaryChild rhoSingletonBoundaryChild
+      rhoSingletonBoundaryChild (.refl rhoSingletonBoundaryChild) rfl (by
+        change
+          rhoSingletonBoundaryCertificate.typed.boundary.targetSupport.length =
+            rhoSingletonBoundaryNode.targetBound.length
+        rw [rhoSingletonBoundaryCertificate.targetSupport_eq,
+          rhoSingletonBoundaryNode_targetBound])
+  exact exposure.toRootBridge
+
+theorem rhoSingletonBoundaryBridge_normalize_pattern_eq :
+    ((CostRegionTree.static (outer := []) rhoSingletonBoundaryNode
+        rhoSingletonBoundaryChildren).normalize
+      (normalizeStatic := rhoHereditaryStaticNormalizer)).pattern =
+      (rhoSingletonBoundaryChild.normalize
+        (normalizeStatic := rhoHereditaryStaticNormalizer)).pattern :=
+  rhoSingletonBoundaryBridge.toTreeAlignment.normalize_pattern_eq
 
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus

@@ -111,17 +111,17 @@ open scoped ENNReal
 variable {Z : Type*} {Index : Type*} {k s : ℕ}
 
 theorem exactVisibleCompressionTarget_of_indexedEmpiricalRiskFamily
-    (F : BitEncodedClassifierFamily (ExactVisiblePostSwitchSurface Z k) s)
-    (samples : Index → Sample (ExactVisiblePostSwitchSurface Z k) Bool) :
+    (F : BitEncodedClassifierFamily (ExactVisiblePostSwitchData Z k) s)
+    (samples : Index → Sample (ExactVisiblePostSwitchData Z k) Bool) :
     ExactVisibleCompressionTarget (Z := Z) (k := k) (Index := Index)
       (F.indexedEmpiricalRiskFamily samples) s := by
   exact F.hasBitBudget_indexedEmpiricalRiskFamily samples
 
 theorem exactVisibleRecoveryLowerBound_of_indexedEmpiricalRiskFamily
     [Fintype Z]
-    (F : BitEncodedClassifierFamily (ExactVisiblePostSwitchSurface Z k) s)
-    (μ : PMF (ExactVisiblePostSwitchSurface Z k))
-    (samples : Index → Sample (ExactVisiblePostSwitchSurface Z k) Bool)
+    (F : BitEncodedClassifierFamily (ExactVisiblePostSwitchData Z k) s)
+    (μ : PMF (ExactVisiblePostSwitchData Z k))
+    (samples : Index → Sample (ExactVisiblePostSwitchData Z k) Bool)
     (i : Index) (m : ℕ)
     {q : ℝ≥0∞}
     (hq :

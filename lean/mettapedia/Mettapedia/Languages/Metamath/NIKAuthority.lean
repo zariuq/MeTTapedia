@@ -1,5 +1,5 @@
 import Mettapedia.GSLT.LanguageDef.CompletenessSpectrum
-import Mettapedia.GSLT.LanguageDef.NIKGSLT
+import Mettapedia.GSLT.LanguageDef.NIKIndexedOperational
 import Mettapedia.Languages.Metamath.SourceInferenceDeclarativeAdequacy
 
 /-!
@@ -25,6 +25,8 @@ open Mettapedia.GSLT.LanguageDef.CheckerAuthorityFamily
 open Mettapedia.GSLT.LanguageDef.CompletenessSpectrum
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
 open Mettapedia.GSLT.LanguageDef.KernelAuthority
+open Mettapedia.GSLT.LanguageDef.NIKGSLT.Indexed
+open Mettapedia.GSLT.LanguageDef.NIKGSLT.Indexed.InternalJudgment
 open Mettapedia.GSLT.LanguageDef.ProofGSLT
 open Mettapedia.GSLT.LanguageDef.ProofGSLT.CheckerCapabilities
 open Mettapedia.Languages.Metamath.InferenceEncoding
@@ -352,6 +354,17 @@ def authorityFamily (scope : SourceScope) : AuthorityFamily EvidenceKind where
         exact (normalLabelChecker_semanticAuthority scope).toProjection
     | proofArticle =>
         exact (proofArticleChecker_semanticAuthority scope).toProjection
+
+/-- For either Metamath evidence representation, inhabitation of the NIK
+internal evidence judgment is exactly supported declarative provability in
+the admitted source scope. -/
+theorem nonempty_nikEvidence_iff_meaning
+    (scope : SourceScope) (kind : EvidenceKind) (claim : Claim scope) :
+    Nonempty (Evidence (authorityFamily scope) kind claim) ↔
+      Meaning scope claim := by
+  simpa [authorityFamily] using
+    nonempty_evidence_iff_certified
+      (authorityFamily scope) kind claim
 
 /-- Cross-format evidence fails closed at the packed NIK boundary. -/
 theorem normalLabels_rejected_for_articleClaim

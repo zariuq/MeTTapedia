@@ -5,7 +5,7 @@ import Mettapedia.Logic.MarkovPredictiveChaining
 import Mettapedia.PLN.Bridges.Languages.PLNWMOSLFBridge
 
 /-!
-# Direct Markov Xi Surface for Multi-Step Transition Paths
+# Direct Markov Xi Interface for Multi-Step Transition Paths
 
 This file adds an honest `markov-transition*` atom family for multi-step Markov
 queries.
@@ -45,7 +45,7 @@ structure MarkovTransitionPathQuery (k : ℕ) where
   tail : List (Fin k)
 deriving DecidableEq, Repr
 
-/-- The non-additive singleton semantics state used by the path surface. -/
+/-- The non-additive singleton semantics state used by the path interface. -/
 abbrev MarkovTransitionPathState (k : ℕ) :=
   MassState (MarkovTransitionPathQuery k)
 
@@ -117,7 +117,7 @@ def markovTransitionPathQueryOfAtom :
       ⟨start, tail⟩ := by
   simp [markovTransitionPathQueryOfAtom]
 
-/-- Public Xi surface for direct multi-step Markov path atoms. The rule sets are
+/-- Public Xi interface for direct multi-step Markov path atoms. The rule sets are
 empty: the semantics comes from the predictive chain, not additive rewrites. -/
 def markovTransitionPathXiPLN :
     XiPLN

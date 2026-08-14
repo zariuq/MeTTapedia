@@ -8,7 +8,7 @@ import Mettapedia.UniversalAI.SolomonoffExchangeable
 import Mettapedia.PLN.Bridges.ProbabilityTheory.CategoricalNuPLNBridge
 
 /-!
-# De Finetti Category Exports (Recommended Import Surface)
+# De Finetti Category Exports (Recommended Import Interface)
 
 This is the single recommended import path for the categorical de Finetti route.
 It re-exports the stable theorem chain needed by downstream users.

@@ -9,6 +9,10 @@ import Mettapedia.OSLF.MeTTaIL.ContextualStep
 gives the serializable five-field root.  This module joins them at the generic
 MeTTaIL executor.
 
+Every theorem below is explicitly indexed by `QueryFirstModel`: it calibrates
+today's authored presentation against today's query-first point.  It is not a law
+of every model in Prime's operational specification region.
+
 For every semantic result occurrence, the authored rules expose both routes:
 
 * the direct query-derived Zero evaluation step; and
@@ -41,21 +45,23 @@ def encodeNeedKey {model : Model} (revisionTerm : model.Revision → Pattern)
   .apply "prime-need-key" [revisionTerm key.1, key.2]
 
 /-- Every language-level dependency has a constructor in the five-field root. -/
-def encodeDependency {model : Model}
+def encodeDependency {model : QueryFirstModel}
     (revisionTerm : model.Revision → Pattern) : Dependency model → Pattern
   | .request key =>
-      .apply "prime-request-dependency" [encodeNeedKey revisionTerm key]
+      .apply "prime-request-dependency"
+        [encodeNeedKey (model := model.toPrimeModel) revisionTerm key]
   | .spaceAtom key atom =>
       .apply "prime-space-atom-dependency"
-        [encodeNeedKey revisionTerm key, atom]
+        [encodeNeedKey (model := model.toPrimeModel) revisionTerm key, atom]
   | .capability key result =>
       .apply "prime-capability-dependency"
-        [encodeNeedKey revisionTerm key, result]
+        [encodeNeedKey (model := model.toPrimeModel) revisionTerm key, result]
   | .inert key =>
-      .apply "prime-inert-dependency" [encodeNeedKey revisionTerm key]
+      .apply "prime-inert-dependency"
+        [encodeNeedKey (model := model.toPrimeModel) revisionTerm key]
 
 /-- Encode the root of the finite causal receipt carried by one answer. -/
-def encodeReceipt {model : Model} {space : model.Space}
+def encodeReceipt {model : QueryFirstModel} {space : model.Space}
     {subject result : Pattern} (revisionTerm : model.Revision → Pattern)
     (cause : Cause model space subject result) : Pattern :=
   .apply "prime-receipt" [encodeDependency revisionTerm cause.dependency]
@@ -64,10 +70,10 @@ def encodeReceipt {model : Model} {space : model.Space}
 occurrences intentionally select the same value-level receipt.  The failure
 branch is never emitted by `semanticNeedAnswers`; retaining it makes the
 encoder total. -/
-noncomputable def receiptFor (model : Model) (space : model.Space)
+noncomputable def receiptFor (model : QueryFirstModel) (space : model.Space)
     (revisionTerm : model.Revision → Pattern) (subject result : Pattern) :
     Pattern :=
-  if member : result ∈ MeTTaZero.evaluateOne model.toModel space subject then
+  if member : result ∈ MeTTaZero.evaluateOne model.zero space subject then
     encodeReceipt revisionTerm
       (exists_cause_of_mem_evaluateOne model space subject result member).some
   else
@@ -75,9 +81,9 @@ noncomputable def receiptFor (model : Model) (space : model.Space)
 
 /-- Every receipt that can actually be emitted encodes a genuine semantic
 cause, rather than an unrelated token. -/
-theorem receiptFor_causal (model : Model) (space : model.Space)
+theorem receiptFor_causal (model : QueryFirstModel) (space : model.Space)
     (revisionTerm : model.Revision → Pattern) (subject result : Pattern)
-    (member : result ∈ MeTTaZero.evaluateOne model.toModel space subject) :
+    (member : result ∈ MeTTaZero.evaluateOne model.zero space subject) :
     ∃ cause : Cause model space subject result,
       receiptFor model space revisionTerm subject result =
         encodeReceipt revisionTerm cause := by
@@ -99,21 +105,23 @@ def reflectedEvaluationPattern (spaceTerm subject : Pattern) : Pattern :=
 /-- Semantic answer occurrences paired with the finite receipt selected for
 their value.  Multiplicity is retained by the multiset, not by distinguishing
 equal receipts. -/
-noncomputable def semanticNeedEntries (model : Model) (space : model.Space)
+noncomputable def semanticNeedEntries (model : QueryFirstModel)
+    (space : model.Space)
     (revisionTerm : model.Revision → Pattern) (subject : Pattern) :
     Multiset (Pattern × Pattern) :=
-  (MeTTaZero.evaluateOne model.toModel space subject).map fun answer =>
+  (MeTTaZero.evaluateOne model.zero space subject).map fun answer =>
     (answer, receiptFor model space revisionTerm subject answer)
 
 /-- The Need answer bag is exactly the Zero answer bag decorated pointwise
 with finite causal receipts. -/
-noncomputable def semanticNeedAnswers (model : Model) (space : model.Space)
+noncomputable def semanticNeedAnswers (model : QueryFirstModel)
+    (space : model.Space)
     (revisionTerm : model.Revision → Pattern) (subject : Pattern) :
     Multiset Pattern :=
   (semanticNeedEntries model space revisionTerm subject).map fun entry =>
     needAnswerPattern entry.1 entry.2
 
-private theorem needAnswerDecoration_injective (model : Model)
+private theorem needAnswerDecoration_injective (model : QueryFirstModel)
     (space : model.Space) (revisionTerm : model.Revision → Pattern)
     (subject : Pattern) :
     Function.Injective (fun answer =>
@@ -124,19 +132,20 @@ private theorem needAnswerDecoration_injective (model : Model)
   exact equal.1
 
 /-- Decorating answers with receipts preserves the count of every occurrence. -/
-theorem semanticNeedAnswers_count (model : Model) (space : model.Space)
+theorem semanticNeedAnswers_count (model : QueryFirstModel)
+    (space : model.Space)
     (revisionTerm : model.Revision → Pattern) (subject answer : Pattern) :
     Multiset.count
         (needAnswerPattern answer
           (receiptFor model space revisionTerm subject answer))
         (semanticNeedAnswers model space revisionTerm subject) =
       Multiset.count answer
-        (MeTTaZero.evaluateOne model.toModel space subject) := by
+        (MeTTaZero.evaluateOne model.zero space subject) := by
   rw [semanticNeedAnswers, semanticNeedEntries, Multiset.map_map]
   exact Multiset.count_map_eq_count'
     (fun candidate => needAnswerPattern candidate
       (receiptFor model space revisionTerm subject candidate))
-    (MeTTaZero.evaluateOne model.toModel space subject)
+    (MeTTaZero.evaluateOne model.zero space subject)
     (needAnswerDecoration_injective model space revisionTerm subject) answer
 
 /-! ## Current receipt granularity
@@ -158,13 +167,13 @@ private def equation : Pattern := .apply "=" [subject, result]
 
 private def space : VersionedSpace := (0, {equation, equation})
 
-private def model : Model := structuralModel (fun _ => 0)
+private def model : QueryFirstModel := structuralModel (fun _ => 0)
 
 private def revisionTerm : Nat → Pattern := fun revision =>
   .apply "revision" [.apply (toString revision) []]
 
 private theorem duplicateEvaluation :
-    MeTTaZero.evaluateOne model.toModel space subject =
+    MeTTaZero.evaluateOne model.zero space subject =
       ({result, result} : Multiset Pattern) := by
   simp [MeTTaZero.evaluateOne, MeTTaZero.interpretedResults,
     MeTTaZero.equationResults, MeTTaZero.queryAll, MeTTaZero.query,
@@ -187,7 +196,7 @@ receipt pattern. -/
 structure ReceiptOccurrence where
   occurrence : Nat
   copy : occurrence < Multiset.count result
-    (MeTTaZero.evaluateOne model.toModel space subject)
+    (MeTTaZero.evaluateOne model.zero space subject)
 
 /-- The current receipt shadow forgets which exact copy it decorates. -/
 noncomputable def receiptShadow (_ : ReceiptOccurrence) : Pattern :=
@@ -223,7 +232,8 @@ theorem exact_occurrence_does_not_factor_through_value_receipt :
 
 end ReceiptMultiplicityCanary
 
-private noncomputable def needRows (model : Model) (space : model.Space)
+private noncomputable def needRows (model : QueryFirstModel)
+    (space : model.Space)
     (spaceTerm : Pattern) (revisionTerm : model.Revision → Pattern)
     (subject : Pattern) : List (List Pattern) :=
   (semanticNeedEntries model space revisionTerm subject).toList.map
@@ -232,7 +242,7 @@ private noncomputable def needRows (model : Model) (space : model.Space)
 /-- Prime extends the Zero relation environment with the single `PrimeNeed`
 relation.  Query and direct evaluation delegate to the already-proved Zero
 environment. -/
-noncomputable def relationEnv (model : Model) (space : model.Space)
+noncomputable def relationEnv (model : QueryFirstModel) (space : model.Space)
     (spaceTerm : Pattern) (revisionTerm : model.Revision → Pattern) :
     RelationEnv where
   tuples relation arguments :=
@@ -244,7 +254,7 @@ noncomputable def relationEnv (model : Model) (space : model.Space)
           []
     | _, _ =>
         (Mettapedia.Languages.MeTTa.MeTTaZeroLanguageAdequacy.relationEnv
-          model.toModel space spaceTerm).tuples
+          model.zero space spaceTerm).tuples
           relation arguments
 
 @[simp] private theorem match_need_row
@@ -309,7 +319,7 @@ private def needRowResults (spaceTerm subject : Pattern)
 
 /-- Prime execution is the ordinary premise-aware interpreter instantiated
 with the authored five-field root. -/
-noncomputable def executionStep (model : Model) (space : model.Space)
+noncomputable def executionStep (model : QueryFirstModel) (space : model.Space)
     (spaceTerm : Pattern) (revisionTerm : model.Revision → Pattern)
     (source target : Pattern) : Prop :=
   target ∈ rewriteStepWithPremisesUsing
@@ -318,7 +328,7 @@ noncomputable def executionStep (model : Model) (space : model.Space)
 
 /-- The execution relation itself is a GSLT; no Prime-specific machine is
 smuggled into the semantic root. -/
-noncomputable def executionGSLT (model : Model) (space : model.Space)
+noncomputable def executionGSLT (model : QueryFirstModel) (space : model.Space)
     (spaceTerm : Pattern) (revisionTerm : model.Revision → Pattern) : GSLT where
   Term := Pattern
   equations := ⟨Eq, ⟨Eq.refl, Eq.symm, Eq.trans⟩⟩
@@ -336,7 +346,8 @@ set_option maxHeartbeats 4000000 in
 set_option maxRecDepth 100000 in
 /-- Executing an authored Need request produces exactly the semantic Zero
 answer bag decorated with causal receipts. -/
-theorem need_rewrite_bag_adequate (model : Model) (space : model.Space)
+theorem need_rewrite_bag_adequate (model : QueryFirstModel)
+    (space : model.Space)
     (spaceTerm : Pattern) (revisionTerm : model.Revision → Pattern)
     (subject : Pattern) :
     (rewriteStepWithPremisesUsing
@@ -393,7 +404,7 @@ macro "prime_step_simp" : tactic =>
 
 /-- The first leg of the semantic lazy route is executable directly from the
 authored `evaluationDemandRewrite`. -/
-theorem evaluation_demand_exec (model : Model) (space : model.Space)
+theorem evaluation_demand_exec (model : QueryFirstModel) (space : model.Space)
     (spaceTerm : Pattern) (revisionTerm : model.Revision → Pattern)
     (subject : Pattern) :
     executionStep model space spaceTerm revisionTerm
@@ -402,10 +413,10 @@ theorem evaluation_demand_exec (model : Model) (space : model.Space)
   prime_step_simp
 
 /-- The same authored root retains the direct extensional evaluation branch. -/
-theorem direct_evaluation_exec (model : Model) (space : model.Space)
+theorem direct_evaluation_exec (model : QueryFirstModel) (space : model.Space)
     (spaceTerm : Pattern) (revisionTerm : model.Revision → Pattern)
     (subject result : Pattern)
-    (member : result ∈ MeTTaZero.evaluateOne model.toModel space subject) :
+    (member : result ∈ MeTTaZero.evaluateOne model.zero space subject) :
     executionStep model space spaceTerm revisionTerm
       (MeTTaZero.evaluationRequestPattern spaceTerm subject)
       (MeTTaZero.evaluationAnswerPattern result) := by
@@ -427,7 +438,7 @@ theorem direct_evaluation_exec (model : Model) (space : model.Space)
 
 /-- A Need answer returns to the exact Zero observation under the generic
 executor, independently of the receipt payload. -/
-theorem need_return_exec (model : Model) (space : model.Space)
+theorem need_return_exec (model : QueryFirstModel) (space : model.Space)
     (spaceTerm : Pattern) (revisionTerm : model.Revision → Pattern)
     (answer receipt : Pattern) :
     executionStep model space spaceTerm revisionTerm
@@ -436,7 +447,7 @@ theorem need_return_exec (model : Model) (space : model.Space)
   prime_step_simp
 
 /-- Explicit evaluation of a structural quote enters the same Need request. -/
-theorem reflected_demand_exec (model : Model) (space : model.Space)
+theorem reflected_demand_exec (model : QueryFirstModel) (space : model.Space)
     (spaceTerm : Pattern) (revisionTerm : model.Revision → Pattern)
     (subject : Pattern) :
     executionStep model space spaceTerm revisionTerm
@@ -447,10 +458,10 @@ theorem reflected_demand_exec (model : Model) (space : model.Space)
 /-- Every semantic result gives one generic Need answer step, with the receipt
 chosen by `receiptFor`.  Multiplicity is retained by
 `need_rewrite_bag_adequate`; this membership theorem selects one copy. -/
-theorem need_answer_exec_of_mem (model : Model) (space : model.Space)
+theorem need_answer_exec_of_mem (model : QueryFirstModel) (space : model.Space)
     (spaceTerm : Pattern) (revisionTerm : model.Revision → Pattern)
     (subject result : Pattern)
-    (member : result ∈ MeTTaZero.evaluateOne model.toModel space subject) :
+    (member : result ∈ MeTTaZero.evaluateOne model.zero space subject) :
     executionStep model space spaceTerm revisionTerm
       (needRequestPattern spaceTerm subject)
       (needAnswerPattern result
@@ -475,11 +486,12 @@ theorem need_answer_exec_of_mem (model : Model) (space : model.Space)
 /-! ## Route-level correspondence -/
 
 /-- The direct generic route corresponding to one semantic occurrence. -/
-noncomputable def authoredDirectPath (model : Model) (space : model.Space)
+noncomputable def authoredDirectPath (model : QueryFirstModel)
+    (space : model.Space)
     (spaceTerm : Pattern) (revisionTerm : model.Revision → Pattern)
     (subject result : Pattern) (occurrence : Nat)
     (copy : occurrence < Multiset.count result
-      (MeTTaZero.evaluateOne model.toModel space subject)) :
+      (MeTTaZero.evaluateOne model.zero space subject)) :
     (executionGSLT model space spaceTerm revisionTerm).RewritePath
       (MeTTaZero.evaluationRequestPattern spaceTerm subject)
       (MeTTaZero.evaluationAnswerPattern result) :=
@@ -488,15 +500,16 @@ noncomputable def authoredDirectPath (model : Model) (space : model.Space)
     (.nil _)
 
 /-- The three authored rewrites execute the same occurrence through Need. -/
-noncomputable def authoredLazyPath (model : Model) (space : model.Space)
+noncomputable def authoredLazyPath (model : QueryFirstModel)
+    (space : model.Space)
     (spaceTerm : Pattern) (revisionTerm : model.Revision → Pattern)
     (subject result : Pattern) (occurrence : Nat)
     (copy : occurrence < Multiset.count result
-      (MeTTaZero.evaluateOne model.toModel space subject)) :
+      (MeTTaZero.evaluateOne model.zero space subject)) :
     (executionGSLT model space spaceTerm revisionTerm).RewritePath
       (MeTTaZero.evaluationRequestPattern spaceTerm subject)
       (MeTTaZero.evaluationAnswerPattern result) := by
-  have member : result ∈ MeTTaZero.evaluateOne model.toModel space subject :=
+  have member : result ∈ MeTTaZero.evaluateOne model.zero space subject :=
     Multiset.count_pos.mp (Nat.zero_lt_of_lt copy)
   exact .cons (evaluation_demand_exec model space spaceTerm revisionTerm subject)
     (.cons (need_answer_exec_of_mem model space spaceTerm revisionTerm
@@ -506,52 +519,56 @@ noncomputable def authoredLazyPath (model : Model) (space : model.Space)
         (.nil _)))
 
 /-- Reflective evaluation reaches the same causally decorated Need answer. -/
-noncomputable def authoredReflectedPath (model : Model) (space : model.Space)
+noncomputable def authoredReflectedPath (model : QueryFirstModel)
+    (space : model.Space)
     (spaceTerm : Pattern) (revisionTerm : model.Revision → Pattern)
     (subject result : Pattern) (occurrence : Nat)
     (copy : occurrence < Multiset.count result
-      (MeTTaZero.evaluateOne model.toModel space subject)) :
+      (MeTTaZero.evaluateOne model.zero space subject)) :
     (executionGSLT model space spaceTerm revisionTerm).RewritePath
       (reflectedEvaluationPattern spaceTerm subject)
       (needAnswerPattern result
         (receiptFor model space revisionTerm subject result)) := by
-  have member : result ∈ MeTTaZero.evaluateOne model.toModel space subject :=
+  have member : result ∈ MeTTaZero.evaluateOne model.zero space subject :=
     Multiset.count_pos.mp (Nat.zero_lt_of_lt copy)
   exact .cons (reflected_demand_exec model space spaceTerm revisionTerm subject)
     (.cons (need_answer_exec_of_mem model space spaceTerm revisionTerm
       subject result member) (.nil _))
 
-@[simp] theorem authoredDirectPath_length (model : Model) (space : model.Space)
+@[simp] theorem authoredDirectPath_length (model : QueryFirstModel)
+    (space : model.Space)
     (spaceTerm : Pattern) (revisionTerm : model.Revision → Pattern)
     (subject result : Pattern) (occurrence : Nat)
     (copy : occurrence < Multiset.count result
-      (MeTTaZero.evaluateOne model.toModel space subject)) :
+      (MeTTaZero.evaluateOne model.zero space subject)) :
     (authoredDirectPath model space spaceTerm revisionTerm subject result
       occurrence copy).length = 1 := rfl
 
-@[simp] theorem authoredLazyPath_length (model : Model) (space : model.Space)
+@[simp] theorem authoredLazyPath_length (model : QueryFirstModel)
+    (space : model.Space)
     (spaceTerm : Pattern) (revisionTerm : model.Revision → Pattern)
     (subject result : Pattern) (occurrence : Nat)
     (copy : occurrence < Multiset.count result
-      (MeTTaZero.evaluateOne model.toModel space subject)) :
+      (MeTTaZero.evaluateOne model.zero space subject)) :
     (authoredLazyPath model space spaceTerm revisionTerm subject result
       occurrence copy).length = 3 := rfl
 
-@[simp] theorem authoredReflectedPath_length (model : Model)
+@[simp] theorem authoredReflectedPath_length (model : QueryFirstModel)
     (space : model.Space) (spaceTerm : Pattern)
     (revisionTerm : model.Revision → Pattern) (subject result : Pattern)
     (occurrence : Nat)
     (copy : occurrence < Multiset.count result
-      (MeTTaZero.evaluateOne model.toModel space subject)) :
+      (MeTTaZero.evaluateOne model.zero space subject)) :
     (authoredReflectedPath model space spaceTerm revisionTerm subject result
       occurrence copy).length = 2 := rfl
 
 /-- Direct and lazy execution are genuinely distinct paths to one answer. -/
-theorem authoredDirectPath_ne_lazyPath (model : Model) (space : model.Space)
+theorem authoredDirectPath_ne_lazyPath (model : QueryFirstModel)
+    (space : model.Space)
     (spaceTerm : Pattern) (revisionTerm : model.Revision → Pattern)
     (subject result : Pattern) (occurrence : Nat)
     (copy : occurrence < Multiset.count result
-      (MeTTaZero.evaluateOne model.toModel space subject)) :
+      (MeTTaZero.evaluateOne model.zero space subject)) :
     authoredDirectPath model space spaceTerm revisionTerm subject result
         occurrence copy ≠
       authoredLazyPath model space spaceTerm revisionTerm subject result
@@ -564,24 +581,27 @@ theorem authoredDirectPath_ne_lazyPath (model : Model) (space : model.Space)
 
 /-- One proof-relevant semantic occurrence to be realized by the authored
 five-field interpreter. -/
-structure EvaluationOccurrence (model : Model) (space : model.Space) where
+structure EvaluationOccurrence (model : QueryFirstModel)
+    (space : model.Space) where
   subject : Pattern
   result : Pattern
   occurrence : Nat
   copy : occurrence < Multiset.count result
-    (MeTTaZero.evaluateOne model.toModel space subject)
+    (MeTTaZero.evaluateOne model.zero space subject)
 
 /-- The source-side route data already present in Prime's semantic GSLT. -/
-def EvaluationOccurrence.semanticComparison {model : Model}
+def EvaluationOccurrence.semanticComparison {model : QueryFirstModel}
     {space : model.Space} (source : EvaluationOccurrence model space) :
-    EvaluationRouteComparison model space source.subject source.result
+    EvaluationRouteComparison model.toPrimeModel space
+      source.subject source.result
       source.occurrence :=
-  evaluationRouteComparison model space source.subject source.result
+  evaluationRouteComparison model.toPrimeModel space source.subject source.result
     source.occurrence source.copy
 
 /-- A compiled artifact contains actual generic-executor paths and proof that
 its emitted receipt came from a semantic cause. -/
-structure AuthoredEvaluationArtifact (model : Model) (space : model.Space)
+structure AuthoredEvaluationArtifact (model : QueryFirstModel)
+    (space : model.Space)
     (spaceTerm : Pattern) (revisionTerm : model.Revision → Pattern) where
   source : EvaluationOccurrence model space
   direct : (executionGSLT model space spaceTerm revisionTerm).RewritePath
@@ -603,7 +623,8 @@ structure EvaluationObservation where
   lazyLength : Nat
 deriving DecidableEq
 
-noncomputable def compileEvaluation (model : Model) (space : model.Space)
+noncomputable def compileEvaluation (model : QueryFirstModel)
+    (space : model.Space)
     (spaceTerm : Pattern) (revisionTerm : model.Revision → Pattern)
     (source : EvaluationOccurrence model space) :
     AuthoredEvaluationArtifact model space spaceTerm revisionTerm where
@@ -616,7 +637,7 @@ noncomputable def compileEvaluation (model : Model) (space : model.Space)
     source.subject source.result
       (Multiset.count_pos.mp (Nat.zero_lt_of_lt source.copy))
 
-def observeSemanticOccurrence {model : Model} {space : model.Space}
+def observeSemanticOccurrence {model : QueryFirstModel} {space : model.Space}
     (source : EvaluationOccurrence model space) : EvaluationObservation :=
   { subject := source.subject
     result := source.result
@@ -624,7 +645,8 @@ def observeSemanticOccurrence {model : Model} {space : model.Space}
     directLength := source.semanticComparison.direct.length
     lazyLength := source.semanticComparison.lazy.length }
 
-noncomputable def observeAuthoredArtifact {model : Model} {space : model.Space}
+noncomputable def observeAuthoredArtifact {model : QueryFirstModel}
+    {space : model.Space}
     {spaceTerm : Pattern} {revisionTerm : model.Revision → Pattern}
     (artifact : AuthoredEvaluationArtifact model space spaceTerm revisionTerm) :
     EvaluationObservation :=
@@ -638,7 +660,8 @@ noncomputable def observeAuthoredArtifact {model : Model} {space : model.Space}
 evaluation occurrences.  The certificate preserves the result occurrence and
 the nontrivial direct/lazy route profile; the artifact additionally carries
 the executable paths and a causal proof for the result value. -/
-noncomputable def evaluationRealization (model : Model) (space : model.Space)
+noncomputable def evaluationRealization (model : QueryFirstModel)
+    (space : model.Space)
     (spaceTerm : Pattern) (revisionTerm : model.Revision → Pattern) :
     SimpleRealization (EvaluationOccurrence model space)
       (AuthoredEvaluationArtifact model space spaceTerm revisionTerm)
@@ -655,7 +678,7 @@ noncomputable def evaluationRealization (model : Model) (space : model.Space)
           EvaluationOccurrence.semanticComparison, compileEvaluation,
           evaluationRouteComparison]
 
-@[simp] theorem evaluationRealization_observation (model : Model)
+@[simp] theorem evaluationRealization_observation (model : QueryFirstModel)
     (space : model.Space) (spaceTerm : Pattern)
     (revisionTerm : model.Revision → Pattern)
     (source : EvaluationOccurrence model space) :
@@ -668,7 +691,7 @@ noncomputable def evaluationRealization (model : Model) (space : model.Space)
 
 /-- The realization cannot collapse to an identity artifact: its compiled
 direct and lazy paths are observably different. -/
-theorem compiled_paths_distinct (model : Model) (space : model.Space)
+theorem compiled_paths_distinct (model : QueryFirstModel) (space : model.Space)
     (spaceTerm : Pattern) (revisionTerm : model.Revision → Pattern)
     (source : EvaluationOccurrence model space) :
     (compileEvaluation model space spaceTerm revisionTerm source).direct ≠

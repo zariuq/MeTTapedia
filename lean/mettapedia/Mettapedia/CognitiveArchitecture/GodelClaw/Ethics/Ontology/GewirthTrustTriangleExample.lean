@@ -303,7 +303,7 @@ theorem operatorCareClaim_mem_traceSeed
     simp [ESOUpperShardTraceSource.frontier, upperShardFrontier,
       trustTriangleUpperShardTraceSource, operatorCareClaim]⟩
 
-/-- Ethics-surface correctness capstone for the Gewirth non-interference lane.
+/-- Ethics-interface correctness capstone for the Gewirth non-interference lane.
 
 The same PGC / purposive-agency witness yields both:
 
@@ -311,7 +311,7 @@ The same PGC / purposive-agency witness yields both:
 2. logic-side positive WM evidence for the corresponding DDLPlus obligation.
 
 This exposes the already-proved `Ethics -> DDLPlus -> WM` chain directly from
-the trust-triangle ethics surface, rather than leaving it hidden in the logic
+the trust-triangle ethics interface, rather than leaving it hidden in the logic
 layer. -/
 theorem gewirthNonInterferenceClaim_sat_and_deonticWMPositiveEvidence_of_PPA
     {I : PGCInterpretation}

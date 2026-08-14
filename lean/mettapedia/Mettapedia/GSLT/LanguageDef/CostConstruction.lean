@@ -6,8 +6,8 @@ import Mettapedia.GSLT.LanguageDef.CostNamespace
 This module begins the generic Cost construction at its structural boundary.
 It adjoins symbolic signatures, wrapped terms, and ordered token stacks to the
 validated continuation signature of a continued interactive GSLT.  Located
-purses are a subsequent surface-indexed refinement; they are not identified
-with this surface-independent core.
+purses are a subsequent location-indexed refinement; they are not identified
+with this location-independent core.
 
 The output remains derived from the source `LanguageDef`.  Generated
 constructors carry no parser notation or host evaluator policy, and the
@@ -183,7 +183,7 @@ theorem costCoreConstructors_eq_typed (interactingSort : String) :
 
 namespace CIGSLT
 
-/-- Add the surface-independent Cost apparatus to the exact generated
+/-- Add the location-independent Cost apparatus to the exact generated
 continuation signature of a continued interactive GSLT. -/
 def costCoreLanguage (source : CIGSLT) : LanguageDef :=
   { source.continuationRetyping.generatedLanguage with

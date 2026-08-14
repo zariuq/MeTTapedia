@@ -4,7 +4,7 @@ import Mettapedia.Logic.HOL.Semantics.KripkeHenkinCanonical.Membership
 # Supported canonical frame atoms
 
 The supported canonical preorder, scheduler provider interface, atomic forcing,
-and level-local truth-clause surfaces used by the recursive canonical forcing
+and level-local truth-clause interfaces used by the recursive canonical forcing
 construction.
 -/
 
@@ -1187,7 +1187,7 @@ theorem forces_all_level_provider
   exact forces_all_level_at_max_bound (Base := Base) (Const := Const) W
     (P.scheduler (max W.level (maxParam φ) + 1))
 
-/-- The honest level-aware canonical truth-lemma surface for supported
+/-- The honest level-aware canonical truth-lemma interface for supported
 presented worlds.  Local disjunction and existential clauses require the
 formula to be supported by the current world's level; implication, negation,
 and universal clauses quantify over level-growing successors. -/

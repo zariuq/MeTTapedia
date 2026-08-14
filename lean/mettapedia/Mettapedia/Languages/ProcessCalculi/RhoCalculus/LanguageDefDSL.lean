@@ -330,15 +330,15 @@ theorem rhoCalcSetExt_set_not_vec_context_policy :
   exact ⟨rhoSetCommWitness_exists_langReduces_setExt,
     rhoVecCommWitness_no_langReduces_setExt⟩
 
-/-! ## Structural and export checks -/
+/-! ## Structural and syntax export checks -/
 
-def exportedPureSurface : String :=
+def exportedPureSyntax : String :=
   renderLanguageWithUserSyntax rhoCalc
 
-def exportedExtendedSurface : String :=
+def exportedExtendedSyntax : String :=
   renderLanguageWithUserSyntax rhoCalcExtended
 
-def exportedExtendedSurfaceWithFolds : String :=
+def exportedExtendedSyntaxWithFolds : String :=
   renderLanguageWithUserSyntax rhoCalcExtendedWithNativeFolds
 
 theorem rhoCalcExecExt_rewrite_names :

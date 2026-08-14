@@ -296,7 +296,7 @@ theorem boundedBudgetedCausalPrefix_emission_linearizes
 
 /-! ## Status-separation examples -/
 
-private def refinementExampleSurface : RawCostName := .signature ["pay"]
+private def refinementExampleLocation : RawCostName := .signature ["pay"]
 private def refinementExampleSpend : RawCostSig := ["coin"]
 private def refinementExampleDone : RawCostTerm := .signed .nil ["done"]
 private def refinementExamplePayload : RawCostTerm := .signed .nil ["payload"]
@@ -305,10 +305,10 @@ private def refinementExampleTerm : RawCostTerm :=
   RawCostTerm.fromComponents
     [.signed
       (.par
-        (.recv refinementExampleSurface refinementExampleDone)
-        (.send refinementExampleSurface refinementExamplePayload))
+        (.recv refinementExampleLocation refinementExampleDone)
+        (.send refinementExampleLocation refinementExamplePayload))
       refinementExampleSpend,
-     .purse refinementExampleSurface [refinementExampleSpend]]
+     .purse refinementExampleLocation [refinementExampleSpend]]
 
 private theorem refinementExampleTerm_supported :
     refinementExampleTerm.supported = true := by decide

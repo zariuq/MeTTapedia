@@ -5,7 +5,7 @@ import Mettapedia.PLN.TruthValues.PLNTruthTower
 # PLN Deduction Credal Intervals as ITVs
 
 This file connects the no-independence deduction interval from
-`PLNDeduction.lean` to the shared WM-PLN indefinite-truth-value surface.
+`PLNDeduction.lean` to the shared WM-PLN indefinite-truth-value interface.
 
 The bridge is intentionally narrow:
 

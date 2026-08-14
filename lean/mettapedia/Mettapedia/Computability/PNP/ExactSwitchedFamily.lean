@@ -1,4 +1,4 @@
-import Mettapedia.Computability.PNP.VisiblePostSwitchSurface
+import Mettapedia.Computability.PNP.VisiblePostSwitchData
 import Mettapedia.Computability.PNP.SameRouteInterface
 
 /-!
@@ -113,7 +113,7 @@ noncomputable def fintypeTruthTableBitFamily [Fintype View] :
     BitEncodedClassifierFamily View (Fintype.card View) where
   decode := fintypeTruthTableDecode (View := View)
 
-/-- Any indexed family over a finite summary surface admits the explicit
+/-- Any indexed family over a finite summary data domain admits the explicit
 truth-table bit budget `|View|`. -/
 theorem hasBitBudget_card_of_fintype [Fintype View]
     (H : IndexedPredictorFamily Index View) :
@@ -123,7 +123,7 @@ theorem hasBitBudget_card_of_fintype [Fintype View]
   refine ⟨fintypeTruthTableEncode (View := View) (H.predict i), ?_⟩
   exact fintypeTruthTableDecode_encode (View := View) (H.predict i)
 
-/-- Dependence on a finite visible summary surface yields the corresponding
+/-- Dependence on a finite visible summary data domain yields the corresponding
 explicit bit budget on the original input type. -/
 theorem hasBitBudget_card_of_factorsThrough_fintype
     [Fintype View]
@@ -144,17 +144,17 @@ variable {Z : Type*} {k s : ℕ} {Index : Type*}
 
 /-- The manuscript's exact switched family on the full visible post-switch input. -/
 abbrev ExactVisibleSwitchedFamily (Z : Type*) (k : ℕ) (Index : Type*) :=
-  IndexedPredictorFamily Index (ExactVisiblePostSwitchSurface Z k)
+  IndexedPredictorFamily Index (ExactVisiblePostSwitchData Z k)
 
 /-- The same family after factoring through the invariant exact view `(z, a)`. -/
 abbrev InvariantVisibleSwitchedFamily (Z : Type*) (k : ℕ) (Index : Type*) :=
-  IndexedPredictorFamily Index (InvariantPostSwitchSurface Z k)
+  IndexedPredictorFamily Index (InvariantPostSwitchData Z k)
 
 /-- The same family after factoring through the exact fork view `((z, a), b)`. -/
 abbrev ForkVisibleSwitchedFamily (Z : Type*) (k : ℕ) (Index : Type*) :=
-  IndexedPredictorFamily Index (ForkPostSwitchSurface Z k)
+  IndexedPredictorFamily Index (ForkPostSwitchData Z k)
 
-/-- The strongest same-route compression claim on the exact manuscript surface. -/
+/-- The strongest same-route compression claim on the exact manuscript data domain. -/
 abbrev ExactVisibleCompressionTarget
     (G : ExactVisibleSwitchedFamily Z k Index) (s : ℕ) : Prop :=
   G.HasBitBudget s
@@ -186,85 +186,85 @@ theorem exactVisibleCompressionTarget_of_forkCompressionTarget
   exact IndexedPredictorFamily.hasBitBudget_of_factorsThrough hfactor hsmall
 
 /-- The invariant visible summary has cardinality `|Z| * 2^k`. -/
-theorem card_invariantVisiblePostSwitchSurface [Fintype Z] :
-    Fintype.card (InvariantPostSwitchSurface Z k) =
+theorem card_invariantVisiblePostSwitchDataDomain [Fintype Z] :
+    Fintype.card (InvariantPostSwitchData Z k) =
       Fintype.card Z * 2 ^ k := by
-  simp [InvariantPostSwitchSurface, BitVec]
+  simp [InvariantPostSwitchData, BitVec]
 
 /-- The fork-visible summary has cardinality `|Z| * 2^k * 2^k`. -/
-theorem card_forkVisiblePostSwitchSurface [Fintype Z] :
-    Fintype.card (ForkPostSwitchSurface Z k) =
+theorem card_forkVisiblePostSwitchDataDomain [Fintype Z] :
+    Fintype.card (ForkPostSwitchData Z k) =
       Fintype.card Z * 2 ^ k * 2 ^ k := by
-  simp [ForkPostSwitchSurface, InvariantPostSwitchSurface, BitVec]
+  simp [ForkPostSwitchData, InvariantPostSwitchData, BitVec]
 
 /-- If the exact switched family truly factors through the invariant view
 `(z, a)`, then it already has the explicit truth-table bit budget for that
-summary surface. -/
+summary data domain. -/
 theorem invariantCompressionTarget_of_factorsThrough_fintype
     [Fintype Z]
     {G : ExactVisibleSwitchedFamily Z k Index}
     {H : InvariantVisibleSwitchedFamily Z k Index}
     (hfactor : G.FactorsThrough invariantVisibleData H) :
     InvariantCompressionTarget (Z := Z) (k := k) (Index := Index) G
-      (Fintype.card (InvariantPostSwitchSurface Z k)) := by
+      (Fintype.card (InvariantPostSwitchData Z k)) := by
   refine ⟨H, hfactor, ?_⟩
   exact IndexedPredictorFamily.hasBitBudget_card_of_fintype H
 
-/-- The corresponding exact-surface compression target follows immediately. -/
+/-- The corresponding exact-data domain compression target follows immediately. -/
 theorem exactVisibleCompressionTarget_of_factorsThrough_invariant_fintype
     [Fintype Z]
     {G : ExactVisibleSwitchedFamily Z k Index}
     {H : InvariantVisibleSwitchedFamily Z k Index}
     (hfactor : G.FactorsThrough invariantVisibleData H) :
     ExactVisibleCompressionTarget (Z := Z) (k := k) (Index := Index) G
-      (Fintype.card (InvariantPostSwitchSurface Z k)) := by
+      (Fintype.card (InvariantPostSwitchData Z k)) := by
   exact
     exactVisibleCompressionTarget_of_invariantCompressionTarget
       (invariantCompressionTarget_of_factorsThrough_fintype (Z := Z) (k := k)
         (Index := Index) hfactor)
 
 /-- If the exact switched family factors through the fork view `((z, a), b)`,
-then it inherits the explicit truth-table bit budget for that summary surface. -/
+then it inherits the explicit truth-table bit budget for that summary data domain. -/
 theorem forkCompressionTarget_of_factorsThrough_fintype
     [Fintype Z]
     {G : ExactVisibleSwitchedFamily Z k Index}
     {H : ForkVisibleSwitchedFamily Z k Index}
     (hfactor : G.FactorsThrough forkVisibleData H) :
     ForkCompressionTarget (Z := Z) (k := k) (Index := Index) G
-      (Fintype.card (ForkPostSwitchSurface Z k)) := by
+      (Fintype.card (ForkPostSwitchData Z k)) := by
   refine ⟨H, hfactor, ?_⟩
   exact IndexedPredictorFamily.hasBitBudget_card_of_fintype H
 
-/-- The corresponding exact-surface compression target follows immediately. -/
+/-- The corresponding exact-data domain compression target follows immediately. -/
 theorem exactVisibleCompressionTarget_of_factorsThrough_fork_fintype
     [Fintype Z]
     {G : ExactVisibleSwitchedFamily Z k Index}
     {H : ForkVisibleSwitchedFamily Z k Index}
     (hfactor : G.FactorsThrough forkVisibleData H) :
     ExactVisibleCompressionTarget (Z := Z) (k := k) (Index := Index) G
-      (Fintype.card (ForkPostSwitchSurface Z k)) := by
+      (Fintype.card (ForkPostSwitchData Z k)) := by
   exact
     exactVisibleCompressionTarget_of_forkCompressionTarget
       (forkCompressionTarget_of_factorsThrough_fintype (Z := Z) (k := k)
         (Index := Index) hfactor)
 
-/-- The exact post-switch surface is finite whenever the latent local datum `z` is finite. -/
+/-- The exact post-switch data domain is finite whenever the latent local datum `z` is finite. -/
 noncomputable def exactVisibleFintype [Fintype Z] :
-    Fintype (ExactVisiblePostSwitchSurface Z k) :=
-  Fintype.ofEquiv (ForkPostSwitchSurface Z k) (forkVisibleEquiv (Z := Z) (k := k)).symm
+    Fintype (ExactVisiblePostSwitchData Z k) :=
+  Fintype.ofEquiv (ForkPostSwitchData Z k) (forkVisibleEquiv (Z := Z) (k := k)).symm
 
-noncomputable instance instFintypeExactVisiblePostSwitchSurface [Fintype Z] :
-    Fintype (ExactVisiblePostSwitchSurface Z k) :=
+noncomputable instance instFintypeExactVisiblePostSwitchData [Fintype Z] :
+    Fintype (ExactVisiblePostSwitchData Z k) :=
   exactVisibleFintype (Z := Z) (k := k)
 
-/-- Once a bit-budget theorem on the exact manuscript surface is supplied, the
+/-- Once a bit-budget theorem on the exact manuscript data domain is supplied, the
 same-route ERM recovery theorem applies there verbatim on any finite exact
-surface. -/
+data domain. -/
 theorem exactVisible_bitFamily_exactRecoverySampleMass_ge_one_sub_bitBudget_mul_pow_of_agreementMass_le
-    [Fintype (ExactVisiblePostSwitchSurface Z k)]
-    (F : BitEncodedClassifierFamily (ExactVisiblePostSwitchSurface Z k) s)
-    (μ : PMF (ExactVisiblePostSwitchSurface Z k))
-    (target : ExactVisiblePostSwitchSurface Z k → Bool) (m : ℕ)
+    [Fintype (ExactVisiblePostSwitchData Z k)]
+    (F : BitEncodedClassifierFamily (ExactVisiblePostSwitchData Z k) s)
+    (μ : PMF (ExactVisiblePostSwitchData Z k))
+    (target : ExactVisiblePostSwitchData Z k → Bool) (m : ℕ)
     (htarget : ∃ c : BitCode s, F.decode c = target)
     {q : ℝ≥0∞}
     (hq : ∀ c : F.toEncodedFamily.BadCodes target, agreementMass μ target (F.decode c.1) ≤ q) :
@@ -274,13 +274,13 @@ theorem exactVisible_bitFamily_exactRecoverySampleMass_ge_one_sub_bitBudget_mul_
     BitEncodedClassifierFamily.exactRecoverySampleMass_ge_one_sub_bitBudget_mul_pow_of_agreementMass_le
       (F := F) (μ := μ) (target := target) (m := m) htarget hq
 
-/-- The finite exact-surface hypothesis follows from finiteness of the latent
+/-- The finite exact-data domain hypothesis follows from finiteness of the latent
 local datum `z`. -/
 theorem exactVisible_bitFamily_exactRecoverySampleMass_ge_one_sub_bitBudget_mul_pow_of_agreementMass_le_of_fintype
     [Fintype Z]
-    (F : BitEncodedClassifierFamily (ExactVisiblePostSwitchSurface Z k) s)
-    (μ : PMF (ExactVisiblePostSwitchSurface Z k))
-    (target : ExactVisiblePostSwitchSurface Z k → Bool) (m : ℕ)
+    (F : BitEncodedClassifierFamily (ExactVisiblePostSwitchData Z k) s)
+    (μ : PMF (ExactVisiblePostSwitchData Z k))
+    (target : ExactVisiblePostSwitchData Z k → Bool) (m : ℕ)
     (htarget : ∃ c : BitCode s, F.decode c = target)
     {q : ℝ≥0∞}
     (hq : ∀ c : F.toEncodedFamily.BadCodes target, agreementMass μ target (F.decode c.1) ≤ q) :

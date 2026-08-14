@@ -74,6 +74,104 @@ theorem exists_base_of_collapsingRoot
 
 end CostCanonicalRecursiveTypeDomain
 
+/-- Static-root closure restricted to the recursive type domain actually
+consumed by reachable paired elaboration.  This avoids requiring a language
+to close unrelated collection fibres that recursive generator descent can
+never reach. -/
+def CostCanonicalStaticPairClosedInDomain
+    {source : CIGSLT} (recursive : CostCanonicalRecursiveTypeDomain source)
+    (kernel : CostStaticNormalizationKernel source)
+    (declaration : ReflectivePresentationDecl) : Prop :=
+  ∀ {targetFree : FreeTypeContext} {available outer : List TypeExpr}
+    {leftPattern rightPattern : Pattern} {type : TypeExpr},
+    recursive.Admissible type →
+    ReflectiveWellSorted.OpenPatternWellSorted
+        source.costWholeReflectionProfile source.costWholeLanguage targetFree
+        available type leftPattern →
+    ReflectiveWellSorted.OpenPatternWellSorted
+        source.costWholeReflectionProfile source.costWholeLanguage targetFree
+        available type rightPattern →
+    canonicalize declaration leftPattern =
+      canonicalize declaration rightPattern →
+    (CostStaticRootShape source leftPattern type ∨
+      CostStaticRootShape source rightPattern type) →
+    Nonempty (CostCanonicalPairElaboration source kernel targetFree available
+      outer leftPattern rightPattern type)
+
+namespace CostCanonicalStaticPairClosedInDomain
+
+/-- An unrestricted static closure restricts to every recursive type domain.
+This is the sole compatibility direction needed by existing generic clients. -/
+theorem of_unrestricted
+    {source : CIGSLT} {recursive : CostCanonicalRecursiveTypeDomain source}
+    {kernel : CostStaticNormalizationKernel source}
+    {declaration : ReflectivePresentationDecl}
+    (closed : CostCanonicalStaticPairClosed source kernel declaration) :
+    CostCanonicalStaticPairClosedInDomain recursive kernel declaration := by
+  intro targetFree available outer leftPattern rightPattern type _
+    leftWellSorted rightWellSorted canonical staticShape
+  exact closed leftWellSorted rightWellSorted canonical staticShape
+
+end CostCanonicalStaticPairClosedInDomain
+
+/-- One syntax-directed static-root step inside the recursive domain.
+
+Unlike `CostCanonicalStaticPairClosedInDomain`, this interface does not assume
+the complete closure theorem it is intended to construct.  It may consume only
+paired elaborations whose two-endpoint size is strictly smaller than the
+current pair.  This is the induction interface required by static normalizers
+whose collapsing cases recurse into either endpoint. -/
+def CostCanonicalStaticPairStepInDomain
+    {source : CIGSLT} (recursive : CostCanonicalRecursiveTypeDomain source)
+    (kernel : CostStaticNormalizationKernel source)
+    (declaration : ReflectivePresentationDecl) : Prop :=
+  ∀ {targetFree : FreeTypeContext} {available outer : List TypeExpr}
+    {leftPattern rightPattern : Pattern} {type : TypeExpr},
+    recursive.Admissible type →
+    ReflectiveWellSorted.OpenPatternWellSorted
+        source.costWholeReflectionProfile source.costWholeLanguage targetFree
+        available type leftPattern →
+    ReflectiveWellSorted.OpenPatternWellSorted
+        source.costWholeReflectionProfile source.costWholeLanguage targetFree
+        available type rightPattern →
+    canonicalize declaration leftPattern =
+      canonicalize declaration rightPattern →
+    (CostStaticRootShape source leftPattern type ∨
+      CostStaticRootShape source rightPattern type) →
+    (∀ {childAvailable childOuter : List TypeExpr}
+      {leftChild rightChild : Pattern} {childType : TypeExpr},
+      ReflectiveWellSorted.OpenPatternWellSorted
+          source.costWholeReflectionProfile source.costWholeLanguage targetFree
+          childAvailable childType leftChild →
+      ReflectiveWellSorted.OpenPatternWellSorted
+          source.costWholeReflectionProfile source.costWholeLanguage targetFree
+          childAvailable childType rightChild →
+      canonicalize declaration leftChild = canonicalize declaration rightChild →
+      sizeOf leftChild + sizeOf rightChild <
+        sizeOf leftPattern + sizeOf rightPattern →
+      recursive.Admissible childType →
+      Nonempty (CostCanonicalPairElaboration source kernel targetFree
+        childAvailable childOuter leftChild rightChild childType)) →
+    Nonempty (CostCanonicalPairElaboration source kernel targetFree available
+      outer leftPattern rightPattern type)
+
+namespace CostCanonicalStaticPairStepInDomain
+
+/-- A completed closure supplies a local step by ignoring the strictly smaller
+recursive interface. -/
+theorem of_closed
+    {source : CIGSLT} {recursive : CostCanonicalRecursiveTypeDomain source}
+    {kernel : CostStaticNormalizationKernel source}
+    {declaration : ReflectivePresentationDecl}
+    (closed : CostCanonicalStaticPairClosedInDomain recursive kernel
+      declaration) :
+    CostCanonicalStaticPairStepInDomain recursive kernel declaration := by
+  intro targetFree available outer leftPattern rightPattern type admissible
+    leftWellSorted rightWellSorted canonical staticShape _closeSmaller
+  exact closed admissible leftWellSorted rightWellSorted canonical staticShape
+
+end CostCanonicalStaticPairStepInDomain
+
 /-- Paired argument elaboration with an explicit proof that every parameter
 type lies in the recursive domain.  The domain proof travels with the exact
 parameter position, so no global claim about arbitrary child types is needed. -/
@@ -81,7 +179,8 @@ theorem CostCanonicalArgumentPairElaboration.nonempty_of_wellSorted_inDomain
     {source : CIGSLT} {kernel : CostStaticNormalizationKernel source}
     {targetFree : FreeTypeContext}
     (recursive : CostCanonicalRecursiveTypeDomain source)
-    (declaration : ReflectivePresentationDecl) (parent : Pattern)
+    (declaration : ReflectivePresentationDecl)
+    (leftParent rightParent : Pattern)
     (alignChild : ∀ {available outer : List TypeExpr}
       {leftPattern rightPattern : Pattern} {type : TypeExpr},
       ReflectiveWellSorted.OpenPatternWellSorted source.costWholeReflectionProfile source.costWholeLanguage targetFree available type
@@ -89,7 +188,8 @@ theorem CostCanonicalArgumentPairElaboration.nonempty_of_wellSorted_inDomain
         ReflectiveWellSorted.OpenPatternWellSorted source.costWholeReflectionProfile source.costWholeLanguage targetFree available type
           rightPattern →
         canonicalize declaration leftPattern = canonicalize declaration rightPattern →
-        sizeOf leftPattern < sizeOf parent →
+        sizeOf leftPattern + sizeOf rightPattern <
+          sizeOf leftParent + sizeOf rightParent →
         recursive.Admissible type →
         Nonempty (CostCanonicalPairElaboration source kernel targetFree
           available outer leftPattern rightPattern type)) :
@@ -110,7 +210,8 @@ theorem CostCanonicalArgumentPairElaboration.nonempty_of_wellSorted_inDomain
       (∀ presentation ∈ source.costWholeReflectionProfile.presentations,
         binderSafeListAt presentation.quoteConstructor available.length
           rightArguments = true) →
-      (∀ argument ∈ leftArguments, sizeOf argument < sizeOf parent) →
+      (∀ argument ∈ leftArguments, sizeOf argument < sizeOf leftParent) →
+      (∀ argument ∈ rightArguments, sizeOf argument < sizeOf rightParent) →
       (∀ {parameter : TermParam}, parameter ∈ parameters →
         ∀ {expected : TypeExpr}, parameterType? parameter = some expected →
           recursive.Admissible expected) →
@@ -122,7 +223,8 @@ theorem CostCanonicalArgumentPairElaboration.nonempty_of_wellSorted_inDomain
         available outer leftArguments rightArguments parameters) := by
   intro available outer leftArguments rightArguments parameters leftTyped
     rightTyped leftCanonical rightCanonical leftObjects rightObjects leftScope
-    rightScope leftArgumentsSmaller parametersAdmissible canonical
+    rightScope leftArgumentsSmaller rightArgumentsSmaller parametersAdmissible
+    canonical
   induction canonical generalizing parameters with
   | nil =>
       cases leftTyped
@@ -193,13 +295,21 @@ theorem CostCanonicalArgumentPairElaboration.nonempty_of_wellSorted_inDomain
                     leftHeadTyped.isWellScopedAt⟩, leftHeadScope⟩
                 ⟨⟨rightHeadTyped, rightCanonicalParts.1, rightObjectParts.1,
                     rightHeadTyped.isWellScopedAt⟩, rightHeadScope⟩ headCanonical
-                (leftArgumentsSmaller leftArgument (by simp)) headAdmissible
+                (by
+                  have leftSmaller := leftArgumentsSmaller leftArgument (by simp)
+                  have rightSmaller :=
+                    rightArgumentsSmaller rightArgument (by simp)
+                  omega)
+                headAdmissible
               obtain ⟨tailPair⟩ := inductionHypothesis leftTailTyped
                 rightTailTyped leftCanonicalParts.2 rightCanonicalParts.2
                 leftObjectParts.2 rightObjectParts.2 leftTailScope
                 rightTailScope (by
                   intro argument membership
                   exact leftArgumentsSmaller argument (by simp [membership]))
+                (by
+                  intro argument membership
+                  exact rightArgumentsSmaller argument (by simp [membership]))
                 (by
                   intro parameter membership expected parameterType
                   exact parametersAdmissible (by simp [membership]) parameterType)
@@ -223,7 +333,8 @@ theorem CostCanonicalPairElaboration.nonempty_of_aligned_inDomain
     {type : TypeExpr}
     (recursive : CostCanonicalRecursiveTypeDomain source)
     (declaration : ReflectivePresentationDecl)
-    (staticClosed : CostCanonicalStaticPairClosed source kernel declaration)
+    (staticStep : CostCanonicalStaticPairStepInDomain recursive kernel
+      declaration)
     (alignChild : ∀ {childAvailable childOuter : List TypeExpr}
       {leftChild rightChild : Pattern} {childType : TypeExpr},
       ReflectiveWellSorted.OpenPatternWellSorted source.costWholeReflectionProfile source.costWholeLanguage targetFree childAvailable
@@ -231,7 +342,8 @@ theorem CostCanonicalPairElaboration.nonempty_of_aligned_inDomain
         ReflectiveWellSorted.OpenPatternWellSorted source.costWholeReflectionProfile source.costWholeLanguage targetFree childAvailable
           childType rightChild →
         canonicalize declaration leftChild = canonicalize declaration rightChild →
-        sizeOf leftChild < sizeOf leftPattern →
+        sizeOf leftChild + sizeOf rightChild <
+          sizeOf leftPattern + sizeOf rightPattern →
         recursive.Admissible childType →
         Nonempty (CostCanonicalPairElaboration source kernel targetFree
           childAvailable childOuter leftChild rightChild childType))
@@ -285,12 +397,12 @@ theorem CostCanonicalPairElaboration.nonempty_of_aligned_inDomain
         simpa [isObjectPattern] using rightWellSorted.1.2.2.1
       cases role : source.declaredCostConstructorRole constructor with
       | static color =>
-          exact staticClosed leftWellSorted rightWellSorted canonical
+          exact staticStep admissible leftWellSorted rightWellSorted canonical
             (Or.inl (.application color constructor (by
               rw [← materializes,
                 source.materializeDeclaredCostConstructor_label constructor]
               exact source.decodeDeclaredCostConstructor_render constructor)
-              role))
+              role)) alignChild
       | interactionPrincipal =>
           have neutral : source.declaredCostConstructorRole constructor =
               .interactionPrincipal ∨ ∃ kind,
@@ -333,10 +445,17 @@ theorem CostCanonicalPairElaboration.nonempty_of_aligned_inDomain
             obtain ⟨argumentPair⟩ :=
               CostCanonicalArgumentPairElaboration.nonempty_of_wellSorted_inDomain
                 recursive (available := []) (outer := available ++ outer)
-                declaration (.apply rule.label leftArguments) alignChild
+                declaration (.apply rule.label leftArguments)
+                  (.apply rule.label rightArguments) alignChild
                   leftTypedAtZero rightTypedAtZero canonicalLeft canonicalRight
                   objectsLeft objectsRight leftReflectiveAtZero
                   rightReflectiveAtZero (by
+                    intro argument argumentMembership
+                    have argumentBound :=
+                      List.sizeOf_lt_of_mem argumentMembership
+                    simp_wf
+                    omega)
+                  (by
                     intro argument argumentMembership
                     have argumentBound :=
                       List.sizeOf_lt_of_mem argumentMembership
@@ -369,10 +488,17 @@ theorem CostCanonicalPairElaboration.nonempty_of_aligned_inDomain
             obtain ⟨argumentPair⟩ :=
               CostCanonicalArgumentPairElaboration.nonempty_of_wellSorted_inDomain
                 recursive (available := available) (outer := outer)
-                declaration (.apply rule.label leftArguments) alignChild
+                declaration (.apply rule.label leftArguments)
+                  (.apply rule.label rightArguments) alignChild
                   leftArgumentsTyped rightArgumentsTyped canonicalLeft
                   canonicalRight objectsLeft objectsRight leftReflective
                   rightReflective (by
+                    intro argument argumentMembership
+                    have argumentBound :=
+                      List.sizeOf_lt_of_mem argumentMembership
+                    simp_wf
+                    omega)
+                  (by
                     intro argument argumentMembership
                     have argumentBound :=
                       List.sizeOf_lt_of_mem argumentMembership
@@ -435,10 +561,17 @@ theorem CostCanonicalPairElaboration.nonempty_of_aligned_inDomain
             obtain ⟨argumentPair⟩ :=
               CostCanonicalArgumentPairElaboration.nonempty_of_wellSorted_inDomain
                 recursive (available := []) (outer := available ++ outer)
-                declaration (.apply rule.label leftArguments) alignChild
+                declaration (.apply rule.label leftArguments)
+                  (.apply rule.label rightArguments) alignChild
                   leftTypedAtZero rightTypedAtZero canonicalLeft canonicalRight
                   objectsLeft objectsRight leftReflectiveAtZero
                   rightReflectiveAtZero (by
+                    intro argument argumentMembership
+                    have argumentBound :=
+                      List.sizeOf_lt_of_mem argumentMembership
+                    simp_wf
+                    omega)
+                  (by
                     intro argument argumentMembership
                     have argumentBound :=
                       List.sizeOf_lt_of_mem argumentMembership
@@ -469,10 +602,17 @@ theorem CostCanonicalPairElaboration.nonempty_of_aligned_inDomain
             obtain ⟨argumentPair⟩ :=
               CostCanonicalArgumentPairElaboration.nonempty_of_wellSorted_inDomain
                 recursive (available := available) (outer := outer)
-                declaration (.apply rule.label leftArguments) alignChild
+                declaration (.apply rule.label leftArguments)
+                  (.apply rule.label rightArguments) alignChild
                   leftArgumentsTyped rightArgumentsTyped canonicalLeft
                   canonicalRight objectsLeft objectsRight leftReflective
                   rightReflective (by
+                    intro argument argumentMembership
+                    have argumentBound :=
+                      List.sizeOf_lt_of_mem argumentMembership
+                    simp_wf
+                    omega)
+                  (by
                     intro argument argumentMembership
                     have argumentBound :=
                       List.sizeOf_lt_of_mem argumentMembership
@@ -531,7 +671,7 @@ theorem CostCanonicalPairElaboration.nonempty_of_aligned_inDomain
                     leftBodyTyped.isWellScopedAt⟩, leftBodyScope⟩
                 ⟨⟨rightBodyTyped, rightCanonicalParts.2, rightBodyObject,
                     rightBodyTyped.isWellScopedAt⟩, rightBodyScope⟩
-                  bodyCanonical (by simp_wf)
+                  bodyCanonical (by simp_wf; omega)
                 (recursive.codomain admissible)
               let leftTree := CostRegionTree.lambda (binder := binder)
                 bodyPair.leftTree
@@ -584,7 +724,7 @@ theorem CostCanonicalPairElaboration.nonempty_of_aligned_inDomain
                     leftBodyTyped.isWellScopedAt⟩, leftBodyScope⟩
                 ⟨⟨rightBodyTyped, rightCanonicalParts.2, rightBodyObject,
                     rightBodyTyped.isWellScopedAt⟩, rightBodyScope⟩
-                  bodyCanonical (by simp_wf)
+                  bodyCanonical (by simp_wf; omega)
                 (recursive.codomain admissible)
               let leftTree := CostRegionTree.multiLambda (arity := arity)
                 (binders := binders) bodyPair.leftTree
@@ -600,8 +740,8 @@ theorem CostCanonicalPairElaboration.nonempty_of_aligned_inDomain
       childrenCanonical =>
       cases type with
       | base category =>
-          exact staticClosed leftWellSorted rightWellSorted canonical
-            (Or.inl CostStaticRootShape.baseCollection)
+          exact staticStep admissible leftWellSorted rightWellSorted canonical
+            (Or.inl CostStaticRootShape.baseCollection) alignChild
       | collection actual elementType =>
           exact (recursive.noCollection admissible).elim
       | arrow domain codomain => cases leftWellSorted.1.1
@@ -610,11 +750,34 @@ theorem CostCanonicalPairElaboration.nonempty_of_aligned_inDomain
       have impossible := leftWellSorted.1.2.2.1
       simp [isObjectPattern] at impossible
 
-/-- Well-founded paired elaboration for every canonical pair whose result
-type belongs to the recursive domain.  Root-changing canonicalization is
-closed by the same static-root theorem as ordinary static constructors; no
-unrestricted collapsing-pair premise appears. -/
-noncomputable def CostCanonicalPairElaboration.nonempty_of_canonical_inDomain
+/-- Identical endpoints close with one checked elaboration and the reflexive
+alignment constructor.  This is the genuine base case of paired canonical
+descent: it preserves the compiler's proof-relevant tree while avoiding an
+unnecessary static-root obligation for a diagonal pair. -/
+theorem CostCanonicalPairElaboration.nonempty_of_pattern_eq
+    {source : CIGSLT} {kernel : CostStaticNormalizationKernel source}
+    {targetFree : FreeTypeContext}
+    {available outer : List TypeExpr} {leftPattern rightPattern : Pattern}
+    {type : TypeExpr}
+    (leftWellSorted : ReflectiveWellSorted.OpenPatternWellSorted
+      source.costWholeReflectionProfile source.costWholeLanguage targetFree
+      available type leftPattern)
+    (patternEq : leftPattern = rightPattern) :
+    Nonempty (CostCanonicalPairElaboration source kernel targetFree available
+      outer leftPattern rightPattern type) := by
+  subst rightPattern
+  let result := CostRegionTree.build? (source := source)
+    (targetFree := targetFree) available outer leftPattern type
+  have some : result.isSome = true :=
+    CostRegionTree.build?_isSome_of_wellSorted leftWellSorted
+  let tree := result.get some
+  exact ⟨⟨tree, tree, .refl tree⟩⟩
+
+/-- Well-founded paired elaboration from one syntax-directed static-root step.
+The symmetric endpoint measure permits a collapsing static shell on either
+side to expose and recursively align a proper child. -/
+noncomputable def
+    CostCanonicalPairElaboration.nonempty_of_canonical_inDomain_of_staticStep
     {source : CIGSLT} {kernel : CostStaticNormalizationKernel source}
     {targetFree : FreeTypeContext}
     (recursive : CostCanonicalRecursiveTypeDomain source)
@@ -622,7 +785,7 @@ noncomputable def CostCanonicalPairElaboration.nonempty_of_canonical_inDomain
     (sourceDeclaration : ReflectivePresentationDecl)
     (membership : sourceDeclaration ∈
       source.reflection.1.presentations)
-    (staticClosed : CostCanonicalStaticPairClosed source kernel
+    (staticStep : CostCanonicalStaticPairStepInDomain recursive kernel
       (costStaticReflectivePresentationDecl source declarationColor
         sourceDeclaration))
     {available outer : List TypeExpr} {leftPattern rightPattern : Pattern}
@@ -640,6 +803,9 @@ noncomputable def CostCanonicalPairElaboration.nonempty_of_canonical_inDomain
     (admissible : recursive.Admissible type) :
     Nonempty (CostCanonicalPairElaboration source kernel targetFree available
       outer leftPattern rightPattern type) := by
+  by_cases patternEq : leftPattern = rightPattern
+  · exact CostCanonicalPairElaboration.nonempty_of_pattern_eq
+      leftWellSorted patternEq
   let declaration := costStaticReflectivePresentationDecl source
     declarationColor sourceDeclaration
   rcases canonicalize_eq_root_cases declaration canonical with
@@ -648,29 +814,106 @@ noncomputable def CostCanonicalPairElaboration.nonempty_of_canonical_inDomain
       recursive.exists_base_of_collapsingRoot admissible leftWellSorted
         leftCollapsing
     subst type
-    exact staticClosed leftWellSorted rightWellSorted canonical
+    exact staticStep admissible leftWellSorted rightWellSorted canonical
       (Or.inl (CostStaticRootShape.of_costStatic_collapsingRoot source
-        declarationColor sourceDeclaration membership leftCollapsing))
+        declarationColor sourceDeclaration membership leftCollapsing)) (by
+          intro childAvailable childOuter leftChild rightChild childType
+            childLeftWellSorted childRightWellSorted childCanonical smaller
+            childAdmissible
+          exact
+            CostCanonicalPairElaboration.nonempty_of_canonical_inDomain_of_staticStep
+              recursive declarationColor sourceDeclaration membership
+              staticStep childLeftWellSorted childRightWellSorted
+              childCanonical childAdmissible)
   · obtain ⟨category, typeEq⟩ :=
       recursive.exists_base_of_collapsingRoot admissible rightWellSorted
         rightCollapsing
     subst type
-    exact staticClosed leftWellSorted rightWellSorted canonical
+    exact staticStep admissible leftWellSorted rightWellSorted canonical
       (Or.inr (CostStaticRootShape.of_costStatic_collapsingRoot source
-        declarationColor sourceDeclaration membership rightCollapsing))
+        declarationColor sourceDeclaration membership rightCollapsing)) (by
+          intro childAvailable childOuter leftChild rightChild childType
+            childLeftWellSorted childRightWellSorted childCanonical smaller
+            childAdmissible
+          exact
+            CostCanonicalPairElaboration.nonempty_of_canonical_inDomain_of_staticStep
+              recursive declarationColor sourceDeclaration membership
+              staticStep childLeftWellSorted childRightWellSorted
+              childCanonical childAdmissible)
   · apply CostCanonicalPairElaboration.nonempty_of_aligned_inDomain
-      recursive declaration staticClosed
+      recursive declaration staticStep
     · intro childAvailable childOuter leftChild rightChild childType
         childLeftWellSorted childRightWellSorted childCanonical smaller
         childAdmissible
-      exact CostCanonicalPairElaboration.nonempty_of_canonical_inDomain
-        recursive declarationColor sourceDeclaration membership staticClosed
-        childLeftWellSorted childRightWellSorted childCanonical childAdmissible
+      exact
+        CostCanonicalPairElaboration.nonempty_of_canonical_inDomain_of_staticStep
+          recursive declarationColor sourceDeclaration membership staticStep
+          childLeftWellSorted childRightWellSorted childCanonical childAdmissible
     · exact leftWellSorted
     · exact rightWellSorted
     · exact canonical
     · exact admissible
     · exact aligned
-termination_by sizeOf leftPattern
+termination_by sizeOf leftPattern + sizeOf rightPattern
+
+/-- Well-founded paired elaboration for every canonical pair whose result type
+belongs to the recursive domain.  A completed static closure remains accepted
+as a compatibility interface; internally it is viewed as a local step. -/
+theorem CostCanonicalPairElaboration.nonempty_of_canonical_inDomain
+    {source : CIGSLT} {kernel : CostStaticNormalizationKernel source}
+    {targetFree : FreeTypeContext}
+    (recursive : CostCanonicalRecursiveTypeDomain source)
+    (declarationColor : CostStaticColor)
+    (sourceDeclaration : ReflectivePresentationDecl)
+    (membership : sourceDeclaration ∈ source.reflection.1.presentations)
+    (staticClosed : CostCanonicalStaticPairClosedInDomain recursive kernel
+      (costStaticReflectivePresentationDecl source declarationColor
+        sourceDeclaration))
+    {available outer : List TypeExpr} {leftPattern rightPattern : Pattern}
+    {type : TypeExpr}
+    (leftWellSorted : ReflectiveWellSorted.OpenPatternWellSorted
+      source.costWholeReflectionProfile source.costWholeLanguage targetFree
+      available type leftPattern)
+    (rightWellSorted : ReflectiveWellSorted.OpenPatternWellSorted
+      source.costWholeReflectionProfile source.costWholeLanguage targetFree
+      available type rightPattern)
+    (canonical : canonicalize
+        (costStaticReflectivePresentationDecl source declarationColor
+          sourceDeclaration) leftPattern =
+      canonicalize
+        (costStaticReflectivePresentationDecl source declarationColor
+          sourceDeclaration) rightPattern)
+    (admissible : recursive.Admissible type) :
+    Nonempty (CostCanonicalPairElaboration source kernel targetFree available
+      outer leftPattern rightPattern type) :=
+  CostCanonicalPairElaboration.nonempty_of_canonical_inDomain_of_staticStep
+    recursive declarationColor sourceDeclaration membership
+    (CostCanonicalStaticPairStepInDomain.of_closed staticClosed) leftWellSorted
+      rightWellSorted canonical admissible
+
+namespace CostCanonicalStaticPairClosedInDomain
+
+/-- A syntax-directed static step closes the whole recursive domain by the
+generic symmetric well-founded elaborator. -/
+theorem of_step
+    {source : CIGSLT} {recursive : CostCanonicalRecursiveTypeDomain source}
+    {kernel : CostStaticNormalizationKernel source}
+    {declarationColor : CostStaticColor}
+    {sourceDeclaration : ReflectivePresentationDecl}
+    (membership : sourceDeclaration ∈ source.reflection.1.presentations)
+    (step : CostCanonicalStaticPairStepInDomain recursive kernel
+      (costStaticReflectivePresentationDecl source declarationColor
+        sourceDeclaration)) :
+    CostCanonicalStaticPairClosedInDomain recursive kernel
+      (costStaticReflectivePresentationDecl source declarationColor
+        sourceDeclaration) := by
+  intro targetFree available outer leftPattern rightPattern type admissible
+    leftWellSorted rightWellSorted canonical _staticShape
+  exact
+    CostCanonicalPairElaboration.nonempty_of_canonical_inDomain_of_staticStep
+      recursive declarationColor sourceDeclaration membership step
+      leftWellSorted rightWellSorted canonical admissible
+
+end CostCanonicalStaticPairClosedInDomain
 
 end Mettapedia.GSLT.LanguageDef

@@ -4,7 +4,7 @@ import Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiFortiniBridge
 # Markov de Finetti Fortini Bridge: Crux Layer (Internal)
 
 This module contains internal proof plumbing, staging interfaces, and
-compatibility surfaces accumulated during the Fortini development.
+compatibility interfaces accumulated during the Fortini development.
 
 For canonical theorem work, import:
 `Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiFortiniBridge`
@@ -1192,7 +1192,7 @@ theorem fortiniSuccessorMatrixInvarianceTheoremExplicit_proved :
     FortiniSuccessorMatrixInvarianceTheoremInternal k :=
   fortiniSuccessorMatrixInvarianceTheoremInternal_proved (k := k)
 
-/-- Fortini successor-matrix invariance theorem (literature-facing surface):
+/-- Fortini successor-matrix invariance theorem (literature-facing interface):
 Markov exchangeability + recurrence imply Markov-mixture representation. -/
 def FortiniSuccessorMatrixInvarianceTheorem (k : ℕ) : Prop :=
   ∀ μ : FiniteAlphabet.PrefixMeasure (Fin k),
@@ -2222,7 +2222,7 @@ def ExistsBuiltRowKernel_of_successorMatrixPE (k : ℕ) : Prop :=
 /-- Minimal canonical PE→kernel payload for representation:
 build a row-kernel with singleton-eval AE-measurability and row-successor
 matrix invariance. This avoids exposing start-restricted factorization on the
-public theorem surface. -/
+public theorem family. -/
 def ExistsRowKernel_hEval_and_rowSuccessorMatrixInvariance_of_successorMatrixPE (k : ℕ) : Prop :=
   ∀ (P : Measure (ℕ → Fin k)) (_hP : IsProbabilityMeasure P),
       SuccessorMatrixPartialExchangeable (k := k) P →
@@ -2403,7 +2403,7 @@ theorem exists_rowKernel_with_crossAnchor_of_successorMatrixPE
       (k := k) P rowKernel hbuilt
   exact ⟨rowKernel, hbuilt, hcross⟩
 
-/-- Strong-recurrence variant of the literature-facing theorem surface:
+/-- Strong-recurrence variant of the literature-facing theorem family:
 Markov exchangeability plus an extension with strong recurrence imply a Markov
 mixture representation. -/
 def FortiniSuccessorMatrixInvarianceTheoremStrongRecurrence (k : ℕ) : Prop :=

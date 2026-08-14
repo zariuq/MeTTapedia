@@ -42,7 +42,7 @@ choice but a forced one.
 | File | Contents |
 |------|----------|
 | `Basic.lean` | core types: `ProbVec n` (distributions over `Fin n`), `shannonEntropy` `H(p) = -Σ pᵢ log pᵢ`, `uniformDist` |
-| `EntropyKL.lean` | curated single-import surface tying entropy/KL together across the axiomatic, Knuth–Skilling, and measure-theoretic routes; bridge glue (`probVecEquivProbDist`, `shannonEntropy_eq_ks_shannonEntropy`, `klDivergenceVec`) |
+| `EntropyKL.lean` | curated single-import interface tying entropy/KL together across the axiomatic, Knuth–Skilling, and measure-theoretic routes; bridge glue (`probVecEquivProbDist`, `shannonEntropy_eq_ks_shannonEntropy`, `klDivergenceVec`) |
 | `MutualInformation.lean` | pointwise log-ratio information gain (the scalar in `posterior = prior · 2^score`) vs. Shannon mutual information of a joint distribution |
 | `BinomialEntropy.lean` | exact natural-number entropy bounds on binomial coefficients `2^{n·H(k/n)}/(n+1) ≤ C(n,k) ≤ 2^{n·H(k/n)}`, stated without real logs — workhorse counting estimates |
 | `Main.lean` | aggregate entry point (finite entropy, mutual information, K&S bridge) |

@@ -4,7 +4,7 @@ import Mettapedia.KR.ConceptOntology.CredalFormation
 /-!
 # Concept-Formation Benchmark Control
 
-This module provides a small reusable benchmark surface for exact FCA contexts
+This module provides a small reusable benchmark interface for exact FCA contexts
 and a tiny control dataset with both exact and credal gate variation.
 -/
 

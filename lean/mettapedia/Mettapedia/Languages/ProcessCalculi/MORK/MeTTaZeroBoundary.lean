@@ -19,6 +19,7 @@ cannot.
 namespace Mettapedia.Languages.ProcessCalculi.MORK
 
 open Mettapedia.GSLT
+open Mettapedia.GSLT.Core.ClosureCriteria
 open Mettapedia.Languages.MeTTa.MeTTaZero
 open Mettapedia.Languages.MeTTa.OSLFCore
 open WQComputable
@@ -134,8 +135,12 @@ theorem generatedWorkMiddle_invariant :
 /-- MM2's executable work queue has genuine internal re-entry. -/
 theorem nativeMM2_has_composable_steps :
     HasComposableSteps nativeListExecGSLT := by
-  exact ⟨generatedWorkInitial, generatedWorkMiddle, generatedWorkFinal,
-    generatedWork_first_step, generatedWork_second_step⟩
+  exact ⟨
+    { source := generatedWorkInitial
+      middle := generatedWorkMiddle
+      target := generatedWorkFinal
+      first := generatedWork_first_step
+      second := generatedWork_second_step }⟩
 
 /-- The first executable canary edge is also an authored support-level MM2
 edge. -/
@@ -156,21 +161,14 @@ theorem generatedWork_second_validExec_step :
 /-- The authored support-level MM2 GSLT itself has internal work closure. -/
 theorem authoredMM2_has_composable_steps :
     HasComposableSteps validExecGSLT := by
-  exact ⟨generatedWorkInitial.toFinset, generatedWorkMiddle.toFinset,
-    generatedWorkFinal.toFinset, generatedWork_first_validExec_step,
-    generatedWork_second_validExec_step⟩
+  exact ⟨
+    { source := generatedWorkInitial.toFinset
+      middle := generatedWorkMiddle.toFinset
+      target := generatedWorkFinal.toFinset
+      first := generatedWork_first_validExec_step
+      second := generatedWork_second_validExec_step }⟩
 
 /-! ## The structural separation -/
-
-/-- A structural GSLT embedding preserves internal re-entry. -/
-theorem hasComposableSteps_of_embedding {source target : GSLT}
-    (embedding : GSLT.Embedding source target)
-    (sourceReentry : HasComposableSteps source) :
-    HasComposableSteps target := by
-  obtain ⟨first, middle, last, firstStep, secondStep⟩ := sourceReentry
-  exact ⟨embedding.toFun first, embedding.toFun middle, embedding.toFun last,
-    (embedding.step_iff first middle).2 firstStep,
-    (embedding.step_iff middle last).2 secondStep⟩
 
 /-- **Zero/MM2 work-closure separation.**  There is no faithful structural
 embedding of MM2's executable work-queue GSLT into the bare one-step Zero

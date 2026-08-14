@@ -3,6 +3,7 @@ import Mettapedia.GSLT.Core.BranchingTemporal
 import Mettapedia.GSLT.Core.Web
 import Mettapedia.GSLT.Core.ChangeOfBase
 import Mettapedia.GSLT.Core.Composition
+import Mettapedia.GSLT.Core.GSLTConstructions
 import Mettapedia.GSLT.Core.CertifiedPlanning
 import Mettapedia.GSLT.Core.ClosureCriteria
 import Mettapedia.GSLT.Core.InteractionEvent
@@ -11,6 +12,8 @@ import Mettapedia.GSLT.Core.Ultrainfinite
 import Mettapedia.GSLT.Core.UltrainfiniteTransport
 import Mettapedia.GSLT.Core.IndexedOperational
 import Mettapedia.GSLT.Core.IndexedOperationalCanary
+import Mettapedia.GSLT.Core.WeightedMuScheduler
+import Mettapedia.GSLT.Core.GradedSelectionIrreducibility
 import Mettapedia.GSLT.Dynamics.QueryRevision
 import Mettapedia.GSLT.Dynamics.InteractionEventValuation
 import Mettapedia.GSLT.Dynamics.ProofRelevantNeed
@@ -67,8 +70,10 @@ import Mettapedia.GSLT.LanguageDef.CompletenessSpectrumSAT
 import Mettapedia.GSLT.LanguageDef.SemanticProofGSLTCategory
 import Mettapedia.GSLT.LanguageDef.NIKGSLT
 import Mettapedia.GSLT.LanguageDef.NIKIndexedOperational
+import Mettapedia.GSLT.LanguageDef.NIKMetalogic
+import Mettapedia.GSLT.LanguageDef.DescentInterface
 import Mettapedia.GSLT.LanguageDef.GSLTIL
-import Mettapedia.GSLT.LanguageDef.GSLTILSurface
+import Mettapedia.GSLT.LanguageDef.GSLTILSyntax
 import Mettapedia.GSLT.LanguageDef.GSLTILCanary
 import Mettapedia.GSLT.LanguageDef.NIKDefaultProfile
 import Mettapedia.GSLT.LanguageDef.NIKPolarizedAuthority

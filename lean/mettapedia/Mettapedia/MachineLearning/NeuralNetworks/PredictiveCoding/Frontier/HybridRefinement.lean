@@ -202,7 +202,7 @@ noncomputable def checkerConstraintObjective
   classical
   exact if action ∈ root.legalActions state then 0 else 1
 
-/-- Every action surfaced by a workspace ranking has zero checker constraint
+/-- Every action exposed by a workspace ranking has zero checker constraint
 cost, for arbitrary learned scores and recurrence depth. -/
 theorem ranking_checkerConstraintObjective_zero
     {root : AtomicRoot} (decoder : LegalActionWorkspaceDecoder root)
@@ -249,7 +249,7 @@ theorem hybrid_monotone_refinement_and_legality
     decoder.rankedAccepts_iff_accepts laws⟩
 
 /-- Strong checker-instantiated crown.  In one statement, finite refinement
-never worsens the PC energy, every surfaced action has zero checker-derived
+never worsens the PC energy, every exposed action has zero checker-derived
 constraint cost, and the checker accepts exactly the same traces with or
 without learned ranking. -/
 theorem hybrid_refinement_constraint_and_legality

@@ -46,7 +46,7 @@ through the current perspective at that budget. The abstract content attached to
 one visible query is the rule closure generated from that query as a singleton
 seed inside the fixed trace/state `σ`. -/
 noncomputable def queryConstructionBaseFromTrace
-    (S : SufficientStatisticSurface Obs Query Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence)
+    (S : SufficientStatisticEncoder Obs Query Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : Mettapedia.Hyperseed.RulePool S)
     (σ : Multiset Obs)
@@ -71,7 +71,7 @@ noncomputable def queryConstructionBaseFromTrace
   Iff.rfl
 
 @[simp] theorem queryConstructionBaseFromTrace_visibleAt_eq
-    (S : SufficientStatisticSurface Obs Query Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence)
+    (S : SufficientStatisticEncoder Obs Query Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : Mettapedia.Hyperseed.RulePool S)
     (σ : Multiset Obs)
@@ -87,7 +87,7 @@ noncomputable def queryConstructionBaseFromTrace
   rfl
 
 theorem queryConstructionBaseFromTrace_refines_of_le
-    (S : SufficientStatisticSurface Obs Query Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence)
+    (S : SufficientStatisticEncoder Obs Query Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : Mettapedia.Hyperseed.RulePool S)
     (σ : Multiset Obs)
@@ -108,7 +108,7 @@ The observer's indexicality now includes both the current trace/state and the
 budget. Visible phenomena are `(trace, query)` pairs whose query lies in the
 state-sensitive available closure of that same trace. -/
 noncomputable def statefulQueryConstructionBaseFromTrace
-    (S : SufficientStatisticSurface Obs Query Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence)
+    (S : SufficientStatisticEncoder Obs Query Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : Mettapedia.Hyperseed.RulePool S)
     (P : StatefulPerspective (Multiset Obs) Query Signal Cost)
@@ -128,7 +128,7 @@ noncomputable def statefulQueryConstructionBaseFromTrace
             w.2 ∈ stateAvailableClosureFromTrace S frontier R i.1 P i.2 guard } }
 
 @[simp] theorem statefulQueryConstructionBaseFromTrace_visibleAt_eq
-    (S : SufficientStatisticSurface Obs Query Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence)
+    (S : SufficientStatisticEncoder Obs Query Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : Mettapedia.Hyperseed.RulePool S)
     (P : StatefulPerspective (Multiset Obs) Query Signal Cost)
@@ -145,7 +145,7 @@ noncomputable def statefulQueryConstructionBaseFromTrace
   rfl
 
 theorem statefulQueryConstructionBaseFromTrace_refines_of_le
-    (S : SufficientStatisticSurface Obs Query Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence)
+    (S : SufficientStatisticEncoder Obs Query Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence)
     (frontier : Obs → Set Query)
     (R : Mettapedia.Hyperseed.RulePool S)
     (P : StatefulPerspective (Multiset Obs) Query Signal Cost)
@@ -174,19 +174,19 @@ theorem witnessTrace_nonempty : witnessTrace ≠ 0 := by
 under the grounded perspective at the chosen budget. -/
 noncomputable abbrev groundedConstructionBase : ConstructionBase :=
   queryConstructionBaseFromTrace
-    agentSurface agentFrontier agentRules witnessTrace groundedQueryPerspective Set.univ
+    agentEncoder agentFrontier agentRules witnessTrace groundedQueryPerspective Set.univ
 
 /-- Expansive Hyperseed construction base: the richer perspective exposes the
 entire query closure by budget `3`. -/
 noncomputable abbrev expansiveConstructionBase : ConstructionBase :=
   queryConstructionBaseFromTrace
-    agentSurface agentFrontier agentRules witnessTrace expansiveQueryPerspective Set.univ
+    agentEncoder agentFrontier agentRules witnessTrace expansiveQueryPerspective Set.univ
 
 /-- Regime-sensitive construction base: the visible query interface depends on
 both the current trace and the budget. -/
 noncomputable abbrev regimeSensitiveConstructionBase : ConstructionBase :=
   statefulQueryConstructionBaseFromTrace
-    agentSurface agentFrontier agentRules regimeSensitiveQueryPerspective Set.univ
+    agentEncoder agentFrontier agentRules regimeSensitiveQueryPerspective Set.univ
 
 /-- Premise focusing on the action-readiness query. -/
 def readyToActPremise : Set AgentQuery := {AgentQuery.readyToAct}
@@ -311,7 +311,7 @@ theorem sensedSignal_mem_visible_grounded_budget1 :
   · exact sensedSignal_in_closure_of_nonempty witnessTrace_nonempty
   · refine ⟨?_, ?_, by simp⟩
     · exact
-        ⟨AgentSignal.surface, by simp [groundedQueryPerspective],
+        ⟨AgentSignal.external, by simp [groundedQueryPerspective],
           by simp [groundedQueryPerspective]⟩
     · simp [nearEurycosm, sublevelRegion, groundedQueryPerspective]
 
@@ -333,7 +333,7 @@ theorem readyToAct_not_mem_visible_grounded_budget1 :
         availableRegion groundedQueryPerspective 1 Set.univ := by
     exact
       availableClosureFromTrace_subset_availableRegion
-        agentSurface agentFrontier agentRules witnessTrace groundedQueryPerspective 1 Set.univ h
+        agentEncoder agentFrontier agentRules witnessTrace groundedQueryPerspective 1 Set.univ h
   exact readyToAct_not_mem_availableRegion_grounded_budget1 hAvail
 
 theorem awareReady_not_mem_visible_grounded_budget1 :
@@ -345,7 +345,7 @@ theorem awareReady_not_mem_visible_grounded_budget1 :
         ((groundedConstructionBase.visibleAt (2 : ℕ)) : Set AgentQuery) := by
     exact
       queryConstructionBaseFromTrace_refines_of_le
-        agentSurface agentFrontier agentRules witnessTrace groundedQueryPerspective Set.univ
+        agentEncoder agentFrontier agentRules witnessTrace groundedQueryPerspective Set.univ
         (show (1 : ℕ) ≤ 2 by decide)
   have hTwo : AgentQuery.awareReady ∈
       ((groundedConstructionBase.visibleAt (2 : ℕ)) : Set AgentQuery) := hMono h
@@ -403,7 +403,7 @@ theorem sensedSignal_mem_visible_expansive_budget3 :
     AgentQuery.sensedSignal ∈
       ((expansiveConstructionBase.visibleAt (3 : ℕ)) : Set AgentQuery) := by
   show AgentQuery.sensedSignal ∈
-    availableClosureFromTrace agentSurface agentFrontier agentRules witnessTrace expansiveQueryPerspective 3 Set.univ
+    availableClosureFromTrace agentEncoder agentFrontier agentRules witnessTrace expansiveQueryPerspective 3 Set.univ
   rw [← closure_eq_availableClosure_expansive_budget3 (σ := witnessTrace)]
   exact sensedSignal_in_closure_of_nonempty witnessTrace_nonempty
 
@@ -411,7 +411,7 @@ theorem readyToAct_mem_visible_expansive_budget3 :
     AgentQuery.readyToAct ∈
       ((expansiveConstructionBase.visibleAt (3 : ℕ)) : Set AgentQuery) := by
   show AgentQuery.readyToAct ∈
-    availableClosureFromTrace agentSurface agentFrontier agentRules witnessTrace expansiveQueryPerspective 3 Set.univ
+    availableClosureFromTrace agentEncoder agentFrontier agentRules witnessTrace expansiveQueryPerspective 3 Set.univ
   rw [← closure_eq_availableClosure_expansive_budget3 (σ := witnessTrace)]
   exact readyToAct_in_closure_of_nonempty witnessTrace_nonempty
 
@@ -419,7 +419,7 @@ theorem awareReady_mem_visible_expansive_budget3 :
     AgentQuery.awareReady ∈
       ((expansiveConstructionBase.visibleAt (3 : ℕ)) : Set AgentQuery) := by
   show AgentQuery.awareReady ∈
-    availableClosureFromTrace agentSurface agentFrontier agentRules witnessTrace expansiveQueryPerspective 3 Set.univ
+    availableClosureFromTrace agentEncoder agentFrontier agentRules witnessTrace expansiveQueryPerspective 3 Set.univ
   rw [← closure_eq_availableClosure_expansive_budget3 (σ := witnessTrace)]
   exact awareReady_in_closure_of_nonempty witnessTrace_nonempty
 
@@ -452,7 +452,7 @@ theorem sensedSignal_mem_visible_regimeSensitive_nonempty_budget3 :
   refine ⟨sensedSignal_in_closure_of_nonempty witnessTrace_nonempty, ?_⟩
   refine ⟨?_, ?_, by simp⟩
   · exact
-      ⟨AgentSignal.surface,
+      ⟨AgentSignal.external,
         by simp [freezePerspective, regimeSensitiveQueryPerspective, witnessTrace_nonempty],
         by simp [freezePerspective, regimeSensitiveQueryPerspective, witnessTrace_nonempty]⟩
   · simp [nearEurycosm, sublevelRegion,
@@ -466,7 +466,7 @@ theorem readyToAct_mem_visible_regimeSensitive_nonempty_budget3 :
   refine ⟨readyToAct_in_closure_of_nonempty witnessTrace_nonempty, ?_⟩
   refine ⟨?_, ?_, by simp⟩
   · exact
-      ⟨AgentSignal.surface,
+      ⟨AgentSignal.external,
         by simp [freezePerspective, regimeSensitiveQueryPerspective, witnessTrace_nonempty],
         by simp [freezePerspective, regimeSensitiveQueryPerspective, witnessTrace_nonempty]⟩
   · simp [nearEurycosm, sublevelRegion,

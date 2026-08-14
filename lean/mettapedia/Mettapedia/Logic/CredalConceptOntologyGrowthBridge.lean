@@ -5,7 +5,7 @@ import Mettapedia.Logic.MarkovLogicOntologyGrowth
 /-!
 # Credal Lower-Formed Concept ↔ Ontology-Growth Bridge
 
-This module composes two already-proved surfaces:
+This module composes two already-proved interfaces:
 
 - robust lower-formed credal inheritance obligations encoded as WM queries,
 - local ontology-growth stability for infinite MLN query probabilities.
@@ -603,11 +603,11 @@ variable [AddCommMonoid Q] [Preorder Q] [Fintype Gate] [Nonempty Gate] [Fintype 
 
 /- Observation-level specialization of local ontology-growth stability for
 robust lower-formed seed obligations. Positive example: a robust concept pair
-formed from a local observation surface keeps its threshold-valid inheritance
+formed from a local observation interface keeps its threshold-valid inheritance
 query when new remote ontology clauses are added. Negative example: this
 theorem does not apply once the encoded query leaves the agreement region. -/
 omit [Fintype Gate] [Nonempty Gate] in
-theorem ConceptOntology.ObservationSurface.thresholdValid_observationLowerFormedConceptQuerySet_stable_of_specAgreesOnRegion
+theorem ConceptOntology.ObservationEncoder.thresholdValid_observationLowerFormedConceptQuerySet_stable_of_specAgreesOnRegion
     {M₁ M₂ : MarkovLogicInfiniteUniqueness.ClassicalInfiniteGroundMLNSpec Atom ClauseId}
     {Γ : MarkovLogicInfiniteSpecification.Region Atom}
     (hagree : SpecAgreesOnRegion M₁ M₂ Γ)
@@ -623,43 +623,43 @@ theorem ConceptOntology.ObservationSurface.thresholdValid_observationLowerFormed
     (hμ₂ : MarkovLogicInfiniteFixedRegionDLR.FixedRegionCylinderDLR
       M₂.toStrictlyPositiveInfiniteGroundMLNSpec
       (μ₂ : MeasureTheory.Measure (MarkovLogicInfiniteSpecification.InfiniteWorld Atom)))
-    (S : _root_.Mettapedia.KR.ConceptOntology.ObservationSurface Obs Obj Attr Q)
+    (S : _root_.Mettapedia.KR.ConceptOntology.ObservationEncoder Obs Obj Attr Q)
     (GateFamily : Gate → _root_.Mettapedia.KR.ConceptOntology.EvidenceGate Q) (σ : Multiset Obs)
     (tau : ENNReal)
     (encode :
-      _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ →
-        _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ →
+      _root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.LowerFormedConcept S GateFamily σ →
+        _root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.LowerFormedConcept S GateFamily σ →
           ConstraintQuery Atom)
     (seed :
       Set
-        (_root_.Mettapedia.KR.ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ ×
-          _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ))
+        (_root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.LowerFormedConcept S GateFamily σ ×
+          _root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.LowerFormedConcept S GateFamily σ))
     (hSeed :
       thresholdValid
         (State := MassState (ConstraintQuery Atom))
         (Query := ConstraintQuery Atom)
         ({infiniteMLNMassSemantics M₁ μ₁ hμ₁}) tau
         (CredalConceptFixpointClosureBridge.lowerFormedConceptQuerySet GateFamily
-          (_root_.Mettapedia.KR.ConceptOntology.ObservationSurface.aggregate S σ) encode seed))
+          (_root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.aggregate S σ) encode seed))
     (hSupport :
-      ∀ p : _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ ×
-          _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ, p ∈ seed →
+      ∀ p : _root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.LowerFormedConcept S GateFamily σ ×
+          _root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.LowerFormedConcept S GateFamily σ, p ∈ seed →
         ∀ c ∈ encode p.1 p.2, (c : Sigma fun _ : Atom => Bool).1 ∈ Γ) :
     thresholdValid
       (State := MassState (ConstraintQuery Atom))
       (Query := ConstraintQuery Atom)
       ({infiniteMLNMassSemantics M₂ μ₂ hμ₂}) tau
       (CredalConceptFixpointClosureBridge.lowerFormedConceptQuerySet GateFamily
-        (_root_.Mettapedia.KR.ConceptOntology.ObservationSurface.aggregate S σ) encode seed) := by
+        (_root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.aggregate S σ) encode seed) := by
   exact thresholdValid_lowerFormedConceptQuerySet_stable_of_specAgreesOnRegion
     hagree hclosed₁ hclosed₂ hbudget₁ hbudget₂ μ₁ μ₂ hμ₁ hμ₂
-    GateFamily (_root_.Mettapedia.KR.ConceptOntology.ObservationSurface.aggregate S σ) tau encode seed hSeed hSupport
+    GateFamily (_root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.aggregate S σ) tau encode seed hSeed hSupport
 
 /- Observation-level closure corollary: once a robust observation-formed seed
 family is locally stable under ontology growth, generic WM consequence closure
 on the grown ontology preserves the same threshold. -/
 omit [Fintype Gate] [Nonempty Gate] in
-theorem ConceptOntology.ObservationSurface.leastRuleClosure_thresholdValid_observationLowerFormedConceptQuerySet_of_specAgreesOnRegion
+theorem ConceptOntology.ObservationEncoder.leastRuleClosure_thresholdValid_observationLowerFormedConceptQuerySet_of_specAgreesOnRegion
     (R :
       RuleSet
         (MassState (ConstraintQuery Atom))
@@ -679,27 +679,27 @@ theorem ConceptOntology.ObservationSurface.leastRuleClosure_thresholdValid_obser
     (hμ₂ : MarkovLogicInfiniteFixedRegionDLR.FixedRegionCylinderDLR
       M₂.toStrictlyPositiveInfiniteGroundMLNSpec
       (μ₂ : MeasureTheory.Measure (MarkovLogicInfiniteSpecification.InfiniteWorld Atom)))
-    (S : _root_.Mettapedia.KR.ConceptOntology.ObservationSurface Obs Obj Attr Q)
+    (S : _root_.Mettapedia.KR.ConceptOntology.ObservationEncoder Obs Obj Attr Q)
     (GateFamily : Gate → _root_.Mettapedia.KR.ConceptOntology.EvidenceGate Q) (σ : Multiset Obs)
     (tau : ENNReal)
     (encode :
-      _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ →
-        _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ →
+      _root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.LowerFormedConcept S GateFamily σ →
+        _root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.LowerFormedConcept S GateFamily σ →
           ConstraintQuery Atom)
     (seed :
       Set
-        (_root_.Mettapedia.KR.ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ ×
-          _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ))
+        (_root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.LowerFormedConcept S GateFamily σ ×
+          _root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.LowerFormedConcept S GateFamily σ))
     (hSeed :
       thresholdValid
         (State := MassState (ConstraintQuery Atom))
         (Query := ConstraintQuery Atom)
         ({infiniteMLNMassSemantics M₁ μ₁ hμ₁}) tau
         (CredalConceptFixpointClosureBridge.lowerFormedConceptQuerySet GateFamily
-          (_root_.Mettapedia.KR.ConceptOntology.ObservationSurface.aggregate S σ) encode seed))
+          (_root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.aggregate S σ) encode seed))
     (hSupport :
-      ∀ p : _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ ×
-          _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ, p ∈ seed →
+      ∀ p : _root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.LowerFormedConcept S GateFamily σ ×
+          _root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.LowerFormedConcept S GateFamily σ, p ∈ seed →
         ∀ c ∈ encode p.1 p.2, (c : Sigma fun _ : Atom => Bool).1 ∈ Γ) :
     thresholdValid
       (State := MassState (ConstraintQuery Atom))
@@ -710,15 +710,15 @@ theorem ConceptOntology.ObservationSurface.leastRuleClosure_thresholdValid_obser
         (Query := ConstraintQuery Atom)
         R ({infiniteMLNMassSemantics M₂ μ₂ hμ₂})
         (CredalConceptFixpointClosureBridge.lowerFormedConceptQuerySet GateFamily
-          (_root_.Mettapedia.KR.ConceptOntology.ObservationSurface.aggregate S σ) encode seed)) := by
+          (_root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.aggregate S σ) encode seed)) := by
   exact leastRuleClosure_thresholdValid_lowerFormedConceptQuerySet_of_specAgreesOnRegion
     R hagree hclosed₁ hclosed₂ hbudget₁ hbudget₂ μ₁ μ₂ hμ₁ hμ₂
-    GateFamily (_root_.Mettapedia.KR.ConceptOntology.ObservationSurface.aggregate S σ) tau encode seed hSeed hSupport
+    GateFamily (_root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.aggregate S σ) tau encode seed hSeed hSupport
 
 /- Observation-level specialization of local ontology-growth stability for
 robust lower-formed exact full-inheritance obligations. -/
 omit [Fintype Gate] [Nonempty Gate] in
-theorem ConceptOntology.ObservationSurface.thresholdValid_observationLowerFormedConceptQuerySet_stable_of_specAgreesOnRegion_of_exactFullInheritanceStrength
+theorem ConceptOntology.ObservationEncoder.thresholdValid_observationLowerFormedConceptQuerySet_stable_of_specAgreesOnRegion_of_exactFullInheritanceStrength
     {M₁ M₂ : MarkovLogicInfiniteUniqueness.ClassicalInfiniteGroundMLNSpec Atom ClauseId}
     {Γ : MarkovLogicInfiniteSpecification.Region Atom}
     (hagree : SpecAgreesOnRegion M₁ M₂ Γ)
@@ -734,42 +734,42 @@ theorem ConceptOntology.ObservationSurface.thresholdValid_observationLowerFormed
     (hμ₂ : MarkovLogicInfiniteFixedRegionDLR.FixedRegionCylinderDLR
       M₂.toStrictlyPositiveInfiniteGroundMLNSpec
       (μ₂ : MeasureTheory.Measure (MarkovLogicInfiniteSpecification.InfiniteWorld Atom)))
-    (S : _root_.Mettapedia.KR.ConceptOntology.ObservationSurface Obs Obj Attr Q)
+    (S : _root_.Mettapedia.KR.ConceptOntology.ObservationEncoder Obs Obj Attr Q)
     (GateFamily : Gate → _root_.Mettapedia.KR.ConceptOntology.EvidenceGate Q) (σ : Multiset Obs)
     (tau : ENNReal)
     (encode :
-      _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ →
-        _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ →
+      _root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.LowerFormedConcept S GateFamily σ →
+        _root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.LowerFormedConcept S GateFamily σ →
           ConstraintQuery Atom)
     (seed :
       Set
-        (_root_.Mettapedia.KR.ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ ×
-          _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ))
+        (_root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.LowerFormedConcept S GateFamily σ ×
+          _root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.LowerFormedConcept S GateFamily σ))
     (hSeed :
       thresholdValid
         (State := MassState (ConstraintQuery Atom))
         (Query := ConstraintQuery Atom)
         ({infiniteMLNMassSemantics M₁ μ₁ hμ₁}) tau
         (CredalConceptFullInheritanceClosureBridge.lowerFormedConceptQuerySet GateFamily
-          (_root_.Mettapedia.KR.ConceptOntology.ObservationSurface.aggregate S σ) encode seed))
+          (_root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.aggregate S σ) encode seed))
     (hSupport :
-      ∀ p : _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ ×
-          _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ, p ∈ seed →
+      ∀ p : _root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.LowerFormedConcept S GateFamily σ ×
+          _root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.LowerFormedConcept S GateFamily σ, p ∈ seed →
         ∀ c ∈ encode p.1 p.2, (c : Sigma fun _ : Atom => Bool).1 ∈ Γ) :
     thresholdValid
       (State := MassState (ConstraintQuery Atom))
       (Query := ConstraintQuery Atom)
       ({infiniteMLNMassSemantics M₂ μ₂ hμ₂}) tau
       (CredalConceptFullInheritanceClosureBridge.lowerFormedConceptQuerySet GateFamily
-        (_root_.Mettapedia.KR.ConceptOntology.ObservationSurface.aggregate S σ) encode seed) := by
+        (_root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.aggregate S σ) encode seed) := by
   exact thresholdValid_lowerFormedConceptQuerySet_stable_of_specAgreesOnRegion_of_exactFullInheritanceStrength
     hagree hclosed₁ hclosed₂ hbudget₁ hbudget₂ μ₁ μ₂ hμ₁ hμ₂
-    GateFamily (_root_.Mettapedia.KR.ConceptOntology.ObservationSurface.aggregate S σ) tau encode seed hSeed hSupport
+    GateFamily (_root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.aggregate S σ) tau encode seed hSeed hSupport
 
 /- Observation-level closure corollary for the exact full-inheritance
-lower-formed surface. -/
+lower-formed interface. -/
 omit [Fintype Gate] [Nonempty Gate] in
-theorem ConceptOntology.ObservationSurface.leastRuleClosure_thresholdValid_observationLowerFormedConceptQuerySet_of_specAgreesOnRegion_of_exactFullInheritanceStrength
+theorem ConceptOntology.ObservationEncoder.leastRuleClosure_thresholdValid_observationLowerFormedConceptQuerySet_of_specAgreesOnRegion_of_exactFullInheritanceStrength
     (R :
       RuleSet
         (MassState (ConstraintQuery Atom))
@@ -789,27 +789,27 @@ theorem ConceptOntology.ObservationSurface.leastRuleClosure_thresholdValid_obser
     (hμ₂ : MarkovLogicInfiniteFixedRegionDLR.FixedRegionCylinderDLR
       M₂.toStrictlyPositiveInfiniteGroundMLNSpec
       (μ₂ : MeasureTheory.Measure (MarkovLogicInfiniteSpecification.InfiniteWorld Atom)))
-    (S : _root_.Mettapedia.KR.ConceptOntology.ObservationSurface Obs Obj Attr Q)
+    (S : _root_.Mettapedia.KR.ConceptOntology.ObservationEncoder Obs Obj Attr Q)
     (GateFamily : Gate → _root_.Mettapedia.KR.ConceptOntology.EvidenceGate Q) (σ : Multiset Obs)
     (tau : ENNReal)
     (encode :
-      _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ →
-        _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ →
+      _root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.LowerFormedConcept S GateFamily σ →
+        _root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.LowerFormedConcept S GateFamily σ →
           ConstraintQuery Atom)
     (seed :
       Set
-        (_root_.Mettapedia.KR.ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ ×
-          _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ))
+        (_root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.LowerFormedConcept S GateFamily σ ×
+          _root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.LowerFormedConcept S GateFamily σ))
     (hSeed :
       thresholdValid
         (State := MassState (ConstraintQuery Atom))
         (Query := ConstraintQuery Atom)
         ({infiniteMLNMassSemantics M₁ μ₁ hμ₁}) tau
         (CredalConceptFullInheritanceClosureBridge.lowerFormedConceptQuerySet GateFamily
-          (_root_.Mettapedia.KR.ConceptOntology.ObservationSurface.aggregate S σ) encode seed))
+          (_root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.aggregate S σ) encode seed))
     (hSupport :
-      ∀ p : _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ ×
-          _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ, p ∈ seed →
+      ∀ p : _root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.LowerFormedConcept S GateFamily σ ×
+          _root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.LowerFormedConcept S GateFamily σ, p ∈ seed →
         ∀ c ∈ encode p.1 p.2, (c : Sigma fun _ : Atom => Bool).1 ∈ Γ) :
     thresholdValid
       (State := MassState (ConstraintQuery Atom))
@@ -820,10 +820,10 @@ theorem ConceptOntology.ObservationSurface.leastRuleClosure_thresholdValid_obser
         (Query := ConstraintQuery Atom)
         R ({infiniteMLNMassSemantics M₂ μ₂ hμ₂})
         (CredalConceptFullInheritanceClosureBridge.lowerFormedConceptQuerySet GateFamily
-          (_root_.Mettapedia.KR.ConceptOntology.ObservationSurface.aggregate S σ) encode seed)) := by
+          (_root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.aggregate S σ) encode seed)) := by
   exact leastRuleClosure_thresholdValid_lowerFormedConceptQuerySet_of_specAgreesOnRegion_of_exactFullInheritanceStrength
     R hagree hclosed₁ hclosed₂ hbudget₁ hbudget₂ μ₁ μ₂ hμ₁ hμ₂
-    GateFamily (_root_.Mettapedia.KR.ConceptOntology.ObservationSurface.aggregate S σ) tau encode seed hSeed hSupport
+    GateFamily (_root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.aggregate S σ) tau encode seed hSeed hSupport
 
 section ObservationAdmissibility
 
@@ -836,7 +836,7 @@ variable [Preorder Cost]
 /- Observation-level admissibility corollary for locally stable robust
 lower-formed obligations under ontology growth. -/
 omit [Fintype Gate] [Nonempty Gate] in
-theorem ConceptOntology.ObservationSurface.availableRegionAt_subset_wmAdmissibleRegionAt_of_specAgreesOnRegion
+theorem ConceptOntology.ObservationEncoder.availableRegionAt_subset_wmAdmissibleRegionAt_of_specAgreesOnRegion
     (P : StatefulPerspective (MassState (ConstraintQuery Atom)) (ConstraintQuery Atom) Signal Cost)
     (R :
       RuleSet
@@ -857,27 +857,27 @@ theorem ConceptOntology.ObservationSurface.availableRegionAt_subset_wmAdmissible
     (hμ₂ : MarkovLogicInfiniteFixedRegionDLR.FixedRegionCylinderDLR
       M₂.toStrictlyPositiveInfiniteGroundMLNSpec
       (μ₂ : MeasureTheory.Measure (MarkovLogicInfiniteSpecification.InfiniteWorld Atom)))
-    (S : _root_.Mettapedia.KR.ConceptOntology.ObservationSurface Obs Obj Attr Q)
+    (S : _root_.Mettapedia.KR.ConceptOntology.ObservationEncoder Obs Obj Attr Q)
     (GateFamily : Gate → _root_.Mettapedia.KR.ConceptOntology.EvidenceGate Q) (σ : Multiset Obs)
     (B : Cost) (guard : Set (ConstraintQuery Atom)) (tau : ENNReal)
     (encode :
-      _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ →
-        _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ →
+      _root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.LowerFormedConcept S GateFamily σ →
+        _root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.LowerFormedConcept S GateFamily σ →
           ConstraintQuery Atom)
     (seed :
       Set
-        (_root_.Mettapedia.KR.ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ ×
-          _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ))
+        (_root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.LowerFormedConcept S GateFamily σ ×
+          _root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.LowerFormedConcept S GateFamily σ))
     (hSeed :
       thresholdValid
         (State := MassState (ConstraintQuery Atom))
         (Query := ConstraintQuery Atom)
         ({infiniteMLNMassSemantics M₁ μ₁ hμ₁}) tau
         (CredalConceptFixpointClosureBridge.lowerFormedConceptQuerySet GateFamily
-          (_root_.Mettapedia.KR.ConceptOntology.ObservationSurface.aggregate S σ) encode seed))
+          (_root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.aggregate S σ) encode seed))
     (hSupport :
-      ∀ p : _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ ×
-          _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ, p ∈ seed →
+      ∀ p : _root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.LowerFormedConcept S GateFamily σ ×
+          _root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.LowerFormedConcept S GateFamily σ, p ∈ seed →
         ∀ c ∈ encode p.1 p.2, (c : Sigma fun _ : Atom => Bool).1 ∈ Γ)
     (hAvail :
       availableRegionAt P ({infiniteMLNMassSemantics M₂ μ₂ hμ₂}) B guard ⊆
@@ -886,7 +886,7 @@ theorem ConceptOntology.ObservationSurface.availableRegionAt_subset_wmAdmissible
           (Query := ConstraintQuery Atom)
           R ({infiniteMLNMassSemantics M₂ μ₂ hμ₂})
           (CredalConceptFixpointClosureBridge.lowerFormedConceptQuerySet GateFamily
-            (_root_.Mettapedia.KR.ConceptOntology.ObservationSurface.aggregate S σ) encode seed)) :
+            (_root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.aggregate S σ) encode seed)) :
     availableRegionAt P ({infiniteMLNMassSemantics M₂ μ₂ hμ₂}) B guard ⊆
       Mettapedia.PLN.RuleFamilies.HigherOrder.PLNWorldModelRegimeAdmissibility.wmAdmissibleRegionAt
         (State := MassState (ConstraintQuery Atom))
@@ -894,13 +894,13 @@ theorem ConceptOntology.ObservationSurface.availableRegionAt_subset_wmAdmissible
         P ({infiniteMLNMassSemantics M₂ μ₂ hμ₂}) B guard tau := by
   exact generic_availableRegionAt_subset_wmAdmissibleRegionAt_of_specAgreesOnRegion
     P R hagree hclosed₁ hclosed₂ hbudget₁ hbudget₂ μ₁ μ₂ hμ₁ hμ₂
-    GateFamily (_root_.Mettapedia.KR.ConceptOntology.ObservationSurface.aggregate S σ)
+    GateFamily (_root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.aggregate S σ)
     B guard tau encode seed hSeed hSupport hAvail
 
 /- Observation-level admissibility corollary for locally stable exact
 full-inheritance lower-formed obligations under ontology growth. -/
 omit [Fintype Gate] [Nonempty Gate] in
-theorem ConceptOntology.ObservationSurface.availableRegionAt_subset_wmAdmissibleRegionAt_of_specAgreesOnRegion_of_exactFullInheritanceStrength
+theorem ConceptOntology.ObservationEncoder.availableRegionAt_subset_wmAdmissibleRegionAt_of_specAgreesOnRegion_of_exactFullInheritanceStrength
     (P : StatefulPerspective (MassState (ConstraintQuery Atom)) (ConstraintQuery Atom) Signal Cost)
     (R :
       RuleSet
@@ -921,27 +921,27 @@ theorem ConceptOntology.ObservationSurface.availableRegionAt_subset_wmAdmissible
     (hμ₂ : MarkovLogicInfiniteFixedRegionDLR.FixedRegionCylinderDLR
       M₂.toStrictlyPositiveInfiniteGroundMLNSpec
       (μ₂ : MeasureTheory.Measure (MarkovLogicInfiniteSpecification.InfiniteWorld Atom)))
-    (S : _root_.Mettapedia.KR.ConceptOntology.ObservationSurface Obs Obj Attr Q)
+    (S : _root_.Mettapedia.KR.ConceptOntology.ObservationEncoder Obs Obj Attr Q)
     (GateFamily : Gate → _root_.Mettapedia.KR.ConceptOntology.EvidenceGate Q) (σ : Multiset Obs)
     (B : Cost) (guard : Set (ConstraintQuery Atom)) (tau : ENNReal)
     (encode :
-      _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ →
-        _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ →
+      _root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.LowerFormedConcept S GateFamily σ →
+        _root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.LowerFormedConcept S GateFamily σ →
           ConstraintQuery Atom)
     (seed :
       Set
-        (_root_.Mettapedia.KR.ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ ×
-          _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ))
+        (_root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.LowerFormedConcept S GateFamily σ ×
+          _root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.LowerFormedConcept S GateFamily σ))
     (hSeed :
       thresholdValid
         (State := MassState (ConstraintQuery Atom))
         (Query := ConstraintQuery Atom)
         ({infiniteMLNMassSemantics M₁ μ₁ hμ₁}) tau
         (CredalConceptFullInheritanceClosureBridge.lowerFormedConceptQuerySet GateFamily
-          (_root_.Mettapedia.KR.ConceptOntology.ObservationSurface.aggregate S σ) encode seed))
+          (_root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.aggregate S σ) encode seed))
     (hSupport :
-      ∀ p : _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ ×
-          _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ, p ∈ seed →
+      ∀ p : _root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.LowerFormedConcept S GateFamily σ ×
+          _root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.LowerFormedConcept S GateFamily σ, p ∈ seed →
         ∀ c ∈ encode p.1 p.2, (c : Sigma fun _ : Atom => Bool).1 ∈ Γ)
     (hAvail :
       availableRegionAt P ({infiniteMLNMassSemantics M₂ μ₂ hμ₂}) B guard ⊆
@@ -950,7 +950,7 @@ theorem ConceptOntology.ObservationSurface.availableRegionAt_subset_wmAdmissible
           (Query := ConstraintQuery Atom)
           R ({infiniteMLNMassSemantics M₂ μ₂ hμ₂})
           (CredalConceptFullInheritanceClosureBridge.lowerFormedConceptQuerySet GateFamily
-            (_root_.Mettapedia.KR.ConceptOntology.ObservationSurface.aggregate S σ) encode seed)) :
+            (_root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.aggregate S σ) encode seed)) :
     availableRegionAt P ({infiniteMLNMassSemantics M₂ μ₂ hμ₂}) B guard ⊆
       Mettapedia.PLN.RuleFamilies.HigherOrder.PLNWorldModelRegimeAdmissibility.wmAdmissibleRegionAt
         (State := MassState (ConstraintQuery Atom))
@@ -958,13 +958,13 @@ theorem ConceptOntology.ObservationSurface.availableRegionAt_subset_wmAdmissible
         P ({infiniteMLNMassSemantics M₂ μ₂ hμ₂}) B guard tau := by
   exact generic_availableRegionAt_subset_wmAdmissibleRegionAt_of_specAgreesOnRegion_of_exactFullInheritanceStrength
     P R hagree hclosed₁ hclosed₂ hbudget₁ hbudget₂ μ₁ μ₂ hμ₁ hμ₂
-    GateFamily (_root_.Mettapedia.KR.ConceptOntology.ObservationSurface.aggregate S σ)
+    GateFamily (_root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.aggregate S σ)
     B guard tau encode seed hSeed hSupport hAvail
 
 /- Observation-level admissible-region collapse corollary for locally stable
 robust lower-formed obligations under ontology growth. -/
 omit [Fintype Gate] [Nonempty Gate] in
-theorem ConceptOntology.ObservationSurface.wmAdmissibleRegionAt_eq_availableRegionAt_of_specAgreesOnRegion
+theorem ConceptOntology.ObservationEncoder.wmAdmissibleRegionAt_eq_availableRegionAt_of_specAgreesOnRegion
     (P : StatefulPerspective (MassState (ConstraintQuery Atom)) (ConstraintQuery Atom) Signal Cost)
     (R :
       RuleSet
@@ -985,27 +985,27 @@ theorem ConceptOntology.ObservationSurface.wmAdmissibleRegionAt_eq_availableRegi
     (hμ₂ : MarkovLogicInfiniteFixedRegionDLR.FixedRegionCylinderDLR
       M₂.toStrictlyPositiveInfiniteGroundMLNSpec
       (μ₂ : MeasureTheory.Measure (MarkovLogicInfiniteSpecification.InfiniteWorld Atom)))
-    (S : _root_.Mettapedia.KR.ConceptOntology.ObservationSurface Obs Obj Attr Q)
+    (S : _root_.Mettapedia.KR.ConceptOntology.ObservationEncoder Obs Obj Attr Q)
     (GateFamily : Gate → _root_.Mettapedia.KR.ConceptOntology.EvidenceGate Q) (σ : Multiset Obs)
     (B : Cost) (guard : Set (ConstraintQuery Atom)) (tau : ENNReal)
     (encode :
-      _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ →
-        _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ →
+      _root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.LowerFormedConcept S GateFamily σ →
+        _root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.LowerFormedConcept S GateFamily σ →
           ConstraintQuery Atom)
     (seed :
       Set
-        (_root_.Mettapedia.KR.ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ ×
-          _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ))
+        (_root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.LowerFormedConcept S GateFamily σ ×
+          _root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.LowerFormedConcept S GateFamily σ))
     (hSeed :
       thresholdValid
         (State := MassState (ConstraintQuery Atom))
         (Query := ConstraintQuery Atom)
         ({infiniteMLNMassSemantics M₁ μ₁ hμ₁}) tau
         (CredalConceptFixpointClosureBridge.lowerFormedConceptQuerySet GateFamily
-          (_root_.Mettapedia.KR.ConceptOntology.ObservationSurface.aggregate S σ) encode seed))
+          (_root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.aggregate S σ) encode seed))
     (hSupport :
-      ∀ p : _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ ×
-          _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ, p ∈ seed →
+      ∀ p : _root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.LowerFormedConcept S GateFamily σ ×
+          _root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.LowerFormedConcept S GateFamily σ, p ∈ seed →
         ∀ c ∈ encode p.1 p.2, (c : Sigma fun _ : Atom => Bool).1 ∈ Γ)
     (hAvail :
       availableRegionAt P ({infiniteMLNMassSemantics M₂ μ₂ hμ₂}) B guard ⊆
@@ -1014,7 +1014,7 @@ theorem ConceptOntology.ObservationSurface.wmAdmissibleRegionAt_eq_availableRegi
           (Query := ConstraintQuery Atom)
           R ({infiniteMLNMassSemantics M₂ μ₂ hμ₂})
           (CredalConceptFixpointClosureBridge.lowerFormedConceptQuerySet GateFamily
-            (_root_.Mettapedia.KR.ConceptOntology.ObservationSurface.aggregate S σ) encode seed)) :
+            (_root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.aggregate S σ) encode seed)) :
     Mettapedia.PLN.RuleFamilies.HigherOrder.PLNWorldModelRegimeAdmissibility.wmAdmissibleRegionAt
         (State := MassState (ConstraintQuery Atom))
         (Query := ConstraintQuery Atom)
@@ -1022,13 +1022,13 @@ theorem ConceptOntology.ObservationSurface.wmAdmissibleRegionAt_eq_availableRegi
       availableRegionAt P ({infiniteMLNMassSemantics M₂ μ₂ hμ₂}) B guard := by
   exact generic_wmAdmissibleRegionAt_eq_availableRegionAt_of_specAgreesOnRegion
     P R hagree hclosed₁ hclosed₂ hbudget₁ hbudget₂ μ₁ μ₂ hμ₁ hμ₂
-    GateFamily (_root_.Mettapedia.KR.ConceptOntology.ObservationSurface.aggregate S σ)
+    GateFamily (_root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.aggregate S σ)
     B guard tau encode seed hSeed hSupport hAvail
 
 /- Observation-level admissible-region collapse corollary for locally stable
 exact full-inheritance lower-formed obligations under ontology growth. -/
 omit [Fintype Gate] [Nonempty Gate] in
-theorem ConceptOntology.ObservationSurface.wmAdmissibleRegionAt_eq_availableRegionAt_of_specAgreesOnRegion_of_exactFullInheritanceStrength
+theorem ConceptOntology.ObservationEncoder.wmAdmissibleRegionAt_eq_availableRegionAt_of_specAgreesOnRegion_of_exactFullInheritanceStrength
     (P : StatefulPerspective (MassState (ConstraintQuery Atom)) (ConstraintQuery Atom) Signal Cost)
     (R :
       RuleSet
@@ -1049,27 +1049,27 @@ theorem ConceptOntology.ObservationSurface.wmAdmissibleRegionAt_eq_availableRegi
     (hμ₂ : MarkovLogicInfiniteFixedRegionDLR.FixedRegionCylinderDLR
       M₂.toStrictlyPositiveInfiniteGroundMLNSpec
       (μ₂ : MeasureTheory.Measure (MarkovLogicInfiniteSpecification.InfiniteWorld Atom)))
-    (S : _root_.Mettapedia.KR.ConceptOntology.ObservationSurface Obs Obj Attr Q)
+    (S : _root_.Mettapedia.KR.ConceptOntology.ObservationEncoder Obs Obj Attr Q)
     (GateFamily : Gate → _root_.Mettapedia.KR.ConceptOntology.EvidenceGate Q) (σ : Multiset Obs)
     (B : Cost) (guard : Set (ConstraintQuery Atom)) (tau : ENNReal)
     (encode :
-      _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ →
-        _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ →
+      _root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.LowerFormedConcept S GateFamily σ →
+        _root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.LowerFormedConcept S GateFamily σ →
           ConstraintQuery Atom)
     (seed :
       Set
-        (_root_.Mettapedia.KR.ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ ×
-          _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ))
+        (_root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.LowerFormedConcept S GateFamily σ ×
+          _root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.LowerFormedConcept S GateFamily σ))
     (hSeed :
       thresholdValid
         (State := MassState (ConstraintQuery Atom))
         (Query := ConstraintQuery Atom)
         ({infiniteMLNMassSemantics M₁ μ₁ hμ₁}) tau
         (CredalConceptFullInheritanceClosureBridge.lowerFormedConceptQuerySet GateFamily
-          (_root_.Mettapedia.KR.ConceptOntology.ObservationSurface.aggregate S σ) encode seed))
+          (_root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.aggregate S σ) encode seed))
     (hSupport :
-      ∀ p : _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ ×
-          _root_.Mettapedia.KR.ConceptOntology.ObservationSurface.LowerFormedConcept S GateFamily σ, p ∈ seed →
+      ∀ p : _root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.LowerFormedConcept S GateFamily σ ×
+          _root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.LowerFormedConcept S GateFamily σ, p ∈ seed →
         ∀ c ∈ encode p.1 p.2, (c : Sigma fun _ : Atom => Bool).1 ∈ Γ)
     (hAvail :
       availableRegionAt P ({infiniteMLNMassSemantics M₂ μ₂ hμ₂}) B guard ⊆
@@ -1078,7 +1078,7 @@ theorem ConceptOntology.ObservationSurface.wmAdmissibleRegionAt_eq_availableRegi
           (Query := ConstraintQuery Atom)
           R ({infiniteMLNMassSemantics M₂ μ₂ hμ₂})
           (CredalConceptFullInheritanceClosureBridge.lowerFormedConceptQuerySet GateFamily
-            (_root_.Mettapedia.KR.ConceptOntology.ObservationSurface.aggregate S σ) encode seed)) :
+            (_root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.aggregate S σ) encode seed)) :
     Mettapedia.PLN.RuleFamilies.HigherOrder.PLNWorldModelRegimeAdmissibility.wmAdmissibleRegionAt
         (State := MassState (ConstraintQuery Atom))
         (Query := ConstraintQuery Atom)
@@ -1086,7 +1086,7 @@ theorem ConceptOntology.ObservationSurface.wmAdmissibleRegionAt_eq_availableRegi
       availableRegionAt P ({infiniteMLNMassSemantics M₂ μ₂ hμ₂}) B guard := by
   exact generic_wmAdmissibleRegionAt_eq_availableRegionAt_of_specAgreesOnRegion_of_exactFullInheritanceStrength
     P R hagree hclosed₁ hclosed₂ hbudget₁ hbudget₂ μ₁ μ₂ hμ₁ hμ₂
-    GateFamily (_root_.Mettapedia.KR.ConceptOntology.ObservationSurface.aggregate S σ)
+    GateFamily (_root_.Mettapedia.KR.ConceptOntology.ObservationEncoder.aggregate S σ)
     B guard tau encode seed hSeed hSupport hAvail
 
 end ObservationAdmissibility

@@ -3,7 +3,7 @@ import Mettapedia.Hyperseed.Closure
 /-!
 # Hyperseed: OpenClaw Bridge
 
-Minimal OpenClaw-facing surface for observation ingestion.
+Minimal OpenClaw-facing API for observation ingestion.
 
 Defines `OpenClawObservation` as a tagged observation envelope and provides
 `appendObservation` / `appendObservationTrace` helpers that extend the trace

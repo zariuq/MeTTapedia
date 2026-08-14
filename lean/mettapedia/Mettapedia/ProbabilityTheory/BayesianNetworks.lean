@@ -27,7 +27,7 @@ The intended public story is:
 * graph and BN structure,
 * discrete local-Markov and d-separation soundness for CPT joint measures,
 * exact factor-graph inference (`VariableElimination`, `ValuationBridge`),
-* semiring-generic belief propagation, with the incident-edge schedule surface
+* semiring-generic belief propagation, with the incident-edge schedule interface
   as the preferred exactness API,
 * local bridge lemmas and the attached-tree exactness support layer,
 * first belief-exactness theorems on small tree fragments and reusable

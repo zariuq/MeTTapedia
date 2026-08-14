@@ -38,54 +38,139 @@ inductive CompressedAction where
   | unknown
 deriving DecidableEq, Repr
 
-/-- Decode one byte while retaining the base-five accumulator between
-compressed-word tokens. -/
-def decodeByte (accumulator : Nat) (byte : UInt8) :
-    Option (List CompressedAction × Nat) :=
+/-- Appendix-B compressed-proof grammar state.  Keeping the numeric prefix
+inside `openIndex` makes it impossible to confuse an empty prefix with
+permission to save the preceding step. -/
+inductive CompressedPhase where
+  | betweenSteps
+  | openIndex (accumulator : Nat)
+  | justCompletedStep
+deriving DecidableEq, Repr
+
+namespace CompressedPhase
+
+def accumulator : CompressedPhase → Nat
+  | .openIndex value => value
+  | .betweenSteps | .justCompletedStep => 0
+
+end CompressedPhase
+
+/-- Decode one byte according to the Appendix-B phase grammar. -/
+def decodeByte (phase : CompressedPhase) (byte : UInt8) :
+    Option (List CompressedAction × CompressedPhase) :=
   let code := byte.toNat
   if 65 ≤ code ∧ code ≤ 84 then
-    some ([.step (20 * accumulator + (code - 65))], 0)
+    some ([.step (20 * phase.accumulator + (code - 65))],
+      .justCompletedStep)
   else if 85 ≤ code ∧ code ≤ 89 then
-    some ([], 5 * accumulator + (code - 84))
+    some ([], .openIndex (5 * phase.accumulator + (code - 84)))
   else if code = 90 then
-    some ([.save], 0)
+    match phase with
+    | .justCompletedStep => some ([.save], .betweenSteps)
+    | .betweenSteps | .openIndex _ => none
   else if code = 63 then
-    some ([.unknown], 0)
+    match phase with
+    | .openIndex _ => none
+    | .betweenSteps | .justCompletedStep =>
+        some ([.unknown], .betweenSteps)
   else
     none
 
 /-- Decode one lexical compressed-word token. -/
-def decodeWord : List UInt8 → Nat →
-    Option (List CompressedAction × Nat)
-  | [], accumulator => some ([], accumulator)
-  | byte :: bytes, accumulator => do
-      let (headActions, nextAccumulator) ←
-        decodeByte accumulator byte
-      let (tailActions, finalAccumulator) ←
-        decodeWord bytes nextAccumulator
-      pure (headActions ++ tailActions, finalAccumulator)
+def decodeWord : List UInt8 → CompressedPhase →
+    Option (List CompressedAction × CompressedPhase)
+  | [], phase => some ([], phase)
+  | byte :: bytes, phase => do
+      let (headActions, nextPhase) ← decodeByte phase byte
+      let (tailActions, finalPhase) ← decodeWord bytes nextPhase
+      pure (headActions ++ tailActions, finalPhase)
 
 /-- Decode a list of lexical compressed-word tokens.  Token boundaries are
 retained in the input while the numeric accumulator crosses those boundaries,
 as required by the source language. -/
-def decodeWords : List (List UInt8) → Nat →
-    Option (List CompressedAction × Nat)
-  | [], accumulator => some ([], accumulator)
-  | word :: words, accumulator => do
-      let (headActions, nextAccumulator) ←
-        decodeWord word accumulator
-      let (tailActions, finalAccumulator) ←
-        decodeWords words nextAccumulator
-      pure (headActions ++ tailActions, finalAccumulator)
+def decodeWords : List (List UInt8) → CompressedPhase →
+    Option (List CompressedAction × CompressedPhase)
+  | [], phase => some ([], phase)
+  | word :: words, phase => do
+      let (headActions, nextPhase) ← decodeWord word phase
+      let (tailActions, finalPhase) ← decodeWords words nextPhase
+      pure (headActions ++ tailActions, finalPhase)
 
 /-- A complete compressed program must finish outside a numeric index. -/
 def decodeProgram (words : List (List UInt8)) :
     Option (List CompressedAction) := do
-  let (actions, accumulator) ← decodeWords words 0
-  if accumulator = 0 then
-    some actions
-  else
-    none
+  let (actions, phase) ← decodeWords words .betweenSteps
+  match phase with
+  | .betweenSteps | .justCompletedStep => some actions
+  | .openIndex _ => none
+
+/-- The final phase computed by the source decoder.  The fallback is observed
+only for rejected programs; successful-program theorems below rule it out. -/
+def decodedFinalPhase (words : List (List UInt8)) : CompressedPhase :=
+  match decodeWords words .betweenSteps with
+  | some (_, phase) => phase
+  | none => .betweenSteps
+
+/-- A successful program exposes its computed final phase without choosing a
+witness from a proposition. -/
+theorem decodeWords_eq_of_decodeProgram_eq_some'
+    (words : List (List UInt8)) (actions : List CompressedAction)
+    (decoded : decodeProgram words = some actions) :
+    decodeWords words .betweenSteps =
+      some (actions, decodedFinalPhase words) := by
+  unfold decodeProgram at decoded
+  cases wordsDecoded : decodeWords words .betweenSteps with
+  | none => simp [wordsDecoded] at decoded
+  | some result =>
+      rcases result with ⟨decodedActions, finalPhase⟩
+      cases finalPhase <;> simp [wordsDecoded] at decoded ⊢
+      · subst decodedActions
+        simp [decodedFinalPhase, wordsDecoded]
+      · subst decodedActions
+        simp [decodedFinalPhase, wordsDecoded]
+
+/-- Successful programs finish in a phase admitted at theorem termination. -/
+theorem decodedFinalPhase_complete
+    (words : List (List UInt8)) (actions : List CompressedAction)
+    (decoded : decodeProgram words = some actions) :
+    decodedFinalPhase words = .betweenSteps ∨
+      decodedFinalPhase words = .justCompletedStep := by
+  unfold decodeProgram at decoded
+  cases wordsDecoded : decodeWords words .betweenSteps with
+  | none => simp [wordsDecoded] at decoded
+  | some result =>
+      rcases result with ⟨decodedActions, finalPhase⟩
+      cases finalPhase <;> simp [wordsDecoded] at decoded ⊢
+      · left
+        simp [decodedFinalPhase, wordsDecoded]
+      · right
+        simp [decodedFinalPhase, wordsDecoded]
+
+/-- Successful complete-program decoding exposes the exact final grammar
+phase, which is necessarily one of the two phases admitted at `$.`. -/
+theorem decodeWords_eq_of_decodeProgram_eq_some
+    (words : List (List UInt8)) (actions : List CompressedAction)
+    (decoded : decodeProgram words = some actions) :
+    ∃ finalPhase,
+      decodeWords words .betweenSteps = some (actions, finalPhase) ∧
+      (finalPhase = .betweenSteps ∨
+        finalPhase = .justCompletedStep) := by
+  unfold decodeProgram at decoded
+  cases wordsDecoded : decodeWords words .betweenSteps with
+  | none => simp [wordsDecoded] at decoded
+  | some result =>
+      rcases result with ⟨decodedActions, finalPhase⟩
+      cases finalPhase with
+      | betweenSteps =>
+          simp [wordsDecoded] at decoded
+          subst decodedActions
+          exact ⟨.betweenSteps, rfl, Or.inl rfl⟩
+      | openIndex accumulator =>
+          simp [wordsDecoded] at decoded
+      | justCompletedStep =>
+          simp [wordsDecoded] at decoded
+          subst decodedActions
+          exact ⟨.justCompletedStep, rfl, Or.inr rfl⟩
 
 def actionsVerified (actions : List CompressedAction) : Prop :=
   ∀ action ∈ actions, action ≠ .unknown
@@ -115,6 +200,22 @@ theorem decode_incomplete_index_rejected :
 
 theorem decode_noncode_byte_rejected :
     decodeProgram [[97]] = none := by
+  decide
+
+theorem decode_save_without_step_rejected :
+    decodeProgram [[90]] = none := by
+  decide
+
+theorem decode_interrupted_index_rejected :
+    decodeProgram [[65, 85, 90]] = none := by
+  decide
+
+theorem decode_repeated_save_rejected :
+    decodeProgram [[65, 90, 90]] = none := by
+  decide
+
+theorem decode_unknown_cannot_close_index :
+    decodeProgram [[85, 63]] = none := by
   decide
 
 /-! ## Proof DAG carrier -/
@@ -223,13 +324,23 @@ def emptyMachine
 
 inductive HeaderItem where
   | mandatory (hypothesis : HypothesisView)
-  | explicit (label : String)
+  | explicit (mandatory : List HypothesisView) (label : String)
+
+/-- Source-level Appendix-B admission for one header item.  The explicit
+suffix cannot name a hypothesis already supplied by the implicit mandatory
+prefix.  Assertions remain admissible because assertion and hypothesis labels
+are globally disjoint in a validated source prefix. -/
+def HeaderItem.Admitted : HeaderItem → Prop
+  | .mandatory _ => True
+  | .explicit mandatoryItems label =>
+      label ∉ mandatoryItems.map HypothesisView.label
 
 def headerItems (state : SourceState)
     (formula : ConstantHeadedFormula)
     (explicitLabels : List String) : List HeaderItem :=
-  (mandatoryHypotheses state formula).map .mandatory ++
-    explicitLabels.map .explicit
+  let mandatory := mandatoryHypotheses state formula
+  mandatory.map .mandatory ++
+    explicitLabels.map (.explicit mandatory)
 
 /-- One exact header-preload transition.  Hypotheses allocate leaf nodes;
 assertions allocate schemas only. -/
@@ -251,11 +362,13 @@ inductive HeaderStep
           heap := before.heap ++ [.proof before.nodes.length] }
   | explicitHypothesis
       (before : MachineState source target)
+      (mandatory : List HypothesisView)
       (label : String)
       (hypothesis : HypothesisView)
       (member : hypothesis ∈ source.activeHypotheses)
+      (nonmandatory : label ∉ mandatory.map HypothesisView.label)
       (label_eq : hypothesis.label = label) :
-      HeaderStep (.explicit label) before
+      HeaderStep (.explicit mandatory label) before
         { before with
           nodes := before.nodes ++
             [{ formula := hypothesis.formula
@@ -264,13 +377,27 @@ inductive HeaderStep
           heap := before.heap ++ [.proof before.nodes.length] }
   | explicitAssertion
       (before : MachineState source target)
+      (mandatory : List HypothesisView)
       (label : String)
       (assertion : SourceAssertion)
       (member : assertion ∈ source.assertions)
+      (nonmandatory : label ∉ mandatory.map HypothesisView.label)
       (label_eq : assertion.label = label) :
-      HeaderStep (.explicit label) before
+      HeaderStep (.explicit mandatory label) before
         { before with
           heap := before.heap ++ [.assertion assertion] }
+
+/-- Every source header transition carries the exact Appendix-B admission
+fact for its indexed item. -/
+def HeaderStep.itemAdmitted
+    {source : SourcePrefix} {target : ValidatedPresentation}
+    {item : HeaderItem}
+    {before after : MachineState source target}
+    (step : HeaderStep item before after) : item.Admitted := by
+  cases step with
+  | mandatory => trivial
+  | explicitHypothesis _ _ _ _ _ nonmandatory _ => exact nonmandatory
+  | explicitAssertion _ _ _ _ _ nonmandatory _ => exact nonmandatory
 
 /-- Ordered header construction, beginning with mandatory hypotheses and then
 the authored explicit label list. -/
@@ -288,6 +415,22 @@ inductive HeaderBuild
       (tail : HeaderBuild items middle after) :
       HeaderBuild (item :: items) before after
 
+/-- Every item in an authored header build carries its constructor-indexed
+Appendix-B admission fact. -/
+def HeaderBuild.itemAdmitted
+    {source : SourcePrefix} {target : ValidatedPresentation}
+    {items : List HeaderItem}
+    {before after : MachineState source target}
+    (build : HeaderBuild items before after) :
+    ∀ item ∈ items, item.Admitted := by
+  induction build with
+  | nil => simp
+  | cons head tail ih =>
+      intro item member
+      rcases List.mem_cons.mp member with rfl | member
+      · exact head.itemAdmitted
+      · exact ih item member
+
 noncomputable def HeaderStep.preservesDAGValid
     {source : SourcePrefix} {target : ValidatedPresentation}
     {item : HeaderItem}
@@ -298,7 +441,8 @@ noncomputable def HeaderStep.preservesDAGValid
   cases step with
   | mandatory before hypothesis member =>
       exact .snoc valid (.active hypothesis member)
-  | explicitHypothesis before label hypothesis member label_eq =>
+  | explicitHypothesis before mandatory label hypothesis member
+      nonmandatory label_eq =>
       exact .snoc valid (.active hypothesis member)
   | explicitAssertion =>
       exact valid

@@ -9,12 +9,12 @@ for the current switching/ERM program.
 
 If a proposed rescue still intends to pass through:
 
-* a visible input surface,
+* a visible input data domain,
 * a small encoded family of per-bit predictors, and
 * finite-class ERM / deceptive-sample recovery bounds,
 
 then it must instantiate the objects below.  In particular, a bit-budgeted
-family over an available input surface automatically inherits the weighted exact
+family over an available input data domain automatically inherits the weighted exact
 recovery lower bound from `FiniteIIDRecovery.lean`.
 
 So a weakness/GSLT argument that does *not* produce such an encoded family is no
@@ -28,7 +28,7 @@ open scoped ENNReal
 universe u v w
 
 /-- A "same-route" family is a bit-encoded boolean predictor family over one
-Hyperseed available input surface. -/
+Hyperseed available input data domain. -/
 abbrev SameRouteFamily
     {World : Type u} {Signal : Type v} {Cost : Type w} [Preorder Cost]
     (P : Mettapedia.Hyperseed.Perspective World Signal Cost) (B : Cost) (guard : Set World)

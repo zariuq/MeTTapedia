@@ -223,7 +223,7 @@ not a mixture of recurrent Markov chains.
 
 \begin{definition}
 A prefix measure $\mu$ is \emph{strongly recurrent} in the formal theorem
-surface if it admits an extension $P$ to infinite sequences satisfying
+theorem set if it admits an extension $P$ to infinite sequences satisfying
 \texttt{StrongRecurrence}. This is the recurrence hypothesis used by the
 public constructor.
 \end{definition}
@@ -307,7 +307,7 @@ noncomputable def MarkovMixture.of_markovExchangeable_strongRecurrence
     MarkovMixture k mu
 \end{lstlisting}
 
-The corresponding theorem surface is:
+The corresponding theorem set is:
 
 \begin{lstlisting}
 def FortiniSuccessorMatrixInvarianceTheoremStrongRecurrence
@@ -547,7 +547,7 @@ Successor-matrix PE & 3 files & 5,970 \\
 Crux and fiber payload & 5 files & 21,354 \\
 Carrier transport and evidence basis & 4 files & 2,067 \\
 Euler trail support & 6 files & 1,948 \\
-Surface and extension helpers & 8 files & 4,461 \\
+Theorem-set and extension helpers & 8 files & 4,461 \\
 \midrule
 \textbf{Total} & \textbf{28 files} & \textbf{42,405} \\
 \bottomrule
@@ -664,7 +664,7 @@ gives Solomonoff-style dominance guarantees.
 
 \medskip
 
-\noindent\textbf{Current theorem surface (2026-04):} the post-Markov bridge is
+\noindent\textbf{Current theorem set (2026-04):} the post-Markov bridge is
 now exposed at three abstraction levels:
 \begin{enumerate}
 \item \textbf{General $k$-ary}: \texttt{markovExchangeable\_domain\_characterization}
@@ -683,9 +683,9 @@ The class-recurrence layer enables PLN-style reasoning in settings where only
 partial recurrence is known, with explicit tracking of which transition rows
 support the factorization.
 
-\subsubsection{The Markov Xi Transition Surface}
+\subsubsection{The Markov Xi Transition Theorem Set}
 
-The formalization exposes a direct transition atom surface via
+The formalization exposes a direct transition atom theorem set via
 \texttt{MarkovTransitionXi.lean} and \texttt{MarkovPathXi.lean}.
 Key theorem: single-step transition queries compile to row-conditioned
 Dirichlet posterior means (\texttt{markovTransitionAtom\_semE\_eq\_rowProjection}).
@@ -844,10 +844,10 @@ setting:
   exchangeability from the row-specific hypothesis
 \end{itemize}
 
-The public API packages these results in \texttt{ClassRestrictedMarkovMixtureSurface},
+The public API packages these results in \texttt{ClassRestrictedMarkovMixtureModel},
 which carries the extension law, class recurrence hypothesis, and all derived
 row-law consequences. The theorem
-\texttt{ClassRestrictedMarkovMixtureSurface.class\_transition\_structure}
+\texttt{ClassRestrictedMarkovMixtureModel.class\_transition\_structure}
 provides the canonical entrypoint for downstream applications.
 
 \subsection{The MarkovMixture API}
@@ -865,14 +865,14 @@ The main constructor is
 \texttt{of\_markovExchangeable\_strongRecurrence}, which discharges the closed
 Fortini endpoint and returns a \texttt{MarkovMixture} directly from the public
 Markov-exchangeability, extension, and strong-recurrence hypotheses. More
-specialized constructors expose internal theorem surfaces for callers that
+specialized constructors expose internal theorem sets for callers that
 already have successor-matrix PE payloads. For class-restricted settings,
-\texttt{ClassRestrictedMarkovMixtureSurface} provides the analogous object
+\texttt{ClassRestrictedMarkovMixtureModel} provides the analogous object
 with honest scope for rows in the class.
 
 \subsection{Kleisli(Giry) Prefix-Law Bridge}
 
-We also connected the measure-theoretic theorem surface to the existing
+We also connected the measure-theoretic theorem set to the existing
 categorical Giry infrastructure. The new file
 \texttt{CategoryTheory/DeFinettiMarkovGiryBridge.lean} packages a
 \texttt{MarkovMixture} as a constant Kleisli(Giry) mediator
@@ -887,7 +887,7 @@ theorems are:
 \item \texttt{kleisliGiryMarkovDeFinettiFactorization\_iff\_nonempty\_markovMixture}
 \end{itemize}
 
-This gives an honest categorical restatement of the proved theorem surface:
+This gives an honest categorical restatement of the proved theorem set:
 the public Markov-mixture witness is equivalent to a Kleisli(Giry)
 factorization through the Markov parameter space at the finite-prefix level.
 
@@ -959,7 +959,7 @@ theorem markovSequenceKernel_cylinder_eq_wordProb (theta : MarkovParam k) :
   forall xs, markovSequenceKernel theta (cylinder xs) = wordProb theta xs
 \end{lstlisting}
 
-\subsection{Categorical Borel-Side Surface}
+\subsection{Categorical Borel-Side Contract}
 
 The Borel sequence kernel enables a stronger categorical factorization. Given
 a probability measure $\pi$ on $\mathrm{MarkovParam}_k$ (with Borel
@@ -978,13 +978,13 @@ theorem borelMarkovSequenceMixture_cylinder_eq (pi : ProbMarkov k) (xs : List (F
     integral theta, markovSequenceKernel theta (cylinder xs) dpi
 \end{lstlisting}
 
-The public factorization surface \texttt{CategoricalBorelMarkovSequenceKernelFactorization}
+The public factorization contract \texttt{CategoricalBorelMarkovSequenceKernelFactorization}
 packages this as a categorical statement: the prefix law $\mu$ factors through
 integrating the sequence kernel against a Borel probability law on parameters.
 
 \textbf{One-Way Lift}: The Borel-side construction uses a finer $\sigma$-algebra
 than the active \texttt{markovParamMeasurableSpace} (generated by \texttt{wordProb}
-coordinates). We prove the key bridge theorem connecting the two surfaces:
+coordinates). We prove the key bridge theorem connecting the two contracts:
 
 \begin{lstlisting}
 -- Trim a Borel law to the active sigma-algebra
@@ -1115,7 +1115,7 @@ theorem orderTwo_cylinder_011_eq_longWordProb (theta : HigherOrderMarkovParam 2 
 
 \begin{itemize}
 \item \textbf{Positive example}: the cylinder $[0,0,1]$ on an order-2 binary chain
-  now reduces to the honest higher-order probability surface via the full
+  now reduces to the honest higher-order probability theorem set via the full
   raw-symbol theorem.
 \item \textbf{Negative example}: this does not give de~Finetti mixtures for
   higher-order chains; that requires lifting through the Borel/Giry bridge.
@@ -1182,14 +1182,14 @@ Key results:
 \item \texttt{pairedWordProb\_eq}: paired word factorization into latent and emission
 \end{itemize}
 
-This gives a complete finite HMM sequence-law surface: the sequence measure
+This gives a complete finite HMM sequence-law theorem set: the sequence measure
 evaluates cylinder events exactly as the finite-word observation probability.
 
 \begin{itemize}
 \item \textbf{Positive example}: a 3-state latent chain with 5-symbol emissions
   has \texttt{observedSequenceMeasure (cylinder [y0,y1,y2]) = observedWordProb [y0,y1,y2]}.
 \item \textbf{Negative example}: this does not give Baum-Welch, forward-backward,
-  or posterior inference; what we proved is the finite sequence-law surface.
+  or posterior inference; what we proved is the finite sequence-law theorem set.
 \end{itemize}
 
 File: \texttt{FiniteHiddenMarkovModel.lean} (668 lines, 0~\texttt{sorry}).
@@ -1220,7 +1220,7 @@ File: \texttt{DeFinettiHigherOrderGiryBridge.lean} (175 lines, 0~\texttt{sorry})
 
 \subsection{Finite HMM de Finetti Bridge}
 
-The finite HMM surface also lifts to the Borel layer, with the latent
+The finite HMM theorem set also lifts to the Borel layer, with the latent
 parameter law as a Borel probability measure on \texttt{MarkovParam} and
 the emission kernel held fixed:
 
@@ -1243,7 +1243,7 @@ File: \texttt{FiniteHiddenMarkovDeFinettiBridge.lean} (339 lines, 0~\texttt{sorr
 
 \subsection{Controlled Finite HMMs, Credal Beliefs, and POMDP-Style Planning}
 
-The action-conditioned extension turns the finite HMM surface into a structured
+The action-conditioned extension turns the finite HMM theorem set into a structured
 finite POMDP substrate.  The latent transition kernel now depends on an
 externally supplied action:
 
@@ -1255,7 +1255,7 @@ structure ControlledFiniteHMMParam (Action : Type) (latent obs : Nat) where
 \end{lstlisting}
 
 At the observation level, the formalization proves a complete finite-state
-filtering and smoothing surface for completed action-observation cycles:
+filtering and smoothing theorem set for completed action-observation cycles:
 \begin{itemize}
 \item \texttt{filteringMass}: unnormalized latent belief after a completed trace,
 \item \texttt{filteringPosteriorMass}: normalized posterior given a nonzero
@@ -1323,7 +1323,7 @@ controlled prefix law whose conditioned observation process is
 lower-semicomputable, the standard finite-horizon Solomonoff log-loss regret
 bound applies along that fixed action stream.
 
-For controlled finite HMMs, this yields a concrete theorem surface, schematically:
+For controlled finite HMMs, this yields a concrete theorem set, schematically:
 \begin{lstlisting}
 theorem relEntropy_le_log_inv_controlledM2
     (theta : ControlledFiniteHMMParam Action latent obs)
@@ -1342,7 +1342,7 @@ theorem relEntropy_le_log_inv_controlledM2
 The lower-semicomputability hypothesis is not an implementation leftover.  The
 current parameter record allows arbitrary probability measures, so computability
 of the induced law is a genuine extra domain condition.  Removing that
-hypothesis would require an additional computable-parameter surface, not a
+hypothesis would require an additional computable-parameter theorem set, not a
 proof cleanup.
 
 \subsection{Higher-Order WM/PLN Bridge}
@@ -1356,7 +1356,7 @@ def rowEvidence (c : GramCounts k m) (ctx : Context k m) : MultiEvidence k :=
   { counts := fun a => c.counts ctx a }
 
 def higherOrderRowStatistic :
-    SufficientStatisticSurface (HigherOrderObservation k m) (Context k m) (MultiEvidence k)
+    SufficientStatisticEncoder (HigherOrderObservation k m) (Context k m) (MultiEvidence k)
 \end{lstlisting}
 
 The design stays honest: additive evidence is context-conditioned next-symbol

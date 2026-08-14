@@ -5,7 +5,7 @@ import Mettapedia.PLN.RuleFamilies.FirstOrder.PLNRevisionProfile
 /-!
 # Revision Bayesian Grounding Profile
 
-This file packages the existing theorem surface connecting finite PLN Revision
+This file packages the existing theorem family connecting finite PLN Revision
 to Beta-Bernoulli sufficient-statistic updating.
 
 It is intentionally a bridge profile: the rule-family algebra stays in

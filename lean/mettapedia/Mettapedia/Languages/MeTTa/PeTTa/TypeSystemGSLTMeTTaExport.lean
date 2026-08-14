@@ -2,12 +2,14 @@ import Mettapedia.Languages.MeTTa.PeTTa.TypeSystemGSLT
 import Mettapedia.Languages.MeTTa.PeTTa.TypeSystemGSLTGuard
 import Mettapedia.GSLT.LanguageDef.InferenceMeTTaRender
 import Mettapedia.GSLT.LanguageDef.InferenceRelationalMeTTaRender
+import Mettapedia.GSLT.LanguageDef.InferenceFiniteHornGSLTRender
 
 /-!
 # Exporter: PeTTa typecheck-v2 core presentation → generated artifacts
 
-Script (`lake env lean --run <this file> <executable.metta> <audit.metta>`)
-emitting the two projections of the admitted PeTTa typecheck-v2 GSLT root:
+Script (`lake env lean --run <this file> <executable.metta> <audit.metta>
+[<presentation.metta>]`) emitting projections of the admitted PeTTa
+typecheck-v2 GSLT root:
 
 - the EXECUTABLE artifact — the relational clause program the sealed
   checker space loads (`lib/petta/lib_typecheck_petta_generated_v0.metta`
@@ -16,7 +18,10 @@ emitting the two projections of the admitted PeTTa typecheck-v2 GSLT root:
   sample derivations, replayed by the operational generic inference
   checker (`generic_inference_checker_v0`).  Replay agreement is the
   J2-soundness sample check; it does not by itself establish the full
-  specialized↔LanguageDef correspondence.
+  specialized↔LanguageDef correspondence; and
+- the optional FINITE-HORN GSLT source — a proper `gslt-presentation-v1`
+  consumed by CeTTa's build-time langdef tooling.  It contains the authored
+  constructors, judgments, and rules, but no runtime harness or fixture rules.
 
 Byte-identity between committed artifacts and fresh regeneration is the
 gate (`cmp -s`), per the Metamath export contract.
@@ -167,6 +172,13 @@ def executable? : Option String := do
   some (executableHeader ++ program ++ "\n" ++ envBindings ++ "\n" ++
         reifier ++ "\n" ++ verdictHarness)
 
+/-- Semantic-source projection for the build-time langdef pipeline.  The
+guard presentation deliberately excludes the receipt-only environment
+fixtures and the nonmonotone four-way runtime harness. -/
+def finiteHornPresentation? : Option String :=
+  Mettapedia.GSLT.LanguageDef.InferenceFiniteHornGSLTRender.renderPresentation?
+    guardPresentation
+
 /-- Fail-closed totality, structural side: every core rule satisfies
 exactly the conditions under which `renderClause?` renders.  A rule
 drifting outside the fragment fails the build here; the exporter's
@@ -248,8 +260,25 @@ def main (arguments : List String) : IO UInt32 := do
           IO.println s!"wrote {rendered.toUTF8.size} bytes to {executablePath}"
           IO.println s!"wrote {audit.toUTF8.size} bytes to {auditPath}"
           pure 0
+  | [executablePath, auditPath, presentationPath] =>
+      match executable?, finiteHornPresentation? with
+      | none, _ =>
+          IO.eprintln "PeTTa typecheck core rule outside the relational fragment"
+          pure 1
+      | _, none =>
+          IO.eprintln "PeTTa typecheck rule outside the finite-Horn GSLT fragment"
+          pure 1
+      | some rendered, some presentation => do
+          IO.FS.writeFile executablePath rendered
+          IO.FS.writeFile auditPath audit
+          IO.FS.writeFile presentationPath presentation
+          IO.println s!"wrote {rendered.toUTF8.size} bytes to {executablePath}"
+          IO.println s!"wrote {audit.toUTF8.size} bytes to {auditPath}"
+          IO.println s!"wrote {presentation.toUTF8.size} bytes to {presentationPath}"
+          pure 0
   | _ => do
-      IO.eprintln "usage: <executable-output.metta> <audit-output.metta>"
+      IO.eprintln
+        "usage: <executable-output.metta> <audit-output.metta> [<presentation-output.metta>]"
       pure 2
 
 end Mettapedia.Languages.MeTTa.PeTTa.TypeSystemGSLTMeTTaExport

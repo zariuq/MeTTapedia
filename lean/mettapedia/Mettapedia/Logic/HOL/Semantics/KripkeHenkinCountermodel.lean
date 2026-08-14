@@ -2,10 +2,10 @@ import Mettapedia.Logic.HOL.Semantics.KripkeHenkin
 import Mettapedia.Logic.HOL.Semantics.KripkeHenkinGeneral
 
 /-!
-# Excluded-middle canary signature and countermodel surface
+# Excluded-middle canary signature and countermodel interface
 
 The concrete canary signature (one propositional atom over no base types, a
-two-world frame) together with the generation-free canary surfaces: the
+two-world frame) together with the generation-free canary interfaces: the
 countermodel-conditional negative canary and the positive derivable/semantic
 twins.  The concrete `KripkeHenkin` countermodel instance is the open
 obligation recorded in the consolidation verdict.  Split out of

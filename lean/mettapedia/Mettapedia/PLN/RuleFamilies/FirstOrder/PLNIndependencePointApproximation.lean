@@ -3,7 +3,7 @@ import Mettapedia.PLN.RuleFamilies.FirstOrder.PLNDeductionITVBridge
 /-!
 # Independence-Point Approximation Canaries
 
-This file records the small theorem surface behind a common implementation
+This file records the small theorem family behind a common implementation
 temptation: represent second-order truth values by moments, histograms, samples,
 or mixtures of Betas, then push the marginal representations through a rule.
 

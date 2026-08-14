@@ -202,7 +202,7 @@ The spec currently covers:
 - Automatic OSLF native types and ProofGSLT claims generated from each GSLT member
 - Catalog-indexed provider declarations, typed oracle projections, and
   observation-indexed native source/sink realization laws
-- Arithmetic/comparison extension surface: int/float sink lowerings and explicit `CmpSource` packaging
+- Arithmetic/comparison extension interface: int/float sink lowerings and explicit `CmpSource` packaging
 
 Explicit current boundaries:
 - The active scheduler uses the full exact compact-expression key.  The older

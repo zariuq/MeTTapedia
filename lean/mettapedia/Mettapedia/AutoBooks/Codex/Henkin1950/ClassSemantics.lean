@@ -14,7 +14,7 @@ paper-facing endpoint: class-valued models whose proposition carrier has its
 own truth predicate.
 
 This keeps the existing canonical quotient construction usable as a genuine
-semantic witness, rather than only as a bridge-obstruction surface.
+semantic witness, rather than only as a bridge-obstruction interface.
 -/
 
 /-- A paper-facing class general model carries typed semantic objects directly,

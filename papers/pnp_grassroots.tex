@@ -85,13 +85,13 @@ one-predictor agreement law and a family-level weighted union bound over finite
 encoded classes, together with weighted exact-recovery lower bounds for ERM.
 It also now packages the exact \emph{same-route interface}: a repair that still
 intends to use switching plus ERM must produce a bit-encoded family over an
-available input surface and therefore inherits the current finite weighted
+available input region and therefore inherits the current finite weighted
 recovery theorem.
-It also now isolates the exact post-switch visible surface and proves a clean
+It also now isolates the exact post-switch visible data domain and proves a clean
 finite-summary kernel: any switched family that truly factors through a finite
-summary surface automatically inherits an explicit truth-table bit budget equal
+summary domain automatically inherits an explicit truth-table bit budget equal
 to the cardinality of that summary type.
-It now also ties the four current exact-surface affine candidate classes
+It now also ties the four current exact-data-domain affine candidate classes
 directly to the weighted recovery backbone: once the target lies in one of
 those classes, the finite-sampling lower bound is available immediately with the
 matching explicit bit budget.
@@ -104,7 +104,7 @@ only through those summaries is constant on the whole state space.  The current
 exact HML layer is infinitary by default: if the certified minimal-context type
 is infinite, then even the depth-1 fragment is infinite, and the concrete rho
 instance already realizes that case.  And one layer below exact HML, the
-concrete rho present-moment surface already realizes arbitrary finite
+concrete rho present-moment external channels already realizes arbitrary finite
 membership patterns on a natural probe slice: a single-output probe state
 against a flat bag of input guards records exactly which channels are present in
 the environment.
@@ -170,26 +170,26 @@ ground-up PNP effort.
 \texttt{PNP/FiniteIIDFamilyBound.lean} & weighted deceptive-mass union bound for finite encoded families \\
 \texttt{PNP/FiniteIIDRecovery.lean} & weighted exact ERM recovery lower bounds under finite PMFs \\
 \texttt{PNP/SameRouteInterface.lean} & exact certificate for when a repair still counts as the same switching/ERM route \\
-\texttt{PNP/ExactSwitchedFamily.lean} & exact post-switch surface plus finite-summary compression kernel \\
-\texttt{PNP/ABVisibleSurface.lean} & reduced raw visible surface $(a,b)$ and its explicit cardinality \\
+\texttt{PNP/ExactSwitchedFamily.lean} & exact post-switch data domain plus finite-summary compression kernel \\
+\texttt{PNP/ABVisibleState.lean} & reduced raw visible data domain $(a,b)$ and its explicit cardinality \\
 \texttt{PNP/AffineColumnFamily.lean} & concrete affine GF(2)-style column family with $k+1$ bit budget \\
 \texttt{PNP/AffineFeatureFamily.lean} & bounded affine-feature family with budget $r(k+1)+2^r$ \\
 \texttt{PNP/SparseThresholdAffineFamily.lean} & sparse-threshold affine-feature family with linear budget $r(k+3)$ \\
 \texttt{PNP/AffineDecisionListFamily.lean} & affine decision-list family with linear budget $r(k+2)+1$ \\
-\texttt{PNP/ExactAffineRecovery.lean} & exact-surface weighted recovery bounds for the current affine candidate classes \\
-\texttt{PNP/SharedAffineFeatureFamilies.lean} & shared-basis exact-surface families with combiner-only budgets and recovery bounds \\
-\texttt{PNP/ExactABDecisionListFamily.lean} & concrete raw exact-surface decision-list family on $(a,b)$ with budget $2k+1$ \\
-\texttt{PNP/ABDecisionListRoute.lean} & pullback certificate from reduced $(a,b)$ decision lists to exact-surface compression/recovery \\
-\texttt{PNP/ExactABAffineFamilies.lean} & affine-feature, sparse-threshold, and decision-list ladders on the raw $(a,b)$ surface \\
-\texttt{PNP/SharedExactABFeatureFamilies.lean} & shared-basis affine ladders on the raw $(a,b)$ surface with combiner-only budgets \\
-\texttt{PNP/SharedABFeatureRoutes.lean} & quotient-route transfer from reduced $(a,b)$ families to shared-basis exact-surface budgets \\
+\texttt{PNP/ExactAffineRecovery.lean} & exact-data-domain weighted recovery bounds for the current affine candidate classes \\
+\texttt{PNP/SharedAffineFeatureFamilies.lean} & shared-basis exact-data-domain families with combiner-only budgets and recovery bounds \\
+\texttt{PNP/ExactABDecisionListFamily.lean} & concrete raw exact-data-domain decision-list family on $(a,b)$ with budget $2k+1$ \\
+\texttt{PNP/ABDecisionListRoute.lean} & pullback certificate from reduced $(a,b)$ decision lists to exact-data-domain compression/recovery \\
+\texttt{PNP/ExactABAffineFamilies.lean} & affine-feature, sparse-threshold, and decision-list ladders on the raw $(a,b)$ state \\
+\texttt{PNP/SharedExactABFeatureFamilies.lean} & shared-basis affine ladders on the raw $(a,b)$ state with combiner-only budgets \\
+\texttt{PNP/SharedABFeatureRoutes.lean} & quotient-route transfer from reduced $(a,b)$ families to shared-basis exact-data-domain budgets \\
 \texttt{PNP/SharedABTargetInterface.lean} & unified target data packages for the shared raw $(a,b)$ route \\
 \texttt{PNP/CanonicalABTargetRoute.lean} & canonical-coordinate specialization reducing the target interface back to raw $(a,b)$ decision lists \\
 \texttt{PNP/CanonicalABCandidateInterface.lean} & single candidate-data package for the canonical raw $(a,b)$ decision-list route, with recovery consequence \\
 \texttt{PNP/CanonicalABCodeWitness.lean} & explicit code-witness reduction: the route follows automatically from one raw $(a,b)$ decision-list code assignment per index \\
 \texttt{PNP/CanonicalABRecoveryInterface.lean} & final generic interface: explicit code assignment plus agreement bound imply compression and recovery \\
 \texttt{PNP/BitFamilyERM.lean} & ERM transport layer: one fixed local class yields one selected code per sample/index \\
-\texttt{PNP/ExactZABDecisionListFamily.lean} & exact-surface decision-list family on $(zfeat(z),a,b)$ with budget $r+2k+1$ \\
+\texttt{PNP/ExactZABDecisionListFamily.lean} & exact-data-domain decision-list family on $(zfeat(z),a,b)$ with budget $r+2k+1$ \\
 \texttt{PNP/ExactZABTargetInterface.lean} & target and recovery interfaces for the shared $(zfeat(z),a,b)$ decision-list route \\
 \texttt{PNP/ExactZABERMRoute.lean} & ERM specialization: the selected code itself witnesses the shared $(zfeat(z),a,b)$ route \\
 \texttt{PNP/SharedExactZABFeatureFamilies.lean} & shared-basis affine ladders on $(zfeat(z),a,b)$ with combiner-only budgets \\
@@ -201,11 +201,11 @@ ground-up PNP effort.
 \texttt{PNP/CanonicalZABRecoveryInterface.lean} & final direct exact-route interface: code assignment plus agreement bound imply compression and recovery \\
 \texttt{PNP/CanonicalZABERMRoute.lean} & ERM-to-canonical bridge: the exact ERM wrapper itself supplies the canonical code witness and recovery interface \\
 \texttt{PNP/CanonicalZABERMInterface.lean} & final manuscript-facing ERM interface: samples, equality to the ERM wrapper, and an agreement bound imply compression and recovery \\
-\texttt{PNP/BitVecZABVisibleSurface.lean} & when $z$ is already bit-valued, the full exact visible surface $(z,a,b)$ becomes one raw bitvector of length $r+2k$ \\
-\texttt{PNP/BitVecZABERMInterface.lean} & concrete identity-extractor specialization of the final exact ERM interface on the raw full visible bit surface \\
+\texttt{PNP/BitVecZABVisibleState.lean} & when $z$ is already bit-valued, the full exact visible data domain $(z,a,b)$ becomes one raw bitvector of length $r+2k$ \\
+\texttt{PNP/BitVecZABERMInterface.lean} & concrete identity-extractor specialization of the final exact ERM interface on the raw full visible bit state \\
 \texttt{PNP/ProjectedZABERMInterface.lean} & coordinate-projection specialization: the extractor burden is reduced to choosing finitely many coordinates of a bit-valued $z$ \\
-\texttt{PNP/GlobalWeaknessObstruction.lean} & current weakness summaries alone cannot yield a nonconstant predictor surface \\
-\texttt{PNP/InfinitaryHMLObstruction.lean} & infinite minimal contexts force an infinite depth-1 HML observable surface \\
+\texttt{PNP/GlobalWeaknessObstruction.lean} & current weakness summaries alone cannot yield a nonconstant predictor \\
+\texttt{PNP/InfinitaryHMLObstruction.lean} & infinite minimal contexts force an infinite depth-1 HML observable set \\
 \texttt{PNP/PresentMomentShattering.lean} & exact rho present-moment probes already realize arbitrary finite membership slices \\
 \bottomrule
 \end{tabular}
@@ -622,8 +622,8 @@ existing finite learning interface.
 The new module \texttt{SameRouteInterface.lean} packages exactly that point.  A
 \emph{same-route family} is just:
 \begin{enumerate}[leftmargin=1.5em]
-  \item one available input surface \(\mathrm{AvailableInput}(P,B,G)\),
-  \item one \(s\)-bit encoded boolean predictor family on that surface,
+  \item one available input region \(\mathrm{AvailableInput}(P,B,G)\),
+  \item one \(s\)-bit encoded boolean predictor family on that domain,
   \item one target predictor realized by some code in that family.
 \end{enumerate}
 
@@ -643,7 +643,7 @@ This is formalized as
 The point is not that this theorem proves the current switching step.  The
 point is that it now marks the boundary of the current route.  A weakness/GSLT
 idea that still intends to be a \emph{repair} of the present program must hand
-over this sort of certificate: an explicit visible input surface, an explicit
+over this sort of certificate: an explicit visible input region, an explicit
 small code space, and explicit agreement-mass control for the bad codes.  If it
 does not, then it is no longer filling a gap in the current route.  It is
 starting a different route.
@@ -654,13 +654,13 @@ The next optimistic cleanup is to isolate the exact object that still needs to
 be compressed.  The module \texttt{ExactSwitchedFamily.lean} now makes that
 object explicit.
 
-The manuscript-visible post-switch datum is the exact local surface
+The manuscript-visible post-switch datum is the exact local datum
 \[
   u = (z,a,b).
 \]
 The Lean file separates:
 \begin{enumerate}[leftmargin=1.5em]
-  \item the full exact visible surface \(u=(z,a,b)\),
+  \item the full exact visible data domain \(u=(z,a,b)\),
   \item the invariant projection \((z,a)\),
   \item the fork projection \(((z,a),b)\).
 \end{enumerate}
@@ -674,7 +674,7 @@ Let \(G\) be an indexed Boolean predictor family on some input type \(U\).  If
 \[
   \mathrm{view} : U \to V
 \]
-to a finite summary surface \(V\), then \(G\) admits a concrete truth-table bit
+to a finite summary domain \(V\), then \(G\) admits a concrete truth-table bit
 budget of size \(|V|\).
 \end{theorem}
 
@@ -689,7 +689,7 @@ compress the switched family somehow.
 It is:
 \begin{quote}
 prove that the switched family depends only on a genuinely small finite summary
-surface.
+domain.
 \end{quote}
 
 The exact post-switch specializations are now also explicit.
@@ -721,7 +721,7 @@ This is formalized by
 \texttt{card\_forkVisiblePostSwitchSurface} together with
 \texttt{exactVisibleCompressionTarget\_of\_factorsThrough\_fork\_fintype}.
 
-This does \emph{not} defeat the crux.  Those summary surfaces may still be far
+This does \emph{not} defeat the crux.  Those summary domains may still be far
 too large.  But it does give the ground-up reduction we wanted: a successful
 repair must now prove an actually small finite summary theorem, not merely a
 slogan about switched locality.
@@ -756,7 +756,7 @@ still wants to count as the current switching/ERM route must add genuinely
 per-instance observables or side information beyond these present global
 summaries.
 
-\section{Hyperseed as a Local-View Surface}
+\section{Hyperseed as a Local-View Region}
 
 The existing Hyperseed formalization already provides a clean observer-relative
 semantics.
@@ -775,14 +775,14 @@ an \emph{available region}
 
 For the grassroots PNP program, this matters because it gives a principled way to
 talk about what a decoder can even access.  Instead of treating locality as an
-informal phrase, we can work with a typed input surface:
+informal phrase, we can work with a typed input region:
 \[
   \mathrm{AvailableInput}(P,B,G)
   := \{x : \mathrm{World} \mid x \in \mathrm{availableRegion}(P,B,G)\}.
 \]
 
 The new Lean module proves the corresponding encoded-family bound on such an
-available input surface:
+available input region:
 
 \begin{theorem}[Available-region code-budget bound]
 An \(s\)-bit classifier family over one Hyperseed available region still realizes
@@ -905,7 +905,7 @@ the \(K_{\mathrm{poly}}\) contradiction step.  But it is now a real machine-chec
 background layer, not merely an idea.
 The new obstruction above sharpens this limit: the currently formalized
 weakness summaries are quotient-level evidence scalars, not a per-instance
-predictor surface.  So any semantic rescue that remains close to the
+predictor.  So any semantic rescue that remains close to the
 current switching/ERM route still needs an extra layer that turns operational
 semantics into state-indexed encoded observables.
 
@@ -934,7 +934,7 @@ The Meredith-side trilemma is now simple.
   \item Use the current weakness summaries: then the predictor is constant.
   \item Use the current exact HML/context probes: then the observable family is
   already too large, even at depth \(1\).
-  \item Use the current exact present-moment surface directly: then one already
+  \item Use the current exact present-moment external channels directly: then one already
   encounters powerset-like finite probe slices.
 \end{enumerate}
 
@@ -949,22 +949,22 @@ output on channel \(i\), and let environment \(S\) be a flat bag of input
 guards on the channels in a finite list \(S\).  Then the file proves:
 \begin{enumerate}[leftmargin=1.5em]
   \item channel \(i\) lies in
-  \(\mathrm{surfaceChannels}(\mathrm{state}_i,\mathrm{env}_S)\) iff \(i \in S\);
+  \(\mathrm{externalChannels}(\mathrm{state}_i,\mathrm{env}_S)\) iff \(i \in S\);
   \item the concrete external-present-moment pair
   \((\mathrm{par}(\mathrm{env}_S,\Box), i)\) is present iff \(i \in S\).
 \end{enumerate}
 
 So even before passing to the exact HML layer, the currently formalized
-state-indexed observational surface already realizes arbitrary finite
+state-indexed external-channel set already realizes arbitrary finite
 membership patterns on a natural probe family.  This is not yet a full
-``depth-1 HML shattering'' theorem, but it means the large-observable-surface
+``depth-1 HML shattering'' theorem, but it means the large-observable-set
 pressure is already visible one layer earlier in the exact present-moment
 semantics.  In fact, the file now packages this as an injective finite-signature
 map \(S \mapsto (i \mapsto \mathrm{observable}_S(i))\) on
 \(\mathrm{Finset}(\mathrm{Fin}\,n)\): distinct finite probe sets yield distinct
 exact present-moment signatures on the \(n\) probe states.  Any close-form
 Meredith rescue now has to compress not only an infinitary exact HML layer, but
-already a powerset-like concrete probe family in the rho present-moment surface.
+already a powerset-like concrete probe family in the rho present-moment external channels.
 
 \section{Kolmogorov Foundations Already Present}
 
@@ -1106,9 +1106,9 @@ on the retained VV column view, the optimistic route now has an even smaller
 explicit candidate class than the sparse-threshold family.
 
 The next layer is now also formalized.  The new module
-\texttt{ExactAffineRecovery.lean} turns those four exact-surface candidate
+\texttt{ExactAffineRecovery.lean} turns those four exact-data-domain candidate
 classes into direct weighted finite-sampling recovery theorems.  Once the
-target lies in one of the concrete exact-surface affine families, the existing
+target lies in one of the concrete exact-data-domain affine families, the existing
 recovery backbone from \texttt{SameRouteInterface.lean} applies immediately
 with one of the four explicit budgets
 \[
@@ -1128,7 +1128,7 @@ to the combiner alone:
 \]
 for the shared truth-table, shared sparse-threshold, and shared decision-list
 regimes respectively.  The same module also proves the corresponding weighted
-exact-recovery lower bounds on the exact post-switch surface.
+exact-recovery lower bounds on the exact post-switch data domain.
 
 This is the first genuinely sharp improvement in the optimistic lane.  If the
 real switched family uses a common low-complexity feature extractor and varies
@@ -1139,45 +1139,45 @@ The next concrete step is now also formalized.  The new module
 \texttt{ExactABDecisionListFamily.lean} fixes the shared extractor to the raw
 exact visible bits themselves: concatenate the retained VV column bits \(a\)
 with the side-channel bits \(b\), then run a fixed-order decision list on those
-\(2k\) raw bits.  This yields a completely concrete exact-surface candidate
+\(2k\) raw bits.  This yields a completely concrete exact-data-domain candidate
 class with budget
 \[
   2k + 1.
 \]
 The key point is that the feature extractor is no longer existential or
-parameterized.  It is the literal raw exact visible surface restricted to the
+parameterized.  It is the literal raw exact visible data domain restricted to the
 bit coordinates \((a,b)\).  The same module also proves the corresponding
 weighted exact-recovery lower bound for that family.
 
 The route is now factored one step more cleanly.  The new modules
-\texttt{ABVisibleSurface.lean} and \texttt{ABDecisionListRoute.lean} isolate the
-reduced raw visible surface \((a,b)\) as an explicit quotient candidate and
+\texttt{ABVisibleState.lean} and \texttt{ABDecisionListRoute.lean} isolate the
+reduced raw visible data domain \((a,b)\) as an explicit quotient candidate and
 prove the pullback statement one actually wants: if the switched family factors
-through that reduced surface and the reduced family is realized by fixed-order
-decision lists there, then the exact-surface compression and weighted recovery
+through that reduced state and the reduced family is realized by fixed-order
+decision lists there, then the exact-data-domain compression and weighted recovery
 theorems follow immediately.  This is also the natural insertion point for any
 future observational-equivalence argument: a semantic quotient can help justify
 the map to \((a,b)\), but it does not need to alter the learning-theoretic
 backbone once that map is fixed.  The same route file now also proves the
-slightly stronger lift: if an exact-surface family is invariant under the
+slightly stronger lift: if an exact-data-domain family is invariant under the
 \((a,b)\) quotient, then a canonical reduced family can be reconstructed and
 the same \(2k+1\)-bit decision-list target follows from that invariance alone.
 
 The raw \((a,b)\) route is now richer than a single fixed-order decision list.
 The new module \texttt{ExactABAffineFamilies.lean} reuses the existing affine
-machinery on the same raw extractor and proves exact-surface compression and
+machinery on the same raw extractor and proves exact-data-domain compression and
 weighted recovery bounds for three further candidate classes on the raw
 \((a,b)\) bits:
 \[
   r((2k)+1)+2^r, \qquad r((2k)+3), \qquad r((2k)+2)+1
 \]
 for bounded affine features, sparse-threshold affine predictors, and affine
-decision lists respectively.  So the reduced raw surface is now a whole
+decision lists respectively.  So the reduced raw state is now a whole
 candidate-family ladder, not just one isolated family.
 
 The next refinement is now in place as well.  The new module
 \texttt{SharedExactABFeatureFamilies.lean} adds the shared-basis collapse on
-that same raw \((a,b)\) surface.  If one fixed affine basis on the \(2k\) raw
+that same raw \((a,b)\) state.  If one fixed affine basis on the \(2k\) raw
 bits is reused across the whole switched family and only the downstream
 combiner varies, the exact visible compression target drops all the way to
 combiner-only budgets:
@@ -1190,12 +1190,12 @@ per-predictor affine ladder and a sharper shared-basis ladder.
 
 That bridge is now factored explicitly too.  The new module
 \texttt{SharedABFeatureRoutes.lean} proves that if the switched family factors
-through the reduced raw surface \((a,b)\) and the reduced family is realized by
-one of those shared-basis raw affine classes, then the exact-surface family
+through the reduced raw state \((a,b)\) and the reduced family is realized by
+one of those shared-basis raw affine classes, then the exact-data-domain family
 inherits the same combiner-only budget immediately.  This is the sharpest
 current handoff point between any future observational quotient theorem and the
 small-class recovery machinery.  The same file now also proves the invariance
-version: if the exact-surface family is already invariant under the raw
+version: if the exact-data-domain family is already invariant under the raw
 \((a,b)\) quotient, then the canonical reduced family inherits those same
 shared-basis combiner-only budgets without any separately supplied
 factorization witness.
@@ -1217,7 +1217,7 @@ that specialization, the generic shared-basis decision-list target collapses
 exactly to the older raw \((a,b)\) decision-list route.  So the current formal
 burden can now be read in two equivalent ways:
 \begin{enumerate}[leftmargin=1.5em]
-  \item as a generic shared-basis target interface on the reduced raw surface,
+  \item as a generic shared-basis target interface on the reduced raw state,
   \item or as quotient invariance plus realization by fixed-order decision
   lists on the literal raw visible bits.
 \end{enumerate}
@@ -1263,9 +1263,9 @@ fixed shared extractor on the masked block.  The new module
 \texttt{ExactZABDecisionListFamily.lean} formalizes the corresponding candidate
 class directly: for any shared extractor \(\mathsf{zfeat}: Z \to \{0,1\}^r\), one
 concatenates \(\mathsf{zfeat}(z)\), \(a\), and \(b\), then applies the same
-fixed-order decision-list family as before.  The exact-surface budget is then
+fixed-order decision-list family as before.  The exact-data-domain budget is then
 \(r+2k+1\), and the matching weighted exact-recovery bound is proved on that
-larger visible surface.
+larger visible data domain.
 
 That new route is then packaged in \texttt{ExactZABTargetInterface.lean}.  The
 burden is exactly what one would want it to be: prove that the switched family
@@ -1288,7 +1288,7 @@ There is now one more collapse on top of that manuscript-facing route.  The new
 module \texttt{SharedExactZABFeatureFamilies.lean} assumes that the local bits
 \((\mathsf{zfeat}(z),a,b)\) first pass through one fixed shared affine-feature
 basis of width \(p\), and only the final combiner varies across predictors.  On
-that shared-basis route, the exact-surface budgets fall to \(2^p\) for arbitrary
+that shared-basis route, the exact-data-domain budgets fall to \(2^p\) for arbitrary
 truth tables, \(2p\) for sparse thresholds, and \(p+1\) for fixed-order
 decision lists.  Then \texttt{SharedExactZABTargetInterface.lean} packages the
 corresponding target and recovery interfaces, and
@@ -1297,7 +1297,7 @@ over that shared-basis decision-list class, then the selected code itself again
 is the route witness, now with the sharper \(p+1\) budget.
 
 So the remaining burden is now split cleanly into two candidate routes on the
-real local surface \(u=(z,a,b)\):
+real local datum \(u=(z,a,b)\):
 \begin{enumerate}[leftmargin=1.5em]
   \item the direct decision-list route on \((\mathsf{zfeat}(z),a,b)\), with budget \(r+2k+1\),
   \item the shared-basis route, where one fixed affine basis on \((\mathsf{zfeat}(z),a,b)\) reduces the decision-list budget to \(p+1\).
@@ -1323,11 +1323,11 @@ manuscript-facing form: one sample assignment, one proof that the switched
 family is exactly that ERM wrapper, and one bad-code agreement bound.
 
 There is now also one fully concrete specialization of that exact route.
-\texttt{BitVecZABVisibleSurface.lean} fixes the case where the local datum is
+\texttt{BitVecZABVisibleState.lean} fixes the case where the local datum is
 already a bitvector \(z : \mathrm{BitVec}\, r\), so the full visible input
 \((z,a,b)\) becomes one raw bitvector of length \(r+2k\).  Then
 \texttt{BitVecZABERMInterface.lean} specializes the final exact ERM interface
-to the identity extractor on that raw full visible bit surface.  So in that
+to the identity extractor on that raw full visible bit state.  So in that
 case the remaining burden is no longer “choose \(\mathsf{zfeat}\)”; it is only
 “choose the samples, prove equality to the ERM wrapper, and control the bad
 codes.”  The new module \texttt{ProjectedZABERMInterface.lean} narrows the same
@@ -1340,7 +1340,7 @@ Only after those layers are built does it make sense to reconnect to the full
 proof program:
 \begin{enumerate}[leftmargin=1.5em]
   \item define the distributional ensemble cleanly,
-  \item define local views as typed accessible surfaces,
+  \item define local views as typed accessible regions,
   \item prove the switched family lies in a small encoded subclass,
   \item connect success bounds to a properly formalized \(K_{\mathrm{poly}}\),
   \item finally compare with the upper bound under \(P=NP\).
@@ -1367,14 +1367,14 @@ finite weighted family union bound & proved & \texttt{FiniteIIDFamilyBound.lean}
 finite weighted recovery bounds & proved & \texttt{FiniteIIDRecovery.lean} \\
 same-route switching/ERM certificate & proved & \texttt{SameRouteInterface.lean} \\
 exact post-switch finite-summary kernel & proved & \texttt{ExactSwitchedFamily.lean} \\
-reduced raw visible surface $(a,b)$ & proved & \texttt{ABVisibleSurface.lean} \\
+reduced raw visible data domain $(a,b)$ & proved & \texttt{ABVisibleState.lean} \\
 affine GF(2)-style column candidate class & proved & \texttt{AffineColumnFamily.lean} \\
 bounded affine-feature candidate class & proved & \texttt{AffineFeatureFamily.lean} \\
 sparse-threshold affine candidate class & proved & \texttt{SparseThresholdAffineFamily.lean} \\
 affine decision-list candidate class & proved & \texttt{AffineDecisionListFamily.lean} \\
-exact-surface affine recovery ladder & proved & \texttt{ExactAffineRecovery.lean} \\
+exact-data-domain affine recovery ladder & proved & \texttt{ExactAffineRecovery.lean} \\
 shared-basis affine family ladder & proved & \texttt{SharedAffineFeatureFamilies.lean} \\
-raw exact-surface decision-list family on $(a,b)$ & proved & \texttt{ExactABDecisionListFamily.lean} \\
+raw exact-data-domain decision-list family on $(a,b)$ & proved & \texttt{ExactABDecisionListFamily.lean} \\
 pullback route from reduced $(a,b)$ families & proved & \texttt{ABDecisionListRoute.lean} \\
 affine candidate ladder on raw $(a,b)$ bits & proved & \texttt{ExactABAffineFamilies.lean} \\
 shared-basis affine ladder on raw $(a,b)$ bits & proved & \texttt{SharedExactABFeatureFamilies.lean} \\
@@ -1397,8 +1397,8 @@ explicit direct exact-route code-witness reduction & proved & \texttt{CanonicalZ
 final direct exact-route recovery interface & proved & \texttt{CanonicalZABRecoveryInterface.lean} \\
 ERM-to-canonical bridge for the exact $(zfeat(z),a,b)$ route & proved & \texttt{CanonicalZABERMRoute.lean} \\
 final ERM interface for the canonical exact $(zfeat(z),a,b)$ route & proved & \texttt{CanonicalZABERMInterface.lean} \\
-raw full visible bit surface when $z : \mathrm{BitVec}\, r$ & proved & \texttt{BitVecZABVisibleSurface.lean} \\
-identity-extractor ERM interface on the raw full visible bit surface & proved & \texttt{BitVecZABERMInterface.lean} \\
+raw full visible bit state when $z : \mathrm{BitVec}\, r$ & proved & \texttt{BitVecZABVisibleState.lean} \\
+identity-extractor ERM interface on the raw full visible bit state & proved & \texttt{BitVecZABERMInterface.lean} \\
 coordinate-projection ERM interface on bit-valued local data & proved & \texttt{ProjectedZABERMInterface.lean} \\
 weakness-globality obstruction & proved & \texttt{GlobalWeaknessObstruction.lean} \\
 infinitary HML obstruction & proved & \texttt{InfinitaryHMLObstruction.lean} \\
@@ -1429,14 +1429,14 @@ explicit miss-ratio success bounds, weighted one-predictor agreement laws,
 weighted family deceptive-mass bounds, weighted exact recovery bounds, exact
 post-switch finite-summary compression kernels, one concrete affine GF(2)-style
 candidate family, one bounded affine-feature candidate family, and
-observer-relative input surfaces can already be handled cleanly inside one
+observer-relative input regions can already be handled cleanly inside one
 coherent Mettapedia/mathlib formal background layer.  Optimistically, the same is
 now becoming true for the observational-semantics side: finite-depth HML
 distinction, weakness on operational quotients, and a concrete rho-calculus
 minimal-context instance are landing as reusable infrastructure rather than as
 one-off prose.  But the current Meredith bridge is now also honest about its own
 shape: it produces global evidence summaries, not yet a nontrivial per-state
-learning surface.  And even once one moves from those global summaries to the
+learning domain.  And even once one moves from those global summaries to the
 HML/context layer, the current observable family is infinitary by default and
 already concretely infinitary in the rho instance.
 

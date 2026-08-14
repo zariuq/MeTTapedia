@@ -5,7 +5,7 @@ import Mettapedia.Logic.HOL.Semantics.Henkin
 # First-Order Embedding into HOL
 
 This module embeds Foundation first-order syntax into the real Church-style HOL
-layer using one distinguished individual base type. The initial theorem surface
+layer using one distinguished individual base type. The initial theorem family
 focuses on closed first-order syntax (`Semisentence` / `Sentence`) and semantic
 truth preservation into the induced standard HOL model.
 -/

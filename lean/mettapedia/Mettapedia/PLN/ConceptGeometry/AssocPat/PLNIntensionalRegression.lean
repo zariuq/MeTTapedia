@@ -27,7 +27,7 @@ ulimit -Sv 6291456 && export LAKE_JOBS=3 && nice -n 19 \
 
 namespace Mettapedia.PLN.ConceptGeometry.AssocPat.PLNIntensionalRegression
 
-/-! ## Chapter 12 Surface -/
+/-! ## Chapter 12 Interface -/
 
 abbrev ch12_inheritanceSort :=
   PLNIntensionalWorldModel.InheritanceSort

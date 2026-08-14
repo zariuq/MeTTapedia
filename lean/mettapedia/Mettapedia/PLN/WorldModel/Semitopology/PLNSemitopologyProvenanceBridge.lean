@@ -11,7 +11,7 @@ states.
 This first non-additive slice stays honest:
 
 - exact forgetting is available on the tracked provenance-history state;
-- support-level forgetting is available on the plain `Which` K-relation surface;
+- support-level forgetting is available on the plain `Which` K-relation interface;
 - overlap forgetting recovers disjoint remainder supports, and actionable
   remainder supports then give semitopological independence.
 
@@ -29,7 +29,7 @@ open Mettapedia.Logic.LP
 variable {σ : LPSignature} {n : ℕ}
 variable {m : ℕ}
 
-/-- Query-indexed support forgetting on the plain `Which` provenance surface. -/
+/-- Query-indexed support forgetting on the plain `Which` provenance interface. -/
 def forgetWhichSupportBy
     (S : GroundAtom σ → Finset (Fin n))
     (I : KRelation σ (Which (Fin n))) :

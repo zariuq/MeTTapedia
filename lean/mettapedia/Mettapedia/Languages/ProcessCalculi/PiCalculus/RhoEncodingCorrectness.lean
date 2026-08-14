@@ -2,10 +2,10 @@ import Mettapedia.Languages.ProcessCalculi.PiCalculus.EncodingMorphism
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedRepNu
 
 /-!
-# π → ρ Encoding Correctness (Clean RF Surface)
+# π → ρ Encoding Correctness (Clean RF Interface)
 
 This module intentionally exposes only the proved, maintained forward-correctness
-surface for the π→ρ encoding.
+interface for the π→ρ encoding.
 
 Included:
 - encoding image characterization (`Encoded`)

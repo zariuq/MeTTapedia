@@ -2,7 +2,7 @@ import Mathlib.MeasureTheory.Measure.ProbabilityMeasure
 import Mettapedia.UniversalAI.UniversalPrediction.FiniteAlphabet.PrefixMeasure
 
 /-!
-# Markov de Finetti Recurrence (Active Minimal Surface)
+# Markov de Finetti Recurrence (Active Minimal Interface)
 
 Minimal recurrence interface used by the active Fortini/anchor modules.
 -/

@@ -264,27 +264,27 @@ theorem exactPurseCovers_complete
           simp [exactPurseCovers, exactPurseCoversAux, empty, subtraction,
             tail_member]
 
-theorem mem_matchingPurses_surface {surface : RawCostName}
+theorem mem_matchingPurses_location {location : RawCostName}
     {purses : List RawIndexedPurse} {purse : RawIndexedPurse}
-    (member : purse ∈ matchingPurses surface purses) :
-    purse.surface.normalize = surface.normalize := by
+    (member : purse ∈ matchingPurses location purses) :
+    purse.location.normalize = location.normalize := by
   simp [matchingPurses] at member
   exact member.2
 
 /-- Covers selected after location filtering inherit both occurrence and
 location fidelity. -/
-theorem exact_matching_cover_sound {surface : RawCostName}
+theorem exact_matching_cover_sound {location : RawCostName}
     {demand : RawCostSig} {purses cover : List RawIndexedPurse}
-    (member : cover ∈ exactPurseCovers demand (matchingPurses surface purses)) :
+    (member : cover ∈ exactPurseCovers demand (matchingPurses location purses)) :
     rawSelectedSpend cover = demand.toMultiset ∧
       cover.Sublist purses ∧
-      ∀ purse ∈ cover, purse.surface.normalize = surface.normalize := by
+      ∀ purse ∈ cover, purse.location.normalize = location.normalize := by
   refine ⟨exactPurseCovers_spend_sound member, ?_, ?_⟩
   · exact (exactPurseCovers_sublist member).trans
       List.filter_sublist
   · intro purse purse_member
     have in_filtered := (exactPurseCovers_sublist member).mem purse_member
-    exact mem_matchingPurses_surface in_filtered
+    exact mem_matchingPurses_location in_filtered
 
 /-! ## Candidate-firing funding invariants -/
 
@@ -293,9 +293,9 @@ structure RawRuntimeStep.FundingValidFor (config : RawCostConfig)
     (step : RawRuntimeStep) : Prop where
   exact_spend : rawSelectedSpend step.selectedPurses = step.spend.toMultiset
   selected_from_config : step.selectedPurses.Sublist config.purses
-  selected_at_surface :
+  selected_at_location :
     ∀ purse ∈ step.selectedPurses,
-      purse.surface.normalize = step.surface.normalize
+      purse.location.normalize = step.location.normalize
 
 private theorem wholeCandidates_funding_valid
     {config : RawCostConfig} {purses : List RawIndexedPurse}
@@ -304,7 +304,7 @@ private theorem wholeCandidates_funding_valid
     rawSelectedSpend step.selectedPurses = step.spend.toMultiset ∧
       step.selectedPurses.Sublist purses ∧
       ∀ purse ∈ step.selectedPurses,
-        purse.surface.normalize = step.surface.normalize := by
+        purse.location.normalize = step.location.normalize := by
   simp only [wholeCandidates] at member
   obtain ⟨cover, cover_member, rfl⟩ := List.mem_map.mp member
   exact exact_matching_cover_sound cover_member
@@ -317,9 +317,9 @@ private theorem splitCandidates_funding_valid
     rawSelectedSpend step.selectedPurses = step.spend.toMultiset ∧
       step.selectedPurses.Sublist purses ∧
       ∀ purse ∈ step.selectedPurses,
-        purse.surface.normalize = step.surface.normalize := by
+        purse.location.normalize = step.location.normalize := by
   unfold splitCandidates at member
-  split at member <;> rename_i surfaces_match
+  split at member <;> rename_i locations_match
   · obtain ⟨cover, cover_member, rfl⟩ := List.mem_map.mp member
     exact exact_matching_cover_sound cover_member
   · contradiction
@@ -378,16 +378,16 @@ theorem eventFor_funding_eq_selected_heads
   simpa only [List.map_map, Function.comp_def] using exact
 
 /-- Every emitted funding entry reports the candidate's actual interaction
-surface. -/
-theorem eventFor_funding_surface
+location. -/
+theorem eventFor_funding_location
     {components : List RawTraceComponent} {step : RawRuntimeStep}
     {eventId : Nat} {config : RawCostConfig}
     (funding : step.FundingValidFor config)
     {contribution : RawFundingContribution}
     (member : contribution ∈ (eventFor components step eventId).funding) :
-    contribution.surface.normalize = step.surface.normalize := by
+    contribution.location.normalize = step.location.normalize := by
   simp only [List.mem_map] at member
   obtain ⟨purse, purse_member, rfl⟩ := member
-  exact funding.selected_at_surface purse purse_member
+  exact funding.selected_at_location purse purse_member
 
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost

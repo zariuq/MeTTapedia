@@ -11,6 +11,6 @@ import Mettapedia.PLN.WorldModel
 /-!
 # Probabilistic Logic Networks
 
-Top-level room for PLN-native truth values, evidence surfaces, rule families,
+Top-level room for PLN-native truth values, evidence interfaces, rule families,
 world-model machinery, and bridges to neighboring mathematical rooms.
 -/

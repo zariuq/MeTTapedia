@@ -934,7 +934,7 @@ variable (bn : BayesianNetwork V)
 
 This is kept under a historical VE-facing name for compatibility, but the
 current implementation routes through the explicit exact VE elimination
-surface. -/
+interface. -/
 noncomputable def propProbVE (cpt : bn.DiscreteCPT) (v : V) (val : bn.stateSpace v)
     [DecidableRel bn.graph.edges]
     [∀ v, Fintype (bn.stateSpace v)] [∀ v, DecidableEq (bn.stateSpace v)] : ENNReal :=
@@ -961,7 +961,7 @@ noncomputable def propProbVE (cpt : bn.DiscreteCPT) (v : V) (val : bn.stateSpace
 
 This is kept under a historical VE-facing name for compatibility, but the
 current implementation routes through the explicit exact VE elimination
-surface. -/
+interface. -/
 noncomputable def linkProbVE (cpt : bn.DiscreteCPT)
     (a b : V) (valA : bn.stateSpace a) (valB : bn.stateSpace b)
     [DecidableRel bn.graph.edges]
@@ -989,7 +989,7 @@ noncomputable def linkProbVE (cpt : bn.DiscreteCPT)
 
 This is kept under a historical VE-facing name for compatibility, but the
 current implementation routes through the explicit exact VE elimination
-surface. -/
+interface. -/
 noncomputable def linkProbVECond (cpt : bn.DiscreteCPT)
     (constraints : List (Σ v : V, bn.stateSpace v)) (b : Σ v : V, bn.stateSpace v)
     [DecidableRel bn.graph.edges]

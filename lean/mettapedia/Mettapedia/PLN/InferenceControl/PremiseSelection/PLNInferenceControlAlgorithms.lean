@@ -4,7 +4,7 @@ import Mettapedia.PLN.InferenceControl.PremiseSelection.PLNInferenceControlCore
 # Chapter 13 Inference Control: Executable Algorithms
 
 This module adds a verified, simple executable greedy selector over finite premise
-pools (`Fact`) and connects it to the Chapter-13 theorem surface.
+pools (`Fact`) and connects it to the Chapter-13 theorem family.
 
 The algorithm is intentionally minimal:
 

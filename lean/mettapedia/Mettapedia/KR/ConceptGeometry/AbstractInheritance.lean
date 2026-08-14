@@ -324,7 +324,7 @@ theorem mutualInherits_trans (I : Interpretation Carrier Obj Attr) {a b c : Carr
 
 /-- Pairwise subset semantics induced directly from the abstract inheritance
 foundation. This is the generic relation used by downstream ASSOC/PAT
-monotonicity surfaces. -/
+monotonicity theorem sets. -/
 def PairSubsetRel (I : Interpretation Carrier Obj Attr)
     (a b c d : Carrier) : Prop :=
   I.Inherits c a ∧ I.Inherits b d

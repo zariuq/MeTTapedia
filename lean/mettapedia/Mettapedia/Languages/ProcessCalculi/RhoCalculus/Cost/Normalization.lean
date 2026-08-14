@@ -422,7 +422,7 @@ mutual
         | drop name =>
             simp only [RawCostTerm.normalize] at fixed
             exact RawCostTerm.drop.inj fixed
-        | purse surface stack =>
+        | purse location stack =>
             simp only [RawCostName.normalize, fixed]
     | .signature sig => by
         simp [RawCostName.normalize]
@@ -507,10 +507,10 @@ mutual
     | .drop name => by
         have name_fixed := RawCostName.normalize_idempotent name
         constructor <;> simp [RawCostTerm.normalize, name_fixed]
-    | .purse surface stack => by
-        have surface_fixed := RawCostName.normalize_idempotent surface
+    | .purse location stack => by
+        have location_fixed := RawCostName.normalize_idempotent location
         constructor <;>
-          simp [RawCostTerm.normalize, surface_fixed, List.map_map]
+          simp [RawCostTerm.normalize, location_fixed, List.map_map]
 end
 
 @[simp]
@@ -582,8 +582,8 @@ mutual
     | .signed proc sig => proc.EncodingCanonical ∧ sig.EncodingCanonical
     | .par left right => left.EncodingCanonical ∧ right.EncodingCanonical
     | .drop name => name.EncodingCanonical
-    | .purse surface stack =>
-        surface.EncodingCanonical ∧ stack.EncodingCanonical
+    | .purse location stack =>
+        location.EncodingCanonical ∧ stack.EncodingCanonical
 end
 
 theorem encodeCostSig_encodingCanonical (sig : CostSig String) :
@@ -620,8 +620,8 @@ mutual
         ⟨encodeCostTerm_encodingCanonical left,
           encodeCostTerm_encodingCanonical right⟩
     | .drop name => encodeCostName_encodingCanonical name
-    | .purse surface stack =>
-        ⟨encodeCostName_encodingCanonical surface,
+    | .purse location stack =>
+        ⟨encodeCostName_encodingCanonical location,
           encodeCostStack_encodingCanonical stack⟩
 
   theorem encodeCostStack_encodingCanonical :
@@ -674,7 +674,7 @@ theorem RawCostTerm.components_forall_encodingCanonical :
       simpa [RawCostTerm.components] using canonical
   | .drop name, canonical => by
       simpa [RawCostTerm.components] using canonical
-  | .purse surface stack, canonical => by
+  | .purse location stack, canonical => by
       simpa [RawCostTerm.components] using canonical
 
 theorem RawCostProc.fromComponents_encodingCanonical :
@@ -718,7 +718,7 @@ mutual
         | signed proc sig => exact term_canonical
         | par left right => exact term_canonical
         | drop name => exact term_canonical
-        | purse surface stack => exact term_canonical
+        | purse location stack => exact term_canonical
 
   theorem RawCostProc.normalize_encodingCanonical :
       ∀ proc : RawCostProc, proc.normalize.EncodingCanonical
@@ -753,8 +753,8 @@ mutual
           RawCostTerm.components_forall_encodingCanonical
             (RawCostTerm.normalize_encodingCanonical right)⟩
     | .drop name => RawCostName.normalize_encodingCanonical name
-    | .purse surface stack =>
-        ⟨RawCostName.normalize_encodingCanonical surface,
+    | .purse location stack =>
+        ⟨RawCostName.normalize_encodingCanonical location,
           RawCostStack.map_normalize_encodingCanonical stack⟩
 end
 
@@ -947,9 +947,9 @@ mutual
     | .drop name =>
         let denotedName := name.structuralDenote
         ⟨{rawStructuralFrame "drop" [denotedName]}, {denotedName}⟩
-    | .purse surface stack =>
+    | .purse location stack =>
         ⟨{rawStructuralFrame "purse"
-            (surface.structuralDenote :: stack.structuralFrames)}, 0⟩
+            (location.structuralDenote :: stack.structuralFrames)}, 0⟩
 end
 
 /-- Structural name equivalence is equality in the independent denotation. -/
@@ -1137,7 +1137,7 @@ theorem RawCostTerm.normalize_loneDrop? (term : RawCostTerm) :
       simp [RawTermStructuralDenotation.loneDrop?, card_ne]
   | drop name =>
       simp [RawTermStructuralDenotation.loneDrop?, RawCostTerm.structuralDenote]
-  | purse surface stack =>
+  | purse location stack =>
       simp [RawCostTerm.structuralDenote,
         RawTermStructuralDenotation.loneDrop?]
 
@@ -1196,13 +1196,13 @@ mutual
               | none => rawStructuralMultisetFrame "quote"
                   term.structuralDenote.atoms
             rw [← term_sound, exposed]
-        | purse surface stack =>
-            change (RawCostTerm.purse surface stack).structuralDenote.loneDrop? =
+        | purse location stack =>
+            change (RawCostTerm.purse location stack).structuralDenote.loneDrop? =
               none at exposed
             simp only [RawCostName.structuralDenote]
             rw [exposed]
             change rawStructuralMultisetFrame "quote"
-                (RawCostTerm.purse surface stack).structuralDenote.atoms =
+                (RawCostTerm.purse location stack).structuralDenote.atoms =
               match term.structuralDenote.loneDrop? with
               | some name => name
               | none => rawStructuralMultisetFrame "quote"
@@ -1244,9 +1244,9 @@ mutual
     | .drop name => by
         simp [RawCostTerm.structuralDenote,
           RawCostName.structuralDenote_normalize name]
-    | .purse surface stack => by
+    | .purse location stack => by
         simp only [RawCostTerm.structuralDenote]
-        rw [RawCostName.structuralDenote_normalize surface]
+        rw [RawCostName.structuralDenote_normalize location]
         rw [RawCostStack.structuralFrames_map_normalize]
     | .par left right => by
         rw [RawCostTerm.normalize,

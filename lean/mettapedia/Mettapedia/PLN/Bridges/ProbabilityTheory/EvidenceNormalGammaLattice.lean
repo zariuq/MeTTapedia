@@ -42,7 +42,7 @@ open Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceNormalGamma
 
 The observation count `n` is the fundamental measure of how much
 information an evidence state carries. More observations = more informed.
-This is the same ordering used by `ConjugateEvidenceSurface.observationCount`. -/
+This is the same ordering used by `ConjugateEvidenceCore.observationCount`. -/
 
 /-- Information order: e₁ ≤ e₂ iff e₁ has fewer observations. -/
 def informationLE (e₁ e₂ : NormalGammaEvidence) : Prop := e₁.n ≤ e₂.n

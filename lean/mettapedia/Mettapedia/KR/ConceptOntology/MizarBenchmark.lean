@@ -5,7 +5,7 @@ import Mettapedia.KR.ConceptOntology.Generated.MizarConlat1
 /-!
 # Mizar Concept-Formation Benchmark
 
-This module instantiates the benchmark-control surface on a small extracted
+This module instantiates the benchmark-control interface on a small extracted
 slice of `conlat_1.miz`.
 
 The exact lane is tied explicitly to the classical FCA concept lattice via the

@@ -3,12 +3,12 @@ import Mettapedia.Computability.PNP.CanonicalABTargetRoute
 /-!
 # P vs NP grassroots: canonical raw `(a, b)` candidate interface
 
-This file packages the most concrete current exact-surface route into one data
+This file packages the most concrete current exact-data domain route into one data
 object.
 
 The burden is now:
 
-* quotient invariance under the reduced raw visible surface `(a, b)`,
+* quotient invariance under the reduced raw visible data domain `(a, b)`,
 * realization of the lifted reduced family by fixed-order decision lists on the
   raw visible bits.
 
@@ -66,7 +66,7 @@ theorem CanonicalABDecisionListCandidateData.recoveryLowerBound
     [Fintype Z]
     {G : ExactVisibleSwitchedFamily Z k Index}
     (h : CanonicalABDecisionListCandidateData (Z := Z) (k := k) (Index := Index) G)
-    (μ : PMF (ExactVisiblePostSwitchSurface Z k))
+    (μ : PMF (ExactVisiblePostSwitchData Z k))
     (i : Index) (m : ℕ)
     {q : ℝ≥0∞}
     (hq :

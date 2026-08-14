@@ -1,5 +1,7 @@
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryRestorationClosure
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostCanonicalReachableDomain
 import Mettapedia.GSLT.LanguageDef.CostCanonicalStructuralAlignment
+import Mettapedia.GSLT.LanguageDef.CostStaticRootView
 import Mettapedia.OSLF.MeTTaIL.ReflectiveCanonicalRootDichotomy
 
 /-!
@@ -662,6 +664,35 @@ inductive RhoCollapsingLeafExposure
 
 namespace RhoCollapsingLeafExposure
 
+/-- Eliminate corrected atom-or-rigid exposure to the exact hereditary root
+bridge.  The result equality is derived by the selected terminal: semantic
+atoms use their stored typed normal value, whereas bound variables are rigid
+under every supported assignment. -/
+noncomputable def toRootBridge
+    {color : CostStaticColor} {targetFree : FreeTypeContext}
+    {leftOuter rightAvailable rightOuter : List TypeExpr}
+    {node : CostStaticRegionNode rhoCIGSLT color targetFree}
+    {children : CostRegionBoundaryTrees rhoCIGSLT targetFree color
+      node.finiteBoundaryTable}
+    {rightPattern : Pattern} {rightType : TypeExpr}
+    {right : CostRegionTree rhoCIGSLT targetFree rightAvailable rightOuter
+      rightPattern rightType}
+    (exposure : RhoCollapsingLeafExposure node children right) :
+    CostRegionRootNormalizationBridge rhoCIGSLT
+      rhoHereditaryNormalizationKernel targetFree
+      (CostRegionTree.static (outer := leftOuter) node children) right := by
+  cases exposure with
+  | atom slot staticFrame structuralNormal =>
+      exact rhoStaticRootBridgeOfCanonicalAtom node children right slot
+        staticFrame structuralNormal
+  | rigidBVar index staticNormal structuralNormal =>
+      apply rhoStaticRootBridgeOfRigidLeaf node children right (.bvar index)
+      · intro support assignment depth
+        simp [ReflectiveContextSupport.substituteAt]
+      · rw [CostRegionTree.normalize_static_pattern]
+        exact staticNormal
+      · exact structuralNormal
+
 /-- Construct atom exposure from equality with the selected atom's normalized
 value.  Binder support remains proof-relevant in the atom key, but a
 binder-closed normal value restores unchanged at every ambient depth. -/
@@ -815,6 +846,105 @@ noncomputable def boundarySourceVariable
   rw [atomNormal, selectedNormal]
   rfl
 
+/-- Construct the support-independent source-variable exposure through any
+proof-relevant elaboration of the selected boundary endpoint.
+
+The recursive elaborator is allowed to choose a different admissible tree
+for the boundary content.  Static-decomposition unambiguity identifies that
+tree's normalized pattern with the exact occurrence-selected forest child;
+the supplied alignment then proves that the common value is the structural
+free name.  No equality search through the boundary table and no equality of
+target-support lengths is used. -/
+noncomputable def boundaryElaborationSourceVariable
+    {color : CostStaticColor} {targetFree : FreeTypeContext}
+    {alignedAvailable alignedOuter rightAvailable rightOuter : List TypeExpr}
+    {alignedType rightType : TypeExpr}
+    (node : CostStaticRegionNode rhoCIGSLT color targetFree)
+    (children : CostRegionBoundaryTrees rhoCIGSLT targetFree color
+      node.finiteBoundaryTable)
+    {payload : Pattern}
+    (view : CostStaticPlanContextInventoryView rhoCIGSLT color targetFree
+      payload node.skeleton.1 node.finiteBoundaryTable.entries)
+    (index : Fin view.view.retainedEntries.length)
+    (occurrence : CostStaticFVarOccurrence node.skeleton.1)
+    (occurrenceName : occurrence.name = costRegionBoundaryVariableName
+      (view.view.retainedEntries.get index).boundary)
+    (name : String)
+    (leftElaboration : CostRegionTree rhoCIGSLT targetFree
+      (view.view.retainedEntries.get index).boundary.targetSupport []
+      (view.view.retainedEntries.get index).boundary.content
+      (view.view.retainedEntries.get index).boundary.targetType)
+    (alignedRight : CostRegionTree rhoCIGSLT targetFree alignedAvailable
+      alignedOuter (.fvar name) alignedType)
+    (right : CostRegionTree rhoCIGSLT targetFree rightAvailable rightOuter
+      (.fvar name) rightType)
+    (slot : Fin (node.normalizationEnvironment rhoHereditaryStaticNormalizer
+      children).atomCount)
+    (selected :
+      (node.normalizationEnvironment rhoHereditaryStaticNormalizer children
+        ).slotOfName? occurrence.name = some slot)
+    (staticFrame :
+      node.canonicalizeReifiedTargetFrame
+          (node.normalizationEnvironment rhoHereditaryStaticNormalizer
+            children)
+          (costStaticReflectivePresentationDecl rhoCIGSLT color
+            rhoReflectivePresentation) =
+        .fvar ((node.normalizationEnvironment
+          rhoHereditaryStaticNormalizer children).atomName slot))
+    (childAlignment : CostRegionTreeNormalizationAlignment rhoCIGSLT
+      rhoHereditaryNormalizationKernel targetFree leftElaboration
+        alignedRight) :
+    RhoCollapsingLeafExposure node children right := by
+  let environment := node.normalizationEnvironment
+    rhoHereditaryStaticNormalizer children
+  have alignedRightNormal :
+      (alignedRight.normalize
+        (normalizeStatic := rhoHereditaryStaticNormalizer)).pattern =
+          .fvar name := by
+    let alignedRightView := alignedRight.structuralRootView
+      alignedRight.rootIsStatic_eq_false_of_fvar
+    cases alignedRightView with
+    | fvar lookup => simp [CostRegionTree.normalize]
+  have rightNormal :
+      (right.normalize
+        (normalizeStatic := rhoHereditaryStaticNormalizer)).pattern =
+          .fvar name := by
+    let rightView := right.structuralRootView
+      right.rootIsStatic_eq_false_of_fvar
+    cases rightView with
+    | fvar lookup => simp [CostRegionTree.normalize]
+  have atomNormal : (environment.atomValue slot).key.normal =
+      ((view.selectedTreeFromForest children index).normalizedBoundaryValue
+        rhoHereditaryNormalizationKernel).1 :=
+    view.selectedBoundaryAtom_normal_eq
+      (kernel := rhoHereditaryNormalizationKernel)
+      CostCanonicalLaws.rho_unambiguousStaticDecomposition children
+      (environment := environment) index occurrence occurrenceName slot
+      selected
+  have selectedToElaboration :
+      ((view.selectedTreeFromForest children index).normalize
+          (normalizeStatic := rhoHereditaryStaticNormalizer)).pattern =
+        (leftElaboration.normalize
+          (normalizeStatic := rhoHereditaryStaticNormalizer)).pattern :=
+    CostRegionTree.normalize_pattern_eq_of_unambiguous
+      CostCanonicalLaws.rho_unambiguousStaticDecomposition
+      rhoHereditaryNormalizationKernel
+      (view.selectedTreeFromForest children index) leftElaboration
+      (view.view.retainedEntries.get index).contentObjectPattern
+  have selectedNormal :
+      ((view.selectedTreeFromForest children index).normalizedBoundaryValue
+        rhoHereditaryNormalizationKernel).1 = .fvar name := by
+    rw [CostRegionTree.normalizedBoundaryValue_pattern]
+    exact selectedToElaboration.trans
+      (childAlignment.normalize_pattern_eq.trans alignedRightNormal)
+  have normalEq : (environment.atomValue slot).key.normal =
+      (right.normalize
+        (normalizeStatic := rhoHereditaryStaticNormalizer)).pattern :=
+    atomNormal.trans (selectedNormal.trans rightNormal.symm)
+  apply atomOfNormal node children right slot staticFrame normalEq
+  rw [atomNormal, selectedNormal]
+  rfl
+
 /-- Construct atom exposure when a retained recursive boundary child aligns
 with an arbitrary structural endpoint at the same ambient binder depth.
 
@@ -888,6 +1018,1074 @@ noncomputable def boundaryAlignedSameSupport
     (atomNormal.trans selectedNormal)
   exact congrArg List.length atomSupport |>.trans sameSupport
 
+/-- Construct the same-support atom exposure through any proof-relevant
+elaboration of the selected boundary endpoint.
+
+The recursively constructed left tree need not be definitionally the tree
+stored at the retained forest position.  Rho's checked static-decomposition
+unambiguity identifies their normalized patterns, after which the supplied
+hereditary alignment transports to the structural endpoint.  Thus recursive
+closure may choose its own admissible tree without replacing occurrence
+identity by an equality search through the boundary table. -/
+noncomputable def boundaryElaborationAlignedSameSupport
+    {color : CostStaticColor} {targetFree : FreeTypeContext}
+    {alignedAvailable alignedOuter rightAvailable rightOuter : List TypeExpr}
+    (node : CostStaticRegionNode rhoCIGSLT color targetFree)
+    (children : CostRegionBoundaryTrees rhoCIGSLT targetFree color
+      node.finiteBoundaryTable)
+    {payload : Pattern}
+    (view : CostStaticPlanContextInventoryView rhoCIGSLT color targetFree
+      payload node.skeleton.1 node.finiteBoundaryTable.entries)
+    (index : Fin view.view.retainedEntries.length)
+    (occurrence : CostStaticFVarOccurrence node.skeleton.1)
+    (occurrenceName : occurrence.name = costRegionBoundaryVariableName
+      (view.view.retainedEntries.get index).boundary)
+    {alignedPattern rightPattern : Pattern}
+    {alignedType rightType : TypeExpr}
+    (leftElaboration : CostRegionTree rhoCIGSLT targetFree
+      (view.view.retainedEntries.get index).boundary.targetSupport []
+      (view.view.retainedEntries.get index).boundary.content
+      (view.view.retainedEntries.get index).boundary.targetType)
+    (alignedRight : CostRegionTree rhoCIGSLT targetFree alignedAvailable
+      alignedOuter alignedPattern alignedType)
+    (right : CostRegionTree rhoCIGSLT targetFree rightAvailable rightOuter
+      rightPattern rightType)
+    (slot : Fin (node.normalizationEnvironment rhoHereditaryStaticNormalizer
+      children).atomCount)
+    (selected :
+      (node.normalizationEnvironment rhoHereditaryStaticNormalizer children
+        ).slotOfName? occurrence.name = some slot)
+    (staticFrame :
+      node.canonicalizeReifiedTargetFrame
+          (node.normalizationEnvironment rhoHereditaryStaticNormalizer
+            children)
+          (costStaticReflectivePresentationDecl rhoCIGSLT color
+            rhoReflectivePresentation) =
+        .fvar ((node.normalizationEnvironment
+          rhoHereditaryStaticNormalizer children).atomName slot))
+    (childAlignment : CostRegionTreeNormalizationAlignment rhoCIGSLT
+      rhoHereditaryNormalizationKernel targetFree leftElaboration alignedRight)
+    (alignedToRight :
+      (alignedRight.normalize
+        (normalizeStatic := rhoHereditaryStaticNormalizer)).pattern =
+      (right.normalize
+        (normalizeStatic := rhoHereditaryStaticNormalizer)).pattern)
+    (sameSupport :
+      (view.view.retainedEntries.get index).boundary.targetSupport.length =
+        node.targetBound.length) :
+    RhoCollapsingLeafExposure node children right := by
+  let environment := node.normalizationEnvironment
+    rhoHereditaryStaticNormalizer children
+  have atomNormal : (environment.atomValue slot).key.normal =
+      ((view.selectedTreeFromForest children index).normalizedBoundaryValue
+        rhoHereditaryNormalizationKernel).1 :=
+    view.selectedBoundaryAtom_normal_eq
+      (kernel := rhoHereditaryNormalizationKernel)
+      CostCanonicalLaws.rho_unambiguousStaticDecomposition children
+      (environment := environment) index occurrence occurrenceName slot
+      selected
+  have selectedToElaboration :
+      ((view.selectedTreeFromForest children index).normalize
+          (normalizeStatic := rhoHereditaryStaticNormalizer)).pattern =
+        (leftElaboration.normalize
+          (normalizeStatic := rhoHereditaryStaticNormalizer)).pattern :=
+    CostRegionTree.normalize_pattern_eq_of_unambiguous
+      CostCanonicalLaws.rho_unambiguousStaticDecomposition
+      rhoHereditaryNormalizationKernel
+      (view.selectedTreeFromForest children index) leftElaboration
+      (view.view.retainedEntries.get index).contentObjectPattern
+  have selectedNormal :
+      ((view.selectedTreeFromForest children index).normalizedBoundaryValue
+        rhoHereditaryNormalizationKernel).1 =
+          (right.normalize
+            (normalizeStatic := rhoHereditaryStaticNormalizer)).pattern := by
+    rw [CostRegionTree.normalizedBoundaryValue_pattern]
+    exact selectedToElaboration.trans
+      (childAlignment.normalize_pattern_eq.trans alignedToRight)
+  have atomSupport : (environment.atomValue slot).key.targetSupport =
+      (view.view.retainedEntries.get index).boundary.targetSupport :=
+    view.selectedBoundaryAtom_targetSupport_eq
+      (kernel := rhoHereditaryNormalizationKernel)
+      CostCanonicalLaws.rho_unambiguousStaticDecomposition children
+      (environment := environment) index occurrence occurrenceName slot
+      selected
+  apply atomOfSameSupportNormal node children right slot staticFrame
+    (atomNormal.trans selectedNormal)
+  exact congrArg List.length atomSupport |>.trans sameSupport
+
+/-- Close a stopped context traversal through its exact intercepted boundary.
+
+The stopped state already stores both a one-hole occurrence context in the
+root skeleton and the sole retained boundary entry.  This wrapper replays
+those proof-relevant positions, recovers the corresponding semantic-atom
+slot, and applies `boundaryElaborationAlignedSameSupport`.  In particular it
+never searches the root table for an equal boundary value, so duplicate
+boundary values remain distinct occurrences even when their semantic atoms
+coincide. -/
+noncomputable def stoppedBoundaryElaborationAlignedSameSupport
+    {color : CostStaticColor} {targetFree : FreeTypeContext}
+    {payload : Pattern}
+    {alignedAvailable alignedOuter rightAvailable rightOuter : List TypeExpr}
+    (node : CostStaticRegionNode rhoCIGSLT color targetFree)
+    (children : CostRegionBoundaryTrees rhoCIGSLT targetFree color
+      node.finiteBoundaryTable)
+    (state : CostStaticPlanStopped rhoCIGSLT color targetFree payload
+      node.skeleton.1)
+    (entryEmbedding : CostStaticPlanEntryEmbedding rhoCIGSLT color targetFree
+      [state.certified.typed] node.finiteBoundaryTable.entries)
+    {alignedPattern rightPattern : Pattern}
+    {alignedType rightType : TypeExpr}
+    (leftElaboration : CostRegionTree rhoCIGSLT targetFree
+      state.certified.typed.boundary.targetSupport []
+      state.certified.typed.boundary.content
+      state.certified.typed.boundary.targetType)
+    (alignedRight : CostRegionTree rhoCIGSLT targetFree alignedAvailable
+      alignedOuter alignedPattern alignedType)
+    (right : CostRegionTree rhoCIGSLT targetFree rightAvailable rightOuter
+      rightPattern rightType)
+    (staticFrame :
+      ∀ slot : Fin (node.normalizationEnvironment
+        rhoHereditaryStaticNormalizer children).atomCount,
+        (node.normalizationEnvironment rhoHereditaryStaticNormalizer children
+          ).slotOfName? state.boundaryOccurrence.name = some slot →
+        node.canonicalizeReifiedTargetFrame
+            (node.normalizationEnvironment rhoHereditaryStaticNormalizer
+              children)
+            (costStaticReflectivePresentationDecl rhoCIGSLT color
+              rhoReflectivePresentation) =
+          .fvar ((node.normalizationEnvironment
+            rhoHereditaryStaticNormalizer children).atomName slot))
+    (childAlignment : CostRegionTreeNormalizationAlignment rhoCIGSLT
+      rhoHereditaryNormalizationKernel targetFree leftElaboration alignedRight)
+    (alignedToRight :
+      (alignedRight.normalize
+        (normalizeStatic := rhoHereditaryStaticNormalizer)).pattern =
+      (right.normalize
+        (normalizeStatic := rhoHereditaryStaticNormalizer)).pattern)
+    (sameSupport : state.certified.typed.boundary.targetSupport.length =
+      node.targetBound.length) :
+    RhoCollapsingLeafExposure node children right := by
+  let view : CostStaticPlanContextInventoryView rhoCIGSLT color targetFree
+      payload node.skeleton.1 node.finiteBoundaryTable.entries :=
+    { view := .stopped state
+      entryEmbedding := entryEmbedding }
+  let environment := node.normalizationEnvironment
+    rhoHereditaryStaticNormalizer children
+  have slotExists := environment.slotOfName?_isSome_of_occurrence
+    state.boundaryOccurrence
+  let slot := (environment.slotOfName? state.boundaryOccurrence.name).get
+    slotExists
+  have selected : environment.slotOfName? state.boundaryOccurrence.name =
+      some slot :=
+    (Option.some_get slotExists).symm
+  have retainedEntryEq :
+      view.view.retainedEntries.get state.retainedIndex =
+        state.certified.typed := by
+    simpa only [view] using state.retainedEntries_get_retainedIndex
+  have occurrenceName : state.boundaryOccurrence.name =
+      costRegionBoundaryVariableName
+        (view.view.retainedEntries.get state.retainedIndex).boundary := by
+    calc
+      state.boundaryOccurrence.name =
+          costRegionBoundaryVariableName state.certified.typed.boundary := rfl
+      _ = costRegionBoundaryVariableName
+          (view.view.retainedEntries.get state.retainedIndex).boundary :=
+        congrArg
+          (fun entry : TypedCostRegionBoundary rhoCIGSLT color targetFree =>
+            costRegionBoundaryVariableName entry.boundary)
+          retainedEntryEq.symm
+  have retainedSupportLength :
+      (view.view.retainedEntries.get state.retainedIndex).boundary.targetSupport.length =
+        node.targetBound.length :=
+    (congrArg
+      (fun entry : TypedCostRegionBoundary rhoCIGSLT color targetFree =>
+        entry.boundary.targetSupport.length)
+      retainedEntryEq).trans sameSupport
+  exact boundaryElaborationAlignedSameSupport node children view
+    state.retainedIndex state.boundaryOccurrence occurrenceName
+    leftElaboration alignedRight right slot selected (staticFrame slot selected)
+    childAlignment alignedToRight retainedSupportLength
+
+/-- Close a stopped context traversal whose recursively elaborated boundary
+normalizes to a structural source variable.
+
+The stopped certificate and entry embedding replay the exact intercepted
+occurrence.  Recursive closure may choose its own boundary-content tree; rho
+unambiguity transports that tree back to the selected forest child before the
+support-independent free-variable terminal is applied. -/
+noncomputable def stoppedBoundaryElaborationSourceVariable
+    {color : CostStaticColor} {targetFree : FreeTypeContext}
+    {payload : Pattern}
+    {alignedAvailable alignedOuter rightAvailable rightOuter : List TypeExpr}
+    {alignedType rightType : TypeExpr}
+    (node : CostStaticRegionNode rhoCIGSLT color targetFree)
+    (children : CostRegionBoundaryTrees rhoCIGSLT targetFree color
+      node.finiteBoundaryTable)
+    (state : CostStaticPlanStopped rhoCIGSLT color targetFree payload
+      node.skeleton.1)
+    (entryEmbedding : CostStaticPlanEntryEmbedding rhoCIGSLT color targetFree
+      [state.certified.typed] node.finiteBoundaryTable.entries)
+    (name : String)
+    (leftElaboration : CostRegionTree rhoCIGSLT targetFree
+      state.certified.typed.boundary.targetSupport []
+      state.certified.typed.boundary.content
+      state.certified.typed.boundary.targetType)
+    (alignedRight : CostRegionTree rhoCIGSLT targetFree alignedAvailable
+      alignedOuter (.fvar name) alignedType)
+    (right : CostRegionTree rhoCIGSLT targetFree rightAvailable rightOuter
+      (.fvar name) rightType)
+    (staticFrame :
+      ∀ slot : Fin (node.normalizationEnvironment
+        rhoHereditaryStaticNormalizer children).atomCount,
+        (node.normalizationEnvironment rhoHereditaryStaticNormalizer children
+          ).slotOfName? state.boundaryOccurrence.name = some slot →
+        node.canonicalizeReifiedTargetFrame
+            (node.normalizationEnvironment rhoHereditaryStaticNormalizer
+              children)
+            (costStaticReflectivePresentationDecl rhoCIGSLT color
+              rhoReflectivePresentation) =
+          .fvar ((node.normalizationEnvironment
+            rhoHereditaryStaticNormalizer children).atomName slot))
+    (childAlignment : CostRegionTreeNormalizationAlignment rhoCIGSLT
+      rhoHereditaryNormalizationKernel targetFree leftElaboration
+        alignedRight) :
+    RhoCollapsingLeafExposure node children right := by
+  let view : CostStaticPlanContextInventoryView rhoCIGSLT color targetFree
+      payload node.skeleton.1 node.finiteBoundaryTable.entries :=
+    { view := .stopped state
+      entryEmbedding := entryEmbedding }
+  let environment := node.normalizationEnvironment
+    rhoHereditaryStaticNormalizer children
+  have slotExists := environment.slotOfName?_isSome_of_occurrence
+    state.boundaryOccurrence
+  let slot := (environment.slotOfName? state.boundaryOccurrence.name).get
+    slotExists
+  have selected : environment.slotOfName? state.boundaryOccurrence.name =
+      some slot :=
+    (Option.some_get slotExists).symm
+  have occurrenceName : state.boundaryOccurrence.name =
+      costRegionBoundaryVariableName
+        (view.view.retainedEntries.get state.retainedIndex).boundary := by
+    rfl
+  exact boundaryElaborationSourceVariable node children view
+    state.retainedIndex state.boundaryOccurrence occurrenceName name
+    leftElaboration alignedRight right slot selected (staticFrame slot selected)
+    childAlignment
+
+/-- Close a stopped foreign boundary beneath one exact authored Quote/Drop
+shell.
+
+The stopped view already identifies the intercepted occurrence and retains
+the executable boundary-certification receipt.  The shell equation determines
+the complete atomized source frame, so the selected semantic slot and its
+target-frame collapse are derived here rather than supplied by a caller.  The
+only semantic input left is the recursive alignment of the certified boundary
+content with the opposite endpoint. -/
+noncomputable def stoppedQuoteDropBoundaryElaborationAlignedSameSupport
+    {color : CostStaticColor} {targetFree : FreeTypeContext}
+    {payload : Pattern}
+    {alignedAvailable alignedOuter rightAvailable rightOuter : List TypeExpr}
+    (node : CostStaticRegionNode rhoCIGSLT color targetFree)
+    (children : CostRegionBoundaryTrees rhoCIGSLT targetFree color
+      node.finiteBoundaryTable)
+    (state : CostStaticPlanStopped rhoCIGSLT color targetFree payload
+      node.skeleton.1)
+    (entryEmbedding : CostStaticPlanEntryEmbedding rhoCIGSLT color targetFree
+      [state.certified.typed] node.finiteBoundaryTable.entries)
+    (shell : state.skeletonContext =
+      .apply rhoReflectivePresentation.quoteConstructor []
+        (.apply rhoReflectivePresentation.dropConstructor [] .hole []) [])
+    {alignedPattern rightPattern : Pattern}
+    {alignedType rightType : TypeExpr}
+    (leftElaboration : CostRegionTree rhoCIGSLT targetFree
+      state.certified.typed.boundary.targetSupport []
+      state.certified.typed.boundary.content
+      state.certified.typed.boundary.targetType)
+    (alignedRight : CostRegionTree rhoCIGSLT targetFree alignedAvailable
+      alignedOuter alignedPattern alignedType)
+    (right : CostRegionTree rhoCIGSLT targetFree rightAvailable rightOuter
+      rightPattern rightType)
+    (childAlignment : CostRegionTreeNormalizationAlignment rhoCIGSLT
+      rhoHereditaryNormalizationKernel targetFree leftElaboration alignedRight)
+    (alignedToRight :
+      (alignedRight.normalize
+        (normalizeStatic := rhoHereditaryStaticNormalizer)).pattern =
+      (right.normalize
+        (normalizeStatic := rhoHereditaryStaticNormalizer)).pattern)
+    (sameSupport : state.certified.typed.boundary.targetSupport.length =
+      node.targetBound.length) :
+    RhoCollapsingLeafExposure node children right := by
+  let environment := node.normalizationEnvironment
+    rhoHereditaryStaticNormalizer children
+  have slotExists := environment.slotOfName?_isSome_of_occurrence
+    state.boundaryOccurrence
+  let slot := (environment.slotOfName? state.boundaryOccurrence.name).get
+    slotExists
+  have selected : environment.slotOfName? state.boundaryOccurrence.name =
+      some slot := (Option.some_get slotExists).symm
+  have reifiedFrame :
+      (node.reifiedSourceFrame environment).1 =
+        .apply rhoReflectivePresentation.quoteConstructor
+          [.apply rhoReflectivePresentation.dropConstructor
+            [.fvar (environment.atomName slot)]] := by
+    rw [node.reifiedSourceFrame_pattern]
+    calc
+      environment.reify node.skeleton.1 =
+          environment.reify
+            (state.skeletonContext.fill
+              (.fvar (costRegionBoundaryVariableName
+                state.certified.typed.boundary))) :=
+        congrArg environment.reify state.abstract_eq
+      _ = _ := by
+        rw [shell]
+        simp only [
+          Mettapedia.OSLF.MeTTaIL.DerivedContexts.OneHoleContext.fill,
+          List.nil_append, List.map_singleton,
+          CostStaticAtomEnvironment.reify]
+        simp only [Pattern.apply.injEq, true_and, List.cons.injEq,
+          and_true, Pattern.fvar.injEq]
+        change environment.reifyName state.boundaryOccurrence.name =
+          environment.atomName slot
+        unfold CostStaticAtomEnvironment.reifyName
+        rw [selected]
+  have staticFrame :
+      node.canonicalizeReifiedTargetFrame environment
+          (costStaticReflectivePresentationDecl rhoCIGSLT color
+            rhoReflectivePresentation) =
+        .fvar (environment.atomName slot) :=
+    CostStaticRegionNode.canonicalizeReifiedTargetFrame_quoteDrop_atom
+      node environment slot reifiedFrame
+  exact stoppedBoundaryElaborationAlignedSameSupport node children state
+    entryEmbedding leftElaboration alignedRight right
+    (fun candidate candidateSelected => by
+      have candidateEq : candidate = slot := by
+        exact Option.some.inj
+          (candidateSelected.symm.trans selected)
+      subst candidate
+      exact staticFrame)
+    childAlignment alignedToRight sameSupport
+
+/-- Support-independent Quote/Drop terminal for a stopped boundary whose
+recursive elaboration normalizes to a structural source variable.  The exact
+stopped occurrence determines the semantic slot; the authored shell proves
+that Quote/Drop exposes precisely that slot. -/
+noncomputable def stoppedQuoteDropBoundaryElaborationSourceVariable
+    {color : CostStaticColor} {targetFree : FreeTypeContext}
+    {payload : Pattern}
+    {alignedAvailable alignedOuter rightAvailable rightOuter : List TypeExpr}
+    {alignedType rightType : TypeExpr}
+    (node : CostStaticRegionNode rhoCIGSLT color targetFree)
+    (children : CostRegionBoundaryTrees rhoCIGSLT targetFree color
+      node.finiteBoundaryTable)
+    (state : CostStaticPlanStopped rhoCIGSLT color targetFree payload
+      node.skeleton.1)
+    (entryEmbedding : CostStaticPlanEntryEmbedding rhoCIGSLT color targetFree
+      [state.certified.typed] node.finiteBoundaryTable.entries)
+    (shell : state.skeletonContext =
+      .apply rhoReflectivePresentation.quoteConstructor []
+        (.apply rhoReflectivePresentation.dropConstructor [] .hole []) [])
+    (name : String)
+    (leftElaboration : CostRegionTree rhoCIGSLT targetFree
+      state.certified.typed.boundary.targetSupport []
+      state.certified.typed.boundary.content
+      state.certified.typed.boundary.targetType)
+    (alignedRight : CostRegionTree rhoCIGSLT targetFree alignedAvailable
+      alignedOuter (.fvar name) alignedType)
+    (right : CostRegionTree rhoCIGSLT targetFree rightAvailable rightOuter
+      (.fvar name) rightType)
+    (childAlignment : CostRegionTreeNormalizationAlignment rhoCIGSLT
+      rhoHereditaryNormalizationKernel targetFree leftElaboration
+        alignedRight) :
+    RhoCollapsingLeafExposure node children right := by
+  let environment := node.normalizationEnvironment
+    rhoHereditaryStaticNormalizer children
+  have slotExists := environment.slotOfName?_isSome_of_occurrence
+    state.boundaryOccurrence
+  let slot := (environment.slotOfName? state.boundaryOccurrence.name).get
+    slotExists
+  have selected : environment.slotOfName? state.boundaryOccurrence.name =
+      some slot := (Option.some_get slotExists).symm
+  have reifiedFrame :
+      (node.reifiedSourceFrame environment).1 =
+        .apply rhoReflectivePresentation.quoteConstructor
+          [.apply rhoReflectivePresentation.dropConstructor
+            [.fvar (environment.atomName slot)]] := by
+    rw [node.reifiedSourceFrame_pattern]
+    calc
+      environment.reify node.skeleton.1 =
+          environment.reify
+            (state.skeletonContext.fill
+              (.fvar (costRegionBoundaryVariableName
+                state.certified.typed.boundary))) :=
+        congrArg environment.reify state.abstract_eq
+      _ = _ := by
+        rw [shell]
+        simp only [
+          Mettapedia.OSLF.MeTTaIL.DerivedContexts.OneHoleContext.fill,
+          List.nil_append, List.map_singleton,
+          CostStaticAtomEnvironment.reify]
+        simp only [Pattern.apply.injEq, true_and, List.cons.injEq,
+          and_true, Pattern.fvar.injEq]
+        change environment.reifyName state.boundaryOccurrence.name =
+          environment.atomName slot
+        unfold CostStaticAtomEnvironment.reifyName
+        rw [selected]
+  have staticFrame :
+      node.canonicalizeReifiedTargetFrame environment
+          (costStaticReflectivePresentationDecl rhoCIGSLT color
+            rhoReflectivePresentation) =
+        .fvar (environment.atomName slot) :=
+    CostStaticRegionNode.canonicalizeReifiedTargetFrame_quoteDrop_atom
+      node environment slot reifiedFrame
+  exact stoppedBoundaryElaborationSourceVariable node children state
+    entryEmbedding name leftElaboration alignedRight right
+    (fun candidate candidateSelected => by
+      have candidateEq : candidate = slot := by
+        exact Option.some.inj
+          (candidateSelected.symm.trans selected)
+      subst candidate
+      exact staticFrame)
+    childAlignment
+
+/-- Close a stopped foreign boundary beneath one bare-parallel singleton
+shell.
+
+As in the Quote/Drop terminal, the stopped view supplies the exact authored
+occurrence and its certification receipt.  The singleton shell determines the
+complete atomized source frame; singleton collapse then exposes the selected
+semantic atom without requiring the caller to name a slot or a canonical
+frame. -/
+noncomputable def stoppedParallelSingletonBoundaryElaborationAlignedSameSupport
+    {color : CostStaticColor} {targetFree : FreeTypeContext}
+    {payload : Pattern}
+    {alignedAvailable alignedOuter rightAvailable rightOuter : List TypeExpr}
+    (node : CostStaticRegionNode rhoCIGSLT color targetFree)
+    (children : CostRegionBoundaryTrees rhoCIGSLT targetFree color
+      node.finiteBoundaryTable)
+    (state : CostStaticPlanStopped rhoCIGSLT color targetFree payload
+      node.skeleton.1)
+    (entryEmbedding : CostStaticPlanEntryEmbedding rhoCIGSLT color targetFree
+      [state.certified.typed] node.finiteBoundaryTable.entries)
+    (shell : state.skeletonContext =
+      .collection rhoReflectivePresentation.parallelCollection
+        [] .hole [] none)
+    {alignedPattern rightPattern : Pattern}
+    {alignedType rightType : TypeExpr}
+    (leftElaboration : CostRegionTree rhoCIGSLT targetFree
+      state.certified.typed.boundary.targetSupport []
+      state.certified.typed.boundary.content
+      state.certified.typed.boundary.targetType)
+    (alignedRight : CostRegionTree rhoCIGSLT targetFree alignedAvailable
+      alignedOuter alignedPattern alignedType)
+    (right : CostRegionTree rhoCIGSLT targetFree rightAvailable rightOuter
+      rightPattern rightType)
+    (childAlignment : CostRegionTreeNormalizationAlignment rhoCIGSLT
+      rhoHereditaryNormalizationKernel targetFree leftElaboration alignedRight)
+    (alignedToRight :
+      (alignedRight.normalize
+        (normalizeStatic := rhoHereditaryStaticNormalizer)).pattern =
+      (right.normalize
+        (normalizeStatic := rhoHereditaryStaticNormalizer)).pattern)
+    (sameSupport : state.certified.typed.boundary.targetSupport.length =
+      node.targetBound.length) :
+    RhoCollapsingLeafExposure node children right := by
+  let environment := node.normalizationEnvironment
+    rhoHereditaryStaticNormalizer children
+  have slotExists := environment.slotOfName?_isSome_of_occurrence
+    state.boundaryOccurrence
+  let slot := (environment.slotOfName? state.boundaryOccurrence.name).get
+    slotExists
+  have selected : environment.slotOfName? state.boundaryOccurrence.name =
+      some slot := (Option.some_get slotExists).symm
+  have reifiedFrame :
+      (node.reifiedSourceFrame environment).1 =
+        .collection rhoReflectivePresentation.parallelCollection
+          [.fvar (environment.atomName slot)] none := by
+    rw [node.reifiedSourceFrame_pattern]
+    calc
+      environment.reify node.skeleton.1 =
+          environment.reify
+            (state.skeletonContext.fill
+              (.fvar (costRegionBoundaryVariableName
+                state.certified.typed.boundary))) :=
+        congrArg environment.reify state.abstract_eq
+      _ = _ := by
+        rw [shell]
+        simp only [
+          Mettapedia.OSLF.MeTTaIL.DerivedContexts.OneHoleContext.fill,
+          List.nil_append, List.map_singleton,
+          CostStaticAtomEnvironment.reify]
+        simp only [Pattern.collection.injEq, true_and, List.cons.injEq,
+          and_true, Pattern.fvar.injEq]
+        change environment.reifyName state.boundaryOccurrence.name =
+          environment.atomName slot
+        unfold CostStaticAtomEnvironment.reifyName
+        rw [selected]
+  have staticFrame :
+      node.canonicalizeReifiedTargetFrame environment
+          (costStaticReflectivePresentationDecl rhoCIGSLT color
+            rhoReflectivePresentation) =
+        .fvar (environment.atomName slot) :=
+    CostStaticRegionNode.canonicalizeReifiedTargetFrame_parallelSingleton_atom
+      node environment slot reifiedFrame
+  exact stoppedBoundaryElaborationAlignedSameSupport node children state
+    entryEmbedding leftElaboration alignedRight right
+    (fun candidate candidateSelected => by
+      have candidateEq : candidate = slot := by
+        exact Option.some.inj
+          (candidateSelected.symm.trans selected)
+      subst candidate
+      exact staticFrame)
+    childAlignment alignedToRight sameSupport
+
+/-- Support-independent bare-parallel singleton terminal for a stopped
+boundary whose recursive elaboration normalizes to a structural source
+variable.  Multiplicity is retained by the stopped occurrence and entry
+embedding until the selected semantic slot has been fixed. -/
+noncomputable def stoppedParallelSingletonBoundaryElaborationSourceVariable
+    {color : CostStaticColor} {targetFree : FreeTypeContext}
+    {payload : Pattern}
+    {alignedAvailable alignedOuter rightAvailable rightOuter : List TypeExpr}
+    {alignedType rightType : TypeExpr}
+    (node : CostStaticRegionNode rhoCIGSLT color targetFree)
+    (children : CostRegionBoundaryTrees rhoCIGSLT targetFree color
+      node.finiteBoundaryTable)
+    (state : CostStaticPlanStopped rhoCIGSLT color targetFree payload
+      node.skeleton.1)
+    (entryEmbedding : CostStaticPlanEntryEmbedding rhoCIGSLT color targetFree
+      [state.certified.typed] node.finiteBoundaryTable.entries)
+    (shell : state.skeletonContext =
+      .collection rhoReflectivePresentation.parallelCollection
+        [] .hole [] none)
+    (name : String)
+    (leftElaboration : CostRegionTree rhoCIGSLT targetFree
+      state.certified.typed.boundary.targetSupport []
+      state.certified.typed.boundary.content
+      state.certified.typed.boundary.targetType)
+    (alignedRight : CostRegionTree rhoCIGSLT targetFree alignedAvailable
+      alignedOuter (.fvar name) alignedType)
+    (right : CostRegionTree rhoCIGSLT targetFree rightAvailable rightOuter
+      (.fvar name) rightType)
+    (childAlignment : CostRegionTreeNormalizationAlignment rhoCIGSLT
+      rhoHereditaryNormalizationKernel targetFree leftElaboration
+        alignedRight) :
+    RhoCollapsingLeafExposure node children right := by
+  let environment := node.normalizationEnvironment
+    rhoHereditaryStaticNormalizer children
+  have slotExists := environment.slotOfName?_isSome_of_occurrence
+    state.boundaryOccurrence
+  let slot := (environment.slotOfName? state.boundaryOccurrence.name).get
+    slotExists
+  have selected : environment.slotOfName? state.boundaryOccurrence.name =
+      some slot := (Option.some_get slotExists).symm
+  have reifiedFrame :
+      (node.reifiedSourceFrame environment).1 =
+        .collection rhoReflectivePresentation.parallelCollection
+          [.fvar (environment.atomName slot)] none := by
+    rw [node.reifiedSourceFrame_pattern]
+    calc
+      environment.reify node.skeleton.1 =
+          environment.reify
+            (state.skeletonContext.fill
+              (.fvar (costRegionBoundaryVariableName
+                state.certified.typed.boundary))) :=
+        congrArg environment.reify state.abstract_eq
+      _ = _ := by
+        rw [shell]
+        simp only [
+          Mettapedia.OSLF.MeTTaIL.DerivedContexts.OneHoleContext.fill,
+          List.nil_append, List.map_singleton,
+          CostStaticAtomEnvironment.reify]
+        simp only [Pattern.collection.injEq, true_and, List.cons.injEq,
+          and_true, Pattern.fvar.injEq]
+        change environment.reifyName state.boundaryOccurrence.name =
+          environment.atomName slot
+        unfold CostStaticAtomEnvironment.reifyName
+        rw [selected]
+  have staticFrame :
+      node.canonicalizeReifiedTargetFrame environment
+          (costStaticReflectivePresentationDecl rhoCIGSLT color
+            rhoReflectivePresentation) =
+        .fvar (environment.atomName slot) :=
+    CostStaticRegionNode.canonicalizeReifiedTargetFrame_parallelSingleton_atom
+      node environment slot reifiedFrame
+  exact stoppedBoundaryElaborationSourceVariable node children state
+    entryEmbedding name leftElaboration alignedRight right
+    (fun candidate candidateSelected => by
+      have candidateEq : candidate = slot := by
+        exact Option.some.inj
+          (candidateSelected.symm.trans selected)
+      subst candidate
+      exact staticFrame)
+    childAlignment
+
+/-- Lift one already-closed boundary pair through an exact stopped Quote/Drop
+occurrence.
+
+This is the non-recursive semantic core of the Quote/Drop step.  The child
+pair lives in the certified boundary fibre and may use independently chosen
+trees.  Its right tree is weakened beneath the root's ambient outer context;
+static decomposition unambiguity then relates that choice to the caller's
+actual right endpoint. -/
+noncomputable def stoppedQuoteDropPairElaboration
+    {color : CostStaticColor} {targetFree : FreeTypeContext}
+    {available outer : List TypeExpr}
+    {leftPattern rightPattern : Pattern} {type : TypeExpr}
+    (left : CostRegionTree rhoCIGSLT targetFree available outer leftPattern
+      type)
+    (right : CostRegionTree rhoCIGSLT targetFree available outer rightPattern
+      type)
+    (leftView : left.StaticRootView color)
+    (rightObject : isObjectPattern rightPattern = true)
+    {payload : Pattern}
+    (state : CostStaticPlanStopped rhoCIGSLT color targetFree payload
+      leftView.node.skeleton.1)
+    (entryEmbedding : CostStaticPlanEntryEmbedding rhoCIGSLT color targetFree
+      [state.certified.typed] leftView.node.finiteBoundaryTable.entries)
+    (shell : state.skeletonContext =
+      .apply rhoReflectivePresentation.quoteConstructor []
+        (.apply rhoReflectivePresentation.dropConstructor [] .hole []) [])
+    (boundarySupport :
+      state.certified.typed.boundary.targetSupport = available)
+    (boundaryType : state.certified.typed.boundary.targetType = type)
+    (childPair : CostCanonicalPairElaboration rhoCIGSLT
+      rhoHereditaryNormalizationKernel targetFree
+      state.certified.typed.boundary.targetSupport []
+      state.certified.typed.boundary.content rightPattern
+      state.certified.typed.boundary.targetType) :
+    CostCanonicalPairElaboration rhoCIGSLT
+      rhoHereditaryNormalizationKernel targetFree available outer leftPattern
+      rightPattern type := by
+  let ambientRight : CostRegionTree rhoCIGSLT targetFree available outer
+      rightPattern type :=
+    ((childPair.rightTree.extendOuter outer).reindexAvailable boundarySupport
+      ).reindexType boundaryType
+  have childToAmbient :
+      (childPair.rightTree.normalize
+        (normalizeStatic := rhoHereditaryStaticNormalizer)).pattern =
+      (ambientRight.normalize
+        (normalizeStatic := rhoHereditaryStaticNormalizer)).pattern := by
+    have typeReindex := CostRegionTree.reindexType_normalize
+      (normalizeStatic := rhoHereditaryStaticNormalizer) boundaryType
+      ((childPair.rightTree.extendOuter outer).reindexAvailable
+        boundarySupport)
+    have supportReindex := CostRegionTree.reindexAvailable_normalize
+      (normalizeStatic := rhoHereditaryStaticNormalizer) boundarySupport
+      (childPair.rightTree.extendOuter outer)
+    have weakened := childPair.rightTree.extendOuter_normalize_pattern outer
+      rhoHereditaryStaticNormalizer
+    exact (typeReindex.trans (supportReindex.trans weakened)).symm
+  have ambientToRight :
+      (ambientRight.normalize
+        (normalizeStatic := rhoHereditaryStaticNormalizer)).pattern =
+      (right.normalize
+        (normalizeStatic := rhoHereditaryStaticNormalizer)).pattern :=
+    CostRegionTree.normalize_pattern_eq_of_unambiguous
+      CostCanonicalLaws.rho_unambiguousStaticDecomposition
+      rhoHereditaryNormalizationKernel ambientRight right
+      rightObject
+  have exposure := stoppedQuoteDropBoundaryElaborationAlignedSameSupport
+    leftView.node leftView.children state entryEmbedding shell
+      childPair.leftTree childPair.rightTree right childPair.alignment
+      (childToAmbient.trans ambientToRight)
+      (congrArg List.length (boundarySupport.trans leftView.availableEq.symm))
+  exact
+    { leftTree := left
+      rightTree := right
+      alignment :=
+        (leftView.rootBridge_reindex_left
+          exposure.toRootBridge).toTreeAlignment }
+
+/-- Recursive Quote/Drop closure at an exact stopped boundary occurrence.
+
+The caller supplies only the local parent pair and the generic strictly-
+smaller elaboration interface.  The theorem replays the stopped occurrence,
+proves that its certified boundary content is a proper subproblem of the
+static root, invokes recursive closure on that content versus the exposed
+free name, and feeds the returned proof-relevant alignment into the
+support-independent Quote/Drop terminal.  The resulting pair elaboration
+uses the actual static tree together with an independently typed structural
+free-variable tree; recursive tree choice is therefore never confused with
+endpoint identity. -/
+noncomputable def stoppedQuoteDropSourceVariablePairElaborationOfCloseSmaller
+    {color : CostStaticColor} {targetFree : FreeTypeContext}
+    {available outer : List TypeExpr}
+    {leftPattern : Pattern} {type : TypeExpr}
+    (left : CostRegionTree rhoCIGSLT targetFree available outer leftPattern
+      type)
+    (leftView : left.StaticRootView color)
+    (name : String)
+    (rightWellSorted : ReflectiveWellSorted.OpenPatternWellSorted
+      rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
+      targetFree available type (.fvar name))
+    {payload : Pattern}
+    (state : CostStaticPlanStopped rhoCIGSLT color targetFree payload
+      leftView.node.skeleton.1)
+    (entryEmbedding : CostStaticPlanEntryEmbedding rhoCIGSLT color targetFree
+      [state.certified.typed] leftView.node.finiteBoundaryTable.entries)
+    (shell : state.skeletonContext =
+      .apply rhoReflectivePresentation.quoteConstructor []
+        (.apply rhoReflectivePresentation.dropConstructor [] .hole []) [])
+    (boundaryCanonical :
+      canonicalize
+          (costStaticReflectivePresentationDecl rhoCIGSLT color
+            rhoReflectivePresentation)
+          state.certified.typed.boundary.content =
+        canonicalize
+          (costStaticReflectivePresentationDecl rhoCIGSLT color
+            rhoReflectivePresentation)
+          (.fvar name))
+    (boundaryType : state.certified.typed.boundary.targetType = type)
+    (closeSmaller :
+      ∀ {childAvailable childOuter : List TypeExpr}
+        {leftChild rightChild : Pattern} {childType : TypeExpr},
+        ReflectiveWellSorted.OpenPatternWellSorted
+            rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
+            targetFree childAvailable childType leftChild →
+        ReflectiveWellSorted.OpenPatternWellSorted
+            rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
+            targetFree childAvailable childType rightChild →
+        canonicalize
+            (costStaticReflectivePresentationDecl rhoCIGSLT color
+              rhoReflectivePresentation)
+            leftChild =
+          canonicalize
+            (costStaticReflectivePresentationDecl rhoCIGSLT color
+              rhoReflectivePresentation)
+            rightChild →
+        sizeOf leftChild + sizeOf rightChild <
+          sizeOf leftPattern + sizeOf (Pattern.fvar name) →
+        rhoCanonicalRecursiveTypeDomain.Admissible childType →
+        Nonempty (CostCanonicalPairElaboration rhoCIGSLT
+          rhoHereditaryNormalizationKernel targetFree childAvailable
+          childOuter leftChild rightChild childType)) :
+    CostCanonicalPairElaboration rhoCIGSLT
+      rhoHereditaryNormalizationKernel targetFree available outer leftPattern
+      (Pattern.fvar name) type := by
+  have boundaryWellSorted : ReflectiveWellSorted.OpenPatternWellSorted
+      rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
+      targetFree state.certified.typed.boundary.targetSupport
+      state.certified.typed.boundary.targetType
+      state.certified.typed.boundary.content :=
+    ⟨⟨state.certified.typed.contentTyped,
+        state.certified.typed.contentCanonicalBinderMetadata,
+        state.certified.typed.contentObjectPattern,
+        state.certified.typed.contentTyped.isWellScopedAt⟩,
+      state.certified.typed.contentReflectiveScopeSafe⟩
+  have nameLookup : targetFree name = some type := by
+    cases rightWellSorted.1.1 with
+    | fvar lookup => exact lookup
+  have boundaryNameWellSorted : ReflectiveWellSorted.OpenPatternWellSorted
+      rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
+      targetFree state.certified.typed.boundary.targetSupport
+      state.certified.typed.boundary.targetType (.fvar name) := by
+    have boundaryNameLookup : targetFree name =
+        some state.certified.typed.boundary.targetType := by
+      rw [boundaryType]
+      exact nameLookup
+    exact ⟨⟨WellSorted.HasType.fvar boundaryNameLookup, rfl, rfl, rfl⟩,
+      by
+        intro presentation membership
+        rfl⟩
+  have boundaryMember : state.certified.typed ∈
+      leftView.node.plan.boundaryTable.entries :=
+    entryEmbedding.subset (by simp)
+  have boundarySmaller :
+      sizeOf state.certified.typed.boundary.content +
+          sizeOf (Pattern.fvar name) <
+        sizeOf leftPattern + sizeOf (Pattern.fvar name) := by
+    have contentLt :=
+      leftView.node.plan.boundary_content_size_lt_of_isStaticRoot
+        leftView.node.rootStatic state.certified.typed boundaryMember
+    have nodePatternEq : leftView.node.term.1 = leftPattern :=
+      leftView.patternEq
+    have contentLt' :
+        sizeOf state.certified.typed.boundary.content < sizeOf leftPattern := by
+      calc
+        sizeOf state.certified.typed.boundary.content <
+            sizeOf leftView.node.term.1 := contentLt
+        _ = sizeOf leftPattern := congrArg sizeOf nodePatternEq
+    omega
+  have childAdmissible : rhoCanonicalRecursiveTypeDomain.Admissible
+      state.certified.typed.boundary.targetType := by
+    exact (leftView.typeEq.trans boundaryType.symm) ▸
+      rhoCanonicalRecursiveTypeDomain.base _
+  let childPair := Classical.choice
+    (closeSmaller (childOuter := []) boundaryWellSorted
+      boundaryNameWellSorted boundaryCanonical boundarySmaller
+        childAdmissible)
+  let rightTree : CostRegionTree rhoCIGSLT targetFree available outer
+      (Pattern.fvar name) type := CostRegionTree.fvar nameLookup
+  have exposure := stoppedQuoteDropBoundaryElaborationSourceVariable
+    leftView.node leftView.children state entryEmbedding shell name
+      childPair.leftTree childPair.rightTree rightTree childPair.alignment
+  exact
+    { leftTree := left
+      rightTree := rightTree
+      alignment :=
+        (leftView.rootBridge_reindex_left
+          exposure.toRootBridge).toTreeAlignment }
+
+/-- Recursive Quote/Drop closure at an exact stopped boundary occurrence.
+
+Unlike the source-variable specialization above, the opposite endpoint may be
+an arbitrary well-sorted canonical pattern.  Recursive closure is performed in
+the certified boundary fibre.  Its chosen right tree is then weakened beneath
+the ambient outer context and compared with the actual endpoint using static
+decomposition unambiguity.  Consequently neither recursive tree choice nor an
+equality of endpoints is smuggled into the enclosing root bridge. -/
+noncomputable def stoppedQuoteDropPairElaborationOfCloseSmaller
+    {color : CostStaticColor} {targetFree : FreeTypeContext}
+    {available outer : List TypeExpr}
+    {leftPattern rightPattern : Pattern} {type : TypeExpr}
+    (left : CostRegionTree rhoCIGSLT targetFree available outer leftPattern
+      type)
+    (right : CostRegionTree rhoCIGSLT targetFree available outer rightPattern
+      type)
+    (leftView : left.StaticRootView color)
+    (rightWellSorted : ReflectiveWellSorted.OpenPatternWellSorted
+      rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
+      targetFree available type rightPattern)
+    {payload : Pattern}
+    (state : CostStaticPlanStopped rhoCIGSLT color targetFree payload
+      leftView.node.skeleton.1)
+    (entryEmbedding : CostStaticPlanEntryEmbedding rhoCIGSLT color targetFree
+      [state.certified.typed] leftView.node.finiteBoundaryTable.entries)
+    (shell : state.skeletonContext =
+      .apply rhoReflectivePresentation.quoteConstructor []
+        (.apply rhoReflectivePresentation.dropConstructor [] .hole []) [])
+    (boundaryCanonical :
+      canonicalize
+          (costStaticReflectivePresentationDecl rhoCIGSLT color
+            rhoReflectivePresentation)
+          state.certified.typed.boundary.content =
+        canonicalize
+          (costStaticReflectivePresentationDecl rhoCIGSLT color
+            rhoReflectivePresentation)
+          rightPattern)
+    (boundarySupport :
+      state.certified.typed.boundary.targetSupport = available)
+    (boundaryType : state.certified.typed.boundary.targetType = type)
+    (closeSmaller :
+      ∀ {childAvailable childOuter : List TypeExpr}
+        {leftChild rightChild : Pattern} {childType : TypeExpr},
+        ReflectiveWellSorted.OpenPatternWellSorted
+            rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
+            targetFree childAvailable childType leftChild →
+        ReflectiveWellSorted.OpenPatternWellSorted
+            rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
+            targetFree childAvailable childType rightChild →
+        canonicalize
+            (costStaticReflectivePresentationDecl rhoCIGSLT color
+              rhoReflectivePresentation)
+            leftChild =
+          canonicalize
+            (costStaticReflectivePresentationDecl rhoCIGSLT color
+              rhoReflectivePresentation)
+            rightChild →
+        sizeOf leftChild + sizeOf rightChild <
+          sizeOf leftPattern + sizeOf rightPattern →
+        rhoCanonicalRecursiveTypeDomain.Admissible childType →
+        Nonempty (CostCanonicalPairElaboration rhoCIGSLT
+          rhoHereditaryNormalizationKernel targetFree childAvailable
+          childOuter leftChild rightChild childType)) :
+    CostCanonicalPairElaboration rhoCIGSLT
+      rhoHereditaryNormalizationKernel targetFree available outer leftPattern
+      rightPattern type := by
+  have boundaryWellSorted : ReflectiveWellSorted.OpenPatternWellSorted
+      rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
+      targetFree state.certified.typed.boundary.targetSupport
+      state.certified.typed.boundary.targetType
+      state.certified.typed.boundary.content :=
+    ⟨⟨state.certified.typed.contentTyped,
+        state.certified.typed.contentCanonicalBinderMetadata,
+        state.certified.typed.contentObjectPattern,
+        state.certified.typed.contentTyped.isWellScopedAt⟩,
+      state.certified.typed.contentReflectiveScopeSafe⟩
+  have boundaryRightWellSorted : ReflectiveWellSorted.OpenPatternWellSorted
+      rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
+      targetFree state.certified.typed.boundary.targetSupport
+      state.certified.typed.boundary.targetType rightPattern := by
+    simpa only [boundarySupport, boundaryType] using rightWellSorted
+  have boundaryMember : state.certified.typed ∈
+      leftView.node.plan.boundaryTable.entries :=
+    entryEmbedding.subset (by simp)
+  have boundarySmaller :
+      sizeOf state.certified.typed.boundary.content + sizeOf rightPattern <
+        sizeOf leftPattern + sizeOf rightPattern := by
+    have contentLt :=
+      leftView.node.plan.boundary_content_size_lt_of_isStaticRoot
+        leftView.node.rootStatic state.certified.typed boundaryMember
+    have nodePatternEq : leftView.node.term.1 = leftPattern :=
+      leftView.patternEq
+    have contentLt' :
+        sizeOf state.certified.typed.boundary.content < sizeOf leftPattern := by
+      calc
+        sizeOf state.certified.typed.boundary.content <
+            sizeOf leftView.node.term.1 := contentLt
+        _ = sizeOf leftPattern := congrArg sizeOf nodePatternEq
+    omega
+  have childAdmissible : rhoCanonicalRecursiveTypeDomain.Admissible
+      state.certified.typed.boundary.targetType := by
+    exact (leftView.typeEq.trans boundaryType.symm) ▸
+      rhoCanonicalRecursiveTypeDomain.base _
+  let childPair := Classical.choice
+    (closeSmaller (childOuter := []) boundaryWellSorted
+      boundaryRightWellSorted boundaryCanonical boundarySmaller
+        childAdmissible)
+  exact stoppedQuoteDropPairElaboration left right leftView
+    rightWellSorted.1.2.2.1 state entryEmbedding shell boundarySupport
+    boundaryType childPair
+
+/-- Recursive singleton-parallel closure at an exact stopped boundary
+occurrence.
+
+The boundary support equality is stronger than the length equality needed by
+restoration: it lets recursive closure compare the intercepted child with the
+structural endpoint in one exact typed fibre.  The recursive right tree is
+then weakened beneath the ambient outer context and compared with the actual
+endpoint by decomposition unambiguity.  Thus the exact stopped occurrence is
+retained while the recursive elaborator remains free to choose its own trees. -/
+noncomputable def stoppedParallelSingletonPairElaborationOfCloseSmaller
+    {color : CostStaticColor} {targetFree : FreeTypeContext}
+    {available outer : List TypeExpr}
+    {leftPattern rightPattern : Pattern} {type : TypeExpr}
+    (left : CostRegionTree rhoCIGSLT targetFree available outer leftPattern
+      type)
+    (right : CostRegionTree rhoCIGSLT targetFree available outer rightPattern
+      type)
+    (leftView : left.StaticRootView color)
+    (rightWellSorted : ReflectiveWellSorted.OpenPatternWellSorted
+      rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
+      targetFree available type rightPattern)
+    {payload : Pattern}
+    (state : CostStaticPlanStopped rhoCIGSLT color targetFree payload
+      leftView.node.skeleton.1)
+    (entryEmbedding : CostStaticPlanEntryEmbedding rhoCIGSLT color targetFree
+      [state.certified.typed] leftView.node.finiteBoundaryTable.entries)
+    (shell : state.skeletonContext =
+      .collection rhoReflectivePresentation.parallelCollection
+        [] .hole [] none)
+    (boundaryCanonical :
+      canonicalize
+          (costStaticReflectivePresentationDecl rhoCIGSLT color
+            rhoReflectivePresentation)
+          state.certified.typed.boundary.content =
+        canonicalize
+          (costStaticReflectivePresentationDecl rhoCIGSLT color
+            rhoReflectivePresentation)
+          rightPattern)
+    (boundarySupport :
+      state.certified.typed.boundary.targetSupport = available)
+    (boundaryType : state.certified.typed.boundary.targetType = type)
+    (closeSmaller :
+      ∀ {childAvailable childOuter : List TypeExpr}
+        {leftChild rightChild : Pattern} {childType : TypeExpr},
+        ReflectiveWellSorted.OpenPatternWellSorted
+            rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
+            targetFree childAvailable childType leftChild →
+        ReflectiveWellSorted.OpenPatternWellSorted
+            rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
+            targetFree childAvailable childType rightChild →
+        canonicalize
+            (costStaticReflectivePresentationDecl rhoCIGSLT color
+              rhoReflectivePresentation)
+            leftChild =
+          canonicalize
+            (costStaticReflectivePresentationDecl rhoCIGSLT color
+              rhoReflectivePresentation)
+            rightChild →
+        sizeOf leftChild + sizeOf rightChild <
+          sizeOf leftPattern + sizeOf rightPattern →
+        rhoCanonicalRecursiveTypeDomain.Admissible childType →
+        Nonempty (CostCanonicalPairElaboration rhoCIGSLT
+          rhoHereditaryNormalizationKernel targetFree childAvailable
+          childOuter leftChild rightChild childType)) :
+    CostCanonicalPairElaboration rhoCIGSLT
+      rhoHereditaryNormalizationKernel targetFree available outer leftPattern
+      rightPattern type := by
+  have boundaryWellSorted : ReflectiveWellSorted.OpenPatternWellSorted
+      rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
+      targetFree state.certified.typed.boundary.targetSupport
+      state.certified.typed.boundary.targetType
+      state.certified.typed.boundary.content :=
+    ⟨⟨state.certified.typed.contentTyped,
+        state.certified.typed.contentCanonicalBinderMetadata,
+        state.certified.typed.contentObjectPattern,
+        state.certified.typed.contentTyped.isWellScopedAt⟩,
+      state.certified.typed.contentReflectiveScopeSafe⟩
+  have boundaryRightWellSorted : ReflectiveWellSorted.OpenPatternWellSorted
+      rhoCIGSLT.costWholeReflectionProfile rhoCIGSLT.costWholeLanguage
+      targetFree state.certified.typed.boundary.targetSupport
+      state.certified.typed.boundary.targetType rightPattern := by
+    simpa only [boundarySupport, boundaryType] using rightWellSorted
+  have boundaryMember : state.certified.typed ∈
+      leftView.node.plan.boundaryTable.entries :=
+    entryEmbedding.subset (by simp)
+  have boundarySmaller :
+      sizeOf state.certified.typed.boundary.content + sizeOf rightPattern <
+        sizeOf leftPattern + sizeOf rightPattern := by
+    have contentLt :=
+      leftView.node.plan.boundary_content_size_lt_of_isStaticRoot
+        leftView.node.rootStatic state.certified.typed boundaryMember
+    have nodePatternEq : leftView.node.term.1 = leftPattern :=
+      leftView.patternEq
+    have contentLt' :
+        sizeOf state.certified.typed.boundary.content < sizeOf leftPattern := by
+      calc
+        sizeOf state.certified.typed.boundary.content <
+            sizeOf leftView.node.term.1 := contentLt
+        _ = sizeOf leftPattern := congrArg sizeOf nodePatternEq
+    omega
+  have childAdmissible : rhoCanonicalRecursiveTypeDomain.Admissible
+      state.certified.typed.boundary.targetType := by
+    exact (leftView.typeEq.trans boundaryType.symm) ▸
+      rhoCanonicalRecursiveTypeDomain.base _
+  let childPair := Classical.choice
+    (closeSmaller (childOuter := []) boundaryWellSorted
+      boundaryRightWellSorted boundaryCanonical boundarySmaller
+        childAdmissible)
+  let ambientRight : CostRegionTree rhoCIGSLT targetFree available outer
+      rightPattern type :=
+    ((childPair.rightTree.extendOuter outer).reindexAvailable boundarySupport
+      ).reindexType boundaryType
+  have childToAmbient :
+      (childPair.rightTree.normalize
+        (normalizeStatic := rhoHereditaryStaticNormalizer)).pattern =
+      (ambientRight.normalize
+        (normalizeStatic := rhoHereditaryStaticNormalizer)).pattern := by
+    have typeReindex := CostRegionTree.reindexType_normalize
+      (normalizeStatic := rhoHereditaryStaticNormalizer) boundaryType
+      ((childPair.rightTree.extendOuter outer).reindexAvailable
+        boundarySupport)
+    have supportReindex := CostRegionTree.reindexAvailable_normalize
+      (normalizeStatic := rhoHereditaryStaticNormalizer) boundarySupport
+      (childPair.rightTree.extendOuter outer)
+    have weakened := childPair.rightTree.extendOuter_normalize_pattern outer
+      rhoHereditaryStaticNormalizer
+    exact (typeReindex.trans (supportReindex.trans weakened)).symm
+  have ambientToRight :
+      (ambientRight.normalize
+        (normalizeStatic := rhoHereditaryStaticNormalizer)).pattern =
+      (right.normalize
+        (normalizeStatic := rhoHereditaryStaticNormalizer)).pattern :=
+    CostRegionTree.normalize_pattern_eq_of_unambiguous
+      CostCanonicalLaws.rho_unambiguousStaticDecomposition
+      rhoHereditaryNormalizationKernel ambientRight right
+      rightWellSorted.1.2.2.1
+  have alignedToRight := childToAmbient.trans ambientToRight
+  have exposure := stoppedParallelSingletonBoundaryElaborationAlignedSameSupport
+    leftView.node leftView.children state entryEmbedding shell
+      childPair.leftTree childPair.rightTree right childPair.alignment
+      alignedToRight
+      (congrArg List.length (boundarySupport.trans leftView.availableEq.symm))
+  exact
+    { leftTree := left
+      rightTree := right
+      alignment :=
+        (leftView.rootBridge_reindex_left
+          exposure.toRootBridge).toTreeAlignment }
+
 /-- Construct the atom branch when a collapsing static frame exposes an
 authored source-variable occurrence as its complete canonical result.
 
@@ -898,6 +2096,7 @@ uniformly from the occurrence-indexed inventory. -/
 noncomputable def sourceVariable
     {color : CostStaticColor} {targetFree : FreeTypeContext}
     {rightAvailable rightOuter : List TypeExpr}
+    {rightType : TypeExpr}
     (node : CostStaticRegionNode rhoCIGSLT color targetFree)
     (children : CostRegionBoundaryTrees rhoCIGSLT targetFree color
       node.finiteBoundaryTable)
@@ -905,7 +2104,7 @@ noncomputable def sourceVariable
     (name : String)
     (occurrenceName : occurrence.name = costRegionSourceVariableName name)
     (right : CostRegionTree rhoCIGSLT targetFree rightAvailable rightOuter
-      (.fvar name) (.base (costBaseSortName "Name")))
+      (.fvar name) rightType)
     (slot : Fin (node.normalizationEnvironment rhoHereditaryStaticNormalizer
       children).atomCount)
     (selected :
@@ -950,6 +2149,7 @@ factorization is then derived from the existing semantic-atom join. -/
 noncomputable def quoteDropSourceVariable
     {color : CostStaticColor} {targetFree : FreeTypeContext}
     {rightAvailable rightOuter : List TypeExpr}
+    {rightType : TypeExpr}
     (node : CostStaticRegionNode rhoCIGSLT color targetFree)
     (children : CostRegionBoundaryTrees rhoCIGSLT targetFree color
       node.finiteBoundaryTable)
@@ -957,7 +2157,7 @@ noncomputable def quoteDropSourceVariable
     (name : String)
     (occurrenceName : occurrence.name = costRegionSourceVariableName name)
     (right : CostRegionTree rhoCIGSLT targetFree rightAvailable rightOuter
-      (.fvar name) (.base (costBaseSortName "Name")))
+      (.fvar name) rightType)
     (slot : Fin (node.normalizationEnvironment rhoHereditaryStaticNormalizer
       children).atomCount)
     (selected :
@@ -985,35 +2185,6 @@ noncomputable def quoteDropSourceVariable
       node environment slot reifiedFrame
   exact sourceVariable node children occurrence name occurrenceName right slot
     selected staticFrame
-
-/-- Eliminate corrected atom-or-rigid exposure to the exact hereditary root
-bridge.  The result equality is derived by the selected terminal: semantic
-atoms use their stored typed normal value, whereas bound variables are rigid
-under every supported assignment. -/
-noncomputable def toRootBridge
-    {color : CostStaticColor} {targetFree : FreeTypeContext}
-    {leftOuter rightAvailable rightOuter : List TypeExpr}
-    {node : CostStaticRegionNode rhoCIGSLT color targetFree}
-    {children : CostRegionBoundaryTrees rhoCIGSLT targetFree color
-      node.finiteBoundaryTable}
-    {rightPattern : Pattern} {rightType : TypeExpr}
-    {right : CostRegionTree rhoCIGSLT targetFree rightAvailable rightOuter
-      rightPattern rightType}
-    (exposure : RhoCollapsingLeafExposure node children right) :
-    CostRegionRootNormalizationBridge rhoCIGSLT
-      rhoHereditaryNormalizationKernel targetFree
-      (CostRegionTree.static (outer := leftOuter) node children) right := by
-  cases exposure with
-  | atom slot staticFrame structuralNormal =>
-      exact rhoStaticRootBridgeOfCanonicalAtom node children right slot
-        staticFrame structuralNormal
-  | rigidBVar index staticNormal structuralNormal =>
-      apply rhoStaticRootBridgeOfRigidLeaf node children right (.bvar index)
-      · intro support assignment depth
-        simp [ReflectiveContextSupport.substituteAt]
-      · rw [CostRegionTree.normalize_static_pattern]
-        exact staticNormal
-      · exact structuralNormal
 
 end RhoCollapsingLeafExposure
 

@@ -32,7 +32,7 @@ def wholeStepForCover (config : RawCostConfig) (redex : RawWholeRedex)
       match config[redex.index]? with
       | some (.signed (.par (.send _ _) (.recv _ _)) _) => .wholeSendRecv
       | _ => .wholeRecvSend
-    surface := redex.surface
+    location := redex.location
     spend := redex.sig
     participantIndices := [redex.index]
     selectedPurses := cover
@@ -45,7 +45,7 @@ def splitStepForCover (config : RawCostConfig) (recv : RawRecvEndpoint)
   let spend := (recv.sig ++ send.sig).normalize
   let contractum := RawCostTerm.commSubst recv.body send.payload |>.normalize
   { shape := .split
-    surface := recv.surface
+    location := recv.location
     spend
     participantIndices := [recv.index, send.index]
     selectedPurses := cover
@@ -84,7 +84,7 @@ def seekRuntimeTasks (config : RawCostConfig)
       | .whole redex =>
           let coverResult :=
             (CoverCursor.initial redex.sig
-              (matchingPurses redex.surface purses)).seekMetered budget
+              (matchingPurses redex.location purses)).seekMetered budget
           match coverResult.decision with
           | .found cover _ =>
               ⟨.found (wholeStepForCover config redex cover),
@@ -95,12 +95,12 @@ def seekRuntimeTasks (config : RawCostConfig)
           | .searchExhausted _ =>
               ⟨.searchExhausted, coverResult.remainingBudget⟩
       | .split recv send =>
-          if _surfacesMatch :
-              recv.surface.normalize = send.surface.normalize then
+          if _locationsMatch :
+              recv.location.normalize = send.location.normalize then
             let spend := (recv.sig ++ send.sig).normalize
             let coverResult :=
               (CoverCursor.initial spend
-                (matchingPurses recv.surface purses)).seekMetered budget
+                (matchingPurses recv.location purses)).seekMetered budget
             match coverResult.decision with
             | .found cover _ =>
                 ⟨.found (splitStepForCover config recv send cover),
@@ -126,7 +126,7 @@ theorem wholeStepForCover_mem
     {config : RawCostConfig} {purses : List RawIndexedPurse}
     {redex : RawWholeRedex} {cover : List RawIndexedPurse}
     (coverMember : cover ∈ exactPurseCovers redex.sig
-      (matchingPurses redex.surface purses)) :
+      (matchingPurses redex.location purses)) :
     wholeStepForCover config redex cover ∈
       wholeCandidates config purses redex := by
   unfold wholeCandidates
@@ -137,10 +137,10 @@ theorem splitStepForCover_mem
     {config : RawCostConfig} {purses : List RawIndexedPurse}
     {recv : RawRecvEndpoint} {send : RawSendEndpoint}
     {cover : List RawIndexedPurse}
-    (surfacesMatch : recv.surface.normalize = send.surface.normalize)
+    (locationsMatch : recv.location.normalize = send.location.normalize)
     (coverMember : cover ∈ exactPurseCovers
       ((recv.sig ++ send.sig).normalize)
-      (matchingPurses recv.surface purses)) :
+      (matchingPurses recv.location purses)) :
     splitStepForCover config recv send cover ∈
       splitCandidates config purses recv send := by
   unfold splitCandidates
@@ -169,7 +169,7 @@ theorem seekRuntimeTasks_found_sound
           | whole redex =>
               cases cover_eq :
                 (CoverCursor.initial redex.sig
-                  (matchingPurses redex.surface purses)).seekMetered budget with
+                  (matchingPurses redex.location purses)).seekMetered budget with
               | mk decision coverRemaining =>
                   cases decision with
                   | noCover =>
@@ -190,25 +190,25 @@ theorem seekRuntimeTasks_found_sound
                       apply CoverCursor.seek_initial_found_sound
                       have verdict := CoverCursor.seekMetered_decision budget
                         (CoverCursor.initial redex.sig
-                          (matchingPurses redex.surface purses))
+                          (matchingPurses redex.location purses))
                       rw [cover_eq] at verdict
                       exact verdict.symm
           | split recv send =>
-              by_cases surfacesMatch :
-                  recv.surface.normalize = send.surface.normalize
+              by_cases locationsMatch :
+                  recv.location.normalize = send.location.normalize
               · cases cover_eq :
                   (CoverCursor.initial ((recv.sig ++ send.sig).normalize)
-                    (matchingPurses recv.surface purses)).seekMetered budget with
+                    (matchingPurses recv.location purses)).seekMetered budget with
                 | mk decision coverRemaining =>
                     cases decision with
                     | noCover =>
                         rw [seekRuntimeTasks] at found
-                        simp only [dif_pos surfacesMatch] at found
+                        simp only [dif_pos locationsMatch] at found
                         rw [cover_eq] at found
                         exact List.mem_append_right _ (ih found)
                     | searchExhausted cursor =>
                         rw [seekRuntimeTasks] at found
-                        simp only [dif_pos surfacesMatch] at found
+                        simp only [dif_pos locationsMatch] at found
                         rw [cover_eq] at found
                         simp at found
                     | found cover cursor =>
@@ -220,21 +220,21 @@ theorem seekRuntimeTasks_found_sound
                               MeteredRuntimeCandidate.mk (.found step)
                                 remaining := by
                           rw [seekRuntimeTasks] at found
-                          simp only [dif_pos surfacesMatch] at found
+                          simp only [dif_pos locationsMatch] at found
                           rw [cover_eq] at found
                           exact found
                         cases foundEq
                         apply List.mem_append_left
-                        apply splitStepForCover_mem surfacesMatch
+                        apply splitStepForCover_mem locationsMatch
                         apply CoverCursor.seek_initial_found_sound
                         have verdict := CoverCursor.seekMetered_decision budget
                           (CoverCursor.initial
                             ((recv.sig ++ send.sig).normalize)
-                            (matchingPurses recv.surface purses))
+                            (matchingPurses recv.location purses))
                         rw [cover_eq] at verdict
                         exact verdict.symm
               · rw [seekRuntimeTasks] at found
-                simp only [dif_neg surfacesMatch] at found
+                simp only [dif_neg locationsMatch] at found
                 exact List.mem_append_right _ (ih found)
 
 /-- Runtime-task search never creates candidate-search allowance. -/
@@ -252,12 +252,12 @@ theorem seekRuntimeTasks_remaining_le
           | whole redex =>
               cases cover_eq :
                 (CoverCursor.initial redex.sig
-                  (matchingPurses redex.surface purses)).seekMetered budget with
+                  (matchingPurses redex.location purses)).seekMetered budget with
               | mk decision coverRemaining =>
                   have cover_le : coverRemaining ≤ budget := by
                     have bound := CoverCursor.seekMetered_remaining_le budget
                       (CoverCursor.initial redex.sig
-                        (matchingPurses redex.surface purses))
+                        (matchingPurses redex.location purses))
                     simpa [cover_eq] using bound
                   cases decision with
                   | found cover cursor =>
@@ -271,21 +271,21 @@ theorem seekRuntimeTasks_remaining_le
                       simp only [seekRuntimeTasks, cover_eq]
                       omega
           | split recv send =>
-              by_cases surfacesMatch :
-                  recv.surface.normalize = send.surface.normalize
+              by_cases locationsMatch :
+                  recv.location.normalize = send.location.normalize
               · cases cover_eq :
                   (CoverCursor.initial ((recv.sig ++ send.sig).normalize)
-                    (matchingPurses recv.surface purses)).seekMetered budget with
+                    (matchingPurses recv.location purses)).seekMetered budget with
                 | mk decision coverRemaining =>
                     have cover_le : coverRemaining ≤ budget := by
                       have bound := CoverCursor.seekMetered_remaining_le budget
                         (CoverCursor.initial
                           ((recv.sig ++ send.sig).normalize)
-                          (matchingPurses recv.surface purses))
+                          (matchingPurses recv.location purses))
                       rw [cover_eq] at bound
                       exact bound
                     rw [seekRuntimeTasks]
-                    simp only [dif_pos surfacesMatch]
+                    simp only [dif_pos locationsMatch]
                     rw [cover_eq]
                     cases decision with
                     | found cover cursor =>
@@ -301,7 +301,7 @@ theorem seekRuntimeTasks_remaining_le
                             coverRemaining).remainingBudget ≤ budget + 1
                         omega
               · have recursive := ih budget
-                simp only [seekRuntimeTasks, dif_neg surfacesMatch]
+                simp only [seekRuntimeTasks, dif_neg locationsMatch]
                 omega
 
 /-- `noCandidate` is returned only after every task and every funding cover
@@ -322,7 +322,7 @@ theorem seekRuntimeTasks_noCandidate_denote_empty
           | whole redex =>
               cases cover_eq :
                 (CoverCursor.initial redex.sig
-                  (matchingPurses redex.surface purses)).seekMetered budget with
+                  (matchingPurses redex.location purses)).seekMetered budget with
               | mk decision coverRemaining =>
                   cases decision with
                   | found cover cursor =>
@@ -331,7 +331,7 @@ theorem seekRuntimeTasks_noCandidate_denote_empty
                       simp [seekRuntimeTasks, cover_eq] at absent
                   | noCover =>
                       have cover_empty : exactPurseCovers redex.sig
-                          (matchingPurses redex.surface purses) = [] := by
+                          (matchingPurses redex.location purses) = [] := by
                         have denotation :=
                           CoverCursor.seekMetered_noCover_denote_empty cover_eq
                         simpa only [CoverCursor.denote_initial] using denotation
@@ -343,14 +343,14 @@ theorem seekRuntimeTasks_noCandidate_denote_empty
                       simp [RawRuntimeTask.denote, wholeCandidates,
                         cover_empty, rest_empty]
           | split recv send =>
-              by_cases surfacesMatch :
-                  recv.surface.normalize = send.surface.normalize
+              by_cases locationsMatch :
+                  recv.location.normalize = send.location.normalize
               · cases cover_eq :
                   (CoverCursor.initial ((recv.sig ++ send.sig).normalize)
-                    (matchingPurses recv.surface purses)).seekMetered budget with
+                    (matchingPurses recv.location purses)).seekMetered budget with
                 | mk decision coverRemaining =>
                     rw [seekRuntimeTasks] at absent
-                    simp only [dif_pos surfacesMatch] at absent
+                    simp only [dif_pos locationsMatch] at absent
                     rw [cover_eq] at absent
                     cases decision with
                     | found cover cursor =>
@@ -360,7 +360,7 @@ theorem seekRuntimeTasks_noCandidate_denote_empty
                     | noCover =>
                         have cover_empty : exactPurseCovers
                             ((recv.sig ++ send.sig).normalize)
-                            (matchingPurses recv.surface purses) = [] := by
+                            (matchingPurses recv.location purses) = [] := by
                           have denotation :=
                             CoverCursor.seekMetered_noCover_denote_empty cover_eq
                           simpa only [CoverCursor.denote_initial] using denotation
@@ -372,16 +372,16 @@ theorem seekRuntimeTasks_noCandidate_denote_empty
                         have rest_empty := ih rest_absent
                         simp only [List.flatMap_cons,
                           RawRuntimeTask.denote]
-                        rw [splitCandidates, if_pos surfacesMatch]
+                        rw [splitCandidates, if_pos locationsMatch]
                         dsimp only
                         rw [cover_empty, rest_empty]
                         simp
               · have rest_absent :
                     seekRuntimeTasks config purses rest budget =
                       ⟨RuntimeCandidateDecision.noCandidate, remaining⟩ := by
-                  simpa [seekRuntimeTasks, dif_neg surfacesMatch] using absent
+                  simpa [seekRuntimeTasks, dif_neg locationsMatch] using absent
                 have rest_empty := ih rest_absent
-                simp [RawRuntimeTask.denote, splitCandidates, surfacesMatch,
+                simp [RawRuntimeTask.denote, splitCandidates, locationsMatch,
                   rest_empty]
 
 theorem runtimeCandidateTasks_denote (config : RawCostConfig) :

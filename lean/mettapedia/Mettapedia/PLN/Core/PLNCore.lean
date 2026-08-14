@@ -66,7 +66,7 @@ import Mettapedia.PLN.RuleFamilies.FirstOrder.Quantifiers.FuzzyDomainQuantifierR
 import Mettapedia.PLN.RuleFamilies.FirstOrder.Quantifiers.FuzzySyllogismRegressionFin
 import Mettapedia.PLN.Bridges.HOL.PLNWorldModelHOLSetBridge
 import Mettapedia.PLN.Bridges.HOL.PLNHigherOrderHOLRegression
-import Mettapedia.PLN.WorldModel.SufficientStatisticSurface
+import Mettapedia.PLN.WorldModel.SufficientStatisticEncoder
 import Mettapedia.PLN.WorldModel.GenericWorldModelForgetting
 import Mettapedia.PLN.WorldModel.Semitopology.PLNSemitopology
 import Mettapedia.PLN.WorldModel.Semitopology.PLNSemitopologyProvenanceBridge
@@ -88,7 +88,7 @@ import Mettapedia.PLN.InferenceControl.PremiseSelection.BRGI
 /-!
 # PLN Core (Curated, theorem-complete entrypoint)
 
-This module is a curated import surface for the currently theorem-complete PLN stack:
+This module is a curated import interface for the currently theorem-complete PLN stack:
 
 - Core derivation formulas (`PLNDerivation`)
 - Complete/joint evidence world-model semantics (`CompletePLN`, `PLNJointEvidence*`)
@@ -142,22 +142,22 @@ This module is a curated import surface for the currently theorem-complete PLN s
 - Error-magnification grounding across WM calculus, OSLF atom semantics, and
   evidence-derived confidence transport (`PLNErrorMagnificationGrounding`)
 - Canonical API with 3-tier theorem index (`PLNCanonicalAPI`)
-- Exact formed-concept family surface, exact inheritance-query wrappers, and
+- Exact formed-concept family interface, exact inheritance-query wrappers, and
   closure/growth transport for the extensional finite concept lane
   (`_root_.Mettapedia.KR.ConceptOntology.Formation`, `EmpiricalIntensionalFactorGraphBridge`,
-  `FormedConcept*Bridge`, surfaced through canonical aliases in `PLNCanonicalAPI`)
+  `FormedConcept*Bridge`, exposed through canonical aliases in `PLNCanonicalAPI`)
 - Explicit mixed ASSOC+PAT boundary canary and model-based mixed threshold
   endpoints, kept separate from the exact extensional formed-concept lane
   (`PLNIntensionalAssocPatClosure`, especially `assocPat_boundary_canary`)
-- Arbitrary-domain PLN first-order quantifier surface
+- Arbitrary-domain PLN first-order quantifier interface
   (`PLNFirstOrder.InfiniteRegression`, plus canonical aliases in `PLNCanonicalAPI`)
-- Arbitrary-domain fuzzy first-order quantifier surface
+- Arbitrary-domain fuzzy first-order quantifier interface
   (`PLNFirstOrder.FuzzyQuantifierRegressionInf`, plus canonical aliases in `PLNCanonicalAPI`)
 - Choquet-style arbitrary-domain fuzzy first-order branch
   (`PLNFirstOrder.ChoquetQuantifierRegression`, plus canonical aliases in `PLNCanonicalAPI`)
 - Fuzzy-domain arbitrary-domain first-order branch
   (`PLNFirstOrder.FuzzyDomainQuantifierRegression`, plus canonical aliases in `PLNCanonicalAPI`)
-- Finite/counting fuzzy Chapter-11 syllogism surface
+- Finite/counting fuzzy Chapter-11 syllogism interface
   (`PLNFirstOrder.FuzzySyllogismRegressionFin`)
 - Higher-order PLN layer over real Church/Henkin HOL plus the real HOL WM bridge
   (`PLNHigherOrderHOLRegression`, plus canonical aliases in `PLNCanonicalAPI`)
@@ -190,8 +190,8 @@ This module is a curated import surface for the currently theorem-complete PLN s
   abstract MassState WM bridge
   (`MarkovLogic{Abstract,Countable,FiniteRestriction,FactorGraph,BinaryWorldModel}`,
   regression canary in `MarkovLogicRegression`)
-- Additive multiset WM singleton-surface classification / uniqueness
-  (`SufficientStatisticSurface`)
+- Additive multiset WM singleton-interface classification / uniqueness
+  (`SufficientStatisticEncoder`)
 - Forgetting layer with scope invariance and scoped no-go for exact inverse forgetting
   (`GenericWorldModelForgetting`)
 - Coalition/semitopology layer for quorum/actionable-coalition reasoning with

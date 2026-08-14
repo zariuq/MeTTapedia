@@ -18,7 +18,7 @@ The core abstraction here is simple:
 * so any successful switching theorem must exhibit a concrete decoder family,
   not merely a locality radius.
 
-We also expose a Hyperseed-flavored surface in which inputs are restricted to an
+We also expose a Hyperseed-flavored data domain in which inputs are restricted to an
 observer-relative available region.  This lets the same background theory speak
 about "what a decoder can see" using existing Mettapedia infrastructure.
 -/

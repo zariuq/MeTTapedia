@@ -473,7 +473,7 @@ open Mettapedia.Logic.WMMarkovCanonical
 variable {k : ℕ}
 
 /-- Markov XiPLN queries are transition atoms `i → j`, represented by the
-existing `AtomQuery (Fin k)` link surface. -/
+existing `AtomQuery (Fin k)` link interface. -/
 abbrev MarkovXiQuery (k : ℕ) := MarkovTransitionQuery k
 
 /-- Query-indexed Dirichlet carrier for Markov transition multisets. The view

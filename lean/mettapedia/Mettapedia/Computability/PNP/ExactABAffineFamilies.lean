@@ -2,14 +2,14 @@ import Mettapedia.Computability.PNP.ExactABDecisionListFamily
 import Mettapedia.Computability.PNP.ExactAffineRecovery
 
 /-!
-# P vs NP grassroots: affine candidate families on the raw `(a, b)` surface
+# P vs NP grassroots: affine candidate families on the raw `(a, b)` data domain
 
-The exact post-switch surface now has one fully concrete reduced extractor:
+The exact post-switch data domain now has one fully concrete reduced extractor:
 the raw visible bit vector obtained from `(a, b)`.
 
 This file reuses the generic affine-family machinery on top of that extractor.
-So besides the plain raw decision-list family, we now get a richer exact-surface
-candidate ladder on the same visible bit surface:
+So besides the plain raw decision-list family, we now get a richer exact-data domain
+candidate ladder on the same visible bit data domain:
 
 * bounded affine-feature predictors on the raw `(a, b)` bits,
 * sparse-threshold affine predictors on the raw `(a, b)` bits,
@@ -26,34 +26,34 @@ section
 
 variable {Z : Type*} {r k : ℕ}
 
-/-- The exact-surface bit family induced by bounded affine-feature predictors
-on the raw exact visible bit surface `(a, b)`. -/
+/-- The exact-data domain bit family induced by bounded affine-feature predictors
+on the raw exact visible bit data domain `(a, b)`. -/
 noncomputable def exactABAffineFeatureBitFamily (Z : Type*) (r k : ℕ) :
-    BitEncodedClassifierFamily (ExactVisiblePostSwitchSurface Z k)
+    BitEncodedClassifierFamily (ExactVisiblePostSwitchData Z k)
       (r * ((k + k) + 1) + 2 ^ r) :=
   IndexedPredictorFamily.pullbackBitFamily
     (exactABVisibleData (Z := Z) (k := k))
     (affineFeatureBitFamily r (k + k))
 
-/-- The exact-surface bit family induced by sparse-threshold affine predictors
-on the raw exact visible bit surface `(a, b)`. -/
+/-- The exact-data domain bit family induced by sparse-threshold affine predictors
+on the raw exact visible bit data domain `(a, b)`. -/
 noncomputable def exactABSparseThresholdAffineBitFamily (Z : Type*) (r k : ℕ) :
-    BitEncodedClassifierFamily (ExactVisiblePostSwitchSurface Z k)
+    BitEncodedClassifierFamily (ExactVisiblePostSwitchData Z k)
       (r * ((k + k) + 3)) :=
   IndexedPredictorFamily.pullbackBitFamily
     (exactABVisibleData (Z := Z) (k := k))
     (sparseThresholdAffineBitFamily r (k + k))
 
-/-- The exact-surface bit family induced by affine decision-list predictors on
-the raw exact visible bit surface `(a, b)`. -/
+/-- The exact-data domain bit family induced by affine decision-list predictors on
+the raw exact visible bit data domain `(a, b)`. -/
 noncomputable def exactABAffineDecisionListBitFamily (Z : Type*) (r k : ℕ) :
-    BitEncodedClassifierFamily (ExactVisiblePostSwitchSurface Z k)
+    BitEncodedClassifierFamily (ExactVisiblePostSwitchData Z k)
       (r * ((k + k) + 2) + 1) :=
   IndexedPredictorFamily.pullbackBitFamily
     (exactABVisibleData (Z := Z) (k := k))
     (affineDecisionListBitFamily r (k + k))
 
-/-- Exact-surface specialization: the switched family depends only on a bounded
+/-- Exact-data domain specialization: the switched family depends only on a bounded
 affine-feature summary of the raw exact visible bits `(a, b)`. -/
 abbrev RealizedByExactABAffineFeatureFamily
     {Z : Type*} {Index : Type*}
@@ -61,7 +61,7 @@ abbrev RealizedByExactABAffineFeatureFamily
   RealizedByAffineFeatureFamily (r := r) (k := k + k)
     (exactABVisibleData (Z := Z) (k := k)) G
 
-/-- Exact-surface specialization: the switched family depends only on a
+/-- Exact-data domain specialization: the switched family depends only on a
 sparse-threshold affine summary of the raw exact visible bits `(a, b)`. -/
 abbrev RealizedByExactABSparseThresholdAffineFamily
     {Z : Type*} {Index : Type*}
@@ -69,7 +69,7 @@ abbrev RealizedByExactABSparseThresholdAffineFamily
   RealizedBySparseThresholdAffineFamily (r := r) (k := k + k)
     (exactABVisibleData (Z := Z) (k := k)) G
 
-/-- Exact-surface specialization: the switched family depends only on an
+/-- Exact-data domain specialization: the switched family depends only on an
 affine decision-list summary of the raw exact visible bits `(a, b)`. -/
 abbrev RealizedByExactABAffineDecisionListFamily
     {Z : Type*} {Index : Type*}
@@ -110,7 +110,7 @@ theorem exactVisibleCompressionTarget_of_realizedByExactABAffineDecisionListFami
     (code : AffineFeatureCode r (k + k)) :
     (exactABAffineFeatureBitFamily Z r k).decode
         (affineFeatureCodeEquivBitCode r (k + k) code)
-      = fun u : ExactVisiblePostSwitchSurface Z k =>
+      = fun u : ExactVisiblePostSwitchData Z k =>
           affineFeaturePredict code (exactABVisibleData u) := by
   funext u
   change affineFeaturePredict
@@ -124,7 +124,7 @@ theorem exactVisibleCompressionTarget_of_realizedByExactABAffineDecisionListFami
     (code : SparseThresholdAffineCode r (k + k)) :
     (exactABSparseThresholdAffineBitFamily Z r k).decode
         (sparseThresholdAffineCodeEquivBitCode r (k + k) code)
-      = fun u : ExactVisiblePostSwitchSurface Z k =>
+      = fun u : ExactVisiblePostSwitchData Z k =>
           sparseThresholdAffinePredict code (exactABVisibleData u) := by
   funext u
   change sparseThresholdAffinePredict
@@ -138,7 +138,7 @@ theorem exactVisibleCompressionTarget_of_realizedByExactABAffineDecisionListFami
     (code : AffineDecisionListCode r (k + k)) :
     (exactABAffineDecisionListBitFamily Z r k).decode
         (affineDecisionListCodeEquivBitCode r (k + k) code)
-      = fun u : ExactVisiblePostSwitchSurface Z k =>
+      = fun u : ExactVisiblePostSwitchData Z k =>
           affineDecisionListPredict code (exactABVisibleData u) := by
   funext u
   change affineDecisionListPredict
@@ -150,10 +150,10 @@ theorem exactVisibleCompressionTarget_of_realizedByExactABAffineDecisionListFami
 
 theorem exactABAffineFeatureRecoveryLowerBound
     [Fintype Z]
-    (μ : PMF (ExactVisiblePostSwitchSurface Z k))
-    (target : ExactVisiblePostSwitchSurface Z k → Bool) (m : ℕ)
+    (μ : PMF (ExactVisiblePostSwitchData Z k))
+    (target : ExactVisiblePostSwitchData Z k → Bool) (m : ℕ)
     (htarget : ∃ code : AffineFeatureCode r (k + k),
-      target = fun u : ExactVisiblePostSwitchSurface Z k =>
+      target = fun u : ExactVisiblePostSwitchData Z k =>
         affineFeaturePredict code (exactABVisibleData u))
     {q : ℝ≥0∞}
     (hq :
@@ -165,7 +165,7 @@ theorem exactABAffineFeatureRecoveryLowerBound
   refine BitEncodedClassifierFamily.exactRecoverySampleMass_ge_one_sub_bitBudget_mul_pow_of_agreementMass_le
     (F := exactABAffineFeatureBitFamily Z r k)
     (μ := μ)
-    (target := fun u : ExactVisiblePostSwitchSurface Z k =>
+    (target := fun u : ExactVisiblePostSwitchData Z k =>
       affineFeaturePredict code (exactABVisibleData u))
     (m := m) ?_ hq
   refine ⟨affineFeatureCodeEquivBitCode r (k + k) code, ?_⟩
@@ -173,10 +173,10 @@ theorem exactABAffineFeatureRecoveryLowerBound
 
 theorem exactABSparseThresholdAffineRecoveryLowerBound
     [Fintype Z]
-    (μ : PMF (ExactVisiblePostSwitchSurface Z k))
-    (target : ExactVisiblePostSwitchSurface Z k → Bool) (m : ℕ)
+    (μ : PMF (ExactVisiblePostSwitchData Z k))
+    (target : ExactVisiblePostSwitchData Z k → Bool) (m : ℕ)
     (htarget : ∃ code : SparseThresholdAffineCode r (k + k),
-      target = fun u : ExactVisiblePostSwitchSurface Z k =>
+      target = fun u : ExactVisiblePostSwitchData Z k =>
         sparseThresholdAffinePredict code (exactABVisibleData u))
     {q : ℝ≥0∞}
     (hq :
@@ -188,7 +188,7 @@ theorem exactABSparseThresholdAffineRecoveryLowerBound
   refine BitEncodedClassifierFamily.exactRecoverySampleMass_ge_one_sub_bitBudget_mul_pow_of_agreementMass_le
     (F := exactABSparseThresholdAffineBitFamily Z r k)
     (μ := μ)
-    (target := fun u : ExactVisiblePostSwitchSurface Z k =>
+    (target := fun u : ExactVisiblePostSwitchData Z k =>
       sparseThresholdAffinePredict code (exactABVisibleData u))
     (m := m) ?_ hq
   refine ⟨sparseThresholdAffineCodeEquivBitCode r (k + k) code, ?_⟩
@@ -196,10 +196,10 @@ theorem exactABSparseThresholdAffineRecoveryLowerBound
 
 theorem exactABAffineDecisionListRecoveryLowerBound
     [Fintype Z]
-    (μ : PMF (ExactVisiblePostSwitchSurface Z k))
-    (target : ExactVisiblePostSwitchSurface Z k → Bool) (m : ℕ)
+    (μ : PMF (ExactVisiblePostSwitchData Z k))
+    (target : ExactVisiblePostSwitchData Z k → Bool) (m : ℕ)
     (htarget : ∃ code : AffineDecisionListCode r (k + k),
-      target = fun u : ExactVisiblePostSwitchSurface Z k =>
+      target = fun u : ExactVisiblePostSwitchData Z k =>
         affineDecisionListPredict code (exactABVisibleData u))
     {q : ℝ≥0∞}
     (hq :
@@ -211,7 +211,7 @@ theorem exactABAffineDecisionListRecoveryLowerBound
   refine BitEncodedClassifierFamily.exactRecoverySampleMass_ge_one_sub_bitBudget_mul_pow_of_agreementMass_le
     (F := exactABAffineDecisionListBitFamily Z r k)
     (μ := μ)
-    (target := fun u : ExactVisiblePostSwitchSurface Z k =>
+    (target := fun u : ExactVisiblePostSwitchData Z k =>
       affineDecisionListPredict code (exactABVisibleData u))
     (m := m) ?_ hq
   refine ⟨affineDecisionListCodeEquivBitCode r (k + k) code, ?_⟩

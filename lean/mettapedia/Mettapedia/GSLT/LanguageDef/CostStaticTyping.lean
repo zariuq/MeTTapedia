@@ -39,6 +39,16 @@ def symbols (source : CIGSLT) : CostStaticColor → PresentationSymbols
   | .base => costBaseStaticSymbols
   | .wrapped => costWrappedStaticSymbols source.theory
 
+/-- The exact hereditary constructor image of one static Cost colour.  The
+source witness belongs to the cut-derived non-principal fragment; recording
+that witness also distinguishes the otherwise syntax-invisible declaration
+used to type a bare collection. -/
+def hereditaryConstructorImage (source : CIGSLT)
+    (color : CostStaticColor) (targetConstructor : String) : Prop :=
+  ∃ sourceConstructor,
+    sourceConstructor ∈ source.continuationRetyping.wrappedLabels ∧
+      targetConstructor = (color.symbols source).constructor sourceConstructor
+
 /-- The corresponding action on the independently authored reflection
 fibre.  Its core projection is exactly `symbols`; the additional component
 renames presentation and reflective-rule identifiers. -/

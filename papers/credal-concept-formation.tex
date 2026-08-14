@@ -203,8 +203,8 @@ $\STV{s}{c}$.
 
 \section{The credal carriers}\label{sec:carriers}
 
-The exact (precise) concept-formation surface in our framework is given by the
-\lid{ObservationSurface} machinery and its
+The exact (precise) concept-formation API in our framework is given by the
+\lid{ObservationEncoder} machinery and its
 \lid{finiteConceptFamily} operator; see~\cite{wmpln_concept_formation_guidance} for
 the public-API discussion. Codex's \lid{ConceptOntology/Formation.lean} provides the
 operator and a correctness theorem
@@ -567,7 +567,7 @@ and predicate uses. Output schema:
 Mizar's full grammar, only enough to populate the attribute-count cells. The output
 is then loaded by a generated Lean module
 (\lpath{Generated/MizarConlat1.lean}) into the
-\lid{BinaryFcaBenchmarkContext} surface from \lpath{BenchmarkControl.lean}.
+\lid{BinaryFcaBenchmarkContext} from \lpath{BenchmarkControl.lean}.
 
 \subsection{Working slice: \texorpdfstring{\lid{conlat\_1.miz}}{conlat\_1.miz}}\label{sec:mizar-data}
 
@@ -607,13 +607,13 @@ in the exact concept family; the negative witness
 correctly rejected; the lower-credal exclusion
 \lid{flyingFamilyConcept\_not\_mem\_lower} at line 265 shows the lower-credal carrier
 correctly rejects the flying-family concept under a strict-gate family that requires
-two supporting tokens. This is the controlled benchmark surface against which the
+two supporting tokens. This is the controlled benchmark fixture against which the
 Mizar layer is instantiated.
 
 \subsection{The credal witness on \texorpdfstring{\lid{conlat\_1}}{conlat\_1}}\label{sec:mizar-witness}
 
 \lpath{ConceptOntology/MizarBenchmark.lean} instantiates the
-\lid{BinaryFcaBenchmarkContext} surface on the extracted \lid{conlat\_1} context.
+\lid{BinaryFcaBenchmarkContext} on the extracted \lid{conlat\_1} context.
 A two-element gate family
 \lid{MizarGate} := \{\lid{loose}, \lid{strict}\} is defined:
 \lid{loose} = the exact (positive-support) gate; \lid{strict} = the

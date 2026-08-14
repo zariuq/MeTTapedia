@@ -603,7 +603,7 @@ theorem prod_relevantHeadConditioningFinset_eq_of_agree
     bn cpt X Y Z (by
       exact (Finset.mem_filter.mp hv).2) x y hZeq
 
-/-- All relevant heads for the moral-ancestral factorization surface. -/
+/-- All relevant heads for the moral-ancestral factorization interface. -/
 noncomputable def relevantHeadFinset (X Y Z : Set V) : Finset V :=
   Finset.univ.filter (fun v => v ∈ DSeparation.relevantVertices bn.graph X Y Z)
 

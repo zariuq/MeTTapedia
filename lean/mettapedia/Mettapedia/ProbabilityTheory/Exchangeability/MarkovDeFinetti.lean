@@ -1,7 +1,7 @@
 import Mettapedia.UniversalAI.UniversalPrediction.MarkovExchangeabilityBridge
 
 /-!
-# Markov de Finetti (Active Minimal Surface)
+# Markov de Finetti (Active Minimal Interface)
 
 This module intentionally keeps only a minimal active entrypoint while the
 previous large development remains archived.

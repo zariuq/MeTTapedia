@@ -25,7 +25,7 @@ by two independent structural decisions:
 2. Do you track evidence per-channel or summarize to a point? (Bounds vs Point)
 
 The KS formalism then constrains what kinds of additive and representation
-surfaces fit those choices. The WM calculus instantiates each vertex.
+interfaces fit those choices. The WM calculus instantiates each vertex.
 
 ## References
 

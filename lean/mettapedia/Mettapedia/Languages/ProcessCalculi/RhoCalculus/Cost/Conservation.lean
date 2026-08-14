@@ -187,42 +187,42 @@ private theorem sum_get_eq_sum_map {Alpha : Type*} {M : Type*}
         value head + (tail.map value).sum
       rw [ih]
 
-/-- Ordered local account at one nominal funding surface. -/
+/-- Ordered local account at one nominal funding location. -/
 def rawAccountAt
     {nextId components finalId finalComponents}
     (path : CostPath nextId components finalId finalComponents)
-    (surface : RawCostName) : CostSig String :=
-  (path.emission.map fun event => event.label.rawSpendAt surface).sum
+    (location : RawCostName) : CostSig String :=
+  (path.emission.map fun event => event.label.rawSpendAt location).sum
 
 /-- Per-location restriction of the causal measure is exactly the local fold
 of the ordered emission. -/
 theorem per_location_restriction_account_conservation
     {components finalId finalComponents}
     (path : CostPath 0 components finalId finalComponents)
-    (surface : RawCostName) :
-    path.receipt.rawMeasureAt surface Finset.univ = path.rawAccountAt surface := by
+    (location : RawCostName) :
+    path.receipt.rawMeasureAt location Finset.univ = path.rawAccountAt location := by
   simpa [receipt, CausalReceipt.rawMeasureAt, ReceiptEmission.toReceipt,
     rawAccountAt] using
     sum_get_eq_sum_map path.emission
-      (fun event => event.label.rawSpendAt surface)
+      (fun event => event.label.rawSpendAt location)
 
 /-- The finitely supported family of ordered local accounts glues exactly to
 the path's global raw account. -/
 theorem local_accounts_glue_to_global
     {components finalId finalComponents}
     (path : CostPath 0 components finalId finalComponents) :
-    (∑ surface ∈ path.receipt.fundingSurfaces Finset.univ,
-      path.rawAccountAt surface) = path.receipt.totalRawMeasure := by
+    (∑ location ∈ path.receipt.fundingLocations Finset.univ,
+      path.rawAccountAt location) = path.receipt.totalRawMeasure := by
   calc
-    (∑ surface ∈ path.receipt.fundingSurfaces Finset.univ,
-        path.rawAccountAt surface) =
-        ∑ surface ∈ path.receipt.fundingSurfaces Finset.univ,
-          path.receipt.rawMeasureAt surface Finset.univ := by
+    (∑ location ∈ path.receipt.fundingLocations Finset.univ,
+        path.rawAccountAt location) =
+        ∑ location ∈ path.receipt.fundingLocations Finset.univ,
+          path.receipt.rawMeasureAt location Finset.univ := by
       apply Finset.sum_congr rfl
-      intro surface _member
-      exact (path.per_location_restriction_account_conservation surface).symm
+      intro location _member
+      exact (path.per_location_restriction_account_conservation location).symm
     _ = path.receipt.rawMeasure Finset.univ :=
-      path.receipt.sum_rawMeasureAt_fundingSurfaces_eq_rawMeasure Finset.univ
+      path.receipt.sum_rawMeasureAt_fundingLocations_eq_rawMeasure Finset.univ
     _ = path.receipt.totalRawMeasure := rfl
 
 /-- Additive effort-object readings glue over the same finite location support. -/
@@ -230,17 +230,17 @@ theorem additive_local_accounts_glue_to_global
     {components finalId finalComponents}
     (path : CostPath 0 components finalId finalComponents)
     {Delta : Type x} [AddCommMonoid Delta] (weight : String → Delta) :
-    (∑ surface ∈ path.receipt.fundingSurfaces Finset.univ,
-      CostSig.additiveFold weight (path.rawAccountAt surface)) =
+    (∑ location ∈ path.receipt.fundingLocations Finset.univ,
+      CostSig.additiveFold weight (path.rawAccountAt location)) =
       path.receipt.totalAdditiveValue weight := by
   calc
-    (∑ surface ∈ path.receipt.fundingSurfaces Finset.univ,
-        CostSig.additiveFold weight (path.rawAccountAt surface)) =
-        ∑ surface ∈ path.receipt.fundingSurfaces Finset.univ,
+    (∑ location ∈ path.receipt.fundingLocations Finset.univ,
+        CostSig.additiveFold weight (path.rawAccountAt location)) =
+        ∑ location ∈ path.receipt.fundingLocations Finset.univ,
           CostSig.additiveFold weight
-            (path.receipt.rawMeasureAt surface Finset.univ) := by
+            (path.receipt.rawMeasureAt location Finset.univ) := by
       apply Finset.sum_congr rfl
-      intro surface _member
+      intro location _member
       rw [path.per_location_restriction_account_conservation]
     _ = CostSig.additiveFold weight
         (path.receipt.rawMeasure Finset.univ) :=
@@ -253,17 +253,17 @@ theorem multiplicative_local_accounts_glue_to_global
     {components finalId finalComponents}
     (path : CostPath 0 components finalId finalComponents)
     {Delta : Type x} [CommMonoid Delta] (weight : String → Delta) :
-    (∏ surface ∈ path.receipt.fundingSurfaces Finset.univ,
-      CostSig.multiplicativeFold weight (path.rawAccountAt surface)) =
+    (∏ location ∈ path.receipt.fundingLocations Finset.univ,
+      CostSig.multiplicativeFold weight (path.rawAccountAt location)) =
       path.receipt.totalMultiplicativeValue weight := by
   calc
-    (∏ surface ∈ path.receipt.fundingSurfaces Finset.univ,
-        CostSig.multiplicativeFold weight (path.rawAccountAt surface)) =
-        ∏ surface ∈ path.receipt.fundingSurfaces Finset.univ,
+    (∏ location ∈ path.receipt.fundingLocations Finset.univ,
+        CostSig.multiplicativeFold weight (path.rawAccountAt location)) =
+        ∏ location ∈ path.receipt.fundingLocations Finset.univ,
           CostSig.multiplicativeFold weight
-            (path.receipt.rawMeasureAt surface Finset.univ) := by
+            (path.receipt.rawMeasureAt location Finset.univ) := by
       apply Finset.prod_congr rfl
-      intro surface _member
+      intro location _member
       rw [path.per_location_restriction_account_conservation]
     _ = CostSig.multiplicativeFold weight
         (path.receipt.rawMeasure Finset.univ) :=

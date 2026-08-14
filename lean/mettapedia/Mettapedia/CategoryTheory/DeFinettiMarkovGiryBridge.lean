@@ -336,7 +336,7 @@ lemma measurableSet_markovCylinder (xs : List (Fin k)) :
     (measurableSet_eq_fun (measurable_pi_apply i.1) measurable_const)
 
 /-- Honest Borel-side prefix-law factorization through the Borel probability
-space on `MarkovParam k`. This mirrors the older prefix-law surface, but does
+space on `MarkovParam k`. This mirrors the older prefix-law interface, but does
 not claim any transport back to the coarser active measurable space. -/
 def CategoricalBorelMarkovDeFinettiFactorization
     (k : ℕ)
@@ -434,7 +434,7 @@ theorem borelMarkovSequenceMixture_cylinder_eq
   rfl
 
 /-- Public Borel-side factorization through the measurable sequence kernel
-`MarkovParam k → G((Fin k)^ℕ)`. This is the honest categorical surface for the
+`MarkovParam k → G((Fin k)^ℕ)`. This is the honest categorical interface for the
 stronger kernel construction before transporting back to the coarser active
 parameter σ-algebra. -/
 def CategoricalBorelMarkovSequenceKernelFactorization
@@ -503,7 +503,7 @@ section BorelToActiveLift
 
 /-- Trim a Borel probability law on `MarkovParam k` down to the active
 wordProb-generated measurable space. This is the honest one-way bridge from the
-stronger Borel-side interface back to the older active theorem surface. -/
+stronger Borel-side interface back to the older active theorem family. -/
 noncomputable def probMarkovToActiveMeasure
     (π : Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiHard.ProbMarkov k) :
     Measure (MarkovParam k) :=

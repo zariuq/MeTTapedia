@@ -6,7 +6,7 @@ import Mettapedia.OSLF.MeTTaIL.Syntax
 A Software-Foundations-style imperative core, rendered as a `LanguageDef`
 with explicit continuation/state-machine semantics.
 
-Current surface:
+Current interface:
 - Peano naturals (`0`, `S n`)
 - variables `x`, `y`, `z`
 - arithmetic `+`, `*`

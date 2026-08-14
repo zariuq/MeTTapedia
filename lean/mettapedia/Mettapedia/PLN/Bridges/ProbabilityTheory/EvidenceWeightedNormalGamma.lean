@@ -4,14 +4,14 @@ import Mathlib.Analysis.SpecialFunctions.Pow.Real
 import Mathlib.Data.ENNReal.Real
 import Mathlib.Data.NNReal.Defs
 import Mathlib.Data.Real.Basic
-import Mettapedia.PLN.Bridges.ProbabilityTheory.ConjugateEvidenceSurface
+import Mettapedia.PLN.Bridges.ProbabilityTheory.ConjugateEvidenceCore
 import Mettapedia.PLN.Evidence.EvidenceClass
 import Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceNormalGamma
 
 namespace Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceWeightedNormalGamma
 
 open Mettapedia.PLN.Evidence.EvidenceClass
-open Mettapedia.PLN.Bridges.ProbabilityTheory.ConjugateEvidenceSurface
+open Mettapedia.PLN.Bridges.ProbabilityTheory.ConjugateEvidenceCore
 
 abbrev DiscreteNormalGammaEvidence := Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceNormalGamma.NormalGammaEvidence
 abbrev NormalGammaPrior := Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceNormalGamma.NormalGammaPrior

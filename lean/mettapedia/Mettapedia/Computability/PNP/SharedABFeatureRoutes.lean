@@ -4,12 +4,12 @@ import Mettapedia.Computability.PNP.SharedExactABFeatureFamilies
 /-!
 # P vs NP grassroots: quotient routes for shared raw `(a, b)` feature families
 
-This file connects the reduced raw visible surface `(a, b)` to the shared-basis
-exact-surface families.
+This file connects the reduced raw visible data domain `(a, b)` to the shared-basis
+exact-data domain families.
 
-If a switched family factors through the reduced surface and the reduced family
+If a switched family factors through the reduced data domain and the reduced family
 is realized using one shared affine basis on the raw `(a, b)` bits, then the
-exact-surface family inherits the corresponding combiner-only budget.
+exact-data domain family inherits the corresponding combiner-only budget.
 -/
 
 namespace Mettapedia.Computability.PNP
@@ -18,27 +18,27 @@ section
 
 variable {Z : Type*} {r k : ℕ}
 
-/-- Shared affine-feature predictor on the reduced raw surface `(a, b)`. -/
+/-- Shared affine-feature predictor on the reduced raw data domain `(a, b)`. -/
 noncomputable def sharedABAffineFeaturePredict
     (features : Fin r → AffineColumnCode (k + k))
     (table : BitCode (2 ^ r))
-    (x : ABVisibleSurface k) : Bool :=
+    (x : ABVisibleState k) : Bool :=
   table ((Fintype.equivFinOfCardEq (by simp [BitVec] : Fintype.card (BitVec r) = 2 ^ r))
     (affineFeatureVector features (abVisibleBits (k := k) x)))
 
-/-- Shared sparse-threshold predictor on the reduced raw surface `(a, b)`. -/
+/-- Shared sparse-threshold predictor on the reduced raw data domain `(a, b)`. -/
 noncomputable def sharedABSparseThresholdAffinePredict
     (features : Fin r → AffineColumnCode (k + k))
     (code : SharedSparseThresholdCode r)
-    (x : ABVisibleSurface k) : Bool :=
+    (x : ABVisibleState k) : Bool :=
   decide (thresholdCodeValue (r := r) code.2 ≤
     maskedAffineFeatureCount (k := k + k) features code.1 (abVisibleBits (k := k) x))
 
-/-- Shared decision-list predictor on the reduced raw surface `(a, b)`. -/
+/-- Shared decision-list predictor on the reduced raw data domain `(a, b)`. -/
 noncomputable def sharedABAffineDecisionListPredict
     (features : Fin r → AffineColumnCode (k + k))
     (code : SharedAffineDecisionListCode r)
-    (x : ABVisibleSurface k) : Bool :=
+    (x : ABVisibleState k) : Bool :=
   match firstActiveFeature? (affineFeatureVector features (abVisibleBits (k := k) x)) with
   | some j => code.1 j
   | none => code.2
@@ -70,7 +70,7 @@ theorem sharedExactABAffineDecisionListPredict_eq_sharedABAffineDecisionListPred
   cases u
   rfl
 
-/-- Reduced-surface family using one shared raw `(a, b)` affine basis and an
+/-- Reduced-data domain family using one shared raw `(a, b)` affine basis and an
 arbitrary truth-table combiner. -/
 def RealizedBySharedABAffineFeatureFamily
     {Index : Type*} (features : Fin r → AffineColumnCode (k + k))
@@ -78,7 +78,7 @@ def RealizedBySharedABAffineFeatureFamily
   ∀ i, ∃ table : BitCode (2 ^ r),
     H.predict i = sharedABAffineFeaturePredict (k := k) features table
 
-/-- Reduced-surface family using one shared raw `(a, b)` affine basis and a
+/-- Reduced-data domain family using one shared raw `(a, b)` affine basis and a
 sparse-threshold combiner. -/
 def RealizedBySharedABSparseThresholdAffineFamily
     {Index : Type*} (features : Fin r → AffineColumnCode (k + k))
@@ -86,7 +86,7 @@ def RealizedBySharedABSparseThresholdAffineFamily
   ∀ i, ∃ code : SharedSparseThresholdCode r,
     H.predict i = sharedABSparseThresholdAffinePredict (k := k) features code
 
-/-- Reduced-surface family using one shared raw `(a, b)` affine basis and a
+/-- Reduced-data domain family using one shared raw `(a, b)` affine basis and a
 fixed-order decision-list combiner. -/
 def RealizedBySharedABAffineDecisionListFamily
     {Index : Type*} (features : Fin r → AffineColumnCode (k + k))

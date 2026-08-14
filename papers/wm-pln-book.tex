@@ -1631,6 +1631,55 @@ It is the finite, constructive form of a broad warning: a selected table,
 aggregate count, or projected marginal cannot identify information it has
 erased.
 
+\subsection{Evidence availability is not addressability}
+
+The same boundary appears when an evidence table is used as a memory.  A
+lineage-auditable atomic memory fact has the form
+\[
+  (m,\sigma,q,p,t,\pm,\ell),
+\]
+recording memory identity, aggregate signature, query, program, solved target,
+polarity, and lineage.  Projecting this atom to $(\sigma,\pm)$ supplies a valid
+aggregate evidence table, but collisions erase the program--target competence
+edge $(p,t)$, the routing edge $(q,p)$, and lineage $\ell$.  The Lean theorems
+\code{aggregateKey\_does\_not\_recover\_competence},
+\code{aggregateKey\_does\_not\_recover\_accessibility}, and
+\code{aggregateKey\_does\_not\_recover\_lineage} instantiate the general
+observation-collision theorem.  The positive boundary is equally important, and
+it is an exact characterization rather than a restatement of its own
+hypothesis: \code{recoverable\_iff\_respectsAggregateCollisions} proves that an
+estimand is recoverable from the aggregate key precisely when it is constant on
+aggregate-key collisions, constructing the decoder in the nontrivial direction.
+The negative results are its contrapositive at a single colliding pair.
+
+Let $A$ be the targets with stored witnesses and $R$ those reached by the
+router.  Then $R\subseteq A$, and $R=A$ exactly when every available target has
+at least one stored witness selected at its recorded query
+(\code{routedTargets\_eq\_availableTargets\_iff}).  Thus immutable storage can
+preserve availability while a router loses accessibility.  Direct-target
+coverage is a third projection: a program discovered for query $q$ may solve a
+different target and add a genuine program--target fact without being a direct
+hit.  Aggregate support, available competence, routed competence, and direct
+conditioning are therefore four different estimands.
+
+For the Unified neural carrier this distinction yields a conservative
+architecture.  Keep the existing aggregate prior and place provenance-rich,
+lineage-bound initializers in a sidecar.  Forgetting the sidecar recovers the
+aggregate treatment, and a disabled lookup returns the cold initializer with the
+original memory; both hold by construction of the proposed transition, so they
+are interface laws for the design rather than measurements of a deployed system.
+Rejection is state preserving for an arbitrary acceptance predicate, and the
+substantive safety property is that the router is fail-closed: when acceptance is
+sound for the certified set, every state it can return is either the declared cold
+initializer or one satisfying the already formalized lineage, shape, and
+solver-basin predicate
+(\code{routedInitializer\_sound\_accept\_cold\_or\_certified}).  A
+negative mutating-router fixture shows that cold-output equality alone would not
+certify storage preservation
+(\code{mutatingRouter\_changes\_storage\_fixture}).  These are theorems about a named memory
+treatment, not evidence that an aggregate prior already contains addressable
+knowledge.
+
 \subsection{Relational novelty: facts are not objects}
 
 Program discovery naturally produces a finite relation
@@ -1994,6 +2043,47 @@ and preregisters both ordinary coverage and concentration-robust endpoints:
 fresh identities, cross-target facts, maximum exclusive contribution, and
 leave-one-program-out target coverage.  Multiple authenticated seeds or
 worlds are then needed for a population claim.
+
+\paragraph{Overlap as a population estimator, and what it requires.}
+Two arms that search the same space invite a further inference: read their
+overlap as a capture--recapture experiment and estimate how much remains
+undiscovered.  For samples $A$ and $B$ from a population of size $N$, the
+Lincoln--Petersen estimator is
+\[
+ \hat N = \frac{|A|\,|B|}{|A\cap B|},
+\]
+which is unbiased in the large-sample limit exactly when the two draws are
+independent and every member is equally catchable.  Both licenses are
+projection-relative, and neither is free.
+
+A registered control supplies a clean instance.  Two models differing only in
+training history---one continued across rounds, one retrained from the same
+initial weights on the accumulated corpus---were searched and checked
+identically.  Applying the estimator to the same pair of runs under the three
+projections of the previous section gives, for the Unified carrier,
+$\hat N=973$ on targets, $4600$ on program identities, and $5046$ on verified
+facts; for the recurrent carrier, $2674$, $3726$, and $3932$.  The Unified
+estimates differ by a factor of nearly five across projections of one
+experiment.
+
+This is not estimator error.  The three numbers estimate three different
+populations, and the target projection is the one that collapses hardest: two
+distinct programs solving one target are two program-level events but one
+target-level event, so projection to targets can only increase the observed
+intersection, and increasing $|A\cap B|$ decreases $\hat N$.  A reported
+``fraction of the reachable space still unexplored'' is therefore meaningless
+until the projection is declared, exactly as a reported count is.
+
+The independence license fails in the same instance, and its direction is
+knowable.  The two arms share architecture, tokenizer, language, and corpus,
+so they are positively dependent: they tend to find the same easy targets.
+Positive dependence inflates $|A\cap B|$ relative to independent sampling and
+therefore deflates $\hat N$.  Every number above is consequently a lower bound
+on its population rather than an estimate of it---a one-sided conclusion that
+survives the broken license, which is the most that should be claimed.  The
+general pattern is worth stating: when a sampling model fails in a known
+direction, the estimator is not discarded but demoted to the bound that its
+failure direction permits.
 
 \paragraph{Implementation contract.}
 For evidence-producing systems, the safe order is:
@@ -2547,7 +2637,7 @@ PPLBench Stan backend under \codepath{pplbench/ppls/stan/}, not an
 ad hoc one-off script.  The same family includes PyMC, JAGS, NumPyro,
 and BeanMachine where available.  Appendix~\ref{app:pplbench-stan-pln}
 now includes a direct \codepath{normal\_normal} Stan $\leftrightarrow$
-WM-PLN run on that proper PPLBench surface.
+WM-PLN run on that proper PPLBench harness.
 \item \textbf{External statistical/ML baselines.} \texttt{GaussianNB},
 \texttt{XGBoost}, and Windowed Gaussian are not WM-PLN variants; they are
 separate classical baselines used to show where WM-style semantics help,
@@ -4490,7 +4580,7 @@ not as a bare derived edge.  In the Lean demo this provenance points back
 to the already-proved exact endpoints
 \code{PLNEndToEnd.forkFormulaExact},
 \code{PLNEndToEnd.chainFormulaExact}, and the corresponding
-$\Sigma$-guarded rewrite surfaces.  See
+$\Sigma$-guarded rewrite lemmas.  See
 \code{fork\_contraction\_matches\_exact\_semantics},
 \code{chain\_contraction\_C\_matches\_exact\_semantics},
 \code{chain\_contraction\_D\_matches\_exact\_semantics} in
@@ -5728,15 +5818,15 @@ $1{,}206$ metapaths of length $2$--$4$, with $\Delta$AUROC and fitted coefficien
 Typed support families and regime candidates. \\
 Per-compound predictions &
 $1{,}000$ tables, each scoring one compound against all diseases &
-Broad compound-conditioned support surface. \\
+Broad compound-conditioned support table. \\
 Per-disease predictions &
 $136$ tables, each scoring one disease against all compounds &
-Disease-conditioned scoring and explanation surface. \\
+Disease-conditioned scoring and explanation table. \\
 \bottomrule
 \end{tabular}
 \renewcommand{\arraystretch}{1}
-\caption{What the Hetionet / Rephetio benchmark actually consists of in the current public bundle.  The graph is the heterogeneous biomedical substrate; the Rephetio tables provide the benchmark-facing task surface.}
-\label{tab:hetionet-dataset-surface}
+\caption{What the Hetionet / Rephetio benchmark actually consists of in the current public bundle.  The graph is the heterogeneous biomedical substrate; the Rephetio tables provide the benchmark-facing task set.}
+\label{tab:hetionet-dataset-table}
 \end{table}
 
 The flagship query for this benchmark is
@@ -5808,16 +5898,16 @@ locus-to-gene pipeline with at least three separable layers:
   locus, and later variant $\to$ gene $\to$ mechanism explanation);
 \item the \emph{scoring semantics} (the current ProbLog/LPAD baseline versus a
   WM-PLN evidence-carrying strengthening); and
-\item the \emph{runtime surface} (native repo/cplint path first, Janus/PeTTa
+\item the \emph{runtime lane} (native repo/cplint path first, Janus/PeTTa
   parity second, any later harnesses only after that).
 \end{enumerate}
 That separation matters because the public
 \codepath{hypothesis-generation-demo} repository already contains its own
-benchmark-facing ProbLog family: a learned-rule LPAD surface in
+benchmark-facing ProbLog family: a learned-rule LPAD model in
 \codepath{pl/pl\_rules.pl}, a native cplint parameter-learning/evaluation
 driver in \codepath{pl/param\_learn.pl}, and the current fold/index artifacts
 under \codepath{pl/models/}.  So the first obligation is not to replace that
-surface with a new one.  It is to replicate their methodology with
+model with a new one.  It is to replicate their methodology with
 \emph{their} ProbLog stack as faithfully as the surviving data/runtime
 artifacts allow.
 
@@ -5827,7 +5917,7 @@ artifacts allow.
 \renewcommand{\arraystretch}{1.02}
 \begin{tabular}{@{}p{0.22\textwidth}p{0.31\textwidth}p{0.31\textwidth}@{}}
 \toprule
-Surface / bundle & What we currently have locally & Role in the benchmark plan \\
+Dataset / bundle & What we currently have locally & Role in the benchmark plan \\
 \midrule
 Native repo artifacts &
 \codepath{pl/param\_learn.pl}, \codepath{pl/pl\_rules.pl}, five
@@ -5858,10 +5948,10 @@ replication. \\
 \bottomrule
 \end{tabular}
 \renewcommand{\arraystretch}{1}
-\caption{Current genomic benchmark surface and status.  The crucial distinction
+\caption{Current genomic benchmark harness and status.  The crucial distinction
 is between \emph{exact replication} of the original repo/runtime/data bundle
 and \emph{methodology replication} on close public-source reconstructions.}
-\label{tab:gwas-benchmark-surface}
+\label{tab:gwas-benchmark-table}
 \end{table}
 
 The resulting protocol should be deliberately staged:
@@ -5877,7 +5967,7 @@ The resulting protocol should be deliberately staged:
   drive it from the closest public-source reconstruction.  This should be
   labeled strictly as a methodology replication, not as an exact rerun.
 \item \textbf{WM-PLN strengthening parity.}  Only after the ProbLog baseline is
-  understood should we hold the candidate/evaluation surface fixed and replace
+  understood should we hold the candidate/evaluation set fixed and replace
   Boolean mechanism activations with real WM evidence objects on a PeTTa/Janus
   path.  The scientific question here is then clean: what improves when the
   same genomic task is given a stronger evidence semantics?
@@ -6235,7 +6325,7 @@ Ranking-evaluable   & 1{,}097 & Candidate-covered \textbf{and} $\geq 2$ candidat
 \end{tabular}
 \end{center}
 \noindent
-The ranking-evaluable subset is the primary evaluation surface:
+The ranking-evaluable subset is the primary evaluation set:
 nontrivial gene ranking is required, avoiding inflation from
 single-candidate loci.  Five-fold cross-validation uses
 studyLocusId-disjoint splits ($\sim$560~loci per fold).
@@ -6426,10 +6516,10 @@ All supervised models use fold-local imputation and scaling.
 \small
 \begin{tabular}{@{}llcccc@{}}
 \toprule
-\textbf{Surface} & \textbf{Model}
+\textbf{Feature set} & \textbf{Model}
   & \textbf{AUC-ROC} & \textbf{AUC-PR} & \textbf{MRR} & \textbf{P@1} \\
 \midrule
-\multicolumn{6}{@{}l}{\textit{V1 surface (3~channels)}} \\
+\multicolumn{6}{@{}l}{\textit{V1 feature set (3~channels)}} \\
   & B (noisy-OR)
   & $0.658 \pm 0.062$ & $0.618 \pm 0.100$
   & $0.818 \pm 0.066$ & $0.673 \pm 0.104$ \\
@@ -6437,7 +6527,7 @@ All supervised models use fold-local imputation and scaling.
   & $0.646 \pm 0.048$ & $0.584 \pm 0.075$
   & $0.780 \pm 0.056$ & $0.600 \pm 0.093$ \\
 \midrule
-\multicolumn{6}{@{}l}{\textit{V2 surface (27~features, 7~families)}} \\
+\multicolumn{6}{@{}l}{\textit{V2 feature set (27~features, 7~families)}} \\
   & Nearest gene
   & $0.583 \pm 0.073$ & $0.548 \pm 0.080$
   & $0.764 \pm 0.069$ & $0.587 \pm 0.111$ \\
@@ -6555,7 +6645,7 @@ Three directions for the next round:
   as additional frozen families.
 (b)~\emph{Improve the additive model}: intermediate-granularity
   summaries (15--20 features) may recover both interpretability and
-  performance relative to the full 27-feature surface.
+  performance relative to the full 27-feature set.
 (c)~\emph{Characterize rescue loci}: inspect cases where WM-v2
   outranks L2G to determine whether the complementary signal is
   biologically coherent (e.g., mechanism-specific rescue).
@@ -6678,7 +6768,7 @@ per-step certificates can be \emph{composed} into chain-length-independent
 guarantees.  \xiPLN{} formalizes five theorems showing this is impossible in
 general.  Each is a clean no-go result proved without sorries.
 
-In the current theorem surface these are not merely schematic warnings.
+In the current theorem set these are not merely schematic warnings.
 The no-go layer now includes a graph-parametric strengthening of the
 topology--CPT gap and a chain-with-resets strengthening of variance
 accumulation, together with a small higher-order bridge stating the design
@@ -7615,7 +7705,7 @@ all the information actually present.
 \textbf{Goal:} Ground higher-order PLN in a real HOL layer with set-theoretic semantics.\\
 \textbf{Layer:} Extension (higher-order).\\
 \textbf{Semantic object:} Typed HOL syntax; extensional Henkin semantics; ProbHOL; HOL$\leftrightarrow$WM bridge.\\
-\textbf{Proved:} Typed HOL surface, soundness, classical Henkin model existence, FOL embedding, ProbHOL, and certified chaining.\\
+\textbf{Proved:} Typed HOL syntax, soundness, classical Henkin model existence, FOL embedding, ProbHOL, and certified chaining.\\
 \textbf{In progress:} Intuitionistic/generalized semantic strengthenings and fuller dynamic belief fusion.\\[4pt]
 \textbf{Extension template:}
 \textit{State:} HOL environment (typed terms + interpretations).
@@ -7722,13 +7812,13 @@ So one can speak directly about
   \lambda x.\, t,\qquad f = g,\qquad \forall P : \iota \to o,\; \varphi(P),
 \]
 instead of encoding those patterns awkwardly inside a purely first-order
-surface.
+set.
 
 The active metatheoretic route is now the classical Henkin one:
 \codepath{Mettapedia/Logic/HOL/Soundness.lean} gives validity in every Henkin
 model, and
 \codepath{Mettapedia/Logic/HOL/TermModel/HenkinCompleteness.lean} gives the
-classical model-existence theorem surfaced by
+classical model-existence theorem setd by
 \codepath{Mettapedia/Logic/HOL.lean}.
 
 \begin{theorem}[HOL soundness over Henkin models (\claimCore{})]
@@ -7738,7 +7828,7 @@ it is satisfied by every Henkin model.
 
 This is formalized in
 \codepath{Mettapedia/Logic/HOL/Soundness.lean}.
-The active completeness surface is the classical Henkin model-existence theorem
+The active completeness result is the classical Henkin model-existence theorem
 packaged by \codepath{Mettapedia/Logic/HOL.lean} and
 \codepath{Mettapedia/Logic/HOL/TermModel/HenkinCompleteness.lean};
 intuitionistic HOL completeness remains future work.
@@ -7765,7 +7855,7 @@ canonical model later.''  The current formalization instead factors through:
   \codepath{Mettapedia/Logic/HOL/TermModel/Fundamental.lean}, and
   \codepath{Mettapedia/Logic/HOL/TermModel/HenkinCompleteness.lean}.
 \end{itemize}
-This route supplies the public classical model-existence theorem surfaced by
+This route supplies the public classical model-existence theorem setd by
 \codepath{Mettapedia/Logic/HOL.lean}, rather than leaving completeness as a
 future placeholder.
 
@@ -7861,7 +7951,7 @@ evidence and query-strength values.
 Higher-order PLN now sits \emph{above} both the HOL core and the HOL-to-WM
 bridge.
 
-The key rule surface is not a second semantics.  It is a theorem-backed layer
+The key rule set is not a second semantics.  It is a theorem-backed layer
 over real HOL derivability:
 \begin{itemize}
 \item proved HOL implications become WM consequence rules,
@@ -8047,7 +8137,7 @@ shadow derived from semantic ProbHOL.  In Lean this is exposed by
 So the control layer is no longer merely carrying a higher-order-looking score:
 it is carrying a value with an explicit semantic provenance, together with a
 separate belief-process shadow that tracks the same benchmark query on the
-designated sample.  The paired regression surface in
+designated sample.  The paired regression fixtures in
 \codepath{Mettapedia/Logic/PLNProbHOLPlannerBridgeRegression.lean} then records
 both the positive tracking fixture and the negative expanded-sample guardrail.
 
@@ -8063,7 +8153,7 @@ XGBoost internals, softmax heuristics, or benchmark-specific coefficients.
 Instead it formalizes the certified interfaces that any empirical estimator
 must satisfy before its outputs may enter the chaining theorems.
 
-The current theorem surface is:
+The current theorem set is:
 \begin{itemize}
 \item \codepath{Mettapedia/Logic/PLNHigherOrderCertifiedEstimates.lean},
   defining \texttt{CertifiedAdmissibilityEstimate},
@@ -8128,7 +8218,7 @@ the regime posterior by a Bayesian rule
   \frac{\pi(r \mid x)\,P(c \mid r)}
        {\sum_{r'} \pi(r' \mid x)\,P(c \mid r')},
 \]
-and the new theorem surface proves validity, concentration under likelihood
+and the new theorem set proves validity, concentration under likelihood
 gaps, and that expected post-reveal variance is no worse than prior variance.
 This matters because the higher-order controller is no longer forced to talk as
 if reveal simply ``changes the query'' by fiat; it can instead refer to an
@@ -8339,12 +8429,12 @@ For clarity, we summarize the current state of the HOL metatheory:
   with extensional overlay, Henkin semantics, and soundness.
 \item[Done.] Witnessed extension/saturation, prime/maximal/classical-world
   construction, general term-model assembly, and the classical Henkin
-  model-existence theorem surfaced by
+  model-existence theorem setd by
   \codepath{Mettapedia/Logic/HOL.lean} and
   \codepath{Mettapedia/Logic/HOL/TermModel/HenkinCompleteness.lean}.
 \item[Done.] The HOL$\leftrightarrow$WM bridge, semantic ProbHOL,
   hierarchical probabilistic HOL, certified higher-order chaining, and the
-  inference-control theorem surface all run over that live classical Henkin
+  inference-control theorem set all run over that live classical Henkin
   base.
 \item[Future work.] Intuitionistic completeness and other non-classical
   strengthenings of the HOL metatheory.
@@ -8355,7 +8445,7 @@ For clarity, we summarize the current state of the HOL metatheory:
 The active higher-order foundation is therefore no longer ``canonical model
 pending.''  It is the landed classical Henkin route.  The
 HOL$\leftrightarrow$WM bridge, semantic ProbHOL, hierarchical probabilistic
-HOL, certified higher-order chaining, and the inference-control theorem surface
+HOL, certified higher-order chaining, and the inference-control theorem set
 do not depend on further completeness strengthening beyond that route.
 
 
@@ -8481,7 +8571,7 @@ transport.%
 \paragraph{Arbitrary-domain graded fuzzy layer.}
 The repository now also exposes a reusable arbitrary-domain graded
 specialization layer.  Instead of treating the Sugeno/proxy-cut and
-Choquet branches as unrelated surfaces, Lean factors out their honest
+Choquet branches as unrelated developments, Lean factors out their honest
 common spine via
 \codepath{Mettapedia/PLN/RuleFamilies/FirstOrder/Quantifiers/GradedQuantifierSpecialization.lean}.
 The generic interface \code{GradedQuantifierSemantics} packages
@@ -8636,7 +8726,7 @@ extensional and ASSOC values ($\mathrm{mixed\_not\_assoc\_only}$).
 This means the book's binary mixture is not merely incomplete but false
 as a general chapter-level law: the full three-channel model
 (extensional, ASSOC, PAT) is needed.
-The corrected theoremic surface is therefore a typed three-channel mixed
+The corrected theorem set is therefore a typed three-channel mixed
 rule, not a repaired version of the old binary extensional+ASSOC law.%
 \footnote{Formalized in \codepath{Mettapedia/Logic/PLNIntensionalCanary.lean},
   \codepath{Mettapedia/Logic/PLNIntensionalAssocPatClosure.lean}, and
@@ -11046,7 +11136,7 @@ The following are \emph{not} yet proved:
 
 \noindent
 Crucially, the WM bridge, ProbHOL (probabilistic higher-order logic),
-certified higher-order chaining, and the inference-control surface
+certified higher-order chaining, and the inference-control API
 \emph{do not depend on those stronger variants}.  They already work over the
 live classical Henkin model layer.
 
@@ -11185,7 +11275,7 @@ global coverage.  A family of five certified-chaining no-go theorems
 Lipschitz sensitivity amplification, variance accumulation,
 topology--CPT gap, and regime underdetermination---characterizes the
 fundamental limitations of composing per-step certificates.  The current
-canonical surface also includes strengthened parametric forms and their
+canonical API also includes strengthened parametric forms and their
 higher-order bridges: graph-parametric topology/CPT impossibility,
 chain-with-resets variance accumulation, topology-only
 non-certification, and unrevealed-chain variance-budget consumption.
@@ -11461,8 +11551,8 @@ world-model state as a richer situation state
 \]
 where $g$ is geography/region, $t$ is horizon, $G$ is
 governance/auditability structure, $A$ is authoritarian/lock-in
-pressure, $I$ is the incident/harm surface, $U$ is the benefit-side
-capability surface, and $F$ is the forecast-target/reliability layer.
+pressure, $I$ is the incident/harm component, $U$ is the benefit-side
+capability component, and $F$ is the forecast-target/reliability layer.
 Given prior world-model state $W_0$, evidence bundle $E$, and a declared
 scenario-regime scaffold $\mathcal{R}$, the revised state is
 \[
@@ -11502,7 +11592,7 @@ than terminal-world labels.  In particular:
 \item the authoritarian and benefit proxy layers support thin but explicit
   directional pressure predicates.
 \end{itemize}
-For external review, the primary empirical surface is the normalized
+For external review, the primary empirical dataset is the normalized
 table bundle itself.  That bundle is intentionally small enough to audit:
 each table has a clear granularity, a short list of key axes, a declared
 WM role, and a visible caveat.
@@ -11552,7 +11642,7 @@ The six normalized tables should be read as follows:
 \item \code{source\_reliability\_candidates.csv}: source trust layer;
 \item \code{preparedness\_governance\_events.csv}: governance and
   auditability events;
-\item \code{incident\_signals.csv}: harm/misuse/incident surface;
+\item \code{incident\_signals.csv}: harm/misuse/incident table;
 \item \code{authoritarian\_risk\_proxies.csv}: thin lock-in pressure proxies;
 \item \code{benefit\_side\_proxies.csv}: thin upside capability proxies.
 \end{itemize}
@@ -11607,7 +11697,7 @@ refreshed as new source snapshots are normalized
 
 \begin{table}[htbp]
 \centering
-\caption{Current coarse-lens status surface from the generated
+\caption{Current coarse-lens status table from the generated
 aggregation summary artifact.}
 \label{tab:ai-outcomes-branch-status}
 \IfFileExists{../results/ai_outcomes/ai_outcomes_branch_status_table.tex}{%
@@ -11755,7 +11845,7 @@ into a didactic benchmark story.  The point is not to claim a broad
 PPL victory; it is to show that the current WM-PLN stack now supports:
 \begin{enumerate}
 \item a reliable native Python $\to$ PeTTa path via Janus,
-\item rule-surface checks against the current xiPLN libraries, and
+\item rule-set checks against the current xiPLN libraries, and
 \item one full typed continuous-evidence lane that runs through the real
 PPLBench interface and can be scored on held-out data.
 \end{enumerate}
@@ -11800,7 +11890,7 @@ All nine current lanes fall into one of these two categories.  None is
 approximate-carrier or legacy-only.
 
 Table~\ref{tab:pplbench-cross-lane} gives the cross-lane summary.
-Table~\ref{tab:pplbench-pln-surface-map} maps WM-PLN operations to
+Table~\ref{tab:pplbench-pln-operation-map} maps WM-PLN operations to
 classical PLN roles, with the caveat that these correspondences are
 approximate---WM-PLN is its own calculus, not a classical PLN tribute.
 
@@ -11870,12 +11960,12 @@ Lane & Carried state & Queried view & Scheduler & Status & Main limitation \\
 
 \begin{table}[htbp]
 \centering
-\caption{Classical PLN surface map.  For each lane we identify what plays
+\caption{Classical PLN operation map.  For each lane we identify what plays
 the role of revision, composition, context, and inference control in
 classical PLN terms.  These correspondences are approximate: WM-PLN
 operations are defined by the world-model calculus, not by classical PLN
 rule tables.}
-\label{tab:pplbench-pln-surface-map}
+\label{tab:pplbench-pln-operation-map}
 \scriptsize
 \begin{tabular}{p{0.13\textwidth}p{0.19\textwidth}p{0.19\textwidth}p{0.19\textwidth}p{0.19\textwidth}}
 \toprule
@@ -11929,7 +12019,7 @@ When this appendix says ``Stan'' or ``proper PPL baseline,'' the intended
 reference is the standard PPLBench integration under
 \codepath{pplbench/ppls/stan/}.  The repository does contain standalone
 exploratory comparison scripts, but those are not the manuscript's
-authoritative Stan surface.  The authoritative comparison surface is the
+authoritative Stan model.  The authoritative comparison baseline is the
 PPLBench backend family itself.
 
 \section{What We Tested}
@@ -11938,8 +12028,8 @@ We organized the refresh into three deliberately small task families:
 \begin{description}
 \item[Task 1: Bridge smoke tests.] Can Python call PeTTa directly, with the
 same codebase retaining deterministic subprocess fallback?
-\item[Task 2: Rule-surface checks.] Do the current xiPLN rewrite and STV
-surfaces still behave as expected on the refreshed bridge?
+\item[Task 2: Rule-set checks.] Do the current xiPLN rewrite and STV
+sets still behave as expected on the refreshed bridge?
 \item[Task 3: A real benchmark lane.] Can one concrete typed evidence model
 run end-to-end inside PPLBench and produce sensible held-out predictive
 behavior, rather than only one-off unit checks?
@@ -12012,7 +12102,7 @@ deterministic subprocess fallback path in the bridge.
 \begin{figure}[htbp]
 \centering
 \wmplnincludegraphics[width=0.96\textwidth]{../results/figures/pplbench_refresh_checks.pdf}
-\caption{Bridge and rule-surface checks for the refreshed PPLBench $\leftrightarrow$
+\caption{Bridge and rule-set checks for the refreshed PPLBench $\leftrightarrow$
 PeTTa path.  The checks are intentionally small and auditable: arithmetic
 smoke, xiPLN deterministic rewrite loading, one discrete STV projection, one
 Normal-Normal posterior query, and one continuous xiPLN probability-STV
@@ -12116,7 +12206,7 @@ competitive leaderboard claim.  The main takeaways are:
 \begin{enumerate}
 \item The native PeTTa-in-Python route is now real enough to support repeated
 benchmark calls, not just one-off manual snippets.
-\item The current xiPLN library surface still exposes the expected rewrite and
+\item The current xiPLN library API still exposes the expected rewrite and
 STV behavior after the bridge refresh.
 \item A full typed continuous-evidence lane now runs inside PPLBench, produces
 held-out predictive scores, and agrees exactly with the analytical
@@ -12145,10 +12235,10 @@ python3 -m pplbench examples/normal_normal_stan_vs_pln.json
 \end{lstlisting}
 
 This comparison is important for two reasons.
-First, it uses the \emph{real} PPLBench Stan surface rather than an ad hoc
+First, it uses the \emph{real} PPLBench Stan model rather than an ad hoc
 comparison script.  In this Python~3.13 environment the Stan backend executes
 through a \code{cmdstanpy} fallback inside the PPLBench Stan inference layer,
-but the benchmark surface is still the ordinary \codepath{pplbench/ppls/stan/}
+but the benchmark harness is still the ordinary \codepath{pplbench/ppls/stan/}
 backend family.  Second, it uses the refreshed Janus-backed WM-PLN lane from
 the same \codepath{normal\_normal} model family, so the comparison is finally
 same-model and same-harness rather than a cross-tool anecdote.
@@ -12162,7 +12252,7 @@ The stable exported summary for the current manuscript snapshot is:
 \begin{table}[htbp]
 \centering
 \caption{Direct Normal-Normal comparison on the proper PPLBench
-surface. On this exact conjugate case, the refreshed WM-PLN lane is slightly
+harness. On this exact conjugate case, the refreshed WM-PLN lane is slightly
 closer to the analytical posterior mean and slightly better on held-out
 predictive log-likelihood in the recorded run.}
 \label{tab:pplbench-stan-vs-pln}
@@ -12312,7 +12402,7 @@ Proof Objects'' and keeps the factor graph on the semantic side of the
 ``Factor Graphs: Semantic vs.\ Operational'' split.  The Bayes-net
 compatibility story is not invented ad hoc here: it is already anticipated in
 the PLN book's ``PLN and Bayes Nets'' discussion, and in our Lean layer it
-matches the evidence-first BN/CPT surface in
+matches the evidence-first BN/CPT encoding in
 \codepath{Mettapedia/PLN/WorldModel/BayesNet/PLNBayesNetWorldModel.lean}.
 
 \begin{table}[htbp]
@@ -12573,7 +12663,7 @@ That is a good \emph{positive example} because the full procedure remains
 \emph{negative example} is the archived
 \codepath{pplbench/ppls/pln/dirichlet\_categorical\_legacy.py}: it is still
 useful as reference material, but it is no longer the active benchmark
-surface.
+set.
 
 The first check was exact calibration, not the benchmark.  The artifact
 \codepath{results/pplbench\_dirichlet\_categorical\_exact\_calibration.json}
@@ -12638,7 +12728,7 @@ to the analytic posterior mean vector.}
 \wmplnincludegraphics[width=0.92\textwidth]{../results/figures/pplbench_dirichlet_categorical_pll.png}
 \caption{Stan vs exact WM-PLN on the Dirichlet-Categorical lane.  Because both
 sides are exact conjugate updates here, the comparison isolates sampling and
-benchmark-surface behavior rather than scheduler quality.}
+benchmark-harness behavior rather than scheduler quality.}
 \label{fig:pplbench-dirichlet-categorical-pll}
 \end{figure}
 
@@ -12652,7 +12742,7 @@ drops from about $0.042$s to about $0.0082$s.  This is exactly the sort of
 result we wanted from an exact multiclass lane: not a claim that WM-PLN always
 beats Stan, but a clean demonstration that the promoted Dirichlet count
 carrier is not merely philosophically nice; it works as an exact benchmark
-surface.
+set.
 
 \section{Hierarchical \texttt{n\_schools} via Carried Evidence State}
 \label{app:pplbench-n-schools}
@@ -12795,7 +12885,7 @@ used by Stan.  That older work is still useful as theory context: the Lean
 \code{StratifiedPLN} development shows why histogram-style PLN can be a
 consistent estimator on logistic-regression tasks.  But that is not the same as
 the PPLBench logistic model, so we did not reuse it as the active benchmark
-surface.
+set.
 
 Instead, the refreshed lane treats logistic regression as a WM-PLN problem with
 three explicit carried pieces:
@@ -13071,7 +13161,7 @@ current local PPLBench checkout supports under NumPyro:
 \codepath{logistic\_regression} and \codepath{robust\_regression}.  This is a
 good \emph{positive example} because it checks the refreshed WM-PLN lanes
 against a second modern PPL family rather than only against Stan.  It is also a
-good \emph{negative example} because the comparison surface is still limited to
+good \emph{negative example} because the comparison baseline is still limited to
 the two lanes for which this repo actually has NumPyro backends.  We therefore
 do \emph{not} present this as full cross-backend coverage of the whole
 PPLBench model family.

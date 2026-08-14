@@ -81,10 +81,15 @@ notation:50 "N(" p ")" => allNames p
 
 /-! ## Interaction Capability -/
 
-/-- Check if a pattern can interact on a given channel.
+/-- Check if a pattern can interact on a given channel:
+`P ⇅ₓ` just when `P = for(<-x)P' | x!(Q) | R`, for some `R`.
 
-    P ↓ₓ just when P = for(<-x)P' | x!(Q) | R, for some R
--/
+Deliberately STRONGER than a barb: it requires both an input and an output
+on `x` (a COMM on `x` is enabled), whereas Milner–Sangiorgi barbs `P ↓ₓ`
+are one-sided (see `OutputBarb`/`InputBarb` in `Types.lean`).  The
+present-moment paper writes the one-sided `↓ₓ`; this formalization
+strengthens to two-sided interaction-enabledness on purpose, and the
+notation `⇅` records the two-sidedness so the barb symbol stays free. -/
 def canInteract (p : Pattern) (x : Pattern) : Prop :=
   match p with
   | .collection .hashBag elems none =>
@@ -92,7 +97,7 @@ def canInteract (p : Pattern) (x : Pattern) : Prop :=
       (∃ q, .apply "POutput" [x, q] ∈ elems)
   | _ => False
 
-notation:50 p " ↓ " x => canInteract p x
+notation:50 p " ⇅ " x => canInteract p x
 
 /-! ## Labeled Transitions -/
 

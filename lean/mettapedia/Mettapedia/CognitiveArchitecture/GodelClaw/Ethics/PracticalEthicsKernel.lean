@@ -33,7 +33,7 @@ universe u v
 
 /-- A practical ethical problem is a finite-or-at-least-explicit action space
 living over a live ethical conflict lane.  This keeps practical resolution tied
-to the already-formalized ethical dilemma surface. -/
+to the already-formalized ethical dilemma interface. -/
 structure PracticalEthicalProblem
     (World : Type u) (Agent : Type u) (Action : Type u) where
   conflict : EthicalConflictLane World Agent

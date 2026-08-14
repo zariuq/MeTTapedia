@@ -10,5 +10,5 @@ import Mettapedia.Languages.MinskyLite.SpecProfile
 Minimal deterministic two-register machine:
 - executable `LanguageDef`
 - transition, rewrite, lookup, and syntax-profile artifacts
-- Lean-side export surface for mettail-rust consumption
+- Lean-side export interface for mettail-rust consumption
 -/

@@ -190,6 +190,8 @@ noncomputable def LocatedSignificantCallTrace.simulateStatement
     (normalSteps : NormalStepsOK statement)
     (compressedWords : CompressedWordsOK statement)
     (agreement : SourceParserPrefixAgrees before initial)
+    (savePlacement : initial.db.config.compressedSavePlacement =
+      .immediatelyAfterUse)
     (applied : applyStatement before statement = .ok (after, obligations))
     (admission : StatementProjectionAdmission before statement) :
     ReaderStatementSimulation fileId before initial statement entries after
@@ -372,9 +374,9 @@ noncomputable def LocatedSignificantCallTrace.simulateStatement
                   let outcome :=
                     Mettapedia.Languages.Metamath.SourceGSLTParserStatementOutcomes.SpelledCallTrace.compressedStatementOutcome
                       spelled'
-                    agreement.database agreement.interrupt_eq labelCharset
-                    typecodeCharset bodyCharsets headerCharsets wordCharsets
-                    taggedFormula inserted admission.runtimeTarget
+                    agreement.database agreement.interrupt_eq savePlacement
+                    labelCharset typecodeCharset bodyCharsets headerCharsets
+                    wordCharsets taggedFormula inserted admission.runtimeTarget
                     admission.sourceTarget admission.runtimePresentation
                     admission.sourcePresentation
                   exact
@@ -480,6 +482,8 @@ noncomputable def LocatedStatementCallTrace.simulate
     {obligations : List TheoremObligation}
     (trace : LocatedStatementCallTrace fileId initial statements entries final)
     (agreement : SourceParserPrefixAgrees before initial)
+    (savePlacement : initial.db.config.compressedSavePlacement =
+      .immediatelyAfterUse)
     (folded : foldStatements before statements = .ok (after, obligations))
     (normalSteps : ∀ statement ∈ statements, NormalStepsOK statement)
     (compressedWords :
@@ -529,9 +533,14 @@ noncomputable def LocatedStatementCallTrace.simulate
               let head :=
                 Mettapedia.Languages.Metamath.SourceGSLTParserStatementSimulation.LocatedSignificantCallTrace.simulateStatement
                   statementTrace spanEq tokenTextEq charsets headNormal
-                    headCompressed agreement applied admissions'.1
-              let tailRun := ih head.nextPrefix foldedTail tailNormal
-                tailCompressed admissions'.2
+                    headCompressed agreement savePlacement applied admissions'.1
+              have middleSavePlacement :
+                  middleParser.db.config.compressedSavePlacement =
+                    .immediatelyAfterUse := by
+                rw [statementTrace.final_config_eq]
+                exact savePlacement
+              let tailRun := ih head.nextPrefix middleSavePlacement foldedTail
+                tailNormal tailCompressed admissions'.2
               exact .cons head tailRun
 
 /-! ## Kernel-checkable boundaries -/

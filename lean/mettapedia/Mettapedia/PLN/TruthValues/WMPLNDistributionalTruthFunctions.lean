@@ -43,12 +43,12 @@ Current public regimes:
   - support ITV, exposing the exact finite-population support interval
   - equal-tailed 95% CDF ITV, normalized over the clipped finite count window
 
-The interval surface for hypergeometric conjunction is intentionally packaged as
+The interval interface for hypergeometric conjunction is intentionally packaged as
 an **honest support interval**. The current tree has PMF/CDF machinery, but not
 yet a theorem-backed central-quantile selector for the raw support law itself.
 This file now adds a second, explicit equal-tailed 95% CDF interval view by
 normalizing the PMF over the clipped finite count window. This keeps the public
-surface truthful for both regimes:
+interface truthful for both regimes:
 
 * `truthConjunctionHypergeometricInterval`
   - exact support interval
@@ -58,10 +58,10 @@ surface truthful for both regimes:
 The CDF interval is intentionally named with its confidence level and should
 not be mistaken for the support ITV above.
 
-Worked examples for these public surfaces live in
+Worked examples for these public interfaces live in
 `Mettapedia.Examples.PLN.WMPLNDistributionalExamples`.
 
-Historical note: the older `Mettapedia.Logic.PLNMettaTruthFunctions` surface
+Historical note: the older `Mettapedia.Logic.PLNMettaTruthFunctions` interface
 has been retired. The classical mirrored/theorem-backed split now lives in
 `PeTTaLibPLNTruthFunctions`, `WMPLNJustifiedTruthFunctions`, and this
 distributional sibling.
@@ -205,7 +205,7 @@ theorem truthMarkovDirichletPredictiveChainMass_le_one
 /-! ## Hypergeometric finite-population conjunction views -/
 
 /-- Modal point view for finite-population conjunction, re-exported from the
-WM-justified truth-function surface. -/
+WM-justified truth-function interface. -/
 abbrev truthConjunctionHypergeometricModal :=
   Mettapedia.PLN.TruthValues.WMPLNJustifiedTruthFunctions.truthConjunctionHypergeometric
 
@@ -276,7 +276,7 @@ theorem truthConjunctionHypergeometricInterval_credibility_in_unit (n a b : ℕ)
 
 /-! ### Hypergeometric equal-tailed 95% CDF interval -/
 
-/-- Finite clipped count window used by the public hypergeometric CDF surface.
+/-- Finite clipped count window used by the public hypergeometric CDF interface.
 
 This keeps the CDF-based interval in the same ambient count range as the
 support ITV while still allowing the PMF to contribute zero mass on impossible
@@ -454,7 +454,7 @@ theorem hypergeometricCDF95LowerCount_le_upperCount (n a b : ℕ) :
 /-- Equal-tailed 95% CDF interval view for finite-population conjunction.
 
 Unlike `truthConjunctionHypergeometricInterval`, which returns the exact support
-interval, this surface selects its lower and upper endpoints from the
+interval, this interface selects its lower and upper endpoints from the
 normalized finite-support CDF on the clipped count window. The credibility
 coordinate records the nominal 95% level used to choose the equal tails. -/
 noncomputable def truthConjunctionHypergeometricCDFInterval95 (n a b : ℕ) : ITV :=

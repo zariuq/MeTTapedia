@@ -3,6 +3,6 @@ import Mettapedia.PLN.InferenceControl.Counterexamples.PLNLargeScaleInferenceCou
 /-!
 # PLN inference-control counterexamples
 
-Index surfaces for large-scale PLN inference counterexamples and their
+Index interfaces for large-scale PLN inference counterexamples and their
 corrected-positive companions.
 -/

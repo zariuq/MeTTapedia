@@ -2216,6 +2216,28 @@ def LocatedSignificantCallTrace.reindexFinal
     LocatedSignificantCallTrace fileId initial entries next :=
   equality ▸ trace
 
+/-- The public reader's mode configuration is immutable across a located
+token chronology.  Parser calls may change the database contents, proof mode,
+or error fields, but never the policy under which those calls are decoded. -/
+theorem LocatedSignificantCallTrace.final_config_eq
+    {fileId : String}
+    {initial final : ParserObservedState}
+    {entries : List (LocatedToken × TokenCall)}
+    (trace : LocatedSignificantCallTrace fileId initial entries final) :
+    final.db.config = initial.db.config := by
+  induction trace with
+  | nil => rfl
+  | @cons initial final entries entry significant afterErrorFree beforeEq
+      tail ih =>
+      calc
+        final.db.config = entry.2.after.db.config := ih
+        _ = entry.2.before.db.config := by
+          rw [entry.2.after_eq]
+          exact ParserState.feedToken_db_config _ _ _
+        _ = initial.db.config :=
+          congrArg (fun state : ParserObservedState => state.db.config)
+            beforeEq
+
 /-- A one-token chronology spelled `${` is the scope-push transition. -/
 theorem LocatedSignificantCallTrace.scopeOpen_final
     {fileId : String} {db : DB} {final : ParserObservedState}
@@ -3655,8 +3677,8 @@ noncomputable def SpelledCallTrace.compressedHeader :
               after_preload := restResult.after_preload
               final_observed := restResult.final_observed }
 
-/-- The retained closing `)` changes only the proof-token phase and resets the
-compressed numeric accumulator to zero. -/
+/-- The retained closing `)` changes only the proof-token phase and enters
+compressed decoding between proof steps. -/
 noncomputable def SpelledCallTrace.compressedClose_final
     {fileId : String} {db : DB} {before : RuntimeProofState}
     {entries : List (LocatedToken × TokenCall)}
@@ -3665,7 +3687,8 @@ noncomputable def SpelledCallTrace.compressedClose_final
       [")"] entries final)
     (anchor : ParserState) (anchorDb : anchor.db = db)
     (beforePreload : before.ptp = .preload) :
-    final = ⟨db, .proof { before with ptp := .compressed 0 }⟩ := by
+    final = ⟨db, .proof { before with
+      ptp := .compressed .betweenSteps }⟩ := by
   cases trace with
   | @cons _ _ texts tailEntries text entry spelling significant
       after_errorFree before_eq tail =>
@@ -3710,10 +3733,11 @@ theorem compressedWordByte_upper_or_question (byte : UInt8)
 executes the same step as the rejecting, specification-faithful policy. -/
 theorem decodeCompressedStep_policy_eq_of_compressedWordByte
     (policy : CompressedInvalidBytePolicy)
-    (initial : MProd (List ParserState.CompressedAction) Nat)
+    (initial : MProd (List ParserState.CompressedAction)
+      Metamath.Verify.CompressedPhase)
     (byte : UInt8) (valid : compressedWordByte byte = true) :
-    decodeCompressedStep policy initial byte =
-      decodeCompressedStep .reject initial byte := by
+    decodeCompressedStep policy .immediatelyAfterUse initial byte =
+      decodeCompressedStep .reject .immediatelyAfterUse initial byte := by
   rcases compressedWordByte_upper_or_question byte valid with
       uppercase | question
   · rcases uppercase with ⟨lower, upper⟩
@@ -3725,9 +3749,12 @@ theorem decodeCompressedStep_policy_eq_of_compressedWordByte
 theorem decodeFold_policy_eq_of_all_compressedWordByte
     (policy : CompressedInvalidBytePolicy) (bytes : List UInt8)
     (valid : bytes.all compressedWordByte = true)
-    (initial : MProd (List ParserState.CompressedAction) Nat) :
-    bytes.foldlM (decodeCompressedStep policy) initial =
-      bytes.foldlM (decodeCompressedStep .reject) initial := by
+    (initial : MProd (List ParserState.CompressedAction)
+      Metamath.Verify.CompressedPhase) :
+    bytes.foldlM
+        (decodeCompressedStep policy .immediatelyAfterUse) initial =
+      bytes.foldlM
+        (decodeCompressedStep .reject .immediatelyAfterUse) initial := by
   induction bytes generalizing initial with
   | nil => rfl
   | cons byte bytes ih =>
@@ -3735,7 +3762,8 @@ theorem decodeFold_policy_eq_of_all_compressedWordByte
       simp only [List.foldlM_cons]
       rw [decodeCompressedStep_policy_eq_of_compressedWordByte
         policy initial byte valid.1]
-      cases head : decodeCompressedStep .reject initial byte with
+      cases head : decodeCompressedStep .reject .immediatelyAfterUse
+          initial byte with
       | error error => rfl
       | ok next => exact ih valid.2 next
 
@@ -3743,11 +3771,11 @@ theorem decodeFold_policy_eq_of_all_compressedWordByte
 change decoding.  This is the exact bridge needed when reflecting a live
 reader run back into the authored rejecting decoder. -/
 theorem decodeCompressed_policy_eq_of_compressedWordValid
-    (tk : ByteSlice) (accumulator : Nat)
+    (tk : ByteSlice) (phase : Metamath.Verify.CompressedPhase)
     (policy : CompressedInvalidBytePolicy)
     (valid : compressedWordValid (sliceBytes tk) = true) :
-    ParserState.decodeCompressed tk accumulator policy =
-      ParserState.decodeCompressed tk accumulator := by
+    ParserState.decodeCompressed tk phase policy .immediatelyAfterUse =
+      ParserState.decodeCompressed tk phase := by
   have valid' := valid
   rw [SourceGSLTCompressedMMLean4.sliceBytes_eq_sliceList] at valid'
   simp only [compressedWordValid, Bool.and_eq_true] at valid'
@@ -3862,23 +3890,27 @@ run exposes the one-shot decoder result and the one-shot action application;
 the final accumulator remains explicit. -/
 theorem runCompressedTokenGo_reflect
     (parser : ParserState) :
-    ∀ (tokens : List ByteSlice) (accumulator : Nat)
+    ∀ (tokens : List ByteSlice)
+      (phase : Metamath.Verify.CompressedPhase)
       (initial final : RuntimeProofState),
       (∀ token ∈ tokens,
         compressedWordValid (sliceBytes token) = true) →
+      parser.db.config.compressedSavePlacement =
+        .immediatelyAfterUse →
       runCompressedTokenGo parser tokens
-          { initial with ptp := .compressed accumulator } = .ok final →
+          { initial with ptp := .compressed phase } = .ok final →
       ∃ (actions : List ParserState.CompressedAction)
-        (finalAccumulator : Nat) (result : RuntimeProofState),
-        decodeCompressedTokens tokens accumulator =
-            .ok (actions, finalAccumulator) ∧
+        (finalPhase : Metamath.Verify.CompressedPhase)
+        (result : RuntimeProofState),
+        decodeCompressedTokens tokens phase =
+            .ok (actions, finalPhase) ∧
           ParserState.applyCompressedActions parser.db initial actions =
             .ok result ∧
-          final = { result with ptp := .compressed finalAccumulator } := by
+          final = { result with ptp := .compressed finalPhase } := by
   intro tokens
   induction tokens with
   | nil =>
-      intro accumulator initial final _ execution
+      intro phase initial final _ _ execution
       simp only [runCompressedTokenGo, List.foldlM_nil, pure,
         Except.pure] at execution
       have finalEq := Except.ok.inj execution
@@ -3888,10 +3920,10 @@ theorem runCompressedTokenGo_reflect
             .ok initial := by
         unfold ParserState.applyCompressedActions
         rfl
-      exact ⟨[], accumulator, initial, by simp [decodeCompressedTokens],
+      exact ⟨[], phase, initial, by simp [decodeCompressedTokens],
         emptyApplied, rfl⟩
   | cons token tokens ih =>
-      intro accumulator initial final valid execution
+      intro phase initial final valid savePlacement execution
       have tokenValid :
           compressedWordValid (sliceBytes token) = true :=
         valid token (by simp)
@@ -3900,21 +3932,22 @@ theorem runCompressedTokenGo_reflect
         intro next member
         exact valid next (by simp [member])
       have policyEq :=
-        decodeCompressed_policy_eq_of_compressedWordValid token accumulator
+        decodeCompressed_policy_eq_of_compressedWordValid token phase
           parser.db.config.compressedInvalidBytes tokenValid
-      cases decoded : ParserState.decodeCompressed token accumulator with
+      cases decoded : ParserState.decodeCompressed token phase with
       | error error =>
           simp only [runCompressedTokenGo, List.foldlM_cons,
-            ParserState.feedProof.go, policyEq, decoded, bind,
+            ParserState.feedProof.go, savePlacement, policyEq, decoded, bind,
             Except.bind] at execution
           cases execution
       | ok decodedResult =>
           obtain ⟨headActions, nextAccumulator⟩ := decodedResult
           cases applied : ParserState.applyCompressedActions parser.db
-              { initial with ptp := .compressed accumulator } headActions with
+              { initial with ptp := .compressed phase } headActions with
           | error error =>
               simp only [runCompressedTokenGo, List.foldlM_cons,
-                ParserState.feedProof.go, policyEq, decoded, applied, bind,
+                ParserState.feedProof.go, savePlacement, policyEq, decoded,
+                applied, bind,
                 Except.bind] at execution
               cases execution
           | ok middle =>
@@ -3923,7 +3956,8 @@ theorem runCompressedTokenGo_reflect
                       { middle with ptp := .compressed nextAccumulator } =
                     .ok final := by
                 simpa only [runCompressedTokenGo, List.foldlM_cons,
-                  ParserState.feedProof.go, policyEq, decoded, applied, bind,
+                  ParserState.feedProof.go, savePlacement, policyEq, decoded,
+                  applied, bind,
                   Except.bind, Functor.map, Except.map, pure,
                   Except.pure] using execution
               let middleCore : RuntimeProofState :=
@@ -3933,17 +3967,18 @@ theorem runCompressedTokenGo_reflect
                       headActions = .ok middleCore := by
                 simpa [middleCore] using
                   (Metamath.PrefixTraceCompressed.applyCA_ptp_ok parser.db
-                    { initial with ptp := .compressed accumulator }
+                    { initial with ptp := .compressed phase }
                     headActions initial.ptp middle applied)
               have tailExecution' :
                   runCompressedTokenGo parser tokens
                       { middleCore with ptp := .compressed nextAccumulator } =
                     .ok final := by
                 simpa [middleCore] using tailExecution
-              obtain ⟨tailActions, finalAccumulator, result,
+              obtain ⟨tailActions, finalPhase, result,
                 tailDecoded, tailApplied, final_eq⟩ :=
-                ih nextAccumulator middleCore final tailValid tailExecution'
-              refine ⟨headActions ++ tailActions, finalAccumulator, result,
+                ih nextAccumulator middleCore final tailValid savePlacement
+                  tailExecution'
+              refine ⟨headActions ++ tailActions, finalPhase, result,
                 ?_, ?_, final_eq⟩
               · simp [decodeCompressedTokens, decoded, tailDecoded,
                   bind, Except.bind, pure, Except.pure]
@@ -3955,35 +3990,39 @@ theorem runCompressedTokenGo_reflect
 the reflected decoder and executor with source proof objects. -/
 structure CompressedTokenGoReflection
     (parser : ParserState) (tokens : List ByteSlice)
-    (accumulator : Nat) (initial final : RuntimeProofState) : Type where
+    (phase : Metamath.Verify.CompressedPhase)
+    (initial final : RuntimeProofState) : Type where
   actions : List ParserState.CompressedAction
-  finalAccumulator : Nat
+  finalPhase : Metamath.Verify.CompressedPhase
   result : RuntimeProofState
-  decoded : decodeCompressedTokens tokens accumulator =
-    .ok (actions, finalAccumulator)
+  decoded : decodeCompressedTokens tokens phase =
+    .ok (actions, finalPhase)
   applied : ParserState.applyCompressedActions parser.db initial actions =
     .ok result
-  final_eq : final = { result with ptp := .compressed finalAccumulator }
+  final_eq : final = { result with ptp := .compressed finalPhase }
 
 noncomputable def compressedTokenGoReflection
     (parser : ParserState) (tokens : List ByteSlice)
-    (accumulator : Nat) (initial final : RuntimeProofState)
+    (phase : Metamath.Verify.CompressedPhase)
+    (initial final : RuntimeProofState)
     (valid : ∀ token ∈ tokens,
       compressedWordValid (sliceBytes token) = true)
+    (savePlacement : parser.db.config.compressedSavePlacement =
+      .immediatelyAfterUse)
     (execution : runCompressedTokenGo parser tokens
-      { initial with ptp := .compressed accumulator } = .ok final) :
-    CompressedTokenGoReflection parser tokens accumulator initial final := by
-  let witness := runCompressedTokenGo_reflect parser tokens accumulator
-    initial final valid execution
+      { initial with ptp := .compressed phase } = .ok final) :
+    CompressedTokenGoReflection parser tokens phase initial final := by
+  let witness := runCompressedTokenGo_reflect parser tokens phase
+    initial final valid savePlacement execution
   let actions := Classical.choose witness
   let witness₁ := Classical.choose_spec witness
-  let finalAccumulator := Classical.choose witness₁
+  let finalPhase := Classical.choose witness₁
   let witness₂ := Classical.choose_spec witness₁
   let result := Classical.choose witness₂
   let facts := Classical.choose_spec witness₂
   exact
     { actions := actions
-      finalAccumulator := finalAccumulator
+      finalPhase := finalPhase
       result := result
       decoded := facts.1
       applied := facts.2.1
@@ -4000,7 +4039,10 @@ structure ReaderReflectedCompressedProgram
   execution :
     ParserState.applyCompressedActions parser.db initial
       (actions.map toMMLean4Action) = .ok runtimeFinal
-  final_eq : final = { runtimeFinal with ptp := .compressed 0 }
+  finalPhase : Metamath.Verify.CompressedPhase
+  finalPhaseComplete : finalPhase = .betweenSteps ∨
+    finalPhase = .justCompletedStep
+  final_eq : final = { runtimeFinal with ptp := .compressed finalPhase }
 
 /-- Successful reflected compressed execution preserves the theorem formula
 and mandatory frame. -/
@@ -4058,14 +4100,17 @@ def ReaderReflectedCompressedProgram.toRuntimeEvidence
     finalStack := finalStack }
 
 /-- Complete-program reflection for the retained body.  Successful
-`finishProof` supplies the otherwise-missing zero-accumulator fact. -/
+`finishProof` supplies the otherwise-missing phase-completeness fact. -/
 noncomputable def ReaderCompressedBody.reflectProgram
     {parser : ParserState} {db : DB} {initial : RuntimeProofState}
     {words : List (List UInt8)}
     {entries : List (LocatedToken × TokenCall)}
     {observed : ParserObservedState}
     (body : ReaderCompressedBody parser db
-      { initial with ptp := .compressed 0 } words entries observed)
+      { initial with ptp := .compressed .betweenSteps }
+        words entries observed)
+    (savePlacement : parser.db.config.compressedSavePlacement =
+      .immediatelyAfterUse)
     (finishSuccess :
       (parser.finishProof body.after).db.error? = none) :
     ReaderReflectedCompressedProgram parser initial words body.after := by
@@ -4077,22 +4122,30 @@ noncomputable def ReaderCompressedBody.reflectProgram
       List.mem_map_of_mem member
     rw [body.bytes_eq] at bytesMember
     exact body.valid (sliceBytes token) bytesMember
-  let reflected := compressedTokenGoReflection parser tokens 0 initial
-    body.after tokensValid (by simpa [tokens] using body.execution)
+  let reflected := compressedTokenGoReflection parser tokens .betweenSteps
+    initial body.after tokensValid savePlacement
+      (by simpa [tokens] using body.execution)
   have finishConditions :=
     Metamath.ParserAnyModeEquivalence.finishProof_success_stack_conditions
       parser body.after finishSuccess
-  have finalAccumulatorZero : reflected.finalAccumulator = 0 := by
-    rcases finishConditions.2.2 with normalMode | compressedMode
+  have finalPhaseComplete : reflected.finalPhase = .betweenSteps ∨
+      reflected.finalPhase = .justCompletedStep := by
+    rcases finishConditions.2.2 with normalMode |
+        compressedBetween | compressedCompleted
     · rw [reflected.final_eq] at normalMode
       cases normalMode
-    · rw [reflected.final_eq] at compressedMode
-      exact ProofTokenParser.compressed.inj compressedMode
+    · left
+      rw [reflected.final_eq] at compressedBetween
+      exact ProofTokenParser.compressed.inj compressedBetween
+    · right
+      rw [reflected.final_eq] at compressedCompleted
+      exact ProofTokenParser.compressed.inj compressedCompleted
   have implementationDecoded :
       decodeCompressedProgram tokens = .ok reflected.actions := by
     unfold decodeCompressedProgram
-    rw [reflected.decoded, finalAccumulatorZero]
-    rfl
+    rw [reflected.decoded]
+    rcases finalPhaseComplete with finalPhase | finalPhase <;>
+      simp [finalPhase]
   have decoderAgreement :
       (.ok reflected.actions : Except ProofCheckFail
         (List ParserState.CompressedAction)) =
@@ -4120,16 +4173,9 @@ noncomputable def ReaderCompressedBody.reflectProgram
           execution := by
             rw [← actions_eq]
             exact reflected.applied
-          final_eq := by
-            calc
-              body.after =
-                  { reflected.result with
-                    ptp := ProofTokenParser.compressed
-                      reflected.finalAccumulator } :=
-                reflected.final_eq
-              _ = { reflected.result with
-                  ptp := ProofTokenParser.compressed 0 } := by
-                rw [finalAccumulatorZero] }
+          finalPhase := reflected.finalPhase
+          finalPhaseComplete
+          final_eq := reflected.final_eq }
 
 /-- Ordered preloading commutes with changing only the proof-token phase. -/
 theorem preloadFold_withPtp
@@ -4301,6 +4347,8 @@ noncomputable def SpelledCallTrace.acceptedCompressedStatement
       entries final)
     (agreement : RuntimeDBAgrees db before)
     (interruptEq : db.interrupt = false)
+    (savePlacement : db.config.compressedSavePlacement =
+      .immediatelyAfterUse)
     (labelCharset : NameCharset labelBytesValid label)
     (typecodeCharset : NameCharset mathBytesValid typecode)
     (bodyCharsets :
@@ -4383,7 +4431,7 @@ noncomputable def SpelledCallTrace.acceptedCompressedStatement
     anchor.database_eq loaded.after_preload
   have afterCloseTrace' := afterCloseTrace.reindexInitial closed
   have afterCloseTrace'' : SpelledCallTrace fileId
-      ⟨db, .proof { loaded.after with ptp := .compressed 0 }⟩
+      ⟨db, .proof { loaded.after with ptp := .compressed .betweenSteps }⟩
       (words.map (fun word => tokenText word.bytes) ++ ["$."])
       ((((entries.drop formulaPrefix.length).drop 1).drop header.length).drop 1)
       final := by
@@ -4399,7 +4447,13 @@ noncomputable def SpelledCallTrace.acceptedCompressedStatement
         |>.drop words.length) final := by
     simpa using finishTrace'
   let finished := finishTrace''.proofFinish anchor.state anchor.database_eq
-  let program := bodyRun.reflectProgram finished.finish_success
+  have anchorSavePlacement :
+      anchor.state.db.config.compressedSavePlacement =
+        .immediatelyAfterUse := by
+    rw [anchor.database_eq]
+    exact savePlacement
+  let program := bodyRun.reflectProgram anchorSavePlacement
+    finished.finish_success
 
   have projectEq :
       projectPrefix? db = some (runtimePrefix before).toProjection :=
@@ -4674,6 +4728,8 @@ noncomputable def SpelledCallTrace.verifiedCompressedStatement
       entries final)
     (agreement : RuntimeDBAgrees db before)
     (interruptEq : db.interrupt = false)
+    (savePlacement : db.config.compressedSavePlacement =
+      .immediatelyAfterUse)
     (labelCharset : NameCharset labelBytesValid label)
     (typecodeCharset : NameCharset mathBytesValid typecode)
     (bodyCharsets : ∀ name ∈ body, NameCharset mathBytesValid name)
@@ -4698,7 +4754,8 @@ noncomputable def SpelledCallTrace.verifiedCompressedStatement
       ⟨typecode.name, bodySymbols⟩
       (header.map LocatedName.name) (words.map (fun word => word.bytes))
       final :=
-  (trace.acceptedCompressedStatement agreement interruptEq labelCharset typecodeCharset
+  (trace.acceptedCompressedStatement agreement interruptEq savePlacement
+    labelCharset typecodeCharset
     bodyCharsets headerCharsets wordCharsets taggedFormula inserted).toVerified
       verifiedWords runtimeTarget sourceTarget runtimePresentation
         sourcePresentation
@@ -4720,6 +4777,8 @@ noncomputable def SpelledCallTrace.incompleteCompressedStatement
       entries final)
     (agreement : RuntimeDBAgrees db before)
     (interruptEq : db.interrupt = false)
+    (savePlacement : db.config.compressedSavePlacement =
+      .immediatelyAfterUse)
     (labelCharset : NameCharset labelBytesValid label)
     (typecodeCharset : NameCharset mathBytesValid typecode)
     (bodyCharsets : ∀ name ∈ body, NameCharset mathBytesValid name)
@@ -4737,7 +4796,8 @@ noncomputable def SpelledCallTrace.incompleteCompressedStatement
       ⟨typecode.name, bodySymbols⟩
       (header.map LocatedName.name) (words.map (fun word => word.bytes))
       final :=
-  (trace.acceptedCompressedStatement agreement interruptEq labelCharset typecodeCharset
+  (trace.acceptedCompressedStatement agreement interruptEq savePlacement
+    labelCharset typecodeCharset
     bodyCharsets headerCharsets wordCharsets taggedFormula inserted).toIncomplete
       incompleteWords
 

@@ -87,8 +87,8 @@ theorem pureProfileBaseStep_sound_langReduces {s t : Pattern}
         · rw [List.mem_map]
           refine ⟨bs, ?_, ?_⟩
           · simp [applyPremisesWithEnv, bs, betaPiRule]
-          · simpa [bs, betaPiRule, mettaPure, applyBindings] using
-              instantiateBVar_eq_openBVar_of_isWellScoped hscope.1 hscope.2
+          · simp [bs, betaPiRule, mettaPure, applyBindings,
+              instantiateBVar_eq_openBVar_of_isWellScoped hscope.1 hscope.2]
   | @betaSigmaFst aa bb =>
       apply exec_to_langReducesUsing (relEnv := RelationEnv.empty) (lang := mettaPure)
       refine ⟨1, ?_⟩

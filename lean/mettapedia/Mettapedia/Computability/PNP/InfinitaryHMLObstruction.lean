@@ -2,11 +2,11 @@ import Mettapedia.GSLT.Logic.LogicalMetric
 import Mettapedia.GSLT.Meredith.RhoMinimalContext
 
 /-!
-# P vs NP crux: the current Meredith observable surface is already infinitary
+# P vs NP crux: the current Meredith observation interface is already infinitary
 
 The current HML layer quantifies over all certified minimal contexts.  Without a
 separate finiteness theorem on that context type, the depth-bounded observable
-surface need not be finite at all.  In fact:
+data domain need not be finite at all.  In fact:
 
 * abstractly, if `MinimalContext S` is infinite, then `HMLFormula S` and even the
   depth-`1` fragment are infinite;

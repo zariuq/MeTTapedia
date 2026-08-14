@@ -99,7 +99,7 @@ def notForm (type : Pattern) : Pattern := .apply "PrimeNotForm" [type]
 
 def ruleId (value : String) : RuleId := ⟨value⟩
 
-private def primitiveRule (id : String) (type : Pattern) : RuleSchema :=
+def primitiveRule (id : String) (type : Pattern) : RuleSchema :=
   { id := ruleId id
     metavariables := []
     premises := []

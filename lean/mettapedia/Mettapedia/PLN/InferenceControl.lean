@@ -8,5 +8,5 @@ import Mettapedia.PLN.InferenceControl.SelectorRewriteThreshold
 /-!
 # PLN inference control
 
-PLN-native theorem surfaces for selecting, sequencing, and gating inference.
+PLN-native theorem families for selecting, sequencing, and gating inference.
 -/

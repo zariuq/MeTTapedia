@@ -175,7 +175,7 @@ just by changing its leaf labels.
 At the same time, the optimistic Lean work now isolates the precise positive interface one
 would need for the switching lemma to go through: a \emph{small explicitly encoded
 hypothesis family} whose realized classifier class is bounded by its code budget, together
-with a perspective-relative notion of accessible input surface inspired by the existing
+with a perspective-relative notion of accessible input region inspired by the existing
 Hyperseed formalization.
 
 These results do not by themselves disprove the whole paper.  They do isolate an essential gap:
@@ -235,9 +235,9 @@ The current Lean modules under
 \texttt{SymmetrizationObstruction.lean} & unbiased majority does not beat Bayes without a margin \\
 \texttt{PostSwitchInputObstruction.lean} & exact \(u=(z,a_i,b)\) is \(T_i\)-invariant iff \(a_i=0\) \\
 \texttt{PostSwitchForkObstruction.lean} & exact \(T_i\)-fork: invariant \((z,a_i)\) has zero signal, \(b\)-side-channel gain needs nonzero-column mass \\
-\texttt{VisiblePostSwitchSurface.lean} & isolates the exact visible surface, invariant projection, and fork-visible projection \\
+\texttt{VisiblePostSwitchData.lean} & isolates the exact visible data domain, invariant projection, and fork-visible projection \\
 \texttt{ExactSwitchedFamily.lean} & isolates the exact switched-family compression target and ERM reuse theorem \\
-\texttt{ExactVisibleCompressionObstruction.lean} & if the exact family spans all exact visible rules, no sub-surface-cardinality code budget can cover it \\
+\texttt{ExactVisibleCompressionObstruction.lean} & if the exact family spans all exact visible rules, no sub-data-domain-cardinality code budget can cover it \\
 \texttt{OrbitNeutralityObstruction.lean} & involution-invariant feature collapse forces exact half accuracy \\
 \texttt{FiberNeutralityObstruction.lean} & invariant feature fibers have exact zero conditional margin \\
 \texttt{WeightedFiberNeutralityObstruction.lean} & symmetry-respecting weights still give zero conditional margin \\
@@ -330,7 +330,7 @@ The new module \texttt{HypothesisClass.lean} formalizes exactly this interface:
 This is the correct positive abstraction: if this switching argument is salvageable, it must
 land in one of these small encoded subclasses rather than in the full local-rule space.
 
-\subsection{Hyperseed Perspective Surface}
+\subsection{Hyperseed Perspective Region}
 
 The Hyperseed formalization in \texttt{Mettapedia/Hyperseed/} already provides a useful
 observer-relative interface:
@@ -341,7 +341,7 @@ observer-relative interface:
 \end{itemize}
 
 The optimistic PNP background layer reuses this by treating a decoder's \emph{available
-input surface} as a subtype of the Hyperseed \texttt{availableRegion}.  This does not solve
+input region} as a subtype of the Hyperseed \texttt{availableRegion}.  This does not solve
 switching.  It does provide a clean ground-up semantics for what a bounded observer can even
 use as input, without baking in a bespoke notion of locality for every later argument.
 
@@ -1785,12 +1785,12 @@ The proof attempt is not yet broken in full, but one of its central complexity-c
 transitions has not been justified, and the default combinatorics point in the opposite direction.
 \end{quote}
 
-\section{Next Attack Surface}
+\section{Next Formal Target}
 
 The next natural formal target is the paper's implicit compression claim.  The
 first and third interface steps are now isolated in Lean:
-\texttt{VisiblePostSwitchSurface.lean} defines the exact manuscript-visible
-surface \(u=(z,a,b)\) together with its invariant and fork projections, and
+\texttt{VisiblePostSwitchData.lean} defines the exact manuscript-visible
+data domain \(u=(z,a,b)\) together with its invariant and fork projections, and
 \texttt{ExactSwitchedFamily.lean} packages the exact bit-budget theorem needed
 to reuse the same-route ERM bound.  The remaining mathematical burden is now
 sharper:
@@ -1813,8 +1813,8 @@ To make that rigorous, one would want a theorem of the shape:
 The new module \texttt{ExactVisibleCompressionObstruction.lean} records the
 fallback counting barrier on that exact object: if the switched family on
 \(u=(z,a,b)\) is still rich enough to realize \emph{all} Boolean rules on the
-exact visible surface, then no \(s\)-bit code can cover it when
-\(s < |\text{surface}|\).  So any same-route rescue must now prove a genuine
+exact visible data domain, then no \(s\)-bit code can cover it when
+\(s < |\text{data domain}|\).  So any same-route rescue must now prove a genuine
 strict subclass theorem for the \emph{actual} switched predictors.
 
 If such a theorem cannot be proved, then the proof attempt should be regarded as stalled at a real

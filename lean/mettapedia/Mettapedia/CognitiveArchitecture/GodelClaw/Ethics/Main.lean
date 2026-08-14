@@ -20,7 +20,7 @@ import Mettapedia.CognitiveArchitecture.GodelClaw.Ethics.Examples
 /-!
 # GodelClaw Ethics
 
-Consolidated import surface for the universal-loving-care / ethics-safety lane.
+Consolidated import interface for the universal-loving-care / ethics-safety lane.
 
 This keeps legacy modules in place while giving future work a proper folder:
 
@@ -35,7 +35,7 @@ This keeps legacy modules in place while giving future work a proper folder:
   questions above the computable resolver.
 - `EthicalDecisionProblemCaseStudies` for concrete internet-inspired privacy,
   shutdown, and force-escalation examples.
-- `WMGrounding` for the preferred ontology-aware ethics/WM import surface.
+- `WMGrounding` for the preferred ontology-aware ethics/WM import interface.
 - `Ontology.ChoicePointTrustTriangleExample` for the structured active-goal
   conflict / `ChoicePoint` example.
 - `FoundationalMeaningAgencyExample` for the concrete trust-triangle meaning profile.

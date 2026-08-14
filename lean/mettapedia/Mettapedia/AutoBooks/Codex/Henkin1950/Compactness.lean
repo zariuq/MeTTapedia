@@ -8,7 +8,7 @@ open Mettapedia.Logic.HOL
 Narrow theorem-facing compactness consequences for Henkin (1950).
 
 The full reverse direction of Theorem 3 still depends on the remaining bridge
-from the currently surfaced model theory to the exact proof system and
+from the currently exposed model theory to the exact proof system and
 consistency notion used in the paper. This file currently packages the trusted
 HOL-side finite-theory derivability and consistency notions that a future
 reverse-side compactness theorem will need.

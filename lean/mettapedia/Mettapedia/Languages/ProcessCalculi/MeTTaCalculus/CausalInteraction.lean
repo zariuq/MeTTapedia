@@ -11,7 +11,7 @@ a pair is coexecutible when its two orders form a commuting square.
 
 The square is deliberately stated over the small located access protocol.  It
 is a semantic interface for later schedulers and realizations, not a final
-surface syntax or a fixed execution plan.
+syntax or a fixed execution plan.
 
 Positive and negative controls establish the boundary:
 

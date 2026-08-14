@@ -2,6 +2,7 @@ import Mathlib.Algebra.Order.Quantale
 import Mettapedia.Algebra.QuantaleWeakness
 import Mettapedia.Logic.ModalMuCalculus
 import Mettapedia.Algebra.TemporalQuantale
+import Mettapedia.Order.FiniteSetFixedPoints
 
 /-!
 # Quantale-Valued Modal μ-Calculus Semantics
@@ -57,25 +58,18 @@ Instead of `trans : S → Act → S → Prop`, we have `trans : S → Act → S 
 -/
 
 /-- A quantale-labeled transition system (QLTS).
-    Transitions carry quantale values representing "strength" or "evidence". -/
+    Transitions carry quantale values representing "strength" or "evidence".
+    An absent transition has weight `⊥`; totality is an optional property of a
+    particular system, not part of the carrier. -/
 structure QLTS (Q : Type*) [CompleteLattice Q] (S : Type*) (Act : Type*) where
   /-- Transition strength: how strongly state s transitions to s' via action a -/
   trans : S → Act → S → Q
-  /-- Assumption: total system (every state has successors for every action)
-      This simplifies semantics; partial systems can use ⊥ for non-transitions -/
-  total : ∀ s a, ∃ s', trans s a s' ≠ ⊥
 
 /-- Convert a Boolean LTS to QLTS using top/bottom values.
-    Requires the LTS to be total (every state has at least one successor for each action).
-    Requires classical decidability and nontriviality (⊤ ≠ ⊥). -/
-noncomputable def QLTS.ofLTS [CompleteLattice Q] [Nontrivial Q]
-    (lts : LTS S Act) (h_total : ∀ s a, ∃ s', lts.trans s a s') : QLTS Q S Act where
+    Classical decidability selects `⊤` for authored transitions and `⊥` for
+    absent transitions. -/
+noncomputable def QLTS.ofLTS (lts : LTS S Act) : QLTS Q S Act where
   trans s a s' := @ite _ (lts.trans s a s') (Classical.propDecidable _) ⊤ ⊥
-  total s a := by
-    obtain ⟨s', hs'⟩ := h_total s a
-    use s'
-    simp only [hs', ↓reduceIte]
-    exact top_ne_bot
 
 /-! ## Quantale-Valued Satisfaction
 
@@ -137,20 +131,24 @@ noncomputable def qSat (qlts : QLTS Q S Act) (ρ : QEnv Q S n) (φ : Formula Act
 
 /-! ## Basic Properties -/
 
+omit [IsCommQuantale Q] in
 /-- Truth is maximal -/
 theorem qSat_tt (qlts : QLTS Q S Act) (ρ : QEnv Q S n) (s : S) :
     qSatisfies qlts ρ Formula.tt s = ⊤ := rfl
 
+omit [IsCommQuantale Q] in
 /-- Falsity is minimal -/
 theorem qSat_ff (qlts : QLTS Q S Act) (ρ : QEnv Q S n) (s : S) :
     qSatisfies qlts ρ Formula.ff s = ⊥ := rfl
 
+omit [IsCommQuantale Q] in
 /-- Conjunction is infimum -/
 theorem qSat_conj (qlts : QLTS Q S Act) (ρ : QEnv Q S n)
     (φ ψ : Formula Act n) (s : S) :
     qSatisfies qlts ρ (Formula.conj φ ψ) s =
     qSatisfies qlts ρ φ s ⊓ qSatisfies qlts ρ ψ s := rfl
 
+omit [IsCommQuantale Q] in
 /-- Disjunction is supremum -/
 theorem qSat_disj (qlts : QLTS Q S Act) (ρ : QEnv Q S n)
     (φ ψ : Formula Act n) (s : S) :
@@ -167,6 +165,7 @@ noncomputable def transformer (qlts : QLTS Q S Act) (ρ : QEnv Q S n)
     (φ : Formula Act (n + 1)) : (S → Q) → (S → Q) :=
   fun P s => qSatisfies qlts (ρ.extend P) φ s
 
+omit [CommSemigroup Q] [IsCommQuantale Q] in
 /-- Helper: extend environment monotonically -/
 lemma qEnv_extend_mono (ρ : QEnv Q S n) {P₁ P₂ : S → Q} (hle : ∀ s, P₁ s ≤ P₂ s) :
     ∀ i s, (ρ.extend P₁) i s ≤ (ρ.extend P₂) i s := by
@@ -303,7 +302,7 @@ lemma qSatisfies_mono_env (qlts : QLTS Q S Act) {n : ℕ}
                   omega)
             · intro t'; unfold QEnv.extend; by_cases h : i.succ.val = 0
               · exfalso; simp [Fin.val_succ] at h
-              · simp [h]; convert h_le t' using 1
+              · simp; convert h_le t' using 1
           _ ≤ P t := hP t
     | false =>
       -- polarity = false: show ⨅ prefixed(ρ₂) ≤ ⨅ prefixed(ρ₁)
@@ -334,7 +333,7 @@ lemma qSatisfies_mono_env (qlts : QLTS Q S Act) {n : ℕ}
                   omega)
             · intro t'; unfold QEnv.extend; by_cases h : i.succ.val = 0
               · exfalso; simp [Fin.val_succ] at h
-              · simp [h]; convert h_le t' using 1
+              · simp; convert h_le t' using 1
           _ ≤ P t := hP t
   | nu φ ih =>
     intros ρ₁ ρ₂ h_eq h_le s
@@ -371,7 +370,7 @@ lemma qSatisfies_mono_env (qlts : QLTS Q S Act) {n : ℕ}
                   omega)
             · intro t'; unfold QEnv.extend; by_cases h : i.succ.val = 0
               · exfalso; simp [Fin.val_succ] at h
-              · simp [h]; convert h_le t' using 1
+              · simp; convert h_le t' using 1
     | false =>
       -- polarity = false: show ⨆ postfixed(ρ₂) ≤ ⨆ postfixed(ρ₁)
       apply iSup_le; intro P; apply iSup_le; intro hP
@@ -403,7 +402,7 @@ lemma qSatisfies_mono_env (qlts : QLTS Q S Act) {n : ℕ}
                   omega)
             · intro t'; unfold QEnv.extend; by_cases h : i.succ.val = 0
               · exfalso; simp [Fin.val_succ] at h
-              · simp [h]; convert h_le t' using 1
+              · simp; convert h_le t' using 1
   | var j =>
     intros ρ₁ ρ₂ h_eq h_le s
     simp only [qSatisfies]
@@ -465,6 +464,7 @@ theorem diamond_le_sSup_top (qlts : QLTS Q S Act) (ρ : QEnv Q S n)
     _ = qlts.trans s a s' := h_top_bound _
     _ ≤ ⨆ s'', qlts.trans s a s'' := le_iSup _ s'
 
+omit [IsCommQuantale Q] in
 /-- Box is bounded below by infimum of residuated transitions
     When φ is satisfied maximally (⊤) everywhere, box gives this bound -/
 theorem iInf_le_box (qlts : QLTS Q S Act) (ρ : QEnv Q S n)
@@ -480,11 +480,394 @@ theorem iInf_le_box (qlts : QLTS Q S Act) (ρ : QEnv Q S n)
     rw [h_top_sat s']
   rw [h_eq]
 
-/-! ## Connection to Boolean Semantics
+/-! ## Boolean specialization
 
-When Q is a Boolean algebra, quantale semantics specializes appropriately.
-The details are subtle and deferred.
+Ordinary truth is the commutative quantale whose multiplication is
+conjunction.  The instances are local to this namespace: they are used only
+to prove that `qSatisfies` recovers the pre-existing Boolean semantics and do
+not change global notation or typeclass search for propositions.
 -/
+
+namespace Boolean
+
+open Mettapedia.Order.FiniteSetFixedPoints
+
+local instance : Mul Prop where
+  mul := And
+
+local instance : CommSemigroup Prop where
+  mul_assoc := fun _ _ _ => propext and_assoc
+  mul_comm := fun _ _ => propext and_comm
+
+local instance : IsCommQuantale Prop :=
+  IsCommQuantale.ofCommSemigroup (by
+    intro proposition propositions
+    change (proposition ∧ sSup propositions) =
+      iSup (fun value : Prop =>
+        iSup fun _ : value ∈ propositions => proposition ∧ value)
+    apply propext
+    simp)
+
+@[simp] theorem prop_mul_iff (left right : Prop) :
+    left * right ↔ left ∧ right := Iff.rfl
+
+/-- Quantale residuation specializes to ordinary implication. -/
+theorem prop_leftResiduate_iff (premise conclusion : Prop) :
+    leftResiduate premise conclusion ↔ (premise → conclusion) := by
+  constructor
+  · intro residuated premiseProof
+    exact modusPonens_left premise conclusion ⟨residuated, premiseProof⟩
+  · intro implication
+    exact (residuate_galois premise conclusion (premise → conclusion)).mp
+      (fun conjunction => implication conjunction.2) implication
+
+/-- View an ordinary transition relation as a proposition-valued weighted
+transition system. -/
+def ofLTS (lts : LTS S Act) : QLTS Prop S Act where
+  trans := lts.trans
+
+/-- Proposition-valued quantale semantics is exactly the ordinary Boolean
+semantics, including least and greatest fixed points. -/
+theorem qSatisfies_iff_satisfies (lts : LTS S Act) (ρ : Env S n)
+    (formula : Formula Act n) (state : S) :
+    qSatisfies (ofLTS lts) ρ formula state ↔
+      satisfies lts ρ formula state := by
+  induction formula generalizing state with
+  | tt => rfl
+  | ff => rfl
+  | neg formula inductionHypothesis =>
+      simp only [qSatisfies, satisfies, prop_leftResiduate_iff]
+      exact not_congr (inductionHypothesis ρ state)
+  | conj left right leftHypothesis rightHypothesis =>
+      simp only [qSatisfies, satisfies]
+      exact and_congr (leftHypothesis ρ state) (rightHypothesis ρ state)
+  | disj left right leftHypothesis rightHypothesis =>
+      simp only [qSatisfies, satisfies]
+      exact or_congr (leftHypothesis ρ state) (rightHypothesis ρ state)
+  | diamond action formula inductionHypothesis =>
+      simp only [qSatisfies, satisfies, ofLTS, LTS.successors,
+        Set.mem_setOf_eq, prop_mul_iff, iSup_Prop_eq]
+      exact exists_congr fun target =>
+        and_congr Iff.rfl (inductionHypothesis ρ target)
+  | box action formula inductionHypothesis =>
+      simp only [qSatisfies, satisfies, ofLTS, LTS.successors,
+        Set.mem_setOf_eq, prop_leftResiduate_iff, iInf_Prop_eq]
+      exact forall_congr' fun target =>
+        imp_congr Iff.rfl (inductionHypothesis ρ target)
+  | mu body inductionHypothesis =>
+      simp only [qSatisfies, satisfies, iInf_Prop_eq]
+      constructor
+      · intro least candidate preFixed
+        exact least candidate (fun target satisfied =>
+          preFixed target
+            ((inductionHypothesis (ρ.extend candidate) target).mp satisfied))
+      · intro least candidate preFixed
+        exact least candidate (fun target satisfied =>
+          preFixed target
+            ((inductionHypothesis (ρ.extend candidate) target).mpr satisfied))
+  | nu body inductionHypothesis =>
+      simp only [qSatisfies, satisfies, iSup_Prop_eq]
+      constructor
+      · rintro ⟨candidate, postFixed, member⟩
+        exact ⟨candidate, member, fun target targetMember =>
+          (inductionHypothesis (ρ.extend candidate) target).mp
+            (postFixed target targetMember)⟩
+      · rintro ⟨candidate, member, postFixed⟩
+        exact ⟨candidate, (fun target targetMember =>
+          (inductionHypothesis (ρ.extend candidate) target).mpr
+            (postFixed target targetMember)), member⟩
+  | var index => rfl
+
+/-- Boolean satisfaction is monotone or antitone in one environment variable
+according to the syntactically checked polarity of that variable.  This is a
+direct specialization of `qSatisfies_mono_env`, not a second structural
+induction. -/
+theorem satisfies_mono_env (lts : LTS S Act) {n : Nat}
+    (formula : Formula Act n) (index : Fin n) (polarity : Bool)
+    (positive : formula.isPositiveIn index polarity = true) :
+    ∀ (left right : Env S n),
+      (∀ other state, other ≠ index → left other state = right other state) →
+      (∀ state, left index state → right index state) →
+      ∀ state, if polarity then satisfies lts left formula state →
+        satisfies lts right formula state else
+        satisfies lts right formula state → satisfies lts left formula state := by
+  intro left right agree inclusion state
+  have quantaleMonotonicity := qSatisfies_mono_env
+    (ofLTS lts) formula index polarity positive left right agree inclusion state
+  cases polarity with
+  | false =>
+      simp only [Bool.false_eq_true, ↓reduceIte] at quantaleMonotonicity ⊢
+      intro satisfied
+      exact (qSatisfies_iff_satisfies lts left formula state).mp
+        (quantaleMonotonicity
+          ((qSatisfies_iff_satisfies lts right formula state).mpr satisfied))
+  | true =>
+      simp only [↓reduceIte] at quantaleMonotonicity ⊢
+      intro satisfied
+      exact (qSatisfies_iff_satisfies lts right formula state).mp
+        (quantaleMonotonicity
+          ((qSatisfies_iff_satisfies lts left formula state).mpr satisfied))
+
+/-- The predicate transformer denoted by one positive fixed-point body,
+bundled as Mathlib's monotone `OrderHom`. -/
+noncomputable def bodyOrderHom (lts : LTS S Act) (ρ : Env S n)
+    (body : Formula Act (n + 1)) (positive : body.isPositive = true) :
+    Set S →o Set S where
+  toFun candidate := sat lts (ρ.extend candidate) body
+  monotone' := by
+    intro left right inclusion state satisfied
+    exact satisfies_mono_env lts body 0 true positive
+      (ρ.extend left) (ρ.extend right)
+      (by
+        intro index _state indexNotZero
+        unfold Env.extend
+        split
+        · exfalso
+          exact indexNotZero (Fin.ext ‹_›)
+        · rfl)
+      (by
+        intro _state member
+        exact inclusion member)
+      state satisfied
+
+/-- The impredicative least-fixed-point clause in `satisfies` is Mathlib's
+Knaster--Tarski least fixed point for a positive body. -/
+theorem satisfies_mu_iff_mem_lfp (lts : LTS S Act) (ρ : Env S n)
+    (body : Formula Act (n + 1)) (positive : body.isPositive = true)
+    (state : S) :
+    satisfies lts ρ (.mu body) state ↔
+      state ∈ (bodyOrderHom lts ρ body positive).lfp := by
+  let transformer := bodyOrderHom lts ρ body positive
+  constructor
+  · intro least
+    apply least transformer.lfp
+    intro target satisfied
+    exact transformer.map_le_lfp le_rfl satisfied
+  · intro member candidate preFixed
+    exact transformer.lfp_le preFixed member
+
+/-- The impredicative greatest-fixed-point clause in `satisfies` is Mathlib's
+Knaster--Tarski greatest fixed point for a positive body. -/
+theorem satisfies_nu_iff_mem_gfp (lts : LTS S Act) (ρ : Env S n)
+    (body : Formula Act (n + 1)) (positive : body.isPositive = true)
+    (state : S) :
+    satisfies lts ρ (.nu body) state ↔
+      state ∈ (bodyOrderHom lts ρ body positive).gfp := by
+  let transformer := bodyOrderHom lts ρ body positive
+  constructor
+  · rintro ⟨candidate, member, postFixed⟩
+    exact transformer.le_gfp postFixed member
+  · intro member
+    exact ⟨transformer.gfp, member,
+      fun target targetMember => transformer.gfp_le_map le_rfl targetMember⟩
+
+/-- A positive least fixed point satisfies its usual unfolding equation. -/
+theorem satisfies_mu_unfold_iff (lts : LTS S Act) (ρ : Env S n)
+    (body : Formula Act (n + 1)) (positive : body.isPositive = true)
+    (state : S) :
+    satisfies lts ρ (.mu body) state ↔
+      satisfies lts
+        (ρ.extend (sat lts ρ (.mu body))) body state := by
+  let transformer := bodyOrderHom lts ρ body positive
+  have satEq : sat lts ρ (.mu body) = transformer.lfp := by
+    ext target
+    exact satisfies_mu_iff_mem_lfp lts ρ body positive target
+  change state ∈ sat lts ρ (.mu body) ↔
+    state ∈ transformer (sat lts ρ (.mu body))
+  rw [satEq, transformer.map_lfp]
+
+/-- A positive greatest fixed point satisfies its usual unfolding equation. -/
+theorem satisfies_nu_unfold_iff (lts : LTS S Act) (ρ : Env S n)
+    (body : Formula Act (n + 1)) (positive : body.isPositive = true)
+    (state : S) :
+    satisfies lts ρ (.nu body) state ↔
+      satisfies lts
+        (ρ.extend (sat lts ρ (.nu body))) body state := by
+  let transformer := bodyOrderHom lts ρ body positive
+  have satEq : sat lts ρ (.nu body) = transformer.gfp := by
+    ext target
+    exact satisfies_nu_iff_mem_gfp lts ρ body positive target
+  change state ∈ sat lts ρ (.nu body) ↔
+    state ∈ transformer (sat lts ρ (.nu body))
+  rw [satEq, transformer.map_gfp]
+
+/-- On a finite state carrier, least-fixed-point satisfaction is decided by
+at most `Nat.card S` iterations from the empty set. -/
+theorem satisfies_mu_iff_mem_iterate_empty [Finite S]
+    (lts : LTS S Act) (ρ : Env S n)
+    (body : Formula Act (n + 1)) (positive : body.isPositive = true)
+    (state : S) :
+    satisfies lts ρ (.mu body) state ↔
+      state ∈
+        ((bodyOrderHom lts ρ body positive : Set S →o Set S) :
+          Set S → Set S)^[Nat.card S] (∅ : Set S) := by
+  rw [satisfies_mu_iff_mem_lfp]
+  rw [Mettapedia.Order.FiniteSetFixedPoints.lfp_eq_iterate_empty]
+
+/-- On a finite state carrier, greatest-fixed-point satisfaction is decided
+by at most `Nat.card S` iterations from the universal set. -/
+theorem satisfies_nu_iff_mem_iterate_univ [Finite S]
+    (lts : LTS S Act) (ρ : Env S n)
+    (body : Formula Act (n + 1)) (positive : body.isPositive = true)
+    (state : S) :
+    satisfies lts ρ (.nu body) state ↔
+      state ∈
+        ((bodyOrderHom lts ρ body positive : Set S →o Set S) :
+          Set S → Set S)^[Nat.card S] (Set.univ : Set S) := by
+  rw [satisfies_nu_iff_mem_gfp]
+  rw [Mettapedia.Order.FiniteSetFixedPoints.gfp_eq_iterate_univ]
+
+/-! ### Semantic ranks consumed by finite evaluation games -/
+
+/-- First finite approximation at which a state satisfies a positive least
+fixed point. -/
+noncomputable def muSemanticRank [Finite S]
+    (lts : LTS S Act) (ρ : Env S n)
+    (body : Formula Act (n + 1)) (positive : body.isPositive = true)
+    (state : S) (satisfied : satisfies lts ρ (.mu body) state) : Nat :=
+  lfpEntryRank (bodyOrderHom lts ρ body positive) state
+    ((satisfies_mu_iff_mem_lfp lts ρ body positive state).mp satisfied)
+
+theorem muSemanticRank_mem [Finite S]
+    (lts : LTS S Act) (ρ : Env S n)
+    (body : Formula Act (n + 1)) (positive : body.isPositive = true)
+    (state : S) (satisfied : satisfies lts ρ (.mu body) state) :
+    state ∈ lowerApproximation (bodyOrderHom lts ρ body positive)
+      (muSemanticRank lts ρ body positive state satisfied) := by
+  unfold muSemanticRank
+  apply lfpEntryRank_mem
+
+theorem muSemanticRank_pos [Finite S]
+    (lts : LTS S Act) (ρ : Env S n)
+    (body : Formula Act (n + 1)) (positive : body.isPositive = true)
+    (state : S) (satisfied : satisfies lts ρ (.mu body) state) :
+    0 < muSemanticRank lts ρ body positive state satisfied := by
+  unfold muSemanticRank
+  apply lfpEntryRank_pos
+
+theorem muSemanticRank_le_card [Finite S]
+    (lts : LTS S Act) (ρ : Env S n)
+    (body : Formula Act (n + 1)) (positive : body.isPositive = true)
+    (state : S) (satisfied : satisfies lts ρ (.mu body) state) :
+    muSemanticRank lts ρ body positive state satisfied ≤ Nat.card S := by
+  unfold muSemanticRank
+  apply lfpEntryRank_le_card
+
+/-- Membership in a lower approximation supplies genuine least-fixed-point
+satisfaction, with semantic rank bounded by that approximation index. -/
+theorem exists_muSemanticRank_le_of_mem_lowerApproximation [Finite S]
+    (lts : LTS S Act) (ρ : Env S n)
+    (body : Formula Act (n + 1)) (positive : body.isPositive = true)
+    (state : S) (index : Nat)
+    (atIndex : state ∈ lowerApproximation
+      (bodyOrderHom lts ρ body positive) index) :
+    ∃ satisfied : satisfies lts ρ (.mu body) state,
+      muSemanticRank lts ρ body positive state satisfied ≤ index := by
+  have member : state ∈ (bodyOrderHom lts ρ body positive).lfp :=
+    lowerApproximation_le_lfp
+      (bodyOrderHom lts ρ body positive) index atIndex
+  let satisfied : satisfies lts ρ (.mu body) state :=
+    (satisfies_mu_iff_mem_lfp lts ρ body positive state).mpr member
+  refine ⟨satisfied, ?_⟩
+  unfold muSemanticRank
+  exact lfpEntryRank_min
+    (bodyOrderHom lts ρ body positive) state member atIndex
+
+/-- Entering the body of a true least fixed point spends one semantic-rank
+step and interprets its bound variable by the previous approximation. -/
+theorem muSemanticRank_unfold [Finite S]
+    (lts : LTS S Act) (ρ : Env S n)
+    (body : Formula Act (n + 1)) (positive : body.isPositive = true)
+    (state : S) (satisfied : satisfies lts ρ (.mu body) state) :
+    ∃ previous,
+      muSemanticRank lts ρ body positive state satisfied = previous + 1 ∧
+        satisfies lts
+          (ρ.extend (lowerApproximation
+            (bodyOrderHom lts ρ body positive) previous)) body state := by
+  obtain ⟨previous, rankEq⟩ := Nat.exists_eq_succ_of_ne_zero
+    (muSemanticRank_pos lts ρ body positive state satisfied).ne'
+  refine ⟨previous, rankEq, ?_⟩
+  have enters := muSemanticRank_mem lts ρ body positive state satisfied
+  rw [rankEq, lowerApproximation_succ] at enters
+  exact enters
+
+/-- First finite approximation at which a state is eliminated while refuting
+a positive greatest fixed point. -/
+noncomputable def nuRefutationRank [Finite S]
+    (lts : LTS S Act) (ρ : Env S n)
+    (body : Formula Act (n + 1)) (positive : body.isPositive = true)
+    (state : S) (refuted : ¬ satisfies lts ρ (.nu body) state) : Nat :=
+  gfpExitRank (bodyOrderHom lts ρ body positive) state (by
+    intro member
+    exact refuted
+      ((satisfies_nu_iff_mem_gfp lts ρ body positive state).mpr member))
+
+theorem nuRefutationRank_not_mem [Finite S]
+    (lts : LTS S Act) (ρ : Env S n)
+    (body : Formula Act (n + 1)) (positive : body.isPositive = true)
+    (state : S) (refuted : ¬ satisfies lts ρ (.nu body) state) :
+    state ∉ upperApproximation (bodyOrderHom lts ρ body positive)
+      (nuRefutationRank lts ρ body positive state refuted) := by
+  unfold nuRefutationRank
+  apply gfpExitRank_not_mem
+
+theorem nuRefutationRank_pos [Finite S]
+    (lts : LTS S Act) (ρ : Env S n)
+    (body : Formula Act (n + 1)) (positive : body.isPositive = true)
+    (state : S) (refuted : ¬ satisfies lts ρ (.nu body) state) :
+    0 < nuRefutationRank lts ρ body positive state refuted := by
+  unfold nuRefutationRank
+  apply gfpExitRank_pos
+
+theorem nuRefutationRank_le_card [Finite S]
+    (lts : LTS S Act) (ρ : Env S n)
+    (body : Formula Act (n + 1)) (positive : body.isPositive = true)
+    (state : S) (refuted : ¬ satisfies lts ρ (.nu body) state) :
+    nuRefutationRank lts ρ body positive state refuted ≤ Nat.card S := by
+  unfold nuRefutationRank
+  apply gfpExitRank_le_card
+
+/-- Absence from an upper approximation supplies genuine greatest-fixed-point
+refutation, with elimination rank bounded by that approximation index. -/
+theorem exists_nuRefutationRank_le_of_not_mem_upperApproximation [Finite S]
+    (lts : LTS S Act) (ρ : Env S n)
+    (body : Formula Act (n + 1)) (positive : body.isPositive = true)
+    (state : S) (index : Nat)
+    (notAtIndex : state ∉ upperApproximation
+      (bodyOrderHom lts ρ body positive) index) :
+    ∃ refuted : ¬ satisfies lts ρ (.nu body) state,
+      nuRefutationRank lts ρ body positive state refuted ≤ index := by
+  have missing : state ∉ (bodyOrderHom lts ρ body positive).gfp := by
+    intro member
+    exact notAtIndex
+      (gfp_le_upperApproximation
+        (bodyOrderHom lts ρ body positive) index member)
+  let refuted : ¬ satisfies lts ρ (.nu body) state := fun satisfied =>
+    missing ((satisfies_nu_iff_mem_gfp lts ρ body positive state).mp satisfied)
+  refine ⟨refuted, ?_⟩
+  unfold nuRefutationRank
+  exact gfpExitRank_min
+    (bodyOrderHom lts ρ body positive) state missing notAtIndex
+
+/-- Refuting a greatest fixed point likewise spends one elimination-rank
+step and refutes its body at the previous upper approximation. -/
+theorem nuRefutationRank_unfold [Finite S]
+    (lts : LTS S Act) (ρ : Env S n)
+    (body : Formula Act (n + 1)) (positive : body.isPositive = true)
+    (state : S) (refuted : ¬ satisfies lts ρ (.nu body) state) :
+    ∃ previous,
+      nuRefutationRank lts ρ body positive state refuted = previous + 1 ∧
+        ¬ satisfies lts
+          (ρ.extend (upperApproximation
+            (bodyOrderHom lts ρ body positive) previous)) body state := by
+  obtain ⟨previous, rankEq⟩ := Nat.exists_eq_succ_of_ne_zero
+    (nuRefutationRank_pos lts ρ body positive state refuted).ne'
+  refine ⟨previous, rankEq, ?_⟩
+  have exits := nuRefutationRank_not_mem lts ρ body positive state refuted
+  rw [rankEq, upperApproximation_succ] at exits
+  exact exits
+
+end Boolean
 
 /-! ## Fixed Point Approximations
 

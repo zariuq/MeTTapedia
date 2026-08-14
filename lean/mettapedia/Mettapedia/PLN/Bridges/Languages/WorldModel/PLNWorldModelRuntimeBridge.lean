@@ -2,11 +2,11 @@ import Mettapedia.PLN.WorldModel.PLNWorldModelCalculus
 import Mettapedia.Languages.MeTTa.RuntimeSpec
 
 /-!
-# RuntimeSpec -> WM Obligation Bridge Surface
+# RuntimeSpec -> WM Obligation Bridge Interface
 
 This module defines the first runtime-facing `C*` target for the MeTTa family.
 It does not define new runtime semantics. Instead, it packages the minimal
-obligation surface needed to land a runtime step relation on the same WM
+obligation interface needed to land a runtime step relation on the same WM
 strength-consequence boundary already used by other bridges.
 
 Design constraints:
@@ -14,7 +14,7 @@ Design constraints:
 - keep PureKernel `A/B/C1` untouched
 - keep `RuntimeSpec` audit-oriented and minimal
 - let concrete runtime relations (`HE`, `PeTTa`, later MM2-near layers) prove
-  their soundness against this surface
+  their soundness against this interface
 
 At this level, MM2 priority and sink/update details are treated as execution
 metadata rather than semantic necessities. They matter for scheduling and native

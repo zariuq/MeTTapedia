@@ -5,9 +5,9 @@ import Mettapedia.PLN.TruthValues.PLNWeightTV
 /-!
 # Extensional/Intensional Inheritance Divergence and Pure Intensional Strength
 
-This module makes two facts first-class on the *pre-closure* dual-concept surface,
+This module makes two facts first-class on the *pre-closure* dual-concept (preconcept) level,
 where extensional and intensional inheritance are genuinely independent. (On the
-closed/FCA surface the Galois closure forces the intent to be a function of the
+concept lattice the Galois closure forces the intent to be a function of the
 extent, so the two coincide and the phenomenon is invisible; the divergence must be
 stated on `DualConcept` / `Interpretation`, not on closed concepts.)
 
@@ -52,7 +52,7 @@ open Mettapedia.KR.ConceptGeometry.IntensionalInheritance (heartConcept kidneyCo
 
 universe u v w
 
-/-! ## (1) Qualitative divergence on the pre-closure surface -/
+/-! ## (1) Qualitative divergence at the preconcept level -/
 
 section Qualitative
 variable {Obj : Type u} {Attr : Type v}
@@ -124,7 +124,7 @@ theorem exists_coextensive_not_inherits :
   ⟨Unit, String, heartConcept (fun _ => True), kidneyConcept (fun _ => True), rfl,
     (heartConcept_kidneyConcept_diverges (fun _ : Unit => True)).2.2.2⟩
 
-/-! ## Collapse on the closed/FCA surface (the negative contrast) -/
+/-! ## Collapse on the concept lattice (the negative contrast) -/
 
 section Collapse
 variable {Obj : Type u} {Attr : Type v}

@@ -5,7 +5,7 @@ import Mettapedia.PLN.Bridges.Languages.WorldModel.PLNWorldModelRuntimeBridge
 # PeTTa Space Core Fragment -> WM Bridge
 
 Composes the first explicit PeTTa atomspace/query fragment through the existing
-runtime-to-WM consequence surface.
+runtime-to-WM consequence interface.
 
 This sits alongside the rule-firing PeTTa core bridge:
 - `PeTTaCoreStep` covers top-level rule-application runtime steps

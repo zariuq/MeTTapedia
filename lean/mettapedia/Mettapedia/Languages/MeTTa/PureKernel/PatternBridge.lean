@@ -2,6 +2,7 @@ import Mettapedia.Languages.MeTTa.Pure.Core
 import Mettapedia.Languages.MeTTa.PureKernel.Context
 import Mettapedia.Languages.MeTTa.PureKernel.Substitution
 import Mettapedia.OSLF.MeTTaIL.Substitution
+import Provenance.Util.ValueTypeString
 
 namespace Mettapedia.Languages.MeTTa.PureKernel.PatternBridge
 
@@ -66,7 +67,7 @@ def quoteTmWith (ν : Nat → String) (k : Nat) (ρ : QuoteEnv n) : PureTm n →
   | .snd p => mkSnd (quoteTmWith ν k ρ p)
   | .refl a => mkRefl (quoteTmWith ν k ρ a)
 
-@[simp] theorem envCons_comp_liftRen
+theorem envCons_comp_liftRen
     (x : String) (ρdst : QuoteEnv m) (ρ : Ren n m) :
     (fun j : Fin (n + 1) => envCons x ρdst (liftRen ρ j)) =
       envCons x (fun i => ρdst (ρ i)) := by
@@ -223,6 +224,18 @@ def quoteCtx (ρ : QuoteEnv n) : Ctx n → Pattern
 structure BinderPolicy where
   name : Nat → String
   inj : Function.Injective name
+
+/-- The established numeric binder-name supply is injective. -/
+theorem defaultBinderName_injective : Function.Injective defaultBinderName := by
+  intro first second equal
+  rw [← natStringValue_repr first, ← natStringValue_repr second]
+  simpa [defaultBinderName, natStringValue, parseDigits, digitNat] using
+    congrArg natStringValue equal
+
+/-- Canonical binder policy used by closed production queries. -/
+def defaultBinderPolicy : BinderPolicy where
+  name := defaultBinderName
+  inj := defaultBinderName_injective
 
 /-- Compatibility assumptions for contextual quotation:
 `ν` is injective and all future binder names `ν j` (j ≥ k) are absent from `ρ`. -/

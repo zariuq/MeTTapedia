@@ -4,7 +4,7 @@ import Mettapedia.ProbabilityTheory.ImpreciseProbability.ProjectiveCredal
 /-!
 # Credal Concept-Family Formation
 
-This module lifts exact finite concept formation to a first imprecise surface by
+This module lifts exact finite concept formation to a first imprecise interface by
 allowing uncertainty over which admissible evidence gate is active.
 
 The intended semantics is deliberately conservative:
@@ -53,7 +53,7 @@ def lowerConceptFamily
   fun A => ∀ g : Gate, A ∈ Mettapedia.KR.ConceptGeometry.AbstractInheritance.finiteConceptFamily (Γ g) M
 
 /-- Bundle the lower and upper credal formation fronts into one public
-surface. -/
+interface. -/
 def credalConceptFamily
     (Γ : Gate → EvidenceGate Q) (M : Obj → Attr → Q) :
     CredalConceptFamily Obj Attr where
@@ -626,7 +626,7 @@ theorem globalEnvelopeMidpoint_conceptFormationGamble_eq
 
 end GateFamilies
 
-namespace ObservationSurface
+namespace ObservationEncoder
 
 variable {Obs : Type u} {Obj : Type v} {Attr : Type w} {Q : Type z} {Gate : Type*}
 variable [AddCommMonoid Q] [Preorder Q]
@@ -636,78 +636,78 @@ variable [Fintype Obj] [Fintype Attr]
 /-- Observation-level lower/upper credal concept family induced by a finite
 family of admissible gates. -/
 noncomputable def credalConceptFamily
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs) :
     Mettapedia.KR.ConceptOntology.CredalConceptFamily Obj Attr :=
   Mettapedia.KR.ConceptOntology.credalConceptFamily Γ (aggregate S σ)
 
 def lowerConceptFamily
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs) :
     Set (DualConcept Obj Attr) :=
   Mettapedia.KR.ConceptOntology.lowerConceptFamily Γ (aggregate S σ)
 
 def upperConceptFamily
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs) :
     Set (DualConcept Obj Attr) :=
   Mettapedia.KR.ConceptOntology.upperConceptFamily Γ (aggregate S σ)
 
 /-- Robustly formed concepts induced by aggregated observations. -/
 abbrev LowerFormedConcept
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs) :=
   Mettapedia.KR.ConceptOntology.LowerFormedConcept Γ (aggregate S σ)
 
 /-- Permissively formed concepts induced by aggregated observations. -/
 abbrev UpperFormedConcept
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs) :=
   Mettapedia.KR.ConceptOntology.UpperFormedConcept Γ (aggregate S σ)
 
 noncomputable def lowerConceptFamilyFinset
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs) :
     Finset (DualConcept Obj Attr) :=
   Mettapedia.KR.ConceptOntology.lowerConceptFamilyFinset Γ (aggregate S σ)
 
 noncomputable def upperConceptFamilyFinset
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs) :
     Finset (DualConcept Obj Attr) :=
   Mettapedia.KR.ConceptOntology.upperConceptFamilyFinset Γ (aggregate S σ)
 
 /-- Interpretation of robust credally formed observation concepts. -/
 noncomputable def lowerFormedConceptInterpretation
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs) :
     Mettapedia.KR.ConceptGeometry.AbstractInheritance.Interpretation (LowerFormedConcept S Γ σ) Obj Attr :=
   Mettapedia.KR.ConceptOntology.lowerFormedConceptInterpretation Γ (aggregate S σ)
 
 /-- Interpretation of permissively credally formed observation concepts. -/
 noncomputable def upperFormedConceptInterpretation
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs) :
     Mettapedia.KR.ConceptGeometry.AbstractInheritance.Interpretation (UpperFormedConcept S Γ σ) Obj Attr :=
   Mettapedia.KR.ConceptOntology.upperFormedConceptInterpretation Γ (aggregate S σ)
 
 omit [Fintype Gate] [Nonempty Gate] in
 @[simp] theorem lowerFormedConceptInterpretation_meaning
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : LowerFormedConcept S Γ σ) :
     (lowerFormedConceptInterpretation S Γ σ).meaning A = A.1 := rfl
 
 omit [Fintype Gate] [Nonempty Gate] in
 @[simp] theorem upperFormedConceptInterpretation_meaning
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : UpperFormedConcept S Γ σ) :
     (upperFormedConceptInterpretation S Γ σ).meaning A = A.1 := rfl
 
 omit [Fintype Gate] [Nonempty Gate] in
 @[simp] theorem mem_lowerConceptFamily_iff
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     A ∈ lowerConceptFamily S Γ σ ↔
@@ -716,7 +716,7 @@ omit [Fintype Gate] [Nonempty Gate] in
 
 omit [Fintype Gate] [Nonempty Gate] in
 @[simp] theorem mem_upperConceptFamily_iff
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     A ∈ upperConceptFamily S Γ σ ↔
@@ -725,7 +725,7 @@ omit [Fintype Gate] [Nonempty Gate] in
 
 omit [Fintype Gate] [Nonempty Gate] in
 @[simp] theorem mem_credalConceptFamily_lower_iff
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     A ∈ (credalConceptFamily S Γ σ).lower ↔
@@ -734,7 +734,7 @@ omit [Fintype Gate] [Nonempty Gate] in
 
 omit [Fintype Gate] [Nonempty Gate] in
 @[simp] theorem mem_credalConceptFamily_upper_iff
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     A ∈ (credalConceptFamily S Γ σ).upper ↔
@@ -743,7 +743,7 @@ omit [Fintype Gate] [Nonempty Gate] in
 
 omit [Fintype Gate] in
 theorem lowerConceptFamily_subset_upperConceptFamily
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs) :
     lowerConceptFamily S Γ σ ⊆ upperConceptFamily S Γ σ :=
   Mettapedia.KR.ConceptOntology.lowerConceptFamily_subset_upperConceptFamily
@@ -751,7 +751,7 @@ theorem lowerConceptFamily_subset_upperConceptFamily
 
 omit [Fintype Gate] in
 theorem credalConceptFamily_lower_subset_upper
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs) :
     (credalConceptFamily S Γ σ).lower ⊆ (credalConceptFamily S Γ σ).upper :=
   lowerConceptFamily_subset_upperConceptFamily S Γ σ
@@ -759,7 +759,7 @@ theorem credalConceptFamily_lower_subset_upper
 /-- A robust observation-formed concept can be viewed as an exact formed
 concept under any admissible gate. -/
 noncomputable def lowerFormedConceptAt
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (g : Gate) :
     LowerFormedConcept S Γ σ → FormedConcept S (Γ g) σ :=
@@ -767,7 +767,7 @@ noncomputable def lowerFormedConceptAt
 
 /-- A permissive observation-formed concept carries an exact gate witness. -/
 noncomputable def upperFormedConceptWitness
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs) :
     UpperFormedConcept S Γ σ →
       Σ g : Gate, FormedConcept S (Γ g) σ :=
@@ -776,21 +776,21 @@ noncomputable def upperFormedConceptWitness
 /-- Robust observation-formed concepts are permissively formed with the same
 underlying dual concept. -/
 noncomputable def lowerToUpperFormedConcept
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs) :
     LowerFormedConcept S Γ σ → UpperFormedConcept S Γ σ :=
   Mettapedia.KR.ConceptOntology.lowerToUpperFormedConcept Γ (aggregate S σ)
 
 omit [Fintype Gate] [Nonempty Gate] in
 @[simp] theorem lowerFormedConceptAt_val
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (g : Gate) (A : LowerFormedConcept S Γ σ) :
     (lowerFormedConceptAt S Γ σ g A).1 = A.1 := rfl
 
 omit [Fintype Gate] [Nonempty Gate] in
 @[simp] theorem upperFormedConceptWitness_val
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : UpperFormedConcept S Γ σ) :
     (upperFormedConceptWitness S Γ σ A).2.1 = A.1 := by
@@ -799,13 +799,13 @@ omit [Fintype Gate] [Nonempty Gate] in
 
 omit [Fintype Gate] in
 @[simp] theorem lowerToUpperFormedConcept_val
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : LowerFormedConcept S Γ σ) :
     (lowerToUpperFormedConcept S Γ σ A).1 = A.1 := rfl
 
 @[simp] theorem mem_upperConceptFamily_singleton_iff
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (G : EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     A ∈ upperConceptFamily S (Gate := PUnit) (fun _ => G) σ ↔
@@ -813,7 +813,7 @@ omit [Fintype Gate] in
   simp [upperConceptFamily, finiteConceptFamily]
 
 @[simp] theorem mem_lowerConceptFamily_singleton_iff
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (G : EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     A ∈ lowerConceptFamily S (Gate := PUnit) (fun _ => G) σ ↔
@@ -821,7 +821,7 @@ omit [Fintype Gate] in
   simp [lowerConceptFamily, finiteConceptFamily]
 
 theorem upperConceptFamilyFinset_singleton_eq
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (G : EvidenceGate Q) (σ : Multiset Obs) :
     upperConceptFamilyFinset S (Gate := PUnit) (fun _ => G) σ =
       finiteConceptFamily S G σ := by
@@ -830,7 +830,7 @@ theorem upperConceptFamilyFinset_singleton_eq
   simp [upperConceptFamilyFinset, finiteConceptFamily]
 
 theorem lowerConceptFamilyFinset_singleton_eq
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (G : EvidenceGate Q) (σ : Multiset Obs) :
     lowerConceptFamilyFinset S (Gate := PUnit) (fun _ => G) σ =
       finiteConceptFamily S G σ := by
@@ -841,7 +841,7 @@ theorem lowerConceptFamilyFinset_singleton_eq
 /-- Singleton gate uncertainty collapses robust observation-formed concepts
 back to the exact observation-formed carrier. -/
 noncomputable def lowerFormedConceptSingletonEquiv
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (G : EvidenceGate Q) (σ : Multiset Obs) :
     LowerFormedConcept S (Gate := PUnit) (fun _ => G) σ ≃
       FormedConcept S G σ :=
@@ -851,7 +851,7 @@ noncomputable def lowerFormedConceptSingletonEquiv
 /-- Singleton gate uncertainty collapses permissive observation-formed concepts
 back to the exact observation-formed carrier. -/
 noncomputable def upperFormedConceptSingletonEquiv
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (G : EvidenceGate Q) (σ : Multiset Obs) :
     UpperFormedConcept S (Gate := PUnit) (fun _ => G) σ ≃
       FormedConcept S G σ :=
@@ -859,26 +859,26 @@ noncomputable def upperFormedConceptSingletonEquiv
     G (aggregate S σ)
 
 @[simp] theorem lowerFormedConceptSingletonEquiv_val
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (G : EvidenceGate Q) (σ : Multiset Obs)
     (A : LowerFormedConcept S (Gate := PUnit) (fun _ => G) σ) :
     (lowerFormedConceptSingletonEquiv S G σ A).1 = A.1 := rfl
 
 @[simp] theorem upperFormedConceptSingletonEquiv_val
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (G : EvidenceGate Q) (σ : Multiset Obs)
     (A : UpperFormedConcept S (Gate := PUnit) (fun _ => G) σ) :
     (upperFormedConceptSingletonEquiv S G σ A).1 = A.1 := rfl
 
 noncomputable def conceptFormationGamble
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) : Gamble Gate :=
   Mettapedia.KR.ConceptOntology.conceptFormationGamble Γ (aggregate S σ) A
 
 omit [Fintype Gate] [Nonempty Gate] in
 @[simp] theorem conceptFormationGamble_apply
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) (g : Gate) :
     conceptFormationGamble S Γ σ A g =
@@ -888,7 +888,7 @@ omit [Fintype Gate] [Nonempty Gate] in
 
 omit [Fintype Gate] [Nonempty Gate] in
 theorem conceptFormationGamble_in_unit
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) (g : Gate) :
     conceptFormationGamble S Γ σ A g ∈ Set.Icc (0 : ℝ) 1 :=
@@ -896,7 +896,7 @@ theorem conceptFormationGamble_in_unit
     Γ (aggregate S σ) A g
 
 theorem lowerEnvelope_conceptFormationGamble_eq
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     lowerEnvelope (gateCredalSet (Gate := Gate))
@@ -907,7 +907,7 @@ theorem lowerEnvelope_conceptFormationGamble_eq
       (Gate := Gate) Γ (aggregate S σ) A
 
 theorem upperEnvelope_conceptFormationGamble_eq
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     upperEnvelope (gateCredalSet (Gate := Gate))
@@ -918,7 +918,7 @@ theorem upperEnvelope_conceptFormationGamble_eq
       (Gate := Gate) Γ (aggregate S σ) A
 
 theorem globalNaturalExtension_conceptFormationGamble_eq
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     (gateCredalProjectiveSpec (Gate := Gate)).globalNaturalExtension
@@ -929,7 +929,7 @@ theorem globalNaturalExtension_conceptFormationGamble_eq
       (Gate := Gate) Γ (aggregate S σ) A
 
 theorem globalEnvelopeWidth_conceptFormationGamble_eq
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     (gateCredalProjectiveSpec (Gate := Gate)).globalEnvelopeWidth
@@ -941,7 +941,7 @@ theorem globalEnvelopeWidth_conceptFormationGamble_eq
 
 omit [Fintype Gate] [Nonempty Gate] in
 theorem gateCredalProjectiveSpec_determinesGlobalGamble_conceptFormationGamble_iff
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     (gateCredalProjectiveSpec (Gate := Gate)).determinesGlobalGamble
@@ -953,7 +953,7 @@ theorem gateCredalProjectiveSpec_determinesGlobalGamble_conceptFormationGamble_i
 
 omit [Fintype Gate] [Nonempty Gate] in
 theorem gateCredalProjectiveSpec_hasStrictGlobalWidth_conceptFormationGamble_iff
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     (gateCredalProjectiveSpec (Gate := Gate)).hasStrictGlobalWidth
@@ -964,7 +964,7 @@ theorem gateCredalProjectiveSpec_hasStrictGlobalWidth_conceptFormationGamble_iff
       (Γ := Γ) (M := aggregate S σ) (A := A)
 
 theorem globalEnvelopeWidthComplement_conceptFormationGamble_eq
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     (gateCredalProjectiveSpec (Gate := Gate)).globalEnvelopeWidthComplement
@@ -975,7 +975,7 @@ theorem globalEnvelopeWidthComplement_conceptFormationGamble_eq
       (Gate := Gate) Γ (aggregate S σ) A
 
 theorem globalEnvelopeMidpoint_conceptFormationGamble_eq
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     (gateCredalProjectiveSpec (Gate := Gate)).globalEnvelopeMidpoint
@@ -987,37 +987,37 @@ theorem globalEnvelopeMidpoint_conceptFormationGamble_eq
       (Gate := Gate) Γ (aggregate S σ) A
 
 /-- Proof-carrying index for the observation-level credal concept-formation
-surface.
+interface.
 
 The profile keeps the active post-rule-family center readable without adding a
 new family of thin aliases: lower/upper membership, singleton crisp recovery,
 Walley/projective readouts, and strict-width/determination boundaries all route
-through the existing observation-surface theorems above. -/
+through the existing observation-encoder theorems above. -/
 structure CredalConceptFormationProfile where
   lowerSubsetUpper :
     ∀ {Obs Obj Attr Q Gate : Type} [AddCommMonoid Q] [Preorder Q]
       [Fintype Gate] [Nonempty Gate] [Fintype Obj] [Fintype Attr],
-      (S : ObservationSurface Obs Obj Attr Q) →
+      (S : ObservationEncoder Obs Obj Attr Q) →
       (Γ : Gate → EvidenceGate Q) → (σ : Multiset Obs) →
       lowerConceptFamily S Γ σ ⊆ upperConceptFamily S Γ σ
   lowerSingleton :
     ∀ {Obs Obj Attr Q : Type} [AddCommMonoid Q] [Preorder Q]
       [Fintype Obj] [Fintype Attr],
-      (S : ObservationSurface Obs Obj Attr Q) →
+      (S : ObservationEncoder Obs Obj Attr Q) →
       (G : EvidenceGate Q) → (σ : Multiset Obs) → (A : DualConcept Obj Attr) →
       A ∈ lowerConceptFamily S (Gate := PUnit.{1}) (fun _ => G) σ ↔
         A ∈ finiteConceptFamily S G σ
   upperSingleton :
     ∀ {Obs Obj Attr Q : Type} [AddCommMonoid Q] [Preorder Q]
       [Fintype Obj] [Fintype Attr],
-      (S : ObservationSurface Obs Obj Attr Q) →
+      (S : ObservationEncoder Obs Obj Attr Q) →
       (G : EvidenceGate Q) → (σ : Multiset Obs) → (A : DualConcept Obj Attr) →
       A ∈ upperConceptFamily S (Gate := PUnit.{1}) (fun _ => G) σ ↔
         A ∈ finiteConceptFamily S G σ
   naturalExtension :
     ∀ {Obs Obj Attr Q Gate : Type} [AddCommMonoid Q] [Preorder Q]
       [Fintype Gate] [Nonempty Gate] [Fintype Obj] [Fintype Attr],
-      (S : ObservationSurface Obs Obj Attr Q) →
+      (S : ObservationEncoder Obs Obj Attr Q) →
       (Γ : Gate → EvidenceGate Q) → (σ : Multiset Obs) →
       (A : DualConcept Obj Attr) →
       (gateCredalProjectiveSpec (Gate := Gate)).globalNaturalExtension
@@ -1026,7 +1026,7 @@ structure CredalConceptFormationProfile where
   envelopeWidth :
     ∀ {Obs Obj Attr Q Gate : Type} [AddCommMonoid Q] [Preorder Q]
       [Fintype Gate] [Nonempty Gate] [Fintype Obj] [Fintype Attr],
-      (S : ObservationSurface Obs Obj Attr Q) →
+      (S : ObservationEncoder Obs Obj Attr Q) →
       (Γ : Gate → EvidenceGate Q) → (σ : Multiset Obs) →
       (A : DualConcept Obj Attr) →
       (gateCredalProjectiveSpec (Gate := Gate)).globalEnvelopeWidth
@@ -1035,7 +1035,7 @@ structure CredalConceptFormationProfile where
   determines :
     ∀ {Obs Obj Attr Q Gate : Type} [AddCommMonoid Q] [Preorder Q]
       [Fintype Gate] [Nonempty Gate] [Fintype Obj] [Fintype Attr],
-      (S : ObservationSurface Obs Obj Attr Q) →
+      (S : ObservationEncoder Obs Obj Attr Q) →
       (Γ : Gate → EvidenceGate Q) → (σ : Multiset Obs) →
       (A : DualConcept Obj Attr) →
       (gateCredalProjectiveSpec (Gate := Gate)).determinesGlobalGamble
@@ -1044,7 +1044,7 @@ structure CredalConceptFormationProfile where
   strictWidth :
     ∀ {Obs Obj Attr Q Gate : Type} [AddCommMonoid Q] [Preorder Q]
       [Fintype Gate] [Nonempty Gate] [Fintype Obj] [Fintype Attr],
-      (S : ObservationSurface Obs Obj Attr Q) →
+      (S : ObservationEncoder Obs Obj Attr Q) →
       (Γ : Gate → EvidenceGate Q) → (σ : Multiset Obs) →
       (A : DualConcept Obj Attr) →
       (gateCredalProjectiveSpec (Gate := Gate)).hasStrictGlobalWidth
@@ -1053,7 +1053,7 @@ structure CredalConceptFormationProfile where
   widthComplement :
     ∀ {Obs Obj Attr Q Gate : Type} [AddCommMonoid Q] [Preorder Q]
       [Fintype Gate] [Nonempty Gate] [Fintype Obj] [Fintype Attr],
-      (S : ObservationSurface Obs Obj Attr Q) →
+      (S : ObservationEncoder Obs Obj Attr Q) →
       (Γ : Gate → EvidenceGate Q) → (σ : Multiset Obs) →
       (A : DualConcept Obj Attr) →
       (gateCredalProjectiveSpec (Gate := Gate)).globalEnvelopeWidthComplement
@@ -1062,7 +1062,7 @@ structure CredalConceptFormationProfile where
   midpoint :
     ∀ {Obs Obj Attr Q Gate : Type} [AddCommMonoid Q] [Preorder Q]
       [Fintype Gate] [Nonempty Gate] [Fintype Obj] [Fintype Attr],
-      (S : ObservationSurface Obs Obj Attr Q) →
+      (S : ObservationEncoder Obs Obj Attr Q) →
       (Γ : Gate → EvidenceGate Q) → (σ : Multiset Obs) →
       (A : DualConcept Obj Attr) →
       (gateCredalProjectiveSpec (Gate := Gate)).globalEnvelopeMidpoint
@@ -1091,6 +1091,6 @@ def credalConceptFormationProfile : CredalConceptFormationProfile where
   midpoint := fun S Γ σ A =>
     globalEnvelopeMidpoint_conceptFormationGamble_eq S Γ σ A
 
-end ObservationSurface
+end ObservationEncoder
 
 end Mettapedia.KR.ConceptOntology

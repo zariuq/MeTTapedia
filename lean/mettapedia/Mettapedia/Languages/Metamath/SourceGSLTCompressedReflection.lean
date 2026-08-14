@@ -304,6 +304,7 @@ noncomputable def headerStep_runtimeReflected
     (agreement : MachineAgrees db source target before runtimeBefore)
     (mandatoryMember : ∀ hypothesis : HypothesisView,
       item = .mandatory hypothesis → hypothesis ∈ source.activeHypotheses)
+    (itemAdmitted : item.Admitted)
     (accepted :
       db.preload runtimeBefore (headerRuntimeLabel item) = .ok runtimeAfter) :
     Σ middle : MachineState source target,
@@ -321,7 +322,7 @@ noncomputable def headerStep_runtimeReflected
         Except.ok.inj (accepted.symm.trans canonicalStep)
       subst hruntime
       exact ⟨_, .mandatory before hypothesis member, nextAgreement⟩
-  | explicit label =>
+  | explicit mandatoryItems label =>
       cases hfind : db.find? label with
       | none =>
           exact absurd
@@ -349,14 +350,14 @@ noncomputable def headerStep_runtimeReflected
                 obtain ⟨runtimeCanonical, canonicalStep, nextAgreement,
                     _incomplete⟩ :=
                   headerStep_runtimePreserved db hproject runtimeBefore
-                    (HeaderStep.explicitHypothesis before label hexists.choose
-                      member label_eq) agreement
+                    (HeaderStep.explicitHypothesis before mandatoryItems label
+                      hexists.choose member itemAdmitted label_eq) agreement
                 have hruntime : runtimeAfter = runtimeCanonical :=
                   Except.ok.inj (accepted.symm.trans canonicalStep)
                 subst hruntime
                 exact ⟨_,
-                  .explicitHypothesis before label hexists.choose member
-                    label_eq,
+                  .explicitHypothesis before mandatoryItems label
+                    hexists.choose member itemAdmitted label_eq,
                   nextAgreement⟩
               · exact absurd
                   (accepted.symm.trans
@@ -372,13 +373,14 @@ noncomputable def headerStep_runtimeReflected
               obtain ⟨runtimeCanonical, canonicalStep, nextAgreement,
                   _incomplete⟩ :=
                 headerStep_runtimePreserved db hproject runtimeBefore
-                  (HeaderStep.explicitAssertion before label hexists.choose
-                    member label_eq) agreement
+                  (HeaderStep.explicitAssertion before mandatoryItems label
+                    hexists.choose member itemAdmitted label_eq) agreement
               have hruntime : runtimeAfter = runtimeCanonical :=
                 Except.ok.inj (accepted.symm.trans canonicalStep)
               subst hruntime
               exact ⟨_,
-                .explicitAssertion before label hexists.choose member label_eq,
+                .explicitAssertion before mandatoryItems label hexists.choose
+                  member itemAdmitted label_eq,
                 nextAgreement⟩
 
 /-! ## The reflected header build -/
@@ -403,16 +405,17 @@ noncomputable def headerBuild_runtimeReflected
       (∀ hypothesis : HypothesisView,
         HeaderItem.mandatory hypothesis ∈ items →
           hypothesis ∈ source.activeHypotheses) →
+      (∀ item, item ∈ items → item.Admitted) →
       Σ after : MachineState source target,
         HeaderBuild items before after ×'
         MachineAgrees db source target after runtimeAfter
-  | [], before, runtimeBefore, runtimeAfter, agreement, hfold, _ => by
+  | [], before, runtimeBefore, runtimeAfter, agreement, hfold, _, _ => by
       simp only [List.map_nil, List.foldlM_nil] at hfold
       have hid : runtimeBefore = runtimeAfter := optionExceptOk_inj hfold
       subst hid
       exact ⟨before, HeaderBuild.nil before, agreement⟩
   | item :: rest, before, runtimeBefore, runtimeAfter, agreement,
-      hfold, hmand => by
+      hfold, hmand, hadmitted => by
       simp only [List.map_cons, List.foldlM_cons] at hfold
       cases hstep : db.preload runtimeBefore
           (headerRuntimeLabel item) with
@@ -426,11 +429,14 @@ noncomputable def headerBuild_runtimeReflected
               runtimeMiddle agreement
               (fun hypothesis hitem =>
                 hmand hypothesis (hitem ▸ List.Mem.head _))
+              (hadmitted item (List.Mem.head _))
               hstep
           obtain ⟨after, build, agreeAfter⟩ :=
             headerBuild_runtimeReflected db hproject agreeMiddle hfold
               (fun hypothesis hmem =>
                 hmand hypothesis (List.Mem.tail _ hmem))
+              (fun restItem hmem =>
+                hadmitted restItem (List.Mem.tail _ hmem))
           exact ⟨after, HeaderBuild.cons step build, agreeAfter⟩
 
 /-! ## Shipped acceptance reconstructs the theorem step -/
@@ -489,6 +495,9 @@ noncomputable def compressedTheoremStep_of_mmLean4
         (fun state l => db.preload state l)
         { runtimeBase with heap := #[], stack := #[] }) =
         .ok runtimeInitial)
+    (hheaderAdmitted : ∀ explicitLabel ∈ explicitHeaderLabels,
+      explicitLabel ∉
+        (mandatoryHypotheses before formula).map HypothesisView.label)
     (hactions :
       ParserState.applyCompressedActions db runtimeInitial
         (actions.map toMMLean4Action) = .ok runtimeFinal)
@@ -507,10 +516,22 @@ noncomputable def compressedTheoremStep_of_mmLean4
       exact List.mem_of_mem_filter hh₀
     · obtain ⟨l₀, hl₀, heq⟩ := List.mem_map.mp hright
       exact nomatch heq
+  have hadmitted : ∀ item,
+      item ∈ headerItems before formula explicitHeaderLabels →
+      item.Admitted := by
+    intro item hmem
+    unfold headerItems at hmem
+    rcases List.mem_append.mp hmem with hleft | hright
+    · obtain ⟨hypothesis, _hhypothesis, heq⟩ := List.mem_map.mp hleft
+      subst item
+      trivial
+    · obtain ⟨explicitLabel, hexplicit, heq⟩ := List.mem_map.mp hright
+      subst item
+      exact hheaderAdmitted explicitLabel hexplicit
   obtain ⟨initialState, headerBuild, agreementInitial⟩ :=
     headerBuild_runtimeReflected db hproject
       (emptyMachineAgrees db before.toSourcePrefix target runtimeBase)
-      hheader hmand
+      hheader hmand hadmitted
   obtain ⟨finalState, execution, agreementFinal⟩ :=
     execute_mmLean4Reflected actions db hpres hproject runtimeInitial
       runtimeFinal agreementInitial hverified hactions

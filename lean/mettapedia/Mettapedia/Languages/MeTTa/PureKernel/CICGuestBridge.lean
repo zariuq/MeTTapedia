@@ -166,11 +166,6 @@ def cicStage3Boundary :
     cicStage3SignatureWellFormed
     cicStage3Specs_allNone
 
-private theorem defaultBinderName_injective : Function.Injective defaultBinderName := by
-  intro a b hab
-  rw [← natStringValue_repr a, ← natStringValue_repr b]
-  simpa [defaultBinderName, natStringValue, parseDigits, digitNat] using congrArg natStringValue hab
-
 private theorem defaultBinderName_quoteCompat0 :
     QuoteCompat defaultBinderName 0 emptyEnv :=
   quoteCompat_empty defaultBinderName defaultBinderName_injective 0

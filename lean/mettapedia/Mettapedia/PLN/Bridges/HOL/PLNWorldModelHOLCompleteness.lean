@@ -135,16 +135,16 @@ theory-model abstraction:
 This makes the landed completeness theorem load-bearing for WM-PLN at the
 model-class grounding layer, even before the stronger proof-theoretic
 `provable ↔ consequence` bridge is finished for the public no-assumptions
-surface.
+interface.
 -/
 
-/-- The actual classical Henkin theory surface used by HO WM-PLN. -/
+/-- The actual classical Henkin theory interface used by HO WM-PLN. -/
 abbrev ClassicalHOLTheory := ClosedTheorySet (WithParams Const)
 
-/-- Closed HOL queries over the parameter-extended classical surface. -/
+/-- Closed HOL queries over the parameter-extended classical interface. -/
 abbrev ClassicalHOLQuery := HOLQuery (Base := Base) (WithParams Const)
 
-/-- Pointed Henkin models over the parameter-extended classical surface. -/
+/-- Pointed Henkin models over the parameter-extended classical interface. -/
 abbrev ClassicalHOLPointed := Mettapedia.Logic.HOL.HenkinModel.{u, v, v} Base (WithParams Const)
 
 /-- WM states built from classical Henkin models of a higher-order theory. -/
@@ -259,7 +259,7 @@ theorem pointwiseImpliesOnTheory_iff_singletonConsequenceOnTheory
   pointwiseImpliesOnTheory_iff_singletonStrengthLEOnTheory
     T φ ψ
 
-/-- Sound theory-relative implication surface for HO WM-PLN:
+/-- Sound theory-relative implication interface for HO WM-PLN:
 a finite higher-order derivation of `φ → ψ` from assumptions drawn from `T`. -/
 def derivableImpOnTheory
     (T : ClosedTheorySet (WithParams Const))

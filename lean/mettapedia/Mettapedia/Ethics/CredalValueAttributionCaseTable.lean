@@ -8,7 +8,7 @@ import Mettapedia.KR.ConceptGeometry.Bridges.ProbabilityTheory.EmpiricalIntensio
 # Credal Value Attribution from Case Tables
 
 Tiny reusable interface for case-driven moral-value attribution over the
-uncertainty-native credal concept-formation surface.
+uncertainty-native credal concept-formation interface.
 -/
 
 namespace Mettapedia.Ethics

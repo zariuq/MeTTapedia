@@ -10,5 +10,5 @@ import Mettapedia.Languages.IMP.SpecProfile
 Imperative core language package:
 - Lean `LanguageDef` with explicit continuation/state semantics
 - lookup, transition, rewrite, and syntax-profile artifacts
-- Lean-side export surface for mettail-rust consumption
+- Lean-side export interface for mettail-rust consumption
 -/

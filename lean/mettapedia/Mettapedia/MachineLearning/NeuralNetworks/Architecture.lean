@@ -49,7 +49,7 @@ import Mettapedia.MachineLearning.NeuralNetworks.Architecture.TrainingSelectorFi
 /-!
 # Neural-network state-carrier architecture
 
-This import surface collects typed relation-graph compilation, the abstract
+This import interface collects typed relation-graph compilation, the abstract
 state-carrier calculus, observational-equivalence, execution-semantics, and
 routing-expansion boundaries, observable equilibrium, checker-mediated
 accepted behavior, and the recurrent, workspace, belief, and routed CAROM

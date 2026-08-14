@@ -3,7 +3,7 @@ import Mettapedia.PLN.RuleFamilies.FirstOrder.Quantifiers.FuzzyQuantifierSemanti
 /-!
 # Arbitrary-Domain Fuzzy Quantifier Soundness
 
-Theorem surface for the general-domain fuzzy quantifier layer.
+Theorem family for the general-domain fuzzy quantifier layer.
 -/
 
 namespace Mettapedia.PLN.RuleFamilies.FirstOrder.Quantifiers

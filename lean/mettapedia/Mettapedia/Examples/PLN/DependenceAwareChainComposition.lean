@@ -5,7 +5,7 @@ import Mettapedia.Examples.PLN.MapleCourtOverlapDemo
 /-!
 # Dependence-aware chain-composition examples
 
-Positive and negative fixtures for the W1 two-hop composition surface.
+Positive and negative fixtures for the W1 two-hop composition interface.
 -/
 
 namespace Mettapedia.Examples.PLN.DependenceAwareChainComposition

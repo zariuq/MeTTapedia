@@ -158,7 +158,7 @@ theorem wr_wor_patternRate_of_certified_surrogate
       (hwr_q := hwr s)
       (hcert := hcert s)
 
-/-- Archive-style large-`R` wrapper name on the active rebuilt surface.
+/-- Archive-style large-`R` wrapper name on the active rebuilt implementation.
 This mirrors the old route-A shape while consuming certified checkers. -/
 theorem largeR_wr_wor_patternRate_of_canonicalWRSurrogate_largeR_certified
     (core : QuantitativeCore (σ := σ) (β := β))

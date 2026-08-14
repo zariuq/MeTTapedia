@@ -42,7 +42,7 @@ MetaMo is a six-file motivational Q-module framework.
   - MetaMo/Dynamics.lean proves stability via Banach fixed-point arguments
 
 - `MetaMo/Main.lean`
-  - MetaMo/Main.lean aggregates the MetaMo module surface
+  - MetaMo/Main.lean aggregates the MetaMo module interface
 
 ### OpenPsi
 

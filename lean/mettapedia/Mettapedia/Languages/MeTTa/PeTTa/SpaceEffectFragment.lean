@@ -139,7 +139,7 @@ theorem addAtom_fireSourceRule_mem (p : ILPattern)
   simp only [addAtomSourceExecRule, matchInputSpec, matchSourceFactors]
   -- Unfold the single-factor go
   show _ ∈ matchSourceFactors.go workspace [.btm addAtomCmdAtom] [] ∅
-  simp only [matchSourceFactors.go, matchSourceFactor, Finset.sdiff_empty]
+  simp only [matchSourceFactors.go, matchSourceFactor]
   apply List.mem_flatMap.mpr
   exact ⟨([("x", morkPatternToAtom p)],
     morkPatternToAtom (.apply "add-atom" [.apply "&self" [], p])),
@@ -159,7 +159,7 @@ theorem removeAtom_fireSourceRule_mem (p : ILPattern)
     {morkPatternToAtom (.apply "remove-atom" [.apply "&self" [], p])}), ?_, rfl⟩
   simp only [removeAtomSourceExecRule, matchInputSpec, matchSourceFactors]
   show _ ∈ matchSourceFactors.go workspace [.btm removeAtomCmdAtom] [] ∅
-  simp only [matchSourceFactors.go, matchSourceFactor, Finset.sdiff_empty]
+  simp only [matchSourceFactors.go, matchSourceFactor]
   apply List.mem_flatMap.mpr
   exact ⟨([("x", morkPatternToAtom p)],
     morkPatternToAtom (.apply "remove-atom" [.apply "&self" [], p])),

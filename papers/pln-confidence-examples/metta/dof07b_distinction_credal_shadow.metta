@@ -5,7 +5,7 @@
 ;   distinction/credal bridge.
 ;
 ; THE KNOB.  Limited observational resolution can leave multiple admissible
-;   worlds live. They can agree on the same marginal STV-style surface while
+;   worlds live. They can agree on the same marginal STV-style summary while
 ;   disagreeing on a hidden joint or distinction-sensitive query.
 ;
 ; WHY KEEP IT.  Two models can both show the same marginal belief about A while

@@ -4,7 +4,7 @@ import Mettapedia.KR.ConceptOntology.LoopConjectureScrutability
 # Construction Base
 
 This module packages the existing closure and credal machinery into a thin
-`Abstract / Phenomena / Indexicality` surface.
+`Abstract / Phenomena / Indexicality` interface.
 
 The intent is not to create a parallel theory. Instead, it gives a higher-level
 reframing layer:

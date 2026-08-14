@@ -4,6 +4,6 @@ import Mettapedia.KR.ConceptGeometry.Bridges.UniversalAI.IntensionalInheritanceS
 /-!
 # Concept Geometry ↔ UniversalAI Bridges
 
-Bridge surfaces from intensional inheritance to Solomonoff/universal-prediction
+Bridge interfaces from intensional inheritance to Solomonoff/universal-prediction
 and approximation machinery.
 -/

@@ -12,7 +12,7 @@ import Mettapedia.Ethics.FOETCore
 /-!
 # GodelClaw Ethics WM Grounding
 
-Preferred import surface for the ethics-to-WM grounding lane.
+Preferred import interface for the ethics-to-WM grounding lane.
 
 Architecture:
 
@@ -30,7 +30,7 @@ Architecture:
 - `Ontology.HyperseedBridge` composes the richer ontology claims with Hyperseed
   traces and the protected-goal theorems.
 
-This is the intended public surface for a SUMO-light, ontology-respecting
+This is the intended public interface for a SUMO-light, ontology-respecting
 extraction path.
 -/
 
@@ -42,7 +42,7 @@ open Mettapedia.Ethics.Gewirth
 /-- Preferred public correctness bridge on the live Gewirth trust-triangle
 lane.
 
-This is the primary story the public GodelClaw ethics surface should tell:
+This is the primary story the public GodelClaw ethics interface should tell:
 the same PGC/purposive-agency witness yields both ontology-side satisfaction of
 the upper-shard claim and DDL-grounded WM positive evidence for the
 corresponding obligation. -/
@@ -74,7 +74,7 @@ theorem gewirthTrustTriangle_primaryWMGrounding_of_PPA
 universal-duty / non-maleficence lane.
 
 This exposes the strengthened no-harm path as a first-class theorem at the
-public grounding surface: the trust-triangle structured ESO model satisfies the
+public grounding interface: the trust-triangle structured ESO model satisfies the
 claim, and the compiled WM query receives positive support on the canonical
 carrier semantics. -/
 theorem trustTriangle_nonMaleficence_primaryWMGrounding :
@@ -105,7 +105,7 @@ theorem trustTriangle_consent_primaryWMGrounding :
 
 /-- Public non-Gewirth bridge on the privacy-disclosure autonomy lane.
 
-This theorem widens the public grounding surface beyond the trust triangle:
+This theorem widens the public grounding interface beyond the trust triangle:
 the structured source model satisfies the ask-consent obligation, and the live
 privacy-disclosure practical-lowering query receives positive WM support on the
 named autonomy region. -/
@@ -122,7 +122,7 @@ theorem privacyDisclosure_autonomy_primaryWMGrounding :
 
 /-- Public non-Gewirth bridge on the force-escalation protection lane.
 
-This theorem widens the public grounding surface with the first live
+This theorem widens the public grounding interface with the first live
 consequentialist case study: the `lockDown` action carries a candidate-local
 ground witness, is satisfied in the structured source model, and its practical
 lowering receives positive WM support on the named protection region. -/

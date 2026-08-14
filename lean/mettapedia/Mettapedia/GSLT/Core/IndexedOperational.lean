@@ -1,4 +1,5 @@
 import Mathlib.CategoryTheory.Presentable.Finite
+import Mettapedia.GSLT.Core.ClosureCriteria
 import Mettapedia.GSLT.Core.UltrainfiniteTransport
 import Mettapedia.OSLF.Framework.GSLTTypeSynthesis
 
@@ -35,6 +36,7 @@ open CategoryTheory
 open CategoryTheory.Limits
 open scoped CategoryTheory
 open Mettapedia.GSLT
+open Mettapedia.GSLT.Core.ClosureCriteria
 open Mettapedia.GSLT.Ultrainfinite
 open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
 
@@ -79,6 +81,36 @@ def comp {first : GSLT.{uSourceTerm}} {middle : GSLT.{uMiddleTerm}}
   mapTerm := later.mapTerm ∘ earlier.mapTerm
   mapEquiv := fun equivalent => later.mapEquiv (earlier.mapEquiv equivalent)
   mapStep := fun step => later.mapStep (earlier.mapStep step)
+
+/-- Forward operational transport retains the selected two-step execution
+witness rather than merely proving an existential preservation fact. -/
+def mapComposableStepWitness
+    {source : GSLT.{uSourceTerm}} {target : GSLT.{uTargetTerm}}
+    (translation : OperationalTranslation source target)
+    (witness : ComposableStepWitness source) :
+    ComposableStepWitness target :=
+  witness.map translation.mapTerm translation.mapStep
+
+/-- Every forward operational translation preserves internal re-entry. -/
+theorem preserves_hasComposableSteps
+    {source : GSLT.{uSourceTerm}} {target : GSLT.{uTargetTerm}}
+    (translation : OperationalTranslation source target)
+    (sourceReentry : HasComposableSteps source) :
+    HasComposableSteps target := by
+  obtain ⟨witness⟩ := sourceReentry
+  exact ⟨translation.mapComposableStepWitness witness⟩
+
+/-- A composable source cannot translate forward into a theory whose every
+one-step target is terminal.  This obstruction concerns step preservation;
+it does not assume injectivity, reflection, or observation adequacy. -/
+theorem no_translation_to_oneStepTerminal
+    {source : GSLT.{uSourceTerm}} {target : GSLT.{uTargetTerm}}
+    (sourceReentry : HasComposableSteps source)
+    (targetTerminal : OneStepTerminal target) :
+    ¬ Nonempty (OperationalTranslation source target) := by
+  rintro ⟨translation⟩
+  exact targetTerminal.not_hasComposableSteps
+    (translation.preserves_hasComposableSteps sourceReentry)
 
 end OperationalTranslation
 

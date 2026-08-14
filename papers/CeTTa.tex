@@ -81,7 +81,7 @@ The runtime is organized as an explicit profile family:
 the principled \code{he} line carries exact rationals, true division,
 and per-case recorded divergences; \code{he-extended} adds labeled
 extensions; \code{he-prime} adds dependent telescopes.  The one-step
-reduction relation is reflected into MeTTa itself as a modal surface
+reduction relation is reflected into MeTTa itself as a modal layer
 (\code{transitions}, \code{box}, \code{diamond}, normal-form tests)
 aligned with the OSLF
 $\mathrm{LanguageDef}\to\mathrm{ReductionSpan}\to\Diamond/\Box$
@@ -164,7 +164,7 @@ Three implementations exist:
   per-build gate replays 23 \HE{} I/O semantic fixtures against the
   \HE{}~v0.2.10 baseline, while broader generated catalogs remain audit
   material rather than headline claims (Section~\ref{sec:specdriven}).
-\item A reflective modal LTS surface over the evaluator's one-step
+\item A reflective modal LTS layer over the evaluator's one-step
   reduction relation---successor set, $\Box$/$\Diamond$,
   normal-form tests---with runtime De~Morgan self-tests mirroring the
   Galois connection proven in the Lean OSLF framework.
@@ -272,7 +272,7 @@ snapshot on commit 9237afd:
 \textbf{401 passed, 0 failed, 75 skipped} on the MORK-bridge build
 (all bridge sub-lanes green), plus 112 profile tests covering module
 imports, foreign (Python) function dispatch, numeric-tower and
-profile-surface splits, and extension surfaces.  Two further lanes are
+profile-builtin splits, and extension builtins.  Two further lanes are
 fail-by-default: \code{make test-step-rules} disables individual
 rule-table entries and \emph{requires} the witnesses to fail
 (Section~\ref{sec:specdriven}), and the semantic conformance suite
@@ -304,7 +304,7 @@ targets reuse their binaries instead of recursively relinking \CeTTa{}.
 is a named object, not an emergent property of the implementation}.
 This section describes the profile family, the oracle-conformance
 campaign against upstream \HE{}, the evaluator bug classes that
-campaign exposed, the reflective modal surface over the one-step
+campaign exposed, the reflective modal layer over the one-step
 reduction relation, and the first welded rule pack that makes the
 reduction rules themselves runtime data.
 
@@ -330,12 +330,19 @@ layers---never as visibility masks over one shared universe:
   \code{math:mod}, and the clean \code{math:} namespace over the
   Rust-heritage \code{*-math} ops.  Extensions that accept more
   programs (e.g.\ two-argument \code{if}) are deliberate, recorded
-  surface choices.
+  semantic choices.
 \item[\code{he-extended}] \code{he} plus labeled \CeTTa{} extensions:
   typed space kinds, \code{with-space-snapshot}, the \code{lts}
-  reflection surface, MORK/PathMap-backed spaces.
+  reflection layer, MORK/PathMap-backed spaces.
 \item[\code{he-prime}] The dependent-telescope extension
   (Section~\ref{sec:heprime}).
+\item[\code{petta/typecheck-v2}] The \PeTTa{} dialect with the native,
+  Roman-compatible residual type checker enabled.
+\item[\code{petta/typecheck-v3}] A native refinement of v2's success-typing
+  core, with whole-block fallback to v2 for mechanisms outside the factored
+  calculus.  The ordinary \code{--lang petta} profile remains unchanged;
+  typing is an explicit opt-in semantic product, not a hidden mode of
+  evaluation.
 \end{description}
 
 Two rules keep this family honest.  First, unknown symbols stay
@@ -347,6 +354,253 @@ splits with named tests (e.g.\ \code{profile\_if\_compat\_arity}
 pins that \code{he-compat} rejects two-argument \code{if} exactly as
 upstream does, while \code{he}/\code{he-extended} accept it as a
 recorded extension).
+
+\subsection{The \PeTTa{} Typecheck Profile and Its Native Refinement}
+\label{sec:petta-typecheck}
+
+\paragraph{The operational profile.}
+\PeTTa{}'s type checker is exposed as an explicit profile:
+
+\begin{lstlisting}
+cetta --lang petta --profile typecheck-v2 --silent program.metta
+cetta --lang petta --profile typecheck-v3 --silent program.metta
+\end{lstlisting}
+
+The profile performs \emph{success typing}: it rejects a definition only
+when static evidence identifies a concrete incompatibility, while incomplete
+search and missing information remain distinct from a negative verdict.  It
+is residual in the practical sense that the checker reasons about the values
+and clause-selection behavior that may remain after \PeTTa{} reduction,
+rather than treating a type annotation as a nominal label.  The compatibility
+implementation is qualified against a fixed Roman-checker snapshot, but that
+snapshot is a measuring instrument only; new implementation and migration
+work targets the current upstream language.
+
+The typing profile is isolated in both directions.  Running ordinary
+\code{--lang petta} does not activate its operations or pay its admission
+boundary, and a build may omit the v2 checker physically.  Conversely, the
+typed profile obtains declarations and expression facts from the live program
+revision rather than copying a second user-visible type space.  At the
+2026-08-14 qualification snapshot, the operational v2 corpus contains 389
+oracle-classified cases: 164 acceptances and 225 clean rejections, all in
+agreement.
+
+\paragraph{From a large checker to a small theory.}
+The native v3 work did not transliterate thousands of lines of checker code.
+Instead, each observed v2 decision was reduced to a minimal witness, grouped
+by mechanism, and factored into four independent axes.  The resulting
+calculus was formalized first and only then mirrored into the executable
+LanguageDef.
+
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}[
+  node distance=7mm and 9mm,
+  box/.style={draw, rounded corners, align=center, minimum height=9mm,
+              text width=29mm, font=\small},
+  live/.style={box, fill=blue!7},
+  proof/.style={box, fill=green!9},
+  exec/.style={box, fill=orange!10},
+  every edge/.style={draw, -{Latex[length=2mm]}}
+]
+\node[live] (oracle) {operational v2\\compatibility oracle};
+\node[live, right=of oracle] (census) {minimal witnesses\\and semantic census};
+\node[proof, right=of census] (axes) {four-axis\\success-typing calculus};
+\node[proof, below=of axes] (lean) {Lean definitions,\\decision procedures, laws};
+\node[exec, left=of lean] (langdef) {ordered v3\\LanguageDef rules};
+\node[exec, left=of langdef] (native) {generated plan $+$\\native provider adapter};
+\node[live, below=of census] (diff) {differential classifier:\\agree / fix / migration};
+\path (oracle) edge (census)
+      (census) edge (axes)
+      (axes) edge (lean)
+      (lean) edge (langdef)
+      (langdef) edge (native)
+      (oracle) edge[dashed] (diff)
+      (native) edge[dashed] (diff);
+\end{tikzpicture}
+\caption{Distillation, not cloning.  The compatibility checker supplies
+observations; the v3 implementation is generated from a factored calculus.
+V2 is never used as a v3 fact interface: the two meet only at a compatibility
+or differential boundary.}
+\label{fig:petta-typecheck-distillation}
+\end{figure}
+
+The four axes are:
+
+\begin{center}
+\begin{tabular}{p{.19\linewidth}p{.34\linewidth}p{.37\linewidth}}
+\toprule
+Axis & Native object & Governing distinction \\
+\midrule
+Shape compatibility
+  & directional consistency on primitive, list, product, union, arrow,
+    alias, and nominal-newtype shapes
+  & an actual union is universal; a required union is existential; unknown
+    is compatible ignorance, not a proof of equality \\
+Result cardinality
+  & the grade order $\mathsf{det}\leq\mathsf{semidet}\leq\mathsf{nondet}$
+    and grade sequencing
+  & a deterministic promise cannot be discharged by a computation that may
+    fail or branch; effect variables remain polymorphic \\
+Stage evidence
+  & held, evaluated, and compiled evidence, with an explicit grounding
+    license
+  & quoted code does not masquerade as its executed value; grounding requires
+    compiled-stage evidence \\
+Open-world knowledge
+  & unknown, empty, or positively typed result evidence, plus selector facts
+  & ignorance yields \emph{undetermined}; exhaustion yields
+    \emph{incomplete}; only a replayable conflict yields \emph{refuted} \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The first row explains an initially surprising polarity law.  If a value is
+known to be a \code{Number}, a requirement of
+\code{(| Number String)} is satisfied by one member.  If the value itself may
+be either \code{Number} or \code{String}, a \code{Number}-only requirement is
+unsafe because \emph{every} actual alternative must be admissible.  Thus
+consistency is deliberately directional and, in the presence of unknown
+information, deliberately non-transitive.
+
+\paragraph{A source-level example.}
+The following selector is total on proper lists.  The identity
+\code{let*} and its administrative alias must preserve both the
+\code{List Number} shape and the deterministic grade:
+
+\begin{lstlisting}
+(: keep-number (-[det]-> Number Number))
+(= (keep-number $x) $x)
+
+(: select-list
+   (-[$effect]-> (List Number)
+                 (-[$effect]-> Number Number)
+                 Number))
+(= (select-list () $k) ($k 0))
+(= (select-list (cons $head $tail) $k) ($k $head))
+
+(: caller (-[det]-> Number))
+(= (caller)
+   (select-list
+      (let* (($source (cons 1 ()))
+             ($items  $source))
+        $items)
+      keep-number))
+\end{lstlisting}
+
+v3 accepts \code{caller}: lexical names elaborate to de Bruijn indices,
+alias resolution transports the original runtime evidence, and the selector
+consumes the positive proper-list fact.  Replacing
+\code{(cons 1 ())} by \code{1} is the negative mirror: the alias still
+transports evidence exactly, so the call is rejected at the named shape
+boundary rather than accidentally acquiring a list fact.  Replacing the
+producer by a nondeterministic superposition of Booleans similarly preserves
+shape but fails a deterministic cardinality promise.  These paired examples
+ensure that ``transport'' means preservation, not widening.
+
+Stage evidence supplies a second compact example:
+
+\begin{lstlisting}
+(: Count (Newtype Number))
+
+(: held-count (-[det]-> Count))
+(= (held-count) (quote (brand Count 1)))      ; rejected: held code
+
+(: evaluated-count (-[det]-> Count))
+(= (evaluated-count)
+   (eval (quote (brand Count 1))))            ; accepted: reactivated
+\end{lstlisting}
+
+Quotation preserves latent evidence but does not expose it as runtime typing
+evidence.  Only the explicit \code{eval} transition reactivates it.  Native
+v3 therefore rejects \code{held-count} and establishes
+\code{evaluated-count}; the latter is recorded as a named refinement and
+continues to follow v2 until that refinement is explicitly promoted.  This is
+why the calculus can make the historical source-grounding defect
+unrepresentable: source shape alone cannot construct a grounding license.
+
+\paragraph{Runtime authority and status.}
+The executable checker sees program state through exactly five
+revision-keyed fact interfaces:
+\begin{lstlisting}
+EnvDeclared              EnvDeclaredList
+EnvNonNewtype            KnownExpressionEffect
+KnownExpressionResultType
+\end{lstlisting}
+They derive facts from the live \PeTTa{} program; they do not call v2 to
+manufacture v3 answers.
+
+\begin{figure}[ht]
+\centering
+\begin{tikzpicture}[
+  node distance=8mm and 7mm,
+  box/.style={draw, rounded corners, align=center, minimum height=10mm,
+              text width=28mm, font=\small},
+  every edge/.style={draw, -{Latex[length=2mm]}}
+]
+\node[box, fill=blue!7] (block) {one mutually visible\\declaration block};
+\node[box, fill=green!9, right=of block] (native) {native v3 judgment\\Exact / Gradual / Conflict};
+\node[box, fill=gray!10, below=of native] (legacy) {v2 compatibility\\judgment};
+\node[box, fill=orange!10, right=of native] (router) {whole-block router};
+\node[box, fill=orange!10, right=of router] (verdict) {one product verdict};
+\node[box, fill=green!9, below=of verdict] (license) {revision-bound\\optimization license};
+\path (block) edge (native)
+      (block) edge[bend right=16] (legacy)
+      (native) edge (router)
+      (legacy) edge (router)
+      (router) edge (verdict)
+      (router) edge node[above,sloped,font=\scriptsize]{Exact agreement only} (license);
+\end{tikzpicture}
+\caption{The KISS compatibility waist.  Routing is per complete block, so a
+recursive definition group never mixes authorities.  A gradual result,
+conflict, unpromoted refinement, or legacy route cannot mint an optimization
+license.}
+\label{fig:petta-typecheck-authority}
+\end{figure}
+
+At the same 2026-08-14 snapshot, the Lean core contains the executable
+sound-and-complete consistency decision procedure, the cardinality and stage
+algebras, lexical evidence transport, products, aliases, rational-tree
+boundedness, and the Exact/Gradual/Conflict seam, with no holes.  Its ordered
+LanguageDef mirror contains 149 rules (134 core and 15 seam rules) and passes
+three order/multiplicity mutation canaries.  The isolated native harness
+passes 353/353 checks, including product canaries that distinguish exact
+agreement from rejection and gradual fallback.  All 51 census-selected
+source candidates are executable end to end.  In particular, v3 derives
+undeclared result/effect
+contracts from the revision-keyed live equation set, retains heterogeneous
+results as precise unions, and distinguishes proved concrete selection from
+unresolved open patterns.
+
+The complete 389-case differential classifies 214 cases as native agreement,
+four as named refinements, and 171 as whole-block legacy-v2, with zero
+unclassified, incomplete, or faulted cases.  Current-upstream PeTTaChainer
+qualification passes all three representative programs after small,
+semantics-preserving migrations that replace effect-polymorphic traversal
+helpers with explicit typed recursion.  The no-typecheck profile and v3 both
+match the PeTTa reference on those programs.
+
+The optional v3 profile is not yet free.  Three matched runs on the same
+materialized programs give the following medians; v3 includes both admission
+and ordinary execution:
+
+\begin{center}
+\begin{tabular}{lrrrr}
+\toprule
+Program & no typing & typecheck-v3 & wall ratio & RSS ratio \\
+\midrule
+\code{deductionrevision} & 1.49\,s & 4.59\,s & 3.08$\times$ & 2.41$\times$ \\
+\code{flyingraven}       & 6.07\,s & 12.10\,s & 1.99$\times$ & 1.59$\times$ \\
+\code{raveninduction}    & 1.97\,s & 5.26\,s & 2.67$\times$ & 1.98$\times$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+This is an integration baseline, not an optimization claim.  Typed fast paths
+remain disabled until an exact, current license is consumed at an appropriate
+construction boundary.  These denominators are intentionally separate:
+operational compatibility, theory/LanguageDef parity, native coverage,
+product migration, and execution cost are different claims.
 
 \subsection{Oracle Conformance}
 \label{sec:conformance}
@@ -409,14 +663,14 @@ branches independently of their siblings.  In modal terms
 $\Diamond\bot = \bot$.
 
 \paragraph{The one-step congruence bug.}  The reflective one-step
-surface reported \code{(+ 1 (+ 2 3))} as a \emph{normal form}: the
+layer reported \code{(+ 1 (+ 2 3))} as a \emph{normal form}: the
 one-step relation lacked argument congruence (stepping a reducible
 argument when the head cannot fire), while the big-step evaluator had
 it.  Because the one-step relation and the evaluator were separately
 hand-maintained C branch sets, the gap replicated identically across
 three development branches and was invisible to every test that only
 exercised head-reducible terms.  The bug was diagnosed through the
-modal surface itself ($\Box\bot$ holding on a reducible term), fixed
+modal layer itself ($\Box\bot$ holding on a reducible term), fixed
 as deterministic left-to-right congruence matching the evaluator's
 applicative order---and is the direct motivation for the rule-pack
 weld in Section~\ref{sec:langdefpack}.
@@ -462,10 +716,10 @@ semantics (\PeTTa{}'s Prolog grounding, set-carrier stores) simply
 answer as their own specifications say, which is what declared
 contracts are for.
 
-\subsection{The Reflective Modal Surface}
+\subsection{The Reflective Modal Layer}
 \label{sec:modal}
 
-The library surface \code{lts} (generic, step-parameterized) and
+The library \code{lts} (generic, step-parameterized) and
 \code{lts:he} (bound to the \HE{} evaluator's one-step relation) reflect the
 one-step reduction relation into MeTTa as data:
 
@@ -489,7 +743,7 @@ where $\mathrm{LanguageDef}\to\mathrm{RewriteSystem}\to
 \mathrm{ReductionSpan}\to(\Diamond,\Box)$ is derived generically and
 \code{langGalois} establishes the adjunction.  Native behavioral types
 in the sense of Native Type Theory arise as predicates over exactly
-this reduction span; the runtime surface and the Lean derivation
+this reduction span; the runtime implementation and the Lean derivation
 describe the same object at two levels.
 
 Multiplicity discipline: \code{transitions} preserves the result
@@ -511,7 +765,7 @@ Three granularity strata are kept distinct.  \emph{HEFine} is the Lean
 the proof reference).  \emph{HE small-step} is the coarse user-visible
 one-step relation---one observable source rewrite, e.g.\
 \code{(+ 1 (+ 2 3))} $\to$ \code{(+ 1 5)}---which is what the
-\code{lts} surface exposes.  \emph{HEBigStep} is full evaluation.  The
+\code{lts} layer exposes.  \emph{HEBigStep} is full evaluation.  The
 table encodes the small-step relation; its relationship to the fine machine is a
 collapse/simulation with explicit provenance links (each coarse rule
 names the fine rules that justify it), never a label identity.
@@ -570,7 +824,7 @@ path and oracle bags on the witness corpus),
 proves the rule absorbed by the official declarative semantics on an
 explicitly characterized fragment), and \emph{rule-sound} (the same,
 unconditionally).  A claim flips only when the compiled theorem
-exists, so the reflective surface can never overclaim.  The
+exists, so the reflective layer can never overclaim.  The
 certification route is \emph{absorption}: for each coarse rule, a
 theorem that whenever the rule relates $a \to a'$, the official
 declarative judgment of the Mettapedia \HE{} formalization
@@ -615,11 +869,11 @@ The five remaining rules are upstream \emph{stdlib sugar}: their
 one-step behavior is the upstream definition of \code{let},
 \code{let*}, \code{case}, \code{switch}, and \code{switch-minimal} as
 \code{unify}/\code{chain} programs.  Certifying them required a
-\emph{matcher bridge}: relating the public equation-query surface to the
+\emph{matcher bridge}: relating the public equation-query API to the
 official \code{matchAtoms}/\code{mergeBindings} semantics.  The key
 insight from this development stage was that the real seam was \emph{not} merely a
 direct one-way-to-two-way matcher comparison.  The public \HE{} query
-surface had historically routed equation lookup through the simplified
+API had historically routed equation lookup through the simplified
 \code{simpleMatch} path, while the faithful two-sided matcher already
 existed separately.  We therefore split the bridge into three explicit
 layers.
@@ -638,7 +892,7 @@ the \emph{public} query interface:
 \code{queryEquationsAgainstVisible}-companion show that, on the
 ground-query fragment and under the explicit freshening adequacy
 hypothesis \code{EquationFresheningAdequate}, the repaired
-\code{matchAtoms}/\code{mergeBindings} surface and the legacy
+\code{matchAtoms}/\code{mergeBindings} API and the legacy
 \code{simpleMatch}-based scan agree in both directions up to replay
 fuel.
 
@@ -649,8 +903,8 @@ when the queried atom itself still contains variables, because that is
 the point at which \code{Bindings.resolve}/\code{Bindings.apply} must
 honor equalities rather than plain assignments.  We therefore bank the
 ground-query adequacy result as the honest current certification
-surface, and carry the variable-bearing query case as an explicit next
-obligation rather than silently pretending the legacy surface was already
+API, and carry the variable-bearing query case as an explicit next
+obligation rather than silently pretending the legacy API was already
 faithful.
 
 %% ────────────────────────────────────────────────────────────────────
@@ -829,7 +1083,7 @@ eval-at-\textsc{comm} becomes a way to program once the payload is a MeTTa term.
 \code{lib/rhometta.metta} provides \code{rhometta:eval}, which defers a MeTTa term as the
 payload to be run at \textsc{comm}; \code{rhometta:run}, which reduces a process to its
 quiescent outcome set; and \code{rhometta:transitions}, which returns one-step successors. It
-sits on \code{lib/rho.metta}, the strict-core constructor surface, and delegates all
+sits on \code{lib/rho.metta}, the strict-core constructor syntax, and delegates all
 reduction to the engine. One consequence is central: when a deferred payload evaluates to
 \emph{several} results, the \textsc{comm} forks --- one successor per result. Nondeterministic
 computation becomes a branching reaction, and \code{rhometta:run} returns one residual per
@@ -941,7 +1195,7 @@ depend on which interleaving the scheduler happened to choose. Instead, every re
 an event record with four fields: a fresh event identifier; a \emph{cause list} --- the
 identifiers of the events that produced the exact occurrences this event consumed, with
 repetitions kept (consuming two outputs of event $0$ yields the cause list \code{(0 0)}); a
-nonempty list of \emph{funding} records naming the purse surface and head signature of each
+nonempty list of \emph{funding} records naming the purse location and head signature of each
 token spent; and the consumed signature itself. The two-reaction chain below (the first case
 of
 \href{https://github.com/zariuq/CeTTa/blob/e23de3043462d80e27f9c9009bd0f1b955ed140c/tests/test_lts_rho_cost_causal_trace.metta}{\code{tests/test\_lts\_rho\_cost\_causal\_trace.metta}})
@@ -1048,7 +1302,7 @@ is pure structural congruence: no executable free-Drop step is admitted.  The
 canonical configuration erasure is defined by quotient lifting rather than by
 a noncomputable representative choice.  The pure-erasure binder-safety judgment
 covers exactly syntax observable by pure erasure.  The separate public
-runtime-scope check validates every raw field, including purse surfaces, and is
+runtime-scope check validates every raw field, including purse locations, and is
 proved to imply the erasure-domain judgment.
 A rerunnable Lean audit prints the axioms of the exported results; they use only Lean's
 standard quotient and classical infrastructure, with no project axiom and no unfinished
@@ -1147,7 +1401,7 @@ $\mathrm{Cost}_1$.  The theory paper develops all of this precisely
 authored declaration that generates this profile's grammar and its single
 funded rewrite is the object the endofunctor consumes, so iterated
 cost-accounting is a construction on the specification, never a second
-hand-written engine.  The public surface is
+hand-written engine.  The public API is
 \href{https://github.com/zariuq/CeTTa/blob/e23de3043462d80e27f9c9009bd0f1b955ed140c/lib/lts/rho/cost.metta}{\code{lib/lts/rho/cost.metta}};
 the engine is
 \href{https://github.com/zariuq/CeTTa/blob/e23de3043462d80e27f9c9009bd0f1b955ed140c/src/rhocalc_core.c}{\code{src/rhocalc\_core.c}}.
@@ -1156,7 +1410,7 @@ Runnable showcases ship with the engine in \code{examples/rho/} --- a funded ven
 provenance audit trail, an honest-budget meter exhibiting all three prefix verdicts and a
 two-cover spend, and a threaded settlement wave whose residual is byte-identical at every
 thread count --- each with expected outputs checked by the test suite, alongside a documented
-walkthrough of the calculus, both surfaces, and the profile.
+walkthrough of the calculus, both syntaxes, and the profile.
 
 %% ────────────────────────────────────────────────────────────────────
 \section{Cross-Runtime Benchmarks}
@@ -1233,7 +1487,7 @@ Runtime & Time & vs.\ \CeTTa{} & Output \\
 \end{center}
 
 This is a startup-dominated sanity row, not a scaling claim.  It is
-useful because it exercises the typed proof-carrying surface while
+useful because it exercises the typed proof-carrying API while
 remaining small enough that translator and runtime drift are easy to
 spot.
 
@@ -2021,7 +2275,7 @@ start state: $9!/2 = 181{,}440$ board configurations.  The \CeTTa{} port
 (\href{https://github.com/zariuq/CeTTa/blob/9237afd/benchmarks/test_tilepuzzle.metta}{\code{benchmarks/test\_tilepuzzle.metta}})
 is a hand-normalized \HE{}/\CeTTa{} counterpart of the \PeTTa{} example.
 The algorithmic contract is the same BFS over the solvable parity class,
-but the supporting surfaces differ: \PeTTa{} uses its
+but the supporting builtins differ: \PeTTa{} uses its
 \code{lib\_datastructures} queue and \code{add-unique-or-fail}
 visited-set idiom, while \CeTTa{} uses queue-space, hash-space, and the
 \HE{}-portable zero-results idiom \code{case(collapse(match))}.  It now
@@ -2383,7 +2637,7 @@ general MM2 compiler claim.  The queue is compiled statically and does not
 yet model runtime \code{exec} creation or consumption; the distinct-count
 path still groups quadratically; and upstream source/sink coverage remains
 incomplete.  The prototype therefore remains under \code{tools/}, with no
-new unnamespaced standard-library surface.
+new unnamespaced standard-library builtins.
 
 %% ────────────────────────────────────────────────────────────────────
 \section{The MeTTa Dialect Landscape}
@@ -3345,7 +3599,7 @@ outcome set, with no certification witness in the carrier.
 Beyond raw performance, \CeTTa{} now treats its own semantics as a
 first-class object.  The profile family makes \code{he-compat} (literal
 Rust \HE{}) and the principled \code{he} line distinct, recorded
-semantic products; the reflective modal surface exposes the one-step
+semantic products; the reflective modal layer exposes the one-step
 reduction relation---$\Diamond$, $\Box$, normal-form---to MeTTa
 programs themselves, aligned with the Lean OSLF derivation; and the
 small-step rule table makes the first reduction-rule classes named,
@@ -3409,7 +3663,7 @@ hidden---not global, ambient, or user-visible.}
   capability-receipt codecs that discharge open articles; prove native
   codec/replay correspondence; then compose the compilation certificate
   with a separate execution receipt.  Proof machinery remains a build-time
-  or on-demand surface, absent from the ordinary runtime hot path.
+  or on-demand path, absent from the ordinary runtime hot path.
 \item \textbf{Small-step / official-HE correspondence:} the
   \code{HESmallStep} relation and its OSLF span exist in Lean
   (proven; zero sorries); the remaining climb is the delimited
@@ -3437,7 +3691,7 @@ hidden---not global, ambient, or user-visible.}
   cursors; add leapfrog triejoin, grouped aggregation, and persistent
   snapshot/fork experiments.  Preserve the SpaceEngine boundary (formalized in
   \code{SpaceEngineBoundary.lean}: native $\subset$ pathmap $\subset$ mork,
-  with ACT as artifact-only surface; \code{ACTArtifactBoundary.lean}
+  with ACT as artifact-only boundary; \code{ACTArtifactBoundary.lean}
   classifies \code{open-act}/\code{load-act!}/\code{dump!} as storage seams).
   Retain authoritative native fallback wherever a direct route cannot preserve
   the named observer.
@@ -3452,7 +3706,7 @@ hidden---not global, ambient, or user-visible.}
   grouping with one grouped pass/backend operator, and extend source/sink
   coverage only under exact differential witnesses.
 \item \textbf{\PathMap{} algebra (working):}  \CeTTa{} already exposes MORK's
-  \PathMap{} substrate through the \code{mork:} surface: the lattice
+  \PathMap{} substrate through the \code{mork:} builtins: the lattice
   operations \code{mork:join}, \code{mork:meet}, \code{mork:subtract}, and
   \code{mork:prefix-restrict}; read-only zipper navigation; product-zipper
   Cartesian joins over two to four spaces; and overlay-zipper cursors.
@@ -3504,7 +3758,7 @@ file under the \CeTTa{} tree (1255 files) through \LeaTTa{}.
 \paragraph{Coverage, in three tiers.}
 The raw aggregate---168 of 951 assertion-bearing files passing in
 full---is misleading on its own, because most of the \CeTTa{} test
-corpus exercises extension surfaces that \LeaTTa{}, a deliberately
+corpus exercises extension builtins that \LeaTTa{}, a deliberately
 minimal \HE{} interpreter, does not implement and is not meant to.  The
 honest decomposition is:
 
@@ -3519,7 +3773,7 @@ Tier & What \LeaTTa{} does on it \\
 for 203/206 assertions.  Full passes span symbols, equal-chaining,
 backchaining, GADTs, dependent types, higher-order functions, grounded
 basics, type propagation, states, documentation, and PLN truth values.
-This is the surface that overlaps the \HE{} evaluation semantics. \\
+This is the fragment that overlaps the \HE{} evaluation semantics. \\
 \addlinespace
 \CeTTa{} extensions & \textbf{Out of scope by design.}  The bulk of the
 783 partial failures call builtins \LeaTTa{} does not provide:
@@ -3545,7 +3799,7 @@ checkout), remain to be diagnosed. \\
 
 \paragraph{Spec repair triggered by the cross-check.}
 The \LeaTTa{} comparison was useful not only as an oracle but as a
-debugger for our own \HE{} Lean surface.  During this pass we found that
+debugger for our own \HE{} Lean formalization.  During this pass we found that
 the public equation-query path had been routed through the simplified
 \code{simpleMatch} helper even though the faithful two-sided
 \code{matchAtoms}/\code{mergeBindings} semantics already existed.  The
@@ -3558,7 +3812,7 @@ and \code{QueryInterfaceAgreement.lean} proves the staged ground-fragment
 adequacy theorems
 \code{queryEquations\_ground\_two\_way\_adequate} and
 \code{queryEquationsAgainstVisible\_ground\_two\_way\_adequate}.  So the
-cross-check is now anchored on the faithful ground-query surface rather
+cross-check is now anchored on the faithful ground-query API rather
 than on the older simplified one.  The remaining variable-bearing query
 case is deliberately left explicit: it requires the next repair, namely
 threading equalities through \code{Bindings.resolve}/\code{Bindings.apply},
@@ -3595,10 +3849,10 @@ both run; \LeaTTa{} $\approx$917\,MB RSS vs.\ \CeTTa{} $\approx$136\,MB \\
 \normalsize
 \end{center}
 
-\paragraph{Tilepuzzle: surface vs.\ performance.}
+\paragraph{Tilepuzzle: semantics vs.\ performance.}
 The raw \CeTTa{} tilepuzzle benchmark depends on \CeTTa{}'s typed
 \code{queue} and \code{hash} spaces, so it does not run unchanged on
-\LeaTTa{} (a Tier-2 surface mismatch).  A bounded adaptation replacing
+\LeaTTa{} (a Tier-2 builtin mismatch).  A bounded adaptation replacing
 those spaces with a functional queue and plain named-space membership
 does run: a 100-step witness reaches 171 visited states in 18.47\,s,
 while the 500-step version did not finish under a 30\,s cap.  For
@@ -3609,14 +3863,14 @@ difference, not evidence for an extra reachable board.  A fresh full
 native \CeTTa{} run now completes with the tail-safe evaluation-arena
 garbage collector:
 181{,}440 states in 8.80\,s at 233\,MiB (Section~\ref{sec:tilepuzzle-gc}).
-So this bounded \LeaTTa{} adaptation is only evidence that the surface
+So this bounded \LeaTTa{} adaptation is only evidence that the algorithmic
 idea transfers, while the full native \CeTTa{} row is settled capacity
 evidence.
 
 \paragraph{Bottom line.}
 \LeaTTa{} is a credible independent oracle and a candidate verified
 engine-floor for the \HE{} evaluation core of \CeTTa{}: it agrees on the
-conformance surface that matters, diverges only on extension builtins it
+conformance set that matters, diverges only on extension builtins it
 deliberately omits and on a float-only numeric model, and pays an
 expected interpreter-speed cost.  Linking \LeaTTa{} to the \HE{} Lean
 specification is therefore well-founded on the core, provided the
@@ -3821,7 +4075,7 @@ The table remains a useful comparison vocabulary, not a frozen C ABI.
 
 General implementation-level \code{SUSPEND/RESUME}, cancellation tokens,
 backend-independent snapshot handles, and a single per-\code{--lang} MAM
-registration surface remain deferred; individual machines already carry
+registration hooks remain deferred; individual machines already carry
 narrower instances of several of these concerns.
 
 \subsection{Implemented machine substrate (August 2026)}
@@ -3833,7 +4087,7 @@ without pretending that one universal machine has been completed:
 \item[Choice and continuation ownership.]
   \code{PettaSearchMachine} owns an explicit heap of clause activations,
   environments, continuations, choice frontiers, binding rollback, and answer
-  projection.  Its host callback surface supplies language services but does
+  projection.  Its host callback API supplies language services but does
   not own the \PeTTa{} choice point.  \code{SearchContext} retains the small
   shared bindings/scratch save-and-rollback protocol.
 \item[Revision-pinned candidate programs.]
@@ -4042,7 +4296,7 @@ exhaustion and cancellation retain a resumable frontier.  \code{delay},
 
 \subsection{Open}
 
-The public suspension-observation surface (constraints and invariants
+The public suspension-observation API (constraints and invariants
 selected; the concrete observed form is a narrowed choice); the worlds
 carrier presentation (event structures lead); registered-equality
 concrete syntax; the other-owner forcing protocol; cyclic graph
@@ -4236,7 +4490,7 @@ lines share a substrate while requiring distinct control cores --- now a
 mechanized fact --- and demand-driven execution restricted to the
 production-cone/demand-cone diamond is sound and complete for
 goal-reaching, making magic-set restriction, premise pruning, and tabling
-instances of a theorem.  Method: contested surface laws are settled by
+instances of a theorem.  Method: contested semantic laws are settled by
 feature-ablation tournaments (every candidate behind a flag, one corpus,
 discriminating programs choose); falsification ladders run
 theory-decidable gates before compute is spent (``no conservativity, no
@@ -4409,7 +4663,7 @@ exactly the ones laziness makes visible.  A migration checklist:
 \item \textbf{What does not change.}  Bag semantics and non-semantic
   ordering; \code{match} and space effects on the shared fragment;
   equations as unordered space members; the profile discipline (silent
-  fall-through for surfaces a profile does not provide).
+  fall-through for builtins a profile does not provide).
 \end{enumerate}
 
 From \PeTTa{} specifically, the additional step is dropping reliance on

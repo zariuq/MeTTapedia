@@ -27,28 +27,28 @@ universe u
 /-- The purse-head occurrences selected by one firing.  Unselected purses are
 not stored here; they belong to the wave frame. -/
 structure FundingSelection (Ground : Type u)
-    (surface : CostName Ground) (demand : CostSig Ground) where
+    (location : CostName Ground) (demand : CostSig Ground) where
   chosen : Multiset (SelectedPurseHead Ground)
   demand_eq : demand = (chosen.map SelectedPurseHead.head).sum
 
 namespace FundingSelection
 
-variable {Ground : Type u} {surface : CostName Ground} {demand : CostSig Ground}
+variable {Ground : Type u} {location : CostName Ground} {demand : CostSig Ground}
 
 /-- Selected purse occurrences before their heads are consumed. -/
-def before (selection : FundingSelection Ground surface demand) :
+def before (selection : FundingSelection Ground location demand) :
     Multiset (LocatedPurse Ground) :=
   selection.chosen.map fun choice =>
-    ⟨surface, .cons choice.head choice.tail⟩
+    ⟨location, .cons choice.head choice.tail⟩
 
 /-- Selected purse occurrences after their tails are exposed. -/
-def after (selection : FundingSelection Ground surface demand) :
+def after (selection : FundingSelection Ground location demand) :
     Multiset (LocatedPurse Ground) :=
-  selection.chosen.map fun choice => ⟨surface, choice.tail⟩
+  selection.chosen.map fun choice => ⟨location, choice.tail⟩
 
 /-- A selection is a located cover with no hidden untouched purse component. -/
-def toLocatedCover (selection : FundingSelection Ground surface demand) :
-    LocatedTokenCover surface demand selection.before selection.after where
+def toLocatedCover (selection : FundingSelection Ground location demand) :
+    LocatedTokenCover location demand selection.before selection.after where
   chosen := selection.chosen
   untouched := 0
   available_eq := by simp [before]
@@ -56,13 +56,13 @@ def toLocatedCover (selection : FundingSelection Ground surface demand) :
   demand_eq := selection.demand_eq
 
 /-- One located receipt contribution for every selected purse occurrence. -/
-def contributions (selection : FundingSelection Ground surface demand) :
+def contributions (selection : FundingSelection Ground location demand) :
     Multiset (FundingContribution Ground (CostName Ground)) :=
   selection.chosen.map fun choice =>
-    ⟨surface, choice.head, choice.head_valid⟩
+    ⟨location, choice.head, choice.head_valid⟩
 
 /-- A nonzero demand forces an actual selected purse occurrence. -/
-theorem chosen_ne_zero (selection : FundingSelection Ground surface demand)
+theorem chosen_ne_zero (selection : FundingSelection Ground location demand)
     (demand_valid : demand.RuntimeValid) : selection.chosen ≠ 0 := by
   intro chosen_zero
   apply demand_valid
@@ -70,7 +70,7 @@ theorem chosen_ne_zero (selection : FundingSelection Ground surface demand)
   simp
 
 /-- The selected heads form one occurrence-preserving event label. -/
-def toSpendEvent (selection : FundingSelection Ground surface demand)
+def toSpendEvent (selection : FundingSelection Ground location demand)
     (demand_valid : demand.RuntimeValid) :
     SpendEvent Ground (CostName Ground) where
   funding := selection.contributions
@@ -83,7 +83,7 @@ def toSpendEvent (selection : FundingSelection Ground surface demand)
 
 /-- The event label measures exactly the demanded signature. -/
 theorem toSpendEvent_rawSpend
-    (selection : FundingSelection Ground surface demand)
+    (selection : FundingSelection Ground location demand)
     (demand_valid : demand.RuntimeValid) :
     (selection.toSpendEvent demand_valid).rawSpend = demand := by
   simp [toSpendEvent, contributions, SpendEvent.rawSpend, selection.demand_eq]
@@ -126,8 +126,8 @@ private theorem runtimeValid_add_left {left right : CostSig Ground}
   rw [sum_zero] at contained
   exact Multiset.le_zero.mp contained
 
-/-- Interaction surface of an event. -/
-def surface : CostedEvent Ground → CostName Ground
+/-- Interaction location of an event. -/
+def location : CostedEvent Ground → CostName Ground
   | .wholeRecvSend channel .. => channel
   | .wholeSendRecv channel .. => channel
   | .split channel .. => channel
@@ -203,7 +203,7 @@ theorem toSpendEvent_rawSpend (event : CostedEvent Ground) :
 /-- A local event fires in any disjoint multiset frame using the original
 interleaving semantics. -/
 def toCostStepIn (event : CostedEvent Ground) (frame : CostConfig Ground) :
-    CostStep (frame + event.consumed) event.surface event.spend
+    CostStep (frame + event.consumed) event.location event.spend
       (frame + event.produced) := by
   cases event with
   | wholeRecvSend channel body payload outerSig valid funding =>
@@ -247,10 +247,10 @@ inductive CostTrace {Ground : Type u} :
     CostConfig Ground → List (CostName Ground × CostSig Ground) →
       CostConfig Ground → Prop where
   | nil (config : CostConfig Ground) : CostTrace config [] config
-  | cons {source middle target surface spend trace}
-      (head : CostStep source surface spend middle)
+  | cons {source middle target location spend trace}
+      (head : CostStep source location spend middle)
       (tail : CostTrace middle trace target) :
-      CostTrace source ((surface, spend) :: trace) target
+      CostTrace source ((location, spend) :: trace) target
 
 /-- Source configuration of a wave: every event owns a separate summand. -/
 def costWaveSource {Ground : Type u}
@@ -267,7 +267,7 @@ def costWaveTarget {Ground : Type u}
 /-- Ordered labels of one serialization. -/
 def costWaveTrace {Ground : Type u} (events : List (CostedEvent Ground)) :
     List (CostName Ground × CostSig Ground) :=
-  events.map fun event => (event.surface, event.spend)
+  events.map fun event => (event.location, event.spend)
 
 /-- The occurrence bag of event receipts in a wave. -/
 def costWaveReceipt {Ground : Type u} (events : List (CostedEvent Ground)) :
@@ -286,7 +286,7 @@ theorem costWave_serializes {Ground : Type u}
   | cons event rest ih =>
       let nextFrame := frame + event.produced
       have head : CostStep (costWaveSource (event :: rest) frame)
-          event.surface event.spend (costWaveSource rest nextFrame) := by
+          event.location event.spend (costWaveSource rest nextFrame) := by
         have eventStep := event.toCostStepIn (costWaveSource rest frame)
         simpa [costWaveSource, nextFrame, add_assoc, add_comm, add_left_comm] using eventStep
       have tail := ih nextFrame
@@ -433,13 +433,13 @@ def CostedDiamond {Ground : Type u} (source : CostConfig Ground)
     (left right : CostedEvent Ground) : Prop :=
   ∃ frame : CostConfig Ground,
     source = costWaveSource [left, right] frame ∧
-    CostStep source left.surface left.spend
+    CostStep source left.location left.spend
       (costAfterLeft left right frame) ∧
-    CostStep (costAfterLeft left right frame) right.surface right.spend
+    CostStep (costAfterLeft left right frame) right.location right.spend
       (costPairTarget left right frame) ∧
-    CostStep source right.surface right.spend
+    CostStep source right.location right.spend
       (costAfterRight left right frame) ∧
-    CostStep (costAfterRight left right frame) left.surface left.spend
+    CostStep (costAfterRight left right frame) left.location left.spend
       (costPairTarget left right frame)
 
 /-- Compatible funded events commute to one exact multiset target; the result
@@ -569,9 +569,9 @@ theorem costWaveCausalReceipt_eq_receipt_bag_sum {Ground : Type u}
 multiplicities, and the acyclicity rank. -/
 structure CausalReceiptIso
     {LeftEvent RightEvent : Type*} [Fintype LeftEvent] [Fintype RightEvent]
-    {Ground : Type u} {Surface : Type*}
-    (left : CausalReceipt LeftEvent Ground Surface)
-    (right : CausalReceipt RightEvent Ground Surface) where
+    {Ground : Type u} {Location : Type*}
+    (left : CausalReceipt LeftEvent Ground Location)
+    (right : CausalReceipt RightEvent Ground Location) where
   events : LeftEvent ≃ RightEvent
   label_eq : ∀ event, left.label event = right.label (events event)
   arcMultiplicity_eq : ∀ cause effect,

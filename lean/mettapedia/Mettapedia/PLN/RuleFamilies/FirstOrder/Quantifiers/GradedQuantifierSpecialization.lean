@@ -7,7 +7,7 @@ import Mettapedia.PLN.RuleFamilies.FirstOrder.Quantifiers.ChoquetQuantifierSeman
 Shared specialization layer for the arbitrary-domain graded quantifier families.
 
 This file factors out the common structure shared by the current Sugeno/proxy-cut
-and Choquet quantifier surfaces:
+and Choquet quantifier interfaces:
 
 - score-based interval and `ForAll` predicates
 - complement-dual `ThereExists` predicates

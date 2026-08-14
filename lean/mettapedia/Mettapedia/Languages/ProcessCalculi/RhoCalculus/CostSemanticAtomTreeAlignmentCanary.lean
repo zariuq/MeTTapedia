@@ -129,6 +129,32 @@ def rhoBreadthWrongSourceTypeBoundaryA :
   contentObjectPattern := rfl
   contentReflectiveScopeSafe := rhoBreadthStructuralBoundaryA.contentReflectiveScopeSafe
 
+/-- The same deliberately wrong source fibre, packaged with only the target
+indices carried by `CertifiedCostRegionBoundary`.  This value demonstrates
+why a stopped traversal must retain the executable certification equation in
+addition to the decoded boundary record. -/
+def rhoBreadthWrongSourceTypeCertifiedBoundaryA :
+    CertifiedCostRegionBoundary rhoCIGSLT .wrapped rhoCutOrderFree []
+      (mapTypeExpr (CostStaticColor.wrapped.symbols rhoCIGSLT)
+        (.base "Name")) (.fvar "a") where
+  typed := rhoBreadthWrongSourceTypeBoundaryA
+  content_eq := rfl
+  targetSupport_eq := rfl
+  targetType_eq := rfl
+
+/-- Negative receipt canary: the executable boundary certifier cannot
+produce the forged source fibre, even though its target type, target support,
+and content are all well formed. -/
+theorem rhoBreadth_wrongSourceType_not_certified :
+    certifyCostRegionBoundary? rhoCIGSLT .wrapped rhoCutOrderFree []
+        (mapTypeExpr (CostStaticColor.wrapped.symbols rhoCIGSLT)
+          (.base "Name")) (.fvar "a") ≠
+      some rhoBreadthWrongSourceTypeCertifiedBoundaryA := by
+  intro certified
+  have sourceType := certifyCostRegionBoundary?_sourceType_eq certified
+  change (.base "Proc" : TypeExpr) = .base "Name" at sourceType
+  exact (show "Proc" ≠ "Name" by decide) (TypeExpr.base.inj sourceType)
+
 /-- Negative canary: equality of restored compact values alone cannot
 replace the same-fibre premise of `alignedBoundaryAtom_eq`. -/
 theorem rhoBreadth_sameNormal_wrongSourceType_atoms_ne :

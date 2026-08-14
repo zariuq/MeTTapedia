@@ -13,7 +13,7 @@ namespace Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.Examples
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost
 
 abbrev TestGround := String
-abbrev TestSurface := String
+abbrev TestLocation := String
 
 def aliceSig : CostSig TestGround := {"alice"}
 def bobSig : CostSig TestGround := {"bob"}
@@ -24,21 +24,21 @@ theorem aliceSig_valid : aliceSig.RuntimeValid := by
 theorem bobSig_valid : bobSig.RuntimeValid := by
   simp [bobSig, CostSig.RuntimeValid]
 
-def aliceEvent : SpendEvent TestGround TestSurface :=
+def aliceEvent : SpendEvent TestGround TestLocation :=
   SpendEvent.singleton "shop-a" aliceSig aliceSig_valid
 
-def bobEvent : SpendEvent TestGround TestSurface :=
+def bobEvent : SpendEvent TestGround TestLocation :=
   SpendEvent.singleton "lab-b" bobSig bobSig_valid
 
 /-! ## Valid causal and independent emissions -/
 
-def chainEmission : ReceiptEmission Nat TestGround TestSurface :=
+def chainEmission : ReceiptEmission Nat TestGround TestLocation :=
   [⟨0, [], aliceEvent⟩, ⟨1, [0], bobEvent⟩]
 
 theorem chainEmission_valid : chainEmission.Valid := by
   simp [ReceiptEmission.Valid, chainEmission]
 
-def chainReceipt : CausalReceipt (Fin chainEmission.length) TestGround TestSurface :=
+def chainReceipt : CausalReceipt (Fin chainEmission.length) TestGround TestLocation :=
   chainEmission.toReceipt chainEmission_valid
 
 theorem chain_direct_cause :
@@ -59,14 +59,14 @@ theorem chain_not_reversed :
   · change 1 < 0 at hlt
     omega
 
-def independentEmission : ReceiptEmission Nat TestGround TestSurface :=
+def independentEmission : ReceiptEmission Nat TestGround TestLocation :=
   [⟨0, [], aliceEvent⟩, ⟨1, [], bobEvent⟩]
 
 theorem independentEmission_valid : independentEmission.Valid := by
   simp [ReceiptEmission.Valid, independentEmission]
 
 def independentReceipt :
-    CausalReceipt (Fin independentEmission.length) TestGround TestSurface :=
+    CausalReceipt (Fin independentEmission.length) TestGround TestLocation :=
   independentEmission.toReceipt independentEmission_valid
 
 theorem independent_events :
@@ -98,7 +98,7 @@ inductive TestEventId where
   | sink
   deriving DecidableEq
 
-def opaqueIdEmission : ReceiptEmission TestEventId TestGround TestSurface :=
+def opaqueIdEmission : ReceiptEmission TestEventId TestGround TestLocation :=
   [⟨.source, [], aliceEvent⟩, ⟨.sink, [.source], bobEvent⟩]
 
 theorem opaqueIdEmission_valid : opaqueIdEmission.Valid := by
@@ -106,14 +106,14 @@ theorem opaqueIdEmission_valid : opaqueIdEmission.Valid := by
 
 /-! ## Repeated occurrences and repeated consumption arcs -/
 
-def repeatedEmission : ReceiptEmission Nat TestGround TestSurface :=
+def repeatedEmission : ReceiptEmission Nat TestGround TestLocation :=
   [⟨0, [], aliceEvent⟩, ⟨1, [], aliceEvent⟩]
 
 theorem repeatedEmission_valid : repeatedEmission.Valid := by
   simp [ReceiptEmission.Valid, repeatedEmission]
 
 def repeatedReceipt :
-    CausalReceipt (Fin repeatedEmission.length) TestGround TestSurface :=
+    CausalReceipt (Fin repeatedEmission.length) TestGround TestLocation :=
   repeatedEmission.toReceipt repeatedEmission_valid
 
 theorem identical_labels_are_distinct_occurrences :
@@ -127,7 +127,7 @@ theorem repeated_spends_are_measured_twice :
     repeatedReceipt.totalRawMeasure.card = 2 := by
   decide
 
-def repeatedArcEmission : ReceiptEmission Nat TestGround TestSurface :=
+def repeatedArcEmission : ReceiptEmission Nat TestGround TestLocation :=
   [⟨0, [], aliceEvent⟩, ⟨1, [0, 0], bobEvent⟩]
 
 theorem repeatedArcEmission_valid : repeatedArcEmission.Valid := by
@@ -138,48 +138,48 @@ theorem repeated_consumption_arcs_are_not_deduplicated :
       ⟨0, by decide⟩ ⟨1, by decide⟩ = 2 := by
   decide
 
-/-! ## Multiple opaque funding surfaces -/
+/-! ## Multiple opaque funding locations -/
 
-def aliceAtShop : FundingContribution TestGround TestSurface :=
+def aliceAtShop : FundingContribution TestGround TestLocation :=
   ⟨"shop-a", aliceSig, aliceSig_valid⟩
 
-def bobAtLab : FundingContribution TestGround TestSurface :=
+def bobAtLab : FundingContribution TestGround TestLocation :=
   ⟨"lab-b", bobSig, bobSig_valid⟩
 
-def multiSurfaceEvent : SpendEvent TestGround TestSurface where
+def multiLocationEvent : SpendEvent TestGround TestLocation where
   funding := aliceAtShop ::ₘ bobAtLab ::ₘ 0
   funding_nonempty := by simp
 
-theorem multi_surface_restrictions_preserve_contributions :
-    multiSurfaceEvent.rawSpendAt "shop-a" = aliceSig ∧
-      multiSurfaceEvent.rawSpendAt "lab-b" = bobSig := by
+theorem multi_location_restrictions_preserve_contributions :
+    multiLocationEvent.rawSpendAt "shop-a" = aliceSig ∧
+      multiLocationEvent.rawSpendAt "lab-b" = bobSig := by
   decide
 
 theorem signatures_are_not_locations :
-    multiSurfaceEvent.rawSpendAt "alice" = 0 := by
+    multiLocationEvent.rawSpendAt "alice" = 0 := by
   decide
 
 /-! ## Rejected malformed emissions -/
 
-def danglingCauseEmission : ReceiptEmission Nat TestGround TestSurface :=
+def danglingCauseEmission : ReceiptEmission Nat TestGround TestLocation :=
   [⟨0, [99], aliceEvent⟩]
 
 theorem danglingCauseEmission_invalid : ¬danglingCauseEmission.Valid := by
   simp [ReceiptEmission.Valid, danglingCauseEmission]
 
-def selfCauseEmission : ReceiptEmission Nat TestGround TestSurface :=
+def selfCauseEmission : ReceiptEmission Nat TestGround TestLocation :=
   [⟨0, [0], aliceEvent⟩]
 
 theorem selfCauseEmission_invalid : ¬selfCauseEmission.Valid := by
   simp [ReceiptEmission.Valid, selfCauseEmission]
 
-def forwardCauseEmission : ReceiptEmission Nat TestGround TestSurface :=
+def forwardCauseEmission : ReceiptEmission Nat TestGround TestLocation :=
   [⟨0, [1], aliceEvent⟩, ⟨1, [], bobEvent⟩]
 
 theorem forwardCauseEmission_invalid : ¬forwardCauseEmission.Valid := by
   simp [ReceiptEmission.Valid, forwardCauseEmission]
 
-def duplicateIdEmission : ReceiptEmission Nat TestGround TestSurface :=
+def duplicateIdEmission : ReceiptEmission Nat TestGround TestLocation :=
   [⟨0, [], aliceEvent⟩, ⟨0, [], bobEvent⟩]
 
 theorem duplicateIdEmission_invalid : ¬duplicateIdEmission.Valid := by

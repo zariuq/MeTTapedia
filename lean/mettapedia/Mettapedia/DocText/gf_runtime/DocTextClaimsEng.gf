@@ -239,7 +239,7 @@ concrete DocTextClaimsEng of DocTextClaims = {
     Clm_00234 = {s = "The project includes operational specification and semantic specification"} ;
     Clm_00235 = {s = "The project structure section is a layer-by-layer map from generic rewriting to System F"} ;
     Clm_00236 = {s = "The proof techniques section is the method-level bridge from diamond proofs to logical relations"} ;
-    Clm_00237 = {s = "The public surface is docstring-rich with source references"} ;
+    Clm_00237 = {s = "The public interface is docstring-rich with source references"} ;
     Clm_00238 = {s = "The references section covers papers, books, and related formalization links"} ;
     Clm_00239 = {s = "The references section lists references"} ;
     Clm_00240 = {s = "The related formalizations subsection is Software Foundations, CoLoR, Nominal Isabelle, and PLFA links"} ;

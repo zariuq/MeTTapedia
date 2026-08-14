@@ -1,4 +1,4 @@
-import Mettapedia.PLN.WorldModel.SufficientStatisticSurface
+import Mettapedia.PLN.WorldModel.SufficientStatisticEncoder
 import Mettapedia.UniversalAI.UniversalPrediction.MarkovDirichletPredictor
 
 /-!
@@ -32,7 +32,7 @@ namespace Mettapedia.UniversalAI.UniversalPrediction
 
 open Mettapedia.PLN.WorldModel
 open Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceDirichlet
-open Mettapedia.PLN.WorldModel.SufficientStatisticSurface
+open Mettapedia.PLN.WorldModel.SufficientStatisticEncoder
 
 open scoped ENNReal
 
@@ -86,7 +86,7 @@ def transitionObservation
 /-- The query-indexed Markov row statistic: extract outgoing categorical
 evidence for the queried current state. -/
 def markovRowStatistic :
-    SufficientStatisticSurface (TransitionObservation k) (Fin k) (MultiEvidence k) where
+    SufficientStatisticEncoder (TransitionObservation k) (Fin k) (MultiEvidence k) where
   observe obs q := transitionObservation (k := k) obs q
 
 /-- Recursively collect the transitions in a word tail, given the previous
@@ -233,7 +233,7 @@ theorem inducedWorldModel_extract_transitionMultiset_eq_rowEvidence_of_summary
   letI : PLNWorldModelGeneric.AdditiveWorldModel
     (Multiset (TransitionObservation k)) (Fin k) (MultiEvidence k) :=
     (markovRowStatistic (k := k)).inducedWorldModel
-  simpa [SufficientStatisticSurface.inducedWorldModel_evidence_eq_aggregate] using
+  simpa [SufficientStatisticEncoder.inducedWorldModel_evidence_eq_aggregate] using
     aggregate_transitionMultiset_eq_rowEvidence_of_summary (k := k) hsum q
 
 /-- The count view of the induced WM extractor is exactly the row total of the
@@ -260,7 +260,7 @@ theorem inducedWorldModel_queryObservationCount_transitionMultiset_eq_rowTotal_o
   letI : PLNWorldModelGeneric.AdditiveWorldModel
     (Multiset (TransitionObservation k)) (Fin k) (MultiEvidence k) :=
     (markovRowStatistic (k := k)).inducedWorldModel
-  rw [SufficientStatisticSurface.queryObservationCount_inducedWorldModel_eq_aggregate_observationCount
+  rw [SufficientStatisticEncoder.queryObservationCount_inducedWorldModel_eq_aggregate_observationCount
     (S := markovRowStatistic (k := k))]
   rw [aggregate_transitionMultiset_eq_rowEvidence_of_summary (k := k) hsum q]
   change ((rowEvidence c q).total : ℝ≥0∞) = c.rowTotal q
@@ -280,10 +280,10 @@ theorem rowEvidence_posteriorMean_eq_stepProb
   rw [Finset.sum_add_distrib]
   simp [rowEvidence, TransCounts.rowTotal, Nat.cast_sum, add_comm]
 
-/-- A Markov row posterior surface: batches of observed transitions update the
+/-- A Markov row posterior interface: batches of observed transitions update the
 Dirichlet evidence of the queried current-state row. -/
-noncomputable def markovRowConjugatePosteriorSurface :
-    ConjugatePosteriorSurface
+noncomputable def markovRowConjugatePosteriorModel :
+    ConjugatePosteriorModel
       (TransitionObservation k) (Fin k) (MultiEvidence k) (EvidenceDirichletParams k) where
   stat := markovRowStatistic (k := k)
   posterior params σ q :=
@@ -297,13 +297,13 @@ noncomputable def markovRowConjugatePosteriorSurface :
     rw [aggregate_add]
     simp [add_assoc]
 
-/-- Under the WM-side Markov row posterior surface, observing the transitions
+/-- Under the WM-side Markov row posterior interface, observing the transitions
 of a word updates the queried row to exactly the Markov summary row. -/
-theorem markovRowConjugatePosteriorSurface_evidence_eq_rowEvidence_of_summary
+theorem markovRowConjugatePosteriorModel_evidence_eq_rowEvidence_of_summary
     {xs : List (Fin k)} {c : TransCounts k} {last : Fin k}
     (hsum : TransCounts.summary (k := k) xs = some (c, last))
     (prior : DirichletParams k) (q : Fin k) :
-    ((markovRowConjugatePosteriorSurface (k := k)).posterior
+    ((markovRowConjugatePosteriorModel (k := k)).posterior
       ⟨prior, (0 : MultiEvidence k)⟩
       (transitionMultiset (k := k) xs) q).evidence =
       rowEvidence c q := by
@@ -316,17 +316,17 @@ theorem markovRowConjugatePosteriorSurface_evidence_eq_rowEvidence_of_summary
 /-- The WM/PLN-side posterior mean for the queried active row matches the
 Markov-Dirichlet one-step predictive probability selected by the Markov
 summary `(counts,last)`. -/
-theorem markovRowConjugatePosteriorSurface_posteriorMean_eq_stepProb_of_summary
+theorem markovRowConjugatePosteriorModel_posteriorMean_eq_stepProb_of_summary
     (hk : 0 < k)
     {xs : List (Fin k)} {c : TransCounts k} {last : Fin k}
     (hsum : TransCounts.summary (k := k) xs = some (c, last))
     (prior : Fin k → DirichletParams k) (next : Fin k) :
     let params :=
-      (markovRowConjugatePosteriorSurface (k := k)).posterior
+      (markovRowConjugatePosteriorModel (k := k)).posterior
         ⟨prior last, (0 : MultiEvidence k)⟩
         (transitionMultiset (k := k) xs) last
     params.posteriorMean hk next = MarkovDirichlet.stepProb prior c last next := by
-  dsimp [markovRowConjugatePosteriorSurface]
+  dsimp [markovRowConjugatePosteriorModel]
   change
     (⟨prior last,
         (0 : MultiEvidence k) +

@@ -1,4 +1,5 @@
 import Mettapedia.Languages.MeTTa.Prime.ClosedFormationGSLT
+import Mettapedia.GSLT.LanguageDef.InferenceFiniteHornGSLTRender
 import Mettapedia.GSLT.LanguageDef.InferenceMeTTaRender
 
 /-!
@@ -12,7 +13,26 @@ runtime search policy.
 namespace Mettapedia.Languages.MeTTa.Prime.ClosedFormationGSLTMeTTaExport
 
 open Mettapedia.Languages.MeTTa.Prime.ClosedFormationGSLT
+open Mettapedia.GSLT.LanguageDef.InferenceFiniteHornGSLTRender
 open Mettapedia.GSLT.LanguageDef.InferenceMeTTaRender
+
+def finiteHornPresentation? : Option String :=
+  Mettapedia.GSLT.LanguageDef.InferenceFiniteHornGSLTRender.renderPresentation?
+    exportedPresentation
+
+theorem finiteHornPresentation_renders :
+    finiteHornPresentation?.isSome = true := by
+  simp [finiteHornPresentation?, exportedPresentation, presentation,
+    definition, renderPresentation?, operatorSignature,
+    noDuplicateOperators, renderOperators?, renderOperator?, renderRules?,
+    renderRule?, renderTerm?, renderTerms?, safeSymbol, safeVariable,
+    safeToken, safeTokenCharacter, integerToken, isApplication,
+    termType, termConstructor, formType, formDynamic, formAtom, formSymbol,
+    formVariable, formExpression, formGrounded, formNumber, formBool,
+    formString, formError, formComponentsOne, formComponentsCons, formArrow,
+    notFormEmptyArrow, primitiveRule, form, formComponents, notForm, pType,
+    pDynamic, pAtom, pSymbol, pVariable, pExpression, pGrounded, pNumber,
+    pBool, pString, pError, pNil, pCons, pArrow, ruleId]
 
 def renderNullaryMap (entry : SyntaxNullaryMap) : String :=
   s!"(GNullaryMap {quote entry.sourceHead} {quote entry.targetConstructor})"
@@ -53,8 +73,19 @@ def main (arguments : List String) : IO UInt32 := do
       IO.FS.writeFile auditPath audit
       IO.println s!"wrote {audit.toUTF8.size} bytes to {auditPath}"
       pure 0
+  | [auditPath, presentationPath] =>
+      match finiteHornPresentation? with
+      | none =>
+          IO.eprintln "Prime formation rule outside the finite-Horn source fragment"
+          pure 1
+      | some presentation => do
+          IO.FS.writeFile auditPath audit
+          IO.FS.writeFile presentationPath presentation
+          IO.println s!"wrote {audit.toUTF8.size} bytes to {auditPath}"
+          IO.println s!"wrote {presentation.toUTF8.size} bytes to {presentationPath}"
+          pure 0
   | _ =>
-      IO.eprintln "usage: <audit-output.metta>"
+      IO.eprintln "usage: <audit-output.metta> [<presentation-output.metta>]"
       pure 2
 
 end Mettapedia.Languages.MeTTa.Prime.ClosedFormationGSLTMeTTaExport

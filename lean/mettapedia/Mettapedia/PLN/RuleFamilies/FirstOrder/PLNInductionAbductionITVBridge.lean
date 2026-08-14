@@ -6,7 +6,7 @@ import Mettapedia.PLN.RuleFamilies.FirstOrder.PLNDeductionITVBridge
 # PLN Induction and Abduction Credal Intervals
 
 This file lifts the PLN source-rule and sink-rule point formulas into the
-existing no-independence deduction ITV surface.  It does not define another
+existing no-independence deduction ITV interface.  It does not define another
 interval semantics: induction and abduction are Bayes-inversion presentations
 of deduction, and the credal envelope is the one from `PLNDeductionITVBridge`.
 -/
@@ -179,7 +179,7 @@ noncomputable def plnAbductionCredalStrengthITV
 /-- On the guarded non-edge branch, the deduction implementation used by the
 ITV bridge agrees with the raw PLN deduction formula in `PLNDerivation`.
 
-This is only a seam lemma between the two existing deduction surfaces; the
+This is only a seam lemma between the two existing deduction interfaces; the
 substantive interval fact remains
 `simpleDeductionStrengthFormula_mem_deductionCredalStrengthITV`.
 -/
@@ -308,7 +308,7 @@ theorem plnAbductionStrength_mem_credalStrengthITV
 /-! ## Feasible asymmetry canary
 
 The point-rule canary in `PLNDerivation` is lifted here to the
-no-independence interval surface.  With `P(A)=P(C)=1/2`, `P(B)=3/4`,
+no-independence interval interface.  With `P(A)=P(C)=1/2`, `P(B)=3/4`,
 and the same visible premise strengths `1/2, 1/2`, source-rule induction and
 sink-rule abduction induce different feasible deduction skeletons:
 

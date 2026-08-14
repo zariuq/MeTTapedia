@@ -1,5 +1,5 @@
 import Mathlib.Data.ENNReal.Basic
-import Mettapedia.PLN.Bridges.ProbabilityTheory.ConjugateEvidenceSurface
+import Mettapedia.PLN.Bridges.ProbabilityTheory.ConjugateEvidenceCore
 import Mettapedia.PLN.WorldModel.GenericWorldModelForgetting
 import Mettapedia.PLN.WorldModel.PLNWorldModelOverlap
 import Mettapedia.PLN.WorldModel.PLNWorldModelConservationPack
@@ -7,9 +7,9 @@ import Mettapedia.PLN.WorldModel.OrderCost.PLNWorldModelOrderCostBounds
 import Mettapedia.PLN.WorldModel.Semitopology.PLNSemitopologyProvenanceBridge
 
 /-!
-# WM Audit Surface
+# WM Audit Interface
 
-Small audit-facing wrappers over the existing WM theorem surface:
+Small audit-facing wrappers over the existing WM theorem family:
 
 - evidence-conservation checks (no hallucination / zero outside-scope leakage),
 - non-commutative order-sensitivity signal (`SwapDefect`),
@@ -20,7 +20,7 @@ namespace Mettapedia.PLN.WorldModel.Audit
 
 open scoped ENNReal
 open Mettapedia.PLN.Evidence.EvidenceClass
-open Mettapedia.PLN.Bridges.ProbabilityTheory.ConjugateEvidenceSurface
+open Mettapedia.PLN.Bridges.ProbabilityTheory.ConjugateEvidenceCore
 open Mettapedia.PLN.WorldModel.PLNWorldModelGeneric
 open Mettapedia.PLN.WorldModel.GenericWorldModelForgetting
 open Mettapedia.PLN.WorldModel.WorldModelOverlap

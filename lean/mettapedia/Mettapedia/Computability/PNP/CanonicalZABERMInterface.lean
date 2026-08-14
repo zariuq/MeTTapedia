@@ -26,11 +26,11 @@ variable {Z : Type*} {r k : ℕ} {Index : Type*}
 
 structure CanonicalZABERMRecoveryData
     [Fintype Z]
-    (μ : PMF (ExactVisiblePostSwitchSurface Z k))
+    (μ : PMF (ExactVisiblePostSwitchData Z k))
     (zfeat : Z → BitVec r)
     (G : ExactVisibleSwitchedFamily Z k Index)
     (q : ℝ≥0∞) where
-  samples : Index → Sample (ExactVisiblePostSwitchSurface Z k) Bool
+  samples : Index → Sample (ExactVisiblePostSwitchData Z k) Bool
   exact_family :
     G = exactZABDecisionListERMFamily (Z := Z) (r := r) (k := k) zfeat samples
   agreement_le :
@@ -45,7 +45,7 @@ section
 variable [Fintype Z]
 
 theorem CanonicalZABERMRecoveryData.candidateData
-    {μ : PMF (ExactVisiblePostSwitchSurface Z k)}
+    {μ : PMF (ExactVisiblePostSwitchData Z k)}
     {zfeat : Z → BitVec r}
     {G : ExactVisibleSwitchedFamily Z k Index}
     {q : ℝ≥0∞}
@@ -59,7 +59,7 @@ theorem CanonicalZABERMRecoveryData.candidateData
     (Z := Z) (r := r) (k := k) (Index := Index) zfeat samples
 
 theorem CanonicalZABERMRecoveryData.compressionTarget
-    {μ : PMF (ExactVisiblePostSwitchSurface Z k)}
+    {μ : PMF (ExactVisiblePostSwitchData Z k)}
     {zfeat : Z → BitVec r}
     {G : ExactVisibleSwitchedFamily Z k Index}
     {q : ℝ≥0∞}
@@ -73,7 +73,7 @@ theorem CanonicalZABERMRecoveryData.compressionTarget
     (Z := Z) (r := r) (k := k) (Index := Index) zfeat samples
 
 theorem CanonicalZABERMRecoveryData.recoveryLowerBound
-    {μ : PMF (ExactVisiblePostSwitchSurface Z k)}
+    {μ : PMF (ExactVisiblePostSwitchData Z k)}
     {zfeat : Z → BitVec r}
     {G : ExactVisibleSwitchedFamily Z k Index}
     {q : ℝ≥0∞}

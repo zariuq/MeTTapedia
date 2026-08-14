@@ -294,7 +294,7 @@ theorem multiset_strength_le_of_consequence {L : Language.{u}}
   exact queryStrength_le_of_pointwise_on (T := T) (W := W) (φ := φ) (ψ := ψ) hW himp
 
 /-- Categorical-aligned FOL consequence wrapper:
-same multiset strength inequality with explicit endpoint-surface input. -/
+same multiset strength inequality with explicit endpoint-interface input. -/
 theorem multiset_strength_le_of_consequence_categorical {L : Language.{u}}
     (H : WMHyperdoctrine (FOLState L))
     (_hcat : WMCategoricalEndpointContract (H := H))
@@ -356,7 +356,7 @@ theorem multiset_consequence_of_provable_imp {L : Language.{u}}
   multiset_strength_le_of_provable_imp (T := T) (W := W) (φ := φ) (ψ := ψ) hW hprov
 
 /-- Categorical-aligned FOL provability wrapper:
-same multiset strength inequality with explicit endpoint-surface input. -/
+same multiset strength inequality with explicit endpoint-interface input. -/
 theorem multiset_strength_le_of_provable_imp_categorical {L : Language.{u}}
     (H : WMHyperdoctrine (FOLState L))
     (_hcat : WMCategoricalEndpointContract (H := H))

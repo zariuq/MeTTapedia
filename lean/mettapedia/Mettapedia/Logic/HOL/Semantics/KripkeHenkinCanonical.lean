@@ -5,7 +5,7 @@ import Mettapedia.Logic.HOL.Semantics.KripkeHenkinCanonical.Support
 
 Final content layer for the supported canonical construction: local membership
 clauses, conditional full-presented upgrades, canonical `KripkeHenkin`
-instances, and the supported consequence/completeness packaging surfaces.
+instances, and the supported consequence/completeness packaging interfaces.
 The membership, frame, recursive forcing, and support towers are imported from
 content modules under `KripkeHenkinCanonical/`; namespaces and declaration names
 are preserved.
@@ -95,7 +95,7 @@ raw presentation or support level.
 disjunction primeness of a fixed level-bounded closure over pairs mentioning
 future-layer parameters is disjunction-property strength (normalization-route
 work), and `FormulaPairFairAfter.incompatible_with_avoids_layers` refutes the
-one-enumeration fairness route.  The viable completeness surface is the
+one-enumeration fairness route.  The viable completeness interface is the
 support-bounded one (`provable_iff_supportedMembershipConsequence_*`); this
 structure remains only as hypothesis packaging for the conditional
 `KripkeHenkin`-class instances. -/
@@ -413,7 +413,7 @@ end SupportedCanonicalFrame
 namespace SupportedCanonicalFrame
 
 /-- Semantic consequence over the canonical supported-membership frame.  This is
-an intermediate canonical countermodel surface, not the final independent
+an intermediate canonical countermodel interface, not the final independent
 `KripkeHenkin` model class: worlds still carry raw presentations and forcing is
 carrier membership. -/
 def SupportedMembershipConsequence
@@ -424,7 +424,7 @@ def SupportedMembershipConsequence
       Forces (Base := Base) (Const := Const) W ψ) →
         Forces (Base := Base) (Const := Const) W θ
 
-/-- The supported-membership surface is exactly consequence over the ordinary
+/-- The supported-membership interface is exactly consequence over the ordinary
 canonical membership model once that model is supplied. -/
 theorem supportedMembershipConsequence_iff_canonicalKripkeHenkin
     (P : SchedulerProvider (Base := Base) Const)
@@ -438,7 +438,7 @@ theorem supportedMembershipConsequence_iff_canonicalKripkeHenkin
             (canonicalKripkeHenkin (Base := Base) (Const := Const) P L).forces W θ := by
   rfl
 
-/-- The same supported-membership surface is exactly consequence over the
+/-- The same supported-membership interface is exactly consequence over the
 level-respecting canonical membership model; only the model's accessibility
 relation differs. -/
 theorem supportedMembershipConsequence_iff_canonicalLevelKripkeHenkin
@@ -454,7 +454,7 @@ theorem supportedMembershipConsequence_iff_canonicalLevelKripkeHenkin
   rfl
 
 /-- EM-free provability is sound for the supported-membership consequence
-surface by deductive closure of every supported presented carrier. -/
+interface by deductive closure of every supported presented carrier. -/
 theorem supportedMembershipConsequence_of_provable
     {T : ClosedTheorySet (WithParams Const)}
     {θ : ClosedFormula (WithParams Const)}
@@ -517,7 +517,7 @@ theorem not_supportedMembershipConsequence_of_supported_countermodel_at_bound
     (Base := Base) (Const := Const) W hT hθ
 
 /-- Conditional completeness at a fixed parameter bound for the supported
-canonical membership surface. -/
+canonical membership interface. -/
 theorem provable_of_supportedMembershipConsequence_supported_at_bound
     (P : SchedulerProvider (Base := Base) Const)
     {m : Nat} {T : ClosedTheorySet (WithParams Const)}
@@ -535,7 +535,7 @@ theorem provable_of_supportedMembershipConsequence_supported_at_bound
   exact (not_supportedMembershipConsequence_of_supported_countermodel_at_bound
     (Base := Base) (Const := Const) P hLayer hStage hθStage hNot) hSem
 
-/-- At a fixed parameter bound, the supported canonical membership surface is
+/-- At a fixed parameter bound, the supported canonical membership interface is
 complete for the EM-free calculus.  This is an intermediate equivalence for the
 raw presented-world semantics, not yet the final independent `KripkeHenkin`
 consequence theorem. -/
@@ -557,7 +557,7 @@ theorem provable_iff_supportedMembershipConsequence_supported_at_bound
       (Base := Base) (Const := Const) P hLayer hStage hθStage
 
 /-- Param-free conditional completeness for the supported canonical membership
-surface.  This avoids the full `KripkeHenkin` upgrade obligation and records only
+interface.  This avoids the full `KripkeHenkin` upgrade obligation and records only
 what the current supported raw construction already proves. -/
 theorem provable_of_supportedMembershipConsequence_param_free_supported
     (P : SchedulerProvider (Base := Base) Const)
@@ -578,7 +578,7 @@ theorem provable_of_supportedMembershipConsequence_param_free_supported
   · intro σ r k _hr
     exact hθ0 σ (Nat.pair 0 (Nat.pair r k))
 
-/-- Param-free equivalence for the supported canonical membership surface.  The
+/-- Param-free equivalence for the supported canonical membership interface.  The
 remaining assumptions are exactly the scheduler data for the raw alternating
 construction; the theorem deliberately does not claim the final model-class
 `Consequence` result. -/
@@ -691,7 +691,7 @@ theorem provable_iff_canonicalLevelKripkeHenkin_param_free_supported_of_upgrade
     (U.toLevelLocalMembershipClauses (Base := Base)) hT0 hθ0
 
 /-- Full semantic consequence over independent `KripkeHenkin` structures
-restricts to the supported canonical membership surface whenever the conditional
+restricts to the supported canonical membership interface whenever the conditional
 canonical membership model is available. -/
 theorem supportedMembershipConsequence_of_consequence
     (P : SchedulerProvider (Base := Base) Const)
@@ -1327,7 +1327,7 @@ theorem provable_iff_consequence_param_free_supported_of_upgrade
     (Base := Base) (Const := Const) P
     (U.toLocalMembershipClauses (Base := Base)) hT0 hθ0
 
-/-! ## Intuitionistic HOL supported completeness surface -/
+/-! ## Intuitionistic HOL supported completeness interface -/
 
 /-- Positive supported example: EM-free derivability is valid in every
 supported canonical membership world. -/

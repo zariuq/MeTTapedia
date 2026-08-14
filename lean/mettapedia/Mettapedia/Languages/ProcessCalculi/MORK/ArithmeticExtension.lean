@@ -2,14 +2,14 @@ import Mettapedia.Languages.ProcessCalculi.MORK.Conformance
 import Mettapedia.Languages.ProcessCalculi.MORK.ThreePhaseRefinement
 
 /-!
-# MORK Arithmetic / Comparison Extension Surface
+# MORK Arithmetic / Comparison Extension Interface
 
 Packages the currently live arithmetic sink and comparison-source extension lane
 around the existing core MORK formalization.
 
 ## What this file IS
 
-- A theorem-backed surface for the current Rust extension heads:
+- A theorem-backed interface for the current Rust extension heads:
   - integer sinks: `i+`, `i-`, `i*`, `ieq`
   - float sinks: `f+`, `f-`, `f*`, `f/`, `fgt`, `flt`, `feq`
   - comparison sources: `==`, `!=`
@@ -269,7 +269,7 @@ end FloatArithOp
 
 /-- Runtime float rendering is intentionally a parameter here.
 
-This keeps the theorem surface honest: Rust uses `format!("{}", f64)`, which is
+This keeps the theorem family honest: Rust uses `format!("{}", f64)`, which is
 not Lean's default `Float.toString`. The arithmetic semantics are settled here;
 the exact printer remains a runtime rendering choice. -/
 abbrev FloatRenderer := Float → String

@@ -3641,7 +3641,7 @@ theorem rawAlternatingStageLimit_exists_witness
 /-- The global full-world raw limit assumptions are incompatible.  A pair
 enumeration cannot be both globally fair and uniformly avoid a future parameter
 layer, so full presented canonical worlds cannot be obtained from this global
-stage construction.  The live construction surface is the supported scheduler
+stage construction.  The live construction interface is the supported scheduler
 above. -/
 theorem full_rawAlternatingStageLimit_global_assumptions_inconsistent
     {ℓ : Nat}

@@ -115,20 +115,33 @@ private def tokenizeWith (cfg : ParserDialect) (input : String) : List String :=
     input.toList false false [] []
 
 mutual
-  private partial def parseSExprOne : List String → Except ParseError (SExpr × List String)
-    | [] => .error (mkParseError "expected expression, found end of input")
-    | "(" :: rest => parseSExprList [] rest
-    | ")" :: _ => .error (mkParseError "unexpected closing parenthesis" (near := some ")"))
-    | tok :: rest => .ok (.atom tok, rest)
+  /-- Parse one tokenized S-expression with structurally decreasing fuel.
+  Public expression entry points supply more fuel than there are tokens, so
+  the fuel-exhausted branch is unreachable for their input. -/
+  private def parseSExprOneFuel : Nat → List String →
+      Except ParseError (SExpr × List String)
+    | 0, _ => .error (mkParseError "S-expression parser fuel exhausted")
+    | _ + 1, [] =>
+        .error (mkParseError "expected expression, found end of input")
+    | fuel + 1, "(" :: rest => parseSExprListFuel [] fuel rest
+    | _ + 1, ")" :: _ =>
+        .error (mkParseError "unexpected closing parenthesis" (near := some ")"))
+    | _ + 1, tok :: rest => .ok (.atom tok, rest)
 
-  private partial def parseSExprList (accRev : List SExpr) :
-      List String → Except ParseError (SExpr × List String)
-    | [] => .error (mkParseError "unclosed list expression")
-    | ")" :: rest => .ok (.list accRev.reverse, rest)
-    | toks => do
-        let (x, rest) ← parseSExprOne toks
-        parseSExprList (x :: accRev) rest
+  /-- Parse a tokenized list body with the same decreasing fuel. -/
+  private def parseSExprListFuel (accRev : List SExpr) : Nat → List String →
+      Except ParseError (SExpr × List String)
+    | 0, _ => .error (mkParseError "S-expression parser fuel exhausted")
+    | _ + 1, [] => .error (mkParseError "unclosed list expression")
+    | _ + 1, ")" :: rest => .ok (.list accRev.reverse, rest)
+    | fuel + 1, toks => do
+        let (x, rest) ← parseSExprOneFuel fuel toks
+        parseSExprListFuel (x :: accRev) fuel rest
 end
+
+private def parseSExprOne (tokens : List String) :
+    Except ParseError (SExpr × List String) :=
+  parseSExprOneFuel (tokens.length + 1) tokens
 
 private def parseSingleSExprWith (cfg : ParserDialect) (input : String) : Except ParseError SExpr := do
   let toks := tokenizeWith cfg input
@@ -151,17 +164,28 @@ private def atomToPattern (tok : String) : Pattern :=
   else
     .apply tok []
 
-partial def sexprToPattern : SExpr → Except ParseError Pattern
-  | .atom tok => .ok (atomToPattern tok)
-  | .list [] => .ok (.apply "()" [])
-  | .list (head :: args) =>
-      match head with
-      | .atom ctor => do
-          let args' ← args.mapM sexprToPattern
-          .ok (.apply ctor args')
-      | _ => do
-          let elems' ← (head :: args).mapM sexprToPattern
-          .ok (.apply "Expr" elems')
+mutual
+  def sexprToPattern : SExpr → Except ParseError Pattern
+    | .atom tok => .ok (atomToPattern tok)
+    | .list [] => .ok (.apply "()" [])
+    | .list (.atom ctor :: args) => do
+        let args' ← sexprsToPatterns args
+        .ok (.apply ctor args')
+    | .list (.list nested :: args) => do
+        let elems' ← sexprsToPatterns (.list nested :: args)
+        .ok (.apply "Expr" elems')
+  termination_by expression => sizeOf expression
+  decreasing_by all_goals simp_wf <;> omega
+
+  def sexprsToPatterns : List SExpr → Except ParseError (List Pattern)
+    | [] => .ok []
+    | expression :: expressions => do
+        let pattern ← sexprToPattern expression
+        let patterns ← sexprsToPatterns expressions
+        .ok (pattern :: patterns)
+  termination_by expressions => sizeOf expressions
+  decreasing_by all_goals simp_wf <;> omega
+end
 
 private def parseNatToken (tok : String) : Except ParseError Nat :=
   match tok.toNat? with

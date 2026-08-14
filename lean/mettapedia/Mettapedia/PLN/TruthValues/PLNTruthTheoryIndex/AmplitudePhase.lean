@@ -927,10 +927,10 @@ structure CredalProjectionTowerProfile where
 
 /-- Credal projection tower profile.
 
-This packages the finite projection-forcing surface together with the generic
+This packages the finite projection-forcing interface together with the generic
 setoid-based distinction/credal bridge and its OSLF observational
 specialization.  The concrete Bool witness remains available underneath these
-fields, but the profile surfaces the generic and language-specialized theorems
+fields, but the profile exposes the generic and language-specialized theorems
 directly. -/
 def credalProjectionTowerProfile : CredalProjectionTowerProfile where
   lowerForced :=

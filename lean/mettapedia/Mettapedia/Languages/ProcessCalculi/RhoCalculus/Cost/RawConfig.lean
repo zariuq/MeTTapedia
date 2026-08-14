@@ -30,6 +30,6 @@ theorem decodeRawConfig_components : ∀ term : RawCostTerm,
       simp [RawCostTerm.components, decodeCostTerm, CostTerm.components,
         decodeRawConfig_components left, decodeRawConfig_components right]
   | .drop name => rfl
-  | .purse surface stack => rfl
+  | .purse location stack => rfl
 
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost

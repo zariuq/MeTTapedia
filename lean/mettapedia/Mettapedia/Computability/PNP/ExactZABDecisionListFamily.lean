@@ -15,7 +15,7 @@ Given a shared extractor `zfeat : Z → BitVec r`, we concatenate
 * the side-channel bits `b`,
 
 and run the same fixed-order decision-list family on that combined bit vector.
-The resulting exact-surface budget is `r + 2k + 1`.
+The resulting exact-data domain budget is `r + 2k + 1`.
 -/
 
 namespace Mettapedia.Computability.PNP
@@ -26,16 +26,16 @@ section
 
 variable {Z : Type*} {r k : ℕ}
 
-/-- The exact visible bit surface obtained from one shared `z` extractor
+/-- The exact visible bit data domain obtained from one shared `z` extractor
 together with the raw `(a, b)` VV data. -/
 def exactZABVisibleData
     (zfeat : Z → BitVec r)
-    (u : ExactVisiblePostSwitchSurface Z k) : BitVec (r + (k + k)) :=
+    (u : ExactVisiblePostSwitchData Z k) : BitVec (r + (k + k)) :=
   Fin.append (zfeat u.z) (exactABVisibleData (Z := Z) (k := k) u)
 
 @[simp] theorem exactZABVisibleData_tiInputMap
     (zfeat : Z → BitVec r)
-    (u : ExactVisiblePostSwitchSurface Z k) :
+    (u : ExactVisiblePostSwitchData Z k) :
     exactZABVisibleData (Z := Z) (r := r) (k := k) zfeat (tiInputMap u) =
       Fin.append (zfeat u.z) (Fin.append u.a (vvToggle u.a u.b)) := by
   cases u
@@ -46,15 +46,15 @@ def exactZABVisibleData
 noncomputable def rawExactZABDecisionListPredict
     (zfeat : Z → BitVec r)
     (code : SharedAffineDecisionListCode (r + (k + k)))
-    (u : ExactVisiblePostSwitchSurface Z k) : Bool :=
+    (u : ExactVisiblePostSwitchData Z k) : Bool :=
   match firstActiveFeature? (exactZABVisibleData (Z := Z) (r := r) (k := k) zfeat u) with
   | some j => code.1 j
   | none => code.2
 
-/-- The corresponding exact-surface bit family. -/
+/-- The corresponding exact-data domain bit family. -/
 noncomputable def rawExactZABDecisionListBitFamily
     (Z : Type*) (r k : ℕ) (zfeat : Z → BitVec r) :
-    BitEncodedClassifierFamily (ExactVisiblePostSwitchSurface Z k) (r + (k + k) + 1) where
+    BitEncodedClassifierFamily (ExactVisiblePostSwitchData Z k) (r + (k + k) + 1) where
   decode raw u :=
     let code := (sharedAffineDecisionListCodeEquivBitCode (r + (k + k))).symm raw
     rawExactZABDecisionListPredict (Z := Z) (r := r) (k := k) zfeat code u
@@ -68,7 +68,7 @@ noncomputable def rawExactZABDecisionListBitFamily
   funext u
   simp [rawExactZABDecisionListBitFamily, sharedAffineDecisionListCodeEquivBitCode]
 
-/-- Exact-surface families realized by fixed-order decision lists on the shared
+/-- Exact-data domain families realized by fixed-order decision lists on the shared
 visible bits `(zfeat z, a, b)`. -/
 def RealizedByRawExactZABDecisionListFamily
     {Index : Type*}
@@ -105,8 +105,8 @@ theorem exactVisibleCompressionTarget_of_realizedByRawExactZABDecisionListFamily
 theorem rawExactZABDecisionListRecoveryLowerBound
     [Fintype Z]
     (zfeat : Z → BitVec r)
-    (μ : PMF (ExactVisiblePostSwitchSurface Z k))
-    (target : ExactVisiblePostSwitchSurface Z k → Bool) (m : ℕ)
+    (μ : PMF (ExactVisiblePostSwitchData Z k))
+    (target : ExactVisiblePostSwitchData Z k → Bool) (m : ℕ)
     (htarget : ∃ code : SharedAffineDecisionListCode (r + (k + k)),
       target = rawExactZABDecisionListPredict (Z := Z) (r := r) (k := k) zfeat code)
     {q : ℝ≥0∞}
@@ -133,8 +133,8 @@ theorem rawExactZABDecisionListRecoveryLowerBound
 theorem rawExactZABDecisionListRecoveryLowerBound_twoMul
     [Fintype Z]
     (zfeat : Z → BitVec r)
-    (μ : PMF (ExactVisiblePostSwitchSurface Z k))
-    (target : ExactVisiblePostSwitchSurface Z k → Bool) (m : ℕ)
+    (μ : PMF (ExactVisiblePostSwitchData Z k))
+    (target : ExactVisiblePostSwitchData Z k → Bool) (m : ℕ)
     (htarget : ∃ code : SharedAffineDecisionListCode (r + (k + k)),
       target = rawExactZABDecisionListPredict (Z := Z) (r := r) (k := k) zfeat code)
     {q : ℝ≥0∞}

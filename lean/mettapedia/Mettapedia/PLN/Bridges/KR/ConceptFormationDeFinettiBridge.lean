@@ -46,16 +46,16 @@ theorem deFinettiGateSpec_determinesConceptFormationGamble_iff_noGap
     (D : DeFinettiProjectiveCredalSpecialization
       (Window := PUnit) (Global := Gate) X μ)
     (hSpec : D.projectiveSpec = gateCredalProjectiveSpec (Gate := Gate))
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     D.projectiveSpec.determinesGlobalGamble
-        (ObservationSurface.conceptFormationGamble S Γ σ A) ↔
-      ¬ (A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-          A ∉ ObservationSurface.lowerConceptFamily S Γ σ) := by
+        (ObservationEncoder.conceptFormationGamble S Γ σ A) ↔
+      ¬ (A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+          A ∉ ObservationEncoder.lowerConceptFamily S Γ σ) := by
   rw [hSpec]
   exact
-    ObservationSurface.gateCredalProjectiveSpec_determinesGlobalGamble_conceptFormationGamble_iff
+    ObservationEncoder.gateCredalProjectiveSpec_determinesGlobalGamble_conceptFormationGamble_iff
       S Γ σ A
 
 /- The same glued de Finetti/projective-credal specialization has strict
@@ -67,16 +67,16 @@ theorem deFinettiGateSpec_hasStrictGlobalWidth_conceptFormationGamble_iff_gap
     (D : DeFinettiProjectiveCredalSpecialization
       (Window := PUnit) (Global := Gate) X μ)
     (hSpec : D.projectiveSpec = gateCredalProjectiveSpec (Gate := Gate))
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     D.projectiveSpec.hasStrictGlobalWidth
-        (ObservationSurface.conceptFormationGamble S Γ σ A) ↔
-      A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-        A ∉ ObservationSurface.lowerConceptFamily S Γ σ := by
+        (ObservationEncoder.conceptFormationGamble S Γ σ A) ↔
+      A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+        A ∉ ObservationEncoder.lowerConceptFamily S Γ σ := by
   rw [hSpec]
   exact
-    ObservationSurface.gateCredalProjectiveSpec_hasStrictGlobalWidth_conceptFormationGamble_iff
+    ObservationEncoder.gateCredalProjectiveSpec_hasStrictGlobalWidth_conceptFormationGamble_iff
       S Γ σ A
 
 omit [Fintype Gate] [Nonempty Gate] in
@@ -114,21 +114,21 @@ theorem deFinettiGateSpec_completion_conceptFormationGamble_eq_activeGate
       (Window := PUnit) (Global := Gate) X μ)
     (hSpec : D.projectiveSpec = gateCredalProjectiveSpec (Gate := Gate))
     (M : BernoulliMixture) (hRep : Represents M X μ)
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     ∃ g : Gate,
       (D.completionOfMixture M)
-          (ObservationSurface.conceptFormationGamble S Γ σ A) =
+          (ObservationEncoder.conceptFormationGamble S Γ σ A) =
         if A ∈
             Mettapedia.KR.ConceptGeometry.AbstractInheritance.finiteConceptFamily
-              (Γ g) (ObservationSurface.aggregate S σ)
+              (Γ g) (ObservationEncoder.aggregate S σ)
         then 1 else 0 := by
   rcases deFinettiGateSpec_completion_eq_dirac_of_compatible
       X μ D hSpec M hRep with ⟨g, hg⟩
   refine ⟨g, ?_⟩
   rw [hg]
-  simp [ObservationSurface.conceptFormationGamble]
+  simp [ObservationEncoder.conceptFormationGamble]
 
 omit [Fintype Gate] [Nonempty Gate] in
 /-- Constructive endpoint form of the gap canary.  If a candidate concept is
@@ -141,27 +141,27 @@ theorem deFinettiGateSpec_gap_has_endpoint_completions
     (D : DeFinettiProjectiveCredalSpecialization
       (Window := PUnit) (Global := Gate) X μ)
     (hSpec : D.projectiveSpec = gateCredalProjectiveSpec (Gate := Gate))
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr)
     (hGap :
-      A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-        A ∉ ObservationSurface.lowerConceptFamily S Γ σ) :
+      A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+        A ∉ ObservationEncoder.lowerConceptFamily S Γ σ) :
     ∃ P Q : PrecisePrevision Gate,
       P ∈ D.projectiveSpec.projectiveLimitCredalSet ∧
       Q ∈ D.projectiveSpec.projectiveLimitCredalSet ∧
-      P (ObservationSurface.conceptFormationGamble S Γ σ A) = 1 ∧
-      Q (ObservationSurface.conceptFormationGamble S Γ σ A) = 0 := by
+      P (ObservationEncoder.conceptFormationGamble S Γ σ A) = 1 ∧
+      Q (ObservationEncoder.conceptFormationGamble S Γ σ A) = 0 := by
   rcases hGap with ⟨hUpper, hNotLower⟩
-  rcases (ObservationSurface.mem_upperConceptFamily_iff S Γ σ A).mp hUpper with
+  rcases (ObservationEncoder.mem_upperConceptFamily_iff S Γ σ A).mp hUpper with
     ⟨gTrue, hTrue⟩
   have hFalseEx :
       ∃ gFalse : Gate,
         A ∉ Mettapedia.KR.ConceptGeometry.AbstractInheritance.finiteConceptFamily
-          (Γ gFalse) (ObservationSurface.aggregate S σ) := by
+          (Γ gFalse) (ObservationEncoder.aggregate S σ) := by
     by_contra hNoFalse
     exact hNotLower
-      ((ObservationSurface.mem_lowerConceptFamily_iff S Γ σ A).mpr
+      ((ObservationEncoder.mem_lowerConceptFamily_iff S Γ σ A).mpr
         (fun g => by
           by_contra hNot
           exact hNoFalse ⟨g, hNot⟩))
@@ -173,8 +173,8 @@ theorem deFinettiGateSpec_gap_has_endpoint_completions
   · rw [hSpec, gateCredalProjectiveSpec,
       identityCredalProjectiveSpec_projectiveLimitCredalSet]
     exact ⟨gFalse, rfl⟩
-  · simp [ObservationSurface.conceptFormationGamble, hTrue]
-  · simp [ObservationSurface.conceptFormationGamble, hFalse]
+  · simp [ObservationEncoder.conceptFormationGamble, hTrue]
+  · simp [ObservationEncoder.conceptFormationGamble, hFalse]
 
 omit [Fintype Gate] [Nonempty Gate] in
 /-- Strict-width form of the endpoint canary.  At the de Finetti adapter
@@ -186,20 +186,20 @@ theorem deFinettiGateSpec_strictWidth_has_endpoint_completions
     (D : DeFinettiProjectiveCredalSpecialization
       (Window := PUnit) (Global := Gate) X μ)
     (hSpec : D.projectiveSpec = gateCredalProjectiveSpec (Gate := Gate))
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr)
     (hStrict :
       D.projectiveSpec.hasStrictGlobalWidth
-        (ObservationSurface.conceptFormationGamble S Γ σ A)) :
+        (ObservationEncoder.conceptFormationGamble S Γ σ A)) :
     ∃ P Q : PrecisePrevision Gate,
       P ∈ D.projectiveSpec.projectiveLimitCredalSet ∧
       Q ∈ D.projectiveSpec.projectiveLimitCredalSet ∧
-      P (ObservationSurface.conceptFormationGamble S Γ σ A) = 1 ∧
-      Q (ObservationSurface.conceptFormationGamble S Γ σ A) = 0 := by
+      P (ObservationEncoder.conceptFormationGamble S Γ σ A) = 1 ∧
+      Q (ObservationEncoder.conceptFormationGamble S Γ σ A) = 0 := by
   have hGap :
-      A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-        A ∉ ObservationSurface.lowerConceptFamily S Γ σ :=
+      A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+        A ∉ ObservationEncoder.lowerConceptFamily S Γ σ :=
     (deFinettiGateSpec_hasStrictGlobalWidth_conceptFormationGamble_iff_gap
       X μ D hSpec S Γ σ A).mp hStrict
   exact
@@ -214,20 +214,20 @@ theorem conceptFormationWidthComplementITV_deFinettiStrictWidth_gapReadout
     (D : DeFinettiProjectiveCredalSpecialization
       (Window := PUnit) (Global := Gate) X μ)
     (hSpec : D.projectiveSpec = gateCredalProjectiveSpec (Gate := Gate))
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr)
     (hStrict :
       D.projectiveSpec.hasStrictGlobalWidth
-        (ObservationSurface.conceptFormationGamble S Γ σ A)) :
+        (ObservationEncoder.conceptFormationGamble S Γ σ A)) :
     (conceptFormationWidthComplementITV S Γ σ A).lower = 0 ∧
       (conceptFormationWidthComplementITV S Γ σ A).upper = 1 ∧
       (conceptFormationWidthComplementITV S Γ σ A).width = 1 ∧
       (conceptFormationWidthComplementITV S Γ σ A).credibility = 0 ∧
       (conceptFormationWidthComplementITV S Γ σ A).strength = (1 / 2 : ℝ) := by
   have hGap :
-      A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-        A ∉ ObservationSurface.lowerConceptFamily S Γ σ :=
+      A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+        A ∉ ObservationEncoder.lowerConceptFamily S Γ σ :=
     (deFinettiGateSpec_hasStrictGlobalWidth_conceptFormationGamble_iff_gap
       X μ D hSpec S Γ σ A).mp hStrict
   exact conceptFormationWidthComplementITV_gap_readout S Γ σ A hGap
@@ -239,20 +239,20 @@ theorem conceptFormationTypedWidthComplementITV_deFinettiStrictWidth_gapReadout
     (D : DeFinettiProjectiveCredalSpecialization
       (Window := PUnit) (Global := Gate) X μ)
     (hSpec : D.projectiveSpec = gateCredalProjectiveSpec (Gate := Gate))
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr)
     (hStrict :
       D.projectiveSpec.hasStrictGlobalWidth
-        (ObservationSurface.conceptFormationGamble S Γ σ A)) :
+        (ObservationEncoder.conceptFormationGamble S Γ σ A)) :
     (conceptFormationTypedWidthComplementITV S Γ σ A).lower = 0 ∧
       (conceptFormationTypedWidthComplementITV S Γ σ A).upper = 1 ∧
       (conceptFormationTypedWidthComplementITV S Γ σ A).width = 1 ∧
       (conceptFormationTypedWidthComplementITV S Γ σ A).credibility = 0 ∧
       (conceptFormationTypedWidthComplementITV S Γ σ A).midpoint = (1 / 2 : ℝ) := by
   have hGap :
-      A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-        A ∉ ObservationSurface.lowerConceptFamily S Γ σ :=
+      A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+        A ∉ ObservationEncoder.lowerConceptFamily S Γ σ :=
     (deFinettiGateSpec_hasStrictGlobalWidth_conceptFormationGamble_iff_gap
       X μ D hSpec S Γ σ A).mp hStrict
   exact conceptFormationTypedWidthComplementITV_gap_readout S Γ σ A hGap
@@ -266,7 +266,7 @@ theorem conceptFormationWidthComplementITV_deFinettiStrictWidth_fullReadout_iff
     (D : DeFinettiProjectiveCredalSpecialization
       (Window := PUnit) (Global := Gate) X μ)
     (hSpec : D.projectiveSpec = gateCredalProjectiveSpec (Gate := Gate))
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     ((conceptFormationWidthComplementITV S Γ σ A).lower = 0 ∧
@@ -275,12 +275,12 @@ theorem conceptFormationWidthComplementITV_deFinettiStrictWidth_fullReadout_iff
       (conceptFormationWidthComplementITV S Γ σ A).credibility = 0 ∧
       (conceptFormationWidthComplementITV S Γ σ A).strength = (1 / 2 : ℝ)) ↔
       D.projectiveSpec.hasStrictGlobalWidth
-        (ObservationSurface.conceptFormationGamble S Γ σ A) := by
+        (ObservationEncoder.conceptFormationGamble S Γ σ A) := by
   constructor
   · intro hReadout
     have hGap :
-        A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-          A ∉ ObservationSurface.lowerConceptFamily S Γ σ :=
+        A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+          A ∉ ObservationEncoder.lowerConceptFamily S Γ σ :=
       (conceptFormationWidthComplementITV_fullReadout_iff_gap S Γ σ A).mp
         hReadout
     exact
@@ -298,7 +298,7 @@ theorem conceptFormationTypedWidthComplementITV_deFinettiStrictWidth_fullReadout
     (D : DeFinettiProjectiveCredalSpecialization
       (Window := PUnit) (Global := Gate) X μ)
     (hSpec : D.projectiveSpec = gateCredalProjectiveSpec (Gate := Gate))
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     ((conceptFormationTypedWidthComplementITV S Γ σ A).lower = 0 ∧
@@ -307,12 +307,12 @@ theorem conceptFormationTypedWidthComplementITV_deFinettiStrictWidth_fullReadout
       (conceptFormationTypedWidthComplementITV S Γ σ A).credibility = 0 ∧
       (conceptFormationTypedWidthComplementITV S Γ σ A).midpoint = (1 / 2 : ℝ)) ↔
       D.projectiveSpec.hasStrictGlobalWidth
-        (ObservationSurface.conceptFormationGamble S Γ σ A) := by
+        (ObservationEncoder.conceptFormationGamble S Γ σ A) := by
   constructor
   · intro hReadout
     have hGap :
-        A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-          A ∉ ObservationSurface.lowerConceptFamily S Γ σ :=
+        A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+          A ∉ ObservationEncoder.lowerConceptFamily S Γ σ :=
       (conceptFormationTypedWidthComplementITV_fullReadout_iff_gap S Γ σ A).mp
         hReadout
     exact
@@ -333,18 +333,18 @@ theorem conceptFormationWidthComplementITV_deFinettiStrictWidth_width_pos_iff
     (D : DeFinettiProjectiveCredalSpecialization
       (Window := PUnit) (Global := Gate) X μ)
     (hSpec : D.projectiveSpec = gateCredalProjectiveSpec (Gate := Gate))
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     (0 < (conceptFormationWidthComplementITV S Γ σ A).width ∧
       (conceptFormationWidthComplementITV S Γ σ A).credibility < 1) ↔
       D.projectiveSpec.hasStrictGlobalWidth
-        (ObservationSurface.conceptFormationGamble S Γ σ A) := by
+        (ObservationEncoder.conceptFormationGamble S Γ σ A) := by
   constructor
   · intro hDisplay
     have hGap :
-        A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-          A ∉ ObservationSurface.lowerConceptFamily S Γ σ :=
+        A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+          A ∉ ObservationEncoder.lowerConceptFamily S Γ σ :=
       (conceptFormationWidthComplementITV_width_pos_iff_gap S Γ σ A).mp
         hDisplay
     exact
@@ -352,8 +352,8 @@ theorem conceptFormationWidthComplementITV_deFinettiStrictWidth_width_pos_iff
         X μ D hSpec S Γ σ A).mpr hGap
   · intro hStrict
     have hGap :
-        A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-          A ∉ ObservationSurface.lowerConceptFamily S Γ σ :=
+        A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+          A ∉ ObservationEncoder.lowerConceptFamily S Γ σ :=
       (deFinettiGateSpec_hasStrictGlobalWidth_conceptFormationGamble_iff_gap
         X μ D hSpec S Γ σ A).mp hStrict
     exact
@@ -366,18 +366,18 @@ theorem conceptFormationTypedWidthComplementITV_deFinettiStrictWidth_width_pos_i
     (D : DeFinettiProjectiveCredalSpecialization
       (Window := PUnit) (Global := Gate) X μ)
     (hSpec : D.projectiveSpec = gateCredalProjectiveSpec (Gate := Gate))
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     (0 < (conceptFormationTypedWidthComplementITV S Γ σ A).width ∧
       (conceptFormationTypedWidthComplementITV S Γ σ A).credibility < 1) ↔
       D.projectiveSpec.hasStrictGlobalWidth
-        (ObservationSurface.conceptFormationGamble S Γ σ A) := by
+        (ObservationEncoder.conceptFormationGamble S Γ σ A) := by
   constructor
   · intro hDisplay
     have hGap :
-        A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-          A ∉ ObservationSurface.lowerConceptFamily S Γ σ :=
+        A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+          A ∉ ObservationEncoder.lowerConceptFamily S Γ σ :=
       (conceptFormationTypedWidthComplementITV_width_pos_iff_gap S Γ σ A).mp
         hDisplay
     exact
@@ -385,8 +385,8 @@ theorem conceptFormationTypedWidthComplementITV_deFinettiStrictWidth_width_pos_i
         X μ D hSpec S Γ σ A).mpr hGap
   · intro hStrict
     have hGap :
-        A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-          A ∉ ObservationSurface.lowerConceptFamily S Γ σ :=
+        A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+          A ∉ ObservationEncoder.lowerConceptFamily S Γ σ :=
       (deFinettiGateSpec_hasStrictGlobalWidth_conceptFormationGamble_iff_gap
         X μ D hSpec S Γ σ A).mp hStrict
     exact
@@ -405,7 +405,7 @@ noncomputable def conceptFormationDeFinettiPrefixWidthComplementITVSource
     (hLaw : ∀ M : BernoulliMixture, M ∈ C →
       BernoulliMixturePrefixLaw M n)
     (hC : C.Nonempty)
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : (Fin n → Bool) → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     ProjectiveCredalWidthComplementITVSource PUnit (Fin n → Bool) :=
@@ -421,7 +421,7 @@ noncomputable def conceptFormationDeFinettiPrefixWidthComplementITV
     (hLaw : ∀ M : BernoulliMixture, M ∈ C →
       BernoulliMixturePrefixLaw M n)
     (hC : C.Nonempty)
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : (Fin n → Bool) → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) : ITV :=
   projectiveCredalWidthComplementITV
@@ -435,7 +435,7 @@ noncomputable def conceptFormationDeFinettiPrefixTypedWidthComplementITV
     (hLaw : ∀ M : BernoulliMixture, M ∈ C →
       BernoulliMixturePrefixLaw M n)
     (hC : C.Nonempty)
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : (Fin n → Bool) → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     TypedITV (projectiveCredalWidthComplementITVSemantics PUnit (Fin n → Bool)) :=
@@ -450,19 +450,19 @@ theorem conceptFormationDeFinettiPrefixProjectiveSpec_determinesGlobalGamble_iff
     (C : Set BernoulliMixture) (n : ℕ)
     (hLaw : ∀ M : BernoulliMixture, M ∈ C →
       BernoulliMixturePrefixLaw M n)
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : (Fin n → Bool) → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     (bernoulliMixturePrefixProjectiveSpec C n hLaw).determinesGlobalGamble
-        (ObservationSurface.conceptFormationGamble S Γ σ A) ↔
+        (ObservationEncoder.conceptFormationGamble S Γ σ A) ↔
       ∀ M : BernoulliMixture, ∀ hM : M ∈ C,
         ∀ N : BernoulliMixture, ∀ hN : N ∈ C,
           (hLaw M hM).toPrecisePrevision
-              (ObservationSurface.conceptFormationGamble S Γ σ A) =
+              (ObservationEncoder.conceptFormationGamble S Γ σ A) =
             (hLaw N hN).toPrecisePrevision
-              (ObservationSurface.conceptFormationGamble S Γ σ A) :=
+              (ObservationEncoder.conceptFormationGamble S Γ σ A) :=
   bernoulliMixturePrefixProjectiveSpec_determinesGlobalGamble_iff_mixtureAgreement
-    C n hLaw (ObservationSurface.conceptFormationGamble S Γ σ A)
+    C n hLaw (ObservationEncoder.conceptFormationGamble S Γ σ A)
 
 /-- The finite-prefix de Finetti concept-formation gamble has strict
 projective width exactly when admissible Bernoulli mixtures do not all agree on
@@ -471,19 +471,19 @@ theorem conceptFormationDeFinettiPrefixProjectiveSpec_hasStrictGlobalWidth_iff_n
     (C : Set BernoulliMixture) (n : ℕ)
     (hLaw : ∀ M : BernoulliMixture, M ∈ C →
       BernoulliMixturePrefixLaw M n)
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : (Fin n → Bool) → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     (bernoulliMixturePrefixProjectiveSpec C n hLaw).hasStrictGlobalWidth
-        (ObservationSurface.conceptFormationGamble S Γ σ A) ↔
+        (ObservationEncoder.conceptFormationGamble S Γ σ A) ↔
       ¬ ∀ M : BernoulliMixture, ∀ hM : M ∈ C,
         ∀ N : BernoulliMixture, ∀ hN : N ∈ C,
           (hLaw M hM).toPrecisePrevision
-              (ObservationSurface.conceptFormationGamble S Γ σ A) =
+              (ObservationEncoder.conceptFormationGamble S Γ σ A) =
             (hLaw N hN).toPrecisePrevision
-              (ObservationSurface.conceptFormationGamble S Γ σ A) :=
+              (ObservationEncoder.conceptFormationGamble S Γ σ A) :=
   bernoulliMixturePrefixProjectiveSpec_hasStrictGlobalWidth_iff_not_mixtureAgreement
-    C n hLaw (ObservationSurface.conceptFormationGamble S Γ σ A)
+    C n hLaw (ObservationEncoder.conceptFormationGamble S Γ σ A)
 
 /-- If all admissible Bernoulli mixtures agree on the concept-formation
 gamble, the finite-prefix de Finetti concept-formation ITV is exact. -/
@@ -492,15 +492,15 @@ theorem conceptFormationDeFinettiPrefixWidthComplementITV_exact_of_mixtureAgreem
     (hLaw : ∀ M : BernoulliMixture, M ∈ C →
       BernoulliMixturePrefixLaw M n)
     (hC : C.Nonempty)
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : (Fin n → Bool) → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr)
     (hAgree : ∀ M : BernoulliMixture, ∀ hM : M ∈ C,
       ∀ N : BernoulliMixture, ∀ hN : N ∈ C,
         (hLaw M hM).toPrecisePrevision
-            (ObservationSurface.conceptFormationGamble S Γ σ A) =
+            (ObservationEncoder.conceptFormationGamble S Γ σ A) =
           (hLaw N hN).toPrecisePrevision
-            (ObservationSurface.conceptFormationGamble S Γ σ A)) :
+            (ObservationEncoder.conceptFormationGamble S Γ σ A)) :
     (conceptFormationDeFinettiPrefixWidthComplementITV
         C n hLaw hC S Γ σ A).lower =
         (conceptFormationDeFinettiPrefixWidthComplementITV
@@ -515,9 +515,9 @@ theorem conceptFormationDeFinettiPrefixWidthComplementITV_exact_of_mixtureAgreem
           C n hLaw hC S Γ σ A).lower := by
   have hDet :
       (bernoulliMixturePrefixProjectiveSpec C n hLaw).determinesGlobalGamble
-        (ObservationSurface.conceptFormationGamble S Γ σ A) :=
+        (ObservationEncoder.conceptFormationGamble S Γ σ A) :=
     bernoulliMixturePrefixProjectiveSpec_determinesGlobalGamble_of_mixtureAgreement
-      C n hLaw (ObservationSurface.conceptFormationGamble S Γ σ A) hAgree
+      C n hLaw (ObservationEncoder.conceptFormationGamble S Γ σ A) hAgree
   exact
     conceptFormationWidthComplementITVOfSpec_exact_of_determines
       (bernoulliMixturePrefixProjectiveSpec C n hLaw)
@@ -531,15 +531,15 @@ theorem conceptFormationDeFinettiPrefixTypedWidthComplementITV_exact_of_mixtureA
     (hLaw : ∀ M : BernoulliMixture, M ∈ C →
       BernoulliMixturePrefixLaw M n)
     (hC : C.Nonempty)
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : (Fin n → Bool) → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr)
     (hAgree : ∀ M : BernoulliMixture, ∀ hM : M ∈ C,
       ∀ N : BernoulliMixture, ∀ hN : N ∈ C,
         (hLaw M hM).toPrecisePrevision
-            (ObservationSurface.conceptFormationGamble S Γ σ A) =
+            (ObservationEncoder.conceptFormationGamble S Γ σ A) =
           (hLaw N hN).toPrecisePrevision
-            (ObservationSurface.conceptFormationGamble S Γ σ A)) :
+            (ObservationEncoder.conceptFormationGamble S Γ σ A)) :
     (conceptFormationDeFinettiPrefixTypedWidthComplementITV
         C n hLaw hC S Γ σ A).lower =
         (conceptFormationDeFinettiPrefixTypedWidthComplementITV
@@ -554,9 +554,9 @@ theorem conceptFormationDeFinettiPrefixTypedWidthComplementITV_exact_of_mixtureA
           C n hLaw hC S Γ σ A).lower := by
   have hDet :
       (bernoulliMixturePrefixProjectiveSpec C n hLaw).determinesGlobalGamble
-        (ObservationSurface.conceptFormationGamble S Γ σ A) :=
+        (ObservationEncoder.conceptFormationGamble S Γ σ A) :=
     bernoulliMixturePrefixProjectiveSpec_determinesGlobalGamble_of_mixtureAgreement
-      C n hLaw (ObservationSurface.conceptFormationGamble S Γ σ A) hAgree
+      C n hLaw (ObservationEncoder.conceptFormationGamble S Γ σ A) hAgree
   exact
     conceptFormationTypedWidthComplementITVOfSpec_exact_of_determines
       (bernoulliMixturePrefixProjectiveSpec C n hLaw)
@@ -572,7 +572,7 @@ theorem conceptFormationDeFinettiPrefixWidthComplementITV_exact_iff_mixtureAgree
     (hLaw : ∀ M : BernoulliMixture, M ∈ C →
       BernoulliMixturePrefixLaw M n)
     (hC : C.Nonempty)
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : (Fin n → Bool) → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     ((conceptFormationDeFinettiPrefixWidthComplementITV
@@ -590,26 +590,26 @@ theorem conceptFormationDeFinettiPrefixWidthComplementITV_exact_iff_mixtureAgree
       ∀ M : BernoulliMixture, ∀ hM : M ∈ C,
         ∀ N : BernoulliMixture, ∀ hN : N ∈ C,
           (hLaw M hM).toPrecisePrevision
-              (ObservationSurface.conceptFormationGamble S Γ σ A) =
+              (ObservationEncoder.conceptFormationGamble S Γ σ A) =
             (hLaw N hN).toPrecisePrevision
-              (ObservationSurface.conceptFormationGamble S Γ σ A) := by
+              (ObservationEncoder.conceptFormationGamble S Γ σ A) := by
   constructor
   · intro hExact
     rcases hExact with ⟨_, hWidth, _, _⟩
     by_contra hNotAgree
     have hNotDet :
         ¬ (bernoulliMixturePrefixProjectiveSpec C n hLaw).determinesGlobalGamble
-            (ObservationSurface.conceptFormationGamble S Γ σ A) := by
+            (ObservationEncoder.conceptFormationGamble S Γ σ A) := by
       intro hDet
       exact hNotAgree
         ((conceptFormationDeFinettiPrefixProjectiveSpec_determinesGlobalGamble_iff_mixtureAgreement
           C n hLaw S Γ σ A).mp hDet)
     have hStrict :
         (bernoulliMixturePrefixProjectiveSpec C n hLaw).hasStrictGlobalWidth
-          (ObservationSurface.conceptFormationGamble S Γ σ A) :=
+          (ObservationEncoder.conceptFormationGamble S Γ σ A) :=
       (ProjectiveLocalCredalSpec.hasStrictGlobalWidth_iff_not_determinesGlobalGamble
         (bernoulliMixturePrefixProjectiveSpec C n hLaw)
-        (ObservationSurface.conceptFormationGamble S Γ σ A)).mpr hNotDet
+        (ObservationEncoder.conceptFormationGamble S Γ σ A)).mpr hNotDet
     have hPosOfSpec :
         0 < (conceptFormationWidthComplementITVOfSpec
           (bernoulliMixturePrefixProjectiveSpec C n hLaw)
@@ -646,7 +646,7 @@ theorem conceptFormationDeFinettiPrefixTypedWidthComplementITV_exact_iff_mixture
     (hLaw : ∀ M : BernoulliMixture, M ∈ C →
       BernoulliMixturePrefixLaw M n)
     (hC : C.Nonempty)
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : (Fin n → Bool) → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     ((conceptFormationDeFinettiPrefixTypedWidthComplementITV
@@ -664,26 +664,26 @@ theorem conceptFormationDeFinettiPrefixTypedWidthComplementITV_exact_iff_mixture
       ∀ M : BernoulliMixture, ∀ hM : M ∈ C,
         ∀ N : BernoulliMixture, ∀ hN : N ∈ C,
           (hLaw M hM).toPrecisePrevision
-              (ObservationSurface.conceptFormationGamble S Γ σ A) =
+              (ObservationEncoder.conceptFormationGamble S Γ σ A) =
             (hLaw N hN).toPrecisePrevision
-              (ObservationSurface.conceptFormationGamble S Γ σ A) := by
+              (ObservationEncoder.conceptFormationGamble S Γ σ A) := by
   constructor
   · intro hExact
     rcases hExact with ⟨_, hWidth, _, _⟩
     by_contra hNotAgree
     have hNotDet :
         ¬ (bernoulliMixturePrefixProjectiveSpec C n hLaw).determinesGlobalGamble
-            (ObservationSurface.conceptFormationGamble S Γ σ A) := by
+            (ObservationEncoder.conceptFormationGamble S Γ σ A) := by
       intro hDet
       exact hNotAgree
         ((conceptFormationDeFinettiPrefixProjectiveSpec_determinesGlobalGamble_iff_mixtureAgreement
           C n hLaw S Γ σ A).mp hDet)
     have hStrict :
         (bernoulliMixturePrefixProjectiveSpec C n hLaw).hasStrictGlobalWidth
-          (ObservationSurface.conceptFormationGamble S Γ σ A) :=
+          (ObservationEncoder.conceptFormationGamble S Γ σ A) :=
       (ProjectiveLocalCredalSpec.hasStrictGlobalWidth_iff_not_determinesGlobalGamble
         (bernoulliMixturePrefixProjectiveSpec C n hLaw)
-        (ObservationSurface.conceptFormationGamble S Γ σ A)).mpr hNotDet
+        (ObservationEncoder.conceptFormationGamble S Γ σ A)).mpr hNotDet
     have hPosOfSpec :
         0 < (conceptFormationTypedWidthComplementITVOfSpec
           (bernoulliMixturePrefixProjectiveSpec C n hLaw)
@@ -721,24 +721,24 @@ theorem conceptFormationDeFinettiPrefixWidthComplementITV_width_pos_of_mixtureDi
     (hLaw : ∀ M : BernoulliMixture, M ∈ C →
       BernoulliMixturePrefixLaw M n)
     (hC : C.Nonempty)
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : (Fin n → Bool) → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr)
     {M N : BernoulliMixture} (hM : M ∈ C) (hN : N ∈ C)
     (hlt :
       (hLaw M hM).toPrecisePrevision
-          (ObservationSurface.conceptFormationGamble S Γ σ A) <
+          (ObservationEncoder.conceptFormationGamble S Γ σ A) <
         (hLaw N hN).toPrecisePrevision
-          (ObservationSurface.conceptFormationGamble S Γ σ A)) :
+          (ObservationEncoder.conceptFormationGamble S Γ σ A)) :
     0 < (conceptFormationDeFinettiPrefixWidthComplementITV
         C n hLaw hC S Γ σ A).width ∧
       (conceptFormationDeFinettiPrefixWidthComplementITV
         C n hLaw hC S Γ σ A).credibility < 1 := by
   have hStrict :
       (bernoulliMixturePrefixProjectiveSpec C n hLaw).hasStrictGlobalWidth
-        (ObservationSurface.conceptFormationGamble S Γ σ A) :=
+        (ObservationEncoder.conceptFormationGamble S Γ σ A) :=
     bernoulliMixturePrefixProjectiveSpec_hasStrictGlobalWidth_of_mixtureDisagreement
-      C n hLaw (ObservationSurface.conceptFormationGamble S Γ σ A) hM hN hlt
+      C n hLaw (ObservationEncoder.conceptFormationGamble S Γ σ A) hM hN hlt
   exact
     conceptFormationWidthComplementITVOfSpec_width_pos_of_strictWidth
       (bernoulliMixturePrefixProjectiveSpec C n hLaw)
@@ -752,24 +752,24 @@ theorem conceptFormationDeFinettiPrefixTypedWidthComplementITV_width_pos_of_mixt
     (hLaw : ∀ M : BernoulliMixture, M ∈ C →
       BernoulliMixturePrefixLaw M n)
     (hC : C.Nonempty)
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : (Fin n → Bool) → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr)
     {M N : BernoulliMixture} (hM : M ∈ C) (hN : N ∈ C)
     (hlt :
       (hLaw M hM).toPrecisePrevision
-          (ObservationSurface.conceptFormationGamble S Γ σ A) <
+          (ObservationEncoder.conceptFormationGamble S Γ σ A) <
         (hLaw N hN).toPrecisePrevision
-          (ObservationSurface.conceptFormationGamble S Γ σ A)) :
+          (ObservationEncoder.conceptFormationGamble S Γ σ A)) :
     0 < (conceptFormationDeFinettiPrefixTypedWidthComplementITV
         C n hLaw hC S Γ σ A).width ∧
       (conceptFormationDeFinettiPrefixTypedWidthComplementITV
         C n hLaw hC S Γ σ A).credibility < 1 := by
   have hStrict :
       (bernoulliMixturePrefixProjectiveSpec C n hLaw).hasStrictGlobalWidth
-        (ObservationSurface.conceptFormationGamble S Γ σ A) :=
+        (ObservationEncoder.conceptFormationGamble S Γ σ A) :=
     bernoulliMixturePrefixProjectiveSpec_hasStrictGlobalWidth_of_mixtureDisagreement
-      C n hLaw (ObservationSurface.conceptFormationGamble S Γ σ A) hM hN hlt
+      C n hLaw (ObservationEncoder.conceptFormationGamble S Γ σ A) hM hN hlt
   exact
     conceptFormationTypedWidthComplementITVOfSpec_width_pos_of_strictWidth
       (bernoulliMixturePrefixProjectiveSpec C n hLaw)
@@ -784,7 +784,7 @@ theorem conceptFormationDeFinettiPrefixWidthComplementITV_width_pos_iff_not_mixt
     (hLaw : ∀ M : BernoulliMixture, M ∈ C →
       BernoulliMixturePrefixLaw M n)
     (hC : C.Nonempty)
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : (Fin n → Bool) → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     (0 < (conceptFormationDeFinettiPrefixWidthComplementITV
@@ -794,9 +794,9 @@ theorem conceptFormationDeFinettiPrefixWidthComplementITV_width_pos_iff_not_mixt
       ¬ ∀ M : BernoulliMixture, ∀ hM : M ∈ C,
         ∀ N : BernoulliMixture, ∀ hN : N ∈ C,
           (hLaw M hM).toPrecisePrevision
-              (ObservationSurface.conceptFormationGamble S Γ σ A) =
+              (ObservationEncoder.conceptFormationGamble S Γ σ A) =
             (hLaw N hN).toPrecisePrevision
-              (ObservationSurface.conceptFormationGamble S Γ σ A) := by
+              (ObservationEncoder.conceptFormationGamble S Γ σ A) := by
   constructor
   · intro hDisplay hAgree
     rcases hDisplay with ⟨hWidthPos, _⟩
@@ -814,7 +814,7 @@ theorem conceptFormationDeFinettiPrefixWidthComplementITV_width_pos_iff_not_mixt
   · intro hNotAgree
     have hStrict :
         (bernoulliMixturePrefixProjectiveSpec C n hLaw).hasStrictGlobalWidth
-          (ObservationSurface.conceptFormationGamble S Γ σ A) :=
+          (ObservationEncoder.conceptFormationGamble S Γ σ A) :=
       (conceptFormationDeFinettiPrefixProjectiveSpec_hasStrictGlobalWidth_iff_not_mixtureAgreement
         C n hLaw S Γ σ A).mpr hNotAgree
     exact
@@ -831,7 +831,7 @@ theorem conceptFormationDeFinettiPrefixTypedWidthComplementITV_width_pos_iff_not
     (hLaw : ∀ M : BernoulliMixture, M ∈ C →
       BernoulliMixturePrefixLaw M n)
     (hC : C.Nonempty)
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : (Fin n → Bool) → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     (0 < (conceptFormationDeFinettiPrefixTypedWidthComplementITV
@@ -841,9 +841,9 @@ theorem conceptFormationDeFinettiPrefixTypedWidthComplementITV_width_pos_iff_not
       ¬ ∀ M : BernoulliMixture, ∀ hM : M ∈ C,
         ∀ N : BernoulliMixture, ∀ hN : N ∈ C,
           (hLaw M hM).toPrecisePrevision
-              (ObservationSurface.conceptFormationGamble S Γ σ A) =
+              (ObservationEncoder.conceptFormationGamble S Γ σ A) =
             (hLaw N hN).toPrecisePrevision
-              (ObservationSurface.conceptFormationGamble S Γ σ A) := by
+              (ObservationEncoder.conceptFormationGamble S Γ σ A) := by
   constructor
   · intro hDisplay hAgree
     rcases hDisplay with ⟨hWidthPos, _⟩
@@ -861,7 +861,7 @@ theorem conceptFormationDeFinettiPrefixTypedWidthComplementITV_width_pos_iff_not
   · intro hNotAgree
     have hStrict :
         (bernoulliMixturePrefixProjectiveSpec C n hLaw).hasStrictGlobalWidth
-          (ObservationSurface.conceptFormationGamble S Γ σ A) :=
+          (ObservationEncoder.conceptFormationGamble S Γ σ A) :=
       (conceptFormationDeFinettiPrefixProjectiveSpec_hasStrictGlobalWidth_iff_not_mixtureAgreement
         C n hLaw S Γ σ A).mpr hNotAgree
     exact
@@ -880,7 +880,7 @@ canonical external `Bool^ℕ` process-law family generated by the same Bernoulli
 mixture credal set. -/
 theorem conceptFormationDeFinettiPrefixWidthComplementITV_canonicalExternalProcessLaw_readout
     (C : Set BernoulliMixture) (n : ℕ) (hC : C.Nonempty)
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : (Fin n → Bool) → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     (conceptFormationDeFinettiPrefixWidthComplementITV
@@ -888,32 +888,32 @@ theorem conceptFormationDeFinettiPrefixWidthComplementITV_canonicalExternalProce
         hC S Γ σ A).lower =
         externalPathLawPrefixLowerEnvelope
           (bernoulliMixtureCanonicalExternalBoolProcessLawSet C) n
-          (ObservationSurface.conceptFormationGamble S Γ σ A) ∧
+          (ObservationEncoder.conceptFormationGamble S Γ σ A) ∧
       (conceptFormationDeFinettiPrefixWidthComplementITV
         C n (fun M _ => bernoulliMixturePrefixLaw_analytic M n)
         hC S Γ σ A).upper =
         externalPathLawPrefixUpperEnvelope
           (bernoulliMixtureCanonicalExternalBoolProcessLawSet C) n
-          (ObservationSurface.conceptFormationGamble S Γ σ A) ∧
+          (ObservationEncoder.conceptFormationGamble S Γ σ A) ∧
       (conceptFormationDeFinettiPrefixWidthComplementITV
         C n (fun M _ => bernoulliMixturePrefixLaw_analytic M n)
         hC S Γ σ A).width =
         externalPathLawPrefixEnvelopeWidth
           (bernoulliMixtureCanonicalExternalBoolProcessLawSet C) n
-          (ObservationSurface.conceptFormationGamble S Γ σ A) ∧
+          (ObservationEncoder.conceptFormationGamble S Γ σ A) ∧
       (conceptFormationDeFinettiPrefixWidthComplementITV
         C n (fun M _ => bernoulliMixturePrefixLaw_analytic M n)
         hC S Γ σ A).credibility =
         externalPathLawPrefixEnvelopeWidthComplement
           (bernoulliMixtureCanonicalExternalBoolProcessLawSet C) n
-          (ObservationSurface.conceptFormationGamble S Γ σ A) ∧
+          (ObservationEncoder.conceptFormationGamble S Γ σ A) ∧
       (conceptFormationDeFinettiPrefixWidthComplementITV
         C n (fun M _ => bernoulliMixturePrefixLaw_analytic M n)
         hC S Γ σ A).strength =
         externalPathLawPrefixEnvelopeMidpoint
           (bernoulliMixtureCanonicalExternalBoolProcessLawSet C) n
-          (ObservationSurface.conceptFormationGamble S Γ σ A) := by
-  let Y := ObservationSurface.conceptFormationGamble S Γ σ A
+          (ObservationEncoder.conceptFormationGamble S Γ σ A) := by
+  let Y := ObservationEncoder.conceptFormationGamble S Γ σ A
   refine ⟨?_, ?_, ?_, ?_, ?_⟩
   · calc
       (conceptFormationDeFinettiPrefixWidthComplementITV
@@ -998,7 +998,7 @@ theorem conceptFormationDeFinettiPrefixWidthComplementITV_canonicalExternalProce
 `conceptFormationDeFinettiPrefixWidthComplementITV_canonicalExternalProcessLaw_readout`. -/
 theorem conceptFormationDeFinettiPrefixTypedWidthComplementITV_canonicalExternalProcessLaw_readout
     (C : Set BernoulliMixture) (n : ℕ) (hC : C.Nonempty)
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : (Fin n → Bool) → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     (conceptFormationDeFinettiPrefixTypedWidthComplementITV
@@ -1006,32 +1006,32 @@ theorem conceptFormationDeFinettiPrefixTypedWidthComplementITV_canonicalExternal
         hC S Γ σ A).lower =
         externalPathLawPrefixLowerEnvelope
           (bernoulliMixtureCanonicalExternalBoolProcessLawSet C) n
-          (ObservationSurface.conceptFormationGamble S Γ σ A) ∧
+          (ObservationEncoder.conceptFormationGamble S Γ σ A) ∧
       (conceptFormationDeFinettiPrefixTypedWidthComplementITV
         C n (fun M _ => bernoulliMixturePrefixLaw_analytic M n)
         hC S Γ σ A).upper =
         externalPathLawPrefixUpperEnvelope
           (bernoulliMixtureCanonicalExternalBoolProcessLawSet C) n
-          (ObservationSurface.conceptFormationGamble S Γ σ A) ∧
+          (ObservationEncoder.conceptFormationGamble S Γ σ A) ∧
       (conceptFormationDeFinettiPrefixTypedWidthComplementITV
         C n (fun M _ => bernoulliMixturePrefixLaw_analytic M n)
         hC S Γ σ A).width =
         externalPathLawPrefixEnvelopeWidth
           (bernoulliMixtureCanonicalExternalBoolProcessLawSet C) n
-          (ObservationSurface.conceptFormationGamble S Γ σ A) ∧
+          (ObservationEncoder.conceptFormationGamble S Γ σ A) ∧
       (conceptFormationDeFinettiPrefixTypedWidthComplementITV
         C n (fun M _ => bernoulliMixturePrefixLaw_analytic M n)
         hC S Γ σ A).credibility =
         externalPathLawPrefixEnvelopeWidthComplement
           (bernoulliMixtureCanonicalExternalBoolProcessLawSet C) n
-          (ObservationSurface.conceptFormationGamble S Γ σ A) ∧
+          (ObservationEncoder.conceptFormationGamble S Γ σ A) ∧
       (conceptFormationDeFinettiPrefixTypedWidthComplementITV
         C n (fun M _ => bernoulliMixturePrefixLaw_analytic M n)
         hC S Γ σ A).midpoint =
         externalPathLawPrefixEnvelopeMidpoint
           (bernoulliMixtureCanonicalExternalBoolProcessLawSet C) n
-          (ObservationSurface.conceptFormationGamble S Γ σ A) := by
-  let Y := ObservationSurface.conceptFormationGamble S Γ σ A
+          (ObservationEncoder.conceptFormationGamble S Γ σ A) := by
+  let Y := ObservationEncoder.conceptFormationGamble S Γ σ A
   refine ⟨?_, ?_, ?_, ?_, ?_⟩
   · calc
       (conceptFormationDeFinettiPrefixTypedWidthComplementITV
@@ -1118,7 +1118,7 @@ Bernoulli mixtures on the same concept-formation gamble.  This is the
 process-law version of the mixture-agreement criterion, not a new semantics. -/
 theorem conceptFormationDeFinettiPrefix_canonicalExternalProcessAgreement_iff_mixtureAgreement
     (C : Set BernoulliMixture) (n : ℕ)
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : (Fin n → Bool) → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     (∀ E : ExternalBoolProcessLaw (ℕ → Bool),
@@ -1126,16 +1126,16 @@ theorem conceptFormationDeFinettiPrefix_canonicalExternalProcessAgreement_iff_mi
         ∀ F : ExternalBoolProcessLaw (ℕ → Bool),
         ∀ _hF : F ∈ bernoulliMixtureCanonicalExternalBoolProcessLawSet C,
           E.prefixPrevision n
-              (ObservationSurface.conceptFormationGamble S Γ σ A) =
+              (ObservationEncoder.conceptFormationGamble S Γ σ A) =
             F.prefixPrevision n
-              (ObservationSurface.conceptFormationGamble S Γ σ A)) ↔
+              (ObservationEncoder.conceptFormationGamble S Γ σ A)) ↔
       ∀ M : BernoulliMixture, ∀ _hM : M ∈ C,
         ∀ N : BernoulliMixture, ∀ _hN : N ∈ C,
           (bernoulliMixturePrefixLaw_analytic M n).toPrecisePrevision
-              (ObservationSurface.conceptFormationGamble S Γ σ A) =
+              (ObservationEncoder.conceptFormationGamble S Γ σ A) =
             (bernoulliMixturePrefixLaw_analytic N n).toPrecisePrevision
-              (ObservationSurface.conceptFormationGamble S Γ σ A) := by
-  let Y := ObservationSurface.conceptFormationGamble S Γ σ A
+              (ObservationEncoder.conceptFormationGamble S Γ σ A) := by
+  let Y := ObservationEncoder.conceptFormationGamble S Γ σ A
   constructor
   · intro hProcess M hM N hN
     have hAgree :
@@ -1173,24 +1173,24 @@ agreement criterion: the process-law witness is not inferred from a display
 interval; it is built from the two disagreeing Bernoulli mixtures. -/
 theorem conceptFormationDeFinettiPrefix_canonicalExternalProcessDisagreement_of_mixtureDisagreement
     (C : Set BernoulliMixture) (n : ℕ)
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : (Fin n → Bool) → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr)
     {M N : BernoulliMixture} (hM : M ∈ C) (hN : N ∈ C)
     (hlt :
       (bernoulliMixturePrefixLaw_analytic M n).toPrecisePrevision
-          (ObservationSurface.conceptFormationGamble S Γ σ A) <
+          (ObservationEncoder.conceptFormationGamble S Γ σ A) <
         (bernoulliMixturePrefixLaw_analytic N n).toPrecisePrevision
-          (ObservationSurface.conceptFormationGamble S Γ σ A)) :
+          (ObservationEncoder.conceptFormationGamble S Γ σ A)) :
     ∃ E : ExternalBoolProcessLaw (ℕ → Bool),
       E ∈ bernoulliMixtureCanonicalExternalBoolProcessLawSet C ∧
         ∃ F : ExternalBoolProcessLaw (ℕ → Bool),
           F ∈ bernoulliMixtureCanonicalExternalBoolProcessLawSet C ∧
             E.prefixPrevision n
-                (ObservationSurface.conceptFormationGamble S Γ σ A) <
+                (ObservationEncoder.conceptFormationGamble S Γ σ A) <
               F.prefixPrevision n
-                (ObservationSurface.conceptFormationGamble S Γ σ A) := by
-  let Y := ObservationSurface.conceptFormationGamble S Γ σ A
+                (ObservationEncoder.conceptFormationGamble S Γ σ A) := by
+  let Y := ObservationEncoder.conceptFormationGamble S Γ σ A
   refine
     ⟨bernoulliMixtureCanonicalExternalBoolProcessLaw M, ⟨M, hM, rfl⟩,
       bernoulliMixtureCanonicalExternalBoolProcessLaw N, ⟨N, hN, rfl⟩, ?_⟩
@@ -1209,7 +1209,7 @@ cylinder.  This turns the negated agreement boundary into an explicit strict
 pair of process laws, with the order oriented toward the smaller prevision. -/
 theorem conceptFormationDeFinettiPrefix_existsCanonicalExternalProcessDisagreement_iff_not_agreement
     (C : Set BernoulliMixture) (n : ℕ)
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : (Fin n → Bool) → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     (∃ E : ExternalBoolProcessLaw (ℕ → Bool),
@@ -1217,18 +1217,18 @@ theorem conceptFormationDeFinettiPrefix_existsCanonicalExternalProcessDisagreeme
         ∃ F : ExternalBoolProcessLaw (ℕ → Bool),
           F ∈ bernoulliMixtureCanonicalExternalBoolProcessLawSet C ∧
             E.prefixPrevision n
-                (ObservationSurface.conceptFormationGamble S Γ σ A) <
+                (ObservationEncoder.conceptFormationGamble S Γ σ A) <
               F.prefixPrevision n
-                (ObservationSurface.conceptFormationGamble S Γ σ A)) ↔
+                (ObservationEncoder.conceptFormationGamble S Γ σ A)) ↔
       ¬ ∀ E : ExternalBoolProcessLaw (ℕ → Bool),
         ∀ _hE : E ∈ bernoulliMixtureCanonicalExternalBoolProcessLawSet C,
         ∀ F : ExternalBoolProcessLaw (ℕ → Bool),
         ∀ _hF : F ∈ bernoulliMixtureCanonicalExternalBoolProcessLawSet C,
           E.prefixPrevision n
-              (ObservationSurface.conceptFormationGamble S Γ σ A) =
+              (ObservationEncoder.conceptFormationGamble S Γ σ A) =
             F.prefixPrevision n
-              (ObservationSurface.conceptFormationGamble S Γ σ A) := by
-  let Y := ObservationSurface.conceptFormationGamble S Γ σ A
+              (ObservationEncoder.conceptFormationGamble S Γ σ A) := by
+  let Y := ObservationEncoder.conceptFormationGamble S Γ σ A
   constructor
   · rintro ⟨E, hE, F, hF, hlt⟩ hAgree
     have hEq : E.prefixPrevision n Y = F.prefixPrevision n Y :=
@@ -1249,7 +1249,7 @@ disagree on the formed-concept finite cylinder, the displayed untyped PLN
 finite-prefix ITV has positive width and sub-maximal credibility. -/
 theorem conceptFormationDeFinettiPrefixWidthComplementITV_width_pos_of_canonicalExternalProcessDisagreement
     (C : Set BernoulliMixture) (n : ℕ) (hC : C.Nonempty)
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : (Fin n → Bool) → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr)
     (hDisagree :
@@ -1258,9 +1258,9 @@ theorem conceptFormationDeFinettiPrefixWidthComplementITV_width_pos_of_canonical
           ∃ F : ExternalBoolProcessLaw (ℕ → Bool),
             F ∈ bernoulliMixtureCanonicalExternalBoolProcessLawSet C ∧
               E.prefixPrevision n
-                  (ObservationSurface.conceptFormationGamble S Γ σ A) <
+                  (ObservationEncoder.conceptFormationGamble S Γ σ A) <
                 F.prefixPrevision n
-                  (ObservationSurface.conceptFormationGamble S Γ σ A)) :
+                  (ObservationEncoder.conceptFormationGamble S Γ σ A)) :
     0 < (conceptFormationDeFinettiPrefixWidthComplementITV
         C n (fun M _ => bernoulliMixturePrefixLaw_analytic M n)
         hC S Γ σ A).width ∧
@@ -1275,17 +1275,17 @@ theorem conceptFormationDeFinettiPrefixWidthComplementITV_width_pos_of_canonical
         ∀ F : ExternalBoolProcessLaw (ℕ → Bool),
         ∀ _hF : F ∈ bernoulliMixtureCanonicalExternalBoolProcessLawSet C,
           E.prefixPrevision n
-              (ObservationSurface.conceptFormationGamble S Γ σ A) =
+              (ObservationEncoder.conceptFormationGamble S Γ σ A) =
             F.prefixPrevision n
-              (ObservationSurface.conceptFormationGamble S Γ σ A) :=
+              (ObservationEncoder.conceptFormationGamble S Γ σ A) :=
     (conceptFormationDeFinettiPrefix_canonicalExternalProcessAgreement_iff_mixtureAgreement
       C n S Γ σ A).mpr hMixtureAgree
   rcases hDisagree with ⟨E, hE, F, hF, hlt⟩
   have hEq :
       E.prefixPrevision n
-          (ObservationSurface.conceptFormationGamble S Γ σ A) =
+          (ObservationEncoder.conceptFormationGamble S Γ σ A) =
         F.prefixPrevision n
-          (ObservationSurface.conceptFormationGamble S Γ σ A) :=
+          (ObservationEncoder.conceptFormationGamble S Γ σ A) :=
     hAgree E hE F hF
   rw [hEq] at hlt
   exact (lt_irrefl _) hlt
@@ -1296,7 +1296,7 @@ on the formed-concept finite cylinder.  This is the positive-witness version
 of the non-agreement criterion. -/
 theorem conceptFormationDeFinettiPrefixWidthComplementITV_width_pos_iff_existsCanonicalExternalProcessDisagreement
     (C : Set BernoulliMixture) (n : ℕ) (hC : C.Nonempty)
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : (Fin n → Bool) → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     (0 < (conceptFormationDeFinettiPrefixWidthComplementITV
@@ -1310,9 +1310,9 @@ theorem conceptFormationDeFinettiPrefixWidthComplementITV_width_pos_iff_existsCa
           ∃ F : ExternalBoolProcessLaw (ℕ → Bool),
             F ∈ bernoulliMixtureCanonicalExternalBoolProcessLawSet C ∧
               E.prefixPrevision n
-                  (ObservationSurface.conceptFormationGamble S Γ σ A) <
+                  (ObservationEncoder.conceptFormationGamble S Γ σ A) <
                 F.prefixPrevision n
-                  (ObservationSurface.conceptFormationGamble S Γ σ A) := by
+                  (ObservationEncoder.conceptFormationGamble S Γ σ A) := by
   exact
     ((conceptFormationDeFinettiPrefixWidthComplementITV_width_pos_iff_not_mixtureAgreement
       C n (fun M _ => bernoulliMixturePrefixLaw_analytic M n) hC S Γ σ A).trans
@@ -1326,7 +1326,7 @@ theorem conceptFormationDeFinettiPrefixWidthComplementITV_width_pos_iff_existsCa
 `conceptFormationDeFinettiPrefixWidthComplementITV_width_pos_of_canonicalExternalProcessDisagreement`. -/
 theorem conceptFormationDeFinettiPrefixTypedWidthComplementITV_width_pos_of_canonicalExternalProcessDisagreement
     (C : Set BernoulliMixture) (n : ℕ) (hC : C.Nonempty)
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : (Fin n → Bool) → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr)
     (hDisagree :
@@ -1335,9 +1335,9 @@ theorem conceptFormationDeFinettiPrefixTypedWidthComplementITV_width_pos_of_cano
           ∃ F : ExternalBoolProcessLaw (ℕ → Bool),
             F ∈ bernoulliMixtureCanonicalExternalBoolProcessLawSet C ∧
               E.prefixPrevision n
-                  (ObservationSurface.conceptFormationGamble S Γ σ A) <
+                  (ObservationEncoder.conceptFormationGamble S Γ σ A) <
                 F.prefixPrevision n
-                  (ObservationSurface.conceptFormationGamble S Γ σ A)) :
+                  (ObservationEncoder.conceptFormationGamble S Γ σ A)) :
     0 < (conceptFormationDeFinettiPrefixTypedWidthComplementITV
         C n (fun M _ => bernoulliMixturePrefixLaw_analytic M n)
         hC S Γ σ A).width ∧
@@ -1352,17 +1352,17 @@ theorem conceptFormationDeFinettiPrefixTypedWidthComplementITV_width_pos_of_cano
         ∀ F : ExternalBoolProcessLaw (ℕ → Bool),
         ∀ _hF : F ∈ bernoulliMixtureCanonicalExternalBoolProcessLawSet C,
           E.prefixPrevision n
-              (ObservationSurface.conceptFormationGamble S Γ σ A) =
+              (ObservationEncoder.conceptFormationGamble S Γ σ A) =
             F.prefixPrevision n
-              (ObservationSurface.conceptFormationGamble S Γ σ A) :=
+              (ObservationEncoder.conceptFormationGamble S Γ σ A) :=
     (conceptFormationDeFinettiPrefix_canonicalExternalProcessAgreement_iff_mixtureAgreement
       C n S Γ σ A).mpr hMixtureAgree
   rcases hDisagree with ⟨E, hE, F, hF, hlt⟩
   have hEq :
       E.prefixPrevision n
-          (ObservationSurface.conceptFormationGamble S Γ σ A) =
+          (ObservationEncoder.conceptFormationGamble S Γ σ A) =
         F.prefixPrevision n
-          (ObservationSurface.conceptFormationGamble S Γ σ A) :=
+          (ObservationEncoder.conceptFormationGamble S Γ σ A) :=
     hAgree E hE F hF
   rw [hEq] at hlt
   exact (lt_irrefl _) hlt
@@ -1371,7 +1371,7 @@ theorem conceptFormationDeFinettiPrefixTypedWidthComplementITV_width_pos_of_cano
 `conceptFormationDeFinettiPrefixWidthComplementITV_width_pos_iff_existsCanonicalExternalProcessDisagreement`. -/
 theorem conceptFormationDeFinettiPrefixTypedWidthComplementITV_width_pos_iff_existsCanonicalExternalProcessDisagreement
     (C : Set BernoulliMixture) (n : ℕ) (hC : C.Nonempty)
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : (Fin n → Bool) → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     (0 < (conceptFormationDeFinettiPrefixTypedWidthComplementITV
@@ -1385,9 +1385,9 @@ theorem conceptFormationDeFinettiPrefixTypedWidthComplementITV_width_pos_iff_exi
           ∃ F : ExternalBoolProcessLaw (ℕ → Bool),
             F ∈ bernoulliMixtureCanonicalExternalBoolProcessLawSet C ∧
               E.prefixPrevision n
-                  (ObservationSurface.conceptFormationGamble S Γ σ A) <
+                  (ObservationEncoder.conceptFormationGamble S Γ σ A) <
                 F.prefixPrevision n
-                  (ObservationSurface.conceptFormationGamble S Γ σ A) := by
+                  (ObservationEncoder.conceptFormationGamble S Γ σ A) := by
   exact
     ((conceptFormationDeFinettiPrefixTypedWidthComplementITV_width_pos_iff_not_mixtureAgreement
       C n (fun M _ => bernoulliMixturePrefixLaw_analytic M n) hC S Γ σ A).trans
@@ -1402,20 +1402,20 @@ projectively determined exactly when all canonical external process laws agree
 on the corresponding formed-concept finite cylinder. -/
 theorem conceptFormationDeFinettiPrefixProjectiveSpec_determinesGlobalGamble_iff_canonicalExternalProcessAgreement
     (C : Set BernoulliMixture) (n : ℕ)
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : (Fin n → Bool) → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     (bernoulliMixturePrefixProjectiveSpec C n
         (fun M _ => bernoulliMixturePrefixLaw_analytic M n)).determinesGlobalGamble
-        (ObservationSurface.conceptFormationGamble S Γ σ A) ↔
+        (ObservationEncoder.conceptFormationGamble S Γ σ A) ↔
       ∀ E : ExternalBoolProcessLaw (ℕ → Bool),
         ∀ _hE : E ∈ bernoulliMixtureCanonicalExternalBoolProcessLawSet C,
         ∀ F : ExternalBoolProcessLaw (ℕ → Bool),
         ∀ _hF : F ∈ bernoulliMixtureCanonicalExternalBoolProcessLawSet C,
           E.prefixPrevision n
-              (ObservationSurface.conceptFormationGamble S Γ σ A) =
+              (ObservationEncoder.conceptFormationGamble S Γ σ A) =
             F.prefixPrevision n
-              (ObservationSurface.conceptFormationGamble S Γ σ A) := by
+              (ObservationEncoder.conceptFormationGamble S Γ σ A) := by
   rw [conceptFormationDeFinettiPrefixProjectiveSpec_determinesGlobalGamble_iff_mixtureAgreement]
   exact
     (conceptFormationDeFinettiPrefix_canonicalExternalProcessAgreement_iff_mixtureAgreement
@@ -1427,20 +1427,20 @@ canonical external process laws on the formed-concept finite cylinder.  This is
 the exactness side of the explicit process-law boundary. -/
 theorem conceptFormationDeFinettiPrefixProjectiveSpec_determinesGlobalGamble_iff_noCanonicalExternalProcessDisagreement
     (C : Set BernoulliMixture) (n : ℕ)
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : (Fin n → Bool) → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     (bernoulliMixturePrefixProjectiveSpec C n
         (fun M _ => bernoulliMixturePrefixLaw_analytic M n)).determinesGlobalGamble
-        (ObservationSurface.conceptFormationGamble S Γ σ A) ↔
+        (ObservationEncoder.conceptFormationGamble S Γ σ A) ↔
       ¬ ∃ E : ExternalBoolProcessLaw (ℕ → Bool),
         E ∈ bernoulliMixtureCanonicalExternalBoolProcessLawSet C ∧
           ∃ F : ExternalBoolProcessLaw (ℕ → Bool),
             F ∈ bernoulliMixtureCanonicalExternalBoolProcessLawSet C ∧
               E.prefixPrevision n
-                  (ObservationSurface.conceptFormationGamble S Γ σ A) <
+                  (ObservationEncoder.conceptFormationGamble S Γ σ A) <
                 F.prefixPrevision n
-                  (ObservationSurface.conceptFormationGamble S Γ σ A) := by
+                  (ObservationEncoder.conceptFormationGamble S Γ σ A) := by
   constructor
   · intro hDet hDisagree
     have hAgree :
@@ -1449,9 +1449,9 @@ theorem conceptFormationDeFinettiPrefixProjectiveSpec_determinesGlobalGamble_iff
           ∀ F : ExternalBoolProcessLaw (ℕ → Bool),
           ∀ _hF : F ∈ bernoulliMixtureCanonicalExternalBoolProcessLawSet C,
             E.prefixPrevision n
-                (ObservationSurface.conceptFormationGamble S Γ σ A) =
+                (ObservationEncoder.conceptFormationGamble S Γ σ A) =
               F.prefixPrevision n
-                (ObservationSurface.conceptFormationGamble S Γ σ A) :=
+                (ObservationEncoder.conceptFormationGamble S Γ σ A) :=
       (conceptFormationDeFinettiPrefixProjectiveSpec_determinesGlobalGamble_iff_canonicalExternalProcessAgreement
         C n S Γ σ A).mp hDet
     have hNotAgree :
@@ -1460,9 +1460,9 @@ theorem conceptFormationDeFinettiPrefixProjectiveSpec_determinesGlobalGamble_iff
           ∀ F : ExternalBoolProcessLaw (ℕ → Bool),
           ∀ _hF : F ∈ bernoulliMixtureCanonicalExternalBoolProcessLawSet C,
             E.prefixPrevision n
-                (ObservationSurface.conceptFormationGamble S Γ σ A) =
+                (ObservationEncoder.conceptFormationGamble S Γ σ A) =
               F.prefixPrevision n
-                (ObservationSurface.conceptFormationGamble S Γ σ A) :=
+                (ObservationEncoder.conceptFormationGamble S Γ σ A) :=
       (conceptFormationDeFinettiPrefix_existsCanonicalExternalProcessDisagreement_iff_not_agreement
         C n S Γ σ A).mp hDisagree
     exact hNotAgree hAgree
@@ -1480,7 +1480,7 @@ exact exactly when there is no strict disagreement between canonical external
 process laws on the formed-concept finite cylinder. -/
 theorem conceptFormationDeFinettiPrefixWidthComplementITV_exact_iff_noCanonicalExternalProcessDisagreement
     (C : Set BernoulliMixture) (n : ℕ) (hC : C.Nonempty)
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : (Fin n → Bool) → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     ((conceptFormationDeFinettiPrefixWidthComplementITV
@@ -1506,9 +1506,9 @@ theorem conceptFormationDeFinettiPrefixWidthComplementITV_exact_iff_noCanonicalE
           ∃ F : ExternalBoolProcessLaw (ℕ → Bool),
             F ∈ bernoulliMixtureCanonicalExternalBoolProcessLawSet C ∧
               E.prefixPrevision n
-                  (ObservationSurface.conceptFormationGamble S Γ σ A) <
+                  (ObservationEncoder.conceptFormationGamble S Γ σ A) <
                 F.prefixPrevision n
-                  (ObservationSurface.conceptFormationGamble S Γ σ A) := by
+                  (ObservationEncoder.conceptFormationGamble S Γ σ A) := by
   have hExactAgreement :
       ((conceptFormationDeFinettiPrefixWidthComplementITV
           C n (fun M _ => bernoulliMixturePrefixLaw_analytic M n)
@@ -1533,9 +1533,9 @@ theorem conceptFormationDeFinettiPrefixWidthComplementITV_exact_iff_noCanonicalE
           ∀ F : ExternalBoolProcessLaw (ℕ → Bool),
           ∀ _hF : F ∈ bernoulliMixtureCanonicalExternalBoolProcessLawSet C,
             E.prefixPrevision n
-                (ObservationSurface.conceptFormationGamble S Γ σ A) =
+                (ObservationEncoder.conceptFormationGamble S Γ σ A) =
               F.prefixPrevision n
-                (ObservationSurface.conceptFormationGamble S Γ σ A) :=
+                (ObservationEncoder.conceptFormationGamble S Γ σ A) :=
     (conceptFormationDeFinettiPrefixWidthComplementITV_exact_iff_mixtureAgreement
       C n (fun M _ => bernoulliMixturePrefixLaw_analytic M n) hC S Γ σ A).trans
       (conceptFormationDeFinettiPrefix_canonicalExternalProcessAgreement_iff_mixtureAgreement
@@ -1548,9 +1548,9 @@ theorem conceptFormationDeFinettiPrefixWidthComplementITV_exact_iff_noCanonicalE
           ∀ F : ExternalBoolProcessLaw (ℕ → Bool),
           ∀ _hF : F ∈ bernoulliMixtureCanonicalExternalBoolProcessLawSet C,
             E.prefixPrevision n
-                (ObservationSurface.conceptFormationGamble S Γ σ A) =
+                (ObservationEncoder.conceptFormationGamble S Γ σ A) =
               F.prefixPrevision n
-                (ObservationSurface.conceptFormationGamble S Γ σ A) :=
+                (ObservationEncoder.conceptFormationGamble S Γ σ A) :=
       (conceptFormationDeFinettiPrefix_existsCanonicalExternalProcessDisagreement_iff_not_agreement
         C n S Γ σ A).mp hDisagree
     exact hNotAgree (hExactAgreement.mp hExact)
@@ -1565,7 +1565,7 @@ theorem conceptFormationDeFinettiPrefixWidthComplementITV_exact_iff_noCanonicalE
 `conceptFormationDeFinettiPrefixWidthComplementITV_exact_iff_noCanonicalExternalProcessDisagreement`. -/
 theorem conceptFormationDeFinettiPrefixTypedWidthComplementITV_exact_iff_noCanonicalExternalProcessDisagreement
     (C : Set BernoulliMixture) (n : ℕ) (hC : C.Nonempty)
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : (Fin n → Bool) → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     ((conceptFormationDeFinettiPrefixTypedWidthComplementITV
@@ -1591,9 +1591,9 @@ theorem conceptFormationDeFinettiPrefixTypedWidthComplementITV_exact_iff_noCanon
           ∃ F : ExternalBoolProcessLaw (ℕ → Bool),
             F ∈ bernoulliMixtureCanonicalExternalBoolProcessLawSet C ∧
               E.prefixPrevision n
-                  (ObservationSurface.conceptFormationGamble S Γ σ A) <
+                  (ObservationEncoder.conceptFormationGamble S Γ σ A) <
                 F.prefixPrevision n
-                  (ObservationSurface.conceptFormationGamble S Γ σ A) := by
+                  (ObservationEncoder.conceptFormationGamble S Γ σ A) := by
   have hExactAgreement :
       ((conceptFormationDeFinettiPrefixTypedWidthComplementITV
           C n (fun M _ => bernoulliMixturePrefixLaw_analytic M n)
@@ -1618,9 +1618,9 @@ theorem conceptFormationDeFinettiPrefixTypedWidthComplementITV_exact_iff_noCanon
           ∀ F : ExternalBoolProcessLaw (ℕ → Bool),
           ∀ _hF : F ∈ bernoulliMixtureCanonicalExternalBoolProcessLawSet C,
             E.prefixPrevision n
-                (ObservationSurface.conceptFormationGamble S Γ σ A) =
+                (ObservationEncoder.conceptFormationGamble S Γ σ A) =
               F.prefixPrevision n
-                (ObservationSurface.conceptFormationGamble S Γ σ A) :=
+                (ObservationEncoder.conceptFormationGamble S Γ σ A) :=
     (conceptFormationDeFinettiPrefixTypedWidthComplementITV_exact_iff_mixtureAgreement
       C n (fun M _ => bernoulliMixturePrefixLaw_analytic M n) hC S Γ σ A).trans
       (conceptFormationDeFinettiPrefix_canonicalExternalProcessAgreement_iff_mixtureAgreement
@@ -1633,9 +1633,9 @@ theorem conceptFormationDeFinettiPrefixTypedWidthComplementITV_exact_iff_noCanon
           ∀ F : ExternalBoolProcessLaw (ℕ → Bool),
           ∀ _hF : F ∈ bernoulliMixtureCanonicalExternalBoolProcessLawSet C,
             E.prefixPrevision n
-                (ObservationSurface.conceptFormationGamble S Γ σ A) =
+                (ObservationEncoder.conceptFormationGamble S Γ σ A) =
               F.prefixPrevision n
-                (ObservationSurface.conceptFormationGamble S Γ σ A) :=
+                (ObservationEncoder.conceptFormationGamble S Γ σ A) :=
       (conceptFormationDeFinettiPrefix_existsCanonicalExternalProcessDisagreement_iff_not_agreement
         C n S Γ σ A).mp hDisagree
     exact hNotAgree (hExactAgreement.mp hExact)
@@ -1651,20 +1651,20 @@ projective width exactly when the canonical external process-law family does
 not agree on that formed-concept finite cylinder. -/
 theorem conceptFormationDeFinettiPrefixProjectiveSpec_hasStrictGlobalWidth_iff_not_canonicalExternalProcessAgreement
     (C : Set BernoulliMixture) (n : ℕ)
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : (Fin n → Bool) → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     (bernoulliMixturePrefixProjectiveSpec C n
         (fun M _ => bernoulliMixturePrefixLaw_analytic M n)).hasStrictGlobalWidth
-        (ObservationSurface.conceptFormationGamble S Γ σ A) ↔
+        (ObservationEncoder.conceptFormationGamble S Γ σ A) ↔
       ¬ ∀ E : ExternalBoolProcessLaw (ℕ → Bool),
         ∀ _hE : E ∈ bernoulliMixtureCanonicalExternalBoolProcessLawSet C,
         ∀ F : ExternalBoolProcessLaw (ℕ → Bool),
         ∀ _hF : F ∈ bernoulliMixtureCanonicalExternalBoolProcessLawSet C,
           E.prefixPrevision n
-              (ObservationSurface.conceptFormationGamble S Γ σ A) =
+              (ObservationEncoder.conceptFormationGamble S Γ σ A) =
             F.prefixPrevision n
-              (ObservationSurface.conceptFormationGamble S Γ σ A) := by
+              (ObservationEncoder.conceptFormationGamble S Γ σ A) := by
   rw [conceptFormationDeFinettiPrefixProjectiveSpec_hasStrictGlobalWidth_iff_not_mixtureAgreement]
   exact
     not_congr
@@ -1676,20 +1676,20 @@ projective width exactly when the canonical external process-law family
 contains an explicit strict disagreement on the formed-concept finite cylinder. -/
 theorem conceptFormationDeFinettiPrefixProjectiveSpec_hasStrictGlobalWidth_iff_existsCanonicalExternalProcessDisagreement
     (C : Set BernoulliMixture) (n : ℕ)
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : (Fin n → Bool) → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     (bernoulliMixturePrefixProjectiveSpec C n
         (fun M _ => bernoulliMixturePrefixLaw_analytic M n)).hasStrictGlobalWidth
-        (ObservationSurface.conceptFormationGamble S Γ σ A) ↔
+        (ObservationEncoder.conceptFormationGamble S Γ σ A) ↔
       ∃ E : ExternalBoolProcessLaw (ℕ → Bool),
         E ∈ bernoulliMixtureCanonicalExternalBoolProcessLawSet C ∧
           ∃ F : ExternalBoolProcessLaw (ℕ → Bool),
             F ∈ bernoulliMixtureCanonicalExternalBoolProcessLawSet C ∧
               E.prefixPrevision n
-                  (ObservationSurface.conceptFormationGamble S Γ σ A) <
+                  (ObservationEncoder.conceptFormationGamble S Γ σ A) <
                 F.prefixPrevision n
-                  (ObservationSurface.conceptFormationGamble S Γ σ A) := by
+                  (ObservationEncoder.conceptFormationGamble S Γ σ A) := by
   exact
     (conceptFormationDeFinettiPrefixProjectiveSpec_hasStrictGlobalWidth_iff_not_canonicalExternalProcessAgreement
       C n S Γ σ A).trans
@@ -1701,7 +1701,7 @@ canonical external process-law family disagrees on the formed-concept finite
 cylinder. -/
 theorem conceptFormationDeFinettiPrefixWidthComplementITV_width_pos_iff_not_canonicalExternalProcessAgreement
     (C : Set BernoulliMixture) (n : ℕ) (hC : C.Nonempty)
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : (Fin n → Bool) → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     (0 < (conceptFormationDeFinettiPrefixWidthComplementITV
@@ -1715,9 +1715,9 @@ theorem conceptFormationDeFinettiPrefixWidthComplementITV_width_pos_iff_not_cano
         ∀ F : ExternalBoolProcessLaw (ℕ → Bool),
         ∀ _hF : F ∈ bernoulliMixtureCanonicalExternalBoolProcessLawSet C,
           E.prefixPrevision n
-              (ObservationSurface.conceptFormationGamble S Γ σ A) =
+              (ObservationEncoder.conceptFormationGamble S Γ σ A) =
             F.prefixPrevision n
-              (ObservationSurface.conceptFormationGamble S Γ σ A) := by
+              (ObservationEncoder.conceptFormationGamble S Γ σ A) := by
   rw [conceptFormationDeFinettiPrefixWidthComplementITV_width_pos_iff_not_mixtureAgreement]
   exact
     not_congr
@@ -1728,7 +1728,7 @@ theorem conceptFormationDeFinettiPrefixWidthComplementITV_width_pos_iff_not_cano
 `conceptFormationDeFinettiPrefixWidthComplementITV_width_pos_iff_not_canonicalExternalProcessAgreement`. -/
 theorem conceptFormationDeFinettiPrefixTypedWidthComplementITV_width_pos_iff_not_canonicalExternalProcessAgreement
     (C : Set BernoulliMixture) (n : ℕ) (hC : C.Nonempty)
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : (Fin n → Bool) → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     (0 < (conceptFormationDeFinettiPrefixTypedWidthComplementITV
@@ -1742,9 +1742,9 @@ theorem conceptFormationDeFinettiPrefixTypedWidthComplementITV_width_pos_iff_not
         ∀ F : ExternalBoolProcessLaw (ℕ → Bool),
         ∀ _hF : F ∈ bernoulliMixtureCanonicalExternalBoolProcessLawSet C,
           E.prefixPrevision n
-              (ObservationSurface.conceptFormationGamble S Γ σ A) =
+              (ObservationEncoder.conceptFormationGamble S Γ σ A) =
             F.prefixPrevision n
-              (ObservationSurface.conceptFormationGamble S Γ σ A) := by
+              (ObservationEncoder.conceptFormationGamble S Γ σ A) := by
   rw [conceptFormationDeFinettiPrefixTypedWidthComplementITV_width_pos_iff_not_mixtureAgreement]
   exact
     not_congr
@@ -1765,23 +1765,23 @@ theorem conceptFormationWidthComplementITV_deFinettiMixtureReadout_of_determines
       (Window := PUnit) (Global := Gate) X μ)
     (hSpec : D.projectiveSpec = gateCredalProjectiveSpec (Gate := Gate))
     (M : BernoulliMixture) (hRep : Represents M X μ)
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr)
     (hDet :
       (gateCredalProjectiveSpec (Gate := Gate)).determinesGlobalGamble
-        (ObservationSurface.conceptFormationGamble S Γ σ A)) :
+        (ObservationEncoder.conceptFormationGamble S Γ σ A)) :
     (conceptFormationWidthComplementITV S Γ σ A).lower =
         (D.completionOfMixture M)
-          (ObservationSurface.conceptFormationGamble S Γ σ A) ∧
+          (ObservationEncoder.conceptFormationGamble S Γ σ A) ∧
       (conceptFormationWidthComplementITV S Γ σ A).upper =
         (D.completionOfMixture M)
-          (ObservationSurface.conceptFormationGamble S Γ σ A) ∧
+          (ObservationEncoder.conceptFormationGamble S Γ σ A) ∧
       (conceptFormationWidthComplementITV S Γ σ A).width = 0 ∧
       (conceptFormationWidthComplementITV S Γ σ A).credibility = 1 ∧
       (conceptFormationWidthComplementITV S Γ σ A).strength =
         (D.completionOfMixture M)
-          (ObservationSurface.conceptFormationGamble S Γ σ A) := by
+          (ObservationEncoder.conceptFormationGamble S Γ σ A) := by
   have hP :
       D.completionOfMixture M ∈
         (gateCredalProjectiveSpec (Gate := Gate)).projectiveLimitCredalSet := by
@@ -1800,27 +1800,27 @@ theorem conceptFormationWidthComplementITV_deFinettiMixtureReadout_of_noGap
       (Window := PUnit) (Global := Gate) X μ)
     (hSpec : D.projectiveSpec = gateCredalProjectiveSpec (Gate := Gate))
     (M : BernoulliMixture) (hRep : Represents M X μ)
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr)
     (hNoGap :
-      ¬ (A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-          A ∉ ObservationSurface.lowerConceptFamily S Γ σ)) :
+      ¬ (A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+          A ∉ ObservationEncoder.lowerConceptFamily S Γ σ)) :
     (conceptFormationWidthComplementITV S Γ σ A).lower =
         (D.completionOfMixture M)
-          (ObservationSurface.conceptFormationGamble S Γ σ A) ∧
+          (ObservationEncoder.conceptFormationGamble S Γ σ A) ∧
       (conceptFormationWidthComplementITV S Γ σ A).upper =
         (D.completionOfMixture M)
-          (ObservationSurface.conceptFormationGamble S Γ σ A) ∧
+          (ObservationEncoder.conceptFormationGamble S Γ σ A) ∧
       (conceptFormationWidthComplementITV S Γ σ A).width = 0 ∧
       (conceptFormationWidthComplementITV S Γ σ A).credibility = 1 ∧
       (conceptFormationWidthComplementITV S Γ σ A).strength =
         (D.completionOfMixture M)
-          (ObservationSurface.conceptFormationGamble S Γ σ A) := by
+          (ObservationEncoder.conceptFormationGamble S Γ σ A) := by
   have hDet :
       (gateCredalProjectiveSpec (Gate := Gate)).determinesGlobalGamble
-        (ObservationSurface.conceptFormationGamble S Γ σ A) :=
-    (ObservationSurface.gateCredalProjectiveSpec_determinesGlobalGamble_conceptFormationGamble_iff
+        (ObservationEncoder.conceptFormationGamble S Γ σ A) :=
+    (ObservationEncoder.gateCredalProjectiveSpec_determinesGlobalGamble_conceptFormationGamble_iff
       S Γ σ A).mpr hNoGap
   exact
     conceptFormationWidthComplementITV_deFinettiMixtureReadout_of_determines
@@ -1836,22 +1836,22 @@ theorem conceptFormationWidthComplementITV_deFinettiMixtureExactReadout_iff_noGa
       (Window := PUnit) (Global := Gate) X μ)
     (hSpec : D.projectiveSpec = gateCredalProjectiveSpec (Gate := Gate))
     (M : BernoulliMixture) (hRep : Represents M X μ)
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     ((conceptFormationWidthComplementITV S Γ σ A).lower =
         (D.completionOfMixture M)
-          (ObservationSurface.conceptFormationGamble S Γ σ A) ∧
+          (ObservationEncoder.conceptFormationGamble S Γ σ A) ∧
       (conceptFormationWidthComplementITV S Γ σ A).upper =
         (D.completionOfMixture M)
-          (ObservationSurface.conceptFormationGamble S Γ σ A) ∧
+          (ObservationEncoder.conceptFormationGamble S Γ σ A) ∧
       (conceptFormationWidthComplementITV S Γ σ A).width = 0 ∧
       (conceptFormationWidthComplementITV S Γ σ A).credibility = 1 ∧
       (conceptFormationWidthComplementITV S Γ σ A).strength =
         (D.completionOfMixture M)
-          (ObservationSurface.conceptFormationGamble S Γ σ A)) ↔
-      ¬ (A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-          A ∉ ObservationSurface.lowerConceptFamily S Γ σ) := by
+          (ObservationEncoder.conceptFormationGamble S Γ σ A)) ↔
+      ¬ (A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+          A ∉ ObservationEncoder.lowerConceptFamily S Γ σ) := by
   constructor
   · intro hReadout
     rcases hReadout with ⟨hLower, hUpper, hWidth, hCred, hStrength⟩
@@ -1880,23 +1880,23 @@ theorem conceptFormationTypedWidthComplementITV_deFinettiMixtureReadout_of_deter
       (Window := PUnit) (Global := Gate) X μ)
     (hSpec : D.projectiveSpec = gateCredalProjectiveSpec (Gate := Gate))
     (M : BernoulliMixture) (hRep : Represents M X μ)
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr)
     (hDet :
       (gateCredalProjectiveSpec (Gate := Gate)).determinesGlobalGamble
-        (ObservationSurface.conceptFormationGamble S Γ σ A)) :
+        (ObservationEncoder.conceptFormationGamble S Γ σ A)) :
     (conceptFormationTypedWidthComplementITV S Γ σ A).lower =
         (D.completionOfMixture M)
-          (ObservationSurface.conceptFormationGamble S Γ σ A) ∧
+          (ObservationEncoder.conceptFormationGamble S Γ σ A) ∧
       (conceptFormationTypedWidthComplementITV S Γ σ A).upper =
         (D.completionOfMixture M)
-          (ObservationSurface.conceptFormationGamble S Γ σ A) ∧
+          (ObservationEncoder.conceptFormationGamble S Γ σ A) ∧
       (conceptFormationTypedWidthComplementITV S Γ σ A).width = 0 ∧
       (conceptFormationTypedWidthComplementITV S Γ σ A).credibility = 1 ∧
       (conceptFormationTypedWidthComplementITV S Γ σ A).midpoint =
         (D.completionOfMixture M)
-          (ObservationSurface.conceptFormationGamble S Γ σ A) := by
+          (ObservationEncoder.conceptFormationGamble S Γ σ A) := by
   have hP :
       D.completionOfMixture M ∈
         (gateCredalProjectiveSpec (Gate := Gate)).projectiveLimitCredalSet := by
@@ -1913,27 +1913,27 @@ theorem conceptFormationTypedWidthComplementITV_deFinettiMixtureReadout_of_noGap
       (Window := PUnit) (Global := Gate) X μ)
     (hSpec : D.projectiveSpec = gateCredalProjectiveSpec (Gate := Gate))
     (M : BernoulliMixture) (hRep : Represents M X μ)
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr)
     (hNoGap :
-      ¬ (A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-          A ∉ ObservationSurface.lowerConceptFamily S Γ σ)) :
+      ¬ (A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+          A ∉ ObservationEncoder.lowerConceptFamily S Γ σ)) :
     (conceptFormationTypedWidthComplementITV S Γ σ A).lower =
         (D.completionOfMixture M)
-          (ObservationSurface.conceptFormationGamble S Γ σ A) ∧
+          (ObservationEncoder.conceptFormationGamble S Γ σ A) ∧
       (conceptFormationTypedWidthComplementITV S Γ σ A).upper =
         (D.completionOfMixture M)
-          (ObservationSurface.conceptFormationGamble S Γ σ A) ∧
+          (ObservationEncoder.conceptFormationGamble S Γ σ A) ∧
       (conceptFormationTypedWidthComplementITV S Γ σ A).width = 0 ∧
       (conceptFormationTypedWidthComplementITV S Γ σ A).credibility = 1 ∧
       (conceptFormationTypedWidthComplementITV S Γ σ A).midpoint =
         (D.completionOfMixture M)
-          (ObservationSurface.conceptFormationGamble S Γ σ A) := by
+          (ObservationEncoder.conceptFormationGamble S Γ σ A) := by
   have hDet :
       (gateCredalProjectiveSpec (Gate := Gate)).determinesGlobalGamble
-        (ObservationSurface.conceptFormationGamble S Γ σ A) :=
-    (ObservationSurface.gateCredalProjectiveSpec_determinesGlobalGamble_conceptFormationGamble_iff
+        (ObservationEncoder.conceptFormationGamble S Γ σ A) :=
+    (ObservationEncoder.gateCredalProjectiveSpec_determinesGlobalGamble_conceptFormationGamble_iff
       S Γ σ A).mpr hNoGap
   exact
     conceptFormationTypedWidthComplementITV_deFinettiMixtureReadout_of_determines
@@ -1947,22 +1947,22 @@ theorem conceptFormationTypedWidthComplementITV_deFinettiMixtureExactReadout_iff
       (Window := PUnit) (Global := Gate) X μ)
     (hSpec : D.projectiveSpec = gateCredalProjectiveSpec (Gate := Gate))
     (M : BernoulliMixture) (hRep : Represents M X μ)
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
     ((conceptFormationTypedWidthComplementITV S Γ σ A).lower =
         (D.completionOfMixture M)
-          (ObservationSurface.conceptFormationGamble S Γ σ A) ∧
+          (ObservationEncoder.conceptFormationGamble S Γ σ A) ∧
       (conceptFormationTypedWidthComplementITV S Γ σ A).upper =
         (D.completionOfMixture M)
-          (ObservationSurface.conceptFormationGamble S Γ σ A) ∧
+          (ObservationEncoder.conceptFormationGamble S Γ σ A) ∧
       (conceptFormationTypedWidthComplementITV S Γ σ A).width = 0 ∧
       (conceptFormationTypedWidthComplementITV S Γ σ A).credibility = 1 ∧
       (conceptFormationTypedWidthComplementITV S Γ σ A).midpoint =
         (D.completionOfMixture M)
-          (ObservationSurface.conceptFormationGamble S Γ σ A)) ↔
-      ¬ (A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-          A ∉ ObservationSurface.lowerConceptFamily S Γ σ) := by
+          (ObservationEncoder.conceptFormationGamble S Γ σ A)) ↔
+      ¬ (A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+          A ∉ ObservationEncoder.lowerConceptFamily S Γ σ) := by
   constructor
   · intro hReadout
     rcases hReadout with ⟨hLower, hUpper, hWidth, hCred, hMidpoint⟩
@@ -1990,32 +1990,32 @@ theorem conceptFormationWidthComplementITV_deFinettiMixtureBoundary_dichotomy
       (Window := PUnit) (Global := Gate) X μ)
     (hSpec : D.projectiveSpec = gateCredalProjectiveSpec (Gate := Gate))
     (M : BernoulliMixture) (hRep : Represents M X μ)
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
-    (¬ (A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-          A ∉ ObservationSurface.lowerConceptFamily S Γ σ) ∧
+    (¬ (A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+          A ∉ ObservationEncoder.lowerConceptFamily S Γ σ) ∧
       (conceptFormationWidthComplementITV S Γ σ A).lower =
           (D.completionOfMixture M)
-            (ObservationSurface.conceptFormationGamble S Γ σ A) ∧
+            (ObservationEncoder.conceptFormationGamble S Γ σ A) ∧
         (conceptFormationWidthComplementITV S Γ σ A).upper =
           (D.completionOfMixture M)
-            (ObservationSurface.conceptFormationGamble S Γ σ A) ∧
+            (ObservationEncoder.conceptFormationGamble S Γ σ A) ∧
         (conceptFormationWidthComplementITV S Γ σ A).width = 0 ∧
         (conceptFormationWidthComplementITV S Γ σ A).credibility = 1 ∧
         (conceptFormationWidthComplementITV S Γ σ A).strength =
           (D.completionOfMixture M)
-            (ObservationSurface.conceptFormationGamble S Γ σ A)) ∨
-      ((A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-          A ∉ ObservationSurface.lowerConceptFamily S Γ σ) ∧
+            (ObservationEncoder.conceptFormationGamble S Γ σ A)) ∨
+      ((A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+          A ∉ ObservationEncoder.lowerConceptFamily S Γ σ) ∧
         (conceptFormationWidthComplementITV S Γ σ A).lower = 0 ∧
           (conceptFormationWidthComplementITV S Γ σ A).upper = 1 ∧
           (conceptFormationWidthComplementITV S Γ σ A).width = 1 ∧
           (conceptFormationWidthComplementITV S Γ σ A).credibility = 0 ∧
           (conceptFormationWidthComplementITV S Γ σ A).strength = (1 / 2 : ℝ)) := by
   by_cases hGap :
-      A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-        A ∉ ObservationSurface.lowerConceptFamily S Γ σ
+      A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+        A ∉ ObservationEncoder.lowerConceptFamily S Γ σ
   · right
     exact ⟨hGap, conceptFormationWidthComplementITV_gap_readout S Γ σ A hGap⟩
   · left
@@ -2032,32 +2032,32 @@ theorem conceptFormationTypedWidthComplementITV_deFinettiMixtureBoundary_dichoto
       (Window := PUnit) (Global := Gate) X μ)
     (hSpec : D.projectiveSpec = gateCredalProjectiveSpec (Gate := Gate))
     (M : BernoulliMixture) (hRep : Represents M X μ)
-    (S : ObservationSurface Obs Obj Attr Q)
+    (S : ObservationEncoder Obs Obj Attr Q)
     (Γ : Gate → EvidenceGate Q) (σ : Multiset Obs)
     (A : DualConcept Obj Attr) :
-    (¬ (A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-          A ∉ ObservationSurface.lowerConceptFamily S Γ σ) ∧
+    (¬ (A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+          A ∉ ObservationEncoder.lowerConceptFamily S Γ σ) ∧
       (conceptFormationTypedWidthComplementITV S Γ σ A).lower =
           (D.completionOfMixture M)
-            (ObservationSurface.conceptFormationGamble S Γ σ A) ∧
+            (ObservationEncoder.conceptFormationGamble S Γ σ A) ∧
         (conceptFormationTypedWidthComplementITV S Γ σ A).upper =
           (D.completionOfMixture M)
-            (ObservationSurface.conceptFormationGamble S Γ σ A) ∧
+            (ObservationEncoder.conceptFormationGamble S Γ σ A) ∧
         (conceptFormationTypedWidthComplementITV S Γ σ A).width = 0 ∧
         (conceptFormationTypedWidthComplementITV S Γ σ A).credibility = 1 ∧
         (conceptFormationTypedWidthComplementITV S Γ σ A).midpoint =
           (D.completionOfMixture M)
-            (ObservationSurface.conceptFormationGamble S Γ σ A)) ∨
-      ((A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-          A ∉ ObservationSurface.lowerConceptFamily S Γ σ) ∧
+            (ObservationEncoder.conceptFormationGamble S Γ σ A)) ∨
+      ((A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+          A ∉ ObservationEncoder.lowerConceptFamily S Γ σ) ∧
         (conceptFormationTypedWidthComplementITV S Γ σ A).lower = 0 ∧
           (conceptFormationTypedWidthComplementITV S Γ σ A).upper = 1 ∧
           (conceptFormationTypedWidthComplementITV S Γ σ A).width = 1 ∧
           (conceptFormationTypedWidthComplementITV S Γ σ A).credibility = 0 ∧
           (conceptFormationTypedWidthComplementITV S Γ σ A).midpoint = (1 / 2 : ℝ)) := by
   by_cases hGap :
-      A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-        A ∉ ObservationSurface.lowerConceptFamily S Γ σ
+      A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+        A ∉ ObservationEncoder.lowerConceptFamily S Γ σ
   · right
     exact ⟨hGap,
       conceptFormationTypedWidthComplementITV_gap_readout S Γ σ A hGap⟩
@@ -2081,34 +2081,34 @@ structure ConceptFormationDeFinettiPrefixBridgeProfile where
       (C : Set BernoulliMixture) → (n : ℕ) →
       (hLaw : ∀ M : BernoulliMixture, M ∈ C →
         BernoulliMixturePrefixLaw M n) →
-      (S : ObservationSurface Obs Obj Attr Q) →
+      (S : ObservationEncoder Obs Obj Attr Q) →
       (Γ : (Fin n → Bool) → EvidenceGate Q) → (σ : Multiset Obs) →
       (A : DualConcept Obj Attr) →
       (bernoulliMixturePrefixProjectiveSpec C n hLaw).determinesGlobalGamble
-          (ObservationSurface.conceptFormationGamble S Γ σ A) ↔
+          (ObservationEncoder.conceptFormationGamble S Γ σ A) ↔
         ∀ M : BernoulliMixture, ∀ hM : M ∈ C,
           ∀ N : BernoulliMixture, ∀ hN : N ∈ C,
             (hLaw M hM).toPrecisePrevision
-                (ObservationSurface.conceptFormationGamble S Γ σ A) =
+                (ObservationEncoder.conceptFormationGamble S Γ σ A) =
               (hLaw N hN).toPrecisePrevision
-                (ObservationSurface.conceptFormationGamble S Γ σ A)
+                (ObservationEncoder.conceptFormationGamble S Γ σ A)
   strictWidthIffNotMixtureAgreement :
     ∀ {Obs Obj Attr Q : Type} [AddCommMonoid Q] [Preorder Q]
       [Fintype Obj] [Fintype Attr],
       (C : Set BernoulliMixture) → (n : ℕ) →
       (hLaw : ∀ M : BernoulliMixture, M ∈ C →
         BernoulliMixturePrefixLaw M n) →
-      (S : ObservationSurface Obs Obj Attr Q) →
+      (S : ObservationEncoder Obs Obj Attr Q) →
       (Γ : (Fin n → Bool) → EvidenceGate Q) → (σ : Multiset Obs) →
       (A : DualConcept Obj Attr) →
       (bernoulliMixturePrefixProjectiveSpec C n hLaw).hasStrictGlobalWidth
-          (ObservationSurface.conceptFormationGamble S Γ σ A) ↔
+          (ObservationEncoder.conceptFormationGamble S Γ σ A) ↔
         ¬ ∀ M : BernoulliMixture, ∀ hM : M ∈ C,
           ∀ N : BernoulliMixture, ∀ hN : N ∈ C,
             (hLaw M hM).toPrecisePrevision
-                (ObservationSurface.conceptFormationGamble S Γ σ A) =
+                (ObservationEncoder.conceptFormationGamble S Γ σ A) =
               (hLaw N hN).toPrecisePrevision
-                (ObservationSurface.conceptFormationGamble S Γ σ A)
+                (ObservationEncoder.conceptFormationGamble S Γ σ A)
   untypedExactIffMixtureAgreement :
     ∀ {Obs Obj Attr Q : Type} [AddCommMonoid Q] [Preorder Q]
       [Fintype Obj] [Fintype Attr],
@@ -2116,7 +2116,7 @@ structure ConceptFormationDeFinettiPrefixBridgeProfile where
       (hLaw : ∀ M : BernoulliMixture, M ∈ C →
         BernoulliMixturePrefixLaw M n) →
       (hC : C.Nonempty) →
-      (S : ObservationSurface Obs Obj Attr Q) →
+      (S : ObservationEncoder Obs Obj Attr Q) →
       (Γ : (Fin n → Bool) → EvidenceGate Q) → (σ : Multiset Obs) →
       (A : DualConcept Obj Attr) →
       ((conceptFormationDeFinettiPrefixWidthComplementITV
@@ -2134,9 +2134,9 @@ structure ConceptFormationDeFinettiPrefixBridgeProfile where
         ∀ M : BernoulliMixture, ∀ hM : M ∈ C,
           ∀ N : BernoulliMixture, ∀ hN : N ∈ C,
             (hLaw M hM).toPrecisePrevision
-                (ObservationSurface.conceptFormationGamble S Γ σ A) =
+                (ObservationEncoder.conceptFormationGamble S Γ σ A) =
               (hLaw N hN).toPrecisePrevision
-                (ObservationSurface.conceptFormationGamble S Γ σ A)
+                (ObservationEncoder.conceptFormationGamble S Γ σ A)
   typedExactIffMixtureAgreement :
     ∀ {Obs Obj Attr Q : Type} [AddCommMonoid Q] [Preorder Q]
       [Fintype Obj] [Fintype Attr],
@@ -2144,7 +2144,7 @@ structure ConceptFormationDeFinettiPrefixBridgeProfile where
       (hLaw : ∀ M : BernoulliMixture, M ∈ C →
         BernoulliMixturePrefixLaw M n) →
       (hC : C.Nonempty) →
-      (S : ObservationSurface Obs Obj Attr Q) →
+      (S : ObservationEncoder Obs Obj Attr Q) →
       (Γ : (Fin n → Bool) → EvidenceGate Q) → (σ : Multiset Obs) →
       (A : DualConcept Obj Attr) →
       ((conceptFormationDeFinettiPrefixTypedWidthComplementITV
@@ -2162,14 +2162,14 @@ structure ConceptFormationDeFinettiPrefixBridgeProfile where
         ∀ M : BernoulliMixture, ∀ hM : M ∈ C,
           ∀ N : BernoulliMixture, ∀ hN : N ∈ C,
             (hLaw M hM).toPrecisePrevision
-                (ObservationSurface.conceptFormationGamble S Γ σ A) =
+                (ObservationEncoder.conceptFormationGamble S Γ σ A) =
               (hLaw N hN).toPrecisePrevision
-                (ObservationSurface.conceptFormationGamble S Γ σ A)
+                (ObservationEncoder.conceptFormationGamble S Γ σ A)
   untypedExactIffNoCanonicalExternalProcessDisagreement :
     ∀ {Obs Obj Attr Q : Type} [AddCommMonoid Q] [Preorder Q]
       [Fintype Obj] [Fintype Attr],
       (C : Set BernoulliMixture) → (n : ℕ) → (hC : C.Nonempty) →
-      (S : ObservationSurface Obs Obj Attr Q) →
+      (S : ObservationEncoder Obs Obj Attr Q) →
       (Γ : (Fin n → Bool) → EvidenceGate Q) → (σ : Multiset Obs) →
       (A : DualConcept Obj Attr) →
       ((conceptFormationDeFinettiPrefixWidthComplementITV
@@ -2195,14 +2195,14 @@ structure ConceptFormationDeFinettiPrefixBridgeProfile where
             ∃ F : ExternalBoolProcessLaw (ℕ → Bool),
               F ∈ bernoulliMixtureCanonicalExternalBoolProcessLawSet C ∧
                 E.prefixPrevision n
-                    (ObservationSurface.conceptFormationGamble S Γ σ A) <
+                    (ObservationEncoder.conceptFormationGamble S Γ σ A) <
                   F.prefixPrevision n
-                    (ObservationSurface.conceptFormationGamble S Γ σ A)
+                    (ObservationEncoder.conceptFormationGamble S Γ σ A)
   typedExactIffNoCanonicalExternalProcessDisagreement :
     ∀ {Obs Obj Attr Q : Type} [AddCommMonoid Q] [Preorder Q]
       [Fintype Obj] [Fintype Attr],
       (C : Set BernoulliMixture) → (n : ℕ) → (hC : C.Nonempty) →
-      (S : ObservationSurface Obs Obj Attr Q) →
+      (S : ObservationEncoder Obs Obj Attr Q) →
       (Γ : (Fin n → Bool) → EvidenceGate Q) → (σ : Multiset Obs) →
       (A : DualConcept Obj Attr) →
       ((conceptFormationDeFinettiPrefixTypedWidthComplementITV
@@ -2228,9 +2228,9 @@ structure ConceptFormationDeFinettiPrefixBridgeProfile where
             ∃ F : ExternalBoolProcessLaw (ℕ → Bool),
               F ∈ bernoulliMixtureCanonicalExternalBoolProcessLawSet C ∧
                 E.prefixPrevision n
-                    (ObservationSurface.conceptFormationGamble S Γ σ A) <
+                    (ObservationEncoder.conceptFormationGamble S Γ σ A) <
                   F.prefixPrevision n
-                    (ObservationSurface.conceptFormationGamble S Γ σ A)
+                    (ObservationEncoder.conceptFormationGamble S Γ σ A)
   untypedWidthPosIffNotMixtureAgreement :
     ∀ {Obs Obj Attr Q : Type} [AddCommMonoid Q] [Preorder Q]
       [Fintype Obj] [Fintype Attr],
@@ -2238,7 +2238,7 @@ structure ConceptFormationDeFinettiPrefixBridgeProfile where
       (hLaw : ∀ M : BernoulliMixture, M ∈ C →
         BernoulliMixturePrefixLaw M n) →
       (hC : C.Nonempty) →
-      (S : ObservationSurface Obs Obj Attr Q) →
+      (S : ObservationEncoder Obs Obj Attr Q) →
       (Γ : (Fin n → Bool) → EvidenceGate Q) → (σ : Multiset Obs) →
       (A : DualConcept Obj Attr) →
       (0 < (conceptFormationDeFinettiPrefixWidthComplementITV
@@ -2248,9 +2248,9 @@ structure ConceptFormationDeFinettiPrefixBridgeProfile where
         ¬ ∀ M : BernoulliMixture, ∀ hM : M ∈ C,
           ∀ N : BernoulliMixture, ∀ hN : N ∈ C,
             (hLaw M hM).toPrecisePrevision
-                (ObservationSurface.conceptFormationGamble S Γ σ A) =
+                (ObservationEncoder.conceptFormationGamble S Γ σ A) =
               (hLaw N hN).toPrecisePrevision
-                (ObservationSurface.conceptFormationGamble S Γ σ A)
+                (ObservationEncoder.conceptFormationGamble S Γ σ A)
   typedWidthPosIffNotMixtureAgreement :
     ∀ {Obs Obj Attr Q : Type} [AddCommMonoid Q] [Preorder Q]
       [Fintype Obj] [Fintype Attr],
@@ -2258,7 +2258,7 @@ structure ConceptFormationDeFinettiPrefixBridgeProfile where
       (hLaw : ∀ M : BernoulliMixture, M ∈ C →
         BernoulliMixturePrefixLaw M n) →
       (hC : C.Nonempty) →
-      (S : ObservationSurface Obs Obj Attr Q) →
+      (S : ObservationEncoder Obs Obj Attr Q) →
       (Γ : (Fin n → Bool) → EvidenceGate Q) → (σ : Multiset Obs) →
       (A : DualConcept Obj Attr) →
       (0 < (conceptFormationDeFinettiPrefixTypedWidthComplementITV
@@ -2268,14 +2268,14 @@ structure ConceptFormationDeFinettiPrefixBridgeProfile where
         ¬ ∀ M : BernoulliMixture, ∀ hM : M ∈ C,
           ∀ N : BernoulliMixture, ∀ hN : N ∈ C,
             (hLaw M hM).toPrecisePrevision
-                (ObservationSurface.conceptFormationGamble S Γ σ A) =
+                (ObservationEncoder.conceptFormationGamble S Γ σ A) =
               (hLaw N hN).toPrecisePrevision
-                (ObservationSurface.conceptFormationGamble S Γ σ A)
+                (ObservationEncoder.conceptFormationGamble S Γ σ A)
   untypedCanonicalExternalProcessReadout :
     ∀ {Obs Obj Attr Q : Type} [AddCommMonoid Q] [Preorder Q]
       [Fintype Obj] [Fintype Attr],
       (C : Set BernoulliMixture) → (n : ℕ) → (hC : C.Nonempty) →
-      (S : ObservationSurface Obs Obj Attr Q) →
+      (S : ObservationEncoder Obs Obj Attr Q) →
       (Γ : (Fin n → Bool) → EvidenceGate Q) → (σ : Multiset Obs) →
       (A : DualConcept Obj Attr) →
       (conceptFormationDeFinettiPrefixWidthComplementITV
@@ -2283,36 +2283,36 @@ structure ConceptFormationDeFinettiPrefixBridgeProfile where
           hC S Γ σ A).lower =
           externalPathLawPrefixLowerEnvelope
             (bernoulliMixtureCanonicalExternalBoolProcessLawSet C) n
-            (ObservationSurface.conceptFormationGamble S Γ σ A) ∧
+            (ObservationEncoder.conceptFormationGamble S Γ σ A) ∧
       (conceptFormationDeFinettiPrefixWidthComplementITV
           C n (fun M _ => bernoulliMixturePrefixLaw_analytic M n)
           hC S Γ σ A).upper =
           externalPathLawPrefixUpperEnvelope
             (bernoulliMixtureCanonicalExternalBoolProcessLawSet C) n
-            (ObservationSurface.conceptFormationGamble S Γ σ A) ∧
+            (ObservationEncoder.conceptFormationGamble S Γ σ A) ∧
       (conceptFormationDeFinettiPrefixWidthComplementITV
           C n (fun M _ => bernoulliMixturePrefixLaw_analytic M n)
           hC S Γ σ A).width =
           externalPathLawPrefixEnvelopeWidth
             (bernoulliMixtureCanonicalExternalBoolProcessLawSet C) n
-            (ObservationSurface.conceptFormationGamble S Γ σ A) ∧
+            (ObservationEncoder.conceptFormationGamble S Γ σ A) ∧
       (conceptFormationDeFinettiPrefixWidthComplementITV
           C n (fun M _ => bernoulliMixturePrefixLaw_analytic M n)
           hC S Γ σ A).credibility =
           externalPathLawPrefixEnvelopeWidthComplement
             (bernoulliMixtureCanonicalExternalBoolProcessLawSet C) n
-            (ObservationSurface.conceptFormationGamble S Γ σ A) ∧
+            (ObservationEncoder.conceptFormationGamble S Γ σ A) ∧
       (conceptFormationDeFinettiPrefixWidthComplementITV
           C n (fun M _ => bernoulliMixturePrefixLaw_analytic M n)
           hC S Γ σ A).strength =
           externalPathLawPrefixEnvelopeMidpoint
             (bernoulliMixtureCanonicalExternalBoolProcessLawSet C) n
-            (ObservationSurface.conceptFormationGamble S Γ σ A)
+            (ObservationEncoder.conceptFormationGamble S Γ σ A)
   typedCanonicalExternalProcessReadout :
     ∀ {Obs Obj Attr Q : Type} [AddCommMonoid Q] [Preorder Q]
       [Fintype Obj] [Fintype Attr],
       (C : Set BernoulliMixture) → (n : ℕ) → (hC : C.Nonempty) →
-      (S : ObservationSurface Obs Obj Attr Q) →
+      (S : ObservationEncoder Obs Obj Attr Q) →
       (Γ : (Fin n → Bool) → EvidenceGate Q) → (σ : Multiset Obs) →
       (A : DualConcept Obj Attr) →
       (conceptFormationDeFinettiPrefixTypedWidthComplementITV
@@ -2320,36 +2320,36 @@ structure ConceptFormationDeFinettiPrefixBridgeProfile where
           hC S Γ σ A).lower =
           externalPathLawPrefixLowerEnvelope
             (bernoulliMixtureCanonicalExternalBoolProcessLawSet C) n
-            (ObservationSurface.conceptFormationGamble S Γ σ A) ∧
+            (ObservationEncoder.conceptFormationGamble S Γ σ A) ∧
       (conceptFormationDeFinettiPrefixTypedWidthComplementITV
           C n (fun M _ => bernoulliMixturePrefixLaw_analytic M n)
           hC S Γ σ A).upper =
           externalPathLawPrefixUpperEnvelope
             (bernoulliMixtureCanonicalExternalBoolProcessLawSet C) n
-            (ObservationSurface.conceptFormationGamble S Γ σ A) ∧
+            (ObservationEncoder.conceptFormationGamble S Γ σ A) ∧
       (conceptFormationDeFinettiPrefixTypedWidthComplementITV
           C n (fun M _ => bernoulliMixturePrefixLaw_analytic M n)
           hC S Γ σ A).width =
           externalPathLawPrefixEnvelopeWidth
             (bernoulliMixtureCanonicalExternalBoolProcessLawSet C) n
-            (ObservationSurface.conceptFormationGamble S Γ σ A) ∧
+            (ObservationEncoder.conceptFormationGamble S Γ σ A) ∧
       (conceptFormationDeFinettiPrefixTypedWidthComplementITV
           C n (fun M _ => bernoulliMixturePrefixLaw_analytic M n)
           hC S Γ σ A).credibility =
           externalPathLawPrefixEnvelopeWidthComplement
             (bernoulliMixtureCanonicalExternalBoolProcessLawSet C) n
-            (ObservationSurface.conceptFormationGamble S Γ σ A) ∧
+            (ObservationEncoder.conceptFormationGamble S Γ σ A) ∧
       (conceptFormationDeFinettiPrefixTypedWidthComplementITV
           C n (fun M _ => bernoulliMixturePrefixLaw_analytic M n)
           hC S Γ σ A).midpoint =
           externalPathLawPrefixEnvelopeMidpoint
             (bernoulliMixtureCanonicalExternalBoolProcessLawSet C) n
-            (ObservationSurface.conceptFormationGamble S Γ σ A)
+            (ObservationEncoder.conceptFormationGamble S Γ σ A)
   canonicalExternalProcessAgreementIffMixtureAgreement :
     ∀ {Obs Obj Attr Q : Type} [AddCommMonoid Q] [Preorder Q]
       [Fintype Obj] [Fintype Attr],
       (C : Set BernoulliMixture) → (n : ℕ) →
-      (S : ObservationSurface Obs Obj Attr Q) →
+      (S : ObservationEncoder Obs Obj Attr Q) →
       (Γ : (Fin n → Bool) → EvidenceGate Q) → (σ : Multiset Obs) →
       (A : DualConcept Obj Attr) →
       (∀ E : ExternalBoolProcessLaw (ℕ → Bool),
@@ -2357,56 +2357,56 @@ structure ConceptFormationDeFinettiPrefixBridgeProfile where
           ∀ F : ExternalBoolProcessLaw (ℕ → Bool),
           ∀ _hF : F ∈ bernoulliMixtureCanonicalExternalBoolProcessLawSet C,
             E.prefixPrevision n
-                (ObservationSurface.conceptFormationGamble S Γ σ A) =
+                (ObservationEncoder.conceptFormationGamble S Γ σ A) =
               F.prefixPrevision n
-                (ObservationSurface.conceptFormationGamble S Γ σ A)) ↔
+                (ObservationEncoder.conceptFormationGamble S Γ σ A)) ↔
         ∀ M : BernoulliMixture, ∀ _hM : M ∈ C,
           ∀ N : BernoulliMixture, ∀ _hN : N ∈ C,
             (bernoulliMixturePrefixLaw_analytic M n).toPrecisePrevision
-                (ObservationSurface.conceptFormationGamble S Γ σ A) =
+                (ObservationEncoder.conceptFormationGamble S Γ σ A) =
               (bernoulliMixturePrefixLaw_analytic N n).toPrecisePrevision
-                (ObservationSurface.conceptFormationGamble S Γ σ A)
+                (ObservationEncoder.conceptFormationGamble S Γ σ A)
   determinesIffCanonicalExternalProcessAgreement :
     ∀ {Obs Obj Attr Q : Type} [AddCommMonoid Q] [Preorder Q]
       [Fintype Obj] [Fintype Attr],
       (C : Set BernoulliMixture) → (n : ℕ) →
-      (S : ObservationSurface Obs Obj Attr Q) →
+      (S : ObservationEncoder Obs Obj Attr Q) →
       (Γ : (Fin n → Bool) → EvidenceGate Q) → (σ : Multiset Obs) →
       (A : DualConcept Obj Attr) →
       (bernoulliMixturePrefixProjectiveSpec C n
           (fun M _ => bernoulliMixturePrefixLaw_analytic M n)).determinesGlobalGamble
-          (ObservationSurface.conceptFormationGamble S Γ σ A) ↔
+          (ObservationEncoder.conceptFormationGamble S Γ σ A) ↔
         ∀ E : ExternalBoolProcessLaw (ℕ → Bool),
           ∀ _hE : E ∈ bernoulliMixtureCanonicalExternalBoolProcessLawSet C,
           ∀ F : ExternalBoolProcessLaw (ℕ → Bool),
           ∀ _hF : F ∈ bernoulliMixtureCanonicalExternalBoolProcessLawSet C,
             E.prefixPrevision n
-                (ObservationSurface.conceptFormationGamble S Γ σ A) =
+                (ObservationEncoder.conceptFormationGamble S Γ σ A) =
               F.prefixPrevision n
-                (ObservationSurface.conceptFormationGamble S Γ σ A)
+                (ObservationEncoder.conceptFormationGamble S Γ σ A)
   determinesIffNoCanonicalExternalProcessDisagreement :
     ∀ {Obs Obj Attr Q : Type} [AddCommMonoid Q] [Preorder Q]
       [Fintype Obj] [Fintype Attr],
       (C : Set BernoulliMixture) → (n : ℕ) →
-      (S : ObservationSurface Obs Obj Attr Q) →
+      (S : ObservationEncoder Obs Obj Attr Q) →
       (Γ : (Fin n → Bool) → EvidenceGate Q) → (σ : Multiset Obs) →
       (A : DualConcept Obj Attr) →
       (bernoulliMixturePrefixProjectiveSpec C n
           (fun M _ => bernoulliMixturePrefixLaw_analytic M n)).determinesGlobalGamble
-          (ObservationSurface.conceptFormationGamble S Γ σ A) ↔
+          (ObservationEncoder.conceptFormationGamble S Γ σ A) ↔
         ¬ ∃ E : ExternalBoolProcessLaw (ℕ → Bool),
           E ∈ bernoulliMixtureCanonicalExternalBoolProcessLawSet C ∧
             ∃ F : ExternalBoolProcessLaw (ℕ → Bool),
               F ∈ bernoulliMixtureCanonicalExternalBoolProcessLawSet C ∧
                 E.prefixPrevision n
-                    (ObservationSurface.conceptFormationGamble S Γ σ A) <
+                    (ObservationEncoder.conceptFormationGamble S Γ σ A) <
                   F.prefixPrevision n
-                    (ObservationSurface.conceptFormationGamble S Γ σ A)
+                    (ObservationEncoder.conceptFormationGamble S Γ σ A)
   untypedWidthPosIffNotCanonicalExternalProcessAgreement :
     ∀ {Obs Obj Attr Q : Type} [AddCommMonoid Q] [Preorder Q]
       [Fintype Obj] [Fintype Attr],
       (C : Set BernoulliMixture) → (n : ℕ) → (hC : C.Nonempty) →
-      (S : ObservationSurface Obs Obj Attr Q) →
+      (S : ObservationEncoder Obs Obj Attr Q) →
       (Γ : (Fin n → Bool) → EvidenceGate Q) → (σ : Multiset Obs) →
       (A : DualConcept Obj Attr) →
       (0 < (conceptFormationDeFinettiPrefixWidthComplementITV
@@ -2420,14 +2420,14 @@ structure ConceptFormationDeFinettiPrefixBridgeProfile where
           ∀ F : ExternalBoolProcessLaw (ℕ → Bool),
           ∀ _hF : F ∈ bernoulliMixtureCanonicalExternalBoolProcessLawSet C,
             E.prefixPrevision n
-                (ObservationSurface.conceptFormationGamble S Γ σ A) =
+                (ObservationEncoder.conceptFormationGamble S Γ σ A) =
               F.prefixPrevision n
-                (ObservationSurface.conceptFormationGamble S Γ σ A)
+                (ObservationEncoder.conceptFormationGamble S Γ σ A)
   typedWidthPosIffNotCanonicalExternalProcessAgreement :
     ∀ {Obs Obj Attr Q : Type} [AddCommMonoid Q] [Preorder Q]
       [Fintype Obj] [Fintype Attr],
       (C : Set BernoulliMixture) → (n : ℕ) → (hC : C.Nonempty) →
-      (S : ObservationSurface Obs Obj Attr Q) →
+      (S : ObservationEncoder Obs Obj Attr Q) →
       (Γ : (Fin n → Bool) → EvidenceGate Q) → (σ : Multiset Obs) →
       (A : DualConcept Obj Attr) →
       (0 < (conceptFormationDeFinettiPrefixTypedWidthComplementITV
@@ -2441,32 +2441,32 @@ structure ConceptFormationDeFinettiPrefixBridgeProfile where
           ∀ F : ExternalBoolProcessLaw (ℕ → Bool),
           ∀ _hF : F ∈ bernoulliMixtureCanonicalExternalBoolProcessLawSet C,
             E.prefixPrevision n
-                (ObservationSurface.conceptFormationGamble S Γ σ A) =
+                (ObservationEncoder.conceptFormationGamble S Γ σ A) =
               F.prefixPrevision n
-                (ObservationSurface.conceptFormationGamble S Γ σ A)
+                (ObservationEncoder.conceptFormationGamble S Γ σ A)
   strictGlobalWidthIffExistsCanonicalExternalProcessDisagreement :
     ∀ {Obs Obj Attr Q : Type} [AddCommMonoid Q] [Preorder Q]
       [Fintype Obj] [Fintype Attr],
       (C : Set BernoulliMixture) → (n : ℕ) →
-      (S : ObservationSurface Obs Obj Attr Q) →
+      (S : ObservationEncoder Obs Obj Attr Q) →
       (Γ : (Fin n → Bool) → EvidenceGate Q) → (σ : Multiset Obs) →
       (A : DualConcept Obj Attr) →
       (bernoulliMixturePrefixProjectiveSpec C n
           (fun M _ => bernoulliMixturePrefixLaw_analytic M n)).hasStrictGlobalWidth
-          (ObservationSurface.conceptFormationGamble S Γ σ A) ↔
+          (ObservationEncoder.conceptFormationGamble S Γ σ A) ↔
         ∃ E : ExternalBoolProcessLaw (ℕ → Bool),
           E ∈ bernoulliMixtureCanonicalExternalBoolProcessLawSet C ∧
             ∃ F : ExternalBoolProcessLaw (ℕ → Bool),
               F ∈ bernoulliMixtureCanonicalExternalBoolProcessLawSet C ∧
                 E.prefixPrevision n
-                    (ObservationSurface.conceptFormationGamble S Γ σ A) <
+                    (ObservationEncoder.conceptFormationGamble S Γ σ A) <
                   F.prefixPrevision n
-                    (ObservationSurface.conceptFormationGamble S Γ σ A)
+                    (ObservationEncoder.conceptFormationGamble S Γ σ A)
   canonicalExternalProcessDisagreementIffNotAgreement :
     ∀ {Obs Obj Attr Q : Type} [AddCommMonoid Q] [Preorder Q]
       [Fintype Obj] [Fintype Attr],
       (C : Set BernoulliMixture) → (n : ℕ) →
-      (S : ObservationSurface Obs Obj Attr Q) →
+      (S : ObservationEncoder Obs Obj Attr Q) →
       (Γ : (Fin n → Bool) → EvidenceGate Q) → (σ : Multiset Obs) →
       (A : DualConcept Obj Attr) →
       (∃ E : ExternalBoolProcessLaw (ℕ → Bool),
@@ -2474,43 +2474,43 @@ structure ConceptFormationDeFinettiPrefixBridgeProfile where
           ∃ F : ExternalBoolProcessLaw (ℕ → Bool),
             F ∈ bernoulliMixtureCanonicalExternalBoolProcessLawSet C ∧
               E.prefixPrevision n
-                  (ObservationSurface.conceptFormationGamble S Γ σ A) <
+                  (ObservationEncoder.conceptFormationGamble S Γ σ A) <
                 F.prefixPrevision n
-                  (ObservationSurface.conceptFormationGamble S Γ σ A)) ↔
+                  (ObservationEncoder.conceptFormationGamble S Γ σ A)) ↔
         ¬ ∀ E : ExternalBoolProcessLaw (ℕ → Bool),
           ∀ _hE : E ∈ bernoulliMixtureCanonicalExternalBoolProcessLawSet C,
           ∀ F : ExternalBoolProcessLaw (ℕ → Bool),
           ∀ _hF : F ∈ bernoulliMixtureCanonicalExternalBoolProcessLawSet C,
             E.prefixPrevision n
-                (ObservationSurface.conceptFormationGamble S Γ σ A) =
+                (ObservationEncoder.conceptFormationGamble S Γ σ A) =
               F.prefixPrevision n
-                (ObservationSurface.conceptFormationGamble S Γ σ A)
+                (ObservationEncoder.conceptFormationGamble S Γ σ A)
   canonicalExternalProcessDisagreementOfMixtureDisagreement :
     ∀ {Obs Obj Attr Q : Type} [AddCommMonoid Q] [Preorder Q]
       [Fintype Obj] [Fintype Attr],
       (C : Set BernoulliMixture) → (n : ℕ) →
-      (S : ObservationSurface Obs Obj Attr Q) →
+      (S : ObservationEncoder Obs Obj Attr Q) →
       (Γ : (Fin n → Bool) → EvidenceGate Q) → (σ : Multiset Obs) →
       (A : DualConcept Obj Attr) →
       {M N : BernoulliMixture} → (hM : M ∈ C) → (hN : N ∈ C) →
       (hlt :
         (bernoulliMixturePrefixLaw_analytic M n).toPrecisePrevision
-            (ObservationSurface.conceptFormationGamble S Γ σ A) <
+            (ObservationEncoder.conceptFormationGamble S Γ σ A) <
           (bernoulliMixturePrefixLaw_analytic N n).toPrecisePrevision
-            (ObservationSurface.conceptFormationGamble S Γ σ A)) →
+            (ObservationEncoder.conceptFormationGamble S Γ σ A)) →
       ∃ E : ExternalBoolProcessLaw (ℕ → Bool),
         E ∈ bernoulliMixtureCanonicalExternalBoolProcessLawSet C ∧
           ∃ F : ExternalBoolProcessLaw (ℕ → Bool),
             F ∈ bernoulliMixtureCanonicalExternalBoolProcessLawSet C ∧
               E.prefixPrevision n
-                  (ObservationSurface.conceptFormationGamble S Γ σ A) <
+                  (ObservationEncoder.conceptFormationGamble S Γ σ A) <
                 F.prefixPrevision n
-                  (ObservationSurface.conceptFormationGamble S Γ σ A)
+                  (ObservationEncoder.conceptFormationGamble S Γ σ A)
   untypedWidthPosOfCanonicalExternalProcessDisagreement :
     ∀ {Obs Obj Attr Q : Type} [AddCommMonoid Q] [Preorder Q]
       [Fintype Obj] [Fintype Attr],
       (C : Set BernoulliMixture) → (n : ℕ) → (hC : C.Nonempty) →
-      (S : ObservationSurface Obs Obj Attr Q) →
+      (S : ObservationEncoder Obs Obj Attr Q) →
       (Γ : (Fin n → Bool) → EvidenceGate Q) → (σ : Multiset Obs) →
       (A : DualConcept Obj Attr) →
       (hDisagree :
@@ -2519,9 +2519,9 @@ structure ConceptFormationDeFinettiPrefixBridgeProfile where
             ∃ F : ExternalBoolProcessLaw (ℕ → Bool),
               F ∈ bernoulliMixtureCanonicalExternalBoolProcessLawSet C ∧
                 E.prefixPrevision n
-                    (ObservationSurface.conceptFormationGamble S Γ σ A) <
+                    (ObservationEncoder.conceptFormationGamble S Γ σ A) <
                   F.prefixPrevision n
-                    (ObservationSurface.conceptFormationGamble S Γ σ A)) →
+                    (ObservationEncoder.conceptFormationGamble S Γ σ A)) →
       0 < (conceptFormationDeFinettiPrefixWidthComplementITV
           C n (fun M _ => bernoulliMixturePrefixLaw_analytic M n)
           hC S Γ σ A).width ∧
@@ -2532,7 +2532,7 @@ structure ConceptFormationDeFinettiPrefixBridgeProfile where
     ∀ {Obs Obj Attr Q : Type} [AddCommMonoid Q] [Preorder Q]
       [Fintype Obj] [Fintype Attr],
       (C : Set BernoulliMixture) → (n : ℕ) → (hC : C.Nonempty) →
-      (S : ObservationSurface Obs Obj Attr Q) →
+      (S : ObservationEncoder Obs Obj Attr Q) →
       (Γ : (Fin n → Bool) → EvidenceGate Q) → (σ : Multiset Obs) →
       (A : DualConcept Obj Attr) →
       (0 < (conceptFormationDeFinettiPrefixWidthComplementITV
@@ -2546,14 +2546,14 @@ structure ConceptFormationDeFinettiPrefixBridgeProfile where
             ∃ F : ExternalBoolProcessLaw (ℕ → Bool),
               F ∈ bernoulliMixtureCanonicalExternalBoolProcessLawSet C ∧
                 E.prefixPrevision n
-                    (ObservationSurface.conceptFormationGamble S Γ σ A) <
+                    (ObservationEncoder.conceptFormationGamble S Γ σ A) <
                   F.prefixPrevision n
-                    (ObservationSurface.conceptFormationGamble S Γ σ A)
+                    (ObservationEncoder.conceptFormationGamble S Γ σ A)
   typedWidthPosOfCanonicalExternalProcessDisagreement :
     ∀ {Obs Obj Attr Q : Type} [AddCommMonoid Q] [Preorder Q]
       [Fintype Obj] [Fintype Attr],
       (C : Set BernoulliMixture) → (n : ℕ) → (hC : C.Nonempty) →
-      (S : ObservationSurface Obs Obj Attr Q) →
+      (S : ObservationEncoder Obs Obj Attr Q) →
       (Γ : (Fin n → Bool) → EvidenceGate Q) → (σ : Multiset Obs) →
       (A : DualConcept Obj Attr) →
       (hDisagree :
@@ -2562,9 +2562,9 @@ structure ConceptFormationDeFinettiPrefixBridgeProfile where
             ∃ F : ExternalBoolProcessLaw (ℕ → Bool),
               F ∈ bernoulliMixtureCanonicalExternalBoolProcessLawSet C ∧
                 E.prefixPrevision n
-                    (ObservationSurface.conceptFormationGamble S Γ σ A) <
+                    (ObservationEncoder.conceptFormationGamble S Γ σ A) <
                   F.prefixPrevision n
-                    (ObservationSurface.conceptFormationGamble S Γ σ A)) →
+                    (ObservationEncoder.conceptFormationGamble S Γ σ A)) →
       0 < (conceptFormationDeFinettiPrefixTypedWidthComplementITV
           C n (fun M _ => bernoulliMixturePrefixLaw_analytic M n)
           hC S Γ σ A).width ∧
@@ -2575,7 +2575,7 @@ structure ConceptFormationDeFinettiPrefixBridgeProfile where
     ∀ {Obs Obj Attr Q : Type} [AddCommMonoid Q] [Preorder Q]
       [Fintype Obj] [Fintype Attr],
       (C : Set BernoulliMixture) → (n : ℕ) → (hC : C.Nonempty) →
-      (S : ObservationSurface Obs Obj Attr Q) →
+      (S : ObservationEncoder Obs Obj Attr Q) →
       (Γ : (Fin n → Bool) → EvidenceGate Q) → (σ : Multiset Obs) →
       (A : DualConcept Obj Attr) →
       (0 < (conceptFormationDeFinettiPrefixTypedWidthComplementITV
@@ -2589,9 +2589,9 @@ structure ConceptFormationDeFinettiPrefixBridgeProfile where
             ∃ F : ExternalBoolProcessLaw (ℕ → Bool),
               F ∈ bernoulliMixtureCanonicalExternalBoolProcessLawSet C ∧
                 E.prefixPrevision n
-                    (ObservationSurface.conceptFormationGamble S Γ σ A) <
+                    (ObservationEncoder.conceptFormationGamble S Γ σ A) <
                   F.prefixPrevision n
-                    (ObservationSurface.conceptFormationGamble S Γ σ A)
+                    (ObservationEncoder.conceptFormationGamble S Γ σ A)
   untypedExactOfMixtureAgreement :
     ∀ {Obs Obj Attr Q : Type} [AddCommMonoid Q] [Preorder Q]
       [Fintype Obj] [Fintype Attr],
@@ -2599,15 +2599,15 @@ structure ConceptFormationDeFinettiPrefixBridgeProfile where
       (hLaw : ∀ M : BernoulliMixture, M ∈ C →
         BernoulliMixturePrefixLaw M n) →
       (hC : C.Nonempty) →
-      (S : ObservationSurface Obs Obj Attr Q) →
+      (S : ObservationEncoder Obs Obj Attr Q) →
       (Γ : (Fin n → Bool) → EvidenceGate Q) → (σ : Multiset Obs) →
       (A : DualConcept Obj Attr) →
       (hAgree : ∀ M : BernoulliMixture, ∀ hM : M ∈ C,
         ∀ N : BernoulliMixture, ∀ hN : N ∈ C,
           (hLaw M hM).toPrecisePrevision
-              (ObservationSurface.conceptFormationGamble S Γ σ A) =
+              (ObservationEncoder.conceptFormationGamble S Γ σ A) =
             (hLaw N hN).toPrecisePrevision
-              (ObservationSurface.conceptFormationGamble S Γ σ A)) →
+              (ObservationEncoder.conceptFormationGamble S Γ σ A)) →
       (conceptFormationDeFinettiPrefixWidthComplementITV
           C n hLaw hC S Γ σ A).lower =
           (conceptFormationDeFinettiPrefixWidthComplementITV
@@ -2627,15 +2627,15 @@ structure ConceptFormationDeFinettiPrefixBridgeProfile where
       (hLaw : ∀ M : BernoulliMixture, M ∈ C →
         BernoulliMixturePrefixLaw M n) →
       (hC : C.Nonempty) →
-      (S : ObservationSurface Obs Obj Attr Q) →
+      (S : ObservationEncoder Obs Obj Attr Q) →
       (Γ : (Fin n → Bool) → EvidenceGate Q) → (σ : Multiset Obs) →
       (A : DualConcept Obj Attr) →
       (hAgree : ∀ M : BernoulliMixture, ∀ hM : M ∈ C,
         ∀ N : BernoulliMixture, ∀ hN : N ∈ C,
           (hLaw M hM).toPrecisePrevision
-              (ObservationSurface.conceptFormationGamble S Γ σ A) =
+              (ObservationEncoder.conceptFormationGamble S Γ σ A) =
             (hLaw N hN).toPrecisePrevision
-              (ObservationSurface.conceptFormationGamble S Γ σ A)) →
+              (ObservationEncoder.conceptFormationGamble S Γ σ A)) →
       (conceptFormationDeFinettiPrefixTypedWidthComplementITV
           C n hLaw hC S Γ σ A).lower =
           (conceptFormationDeFinettiPrefixTypedWidthComplementITV
@@ -2655,15 +2655,15 @@ structure ConceptFormationDeFinettiPrefixBridgeProfile where
       (hLaw : ∀ M : BernoulliMixture, M ∈ C →
         BernoulliMixturePrefixLaw M n) →
       (hC : C.Nonempty) →
-      (S : ObservationSurface Obs Obj Attr Q) →
+      (S : ObservationEncoder Obs Obj Attr Q) →
       (Γ : (Fin n → Bool) → EvidenceGate Q) → (σ : Multiset Obs) →
       (A : DualConcept Obj Attr) →
       {M N : BernoulliMixture} → (hM : M ∈ C) → (hN : N ∈ C) →
       (hlt :
         (hLaw M hM).toPrecisePrevision
-            (ObservationSurface.conceptFormationGamble S Γ σ A) <
+            (ObservationEncoder.conceptFormationGamble S Γ σ A) <
           (hLaw N hN).toPrecisePrevision
-            (ObservationSurface.conceptFormationGamble S Γ σ A)) →
+            (ObservationEncoder.conceptFormationGamble S Γ σ A)) →
       0 < (conceptFormationDeFinettiPrefixWidthComplementITV
           C n hLaw hC S Γ σ A).width ∧
         (conceptFormationDeFinettiPrefixWidthComplementITV
@@ -2675,15 +2675,15 @@ structure ConceptFormationDeFinettiPrefixBridgeProfile where
       (hLaw : ∀ M : BernoulliMixture, M ∈ C →
         BernoulliMixturePrefixLaw M n) →
       (hC : C.Nonempty) →
-      (S : ObservationSurface Obs Obj Attr Q) →
+      (S : ObservationEncoder Obs Obj Attr Q) →
       (Γ : (Fin n → Bool) → EvidenceGate Q) → (σ : Multiset Obs) →
       (A : DualConcept Obj Attr) →
       {M N : BernoulliMixture} → (hM : M ∈ C) → (hN : N ∈ C) →
       (hlt :
         (hLaw M hM).toPrecisePrevision
-            (ObservationSurface.conceptFormationGamble S Γ σ A) <
+            (ObservationEncoder.conceptFormationGamble S Γ σ A) <
           (hLaw N hN).toPrecisePrevision
-          (ObservationSurface.conceptFormationGamble S Γ σ A)) →
+          (ObservationEncoder.conceptFormationGamble S Γ σ A)) →
       0 < (conceptFormationDeFinettiPrefixTypedWidthComplementITV
           C n hLaw hC S Γ σ A).width ∧
         (conceptFormationDeFinettiPrefixTypedWidthComplementITV
@@ -2697,22 +2697,22 @@ structure ConceptFormationDeFinettiPrefixBridgeProfile where
         (Window := PUnit) (Global := Gate) X μ) →
       (hSpec : D.projectiveSpec = gateCredalProjectiveSpec (Gate := Gate)) →
       (M : BernoulliMixture) → Represents M X μ →
-      (S : ObservationSurface Obs Obj Attr Q) →
+      (S : ObservationEncoder Obs Obj Attr Q) →
       (Γ : Gate → EvidenceGate Q) → (σ : Multiset Obs) →
       (A : DualConcept Obj Attr) →
       ((conceptFormationWidthComplementITV S Γ σ A).lower =
           (D.completionOfMixture M)
-            (ObservationSurface.conceptFormationGamble S Γ σ A) ∧
+            (ObservationEncoder.conceptFormationGamble S Γ σ A) ∧
         (conceptFormationWidthComplementITV S Γ σ A).upper =
           (D.completionOfMixture M)
-            (ObservationSurface.conceptFormationGamble S Γ σ A) ∧
+            (ObservationEncoder.conceptFormationGamble S Γ σ A) ∧
         (conceptFormationWidthComplementITV S Γ σ A).width = 0 ∧
         (conceptFormationWidthComplementITV S Γ σ A).credibility = 1 ∧
         (conceptFormationWidthComplementITV S Γ σ A).strength =
           (D.completionOfMixture M)
-            (ObservationSurface.conceptFormationGamble S Γ σ A)) ↔
-        ¬ (A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-            A ∉ ObservationSurface.lowerConceptFamily S Γ σ)
+            (ObservationEncoder.conceptFormationGamble S Γ σ A)) ↔
+        ¬ (A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+            A ∉ ObservationEncoder.lowerConceptFamily S Γ σ)
   typedGluedMixtureExactReadoutIffNoGap :
     ∀ {Ω Obs Obj Attr Q Gate : Type} [MeasurableSpace Ω]
       [AddCommMonoid Q] [Preorder Q] [Fintype Gate] [Nonempty Gate]
@@ -2722,22 +2722,22 @@ structure ConceptFormationDeFinettiPrefixBridgeProfile where
         (Window := PUnit) (Global := Gate) X μ) →
       (hSpec : D.projectiveSpec = gateCredalProjectiveSpec (Gate := Gate)) →
       (M : BernoulliMixture) → Represents M X μ →
-      (S : ObservationSurface Obs Obj Attr Q) →
+      (S : ObservationEncoder Obs Obj Attr Q) →
       (Γ : Gate → EvidenceGate Q) → (σ : Multiset Obs) →
       (A : DualConcept Obj Attr) →
       ((conceptFormationTypedWidthComplementITV S Γ σ A).lower =
           (D.completionOfMixture M)
-            (ObservationSurface.conceptFormationGamble S Γ σ A) ∧
+            (ObservationEncoder.conceptFormationGamble S Γ σ A) ∧
         (conceptFormationTypedWidthComplementITV S Γ σ A).upper =
           (D.completionOfMixture M)
-            (ObservationSurface.conceptFormationGamble S Γ σ A) ∧
+            (ObservationEncoder.conceptFormationGamble S Γ σ A) ∧
         (conceptFormationTypedWidthComplementITV S Γ σ A).width = 0 ∧
         (conceptFormationTypedWidthComplementITV S Γ σ A).credibility = 1 ∧
         (conceptFormationTypedWidthComplementITV S Γ σ A).midpoint =
           (D.completionOfMixture M)
-            (ObservationSurface.conceptFormationGamble S Γ σ A)) ↔
-        ¬ (A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-            A ∉ ObservationSurface.lowerConceptFamily S Γ σ)
+            (ObservationEncoder.conceptFormationGamble S Γ σ A)) ↔
+        ¬ (A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+            A ∉ ObservationEncoder.lowerConceptFamily S Γ σ)
   untypedGluedMixtureBoundaryDichotomy :
     ∀ {Ω Obs Obj Attr Q Gate : Type} [MeasurableSpace Ω]
       [AddCommMonoid Q] [Preorder Q] [Fintype Gate] [Nonempty Gate]
@@ -2747,24 +2747,24 @@ structure ConceptFormationDeFinettiPrefixBridgeProfile where
         (Window := PUnit) (Global := Gate) X μ) →
       (hSpec : D.projectiveSpec = gateCredalProjectiveSpec (Gate := Gate)) →
       (M : BernoulliMixture) → Represents M X μ →
-      (S : ObservationSurface Obs Obj Attr Q) →
+      (S : ObservationEncoder Obs Obj Attr Q) →
       (Γ : Gate → EvidenceGate Q) → (σ : Multiset Obs) →
       (A : DualConcept Obj Attr) →
-      (¬ (A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-            A ∉ ObservationSurface.lowerConceptFamily S Γ σ) ∧
+      (¬ (A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+            A ∉ ObservationEncoder.lowerConceptFamily S Γ σ) ∧
         (conceptFormationWidthComplementITV S Γ σ A).lower =
             (D.completionOfMixture M)
-              (ObservationSurface.conceptFormationGamble S Γ σ A) ∧
+              (ObservationEncoder.conceptFormationGamble S Γ σ A) ∧
           (conceptFormationWidthComplementITV S Γ σ A).upper =
             (D.completionOfMixture M)
-              (ObservationSurface.conceptFormationGamble S Γ σ A) ∧
+              (ObservationEncoder.conceptFormationGamble S Γ σ A) ∧
           (conceptFormationWidthComplementITV S Γ σ A).width = 0 ∧
           (conceptFormationWidthComplementITV S Γ σ A).credibility = 1 ∧
           (conceptFormationWidthComplementITV S Γ σ A).strength =
             (D.completionOfMixture M)
-              (ObservationSurface.conceptFormationGamble S Γ σ A)) ∨
-        ((A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-            A ∉ ObservationSurface.lowerConceptFamily S Γ σ) ∧
+              (ObservationEncoder.conceptFormationGamble S Γ σ A)) ∨
+        ((A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+            A ∉ ObservationEncoder.lowerConceptFamily S Γ σ) ∧
           (conceptFormationWidthComplementITV S Γ σ A).lower = 0 ∧
             (conceptFormationWidthComplementITV S Γ σ A).upper = 1 ∧
             (conceptFormationWidthComplementITV S Γ σ A).width = 1 ∧
@@ -2779,24 +2779,24 @@ structure ConceptFormationDeFinettiPrefixBridgeProfile where
         (Window := PUnit) (Global := Gate) X μ) →
       (hSpec : D.projectiveSpec = gateCredalProjectiveSpec (Gate := Gate)) →
       (M : BernoulliMixture) → Represents M X μ →
-      (S : ObservationSurface Obs Obj Attr Q) →
+      (S : ObservationEncoder Obs Obj Attr Q) →
       (Γ : Gate → EvidenceGate Q) → (σ : Multiset Obs) →
       (A : DualConcept Obj Attr) →
-      (¬ (A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-            A ∉ ObservationSurface.lowerConceptFamily S Γ σ) ∧
+      (¬ (A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+            A ∉ ObservationEncoder.lowerConceptFamily S Γ σ) ∧
         (conceptFormationTypedWidthComplementITV S Γ σ A).lower =
             (D.completionOfMixture M)
-              (ObservationSurface.conceptFormationGamble S Γ σ A) ∧
+              (ObservationEncoder.conceptFormationGamble S Γ σ A) ∧
           (conceptFormationTypedWidthComplementITV S Γ σ A).upper =
             (D.completionOfMixture M)
-              (ObservationSurface.conceptFormationGamble S Γ σ A) ∧
+              (ObservationEncoder.conceptFormationGamble S Γ σ A) ∧
           (conceptFormationTypedWidthComplementITV S Γ σ A).width = 0 ∧
           (conceptFormationTypedWidthComplementITV S Γ σ A).credibility = 1 ∧
           (conceptFormationTypedWidthComplementITV S Γ σ A).midpoint =
             (D.completionOfMixture M)
-              (ObservationSurface.conceptFormationGamble S Γ σ A)) ∨
-        ((A ∈ ObservationSurface.upperConceptFamily S Γ σ ∧
-            A ∉ ObservationSurface.lowerConceptFamily S Γ σ) ∧
+              (ObservationEncoder.conceptFormationGamble S Γ σ A)) ∨
+        ((A ∈ ObservationEncoder.upperConceptFamily S Γ σ ∧
+            A ∉ ObservationEncoder.lowerConceptFamily S Γ σ) ∧
           (conceptFormationTypedWidthComplementITV S Γ σ A).lower = 0 ∧
             (conceptFormationTypedWidthComplementITV S Γ σ A).upper = 1 ∧
             (conceptFormationTypedWidthComplementITV S Γ σ A).width = 1 ∧

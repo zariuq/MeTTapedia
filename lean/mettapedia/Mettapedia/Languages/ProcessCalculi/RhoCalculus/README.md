@@ -55,7 +55,7 @@ Extensions and bridges:
 |------|----------|
 | `SpiceRule.lean` | Spice calculus — n-step lookahead (Meredith 2026); `futureStates_zero` recovers rho at n = 0 |
 | `CommRule.lean` | Spice COMM with n-step lookahead (`SpiceCommReduction`, `spice_comm_preserves_reduces`) |
-| `PresentMoment.lean` | Present moment: surface + internal channels |
+| `PresentMoment.lean` | Present moment: external + internal channels |
 | `ParallelWave.lean` | Serializability for disjoint COMMs (`disjointComm_diamond`) |
 | `RhometaReduction.lean` | Rhometta reduction layer: deferred MeTTa-at-COMM behavior without forking the rho reducer |
 | `RhometaDropObserver.lean` | Auxiliary Rhometta module reserved for future drop-observer proofs |

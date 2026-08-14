@@ -6,7 +6,7 @@ import Mettapedia.PLN.RuleFamilies.FirstOrder.PLNAlgorithmicAbductionBridge
 # PLN-guided evolutionary selection
 
 This module welds evolutionary/population fitness evidence onto the existing
-PLN interval-ranking surface.  Selection is admissible only when an incumbent's
+PLN interval-ranking interface.  Selection is admissible only when an incumbent's
 constructed fitness interval strictly dominates a candidate's interval.
 -/
 

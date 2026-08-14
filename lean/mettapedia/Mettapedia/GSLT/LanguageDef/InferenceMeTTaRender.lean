@@ -1,4 +1,5 @@
 import Mettapedia.GSLT.LanguageDef.CheckedSource
+import Mettapedia.GSLT.LanguageDef.InferenceCettaWireFormat
 
 namespace Mettapedia.GSLT.LanguageDef.InferenceMeTTaRender
 
@@ -15,54 +16,44 @@ def renderList (render : α → String) : List α → String
 
 mutual
 
-def renderPattern : Pattern → String
-  | .bvar index => s!"(Var {index})"
-  | .fvar name => s!"(FVar {quote name})"
-  | .apply head arguments =>
-      s!"(PApp {quote head} {renderPatterns arguments})"
-  | .lambda binder body =>
-      let renderedBinder := match binder with
-        | none => "BNone"
-        | some name => s!"(BSome {quote name})"
-      s!"(PLam {renderedBinder} {renderPattern body})"
-  | .multiLambda arity binders body =>
-      s!"(PMultiLam {arity} {renderList quote binders} {renderPattern body})"
-  | .subst body replacement =>
-      s!"(PSubst {renderPattern body} {renderPattern replacement})"
-  | .collection collectionType elements rest =>
-      let renderedRest := match rest with
-        | none => "RNone"
-        | some name => s!"(RSome {quote name})"
-      s!"(PCollection {quote (reprStr collectionType)} " ++
-        s!"{renderPatterns elements} {renderedRest})"
-termination_by pattern => 2 * sizeOf pattern
+def renderPattern (pattern : Pattern) : String :=
+  InferenceCettaWire.CettaTerm.render
+    (InferenceCettaWire.encodePattern pattern)
 
-def renderPatterns : List Pattern → String
-  | [] => "LNil"
-  | pattern :: patterns =>
-      s!"(LCons {renderPattern pattern} {renderPatterns patterns})"
-termination_by patterns => 2 * sizeOf patterns + 1
+def renderPatterns (patterns : List Pattern) : String :=
+  InferenceCettaWire.CettaTerm.render
+    (InferenceCettaWire.encodePatterns patterns)
 
 end
 
 def renderFormal (formal : String × Nat) : String :=
-  s!"(Formal {quote formal.1} {formal.2})"
+  InferenceCettaWire.CettaTerm.render
+    (InferenceCettaWire.encodeFormal formal)
+
+def renderSideCondition (condition : RuleSideCondition) : String :=
+  InferenceCettaWire.CettaTerm.render
+    (InferenceCettaWire.encodeSideCondition condition)
 
 def renderRule (rule : RuleSchema) : String :=
-  s!"(GRule {quote rule.id.value} {renderList renderFormal rule.metavariables} " ++
-    s!"{renderPatterns rule.premises} {renderPattern rule.conclusion})"
+  InferenceCettaWire.CettaTerm.render
+    (InferenceCettaWire.encodeRule rule)
 
 def renderConstructor (declaration : GrammarRule) : String :=
-  s!"(CDecl {quote declaration.label} {declaration.params.length})"
+  InferenceCettaWire.CettaTerm.render
+    (InferenceCettaWire.encodeConstructor
+      { head := declaration.label, arity := declaration.params.length })
 
 def renderJudgment (judgment : JudgmentDecl) : String :=
-  s!"(JDecl {quote judgment.head} {judgment.arity})"
+  InferenceCettaWire.CettaTerm.render
+    (InferenceCettaWire.encodeJudgment judgment)
+
+def renderConversion (conversion : Option ConversionDecl) : String :=
+  InferenceCettaWire.CettaTerm.render
+    (InferenceCettaWire.encodeConversion conversion)
 
 def renderPresentation (presentation : Presentation) : String :=
-  s!"(GPresentation " ++
-    s!"{renderList renderConstructor presentation.language.terms} " ++
-    s!"{renderList renderJudgment presentation.judgments} " ++
-    s!"{renderList renderRule presentation.rules})"
+  InferenceCettaWire.CettaTerm.render
+    (InferenceCettaWire.encodePresentation presentation)
 
 def renderSourceIdentity (identity : SourceIdentity) : String :=
   s!"(SourceIdentityV1 {quote identity.systemId} {quote identity.revision} " ++
@@ -91,22 +82,18 @@ def renderGSLTSource (source : GSLTSource) : String :=
     s!"{renderPresentation source.presentation})"
 
 def renderRuleInstance (ruleInstance : RuleInstance) : String :=
-  s!"(GRuleInst {quote ruleInstance.ruleId.value} " ++
-    s!"{renderPatterns ruleInstance.arguments})"
+  InferenceCettaWire.CettaTerm.render
+    (InferenceCettaWire.encodeRuleInstance ruleInstance)
 
 mutual
 
-def renderRawProof : RawProof → String
-  | .node ruleInstance children =>
-      s!"(GProof {renderRuleInstance ruleInstance} {renderProofs children})"
-termination_by proof => 2 * sizeOf proof
-decreasing_by all_goals simp_wf; omega
+def renderRawProof (proof : RawProof) : String :=
+  InferenceCettaWire.CettaTerm.render
+    (InferenceCettaWire.encodeRawProof proof)
 
-def renderProofs : List RawProof → String
-  | [] => "PrNil"
-  | proof :: proofs =>
-      s!"(PrCons {renderRawProof proof} {renderProofs proofs})"
-termination_by proofs => 2 * sizeOf proofs + 1
+def renderProofs (proofs : List RawProof) : String :=
+  InferenceCettaWire.CettaTerm.render
+    (InferenceCettaWire.encodeProofs proofs)
 
 end
 

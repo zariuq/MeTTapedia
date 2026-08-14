@@ -79,7 +79,7 @@ converted back. A theorem in the WM file
 confidence is the weaker of your two inputs'".
 
 The old raw-min formula `w2c (min cBA cBC)` is retained only as a
-historical bug surface in `PLNBugAnalysis`: it takes the min of two
+historical bug interface in `PLNBugAnalysis`: it takes the min of two
 *confidences* and then passes that min *back through* `w2c` as if it
 were a *weight*. That is the "double damping" bug: a confidence of 0.5
 becomes `0.5 / 1.5 ≈ 0.333`.

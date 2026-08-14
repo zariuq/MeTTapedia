@@ -32,25 +32,25 @@ end ParallelCostStep
 
 namespace LocatedTokenCover
 
-variable {Ground : Type u} {surface : CostName Ground} {demand : CostSig Ground}
+variable {Ground : Type u} {location : CostName Ground} {demand : CostSig Ground}
   {available residual : Multiset (LocatedPurse Ground)}
 
 /-- Forget only the untouched frame of a located cover, retaining the exact
 selected purse occurrences needed by one concurrent event. -/
 def toFundingSelection
-    (cover : LocatedTokenCover surface demand available residual) :
-    FundingSelection Ground surface demand where
+    (cover : LocatedTokenCover location demand available residual) :
+    FundingSelection Ground location demand where
   chosen := cover.chosen
   demand_eq := cover.demand_eq
 
 @[simp]
 theorem toFundingSelection_before
-    (cover : LocatedTokenCover surface demand available residual) :
+    (cover : LocatedTokenCover location demand available residual) :
     cover.toFundingSelection.before = cover.selectedBefore := rfl
 
 @[simp]
 theorem toFundingSelection_after
-    (cover : LocatedTokenCover surface demand available residual) :
+    (cover : LocatedTokenCover location demand available residual) :
     cover.toFundingSelection.after = cover.selectedAfter := rfl
 
 end LocatedTokenCover
@@ -59,19 +59,19 @@ end LocatedTokenCover
 Together with wave serialization, this is the one-step outcome-set equality:
 parallelism adds commuting groupings, not new or missing reductions. -/
 theorem costStep_has_singleton_parallel {Ground : Type u}
-    {source target : CostConfig Ground} {surface : CostName Ground}
-    {spend : CostSig Ground} (step : CostStep source surface spend target) :
+    {source target : CostConfig Ground} {location : CostName Ground}
+    {spend : CostSig Ground} (step : CostStep source location spend target) :
     ∃ receipt, ParallelCostStep source receipt target := by
   cases step with
   | @wholeRecvSend context available residual channel body payload outerSig
       signature_valid cover =>
-      let event : CostedEvent Ground := .wholeRecvSend surface body payload
+      let event : CostedEvent Ground := .wholeRecvSend location body payload
         spend signature_valid cover.toFundingSelection
       let frame : CostConfig Ground :=
         context + LocatedPurse.configComponents cover.untouched
       let matching : CostMatching Ground :=
         { source := context +
-            (.signed (.par (.recv surface body) (.send surface payload))
+            (.signed (.par (.recv location body) (.send location payload))
               spend ::ₘ 0) +
             LocatedPurse.configComponents available
           events := [event]
@@ -91,13 +91,13 @@ theorem costStep_has_singleton_parallel {Ground : Type u}
       ac_rfl
   | @wholeSendRecv context available residual channel body payload outerSig
       signature_valid cover =>
-      let event : CostedEvent Ground := .wholeSendRecv surface body payload
+      let event : CostedEvent Ground := .wholeSendRecv location body payload
         spend signature_valid cover.toFundingSelection
       let frame : CostConfig Ground :=
         context + LocatedPurse.configComponents cover.untouched
       let matching : CostMatching Ground :=
         { source := context +
-            (.signed (.par (.send surface payload) (.recv surface body))
+            (.signed (.par (.send location payload) (.recv location body))
               spend ::ₘ 0) +
             LocatedPurse.configComponents available
           events := [event]
@@ -117,13 +117,13 @@ theorem costStep_has_singleton_parallel {Ground : Type u}
       ac_rfl
   | @split context available residual channel body payload recvSeal sendSeal
       recv_valid send_valid cover =>
-      let event : CostedEvent Ground := .split surface body payload
+      let event : CostedEvent Ground := .split location body payload
         recvSeal sendSeal recv_valid send_valid cover.toFundingSelection
       let frame : CostConfig Ground :=
         context + LocatedPurse.configComponents cover.untouched
       let matching : CostMatching Ground :=
-        { source := context + (.signed (.recv surface body) recvSeal ::ₘ 0) +
-            (.signed (.send surface payload) sendSeal ::ₘ 0) +
+        { source := context + (.signed (.recv location body) recvSeal ::ₘ 0) +
+            (.signed (.send location payload) sendSeal ::ₘ 0) +
             LocatedPurse.configComponents available
           events := [event]
           frame := frame

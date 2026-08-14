@@ -16,7 +16,7 @@ development works one layer lower, with strictly positive clause potentials.
 
 So the first honest step toward the paper theorem is:
 
-- add the classical infinite-MLN surface object;
+- add the classical infinite-MLN interface object;
 - map it into the existing strictly-positive semantics;
 - define the exact `total influence < 2` hypothesis from the paper;
 - define the uniqueness target at the current proven DLR layer.
@@ -104,7 +104,7 @@ noncomputable def toStrictlyPositiveInfiniteGroundMLNSpec
       (M.clause j) (M.logWeight j)
 
 /-- The paper's existence theorem now transfers immediately to the classical
-weighted-clause surface. -/
+weighted-clause interface. -/
 theorem exists_fixedRegionCylinderDLR_of_equiv
     (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
     (E : Mettapedia.Logic.MarkovLogicInfiniteExhaustion.RegionExhaustion Atom)
@@ -345,7 +345,7 @@ theorem measurableSet_singletonTrueAssignmentSet
   exact (Set.to_countable {x : LocalAssignment Atom ({a} : Region Atom) | x ⟨a, by simp⟩ = true}).measurableSet
 
 /-- The one-site kernel probability that atom `a` is true under boundary
-condition `ξ`, viewed on the classical weighted-clause surface. -/
+condition `ξ`, viewed on the classical weighted-clause interface. -/
 noncomputable def singletonKernelTrueProb
     (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId)
     (a : Atom) (ξ : BoundaryCondition Atom) : ℝ :=
@@ -6107,7 +6107,7 @@ def UniqueFixedRegionCylinderDLR
       FixedRegionCylinderDLR M (ν : Measure (InfiniteWorld Atom)) →
         (μ : Measure (InfiniteWorld Atom)) = (ν : Measure (InfiniteWorld Atom))
 
-/-- Paper-style uniqueness target for the classical weighted-clause surface. -/
+/-- Paper-style uniqueness target for the classical weighted-clause interface. -/
 def PaperUniqueMeasure
     (M : ClassicalInfiniteGroundMLNSpec Atom ClauseId) : Prop :=
   UniqueFixedRegionCylinderDLR M.toStrictlyPositiveInfiniteGroundMLNSpec

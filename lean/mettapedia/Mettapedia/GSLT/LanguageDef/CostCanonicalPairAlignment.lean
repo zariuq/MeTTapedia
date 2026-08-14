@@ -185,6 +185,45 @@ structure CostCanonicalPairElaboration
   alignment : CostRegionTreeNormalizationAlignment source kernel targetFree
     leftTree rightTree
 
+namespace CostCanonicalPairElaboration
+
+/-- Reverse a paired elaboration by swapping its exact retained trees and
+reversing the proof-relevant hereditary alignment.  This does not reconstruct
+an alignment from equality of the erased normalized patterns. -/
+def symm
+    {source : CIGSLT} {kernel : CostStaticNormalizationKernel source}
+    {targetFree : FreeTypeContext} {available outer : List TypeExpr}
+    {leftPattern rightPattern : Pattern} {type : TypeExpr}
+    (pair : CostCanonicalPairElaboration source kernel targetFree available
+      outer leftPattern rightPattern type) :
+    CostCanonicalPairElaboration source kernel targetFree available outer
+      rightPattern leftPattern type where
+  leftTree := pair.rightTree
+  rightTree := pair.leftTree
+  alignment := pair.alignment.symm
+
+@[simp]
+theorem symm_leftTree
+    {source : CIGSLT} {kernel : CostStaticNormalizationKernel source}
+    {targetFree : FreeTypeContext} {available outer : List TypeExpr}
+    {leftPattern rightPattern : Pattern} {type : TypeExpr}
+    (pair : CostCanonicalPairElaboration source kernel targetFree available
+      outer leftPattern rightPattern type) :
+    pair.symm.leftTree = pair.rightTree :=
+  rfl
+
+@[simp]
+theorem symm_rightTree
+    {source : CIGSLT} {kernel : CostStaticNormalizationKernel source}
+    {targetFree : FreeTypeContext} {available outer : List TypeExpr}
+    {leftPattern rightPattern : Pattern} {type : TypeExpr}
+    (pair : CostCanonicalPairElaboration source kernel targetFree available
+      outer leftPattern rightPattern type) :
+    pair.symm.rightTree = pair.leftTree :=
+  rfl
+
+end CostCanonicalPairElaboration
+
 /-- Paired elaboration of one authored constructor's arguments. -/
 structure CostCanonicalArgumentPairElaboration
     (source : CIGSLT) (kernel : CostStaticNormalizationKernel source)

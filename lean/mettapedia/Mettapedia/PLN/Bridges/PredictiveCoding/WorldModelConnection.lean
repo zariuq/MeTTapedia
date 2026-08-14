@@ -33,7 +33,7 @@ open Mettapedia.PLN.TruthValues.PLNTruthTower
 open Mettapedia.PLN.TruthValues.PLNWeightTV
 open scoped ENNReal
 
-/-! ## Binary world-model surface -/
+/-! ## Binary world-model interface -/
 
 /-- Query labels for the predictive-coding world-model bridge.
 
@@ -244,7 +244,7 @@ theorem pcWM_queryStrengthReal_eq_plnRevisionStrength
   exact gaussianFusion_eq_plnRevisionWTV source₁ source₂
 
 /-- Target 3: the equilibrium/error facts remain imported PC facts.  This
-bundles the PC normal-equation, error-recursion, and localization surfaces
+bundles the PC normal-equation, error-recursion, and localization interfaces
 without turning them into PLN revision claims. -/
 theorem pc_imported_equilibrium_error_localization_side
     {depth : Nat} (links : Fin depth → PCLink) (x y : ℝ) (z : PCState depth)

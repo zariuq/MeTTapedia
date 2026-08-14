@@ -104,7 +104,7 @@ theorem pln_revision_sequential_beta_update_canary :
 
 /-! ## Boundary: exchangeability is broader than the Beta subfamily -/
 
-/-- Public comparison-surface guardrail: a count-based exchangeable
+/-- Public comparison-interface guardrail: a count-based exchangeable
 de-Finetti mixture predictor need not be a Beta posterior-predictive
 predictor.  Revision's Beta-update theorem is therefore a conjugate subfamily
 result, not a theorem that all exchangeable predictors are Beta. -/

@@ -97,7 +97,7 @@ def renderCognitiveArchitectureClaim : CognitiveArchitectureClaim → String
         (complV2 (mkV2 (regV "prove")) (properNameNP "stability via Banach fixed-point arguments"))
   | .metamoMainRole =>
       mkPresPos (properNameNP "MetaMo/Main.lean")
-        (complV2 (mkV2 (regV "aggregate")) (properNameNP "the MetaMo module surface"))
+        (complV2 (mkV2 (regV "aggregate")) (properNameNP "the MetaMo module API"))
   | .openPsiBasicRole =>
       mkPresPos (properNameNP "OpenPsi/Basic.lean")
         (complV2 (mkV2 (regV "define")) (properNameNP "demands, modulators, and action-selection rules"))

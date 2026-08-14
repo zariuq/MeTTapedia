@@ -1041,7 +1041,7 @@ For clarity on what is \emph{not} proved:
 \label{sec:categorical-wm-transport}
 
 Beyond modal instantiations, the WM layer now has an explicit categorical
-transport surface:
+transport contract:
 \begin{itemize}[leftmargin=2em]
 \item \textbf{Institution transport} over typed WM signatures:
   \code{satisfactionCondition\_evidence},
@@ -1057,7 +1057,7 @@ transport surface:
 \item \textbf{Unified endpoint}:
   \code{EndpointStatement},
   \code{institution\_beckChevalley\_endpoint},
-  \code{endpointSurface\_of\_hyperdoctrine}
+  \code{endpointContract\_of\_hyperdoctrine}
   (\code{PLNWorldModelCategoricalBridge.lean}),
   which packages institution-level satisfaction transport and
   hyperdoctrine-level Beck-Chevalley transport in one theorem statement.
@@ -1066,7 +1066,7 @@ transport surface:
   (\code{PLNWorldModelCategoricalRegression.lean}),
   instantiating the unified endpoint on an identity pullback square.
 \item \textbf{Aligned consequence-transfer wrappers}:
-  categorical-surface variants are exposed for the PureKernel$\rightarrow$WM
+  categorical-contract variants are exposed for the PureKernel$\rightarrow$WM
   bridge and for HOL/FOL WM consequence transfer
   (\code{PLNWorldModelPureKernelBridge.lean},
    \code{PLNWorldModelHOLCompleteness.lean},
@@ -1080,7 +1080,7 @@ transport surface:
   \code{Z/ZF/ZC/ZFC}
   (\code{PLNWorldModelSetTheoryBridge.lean}), including
   \code{provable\_imp\_iff\_singletonStrengthLEOnTheory},
-  multiset consequence transport, and categorical-surface wrappers.
+  multiset consequence transport, and categorical-contract wrappers.
 \item \textbf{OSLF$\rightarrow$NTT$\rightarrow$WM canonical endpoint}: presheaf/subobject
   modal transport and formula-level graph witness transport are exposed via
   \code{modalSubobject\_commDi\_bc\_graph\_endpoint\_of\_pathSemLiftPkg},
@@ -1102,7 +1102,7 @@ transport surface:
    \code{OSLF/Framework/OSLFNTTWMBridgeRegression.lean}).
 \item \textbf{GF$\rightarrow$WM obligation adapters}:
   GF syntactic transports are consumable on the same
-  \code{PureJudgmentWMInterface} surface used by Pure-kernel bridge wrappers,
+  \code{PureJudgmentWMInterface} used by Pure-kernel bridge wrappers,
   via
   \code{gfSyntaxHom\_to\_wmStrengthObligation},
   \code{wmConsequenceRuleOn\_of\_gfSyntaxHom\_viaPureInterface},

@@ -31,6 +31,6 @@ import Mettapedia.PLN.Evidence.SourceReliability
 /-!
 # PLN Evidence
 
-Evidence carriers, evidence-count views, and bridge surfaces for PLN truth-value
+Evidence carriers, evidence-count views, and bridge interfaces for PLN truth-value
 semantics.
 -/

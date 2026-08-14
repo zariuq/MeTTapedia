@@ -59,9 +59,9 @@ mutual
           RawCostTerm.wellFormed_lift amount cutoff right supported.2⟩
     | .drop name, supported =>
         RawCostName.wellFormed_lift amount cutoff name supported
-    | .purse surface stack, supported => by
+    | .purse location stack, supported => by
         simp only [RawCostTerm.wellFormed, Bool.and_eq_true] at supported ⊢
-        exact ⟨RawCostName.wellFormed_lift amount cutoff surface supported.1,
+        exact ⟨RawCostName.wellFormed_lift amount cutoff location supported.1,
           supported.2⟩
 end
 
@@ -134,11 +134,11 @@ mutual
         simpa [RawCostTerm.substitute, RawCostTerm.wellFormed] using supported
     | .drop (.signature sig), supported => by
         simpa [RawCostTerm.substitute, RawCostTerm.wellFormed] using supported
-    | .purse surface stack, supported => by
+    | .purse location stack, supported => by
         simp only [RawCostTerm.wellFormed, Bool.and_eq_true] at supported ⊢
         exact ⟨
           RawCostName.wellFormed_substitute replacement replacement_supported depth
-            surface supported.1,
+            location supported.1,
           supported.2⟩
 end
 
@@ -270,7 +270,7 @@ theorem RawCostTerm.components_forall_wellFormed : ∀ term : RawCostTerm,
       simpa [RawCostTerm.components] using supported
   | .drop name, supported => by
       simpa [RawCostTerm.components] using supported
-  | .purse surface stack, supported => by
+  | .purse location stack, supported => by
       simpa [RawCostTerm.components] using supported
 
 theorem RawCostProc.fromComponents_wellFormed : ∀ items : List RawCostProc,
@@ -355,9 +355,9 @@ mutual
           RawCostTerm.components_forall_wellFormed right.normalize right_ok⟩
     | .drop name, supported =>
         RawCostName.wellFormed_normalize name supported
-    | .purse surface stack, supported => by
+    | .purse location stack, supported => by
         simp only [RawCostTerm.wellFormed, Bool.and_eq_true] at supported ⊢
-        exact ⟨RawCostName.wellFormed_normalize surface supported.1,
+        exact ⟨RawCostName.wellFormed_normalize location supported.1,
           RawCostStack.normalize_all_valid stack supported.2⟩
 end
 
@@ -372,7 +372,7 @@ theorem RawCostTerm.normalizeConfig_forall_wellFormed {term : RawCostTerm}
 /-! ## Purse extraction and successor preservation -/
 
 structure RawIndexedPurse.WellFormed (purse : RawIndexedPurse) : Prop where
-  surface : purse.surface.wellFormed = true
+  location : purse.location.wellFormed = true
   head : purse.head.valid = true
   tail : purse.tail.all RawCostSig.valid = true
 
@@ -387,14 +387,14 @@ theorem collectPursesAux_forall_wellFormed :
           term rest).mp supported
       have tail_ok := collectPursesAux_forall_wellFormed rest (index + 1) rest_ok
       cases term with
-      | purse surface stack =>
+      | purse location stack =>
           cases stack with
           | nil => exact tail_ok
           | cons head tail =>
               simp only [RawCostTerm.wellFormed, List.all_cons,
                 Bool.and_eq_true] at term_ok
               exact (List.forall_cons RawIndexedPurse.WellFormed
-                ⟨index, surface, head, tail⟩
+                ⟨index, location, head, tail⟩
                 (collectPursesAux rest (index + 1))).mpr
                 ⟨⟨term_ok.1, term_ok.2.1, term_ok.2.2⟩, tail_ok⟩
       | _ => exact tail_ok
@@ -419,7 +419,7 @@ theorem selected_tails_forall_wellFormed
     {config : RawCostConfig} (config_ok : config.Forall
       (fun term => term.wellFormed = true))
     {selected : List RawSelectedPurse} (selected_source : selected.Sublist config.purses) :
-    (selected.map fun purse => RawCostTerm.purse purse.surface purse.tail).Forall
+    (selected.map fun purse => RawCostTerm.purse purse.location purse.tail).Forall
       (fun term => term.wellFormed = true) := by
   rw [List.forall_iff_forall_mem]
   intro term term_member
@@ -428,7 +428,7 @@ theorem selected_tails_forall_wellFormed
   have purse_ok := List.forall_iff_forall_mem.mp all_purses purse
     (selected_source.mem purse_member)
   simp only [RawCostTerm.wellFormed, Bool.and_eq_true]
-  exact ⟨purse_ok.surface, purse_ok.tail⟩
+  exact ⟨purse_ok.location, purse_ok.tail⟩
 
 /-- Generic successor construction preserves the raw wrapped grammar when its
 contractum is supported and its selected purse occurrences came from the
@@ -451,7 +451,7 @@ theorem residualFor_wellFormed
   have all_components :
       (eraseIndices config (participants ++ selected.map RawIndexedPurse.index) ++
         contractum.normalize.components ++
-        selected.map (fun purse => RawCostTerm.purse purse.surface purse.tail)).Forall
+        selected.map (fun purse => RawCostTerm.purse purse.location purse.tail)).Forall
         (fun term => term.wellFormed = true) := by
     simp only [List.forall_append]
     exact ⟨⟨retained_ok, contractum_components_ok⟩, tails_ok⟩
@@ -475,7 +475,7 @@ structure RawSendEndpoint.WellFormed (endpoint : RawSendEndpoint) : Prop where
 theorem wholeAt?_wellFormed (index : Nat) :
     ∀ term redex, term.wellFormed = true →
       wholeAt? index term = some redex → redex.WellFormed
-  | .signed (.par (.recv recvSurface body) (.send sendSurface payload)) sig,
+  | .signed (.par (.recv recvLocation body) (.send sendLocation payload)) sig,
       redex, supported, found => by
       simp only [RawCostTerm.wellFormed, RawCostProc.wellFormed,
         Bool.and_eq_true] at supported
@@ -486,7 +486,7 @@ theorem wholeAt?_wellFormed (index : Nat) :
         exact ⟨supported.1.1.2, supported.1.2.2,
           RawCostSig.normalize_valid supported.2⟩
       · contradiction
-  | .signed (.par (.send sendSurface payload) (.recv recvSurface body)) sig,
+  | .signed (.par (.send sendLocation payload) (.recv recvLocation body)) sig,
       redex, supported, found => by
       simp only [RawCostTerm.wellFormed, RawCostProc.wellFormed,
         Bool.and_eq_true] at supported
@@ -504,7 +504,7 @@ theorem wholeAt?_wellFormed (index : Nat) :
           | par left right =>
               cases left <;> cases right <;> simp [wholeAt?] at found
               all_goals
-                rcases found with ⟨_surfaces, rfl⟩
+                rcases found with ⟨_locations, rfl⟩
                 simp only [RawCostTerm.wellFormed, RawCostProc.wellFormed,
                   Bool.and_eq_true] at _supported
                 refine ⟨?_, ?_, RawCostSig.normalize_valid _supported.2⟩ <;>
@@ -515,7 +515,7 @@ theorem wholeAt?_wellFormed (index : Nat) :
 theorem recvAt?_wellFormed (index : Nat) :
     ∀ term endpoint, term.wellFormed = true →
       recvAt? index term = some endpoint → endpoint.WellFormed
-  | .signed (.recv surface body) sig, endpoint, supported, found => by
+  | .signed (.recv location body) sig, endpoint, supported, found => by
       simp only [RawCostTerm.wellFormed, RawCostProc.wellFormed,
         Bool.and_eq_true] at supported
       simp only [recvAt?, Option.some.injEq] at found
@@ -534,7 +534,7 @@ theorem recvAt?_wellFormed (index : Nat) :
 theorem sendAt?_wellFormed (index : Nat) :
     ∀ term endpoint, term.wellFormed = true →
       sendAt? index term = some endpoint → endpoint.WellFormed
-  | .signed (.send surface payload) sig, endpoint, supported, found => by
+  | .signed (.send location payload) sig, endpoint, supported, found => by
       simp only [RawCostTerm.wellFormed, RawCostProc.wellFormed,
         Bool.and_eq_true] at supported
       simp only [sendAt?, Option.some.injEq] at found

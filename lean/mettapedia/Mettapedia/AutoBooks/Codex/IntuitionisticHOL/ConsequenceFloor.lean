@@ -21,20 +21,20 @@ The intended reading is:
 `goal -> consequence`, `counterexample -> not goal`, and
 `counterexample -> not consequence`.
 -/
-structure ConsequenceCounterexampleSurface
+structure ConsequenceCounterexampleInterface
     (goal consequence counterexample : Prop) : Prop where
   consequence_of_goal : goal → consequence
   counterexample_refutes_goal : counterexample → ¬ goal
   counterexample_refutes_consequence : counterexample → ¬ consequence
   no_counterexample_of_goal : goal → ¬ counterexample
 
-namespace ConsequenceCounterexampleSurface
+namespace ConsequenceCounterexampleInterface
 
 variable {goal consequence counterexample : Prop}
 
 /-- Counterexamples are incompatible with the positive consequence endpoint. -/
 theorem no_counterexample_of_consequence
-    (S : ConsequenceCounterexampleSurface goal consequence counterexample)
+    (S : ConsequenceCounterexampleInterface goal consequence counterexample)
     (hConsequence : consequence) :
     ¬ counterexample := by
   intro hCounter
@@ -42,19 +42,19 @@ theorem no_counterexample_of_consequence
 
 /-- The negative endpoint can be read directly as failure of consequence. -/
 theorem not_consequence_of_counterexample
-    (S : ConsequenceCounterexampleSurface goal consequence counterexample)
+    (S : ConsequenceCounterexampleInterface goal consequence counterexample)
     (hCounter : counterexample) :
     ¬ consequence :=
   S.counterexample_refutes_consequence hCounter
 
 /-- The proof-theoretic goal excludes counterexamples through consequence. -/
 theorem no_counterexample_of_goal_via_consequence
-    (S : ConsequenceCounterexampleSurface goal consequence counterexample)
+    (S : ConsequenceCounterexampleInterface goal consequence counterexample)
     (hGoal : goal) :
     ¬ counterexample :=
   S.no_counterexample_of_consequence (S.consequence_of_goal hGoal)
 
-end ConsequenceCounterexampleSurface
+end ConsequenceCounterexampleInterface
 
 namespace CompletenessFrontier
 
@@ -63,8 +63,8 @@ abbrev DerivabilityGoal (F : CompletenessFrontier Const Γ) : Prop :=
   Derivable (Base := Base) (Const := Const) F.antecedents F.succedent
 
 /-- Semilocal semantic consequence packaged in the reusable source format. -/
-abbrev SemilocalSurface (F : CompletenessFrontier Const Γ) : Prop :=
-  ConsequenceCounterexampleSurface
+abbrev SemilocalInterface (F : CompletenessFrontier Const Γ) : Prop :=
+  ConsequenceCounterexampleInterface
     (DerivabilityGoal (Base := Base) (Const := Const) F)
     (CompletenessFrontier.SemilocalSemanticConsequence.{u, v, w, w'}
       (Base := Base) (Const := Const) F)
@@ -76,8 +76,8 @@ The mature semilocal mainline floor:
 derivability implies semilocal semantic consequence, and extracted semilocal
 truth counterexamples refute both derivability and that consequence endpoint.
 -/
-def semilocalSurface (F : CompletenessFrontier Const Γ) :
-    SemilocalSurface (Base := Base) (Const := Const) (Γ := Γ) F where
+def semilocalInterface (F : CompletenessFrontier Const Γ) :
+    SemilocalInterface (Base := Base) (Const := Const) (Γ := Γ) F where
   consequence_of_goal := F.semilocalSoundnessFloor_of_derivable
   counterexample_refutes_goal := F.not_derivable_of_hasSemilocalTruthCounterexample
   counterexample_refutes_consequence :=
@@ -90,7 +90,7 @@ global-model soundness endpoint.
 -/
 structure SemanticFloor (F : CompletenessFrontier Const Γ) : Prop where
   semilocal :
-    SemilocalSurface.{u, v, w, w'} (Base := Base) (Const := Const) (Γ := Γ) F
+    SemilocalInterface.{u, v, w, w'} (Base := Base) (Const := Const) (Γ := Γ) F
   global_sound :
     DerivabilityGoal (Base := Base) (Const := Const) F →
       CompletenessFrontier.GlobalSemanticConsequence.{u, v, w, w'}
@@ -99,7 +99,7 @@ structure SemanticFloor (F : CompletenessFrontier Const Γ) : Prop where
 /-- One-stop semantic floor for the mature mainline route. -/
 def semanticFloor (F : CompletenessFrontier Const Γ) :
     SemanticFloor (Base := Base) (Const := Const) (Γ := Γ) F where
-  semilocal := F.semilocalSurface
+  semilocal := F.semilocalInterface
   global_sound := F.globalSoundnessFloor_of_derivable
 
 /--
@@ -287,8 +287,8 @@ theorem awodey_butz_not_derivable_of_candidate_exists_candidateClosedHintikkaSem
   C.awodey_butz_completeness_of_exists_candidateClosedHintikkaSemantics hSem
 
 /-- Closed-frontier world-model/query-strength consequence in reusable form. -/
-abbrev ClosedWorldModelSurface (F : CompletenessFrontier Const []) : Prop :=
-  ConsequenceCounterexampleSurface
+abbrev ClosedWorldModelInterface (F : CompletenessFrontier Const []) : Prop :=
+  ConsequenceCounterexampleInterface
     (DerivabilityGoal (Base := Base) (Const := Const) F)
     (SingletonStrengthConsequence (Base := Base) (Const := Const) F)
     (Nonempty (SingletonWorldModelCounterexample (Const := Const) F))
@@ -298,8 +298,8 @@ Closed singleton-strength world-model floor:
 derivability implies singleton query-strength consequence, and singleton
 world-model counterexamples refute both derivability and that consequence.
 -/
-def closedWorldModelSurface (F : CompletenessFrontier Const []) :
-    ClosedWorldModelSurface (Base := Base) (Const := Const) F where
+def closedWorldModelInterface (F : CompletenessFrontier Const []) :
+    ClosedWorldModelInterface (Base := Base) (Const := Const) F where
   consequence_of_goal := F.singletonStrengthConsequence_of_derivable
   counterexample_refutes_goal := by
     rintro ⟨C⟩
@@ -312,8 +312,8 @@ def closedWorldModelSurface (F : CompletenessFrontier Const []) :
     exact F.not_nonempty_singletonWorldModelCounterexample_of_derivable hDer
 
 /-- A closed-term quotient realization that semantically separates a frontier
-is exactly the negative endpoint expected by the closed world-model surface. -/
-theorem closedWorldModelSurface_counterexample_of_quotientRealizationSemanticCounterexample
+is exactly the negative endpoint expected by the closed world-model interface. -/
+theorem closedWorldModelInterface_counterexample_of_quotientRealizationSemanticCounterexample
     {F : CompletenessFrontier Const []}
     {M : HenkinModel.{u, v, w} Base Const}
     {W : ClosedTheorySet.World Const}
@@ -324,9 +324,9 @@ theorem closedWorldModelSurface_counterexample_of_quotientRealizationSemanticCou
   ⟨singletonWorldModelCounterexampleOfQuotientRealizationSemanticCounterexample
     (Base := Base) (Const := Const) (W := W) R hAnte hSucc⟩
 
-/-- The closed world-model surface consumes a realized quotient separation as a
+/-- The closed world-model interface consumes a realized quotient separation as a
 direct refutation of native derivability. -/
-theorem closedWorldModelSurface_refutes_goal_of_quotientRealizationSemanticCounterexample
+theorem closedWorldModelInterface_refutes_goal_of_quotientRealizationSemanticCounterexample
     {F : CompletenessFrontier Const []}
     {M : HenkinModel.{u, v, w} Base Const}
     {W : ClosedTheorySet.World Const}
@@ -334,13 +334,13 @@ theorem closedWorldModelSurface_refutes_goal_of_quotientRealizationSemanticCount
     (hAnte : ∀ φ, φ ∈ F.antecedents → HenkinModel.models M φ)
     (hSucc : ¬ HenkinModel.models M F.succedent) :
     ¬ DerivabilityGoal (Base := Base) (Const := Const) F :=
-  (closedWorldModelSurface (Base := Base) (Const := Const) F).counterexample_refutes_goal
-    (closedWorldModelSurface_counterexample_of_quotientRealizationSemanticCounterexample
+  (closedWorldModelInterface (Base := Base) (Const := Const) F).counterexample_refutes_goal
+    (closedWorldModelInterface_counterexample_of_quotientRealizationSemanticCounterexample
       (Base := Base) (Const := Const) (W := W) R hAnte hSucc)
 
-/-- The closed world-model surface also consumes a realized quotient separation
+/-- The closed world-model interface also consumes a realized quotient separation
 as a direct refutation of singleton query-strength consequence. -/
-theorem closedWorldModelSurface_refutes_consequence_of_quotientRealizationSemanticCounterexample
+theorem closedWorldModelInterface_refutes_consequence_of_quotientRealizationSemanticCounterexample
     {F : CompletenessFrontier Const []}
     {M : HenkinModel.{u, v, w} Base Const}
     {W : ClosedTheorySet.World Const}
@@ -348,8 +348,8 @@ theorem closedWorldModelSurface_refutes_consequence_of_quotientRealizationSemant
     (hAnte : ∀ φ, φ ∈ F.antecedents → HenkinModel.models M φ)
     (hSucc : ¬ HenkinModel.models M F.succedent) :
     ¬ SingletonStrengthConsequence (Base := Base) (Const := Const) F :=
-  (closedWorldModelSurface (Base := Base) (Const := Const) F).counterexample_refutes_consequence
-    (closedWorldModelSurface_counterexample_of_quotientRealizationSemanticCounterexample
+  (closedWorldModelInterface (Base := Base) (Const := Const) F).counterexample_refutes_consequence
+    (closedWorldModelInterface_counterexample_of_quotientRealizationSemanticCounterexample
       (Base := Base) (Const := Const) (W := W) R hAnte hSucc)
 
 /--
@@ -360,13 +360,13 @@ structure ClosedFrontierFloor (F : CompletenessFrontier Const []) : Prop where
   semantic :
     SemanticFloor.{u, v, w, w'} (Base := Base) (Const := Const) (Γ := []) F
   worldModel :
-    ClosedWorldModelSurface (Base := Base) (Const := Const) F
+    ClosedWorldModelInterface (Base := Base) (Const := Const) F
 
 /-- One-stop floor for closed frontiers across semantic and world-model endpoints. -/
 def closedFrontierFloor (F : CompletenessFrontier Const []) :
     ClosedFrontierFloor (Base := Base) (Const := Const) F where
   semantic := F.semanticFloor
-  worldModel := F.closedWorldModelSurface
+  worldModel := F.closedWorldModelInterface
 
 end CompletenessFrontier
 

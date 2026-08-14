@@ -9,7 +9,7 @@ import Mettapedia.ProbabilityTheory.Exchangeability.MarkovDeFinettiSequenceKerne
 /-!
 # Finite Hidden Markov Models
 
-This file gives a clean finite-state/finitely-emitting HMM surface:
+This file gives a clean finite-state/finitely-emitting HMM interface:
 * a latent finite Markov parameter,
 * a finite emission kernel,
 * finite-word observation probabilities obtained by summing over latent words.
@@ -654,7 +654,7 @@ theorem observedSequenceMeasure_cylinder_eq_observedWordProb
       (measurableSet_singleton p)
 
 /-- The emission kernel as an explicit finite kernel. This is the honest HMM
-surface we need before any learning/inference algorithmics. -/
+interface we need before any learning/inference algorithmics. -/
 noncomputable def emissionKernel (θ : FiniteHMMParam latent obs) :
     Kernel (Fin latent) (Fin obs) :=
   Kernel.ofFunOfCountable (fun x => (θ.emission x : Measure (Fin obs)))

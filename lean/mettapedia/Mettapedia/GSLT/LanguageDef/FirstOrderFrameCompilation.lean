@@ -663,17 +663,17 @@ compiler together with its acceptance equation. -/
 structure AdmittedFrame (Token : Type u) (Var : Type v) where
   source : SourceFrame Token Var
   compiled : CompiledFrame Token Var
-  certificate : compileFrame source = some compiled
+  compile_eq : compileFrame source = some compiled
 
-/-- Turn the partial admission decision into an explicit certified source
+/-- Turn the partial admission decision into an explicit computed source
 object. -/
 def admitFrame (source : SourceFrame Token Var) :
     Option (AdmittedFrame Token Var) :=
   match accepted : compileFrame source with
   | none => none
-  | some compiled => some { source, compiled, certificate := accepted }
+  | some compiled => some { source, compiled, compile_eq := accepted }
 
-/-- The ordered-frame compiler is a certified realization whose observation
+/-- The ordered-frame compiler is a computed realization whose observation
 is the entire partial stack transformer, not merely an acceptance bit. -/
 def orderedFrameRealization [DecidableEq Token] [DecidableEq Var] :
     Mettapedia.GSLT.SimpleRealization
@@ -686,9 +686,9 @@ def orderedFrameRealization [DecidableEq Token] [DecidableEq Var] :
     intro _ admitted
     funext stack
     exact runCompiledFrame_eq_runSourceFrame
-      admitted.source admitted.compiled admitted.certificate stack
+      admitted.source admitted.compiled admitted.compile_eq stack
 
-/-! ## Certified frame caches -/
+/-! ## Computed frame caches -/
 
 /-- A persistent table of admitted rules indexed by an arbitrary generated key
 type.  Rejected source frames cannot enter this compiled-store boundary. -/
@@ -739,7 +739,7 @@ theorem runCachedAt_eq_runSourceAt
   | some entry =>
       simp only [Option.map]
       exact runCompiledFrame_eq_runSourceFrame
-        entry.source entry.compiled entry.certificate stack
+        entry.source entry.compiled entry.compile_eq stack
 
 /-- A cache compiled from an earlier store snapshot remains valid for a key
 exactly when that key's source frame is preserved by the update.  No property
@@ -769,7 +769,7 @@ def runFrameCacheArtifactAt [DecidableEq Token] [DecidableEq Var]
   let compiled ← artifact key
   runCompiledFrame compiled stack
 
-/-- Whole-table certified realization.  This packages compile-once frame
+/-- Whole-table computed realization.  This packages compile-once frame
 memoization as a normal composable lowering pass, observing every keyed stack
 transformer rather than one selected example. -/
 def frameCacheRealization [DecidableEq Token] [DecidableEq Var] :
@@ -792,7 +792,7 @@ def frameCacheRealization [DecidableEq Token] [DecidableEq Var] :
     | some entry =>
         simpa [sourceEq] using
           (runCompiledFrame_eq_runSourceFrame
-            entry.source entry.compiled entry.certificate stack)
+            entry.source entry.compiled entry.compile_eq stack)
 
 /-! ## Non-vacuity canaries -/
 
@@ -810,7 +810,7 @@ private def canaryCompiled : CompiledFrame Nat Nat where
 private def canaryAdmitted : AdmittedFrame Nat Nat where
   source := canarySource
   compiled := canaryCompiled
-  certificate := rfl
+  compile_eq := rfl
 
 /-- Positive witness: the admitted one-pass machine performs a real
 substitution and returns the instantiated conclusion. -/
@@ -849,7 +849,7 @@ private def canaryStoreUnrelatedUpdate : FrameStore Nat Nat Nat
           { binders := []
             patterns := []
             conclusion := [.literal 99] }
-        certificate := rfl }
+        compile_eq := rfl }
   | _ => none
 
 private def canaryChangedSource : SourceFrame Nat Nat where
@@ -864,7 +864,7 @@ private def canaryChangedCompiled : CompiledFrame Nat Nat where
 private def canaryChangedAdmitted : AdmittedFrame Nat Nat where
   source := canaryChangedSource
   compiled := canaryChangedCompiled
-  certificate := rfl
+  compile_eq := rfl
 
 private def canaryStoreChangedEntry : FrameStore Nat Nat Nat
   | 0 => some canaryChangedAdmitted

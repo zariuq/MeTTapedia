@@ -199,8 +199,11 @@ def admittedLogic : AdmittedProgram language :=
 
 /-! ## A finite, language-visible execution catalog -/
 
-/-- One admitted local transition row. -/
+/-- One admitted local transition row.  `occurrence` is proof-relevant
+authorship identity.  Execution queries ignore it, but encodings retain it so
+two extensionally equal authored rules do not become the same operation. -/
 structure FibreRow where
+  occurrence : Pattern
   stage : Pattern
   source : Pattern
   target : Pattern
@@ -210,6 +213,7 @@ structure FibreRow where
 translation cannot be consumed where exact coverage or realization evidence
 is required. -/
 structure TransportRow where
+  occurrence : Pattern
   kind : Pattern
   route : Pattern
   sourceStage : Pattern
@@ -444,16 +448,24 @@ structure StepPreservingCommandEncoding
     (source ⟶ target) → Pattern
   encodeRoute : ∀ {source target : Index},
     (source ⟶ target) → Pattern
+  encodeFibreOccurrence : ∀ {stage : Index}
+      {source target : SemanticTerm (diagram.obj stage).theory},
+    SemanticStep (diagram.obj stage).theory source target → Pattern
+  encodeTransportOccurrence : ∀ {source target : Index}
+      (_route : source ⟶ target)
+      (_state : SemanticTerm (diagram.obj source).theory), Pattern
   admitFibre : ∀ {stage : Index}
       {source target : SemanticTerm (diagram.obj stage).theory},
-    SemanticStep (diagram.obj stage).theory source target →
-      ({ stage := encodeStage stage
+    (step : SemanticStep (diagram.obj stage).theory source target) →
+      ({ occurrence := encodeFibreOccurrence step
+         stage := encodeStage stage
          source := encodeState stage source
          target := encodeState stage target } : FibreRow) ∈ catalog.fibreRows
   admitTransport : ∀ {source target : Index}
       (route : source ⟶ target)
       (state : SemanticTerm (diagram.obj source).theory),
-    ({ kind := encodeRouteKind route
+    ({ occurrence := encodeTransportOccurrence route state
+       kind := encodeRouteKind route
        route := encodeRoute route
        sourceStage := encodeStage source
        targetStage := encodeStage target

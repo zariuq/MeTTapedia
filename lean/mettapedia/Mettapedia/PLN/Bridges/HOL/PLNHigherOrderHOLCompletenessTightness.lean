@@ -975,7 +975,7 @@ if the all-theory-model interval has width zero, then `T` decides `χ` by
 proving either `χ` or `¬χ`.
 
 The converse direction needs a proof-to-semantics bridge for the extensional
-`ClosedTheorySet.Provable` surface and is intentionally not claimed here. -/
+`ClosedTheorySet.Provable` interface and is intentionally not claimed here. -/
 theorem decides_of_theoryCredalHOLFormulaInterval_width_eq_zero
     {T : ClosedTheorySet (WithParams Const)}
     {χ : ClosedFormula (WithParams Const)}

@@ -8,7 +8,7 @@ import Mettapedia.ProbabilityTheory.ImpreciseProbability.ProjectiveCredal
 /-!
 # Infinite MLN Credal Bridge
 
-This file connects the infinite-MLN/DLR surface to the projective credal
+This file connects the infinite-MLN/DLR interface to the projective credal
 reading of imprecise probability.
 
 The central object is the set of σ-additive DLR completions of an infinite MLN.
@@ -7055,7 +7055,7 @@ noncomputable def projectiveLimitDLRCompletion_of_stageMarginal_tendsto
       (E := E) (M := M.toStrictlyPositiveInfiniteGroundMLNSpec) (ξ := ξ)
       e P hP hconv
 
-/-! ## Profile surface -/
+/-! ## Profile interface -/
 
 /-- Proof-carrying profile for the σ-additive infinite-MLN face of the
 projective credal abstraction. -/

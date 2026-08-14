@@ -5,7 +5,7 @@ import Mettapedia.PLN.Bridges.Languages.WorldModel.PLNWorldModelHERuntimeBridge
 # HE Core Fragment -> WM Bridge
 
 Composes the first explicit `HECore` runtime fragment through the existing
-runtime-to-WM consequence surface.
+runtime-to-WM consequence interface.
 
 This is deliberately a composition result:
 - `HECoreStep` is a smaller runtime fragment

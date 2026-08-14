@@ -97,8 +97,8 @@ def checkHeStatementTrailingComment : Bool :=
   parseLineOk? he "(= (f a) b) ; trailing comment"
     (.defineEq (app "f" [sym "a"]) (sym "b"))
 
-def checkPeTTaSetFuelIsPlainFact : Bool :=
-  parseLineOk? petta "(set-fuel 7)" (.fact (app "set-fuel" [sym "7"]))
+def checkPeTTaSetFuelCommand : Bool :=
+  parseLineOk? petta "(set-fuel 7)" (.setFuel 7)
 
 def checkHeSetFuelFallsBackToFact : Bool :=
   parseLineOk? he "(set-fuel 7)" (.fact (app "set-fuel" [sym "7"]))
@@ -117,7 +117,7 @@ def checkProgramMixedHe : Bool :=
 
 def checkProgramMixedPeTTa : Bool :=
   parseProgramOk? petta "(set-fuel 3)\n!(set-fuel 3)\n"
-    [ (1, .fact (app "set-fuel" [sym "3"]))
+    [ (1, .setFuel 3)
     , (2, .eval (app "set-fuel" [sym "3"]))
     ]
 
@@ -220,9 +220,9 @@ def checkHeImportHeadNowPlainFact : Bool :=
   parseLineOk? he "(import! &self lib)"
     (.fact (app "import!" [sym "&self", sym "lib"]))
 
-def checkPeTTaAddAtomHeadNowPlainFact : Bool :=
+def checkPeTTaAddAtomCommand : Bool :=
   parseLineOk? petta "(add-atom! &self (friend a b))"
-    (.fact (app "add-atom!" [sym "&self", app "friend" [sym "a", sym "b"]]))
+    (.addAtom (sym "&self") (app "friend" [sym "a", sym "b"]))
 
 def checkHeDocFunctionExpression : Bool :=
   parseLineOk? he "(= (if True $then $else) $then)"
@@ -257,7 +257,7 @@ def allChecks : List (String × Bool) :=
   , ("heEvalPrefixNewlineForm", checkHeEvalPrefixNewlineForm)
   , ("heEvalPrefixNewlineCommentForm", checkHeEvalPrefixNewlineCommentForm)
   , ("heStatementTrailingComment", checkHeStatementTrailingComment)
-  , ("pettaSetFuelIsPlainFact", checkPeTTaSetFuelIsPlainFact)
+  , ("pettaSetFuelCommand", checkPeTTaSetFuelCommand)
   , ("heSetFuelFallsBackToFact", checkHeSetFuelFallsBackToFact)
   , ("heDefineTypeForm", checkHeDefineTypeForm)
   , ("pettaDefineTypeForm", checkPeTTaDefineTypeForm)
@@ -290,7 +290,7 @@ def allChecks : List (String × Bool) :=
   , ("strictUnknownHeadError", checkStrictUnknownHeadError)
   , ("strictArityMismatchError", checkStrictArityMismatchError)
   , ("heImportHeadNowPlainFact", checkHeImportHeadNowPlainFact)
-  , ("pettaAddAtomHeadNowPlainFact", checkPeTTaAddAtomHeadNowPlainFact)
+  , ("pettaAddAtomCommand", checkPeTTaAddAtomCommand)
   , ("heDocFunctionExpression", checkHeDocFunctionExpression)
   , ("heDocTypeAssignment", checkHeDocTypeAssignment)
   , ("pettaExampleConjMatch", checkPeTTaExampleConjMatch)
@@ -302,7 +302,7 @@ def allChecks : List (String × Bool) :=
 def allChecksPass : Bool :=
   allChecks.all (fun x => x.2)
 
-/-! ## Theorem-level parser invariants (non-native_decide) -/
+/-! ## Theorem-level parser invariants -/
 
 theorem grammar_eval_prefix_field_qPrefix :
     qPrefixSyntax.toGrammarSpec.evalPrefixToken = "?" := by

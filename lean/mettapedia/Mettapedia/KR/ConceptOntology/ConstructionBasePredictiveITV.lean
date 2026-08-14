@@ -5,7 +5,7 @@ import Mettapedia.PLN.Bridges.ProbabilityTheory.DeFinettiPLNTruthBridge
 # Construction-Base Predictive ITV Bridge
 
 This module isolates the exact typed-ITV readout layer for the posterior
-de Finetti predictive surface.
+de Finetti predictive interface.
 
 It does not add new probability semantics. It packages the already-proved
 posterior prefix ITV collapse so downstream consumers can cite one small leaf

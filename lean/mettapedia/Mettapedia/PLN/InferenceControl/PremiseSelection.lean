@@ -24,7 +24,7 @@ import Mettapedia.PLN.InferenceControl.PremiseSelection.SelectorSpec
 /-!
 # PLN premise-selection inference control
 
-Chapter-13 PLN inference-control surfaces over premise-selection objectives,
+Chapter-13 PLN inference-control interfaces over premise-selection objectives,
 selector fusion/revision, ranking transfer, greedy selection, chainer interfaces,
 and executable regression canaries.
 -/

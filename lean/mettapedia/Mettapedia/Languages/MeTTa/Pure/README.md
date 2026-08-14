@@ -26,12 +26,12 @@ properties a dependent kernel needs to be sound. Terms are represented in the
 ambient MeTTa-IL `Pattern` type, with a predicate `PureTmPattern` carving out
 the pure fragment and locally nameless binders (Aydemir et al. 2008).
 
-MeTTa-Pure is the **proof branch** of MeTTa's two-target story — surface MeTTa
+MeTTa-Pure is the **proof branch** of MeTTa's two-target story — MeTTa syntax
 elaborates to a core, which then heads either toward this proof target
 (MeTTa-Pure / PureKernel) or toward a runtime target (MORK / MM2):
 
 ```
-Surface MeTTa -> Elaborated MeTTa-Core -> +- MeTTa-Pure / PureKernel  (proof target)
+MeTTa syntax -> Elaborated MeTTa-Core -> +- MeTTa-Pure / PureKernel  (proof target)
                                           +- RuntimeExec / MORK / MM2  (runtime target)
 ```
 

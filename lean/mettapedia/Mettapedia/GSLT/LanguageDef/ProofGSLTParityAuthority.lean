@@ -1,5 +1,6 @@
 import Mathlib.Data.Fintype.Pigeonhole
 import Mathlib.Data.Finset.Lattice.Fold
+import Mathlib.Data.List.Chain
 import Mathlib.Algebra.Ring.Parity
 import Mathlib.Order.Interval.Finset.Nat
 import Mathlib.Data.Set.Finite.Basic
@@ -18,9 +19,11 @@ must decrease when leaving a vertex at exactly that priority.  Consequently
 an infinite controlled play cannot have an odd priority as its eventual
 maximum recurring priority.
 
-The result here is deliberately one-sided: a valid rank is sound for the
-parity objective.  Completeness of this rank format and adequacy of a modal
-mu-calculus evaluation-game translation are separate obligations.
+The rank format is characterized exactly by the absence of a return to an
+odd-threshold vertex while remaining below that threshold.  Restricting a
+root-winning strategy to its reachable controlled cone satisfies this graph
+condition and therefore generates an accepted rank certificate.  Adequacy of
+a modal mu-calculus evaluation-game translation remains a separate obligation.
 -/
 
 namespace Mettapedia.GSLT.LanguageDef.ProofGSLT.Parity
@@ -115,13 +118,111 @@ def BadOddDominant (game : Game State) (path : Nat -> State) : Prop :=
       exists cutoff, forall index, cutoff <= index ->
         game.priority (path index) <= priority
 
-/-- A strategy wins when no controlled play has an odd dominant priority.
-This is the maximum-priority-even convention, stated negatively so it remains
-meaningful without assuming a finite carrier. -/
+/-- A strategy wins when it generates legal play from the root and no
+controlled play has an odd dominant priority.  Including local validity here
+is essential: otherwise a verifier could select a non-edge and vacuously
+"win" because no controlled infinite play would exist.
+
+The second conjunct is the maximum-priority-even convention, stated
+negatively so it remains meaningful without assuming a finite carrier. -/
 def ParityWinning (game : Game State) (strategy : Strategy State)
     (root : State) : Prop :=
-  forall play : Play game strategy root,
-    ¬ BadOddDominant game play.state
+  strategy.LocallyValid game root /\
+    forall play : Play game strategy root,
+      ¬ BadOddDominant game play.state
+
+/-! ## Root-reachable strategy cones -/
+
+/-- A state is reachable from the root by the moves retained by a strategy.
+This relation depends on the selected verifier moves and authored falsifier
+moves, but not on the strategy's separately declared active bitmap. -/
+def Reachable (game : Game State) (strategy : Strategy State)
+    (root state : State) : Prop :=
+  Relation.ReflTransGen (strategy.ControlledEdge game) root state
+
+/-- Restrict the active bitmap to the states that can actually be reached
+from the root.  The selected verifier move is unchanged. -/
+noncomputable def reachableRestriction (game : Game State)
+    (strategy : Strategy State) (root : State) : Strategy State := by
+  classical
+  exact
+    { active := fun state => decide (strategy.Reachable game root state)
+      next := strategy.next }
+
+@[simp]
+theorem reachableRestriction_active_eq_true_iff (game : Game State)
+    (strategy : Strategy State) (root state : State) :
+    (strategy.reachableRestriction game root).active state = true ↔
+      strategy.Reachable game root state := by
+  classical
+  simp [reachableRestriction]
+
+@[simp]
+theorem reachableRestriction_controlledEdge_iff (game : Game State)
+    (strategy : Strategy State) (root source target : State) :
+    (strategy.reachableRestriction game root).ControlledEdge game source target ↔
+      strategy.ControlledEdge game source target := by
+  simp [ControlledEdge, reachableRestriction]
+
+/-- Local validity propagates the original active invariant along every
+root-reachable controlled path. -/
+theorem active_of_reachable {game : Game State} {strategy : Strategy State}
+    {root state : State} (locallyValid : strategy.LocallyValid game root)
+    (reachable : strategy.Reachable game root state) :
+    strategy.active state = true := by
+  induction reachable with
+  | refl => exact locallyValid.1
+  | @tail source target _ controlled sourceActive =>
+      exact (locallyValid.2 source sourceActive).2 target controlled
+
+/-- A locally valid strategy remains locally valid after discarding every
+active state outside its root-reachable cone. -/
+theorem reachableRestriction_locallyValid
+    {game : Game State} {strategy : Strategy State} {root : State}
+    (locallyValid : strategy.LocallyValid game root) :
+    (strategy.reachableRestriction game root).LocallyValid game root := by
+  classical
+  constructor
+  · apply (reachableRestriction_active_eq_true_iff
+      game strategy root root).2
+    exact Relation.ReflTransGen.refl
+  · intro source sourceActive
+    have sourceReachable : strategy.Reachable game root source :=
+      (reachableRestriction_active_eq_true_iff game strategy root source).1
+        sourceActive
+    have originalActive := active_of_reachable locallyValid sourceReachable
+    obtain ⟨⟨target, controlled⟩, closed⟩ :=
+      locallyValid.2 source originalActive
+    constructor
+    · exact ⟨target,
+        (reachableRestriction_controlledEdge_iff game strategy root source target).2
+          controlled⟩
+    · intro successor restrictedControlled
+      have originalControlled :
+          strategy.ControlledEdge game source successor :=
+        (reachableRestriction_controlledEdge_iff game strategy root source successor).1
+          restrictedControlled
+      apply (reachableRestriction_active_eq_true_iff
+        game strategy root successor).2
+      exact sourceReachable.tail originalControlled
+
+/-- Root restriction does not alter any controlled play, so it preserves a
+winning strategy while removing irrelevant disconnected active components. -/
+theorem parityWinning_reachableRestriction
+    {game : Game State} {strategy : Strategy State} {root : State}
+    (winning : strategy.ParityWinning game root) :
+    (strategy.reachableRestriction game root).ParityWinning game root := by
+  refine ⟨reachableRestriction_locallyValid winning.1, ?_⟩
+  intro restrictedPlay bad
+  let originalPlay : strategy.Play game root :=
+    { state := restrictedPlay.state
+      starts := restrictedPlay.starts
+      follows := fun index =>
+        (reachableRestriction_controlledEdge_iff game strategy root
+          (restrictedPlay.state index)
+          (restrictedPlay.state (index + 1))).1
+            (restrictedPlay.follows index) }
+  exact winning.2 originalPlay bad
 
 end Strategy
 
@@ -174,6 +275,145 @@ theorem check_eq_true_iff [DecidableEq State]
     measure.check game strategy root = true <->
       measure.Valid game strategy root := by
   simp [check]
+
+/-! ## Constructing ranks from the controlled graph -/
+
+/-- A controlled edge whose endpoints both lie at or below one priority
+threshold.  The source is required to be in the strategy cone; local validity
+then keeps its target in the same cone. -/
+def thresholdEdge (game : Game State) (strategy : Strategy State)
+    (threshold : game.Threshold) (source target : State) : Prop :=
+  strategy.active source = true /\
+    strategy.ControlledEdge game source target /\
+    game.priority source <= threshold.val /\
+    game.priority target <= threshold.val
+
+/-- Graph-theoretic condition sufficient to synthesize the natural ranks:
+after leaving an active vertex at an odd threshold, no path remaining below
+that threshold may return to it. -/
+def NoOddThresholdReturn (game : Game State) (strategy : Strategy State) : Prop :=
+  forall threshold : game.Threshold, Odd threshold.val ->
+    forall source target,
+      strategy.active source = true ->
+      strategy.ControlledEdge game source target ->
+      game.priority source = threshold.val ->
+      game.priority target <= threshold.val ->
+      ¬ Relation.ReflTransGen
+        (thresholdEdge game strategy threshold) target source
+
+/-- Critical vertices reachable without crossing above a threshold. -/
+noncomputable def criticalReachable (game : Game State)
+    (strategy : Strategy State) (threshold : game.Threshold)
+    (source : State) : Finset State := by
+  classical
+  exact Finset.univ.filter fun target =>
+    Relation.ReflTransGen (thresholdEdge game strategy threshold)
+        source target /\
+      game.priority target = threshold.val
+
+theorem criticalReachable_mono_of_thresholdEdge
+    (game : Game State) (strategy : Strategy State)
+    (threshold : game.Threshold) {source target : State}
+    (edge : thresholdEdge game strategy threshold source target) :
+    criticalReachable game strategy threshold target ⊆
+      criticalReachable game strategy threshold source := by
+  classical
+  intro candidate member
+  simp only [criticalReachable, Finset.mem_filter, Finset.mem_univ,
+    true_and] at member ⊢
+  exact ⟨Relation.ReflTransGen.head edge member.1, member.2⟩
+
+/-- The canonical finite rank counts threshold-priority vertices still
+reachable below that threshold. -/
+noncomputable def ofNoOddThresholdReturn (game : Game State)
+    (strategy : Strategy State) : ProgressMeasure game where
+  rank threshold source :=
+    (criticalReachable game strategy threshold source).card
+
+/-- The graph condition constructs a globally valid threshold measure. -/
+theorem ofNoOddThresholdReturn_globallyValid
+    (game : Game State) (strategy : Strategy State)
+    (noReturn : NoOddThresholdReturn game strategy) :
+    (ofNoOddThresholdReturn game strategy).GloballyValid game strategy := by
+  classical
+  intro threshold odd source sourceActive target controlled
+    sourceBelow targetBelow
+  let edge : thresholdEdge game strategy threshold source target :=
+    ⟨sourceActive, controlled, sourceBelow, targetBelow⟩
+  have subset := criticalReachable_mono_of_thresholdEdge
+    game strategy threshold edge
+  constructor
+  · exact Finset.card_le_card subset
+  · intro sourceAtThreshold
+    apply Finset.card_lt_card
+    apply (Finset.ssubset_iff_of_subset subset).2
+    refine ⟨source, ?_, ?_⟩
+    · simp only [criticalReachable, Finset.mem_filter, Finset.mem_univ,
+        true_and]
+      exact ⟨Relation.ReflTransGen.refl, sourceAtThreshold⟩
+    · simp only [criticalReachable, Finset.mem_filter, Finset.mem_univ,
+        true_and, not_and]
+      intro returns _
+      exact noReturn threshold odd source target sourceActive controlled
+        sourceAtThreshold targetBelow returns
+
+/-- A globally valid rank is nonincreasing along every finite path that stays
+below an odd threshold. -/
+theorem rank_nonincreasing_of_reflTransGen
+    (game : Game State) (strategy : Strategy State)
+    (measure : ProgressMeasure game)
+    (valid : measure.GloballyValid game strategy)
+    (threshold : game.Threshold) (odd : Odd threshold.val)
+    {source target : State}
+    (path : Relation.ReflTransGen
+      (thresholdEdge game strategy threshold) source target) :
+    measure.rank threshold target <= measure.rank threshold source := by
+  induction path using Relation.ReflTransGen.head_induction_on with
+  | refl => exact le_rfl
+  | @head source next first _ inductionHypothesis =>
+      have firstValidity := valid threshold odd source first.1 next first.2.1
+        first.2.2.1 first.2.2.2
+      exact inductionHypothesis.trans firstValidity.1
+
+/-- Conversely, a valid rank rules out every odd-threshold return. -/
+theorem globallyValid_noOddThresholdReturn
+    (game : Game State) (strategy : Strategy State)
+    (measure : ProgressMeasure game)
+    (valid : measure.GloballyValid game strategy) :
+    NoOddThresholdReturn game strategy := by
+  intro threshold odd source target sourceActive controlled
+    sourceAtThreshold targetBelow returns
+  have firstValidity := valid threshold odd source sourceActive target controlled
+    sourceAtThreshold.le targetBelow
+  have returnNonincrease := rank_nonincreasing_of_reflTransGen
+    game strategy measure valid threshold odd returns
+  exact (Nat.not_lt_of_ge returnNonincrease)
+    (firstValidity.2 sourceAtThreshold)
+
+/-- On a finite carrier, the graph condition exactly characterizes the
+existence of this threshold-rank format. -/
+theorem exists_globallyValid_iff_noOddThresholdReturn
+    (game : Game State) (strategy : Strategy State) :
+    (exists measure : ProgressMeasure game,
+      measure.GloballyValid game strategy) <->
+      NoOddThresholdReturn game strategy := by
+  constructor
+  · rintro ⟨measure, valid⟩
+    exact globallyValid_noOddThresholdReturn game strategy measure valid
+  · intro noReturn
+    exact ⟨ofNoOddThresholdReturn game strategy,
+      ofNoOddThresholdReturn_globallyValid game strategy noReturn⟩
+
+/-- A locally valid strategy satisfying the graph condition always has an
+accepted progress certificate. -/
+theorem exists_valid_of_noOddThresholdReturn
+    (game : Game State) (strategy : Strategy State) (root : State)
+    (locallyValid : strategy.LocallyValid game root)
+    (noReturn : NoOddThresholdReturn game strategy) :
+    exists measure : ProgressMeasure game,
+      measure.Valid game strategy root :=
+  ⟨ofNoOddThresholdReturn game strategy, locallyValid,
+    ofNoOddThresholdReturn_globallyValid game strategy noReturn⟩
 
 end ProgressMeasure
 
@@ -253,6 +493,64 @@ namespace Strategy.Play
 
 variable {State : Type uState}
 
+/-- Choose one controlled successor of an active state.  This construction is
+semantic rather than executable: the finite certificate checker verifies the
+existence claim, while a concrete play may choose any of the retained
+falsifier moves. -/
+noncomputable def legalSuccessor
+    {game : Game State} {strategy : Strategy State} {root : State}
+    (localValidity : strategy.LocallyValid game root) (source : State) : State :=
+  if active : strategy.active source = true then
+    Classical.choose (localValidity.2 source active).1
+  else source
+
+theorem legalSuccessor_controlled
+    {game : Game State} {strategy : Strategy State} {root : State}
+    (localValidity : strategy.LocallyValid game root) (source : State)
+    (active : strategy.active source = true) :
+    strategy.ControlledEdge game source
+      (legalSuccessor localValidity source) := by
+  rw [legalSuccessor, dif_pos active]
+  exact Classical.choose_spec (localValidity.2 source active).1
+
+theorem legalSuccessor_active
+    {game : Game State} {strategy : Strategy State} {root : State}
+    (localValidity : strategy.LocallyValid game root) (source : State)
+    (active : strategy.active source = true) :
+    strategy.active (legalSuccessor localValidity source) = true :=
+  (localValidity.2 source active).2 _
+    (legalSuccessor_controlled localValidity source active)
+
+/-- The path generated by repeatedly choosing a legal controlled successor. -/
+noncomputable def generatedPath
+    {game : Game State} {strategy : Strategy State} {root : State}
+    (localValidity : strategy.LocallyValid game root) : Nat → State
+  | 0 => root
+  | index + 1 => legalSuccessor localValidity (generatedPath localValidity index)
+
+theorem generatedPath_active
+    {game : Game State} {strategy : Strategy State} {root : State}
+    (localValidity : strategy.LocallyValid game root) :
+    ∀ index, strategy.active (generatedPath localValidity index) = true := by
+  intro index
+  induction index with
+  | zero => exact localValidity.1
+  | succ index inductionHypothesis =>
+      exact legalSuccessor_active localValidity _ inductionHypothesis
+
+/-- Local validity is precisely the missing productivity condition: it
+constructs an infinite controlled play, so the parity objective can no longer
+hold merely because the strategy gets stuck. -/
+noncomputable def ofLocallyValid
+    {game : Game State} {strategy : Strategy State} {root : State}
+    (localValidity : strategy.LocallyValid game root) :
+    Strategy.Play game strategy root where
+  state := generatedPath localValidity
+  starts := rfl
+  follows index :=
+    legalSuccessor_controlled localValidity _
+      (generatedPath_active localValidity index)
+
 /-- Local validity keeps every state of a controlled play inside the active
 cone. -/
 theorem active {game : Game State} {strategy : Strategy State} {root : State}
@@ -266,7 +564,199 @@ theorem active {game : Game State} {strategy : Strategy State} {root : State}
       exact localValidity.2 (play.state index) inductionHypothesis |>.2
         (play.state (index + 1)) (play.follows index)
 
+/-- Prepend one controlled edge to an infinite play. -/
+def prepend {game : Game State} {strategy : Strategy State}
+    {source target : State}
+    (first : strategy.ControlledEdge game source target)
+    (tail : Strategy.Play game strategy target) :
+    Strategy.Play game strategy source where
+  state
+    | 0 => source
+    | index + 1 => tail.state index
+  starts := rfl
+  follows
+    | 0 => by simpa [tail.starts] using first
+    | index + 1 => by simpa [Nat.add_assoc] using tail.follows index
+
+/-- A bad parity tail remains bad after adding one finite prefix edge. -/
+theorem prepend_badOddDominant
+    {game : Game State} {strategy : Strategy State}
+    {source target : State}
+    (first : strategy.ControlledEdge game source target)
+    (tail : Strategy.Play game strategy target)
+    (bad : BadOddDominant game tail.state) :
+    BadOddDominant game (tail.prepend first).state := by
+  rcases bad with ⟨priority, odd, recurring, cutoff, bounded⟩
+  refine ⟨priority, odd, ?_, cutoff + 1, ?_⟩
+  · have shiftedInfinite :
+        Set.Infinite (Nat.succ ''
+          {index | game.priority (tail.state index) = priority}) :=
+      recurring.image Nat.succ_injective.injOn
+    apply shiftedInfinite.mono
+    rintro index ⟨tailIndex, tailMember, rfl⟩
+    simpa [prepend] using tailMember
+  · intro index afterCutoff
+    cases index with
+    | zero => omega
+    | succ tailIndex =>
+        simpa [prepend] using bounded tailIndex (by omega)
+
 end Strategy.Play
+
+/-- Winning from a state implies winning from each controlled successor. -/
+theorem Strategy.ParityWinning.of_controlledEdge
+    {State : Type uState} {game : Game State} {strategy : Strategy State}
+    {source target : State} (winning : strategy.ParityWinning game source)
+    (controlled : strategy.ControlledEdge game source target) :
+    strategy.ParityWinning game target := by
+  have targetActive : strategy.active target = true :=
+    (winning.1.2 source winning.1.1).2 target controlled
+  refine ⟨⟨targetActive, winning.1.2⟩, ?_⟩
+  intro tail bad
+  exact winning.2 (tail.prepend controlled)
+    (tail.prepend_badOddDominant controlled bad)
+
+/-- Winning propagates along every finite controlled path. -/
+theorem Strategy.ParityWinning.of_reachable
+    {State : Type uState} {game : Game State} {strategy : Strategy State}
+    {root state : State} (winning : strategy.ParityWinning game root)
+    (reachable : strategy.Reachable game root state) :
+    strategy.ParityWinning game state := by
+  induction reachable with
+  | refl => exact winning
+  | @tail source target _ controlled sourceWinning =>
+      exact sourceWinning.of_controlledEdge controlled
+
+/-- Read a nonempty finite loop forever. -/
+private def periodicGet {α : Type*} (loop : List α) (nonempty : loop ≠ [])
+    (index : Nat) : α :=
+  loop[index % loop.length]'(
+    Nat.mod_lt _ (List.length_pos_of_ne_nil nonempty))
+
+private theorem periodicGet_zero {α : Type*} (loop : List α)
+    (nonempty : loop ≠ []) :
+    periodicGet loop nonempty 0 = loop.head nonempty := by
+  simp [periodicGet, List.head_eq_getElem]
+
+/-- A finite chain with its head appended supplies every adjacent edge of its
+infinite periodic reading, including the wraparound edge. -/
+private theorem periodicGet_follows {α : Type*} {relation : α -> α -> Prop}
+    (loop : List α) (nonempty : loop ≠ [])
+    (chain : List.IsChain relation (loop ++ [loop.head nonempty]))
+    (index : Nat) :
+    relation (periodicGet loop nonempty index)
+      (periodicGet loop nonempty (index + 1)) := by
+  rw [List.isChain_iff_getElem] at chain
+  let current := index % loop.length
+  have lengthPos : 0 < loop.length := List.length_pos_of_ne_nil nonempty
+  have currentLt : current < loop.length := Nat.mod_lt _ lengthPos
+  by_cases nextLt : current + 1 < loop.length
+  · have oneLt : 1 < loop.length := by omega
+    have nextMod : (index + 1) % loop.length = current + 1 := by
+      rw [Nat.add_mod, Nat.mod_eq_of_lt oneLt, Nat.mod_eq_of_lt nextLt]
+    have link := chain current (by simp [currentLt])
+    simpa only [periodicGet, current, nextMod,
+      List.getElem_append_left currentLt,
+      List.getElem_append_left nextLt] using link
+  · have currentLast : current + 1 = loop.length := by omega
+    have nextMod : (index + 1) % loop.length = 0 := by
+      rw [Nat.add_mod]
+      by_cases lengthOne : loop.length = 1
+      · simp only [lengthOne, Nat.mod_one]
+      · have oneLt : 1 < loop.length := by omega
+        rw [Nat.mod_eq_of_lt oneLt, currentLast, Nat.mod_self]
+    have link := chain current (by simp [currentLt])
+    simpa only [periodicGet, current, nextMod,
+      List.getElem_append_left currentLt, currentLast,
+      List.getElem_append_right (le_refl loop.length), Nat.sub_self,
+      List.getElem_cons_zero, List.head_eq_getElem] using link
+
+/-- A first edge followed by a finite return path can be represented as a
+nonempty loop whose appended head closes the chain. -/
+private theorem exists_loopList {α : Type*} {relation : α -> α -> Prop}
+    {source target : α} (first : relation source target)
+    (returns : Relation.ReflTransGen relation target source) :
+    ∃ (loop : List α) (nonempty : loop ≠ []),
+      loop.head nonempty = source /\
+        List.IsChain relation (loop ++ [loop.head nonempty]) := by
+  obtain ⟨tail, pathChain, pathLast⟩ :=
+    List.exists_isChain_cons_of_relationReflTransGen returns
+  let path := target :: tail
+  have pathNonempty : path ≠ [] := List.cons_ne_nil _ _
+  have pathLast' : path.getLast pathNonempty = source := pathLast
+  let loop := source :: path.dropLast
+  have loopNonempty : loop ≠ [] := List.cons_ne_nil _ _
+  refine ⟨loop, loopNonempty, rfl, ?_⟩
+  have restored : path.dropLast ++ [source] = path := by
+    calc
+      path.dropLast ++ [source] =
+          path.dropLast ++ [path.getLast pathNonempty] := by rw [pathLast']
+      _ = path := List.dropLast_append_getLast pathNonempty
+  have cycleChain : List.IsChain relation (source :: path) :=
+    List.IsChain.cons_cons first pathChain
+  simpa [loop, List.cons_append, restored] using cycleChain
+
+/-- Periodically repeat a finite threshold-bounded controlled loop. -/
+private def periodicThresholdPlay
+    {State : Type uState} [Fintype State]
+    {game : Game State} {strategy : Strategy State}
+    {threshold : game.Threshold} {source : State}
+    (loop : List State) (nonempty : loop ≠ [])
+    (head : loop.head nonempty = source)
+    (chain : List.IsChain
+      (ProgressMeasure.thresholdEdge game strategy threshold)
+      (loop ++ [loop.head nonempty])) :
+    Strategy.Play game strategy source where
+  state := periodicGet loop nonempty
+  starts := by simpa [head] using periodicGet_zero loop nonempty
+  follows index := (periodicGet_follows loop nonempty chain index).2.1
+
+/-- Repeating an odd-threshold loop is a concrete parity-losing play. -/
+private theorem periodicThresholdPlay_badOddDominant
+    {State : Type uState} [Fintype State]
+    {game : Game State} {strategy : Strategy State}
+    {threshold : game.Threshold} {source : State}
+    (odd : Odd threshold.val)
+    (sourcePriority : game.priority source = threshold.val)
+    (loop : List State) (nonempty : loop ≠ [])
+    (head : loop.head nonempty = source)
+    (chain : List.IsChain
+      (ProgressMeasure.thresholdEdge game strategy threshold)
+      (loop ++ [loop.head nonempty])) :
+    Strategy.BadOddDominant game
+      (periodicThresholdPlay loop nonempty head chain).state := by
+  refine ⟨threshold.val, odd, ?_, 0, ?_⟩
+  · have multiplesInfinite :
+        Set.Infinite (Set.range (fun index : Nat => loop.length * index)) :=
+      Set.infinite_range_of_injective (by
+        intro first second equal
+        exact Nat.mul_left_cancel (List.length_pos_of_ne_nil nonempty) equal)
+    apply multiplesInfinite.mono
+    rintro index ⟨factor, rfl⟩
+    have atSource :
+        (periodicThresholdPlay loop nonempty head chain).state
+            (loop.length * factor) = source := by
+      change periodicGet loop nonempty (loop.length * factor) = source
+      calc
+        periodicGet loop nonempty (loop.length * factor) =
+            periodicGet loop nonempty 0 := by
+          simp [periodicGet]
+        _ = loop.head nonempty := periodicGet_zero loop nonempty
+        _ = source := head
+    change game.priority
+      ((periodicThresholdPlay loop nonempty head chain).state
+        (loop.length * factor)) = threshold.val
+    rw [atSource]
+    exact sourcePriority
+  · intro index _
+    exact (periodicGet_follows loop nonempty chain index).2.2.1
+
+/-- Every winning strategy generates at least one legal infinite play. -/
+theorem Strategy.ParityWinning.playNonempty
+    {State : Type uState} {game : Game State} {strategy : Strategy State}
+    {root : State} (winning : strategy.ParityWinning game root) :
+    Nonempty (Strategy.Play game strategy root) :=
+  ⟨Strategy.Play.ofLocallyValid winning.1⟩
 
 namespace ProgressMeasure
 
@@ -346,6 +836,7 @@ theorem parity_sound
     {measure : ProgressMeasure game}
     (valid : measure.Valid game strategy root) :
     strategy.ParityWinning game root := by
+  refine ⟨valid.1, ?_⟩
   intro play bad
   rcases bad with ⟨priority, odd, recurring, cutoff, bounded⟩
   obtain ⟨firstVisit, _, firstPriority⟩ :=
@@ -374,9 +865,61 @@ theorem parity_sound
   have member := occurrence_mem indicesInfinite cutoff index
   simpa [indices, threshold] using member
 
+/-- A root-winning strategy has no odd-threshold return after its active
+bitmap is restricted to the root-reachable controlled cone.  Otherwise the
+return path can be repeated into a concrete odd-dominant play from the
+reachable source. -/
+theorem noOddThresholdReturn_reachableRestriction
+    {game : Game State} {strategy : Strategy State} {root : State}
+    (winning : strategy.ParityWinning game root) :
+    NoOddThresholdReturn game
+      (strategy.reachableRestriction game root) := by
+  classical
+  intro threshold odd source target sourceActive controlled
+    sourcePriority targetBelow returns
+  have sourceReachable : strategy.Reachable game root source :=
+    (Strategy.reachableRestriction_active_eq_true_iff
+      game strategy root source).1 sourceActive
+  have sourceWinning : strategy.ParityWinning game source :=
+    winning.of_reachable sourceReachable
+  have firstThreshold : thresholdEdge game
+      (strategy.reachableRestriction game root) threshold source target :=
+    ⟨sourceActive, controlled, sourcePriority.le, targetBelow⟩
+  obtain ⟨loop, nonempty, head, chain⟩ :=
+    exists_loopList firstThreshold returns
+  let restrictedPlay : Strategy.Play game
+      (strategy.reachableRestriction game root) source :=
+    periodicThresholdPlay loop nonempty head chain
+  have restrictedBad : Strategy.BadOddDominant game restrictedPlay.state :=
+    periodicThresholdPlay_badOddDominant odd sourcePriority
+      loop nonempty head chain
+  let originalPlay : Strategy.Play game strategy source :=
+    { state := restrictedPlay.state
+      starts := restrictedPlay.starts
+      follows := fun index =>
+        (Strategy.reachableRestriction_controlledEdge_iff
+          game strategy root (restrictedPlay.state index)
+          (restrictedPlay.state (index + 1))).1
+            (restrictedPlay.follows index) }
+  have originalBad : Strategy.BadOddDominant game originalPlay.state := by
+    exact restrictedBad
+  exact sourceWinning.2 originalPlay originalBad
+
+/-- Every root-winning finite strategy therefore has a generated accepted
+certificate after canonical restriction to the part of the strategy that can
+actually be played from the root. -/
+theorem exists_valid_reachableRestriction_of_parityWinning
+    {game : Game State} {strategy : Strategy State} {root : State}
+    (winning : strategy.ParityWinning game root) :
+    ∃ measure : ProgressMeasure game,
+      measure.Valid game (strategy.reachableRestriction game root) root :=
+  exists_valid_of_noOddThresholdReturn game
+    (strategy.reachableRestriction game root) root
+    (Strategy.reachableRestriction_locallyValid winning.1)
+    (noOddThresholdReturn_reachableRestriction winning)
+
 /-- The executable parity measure checker, packaged at the common checker
-interface.  This theorem states soundness only; it does not manufacture the
-still-missing completeness theorem. -/
+interface. -/
 def parityChecker [DecidableEq State] (game : Game State) :
     Checker (Strategy State × State) (ProgressMeasure game) where
   check claim measure :=
@@ -419,6 +962,51 @@ theorem goodStrategy_wins :
   exact (ProgressMeasure.check_eq_true_iff
     goodGame goodStrategy goodMeasure false).mp goodCertificate
 
+/-- The positive fixture also satisfies the graph condition directly: its
+odd vertex exits above the odd threshold, so there is no below-threshold
+return path. -/
+theorem goodStrategy_noOddThresholdReturn :
+    ProgressMeasure.NoOddThresholdReturn goodGame goodStrategy := by
+  intro threshold odd source target _sourceActive controlled
+    sourceAtThreshold targetBelow _returns
+  cases source with
+  | false =>
+      cases target with
+      | false =>
+          simp [goodGame, goodStrategy, Strategy.ControlledEdge] at controlled
+      | true =>
+          simp [goodGame] at sourceAtThreshold targetBelow
+          omega
+  | true =>
+      cases target with
+      | false =>
+          simp [goodGame] at sourceAtThreshold
+          obtain ⟨half, halfEquation⟩ := odd
+          omega
+      | true =>
+          simp [goodGame, goodStrategy, Strategy.ControlledEdge] at controlled
+
+/-- The graph constructor synthesizes a valid certificate for the positive
+fixture without choosing ranks by hand. -/
+theorem goodStrategy_generatedCertificate :
+    exists measure : ProgressMeasure goodGame,
+      measure.Valid goodGame goodStrategy false := by
+  apply ProgressMeasure.exists_valid_of_noOddThresholdReturn
+  · constructor
+    · rfl
+    · intro source _sourceActive
+      constructor
+      · cases source with
+        | false =>
+            exact ⟨true, by
+              simp [Strategy.ControlledEdge, goodGame, goodStrategy]⟩
+        | true =>
+            exact ⟨false, by
+              simp [Strategy.ControlledEdge, goodGame, goodStrategy]⟩
+      · intro _target _controlled
+        rfl
+  · exact goodStrategy_noOddThresholdReturn
+
 /-- A one-state odd self-loop is the minimal losing parity game. -/
 def oddLoopGame : Game Unit where
   edge _ _ := true
@@ -446,7 +1034,41 @@ theorem oddLoop_bad :
 theorem oddLoop_not_winning :
     ¬ oddLoopStrategy.ParityWinning oddLoopGame () := by
   intro winning
-  exact winning oddLoopPlay oddLoop_bad
+  exact winning.2 oddLoopPlay oddLoop_bad
+
+/-- The negative fixture violates the graph condition by its reflexive odd
+return. -/
+theorem oddLoop_not_noOddThresholdReturn :
+    ¬ ProgressMeasure.NoOddThresholdReturn oddLoopGame oddLoopStrategy := by
+  intro noReturn
+  let threshold : oddLoopGame.Threshold := ⟨1, by
+    simp [Game.maxPriority, oddLoopGame]⟩
+  have forbidden := noReturn threshold (by
+      change Odd 1
+      exact ⟨0, rfl⟩)
+    () () rfl
+    (by simp [Strategy.ControlledEdge, oddLoopGame, oddLoopStrategy])
+    (by simp [oddLoopGame, threshold])
+    (by simp [oddLoopGame, threshold])
+  exact forbidden Relation.ReflTransGen.refl
+
+/-- A verifier cannot win by selecting a nonexistent move.  Before local
+validity became part of `ParityWinning`, this stranded strategy satisfied the
+path condition vacuously because it generated no controlled play. -/
+def strandedGame : Game Unit where
+  edge _ _ := false
+  owner _ := .verifier
+  priority _ := 0
+
+def strandedStrategy : Strategy Unit where
+  active _ := true
+  next _ := ()
+
+theorem strandedStrategy_not_winning :
+    ¬ strandedStrategy.ParityWinning strandedGame () := by
+  intro winning
+  obtain ⟨target, controlled⟩ := winning.1.2 () rfl |>.1
+  simp [Strategy.ControlledEdge, strandedGame] at controlled
 
 /-- No natural-valued parity progress measure can validate an odd self-loop:
 its sole threshold rank would have to be strictly smaller than itself. -/
@@ -467,16 +1089,84 @@ theorem oddLoop_no_valid_measure
   have impossible := edgeValidity.2 (by simp [oddLoopGame, threshold])
   exact (Nat.lt_irrefl _) impossible
 
+/-! ### Reachable-cone normalization -/
+
+/-- The `true` root is an even self-loop.  The disconnected `false` component
+is an odd self-loop deliberately left active in the original strategy. -/
+def splitGame : Game Bool where
+  edge source target := decide (target = source)
+  owner _ := .verifier
+  priority state := if state then 0 else 1
+
+def splitStrategy : Strategy Bool where
+  active _ := true
+  next := id
+
+theorem splitStrategy_wins_from_true :
+    splitStrategy.ParityWinning splitGame true := by
+  constructor
+  · constructor
+    · rfl
+    · intro source _
+      constructor
+      · exact ⟨source, by
+          simp [Strategy.ControlledEdge, splitGame, splitStrategy]⟩
+      · intro _ _
+        rfl
+  · intro play bad
+    have constant : ∀ index, play.state index = true := by
+      intro index
+      induction index with
+      | zero => exact play.starts
+      | succ index inductionHypothesis =>
+          have step := play.follows index
+          simp [Strategy.ControlledEdge, splitGame, splitStrategy] at step
+          exact step.trans inductionHypothesis
+    rcases bad with ⟨priority, odd, recurring, _cutoff, _bounded⟩
+    obtain ⟨index, member⟩ := recurring.nonempty
+    have priorityZero : priority = 0 := by
+      simpa [splitGame, constant index] using member.symm
+    rw [priorityZero] at odd
+    exact Nat.not_odd_zero odd
+
+/-- The disconnected odd component prevents the unreduced active bitmap from
+admitting a global certificate. -/
+theorem splitStrategy_no_unrestricted_measure :
+    ¬ ∃ measure : ProgressMeasure splitGame,
+      measure.Valid splitGame splitStrategy true := by
+  rintro ⟨measure, valid⟩
+  let threshold : splitGame.Threshold := ⟨1, by
+    simp [Game.maxPriority, splitGame]⟩
+  have edgeValidity := valid.2 threshold (by
+      change Odd 1
+      exact ⟨0, rfl⟩)
+    false rfl false
+    (by simp [Strategy.ControlledEdge, splitGame, splitStrategy])
+    (by simp [splitGame, threshold])
+    (by simp [splitGame, threshold])
+  have impossible := edgeValidity.2 (by simp [splitGame, threshold])
+  exact (Nat.lt_irrefl _) impossible
+
+/-- Reachable-cone normalization removes exactly the irrelevant odd component
+and the generic constructor then produces an accepted certificate. -/
+theorem splitStrategy_generated_reachableCertificate :
+    ∃ measure : ProgressMeasure splitGame,
+      measure.Valid splitGame
+        (splitStrategy.reachableRestriction splitGame true) true :=
+  ProgressMeasure.exists_valid_reachableRestriction_of_parityWinning
+    splitStrategy_wins_from_true
+
 /-- The positive and negative examples separate sound acceptance from a real
 odd-dominant failure. -/
 theorem parity_boundary_nontrivial :
     goodMeasure.check goodGame goodStrategy false = true /\
       goodStrategy.ParityWinning goodGame false /\
       (¬ oddLoopStrategy.ParityWinning oddLoopGame ()) /\
+      (¬ strandedStrategy.ParityWinning strandedGame ()) /\
       forall measure : ProgressMeasure oddLoopGame,
         ¬ measure.Valid oddLoopGame oddLoopStrategy () :=
   ⟨goodCertificate, goodStrategy_wins, oddLoop_not_winning,
-    oddLoop_no_valid_measure⟩
+    strandedStrategy_not_winning, oddLoop_no_valid_measure⟩
 
 end Canary
 

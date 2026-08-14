@@ -898,7 +898,7 @@ axiom.  Second, the denotational semantics is parameterized by an abstract
 \code{MQSemanticsBackend}, so the same six denotational clauses are provably correct
 for any compliant backend without re-proving them.  Third, every clause of
 \S{}6.3 of the paper has a named Lean theorem in \code{PaperMap.lean} (see
-Appendix~\ref{app:mq-lean}), giving an explicit audit surface that connects
+Appendix~\ref{app:mq-lean}), giving an explicit audit map that connects
 narrative paper text to kernel-checked declarations.
 
 The MQ formalization also provides realistic workload profiles for
@@ -1325,7 +1325,7 @@ All listings are excerpted verbatim from the formalization.
 \item \codepath{MQCalculus/Reduction.lean} --- full structural reduction relation
 \item \codepath{MQCalculus/Backend.lean} --- abstract semantic backend interface
 \item \codepath{MQCalculus/Denotational.lean} --- backend-parametric denotation
-\item \codepath{MQCalculus/PaperMap.lean} --- stable audit surface (paper $\to$ theorem)
+\item \codepath{MQCalculus/PaperMap.lean} --- stable audit map (paper $\to$ theorem)
 \end{itemize}
 
 \subsection*{A. Process grammar and Born-rule reduction}
@@ -1403,7 +1403,7 @@ noncomputable def denoteWith (backend : MQSemanticsBackend) :
         denoteWith backend q (backend.collapse i .one st)
 \end{lstlisting}
 
-\subsection*{C. Paper-map audit surface}
+\subsection*{C. Paper-map audit map}
 
 \codepath{PaperMap.lean} exposes one named theorem per paper clause.
 To audit a specific claim, import the file and check the corresponding theorem.

@@ -375,6 +375,16 @@ theorem mapOneHoleContext_comp (first second : PresentationSymbols)
   | collection collectionType before inner after rest ih =>
       simp [mapOneHoleContext, ih, mapPatternList_comp]
 
+/-- Structural translation preserves composition of one-hole contexts. -/
+@[simp]
+theorem mapOneHoleContext_contextComp (symbols : PresentationSymbols)
+    (outer inner : OneHoleContext) :
+    mapOneHoleContext symbols (outer.comp inner) =
+      (mapOneHoleContext symbols outer).comp
+        (mapOneHoleContext symbols inner) := by
+  induction outer <;>
+    simp_all [mapOneHoleContext, OneHoleContext.comp]
+
 end CIGSLT
 
 @[simp] theorem mapPremise_id (premise : Premise) :

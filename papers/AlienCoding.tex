@@ -752,6 +752,48 @@ process.  A temperature intervention can improve search while leaving learning u
 an energy stop can reduce learning cost without changing the decoder; and an exact schedule
 can validate implementation while offering no performance gain.
 
+One of these prescriptions must be narrowed, and a second acquires a use it did not have.
+The decoder recurrence is a cycle, so its settling correction solves $y-Ay=b$ for a cycle
+operator $A$ fixed by where the graph is cut, and after $R$ damped steps at fraction
+$\alpha$ the available geometric bound runs on $q_\alpha=(1-\alpha)+\alpha q$, where $q$
+is a declared norm bound for $A$.  When only $q\ge1$ is available, that construction
+merely fails to certify contraction; it does not establish that the exact damped map
+expands.  The counterexample is immediate: for $A=-2I$ and $\alpha=1/3$ the norm
+construction returns $4/3$ while the damped operator is exactly zero.  A genuine
+no-rescue conclusion needs a directional witness---a nonzero mode with $Av=\lambda v$ and
+real $\lambda\ge1$---not a norm observation.
+
+Our coarse-cut telemetry does not supply that witness.  Latent gradients of order
+$10^{7}$, transported credit plateauing at cosine $0.270$ across settling depths $32$
+through $160$, and a further $26\%$ energy decrease are consistent with an expanding
+cycle, and equally with large forcing, a sensitive credit readout, or non-normal
+transient amplification.  Identifying which requires extracting the linearized operator
+for this decoder and certifying an enclosure over an invariant region, which no amount of
+training telemetry supplies.
+
+Item~2 is nonetheless the one prescription that must change, and it changes on measured
+grounds rather than on any claim about the operator.  Approaching a settling failure this
+carrier recorded monotone energy descent at every accepted step while the credit direction
+had already fallen to cosine $0.0008$ against the reference---orthogonal, and so carrying
+no first-order reduction of the task loss.  A stopping rule reading normalized energy
+decrease and latent gradient norm is therefore not merely weak here; it is uninformative
+in the one situation it exists to catch.  The admissible criterion is a floor on credit
+alignment.  Item~3 gains a purpose beyond validating graph construction: an exact schedule
+supplies the reference credit direction that such a floor is measured against, without
+which the alignment gate has no denominator.  It does not by itself identify $q$ or
+$\alpha$.
+
+A finer cut remains the best-motivated repair, since it replaces long products of
+transition sensitivities along the recurrence with local ones, and $q$ is a property of
+that choice.  The successor arm makes that change and its median credit cosine rose from
+$0.888$ to $0.9996$ over six thousand updates, with median relative credit error falling
+from $0.46$ to $0.028$.  That is training-time telemetry, neither a contraction
+certificate nor a behavioral endpoint.  Whether it also predicts reference-like discovery
+requires the separate uniform-curvature premise under which exactly settled credit is a
+positive multiple of the reference credit; the expectation that the successor lands near
+its backpropagation twin is a timestamped pre-checker hypothesis, not a sealed
+registration.
+
 \section{What can and cannot be compared}
 
 The tree and recurrent systems are complementary, not two rows in an architecture
@@ -777,6 +819,58 @@ An architecture comparison would require a separate frozen common language, base
 corpus, target set, checker, and declared proposal/evaluator budgets.  Native wall-time
 curves should still be reported separately because tree search and beam search are
 intentionally different algorithms.
+
+\section{Continuous training against joint retraining}
+
+The original loop names this axis and leaves it qualitative.  Its \emph{continuous
+training} option re-uses the previous iteration's model and trains it further on the
+latest data, which is expected to be more stable and eventually trained for orders of
+magnitude more steps; the alternative trains only on the latest corpus and is expected to
+be less encumbered by old solutions and more focused on exploring recent
+ones~\cite{aliencoding}.  Both intuitions are plausible, they predict opposite winners,
+and neither is measured there.
+
+A registered control measures it on the recurrent carrier under a fixed credit rule.  Two
+observer lineages, one per carrier, were trained from the authenticated initial weights on
+the frozen final cumulative corpus for the same cumulative update budget the continued
+lineages had spent, then searched and checked identically, with their discoveries
+quarantined from the shared corpus so the measurement cannot perturb what it measures.
+This is a cleaner separation than the original description affords: the published contrast
+bundles weight inheritance with corpus scope, since its from-scratch variant also narrows
+to the latest data, whereas here both conditions see the same accumulated corpus and only
+the weight history differs.  What remains bundled is arrival order---the retrained model
+sees the whole corpus from its first update---so the estimand is offline joint retraining
+against streaming continuation, and only the terminal budget comparison is free of the
+retrained model's future information.
+
+Both intuitions turn out to be correct, on different projections of the checker's relation.
+Joint retraining is the better explorer: on the recurrent carrier it covers more new targets
+at every measured budget---$361$ against $336$, $304$ against $215$, $228$ against $192$,
+and $225$ against $202$---and its new-target yield per unique proposal is higher in every
+measured cell of the experiment, by factors between $1.08$ and $1.45$.  Continuation is the
+better custodian: it covers more already-known targets in seven of eight cells, by up to
+$370$ targets, so total support favours it in six of eight.  Stability and exploration are
+separated endpoints, and the loop's design choice determines which is bought.
+
+The result is also carrier-dependent, which the original framing does not anticipate.  At the
+terminal budget the recurrent carrier gains $+23$ new targets from retraining while the finer
+Unified carrier loses $12$, an interaction of $+35$.  The earlier landmarks alternate in sign
+for the Unified carrier and are uniformly positive for the recurrent one, and since their
+future information favours retraining, the Unified deficit is the conservative reading and the
+recurrent gain the weaker one.  One pair of training runs sampled at four budgets does not
+license a population claim.
+
+Finally, the portfolio argument of the original work is confirmed quantitatively and its
+scope widened.  There the argument is made for models differing in language, objective, or
+architecture; here the two models differ \emph{only} in training history, and they still
+overlap remarkably little.  The Jaccard index of their new-target sets falls from $0.185$ to
+$0.041$ on the recurrent carrier, so their union exceeds the better single condition by a
+factor between $1.54$ and $1.82$ in all eight cells---$410$ recurrent targets at the terminal
+budget against the best single $225$.  Training history alone is enough to make two otherwise
+identical learners complementary, which argues for running both rather than choosing.  Because
+the two draws share architecture and corpus they are positively dependent, so a
+Lincoln--Petersen reading of the overlap ($2674$ and $973$ reachable targets at the terminal
+budget) bounds the reachable pool from below rather than estimating it.
 
 \section{Limitations and current status}
 

@@ -135,7 +135,7 @@ def renderMetatheoryClaim : MetatheoryClaim → String
       mkPresNeg (properNameNP "The metatheory core")
         (complV2 (mkV2 (regV "contain")) (properNameNP "axioms, constants, sorries, or admits"))
   | .whyDocumentation =>
-      mkPresPos (properNameNP "The public surface")
+      mkPresPos (properNameNP "The public interface")
         (copulaNP (properNameNP "docstring-rich with source references"))
   | .installationPrereqLean =>
       mkPresPos (properNameNP "The installation")

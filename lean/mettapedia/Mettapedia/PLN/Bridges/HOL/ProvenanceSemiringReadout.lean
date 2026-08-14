@@ -30,7 +30,7 @@ universe u v w
 
 variable {Base : Type u} {Const : Ty Base → Type v}
 
-/-- Proof-relevant mirror of the live `ExtDerivation` constructor surface. -/
+/-- Proof-relevant mirror of the live `ExtDerivation` constructor interface. -/
 inductive DerivationTree (Const : Ty Base → Type v) :
     {Γ : Ctx Base} → List (Formula Const Γ) → Formula Const Γ → Type (max u v) where
   | hyp {Γ : Ctx Base} {Δ : List (Formula Const Γ)} {φ : Formula Const Γ} :

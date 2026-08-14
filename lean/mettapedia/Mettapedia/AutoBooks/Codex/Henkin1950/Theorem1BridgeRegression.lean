@@ -5,7 +5,7 @@ namespace Mettapedia.AutoBooks.Codex.Henkin1950
 /-!
 # Henkin 1950 Theorem 1 Bridge Regression
 
-Positive canaries for the class-to-general bridge surface and the stronger
+Positive canaries for the class-to-general bridge interface and the stronger
 canonical obstruction around `SentenceSoundBridge`.
 -/
 

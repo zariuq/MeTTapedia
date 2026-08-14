@@ -12,13 +12,13 @@ import Mettapedia.KR.ConceptGeometry.Bridges.UniversalAI.IntensionalInheritanceA
 This module collects the stable public entry points for the regrounded
 Chapter-12 / intensional-inheritance line:
 
-* the abstract-interpretation-based inheritance surface,
-* the extensional/intensional divergence surface and pure intensional strength,
+* the abstract-interpretation-based inheritance theorem set,
+* the extensional/intensional divergence theorem set and pure intensional strength,
 * the concrete finite empirical 2x2 instance,
 * the tiny factor-graph / VE / BP bridge for that empirical instance,
 * the Solomonoff-facing bridge,
 * the approximation-facing bridge.
 
-It is the focused public import surface for this topic, without routing through
+It is the focused public import interface for this topic, without routing through
 the much larger PLN canonical facade.
 -/

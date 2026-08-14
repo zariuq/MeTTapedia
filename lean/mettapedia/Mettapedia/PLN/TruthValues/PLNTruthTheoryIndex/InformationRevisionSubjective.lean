@@ -216,7 +216,7 @@ theorem assoc_pat_exact_packet_joint_merge_is_source_union :
   Mettapedia.PLN.ConceptGeometry.AssocPat.AbstractInheritanceIntensionalDemo.assoc_pat_packetJointMerge_eq_source_union
 
 /-- Public index name for duplicate-source absorption in the concrete ASSOC/PAT
-consumer surface. -/
+consumer interface. -/
 theorem assoc_pat_exact_packet_duplicate_absorbs :
     Mettapedia.KR.ConceptGeometry.AbstractInheritance.DualConcept.packetJointMerge
         [Mettapedia.PLN.ConceptGeometry.AssocPat.AbstractInheritanceIntensionalDemo.penguinBirdStampedEvidence,
@@ -241,7 +241,7 @@ theorem assoc_pat_base_score_bird_bird_lt_pat_base_score_bird_bird :
 
 /-- Public index name for the evidence-level Chapter-12 noncollapse guardrail:
 the ASSOC and PAT query channels remain distinct at the rule-facing evidence
-surface, not only in their raw score definitions. -/
+interface, not only in their raw score definitions. -/
 theorem assoc_pat_evidence_bird_bird_ne_pat_evidence_bird_bird :
     Mettapedia.PLN.ConceptGeometry.AssocPat.PLNIntensionalWorldModel.InheritanceQueryBuilder.intensionalAssocEvidence
         (State := Mettapedia.PLN.ConceptGeometry.AssocPat.AbstractInheritanceIntensionalDemo.DemoState)
@@ -294,7 +294,7 @@ theorem assoc_pat_mixed_monotonicity_requires_extensional_monotonicity :
   Mettapedia.PLN.ConceptGeometry.AssocPat.PLNHigherOrderHOLAssocPatBridge.mixedEvidence_mono_requires_extensional_mono_counterexample
 
 /-- Proof-carrying profile for the current Chapter-12 ASSOC/PAT consumer
-surface. It packages exact-provenance positive cases, the finite-table and
+interface. It packages exact-provenance positive cases, the finite-table and
 formed-concept source packages, the formed-concept semantic-layer ASSOC/PAT
 equality and monotonicity theorems, the formed-concept lower/upper
 semantic-layer concept-closure bridge, the formed-concept mixed boundary and
@@ -462,7 +462,7 @@ structure AssocPatChapter12ConsumerProfile where
         ¬ (ext₁ + assoc₁ + pat₁ ≤ ext₂ + assoc₂ + pat₂)
 
 /-- Public profile for the current Chapter-12 ASSOC/PAT exact-provenance and
-noncollapse consumer surface. -/
+noncollapse consumer interface. -/
 def assocPatChapter12ConsumerProfile : AssocPatChapter12ConsumerProfile where
   exactPacketsAndOverlapGuard :=
     assoc_pat_exact_packets_are_exact_and_guarded_revision_rejects_overlap

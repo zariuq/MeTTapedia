@@ -457,7 +457,7 @@ theorem nonRF_admin_correspondence_umbrella_fresh_userObs
   exact ⟨hdisj, ⟨hrep, hcombo, hnuOut, hseedOut, hrepOut⟩⟩
 
 /-- Record-form pre-OSLF calculus correspondence package. This gives a stable API
-surface for downstream consumers without unpacking deep conjunctions. -/
+interface for downstream consumers without unpacking deep conjunctions. -/
 structure CalcPreludeCorrespondencePackage
     (N : Finset String)
     (x : Name) (P : Process)

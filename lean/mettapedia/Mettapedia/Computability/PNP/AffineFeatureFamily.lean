@@ -120,7 +120,7 @@ abbrev RealizedByExactAffineFeatureFamily
     {Z : Type*} {Index : Type*}
     (G : ExactVisibleSwitchedFamily Z k Index) : Prop :=
   RealizedByAffineFeatureFamily (r := r) (k := k)
-    (fun u : ExactVisiblePostSwitchSurface Z k => u.a) G
+    (fun u : ExactVisiblePostSwitchData Z k => u.a) G
 
 theorem exactVisibleCompressionTarget_of_realizedByExactAffineFeatureFamily
     {Z : Type*} {Index : Type*}

@@ -1,5 +1,5 @@
 import Mettapedia.PLN.WorldModel.PLNWorldModelAdditive
-import Mettapedia.PLN.Bridges.ProbabilityTheory.ConjugateEvidenceSurface
+import Mettapedia.PLN.Bridges.ProbabilityTheory.ConjugateEvidenceCore
 
 /-!
 # Generic PLN World Models
@@ -25,7 +25,7 @@ open Mettapedia.PLN.Evidence.EvidenceClass
 open Mettapedia.PLN.Evidence.EvidenceQuantale
 open Mettapedia.PLN.WorldModel.PLNWorldModel
 open Mettapedia.PLN.WorldModel.PLNWorldModelAdditive
-open Mettapedia.PLN.Bridges.ProbabilityTheory.ConjugateEvidenceSurface
+open Mettapedia.PLN.Bridges.ProbabilityTheory.ConjugateEvidenceCore
 open Mettapedia.PLN.Bridges.ProbabilityTheory.EvidenceDirichlet
 
 /-- A revisable posterior state supporting additive extraction into an arbitrary

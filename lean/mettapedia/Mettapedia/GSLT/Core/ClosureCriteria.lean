@@ -1,4 +1,4 @@
-import Mettapedia.GSLT.Core.GSLT
+import Mettapedia.GSLT.Core.Composition
 import Mettapedia.GSLT.Core.NonFactorization
 
 /-!
@@ -29,6 +29,91 @@ open Mettapedia.GSLT
 open Mettapedia.GSLT.Core.NonFactorization
 
 universe u v w
+
+/-! ## Intrinsic step-shape capabilities -/
+
+/-- Exact data witnessing two composable one-step transitions.  Keeping the
+three states and both selected steps in `Type` lets later transports retain
+the operational witness rather than only an existential proposition. -/
+structure ComposableStepWitness (theory : GSLT) where
+  source : theory.Term
+  middle : theory.Term
+  target : theory.Term
+  first : theory.Step source middle
+  second : theory.Step middle target
+
+/-- A theory admits internal re-entry when it carries a composable-step
+witness.  `Nonempty` exposes the capability proposition without choosing a
+distinguished execution globally. -/
+def HasComposableSteps (theory : GSLT) : Prop :=
+  Nonempty (ComposableStepWitness theory)
+
+namespace ComposableStepWitness
+
+/-- A step-preserving map transports the complete composable-step witness. -/
+def map {sourceTheory : GSLT.{u}} {targetTheory : GSLT.{v}}
+    (witness : ComposableStepWitness sourceTheory)
+    (mapTerm : sourceTheory.Term → targetTheory.Term)
+    (mapStep : ∀ {source target},
+      sourceTheory.Step source target →
+        targetTheory.Step (mapTerm source) (mapTerm target)) :
+    ComposableStepWitness targetTheory where
+  source := mapTerm witness.source
+  middle := mapTerm witness.middle
+  target := mapTerm witness.target
+  first := mapStep witness.first
+  second := mapStep witness.second
+
+/-- A faithful structural embedding transports internal re-entry while
+retaining the selected source execution. -/
+def mapEmbedding {sourceTheory targetTheory : GSLT.{u}}
+    (witness : ComposableStepWitness sourceTheory)
+    (embedding : GSLT.Embedding sourceTheory targetTheory) :
+    ComposableStepWitness targetTheory :=
+  witness.map embedding.toFun fun step =>
+    (embedding.step_iff _ _).2 step
+
+end ComposableStepWitness
+
+/-- Every step-preserving map preserves the existence of internal re-entry. -/
+theorem hasComposableSteps_of_mapStep
+    {sourceTheory : GSLT.{u}} {targetTheory : GSLT.{v}}
+    (mapTerm : sourceTheory.Term → targetTheory.Term)
+    (mapStep : ∀ {source target},
+      sourceTheory.Step source target →
+        targetTheory.Step (mapTerm source) (mapTerm target))
+    (sourceReentry : HasComposableSteps sourceTheory) :
+    HasComposableSteps targetTheory := by
+  obtain ⟨witness⟩ := sourceReentry
+  exact ⟨witness.map mapTerm mapStep⟩
+
+/-- Structural embeddings preserve internal re-entry as a specialization of
+step-preserving witness transport. -/
+theorem hasComposableSteps_of_embedding
+    {sourceTheory targetTheory : GSLT.{u}}
+    (embedding : GSLT.Embedding sourceTheory targetTheory)
+    (sourceReentry : HasComposableSteps sourceTheory) :
+    HasComposableSteps targetTheory := by
+  obtain ⟨witness⟩ := sourceReentry
+  exact ⟨witness.mapEmbedding embedding⟩
+
+/-- A one-step-terminal theory sends every transition to a normal form.  This
+is a law bundle, not a claim that every theory should have terminal steps. -/
+structure OneStepTerminal (theory : GSLT) : Prop where
+  target_normal : ∀ {source target},
+    theory.Step source target → theory.IsNormalForm target
+
+namespace OneStepTerminal
+
+/-- One-step terminality rules out internal re-entry. -/
+theorem not_hasComposableSteps {theory : GSLT}
+    (terminal : OneStepTerminal theory) :
+    ¬ HasComposableSteps theory := by
+  rintro ⟨witness⟩
+  exact terminal.target_normal witness.first
+    ⟨witness.target, witness.second⟩
+
+end OneStepTerminal
 
 /-! ## Honest bounded execution -/
 

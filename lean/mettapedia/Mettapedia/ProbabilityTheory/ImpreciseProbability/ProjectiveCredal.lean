@@ -10997,7 +10997,7 @@ theorem singletonIdentityProjectiveSpec_hasCompatibleCompletion
   rw [hMarg]
   exact Set.mem_singleton _
 
-/-! ## Profile surface -/
+/-! ## Profile interface -/
 
 /-- Proof-carrying profile for the shared projective credal abstraction.
 

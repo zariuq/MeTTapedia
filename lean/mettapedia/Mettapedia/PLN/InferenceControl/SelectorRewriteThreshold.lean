@@ -4,6 +4,6 @@ import Mettapedia.PLN.InferenceControl.SelectorRewriteThreshold.PLNSelectorRewri
 /-!
 # Selector, rewrite, and threshold compositions
 
-Worked and regression surfaces composing PLN selector fixtures with rewrite and
+Worked and regression interfaces composing PLN selector fixtures with rewrite and
 threshold endpoints.
 -/

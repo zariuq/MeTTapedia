@@ -27,117 +27,117 @@ open scoped ENNReal
 
 universe uΩ
 
-/-- A one-observation surface whose singleton aggregate is the existing KR
+/-- A one-observation interface whose singleton aggregate is the existing KR
 control context. -/
-def controlObservationSurface :
-    ObservationSurface PUnit.{1} Animal Trait BinaryEvidence where
+def controlObservationEncoder :
+    ObservationEncoder PUnit.{1} Animal Trait BinaryEvidence where
   observe _ q := context.evidence q.1 q.2
 
 /-- The singleton observation packet used to present the control context through
-the observation-surface API. -/
+the observation-interface API. -/
 def controlObservationSample : Multiset PUnit.{1} :=
   ({PUnit.unit} : Multiset PUnit.{1})
 
-@[simp] theorem controlObservationSurface_aggregate
+@[simp] theorem controlObservationEncoder_aggregate
     (x : Animal) (t : Trait) :
-    ObservationSurface.aggregate controlObservationSurface controlObservationSample x t =
+    ObservationEncoder.aggregate controlObservationEncoder controlObservationSample x t =
       context.evidence x t := by
-  simp [controlObservationSurface, controlObservationSample, ObservationSurface.aggregate]
+  simp [controlObservationEncoder, controlObservationSample, ObservationEncoder.aggregate]
 
-@[simp] theorem controlObservationSurface_aggregate_eq :
-    ObservationSurface.aggregate controlObservationSurface controlObservationSample =
+@[simp] theorem controlObservationEncoder_aggregate_eq :
+    ObservationEncoder.aggregate controlObservationEncoder controlObservationSample =
       context.evidence := by
   funext x t
-  exact controlObservationSurface_aggregate x t
+  exact controlObservationEncoder_aggregate x t
 
 theorem flyingFamilyConcept_mem_observationUpper :
     flyingFamilyConcept ∈
-      ObservationSurface.upperConceptFamily controlObservationSurface gateFamily controlObservationSample := by
-  simpa [ObservationSurface.upperConceptFamily, gateFamily,
+      ObservationEncoder.upperConceptFamily controlObservationEncoder gateFamily controlObservationSample := by
+  simpa [ObservationEncoder.upperConceptFamily, gateFamily,
     BinaryFcaBenchmarkContext.upperThresholdConceptFamily] using flyingFamilyConcept_mem_upper
 
 theorem flyingFamilyConcept_not_mem_observationLower :
     flyingFamilyConcept ∉
-      ObservationSurface.lowerConceptFamily controlObservationSurface gateFamily controlObservationSample := by
-  simpa [ObservationSurface.lowerConceptFamily, gateFamily,
+      ObservationEncoder.lowerConceptFamily controlObservationEncoder gateFamily controlObservationSample := by
+  simpa [ObservationEncoder.lowerConceptFamily, gateFamily,
     BinaryFcaBenchmarkContext.lowerThresholdConceptFamily] using flyingFamilyConcept_not_mem_lower
 
 /-- The flying-family concept is visible under some admissible threshold gate but
 not robust across all admissible gates. -/
 theorem flyingFamilyConcept_observationGap :
     flyingFamilyConcept ∈
-        ObservationSurface.upperConceptFamily controlObservationSurface gateFamily controlObservationSample ∧
+        ObservationEncoder.upperConceptFamily controlObservationEncoder gateFamily controlObservationSample ∧
       flyingFamilyConcept ∉
-        ObservationSurface.lowerConceptFamily controlObservationSurface gateFamily controlObservationSample :=
+        ObservationEncoder.lowerConceptFamily controlObservationEncoder gateFamily controlObservationSample :=
   ⟨flyingFamilyConcept_mem_observationUpper, flyingFamilyConcept_not_mem_observationLower⟩
 
 /-- The untyped PLN ITV readout for a permissive-but-not-robust control concept:
 the bridge honestly displays the full semantic interval. -/
 theorem flyingFamilyConcept_widthComplementITV_full_readout :
-    (conceptFormationWidthComplementITV controlObservationSurface gateFamily
+    (conceptFormationWidthComplementITV controlObservationEncoder gateFamily
         controlObservationSample flyingFamilyConcept).lower = 0 ∧
-      (conceptFormationWidthComplementITV controlObservationSurface gateFamily
+      (conceptFormationWidthComplementITV controlObservationEncoder gateFamily
         controlObservationSample flyingFamilyConcept).upper = 1 ∧
-      (conceptFormationWidthComplementITV controlObservationSurface gateFamily
+      (conceptFormationWidthComplementITV controlObservationEncoder gateFamily
         controlObservationSample flyingFamilyConcept).width = 1 ∧
-      (conceptFormationWidthComplementITV controlObservationSurface gateFamily
+      (conceptFormationWidthComplementITV controlObservationEncoder gateFamily
         controlObservationSample flyingFamilyConcept).credibility = 0 ∧
-      (conceptFormationWidthComplementITV controlObservationSurface gateFamily
+      (conceptFormationWidthComplementITV controlObservationEncoder gateFamily
         controlObservationSample flyingFamilyConcept).strength = (1 / 2 : ℝ) :=
   conceptFormationWidthComplementITV_gap_readout
-    controlObservationSurface gateFamily controlObservationSample flyingFamilyConcept
+    controlObservationEncoder gateFamily controlObservationSample flyingFamilyConcept
     flyingFamilyConcept_observationGap
 
 /-- Typed counterpart of `flyingFamilyConcept_widthComplementITV_full_readout`. -/
 theorem flyingFamilyConcept_typedWidthComplementITV_full_readout :
-    (conceptFormationTypedWidthComplementITV controlObservationSurface gateFamily
+    (conceptFormationTypedWidthComplementITV controlObservationEncoder gateFamily
         controlObservationSample flyingFamilyConcept).lower = 0 ∧
-      (conceptFormationTypedWidthComplementITV controlObservationSurface gateFamily
+      (conceptFormationTypedWidthComplementITV controlObservationEncoder gateFamily
         controlObservationSample flyingFamilyConcept).upper = 1 ∧
-      (conceptFormationTypedWidthComplementITV controlObservationSurface gateFamily
+      (conceptFormationTypedWidthComplementITV controlObservationEncoder gateFamily
         controlObservationSample flyingFamilyConcept).width = 1 ∧
-      (conceptFormationTypedWidthComplementITV controlObservationSurface gateFamily
+      (conceptFormationTypedWidthComplementITV controlObservationEncoder gateFamily
         controlObservationSample flyingFamilyConcept).credibility = 0 ∧
-      (conceptFormationTypedWidthComplementITV controlObservationSurface gateFamily
+      (conceptFormationTypedWidthComplementITV controlObservationEncoder gateFamily
         controlObservationSample flyingFamilyConcept).midpoint = (1 / 2 : ℝ) :=
   conceptFormationTypedWidthComplementITV_gap_readout
-    controlObservationSurface gateFamily controlObservationSample flyingFamilyConcept
+    controlObservationEncoder gateFamily controlObservationSample flyingFamilyConcept
     flyingFamilyConcept_observationGap
 
 theorem batOnlyFlyingConcept_not_mem_observationUpper :
     batOnlyFlyingConcept ∉
-      ObservationSurface.upperConceptFamily controlObservationSurface gateFamily controlObservationSample := by
-  simpa [ObservationSurface.upperConceptFamily, gateFamily,
+      ObservationEncoder.upperConceptFamily controlObservationEncoder gateFamily controlObservationSample := by
+  simpa [ObservationEncoder.upperConceptFamily, gateFamily,
     BinaryFcaBenchmarkContext.upperThresholdConceptFamily] using batOnlyFlyingConcept_not_mem_upper
 
 theorem batOnlyFlyingConcept_not_mem_observationLower :
     batOnlyFlyingConcept ∉
-      ObservationSurface.lowerConceptFamily controlObservationSurface gateFamily controlObservationSample := by
+      ObservationEncoder.lowerConceptFamily controlObservationEncoder gateFamily controlObservationSample := by
   intro hLower
   exact batOnlyFlyingConcept_not_mem_observationUpper
-    (ObservationSurface.lowerConceptFamily_subset_upperConceptFamily
-      controlObservationSurface gateFamily controlObservationSample hLower)
+    (ObservationEncoder.lowerConceptFamily_subset_upperConceptFamily
+      controlObservationEncoder gateFamily controlObservationSample hLower)
 
 /-- A concept outside even the permissive control family displays exact zero:
 lower and upper coincide, width is zero, and credibility is one. -/
 theorem batOnlyFlyingConcept_widthComplementITV_exact_zero_readout :
-    (conceptFormationWidthComplementITV controlObservationSurface gateFamily
+    (conceptFormationWidthComplementITV controlObservationEncoder gateFamily
         controlObservationSample batOnlyFlyingConcept).lower = 0 ∧
-      (conceptFormationWidthComplementITV controlObservationSurface gateFamily
+      (conceptFormationWidthComplementITV controlObservationEncoder gateFamily
         controlObservationSample batOnlyFlyingConcept).upper = 0 ∧
-      (conceptFormationWidthComplementITV controlObservationSurface gateFamily
+      (conceptFormationWidthComplementITV controlObservationEncoder gateFamily
         controlObservationSample batOnlyFlyingConcept).width = 0 ∧
-      (conceptFormationWidthComplementITV controlObservationSurface gateFamily
+      (conceptFormationWidthComplementITV controlObservationEncoder gateFamily
         controlObservationSample batOnlyFlyingConcept).credibility = 1 ∧
-      (conceptFormationWidthComplementITV controlObservationSurface gateFamily
+      (conceptFormationWidthComplementITV controlObservationEncoder gateFamily
         controlObservationSample batOnlyFlyingConcept).strength = 0 := by
   have hUpper := batOnlyFlyingConcept_not_mem_observationUpper
   have hLower := batOnlyFlyingConcept_not_mem_observationLower
   have hNoGap :
       ¬ (batOnlyFlyingConcept ∈
-            ObservationSurface.upperConceptFamily controlObservationSurface gateFamily controlObservationSample ∧
+            ObservationEncoder.upperConceptFamily controlObservationEncoder gateFamily controlObservationSample ∧
           batOnlyFlyingConcept ∉
-            ObservationSurface.lowerConceptFamily controlObservationSurface gateFamily controlObservationSample) := by
+            ObservationEncoder.lowerConceptFamily controlObservationEncoder gateFamily controlObservationSample) := by
     intro hGap
     exact hUpper hGap.1
   exact ⟨by
@@ -159,23 +159,23 @@ theorem batOnlyFlyingConcept_widthComplementITV_exact_zero_readout :
 /-- Typed counterpart of
 `batOnlyFlyingConcept_widthComplementITV_exact_zero_readout`. -/
 theorem batOnlyFlyingConcept_typedWidthComplementITV_exact_zero_readout :
-    (conceptFormationTypedWidthComplementITV controlObservationSurface gateFamily
+    (conceptFormationTypedWidthComplementITV controlObservationEncoder gateFamily
         controlObservationSample batOnlyFlyingConcept).lower = 0 ∧
-      (conceptFormationTypedWidthComplementITV controlObservationSurface gateFamily
+      (conceptFormationTypedWidthComplementITV controlObservationEncoder gateFamily
         controlObservationSample batOnlyFlyingConcept).upper = 0 ∧
-      (conceptFormationTypedWidthComplementITV controlObservationSurface gateFamily
+      (conceptFormationTypedWidthComplementITV controlObservationEncoder gateFamily
         controlObservationSample batOnlyFlyingConcept).width = 0 ∧
-      (conceptFormationTypedWidthComplementITV controlObservationSurface gateFamily
+      (conceptFormationTypedWidthComplementITV controlObservationEncoder gateFamily
         controlObservationSample batOnlyFlyingConcept).credibility = 1 ∧
-      (conceptFormationTypedWidthComplementITV controlObservationSurface gateFamily
+      (conceptFormationTypedWidthComplementITV controlObservationEncoder gateFamily
         controlObservationSample batOnlyFlyingConcept).midpoint = 0 := by
   have hUpper := batOnlyFlyingConcept_not_mem_observationUpper
   have hLower := batOnlyFlyingConcept_not_mem_observationLower
   have hNoGap :
       ¬ (batOnlyFlyingConcept ∈
-            ObservationSurface.upperConceptFamily controlObservationSurface gateFamily controlObservationSample ∧
+            ObservationEncoder.upperConceptFamily controlObservationEncoder gateFamily controlObservationSample ∧
           batOnlyFlyingConcept ∉
-            ObservationSurface.lowerConceptFamily controlObservationSurface gateFamily controlObservationSample) := by
+            ObservationEncoder.lowerConceptFamily controlObservationEncoder gateFamily controlObservationSample) := by
     intro hGap
     exact hUpper hGap.1
   exact ⟨by
@@ -197,9 +197,9 @@ theorem batOnlyFlyingConcept_typedWidthComplementITV_exact_zero_readout :
 /-- The absent control concept has no lower/upper concept-family gap. -/
 theorem batOnlyFlyingConcept_observationNoGap :
     ¬ (batOnlyFlyingConcept ∈
-          ObservationSurface.upperConceptFamily controlObservationSurface gateFamily controlObservationSample ∧
+          ObservationEncoder.upperConceptFamily controlObservationEncoder gateFamily controlObservationSample ∧
         batOnlyFlyingConcept ∉
-          ObservationSurface.lowerConceptFamily controlObservationSurface gateFamily controlObservationSample) := by
+          ObservationEncoder.lowerConceptFamily controlObservationEncoder gateFamily controlObservationSample) := by
   intro hGap
   exact batOnlyFlyingConcept_not_mem_observationUpper hGap.1
 
@@ -207,11 +207,11 @@ theorem batOnlyFlyingConcept_observationNoGap :
 projective specification. -/
 theorem batOnlyFlyingConcept_gateCredalProjectiveSpec_determines :
     (gateCredalProjectiveSpec (Gate := Bool)).determinesGlobalGamble
-      (ObservationSurface.conceptFormationGamble controlObservationSurface gateFamily
+      (ObservationEncoder.conceptFormationGamble controlObservationEncoder gateFamily
         controlObservationSample batOnlyFlyingConcept) := by
   exact
-    (ObservationSurface.gateCredalProjectiveSpec_determinesGlobalGamble_conceptFormationGamble_iff
-      controlObservationSurface gateFamily controlObservationSample batOnlyFlyingConcept).mpr
+    (ObservationEncoder.gateCredalProjectiveSpec_determinesGlobalGamble_conceptFormationGamble_iff
+      controlObservationEncoder gateFamily controlObservationSample batOnlyFlyingConcept).mpr
       batOnlyFlyingConcept_observationNoGap
 
 /-- Concrete de Finetti-adapter endpoint canary for the permissive-but-not-robust
@@ -227,12 +227,12 @@ theorem flyingFamilyConcept_deFinettiGateSpec_endpoint_completions
     ∃ P Q : PrecisePrevision Bool,
       P ∈ D.projectiveSpec.projectiveLimitCredalSet ∧
       Q ∈ D.projectiveSpec.projectiveLimitCredalSet ∧
-      P (ObservationSurface.conceptFormationGamble controlObservationSurface gateFamily
+      P (ObservationEncoder.conceptFormationGamble controlObservationEncoder gateFamily
         controlObservationSample flyingFamilyConcept) = 1 ∧
-      Q (ObservationSurface.conceptFormationGamble controlObservationSurface gateFamily
+      Q (ObservationEncoder.conceptFormationGamble controlObservationEncoder gateFamily
         controlObservationSample flyingFamilyConcept) = 0 :=
   deFinettiGateSpec_gap_has_endpoint_completions
-    X μ D hSpec controlObservationSurface gateFamily controlObservationSample
+    X μ D hSpec controlObservationEncoder gateFamily controlObservationSample
     flyingFamilyConcept flyingFamilyConcept_observationGap
 
 /-- Concrete de Finetti-adapter exact-collapse canary for the absent control
@@ -244,7 +244,7 @@ theorem batOnlyFlyingConcept_deFinettiGateSpec_determines
     (D : DeFinettiProjectiveCredalSpecialization X μ)
     (hSpec : D.projectiveSpec = gateCredalProjectiveSpec (Gate := Bool)) :
     D.projectiveSpec.determinesGlobalGamble
-      (ObservationSurface.conceptFormationGamble controlObservationSurface gateFamily
+      (ObservationEncoder.conceptFormationGamble controlObservationEncoder gateFamily
         controlObservationSample batOnlyFlyingConcept) := by
   rw [hSpec]
   exact batOnlyFlyingConcept_gateCredalProjectiveSpec_determines
@@ -259,11 +259,11 @@ theorem batOnlyFlyingConcept_deFinettiMixture_completion_eq_zero
     (hSpec : D.projectiveSpec = gateCredalProjectiveSpec (Gate := Bool))
     (M : BernoulliMixture) (hRep : Represents M X μ) :
     (D.completionOfMixture M)
-      (ObservationSurface.conceptFormationGamble controlObservationSurface gateFamily
+      (ObservationEncoder.conceptFormationGamble controlObservationEncoder gateFamily
         controlObservationSample batOnlyFlyingConcept) = 0 := by
   have hReadout :=
     conceptFormationWidthComplementITV_deFinettiMixtureReadout_of_determines
-      X μ D hSpec M hRep controlObservationSurface gateFamily controlObservationSample
+      X μ D hSpec M hRep controlObservationEncoder gateFamily controlObservationSample
       batOnlyFlyingConcept
       batOnlyFlyingConcept_gateCredalProjectiveSpec_determines
   exact hReadout.1.symm.trans
@@ -279,25 +279,25 @@ noncomputable abbrev flyingFamilyWidthComplementITV :=
   conceptFormationWidthComplementITV
     (Obs := PUnit.{1}) (Obj := Animal) (Attr := Trait)
     (Q := BinaryEvidence) (Gate := Bool)
-    controlObservationSurface gateFamily controlObservationSample flyingFamilyConcept
+    controlObservationEncoder gateFamily controlObservationSample flyingFamilyConcept
 
 noncomputable abbrev flyingFamilyTypedWidthComplementITV :=
   conceptFormationTypedWidthComplementITV
     (Obs := PUnit.{1}) (Obj := Animal) (Attr := Trait)
     (Q := BinaryEvidence) (Gate := Bool)
-    controlObservationSurface gateFamily controlObservationSample flyingFamilyConcept
+    controlObservationEncoder gateFamily controlObservationSample flyingFamilyConcept
 
 noncomputable abbrev batOnlyWidthComplementITV :=
   conceptFormationWidthComplementITV
     (Obs := PUnit.{1}) (Obj := Animal) (Attr := Trait)
     (Q := BinaryEvidence) (Gate := Bool)
-    controlObservationSurface gateFamily controlObservationSample batOnlyFlyingConcept
+    controlObservationEncoder gateFamily controlObservationSample batOnlyFlyingConcept
 
 noncomputable abbrev batOnlyTypedWidthComplementITV :=
   conceptFormationTypedWidthComplementITV
     (Obs := PUnit.{1}) (Obj := Animal) (Attr := Trait)
     (Q := BinaryEvidence) (Gate := Bool)
-    controlObservationSurface gateFamily controlObservationSample batOnlyFlyingConcept
+    controlObservationEncoder gateFamily controlObservationSample batOnlyFlyingConcept
 
 abbrev FlyingFamilyUntypedFullReadout : Prop :=
   flyingFamilyWidthComplementITV.lower = 0 ∧
@@ -340,9 +340,9 @@ structure ConceptFormationControlCanaryProfile where
       ∃ P Q : PrecisePrevision Bool,
         P ∈ D.projectiveSpec.projectiveLimitCredalSet ∧
         Q ∈ D.projectiveSpec.projectiveLimitCredalSet ∧
-        P (ObservationSurface.conceptFormationGamble controlObservationSurface gateFamily
+        P (ObservationEncoder.conceptFormationGamble controlObservationEncoder gateFamily
           controlObservationSample flyingFamilyConcept) = 1 ∧
-        Q (ObservationSurface.conceptFormationGamble controlObservationSurface gateFamily
+        Q (ObservationEncoder.conceptFormationGamble controlObservationEncoder gateFamily
           controlObservationSample flyingFamilyConcept) = 0
   deFinettiAbsentMixtureCompletionExactZero :
     ∀ {Ω : Type uΩ} [MeasurableSpace Ω]
@@ -351,7 +351,7 @@ structure ConceptFormationControlCanaryProfile where
       (_ : D.projectiveSpec = gateCredalProjectiveSpec (Gate := Bool))
       (M : BernoulliMixture) (_ : Represents M X μ),
       (D.completionOfMixture M)
-        (ObservationSurface.conceptFormationGamble controlObservationSurface gateFamily
+        (ObservationEncoder.conceptFormationGamble controlObservationEncoder gateFamily
           controlObservationSample batOnlyFlyingConcept) = 0
 
 /-- Public control-canary profile for the concept-formation ITV bridge and its
