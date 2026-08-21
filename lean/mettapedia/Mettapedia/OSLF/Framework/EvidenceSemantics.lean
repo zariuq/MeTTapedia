@@ -21,7 +21,7 @@ algebra) structure:
 - Threshold-Prop semantics (`sem`) is a corollary, not the foundation
 - The threshold bridge is PARTIAL: it fails for disjunction/diamond because
   `τ ≤ x ⊔ y ⇏ τ ≤ x ∨ τ ≤ y` in BinaryEvidence's non-total order
-  (this IS the Knuth-Skilling imprecision gate)
+  (this is a threshold-projection obstruction, not a failure of K&S scalar fidelity)
 
 ## Interpretation Table
 
@@ -39,7 +39,7 @@ algebra) structure:
 ## References
 
 - Meredith & Stay, "Operational Semantics in Logical Form"
-- Knuth & Skilling, "Foundations of Inference" (totality axiom)
+- Knuth & Skilling, "Foundations of Inference" (one-way scalar fidelity)
 -/
 
 namespace Mettapedia.OSLF.Framework.EvidenceSemantics
@@ -182,9 +182,8 @@ the conjunctive fragment (top, atom, and, box) but FAILS for the
 disjunctive fragment (or, dia) because BinaryEvidence's order is non-total:
 `τ ≤ x ⊔ y ⇏ τ ≤ x ∨ τ ≤ y`.
 
-This is the formal expression of the Knuth-Skilling imprecision gate:
-precise (Boolean) semantics can only be recovered on fragments where
-the Heyting algebra happens to be Boolean. -/
+This is a property of thresholding a partial order into `Prop`.  It is distinct
+from K&S one-way scalar fidelity and from the Boolean/Heyting complement gate. -/
 
 /-- Threshold atom semantics: atom holds when evidence exceeds threshold. -/
 noncomputable def threshAtomSem (I : EvidenceAtomSem) (τ : BinaryEvidence) :
@@ -242,9 +241,9 @@ The threshold bridge `τ ≤ semE ... → sem ...` works precisely for the
 **conjunctive/universal fragment** {⊤, atom, ∧, →, □} and FAILS for the
 **disjunctive/existential fragment** {∨, ◇}.
 
-This is the formal expression of the Knuth-Skilling totality axiom:
-point-valued (Boolean) semantics requires total order; BinaryEvidence's
-non-total order forces Heyting default on disjunctive connectives. -/
+The obstruction is order-theoretic: a threshold below a join need not lie below
+either summand.  It does not say that K&S scalar valuation requires a total
+source order, nor that totality alone makes the evidence algebra Boolean. -/
 
 /-- Threshold bridge for ⊤: always works (vacuously). -/
 theorem threshold_top (I : EvidenceAtomSem) (τ : BinaryEvidence) (R : Pattern → Pattern → Prop)
@@ -320,16 +319,13 @@ theorem threshold_dia_fails :
   · exact hnle hsat.2
   · exact hnle hsat.1
 
-/-! ## Totality Gate (Knuth-Skilling Projection Theorem)
+/-! ## Totality Gate for Threshold Projection
 
-Under total order (`∀ a b, a ≤ b ∨ b ≤ a`), the threshold bridge works for ALL
-connectives — disjunction and diamond included. This is the formal expression of
-the Knuth-Skilling totality axiom: adding totality to the BinaryEvidence algebra
-recovers Boolean/classical semantics.
-
-The projection theorem says: classical truth-conditional semantics (Montague) is
-a SPECIAL CASE of evidential semantics, obtained by imposing totality. Without
-totality, you get the strictly richer Heyting/evidential semantics. -/
+Under total order (`∀ a b, a ≤ b ∨ b ≤ a`), the forward threshold bridge also
+works for disjunction and, with finite nonempty branching, diamond.  This is a
+projection theorem for the listed connectives.  It does not make the carrier
+Boolean: the reverse implication bridge still requires Booleanness, as recorded
+below. -/
 
 /-- In a linearly ordered lattice, `τ ≤ a ⊔ b → τ ≤ a ∨ τ ≤ b`.
 This is the lattice-level totality gate. -/
@@ -404,7 +400,7 @@ theorem threshold_dia_total
   haveI : Finite {q // R p q} := hSucc.to_subtype
   by_contra hc
   simp only [sem] at hc
-  push_neg at hc
+  push Not at hc
   have hno : ∀ q, R p q → ¬ (τ ≤ semE R I φ q) := by
     intro q hRq hle; exact hc q hRq (hφ q hRq hle)
   have hlt : ∀ (q : {q // R p q}), semE R I φ q.val < τ := by

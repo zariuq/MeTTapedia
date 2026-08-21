@@ -39,7 +39,16 @@ require «mm-lean4» from "../standalone/mm-lean4"
 -- Replaces the previously embedded copy at `Mettapedia/ProbabilityTheory/KnuthSkilling/`.
 require «ks-foundations-of-inference-lean» from "../standalone/ks-foundations-of-inference"
 
-@[default_target] lean_lib Mettapedia
+/-- Authored MeTTa sources consumed by compile-time program quotation.  Making
+the directory an explicit text input prevents stale quoted constructor data
+when a curriculum file changes without a Lean source edit. -/
+input_dir primeMotivationSources where
+  path := "../../MettaKernel/Curriculum/PrimeMotivation"
+  text := true
+  filter := .extension "metta"
+
+@[default_target] lean_lib Mettapedia where
+  needs := #[`@/primeMotivationSources]
 
 lean_exe mettapedia where root := `Main
 

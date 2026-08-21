@@ -135,4 +135,120 @@ noncomputable def sourceVariableCanonicalOccurrences_commonRestorationApex
           (.fvar name)) rightAtomName)
     leaf
 
+/-- Two final canonical occurrences whose exact plan ancestors are the same
+authored source variable have a common-restoration apex.
+
+The final canonical names may have been changed by atom reification and keyed
+canonicalization.  They are therefore related to the authored names through
+the two positional ancestry certificates, not by string equality. -/
+noncomputable def sourceVariableCanonicalOccurrences_twoDepthApex
+    {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    (leftNode rightNode : CostStaticRegionNode rhoCIGSLT color targetFree)
+    {leftValues : TypedCostRegionBoundaryTable.Values rhoCIGSLT color
+      targetFree leftNode.boundaryTable}
+    {rightValues : TypedCostRegionBoundaryTable.Values rhoCIGSLT color
+      targetFree rightNode.boundaryTable}
+    {leftInventory : CostStaticParameterInventory rhoCIGSLT color targetFree
+      leftNode.boundaryTable leftValues leftNode.skeleton.1}
+    {rightInventory : CostStaticParameterInventory rhoCIGSLT color targetFree
+      rightNode.boundaryTable rightValues rightNode.skeleton.1}
+    (leftEnvironment : CostStaticAtomEnvironment rhoCIGSLT color targetFree
+      leftInventory)
+    (rightEnvironment : CostStaticAtomEnvironment rhoCIGSLT color targetFree
+      rightInventory)
+    {leftTarget : CostStaticFVarOccurrence
+      (canonicalizeByDepths
+        (sourceSemanticPatternKeyAt leftNode leftEnvironment)
+        rhoReflectivePresentation leftNode.targetBound.length 0
+        (leftNode.reifiedSourceFrame leftEnvironment).1)}
+    {rightTarget : CostStaticFVarOccurrence
+      (canonicalizeByDepths
+        (sourceSemanticPatternKeyAt rightNode rightEnvironment)
+        rhoReflectivePresentation rightNode.targetBound.length 0
+        (rightNode.reifiedSourceFrame rightEnvironment).1)}
+    {ambient : List TypeExpr}
+    (leftAlignment :
+      RhoCanonicalInventoryOccurrenceAlignmentCertificate leftNode
+        leftEnvironment leftTarget ambient)
+    (rightAlignment :
+      RhoCanonicalInventoryOccurrenceAlignmentCertificate rightNode
+        rightEnvironment rightTarget ambient)
+    (leftName rightName : String)
+    (leftOrigin :
+      (planAbstractOccurrenceAt leftNode leftInventory
+        leftAlignment.sourcePosition).name =
+          costRegionSourceVariableName leftName)
+    (rightOrigin :
+      (planAbstractOccurrenceAt rightNode rightInventory
+        rightAlignment.sourcePosition).name =
+          costRegionSourceVariableName rightName)
+    (namesEq : leftName = rightName)
+    (declaration : ReflectivePresentationDecl)
+    (restorationDepth keyDepth : Nat) :
+    let cospan := leftEnvironment.semanticKeyCospan rightEnvironment
+    CostStaticAtomKeyCospan.TwoDepthApex rhoCIGSLT cospan
+      declaration restorationDepth keyDepth
+      (cospan.reifyWith leftEnvironment.lookupAtom? cospan.leftSlot
+        (.fvar leftTarget.name))
+      (cospan.reifyWith rightEnvironment.lookupAtom? cospan.rightSlot
+        (.fvar rightTarget.name)) := by
+  subst rightName
+  have leftSourceOrigin : leftAlignment.sourceOccurrence.name =
+      costRegionSourceVariableName leftName := by
+    rw [← leftAlignment.position_eq]
+    simpa using leftOrigin
+  have rightSourceOrigin : rightAlignment.sourceOccurrence.name =
+      costRegionSourceVariableName leftName := by
+    rw [← rightAlignment.position_eq]
+    simpa using rightOrigin
+  obtain ⟨leftSlot, leftSelected⟩ :=
+    Option.isSome_iff_exists.mp
+      (leftEnvironment.slotOfName?_isSome_of_occurrence
+        leftAlignment.sourceOccurrence)
+  obtain ⟨rightSlot, rightSelected⟩ :=
+    Option.isSome_iff_exists.mp
+      (rightEnvironment.slotOfName?_isSome_of_occurrence
+        rightAlignment.sourceOccurrence)
+  have leftAtomName : leftEnvironment.atomName leftSlot = leftTarget.name := by
+    calc
+      leftEnvironment.atomName leftSlot =
+          (leftEnvironment.reifyOccurrence
+            leftAlignment.sourceOccurrence).name :=
+        (leftEnvironment.reifyOccurrence_name_eq_atomName_of_slotOfName?_eq_some
+          leftAlignment.sourceOccurrence leftSlot leftSelected).symm
+      _ = leftAlignment.reifiedOccurrence.name := by
+        rw [leftAlignment.reified_eq]
+      _ = leftTarget.name := leftAlignment.canonical_name_eq
+  have rightAtomName : rightEnvironment.atomName rightSlot =
+      rightTarget.name := by
+    calc
+      rightEnvironment.atomName rightSlot =
+          (rightEnvironment.reifyOccurrence
+            rightAlignment.sourceOccurrence).name :=
+        (rightEnvironment.reifyOccurrence_name_eq_atomName_of_slotOfName?_eq_some
+          rightAlignment.sourceOccurrence rightSlot rightSelected).symm
+      _ = rightAlignment.reifiedOccurrence.name := by
+        rw [rightAlignment.reified_eq]
+      _ = rightTarget.name := rightAlignment.canonical_name_eq
+  let leaf := leftEnvironment.sourceVariable_twoDepthApex
+    rightEnvironment leftName leftAlignment.sourceOccurrence
+      rightAlignment.sourceOccurrence leftSourceOrigin rightSourceOrigin
+      leftSlot rightSlot leftSelected rightSelected declaration
+      restorationDepth keyDepth
+  exact CostStaticAtomKeyCospan.TwoDepthApex.reindex
+    (congrArg
+      (fun name =>
+        (leftEnvironment.semanticKeyCospan rightEnvironment).reifyWith
+          leftEnvironment.lookupAtom?
+          (leftEnvironment.semanticKeyCospan rightEnvironment).leftSlot
+          (.fvar name)) leftAtomName)
+    (congrArg
+      (fun name =>
+        (leftEnvironment.semanticKeyCospan rightEnvironment).reifyWith
+          rightEnvironment.lookupAtom?
+          (leftEnvironment.semanticKeyCospan rightEnvironment).rightSlot
+          (.fvar name)) rightAtomName)
+    leaf
+
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus

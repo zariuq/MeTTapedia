@@ -3875,15 +3875,14 @@ theorem lowerPrevision_zero_imprecision_iff_precise
       P.isPrecise :=
   Mettapedia.ProbabilityTheory.ImpreciseProbability.imprecision_zero_iff_precise P
 
-/-! ## Knuth-Skilling precision layer -/
+/-! ## Scalar order-reflection layer -/
 
-/-- A faithful point-valued representation into `ℝ` cannot exist when the
-underlying Knuth-Skilling plausibility order has an incomparable pair.
+/-- A point-valued representation into `ℝ` cannot preserve and reflect order
+when the underlying plausibility order has an incomparable pair.
 
-This is the order-theoretic reason an interval/credal projection is sometimes
-forced: a crisp scalar view would have to collapse a genuinely partial order
-into a total one. -/
-theorem ks_incomparable_forces_no_faithful_point_representation
+This result is stronger than K&S one-way fidelity, which permits a scalar
+readout to add comparisons not present in the source order. -/
+theorem incomparable_forces_no_order_reflecting_point_representation
     {α : Type*}
     [KnuthSkilling.TotalityImprecision.PartialKnuthSkillingAlgebra α]
     (x y : α)
@@ -3891,7 +3890,7 @@ theorem ks_incomparable_forces_no_faithful_point_representation
       KnuthSkilling.TotalityImprecision.PartialKnuthSkillingAlgebra.Incomparable
         x y) :
     ¬ ∃ (Θ : α → ℝ), ∀ a b : α, a ≤ b ↔ Θ a ≤ Θ b :=
-  KnuthSkilling.TotalityImprecision.no_pointRepresentation_with_incomparables
+  KnuthSkilling.TotalityImprecision.no_orderReflectingPointRepresentation_with_incomparables
     x y hxy
 
 end Mettapedia.PLN.TruthValues.PLNTruthTower

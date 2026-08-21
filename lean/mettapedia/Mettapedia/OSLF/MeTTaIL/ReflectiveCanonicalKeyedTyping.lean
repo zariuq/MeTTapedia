@@ -760,7 +760,7 @@ private theorem binderSafeListAt_mono_keyed
   intro pattern membership
   exact binderSafeAt_mono quoteConstructor (safe pattern membership) scope
 
-private theorem parallelSplice_binderSafeListAt
+theorem parallelSplice_binderSafeListAt
     (declaration : ReflectivePresentationDecl)
     (quoteConstructor : String) (depth : Nat) {pattern : Pattern}
     (safe : binderSafeAt quoteConstructor depth pattern = true) :
@@ -1117,5 +1117,24 @@ theorem canonicalizeByAt_binderSafeAt
   exact canonicalizeByDepths_binderSafeAt
     (fun availableDepth _ pattern => key availableDepth pattern)
     declaration observedQuote availableDepth 0 safetyDepth pattern safe
+
+/-- Ordinary reflective canonicalization preserves every quote-aware scope
+invariant.  It is the structural-code instance of the keyed canonicalizer, so
+the keyed preservation theorem specializes without a second syntax
+induction. -/
+theorem canonicalize_binderSafeAt
+    (declaration : ReflectivePresentationDecl) (observedQuote : String)
+    (safetyDepth : Nat) (pattern : Pattern)
+    (safe : binderSafeAt observedQuote safetyDepth pattern = true) :
+    binderSafeAt observedQuote safetyDepth
+        (canonicalize declaration pattern) = true := by
+  have keyed := canonicalizeByDepths_binderSafeAt
+    (fun _ _ pattern => PatternCode.patternCode pattern)
+    declaration observedQuote 0 0 safetyDepth pattern safe
+  rw [canonicalizeByDepths_ignoreScope
+      (fun _ pattern => PatternCode.patternCode pattern),
+    canonicalizeByAt_const PatternCode.patternCode,
+    canonicalizeBy_patternCode] at keyed
+  exact keyed
 
 end Mettapedia.OSLF.MeTTaIL.ReflectiveCanonical

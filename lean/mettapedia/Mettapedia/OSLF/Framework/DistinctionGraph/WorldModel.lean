@@ -119,8 +119,8 @@ theorem oslf_ks_wm_graph_unification
     (∀ (mu : Pat → ℝ) (equiv : Pat → Pat → Prop),
       (∀ p q, equiv p q → mu p = mu q) →
       ∃ muQ : Quot (fun p q => equiv p q) → ℝ, ∀ p, muQ (Quot.mk _ p) = mu p) ∧
-    -- Layer 3 (Knuth/Skilling): imprecision gate
-    (¬ FaithfulPointRepresentation BinaryEvidence) ∧
+    -- Layer 3: scalar order-reflection gate
+    (¬ OrderReflectingPointRepresentation BinaryEvidence) ∧
     -- Layer 4 (Graph): self-edge is ⊤ + revision decomposes additively
     (∀ (W : State) (R : Pat → Pat → Prop) (qoa : String → Pat → Pat) (p : Pat),
       dynamicEdgeWeight W R qoa p p = ⊤) ∧
@@ -131,7 +131,7 @@ theorem oslf_ks_wm_graph_unification
   · exact fun R I equiv hB hBR hA p q hpq φ =>
       bisimulation_invariant_sem hB hBR hA hpq φ
   · exact fun mu equiv hC => valuation_factors_through_obsEq mu equiv hC
-  · exact evidence_imprecision_gate
+  · exact evidence_orderReflection_gate
   · exact fun W R qoa p => dynamicEdge_self_top W R qoa p
   · exact fun W₁ W₂ qoa a p => wmAtomSem_revision W₁ W₂ qoa a p
 

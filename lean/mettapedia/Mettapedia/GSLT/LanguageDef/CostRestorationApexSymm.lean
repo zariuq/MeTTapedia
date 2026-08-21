@@ -236,4 +236,157 @@ theorem substituteAt_eq_of_free_support_eq_nil
 
 end WellSorted.SupportedOpenAssignment
 
+/-- A larger finite boundary table preserves empty restoration support for
+every name typed by a smaller sealed table.  Source variables are closed by
+construction; boundary variables retain the smaller table's exact entry
+through the proof-relevant inclusion. -/
+theorem TypedCostRegionBoundaryTable.restorationSupport_eq_nil_of_entries_subset
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {smallOccurrences largeOccurrences : List CostRegionOccurrence}
+    (small : TypedCostRegionBoundaryTable source color targetFree
+      smallOccurrences)
+    (large : TypedCostRegionBoundaryTable source color targetFree
+      largeOccurrences)
+    (entriesSubset : small.entries ⊆ large.entries)
+    (entriesSealed : ∀ boundary ∈ small.entries,
+      boundary.boundary.targetSupport = [])
+    {name : String} {type : TypeExpr}
+    (typedName : small.sourceFreeContext name = some type) :
+    large.restorationSupport name = [] := by
+  cases decoded : decodeCostRegionSourceVariableName name with
+  | some sourceName =>
+      simp [TypedCostRegionBoundaryTable.restorationSupport, decoded]
+  | none =>
+      cases resolved : small.resolve name with
+      | none =>
+          simp [TypedCostRegionBoundaryTable.sourceFreeContext, decoded,
+            resolved] at typedName
+      | some boundary =>
+          have membership : boundary ∈ small.entries :=
+            small.mem_entries_of_resolve_eq_some resolved
+          have defined : small.resolve name ≠ none := by simp [resolved]
+          have largeResolved : large.resolve name = some boundary := by
+            have transported :=
+              small.resolve_eq_of_entries_subset large entriesSubset name
+                defined
+            simpa [resolved] using transported
+          simp [TypedCostRegionBoundaryTable.restorationSupport, decoded,
+            largeResolved, entriesSealed boundary membership]
+
+/-- A semantic environment whose atom supports are all empty restores every
+pattern independently of the ambient binder depth.  Recognized atom names are
+closed by their typed empty-support fibres; unrecognized names restore to
+themselves. -/
+theorem CostStaticAtomEnvironment.restoreAt_eq_of_atomTargetSupport_eq_nil
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    {table : TypedCostRegionBoundaryTable source color targetFree occurrences}
+    {values : TypedCostRegionBoundaryTable.Values source color targetFree table}
+    {root : Pattern}
+    {inventory : CostStaticParameterInventory source color targetFree table
+      values root}
+    (environment : CostStaticAtomEnvironment source color targetFree inventory)
+    (supportNil : ∀ slot,
+      (environment.atomValue slot).key.targetSupport = [])
+    (pattern : Pattern) (firstDepth secondDepth : Nat) :
+    environment.restoreAt firstDepth pattern =
+      environment.restoreAt secondDepth pattern := by
+  apply ReflectiveContextSupport.substituteAt_eq_of_liftStable
+  intro name shift
+  cases selected : environment.lookupAtom? name with
+  | none =>
+      simp [CostStaticAtomEnvironment.restorationAssignment, selected,
+        Mettapedia.OSLF.MeTTaIL.Substitution.liftBVars]
+  | some slot =>
+      have normalScoped :
+          (environment.atomValue slot).key.normal.isWellScopedAt 0 = true := by
+        have typedScoped := (environment.atomValue slot).normalTyped.isWellScopedAt
+        simpa [supportNil slot] using typedScoped
+      simpa [CostStaticAtomEnvironment.restorationAssignment, selected] using
+        Mettapedia.OSLF.MeTTaIL.Substitution.liftBVars_eq_self_of_isWellScopedAt
+          (shift := shift) normalScoped
+
+/-- Restoring a pattern is independent of ambient depth when every semantic
+atom name actually occurring in that pattern has empty target support.
+Atoms elsewhere in the finite environment may retain nonempty support. -/
+theorem CostStaticAtomEnvironment.restoreAt_eq_of_freeAtomTargetSupport_eq_nil
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    {table : TypedCostRegionBoundaryTable source color targetFree occurrences}
+    {values : TypedCostRegionBoundaryTable.Values source color targetFree table}
+    {root : Pattern}
+    {inventory : CostStaticParameterInventory source color targetFree table
+      values root}
+    (environment : CostStaticAtomEnvironment source color targetFree inventory)
+    (pattern : Pattern)
+    (supportNil : ∀ name, name ∈ pattern.freeFvarNames →
+      ∀ slot, environment.lookupAtom? name = some slot →
+        (environment.atomValue slot).key.targetSupport = [])
+    (firstDepth secondDepth : Nat) :
+    environment.restoreAt firstDepth pattern =
+      environment.restoreAt secondDepth pattern := by
+  apply ReflectiveContextSupport.substituteAt_eq_of_liftStable_on_freeFvars
+  intro name membership shift
+  cases selected : environment.lookupAtom? name with
+  | none =>
+      simp [CostStaticAtomEnvironment.restorationAssignment, selected,
+        Mettapedia.OSLF.MeTTaIL.Substitution.liftBVars]
+  | some slot =>
+      have normalScoped :
+          (environment.atomValue slot).key.normal.isWellScopedAt 0 = true := by
+        have typedScoped := (environment.atomValue slot).normalTyped.isWellScopedAt
+        simpa [supportNil name membership slot selected] using typedScoped
+      simpa [CostStaticAtomEnvironment.restorationAssignment, selected] using
+        Mettapedia.OSLF.MeTTaIL.Substitution.liftBVars_eq_self_of_isWellScopedAt
+          (shift := shift) normalScoped
+
+/-- The semantic ordering key is depth-independent on a frame whose used
+semantic atoms all have empty target support. -/
+theorem CostStaticRegionNode.semanticPatternKeyAt_eq_of_freeAtomTargetSupport_eq_nil
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    {table : TypedCostRegionBoundaryTable source color targetFree occurrences}
+    {values : TypedCostRegionBoundaryTable.Values source color targetFree table}
+    {root : Pattern}
+    {inventory : CostStaticParameterInventory source color targetFree table
+      values root}
+    (environment : CostStaticAtomEnvironment source color targetFree inventory)
+    (pattern : Pattern)
+    (supportNil : ∀ name, name ∈ pattern.freeFvarNames →
+      ∀ slot, environment.lookupAtom? name = some slot →
+        (environment.atomValue slot).key.targetSupport = [])
+    (firstDepth secondDepth : Nat) :
+    CostStaticRegionNode.semanticPatternKeyAt environment firstDepth pattern =
+      CostStaticRegionNode.semanticPatternKeyAt environment secondDepth
+        pattern := by
+  exact congrArg Mettapedia.OSLF.MeTTaIL.PatternCode.patternCode
+    (environment.restoreAt_eq_of_freeAtomTargetSupport_eq_nil pattern
+      supportNil firstDepth secondDepth)
+
+/-- Empty atom supports also make the semantic ordering key independent of
+the ambient restoration depth. -/
+theorem CostStaticRegionNode.semanticPatternKeyAt_eq_of_atomTargetSupport_eq_nil
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    {table : TypedCostRegionBoundaryTable source color targetFree occurrences}
+    {values : TypedCostRegionBoundaryTable.Values source color targetFree table}
+    {root : Pattern}
+    {inventory : CostStaticParameterInventory source color targetFree table
+      values root}
+    (environment : CostStaticAtomEnvironment source color targetFree inventory)
+    (supportNil : ∀ slot,
+      (environment.atomValue slot).key.targetSupport = [])
+    (firstDepth secondDepth : Nat) (pattern : Pattern) :
+    CostStaticRegionNode.semanticPatternKeyAt environment firstDepth pattern =
+      CostStaticRegionNode.semanticPatternKeyAt environment secondDepth
+        pattern := by
+  exact congrArg Mettapedia.OSLF.MeTTaIL.PatternCode.patternCode
+    (environment.restoreAt_eq_of_atomTargetSupport_eq_nil supportNil pattern
+      firstDepth secondDepth)
+
 end Mettapedia.GSLT.LanguageDef

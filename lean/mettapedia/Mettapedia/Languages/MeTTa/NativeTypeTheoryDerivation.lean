@@ -7,6 +7,7 @@ import Mettapedia.Languages.MeTTa.PeTTa.TypeSystem
 import Mettapedia.Languages.MeTTa.Prime.Language
 import Mettapedia.Languages.MeTTa.Prime.LanguageDef
 import Mettapedia.Languages.MeTTa.PureKernel.Typing
+import Mettapedia.TypeTheory.ModalCwF
 
 /-!
 # Deriving the native type theory of the MeTTa family — derivation skeleton
@@ -45,14 +46,12 @@ completion state is machine-visible.  The small theorems proved here
 (forcing injectivity, coverage, subtyping laws) are genuine but deliberately
 modest; no structure defined here is claimed to *be* the completed theory.
 
-Two design gates are recorded as obligations rather than decided here:
-
-* **Equality axis**: the spine commits only to an intensional core; the
-  observational/cubical upgrade decision is deferred until the Megalodon
-  adequacy work supplies evidence about what mathematical equality demands.
-* **Reflective quotation**: same-mode quotation (reflection into the same
-  sort, as in reflective process calculi) needs a nondegeneracy law on the
-  modal box rather than mode distinctness; recorded as an obligation.
+The equality architecture and reflective-quotation gate have since been
+resolved inside this module.  The selected kernel equality is the intensional
+core; stronger observational or cubical relations remain explicitly named
+profiles rather than leaking into conversion.  Same-stage quotation carries a
+nonzero quotation-depth witness and has distinct positive and negative models.
+The obligations that genuinely remain are listed at §11.
 -/
 
 namespace Mettapedia.Languages.MeTTa.NativeTypeTheory
@@ -61,6 +60,7 @@ universe uNativeClaim uNativeCertificate uNativeProof uRaw uRawTarget
 
 open Mettapedia.OSLF.MeTTaIL.Syntax (Pattern)
 open Mettapedia.GSLT.LanguageDef.KernelAuthority (Checker)
+open Mettapedia.TypeTheory
 
 /-! ## §1 Observations: the dialect property bags
 
@@ -252,235 +252,12 @@ theorem commitments_extend_observations :
   intro c
   cases c <;> decide
 
-/-! ## §3 Mode theories and cost grading
+/-! ## §3–§4 General modal CwF interface
 
-The modality mechanism is a *parameter*: quotation, staging levels, and cost
-grading are instances of one mode-theory interface, not separate features. -/
-
-/-- A small strict category of modes: the modality parameter of the spine. -/
-structure ModeTheory where
-  Mode : Type
-  Hom : Mode → Mode → Type
-  id : (m : Mode) → Hom m m
-  comp : {a b c : Mode} → Hom a b → Hom b c → Hom a c
-  id_comp : ∀ {a b : Mode} (f : Hom a b), comp (id a) f = f
-  comp_id : ∀ {a b : Mode} (f : Hom a b), comp f (id b) = f
-  comp_assoc : ∀ {a b c d : Mode} (f : Hom a b) (g : Hom b c) (h : Hom c d),
-    comp (comp f g) h = comp f (comp g h)
-
-/-- Cost grading over a mode theory: modalities carry grades in a monoid,
-composition accumulates.  The intended instance takes grades from the
-cost-accounting semiring of the costed process-calculus lane; the monoid is
-deliberately not assumed commutative (sequential cost need not commute). -/
-structure CostGrading (M : ModeTheory) where
-  Grade : Type
-  unit : Grade
-  add : Grade → Grade → Grade
-  add_assoc : ∀ a b c, add (add a b) c = add a (add b c)
-  unit_add : ∀ a, add unit a = a
-  add_unit : ∀ a, add a unit = a
-  gradeOf : {a b : M.Mode} → M.Hom a b → Grade
-  gradeOf_id : ∀ m, gradeOf (M.id m) = unit
-  gradeOf_comp : ∀ {a b c : M.Mode} (f : M.Hom a b) (g : M.Hom b c),
-    gradeOf (M.comp f g) = add (gradeOf f) (gradeOf g)
-
-/-! ## §4 The judgmental spine: a contextual multimodal CwF skeleton
-
-Contexts, substitutions, types, terms, comprehension, dependent products, a
-universe à la Tarski, and a Fitch-style modal box per modality.  The
-substitution functor laws for types are required here; the remaining CwF
-equations (term substitution laws, the comprehension universal property, the
-β/η laws for `pi`, and the full multimodal lock calculus) are deliberately
-listed in `openObligations` rather than half-stated. -/
-
-structure ModalCwF (M : ModeTheory) where
-  /-- Contexts may contain small Lean types, so the context collection lives
-  one universe above the mode theory.  This is the minimum universe lift
-  needed by the concrete families model below; it is not a type-in-type
-  assumption. -/
-  Con : M.Mode → Type 1
-  /-- Individual substitutions remain small. -/
-  Sub : {m : M.Mode} → Con m → Con m → Type
-  sid : {m : M.Mode} → (Γ : Con m) → Sub Γ Γ
-  scomp : {m : M.Mode} → {Γ Δ Ε : Con m} → Sub Γ Δ → Sub Δ Ε → Sub Γ Ε
-  Ty : {m : M.Mode} → Con m → Type 1
-  /-- Each code in the large collection `Ty Γ` decodes to a small term
-  carrier. -/
-  Tm : {m : M.Mode} → (Γ : Con m) → Ty Γ → Type
-  tySub : {m : M.Mode} → {Γ Δ : Con m} → Ty Δ → Sub Γ Δ → Ty Γ
-  tmSub : {m : M.Mode} → {Γ Δ : Con m} → {A : Ty Δ} →
-    Tm Δ A → (σ : Sub Γ Δ) → Tm Γ (tySub A σ)
-  tySub_id : ∀ {m : M.Mode} {Γ : Con m} (A : Ty Γ), tySub A (sid Γ) = A
-  tySub_comp : ∀ {m : M.Mode} {Γ Δ Ε : Con m}
-    (A : Ty Ε) (σ : Sub Γ Δ) (τ : Sub Δ Ε),
-    tySub A (scomp σ τ) = tySub (tySub A τ) σ
-  empty : (m : M.Mode) → Con m
-  ext : {m : M.Mode} → (Γ : Con m) → Ty Γ → Con m
-  wk : {m : M.Mode} → {Γ : Con m} → (A : Ty Γ) → Sub (ext Γ A) Γ
-  vz : {m : M.Mode} → {Γ : Con m} → (A : Ty Γ) → Tm (ext Γ A) (tySub A (wk A))
-  sext : {m : M.Mode} → {Γ Δ : Con m} → {A : Ty Δ} →
-    (σ : Sub Γ Δ) → Tm Γ (tySub A σ) → Sub Γ (ext Δ A)
-  pi : {m : M.Mode} → {Γ : Con m} → (A : Ty Γ) → Ty (ext Γ A) → Ty Γ
-  univ : {m : M.Mode} → (Γ : Con m) → Ty Γ
-  el : {m : M.Mode} → {Γ : Con m} → Tm Γ (univ Γ) → Ty Γ
-  lock : {m n : M.Mode} → M.Hom m n → Con n → Con m
-  boxTy : {m n : M.Mode} → (μ : M.Hom m n) → {Γ : Con n} →
-    Ty (lock μ Γ) → Ty Γ
-
-namespace ModalCwF
-
-/-- Transport a term along equality of its type code. -/
-def castTm {M : ModeTheory} (C : ModalCwF M)
-    {mode : M.Mode} {Γ : C.Con mode} {A B : C.Ty Γ}
-    (equalTypes : A = B) (term : C.Tm Γ A) : C.Tm Γ B :=
-  equalTypes ▸ term
-
-/-- Lift a substitution through context comprehension.  The only transport
-is the already-required type-substitution composition law. -/
-def liftSub {M : ModeTheory} (C : ModalCwF M)
-    {mode : M.Mode} {Γ Δ : C.Con mode} {A : C.Ty Δ}
-    (substitution : C.Sub Γ Δ) :
-    C.Sub (C.ext Γ (C.tySub A substitution)) (C.ext Δ A) :=
-  C.sext (C.scomp (C.wk (C.tySub A substitution)) substitution)
-    (C.castTm
-      (C.tySub_comp A (C.wk (C.tySub A substitution)) substitution).symm
-      (C.vz (C.tySub A substitution)))
-
-/-- Pair the identity substitution with a term, inserting only the required
-transport along `tySub_id`. -/
-def selfExtend {M : ModeTheory} (C : ModalCwF M)
-    {mode : M.Mode} {Γ : C.Con mode} {A : C.Ty Γ}
-    (term : C.Tm Γ A) : C.Sub Γ (C.ext Γ A) :=
-  C.sext (C.sid Γ) (C.castTm (C.tySub_id A).symm term)
-
-end ModalCwF
-
-/-- Introduction, elimination, β, substitution stability, and generalized
-η/extensionality for dependent products.  Generalized elements are required
-in the η law so it remains meaningful even when a context has no global
-sections. -/
-structure PiStructure (M : ModeTheory) (C : ModalCwF M) where
-  lam : {mode : M.Mode} → {Γ : C.Con mode} →
-    {A : C.Ty Γ} → {B : C.Ty (C.ext Γ A)} →
-    C.Tm (C.ext Γ A) B → C.Tm Γ (C.pi A B)
-  app : {mode : M.Mode} → {Γ : C.Con mode} →
-    {A : C.Ty Γ} → {B : C.Ty (C.ext Γ A)} →
-    C.Tm Γ (C.pi A B) → (argument : C.Tm Γ A) →
-    C.Tm Γ (C.tySub B (C.selfExtend argument))
-  beta : ∀ {mode : M.Mode} {Γ : C.Con mode}
-    {A : C.Ty Γ} {B : C.Ty (C.ext Γ A)}
-    (body : C.Tm (C.ext Γ A) B) (argument : C.Tm Γ A),
-    app (lam body) argument =
-      C.tmSub body (C.selfExtend argument)
-  pi_sub : ∀ {mode : M.Mode} {Γ Δ : C.Con mode}
-    (A : C.Ty Δ) (B : C.Ty (C.ext Δ A)) (σ : C.Sub Γ Δ),
-    C.tySub (C.pi A B) σ =
-      C.pi (C.tySub A σ) (C.tySub B (C.liftSub σ))
-  extensional : ∀ {mode : M.Mode} {Γ : C.Con mode}
-    {A : C.Ty Γ} {B : C.Ty (C.ext Γ A)}
-    (left right : C.Tm Γ (C.pi A B)),
-    (∀ {Δ : C.Con mode} (σ : C.Sub Δ Γ)
-      (argument : C.Tm Δ (C.tySub A σ)),
-      HEq
-        (app
-          (C.castTm (pi_sub A B σ) (C.tmSub left σ)) argument)
-        (app
-          (C.castTm (pi_sub A B σ) (C.tmSub right σ)) argument)) →
-    left = right
-
-/-- The complete equational layer over a `ModalCwF`.  `HEq` appears only
-where the laws themselves identify dependent fibres; ordinary equations are
-used whenever both sides already have the same type. -/
-structure ModalCwFLaws (M : ModeTheory) (C : ModalCwF M) where
-  scomp_sid_left : ∀ {mode : M.Mode} {Γ Δ : C.Con mode}
-    (σ : C.Sub Γ Δ), C.scomp (C.sid Γ) σ = σ
-  scomp_sid_right : ∀ {mode : M.Mode} {Γ Δ : C.Con mode}
-    (σ : C.Sub Γ Δ), C.scomp σ (C.sid Δ) = σ
-  scomp_assoc : ∀ {mode : M.Mode} {Γ Δ Ε Ζ : C.Con mode}
-    (σ : C.Sub Γ Δ) (τ : C.Sub Δ Ε) (υ : C.Sub Ε Ζ),
-    C.scomp (C.scomp σ τ) υ = C.scomp σ (C.scomp τ υ)
-  tmSub_id : ∀ {mode : M.Mode} {Γ : C.Con mode}
-    {A : C.Ty Γ} (term : C.Tm Γ A),
-    HEq (C.tmSub term (C.sid Γ)) term
-  tmSub_comp : ∀ {mode : M.Mode} {Γ Δ Ε : C.Con mode}
-    {A : C.Ty Ε} (term : C.Tm Ε A)
-    (σ : C.Sub Γ Δ) (τ : C.Sub Δ Ε),
-    HEq (C.tmSub term (C.scomp σ τ))
-      (C.tmSub (C.tmSub term τ) σ)
-  wk_sext : ∀ {mode : M.Mode} {Γ Δ : C.Con mode}
-    {A : C.Ty Δ} (σ : C.Sub Γ Δ) (term : C.Tm Γ (C.tySub A σ)),
-    C.scomp (C.sext σ term) (C.wk A) = σ
-  vz_sext : ∀ {mode : M.Mode} {Γ Δ : C.Con mode}
-    {A : C.Ty Δ} (σ : C.Sub Γ Δ) (term : C.Tm Γ (C.tySub A σ)),
-    HEq (C.tmSub (C.vz A) (C.sext σ term)) term
-  sext_eta : ∀ {mode : M.Mode} {Γ : C.Con mode} (A : C.Ty Γ),
-    C.sext (C.wk A) (C.vz A) = C.sid (C.ext Γ A)
-  piLaws : PiStructure M C
-  lockSub : {high low : M.Mode} → (μ : M.Hom high low) →
-    {Γ Δ : C.Con low} → C.Sub Γ Δ →
-      C.Sub (C.lock μ Γ) (C.lock μ Δ)
-  lockSub_sid : ∀ {high low : M.Mode} (μ : M.Hom high low)
-    (Γ : C.Con low), lockSub μ (C.sid Γ) = C.sid (C.lock μ Γ)
-  lockSub_comp : ∀ {high low : M.Mode} (μ : M.Hom high low)
-    {Γ Δ Ε : C.Con low} (σ : C.Sub Γ Δ) (τ : C.Sub Δ Ε),
-    lockSub μ (C.scomp σ τ) =
-      C.scomp (lockSub μ σ) (lockSub μ τ)
-  boxTy_natural : ∀ {high low : M.Mode} (μ : M.Hom high low)
-    {Γ Δ : C.Con low} (A : C.Ty (C.lock μ Δ)) (σ : C.Sub Γ Δ),
-    C.tySub (C.boxTy μ A) σ =
-      C.boxTy μ (C.tySub A (lockSub μ σ))
-  lock_id : ∀ {mode : M.Mode} (Γ : C.Con mode),
-    C.lock (M.id mode) Γ = Γ
-  lock_comp : ∀ {first middle last : M.Mode}
-    (earlier : M.Hom first middle) (later : M.Hom middle last)
-    (Γ : C.Con last),
-    C.lock (M.comp earlier later) Γ = C.lock earlier (C.lock later Γ)
-  lockSub_id : ∀ {mode : M.Mode} {Γ Δ : C.Con mode}
-    (σ : C.Sub Γ Δ), HEq (lockSub (M.id mode) σ) σ
-  lockSub_modal_comp : ∀ {first middle last : M.Mode}
-    (earlier : M.Hom first middle) (later : M.Hom middle last)
-    {Γ Δ : C.Con last} (σ : C.Sub Γ Δ),
-    HEq (lockSub (M.comp earlier later) σ)
-      (lockSub earlier (lockSub later σ))
-  boxTy_id : ∀ {mode : M.Mode} {Γ : C.Con mode}
-    (A : C.Ty (C.lock (M.id mode) Γ)),
-    HEq (C.boxTy (M.id mode) A) A
-  boxTy_comp : ∀ {first middle last : M.Mode}
-    (earlier : M.Hom first middle) (later : M.Hom middle last)
-    {Γ : C.Con last}
-    (direct : C.Ty (C.lock (M.comp earlier later) Γ))
-    (nested : C.Ty (C.lock earlier (C.lock later Γ))),
-    HEq direct nested →
-      HEq (C.boxTy (M.comp earlier later) direct)
-        (C.boxTy later (C.boxTy earlier nested))
-
-/-! ### Term-level quotation is additional modal structure
-
-`ModalCwF` and `ModalCwFLaws` specify how contexts and types move along a
-mode morphism.  They do not, by themselves, provide a term constructor for
-quotation.  An authored language containing `quote` therefore has models in
-the enriched interface below.  The erasing model later in this file proves
-that this enrichment cannot be recovered from the bare modal CwF laws. -/
-
-/-- Term introduction for modal types, stable under ordinary substitution and
-identity modalities.  No idempotence or multiplication law is assumed:
-successive quotation may retain genuinely distinct staging information. -/
-structure QuotationTermStructure (M : ModeTheory) (C : ModalCwF M)
-    (laws : ModalCwFLaws M C) where
-  quoteTm : {high low : M.Mode} → (modality : M.Hom high low) →
-    {Γ : C.Con low} → {A : C.Ty (C.lock modality Γ)} →
-    C.Tm (C.lock modality Γ) A → C.Tm Γ (C.boxTy modality A)
-  quote_sub : ∀ {high low : M.Mode} (modality : M.Hom high low)
-    {Γ Δ : C.Con low} {A : C.Ty (C.lock modality Δ)}
-    (term : C.Tm (C.lock modality Δ) A) (substitution : C.Sub Γ Δ),
-    HEq
-      (C.tmSub (quoteTm modality term) substitution)
-      (quoteTm modality
-        (C.tmSub term (laws.lockSub modality substitution)))
-  quote_id : ∀ {mode : M.Mode} {Γ : C.Con mode}
-    {A : C.Ty (C.lock (M.id mode) Γ)}
-    (term : C.Tm (C.lock (M.id mode) Γ) A),
-    HEq (quoteTm (M.id mode) term) term
+The reusable mode theory, cost grading, contextual multimodal CwF laws,
+dependent-product structure, and term-level quotation interface live in
+`Mettapedia.TypeTheory.ModalCwF`.  This module supplies MeTTa-family models
+and derived requirements without making those general definitions language-specific. -/
 
 /-! ## §5 Types as spaces: the semantic layer -/
 
@@ -538,8 +315,9 @@ numbers and a modality may only point from a higher stage to a lower one.
 
 This model is intentionally semantic rather than a second syntax.  It gives
 the native presentation a nondegenerate target in which dependent products
-are actual dependent functions.  The authored syntax and its initiality into
-this target remain the separate `O10` obligation. -/
+are actual dependent functions.  The later rule-algebra initiality theorem
+does not identify this semantic CwF with the authored syntax; the stronger
+CwF-level comparison remains an explicit obligation. -/
 
 /-- A stage morphism retains both its nonascending level law and the number of
 reflective quotation layers it introduces.  The latter supplies genuine
@@ -798,6 +576,73 @@ def familiesCwFLaws : ModalCwFLaws stageModeTheory familiesCwF where
     funext value
     exact reflectiveCodeIter_add earlier.quoteDepth later.quoteDepth
       (direct value)
+
+/-- The families model has terminal empty contexts, natural comprehension,
+and a substitution-stable Tarski universe. -/
+def familiesCwFCoherence :
+    ModalCwFCoherence stageModeTheory familiesCwF familiesCwFLaws where
+  empty_sub_unique := by
+    intro mode context left right
+    funext value
+    cases left value
+    cases right value
+    rfl
+  sext_natural := by intros; rfl
+  univ_natural := by intros; rfl
+  el_natural := by intros; rfl
+
+/-- General comprehension eta is available in the concrete semantic model,
+not merely the identity-instance eta stored in the basic law package. -/
+theorem familiesCwF_sext_unique
+    {mode : stageModeTheory.Mode} {source target : familiesCwF.Con mode}
+    (type : familiesCwF.Ty target)
+    (substitution : familiesCwF.Sub source (familiesCwF.ext target type)) :
+    substitution =
+      familiesCwF.sext
+        (familiesCwF.scomp substitution (familiesCwF.wk type))
+        (familiesCwF.castTm
+          (familiesCwF.tySub_comp type substitution
+            (familiesCwF.wk type)).symm
+          (familiesCwF.tmSub (familiesCwF.vz type) substitution)) :=
+  familiesCwFCoherence.sext_unique type substitution
+
+/-! ### The basic equations do not force terminality -/
+
+/-- Changing only the designated empty context leaves every basic CwF law
+intact, demonstrating that terminality is genuinely additional coherence. -/
+def nonterminalFamiliesCwF : ModalCwF stageModeTheory :=
+  familiesCwF.replaceEmpty (fun _ => Bool)
+
+/-- The basic equations never inspect the designated empty context. -/
+def nonterminalFamiliesCwFLaws :
+    ModalCwFLaws stageModeTheory nonterminalFamiliesCwF :=
+  familiesCwFLaws.replaceEmpty (fun _ => Bool)
+
+private def nonterminalEmptyFalse :
+    nonterminalFamiliesCwF.Sub PUnit
+      (nonterminalFamiliesCwF.empty (stageOfNat 0)) :=
+  fun _ => false
+
+private def nonterminalEmptyTrue :
+    nonterminalFamiliesCwF.Sub PUnit
+      (nonterminalFamiliesCwF.empty (stageOfNat 0)) :=
+  fun _ => true
+
+theorem nonterminal_empty_substitutions_distinct :
+    nonterminalEmptyFalse ≠ nonterminalEmptyTrue := by
+  intro equality
+  have pointwise := congrFun equality PUnit.unit
+  cases pointwise
+
+/-- Negative control: a law-complete operational CwF need not have the
+semantic coherence package. -/
+theorem basic_modal_cwf_laws_do_not_force_coherence :
+    ¬ Nonempty
+      (ModalCwFCoherence stageModeTheory nonterminalFamiliesCwF
+        nonterminalFamiliesCwFLaws) := by
+  rintro ⟨coherence⟩
+  exact nonterminal_empty_substitutions_distinct
+    (coherence.empty_sub_unique nonterminalEmptyFalse nonterminalEmptyTrue)
 
 namespace FamiliesCwF
 
@@ -2959,8 +2804,8 @@ theorem lambdaPi_unrelated_negative :
   decide
 
 /-- The complete O2 witness bundle.  It keeps the semantic Π structure and
-the executable λΠ carrier distinct: their eventual initiality/adequacy map is
-O10, while O2 asks only for a genuine Pattern model and an embedded,
+the executable λΠ carrier distinct: their semantic-CwF comparison remains
+open, while O2 asks only for a genuine Pattern model and an embedded,
 evaluation-decided Π fragment. -/
 structure PatternLambdaPiRealization where
   model : SpaceModel stageModeTheory familiesCwF
@@ -3091,10 +2936,10 @@ theorem firstUniverseLowerContracts_distinct :
 /-! ## §7b Native intensional conversion
 
 The current native conversion carrier joins the executable λΠ fragment,
-universe codes, and runtime Patterns.  The O4 equality gate remains open:
-this relation is intentionally intensional equality of computed canonical
-forms and does not choose observational equality, UIP, cubical structure, or
-univalence. -/
+universe codes, and runtime Patterns.  The selected equality architecture
+below fixes an intensional kernel core.  It deliberately does not identify
+that core with observational equality, UIP, cubical structure, or univalence;
+such relations require separately named extension profiles. -/
 
 inductive NativeConversionTerm where
   | lambdaPi : Mettapedia.GSLT.LanguageDef.Pure.Expr → NativeConversionTerm
@@ -3161,10 +3006,9 @@ theorem nativeConversion_code_pattern_negative :
 
 /-! ## §7c Equality-neutral recursion for the intrinsic Pure syntax
 
-Full initiality among `ModalCwF` models remains O10: it depends on the equality
-profile selected at O4, and this module does not choose that profile.  The raw
+Full initiality among semantic `ModalCwF` models is not proved here.  The raw
 binding signature is independent of conversion, however.  This section proves
-its genuine recursion and uniqueness theorem now, including the binder-indexed
+its genuine recursion and uniqueness theorem, including the binder-indexed
 operations.  It is therefore an initiality precursor rather than a disguised
 semantic self-model.
 
@@ -3523,11 +3367,12 @@ theorem no_unit_to_pure_syntax_hom :
 
 /-! ### Equality profiles and their quotient presentations
 
-O4 chooses one inhabitant of this interface; it does not change the
-interface.  Besides being a congruence for the complete raw signature, an
-admissible equality profile must be stable under renaming and simultaneous
-substitution.  The latter condition relates substitutions pointwise, so it
-remains suitable for nontrivial open terms rather than merely closed syntax. -/
+An optional equality extension inhabits this interface; it does not change the
+intensional core.  Besides being a congruence for the complete raw signature,
+an admissible equality profile supplies stability under simultaneous
+substitution.  The condition relates substitutions pointwise, so it remains
+suitable for nontrivial open terms rather than merely closed syntax.  Renaming
+stability is derived below rather than supplied as a duplicate premise. -/
 
 /-- An equality profile admissible for the intrinsically scoped Pure syntax. -/
 structure PureEqualityProfile where
@@ -3551,12 +3396,6 @@ structure PureEqualityProfile where
     Rel pair pair' → Rel (.snd pair) (.snd pair')
   congr_refl : ∀ {n} {term term' : PureTm n},
     Rel term term' → Rel (.refl term) (.refl term')
-  rename_closed : ∀ {n m}
-    (ρ : Mettapedia.Languages.MeTTa.PureKernel.Renaming.Ren n m)
-    {left right : PureTm n},
-    Rel left right → Rel
-      (Mettapedia.Languages.MeTTa.PureKernel.Renaming.rename ρ left)
-      (Mettapedia.Languages.MeTTa.PureKernel.Renaming.rename ρ right)
   subst_closed : ∀ {n m}
     {leftSub rightSub :
       Mettapedia.Languages.MeTTa.PureKernel.Substitution.Sub n m}
@@ -3567,6 +3406,27 @@ structure PureEqualityProfile where
         (Mettapedia.Languages.MeTTa.PureKernel.Substitution.subst rightSub right)
 
 namespace PureEqualityProfile
+
+/-- Renaming stability is forced by pointwise substitution stability: use the
+renaming as a substitution whose images are variables.  It is therefore a
+theorem of every admissible profile rather than an independently supplied
+regularity premise. -/
+theorem rename_closed (profile : PureEqualityProfile) {n m : Nat}
+    (ρ : Mettapedia.Languages.MeTTa.PureKernel.Renaming.Ren n m)
+    {left right : PureTm n} (related : profile.Rel left right) :
+    profile.Rel
+      (Mettapedia.Languages.MeTTa.PureKernel.Renaming.rename ρ left)
+      (Mettapedia.Languages.MeTTa.PureKernel.Renaming.rename ρ right) := by
+  have substituted := profile.subst_closed
+    (leftSub :=
+      Mettapedia.Languages.MeTTa.PureKernel.Typing.renToSub ρ)
+    (rightSub :=
+      Mettapedia.Languages.MeTTa.PureKernel.Typing.renToSub ρ)
+    (fun index => (profile.equivalence m).refl _)
+    related
+  simpa only [
+    Mettapedia.Languages.MeTTa.PureKernel.Typing.subst_renToSub] using
+      substituted
 
 /-- The setoid presented by one equality profile at one de Bruijn depth. -/
 def setoid (profile : PureEqualityProfile) (n : Nat) : Setoid (PureTm n) where
@@ -3703,6 +3563,232 @@ def quotientMap {finer coarser : PureEqualityProfile}
   rfl
 
 end PureEqualityProfile
+
+/-! ### Equality kernels forced by contextual interpretations -/
+
+/-- Substitution action and its naturality for one raw interpretation.  This
+is the exact extra structure needed beyond a raw-signature homomorphism for
+the interpretation kernel to be stable under open substitution.  It is not
+presented as a full CwF: context comprehension and typed terms enter at the
+later semantic interpretation boundary. -/
+structure PureInterpretationSubstitutionAction
+    (target : PureRawAlgebra.{uRawTarget})
+    (hom : PureRawHom pureSyntaxAlgebra target) where
+  semanticSubst : {n m : Nat} →
+    (Fin n → target.Carrier m) → target.Carrier n → target.Carrier m
+  map_subst : ∀ {n m}
+    (substitution :
+      Mettapedia.Languages.MeTTa.PureKernel.Substitution.Sub n m)
+    (term : PureTm n),
+    hom.map
+        (Mettapedia.Languages.MeTTa.PureKernel.Substitution.subst
+          substitution term) =
+      semanticSubst (fun index => hom.map (substitution index)) (hom.map term)
+
+namespace PureRawHom
+
+/-- Equality of semantic images induces every congruence law automatically;
+substitution naturality induces the open-substitution law.  Thus an
+interpretation kernel is an admissible equality profile without separately
+postulating its regularity fields. -/
+def kernelProfile {target : PureRawAlgebra.{uRawTarget}}
+    (hom : PureRawHom pureSyntaxAlgebra target)
+    (action : PureInterpretationSubstitutionAction target hom) :
+    PureEqualityProfile where
+  Rel := fun left right => hom.map left = hom.map right
+  equivalence := fun _ =>
+    { refl := fun term => Eq.refl (hom.map term)
+      symm := fun related => related.symm
+      trans := fun first second => first.trans second }
+  congr_pi := by
+    intro n A A' B B' domainRelated bodyRelated
+    calc
+      hom.map (.pi A B) = target.pi (hom.map A) (hom.map B) := by
+        simpa only [pureSyntaxAlgebra] using hom.preserves.map_pi A B
+      _ = target.pi (hom.map A') (hom.map B') := by
+        rw [domainRelated, bodyRelated]
+      _ = hom.map (.pi A' B') := by
+        simpa only [pureSyntaxAlgebra] using
+          (hom.preserves.map_pi A' B').symm
+  congr_sigma := by
+    intro n A A' B B' domainRelated bodyRelated
+    calc
+      hom.map (.sigma A B) = target.sigma (hom.map A) (hom.map B) := by
+        simpa only [pureSyntaxAlgebra] using hom.preserves.map_sigma A B
+      _ = target.sigma (hom.map A') (hom.map B') := by
+        rw [domainRelated, bodyRelated]
+      _ = hom.map (.sigma A' B') := by
+        simpa only [pureSyntaxAlgebra] using
+          (hom.preserves.map_sigma A' B').symm
+  congr_id := by
+    intro n A A' left left' right right' typeRelated leftRelated rightRelated
+    calc
+      hom.map (.id A left right) =
+          target.id (hom.map A) (hom.map left) (hom.map right) := by
+        simpa only [pureSyntaxAlgebra] using
+          hom.preserves.map_id A left right
+      _ = target.id (hom.map A') (hom.map left') (hom.map right') := by
+        rw [typeRelated, leftRelated, rightRelated]
+      _ = hom.map (.id A' left' right') := by
+        simpa only [pureSyntaxAlgebra] using
+          (hom.preserves.map_id A' left' right').symm
+  congr_lam := by
+    intro n body body' related
+    calc
+      hom.map (.lam body) = target.lam (hom.map body) := by
+        simpa only [pureSyntaxAlgebra] using hom.preserves.map_lam body
+      _ = target.lam (hom.map body') := by rw [related]
+      _ = hom.map (.lam body') := by
+        simpa only [pureSyntaxAlgebra] using
+          (hom.preserves.map_lam body').symm
+  congr_app := by
+    intro n function function' argument argument' functionRelated argumentRelated
+    calc
+      hom.map (.app function argument) =
+          target.app (hom.map function) (hom.map argument) := by
+        simpa only [pureSyntaxAlgebra] using
+          hom.preserves.map_app function argument
+      _ = target.app (hom.map function') (hom.map argument') := by
+        rw [functionRelated, argumentRelated]
+      _ = hom.map (.app function' argument') := by
+        simpa only [pureSyntaxAlgebra] using
+          (hom.preserves.map_app function' argument').symm
+  congr_pair := by
+    intro n left left' right right' leftRelated rightRelated
+    calc
+      hom.map (.pair left right) =
+          target.pair (hom.map left) (hom.map right) := by
+        simpa only [pureSyntaxAlgebra] using hom.preserves.map_pair left right
+      _ = target.pair (hom.map left') (hom.map right') := by
+        rw [leftRelated, rightRelated]
+      _ = hom.map (.pair left' right') := by
+        simpa only [pureSyntaxAlgebra] using
+          (hom.preserves.map_pair left' right').symm
+  congr_fst := by
+    intro n pair pair' related
+    calc
+      hom.map (.fst pair) = target.fst (hom.map pair) := by
+        simpa only [pureSyntaxAlgebra] using hom.preserves.map_fst pair
+      _ = target.fst (hom.map pair') := by rw [related]
+      _ = hom.map (.fst pair') := by
+        simpa only [pureSyntaxAlgebra] using
+          (hom.preserves.map_fst pair').symm
+  congr_snd := by
+    intro n pair pair' related
+    calc
+      hom.map (.snd pair) = target.snd (hom.map pair) := by
+        simpa only [pureSyntaxAlgebra] using hom.preserves.map_snd pair
+      _ = target.snd (hom.map pair') := by rw [related]
+      _ = hom.map (.snd pair') := by
+        simpa only [pureSyntaxAlgebra] using
+          (hom.preserves.map_snd pair').symm
+  congr_refl := by
+    intro n term term' related
+    calc
+      hom.map (.refl term) = target.refl (hom.map term) := by
+        simpa only [pureSyntaxAlgebra] using hom.preserves.map_refl term
+      _ = target.refl (hom.map term') := by rw [related]
+      _ = hom.map (.refl term') := by
+        simpa only [pureSyntaxAlgebra] using
+          (hom.preserves.map_refl term').symm
+  subst_closed := by
+    intro n m leftSub rightSub left right substitutionsRelated termsRelated
+    have environmentsEqual :
+        (fun index => hom.map (leftSub index)) =
+          (fun index => hom.map (rightSub index)) := by
+      funext index
+      exact substitutionsRelated index
+    calc
+      hom.map
+          (Mettapedia.Languages.MeTTa.PureKernel.Substitution.subst
+            leftSub left) =
+          action.semanticSubst (fun index => hom.map (leftSub index))
+            (hom.map left) := action.map_subst leftSub left
+      _ = action.semanticSubst (fun index => hom.map (rightSub index))
+            (hom.map right) := by rw [environmentsEqual, termsRelated]
+      _ = hom.map
+          (Mettapedia.Languages.MeTTa.PureKernel.Substitution.subst
+            rightSub right) := (action.map_subst rightSub right).symm
+
+end PureRawHom
+
+/-- The identity interpretation carries the ordinary syntactic substitution
+action. -/
+def pureSyntaxSubstitutionAction :
+    PureInterpretationSubstitutionAction pureSyntaxAlgebra
+      (PureRawHom.id pureSyntaxAlgebra) where
+  semanticSubst :=
+    Mettapedia.Languages.MeTTa.PureKernel.Substitution.subst
+  map_subst := by intros; rfl
+
+/-- Syntactic equality recovered as the kernel of the identity contextual
+interpretation, rather than assembled from a second list of regularity
+proofs.  Reducibility retains the expected definitional equality interface
+for clients of the profile. -/
+abbrev syntacticEqualityProfile : PureEqualityProfile :=
+  (PureRawHom.id pureSyntaxAlgebra).kernelProfile
+    pureSyntaxSubstitutionAction
+
+theorem syntacticEqualityProfile_rel_iff {n : Nat}
+    (left right : PureTm n) :
+    syntacticEqualityProfile.Rel left right ↔ left = right := by
+  rfl
+
+/-- A raw algebra that identifies every variable with `u1` while keeping
+`u0` distinct.  It is a valid algebra for the constructor signature, but its
+interpretation kernel is not stable under open substitution. -/
+abbrev substitutionUnstablePureAlgebra : PureRawAlgebra where
+  Carrier := fun _ => Bool
+  var := fun _ => true
+  const := fun _ => false
+  u0 := false
+  u1 := true
+  pi := fun _ _ => false
+  sigma := fun _ _ => false
+  id := fun _ _ _ => false
+  lam := fun _ => false
+  app := fun _ _ => false
+  pair := fun _ _ => false
+  fst := fun _ => false
+  snd := fun _ => false
+  refl := fun _ => false
+
+def substitutionUnstablePureHom :
+    PureRawHom pureSyntaxAlgebra substitutionUnstablePureAlgebra :=
+  pureRawFoldHom substitutionUnstablePureAlgebra
+
+/-- Negative control: raw constructor preservation alone does not force
+substitution regularity.  Replacing the related variable and `u1` by the same
+`u0` environment separates their images, so no natural substitution action
+can exist for this raw interpretation. -/
+theorem substitutionUnstablePureHom_has_no_substitution_action :
+    ¬ Nonempty
+      (PureInterpretationSubstitutionAction substitutionUnstablePureAlgebra
+        substitutionUnstablePureHom) := by
+  rintro ⟨action⟩
+  let substitution :
+      Mettapedia.Languages.MeTTa.PureKernel.Substitution.Sub 1 0 :=
+    fun _ => .u0
+  have related :
+      substitutionUnstablePureHom.map (.var (0 : Fin 1)) =
+        substitutionUnstablePureHom.map .u1 := by
+    rfl
+  have semanticRelated := congrArg
+    (action.semanticSubst
+      (fun _ : Fin 1 =>
+        substitutionUnstablePureHom.map (PureTm.u0 : PureTm 0)))
+    related
+  have substitutedRelated :
+      substitutionUnstablePureHom.map
+          (Mettapedia.Languages.MeTTa.PureKernel.Substitution.subst
+            substitution (.var (0 : Fin 1))) =
+        substitutionUnstablePureHom.map
+          (Mettapedia.Languages.MeTTa.PureKernel.Substitution.subst
+            substitution .u1) :=
+    (action.map_subst substitution (.var (0 : Fin 1))).trans
+      (semanticRelated.trans (action.map_subst substitution .u1).symm)
+  change false = true at substitutedRelated
+  cases substitutedRelated
 
 /-- The quotient algebra selected by an equality profile. -/
 def pureProfileQuotientAlgebra (profile : PureEqualityProfile) :
@@ -3936,7 +4022,7 @@ theorem intrinsicPureConv_subst_congr {n m : Nat}
     (intrinsicPureConv_subst_pointwise substitutions right)
 
 /-- The actual intrinsic Pure conversion relation as one admissible equality
-profile.  It is evidence for O4, not the O4 choice. -/
+profile.  It is evidence for the extension interface, not kernel selection. -/
 def intrinsicPureConversionProfile : PureEqualityProfile where
   Rel := IntrinsicPureConv
   equivalence := fun _ =>
@@ -3952,8 +4038,6 @@ def intrinsicPureConversionProfile : PureEqualityProfile where
   congr_fst := intrinsicPureConv_congr_fst
   congr_snd := intrinsicPureConv_congr_snd
   congr_refl := intrinsicPureConv_congr_refl
-  rename_closed := fun ρ _ _ conversion =>
-    Mettapedia.Languages.MeTTa.PureKernel.Typing.conv_rename ρ conversion
   subst_closed := fun substitutions conversion =>
     intrinsicPureConv_subst_congr substitutions conversion
 
@@ -3976,27 +4060,6 @@ theorem intrinsicPureProfile_beta_quotient :
         (PureTm.u0 : PureTm 0) :=
   Quotient.sound intrinsicPureConversionProfile_beta
 
-/-- Raw syntactic equality is an admissible profile; it is the conservative
-positive point available before O4 chooses any larger conversion relation. -/
-def syntacticEqualityProfile : PureEqualityProfile where
-  Rel := Eq
-  equivalence := fun _ => ⟨Eq.refl, Eq.symm, Eq.trans⟩
-  congr_pi := by intros; subst_vars; rfl
-  congr_sigma := by intros; subst_vars; rfl
-  congr_id := by intros; subst_vars; rfl
-  congr_lam := by intros; subst_vars; rfl
-  congr_app := by intros; subst_vars; rfl
-  congr_pair := by intros; subst_vars; rfl
-  congr_fst := by intros; subst_vars; rfl
-  congr_snd := by intros; subst_vars; rfl
-  congr_refl := by intros; subst_vars; rfl
-  rename_closed := by intros; subst_vars; rfl
-  subst_closed := by
-    intro n m leftSub rightSub left right substitutionsEqual termsEqual
-    subst right
-    apply Mettapedia.Languages.MeTTa.PureKernel.Substitution.subst_ext
-    exact substitutionsEqual
-
 /-- Positive quotient witness: syntactic equality does not collapse the two
 universe constructors. -/
 theorem syntacticProfile_u0_ne_u1 :
@@ -4013,6 +4076,7 @@ theorem syntacticEqualityProfile_finer
     (profile : PureEqualityProfile) :
     syntacticEqualityProfile.FinerThan profile := by
   intro n left right equal
+  have termsEqual := (syntacticEqualityProfile_rel_iff left right).mp equal
   subst right
   exact (profile.equivalence n).refl left
 
@@ -4165,8 +4229,8 @@ of complete `PureRawAlgebra`s indexed by interpreter stage, together with the
 six genuinely MeTTa-specific operations.  Consequently the Pure operations
 remain available on mixed native terms: for example, application may consume
 a quoted or evidence-decorated term.  No equality laws are imposed here, so
-this construction neither decides O4 nor disguises O10's remaining typed
-initiality obligation. -/
+raw initiality is not presented as the stronger semantic-CwF initiality still
+listed at §11. -/
 
 /-- Intrinsically scoped raw terms for the staged native presentation.
 
@@ -5736,7 +5800,7 @@ as the stage-uniform part.  This section retains Pure's actual hypothetical
 judgment and typed simultaneous substitutions, proves their laws, and maps
 them faithfully into the native support category.
 
-This is deliberately not the modal typing presentation required by `O10`.
+This is deliberately not the modal typing presentation constructed below.
 In particular, it does not manufacture a Fitch lock from quotation: the
 negative non-fullness theorem below exhibits a native stage-sensitive
 substitution that no intrinsic Pure context morphism can supply. -/
@@ -5968,8 +6032,8 @@ theorem stageSensitiveEndSub_has_no_typedPure_preimage :
   cases impossible
 
 /-- Native quotation is outside the intrinsic typed refinement, independently
-of which native type one proposes for it.  Typing quotation therefore needs
-the genuine modal context/lock rules still demanded by `O10`. -/
+of which native type one proposes for it.  Typing quotation therefore uses the
+genuine modal context/lock rules of the native judgment below. -/
 theorem quotedPureUniverse_has_no_intrinsic_typing :
     ¬ ∃ type : NativeRawTm 0 0,
       Nonempty (TypingAt 0 .nil quotedPureUniverse type) := by
@@ -5991,7 +6055,8 @@ The contextual presentation below follows that fact rather than pretending a
 single-stage argument can be retyped at every stage.  Context entries and
 substitutable arguments are stage-indexed families.  Conversion is an
 explicit parameter whose only laws here are equivalence and substitution
-stability; choosing its concrete operator remains O4. -/
+stability.  The selected architecture later fixes syntactic conversion as the
+kernel core and exposes stronger policies only through explicit extension. -/
 
 namespace NativeModalTyping
 
@@ -6047,8 +6112,8 @@ theorem Context.lock_ne_unlocked (route : StageHom high low)
   cases context <;> cases equal
 
 /-- The equality data needed by the conversion rule and typed substitution.
-Congruence and computational adequacy are deliberately separate O4 demands;
-they are not smuggled into this minimal substitution doctrine. -/
+Congruence and computational adequacy remain separate extension-profile
+demands; they are not smuggled into this minimal substitution doctrine. -/
 structure ConversionPolicy where
   Rel : {stage binders : Nat} →
     NativeRawTm stage binders → NativeRawTm stage binders → Prop
@@ -6743,8 +6808,8 @@ theorem toNativeSupport_map_injective (conversion : ConversionPolicy)
 The embedding below is conditional only at conversion: a native policy must
 contain every conversion used by intrinsic Pure.  The raw constructors,
 contexts, dependent binders, and typing rules then map structurally.  Keeping
-this premise explicit leaves O4 open and prevents the Pure conversion closure
-from being silently declared to be the native equality. -/
+this premise explicit prevents the Pure conversion closure from being silently
+declared to be the native kernel equality. -/
 
 /-- Embed a live intrinsic Pure telescope as a stage-uniform native modal
 telescope. -/
@@ -8981,8 +9046,8 @@ theorem no_unit_to_native_syntax_hom :
   cases universesEqual
 
 /-- An equality profile is compatible with a native algebra at one stage when
-the stage's Pure fold identifies every equation in that profile.  This makes
-the O4 choice an explicit parameter rather than selecting one in raw syntax. -/
+the stage's Pure fold identifies every equation in that profile.  This keeps
+optional extensions explicit rather than selecting one in raw syntax. -/
 def NativeRawAlgebra.CompatibleWithPureProfileAt
     (target : NativeRawAlgebra.{uRawTarget}) (stage : Nat)
     (profile : PureEqualityProfile) : Prop :=
@@ -9023,6 +9088,7 @@ theorem nativeSyntax_compatible_syntactic (stage : Nat) :
     nativeSyntaxAlgebra.CompatibleWithPureProfileAt stage
       syntacticEqualityProfile := by
   intro binders left right equal
+  have termsEqual := (syntacticEqualityProfile_rel_iff left right).mp equal
   subst right
   rfl
 
@@ -9044,6 +9110,7 @@ structure TypeTheoryCandidate where
   modes : ModeTheory
   spine : ModalCwF modes
   laws : ModalCwFLaws modes spine
+  coherence : ModalCwFCoherence modes spine laws
   ConversionTerm : Type
   Converts : ConversionTerm → ConversionTerm → Prop
   conversion : Mettapedia.GSLT.LanguageDef.NIKMetalogic.DecidedRelation
@@ -9055,6 +9122,7 @@ def familiesCandidate : TypeTheoryCandidate where
   modes := stageModeTheory
   spine := familiesCwF
   laws := familiesCwFLaws
+  coherence := familiesCwFCoherence
   ConversionTerm := NativeConversionTerm
   Converts := NativeConverts
   conversion := nativeDecidedConversion
@@ -9203,14 +9271,64 @@ theorem familiesDerivedNativeTheory_primary_negative :
 
 /-! ## §11 Open obligations
 
-Everything unproven, named.  The count theorem keeps the completion state
-machine-visible; shrink the list as instances land, and update the count in
-the same change. -/
+The typed ledger names theorem-level gaps that are not discharged by the
+families-model witness bundle or by rule-algebra initiality.  The count and
+duplicate check make accidental emptying or repeated bookkeeping visible.
+An entry may be removed only in the same change that supplies its theorem and
+connects that theorem to the assembled theory. -/
 
-def openObligations : List String := []
+/-- Unresolved theorem boundaries in the native theory and its GSLT-IL
+interpretation. -/
+inductive OpenObligation where
+  /-- Authored typing needs initiality/adequacy in semantic modal CwFs, not
+  merely in rule algebras carrying the same operations. -/
+  | semanticCwFInitiality
+  /-- Interpretation kernels now derive raw congruence and renaming from
+  substitution naturality.  The remaining typed rule regularity must likewise
+  be forced by the semantic CwF model rather than supplied through a duplicate
+  `TypingAlgebra`. -/
+  | modelForcedRegularity
+  /-- Generated operational judgments need a two-way adequacy theorem with the
+  independently authored typing judgment on their stated fragment. -/
+  | operationalTypingAdequacy
+  /-- The exact returned-fibre theorem must be extended to full command syntax
+  only after typed transport, substitution, cell coherence, and the universal
+  factorization premises have been supplied. -/
+  | fullCommandInternalLanguage
+  /-- Beyond the finite eight-row conformance authority, the complete native
+  judgment needs a sound, evidence-bearing executable authority over encoded
+  syntax that is complete on a named fragment and abstains outside it. -/
+  | executableNativeAuthority
+deriving DecidableEq, Repr
 
-/-- Pinned obligation count: update together with the list. -/
-theorem openObligations_count : openObligations.length = 0 := rfl
+/-- Human-readable statement of each machine-visible obligation. -/
+def OpenObligation.description : OpenObligation → String
+  | .semanticCwFInitiality =>
+      "authored typing is initial and adequate in semantic modal CwFs"
+  | .modelForcedRegularity =>
+      "semantic CwF structure forces the remaining typed rule regularity"
+  | .operationalTypingAdequacy =>
+      "generated operational judgments agree with authored typing"
+  | .fullCommandInternalLanguage =>
+      "the internal-language theorem extends from the returned image to full commands"
+  | .executableNativeAuthority =>
+      "encoded native syntax has an evidence-bearing checker beyond the finite conformance image"
+
+def openObligations : List OpenObligation :=
+  [.semanticCwFInitiality,
+    .modelForcedRegularity,
+    .operationalTypingAdequacy,
+    .fullCommandInternalLanguage,
+    .executableNativeAuthority]
+
+/-- Pinned obligation count: update together with the typed ledger. -/
+theorem openObligations_count : openObligations.length = 5 := rfl
+
+/-- Each open boundary occurs exactly once in the ledger. -/
+theorem openObligations_nodup : openObligations.Nodup := by decide
+
+/-- The assembled witness bundle is not the completed native theory. -/
+theorem openObligations_nonempty : openObligations ≠ [] := by decide
 
 /-! ## Axiom audit -/
 
@@ -9218,6 +9336,8 @@ theorem openObligations_count : openObligations.length = 0 := rfl
 #print axioms commitments_extend_observations
 #print axioms Space.sub_trans
 #print axioms openObligations_count
+#print axioms openObligations_nodup
+#print axioms openObligations_nonempty
 #print axioms DerivedNativeTheory.primaryAuthority
 #print axioms familiesDerivedNativeTheory_primary_positive
 #print axioms familiesDerivedNativeTheory_primary_negative
@@ -9226,6 +9346,10 @@ theorem openObligations_count : openObligations.length = 0 := rfl
 #print axioms FamiliesCwF.lam_app
 #print axioms familiesPiStructure
 #print axioms familiesCwFLaws
+#print axioms familiesCwFCoherence
+#print axioms familiesCwF_sext_unique
+#print axioms nonterminal_empty_substitutions_distinct
+#print axioms basic_modal_cwf_laws_do_not_force_coherence
 #print axioms familiesPatternOutside_ne_marker
 #print axioms familiesRuntimePatternCode_decodes
 #print axioms LanguageCodeWitness.isLanguagePattern_iff_decode_ne_none
@@ -9320,6 +9444,10 @@ theorem openObligations_count : openObligations.length = 0 := rfl
 #print axioms pureRawFold_unique
 #print axioms pureNodeCount_betaShape_positive
 #print axioms no_unit_to_pure_syntax_hom
+#print axioms PureEqualityProfile.rename_closed
+#print axioms PureRawHom.kernelProfile
+#print axioms syntacticEqualityProfile_rel_iff
+#print axioms substitutionUnstablePureHom_has_no_substitution_action
 #print axioms PureEqualityProfile.rename_mk
 #print axioms PureEqualityProfile.substRaw_mk
 #print axioms PureEqualityProfile.substRaw_ids

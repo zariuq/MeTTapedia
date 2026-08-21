@@ -822,6 +822,66 @@ theorem normalizeValues_assignment_restrict_eq_of_resolve_defined
       rw [smallResolutionAtName, largeResolutionAtName]
       exact normalEq
 
+/-- Positional restriction preserves normalized restoration at any requested
+binder depth.  Typing is used only to justify the finite free-name support of
+the skeleton; its authored bound context need not coincide with the depth at
+which a surrounding caller performs substitution. -/
+theorem normalizeValues_substituteAt_restrict_eq
+    {source : CIGSLT} {kernel : CostStaticNormalizationKernel source}
+    (unambiguous : CostStaticRegionNode.UnambiguousStaticDecomposition source)
+    {targetFree : FreeTypeContext} {color : CostStaticColor}
+    {smallOccurrences largeOccurrences : List CostRegionOccurrence}
+    (smallTable : TypedCostRegionBoundaryTable source color targetFree
+      smallOccurrences)
+    (largeTable : TypedCostRegionBoundaryTable source color targetFree
+      largeOccurrences)
+    (embedding : CostStaticPlanEntryEmbedding source color targetFree
+      smallTable.entries largeTable.entries)
+    (trees : CostRegionBoundaryTrees source targetFree color largeTable)
+    {typedBound : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
+    (typed : WellSorted.HasType source.costWholeLanguage
+      smallTable.mappedFreeContext typedBound pattern type)
+    (object : WellSorted.isObjectPattern pattern = true)
+    (availableDepth : Nat) :
+    ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
+        smallTable.restorationSupport
+        (((restrictAlongEntryEmbedding smallTable largeTable embedding trees
+          ).normalizeValues
+            (normalizeStatic := kernel.normalize)).assignment smallTable)
+        availableDepth pattern =
+      ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
+        largeTable.restorationSupport
+        ((trees.normalizeValues
+          (normalizeStatic := kernel.normalize)).assignment largeTable)
+        availableDepth pattern := by
+  apply ReflectiveContextSupport.substituteAt_eq_of_inputsAgreeOn
+  intro name membership
+  obtain ⟨freeType, lookup⟩ :=
+    typed.freeType_of_mem_freeFvarNames_of_isObjectPattern object membership
+  cases decodedName : decodeCostRegionSourceVariableName name with
+  | some sourceName =>
+      constructor <;>
+        simp [TypedCostRegionBoundaryTable.restorationSupport,
+          TypedCostRegionBoundaryTable.Values.assignment, decodedName]
+  | none =>
+      cases smallResolved : smallTable.resolve name with
+      | none =>
+          simp [TypedCostRegionBoundaryTable.mappedFreeContext, decodedName,
+            smallResolved] at lookup
+      | some boundary =>
+          have defined : smallTable.resolve name ≠ none := by
+            simp [smallResolved]
+          have tableResolution :=
+            smallTable.resolve_eq_of_entries_subset largeTable
+              embedding.subset name defined
+          have largeResolved : largeTable.resolve name = some boundary := by
+            simpa [smallResolved] using tableResolution
+          constructor
+          · simp [TypedCostRegionBoundaryTable.restorationSupport,
+              decodedName, smallResolved, largeResolved]
+          · exact normalizeValues_assignment_restrict_eq_of_resolve_defined
+              unambiguous smallTable largeTable embedding trees name defined
+
 /-- Restoring a typed object skeleton from a positionally restricted child
 forest agrees exactly with restoring it from the root forest.  The theorem
 observes only the finite names occurring in the skeleton: retained duplicate
@@ -850,35 +910,141 @@ theorem normalizeValues_restoreSupportedSkeleton_restrict_eq
       (trees.normalizeValues
           (normalizeStatic := kernel.normalize)).restoreSupportedSkeleton
             largeTable bound pattern := by
-  apply ReflectiveContextSupport.substitute_eq_of_inputsAgreeOn
-  intro name membership
-  obtain ⟨freeType, lookup⟩ :=
-    typed.freeType_of_mem_freeFvarNames_of_isObjectPattern object membership
-  cases decodedName : decodeCostRegionSourceVariableName name with
-  | some sourceName =>
-      constructor <;>
-        simp [TypedCostRegionBoundaryTable.restorationSupport,
-          TypedCostRegionBoundaryTable.Values.assignment, decodedName]
-  | none =>
-      cases smallResolved : smallTable.resolve name with
-      | none =>
-          simp [TypedCostRegionBoundaryTable.mappedFreeContext, decodedName,
-            smallResolved] at lookup
-      | some boundary =>
-          have defined : smallTable.resolve name ≠ none := by
-            simp [smallResolved]
-          have tableResolution :=
-            smallTable.resolve_eq_of_entries_subset largeTable
-              embedding.subset name defined
-          have largeResolved : largeTable.resolve name = some boundary := by
-            simpa [smallResolved] using tableResolution
-          constructor
-          · simp [TypedCostRegionBoundaryTable.restorationSupport,
-              decodedName, smallResolved, largeResolved]
-          · exact normalizeValues_assignment_restrict_eq_of_resolve_defined
-              unambiguous smallTable largeTable embedding trees name defined
+  exact normalizeValues_substituteAt_restrict_eq unambiguous smallTable
+    largeTable embedding trees typed object bound.length
 
 end CostRegionBoundaryTrees
+
+/-- Normalized restoration of a plan's mapped and thickened abstract is
+unchanged when its exact entry embedding is replayed into a larger root
+forest.  Objecthood remains an explicit source-side premise; callers with a
+semantic admission derive it there rather than making this transport lemma
+depend on canonical-stop policy. -/
+theorem CostStaticRegionPlan.normalizeValues_restoreMappedAbstract_restrict_eq
+    {source : CIGSLT} {kernel : CostStaticNormalizationKernel source}
+    (unambiguous : CostStaticRegionNode.UnambiguousStaticDecomposition source)
+    {color : CostStaticColor} {targetFree : FreeTypeContext}
+    {sourceBound targetBound : List TypeExpr}
+    {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+    {sourceAvailable : List TypeExpr}
+    {outer : Mettapedia.OSLF.MeTTaIL.DerivedContexts.OneHoleContext}
+    {payload : Pattern} {sourceType : TypeExpr}
+    (plan : CostStaticRegionPlan source color targetFree sourceBound targetBound
+      thinning sourceAvailable outer payload sourceType)
+    (payloadObject : WellSorted.isObjectPattern payload = true)
+    {rootOccurrences : List CostRegionOccurrence}
+    (rootTable : TypedCostRegionBoundaryTable source color targetFree
+      rootOccurrences)
+    (embedding : CostStaticPlanEntryEmbedding source color targetFree
+      plan.boundaryTable.entries rootTable.entries)
+    (rootTrees : CostRegionBoundaryTrees source targetFree color rootTable) :
+    let mappedAbstract := thinning.thickenAmbientBVars 0
+      (mapPattern (color.symbols source) plan.abstractPattern)
+    ((CostRegionBoundaryTrees.restrictAlongEntryEmbedding
+        plan.boundaryTable rootTable embedding rootTrees).normalizeValues
+          (normalizeStatic := kernel.normalize)).restoreSupportedSkeleton
+            plan.boundaryTable sourceAvailable mappedAbstract =
+      (rootTrees.normalizeValues
+          (normalizeStatic := kernel.normalize)).restoreSupportedSkeleton
+            rootTable sourceAvailable mappedAbstract := by
+  dsimp only
+  obtain ⟨supported, _safe⟩ :=
+    plan.abstractPattern_supportedSafe plan.boundaryTable (by
+      intro boundary membership
+      exact membership)
+  have mapped := supported.mapCostStatic source color
+  have transport := plan.boundaryTable.transport_of_fiberCoherent
+    plan.boundaryTable_fiberCoherent
+  rw [transport.freeContext] at mapped
+  have thickened := mapped.thickenAmbientBVars (inner := []) thinning
+  simp only [List.nil_append, List.length_nil] at thickened
+  apply CostRegionBoundaryTrees.normalizeValues_substituteAt_restrict_eq
+    unambiguous plan.boundaryTable rootTable embedding rootTrees thickened
+  · rw [thinning.isObjectPattern_thickenAmbientBVars,
+      WellSorted.isObjectPattern_mapPattern,
+      plan.abstractPattern_object payloadObject]
+
+/-- Replacing every boundary in a plan by its normalized hereditary value
+preserves the reflective equation class of the original payload.  The result
+is deliberately equation equivalence rather than syntactic equality: child
+normalization is semantic, while the plan's original restoration theorem is
+syntactic. -/
+theorem CostStaticRegionPlan.normalizeValues_restoreMappedAbstract_equationEquiv
+    {source : CIGSLT} {normalizeStatic : CostStaticRegionNormalizer source}
+    (laws : CostStaticRegionNormalizerLaws source normalizeStatic)
+    {color : CostStaticColor} {targetFree : FreeTypeContext}
+    {sourceBound targetBound : List TypeExpr}
+    {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+    {sourceAvailable : List TypeExpr}
+    {outer : Mettapedia.OSLF.MeTTaIL.DerivedContexts.OneHoleContext}
+    {payload : Pattern} {sourceType : TypeExpr}
+    (plan : CostStaticRegionPlan source color targetFree sourceBound targetBound
+      thinning sourceAvailable outer payload sourceType)
+    (payloadObject : WellSorted.isObjectPattern payload = true)
+    (trees : CostRegionBoundaryTrees source targetFree color
+      plan.boundaryTable) :
+    let mappedAbstract := thinning.thickenAmbientBVars 0
+      (mapPattern (color.symbols source) plan.abstractPattern)
+    ReflectiveEquationSemantics.ReflectiveEquationEquiv
+      source.costWholeReflectionProfile defaultBasePremises
+      source.costWholeLanguage
+      ((trees.normalizeValues
+        (normalizeStatic := normalizeStatic)).restoreSupportedSkeleton
+          plan.boundaryTable sourceAvailable mappedAbstract)
+      payload := by
+  dsimp only
+  obtain ⟨supported, _safe⟩ :=
+    plan.abstractPattern_supportedSafe plan.boundaryTable (by
+      intro boundary membership
+      exact membership)
+  have mapped := supported.mapCostStatic source color
+  have transport := plan.boundaryTable.transport_of_fiberCoherent
+    plan.boundaryTable_fiberCoherent
+  rw [transport.freeContext] at mapped
+  have thickened := mapped.thickenAmbientBVars (inner := []) thinning
+  simp only [List.nil_append, List.length_nil] at thickened
+  have valuesEquivalent :
+      ((trees.normalizeValues (normalizeStatic := normalizeStatic)
+        ).supportedOpenAssignment plan.boundaryTable).Equivalent
+        ((TypedCostRegionBoundaryTable.Values.original plan.boundaryTable
+          ).supportedOpenAssignment plan.boundaryTable) :=
+    trees.normalizeValuesWithStatic_equivalent_original normalizeStatic laws
+  have assignmentStep :=
+    thickened.equationEquiv_substituteAt_pointwise
+      ((trees.normalizeValues (normalizeStatic := normalizeStatic)
+        ).supportedOpenAssignment plan.boundaryTable)
+      ((TypedCostRegionBoundaryTable.Values.original plan.boundaryTable
+        ).supportedOpenAssignment plan.boundaryTable)
+      valuesEquivalent sourceAvailable.length
+  have assignmentStep' :
+      ReflectiveEquationSemantics.ReflectiveEquationEquiv
+        source.costWholeReflectionProfile defaultBasePremises
+        source.costWholeLanguage
+        ((trees.normalizeValues (normalizeStatic := normalizeStatic)
+          ).restoreSupportedSkeleton plan.boundaryTable sourceAvailable
+            (thinning.thickenAmbientBVars 0
+              (mapPattern (color.symbols source) plan.abstractPattern)))
+        ((TypedCostRegionBoundaryTable.Values.original plan.boundaryTable
+          ).restoreSupportedSkeleton plan.boundaryTable sourceAvailable
+            (thinning.thickenAmbientBVars 0
+              (mapPattern (color.symbols source) plan.abstractPattern))) := by
+    simpa only [
+      TypedCostRegionBoundaryTable.Values.supportedOpenAssignment,
+      TypedCostRegionBoundaryTable.Values.supportedAssignment,
+      TypedCostRegionBoundaryTable.Values.restoreSupportedSkeleton,
+      ReflectiveContextSupport.substitute,
+      WellSorted.SupportSafeOpenPattern.substitute_pattern] using assignmentStep
+  have originalRestoration :
+      (TypedCostRegionBoundaryTable.Values.original plan.boundaryTable
+        ).restoreSupportedSkeleton plan.boundaryTable sourceAvailable
+          (thinning.thickenAmbientBVars 0
+            (mapPattern (color.symbols source) plan.abstractPattern)) = payload := by
+    rw [TypedCostRegionBoundaryTable.Values.restoreSupportedSkeleton_original]
+    exact (plan.restoreMappedAbstractPattern plan.boundaryTable
+      (by intro boundary membership; exact membership) payloadObject).trans
+        plan.recomposePattern_eq
+  rw [originalRestoration] at assignmentStep'
+  exact assignmentStep'
 
 namespace CostRegionTree
 
@@ -2970,6 +3136,49 @@ noncomputable def reachedRoot_selectedRoot_commonRestorationApex
 end CostStaticPlanStopped
 
 namespace CostStaticPlanReached
+
+/-- Build the recursive Cost tree carried by an admitted reached payload in
+its exact visible availability fibre.  The reached plan's sealed suffix and
+one-hole path belong to the enclosing static context; neither is recast as
+part of the payload tree. -/
+noncomputable def payloadTreeOfWellSorted
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : FreeTypeContext} {payload rootAbstract : Pattern}
+    (reached : CostStaticPlanReached source color targetFree payload
+      rootAbstract)
+    (wellSorted : ReflectiveWellSorted.OpenPatternWellSorted
+      source.costWholeReflectionProfile source.costWholeLanguage targetFree
+      reached.sourceAvailable
+      (mapTypeExpr (color.symbols source) reached.sourceType) payload) :
+    CostRegionTree source targetFree reached.sourceAvailable [] payload
+      (mapTypeExpr (color.symbols source) reached.sourceType) :=
+  (CostRegionTree.build? (source := source) (targetFree := targetFree)
+    reached.sourceAvailable [] payload
+      (mapTypeExpr (color.symbols source) reached.sourceType)).get
+    (CostRegionTree.build?_isSome_of_wellSorted wellSorted)
+
+/-- Structural unambiguity identifies the normal form of the executable
+reached-payload tree with every proof-relevant decomposition of the same
+typed payload fibre. -/
+theorem payloadTreeOfWellSorted_normalize_eq
+    {source : CIGSLT} {kernel : CostStaticNormalizationKernel source}
+    (unambiguous : CostStaticRegionNode.UnambiguousStaticDecomposition source)
+    {color : CostStaticColor}
+    {targetFree : FreeTypeContext} {payload rootAbstract : Pattern}
+    (reached : CostStaticPlanReached source color targetFree payload
+      rootAbstract)
+    (wellSorted : ReflectiveWellSorted.OpenPatternWellSorted
+      source.costWholeReflectionProfile source.costWholeLanguage targetFree
+      reached.sourceAvailable
+      (mapTypeExpr (color.symbols source) reached.sourceType) payload)
+    (object : WellSorted.isObjectPattern payload = true)
+    (tree : CostRegionTree source targetFree reached.sourceAvailable [] payload
+      (mapTypeExpr (color.symbols source) reached.sourceType)) :
+    ((reached.payloadTreeOfWellSorted wellSorted).normalize
+      (normalizeStatic := kernel.normalize)).pattern =
+      (tree.normalize (normalizeStatic := kernel.normalize)).pattern := by
+  exact CostRegionTree.normalize_pattern_eq_of_unambiguous unambiguous kernel
+    (reached.payloadTreeOfWellSorted wellSorted) tree object
 
 /-- Reifying a reached plan after source-to-target mapping and binder
 reinsertion preserves its exact one-hole factorization.  This is a structural

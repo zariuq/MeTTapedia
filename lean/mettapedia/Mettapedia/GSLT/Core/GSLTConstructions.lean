@@ -708,6 +708,88 @@ theorem budget_filter_not_base_expressible :
 
 end SpendChooseSeparation
 
+/-! ## Policy descent through erasure: the control-tower step
+
+An erasure identifies elaborated states; a policy observes them.  The
+three theorems below are the complete story of when observation survives
+compression, stated generically because they apply to every erasure in
+the library — compact erasure of elaborated cost carriers, accumulator
+erasure of spend lifts, quotients of presentations:
+
+* `policy_factors_iff_fiberInvariant` — a policy runs on compact syntax
+  **exactly when** it cannot distinguish anything the erasure identifies.
+  The safe-compression criterion, as an iff.
+* `exists_policy_not_factoring` — one nontrivial fibre plus two
+  distinguishable values yields a policy that no compact policy
+  reproduces.  Erasure does not merely lose bookkeeping; it strictly
+  shrinks the space of expressible controls.
+* `compact_policy_precompose_injective` — distinct compact policies stay
+  distinct upstairs.  Together with the previous theorem: whenever a
+  fibre is nontrivial, the compact policy space embeds **strictly** into
+  the elaborated one.  Iterating an elaboration whose erasures keep
+  nontrivial fibres therefore yields a strictly ascending tower of
+  control — each level can act on distinctions no lower level can see.
+-/
+
+section PolicyDescent
+
+universe uE uB uV
+
+variable {Elaborated : Type uE} {Compact : Type uB} {Value : Type uV}
+
+/-- **The exact control-descent criterion.**  For a split erasure, a
+policy factors through compact syntax iff it is constant on erasure
+fibres. -/
+theorem policy_factors_iff_fiberInvariant (erase : Elaborated → Compact)
+    (select : Compact → Elaborated)
+    (splits : ∀ compact, erase (select compact) = compact)
+    (policy : Elaborated → Value) :
+    (∃ compactPolicy : Compact → Value,
+        policy = compactPolicy ∘ erase) ↔
+      ∀ x y, erase x = erase y → policy x = policy y := by
+  constructor
+  · rintro ⟨compactPolicy, rfl⟩ x y identified
+    simp only [Function.comp_apply, identified]
+  · intro invariant
+    refine ⟨policy ∘ select, funext fun x => ?_⟩
+    exact invariant x (select (erase x)) (splits (erase x)).symm
+
+/-- **Nontrivial fibres create new control.**  Two distinct elaborations
+with one compact image, plus two distinguishable values, give a policy
+that no compact policy expresses. -/
+theorem exists_policy_not_factoring (erase : Elaborated → Compact)
+    {x y : Elaborated} (distinct : x ≠ y)
+    (identified : erase x = erase y)
+    {low high : Value} (separated : low ≠ high) :
+    ∃ policy : Elaborated → Value,
+      ∀ compactPolicy : Compact → Value,
+        policy ≠ compactPolicy ∘ erase := by
+  classical
+  refine ⟨fun state => if state = x then low else high,
+    fun compactPolicy equal => ?_⟩
+  have atX := congrFun equal x
+  have atY := congrFun equal y
+  rw [if_pos rfl] at atX
+  rw [if_neg (fun h => distinct h.symm)] at atY
+  simp only [Function.comp_apply] at atX atY
+  rw [identified] at atX
+  exact separated (atX.trans atY.symm)
+
+/-- Precomposition with a split erasure is injective: compact policies
+never collapse upstairs.  With `exists_policy_not_factoring`, a
+nontrivial fibre makes the inclusion of compact into elaborated policies
+strict — the tower step. -/
+theorem compact_policy_precompose_injective
+    (erase : Elaborated → Compact) (select : Compact → Elaborated)
+    (splits : ∀ compact, erase (select compact) = compact)
+    {compactPolicy compactPolicy' : Compact → Value}
+    (equal : compactPolicy ∘ erase = compactPolicy' ∘ erase) :
+    compactPolicy = compactPolicy' := by
+  funext compact
+  simpa [splits] using congrFun equal (select compact)
+
+end PolicyDescent
+
 
 end GSLT
 

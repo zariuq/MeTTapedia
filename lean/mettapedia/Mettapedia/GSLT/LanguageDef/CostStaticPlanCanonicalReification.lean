@@ -77,6 +77,8 @@ noncomputable def sourceCanonicalStopAligned_of_rawAlignment
       (CostStaticPlanCanonicalStop leftNode.plan rightNode.plan declaration
         rawDeclaration rawStop)
       leftNode.skeleton.1 rightNode.skeleton.1 := by
+  have leftAdmission := leftNode.planRawAdmission
+  have rightAdmission := rightNode.planRawAdmission
   cases leftNode with
   | mk leftTargetBound leftSourceSort leftTerm leftPlan leftRootStatic
       leftSkeleton leftSkeletonPattern leftSupported leftSupportSafe =>
@@ -87,7 +89,8 @@ noncomputable def sourceCanonicalStopAligned_of_rawAlignment
       cases sameSort
       have planAligned :=
         leftPlan.canonicalStopAligned_of_rawAlignment collectionDeterministic
-          declaration rawDeclaration rightPlan rfl rawAligned
+          declaration rawDeclaration rightPlan leftAdmission rightAdmission
+            rfl rawAligned
       simpa only [leftSkeletonPattern, rightSkeletonPattern] using planAligned
 
 /-- Canonically equal same-fibre static nodes induce a stopped structural

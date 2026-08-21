@@ -1,3 +1,4 @@
+import Mettapedia.GSLT.LanguageDef.TwoDepthRestorationApex
 import Mettapedia.GSLT.LanguageDef.CostRestorationRelationQuoteArm
 import Mettapedia.GSLT.LanguageDef.CostRestorationCut
 import Mettapedia.GSLT.LanguageDef.CostStaticHereditaryTyping
@@ -2799,6 +2800,251 @@ theorem rhoBareParallelApex
   exact CommonRestorationApex.parallel_of_permutation cospan declaration
     rootDepth frontierAlignment
 
+/-- **Separated-depth bare parallel.**  Exactly `rhoBareParallelApex` with
+the restoration depth and the canonicalization key depth carried
+independently.  The keyed side still collapses to one depth (both endpoints
+are canonicalized under the same declaration at `keyDepth`), while the
+restoration index is free — which is the configuration a foreign quote
+produces and the one-index form cannot express.
+
+Direct construction: no `QuoteStatusAgrees` premise, so this is usable in
+rho's two-colour profile where that assumption is refuted. -/
+theorem rhoBareParallelTwoDepthApex
+    {leftCount rightCount : Nat}
+    {leftKey : Fin leftCount → CostStaticAtomKey}
+    {rightKey : Fin rightCount → CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey)
+    (color : CostStaticColor)
+    {bound : List TypeExpr} {leftElements rightElements : List Pattern}
+    {leftDepth rightDepth restorationDepth keyDepth : Nat}
+    (close : ∀ {left right : Pattern},
+      HasTypeWithConstructors rhoCIGSLT.costWholeLanguage
+          (CostStaticColor.hereditaryConstructorImage rhoCIGSLT color)
+          cospan.commonTargetFreeContext bound left
+          (.base (costStaticReflectivePresentationDecl rhoCIGSLT color
+            rhoReflectivePresentation.toReflectivePresentationDecl
+            ).processSort) →
+        HasTypeWithConstructors rhoCIGSLT.costWholeLanguage
+          (CostStaticColor.hereditaryConstructorImage rhoCIGSLT color)
+          cospan.commonTargetFreeContext bound right
+          (.base (costStaticReflectivePresentationDecl rhoCIGSLT color
+            rhoReflectivePresentation.toReflectivePresentationDecl
+            ).processSort) →
+        HasType rhoCIGSLT.costWholeLanguage cospan.commonTargetFreeContext
+          bound left
+          (.base (costStaticReflectivePresentationDecl rhoCIGSLT color
+            rhoReflectivePresentation.toReflectivePresentationDecl
+            ).processSort) →
+        HasType rhoCIGSLT.costWholeLanguage cospan.commonTargetFreeContext
+          bound right
+          (.base (costStaticReflectivePresentationDecl rhoCIGSLT color
+            rhoReflectivePresentation.toReflectivePresentationDecl
+            ).processSort) →
+        isObjectPattern left = true →
+        isObjectPattern right = true →
+        ConstructorsWithin
+          (fun constructor => ∃ sourceConstructor,
+            decodeCostStaticConstructor color constructor =
+              some sourceConstructor) left →
+        ConstructorsWithin
+          (fun constructor => ∃ sourceConstructor,
+            decodeCostStaticConstructor color constructor =
+              some sourceConstructor) right →
+        canonicalize
+            (costStaticReflectivePresentationDecl rhoCIGSLT color
+              rhoReflectivePresentation.toReflectivePresentationDecl) left =
+          canonicalize
+            (costStaticReflectivePresentationDecl rhoCIGSLT color
+              rhoReflectivePresentation.toReflectivePresentationDecl) right →
+        sizeOf left + sizeOf right <
+          sizeOf
+              (Pattern.collection
+                (costStaticReflectivePresentationDecl rhoCIGSLT color
+                  rhoReflectivePresentation.toReflectivePresentationDecl
+                  ).parallelCollection leftElements none) +
+            sizeOf
+              (Pattern.collection
+                (costStaticReflectivePresentationDecl rhoCIGSLT color
+                  rhoReflectivePresentation.toReflectivePresentationDecl
+                  ).parallelCollection rightElements none) →
+        TwoDepthApex rhoCIGSLT cospan
+          (costStaticReflectivePresentationDecl rhoCIGSLT color
+            rhoReflectivePresentation.toReflectivePresentationDecl)
+          restorationDepth keyDepth
+          (canonicalizeByAt
+            (cospan.commonSemanticPatternKeyAt rhoCIGSLT)
+            (costStaticReflectivePresentationDecl rhoCIGSLT color
+              rhoReflectivePresentation.toReflectivePresentationDecl)
+            keyDepth left)
+          (canonicalizeByAt
+            (cospan.commonSemanticPatternKeyAt rhoCIGSLT)
+            (costStaticReflectivePresentationDecl rhoCIGSLT color
+              rhoReflectivePresentation.toReflectivePresentationDecl)
+            keyDepth right))
+    (leftHereditary : HasTypeWithConstructors rhoCIGSLT.costWholeLanguage
+      (CostStaticColor.hereditaryConstructorImage rhoCIGSLT color)
+      cospan.commonTargetFreeContext bound
+      (.collection
+        (costStaticReflectivePresentationDecl rhoCIGSLT color
+          rhoReflectivePresentation.toReflectivePresentationDecl
+          ).parallelCollection leftElements none)
+      (.base (costStaticReflectivePresentationDecl rhoCIGSLT color
+        rhoReflectivePresentation.toReflectivePresentationDecl).processSort))
+    (rightHereditary : HasTypeWithConstructors rhoCIGSLT.costWholeLanguage
+      (CostStaticColor.hereditaryConstructorImage rhoCIGSLT color)
+      cospan.commonTargetFreeContext bound
+      (.collection
+        (costStaticReflectivePresentationDecl rhoCIGSLT color
+          rhoReflectivePresentation.toReflectivePresentationDecl
+          ).parallelCollection rightElements none)
+      (.base (costStaticReflectivePresentationDecl rhoCIGSLT color
+        rhoReflectivePresentation.toReflectivePresentationDecl).processSort))
+    (leftTyped : HasType rhoCIGSLT.costWholeLanguage
+      cospan.commonTargetFreeContext bound
+      (.collection
+        (costStaticReflectivePresentationDecl rhoCIGSLT color
+          rhoReflectivePresentation.toReflectivePresentationDecl
+          ).parallelCollection leftElements none)
+      (.base (costStaticReflectivePresentationDecl rhoCIGSLT color
+        rhoReflectivePresentation.toReflectivePresentationDecl).processSort))
+    (rightTyped : HasType rhoCIGSLT.costWholeLanguage
+      cospan.commonTargetFreeContext bound
+      (.collection
+        (costStaticReflectivePresentationDecl rhoCIGSLT color
+          rhoReflectivePresentation.toReflectivePresentationDecl
+          ).parallelCollection rightElements none)
+      (.base (costStaticReflectivePresentationDecl rhoCIGSLT color
+        rhoReflectivePresentation.toReflectivePresentationDecl).processSort))
+    (leftObject : isObjectPattern
+      (.collection
+        (costStaticReflectivePresentationDecl rhoCIGSLT color
+          rhoReflectivePresentation.toReflectivePresentationDecl
+          ).parallelCollection leftElements none) = true)
+    (rightObject : isObjectPattern
+      (.collection
+        (costStaticReflectivePresentationDecl rhoCIGSLT color
+          rhoReflectivePresentation.toReflectivePresentationDecl
+          ).parallelCollection rightElements none) = true)
+    (leftSupported : ConstructorsWithin
+      (fun constructor => ∃ sourceConstructor,
+        decodeCostStaticConstructor color constructor = some sourceConstructor)
+      (.collection
+        (costStaticReflectivePresentationDecl rhoCIGSLT color
+          rhoReflectivePresentation.toReflectivePresentationDecl
+          ).parallelCollection leftElements none))
+    (rightSupported : ConstructorsWithin
+      (fun constructor => ∃ sourceConstructor,
+        decodeCostStaticConstructor color constructor = some sourceConstructor)
+      (.collection
+        (costStaticReflectivePresentationDecl rhoCIGSLT color
+          rhoReflectivePresentation.toReflectivePresentationDecl
+          ).parallelCollection rightElements none))
+    (canonical : canonicalize
+        (costStaticReflectivePresentationDecl rhoCIGSLT color
+          rhoReflectivePresentation.toReflectivePresentationDecl)
+        (.collection
+          (costStaticReflectivePresentationDecl rhoCIGSLT color
+            rhoReflectivePresentation.toReflectivePresentationDecl
+            ).parallelCollection leftElements none) =
+      canonicalize
+        (costStaticReflectivePresentationDecl rhoCIGSLT color
+          rhoReflectivePresentation.toReflectivePresentationDecl)
+        (.collection
+          (costStaticReflectivePresentationDecl rhoCIGSLT color
+            rhoReflectivePresentation.toReflectivePresentationDecl
+            ).parallelCollection rightElements none))
+    (leftDepth_eq : leftDepth = keyDepth)
+    (rightDepth_eq : rightDepth = keyDepth) :
+    TwoDepthApex rhoCIGSLT cospan
+      (costStaticReflectivePresentationDecl rhoCIGSLT color
+        rhoReflectivePresentation.toReflectivePresentationDecl)
+      restorationDepth keyDepth
+      (canonicalizeByAt (cospan.commonSemanticPatternKeyAt rhoCIGSLT)
+        (costStaticReflectivePresentationDecl rhoCIGSLT color
+          rhoReflectivePresentation.toReflectivePresentationDecl)
+        leftDepth
+        (.collection
+          (costStaticReflectivePresentationDecl rhoCIGSLT color
+            rhoReflectivePresentation.toReflectivePresentationDecl
+            ).parallelCollection leftElements none))
+      (canonicalizeByAt (cospan.commonSemanticPatternKeyAt rhoCIGSLT)
+        (costStaticReflectivePresentationDecl rhoCIGSLT color
+          rhoReflectivePresentation.toReflectivePresentationDecl)
+        rightDepth
+        (.collection
+          (costStaticReflectivePresentationDecl rhoCIGSLT color
+            rhoReflectivePresentation.toReflectivePresentationDecl
+            ).parallelCollection rightElements none)) := by
+  subst leftDepth
+  subst rightDepth
+  let declaration := costStaticReflectivePresentationDecl rhoCIGSLT color
+    rhoReflectivePresentation.toReflectivePresentationDecl
+  let key := cospan.commonSemanticPatternKeyAt rhoCIGSLT
+  let allowed := fun constructor => ∃ sourceConstructor,
+    decodeCostStaticConstructor color constructor = some sourceConstructor
+  have leftElementsTyped := rhoParallel_elements_hasType color leftTyped
+  have rightElementsTyped := rhoParallel_elements_hasType color rightTyped
+  have leftElementsHereditary :=
+    rhoParallel_elements_hasTypeWithConstructors color leftHereditary
+  have rightElementsHereditary :=
+    rhoParallel_elements_hasTypeWithConstructors color rightHereditary
+  have leftElementsObject : isObjectPatternList leftElements = true := by
+    simpa [isObjectPattern] using leftObject
+  have rightElementsObject : isObjectPatternList rightElements = true := by
+    simpa [isObjectPattern] using rightObject
+  have leftLeavesTyped := rhoProc_parallelLeavesList_typed color
+    cospan.commonTargetFreeContext bound leftElementsTyped
+  have rightLeavesTyped := rhoProc_parallelLeavesList_typed color
+    cospan.commonTargetFreeContext bound rightElementsTyped
+  have leftLeavesHereditary :=
+    rhoProc_parallelLeavesList_typedWithConstructors color
+      cospan.commonTargetFreeContext bound leftElementsHereditary
+  have rightLeavesHereditary :=
+    rhoProc_parallelLeavesList_typedWithConstructors color
+      cospan.commonTargetFreeContext bound rightElementsHereditary
+  have leftLeavesObject := parallelLeavesList_objects declaration
+    leftElementsObject
+  have rightLeavesObject := parallelLeavesList_objects declaration
+    rightElementsObject
+  have leftLeavesSupported := parallelLeavesList_supported declaration allowed
+    leftSupported
+  have rightLeavesSupported := parallelLeavesList_supported declaration allowed
+    rightSupported
+  have canonicalLeaves := rhoParallelLeaves_canonical_map_perm key color
+    leftElementsTyped rightElementsTyped canonical keyDepth
+  let leafAlignment : TwoDepthPermutation cospan declaration
+      restorationDepth keyDepth
+      (canonicalizeListByAt key declaration keyDepth
+        (parallelLeavesList declaration leftElements))
+      (canonicalizeListByAt key declaration keyDepth
+        (parallelLeavesList declaration rightElements)) :=
+    TwoDepthPermutation.of_canonical_map_perm cospan declaration
+      restorationDepth keyDepth canonicalLeaves (fun leftMembership rightMembership equal =>
+        close
+          (leftLeavesHereditary.hasType_of_mem leftMembership)
+          (rightLeavesHereditary.hasType_of_mem rightMembership)
+          (elementsHaveType_of_mem leftLeavesTyped leftMembership)
+          (elementsHaveType_of_mem rightLeavesTyped rightMembership)
+          (isObjectPattern_of_mem leftLeavesObject leftMembership)
+          (isObjectPattern_of_mem rightLeavesObject rightMembership)
+          (leftLeavesSupported.of_mem leftMembership)
+          (rightLeavesSupported.of_mem rightMembership) equal (by
+            have leftSmaller := parallelLeavesList_size_lt declaration
+              leftElements _ leftMembership
+            have rightSmaller := parallelLeavesList_size_lt declaration
+              rightElements _ rightMembership
+            simp_wf
+            omega))
+  have leftFrontier := rhoProc_parallelLeavesList_frontier_perm key color
+    cospan.commonTargetFreeContext bound leftElementsTyped keyDepth
+  have rightFrontier := rhoProc_parallelLeavesList_frontier_perm key color
+    cospan.commonTargetFreeContext bound rightElementsTyped keyDepth
+  let frontierAlignment :=
+    TwoDepthPermutation.of_endpoint_perms leafAlignment
+      leftFrontier rightFrontier
+  exact TwoDepthApex.parallel_of_permutation cospan declaration
+    restorationDepth keyDepth frontierAlignment
+
 /-- A typed bare parallel process closes against an arbitrary typed process
 of the same static colour whenever the latter is not itself syntactically a
 bare parallel collection.  The parallel side descends strictly through its
@@ -3030,6 +3276,238 @@ theorem rhoBareParallelLeftApex
       rightNotParallel rootDepth
   have absorbRight := canonicalizeByAt_parallel_singleton_of_not_parallel key
     declaration rootDepth right rightCanonicalNotParallel
+  simpa only [absorbRight] using wrapped
+
+/-- **Separated-depth one-sided bare parallel.**  The companion of
+`rhoBareParallelLeftTwoDepthApex`'s two-sided form: a typed bare parallel
+closes against a non-parallel typed process of the same colour, with the
+restoration index free of the keying index.  Direct construction, no
+agreement premise. -/
+theorem rhoBareParallelLeftTwoDepthApex
+    {leftCount rightCount : Nat}
+    {leftKey : Fin leftCount → CostStaticAtomKey}
+    {rightKey : Fin rightCount → CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey)
+    (color : CostStaticColor)
+    {bound : List TypeExpr} {leftElements : List Pattern} {right : Pattern}
+    {leftDepth rightDepth restorationDepth keyDepth : Nat}
+    (close : ∀ {leftLeaf rightLeaf : Pattern},
+      HasTypeWithConstructors rhoCIGSLT.costWholeLanguage
+          (CostStaticColor.hereditaryConstructorImage rhoCIGSLT color)
+          cospan.commonTargetFreeContext bound leftLeaf
+          (.base (costStaticReflectivePresentationDecl rhoCIGSLT color
+            rhoReflectivePresentation.toReflectivePresentationDecl
+            ).processSort) →
+        HasTypeWithConstructors rhoCIGSLT.costWholeLanguage
+          (CostStaticColor.hereditaryConstructorImage rhoCIGSLT color)
+          cospan.commonTargetFreeContext bound rightLeaf
+          (.base (costStaticReflectivePresentationDecl rhoCIGSLT color
+            rhoReflectivePresentation.toReflectivePresentationDecl
+            ).processSort) →
+        HasType rhoCIGSLT.costWholeLanguage cospan.commonTargetFreeContext
+          bound leftLeaf
+          (.base (costStaticReflectivePresentationDecl rhoCIGSLT color
+            rhoReflectivePresentation.toReflectivePresentationDecl
+            ).processSort) →
+        HasType rhoCIGSLT.costWholeLanguage cospan.commonTargetFreeContext
+          bound rightLeaf
+          (.base (costStaticReflectivePresentationDecl rhoCIGSLT color
+            rhoReflectivePresentation.toReflectivePresentationDecl
+            ).processSort) →
+        isObjectPattern leftLeaf = true →
+        isObjectPattern rightLeaf = true →
+        ConstructorsWithin
+          (fun constructor => ∃ sourceConstructor,
+            decodeCostStaticConstructor color constructor =
+              some sourceConstructor) leftLeaf →
+        ConstructorsWithin
+          (fun constructor => ∃ sourceConstructor,
+            decodeCostStaticConstructor color constructor =
+              some sourceConstructor) rightLeaf →
+        canonicalize
+            (costStaticReflectivePresentationDecl rhoCIGSLT color
+              rhoReflectivePresentation.toReflectivePresentationDecl)
+            leftLeaf =
+          canonicalize
+            (costStaticReflectivePresentationDecl rhoCIGSLT color
+              rhoReflectivePresentation.toReflectivePresentationDecl)
+            rightLeaf →
+        sizeOf leftLeaf + sizeOf rightLeaf <
+          sizeOf
+              (Pattern.collection
+                (costStaticReflectivePresentationDecl rhoCIGSLT color
+                  rhoReflectivePresentation.toReflectivePresentationDecl
+                  ).parallelCollection leftElements none) +
+            sizeOf right →
+        TwoDepthApex rhoCIGSLT cospan
+          (costStaticReflectivePresentationDecl rhoCIGSLT color
+            rhoReflectivePresentation.toReflectivePresentationDecl)
+          restorationDepth keyDepth
+          (canonicalizeByAt
+            (cospan.commonSemanticPatternKeyAt rhoCIGSLT)
+            (costStaticReflectivePresentationDecl rhoCIGSLT color
+              rhoReflectivePresentation.toReflectivePresentationDecl)
+            keyDepth leftLeaf)
+          (canonicalizeByAt
+            (cospan.commonSemanticPatternKeyAt rhoCIGSLT)
+            (costStaticReflectivePresentationDecl rhoCIGSLT color
+              rhoReflectivePresentation.toReflectivePresentationDecl)
+            keyDepth rightLeaf))
+    (leftHereditary : HasTypeWithConstructors rhoCIGSLT.costWholeLanguage
+      (CostStaticColor.hereditaryConstructorImage rhoCIGSLT color)
+      cospan.commonTargetFreeContext bound
+      (.collection
+        (costStaticReflectivePresentationDecl rhoCIGSLT color
+          rhoReflectivePresentation.toReflectivePresentationDecl
+          ).parallelCollection leftElements none)
+      (.base (costStaticReflectivePresentationDecl rhoCIGSLT color
+        rhoReflectivePresentation.toReflectivePresentationDecl).processSort))
+    (rightHereditary : HasTypeWithConstructors rhoCIGSLT.costWholeLanguage
+      (CostStaticColor.hereditaryConstructorImage rhoCIGSLT color)
+      cospan.commonTargetFreeContext bound right
+      (.base (costStaticReflectivePresentationDecl rhoCIGSLT color
+        rhoReflectivePresentation.toReflectivePresentationDecl).processSort))
+    (leftTyped : HasType rhoCIGSLT.costWholeLanguage
+      cospan.commonTargetFreeContext bound
+      (.collection
+        (costStaticReflectivePresentationDecl rhoCIGSLT color
+          rhoReflectivePresentation.toReflectivePresentationDecl
+          ).parallelCollection leftElements none)
+      (.base (costStaticReflectivePresentationDecl rhoCIGSLT color
+        rhoReflectivePresentation.toReflectivePresentationDecl).processSort))
+    (rightTyped : HasType rhoCIGSLT.costWholeLanguage
+      cospan.commonTargetFreeContext bound right
+      (.base (costStaticReflectivePresentationDecl rhoCIGSLT color
+        rhoReflectivePresentation.toReflectivePresentationDecl).processSort))
+    (leftObject : isObjectPattern
+      (.collection
+        (costStaticReflectivePresentationDecl rhoCIGSLT color
+          rhoReflectivePresentation.toReflectivePresentationDecl
+          ).parallelCollection leftElements none) = true)
+    (rightObject : isObjectPattern right = true)
+    (leftSupported : ConstructorsWithin
+      (fun constructor => ∃ sourceConstructor,
+        decodeCostStaticConstructor color constructor = some sourceConstructor)
+      (.collection
+        (costStaticReflectivePresentationDecl rhoCIGSLT color
+          rhoReflectivePresentation.toReflectivePresentationDecl
+          ).parallelCollection leftElements none))
+    (rightSupported : ConstructorsWithin
+      (fun constructor => ∃ sourceConstructor,
+        decodeCostStaticConstructor color constructor = some sourceConstructor)
+      right)
+    (rightNotParallel : ∀ elements,
+      right ≠ .collection
+        (costStaticReflectivePresentationDecl rhoCIGSLT color
+          rhoReflectivePresentation.toReflectivePresentationDecl
+          ).parallelCollection elements none)
+    (canonical : canonicalize
+        (costStaticReflectivePresentationDecl rhoCIGSLT color
+          rhoReflectivePresentation.toReflectivePresentationDecl)
+        (.collection
+          (costStaticReflectivePresentationDecl rhoCIGSLT color
+            rhoReflectivePresentation.toReflectivePresentationDecl
+            ).parallelCollection leftElements none) =
+      canonicalize
+        (costStaticReflectivePresentationDecl rhoCIGSLT color
+          rhoReflectivePresentation.toReflectivePresentationDecl) right)
+    (leftDepth_eq : leftDepth = keyDepth)
+    (rightDepth_eq : rightDepth = keyDepth) :
+    TwoDepthApex rhoCIGSLT cospan
+      (costStaticReflectivePresentationDecl rhoCIGSLT color
+        rhoReflectivePresentation.toReflectivePresentationDecl)
+      restorationDepth keyDepth
+      (canonicalizeByAt (cospan.commonSemanticPatternKeyAt rhoCIGSLT)
+        (costStaticReflectivePresentationDecl rhoCIGSLT color
+          rhoReflectivePresentation.toReflectivePresentationDecl)
+        leftDepth
+        (.collection
+          (costStaticReflectivePresentationDecl rhoCIGSLT color
+            rhoReflectivePresentation.toReflectivePresentationDecl
+            ).parallelCollection leftElements none))
+      (canonicalizeByAt (cospan.commonSemanticPatternKeyAt rhoCIGSLT)
+        (costStaticReflectivePresentationDecl rhoCIGSLT color
+          rhoReflectivePresentation.toReflectivePresentationDecl)
+        rightDepth right) := by
+  subst leftDepth
+  subst rightDepth
+  let declaration := costStaticReflectivePresentationDecl rhoCIGSLT color
+    rhoReflectivePresentation.toReflectivePresentationDecl
+  let key := cospan.commonSemanticPatternKeyAt rhoCIGSLT
+  let allowed := fun constructor => ∃ sourceConstructor,
+    decodeCostStaticConstructor color constructor = some sourceConstructor
+  have leftElementsTyped := rhoParallel_elements_hasType color leftTyped
+  have leftElementsHereditary :=
+    rhoParallel_elements_hasTypeWithConstructors color leftHereditary
+  have leftElementsObject : isObjectPatternList leftElements = true := by
+    simpa [isObjectPattern] using leftObject
+  have leftLeavesTyped := rhoProc_parallelLeavesList_typed color
+    cospan.commonTargetFreeContext bound leftElementsTyped
+  have rightLeavesTyped := rhoProc_parallelLeaves_typed color
+    cospan.commonTargetFreeContext bound rightTyped
+  have leftLeavesHereditary :=
+    rhoProc_parallelLeavesList_typedWithConstructors color
+      cospan.commonTargetFreeContext bound leftElementsHereditary
+  have rightLeavesHereditary :=
+    rhoProc_parallelLeaves_typedWithConstructors color
+      cospan.commonTargetFreeContext bound rightHereditary
+  have leftLeavesObject := parallelLeavesList_objects declaration
+    leftElementsObject
+  have rightLeavesObject := parallelLeaves_objects declaration rightObject
+  have leftLeavesSupported := parallelLeavesList_supported declaration allowed
+    leftSupported
+  have rightLeavesSupported := parallelLeaves_supported declaration allowed
+    rightSupported
+  have canonicalLeaves : List.Perm
+      ((parallelLeavesList declaration leftElements).map
+        (canonicalize declaration))
+      ((parallelLeaves declaration right).map
+        (canonicalize declaration)) := by
+    simpa [declaration, parallelLeaves] using
+      (rhoProcParallelLeaves_canonical_map_perm key color leftTyped rightTyped
+        canonical keyDepth)
+  let leafAlignment : TwoDepthPermutation cospan declaration
+      restorationDepth keyDepth
+      (canonicalizeListByAt key declaration keyDepth
+        (parallelLeavesList declaration leftElements))
+      (canonicalizeListByAt key declaration keyDepth
+        (parallelLeaves declaration right)) :=
+    TwoDepthPermutation.of_canonical_map_perm cospan declaration
+      restorationDepth keyDepth canonicalLeaves (fun leftMembership rightMembership equal =>
+        close
+          (leftLeavesHereditary.hasType_of_mem leftMembership)
+          (rightLeavesHereditary.hasType_of_mem rightMembership)
+          (elementsHaveType_of_mem leftLeavesTyped leftMembership)
+          (elementsHaveType_of_mem rightLeavesTyped rightMembership)
+          (isObjectPattern_of_mem leftLeavesObject leftMembership)
+          (isObjectPattern_of_mem rightLeavesObject rightMembership)
+          (leftLeavesSupported.of_mem leftMembership)
+          (rightLeavesSupported.of_mem rightMembership) equal (by
+            have leftSmaller := parallelLeavesList_size_lt declaration
+              leftElements _ leftMembership
+            have rightBounded := parallelLeaves_size_le declaration
+              right _ rightMembership
+            simp_wf
+            omega))
+  have leftFrontier := rhoProc_parallelLeavesList_frontier_perm key color
+    cospan.commonTargetFreeContext bound leftElementsTyped keyDepth
+  have rightFrontier := rhoProc_parallelLeaves_frontier_perm key color
+    cospan.commonTargetFreeContext bound rightTyped keyDepth
+  let frontierAlignment :=
+    TwoDepthPermutation.of_endpoint_perms leafAlignment
+      leftFrontier rightFrontier
+  have wrapped : TwoDepthApex rhoCIGSLT cospan declaration restorationDepth keyDepth
+      (canonicalizeByAt key declaration keyDepth
+        (.collection declaration.parallelCollection leftElements none))
+      (canonicalizeByAt key declaration keyDepth
+        (.collection declaration.parallelCollection [right] none)) :=
+    TwoDepthApex.parallel_of_permutation cospan declaration
+      restorationDepth keyDepth frontierAlignment
+  have rightCanonicalNotParallel :=
+    rhoProc_canonicalizeByAt_notParallel key color rightTyped
+      rightNotParallel keyDepth
+  have absorbRight := canonicalizeByAt_parallel_singleton_of_not_parallel key
+    declaration keyDepth right rightCanonicalNotParallel
   simpa only [absorbRight] using wrapped
 
 

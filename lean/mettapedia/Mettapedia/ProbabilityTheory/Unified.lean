@@ -231,16 +231,17 @@ theorem quantum_at_noncomm_vertex :
 These theorems show when additional axioms collapse a weaker theory to a stronger one.
 -/
 
-/- TODO: Collapse theorem (Separation ⇒ collapse of imprecision).
+/- TODO: Collapse theorem for a convergent family of interval models.
 
 The intended content here is a bridge from:
 - an imprecise/credal semantics (PartialOrder / interval-valued representation),
-- plus a K&S-style separation/totality hypothesis,
+- plus explicit coherence and convergence hypotheses that make all bounds meet,
 to a point-valued additive representation.
 
 This should eventually be backed by the concrete Lean results in:
-- `Mettapedia/ProbabilityTheory/KnuthSkilling/Core/TotalityImprecision.lean`
-- and the KS representation pipeline.
+- `KnuthSkilling/Core/TotalityImprecision.lean` for the weaker order-separation facts,
+- `Mettapedia/ProbabilityTheory/Hypercube/ThetaSemantics.lean` for families of completions,
+- and the K&S representation pipeline for additive scalar representations.
 
 We intentionally do not leave a placeholder theorem of type `True`.
 -/

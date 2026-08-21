@@ -2,19 +2,21 @@ import Mettapedia.PLN.Evidence.EvidenceQuantale
 import KnuthSkilling.Core.TotalityImprecision
 
 /-!
-# PLN BinaryEvidence vs Knuth-Skilling: the Totality Gate
+# PLN BinaryEvidence vs Scalar Order Reflection
 
 This file records the clean meeting point between:
 
-* Knuth–Skilling style representation theorems that produce **point-valued** maps `Θ : α → ℝ`, and
+* scalar maps `Θ : α → ℝ` that are required to preserve and reflect order, and
 * PLN-style **evidence semantics** `BinaryEvidence := (n⁺, n⁻)`, which naturally admits incomparable values.
 
 The key formal fact is simple:
 
-> Any faithful point-valued order representation into `ℝ` forces the order to be **total**.
+> Any order-reflecting point-valued representation into `ℝ` forces the order to be **total**.
 
-So, in domains where incomparable plausibility values are meaningful (e.g. "more positive evidence
-but less negative evidence"), one should *not* expect a faithful point-valued probability calculus.
+This is deliberately stronger than Knuth–Skilling's one-way fidelity condition,
+which permits scalar values to add comparisons not present in the lattice.  In
+domains where incomparability itself is meaningful, an order-reflecting scalar
+readout cannot retain it.
 -/
 
 namespace Mettapedia.PLN.Evidence.PLN_KS_Bridge
@@ -32,18 +34,19 @@ theorem evidence_has_incomparables :
     -- Coordinatewise order: need both components to be ≤, so (1,0) and (0,1) are incomparable.
     simp [BinaryEvidence.le_def]
 
-/-! ## Therefore, no faithful point-valued `Θ : BinaryEvidence → ℝ` exists -/
+/-! ## Therefore, no order-reflecting scalar readout exists -/
 
-/-- BinaryEvidence has no faithful point-valued order representation into `ℝ`. -/
-theorem evidence_no_faithfulPointRepresentation :
-    ¬ FaithfulPointRepresentation BinaryEvidence := by
-  apply no_faithfulPointRepresentation_of_incomparable (α := BinaryEvidence)
+/-- BinaryEvidence has no point-valued representation into `ℝ` that preserves
+and reflects its coordinatewise order. -/
+theorem evidence_no_orderReflectingPointRepresentation :
+    ¬ OrderReflectingPointRepresentation BinaryEvidence := by
+  apply no_orderReflectingPointRepresentation_of_incomparable (α := BinaryEvidence)
   exact evidence_has_incomparables
 
-/-- Unfolded form of `evidence_no_faithfulPointRepresentation`. -/
-theorem evidence_no_point_representation :
+/-- Unfolded form of `evidence_no_orderReflectingPointRepresentation`. -/
+theorem evidence_no_orderEmbedding_into_real :
     ¬ ∃ Θ : BinaryEvidence → ℝ, ∀ a b : BinaryEvidence, a ≤ b ↔ Θ a ≤ Θ b := by
-  exact evidence_no_faithfulPointRepresentation
+  exact evidence_no_orderReflectingPointRepresentation
 
 /-! ## BinaryEvidence is not Boolean (Heyting negation does not satisfy LEM) -/
 

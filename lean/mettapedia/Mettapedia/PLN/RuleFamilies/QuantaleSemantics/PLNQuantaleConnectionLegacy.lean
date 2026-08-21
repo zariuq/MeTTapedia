@@ -10,7 +10,7 @@ This file explores a **strength-level** (point-valued) quantale-like story for P
 
 Important: the canonical foundational carrier for PLN in this repo is **evidence counts**
 `(n⁺, n⁻)` in `Mettapedia.PLN.Evidence.EvidenceQuantale`, which naturally admits incomparability and therefore
-cannot have a faithful point-valued representation into `ℝ` (see `Mettapedia.PLN.Evidence.PLN_KS_Bridge`).
+cannot embed its order into `ℝ` (see `Mettapedia.PLN.Evidence.PLN_KS_Bridge`).
 The `[0,1]` strength view is a lossy projection of that richer semantics.
 
 ## Main Results

@@ -4,15 +4,18 @@ import KnuthSkilling.Core.Basic
 /-!
 # BinaryEvidence ↔ Knuth-Skilling Bridge: Intuitionistic Probability Theory
 
-This file establishes the connection between PLN BinaryEvidence and Knuth-Skilling theory
-at the **distributive lattice level** (PlausibilitySpace).
+This file relates PLN BinaryEvidence to the project’s distributive-lattice
+valuation interface (`PlausibilitySpace`).
 
 ## Key Insight
 
-K&S theory has multiple levels:
-1. **PlausibilitySpace** (DistribLattice + BoundedOrder) - Valuations, conditional probability
-2. **ComplementedLattice** (adds complements) - Product rule derivations
-3. **BooleanAlgebra** (full LEM) - Sum rule, P(¬A) = 1 - P(A)
+The distinction needed here is:
+1. **Distributive lattice valuation** — sum/inclusion-exclusion structure does
+   not require Boolean negation.
+2. **Heyting algebra** — supplies intuitionistic implication and
+   pseudocomplement.
+3. **Boolean algebra** — additionally validates excluded middle and the
+   complement equation `P(¬A) = 1 - P(A)`.
 
 BinaryEvidence is a **Frame** (complete Heyting algebra), which gives:
 - ✅ PlausibilitySpace (distributive lattice with ⊤, ⊥)
@@ -20,11 +23,9 @@ BinaryEvidence is a **Frame** (complete Heyting algebra), which gives:
 - ❌ NOT ComplementedLattice (Heyting negation ≠ Boolean complement)
 - ❌ NOT BooleanAlgebra (LEM fails)
 
-Therefore, K&S theory at the PlausibilitySpace level applies to BinaryEvidence,
-giving us **intuitionistic probability theory** where:
-- Valuations are well-defined
-- Conditional probability works
-- But P(¬A) ≠ 1 - P(A) in general
+Therefore BinaryEvidence supports the project’s lattice-level valuation
+scaffolding and Heyting implication.  A particular normalized modular valuation
+still has to be supplied, and Boolean complement laws do not follow.
 
 ## References
 
@@ -92,12 +93,13 @@ theorem total_monotone :
   simp only [BinaryEvidence.le_def, BinaryEvidence.total] at h ⊢
   exact add_le_add h.1 h.2
 
-/-! ## Conditional Probability on BinaryEvidence
+/-! ## A Conditional-Valuation Readout
 
-Even without Boolean structure, we can define conditional "plausibility":
+Even without Boolean structure, the generic valuation interface defines the readout:
   plaus(a | b) = plaus(a ⊓ b) / plaus(b)
 
-For BinaryEvidence, the meet is coordinatewise min:
+Additional hypotheses are needed before treating that definition as a complete
+conditional-probability calculus.  For BinaryEvidence, the meet is coordinatewise min:
   e₁ ⊓ e₂ = ⟨min e₁.pos e₂.pos, min e₁.neg e₂.neg⟩
 -/
 

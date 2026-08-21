@@ -1561,16 +1561,25 @@ in particular, the exact state/error change of coordinates is not itself a chang
 objective.
 
 The same instrumentation exhibits the boundary of the useful regime. Approaching a
-settling failure the cosine falls to $0.0008$: credit essentially orthogonal to the BP
-direction, hence carrying no first-order reduction of the task loss. That is not a
-stronger departure but a departed and no-longer-descending state, which is exactly the
-complement of the \emph{departs-but-descends} band---positive inner product, not a
-scalar multiple, squared cosine below one---established constructively in
-\S\ref{sec:finite-settling}. The practical consequence is that a monotone-energy gate
-cannot detect this failure: energy decreased at every accepted step while the credit was
-already orthogonal. The admissible criterion is a floor on credit cosine, which is the
-credit-unit stationarity condition that a bare gradient-norm tolerance provably cannot
-supply.
+settling failure the cosine falls to $0.0008$: credit within a twentieth of a degree of
+orthogonal to the BP direction. The inner product is still positive, so the first-order
+term is a reduction rather than an increase; its normalized alignment is only about
+$8\times10^{-4}$, roughly three orders of magnitude below an aligned direction. Without
+a curvature bound, an admitted-step-size certificate, and numerical and readout error
+budgets, that observation does not establish robust finite-step descent: the quadratic
+remainder or either error source may overwhelm the small positive margin. For a positive
+directional-curvature bound $\kappa$, the sufficient trust condition is
+$\eta\kappa/2<\langle g,d\rangle$
+(\leanname{directionalTask\_strict\_descent}); that inequality was not certified here.
+The state
+therefore does not leave the \emph{departs-but-descends} band---positive inner product,
+not a scalar multiple, squared cosine below one---by sign, but the measured cosine alone
+does not certify a robust interior margin. The practical consequence is the reason to
+record it: a monotone-energy gate did not expose the loss of alignment, because energy
+decreased at every accepted step while the credit direction had already nearly collapsed.
+A large-gradient guard may still detect this particular approach to failure, but neither
+energy decrease nor a bare gradient norm certifies credit direction. The admissible
+criterion is an explicit floor on credit cosine with its measurement uncertainty charged.
 
 \paragraph{Replication locates a transport reservoir beyond production depth.}
 The first single-update curve was misleading when its absolute cosine was interpreted as

@@ -321,12 +321,10 @@ theorem confidence_monotone_in_total (hκ_ne_top : κ ≠ ⊤) :
     _ ≤ t₁ * t₂ + t₂ * κ := by gcongr
     _ = (t₁ + κ) * t₂ := by ring
 
-/-- The PLN 2D structure (strength, confidence) captures STRICTLY MORE
-    information than any single K&S valuation.
-
-    Proof: valuations collapse incomparable BinaryEvidence to comparable reals,
-    but (strength, confidence) pairs remain distinguishable. -/
-theorem pln_2d_more_informative :
+/-- A concrete incomparable pair remains distinguishable by the PLN readout.
+This is a positive information-preservation example; it does not claim that
+ordinary K&S one-way scalar valuations are impossible. -/
+theorem incomparable_evidence_has_distinct_pln_readout :
     ∃ e₁ e₂ : BinaryEvidence,
       ¬(e₁ ≤ e₂) ∧ ¬(e₂ ≤ e₁) ∧
       (e₁.toStrength ≠ e₂.toStrength ∨ e₁.toConfidence 1 ≠ e₂.toConfidence 1) := by
@@ -347,18 +345,6 @@ theorem pln_2d_more_informative :
     rw [ENNReal.div_self h2ne0 (ENNReal.natCast_ne_top 2)]
     rw [ENNReal.zero_div]
     exact one_ne_zero
-
-/-- Summary: The PLN BinaryEvidence framework gives TIGHTER bounds than K&S valuations alone.
-
-    - K&S valuation: collapses 2D to 1D, loses incomparability info
-    - PLN (strength, confidence): preserves 2D structure
-    - PLN (n⁺, n⁻): preserves FULL structure -/
-theorem pln_avoids_heyting_precision_loss :
-    ∀ v : Valuation BinaryEvidence, ∀ a : BinaryEvidence,
-      0 ≤ v.val a ∧ v.val a ≤ 1 ∧
-      (a.pos, a.neg) = (a.pos, a.neg) := by
-  intro v a
-  exact ⟨v.nonneg a, v.le_one a, rfl⟩
 
 end PLNConnection
 

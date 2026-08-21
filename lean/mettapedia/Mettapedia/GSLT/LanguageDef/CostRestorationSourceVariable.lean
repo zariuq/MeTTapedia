@@ -1,5 +1,6 @@
 import Mettapedia.GSLT.LanguageDef.CostRestorationRelation
 import Mettapedia.GSLT.LanguageDef.CostHereditaryTransportAtoms
+import Mettapedia.GSLT.LanguageDef.TwoDepthRestorationApex
 
 /-!
 # Common restoration of authored source variables
@@ -115,6 +116,62 @@ theorem sourceVariable_key_ne_of_name_ne
     leftValues.assignment_sourceVariable,
     rightValues.assignment_sourceVariable] at normalEquality
   exact namesNe (Pattern.fvar.inj normalEquality)
+
+/-- Separated-depth form of the source-variable terminal: two authored
+source variables with the same name share a
+common-restoration apex at every depth.  The proof identifies the complete
+semantic keys first; it does not infer restoration equality from the raw
+variable spelling alone. -/
+noncomputable def sourceVariable_twoDepthApex
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {leftOccurrences rightOccurrences : List CostRegionOccurrence}
+    {leftTable : TypedCostRegionBoundaryTable source color targetFree
+      leftOccurrences}
+    {rightTable : TypedCostRegionBoundaryTable source color targetFree
+      rightOccurrences}
+    {leftValues : TypedCostRegionBoundaryTable.Values source color targetFree
+      leftTable}
+    {rightValues : TypedCostRegionBoundaryTable.Values source color targetFree
+      rightTable}
+    {leftRoot rightRoot : Pattern}
+    {leftInventory : CostStaticParameterInventory source color targetFree
+      leftTable leftValues leftRoot}
+    {rightInventory : CostStaticParameterInventory source color targetFree
+      rightTable rightValues rightRoot}
+    (left : CostStaticAtomEnvironment source color targetFree leftInventory)
+    (right : CostStaticAtomEnvironment source color targetFree rightInventory)
+    (name : String)
+    (leftOccurrence : CostStaticFVarOccurrence leftRoot)
+    (rightOccurrence : CostStaticFVarOccurrence rightRoot)
+    (leftName : leftOccurrence.name = costRegionSourceVariableName name)
+    (rightName : rightOccurrence.name = costRegionSourceVariableName name)
+    (leftSlot : Fin left.atomCount) (rightSlot : Fin right.atomCount)
+    (leftSelected : left.slotOfName? leftOccurrence.name = some leftSlot)
+    (rightSelected : right.slotOfName? rightOccurrence.name = some rightSlot)
+    (declaration : ReflectivePresentationDecl)
+    (restorationDepth keyDepth : Nat) :
+    let cospan := left.semanticKeyCospan right
+    CostStaticAtomKeyCospan.TwoDepthApex source cospan declaration
+      restorationDepth keyDepth
+      (cospan.reifyWith left.lookupAtom? cospan.leftSlot
+        (.fvar (left.atomName leftSlot)))
+      (cospan.reifyWith right.lookupAtom? cospan.rightSlot
+        (.fvar (right.atomName rightSlot))) := by
+  let cospan := left.semanticKeyCospan right
+  have keyEquality : (left.atomValue leftSlot).key =
+      (right.atomValue rightSlot).key :=
+    left.sourceVariable_key_eq right name leftOccurrence rightOccurrence
+      leftName rightName leftSlot rightSlot leftSelected rightSelected
+  have slotEquality : cospan.leftSlot leftSlot =
+      cospan.rightSlot rightSlot :=
+    (cospan.crossExtensional leftSlot rightSlot).mpr keyEquality
+  apply CostStaticAtomKeyCospan.TwoDepthApex.of_eq cospan
+    declaration restorationDepth keyDepth
+  simp only [CostStaticAtomKeyCospan.reifyWith,
+    CostStaticAtomEnvironment.lookupAtom?_atomName]
+  exact congrArg (fun slot => Pattern.fvar (cospan.commonAtomName slot))
+    slotEquality
 
 end CostStaticAtomEnvironment
 

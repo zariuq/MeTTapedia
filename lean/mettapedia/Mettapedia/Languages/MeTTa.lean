@@ -50,6 +50,7 @@ import Mettapedia.Languages.MeTTa.PureKernel.RegularContextualIdentity
 import Mettapedia.Languages.MeTTa.PureKernel.RegularSemanticUniverse
 import Mettapedia.Languages.MeTTa.PureKernel.RegularSemanticCoherence
 import Mettapedia.Languages.MeTTa.PureKernel.RegularFundamental
+import Mettapedia.Languages.MeTTa.PureKernel.Universe.LevelAlgebra
 import Mettapedia.Languages.MeTTa.AbstractMachineBoundary
 import Mettapedia.Languages.MeTTa.CeTTaSpaceEngineRefinement
 import Mettapedia.Languages.MeTTa.HEPureKernelFragmentBridge
@@ -108,6 +109,10 @@ import Mettapedia.Languages.MeTTa.UnitAndChoiceZero
 import Mettapedia.Languages.MeTTa.CollapseSuperposeRoundTrip
 import Mettapedia.Languages.MeTTa.EmptinessTaxonomy
 import Mettapedia.Languages.MeTTa.SourceZeroCase
+import Mettapedia.Languages.MeTTa.DemandSemantics
+import Mettapedia.Languages.MeTTa.DemandPrimeObligations
+import Mettapedia.Languages.MeTTa.PrimeNeedCacheLaws
+import Mettapedia.Languages.MeTTa.PrimeDemandNeedSimulation
 import Mettapedia.OSLF.Framework.PrimeDTTCheckedIntroduction
 import Mettapedia.OSLF.Framework.PrimeDependentWorldModel
 

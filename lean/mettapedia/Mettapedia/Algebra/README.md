@@ -9,7 +9,7 @@ those constraints are exactly what the probability and PLN developments elsewher
 Mettapedia lean on. `Mettapedia/Algebra` collects the order-theoretic and algebraic
 structures that supply those constraints.
 
-Two threads run through the directory:
+Three threads run through the directory:
 
 - **Ordered structures that force a number line.** An *ordered semigroup* is a set
   with an associative, order-respecting operation. A classical theorem (Hölder)
@@ -25,6 +25,16 @@ Two threads run through the directory:
   at the three signs of a single parameter, yet form a *discrete* classification, not
   a continuum. That trichotomy is the algebraic shadow of the Knuth–Skilling
   symmetry argument for why probability is real- (not split- or dual-) valued.
+- **What a cost readout can and cannot say.** Running a computation and *measuring*
+  it are different acts, and the measurement is a projection. Work and span compose
+  in a specific way — sequential phases add both, independent branches add work but
+  take the slower span — and that pattern, not any particular pair of numbers, is
+  the interface a resource measurement must satisfy. Some familiar resources fit it
+  (energy, communication) and at least one does not: peak memory allocation runs the
+  *other* way, taking a maximum where span adds and adding where span takes a
+  maximum, so no single scalar can stand in for both. The rest of this thread bounds
+  what such readouts forget, which is the honest way to say what a replay check can
+  actually verify.
 
 ## Components
 
@@ -36,6 +46,13 @@ Two threads run through the directory:
 | `Hyperstructure.lean` | hyperoperations / hypermagmas / hypersemigroups built on Mathlib's `Set` (powerset) monad; hyperassociativity = Set-monad bind associativity |
 | `SplitComplex.lean` | the split-complex numbers (`j^2 = +1`): zero divisors, idempotents `(1±j)/2`, the `a²−b²` norm, ring iso to `ℝ × ℝ` |
 | `TwoDimClassification.lean` | the classification of 2-dimensional unital real algebras into complex / dual / split-complex by the sign of the "completed-square" parameter `μ` |
+| `FootprintQuantale.lean` | axiom/rule footprints as the quantale `((Set α)ᵒᵈ, ∪, ∅, ⊇)` — reverse inclusion, so a smaller footprint is a *stronger* claim and the unit `∅` is `⊤`; includes why plain inclusion fails to be a quantale |
+| `TemporalQuantale.lean` | commutative quantales with a group action by quantale automorphisms; temporal transitivity of residuated implication follows without extra axioms |
+| `WorkSpan.lean` | the two-coordinate concurrent cost algebra: sequential composition adds work and span, parallel adds work and maximizes span. The laws are a *lax interchange* inequality, not a semiring; `ConcurrentCostAlgebra` is the reusable interface |
+| `WorkSpanInformationLoss.lean` | what a work/span readout forgets — for each of colour, declaration identity, receipt, causal order, elaboration path, and schedule shape, two executions differing in that attribute with identical work and span; plus the two directions in which work and span fail to determine each other |
+| `ResourceValuations.lean` | which resources satisfy `ConcurrentCostAlgebra`. Energy and communication do; **peak allocation provably does not** — it violates the lax interchange law — and no single scalar respects both span and allocation |
+| `ReceiptSchemaAdequacy.lean` | a receipt is a projection, so it determines exactly what its schema records: a schema separates two executions iff a checker built on it can tell them apart, hence any omitted attribute is one replay cannot check |
+| `OccurrenceIdentity.lean` | pairing parallel frontiers by *value* is unsound exactly when elements repeat — which is what parallel composition creates — so a correspondence must be carried as data; an injective frontier is the delimited case where recovery is legitimate |
 
 ## External dependency
 
@@ -49,9 +66,14 @@ path depends on it.
 
 ## Formalization status
 
-All 6 `Mettapedia/Algebra` source files are `sorry`-free. No `axiom` declarations
+All 13 `Mettapedia/Algebra` source files are `sorry`-free. No `axiom` declarations
 appear in these files — this is a source-level grep, *not* a per-theorem
 `#print axioms` audit (a theorem can still inherit a Mathlib axiom transitively).
+
+The negative results in `WorkSpanInformationLoss`, `ResourceValuations`, and
+`OccurrenceIdentity` are stated as genuine non-existence or separation claims with
+explicit witnesses, never as unproved side conditions: an information-loss claim is
+only meaningful if the two distinguishable executions are exhibited.
 
 **Trusted base.** Nothing in this directory uses `native_decide`, so nothing here
 enlarges the trusted base by trusting the compiler.
@@ -97,6 +119,15 @@ rg -n --glob '*.lean' 'native_decide' .
 - Frédéric Marty, "Sur une généralisation de la notion de groupe" (1934); Piergiulio
   Corsini & Violeta Leoreanu, *Applications of Hyperstructure Theory* (Kluwer, 2003) —
   the hyperstructure background for `Hyperstructure.lean`.
+- Richard P. Brent, "The Parallel Evaluation of General Arithmetic Expressions,"
+  *Journal of the ACM* 21(2):201–206 (1974) — the work/depth bound that makes the
+  two coordinates of `WorkSpan.lean` the standard pair.
+- Marcelo Aguiar & Swapneel Mahajan, *Monoidal Functors, Species and Hopf Algebras*,
+  CRM Monograph Series 29 (AMS, 2010) — 2-monoidal (duoidal) categories, where the
+  lax interchange between two monoidal structures is the defining axiom rather than
+  a defect; this is the categorical home of `ConcurrentCostAlgebra`'s law.
 
 ---
-*Status (drafted 2026-06-22 by Claude Code, Opus 4.8): 6 .lean files, 0 with sorries.*
+*Status (drafted 2026-06-22 by Claude Code, Opus 4.8; cost-readout thread added
+2026-08-15 by Claude Code, Fable 5): 13 .lean files, ~3.2k lines, 0 with sorries,
+0 axiom declarations, 0 `native_decide`.*

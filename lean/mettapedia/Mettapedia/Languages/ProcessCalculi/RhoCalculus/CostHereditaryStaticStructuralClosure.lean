@@ -2,7 +2,9 @@ import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryRestoration
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostCanonicalReachableDomain
 import Mettapedia.GSLT.LanguageDef.CostCanonicalStructuralAlignment
 import Mettapedia.GSLT.LanguageDef.CostStaticRootView
+import Mettapedia.GSLT.LanguageDef.ReflectiveCanonicalFreeRenaming
 import Mettapedia.OSLF.MeTTaIL.ReflectiveCanonicalRootDichotomy
+import Mettapedia.OSLF.MeTTaIL.ReflectiveCanonicalOrderAgnosticDepths
 
 /-!
 # Static-to-structural hereditary closure for rho Cost
@@ -2085,6 +2087,146 @@ noncomputable def stoppedParallelSingletonPairElaborationOfCloseSmaller
       alignment :=
         (leftView.rootBridge_reindex_left
           exposure.toRootBridge).toTreeAlignment }
+
+private theorem reify_eq_renameFVars_for_canonical
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    {table : TypedCostRegionBoundaryTable source color targetFree occurrences}
+    {values : TypedCostRegionBoundaryTable.Values source color targetFree table}
+    {root : Pattern}
+    {inventory : CostStaticParameterInventory source color targetFree table
+      values root}
+    (environment : CostStaticAtomEnvironment source color targetFree inventory) :
+    ∀ pattern,
+      environment.reify pattern =
+        Pattern.renameFVars environment.reifyName pattern := by
+  intro pattern
+  induction pattern using Pattern.inductionOn with
+  | hbvar index => simp [CostStaticAtomEnvironment.reify, Pattern.renameFVars]
+  | hfvar name => simp [CostStaticAtomEnvironment.reify, Pattern.renameFVars]
+  | happly constructor arguments inductionHypothesis =>
+      simp only [CostStaticAtomEnvironment.reify, Pattern.renameFVars,
+        Pattern.apply.injEq, true_and]
+      exact List.map_congr_left inductionHypothesis
+  | hlambda binder body inductionHypothesis =>
+      simp [CostStaticAtomEnvironment.reify, Pattern.renameFVars,
+        inductionHypothesis]
+  | hmultiLambda arity binders body inductionHypothesis =>
+      simp [CostStaticAtomEnvironment.reify, Pattern.renameFVars,
+        inductionHypothesis]
+  | hsubst body replacement bodyInduction replacementInduction =>
+      simp [CostStaticAtomEnvironment.reify, Pattern.renameFVars,
+        bodyInduction, replacementInduction]
+  | hcollection collectionType elements rest inductionHypothesis =>
+      simp only [CostStaticAtomEnvironment.reify, Pattern.renameFVars,
+        Pattern.collection.injEq, true_and, and_true]
+      exact List.map_congr_left inductionHypothesis
+
+/-- A bound variable that is the whole authored canonical skeleton result
+survives semantic-name reification unchanged. -/
+theorem CostStaticRegionNode.reifiedSourceFrame_bvar_of_abstractCanonical
+    {color : CostStaticColor} {targetFree : FreeTypeContext}
+    (node : CostStaticRegionNode rhoCIGSLT color targetFree)
+    {values : TypedCostRegionBoundaryTable.Values rhoCIGSLT color targetFree
+      node.boundaryTable}
+    {inventory : CostStaticParameterInventory rhoCIGSLT color targetFree
+      node.boundaryTable values node.skeleton.1}
+    (environment : CostStaticAtomEnvironment rhoCIGSLT color targetFree
+      inventory)
+    (sourceIndex : Nat)
+    (abstractCanonical : canonicalize rhoReflectivePresentation
+      node.skeleton.1 = .bvar sourceIndex) :
+    canonicalize rhoReflectivePresentation
+        (node.reifiedSourceFrame environment).1 =
+      .bvar sourceIndex := by
+  rw [node.reifiedSourceFrame_pattern,
+    reify_eq_renameFVars_for_canonical]
+  have canonicalEquality : canonicalize rhoReflectivePresentation
+      node.skeleton.1 =
+      canonicalize rhoReflectivePresentation (.bvar sourceIndex) := by
+    simpa [canonicalize] using abstractCanonical
+  have renamed := canonicalize_renameFVars_eq_of_eq
+    rhoReflectivePresentation (by decide) environment.reifyName
+    canonicalEquality
+  simpa [Pattern.renameFVars, canonicalize] using renamed
+
+/-- An authored source name that is the whole canonical skeleton result
+supplies the exact occurrence, semantic slot, and selected-colour canonical
+frame needed by the direct free-variable exposure constructor. -/
+theorem CostStaticRegionNode.sourceVariableFrame_of_abstractCanonical
+    {color : CostStaticColor} {targetFree : FreeTypeContext}
+    (node : CostStaticRegionNode rhoCIGSLT color targetFree)
+    (children : CostRegionBoundaryTrees rhoCIGSLT targetFree color
+      node.finiteBoundaryTable)
+    (name : String)
+    (abstractCanonical :
+      canonicalize rhoReflectivePresentation node.skeleton.1 =
+        .fvar (costRegionSourceVariableName name)) :
+    ∃ occurrence : CostStaticFVarOccurrence node.skeleton.1,
+      ∃ slot : Fin (node.normalizationEnvironment
+        rhoHereditaryStaticNormalizer children).atomCount,
+      occurrence.name = costRegionSourceVariableName name ∧
+        (node.normalizationEnvironment rhoHereditaryStaticNormalizer
+          children).slotOfName? occurrence.name = some slot ∧
+        node.canonicalizeReifiedTargetFrame
+            (node.normalizationEnvironment rhoHereditaryStaticNormalizer
+              children)
+            (costStaticReflectivePresentationDecl rhoCIGSLT color
+              rhoReflectivePresentation) =
+          .fvar ((node.normalizationEnvironment
+            rhoHereditaryStaticNormalizer children).atomName slot) := by
+  let environment := node.normalizationEnvironment
+    rhoHereditaryStaticNormalizer children
+  have nameMembership : costRegionSourceVariableName name ∈
+      node.skeleton.1.freeFvarNames := by
+    rw [← mem_freeFvarNames_canonicalize_iff rhoReflectivePresentation]
+    rw [abstractCanonical]
+    simp [Pattern.freeFvarNames]
+  obtain ⟨occurrence, occurrenceName⟩ :=
+    CostStaticFVarOccurrence.exists_of_mem_freeFvarNames_of_object
+      nameMembership node.skeleton.2.1.2.2.1
+  have slotExists := environment.slotOfName?_isSome_of_occurrence occurrence
+  let slot := (environment.slotOfName? occurrence.name).get slotExists
+  have selected : environment.slotOfName? occurrence.name = some slot :=
+    (Option.some_get slotExists).symm
+  have selectedSourceName : environment.slotOfName?
+      (costRegionSourceVariableName name) = some slot := by
+    simpa [occurrenceName] using selected
+  have reifiedOrdinary : canonicalize rhoReflectivePresentation
+      (node.reifiedSourceFrame environment).1 =
+      .fvar (environment.atomName slot) := by
+    rw [node.reifiedSourceFrame_pattern]
+    have canonicalEquality : canonicalize rhoReflectivePresentation
+        node.skeleton.1 =
+        canonicalize rhoReflectivePresentation
+          (.fvar (costRegionSourceVariableName name)) := by
+      simpa [canonicalize] using abstractCanonical
+    have renamed := canonicalize_renameFVars_eq_of_eq
+      rhoReflectivePresentation (by decide) environment.reifyName
+      canonicalEquality
+    calc
+      canonicalize rhoReflectivePresentation
+          (environment.reify node.skeleton.1) =
+        canonicalize rhoReflectivePresentation
+          (Pattern.renameFVars environment.reifyName
+            (.fvar (costRegionSourceVariableName name))) := by
+          rw [reify_eq_renameFVars_for_canonical]
+          exact renamed
+      _ = .fvar (environment.atomName slot) := by
+        simp [Pattern.renameFVars, CostStaticAtomEnvironment.reifyName,
+          selectedSourceName, canonicalize]
+  have keyed := canonicalizeByDepths_eq_fvar_of_canonicalize_eq
+    (CostStaticRegionNode.sourceSemanticPatternKeyAt node environment)
+    rhoReflectivePresentation node.targetBound.length 0 reifiedOrdinary
+  refine ⟨occurrence, slot, occurrenceName,
+    by simpa [environment] using selected, ?_⟩
+  change node.canonicalizeReifiedTargetFrame environment
+      (costStaticReflectivePresentationDecl rhoCIGSLT color
+        rhoReflectivePresentation) = .fvar (environment.atomName slot)
+  rw [CostStaticRegionNode.canonicalizeReifiedTargetFrame_eq_map_sourceCanonicalize
+    node environment, keyed]
+  simp [mapPattern, CostStaticBinderThinning.thickenAmbientBVars]
 
 /-- Construct the atom branch when a collapsing static frame exposes an
 authored source-variable occurrence as its complete canonical result.

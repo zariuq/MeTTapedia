@@ -19,24 +19,26 @@ The probability hypercube is a geometric framework for understanding relationshi
 The hypercube is not just a taxonomy of "probability theories"; it is a way to keep track of which
 *properties of your domain* are required for which styles of reasoning.
 
-### The Totality / Linear-Order Gate (Why Point-Valued Probability Needs Comparability)
+### The Scalar Order-Reflection Gate
 
-If you want a **faithful point-valued representation** (a map `Θ : α → ℝ` that preserves *and
-reflects* `≤`), then your plausibility order must already be **total**: every pair must be
-comparable. Otherwise, no such `Θ` can exist, because `ℝ` is linearly ordered.
+If you want a scalar representation `Θ : α → ℝ` that preserves *and reflects* `≤`, then your
+plausibility order must already be total: every pair must be comparable. Otherwise, no such
+order embedding can exist, because `ℝ` is linearly ordered.
 
 This is formalized in:
-- `Mettapedia/Logic/PLNTruthTower.lean`:
-  - `no_pointRepresentation_with_incomparables` (incomparables rule out any faithful `Θ : α → ℝ`)
+- `Mettapedia/PLN/TruthValues/PLNTruthTower.lean`:
+  - `incomparable_forces_no_order_reflecting_point_representation`
 
-Interpretation: **Linear order is not cosmetic** in the K&S-style representation theorems; it is
-exactly the condition that makes point-valued (precise) semantics possible.
+This is stronger than Knuth–Skilling fidelity. K&S require lattice order to imply scalar order,
+but explicitly permit the scalar order to extend the lattice order. The Heyting/Boolean gate is
+instead controlled by complement behavior: Boolean valuations collapse the lower and upper
+bounds, while a valuation that detects failure of excluded middle yields a strict gap.
 
 ### Evidence/Quantale Semantics (PLN) Lives on the "Partial-Order" Face
 
 PLN’s evidence-count carrier `Evidence := (n⁺, n⁻)` has a natural **partial order**
 (coordinatewise `≤`). It contains incomparable elements (e.g. "more positive evidence but less
-negative evidence"), so it cannot admit a faithful point-valued embedding into `ℝ`.
+negative evidence"), so it cannot admit an order-reflecting scalar embedding into `ℝ`.
 
 In this setting:
 - you should *not* expect a point-valued Kolmogorov calculus to be valid "for free";

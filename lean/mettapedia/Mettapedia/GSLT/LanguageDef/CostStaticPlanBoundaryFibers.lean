@@ -41,6 +41,274 @@ theorem TypedCostRegionBoundaryTable.certify?_cons
       cases tailResult : TypedCostRegionBoundaryTable.certify? tail <;>
         simp [TypedCostRegionBoundaryTable.certify?, headResult, tailResult]
 
+/-! ## Traversal-context naturality -/
+
+mutual
+  /-- Change only the traversal context carried by a static plan.  Boundary
+  occurrence paths are recomputed under the new context, while the typed
+  boundary data and source abstract skeleton remain unchanged. -/
+  def CostStaticRegionPlan.recontextualize
+      {source : CIGSLT} {color : CostStaticColor}
+      {targetFree : WellSorted.FreeTypeContext}
+      {sourceBound targetBound : List TypeExpr}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+      {sourceAvailable : List TypeExpr} {outer : OneHoleContext}
+      {pattern : Pattern} {sourceType : TypeExpr}
+      (plan : CostStaticRegionPlan source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer pattern sourceType)
+      (newOuter : OneHoleContext) :
+      CostStaticRegionPlan source color targetFree sourceBound targetBound
+        thinning sourceAvailable newOuter pattern sourceType :=
+    match plan with
+    | .bvar sourceIndex lookup correspondence availableScope =>
+        .bvar sourceIndex lookup correspondence availableScope
+    | .fvar lookup => .fvar lookup
+    | .boundaryApplication constructor rendered outsideCurrent certified
+        certifies =>
+        .boundaryApplication constructor rendered outsideCurrent certified
+          certifies
+    | .application constructor rendered current preimage notBare children =>
+        .application constructor rendered current preimage notBare
+          (children.recontextualize newOuter)
+    | .lambda bodyPlan =>
+        .lambda (bodyPlan.recontextualize
+          (newOuter.comp (.lambda _ .hole)))
+    | .multiLambda bodyPlan =>
+        .multiLambda (bodyPlan.recontextualize
+          (newOuter.comp (.multiLambda _ _ .hole)))
+    | .collection choice selected children =>
+        .collection choice selected (children.recontextualize newOuter)
+    | .boundaryCollection currentRejected oppositeChoice oppositeSelected
+        certified certifies =>
+        .boundaryCollection currentRejected oppositeChoice oppositeSelected
+          certified certifies
+
+  /-- Argument-spine companion of `CostStaticRegionPlan.recontextualize`. -/
+  def CostStaticArgumentPlan.recontextualize
+      {source : CIGSLT} {color : CostStaticColor}
+      {targetFree : WellSorted.FreeTypeContext}
+      {sourceBound targetBound : List TypeExpr}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+      {sourceAvailable : List TypeExpr} {outer : OneHoleContext}
+      {wireName : String} {before arguments : List Pattern}
+      {parameters : List TermParam}
+      (plan : CostStaticArgumentPlan source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer wireName before arguments
+        parameters)
+      (newOuter : OneHoleContext) :
+      CostStaticArgumentPlan source color targetFree sourceBound targetBound
+        thinning sourceAvailable newOuter wireName before arguments
+        parameters :=
+    match plan with
+    | .nil => .nil
+    | .cons representation parameterType head tail =>
+        .cons representation parameterType
+          (head.recontextualize
+            (newOuter.comp (.apply wireName before .hole _)))
+          (tail.recontextualize newOuter)
+
+  /-- Collection-spine companion of `CostStaticRegionPlan.recontextualize`. -/
+  def CostStaticElementPlan.recontextualize
+      {source : CIGSLT} {color : CostStaticColor}
+      {targetFree : WellSorted.FreeTypeContext}
+      {sourceBound targetBound : List TypeExpr}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+      {sourceAvailable : List TypeExpr} {outer : OneHoleContext}
+      {collectionType : CollType} {before elements : List Pattern}
+      {rest : Option String} {sourceElementType : TypeExpr}
+      (plan : CostStaticElementPlan source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer collectionType before
+        elements rest sourceElementType)
+      (newOuter : OneHoleContext) :
+      CostStaticElementPlan source color targetFree sourceBound targetBound
+        thinning sourceAvailable newOuter collectionType before elements rest
+        sourceElementType :=
+    match plan with
+    | .nil => .nil
+    | .cons head tail =>
+        .cons
+          (head.recontextualize
+            (newOuter.comp
+              (.collection collectionType before .hole _ rest)))
+          (tail.recontextualize newOuter)
+end
+
+mutual
+  /-- Recontextualization preserves the source abstract skeleton exactly. -/
+  def CostStaticRegionPlan.recontextualizeAbstractEq
+      {source : CIGSLT} {color : CostStaticColor}
+      {targetFree : WellSorted.FreeTypeContext}
+      {sourceBound targetBound : List TypeExpr}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+      {sourceAvailable : List TypeExpr} {outer : OneHoleContext}
+      {pattern : Pattern} {sourceType : TypeExpr}
+      (plan : CostStaticRegionPlan source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer pattern sourceType)
+      (newOuter : OneHoleContext) :
+      (plan.recontextualize newOuter).abstractPattern = plan.abstractPattern :=
+    match plan with
+    | .bvar .. | .fvar .. | .boundaryApplication .. |
+        .boundaryCollection .. => rfl
+    | .application _ _ _ _ _ children => by
+        simpa [CostStaticRegionPlan.recontextualize,
+          CostStaticRegionPlan.abstractPattern] using
+            children.recontextualizeAbstractEq newOuter
+    | .lambda body => by
+        simpa [CostStaticRegionPlan.recontextualize,
+          CostStaticRegionPlan.abstractPattern] using
+            body.recontextualizeAbstractEq
+              (newOuter.comp (.lambda _ .hole))
+    | .multiLambda body => by
+        simpa [CostStaticRegionPlan.recontextualize,
+          CostStaticRegionPlan.abstractPattern] using
+            body.recontextualizeAbstractEq
+              (newOuter.comp (.multiLambda _ _ .hole))
+    | .collection _ _ children => by
+        simpa [CostStaticRegionPlan.recontextualize,
+          CostStaticRegionPlan.abstractPattern] using
+            children.recontextualizeAbstractEq newOuter
+
+  /-- Argument-spine abstract skeletons ignore traversal recontextualization. -/
+  def CostStaticArgumentPlan.recontextualizeAbstractEq
+      {source : CIGSLT} {color : CostStaticColor}
+      {targetFree : WellSorted.FreeTypeContext}
+      {sourceBound targetBound : List TypeExpr}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+      {sourceAvailable : List TypeExpr} {outer : OneHoleContext}
+      {wireName : String} {before arguments : List Pattern}
+      {parameters : List TermParam}
+      (plan : CostStaticArgumentPlan source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer wireName before arguments
+        parameters)
+      (newOuter : OneHoleContext) :
+      (plan.recontextualize newOuter).abstractPatterns =
+        plan.abstractPatterns :=
+    match plan with
+    | .nil => rfl
+    | .cons _ _ head tail => by
+        simp only [CostStaticArgumentPlan.recontextualize,
+          CostStaticArgumentPlan.abstractPatterns, List.cons.injEq]
+        exact ⟨head.recontextualizeAbstractEq _,
+          tail.recontextualizeAbstractEq _⟩
+
+  /-- Collection-spine abstract skeletons ignore traversal recontextualization. -/
+  def CostStaticElementPlan.recontextualizeAbstractEq
+      {source : CIGSLT} {color : CostStaticColor}
+      {targetFree : WellSorted.FreeTypeContext}
+      {sourceBound targetBound : List TypeExpr}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+      {sourceAvailable : List TypeExpr} {outer : OneHoleContext}
+      {collectionType : CollType} {before elements : List Pattern}
+      {rest : Option String} {sourceElementType : TypeExpr}
+      (plan : CostStaticElementPlan source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer collectionType before
+        elements rest sourceElementType)
+      (newOuter : OneHoleContext) :
+      (plan.recontextualize newOuter).abstractPatterns =
+        plan.abstractPatterns :=
+    match plan with
+    | .nil => rfl
+    | .cons head tail => by
+        simp only [CostStaticElementPlan.recontextualize,
+          CostStaticElementPlan.abstractPatterns, List.cons.injEq]
+        exact ⟨head.recontextualizeAbstractEq _,
+          tail.recontextualizeAbstractEq _⟩
+end
+
+mutual
+  /-- Recontextualization changes occurrence paths but preserves the ordered
+  semantic boundary entries retained by a region plan. -/
+  theorem CostStaticRegionPlan.recontextualizeEntriesEq
+      {source : CIGSLT} {color : CostStaticColor}
+      {targetFree : WellSorted.FreeTypeContext}
+      {sourceBound targetBound sourceAvailable : List TypeExpr}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+      {outer : OneHoleContext} {pattern : Pattern} {sourceType : TypeExpr}
+      (plan : CostStaticRegionPlan source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer pattern sourceType)
+      (newOuter : OneHoleContext) :
+      (plan.recontextualize newOuter).boundaryTable.entries =
+        plan.boundaryTable.entries :=
+    match plan with
+    | .bvar .. | .fvar .. | .boundaryApplication .. |
+        .boundaryCollection .. => rfl
+    | .application _ _ _ _ _ children =>
+        children.recontextualizeEntriesEq newOuter
+    | .lambda bodyPlan =>
+        bodyPlan.recontextualizeEntriesEq
+          (newOuter.comp (.lambda _ .hole))
+    | .multiLambda bodyPlan =>
+        bodyPlan.recontextualizeEntriesEq
+          (newOuter.comp (.multiLambda _ _ .hole))
+    | .collection _ _ children =>
+        children.recontextualizeEntriesEq newOuter
+
+  /-- Argument-spine recontextualization preserves ordered boundary entries. -/
+  theorem CostStaticArgumentPlan.recontextualizeEntriesEq
+      {source : CIGSLT} {color : CostStaticColor}
+      {targetFree : WellSorted.FreeTypeContext}
+      {sourceBound targetBound sourceAvailable : List TypeExpr}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+      {outer : OneHoleContext} {wireName : String}
+      {before arguments : List Pattern} {parameters : List TermParam}
+      (plan : CostStaticArgumentPlan source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer wireName before arguments
+        parameters)
+      (newOuter : OneHoleContext) :
+      (plan.recontextualize newOuter).boundaryTable.entries =
+        plan.boundaryTable.entries :=
+    match plan with
+    | .nil => rfl
+    | @CostStaticArgumentPlan.cons _ _ _ _ _ _ _ _ _ _ argument arguments
+        _ _ _ _ _ head tail => by
+        change
+          ((head.recontextualize
+              (newOuter.comp (.apply wireName before .hole arguments))
+            ).boundaryTable.append
+              (tail.recontextualize newOuter).boundaryTable).entries =
+            (head.boundaryTable.append tail.boundaryTable).entries
+        rw [TypedCostRegionBoundaryTable.entries_append,
+          TypedCostRegionBoundaryTable.entries_append]
+        exact congrArg₂ List.append
+          (head.recontextualizeEntriesEq
+            (newOuter.comp (.apply wireName before .hole arguments)))
+          (tail.recontextualizeEntriesEq newOuter)
+
+  /-- Collection-spine recontextualization preserves ordered boundary entries. -/
+  theorem CostStaticElementPlan.recontextualizeEntriesEq
+      {source : CIGSLT} {color : CostStaticColor}
+      {targetFree : WellSorted.FreeTypeContext}
+      {sourceBound targetBound sourceAvailable : List TypeExpr}
+      {thinning : CostStaticBinderThinning source color sourceBound targetBound}
+      {outer : OneHoleContext} {collectionType : CollType}
+      {before elements : List Pattern} {rest : Option String}
+      {sourceElementType : TypeExpr}
+      (plan : CostStaticElementPlan source color targetFree sourceBound
+        targetBound thinning sourceAvailable outer collectionType before
+        elements rest sourceElementType)
+      (newOuter : OneHoleContext) :
+      (plan.recontextualize newOuter).boundaryTable.entries =
+        plan.boundaryTable.entries :=
+    match plan with
+    | .nil => rfl
+    | @CostStaticElementPlan.cons _ _ _ _ _ _ _ _ _ _ element elements _ _
+        head tail => by
+        change
+          ((head.recontextualize
+              (newOuter.comp
+                (.collection collectionType before .hole elements rest))
+            ).boundaryTable.append
+              (tail.recontextualize newOuter).boundaryTable).entries =
+            (head.boundaryTable.append tail.boundaryTable).entries
+        rw [TypedCostRegionBoundaryTable.entries_append,
+          TypedCostRegionBoundaryTable.entries_append]
+        exact congrArg₂ List.append
+          (head.recontextualizeEntriesEq
+            (newOuter.comp
+              (.collection collectionType before .hole elements rest)))
+          (tail.recontextualizeEntriesEq newOuter)
+end
+
 mutual
   /-- Target support and type of every boundary retained by one static plan. -/
   def CostStaticRegionPlan.boundaryFibers

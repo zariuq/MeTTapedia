@@ -774,11 +774,19 @@ training telemetry supplies.
 Item~2 is nonetheless the one prescription that must change, and it changes on measured
 grounds rather than on any claim about the operator.  Approaching a settling failure this
 carrier recorded monotone energy descent at every accepted step while the credit direction
-had already fallen to cosine $0.0008$ against the reference---orthogonal, and so carrying
-no first-order reduction of the task loss.  A stopping rule reading normalized energy
-decrease and latent gradient norm is therefore not merely weak here; it is uninformative
-in the one situation it exists to catch.  The admissible criterion is a floor on credit
-alignment.  Item~3 gains a purpose beyond validating graph construction: an exact schedule
+had already fallen to cosine $0.0008$ against the reference.  That inner product is still
+positive, so the first-order term remains a reduction; its normalized alignment is only
+about $8\times10^{-4}$, roughly three orders of magnitude below an aligned direction.
+Without a curvature bound, an admitted-step-size certificate, and numerical and readout
+error budgets, that observation does not establish robust finite-step descent: the
+quadratic remainder or either error source may overwhelm the small positive margin.  For
+a positive directional-curvature bound $\kappa$, the standard sufficient trust condition
+is $\eta\kappa/2<\langle g,d\rangle$; that inequality was not certified here.  The
+monotone energy trace therefore failed to expose the loss of alignment.  A large-gradient
+guard may still detect this particular approach to failure, but neither energy decrease
+nor a bare gradient norm certifies credit direction.  The admissible criterion is an
+explicit alignment floor with its uncertainty charged.  Item~3 gains a purpose beyond
+validating graph construction: an exact schedule
 supplies the reference credit direction that such a floor is measured against, without
 which the alignment gate has no denominator.  It does not by itself identify $q$ or
 $\alpha$.

@@ -13,6 +13,7 @@ constructor.
 namespace Mettapedia.GSLT.LanguageDef
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
+open Mettapedia.OSLF.MeTTaIL.DerivedContexts
 open WellSorted
 
 /-- The two reached-plan root classes that carry one certified foreign
@@ -25,6 +26,87 @@ def CostStaticPlanRootClass.IsCertifiedBoundary
 theorem not_rigid_isCertifiedBoundary :
     ¬ CostStaticPlanRootClass.rigid.IsCertifiedBoundary := by
   simp [CostStaticPlanRootClass.IsCertifiedBoundary]
+
+/-- Outside the certified-boundary/boundary quadrant, structural stop
+eligibility has exactly four shapes: paired Quote, either orientation of a
+foreign/source collection, or paired bare parallel.  In particular, rigid
+leaves and ordinary applications cannot enter the semantic stop callback. -/
+theorem CostStaticPlanStopEligible.nonBoundary_cases
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {leftSourceBound rightSourceBound leftTargetBound rightTargetBound :
+      List TypeExpr}
+    {leftThinning : CostStaticBinderThinning source color leftSourceBound
+      leftTargetBound}
+    {rightThinning : CostStaticBinderThinning source color rightSourceBound
+      rightTargetBound}
+    {leftAvailable rightAvailable : List TypeExpr}
+    {leftOuter rightOuter : OneHoleContext}
+    {leftPattern rightPattern : Pattern}
+    {leftSourceType rightSourceType : TypeExpr}
+    (declaration : ReflectivePresentationDecl)
+    (leftPlan : CostStaticRegionPlan source color targetFree leftSourceBound
+      leftTargetBound leftThinning leftAvailable leftOuter leftPattern
+      leftSourceType)
+    (rightPlan : CostStaticRegionPlan source color targetFree rightSourceBound
+      rightTargetBound rightThinning rightAvailable rightOuter rightPattern
+      rightSourceType)
+    (eligible : CostStaticPlanStopEligible declaration leftPlan rightPlan)
+    (notBoth :
+      ¬ (leftPlan.rootClass.IsCertifiedBoundary ∧
+        rightPlan.rootClass.IsCertifiedBoundary)) :
+    (leftPlan.rootClass = .application declaration.quoteConstructor ∧
+      rightPlan.rootClass = .application declaration.quoteConstructor) ∨
+    (leftPlan.rootClass = .boundaryCollection ∧
+      ∃ collectionType, rightPlan.rootClass = .collection collectionType) ∨
+    ((∃ collectionType, leftPlan.rootClass = .collection collectionType) ∧
+      rightPlan.rootClass = .boundaryCollection) ∨
+    (leftPlan.rootClass = .collection declaration.parallelCollection ∧
+      rightPlan.rootClass = .collection declaration.parallelCollection) := by
+  cases hLeft : leftPlan.rootClass <;>
+    cases hRight : rightPlan.rootClass <;>
+    simp [CostStaticPlanStopEligible, hLeft, hRight,
+      CostStaticPlanRootClass.IsCertifiedBoundary] at eligible notBoth ⊢
+  all_goals exact eligible
+
+/-- Once paired Quote and every certified-boundary side have been removed,
+the only remaining structurally eligible stop is paired bare parallel. -/
+theorem CostStaticPlanStopEligible.parallel_of_nonBoundary_residual
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {leftSourceBound rightSourceBound leftTargetBound rightTargetBound :
+      List TypeExpr}
+    {leftThinning : CostStaticBinderThinning source color leftSourceBound
+      leftTargetBound}
+    {rightThinning : CostStaticBinderThinning source color rightSourceBound
+      rightTargetBound}
+    {leftAvailable rightAvailable : List TypeExpr}
+    {leftOuter rightOuter : OneHoleContext}
+    {leftPattern rightPattern : Pattern}
+    {leftSourceType rightSourceType : TypeExpr}
+    {leftPlan : CostStaticRegionPlan source color targetFree leftSourceBound
+      leftTargetBound leftThinning leftAvailable leftOuter leftPattern
+      leftSourceType}
+    {rightPlan : CostStaticRegionPlan source color targetFree rightSourceBound
+      rightTargetBound rightThinning rightAvailable rightOuter rightPattern
+      rightSourceType}
+    {declaration : ReflectivePresentationDecl}
+    (eligible : CostStaticPlanStopEligible declaration leftPlan rightPlan)
+    (notBoth : ¬ (leftPlan.rootClass.IsCertifiedBoundary ∧
+      rightPlan.rootClass.IsCertifiedBoundary))
+    (notQuote : ¬ (leftPlan.rootClass =
+        .application declaration.quoteConstructor ∧
+      rightPlan.rootClass = .application declaration.quoteConstructor))
+    (neitherBoundary : ¬ leftPlan.rootClass.IsCertifiedBoundary ∧
+      ¬ rightPlan.rootClass.IsCertifiedBoundary) :
+    leftPlan.rootClass = .collection declaration.parallelCollection ∧
+      rightPlan.rootClass = .collection declaration.parallelCollection := by
+  rcases CostStaticPlanStopEligible.nonBoundary_cases declaration leftPlan
+      rightPlan eligible notBoth with quote | mixedLeft | mixedRight | parallel
+  · exact (notQuote quote).elim
+  · exact (neitherBoundary.1 (Or.inr mixedLeft.1)).elim
+  · exact (neitherBoundary.2 (Or.inr mixedRight.2)).elim
+  · exact parallel
 
 namespace CostStaticPlanReached
 
@@ -87,6 +169,60 @@ theorem nonempty_boundaryView_of_boundaryClass
   | bvar | fvar | application | lambda | multiLambda | collection =>
       simp [CostStaticPlanRootClass.IsCertifiedBoundary,
         CostStaticRegionPlan.rootClass] at boundaryClass
+
+/-- A reached certified boundary is strictly smaller than its enclosing static
+root.  Consequently, pairing it with any payload bounded by the other root is
+strictly smaller than the enclosing root pair. -/
+theorem mixed_pair_size_lt_of_left_boundary
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : FreeTypeContext}
+    (leftNode rightNode : CostStaticRegionNode source color targetFree)
+    {leftPayload rightPayload leftAbstract : Pattern}
+    (leftReached : CostStaticPlanReached source color targetFree leftPayload
+      leftAbstract)
+    (leftBoundary : leftReached.BoundaryView)
+    (leftEmbedding : CostStaticPlanEntryEmbedding source color targetFree
+      leftReached.plan.boundaryTable.entries
+      leftNode.plan.boundaryTable.entries)
+    (rightBound : sizeOf rightPayload ≤ sizeOf rightNode.term.1) :
+    sizeOf leftPayload + sizeOf rightPayload <
+      sizeOf leftNode.term.1 + sizeOf rightNode.term.1 := by
+  have leftMember : leftBoundary.stopped.certified.typed ∈
+      leftNode.plan.boundaryTable.entries :=
+    leftEmbedding.subset (by
+      rw [leftBoundary.entries_eq]
+      simp)
+  have leftStrict :=
+    leftNode.plan.boundary_content_size_lt_of_isStaticRoot
+      leftNode.rootStatic leftBoundary.stopped.certified.typed leftMember
+  rw [leftBoundary.content_eq] at leftStrict
+  omega
+
+/-- Symmetric strictness when the right reached plan is a certified boundary. -/
+theorem mixed_pair_size_lt_of_right_boundary
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : FreeTypeContext}
+    (leftNode rightNode : CostStaticRegionNode source color targetFree)
+    {leftPayload rightPayload rightAbstract : Pattern}
+    (rightReached : CostStaticPlanReached source color targetFree rightPayload
+      rightAbstract)
+    (rightBoundary : rightReached.BoundaryView)
+    (rightEmbedding : CostStaticPlanEntryEmbedding source color targetFree
+      rightReached.plan.boundaryTable.entries
+      rightNode.plan.boundaryTable.entries)
+    (leftBound : sizeOf leftPayload ≤ sizeOf leftNode.term.1) :
+    sizeOf leftPayload + sizeOf rightPayload <
+      sizeOf leftNode.term.1 + sizeOf rightNode.term.1 := by
+  have rightMember : rightBoundary.stopped.certified.typed ∈
+      rightNode.plan.boundaryTable.entries :=
+    rightEmbedding.subset (by
+      rw [rightBoundary.entries_eq]
+      simp)
+  have rightStrict :=
+    rightNode.plan.boundary_content_size_lt_of_isStaticRoot
+      rightNode.rootStatic rightBoundary.stopped.certified.typed rightMember
+  rw [rightBoundary.content_eq] at rightStrict
+  omega
 
 /-- Positive control: an explicitly retained boundary view remembers exactly
 one local table entry. -/

@@ -212,6 +212,62 @@ theorem atom_of_rightTargetSupportNil
   exact atom_of_scopedNormalEq left right leftSlot rightSlot normalEq leftScoped
     declaration depth
 
+/-- Equal atom normals restore together whenever each retained support is
+either one common exposed support or the empty sealed support.  Equal exposed
+supports use the ordinary restoration-components equation; either sealed
+side makes the shared normal closed and therefore insensitive to depth. -/
+theorem atom_of_normalEq_of_support_eq_or_nil
+    {source : CIGSLT} {leftColor rightColor : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {leftOccurrences rightOccurrences : List CostRegionOccurrence}
+    {leftTable : TypedCostRegionBoundaryTable source leftColor targetFree
+      leftOccurrences}
+    {rightTable : TypedCostRegionBoundaryTable source rightColor targetFree
+      rightOccurrences}
+    {leftValues : TypedCostRegionBoundaryTable.Values source leftColor
+      targetFree leftTable}
+    {rightValues : TypedCostRegionBoundaryTable.Values source rightColor
+      targetFree rightTable}
+    {leftRoot rightRoot : Pattern}
+    {leftInventory : CostStaticParameterInventory source leftColor targetFree
+      leftTable leftValues leftRoot}
+    {rightInventory : CostStaticParameterInventory source rightColor targetFree
+      rightTable rightValues rightRoot}
+    (left : CostStaticAtomEnvironment source leftColor targetFree leftInventory)
+    (right : CostStaticAtomEnvironment source rightColor targetFree
+      rightInventory)
+    (leftSlot : Fin left.atomCount) (rightSlot : Fin right.atomCount)
+    (normalEq : (left.atomValue leftSlot).key.normal =
+      (right.atomValue rightSlot).key.normal)
+    {commonSupport : List TypeExpr}
+    (leftSupport :
+      (left.atomValue leftSlot).key.targetSupport = commonSupport ∨
+        (left.atomValue leftSlot).key.targetSupport = [])
+    (rightSupport :
+      (right.atomValue rightSlot).key.targetSupport = commonSupport ∨
+        (right.atomValue rightSlot).key.targetSupport = [])
+    (declaration : ReflectivePresentationDecl) (depth : Nat) :
+    let cospan := left.semanticKeyCospan right
+    CostStaticAtomKeyCospan.CommonRestorationApex source cospan declaration
+      depth
+      (cospan.reifyWith left.lookupAtom? cospan.leftSlot
+        (.fvar (left.atomName leftSlot)))
+      (cospan.reifyWith right.lookupAtom? cospan.rightSlot
+        (.fvar (right.atomName rightSlot))) := by
+  rcases leftSupport with leftExposed | leftSealed
+  · rcases rightSupport with rightExposed | rightSealed
+    · apply CostStaticAtomKeyCospan.CommonRestorationApex.leafAligned
+      apply PatternLeafAligned.leaf
+      intro restoreDepth
+      exact
+        left.substituteAt_commonReifiedAtom_eq_of_restorationComponents right
+          leftSlot rightSlot (leftExposed.trans rightExposed.symm) normalEq
+            restoreDepth
+    · exact atom_of_rightTargetSupportNil left right leftSlot rightSlot normalEq
+        rightSealed declaration depth
+  · exact atom_of_leftTargetSupportNil left right leftSlot rightSlot normalEq
+      leftSealed declaration depth
+
 /-- Two atom occurrences with the same closed normalized value form a rigid
 unary common-restoration apex, even when their complete keys and common names
 differ.  The constructor is the leaf case needed when canonical Quote/Drop

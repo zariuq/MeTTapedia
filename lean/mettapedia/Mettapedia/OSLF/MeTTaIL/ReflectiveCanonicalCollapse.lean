@@ -1155,6 +1155,20 @@ theorem exists_member_of_parallel_collapse_bvar
     (fun equality => Pattern.noConfusion equality)
     (fun nested equality => Pattern.noConfusion equality)
 
+/-- Free-variable specialization: a parallel collapsing to one free name
+contains an actual member with that canonical form. -/
+theorem exists_member_of_parallel_collapse_fvar
+    (declaration : ReflectivePresentationDecl)
+    {elements : List Pattern} {name : String}
+    (collapsed : canonicalize declaration
+        (.collection declaration.parallelCollection elements none) =
+      .fvar name) :
+    ∃ element ∈ elements,
+      canonicalize declaration element = .fvar name := by
+  exact exists_member_of_parallel_collapse declaration collapsed
+    (fun equality => Pattern.noConfusion equality)
+    (fun nested equality => Pattern.noConfusion equality)
+
 /-- A parallel collapse onto a bound variable exposes a strictly smaller
 member in the same canonical class. -/
 theorem exists_smaller_of_parallel_collapse_bvar
@@ -1170,6 +1184,26 @@ theorem exists_smaller_of_parallel_collapse_bvar
         canonicalize declaration smaller = .bvar index := by
   obtain ⟨smaller, membership, smallerCanonical⟩ :=
     exists_member_of_parallel_collapse_bvar declaration collapsed
+  refine ⟨smaller, ?_, smallerCanonical⟩
+  have memberSmaller := List.sizeOf_lt_of_mem membership
+  simp_wf
+  omega
+
+/-- A parallel collapse onto a free variable exposes a strictly smaller
+member in the same canonical class. -/
+theorem exists_smaller_of_parallel_collapse_fvar
+    (declaration : ReflectivePresentationDecl)
+    {elements : List Pattern} {name : String}
+    (collapsed : canonicalize declaration
+        (.collection declaration.parallelCollection elements none) =
+      .fvar name) :
+    ∃ smaller : Pattern,
+      sizeOf smaller <
+          sizeOf (Pattern.collection declaration.parallelCollection elements
+            none) ∧
+        canonicalize declaration smaller = .fvar name := by
+  obtain ⟨smaller, membership, smallerCanonical⟩ :=
+    exists_member_of_parallel_collapse_fvar declaration collapsed
   refine ⟨smaller, ?_, smallerCanonical⟩
   have memberSmaller := List.sizeOf_lt_of_mem membership
   simp_wf

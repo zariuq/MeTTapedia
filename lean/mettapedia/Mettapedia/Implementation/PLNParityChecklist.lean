@@ -40,8 +40,8 @@ It is intentionally *not* a prose paper section (no `.md`), just a compiler-chec
   - polarity-swap negation rule: `Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence.toStrength_flip`
     (defined in `Mettapedia.PLN.Evidence.PLNDerivedFromEvidence`)
 
-- KS vs BinaryEvidence (totality gate, “no faithful point semantics”)
-  - `Mettapedia.PLN.Evidence.PLN_KS_Bridge.evidence_no_point_representation`
+- BinaryEvidence scalar order-reflection gate
+  - `Mettapedia.PLN.Evidence.PLN_KS_Bridge.evidence_no_orderEmbedding_into_real`
 
 ## Additional PLN book-style rules (partial coverage)
 

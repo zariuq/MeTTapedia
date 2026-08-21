@@ -457,7 +457,7 @@ PLN occupies a special position in the hypercube:
 3. **BinaryEvidence PLN** (BinaryEvidence counts): different *semantics layer*
    - Carrier: `BinaryEvidence := (n⁺, n⁻)` with the coordinatewise (partial) order
    - Incomparables are fundamental ("more positive evidence but less negative evidence")
-   - Therefore there is **no faithful** point-valued representation `Θ : BinaryEvidence → ℝ`
+   - Therefore there is no **order-reflecting** scalar representation `Θ : BinaryEvidence → ℝ`
      (formalized in `Mettapedia.PLN.Evidence.PLN_KS_Bridge`)
    - `toStrength : BinaryEvidence → [0,1]` is a lossy *view* (a forgetful projection), not an identification
 
@@ -466,7 +466,7 @@ The PLN deduction formula:
 
 is best treated as a **strength-level view** of an underlying evidence semantics:
 - foundational carrier: `Mettapedia.PLN.Evidence.EvidenceQuantale` (evidence counts `(n⁺, n⁻)`)
-- “no faithful point semantics” gate: `Mettapedia.PLN.Evidence.PLN_KS_Bridge`
+- scalar order-reflection gate: `Mettapedia.PLN.Evidence.PLN_KS_Bridge`
 - measure-theoretic derivation (with explicit independence assumptions): `Mettapedia.PLN.RuleFamilies.FirstOrder.PLNDerivation`
 
 ### PLN vs K&S vs Cox Comparison
@@ -1155,51 +1155,51 @@ private theorem isNaturalEdge_stepToward (V W : ProbabilityVertex) (hne : V ≠ 
   unfold stepToward isNaturalEdge hammingDistance
   by_cases hc : V.commutativity ≠ W.commutativity
   · simp [hc]
-  · push_neg at hc
+  · push Not at hc
     simp [hc]
     by_cases hd : V.distributivity ≠ W.distributivity
     · simp [hd]
-    · push_neg at hd
+    · push Not at hd
       simp [hd]
       by_cases hp : V.precision ≠ W.precision
       · simp [hp]
-      · push_neg at hp
+      · push Not at hp
         simp [hp]
         by_cases ho : V.orderAxis ≠ W.orderAxis
         · simp [ho]
-        · push_neg at ho
+        · push Not at ho
           simp [ho]
           by_cases hden : V.density ≠ W.density
           · simp [hden]
-          · push_neg at hden
+          · push Not at hden
             simp [hden]
             by_cases hcomp : V.completeness ≠ W.completeness
             · simp [hcomp]
-            · push_neg at hcomp
+            · push Not at hcomp
               simp [hcomp]
               by_cases hsep : V.separation ≠ W.separation
               · simp [hsep]
-              · push_neg at hsep
+              · push Not at hsep
                 simp [hsep]
                 by_cases ha : V.additivity ≠ W.additivity
                 · simp [ha]
-                · push_neg at ha
+                · push Not at ha
                   simp [ha]
                   by_cases hinv : V.invertibility ≠ W.invertibility
                   · simp [hinv]
-                  · push_neg at hinv
+                  · push Not at hinv
                     simp [hinv]
                     by_cases hdet : V.determinism ≠ W.determinism
                     · simp [hdet]
-                    · push_neg at hdet
+                    · push Not at hdet
                       simp [hdet]
                       by_cases hsup : V.support ≠ W.support
                       · simp [hsup]
-                      · push_neg at hsup
+                      · push Not at hsup
                         simp [hsup]
                         by_cases hreg : V.regularity ≠ W.regularity
                         · simp [hreg]
-                        · push_neg at hreg
+                        · push Not at hreg
                           simp [hreg]
                           -- All other axes match, so independence must differ.
                           have hind : V.independence ≠ W.independence := by
@@ -1215,51 +1215,51 @@ private theorem hammingDistance_stepToward_lt (V W : ProbabilityVertex) (hne : V
   -- Work through the chain: find the first differing axis.
   by_cases hc : V.commutativity ≠ W.commutativity
   · simp [hc]
-  · push_neg at hc
+  · push Not at hc
     simp [hc]
     by_cases hd : V.distributivity ≠ W.distributivity
     · simp [hd]
-    · push_neg at hd
+    · push Not at hd
       simp [hd]
       by_cases hp : V.precision ≠ W.precision
       · simp [hp]
-      · push_neg at hp
+      · push Not at hp
         simp [hp]
         by_cases ho : V.orderAxis ≠ W.orderAxis
         · simp [ho]
-        · push_neg at ho
+        · push Not at ho
           simp [ho]
           by_cases hden : V.density ≠ W.density
           · simp [hden]
-          · push_neg at hden
+          · push Not at hden
             simp [hden]
             by_cases hcomp : V.completeness ≠ W.completeness
             · simp [hcomp]
-            · push_neg at hcomp
+            · push Not at hcomp
               simp [hcomp]
               by_cases hsep : V.separation ≠ W.separation
               · simp [hsep]
-              · push_neg at hsep
+              · push Not at hsep
                 simp [hsep]
                 by_cases ha : V.additivity ≠ W.additivity
                 · simp [ha]
-                · push_neg at ha
+                · push Not at ha
                   simp [ha]
                   by_cases hinv : V.invertibility ≠ W.invertibility
                   · simp [hinv]
-                  · push_neg at hinv
+                  · push Not at hinv
                     simp [hinv]
                     by_cases hdet : V.determinism ≠ W.determinism
                     · simp [hdet]
-                    · push_neg at hdet
+                    · push Not at hdet
                       simp [hdet]
                       by_cases hsup : V.support ≠ W.support
                       · simp [hsup]
-                      · push_neg at hsup
+                      · push Not at hsup
                         simp [hsup]
                         by_cases hreg : V.regularity ≠ W.regularity
                         · simp [hreg]
-                        · push_neg at hreg
+                        · push Not at hreg
                           simp [hreg]
                           have hind : V.independence ≠ W.independence := by
                             intro heq
@@ -1376,14 +1376,15 @@ The hypercube has a deep connection to quantale theory:
 
 - The canonical “PLN” value space in this repo is **evidence** `(n⁺, n⁻)` (see
   `Mettapedia.PLN.Evidence.EvidenceQuantale`). This carrier has a natural *partial order* with incomparable
-  elements, so it does **not** admit a faithful point-valued representation `Θ : BinaryEvidence → ℝ`
+  elements, so it does **not** admit an order-reflecting scalar representation
+  `Θ : BinaryEvidence → ℝ`
   (see `Mettapedia.PLN.Evidence.PLN_KS_Bridge`).
 
 - The familiar strength-level formulas in `[0,1]` are therefore best treated as **views/projections**
   (e.g. `toStrength`) of a richer underlying semantics, not as the foundational carrier.
 
-When a domain *does* support total comparability (the K&S gate), one recovers point-valued
-probability/conditioning and can express deduction in the usual `[0,1]` formulas; see
+When a chosen readout supports the required scalar probability laws, one can
+express deduction in the usual `[0,1]` formulas; see
 `Mettapedia.PLN.RuleFamilies.FirstOrder.PLNDerivation` for the explicit measure-theoretic derivation under independence.
 
 ### PLN Inference as Quantale Operations

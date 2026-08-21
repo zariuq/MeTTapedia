@@ -278,7 +278,7 @@ def crispnessCollapseProfile : CrispnessCollapseProfile where
     Mettapedia.ProbabilityTheory.ImpreciseProbability.LowerPrevision.precise_iff_additive
   ksIncomparabilityBlocksCrispPoint := by
     intro α inst x y hxy
-    exact ks_incomparable_forces_no_faithful_point_representation x y hxy
+    exact incomparable_forces_no_order_reflecting_point_representation x y hxy
 
 /-! ## Degrees of freedom versus forcing capstone -/
 

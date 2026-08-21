@@ -1,9 +1,12 @@
 import Mettapedia.OSLF.Formula
+import Mettapedia.OSLF.Framework.CategoryBridge
 import Mettapedia.OSLF.Framework.TypeSynthesis
+import Mettapedia.OSLF.NativeType.Construction
 import Mettapedia.PLN.Evidence.EvidenceQuantale
 import Mettapedia.PLN.WorldModel.PLNWorldModel
 import Mettapedia.PLN.WorldModel.PLNWorldModelCalculus
 import Mettapedia.PLN.Evidence.PLN_KS_Bridge
+import KnuthSkilling.Core.HeytingBounds
 import KnuthSkilling.Core.TotalityImprecision
 
 /-!
@@ -16,8 +19,9 @@ Core unification theorems connecting three layers:
    under image-finiteness), observational equivalence quotients
 2. **Stay/Baez** — WM evidence semantics: threshold atoms, checker soundness,
    evidence revision, rewrite rule preservation
-3. **Knuth/Skilling** — Totality gate: faithful scalarization exists only for
-   total orders; BinaryEvidence is non-total (imprecision gate)
+3. **Knuth/Skilling** — one-way scalar fidelity is distinguished from the
+   stronger order-reflection gate; Heyting complement slack is distinguished
+   from both
 
 -/
 
@@ -25,9 +29,15 @@ namespace Mettapedia.OSLF.Framework.KSUnificationSketch
 
 open scoped ENNReal
 
+open CategoryTheory
+open Opposite
 open Mettapedia.OSLF.Formula
+open Mettapedia.OSLF.Framework.CategoryBridge
+open Mettapedia.OSLF.Framework.ConstructorCategory
+open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.PLN.Evidence.EvidenceQuantale
 open Mettapedia.PLN.WorldModel.PLNWorldModel
+open KnuthSkilling.Heyting
 open KnuthSkilling.TotalityImprecision
 
 abbrev Pat := Mettapedia.OSLF.MeTTaIL.Syntax.Pattern
@@ -150,7 +160,7 @@ theorem obsEq_is_stepBisimulation
   · -- Forth: OSLFObsEq p q → R p p' → ∃ q', R q q' ∧ OSLFObsEq p' q'
     intro p q hpq p' hpp'
     by_contra h_no_match
-    push_neg at h_no_match
+    push Not at h_no_match
     -- Every successor q' of q fails to be obsEq to p'
     -- Get finite set of q-successors
     have hfin := hImageFinite q
@@ -200,7 +210,7 @@ theorem obsEq_is_stepBisimulation
     have hpq' := obsEq_symm hpq
     -- Apply forth direction with roles swapped
     by_contra h_no_match
-    push_neg at h_no_match
+    push Not at h_no_match
     have hfin := hImageFinite p
     have hsep : ∀ p' : Pat, R p p' →
         ∃ φ, sem R I φ q' ∧ ¬ sem R I φ p' := by
@@ -312,19 +322,264 @@ theorem diamond_sem_unfold
     sem R I (.dia φ) p ↔ ∃ q, R p q ∧ sem R I φ q := by
   rfl
 
-/-! ## KS Totality Gate Layer -/
+/-! ## Scalar Order-Reflection Gate -/
 
-/-- Scalar faithful regrading exists exactly when requested as a hypothesis. -/
-theorem ks_regrading_boolean_fragment
+/-- An order-reflecting scalar readout is exactly an order embedding into `ℝ`.
+This is stronger than the one-way fidelity condition used by K&S. -/
+theorem orderReflecting_scalar_readout
     {alpha : Type*} [PartialOrder alpha]
-    (hFaithful : FaithfulPointRepresentation alpha) :
+    (hReflecting : OrderReflectingPointRepresentation alpha) :
     ∃ Theta : alpha → ℝ, ∀ a b : alpha, a ≤ b ↔ Theta a ≤ Theta b := by
-  simpa [FaithfulPointRepresentation] using hFaithful
+  simpa [OrderReflectingPointRepresentation] using hReflecting
 
-/-- BinaryEvidence is a canonical non-total case: no faithful point-valued scalarization. -/
-theorem evidence_imprecision_gate :
-    ¬ FaithfulPointRepresentation BinaryEvidence := by
-  exact Mettapedia.PLN.Evidence.PLN_KS_Bridge.evidence_no_faithfulPointRepresentation
+/-- BinaryEvidence is a canonical non-total case: no scalar readout can both
+preserve and reflect its coordinatewise order. -/
+theorem evidence_orderReflection_gate :
+    ¬ OrderReflectingPointRepresentation BinaryEvidence := by
+  exact Mettapedia.PLN.Evidence.PLN_KS_Bridge.evidence_no_orderReflectingPointRepresentation
+
+/-! ## Native-Type Heyting Probability Gate -/
+
+/-- Every OSLF native-type fiber is a complete Heyting algebra.  For any
+normalized modular valuation, Boolean complement behavior collapses the
+canonical lower and upper bounds to a point.  If the valuation detects a
+failure of excluded middle, the classical complement equation fails and the
+bounds are strictly distinct. -/
+theorem nativeType_heyting_probability_gate
+    (L : Mettapedia.CategoryTheory.LambdaTheories.LambdaTheory)
+    (S : L.Obj)
+    (ν : ModularValuation (Mettapedia.OSLF.NativeType.NatTypeFiber L S))
+    (a : Mettapedia.OSLF.NativeType.NatTypeFiber L S) :
+    ν.val a + ν.val aᶜ = ν.val (a ⊔ aᶜ) ∧
+    lowerBound ν a ≤ upperBound ν a ∧
+    (a ⊔ aᶜ = ⊤ → lowerBound ν a = upperBound ν a) ∧
+    (ν.val (a ⊔ aᶜ) < 1 →
+      ν.val a + ν.val aᶜ < 1 ∧ lowerBound ν a < upperBound ν a) := by
+  have hmod := ν.modular a aᶜ
+  rw [inf_compl_self, ν.val_bot, add_zero] at hmod
+  refine ⟨hmod, lower_le_upper ν a, ?_, ?_⟩
+  · intro hem
+    have hgap := gap_zero_of_em ν a hem
+    linarith
+  · intro hdetect
+    constructor
+    · rw [hmod]
+      exact hdetect
+    · have hnot : a ⊔ aᶜ ≠ ⊤ := by
+        intro hem
+        rw [hem, ν.val_top] at hdetect
+        exact (lt_irrefl 1) hdetect
+      have hgap := gap_pos_of_not_em ν a hnot hdetect
+      linarith
+
+/-! ### A concrete `LanguageDef → NTT → Heyting gap` witness -/
+
+/-- Native predicates over the representable `Name` sort generated from the
+actual `rhoCalc` language presentation. -/
+abbrev RhoNameNativeFiber :=
+  languageSortFiber rhoCalc rhoName
+
+noncomputable instance : Order.Frame RhoNameNativeFiber := by
+  dsimp [RhoNameNativeFiber, languageSortFiber, languagePresheafLambdaTheory]
+  infer_instance
+
+/-- The identity path at the rho name sort, named to keep the two sampled
+constructor paths syntactically explicit. -/
+def rhoNameIdentity : rhoNameObj ⟶ rhoNameObj :=
+  SortPath.nil
+
+/-- The native predicate generated by the authored constructor
+`NQuote : Proc → Name`.  At a constructor context `X`, it contains exactly the
+paths `X → Name` that factor through `NQuote`. -/
+noncomputable def rhoQuotePredicate : RhoNameNativeFiber where
+  obj X := {g | ∃ h : SortPath rhoCalc (unop X).sort rhoProc,
+    SortPath.comp h nquoteMor = g}
+  map := by
+    intro X Y i g
+    rintro ⟨h, rfl⟩
+    refine ⟨SortPath.comp i.unop h, ?_⟩
+    change SortPath.comp (SortPath.comp i.unop h) nquoteMor =
+      SortPath.comp i.unop (SortPath.comp h nquoteMor)
+    exact SortPath.comp_assoc i.unop h nquoteMor
+
+theorem nquote_mem_rhoQuotePredicate :
+    rhoQuotePredicate.obj (op rhoProcObj) nquoteMor := by
+  exact ⟨SortPath.nil, SortPath.nil_comp nquoteMor⟩
+
+theorem nameIdentity_not_mem_rhoQuotePredicate :
+    ¬ rhoQuotePredicate.obj (op rhoNameObj) rhoNameIdentity := by
+  rintro ⟨h, hh⟩
+  change SortPath.comp h nquoteMor = SortPath.nil at hh
+  simp [nquoteMor, SortArrow.toPath, SortPath.comp] at hh
+
+/-- The real-valued indicator of a proposition. -/
+private noncomputable def truthIndicator (p : Prop) : ℝ :=
+  by
+    classical
+    exact if p then 1 else 0
+
+private theorem truthIndicator_mono {p q : Prop} (hpq : p → q) :
+    truthIndicator p ≤ truthIndicator q := by
+  classical
+  by_cases hp : p
+  · have hq : q := hpq hp
+    simp [truthIndicator, hp, hq]
+  · by_cases hq : q <;> simp [truthIndicator, hp, hq]
+
+private theorem truthIndicator_modular (p q : Prop) :
+    truthIndicator p + truthIndicator q =
+      truthIndicator (p ∨ q) + truthIndicator (p ∧ q) := by
+  classical
+  by_cases hp : p <;> by_cases hq : q <;>
+    simp [truthIndicator, hp, hq]
+
+/-- A normalized modular valuation on the concrete rho native-type fiber.
+It observes whether a native predicate contains the identity at `Name` and
+whether it contains `NQuote`, assigning equal weight to the two observations.
+Naturality ensures identity membership implies `NQuote` membership. -/
+noncomputable def rhoNameNativeValuation : ModularValuation RhoNameNativeFiber where
+  val := fun predicate =>
+    (truthIndicator (predicate.obj (op rhoNameObj) rhoNameIdentity) +
+      truthIndicator (predicate.obj (op rhoProcObj) nquoteMor)) / 2
+  monotone := by
+    intro first second h
+    apply div_le_div_of_nonneg_right
+    · exact add_le_add
+        (truthIndicator_mono (fun hp ↦ h _ hp))
+        (truthIndicator_mono (fun hp ↦ h _ hp))
+    · norm_num
+  val_bot := by
+    change (truthIndicator False + truthIndicator False) / 2 = 0
+    norm_num [truthIndicator]
+  val_top := by
+    change (truthIndicator True + truthIndicator True) / 2 = 1
+    norm_num [truthIndicator]
+  modular := by
+    intro first second
+    have hIdentity := truthIndicator_modular
+      (first.obj (op rhoNameObj) rhoNameIdentity)
+      (second.obj (op rhoNameObj) rhoNameIdentity)
+    have hQuote := truthIndicator_modular
+      (first.obj (op rhoProcObj) nquoteMor)
+      (second.obj (op rhoProcObj) nquoteMor)
+    change
+      (truthIndicator (first.obj (op rhoNameObj) rhoNameIdentity) +
+          truthIndicator (first.obj (op rhoProcObj) nquoteMor)) / 2 +
+        (truthIndicator (second.obj (op rhoNameObj) rhoNameIdentity) +
+          truthIndicator (second.obj (op rhoProcObj) nquoteMor)) / 2 =
+      (truthIndicator
+          (first.obj (op rhoNameObj) rhoNameIdentity ∨
+            second.obj (op rhoNameObj) rhoNameIdentity) +
+          truthIndicator
+            (first.obj (op rhoProcObj) nquoteMor ∨
+              second.obj (op rhoProcObj) nquoteMor)) / 2 +
+        (truthIndicator
+          (first.obj (op rhoNameObj) rhoNameIdentity ∧
+            second.obj (op rhoNameObj) rhoNameIdentity) +
+          truthIndicator
+            (first.obj (op rhoProcObj) nquoteMor ∧
+              second.obj (op rhoProcObj) nquoteMor)) / 2
+    linarith
+
+theorem rhoQuotePredicate_value :
+    rhoNameNativeValuation.val rhoQuotePredicate = (1 : ℝ) / 2 := by
+  norm_num [rhoNameNativeValuation, truthIndicator,
+    nameIdentity_not_mem_rhoQuotePredicate, nquote_mem_rhoQuotePredicate]
+
+theorem nquote_not_mem_rhoQuotePredicate_compl :
+    ¬ (rhoQuotePredicateᶜ).obj (op rhoProcObj) nquoteMor := by
+  intro hcompl
+  have hboth :
+      (rhoQuotePredicate ⊓ rhoQuotePredicateᶜ).obj (op rhoProcObj) nquoteMor :=
+    ⟨nquote_mem_rhoQuotePredicate, hcompl⟩
+  rw [inf_compl_self] at hboth
+  exact hboth
+
+theorem nameIdentity_not_mem_rhoQuotePredicate_compl :
+    ¬ (rhoQuotePredicateᶜ).obj (op rhoNameObj) rhoNameIdentity := by
+  intro hid
+  have hnquote : (rhoQuotePredicateᶜ).obj (op rhoProcObj) nquoteMor := by
+    have hmapped := (rhoQuotePredicateᶜ).map nquoteMor.op hid
+    change (rhoQuotePredicateᶜ).obj (op rhoProcObj)
+      (SortPath.comp nquoteMor rhoNameIdentity) at hmapped
+    change (rhoQuotePredicateᶜ).obj (op rhoProcObj)
+      (SortPath.comp nquoteMor SortPath.nil) at hmapped
+    have hpath : SortPath.comp nquoteMor SortPath.nil = nquoteMor :=
+      SortPath.comp_nil nquoteMor
+    exact hpath ▸ hmapped
+  exact nquote_not_mem_rhoQuotePredicate_compl hnquote
+
+theorem rhoQuotePredicate_compl_value :
+    rhoNameNativeValuation.val rhoQuotePredicateᶜ = 0 := by
+  norm_num [rhoNameNativeValuation, truthIndicator,
+    nameIdentity_not_mem_rhoQuotePredicate_compl,
+    nquote_not_mem_rhoQuotePredicate_compl]
+
+/-- The quote-generated native predicate is an explicit failure of excluded
+middle in the `Name` fiber of `rhoCalc`. -/
+theorem rhoQuotePredicate_excludedMiddle_ne_top :
+    rhoQuotePredicate ⊔ rhoQuotePredicateᶜ ≠ ⊤ := by
+  intro hem
+  have hcollapse := gap_zero_of_em rhoNameNativeValuation rhoQuotePredicate hem
+  change
+    (1 - rhoNameNativeValuation.val rhoQuotePredicateᶜ) -
+      rhoNameNativeValuation.val rhoQuotePredicate = 0 at hcollapse
+  rw [rhoQuotePredicate_compl_value, rhoQuotePredicate_value] at hcollapse
+  norm_num at hcollapse
+
+/-- The concrete rho `Name` native fiber is not Boolean under its canonical
+Heyting pseudo-complement. -/
+theorem rhoNameNativeFiber_not_boolean :
+    ¬ ∀ predicate : RhoNameNativeFiber, predicate ⊔ predicateᶜ = ⊤ := by
+  intro hBoolean
+  exact rhoQuotePredicate_excludedMiddle_ne_top (hBoolean rhoQuotePredicate)
+
+/-- **Concrete OSLF dimensionality witness.**  The actual `rhoCalc`
+`LanguageDef`, passed through its presheaf native type theory, has a native
+predicate whose direct-support and not-refuted plausibility bounds are
+different.  Consequently no single point probability can equal both bounds.
+
+This is a necessity theorem for the two-bound readout, not a claim that the
+whole Heyting lattice lacks scalar valuations or cannot be encoded into one
+real number under weaker requirements. -/
+theorem rhoCalc_nativeType_requires_distinct_probability_bounds :
+    rhoNameNativeValuation.val rhoQuotePredicate = (1 : ℝ) / 2 ∧
+    rhoNameNativeValuation.val rhoQuotePredicateᶜ = 0 ∧
+    rhoQuotePredicate ⊔ rhoQuotePredicateᶜ ≠ ⊤ ∧
+    lowerBound rhoNameNativeValuation rhoQuotePredicate = (1 : ℝ) / 2 ∧
+    upperBound rhoNameNativeValuation rhoQuotePredicate = 1 ∧
+    lowerBound rhoNameNativeValuation rhoQuotePredicate <
+      upperBound rhoNameNativeValuation rhoQuotePredicate ∧
+    ¬ ∃ point : ℝ,
+      point = lowerBound rhoNameNativeValuation rhoQuotePredicate ∧
+      point = upperBound rhoNameNativeValuation rhoQuotePredicate := by
+  have hvalue := rhoQuotePredicate_value
+  have hcompl := rhoQuotePredicate_compl_value
+  constructor
+  · exact hvalue
+  constructor
+  · exact hcompl
+  constructor
+  · exact rhoQuotePredicate_excludedMiddle_ne_top
+  constructor
+  · change rhoNameNativeValuation.val rhoQuotePredicate = (1 : ℝ) / 2
+    exact hvalue
+  constructor
+  · change 1 - rhoNameNativeValuation.val rhoQuotePredicateᶜ = 1
+    rw [hcompl]
+    norm_num
+  constructor
+  · change rhoNameNativeValuation.val rhoQuotePredicate <
+      1 - rhoNameNativeValuation.val rhoQuotePredicateᶜ
+    rw [hvalue, hcompl]
+    norm_num
+  · rintro ⟨point, hlower, hupper⟩
+    change point = rhoNameNativeValuation.val rhoQuotePredicate at hlower
+    change point = 1 - rhoNameNativeValuation.val rhoQuotePredicateᶜ at hupper
+    rw [hvalue] at hlower
+    rw [hcompl] at hupper
+    norm_num at hupper
+    linarith
 
 /-- Measurement factors through observational equivalence classes (schema). -/
 theorem valuation_factors_through_obsEq
@@ -340,7 +595,7 @@ theorem valuation_factors_through_obsEq
 /-- Grand composition schema (3 layers):
   1. Meredith: bisimulation → observational equivalence
   2. Stay/Baez: measurement factors through observational equivalence classes
-  3. Knuth/Skilling: imprecision gate (BinaryEvidence has no faithful point scalarization) -/
+  3. Scalar order reflection: BinaryEvidence has no order embedding into `ℝ` -/
 theorem oslf_ks_wm_unification_schema :
     -- Layer 1 (Meredith): bisimulation → observational equivalence
     (∀ (R : Pat → Pat → Prop) (I : AtomSem) (equiv : Pat → Pat → Prop),
@@ -352,11 +607,11 @@ theorem oslf_ks_wm_unification_schema :
     (∀ (mu : Pat → ℝ) (equiv : Pat → Pat → Prop),
       (∀ p q, equiv p q → mu p = mu q) →
       ∃ muQ : Quot (fun p q => equiv p q) → ℝ, ∀ p, muQ (Quot.mk _ p) = mu p) ∧
-    -- Layer 3 (Knuth/Skilling): imprecision gate
-    (¬ FaithfulPointRepresentation BinaryEvidence) := by
+    -- Layer 3: order-reflection gate
+    (¬ OrderReflectingPointRepresentation BinaryEvidence) := by
   exact ⟨
     fun R I equiv hB hBR hA p q hpq φ => bisimulation_invariant_sem hB hBR hA hpq φ,
     fun mu equiv hC => (valuation_factors_through_obsEq mu equiv hC),
-    evidence_imprecision_gate⟩
+    evidence_orderReflection_gate⟩
 
 end Mettapedia.OSLF.Framework.KSUnificationSketch

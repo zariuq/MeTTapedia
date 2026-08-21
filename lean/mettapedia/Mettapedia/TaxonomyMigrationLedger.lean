@@ -1244,7 +1244,7 @@ Verification scope:
 - Spot-check moved theorem axiom footprints remain within the accepted project
   footprint.
 
-## Cluster 6c.22: PLN K&S totality gate over BinaryEvidence
+## Cluster 6c.22: PLN scalar order-reflection gate over BinaryEvidence
 
 Status: completed in the working tree.
 
@@ -1254,7 +1254,7 @@ Moved paths:
 - The `Mettapedia/PLN/Evidence.lean` room hub imports the moved module.
 
 Namespace:
-- BinaryEvidence incomparability, no faithful point-representation, and
+- BinaryEvidence incomparability, no order-reflecting scalar representation, and
   non-Boolean evidence theorems now live under
   `Mettapedia.PLN.Evidence.PLN_KS_Bridge.*`.
 
@@ -3318,7 +3318,7 @@ Verification scope:
   `indistObs_equivalence`,
   `indist_iff_fullBisim_imageFinite`,
   `indistWeightE_self_top`,
-  `gate_theorem`,
+  `projection_separation`,
   `wmAtomSem_revision`,
   `oslf_ks_wm_graph_unification`, and
   `graphtropy_crispWeight_eq_repeatProb`.
@@ -3465,7 +3465,7 @@ Verification scope:
 - Check no migration facade marker remains.
 - The strict unfinished-proof scan found no `sorry`, `admit`, or
   `theorem_wanted` in the moved Boolean-to-Heyting bridge file.
-- The local `push_neg` deprecation warning in the moved file was removed during
+- The local negation-normalization deprecation warning in the moved file was removed during
   the migration.
 - Spot-check moved theorem axiom footprints remain within the accepted project
   footprint:

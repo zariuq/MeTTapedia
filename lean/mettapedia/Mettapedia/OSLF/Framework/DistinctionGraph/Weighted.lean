@@ -4,7 +4,7 @@ import Mettapedia.PLN.Evidence.EvidenceKSBridge
 import Mettapedia.PLN.Evidence.HeytingValuationOnEvidence
 
 /-!
-# Weighted Distinction Graph + KS Gate Theorem
+# Weighted Distinction Graph + Projection Separation
 
 Extends the distinction graph with two edge-weight types:
 
@@ -15,11 +15,12 @@ Extends the distinction graph with two edge-weight types:
 2. **Strength-scalar weight** (`indistWeightS`): Projects to `ℝ≥0∞` via `toStrength`.
    Lossy — loses the neg/pos decomposition.
 
-The **gate theorem** (Items 3-4) establishes:
-- Under totality (`pos + neg = 1`), `toStrength` IS monotone → scalar faithful
-- In general, `toStrength` is NOT monotone → scalar view loses ordering information
+The projection-separation theorem establishes two different facts:
+- total evidence `pos + neg` is monotone in the coordinatewise order;
+- the strength ratio `pos / (pos + neg)` is not monotone in that order.
 
-This is the Knuth-Skilling imprecision gate applied to the distinction graph.
+This is a property of the chosen evidence readouts, not a restriction on K&S
+one-way scalar fidelity.
 
 ## References
 
@@ -74,35 +75,30 @@ theorem indistWeightE_le_top (R : Pat → Pat → Prop) (I : EvidenceAtomSem)
     (p q : Pat) : indistWeightE R I p q ≤ ⊤ :=
   le_top
 
-/-! ## Gate Theorem: Scalar Faithfulness -/
+/-! ## Projection Separation -/
 
-/-- **Gate (positive direction)**: `toStrength` is monotone on total evidence.
-When all evidence values have `pos + neg = const`, the scalar view preserves ordering.
-
-This repackages `total_monotone` from EvidenceKSBridge for the graph context. -/
-theorem gate_total_monotone :
+/-- Total evidence is monotone in the coordinatewise evidence order. -/
+theorem totalEvidence_monotone :
     ∀ e₁ e₂ : BinaryEvidence, e₁ ≤ e₂ → e₁.total ≤ e₂.total :=
   total_monotone
 
-/-- **Gate (negative direction)**: `toStrength` is NOT monotone in general.
+/-- The strength projection is not monotone in the coordinatewise evidence order.
 Adding negative evidence increases in the lattice order but decreases strength.
-
-This repackages `strength_not_monotone` from EvidenceKSBridge. -/
-theorem gate_strength_not_monotone :
+ -/
+theorem strengthProjection_not_monotone :
     ∃ e₁ e₂ : BinaryEvidence, e₁ ≤ e₂ ∧ e₂.toStrength < e₁.toStrength :=
   strength_not_monotone
 
-/-- **The KS Gate Theorem for distinction graphs**: the scalar weight `indistWeightS`
-is a well-defined projection of the lattice weight `indistWeightE`, but the projection
-is NOT order-preserving in general.
+/-- Total evidence and strength are distinct scalar readouts: the former is
+monotone, while the latter is not.
 
 Specifically:
-- `toStrength` preserves total evidence ordering (monotone on `total`)
+- `total` preserves evidence ordering
 - `toStrength` does NOT preserve the lattice order on BinaryEvidence
 
-This means: two distinction graphs may be ordered lattice-wise (one refines the other)
-but their scalar projections may NOT preserve that ordering. -/
-theorem gate_theorem :
+Thus coordinatewise-ordered evidence values need not remain ordered after the
+strength projection. -/
+theorem projection_separation :
     -- Positive: total is monotone
     (∀ e₁ e₂ : BinaryEvidence, e₁ ≤ e₂ → e₁.total ≤ e₂.total) ∧
     -- Negative: strength is not monotone
@@ -110,8 +106,8 @@ theorem gate_theorem :
   ⟨total_monotone, strength_not_monotone⟩
 
 /-- BinaryEvidence has no Boolean complement: there exists an evidence value with no
-complement. This is the fundamental reason the gate is one-way. -/
-theorem gate_no_boolean_complement :
+complement. -/
+theorem no_boolean_complement_witness :
     ∃ e : BinaryEvidence, ∀ c : BinaryEvidence, ¬(e ⊔ c = ⊤ ∧ e ⊓ c = ⊥) :=
   evidence_not_boolean
 

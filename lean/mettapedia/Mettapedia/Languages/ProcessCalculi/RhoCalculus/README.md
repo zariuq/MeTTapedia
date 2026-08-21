@@ -77,6 +77,19 @@ Extensions and bridges:
   Hennessy-Milner / modal-logic theory lives under `Mettapedia/OSLF/` and
   `Mettapedia/GSLT/`.)
 - **Serializability of disjoint COMMs** (`ParallelWave.lean`).
+- **Compact syntax is an incomplete key for cost-bearing normalization**
+  (`CostIterationPolicyCorollary.lean`). Erasing a cost-elaborated process to its
+  compact form loses information that normalization depends on. Two packagings state
+  the boundary: `rhoCostTwo_boundary_package` gives four negatives requiring no
+  normalization laws — normalization does not factor through compact erasure, compact
+  erasure is not faithful, elaboration fibres are not all subsingletons, and some
+  fibre policy is not constant — and `rhoCostTwo_boundary_package_withLaws` adds the
+  fifth, which needs elaborated normalization laws as an input: no proof-relevant
+  second-layer normalizer admits a universally commuting compactification.
+  The positive counterpart is elsewhere (`GSLT/Core/GSLTConstructions.lean`,
+  `policy_factors_iff_fiberInvariant`): a policy descends to compact syntax exactly
+  when it is invariant along the fibre, which is what makes the obstruction a design
+  criterion rather than only a prohibition.
 
 ## Formalization status
 

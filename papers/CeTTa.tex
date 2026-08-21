@@ -716,6 +716,78 @@ semantics (\PeTTa{}'s Prolog grounding, set-carrier stores) simply
 answer as their own specifications say, which is what declared
 contracts are for.
 
+\subsection{Checker Bug Classes the Native Authority Flip Exposed}
+\label{sec:checkerbugs}
+
+The differential discipline of Section~\ref{sec:bugclasses} was built to
+catch \emph{evaluator} defects.  When the \code{prime} lane's conversion
+judgment was migrated from its legacy route---normalize both sides
+through the \HE{} type-level normalizer, then compare the results
+syntactically---to a native $\lambda\Pi$ kernel that decides
+$\beta\eta$-conversion directly for the closed, well-scoped fragment,
+the same discipline exposed a subtler class: \emph{checker} false
+negatives.  The migration keeps the legacy route alive as a separately
+compiled test-only oracle (production has no toggle back), and compares
+verdicts over a pinned eleven-row corpus
+(\code{tests/prime/conformance/closed\_lambda\_pi\_convert.metta}).
+Nine rows agree.  Two do not, and in both the legacy verdict is wrong:
+
+\begin{verbatim}
+; beta: (\f:(Pi U0 U0). f) (\y:U0. y)  vs  \y:U0. y
+!(conversion-status
+  (prime-judge &self
+    (Convert
+      (App (Lam (Pi U0 U0) (idx 0)) (Lam U0 (idx 0)))
+      (Lam U0 (idx 0)))))
+; native: [Established]     legacy: [Refuted]
+
+; eta: \f:(Pi U0 U0). \x:U0. f x  vs  \f:(Pi U0 U0). f
+!(conversion-status
+  (prime-judge &self
+    (Convert
+      (Lam (Pi U0 U0) (Lam U0 (App (idx 1) (idx 0))))
+      (Lam (Pi U0 U0) (idx 0)))))
+; native: [Established]     legacy: [Refuted]
+\end{verbatim}
+
+\noindent
+(Terms are de Bruijn: \code{(idx 0)} is the innermost binder.)  The
+first pair is one $\beta$-step apart; the second is an
+$\eta$-expansion.  The legacy route's normalizer neither reduces this
+redex nor knows $\eta$, so it compares two syntactically distinct terms
+it wrongly believes normal and \emph{refutes} a true conversion.  The
+instructive part is not that a normalizer was incomplete---that is
+ordinary---but that its incompleteness was silently promoted to
+refutation authority.  An incomplete procedure can honestly answer
+``incomplete''; it cannot honestly answer ``no.''
+
+Three consequences are locked into the gates.  First, verdict equality
+with a buggy oracle cannot be the acceptance criterion for a checker
+migration: the differential gate separates \emph{exact agreements}
+(nine rows, including the refutation of unequal well-typed operands,
+which is a genuine negative, not a fallback) from \emph{adjudicated
+repairs} (the two rows above), and pins both expectation files so the
+divergence remains a permanent witness rather than a silent fix---the
+same adjudication policy Section~\ref{sec:conformance} applies to
+upstream behavioral divergences, now applied to a typing judgment.
+Second, the repaired class must earn its authority: mutation canaries
+that corrupt the native kernel's context discipline, $\beta$-rule, or
+$\eta$-rule are killed by the suite, so the tests demonstrably
+constrain the code that produces the new verdicts.  Third, the flip is
+class-exact and fail-open: outside the recognized fragment the legacy
+route still answers, and exhausting the native budget reports
+incomplete rather than silently retrying the other authority---a
+verdict must never depend on which checker happened to have budget.
+
+The same lesson closed a sibling defect at the interaction of typing
+and matching: a typed-applicability pruning path refuted
+candidate pairs that the positive matcher accepts (a space-class
+mismatch between a negative license and the positive semantics it
+claims to approximate).  The rule that covers both incidents: a
+negative answer is a claim about all executions, and may only be issued
+by an authority whose completeness for that claim is established;
+everything weaker prunes nothing and abstains.
+
 \subsection{The Reflective Modal Layer}
 \label{sec:modal}
 

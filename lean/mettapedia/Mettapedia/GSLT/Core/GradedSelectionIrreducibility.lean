@@ -92,13 +92,27 @@ crisp discipline must buy with new syntax and new steps.  The converse
 irreducibility — that a signature-level cost wrapping is not expressible
 as any value readout — is witnessed separately by the cost lane's
 two-colour continuation retyping and is not formalized in this module.
+
+Delivery-level companions (below) complete the picture at result
+granularity.  The conservative direction is made exact: a crisp
+where-clause delivers *identically* to an `if` at the head of the transform
+with an `(empty)` failure branch (`whereDeliver_eq_ifDeliver`), and that
+identity is the `Bool` corner of graded delivery
+(`gradedDeliver_bool_corner`).  What escapes sugarhood arrives with
+normalization: a normalized (Gillespie / sampled) discipline needs the
+race total in addition to each candidate's weight — sufficient
+(`raceShare_eq_of_total_eq`) and necessary
+(`normalizedShare_not_candidatewise`).  Finally, firing is two-axis:
+semiring annihilation gates the zero grade (`zero_grade_never_fires`),
+but affordability lives outside the value algebra
+(`grade_annihilation_cannot_gate`).
 -/
 
 namespace Mettapedia.GSLT.Core
 
 open Mettapedia.GSLT.Core.WeightedMuScheduler
 
-universe uCandidate
+universe uCandidate uResult
 
 variable {Candidate : Type uCandidate}
 
@@ -441,5 +455,165 @@ theorem thresholdSelection_pointwise
   refine ⟨fun candidate => decide (threshold ≤ weight candidate),
     fun bag => ?_⟩
   simp
+
+/-! ## Delivery: the crisp where-clause is exactly an if-guarded transform
+
+The guard-granularity results above say what a crisp *guard* cannot do.
+At *delivery* granularity the complementary exactness holds: the two
+MeTTa surface forms `(= $p $t $w)` (crisp guard) and
+`(= $p (if $w $t (empty)))` (an `if` at the head of the transform)
+deliver the same result bag.  Under the usual evaluation order the
+`if`'s condition is evaluated before either branch, so not even the
+evaluation-order argument separates the forms: the crisp where-clause is
+a semantic reshuffling, provably.  What the graded generalization changes
+is recorded by `gradedDeliver` and its `Bool` corner. -/
+
+section Delivery
+
+variable {Result : Type uResult} (w : Candidate → Bool) (t : Candidate → Result)
+
+/-- Crisp where-clause delivery: keep the rows the guard admits, then apply
+the transform.  This is `(= $p $t $w)` read as a bag producer. -/
+def whereDeliver (bag : Multiset Candidate) : Multiset Result :=
+  (bag.filter (fun σ => w σ = true)).map t
+
+/-- If-guarded transform delivery: every row runs the head-`if` of
+`(= $p (if $w $t (empty)))`; admitted rows yield the transformed result,
+rejected rows yield `(empty)` — no result at all. -/
+def ifDeliver (bag : Multiset Candidate) : Multiset Result :=
+  bag.filterMap (fun σ => if w σ = true then some (t σ) else none)
+
+variable {w t}
+
+/-- **The crisp equivalence.**  For a Boolean guard the two forms produce
+identical result bags: the crisp where-clause is exactly an `if` at the
+head of the transform with `(empty)` in the failure branch.  Positive
+example: the sugar direction. -/
+theorem whereDeliver_eq_ifDeliver (bag : Multiset Candidate) :
+    whereDeliver w t bag = ifDeliver w t bag := by
+  unfold whereDeliver ifDeliver
+  induction bag using Multiset.induction_on with
+  | empty => rfl
+  | cons σ rest ih =>
+      cases hσ : w σ <;> simp [hσ, ih]
+
+/-- Graded delivery: every row survives, annotated with its value — the
+result bag becomes a weighted bag, a `V`-valued support with
+coefficients. -/
+def gradedDeliver {V : Type*} [CommSemiring V]
+    (weight : Candidate → V) (t : Candidate → Result)
+    (bag : Multiset Candidate) : Multiset (V × Result) :=
+  bag.map fun σ => (weight σ, t σ)
+
+/-- **The Bool corner.**  Filtering a `Bool`-graded delivery down to its
+admitted projections recovers the crisp where-clause: the graded form
+specializes to the crisp form exactly, so the equivalence above is the
+degenerate `V = Bool` case rather than an accidental identity. -/
+theorem gradedDeliver_bool_corner (w : Candidate → Bool) (t : Candidate → Result)
+    (bag : Multiset Candidate) :
+    (gradedDeliver w t bag).filterMap
+        (fun p : Bool × Result => if p.1 = true then some p.2 else none) =
+      whereDeliver w t bag := by
+  unfold gradedDeliver whereDeliver
+  induction bag using Multiset.induction_on with
+  | empty => rfl
+  | cons σ rest ih =>
+      cases hσ : w σ <;> simp [hσ, ih]
+
+end Delivery
+
+/-! ## Normalized readings need the race total
+
+A normalized (Gillespie / sampled) discipline assigns each candidate the
+share `weight / raceTotal`.  The total is the *only* race-set information
+such a discipline adds to a candidate's own weight — it suffices
+(`raceShare_eq_of_total_eq`) and it is necessary
+(`normalizedShare_not_candidatewise`).  Over a finite, fully enumerated
+race set the total exists by construction; over a stream it must be
+declared as a window. -/
+
+/-- The total weight a race aggregates: the denominator of every
+normalized (Gillespie / sampled) discipline. -/
+noncomputable def raceTotal (bag : Multiset ℝ) : ℝ :=
+  bag.sum
+
+/-- The normalized share of one candidate: its weight over the race
+total. -/
+noncomputable def raceShare (w : Candidate → ℝ) (bag : Multiset Candidate)
+    (σ : Candidate) : ℝ :=
+  w σ / raceTotal (bag.map w)
+
+/-- **The total suffices.**  Two race sets with the same aggregate weight
+assign the candidate the same share. -/
+theorem raceShare_eq_of_total_eq (w : Candidate → ℝ) (σ : Candidate)
+    (b₁ b₂ : Multiset Candidate)
+    (h : raceTotal (b₁.map w) = raceTotal (b₂.map w)) :
+    raceShare w b₁ σ = raceShare w b₂ σ := by
+  unfold raceShare
+  rw [h]
+
+/-- **The total is necessary.**  Two bags in which one candidate carries
+the same weight can assign it different shares — here a singleton race
+versus a two-candidate race at uniform positive weight — so no
+per-candidate computation realizes a normalized discipline.  Negative
+example: what candidate-local data cannot see, formalized. -/
+theorem normalizedShare_not_candidatewise :
+    ∃ w : Bool → ℝ, ∃ σ : Bool, ∃ b₁ b₂ : Multiset Bool,
+      σ ∈ b₁ ∧ σ ∈ b₂ ∧ (∀ τ ∈ b₁, 0 < w τ) ∧ (∀ τ ∈ b₂, 0 < w τ) ∧
+        raceShare w b₁ σ ≠ raceShare w b₂ σ := by
+  have singleton_share :
+      raceShare (fun _ : Bool => (1 : ℝ)) ({true} : Multiset Bool) true = 1 := by
+    simp [raceShare, raceTotal, Multiset.map_singleton, Multiset.sum_singleton]
+  have pair_share :
+      raceShare (fun _ : Bool => (1 : ℝ)) ({true, false} : Multiset Bool) true =
+        1 / 2 := by
+    simp [raceShare, raceTotal, Multiset.insert_eq_cons, Multiset.map_singleton,
+      Multiset.sum_singleton, one_add_one_eq_two]
+  refine ⟨fun _ => 1, true, {true}, {true, false}, ?_, ?_, ?_, ?_, ?_⟩
+  · simp
+  · simp
+  · intro τ _
+    norm_num
+  · intro τ _
+    norm_num
+  · rw [singleton_share, pair_share]
+    norm_num
+
+/-! ## Firing: value and cost are two axes -/
+
+/-- A candidate fires exactly when its grade is nonzero *and* its price
+is affordable.  The first conjunct belongs to the value semiring; the
+second to the cost ledger's order. -/
+def fires (value price purse : ℝ) : Prop :=
+  value ≠ 0 ∧ price ≤ purse
+
+/-- Positive example: grade and budget together license firing. -/
+theorem fires_of_grade_and_budget {value price purse : ℝ}
+    (hv : value ≠ 0) (hc : price ≤ purse) : fires value price purse :=
+  ⟨hv, hc⟩
+
+/-- Negative example: the value semiring's zero gates firing — its
+annihilation law is exactly this conjunct. -/
+theorem zero_grade_never_fires (price purse : ℝ) : ¬ fires 0 price purse := by
+  norm_num [fires]
+
+/-- Negative example: no value-algebra condition expresses affordability.
+A candidate with a nonzero grade and an unaffordable price does not fire,
+yet every condition of the pure value fragment `value ≠ 0` already
+holds — the purse is invisible to the semiring's multiplication, so cost
+cannot be folded into the guard's algebra. -/
+theorem grade_annihilation_cannot_gate :
+    ∃ value purse price : ℝ, value ≠ 0 ∧ ¬ fires value price purse := by
+  refine ⟨1, 0, 1, by norm_num, ?_⟩
+  norm_num [fires]
+
+/-! ## Axiom audit for the delivery-level companions -/
+
+#print axioms whereDeliver_eq_ifDeliver
+#print axioms gradedDeliver_bool_corner
+#print axioms raceShare_eq_of_total_eq
+#print axioms normalizedShare_not_candidatewise
+#print axioms zero_grade_never_fires
+#print axioms grade_annihilation_cannot_gate
 
 end Mettapedia.GSLT.Core

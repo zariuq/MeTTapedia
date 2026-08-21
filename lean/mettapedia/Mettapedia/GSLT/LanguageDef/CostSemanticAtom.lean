@@ -1760,6 +1760,43 @@ theorem ofInventory_occurrenceSlot_surjective
   rw [occurrenceValue]
   exact List.get_idxOf inventory.semanticAtoms_nodup slot
 
+/-- If every proof-relevant boundary in an inventory is sealed, then every
+semantic atom produced by its executable quotient is sealed as well.  Authored
+source variables require no extra premise: their generated atoms always have
+empty target support. -/
+theorem ofInventory_atomValue_targetSupport_eq_nil_of_boundaryEntries
+    {source : CIGSLT} {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {occurrences : List CostRegionOccurrence}
+    {table : TypedCostRegionBoundaryTable source color targetFree occurrences}
+    {values : TypedCostRegionBoundaryTable.Values source color targetFree table}
+    {root : Pattern}
+    (inventory : CostStaticParameterInventory source color targetFree table
+      values root)
+    (boundariesSealed : ∀ boundary ∈ table.entries,
+      boundary.boundary.targetSupport = [])
+    (slot : Fin (ofInventory inventory).atomCount) :
+    ((ofInventory inventory).atomValue slot).key.targetSupport = [] := by
+  let environment := ofInventory inventory
+  obtain ⟨position, rfl⟩ :=
+    ofInventory_occurrenceSlot_surjective inventory slot
+  rw [environment.occurrenceValue]
+  change (inventory.occurrenceAt position).atom.key.targetSupport = []
+  generalize parameterEquality : inventory.occurrenceAt position = parameter
+  cases parameter with
+  | sourceFVar occurrence decodedName targetLookup decodedType =>
+      rfl
+  | boundary occurrence notSource resolved resolution =>
+      have tableResolution : table.resolve occurrence.name = some resolved.1 := by
+        have agrees := values.resolve_boundary table occurrence.name
+        rw [resolution] at agrees
+        simpa using agrees.symm
+      have membership : resolved.1 ∈ table.entries :=
+        table.mem_entries_of_resolve_eq_some tableResolution
+      simpa [CostStaticParameterOccurrence.atom,
+        TypedCostStaticAtom.ofBoundaryValue] using
+        boundariesSealed resolved.1 membership
+
 /-- Negative quotient law: differing typed semantic values cannot be merged
 merely because their origins or compact payloads look similar. -/
 theorem ofInventory_occurrenceSlot_ne_of_atom_ne

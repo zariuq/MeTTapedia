@@ -133,7 +133,7 @@ theorem indistObs_is_revStepBisimulation
   · -- Forth for R⁻¹: indistObs p q → R p' p → ∃ q', R q' q ∧ indistObs p' q'
     intro p q hpq p' hpp'
     by_contra h_no_match
-    push_neg at h_no_match
+    push Not at h_no_match
     -- Every R-predecessor q' of q fails to be indistObs to p'
     have hfin := hPredFinite q
     have hsep : ∀ q' : Pat, R q' q →
@@ -181,7 +181,7 @@ theorem indistObs_is_revStepBisimulation
   · -- Back for R⁻¹: indistObs p q → R q' q → ∃ p', R p' p ∧ indistObs p' q'
     intro p q hpq q' hq'q
     by_contra h_no_match
-    push_neg at h_no_match
+    push Not at h_no_match
     have hfin := hPredFinite p
     have hsep : ∀ p' : Pat, R p' p →
         ∃ φ, sem R I φ q' ∧ ¬ sem R I φ p' := by

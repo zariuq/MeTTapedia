@@ -1884,7 +1884,7 @@ private theorem list_map_eq_self_of_mem {α : Type*} (function : α → α)
 when a deeper ambient context is embedded.  This is the quotation case of
 mixed-context scope preservation: quotation resets safety to zero, so no
 ambient index is available to move. -/
-private theorem thickenAmbientBVars_eq_self_of_binderSafeAt_le
+theorem thickenAmbientBVars_eq_self_of_binderSafeAt_le
     {source : CIGSLT} {color : CostStaticColor}
     {sourceBound targetBound : List TypeExpr}
     (thinning : CostStaticBinderThinning source color sourceBound targetBound)
@@ -1964,6 +1964,18 @@ private theorem thickenAmbientBVars_eq_self_of_binderSafeAt_le
           exact inductionHypothesis element membership
             (elementsSafe element membership) depthOrder)
       simp [thickenAmbientBVars, fixed]
+
+/-- A frame sealed by a quotation boundary is unchanged by insertion of any
+target-only ambient binders. -/
+theorem thickenAmbientBVars_eq_self_of_binderSafeAt_zero
+    {source : CIGSLT} {color : CostStaticColor}
+    {sourceBound targetBound : List TypeExpr}
+    (thinning : CostStaticBinderThinning source color sourceBound targetBound)
+    (quoteConstructor : String) (depth : Nat) (pattern : Pattern)
+    (safe : binderSafeAt quoteConstructor 0 pattern = true) :
+    thinning.thickenAmbientBVars depth pattern = pattern :=
+  thickenAmbientBVars_eq_self_of_binderSafeAt_le thinning quoteConstructor
+    safe (Nat.zero_le depth)
 
 /-- Quote-aware binder scope survives insertion of target-only ambient
 binders.  Internal quotation bodies remain sealed rather than merely being

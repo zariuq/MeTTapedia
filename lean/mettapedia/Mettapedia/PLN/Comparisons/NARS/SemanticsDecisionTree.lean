@@ -23,8 +23,8 @@ Use the strongest layer justified by assumptions:
 
 ## Concrete theorem pointers
 
-- No faithful scalarization in general evidence order:
-  `PLN_KS_Bridge.evidence_no_point_representation`.
+- No scalar order embedding for the general evidence order:
+  `PLN_KS_Bridge.evidence_no_orderEmbedding_into_real`.
 - K&S/classical commutative quantale slice:
   `Hypercube.knuthSkilling_has_standard_pln`.
 - Weaker-than-KS interval slice:
@@ -99,11 +99,11 @@ theorem gate_example_dempsterShafer :
 
 /-! ## Hard gates (formal facts) -/
 
-/-- If evidence values are incomparable, no faithful scalar order map exists. -/
-theorem evidence_blocks_faithful_scalarization :
+/-- If evidence values are incomparable, no scalar order embedding exists. -/
+theorem evidence_blocks_order_reflecting_scalarization :
     ¬ ∃ Θ : Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence → ℝ,
       ∀ a b : Mettapedia.PLN.Evidence.EvidenceQuantale.BinaryEvidence, a ≤ b ↔ Θ a ≤ Θ b :=
-  Mettapedia.PLN.Evidence.PLN_KS_Bridge.evidence_no_point_representation
+  Mettapedia.PLN.Evidence.PLN_KS_Bridge.evidence_no_orderEmbedding_into_real
 
 /-- K&S sits in the standard commutative quantale inference slice. -/
 theorem ks_has_standard_inference :
@@ -129,7 +129,7 @@ theorem weaker_than_ks_interval_inference :
 /-- Canonical symbol list for the semantics choice flow.
 Includes weaker-than-KS interval/imprecise references. -/
 def keyReferenceSymbols : List String :=
-  [ "Mettapedia.PLN.Evidence.PLN_KS_Bridge.evidence_no_point_representation"
+  [ "Mettapedia.PLN.Evidence.PLN_KS_Bridge.evidence_no_orderEmbedding_into_real"
   , "Mettapedia.ProbabilityTheory.Hypercube.knuthSkilling_has_standard_pln"
   , "Mettapedia.ProbabilityTheory.Hypercube.dempsterShafer_quantale"
   , "Mettapedia.ProbabilityTheory.Hypercube.dempsterShafer_has_interval_pln"
