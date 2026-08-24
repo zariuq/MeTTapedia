@@ -1,7 +1,7 @@
-import Mettapedia.Languages.MeTTa.Prime.CostTwoPolicyFamilyObservationBridge
+import Mettapedia.Languages.MeTTa.Prime.PolicyKeyObservationFamilyBridge
 
 /-!
-# Cost² keys at the abstract implementation boundary
+# cost-layer iteration keys at the abstract implementation boundary
 
 The complete dependent Cost elaboration carrier has a global compact erasure,
 not merely one constant key on each elaboration fibre.  Its canonical compiler
@@ -12,7 +12,7 @@ split map:
   compact-erasure fibre;
 * the compact key is an exact receipt representation exactly when compact
   erasure is faithful; and
-* concrete languages may admit compact-derived hot policies while refusing
+* concrete languages may support compact-derived hot policies while refusing
   exact replay from that same key.
 
 The distinction is abstract.  No representation fields or runtime ABI are
@@ -21,13 +21,13 @@ prescribed.
 
 set_option autoImplicit false
 
-namespace Mettapedia.Languages.MeTTa.Prime.CostTwoImplementationKeyContract
+namespace Mettapedia.Languages.MeTTa.Prime.CostElaborationKeyContract
 
 open Mettapedia.GSLT.LanguageDef
 open Mettapedia.GSLT.LanguageDef.NIKRouteAdmission
 open Mettapedia.Languages.MeTTa.Prime.PrimeAbstractImplementationModel
-open Mettapedia.Languages.MeTTa.Prime.CostTwoCacheReplayBoundary
-open Mettapedia.Languages.MeTTa.Prime.CostTwoPolicyKeyNIKAdmission
+open Mettapedia.GSLT.LanguageDef.Cost.Elaboration
+open Mettapedia.Languages.MeTTa.Prime.PolicyKeyNIKAdmission
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.Framework.ConstructorCategory
 
@@ -67,13 +67,11 @@ elaboration evidence at fixed compact syntax. -/
 theorem compactCarrierKey_policySafe_iff_fiberInvariant
     (source : CIGSLT) {Value : Type uValue}
     (policy : CostElaborationFiber source → Value) :
-    PolicySafe (compactCarrierKey source) policy ↔
+    ReplayKey.Supports (compactCarrierKey source) policy ↔
       ∀ left right,
         compactCarrierKey source left = compactCarrierKey source right →
-          policy left = policy right := by
-  exact policySafe_iff_fiberInvariant_of_split
-    (compactCarrierKey source) (selectCompactCarrier source)
-    (compactCarrierKey_selectCompactCarrier source) policy
+          policy left = policy right :=
+  Iff.rfl
 
 /-! ## Exact receipt criterion -/
 
@@ -81,10 +79,10 @@ theorem compactCarrierKey_policySafe_iff_fiberInvariant
 erasure is faithful in every dependent typed fibre. -/
 theorem compactCarrierKey_exactReplay_iff_erasureFaithful
     (source : CIGSLT) :
-    ExactReplayKey (compactCarrierKey source) ↔
+    ReplayKey.IsExact (compactCarrierKey source) ↔
       source.CostCompactErasureFaithful := by
   constructor
-  · rintro ⟨decode, recovers⟩ targetFree targetBound targetSort left right erased
+  · rintro ⟨⟨decode, recovers⟩⟩ targetFree targetBound targetSort left right erased
     rcases left with ⟨leftTerm, leftElaboration⟩
     rcases right with ⟨rightTerm, rightElaboration⟩
     dsimp only [CIGSLT.costOpenElaborationCarrier,
@@ -109,7 +107,7 @@ theorem compactCarrierKey_exactReplay_iff_erasureFaithful
     subst rightElaboration
     rfl
   · intro faithful
-    refine ⟨selectCompactCarrier source, ?_⟩
+    refine ⟨{ decode := selectCompactCarrier source, recovers := ?_ }⟩
     rintro ⟨index, term, elaboration⟩
     have fiberEquality :
         CostOpenElaboration.compileTerm source term =
@@ -143,7 +141,7 @@ proof-relevant state. -/
 def compactDerivedPolicyRealization
     (source : CIGSLT) {Value : Type uValue}
     (observeCompact : CompactCostCarrier source → Value) :
-    PolicyRealization (compactCarrierKey source)
+    ObservationRealization (compactCarrierKey source)
       (observeCompact ∘ compactCarrierKey source) where
   run := observeCompact
   agrees := rfl
@@ -177,4 +175,4 @@ def compactIdentityPolicyAdmission
 #print axioms compactExactCodec
 #print axioms compactDerivedPolicyAdmission
 
-end Mettapedia.Languages.MeTTa.Prime.CostTwoImplementationKeyContract
+end Mettapedia.Languages.MeTTa.Prime.CostElaborationKeyContract

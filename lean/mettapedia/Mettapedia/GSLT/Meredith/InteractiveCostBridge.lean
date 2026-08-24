@@ -1,5 +1,5 @@
 import Mettapedia.GSLT.Meredith.InteractiveReducesNBridge
-import Mettapedia.GSLT.Meredith.CostMonadObstruction
+import Mettapedia.GSLT.LanguageDef.Cost.FlatteningObstruction
 import Mettapedia.GSLT.Synthesis.MainConservation
 
 /-!

@@ -566,7 +566,7 @@ that work in a stronger form; taking the apex obligation inherits it. -/
 /-- **Obligation A1′ — the aligned arm in apex form.**  Strictly weaker than
 `RhoAlignedViewsRestorationAlignedInDomain`, and the form every existing tool
 for this configuration already produces. -/
-def RhoAlignedViewsPlanStopApexInDomain (declarationColor : CostStaticColor) :
+def RhoAlignedPlanStops.HaveCommonRestoration (declarationColor : CostStaticColor) :
     Prop :=
   ∀ {targetFree : WellSorted.FreeTypeContext}
     {available outer : List TypeExpr}
@@ -596,13 +596,13 @@ def RhoAlignedViewsPlanStopApexInDomain (declarationColor : CostStaticColor) :
         (sizeOf leftPattern + sizeOf rightPattern))
 
 /-- **The provider from the apex-form obligations.** -/
-theorem rhoCanonicalStaticPairSemanticCutProviderInDomain_of_apexObligations
+theorem rhoCanonicalStaticPair_hasSemanticCut_of_apexObligations
     {declarationColor : CostStaticColor}
-    (alignedApex : RhoAlignedViewsPlanStopApexInDomain declarationColor)
+    (alignedApex : RhoAlignedPlanStops.HaveCommonRestoration declarationColor)
     (collapsingRestoration :
       RhoCollapsingViewsRestorationAlignedInDomain declarationColor)
-    (exposure : RhoCollapsingLeafExposureInDomain declarationColor) :
-    RhoCanonicalStaticPairSemanticCutProviderInDomain declarationColor := by
+    (exposure : RhoCollapsingLeaf.HasExposure declarationColor) :
+    RhoCanonicalStaticPair.HasSemanticCut declarationColor := by
   intro targetFree available outer leftPattern rightPattern type admissible
     leftWellSorted rightWellSorted canonical _staticShape closeSmaller
     left right rootCase
@@ -638,33 +638,33 @@ theorem rhoCanonicalStaticPairSemanticCutProviderInDomain_of_apexObligations
         (alignedApex leftView rightView admissible leftWellSorted
           rightWellSorted close roots)⟩
 
-/-- **The rho Cost₁ domain object over the apex-form obligations.**
+/-- **The rho cost layer domain object over the apex-form obligations.**
 
 The operative seal statement.  Discharging A1′, A2 and B produces
-`CostOneDomainObject` with no remaining hypotheses. -/
-noncomputable def rhoHereditaryCostOneDomainObject_ofApexObligations
-    (alignedApex : ∀ color, RhoAlignedViewsPlanStopApexInDomain color)
+`Cost.Layer` with no remaining hypotheses. -/
+noncomputable def rhoHereditaryCostLayer_ofApexObligations
+    (alignedApex : ∀ color, RhoAlignedPlanStops.HaveCommonRestoration color)
     (collapsingRestoration :
       ∀ color, RhoCollapsingViewsRestorationAlignedInDomain color)
-    (exposure : ∀ color, RhoCollapsingLeafExposureInDomain color) :
-    CostOneDomainObject :=
-  rhoHereditaryCostOneDomainObject_ofSemanticLaws
+    (exposure : ∀ color, RhoCollapsingLeaf.HasExposure color) :
+    Cost.Layer :=
+  rhoHereditaryCostLayer_ofSemanticLaws
     (fun color =>
-      rhoCanonicalStaticPairSemanticCutProviderInDomain_of_apexObligations
+      rhoCanonicalStaticPair_hasSemanticCut_of_apexObligations
         (alignedApex color) (collapsingRestoration color) (exposure color))
     rhoHereditaryStaticNormalizer_preservesReflectiveSupport_path
 
-/-- The Cost₁ object laws over the apex-form obligations. -/
-noncomputable def rhoHereditaryCostOneObjectLaws_ofApexObligations
-    (alignedApex : ∀ color, RhoAlignedViewsPlanStopApexInDomain color)
+/-- The cost layer object laws over the apex-form obligations. -/
+noncomputable def rhoHereditaryCompactOpenNormalizerLaws_ofApexObligations
+    (alignedApex : ∀ color, RhoAlignedPlanStops.HaveCommonRestoration color)
     (collapsingRestoration :
       ∀ color, RhoCollapsingViewsRestorationAlignedInDomain color)
-    (exposure : ∀ color, RhoCollapsingLeafExposureInDomain color) :
-    CIGSLT.CostOneObjectLawsFor rhoCIGSLT
+    (exposure : ∀ color, RhoCollapsingLeaf.HasExposure color) :
+    Cost.CompactOpenNormalizer.Laws rhoCIGSLT
       rhoCostNormalizeOpenHereditarySupported :=
-  rhoHereditaryCostOneObjectLaws_ofSemanticLaws
+  rhoHereditaryCompactOpenNormalizerLaws_ofSemanticLaws
     (fun color =>
-      rhoCanonicalStaticPairSemanticCutProviderInDomain_of_apexObligations
+      rhoCanonicalStaticPair_hasSemanticCut_of_apexObligations
         (alignedApex color) (collapsingRestoration color) (exposure color))
     rhoHereditaryStaticNormalizer_preservesReflectiveSupport_path
 

@@ -28,7 +28,7 @@ import Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefDSL
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefGSLTBridge
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.DerivedContextualStep
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.PureCanonicalSection
-import Mettapedia.GSLT.Meredith.CostMonadObstruction
+import Mettapedia.GSLT.LanguageDef.Cost.FlatteningObstruction
 import Mettapedia.GSLT.Meredith.InteractiveGSLT
 
 /-!
@@ -132,11 +132,11 @@ namespace Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost
 #print axioms FundedExecution.rawAccount_eq_authorityReceipt_aggregate
 #print axioms AuthorityObservationExamples.aggregate_not_injective
 #print axioms AuthorityObservationExamples.no_total_reconstruction_from_aggregate
-#print axioms Mettapedia.GSLT.Meredith.CostMonadObstruction.pairMul_not_injective
-#print axioms Mettapedia.GSLT.Meredith.CostMonadObstruction.list_append_not_injective
-#print axioms Mettapedia.GSLT.Meredith.CostMonadObstruction.list_append_forgets_nonempty_boundary
-#print axioms Mettapedia.GSLT.Meredith.CostMonadObstruction.writerFlatten_not_injective
-#print axioms Mettapedia.GSLT.Meredith.CostMonadObstruction.multiset_add_forgets_nonempty_boundary
+#print axioms Mettapedia.GSLT.LanguageDef.Cost.FlatteningObstruction.mul_not_injective2
+#print axioms Mettapedia.GSLT.LanguageDef.Cost.FlatteningObstruction.list_append_not_injective
+#print axioms Mettapedia.GSLT.LanguageDef.Cost.FlatteningObstruction.list_append_forgets_nonempty_boundary
+#print axioms Mettapedia.GSLT.LanguageDef.Cost.FlatteningObstruction.writerFlatten_not_injective
+#print axioms Mettapedia.GSLT.LanguageDef.Cost.FlatteningObstruction.multiset_add_forgets_nonempty_boundary
 #print axioms ResourceTransitionExamples.exists_one_step_funded_execution
 #print axioms ResourceTransitionExamples.no_nonempty_identity_execution
 #print axioms ResourceTransitionExamples.raw_spend_forgets_funding_factorisation

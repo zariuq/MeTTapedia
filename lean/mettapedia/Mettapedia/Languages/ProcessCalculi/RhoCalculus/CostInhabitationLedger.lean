@@ -1,12 +1,12 @@
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditarySupportedEndgame
-import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryProviderApexSlice
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryProviderObligations
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryCrossColorRestoration
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryLeafDichotomyProbe
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryForeignBoundaryWitness
-import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryCollapsingPlanStopApex
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryCollapsingPlanStopRestoration
 
 /-!
-# Inhabitation ledger for the rho Cost₁ chain
+# Inhabitation ledger for the rho cost layer chain
 
 A conditional theorem over an empty hypothesis type compiles, reports green,
 and constrains nothing.  The reference-executor object tower reached exactly
@@ -25,27 +25,27 @@ Ledger, as of this file's last update:
 * inhabited — `OrderedCIGSLT` (first witness: the rho theory);
 * refuted for rho — every reference-executor law bundle
   (`CostReferenceOpenGeneratorInvariant`, `CostReferenceOpenSectionLaws`,
-  `CostReferenceOneObjectLaws`);
-* proved — the reflective-support crown: `rhoHereditaryReflectiveSupportPreserving`
+  `Cost.ReferenceCompactOpenNormalizer.Laws`);
+* proved — the reflective-support closure: `rhoHereditaryReflectiveSupportPreserving`
   is a theorem (local static-node law by path-indexed substitution, whole-tree
   structural theorem, supported-executor context transport);
 * proved — the second node-local semantic input,
   `rhoHereditaryStaticNormalizer_preservesReflectiveSupport_path`.  It is a
-  closed term, so the Cost₁ assembly no longer waits on it;
+  closed term, so the cost layer assembly no longer waits on it;
 * proved — the four node-local inputs of the target-rebased semantic-cut
   provider, each over both colours.  The provider is constructed by
-  `rhoCanonicalStaticPairSemanticCutProviderInDomain_of_exposureA2x`, and the
+  `rhoCanonicalStaticPair_hasSemanticCut_of_exposureA2x`, and the
   domain object follows by
-  `rhoHereditaryCostOneDomainObject_ofExposureApexSliceObligations`.  The four
+  `rhoHereditaryCostLayer_ofExposureRestorationObligations`.  The four
   inputs are:
 
-  - `RhoAlignedViewsPlanStopApexInDomain` — aligned bridge case, apex form;
-  - `RhoCollapsingViewsPlanStopApexInDomain` — same-colour collapsing arms,
+  - `RhoAlignedPlanStops.HaveCommonRestoration` — aligned bridge case, apex form;
+  - `RhoCollapsingPlanStops.HaveCommonRestoration` — same-colour collapsing arms,
     apex form, at the `+ 1` measure forced by
     `not_canonicalStopAligned_endpoints_of_collapsing`;
   - `RhoCollapsingCrossColorViewsLeafExposuresInDomain` — cross-colour
     collapsing arms, discharged by hereditary target rebase;
-  - `RhoCollapsingLeafExposureInDomain` — structural partners.
+  - `RhoCollapsingLeaf.HasExposure` — structural partners.
 
   They are apex-form on the static branches because that is what the cut
   constructors consume; each carries the provider's own recursion callback
@@ -64,7 +64,7 @@ Ledger, as of this file's last update:
   parallel, whose canonical form is the declared unit — an application — at a
   node whose boundary inventory is empty), and
   `not_rhoCollapsingLeafClassifications` shows the three hypotheses are
-  jointly uninhabited.  `rho_collapsingLeafExposureInDomain_of_classifications`
+  jointly uninhabited.  `rho_collapsingLeaf_hasExposure_of_classifications`
   is therefore valid but vacuous, and must never be counted as progress on B;
   the defect was dropping the partner's `rootIsStatic = false` premise;
 * proved — reflective quotation seals ambient binders
@@ -72,7 +72,7 @@ Ledger, as of this file's last update:
   bound variable is never certifiable at either colour.  With
   `isStaticRoot_or_bvar_of_rhoProcess_canonicalize_eq_bvar` this empties the
   (certified boundary, bound-variable plan) configuration;
-* proved from that same provider — the exact selected-executor compact Cost²
+* proved from that same provider — the exact selected-executor compact cost-layer iteration
   obstruction.
 -/
 
@@ -87,24 +87,24 @@ example : Nonempty OrderedCIGSLT := ⟨⟨rhoCIGSLT⟩⟩
 
 /-- The reference-executor object bundle is refuted for rho, so nothing may
 be built over it. -/
-example : ¬ CIGSLT.CostReferenceOneObjectLaws rhoCIGSLT :=
-  CostGeneratorInvariantCounterexample.not_rho_costReferenceOneObjectLaws
+example : ¬ Cost.ReferenceCompactOpenNormalizer.Laws rhoCIGSLT :=
+  CostGeneratorInvariantCounterexample.not_rho_referenceCompactOpenNormalizerLaws
 
 /-- The reference-executor section bundle is refuted for rho. -/
 example : ¬ CostReferenceOpenSectionLaws rhoCIGSLT :=
   CostGeneratorInvariantCounterexample.not_rho_costReferenceOpenSectionLaws
 
-/-- Signature guard: the live rho Cost₁ object assembly and its exact open
+/-- Signature guard: the live rho cost layer object assembly and its exact open
 hypotheses.  If either obligation is discharged, replace the corresponding
 guard with the witness. -/
-example := @rhoHereditaryCostOneObjectLaws_of
+example := @rhoHereditaryCompactOpenNormalizerLaws_of
 
 /-- Signature guard: the normalizer-indexed rho domain object assembly. -/
-example := @rhoHereditaryCostOneDomainObject_of
+example := @rhoHereditaryCostLayer_of
 
 /-- Historical signature guard: the reduced two-local-law assembly.  The
-second input now has a checked global producer in the support crown. -/
-example := @rhoHereditaryCostOneObjectLaws_ofStaticLaw
+second input now has a checked global producer in the support closure. -/
+example := @rhoHereditaryCompactOpenNormalizerLaws_ofStaticLaw
 
 /-- Signature guard: the reduction itself — the supported executor preserves
 every caller-relative reflective support once the local static-node law
@@ -117,42 +117,42 @@ example := @rhoCostOpenGeneratorTreeAlignable_of_provider
 
 /-- Signature guard: the fully reduced assembly over the two node-local
 semantic obligations. -/
-example := @rhoHereditaryCostOneObjectLaws_ofSemanticLaws
+example := @rhoHereditaryCompactOpenNormalizerLaws_ofSemanticLaws
 
-/-- The reflective-support crown is closed: a checked witness, not a guard. -/
+/-- The reflective-support closure is closed: a checked witness, not a guard. -/
 example : RhoHereditaryReflectiveSupportPreserving :=
   rhoHereditaryReflectiveSupportPreserving
 
-/-- Signature guard: the final waist — the Cost₁ object from the per-colour
+/-- Signature guard: the final waist — the cost layer object from the per-colour
 semantic-cut provider alone. -/
-example := @rhoHereditaryCostOneObjectLaws_ofProvider
+example := @rhoHereditaryCompactOpenNormalizerLaws_ofProvider
 
-/-- The selected-executor Cost² boundary has the same sole provider input as
-the Cost₁ object; no executor agreement hypothesis remains. -/
+/-- The selected-executor cost-layer iteration boundary has the same sole provider input as
+the cost layer object; no executor agreement hypothesis remains. -/
 example :=
-  @rhoHereditaryCostOneDomainObject_not_compactCostNormalizationCoherent_ofProvider
+  @rhoHereditaryCostLayer_not_compactCostNormalizationCoherent_ofProvider
 
 /-- The second node-local semantic input is closed: a checked witness, not a
 guard. -/
 example := @rhoHereditaryStaticNormalizer_preservesReflectiveSupport_path
 
 /-- Signature guard: the provider is no longer primitive.  It is proved from
-the four apex-slice obligations. -/
-example := @rhoCanonicalStaticPairSemanticCutProviderInDomain_of_apexSliceObligations
+the four restoration obligations. -/
+example := @rhoCanonicalStaticPair_hasSemanticCut_of_restorationObligations
 
-/-- The unconditional rho Cost₁ seal is a checked witness. -/
-noncomputable example : CostOneDomainObject :=
-  rhoHereditaryCostOneDomainObject
+/-- The unconditional rho cost layer seal is a checked witness. -/
+noncomputable example : Cost.Layer :=
+  rhoHereditaryCostLayer
 
 /-- Checked witnesses for the four inputs of the target-rebased provider. -/
-example : ∀ color, RhoAlignedViewsPlanStopApexInDomain color :=
-  rho_alignedViewsPlanStopApexInDomain_allColors
-example : ∀ color, RhoCollapsingViewsPlanStopApexInDomain color :=
-  rho_collapsingViewsPlanStopApexInDomain_allColors
+example : ∀ color, RhoAlignedPlanStops.HaveCommonRestoration color :=
+  rho_alignedPlanStops_haveCommonRestoration_allColors
+example : ∀ color, RhoCollapsingPlanStops.HaveCommonRestoration color :=
+  rho_collapsingPlanStops_haveCommonRestoration_allColors
 example : ∀ color, RhoCollapsingCrossColorViewsLeafExposuresInDomain color :=
-  rhoCrossColor_collapsingLeafExposuresInDomain
-example : ∀ color, RhoCollapsingLeafExposureInDomain color :=
-  rho_collapsingLeafExposureInDomain_allColors
+  rhoCrossColor_collapsingLeaves_haveExposure
+example : ∀ color, RhoCollapsingLeaf.HasExposure color :=
+  rho_collapsingLeaf_hasExposure_allColors
 
 /-- The cross-colour obligation is *equivalent* to its flat form, so either
 may be discharged. -/

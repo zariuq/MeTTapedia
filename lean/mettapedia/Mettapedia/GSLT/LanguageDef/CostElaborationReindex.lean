@@ -1,4 +1,4 @@
-import Mettapedia.GSLT.LanguageDef.CostOneCategory
+import Mettapedia.GSLT.LanguageDef.Cost.Layer.Category
 
 /-!
 # Reindexing proof-relevant Cost elaborations
@@ -6,7 +6,7 @@ import Mettapedia.GSLT.LanguageDef.CostOneCategory
 The compact Cost functor maps checked syntax.  Its proof-relevant lift must
 also map the retained declaration, colour, occurrence, and decomposition data
 without erasing and recompiling it.  This file constructs that action from
-the declaration map carried by an admissible Cost₁ arrow.
+the declaration map carried by an admissible cost layer arrow.
 -/
 
 namespace Mettapedia.GSLT.LanguageDef

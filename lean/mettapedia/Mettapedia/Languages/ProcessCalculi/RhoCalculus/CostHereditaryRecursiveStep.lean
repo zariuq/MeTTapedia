@@ -1,4 +1,4 @@
-import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryProviderApexSlice
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryProviderObligations
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryResidualSwitchboard
 
 /-!
@@ -16,9 +16,9 @@ Two consequences are recorded here.
   declaration's own colour, the step discharges the plan-stop apex obligation
   at *every* raw stop whose stops carry canonical equality.  No size budget is
   consumed, so the endpoint measure and the successor measure are alike.
-* The two apex-slice obligations then reduce to their foreign-colour halves
-  alone (`rhoAlignedViewsPlanStopApexInDomain_of_recursiveStep`,
-  `rhoCollapsingViewsPlanStopApexInDomain_of_recursiveStep`).
+* The two restoration obligations then reduce to their foreign-colour halves
+  alone (`rhoAlignedPlanStops_haveCommonRestoration_of_recursiveStep`,
+  `rhoCollapsingPlanStops_haveCommonRestoration_of_recursiveStep`).
 
 The colour restriction is not an artifact of the proof.
 `RhoCanonicalPairRecursiveResult.reachedApex` is a
@@ -44,8 +44,8 @@ open Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefContinuedInterac
 endpoint has no raw descent measured at itself.  The converse is recorded here,
 so the gate becomes an equivalence: at the endpoint measure the raw descent
 exists exactly when neither endpoint collapses.  That is the whole reason
-`RhoCollapsingViewsPlanStopApexInDomain` is stated one above the endpoint pair
-while `RhoAlignedViewsPlanStopApexInDomain` is stated at it. -/
+`RhoCollapsingPlanStops.HaveCommonRestoration` is stated one above the endpoint pair
+while `RhoAlignedPlanStops.HaveCommonRestoration` is stated at it. -/
 
 /-- **A non-collapsing canonical pair does descend at its own measure.**
 
@@ -84,7 +84,7 @@ theorem rhoCanonicalStopAligned_endpoints_of_not_collapsing
 
 /-- **The gate is an equivalence.**  Together with
 `not_canonicalStopAligned_endpoints_of_collapsing` this pins the measure of
-both apex-slice obligations: the aligned arm may run at the endpoint pair
+both restoration obligations: the aligned arm may run at the endpoint pair
 because its roots are aligned, and the collapsing arms may not. -/
 theorem rhoCanonicalStopAligned_endpoints_iff_not_collapsing
     {declarationColor : CostStaticColor} {leftPattern rightPattern : Pattern}
@@ -196,7 +196,7 @@ theorem rhoStaticPlanStopCommonApex_sameColor_of_recursiveStep
     sourceBoundEq targetBoundEq thinningEq leftEmbedding rightEmbedding leftRoute
     ⟨rightRoute'⟩
 
-/-! ## The two apex-slice obligations, reduced to their foreign-colour halves
+/-! ## The two restoration obligations, reduced to their foreign-colour halves
 
 Both reductions keep the foreign-colour half as an explicit hypothesis of
 exactly the shape the obligation asks for at `color ≠ declarationColor`.  That
@@ -211,7 +211,7 @@ carry canonical equality in their second component, so the same-colour half is
 exactly `rhoStaticPlanStopCommonApex_sameColor_of_recursiveStep`.  The
 provider's own recursion callback `RhoPairCloseSmaller` is not consumed at all
 in that half: the step's closure is stronger and needs no budget. -/
-theorem rhoAlignedViewsPlanStopApexInDomain_of_recursiveStep
+theorem rhoAlignedPlanStops_haveCommonRestoration_of_recursiveStep
     {declarationColor : CostStaticColor}
     (step : RhoCanonicalPairRecursiveStep declarationColor)
     (foreignViews : ∀ {targetFree : FreeTypeContext}
@@ -241,7 +241,7 @@ theorem rhoAlignedViewsPlanStopApexInDomain_of_recursiveStep
       RhoStaticPlanStopCommonApex leftView rightView declarationColor
         (RhoCanonicalRawStop declarationColor
           (sizeOf leftPattern + sizeOf rightPattern))) :
-    RhoAlignedViewsPlanStopApexInDomain declarationColor := by
+    RhoAlignedPlanStops.HaveCommonRestoration declarationColor := by
   intro targetFree available outer leftPattern rightPattern type left right
     color leftView rightView admissible leftWellSorted rightWellSorted
     closeSmaller roots
@@ -262,7 +262,7 @@ the endpoint pair.  That gap is invisible here: the same-colour half consumes
 no size budget, so the successor measure costs nothing over the endpoint
 measure — the endpoint pair itself is closed by the step's own result at that
 pair, not by a strictly smaller callback. -/
-theorem rhoCollapsingViewsPlanStopApexInDomain_of_recursiveStep
+theorem rhoCollapsingPlanStops_haveCommonRestoration_of_recursiveStep
     {declarationColor : CostStaticColor}
     (step : RhoCanonicalPairRecursiveStep declarationColor)
     (foreignViews : ∀ {targetFree : FreeTypeContext}
@@ -304,7 +304,7 @@ theorem rhoCollapsingViewsPlanStopApexInDomain_of_recursiveStep
       RhoStaticPlanStopCommonApex leftView rightView declarationColor
         (RhoCanonicalRawStop declarationColor
           (sizeOf leftPattern + sizeOf rightPattern + 1))) :
-    RhoCollapsingViewsPlanStopApexInDomain declarationColor := by
+    RhoCollapsingPlanStops.HaveCommonRestoration declarationColor := by
   intro targetFree available outer leftPattern rightPattern type left right
     color leftView rightView admissible leftWellSorted rightWellSorted
     closeSmaller collapsing canonical
@@ -320,7 +320,7 @@ theorem rhoCollapsingViewsPlanStopApexInDomain_of_recursiveStep
 
 The two reductions above are the *upper* half of the accounting.  The lower
 half is recorded here, because it decides whether the step is a decomposition
-of the apex-slice obligations or a strengthening of them. -/
+of the restoration obligations or a strengthening of them. -/
 
 /-- **The step subsumes the compact pair closure.**
 
@@ -330,17 +330,17 @@ the hereditary normalization alignment between them.  Projecting it out of the
 measure-free closure gives the static-root pair closure for rho outright, with
 the static-root premise discarded.
 
-So the step is not a sub-obligation of `RhoAlignedViewsPlanStopApexInDomain`
-and `RhoCollapsingViewsPlanStopApexInDomain`.  It implies the pair closure that
+So the step is not a sub-obligation of `RhoAlignedPlanStops.HaveCommonRestoration`
+and `RhoCollapsingPlanStops.HaveCommonRestoration`.  It implies the pair closure that
 those obligations exist to produce, at every canonical pair and at both root
 cases — including the collapsing and cross-colour configurations that the
-apex-slice obligations `RhoCollapsingCrossColorViewsRestorationAlignedInDomain`
-and `RhoCollapsingLeafExposureInDomain` carry, and which no recursive descent
+restoration obligations `RhoCollapsingCrossColorViewsRestorationAlignedInDomain`
+and `RhoCollapsingLeaf.HasExposure` carry, and which no recursive descent
 argument addresses. -/
-theorem costCanonicalStaticPairClosedInDomain_of_recursiveStep
+theorem costCanonicalStaticPair_isClosedIn_of_recursiveStep
     {declarationColor : CostStaticColor}
     (step : RhoCanonicalPairRecursiveStep declarationColor) :
-    CostCanonicalStaticPairClosedInDomain rhoCanonicalRecursiveTypeDomain
+    CostCanonicalStaticPair.IsClosedIn rhoCanonicalRecursiveTypeDomain
       rhoHereditaryNormalizationKernel
       (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
         rhoReflectivePresentation) := by

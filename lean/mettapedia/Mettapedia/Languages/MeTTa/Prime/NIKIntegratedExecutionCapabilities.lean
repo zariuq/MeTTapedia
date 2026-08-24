@@ -1,5 +1,5 @@
 import Mettapedia.GSLT.LanguageDef.MaximalNativeCalculus
-import Mettapedia.Languages.MeTTa.Prime.CostTwoPolicyKeyNIKAdmission
+import Mettapedia.Languages.MeTTa.Prime.PolicyKeyNIKAdmission
 
 /-!
 # Integrated NIK execution capabilities without axis collapse
@@ -29,7 +29,7 @@ open Mettapedia.GSLT.LanguageDef.NIKRouteAdmission
 open Mettapedia.GSLT.LanguageDef.NIKIndexedExecutionAdmission
 open Mettapedia.GSLT.LanguageDef.MaximalNativeCalculus
 open Mettapedia.Languages.MeTTa.Prime.PrimeAbstractImplementationModel
-open Mettapedia.Languages.MeTTa.Prime.CostTwoPolicyKeyNIKAdmission
+open Mettapedia.Languages.MeTTa.Prime.PolicyKeyNIKAdmission
 
 universe u uObservation uPolicy uValue uKey uCost uIndex uCapability uArtifact
 

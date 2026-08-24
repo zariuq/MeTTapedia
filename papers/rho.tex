@@ -695,8 +695,8 @@ canonical keys carry a collision-free structural code, giving every
 object a linear order on keys, and ordered morphisms are those whose
 key action is monotone.  Exact typed Cost objects
 (Section~\ref{sec:canon}) then form an honest full subcategory ---
-written \code{CostOneObjects} --- which is the intended domain of strict
-$\mathrm{Cost}_1$. \formalized
+written \code{ReferenceCostLayers} --- which is the intended domain of the
+strict reference cost-layer construction. \formalized
 
 \section{Typed normalization: a refutation and its repair}
 \label{sec:typednorm}
@@ -817,7 +817,7 @@ object \emph{property} --- membership is semantic, not structural ---
 and cut out the full subcategory on which strict $\mathrm{Cost}_1$
 lives. \formalized
 
-\section{Cost as an endofunctor: the object-closure programme}
+\section{Cost layers: the object-closure programme}
 \label{sec:endofunctor}
 
 Iterating Cost means: the generated funded language, with its generated
@@ -825,7 +825,7 @@ cut and generated retyping plan, is again a continued object.  The data
 triple exists by construction.  The closure laws are theorems to be
 proved \emph{generically} --- for every source object --- and this
 programme
-(\leanfile{GSLT/LanguageDef/CostEndofunctor.lean}{CostEndofunctor.lean})
+(\leanfile{GSLT/LanguageDef/Cost/Construction.lean}{Cost/Construction.lean})
 is now largely discharged:
 
 \begin{itemize}
@@ -1128,11 +1128,11 @@ Typed equation carriers; edge-wise raw-to-typed lifting &
   \S\ref{sec:typednorm} & formalized \\
 Proof-relevant elaboration; typed normalization soundness &
   \S\ref{sec:typednorm} & formalized \\
-Exact canonical laws; \code{CostOneObjects} subcategory &
+Exact canonical laws; \code{ReferenceCostLayers} subcategory &
   \S\ref{sec:typednorm} & formalized \\
-Endofunctor: one Cost application as a continued object &
+Layer construction: one Cost application as a continued object &
   \S\ref{sec:endofunctor} & formalized \\
-Endofunctor: closure of the exact laws themselves &
+Layer iteration: closure of the exact laws themselves &
   \S\ref{sec:endofunctor} & open; cross-colour counterexample recorded \\
 Computable pure canonical form + section & \S\ref{sec:canon} &
   formalized \\

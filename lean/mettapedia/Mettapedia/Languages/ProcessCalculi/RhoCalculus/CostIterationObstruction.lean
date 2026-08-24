@@ -1,4 +1,4 @@
-import Mettapedia.GSLT.LanguageDef.CostEndofunctor
+import Mettapedia.GSLT.LanguageDef.Cost.Construction
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostCanonicalLaws
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryCanonical
 
@@ -32,62 +32,62 @@ open Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefContinuedInterac
 /-- The generated continued object selected by the original reference
 normalizer.  Rho refutes this law bundle; the definition is retained only to
 state that negative compatibility boundary explicitly. -/
-abbrev rhoReferenceCostOne
-    (laws : CIGSLT.CostReferenceOneObjectLaws rhoCIGSLT) : CIGSLT :=
+abbrev rhoReferenceCostLayer
+    (laws : Cost.ReferenceCompactOpenNormalizer.Laws rhoCIGSLT) : CIGSLT :=
   rhoCIGSLT.costCIGSLTReference laws
 
 /-- A choice of first-layer rho Cost normalizer together with its exact object
 laws.  The generated syntax is fixed by `rhoCIGSLT`; only the canonical open
 section varies. -/
-structure RhoCostOneConfiguration where
+structure RhoCostLayerConfiguration where
   normalizeOpen : CostOpenNormalizer rhoCIGSLT
-  laws : CIGSLT.CostOneObjectLawsFor rhoCIGSLT normalizeOpen
+  laws : Cost.CompactOpenNormalizer.Laws rhoCIGSLT normalizeOpen
 
-namespace RhoCostOneConfiguration
+namespace RhoCostLayerConfiguration
 
 /-- The first generated Cost object selected by a normalizer configuration. -/
-def source (configuration : RhoCostOneConfiguration) : CIGSLT :=
+def source (configuration : RhoCostLayerConfiguration) : CIGSLT :=
   rhoCIGSLT.costCIGSLTWith configuration.normalizeOpen configuration.laws
 
 /-- The original reference executor as one point in the parameterized family.
 Rho has no inhabitant of this input type; use `hereditary` for the repaired
 construction. -/
-def reference (laws : CIGSLT.CostReferenceOneObjectLaws rhoCIGSLT) :
-    RhoCostOneConfiguration where
+def reference (laws : Cost.ReferenceCompactOpenNormalizer.Laws rhoCIGSLT) :
+    RhoCostLayerConfiguration where
   normalizeOpen := rhoCIGSLT.costNormalizeOpen
-  laws := laws.toCostOneObjectLawsFor
+  laws := laws.toCompactOpenNormalizerLaws
 
 /-- The repaired hereditary executor as a point in the same parameterized
 family.  The law bundle remains explicit, so this definition cannot be used
 before the actual hereditary object theorem is constructed. -/
 def hereditary
-    (laws : CIGSLT.CostOneObjectLawsFor rhoCIGSLT
-      rhoCostNormalizeOpenHereditary) : RhoCostOneConfiguration where
+    (laws : Cost.CompactOpenNormalizer.Laws rhoCIGSLT
+      rhoCostNormalizeOpenHereditary) : RhoCostLayerConfiguration where
   normalizeOpen := rhoCostNormalizeOpenHereditary
   laws := laws
 
 @[simp]
 theorem reference_source
-    (laws : CIGSLT.CostReferenceOneObjectLaws rhoCIGSLT) :
-    (reference laws).source = rhoReferenceCostOne laws :=
+    (laws : Cost.ReferenceCompactOpenNormalizer.Laws rhoCIGSLT) :
+    (reference laws).source = rhoReferenceCostLayer laws :=
   rfl
 
 @[simp]
 theorem hereditary_source
-    (laws : CIGSLT.CostOneObjectLawsFor rhoCIGSLT
+    (laws : Cost.CompactOpenNormalizer.Laws rhoCIGSLT
       rhoCostNormalizeOpenHereditary) :
     (hereditary laws).source =
       rhoCIGSLT.costCIGSLTWith rhoCostNormalizeOpenHereditary laws :=
   rfl
 
-end RhoCostOneConfiguration
+end RhoCostLayerConfiguration
 
 /-- The sole representative-shape premise used by the second-layer
 obstruction.  It is intentionally local: an empty parallel occurring in any
 boundary context must still normalize to rho's first-layer base unit.  No
 claim is made that two arbitrary first-layer normalizers agree. -/
 def RhoEmptyParallelSourceRepresentative
-    (configuration : RhoCostOneConfiguration) : Prop :=
+    (configuration : RhoCostLayerConfiguration) : Prop :=
   ∀ {color : CostStaticColor}
     (node : CostStaticRegionNode configuration.source color
       FreeTypeContext.empty),
@@ -217,14 +217,14 @@ private def baseParallelRule : GrammarRule :=
   costBaseConstructor rhoCIGSLT.cut rhoCalc.terms[3]
 
 private theorem baseParallelRule_mem
-    (configuration : RhoCostOneConfiguration) :
+    (configuration : RhoCostLayerConfiguration) :
     baseParallelRule ∈
       configuration.source.theory.presentation.presentation.language.terms :=
   rhoCIGSLT.costBaseConstructor_mem_costWhole rhoCalc.terms[3]
     rhoParallelRule_mem
 
 private theorem baseParallelRule_wrapped
-    (configuration : RhoCostOneConfiguration) :
+    (configuration : RhoCostLayerConfiguration) :
     baseParallelRule.label ∈
       (configuration.source).continuationRetyping.wrappedLabels := by
   apply (configuration.source).bareCollectionConstructorsWrapped baseParallelRule
@@ -236,7 +236,7 @@ private theorem baseParallelRule_wrapped
       rho_costBaseParallelConstructor_params⟩
 
 private theorem baseParallelRule_noninteracting
-    (configuration : RhoCostOneConfiguration) :
+    (configuration : RhoCostLayerConfiguration) :
     baseParallelRule.category ≠
       (configuration.source).theory.presentation.interactingSort.1.name :=
   costBaseSortName_ne_wrapped "Proc"
@@ -247,7 +247,7 @@ private theorem baseParallelRule_params :
         (.collection .hashBag (.base (costBaseSortName "Proc")))] :=
   rho_costBaseParallelConstructor_params
 
-private def sourceSort (configuration : RhoCostOneConfiguration) :
+private def sourceSort (configuration : RhoCostLayerConfiguration) :
     LangSort (configuration.source).theory.presentation.presentation.language :=
   ⟨baseParallelRule.category,
     Mettapedia.OSLF.MeTTaIL.Syntax.LanguageDef.termCategory_mem_of_validate_eq_nil
@@ -260,7 +260,7 @@ private def parallelChoice : CostCollectionTypingChoice :=
 /-- The same declaration-derived empty parallel choice occurs in both
 second-layer static colours. -/
 theorem emptyParallelChoice_crossColorFor
-    (configuration : RhoCostOneConfiguration) :
+    (configuration : RhoCostLayerConfiguration) :
     let source := configuration.source
     let expected :=
       mapTypeExpr (CostStaticColor.base.symbols source)
@@ -281,8 +281,8 @@ theorem emptyParallelChoice_crossColorFor
 cross-colour choice.  This implication records the old API boundary; rho's
 reference law premise is refuted independently. -/
 theorem referenceEmptyParallelChoice_crossColor
-    (laws : CIGSLT.CostReferenceOneObjectLaws rhoCIGSLT) :
-    let source := rhoReferenceCostOne laws
+    (laws : Cost.ReferenceCompactOpenNormalizer.Laws rhoCIGSLT) :
+    let source := rhoReferenceCostLayer laws
     let expected :=
       mapTypeExpr (CostStaticColor.base.symbols source)
         (.base baseParallelRule.category)
@@ -293,10 +293,10 @@ theorem referenceEmptyParallelChoice_crossColor
         costStaticCollectionTypingChoices source .wrapped
           FreeTypeContext.empty [] .hashBag [] expected := by
   exact emptyParallelChoice_crossColorFor
-    (RhoCostOneConfiguration.reference laws)
+    (RhoCostLayerConfiguration.reference laws)
 
 private theorem baseChoice_mem
-    (configuration : RhoCostOneConfiguration) :
+    (configuration : RhoCostLayerConfiguration) :
     parallelChoice ∈
       costStaticCollectionTypingChoices (configuration.source) .base
         FreeTypeContext.empty [] .hashBag []
@@ -305,7 +305,7 @@ private theorem baseChoice_mem
   (emptyParallelChoice_crossColorFor configuration).1
 
 private theorem wrappedChoice_mem
-    (configuration : RhoCostOneConfiguration) :
+    (configuration : RhoCostLayerConfiguration) :
     parallelChoice ∈
       costStaticCollectionTypingChoices (configuration.source) .wrapped
         FreeTypeContext.empty [] .hashBag []
@@ -320,7 +320,7 @@ private theorem wrappedChoice_mem
   rw [← overlap]
   exact (emptyParallelChoice_crossColorFor configuration).2
 
-private def basePlan (configuration : RhoCostOneConfiguration) :
+private def basePlan (configuration : RhoCostLayerConfiguration) :
     CostStaticRegionPlan (configuration.source) .base FreeTypeContext.empty
       (CostStaticBinderThinning.sourceContextOfTarget
         (configuration.source) .base [])
@@ -330,7 +330,7 @@ private def basePlan (configuration : RhoCostOneConfiguration) :
       (.base (sourceSort configuration).1) :=
   .collection parallelChoice (baseChoice_mem configuration) .nil
 
-private def wrappedPlan (configuration : RhoCostOneConfiguration) :
+private def wrappedPlan (configuration : RhoCostLayerConfiguration) :
     CostStaticRegionPlan (configuration.source) .wrapped FreeTypeContext.empty
       (CostStaticBinderThinning.sourceContextOfTarget
         (configuration.source) .wrapped [])
@@ -341,7 +341,7 @@ private def wrappedPlan (configuration : RhoCostOneConfiguration) :
   .collection parallelChoice (wrappedChoice_mem configuration) .nil
 
 private theorem nextBaseParallelRule_params
-    (configuration : RhoCostOneConfiguration) :
+    (configuration : RhoCostLayerConfiguration) :
     (costBaseConstructor (configuration.source).cut baseParallelRule).params =
       [.simple "ps"
         (.collection .hashBag
@@ -353,7 +353,7 @@ private theorem nextBaseParallelRule_params
   rfl
 
 private theorem emptyParallel_typed
-    (configuration : RhoCostOneConfiguration) :
+    (configuration : RhoCostLayerConfiguration) :
     HasType (configuration.source).costWholeLanguage FreeTypeContext.empty []
       (.collection .hashBag [] none)
       (.base (CostStaticColor.base.mapLangSort
@@ -378,7 +378,7 @@ private theorem emptyParallel_typed
     costBasePresentationSymbols, costBaseConstructor] using typed
 
 private def emptyParallel
-    (configuration : RhoCostOneConfiguration) :
+    (configuration : RhoCostLayerConfiguration) :
     ReflectiveWellSorted.OpenTerm
       (configuration.source).costWholeReflectionProfile
       (configuration.source).costWholeLanguage FreeTypeContext.empty []
@@ -390,7 +390,7 @@ private def emptyParallel
   rfl
 
 private theorem colorOverlap
-    (configuration : RhoCostOneConfiguration) :
+    (configuration : RhoCostLayerConfiguration) :
     CostStaticColor.base.mapLangSort (configuration.source) (sourceSort configuration) =
       CostStaticColor.wrapped.mapLangSort
         (configuration.source) (sourceSort configuration) :=
@@ -399,7 +399,7 @@ private theorem colorOverlap
       (baseParallelRule_noninteracting configuration)
 
 private def wrappedEmptyParallel
-    (configuration : RhoCostOneConfiguration) :
+    (configuration : RhoCostLayerConfiguration) :
     ReflectiveWellSorted.OpenTerm
       (configuration.source).costWholeReflectionProfile
       (configuration.source).costWholeLanguage FreeTypeContext.empty []
@@ -409,25 +409,25 @@ private def wrappedEmptyParallel
     (emptyParallel configuration)
 
 private def baseNode
-    (configuration : RhoCostOneConfiguration) :
+    (configuration : RhoCostLayerConfiguration) :
     CostStaticRegionNode (configuration.source) .base FreeTypeContext.empty :=
   CostStaticRegionNode.ofPlan (emptyParallel configuration).toCore (basePlan configuration) rfl
 
 private def wrappedNode
-    (configuration : RhoCostOneConfiguration) :
+    (configuration : RhoCostLayerConfiguration) :
     CostStaticRegionNode (configuration.source) .wrapped FreeTypeContext.empty :=
   CostStaticRegionNode.ofPlan
     (wrappedEmptyParallel configuration).toCore (wrappedPlan configuration) rfl
 
 private theorem baseNode_sourceSort
-    (configuration : RhoCostOneConfiguration) :
+    (configuration : RhoCostLayerConfiguration) :
     (baseNode configuration).sourceSort =
       CostStaticColor.base.mapLangSort rhoCIGSLT rhoProc := by
   apply Subtype.ext
   rfl
 
 private theorem baseNode_sourceBound
-    (configuration : RhoCostOneConfiguration) :
+    (configuration : RhoCostLayerConfiguration) :
     (baseNode configuration).sourceBound = [] := by
   change
     CostStaticBinderThinning.sourceContextOfTarget (configuration.source) .base
@@ -436,14 +436,14 @@ private theorem baseNode_sourceBound
   simp [CostStaticBinderThinning.sourceContextOfTarget]
 
 private theorem wrappedNode_sourceSort
-    (configuration : RhoCostOneConfiguration) :
+    (configuration : RhoCostLayerConfiguration) :
     (wrappedNode configuration).sourceSort =
       CostStaticColor.base.mapLangSort rhoCIGSLT rhoProc := by
   apply Subtype.ext
   rfl
 
 private theorem wrappedNode_sourceBound
-    (configuration : RhoCostOneConfiguration) :
+    (configuration : RhoCostLayerConfiguration) :
     (wrappedNode configuration).sourceBound = [] := by
   change
     CostStaticBinderThinning.sourceContextOfTarget (configuration.source) .wrapped
@@ -452,20 +452,20 @@ private theorem wrappedNode_sourceBound
   simp [CostStaticBinderThinning.sourceContextOfTarget]
 
 private theorem baseNode_skeleton_pattern_eq
-    (configuration : RhoCostOneConfiguration) :
+    (configuration : RhoCostLayerConfiguration) :
     (.collection .hashBag [] none : Pattern) =
       (baseNode configuration).skeleton.1 := by
   rfl
 
 private theorem wrappedNode_skeleton_pattern_eq
-    (configuration : RhoCostOneConfiguration) :
+    (configuration : RhoCostLayerConfiguration) :
     (.collection .hashBag [] none : Pattern) =
       (wrappedNode configuration).skeleton.1 := by
   rfl
 
 private theorem rhoParallelChoice_memAt
     {color : CostStaticColor}
-    (configuration : RhoCostOneConfiguration)
+    (configuration : RhoCostLayerConfiguration)
     (node : CostStaticRegionNode (configuration.source) color
       FreeTypeContext.empty) :
     rhoParallelChoice ∈
@@ -483,7 +483,7 @@ private theorem rhoParallelChoice_memAt
 
 private def rhoBaseEmptyPlanAt
     {color : CostStaticColor}
-    (configuration : RhoCostOneConfiguration)
+    (configuration : RhoCostLayerConfiguration)
     (node : CostStaticRegionNode (configuration.source) color
       FreeTypeContext.empty) :
     CostStaticRegionPlan rhoCIGSLT .base
@@ -499,7 +499,7 @@ private def rhoBaseEmptyPlanAt
 
 private def rhoBaseEmptyAt
     {color : CostStaticColor}
-    (configuration : RhoCostOneConfiguration)
+    (configuration : RhoCostLayerConfiguration)
     (node : CostStaticRegionNode (configuration.source) color
       FreeTypeContext.empty) :
     OpenTerm rhoCIGSLT.costWholeLanguage
@@ -519,7 +519,7 @@ private def rhoBaseEmptyAt
 
 private def rhoBaseEmptyNodeAt
     {color : CostStaticColor}
-    (configuration : RhoCostOneConfiguration)
+    (configuration : RhoCostLayerConfiguration)
     (node : CostStaticRegionNode (configuration.source) color
       FreeTypeContext.empty) :
     CostStaticRegionNode rhoCIGSLT .base
@@ -529,7 +529,7 @@ private def rhoBaseEmptyNodeAt
 
 private def rhoBaseEmptyTreeAt
     {color : CostStaticColor}
-    (configuration : RhoCostOneConfiguration)
+    (configuration : RhoCostLayerConfiguration)
     (node : CostStaticRegionNode (configuration.source) color
       FreeTypeContext.empty) :
     CostRegionTree rhoCIGSLT
@@ -541,7 +541,7 @@ private def rhoBaseEmptyTreeAt
 
 private theorem sourceNode_sourceType_eq
     {color : CostStaticColor}
-    (configuration : RhoCostOneConfiguration)
+    (configuration : RhoCostLayerConfiguration)
     (node : CostStaticRegionNode (configuration.source) color
       FreeTypeContext.empty)
     (sourceSortEq :
@@ -555,7 +555,7 @@ private theorem sourceNode_sourceType_eq
 
 private def rhoBaseEmptyElaborationAt
     {color : CostStaticColor}
-    (configuration : RhoCostOneConfiguration)
+    (configuration : RhoCostLayerConfiguration)
     (node : CostStaticRegionNode (configuration.source) color
       FreeTypeContext.empty)
     (sourceSortEq :
@@ -570,7 +570,7 @@ private def rhoBaseEmptyElaborationAt
 
 private theorem rhoBaseEmptyElaborationAt_normalize_eq
     {color : CostStaticColor}
-    (configuration : RhoCostOneConfiguration)
+    (configuration : RhoCostLayerConfiguration)
     (node : CostStaticRegionNode (configuration.source) color
       FreeTypeContext.empty)
     (sourceSortEq :
@@ -591,7 +591,7 @@ private theorem rhoBaseEmptyElaborationAt_normalize_eq
 
 private theorem rhoBaseEmptyNodeAt_normalizedThickenedSkeletonRaw
     {color : CostStaticColor}
-    (configuration : RhoCostOneConfiguration)
+    (configuration : RhoCostLayerConfiguration)
     (node : CostStaticRegionNode (configuration.source) color
       FreeTypeContext.empty)
     (sourceBoundEq : node.sourceBound = []) :
@@ -617,7 +617,7 @@ private theorem rhoBaseEmptyNodeAt_normalizedThickenedSkeletonRaw
 
 private theorem rhoBaseEmptyElaborationAt_normalized_pattern
     {color : CostStaticColor}
-    (configuration : RhoCostOneConfiguration)
+    (configuration : RhoCostLayerConfiguration)
     (node : CostStaticRegionNode (configuration.source) color
       FreeTypeContext.empty)
     (sourceSortEq :
@@ -643,9 +643,9 @@ private theorem rhoBaseEmptyElaborationAt_normalized_pattern
 
 private theorem referenceSourceNode_sourceCanonical
     {color : CostStaticColor}
-    (laws : CIGSLT.CostReferenceOneObjectLaws rhoCIGSLT) :
+    (laws : Cost.ReferenceCompactOpenNormalizer.Laws rhoCIGSLT) :
     ∀ (node : CostStaticRegionNode
-        (RhoCostOneConfiguration.reference laws).source color
+        (RhoCostLayerConfiguration.reference laws).source color
         FreeTypeContext.empty)
       (_sourceSortEq :
         node.sourceSort =
@@ -653,7 +653,7 @@ private theorem referenceSourceNode_sourceCanonical
       (_sourceBoundEq : node.sourceBound = [])
       (_patternEq : (.collection .hashBag [] none : Pattern) =
         node.skeleton.1),
-      ((RhoCostOneConfiguration.reference laws).source.openCanonical.normalize
+      ((RhoCostLayerConfiguration.reference laws).source.openCanonical.normalize
         node.skeleton).1 =
         .apply (costBaseConstructorName "PZero") [] := by
   intro node _sourceSortEq _sourceBoundEq _patternEq
@@ -663,33 +663,33 @@ private theorem referenceSourceNode_sourceCanonical
         (CostOpenElaboration.compile rhoCIGSLT
           node.skeleton).normalizeErasure.1 := rfl
     _ = (rhoBaseEmptyElaborationAt
-          (RhoCostOneConfiguration.reference laws) node _sourceSortEq
+          (RhoCostLayerConfiguration.reference laws) node _sourceSortEq
           _patternEq).normalizeErasure.1 :=
       congrArg (fun term => term.1)
         (CostCanonicalLaws.rho_compactCostNormalizationCoherent node.skeleton
           (CostOpenElaboration.compile rhoCIGSLT
             node.skeleton)
           (rhoBaseEmptyElaborationAt
-            (RhoCostOneConfiguration.reference laws) node _sourceSortEq
+            (RhoCostLayerConfiguration.reference laws) node _sourceSortEq
               _patternEq))
     _ = _ := rhoBaseEmptyElaborationAt_normalized_pattern
-      (RhoCostOneConfiguration.reference laws) node
+      (RhoCostLayerConfiguration.reference laws) node
       _sourceSortEq _sourceBoundEq _patternEq
 
 /-- The reference rho normalizer would satisfy the representative fact needed
-by the parameterized Cost² obstruction.  Its law premise is independently
+by the parameterized cost-layer iteration obstruction.  Its law premise is independently
 refuted for rho. -/
 theorem reference_emptyParallelSourceRepresentative
-    (laws : CIGSLT.CostReferenceOneObjectLaws rhoCIGSLT) :
+    (laws : Cost.ReferenceCompactOpenNormalizer.Laws rhoCIGSLT) :
     RhoEmptyParallelSourceRepresentative
-      (RhoCostOneConfiguration.reference laws) := by
+      (RhoCostLayerConfiguration.reference laws) := by
   intro color node sourceSortEq sourceBoundEq patternEq
   exact referenceSourceNode_sourceCanonical laws node sourceSortEq
     sourceBoundEq patternEq
 
 private theorem rhoBaseEmptyElaborationAt_normalizedHereditary_pattern
     {color : CostStaticColor}
-    (configuration : RhoCostOneConfiguration)
+    (configuration : RhoCostLayerConfiguration)
     (node : CostStaticRegionNode (configuration.source) color
       FreeTypeContext.empty)
     (sourceSortEq :
@@ -778,11 +778,11 @@ private theorem rhoBaseEmptyElaborationAt_normalizedHereditary_pattern
     _ = _ := staticResult
 
 private theorem hereditarySourceNode_sourceCanonical
-    (laws : CIGSLT.CostOneObjectLawsFor rhoCIGSLT
+    (laws : Cost.CompactOpenNormalizer.Laws rhoCIGSLT
       rhoCostNormalizeOpenHereditary)
     {color : CostStaticColor} :
     ∀ (node : CostStaticRegionNode
-        (RhoCostOneConfiguration.hereditary laws).source color
+        (RhoCostLayerConfiguration.hereditary laws).source color
         FreeTypeContext.empty)
       (_sourceSortEq :
         node.sourceSort =
@@ -790,7 +790,7 @@ private theorem hereditarySourceNode_sourceCanonical
       (_sourceBoundEq : node.sourceBound = [])
       (_patternEq : (.collection .hashBag [] none : Pattern) =
         node.skeleton.1),
-      ((RhoCostOneConfiguration.hereditary laws).source.openCanonical.normalize
+      ((RhoCostLayerConfiguration.hereditary laws).source.openCanonical.normalize
         node.skeleton).1 =
         .apply (costBaseConstructorName "PZero") [] := by
   intro node _sourceSortEq _sourceBoundEq _patternEq
@@ -802,23 +802,23 @@ private theorem hereditarySourceNode_sourceCanonical
             node.skeleton)).pattern := rfl
     _ = (CostRegionTree.normalizeHereditary
           (rhoBaseEmptyElaborationAt
-            (RhoCostOneConfiguration.hereditary laws) node _sourceSortEq
+            (RhoCostLayerConfiguration.hereditary laws) node _sourceSortEq
               _patternEq).tree).pattern :=
       (CostRegionTree.normalizeHereditary_eq_buildOpenTerm node.skeleton
         (rhoBaseEmptyElaborationAt
-          (RhoCostOneConfiguration.hereditary laws) node _sourceSortEq
+          (RhoCostLayerConfiguration.hereditary laws) node _sourceSortEq
             _patternEq).tree).symm
     _ = _ := rhoBaseEmptyElaborationAt_normalizedHereditary_pattern
-      (RhoCostOneConfiguration.hereditary laws) node _sourceSortEq
+      (RhoCostLayerConfiguration.hereditary laws) node _sourceSortEq
         _sourceBoundEq _patternEq
 
 /-- The hereditary rho executor satisfies the exact representative premise
-used by the parameterized Cost² obstruction. -/
+used by the parameterized cost-layer iteration obstruction. -/
 theorem hereditary_emptyParallelSourceRepresentative
-    (laws : CIGSLT.CostOneObjectLawsFor rhoCIGSLT
+    (laws : Cost.CompactOpenNormalizer.Laws rhoCIGSLT
       rhoCostNormalizeOpenHereditary) :
     RhoEmptyParallelSourceRepresentative
-      (RhoCostOneConfiguration.hereditary laws) := by
+      (RhoCostLayerConfiguration.hereditary laws) := by
   intro color node sourceSortEq sourceBoundEq patternEq
   exact hereditarySourceNode_sourceCanonical laws node sourceSortEq
     sourceBoundEq patternEq
@@ -893,7 +893,7 @@ as soon as it chooses rho's base unit on the single canonical closed empty
 parallel.  Contextual naturality transports that value to every reconstructed
 boundary context used by the second-layer witness. -/
 theorem emptyParallelSourceRepresentative_of_baseEmptyRepresentative
-    (configuration : RhoCostOneConfiguration)
+    (configuration : RhoCostLayerConfiguration)
     (selectsBaseEmpty :
       (configuration.normalizeOpen rhoBaseEmptyRepresentative).1 =
         .apply (costBaseConstructorName "PZero") []) :
@@ -962,7 +962,7 @@ theorem emptyParallelSourceRepresentative_of_baseEmptyRepresentative
 
 private theorem sourceNode_sourceCanonical
     {color : CostStaticColor}
-    (configuration : RhoCostOneConfiguration)
+    (configuration : RhoCostLayerConfiguration)
     (representative : RhoEmptyParallelSourceRepresentative configuration) :
     ∀ (node : CostStaticRegionNode configuration.source color
         FreeTypeContext.empty)
@@ -978,7 +978,7 @@ private theorem sourceNode_sourceCanonical
   exact representative node sourceSortEq sourceBoundEq patternEq
 
 private theorem baseNode_sourceCanonical
-    (configuration : RhoCostOneConfiguration)
+    (configuration : RhoCostLayerConfiguration)
     (representative : RhoEmptyParallelSourceRepresentative configuration) :
     ((configuration.source).openCanonical.normalize
       (baseNode configuration).skeleton).1 =
@@ -989,7 +989,7 @@ private theorem baseNode_sourceCanonical
       (baseNode_skeleton_pattern_eq configuration)
 
 private theorem wrappedNode_sourceCanonical
-    (configuration : RhoCostOneConfiguration)
+    (configuration : RhoCostLayerConfiguration)
     (representative : RhoEmptyParallelSourceRepresentative configuration) :
     ((configuration.source).openCanonical.normalize
       (wrappedNode configuration).skeleton).1 =
@@ -1000,7 +1000,7 @@ private theorem wrappedNode_sourceCanonical
       (wrappedNode_skeleton_pattern_eq configuration)
 
 private theorem baseNode_normalizedThickenedSkeletonRaw
-    (configuration : RhoCostOneConfiguration)
+    (configuration : RhoCostLayerConfiguration)
     (representative : RhoEmptyParallelSourceRepresentative configuration) :
     (baseNode configuration).normalizedThickenedSkeletonRaw =
       .apply
@@ -1014,7 +1014,7 @@ private theorem baseNode_normalizedThickenedSkeletonRaw
   rfl
 
 private theorem wrappedNode_normalizedThickenedSkeletonRaw
-    (configuration : RhoCostOneConfiguration)
+    (configuration : RhoCostLayerConfiguration)
     (representative : RhoEmptyParallelSourceRepresentative configuration) :
     (wrappedNode configuration).normalizedThickenedSkeletonRaw =
       .apply
@@ -1028,7 +1028,7 @@ private theorem wrappedNode_normalizedThickenedSkeletonRaw
   rfl
 
 private def baseTree
-    (configuration : RhoCostOneConfiguration) :
+    (configuration : RhoCostLayerConfiguration) :
     CostRegionTree (configuration.source) FreeTypeContext.empty [] []
       (.collection .hashBag [] none)
       (.base (CostStaticColor.base.mapLangSort
@@ -1036,7 +1036,7 @@ private def baseTree
   .static (baseNode configuration) .nil
 
 private def wrappedTreeNatural
-    (configuration : RhoCostOneConfiguration) :
+    (configuration : RhoCostLayerConfiguration) :
     CostRegionTree (configuration.source) FreeTypeContext.empty [] []
       (.collection .hashBag [] none)
       (.base (CostStaticColor.wrapped.mapLangSort
@@ -1044,7 +1044,7 @@ private def wrappedTreeNatural
   .static (wrappedNode configuration) .nil
 
 private theorem colorOverlapType
-    (configuration : RhoCostOneConfiguration) :
+    (configuration : RhoCostLayerConfiguration) :
     (.base (CostStaticColor.wrapped.mapLangSort
       (configuration.source) (sourceSort configuration)).1 : TypeExpr) =
     .base (CostStaticColor.base.mapLangSort
@@ -1053,7 +1053,7 @@ private theorem colorOverlapType
     (.base sort.1 : TypeExpr)) (colorOverlap configuration).symm
 
 private def wrappedTree
-    (configuration : RhoCostOneConfiguration) :
+    (configuration : RhoCostLayerConfiguration) :
     CostRegionTree (configuration.source) FreeTypeContext.empty [] []
       (.collection .hashBag [] none)
       (.base (CostStaticColor.base.mapLangSort
@@ -1061,24 +1061,24 @@ private def wrappedTree
   exact (wrappedTreeNatural configuration).reindexType (colorOverlapType configuration)
 
 private theorem wrappedTree_normalize_eq
-    (configuration : RhoCostOneConfiguration) :
+    (configuration : RhoCostLayerConfiguration) :
     (wrappedTree configuration).normalize.pattern =
       (wrappedTreeNatural configuration).normalize.pattern :=
   CostRegionTree.reindexType_normalize
     (typeEq := colorOverlapType configuration) (tree := wrappedTreeNatural configuration)
 
 private def baseElaboration
-    (configuration : RhoCostOneConfiguration) :
+    (configuration : RhoCostLayerConfiguration) :
     CostOpenElaboration (configuration.source) (emptyParallel configuration) :=
   ⟨baseTree configuration⟩
 
 private def wrappedElaboration
-    (configuration : RhoCostOneConfiguration) :
+    (configuration : RhoCostLayerConfiguration) :
     CostOpenElaboration (configuration.source) (emptyParallel configuration) :=
   ⟨wrappedTree configuration⟩
 
 private theorem base_normalized_pattern
-    (configuration : RhoCostOneConfiguration)
+    (configuration : RhoCostLayerConfiguration)
     (representative : RhoEmptyParallelSourceRepresentative configuration) :
     (baseElaboration configuration).normalizeErasure.1 =
       .apply
@@ -1097,7 +1097,7 @@ private theorem base_normalized_pattern
     ReflectiveContextSupport.substitute, ReflectiveContextSupport.substituteAt]
 
 private theorem wrapped_normalized_pattern
-    (configuration : RhoCostOneConfiguration)
+    (configuration : RhoCostLayerConfiguration)
     (representative : RhoEmptyParallelSourceRepresentative configuration) :
     (wrappedElaboration configuration).normalizeErasure.1 =
       .apply
@@ -1119,8 +1119,8 @@ private theorem wrapped_normalized_pattern
 /-- Exact compact coherence is not closed by a second Cost application on
 rho.  The same checked compact empty parallel has base- and wrapped-colour
 elaborations whose normalized units retain distinct constructor identities. -/
-theorem rhoCostOneFor_not_compactCostNormalizationCoherent
-    (configuration : RhoCostOneConfiguration)
+theorem rhoCostLayerFor_not_compactCostNormalizationCoherent
+    (configuration : RhoCostLayerConfiguration)
     (representative : RhoEmptyParallelSourceRepresentative configuration) :
     ¬ CompactCostNormalizationCoherent (configuration.source) := by
   intro coherent
@@ -1140,24 +1140,24 @@ theorem rhoCostOneFor_not_compactCostNormalizationCoherent
 
 /-- The reference-executor obstruction is the corresponding implication from
 the old, refuted rho object premise.  The normalizer-parameterized theorem
-above and its hereditary instance carry the substantive Cost² boundary. -/
-theorem rhoReferenceCostOne_not_compactCostNormalizationCoherent
-    (laws : CIGSLT.CostReferenceOneObjectLaws rhoCIGSLT) :
-    ¬ CompactCostNormalizationCoherent (rhoReferenceCostOne laws) := by
-  exact rhoCostOneFor_not_compactCostNormalizationCoherent
-    (RhoCostOneConfiguration.reference laws)
+above and its hereditary instance carry the substantive cost-layer iteration boundary. -/
+theorem rhoReferenceCostLayer_not_compactCostNormalizationCoherent
+    (laws : Cost.ReferenceCompactOpenNormalizer.Laws rhoCIGSLT) :
+    ¬ CompactCostNormalizationCoherent (rhoReferenceCostLayer laws) := by
+  exact rhoCostLayerFor_not_compactCostNormalizationCoherent
+    (RhoCostLayerConfiguration.reference laws)
     (reference_emptyParallelSourceRepresentative laws)
 
-/-- The repaired hereditary executor meets the same precise Cost² boundary:
+/-- The repaired hereditary executor meets the same precise cost-layer iteration boundary:
 its first layer is a genuine Cost object, while its generated compact syntax
 does not support a second exact compact section. -/
-theorem rhoHereditaryCostOne_not_compactCostNormalizationCoherent
-    (laws : CIGSLT.CostOneObjectLawsFor rhoCIGSLT
+theorem rhoHereditaryCostLayer_not_compactCostNormalizationCoherent
+    (laws : Cost.CompactOpenNormalizer.Laws rhoCIGSLT
       rhoCostNormalizeOpenHereditary) :
     ¬ CompactCostNormalizationCoherent
       (rhoCIGSLT.costCIGSLTWith rhoCostNormalizeOpenHereditary laws) := by
-  exact rhoCostOneFor_not_compactCostNormalizationCoherent
-    (RhoCostOneConfiguration.hereditary laws)
+  exact rhoCostLayerFor_not_compactCostNormalizationCoherent
+    (RhoCostLayerConfiguration.hereditary laws)
     (hereditary_emptyParallelSourceRepresentative laws)
 
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostIterationObstruction

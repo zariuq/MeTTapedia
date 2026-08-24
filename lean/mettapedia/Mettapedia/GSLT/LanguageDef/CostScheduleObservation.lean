@@ -1,5 +1,5 @@
 import Mettapedia.GSLT.Dynamics.IndexedExecutionObservation
-import Mettapedia.GSLT.LanguageDef.CostOneOperationalAdequacy
+import Mettapedia.GSLT.LanguageDef.Cost.Layer.Operational
 
 /-!
 # Observation disciplines on proof-relevant Cost schedules
@@ -26,7 +26,7 @@ namespace Mettapedia.GSLT.LanguageDef.CostScheduleObservation
 open Mettapedia.Algebra
 open Mettapedia.GSLT.Dynamics
 open Mettapedia.GSLT.Dynamics.IndexedEventValuation
-open Mettapedia.GSLT.LanguageDef.CostOneOperationalAdequacy
+open Mettapedia.GSLT.LanguageDef.Cost.Layer.Operational
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost
 
 universe uGround
@@ -53,36 +53,36 @@ namespace Schedule
 
 /-- Retain every chronological wave of an operational schedule as one event. -/
 def events {Ground : Type uGround} {source target : CostConfig Ground} :
-    CostOneOperationalAdequacy.OperationalSchedule Ground source target →
+    Cost.Layer.Operational.OperationalSchedule Ground source target →
       List (WaveEvent Ground)
   | .refl _ => []
   | .cons step tail => ⟨_, _, step⟩ :: events tail
 
 @[simp] theorem events_nil {Ground : Type uGround}
     (config : CostConfig Ground) :
-    events (CostOneOperationalAdequacy.OperationalSchedule.nil config) = [] :=
+    events (Cost.Layer.Operational.OperationalSchedule.nil config) = [] :=
   rfl
 
 @[simp] theorem events_cons {Ground : Type uGround}
     {source middle target : CostConfig Ground}
     (step : OperationalStep Ground source middle)
-    (tail : CostOneOperationalAdequacy.OperationalSchedule Ground middle target) :
+    (tail : Cost.Layer.Operational.OperationalSchedule Ground middle target) :
     events (.cons step tail) = ⟨source, middle, step⟩ :: events tail :=
   rfl
 
 /-- Event extraction respects chronological schedule composition. -/
 @[simp] theorem events_append {Ground : Type uGround}
     {source middle target : CostConfig Ground}
-    (first : CostOneOperationalAdequacy.OperationalSchedule Ground source middle)
-    (second : CostOneOperationalAdequacy.OperationalSchedule Ground middle target) :
-    events (CostOneOperationalAdequacy.OperationalSchedule.append first second) =
+    (first : Cost.Layer.Operational.OperationalSchedule Ground source middle)
+    (second : Cost.Layer.Operational.OperationalSchedule Ground middle target) :
+    events (Cost.Layer.Operational.OperationalSchedule.append first second) =
       events first ++ events second := by
   induction first with
   | refl => rfl
   | cons step tail inductionHypothesis =>
       change
         events (.cons step
-          (CostOneOperationalAdequacy.OperationalSchedule.append tail second)) =
+          (Cost.Layer.Operational.OperationalSchedule.append tail second)) =
           _
       simp only [events, List.cons_append]
       rw [inductionHypothesis]
@@ -96,28 +96,28 @@ def eventReceipt {Ground : Type uGround} :
 /-- Extracting wave events preserves the complete occurrence multiset. -/
 @[simp] theorem eventReceipt_events {Ground : Type uGround}
     {source target : CostConfig Ground}
-    (schedule : CostOneOperationalAdequacy.OperationalSchedule Ground source target) :
+    (schedule : Cost.Layer.Operational.OperationalSchedule Ground source target) :
     eventReceipt (events schedule) =
-      CostOneOperationalAdequacy.OperationalSchedule.receipt schedule := by
+      Cost.Layer.Operational.OperationalSchedule.receipt schedule := by
   induction schedule with
   | refl => rfl
   | cons step tail inductionHypothesis =>
       rcases step with ⟨receipt, stepProof⟩
       simp only [events, eventReceipt, WaveEvent.receipt,
-        CostOneOperationalAdequacy.OperationalSchedule.receipt]
+        Cost.Layer.Operational.OperationalSchedule.receipt]
       rw [inductionHypothesis]
 
 /-- Event extraction preserves the exact number of chronological waves. -/
 @[simp] theorem events_length {Ground : Type uGround}
     {source target : CostConfig Ground}
-    (schedule : CostOneOperationalAdequacy.OperationalSchedule Ground source target) :
+    (schedule : Cost.Layer.Operational.OperationalSchedule Ground source target) :
     (events schedule).length =
-      CostOneOperationalAdequacy.OperationalSchedule.waves schedule := by
+      Cost.Layer.Operational.OperationalSchedule.waves schedule := by
   induction schedule with
   | refl => rfl
   | cons step tail inductionHypothesis =>
       simp only [events, List.length_cons,
-        CostOneOperationalAdequacy.OperationalSchedule.waves]
+        Cost.Layer.Operational.OperationalSchedule.waves]
       rw [inductionHypothesis]
       omega
 
@@ -129,9 +129,9 @@ def discipline (Ground : Type uGround) : ObservationDiscipline (WaveEvent Ground
 WorkSpan valuation exactly. -/
 @[simp] theorem collect_events {Ground : Type uGround}
     {source target : CostConfig Ground}
-    (schedule : CostOneOperationalAdequacy.OperationalSchedule Ground source target) :
+    (schedule : Cost.Layer.Operational.OperationalSchedule Ground source target) :
     (discipline Ground).collection.collect (events schedule) =
-      some (CostOneOperationalAdequacy.OperationalSchedule.workSpan schedule) := by
+      some (Cost.Layer.Operational.OperationalSchedule.workSpan schedule) := by
   induction schedule with
   | refl => rfl
   | cons step tail inductionHypothesis =>
@@ -140,7 +140,7 @@ WorkSpan valuation exactly. -/
         (WorkSpanObservation.valuation WaveEvent.workSpan).historyGrade
             (⟨_, _, ⟨receipt, stepProof⟩⟩ :: events tail) =
           some (WorkSpan.sequential ⟨receipt.card, 1⟩
-            (CostOneOperationalAdequacy.OperationalSchedule.workSpan tail))
+            (Cost.Layer.Operational.OperationalSchedule.workSpan tail))
       rw [IndexedEventValuation.Valuation.historyGrade_cons]
       change
         (some (⟨receipt.card, 1⟩ : WorkSpan)).bind (fun head =>
@@ -153,36 +153,36 @@ WorkSpan valuation exactly. -/
 /-- Operational schedules form an exact indexed execution observation. -/
 def observation (Ground : Type uGround) :
     IndexedExecutionObservation (discipline Ground) (CostConfig Ground)
-      (CostOneOperationalAdequacy.OperationalSchedule Ground) where
+      (Cost.Layer.Operational.OperationalSchedule Ground) where
   events := events
-  container := CostOneOperationalAdequacy.OperationalSchedule.workSpan
+  container := Cost.Layer.Operational.OperationalSchedule.workSpan
   collects := collect_events
 
 /-- Chronological schedule concatenation is observed by event-list
 concatenation. -/
 def chronological (Ground : Type uGround) :
     (observation Ground).Chronological where
-  append := CostOneOperationalAdequacy.OperationalSchedule.append
+  append := Cost.Layer.Operational.OperationalSchedule.append
   events_append := events_append
 
 @[simp] theorem observed_value {Ground : Type uGround}
     {source target : CostConfig Ground}
-    (schedule : CostOneOperationalAdequacy.OperationalSchedule Ground source target) :
+    (schedule : Cost.Layer.Operational.OperationalSchedule Ground source target) :
     (observation Ground).value schedule =
-      CostOneOperationalAdequacy.OperationalSchedule.workSpan schedule :=
+      Cost.Layer.Operational.OperationalSchedule.workSpan schedule :=
   rfl
 
 /-- The generic execution/container bridge recovers chronological WorkSpan
 composition from the execution and collector laws. -/
 theorem observed_append {Ground : Type uGround}
     {source middle target : CostConfig Ground}
-    (first : CostOneOperationalAdequacy.OperationalSchedule Ground source middle)
-    (second : CostOneOperationalAdequacy.OperationalSchedule Ground middle target) :
+    (first : Cost.Layer.Operational.OperationalSchedule Ground source middle)
+    (second : Cost.Layer.Operational.OperationalSchedule Ground middle target) :
     WorkSpanObservation.sequentialAlgebra.op
         ((observation Ground).container first)
         ((observation Ground).container second) =
       some ((observation Ground).container
-        (CostOneOperationalAdequacy.OperationalSchedule.append first second)) :=
+        (Cost.Layer.Operational.OperationalSchedule.append first second)) :=
   IndexedExecutionObservation.Chronological.container_append
     (observation Ground) (WorkSpanObservation.chronological WaveEvent.workSpan)
     (chronological Ground) first second
@@ -195,10 +195,10 @@ losing its WorkSpan value. -/
     {count waves : Nat}
     (schedule : ParallelCostSchedule source receipt target count waves) :
     (observation Ground).value
-        (CostOneOperationalAdequacy.OperationalSchedule.ofIndexed schedule) =
+        (Cost.Layer.Operational.OperationalSchedule.ofIndexed schedule) =
       schedule.workSpan := by
   rw [observed_value,
-    CostOneOperationalAdequacy.OperationalSchedule.workSpan_ofIndexed]
+    Cost.Layer.Operational.OperationalSchedule.workSpan_ofIndexed]
 
 /-- The same crossing preserves the exact occurrence receipt. -/
 @[simp] theorem observed_receipt_ofIndexed {Ground : Type uGround}
@@ -207,10 +207,10 @@ losing its WorkSpan value. -/
     {count waves : Nat}
     (schedule : ParallelCostSchedule source receipt target count waves) :
     eventReceipt (events
-      (CostOneOperationalAdequacy.OperationalSchedule.ofIndexed schedule)) =
+      (Cost.Layer.Operational.OperationalSchedule.ofIndexed schedule)) =
         receipt := by
   rw [eventReceipt_events,
-    CostOneOperationalAdequacy.OperationalSchedule.receipt_ofIndexed]
+    Cost.Layer.Operational.OperationalSchedule.receipt_ofIndexed]
 
 /-- The same crossing preserves the exact number of wave events. -/
 @[simp] theorem observed_wave_count_ofIndexed {Ground : Type uGround}
@@ -219,10 +219,10 @@ losing its WorkSpan value. -/
     {count waves : Nat}
     (schedule : ParallelCostSchedule source receipt target count waves) :
     (events
-      (CostOneOperationalAdequacy.OperationalSchedule.ofIndexed schedule)).length =
+      (Cost.Layer.Operational.OperationalSchedule.ofIndexed schedule)).length =
         waves := by
   rw [events_length,
-    CostOneOperationalAdequacy.OperationalSchedule.waves_ofIndexed]
+    Cost.Layer.Operational.OperationalSchedule.waves_ofIndexed]
 
 end Schedule
 

@@ -18,7 +18,7 @@ namespace Mettapedia.Languages.MeTTa.Prime.NativeParallelNondeterministicWorlds
 
 open Mettapedia.Algebra
 open Mettapedia.GSLT.Dynamics
-open Mettapedia.GSLT.LanguageDef.CostOneOperationalAdequacy
+open Mettapedia.GSLT.LanguageDef.Cost.Layer.Operational
 open Mettapedia.GSLT.LanguageDef.NIKIndexedExecutionAdmission
 open Mettapedia.GSLT.LanguageDef.NIKRouteAdmission
 open Mettapedia.Languages.MeTTa.NativeTypeTheory
@@ -26,7 +26,7 @@ open Mettapedia.Languages.MeTTa.Prime.NativeInteraction
 open Mettapedia.Languages.MeTTa.Prime.NativeInteractionFamilyFibration
 open Mettapedia.Languages.MeTTa.Prime.NativeInteractionFibration
 open Mettapedia.Languages.MeTTa.Prime.NativeInteractionParallelWorlds
-open Mettapedia.Languages.MeTTa.Prime.NativeCostOneOperationalAdequacy
+open Mettapedia.Languages.MeTTa.Prime.NativeCostLayerOperationalAdequacy
 open Mettapedia.Languages.MeTTa.Prime.NativeParallelNIKAdmission
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost
 

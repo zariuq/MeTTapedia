@@ -4,7 +4,7 @@ import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryProviderBui
 /-!
 # Cross-colour application/application quadrant canary
 
-Verdict probe for the central semantic question of the rho Cost₁ audit:
+Verdict probe for the central semantic question of the rho cost layer audit:
 can a built cross-colour collapsing pair reach two colour-decodable
 application frames?  The pair here is the smallest one, in both colour
 orientations:

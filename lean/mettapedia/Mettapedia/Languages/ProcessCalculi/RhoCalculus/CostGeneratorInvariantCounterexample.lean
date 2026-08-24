@@ -1,6 +1,6 @@
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostCanonicalLaws
 import Mettapedia.GSLT.LanguageDef.ReflectiveEquationOccurrence
-import Mettapedia.GSLT.LanguageDef.CostEndofunctor
+import Mettapedia.GSLT.LanguageDef.Cost.Construction
 
 /-!
 # A cross-boundary ordering canary for compact rho Cost normalization
@@ -1113,12 +1113,12 @@ theorem not_rho_costReferenceOpenSectionLaws :
   intro laws
   exact not_rho_costReferenceOpenGeneratorInvariant laws.generatorInvariant
 
-/-- Rho also cannot inhabit the reference-executor Cost₁ object bundle.  A
+/-- Rho also cannot inhabit the reference-executor cost layer object bundle.  A
 rho Cost object must therefore name a repaired normalizer through
-`CostOneObjectLawsFor`; accepting the reference bundle would make every
+`Cost.CompactOpenNormalizer.Laws`; accepting the reference bundle would make every
 downstream construction vacuous. -/
-theorem not_rho_costReferenceOneObjectLaws :
-    ¬ CIGSLT.CostReferenceOneObjectLaws rhoCIGSLT := by
+theorem not_rho_referenceCompactOpenNormalizerLaws :
+    ¬ Cost.ReferenceCompactOpenNormalizer.Laws rhoCIGSLT := by
   intro laws
   exact not_rho_costReferenceOpenSectionLaws
     laws.toCostReferenceOpenSectionLaws

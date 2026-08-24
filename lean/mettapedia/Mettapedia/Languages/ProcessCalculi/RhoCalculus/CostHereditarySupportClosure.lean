@@ -2,7 +2,7 @@ import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryCanonicalOc
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryObjectReduction
 
 /-!
-# The rho reflective-support crown, closed
+# Reflective-support closure for rho
 
 The finite-support hereditary executor preserves every caller-relative
 reflective support.  The proof composes three finished layers:
@@ -16,7 +16,7 @@ reflective support.  The proof composes three finished layers:
 * the supported-executor context transport
   (`rhoHereditaryReflectiveSupportPreserving_of`).
 
-With this crown closed, the rho Cost₁ object assembles from generator tree
+With this theorem, the rho cost layer assembles from generator-tree
 alignability alone — equivalently, from the per-colour semantic-cut provider
 alone.
 -/
@@ -26,47 +26,47 @@ namespace Mettapedia.Languages.ProcessCalculi.RhoCalculus
 open Mettapedia.GSLT.LanguageDef
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefContinuedInteraction
 
-/-- The support crown: the finite-support hereditary executor preserves every
+/-- The support closure: the finite-support hereditary executor preserves every
 caller-relative reflective support. -/
 theorem rhoHereditaryReflectiveSupportPreserving :
     RhoHereditaryReflectiveSupportPreserving :=
   rhoHereditaryReflectiveSupportPreserving_of
     rhoHereditaryStaticNormalizer_preservesReflectiveSupport_path
 
-/-- The rho Cost₁ object laws from generator tree alignability alone. -/
-def rhoHereditaryCostOneObjectLaws_ofAlignable
+/-- The rho cost layer object laws from generator tree alignability alone. -/
+def rhoHereditaryCompactOpenNormalizerLaws_ofAlignable
     (alignable : CostOpenGeneratorTreeAlignable rhoCIGSLT
       rhoHereditaryNormalizationKernel) :
-    CIGSLT.CostOneObjectLawsFor rhoCIGSLT
+    Cost.CompactOpenNormalizer.Laws rhoCIGSLT
       rhoCostNormalizeOpenHereditarySupported :=
-  rhoHereditaryCostOneObjectLaws_of alignable
+  rhoHereditaryCompactOpenNormalizerLaws_of alignable
     rhoHereditaryReflectiveSupportPreserving
 
-/-- The normalizer-indexed rho Cost₁ domain object from alignability alone. -/
-def rhoHereditaryCostOneDomainObject_ofAlignable
+/-- The normalizer-indexed rho cost layer domain object from alignability alone. -/
+def rhoHereditaryCostLayer_ofAlignable
     (alignable : CostOpenGeneratorTreeAlignable rhoCIGSLT
       rhoHereditaryNormalizationKernel) :
-    CostOneDomainObject :=
-  rhoHereditaryCostOneDomainObject_of alignable
+    Cost.Layer :=
+  rhoHereditaryCostLayer_of alignable
     rhoHereditaryReflectiveSupportPreserving
 
-/-- The rho Cost₁ object laws from the per-colour semantic-cut provider
-alone — the single remaining open obligation of the Cost₁ chain. -/
-def rhoHereditaryCostOneObjectLaws_ofProvider
+/-- The rho cost layer object laws from the per-colour semantic-cut provider
+alone — the single remaining open obligation of the cost layer chain. -/
+def rhoHereditaryCompactOpenNormalizerLaws_ofProvider
     (provider : ∀ color,
-      RhoCanonicalStaticPairSemanticCutProviderInDomain color) :
-    CIGSLT.CostOneObjectLawsFor rhoCIGSLT
+      RhoCanonicalStaticPair.HasSemanticCut color) :
+    Cost.CompactOpenNormalizer.Laws rhoCIGSLT
       rhoCostNormalizeOpenHereditarySupported :=
-  rhoHereditaryCostOneObjectLaws_ofAlignable
+  rhoHereditaryCompactOpenNormalizerLaws_ofAlignable
     (rhoCostOpenGeneratorTreeAlignable_of_provider provider)
 
-/-- The normalizer-indexed rho Cost₁ domain object from the per-colour
+/-- The normalizer-indexed rho cost layer domain object from the per-colour
 semantic-cut provider alone. -/
-def rhoHereditaryCostOneDomainObject_ofProvider
+def rhoHereditaryCostLayer_ofProvider
     (provider : ∀ color,
-      RhoCanonicalStaticPairSemanticCutProviderInDomain color) :
-    CostOneDomainObject :=
-  rhoHereditaryCostOneDomainObject_ofAlignable
+      RhoCanonicalStaticPair.HasSemanticCut color) :
+    Cost.Layer :=
+  rhoHereditaryCostLayer_ofAlignable
     (rhoCostOpenGeneratorTreeAlignable_of_provider provider)
 
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus

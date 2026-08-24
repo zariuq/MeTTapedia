@@ -1,36 +1,36 @@
-import Mettapedia.Languages.MeTTa.Prime.CostTwoDisplayedKeyTransport
+import Mettapedia.Languages.MeTTa.Prime.CostElaborationKeyTransport
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostIterationPolicyCorollary
 
 /-!
-# The reflective-rho instance of the Prime Cost² boundary
+# The reflective-rho instance of the Prime cost-layer iteration boundary
 
-The generic Prime Cost² interface is independent of any concrete language.
+The generic Prime cost-layer iteration interface is independent of any concrete language.
 This annex instantiates its cache, information-order, NIK-admission,
 implementation-key, and displayed-transport boundaries with the reflective
 rho calculus.
 
 The compact term remains an admissible key for fibre-invariant observations,
-but the rho Cost² witness proves that it cannot replay arbitrary retained
+but the rho cost-layer iteration witness proves that it cannot replay arbitrary retained
 elaborations.  The proof-relevant elaboration key remains exact.
 -/
 
 set_option autoImplicit false
 
-namespace Mettapedia.Languages.MeTTa.Prime.CostTwoCacheReplayBoundary
+namespace Mettapedia.GSLT.LanguageDef.Cost.Elaboration
 
 open Mettapedia.GSLT.LanguageDef
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.Framework.ConstructorCategory
 
-/-- Rho's Cost² witness produces a concrete future policy for which compact
+/-- Rho's cost-layer iteration witness produces a concrete future policy for which compact
 syntax is neither a safe cache key nor an exact replay key, while the retained
 proof-relevant key supports the same policy exactly.
 
 The two normalization negatives are included so the cache statement cannot
-be detached from the actual Cost² nonfactorization witness. -/
-theorem rhoCostTwo_cache_replay_boundary
-    (configuration : CostIterationObstruction.RhoCostOneConfiguration)
+be detached from the actual cost-layer iteration nonfactorization witness. -/
+theorem rhoCostLayerIteration_cache_replay_boundary
+    (configuration : CostIterationObstruction.RhoCostLayerConfiguration)
     (representative :
       CostIterationObstruction.RhoEmptyParallelSourceRepresentative
         configuration) :
@@ -44,31 +44,31 @@ theorem rhoCostTwo_cache_replay_boundary
           configuration.source.costWholeLanguage targetFree targetBound
           targetSort)
         (policy : CostOpenElaboration configuration.source term → Bool),
-        ¬ PolicySafe (compactFibreKey term) policy ∧
-          ¬ ExactReplayKey (compactFibreKey term) ∧
-          ExactReplayKey
+        ¬ ReplayKey.Supports (compactFibreKey term) policy ∧
+          ¬ ReplayKey.IsExact (compactFibreKey term) ∧
+          ReplayKey.IsExact
             (provenanceKey (source := configuration.source) (term := term)) ∧
-          PolicySafe
+          ReplayKey.Supports
             (provenanceKey (source := configuration.source) (term := term))
             policy := by
-  refine ⟨rhoCostOneFor_not_normalizationFactorsThroughCompactErasure
+  refine ⟨rhoCostLayerFor_not_normalizationFactorsThroughCompactErasure
       configuration representative,
-    rhoCostOneFor_not_costCompactErasureFaithful configuration representative,
+    rhoCostLayerFor_not_costCompactErasureFaithful configuration representative,
     ?_⟩
   obtain ⟨targetFree, targetBound, targetSort, term, policy, nonconstant⟩ :=
-    rhoCostOneFor_exists_nonconstant_fiber_policy configuration representative
-  have compactUnsafe : ¬ PolicySafe (compactFibreKey term) policy := by
-    rw [compactFibreKey_policySafe_iff_constant]
+    rhoCostLayerFor_exists_nonconstant_fiber_policy configuration representative
+  have compactUnsafe : ¬ ReplayKey.Supports (compactFibreKey term) policy := by
+    rw [compactFibreKey_supports_iff_constant]
     exact nonconstant
   refine ⟨targetFree, targetBound, targetSort, term, policy, compactUnsafe, ?_,
-    provenanceKey_exactReplayKey, provenanceKey_policySafe policy⟩
+    provenanceKey_isExact, provenanceKey_supports policy⟩
   intro exact
-  exact compactUnsafe (exact.policySafe policy)
+  exact compactUnsafe (exact.supports policy)
 
-/-- Compact syntax cannot encode an exact replay codec on the rho Cost²
+/-- Compact syntax cannot encode an exact replay codec on the rho cost-layer iteration
 witness fibre. -/
-theorem rhoCostTwo_no_exact_compact_replay
-    (configuration : CostIterationObstruction.RhoCostOneConfiguration)
+theorem rhoCostLayerIteration_no_exact_compact_replay
+    (configuration : CostIterationObstruction.RhoCostLayerConfiguration)
     (representative :
       CostIterationObstruction.RhoEmptyParallelSourceRepresentative
         configuration) :
@@ -79,26 +79,26 @@ theorem rhoCostTwo_no_exact_compact_replay
         configuration.source.costWholeReflectionProfile
         configuration.source.costWholeLanguage targetFree targetBound
         targetSort),
-      ¬ ExactReplayKey (compactFibreKey term) := by
+      ¬ ReplayKey.IsExact (compactFibreKey term) := by
   obtain ⟨targetFree, targetBound, targetSort, term, _policy, _compactUnsafe,
       notExact, _provenanceExact, _provenanceSafe⟩ :=
-    (rhoCostTwo_cache_replay_boundary configuration representative).2.2
+    (rhoCostLayerIteration_cache_replay_boundary configuration representative).2.2
   exact ⟨targetFree, targetBound, targetSort, term, notExact⟩
 
-end Mettapedia.Languages.MeTTa.Prime.CostTwoCacheReplayBoundary
+end Mettapedia.GSLT.LanguageDef.Cost.Elaboration
 
-namespace Mettapedia.Languages.MeTTa.Prime.CostTwoObservationKeyOrder
+namespace Mettapedia.GSLT.LanguageDef.Cost.Elaboration
 
 open Mettapedia.GSLT.LanguageDef
-open Mettapedia.Languages.MeTTa.Prime.CostTwoCacheReplayBoundary
+open Mettapedia.GSLT.LanguageDef.Cost.Elaboration
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.Framework.ConstructorCategory
 
-/-- On rho's Cost² witness, retained construction provenance is strictly
+/-- On rho's cost-layer iteration witness, retained construction provenance is strictly
 more informative than the compact term. -/
-theorem rhoCostTwo_provenance_strictlyRefines_compact
-    (configuration : CostIterationObstruction.RhoCostOneConfiguration)
+theorem rhoCostLayerIteration_provenance_strictlyRefines_compact
+    (configuration : CostIterationObstruction.RhoCostLayerConfiguration)
     (representative :
       CostIterationObstruction.RhoEmptyParallelSourceRepresentative
         configuration) :
@@ -109,31 +109,22 @@ theorem rhoCostTwo_provenance_strictlyRefines_compact
         configuration.source.costWholeReflectionProfile
         configuration.source.costWholeLanguage targetFree targetBound
         targetSort),
-      StrictlyRefines
+      ReplayKey.StrictlyRefines
         (provenanceKey (source := configuration.source) (term := term))
         (compactFibreKey term) := by
-  obtain ⟨targetFree, targetBound, targetSort, term, _policy, _compactUnsafe,
-      compactNotExact, provenanceExact, _provenanceSafe⟩ :=
-    (rhoCostTwo_cache_replay_boundary configuration representative).2.2
+  obtain ⟨targetFree, targetBound, targetSort, term, policy, compactUnsafe,
+      _compactNotExact, provenanceExact, _provenanceSafe⟩ :=
+    (rhoCostLayerIteration_cache_replay_boundary configuration representative).2.2
   refine ⟨targetFree, targetBound, targetSort, term,
-    ExactReplayKey.refines provenanceExact (compactFibreKey term), ?_⟩
+    ReplayKey.IsExact.refines provenanceExact (compactFibreKey term), ?_⟩
   intro compactRefinesProvenance
-  have identitySafe :
-      PolicySafe (compactFibreKey term)
-        (id : CostOpenElaboration configuration.source term →
-          CostOpenElaboration configuration.source term) := by
-    simpa [provenanceKey] using
-      (keyRefines_iff_policySafe (compactFibreKey term)
-        (provenanceKey (source := configuration.source) (term := term))).1
-        compactRefinesProvenance
-  exact compactNotExact
-    ((exactReplayKey_iff_identityPolicySafe (compactFibreKey term)).2
-      identitySafe)
+  exact compactUnsafe
+    (compactRefinesProvenance.supports (provenanceKey_supports policy))
 
-/-- The strict rho Cost² information order has a direct replay failure: every
+/-- The strict rho cost-layer iteration information order has a direct replay failure: every
 compact decoder misreplays at least one of two collided elaborations. -/
-theorem rhoCostTwo_compact_collision_forces_decode_failure
-    (configuration : CostIterationObstruction.RhoCostOneConfiguration)
+theorem rhoCostLayerIteration_compact_collision_forces_decode_failure
+    (configuration : CostIterationObstruction.RhoCostLayerConfiguration)
     (representative :
       CostIterationObstruction.RhoEmptyParallelSourceRepresentative
         configuration) :
@@ -158,37 +149,37 @@ theorem rhoCostTwo_compact_collision_forces_decode_failure
           decode (compactFibreKey term left) ≠ left ∨
             decode (compactFibreKey term right) ≠ right := by
   obtain ⟨targetFree, targetBound, targetSort, term, policy, nonconstant⟩ :=
-    rhoCostOneFor_exists_nonconstant_fiber_policy configuration representative
+    rhoCostLayerFor_exists_nonconstant_fiber_policy configuration representative
   obtain ⟨left, right, policyDifferent⟩ :=
-    exists_policy_distinguished_pair policy nonconstant
+    ReplayKey.exists_bool_distinguished_pair policy nonconstant
   have different : left ≠ right := by
     intro same
     exact policyDifferent (congrArg policy same)
   refine ⟨targetFree, targetBound, targetSort, term, policy, left, right,
     policyDifferent, different, rfl, ?_⟩
   intro decode
-  exact collision_forces_decode_failure
+  exact ReplayKey.collision_forces_decode_failure
     (key := compactFibreKey term) (left := left) (right := right)
     different rfl decode
 
-end Mettapedia.Languages.MeTTa.Prime.CostTwoObservationKeyOrder
+end Mettapedia.GSLT.LanguageDef.Cost.Elaboration
 
-namespace Mettapedia.Languages.MeTTa.Prime.CostTwoPolicyKeyNIKAdmission
+namespace Mettapedia.Languages.MeTTa.Prime.PolicyKeyNIKAdmission
 
 open Mettapedia.GSLT.LanguageDef
 open Mettapedia.GSLT.LanguageDef.NIKIndexedExecutionAdmission
 open Mettapedia.GSLT.LanguageDef.NIKRouteAdmission
-open Mettapedia.Languages.MeTTa.Prime.CostTwoCacheReplayBoundary
-open Mettapedia.Languages.MeTTa.Prime.CostTwoObservationKeyOrder
+open Mettapedia.GSLT.LanguageDef.Cost.Elaboration
+open Mettapedia.GSLT.LanguageDef.Cost.Elaboration
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.Framework.ConstructorCategory
 
-/-- Rho's Cost² witness distinguishes request-scoped policy sufficiency from
+/-- Rho's cost-layer iteration witness distinguishes request-scoped policy sufficiency from
 exact replay without introducing another semantic authority. -/
-theorem rhoCostTwo_nik_policy_key_boundary
+theorem rhoCostLayerIteration_nik_policy_key_boundary
     (dependencies : DependencySystem) (revision : dependencies.Revision)
-    (configuration : CostIterationObstruction.RhoCostOneConfiguration)
+    (configuration : CostIterationObstruction.RhoCostLayerConfiguration)
     (representative :
       CostIterationObstruction.RhoEmptyParallelSourceRepresentative
         configuration) :
@@ -216,12 +207,12 @@ theorem rhoCostTwo_nik_policy_key_boundary
           (provenanceKey (source := configuration.source) (term := term))) := by
   obtain ⟨targetFree, targetBound, targetSort, term, policy, compactUnsafe,
       compactNotExact, _provenanceExact, _provenanceSafe⟩ :=
-    (rhoCostTwo_cache_replay_boundary configuration representative).2.2
+    (rhoCostLayerIteration_cache_replay_boundary configuration representative).2.2
   refine ⟨targetFree, targetBound, targetSort, term, policy, ?_, ?_, ?_, ?_⟩
   · rintro ⟨admission⟩
     exact compactUnsafe (admission.supports ())
   · rintro ⟨admission⟩
-    exact compactNotExact (admission.exactReplayKey True.intro)
+    exact compactNotExact (admission.isExact True.intro)
   · exact ⟨by
       simpa [provenanceKey] using
         (identityKeyAdmission dependencies revision
@@ -231,23 +222,23 @@ theorem rhoCostTwo_nik_policy_key_boundary
         (identityKeyAdmission dependencies revision
           (singlePolicyRequest policy True))⟩
 
-end Mettapedia.Languages.MeTTa.Prime.CostTwoPolicyKeyNIKAdmission
+end Mettapedia.Languages.MeTTa.Prime.PolicyKeyNIKAdmission
 
-namespace Mettapedia.Languages.MeTTa.Prime.CostTwoImplementationKeyContract
+namespace Mettapedia.Languages.MeTTa.Prime.CostElaborationKeyContract
 
 open Mettapedia.GSLT.LanguageDef
 open Mettapedia.GSLT.LanguageDef.NIKRouteAdmission
-open Mettapedia.Languages.MeTTa.Prime.CostTwoCacheReplayBoundary
-open Mettapedia.Languages.MeTTa.Prime.CostTwoPolicyKeyNIKAdmission
+open Mettapedia.GSLT.LanguageDef.Cost.Elaboration
+open Mettapedia.Languages.MeTTa.Prime.PolicyKeyNIKAdmission
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus
 open Mettapedia.OSLF.Framework.ConstructorCategory
 open Mettapedia.OSLF.MeTTaIL.Syntax
 
 /-- Rho admits the complete compact representation as a hot policy answer but
 refuses it as an exact receipt.  The displayed elaboration remains exact. -/
-theorem rhoCostTwo_compact_hot_key_but_not_exact_receipt
+theorem rhoCostLayerIteration_compact_hot_key_but_not_exact_receipt
     (dependencies : DependencySystem) (revision : dependencies.Revision)
-    (configuration : CostIterationObstruction.RhoCostOneConfiguration)
+    (configuration : CostIterationObstruction.RhoCostLayerConfiguration)
     (representative :
       CostIterationObstruction.RhoEmptyParallelSourceRepresentative
         configuration) :
@@ -273,33 +264,33 @@ theorem rhoCostTwo_compact_hot_key_but_not_exact_receipt
   constructor
   · rintro ⟨admission⟩
     have compactExact :
-        ExactReplayKey (compactCarrierKey configuration.source) :=
-      admission.exactReplayKey True.intro
+        ReplayKey.IsExact (compactCarrierKey configuration.source) :=
+      admission.isExact True.intro
     have faithful : configuration.source.CostCompactErasureFaithful :=
       (compactCarrierKey_exactReplay_iff_erasureFaithful
         configuration.source).1 compactExact
-    exact (rhoCostOneFor_not_costCompactErasureFaithful
+    exact (rhoCostLayerFor_not_costCompactErasureFaithful
       configuration representative) faithful
   · exact ⟨identityKeyAdmission dependencies revision
       (singlePolicyRequest
         (compactCarrierKey configuration.source) True)⟩
 
-end Mettapedia.Languages.MeTTa.Prime.CostTwoImplementationKeyContract
+end Mettapedia.Languages.MeTTa.Prime.CostElaborationKeyContract
 
-namespace Mettapedia.Languages.MeTTa.Prime.CostTwoDisplayedKeyTransport
+namespace Mettapedia.Languages.MeTTa.Prime.CostElaborationKeyTransport
 
 open Mettapedia.GSLT.LanguageDef
 open Mettapedia.GSLT.LanguageDef.NIKRouteAdmission
-open Mettapedia.Languages.MeTTa.Prime.CostTwoCacheReplayBoundary
-open Mettapedia.Languages.MeTTa.Prime.CostTwoImplementationKeyContract
-open Mettapedia.Languages.MeTTa.Prime.CostTwoPolicyKeyNIKAdmission
+open Mettapedia.GSLT.LanguageDef.Cost.Elaboration
+open Mettapedia.Languages.MeTTa.Prime.CostElaborationKeyContract
+open Mettapedia.Languages.MeTTa.Prime.PolicyKeyNIKAdmission
 
 /-- The rho compact value is an admitted hot observation, while the same
 global key has no exact replay decoder. -/
 theorem rho_compact_policy_admission_without_exact_replay
     (dependencies : DependencySystem) (revision : dependencies.Revision)
     (configuration :
-      Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostIterationObstruction.RhoCostOneConfiguration)
+      Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostIterationObstruction.RhoCostLayerConfiguration)
     (representative :
       Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostIterationObstruction.RhoEmptyParallelSourceRepresentative
         configuration) :
@@ -308,8 +299,8 @@ theorem rho_compact_policy_admission_without_exact_replay
           (singlePolicyRequest
             (compactCarrierKey configuration.source) False)
           (compactCarrierKey configuration.source)) ∧
-      ¬ ExactReplayKey (compactCarrierKey configuration.source) := by
-  have boundary := rhoCostTwo_compact_hot_key_but_not_exact_receipt
+      ¬ ReplayKey.IsExact (compactCarrierKey configuration.source) := by
+  have boundary := rhoCostLayerIteration_compact_hot_key_but_not_exact_receipt
     dependencies revision configuration representative
   constructor
   · exact boundary.1
@@ -318,15 +309,15 @@ theorem rho_compact_policy_admission_without_exact_replay
       (compactCarrierKey_exactReplay_iff_erasureFaithful
         configuration.source).1 replay
     exact
-      (Mettapedia.Languages.ProcessCalculi.RhoCalculus.rhoCostOneFor_not_costCompactErasureFaithful
+      (Mettapedia.Languages.ProcessCalculi.RhoCalculus.rhoCostLayerFor_not_costCompactErasureFaithful
         configuration representative) faithful
 
-end Mettapedia.Languages.MeTTa.Prime.CostTwoDisplayedKeyTransport
+end Mettapedia.Languages.MeTTa.Prime.CostElaborationKeyTransport
 
-#print axioms Mettapedia.Languages.MeTTa.Prime.CostTwoCacheReplayBoundary.rhoCostTwo_cache_replay_boundary
-#print axioms Mettapedia.Languages.MeTTa.Prime.CostTwoCacheReplayBoundary.rhoCostTwo_no_exact_compact_replay
-#print axioms Mettapedia.Languages.MeTTa.Prime.CostTwoObservationKeyOrder.rhoCostTwo_provenance_strictlyRefines_compact
-#print axioms Mettapedia.Languages.MeTTa.Prime.CostTwoObservationKeyOrder.rhoCostTwo_compact_collision_forces_decode_failure
-#print axioms Mettapedia.Languages.MeTTa.Prime.CostTwoPolicyKeyNIKAdmission.rhoCostTwo_nik_policy_key_boundary
-#print axioms Mettapedia.Languages.MeTTa.Prime.CostTwoImplementationKeyContract.rhoCostTwo_compact_hot_key_but_not_exact_receipt
-#print axioms Mettapedia.Languages.MeTTa.Prime.CostTwoDisplayedKeyTransport.rho_compact_policy_admission_without_exact_replay
+#print axioms Mettapedia.GSLT.LanguageDef.Cost.Elaboration.rhoCostLayerIteration_cache_replay_boundary
+#print axioms Mettapedia.GSLT.LanguageDef.Cost.Elaboration.rhoCostLayerIteration_no_exact_compact_replay
+#print axioms Mettapedia.GSLT.LanguageDef.Cost.Elaboration.rhoCostLayerIteration_provenance_strictlyRefines_compact
+#print axioms Mettapedia.GSLT.LanguageDef.Cost.Elaboration.rhoCostLayerIteration_compact_collision_forces_decode_failure
+#print axioms Mettapedia.Languages.MeTTa.Prime.PolicyKeyNIKAdmission.rhoCostLayerIteration_nik_policy_key_boundary
+#print axioms Mettapedia.Languages.MeTTa.Prime.CostElaborationKeyContract.rhoCostLayerIteration_compact_hot_key_but_not_exact_receipt
+#print axioms Mettapedia.Languages.MeTTa.Prime.CostElaborationKeyTransport.rho_compact_policy_admission_without_exact_replay

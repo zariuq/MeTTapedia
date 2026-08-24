@@ -1,11 +1,11 @@
-import Mettapedia.Languages.MeTTa.Prime.NativeCostOneReceiptObservation
-import Mettapedia.Languages.MeTTa.Prime.CostTwoPolicyKeyNIKAdmission
+import Mettapedia.Languages.MeTTa.Prime.NativeCostLayerReceiptObservation
+import Mettapedia.Languages.MeTTa.Prime.PolicyKeyNIKAdmission
 import Mettapedia.GSLT.Dynamics.ObservationPolicyFamilyUniversal
 
 /-!
-# NIK receipt-key admission for Cost₁ histories
+# NIK receipt-key admission for cost layer histories
 
-The exact Cost₁ observation factorization retains a chronological list of
+The exact cost layer observation factorization retains a chronological list of
 proof-relevant wave events and only then computes `WorkSpan`.  This module
 turns that strict information loss into a revision-current NIK admission
 boundary.
@@ -22,24 +22,24 @@ is the least informative sufficient key by the generic policy-vector theorem.
 Retaining the complete history is also sufficient, but is not prescribed as
 the runtime representation.
 
-This is a displayed observation capability over Cost₁ execution.  It does
+This is a displayed observation capability over cost layer execution.  It does
 not construct a semantic normalization event, an operational realization, or
 a second execution authority.
 -/
 
 set_option autoImplicit false
 
-namespace Mettapedia.Languages.MeTTa.Prime.NativeCostOneReceiptPolicyNIKAdmission
+namespace Mettapedia.Languages.MeTTa.Prime.NativeCostLayerReceiptPolicyNIKAdmission
 
 open Mettapedia.Algebra
 open Mettapedia.GSLT.Core
 open Mettapedia.GSLT.LanguageDef
 open Mettapedia.GSLT.LanguageDef.CostScheduleObservation
 open Mettapedia.GSLT.LanguageDef.NIKRouteAdmission
-open Mettapedia.Languages.MeTTa.Prime.CostTwoCacheReplayBoundary
-open Mettapedia.Languages.MeTTa.Prime.CostTwoObservationKeyOrder
-open Mettapedia.Languages.MeTTa.Prime.CostTwoPolicyKeyNIKAdmission
-open Mettapedia.Languages.MeTTa.Prime.NativeCostOneReceiptObservation
+open Mettapedia.GSLT.LanguageDef.Cost.Elaboration
+open Mettapedia.GSLT.LanguageDef.Cost.Elaboration
+open Mettapedia.Languages.MeTTa.Prime.PolicyKeyNIKAdmission
+open Mettapedia.Languages.MeTTa.Prime.NativeCostLayerReceiptObservation
 open Mettapedia.Languages.MeTTa.Prime.NativeInteractionFamilyFibration
 open Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost
 
@@ -58,7 +58,7 @@ inductive ReceiptPolicy where
   | chronology
   deriving DecidableEq, Repr
 
-/-- The heterogeneous policy family requested from one retained Cost₁
+/-- The heterogeneous policy family requested from one retained cost layer
 history. -/
 def receiptPolicies (Ground : Type uGround) :
     PolicyFamily.{uGround, 0, uGround} (History Ground) where
@@ -102,7 +102,7 @@ theorem retainedHistory_supports_receiptPolicies (Ground : Type uGround) :
 
 namespace Examples
 
-open NativeCostOneReceiptObservation.Examples
+open NativeCostLayerReceiptObservation.Examples
 open NativeInteractionFibration.Examples
 
 /-- The two concrete schedules with their history type exposed rather than
@@ -116,7 +116,7 @@ abbrev reverseEventHistory : History Ground :=
 theorem two_event_orders_same_workSpan :
     historyWorkSpan forwardEventHistory =
       historyWorkSpan reverseEventHistory := by
-  exact NativeCostOneReceiptObservation.Examples.two_orders_same_workSpan
+  exact NativeCostLayerReceiptObservation.Examples.two_orders_same_workSpan
 
 /-- Reversing the two valid singleton waves reverses their chronological
 receipt observation. -/
@@ -126,11 +126,11 @@ theorem two_orders_distinct_receiptChronologies :
   intro equalChronologies
   have firstReceipts := congrArg List.head? equalChronologies
   change some NativeInteractionFamilyFibration.Examples.leftSingleton.receipt =
-    some NativeCostOneReceiptObservation.Examples.rightSingleton.receipt
+    some NativeCostLayerReceiptObservation.Examples.rightSingleton.receipt
       at firstReceipts
   exact singleton_receipts_ne (Option.some.inj firstReceipts)
 
-/-- The WorkSpan key cannot support the full real Cost₁ policy family. -/
+/-- The WorkSpan key cannot support the full real cost layer policy family. -/
 theorem workSpan_refuses_receiptPolicies :
     Not ((receiptPolicies Ground).SupportsReadout
       (historyWorkSpan : History Ground → WorkSpan)) := by
@@ -141,36 +141,20 @@ theorem workSpan_refuses_receiptPolicies :
   exact two_orders_distinct_receiptChronologies
 
 /-- Retained history strictly refines WorkSpan in the same information order
-used by Cost² cache and replay keys. -/
+used by cost-layer iteration cache and replay keys. -/
 theorem retainedHistory_strictlyRefines_workSpan :
-    StrictlyRefines (id : History Ground → History Ground)
+    ReplayKey.StrictlyRefines (id : History Ground → History Ground)
       (historyWorkSpan : History Ground → WorkSpan) := by
   constructor
-  · exact ExactReplayKey.refines
-      (⟨id, fun _ => rfl⟩ : ExactReplayKey
-        (id : History Ground → History Ground))
-      historyWorkSpan
+  · intro left right sameHistory
+    exact congrArg historyWorkSpan sameHistory
   · intro workSpanRefinesHistory
-    rcases workSpanRefinesHistory with ⟨recover, recovers⟩
     have historiesDifferent : forwardEventHistory ≠ reverseEventHistory := by
       intro historiesEqual
       exact two_orders_distinct_receiptChronologies
         (congrArg receiptChronology historiesEqual)
-    apply historiesDifferent
-    calc
-      forwardEventHistory = recover (historyWorkSpan forwardEventHistory) :=
-        by
-          have recovered := congrFun recovers forwardEventHistory
-          change forwardEventHistory =
-            recover (historyWorkSpan forwardEventHistory) at recovered
-          exact recovered
-      _ = recover (historyWorkSpan reverseEventHistory) :=
-        congrArg recover two_event_orders_same_workSpan
-      _ = reverseEventHistory := by
-        have recovered := congrFun recovers reverseEventHistory
-        change reverseEventHistory =
-          recover (historyWorkSpan reverseEventHistory) at recovered
-        exact recovered.symm
+    exact historiesDifferent
+      (workSpanRefinesHistory two_event_orders_same_workSpan)
 
 end Examples
 
@@ -239,13 +223,13 @@ theorem no_workSpanAdmission_for_receiptRequest
           (historyWorkSpan Examples.forwardEventHistory) =
         receiptChronology Examples.forwardEventHistory := by
     simpa [receiptRequest] using
-      realization.run_encode Examples.forwardEventHistory
+      realization.run_key Examples.forwardEventHistory
   have reverseExact :
       realization.run
           (historyWorkSpan Examples.reverseEventHistory) =
         receiptChronology Examples.reverseEventHistory := by
     simpa [receiptRequest] using
-      realization.run_encode Examples.reverseEventHistory
+      realization.run_key Examples.reverseEventHistory
   have runEqual :
       realization.run
           (historyWorkSpan Examples.forwardEventHistory) =
@@ -289,7 +273,7 @@ theorem request_scoped_key_boundary
 
 namespace RevisionCanary
 
-open NativeCostOneReceiptObservation.Examples
+open NativeCostLayerReceiptObservation.Examples
 open NativeInteractionFibration.Examples
 
 def dependencies : DependencySystem where
@@ -339,4 +323,4 @@ end RevisionCanary
 #print axioms RevisionCanary.current_chronology_is_exact
 #print axioms RevisionCanary.stale_refuses_activation_and_preserves_history
 
-end Mettapedia.Languages.MeTTa.Prime.NativeCostOneReceiptPolicyNIKAdmission
+end Mettapedia.Languages.MeTTa.Prime.NativeCostLayerReceiptPolicyNIKAdmission

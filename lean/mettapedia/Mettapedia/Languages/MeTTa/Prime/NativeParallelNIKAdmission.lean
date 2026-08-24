@@ -28,12 +28,12 @@ minimum colouring.
 namespace Mettapedia.Languages.MeTTa.Prime.NativeParallelNIKAdmission
 
 open Mettapedia.Algebra
-open Mettapedia.GSLT.LanguageDef.CostOneOperationalAdequacy
+open Mettapedia.GSLT.LanguageDef.Cost.Layer.Operational
 open Mettapedia.GSLT.LanguageDef.NIKIndexedExecutionAdmission
 open Mettapedia.GSLT.LanguageDef.NIKRevisionAlignedComposition
 open Mettapedia.GSLT.LanguageDef.NIKRouteAdmission
 open Mettapedia.Languages.MeTTa.NativeTypeTheory
-open Mettapedia.Languages.MeTTa.Prime.NativeCostOneOperationalAdequacy
+open Mettapedia.Languages.MeTTa.Prime.NativeCostLayerOperationalAdequacy
 open Mettapedia.Languages.MeTTa.Prime.NativeFibredScheduleObservation
 open Mettapedia.Languages.MeTTa.Prime.NativeInteraction
 open Mettapedia.Languages.MeTTa.Prime.NativeInteractionFamilyFibration

@@ -1,12 +1,12 @@
-import Mettapedia.GSLT.LanguageDef.CostOneElaborationDisplayed
-import Mettapedia.Languages.MeTTa.Prime.CostTwoImplementationKeyContract
+import Mettapedia.GSLT.LanguageDef.Cost.Elaboration.Total
+import Mettapedia.Languages.MeTTa.Prime.CostElaborationKeyContract
 import Mettapedia.Languages.MeTTa.Prime.NIKPolicyFamilyTransport
 
 /-!
-# Transport of Cost² implementation keys
+# Transport of cost-layer iteration implementation keys
 
 The proof-relevant Cost elaboration carrier already reindexes structurally
-along conservative Cost₁ morphisms.  This module proves that the global
+along conservative cost layer morphisms.  This module proves that the global
 compact implementation key is natural for that displayed transport.
 
 The result is deliberately policy-relative.  A compact observation can be
@@ -18,7 +18,7 @@ key.
 
 set_option autoImplicit false
 
-namespace Mettapedia.Languages.MeTTa.Prime.CostTwoDisplayedKeyTransport
+namespace Mettapedia.Languages.MeTTa.Prime.CostElaborationKeyTransport
 
 open CategoryTheory
 open Mettapedia.GSLT.Core
@@ -26,10 +26,10 @@ open Mettapedia.GSLT.LanguageDef
 open Mettapedia.GSLT.LanguageDef.NIKPolicyFamilyAdmission
 open Mettapedia.GSLT.LanguageDef.NIKRouteAdmission
 open Mettapedia.Languages.MeTTa.Prime.PrimeAbstractImplementationModel
-open Mettapedia.Languages.MeTTa.Prime.CostTwoCacheReplayBoundary
-open Mettapedia.Languages.MeTTa.Prime.CostTwoImplementationKeyContract
-open Mettapedia.Languages.MeTTa.Prime.CostTwoPolicyFamilyObservationBridge
-open Mettapedia.Languages.MeTTa.Prime.CostTwoPolicyKeyNIKAdmission
+open Mettapedia.GSLT.LanguageDef.Cost.Elaboration
+open Mettapedia.Languages.MeTTa.Prime.CostElaborationKeyContract
+open Mettapedia.Languages.MeTTa.Prime.PolicyKeyObservationFamilyBridge
+open Mettapedia.Languages.MeTTa.Prime.PolicyKeyNIKAdmission
 open Mettapedia.Languages.MeTTa.Prime.NIKPolicyFamilyTransport
 
 universe uPolicy uValue
@@ -62,43 +62,43 @@ Cost elaboration.  No recompilation or comparison of proof trees occurs. -/
   rcases fiber with ⟨index, term, elaboration⟩
   rfl
 
-/-! ## Specialization to the displayed Cost₁ category -/
+/-! ## Specialization to the displayed cost layer category -/
 
-/-- The compact action underlying one conservative lawful Cost₁ arrow. -/
+/-- The compact action underlying one conservative lawful cost layer arrow. -/
 def transportCompactCarrier {source target : CostElaborationBase}
     (morphism : source ⟶ target) :
-    CompactCostCarrier source.toCostOne.source.toCIGSLT →
-      CompactCostCarrier target.toCostOne.source.toCIGSLT :=
+    CompactCostCarrier source.toLayer.source.toCIGSLT →
+      CompactCostCarrier target.toLayer.source.toCIGSLT :=
   mapCompactCostCarrier
     morphism.underlying.underlying.underlying
-    (CostOneMorphismLaws.preservesGeneratedReflectiveScope
-      morphism.underlying.laws.toCostOneMorphismLaws)
+    (Cost.Layer.Hom.CompactMapLaws.preservesGeneratedReflectiveScope
+      morphism.underlying.compactMapLaws)
 
 /-- The global compact key commutes with the chosen strongly cocartesian
 displayed transport. -/
 @[simp] theorem compactCarrierKey_transportFiber
     {source target : CostElaborationBase}
     (morphism : source ⟶ target)
-    (fiber : CostElaborationFiber source.toCostOne.source.toCIGSLT) :
-    compactCarrierKey target.toCostOne.source.toCIGSLT
-        (CostOneElaborationTotal.transportFiber morphism fiber) =
+    (fiber : CostElaborationFiber source.toLayer.source.toCIGSLT) :
+    compactCarrierKey target.toLayer.source.toCIGSLT
+        (Cost.Elaboration.Total.transportFiber morphism fiber) =
       transportCompactCarrier morphism
-        (compactCarrierKey source.toCostOne.source.toCIGSLT fiber) := by
+        (compactCarrierKey source.toLayer.source.toCIGSLT fiber) := by
   exact compactCarrierKey_mapCostElaborationFiber
     morphism.underlying.underlying.underlying
-    (CostOneMorphismLaws.preservesGeneratedReflectiveScope
-      morphism.underlying.laws.toCostOneMorphismLaws)
+    (Cost.Layer.Hom.CompactMapLaws.preservesGeneratedReflectiveScope
+      morphism.underlying.compactMapLaws)
     morphism.reindexLaws fiber
 
 /-- The source compact key is a concrete information refinement of the
 target compact key after displayed state transport.  Its forgetting map is
-the compact action induced by the Cost₁ morphism. -/
+the compact action induced by the cost layer morphism. -/
 def compactTransportKeyRefinement {source target : CostElaborationBase}
     (morphism : source ⟶ target) :
     KeyRefinement
-      (compactCarrierKey source.toCostOne.source.toCIGSLT)
-      (compactCarrierKey target.toCostOne.source.toCIGSLT ∘
-        CostOneElaborationTotal.transportFiber morphism) where
+      (compactCarrierKey source.toLayer.source.toCIGSLT)
+      (compactCarrierKey target.toLayer.source.toCIGSLT ∘
+        Cost.Elaboration.Total.transportFiber morphism) where
   forget := transportCompactCarrier morphism
   commutes := by
     funext fiber
@@ -110,14 +110,14 @@ theorem compactPolicy_transport_agrees
     {source target : CostElaborationBase}
     (morphism : source ⟶ target)
     {Value : Type uValue}
-    (observe : CompactCostCarrier target.toCostOne.source.toCIGSLT → Value)
-    (fiber : CostElaborationFiber source.toCostOne.source.toCIGSLT) :
+    (observe : CompactCostCarrier target.toLayer.source.toCIGSLT → Value)
+    (fiber : CostElaborationFiber source.toLayer.source.toCIGSLT) :
     observe
-        (compactCarrierKey target.toCostOne.source.toCIGSLT
-          (CostOneElaborationTotal.transportFiber morphism fiber)) =
+        (compactCarrierKey target.toLayer.source.toCIGSLT
+          (Cost.Elaboration.Total.transportFiber morphism fiber)) =
       observe
         (transportCompactCarrier morphism
-          (compactCarrierKey source.toCostOne.source.toCIGSLT fiber)) := by
+          (compactCarrierKey source.toLayer.source.toCIGSLT fiber)) := by
   rw [compactCarrierKey_transportFiber]
 
 /-- The commuting law composes for two successive displayed transports.
@@ -127,16 +127,16 @@ theorem compactPolicy_transport_comp_agrees
     {first second third : CostElaborationBase}
     (earlier : first ⟶ second) (later : second ⟶ third)
     {Value : Type uValue}
-    (observe : CompactCostCarrier third.toCostOne.source.toCIGSLT → Value)
-    (fiber : CostElaborationFiber first.toCostOne.source.toCIGSLT) :
+    (observe : CompactCostCarrier third.toLayer.source.toCIGSLT → Value)
+    (fiber : CostElaborationFiber first.toLayer.source.toCIGSLT) :
     observe
-        (compactCarrierKey third.toCostOne.source.toCIGSLT
-          (CostOneElaborationTotal.transportFiber later
-            (CostOneElaborationTotal.transportFiber earlier fiber))) =
+        (compactCarrierKey third.toLayer.source.toCIGSLT
+          (Cost.Elaboration.Total.transportFiber later
+            (Cost.Elaboration.Total.transportFiber earlier fiber))) =
       observe
         (transportCompactCarrier later
           (transportCompactCarrier earlier
-            (compactCarrierKey first.toCostOne.source.toCIGSLT fiber))) := by
+            (compactCarrierKey first.toLayer.source.toCIGSLT fiber))) := by
   rw [compactCarrierKey_transportFiber, compactCarrierKey_transportFiber]
 
 /-! ## NIK admission is stable under policy pullback -/
@@ -147,14 +147,14 @@ def transportedCompactPolicyAdmission
     (dependencies : DependencySystem) (revision : dependencies.Revision)
     {source target : CostElaborationBase} (morphism : source ⟶ target)
     {Value : Type uValue}
-    (observe : CompactCostCarrier target.toCostOne.source.toCIGSLT → Value) :
+    (observe : CompactCostCarrier target.toLayer.source.toCIGSLT → Value) :
     PolicyKeyAdmission dependencies revision
       (singlePolicyRequest
         (observe ∘ transportCompactCarrier morphism ∘
-          compactCarrierKey source.toCostOne.source.toCIGSLT) False)
-      (compactCarrierKey source.toCostOne.source.toCIGSLT) :=
+          compactCarrierKey source.toLayer.source.toCIGSLT) False)
+      (compactCarrierKey source.toLayer.source.toCIGSLT) :=
   compactDerivedPolicyAdmission dependencies revision
-    source.toCostOne.source.toCIGSLT
+    source.toLayer.source.toCIGSLT
     (observe ∘ transportCompactCarrier morphism)
 
 /-- The admitted source runner returns exactly the target compact policy on
@@ -163,15 +163,15 @@ the structurally transported semantic state. -/
     (dependencies : DependencySystem) (revision : dependencies.Revision)
     {source target : CostElaborationBase} (morphism : source ⟶ target)
     {Value : Type uValue}
-    (observe : CompactCostCarrier target.toCostOne.source.toCIGSLT → Value)
-    (fiber : CostElaborationFiber source.toCostOne.source.toCIGSLT) :
+    (observe : CompactCostCarrier target.toLayer.source.toCIGSLT → Value)
+    (fiber : CostElaborationFiber source.toLayer.source.toCIGSLT) :
     ((transportedCompactPolicyAdmission dependencies revision morphism observe).realize
       ()).run
-        (compactCarrierKey source.toCostOne.source.toCIGSLT fiber) =
+        (compactCarrierKey source.toLayer.source.toCIGSLT fiber) =
       observe
-        (compactCarrierKey target.toCostOne.source.toCIGSLT
-          (CostOneElaborationTotal.transportFiber morphism fiber)) := by
-  rw [PolicyRealization.run_encode]
+        (compactCarrierKey target.toLayer.source.toCIGSLT
+          (Cost.Elaboration.Total.transportFiber morphism fiber)) := by
+  rw [ObservationRealization.run_key]
   exact (compactPolicy_transport_agrees morphism observe fiber).symm
 
 /-! ## Dependent policy families transport together -/
@@ -183,13 +183,13 @@ capability requiring a decoder for the source state. -/
 def pullbackPolicyRequest
     {source target : CostElaborationBase} (morphism : source ⟶ target)
     (request : PolicyRequest
-      (CostElaborationFiber target.toCostOne.source.toCIGSLT)) :
-    PolicyRequest (CostElaborationFiber source.toCostOne.source.toCIGSLT) where
+      (CostElaborationFiber target.toLayer.source.toCIGSLT)) :
+    PolicyRequest (CostElaborationFiber source.toLayer.source.toCIGSLT) where
   Policy := request.Policy
   Value := request.Value
   observe := fun policy fiber =>
     request.observe policy
-      (CostOneElaborationTotal.transportFiber morphism fiber)
+      (Cost.Elaboration.Total.transportFiber morphism fiber)
   requiresExactReplay := False
 
 /-- The Cost-specific dependent request is exactly the generic policy-family
@@ -197,13 +197,13 @@ pullback at every policy coordinate. -/
 @[simp] theorem observationFamily_pullbackPolicyRequest_decide
     {source target : CostElaborationBase} (morphism : source ⟶ target)
     (request : PolicyRequest
-      (CostElaborationFiber target.toCostOne.source.toCIGSLT))
+      (CostElaborationFiber target.toLayer.source.toCIGSLT))
     (policy : request.Policy)
-    (fiber : CostElaborationFiber source.toCostOne.source.toCIGSLT) :
+    (fiber : CostElaborationFiber source.toLayer.source.toCIGSLT) :
     (observationFamily (pullbackPolicyRequest morphism request)).decide
         policy fiber =
       ((observationFamily request).pullback
-        (CostOneElaborationTotal.transportFiber morphism)).decide
+        (Cost.Elaboration.Total.transportFiber morphism)).decide
           policy fiber :=
   rfl
 
@@ -214,25 +214,25 @@ def pullbackCompactPolicyAdmission
     (dependencies : DependencySystem) (revision : dependencies.Revision)
     {source target : CostElaborationBase} (morphism : source ⟶ target)
     {request : PolicyRequest
-      (CostElaborationFiber target.toCostOne.source.toCIGSLT)}
+      (CostElaborationFiber target.toLayer.source.toCIGSLT)}
     (targetAdmission : PolicyKeyAdmission dependencies revision request
-      (compactCarrierKey target.toCostOne.source.toCIGSLT)) :
+      (compactCarrierKey target.toLayer.source.toCIGSLT)) :
     PolicyKeyAdmission dependencies revision
       (pullbackPolicyRequest morphism request)
-      (compactCarrierKey source.toCostOne.source.toCIGSLT) where
+      (compactCarrierKey source.toLayer.source.toCIGSLT) where
   realize := fun policy =>
     { run := (targetAdmission.realize policy).run ∘
         transportCompactCarrier morphism
       agrees := by
         funext fiber
         change request.observe policy
-            (CostOneElaborationTotal.transportFiber morphism fiber) =
+            (Cost.Elaboration.Total.transportFiber morphism fiber) =
           (targetAdmission.realize policy).run
             (transportCompactCarrier morphism
-              (compactCarrierKey source.toCostOne.source.toCIGSLT fiber))
+              (compactCarrierKey source.toLayer.source.toCIGSLT fiber))
         rw [← compactCarrierKey_transportFiber]
         exact congrFun (targetAdmission.realize policy).agrees
-          (CostOneElaborationTotal.transportFiber morphism fiber) }
+          (Cost.Elaboration.Total.transportFiber morphism fiber) }
   replay := fun impossible => False.elim impossible
 
 /-- The generic NIK route gives the same Cost pullback in two conceptual
@@ -242,16 +242,16 @@ def pullbackCompactPolicyAdmissionViaGeneric
     (dependencies : DependencySystem) (revision : dependencies.Revision)
     {source target : CostElaborationBase} (morphism : source ⟶ target)
     {request : PolicyRequest
-      (CostElaborationFiber target.toCostOne.source.toCIGSLT)}
+      (CostElaborationFiber target.toLayer.source.toCIGSLT)}
     (targetAdmission : PolicyKeyAdmission dependencies revision request
-      (compactCarrierKey target.toCostOne.source.toCIGSLT)) :
+      (compactCarrierKey target.toLayer.source.toCIGSLT)) :
     PolicyKeyAdmission dependencies revision
       (pullbackPolicyRequest morphism request)
-      (compactCarrierKey source.toCostOne.source.toCIGSLT) :=
+      (compactCarrierKey source.toLayer.source.toCIGSLT) :=
   PolicyKeyAdmission.pullback
     (ofGenericAdmissionPolicyOnly
       (PolicyFamilyAdmittedAt.pullbackState
-        (CostOneElaborationTotal.transportFiber morphism)
+        (Cost.Elaboration.Total.transportFiber morphism)
         (toGenericAdmission targetAdmission))
       (by simp [pullbackPolicyRequest]))
     (compactTransportKeyRefinement morphism)
@@ -262,11 +262,11 @@ executable function as the direct Cost specialization. -/
     (dependencies : DependencySystem) (revision : dependencies.Revision)
     {source target : CostElaborationBase} (morphism : source ⟶ target)
     {request : PolicyRequest
-      (CostElaborationFiber target.toCostOne.source.toCIGSLT)}
+      (CostElaborationFiber target.toLayer.source.toCIGSLT)}
     (targetAdmission : PolicyKeyAdmission dependencies revision request
-      (compactCarrierKey target.toCostOne.source.toCIGSLT))
+      (compactCarrierKey target.toLayer.source.toCIGSLT))
     (policy : request.Policy)
-    (encoded : CompactCostCarrier source.toCostOne.source.toCIGSLT) :
+    (encoded : CompactCostCarrier source.toLayer.source.toCIGSLT) :
     ((pullbackCompactPolicyAdmissionViaGeneric dependencies revision morphism
       targetAdmission).realize policy).run encoded =
       ((pullbackCompactPolicyAdmission dependencies revision morphism
@@ -279,17 +279,17 @@ the target observation of the structurally transported state. -/
     (dependencies : DependencySystem) (revision : dependencies.Revision)
     {source target : CostElaborationBase} (morphism : source ⟶ target)
     {request : PolicyRequest
-      (CostElaborationFiber target.toCostOne.source.toCIGSLT)}
+      (CostElaborationFiber target.toLayer.source.toCIGSLT)}
     (targetAdmission : PolicyKeyAdmission dependencies revision request
-      (compactCarrierKey target.toCostOne.source.toCIGSLT))
+      (compactCarrierKey target.toLayer.source.toCIGSLT))
     (policy : request.Policy)
-    (fiber : CostElaborationFiber source.toCostOne.source.toCIGSLT) :
+    (fiber : CostElaborationFiber source.toLayer.source.toCIGSLT) :
     ((pullbackCompactPolicyAdmission dependencies revision morphism
       targetAdmission).realize policy).run
-        (compactCarrierKey source.toCostOne.source.toCIGSLT fiber) =
+        (compactCarrierKey source.toLayer.source.toCIGSLT fiber) =
       request.observe policy
-        (CostOneElaborationTotal.transportFiber morphism fiber) := by
-  exact PolicyRealization.run_encode _ fiber
+        (Cost.Elaboration.Total.transportFiber morphism fiber) := by
+  exact ObservationRealization.run_key _ fiber
 
 /-- Currentness transports without a second dependency test. -/
 def pullbackCompactPolicyActive
@@ -297,9 +297,9 @@ def pullbackCompactPolicyActive
     {revision currentRevision : dependencies.Revision}
     {source target : CostElaborationBase} (morphism : source ⟶ target)
     {request : PolicyRequest
-      (CostElaborationFiber target.toCostOne.source.toCIGSLT)}
+      (CostElaborationFiber target.toLayer.source.toCIGSLT)}
     {targetAdmission : PolicyKeyAdmission dependencies revision request
-      (compactCarrierKey target.toCostOne.source.toCIGSLT)}
+      (compactCarrierKey target.toLayer.source.toCIGSLT)}
     (active : targetAdmission.Active currentRevision) :
     (pullbackCompactPolicyAdmission dependencies revision morphism
       targetAdmission).Active currentRevision :=
@@ -312,23 +312,23 @@ applied to the transported compact key. -/
     {revision currentRevision : dependencies.Revision}
     {source target : CostElaborationBase} (morphism : source ⟶ target)
     {request : PolicyRequest
-      (CostElaborationFiber target.toCostOne.source.toCIGSLT)}
+      (CostElaborationFiber target.toLayer.source.toCIGSLT)}
     {targetAdmission : PolicyKeyAdmission dependencies revision request
-      (compactCarrierKey target.toCostOne.source.toCIGSLT)}
+      (compactCarrierKey target.toLayer.source.toCIGSLT)}
     (active : targetAdmission.Active currentRevision)
     (policy : request.Policy)
-    (fiber : CostElaborationFiber source.toCostOne.source.toCIGSLT) :
+    (fiber : CostElaborationFiber source.toLayer.source.toCIGSLT) :
     (pullbackCompactPolicyActive morphism active).runKey policy
-        (compactCarrierKey source.toCostOne.source.toCIGSLT fiber) =
+        (compactCarrierKey source.toLayer.source.toCIGSLT fiber) =
       active.runKey policy
-        (compactCarrierKey target.toCostOne.source.toCIGSLT
-          (CostOneElaborationTotal.transportFiber morphism fiber)) := by
+        (compactCarrierKey target.toLayer.source.toCIGSLT
+          (Cost.Elaboration.Total.transportFiber morphism fiber)) := by
   change (targetAdmission.realize policy).run
       (transportCompactCarrier morphism
-        (compactCarrierKey source.toCostOne.source.toCIGSLT fiber)) =
+        (compactCarrierKey source.toLayer.source.toCIGSLT fiber)) =
     (targetAdmission.realize policy).run
-      (compactCarrierKey target.toCostOne.source.toCIGSLT
-        (CostOneElaborationTotal.transportFiber morphism fiber))
+      (compactCarrierKey target.toLayer.source.toCIGSLT
+        (Cost.Elaboration.Total.transportFiber morphism fiber))
   rw [compactCarrierKey_transportFiber]
 
 /-- Pulling a dependent family back through two displayed transports retains
@@ -338,19 +338,19 @@ the target semantics for every policy. -/
     {first second third : CostElaborationBase}
     (earlier : first ⟶ second) (later : second ⟶ third)
     {request : PolicyRequest
-      (CostElaborationFiber third.toCostOne.source.toCIGSLT)}
+      (CostElaborationFiber third.toLayer.source.toCIGSLT)}
     (targetAdmission : PolicyKeyAdmission dependencies revision request
-      (compactCarrierKey third.toCostOne.source.toCIGSLT))
+      (compactCarrierKey third.toLayer.source.toCIGSLT))
     (policy : request.Policy)
-    (fiber : CostElaborationFiber first.toCostOne.source.toCIGSLT) :
+    (fiber : CostElaborationFiber first.toLayer.source.toCIGSLT) :
     ((pullbackCompactPolicyAdmission dependencies revision earlier
       (pullbackCompactPolicyAdmission dependencies revision later
         targetAdmission)).realize policy).run
-        (compactCarrierKey first.toCostOne.source.toCIGSLT fiber) =
+        (compactCarrierKey first.toLayer.source.toCIGSLT fiber) =
       request.observe policy
-        (CostOneElaborationTotal.transportFiber later
-          (CostOneElaborationTotal.transportFiber earlier fiber)) := by
-  exact PolicyRealization.run_encode _ fiber
+        (Cost.Elaboration.Total.transportFiber later
+          (Cost.Elaboration.Total.transportFiber earlier fiber)) := by
+  exact ObservationRealization.run_key _ fiber
 
 /-! ## Axiom audit -/
 
@@ -365,4 +365,4 @@ the target semantics for every policy. -/
 #print axioms pullbackCompactPolicyActive_runKey
 #print axioms pullbackCompactPolicyAdmission_comp_run
 
-end Mettapedia.Languages.MeTTa.Prime.CostTwoDisplayedKeyTransport
+end Mettapedia.Languages.MeTTa.Prime.CostElaborationKeyTransport

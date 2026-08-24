@@ -32,7 +32,7 @@ provider actually holds.
 
 `nonempty_rhoCanonicalStaticPairSemanticCut_leftCollapsing_of_routes` then
 composes the three entry points into the exact left-collapsing conclusion of
-`RhoCanonicalStaticPairSemanticCutProviderInDomain`, so the arm's residual
+`RhoCanonicalStaticPair.HasSemanticCut`, so the arm's residual
 content is precisely the three route premises and nothing else.
 
 ## The two-premise form, and why it is the one to use
@@ -54,9 +54,9 @@ canonical equality, and involves no measure at all.  The right-collapsing
 theorem mirrors it exactly.
 
 Composed with `CostHereditaryObjectReduction` and the already-proved
-support-preservation law, this leaves the rho Cost₁ domain object standing on
+support-preservation law, this leaves the rho cost layer domain object standing on
 exactly two node-local obligations, `RhoStaticViewsRestorationAlignedInDomain`
-and `RhoCollapsingLeafExposureInDomain`.
+and `RhoCollapsingLeaf.HasExposure`.
 -/
 
 namespace Mettapedia.GSLT.LanguageDef
@@ -420,7 +420,7 @@ strictly stronger than its call site requires, and in one case fatally so:
 `RhoCollapsingLeafExposure` pins the partner's normal form to the collapsed
 node's (`RhoCollapsingLeafExposure.normalize_eq`), so a callback-free exposure
 obligation *is* mixed-pair hereditary-normalization soundness — the very thing
-the Cost₁ seal exists to establish.  Every producer in the tree whose partner
+the cost layer seal exists to establish.  Every producer in the tree whose partner
 pattern is unconstrained takes this callback; the ones that do not, pin the
 partner to a variable or demand a pre-built normalization alignment. -/
 def RhoPairCloseSmaller (declarationColor : CostStaticColor)
@@ -476,7 +476,7 @@ def RhoStaticViewsRestorationAlignedInDomain
 whose partner endpoint has a non-static root exposes that partner as a leaf.
 Stated with the collapsed endpoint first, so both collapsing arms use it with
 the canonical equation oriented from their own side. -/
-def RhoCollapsingLeafExposureInDomain
+def RhoCollapsingLeaf.HasExposure
     (declarationColor : CostStaticColor) : Prop :=
   ∀ {targetFree : FreeTypeContext} {available outer : List TypeExpr}
     {collapsedPattern otherPattern : Pattern} {type : TypeExpr}
@@ -613,11 +613,11 @@ each collapsing arm by its restoration-route theorem above.  None of the
 recursion parameters — admissibility, well-sortedness, the static root shape,
 or the strictly-smaller callback — is consumed, because an enclosing or
 matched cut is terminal at the classified root. -/
-theorem rhoCanonicalStaticPairSemanticCutProviderInDomain_of_obligations
+theorem rhoCanonicalStaticPair_hasSemanticCut_of_obligations
     {declarationColor : CostStaticColor}
     (restoration : RhoStaticViewsRestorationAlignedInDomain declarationColor)
-    (exposure : RhoCollapsingLeafExposureInDomain declarationColor) :
-    RhoCanonicalStaticPairSemanticCutProviderInDomain declarationColor := by
+    (exposure : RhoCollapsingLeaf.HasExposure declarationColor) :
+    RhoCanonicalStaticPair.HasSemanticCut declarationColor := by
   intro targetFree available outer leftPattern rightPattern type admissible
     leftWellSorted rightWellSorted canonical _staticShape closeSmaller
     left right rootCase
@@ -654,14 +654,14 @@ holds: the aligned arm on its `CanonicalRootAligned` root certificate, each
 collapsing arm on its own `CollapsingRoot` certificate together with canonical
 equality.  This is the form to discharge, since neither premise is asked to
 cover configurations its call site cannot produce. -/
-theorem rhoCanonicalStaticPairSemanticCutProviderInDomain_of_splitObligations
+theorem rhoCanonicalStaticPair_hasSemanticCut_of_splitObligations
     {declarationColor : CostStaticColor}
     (alignedRestoration :
       RhoAlignedViewsRestorationAlignedInDomain declarationColor)
     (collapsingRestoration :
       RhoCollapsingViewsRestorationAlignedInDomain declarationColor)
-    (exposure : RhoCollapsingLeafExposureInDomain declarationColor) :
-    RhoCanonicalStaticPairSemanticCutProviderInDomain declarationColor := by
+    (exposure : RhoCollapsingLeaf.HasExposure declarationColor) :
+    RhoCanonicalStaticPair.HasSemanticCut declarationColor := by
   intro targetFree available outer leftPattern rightPattern type admissible
     leftWellSorted rightWellSorted canonical _staticShape closeSmaller
     left right rootCase
@@ -697,72 +697,72 @@ theorem rhoCanonicalStaticPairSemanticCutProviderInDomain_of_splitObligations
         (alignedRestoration leftView rightView admissible leftWellSorted
           rightWellSorted close roots)⟩
 
-/-! ## The rho Cost₁ laws and domain object over the two obligations
+/-! ## The rho cost layer laws and domain object over the two obligations
 
 `CostHereditaryObjectReduction` reduces the object to the per-colour provider
 together with `RhoCostStaticReflectiveSupportPreserving`, and that second
 input is already proved outright by
 `rhoHereditaryStaticNormalizer_preservesReflectiveSupport_path`.  Composing it
 with the dispatcher leaves obligations A and B as the whole remaining content
-of the rho Cost₁ seal. -/
+of the rho cost layer seal. -/
 
-/-- **The rho Cost₁ object laws from obligations A and B alone.** -/
-noncomputable def rhoHereditaryCostOneObjectLaws_ofRestorationAndExposure
+/-- **The rho cost layer object laws from obligations A and B alone.** -/
+noncomputable def rhoHereditaryCompactOpenNormalizerLaws_ofRestorationAndExposure
     (restoration : ∀ color, RhoStaticViewsRestorationAlignedInDomain color)
-    (exposure : ∀ color, RhoCollapsingLeafExposureInDomain color) :
-    CIGSLT.CostOneObjectLawsFor rhoCIGSLT
+    (exposure : ∀ color, RhoCollapsingLeaf.HasExposure color) :
+    Cost.CompactOpenNormalizer.Laws rhoCIGSLT
       rhoCostNormalizeOpenHereditarySupported :=
-  rhoHereditaryCostOneObjectLaws_ofSemanticLaws
+  rhoHereditaryCompactOpenNormalizerLaws_ofSemanticLaws
     (fun color =>
-      rhoCanonicalStaticPairSemanticCutProviderInDomain_of_obligations
+      rhoCanonicalStaticPair_hasSemanticCut_of_obligations
         (restoration color) (exposure color))
     rhoHereditaryStaticNormalizer_preservesReflectiveSupport_path
 
-/-- **The rho Cost₁ domain object from obligations A and B alone.**
+/-- **The rho cost layer domain object from obligations A and B alone.**
 
 This is the seal target.  Supplying `restoration` and `exposure` produces a
-`CostOneDomainObject` with no further hypotheses. -/
-noncomputable def rhoHereditaryCostOneDomainObject_ofRestorationAndExposure
+`Cost.Layer` with no further hypotheses. -/
+noncomputable def rhoHereditaryCostLayer_ofRestorationAndExposure
     (restoration : ∀ color, RhoStaticViewsRestorationAlignedInDomain color)
-    (exposure : ∀ color, RhoCollapsingLeafExposureInDomain color) :
-    CostOneDomainObject :=
-  rhoHereditaryCostOneDomainObject_ofSemanticLaws
+    (exposure : ∀ color, RhoCollapsingLeaf.HasExposure color) :
+    Cost.Layer :=
+  rhoHereditaryCostLayer_ofSemanticLaws
     (fun color =>
-      rhoCanonicalStaticPairSemanticCutProviderInDomain_of_obligations
+      rhoCanonicalStaticPair_hasSemanticCut_of_obligations
         (restoration color) (exposure color))
     rhoHereditaryStaticNormalizer_preservesReflectiveSupport_path
 
-/-- **The rho Cost₁ domain object over the split obligations.**
+/-- **The rho cost layer domain object over the split obligations.**
 
 The operative seal statement.  Discharging A1, A2 and B — each a node-local
-claim about two static root views — produces `CostOneDomainObject` with no
+claim about two static root views — produces `Cost.Layer` with no
 remaining hypotheses. -/
-noncomputable def rhoHereditaryCostOneDomainObject_ofSplitObligations
+noncomputable def rhoHereditaryCostLayer_ofSplitObligations
     (alignedRestoration :
       ∀ color, RhoAlignedViewsRestorationAlignedInDomain color)
     (collapsingRestoration :
       ∀ color, RhoCollapsingViewsRestorationAlignedInDomain color)
-    (exposure : ∀ color, RhoCollapsingLeafExposureInDomain color) :
-    CostOneDomainObject :=
-  rhoHereditaryCostOneDomainObject_ofSemanticLaws
+    (exposure : ∀ color, RhoCollapsingLeaf.HasExposure color) :
+    Cost.Layer :=
+  rhoHereditaryCostLayer_ofSemanticLaws
     (fun color =>
-      rhoCanonicalStaticPairSemanticCutProviderInDomain_of_splitObligations
+      rhoCanonicalStaticPair_hasSemanticCut_of_splitObligations
         (alignedRestoration color) (collapsingRestoration color)
         (exposure color))
     rhoHereditaryStaticNormalizer_preservesReflectiveSupport_path
 
-/-- The Cost₁ object laws over the split obligations. -/
-noncomputable def rhoHereditaryCostOneObjectLaws_ofSplitObligations
+/-- The cost layer object laws over the split obligations. -/
+noncomputable def rhoHereditaryCompactOpenNormalizerLaws_ofSplitObligations
     (alignedRestoration :
       ∀ color, RhoAlignedViewsRestorationAlignedInDomain color)
     (collapsingRestoration :
       ∀ color, RhoCollapsingViewsRestorationAlignedInDomain color)
-    (exposure : ∀ color, RhoCollapsingLeafExposureInDomain color) :
-    CIGSLT.CostOneObjectLawsFor rhoCIGSLT
+    (exposure : ∀ color, RhoCollapsingLeaf.HasExposure color) :
+    Cost.CompactOpenNormalizer.Laws rhoCIGSLT
       rhoCostNormalizeOpenHereditarySupported :=
-  rhoHereditaryCostOneObjectLaws_ofSemanticLaws
+  rhoHereditaryCompactOpenNormalizerLaws_ofSemanticLaws
     (fun color =>
-      rhoCanonicalStaticPairSemanticCutProviderInDomain_of_splitObligations
+      rhoCanonicalStaticPair_hasSemanticCut_of_splitObligations
         (alignedRestoration color) (collapsingRestoration color)
         (exposure color))
     rhoHereditaryStaticNormalizer_preservesReflectiveSupport_path

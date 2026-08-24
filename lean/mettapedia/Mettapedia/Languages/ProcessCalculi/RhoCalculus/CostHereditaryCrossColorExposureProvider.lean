@@ -1,4 +1,4 @@
-import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryProviderApexSlice
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryProviderObligations
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryCrossColorLeafExposure
 
 namespace Mettapedia.Languages.ProcessCalculi.RhoCalculus
@@ -85,7 +85,7 @@ def RhoCollapsingCrossColorViewsLeafExposuresInDomain
     RhoCrossColorCollapsingLeafExposures
       (declarationColor := declarationColor) leftView rightView
 
-theorem rhoCrossColor_collapsingLeafExposuresInDomain :
+theorem rhoCrossColor_collapsingLeaves_haveExposure :
     ∀ declarationColor,
       RhoCollapsingCrossColorViewsLeafExposuresInDomain
         declarationColor := by
@@ -199,16 +199,16 @@ theorem nonempty_rhoCanonicalStaticPairSemanticCut_rightCollapsing_of_exposureRo
       structuralRoute (Bool.eq_false_of_not_eq_true leftStatic)
     exact ⟨.rightEnclosing rightView collapsing exposure⟩
 
-theorem rhoCanonicalStaticPairSemanticCutProviderInDomain_of_exposureA2x
+theorem rhoCanonicalStaticPair_hasSemanticCut_of_exposureA2x
     {declarationColor : CostStaticColor}
-    (alignedApex : RhoAlignedViewsPlanStopApexInDomain declarationColor)
+    (alignedApex : RhoAlignedPlanStops.HaveCommonRestoration declarationColor)
     (collapsingApex :
-      RhoCollapsingViewsPlanStopApexInDomain declarationColor)
+      RhoCollapsingPlanStops.HaveCommonRestoration declarationColor)
     (crossColor :
       RhoCollapsingCrossColorViewsLeafExposuresInDomain
         declarationColor)
-    (exposure : RhoCollapsingLeafExposureInDomain declarationColor) :
-    RhoCanonicalStaticPairSemanticCutProviderInDomain declarationColor := by
+    (exposure : RhoCollapsingLeaf.HasExposure declarationColor) :
+    RhoCanonicalStaticPair.HasSemanticCut declarationColor := by
   intro targetFree available outer leftPattern rightPattern type admissible
     leftWellSorted rightWellSorted canonical _staticShape closeSmaller
     left right rootCase
@@ -261,37 +261,37 @@ theorem rhoCanonicalStaticPairSemanticCutProviderInDomain_of_exposureA2x
         (alignedApex leftView rightView admissible leftWellSorted
           rightWellSorted close roots)⟩
 
-/-- The rho Cost₁ domain object over the apex-slice obligations with the
+/-- The rho cost layer domain object over the restoration obligations with the
 cross-colour collapsing quadrant discharged by hereditary target rebase. -/
-noncomputable def rhoHereditaryCostOneDomainObject_ofExposureApexSliceObligations
-    (alignedApex : ∀ color, RhoAlignedViewsPlanStopApexInDomain color)
+noncomputable def rhoHereditaryCostLayer_ofExposureRestorationObligations
+    (alignedApex : ∀ color, RhoAlignedPlanStops.HaveCommonRestoration color)
     (collapsingApex :
-      ∀ color, RhoCollapsingViewsPlanStopApexInDomain color)
+      ∀ color, RhoCollapsingPlanStops.HaveCommonRestoration color)
     (crossColor : ∀ color,
       RhoCollapsingCrossColorViewsLeafExposuresInDomain color)
-    (exposure : ∀ color, RhoCollapsingLeafExposureInDomain color) :
-    CostOneDomainObject :=
-  rhoHereditaryCostOneDomainObject_ofSemanticLaws
+    (exposure : ∀ color, RhoCollapsingLeaf.HasExposure color) :
+    Cost.Layer :=
+  rhoHereditaryCostLayer_ofSemanticLaws
     (fun color =>
-      rhoCanonicalStaticPairSemanticCutProviderInDomain_of_exposureA2x
+      rhoCanonicalStaticPair_hasSemanticCut_of_exposureA2x
         (alignedApex color) (collapsingApex color) (crossColor color)
         (exposure color))
     rhoHereditaryStaticNormalizer_preservesReflectiveSupport_path
 
-/-- The rho Cost₁ object laws over the target-rebased cross-colour
-apex-slice obligations. -/
-noncomputable def rhoHereditaryCostOneObjectLaws_ofExposureApexSliceObligations
-    (alignedApex : ∀ color, RhoAlignedViewsPlanStopApexInDomain color)
+/-- The rho cost layer object laws over the target-rebased cross-colour
+restoration obligations. -/
+noncomputable def rhoHereditaryCompactOpenNormalizerLaws_ofExposureRestorationObligations
+    (alignedApex : ∀ color, RhoAlignedPlanStops.HaveCommonRestoration color)
     (collapsingApex :
-      ∀ color, RhoCollapsingViewsPlanStopApexInDomain color)
+      ∀ color, RhoCollapsingPlanStops.HaveCommonRestoration color)
     (crossColor : ∀ color,
       RhoCollapsingCrossColorViewsLeafExposuresInDomain color)
-    (exposure : ∀ color, RhoCollapsingLeafExposureInDomain color) :
-    CIGSLT.CostOneObjectLawsFor rhoCIGSLT
+    (exposure : ∀ color, RhoCollapsingLeaf.HasExposure color) :
+    Cost.CompactOpenNormalizer.Laws rhoCIGSLT
       rhoCostNormalizeOpenHereditarySupported :=
-  rhoHereditaryCostOneObjectLaws_ofSemanticLaws
+  rhoHereditaryCompactOpenNormalizerLaws_ofSemanticLaws
     (fun color =>
-      rhoCanonicalStaticPairSemanticCutProviderInDomain_of_exposureA2x
+      rhoCanonicalStaticPair_hasSemanticCut_of_exposureA2x
         (alignedApex color) (collapsingApex color) (crossColor color)
         (exposure color))
     rhoHereditaryStaticNormalizer_preservesReflectiveSupport_path

@@ -6,7 +6,7 @@ proof-free identity of one normalized authored frame parameter, with
 realizations at either colour by constructor re-tagging.
 
 This is the value level at which the rebased cross-colour formulation of
-the hereditary Cost₁ obligation is stated: coloured realizations form a
+the hereditary cost layer obligation is stated: coloured realizations form a
 split fibration over authored syntax, with erasure the bundle projection
 and each colour's symbol action a section.  Realization is literal here:
 `reifyAt` re-tags the authored normal's constructors by the colour symbol

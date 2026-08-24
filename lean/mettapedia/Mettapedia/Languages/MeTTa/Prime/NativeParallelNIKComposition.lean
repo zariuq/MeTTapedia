@@ -18,11 +18,11 @@ tested independently below.
 namespace Mettapedia.Languages.MeTTa.Prime.NativeParallelNIKComposition
 
 open Mettapedia.Algebra
-open Mettapedia.GSLT.LanguageDef.CostOneOperationalAdequacy
+open Mettapedia.GSLT.LanguageDef.Cost.Layer.Operational
 open Mettapedia.GSLT.LanguageDef.NIKIndexedExecutionAdmission
 open Mettapedia.GSLT.LanguageDef.NIKRevisionAlignedComposition
 open Mettapedia.GSLT.LanguageDef.NIKRouteAdmission
-open Mettapedia.Languages.MeTTa.Prime.NativeCostOneOperationalAdequacy
+open Mettapedia.Languages.MeTTa.Prime.NativeCostLayerOperationalAdequacy
 open Mettapedia.Languages.MeTTa.Prime.NativeInteractionFamilyFibration
 open Mettapedia.Languages.MeTTa.Prime.NativeInteractionFibration
 open Mettapedia.Languages.MeTTa.Prime.NativeParallelNIKAdmission

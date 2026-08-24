@@ -1,10 +1,10 @@
-import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditarySupportCrown
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditarySupportClosure
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditarySupportedIterationObstruction
 
 /-!
 # Provider-indexed rho Cost endgame
 
-The finite-support hereditary Cost one object and its exact compact Cost two
+The finite-support hereditary cost layer and its exact compact iteration
 obstruction share one remaining semantic input: the per-colour static-pair
 cut provider.  This module records both consequences at that common waist.
 -/
@@ -14,15 +14,15 @@ namespace Mettapedia.Languages.ProcessCalculi.RhoCalculus
 open Mettapedia.GSLT.LanguageDef
 open CostIterationObstruction
 
-/-- The compact Cost two obstruction for the exact domain object selected by
-the provider-indexed hereditary Cost one construction. -/
-theorem rhoHereditaryCostOneDomainObject_not_compactCostNormalizationCoherent_ofProvider
+/-- The compact-iteration obstruction for the exact domain object selected by
+the provider-indexed hereditary cost layer construction. -/
+theorem rhoHereditaryCostLayer_not_compactCostNormalizationCoherent_ofProvider
     (provider : ∀ color,
-      RhoCanonicalStaticPairSemanticCutProviderInDomain color) :
+      RhoCanonicalStaticPair.HasSemanticCut color) :
     ¬ CompactCostNormalizationCoherent
-      (rhoHereditaryCostOneDomainObject_ofProvider provider
+      (rhoHereditaryCostLayer_ofProvider provider
         ).compactOutput.toCIGSLT := by
-  exact rhoHereditarySupportedCostOne_not_compactCostNormalizationCoherent
-    (rhoHereditaryCostOneObjectLaws_ofProvider provider)
+  exact rhoHereditarySupportedCostLayer_not_compactCostNormalizationCoherent
+    (rhoHereditaryCompactOpenNormalizerLaws_ofProvider provider)
 
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus

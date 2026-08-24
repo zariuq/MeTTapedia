@@ -10,7 +10,7 @@ import Mettapedia.OSLF.MeTTaIL.MatchSpec
 
 This module discharges the selected-colour typed unary laws and compact
 decomposition coherence needed on the way to placing the sole authored
-pure-rho `LanguageDef` in the exact Cost₁ object domain.  Structural
+pure-rho `LanguageDef` in the exact cost layer object domain.  Structural
 properties are kept separate from the remaining contextual open-section
 laws: finite candidate uniqueness is a decidable sufficient criterion, while
 normalization soundness is stated through the authored equation relation.
@@ -292,7 +292,7 @@ The raw rho parallel collection tag is intentionally shared by the two Cost
 colours, while the two process sorts and their unit constructors are distinct.
 Consequently a canonicalizer for one colour is not type preserving on an
 arbitrary term of the other colour.  The following compact witness prevents
-the Cost₁ laws from being accidentally strengthened to all mixed-colour raw
+the cost layer laws from being accidentally strengthened to all mixed-colour raw
 terms; the actual region normalizer invokes substitution only on one mapped
 static fibre at a time. -/
 
@@ -2550,7 +2550,7 @@ theorem rho_costStaticCanonicalPathSafe :
 Each field is discharged against the selected generated declaration and the
 single generated `LanguageDef`; no mixed-colour stability assumption is used. -/
 theorem rho_costTypedUnaryNormalizationLaws :
-    CostTypedUnaryNormalizationLaws rhoCIGSLT where
+    Cost.SemanticSection.Laws rhoCIGSLT where
   mappedGeneratorFiberAction := rho_costStaticMappedGeneratorFiberAction
   weakeningStable := rho_costOpenPatternEquationWeakeningStable
   canonicalPathSafe := rho_costStaticCanonicalPathSafe
@@ -2735,7 +2735,7 @@ theorem rho_costStaticRootUnambiguous
       (rho_color_eq_of_collection first second termShape)
 
 /-- Pure rho satisfies the structural finite-candidate criterion used to
-discharge exact Cost₁ canonical laws. -/
+discharge exact cost layer canonical laws. -/
 theorem rho_unambiguousStaticDecomposition :
     UnambiguousStaticDecomposition rhoCIGSLT where
   rootCandidates := rho_costStaticRootUnambiguous

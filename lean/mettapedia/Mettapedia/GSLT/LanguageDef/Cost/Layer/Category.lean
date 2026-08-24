@@ -1,4 +1,5 @@
-import Mettapedia.GSLT.LanguageDef.CostOneElaboratedObject
+import Mettapedia.GSLT.LanguageDef.Cost.Layer.Basic
+import Mathlib.CategoryTheory.Limits.Shapes.Equalizers
 
 /-!
 # The normalizer-indexed one-step Cost category
@@ -18,6 +19,7 @@ namespace Mettapedia.GSLT.LanguageDef
 
 open Mettapedia.GSLT
 open Mettapedia.OSLF.MeTTaIL.Syntax
+open Mettapedia.OSLF.Framework.ConstructorCategory
 
 private theorem typeDecl_ext {left right : TypeDecl}
     (names : left.name = right.name)
@@ -429,29 +431,32 @@ theorem comp {first second third : CIGSLT}
 
 end CostGeneratedReflectiveScopePreserving
 
-/-- Naturality of two selected Cost normalizers along a generated structural
-map.  This is the exact square needed for the `mapsOpenCanonical` field of the
-eventual continued Cost morphism. -/
-def CostNormalizerNatural {source target : CIGSLT}
+/-- Fibrewise semiconjugacy of two selected Cost normalizers along a generated
+structural map.  This is the exact square needed for the `mapsOpenCanonical`
+field of the eventual continued Cost morphism. -/
+def Cost.Normalizer.Semiconj {source target : CIGSLT}
     (morphism : source.Morphism target)
     (scope : CostGeneratedReflectiveScopePreserving morphism)
     (sourceNormalizer : CostOpenNormalizer source)
     (targetNormalizer : CostOpenNormalizer target) : Prop :=
-  ∀ {free bound sort}
-    (term : ReflectiveWellSorted.OpenTerm source.costWholeReflectionProfile
-      source.costWholeLanguage free bound sort),
-    targetNormalizer (morphism.mapCostOpenTerm scope term) =
-      (sourceNormalizer term).map morphism.costWholeStructural scope
+  ∀ {free : WellSorted.FreeTypeContext} {bound : List TypeExpr}
+    {sort : LangSort source.costWholeLanguage},
+    Function.Semiconj
+      (fun term : ReflectiveWellSorted.OpenTerm
+          source.costWholeReflectionProfile source.costWholeLanguage
+          free bound sort => morphism.mapCostOpenTerm scope term)
+      (fun term => sourceNormalizer term)
+      (fun term => targetNormalizer term)
 
 /-- Semantic laws on a source continued morphism that are not forced by the
 declaration-derived Cost construction.
 
 No output map is stored.  Generated behavior and reflection are properties
-of the forced Cost symbol action; `normalizerNatural` relates the two
+of the forced Cost symbol action; `normalizerSemiconj` relates the two
 normalizers carried by the endpoint objects; `quoteFaithful` is the exact
 canonical-key condition required by a continued morphism. -/
-structure CostOneMorphismLaws
-    (source target : CostOneDomainObject)
+structure Cost.Layer.Hom.CompactMapLaws
+    (source target : Cost.Layer)
     (underlying : OrderedCIGSLT.Morphism source.source target.source) : Prop where
   preservesGeneratedBisim :
     CostGeneratedBisimPreserving underlying.underlying
@@ -476,8 +481,8 @@ structure CostOneMorphismLaws
         target.source.toCIGSLT.costContinuationRetyping.wrappedLabels ↔
       sourceLabel ∈
         source.source.toCIGSLT.costContinuationRetyping.wrappedLabels
-  normalizerNatural :
-    CostNormalizerNatural underlying.underlying
+  normalizerSemiconj :
+    Cost.Normalizer.Semiconj underlying.underlying
       preservesGeneratedReflectiveScope source.normalizeOpen
         target.normalizeOpen
   quoteFaithful : Function.Injective
@@ -487,13 +492,13 @@ structure CostOneMorphismLaws
           underlying.underlying.underlying.structural.structural.symbols)
         key.1.1)
 
-namespace CostOneMorphismLaws
+namespace Cost.Layer.Hom.CompactMapLaws
 
 /-- Identity satisfies every generated Cost arrow law.  Normalizer
 naturality is inherited from the checked continued identity on the selected
 compact output. -/
-def id (source : CostOneDomainObject) :
-    CostOneMorphismLaws source source
+def id (source : Cost.Layer) :
+    Cost.Layer.Hom.CompactMapLaws source source
       (OrderedCIGSLT.Morphism.id source.source) where
   preservesGeneratedBisim := CostGeneratedBisimPreserving.id _
   preservesGeneratedReflectiveScope :=
@@ -518,8 +523,9 @@ def id (source : CostOneDomainObject) :
         sourceLabel ∈ _ ↔ sourceLabel ∈ _
     rw [costPresentationSymbols_id]
     rfl
-  normalizerNatural := by
+  normalizerSemiconj := by
     intro free bound sort term
+    symm
     let structural :=
       (OrderedCIGSLT.Morphism.id source.source).underlying.costWholeStructural
     have symbolsIdentity : structural.symbols = PresentationSymbols.id := by
@@ -590,11 +596,11 @@ def id (source : CostOneDomainObject) :
 
 /-- Assemble the unique compact continued Cost map selected by the source
 arrow and its explicit semantic admission laws.  No output morphism is
-stored in `CostOneMorphismLaws`. -/
+stored in `Cost.Layer.Hom.CompactMapLaws`. -/
 def toCompactCIGSLTMorphism
-    {source target : CostOneDomainObject}
+    {source target : Cost.Layer}
     {underlying : OrderedCIGSLT.Morphism source.source target.source}
-    (laws : CostOneMorphismLaws source target underlying) :
+    (laws : Cost.Layer.Hom.CompactMapLaws source target underlying) :
     CIGSLT.Morphism source.compactOutput.toCIGSLT
       target.compactOutput.toCIGSLT where
   underlying := underlying.underlying.costIGSLTMorphism
@@ -638,18 +644,18 @@ def toCompactCIGSLTMorphism
     underlying.underlying.mapsCostEnvironmentContinuation
   mapsProgramSubject := underlying.underlying.mapsCostProgramSubject
   mapsEnvironmentSubject := underlying.underlying.mapsCostEnvironmentSubject
-  mapsOpenCanonical := laws.normalizerNatural
+  mapsOpenCanonical := fun term => (laws.normalizerSemiconj term).symm
   quoteFaithful := laws.quoteFaithful
 
 /-- The admissible generated Cost laws are closed under composition.  The
 normalizer square is composed in the indexed open-term fibres; the explicit
 reindexing below is proof-only and does not alter the represented pattern. -/
-def comp {first second third : CostOneDomainObject}
+def comp {first second third : Cost.Layer}
     {left : OrderedCIGSLT.Morphism first.source second.source}
     {right : OrderedCIGSLT.Morphism second.source third.source}
-    (leftLaws : CostOneMorphismLaws first second left)
-    (rightLaws : CostOneMorphismLaws second third right) :
-    CostOneMorphismLaws first third
+    (leftLaws : Cost.Layer.Hom.CompactMapLaws first second left)
+    (rightLaws : Cost.Layer.Hom.CompactMapLaws second third right) :
+    Cost.Layer.Hom.CompactMapLaws first third
       (OrderedCIGSLT.Morphism.comp left right) where
   preservesGeneratedBisim := CostGeneratedBisimPreserving.comp
     leftLaws.preservesGeneratedBisim rightLaws.preservesGeneratedBisim
@@ -691,8 +697,9 @@ def comp {first second third : CostOneDomainObject}
               sourceLabel) ∈ _ ↔ sourceLabel ∈ _
     rw [rightLaws.mapsGeneratedWrappedLabelMembership,
       leftLaws.mapsGeneratedWrappedLabelMembership]
-  normalizerNatural := by
+  normalizerSemiconj := by
     intro free bound sort term
+    symm
     let firstStructural := left.underlying.costWholeStructural
     let secondStructural := right.underlying.costWholeStructural
     let compositeStructural :=
@@ -710,11 +717,11 @@ def comp {first second third : CostOneDomainObject}
       ((first.normalizeOpen term).map firstStructural
         leftLaws.preservesGeneratedReflectiveScope).map secondStructural
           rightLaws.preservesGeneratedReflectiveScope
-    have rightNaturality := rightLaws.normalizerNatural firstMapped
+    have rightNaturality := (rightLaws.normalizerSemiconj firstMapped).symm
     have leftNaturality := congrArg
       (fun mapped => mapped.map secondStructural
         rightLaws.preservesGeneratedReflectiveScope)
-      (leftLaws.normalizerNatural term)
+      (leftLaws.normalizerSemiconj term).symm
     have combined : third.normalizeOpen nestedMapped = nestedNormalized :=
       rightNaturality.trans leftNaturality
     have freeEquality :
@@ -843,7 +850,7 @@ def comp {first second third : CostOneDomainObject}
 /-- The constructed compact Cost map sends the admissible identity laws to
 the continued identity. -/
 @[simp]
-theorem toCompactCIGSLTMorphism_id (source : CostOneDomainObject) :
+theorem toCompactCIGSLTMorphism_id (source : Cost.Layer) :
     (id source).toCompactCIGSLTMorphism =
       CIGSLT.Morphism.id source.compactOutput.toCIGSLT := by
   apply CIGSLT.Morphism.ext
@@ -858,11 +865,11 @@ theorem toCompactCIGSLTMorphism_id (source : CostOneDomainObject) :
 /-- The constructed compact Cost map sends composed admissible laws to the
 composite of the constructed compact maps. -/
 theorem toCompactCIGSLTMorphism_comp
-    {first second third : CostOneDomainObject}
+    {first second third : Cost.Layer}
     {left : OrderedCIGSLT.Morphism first.source second.source}
     {right : OrderedCIGSLT.Morphism second.source third.source}
-    (leftLaws : CostOneMorphismLaws first second left)
-    (rightLaws : CostOneMorphismLaws second third right) :
+    (leftLaws : Cost.Layer.Hom.CompactMapLaws first second left)
+    (rightLaws : Cost.Layer.Hom.CompactMapLaws second third right) :
     (comp leftLaws rightLaws).toCompactCIGSLTMorphism =
       CIGSLT.Morphism.comp leftLaws.toCompactCIGSLTMorphism
         rightLaws.toCompactCIGSLTMorphism := by
@@ -880,179 +887,129 @@ theorem toCompactCIGSLTMorphism_comp
       (costReflectiveSymbols_comp left.underlying.reflectiveSymbols
         right.underlying.reflectiveSymbols)
 
-end CostOneMorphismLaws
+end Cost.Layer.Hom.CompactMapLaws
 
-/-- Ordered admission for a generated compact Cost map.  Monotonicity is an
-arrow law rather than object data: an arbitrary injective symbol translation
-need not preserve the fixed structural order on canonical keys. -/
-structure CostOneOrderedMorphismLaws
-    (source target : CostOneDomainObject)
-    (underlying : OrderedCIGSLT.Morphism source.source target.source) : Prop
-    extends CostOneMorphismLaws source target underlying where
-  generatedCanonicalKeyMonotone : Monotone
-    (CIGSLT.Morphism.canonicalKeyMap
-      toCostOneMorphismLaws.toCompactCIGSLTMorphism)
-
-namespace CostOneOrderedMorphismLaws
-
-/-- Identity is admissible for the generated canonical-key order. -/
-def id (source : CostOneDomainObject) :
-    CostOneOrderedMorphismLaws source source
-      (OrderedCIGSLT.Morphism.id source.source) where
-  toCostOneMorphismLaws := CostOneMorphismLaws.id source
-  generatedCanonicalKeyMonotone := by
-    rw [CostOneMorphismLaws.toCompactCIGSLTMorphism_id]
-    intro firstKey secondKey lessOrEqual
-    rw [CIGSLT.Morphism.canonicalKeyMap_id,
-      CIGSLT.Morphism.canonicalKeyMap_id]
-    exact lessOrEqual
-
-/-- Ordered generated Cost admission is closed under composition. -/
-def comp {first second third : CostOneDomainObject}
-    {left : OrderedCIGSLT.Morphism first.source second.source}
-    {right : OrderedCIGSLT.Morphism second.source third.source}
-    (leftLaws : CostOneOrderedMorphismLaws first second left)
-    (rightLaws : CostOneOrderedMorphismLaws second third right) :
-    CostOneOrderedMorphismLaws first third
-      (OrderedCIGSLT.Morphism.comp left right) where
-  toCostOneMorphismLaws := CostOneMorphismLaws.comp
-    leftLaws.toCostOneMorphismLaws rightLaws.toCostOneMorphismLaws
-  generatedCanonicalKeyMonotone := by
-    rw [CostOneMorphismLaws.toCompactCIGSLTMorphism_comp
-      leftLaws.toCostOneMorphismLaws rightLaws.toCostOneMorphismLaws]
-    intro firstKey secondKey lessOrEqual
-    rw [CIGSLT.Morphism.canonicalKeyMap_comp,
-      CIGSLT.Morphism.canonicalKeyMap_comp]
-    exact rightLaws.generatedCanonicalKeyMonotone
-      (leftLaws.generatedCanonicalKeyMonotone lessOrEqual)
-
-/-- The exact ordered compact-output map constructed from arrow laws. -/
-def toCompactOrderedMorphism
-    {source target : CostOneDomainObject}
-    {underlying : OrderedCIGSLT.Morphism source.source target.source}
-    (laws : CostOneOrderedMorphismLaws source target underlying) :
-    OrderedCIGSLT.Morphism source.compactOutput target.compactOutput where
-  underlying := laws.toCostOneMorphismLaws.toCompactCIGSLTMorphism
-  canonicalKeyMonotone := laws.generatedCanonicalKeyMonotone
-
-/-- The constructed ordered output map preserves identity. -/
-@[simp]
-theorem toCompactOrderedMorphism_id (source : CostOneDomainObject) :
-    (id source).toCompactOrderedMorphism =
-      OrderedCIGSLT.Morphism.id source.compactOutput := by
-  apply OrderedCIGSLT.Morphism.ext
-  exact CostOneMorphismLaws.toCompactCIGSLTMorphism_id source
-
-/-- The constructed ordered output map preserves composition. -/
-theorem toCompactOrderedMorphism_comp
-    {first second third : CostOneDomainObject}
-    {left : OrderedCIGSLT.Morphism first.source second.source}
-    {right : OrderedCIGSLT.Morphism second.source third.source}
-    (leftLaws : CostOneOrderedMorphismLaws first second left)
-    (rightLaws : CostOneOrderedMorphismLaws second third right) :
-    (comp leftLaws rightLaws).toCompactOrderedMorphism =
-      OrderedCIGSLT.Morphism.comp leftLaws.toCompactOrderedMorphism
-        rightLaws.toCompactOrderedMorphism := by
-  apply OrderedCIGSLT.Morphism.ext
-  exact CostOneMorphismLaws.toCompactCIGSLTMorphism_comp
-    leftLaws.toCostOneMorphismLaws rightLaws.toCostOneMorphismLaws
-
-end CostOneOrderedMorphismLaws
-
-/-- An arrow between normalizer-indexed Cost₁ objects.  The underlying map is
-an ordered continued morphism; every generated Cost field is constructed
-from it and the separate law bundle. -/
-structure CostOneMorphism (source target : CostOneDomainObject) where
+/-- An arrow between Cost layers.  Its generated compact map is constructed
+from `compactMapLaws`; monotonicity of that constructed map is the remaining
+ordered-arrow field. -/
+structure Cost.Layer.Hom (source target : Cost.Layer) where
   underlying : OrderedCIGSLT.Morphism source.source target.source
-  laws : CostOneOrderedMorphismLaws source target underlying
+  compactMapLaws : Cost.Layer.Hom.CompactMapLaws source target underlying
+  compactKeyMonotone : Monotone
+    (CIGSLT.Morphism.canonicalKeyMap
+      compactMapLaws.toCompactCIGSLTMorphism)
 
-namespace CostOneMorphism
+namespace Cost.Layer.Hom
 
-/-- Cost₁ arrows are determined by their underlying ordered continued map. -/
+/-- cost layer arrows are determined by their underlying ordered continued map. -/
 @[ext]
-theorem ext {source target : CostOneDomainObject}
-    {first second : CostOneMorphism source target}
+theorem ext {source target : Cost.Layer}
+    {first second : Cost.Layer.Hom source target}
     (underlying : first.underlying = second.underlying) : first = second := by
   cases first
   cases second
   cases underlying
   rfl
 
-/-- Identity Cost₁ arrow. -/
-def id (source : CostOneDomainObject) : CostOneMorphism source source where
+/-- Identity cost layer arrow. -/
+def id (source : Cost.Layer) : Cost.Layer.Hom source source where
   underlying := OrderedCIGSLT.Morphism.id source.source
-  laws := CostOneOrderedMorphismLaws.id source
+  compactMapLaws := Cost.Layer.Hom.CompactMapLaws.id source
+  compactKeyMonotone := by
+    rw [Cost.Layer.Hom.CompactMapLaws.toCompactCIGSLTMorphism_id]
+    intro firstKey secondKey lessOrEqual
+    rw [CIGSLT.Morphism.canonicalKeyMap_id,
+      CIGSLT.Morphism.canonicalKeyMap_id]
+    exact lessOrEqual
 
-/-- Composition of Cost₁ arrows. -/
-def comp {first second third : CostOneDomainObject}
-    (left : CostOneMorphism first second)
-    (right : CostOneMorphism second third) : CostOneMorphism first third where
+/-- Composition of cost layer arrows. -/
+def comp {first second third : Cost.Layer}
+    (left : Cost.Layer.Hom first second)
+    (right : Cost.Layer.Hom second third) : Cost.Layer.Hom first third where
   underlying := OrderedCIGSLT.Morphism.comp left.underlying right.underlying
-  laws := CostOneOrderedMorphismLaws.comp left.laws right.laws
+  compactMapLaws := Cost.Layer.Hom.CompactMapLaws.comp
+    left.compactMapLaws right.compactMapLaws
+  compactKeyMonotone := by
+    rw [Cost.Layer.Hom.CompactMapLaws.toCompactCIGSLTMorphism_comp
+      left.compactMapLaws right.compactMapLaws]
+    intro firstKey secondKey lessOrEqual
+    rw [CIGSLT.Morphism.canonicalKeyMap_comp,
+      CIGSLT.Morphism.canonicalKeyMap_comp]
+    exact right.compactKeyMonotone (left.compactKeyMonotone lessOrEqual)
 
-/-- Map a Cost₁ arrow to its generated compact-output arrow. -/
-def compactOutput {source target : CostOneDomainObject}
-    (morphism : CostOneMorphism source target) :
-    OrderedCIGSLT.Morphism source.compactOutput target.compactOutput :=
-  morphism.laws.toCompactOrderedMorphism
+/-- Map a cost layer arrow to its generated compact-output arrow. -/
+def compactOutput {source target : Cost.Layer}
+    (morphism : Cost.Layer.Hom source target) :
+    OrderedCIGSLT.Morphism source.compactOutput target.compactOutput where
+  underlying := morphism.compactMapLaws.toCompactCIGSLTMorphism
+  canonicalKeyMonotone := morphism.compactKeyMonotone
 
 @[simp]
-theorem compactOutput_id (source : CostOneDomainObject) :
+theorem compactOutput_id (source : Cost.Layer) :
     (id source).compactOutput =
-      OrderedCIGSLT.Morphism.id source.compactOutput :=
-  CostOneOrderedMorphismLaws.toCompactOrderedMorphism_id source
+      OrderedCIGSLT.Morphism.id source.compactOutput := by
+  apply OrderedCIGSLT.Morphism.ext
+  exact Cost.Layer.Hom.CompactMapLaws.toCompactCIGSLTMorphism_id source
 
-theorem compactOutput_comp {first second third : CostOneDomainObject}
-    (left : CostOneMorphism first second)
-    (right : CostOneMorphism second third) :
+theorem compactOutput_comp {first second third : Cost.Layer}
+    (left : Cost.Layer.Hom first second)
+    (right : Cost.Layer.Hom second third) :
     (comp left right).compactOutput =
       OrderedCIGSLT.Morphism.comp left.compactOutput right.compactOutput :=
-  CostOneOrderedMorphismLaws.toCompactOrderedMorphism_comp
-    left.laws right.laws
+  by
+    apply OrderedCIGSLT.Morphism.ext
+    exact Cost.Layer.Hom.CompactMapLaws.toCompactCIGSLTMorphism_comp
+      left.compactMapLaws right.compactMapLaws
 
-end CostOneMorphism
+end Cost.Layer.Hom
 
-/-- The category on explicitly normalizer-indexed Cost₁ objects and the
+/-- The category on explicitly normalizer-indexed cost layer objects and the
 arrows along which the generated Cost construction is lawful. -/
-instance : CategoryTheory.Category CostOneDomainObject where
-  Hom := CostOneMorphism
-  id := CostOneMorphism.id
-  comp := CostOneMorphism.comp
+instance : CategoryTheory.Category Cost.Layer where
+  Hom := Cost.Layer.Hom
+  id := Cost.Layer.Hom.id
+  comp := Cost.Layer.Hom.comp
   id_comp morphism := by
-    apply CostOneMorphism.ext
+    apply Cost.Layer.Hom.ext
     apply OrderedCIGSLT.Morphism.ext
     apply CIGSLT.Morphism.ext
     · rfl
     · rfl
   comp_id morphism := by
-    apply CostOneMorphism.ext
+    apply Cost.Layer.Hom.ext
     apply OrderedCIGSLT.Morphism.ext
     apply CIGSLT.Morphism.ext
     · rfl
     · rfl
   assoc first second third := by
-    apply CostOneMorphism.ext
+    apply Cost.Layer.Hom.ext
     apply OrderedCIGSLT.Morphism.ext
     apply CIGSLT.Morphism.ext
     · rfl
     · rfl
 
 /-- Forget the selected Cost laws while retaining the ordered source. -/
-def costOneSourceForget :
-    CategoryTheory.Functor CostOneDomainObject OrderedCIGSLT where
+def Cost.Layer.forget :
+    CategoryTheory.Functor Cost.Layer OrderedCIGSLT where
   obj source := source.source
   map morphism := morphism.underlying
   map_id _ := rfl
   map_comp _ _ := rfl
 
 /-- Genuine nondegenerate one-step compact Cost functor.  Its codomain is
-the ordered continued category, not the Cost₁ domain: closure under a second
+the ordered continued category, not the cost layer domain: closure under a second
 compact Cost step is independently refuted for rho. -/
-def compactCostOneFunctor :
-    CategoryTheory.Functor CostOneDomainObject OrderedCIGSLT where
+def Cost.Layer.compact :
+    CategoryTheory.Functor Cost.Layer OrderedCIGSLT where
   obj source := source.compactOutput
   map morphism := morphism.compactOutput
-  map_id source := CostOneMorphism.compactOutput_id source
-  map_comp left right := CostOneMorphism.compactOutput_comp left right
+  map_id source := Cost.Layer.Hom.compactOutput_id source
+  map_comp left right := Cost.Layer.Hom.compactOutput_comp left right
+
+/-- The source and compact-output projections form the internal directed graph
+of Cost layers in `Cat`.  No horizontal identity or composition is asserted. -/
+def Cost.Layer.graph :=
+  CategoryTheory.Limits.parallelPair (C := CategoryTheory.Cat)
+    Cost.Layer.forget.toCatHom Cost.Layer.compact.toCatHom
 
 end Mettapedia.GSLT.LanguageDef

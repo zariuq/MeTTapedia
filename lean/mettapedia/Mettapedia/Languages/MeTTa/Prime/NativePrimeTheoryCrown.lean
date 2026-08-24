@@ -30,7 +30,7 @@ import Mettapedia.Languages.MeTTa.Prime.NativeQuotationAdequacy
 import Mettapedia.Languages.MeTTa.Prime.PrimeMotivationProgramPackages
 import Mettapedia.Languages.MeTTa.Prime.NativeInteractionFamilyFibration
 import Mettapedia.Languages.MeTTa.Prime.NativeFibredScheduleObservation
-import Mettapedia.Languages.MeTTa.Prime.NativePrimeCostInterfaceCrown
+import Mettapedia.Languages.MeTTa.Prime.NativePrimeCostInterface
 import Mettapedia.Languages.MeTTa.Prime.NativePrimeCostRhoAnnex
 import Mettapedia.Languages.MeTTa.Prime.GSLTILTypedOperationAdmission
 import Mettapedia.Languages.MeTTa.Prime.NativeInteractionNIKAdmission
@@ -266,11 +266,11 @@ successful build checks one connected dependency graph containing:
   work/span schedules;
 * capability-indexed execution observation factored through retained event
   containers, semantic values, and explicitly lossy scheduler readouts;
-  exact chronological Cost₁ wave-event histories form the witness container,
+  exact chronological cost layer wave-event histories form the witness container,
   WorkSpan is only their declared valuation, two valid histories may have equal
   WorkSpan and unequal receipts, and any genuine operational realization pulls
-  this factorization back to selected Cost₁ normalization paths;
-* request-scoped NIK admission for those real Cost₁ observations: WorkSpan is
+  this factorization back to selected cost layer normalization paths;
+* request-scoped NIK admission for those real cost layer observations: WorkSpan is
   an executable key for a WorkSpan-only request but is refused for a request
   that also observes receipt chronology; the complete policy-answer vector is
   the least informative sufficient key, current activation evaluates it without
@@ -469,35 +469,35 @@ successful build checks one connected dependency graph containing:
   substitution plus endpoint typing, uniform preservation constructs the target
   when available, and the native receipt reflects the exact source occurrence
   while an ill-typed raw instance remains outside the fibre;
-* the Cost² cache and replay boundary: a key supports a policy exactly when
+* the cost-layer iteration cache and replay boundary: a key supports a policy exactly when
   that policy factors through it, exact replay supports every future policy,
-  and collisions preclude exact replay; rho's concrete Cost² fibre makes its
+  and collisions preclude exact replay; rho's concrete cost-layer iteration fibre makes its
   compact term unsafe for a future observation while the proof-relevant
   provenance key supports the same observation exactly;
 * the corresponding global implementation-key theorem over the complete
   dependent Cost carrier: compact-key policy safety is exactly fibre
   invariance, compact syntax is an exact receipt exactly when its erasure is
-  faithful, and faithfulness constructs an exact codec; rho's Cost² witness
+  faithful, and faithfulness constructs an exact codec; rho's cost-layer iteration witness
   still permits the complete compact value as a policy-only hot key while
   refusing that same key for exact replay, which the displayed carrier admits;
-* the unconditional selected rho Cost² seal: the normalizer configuration is
-  definitionally the compact output of the exported rho Cost₁ domain object,
+* the unconditional selected rho cost-layer iteration seal: the normalizer configuration is
+  definitionally the compact output of the exported rho cost layer domain object,
   its representative premise is proved, and its second-layer displayed carrier
   has a genuinely nontrivial elaboration fibre; hence the complete
   nonfactorization, compact-policy, provenance-replay, and NIK refusal package
-  applies without a caller-supplied configuration or a selected compact Cost²
+  applies without a caller-supplied configuration or a selected compact cost-layer iteration
   executor;
 * the induced information preorder on observation keys: exact keys refine
   every coarser representation, supported policies are monotone in retained
   information, and rho's provenance key strictly refines its compact key;
-  two elaborations in the Cost² witness collide compactly while a policy
+  two elaborations in the cost-layer iteration witness collide compactly while a policy
   distinguishes them, forcing every compact decoder to misreplay at least one;
 * revision-current NIK admission of request-scoped receipt keys, displayed
   over rather than replacing an admitted semantic execution model: retained
   keyed functions run without interior checking, stronger keys inherit safe
   runners, staleness preserves raw fallback, the policy vector is the least
   informative policy-only key, and exact replay forces equivalence with the
-  full state; rho's compact Cost² key is refused for both its distinguishing
+  full state; rho's compact cost-layer iteration key is refused for both its distinguishing
   policy and exact replay while the provenance key admits both requests;
 * one common-current display of semantic execution admission, request-scoped
   receipt sufficiency, and optional profitability: the hot runner uses only

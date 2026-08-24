@@ -1,4 +1,4 @@
-import Mathlib.Algebra.Group.Defs
+import Mettapedia.Algebra.Injective2
 import Mathlib.Algebra.Ring.Nat
 import Mathlib.Data.List.Basic
 import Mathlib.Data.Multiset.AddSub
@@ -20,57 +20,15 @@ nor the free monoid of event words can make flattening globally injective on
 factorizations.
 -/
 
-namespace Mettapedia.GSLT.Meredith.CostMonadObstruction
-
-/-- Apply a binary operation to the two components of a pair. -/
-def pairOperation (operation : α → α → α) (pair : α × α) : α :=
-  operation pair.1 pair.2
-
-/-- A jointly injective binary operation with a two-sided unit forces its
-carrier to be a subsingleton. -/
-theorem pairOperation_injective_iff_subsingleton
-    {α : Type*} (operation : α → α → α) (unit : α)
-    (leftUnit : ∀ value, operation unit value = value)
-    (rightUnit : ∀ value, operation value unit = value) :
-    Function.Injective (pairOperation operation) ↔ Subsingleton α := by
-  constructor
-  · intro injective
-    constructor
-    intro left right
-    have leftPair : (unit, left) = (left, unit) := by
-      apply injective
-      simp [pairOperation, leftUnit, rightUnit]
-    have rightPair : (unit, right) = (right, unit) := by
-      apply injective
-      simp [pairOperation, leftUnit, rightUnit]
-    have leftEq : left = unit := congrArg Prod.snd leftPair
-    have rightEq : right = unit := congrArg Prod.snd rightPair
-    exact leftEq.trans rightEq.symm
-  · rintro ⟨allEq⟩ left right _
-    exact Prod.ext (allEq _ _) (allEq _ _)
-
-/-- Joint injectivity of monoid multiplication is possible exactly for
-subsingleton monoids. -/
-theorem pairMul_injective_iff_subsingleton {M : Type*} [Monoid M] :
-    Function.Injective (pairOperation (fun left right : M => left * right)) ↔
-      Subsingleton M := by
-  exact pairOperation_injective_iff_subsingleton
-    (fun left right : M => left * right) 1 (by simp) (by simp)
+namespace Mettapedia.GSLT.LanguageDef.Cost.FlatteningObstruction
 
 /-- Hence multiplication in a nontrivial monoid cannot retain the boundary
 between its two arguments. -/
-theorem pairMul_not_injective {M : Type*} [Monoid M] [Nontrivial M] :
-    ¬Function.Injective (pairOperation (fun left right : M => left * right)) := by
+theorem mul_not_injective2 {M : Type*} [Monoid M] [Nontrivial M] :
+    ¬Function.Injective2 (fun left right : M => left * right) := by
   intro injective
-  exact not_subsingleton M (pairMul_injective_iff_subsingleton.mp injective)
-
-/-- The additive form applies directly to additive cost and signature
-monoids. -/
-theorem pairAdd_injective_iff_subsingleton {A : Type*} [AddMonoid A] :
-    Function.Injective (pairOperation (fun left right : A => left + right)) ↔
-      Subsingleton A := by
-  exact pairOperation_injective_iff_subsingleton
-    (fun left right : A => left + right) 0 (by simp) (by simp)
+  exact not_subsingleton M
+    (Mettapedia.Algebra.mul_injective2_iff_subsingleton.mp injective)
 
 /-- Cancellation still proves the valid fixed-left claim from the manuscript. -/
 theorem fixedLeftMul_injective {M : Type*} [Mul M] [IsLeftCancelMul M]
@@ -85,22 +43,21 @@ theorem nat_fixedLeftAdd_injective (left : Nat) :
 
 /-- Nevertheless, natural-number addition is not jointly injective on a pair
 of summands. -/
-theorem nat_pairAdd_not_injective :
-    ¬Function.Injective
-      (pairOperation (fun left right : Nat => left + right)) := by
+theorem nat_add_not_injective2 :
+    ¬Function.Injective2 (fun left right : Nat => left + right) := by
   intro injective
   exact not_subsingleton Nat
-    ((pairAdd_injective_iff_subsingleton (A := Nat)).mp injective)
+    ((Mettapedia.Algebra.add_injective2_iff_subsingleton (A := Nat)).mp
+      injective)
 
 /-- List concatenation already forgets the boundary in the unit cases. -/
 theorem list_append_not_injective (element : α) :
-    ¬Function.Injective
-      (fun pair : List α × List α => pair.1 ++ pair.2) := by
+    ¬Function.Injective2 (fun left right : List α => left ++ right) := by
   intro injective
-  have pairEquality : (([], [element]) : List α × List α) = ([element], []) := by
+  have pairEquality : ([] : List α) = [element] ∧ [element] = [] := by
     apply injective
     simp
-  have lengthEquality := congrArg (fun pair => pair.1.length) pairEquality
+  have lengthEquality := congrArg List.length pairEquality.1
   simp at lengthEquality
 
 /-- Even with both factors nonempty, concatenation forgets where one factor
@@ -148,4 +105,4 @@ theorem multiset_add_forgets_nonempty_boundary (first second third : α) :
     simp at cardEquality
   · rfl
 
-end Mettapedia.GSLT.Meredith.CostMonadObstruction
+end Mettapedia.GSLT.LanguageDef.Cost.FlatteningObstruction

@@ -1,14 +1,14 @@
 import Mettapedia.Languages.MeTTa.Prime.NativeFibredScheduleObservation
 
 /-!
-# Receipt-retaining observation of Cost₁ execution
+# Receipt-retaining observation of cost layer execution
 
 The existing Cost schedule observation computes `WorkSpan` directly as its
 witness container.  That view is useful for scheduling, but the full Prime
 factorization keeps a richer boundary:
 
 ```
-selected Cost₁ normalization path
+selected cost layer normalization path
   → proof-relevant operational schedule
   → exact chronological wave-event history   (S)
   → WorkSpan valuation                        (V)
@@ -19,7 +19,7 @@ This module constructs that factorization.  The witness container is the
 complete list of existentially indexed wave events, so it retains endpoints,
 funded-occurrence receipts, and execution evidence.  `WorkSpan` is only the
 declared value read from that history.  Any actual operational realization of
-a `CostOneDomainObject` pulls the architecture back to its selected semantic
+a `Cost.Layer` pulls the architecture back to its selected semantic
 normalization paths.
 
 The concrete two-ordering control proves the separation is strict: two valid
@@ -30,14 +30,14 @@ proof-relevant executions or their witness containers.
 
 set_option autoImplicit false
 
-namespace Mettapedia.Languages.MeTTa.Prime.NativeCostOneReceiptObservation
+namespace Mettapedia.Languages.MeTTa.Prime.NativeCostLayerReceiptObservation
 
 open Mettapedia.Algebra
 open Mettapedia.GSLT.Dynamics
 open Mettapedia.GSLT.LanguageDef
-open Mettapedia.GSLT.LanguageDef.CostOneOperationalAdequacy
+open Mettapedia.GSLT.LanguageDef.Cost.Layer.Operational
 open Mettapedia.GSLT.LanguageDef.CostScheduleObservation
-open Mettapedia.Languages.MeTTa.Prime.NativeCostOneOperationalAdequacy
+open Mettapedia.Languages.MeTTa.Prime.NativeCostLayerOperationalAdequacy
 open Mettapedia.Languages.MeTTa.Prime.NativeFibredScheduleObservation
 open Mettapedia.Languages.MeTTa.Prime.NativeInteractionFamilyFibration
 open Mettapedia.Languages.MeTTa.Prime.NativeInteractionFibration
@@ -172,11 +172,11 @@ theorem operational_value_append {Ground : Type uGround}
   rw [operational_value, operational_value, operational_value]
   exact OperationalSchedule.workSpan_append first second
 
-/-! ## Pullback to selected Cost₁ semantic execution -/
+/-! ## Pullback to selected cost layer semantic execution -/
 
 /-- Any genuine operational realization induces an exact observation of the
-selected proof-relevant Cost₁ normalization paths. -/
-def semanticObservation {object : CostOneDomainObject}
+selected proof-relevant cost layer normalization paths. -/
+def semanticObservation {object : Cost.Layer}
     {Ground : Type uGround} (realization : Realization object Ground) :
     IndexedExecutionObservation (historyDiscipline Ground)
       (SemanticState object) (NormalizationPath object) where
@@ -184,9 +184,9 @@ def semanticObservation {object : CostOneDomainObject}
   container := fun path => Schedule.events (realization.realizePath path)
   collects := fun _ => rfl
 
-/-- The selected Cost₁ execution, exact operational receipt history, and
+/-- The selected cost layer execution, exact operational receipt history, and
 WorkSpan valuation as one capability-indexed architecture. -/
-def semanticArchitecture {object : CostOneDomainObject}
+def semanticArchitecture {object : Cost.Layer}
     {Ground : Type uGround} (realization : Realization object Ground) :
     CapabilityIndexedObservationArchitecture (SemanticState object)
       (NormalizationPath object) where
@@ -196,9 +196,9 @@ def semanticArchitecture {object : CostOneDomainObject}
   domain := ObservationDiscipline.OperationalDomain.reachable
     (historyDiscipline Ground)
 
-/-- Composition of semantic Cost₁ paths is witnessed by exact concatenation
+/-- Composition of semantic cost layer paths is witnessed by exact concatenation
 of their realized event histories. -/
-def semanticChronological {object : CostOneDomainObject}
+def semanticChronological {object : Cost.Layer}
     {Ground : Type uGround} (realization : Realization object Ground) :
     (semanticObservation realization).Chronological where
   append := fun first second => first.append second
@@ -209,8 +209,8 @@ def semanticChronological {object : CostOneDomainObject}
     rfl
 
 /-- The semantic value is a declared observation of the realized schedule;
-it is not the Cost₁ state or event itself. -/
-@[simp] theorem semantic_value {object : CostOneDomainObject}
+it is not the cost layer state or event itself. -/
+@[simp] theorem semantic_value {object : Cost.Layer}
     {Ground : Type uGround} (realization : Realization object Ground)
     {source target : SemanticState object}
     (path : NormalizationPath object source target) :
@@ -220,7 +220,7 @@ it is not the Cost₁ state or event itself. -/
 
 /-- The selected semantic path retains the complete operational receipt after
 realization. -/
-@[simp] theorem semantic_receipt {object : CostOneDomainObject}
+@[simp] theorem semantic_receipt {object : Cost.Layer}
     {Ground : Type uGround} (realization : Realization object Ground)
     {source target : SemanticState object}
     (path : NormalizationPath object source target) :
@@ -230,8 +230,8 @@ realization. -/
   exact Schedule.eventReceipt_events (realization.realizePath path)
 
 /-- WorkSpan composes because semantic paths and operational schedules compose;
-it is derived rather than installed as Cost₁'s execution law. -/
-theorem semantic_value_append {object : CostOneDomainObject}
+it is derived rather than installed as cost layer's execution law. -/
+theorem semantic_value_append {object : Cost.Layer}
     {Ground : Type uGround} (realization : Realization object Ground)
     {source middle target : SemanticState object}
     (first : NormalizationPath object source middle)
@@ -352,4 +352,4 @@ end Examples
 #print axioms Examples.workSpan_does_not_determine_receipt_history
 #print axioms Examples.both_histories_are_operational
 
-end Mettapedia.Languages.MeTTa.Prime.NativeCostOneReceiptObservation
+end Mettapedia.Languages.MeTTa.Prime.NativeCostLayerReceiptObservation

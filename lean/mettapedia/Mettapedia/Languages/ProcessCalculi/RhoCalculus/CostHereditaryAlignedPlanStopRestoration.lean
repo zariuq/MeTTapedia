@@ -13,9 +13,9 @@ open Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefContinuedInterac
 declaration colour.  At the views' own colour all stops lie strictly below the
 endpoint pair; at the other colour the hereditary foreign-stop constructor
 supplies the same conclusion. -/
-theorem rho_alignedViewsPlanStopApexInDomain
+theorem rho_alignedPlanStops_haveCommonRestoration
     (declarationColor : CostStaticColor) :
-    RhoAlignedViewsPlanStopApexInDomain declarationColor := by
+    RhoAlignedPlanStops.HaveCommonRestoration declarationColor := by
   intro targetFree available outer leftPattern rightPattern type left right
     color leftView rightView admissible _leftWellSorted _rightWellSorted
     closeSmaller _roots
@@ -36,8 +36,8 @@ theorem rho_alignedViewsPlanStopApexInDomain
 
 /-- Both generated declarations satisfy the aligned plan-stop apex
 obligation. -/
-theorem rho_alignedViewsPlanStopApexInDomain_allColors :
-    ∀ color, RhoAlignedViewsPlanStopApexInDomain color :=
-  rho_alignedViewsPlanStopApexInDomain
+theorem rho_alignedPlanStops_haveCommonRestoration_allColors :
+    ∀ color, RhoAlignedPlanStops.HaveCommonRestoration color :=
+  rho_alignedPlanStops_haveCommonRestoration
 
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus

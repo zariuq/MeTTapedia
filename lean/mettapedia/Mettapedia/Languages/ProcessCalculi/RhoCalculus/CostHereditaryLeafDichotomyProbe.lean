@@ -3,7 +3,7 @@ import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryExposureBri
 /-!
 # Probe of the three collapsing-leaf classifications
 
-`CostHereditaryExposureBridge` reduces obligation B of the rho Cost₁ seal to
+`CostHereditaryExposureBridge` reduces obligation B of the rho cost layer seal to
 three node-local statements.  Two of them are disjunctions, and the third,
 `RhoCollapsingApplyLeafBoundary`, has a single conclusion: every static node
 whose declaration-coloured canonical form is an application must carry a
@@ -261,7 +261,7 @@ theorem not_rhoCollapsingApplyLeafBoundary (declarationColor : CostStaticColor) 
 
 /-- **The three classifications are jointly uninhabited.**
 
-`rho_collapsingLeafExposureInDomain_of_classifications` therefore cannot be
+`rho_collapsingLeaf_hasExposure_of_classifications` therefore cannot be
 applied: its third hypothesis has no inhabitant.  The reduction is sound but
 vacuous as stated, so obligation B is not reachable through it. -/
 theorem not_rhoCollapsingLeafClassifications (declarationColor : CostStaticColor) :

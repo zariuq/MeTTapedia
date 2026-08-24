@@ -1,11 +1,11 @@
-import Mettapedia.GSLT.LanguageDef.CostOneOperationalAdequacy
+import Mettapedia.GSLT.LanguageDef.Cost.Layer.Operational
 import Mettapedia.Languages.MeTTa.Prime.NativeFibredCost
 import Mettapedia.Languages.MeTTa.Prime.NativeInteractionFamilyFibration
 
 /-!
-# Prime fibred schedules at the Cost₁ operational boundary
+# Prime fibred schedules at the cost layer operational boundary
 
-The Cost₁ operational interface uses chronological paths of proof-relevant
+The cost layer operational interface uses chronological paths of proof-relevant
 concurrent waves.  Prime already constructs the exactly indexed
 `ParallelCostSchedule` from retained separation evidence.  This module proves
 that those are the same scheduler artifacts at the boundary: the indexed
@@ -17,9 +17,9 @@ returns `none`; it does not manufacture a serial schedule and does not reject
 ordinary execution.
 -/
 
-namespace Mettapedia.Languages.MeTTa.Prime.NativeCostOneOperationalAdequacy
+namespace Mettapedia.Languages.MeTTa.Prime.NativeCostLayerOperationalAdequacy
 
-open Mettapedia.GSLT.LanguageDef.CostOneOperationalAdequacy
+open Mettapedia.GSLT.LanguageDef.Cost.Layer.Operational
 open Mettapedia.Languages.MeTTa.Prime.NativeFibredCost
 open Mettapedia.Languages.MeTTa.Prime.NativeInteractionFamilyFibration
 open Mettapedia.Languages.MeTTa.Prime.NativeInteractionFibration
@@ -57,7 +57,7 @@ def compiledOperationalSchedule {Ground : Type}
   OperationalSchedule.waves_ofIndexed _
 
 /-- Prime's typed separation license has the same parallel valuation at the
-Cost₁ operational boundary. -/
+cost layer operational boundary. -/
 @[simp] theorem compiled_workSpan {Ground : Type}
     {source : CostConfig Ground} {left right : CostedEvent Ground}
     (separation : CostEffectSeparation Ground source left right) :
@@ -111,7 +111,7 @@ def coloringOperationalSchedule {Ground : Type u}
 /-! ## The partial producer remains fail-open -/
 
 /-- Run Prime's exact effect analysis and expose a successful result at the
-Cost₁ operational boundary. -/
+cost layer operational boundary. -/
 def analyzeOperational? {Ground : Type} [DecidableEq Ground]
     (source : CostConfig Ground) (left right : CostedEvent Ground) :
     Option (Σ target : CostConfig Ground,
@@ -133,7 +133,7 @@ namespace Examples
 open Mettapedia.Languages.MeTTa.Prime.NativeInteractionFibration.Examples
 
 /-- Positive control: same-channel events with distinct occurrences retain
-their one-wave parallel value after crossing the Cost₁ boundary. -/
+their one-wave parallel value after crossing the cost layer boundary. -/
 theorem sameChannel_operational_workSpan :
     (compiledOperationalSchedule sameChannelSeparation).workSpan = ⟨2, 1⟩ :=
   compiled_workSpan sameChannelSeparation
@@ -156,4 +156,4 @@ end Examples
 #print axioms Examples.sameChannel_operational_workSpan
 #print axioms Examples.contested_operational_analysis_is_none
 
-end Mettapedia.Languages.MeTTa.Prime.NativeCostOneOperationalAdequacy
+end Mettapedia.Languages.MeTTa.Prime.NativeCostLayerOperationalAdequacy

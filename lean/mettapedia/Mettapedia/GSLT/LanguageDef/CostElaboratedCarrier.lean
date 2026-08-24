@@ -135,7 +135,7 @@ normalizer reproduces the normalized erasure of every elaboration.
 
 This is stronger than unary authored equivalence.  It says proof-relevant
 choices are unobservable after normalization, precisely the property that
-fails at the rho Cost² overlap. -/
+fails at the rho cost-layer iteration overlap. -/
 def CostNormalizationFactorsThroughCompactErasure (source : CIGSLT) : Prop :=
   ∃ normalize : ∀ {free bound sort},
       ReflectiveWellSorted.OpenTerm source.costWholeReflectionProfile

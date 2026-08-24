@@ -3,7 +3,7 @@ import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryProviderLef
 /-!
 # Partner-shape reduction for the collapsing-leaf exposure obligation
 
-`RhoCollapsingLeafExposureInDomain` quantifies over an arbitrary non-static
+`RhoCollapsingLeaf.HasExposure` quantifies over an arbitrary non-static
 partner endpoint.  `CostRegionTree` has eight constructors, so a direct attack
 faces eight configurations.  Four of them are impossible and are refuted here
 outright, leaving the obligation supported on exactly the three leaf-shaped
@@ -19,7 +19,7 @@ partner patterns.
   The supporting preservation law for the unkeyed canonicalizer is proved
   below from the keyed one.
 
-What remains is `rho_collapsingLeafExposureInDomain_of_leafRoutes`: the
+What remains is `rho_collapsingLeaf_hasExposure_of_leafRoutes`: the
 obligation follows from three routes whose partner pattern is a bound
 variable, a free variable, or a constructor application.  This is the exact
 case list a proof of the obligation has to cover, and it is closed under the
@@ -35,8 +35,8 @@ certified agreement of the two hereditary normal forms, carrying in addition
 a shape certificate for the collapsed side.
 
 Projecting that through the obligation gives
-`rho_normalize_eq_of_collapsingLeafExposureInDomain`: assuming
-`RhoCollapsingLeafExposureInDomain` for one colour, any two endpoints in one
+`rho_normalize_eq_of_collapsingLeaf_hasExposure`: assuming
+`RhoCollapsingLeaf.HasExposure` for one colour, any two endpoints in one
 fibre with equal canonicalizations, one static with a collapsing root and one
 with a non-static root, already have equal hereditary normal forms.  That is
 the normalization-soundness statement itself, restricted to a mixed pair, and
@@ -149,15 +149,15 @@ end RhoCollapsingLeafExposure
 
 /-- **The obligation is a normalization-soundness statement.**
 
-Discharging `RhoCollapsingLeafExposureInDomain` for one colour already
+Discharging `RhoCollapsingLeaf.HasExposure` for one colour already
 decides every mixed endpoint pair in the domain: equal canonicalizations,
 one collapsing static root, one non-static root, hence equal hereditary
 normal forms.  The obligation offers no recursion parameter with which to
 establish that on the partner's own subterms — the provider's
 strictly-decreasing callback is discarded before the obligation is stated. -/
-theorem rho_normalize_eq_of_collapsingLeafExposureInDomain
+theorem rho_normalize_eq_of_collapsingLeaf_hasExposure
     {declarationColor : CostStaticColor}
-    (exposure : RhoCollapsingLeafExposureInDomain declarationColor)
+    (exposure : RhoCollapsingLeaf.HasExposure declarationColor)
     {targetFree : FreeTypeContext} {available outer : List TypeExpr}
     {collapsedPattern otherPattern : Pattern} {type : TypeExpr}
     {collapsed : CostRegionTree rhoCIGSLT targetFree available outer
@@ -297,16 +297,16 @@ def RhoCollapsingLeafExposureApplyRoute (declarationColor : CostStaticColor) :
 /-- **The collapsing-leaf obligation reduced to three partner shapes.**
 
 Binders, collections and pending substitutions are refuted outright, so the
-whole content of `RhoCollapsingLeafExposureInDomain` is carried by partners
+whole content of `RhoCollapsingLeaf.HasExposure` is carried by partners
 whose pattern is a bound variable, a free variable, or an application.  In
 the two variable routes the canonical premise is delivered already solved,
 because canonicalization fixes variables. -/
-theorem rho_collapsingLeafExposureInDomain_of_leafRoutes
+theorem rho_collapsingLeaf_hasExposure_of_leafRoutes
     {declarationColor : CostStaticColor}
     (bvarRoute : RhoCollapsingLeafExposureBVarRoute declarationColor)
     (fvarRoute : RhoCollapsingLeafExposureFVarRoute declarationColor)
     (applyRoute : RhoCollapsingLeafExposureApplyRoute declarationColor) :
-    RhoCollapsingLeafExposureInDomain declarationColor := by
+    RhoCollapsingLeaf.HasExposure declarationColor := by
   intro targetFree available outer collapsedPattern otherPattern type
     collapsed other color view admissible _collapsedWellSorted
     otherWellSorted close collapsing structural canonical

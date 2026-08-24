@@ -1,4 +1,4 @@
-import Mettapedia.GSLT.LanguageDef.CostEndofunctor
+import Mettapedia.GSLT.LanguageDef.Cost.Construction
 import Mettapedia.GSLT.LanguageDef.CanonicalConstructorSupport
 import Mettapedia.OSLF.Framework.LambdaInstance
 

@@ -3913,7 +3913,7 @@ theorem sourceResultType_eq_of_mem_base_wrapped_collectionChoices
 /-- Positive cross-colour canary for label-free collection roots.  An
 authored bare declaration whose result is outside the interacting sort
 contributes the same proof-relevant choice to both static colours on the
-empty element spine.  Thus generated Cost objects cannot obtain Cost²
+empty element spine.  Thus generated Cost objects cannot obtain cost-layer iteration
 closure merely by iterating a first-layer root-colour uniqueness proof. -/
 theorem crossColorEmptyBareCollectionCandidate
     (source : CIGSLT) (targetFree : WellSorted.FreeTypeContext)
@@ -12792,7 +12792,7 @@ theorem UnambiguousStaticDecomposition.collectionGloballyUnambiguous
 
 /-
 Bare collections have no constructor head, so observable coherence inside
-one colour does not make the root colour unique.  Cost² closure must handle
+one colour does not make the root colour unique.  cost-layer iteration closure must handle
 that cross-colour case extensionally rather than packaging this local
 relation as a global decomposition criterion.
 -/
@@ -13995,7 +13995,7 @@ theorem actAvailable_pattern
 
 end CostStaticSourceTerm
 
-/-- The source-authored static equation action required by Cost₁.  It is a
+/-- The source-authored static equation action required by cost layer.  It is a
 single-generator law: no region tree, canonicalizer, or normalized endpoint
 appears in its statement. -/
 def _root_.CostStaticMappedGeneratorAction (source : CIGSLT) : Prop :=
@@ -19256,8 +19256,8 @@ theorem CostRegionTree.normalize_pattern_eq_of_buildFuel
 
 This interface is retained as a negative control: it requires every raw
 equation path to remain in every independently chosen typing fiber.  That
-property is not required by Cost₁ and fails for valid languages with
-type-indistinguishable binder occurrences.  The operative Cost₁ theorem is
+property is not required by cost layer and fails for valid languages with
+type-indistinguishable binder occurrences.  The operative cost layer theorem is
 the proof-relevant typed interface in `CostRegionNormalization`. -/
 structure CostRawFiberNormalizationLaws (source : CIGSLT) : Prop where
   mappedGeneratorAction : CostStaticMappedGeneratorAction source

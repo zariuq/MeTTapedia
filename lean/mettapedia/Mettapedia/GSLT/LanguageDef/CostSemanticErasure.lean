@@ -371,7 +371,7 @@ theorem CostSemanticTree.normalize_static_result_pattern
       children)
 
 private theorem CostSemanticTree.normalizationSound_static
-    {source : CIGSLT} (laws : CostTypedUnaryNormalizationLaws source)
+    {source : CIGSLT} (laws : Cost.SemanticSection.Laws source)
     {targetFree : WellSorted.FreeTypeContext} {color : CostStaticColor}
     {outer : List TypeExpr}
     (frame : CostStaticRegionNode source color targetFree)
@@ -459,7 +459,7 @@ finite-boundary fibers.  The generated four-way recursor supplies all mutually
 recursive hypotheses, so this proof has no auxiliary termination measure or
 heartbeat-sensitive mutual block. -/
 theorem CostSemanticTree.normalizationSound
-    {source : CIGSLT} (laws : CostTypedUnaryNormalizationLaws source)
+    {source : CIGSLT} (laws : Cost.SemanticSection.Laws source)
     {targetFree : WellSorted.FreeTypeContext}
     {available outer : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
     (tree : CostSemanticTree source targetFree available outer pattern type) :
@@ -1178,7 +1178,7 @@ namespace CostSemanticOpenElaboration
 equation setoid over the authored Cost language.  The retained frame and
 boundary evidence contribute no second semantic authority. -/
 theorem normalizeOpen_typed_openEquationSetoid
-    {source : CIGSLT} (laws : CostTypedUnaryNormalizationLaws source)
+    {source : CIGSLT} (laws : Cost.SemanticSection.Laws source)
     {targetFree : WellSorted.FreeTypeContext}
     {targetBound : List TypeExpr}
     {targetSort : LangSort source.costWholeLanguage}
@@ -1222,7 +1222,7 @@ theorem normalizeOpen_typed_openEquationSetoid
 equation path.  Exact equality of retained normal forms supplies the common
 middle vertex. -/
 theorem Step.erasesToAuthored
-    {source : CIGSLT} (laws : CostTypedUnaryNormalizationLaws source)
+    {source : CIGSLT} (laws : Cost.SemanticSection.Laws source)
     {targetFree : WellSorted.FreeTypeContext}
     {targetBound : List TypeExpr}
     {targetSort : LangSort source.costWholeLanguage}
@@ -1265,7 +1265,7 @@ def costSemanticOpenElaborationCarrier (source : CIGSLT)
 
 /-- Stable-frame semantic edges form an authored path lift. -/
 def costSemanticPathLift (source : CIGSLT)
-    (laws : CostTypedUnaryNormalizationLaws source) :
+    (laws : Cost.SemanticSection.Laws source) :
     ReflectiveOpenElaborationPathLift
       (source.costSemanticOpenElaborationCarrier laws.canonicalPathSafe) where
   step := fun free bound sort =>
@@ -1276,7 +1276,7 @@ def costSemanticPathLift (source : CIGSLT)
 /-- The exact proof-relevant Cost relation with its mandatory erasure into the
 admitted reflective equation theory over the authored Cost `IGSLT`. -/
 def costSemanticSemantics (source : CIGSLT)
-    (laws : CostTypedUnaryNormalizationLaws source) :
+    (laws : Cost.SemanticSection.Laws source) :
     ReflectiveOpenElaborationSemantics
       (source.costSemanticOpenElaborationCarrier laws.canonicalPathSafe) :=
   ReflectiveOpenElaborationSemantics.ofPathLift
@@ -1285,7 +1285,7 @@ def costSemanticSemantics (source : CIGSLT)
 /-- The retained child-first normalizer is an exact section of semantic Cost
 equivalence on every typed open fibre. -/
 def costSemanticCanonicalSection (source : CIGSLT)
-    (laws : CostTypedUnaryNormalizationLaws source) :
+    (laws : Cost.SemanticSection.Laws source) :
     ReflectiveOpenElaborationSemantics.ComputableSection
       (source.costSemanticSemantics laws) :=
   ReflectiveOpenElaborationSemantics.ComputableSection.ofPathInvariant
@@ -1298,7 +1298,7 @@ def costSemanticCanonicalSection (source : CIGSLT)
 values is an exact reflective elaborated open theory over the generated Cost
 `IGSLT`. -/
 def costSemanticElaboratedOpenTheory (source : CIGSLT)
-    (laws : CostTypedUnaryNormalizationLaws source) :
+    (laws : Cost.SemanticSection.Laws source) :
     ReflectiveElaboratedOpenTheory where
   theory := source.costIGSLT
   reflection := source.costWholeAdmittedReflection

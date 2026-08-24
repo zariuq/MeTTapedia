@@ -1,6 +1,6 @@
 import Mettapedia.GSLT.LanguageDef.CostScheduleObservation
 import Mettapedia.GSLT.Dynamics.CapabilityIndexedObservationArchitecture
-import Mettapedia.Languages.MeTTa.Prime.NativeCostOneOperationalAdequacy
+import Mettapedia.Languages.MeTTa.Prime.NativeCostLayerOperationalAdequacy
 
 /-!
 # Prime fibred schedules as capability-indexed observations
@@ -21,9 +21,9 @@ they do not authorize it.
 namespace Mettapedia.Languages.MeTTa.Prime.NativeFibredScheduleObservation
 
 open Mettapedia.Algebra
-open Mettapedia.GSLT.LanguageDef.CostOneOperationalAdequacy
+open Mettapedia.GSLT.LanguageDef.Cost.Layer.Operational
 open Mettapedia.GSLT.LanguageDef.CostScheduleObservation
-open Mettapedia.Languages.MeTTa.Prime.NativeCostOneOperationalAdequacy
+open Mettapedia.Languages.MeTTa.Prime.NativeCostLayerOperationalAdequacy
 open Mettapedia.Languages.MeTTa.Prime.NativeFibredCost
 open Mettapedia.Languages.MeTTa.Prime.NativeInteractionFamilyFibration
 open Mettapedia.Languages.MeTTa.Prime.NativeInteractionFibration
@@ -39,7 +39,7 @@ generic capability-indexed architecture. -/
 def scheduleArchitecture (Ground : Type u) :
     Mettapedia.GSLT.Dynamics.CapabilityIndexedObservationArchitecture
       (CostConfig Ground)
-      (Mettapedia.GSLT.LanguageDef.CostOneOperationalAdequacy.OperationalSchedule
+      (Mettapedia.GSLT.LanguageDef.Cost.Layer.Operational.OperationalSchedule
         Ground) where
   Event := WaveEvent Ground
   discipline := Schedule.discipline Ground
@@ -228,7 +228,7 @@ theorem parallel_value_does_not_mint_contested_separation :
 contested pair. -/
 theorem contested_has_no_observed_schedule :
     analyzeOperational? contestedSource leftEvent leftCompetitor = none :=
-  NativeCostOneOperationalAdequacy.Examples.contested_operational_analysis_is_none
+  NativeCostLayerOperationalAdequacy.Examples.contested_operational_analysis_is_none
 
 end Examples
 

@@ -1,0 +1,537 @@
+\documentclass[11pt]{article}
+\usepackage[margin=1.05in]{geometry}
+\usepackage{amsmath,amssymb,amsthm}
+\usepackage{stmaryrd}
+\usepackage{booktabs}
+\usepackage{array}
+\usepackage{enumitem}
+\usepackage{listings}
+\usepackage{microtype}
+\usepackage{xcolor}
+\usepackage[colorlinks=true,linkcolor=blue!50!black,
+            citecolor=blue!50!black,urlcolor=blue!50!black]{hyperref}
+\usepackage{xurl}
+
+\lstset{basicstyle=\ttfamily\small,breaklines=true,frame=single,
+        columns=fullflexible}
+\newtheorem{definition}{Definition}
+\newtheorem{principle}{Principle}
+\newtheorem{obligation}{Proof obligation}
+\newtheorem{proposition}{Proposition}
+\theoremstyle{remark}
+\newtheorem{remark}{Remark}
+
+\newcommand{\code}[1]{\texttt{#1}}
+\newcommand{\PeTTa}{PeTTa}
+\newcommand{\Rho}{\ensuremath{\rho}}
+\newcommand{\MM}{Metamath}
+\newcommand{\MMZ}{MM0}
+
+\title{Direct Runtime Compilation of Compositional GSLTs\\
+\large Metamath and MM0 as didactic guests for PeTTa and $\rho$}
+\author{Zarathustra Goertzel \and Oru\v{z}i}
+\date{August 2026 --- integration draft}
+
+\begin{document}
+\maketitle
+
+\begin{abstract}
+We describe a compiler architecture in which an authored generalized
+syntax--semantics language theory (GSLT) is composed once and specialized into
+a readable target program, while concrete documents remain runtime data.  The
+distinction is elementary but decisive: a Metamath database or MM0 file must be
+parsed and checked by a reusable generated verifier; it must not be translated
+into thousands of target equations and thereby become part of the verifier
+itself.  Syntax declarations encountered in a document update a live parsing
+environment through ordinary semantic transitions.
+
+The first target is PeTTa, expressed as direct equations, pattern matches,
+recursion, and explicit result/state terms.  A second lowering targets the
+$\rho$-calculus directly through processes, channels, and matching structure.
+Neither route factors through Horn clauses, SLD resolution, Datalog, or a
+universal worklist machine.  Such interpretations may remain useful as
+independent diagnostic oracles, but they are not the meaning of the source
+GSLT and are not on the production path.  An optional execution IR is allowed
+where it is earned by multiple targets, not assumed in advance.
+
+The current implementation qualifies bounded direct PeTTa and $\rho$ artifacts
+for Metamath transition/proof slices and for the MM0 textual pipeline through
+assertion elaboration.  The complete direct Metamath-to-$\rho$ route, complete
+MM0 definitions, textual proof execution, binary \code{.mmb} verification, and
+the full compiler correspondence proofs remain open.  We report the
+construction and the residue separately so that tests are evidence for a
+compiler whose correctness is structural, rather than a
+translation-validation shell around an independently invented engine.
+\end{abstract}
+
+\section{The compilation question}
+
+Suppose a language package $L$ contains signatures $\Sigma_L$, equations
+$E_L$, rewrites $R_L$, and an authored composition graph.  A concrete document
+$d$ is written in the language described by $L$.  For a target presentation
+$T$, the intended staging is
+\[
+   P_T = \mathsf{compile}_T(L), \qquad
+   \mathsf{answer}_T(L,d) =
+      \mathsf{run}_T(P_T,\mathsf{parse}_L(d)).
+\]
+The target program $P_T$ depends on $L$ and $T$, not on $d$.  This is the
+ordinary compiler/interpreter separation studied by partial evaluation
+\cite{Futamura1971,JonesGomardSestoft1993}: specialize the language machinery
+to a language definition, leaving the program input dynamic.
+
+The tempting wrong staging is
+\[
+   P_{T,d} = \mathsf{compile}_T(L,d).
+\]
+It can appear to work on small fixtures because every parsed fact is rendered
+as a target clause.  On a real database it duplicates the document, inflates
+startup cost, and makes a verifier change whenever its input changes.  More
+seriously, it confuses two semantic roles: a declaration is data consumed by
+the source fold, whereas a rewrite is program structure defining that fold.
+
+\begin{principle}[Runtime-input independence]
+For fixed authored package $L$, target $T$, and compiler version, compilation
+is byte-deterministic and independent of the runtime document:
+\[
+  \mathsf{compile}_T(L;d_1)=\mathsf{compile}_T(L;d_2)
+  =\mathsf{compile}_T(L).
+\]
+Document identity may appear in a runtime receipt, but not in the generated
+program's rule inventory.
+\end{principle}
+
+This principle is both conceptual and operational.  It prevents a database
+with $n$ declarations from manufacturing $O(n)$ target equations before the
+checker can begin, and it makes one generated artifact reusable across the
+whole corpus.
+
+\section{GSLTs and composition-preserving lowering}
+
+A GSLT separates a signature, an equational theory, and directed dynamics.
+The separation matters.  An equation $t=t$ is harmless reflexivity in the
+equational center, but a directed rewrite $t\longrightarrow t$ is a
+nonproductive computation step.  A target syntax that uses one surface form
+for equations and executable rules cannot be allowed to erase this
+distinction during lowering.
+
+\begin{definition}[Scoped GSLT lowering]
+A lowering from source fragment $S$ to target presentation $T$ consists of a
+term representation $\llbracket-\rrbracket$, realizations of the source
+signature and rules, and an observation map.  On its declared domain it must:
+\begin{enumerate}[label=(\roman*)]
+\item preserve source equations;
+\item realize every source rewrite by target dynamics;
+\item reflect image behavior, so the target cannot invent a source step;
+\item preserve the declared observations; and
+\item commute with the authored compositions for which it claims support.
+\end{enumerate}
+\end{definition}
+
+The qualification is important: no universal intermediate calculus is
+postulated.  A parser automaton, a small execution instruction language, a
+PeTTa fragment, and a $\rho$ process presentation may each be honest target
+GSLTs.  A useful intermediate is admitted when it makes two actual lowerings
+simpler and its semantics is explicit.  It is not declared universal merely
+because one prototype already emits it.
+
+The intended diagram is
+\begin{lstlisting}
+                    authored language package L
+                    /                         \
+        syntax specialization          semantic specialization
+                |                               |
+  lexer/GLL/Pratt runtime              composed transition program
+                |                               |
+       positioned source AST  ------------------+
+                                                |
+                              +-----------------+----------------+
+                              |                                  |
+                     direct PeTTa lowering              direct rho lowering
+\end{lstlisting}
+
+Composition preservation is ultimately a theorem, not a formatting property.
+The executable implementation currently provides deterministic source
+inventories, per-rule realization provenance, mutation gates, and severance
+tests.  These are necessary integration evidence while the full theorem is
+instantiated, but they are not substituted for it.
+
+\section{Parsing and live syntax}
+
+Lexing and parsing form a separate specialization lane.  A generic guarded
+lexer and generalized parser produce an ordered, normalized, source-positioned
+occurrence stream.  Deterministic grammars may use generated cursor or Pratt
+fast paths; refusal by an accelerator returns authority to the generic parser
+rather than weakening the grammar.
+
+MM0 makes the live nature of syntax unavoidable.  A document can introduce
+term constructors and notation which later mathematical expressions use.
+Accordingly the runtime fold evolves an environment
+\[
+  \Gamma_0 \xrightarrow{d_1} \Gamma_1
+           \xrightarrow{d_2} \cdots
+           \xrightarrow{d_n} \Gamma_n,
+\]
+and each mathematical field is lexed and parsed against the environment at
+its source position.  This is a meta-GSLT transition: syntax is data whose
+meaning is an update to a parser state.  It is not a reason to regenerate the
+target verifier.
+
+The generic parser represents scalar sequences as ordinary lists.  The MM0
+secondary lexer uses its own scalar-list constructors.  Their boundary is an
+authored codec, not an implicit C cast or a second handwritten decoder.  This
+small edge illustrates the general rule: different GSLT presentations compose
+through named relations whose positive and negative behavior is testable.
+
+\section{Direct PeTTa specialization}
+
+PeTTa is the first didactic target because the residual program can remain
+close to the source semantics: equations, pattern matches, recursion,
+constructor-valued state, and result terms.  The primary runner is CeTTa's
+\code{--lang petta}; the SWI-hosted implementation is a useful independent
+dialect check, not the authoritative deployment target.
+
+Each authored relation receives a direct target definition.  Binding-mode
+analysis records which arguments are ground at a call, which become ground on
+success, and whether the selected mode is relational or single-valued.
+Deterministic calls are compiled as deterministic target code; relational
+search remains relational.  This avoids both extremes: running a deterministic
+checker through an unnecessary search engine, and destroying genuine
+nondeterminism with an accidental \code{once}.
+
+\subsection{Source constructors are not target operations}
+
+A subtle phase error appears when a source constructor has the same spelling
+as a PeTTa operation.  A parsed AST may contain \code{(cons h t)} as inert
+source data.  But a PeTTa equation head is an evaluation position: placing that
+form directly in the head can execute \code{cons} before the source rule is
+selected.
+
+The renderer therefore classifies target-effectful heads.  If a ground input
+pattern contains such a head, the equation receives a fresh slot and performs
+the authored structural match in its body:
+\begin{lstlisting}
+; unsafe staging
+(= (f (cons $h $t)) body)
+
+; phase-correct staging
+(= (f $__input_0)
+   (let (cons $h $t) $__input_0 body))
+\end{lstlisting}
+Safe patterns remain in equation heads so recursive clause discrimination is
+not flattened.  A generic canary uses a source constructor literally named
+\code{cons}; recursive ancestor canaries ensure that the repair does not turn
+all input patterns into catch-all clauses.
+
+The current classifier is a target-specific table in the PeTTa renderer.  A
+cleaner endpoint is to derive it from an authored PeTTa target presentation.
+This is future refactoring, not permission for source-language special cases
+in the renderer.
+
+\section{Direct \texorpdfstring{$\rho$}{rho} specialization}
+
+The $\rho$ route consumes authored equations and rewrites directly.  It does
+not translate the PeTTa schedule and does not factor through Horn clauses.
+Strict $\rho$ supplies names, sends, receives, parallel composition,
+quotation, drop, and structural congruence.  A small rhometta layer may be used
+when a target operation is explicitly presented and its reduction boundary is
+known.
+
+Set-automaton matching provides a principled compilation strategy for a
+closed left-linear rewrite family \cite{BouwmanErkens2022}.  Target channels
+are computed from the whole pattern family, and persistent receives realize
+rules.  Nonlinear heads and decision premises must be linearized or presented
+as explicit target computations; they must not be hidden in an adapter.
+
+Metamath checking itself is mostly deterministic and sequential.  This does
+not make a $\rho$ lowering useless.  Rather, it supplies the principal
+soundness criterion: the image of a deterministic source checker must be
+determinate up to structural congruence.  Milner's encoding of functions as
+processes supplies the classical precedent \cite{Milner1990}.
+
+\begin{obligation}[Determinate image]
+For every source state in the deterministic MM/MM0 checking fragment, any two
+one-step target reductions from its image are equivalent at the declared
+observation boundary.  Every image reduction reflects a source transition.
+Consequently target scheduling cannot change verdict, position, witness, or
+history.
+\end{obligation}
+
+The generic determinacy-to-confluence and sequential-realization schema is
+formalized.  Its full MM and MM0 instantiations require the complete authored
+semantics and executable lowering witnesses.
+
+\section{Why Horn is not the canonical middle}
+
+Horn clauses can encode ordered checking if positions, prefixes, and schedules
+are reified as data.  The question is not expressibility; sufficiently rich
+logic programming can express the computation.  The question is whether the
+encoding preserves or obscures the native structure.
+
+A set of ground facts erases order and multiplicity.  Metamath database
+acceptance distinguishes both: declarations are processed in order, and a
+duplicate declaration can change acceptance.  Therefore no pointwise
+statement-to-fact projection followed by positive Horn saturation can be a
+faithful account of the database verdict.  A faithful Horn encoding must put
+the missing sequence back into its facts or control state.  It relocates the
+checker rather than simplifying it.
+
+For PeTTa the extra layer is especially unhelpful: PeTTa already lowers its
+own equations to a Prolog implementation.  Emitting direct PeTTa lets its
+normal implementation choose indexing and WAM-level execution.  Reifying a
+second Horn program and interpreting it inside PeTTa duplicates the logic
+programming layer and moves source order into an auxiliary schedule.
+
+Horn projections remain legitimate independent oracles for small relational
+canaries.  They are not compiler authority, not a required backend, and not a
+performance architecture.
+
+\section{Metamath semantic shape}
+
+The natural Metamath verifier is an ordered, proof-producing transition
+system.  Its state includes declarations, scoped hypotheses, symbol classes,
+disjoint-variable information, assertion frames, and source positions.  A
+normal proof is a deterministic stack program.  A compressed proof adds a
+dictionary and saved-result discipline but remains a deterministic check of a
+finished certificate.
+
+The authored semantic package distinguishes:
+\begin{itemize}
+\item source folding and scope transitions;
+\item state-table lifetimes and ordered actions;
+\item normal and compressed proof decoding;
+\item assertion application and substitution;
+\item disjoint-variable obligations;
+\item total outcomes, positions, witnesses, and history.
+\end{itemize}
+
+The direct target work has executable PeTTa and $\rho$ slices across the state
+action families and proof streams.  Earlier source-owned native C machinery
+also demonstrates full-database parsing and checking performance, but it is
+not evidence that the direct PeTTa/$\rho$ compiler is complete.  The two must
+not be conflated during integration.
+
+\section{MM0 as the second guest}
+
+MM0 is not a dialect flag on the Metamath checker.  It is a second guest whose
+two stages must remain distinct \cite{Carneiro2020}:
+\begin{enumerate}
+\item textual \code{.mm0} elaboration builds and validates the specification;
+\item binary \code{.mmb} verification checks the encoded proof object against
+      that specification.
+\end{enumerate}
+
+The textual pipeline currently reaches assertion elaboration:
+\begin{lstlisting}
+bytes -> generic guarded parser -> ordered AST
+      -> sorts -> terms -> notation -> dynamic math parser
+      -> expression elaboration -> axioms/theorems
+\end{lstlisting}
+Assertions use the live term and notation environment.  Typed binders precede
+hypotheses; hypotheses and conclusions are elaborated at their source
+position; namespace collisions and sort mismatches produce explicit refusal.
+
+Still required are definition declarations, textual proof execution, total
+outcomes for the complete specification, binary decoding, and a correspondence
+statement between the textual and binary stages.  MM0 is the decisive
+guest-genericity test: these features must be added as authored capabilities,
+not as \code{if MM0} branches in either target renderer.
+
+\section{Correctness structure}
+
+Correctness is divided into construction laws and qualification evidence.
+
+\paragraph{Construction laws.}
+The desired theorem family states signature realization, equation
+preservation, rewrite realization, reflection of image steps, observation
+preservation, and compatibility with composition.  Proofs live over GSLT
+objects and target presentations.  No test corpus can replace these laws.
+
+\paragraph{Qualification evidence.}
+Deterministic regeneration, source digests, rule inventories, positive and
+negative canaries, source/target mutation, drift rejection, and severance make
+the implementation auditable.  Removing a load-bearing authored rule must
+change the generated artifact and eliminate the corresponding behavior; C or
+another runtime must not rescue it.
+
+\paragraph{Independent differentials.}
+The Metamath route retains an independent Lean-verified checker differential.
+Agreement is powerful evidence about implementation, but the target compiler
+is not defined as ``whatever happens to agree with the checker.''  This avoids
+translation validation becoming the architecture.
+
+\section{Performance follows representation}
+
+The didactic target should be readable, but it need not be deliberately slow.
+The first performance law is to keep data as data.  Runtime documents are
+streamed into state; large ground relations are stored once and indexed rather
+than emitted repeatedly as clauses.  The second law is to derive control from
+semantic properties:
+\begin{itemize}
+\item deterministic ordered transitions become deterministic code;
+\item ground functional relations use direct lookup or native indexes;
+\item genuine relations preserve occurrence multiplicity and branching;
+\item tabling or fixpoints require an authored recursive relation;
+\item $\rho$ concurrency is used only where source independence permits it.
+\end{itemize}
+
+Performance failures are classified before the goal is narrowed.  A compiler
+that emits four projections of one runtime stream as four clause families has
+a representation defect, not evidence that the target runtime is inherently
+slow.  Only after the input boundary and carrier are correct should target
+machine optimization begin.
+
+\section{Qualification snapshot}
+
+Table~\ref{tab:status} separates current executable evidence from unfinished
+work.  ``Green'' means the named bounded gates passed in the integration
+lineage; it does not mean the full project is complete.
+
+\begin{table}[htbp]
+\centering
+\small
+\begin{tabular}{>{\raggedright\arraybackslash}p{0.26\linewidth}
+                >{\raggedright\arraybackslash}p{0.26\linewidth}
+                >{\raggedright\arraybackslash}p{0.36\linewidth}}
+\toprule
+Component & Evidence & Open boundary \\
+\midrule
+Direct GSLT$\to$PeTTa renderer &
+Source identity, per-rule provenance, binding modes, recursive canaries,
+source-constructor phase canary, mutation and severance green &
+Derive the target-effectful vocabulary from the PeTTa presentation; complete
+the composition theorem \\
+Direct GSLT$\to\rho$ renderer &
+Strict-core target package, recursive/state/proof unit families and target
+identity gates green &
+Full MM/MM0 realization witnesses and full-corpus execution \\
+Metamath &
+All authored state action kinds lowered and stepped; normal/compressed unit
+proof streams and total unit outcomes green &
+Full direct-target corpus acceptance and remaining scale work \\
+MM0 textual syntax &
+Generic parser, live syntax fold, sorts, terms, notation, dynamic math parser,
+expressions, and assertions green in PeTTa and $\rho$ &
+Definitions and textual proof execution \\
+MM0 binary &
+Typed proof-machine sources preserved for reuse &
+Complete \code{.mmb} transition presentation and textual/binary
+correspondence \\
+Formal correspondence &
+Generic composition, observation, certified planning, and determinate-image
+theory available &
+Executable compiler instances for the complete guests and targets \\
+\bottomrule
+\end{tabular}
+\caption{Integration status as of 23 August 2026.}
+\label{tab:status}
+\end{table}
+
+The MM0 assertion gate currently checks five independent c.Petta outcomes and
+two direct $\rho$ observations.  It regenerates 436 PeTTa source-rule
+realizations and 415 source plus 176 target rules for the $\rho$ artifact.
+Neither artifact contains a concrete \code{.mm0} path or Horn/SLD/Datalog
+execution vocabulary.
+
+\section{Integration discipline}
+
+The implementation spans a runtime, compiler tools, authored language
+packages, generated artifacts, and proofs.  A merge should preserve that
+dependency order:
+\begin{enumerate}
+\item runtime correctness and target semantics;
+\item generic parser and composition infrastructure;
+\item direct PeTTa and $\rho$ renderers;
+\item authored Metamath packages and gates;
+\item authored MM0 packages and gates;
+\item generated artifacts regenerated from the merged tools;
+\item performance changes, each retaining the full correctness surface.
+\end{enumerate}
+
+Generated files are never used to adjudicate conflicts with their sources.
+They are regenerated after source/tool integration.  Experimental oracles are
+kept outside authoritative aggregate gates.  A branch that contains a useful
+optimization and an obsolete semantic path is not merged wholesale: the
+optimization is transplanted with its direct correctness canary.
+
+\section{Remaining research programme}
+
+The next substantial steps are:
+\begin{enumerate}
+\item author MM0 definition transitions with positive and negative examples;
+\item complete textual MM0 proof execution and total outcomes;
+\item derive the \code{.mmb} verifier from the typed binary machine and prove
+      its intended relationship to textual elaboration;
+\item instantiate the composition and observation-preservation theorem family
+      for both direct targets;
+\item run complete bounded corpora, then the large Metamath and MM0 databases;
+\item optimize c.Petta and the $\rho$ target only after profiles identify
+      target-machine costs rather than representation defects;
+\item add Prime as a target when its typing materially strengthens the
+      construction, and derive a native C backend from the same authored
+      semantics later.
+\end{enumerate}
+
+The intended endpoint is not one universal execution machine.  It is a family
+of explicit, compositional interpretations of one authored source package,
+each exploiting the target honestly and each preserving the observations that
+make a verifier meaningful.
+
+\section{Conclusion}
+
+The simplest description is also the most useful: write the language once,
+compile its semantics once per target, and run many documents through the
+result.  Metamath and MM0 are attractive didactic guests because their checkers
+are small enough to read and strict enough to expose phase errors.  PeTTa keeps
+the residual close to equations and recursion; $\rho$ tests that the compiler
+does not rely on a guest-shaped schedule.  Correctness resides in the
+compositional interpretation, while regeneration, mutation, severance, and
+independent differentials keep the executable implementation honest.
+
+\begin{thebibliography}{99}
+
+\bibitem{BouwmanErkens2022}
+R.~Bouwman and J.~Erkens.
+\newblock Term rewriting based on set automaton matching.
+\newblock \emph{Logical Methods in Computer Science}, 18(4), 2022.
+
+\bibitem{Carneiro2020}
+M.~Carneiro.
+\newblock Metamath Zero: The cartesian theorem prover.
+\newblock In \emph{Proceedings of CPP}, 2020.
+
+\bibitem{Futamura1971}
+Y.~Futamura.
+\newblock Partial evaluation of computation process---an approach to a
+compiler-compiler.
+\newblock \emph{Systems, Computers, Controls}, 2(5), 1971.
+
+\bibitem{JonesGomardSestoft1993}
+N.~D. Jones, C.~K. Gomard, and P.~Sestoft.
+\newblock \emph{Partial Evaluation and Automatic Program Generation}.
+\newblock Prentice Hall, 1993.
+
+\bibitem{MeredithRadestock2005}
+L.~G. Meredith and M.~Radestock.
+\newblock A reflective higher-order calculus.
+\newblock \emph{Electronic Notes in Theoretical Computer Science},
+141(5):49--67, 2005.
+
+\bibitem{Milner1990}
+R.~Milner.
+\newblock Functions as processes.
+\newblock INRIA Research Report 1154, 1990.
+
+\bibitem{Reynolds1972}
+J.~C. Reynolds.
+\newblock Definitional interpreters for higher-order programming languages.
+\newblock In \emph{Proceedings of the ACM Annual Conference}, 1972.
+
+\bibitem{Warren1983}
+D.~H.~D. Warren.
+\newblock An abstract Prolog instruction set.
+\newblock Technical Report 309, SRI International, 1983.
+
+\end{thebibliography}
+
+\end{document}

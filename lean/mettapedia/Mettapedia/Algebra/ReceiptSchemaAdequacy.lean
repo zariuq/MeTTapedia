@@ -5,7 +5,7 @@ import Mettapedia.Algebra.WorkSpanInformationLoss
 
 A receipt is a projection of an execution.  Replay compares receipts, so a
 receipt determines exactly as much as its schema records — no more.  The
-Cost² non-factorization results say compact syntax is an unsound key for
+cost-layer iteration non-factorization results say compact syntax is an unsound key for
 cost-bearing normalization; this module states the corresponding contract
 at the receipt boundary, so that a replay checker's schema requirement is
 a theorem rather than a convention.

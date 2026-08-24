@@ -197,29 +197,29 @@ end CostElaborationReindexLaws
 
 /-! ## The conservative base category
 
-Proof-relevant region decompositions are functorial only along Cost₁ arrows
+Proof-relevant region decompositions are functorial only along cost layer arrows
 that reflect the two decomposition decisions above.  We therefore keep the
-ordinary Cost₁ category unchanged and form a separate, arrow-restricted base
+ordinary cost layer category unchanged and form a separate, arrow-restricted base
 for the indexed elaboration family. -/
 
-/-- A Cost₁ object viewed in the base over which exact elaborations reindex.
+/-- A cost layer object viewed in the base over which exact elaborations reindex.
 The wrapper permits a stricter morphism class without installing a competing
-category instance on `CostOneDomainObject`. -/
+category instance on `Cost.Layer`. -/
 structure CostElaborationBase where
-  toCostOne : CostOneDomainObject
+  toLayer : Cost.Layer
 
 namespace CostElaborationBase
 
-/-- A Cost₁ arrow together with exactly the reflection laws needed to map its
+/-- A cost layer arrow together with exactly the reflection laws needed to map its
 proof-relevant region decompositions structurally. -/
 structure Morphism (source target : CostElaborationBase) where
-  underlying : CostOneMorphism source.toCostOne target.toCostOne
+  underlying : Cost.Layer.Hom source.toLayer target.toLayer
   reindexLaws : CostElaborationReindexLaws
     underlying.underlying.underlying
 
 namespace Morphism
 
-/-- Conservative elaboration arrows are determined by their Cost₁ arrow;
+/-- Conservative elaboration arrows are determined by their cost layer arrow;
 the reindexing admission fields are propositions. -/
 @[ext]
 theorem ext {source target : CostElaborationBase}
@@ -232,56 +232,56 @@ theorem ext {source target : CostElaborationBase}
 
 /-- Identity reflects every decomposition decision. -/
 def id (source : CostElaborationBase) : Morphism source source where
-  underlying := CostOneMorphism.id source.toCostOne
+  underlying := Cost.Layer.Hom.id source.toLayer
   reindexLaws := CostElaborationReindexLaws.id
-    source.toCostOne.source.toCIGSLT
+    source.toLayer.source.toCIGSLT
 
 /-- Conservative decomposition transport is closed under composition. -/
 def comp {first second third : CostElaborationBase}
     (left : Morphism first second) (right : Morphism second third) :
     Morphism first third where
-  underlying := CostOneMorphism.comp left.underlying right.underlying
+  underlying := Cost.Layer.Hom.comp left.underlying right.underlying
   reindexLaws := CostElaborationReindexLaws.comp left.reindexLaws
     right.reindexLaws
 
 end Morphism
 
 /-- Exact proof-relevant Cost reindexing has its own conservative base
-category.  It forgets to the broader Cost₁ category below. -/
+category.  It forgets to the broader cost layer category below. -/
 instance : CategoryTheory.Category CostElaborationBase where
   Hom := Morphism
   id := Morphism.id
   comp := Morphism.comp
   id_comp morphism := by
     apply Morphism.ext
-    apply CostOneMorphism.ext
+    apply Cost.Layer.Hom.ext
     apply OrderedCIGSLT.Morphism.ext
     apply CIGSLT.Morphism.ext <;> rfl
   comp_id morphism := by
     apply Morphism.ext
-    apply CostOneMorphism.ext
+    apply Cost.Layer.Hom.ext
     apply OrderedCIGSLT.Morphism.ext
     apply CIGSLT.Morphism.ext <;> rfl
   assoc first second third := by
     apply Morphism.ext
-    apply CostOneMorphism.ext
+    apply Cost.Layer.Hom.ext
     apply OrderedCIGSLT.Morphism.ext
     apply CIGSLT.Morphism.ext <;> rfl
 
 /-- Forget decomposition reflection while retaining the selected normalizer,
-Cost₁ laws, and underlying ordered continued arrow. -/
-def forget : CategoryTheory.Functor CostElaborationBase CostOneDomainObject where
-  obj source := source.toCostOne
+cost layer laws, and underlying ordered continued arrow. -/
+def forget : CategoryTheory.Functor CostElaborationBase Cost.Layer where
+  obj source := source.toLayer
   map morphism := morphism.underlying
   map_id _ := rfl
   map_comp _ _ := rfl
 
 /-- Compact one-step Cost restricted to arrows that also transport exact
 decomposition evidence.  Its codomain remains `OrderedCIGSLT`; no compact
-Cost² closure is asserted. -/
-def compactCostOneFunctor :
+cost-layer iteration closure is asserted. -/
+def compact :
     CategoryTheory.Functor CostElaborationBase OrderedCIGSLT :=
-  forget.comp Mettapedia.GSLT.LanguageDef.compactCostOneFunctor
+  forget.comp Mettapedia.GSLT.LanguageDef.Cost.Layer.compact
 
 end CostElaborationBase
 

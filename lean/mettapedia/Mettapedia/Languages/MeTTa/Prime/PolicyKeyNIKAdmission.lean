@@ -1,15 +1,16 @@
-import Mettapedia.Languages.MeTTa.Prime.CostTwoObservationKeyOrder
+import Mettapedia.Languages.MeTTa.Prime.ReplayKey
 
 /-!
 # Revision-current NIK admission for policy-sufficient receipt keys
 
-The Cost² information order determines which receipt or cache representations
+The replay-key information order determines which receipt or cache representations
 may serve which consumers.  This module connects that order to NIK's existing
 revision-indexed execution admission without introducing a second semantic
 authority.
 
-`PolicySafe` is a proposition: it proves that a policy factors through a key.
-Hot execution needs the stronger proof-carrying datum `PolicyRealization`,
+`ReplayKey.Supports` is a proposition: it says that a policy is constant on
+key fibres.  Hot execution needs the stronger proof-carrying datum
+`ObservationRealization`,
 which retains the keyed function together with its factorization law.  A
 `PolicyKeyAdmission` stores one such realization for every requested policy
 and, when requested, an exact decoder.  Current activation exposes only those
@@ -22,20 +23,19 @@ may exhibit either refusal mode in separate annexes without changing this
 generic admission boundary.
 -/
 
-namespace Mettapedia.Languages.MeTTa.Prime.CostTwoPolicyKeyNIKAdmission
+namespace Mettapedia.Languages.MeTTa.Prime.PolicyKeyNIKAdmission
 
 open Mettapedia.GSLT.LanguageDef.NIKRouteAdmission
 open Mettapedia.GSLT.LanguageDef.NIKIndexedExecutionAdmission
 open Mettapedia.Languages.MeTTa.Prime.PrimeAbstractImplementationModel
-open Mettapedia.Languages.MeTTa.Prime.CostTwoCacheReplayBoundary
-open Mettapedia.Languages.MeTTa.Prime.CostTwoObservationKeyOrder
+open Mettapedia.GSLT.LanguageDef.Cost.Elaboration
 open Mettapedia.GSLT.LanguageDef
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.Framework.ConstructorCategory
 
 universe uState uPolicy uValue uKey uCoarse uOther uObservation
 
-/-! ## Requests and retained native realizations -/
+/-! ## Requests -/
 
 /-- A family of observations requested from one retained semantic state.
 Values may depend on the policy index.  Exact replay is a separate capability,
@@ -45,86 +45,6 @@ structure PolicyRequest (State : Type uState) where
   Value : Policy → Type uValue
   observe : (policy : Policy) → State → Value policy
   requiresExactReplay : Prop
-
-/-- The keyed function actually run after admission, paired with the theorem
-that it implements the semantic policy. -/
-structure PolicyRealization {State : Type uState} {Key : Type uKey}
-    (key : State → Key) {Value : Type uValue} (policy : State → Value) where
-  run : Key → Value
-  agrees : policy = run ∘ key
-
-namespace PolicyRealization
-
-/-- Forget executable data to the policy-safety proposition. -/
-theorem policySafe {State : Type uState} {Key : Type uKey}
-    {key : State → Key} {Value : Type uValue} {policy : State → Value}
-    (realization : PolicyRealization key policy) :
-    PolicySafe key policy :=
-  ⟨realization.run, realization.agrees⟩
-
-@[simp] theorem run_encode {State : Type uState} {Key : Type uKey}
-    {key : State → Key} {Value : Type uValue} {policy : State → Value}
-    (realization : PolicyRealization key policy) (state : State) :
-    realization.run (key state) = policy state := by
-  exact (congrFun realization.agrees state).symm
-
-end PolicyRealization
-
-/-- An executable decoder paired with exact recovery.  Unlike
-`ExactReplayKey`, this is retained data rather than mere existence. -/
-structure ReplayRealization {State : Type uState} {Key : Type uKey}
-    (key : State → Key) where
-  decode : Key → State
-  recovers : Function.LeftInverse decode key
-
-namespace ReplayRealization
-
-theorem exactReplayKey {State : Type uState} {Key : Type uKey}
-    {key : State → Key} (replay : ReplayRealization key) :
-    ExactReplayKey key :=
-  ⟨replay.decode, replay.recovers⟩
-
-end ReplayRealization
-
-/-- A concrete forgetting map.  `KeyRefines` is its propositional shadow;
-this data form is what can safely precompose an admitted hot runner. -/
-structure KeyRefinement {State : Type uState} {Fine : Type uKey}
-    {Coarse : Type uCoarse} (fine : State → Fine) (coarse : State → Coarse)
-    where
-  forget : Fine → Coarse
-  commutes : coarse = forget ∘ fine
-
-namespace KeyRefinement
-
-theorem keyRefines {State : Type uState} {Fine : Type uKey}
-    {Coarse : Type uCoarse} {fine : State → Fine} {coarse : State → Coarse}
-    (refinement : KeyRefinement fine coarse) :
-    KeyRefines fine coarse :=
-  ⟨refinement.forget, refinement.commutes⟩
-
-def refl {State : Type uState} {Key : Type uKey} (key : State → Key) :
-    KeyRefinement key key where
-  forget := id
-  commutes := by funext state; rfl
-
-def trans {State : Type uState} {Fine : Type uKey} {Middle : Type uCoarse}
-    {Coarse : Type uOther}
-    {fine : State → Fine} {middle : State → Middle}
-    {coarse : State → Coarse}
-    (fineMiddle : KeyRefinement fine middle)
-    (middleCoarse : KeyRefinement middle coarse) :
-    KeyRefinement fine coarse where
-  forget := middleCoarse.forget ∘ fineMiddle.forget
-  commutes := by
-    funext state
-    calc
-      coarse state = middleCoarse.forget (middle state) :=
-        congrFun middleCoarse.commutes state
-      _ = middleCoarse.forget (fineMiddle.forget (fine state)) :=
-        congrArg middleCoarse.forget (congrFun fineMiddle.commutes state)
-      _ = ((middleCoarse.forget ∘ fineMiddle.forget) ∘ fine) state := rfl
-
-end KeyRefinement
 
 /-! ## Revision-indexed policy-key admission -/
 
@@ -137,7 +57,7 @@ structure PolicyKeyAdmission
     {State : Type uState} (request : PolicyRequest State)
     {Key : Type uKey} (key : State → Key) where
   realize : (policy : request.Policy) →
-    PolicyRealization key (request.observe policy)
+    ObservationRealization key (request.observe policy)
   replay : request.requiresExactReplay → ReplayRealization key
 
 namespace PolicyKeyAdmission
@@ -149,14 +69,14 @@ variable {Key : Type uKey} {key : State → Key}
 
 theorem supports (admission : PolicyKeyAdmission dependencies revision request key)
     (policy : request.Policy) :
-    PolicySafe key (request.observe policy) :=
-  (admission.realize policy).policySafe
+    ReplayKey.Supports key (request.observe policy) :=
+  (admission.realize policy).supports
 
-theorem exactReplayKey
+theorem isExact
     (admission : PolicyKeyAdmission dependencies revision request key)
     (required : request.requiresExactReplay) :
-    ExactReplayKey key :=
-  (admission.replay required).exactReplayKey
+    ReplayKey.IsExact key :=
+  (admission.replay required).isExact
 
 /-- Currentness guards activation exactly as in NIK's execution admissions. -/
 structure Active
@@ -183,7 +103,7 @@ def Active.runKey
     (active : admission.Active currentRevision) (policy : request.Policy)
     (state : State) :
     active.runKey policy (key state) = request.observe policy state :=
-  (admission.realize policy).run_encode state
+  (admission.realize policy).run_key state
 
 /-- Preparation retains the semantic state independently of its potentially
 lossy policy key, preserving deoptimization. -/
@@ -225,7 +145,7 @@ def Active.runPrepared
     active.runPrepared prepared policy = request.observe policy prepared.state := by
   unfold Active.runPrepared Active.runKey
   rw [prepared.encoded_adequate]
-  exact (admission.realize policy).run_encode prepared.state
+  exact (admission.realize policy).run_key prepared.state
 
 def StaleAt
     (_admission : PolicyKeyAdmission dependencies revision request key)
@@ -333,7 +253,7 @@ theorem evaluate_eq
     (prepared : model.PreparedTrace) (policy : request.Policy) :
     view.evaluate active prepared policy =
       request.observe policy (model.compileTrace active prepared.sourceTrace) :=
-  (view.receiptAdmission.realize policy).run_encode _
+  (view.receiptAdmission.realize policy).run_key _
 
 /-- Staleness of the underlying NIK model prevents the scoped receipt view
 from running, while the model's independently retained raw fallback survives. -/
@@ -383,15 +303,15 @@ def admissionRefinesPolicyVector
   commutes := by
     funext state policy
     simpa only [policyVectorKey, Function.comp_apply] using
-      ((admission.realize policy).run_encode state).symm
+      ((admission.realize policy).run_key state).symm
 
 theorem every_admitted_key_refines_policyVector
     {dependencies : DependencySystem} {revision : dependencies.Revision}
     {State : Type uState} {request : PolicyRequest State}
     {Key : Type uKey} {key : State → Key}
     (admission : PolicyKeyAdmission dependencies revision request key) :
-    KeyRefines key (policyVectorKey request) :=
-  (admissionRefinesPolicyVector admission).keyRefines
+    ReplayKey.Refines key (policyVectorKey request) :=
+  (admissionRefinesPolicyVector admission).refines
 
 /-- Retaining the full state always admits every policy and exact replay. -/
 def identityKeyAdmission
@@ -413,11 +333,12 @@ theorem exactRequest_admittedKey_mutuallyRefines_identity
     {Key : Type uKey} {key : State → Key}
     (admission : PolicyKeyAdmission dependencies revision request key)
     (required : request.requiresExactReplay) :
-    KeyRefines key (id : State → State) ∧
-      KeyRefines (id : State → State) key := by
-  exact exactReplayKeys_mutuallyRefine
-    (admission.exactReplayKey required)
-    (⟨id, fun _ => rfl⟩ : ExactReplayKey (id : State → State))
+    ReplayKey.Refines key (id : State → State) ∧
+      ReplayKey.Refines (id : State → State) key := by
+  exact ReplayKey.exactKeys_mutuallyRefine
+    (admission.isExact required)
+    (⟨{ decode := id, recovers := fun _ => rfl }⟩ :
+      ReplayKey.IsExact (id : State → State))
 
 /-- A request for one policy, optionally with exact replay. -/
 def singlePolicyRequest {State : Type uState} {Value : Type uValue}
@@ -470,7 +391,7 @@ theorem relevant_change_prevents_activation_and_preserves_fallback :
 
 end RevisionCanary
 
-#print axioms PolicyRealization.run_encode
+#print axioms ObservationRealization.run_key
 #print axioms KeyRefinement.trans
 #print axioms PolicyKeyAdmission.Active.runPrepared_eq
 #print axioms PolicyKeyAdmission.pullback
@@ -480,4 +401,4 @@ end RevisionCanary
 #print axioms exactRequest_admittedKey_mutuallyRefines_identity
 #print axioms RevisionCanary.relevant_change_prevents_activation_and_preserves_fallback
 
-end Mettapedia.Languages.MeTTa.Prime.CostTwoPolicyKeyNIKAdmission
+end Mettapedia.Languages.MeTTa.Prime.PolicyKeyNIKAdmission

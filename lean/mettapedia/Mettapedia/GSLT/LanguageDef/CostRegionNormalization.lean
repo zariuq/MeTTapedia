@@ -255,7 +255,7 @@ The same-colour action is local to one certified static region.  Weakening is
 required only for already-typed child paths.  In particular, this interface
 does not demand the false property that every mixed-colour raw equation path
 remain in one arbitrary typing fibre. -/
-structure CostTypedUnaryNormalizationLaws (source : CIGSLT) : Prop where
+structure Cost.SemanticSection.Laws (source : CIGSLT) : Prop where
   mappedGeneratorFiberAction : CostStaticMappedGeneratorFiberAction source
   weakeningStable : ReflectiveOpenPatternEquationWeakeningStable
     source.costWholeReflectionProfile source.costWholeLanguage
@@ -288,12 +288,12 @@ structure CostTypedStaticRegionNormalizerLaws
           (normalizeStatic node values))
         node.termAvailable
 
-namespace CostTypedUnaryNormalizationLaws
+namespace Cost.SemanticSection.Laws
 
 /-- The original mapped-action laws instantiate the arbitrary-normalizer
 interface for the established static-frame normalizer. -/
 def toStaticRegionNormalizerLaws {source : CIGSLT}
-    (laws : CostTypedUnaryNormalizationLaws source) :
+    (laws : Cost.SemanticSection.Laws source) :
     CostTypedStaticRegionNormalizerLaws source
       (fun node values => node.normalizeWithReflective values) where
   weakeningStable := laws.weakeningStable
@@ -304,7 +304,7 @@ def toStaticRegionNormalizerLaws {source : CIGSLT}
         laws.mappedGeneratorFiberAction values valuesEquivalent
           (laws.canonicalPathSafe node)
 
-end CostTypedUnaryNormalizationLaws
+end Cost.SemanticSection.Laws
 
 namespace CostRegionTree
 
@@ -1840,7 +1840,7 @@ end
 /-- Compatibility specialization of typed tree normalization to the
 established mapped-action static normalizer. -/
 theorem CostRegionTree.normalize_equationSetoid
-    {source : CIGSLT} (laws : CostTypedUnaryNormalizationLaws source)
+    {source : CIGSLT} (laws : Cost.SemanticSection.Laws source)
     {targetFree : WellSorted.FreeTypeContext}
     {available outer : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
     (tree : CostRegionTree source targetFree available outer pattern type)
@@ -1858,7 +1858,7 @@ theorem CostRegionTree.normalize_equationSetoid
 
 /-- Compatibility specialization for one authored constructor argument. -/
 theorem CostRegionTree.normalize_argument_equationSetoid
-    {source : CIGSLT} (laws : CostTypedUnaryNormalizationLaws source)
+    {source : CIGSLT} (laws : Cost.SemanticSection.Laws source)
     {targetFree : WellSorted.FreeTypeContext}
     {available outer : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
     (tree : CostRegionTree source targetFree available outer pattern type)
@@ -1883,7 +1883,7 @@ theorem CostRegionTree.normalize_argument_equationSetoid
 
 /-- Compatibility specialization for constructor argument spines. -/
 theorem CostRegionArgumentTrees.normalize_equationForall₂
-    {source : CIGSLT} (laws : CostTypedUnaryNormalizationLaws source)
+    {source : CIGSLT} (laws : Cost.SemanticSection.Laws source)
     {targetFree : WellSorted.FreeTypeContext}
     {available outer : List TypeExpr} {arguments : List Pattern}
     {parameters : List TermParam}
@@ -1905,7 +1905,7 @@ theorem CostRegionArgumentTrees.normalize_equationForall₂
 
 /-- Compatibility specialization for homogeneous element spines. -/
 theorem CostRegionElementTrees.normalize_equationForall₂
-    {source : CIGSLT} (laws : CostTypedUnaryNormalizationLaws source)
+    {source : CIGSLT} (laws : Cost.SemanticSection.Laws source)
     {targetFree : WellSorted.FreeTypeContext}
     {available outer : List TypeExpr} {elements : List Pattern}
     {elementType : TypeExpr}
@@ -1927,7 +1927,7 @@ theorem CostRegionElementTrees.normalize_equationForall₂
 
 /-- Compatibility specialization for finite boundary vectors. -/
 theorem CostRegionBoundaryTrees.normalizeValues_fiberEquivalent
-    {source : CIGSLT} (laws : CostTypedUnaryNormalizationLaws source)
+    {source : CIGSLT} (laws : Cost.SemanticSection.Laws source)
     {targetFree : WellSorted.FreeTypeContext} {color : CostStaticColor}
     {occurrences : List CostRegionOccurrence}
     {table : TypedCostRegionBoundaryTable source color targetFree occurrences}
@@ -1942,7 +1942,7 @@ theorem CostRegionBoundaryTrees.normalizeValues_fiberEquivalent
 /-- Forget the quote-visible binder split while retaining every typed
 intermediate vertex of the child-first normalization path. -/
 theorem CostRegionTree.normalize_openPatternEquationSetoid
-    {source : CIGSLT} (laws : CostTypedUnaryNormalizationLaws source)
+    {source : CIGSLT} (laws : Cost.SemanticSection.Laws source)
     {targetFree : WellSorted.FreeTypeContext}
     {available outer : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
     (tree : CostRegionTree source targetFree available outer pattern type)
@@ -1962,7 +1962,7 @@ theorem CostRegionTree.normalize_openPatternEquationSetoid
 /-- Erasing the typed normalization path gives the unary authored contextual
 equivalence theorem.  No global raw fiber-stability hypothesis is used. -/
 theorem CostRegionTree.normalize_typed_equationEquiv
-    {source : CIGSLT} (laws : CostTypedUnaryNormalizationLaws source)
+    {source : CIGSLT} (laws : Cost.SemanticSection.Laws source)
     {targetFree : WellSorted.FreeTypeContext}
     {available outer : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
     (tree : CostRegionTree source targetFree available outer pattern type)
@@ -1987,7 +1987,7 @@ executable chooser semantically irrelevant.  This quantifies over arbitrary
 trees for one exact compact term, rather than over a particular enumeration
 order. -/
 theorem CostRegionTree.normalize_typed_overlap_equivalent
-    {source : CIGSLT} (laws : CostTypedUnaryNormalizationLaws source)
+    {source : CIGSLT} (laws : Cost.SemanticSection.Laws source)
     {targetFree : WellSorted.FreeTypeContext}
     {available outer : List TypeExpr} {pattern : Pattern} {type : TypeExpr}
     (first second :
@@ -2010,7 +2010,7 @@ theorem CostRegionTree.normalize_typed_overlap_equivalent
 /-- Typed soundness holds for every proof-relevant Cost elaboration, not only
 for the deterministic tree selected by compact execution. -/
 theorem CostOpenElaboration.normalizeErasure_typed_openEquationSetoid
-    {source : CIGSLT} (laws : CostTypedUnaryNormalizationLaws source)
+    {source : CIGSLT} (laws : Cost.SemanticSection.Laws source)
     {targetFree : WellSorted.FreeTypeContext}
     {targetBound : List TypeExpr}
     {targetSort : LangSort source.costWholeLanguage}
@@ -2053,7 +2053,7 @@ theorem CostOpenElaboration.normalizeErasure_typed_openEquationSetoid
 proof-relevant elaboration; compilation chooses a tree but contributes no
 semantic equation authority. -/
 theorem CIGSLT.costNormalizeOpen_typed_openEquationSetoid
-    (source : CIGSLT) (laws : CostTypedUnaryNormalizationLaws source)
+    (source : CIGSLT) (laws : Cost.SemanticSection.Laws source)
     {targetFree : WellSorted.FreeTypeContext}
     {targetBound : List TypeExpr}
     {targetSort : LangSort source.costWholeLanguage}
@@ -2300,7 +2300,7 @@ required to inhabit `CIGSLT`.  No claim is made here that all proof-relevant
 elaborations erase to the same normal form; that strictly stronger property
 is separated below because it is not hereditary under Cost iteration. -/
 structure CostReferenceOpenSectionLaws (source : CIGSLT) : Prop
-    extends CostTypedUnaryNormalizationLaws source,
+    extends toSemanticSectionLaws : Cost.SemanticSection.Laws source,
       CostReferenceContextualOpenLaws source where
   generatorInvariant : CostReferenceOpenGeneratorInvariant source
 
@@ -2313,7 +2313,7 @@ def CostReferenceOpenSectionLaws.toCostOpenSectionLawsFor
   equivalent := by
     intro free bound sort term
     exact source.costNormalizeOpen_typed_openEquationSetoid
-      laws.toCostTypedUnaryNormalizationLaws term
+      laws.toSemanticSectionLaws term
   generatorInvariant := laws.generatorInvariant
   preservesFreeVariableSupport := by
     intro free bound sort term name membership
@@ -2343,7 +2343,7 @@ def CostReferenceCanonicalObjectProperty :
   CostReferenceOpenCanonicalLaws
 
 /-- Full subcategory of ciGSLTs carrying the exact typed Cost laws.  The
-eventual Cost₁ category further restricts morphisms to maps preserving the
+eventual cost layer category further restricts morphisms to maps preserving the
 generated structural data and canonical-key order. -/
 abbrev CostReferenceCanonicalObjects :=
   CostReferenceCanonicalObjectProperty.FullSubcategory
@@ -2395,7 +2395,7 @@ def CIGSLT.costReferenceOpenSection (source : CIGSLT)
     laws.toCostOpenSectionLawsFor
 
 /-- Exact contextual open section of the generated Cost presentation.
-Every additional field is supplied by the Cost₁ object law rather than
+Every additional field is supplied by the cost layer object law rather than
 inferred from equation equivalence. -/
 def CIGSLT.costReferenceContextualOpenSection (source : CIGSLT)
     (laws : CostReferenceOpenSectionLaws source) :
@@ -2441,7 +2441,7 @@ def CIGSLT.costReferenceCompactObservationSection (source : CIGSLT)
         source.costWholeLanguage targetFree targetBound
           (.base targetSort.1)).r term.2.normalizeErasure term.1
     exact term.2.normalizeErasure_typed_openEquationSetoid
-      laws.toCostReferenceOpenSectionLaws.toCostTypedUnaryNormalizationLaws
+      laws.toCostReferenceOpenSectionLaws.toSemanticSectionLaws
   complete := by
     intro left right equivalent
     change (ReflectiveEquationSemantics.reflectiveOpenPatternEquationSetoid
@@ -2497,7 +2497,7 @@ theorem CostRegionTree.normalize_overlap_exact
 execution.  This theorem intentionally concludes authored equivalence rather
 than exact syntax equality. -/
 theorem CostRegionTree.normalize_equationEquiv_costNormalizeOpen
-    {source : CIGSLT} (laws : CostTypedUnaryNormalizationLaws source)
+    {source : CIGSLT} (laws : Cost.SemanticSection.Laws source)
     {targetFree : WellSorted.FreeTypeContext}
     {targetBound : List TypeExpr}
     {targetSort : LangSort source.costWholeLanguage}

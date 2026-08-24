@@ -83,7 +83,7 @@ theorem workSpan_forgets_causalOrder {Payload Order : Type}
   workSpan_forgets_any_separating_attribute causalOrder distinct
 
 /-- Work and span do not determine the **elaboration path**.  This is the
-readout-level counterpart of the Cost² non-factorization results: compact
+readout-level counterpart of the cost-layer iteration non-factorization results: compact
 observation cannot recover elaboration provenance. -/
 theorem workSpan_forgets_elaborationPath {Payload Path : Type}
     (elaborationPath : Payload → Path) {first second : Payload}

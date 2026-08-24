@@ -1,11 +1,11 @@
 import Mettapedia.GSLT.Dynamics.ObservationPolicyFamilyUniversal
 import Mettapedia.GSLT.LanguageDef.NIKPolicyFamilyAdmission
-import Mettapedia.Languages.MeTTa.Prime.CostTwoPolicyKeyNIKAdmission
+import Mettapedia.Languages.MeTTa.Prime.PolicyKeyNIKAdmission
 
 /-!
-# Cost² policy-key admission as generic observation-family sufficiency
+# cost-layer iteration policy-key admission as generic observation-family sufficiency
 
-The Cost² receipt-key theory and the general observation-family theory have
+The cost-layer iteration receipt-key theory and the general observation-family theory have
 the same information boundary.  This module makes that relationship formal
 without changing either layer: every existing policy-key admission supplies
 the generic executable readout realization, and the generic least-sufficient
@@ -17,14 +17,13 @@ constant policy family while provably failing to replay the retained state.
 
 set_option autoImplicit false
 
-namespace Mettapedia.Languages.MeTTa.Prime.CostTwoPolicyFamilyObservationBridge
+namespace Mettapedia.Languages.MeTTa.Prime.PolicyKeyObservationFamilyBridge
 
 open Mettapedia.GSLT.Core
 open Mettapedia.GSLT.LanguageDef.NIKRouteAdmission
 open Mettapedia.GSLT.LanguageDef.NIKPolicyFamilyAdmission
-open Mettapedia.Languages.MeTTa.Prime.CostTwoCacheReplayBoundary
-open Mettapedia.Languages.MeTTa.Prime.CostTwoObservationKeyOrder
-open Mettapedia.Languages.MeTTa.Prime.CostTwoPolicyKeyNIKAdmission
+open Mettapedia.GSLT.LanguageDef.Cost.Elaboration
+open Mettapedia.Languages.MeTTa.Prime.PolicyKeyNIKAdmission
 
 universe uState uKey
 
@@ -47,7 +46,7 @@ def observationRealization
     (admission : PolicyKeyAdmission dependencies revision request key) :
     (observationFamily request).ReadoutRealization key where
   run := fun policy => (admission.realize policy).run
-  agrees := fun policy state => (admission.realize policy).run_encode state
+  agrees := fun policy state => (admission.realize policy).run_key state
 
 /-- The Cost/NIK key admission is an ordinary revision-indexed GSLT policy
 family admission after forgetting only its independent replay field. -/
@@ -140,13 +139,19 @@ theorem policyKeyAdmission_refinesPolicyVector_fromObservationUniversal
     {State : Type uState} {request : PolicyRequest State}
     {Key : Type uKey} {key : State -> Key}
     (admission : PolicyKeyAdmission dependencies revision request key) :
-    KeyRefines key (policyVectorKey request) := by
+    ReplayKey.Refines key (policyVectorKey request) := by
   have factors :=
     ((observationFamily request).supportsReadout_iff_vectorFactors key).1
       (policyKeyAdmission_supportsObservationFamily admission)
   obtain ⟨forget, recovers⟩ := factors
-  refine ⟨forget, funext fun state => ?_⟩
-  exact (recovers state).symm
+  intro left right sameKey
+  funext policy
+  have vectorsEqual :
+      (observationFamily request).vector left =
+        (observationFamily request).vector right :=
+    (recovers left).symm.trans
+      ((congrArg forget sameKey).trans (recovers right))
+  exact congrFun vectorsEqual policy
 
 /-! ## Exact replay remains strictly stronger -/
 
@@ -174,10 +179,10 @@ def collapsedAdmission :
 /-- Generic family support does not imply exact replay of semantic state. -/
 theorem familySupport_does_not_mint_exactReplay :
     (observationFamily constantRequest).SupportsReadout collapsedKey /\
-      Not (ExactReplayKey collapsedKey) := by
+      Not (ReplayKey.IsExact collapsedKey) := by
   constructor
   · exact policyKeyAdmission_supportsObservationFamily collapsedAdmission
-  · exact collision_prevents_exactReplayKey
+  · exact ReplayKey.collision_prevents_exact
       (key := collapsedKey) (left := false) (right := true)
       (by decide) rfl
 
@@ -189,4 +194,4 @@ end Canary
 #print axioms activeToGeneric_runKey
 #print axioms Canary.familySupport_does_not_mint_exactReplay
 
-end Mettapedia.Languages.MeTTa.Prime.CostTwoPolicyFamilyObservationBridge
+end Mettapedia.Languages.MeTTa.Prime.PolicyKeyObservationFamilyBridge

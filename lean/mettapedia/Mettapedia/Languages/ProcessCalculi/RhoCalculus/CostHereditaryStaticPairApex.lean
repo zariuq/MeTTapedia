@@ -7427,7 +7427,7 @@ trees and their bridge case are already constructed data; the provider need
 only choose the appropriate enclosing or matched semantic cut.  In
 particular, no `CostStaticPlanEdge` or authored generator occurrence is an
 input to this closure theorem. -/
-def RhoCanonicalStaticPairSemanticCutProviderInDomain
+def RhoCanonicalStaticPair.HasSemanticCut
     (declarationColor : CostStaticColor) : Prop :=
   ∀ {targetFree : FreeTypeContext} {available outer : List TypeExpr}
     {leftPattern rightPattern : Pattern} {type : TypeExpr},
@@ -7490,7 +7490,7 @@ returned by `provider`; no static-plan edge is synthesized or assumed. -/
 theorem of_provider
     {declarationColor : CostStaticColor}
     (provider :
-      RhoCanonicalStaticPairSemanticCutProviderInDomain declarationColor) :
+      RhoCanonicalStaticPair.HasSemanticCut declarationColor) :
     RhoCanonicalStaticPairSemanticCutsInDomain declarationColor := by
   intro targetFree available outer leftPattern rightPattern type admissible
     leftWellSorted rightWellSorted canonical staticShape closeSmaller
@@ -7535,7 +7535,7 @@ well-founded static step. -/
 theorem toStaticPairStepInDomain_of_provider
     {declarationColor : CostStaticColor}
     (provider :
-      RhoCanonicalStaticPairSemanticCutProviderInDomain declarationColor) :
+      RhoCanonicalStaticPair.HasSemanticCut declarationColor) :
     CostCanonicalStaticPairStepInDomain rhoCanonicalRecursiveTypeDomain
       rhoHereditaryNormalizationKernel
       (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor

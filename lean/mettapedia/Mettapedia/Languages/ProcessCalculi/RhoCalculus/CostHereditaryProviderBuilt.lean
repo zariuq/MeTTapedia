@@ -1,4 +1,4 @@
-import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryProviderApexSlice
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryProviderObligations
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryObjectReduction
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryCanonicalOccurrencePathSupport
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryMatchedFramesRestorationApex
@@ -156,8 +156,8 @@ open Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefContinuedInterac
 
 /-- The semantic-cut provider stated at its sole point of use: both trees
 are the `build?` outputs of the two patterns.  Everything else matches
-`RhoCanonicalStaticPairSemanticCutProviderInDomain`. -/
-def RhoCanonicalStaticPairSemanticCutProviderInDomainBuilt
+`RhoCanonicalStaticPair.HasSemanticCut`. -/
+def RhoCanonicalStaticPair.HasBuiltSemanticCut
     (declarationColor : CostStaticColor) : Prop :=
   ∀ {targetFree : FreeTypeContext} {available outer : List TypeExpr}
     {leftPattern rightPattern : Pattern} {type : TypeExpr},
@@ -211,11 +211,11 @@ def RhoCanonicalStaticPairSemanticCutProviderInDomainBuilt
         rootCase)
 
 /-- The general provider specializes to the built interface. -/
-theorem RhoCanonicalStaticPairSemanticCutProviderInDomain.toBuilt
+theorem RhoCanonicalStaticPair.HasSemanticCut.toBuilt
     {declarationColor : CostStaticColor}
     (provider :
-      RhoCanonicalStaticPairSemanticCutProviderInDomain declarationColor) :
-    RhoCanonicalStaticPairSemanticCutProviderInDomainBuilt declarationColor :=
+      RhoCanonicalStaticPair.HasSemanticCut declarationColor) :
+    RhoCanonicalStaticPair.HasBuiltSemanticCut declarationColor :=
   fun admissible leftWellSorted rightWellSorted canonical staticShape
       closeSmaller rootCase =>
     provider admissible leftWellSorted rightWellSorted canonical staticShape
@@ -227,7 +227,7 @@ built interface carries hold definitionally. -/
 theorem RhoCanonicalStaticPairSemanticCutsInDomain.of_provider_built
     {declarationColor : CostStaticColor}
     (provider :
-      RhoCanonicalStaticPairSemanticCutProviderInDomainBuilt
+      RhoCanonicalStaticPair.HasBuiltSemanticCut
         declarationColor) :
     RhoCanonicalStaticPairSemanticCutsInDomain declarationColor := by
   intro targetFree available outer leftPattern rightPattern type admissible
@@ -250,15 +250,15 @@ theorem RhoCanonicalStaticPairSemanticCutsInDomain.of_provider_built
 The route check for the built interface: generator-tree alignability comes
 from the per-colour static closure, whose step is the built provider through
 `of_provider_built`; reflective-support preservation is already a closed
-term.  So the whole remaining content of the rho Cost₁ domain object is the
+term.  So the whole remaining content of the rho cost layer domain object is the
 built provider. -/
-noncomputable def rhoHereditaryCostOneDomainObject_ofBuiltProvider
+noncomputable def rhoHereditaryCostLayer_ofBuiltProvider
     (built : ∀ color,
-      RhoCanonicalStaticPairSemanticCutProviderInDomainBuilt color) :
-    CostOneDomainObject :=
-  rhoHereditaryCostOneDomainObject_of
+      RhoCanonicalStaticPair.HasBuiltSemanticCut color) :
+    Cost.Layer :=
+  rhoHereditaryCostLayer_of
     (rhoCostOpenGeneratorTreeAlignable_of_staticClosures (fun color =>
-      CostCanonicalStaticPairClosedInDomain.of_step
+      CostCanonicalStaticPair.IsClosedIn.of_step
         (by exact List.mem_cons_self)
         (RhoCanonicalStaticPairSemanticCutsInDomain.toStaticPairStepInDomain
           (RhoCanonicalStaticPairSemanticCutsInDomain.of_provider_built
@@ -266,15 +266,15 @@ noncomputable def rhoHereditaryCostOneDomainObject_ofBuiltProvider
     (rhoHereditaryReflectiveSupportPreserving_of
       rhoHereditaryStaticNormalizer_preservesReflectiveSupport_path)
 
-/-- The Cost₁ object laws from the built provider alone. -/
-noncomputable def rhoHereditaryCostOneObjectLaws_ofBuiltProvider
+/-- The cost layer object laws from the built provider alone. -/
+noncomputable def rhoHereditaryCompactOpenNormalizerLaws_ofBuiltProvider
     (built : ∀ color,
-      RhoCanonicalStaticPairSemanticCutProviderInDomainBuilt color) :
-    CIGSLT.CostOneObjectLawsFor rhoCIGSLT
+      RhoCanonicalStaticPair.HasBuiltSemanticCut color) :
+    Cost.CompactOpenNormalizer.Laws rhoCIGSLT
       rhoCostNormalizeOpenHereditarySupported :=
-  rhoHereditaryCostOneObjectLaws_of
+  rhoHereditaryCompactOpenNormalizerLaws_of
     (rhoCostOpenGeneratorTreeAlignable_of_staticClosures (fun color =>
-      CostCanonicalStaticPairClosedInDomain.of_step
+      CostCanonicalStaticPair.IsClosedIn.of_step
         (by exact List.mem_cons_self)
         (RhoCanonicalStaticPairSemanticCutsInDomain.toStaticPairStepInDomain
           (RhoCanonicalStaticPairSemanticCutsInDomain.of_provider_built
@@ -384,7 +384,7 @@ partner's colour is recovered from its own root shape. -/
 
 /-- **Leaf exposure against any partner.**
 
-`RhoCollapsingLeafExposureInDomain` carries `other.rootIsStatic = false`, but
+`RhoCollapsingLeaf.HasExposure` carries `other.rootIsStatic = false`, but
 that premise is not used by any exposure producer — none of
 `CostHereditaryStaticCollapseExposure`, `CostHereditaryStaticDeepAtomExposure`
 or `CostStaticProcessBoundary` mentions it.  It scoped the lane rather than
@@ -512,20 +512,20 @@ same colour, static at the other colour — selects the enclosing,
 static-enclosing, or cross-colour constructor, and the aligned case is the
 restoration cut.
 
-The enclosing arms use `RhoCollapsingLeafExposureInDomain`, which carries the
+The enclosing arms use `RhoCollapsingLeaf.HasExposure`, which carries the
 recursion the exposure producers actually consume; restoration alignment is
 root-level and does not.
 
 OFF THE LIVE PATH — this dispatcher and the two builders below duplicate, by
-hand, the route already implemented in `CostHereditaryProviderApexSlice`, which
-consumes the four apex-slice obligations and seals through
-`rhoHereditaryCostOneDomainObject_ofApexSliceObligations`.  The inhabitation
+hand, the route already implemented in `CostHereditaryProviderObligations`, which
+consumes the four restoration obligations and seals through
+`rhoHereditaryCostLayer_ofRestorationObligations`.  The inhabitation
 ledger records `RhoAlignedViewsRestorationAlignedInDomain` as strictly stronger
 than its consumer requires, with no route back; and
 `RhoCollapsingLeafExposureAnyPartner` below drops the partner's
 `rootIsStatic = false` premise, which is the same weakening that leaves the
 three-classification route vacuous against the empty-parallel witness.  Prefer
-the apex-slice route; these declarations have no dependents. -/
+the restoration route; these declarations have no dependents. -/
 theorem nonempty_rhoCanonicalStaticPairSemanticCut_of_restorationAligned
     {declarationColor : CostStaticColor}
     (sameColorRestoration :
@@ -576,12 +576,12 @@ theorem nonempty_rhoCanonicalStaticPairSemanticCut_of_restorationAligned
       exact ⟨.rightEnclosing rightView collapsing exposed⟩
 
 /-- The built provider at every declaration colour. -/
-theorem rhoCanonicalStaticPairSemanticCutProviderInDomainBuilt_of_restorationAligned
+theorem rhoCanonicalStaticPair_hasBuiltSemanticCut_of_restorationAligned
     (sameColorRestoration : ∀ color,
       RhoAlignedViewsRestorationAlignedInDomain color)
     (exposure : ∀ color, RhoCollapsingLeafExposureAnyPartner color)
     (declarationColor : CostStaticColor) :
-    RhoCanonicalStaticPairSemanticCutProviderInDomainBuilt declarationColor := by
+    RhoCanonicalStaticPair.HasBuiltSemanticCut declarationColor := by
   intro targetFree available outer leftPattern rightPattern type admissible
     leftWellSorted rightWellSorted canonical staticShape closeSmaller rootCase
   exact nonempty_rhoCanonicalStaticPairSemanticCut_of_restorationAligned
@@ -589,15 +589,15 @@ theorem rhoCanonicalStaticPairSemanticCutProviderInDomainBuilt_of_restorationAli
     admissible leftWellSorted
     rightWellSorted closeSmaller canonical rootCase
 
-/-- **The rho Cost₁ domain object from restoration alignment and the standing
+/-- **The rho cost layer domain object from restoration alignment and the standing
 exposure obligation.** -/
-noncomputable def rhoHereditaryCostOneDomainObject_ofRestorationAligned
+noncomputable def rhoHereditaryCostLayer_ofRestorationAligned
     (sameColorRestoration : ∀ color,
       RhoAlignedViewsRestorationAlignedInDomain color)
     (exposure : ∀ color, RhoCollapsingLeafExposureAnyPartner color) :
-    CostOneDomainObject :=
-  rhoHereditaryCostOneDomainObject_ofBuiltProvider
-    (rhoCanonicalStaticPairSemanticCutProviderInDomainBuilt_of_restorationAligned
+    Cost.Layer :=
+  rhoHereditaryCostLayer_ofBuiltProvider
+    (rhoCanonicalStaticPair_hasBuiltSemanticCut_of_restorationAligned
       sameColorRestoration exposure)
 
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus

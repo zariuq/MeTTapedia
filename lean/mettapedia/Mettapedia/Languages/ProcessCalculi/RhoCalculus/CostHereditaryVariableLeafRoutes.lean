@@ -2128,16 +2128,16 @@ theorem rho_collapsingLeafExposureApplyRoute
           (mappedProcess.trans view.typeEq))
       close⟩
 
-theorem rho_collapsingLeafExposureInDomain
+theorem rho_collapsingLeaf_hasExposure
     (declarationColor : CostStaticColor) :
-    RhoCollapsingLeafExposureInDomain declarationColor :=
-  rho_collapsingLeafExposureInDomain_of_leafRoutes
+    RhoCollapsingLeaf.HasExposure declarationColor :=
+  rho_collapsingLeaf_hasExposure_of_leafRoutes
     (rho_collapsingLeafExposureBVarRoute declarationColor)
     (rho_collapsingLeafExposureFVarRoute declarationColor)
     (rho_collapsingLeafExposureApplyRoute declarationColor)
 
-theorem rho_collapsingLeafExposureInDomain_allColors :
-    ∀ declarationColor, RhoCollapsingLeafExposureInDomain declarationColor :=
-  rho_collapsingLeafExposureInDomain
+theorem rho_collapsingLeaf_hasExposure_allColors :
+    ∀ declarationColor, RhoCollapsingLeaf.HasExposure declarationColor :=
+  rho_collapsingLeaf_hasExposure
 
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus

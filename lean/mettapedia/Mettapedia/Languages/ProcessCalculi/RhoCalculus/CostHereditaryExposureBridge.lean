@@ -4,7 +4,7 @@ import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryStaticColla
 /-!
 # Leaf-partner normal forms for the collapsing-leaf routes
 
-The two variable routes of `RhoCollapsingLeafExposureInDomain` quantify over a
+The two variable routes of `RhoCollapsingLeaf.HasExposure` quantify over a
 partner endpoint whose *pattern* is already a bound or free variable.  Such a
 tree has exactly one structural constructor, so its hereditary normal form is
 that same variable and carries no residual content.
@@ -229,8 +229,8 @@ theorem rho_collapsingLeafExposureFVarRoute_of_sourceVariable
 
 /-! ## The routes with the partner's admission retained
 
-`RhoCollapsingLeafExposureInDomain` supplies a well-sortedness certificate for
-the partner endpoint, and `rho_collapsingLeafExposureInDomain_of_leafRoutes`
+`RhoCollapsingLeaf.HasExposure` supplies a well-sortedness certificate for
+the partner endpoint, and `rho_collapsingLeaf_hasExposure_of_leafRoutes`
 discards it before splitting into the three routes.  Retaining it costs
 nothing at the call site and is needed by every recursive closure that hands
 the partner to the strictly-smaller callback, because that callback demands an
@@ -489,16 +489,16 @@ theorem rho_collapsingLeafExposureApplyRoute_of_boundary
 
 This is the whole reduction: discharging the three classification statements
 — each a claim about one static node's plan, its skeleton and one canonical
-equation — discharges `RhoCollapsingLeafExposureInDomain` outright.  No region
+equation — discharges `RhoCollapsingLeaf.HasExposure` outright.  No region
 tree, partner endpoint, pair elaboration or size arithmetic survives into
 them. -/
-theorem rho_collapsingLeafExposureInDomain_of_classifications
+theorem rho_collapsingLeaf_hasExposure_of_classifications
     {declarationColor : CostStaticColor}
     (bvarDichotomy : RhoCollapsingBVarLeafDichotomy declarationColor)
     (fvarDichotomy : RhoCollapsingFVarLeafDichotomy declarationColor)
     (applyBoundary : RhoCollapsingApplyLeafBoundary declarationColor) :
-    RhoCollapsingLeafExposureInDomain declarationColor :=
-  rho_collapsingLeafExposureInDomain_of_leafRoutes
+    RhoCollapsingLeaf.HasExposure declarationColor :=
+  rho_collapsingLeaf_hasExposure_of_leafRoutes
     (rho_collapsingLeafExposureBVarRoute_of_dichotomy bvarDichotomy)
     (rho_collapsingLeafExposureFVarRoute_of_dichotomy fvarDichotomy)
     (rho_collapsingLeafExposureApplyRoute_of_boundary applyBoundary)

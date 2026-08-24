@@ -78,7 +78,7 @@ end CostCanonicalRecursiveTypeDomain
 consumed by reachable paired elaboration.  This avoids requiring a language
 to close unrelated collection fibres that recursive generator descent can
 never reach. -/
-def CostCanonicalStaticPairClosedInDomain
+def CostCanonicalStaticPair.IsClosedIn
     {source : CIGSLT} (recursive : CostCanonicalRecursiveTypeDomain source)
     (kernel : CostStaticNormalizationKernel source)
     (declaration : ReflectivePresentationDecl) : Prop :=
@@ -98,7 +98,7 @@ def CostCanonicalStaticPairClosedInDomain
     Nonempty (CostCanonicalPairElaboration source kernel targetFree available
       outer leftPattern rightPattern type)
 
-namespace CostCanonicalStaticPairClosedInDomain
+namespace CostCanonicalStaticPair.IsClosedIn
 
 /-- An unrestricted static closure restricts to every recursive type domain.
 This is the sole compatibility direction needed by existing generic clients. -/
@@ -107,16 +107,16 @@ theorem of_unrestricted
     {kernel : CostStaticNormalizationKernel source}
     {declaration : ReflectivePresentationDecl}
     (closed : CostCanonicalStaticPairClosed source kernel declaration) :
-    CostCanonicalStaticPairClosedInDomain recursive kernel declaration := by
+    CostCanonicalStaticPair.IsClosedIn recursive kernel declaration := by
   intro targetFree available outer leftPattern rightPattern type _
     leftWellSorted rightWellSorted canonical staticShape
   exact closed leftWellSorted rightWellSorted canonical staticShape
 
-end CostCanonicalStaticPairClosedInDomain
+end CostCanonicalStaticPair.IsClosedIn
 
 /-- One syntax-directed static-root step inside the recursive domain.
 
-Unlike `CostCanonicalStaticPairClosedInDomain`, this interface does not assume
+Unlike `CostCanonicalStaticPair.IsClosedIn`, this interface does not assume
 the complete closure theorem it is intended to construct.  It may consume only
 paired elaborations whose two-endpoint size is strictly smaller than the
 current pair.  This is the induction interface required by static normalizers
@@ -163,7 +163,7 @@ theorem of_closed
     {source : CIGSLT} {recursive : CostCanonicalRecursiveTypeDomain source}
     {kernel : CostStaticNormalizationKernel source}
     {declaration : ReflectivePresentationDecl}
-    (closed : CostCanonicalStaticPairClosedInDomain recursive kernel
+    (closed : CostCanonicalStaticPair.IsClosedIn recursive kernel
       declaration) :
     CostCanonicalStaticPairStepInDomain recursive kernel declaration := by
   intro targetFree available outer leftPattern rightPattern type admissible
@@ -866,7 +866,7 @@ theorem CostCanonicalPairElaboration.nonempty_of_canonical_inDomain
     (declarationColor : CostStaticColor)
     (sourceDeclaration : ReflectivePresentationDecl)
     (membership : sourceDeclaration ∈ source.reflection.1.presentations)
-    (staticClosed : CostCanonicalStaticPairClosedInDomain recursive kernel
+    (staticClosed : CostCanonicalStaticPair.IsClosedIn recursive kernel
       (costStaticReflectivePresentationDecl source declarationColor
         sourceDeclaration))
     {available outer : List TypeExpr} {leftPattern rightPattern : Pattern}
@@ -891,7 +891,7 @@ theorem CostCanonicalPairElaboration.nonempty_of_canonical_inDomain
     (CostCanonicalStaticPairStepInDomain.of_closed staticClosed) leftWellSorted
       rightWellSorted canonical admissible
 
-namespace CostCanonicalStaticPairClosedInDomain
+namespace CostCanonicalStaticPair.IsClosedIn
 
 /-- A syntax-directed static step closes the whole recursive domain by the
 generic symmetric well-founded elaborator. -/
@@ -904,7 +904,7 @@ theorem of_step
     (step : CostCanonicalStaticPairStepInDomain recursive kernel
       (costStaticReflectivePresentationDecl source declarationColor
         sourceDeclaration)) :
-    CostCanonicalStaticPairClosedInDomain recursive kernel
+    CostCanonicalStaticPair.IsClosedIn recursive kernel
       (costStaticReflectivePresentationDecl source declarationColor
         sourceDeclaration) := by
   intro targetFree available outer leftPattern rightPattern type admissible
@@ -914,6 +914,6 @@ theorem of_step
       recursive declarationColor sourceDeclaration membership step
       leftWellSorted rightWellSorted canonical admissible
 
-end CostCanonicalStaticPairClosedInDomain
+end CostCanonicalStaticPair.IsClosedIn
 
 end Mettapedia.GSLT.LanguageDef

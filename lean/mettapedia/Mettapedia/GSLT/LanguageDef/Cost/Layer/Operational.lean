@@ -1,11 +1,11 @@
 import Mettapedia.GSLT.Core.OperationalRealization
-import Mettapedia.GSLT.LanguageDef.CostOneElaboratedObject
+import Mettapedia.GSLT.LanguageDef.Cost.Layer.Basic
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.Cost.WorkSpan
 
 /-!
-# Operational adequacy boundary for proof-relevant Cost₁
+# Operational adequacy boundary for proof-relevant cost layer
 
-`CostOneDomainObject` supplies a selected compact normalizer and an exact
+`Cost.Layer` supplies a selected compact normalizer and an exact
 proof-relevant semantic carrier.  It does not, by itself, choose a runtime
 event representation or a scheduling policy.  This module states the missing
 boundary without identifying those layers.
@@ -17,10 +17,10 @@ required to be injective; an implementation may therefore use compact
 configurations for execution without using them as exact cache identities.
 
 Work/span is derived from the retained schedule.  It is not a field of the
-Cost₁ object and it does not replace the event receipt or state identity.
+cost layer object and it does not replace the event receipt or state identity.
 -/
 
-namespace Mettapedia.GSLT.LanguageDef.CostOneOperationalAdequacy
+namespace Mettapedia.GSLT.LanguageDef.Cost.Layer.Operational
 
 open Mettapedia.Algebra
 open Mettapedia.GSLT
@@ -206,44 +206,44 @@ theorem work_eq_receipt_card {Ground : Type uGround}
 
 end OperationalSchedule
 
-/-! ## The exact selected Cost₁ execution -/
+/-! ## The exact selected cost layer execution -/
 
-/-- One state of the proof-relevant Cost₁ semantic carrier, retaining its
+/-- One state of the proof-relevant cost layer semantic carrier, retaining its
 free context, binder telescope, sort, and complete elaboration. -/
-abbrev SemanticState (object : CostOneDomainObject) :=
+abbrev SemanticState (object : Cost.Layer) :=
   Σ free : WellSorted.FreeTypeContext,
     Σ bound : List TypeExpr,
       Σ sort : LangSort
         object.elaboratedOutput.theory.presentation.presentation.language,
         object.elaboratedOutput.carrier.Carrier free bound sort
 
-/-- Apply the Cost₁ object's selected exact semantic normalizer in the same
+/-- Apply the cost layer object's selected exact semantic normalizer in the same
 dependent fibre. -/
-def normalizeState (object : CostOneDomainObject) :
+def normalizeState (object : Cost.Layer) :
     SemanticState object → SemanticState object
   | ⟨free, bound, sort, term⟩ =>
       ⟨free, bound, sort,
         (object.elaboratedOutput.canonical.canonical free bound sort).normalize
           term⟩
 
-/-- The selected proof-relevant Cost₁ event.  It is normalization of one
+/-- The selected proof-relevant cost layer event.  It is normalization of one
 retained state, not a scalar charge. -/
-structure NormalizationEvent (object : CostOneDomainObject)
+structure NormalizationEvent (object : Cost.Layer)
     (source target : SemanticState object) : Type 1 where
   normalized : target = normalizeState object source
 
 /-- Construct the canonical selected event for one retained state. -/
-def NormalizationEvent.normalize (object : CostOneDomainObject)
+def NormalizationEvent.normalize (object : Cost.Layer)
     (state : SemanticState object) :
     NormalizationEvent object state (normalizeState object state) :=
   ⟨rfl⟩
 
-abbrev NormalizationPath (object : CostOneDomainObject) :=
+abbrev NormalizationPath (object : Cost.Layer) :=
   Route (NormalizationEvent object)
 
 /-- State-indexed authored equivalence of compact erasures.  The constructor
 requires both states to inhabit the same dependent fibre. -/
-inductive ErasuresEquivalent (object : CostOneDomainObject) :
+inductive ErasuresEquivalent (object : Cost.Layer) :
     SemanticState object → SemanticState object → Prop where
   | sameFiber
       (free : WellSorted.FreeTypeContext) (bound : List TypeExpr)
@@ -260,10 +260,10 @@ inductive ErasuresEquivalent (object : CostOneDomainObject) :
       ErasuresEquivalent object
         ⟨free, bound, sort, left⟩ ⟨free, bound, sort, right⟩
 
-/-- Every selected Cost₁ event is sound in the generated authored equation
+/-- Every selected cost layer event is sound in the generated authored equation
 theory after erasure. -/
 theorem NormalizationEvent.erases_equivalent
-    {object : CostOneDomainObject} {source target : SemanticState object}
+    {object : Cost.Layer} {source target : SemanticState object}
     (event : NormalizationEvent object source target) :
     ErasuresEquivalent object target source := by
   rcases event with ⟨normalized⟩
@@ -274,13 +274,13 @@ theorem NormalizationEvent.erases_equivalent
 
 /-! ## The operational adequacy datum -/
 
-/-- An operational realization of one exact Cost₁ object.
+/-- An operational realization of one exact cost layer object.
 
 `identity` is the exact cache/replay identity and must distinguish retained
 semantic states.  `config` is only the executable Cost configuration.  Every
 selected normalization event lowers to a complete proof-relevant schedule
 between those configurations. -/
-structure Realization (object : CostOneDomainObject)
+structure Realization (object : Cost.Layer)
     (Ground : Type uGround) where
   Identity : Type uIdentity
   identity : SemanticState object → Identity
@@ -292,9 +292,9 @@ structure Realization (object : CostOneDomainObject)
 
 namespace Realization
 
-/-- Realize a complete selected Cost₁ path by concatenating the schedules of
+/-- Realize a complete selected cost layer path by concatenating the schedules of
 its exact events. -/
-def realizePath {object : CostOneDomainObject} {Ground : Type uGround}
+def realizePath {object : Cost.Layer} {Ground : Type uGround}
     (realization : Realization object Ground) :
     {source target : SemanticState object} →
       NormalizationPath object source target →
@@ -305,15 +305,15 @@ def realizePath {object : CostOneDomainObject} {Ground : Type uGround}
       (realization.realizeEvent event).append (realization.realizePath rest)
 
 @[simp] theorem realizePath_refl
-    {object : CostOneDomainObject} {Ground : Type uGround}
+    {object : Cost.Layer} {Ground : Type uGround}
     (realization : Realization object Ground) (state : SemanticState object) :
     realization.realizePath (.refl state) =
       OperationalSchedule.nil (realization.config state) :=
   rfl
 
-/-- Operational realization is compositional on Cost₁ paths. -/
+/-- Operational realization is compositional on cost layer paths. -/
 theorem realizePath_append
-    {object : CostOneDomainObject} {Ground : Type uGround}
+    {object : Cost.Layer} {Ground : Type uGround}
     (realization : Realization object Ground)
     {source middle target : SemanticState object}
     (first : NormalizationPath object source middle)
@@ -328,9 +328,9 @@ theorem realizePath_append
       rw [inductionHypothesis]
       exact (Route.append_assoc _ _ _).symm
 
-/-- Work/span is a sequential valuation of realized Cost₁ paths. -/
+/-- Work/span is a sequential valuation of realized cost layer paths. -/
 theorem workSpan_append
-    {object : CostOneDomainObject} {Ground : Type uGround}
+    {object : Cost.Layer} {Ground : Type uGround}
     (realization : Realization object Ground)
     {source middle target : SemanticState object}
     (first : NormalizationPath object source middle)
@@ -345,7 +345,7 @@ theorem workSpan_append
 /-- Exact state identity does not factor through compact operational
 configuration unless that coarser key is separately proved injective. -/
 theorem compact_key_requires_injectivity
-    {object : CostOneDomainObject} {Ground : Type uGround}
+    {object : Cost.Layer} {Ground : Type uGround}
     (realization : Realization object Ground)
     (factors : ∃ key : CostConfig Ground → realization.Identity,
       realization.identity = key ∘ realization.config) :
@@ -403,4 +403,4 @@ theorem oneWave_ne_serial_of_wide {Ground : Type uGround}
 #print axioms oneWave_workSpan
 #print axioms oneWave_ne_serial_of_wide
 
-end Mettapedia.GSLT.LanguageDef.CostOneOperationalAdequacy
+end Mettapedia.GSLT.LanguageDef.Cost.Layer.Operational

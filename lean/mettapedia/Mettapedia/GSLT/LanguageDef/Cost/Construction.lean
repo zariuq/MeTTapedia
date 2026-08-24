@@ -1,12 +1,12 @@
 import Mettapedia.GSLT.LanguageDef.CostContinued
 import Mettapedia.GSLT.LanguageDef.CostGeneratorHereditaryAlignment
 import Mettapedia.GSLT.LanguageDef.CostSemanticErasure
-import Mettapedia.OSLF.MeTTaIL.PatternCode
+import Mettapedia.GSLT.LanguageDef.OrderedContinued
 
 /-!
-# Endofunctor closure of the declaration-derived Cost construction
+# The declaration-derived Cost construction
 
-Repeated Cost application retypes an already wrapped interaction.  The old
+Applying Cost to an already wrapped interaction retypes that interaction.  The old
 wrapped carrier maps to the new wrapped carrier; every other old sort enters
 the next tagged base fiber.  The retained program and environment
 introductions receive base copies, while every other constructor receives a
@@ -20,7 +20,6 @@ open CategoryTheory
 open Mettapedia.GSLT
 open Mettapedia.OSLF.Framework.ConstructorCategory
 open Mettapedia.OSLF.MeTTaIL.Syntax
-open Mettapedia.OSLF.MeTTaIL.PatternCode
 open StructuralMorphism
 open WellSorted
 open ContinuationRetypingPlan
@@ -1923,13 +1922,15 @@ theorem costEquationsRetypable (source : CIGSLT) :
         costWrappedEquation, mapEquation] using
           sourceRetypable.rightMatchCorrect
 
+end CIGSLT
+
 /-- Exact object laws for one explicitly selected Cost normalizer.
 
 The inherited bundle supplies a sound and complete contextual section.  The
 additional field states preservation of the constructor fragment needed by
 the next continuation layer.  Neither the source calculus nor the
 normalization algorithm is fixed by this interface. -/
-structure CostOneObjectLawsFor (source : CIGSLT)
+structure Cost.CompactOpenNormalizer.Laws (source : CIGSLT)
     (normalizeOpen : CostOpenNormalizer source) : Prop
     extends CostOpenSectionLawsFor source normalizeOpen where
   preservesWrappedConstructorTyping :
@@ -1953,7 +1954,7 @@ generator invariance comes from proof-relevant endpoint alignment and compact
 chooser coherence.  Contextuality and preservation of the next wrapped
 constructor fibre remain separate whole-executor obligations because neither
 follows from the local equation law. -/
-def CostOneObjectLawsFor.ofStaticKernel
+def Cost.CompactOpenNormalizer.Laws.ofStaticKernel
     {source : CIGSLT} (kernel : CostStaticNormalizationKernel source)
     (typed : CostTypedStaticRegionNormalizerLaws source kernel.normalize)
     (contextual : CostContextualOpenLawsFor source
@@ -1975,7 +1976,7 @@ def CostOneObjectLawsFor.ofStaticKernel
           free bound
             (source.costNormalizeOpenWithStatic kernel.normalize term).1
             (.base sort.1)) :
-    CostOneObjectLawsFor source
+    Cost.CompactOpenNormalizer.Laws source
       (fun term => source.costNormalizeOpenWithStatic kernel.normalize term) where
   toCostOpenSectionLawsFor :=
     { toCostContextualOpenLawsFor := contextual
@@ -1988,11 +1989,13 @@ def CostOneObjectLawsFor.ofStaticKernel
           coherent }
   preservesWrappedConstructorTyping := preservesWrappedConstructorTyping
 
+namespace CIGSLT
+
 /-- A parameterized Cost section preserves the continuation constructor
 fragment exactly when its object law says it does. -/
 theorem costContextualOpenSectionWith_preservesWrappedConstructorTyping
     (source : CIGSLT) (normalizeOpen : CostOpenNormalizer source)
-    (laws : CostOneObjectLawsFor source normalizeOpen) :
+    (laws : Cost.CompactOpenNormalizer.Laws source normalizeOpen) :
     (source.costContextualOpenSectionWith normalizeOpen
       laws.toCostOpenSectionLawsFor).PreservesTypedConstructors
         (· ∈ source.costContinuationRetyping.wrappedLabels) := by
@@ -2004,7 +2007,7 @@ generated syntax and structural fields still come from the sole declaration
 construction; only the open-section implementation is parameterized. -/
 def costCIGSLTWith (source : CIGSLT)
     (normalizeOpen : CostOpenNormalizer source)
-    (laws : CostOneObjectLawsFor source normalizeOpen) : CIGSLT where
+    (laws : Cost.CompactOpenNormalizer.Laws source normalizeOpen) : CIGSLT where
   theory := source.costIGSLT
   reflection := source.costWholeAdmittedReflection
   cut := source.costInteractionCut
@@ -2052,10 +2055,12 @@ def costCIGSLTOfStaticKernel
     CIGSLT :=
   source.costCIGSLTWith
     (fun term => source.costNormalizeOpenWithStatic kernel.normalize term)
-    (CostOneObjectLawsFor.ofStaticKernel kernel typed contextual alignable
+    (Cost.CompactOpenNormalizer.Laws.ofStaticKernel kernel typed contextual alignable
       coherent preservesWrappedConstructorTyping)
 
-/-- Exact object laws for the initial strict Cost₁ domain.
+end CIGSLT
+
+/-- Exact object laws for the initial strict cost layer domain.
 
 The inherited bundle supplies typed unary soundness, an exact section for the
 chosen compact executor, and contextual support/naturality.  It deliberately
@@ -2064,7 +2069,7 @@ normal form; that stronger factorization law is not hereditary under Cost
 iteration.  The additional field is placed here because it refers to the
 generated continuation plan, which is defined only after the region
 normalizer. -/
-structure CostReferenceOneObjectLaws (source : CIGSLT) : Prop
+structure Cost.ReferenceCompactOpenNormalizer.Laws (source : CIGSLT) : Prop
     extends CostReferenceOpenSectionLaws source where
   preservesWrappedConstructorTyping :
     ∀ {free : WellSorted.FreeTypeContext} {bound : List TypeExpr}
@@ -2081,34 +2086,36 @@ structure CostReferenceOneObjectLaws (source : CIGSLT) : Prop
 
 /-- The established compact-executor object law is the specialization of the
 generic object law to `costNormalizeOpen`. -/
-def CostReferenceOneObjectLaws.toCostOneObjectLawsFor
-    {source : CIGSLT} (laws : CostReferenceOneObjectLaws source) :
-    CostOneObjectLawsFor source source.costNormalizeOpen where
+def Cost.ReferenceCompactOpenNormalizer.Laws.toCompactOpenNormalizerLaws
+    {source : CIGSLT} (laws : Cost.ReferenceCompactOpenNormalizer.Laws source) :
+    Cost.CompactOpenNormalizer.Laws source source.costNormalizeOpen where
   toCostOpenSectionLawsFor :=
     laws.toCostReferenceOpenSectionLaws.toCostOpenSectionLawsFor
   preservesWrappedConstructorTyping := by
     intro free bound sort term supported
     exact laws.preservesWrappedConstructorTyping term supported
 
+namespace CIGSLT
+
 /-- The generated contextual section preserves the exact hereditary
 constructor fragment selected by the next continuation retyping plan. -/
 theorem costReferenceContextualOpenSection_preservesWrappedConstructorTyping
-    (source : CIGSLT) (laws : CostReferenceOneObjectLaws source) :
+    (source : CIGSLT) (laws : Cost.ReferenceCompactOpenNormalizer.Laws source) :
     (source.costReferenceContextualOpenSection
       laws.toCostReferenceOpenSectionLaws
       ).PreservesTypedConstructors
         (· ∈ source.costContinuationRetyping.wrappedLabels) := by
   exact source.costContextualOpenSectionWith_preservesWrappedConstructorTyping
-    source.costNormalizeOpen laws.toCostOneObjectLawsFor
+    source.costNormalizeOpen laws.toCompactOpenNormalizerLaws
 
 /-- One application of Cost as a genuine continued interactive GSLT.
 Every field is either derived from the sole generated `LanguageDef` or is an
-explicit law of the strict Cost₁ object domain. -/
+explicit law of the strict cost layer object domain. -/
 def costCIGSLTReference (source : CIGSLT)
-    (laws : CostReferenceOneObjectLaws source) :
+    (laws : Cost.ReferenceCompactOpenNormalizer.Laws source) :
     CIGSLT :=
   source.costCIGSLTWith source.costNormalizeOpen
-    laws.toCostOneObjectLawsFor
+    laws.toCompactOpenNormalizerLaws
 
 end CIGSLT
 
@@ -2120,130 +2127,22 @@ category keeps every continued object but restricts arrows to precisely those
 continued morphisms that preserve the collision-free structural order.
 Exact Cost objects then form an ordinary full subcategory of this category. -/
 
-namespace CIGSLT
-
-/-- Collision-free structural code of a canonical key.  The proof component
-of the key contributes no data. -/
-def canonicalKeyCode (source : CIGSLT) (key : source.CanonicalKey) : Nat :=
-  patternCode key.1.1
-
-/-- Structural coding distinguishes canonical keys exactly. -/
-theorem canonicalKeyCode_injective (source : CIGSLT) :
-    Function.Injective source.canonicalKeyCode := by
-  intro first second equality
-  apply Subtype.ext
-  apply Subtype.ext
-  exact patternCode_injective equality
-
-/-- The canonical-key order used by strict Cost₁ is the collision-free
-structural order on normalized authored patterns. -/
-instance canonicalKeyLinearOrder (source : CIGSLT) :
-    LinearOrder source.CanonicalKey :=
-  LinearOrder.lift' source.canonicalKeyCode source.canonicalKeyCode_injective
-
-end CIGSLT
-
-/-- Continued interactive GSLTs equipped with the fixed structural order on
-their exact canonical keys.  No new syntax or semantic authority is added. -/
-structure OrderedCIGSLT where
-  toCIGSLT : CIGSLT
-
 namespace OrderedCIGSLT
 
-instance : CoeSort OrderedCIGSLT Type :=
-  ⟨fun source => source.toCIGSLT.CanonicalKey⟩
-
-/-- An ordered continued morphism is an existing continued morphism whose
-canonical-key action is monotone for the collision-free structural order. -/
-structure Morphism (source target : OrderedCIGSLT) where
-  underlying : CIGSLT.Morphism source.toCIGSLT target.toCIGSLT
-  canonicalKeyMonotone :
-    Monotone (CIGSLT.Morphism.canonicalKeyMap underlying)
-
-namespace Morphism
-
-/-- Ordered continued morphisms are determined by their continued map. -/
-@[ext]
-theorem ext {source target : OrderedCIGSLT}
-    {first second : Morphism source target}
-    (underlying : first.underlying = second.underlying) :
-    first = second := by
-  cases first
-  cases second
-  cases underlying
-  rfl
-
-/-- Identity preserves the structural canonical-key order. -/
-def id (source : OrderedCIGSLT) : Morphism source source where
-  underlying := CIGSLT.Morphism.id source.toCIGSLT
-  canonicalKeyMonotone := by
-    intro first second lessOrEqual
-    rw [CIGSLT.Morphism.canonicalKeyMap_id,
-      CIGSLT.Morphism.canonicalKeyMap_id]
-    exact lessOrEqual
-
-/-- Composition preserves structural canonical-key monotonicity. -/
-def comp {first second third : OrderedCIGSLT}
-    (left : Morphism first second) (right : Morphism second third) :
-    Morphism first third where
-  underlying := CIGSLT.Morphism.comp left.underlying right.underlying
-  canonicalKeyMonotone := by
-    intro firstKey secondKey lessOrEqual
-    have mapped :=
-      right.canonicalKeyMonotone
-        (left.canonicalKeyMonotone lessOrEqual)
-    change
-      CIGSLT.Morphism.canonicalKeyMap
-          (CIGSLT.Morphism.comp left.underlying right.underlying) firstKey ≤
-        CIGSLT.Morphism.canonicalKeyMap
-          (CIGSLT.Morphism.comp left.underlying right.underlying) secondKey
-    rw [CIGSLT.Morphism.canonicalKeyMap_comp left.underlying right.underlying,
-      CIGSLT.Morphism.canonicalKeyMap_comp left.underlying right.underlying]
-    exact mapped
-
-end Morphism
-
-instance : CategoryTheory.Category OrderedCIGSLT where
-  Hom := Morphism
-  id := Morphism.id
-  comp := Morphism.comp
-  id_comp morphism := by
-    apply Morphism.ext
-    apply CIGSLT.Morphism.ext
-    · rfl
-    · rfl
-  comp_id morphism := by
-    apply Morphism.ext
-    apply CIGSLT.Morphism.ext
-    · rfl
-    · rfl
-  assoc first second third := by
-    apply Morphism.ext
-    apply CIGSLT.Morphism.ext
-    · rfl
-    · rfl
-
-/-- Forget only the canonical-order preservation proof. -/
-def forget : CategoryTheory.Functor OrderedCIGSLT CIGSLT where
-  obj source := source.toCIGSLT
-  map morphism := morphism.underlying
-  map_id _ := rfl
-  map_comp _ _ := rfl
-
 /-- Exact typed Cost objects inside the strict ordered continued category. -/
-def costReferenceOneObjectProperty :
+def referenceCostLayerProperty :
     CategoryTheory.ObjectProperty OrderedCIGSLT :=
-  fun source => CIGSLT.CostReferenceOneObjectLaws source.toCIGSLT
+  fun source => Cost.ReferenceCompactOpenNormalizer.Laws source.toCIGSLT
 
-/-- The honest initial domain for strict Cost₁: arrows preserve key order by
+/-- The honest initial domain for strict cost layer: arrows preserve key order by
 the ambient category, and objects carry the exact typed canonical laws. -/
-abbrev CostReferenceOneObjects :=
-  costReferenceOneObjectProperty.FullSubcategory
+abbrev ReferenceCostLayers :=
+  referenceCostLayerProperty.FullSubcategory
 
 /-- Forget exact Cost laws and retain the ordered continued object. -/
-def costReferenceOneObjectsForget :
-    CategoryTheory.Functor CostReferenceOneObjects OrderedCIGSLT :=
-  costReferenceOneObjectProperty.ι
+def referenceCostLayersForget :
+    CategoryTheory.Functor ReferenceCostLayers OrderedCIGSLT :=
+  referenceCostLayerProperty.ι
 
 end OrderedCIGSLT
 

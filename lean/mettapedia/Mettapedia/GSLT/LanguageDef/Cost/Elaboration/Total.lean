@@ -25,21 +25,21 @@ open Mettapedia.OSLF.MeTTaIL.Syntax
 
 /-- A lawful one-step Cost authority together with one checked elaboration in
 its exact indexed fibre. -/
-structure CostOneElaborationTotal where
+structure Cost.Elaboration.Total where
   base : CostElaborationBase
-  fiber : CostElaborationFiber base.toCostOne.source.toCIGSLT
+  fiber : CostElaborationFiber base.toLayer.source.toCIGSLT
 
-namespace CostOneElaborationTotal
+namespace Cost.Elaboration.Total
 
 /-- The computationally complete, proof-erased decoration of the retained
 elaboration. -/
-def decoration (object : CostOneElaborationTotal) :
-    CostTreeDecoration object.base.toCostOne.source.toCIGSLT :=
+def decoration (object : Cost.Elaboration.Total) :
+    CostTreeDecoration object.base.toLayer.source.toCIGSLT :=
   object.fiber.2.decoration
 
 /-- A total arrow is a conservative Cost one-step arrow that transports the
 complete retained decoration exactly. -/
-structure Morphism (source target : CostOneElaborationTotal) where
+structure Morphism (source target : Cost.Elaboration.Total) where
   base : source.base ⟶ target.base
   decoration_natural :
     source.decoration.map base.underlying.underlying.underlying =
@@ -50,7 +50,7 @@ namespace Morphism
 /-- Total arrows are determined by their base arrow; decoration naturality is
 a proposition. -/
 @[ext]
-theorem ext {source target : CostOneElaborationTotal}
+theorem ext {source target : Cost.Elaboration.Total}
     {first second : Morphism source target}
     (base : first.base = second.base) : first = second := by
   cases first
@@ -59,12 +59,12 @@ theorem ext {source target : CostOneElaborationTotal}
   rfl
 
 /-- Identity transports a retained decoration without changing it. -/
-def id (source : CostOneElaborationTotal) : Morphism source source where
+def id (source : Cost.Elaboration.Total) : Morphism source source where
   base := CostElaborationBase.Morphism.id source.base
   decoration_natural := CostTreeDecoration.map_id _ _
 
 /-- Composition follows strict composition of complete decoration maps. -/
-def comp {first second third : CostOneElaborationTotal}
+def comp {first second third : Cost.Elaboration.Total}
     (left : Morphism first second) (right : Morphism second third) :
     Morphism first third where
   base := CostElaborationBase.Morphism.comp left.base right.base
@@ -91,7 +91,7 @@ end Morphism
 
 /-- The total category of checked elaborations over the conservative lawful
 Cost one-step base. -/
-instance : CategoryTheory.Category CostOneElaborationTotal where
+instance : CategoryTheory.Category Cost.Elaboration.Total where
   Hom := Morphism
   id := Morphism.id
   comp := Morphism.comp
@@ -108,7 +108,7 @@ instance : CategoryTheory.Category CostOneElaborationTotal where
 /-- Forget the retained fibre while keeping the selected normalizer, Cost
 laws, and conservative arrow. -/
 def projection :
-    CategoryTheory.Functor CostOneElaborationTotal CostElaborationBase where
+    CategoryTheory.Functor Cost.Elaboration.Total CostElaborationBase where
   obj object := object.base
   map morphism := morphism.base
   map_id _ := rfl
@@ -116,16 +116,16 @@ def projection :
 
 /-- Compact one-step Cost is the projection of the lawful total category to
 its base followed by the existing one-step Cost functor. -/
-def compactCostOneFunctor :
-    CategoryTheory.Functor CostOneElaborationTotal OrderedCIGSLT :=
-  projection.comp CostElaborationBase.compactCostOneFunctor
+def compact :
+    CategoryTheory.Functor Cost.Elaboration.Total OrderedCIGSLT :=
+  projection.comp CostElaborationBase.compact
 
 /-- Forget the selected normalizer and its laws while retaining the same
 checked elaboration and exact decoration transport. -/
 def forgetToStructural :
-    CategoryTheory.Functor CostOneElaborationTotal CostElaborationTotal where
+    CategoryTheory.Functor Cost.Elaboration.Total CostElaborationTotal where
   obj object :=
-    { base := object.base.toCostOne.source.toCIGSLT
+    { base := object.base.toLayer.source.toCIGSLT
       fiber := object.fiber }
   map morphism :=
     { base := morphism.base.underlying.underlying.underlying
@@ -133,39 +133,39 @@ def forgetToStructural :
   map_id _ := rfl
   map_comp _ _ := rfl
 
-/-- Push one retained Cost fibre along a conservative lawful Cost₁ arrow.
+/-- Push one retained Cost fibre along a conservative lawful cost layer arrow.
 This is structural transport of the existing tree, not recompilation in the
 target authority. -/
 def transportFiber {source target : CostElaborationBase}
     (morphism : source ⟶ target)
-    (fiber : CostElaborationFiber source.toCostOne.source.toCIGSLT) :
-    CostElaborationFiber target.toCostOne.source.toCIGSLT :=
+    (fiber : CostElaborationFiber source.toLayer.source.toCIGSLT) :
+    CostElaborationFiber target.toLayer.source.toCIGSLT :=
   mapCostElaborationFiber
     morphism.underlying.underlying.underlying
-    (CostOneMorphismLaws.preservesGeneratedReflectiveScope
-      morphism.underlying.laws.toCostOneMorphismLaws)
+    (Cost.Layer.Hom.CompactMapLaws.preservesGeneratedReflectiveScope
+      morphism.underlying.compactMapLaws)
     morphism.reindexLaws fiber
 
-/-- The transported total object over the codomain of a conservative Cost₁
+/-- The transported total object over the codomain of a conservative cost layer
 arrow. -/
 def transportObject {source target : CostElaborationBase}
     (morphism : source ⟶ target)
-    (fiber : CostElaborationFiber source.toCostOne.source.toCIGSLT) :
-    CostOneElaborationTotal :=
+    (fiber : CostElaborationFiber source.toLayer.source.toCIGSLT) :
+    Cost.Elaboration.Total :=
   ⟨target, transportFiber morphism fiber⟩
 
-/-- Every conservative lawful Cost₁ arrow has a chosen displayed lift from
+/-- Every conservative lawful cost layer arrow has a chosen displayed lift from
 each retained source fibre.  Its factorization property is proved below. -/
 def transportLift {source target : CostElaborationBase}
     (morphism : source ⟶ target)
-    (fiber : CostElaborationFiber source.toCostOne.source.toCIGSLT) :
+    (fiber : CostElaborationFiber source.toLayer.source.toCIGSLT) :
     Morphism ⟨source, fiber⟩ (transportObject morphism fiber) where
   base := morphism
   decoration_natural :=
     (mapCostElaborationFiber_decoration
       morphism.underlying.underlying.underlying
-      (CostOneMorphismLaws.preservesGeneratedReflectiveScope
-        morphism.underlying.laws.toCostOneMorphismLaws)
+      (Cost.Layer.Hom.CompactMapLaws.preservesGeneratedReflectiveScope
+        morphism.underlying.compactMapLaws)
       morphism.reindexLaws fiber).symm
 
 /-- The chosen structural lift lies over exactly the requested base arrow. -/
@@ -173,7 +173,7 @@ def transportLift {source target : CostElaborationBase}
 theorem projection_map_transportLift
     {source target : CostElaborationBase}
     (morphism : source ⟶ target)
-    (fiber : CostElaborationFiber source.toCostOne.source.toCIGSLT) :
+    (fiber : CostElaborationFiber source.toLayer.source.toCIGSLT) :
     projection.map (transportLift morphism fiber) = morphism :=
   rfl
 
@@ -186,8 +186,8 @@ the proof terms retained by the two fibres. -/
 def transportFactor
     {source target : CostElaborationBase}
     (morphism : source ⟶ target)
-    (fiber : CostElaborationFiber source.toCostOne.source.toCIGSLT)
-    (destination : CostOneElaborationTotal)
+    (fiber : CostElaborationFiber source.toLayer.source.toCIGSLT)
+    (destination : Cost.Elaboration.Total)
     (composite : Morphism ⟨source, fiber⟩ destination)
     (next : target ⟶ destination.base)
     (baseFactorization : CostElaborationBase.Morphism.comp morphism next =
@@ -210,8 +210,8 @@ def transportFactor
       simpa [transportObject, transportFiber, decoration] using
         (mapCostElaborationFiber_decoration
           morphism.underlying.underlying.underlying
-          (CostOneMorphismLaws.preservesGeneratedReflectiveScope
-            morphism.underlying.laws.toCostOneMorphismLaws)
+          (Cost.Layer.Hom.CompactMapLaws.preservesGeneratedReflectiveScope
+            morphism.underlying.compactMapLaws)
           morphism.reindexLaws fiber)
     calc
       (transportObject morphism fiber).decoration.map
@@ -241,8 +241,8 @@ This is equality of total arrows, not merely equality after projection. -/
 theorem transportLift_comp_transportFactor
     {source target : CostElaborationBase}
     (morphism : source ⟶ target)
-    (fiber : CostElaborationFiber source.toCostOne.source.toCIGSLT)
-    (destination : CostOneElaborationTotal)
+    (fiber : CostElaborationFiber source.toLayer.source.toCIGSLT)
+    (destination : Cost.Elaboration.Total)
     (composite : Morphism ⟨source, fiber⟩ destination)
     (next : target ⟶ destination.base)
     (baseFactorization : CostElaborationBase.Morphism.comp morphism next =
@@ -260,8 +260,8 @@ this is the full cocartesian-style factorization law for the chosen lift. -/
 theorem transportFactor_unique
     {source target : CostElaborationBase}
     (morphism : source ⟶ target)
-    (fiber : CostElaborationFiber source.toCostOne.source.toCIGSLT)
-    (destination : CostOneElaborationTotal)
+    (fiber : CostElaborationFiber source.toLayer.source.toCIGSLT)
+    (destination : Cost.Elaboration.Total)
     (composite : Morphism ⟨source, fiber⟩ destination)
     (next : target ⟶ destination.base)
     (baseFactorization : CostElaborationBase.Morphism.comp morphism next =
@@ -279,7 +279,7 @@ theorems above in Mathlib's standard fibre-category interface. -/
 instance transportLift_isStronglyCocartesian
     {source target : CostElaborationBase}
     (morphism : source ⟶ target)
-    (fiber : CostElaborationFiber source.toCostOne.source.toCIGSLT) :
+    (fiber : CostElaborationFiber source.toLayer.source.toCIGSLT) :
     projection.IsStronglyCocartesian morphism
       (transportLift morphism fiber) := by
   refine { toIsHomLift := ?_, universal_property' := ?_ }
@@ -296,7 +296,7 @@ instance transportLift_isStronglyCocartesian
       change CostElaborationBase.Morphism.comp morphism next =
         projection.map composite
       exact @CategoryTheory.IsHomLift.eq_of_isHomLift
-        _ _ _ _ projection (⟨source, fiber⟩ : CostOneElaborationTotal)
+        _ _ _ _ projection (⟨source, fiber⟩ : Cost.Elaboration.Total)
         destination (CostElaborationBase.Morphism.comp morphism next)
         composite compositeLift
     let factor := @transportFactor source target morphism fiber destination
@@ -326,14 +326,14 @@ lift, even if their proof terms differ. -/
 def identityLiftOfDecorationEq
     (base : CostElaborationBase)
     (sourceFiber targetFiber :
-      CostElaborationFiber base.toCostOne.source.toCIGSLT)
+      CostElaborationFiber base.toLayer.source.toCIGSLT)
     (equalDecoration : sourceFiber.2.decoration =
       targetFiber.2.decoration) :
     Morphism ⟨base, sourceFiber⟩ ⟨base, targetFiber⟩ where
   base := CostElaborationBase.Morphism.id base
   decoration_natural := by
     change sourceFiber.2.decoration.map
-        (CIGSLT.Morphism.id base.toCostOne.source.toCIGSLT) =
+        (CIGSLT.Morphism.id base.toLayer.source.toCIGSLT) =
       targetFiber.2.decoration
     exact (CostTreeDecoration.map_id _ _).trans equalDecoration
 
@@ -342,7 +342,7 @@ computational decorations. -/
 theorem noIdentityLiftOfDecorationNe
     (base : CostElaborationBase)
     (sourceFiber targetFiber :
-      CostElaborationFiber base.toCostOne.source.toCIGSLT)
+      CostElaborationFiber base.toLayer.source.toCIGSLT)
     (differentDecoration : sourceFiber.2.decoration ≠
       targetFiber.2.decoration) :
     ¬ ∃ morphism : Morphism ⟨base, sourceFiber⟩ ⟨base, targetFiber⟩,
@@ -351,11 +351,11 @@ theorem noIdentityLiftOfDecorationNe
   have natural := morphism.decoration_natural
   rw [baseIdentity] at natural
   change sourceFiber.2.decoration.map
-      (CIGSLT.Morphism.id base.toCostOne.source.toCIGSLT) =
+      (CIGSLT.Morphism.id base.toLayer.source.toCIGSLT) =
     targetFiber.2.decoration at natural
   rw [CostTreeDecoration.map_id] at natural
   exact differentDecoration natural
 
-end CostOneElaborationTotal
+end Cost.Elaboration.Total
 
 end Mettapedia.GSLT.LanguageDef

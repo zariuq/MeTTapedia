@@ -1,6 +1,8 @@
 import Mettapedia.GSLT.LanguageDef.CostStaticPlanCanonicalAlignment
 import Mettapedia.GSLT.LanguageDef.CostStaticPlanProvenancedReification
-import Mettapedia.GSLT.LanguageDef.CostEndofunctor
+import Mettapedia.GSLT.LanguageDef.Cost.Construction
+import Mettapedia.GSLT.LanguageDef.Cost.Layer.Category
+import Mettapedia.GSLT.LanguageDef.Cost.Layer.Path
 import Mettapedia.GSLT.LanguageDef.QuoteBoundaryDivergence
 import Mettapedia.GSLT.LanguageDef.ColourTagSeparation
 import Mettapedia.GSLT.LanguageDef.TwoDepthRestorationApex
@@ -12,9 +14,9 @@ import Mettapedia.Algebra.ReceiptSchemaAdequacy
 import Mettapedia.Algebra.OccurrenceIdentity
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryMatchedFramesProvenancedAlignment
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostIterationPolicyCorollary
--- The Cost₁ endgame: the provider and seal over the four apex-slice obligations,
+-- The cost layer endgame: the provider and seal over the four restoration obligations,
 -- together with the modules that reduce or refute the routes into them.
-import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryProviderApexSlice
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryProviderObligations
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryProviderBuilt
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryBichromaticClosure
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryCrossColorRestoration
@@ -29,7 +31,7 @@ import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryDescent
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryVariableLeafRoutes
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryCrossColorLeafExposure
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryCrossColorExposureProvider
-import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryCollapsingPlanStopApex
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryCollapsingPlanStopRestoration
 import Mettapedia.GSLT.LanguageDef.CostAuthoredAtom
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryNonBoundaryPlanStop
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryQuoteParallelCells
@@ -57,14 +59,14 @@ consumer is depending on an internal.
                                                       parallel-children /
                                                       producers)
   REIFICATION     CostStaticPlanProvenancedReification
-  Cost₁ LAWS      CostEndofunctor                    (CostOneObjectLawsFor)
+  LAYER CONSTRUCTION Cost.Construction                  (Cost.CompactOpenNormalizer.Laws)
   GRADING         GradedLanguageDef                  (spend / weigh / choose)
   VALUATION       Algebra.WorkSpan                   (+ InformationLoss negatives)
   RESOURCES       Algebra.ResourceValuations         (energy/comm; allocation does NOT fit)
   REPLAY ABI      Algebra.ReceiptSchemaAdequacy      (what a receipt must record)
   OCCURRENCES     Algebra.OccurrenceIdentity         (values never determine correspondence)
   ρ PROVENANCE    CostHereditaryMatchedFramesProvenancedAlignment
-  Cost² BOUNDARY  CostIterationPolicyCorollary       (rhoCostTwo_boundary_package)
+  cost-layer iteration BOUNDARY  CostIterationPolicyCorollary       (rhoCostLayerIteration_boundary_package)
   QUOTE BOUNDARY  QuoteBoundaryDivergence            (the two reset disciplines)
   COLOUR TAGS     ColourTagSeparation                (base ≠ wrapped, so the gap is live)
   APEX (2-INDEX)  TwoDepthRestorationApex            (TwoDepthApex + embedding)
@@ -94,28 +96,28 @@ evidence on both sides.  No compatibility alias is provided, deliberately.
 ## Status of the surface
 
 Green as imported here.  The umbrella exports the unconditional,
-proof-relevant `rhoHereditaryCostOneDomainObject : CostOneDomainObject`.
-`CostEndofunctor` supplies the laws structure and the ρ development
+proof-relevant `rhoHereditaryCostLayer : Cost.Layer`.
+`Cost.Construction` supplies the laws structure and the ρ development
 supplies every terminal it needs.
 
 The per-colour semantic-cut provider is proved from four node-local
 obligations by
-`rhoCanonicalStaticPairSemanticCutProviderInDomain_of_exposureA2x`, and the
+`rhoCanonicalStaticPair_hasSemanticCut_of_exposureA2x`, and the
 domain object follows by
-`rhoHereditaryCostOneDomainObject_ofExposureApexSliceObligations`.  The four
+`rhoHereditaryCostLayer_ofExposureRestorationObligations`.  The four
 inputs are
 
-* `RhoAlignedViewsPlanStopApexInDomain`,
-* `RhoCollapsingViewsPlanStopApexInDomain`,
+* `RhoAlignedPlanStops.HaveCommonRestoration`,
+* `RhoCollapsingPlanStops.HaveCommonRestoration`,
 * `RhoCollapsingCrossColorViewsLeafExposuresInDomain`,
-* `RhoCollapsingLeafExposureInDomain`,
+* `RhoCollapsingLeaf.HasExposure`,
 
 each quantified over both colours, and all four are inhabited.  They are
 stated in *apex* form on the
 static branches because that is the evidence the cut constructors actually
 consume: `leftStaticEnclosing` asks for a `RhoMatchedStaticFramesApex`, not
 for whole-frame restoration alignment.  The exported domain object packages
-the four inhabitants through the apex-slice provider.
+the four inhabitants through the restoration provider.
 
 Two routes are retained but **non-critical**, and must not be mistaken for
 the live path:
@@ -125,7 +127,7 @@ the live path:
   its consumer requires, with no route back — see the note in
   `CostHereditaryAlignedRestoration`.  Its cell analysis remains useful and
   its source-variable cells are proved;
-* the three-classification route to `RhoCollapsingLeafExposureInDomain` is
+* the three-classification route to `RhoCollapsingLeaf.HasExposure` is
   **refuted**: `not_rhoCollapsingLeafClassifications` shows its hypotheses
   are jointly uninhabited, because `RhoCollapsingApplyLeafBoundary` is false
   at both colours (`not_rhoCollapsingApplyLeafBoundary`, witnessed by the

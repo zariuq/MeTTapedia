@@ -1,7 +1,7 @@
 import Mathlib.CategoryTheory.Elements
 import Mathlib.CategoryTheory.EqToHom
 import Mathlib.CategoryTheory.FiberedCategory.Cocartesian
-import Mettapedia.GSLT.LanguageDef.CostOneElaborationDisplayed
+import Mettapedia.GSLT.LanguageDef.Cost.Elaboration.Total
 
 /-!
 # The complete-decoration waist for lawful one-step Cost elaborations
@@ -29,7 +29,7 @@ namespace CostElaborationBase
 /-- Complete computational decorations form a covariant family over the
 conservative lawful Cost base. -/
 def decorationFunctor : CategoryTheory.Functor CostElaborationBase Type where
-  obj base := CostTreeDecoration base.toCostOne.source.toCIGSLT
+  obj base := CostTreeDecoration base.toLayer.source.toCIGSLT
   map morphism := TypeCat.ofHom fun decoration =>
     decoration.map morphism.underlying.underlying.underlying
   map_id base := by
@@ -47,38 +47,38 @@ end CostElaborationBase
 
 /-- Total category of a lawful Cost base together with one complete
 computational decoration. -/
-abbrev CostOneDecorationTotal :=
+abbrev Cost.Decoration.Total :=
   (CostElaborationBase.decorationFunctor).Elements
 
-namespace CostOneDecorationTotal
+namespace Cost.Decoration.Total
 
 /-- Forget a complete decoration while retaining its lawful Cost base. -/
 def projection :
-    CategoryTheory.Functor CostOneDecorationTotal CostElaborationBase :=
+    CategoryTheory.Functor Cost.Decoration.Total CostElaborationBase :=
   CategoryTheory.CategoryOfElements.π CostElaborationBase.decorationFunctor
 
 /-- Package a lawful base and one complete decoration as an object of the
 decoration total category. -/
 def ofDecoration (base : CostElaborationBase)
-    (decoration : CostTreeDecoration base.toCostOne.source.toCIGSLT) :
-    CostOneDecorationTotal :=
+    (decoration : CostTreeDecoration base.toLayer.source.toCIGSLT) :
+    Cost.Decoration.Total :=
   ⟨base, decoration⟩
 
 /-- Push a complete decoration forward along a conservative lawful Cost
 arrow. -/
-def pushforwardObject (object : CostOneDecorationTotal)
+def pushforwardObject (object : Cost.Decoration.Total)
     {target : CostElaborationBase} (morphism : object.1 ⟶ target) :
-    CostOneDecorationTotal :=
+    Cost.Decoration.Total :=
   ⟨target, CostElaborationBase.decorationFunctor.map morphism object.2⟩
 
 /-- The canonical arrow from a decoration to its strict push-forward. -/
-def pushforwardLift (object : CostOneDecorationTotal)
+def pushforwardLift (object : Cost.Decoration.Total)
     {target : CostElaborationBase} (morphism : object.1 ⟶ target) :
     object ⟶ pushforwardObject object morphism :=
   CategoryTheory.CategoryOfElements.homMk _ _ morphism rfl
 
 @[simp]
-theorem projection_map_pushforwardLift (object : CostOneDecorationTotal)
+theorem projection_map_pushforwardLift (object : Cost.Decoration.Total)
     {target : CostElaborationBase} (morphism : object.1 ⟶ target) :
     projection.map (pushforwardLift object morphism) = morphism :=
   rfl
@@ -86,7 +86,7 @@ theorem projection_map_pushforwardLift (object : CostOneDecorationTotal)
 /-- Strict decoration transport is the strongly cocartesian lift supplied by
 the category of elements. -/
 instance pushforwardLift_isStronglyCocartesian
-    (object : CostOneDecorationTotal) {target : CostElaborationBase}
+    (object : Cost.Decoration.Total) {target : CostElaborationBase}
     (morphism : object.1 ⟶ target) :
     projection.IsStronglyCocartesian morphism
       (pushforwardLift object morphism) where
@@ -144,7 +144,7 @@ instance pushforwardLift_isStronglyCocartesian
 /-- Negative canary: an identity base arrow cannot connect unequal complete
 decorations. -/
 theorem noIdentityArrowOfDecorationNe (base : CostElaborationBase)
-    (source target : CostTreeDecoration base.toCostOne.source.toCIGSLT)
+    (source target : CostTreeDecoration base.toLayer.source.toCIGSLT)
     (different : source ≠ target) :
     ¬ ∃ arrow : (ofDecoration base source) ⟶ (ofDecoration base target),
       arrow.val = CostElaborationBase.Morphism.id base := by
@@ -152,14 +152,14 @@ theorem noIdentityArrowOfDecorationNe (base : CostElaborationBase)
   have natural := arrow.property
   rw [baseIdentity] at natural
   change source.map
-      (CIGSLT.Morphism.id base.toCostOne.source.toCIGSLT) = target at natural
+      (CIGSLT.Morphism.id base.toLayer.source.toCIGSLT) = target at natural
   rw [CostTreeDecoration.map_id] at natural
   exact different natural
 
 /-- Positive control: equal complete decorations over one lawful base are
 connected by the identity base arrow. -/
 def identityArrowOfDecorationEq (base : CostElaborationBase)
-    (source target : CostTreeDecoration base.toCostOne.source.toCIGSLT)
+    (source target : CostTreeDecoration base.toLayer.source.toCIGSLT)
     (equal : source = target) :
     (ofDecoration base source) ⟶ (ofDecoration base target) :=
   CategoryTheory.CategoryOfElements.homMk _ _
@@ -168,20 +168,20 @@ def identityArrowOfDecorationEq (base : CostElaborationBase)
 
 @[simp]
 theorem identityArrowOfDecorationEq_val (base : CostElaborationBase)
-    (source target : CostTreeDecoration base.toCostOne.source.toCIGSLT)
+    (source target : CostTreeDecoration base.toLayer.source.toCIGSLT)
     (equal : source = target) :
     (identityArrowOfDecorationEq base source target equal).val =
       CostElaborationBase.Morphism.id base :=
   rfl
 
-end CostOneDecorationTotal
+end Cost.Decoration.Total
 
-namespace CostOneElaborationTotal
+namespace Cost.Elaboration.Total
 
 /-- Forget the dependent checked tree while retaining its complete
 computational decoration. -/
 def forgetToDecoration :
-    CategoryTheory.Functor CostOneElaborationTotal CostOneDecorationTotal where
+    CategoryTheory.Functor Cost.Elaboration.Total Cost.Decoration.Total where
   obj object := ⟨object.base, object.decoration⟩
   map morphism :=
     CategoryTheory.CategoryOfElements.homMk _ _ morphism.base
@@ -194,19 +194,19 @@ def forgetToDecoration :
     rfl
 
 @[simp]
-theorem forgetToDecoration_obj_base (object : CostOneElaborationTotal) :
+theorem forgetToDecoration_obj_base (object : Cost.Elaboration.Total) :
     (forgetToDecoration.obj object).1 = object.base :=
   rfl
 
 @[simp]
-theorem forgetToDecoration_obj_decoration (object : CostOneElaborationTotal) :
+theorem forgetToDecoration_obj_decoration (object : Cost.Elaboration.Total) :
     (forgetToDecoration.obj object).2 = object.decoration :=
   rfl
 
 /-- Forgetting the proof tree and then the decoration is exactly the original
 projection to the lawful Cost base. -/
 theorem forgetToDecoration_comp_projection :
-    forgetToDecoration.comp CostOneDecorationTotal.projection = projection :=
+    forgetToDecoration.comp Cost.Decoration.Total.projection = projection :=
   rfl
 
 /-- Checked-tree transport erases to the canonical push-forward of the
@@ -214,41 +214,41 @@ complete decoration.  This is the commuting square between the two
 cocartesian constructions. -/
 theorem forgetToDecoration_obj_transportObject
     {source target : CostElaborationBase} (morphism : source ⟶ target)
-    (fiber : CostElaborationFiber source.toCostOne.source.toCIGSLT) :
+    (fiber : CostElaborationFiber source.toLayer.source.toCIGSLT) :
     forgetToDecoration.obj (transportObject morphism fiber) =
-      CostOneDecorationTotal.pushforwardObject
-        (forgetToDecoration.obj (⟨source, fiber⟩ : CostOneElaborationTotal))
+      Cost.Decoration.Total.pushforwardObject
+        (forgetToDecoration.obj (⟨source, fiber⟩ : Cost.Elaboration.Total))
         morphism := by
   apply Sigma.ext
   · rfl
   · exact heq_of_eq (mapCostElaborationFiber_decoration
         morphism.underlying.underlying.underlying
-        (CostOneMorphismLaws.preservesGeneratedReflectiveScope
-          morphism.underlying.laws.toCostOneMorphismLaws)
+        (Cost.Layer.Hom.CompactMapLaws.preservesGeneratedReflectiveScope
+          morphism.underlying.compactMapLaws)
         morphism.reindexLaws fiber)
 
 /-- The chosen checked-tree lift maps to the canonical decoration lift, up
 to the object equality supplied by exact decoration transport. -/
 theorem forgetToDecoration_map_transportLift
     {source target : CostElaborationBase} (morphism : source ⟶ target)
-    (fiber : CostElaborationFiber source.toCostOne.source.toCIGSLT) :
+    (fiber : CostElaborationFiber source.toLayer.source.toCIGSLT) :
     CategoryTheory.CategoryStruct.comp
         (forgetToDecoration.map (transportLift morphism fiber))
         (CategoryTheory.eqToHom
           (forgetToDecoration_obj_transportObject morphism fiber)) =
-      CostOneDecorationTotal.pushforwardLift
-        (forgetToDecoration.obj (⟨source, fiber⟩ : CostOneElaborationTotal))
+      Cost.Decoration.Total.pushforwardLift
+        (forgetToDecoration.obj (⟨source, fiber⟩ : Cost.Elaboration.Total))
         morphism := by
   apply CategoryTheory.CategoryOfElements.ext
   let objectEquality := forgetToDecoration_obj_transportObject morphism fiber
   have projectedEqToHom :
-      CostOneDecorationTotal.projection.map
+      Cost.Decoration.Total.projection.map
           (CategoryTheory.eqToHom objectEquality) =
         CostElaborationBase.Morphism.id target := by
     rw [CategoryTheory.eqToHom_map]
     exact CategoryTheory.eqToHom_refl target _
   change CostElaborationBase.Morphism.comp morphism
-      (CostOneDecorationTotal.projection.map
+      (Cost.Decoration.Total.projection.map
         (CategoryTheory.eqToHom objectEquality)) = morphism
   rw [projectedEqToHom]
   exact CategoryTheory.Category.comp_id morphism
@@ -283,6 +283,6 @@ noncomputable def forgetToDecorationFullyFaithful :
     forgetToDecoration.FullyFaithful :=
   CategoryTheory.Functor.FullyFaithful.ofFullyFaithful forgetToDecoration
 
-end CostOneElaborationTotal
+end Cost.Elaboration.Total
 
 end Mettapedia.GSLT.LanguageDef

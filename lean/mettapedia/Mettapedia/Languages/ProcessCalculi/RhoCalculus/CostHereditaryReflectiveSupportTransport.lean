@@ -17,7 +17,7 @@ this lane:
 * the structural theorem
   `rhoCostNormalizeOpenWithStatic_preservesReflectiveSupport` speaks about the
   plain hereditary executor at whatever free context it is given, while
-* the live Cost₁ obligation `RhoHereditaryReflectiveSupportPreserving` speaks
+* the live cost layer obligation `RhoHereditaryReflectiveSupportPreserving` speaks
   about the finite-support executor, which restricts the caller's free
   context, runs the plain executor, and recontextualizes the result.
 
@@ -25,7 +25,7 @@ Restriction and recontextualization keep the raw pattern and the binder fibre
 and change only the free context, so both crossings are instances of the one
 transport theorem.  The reduction `rhoHereditaryReflectiveSupportPreserving_of`
 therefore leaves exactly one semantic obligation on the support side of the
-rho Cost₁ object: the local static-node law
+rho cost layer object: the local static-node law
 `RhoCostStaticReflectiveSupportPreserving rhoHereditaryStaticNormalizer`.
 -/
 
@@ -299,31 +299,31 @@ theorem rhoHereditaryReflectiveSupportPreserving_of
       term.restrictFreeContext).2.1.2.2.1
     (rhoCostNormalizeOpenHereditarySupported term).2.1.1
 
-/-! ## The rho Cost₁ object over the reduced obligations -/
+/-! ## The rho cost layer object over the reduced obligations -/
 
-/-- The rho Cost₁ object laws, assembled from generator tree alignability and
+/-- The rho cost layer object laws, assembled from generator tree alignability and
 the local static-node reflective-support law alone.  The whole-tree and
 supported-executor layers of the support obligation are discharged by the
 structural theorem and the context transport above. -/
-def rhoHereditaryCostOneObjectLaws_ofStaticLaw
+def rhoHereditaryCompactOpenNormalizerLaws_ofStaticLaw
     (alignable : CostOpenGeneratorTreeAlignable rhoCIGSLT
       rhoHereditaryNormalizationKernel)
     (staticPreserves :
       RhoCostStaticReflectiveSupportPreserving rhoHereditaryStaticNormalizer) :
-    CIGSLT.CostOneObjectLawsFor rhoCIGSLT
+    Cost.CompactOpenNormalizer.Laws rhoCIGSLT
       rhoCostNormalizeOpenHereditarySupported :=
-  rhoHereditaryCostOneObjectLaws_of alignable
+  rhoHereditaryCompactOpenNormalizerLaws_of alignable
     (rhoHereditaryReflectiveSupportPreserving_of staticPreserves)
 
-/-- The normalizer-indexed rho Cost₁ domain object over the same reduced
+/-- The normalizer-indexed rho cost layer domain object over the same reduced
 obligations. -/
-def rhoHereditaryCostOneDomainObject_ofStaticLaw
+def rhoHereditaryCostLayer_ofStaticLaw
     (alignable : CostOpenGeneratorTreeAlignable rhoCIGSLT
       rhoHereditaryNormalizationKernel)
     (staticPreserves :
       RhoCostStaticReflectiveSupportPreserving rhoHereditaryStaticNormalizer) :
-    CostOneDomainObject :=
-  rhoHereditaryCostOneDomainObject_of alignable
+    Cost.Layer :=
+  rhoHereditaryCostLayer_of alignable
     (rhoHereditaryReflectiveSupportPreserving_of staticPreserves)
 
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus

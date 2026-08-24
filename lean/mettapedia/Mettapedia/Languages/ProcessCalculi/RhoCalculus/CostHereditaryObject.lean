@@ -1,7 +1,7 @@
-import Mettapedia.GSLT.LanguageDef.CostEndofunctor
+import Mettapedia.GSLT.LanguageDef.Cost.Construction
 import Mettapedia.GSLT.LanguageDef.CostElaborationDisplayed
-import Mettapedia.GSLT.LanguageDef.CostOneElaboratedObject
-import Mettapedia.GSLT.LanguageDef.CostOneElaborationDisplayed
+import Mettapedia.GSLT.LanguageDef.Cost.Layer.Basic
+import Mettapedia.GSLT.LanguageDef.Cost.Elaboration.Total
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryCanonical
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryGeneratorAlignment
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostGeneratorInvariantCounterexample
@@ -673,7 +673,7 @@ def rhoCostElaborationTotal : CostElaborationTotal :=
     CostGeneratorInvariantCounterexample.rhoCutOrderLeft
 
 /-- The structural total category is concretely inhabited before the stronger
-hereditary Cost₁ normalization package is assembled. -/
+hereditary cost layer normalization package is assembled. -/
 theorem nonempty_costElaborationTotal : Nonempty CostElaborationTotal :=
   ⟨rhoCostElaborationTotal⟩
 
@@ -780,15 +780,15 @@ def RhoHereditaryReflectiveSupportPreserving : Prop :=
     (rhoCostNormalizeOpenHereditarySupported term).2.1.1.ReflectiveSupportSafeAt
       rhoCIGSLT.costWholeReflectionProfile support available binderImage
 
-/-- Assemble the actual finite-support rho Cost₁ object laws from the two
-remaining semantic crown obligations.  All contextual free-name laws,
+/-- Assemble the actual finite-support rho cost layer object laws from the two
+remaining semantic closure obligations.  All contextual free-name laws,
 typed unary soundness, generator transport to the supported executor, and
 wrapped-constructor preservation are discharged here. -/
-def rhoHereditaryCostOneObjectLaws_of
+def rhoHereditaryCompactOpenNormalizerLaws_of
     (alignable : CostOpenGeneratorTreeAlignable rhoCIGSLT
       rhoHereditaryNormalizationKernel)
     (preservesReflectiveSupport : RhoHereditaryReflectiveSupportPreserving) :
-    CIGSLT.CostOneObjectLawsFor rhoCIGSLT
+    Cost.CompactOpenNormalizer.Laws rhoCIGSLT
       rhoCostNormalizeOpenHereditarySupported where
   toCostOpenSectionLawsFor :=
     { toCostContextualOpenLawsFor :=
@@ -808,30 +808,30 @@ def rhoHereditaryCostOneObjectLaws_of
   preservesWrappedConstructorTyping :=
     rhoCostNormalizeOpenHereditarySupported_preservesWrappedConstructorTyping
 
-/-- The actual normalizer-indexed rho Cost₁ object, once the two remaining
-semantic crown obligations are supplied.  The selected compact executor is
+/-- The actual normalizer-indexed rho cost layer object, once the two remaining
+semantic closure obligations are supplied.  The selected compact executor is
 the finite-support hereditary executor; the retained semantic carrier keeps
 the independently proved unary rho normalization laws. -/
-def rhoHereditaryCostOneDomainObject_of
+def rhoHereditaryCostLayer_of
     (alignable : CostOpenGeneratorTreeAlignable rhoCIGSLT
       rhoHereditaryNormalizationKernel)
     (preservesReflectiveSupport : RhoHereditaryReflectiveSupportPreserving) :
-    CostOneDomainObject where
+    Cost.Layer where
   source := ⟨rhoCIGSLT⟩
   normalizeOpen := rhoCostNormalizeOpenHereditarySupported
-  compactLaws := rhoHereditaryCostOneObjectLaws_of alignable
+  compactLaws := rhoHereditaryCompactOpenNormalizerLaws_of alignable
     preservesReflectiveSupport
   semanticLaws := CostCanonicalLaws.rho_costTypedUnaryNormalizationLaws
 
-/-- The concrete rho retained elaboration over the actual hereditary Cost₁
+/-- The concrete rho retained elaboration over the actual hereditary cost layer
 object.  This is the total-space endpoint of the construction: the original
 checked region tree is retained verbatim above the normalizer-indexed base. -/
-def rhoHereditaryCostOneElaborationTotal_of
+def rhoHereditaryCostElaborationTotal_of
     (alignable : CostOpenGeneratorTreeAlignable rhoCIGSLT
       rhoHereditaryNormalizationKernel)
     (preservesReflectiveSupport : RhoHereditaryReflectiveSupportPreserving) :
-    CostOneElaborationTotal where
-  base := ⟨rhoHereditaryCostOneDomainObject_of alignable
+    Cost.Elaboration.Total where
+  base := ⟨rhoHereditaryCostLayer_of alignable
     preservesReflectiveSupport⟩
   fiber := rhoCostElaborationTotal.fiber
 

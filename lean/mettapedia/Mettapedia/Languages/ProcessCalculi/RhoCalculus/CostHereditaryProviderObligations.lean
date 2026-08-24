@@ -13,17 +13,17 @@ strictly more than the constructor consumes.
 
 This module restates the same-colour collapsing branch in the apex form the
 constructor actually takes, mirrors the plan-stop entry point to the right
-arm, and assembles the provider — hence the Cost₁ object and domain object —
+arm, and assembles the provider — hence the cost layer object and domain object —
 from four obligations that match the cut constructor-for-constructor:
 
-* `RhoAlignedViewsPlanStopApexInDomain` (aligned arm, apex form);
-* `RhoCollapsingViewsPlanStopApexInDomain` (same-colour collapsing arms,
+* `RhoAlignedPlanStops.HaveCommonRestoration` (aligned arm, apex form);
+* `RhoCollapsingPlanStops.HaveCommonRestoration` (same-colour collapsing arms,
   apex form, at the forced `+ 1` measure — the endpoint pair of a collapsing
   arm is itself a retained raw stop);
 * `RhoCollapsingCrossColorViewsRestorationAlignedInDomain` (cross-colour
   collapsing arms; the sort agreement facts are derived at the dispatch
   site from `sourceSort_eq_of_color_ne`, not assumed);
-* `RhoCollapsingLeafExposureInDomain` (structural partners).
+* `RhoCollapsingLeaf.HasExposure` (structural partners).
 
 Nothing here retires the restoration-form obligations; both assemblies
 coexist, and whichever family of obligations is discharged first seals the
@@ -157,7 +157,7 @@ retained raw stop (`not_canonicalStopAligned_endpoints_of_collapsing`), so a
 descent measured at the endpoint pair is uninhabited there.  The recursion
 callback is still supplied at the endpoint measure, so it covers exactly the
 proper sub-pairs; the endpoint pair itself must be handled by the apex. -/
-def RhoCollapsingViewsPlanStopApexInDomain
+def RhoCollapsingPlanStops.HaveCommonRestoration
     (declarationColor : CostStaticColor) : Prop :=
   ∀ {targetFree : FreeTypeContext} {available outer : List TypeExpr}
     {leftPattern rightPattern : Pattern} {type : TypeExpr}
@@ -204,15 +204,15 @@ aligned arm a plan-stop apex at the endpoint measure, the same-colour
 collapsing arms a plan-stop apex at the forced successor measure, the
 cross-colour arms restoration alignment with the sort-agreement facts
 derived on the spot, and the structural arms leaf exposure. -/
-theorem rhoCanonicalStaticPairSemanticCutProviderInDomain_of_apexSliceObligations
+theorem rhoCanonicalStaticPair_hasSemanticCut_of_restorationObligations
     {declarationColor : CostStaticColor}
-    (alignedApex : RhoAlignedViewsPlanStopApexInDomain declarationColor)
+    (alignedApex : RhoAlignedPlanStops.HaveCommonRestoration declarationColor)
     (collapsingApex :
-      RhoCollapsingViewsPlanStopApexInDomain declarationColor)
+      RhoCollapsingPlanStops.HaveCommonRestoration declarationColor)
     (crossColor :
       RhoCollapsingCrossColorViewsRestorationAlignedInDomain declarationColor)
-    (exposure : RhoCollapsingLeafExposureInDomain declarationColor) :
-    RhoCanonicalStaticPairSemanticCutProviderInDomain declarationColor := by
+    (exposure : RhoCollapsingLeaf.HasExposure declarationColor) :
+    RhoCanonicalStaticPair.HasSemanticCut declarationColor := by
   intro targetFree available outer leftPattern rightPattern type admissible
     leftWellSorted rightWellSorted canonical _staticShape closeSmaller
     left right rootCase
@@ -262,35 +262,35 @@ theorem rhoCanonicalStaticPairSemanticCutProviderInDomain_of_apexSliceObligation
         (alignedApex leftView rightView admissible leftWellSorted
           rightWellSorted close roots)⟩
 
-/-- **The rho Cost₁ domain object over the apex-slice obligations.** -/
-noncomputable def rhoHereditaryCostOneDomainObject_ofApexSliceObligations
-    (alignedApex : ∀ color, RhoAlignedViewsPlanStopApexInDomain color)
+/-- **The rho cost layer domain object over the restoration obligations.** -/
+noncomputable def rhoHereditaryCostLayer_ofRestorationObligations
+    (alignedApex : ∀ color, RhoAlignedPlanStops.HaveCommonRestoration color)
     (collapsingApex :
-      ∀ color, RhoCollapsingViewsPlanStopApexInDomain color)
+      ∀ color, RhoCollapsingPlanStops.HaveCommonRestoration color)
     (crossColor :
       ∀ color, RhoCollapsingCrossColorViewsRestorationAlignedInDomain color)
-    (exposure : ∀ color, RhoCollapsingLeafExposureInDomain color) :
-    CostOneDomainObject :=
-  rhoHereditaryCostOneDomainObject_ofSemanticLaws
+    (exposure : ∀ color, RhoCollapsingLeaf.HasExposure color) :
+    Cost.Layer :=
+  rhoHereditaryCostLayer_ofSemanticLaws
     (fun color =>
-      rhoCanonicalStaticPairSemanticCutProviderInDomain_of_apexSliceObligations
+      rhoCanonicalStaticPair_hasSemanticCut_of_restorationObligations
         (alignedApex color) (collapsingApex color) (crossColor color)
         (exposure color))
     rhoHereditaryStaticNormalizer_preservesReflectiveSupport_path
 
-/-- The Cost₁ object laws over the apex-slice obligations. -/
-noncomputable def rhoHereditaryCostOneObjectLaws_ofApexSliceObligations
-    (alignedApex : ∀ color, RhoAlignedViewsPlanStopApexInDomain color)
+/-- The cost layer object laws over the restoration obligations. -/
+noncomputable def rhoHereditaryCompactOpenNormalizerLaws_ofRestorationObligations
+    (alignedApex : ∀ color, RhoAlignedPlanStops.HaveCommonRestoration color)
     (collapsingApex :
-      ∀ color, RhoCollapsingViewsPlanStopApexInDomain color)
+      ∀ color, RhoCollapsingPlanStops.HaveCommonRestoration color)
     (crossColor :
       ∀ color, RhoCollapsingCrossColorViewsRestorationAlignedInDomain color)
-    (exposure : ∀ color, RhoCollapsingLeafExposureInDomain color) :
-    CIGSLT.CostOneObjectLawsFor rhoCIGSLT
+    (exposure : ∀ color, RhoCollapsingLeaf.HasExposure color) :
+    Cost.CompactOpenNormalizer.Laws rhoCIGSLT
       rhoCostNormalizeOpenHereditarySupported :=
-  rhoHereditaryCostOneObjectLaws_ofSemanticLaws
+  rhoHereditaryCompactOpenNormalizerLaws_ofSemanticLaws
     (fun color =>
-      rhoCanonicalStaticPairSemanticCutProviderInDomain_of_apexSliceObligations
+      rhoCanonicalStaticPair_hasSemanticCut_of_restorationObligations
         (alignedApex color) (collapsingApex color) (crossColor color)
         (exposure color))
     rhoHereditaryStaticNormalizer_preservesReflectiveSupport_path

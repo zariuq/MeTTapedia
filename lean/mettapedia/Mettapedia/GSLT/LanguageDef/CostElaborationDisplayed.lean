@@ -10,8 +10,8 @@ structural action carries the complete computational decoration of the
 source term to that of the target term.
 
 This is deliberately only a displayed-category-style total construction.
-No Cost₁ normalizer laws and no cartesian or cocartesian lifting property are
-asserted here.  Lawful Cost₁ objects form a later restriction of this base;
+No cost layer normalizer laws and no cartesian or cocartesian lifting property are
+asserted here.  Lawful cost layer objects form a later restriction of this base;
 requiring those laws here would make the structural total category depend on
 the still-separate normalization theorem.
 -/
@@ -55,7 +55,7 @@ carrier whenever the source supplies the local unary normalization laws.
 This is the bridge from executable decomposition evidence to normalization
 in place; it does not erase and recompile the semantic tree. -/
 def toSemantic (object : CostElaborationTotal)
-    (laws : CostTypedUnaryNormalizationLaws object.base) :
+    (laws : Cost.SemanticSection.Laws object.base) :
     CostSemanticElabTerm object.base
       object.fiber.1.targetFree object.fiber.1.targetBound
         object.fiber.1.targetSort :=
@@ -65,7 +65,7 @@ def toSemantic (object : CostElaborationTotal)
 /-- The semantic image of an executable Cost elaboration reaches its exact
 normal form through one retained semantic edge. -/
 theorem toSemantic_normalizes (object : CostElaborationTotal)
-    (laws : CostTypedUnaryNormalizationLaws object.base) :
+    (laws : Cost.SemanticSection.Laws object.base) :
     (CostSemanticOpenElaboration.equationSetoid object.base
       object.fiber.1.targetFree object.fiber.1.targetBound
         object.fiber.1.targetSort).r
@@ -76,7 +76,7 @@ theorem toSemantic_normalizes (object : CostElaborationTotal)
 /-- Normalization in the semantic image is the exact canonical section
 already proved for stable Cost frames. -/
 theorem toSemantic_normalize_eq_iff (object : CostElaborationTotal)
-    (laws : CostTypedUnaryNormalizationLaws object.base)
+    (laws : Cost.SemanticSection.Laws object.base)
     (other : CostSemanticElabTerm object.base
       object.fiber.1.targetFree object.fiber.1.targetBound
         object.fiber.1.targetSort) :

@@ -1,6 +1,6 @@
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditarySameColorReachedPairApex
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryForeignPlanStopRestoration
-import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryAlignedPlanStopApex
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryAlignedPlanStopRestoration
 
 namespace Mettapedia.Languages.ProcessCalculi.RhoCalculus
 
@@ -3049,9 +3049,9 @@ noncomputable def rho_staticPlanStopCommonApex_of_sameColor_succ
 /-- Static collapsing views have the successor-budget plan-stop apex for
 every declaration colour.  Same-colour endpoints use the explicit endpoint
 cell constructors; foreign-colour stops use hereditary plan restoration. -/
-theorem rho_collapsingViewsPlanStopApexInDomain
+theorem rho_collapsingPlanStops_haveCommonRestoration
     (declarationColor : CostStaticColor) :
-    RhoCollapsingViewsPlanStopApexInDomain declarationColor := by
+    RhoCollapsingPlanStops.HaveCommonRestoration declarationColor := by
   intro targetFree available outer leftPattern rightPattern type left right
     color leftView rightView admissible _leftWellSorted _rightWellSorted
     closeSmaller _collapsing _canonical
@@ -3074,17 +3074,17 @@ theorem rho_collapsingViewsPlanStopApexInDomain
 
 /-- Both generated declarations satisfy the collapsing plan-stop apex
 obligation. -/
-theorem rho_collapsingViewsPlanStopApexInDomain_allColors :
-    ∀ color, RhoCollapsingViewsPlanStopApexInDomain color :=
-  rho_collapsingViewsPlanStopApexInDomain
+theorem rho_collapsingPlanStops_haveCommonRestoration_allColors :
+    ∀ color, RhoCollapsingPlanStops.HaveCommonRestoration color :=
+  rho_collapsingPlanStops_haveCommonRestoration
 
-/-- The unconditional proof-relevant Cost₁ domain object for the reflective
+/-- The unconditional proof-relevant cost layer domain object for the reflective
 rho calculus. -/
-noncomputable def rhoHereditaryCostOneDomainObject : CostOneDomainObject :=
-  rhoHereditaryCostOneDomainObject_ofExposureApexSliceObligations
-    rho_alignedViewsPlanStopApexInDomain_allColors
-    rho_collapsingViewsPlanStopApexInDomain_allColors
-    rhoCrossColor_collapsingLeafExposuresInDomain
-    rho_collapsingLeafExposureInDomain_allColors
+noncomputable def rhoHereditaryCostLayer : Cost.Layer :=
+  rhoHereditaryCostLayer_ofExposureRestorationObligations
+    rho_alignedPlanStops_haveCommonRestoration_allColors
+    rho_collapsingPlanStops_haveCommonRestoration_allColors
+    rhoCrossColor_collapsingLeaves_haveExposure
+    rho_collapsingLeaf_hasExposure_allColors
 
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus

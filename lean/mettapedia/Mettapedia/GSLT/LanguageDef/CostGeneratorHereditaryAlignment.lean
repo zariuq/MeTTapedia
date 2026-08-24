@@ -144,7 +144,7 @@ theorem ofTreeAlignable
   CostOpenGeneratorInvariantFor.ofSpanLiftable alignable.spanLiftable coherent
     agrees
 
-/-- Generic hereditary Cost crown: root-aware alignment and compact
+/-- Generic hereditary Cost closure: root-aware alignment and compact
 coherence imply exact generator invariance for the sole executor obtained by
 normalizing the compiled proof-relevant tree with that static kernel. -/
 theorem forCostNormalizeOpenWithStatic
