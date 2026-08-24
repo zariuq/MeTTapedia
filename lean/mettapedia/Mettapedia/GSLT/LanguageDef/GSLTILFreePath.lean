@@ -218,6 +218,94 @@ theorem mapPath_unique {program : Program}
       rw [onCons event rest, inductionHypothesis]
       rfl
 
+/-- A structural interpretation of all free paths that agrees with the
+chosen object and generator interpretation.  Identity and generator
+extension are laws of the candidate, not equations assumed of the target
+edge family. -/
+structure PathExtension {program : Program}
+    (interpretation : EventInterpretation program) where
+  onPath : {source target : Pattern} →
+    AuthoredPath program source target →
+      Route interpretation.Edge (interpretation.onObject source)
+        (interpretation.onObject target)
+  onRefl : ∀ object, onPath (.refl object) =
+    .refl (interpretation.onObject object)
+  onCons : ∀ {source middle target}
+    (event : AuthoredEvent program source middle)
+    (rest : AuthoredPath program middle target),
+    onPath (.cons event rest) =
+      .cons (interpretation.onEvent event) (onPath rest)
+
+namespace PathExtension
+
+/-- The structural recursion on authored paths supplies the canonical
+extension of every generator interpretation. -/
+def canonical {program : Program}
+    (interpretation : EventInterpretation program) :
+    PathExtension interpretation where
+  onPath := interpretation.mapPath
+  onRefl := interpretation.mapPath_refl
+  onCons := interpretation.mapPath_cons
+
+@[ext]
+theorem ext {program : Program}
+    {interpretation : EventInterpretation program}
+    {first second : PathExtension interpretation}
+    (paths : ∀ {source target} (path : AuthoredPath program source target),
+      first.onPath path = second.onPath path) :
+    first = second := by
+  cases first with
+  | mk firstPath firstRefl firstCons =>
+      cases second with
+      | mk secondPath secondRefl secondCons =>
+          have pathEqual : @firstPath = @secondPath := by
+            funext source target path
+            exact paths (source := source) (target := target) path
+          cases pathEqual
+          rfl
+
+/-- The canonical extension is the only structural extension.  This is the
+free-path universal property as uniqueness of the complete interpreter, not
+only pointwise uniqueness after a candidate has been supplied. -/
+theorem unique {program : Program}
+    (interpretation : EventInterpretation program)
+    (candidate : PathExtension interpretation) :
+    candidate = canonical interpretation := by
+  apply PathExtension.ext
+  intro source target path
+  exact interpretation.mapPath_unique candidate.onPath candidate.onRefl
+    candidate.onCons path
+
+/-- Structural extensions form a contractible type. -/
+instance {program : Program}
+    (interpretation : EventInterpretation program) :
+    Unique (PathExtension interpretation) where
+  default := canonical interpretation
+  uniq candidate := unique interpretation candidate
+
+/-- Existence and uniqueness in a proposition-sized form convenient for
+universal-structure clients. -/
+theorem contractible {program : Program}
+    (interpretation : EventInterpretation program) :
+    Nonempty (PathExtension interpretation) ∧
+      Subsingleton (PathExtension interpretation) :=
+  ⟨⟨canonical interpretation⟩, inferInstance⟩
+
+/-- Preservation of arbitrary path append is derived from the generator
+laws.  It is not an extra field of a structural interpretation. -/
+theorem onPath_append {program : Program}
+    {interpretation : EventInterpretation program}
+    (extension : PathExtension interpretation)
+    {source middle target : Pattern}
+    (earlier : AuthoredPath program source middle)
+    (later : AuthoredPath program middle target) :
+    extension.onPath (earlier.append later) =
+      (extension.onPath earlier).append (extension.onPath later) := by
+  rw [unique interpretation extension]
+  exact interpretation.mapPath_append earlier later
+
+end PathExtension
+
 end EventInterpretation
 
 /-! ## Duplicate-occurrence control -/
@@ -265,6 +353,15 @@ theorem events_distinct : firstEvent ≠ secondEvent := by
 theorem erased_events_equal : firstEvent.erase = secondEvent.erase :=
   Subsingleton.elim _ _
 
+/-- Some free generator fibre contains distinct authored occurrences that
+the proposition-valued reachability quotient identifies. -/
+theorem exists_distinct_events_with_equal_erasure :
+    ∃ (program : Program) (source target : Pattern)
+      (first second : AuthoredEvent program source target),
+      first ≠ second ∧ first.erase = second.erase :=
+  ⟨program, inSpace space input, inSpace space output,
+    firstEvent, secondEvent, events_distinct, erased_events_equal⟩
+
 end DuplicateOccurrenceCanary
 
 #print axioms AuthoredEvent.nonempty_iff_step
@@ -272,7 +369,10 @@ end DuplicateOccurrenceCanary
 #print axioms AuthoredPath.comp_assoc
 #print axioms EventInterpretation.mapPath_append
 #print axioms EventInterpretation.mapPath_unique
+#print axioms EventInterpretation.PathExtension.contractible
+#print axioms EventInterpretation.PathExtension.onPath_append
 #print axioms DuplicateOccurrenceCanary.events_distinct
 #print axioms DuplicateOccurrenceCanary.erased_events_equal
+#print axioms DuplicateOccurrenceCanary.exists_distinct_events_with_equal_erasure
 
 end Mettapedia.GSLT.LanguageDef.GSLTIL.FreePath

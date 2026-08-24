@@ -243,12 +243,46 @@ theorem canonical_cells_do_not_strictly_join :
   simp [firstEvent, secondEvent, WireCell.ofEvent, routeIdentity,
     routeA, routeB, atom, viaPattern, Pattern.apply.injEq]
 
+/-- There is no global elaboration function that represents every authored
+elaboration exactly.  The common surface middle elaborates through two
+distinct route occurrences.  A universal semantics must therefore retain an
+elaboration relation or a selected coherence witness; it cannot silently use
+a function on raw commands. -/
+theorem no_function_represents_all_elaborations :
+    ¬ ∃ elaborate : Pattern -> Pattern,
+      ∀ surface internal,
+        Elaborates program surface internal ↔ elaborate surface = internal := by
+  rintro ⟨elaborate, represents⟩
+  have firstEq :=
+    (represents (routeCall "shared" middle)
+      (WireCell.ofEvent firstEvent).targetIR).mp
+        (WireCell.ofEvent firstEvent).targetElaboration
+  have secondEq :=
+    (represents (routeCall "shared" middle)
+      (WireCell.ofEvent secondEvent).sourceIR).mp
+        (WireCell.ofEvent secondEvent).sourceElaboration
+  exact canonical_cells_do_not_strictly_join (firstEq.symm.trans secondEq)
+
 end AmbiguousIntermediateCanary
+
+/-- Some finite authored GSLT-IL program necessarily has relational rather
+than functional elaboration.  The concrete ambiguity witness stays private;
+the public theorem records the language-level obstruction. -/
+theorem exists_program_without_global_functional_elaboration :
+    ∃ program : Program,
+      ¬ ∃ elaborate : Pattern → Pattern,
+        ∀ surface internal,
+          Elaborates program surface internal ↔
+            elaborate surface = internal := by
+  exact ⟨AmbiguousIntermediateCanary.program,
+    AmbiguousIntermediateCanary.no_function_represents_all_elaborations⟩
 
 #print axioms elaborates_reflects_source
 #print axioms WireCell.nonempty_iff_event
 #print axioms WireCellPath.nonempty_iff_authoredPath
 #print axioms WireCellPath.ofAuthoredPath_append
 #print axioms AmbiguousIntermediateCanary.canonical_cells_do_not_strictly_join
+#print axioms AmbiguousIntermediateCanary.no_function_represents_all_elaborations
+#print axioms exists_program_without_global_functional_elaboration
 
 end Mettapedia.GSLT.LanguageDef.GSLTIL.WireCells

@@ -665,6 +665,66 @@ theorem instantiateSchemasAt?_length_eq
               simp [instantiateSchemasAt?_length_eq htail]
 termination_by sizeOf schemas
 
+/-! Ground schemas are closed under every argument environment.  This is the
+reusable fact boundary: a generated ground rule needs no metavariable replay,
+and its instantiated conclusion is exactly its authored conclusion. -/
+
+mutual
+
+theorem instantiateSchemaAt?_eq_self_of_ground
+    (formals : List (String × Nat)) (arguments : List Pattern)
+    (depth : Nat) (schema : Pattern)
+    (ground : schema.isGroundAt depth = true) :
+    instantiateSchemaAt? formals arguments depth schema = some schema := by
+  cases schema with
+  | bvar index => simp [instantiateSchemaAt?]
+  | fvar name => simp [Pattern.isGroundAt] at ground
+  | apply constructor schemas =>
+      simp only [Pattern.isGroundAt] at ground
+      simp [instantiateSchemaAt?,
+        instantiateSchemasAt?_eq_self_of_ground formals arguments depth
+          schemas ground]
+  | lambda binder body =>
+      simp only [Pattern.isGroundAt] at ground
+      simp [instantiateSchemaAt?, instantiateSchemaAt?_eq_self_of_ground
+        formals arguments (depth + 1) body ground]
+  | multiLambda arity binders body =>
+      simp only [Pattern.isGroundAt] at ground
+      simp [instantiateSchemaAt?, instantiateSchemaAt?_eq_self_of_ground
+        formals arguments (depth + arity) body ground]
+  | subst body replacement =>
+      simp only [Pattern.isGroundAt, Bool.and_eq_true] at ground
+      simp [instantiateSchemaAt?, instantiateSchemaAt?_eq_self_of_ground
+        formals arguments (depth + 1) body ground.1,
+        instantiateSchemaAt?_eq_self_of_ground formals arguments depth
+          replacement ground.2]
+  | collection collectionType schemas rest =>
+      simp only [Pattern.isGroundAt, Bool.and_eq_true] at ground
+      cases rest with
+      | some restName => simp at ground
+      | none =>
+          simp [instantiateSchemaAt?,
+            instantiateSchemasAt?_eq_self_of_ground formals arguments depth
+              schemas ground.1]
+termination_by sizeOf schema
+
+theorem instantiateSchemasAt?_eq_self_of_ground
+    (formals : List (String × Nat)) (arguments : List Pattern)
+    (depth : Nat) (schemas : List Pattern)
+    (ground : Pattern.isGroundListAt depth schemas = true) :
+    instantiateSchemasAt? formals arguments depth schemas = some schemas := by
+  cases schemas with
+  | nil => simp [instantiateSchemasAt?]
+  | cons schema schemas =>
+      simp only [Pattern.isGroundListAt, Bool.and_eq_true] at ground
+      simp [instantiateSchemasAt?, instantiateSchemaAt?_eq_self_of_ground
+        formals arguments depth schema ground.1,
+        instantiateSchemasAt?_eq_self_of_ground formals arguments depth
+          schemas ground.2]
+termination_by sizeOf schemas
+
+end
+
 mutual
 
 /-- Declarative structural schema instantiation, independent of the Boolean

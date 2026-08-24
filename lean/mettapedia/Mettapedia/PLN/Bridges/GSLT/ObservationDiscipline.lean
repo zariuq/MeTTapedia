@@ -1,4 +1,5 @@
 import Mettapedia.GSLT.Dynamics.ObservationDiscipline
+import Mettapedia.GSLT.Dynamics.CapabilityIndexedObservationArchitecture
 import Mettapedia.PLN.Bridges.GSLT.EvidenceCostReadout
 
 /-!
@@ -79,6 +80,45 @@ theorem no_evidence_reconstruction_from_discipline_propensity
   Mettapedia.GSLT.Dynamics.ObservationDiscipline.no_reconstruction_of_lossy
     (propensityDiscipline 1 evidence) (propensity_isLossy evidence)
 
+/-! ## Evidence and propensity in the public observation architecture -/
+
+/-- Full revisable evidence is the semantic value of the accepted-history
+architecture.  The execution still retains its event history and collection
+witness separately. -/
+def evidenceArchitecture {Event : Type uEvent}
+    (evidence : Event -> BinaryEvidence) :
+    CapabilityIndexedObservationArchitecture Unit
+      (CollectedEventHistory.Execution (evidenceDiscipline evidence)) :=
+  CollectedEventHistory.architecture (evidenceDiscipline evidence)
+
+/-- Propensity is a policy-facing scheduler view of retained evidence, not a
+replacement for the evidence value or its execution history. -/
+def propensityScheduler {Event : Type uEvent}
+    (prior : ℝ≥0∞) (evidence : Event -> BinaryEvidence) :
+    (evidenceArchitecture evidence).SchedulerReadout ℝ≥0∞ where
+  readout := propensity prior
+
+/-- Unit-prior propensity is lossy specifically at the `V -> Q` scheduler
+layer of the public architecture. -/
+theorem propensityScheduler_isLossy {Event : Type uEvent}
+    (evidence : Event -> BinaryEvidence) :
+    (propensityScheduler 1 evidence).Lossy := by
+  apply
+    Mettapedia.GSLT.Dynamics.CapabilityIndexedObservationArchitecture.SchedulerReadout.lossy_of_collision
+      (propensityScheduler 1 evidence)
+      (first := concentratedEvidence) (second := mixedEvidence)
+  · exact concentratedEvidence_ne_mixedEvidence
+  · exact propensity_collision
+
+/-- No scheduler-side decoder can recover full evidence from scalar
+propensity. -/
+theorem no_evidence_reconstruction_from_propensityScheduler
+    {Event : Type uEvent} (evidence : Event -> BinaryEvidence) :
+    ¬ ∃ recover : ℝ≥0∞ -> BinaryEvidence,
+      Function.LeftInverse recover (propensityScheduler 1 evidence).readout :=
+  Mettapedia.GSLT.Dynamics.CapabilityIndexedObservationArchitecture.SchedulerReadout.no_value_reconstruction_of_lossy
+    (propensityScheduler 1 evidence) (propensityScheduler_isLossy evidence)
+
 /-! ## Evidence and resource observations of one event family -/
 
 /-- One operational occurrence with separate epistemic and resource data. -/
@@ -143,5 +183,9 @@ theorem combined_observation_distinguishes_evidence :
     (congrArg (fun value => value.map Prod.fst) equal |> Option.some.inj)
 
 end
+
+#print axioms evidenceArchitecture
+#print axioms propensityScheduler_isLossy
+#print axioms no_evidence_reconstruction_from_propensityScheduler
 
 end Mettapedia.PLN.Bridges.GSLT.ObservationDiscipline

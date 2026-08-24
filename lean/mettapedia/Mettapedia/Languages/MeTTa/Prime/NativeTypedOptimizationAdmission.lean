@@ -8,14 +8,16 @@ import Mettapedia.GSLT.LanguageDef.RepeatedImmutableLookupCacheCompilation
 
 Three ingredients have distinct jobs:
 
-* exact native type/cardinality evidence supplies an `OptLicense`;
+* each hosted calculus supplies a source/key-indexed native judgment;
 * a local recognizer supplies evidence for one optimization class;
 * an optional `ProfitabilityReceipt` compares work/span observations.
 
-Only the first two are required for semantic admission.  Profitability is a
-separate policy decision and cannot repair an inadequate transformation.
-When either exact authority or shape recognition is absent, preparation keeps
-the source plan.  Both branches have the same named semantic observation.
+Deterministic dispatch uses an `OptLicense`; storage and memoization use their
+own lifetime/publication and physical-revision judgments.  Native judgment and
+shape evidence are both required for semantic admission.  Profitability is a
+separate policy decision and cannot repair an inadequate transformation.  When
+either authority or shape recognition is absent, preparation keeps the source
+plan.  Both branches have the same named semantic observation.
 
 The first instances reuse existing certified transformations: single-valued
 keyed dispatch, non-escaping scratch reuse, and revision-stable memoization.
@@ -28,7 +30,7 @@ open Mettapedia.Languages.MeTTa.PeTTa.TypecheckV3Core
 open Mettapedia.Languages.MeTTa.PeTTa.TypecheckV3Seam
 open Mettapedia.Languages.MeTTa.Prime.GradualExecutionPlan
 
-universe uSource uEvidence uArtifact uObservation
+universe uSource uJudgment uEvidence uArtifact uObservation
 
 /-- Closed inventory of the first optimization classes. -/
 inductive OptimizationKind where
@@ -37,10 +39,23 @@ inductive OptimizationKind where
   | revisionStableMemo
   deriving DecidableEq, Repr
 
+/-- The full cache/admission identity.  The occurrence binds both the
+optimization family and exact source; revision, dialect, expected type, and
+authority are all retained.  A cache entry for one transformation class
+therefore cannot be reused as authority for another class. -/
+abbrev OptimizationKey (Source : Type uSource) :=
+  CheckKey (OptimizationKind × Source) Nat String Ty String
+
 /-- One semantics-preserving optimization family.  Shape evidence and
-artifacts may depend on the exact source occurrence. -/
+artifacts may depend on the exact source occurrence.  Crucially, the hosted
+calculus supplies its own proof-relevant native judgment at the complete key;
+the generic adapter does not pretend that PeTTa cardinality evidence is the
+right authority for storage, memoization, or another guest calculus. -/
 structure OptimizationSpec (Source : Type uSource) where
   kind : OptimizationKind
+  NativeJudgment : (source : Source) → OptimizationKey Source → Type uJudgment
+  nativeJudgment_expected_exact : ∀ source key,
+    NativeJudgment source key → exactTy key.expected = true
   ShapeEvidence : Source → Type uEvidence
   Artifact : Source → Type uArtifact
   Observation : Source → Type uObservation
@@ -53,54 +68,60 @@ structure OptimizationSpec (Source : Type uSource) where
   sourceWorkSpan : Source → WorkSpan
   artifactWorkSpan : ∀ source, Artifact source → WorkSpan
 
-/-- The full cache/admission identity.  The occurrence binds both the
-optimization family and exact source; revision, dialect, expected type, and
-authority are all retained.  A cache entry for one transformation class
-therefore cannot be reused as authority for another class. -/
-abbrev OptimizationKey (Source : Type uSource) :=
-  CheckKey (OptimizationKind × Source) Nat String Ty String
-
-/-- Exact type authority for one optimization family and source occurrence
-at one complete key. -/
-structure ExactAuthority {Source : Type uSource} (kind : OptimizationKind)
-    (source : Source) where
+/-- Native judgment authority for one optimization specification and source
+occurrence at one complete key.  The judgment is selected by the hosted
+calculus and is indexed by both source and key, so an unrelated exact license
+cannot be attached merely because it happens to be constructible. -/
+structure ExactAuthority {Source : Type uSource}
+    (spec : OptimizationSpec Source) (source : Source) where
   key : OptimizationKey Source
-  occurrence_eq : key.occurrence = (kind, source)
-  license : OptLicense
-  expected_eq : license.expected = key.expected
+  occurrence_eq : key.occurrence = (spec.kind, source)
+  judgment : spec.NativeJudgment source key
 
 namespace ExactAuthority
 
 /-- The optimization family is part of cache identity, not an external label
 that may disagree with the proof object. -/
-theorem key_kind {Source : Type uSource} {kind : OptimizationKind}
-    {source : Source} (authority : ExactAuthority kind source) :
-    authority.key.occurrence.1 = kind := by
+theorem key_kind {Source : Type uSource} {spec : OptimizationSpec Source}
+    {source : Source} (authority : ExactAuthority spec source) :
+    authority.key.occurrence.1 = spec.kind := by
   exact congrArg Prod.fst authority.occurrence_eq
 
 /-- The exact source occurrence is the second cache-identity coordinate. -/
-theorem key_source {Source : Type uSource} {kind : OptimizationKind}
-    {source : Source} (authority : ExactAuthority kind source) :
+theorem key_source {Source : Type uSource} {spec : OptimizationSpec Source}
+    {source : Source} (authority : ExactAuthority spec source) :
     authority.key.occurrence.2 = source := by
   exact congrArg Prod.snd authority.occurrence_eq
 
 /-- Authorities for different optimization families cannot share an exact
 cache key, even if their source types and values coincide. -/
 theorem key_ne_of_kind_ne {Source : Type uSource}
-    {leftKind rightKind : OptimizationKind} {leftSource rightSource : Source}
-    (left : ExactAuthority leftKind leftSource)
-    (right : ExactAuthority rightKind rightSource)
-    (different : leftKind ≠ rightKind) : left.key ≠ right.key := by
+    {leftSpec rightSpec : OptimizationSpec Source}
+    {leftSource rightSource : Source}
+    (left : ExactAuthority leftSpec leftSource)
+    (right : ExactAuthority rightSpec rightSource)
+    (different : leftSpec.kind ≠ rightSpec.kind) : left.key ≠ right.key := by
   intro sameKey
   apply different
   rw [← left.key_kind, ← right.key_kind, sameKey]
 
-/-- Gradual unknown can never hide inside optimization authority. -/
-theorem actual_ne_unknown {Source : Type uSource} {kind : OptimizationKind}
-    {source : Source} (authority : ExactAuthority kind source) :
-    authority.license.actual ≠ .unknown := by
+/-- Every admitted native judgment establishes exactness of the expected type
+stored in its complete key. -/
+theorem expected_exact {Source : Type uSource} {spec : OptimizationSpec Source}
+    {source : Source} (authority : ExactAuthority spec source) :
+    exactTy authority.key.expected = true :=
+  spec.nativeJudgment_expected_exact source authority.key authority.judgment
+
+/-- Gradual unknown can never hide in the expected type of native judgment
+authority. -/
+theorem expected_ne_unknown {Source : Type uSource}
+    {spec : OptimizationSpec Source} {source : Source}
+    (authority : ExactAuthority spec source) :
+    authority.key.expected ≠ .unknown := by
   intro equal
-  exact no_unknown_license ⟨authority.license, equal⟩
+  have exact := authority.expected_exact
+  rw [equal] at exact
+  simp [exactTy] at exact
 
 end ExactAuthority
 
@@ -110,7 +131,7 @@ recognizer. -/
 inductive ExecutionPlan {Source : Type uSource}
     (spec : OptimizationSpec Source) (source : Source) where
   | source
-  | optimized (authority : ExactAuthority spec.kind source)
+  | optimized (authority : ExactAuthority spec source)
       (shape : spec.ShapeEvidence source)
 
 namespace ExecutionPlan
@@ -149,7 +170,7 @@ end ExecutionPlan
 /-- Preparation is fail-open.  Missing exact authority or failed recognition
 selects the source plan; neither result rejects the source computation. -/
 def prepare {Source : Type uSource} (spec : OptimizationSpec Source)
-    (source : Source) (authority : Option (ExactAuthority spec.kind source)) :
+    (source : Source) (authority : Option (ExactAuthority spec source)) :
     ExecutionPlan spec source :=
   match authority with
   | none => .source
@@ -164,7 +185,7 @@ def prepare {Source : Type uSource} (spec : OptimizationSpec Source)
 
 theorem prepare_of_unrecognized {Source : Type uSource}
     (spec : OptimizationSpec Source) (source : Source)
-    (authority : ExactAuthority spec.kind source)
+    (authority : ExactAuthority spec source)
     (unrecognized : spec.recognize source = none) :
     prepare spec source (some authority) = .source := by
   simp [prepare, unrecognized]
@@ -173,7 +194,7 @@ theorem prepare_of_unrecognized {Source : Type uSource}
 authority and shape rejection. -/
 theorem observe_prepare {Source : Type uSource}
     (spec : OptimizationSpec Source) (source : Source)
-    (authority : Option (ExactAuthority spec.kind source)) :
+    (authority : Option (ExactAuthority spec source)) :
     (prepare spec source authority).observe = spec.observeSource source :=
   (prepare spec source authority).observe_eq_source
 
@@ -181,7 +202,7 @@ theorem observe_prepare {Source : Type uSource}
 not a field of `OptimizationSpec` and is never used to prove adequacy. -/
 structure ProfitabilityReceipt {Source : Type uSource}
     (spec : OptimizationSpec Source) (source : Source)
-    (authority : ExactAuthority spec.kind source)
+    (authority : ExactAuthority spec source)
     (shape : spec.ShapeEvidence source) where
   key : OptimizationKey Source
   same_key : key = authority.key
@@ -196,7 +217,7 @@ structure ProfitabilityReceipt {Source : Type uSource}
 it cannot manufacture shape or type authority. -/
 structure ProfitablePlan {Source : Type uSource}
     (spec : OptimizationSpec Source) (source : Source) where
-  authority : ExactAuthority spec.kind source
+  authority : ExactAuthority spec source
   shape : spec.ShapeEvidence source
   receipt : ProfitabilityReceipt spec source authority shape
 
@@ -223,6 +244,62 @@ open Mettapedia.GSLT.LanguageDef.MonotoneUniqueIndexCompilation
 variable {Key Value : Type} [BEq Key] [Hashable Key]
   [LawfulBEq Key] [LawfulHashable Key]
 
+/-- The native typing face for deterministic dispatch.  Unlike the earlier
+adapter, the `OptLicense` is indexed by this dispatch source and complete key,
+and all of its type/cardinality coordinates are bound to that key. -/
+structure NativeJudgment (source : SourceProgram Key Value)
+    (key : OptimizationKey (SourceProgram Key Value)) where
+  license : OptLicense
+  actual_eq : license.actual = key.expected
+  expected_eq : license.expected = key.expected
+  card_eq : license.card = .det
+  demand_eq : license.demand = .grade .det
+
+/-- Construct the deterministic native judgment at any exact declared type.
+The separately computed `Evidence` below still establishes that this concrete
+table has the unique-key shape required by the implementation. -/
+def nativeJudgment (source : SourceProgram Key Value)
+    (key : OptimizationKey (SourceProgram Key Value))
+    (expectedExact : exactTy key.expected = true) :
+    NativeJudgment source key where
+  license :=
+    { actual := key.expected
+      expected := key.expected
+      card := .det
+      demand := .grade .det
+      actual_exact := expectedExact
+      expected_exact := expectedExact
+      flows := consistent?_refl key.expected
+      fits := modeFits_refl (.grade .det) }
+  actual_eq := rfl
+  expected_eq := rfl
+  card_eq := rfl
+  demand_eq := rfl
+
+omit [BEq Key] [Hashable Key] [LawfulBEq Key] [LawfulHashable Key] in
+theorem nativeJudgment_expected_exact
+    {source : SourceProgram Key Value}
+    {key : OptimizationKey (SourceProgram Key Value)}
+    (judgment : NativeJudgment source key) :
+    exactTy key.expected = true := by
+  rw [← judgment.expected_eq]
+  exact judgment.license.expected_exact
+
+omit [BEq Key] [Hashable Key] [LawfulBEq Key] [LawfulHashable Key] in
+/-- The dispatch license cannot float free of the candidate key: both type
+coordinates and both cardinality coordinates are fixed by the indexed native
+judgment. -/
+theorem nativeJudgment_coordinates
+    {source : SourceProgram Key Value}
+    {key : OptimizationKey (SourceProgram Key Value)}
+    (judgment : NativeJudgment source key) :
+    judgment.license.actual = key.expected ∧
+      judgment.license.expected = key.expected ∧
+      judgment.license.card = .det ∧
+      judgment.license.demand = .grade .det :=
+  ⟨judgment.actual_eq, judgment.expected_eq, judgment.card_eq,
+    judgment.demand_eq⟩
+
 /-- Evidence is the existing unique-key admission, indexed back to the exact
 source occurrence. -/
 structure Evidence (source : SourceProgram Key Value) where
@@ -247,6 +324,9 @@ def recognize (source : SourceProgram Key Value) : Option (Evidence source) :=
 
 def spec : OptimizationSpec (SourceProgram Key Value) where
   kind := .singleValuedDispatch
+  NativeJudgment := NativeJudgment
+  nativeJudgment_expected_exact := fun _ _ judgment =>
+    nativeJudgment_expected_exact judgment
   ShapeEvidence := Evidence
   Artifact := fun _ => Artifact Key Value
   Observation := fun _ => List (Option Value)
@@ -289,6 +369,45 @@ structure Source where
   plan : ReusePlan
   program : ObservableProgram width Value Observation
 
+/-- Proof-relevant classification of every lifetime/publication plan.  This
+is the native storage-effect judgment; only the call-local/value case is later
+recognized as reusable. -/
+inductive PlanJudgment : ReusePlan → Type
+  | callLocalValue : PlanJudgment ⟨.callLocal, .value⟩
+  | callLocalReference : PlanJudgment ⟨.callLocal, .reference⟩
+  | retainedValue : PlanJudgment ⟨.retained, .value⟩
+  | retainedReference : PlanJudgment ⟨.retained, .reference⟩
+
+def classifyPlan (plan : ReusePlan) : PlanJudgment plan := by
+  rcases plan with ⟨lifetime, boundary⟩
+  cases lifetime <;> cases boundary
+  · exact .callLocalValue
+  · exact .callLocalReference
+  · exact .retainedValue
+  · exact .retainedReference
+
+/-- An exact storage judgment retains both its exact result type and the
+actual lifetime/publication classification of this source. -/
+structure NativeJudgment
+    (source : Source (width := width) (Value := Value)
+      (Observation := Observation))
+    (key : OptimizationKey
+      (Source (width := width) (Value := Value)
+        (Observation := Observation))) where
+  expected_exact : exactTy key.expected = true
+  plan : PlanJudgment source.plan
+
+def nativeJudgment
+    (source : Source (width := width) (Value := Value)
+      (Observation := Observation))
+    (key : OptimizationKey
+      (Source (width := width) (Value := Value)
+        (Observation := Observation)))
+    (expectedExact : exactTy key.expected = true) :
+    NativeJudgment source key where
+  expected_exact := expectedExact
+  plan := classifyPlan source.plan
+
 structure Evidence (source : Source (width := width)
     (Value := Value) (Observation := Observation)) where
   artifact : ReusableObservableProgram width Value Observation
@@ -304,6 +423,8 @@ def recognize (source : Source (width := width)
 def spec : OptimizationSpec
     (Source (width := width) (Value := Value) (Observation := Observation)) where
   kind := .reusableStorage
+  NativeJudgment := NativeJudgment
+  nativeJudgment_expected_exact := fun _ _ judgment => judgment.expected_exact
   ShapeEvidence := Evidence
   Artifact := fun _ => ReusableObservableProgram width Value Observation
   Observation := fun _ => List Observation
@@ -357,6 +478,33 @@ structure Source where
   appendOnly : AppendOnly before after
   keys : List Key
 
+/-- The native physical-revision judgment retains the exact snapshots and
+the append-only derivation.  Snapshot equality remains a separately checked
+optimization shape, so append-only history alone cannot license reuse. -/
+structure NativeJudgment
+    (source : Source (Row := Row) (Key := Key) (Value := Value))
+    (key : OptimizationKey
+      (Source (Row := Row) (Key := Key) (Value := Value))) where
+  expected_exact : exactTy key.expected = true
+  beforeSnapshot : Snapshot
+  afterSnapshot : Snapshot
+  before_eq : beforeSnapshot = capture source.before
+  after_eq : afterSnapshot = capture source.after
+  appendOnly : AppendOnly source.before source.after
+
+def nativeJudgment
+    (source : Source (Row := Row) (Key := Key) (Value := Value))
+    (key : OptimizationKey
+      (Source (Row := Row) (Key := Key) (Value := Value)))
+    (expectedExact : exactTy key.expected = true) :
+    NativeJudgment source key where
+  expected_exact := expectedExact
+  beforeSnapshot := capture source.before
+  afterSnapshot := capture source.after
+  before_eq := rfl
+  after_eq := rfl
+  appendOnly := source.appendOnly
+
 structure Evidence (source : Source (Row := Row) (Key := Key)
     (Value := Value)) : Type where
   snapshot_eq : capture source.before = capture source.after
@@ -370,6 +518,8 @@ def recognize (source : Source (Row := Row) (Key := Key)
 def spec : OptimizationSpec
     (Source (Row := Row) (Key := Key) (Value := Value)) where
   kind := .revisionStableMemo
+  NativeJudgment := NativeJudgment
+  nativeJudgment_expected_exact := fun _ _ judgment => judgment.expected_exact
   ShapeEvidence := Evidence
   Artifact := fun _ => Environment Key Value
   Observation := fun _ => Option (List Value)
@@ -400,7 +550,7 @@ own class tag.  A mismatched envelope falls back to the source plan before
 its dependent evidence can be considered. -/
 def prepareTagged {Source : Type uSource} (spec : OptimizationSpec Source)
     (actualKind : OptimizationKind) (source : Source)
-    (authority : Option (ExactAuthority spec.kind source)) :
+    (authority : Option (ExactAuthority spec source)) :
     ExecutionPlan spec source :=
   if classGate spec.kind actualKind then
     prepare spec source authority
@@ -410,7 +560,7 @@ def prepareTagged {Source : Type uSource} (spec : OptimizationSpec Source)
 theorem prepareTagged_of_class_mismatch {Source : Type uSource}
     (spec : OptimizationSpec Source) (actualKind : OptimizationKind)
     (source : Source)
-    (authority : Option (ExactAuthority spec.kind source))
+    (authority : Option (ExactAuthority spec source))
     (mismatch : classGate spec.kind actualKind = false) :
     prepareTagged spec actualKind source authority = .source := by
   simp [prepareTagged, mismatch]
@@ -428,7 +578,9 @@ theorem dispatch_envelope_cannot_activate_storage {width : Nat}
     {Value Observation : Type} [DecidableEq (Fin width)]
     (source : NonEscapingStorage.Source (width := width)
       (Value := Value) (Observation := Observation))
-    (authority : ExactAuthority .reusableStorage source) :
+    (authority : ExactAuthority
+      (NonEscapingStorage.spec (width := width) (Value := Value)
+        (Observation := Observation)) source) :
     prepareTagged
         (NonEscapingStorage.spec (width := width) (Value := Value)
           (Observation := Observation))
@@ -440,11 +592,16 @@ theorem dispatch_envelope_cannot_activate_storage {width : Nat}
 source carrier cannot share a cache key because the family is inside the
 occurrence identity. -/
 theorem dispatch_storage_authority_keys_differ {Source : Type}
+    {dispatchSpec storageSpec : OptimizationSpec Source}
     {dispatchSource storageSource : Source}
-    (dispatch : ExactAuthority .singleValuedDispatch dispatchSource)
-    (storage : ExactAuthority .reusableStorage storageSource) :
+    (dispatch : ExactAuthority dispatchSpec dispatchSource)
+    (storage : ExactAuthority storageSpec storageSource)
+    (dispatchKind : dispatchSpec.kind = .singleValuedDispatch)
+    (storageKind : storageSpec.kind = .reusableStorage) :
     dispatch.key ≠ storage.key := by
-  exact ExactAuthority.key_ne_of_kind_ne dispatch storage (by decide)
+  apply ExactAuthority.key_ne_of_kind_ne dispatch storage
+  rw [dispatchKind, storageKind]
+  decide
 
 /-! ## Computed instance controls -/
 
@@ -497,7 +654,8 @@ theorem duplicate_rejected :
   simp only [List.eraseDups_cons, List.filter]
   decide
 
-def authority : ExactAuthority .singleValuedDispatch source where
+def authority : ExactAuthority
+    (SingleValuedDispatch.spec (Key := Nat) (Value := String)) source where
   key :=
     { occurrence := (.singleValuedDispatch, source)
       revision := 4
@@ -505,8 +663,7 @@ def authority : ExactAuthority .singleValuedDispatch source where
       expected := .prim .sym
       authority := "native-typecheck-v3" }
   occurrence_eq := rfl
-  license := NativeInteractionSeam.symbolDetLicense
-  expected_eq := rfl
+  judgment := SingleValuedDispatch.nativeJudgment source _ (by simp [exactTy])
 
 /-- A cost receipt is attached after semantic and type/shape admission. -/
 def profitability : ProfitabilityReceipt

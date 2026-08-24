@@ -378,7 +378,8 @@ theorem towerOnlyRow_not_refuted
 open SchemaElaboration
 
 def composeJudgment : ExactJudgment :=
-  .tower .check .nil composeSchemaTerm composeSchemaType
+  .tower .check BoundaryJudgments.emptyTowerContext
+    composeSchemaTerm composeSchemaType
 
 def composeEvidence : ExactEvidence composeJudgment :=
   ⟨composeSchemaTerm_hasType,
@@ -392,7 +393,8 @@ def composeOutcome : ExactOutcome composeJudgment :=
   rfl
 
 def churchMapJudgment : ExactJudgment :=
-  .tower .check .nil churchMapSchemaTerm churchMapSchemaType
+  .tower .check BoundaryJudgments.emptyTowerContext
+    churchMapSchemaTerm churchMapSchemaType
 
 def churchMapEvidence : ExactEvidence churchMapJudgment :=
   ⟨churchMapSchemaTerm_hasType,

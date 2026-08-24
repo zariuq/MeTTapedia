@@ -1,4 +1,4 @@
-import Mettapedia.GSLT.Core.LooseRelationEquipment
+import Mettapedia.GSLT.Core.LooseRelationCompanions
 import Mettapedia.GSLT.Core.OperationalPathFibration
 import Mettapedia.GSLT.LanguageDef.GSLTILStructuralComparison
 

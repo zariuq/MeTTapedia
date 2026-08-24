@@ -171,19 +171,37 @@ example :
 
 /-! ## Exact forward composition -/
 
-/-- Independent assertion application, an exact mandatory stack suffix, and
-the proof-execution frame invariant construct the full live assertion-step
-graph.  Runtime checker success is a conclusion, never a premise. -/
-theorem assertionApplicationSemantics_to_stepGraph
+/-- A successful live assertion step together with exact extensional
+correspondence between the authored finite substitution and the runtime map.
+The runtime map's insertion history remains intentionally abstract. -/
+structure RuntimeAssertionApplicationReceipt
+    (db : RuntimeDB) (pr : RuntimeProofState) (label : String)
+    (result : RuntimeProofState) (substitution : FiniteSubstitution) : Type where
+  step : AssertionLabelStepWitness db pr label result
+  substitutionCorrespondence :
+    RuntimeSubstitutionCorrespondence substitution step.substitution
+
+/-- Explicit assertion-application data, an exact mandatory stack suffix, and
+the proof-execution frame invariant construct the complete proof-relevant live
+step witness.  The application data stays in `Type`: extracting it from the
+propositional `AssertionApplicationSemantics` relation would otherwise require
+choice.  Runtime checker success is a conclusion, never a premise. -/
+def assertionApplicationData_to_stepReceipt
     (db : RuntimeDB) (projection : PrefixProjection)
     (assertion : AssertionView) (pr : RuntimeProofState)
     (actuals : List ConstantHeadedFormula)
     (result : ConstantHeadedFormula)
     (hproject : projectPrefix? db = some projection)
     (hmember : assertion ∈ projection.assertions)
-    (hsemantics :
-      AssertionApplicationSemantics projection.callerFrame assertion
-        actuals result)
+    (substitution : FiniteSubstitution)
+    (hinstances :
+      HypothesisInstances assertion.hypotheses actuals substitution)
+    (hessential :
+      EssentialMatches substitution assertion.hypotheses actuals)
+    (hdvSemantics :
+      DVOKSemantics substitution projection.callerFrame assertion.frame)
+    (hresultSemantics :
+      FormulaSubstitutionSemantics substitution assertion.formula result)
     (hstackEnough : assertion.frame.hyps.size ≤ pr.stack.size)
     (hwindow :
       pr.stack.extract
@@ -191,14 +209,13 @@ theorem assertionApplicationSemantics_to_stepGraph
         (actuals.map ConstantHeadedFormula.toRuntime).toArray)
     (hstackRespects :
       Metamath.Kernel.StackRespectsFrame db db.frame pr.stack) :
-    AssertionLabelStepGraph db pr assertion.label
+    RuntimeAssertionApplicationReceipt db pr assertion.label
       { pr with
         stack :=
           (pr.stack.shrink
             (pr.stack.size - assertion.frame.hyps.size)).push
-              result.toRuntime } := by
-  rcases hsemantics with
-    ⟨substitution, hinstances, hessential, hdvSemantics, hresultSemantics⟩
+              result.toRuntime }
+      substitution := by
   let offset := pr.stack.size - assertion.frame.hyps.size
   have hoffset : offset + assertion.frame.hyps.size = pr.stack.size :=
     Nat.sub_add_cancel hstackEnough
@@ -265,40 +282,121 @@ theorem assertionApplicationSemantics_to_stepGraph
     assertionFormula_runtimeGate_of_viewValid db assertion
       projection.declaredConstants projection.declaredVariables
       hfidelity.2.1 hassertionValid
-  refine ⟨⟨
-    assertion.formula.toRuntime,
-    assertion.frame,
-    assertion.label,
-    hfidelity.1,
-    hstackEnough,
-    ConstantHeadedFormula.hasConstHead_toRuntime assertion.formula,
-    hassertionSymbols,
-    off.1,
-    off.2,
-    ?_,
-    pr.stack.shrink off.1,
-    rfl,
-    pr.stack.extract off.1 pr.stack.size,
-    rfl,
-    ?_,
-    Metamath.Kernel.sigmaFromHypsPrefix db assertion.frame.hyps
-      pr.stack off assertion.frame.hyps.size,
-    hcheckHyp,
-    db.frameFloatVars db.frame,
-    rfl,
-    hdvCheck,
-    result.toRuntime,
-    hformulaSubst,
-    ?_
-  ⟩⟩
-  · simp [off, offset]
-  · rw [hwindow']
-    simp only [List.size_toArray, List.length_map]
-    have hlabels := congrArg List.length hfidelity.2.2.1
-    simp only [List.length_map, Array.length_toList] at hlabels
-    have hlengths := hinstances.lengths
-    omega
-  · simp [off, offset]
+  let runtimeWitness :
+      AssertionLabelStepWitness db pr assertion.label
+        { pr with
+          stack :=
+            (pr.stack.shrink
+              (pr.stack.size - assertion.frame.hyps.size)).push
+                result.toRuntime } := by
+    refine ⟨
+      assertion.formula.toRuntime,
+      assertion.frame,
+      assertion.label,
+      hfidelity.1,
+      hstackEnough,
+      ConstantHeadedFormula.hasConstHead_toRuntime assertion.formula,
+      hassertionSymbols,
+      off.1,
+      off.2,
+      ?_,
+      pr.stack.shrink off.1,
+      rfl,
+      pr.stack.extract off.1 pr.stack.size,
+      rfl,
+      ?_,
+      Metamath.Kernel.sigmaFromHypsPrefix db assertion.frame.hyps
+        pr.stack off assertion.frame.hyps.size,
+      hcheckHyp,
+      db.frameFloatVars db.frame,
+      rfl,
+      hdvCheck,
+      result.toRuntime,
+      hformulaSubst,
+      ?_
+    ⟩
+    · simp [off, offset]
+    · rw [hwindow']
+      simp only [List.size_toArray, List.length_map]
+      have hlabels := congrArg List.length hfidelity.2.2.1
+      simp only [List.length_map, Array.length_toList] at hlabels
+      have hlengths := hinstances.lengths
+      omega
+    · simp [off, offset]
+  refine ⟨runtimeWitness, ?_⟩
+  change RuntimeSubstitutionCorrespondence substitution
+    (Metamath.Kernel.sigmaFromHypsPrefix db assertion.frame.hyps
+      pr.stack off assertion.frame.hyps.size)
+  exact hcorrespondence
+
+/-- The live step witness is the operational projection of the complete
+assertion-application receipt. -/
+def assertionApplicationData_to_stepWitness
+    (db : RuntimeDB) (projection : PrefixProjection)
+    (assertion : AssertionView) (pr : RuntimeProofState)
+    (actuals : List ConstantHeadedFormula)
+    (result : ConstantHeadedFormula)
+    (hproject : projectPrefix? db = some projection)
+    (hmember : assertion ∈ projection.assertions)
+    (substitution : FiniteSubstitution)
+    (hinstances :
+      HypothesisInstances assertion.hypotheses actuals substitution)
+    (hessential :
+      EssentialMatches substitution assertion.hypotheses actuals)
+    (hdvSemantics :
+      DVOKSemantics substitution projection.callerFrame assertion.frame)
+    (hresultSemantics :
+      FormulaSubstitutionSemantics substitution assertion.formula result)
+    (hstackEnough : assertion.frame.hyps.size ≤ pr.stack.size)
+    (hwindow :
+      pr.stack.extract
+          (pr.stack.size - assertion.frame.hyps.size) pr.stack.size =
+        (actuals.map ConstantHeadedFormula.toRuntime).toArray)
+    (hstackRespects :
+      Metamath.Kernel.StackRespectsFrame db db.frame pr.stack) :
+    AssertionLabelStepWitness db pr assertion.label
+      { pr with
+        stack :=
+          (pr.stack.shrink
+            (pr.stack.size - assertion.frame.hyps.size)).push
+              result.toRuntime } :=
+  (assertionApplicationData_to_stepReceipt db projection assertion pr actuals
+    result hproject hmember substitution hinstances hessential hdvSemantics
+      hresultSemantics hstackEnough hwindow hstackRespects).step
+
+/-- Forgetting only the witness carrier recovers the existing relational
+assertion-step graph. -/
+theorem assertionApplicationSemantics_to_stepGraph
+    (db : RuntimeDB) (projection : PrefixProjection)
+    (assertion : AssertionView) (pr : RuntimeProofState)
+    (actuals : List ConstantHeadedFormula)
+    (result : ConstantHeadedFormula)
+    (hproject : projectPrefix? db = some projection)
+    (hmember : assertion ∈ projection.assertions)
+    (hsemantics :
+      AssertionApplicationSemantics projection.callerFrame assertion
+        actuals result)
+    (hstackEnough : assertion.frame.hyps.size ≤ pr.stack.size)
+    (hwindow :
+      pr.stack.extract
+          (pr.stack.size - assertion.frame.hyps.size) pr.stack.size =
+        (actuals.map ConstantHeadedFormula.toRuntime).toArray)
+    (hstackRespects :
+      Metamath.Kernel.StackRespectsFrame db db.frame pr.stack) :
+    AssertionLabelStepGraph db pr assertion.label
+      { pr with
+        stack :=
+          (pr.stack.shrink
+            (pr.stack.size - assertion.frame.hyps.size)).push
+              result.toRuntime } :=
+  by
+    rcases hsemantics with
+      ⟨substitution, hinstances, hessential, hdvSemantics,
+        hresultSemantics⟩
+    exact ⟨assertionApplicationData_to_stepWitness
+      db projection assertion pr actuals result hproject hmember
+        substitution hinstances hessential hdvSemantics hresultSemantics
+        hstackEnough hwindow hstackRespects⟩
 
 /-- The previous graph theorem immediately yields success of the executable
 `stepNormal` assertion branch with the same complete proof-state update. -/
@@ -366,5 +464,7 @@ theorem generatedAssertionNode_to_stepGraph
   exact assertionApplicationSemantics_to_stepGraph
     db projection assertion pr actuals result hproject hmember hsemantics
       hstackEnough hwindow hstackRespects
+
+#print axioms assertionApplicationData_to_stepReceipt
 
 end Mettapedia.Languages.Metamath.InferenceAssertionStepForward

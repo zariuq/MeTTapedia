@@ -468,6 +468,19 @@ def declaredCostConstructorRole (source : CIGSLT)
   | .wrapped _ => .static .wrapped
   | .apparatus kind => .apparatus kind
 
+/-- Declared constructors with different semantic roles have different wire
+renderings.  The role hypothesis is essential in the base namespace, where
+static constructors and interaction principals share the same string tag. -/
+theorem renderDeclaredCostConstructor_ne_of_role_ne (source : CIGSLT)
+    {left right : source.DeclaredCostConstructor}
+    (different : source.declaredCostConstructorRole left ≠
+      source.declaredCostConstructorRole right) :
+    source.renderDeclaredCostConstructor left ≠
+      source.renderDeclaredCostConstructor right := by
+  intro rendered
+  exact different (congrArg source.declaredCostConstructorRole
+    (source.renderDeclaredCostConstructor_injective rendered))
+
 @[simp]
 theorem declaredCostConstructorRole_wrapped (source : CIGSLT)
     (constructor : AuthoredConstructor

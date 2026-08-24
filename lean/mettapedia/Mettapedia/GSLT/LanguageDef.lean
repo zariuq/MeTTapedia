@@ -3,6 +3,7 @@ import Mettapedia.GSLT.LanguageDef.InferenceExtension
 import Mettapedia.GSLT.LanguageDef.ValidatedInferenceExtension
 import Mettapedia.GSLT.LanguageDef.ExtensionComposition
 import Mettapedia.GSLT.LanguageDef.ExtensionGluing
+import Mettapedia.GSLT.LanguageDef.InferenceNewJudgmentConservativity
 import Mettapedia.GSLT.LanguageDef.ExtendedLanguageDef
 import Mettapedia.GSLT.LanguageDef.TotalGSLT
 import Mettapedia.GSLT.LanguageDef.CalculusLanguageDef

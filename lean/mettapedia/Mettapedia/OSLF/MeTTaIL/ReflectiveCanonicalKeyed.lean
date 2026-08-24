@@ -91,6 +91,87 @@ theorem sortPatternsBy_forall₂
   rw [firstProjection, secondProjection] at mappedRelated
   exact mappedRelated
 
+/-- Equal-key cross-pairs determine a pointwise relation after sorting.
+Unlike `sortPatternsBy_forall₂`, this form starts from a permutation of
+keys rather than a retained positional relation, so every tie must satisfy
+the requested relation. -/
+theorem sortPatternsBy_forall₂_of_key_perm_of_cross_ties
+    {Key : Type} [LinearOrder Key]
+    {relation : Pattern → Pattern → Prop}
+    (key : Pattern → Key) {left right : List Pattern}
+    (keyPermutation : List.Perm (left.map key) (right.map key))
+    (ties : ∀ {leftPattern rightPattern}, leftPattern ∈ left →
+      rightPattern ∈ right → key leftPattern = key rightPattern →
+        relation leftPattern rightPattern) :
+    List.Forall₂ relation (sortPatternsBy key left)
+      (sortPatternsBy key right) := by
+  have sortedKeys :
+      (sortPatternsBy key left).map key =
+        (sortPatternsBy key right).map key := by
+    have leftMap :
+        (sortPatternsBy key left).map key =
+          (left.map key).mergeSort
+            (fun first second => decide (first ≤ second)) := by
+      unfold sortPatternsBy
+      rw [List.map_mergeSort]
+      intro first _ second _
+      rfl
+    have rightMap :
+        (sortPatternsBy key right).map key =
+          (right.map key).mergeSort
+            (fun first second => decide (first ≤ second)) := by
+      unfold sortPatternsBy
+      rw [List.map_mergeSort]
+      intro first _ second _
+      rfl
+    rw [leftMap, rightMap]
+    let ordered : Key → Key → Prop := fun first second => first ≤ second
+    letI : Std.Total ordered := ⟨fun first second => le_total first second⟩
+    letI : IsTrans Key ordered := ⟨fun _ _ _ => le_trans⟩
+    letI : Std.Antisymm ordered := ⟨fun _ _ => le_antisymm⟩
+    apply List.Perm.eq_of_pairwise' (r := ordered)
+    · simpa [ordered] using
+        (List.pairwise_mergeSort' ordered (left.map key))
+    · simpa [ordered] using
+        (List.pairwise_mergeSort' ordered (right.map key))
+    · exact (List.mergeSort_perm (left.map key) _).trans
+        (keyPermutation.trans (List.mergeSort_perm (right.map key) _).symm)
+  have leftMembership : ∀ pattern ∈ sortPatternsBy key left,
+      pattern ∈ left := by
+    intro pattern membership
+    exact (sortPatternsBy_perm key left).mem_iff.mp membership
+  have rightMembership : ∀ pattern ∈ sortPatternsBy key right,
+      pattern ∈ right := by
+    intro pattern membership
+    exact (sortPatternsBy_perm key right).mem_iff.mp membership
+  have build : ∀ (leftSorted rightSorted : List Pattern),
+      leftSorted.map key = rightSorted.map key →
+      (∀ pattern ∈ leftSorted, pattern ∈ left) →
+      (∀ pattern ∈ rightSorted, pattern ∈ right) →
+      List.Forall₂ relation leftSorted rightSorted := by
+    intro leftSorted
+    induction leftSorted with
+    | nil =>
+        intro rightSorted keyEq _ _
+        cases rightSorted with
+        | nil => exact .nil
+        | cons rightHead rightTail => simp at keyEq
+    | cons leftHead leftTail inductionHypothesis =>
+        intro rightSorted keyEq leftMem rightMem
+        cases rightSorted with
+        | nil => simp at keyEq
+        | cons rightHead rightTail =>
+            simp only [List.map_cons, List.cons.injEq] at keyEq
+            exact .cons
+              (ties (leftMem leftHead (by simp))
+                (rightMem rightHead (by simp)) keyEq.1)
+              (inductionHypothesis rightTail keyEq.2
+                (fun pattern membership => leftMem pattern (by
+                  simp [membership]))
+                (fun pattern membership => rightMem pattern (by
+                  simp [membership])))
+  exact build _ _ sortedKeys leftMembership rightMembership
+
 /-- Stable key sorting is idempotent even when distinct patterns have equal
 keys.  Antisymmetry on patterns is neither available nor desirable here:
 equal-key occurrences retain their input order. -/

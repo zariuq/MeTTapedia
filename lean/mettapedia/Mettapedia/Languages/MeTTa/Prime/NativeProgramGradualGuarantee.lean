@@ -223,7 +223,7 @@ theorem no_exact_cache_share_across_revision {left right : TypingKey}
 
 theorem preparation_may_authorize_fast_path {Source : Type}
     (spec : OptimizationSpec Source) (source : Source)
-    (authority : ExactAuthority spec.kind source)
+    (authority : ExactAuthority spec source)
     (shape : spec.ShapeEvidence source)
     (recognized : spec.recognize source = some shape) :
     prepare spec source (some authority) = .optimized authority shape := by

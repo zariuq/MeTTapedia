@@ -1,5 +1,6 @@
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryBoundarySideCell
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryAvailabilityTransposition
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryStaticPairApex
 
 namespace Mettapedia.Languages.ProcessCalculi.RhoCalculus
 
@@ -306,6 +307,236 @@ theorem CostStaticPlanReached.exists_visibleQuoteRootTree
     (CostRegionTree.static (outer := []) node children)
     (state.payloadTreeOfWellSorted admission.wellSorted)
     admission.object
+
+/-- Rebuild an admitted reached bare parallel at its visible `Proc` root.
+
+The reached plan may sit below a contextual binder suffix, but recompiling the
+same payload at its own active availability produces a static collection node.
+The hereditary normal of that node is independent of the proof-relevant tree
+chosen for the admitted payload. -/
+theorem CostStaticPlanReached.exists_visibleParallelRootTree
+    {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+    {payload rootAbstract : Pattern}
+    (reached : CostStaticPlanReached rhoCIGSLT color targetFree payload
+      rootAbstract)
+    (admission : reached.plan.RawAdmission)
+    (parallelRoot : reached.plan.rootClass = .collection
+      rhoReflectivePresentation.parallelCollection)
+    (admissible : rhoCanonicalRecursiveTypeDomain.Admissible
+      (mapTypeExpr (color.symbols rhoCIGSLT) reached.sourceType)) :
+    ∃ (sealed : List TypeExpr)
+        (rootPlan : CostStaticRegionPlan rhoCIGSLT color targetFree
+          (CostStaticBinderThinning.sourceContextOfTarget rhoCIGSLT color
+            reached.sourceAvailable)
+          reached.sourceAvailable
+          (CostStaticBinderThinning.ofTargetThinning rhoCIGSLT color
+            reached.sourceAvailable)
+          reached.sourceAvailable .hole payload reached.sourceType)
+        (_rootStatic : rootPlan.isStaticRoot = true)
+        (node : CostStaticRegionNode rhoCIGSLT color targetFree)
+        (children : CostRegionBoundaryTrees rhoCIGSLT targetFree color
+          node.finiteBoundaryTable),
+      reached.targetBound = reached.sourceAvailable ++ sealed ∧
+      CostStaticRegionPlan.BoundaryFibersAvailabilitySuffix sealed .sealed
+        rootPlan (reached.plan.recontextualize .hole) ∧
+      node.targetBound = reached.sourceAvailable ∧
+      node.term.1 = payload ∧
+      node.plan.boundaryTable.entries = rootPlan.boundaryTable.entries ∧
+      node.plan.abstractPattern = rootPlan.abstractPattern ∧
+      ((CostRegionTree.static (outer := []) node children).normalize
+          (normalizeStatic := rhoHereditaryStaticNormalizer)).pattern =
+        ((reached.payloadTreeOfWellSorted admission.wellSorted).normalize
+          (normalizeStatic := rhoHereditaryStaticNormalizer)).pattern := by
+  rcases reached with
+    ⟨sourceBound, targetBound, thinning, sourceAvailable, outer, sourceType,
+      plan, skeletonContext, abstractEq⟩
+  let state : CostStaticPlanReached rhoCIGSLT color targetFree payload
+      rootAbstract :=
+    ⟨sourceBound, targetBound, thinning, sourceAvailable, outer, sourceType,
+      plan, skeletonContext, abstractEq⟩
+  change state.plan.RawAdmission at admission
+  change state.plan.rootClass = .collection
+    rhoReflectivePresentation.parallelCollection at parallelRoot
+  change rhoCanonicalRecursiveTypeDomain.Admissible
+    (mapTypeExpr (color.symbols rhoCIGSLT) state.sourceType) at admissible
+  change ∃ (sealed : List TypeExpr)
+      (rootPlan : CostStaticRegionPlan rhoCIGSLT color targetFree
+        (CostStaticBinderThinning.sourceContextOfTarget rhoCIGSLT color
+          state.sourceAvailable)
+        state.sourceAvailable
+        (CostStaticBinderThinning.ofTargetThinning rhoCIGSLT color
+          state.sourceAvailable)
+        state.sourceAvailable .hole payload state.sourceType)
+      (_rootStatic : rootPlan.isStaticRoot = true)
+      (node : CostStaticRegionNode rhoCIGSLT color targetFree)
+      (children : CostRegionBoundaryTrees rhoCIGSLT targetFree color
+        node.finiteBoundaryTable),
+    state.targetBound = state.sourceAvailable ++ sealed ∧
+    CostStaticRegionPlan.BoundaryFibersAvailabilitySuffix sealed .sealed
+      rootPlan (state.plan.recontextualize .hole) ∧
+    node.targetBound = state.sourceAvailable ∧
+    node.term.1 = payload ∧
+    node.plan.boundaryTable.entries = rootPlan.boundaryTable.entries ∧
+    node.plan.abstractPattern = rootPlan.abstractPattern ∧
+    ((CostRegionTree.static (outer := []) node children).normalize
+      (normalizeStatic := rhoHereditaryStaticNormalizer)).pattern =
+      ((state.payloadTreeOfWellSorted admission.wellSorted).normalize
+        (normalizeStatic := rhoHereditaryStaticNormalizer)).pattern
+  obtain ⟨elements, rest, payloadEq⟩ :=
+    CostStaticRegionPlan.collectionRoot_of_rootClass state.plan parallelRoot
+  subst payload
+  obtain ⟨sealed, rootPlan, split, _rootBuilt, aligned⟩ :=
+    state.exists_rootPlanSealedAlignment
+      CostCanonicalLaws.rho_unambiguousStaticDecomposition.collectionGloballyUnambiguous
+      admission
+  have sourceTypeProc := rho_collectionPlan_sourceType_eq_proc state.plan
+    ⟨rhoReflectivePresentation.parallelCollection, parallelRoot⟩ admissible
+  change sourceType = .base "Proc" at sourceTypeProc
+  subst sourceType
+  have rootStatic : rootPlan.isStaticRoot = true :=
+    rho_collectionPlan_isStaticRoot rootPlan
+  let rootTerm : WellSorted.OpenTerm rhoCIGSLT.costWholeLanguage targetFree
+      state.sourceAvailable (color.mapLangSort rhoCIGSLT rhoProc) := by
+    refine ⟨.collection rhoReflectivePresentation.parallelCollection elements
+      rest, ?_⟩
+    change WellSorted.OpenPatternWellSorted rhoCIGSLT.costWholeLanguage
+      targetFree state.sourceAvailable
+        (.base (color.mapLangSort rhoCIGSLT rhoProc).1)
+        (.collection rhoReflectivePresentation.parallelCollection elements
+          rest)
+    simpa [state, rhoProc, mapTypeExpr] using admission.wellSorted.1
+  let node : CostStaticRegionNode rhoCIGSLT color targetFree :=
+    CostStaticRegionNode.ofPlan (sourceSort := rhoProc) rootTerm rootPlan
+      rootStatic
+  let children : CostRegionBoundaryTrees rhoCIGSLT targetFree color
+      node.finiteBoundaryTable := CostRegionBoundaryTrees.ofTypedTable _
+  refine ⟨sealed, rootPlan, rootStatic, node, children, split, aligned, rfl,
+    rfl, ?_, ?_, ?_⟩
+  · rfl
+  · rfl
+  exact CostRegionTree.normalize_pattern_eq_of_unambiguous
+    CostCanonicalLaws.rho_unambiguousStaticDecomposition
+    rhoHereditaryNormalizationKernel
+    (CostRegionTree.static (outer := []) node children)
+    (state.payloadTreeOfWellSorted admission.wellSorted)
+    admission.object
+
+/-- A recursively flattened parallel leaf retains the exact reached-or-stopped
+plan view at its source occurrence, together with the proof-relevant embedding
+of every retained boundary entry into the enclosing plan table. -/
+theorem CostStaticRegionPlan.nonempty_shapedContextInventoryView_of_parallelLeaf
+    {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+    {sourceBound targetBound : List TypeExpr}
+    {thinning : CostStaticBinderThinning rhoCIGSLT color sourceBound
+      targetBound}
+    {sourceAvailable : List TypeExpr}
+    {outer : Mettapedia.OSLF.MeTTaIL.DerivedContexts.OneHoleContext}
+    {pattern leaf : Pattern} {sourceType : TypeExpr}
+    (plan : CostStaticRegionPlan rhoCIGSLT color targetFree sourceBound
+      targetBound thinning sourceAvailable outer pattern sourceType)
+    (declaration : ReflectivePresentationDecl)
+    (membership : leaf ∈
+      RhoCommonRestorationApex.parallelLeaves declaration pattern) :
+    Nonempty (CostStaticPlanShapedContextInventoryView rhoCIGSLT color
+      targetFree leaf plan.abstractPattern plan.boundaryTable.entries) := by
+  obtain ⟨context, shape⟩ :=
+    RhoCommonRestorationApex.parallelLeaves_context declaration pattern leaf
+      membership
+  exact plan.nonempty_shapedContextInventoryView context shape
+
+/-- Traversing a rho static plan through a context made only of bare-parallel
+frames always reaches the selected payload.  It cannot stop at an application
+boundary because the context has no application frame, and rho admits no
+foreign boundary-collection plan.  The returned embedding retains the exact
+finite boundary positions of the reached subplan in the enclosing plan. -/
+theorem CostStaticRegionPlan.exists_reached_of_parallelLeafContext
+    {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+    (declaration : ReflectivePresentationDecl) :
+    ∀ {context : Mettapedia.OSLF.MeTTaIL.DerivedContexts.OneHoleContext},
+      RhoCommonRestorationApex.ParallelLeafContext declaration context →
+      ∀ {sourceBound targetBound : List TypeExpr}
+        {thinning : CostStaticBinderThinning rhoCIGSLT color sourceBound
+          targetBound}
+        {sourceAvailable : List TypeExpr}
+        {outer : Mettapedia.OSLF.MeTTaIL.DerivedContexts.OneHoleContext}
+        {pattern payload : Pattern} {sourceType : TypeExpr}
+        (plan : CostStaticRegionPlan rhoCIGSLT color targetFree sourceBound
+          targetBound thinning sourceAvailable outer pattern sourceType),
+        pattern = context.fill payload →
+        ∃ reached : CostStaticPlanReached rhoCIGSLT color targetFree payload
+            plan.abstractPattern,
+          Nonempty (CostStaticPlanEntryEmbedding rhoCIGSLT color targetFree
+            reached.plan.boundaryTable.entries plan.boundaryTable.entries)
+  | _, .hole, _, _, _, _, _, pattern, payload, _, plan, fillEq => by
+      simp only [Mettapedia.OSLF.MeTTaIL.DerivedContexts.OneHoleContext.fill]
+        at fillEq
+      subst pattern
+      exact ⟨
+        { sourceBound := _, targetBound := _, thinning := _
+          sourceAvailable := _, outer := _, sourceType := _
+          plan := plan, skeletonContext := .hole, abstract_eq := rfl },
+        ⟨CostStaticPlanEntryEmbedding.refl _⟩⟩
+  | _, .collection before after innerShape, _, _, _, _, _, pattern, payload,
+      _, plan, fillEq => by
+      simp only [Mettapedia.OSLF.MeTTaIL.DerivedContexts.OneHoleContext.fill]
+        at fillEq
+      cases plan with
+      | bvar sourceIndex lookup correspondence availableScope =>
+          simp at fillEq
+      | fvar lookup => simp at fillEq
+      | boundaryApplication constructor rendered outsideCurrent certified
+          certifies => simp at fillEq
+      | application constructor rendered current preimage notBare children =>
+          simp at fillEq
+      | lambda bodyPlan => simp at fillEq
+      | multiLambda bodyPlan => simp at fillEq
+      | boundaryCollection currentRejected oppositeChoice oppositeSelected
+          certified certifies =>
+          exact (rho_boundaryCollection_choices_absurd color targetFree _ _ _ _
+            oppositeSelected currentRejected).elim
+      | @collection _ _ _ _ _ planCollection _ planRest _ choice selected
+          children =>
+          obtain ⟨-, elementsEq, -⟩ := Pattern.collection.inj fillEq
+          obtain ⟨active⟩ :=
+            CostStaticElementPlan.nonempty_activeAt children elementsEq
+          obtain ⟨reached, ⟨embedding⟩⟩ :=
+            CostStaticRegionPlan.exists_reached_of_parallelLeafContext
+              declaration innerShape active.head rfl
+          let frame :
+              Mettapedia.OSLF.MeTTaIL.DerivedContexts.OneHoleContext :=
+            .collection planCollection active.beforeAbstracts .hole
+              active.afterAbstracts
+              (planRest.map costRegionSourceVariableName)
+          refine ⟨reached.rebaseAbstractRoot frame ?_,
+            ⟨embedding.comp active.entryEmbedding⟩⟩
+          simp [CostStaticRegionPlan.abstractPattern, frame,
+            Mettapedia.OSLF.MeTTaIL.DerivedContexts.OneHoleContext.fill,
+            active.abstracts_eq]
+
+/-- Every recursively flattened parallel leaf of a rho plan has an exact
+reached subplan and a proof-relevant entry embedding into the root plan. -/
+theorem CostStaticRegionPlan.exists_reached_of_parallelLeaf
+    {color : CostStaticColor} {targetFree : WellSorted.FreeTypeContext}
+    {sourceBound targetBound : List TypeExpr}
+    {thinning : CostStaticBinderThinning rhoCIGSLT color sourceBound
+      targetBound}
+    {sourceAvailable : List TypeExpr}
+    {outer : Mettapedia.OSLF.MeTTaIL.DerivedContexts.OneHoleContext}
+    {pattern leaf : Pattern} {sourceType : TypeExpr}
+    (plan : CostStaticRegionPlan rhoCIGSLT color targetFree sourceBound
+      targetBound thinning sourceAvailable outer pattern sourceType)
+    (declaration : ReflectivePresentationDecl)
+    (membership : leaf ∈
+      RhoCommonRestorationApex.parallelLeaves declaration pattern) :
+    ∃ reached : CostStaticPlanReached rhoCIGSLT color targetFree leaf
+        plan.abstractPattern,
+      Nonempty (CostStaticPlanEntryEmbedding rhoCIGSLT color targetFree
+        reached.plan.boundaryTable.entries plan.boundaryTable.entries) := by
+  obtain ⟨context, contextShape, fillEq⟩ :=
+    RhoCommonRestorationApex.parallelLeaves_parallelContext declaration pattern
+      leaf membership
+  exact CostStaticRegionPlan.exists_reached_of_parallelLeafContext declaration
+    contextShape plan fillEq
 
 /-- A proof-relevant tree for the payload of an admitted reached Quote has a
 static root at the Quote plan's selected colour. -/
@@ -853,6 +1084,163 @@ theorem CostStaticAtomEnvironment.constructorsWithin_reify
         ((constructorListWithin_iff_forall elements).mp supported element
           membership)
 
+/-- Reifying a plan abstract from its positionally restricted child forest
+and from the embedding parent forest preserves the restoration meaning of
+every occurrence.  The ambient suffix is empty because restriction changes
+the finite table, not the binder context. -/
+noncomputable def CostStaticRegionPlan.restrictedReificationAligned
+    {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {sourceBound targetBound : List TypeExpr}
+    {thinning : CostStaticBinderThinning rhoCIGSLT color sourceBound targetBound}
+    {sourceAvailable : List TypeExpr}
+    {outer : Mettapedia.OSLF.MeTTaIL.DerivedContexts.OneHoleContext}
+    {payload : Pattern} {sourceType : TypeExpr}
+    (plan : CostStaticRegionPlan rhoCIGSLT color targetFree sourceBound
+      targetBound thinning sourceAvailable outer payload sourceType)
+    (payloadObject : WellSorted.isObjectPattern payload = true)
+    {rootOccurrences : List CostRegionOccurrence}
+    (rootTable : TypedCostRegionBoundaryTable rhoCIGSLT color targetFree
+      rootOccurrences)
+    (embedding : CostStaticPlanEntryEmbedding rhoCIGSLT color targetFree
+      plan.boundaryTable.entries rootTable.entries)
+    (rootTrees : CostRegionBoundaryTrees rhoCIGSLT targetFree color rootTable)
+    {root : Pattern}
+    {rootInventory : CostStaticParameterInventory rhoCIGSLT color targetFree
+      rootTable
+      (rootTrees.normalizeValues
+        (normalizeStatic := rhoHereditaryStaticNormalizer)) root}
+    (rootEnvironment : CostStaticAtomEnvironment rhoCIGSLT color targetFree
+      rootInventory)
+    (liftOccurrence : CostStaticFVarOccurrence plan.abstractPattern →
+      CostStaticFVarOccurrence root)
+    (liftName : ∀ occurrence,
+      (liftOccurrence occurrence).name = occurrence.name)
+    (regime : CostStaticAvailabilityRegime) :
+    let restrictedTrees :=
+      CostRegionBoundaryTrees.restrictAlongEntryEmbedding
+        plan.boundaryTable rootTable embedding rootTrees
+    let packed :=
+      Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostStaticRegionPlan.semanticAtomEnvironmentOfTrees
+        plan payloadObject restrictedTrees rhoHereditaryNormalizationKernel
+    let restrictedEnvironment :=
+      CostStaticAtomEnvironment.ofInventory packed.1
+    ReflectiveContextSupport.AvailabilityTransposedRestoresTogether.AvailabilityTransposedPatternAligned
+      rhoCIGSLT.reflection.1
+      restrictedEnvironment.restorationSupport
+      restrictedEnvironment.restorationAssignment
+      rootEnvironment.restorationSupport
+      rootEnvironment.restorationAssignment [] regime
+      (restrictedEnvironment.reify plan.abstractPattern)
+      (rootEnvironment.reify plan.abstractPattern) := by
+  dsimp only
+  let restrictedTrees :=
+    CostRegionBoundaryTrees.restrictAlongEntryEmbedding
+      plan.boundaryTable rootTable embedding rootTrees
+  let packed :=
+    Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostStaticRegionPlan.semanticAtomEnvironmentOfTrees
+      plan payloadObject restrictedTrees rhoHereditaryNormalizationKernel
+  let restrictedEnvironment :=
+    CostStaticAtomEnvironment.ofInventory packed.1
+  rw [restrictedEnvironment.reify_eq_renameFVars,
+    rootEnvironment.reify_eq_renameFVars]
+  apply
+    ReflectiveContextSupport.AvailabilityTransposedRestoresTogether.AvailabilityTransposedPatternAligned.renameFVars
+  intro occurrence
+  obtain ⟨restrictedSlot, restrictedSelected⟩ := Option.isSome_iff_exists.mp
+    (restrictedEnvironment.slotOfName?_isSome_of_occurrence occurrence)
+  let rootOccurrence := liftOccurrence occurrence
+  obtain ⟨rootSlot, rootSelected⟩ := Option.isSome_iff_exists.mp
+    (rootEnvironment.slotOfName?_isSome_of_occurrence rootOccurrence)
+  have rootSelectedName : rootEnvironment.slotOfName? occurrence.name =
+      some rootSlot := by
+    rw [← liftName occurrence]
+    exact rootSelected
+  have resolveDefined
+      (decoded : decodeCostRegionSourceVariableName occurrence.name = none) :
+      plan.boundaryTable.resolve occurrence.name ≠ none := by
+    have localSubset : plan.boundaryTable.entries ⊆
+        plan.boundaryTable.entries := fun _ membership => membership
+    obtain ⟨supported, _safe⟩ :=
+      plan.abstractPattern_supportedSafe plan.boundaryTable localSubset
+    obtain ⟨freeType, typedName⟩ :=
+      supported.toHasType.freeType_of_mem_freeFvarNames_of_isObjectPattern
+        (plan.abstractPattern_object payloadObject)
+        occurrence.name_mem_freeFvarNames
+    intro resolution
+    simp [TypedCostRegionBoundaryTable.sourceFreeContext, decoded,
+      resolution] at typedName
+  have supportEq :
+      (restrictedEnvironment.atomValue restrictedSlot).key.targetSupport =
+        (rootEnvironment.atomValue rootSlot).key.targetSupport := by
+    rw [restrictedEnvironment.atomValue_targetSupport_eq_of_slotOfName?_eq_some
+      occurrence restrictedSlot restrictedSelected]
+    rw [rootEnvironment.atomValue_targetSupport_eq_of_slotOfName?_eq_some
+      rootOccurrence rootSlot rootSelected]
+    rw [liftName occurrence]
+    cases decoded : decodeCostRegionSourceVariableName occurrence.name with
+    | some sourceName =>
+        simp [TypedCostRegionBoundaryTable.restorationSupport, decoded]
+    | none =>
+        have tableResolution := plan.boundaryTable.resolve_eq_of_entries_subset
+          rootTable embedding.subset occurrence.name (resolveDefined decoded)
+        simp [TypedCostRegionBoundaryTable.restorationSupport, decoded,
+          tableResolution]
+  have normalEq :
+      (restrictedEnvironment.atomValue restrictedSlot).key.normal =
+        (rootEnvironment.atomValue rootSlot).key.normal := by
+    rw [restrictedEnvironment.atomValue_normal_eq_of_slotOfName?_eq_some
+      occurrence restrictedSlot restrictedSelected]
+    rw [rootEnvironment.atomValue_normal_eq_of_slotOfName?_eq_some
+      rootOccurrence rootSlot rootSelected]
+    change
+      (restrictedTrees.normalizeValues
+          (normalizeStatic := rhoHereditaryStaticNormalizer)).assignment
+            plan.boundaryTable occurrence.name =
+        (rootTrees.normalizeValues
+          (normalizeStatic := rhoHereditaryStaticNormalizer)).assignment
+            rootTable rootOccurrence.name
+    rw [liftName occurrence]
+    cases decoded : decodeCostRegionSourceVariableName occurrence.name with
+    | some sourceName =>
+        simp [TypedCostRegionBoundaryTable.Values.assignment, decoded]
+    | none =>
+        exact
+          CostRegionBoundaryTrees.normalizeValues_assignment_restrict_eq_of_resolve_defined
+            (kernel := rhoHereditaryNormalizationKernel)
+            CostCanonicalLaws.rho_unambiguousStaticDecomposition
+            plan.boundaryTable rootTable embedding rootTrees occurrence.name
+              (resolveDefined decoded)
+  let occurrenceRegime :=
+    CostStaticAvailabilityRegime.atContext rhoCIGSLT.reflection.1 regime
+      occurrence.context
+  have supportAt : CostStaticAvailabilityAt [] occurrenceRegime
+      (restrictedEnvironment.atomValue restrictedSlot).key.targetSupport
+      (rootEnvironment.atomValue rootSlot).key.targetSupport := by
+    cases occurrenceRegime <;> simp [CostStaticAvailabilityAt, supportEq]
+  have reexposes : occurrenceRegime = .sealed →
+      ReflectiveContextSupport.AvailabilityTransposedRestoresTogether
+        rhoCIGSLT.reflection.1 restrictedEnvironment.restorationSupport
+        restrictedEnvironment.restorationAssignment
+        rootEnvironment.restorationSupport
+        rootEnvironment.restorationAssignment [] .exposed
+        (.fvar (restrictedEnvironment.atomName restrictedSlot))
+        (.fvar (rootEnvironment.atomName rootSlot)) := by
+    intro _sealed depth
+    simp only [ReflectiveContextSupport.substituteAt,
+      CostStaticAvailabilityRegime.largeDepth]
+    simp only [CostStaticAtomEnvironment.restorationSupport_atomName,
+      CostStaticAtomEnvironment.restorationAssignment_atomName]
+    rw [supportEq, normalEq]
+    simp
+  have aligned :=
+    ReflectiveContextSupport.AvailabilityTransposedRestoresTogether.AvailabilityTransposedPatternAligned.atomNamesAt
+      (profile := rhoCIGSLT.reflection.1) restrictedEnvironment rootEnvironment
+      restrictedSlot rootSlot supportAt normalEq reexposes
+  simpa [restrictedEnvironment, rootOccurrence,
+    CostStaticAtomEnvironment.reifyName, restrictedSelected, rootSelectedName,
+    liftName occurrence] using aligned
+
 /-- Reifying a Quote-root plan from its restricted child forest and from an
 embedding parent forest gives the same occurrence-wise restoration meaning.
 The comparison retains the exact occurrence lift into the parent inventory. -/
@@ -982,9 +1370,9 @@ noncomputable def CostStaticRegionPlan.restrictedQuoteReificationAligned
             regime occurrence.context)
           restrictedSlot rootSlot restrictedSupport normalEq
 
-/-- The restricted and parent environments of an authored Quote produce
+/-- Positionally restricted and parent environments produce
 restoration-related target canonical frames at every ambient depth. -/
-noncomputable def CostStaticRegionPlan.restrictedQuoteCanonicalRestoresTogether
+noncomputable def CostStaticRegionPlan.restrictedCanonicalRestoresTogether
     {color : CostStaticColor}
     {targetFree : WellSorted.FreeTypeContext}
     {sourceBound targetBound : List TypeExpr}
@@ -995,8 +1383,6 @@ noncomputable def CostStaticRegionPlan.restrictedQuoteCanonicalRestoresTogether
     (plan : CostStaticRegionPlan rhoCIGSLT color targetFree sourceBound
       targetBound thinning sourceAvailable outer payload sourceType)
     (payloadObject : WellSorted.isObjectPattern payload = true)
-    (quoteRoot : plan.rootClass = .application
-      rhoReflectivePresentation.quoteConstructor)
     {rootOccurrences : List CostRegionOccurrence}
     (rootTable : TypedCostRegionBoundaryTable rhoCIGSLT color targetFree
       rootOccurrences)
@@ -1013,7 +1399,8 @@ noncomputable def CostStaticRegionPlan.restrictedQuoteCanonicalRestoresTogether
     (liftOccurrence : CostStaticFVarOccurrence plan.abstractPattern →
       CostStaticFVarOccurrence root)
     (liftName : ∀ occurrence,
-      (liftOccurrence occurrence).name = occurrence.name) :
+      (liftOccurrence occurrence).name = occurrence.name)
+    (keyDepth : Nat) :
     let restrictedTrees :=
       CostRegionBoundaryTrees.restrictAlongEntryEmbedding
         plan.boundaryTable rootTable embedding rootTrees
@@ -1033,12 +1420,12 @@ noncomputable def CostStaticRegionPlan.restrictedQuoteCanonicalRestoresTogether
       [] .exposed
       (canonicalizeByAt
         (CostStaticRegionNode.semanticPatternKeyAt restrictedEnvironment)
-        declaration 0
+        declaration keyDepth
         (mapPattern (color.symbols rhoCIGSLT)
           (restrictedEnvironment.reify plan.abstractPattern)))
       (canonicalizeByAt
         (CostStaticRegionNode.semanticPatternKeyAt rootEnvironment)
-        declaration 0
+        declaration keyDepth
         (mapPattern (color.symbols rhoCIGSLT)
           (rootEnvironment.reify plan.abstractPattern))) := by
   dsimp only
@@ -1053,8 +1440,8 @@ noncomputable def CostStaticRegionPlan.restrictedQuoteCanonicalRestoresTogether
   let declaration := costStaticReflectivePresentationDecl rhoCIGSLT color
     rhoReflectivePresentation
   have sourceAligned :=
-    Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostStaticRegionPlan.restrictedQuoteReificationAligned
-      plan payloadObject quoteRoot rootTable embedding rootTrees rootEnvironment
+    Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostStaticRegionPlan.restrictedReificationAligned
+      plan payloadObject rootTable embedding rootTrees rootEnvironment
         liftOccurrence liftName .exposed
   have mappedAligned :=
     ReflectiveContextSupport.AvailabilityTransposedRestoresTogether.AvailabilityTransposedPatternAligned.mapPattern
@@ -1115,7 +1502,7 @@ noncomputable def CostStaticRegionPlan.restrictedQuoteCanonicalRestoresTogether
     · exact sourceSupported
   have canonicalAligned :=
     ReflectiveContextSupport.AvailabilityTransposedRestoresTogether.AvailabilityTransposedPatternAligned.canonicalizeByAt
-      mappedAligned declaration quoteRecognized targetSupported 0
+      mappedAligned declaration quoteRecognized targetSupported keyDepth
   change ReflectiveContextSupport.AvailabilityTransposedRestoresTogether
     rhoCIGSLT.costWholeReflectionProfile
     restrictedEnvironment.restorationSupport
@@ -1129,7 +1516,7 @@ noncomputable def CostStaticRegionPlan.restrictedQuoteCanonicalRestoresTogether
             rhoCIGSLT.costWholeReflectionProfile
             restrictedEnvironment.restorationSupport
             restrictedEnvironment.restorationAssignment current pattern))
-      declaration 0
+      declaration keyDepth
       (mapPattern (color.symbols rhoCIGSLT)
         (restrictedEnvironment.reify plan.abstractPattern)))
     (canonicalizeByAt
@@ -1139,11 +1526,246 @@ noncomputable def CostStaticRegionPlan.restrictedQuoteCanonicalRestoresTogether
             rhoCIGSLT.costWholeReflectionProfile
             rootEnvironment.restorationSupport
             rootEnvironment.restorationAssignment current pattern))
-      declaration 0
+      declaration keyDepth
       (mapPattern (color.symbols rhoCIGSLT)
         (rootEnvironment.reify plan.abstractPattern)))
   simpa [CostStaticAvailabilityRegime.largeDepth] using
       canonicalAligned.toRestoresTogether
+
+/-- Positional restriction remains restoration-invariant after a common
+binder thinning and selected-colour keyed canonicalization. -/
+noncomputable def CostStaticRegionPlan.restrictedThickenedCanonicalRestoresTogether
+    {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {sourceBound targetBound frameSourceBound frameTargetBound : List TypeExpr}
+    {thinning : CostStaticBinderThinning rhoCIGSLT color sourceBound targetBound}
+    (frameThinning : CostStaticBinderThinning rhoCIGSLT color frameSourceBound
+      frameTargetBound)
+    {sourceAvailable : List TypeExpr}
+    {outer : Mettapedia.OSLF.MeTTaIL.DerivedContexts.OneHoleContext}
+    {payload : Pattern} {sourceType : TypeExpr}
+    (plan : CostStaticRegionPlan rhoCIGSLT color targetFree sourceBound
+      targetBound thinning sourceAvailable outer payload sourceType)
+    (payloadObject : WellSorted.isObjectPattern payload = true)
+    {rootOccurrences : List CostRegionOccurrence}
+    (rootTable : TypedCostRegionBoundaryTable rhoCIGSLT color targetFree
+      rootOccurrences)
+    (embedding : CostStaticPlanEntryEmbedding rhoCIGSLT color targetFree
+      plan.boundaryTable.entries rootTable.entries)
+    (rootTrees : CostRegionBoundaryTrees rhoCIGSLT targetFree color rootTable)
+    {root : Pattern}
+    {rootInventory : CostStaticParameterInventory rhoCIGSLT color targetFree
+      rootTable
+      (rootTrees.normalizeValues
+        (normalizeStatic := rhoHereditaryStaticNormalizer)) root}
+    (rootEnvironment : CostStaticAtomEnvironment rhoCIGSLT color targetFree
+      rootInventory)
+    (liftOccurrence : CostStaticFVarOccurrence plan.abstractPattern →
+      CostStaticFVarOccurrence root)
+    (liftName : ∀ occurrence,
+      (liftOccurrence occurrence).name = occurrence.name)
+    (scopeDepth keyDepth : Nat) :
+    let restrictedTrees :=
+      CostRegionBoundaryTrees.restrictAlongEntryEmbedding
+        plan.boundaryTable rootTable embedding rootTrees
+    let packed :=
+      Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostStaticRegionPlan.semanticAtomEnvironmentOfTrees
+        plan payloadObject restrictedTrees rhoHereditaryNormalizationKernel
+    let restrictedEnvironment :=
+      CostStaticAtomEnvironment.ofInventory packed.1
+    let declaration := costStaticReflectivePresentationDecl rhoCIGSLT color
+      rhoReflectivePresentation
+    ReflectiveContextSupport.AvailabilityTransposedRestoresTogether
+      rhoCIGSLT.costWholeReflectionProfile
+      restrictedEnvironment.restorationSupport
+      restrictedEnvironment.restorationAssignment
+      rootEnvironment.restorationSupport
+      rootEnvironment.restorationAssignment [] .exposed
+      (canonicalizeByAt
+        (CostStaticRegionNode.semanticPatternKeyAt restrictedEnvironment)
+        declaration keyDepth
+        (frameThinning.thickenAmbientBVars scopeDepth
+          (mapPattern (color.symbols rhoCIGSLT)
+            (restrictedEnvironment.reify plan.abstractPattern))))
+      (canonicalizeByAt
+        (CostStaticRegionNode.semanticPatternKeyAt rootEnvironment)
+        declaration keyDepth
+        (frameThinning.thickenAmbientBVars scopeDepth
+          (mapPattern (color.symbols rhoCIGSLT)
+            (rootEnvironment.reify plan.abstractPattern)))) := by
+  dsimp only
+  let restrictedTrees :=
+    CostRegionBoundaryTrees.restrictAlongEntryEmbedding
+      plan.boundaryTable rootTable embedding rootTrees
+  let packed :=
+    Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostStaticRegionPlan.semanticAtomEnvironmentOfTrees
+      plan payloadObject restrictedTrees rhoHereditaryNormalizationKernel
+  let restrictedEnvironment :=
+    CostStaticAtomEnvironment.ofInventory packed.1
+  let declaration := costStaticReflectivePresentationDecl rhoCIGSLT color
+    rhoReflectivePresentation
+  have sourceAligned :=
+    Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostStaticRegionPlan.restrictedReificationAligned
+      plan payloadObject rootTable embedding rootTrees rootEnvironment
+        liftOccurrence liftName .exposed
+  have mappedAligned :=
+    ReflectiveContextSupport.AvailabilityTransposedRestoresTogether.AvailabilityTransposedPatternAligned.mapPattern
+      (color.symbols rhoCIGSLT)
+      (fun constructor =>
+        reflectiveIsQuoteConstructor_mapCostStatic rhoCIGSLT color constructor)
+      sourceAligned
+  have thickenedAligned :=
+    ReflectiveContextSupport.AvailabilityTransposedRestoresTogether.AvailabilityTransposedPatternAligned.thickenAmbientBVars
+      frameThinning scopeDepth mappedAligned
+  have quoteRecognized : ReflectiveContextSupport.isQuoteConstructor
+      rhoCIGSLT.costWholeReflectionProfile declaration.quoteConstructor =
+        true := by
+    unfold declaration
+    rw [costStaticReflectivePresentationDecl_eq_map]
+    simp only [mapReflectivePresentation,
+      CostStaticColor.reflectiveSymbols_toPresentationSymbols]
+    rw [reflectiveIsQuoteConstructor_mapCostStatic]
+    rw [show rhoCIGSLT.reflection.1 = rhoReflectionProfile from rfl]
+    simp [ReflectiveContextSupport.isQuoteConstructor, rhoReflectionProfile]
+  have sourceSupported : ConstructorsWithin (fun _ => True)
+      (restrictedEnvironment.reify plan.abstractPattern) := by
+    obtain ⟨typed, _safe⟩ :=
+      plan.abstractPattern_supportedSafe plan.boundaryTable
+        (fun _ membership => membership)
+    apply
+      Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostStaticAtomEnvironment.constructorsWithin_reify
+        restrictedEnvironment (fun _ => True) plan.abstractPattern
+    exact typed.constructorsWithin.mono (fun _ _ => trivial)
+  have mappedSupported : ConstructorsWithin
+      (fun constructor =>
+        ReflectiveContextSupport.isQuoteConstructor
+            rhoCIGSLT.costWholeReflectionProfile constructor = true ↔
+          constructor = declaration.quoteConstructor)
+      (mapPattern (color.symbols rhoCIGSLT)
+        (restrictedEnvironment.reify plan.abstractPattern)) := by
+    apply constructorsWithin_mapPattern (color.symbols rhoCIGSLT)
+    · intro constructor _supported
+      rw [reflectiveIsQuoteConstructor_mapCostStatic]
+      rw [show rhoCIGSLT.reflection.1 = rhoReflectionProfile from rfl]
+      unfold declaration
+      rw [costStaticReflectivePresentationDecl_eq_map]
+      simp only [mapReflectivePresentation,
+        CostStaticColor.reflectiveSymbols_toPresentationSymbols]
+      constructor
+      · intro recognized
+        apply congrArg (color.symbols rhoCIGSLT).constructor
+        have reversed : rhoReflectivePresentation.quoteConstructor =
+            constructor := by
+          simpa [ReflectiveContextSupport.isQuoteConstructor,
+            rhoReflectionProfile] using recognized
+        exact reversed.symm
+      · intro equality
+        have sourceEq : constructor =
+            rhoReflectivePresentation.quoteConstructor :=
+          CostStaticColor.symbols_constructor_injective rhoCIGSLT color
+            equality
+        subst constructor
+        simp [ReflectiveContextSupport.isQuoteConstructor,
+          rhoReflectionProfile]
+    · exact sourceSupported
+  have targetSupported :=
+    frameThinning.constructorsWithin_thickenAmbientBVars mappedSupported
+      scopeDepth
+  have canonicalAligned :=
+    ReflectiveContextSupport.AvailabilityTransposedRestoresTogether.AvailabilityTransposedPatternAligned.canonicalizeByAt
+      thickenedAligned declaration quoteRecognized targetSupported keyDepth
+  change ReflectiveContextSupport.AvailabilityTransposedRestoresTogether
+    rhoCIGSLT.costWholeReflectionProfile
+    restrictedEnvironment.restorationSupport
+    restrictedEnvironment.restorationAssignment
+    rootEnvironment.restorationSupport rootEnvironment.restorationAssignment
+    [] .exposed
+    (canonicalizeByAt
+      (fun current pattern =>
+        Mettapedia.OSLF.MeTTaIL.PatternCode.patternCode
+          (ReflectiveContextSupport.substituteAt
+            rhoCIGSLT.costWholeReflectionProfile
+            restrictedEnvironment.restorationSupport
+            restrictedEnvironment.restorationAssignment current pattern))
+      declaration keyDepth
+      (frameThinning.thickenAmbientBVars scopeDepth
+        (mapPattern (color.symbols rhoCIGSLT)
+          (restrictedEnvironment.reify plan.abstractPattern))))
+    (canonicalizeByAt
+      (fun current pattern =>
+        Mettapedia.OSLF.MeTTaIL.PatternCode.patternCode
+          (ReflectiveContextSupport.substituteAt
+            rhoCIGSLT.costWholeReflectionProfile
+            rootEnvironment.restorationSupport
+            rootEnvironment.restorationAssignment current pattern))
+      declaration keyDepth
+      (frameThinning.thickenAmbientBVars scopeDepth
+        (mapPattern (color.symbols rhoCIGSLT)
+          (rootEnvironment.reify plan.abstractPattern))))
+  simpa [CostStaticAvailabilityRegime.largeDepth] using
+    canonicalAligned.toRestoresTogether
+
+/-- Authored-Quote specialization of
+`CostStaticRegionPlan.restrictedCanonicalRestoresTogether`. -/
+noncomputable def CostStaticRegionPlan.restrictedQuoteCanonicalRestoresTogether
+    {color : CostStaticColor}
+    {targetFree : WellSorted.FreeTypeContext}
+    {sourceBound targetBound : List TypeExpr}
+    {thinning : CostStaticBinderThinning rhoCIGSLT color sourceBound targetBound}
+    {sourceAvailable : List TypeExpr}
+    {outer : Mettapedia.OSLF.MeTTaIL.DerivedContexts.OneHoleContext}
+    {payload : Pattern} {sourceType : TypeExpr}
+    (plan : CostStaticRegionPlan rhoCIGSLT color targetFree sourceBound
+      targetBound thinning sourceAvailable outer payload sourceType)
+    (payloadObject : WellSorted.isObjectPattern payload = true)
+    (_quoteRoot : plan.rootClass = .application
+      rhoReflectivePresentation.quoteConstructor)
+    {rootOccurrences : List CostRegionOccurrence}
+    (rootTable : TypedCostRegionBoundaryTable rhoCIGSLT color targetFree
+      rootOccurrences)
+    (embedding : CostStaticPlanEntryEmbedding rhoCIGSLT color targetFree
+      plan.boundaryTable.entries rootTable.entries)
+    (rootTrees : CostRegionBoundaryTrees rhoCIGSLT targetFree color rootTable)
+    {root : Pattern}
+    {rootInventory : CostStaticParameterInventory rhoCIGSLT color targetFree
+      rootTable
+      (rootTrees.normalizeValues
+        (normalizeStatic := rhoHereditaryStaticNormalizer)) root}
+    (rootEnvironment : CostStaticAtomEnvironment rhoCIGSLT color targetFree
+      rootInventory)
+    (liftOccurrence : CostStaticFVarOccurrence plan.abstractPattern →
+      CostStaticFVarOccurrence root)
+    (liftName : ∀ occurrence,
+      (liftOccurrence occurrence).name = occurrence.name) :
+    let restrictedTrees :=
+      CostRegionBoundaryTrees.restrictAlongEntryEmbedding
+        plan.boundaryTable rootTable embedding rootTrees
+    let packed :=
+      Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostStaticRegionPlan.semanticAtomEnvironmentOfTrees
+        plan payloadObject restrictedTrees rhoHereditaryNormalizationKernel
+    let restrictedEnvironment :=
+      CostStaticAtomEnvironment.ofInventory packed.1
+    let declaration := costStaticReflectivePresentationDecl rhoCIGSLT color
+      rhoReflectivePresentation
+    ReflectiveContextSupport.AvailabilityTransposedRestoresTogether
+      rhoCIGSLT.costWholeReflectionProfile
+      restrictedEnvironment.restorationSupport
+      restrictedEnvironment.restorationAssignment
+      rootEnvironment.restorationSupport
+      rootEnvironment.restorationAssignment
+      [] .exposed
+      (canonicalizeByAt
+        (CostStaticRegionNode.semanticPatternKeyAt restrictedEnvironment)
+        declaration 0
+        (mapPattern (color.symbols rhoCIGSLT)
+          (restrictedEnvironment.reify plan.abstractPattern)))
+      (canonicalizeByAt
+        (CostStaticRegionNode.semanticPatternKeyAt rootEnvironment)
+        declaration 0
+        (mapPattern (color.symbols rhoCIGSLT)
+          (rootEnvironment.reify plan.abstractPattern))) :=
+  CostStaticRegionPlan.restrictedCanonicalRestoresTogether plan payloadObject
+    rootTable embedding rootTrees rootEnvironment liftOccurrence liftName 0
 
 /-- Normalized forests over a sealed Quote-plan suffix induce the exact
 endpoint-local reification alignment.  The apparent re-exposure callback is
@@ -3222,6 +3844,7 @@ noncomputable def nestedForeignPlanStop_commonRestorationApex_of_quoteParallel
     (rightView : right.StaticRootView color)
     (declarationColor : CostStaticColor)
     (foreign : declarationColor ≠ color)
+    (stopMeasure : Nat)
     (rightRootAdmissible : rhoCanonicalRecursiveTypeDomain.Admissible
       (mapTypeExpr (color.symbols rhoCIGSLT)
         (.base rightView.node.sourceSort.1)))
@@ -3278,21 +3901,16 @@ noncomputable def nestedForeignPlanStop_commonRestorationApex_of_quoteParallel
           (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
             rhoReflectivePresentation)
           (RhoCanonicalRawStop declarationColor
-            (sizeOf leftView.node.term.1 + sizeOf rightView.node.term.1))
+            stopMeasure)
           leftPayload rightPayload leftAbstract rightAbstract →
-      (∃ leftArguments rightArguments,
-        leftPayload = .apply
-            (costStaticReflectivePresentationDecl rhoCIGSLT color
-              rhoReflectivePresentation).quoteConstructor leftArguments ∧
-        rightPayload = .apply
-            (costStaticReflectivePresentationDecl rhoCIGSLT color
-              rhoReflectivePresentation).quoteConstructor rightArguments ∧
-        CanonicalStopAlignedList
-          (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
-            rhoReflectivePresentation)
-          (RhoCanonicalRawStop declarationColor
-            (sizeOf leftView.node.term.1 + sizeOf rightView.node.term.1))
-          leftArguments rightArguments) →
+      (leftReached : CostStaticPlanReached rhoCIGSLT color targetFree
+        leftPayload leftParentReached.plan.abstractPattern) →
+      (rightReached : CostStaticPlanReached rhoCIGSLT color targetFree
+        rightPayload rightParentReached.plan.abstractPattern) →
+      leftReached.plan.rootClass =
+          .application rhoReflectivePresentation.quoteConstructor →
+      rightReached.plan.rootClass =
+          .application rhoReflectivePresentation.quoteConstructor →
       RhoReachedPlanPairCommonApex leftView rightView callbackAvailable
         callbackScope callbackRoot leftAbstract rightAbstract)
     (parallelSide : ∀
@@ -3302,12 +3920,16 @@ noncomputable def nestedForeignPlanStop_commonRestorationApex_of_quoteParallel
           (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
             rhoReflectivePresentation)
           (RhoCanonicalRawStop declarationColor
-            (sizeOf leftView.node.term.1 + sizeOf rightView.node.term.1))
+            stopMeasure)
           leftPayload rightPayload leftAbstract rightAbstract →
-      ((∃ elements, leftPayload = .collection
-          rhoReflectivePresentation.parallelCollection elements none) ∨
-        ∃ elements, rightPayload = .collection
-          rhoReflectivePresentation.parallelCollection elements none) →
+      (leftReached : CostStaticPlanReached rhoCIGSLT color targetFree
+        leftPayload leftParentReached.plan.abstractPattern) →
+      (rightReached : CostStaticPlanReached rhoCIGSLT color targetFree
+        rightPayload rightParentReached.plan.abstractPattern) →
+      (leftReached.plan.rootClass =
+          .collection rhoReflectivePresentation.parallelCollection ∨
+        rightReached.plan.rootClass =
+          .collection rhoReflectivePresentation.parallelCollection) →
       RhoReachedPlanPairCommonApex leftView rightView callbackAvailable
         callbackScope callbackRoot leftAbstract rightAbstract)
     {leftAbstract rightAbstract : Pattern}
@@ -3316,7 +3938,7 @@ noncomputable def nestedForeignPlanStop_commonRestorationApex_of_quoteParallel
       (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
         rhoReflectivePresentation)
       (RhoCanonicalRawStop declarationColor
-        (sizeOf leftView.node.term.1 + sizeOf rightView.node.term.1))
+        stopMeasure)
       leftAbstract rightAbstract) :
     RhoReachedPlanPairCommonApex leftView rightView callbackAvailable
       callbackScope callbackRoot leftAbstract rightAbstract := by
@@ -3349,12 +3971,10 @@ noncomputable def nestedForeignPlanStop_commonRestorationApex_of_quoteParallel
   · rcases RhoCanonicalRawStop.foreign_reached_stop_cases leftReached
         rightReached foreign stopReason bothBoundary with quote | leftBoundary |
           rightBoundary | leftParallel | rightParallel
-    · exact quotePair evidenceForTerminal
-        (RhoCanonicalRawStop.foreign_sourceQuotes_arguments leftReached
-          rightReached foreign quote.1 quote.2 rawAligned)
+    · exact quotePair evidenceForTerminal leftReached rightReached quote.1
+        quote.2
     · exact nestedBoundaryPlanStops_commonRestorationApex_of_closeSmaller
-        leftView rightView declarationColor
-        (sizeOf leftView.node.term.1 + sizeOf rightView.node.term.1)
+        leftView rightView declarationColor stopMeasure
         rightRootAdmissible closeSmaller leftParentReached rightParentReached
         leftParentEmbedding rightParentEmbedding leftParentRoute
         rightParentRoute leftParentSizeLe rightParentSizeLe callbackAvailable
@@ -3364,8 +3984,7 @@ noncomputable def nestedForeignPlanStop_commonRestorationApex_of_quoteParallel
         rightEmbedding leftRoute rightRoute stopReason leftPayloadSizeLe
         rightPayloadSizeLe rawAligned bothBoundary (Or.inl leftBoundary)
     · exact nestedBoundaryPlanStops_commonRestorationApex_of_closeSmaller
-        leftView rightView declarationColor
-        (sizeOf leftView.node.term.1 + sizeOf rightView.node.term.1)
+        leftView rightView declarationColor stopMeasure
         rightRootAdmissible closeSmaller leftParentReached rightParentReached
         leftParentEmbedding rightParentEmbedding leftParentRoute
         rightParentRoute leftParentSizeLe rightParentSizeLe callbackAvailable
@@ -3374,21 +3993,9 @@ noncomputable def nestedForeignPlanStop_commonRestorationApex_of_quoteParallel
         sourceAvailableEq sourceBoundEq targetBoundEq thinningEq leftEmbedding
         rightEmbedding leftRoute rightRoute stopReason leftPayloadSizeLe
         rightPayloadSizeLe rawAligned bothBoundary (Or.inr rightBoundary)
-    · obtain ⟨elements, rest, shape⟩ :=
-        CostStaticRegionPlan.collectionRoot_of_rootClass leftReached.plan
-          leftParallel
-      subst shape
-      have restNone :=
-        CostStaticRegionPlan.RawAdmission.collectionRest_eq_none leftAdmission
-      subst restNone
-      exact parallelSide evidenceForTerminal (Or.inl ⟨elements, rfl⟩)
-    · obtain ⟨elements, rest, shape⟩ :=
-        CostStaticRegionPlan.collectionRoot_of_rootClass rightReached.plan
-          rightParallel
-      subst shape
-      have restNone :=
-        CostStaticRegionPlan.RawAdmission.collectionRest_eq_none rightAdmission
-      subst restNone
-      exact parallelSide evidenceForTerminal (Or.inr ⟨elements, rfl⟩)
+    · exact parallelSide evidenceForTerminal leftReached rightReached
+        (Or.inl leftParallel)
+    · exact parallelSide evidenceForTerminal leftReached rightReached
+        (Or.inr rightParallel)
 
 end Mettapedia.Languages.ProcessCalculi.RhoCalculus

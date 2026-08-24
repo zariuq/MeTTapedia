@@ -62,6 +62,10 @@ import Mettapedia.Languages.MeTTa.Prime.DataFibration
 import Mettapedia.Languages.MeTTa.Prime.DataTranslationKernel
 import Mettapedia.Languages.MeTTa.Prime.InternalDataTransport
 import Mettapedia.Languages.MeTTa.Prime.LanguageOperationSyntax
+import Mettapedia.Languages.MeTTa.Prime.LanguageOperationFactorization
+import Mettapedia.Languages.MeTTa.Prime.LanguageOperationNIKAdmission
+import Mettapedia.Languages.MeTTa.Prime.GSLTILLayeredCrown
+import Mettapedia.Languages.MeTTa.Prime.GSLTILTypedOperationAdmission
 import Mettapedia.Languages.MeTTa.Prime.InternalAdmission
 import Mettapedia.Languages.MeTTa.Prime.SelfInstance
 import Mettapedia.Languages.MeTTa.Prime.NativeKernel

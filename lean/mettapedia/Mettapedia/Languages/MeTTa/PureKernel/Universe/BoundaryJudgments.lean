@@ -1,6 +1,8 @@
 import Mettapedia.Languages.MeTTa.PureKernel.RegularBidirectionalCompleteness
 import Mettapedia.Languages.MeTTa.PureKernel.Universe.SchemaElaboration
+import Mettapedia.Languages.MeTTa.PureKernel.Universe.SyntacticContextualCategory
 import Mettapedia.Languages.MeTTa.PureKernel.Universe.TowerConversionSkeleton
+import Mettapedia.Languages.MeTTa.PureKernel.Universe.TypingGeneration
 
 /-!
 # Object judgments at the regular/tower authority boundary
@@ -23,6 +25,31 @@ open Mettapedia.Languages.MeTTa.PureKernel
 open Mettapedia.Languages.MeTTa.PureKernel.PresentationBoundary
 open SchemaElaboration
 
+abbrev FormedTowerContext :=
+  SyntacticContextual.FormedContext Tower.rules
+
+/-- The formed empty context used by the closed authority rows. -/
+abbrev emptyTowerContext : FormedTowerContext :=
+  SyntacticContextual.emptyContext Tower.rules
+
+/-- The closed authority context carries its formation evidence positively. -/
+theorem emptyTowerContext_wellFormed :
+    Declaration.ContextWellFormed Tower.rules emptyTowerContext.context :=
+  emptyTowerContext.wellFormed
+
+/-- A raw telescope whose sole entry names no declaration.  It remains useful
+as a negative boundary witness, but cannot be supplied to an authoritative
+tower judgment. -/
+def missingDeclarationContext : Tower.Ctx 1 :=
+  .snoc .nil (.const .anonymous)
+
+theorem missingDeclarationContext_not_wellFormed :
+    ¬ Declaration.ContextWellFormed Tower.rules missingDeclarationContext := by
+  intro formed
+  cases formed with
+  | snoc _ typing _ =>
+      exact typing.constantImpossibleWhenMissing rfl
+
 /-! ## Judgment kinds and their exact meanings -/
 
 inductive JudgmentForm where
@@ -34,16 +61,16 @@ deriving DecidableEq, Repr
 /-- A tower query retains its operational direction.  Checking and synthesis
 both require the returned type to be formed; formation asks directly for the
 displayed typing derivation. -/
-def TowerMeaning (form : JudgmentForm) (context : Tower.Ctx n)
-    (term type : Tower.Tm n) : Prop :=
+def TowerMeaning (form : JudgmentForm) (context : FormedTowerContext)
+    (term type : Tower.Tm context.arity) : Prop :=
   match form with
   | .check =>
-      Tower.HasType context term type ∧
-        ∃ level, Tower.HasType context type (sortTm level)
+      Tower.HasType context.context term type ∧
+        ∃ level, Tower.HasType context.context type (sortTm level)
   | .synthesize =>
-      Tower.HasType context term type ∧
-        ∃ level, Tower.HasType context type (sortTm level)
-  | .formation => Tower.HasType context term type
+      Tower.HasType context.context term type ∧
+        ∃ level, Tower.HasType context.context type (sortTm level)
+  | .formation => Tower.HasType context.context term type
 
 /-- The semantic judgment universe used by the authority contract.  The
 regular constructor packages the established regular context proof rather
@@ -53,8 +80,8 @@ inductive ExactJudgment where
       (term type : Legacy.Tm n)
   | regularCheck {n : Nat} (context : Context.Ctx n)
       (regular : RegularCtx context) (term type : Syntax.PureTm n)
-  | tower {n : Nat} (form : JudgmentForm) (context : Tower.Ctx n)
-      (term type : Tower.Tm n)
+  | tower (form : JudgmentForm) (context : FormedTowerContext)
+      (term type : Tower.Tm context.arity)
 
 def ExactJudgment.Meaning : ExactJudgment → Prop
   | .sealedCheck context term type => Legacy.HasType context term type
@@ -592,7 +619,7 @@ theorem modusPonensType_hasType :
         (.max (.max Tower.zero Tower.zero) (.max Tower.zero Tower.zero)))
 
 theorem modusPonens_evidence :
-    TowerMeaning .check .nil modusPonensTerm modusPonensType :=
+    TowerMeaning .check emptyTowerContext modusPonensTerm modusPonensType :=
   ⟨modusPonensTerm_hasType, modusPonensType_hasType⟩
 
 /-! ### Type-level equality mismatch -/
@@ -645,7 +672,8 @@ theorem typeLevelEquality_not_hasType :
   cases endpointEquality
 
 theorem typeLevelEquality_obstruction :
-    ¬ TowerMeaning .check .nil typeLevelEqualityTerm typeLevelEqualityType := by
+    ¬ TowerMeaning .check emptyTowerContext typeLevelEqualityTerm
+      typeLevelEqualityType := by
   intro meaning
   exact typeLevelEquality_not_hasType meaning.1
 
@@ -675,7 +703,7 @@ theorem largeSigma_not_hasType :
   exact not_conv_pi_sigma domain codomain universe1 universe0 conversion
 
 theorem largeSigma_obstruction :
-    ¬ TowerMeaning .check .nil largeSigmaTerm largeSigmaType := by
+    ¬ TowerMeaning .check emptyTowerContext largeSigmaTerm largeSigmaType := by
   intro meaning
   exact largeSigma_not_hasType meaning.1
 
@@ -691,7 +719,7 @@ theorem upperSortResult_hasType :
     .headType (.sort (.succ (.succ Tower.zero)))⟩
 
 theorem upperSort_evidence :
-    TowerMeaning .synthesize .nil universe1 universe2 :=
+    TowerMeaning .synthesize emptyTowerContext universe1 universe2 :=
   ⟨upperSort_hasType, upperSortResult_hasType⟩
 
 end TowerRows
@@ -709,14 +737,16 @@ def BoundaryRow.judgment : BoundaryRow → ExactJudgment
       .regularCheck .nil .nil RegularRows.distinctIdentityTerm
         RegularRows.distinctIdentityType
   | .polymorphicModusPonens =>
-      .tower .check .nil TowerRows.modusPonensTerm TowerRows.modusPonensType
+      .tower .check emptyTowerContext TowerRows.modusPonensTerm
+        TowerRows.modusPonensType
   | .typeLevelEquality =>
-      .tower .check .nil TowerRows.typeLevelEqualityTerm
+      .tower .check emptyTowerContext TowerRows.typeLevelEqualityTerm
         TowerRows.typeLevelEqualityType
   | .largeSigma =>
-      .tower .check .nil TowerRows.largeSigmaTerm TowerRows.largeSigmaType
+      .tower .check emptyTowerContext TowerRows.largeSigmaTerm
+        TowerRows.largeSigmaType
   | .upperSortSynthesis =>
-      .tower .synthesize .nil TowerRows.universe1 TowerRows.universe2
+      .tower .synthesize emptyTowerContext TowerRows.universe1 TowerRows.universe2
 
 inductive Resolution (judgment : ExactJudgment) where
   | established (evidence : judgment.Meaning)
@@ -755,6 +785,7 @@ theorem BoundaryRow.resolution_exclusive (row : BoundaryRow) :
 #print axioms TowerRows.largeSigma_obstruction
 #print axioms TowerRows.upperSort_evidence
 #print axioms BoundaryRow.resolution_exclusive
+#print axioms missingDeclarationContext_not_wellFormed
 
 end BoundaryJudgments
 

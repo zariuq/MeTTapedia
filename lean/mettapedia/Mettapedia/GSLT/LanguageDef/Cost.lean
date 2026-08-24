@@ -29,6 +29,7 @@ import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryDescent
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryVariableLeafRoutes
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryCrossColorLeafExposure
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryCrossColorExposureProvider
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryCollapsingPlanStopApex
 import Mettapedia.GSLT.LanguageDef.CostAuthoredAtom
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryNonBoundaryPlanStop
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryQuoteParallelCells
@@ -92,29 +93,29 @@ evidence on both sides.  No compatibility alias is provided, deliberately.
 
 ## Status of the surface
 
-Green as imported here.  What this umbrella does **not** yet contain,
-because it is not yet constructed: an *unconditional* `CostOneObjectLawsFor`
-for ρ.  `CostEndofunctor` supplies the laws structure and the ρ side
+Green as imported here.  The umbrella exports the unconditional,
+proof-relevant `rhoHereditaryCostOneDomainObject : CostOneDomainObject`.
+`CostEndofunctor` supplies the laws structure and the ρ development
 supplies every terminal it needs.
 
-The per-colour semantic-cut provider is no longer the primitive gap.  It is
-proved from four node-local obligations by
-`rhoCanonicalStaticPairSemanticCutProviderInDomain_of_apexSliceObligations`,
-and the object and domain object follow by
-`rhoHereditaryCostOneObjectLaws_ofApexSliceObligations` /
-`…DomainObject_ofApexSliceObligations`.  The four are
+The per-colour semantic-cut provider is proved from four node-local
+obligations by
+`rhoCanonicalStaticPairSemanticCutProviderInDomain_of_exposureA2x`, and the
+domain object follows by
+`rhoHereditaryCostOneDomainObject_ofExposureApexSliceObligations`.  The four
+inputs are
 
 * `RhoAlignedViewsPlanStopApexInDomain`,
 * `RhoCollapsingViewsPlanStopApexInDomain`,
-* `RhoCollapsingCrossColorViewsRestorationAlignedInDomain`,
+* `RhoCollapsingCrossColorViewsLeafExposuresInDomain`,
 * `RhoCollapsingLeafExposureInDomain`,
 
-each quantified over both colours.  They are stated in *apex* form on the
+each quantified over both colours, and all four are inhabited.  They are
+stated in *apex* form on the
 static branches because that is the evidence the cut constructors actually
 consume: `leftStaticEnclosing` asks for a `RhoMatchedStaticFramesApex`, not
-for whole-frame restoration alignment.  Consumers should expect to supply
-these four until the seal lands, at which point this file gains one further
-import and nothing else changes.
+for whole-frame restoration alignment.  The exported domain object packages
+the four inhabitants through the apex-slice provider.
 
 Two routes are retained but **non-critical**, and must not be mistaken for
 the live path:

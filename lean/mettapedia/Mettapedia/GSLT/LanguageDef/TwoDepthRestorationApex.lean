@@ -983,6 +983,84 @@ noncomputable def TwoDepthPermutation.of_canonical_map_perm
   · simpa [normalize, canonicalizeListByAt_eq_map] using normalizedAligned
   · simpa [normalize, canonicalizeListByAt_eq_map] using reordered.map normalize
 
+/-- Lift a permutation of source classifications through two
+occurrence-preserving endpoint traversals at independent restoration and
+canonicalization depths. -/
+noncomputable def TwoDepthPermutation.of_related_map_perm
+    {source : CIGSLT} {leftCount rightCount : Nat}
+    {leftKey : Fin leftCount → CostStaticAtomKey}
+    {rightKey : Fin rightCount → CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey)
+    (declaration : ReflectivePresentationDecl)
+    (restorationDepth keyDepth : Nat)
+    {LeftSource RightSource Class : Type}
+    {leftSource : List LeftSource} {rightSource : List RightSource}
+    {leftEndpoint rightEndpoint : List Pattern}
+    (classifyLeft : LeftSource → Class)
+    (classifyRight : RightSource → Class)
+    {leftRelated : LeftSource → Pattern → Prop}
+    {rightRelated : RightSource → Pattern → Prop}
+    (leftTraversal : List.Forall₂ leftRelated leftSource leftEndpoint)
+    (rightTraversal : List.Forall₂ rightRelated rightSource rightEndpoint)
+    (permutation : List.Perm (leftSource.map classifyLeft)
+      (rightSource.map classifyRight))
+    (close : ∀ {leftSourcePattern rightSourcePattern
+        leftPattern rightPattern},
+      leftRelated leftSourcePattern leftPattern →
+      rightRelated rightSourcePattern rightPattern →
+      classifyLeft leftSourcePattern = classifyRight rightSourcePattern →
+      TwoDepthApex source cospan declaration restorationDepth keyDepth
+        leftPattern rightPattern) :
+    TwoDepthPermutation (source := source) cospan declaration restorationDepth
+      keyDepth leftEndpoint rightEndpoint := by
+  have rightGraph : List.Forall₂
+      (fun classValue right => classValue = classifyRight right)
+      (rightSource.map classifyRight) rightSource := by
+    rw [List.forall₂_map_left_iff]
+    exact List.forall₂_same.mpr (fun _ _ => rfl)
+  let pairedEvidence := List.perm_comp_forall₂ permutation rightGraph
+  let pairedRight := Classical.choose pairedEvidence
+  have pairedSpec := Classical.choose_spec pairedEvidence
+  have pairedClass := pairedSpec.1
+  have pairedRightPermutation := pairedSpec.2
+  have pairedClass' : List.Forall₂
+      (fun left right => classifyLeft left = classifyRight right)
+      leftSource pairedRight := by
+    simpa only [pairedRight, List.forall₂_map_left_iff] using pairedClass
+  let endpointEvidence :=
+    List.perm_comp_forall₂ pairedRightPermutation rightTraversal
+  let pairedEndpoint := Classical.choose endpointEvidence
+  have endpointSpec := Classical.choose_spec endpointEvidence
+  have pairedTraversal := endpointSpec.1
+  have endpointPermutation := endpointSpec.2
+  have lift : ∀ {leftSources : List LeftSource}
+      {rightSources : List RightSource} {leftPatterns rightPatterns},
+      List.Forall₂ leftRelated leftSources leftPatterns →
+      List.Forall₂
+        (fun left right => classifyLeft left = classifyRight right)
+        leftSources rightSources →
+      List.Forall₂ rightRelated rightSources rightPatterns →
+      TwoDepthApexList source cospan declaration restorationDepth keyDepth
+        leftPatterns rightPatterns := by
+    intro leftSources rightSources leftPatterns rightPatterns leftRelation
+      classRelation rightRelation
+    induction leftRelation generalizing rightSources rightPatterns with
+    | nil =>
+        cases classRelation
+        cases rightRelation
+        exact .nil restorationDepth keyDepth
+    | cons leftHead leftTail inductionHypothesis =>
+        cases classRelation with
+        | cons classHead classTail =>
+            cases rightRelation with
+            | cons rightHead rightTail =>
+                exact .cons (close leftHead rightHead classHead)
+                  (inductionHypothesis classTail rightTail)
+  exact
+    { middle := pairedEndpoint
+      aligned := lift leftTraversal pairedClass' pairedTraversal
+      permutation := endpointPermutation }
+
 /-- **Bare parallel from an aligned permutation, at separated depths.**  This
 is the two-depth form of the parallel terminal: given occurrence-preserving
 alignment of the post-canonicalization, post-splice frontiers — keyed at

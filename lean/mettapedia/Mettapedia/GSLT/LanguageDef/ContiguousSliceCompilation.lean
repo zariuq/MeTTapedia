@@ -25,11 +25,60 @@ def Slice.shift (amount : Nat) (slice : Slice) : Slice :=
 def Slice.read (storage : List α) (slice : Slice) : List α :=
   (storage.drop slice.offset).take slice.length
 
+/-- Remove a prefix from a handle without touching the immutable carrier.
+The length subtraction deliberately saturates, matching `List.drop` even when
+the requested prefix is longer than the selected occurrence. -/
+def Slice.dropPrefix (amount : Nat) (slice : Slice) : Slice :=
+  { offset := slice.offset + amount, length := slice.length - amount }
+
+/-- A prefix dropped from a handle denotes exactly the corresponding suffix
+of the original observation.  Saturating subtraction also makes the law exact
+when the requested prefix is longer than the slice. -/
+theorem Slice.read_dropPrefix (storage : List α) (slice : Slice)
+    (amount : Nat) :
+    (slice.dropPrefix amount).read storage =
+      (slice.read storage).drop amount := by
+  simp only [Slice.dropPrefix, Slice.read]
+  rw [List.drop_take, List.drop_drop]
+
 /-- One persistent allocation plus compact handles for the source sequences. -/
 structure PackedSequences (α : Type u) where
   storage : List α
   slices : List Slice
   deriving DecidableEq, Repr
+
+/-- Direct observation of one packed occurrence without reconstructing the
+other sequences. -/
+def PackedSequences.readAt? (packed : PackedSequences α) (index : Nat) :
+    Option (List α) :=
+  packed.slices[index]?.map (Slice.read packed.storage)
+
+/-- A published slice retains the immutable owner needed to interpret its
+handle.  A native implementation may refine this pair by an arena reference,
+but it must preserve the same ownership reachability. -/
+structure PublishedSlice (α : Type u) where
+  storage : List α
+  slice : Slice
+  deriving DecidableEq, Repr
+
+def PublishedSlice.read (published : PublishedSlice α) : List α :=
+  published.slice.read published.storage
+
+/-- Derive a suffix view while retaining the same immutable owner. -/
+def PublishedSlice.dropPrefix (amount : Nat) (published : PublishedSlice α) :
+    PublishedSlice α :=
+  { storage := published.storage
+    slice := published.slice.dropPrefix amount }
+
+theorem PublishedSlice.read_dropPrefix (amount : Nat)
+    (published : PublishedSlice α) :
+    (published.dropPrefix amount).read = published.read.drop amount := by
+  exact Slice.read_dropPrefix published.storage published.slice amount
+
+/-- Publish one packed occurrence together with its owner. -/
+def PackedSequences.publishAt? (packed : PackedSequences α) (index : Nat) :
+    Option (PublishedSlice α) :=
+  packed.slices[index]?.map fun slice => ⟨packed.storage, slice⟩
 
 /-- Compile recursively so every later handle is shifted by the exact prefix
 length introduced at the current step. -/
@@ -77,6 +126,34 @@ theorem unpack_pack (sequences : List (List α)) :
               (pack sequences).storage slice
           _ = unpack (pack sequences) := rfl
           _ = sequences := inductionHypothesis
+
+/-- Pointwise packed lookup is the corresponding source occurrence. -/
+theorem PackedSequences.readAt?_pack (sequences : List (List α))
+    (index : Nat) :
+    (pack sequences).readAt? index = sequences[index]? := by
+  have exact := congrArg (fun values => values[index]?) (unpack_pack sequences)
+  simpa [PackedSequences.readAt?, unpack] using exact
+
+/-- Owner-retaining publication reconstructs the exact source occurrence. -/
+theorem PackedSequences.publishAt?_pack_read
+    (sequences : List (List α)) (index : Nat) :
+    ((pack sequences).publishAt? index).map PublishedSlice.read =
+      sequences[index]? := by
+  unfold PackedSequences.publishAt?
+  rw [Option.map_map]
+  change
+    (pack sequences).slices[index]?.map
+        (Slice.read (pack sequences).storage) =
+      sequences[index]?
+  exact PackedSequences.readAt?_pack sequences index
+
+/-- A bare numeric handle is not a self-contained value: changing its owner
+can change its observation.  Publication must therefore retain or copy the
+owner rather than leaking a scratch-only handle. -/
+theorem Slice.owner_matters {left right : α} (different : left ≠ right) :
+    ({ offset := 0, length := 1 } : Slice).read [left] ≠
+      ({ offset := 0, length := 1 } : Slice).read [right] := by
+  simpa [Slice.read] using different
 
 /-- The concatenated storage has exactly the source payload length. -/
 theorem pack_storage_length (sequences : List (List α)) :

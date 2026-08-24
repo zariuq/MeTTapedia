@@ -26,6 +26,12 @@ import Mettapedia.GSLT.Dynamics.ProofRelevantNeedOwnershipValuation
 import Mettapedia.GSLT.Dynamics.ProofRelevantNeedNIK
 import Mettapedia.GSLT.Dynamics.IndexedQueryRevision
 import Mettapedia.GSLT.Dynamics.IndexedQueryRevisionCanary
+import Mettapedia.GSLT.Dynamics.ObservationDisciplineCrown
+import Mettapedia.GSLT.Dynamics.CapabilityGeneratedObservationDomain
+import Mettapedia.GSLT.Dynamics.CapabilityGeneratedObservationUniversal
+import Mettapedia.GSLT.Dynamics.IndexedExecutionObservation
+import Mettapedia.GSLT.Dynamics.CapabilityIndexedObservationArchitecture
+import Mettapedia.GSLT.Dynamics.ObservationPolicyFamilyUniversal
 import Mettapedia.GSLT.GraphTheory.Basic
 import Mettapedia.GSLT.GraphTheory.BohmTree
 import Mettapedia.GSLT.GraphTheory.WeakProduct
@@ -71,9 +77,14 @@ import Mettapedia.GSLT.LanguageDef.SemanticProofGSLTCategory
 import Mettapedia.GSLT.LanguageDef.NIKGSLT
 import Mettapedia.GSLT.LanguageDef.NIKIndexedOperational
 import Mettapedia.GSLT.LanguageDef.NIKMetalogic
+import Mettapedia.GSLT.LanguageDef.NIKRevisionAlignedComposition
+import Mettapedia.GSLT.LanguageDef.NIKPolicyFamilyAdmission
+import Mettapedia.GSLT.LanguageDef.NIKRepresentedRouteObservation
 import Mettapedia.GSLT.LanguageDef.DescentInterface
 import Mettapedia.GSLT.LanguageDef.GSLTIL
 import Mettapedia.GSLT.LanguageDef.GSLTILSyntax
+import Mettapedia.GSLT.LanguageDef.GSLTILUniversalStructure
+import Mettapedia.GSLT.LanguageDef.GSLTILCapabilityGeneratedObservation
 import Mettapedia.GSLT.LanguageDef.GSLTILCanary
 import Mettapedia.GSLT.LanguageDef.NIKDefaultProfile
 import Mettapedia.GSLT.LanguageDef.NIKPolarizedAuthority

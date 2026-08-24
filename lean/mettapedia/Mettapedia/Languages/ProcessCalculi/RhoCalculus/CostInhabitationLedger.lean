@@ -3,6 +3,7 @@ import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryProviderApe
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryCrossColorRestoration
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryLeafDichotomyProbe
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryForeignBoundaryWitness
+import Mettapedia.Languages.ProcessCalculi.RhoCalculus.CostHereditaryCollapsingPlanStopApex
 
 /-!
 # Inhabitation ledger for the rho Cost₁ chain
@@ -31,20 +32,19 @@ Ledger, as of this file's last update:
 * proved — the second node-local semantic input,
   `rhoHereditaryStaticNormalizer_preservesReflectiveSupport_path`.  It is a
   closed term, so the Cost₁ assembly no longer waits on it;
-* open — exactly four node-local obligations, and nothing else.  The
-  per-colour semantic-cut provider is not primitive: it is proved from them by
-  `rhoCanonicalStaticPairSemanticCutProviderInDomain_of_apexSliceObligations`,
-  and the object and domain object follow by
-  `rhoHereditaryCostOneObjectLaws_ofApexSliceObligations` /
-  `…DomainObject_ofApexSliceObligations`.  The four, each over both colours:
+* proved — the four node-local inputs of the target-rebased semantic-cut
+  provider, each over both colours.  The provider is constructed by
+  `rhoCanonicalStaticPairSemanticCutProviderInDomain_of_exposureA2x`, and the
+  domain object follows by
+  `rhoHereditaryCostOneDomainObject_ofExposureApexSliceObligations`.  The four
+  inputs are:
 
   - `RhoAlignedViewsPlanStopApexInDomain` — aligned bridge case, apex form;
   - `RhoCollapsingViewsPlanStopApexInDomain` — same-colour collapsing arms,
     apex form, at the `+ 1` measure forced by
     `not_canonicalStopAligned_endpoints_of_collapsing`;
-  - `RhoCollapsingCrossColorViewsRestorationAlignedInDomain` — cross-colour
-    collapsing arms, confined to the shared `Name` fibre and *equivalent* to
-    the flat `RhoCollapsingCrossColorFramesRestoreTogetherInDomain`;
+  - `RhoCollapsingCrossColorViewsLeafExposuresInDomain` — cross-colour
+    collapsing arms, discharged by hereditary target rebase;
   - `RhoCollapsingLeafExposureInDomain` — structural partners.
 
   They are apex-form on the static branches because that is what the cut
@@ -140,16 +140,19 @@ example := @rhoHereditaryStaticNormalizer_preservesReflectiveSupport_path
 the four apex-slice obligations. -/
 example := @rhoCanonicalStaticPairSemanticCutProviderInDomain_of_apexSliceObligations
 
-/-- Signature guard: the seal itself over those four obligations.  When all
-four are discharged this becomes a checked witness of `CostOneDomainObject`. -/
-noncomputable example := @rhoHereditaryCostOneDomainObject_ofApexSliceObligations
+/-- The unconditional rho Cost₁ seal is a checked witness. -/
+noncomputable example : CostOneDomainObject :=
+  rhoHereditaryCostOneDomainObject
 
-/-- Signature guards for the four open obligations themselves.  A rename or
-reshaping of any of them fails here rather than silently. -/
-example := @RhoAlignedViewsPlanStopApexInDomain
-example := @RhoCollapsingViewsPlanStopApexInDomain
-example := @RhoCollapsingCrossColorViewsRestorationAlignedInDomain
-example := @RhoCollapsingLeafExposureInDomain
+/-- Checked witnesses for the four inputs of the target-rebased provider. -/
+example : ∀ color, RhoAlignedViewsPlanStopApexInDomain color :=
+  rho_alignedViewsPlanStopApexInDomain_allColors
+example : ∀ color, RhoCollapsingViewsPlanStopApexInDomain color :=
+  rho_collapsingViewsPlanStopApexInDomain_allColors
+example : ∀ color, RhoCollapsingCrossColorViewsLeafExposuresInDomain color :=
+  rhoCrossColor_collapsingLeafExposuresInDomain
+example : ∀ color, RhoCollapsingLeafExposureInDomain color :=
+  rho_collapsingLeafExposureInDomain_allColors
 
 /-- The cross-colour obligation is *equivalent* to its flat form, so either
 may be discharged. -/

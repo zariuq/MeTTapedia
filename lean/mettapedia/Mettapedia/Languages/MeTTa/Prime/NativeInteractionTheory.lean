@@ -3,6 +3,8 @@ import Mettapedia.GSLT.Core.GradedSelectionIrreducibility
 import Mettapedia.Languages.MeTTa.Prime.NativeInteractionFibration
 import Mettapedia.Languages.MeTTa.Prime.NativeInteractionEffectAnalysis
 import Mettapedia.Languages.MeTTa.Prime.NativeFibredCost
+import Mettapedia.Languages.MeTTa.Prime.NativeFibredScheduleObservation
+import Mettapedia.Languages.MeTTa.Prime.NativeInteractionObservation
 import Mettapedia.Languages.MeTTa.Prime.NativeInteractionPolicies
 import Mettapedia.Languages.MeTTa.Prime.NativeInteractionSeam
 import Mettapedia.Languages.MeTTa.Prime.NativeFibredInteractionExample
@@ -22,6 +24,8 @@ Intentional import gate for the Prime-native interaction stack:
 * crisp/graded selection separation at fixed observation granularity;
 * structural non-collapse of MeTTa Native into rho syntax;
 * exact occurrence-preserving interaction computations;
+* capability-indexed observation of inhabited interaction fibres, with
+  chronological provenance and explicitly lossy scheduler views;
 * work/span accounting over chronological paths and concurrent schedules;
 * proof-relevant product fibres and occurrence/resource separation licenses;
 * dependent compilation of exact separation licenses into indexed concurrent

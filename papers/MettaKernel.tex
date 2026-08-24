@@ -10,7 +10,9 @@
 %% and the Lean-verified LeaTTa are calibration authorities. The generated-rule
 %% subject-reduction/confluence metatheorem remains open for the runnable LF
 %% kernel; the more general NIK and native-type-theory interfaces are formalized
-%% separately in Lean.
+%% separately in Lean.  The August 23 updates record the checked-context,
+%% layered GSLT-IL, and constructional-family refinements of the native
+%% architecture.
 
 \documentclass[11pt]{article}
 \usepackage[T1]{fontenc}
@@ -42,11 +44,11 @@
 \newcommand{\MIK}{MIK}
 \newcommand{\code}[1]{\texttt{#1}}
 
-\title{MettaKernel: A \MeTTa-hosted Proof/Inference Kernel for both\\
-Dependent Type Theory and Higher-Order Tarski--Grothendieck Set Theory\\
-\large Design, Curriculum, and a Prototype-First Build Plan}
+\title{MettaKernel and MeTTa Native:\\
+A Logic-Polymorphic Native-Calculus Architecture\\
+\large Dependent Types, Proof-Relevant Interlingua, and Admitted Execution}
 \author{Oru\v{z}i \and Zar Goertzel}
-\date{2026-06-18 (design draft); realized-architecture update 2026-06-23;\\ Metamath-profile update 2026-08-06; NIK/native-theory update 2026-08-14}
+\date{2026-06-18 (design draft); realized-architecture update 2026-06-23;\\ Metamath-profile update 2026-08-06; NIK/native-theory updates 2026-08-14--23}
 
 \begin{document}
 \maketitle
@@ -443,6 +445,397 @@ are represented as ordinary typed values.  Megalodon and \code{PureKernel} remai
 independent calibration authorities rather than components silently baked into
 the \NIK{} waist.
 
+The first declaration-aware Prime root now tests this separation formally.  Its
+ordinary typing, context-formation, and universe-formed typing judgments inhabit
+one disjoint exact codec, and one proof-relevant interpreter covers the resulting
+presentation compositionally.  The formed judgment is a conservative derived
+rule with three ordered premises---formed context, formation of the expected
+type, and inhabitation by the subject---rather than a second typing relation.
+Generically, universal semantic fibres turn such a disjoint coproduct of
+judgment codecs into the product of the independently usable semantic views;
+retained rules acquire a new vacuous fibre precisely when none can conclude a
+wire owned by the new judgment family.
+Accepted raw trees therefore reconstruct intrinsic evidence at ingress, while
+the resulting displayed type and term contain no checker.  The important host
+lesson is structural: another logic supplies its own judgment indices and
+semantic fibres, while the reusable waist supplies exact encoding, validated
+extension, proof checking, interpretation, and currentness.  This result does
+not yet constitute complete Lean, Coq, or Megalodon hosting; their native
+conversion and declaration disciplines remain separate obligations.
+
+The source of a hosted calculus is now separated from its extensional lookup
+environment as well.  An authored declaration document elaborates exactly and
+in order, retaining complete equation schemas and a stable occurrence index for
+each instantiated equation.  Its semantic interpretation deliberately uses the
+existing first-wins constant signature and proof-erased computation support.
+Two distinct source inventories can therefore have the same semantic signature,
+while duplicate equations with identical endpoints still have distinct native
+receipts.  This noninjectivity is a boundary theorem: an optimized environment
+is a useful interpretation of a source program, not a reconstruction of it.
+Moreover, mapping a retained equation occurrence merely to the proposition that
+some occurrence exists is proved noninjective.  Logical support is therefore a
+valid conversion readout but not a receipt format.
+
+Intrinsic typing is consequently indexed by an authored declaration host.  A
+formation host proves that every declaration is meaningful; a computational
+host additionally proves that its authored equation steps preserve typing.
+Every judgment in the bare checked fragment embeds into every formed extension,
+and a formed declared constant receives an intrinsic hosted typing judgment
+that the empty host cannot manufacture.  Formation alone does not grant a
+conversion algorithm, normalization, confluence, or native execution.  Those
+are separate capabilities to be earned by each selected family or guest.
+
+Nominal ingress is source-faithful rather than a bare membership test.  A
+proof-relevant first-occurrence witness walks the ordered declaration document,
+retaining skipped equations and differently named constants, and stops at the
+first constant with the requested name.  Its stored index reads back the exact
+source declaration.  This witness exists if and only if the extensional
+first-wins signature lookup returns that complete entry; hence preservation and
+the strongest true reflection hold at this boundary.  The witness directly
+constructs the declaration-hosted typing judgment, while a later shadowed
+declaration is proved unable to acquire the same authority.  A generated raw
+checker and a native constructor may therefore consume one common source fact
+without either recovering provenance from an optimized signature or placing
+checking inside native construction.
+
+This embedding now crosses the checked/native waist itself.  The same fixed
+formed-typing presentation and exact raw proof tree can be interpreted in any
+authored formation host; its native artifact is the corresponding hosted
+context, type, and term judgment.  The reverse inclusion is false in a useful
+way.  For every actually declared constant, the hosted calculus constructs a
+typing inhabitant while the fixed bare checker image at the identical surface
+claim is empty.  Thus a source-generated checker extension may admit raw
+declaration syntax, but it must not be mistaken for the source of native
+declaration construction.  Generic checking is the common ingress floor;
+host-specific introduction and computation remain strictly stronger earned
+faces of the same judgment.
+
+For the current native List and identity package, the source-to-host direction
+is now exact.  One authored document contains the five constant declarations
+and three typed iota schemas.  Its ordered GSLT elaboration interprets to the
+existing formed signature.  More strongly, at every pair of endpoints its
+indexed equation-occurrence carrier is equivalent to the native iota carrier:
+the equivalence retains schema identity, the complete authored substitution,
+and every native eliminator argument in both directions.  A generic
+source-directed presented candidate now requires this fibrewise equivalence;
+equality of logical support follows as a theorem and is not accepted as a
+substitute.  Promotion of the same package from a formation host to a
+computational host still requires the independent preservation family.  A raw
+authored nil reduction with an undeclared element supplies the negative
+control: exact receipt agreement does not manufacture a typing derivation.
+Nothing here claims that an extensional signature can decode its source.
+The construction is now generic over a finite authored inventory: declaration
+order, constant lookup equality, and the receipt-fibre equivalence derive the
+entire presented candidate and its interpretation theorem.  A separate negative
+theorem rules out any total decoder which would recover every such declaration
+inventory from its extensional signature.
+The same construction is instantiated independently for a shared Nat/Vec
+declaration world.  Eight constants and four iota schemas generate one authored
+source; Nat and length-indexed Vec are distinct strictly-positive candidate
+views of that source, and both views carry the same exact receipt-fibre
+equivalence.  This demonstrates that a presentation is a declaration-world
+object rather than one opaque registry record per family.
+
+The authored/native agreement now meets intrinsic typed conversion
+constructionally.  For a presented candidate $P$, define the fibre of typed
+occurrences by
+\[
+  \mathsf{TypedOcc}_{P}(\Gamma,l,r,A)
+  = \mathsf{Occ}_{P}(l,r)
+    \times (\Gamma \vdash l : A)
+    \times (\Gamma \vdash r : A).
+\]
+The receipt-fibre equivalence sends such an occurrence to one exact native
+step between typed states, hence directly to proof-relevant conversion
+evidence.  A second, explicit map forgets the receipt to the existing
+proposition-supported declared conversion.  The native step still recovers
+the authored occurrence exactly; the support projection is intentionally not
+claimed faithful.  If the declaration package proves uniform preservation,
+an authored occurrence and the source typing construct the whole fibre, with
+the target typing derived once from preservation.  Canonical List-nil and
+Nat-zero reductions instantiate the construction, whereas corresponding raw
+reductions with undeclared parameters are proved to have no typed occurrence.
+
+Pointwise receipt equivalence is not yet enough for dependent computation: its
+comparison must also be natural in the open telescope.  The native-family
+interface therefore exposes this as a separate earned capability.  For every
+renaming or simultaneous substitution~$\sigma$, the square
+\[
+\begin{array}{ccc}
+  \mathsf{Occ}(l,r) & \xrightarrow{\eta} & \mathsf{Native}(l,r) \\
+  {\scriptstyle\sigma}\downarrow & & \downarrow{\scriptstyle\sigma} \\
+  \mathsf{Occ}(\sigma l,\sigma r) & \xrightarrow{\eta} &
+    \mathsf{Native}(\sigma l,\sigma r)
+\end{array}
+\]
+commutes on the exact proof-relevant receipt, not merely after support erasure.
+Formally, authored occurrences and native receipts are loose arrows on open
+terms; the fibre equivalence gives mutually inverse equipment cells, and the
+displayed square is an equality of their two vertical composites.
+Consequently a typed occurrence transports along any typed context morphism,
+and translating its transported authored witness yields exactly the receipt
+obtained by native substitution.  The theorem is proved for List/identity and
+for both Nat and Vec views of their one shared declaration source.  The
+ill-typed nil and Nat-zero occurrences remain outside every typed fibre, so
+naturality does not manufacture authority.  At the GSLT-IL layer this square is
+the required operational cell between source transport and native realization;
+it does not require a global native-family conversion checker or force a
+relational elaboration to become a function.
+
+This naturality law supports a stronger constructional kernel without making
+the raw relation stronger.  A typed native presentation supplies one canonical
+typed occurrence for every authored equation schema and proves that it retains
+that exact source position.  This presentation is now generated from one
+source-wide finite inventory containing both endpoint typings at every authored
+schema position, together with the receipt-naturality law.  The scope is
+important: the inventory ranges over the whole declaration world, not one
+family's local iota registry.  In the shared Nat/Vec source, each local registry
+has two clauses while the authored source has four schemas; nevertheless the
+Nat candidate view constructs the Vec-nil step at its source position.  Thus
+local family coverage is neither silently promoted to source coverage nor used
+as a dispatcher boundary.
+
+The kernel generated from this presentation has typed states as its indices.
+A primitive step consists of a schema position, a typed simultaneous
+substitution, the endpoint equations, and an explicit displayed-type
+adjustment.  Hence both endpoints inhabit the same typing fibre by construction.
+Canonical steps and all their typed substitution instances are generated
+directly, and a structural map sends complete reflexive, symmetric, and
+transitive conversion trees into the existing proof-relevant native computation
+while preserving every intermediate state and association node.  Native
+List/identity supplies one instance.  The shared Nat/Vec source supplies two
+more candidate views over the same four-schema declaration world, showing that
+generation is attached to a typed presentation rather than to a hard-coded
+family dispatcher.  The raw nil and Nat-zero equations with undeclared
+parameters supply the negatives: each equation remains available to raw
+execution but cannot be the source of a constructional step.  Extending this
+kernel to every syntactic substitution in the raw equation closure still
+requires the independent preservation or conversion-coherence theorem.  Thus
+the constructional face is automatic on its typed image, while raw computation
+authority is neither assumed nor lost.
+
+This bridge does not turn the generic checked presentation into an interpreter
+for every native computation.  Its present typed-conversion checker describes
+the diagonal boundary fragment, while native beta and iota realizations
+construct richer steps in the same judgment-indexed semantic carrier.  Thus an
+authored family may itself be quoted and transported as GSLT-IL data without
+requiring its already-admitted eliminators to replay that presentation during
+execution.  Reflection describes and transports the calculus; it does not
+replace its native computational structure.
+
+The same comparison now reaches NIK as a constructional admitted flow.  At one
+fixed judgment index, a typed authored occurrence and a complete native receipt
+are equivalent: the forward map retains both endpoint derivations and the exact
+native computation witness, while the inverse recovers the authored occurrence.
+The two composites are identities.  Storing the forward map at a dependency
+revision therefore authorizes a certificate-free active operation whose runner
+only constructs the native receipt; it neither replays the source presentation
+nor invokes a conversion checker.  Current execution is exactly the forward
+GSLT-IL equipment cell and commutes with typed substitution.  A changed selected
+dependency prevents activation without erasing the typed source, and a raw
+ill-typed equation remains expressible below the boundary but cannot inhabit
+the admitted source fibre.  List, Nat, and Vec reductions instantiate the same
+generic bridge.  This is the maximal-native principle in its constructional
+case: reflection supplies the semantic comparison, typing supplies the
+inhabitant, and NIK retains the strongest justified no-replay realization.
+
+There is nevertheless a strict upgrade above this constructional face.  Put a
+typed source generator and a raw source-typed authored equation into one
+gradual request language.  The constructional operation realizes the former
+and returns the latter unchanged for ordinary fallback.  A declaration-wide
+preservation theorem constructs the missing target judgment for the raw
+request, so a second operation realizes both forms without replay.  These
+operations share one proof-carrying result contract: success retains target
+typing, native evidence, and exact authored provenance; fallback retains the
+complete raw request.  Capability inclusion orders constructional image below
+uniform raw preservation, and the latter family cannot even be formed without
+the preservation theorem.  NIK consequently selects uniform preservation as
+the unique strongest member when that capability is requested, while a family
+that has proved only its typed source image remains honestly constructional.
+This is a useful implementation rule: optimize the exact typed image now; only
+expand the no-replay boundary when the independent preservation proof lands.
+
+The constructional face now also instantiates the common lazy gradual law
+without adding another evaluator.  Its exact evidence is displayed over the
+complete raw source request and retains the judgment index, both typed endpoint
+states, the proof-relevant constructed step, and equality of that step's
+erasure with the request.  Exact current evidence enters the no-replay native
+operation.  Suspension or a local failure to establish this optional evidence
+enters the ordinary fallback face with the identical request; neither is a
+semantic rejection.  Revision staleness forgets only the optional construction
+witness, and a changed dependency revision cannot activate the cached admitted
+operation.  Thus precision changes the justified execution face while leaving
+the authored source, context, type, occurrence, and fallback semantics fixed.
+
+Typed contextual substitution acts through that same displayed boundary.  A
+transport request carries the target telescope, simultaneous substitution, and
+its context-typing derivation.  On exact evidence it composes the authored
+schema substitution, transports both endpoint derivations and the directed
+type adjustment, and constructs another native step.  Erasing this transported
+step gives exactly the raw request obtained by substituting the original
+erasure.  Raw request transport satisfies identity and composition, so this is
+contextual structure rather than a family-specific helper.  The induced gradual
+map preserves exact evidence, preserves suspension, and invalidates unsupported
+blame to suspension; revision invalidation commutes with it.  A nonidentity
+weakening of the List-nil context realizes natively when its construction
+witness is retained and follows ordinary fallback when the same transformed
+request is suspended.  This theorem concerns typed contextual transport within
+one hosted declaration world; a translation between distinct authored family
+worlds must separately supply its declaration and receipt map.
+
+The construction extends from generators to complete conversion derivations by
+a general initiality theorem, rather than an indexed-family-specific recursion.
+For any judgment-indexed state and step families, interpretations of primitive
+steps, reflexivity, symmetry, and binary transitivity into an indexed target
+family induce a unique structural fold on complete conversion evidence.  The
+type of constructor-preserving extensions is contractible.  Consequently an
+exact equivalence on every primitive step fibre lifts to an exact equivalence
+of complete conversion trees.  Instantiating this theorem, the authored and
+native indexed-family systems retain every intermediate typed term, occurrence
+identity, native receipt, symmetry, and composition node in both directions,
+and the lift remains natural under typed substitution.
+NIK may therefore admit one structural path translator and execute it directly
+at the current revision.  This result is intentionally prior to higher
+coherence: a witnessed round trip is distinct from reflexivity, and the two
+association trees for the same three legs remain distinct even though their
+endpoints agree.  Endpoint-only normalization, caching, or replay would erase
+information that the native calculus still exposes; any later identification
+of these paths must be supplied by an explicit higher cell.
+
+The complete lift also inhabits the same lazy gradual discipline as primitive
+construction.  The raw value is the entire authored conversion tree; exact
+evidence is a native tree together with equality to its structural lift.
+Typed contextual substitution maps both trees, and receipt naturality proves
+that the transported native evidence is exactly the lift of the transported
+authored path.  Exact evidence therefore remains exact, while suspension and
+unsupported local blame retain the complete authored tree for fallback.
+Revision staleness forgets only the optional native realization.  For a
+nonidentity weakening of the List context, the exact branch preserves the
+whole three-leg association tree and agrees with NIK's current selected
+complete-path result; the same weakened path without evidence follows
+fallback.  Because every valid authored path has a structural native lift, a
+sound refutation of that lift is uninhabited.  This closes the gradual
+conversion-path square without quotienting receipts or adding a checker.
+
+This universal lift now enters maximal-native selection as an explicit
+capability rather than a fixed mode priority.  Over one gradual path-realization
+contract, a primitive face realizes a single generator and retains every
+composite authored path for fallback; a complete face realizes the unique
+structural extension and carries a proof that the inverse lift recovers the
+entire authored tree.  Capability inclusion makes the latter a strict upgrade,
+so a request for complete proof-relevant paths has one unique strongest member.
+The selected current runner is definitionally the free-conversion lift.  This
+does not globally rank all NIK modes: native proof construction and explicit
+boundary replay still have no greatest member when the request leaves their
+incomparable boundary capabilities unspecified.  Hence ``use the strongest
+kernel'' is a theorem exactly where a common semantic contract and a directed
+capability fibre justify it, and a maximal frontier everywhere else.
+
+This free conversion algebra is deliberately not identified with the neighboring
+free directed-path category used for GSLT execution.  The latter composes paths
+associatively; the former still exposes the syntax tree of reflexivity,
+symmetry, and transitivity and assumes no unit, associativity, cancellation, or
+involution equations.  Iterated identity types can support weak
+$\omega$-categorical or weak $\omega$-groupoidal coherence, but that additional
+structure must be constructed and connected to these retained receipts.  It is
+not obtained by silently quotienting them.
+
+The same distinction now holds at the displayed gradual boundary.  Raw
+judgments are indexed by suspended, exact, or refuted evidence, and every
+constructional map acts on raw syntax and exact evidence while invalidating
+negative evidence unless reflection has separately been earned.  Commuting
+squares lift this action to gradual states.  Lambda, application, pairing,
+projections, identity formation, and reflexivity commute with typed context
+substitution; direct $Pi$-beta and first-$Sigma$-beta additionally retain the
+same proof-relevant structural receipt on both routes.  Native identity-iota
+cells enter this exact fibre from their intrinsically typed declaration receipt,
+whereas changing the authored target is uninhabited.
+
+These constructions now satisfy one compositional lazy gradual-dependent
+guarantee rather than a list of isolated examples.  Forward transport of exact
+evidence composes strictly.  Since a merely forward map need not reflect
+exactness, its identity action may deliberately forget cached blame; once an
+exact-reflection capability is supplied, transport preserves blame and becomes
+fully functorial.  Revision activation commutes with both forms of transport,
+with independent products, and with genuinely dependent sums.  Hence a current
+typed constructor may run without an interior check, while a stale capability
+returns to suspension without changing its raw term, path, or program.  Every
+proof-relevant naturality square acts on all three gradual states, and the
+ordinary runner for a checked plan has no checker argument; first demand
+evaluates once and subsequent cached observations are inherited from the shared
+Need semantics.
+
+Whole programs and proof-relevant rho worlds are no longer exceptions to this
+displayed construction.  A complete authored program is the raw index and a
+source-preserving plan is exact evidence over precisely that source.  Promoting
+an island is therefore an exact map whose raw action is identity; matching
+typing evidence changes the selected plan, while independently valid evidence
+for another candidate cannot cross-promote it.  Dually, an already-authorized
+rho branch is the raw index and a certified finite-family schedule is exact
+evidence over that branch.  Current evidence realizes the native schedule;
+suspension, local blame, or revision staleness realizes the exact raw branch.
+Two competing communications inhabit different raw indices, so gradual
+precision cannot silently select, merge, or serialize them.  NIK may choose the
+strongest current evidence within one fibre, but nondeterministic choice remains
+part of the language semantics rather than an artifact of optimization.
+
+This distinction is strict, not terminological.  There is a constructional
+many-to-one map which preserves every exact source witness but cannot reflect
+exactness at an unsupported source point.  It therefore earns the complete
+forward-safe law package and provably cannot earn stable-blame transport.
+Conversely, identity transport earns reflection and retains blame.  These are
+requestable native-calculus capabilities: a maximal implementation may select
+the reflecting face when its guest proves reflection, but must select the
+forward-safe face or deoptimize otherwise.  This is now an instance of the
+request-local maximal-native theorem rather than an implementation convention.
+Every exact map has a unique strongest member in its safe registry.  Registering
+an explicit reflection witness and its derived laws adds one strict common
+upgrade, which is the unique strongest member for both exact-state and
+stable-blame requests.  For the non-reflecting collapse, the stronger
+registration and every nonempty stable-blame request are uninhabited.  A
+revision-current NIK admission runs the retained selected operation directly,
+while a relevant dependency change prevents activation and the gradual state
+returns to suspension without changing its raw index.  No global ranking of
+checkers and kernels is needed, and failure to earn the stronger face removes
+no raw behavior.
+
+Dependent second-$Sigma$-beta reveals the first genuinely higher coherence
+obligation.  Its source and target types are connected by a conversion receipt
+and its terms by a separate computation receipt; the two type codes need not be
+equal.  Ambient substitution commutes on the complete raw boundary and on the
+term receipt.  The type-conversion receipt, however, is generated pointwise from
+the codomain, and substituting a compound term for one variable may expand its
+proof tree.  The formal interface therefore retains both conversion trees and
+does not identify them by proof irrelevance.  A comparison between them must be
+an explicit higher cell (or a stated quotient with an adequacy theorem).  This
+is not needed to execute the native eliminator, but it is required before
+claiming a fully coherent bicategorical or homotopical semantics of all retained
+receipts.
+
+Typed conversion supplies the next bridge without imposing one conversion
+algorithm on every guest.  One exact judgment index records the formed context,
+the common type and universe, both endpoints, and a proof-relevant conversion
+path.  The generic presentation currently earns a diagonal fragment: from an
+accepted formed typing judgment it derives reflexive conversion, and every
+derivation in that fragment is proved to have equal raw endpoints.  Prime's
+native dependent kernel nevertheless constructs a nontrivial well-typed
+$\Pi$-beta path in the same intrinsic family; its endpoints are syntactically
+unequal, so it is formally outside the reflexive checker image.  Conversely, a
+raw beta step that erases an ill-typed argument has no inhabitant of the typed
+conversion family.  Thus there is one semantic wire with several earned native
+realizations, rather than either one universal conversion algorithm or several
+unrelated notions of judgment.
+
+This is also the intended path for Lean, Coq, and Megalodon integration.  The
+hosting layer can be reused for exact claim codecs, source identity, checked
+proof trees, proof-relevant interpretation, revision currentness, and admitted
+transport.  Each guest must still contribute its own declarations, universes,
+conversion, inductive principles, and trust boundary, together with the
+strongest honest preservation and reflection theorem for its represented
+fragment.  Sharing the waist therefore reduces integration work without
+pretending that CIC conversion, a higher-order set-theory kernel, and Prime's
+native computation are interchangeable.
+
 The target system boundary is therefore one reflective Prime, physically realized
 by \CeTTa{}:
 
@@ -519,6 +912,17 @@ Equality follows a proved profile architecture:
 \item Cubical structure and univalence remain possible future authorities and do
   not burden every core judgment.
 \end{itemize}
+
+The present strictly-positive indexed-family mechanism is therefore a precursor
+to, not a substitute for, higher inductive types.  A computational homotopy
+profile must additionally provide dimension contexts, face constraints,
+composition or filling operations, path constructors with boundary data, and
+canonicity for the selected fragment.  Indexed cubical inductive types give a
+particularly close precedent because they combine ordinary indexed
+constructors with higher-dimensional constructors and computational rules.
+Such a profile should extend the native family presentation and receipt fibres;
+it should not silently identify authored operational histories or impose
+univalence on every guest language.
 
 A concrete observational profile is proved to be a strict extension of the core;
 old derivations transport into it, the reverse inclusion fails, universes remain
@@ -718,9 +1122,14 @@ dependent inputs to a second Prime semantic term.  Its result is indexed by the
 target context, preserves the exact free-name support, and proves that an absent
 target name cannot appear.  This supplies the open-code half of I1 without
 pretending that semantic inhabitation already proves syntactic expressibility.
-Second, the GSLT-IL operation category
-must correspond fully and faithfully to a definable Prime fragment, so neither
-direction is merely an encoding convention.  Third, admission and its optional
+Second, the ambient GSLT-IL elaboration is a proof-relevant relation, while a
+declared typed profile earns a direct elaborator exactly when it is covered,
+determinate, and thin in the proof-history dimension.  On that represented
+fragment, exact selection supplies a companion, its conjoint, and the binding
+equations, and the Prime-internal fragment must correspond fully and faithfully
+to this represented action.  The ambient relation must not be collapsed to a
+function: a checked authored program has one surface command with two distinct
+valid elaborations, hence no global exact selector.  Third, admission and its optional
 receipts must be Prime operations and values, with the C path proved to realize
 them rather than bypass them.  Fourth, Prime's own language definition must be a
 transportable, inspectable \code{Data} value at a strictly higher level.  A
@@ -728,6 +1137,162 @@ standing design test follows: a proposed meta-operation is not part of GSLT-IL
 until it has a Prime-internal representative of the stated type.  The existing
 hygiene and functor laws now inhabit that representative; the reverse direction
 of the definability theorem and the other gates remain open.
+
+The ambiguous case now has a request-local native theorem rather than only a
+warning.  For one authored command, let
+\[
+  W(c)=\sum_t \mathsf{Evidence}(c,t)
+\]
+be its complete elaboration worlds, and retain an ordered finite history
+$W(c)^*$.  Three native faces expose, respectively, the history cardinality,
+the list of visible internal outcomes, and the complete outcome--evidence
+worlds.  They form an information order, but all three leave the retained
+semantic history unchanged.  A face enters an exact NIK request precisely when
+every requested dependent policy factors through its readout.  Therefore a
+complete-history request excludes the first two faces and has the full-world
+face as its unique strongest member.  Current activation returns the entire
+ordered history without replaying selection; a dependency change disables that
+face and returns the same history to fallback.
+
+The non-collapse theorem is the important part: this unique strongest
+\emph{observer} exists even for an authored profile with two distinct proof
+histories and no functional elaboration representation.  NIK has selected how
+much of an already-retained relational world a declared consumer may observe;
+it has not selected one world, manufactured a compiler, or converted loose
+semantics into a tight route.  Thus natural ambiguity and maximal-native
+realization coexist.  A language may remain relational at its semantic waist
+while earning direct, check-free kernels for exact observation or execution
+requests over that relation.
+
+Transport between languages sharpens the boundary.  An operational route does
+not automatically say how an elaboration proof in its source becomes an
+elaboration proof in its target.  Complete-world transport is therefore an
+additional typed-route capability with two components:
+\[
+  f_0 : \mathsf{Internal}_L \longrightarrow \mathsf{Internal}_{L'},
+  \qquad
+  f_1 : \mathsf{Evidence}_L(c,t)
+       \longrightarrow \mathsf{Evidence}_{L'}(c',f_0(t)).
+\]
+It maps the dependent sum $W_L(c)$ and hence every ordered finite history
+pointwise.  Identity and composition hold on both complete worlds and their
+lists; list length is invariant, and projecting visible target outcomes is
+exactly pointwise application of $f_0$.  This is a constructed forward map,
+not an assertion that every loose, represented, or operational route carries
+proof-history transport.
+
+Target observation policies pull back along this complete-world map.  All
+three native faces execute the same forward semantic operation, while their
+keys retain different amounts of the mapped target history.  The request for
+complete \emph{target} worlds therefore again has the full-world face as its
+unique strongest realization.  Revision-current NIK activation applies the
+retained map directly as both semantic operation and target policy input; a
+dependency change disables it and leaves the original source history intact
+for fallback.  No inverse is needed for this safe forward behavior.
+
+Reflection is a separate license.  Injectivity of the map on dependent worlds
+lifts to injectivity on ordered histories.  But a checked counterexample maps
+two distinct evidence constructors for one internal outcome to one target
+constructor.  The induced list map preserves two occurrence positions, yet the
+two singleton source histories have the same mapped target history.  Even the
+strongest complete-target-world observer therefore cannot distinguish them,
+while stale fallback still can.  In implementation terms, ``complete'' is
+always relative to the retained fibre: NIK may advertise source-history replay
+or source-sensitive caching only when the route additionally carries the
+reflection proof.
+
+The transport capability is now attached to the intrinsic typed route syntax,
+rather than floating beside it as an arbitrary evidence function.  Over a
+validated presentation, an evidence profile consists of an authored
+elaboration program and its proof-relevant command fibres.  A typed route
+between two such profiles contains a structural presentation morphism, a map
+of authored commands, an executable map of internal patterns, a proof that the
+executable map is pointwise the structural symbol action, a surface-naturality
+law, and the dependent evidence action above.  Identity and composition act on
+all of these fields together.  Assigning this displayed route data to every
+primitive generator therefore extends over the freely composed intrinsic route
+programs, and forgetting the displayed fields yields exactly the pre-existing
+structural path interpretation.
+
+This supplies the missing constructional input to maximal-native selection.
+Restricting a typed route at one authored command produces the
+complete-world map consumed by NIK, so current execution runs a function
+carried by the language operation itself; no route-name dispatcher or unrelated
+runtime transport is introduced.  Generator-level reflection proofs compose
+to injectivity for every intrinsic route program.  Conversely, the current
+typed \code{promote} program admits both a rich displayed interpretation which
+retains two distinct proof histories and a forward interpretation which maps
+them to one target history.  Both lie over the identical structural morphism.
+Thus structural route typing determines safe forward transport, while exact
+proof-history reflection is an independent capability.  The strongest kernel
+is consequently selected relative to a declared request and proved capability
+set, not guessed globally from the route's spelling.
+
+That last boundary is now exact for arbitrary dependent policy families.  Let
+$h$ map an ordered source proof history to its transported target history, and
+let $v_P$ be the complete vector of answers requested by a policy family $P$.
+The route supports $P$ precisely when there is a fixed runner $r$ with
+\[
+  v_P = r \circ h.
+\]
+Equivalently, every pair of source histories identified by $h$ must agree under
+every policy in $P$.  The factorization carries executable runners and installs
+directly into NIK's ordinary policy catalog; the fibrewise equivalence is a
+specification theorem, not a runtime synthesis oracle.  Global injectivity is
+sufficient for every $P$, but is not required for a particular request, and
+composition cannot recover a policy distinction already lost by a prefix.  In
+the checked canary, the non-injective \code{promote} route exactly preserves
+history length and is therefore admissible for that policy, while the same
+route is rejected for complete source-history replay.  This is the operational
+meaning of ``strongest justified kernel'': maximality is taken inside the exact
+request fibre, not in a universal order that would discard useful lossy
+realizations or silently erase provenance.
+
+Policy adequacy also composes, but its exact law is image-sensitive.  Suppose
+the first route maps histories by $h_1$ and realizes the source policy vector
+as $v_P=r_1\circ h_1$.  The function $r_1$ is the residual policy family on
+intermediate histories.  If the second route $h_2$ carries runners $r_2$ with
+$r_1=r_2\circ h_2$, executable composition gives
+\[
+  v_P = r_2\circ h_2\circ h_1.
+\]
+This is the constructive forward rule used by a composed native realization.
+
+The converse is true without qualification only on the propositionally
+certified image of $h_1$.  A reached intermediate history carries the
+proposition that some
+source history maps to it.  Composite policy support is equivalent to support
+of the residual family after restricting $h_2$ to precisely those reached
+histories.  If $h_1$ is surjective, this becomes an equivalence over the full
+intermediate history type.  Without surjectivity the unrestricted statement is
+false: a prefix runner may distinguish an unreachable intermediate history,
+the suffix may erase that distinction, and the source-to-target composite may
+still answer every source policy exactly.  The formal counterexample proves
+all three facts at once---composite adequacy, ambient suffix refusal, and
+non-surjectivity---while the reached-image suffix remains admitted.  Thus NIK
+neither rejects a safe composition because of impossible intermediate worlds
+nor advertises authority over worlds the composed program never reaches.
+
+This image certificate must not be confused with retained provenance.  The
+image subtype stores an intermediate history together with a proposition that
+some source reached it; it need not retain that source history as runtime data.
+The stronger \code{ProvenancedReachedHistory} stores the source and target
+histories plus their route equation.  It is equivalent to the complete source
+history, and its forgetful map to the propositional image is surjective.  That
+map is injective exactly when the typed route reflects complete histories.
+Consequently identity supports a direct provenance-replay policy, whereas the
+same collapsing route which safely supports history length provably refuses
+source-provenance replay: two distinct source proof histories have the same
+reached target key.  Exact replay, tamper checking, and provenance-sensitive
+caches must therefore retain the stronger key.
+
+The provenance carrier is constructional rather than archival.  A suffix maps
+it forward while retaining the original source endpoint, and the two
+parenthesizations of a three-route chain are canonically equivalent.  The
+resulting transport is associative under that equivalence.  Thus a native
+kernel chain may use the smaller reached image for a policy request and the
+larger provenance carrier for exact accountability, without either changing
+the route semantics or making cache identity depend on compiler parentheses.
 
 This architecture changes ergonomics because effects formerly hidden in a broad
 type become visible, typed term formers.  The target operator boundary is:
@@ -1145,10 +1710,11 @@ The policy name is the \textbf{Maximal-Native-Calculus Principle}; its precise
 formal content is \emph{structure-licensed maximal-element selection}:
 
 \begin{quote}
-For each guest and certified fragment, recognize a finite family of admitted
-calculus realizations, order it by a declared license order, and select a maximal
-licensed member.  Do not flatten a guest to generic replay, and do not impose
-structural rules or completeness claims which its presentation does not earn.
+For each guest, semantic request, certified fragment, and current dependency
+revision, recognize a finite family of admitted calculus realizations, order it
+by a declared license order, and select a maximal licensed member.  Do not
+flatten a guest to generic replay, and do not impose structural rules or
+completeness claims which its presentation does not earn.
 \end{quote}
 
 This is now packaged as a theorem.  A \code{RecognizedFamily} contains a finite
@@ -1160,8 +1726,122 @@ a maximal licensed index; selecting it adds no checker
 or replay layer, and semantic preservation follows from the selected admission
 arrow.  ``Maximal'' does not mean ``greatest'': a proved two-element discrete
 counterexample has two incomparable maximal choices and no greatest choice.
-Nor does it mean globally fastest: the license order concerns certified
-capability, while cost is a separate verified refinement.
+The exact positive boundary is also proved.  If the licensed family is
+upward-directed---every two licensed realizations have a licensed common
+upgrade---then every maximal selection is greatest and therefore dominates all
+licensed alternatives; partial-order antisymmetry makes that greatest member
+unique.  Thus a guest may advertise a canonical strongest
+kernel only after supplying common-upgrade closure; otherwise NIK exposes the
+maximal antichain and an explicit observation or cost policy selects among its
+incomparable members.  Nor does it mean globally fastest: the license order
+concerns certified capability, while cost is a separate verified refinement.
+
+Selection is now formalized at the granularity at which a runtime can honestly
+make that claim.  A \code{CapabilityRequest} cuts out a finite fibre by an exact
+if-and-only-if law: its candidates are precisely the currently licensed
+realizations supporting every requested capability.  This prevents a dispatcher
+from manufacturing a ``strongest'' answer by simply omitting a stronger
+candidate.  The operations and their semantic-preservation proofs are unchanged
+by restriction.  If the \emph{request fibre} is upward-directed, it has a unique
+greatest member, and the selected admitted operation still runs directly.  It is
+not necessary that the whole guest-wide family be directed: direct decision,
+proof construction, admitted flow, and boundary replay may be globally
+incomparable while a particular construction or checking request has one exact
+strongest realization.  Conversely, a checked request with two incomparable
+eligible realizations has no canonical strongest kernel; the formal negative
+example rules out replacing that fact by a hidden priority order.
+
+Observation requirements enter this same exact fibre rather than forming a
+second dispatcher.  A displayed policy catalog assigns each native realization
+a readout, a proof-relevant runner for every supported policy, and an agreement
+law with the policy's semantic answer.  The augmented capability universe is
+the disjoint sum of native capabilities and policy indices; candidate membership
+is the conjunction of the original native request and support for every policy
+in the requested dependent family.  Hence the existing maximal, greatest, and
+profitability-frontier selectors apply unchanged, while every selected member
+retains an executable realization of the complete policy family and factors
+onto its least sufficient answer vector.  The negative bounds are sharp:
+mutually unsupported policies yield an empty fibre rather than an invented
+runner, while an empty policy request leaves incomparable native calculi
+incomparable rather than manufacturing a greatest one.  Computational strength
+and observational adequacy are therefore independent request coordinates which
+meet only in an exact eligible fibre.
+
+Retention is likewise shared rather than synchronized by convention.  A
+generic revision-indexed policy admission stores the executable family realization
+at one NIK dependency revision; its prepared state contains both the selected
+readout and the complete semantic state.  A semantically maximal product
+candidate then retains its original native operation and this policy admission
+at the same revision.  Maximal, genuinely greatest, and cost-selected frontier
+members all construct the same retained object.  One currentness witness
+activates both hot functions, while a relevant dependency change makes both
+activations unconstructible and leaves the untransformed operation input and
+complete policy state available for fallback.  The generic policy layer is
+universe-polymorphic; the present adapter for executable admission objects is
+intentionally runtime-sized, pending the separate higher-universe operational
+generalization already identified by the native-admission boundary.
+
+Policy-family support is contravariantly stable under arbitrary semantic state
+maps.  If $m:X\to Y$, a family $F$ on $Y$ is executable from readout $r$, then
+$m^*F$ is executable from $r\circ m$ using the identical retained runners.
+Support reflects back to $Y$ when $m$ is surjective.  This boundary is exact:
+a proved non-surjective counterexample restricts away the target states which
+distinguish a policy, so its source readout becomes sufficient although the
+target readout is not.  Consequently route transport preserves every already
+justified native realization, but may reveal additional image-specific
+realizations only through a fresh recognition theorem; transport itself never
+mints them.
+
+The same law now transports maximal-native selection.  Pulling back a policy
+catalog leaves its native realization family, capability order, declared
+support, and exact request fibre unchanged, while precomposing only its states
+and readouts.  Therefore a maximal selection, or a genuinely strongest one
+when the request fibre has common upgrades, remains such in the transported
+catalog and runs the same retained function under the same revision witness.
+This is maximality relative to the exact transported catalog, not a claim that
+a non-surjective route has already enumerated every stronger kernel newly valid
+on its image.  The distinction permits aggressive language-relative native
+kernels without confusing a safe transported baseline with global optimality.
+
+The resulting dispatch law is therefore
+
+\[
+\begin{gathered}
+  (\text{guest},\text{judgment},\text{fragment},\text{revision},
+    \text{required native capabilities},\text{required policy family})\\[-0.2ex]
+  \longmapsto
+  \begin{cases}
+    \text{the unique greatest licensed realization},
+      &\text{if the exact fibre has common upgrades},\\
+    \text{the maximal frontier plus an explicit policy},
+      &\text{otherwise.}
+  \end{cases}
+\end{gathered}
+\]
+
+Only realizations with the same semantic source and target are compared inside
+one fibre.  A native constructor, a proof-producing kernel, and a certificate
+replayer with different boundary contracts are related by proved adapters or
+composition, not by declaring one globally larger.  Compatible kernels may earn
+a common upgrade---analogous to a reduced product of abstract interpretations or
+a cooperating combination of decision procedures---but the compatibility and
+preservation square are obligations, not dispatcher folklore.
+
+The first nondegenerate hosted instance compares a guest-native proof kernel
+with the same kernel exposed at an explicit certificate boundary.  They accept
+exactly the same native proof fibre, but their retained route receipts differ.
+A request for exact proof identity and certificate-free use selects the native
+face uniquely; a request for exact proof identity at an explicit trust boundary
+selects replay uniquely.  With neither boundary capability requested, both
+faces remain eligible and incomparable, and a checked negative theorem proves
+that no strongest member exists.  Selection is also dependency-current: an
+irrelevant revision-coordinate change retains direct native execution, whereas
+a relevant selected-dependency change makes activation unconstructible rather
+than silently choosing another face.  Even direct theoremhood decision and native
+proof checking can share the same accepted claims and the same
+certificate-free Boolean while remaining different entry constructors.  Thus
+neither a fixed mode priority nor a single ``needs certificate'' flag implements
+the maximal-native principle.
 
 The supporting theorem family places this selection between exact positive and
 negative bounds:
@@ -1214,6 +1894,793 @@ checking ABI.  This is also the common algebra for proof-rule admission, verifie
 MAM transformations, and Prime runtime specialization: a transformation proved
 once to preserve the relevant invariant may thereafter run on the fast path.
 
+\subsection{Accelerate, do not guard: checking is ingress}
+
+The native dependent theory is not an ordinary evaluator surrounded by a type
+filter.  Raw relational computation remains meaningful without a native typing
+derivation.  Conversely, once an exact typed object has been constructed, its
+introduction, elimination, transport, and admitted compositions construct their
+result judgments directly.  Re-running a checker in those interiors would discard
+the principal benefit of intrinsic typing.  The intended dependency is therefore
+
+\begin{lstlisting}
+raw Pattern
+  -- exact decode --> indexed query
+  -- check once ---> intrinsic evidence
+  -- construct ----> typed values and native operations
+  -- admit --------> a current maximal native realization
+\end{lstlisting}
+
+The current declaration-aware fragment now realizes this distinction at a
+nontrivial boundary.  A telescope of arity $n$ carries a
+\code{LevelSpine n}: one explicit universe annotation for each declaration.
+The intrinsic judgment \code{StructuralContextFormation} has an empty
+constructor and a snoc constructor whose premises retain both the previously
+formed telescope and a derivation $\Gamma\vdash A:U_\ell$.  Ordinary typing and
+context formation have disjoint canonical codecs.  Their coproduct is therefore
+one exact heterogeneous judgment waist, and
+\code{primeMeaning\_equiv\_sumFibre} identifies its universal proof fibre with
+the product of the two independent semantic views.
+
+Context formation is a validated \code{newJudgmentsOnly} extension of the
+structural presentation.  The forward theorem compiles every intrinsic context
+tree to an accepted raw artifact.  The reverse theorem
+\code{exists\_accepted\_raw\_iff\_nonempty\_contextFormation} reconstructs the
+intrinsic telescope from every accepted artifact at a canonical query.  This is
+not tautological checker parity: the checker consumes rule schemas and raw trees,
+whereas the interpretation targets an independently defined indexed family and
+retains its ordered premise evidence.
+
+Formed typing now extends that same rooted presentation rather than accepting a
+raw telescope on the side.  Its query retains the context level spine and the
+result universe level; its derived rule has three ordered premises:
+
+\[
+ \mathsf{Formed}(\Gamma,\vec\ell),\qquad
+ \Gamma\vdash A:U_\ell,\qquad
+ \Gamma\vdash t:A.
+\]
+
+The generic checker accepts the derived node exactly when the three component
+artifacts are accepted, and accepted packages reflect into
+\code{IntrinsicFormedTyping}.  The syntactic contextual object is then built from
+the reflected context evidence; no checker is stored in the resulting native
+term.  Swapping the two typing children is rejected, a wrong result-universe
+level is uninhabited, and an undeclared constant in the telescope supplies the
+decisive negative control: both old typing components remain inhabited, while
+the complete formed judgment and every accepted formed package are impossible.
+
+Authored nominal declarations now cross the same boundary without replacing
+source order by an extensional environment.  An executable
+\code{activeInventory} traverses the complete declaration list and retains a
+proof of the exact first occurrence for each active constant.  It emits a
+finite table of ground inference facts with collision-free identifiers; the
+ordinary V2 extension validator admits that table only as a fresh judgment.
+The theorem \code{checkRaw\_reflects\_active\_source} then classifies every
+accepted fact application and reconstructs its source occurrence, source
+index, entry, and displayed type.  A concrete active declaration has an exact
+one-node raw proof.  In the paired negative, every possible raw proof tree for
+a later same-name declaration is rejected.  Thus generated checking is an
+honest ingress for authored data, while already constructed hosted judgments
+continue through the stronger native route without interior replay.
+
+Authored equations now cross an analogous boundary without being flattened to
+endpoint equality.  A proof-relevant path through the complete declaration
+document records both the source position and the position in the filtered
+equation inventory.  Consequently constants may be interleaved with equations
+and two equations with identical endpoints remain distinct occurrences.  The
+generated ground-fact presentation passes the same V2 extension gate.  Accepted
+artifacts reflect to the exact path, while a claim whose source index points to
+an interleaved constant is rejected for every raw proof tree.
+
+This boundary also exposes why the generic checker is a floor rather than the
+maximal native realization.  The exact codec represents a de Bruijn variable as
+closed code{Pattern} data.  Generic schema instantiation therefore leaves that
+encoding unchanged, whereas Prime simultaneous substitution replaces the
+object-level variable.  The two operations are formally unequal on a concrete
+open term.  An authenticated equation enters native computation only after
+Prime substitution and endpoint typing; if the hosted declaration world carries
+uniform preservation, source typing constructs target typing without another
+check.  The resulting proof-relevant native receipt decodes to the exact source
+occurrence and substitution.  Thus a boundary proof says ``this authored rule
+is present,'' while the native DTT says ``this typed instance computes.''
+
+The distinction has both positive and negative native witnesses.  The canonical
+List eliminator equation is constructed from its exact authored occurrence,
+identity substitution, and intrinsic endpoint derivations, after which its
+conversion runs with no checker argument.  Conversely, the same authenticated
+List schema has a raw substitution instance containing an undeclared element;
+that raw reduction exists, but no typed occurrence at any proposed result type
+can be constructed.  Source authenticity, raw dynamics, and typed computational
+authority are therefore three related but non-collapsed capabilities.
+
+This negative control explains ``accelerate, do not guard.''  It does not revoke
+the raw term or its ordinary relational execution.  It prevents that term from
+claiming the stronger native capability whose construction requires a formed
+world.  Exact evidence may authorize typed dispatch, representation changes,
+proof-program composition, or deletion of impossible defensive branches;
+absence, staleness, or conflict leaves the raw semantics available.  NIK hosts
+this distinction and selects the strongest licensed native realization.  It does
+not turn typing failure into object-language falsehood, nor does it reduce Prime
+to repeated proof replay.
+
+The higher-order relational fragment supplies a concrete capability ladder.
+An intrinsically typed hypothesis program denotes a proof-relevant relation.
+If each primitive relation has an exact finite evidence fibre, structural
+recursion derives an exact finite provider for the whole program.  The chain
+case composes providers by dependent sum: an answer index retains the first
+occurrence, its actual intermediate target, and a second occurrence in the
+fibre over precisely that target.  Hence native search materializes every
+target--derivation occurrence without collapsing equal endpoints or losing the
+middle witness.  A successfully checked raw proof constructs this intrinsic
+program and its provider once at ingress; the resulting run operation consumes
+only that constructed plan and returns the complete occurrence bag.
+
+The capabilities are ordered by theorems, not a fixed mode number:
+
+\[
+  \text{functional representation}
+    \Longrightarrow \text{exact finite evidence search}
+    \Longrightarrow \text{proof-relevant relational meaning}.
+\]
+
+Both converse temptations are blocked.  A finite two-answer primitive earns an
+exact native search while admitting no functional representation, and a valid
+relation with a countably infinite proof fibre admits no finite provider at all.
+It remains meaningful in the ambient relational semantics.  Thus NIK may choose
+direct compilation for represented relations, complete finite search for
+finitely enumerable nondeterminism, or relational execution for the open case;
+none of these choices changes the authored relation, and no weaker capability
+may be promoted merely because it is operationally convenient.  The checked
+grandparent chain is the positive end-to-end witness; an ill-shared middle is
+the refusing control and cannot acquire a native-search plan from otherwise
+valid primitive providers.
+
+Strictly-positive families preserve this capability structurally rather than
+through datatype-specific evaluators.  For the native List relator, the empty
+spine has one proof occurrence and a cons spine has the product of one exact
+head occurrence with the recursively exact tail occurrence.  The polynomial
+List representation transports this index to the complete native
+\code{map-rel} evidence fibre.  Thus a finite provider for elements induces a
+complete finite provider for Lists, retaining equal-target multiplicity at
+every position.  If the element relation is functional, the stronger
+representation theorem identifies this relator with the graph of native
+\code{map}; if it merely has two finite proofs, both survive; if its singleton
+fibre is countably infinite, no finite List provider can exist.  These three
+cases turn ``choose the strongest native kernel'' into a proved capability
+order rather than a datatype dispatch convention.
+
+The construction is not specific to Lists.  Its generic source is an indexed
+container: at each output index a value consists of a shape together with one
+parameter value at every position of that shape.  This normal form generates a
+proof-relevant relation lifting without a datatype case split.  Two container
+values are related exactly when they have one common shape and their stored
+values are related at every position.  The generated lifting preserves
+identity and relational composition by proof-fibre equivalence; in the
+composition direction it retains one complete intermediate container and both
+pointwise derivations.  It also maps every functional representation to the
+graph of the container map.  These are constructional powers supplied by the
+description itself, not facts rediscovered by a post-hoc checker.
+
+Exact finite search is generated only from the additional theorem that every
+position fibre is finite.  The resulting provider index chooses one exact
+element occurrence at every position, and is equivalent to the complete lifted
+target--derivation occurrence.  Thus a declared lifting may separately carry
+finite-search preservation and functional-representation preservation; these
+capabilities transport across typed carrier equivalences and recurse over the
+generic higher-order hypothesis forms: primitive, proof-relevant chain, and
+data-former lift.  A whole hypothesis therefore earns exhaustive search or
+direct execution structurally from its constituents, rather than by matching a
+benchmark name.
+
+The separation is essential.  The positive reader container has countably many
+parameter positions.  It has the same lawful compositional relator and direct
+map theorem as List, yet lifting a two-way finite choice through it produces an
+infinite occurrence fibre.  It therefore cannot supply a finite-search
+capability.  A recursive indexed-polynomial description licenses native
+construction, dependent elimination, and iota computation; a separately
+represented parameter container licenses relation lifting and mapping; and
+finitarity licenses exhaustive native enumeration.  These implications are
+strict.  Polynomial List has both recursive and parameter-container views, but
+a second indexed polynomial stores its parameter in a negative function
+position.  Its recursive family is strictly positive by construction, yet the
+empty-to-unit map proves that no covariant parameter action, and hence no unary
+container representation, can exist.  The positive reader then separates
+parameter covariance from finitarity.  This is the capability ladder NIK may
+select from.  The remaining source theorem must elaborate an accepted authored
+family to its recursive indexed polynomial and prove exact constructor,
+eliminator, and computation agreement; an optional parameter-container view is
+earned only under a separate covariance/representation theorem.
+
+The representation boundary is itself exact rather than merely extensional.
+An objectwise equivalence from an authored family to a container extension
+transports the complete proof-relevant relator: identity witnesses move through
+the equivalence, and relational composition reindexes the entire intermediate
+object while retaining both component derivations.  Functional realizations
+and, when finitarity is present, finite occurrence providers transport through
+the same boundary.  The converse is now proved as well.  Any alleged generic
+finite-search lifting of the represented family transports back to its
+container; applying it to binary choice injects every parameter position into
+a distinct target--derivation occurrence.  Hence a unary container supports
+generic exact finite search if and only if all of its position fibres are
+finite.  Exact representation neither manufactures nor conceals this
+capability.  Graph agreement similarly identifies the generated direct
+realization with the functorial family map, whose identity and composition laws
+follow from the representation.  Consequently polynomial List reaches NIK with both
+nondeterministic answer occurrences intact and selects exhaustive finite
+search.  The positive infinitary reader instead selects direct pointwise
+execution for a functional relation while provably refusing general finite
+enumeration.  The parameter-negative family cannot construct this covariant
+bridge at all.  These cases make maximality request-local: NIK chooses the
+strongest operation justified for the particular judgment, rather than
+placing construction, mapping, and search in one artificial global order.
+
+The recursive checked List presentation now crosses the same boundary.  An
+accepted raw proof retains its authored endpoints and exact proof identity,
+constructs an intrinsically typed native \code{map-rel} term, and supplies an
+occurrence that the structural provider returns in its complete answer bag.
+The run operation uses only that provider.  A proof missing its recursive tail
+cannot construct the plan, although the surrounding relation remains available
+to ordinary relational execution.  Hence checking remains ingress, native
+construction remains the fast path, and capability refusal remains gradual.
+
+This ladder now feeds the revisioned NIK membrane directly.  Direct mapping and
+finite proof search are compared only after both inhabit one contract: a typed
+query must produce a complete bag of target--derivation occurrences.  For a
+represented relation, the direct operation strictly adds functional
+representation while retaining exact completeness and certificate-free use, so
+it is the unique greatest member of that request fibre.  For a genuinely
+nondeterministic finite relation, the singleton search family is strongest
+without claiming functionality.  The chosen arrow embeds unchanged into a
+revision-indexed operational refinement; current activation runs that arrow,
+whereas a relevant dependency change makes activation unavailable rather than
+silently selecting another face.  A checked recursive List occurrence survives
+this route, while the infinite-fibre counterexample cannot enter it.  Thus
+``strongest kernel'' is a theorem about a common semantic request and current
+evidence, never a global ordering of unrelated execution modes.
+
+The operational admission interface used by this concrete runtime bridge is
+presently small: its carriers live in \code{Type 0}.  The recognized-family and
+capability-selection mathematics is universe-polymorphic, but lifting the
+operational path API itself to higher universes remains a separate obligation.
+This scope boundary matters for Prime's cumulative tower and is stated rather
+than hidden by an implicit downcast.
+
+The native-selection and observation theorems now meet on the two checked MIL
+clients rather than only on finite canaries.  For both the learned grandparent
+chain and the strictly-positive \code{map-rel} program, the raw proof crosses
+the generic checker once, constructs its intrinsic typed program, derives its
+exact finite provider, and enters one revision-current NIK selection.  The
+selected operation and a family of result policies are retained together.  A
+current run returns the complete dependent search result---including every
+derivation occurrence---and its occurrence-count valuation without replaying
+the ingress checker or the selection proof.  In the four-mode Data algebra,
+this hot segment is exactly the certificate-free \emph{admitted-flow} mode:
+the checker remains at raw ingress, while the retained preservation arrow is
+the subsequent execution authority.  A relevant revision change
+disables the operation and policy runners together while retaining the exact
+query and complete result as fallback.
+
+This path now satisfies the abstract implementation contract generically, not
+only by inspection of the two clients.  A checked ingress state pairs the
+authored raw proof with a derivation whose erasure is exactly that proof.  The
+target state is the displayed graph of independent semantic evidence and its
+calculus-specific native artifact.  These become proof-relevant discrete
+execution objects connected by an observation-preserving cell; universe lifting
+allows the native evidence and artifact fibres to remain at their authored
+levels.  At a current revision the compiled trace is definitionally the retained
+graph embedding.  The raw codec decodes to the complete checked ingress, and the
+receipt codec decodes to the complete evidence/artifact graph.  Thus neither
+checking nor evidence reconstruction occurs inside active execution.
+
+The displayed gradual law now instantiates this abstract contract directly.
+Complete program plans form an exact codec for authored source programs, and
+promoting a typed island decodes to the same complete source whether or not the
+candidate evidence matches.  For rho execution, one gradual evidence state is
+encoded as one worldwise source-trace occurrence.  Current exact evidence
+compiles to its certified operational schedule; suspension, local blame, or a
+stale evidence revision compiles as the exact raw branch.  Staleness of the NIK
+implementation admission is an independent axis: it prevents activation while
+the prepared source trace remains recoverable through the raw codec.  In the
+contested-purse control, the compiled trace still contains both communication
+occurrences in source order and their targets remain distinct.  Hence an
+implementation may choose the strongest realization inside a raw fibre but
+cannot reinterpret that choice as selection among language-level alternatives.
+
+The boundary is sharp.  Generic raw checking succeeds exactly when an
+exact-erasing ingress exists for that same raw tree.  The learned grandparent
+proof inhabits the complete model and a dependency change disables activation
+while preserving its checked fallback; the ill-shared-middle proof has no
+ingress state.  Conversely, whenever two semantic graph points project to one
+artifact, no decoder from artifacts alone can be exact on both.  A compact hot
+artifact is therefore a valid receipt only after faithfulness is separately
+proved; otherwise the displayed graph is the minimal safe implementation
+boundary.
+
+Policy transport is now part of this abstract implementation contract.  Every
+admitted implementation model exposes the static proof-relevant trace map
+underlying its current compilation.  A target policy family pulls back along
+that map, reuses the same executable runners and dependency revision, and on a
+current run returns exactly the target answer after compilation.  Pullback is
+strictly compositional.  It also preserves maximal and genuinely strongest
+selection in the exact transported catalog, while a stale revision disables
+the pulled runner and leaves the complete raw trace available for fallback.
+
+The converse requires surjectivity and is intentionally absent in general.
+A checked unit-to-Boolean implementation reaches only one Boolean trace.  A
+collapsed readout is sufficient on that source image, yet it is insufficient
+for a target policy which distinguishes the reached Boolean trace from the
+unreached one.  Thus implementation transport safely inherits every admitted
+target policy, but a stronger kernel made possible by the implementation image
+must be earned by a fresh image-specific recognition theorem.  Transported
+maximality never masquerades as global optimality.
+
+This client also exercises the policy boundary sharply.  Its policy key is the
+complete dependent search result, so it supports exact-result and
+occurrence-count requests even though it forgets which native face produced
+the result.  Two receipts with the same result and different faces prove that
+the same key cannot support a face-sensitive policy.  The loss is safe exactly
+for the declared family, not globally.  Conversely, the ill-shared grandparent
+middle and the code{map-rel} proof missing its recursive tail cannot construct
+a native plan at all, so neither can be promoted by NIK merely because a finite
+provider exists nearby.  Thus typed construction, strongest justified native
+execution, policy-relative observation, and gradual refusal compose in one
+concrete path while remaining distinct mathematical capabilities.
+
+The gradual law now has a dependent formulation rather than only a slogan about
+plans.  Over each raw value $r$ sits a fibre of exact native evidence $E(r)$ and
+three evidence states: suspended, exact, and locally refuted.  Precision fills a
+suspension but never changes $r$; exact evidence and current blame are rigid.
+A constructional map
+
+\[
+  (f:E\to E')=(f_0:r\mapsto r',\;
+               f_1:E(r)\to E'(f_0r))
+\]
+
+always transports positive evidence.  Transporting a refutation requires the
+additional, separately named capability
+$E'(f_0r)\to E(r)$.  Without that exact-reflection map, the only sound forward
+image of cached blame is suspension.  Formed-context substitution instantiates
+the positive law using the native substitution theorem; revision mismatch
+instantiates invalidation.  Boundary demand is the existing proof-relevant
+call-by-need protocol: the first demand evaluates once, while a current cached
+value or stable fault is observed without another evaluation.
+
+Interaction supplies a nontrivial dependent instance.  Above an ordinary GSLT
+rewrite path $p:x\rightsquigarrow y$, exact evidence is an authenticated event
+path whose erasure is exactly $p$.  Exact evidence composes chronologically,
+precision is monotone in both operands, and a typed GSLT-IL route transports the
+event path while commuting with composition.  Intrinsic
+\code{Comp}\ensuremath{\rho}
+composition therefore constructs the exact composite and concatenates its
+occurrence history without an interior check.  A many-to-one language route may
+identify visible endpoints while retaining distinct occurrences; conversely, a
+component refutation does not become a refutation of an arbitrary composite or
+translation without a reflection/decomposition theorem.  The indexed protocol
+canary retains one authenticated communication for a one-field request while a
+two-field continuation at that index is uninhabited.  Thus dependent protocols,
+relational nondeterminism, and gradual fallback coexist without weakening kernel
+conversion or making observation a gate on execution.
+
+The same constructional law now reaches the ordinary dependent term formers.
+Displayed capabilities have both an ordinary product and a dependent sum.  The
+former combines independent function and argument evidence; the latter retains
+the fact that the expected type of a dependent pair's second component is
+obtained by substituting the first raw term into the codomain.  Lambda,
+application, pairing, identity formation, and reflexivity are then ordinary
+constructional maps of these fibres.  Exact premises construct the exact result
+judgment, whereas any suspended premise leaves the raw constructor available
+with suspended native evidence.  Precision is monotone.  A missing declaration
+provides the negative control: its absence refutes the proposed lambda body, so
+no typed lambda is manufactured, yet the raw lambda syntax is not deleted.  This
+is the native-kernel form of graduality: evidence changes which stronger
+computation can be constructed, not which unrelated raw syntax may exist.
+
+Prime's surface specification remains revisable under this architecture.  The
+stable commitments are homoiconic language-indexed data, relational and
+effect-aware computation, conservative raw execution, intrinsic construction,
+revision-aware admission, and ergonomic access to the strongest earned native
+calculus.  A current spelling or branded dialect point may change when doing so
+better realizes those commitments; the required preservation and non-collapse
+theorems make such a change explicit rather than silently redefining the
+language.
+
+\subsection{Semantic deltas forced by internalized GSLT-IL}
+
+Internalizing GSLT-IL is not merely the addition of a translation API.  It changes
+which distinctions Prime must preserve as language semantics.  The following
+deltas are therefore architectural requirements rather than current surface
+syntax commitments.
+
+\begin{enumerate}
+\item \textbf{Elaboration is relational before it is functional.}
+  One authored command may have several valid elaborations, carrying distinct
+  witnesses or proof histories.  Prime must be able to retain and inspect that
+  fibre.  A profile may expose a direct elaborator only after coverage,
+  determinacy, and history thinness have been established for the declared
+  fragment.
+\item \textbf{Languages and routes are ordinary indexed data.}
+  Quotation records the source language, and route application changes that
+  index.  A reverse route, exact round trip, or common abstract image is evidence
+  to construct, not an untyped string-conversion convention.
+\item \textbf{Typed construction changes available computation.}
+  Exact evidence can select a representation, direct kernel, eliminator,
+  parallel schedule, or fused realization whose result is constructed at the
+  indexed type.  It is not restricted to pruning a raw search after the fact.
+\item \textbf{Ambiguity is usable data, not an implicit error or hidden choice.}
+  The ergonomic default may enumerate the proof-relevant alternatives.  A user
+  or program may request a named profile, refine the context until one world
+  remains, or deliberately combine the alternatives under a declared
+  observation discipline.  No implementation may silently replace this fibre
+  by one representative and then claim reflection.
+\item \textbf{Observation and cost remain downstream.}
+  An observer may forget route history, and a scheduler may select one execution,
+  but neither quotient changes the underlying elaboration or execution fibre.
+  Exact replay and higher Cost iterations consequently retain the provenance
+  that a scalar readout can discard.
+\item \textbf{Graduality is capability monotonicity, not global gatekeeping.}
+  More precise evidence may authorize more native structure.  Failure to obtain
+  that evidence leaves unrelated raw reductions intact; staleness removes the
+  derived capability and returns to a semantically adequate route.
+\end{enumerate}
+
+The Cost$_1$ observation bridge makes the fifth requirement exact.  A selected
+normalization path is first realized as a proof-relevant operational schedule;
+the observation container $S$ is then the complete chronological list of wave
+events, including endpoints, funded-occurrence receipts, and step evidence.
+Work/span is a declared valuation $V$ of that retained list, and a scheduler
+score $Q$ may be derived only afterward.  Concatenating paths concatenates the
+exact event histories and composes their work/span values sequentially.  The
+factorization pulls back along any supplied operational realization of a
+Cost$_1$ domain object, without identifying the realization with its scalar
+value.  The separation is strict even on valid Prime executions: running two
+independent funded occurrences in opposite chronological orders yields unequal
+receipt histories but equal work/span.  Thus an equal scheduler value cannot
+justify replay, cache identity, or exchange of causal histories.  Constructing
+the concrete realization for the selected rho Cost$_1$ object remains a
+separate provider obligation; the observation theorem neither assumes nor
+manufactures it.
+
+This strict separation now feeds NIK at the appropriate abstraction boundary.
+The strongest eligible native semantics and the least sufficient observation
+key are different choices: the former determines how the computation runs,
+whereas the latter is relative to the policies a consumer requests.  Work/span
+is therefore admitted as an executable key for a work/span-only request, but
+the two-order collision proves that no such key can answer a request which also
+observes receipt chronology.  For that larger request, the dependent vector of
+all requested answers is the canonical least sufficient key; retaining the
+whole history is also sound but not required as the hot representation.  A
+current NIK activation evaluates the admitted keyed function directly.  A
+relevant revision change disables it and leaves the complete history available
+for fallback.  Thus scalar equality can authorize a scheduler readout without
+being promoted into receipt identity, replay authority, or a weaker execution
+semantics.
+
+The cache consequence has an exact information order, rather than a prescribed
+list of implementation fields.  For two keys on the same proof-relevant state,
+write $k_f \succeq k_c$ when a fixed forgetting map recovers $k_c$ from $k_f$.
+This relation is reflexive and transitive.  Policy support is monotone in this
+order: any observation computable from $k_c$ is computable from $k_f$.  A key
+with a left-inverse decoder refines every other key, and all exact keys are
+equivalent in the resulting preorder.  Rho's Cost$^2$ witness makes the order
+strict: the elaboration-provenance key refines the compact-term key, but not
+conversely.  Moreover, two elaborations collide under the compact key while a
+future Boolean policy distinguishes them, so every proposed compact decoder
+must return the wrong elaboration for at least one member of that pair.  This is
+the deterministic, proof-relevant analogue of Blackwell's comparison of
+experiments: more information is characterized by the decisions it can support
+after a common garbling, here strengthened from expected decision value to
+exact policy factorization and replay.
+
+This order is now connected to revision-indexed NIK admission without making
+receipt selection a second semantic authority.  Mere policy safety is a
+proposition, so it cannot by itself be the hot runner.  The admitted object
+instead retains each keyed function as data together with its factorization
+proof.  It is displayed over an already-admitted execution model: activation
+uses the same dependency-currentness witness, evaluation applies only the
+retained keyed function, and staleness disables the derived view while the raw
+execution representation remains available.
+
+For a policy-only request, the dependent tuple of all requested observation
+values is a canonical least key.  Every other admitted key forgets to this
+tuple, so it contains at least the distinctions required by the request; the
+canonical tuple contains no additional distinction.  An exact-replay request
+changes the capability fibre: every admitted key is then mutually refining
+with the identity key on the full state.  The Cost$^2$ counterexample exercises
+both boundaries.  Its compact term cannot realize even the concrete policy
+that distinguishes two elaborations, and it cannot realize exact replay;
+retained elaboration provenance realizes both.  Thus NIK may choose a small
+request-scoped key when that is proved sufficient without ever treating a
+lossy cache hit as an exact historical receipt.
+
+The same boundary now holds globally over the complete dependent Cost carrier,
+not only inside one fixed compact-term fibre.  Global compact erasure retains
+the term together with its free context, bound context, and sort, while
+forgetting the elaboration tree.  The existing Cost compiler is a section of
+this map.  Consequently a policy is computable from global compact syntax if
+and only if it is invariant under every change of elaboration evidence at fixed
+compact syntax.  More strongly,
+
+\[
+  \text{global compact key admits exact replay}
+  \quad\Longleftrightarrow\quad
+  \text{compact Cost erasure is faithful}.
+\]
+
+The forward implication extracts injectivity from the replay section; the
+reverse implication uses faithfulness to prove that recompiling the compact
+term recovers the original displayed elaboration.  Hence faithfulness produces
+an actual exact implementation codec rather than a serialization slogan.  In
+rho's Cost$^2$ witness faithfulness fails, but the entire compact value remains
+a valid, nonconstant hot-policy answer: its runner is the identity on compact
+syntax.  The identical key is refused when the request asks for exact replay,
+whereas the displayed elaboration key is admitted.  A backend may therefore
+cache and schedule from compact syntax without pretending that the cache entry
+is an auditable receipt.
+
+These conclusions are now sealed at rho's actual selected object, rather than
+remaining a theorem schema awaiting a first-layer configuration.  The
+finite-support hereditary configuration is definitionally the compact output
+of the unconditional rho Cost$_1$ domain object, and the required
+empty-parallel representative is proved for that executor.  Applying Cost
+elaboration to this selected output yields a genuinely nontrivial displayed
+fibre: it contains two distinct elaborations over one checked compact term.
+The complete laws-free Cost$^2$ package---nonfactorization, nonfaithfulness,
+non-subsingleton fibres, and a provenance-sensitive policy---therefore holds
+without premises.  At every NIK revision the compact value remains an admitted
+policy-only hot key, compact exact replay is refused, and retained displayed
+provenance admits the stronger request.  This closes the selected Cost$^2$
+boundary without choosing a second-layer compact normalizer or claiming a
+compact selected executor.
+
+This policy-relative boundary is stable under language transport.  A
+conservative Cost$_1$ morphism already maps the retained elaboration tree
+structurally, preserving its ordered boundary occurrences rather than
+recompiling it.  There is a corresponding map on the dependent compact
+carrier, and compact erasure forms a commuting square:
+
+\[
+\begin{array}{ccc}
+  E(L) & \xrightarrow{\mathrm{transport}} & E(L') \\
+  \downarrow k_L & & \downarrow k_{L'} \\
+  C(L) & \xrightarrow{\mathrm{compactTransport}} & C(L').
+\end{array}
+\]
+
+The square composes for successive displayed transports.  Therefore a compact
+policy on the target can be pulled back to the source, admitted once, and run
+from the source compact key with exactly the same answer it would return after
+transport.  This is the naturality law needed by NIK to move a licensed hot
+observation through a language route.  It deliberately does not identify a
+freshly compiled proof tree with the transported proof tree.  Rho's Cost$^2$
+counterexample remains: the compact policy is runnable, while exact replay
+still requires faithful erasure or a retained displayed receipt.  Functorial
+policy transport thus preserves acceleration without laundering provenance.
+
+The construction applies simultaneously to a dependent family of requested
+policies, whose result type may vary with the policy.  Each already-admitted
+target runner is precomposed with compact transport, and the same currentness
+witness activates the whole pulled-back family; no second dependency check is
+introduced.  Two successive pullbacks agree with observing the twice-
+transported retained state.  The pulled-back request is explicitly
+policy-only: an exact-replay capability is never inferred from the family of
+hot functions.
+
+The Cost specialization factors through the generic NIK theorem rather than
+forming a parallel admission doctrine.  First the target observation family
+pulls back along displayed Cost state transport.  Then the source compact key
+refines the transported target compact key through the lower horizontal map of
+the commuting square above.  Generic admission pullback followed by this key
+refinement yields definitionally the same keyed executable function as the
+direct Cost construction.  Thus semantic transport, representation
+refinement, current activation, and hot execution are separate proof steps but
+introduce no interior checker and no duplicate runner.
+
+Semantic admission, receipt sufficiency, and profitability now form three
+independent axes over one current dependency world.  A complete capability
+bundle is displayed over an already-admitted execution model: its receipt view
+establishes exactly the observations supported by a retained key, and an
+optional profitability receipt compares the complete source and target traces.
+Activation is inherited solely from the semantic admission.  The hot runner
+applies the admitted semantic map and the keyed policy function; no cost proof
+is passed through execution.  Positive and negative models prove that semantic
+admission plus an exact receipt cannot manufacture a false cost inequality,
+while semantic admission plus a true cost inequality cannot make a collapsed
+key support a distinguishing policy.  A relevant revision change disables the
+whole derived bundle and leaves exact raw fallback intact.
+
+The exact-fibre law of maximal-native selection places profitability on the
+correct side of the boundary.  If two licensed realizations support precisely
+the same requested semantic capabilities, then they have identical membership
+in that capability request.  An external cost preference may rank them only
+after the semantic fibre has been exposed; it cannot silently omit one and
+claim that the remaining realization is a stronger calculus.  This preserves
+the genuine partial order of native capabilities while allowing ordinary cost
+policy to choose among already-correct realizations.
+
+The two-stage selection itself is now formal.  Filtering an exact finite
+request fibre by semantic maximality produces a nonempty frontier.  For any
+declared linearly ordered cost observation, that finite frontier has a
+cost-minimal member, and its executable operation is still the original
+admitted arrow.  Cost therefore refines policy only within the Pareto frontier
+of native structure.  A concrete linear family proves the sharp negative:
+even when a weaker realization is assigned a lower cost, it cannot be selected
+because a strictly stronger eligible realization exists.  Conversely, two
+incomparable maximal realizations with equal cost are both valid selections.
+They are exchanged by a fixed-point-free symmetry, so no symmetry-invariant
+selected element exists.  A deterministic implementation must declare an
+additional tie policy; otherwise it retains both alternatives.  Enumeration
+order is not semantic evidence.
+
+The same separation applies inside typed optimization authority.  There is no
+universal ``optimization license'' whose mere presence authorizes every native
+transformation.  Instead, each hosted calculus supplies a proof-relevant
+judgment indexed by the exact source occurrence and the complete revision key.
+Deterministic dispatch binds its type and cardinality evidence to that key;
+storage reuse retains the actual lifetime and publication classification; and
+memo reuse retains both physical snapshots and the append-only derivation.
+The transformation-specific recognizer then proves the additional shape needed
+by that optimization.  A retained reference and a changed snapshot therefore
+remain well-classified native judgments while correctly failing optimization
+admission.  Profitability is evaluated only after this semantic boundary.
+
+The generic optimizer now enters maximal-native selection conservatively.
+Observational adequacy proves that ordinary and compiled execution inhabit one
+semantic fibre, but it does not by itself order their computational
+capabilities.  A semantics-only request therefore retains two incomparable
+maximal faces, on which a declared profitability projection may select without
+pretending to discover stronger calculus structure.  An explicit request for
+the compiled artifact instead filters to exactly the compiled face and has a
+unique strongest realization.  Constructing that request requires both the
+source-and-key-indexed native judgment and the shape witness returned by the
+optimization's own recognizer.  Thus a hosted calculus can add a stronger
+artifact-specific order when it proves one, while the common NIK selector never
+manufactures such an order from extensional equality alone.
+
+The selected face and the abstract Prime implementation contract now form one
+commuting implementation triangle.  Given the same source-and-key authority and
+recognized shape, the request-selected hot operation emits definitionally the
+same compiled artifact as the implementation model's exact receipt codec.
+This definitional agreement is interface coherence, not a correctness oracle:
+the independently authored adequacy theorem proves that their shared target
+observation equals the source observation.  Both activations use the complete
+optimization key as their sole currentness boundary.  Changing any coordinate
+disables both while the exact source trace remains decodable from raw fallback;
+failure to recognize the required shape prevents construction of the selected
+implementation path in the first place.
+
+The Metamath assertion client makes this ordering executable rather than
+merely illustrative.  Its ordinary ordered scan and immutable prepared index
+are two actual functions into one exact observation fibre.  The equality of
+compiled keyed lookup with authored source lookup grounds the additional
+capability of the prepared face; it is not a nominal flag.  Consequently the
+exact request has the prepared index as its unique greatest realization.
+Exact ordered results and observation count are retained as independent
+policies at the same revision, while two equal result lists with different
+execution faces prove that the result-only key cannot answer a face-sensitive
+policy.  Staleness disables the selected operation and its policies together
+but retains the full query list and receipt.  Even a deliberately adversarial
+cost assigning the raw scan a lower number cannot select it from beneath the
+semantic maximal frontier, and an ambiguous duplicate-label table cannot
+construct the validity evidence needed to enter the family at all.  Fused
+substitution then composes as a separately admitted transformation after exact
+record selection.  It is not inserted into a false global ranking with lookup
+realizations that have a different semantic contract.
+
+This client now also closes the concrete implementation-policy square.  One
+valid authored assertion occurrence compiles to an artifact state whose trace
+is read as a proof-relevant lookup receipt.  The receipt returned by running
+that compiled trace is equal to the receipt returned by the uniquely strongest
+prepared-index policy: physical queries, ordered observations, occurrence
+multiplicity, and native execution face all agree.  Exact-result and
+occurrence-count policies therefore pull back through the implementation at the
+same complete optimization key, and their selected source runners reduce to
+the artifact runners without an interior checker or dispatcher.  A dependency
+revision change disables both policies and leaves the ordinary authored trace
+available; a duplicate-label source cannot construct the validity evidence
+needed for selection.
+
+There is a useful asymmetry at the image boundary.  Every trace produced by
+this compiler has the prepared face, so a fresh image-specific recognizer can
+soundly expose that capability.  The transported result-only catalog does not
+acquire it automatically.  This is the concrete form of the general
+non-surjective boundary: compilation may make a stronger native realization
+provable on its image, but transport preserves only declared policies.  NIK
+must earn the new face by recognition rather than mint it from an implementation
+map.
+
+\subsection{Observation domains are generated, not guessed}
+
+The observation architecture is now factored into five independently varying
+layers: a proof-relevant indexed execution, its event history, a retained
+witness container $S$, a semantic readout $S\to V$, and an optional scheduler
+readout $V\to Q$.  Chronological and certified-independent composition are
+capabilities on $S$, not consequences of possessing a value or a scheduler
+score.  Failure of a partial collector omits an observed execution article; it
+does not remove the underlying GSLT path.
+
+The information required by a scheduler is determined by its complete declared
+policy family, not by an a priori demand for either scalarity or faithfulness.
+For dependent policies $p\in P$ over an operational state $s$, let
+$\vec p(s)=(p(s))_{p\in P}$ be their answer vector.  This vector has an exact
+universal property: it is itself sufficient, and every sufficient readout
+$q(s)$ admits a fixed map $q(s)\mapsto\vec p(s)$.  Thus it is the least
+informative sufficient readout for that request.  Reindexing to a smaller
+policy family projects the vector and cannot invalidate an already sufficient
+readout.  Conversely, one collided pair separated by any requested policy
+refutes the whole readout.  A concrete history model shows why this is sharper
+than ``lossy is bad'': length alone is a lossy but sufficient view for a
+length-only policy, while the identical view becomes insufficient as soon as
+an order-sensitive policy is added.  NIK may therefore retain rich semantic
+state and activate a cheaper view exactly when the requested answer vector
+factors through it.
+
+The Cost$^2$ receipt-key admission is now an explicit instance of this generic
+law rather than a parallel policy theory.  Its retained keyed runners form the
+generic executable family realization, and the universal property rederives
+the existing refinement from every admitted key onto the request vector.
+For a policy-only request the passage is bidirectional: converting into generic
+GSLT policy admission and back preserves every keyed hot function exactly, and
+current activation transports with the same dependency witness.  Exact replay
+remains additional structure rather than a consequence of this equivalence.
+Replay remains orthogonal: a collapsed Boolean key realizes a constant policy
+family while a two-state collision proves that no decoder can recover the
+semantic state.
+
+An operational observation domain may contain more than the flat image of event
+histories.  It can also contain plans built from already observed containers by
+chronological composition or by an independently parallel operation carrying an
+explicit separation witness.  The proof-relevant construction generated by
+these clauses now satisfies its advertised universal property.  Write
+$\mathsf{CapGen}(c)$ for membership in the generated domain and
+$\mathsf{Closed}(D)$ when $D$ contains histories and is closed under the
+supplied licensed operations.  Then
+\[
+ \mathsf{CapGen}(c)
+ \quad\Longleftrightarrow\quad
+ \forall D,\; \mathsf{Closed}(D) \Rightarrow c\in D.
+\]
+The forward direction is induction over the complete construction tree; the
+reverse direction instantiates the quantified domain with the generated domain
+itself.  Thus ``least'' is a theorem rather than an informal reading of an
+inductive definition.
+
+This universal property is stable under every represented GSLT-IL route.  The
+target collector and its declared chronological and independently parallel
+operations pull back to the source event stream, while the authorization family
+is retained unchanged.  The resulting source domain is again exactly the
+intersection of all source domains closed under those transported capabilities.
+The container, readout-value, and authorization universes vary independently;
+transport therefore does not identify evidence with its value or turn a route
+license into a parallelism license.
+
+A finite Boolean model proves strictness.  Every raw history collects to
+\code{false}, while an authorized parallel composition of two such histories
+constructs \code{true}; consequently capability closure strictly extends flat
+history reachability.  Replacing the permission family by the empty type makes
+the same parallel article uninhabitable.  Neither commutativity, route
+representation, nor scheduler preference can manufacture the missing
+authorization.  This is the observation-level form of the wider rule that a
+performance opportunity is not an execution right.
+
+This combination has substantial neighbours but no single cited predecessor is
+being claimed to supply it whole.  Matthews and Findler compose operational
+models of multiple languages; Ranta's GF places typed abstract syntax between
+multiple concrete syntaxes; Shulman's framed bicategories distinguish maps from
+proarrow-like loose structure; Stay and Meredith give a higher-categorical
+operational model of the $\pi$-calculus; Winskel-style event structures and
+Nester's concurrent process histories retain causality and alternatives;
+dependent session types internalize value-sensitive protocols; gradual type
+theory studies precision and embedding--projection structure; and typed assembly,
+proof-carrying code, and translation validation establish check-once or
+type-preserving native execution.  The prospective contribution here is their
+conjunction in one homoiconic, language-indexed, proof-relevant equipment with
+reflective rho nondeterminism, intrinsic dependent construction,
+revision-indexed admission, and several declared observation and cost
+valuations.  Priority for that conjunction remains a literature-review question,
+not a consequence of terminology or title search.
+
 \subsection{Proof objects, GSLT-IL, and the bootstrap boundary}
 
 The native theory retains proof-relevant evidence rather than reducing it to
@@ -1264,6 +2731,32 @@ are impossible.  This supports progressively smaller trusted bases and eventual
 verification of fast implementations without changing their runtime cost model.
 It does \emph{not} prove same-level semantic self-consistency, and it supplies no
 provenance merely from the existence of a level number.
+
+The intended reflective closure is stratified rather than circular.  The
+List--identity package now supplies the lower direction from authored source to
+a formed native host with exact proof-fibre agreement between authored and
+native computation receipts.  That authored elaboration and interpretation is
+also a proof-relevant GSLT-IL route: the intermediate declaration inventory is
+retained, yet the route is represented exactly by the direct semantic
+interpretation map.  The converse relation, from an extensional signature to
+all compatible authored source worlds, is provably not representable by any
+single source-producing map, because interpretation forgets genuine authored
+distinctions.  The native List--identity document is a concrete inhabitant of
+the forward route.  Thus source interpretation can be compiled without search,
+while reflection remains honestly relational instead of selecting an arbitrary
+source world.
+
+At level $n+1$, level-$n$ source and its retained route evidence may themselves
+be quoted and inspected.  The source-to-open-conversion seam is now generic:
+authenticated schemas instantiate through native simultaneous substitution and
+enter the typed conversion fibre exactly when their endpoint evidence permits.
+What remains for fully automatic family admission is stronger and more honest:
+derive the required formation and uniform preservation capability for every
+accepted strictly-positive declaration package, rather than postulating it or
+recovering it from raw support.  Lower-level formation, elimination, and native
+computation do not depend on that later derivation, and no same-level fixed point
+justifies its own rules.  Self-description is therefore a stratified capability
+of the tower rather than an extra premise of the first native kernel.
 
 \subsection{Space operators, quantified queries, and operational polarity}
 
@@ -1503,6 +2996,243 @@ higher witnesses remain open.  In particular, the raw generated syntax is proved
 not to collapse a reflexive vertical composite definitionally, which prevents an
 unearned coherence claim.
 
+The dependent second-$Sigma$-beta boundary above is a small concrete reason this
+extra dimension matters.  Two substitution orders can have the same typed
+endpoints and the same transported term reduction while retaining differently
+shaped derivations of type conversion.  Endpoint equality is therefore too thin,
+and literal equality of proof trees is too strict to assume.  A bicategorical
+completion should relate the trees by a generated coherence 2-cell; an
+$(\infty,2)$-completion should retain transformations between such cells rather
+than forcing all coherence proofs into one quotient.  The present strict squares
+embed as the degenerate cells where that comparison is judgmentally immediate.
+
+The candidate comparison is now checked rather than merely heuristic.  Two
+reflexive conversion histories over the same endpoint have different
+constructor counts, so no endpoint-only readout can reconstruct even that
+coarse receipt observation.  The histories are not equal as proof trees, yet a
+free authored generator relates them without identifying them.  Conversely,
+the raw generated cell syntax is not definitionally left-unital.  These three
+controls rule out both the endpoint quotient and literal receipt equality as a
+universal solution, while also preventing the free syntax from being presented
+prematurely as a bicategory.  For dependent second-$\Sigma$-beta, the two
+substitution routes are aligned to literally common type endpoints and become
+one proposed generator of this free syntax; semantic adequacy and the unit,
+associativity, interchange, substitution, and observation coherences remain the
+selection gate.
+
+The common layer beneath these candidates has now been extracted.  A raw
+one-cell base supplies objects, retained one-cells, and binary composition; a
+parallel generator family then freely builds comparison cells by reflexivity,
+vertical composition, and left/right whiskering.  For every target family that
+interprets those five constructors, the type of structural extensions is
+contractible.  This is a relative initiality theorem over the fixed retained
+one-cell base, not a claim that the one-cells already satisfy category laws.
+The existing GSLT generated cells are exactly equivalent to this common syntax,
+as are the dependent structural-conversion cells.  Both equivalences preserve
+complete constructor trees in both directions.  The dependent
+second-$\Sigma$-beta comparison is therefore an attached two-generator in the
+same raw language as an authored operational optimization diamond.
+
+Initiality and reflection are now separated at theorem level.  Any
+interpretation of primitive comparison generators extends uniquely over the
+complete raw cell syntax, but uniqueness of that extension does not make it
+faithful.  A fibrewise retraction of the primitive-generator interpretation
+induces an injective map on all generated cells, including their vertical and
+whiskering history; a fibrewise equivalence induces an exact equivalence of
+complete cells.  Conversely, identifying two distinct primitive generators
+provably identifies two distinct complete cells even though the corresponding
+extension space remains contractible.  Thus a GSLT-IL realization may advertise
+structural interpretation unconditionally, structural reflection only with
+split evidence, and exact lossless transport with invertible evidence.  This is
+also the selection boundary for a maximal native kernel: a faster face may
+discard proof history only when its declared observation factors through that
+discarding, while a proof-sensitive face must retain or reconstruct it.
+
+That selection boundary is now executable as an exact NIK request rather than
+only stated as a criterion.  A split generator map realizes every dependent
+policy family by reconstructing the complete source cell.  A non-split map
+which collapses two authored receipts still realizes the constructor-shape
+policy, because structural recursion preserves constructor count, but it
+cannot realize the family containing a receipt-identity policy.  Placing the
+collapsed and retained maps in one admitted two-member native family therefore
+leaves both eligible for a shape request and removes the collapsed member from
+the exact receipt request.  The strongest receipt selection executes the
+original retained admission arrow and factors onto the complete requested
+answer vector; it neither inserts a checker nor guesses the erased receipt.
+Lossiness is thus judged relative to an explicit consumer family, while
+accountability-sensitive distinctions are conserved whenever any declared
+consumer can observe them.
+
+Primitive-generator loss is not the only boundary.  A higher completion may
+also identify composite cell trees, for example a comparison preceded by a
+reflexive vertical cell.  The common free-cell layer now carries two generic
+structural observations: authored-generator count ignores reflexivity and is
+invariant under vertical units and reassociation, whereas raw-constructor count
+retains the inserted unit.  On Prime's concrete dependent receipt comparison,
+the generator-count key identifies the unit-padded and unpadded cells and
+executes the corresponding unit-insensitive policy.  The same key is provably
+insufficient for the family that also requests raw construction history; in
+fact, every key identifying that pair is insufficient for the stronger family,
+while the retained cell itself supports both observations.  Thus unit
+coherence is neither globally denied nor silently imposed: it is a
+capability-indexed observation.  A strict or bicategorical compression may be
+selected for consumers invariant under its equations, while a
+history-, accountability-, or repair-sensitive consumer retains the raw
+computad or an equivalently faithful key.  This supplies a theorem-sized
+compatibility gate for any later bicategorical or $(\infty,2)$ completion
+without choosing that completion prematurely.
+
+Reassociation supplies an independent control against mistaking one statistic
+for the gate itself.  The left- and right-associated Prime receipt trees have
+equal authored-generator counts and equal total constructor counts, but their
+raw constructor shapes differ.  A third policy requests that shape, and every
+key identifying the reassociated pair is refused for the enlarged family.
+Interchange supplies the parallel control.  Horizontally composing two
+dependent receipt cells has two raw readings: whisker the left comparison
+across the source of the right and then the right across the target of the
+left, or perform those transports in the opposite order.  The two readings
+have the same endpoints, authored-generator count, and total constructor
+count, but different raw shapes.  Consequently the generator-count key is an
+executable sufficient readout for a work-like request and is provably
+insufficient for a request that includes construction history.  The exact raw
+cell remains sufficient for both.  A strict interchange law is therefore an
+earned observational compression, not a global equation imposed on Prime's
+proof-relevant receipts.
+The corresponding revision-indexed NIK instance constructively admits the
+generator-count runner for the small request and the retained-cell runner for
+the full request, while proving that no generator-count admission can inhabit
+the full request.  Current activation invokes the stored keyed function;
+changing its dependency revision prevents activation and leaves the complete
+horizontal cell available for gradual fallback.
+
+Substitution supplies a second, independent maximal-native boundary.  A map on
+the one-cell base does not by itself transport proof-relevant cells: each
+primitive comparison generator must also have a target generator with the
+substituted endpoints.  Such a generator-naturality witness extends uniquely
+by structural recursion over reflexivity, vertical composition, and both
+whiskerings.  For Prime's dependent conversion receipts, the resulting
+nonidentity closing substitution preserves authored-generator count, total
+constructor count, and complete raw shape.  A target family with an empty
+generator fibre cannot construct the witness.  NIK can therefore place exact
+source retention and strict target-cell construction in one recognized family,
+select the latter as the unique strongest face for the target-cell request,
+and activate it only while its declaration revision is current.  Staleness
+removes that native activation without consuming the complete source cell.
+
+One strict transport and a composable family of strict transports are
+different capabilities.  The proof-relevant root interface supplies actions
+of renaming and substitution, but functorial use additionally requires
+identity and composition coherence for those actions.  This requirement is
+not derivable from their types: a checked countermodel leaves evidence fixed
+when source and target arities agree and increments it when they differ.  It
+preserves identity substitution, yet a round trip through a different arity
+increments twice while the composite identity increments zero times.  Hence a
+native kernel may earn one-step generator transport without earning fusion of
+successive substitutions.
+
+The canonical retained Prime root now earns the second license.  Its authored
+root witnesses are propositions, so proof irrelevance supplies the root action
+laws; dependent induction then lifts those laws through every structural
+constructor.  Identity and composite substitutions preserve the complete
+primitive-step receipt and the complete reflexive--symmetric--transitive
+conversion tree, including intermediate terms, binder liftings, and beta
+receipts.  The result is deliberately heterogeneous equality: substitution
+changes indexed endpoints propositionally, while retaining exactly the same
+proof-relevant construction.  Chaining kernels therefore require two licenses:
+this now-proved retained-root coherence, and a functorial generator action for
+the authored comparison family.  The latter is not manufactured by the former,
+but the tagged Prime receipt family proves it independently.  The two laws then
+lift through the complete free cell and establish, for every dependent cell
+$C$, the heterogeneous equality
+\[
+  \mathsf{Sub}_{\tau}(\mathsf{Sub}_{\sigma}(C))
+  \mathrel{\simeq_{\!h}}
+  \mathsf{Sub}_{\tau\circ\sigma}(C).
+\]
+This is not endpoint agreement: every primitive comparison generator,
+intermediate vertical node, and left or right whiskering is retained.  A
+nontrivial close--then--reopen substitution supplies the positive control.  A
+generator action whose local maps stamp each arity change supplies the negative:
+it has every individual map but cannot inhabit the functoriality interface.
+
+NIK can therefore expose a three-face request-local family: exact source
+retention, successive strict transport, and one direct composite transport.
+This is now an instance of a generic theorem.  Given two admitted stages
+$f:A\to B$ and $g:B\to C$, a direct operation $d:A\to C$, and a declared
+observation $o:C\to O$, the square
+\[
+  o(d(x)) = o(g(f(x)))
+\]
+generates the three-face maximal-native family.  The request for direct
+composition has the direct face as its unique strongest member; admission at a
+dependency revision stores that operation, current activation runs it without
+rechecking the square, and loss of dependency currentness makes the operation
+unavailable.  Identity observation gives exact result preservation.  A checked
+parity counterexample shows why equality under a coarser observation must not
+be advertised as exact composition.
+
+Prime's dependent receipt instance requires a more careful exact observation.
+Successive and direct substitutions have propositionally transported indices,
+so their raw Lean packages need not be propositionally equal.  The observation
+retains the literal source and quotients the complete target cell only by
+heterogeneous equality.  Quotient exactness proves that two observed target
+classes are equal if and only if the entire dependent cells are heterogeneously
+equal.  Thus the comparison forgets index-transport bureaucracy but neither
+receipt provenance nor cell-constructor history.  The instance constructor
+requires both the retained-root and generator laws.  This separation lets NIK
+choose the strongest proved kernel rather than silently upgrading local
+correctness into a global functor law.  The ordering records semantic
+constructional capability, not predicted speed: profitability remains a
+separate measurement-backed admission.
+
+More generally, for any nonempty retained state, a readout supports a dependent
+policy family if and only if every two states in one readout fibre agree under
+every requested policy.  The forward direction is constructive.  The reverse
+existence theorem is classical only because a total runner must assign answers
+to unreachable keys; when the readout carries a concrete section, the full
+equivalence is constructive.  NIK therefore stores an executable realization
+and its agreement proof.  It does not invoke the extensional theorem as a
+runtime synthesis oracle.  This is the precise distinction between a
+mathematical criterion for the strongest admissible compression and an actual
+native kernel implementing that compression.
+
+This construction is computad-shaped in the precise modest sense needed here:
+generators and their globular boundaries are retained, and structural recursion
+supplies the universal interpreter.  Street's computads, Burroni's polygraphs,
+and the modern inductive account of Dean--Finster--Markakis--Reutter--Vicary are
+the direct higher-categorical precedents.  Their fuller free strict or weak
+$\omega$-categorical completions are not being claimed.  Prime has fixed the
+common input to such completions while leaving their equations or higher
+witnesses reviewable.
+
+The present identity theory is intensional dependent type theory with native
+identity formation, reflexivity, substitution, and a dependent eliminator; it
+does not postulate univalence, higher inductive types, or an extensional collapse
+of paths.  A homotopy interpretation should therefore be added as a model of the
+same intrinsic syntax, or as an explicitly stronger hosted calculus, rather than
+by silently identifying proof-relevant operational paths.  In such a model,
+univalence can classify equivalences of data fibres, higher inductives can
+present quotient-like spaces while retaining their path constructors, and
+truncation can state exactly which proof or occurrence distinctions an observer
+forgets.  The strict outer presentation and proof-relevant operational receipts
+remain useful even when the inner semantic fibres are homotopical.
+
+For GSLT-IL specifically, represented tight routes and ambient relational loose
+routes already motivate the more structured equipment layer: representable
+routes earn companion and conjoint cells, while genuinely relational routes do
+not acquire a fictitious global elaboration function.  A future higher
+completion should enrich this interface, not replace it.  Its homs would become
+$\infty$-categories and its current cells would be recovered by homotopy
+2-truncation.  Riehl--Verity's virtual equipment of modules and Ruit's
+$\infty$-equipments provide direct precedents for this shape; Riehl--Shulman's
+Segal and Rezk types provide an internal language for coherently associative
+directed composition.  Two-level type theory supplies the complementary
+stratification: a strict outer layer can organize syntax, stages, and coherence
+diagrams while a fibrant inner layer supports homotopy-sensitive identity and
+univalence.  Operational histories, evidence occurrences, and receipts are not
+identified merely because their current observations are equivalent; any such
+forgetting remains an explicit truncation or quotient.
+
 ``Ultrainfinite'' names a two-variance ambient programme, not a completed
 $(\infty,1)$- or $(\infty,2)$-category.  Filtered compact stages map into an
 ambient GSLT (the Ind-like growth direction), while a cofiltered atlas projects
@@ -1551,6 +3281,28 @@ witness.  This closes the index-independent descent core only; migrating the
 successor-indexed quotation and universe tower remains open.
 
 \subsection{Status boundary and division of exposition}
+
+The current consolidation unit is
+\code{NativePrimeTheoryCrown.lean}.  It is deliberately an intentional leaf
+gate rather than an import of the repository-wide umbrella.  A successful
+build of this leaf establishes that the named Prime, GSLT-IL, NIK, observation,
+and Cost interfaces typecheck in one dependency graph.  It does not by itself
+establish production-umbrella promotion, a concrete runtime refinement, or the
+absence of dependencies on a still-active provider proof.
+
+Production promotion should preserve four separately checkable layers.  The
+first is the language-independent and Prime-native mathematical core: typed
+routes, proof-relevant execution, intrinsic dependent construction, gradual
+fallback, and revision-indexed admission.  The second is the Cost annex:
+abstract receipt and valuation laws first, followed only after its seal by the
+selected rho Cost$_1$ provider and Cost$_2$ nonfactorization corollaries.  The
+third contains guest instances such as Metamath, GDL, and higher-order
+relational learning.  The fourth is the abstract implementation-model contract
+and its eventual CeTTa refinement.  Each layer needs its own positive and
+refusing controls and its own build gate.  In particular, a concrete Cost
+provider must not become an accidental prerequisite for staging unrelated
+Prime or GSLT-IL theorems, and a checked mathematical crown must not be cited as
+evidence that the production C path already realizes it.
 
 At this revision the combined Lean modules for the \NIK{} metalogic and native
 type-theory derivation build together, their public theorem audit uses only the
@@ -1722,6 +3474,136 @@ self-consistency from the bootstrap index.
   translation of proof objects; stronger conservativity is separate).
 \item B. Ahrens and P. L. Lumsdaine, ``Displayed Categories,'' 2019
   (indexed object/morphism families without an assumed lifting property).
+\item C. A. Hermida, \emph{Fibrations, Logical Predicates and
+  Indeterminates}, University of Edinburgh, 1993
+  (indexed proof families and substitution as fibred transport).
+\item B. Jacobs, ``Comprehension Categories and the Semantics of Type
+  Dependency,'' \emph{Theoretical Computer Science} 107(2), 1993,
+  169--207 (dependent fibres, comprehension, and cartesian reindexing).
+\item R. Street, ``Categorical Structures,'' in \emph{Handbook of Algebra},
+  vol.~1, 1996, 529--577 (computads and free higher-dimensional categorical
+  structure generated from globular data).
+\item A. Burroni, ``Higher-Dimensional Word Problems with Applications to
+  Equational Logic,'' \emph{Theoretical Computer Science} 115(1), 1993,
+  43--62 (polygraphs as higher-dimensional presentations of rewriting and
+  equational reasoning).
+\item C. Dean, E. Finster, I. Markakis, D. Reutter, and J. Vicary,
+  ``Computads for Weak $\omega$-Categories as an Inductive Type,''
+  \emph{Advances in Mathematics} 450, 2024, 109739 (explicit inductive free
+  words and universal weak higher-categorical completion).
+\item D. Ara, A. Burroni, Y. Guiraud, P. Malbos, F. M\'etayer, and S. Mimram,
+  \emph{Polygraphs: From Rewriting to Higher Categories}, Cambridge
+  University Press, 2025 (low-dimensional coherence, rewriting, and the
+  homotopy theory of polygraphic presentations).
+\item M. Shulman, ``Framed Bicategories and Monoidal Fibrations,''
+  \emph{Theory and Applications of Categories} 20 (2008), 650--738
+  (companions, conjoints, and map-like structure inside a double-categorical
+  ambient semantics).
+\item E. Riehl and D. Verity, ``Kan Extensions and the Calculus of Modules for
+  $\infty$-Categories,'' \emph{Algebraic \& Geometric Topology} 17(1), 2017,
+  189--271 (modules and representables in a virtual $\infty$-equipment).
+\item J. Ruit, ``Formal Category Theory in $\infty$-Equipments I,''
+  arXiv:2308.03583, 2023 (double $\infty$-categories supporting formal higher
+  category theory).
+\item E. Riehl and M. Shulman, ``A Type Theory for Synthetic
+  $\infty$-Categories,'' \emph{Higher Structures} 1(1), 2017, 147--224
+  (directed shapes, Segal types, Rezk types, and covariant fibrations).
+\item D. Annenkov, P. Capriotti, N. Kraus, and C. Sattler, ``Two-Level Type
+  Theory and Applications,'' \emph{Mathematical Structures in Computer
+  Science} 33, 2023, 688--743 (strict outer metatheory together with an inner
+  homotopy type theory).
+\item The Univalent Foundations Program, \emph{Homotopy Type Theory:
+  Univalent Foundations of Mathematics}, 2013 (identity types as paths,
+  univalence, and higher inductive types).
+\item P. LeFanu Lumsdaine, ``Weak $\omega$-Categories from Intensional Type
+  Theory,'' \emph{Logical Methods in Computer Science} 6(3:24), 2010,
+  1--19 (the iterated identity types of a type carry a weak
+  $\omega$-category structure).
+\item B. van den Berg and R. Garner, ``Types Are Weak $\omega$-Groupoids,''
+  \emph{Proceedings of the London Mathematical Society} 102(2), 2011,
+  370--394 (the canonical higher structure generated by iterated identity
+  types is groupoidal).
+\item C. Cohen, T. Coquand, S. Huber, and A. M\"ortberg, ``Cubical Type
+  Theory: A Constructive Interpretation of the Univalence Axiom,'' TYPES 2015,
+  LIPIcs 69, 2018 (computational paths, composition, and univalence).
+\item E. Cavallo and R. Harper, ``Higher Inductive Types in Cubical
+  Computational Type Theory,'' \emph{Proceedings of the ACM on Programming
+  Languages} 3 (POPL), 2019 (a schema of indexed cubical inductive types and
+  its canonicity theorem).
+\item M. Abbott, T. Altenkirch, and N. Ghani, ``Containers: Constructing
+  Strictly Positive Types,'' \emph{Theoretical Computer Science} 342(1), 2005,
+  3--27 (shape--position normal forms and their functorial semantics).
+\item P. Morris, T. Altenkirch, and N. Ghani, ``Constructing Strictly Positive
+  Families,'' CATS 2007, 111--121 (strictly-positive indexed families and
+  their indexed-container normal forms).
+\item T. Altenkirch, N. Ghani, P. Hancock, C. McBride, and P. Morris,
+  ``Indexed Containers,'' \emph{Journal of Functional Programming} 25, e5,
+  2015 (reduction of strictly-positive families to indexed containers and
+  generic programming over the normal form).
+\item P.-\'E. Dagand and C. McBride, ``Elaborating Inductive Definitions,''
+  arXiv:1210.6390, 2012 (source inductive declarations elaborated into an
+  internal universe of datatype descriptions).
+\item J. Ruit, ``Formal Category Theory in $\infty$-Equipments II: Lax
+  Functors, Monoidality and Fibrations,'' arXiv:2408.15190, 2024 (lax
+  morphisms, monoidal structure, and internal fibrations for
+  $\infty$-equipments).
+\item J. Matthews and R. B. Findler, ``Operational Semantics for
+  Multi-Language Programs,'' POPL 2007, 3--10
+  (semantic composition of languages and explicit interoperation boundaries).
+\item D. I. Spivak, ``Functorial Data Migration,''
+  \emph{Information and Computation} 217, 2012, 31--51
+  (schema-indexed instances and compositional transport between them).
+\item T. J. Green, G. Karvounarakis, and V. Tannen, ``Provenance
+  Semirings,'' PODS 2007, 31--40
+  (bag multiplicity and derivation-sensitive provenance as distinct
+  projections of retained annotated computation).
+\item R. Li, H. Grodin, and R. Harper, ``Directed Proof-Relevant Logical
+  Relations in Simplicial HoTT,'' arXiv:2607.08154, 2026
+  (directed proof-relevant transport and the separation of reduction from
+  horizontal representation evidence in a higher setting).
+\item A. Ranta, ``Grammatical Framework,'' \emph{Journal of Functional
+  Programming} 14(2), 2004, and \emph{Grammatical Framework: Programming with
+  Multilingual Grammars}, 2011 (typed abstract syntax, concrete linearizations,
+  and translation through a shared interlingua).
+\item J. G. Siek and W. Taha, ``Gradual Typing for Functional Languages,''
+  Scheme and Functional Programming 2006; M. S. New and A. Ahmed,
+  ``Graduality from Embedding--Projection Pairs,'' ICFP 2018
+  (precision-indexed interoperability and its semantic graduality law).
+\item P. Cousot and R. Cousot, ``Abstract Interpretation: A Unified Lattice
+  Model for Static Analysis of Programs by Construction or Approximation of
+  Fixpoints,'' POPL 1977, and ``Abstract Interpretation Frameworks,''
+  \emph{Journal of Logic and Computation} 2(4), 1992; P. Cousot, R. Cousot,
+  and L. Mauborgne, ``The Reduced Product of Abstract Domains and the
+  Combination of Decision Procedures,'' FoSSaCS 2011
+  (sound precision orders, best abstractions, and reduced combinations).
+\item D. Blackwell, ``Comparison of Experiments,'' in the \emph{Proceedings of
+  the Second Berkeley Symposium on Mathematical Statistics and Probability},
+  1951, 93--102, and ``Equivalent Comparisons of Experiments,'' \emph{Annals of
+  Mathematical Statistics} 24(2), 1953, 265--272
+  (informativeness ordered by post-processing and the decision problems an
+  observation can support).
+\item R. Milner, ``LCF: A Way of Doing Proofs with a Machine,'' 1979, and
+  M. Gordon, R. Milner, L. Morris, M. Newey, and C. Wadsworth, ``A
+  Metalanguage for Interactive Proof in LCF,'' POPL 1978
+  (abstract theorem values and soundness by construction).
+\item G. Nelson and D. C. Oppen, ``Simplification by Cooperating Decision
+  Procedures,'' \emph{ACM TOPLAS} 1(2), 1979
+  (combination of native decision procedures under explicit compatibility
+  hypotheses rather than a universal solver rank).
+\item B. Ekici, A. Mebsout, C. Tinelli, C. Keller, G. Katz, A. Reynolds, and
+  C. Barrett, ``SMTCoq: A Plug-In for Integrating SMT Solvers into Coq,'' CAV
+  2017 (native automation behind a proved certificate-checking boundary).
+\item G. Morrisett, D. Walker, K. Crary, and N. Glew, ``From System F to Typed
+  Assembly Language,'' \emph{TOPLAS} 21(3), 1999; G. C. Necula and P. Lee,
+  ``Safe Kernel Extensions Without Run-Time Checking,'' OSDI 1996
+  (type-preserving native realization and validate-once execution).
+\item M. Stay and L. G. Meredith, ``Higher Category Models of the
+  $\pi$-Calculus,'' 2015; B. Toninho and N. Yoshida, ``Depending on
+  Session-Typed Processes,'' FoSSaCS 2018
+  (typed higher operational cells and value-dependent process protocols).
+\item J. Hayman and G. Winskel, ``Independence and Concurrent Separation
+  Logic,'' 2008; C. Nester, ``The Structure of Concurrent Process Histories,''
+  2021 (proof-relevant independence and equipment-like material histories).
 \item T. Winterhalter et al., ``Eliminating Reflection from Type Theory,''
   POPL 2019 (extensional-to-intensional translation by explicit transports),
   together with the \code{ett-to-itt} formalization and Lean4Less's adaptation.

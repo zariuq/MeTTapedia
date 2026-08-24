@@ -155,6 +155,87 @@ theorem fvar_of_assignment_eq_of_scoped
     Mettapedia.OSLF.MeTTaIL.Substitution.liftBVars_eq_self_of_isWellScopedAt
         rightScoped]
 
+/-- Supported substitution is independent of the ambient depth when every
+free name occurring in the pattern is assigned a binder-closed value.  Names
+outside the pattern remain unrestricted. -/
+theorem substituteAt_eq_of_freeFvarNames_scopedAtZero
+    (profile : Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile)
+    (support : ContextSupport.Support) (assignment : ContextSupport.Assignment)
+    {pattern : Pattern}
+    (closed : ∀ name, name ∈ pattern.freeFvarNames →
+      (assignment name).isWellScopedAt 0 = true)
+    (first second : Nat) :
+    substituteAt profile support assignment first pattern =
+      substituteAt profile support assignment second pattern := by
+  induction pattern using Pattern.inductionOn generalizing first second with
+  | hbvar index => simp only [substituteAt]
+  | hfvar name =>
+      simp only [substituteAt]
+      have assignedClosed := closed name (by
+        simp only [Pattern.freeFvarNames, List.mem_singleton])
+      rw [Mettapedia.OSLF.MeTTaIL.Substitution.liftBVars_eq_self_of_isWellScopedAt
+          assignedClosed,
+        Mettapedia.OSLF.MeTTaIL.Substitution.liftBVars_eq_self_of_isWellScopedAt
+          assignedClosed]
+  | happly constructor arguments inductionHypothesis =>
+      simp only [substituteAt, Pattern.apply.injEq, true_and]
+      apply List.map_congr_left
+      intro argument membership
+      apply inductionHypothesis argument membership
+      intro name nameMembership
+      exact closed name (by
+        simp only [Pattern.freeFvarNames] at nameMembership ⊢
+        exact List.mem_flatMap.mpr ⟨argument, membership, nameMembership⟩)
+  | hlambda binder body inductionHypothesis =>
+      simp only [substituteAt, Pattern.lambda.injEq, true_and]
+      apply inductionHypothesis
+      intro name nameMembership
+      exact closed name (by simpa [Pattern.freeFvarNames] using nameMembership)
+  | hmultiLambda arity binders body inductionHypothesis =>
+      simp only [substituteAt, Pattern.multiLambda.injEq, true_and]
+      apply inductionHypothesis
+      intro name nameMembership
+      exact closed name (by simpa [Pattern.freeFvarNames] using nameMembership)
+  | hsubst body replacement bodyHypothesis replacementHypothesis =>
+      simp only [substituteAt, Pattern.subst.injEq]
+      constructor
+      · apply bodyHypothesis
+        intro name nameMembership
+        exact closed name (by simp [Pattern.freeFvarNames, nameMembership])
+      · apply replacementHypothesis
+        intro name nameMembership
+        exact closed name (by simp [Pattern.freeFvarNames, nameMembership])
+  | hcollection collectionType elements rest inductionHypothesis =>
+      simp only [substituteAt, Pattern.collection.injEq, true_and, and_true]
+      apply List.map_congr_left
+      intro element membership
+      apply inductionHypothesis element membership
+      intro name nameMembership
+      exact closed name (by
+        simp only [Pattern.freeFvarNames] at nameMembership ⊢
+        exact List.mem_append_left _
+          (List.mem_flatMap.mpr ⟨element, membership, nameMembership⟩))
+
+/-- Equality at one depth extends to depth-uniform restoration when all
+assigned values consulted by both endpoints are binder-closed. -/
+theorem of_eq_at_of_freeFvarNames_scopedAtZero
+    (profile : Mettapedia.OSLF.MeTTaIL.Reflection.ReflectionProfile)
+    (support : ContextSupport.Support) (assignment : ContextSupport.Assignment)
+    {left right : Pattern} {keyDepth : Nat}
+    (leftClosed : ∀ name, name ∈ left.freeFvarNames →
+      (assignment name).isWellScopedAt 0 = true)
+    (rightClosed : ∀ name, name ∈ right.freeFvarNames →
+      (assignment name).isWellScopedAt 0 = true)
+    (equalAt : substituteAt profile support assignment keyDepth left =
+      substituteAt profile support assignment keyDepth right) :
+    RestoresTogether profile support assignment left right := by
+  intro depth
+  rw [substituteAt_eq_of_freeFvarNames_scopedAtZero profile support assignment
+      leftClosed depth keyDepth,
+    substituteAt_eq_of_freeFvarNames_scopedAtZero profile support assignment
+      rightClosed depth keyDepth]
+  exact equalAt
+
 /-- The closed-value premise of `fvar_of_assignment_eq_of_scoped` cannot be
 dropped.  With one retained binder on the left and none on the right, assigning
 the same bound variable produces different de Bruijn indices at depth one. -/
@@ -1265,6 +1346,131 @@ theorem Permutation.restored_perm
   rw [restoredList_eq alignment.aligned]
   exact alignment.permutation.map _
 
+/-- A restoration permutation preserves the multiset of semantic ordering
+keys at its indexed depth. -/
+theorem Permutation.semanticKey_perm
+    {source : CIGSLT} {leftCount rightCount : Nat}
+    {leftKey : Fin leftCount → CostStaticAtomKey}
+    {rightKey : Fin rightCount → CostStaticAtomKey}
+    {cospan : CostStaticAtomKeyCospan leftKey rightKey}
+    {declaration : ReflectivePresentationDecl} {depth : Nat}
+    {left right : List Pattern}
+    (alignment : Permutation (source := source) cospan declaration depth
+      left right) :
+    List.Perm
+      (left.map (cospan.commonSemanticPatternKeyAt source depth))
+      (right.map (cospan.commonSemanticPatternKeyAt source depth)) := by
+  have restored := alignment.restored_perm
+  have coded := restored.map
+    Mettapedia.OSLF.MeTTaIL.PatternCode.patternCode
+  unfold commonSemanticPatternKeyAt
+  simpa only [List.map_map, Function.comp_def] using coded
+
+/-- Equal-key cross-ties make two sorted parallel frontiers restore to the
+same compact list at every ambient depth. -/
+theorem substituteAt_collapseParallel_sortPatternsBy_eq_of_key_perm_of_cross_ties
+    {source : CIGSLT} {leftCount rightCount : Nat}
+    {leftKey : Fin leftCount → CostStaticAtomKey}
+    {rightKey : Fin rightCount → CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey)
+    (declaration : ReflectivePresentationDecl)
+    (keyDepth restorationDepth : Nat) {left right : List Pattern}
+    (keyPermutation : List.Perm
+      (left.map (cospan.commonSemanticPatternKeyAt source keyDepth))
+      (right.map (cospan.commonSemanticPatternKeyAt source keyDepth)))
+    (ties : ∀ {leftPattern rightPattern}, leftPattern ∈ left →
+      rightPattern ∈ right →
+      cospan.commonSemanticPatternKeyAt source keyDepth leftPattern =
+        cospan.commonSemanticPatternKeyAt source keyDepth rightPattern →
+      ReflectiveContextSupport.RestoresTogether
+        source.costWholeReflectionProfile cospan.commonSupport
+          cospan.commonAssignment leftPattern rightPattern) :
+    ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
+        cospan.commonSupport cospan.commonAssignment restorationDepth
+        (collapseParallel declaration
+          (Mettapedia.OSLF.MeTTaIL.PatternCode.sortPatternsBy
+            (cospan.commonSemanticPatternKeyAt source keyDepth) left)) =
+      ReflectiveContextSupport.substituteAt source.costWholeReflectionProfile
+        cospan.commonSupport cospan.commonAssignment restorationDepth
+        (collapseParallel declaration
+          (Mettapedia.OSLF.MeTTaIL.PatternCode.sortPatternsBy
+            (cospan.commonSemanticPatternKeyAt source keyDepth) right)) := by
+  let key := cospan.commonSemanticPatternKeyAt source keyDepth
+  let relation := ReflectiveContextSupport.RestoresTogether
+    source.costWholeReflectionProfile cospan.commonSupport
+      cospan.commonAssignment
+  have aligned : List.Forall₂ relation
+      (Mettapedia.OSLF.MeTTaIL.PatternCode.sortPatternsBy key left)
+      (Mettapedia.OSLF.MeTTaIL.PatternCode.sortPatternsBy key right) :=
+    Mettapedia.OSLF.MeTTaIL.PatternCode.sortPatternsBy_forall₂_of_key_perm_of_cross_ties
+      key (by simpa [key] using keyPermutation) (by
+        intro leftPattern rightPattern leftMem rightMem keyEq
+        exact ties leftMem rightMem (by simpa [key] using keyEq))
+  have restoreAligned : ∀ {leftPatterns rightPatterns : List Pattern},
+      List.Forall₂ relation leftPatterns rightPatterns →
+      leftPatterns.map
+          (ReflectiveContextSupport.substituteAt
+            source.costWholeReflectionProfile cospan.commonSupport
+              cospan.commonAssignment restorationDepth) =
+        rightPatterns.map
+          (ReflectiveContextSupport.substituteAt
+            source.costWholeReflectionProfile cospan.commonSupport
+              cospan.commonAssignment restorationDepth) := by
+    intro leftPatterns rightPatterns related
+    induction related with
+    | nil => rfl
+    | cons head tail inductionHypothesis =>
+        exact congrArg₂ List.cons (head restorationDepth) inductionHypothesis
+  have restored := restoreAligned aligned
+  rw [cospan.substituteAt_collapseParallel source restorationDepth declaration,
+    cospan.substituteAt_collapseParallel source restorationDepth declaration]
+  exact congrArg (collapseParallel declaration) (by simpa [key] using restored)
+
+/-- Restore keyed parallel frontiers at an arbitrary depth when every
+equal-key cross-pair restores uniformly.  The key depth controls the chosen
+canonical representative; it need not equal the ambient restoration depth. -/
+theorem parallel_at_keyDepth_of_key_perm_of_cross_ties
+    {source : CIGSLT} {leftCount rightCount : Nat}
+    {leftKey : Fin leftCount → CostStaticAtomKey}
+    {rightKey : Fin rightCount → CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey)
+    (declaration : ReflectivePresentationDecl)
+    (keyDepth restorationDepth : Nat) {leftElements rightElements : List Pattern}
+    (keyPermutation : List.Perm
+      ((parallelContents declaration
+        (canonicalizeListByAt (cospan.commonSemanticPatternKeyAt source)
+          declaration keyDepth leftElements)).map
+            (cospan.commonSemanticPatternKeyAt source keyDepth))
+      ((parallelContents declaration
+        (canonicalizeListByAt (cospan.commonSemanticPatternKeyAt source)
+          declaration keyDepth rightElements)).map
+            (cospan.commonSemanticPatternKeyAt source keyDepth)))
+    (ties : ∀ {leftPattern rightPattern},
+      leftPattern ∈ parallelContents declaration
+        (canonicalizeListByAt (cospan.commonSemanticPatternKeyAt source)
+          declaration keyDepth leftElements) →
+      rightPattern ∈ parallelContents declaration
+        (canonicalizeListByAt (cospan.commonSemanticPatternKeyAt source)
+          declaration keyDepth rightElements) →
+      cospan.commonSemanticPatternKeyAt source keyDepth leftPattern =
+        cospan.commonSemanticPatternKeyAt source keyDepth rightPattern →
+      ReflectiveContextSupport.RestoresTogether
+        source.costWholeReflectionProfile cospan.commonSupport
+          cospan.commonAssignment leftPattern rightPattern) :
+    CommonRestorationApex source cospan declaration restorationDepth
+      (canonicalizeByAt (cospan.commonSemanticPatternKeyAt source)
+        declaration keyDepth
+        (.collection declaration.parallelCollection leftElements none))
+      (canonicalizeByAt (cospan.commonSemanticPatternKeyAt source)
+        declaration keyDepth
+        (.collection declaration.parallelCollection rightElements none)) := by
+  apply CommonRestorationApex.leafAligned
+  apply PatternLeafAligned.leaf
+  intro depth
+  simp only [canonicalizeByAt, beq_self_eq_true, if_true]
+  exact substituteAt_collapseParallel_sortPatternsBy_eq_of_key_perm_of_cross_ties
+    cospan declaration keyDepth depth keyPermutation ties
+
 /-- Build the parallel apex from an occurrence-preserving alignment of the
 post-canonicalization, post-splice frontiers. -/
 theorem parallel_of_permutation
@@ -1290,10 +1496,32 @@ theorem parallel_of_permutation
         (.collection declaration.parallelCollection rightElements none)) :=
   .parallel alignment.aligned alignment.permutation
 
-/-- A permutation of ordinary canonical images can be pulled back to an
+/-- A permutation of classified images can be pulled back to an
 occurrence-preserving permutation of the original right list, aligned
-pointwise by canonical equality.  No injectivity of canonicalization is used:
-duplicate and collapsing classes retain separate list occurrences. -/
+pointwise by equality of classifications.  No injectivity of the classifier
+is used: duplicate classes retain separate list occurrences. -/
+theorem exists_forall₂_eq_of_map_perm
+    {Element Class : Type} (classify : Element → Class)
+    {left right : List Element}
+    (permutation : List.Perm (left.map classify) (right.map classify)) :
+    ∃ middle,
+      List.Forall₂
+          (fun leftElement rightElement =>
+            classify leftElement = classify rightElement)
+          left middle ∧
+        List.Perm middle right := by
+  have rightGraph : List.Forall₂
+      (fun classValue element => classValue = classify element)
+      (right.map classify) right := by
+    rw [List.forall₂_map_left_iff]
+    exact List.forall₂_same.mpr (fun _ _ => rfl)
+  obtain ⟨middle, aligned, reordered⟩ :=
+    List.perm_comp_forall₂ permutation rightGraph
+  refine ⟨middle, ?_, reordered⟩
+  simpa only [List.forall₂_map_left_iff] using aligned
+
+/-- Canonical-class specialization of
+`exists_forall₂_eq_of_map_perm`. -/
 theorem exists_forall₂_canonical_eq_of_map_perm
     (declaration : ReflectivePresentationDecl)
     {left right : List Pattern}
@@ -1306,37 +1534,25 @@ theorem exists_forall₂_canonical_eq_of_map_perm
             canonicalize declaration leftPattern =
               canonicalize declaration rightPattern)
           left middle ∧
-        List.Perm middle right := by
-  have rightGraph : List.Forall₂
-      (fun canonicalPattern pattern =>
-        canonicalPattern = canonicalize declaration pattern)
-      (right.map (canonicalize declaration)) right := by
-    rw [List.forall₂_map_left_iff]
-    exact List.forall₂_same.mpr (fun _ _ => rfl)
-  obtain ⟨middle, aligned, reordered⟩ :=
-    List.perm_comp_forall₂ permutation rightGraph
-  refine ⟨middle, ?_, reordered⟩
-  simpa only [List.forall₂_map_left_iff] using aligned
+        List.Perm middle right :=
+  exists_forall₂_eq_of_map_perm (canonicalize declaration) permutation
 
-/-- Lift a permutation of ordinary canonical classes through a local
-common-apex constructor.  The callback receives membership in both original
-endpoint lists, so typing, support, size descent, provenance, and occurrence
-evidence can be recovered before recursive closure.  Multiplicities and
-discarded positional identities are retained by the intermediate list. -/
-noncomputable def Permutation.of_canonical_map_perm
+/-- Lift a permutation of arbitrary classes through a local common-apex
+constructor.  The callback receives membership in both original endpoint
+lists, so typed clients can recover support, size, provenance, and occurrence
+evidence before recursive closure. -/
+noncomputable def Permutation.of_map_perm
     {source : CIGSLT} {leftCount rightCount : Nat}
     {leftKey : Fin leftCount → CostStaticAtomKey}
     {rightKey : Fin rightCount → CostStaticAtomKey}
     (cospan : CostStaticAtomKeyCospan leftKey rightKey)
     (declaration : ReflectivePresentationDecl) (depth : Nat)
+    {Class : Type} (classify : Pattern → Class)
     {left right : List Pattern}
-    (permutation : List.Perm
-      (left.map (canonicalize declaration))
-      (right.map (canonicalize declaration)))
+    (permutation : List.Perm (left.map classify) (right.map classify))
     (close : ∀ {leftPattern rightPattern},
       leftPattern ∈ left → rightPattern ∈ right →
-      canonicalize declaration leftPattern =
-          canonicalize declaration rightPattern →
+      classify leftPattern = classify rightPattern →
         CommonRestorationApex source cospan declaration depth
           (canonicalizeByAt (cospan.commonSemanticPatternKeyAt source)
             declaration depth leftPattern)
@@ -1348,7 +1564,7 @@ noncomputable def Permutation.of_canonical_map_perm
       (canonicalizeListByAt (cospan.commonSemanticPatternKeyAt source)
         declaration depth right) := by
   let evidence :=
-    exists_forall₂_canonical_eq_of_map_perm declaration permutation
+    exists_forall₂_eq_of_map_perm classify permutation
   let middle := Classical.choose evidence
   have middleSpec := Classical.choose_spec evidence
   have aligned := middleSpec.1
@@ -1358,8 +1574,7 @@ noncomputable def Permutation.of_canonical_map_perm
   have liftAligned : ∀ {leftPatterns rightPatterns : List Pattern},
       List.Forall₂
           (fun leftPattern rightPattern =>
-            canonicalize declaration leftPattern =
-              canonicalize declaration rightPattern)
+            classify leftPattern = classify rightPattern)
           leftPatterns rightPatterns →
         (∀ pattern ∈ leftPatterns, pattern ∈ left) →
         (∀ pattern ∈ rightPatterns, pattern ∈ right) →
@@ -1387,6 +1602,116 @@ noncomputable def Permutation.of_canonical_map_perm
       permutation := ?_ }
   simpa [normalize, canonicalizeListByAt_eq_map] using normalizedAligned
   simpa [normalize, canonicalizeListByAt_eq_map] using reordered.map normalize
+
+/-- Lift a permutation of source classifications through two
+occurrence-preserving endpoint relations.  The source lists carry the
+classification used to obtain the permutation, while the endpoint lists
+carry the patterns compared by the restoration apex.  This keeps those two
+roles separate when a proof-relevant traversal replaces each source
+occurrence by an abstract or reified occurrence. -/
+noncomputable def Permutation.of_related_map_perm
+    {source : CIGSLT} {leftCount rightCount : Nat}
+    {leftKey : Fin leftCount → CostStaticAtomKey}
+    {rightKey : Fin rightCount → CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey)
+    (declaration : ReflectivePresentationDecl) (depth : Nat)
+    {LeftSource RightSource Class : Type}
+    {leftSource : List LeftSource} {rightSource : List RightSource}
+    {leftEndpoint rightEndpoint : List Pattern}
+    (classifyLeft : LeftSource → Class)
+    (classifyRight : RightSource → Class)
+    {leftRelated : LeftSource → Pattern → Prop}
+    {rightRelated : RightSource → Pattern → Prop}
+    (leftTraversal : List.Forall₂ leftRelated leftSource leftEndpoint)
+    (rightTraversal : List.Forall₂ rightRelated rightSource rightEndpoint)
+    (permutation : List.Perm (leftSource.map classifyLeft)
+      (rightSource.map classifyRight))
+    (close : ∀ {leftSourcePattern rightSourcePattern
+        leftPattern rightPattern},
+      leftRelated leftSourcePattern leftPattern →
+      rightRelated rightSourcePattern rightPattern →
+      classifyLeft leftSourcePattern = classifyRight rightSourcePattern →
+      CommonRestorationApex source cospan declaration depth leftPattern
+        rightPattern) :
+    Permutation (source := source) cospan declaration depth leftEndpoint
+      rightEndpoint := by
+  have rightGraph : List.Forall₂
+      (fun classValue right => classValue = classifyRight right)
+      (rightSource.map classifyRight) rightSource := by
+    rw [List.forall₂_map_left_iff]
+    exact List.forall₂_same.mpr (fun _ _ => rfl)
+  let pairedEvidence := List.perm_comp_forall₂ permutation rightGraph
+  let pairedRight := Classical.choose pairedEvidence
+  have pairedSpec := Classical.choose_spec pairedEvidence
+  have pairedClass := pairedSpec.1
+  have pairedRightPermutation := pairedSpec.2
+  have pairedClass' : List.Forall₂
+      (fun left right => classifyLeft left = classifyRight right)
+      leftSource pairedRight := by
+    simpa only [pairedRight, List.forall₂_map_left_iff] using pairedClass
+  let endpointEvidence :=
+    List.perm_comp_forall₂ pairedRightPermutation rightTraversal
+  let pairedEndpoint := Classical.choose endpointEvidence
+  have endpointSpec := Classical.choose_spec endpointEvidence
+  have pairedTraversal := endpointSpec.1
+  have endpointPermutation := endpointSpec.2
+  have lift : ∀ {leftSources : List LeftSource}
+      {rightSources : List RightSource} {leftPatterns rightPatterns},
+      List.Forall₂ leftRelated leftSources leftPatterns →
+      List.Forall₂
+        (fun left right => classifyLeft left = classifyRight right)
+        leftSources rightSources →
+      List.Forall₂ rightRelated rightSources rightPatterns →
+      CommonRestorationApexList source cospan declaration depth leftPatterns
+        rightPatterns := by
+    intro leftSources rightSources leftPatterns rightPatterns leftRelation
+      classRelation rightRelation
+    induction leftRelation generalizing rightSources rightPatterns with
+    | nil =>
+        cases classRelation
+        cases rightRelation
+        exact .nil depth
+    | cons leftHead leftTail inductionHypothesis =>
+        cases classRelation with
+        | cons classHead classTail =>
+            cases rightRelation with
+            | cons rightHead rightTail =>
+                exact .cons (close leftHead rightHead classHead)
+                  (inductionHypothesis classTail rightTail)
+  exact
+    { middle := pairedEndpoint
+      aligned := lift leftTraversal pairedClass' pairedTraversal
+      permutation := endpointPermutation }
+
+/-- Lift a permutation of ordinary canonical classes through a local
+common-apex constructor.  Multiplicities and discarded positional identities
+are retained by the intermediate list. -/
+noncomputable def Permutation.of_canonical_map_perm
+    {source : CIGSLT} {leftCount rightCount : Nat}
+    {leftKey : Fin leftCount → CostStaticAtomKey}
+    {rightKey : Fin rightCount → CostStaticAtomKey}
+    (cospan : CostStaticAtomKeyCospan leftKey rightKey)
+    (declaration : ReflectivePresentationDecl) (depth : Nat)
+    {left right : List Pattern}
+    (permutation : List.Perm
+      (left.map (canonicalize declaration))
+      (right.map (canonicalize declaration)))
+    (close : ∀ {leftPattern rightPattern},
+      leftPattern ∈ left → rightPattern ∈ right →
+      canonicalize declaration leftPattern =
+          canonicalize declaration rightPattern →
+        CommonRestorationApex source cospan declaration depth
+          (canonicalizeByAt (cospan.commonSemanticPatternKeyAt source)
+            declaration depth leftPattern)
+          (canonicalizeByAt (cospan.commonSemanticPatternKeyAt source)
+            declaration depth rightPattern)) :
+    Permutation (source := source) cospan declaration depth
+      (canonicalizeListByAt (cospan.commonSemanticPatternKeyAt source)
+        declaration depth left)
+      (canonicalizeListByAt (cospan.commonSemanticPatternKeyAt source)
+        declaration depth right) :=
+  Permutation.of_map_perm cospan declaration depth
+    (canonicalize declaration) permutation close
 
 /-- Away from the two root-changing reflective forms, ordinary canonical
 root inversion lifts directly to the common-restoration apex.  The recursive

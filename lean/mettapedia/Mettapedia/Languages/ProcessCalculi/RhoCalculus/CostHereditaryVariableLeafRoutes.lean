@@ -61,6 +61,8 @@ theorem iterDrop_bvar_ne_parallel (level index : Nat)
         nested none := by
   cases level <;> simp [iterDrop]
 
+/-- The whole-language rule behind a colour-static parallel unit is rho's
+authored zero, with the colour image of `Proc` as category. -/
 theorem rho_costWhole_rule_category_of_unitWire
     (color : CostStaticColor) {rule : GrammarRule}
     (membership : rule ∈ rhoCIGSLT.costWholeLanguage.terms)

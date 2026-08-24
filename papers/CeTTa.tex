@@ -3596,6 +3596,50 @@ role: demand-driven search over an inspectable frontier, with
 claim-bearing results lowered to an external checker rather than asserted
 by execution.
 
+\subsection{Prime typed construction and request-local native kernels}
+
+The current Prime tranche implements a nontrivial portion of the native
+dependent theory directly in C; it has no generated-Lean artifact in its
+runtime dependency chain.  NIK does not impose one global ladder of execution
+modes.  For each request and dependency revision it considers the licensed
+realizations that support the requested capabilities.  A unique strongest
+realization is selected only when that request fibre has a licensed common
+upgrade for every pair.  Otherwise the incomparable maximal realizations
+remain visible and an explicit observation or cost policy selects among them.
+Thus native construction, direct decision, admitted flow, and certificate
+checking may coexist without pretending that one always subsumes the others.
+
+The RuleMachine remains an untrusted proof producer.  At its ingress boundary,
+Prime reconstructs ordinary typed constructors rather than installing
+benchmark-specific opcodes or parser authority modes.  The currently recognized
+strictly-positive list fragment contains the constructors of
+\code{rel:all}, \code{rel:fold}, \code{rel:list:member}, \code{rel:any}, and
+\code{rel:case-list}.  Their native values retain recursive proof-tree shape,
+intermediate witnesses, ordered answer occurrences, and occurrence identity.
+An unrecognized or ill-typed tree obtains no native value; it reaches the
+ordinary evidence-bearing checking boundary rather than being silently accepted
+or converted into an empty answer.
+
+Two source-grounded Hopper slices exercise this boundary.  The fold slice has
+sixteen authored cases (eight positive and eight negative), with all positive
+derivations reconstructed natively.  The branching slice has twelve authored
+\code{member}/\code{find-dup} cases (seven positive and five negative).  A
+separate repeated-member canary produces three ordered occurrences with three
+distinct native proof paths, showing that endpoint equality does not collapse
+derivation multiplicity.  Malformed \code{member}, \code{any}, and
+\code{case-list} trees are rejected by the real checking path.  In the complete
+Prime gate this tranche coexists with 395 regular-kernel checks, 352 typed-flow
+checks, nine native-calculus-selection checks, and the 90-check fast gate.
+
+This is an implementation and conformance milestone, not a verified C compiler
+or a completeness result for all Prime programs.  Leaf terms still enter through
+a check-once boundary, and zero-interior-check admitted execution has not yet
+replaced every eligible recursive path.  The remaining ILP work extends the same
+ordinary-family mechanism to the missing Hopper higher-order and structural
+tasks, broadens Popper and IGGP exact images, and qualifies performance only
+after answer-bag, provenance, currentness, fault, abstention, and zero-legacy-HE
+conditions all remain green.
+
 \paragraph{Practicality.}
 Ground-call memoization --- an off-by-default table admitting only
 ground, canonical, completed, effect-pure calls at an exact space

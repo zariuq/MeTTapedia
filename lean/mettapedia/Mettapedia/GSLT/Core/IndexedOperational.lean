@@ -325,6 +325,23 @@ def semanticTheory (theory : GSLT.{uTerm}) : GSLT.{uTerm} where
     subst target'
     exact step
 
+/-- Every operational translation descends to the equation-quotiented
+semantic theories.  Its direct term map is the existing `mapSemantic`, and a
+semantic step is transported with its proof-relevant representatives intact. -/
+def OperationalTranslation.onSemanticTheories
+    {source target : GSLT.{uTerm}}
+    (translation : OperationalTranslation source target) :
+    OperationalTranslation (semanticTheory source) (semanticTheory target) where
+  mapTerm := translation.mapSemantic
+  mapEquiv := fun equal => congrArg translation.mapSemantic equal
+  mapStep := translation.mapSemanticStep
+
+@[simp] theorem OperationalTranslation.onSemanticTheories_mapTerm
+    {source target : GSLT.{uTerm}}
+    (translation : OperationalTranslation source target) :
+    translation.onSemanticTheories.mapTerm = translation.mapSemantic :=
+  rfl
+
 /-! ## The explicit finite indexed command core -/
 
 /-- A finite indexed GSLT diagram with equation- and step-preserving maps.

@@ -398,7 +398,7 @@ theorem canonicalizeByAt_depth_independent_of_typedNameWithin
         declaration declarationMembership typedName).elim
 
 mutual
-  private def parallelLeaves
+  def parallelLeaves
       (declaration : ReflectivePresentationDecl) : Pattern → List Pattern
     | pattern@(.apply constructor arguments) =>
         if constructor = declaration.parallelUnitConstructor ∧ arguments = []
@@ -408,7 +408,7 @@ mutual
         then parallelLeavesList declaration elements else [pattern]
     | pattern => [pattern]
 
-  private def parallelLeavesList
+  def parallelLeavesList
       (declaration : ReflectivePresentationDecl) : List Pattern → List Pattern
     | [] => []
     | pattern :: patterns =>
@@ -416,11 +416,116 @@ mutual
           parallelLeavesList declaration patterns
 end
 
+/-- A one-hole context made exclusively from bare-parallel collection
+frames.  These are exactly the frames introduced while locating one
+recursively flattened parallel leaf. -/
+inductive ParallelLeafContext
+    (declaration : ReflectivePresentationDecl) : OneHoleContext → Prop where
+  | hole : ParallelLeafContext declaration .hole
+  | collection (before after : List Pattern) {inner : OneHoleContext} :
+      ParallelLeafContext declaration inner →
+      ParallelLeafContext declaration
+        (.collection declaration.parallelCollection before inner after none)
+
+namespace ParallelLeafContext
+
+/-- A parallel-leaf context never crosses an application frame. -/
+theorem not_apply (declaration : ReflectivePresentationDecl)
+    (constructor : String) (before after : List Pattern)
+    (inner : OneHoleContext) :
+    ¬ ParallelLeafContext declaration
+      (.apply constructor before inner after) := by
+  intro shaped
+  cases shaped
+
+end ParallelLeafContext
+
+mutual
+  /-- Positional parallel-leaf exposure with the exact grammar of the path to
+  the occurrence retained. -/
+  theorem parallelLeaves_parallelContext
+      (declaration : ReflectivePresentationDecl) : ∀ pattern leaf,
+      leaf ∈ parallelLeaves declaration pattern →
+        ∃ context : OneHoleContext,
+          ParallelLeafContext declaration context ∧
+            pattern = context.fill leaf
+    | .bvar index, leaf, membership => by
+        simp only [parallelLeaves, List.mem_singleton] at membership
+        subst leaf
+        exact ⟨.hole, .hole, rfl⟩
+    | .fvar name, leaf, membership => by
+        simp only [parallelLeaves, List.mem_singleton] at membership
+        subst leaf
+        exact ⟨.hole, .hole, rfl⟩
+    | pattern@(.apply constructor arguments), leaf, membership => by
+        simp only [parallelLeaves] at membership
+        split at membership
+        · simp at membership
+        · have leafEq := List.mem_singleton.mp membership
+          subst leaf
+          exact ⟨.hole, .hole, rfl⟩
+    | pattern@(.lambda binder body), leaf, membership => by
+        have leafEq := List.mem_singleton.mp membership
+        subst leaf
+        exact ⟨.hole, .hole, rfl⟩
+    | pattern@(.multiLambda arity binders body), leaf, membership => by
+        have leafEq := List.mem_singleton.mp membership
+        subst leaf
+        exact ⟨.hole, .hole, rfl⟩
+    | pattern@(.subst body replacement), leaf, membership => by
+        have leafEq := List.mem_singleton.mp membership
+        subst leaf
+        exact ⟨.hole, .hole, rfl⟩
+    | pattern@(.collection collectionType elements rest), leaf,
+        membership => by
+        simp only [parallelLeaves] at membership
+        split at membership
+        next selected =>
+          rcases selected with ⟨collectionEq, restEq⟩
+          subst collectionType
+          subst rest
+          obtain ⟨before, middle, after, context, contextShape, elementsEq,
+              middleEq⟩ :=
+            parallelLeavesList_parallelContext declaration elements leaf
+              membership
+          refine ⟨.collection declaration.parallelCollection before context
+            after none, .collection before after contextShape, ?_⟩
+          simp [OneHoleContext.fill, elementsEq, middleEq]
+        next notSelected =>
+          have leafEq := List.mem_singleton.mp membership
+          subst leaf
+          exact ⟨.hole, .hole, rfl⟩
+
+  /-- Listwise companion of `parallelLeaves_parallelContext`; the source-list
+  split keeps repeated equal leaves positionally distinct. -/
+  theorem parallelLeavesList_parallelContext
+      (declaration : ReflectivePresentationDecl) : ∀ patterns leaf,
+      leaf ∈ parallelLeavesList declaration patterns →
+        ∃ before middle after context,
+          ParallelLeafContext declaration context ∧
+            patterns = before ++ middle :: after ∧
+            middle = context.fill leaf
+    | [], leaf, membership => by
+        simp [parallelLeavesList] at membership
+    | pattern :: patterns, leaf, membership => by
+        simp only [parallelLeavesList, List.mem_append] at membership
+        rcases membership with head | tail
+        · obtain ⟨context, contextShape, patternEq⟩ :=
+            parallelLeaves_parallelContext declaration pattern leaf head
+          exact ⟨[], pattern, patterns, context, contextShape, by simp,
+            patternEq⟩
+        · obtain ⟨before, middle, after, context, contextShape, patternsEq,
+              middleEq⟩ :=
+            parallelLeavesList_parallelContext declaration patterns leaf tail
+          exact ⟨pattern :: before, middle, after, context, contextShape,
+            by simp [patternsEq], middleEq⟩
+end
+
 mutual
   /-- Every recursively flattened parallel leaf retains a concrete occurrence
   context in the unflattened source pattern.  The witness is positional: no
   equality search through sibling leaves is used. -/
-  private theorem parallelLeaves_context
+  theorem parallelLeaves_context
       (declaration : ReflectivePresentationDecl) : ∀ pattern leaf,
       leaf ∈ parallelLeaves declaration pattern →
         ∃ context : OneHoleContext, pattern = context.fill leaf
@@ -472,7 +577,7 @@ mutual
   /-- List-level positional companion of `parallelLeaves_context`.  The
   before/after split distinguishes repeated equal leaves by their recursive
   occurrence path. -/
-  private theorem parallelLeavesList_context
+  theorem parallelLeavesList_context
       (declaration : ReflectivePresentationDecl) : ∀ patterns leaf,
       leaf ∈ parallelLeavesList declaration patterns →
         ∃ before middle after context,
@@ -490,6 +595,121 @@ mutual
             parallelLeavesList_context declaration patterns leaf tail
           exact ⟨pattern :: before, middle, after, context,
             by simp [patternsEq], middleEq⟩
+end
+
+mutual
+  /-- If the declaration's Quote constructor is absent, recursively exposing
+  raw parallel leaves and then canonicalizing presents exactly the canonical
+  parallel contents of the original pattern.  The hypothesis is essential:
+  Quote/Drop absorption can otherwise expose a parallel hidden below an
+  application root. -/
+  theorem parallelLeaves_canonical_map_perm_of_quoteAbsent
+      (declaration : ReflectivePresentationDecl) : ∀ pattern,
+      ConstructorsWithin
+          (fun constructor => constructor ≠ declaration.quoteConstructor)
+          pattern →
+        List.Perm
+          ((parallelLeaves declaration pattern).map
+            (canonicalize declaration))
+          (parallelContents declaration [canonicalize declaration pattern])
+    | .bvar index, _ => by
+        simp [parallelLeaves, canonicalize, parallelContents, parallelSplice]
+    | .fvar name, _ => by
+        simp [parallelLeaves, canonicalize, parallelContents, parallelSplice]
+    | .apply constructor arguments, supported => by
+        have notQuote : constructor ≠ declaration.quoteConstructor :=
+          supported.1
+        by_cases unit : Pattern.apply constructor arguments =
+            .apply declaration.parallelUnitConstructor []
+        · injection unit with constructorEq argumentsEq
+          subst constructor
+          subst arguments
+          simp [parallelLeaves, parallelContents, parallelSplice]
+        · have notUnitShape :
+              ¬ (constructor = declaration.parallelUnitConstructor ∧
+                arguments = []) := by
+            rintro ⟨rfl, rfl⟩
+            exact unit rfl
+          have canonical := canonicalize_apply_of_ne_quote declaration
+            notQuote arguments
+          rw [canonical]
+          simp [parallelLeaves, notUnitShape, parallelContents,
+            parallelSplice]
+          exact canonical
+    | .lambda binder body, supported => by
+        simp [parallelLeaves, canonicalize, parallelContents, parallelSplice]
+    | .multiLambda arity binders body, supported => by
+        simp [parallelLeaves, canonicalize, parallelContents, parallelSplice]
+    | .subst body replacement, supported => by
+        simp [parallelLeaves, canonicalize, parallelContents, parallelSplice]
+    | .collection collectionType elements rest, supported => by
+        cases rest with
+        | some restName =>
+            simp [parallelLeaves, canonicalize, parallelContents,
+              parallelSplice]
+        | none =>
+            by_cases selected : collectionType =
+                declaration.parallelCollection
+            · subst collectionType
+              have children :=
+                parallelLeavesList_canonical_map_perm_of_quoteAbsent
+                  declaration elements supported
+              have canonicalElements : IsCanonicalList declaration
+                  (elements.map (canonicalize declaration)) := by
+                simpa [canonicalizeList_eq_map] using
+                  canonicalizeList_isCanonical declaration elements
+              have collapsed := parallelContents_collapse_normalized
+                declaration canonicalElements
+              have sorted : List.Perm
+                  (parallelContents declaration
+                    (elements.map (canonicalize declaration)))
+                  (normalizeParallelElements declaration
+                    (elements.map (canonicalize declaration))) := by
+                rw [normalizeParallelElements_eq_sort_parallelContents]
+                exact (sortPatterns_perm
+                  (parallelContents declaration
+                    (elements.map (canonicalize declaration)))).symm
+              rw [show parallelLeaves declaration
+                  (.collection declaration.parallelCollection elements none) =
+                    parallelLeavesList declaration elements by
+                simp [parallelLeaves]]
+              rw [canonicalize_parallel]
+              change List.Perm
+                ((parallelLeavesList declaration elements).map
+                  (canonicalize declaration))
+                (parallelContents declaration
+                  [collapseParallel declaration
+                    (normalizeParallelElements declaration
+                      (elements.map (canonicalize declaration)))])
+              rw [collapsed]
+              exact children.trans sorted
+            · simp [parallelLeaves, selected, canonicalize, parallelContents,
+                parallelSplice]
+
+  /-- Listwise companion of
+  `parallelLeaves_canonical_map_perm_of_quoteAbsent`. -/
+  theorem parallelLeavesList_canonical_map_perm_of_quoteAbsent
+      (declaration : ReflectivePresentationDecl) : ∀ patterns,
+      ConstructorListWithin
+          (fun constructor => constructor ≠ declaration.quoteConstructor)
+          patterns →
+        List.Perm
+          ((parallelLeavesList declaration patterns).map
+            (canonicalize declaration))
+          (parallelContents declaration
+            (patterns.map (canonicalize declaration)))
+    | [], _ => by simp [parallelLeavesList, parallelContents]
+    | pattern :: patterns, supported => by
+        have head := parallelLeaves_canonical_map_perm_of_quoteAbsent
+          declaration pattern supported.1
+        have tail := parallelLeavesList_canonical_map_perm_of_quoteAbsent
+          declaration patterns supported.2
+        rw [parallelLeavesList, List.map_append]
+        exact (head.append tail).trans
+          (List.Perm.of_eq
+            (parallelContents_append declaration
+              [canonicalize declaration pattern]
+              (patterns.map (canonicalize declaration))).symm)
 end
 
 mutual
@@ -731,36 +951,159 @@ mutual
         · exact parallelLeavesList_noParallel declaration patterns leaf tail
 end
 
-/-- A constructor application inhabiting a generated rho process fibre cannot
-use that fibre's selected Quote constructor, whose validated result is the
-distinct reflective-name sort. -/
-private theorem rhoProc_typed_apply_ne_quote
-    (color : CostStaticColor)
+/-- The process sort of either generated rho Cost fibre is distinct from the
+shared name sort of either fibre. -/
+theorem rhoCostStatic_processSort_ne_nameSort
+    (processColor nameColor : CostStaticColor) :
+    (costStaticReflectivePresentationDecl rhoCIGSLT processColor
+        rhoReflectivePresentation.toReflectivePresentationDecl).processSort ≠
+      (costStaticReflectivePresentationDecl rhoCIGSLT nameColor
+        rhoReflectivePresentation.toReflectivePresentationDecl).nameSort := by
+  cases processColor <;> cases nameColor
+  all_goals simp [costStaticReflectivePresentationDecl_eq_map,
+      ReflectionExtension.mapReflectivePresentation,
+      rhoReflectivePresentation, CostStaticColor.symbols,
+      costBaseStaticSymbols, costWrappedStaticSymbols,
+      costBasePresentationSymbols,
+      show rhoCIGSLT.theory.presentation.interactingSort.1.name = "Proc" by
+        rfl,
+      costBaseSortName_injective.ne]
+  all_goals exact (costBaseSortName_ne_wrapped "Name").symm
+
+/-- Distinct generated rho Cost fibres have distinct process sorts. -/
+theorem rhoCostStatic_processSort_ne_of_ne
+    (leftColor rightColor : CostStaticColor)
+    (different : leftColor ≠ rightColor) :
+    (costStaticReflectivePresentationDecl rhoCIGSLT leftColor
+        rhoReflectivePresentation.toReflectivePresentationDecl).processSort ≠
+      (costStaticReflectivePresentationDecl rhoCIGSLT rightColor
+        rhoReflectivePresentation.toReflectivePresentationDecl).processSort := by
+  cases leftColor <;> cases rightColor <;> simp_all
+  · exact costBaseSortName_ne_wrapped "Proc"
+  · exact (costBaseSortName_ne_wrapped "Proc").symm
+
+private theorem rho_costWhole_rule_category_of_unitWire_local
+    (color : CostStaticColor) {rule : GrammarRule}
+    (membership : rule ∈ rhoCIGSLT.costWholeLanguage.terms)
+    (labelEq : rule.label = (color.symbols rhoCIGSLT).constructor "PZero") :
+    TypeExpr.base rule.category =
+      mapTypeExpr (color.symbols rhoCIGSLT) (.base "Proc") := by
+  cases color with
+  | base =>
+      have labelRendered :
+          (rhoCIGSLT.materializeDeclaredCostConstructor
+            ⟨CostConstructor.base ⟨rhoCalc.terms[0],
+                List.getElem_mem (by simp [rhoCalc])⟩, True.intro⟩).label =
+            (CostStaticColor.symbols rhoCIGSLT .base).constructor "PZero" := by
+        simp [CIGSLT.materializeDeclaredCostConstructor, costBaseConstructor,
+          rhoCalc, CostStaticColor.symbols, costBaseStaticSymbols,
+          costBasePresentationSymbols]
+      have materialized :=
+        CIGSLT.materializeDeclaredCostConstructor_eq_of_mem_of_label rhoCIGSLT
+          rule membership _ (labelRendered.trans labelEq.symm)
+      subst rule
+      simp [CIGSLT.materializeDeclaredCostConstructor, costBaseConstructor,
+        rhoCalc, mapTypeExpr, CostStaticColor.symbols, costBaseStaticSymbols,
+        costBasePresentationSymbols]
+  | wrapped =>
+      let zero : StructuralMorphism.AuthoredConstructor
+          rhoCIGSLT.theory.presentation.presentation :=
+        ⟨rhoCalc.terms[0], List.getElem_mem (by simp [rhoCalc])⟩
+      have zeroWrapped :
+          zero ∈ rhoCIGSLT.continuationRetyping.wrappedConstructors := by
+        rw [rhoCIGSLT.continuationRetyping.mem_wrappedConstructors_iff]
+        constructor
+        · exact fun equality =>
+            absurd (congrArg Subtype.val equality) (by decide)
+        · exact fun equality =>
+            absurd (congrArg Subtype.val equality) (by decide)
+      have labelRendered :
+          (rhoCIGSLT.materializeDeclaredCostConstructor
+            ⟨CostConstructor.wrapped zero, zeroWrapped⟩).label =
+            (CostStaticColor.symbols rhoCIGSLT .wrapped).constructor "PZero" := by
+        simp [zero, CIGSLT.materializeDeclaredCostConstructor,
+          costWrappedConstructor, rhoCalc, CostStaticColor.symbols,
+          costWrappedStaticSymbols]
+      have materialized :=
+        CIGSLT.materializeDeclaredCostConstructor_eq_of_mem_of_label rhoCIGSLT
+          rule membership _ (labelRendered.trans labelEq.symm)
+      subst rule
+      simp [zero, CIGSLT.materializeDeclaredCostConstructor,
+        costWrappedConstructor, rhoCalc, mapTypeExpr, CostStaticColor.symbols,
+        costWrappedStaticSymbols,
+        show rhoCIGSLT.theory.presentation.interactingSort.1.name = "Proc" by
+          rfl]
+
+/-- A process constructor typed in one rho Cost fibre cannot be the parallel
+unit declared by the opposite fibre. -/
+theorem rhoProc_typed_apply_ne_parallelUnit_of_ne
+    (processColor declarationColor : CostStaticColor)
+    (different : declarationColor ≠ processColor)
     {free : FreeTypeContext} {bound : List TypeExpr}
     {constructor : String} {arguments : List Pattern}
     (typed : HasType rhoCIGSLT.costWholeLanguage free bound
       (.apply constructor arguments)
-      (.base (costStaticReflectivePresentationDecl rhoCIGSLT color
+      (.base (costStaticReflectivePresentationDecl rhoCIGSLT processColor
         rhoReflectivePresentation.toReflectivePresentationDecl).processSort)) :
     constructor ≠
-      (costStaticReflectivePresentationDecl rhoCIGSLT color
+      (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
+        rhoReflectivePresentation.toReflectivePresentationDecl
+        ).parallelUnitConstructor := by
+  obtain ⟨rule, membership, labelEq, _notBare, typeEq, _argumentsTyped⟩ :=
+    hasType_apply_inversion typed
+  subst constructor
+  intro selected
+  have unitWire :
+      (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
+        rhoReflectivePresentation.toReflectivePresentationDecl
+        ).parallelUnitConstructor =
+      (declarationColor.symbols rhoCIGSLT).constructor "PZero" := by
+    cases declarationColor <;> rfl
+  have categoryForm := rho_costWhole_rule_category_of_unitWire_local
+    declarationColor membership (selected.trans unitWire)
+  have mappedProcess :
+      mapTypeExpr (declarationColor.symbols rhoCIGSLT) (.base "Proc") =
+        .base (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
+          rhoReflectivePresentation.toReflectivePresentationDecl).processSort := by
+    cases declarationColor <;> rfl
+  apply rhoCostStatic_processSort_ne_of_ne processColor declarationColor
+    (Ne.symm different)
+  exact TypeExpr.base.inj (typeEq.trans (categoryForm.trans mappedProcess))
+
+/-- A constructor application inhabiting one generated rho process fibre
+cannot use either generated fibre's selected Quote constructor, whose
+validated result lies in the shared, distinct reflective-name sort. -/
+private theorem rhoProc_typed_apply_ne_quoteAt
+    (processColor declarationColor : CostStaticColor)
+    {free : FreeTypeContext} {bound : List TypeExpr}
+    {constructor : String} {arguments : List Pattern}
+    (typed : HasType rhoCIGSLT.costWholeLanguage free bound
+      (.apply constructor arguments)
+      (.base (costStaticReflectivePresentationDecl rhoCIGSLT processColor
+        rhoReflectivePresentation.toReflectivePresentationDecl).processSort)) :
+    constructor ≠
+      (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
         rhoReflectivePresentation.toReflectivePresentationDecl
         ).quoteConstructor := by
-  let declaration := costStaticReflectivePresentationDecl rhoCIGSLT color
+  let processDeclaration := costStaticReflectivePresentationDecl rhoCIGSLT
+    processColor rhoReflectivePresentation.toReflectivePresentationDecl
+  let declaration := costStaticReflectivePresentationDecl rhoCIGSLT
+    declarationColor
     rhoReflectivePresentation.toReflectivePresentationDecl
   change HasType rhoCIGSLT.costWholeLanguage free bound
-      (.apply constructor arguments) (.base declaration.processSort) at typed
+      (.apply constructor arguments) (.base processDeclaration.processSort)
+        at typed
   change constructor ≠ declaration.quoteConstructor
   obtain ⟨rule, membership, labelEq, notBare, typeEq, argumentsTyped⟩ :=
     hasType_apply_inversion typed
   subst constructor
-  have categoryEq : declaration.processSort = rule.category :=
+  have categoryEq : processDeclaration.processSort = rule.category :=
     TypeExpr.base.inj typeEq
   intro selected
   have declarationMembership : declaration ∈
       rhoCIGSLT.costWholeReflectionProfile.presentations := by
     simpa [declaration] using
-      costStaticReflectivePresentationDecl_mem rhoCIGSLT color
+      costStaticReflectivePresentationDecl_mem rhoCIGSLT declarationColor
         rhoReflectivePresentation.toReflectivePresentationDecl
         (by
           change rhoReflectivePresentation.toReflectivePresentationDecl ∈
@@ -787,12 +1130,92 @@ private theorem rhoProc_typed_apply_ne_quote
       (LanguageDef.constructorLabels_nodup_of_validate_eq_nil
         rhoCIGSLT.costWholeLanguage rhoCIGSLT.costWholeLanguage_validate)
       quoteMembership membership sameLabel
-  exact witness.sortsDistinct (by
-    calc
-      declaration.processSort = rule.category := categoryEq
-      _ = witness.quote.category :=
-        congrArg GrammarRule.category sameRule.symm
-      _ = declaration.nameSort := witness.quoteCategory)
+  apply rhoCostStatic_processSort_ne_nameSort processColor declarationColor
+  change processDeclaration.processSort = declaration.nameSort
+  calc
+    processDeclaration.processSort = rule.category := categoryEq
+    _ = witness.quote.category :=
+      congrArg GrammarRule.category sameRule.symm
+    _ = declaration.nameSort := witness.quoteCategory
+
+/-- Same-colour specialization of `rhoProc_typed_apply_ne_quoteAt`. -/
+private theorem rhoProc_typed_apply_ne_quote
+    (color : CostStaticColor)
+    {free : FreeTypeContext} {bound : List TypeExpr}
+    {constructor : String} {arguments : List Pattern}
+    (typed : HasType rhoCIGSLT.costWholeLanguage free bound
+      (.apply constructor arguments)
+      (.base (costStaticReflectivePresentationDecl rhoCIGSLT color
+        rhoReflectivePresentation.toReflectivePresentationDecl).processSort)) :
+    constructor ≠
+      (costStaticReflectivePresentationDecl rhoCIGSLT color
+        rhoReflectivePresentation.toReflectivePresentationDecl
+        ).quoteConstructor :=
+  rhoProc_typed_apply_ne_quoteAt color color typed
+
+/-- A process term typed in either rho Cost fibre cannot acquire a bare
+parallel root under ordinary canonicalization for either fibre unless it was
+already a bare parallel collection for that canonicalizer. -/
+theorem rhoProc_canonicalize_notParallelAt
+    (processColor declarationColor : CostStaticColor)
+    {free : FreeTypeContext} {bound : List TypeExpr} {pattern : Pattern}
+    (typed : HasType rhoCIGSLT.costWholeLanguage free bound pattern
+      (.base (costStaticReflectivePresentationDecl rhoCIGSLT processColor
+        rhoReflectivePresentation.toReflectivePresentationDecl).processSort))
+    (notParallel : ∀ elements,
+      pattern ≠ .collection
+        (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
+          rhoReflectivePresentation.toReflectivePresentationDecl
+          ).parallelCollection elements none) :
+    ∀ elements,
+      canonicalize
+          (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
+            rhoReflectivePresentation.toReflectivePresentationDecl)
+          pattern ≠
+        .collection
+          (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
+            rhoReflectivePresentation.toReflectivePresentationDecl
+            ).parallelCollection elements none := by
+  let processDeclaration := costStaticReflectivePresentationDecl rhoCIGSLT
+    processColor rhoReflectivePresentation.toReflectivePresentationDecl
+  let declaration := costStaticReflectivePresentationDecl rhoCIGSLT
+    declarationColor rhoReflectivePresentation.toReflectivePresentationDecl
+  change HasType rhoCIGSLT.costWholeLanguage free bound pattern
+    (.base processDeclaration.processSort) at typed
+  change (∀ elements,
+    pattern ≠ .collection declaration.parallelCollection elements none) at notParallel
+  change ∀ elements,
+    canonicalize declaration pattern ≠
+      .collection declaration.parallelCollection elements none
+  intro resultElements
+  cases pattern with
+  | bvar index => simp [canonicalize]
+  | fvar name => simp [canonicalize]
+  | apply constructor arguments =>
+      have notQuote : constructor ≠ declaration.quoteConstructor := by
+        simpa [processDeclaration, declaration] using
+          rhoProc_typed_apply_ne_quoteAt processColor declarationColor typed
+      rw [canonicalize_apply_of_ne_quote declaration notQuote]
+      intro equality
+      cases equality
+  | lambda binder body =>
+      simp [canonicalize]
+  | multiLambda arity binders body =>
+      simp [canonicalize]
+  | subst body replacement =>
+      simp [canonicalize]
+  | collection collectionType elements rest =>
+      cases rest with
+      | some restName =>
+          simp [canonicalize]
+      | none =>
+          by_cases selected : collectionType = declaration.parallelCollection
+          · subst collectionType
+            exact (notParallel elements rfl).elim
+          · rw [canonicalize_collection_of_ne_parallel declaration selected]
+            intro equality
+            injection equality with collectionEq
+            exact selected collectionEq
 
 /-- A collapsing root in a generated rho process fibre is necessarily the
 bare parallel representation; the selected Quote alternative returns the
@@ -1304,38 +1727,42 @@ private theorem rhoCostStatic_name_eq_quote_of_canonical_quote_nonDrop
       exact (CostCanonicalLaws.rho_no_collection_at_reflectiveNameSort
         declaration declarationMembership typedName).elim
 
-private theorem rhoProc_canonicalizeByAt_parallelLeaf
+private theorem rhoProc_canonicalizeByAt_parallelLeafAt
     {Key : Type} [LinearOrder Key]
-    (key : Nat → Pattern → Key) (color : CostStaticColor)
+    (key : Nat → Pattern → Key)
+    (processColor declarationColor : CostStaticColor)
     {free : FreeTypeContext} {bound : List TypeExpr} {pattern : Pattern}
     (typed : HasType rhoCIGSLT.costWholeLanguage free bound pattern
-      (.base (costStaticReflectivePresentationDecl rhoCIGSLT color
+      (.base (costStaticReflectivePresentationDecl rhoCIGSLT processColor
         rhoReflectivePresentation.toReflectivePresentationDecl).processSort))
     (notUnit : pattern ≠
-      .apply (costStaticReflectivePresentationDecl rhoCIGSLT color
+      .apply (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
         rhoReflectivePresentation.toReflectivePresentationDecl
         ).parallelUnitConstructor [])
     (notParallel : ∀ elements,
       pattern ≠ .collection
-        (costStaticReflectivePresentationDecl rhoCIGSLT color
+        (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
           rhoReflectivePresentation.toReflectivePresentationDecl
           ).parallelCollection elements none)
     (depth : Nat) :
     parallelContents
-        (costStaticReflectivePresentationDecl rhoCIGSLT color
+        (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
           rhoReflectivePresentation.toReflectivePresentationDecl)
         [canonicalizeByAt key
-          (costStaticReflectivePresentationDecl rhoCIGSLT color
+          (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
             rhoReflectivePresentation.toReflectivePresentationDecl)
           depth pattern] =
       [canonicalizeByAt key
-        (costStaticReflectivePresentationDecl rhoCIGSLT color
+        (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
           rhoReflectivePresentation.toReflectivePresentationDecl)
         depth pattern] := by
-  let declaration := costStaticReflectivePresentationDecl rhoCIGSLT color
+  let processDeclaration := costStaticReflectivePresentationDecl rhoCIGSLT
+    processColor rhoReflectivePresentation.toReflectivePresentationDecl
+  let declaration := costStaticReflectivePresentationDecl rhoCIGSLT
+    declarationColor
     rhoReflectivePresentation.toReflectivePresentationDecl
   change HasType rhoCIGSLT.costWholeLanguage free bound pattern
-    (.base declaration.processSort) at typed
+    (.base processDeclaration.processSort) at typed
   change pattern ≠ .apply declaration.parallelUnitConstructor [] at notUnit
   change (∀ elements,
     pattern ≠ .collection declaration.parallelCollection elements none) at notParallel
@@ -1350,7 +1777,8 @@ private theorem rhoProc_canonicalizeByAt_parallelLeaf
         hasType_apply_inversion typed
       subst constructor
       have notQuote : rule.label ≠ declaration.quoteConstructor := by
-        simpa [declaration] using rhoProc_typed_apply_ne_quote color typed
+        simpa [processDeclaration, declaration] using
+          rhoProc_typed_apply_ne_quoteAt processColor declarationColor typed
       have notQuoteBool : (rule.label == declaration.quoteConstructor) = false :=
         beq_eq_false_iff_ne.mpr notQuote
       have normalizedNotUnit :
@@ -1397,36 +1825,73 @@ private theorem rhoProc_canonicalizeByAt_parallelLeaf
             rw [canonicalEq]
             simp [parallelContents, parallelSplice, selected]
 
-/-- A typed process which is not syntactically a bare parallel collection
-cannot acquire a bare-parallel root under keyed canonicalization.  The proof
-uses the exposed keyed frontier, rather than a false global idempotence law:
-quote-visible depth resets make the latter unavailable in general. -/
-private theorem rhoProc_canonicalizeByAt_notParallel
+/-- Same-colour specialization of
+`rhoProc_canonicalizeByAt_parallelLeafAt`. -/
+private theorem rhoProc_canonicalizeByAt_parallelLeaf
     {Key : Type} [LinearOrder Key]
     (key : Nat → Pattern → Key) (color : CostStaticColor)
     {free : FreeTypeContext} {bound : List TypeExpr} {pattern : Pattern}
     (typed : HasType rhoCIGSLT.costWholeLanguage free bound pattern
       (.base (costStaticReflectivePresentationDecl rhoCIGSLT color
         rhoReflectivePresentation.toReflectivePresentationDecl).processSort))
+    (notUnit : pattern ≠
+      .apply (costStaticReflectivePresentationDecl rhoCIGSLT color
+        rhoReflectivePresentation.toReflectivePresentationDecl
+        ).parallelUnitConstructor [])
     (notParallel : ∀ elements,
       pattern ≠ .collection
         (costStaticReflectivePresentationDecl rhoCIGSLT color
           rhoReflectivePresentation.toReflectivePresentationDecl
           ).parallelCollection elements none)
     (depth : Nat) :
+    parallelContents
+        (costStaticReflectivePresentationDecl rhoCIGSLT color
+          rhoReflectivePresentation.toReflectivePresentationDecl)
+        [canonicalizeByAt key
+          (costStaticReflectivePresentationDecl rhoCIGSLT color
+            rhoReflectivePresentation.toReflectivePresentationDecl)
+          depth pattern] =
+      [canonicalizeByAt key
+        (costStaticReflectivePresentationDecl rhoCIGSLT color
+          rhoReflectivePresentation.toReflectivePresentationDecl)
+        depth pattern] :=
+  rhoProc_canonicalizeByAt_parallelLeafAt key color color typed notUnit
+    notParallel depth
+
+/-- A typed process which is not syntactically a bare parallel collection
+cannot acquire a bare-parallel root under keyed canonicalization.  The proof
+uses the exposed keyed frontier, rather than a false global idempotence law:
+quote-visible depth resets make the latter unavailable in general. -/
+private theorem rhoProc_canonicalizeByAt_notParallelAt
+    {Key : Type} [LinearOrder Key]
+    (key : Nat → Pattern → Key)
+    (processColor declarationColor : CostStaticColor)
+    {free : FreeTypeContext} {bound : List TypeExpr} {pattern : Pattern}
+    (typed : HasType rhoCIGSLT.costWholeLanguage free bound pattern
+      (.base (costStaticReflectivePresentationDecl rhoCIGSLT processColor
+        rhoReflectivePresentation.toReflectivePresentationDecl).processSort))
+    (notParallel : ∀ elements,
+      pattern ≠ .collection
+        (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
+          rhoReflectivePresentation.toReflectivePresentationDecl
+          ).parallelCollection elements none)
+    (depth : Nat) :
     ∀ elements,
       canonicalizeByAt key
-          (costStaticReflectivePresentationDecl rhoCIGSLT color
+          (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
             rhoReflectivePresentation.toReflectivePresentationDecl)
           depth pattern ≠
         .collection
-          (costStaticReflectivePresentationDecl rhoCIGSLT color
+          (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
             rhoReflectivePresentation.toReflectivePresentationDecl
             ).parallelCollection elements none := by
-  let declaration := costStaticReflectivePresentationDecl rhoCIGSLT color
+  let processDeclaration := costStaticReflectivePresentationDecl rhoCIGSLT
+    processColor rhoReflectivePresentation.toReflectivePresentationDecl
+  let declaration := costStaticReflectivePresentationDecl rhoCIGSLT
+    declarationColor
     rhoReflectivePresentation.toReflectivePresentationDecl
   change HasType rhoCIGSLT.costWholeLanguage free bound pattern
-    (.base declaration.processSort) at typed
+    (.base processDeclaration.processSort) at typed
   change (∀ elements,
     pattern ≠ .collection declaration.parallelCollection elements none) at notParallel
   change ∀ elements,
@@ -1449,8 +1914,8 @@ private theorem rhoProc_canonicalizeByAt_notParallel
         [canonicalizeByAt key declaration depth pattern] =
           [canonicalizeByAt key declaration depth pattern] := by
       simpa [declaration] using
-        (rhoProc_canonicalizeByAt_parallelLeaf key color typed
-          isUnit notParallel depth)
+        (rhoProc_canonicalizeByAt_parallelLeafAt key processColor
+          declarationColor typed isUnit notParallel depth)
     have membership : canonicalizeByAt key declaration depth pattern ∈
         parallelContents declaration
           [canonicalizeByAt key declaration depth pattern] := by
@@ -1460,6 +1925,33 @@ private theorem rhoProc_canonicalizeByAt_notParallel
       [pattern] (canonicalizeByAt key declaration depth pattern) (by
         simpa [canonicalizeListByAt] using membership) elements
     exact forbidden equality
+
+/-- Same-colour specialization of
+`rhoProc_canonicalizeByAt_notParallelAt`. -/
+private theorem rhoProc_canonicalizeByAt_notParallel
+    {Key : Type} [LinearOrder Key]
+    (key : Nat → Pattern → Key) (color : CostStaticColor)
+    {free : FreeTypeContext} {bound : List TypeExpr} {pattern : Pattern}
+    (typed : HasType rhoCIGSLT.costWholeLanguage free bound pattern
+      (.base (costStaticReflectivePresentationDecl rhoCIGSLT color
+        rhoReflectivePresentation.toReflectivePresentationDecl).processSort))
+    (notParallel : ∀ elements,
+      pattern ≠ .collection
+        (costStaticReflectivePresentationDecl rhoCIGSLT color
+          rhoReflectivePresentation.toReflectivePresentationDecl
+          ).parallelCollection elements none)
+    (depth : Nat) :
+    ∀ elements,
+      canonicalizeByAt key
+          (costStaticReflectivePresentationDecl rhoCIGSLT color
+            rhoReflectivePresentation.toReflectivePresentationDecl)
+          depth pattern ≠
+        .collection
+          (costStaticReflectivePresentationDecl rhoCIGSLT color
+            rhoReflectivePresentation.toReflectivePresentationDecl
+            ).parallelCollection elements none :=
+  rhoProc_canonicalizeByAt_notParallelAt key color color typed notParallel
+    depth
 
 private theorem rhoParallel_elements_hasType
     (color : CostStaticColor)
@@ -1742,65 +2234,109 @@ mutual
 end
 
 mutual
-  private theorem rhoProc_parallelLeaves_typed
-      (color : CostStaticColor) (free : FreeTypeContext)
+  private theorem rhoProc_parallelLeaves_typedAt
+      (processColor declarationColor : CostStaticColor)
+      (free : FreeTypeContext)
       (bound : List TypeExpr) {pattern : Pattern}
       (typed : HasType rhoCIGSLT.costWholeLanguage free bound pattern
-        (.base (costStaticReflectivePresentationDecl rhoCIGSLT color
+        (.base (costStaticReflectivePresentationDecl rhoCIGSLT processColor
           rhoReflectivePresentation.toReflectivePresentationDecl).processSort)) :
       ElementsHaveType rhoCIGSLT.costWholeLanguage free bound
         (parallelLeaves
-          (costStaticReflectivePresentationDecl rhoCIGSLT color
+          (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
             rhoReflectivePresentation.toReflectivePresentationDecl) pattern)
-        (.base (costStaticReflectivePresentationDecl rhoCIGSLT color
+        (.base (costStaticReflectivePresentationDecl rhoCIGSLT processColor
           rhoReflectivePresentation.toReflectivePresentationDecl).processSort) := by
-    let declaration := costStaticReflectivePresentationDecl rhoCIGSLT color
+    let processDeclaration := costStaticReflectivePresentationDecl rhoCIGSLT
+      processColor rhoReflectivePresentation.toReflectivePresentationDecl
+    let declaration := costStaticReflectivePresentationDecl rhoCIGSLT
+      declarationColor
       rhoReflectivePresentation.toReflectivePresentationDecl
     change HasType rhoCIGSLT.costWholeLanguage free bound pattern
-      (.base declaration.processSort) at typed
+      (.base processDeclaration.processSort) at typed
     change ElementsHaveType rhoCIGSLT.costWholeLanguage free bound
-      (parallelLeaves declaration pattern) (.base declaration.processSort)
+      (parallelLeaves declaration pattern) (.base processDeclaration.processSort)
     by_cases isUnit : pattern =
         .apply declaration.parallelUnitConstructor []
     · subst pattern
       simpa [parallelLeaves] using
-        (ElementsHaveType.nil bound (.base declaration.processSort) :
+        (ElementsHaveType.nil bound (.base processDeclaration.processSort) :
           ElementsHaveType rhoCIGSLT.costWholeLanguage free bound []
-            (.base declaration.processSort))
+            (.base processDeclaration.processSort))
     · by_cases isParallel : ∃ elements,
           pattern = .collection declaration.parallelCollection elements none
       · obtain ⟨elements, rfl⟩ := isParallel
-        simpa [declaration, parallelLeaves] using
-          rhoProc_parallelLeavesList_typed color free bound
-            (rhoParallel_elements_hasType color typed)
+        have collectionEq : declaration.parallelCollection =
+            processDeclaration.parallelCollection := by
+          cases processColor <;> cases declarationColor <;> rfl
+        have typedCurrent := typed
+        rw [collectionEq] at typedCurrent
+        have elementsTyped := rhoParallel_elements_hasType processColor
+          (by simpa [processDeclaration] using typedCurrent)
+        simpa [processDeclaration, declaration, parallelLeaves] using
+          rhoProc_parallelLeavesList_typedAt processColor declarationColor
+            free bound elementsTyped
       · rw [parallelLeaves_of_not_unit_or_parallel declaration pattern isUnit
           (fun elements equality => isParallel ⟨elements, equality⟩)]
-        exact .cons typed (.nil bound (.base declaration.processSort))
+        exact .cons typed (.nil bound (.base processDeclaration.processSort))
   termination_by sizeOf pattern
 
-  private theorem rhoProc_parallelLeavesList_typed
-      (color : CostStaticColor) (free : FreeTypeContext)
+  private theorem rhoProc_parallelLeavesList_typedAt
+      (processColor declarationColor : CostStaticColor)
+      (free : FreeTypeContext)
       (bound : List TypeExpr) {patterns : List Pattern}
       (typed : ElementsHaveType rhoCIGSLT.costWholeLanguage free bound patterns
-        (.base (costStaticReflectivePresentationDecl rhoCIGSLT color
+        (.base (costStaticReflectivePresentationDecl rhoCIGSLT processColor
           rhoReflectivePresentation.toReflectivePresentationDecl).processSort)) :
       ElementsHaveType rhoCIGSLT.costWholeLanguage free bound
         (parallelLeavesList
-          (costStaticReflectivePresentationDecl rhoCIGSLT color
+          (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
             rhoReflectivePresentation.toReflectivePresentationDecl) patterns)
-        (.base (costStaticReflectivePresentationDecl rhoCIGSLT color
+        (.base (costStaticReflectivePresentationDecl rhoCIGSLT processColor
           rhoReflectivePresentation.toReflectivePresentationDecl).processSort) := by
     cases typed with
     | nil => exact .nil bound _
     | cons headTyped tailTyped =>
-        exact (rhoProc_parallelLeaves_typed color free bound headTyped).append
-          (rhoProc_parallelLeavesList_typed color free bound tailTyped)
+        exact (rhoProc_parallelLeaves_typedAt processColor declarationColor
+          free bound headTyped).append
+          (rhoProc_parallelLeavesList_typedAt processColor declarationColor
+            free bound tailTyped)
   termination_by sizeOf patterns
 
   decreasing_by
     all_goals simp_all
     all_goals omega
 end
+
+/-- Same-colour specialization of recursive parallel-leaf typing. -/
+private theorem rhoProc_parallelLeaves_typed
+    (color : CostStaticColor) (free : FreeTypeContext)
+    (bound : List TypeExpr) {pattern : Pattern}
+    (typed : HasType rhoCIGSLT.costWholeLanguage free bound pattern
+      (.base (costStaticReflectivePresentationDecl rhoCIGSLT color
+        rhoReflectivePresentation.toReflectivePresentationDecl).processSort)) :
+    ElementsHaveType rhoCIGSLT.costWholeLanguage free bound
+      (parallelLeaves
+        (costStaticReflectivePresentationDecl rhoCIGSLT color
+          rhoReflectivePresentation.toReflectivePresentationDecl) pattern)
+      (.base (costStaticReflectivePresentationDecl rhoCIGSLT color
+        rhoReflectivePresentation.toReflectivePresentationDecl).processSort) :=
+  rhoProc_parallelLeaves_typedAt color color free bound typed
+
+/-- Same-colour specialization of recursive parallel-leaf-list typing. -/
+private theorem rhoProc_parallelLeavesList_typed
+    (color : CostStaticColor) (free : FreeTypeContext)
+    (bound : List TypeExpr) {patterns : List Pattern}
+    (typed : ElementsHaveType rhoCIGSLT.costWholeLanguage free bound patterns
+      (.base (costStaticReflectivePresentationDecl rhoCIGSLT color
+        rhoReflectivePresentation.toReflectivePresentationDecl).processSort)) :
+    ElementsHaveType rhoCIGSLT.costWholeLanguage free bound
+      (parallelLeavesList
+        (costStaticReflectivePresentationDecl rhoCIGSLT color
+          rhoReflectivePresentation.toReflectivePresentationDecl) patterns)
+      (.base (costStaticReflectivePresentationDecl rhoCIGSLT color
+        rhoReflectivePresentation.toReflectivePresentationDecl).processSort) :=
+  rhoProc_parallelLeavesList_typedAt color color free bound typed
 
 mutual
   private theorem parallelLeaves_objects
@@ -1845,6 +2381,251 @@ mutual
 end
 
 mutual
+  /-- For a process typed in one rho Cost fibre, flattening with the opposite
+  declaration differs from own-colour flattening only by the own-colour unit
+  occurrences that the opposite declaration retains. -/
+  private theorem rhoProc_parallelLeaves_eq_filter_of_ne
+      (processColor declarationColor : CostStaticColor)
+      (different : declarationColor ≠ processColor)
+      (free : FreeTypeContext) (bound : List TypeExpr) {pattern : Pattern}
+      (typed : HasType rhoCIGSLT.costWholeLanguage free bound pattern
+        (.base (costStaticReflectivePresentationDecl rhoCIGSLT processColor
+          rhoReflectivePresentation.toReflectivePresentationDecl).processSort)) :
+      parallelLeaves
+          (costStaticReflectivePresentationDecl rhoCIGSLT processColor
+            rhoReflectivePresentation.toReflectivePresentationDecl) pattern =
+        (parallelLeaves
+          (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
+            rhoReflectivePresentation.toReflectivePresentationDecl) pattern
+        ).filter (· ≠ .apply
+          (costStaticReflectivePresentationDecl rhoCIGSLT processColor
+            rhoReflectivePresentation.toReflectivePresentationDecl
+            ).parallelUnitConstructor []) := by
+    let processDeclaration := costStaticReflectivePresentationDecl rhoCIGSLT
+      processColor rhoReflectivePresentation.toReflectivePresentationDecl
+    let declaration := costStaticReflectivePresentationDecl rhoCIGSLT
+      declarationColor rhoReflectivePresentation.toReflectivePresentationDecl
+    have collectionEq : processDeclaration.parallelCollection =
+        declaration.parallelCollection := by
+      cases processColor <;> cases declarationColor <;> rfl
+    change parallelLeaves processDeclaration pattern =
+      (parallelLeaves declaration pattern).filter
+        (· ≠ .apply processDeclaration.parallelUnitConstructor [])
+    cases pattern with
+    | bvar index => simp [parallelLeaves]
+    | fvar name => simp [parallelLeaves]
+    | apply constructor arguments =>
+        have notForeignUnit : constructor ≠
+            declaration.parallelUnitConstructor := by
+          simpa [processDeclaration, declaration] using
+            rhoProc_typed_apply_ne_parallelUnit_of_ne processColor
+              declarationColor different typed
+        have notForeignUnitShape : ¬
+            (constructor = declaration.parallelUnitConstructor ∧
+              arguments = []) := fun selected => notForeignUnit selected.1
+        by_cases ownUnitShape :
+            constructor = processDeclaration.parallelUnitConstructor ∧
+              arguments = []
+        · simp [parallelLeaves, ownUnitShape]
+        · simp [parallelLeaves, ownUnitShape, notForeignUnitShape]
+    | lambda binder body => simp [parallelLeaves]
+    | multiLambda arity binders body => simp [parallelLeaves]
+    | subst body replacement => simp [parallelLeaves]
+    | collection collectionType elements rest =>
+        cases rest with
+        | some restName =>
+            simp [parallelLeaves]
+        | none =>
+            by_cases selected :
+                collectionType = processDeclaration.parallelCollection
+            · subst collectionType
+              have elementsTyped := rhoParallel_elements_hasType processColor
+                (by simpa [processDeclaration] using typed)
+              have inductionHypothesis :=
+                rhoProc_parallelLeavesList_eq_filter_of_ne processColor
+                  declarationColor different free bound elementsTyped
+              simp only [parallelLeaves]
+              simp only [collectionEq]
+              simpa [processDeclaration, declaration] using inductionHypothesis
+            · have notSelected :
+                  collectionType ≠ declaration.parallelCollection :=
+                fun equality => selected (equality.trans collectionEq.symm)
+              simp [parallelLeaves, selected, notSelected]
+  termination_by sizeOf pattern
+
+  private theorem rhoProc_parallelLeavesList_eq_filter_of_ne
+      (processColor declarationColor : CostStaticColor)
+      (different : declarationColor ≠ processColor)
+      (free : FreeTypeContext) (bound : List TypeExpr)
+      {patterns : List Pattern}
+      (typed : ElementsHaveType rhoCIGSLT.costWholeLanguage free bound patterns
+        (.base (costStaticReflectivePresentationDecl rhoCIGSLT processColor
+          rhoReflectivePresentation.toReflectivePresentationDecl).processSort)) :
+      parallelLeavesList
+          (costStaticReflectivePresentationDecl rhoCIGSLT processColor
+            rhoReflectivePresentation.toReflectivePresentationDecl) patterns =
+        (parallelLeavesList
+          (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
+            rhoReflectivePresentation.toReflectivePresentationDecl) patterns
+        ).filter (· ≠ .apply
+          (costStaticReflectivePresentationDecl rhoCIGSLT processColor
+            rhoReflectivePresentation.toReflectivePresentationDecl
+            ).parallelUnitConstructor []) := by
+    cases typed with
+    | nil => simp [parallelLeavesList]
+    | cons headTyped tailTyped =>
+        have head := rhoProc_parallelLeaves_eq_filter_of_ne processColor
+          declarationColor different free bound headTyped
+        have tail := rhoProc_parallelLeavesList_eq_filter_of_ne processColor
+          declarationColor different free bound tailTyped
+        simp only [parallelLeavesList]
+        rw [head, tail, List.filter_append]
+  termination_by sizeOf patterns
+
+  decreasing_by
+    all_goals simp_all
+    all_goals omega
+end
+
+private theorem rhoProc_canonicalize_eq_parallelUnit_iff_of_notParallel
+    (processColor declarationColor : CostStaticColor)
+    {free : FreeTypeContext} {bound : List TypeExpr} {pattern : Pattern}
+    (typed : HasType rhoCIGSLT.costWholeLanguage free bound pattern
+      (.base (costStaticReflectivePresentationDecl rhoCIGSLT processColor
+        rhoReflectivePresentation.toReflectivePresentationDecl).processSort))
+    (notParallel : ∀ elements,
+      pattern ≠ .collection
+        (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
+          rhoReflectivePresentation.toReflectivePresentationDecl
+          ).parallelCollection elements none) :
+    canonicalize
+        (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
+          rhoReflectivePresentation.toReflectivePresentationDecl) pattern =
+      .apply
+        (costStaticReflectivePresentationDecl rhoCIGSLT processColor
+          rhoReflectivePresentation.toReflectivePresentationDecl
+          ).parallelUnitConstructor [] ↔
+      pattern = .apply
+        (costStaticReflectivePresentationDecl rhoCIGSLT processColor
+          rhoReflectivePresentation.toReflectivePresentationDecl
+          ).parallelUnitConstructor [] := by
+  let processDeclaration := costStaticReflectivePresentationDecl rhoCIGSLT
+    processColor rhoReflectivePresentation.toReflectivePresentationDecl
+  let declaration := costStaticReflectivePresentationDecl rhoCIGSLT
+    declarationColor rhoReflectivePresentation.toReflectivePresentationDecl
+  change canonicalize declaration pattern =
+      .apply processDeclaration.parallelUnitConstructor [] ↔
+    pattern = .apply processDeclaration.parallelUnitConstructor []
+  constructor
+  · intro canonical
+    cases pattern with
+    | bvar index => simp [canonicalize] at canonical
+    | fvar name => simp [canonicalize] at canonical
+    | apply constructor arguments =>
+        have notQuote : constructor ≠ declaration.quoteConstructor := by
+          simpa [processDeclaration, declaration] using
+            rhoProc_typed_apply_ne_quoteAt processColor declarationColor typed
+        rw [canonicalize_apply_of_ne_quote declaration notQuote] at canonical
+        have constructorEq := (Pattern.apply.inj canonical).1
+        have argumentsEq := (Pattern.apply.inj canonical).2
+        rw [constructorEq, List.map_eq_nil_iff.mp argumentsEq]
+    | lambda binder body => simp [canonicalize] at canonical
+    | multiLambda arity binders body => simp [canonicalize] at canonical
+    | subst body replacement => simp [canonicalize] at canonical
+    | collection collectionType elements rest =>
+        cases rest with
+        | some restName => simp [canonicalize] at canonical
+        | none =>
+            by_cases selected :
+                collectionType = declaration.parallelCollection
+            · subst collectionType
+              exact (notParallel elements rfl).elim
+            · rw [canonicalize_collection_of_ne_parallel declaration selected]
+                at canonical
+              cases canonical
+  · intro shape
+    subst pattern
+    have notQuote : processDeclaration.parallelUnitConstructor ≠
+        declaration.quoteConstructor := by
+      simpa [processDeclaration, declaration] using
+        rhoProc_typed_apply_ne_quoteAt processColor declarationColor typed
+    rw [canonicalize_apply_of_ne_quote declaration notQuote]
+    rfl
+
+private theorem List.map_filter_ne_eq_filter_map_of_eq_iff
+    {α β : Type} [DecidableEq α] [DecidableEq β]
+    (function : α → β) (sourceDiscard : α) (targetDiscard : β) :
+    ∀ {elements : List α},
+      (∀ element ∈ elements,
+        function element = targetDiscard ↔ element = sourceDiscard) →
+      (elements.filter (· ≠ sourceDiscard)).map function =
+        (elements.map function).filter (· ≠ targetDiscard)
+  | elements, preserves => by
+      rw [List.filter_map]
+      apply congrArg (List.map function)
+      apply List.filter_congr
+      intro element membership
+      have preserved := preserves element membership
+      by_cases discarded : element = sourceDiscard
+      · subst element
+        have imageDiscarded : function sourceDiscard = targetDiscard :=
+          preserved.mpr rfl
+        simp [imageDiscarded]
+      · have imageRetained : function element ≠ targetDiscard :=
+          fun equality => discarded (preserved.mp equality)
+        simp [discarded, imageRetained]
+
+private theorem elementsHaveType_hasType_of_mem
+    {language : LanguageDef} {free : FreeTypeContext}
+    {bound : List TypeExpr} {patterns : List Pattern} {type : TypeExpr}
+    (typed : ElementsHaveType language free bound patterns type)
+    {pattern : Pattern} (membership : pattern ∈ patterns) :
+    HasType language free bound pattern type := by
+  induction patterns with
+  | nil => simp at membership
+  | cons head tail inductionHypothesis =>
+      cases typed with
+      | cons headTyped tailTyped =>
+          cases membership with
+          | head => exact headTyped
+          | tail _ membershipTail =>
+              exact inductionHypothesis tailTyped membershipTail
+
+private theorem map_canonicalize_filter_parallelUnit_eq_filter_map_of_typed
+    (processColor declarationColor : CostStaticColor)
+    {free : FreeTypeContext} {bound : List TypeExpr}
+    {patterns : List Pattern}
+    (typed : ElementsHaveType rhoCIGSLT.costWholeLanguage free bound patterns
+      (.base (costStaticReflectivePresentationDecl rhoCIGSLT processColor
+        rhoReflectivePresentation.toReflectivePresentationDecl).processSort))
+    (notParallel : ∀ pattern ∈ patterns, ∀ elements,
+      pattern ≠ .collection
+        (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
+          rhoReflectivePresentation.toReflectivePresentationDecl
+          ).parallelCollection elements none) :
+    ((patterns.filter (· ≠ .apply
+        (costStaticReflectivePresentationDecl rhoCIGSLT processColor
+          rhoReflectivePresentation.toReflectivePresentationDecl
+          ).parallelUnitConstructor [])).map
+      (canonicalize
+        (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
+          rhoReflectivePresentation.toReflectivePresentationDecl))) =
+      ((patterns.map
+        (canonicalize
+          (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
+            rhoReflectivePresentation.toReflectivePresentationDecl))).filter
+        (· ≠ .apply
+          (costStaticReflectivePresentationDecl rhoCIGSLT processColor
+            rhoReflectivePresentation.toReflectivePresentationDecl
+            ).parallelUnitConstructor [])) := by
+  apply List.map_filter_ne_eq_filter_map_of_eq_iff
+  intro pattern membership
+  exact rhoProc_canonicalize_eq_parallelUnit_iff_of_notParallel
+    processColor declarationColor
+      (elementsHaveType_hasType_of_mem typed membership)
+      (notParallel pattern membership)
+
+mutual
   private theorem parallelLeaves_supported
       (declaration : ReflectivePresentationDecl) (allowed : String → Prop) :
       ∀ {pattern}, ConstructorsWithin allowed pattern →
@@ -1880,34 +2661,37 @@ mutual
 end
 
 mutual
-  private theorem rhoProc_parallelLeaves_frontier_perm
+  private theorem rhoProc_parallelLeaves_frontier_permAt
       {Key : Type} [LinearOrder Key]
-      (key : Nat → Pattern → Key) (color : CostStaticColor)
+      (key : Nat → Pattern → Key)
+      (processColor declarationColor : CostStaticColor)
       (free : FreeTypeContext) (bound : List TypeExpr) {pattern : Pattern}
       (typed : HasType rhoCIGSLT.costWholeLanguage free bound pattern
-        (.base (costStaticReflectivePresentationDecl rhoCIGSLT color
+        (.base (costStaticReflectivePresentationDecl rhoCIGSLT processColor
           rhoReflectivePresentation.toReflectivePresentationDecl).processSort))
       (depth : Nat) :
       List.Perm
         (parallelContents
-          (costStaticReflectivePresentationDecl rhoCIGSLT color
+          (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
             rhoReflectivePresentation.toReflectivePresentationDecl)
           [canonicalizeByAt key
-            (costStaticReflectivePresentationDecl rhoCIGSLT color
+            (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
               rhoReflectivePresentation.toReflectivePresentationDecl)
             depth pattern])
         (canonicalizeListByAt key
-          (costStaticReflectivePresentationDecl rhoCIGSLT color
+          (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
             rhoReflectivePresentation.toReflectivePresentationDecl)
           depth
           (parallelLeaves
-            (costStaticReflectivePresentationDecl rhoCIGSLT color
+            (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
               rhoReflectivePresentation.toReflectivePresentationDecl)
             pattern)) := by
-    let declaration := costStaticReflectivePresentationDecl rhoCIGSLT color
+    let processDeclaration := costStaticReflectivePresentationDecl rhoCIGSLT
+      processColor rhoReflectivePresentation.toReflectivePresentationDecl
+    let declaration := costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
       rhoReflectivePresentation.toReflectivePresentationDecl
     change HasType rhoCIGSLT.costWholeLanguage free bound pattern
-      (.base declaration.processSort) at typed
+      (.base processDeclaration.processSort) at typed
     change List.Perm
       (parallelContents declaration
         [canonicalizeByAt key declaration depth pattern])
@@ -1934,8 +2718,9 @@ mutual
           rw [unitCanonical]
           simp [parallelLeaves, canonicalizeListByAt, parallelContents,
             parallelSplice]
-        · have stable := rhoProc_canonicalizeByAt_parallelLeaf key color typed
-            isUnit (by intro elements equality; cases equality) depth
+        · have stable := rhoProc_canonicalizeByAt_parallelLeafAt key processColor
+            declarationColor typed isUnit
+            (by intro elements equality; cases equality) depth
           have leavesEq : parallelLeaves declaration
               (.apply constructor arguments) = [.apply constructor arguments] :=
             parallelLeaves_of_not_unit_or_parallel declaration _ isUnit
@@ -1944,19 +2729,22 @@ mutual
           simpa [declaration, canonicalizeListByAt] using
             (List.Perm.of_eq stable)
     | lambda binder body =>
-        have stable := rhoProc_canonicalizeByAt_parallelLeaf key color typed
+        have stable := rhoProc_canonicalizeByAt_parallelLeafAt key processColor
+          declarationColor typed
           (by intro equality; cases equality)
           (by intro elements equality; cases equality) depth
         simpa [declaration, parallelLeaves, canonicalizeListByAt] using
           List.Perm.of_eq stable
     | multiLambda arity binders body =>
-        have stable := rhoProc_canonicalizeByAt_parallelLeaf key color typed
+        have stable := rhoProc_canonicalizeByAt_parallelLeafAt key processColor
+          declarationColor typed
           (by intro equality; cases equality)
           (by intro elements equality; cases equality) depth
         simpa [declaration, parallelLeaves, canonicalizeListByAt] using
           List.Perm.of_eq stable
     | subst body replacement =>
-        have stable := rhoProc_canonicalizeByAt_parallelLeaf key color typed
+        have stable := rhoProc_canonicalizeByAt_parallelLeafAt key processColor
+          declarationColor typed
           (by intro equality; cases equality)
           (by intro elements equality; cases equality) depth
         simpa [declaration, parallelLeaves, canonicalizeListByAt] using
@@ -1964,7 +2752,8 @@ mutual
     | collection collectionType elements rest =>
         cases rest with
         | some restName =>
-            have stable := rhoProc_canonicalizeByAt_parallelLeaf key color typed
+            have stable := rhoProc_canonicalizeByAt_parallelLeafAt key processColor
+              declarationColor typed
               (by intro equality; cases equality)
               (by intro nested equality; cases equality) depth
             simpa [declaration, parallelLeaves, canonicalizeListByAt] using
@@ -1972,12 +2761,22 @@ mutual
         | none =>
             by_cases selected : collectionType = declaration.parallelCollection
             · subst collectionType
-              have elementsTyped := rhoParallel_elements_hasType color typed
+              have parallelCollection_eq :
+                  declaration.parallelCollection =
+                    processDeclaration.parallelCollection := by
+                cases processColor <;> cases declarationColor <;> rfl
+              have typedAtProcessCollection : HasType
+                  rhoCIGSLT.costWholeLanguage free bound
+                  (.collection processDeclaration.parallelCollection elements none)
+                  (.base processDeclaration.processSort) := by
+                simpa only [parallelCollection_eq] using typed
+              have elementsTyped := rhoParallel_elements_hasType processColor
+                typedAtProcessCollection
               have exposed :=
                 parallelContents_canonicalizeByAt_singleton_perm key declaration
                   depth (.collection declaration.parallelCollection elements none)
-              have children := rhoProc_parallelLeavesList_frontier_perm key color
-                free bound elementsTyped depth
+              have children := rhoProc_parallelLeavesList_frontier_permAt key
+                processColor declarationColor free bound elementsTyped depth
               have filtered :=
                 parallelContents_canonicalizeListByAt_filter_unit key declaration
                   depth elements
@@ -1985,7 +2784,8 @@ mutual
                 simpa [declaration, parallelContents, parallelSplice,
                   parallelLeaves] using
                     (List.Perm.of_eq filtered).trans children)
-            · have stable := rhoProc_canonicalizeByAt_parallelLeaf key color typed
+            · have stable := rhoProc_canonicalizeByAt_parallelLeafAt key
+                processColor declarationColor typed
                 (by intro equality; cases equality)
                 (by intro nested equality
                     injection equality with collectionEq
@@ -2003,51 +2803,52 @@ mutual
                 (List.Perm.of_eq stable)
   termination_by sizeOf pattern
 
-  private theorem rhoProc_parallelLeavesList_frontier_perm
+  private theorem rhoProc_parallelLeavesList_frontier_permAt
       {Key : Type} [LinearOrder Key]
-      (key : Nat → Pattern → Key) (color : CostStaticColor)
+      (key : Nat → Pattern → Key)
+      (processColor declarationColor : CostStaticColor)
       (free : FreeTypeContext) (bound : List TypeExpr)
       {patterns : List Pattern}
       (typed : ElementsHaveType rhoCIGSLT.costWholeLanguage free bound patterns
-        (.base (costStaticReflectivePresentationDecl rhoCIGSLT color
+        (.base (costStaticReflectivePresentationDecl rhoCIGSLT processColor
           rhoReflectivePresentation.toReflectivePresentationDecl).processSort))
       (depth : Nat) :
       List.Perm
         (parallelContents
-          (costStaticReflectivePresentationDecl rhoCIGSLT color
+          (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
             rhoReflectivePresentation.toReflectivePresentationDecl)
           (canonicalizeListByAt key
-            (costStaticReflectivePresentationDecl rhoCIGSLT color
+            (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
               rhoReflectivePresentation.toReflectivePresentationDecl)
             depth patterns))
         (canonicalizeListByAt key
-          (costStaticReflectivePresentationDecl rhoCIGSLT color
+          (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
             rhoReflectivePresentation.toReflectivePresentationDecl)
           depth
           (parallelLeavesList
-            (costStaticReflectivePresentationDecl rhoCIGSLT color
+            (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
               rhoReflectivePresentation.toReflectivePresentationDecl)
             patterns)) := by
     cases typed with
     | nil => simp [parallelLeavesList, canonicalizeListByAt, parallelContents]
     | cons headTyped tailTyped =>
-        have head := rhoProc_parallelLeaves_frontier_perm key color
-          free bound headTyped depth
-        have tail := rhoProc_parallelLeavesList_frontier_perm key color
-          free bound tailTyped depth
+        have head := rhoProc_parallelLeaves_frontier_permAt key processColor
+          declarationColor free bound headTyped depth
+        have tail := rhoProc_parallelLeavesList_frontier_permAt key processColor
+          declarationColor free bound tailTyped depth
         simp only [canonicalizeListByAt, parallelLeavesList]
         rw [show canonicalizeByAt key
-              (costStaticReflectivePresentationDecl rhoCIGSLT color
+              (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
                 rhoReflectivePresentation.toReflectivePresentationDecl)
               depth _ :: canonicalizeListByAt key
-                (costStaticReflectivePresentationDecl rhoCIGSLT color
+                (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
                   rhoReflectivePresentation.toReflectivePresentationDecl)
                 depth _ =
             [canonicalizeByAt key
-              (costStaticReflectivePresentationDecl rhoCIGSLT color
+              (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
                 rhoReflectivePresentation.toReflectivePresentationDecl)
               depth _] ++ canonicalizeListByAt key
-                (costStaticReflectivePresentationDecl rhoCIGSLT color
+                (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
                   rhoReflectivePresentation.toReflectivePresentationDecl)
                 depth _ by rfl,
           parallelContents_append]
@@ -2060,50 +2861,138 @@ mutual
     all_goals omega
 end
 
+/-- A typed process has the same keyed parallel frontier whether it is
+flattened before or after keyed canonicalization.  The declaration colour
+may differ from the process colour; typing rules out an authored process
+leaf acquiring a reflective parallel root at the selected declaration. -/
+theorem rhoProc_parallelLeaves_keyed_frontier_perm
+    {Key : Type} [LinearOrder Key]
+    (key : Nat → Pattern → Key)
+    (processColor declarationColor : CostStaticColor)
+    (free : FreeTypeContext) (bound : List TypeExpr) {pattern : Pattern}
+    (typed : HasType rhoCIGSLT.costWholeLanguage free bound pattern
+      (.base (costStaticReflectivePresentationDecl rhoCIGSLT processColor
+        rhoReflectivePresentation.toReflectivePresentationDecl).processSort))
+    (depth : Nat) :
+    List.Perm
+      (parallelContents
+        (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
+          rhoReflectivePresentation.toReflectivePresentationDecl)
+        [canonicalizeByAt key
+          (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
+            rhoReflectivePresentation.toReflectivePresentationDecl)
+          depth pattern])
+      (canonicalizeListByAt key
+        (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
+          rhoReflectivePresentation.toReflectivePresentationDecl)
+        depth
+        (parallelLeaves
+          (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
+            rhoReflectivePresentation.toReflectivePresentationDecl)
+          pattern)) :=
+  rhoProc_parallelLeaves_frontier_permAt key processColor declarationColor
+    free bound typed depth
+
+/-- Same-colour specialization of the typed keyed parallel frontier. -/
+private theorem rhoProc_parallelLeaves_frontier_perm
+    {Key : Type} [LinearOrder Key]
+    (key : Nat → Pattern → Key) (color : CostStaticColor)
+    (free : FreeTypeContext) (bound : List TypeExpr) {pattern : Pattern}
+    (typed : HasType rhoCIGSLT.costWholeLanguage free bound pattern
+      (.base (costStaticReflectivePresentationDecl rhoCIGSLT color
+        rhoReflectivePresentation.toReflectivePresentationDecl).processSort))
+    (depth : Nat) :
+    List.Perm
+      (parallelContents
+        (costStaticReflectivePresentationDecl rhoCIGSLT color
+          rhoReflectivePresentation.toReflectivePresentationDecl)
+        [canonicalizeByAt key
+          (costStaticReflectivePresentationDecl rhoCIGSLT color
+            rhoReflectivePresentation.toReflectivePresentationDecl)
+          depth pattern])
+      (canonicalizeListByAt key
+        (costStaticReflectivePresentationDecl rhoCIGSLT color
+          rhoReflectivePresentation.toReflectivePresentationDecl)
+        depth
+        (parallelLeaves
+          (costStaticReflectivePresentationDecl rhoCIGSLT color
+            rhoReflectivePresentation.toReflectivePresentationDecl)
+          pattern)) :=
+  rhoProc_parallelLeaves_frontier_permAt key color color free bound typed depth
+
+/-- Same-colour specialization of the typed keyed parallel-list frontier. -/
+private theorem rhoProc_parallelLeavesList_frontier_perm
+    {Key : Type} [LinearOrder Key]
+    (key : Nat → Pattern → Key) (color : CostStaticColor)
+    (free : FreeTypeContext) (bound : List TypeExpr)
+    {patterns : List Pattern}
+    (typed : ElementsHaveType rhoCIGSLT.costWholeLanguage free bound patterns
+      (.base (costStaticReflectivePresentationDecl rhoCIGSLT color
+        rhoReflectivePresentation.toReflectivePresentationDecl).processSort))
+    (depth : Nat) :
+    List.Perm
+      (parallelContents
+        (costStaticReflectivePresentationDecl rhoCIGSLT color
+          rhoReflectivePresentation.toReflectivePresentationDecl)
+        (canonicalizeListByAt key
+          (costStaticReflectivePresentationDecl rhoCIGSLT color
+            rhoReflectivePresentation.toReflectivePresentationDecl)
+          depth patterns))
+      (canonicalizeListByAt key
+        (costStaticReflectivePresentationDecl rhoCIGSLT color
+          rhoReflectivePresentation.toReflectivePresentationDecl)
+        depth
+        (parallelLeavesList
+          (costStaticReflectivePresentationDecl rhoCIGSLT color
+            rhoReflectivePresentation.toReflectivePresentationDecl)
+          patterns)) :=
+  rhoProc_parallelLeavesList_frontier_permAt key color color free bound typed depth
+
 /-- Equal ordinary canonical classes of two typed process terms induce an
 occurrence-preserving permutation of their recursively flattened parallel
 leaves.  Singleton parallel wrappers are used only in the ordinary
 canonical quotient, where absorption is unconditional; keyed endpoints stay
 fully explicit. -/
-private theorem rhoProcParallelLeaves_canonical_map_perm
+private theorem rhoProcParallelLeaves_canonical_map_permAt
     {Key : Type} [LinearOrder Key]
-    (key : Nat → Pattern → Key) (color : CostStaticColor)
+    (key : Nat → Pattern → Key)
+    (processColor declarationColor : CostStaticColor)
     {free : FreeTypeContext} {bound : List TypeExpr}
     {left right : Pattern}
     (leftTyped : HasType rhoCIGSLT.costWholeLanguage free bound left
-      (.base (costStaticReflectivePresentationDecl rhoCIGSLT color
+      (.base (costStaticReflectivePresentationDecl rhoCIGSLT processColor
         rhoReflectivePresentation.toReflectivePresentationDecl).processSort))
     (rightTyped : HasType rhoCIGSLT.costWholeLanguage free bound right
-      (.base (costStaticReflectivePresentationDecl rhoCIGSLT color
+      (.base (costStaticReflectivePresentationDecl rhoCIGSLT processColor
         rhoReflectivePresentation.toReflectivePresentationDecl).processSort))
     (canonical : canonicalize
-        (costStaticReflectivePresentationDecl rhoCIGSLT color
+        (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
           rhoReflectivePresentation.toReflectivePresentationDecl) left =
       canonicalize
-        (costStaticReflectivePresentationDecl rhoCIGSLT color
+        (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
           rhoReflectivePresentation.toReflectivePresentationDecl) right)
     (depth : Nat) :
     List.Perm
       ((parallelLeaves
-        (costStaticReflectivePresentationDecl rhoCIGSLT color
+        (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
           rhoReflectivePresentation.toReflectivePresentationDecl)
         left).map
           (canonicalize
-            (costStaticReflectivePresentationDecl rhoCIGSLT color
+            (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
               rhoReflectivePresentation.toReflectivePresentationDecl)))
       ((parallelLeaves
-        (costStaticReflectivePresentationDecl rhoCIGSLT color
+        (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
           rhoReflectivePresentation.toReflectivePresentationDecl)
         right).map
           (canonicalize
-            (costStaticReflectivePresentationDecl rhoCIGSLT color
+            (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
               rhoReflectivePresentation.toReflectivePresentationDecl))) := by
-  let declaration := costStaticReflectivePresentationDecl rhoCIGSLT color
+  let declaration := costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
     rhoReflectivePresentation.toReflectivePresentationDecl
-  have leftFrontier := rhoProc_parallelLeaves_frontier_perm key color
-    free bound leftTyped depth
-  have rightFrontier := rhoProc_parallelLeaves_frontier_perm key color
-    free bound rightTyped depth
+  have leftFrontier := rhoProc_parallelLeaves_frontier_permAt key processColor
+    declarationColor free bound leftTyped depth
+  have rightFrontier := rhoProc_parallelLeaves_frontier_permAt key processColor
+    declarationColor free bound rightTyped depth
   have wrappedCanonical : canonicalize declaration
         (.collection declaration.parallelCollection [left] none) =
       canonicalize declaration
@@ -2138,6 +3027,118 @@ private theorem rhoProcParallelLeaves_canonical_map_perm
           (canonicalize declaration)) := by
     simpa [canonicalizeListByAt] using outer
   exact leftToLeaves.symm.trans (outerSingleton.trans rightToLeaves)
+
+/-- Foreign canonical equality of two terms in one typed rho process fibre
+induces a permutation of their own-colour parallel leaves, classified by the
+foreign canonicalizer.  The only leaves discarded when changing frontiers are
+own-colour units, and typing prevents a non-unit foreign leaf from
+canonicalizing to that unit. -/
+theorem rhoProc_parallelLeaves_map_perm_of_foreign_canonical_eq
+    {Key : Type} [LinearOrder Key]
+    (key : Nat → Pattern → Key)
+    (processColor declarationColor : CostStaticColor)
+    (different : declarationColor ≠ processColor)
+    {free : FreeTypeContext} {bound : List TypeExpr}
+    {left right : Pattern}
+    (leftTyped : HasType rhoCIGSLT.costWholeLanguage free bound left
+      (.base (costStaticReflectivePresentationDecl rhoCIGSLT processColor
+        rhoReflectivePresentation.toReflectivePresentationDecl).processSort))
+    (rightTyped : HasType rhoCIGSLT.costWholeLanguage free bound right
+      (.base (costStaticReflectivePresentationDecl rhoCIGSLT processColor
+        rhoReflectivePresentation.toReflectivePresentationDecl).processSort))
+    (canonical : canonicalize
+        (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
+          rhoReflectivePresentation.toReflectivePresentationDecl) left =
+      canonicalize
+        (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
+          rhoReflectivePresentation.toReflectivePresentationDecl) right)
+    (depth : Nat) :
+    List.Perm
+      ((parallelLeaves
+        (costStaticReflectivePresentationDecl rhoCIGSLT processColor
+          rhoReflectivePresentation.toReflectivePresentationDecl)
+        left).map
+          (canonicalize
+            (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
+              rhoReflectivePresentation.toReflectivePresentationDecl)))
+      ((parallelLeaves
+        (costStaticReflectivePresentationDecl rhoCIGSLT processColor
+          rhoReflectivePresentation.toReflectivePresentationDecl)
+        right).map
+          (canonicalize
+            (costStaticReflectivePresentationDecl rhoCIGSLT declarationColor
+              rhoReflectivePresentation.toReflectivePresentationDecl))) := by
+  let processDeclaration := costStaticReflectivePresentationDecl rhoCIGSLT
+    processColor rhoReflectivePresentation.toReflectivePresentationDecl
+  let declaration := costStaticReflectivePresentationDecl rhoCIGSLT
+    declarationColor rhoReflectivePresentation.toReflectivePresentationDecl
+  have raw := rhoProcParallelLeaves_canonical_map_permAt key processColor
+    declarationColor leftTyped rightTyped canonical depth
+  have filtered := raw.filter
+    (· ≠ .apply processDeclaration.parallelUnitConstructor [])
+  have leftFrontier := rhoProc_parallelLeaves_eq_filter_of_ne processColor
+    declarationColor different free bound leftTyped
+  have rightFrontier := rhoProc_parallelLeaves_eq_filter_of_ne processColor
+    declarationColor different free bound rightTyped
+  have leftLeavesTyped := rhoProc_parallelLeaves_typedAt processColor
+    declarationColor free bound leftTyped
+  have rightLeavesTyped := rhoProc_parallelLeaves_typedAt processColor
+    declarationColor free bound rightTyped
+  have leftMapFilter :=
+    map_canonicalize_filter_parallelUnit_eq_filter_map_of_typed processColor
+      declarationColor leftLeavesTyped
+        (fun leaf membership =>
+          parallelLeaves_noParallel declaration left leaf membership)
+  have rightMapFilter :=
+    map_canonicalize_filter_parallelUnit_eq_filter_map_of_typed processColor
+      declarationColor rightLeavesTyped
+        (fun leaf membership =>
+          parallelLeaves_noParallel declaration right leaf membership)
+  change List.Perm
+    ((parallelLeaves processDeclaration left).map
+      (canonicalize declaration))
+    ((parallelLeaves processDeclaration right).map
+      (canonicalize declaration))
+  rw [leftFrontier, rightFrontier, leftMapFilter, rightMapFilter]
+  exact filtered
+
+/-- Same-colour specialization of the canonical parallel-frontier
+permutation. -/
+private theorem rhoProcParallelLeaves_canonical_map_perm
+    {Key : Type} [LinearOrder Key]
+    (key : Nat → Pattern → Key) (color : CostStaticColor)
+    {free : FreeTypeContext} {bound : List TypeExpr}
+    {left right : Pattern}
+    (leftTyped : HasType rhoCIGSLT.costWholeLanguage free bound left
+      (.base (costStaticReflectivePresentationDecl rhoCIGSLT color
+        rhoReflectivePresentation.toReflectivePresentationDecl).processSort))
+    (rightTyped : HasType rhoCIGSLT.costWholeLanguage free bound right
+      (.base (costStaticReflectivePresentationDecl rhoCIGSLT color
+        rhoReflectivePresentation.toReflectivePresentationDecl).processSort))
+    (canonical : canonicalize
+        (costStaticReflectivePresentationDecl rhoCIGSLT color
+          rhoReflectivePresentation.toReflectivePresentationDecl) left =
+      canonicalize
+        (costStaticReflectivePresentationDecl rhoCIGSLT color
+          rhoReflectivePresentation.toReflectivePresentationDecl) right)
+    (depth : Nat) :
+    List.Perm
+      ((parallelLeaves
+        (costStaticReflectivePresentationDecl rhoCIGSLT color
+          rhoReflectivePresentation.toReflectivePresentationDecl)
+        left).map
+          (canonicalize
+            (costStaticReflectivePresentationDecl rhoCIGSLT color
+              rhoReflectivePresentation.toReflectivePresentationDecl)))
+      ((parallelLeaves
+        (costStaticReflectivePresentationDecl rhoCIGSLT color
+          rhoReflectivePresentation.toReflectivePresentationDecl)
+        right).map
+          (canonicalize
+            (costStaticReflectivePresentationDecl rhoCIGSLT color
+              rhoReflectivePresentation.toReflectivePresentationDecl))) :=
+  rhoProcParallelLeaves_canonical_map_permAt key color color leftTyped rightTyped
+    canonical depth
 
 /-- Flattening a typed process into its raw parallel occurrences and then
 ordinary-canonicalizing those occurrences yields the same multiset as the
@@ -2244,11 +3245,99 @@ private theorem rhoProc_parallelLeaves_eq_singleton_of_canonical_drop
     List.map_eq_singleton_iff.mp singleton
   exact ⟨leaf, leaves, leafCanonical⟩
 
+/-- A typed object process canonically exposing one Drop contains exactly one
+raw Drop leaf.  The raw name remains typed and object-shaped, and its
+canonical form is the exposed name.  No global constructor-support premise is
+needed for this structural exposure. -/
+theorem rhoProc_canonical_drop_leaf_exposure
+    {Key : Type} [LinearOrder Key]
+    (key : Nat → Pattern → Key) (color : CostStaticColor)
+    {free : FreeTypeContext} {bound : List TypeExpr}
+    {pattern name : Pattern}
+    (typed : HasType rhoCIGSLT.costWholeLanguage free bound pattern
+      (.base (costStaticReflectivePresentationDecl rhoCIGSLT color
+        rhoReflectivePresentation.toReflectivePresentationDecl).processSort))
+    (object : isObjectPattern pattern = true)
+    (canonical : canonicalize
+        (costStaticReflectivePresentationDecl rhoCIGSLT color
+          rhoReflectivePresentation.toReflectivePresentationDecl) pattern =
+      .apply
+        (costStaticReflectivePresentationDecl rhoCIGSLT color
+          rhoReflectivePresentation.toReflectivePresentationDecl
+          ).dropConstructor [name])
+    (depth : Nat) :
+    ∃ rawName,
+      parallelLeaves
+          (costStaticReflectivePresentationDecl rhoCIGSLT color
+            rhoReflectivePresentation.toReflectivePresentationDecl)
+          pattern =
+        [.apply
+          (costStaticReflectivePresentationDecl rhoCIGSLT color
+            rhoReflectivePresentation.toReflectivePresentationDecl
+            ).dropConstructor [rawName]] ∧
+      HasType rhoCIGSLT.costWholeLanguage free bound rawName
+        (.base (costStaticReflectivePresentationDecl rhoCIGSLT color
+          rhoReflectivePresentation.toReflectivePresentationDecl).nameSort) ∧
+      isObjectPattern rawName = true ∧
+      canonicalize
+          (costStaticReflectivePresentationDecl rhoCIGSLT color
+            rhoReflectivePresentation.toReflectivePresentationDecl)
+          rawName = name := by
+  let declaration := costStaticReflectivePresentationDecl rhoCIGSLT color
+    rhoReflectivePresentation.toReflectivePresentationDecl
+  obtain ⟨leaf, leaves, leafCanonical⟩ :=
+    rhoProc_parallelLeaves_eq_singleton_of_canonical_drop key color typed
+      canonical depth
+  have leafMembership : leaf ∈ parallelLeaves declaration pattern := by
+    rw [leaves]
+    simp
+  have leavesTyped := rhoProc_parallelLeaves_typed color free bound typed
+  have leafTyped := elementsHaveType_of_mem leavesTyped leafMembership
+  have leavesObject := parallelLeaves_objects declaration object
+  have leafObject := isObjectPattern_of_mem leavesObject leafMembership
+  have quoteNeDrop : declaration.quoteConstructor ≠
+      declaration.dropConstructor := by
+    simpa [declaration] using rhoCostStatic_quote_ne_drop color
+  have dropFixed : canonicalize declaration
+      (.apply declaration.dropConstructor [name]) =
+        .apply declaration.dropConstructor [name] := by
+    rw [← canonical]
+    exact canonicalize_idempotent declaration pattern
+  have nameFixed : canonicalize declaration name = name := by
+    rw [canonicalize_apply_of_ne_quote declaration quoteNeDrop.symm] at dropFixed
+    injection dropFixed with headEquality argumentsEquality
+    exact (List.cons.inj argumentsEquality).1
+  have leafPairCanonical : canonicalize declaration leaf =
+      canonicalize declaration (.apply declaration.dropConstructor [name]) :=
+    leafCanonical.trans dropFixed.symm
+  rcases canonicalize_eq_root_cases declaration leafPairCanonical with
+    leafCollapsing | rightCollapsing | aligned
+  · obtain ⟨elements, shape⟩ :=
+      rhoProc_collapsingRoot_is_parallel color leafTyped leafCollapsing
+    exact (parallelLeaves_noParallel declaration pattern leaf leafMembership
+      elements shape).elim
+  · rcases rightCollapsing with quoted | parallel
+    · obtain ⟨arguments, shape⟩ := quoted
+      injection shape with headEquality argumentsEquality
+      exact (quoteNeDrop headEquality.symm).elim
+    · obtain ⟨elements, shape⟩ := parallel
+      cases shape
+  · cases aligned with
+    | apply notQuote children =>
+        cases children with
+        | @cons rawName rightName leftTail rightTail rawCanonical tail =>
+            cases tail
+            have rawTyped := rhoCostStatic_drop_inner_hasType color leafTyped
+            have rawObject : isObjectPattern rawName = true := by
+              simpa [isObjectPattern, isObjectPatternList] using leafObject
+            exact ⟨rawName, by simpa [declaration] using leaves, rawTyped,
+              rawObject, rawCanonical.trans nameFixed⟩
+
 /-- A typed process whose canonical form is one selected Drop exposes one
 raw Drop occurrence through parallel flattening.  Typing, objecthood, and
 constructor support of the raw name payload are retained, and its ordinary
 canonical form is the exposed canonical name. -/
-private theorem rhoProc_canonical_drop_exposure
+theorem rhoProc_canonical_drop_exposure
     {Key : Type} [LinearOrder Key]
     (key : Nat → Pattern → Key) (color : CostStaticColor)
     {free : FreeTypeContext} {bound : List TypeExpr}
@@ -2353,7 +3442,7 @@ Besides the unique flattened Drop value, this theorem returns the exact
 one-hole context selecting that raw occurrence in the original process.  A
 static-region plan can therefore replay the same occurrence into its retained
 boundary table, including when equal leaves occur elsewhere in the source. -/
-private theorem rhoProc_canonical_drop_exposure_with_context
+theorem rhoProc_canonical_drop_exposure_with_context
     {Key : Type} [LinearOrder Key]
     (key : Nat → Pattern → Key) (color : CostStaticColor)
     {free : FreeTypeContext} {bound : List TypeExpr}
@@ -2422,7 +3511,7 @@ private theorem rhoProc_canonical_drop_exposure_with_context
 occurrence has the same keyed canonical representative as that occurrence.
 The proof handles a genuine nested parallel by exposing its occurrence
 frontier; all other terms reduce to the defining singleton leaf equation. -/
-private theorem rhoProc_canonicalizeByAt_eq_single_parallelLeaf
+theorem rhoProc_canonicalizeByAt_eq_single_parallelLeaf
     {Key : Type} [LinearOrder Key]
     (key : Nat → Pattern → Key) (color : CostStaticColor)
     {free : FreeTypeContext} {bound : List TypeExpr}
