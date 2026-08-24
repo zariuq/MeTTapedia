@@ -2,6 +2,8 @@ import Mettapedia.Languages.MeTTa.Prime.NativeInteractionTheory
 import Mettapedia.Languages.MeTTa.Prime.NativeQuotationAdequacy
 import Mettapedia.Languages.MeTTa.Prime.PrimeMotivationProgramPackages
 import Mettapedia.Languages.MeTTa.Prime.NativeInteractionFamilyFibration
+import Mettapedia.Languages.MeTTa.Prime.NativePrimeCostInterfaceCrown
+import Mettapedia.Languages.MeTTa.Prime.NativePrimeCostRhoAnnex
 import Mettapedia.Languages.MeTTa.Prime.NativeTypedOptimizationAdmission
 import Mettapedia.Languages.MeTTa.Prime.NativeProgramGradualGuarantee
 import Mettapedia.Languages.MeTTa.Prime.NativeProgramSourceAdequacy
