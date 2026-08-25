@@ -1291,7 +1291,8 @@ mutual
           leftPlan leftAdmission).elim
   termination_by 3 * (sizeOf leftPattern + sizeOf rightPattern) + 2
   decreasing_by
-    all_goals subst_vars
+    all_goals subst rightPattern
+    all_goals subst leftPattern
     all_goals simp
     all_goals omega
 
@@ -1541,7 +1542,8 @@ mutual
                     tailAligned)
   termination_by 3 * (sizeOf leftArguments + sizeOf rightArguments) + 1
   decreasing_by
-    all_goals subst_vars
+    all_goals subst rightArguments
+    all_goals subst leftArguments
     all_goals simp
     all_goals omega
 
@@ -1802,7 +1804,8 @@ mutual
                     tailAligned)
   termination_by 3 * (sizeOf leftArguments + sizeOf rightArguments) + 1
   decreasing_by
-    all_goals subst_vars
+    all_goals subst rightArguments
+    all_goals subst leftArguments
     all_goals simp
     all_goals omega
 
@@ -2034,7 +2037,8 @@ mutual
                     tailAligned)
   termination_by 3 * (sizeOf leftElements + sizeOf rightElements) + 1
   decreasing_by
-    all_goals subst_vars
+    all_goals subst rightElements
+    all_goals subst leftElements
     all_goals simp
     all_goals omega
 end
@@ -2273,7 +2277,8 @@ theorem costStaticElementPlan_canonicalStopAlignedBelow
                   (by simp at rightElementsSizeLt ⊢; omega) tailAligned)
   termination_by 3 * (sizeOf leftElements + sizeOf rightElements) + 1
   decreasing_by
-    all_goals subst_vars
+    all_goals subst rightElements
+    all_goals subst leftElements
     all_goals simp
     all_goals omega
 
