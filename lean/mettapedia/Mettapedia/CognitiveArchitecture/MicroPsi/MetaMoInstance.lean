@@ -71,31 +71,10 @@ abbrev MicroPsiStateVec := Fin stateDim → ℝ≥0∞
 
 /-! ## QModule Instance
 
-MicroPsi state vectors form a QModule over ℝ≥0∞.
-Scalar multiplication is component-wise: (q • θ)(i) = q * θ(i)
+`MicroPsiStateVec` inherits the general pointwise `QModule` construction from
+`MetaMo.Basic`; only the architecture-specific component interpretation lives
+here.
 -/
-
-/-- Component-wise scalar multiplication for MicroPsi state vectors -/
-noncomputable def stateVecSmul (q : ℝ≥0∞) (θ : MicroPsiStateVec) : MicroPsiStateVec :=
-  fun i => q * θ i
-
-/-- MicroPsi state vectors form a QModule over ℝ≥0∞ -/
-noncomputable instance microPsiQModule : QModule ℝ≥0∞ MicroPsiStateVec where
-  smul := stateVecSmul
-  smul_one θ := by
-    ext i
-    simp only [stateVecSmul, one_mul]
-  smul_assoc q₁ q₂ θ := by
-    ext i
-    simp only [stateVecSmul, mul_assoc]
-  smul_sup q θ₁ θ₂ := by
-    ext i
-    simp only [stateVecSmul, Pi.sup_apply]
-    have hdist : q * sSup {θ₁ i, θ₂ i} = ⨆ y ∈ ({θ₁ i, θ₂ i} : Set ℝ≥0∞), q * y :=
-      ENNReal.mul_sSup
-    have hsup_pair : sSup ({θ₁ i, θ₂ i} : Set ℝ≥0∞) = θ₁ i ⊔ θ₂ i := sSup_pair
-    rw [← hsup_pair, hdist]
-    exact iSup_pair
 
 /-! ## Key Properties
 

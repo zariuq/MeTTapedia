@@ -139,6 +139,8 @@ import Mettapedia.TaxonomyMigrationLedger
 import Mettapedia.KR
 
 -- Logic
+import Mettapedia.Logic.WorldModel
+import Mettapedia.Logic.MarkovLogicIndividuationBridge
 import Mettapedia.Logic.GunkyMereology
 import Mettapedia.Logic.StoneGunkDuality
 import Mettapedia.Logic.Metaphysics
@@ -177,7 +179,9 @@ import Mettapedia.PLN.Bridges.Logic.WorldModel.PLNWorldModelKripkeNeighborhoodEm
 import Mettapedia.PLN.Bridges.Logic.WorldModel.PLNWorldModelKripkeNeighborhoodCanonical
 import Mettapedia.PLN.Bridges.Logic.WorldModel.PLNWorldModelKripkeWeighted
 import Mettapedia.KR.ConceptGeometry.AbstractInheritance
-import Mettapedia.PLN.Comparisons.NARS.NARSInheritance
+import Mettapedia.NARS
+import Mettapedia.Evidence
+import Mettapedia.Enactive
 import Mettapedia.PLN.WorldModel.Experiment
 -- PLN confidence/strength/ITV characterization tower (finite + infinite:
 -- Ising/Gibbs/DLR and i.i.d. de Finetti).  `PLNTruthTheoryIndex` is the
@@ -189,6 +193,7 @@ import Mettapedia.UniversalAI.SimplicityUncertainty
 import Mettapedia.UniversalAI.BayesianAgents
 import Mettapedia.UniversalAI.ProblemClasses
 import Mettapedia.UniversalAI.TimeBoundedAIXI
+import Mettapedia.UniversalAI.Omega
 
 -- Value Under Ignorance (Wyeth & Hutter 2025)
 import Mettapedia.UniversalAI.ValueUnderIgnorance

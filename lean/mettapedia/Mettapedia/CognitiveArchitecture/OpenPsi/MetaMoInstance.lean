@@ -86,33 +86,10 @@ via pointwise operations. This is already in Mathlib's Pi instances.
 
 /-! ## QModule Instance
 
-We prove that OpenPsiStateVec forms a QModule over ℝ≥0∞.
-Scalar multiplication is defined component-wise: (q • θ)(i) = q * θ(i)
+`OpenPsiStateVec` inherits the general pointwise `QModule` construction from
+`MetaMo.Basic`; only the architecture-specific component interpretation lives
+here.
 -/
-
-/-- Component-wise scalar multiplication for OpenPsi state vectors -/
-noncomputable def stateVecSmul (q : ℝ≥0∞) (θ : OpenPsiStateVec) : OpenPsiStateVec :=
-  fun i => q * θ i
-
-/-- OpenPsi state vectors form a QModule over ℝ≥0∞ -/
-noncomputable instance openPsiQModule : QModule ℝ≥0∞ OpenPsiStateVec where
-  smul := stateVecSmul
-  smul_one θ := by
-    ext i
-    simp only [stateVecSmul, one_mul]
-  smul_assoc q₁ q₂ θ := by
-    ext i
-    simp only [stateVecSmul, mul_assoc]
-  smul_sup q θ₁ θ₂ := by
-    ext i
-    simp only [stateVecSmul, Pi.sup_apply]
-    -- Need: q * (θ₁ i ⊔ θ₂ i) = q * θ₁ i ⊔ q * θ₂ i
-    -- This is exactly the quantale distributivity in ℝ≥0∞
-    have hdist : q * sSup {θ₁ i, θ₂ i} = ⨆ y ∈ ({θ₁ i, θ₂ i} : Set ℝ≥0∞), q * y :=
-      ENNReal.mul_sSup
-    have hsup_pair : sSup ({θ₁ i, θ₂ i} : Set ℝ≥0∞) = θ₁ i ⊔ θ₂ i := sSup_pair
-    rw [← hsup_pair, hdist]
-    exact iSup_pair
 
 /-! ## Key Properties
 

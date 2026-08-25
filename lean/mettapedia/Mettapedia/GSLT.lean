@@ -27,6 +27,9 @@ import Mettapedia.GSLT.Dynamics.ProofRelevantNeedNIK
 import Mettapedia.GSLT.Dynamics.IndexedQueryRevision
 import Mettapedia.GSLT.Dynamics.IndexedQueryRevisionCanary
 import Mettapedia.GSLT.Dynamics.ObservationDisciplineCrown
+import Mettapedia.GSLT.Dynamics.TwoLanguageEvidenceObservation
+import Mettapedia.GSLT.Dynamics.AnswerDistinctionConservation
+import Mettapedia.GSLT.Dynamics.WorldOfViews
 import Mettapedia.GSLT.Dynamics.CapabilityGeneratedObservationDomain
 import Mettapedia.GSLT.Dynamics.CapabilityGeneratedObservationUniversal
 import Mettapedia.GSLT.Dynamics.IndexedExecutionObservation
@@ -80,6 +83,7 @@ import Mettapedia.GSLT.LanguageDef.NIKMetalogic
 import Mettapedia.GSLT.LanguageDef.NIKRevisionAlignedComposition
 import Mettapedia.GSLT.LanguageDef.NIKPolicyFamilyAdmission
 import Mettapedia.GSLT.LanguageDef.NIKRepresentedRouteObservation
+import Mettapedia.GSLT.LanguageDef.OpenSystemExtensionBoundary
 import Mettapedia.GSLT.LanguageDef.DescentInterface
 import Mettapedia.GSLT.LanguageDef.GSLTIL
 import Mettapedia.GSLT.LanguageDef.GSLTILSyntax

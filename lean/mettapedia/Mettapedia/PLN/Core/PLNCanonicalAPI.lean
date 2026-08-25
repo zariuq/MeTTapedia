@@ -62,7 +62,7 @@ import Mettapedia.PLN.RuleFamilies.Temporal.PLNProbabilisticEventCalculus
 import Mettapedia.PLN.Bridges.ProbabilityTheory.BayesNet.PLNColliderSingletonBridge
 import Mettapedia.PLN.Bridges.Languages.PLNErrorMagnificationGrounding
 import Mettapedia.PLN.Bridges.ProbabilityTheory.PLNKyburgReduction
-import Mettapedia.PLN.Comparisons.NARS.PLNNARSRuleCorrespondence
+import Mettapedia.NARS.Bridges.PLN.RuleCorrespondence
 import Mettapedia.PLN.Core.PLNEndToEnd
 import Mettapedia.PLN.Evidence.EvidenceQuantale
 import Mettapedia.PLN.Evidence.EvidenceSTVBridge
@@ -3418,34 +3418,34 @@ abbrev ch7_gaussianEM_unit_mStep_eq_gaussian :=
 /-! ## PLN↔NARS Rule Correspondence canonical aliases -/
 
 abbrev PLNNARSRuleBridgeBundle :=
-  Mettapedia.PLN.Comparisons.NARS.PLNNARSRuleCorrespondence.PLNNARSRuleBridgeBundle
+  Mettapedia.NARS.Bridges.PLN.RuleCorrespondence.PLNNARSRuleBridgeBundle
 
 abbrev plnNarsRuleBridgeBundle :=
-  Mettapedia.PLN.Comparisons.NARS.PLNNARSRuleCorrespondence.plnNarsRuleBridgeBundle
+  Mettapedia.NARS.Bridges.PLN.RuleCorrespondence.plnNarsRuleBridgeBundle
 
 abbrev NARSTruthValue :=
-  Mettapedia.PLN.Comparisons.NARS.NARSPLNGaloisConnection.NARSTruthValue
+  Mettapedia.NARS.Bridges.PLN.InformationAdjunction.NARSTruthValue
 
 abbrev NARSPLNBelief :=
-  Mettapedia.PLN.Comparisons.NARS.NARSPLNGaloisConnection.PLNBelief
+  Mettapedia.NARS.Bridges.PLN.InformationAdjunction.PLNBelief
 
 noncomputable abbrev L_narsToPln :=
-  Mettapedia.PLN.Comparisons.NARS.NARSPLNGaloisConnection.L
+  Mettapedia.NARS.Bridges.PLN.InformationAdjunction.L
 
 noncomputable abbrev U_plnToNars :=
-  Mettapedia.PLN.Comparisons.NARS.NARSPLNGaloisConnection.U
+  Mettapedia.NARS.Bridges.PLN.InformationAdjunction.U
 
 abbrev L_le_iff_le_U_nars_pln :=
-  @Mettapedia.PLN.Comparisons.NARS.NARSPLNGaloisConnection.L_le_iff_le_U
+  @Mettapedia.NARS.Bridges.PLN.InformationAdjunction.L_le_iff_le_U
 
 abbrev galoisConnection_L_U_finite_nars_pln :=
-  @Mettapedia.PLN.Comparisons.NARS.NARSPLNGaloisConnection.galoisConnection_L_U_finite
+  @Mettapedia.NARS.Bridges.PLN.InformationAdjunction.galoisConnection_L_U_finite
 
 abbrev narsToPLNTV :=
-  Mettapedia.PLN.Comparisons.NARS.PLNNARSRuleCorrespondence.narsToPLNTV
+  Mettapedia.NARS.Bridges.PLN.RuleCorrespondence.narsToPLNTV
 
 abbrev plnToNARSTV :=
-  Mettapedia.PLN.Comparisons.NARS.PLNNARSRuleCorrespondence.plnToNARSTV
+  Mettapedia.NARS.Bridges.PLN.RuleCorrespondence.plnToNARSTV
 
 /-! ## Chapter-13 Inference-Control Core Endpoints -/
 

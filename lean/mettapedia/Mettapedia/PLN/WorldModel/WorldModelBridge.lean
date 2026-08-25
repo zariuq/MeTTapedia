@@ -1,4 +1,4 @@
-import Mettapedia.PLN.WorldModel.WorldModelBase
+import Mettapedia.Logic.WorldModel.Basic
 import Mettapedia.PLN.WorldModel.PLNWorldModelGeneric
 
 /-!

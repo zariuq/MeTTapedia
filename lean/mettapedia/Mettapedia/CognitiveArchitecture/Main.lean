@@ -60,7 +60,11 @@ Unified value system extending OpenPsi/MicroPsi to handle full scope of human va
 -/
 
 import Mettapedia.CognitiveArchitecture.MetaMo.Main
+import Mettapedia.CognitiveArchitecture.Agent
+import Mettapedia.CognitiveArchitecture.Agent.Bridges.PLN
+import Mettapedia.CognitiveArchitecture.ProblemSolvingMethods
 import Mettapedia.CognitiveArchitecture.OpenPsi.Main
 import Mettapedia.CognitiveArchitecture.MicroPsi.Main
 import Mettapedia.CognitiveArchitecture.Bridges.Main
 import Mettapedia.CognitiveArchitecture.Values.Main
+import Mettapedia.NARS.Bridges.CognitiveArchitecture

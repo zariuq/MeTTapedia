@@ -32,7 +32,11 @@ is the bisimulation quotient. This means:
 
 - Meredith, "Computation, Causality, and Consciousness" (2026)
 - Goertzel, "Weakness and Its Quantale"
-- Bennett, "Notes on the Concept of Information" (1973, 2003)
+
+Michael Timothy Bennett's completion-count weakness is intentionally kept
+separate in `QuantaleWeakness.lean`.  Charles H. Bennett's 1973 and 2003 work
+concerns reversible computation and Landauer's principle, not this pair-event
+cardinality construction.
 -/
 
 namespace Mettapedia.GSLT.Meredith.WeaknessBridge
@@ -80,7 +84,7 @@ noncomputable def distinctionWeakness (ev : GSLTEvidence U Q) : Q :=
 noncomputable def nonDistinctionWeakness (ev : GSLTEvidence U Q) : Q :=
   gsltWeakness ev (nonDistinctionEvent (U := U))
 
-/-! ## Bennett's Cardinality Remark
+/-! ## Pair-event cardinality
 
     The distinction and non-distinction events partition U × U:
     |distinction| + |non-distinction| = |U|²

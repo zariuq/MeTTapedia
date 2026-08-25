@@ -7,6 +7,7 @@ import Mettapedia.Languages.MeTTa.MeTTaZeroUV
 import Mettapedia.Languages.MeTTa.MeTTaInteraction
 import Mettapedia.Languages.MeTTa.MeTTaInteractionBind
 import Mettapedia.Languages.MeTTa.MeTTaRevisionedQueryBindEval
+import Mettapedia.Languages.MeTTa.StigmergicSpace
 import Mettapedia.Languages.MeTTa.MatchAllContract
 import Mettapedia.Languages.MeTTa.MeTTaSupportIndexedABTWire
 import Mettapedia.Languages.MeTTa.MeTTaZeroLanguageAdequacy
@@ -66,6 +67,7 @@ import Mettapedia.Languages.MeTTa.Prime.LanguageOperationFactorization
 import Mettapedia.Languages.MeTTa.Prime.LanguageOperationNIKAdmission
 import Mettapedia.Languages.MeTTa.Prime.GSLTILLayeredCrown
 import Mettapedia.Languages.MeTTa.Prime.GSLTILTypedOperationAdmission
+import Mettapedia.Languages.MeTTa.Prime.SourceScopedAdaptiveRealization
 import Mettapedia.Languages.MeTTa.Prime.InternalAdmission
 import Mettapedia.Languages.MeTTa.Prime.SelfInstance
 import Mettapedia.Languages.MeTTa.Prime.NativeKernel

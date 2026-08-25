@@ -58,6 +58,26 @@ describe a language as a GSLT, and OSLF builds its modal/Galois type theory for 
 | `Meredith/` | 11 | the interactive/cost/bisimulation bridges and modal (`Diamond`, `RewriteModality`) layer, with ρ-calculus examples |
 | `Life/` | 2 | an assembly-theory experiment over the GSLT substrate |
 
+## Relational and open-system dynamics
+
+The current GSLT-IL integration treats proof-relevant relations as the primary
+transport between language-indexed state fibres. A function is obtained only
+when totality and proof-relevant endpoint determinism establish representability.
+This is developed in `Core/LooseRelationEquipment.lean` and used concretely by:
+
+- `Dynamics/WorldOfViews.lean`, where plural coordination can be partial or
+  branching and functional transport is earned by a representability theorem;
+- `Dynamics/AnswerDistinctionConservation.lean`, where order and multiplicity
+  erasures are rejected whenever the declared answer observation distinguishes
+  them;
+- `LanguageDef/OpenSystemExtensionBoundary.lean`, where validated growth
+  transports old judgments exactly while a merge of independently admitted
+  layers must be revalidated at the new boundary.
+
+This layer is intentionally more general than any one guest language or checker.
+Prime DTT and native execution consume it as instances; they do not define its
+relations.
+
 ## OSLF interface (how the rest of Mettapedia uses GSLT)
 
 GSLT supplies the *spec* that OSLF turns into an executable modal type theory. The

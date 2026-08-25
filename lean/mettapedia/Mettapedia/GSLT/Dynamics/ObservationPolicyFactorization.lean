@@ -116,6 +116,85 @@ theorem supportsPolicy_pair {Event : Type uEvent}
     fun container => ?_⟩
   exact Prod.ext (leftRecovers container) (rightRecovers container)
 
+/-! ## Proof-relevant decision specifications
+
+A decision problem may admit several decisions at one retained history, and
+the reason a decision is admissible can itself carry evidence.  The following
+interface therefore uses a type-valued specification rather than prematurely
+selecting one distinguished decision or quotienting admissibility to a
+Boolean.  A collision is operationally significant precisely when no one
+decision has admissibility evidence at both ends of an observation fibre.
+-/
+
+universe uEvidence
+
+/-- Evidence that a container-indexed policy realizes a proof-relevant
+decision specification at every retained container. -/
+abbrev PolicyRealization {Event : Type uEvent}
+    (discipline : ObservationDiscipline.{uEvent, uContainer, uValue} Event)
+    (Admissible : discipline.collection.Container → Decision → Type uEvidence)
+    (policy : discipline.collection.Container → Decision) :
+    Type (max uContainer uEvidence) :=
+  ∀ container, Admissible container (policy container)
+
+/-- Evidence that a policy computed only from the observation readout realizes
+the specification at every retained container. -/
+abbrev ReadoutPolicyRealization {Event : Type uEvent}
+    (discipline : ObservationDiscipline.{uEvent, uContainer, uValue} Event)
+    (Admissible : discipline.collection.Container → Decision → Type uEvidence)
+    (policy : discipline.Value → Decision) : Type (max uContainer uEvidence) :=
+  ∀ container, Admissible container (policy (discipline.readout container))
+
+/-- Two retained containers in one observation fibre whose admissible
+decision types have empty intersection.  This is stronger and more general
+than requiring a preselected decision function to differ at the two points. -/
+structure IncompatibleDecisionFiber {Event : Type uEvent}
+    (discipline : ObservationDiscipline.{uEvent, uContainer, uValue} Event)
+    (Admissible : discipline.collection.Container → Decision → Type uEvidence) where
+  left : discipline.collection.Container
+  right : discipline.collection.Container
+  sameReadout : discipline.readout left = discipline.readout right
+  incompatible : ∀ decision,
+    IsEmpty (Admissible left decision × Admissible right decision)
+
+/-- An incompatible observation fibre rules out every policy that sees only
+the readout.  The conclusion is type-valued: it excludes a complete family of
+admissibility witnesses, not merely a Boolean success flag. -/
+theorem IncompatibleDecisionFiber.no_readoutPolicyRealization
+    {Event : Type uEvent}
+    {discipline : ObservationDiscipline.{uEvent, uContainer, uValue} Event}
+    {Admissible : discipline.collection.Container → Decision → Type uEvidence}
+    (fiber : IncompatibleDecisionFiber discipline Admissible)
+    (policy : discipline.Value → Decision) :
+    IsEmpty (ReadoutPolicyRealization discipline Admissible policy) := by
+  constructor
+  intro realizes
+  letI := fiber.incompatible (policy (discipline.readout fiber.left))
+  exact isEmptyElim
+    (⟨realizes fiber.left,
+        by simpa only [fiber.sameReadout] using realizes fiber.right⟩ :
+      Admissible fiber.left (policy (discipline.readout fiber.left)) ×
+        Admissible fiber.right (policy (discipline.readout fiber.left)))
+
+/-- A policy realizing an incompatible specification cannot itself factor
+through the observation readout. -/
+theorem IncompatibleDecisionFiber.realizingPolicy_not_supported
+    {Event : Type uEvent}
+    {discipline : ObservationDiscipline.{uEvent, uContainer, uValue} Event}
+    {Admissible : discipline.collection.Container → Decision → Type uEvidence}
+    (fiber : IncompatibleDecisionFiber discipline Admissible)
+    (policy : discipline.collection.Container → Decision)
+    (realizes : PolicyRealization discipline Admissible policy) :
+    ¬ discipline.SupportsPolicy policy := by
+  apply not_supportsPolicy_of_collision discipline policy fiber.sameReadout
+  intro sameDecision
+  letI := fiber.incompatible (policy fiber.left)
+  exact isEmptyElim
+    (⟨realizes fiber.left,
+        by simpa only [sameDecision] using realizes fiber.right⟩ :
+      Admissible fiber.left (policy fiber.left) ×
+        Admissible fiber.right (policy fiber.left))
+
 end ObservationDiscipline
 
 /-! ## Work/span policy controls -/
@@ -175,6 +254,8 @@ end WorkSpanPolicyCanary
 #print axioms ObservationDiscipline.not_supportsPolicy_of_collision
 #print axioms ObservationDiscipline.supportsPolicy_postcompose
 #print axioms ObservationDiscipline.supportsPolicy_pair
+#print axioms ObservationDiscipline.IncompatibleDecisionFiber.no_readoutPolicyRealization
+#print axioms ObservationDiscipline.IncompatibleDecisionFiber.realizingPolicy_not_supported
 #print axioms WorkSpanPolicyCanary.full_supports_every_policy
 #print axioms WorkSpanPolicyCanary.workOnly_lossy_but_supports_workAtLeastTwo
 #print axioms WorkSpanPolicyCanary.workOnly_not_supports_spanAtLeastTwo

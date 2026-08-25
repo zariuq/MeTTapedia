@@ -4,18 +4,31 @@
 Formalization of Ben Goertzel's quantale-based weakness theory from
 "Weakness and Its Quantale: Plausibility Theory from First Principles"
 
-The key insight: Bennett's "weakness" measure generalizes to quantales,
-providing a unified framework for plausibility, probability, and logical entropy.
+The key insight is that several cardinality-based quantities admit quantale
+generalizations.  Two quantities that must remain distinct are:
+
+* Michael Timothy Bennett's weakness of a hypothesis: the number of worlds or
+  completions it admits;
+* pair-event cardinality in the partition/logical-entropy instance: the number
+  of ordered pairs retained by a relation.
+
+The second can be induced from the first by sending a world set `S` to
+`S × S`, but this squares the measure.  It preserves its ordering, not its
+numerical value.
 
 ## Core Definitions
 
-- **Bennett's Weakness**: w(H) = |H| for an event H ⊆ U × U
+- **Bennett Weakness**: w(S) = |S| for admitted worlds `S ⊆ U`
+- **Pair-Event Weakness**: w₂(H) = |H| for `H ⊆ U × U`
 - **Probabilistic Weakness**: wₚ(H) = Σ_{(u,v)∈H} p(u)·p(v)
 - **Quantale Weakness**: w(H) = ⊕_{(u,v)∈H} [μ(u) ⊗ μ(v)]
 
 ## References
 
 - Goertzel, "Weakness and Its Quantale"
+- Michael Timothy Bennett, "The Optimal Choice of Hypothesis Is the Weakest,
+  Not the Shortest" (2023), Definition 7
+- Michael Timothy Bennett, "Is Complexity an Illusion?" (2024), Definition 5
 - Rosenthal, "Quantales and their Applications"
 - Ellerman, "Logical Entropy"
 -/
@@ -224,17 +237,63 @@ end QuantaleHom
 
 end WeaknessMorphisms
 
-/-! ## Bennett's Weakness (Counting Case)
+/-! ## World-count weakness and pair-distinction cardinality
 
-The simplest case: uniform weights on a finite set, counting pairs.
+Michael Timothy Bennett defines the weakness of a statement as the cardinality
+of its extension: the set of worlds/completions the statement admits (2023,
+Definition 7; 2024, Definition 5).  His "Bennett's razor" therefore prefers a
+correct policy that imposes no more constraint than the evidence requires.
+
+The pair-valued cardinality used by the partition/logical-entropy development
+below is related, but it is not Bennett's definition.  The natural map from a
+world set `S` to a pair event is `S × S`, whose cardinality is `|S| ^ 2`.
 -/
 
-section BennettWeakness
+section WorldAndPairWeakness
 
-variable {U : Type*} [Fintype U] [DecidableEq U]
+variable {U : Type*}
 
-/-- Bennett's weakness is just the cardinality of H. -/
-def bennettWeakness (H : Finset (U × U)) : ℕ := H.card
+/-- Michael Timothy Bennett's weakness: the number of worlds or completions
+admitted by a hypothesis. -/
+def bennettWeakness (worlds : Finset U) : ℕ := worlds.card
+
+/-- Cardinality of a pair event in the distinction/logical-entropy instance.
+This quantity was formerly misnamed `bennettWeakness`; it counts pairs, not
+Bennett's admitted worlds. -/
+def pairDistinctionWeakness (event : Finset (U × U)) : ℕ := event.card
+
+/-- The complete pair event induced by a set of admitted worlds. -/
+def inducedPairEvent (worlds : Finset U) : Finset (U × U) :=
+  worlds ×ˢ worlds
+
+/-- Passing from admitted worlds to their complete pair event squares
+cardinality.  This is the precise bridge between Bennett's measure and the
+pair-distinction instance. -/
+theorem pairDistinctionWeakness_inducedPairEvent (worlds : Finset U) :
+    pairDistinctionWeakness (inducedPairEvent worlds) =
+      bennettWeakness worlds ^ 2 := by
+  simp [pairDistinctionWeakness, inducedPairEvent, bennettWeakness, pow_two]
+
+/-- Although the two measures are numerically different, the square embedding
+preserves and reflects their order.  Hence it preserves every finite argmax. -/
+theorem pairDistinctionWeakness_inducedPairEvent_le_iff
+    (left right : Finset U) :
+    pairDistinctionWeakness (inducedPairEvent left) ≤
+        pairDistinctionWeakness (inducedPairEvent right) ↔
+      bennettWeakness left ≤ bennettWeakness right := by
+  simp [pairDistinctionWeakness, inducedPairEvent, bennettWeakness,
+    Nat.mul_self_le_mul_self_iff]
+
+/-- Negative control: on two admitted worlds, Bennett weakness is two while
+the induced pair-event quantity is four.  The bridge preserves maximizers but
+does not identify the measures. -/
+theorem two_world_pair_measure_ne_bennett_measure :
+    pairDistinctionWeakness
+        (inducedPairEvent (Finset.univ : Finset Bool)) = 4 ∧
+      bennettWeakness (Finset.univ : Finset Bool) = 2 := by
+  decide
+
+variable [Fintype U] [DecidableEq U]
 
 /-- The "non-distinction event" D ⊆ U × U consists of pairs where u = v. -/
 def nonDistinctionEvent : Finset (U × U) :=
@@ -285,7 +344,7 @@ theorem distinction_card :
   rw [htotal, hnd] at hcompl
   omega
 
-end BennettWeakness
+end WorldAndPairWeakness
 
 /-! ## Graphtropy and Logical Entropy
 

@@ -920,7 +920,9 @@ theorem correctedMerge_disjointCanary_eq_rawAdd :
   rw [correctedMerge_eq_revise_of_stampDisjoint]
   · rfl
   · simp [StampedBinaryEvidence.StampDisjoint, revisionOverlapCanaryLeftPacket,
-      revisionOverlapCanaryRightPacket]
+      revisionOverlapCanaryRightPacket,
+      Mettapedia.Evidence.SourceScoped.Independent,
+      Mettapedia.Evidence.SourceScope.Independent]
 
 /-- Negative canary: merging the same provenance packet with itself keeps one
 copy of the evidence rather than inflating to two. -/

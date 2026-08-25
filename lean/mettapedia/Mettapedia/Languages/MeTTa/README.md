@@ -43,11 +43,17 @@ scope (files whose nearest README is this one) is 54.
 
 Supporting modules and data:
 - `PureKernel/` — declaration kernel (inductive types as MeTTa atoms)
+- `Prime/` — Prime-facing semantic bridges. In particular,
+  `SourceScopedAdaptiveRealization.lean` separates semantic sufficiency,
+  distinction conservation, currentness, profitability, and cache residence;
+  only the justified semantic judgments may activate a native realization.
 - `Translation/` — HE-to-PeTTa lowering and validated-fragment conformance fixtures
 - `SuiteBase/` — shared test-suite base
 - `TensorDSL/` — tensor-operation layer
 - `HEPrime/` — `Telescope.lean`, a single telescope-IR module
 - `SpecProfiles/` — profile inventories as `.csv`/`.json` data (no Lean code)
+- `StigmergicSpace.lean` — a proof-relevant MeTTa space as a trace-mediated
+  coordination medium, with delayed publication/query evidence.
 
 Root-level modules (`RuntimeSpec.lean`, `ExecutionContract.lean`,
 `ElaboratedCore.lean`, etc.) are integration facades — they wire the layers

@@ -82,7 +82,7 @@ def renderLogicClaim : LogicClaim → String
           (properNameNP "probability theory, Heyting semantics, quantales, and Solomonoff-style prediction"))
   | .semanticsDecisionTreePath =>
       mkPresPos (properNameNP "The semantics decision tree")
-        (copulaNP (properNameNP "`Mettapedia/PLN/Comparisons/NARS/SemanticsDecisionTree.lean`"))
+        (copulaNP (properNameNP "`Mettapedia/PLN/Comparisons/SemanticsDecisionTree.lean`"))
   | .chapter11RegressionHasOneCommand =>
       mkPresPos (properNameNP "Chapter 11 quantifier regression")
         (copulaNP (properNameNP "a one-command build target"))
@@ -311,7 +311,7 @@ def logicReadmeBlocks : List ReadmeBlock :=
       "| Category | Files | Status |\n|----------|-------|--------|\n| Core PLN Inference | 9 | Complete |\n| Weight/Confidence | 2 | Complete |\n| Bounds/Consistency | 2 | Complete |\n| Algebraic Structure | 8 | Complete |\n| Solomonoff/Exchangeability bridge | UniversalAI bridge | See `UniversalAI/` |\n| Convergence/ | 4 | Complete |\n| Comparison/ | 3 | Complete |\n| MeasureTheoreticPLN/ | 3 | Complete |\n| PLNQuantaleSemantics/ | 4 | Complete |\n| Foundations/ | 90+ | Embedded |\n| System Bridges | 4 | Complete |"
   , .heading 2 (renderLogicHeading .semanticsDecisionTree)
   , .claimBullets [claimBullet .semanticsDecisionTreePath]
-  , .pathItems [{path := "Mettapedia/PLN/Comparisons/NARS/SemanticsDecisionTree.lean"}]
+  , .pathItems [{path := "Mettapedia/PLN/Comparisons/SemanticsDecisionTree.lean"}]
   , .heading 2 (renderLogicHeading .chapter11QuantifierRegression)
   , .claimBullets
       [ claimBullet .chapter11RegressionHasOneCommand
@@ -399,7 +399,7 @@ def logicReadmeBlocks : List ReadmeBlock :=
       [ claimBullet .narsCorrespondencePackageExists
       , claimBullet .narsPackageHasFourFamilies
       ]
-  , .pathItems [{path := "Mettapedia/PLN/Comparisons/NARS/PLNNARSRuleCorrespondence.lean"}]
+  , .pathItems [{path := "Mettapedia/NARS/Bridges/PLN/RuleCorrespondence.lean"}]
   , .heading 2 (renderLogicHeading .subdirectories)
   , .claimBullets [claimBullet .subdirectoriesAreCataloged]
   , .codeBlock ""

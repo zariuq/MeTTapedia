@@ -17,6 +17,7 @@ import Mettapedia.PLN.TruthValues.PLNClassicTruthFunctions
 import Mettapedia.PLN.TruthValues.PLNSoundnessCounterexample
 import Mettapedia.PLN.TruthValues.PLNSoundnessDiagnosis
 import Mettapedia.PLN.TruthValues.PLNTruthTower
+import Mettapedia.PLN.TruthValues.EvidenceHorizonInterval
 import Mettapedia.PLN.TruthValues.PLNDistinctionCredalBridge
 import Mettapedia.PLN.TruthValues.PLNTruthTheoryIndex
 import Mettapedia.PLN.TruthValues.WMPLNJustifiedTruthFunctions

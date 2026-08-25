@@ -161,7 +161,7 @@ noncomputable def fuzzySatisfaction (level : UnitValue) (target : DemandTarget) 
           lt_of_le_of_ne level.property.1 (Ne.symm h_level_pos)
         -- From ¬h_in_range and ¬h_below, we get level > max
         have h_above : target.maxLevel.val < level.val := by
-          push_neg at h_in_range
+          push Not at h_in_range
           have h_not_below : level.val ≥ target.minLevel.val := le_of_not_gt h_below
           exact h_in_range h_not_below
         constructor

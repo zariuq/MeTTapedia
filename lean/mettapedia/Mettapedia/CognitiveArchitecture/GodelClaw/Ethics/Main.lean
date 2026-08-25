@@ -3,6 +3,7 @@ import Mettapedia.CognitiveArchitecture.GodelClaw.Ethics.MetaEthicsKernel
 import Mettapedia.CognitiveArchitecture.GodelClaw.Ethics.MetaEthicsTrustTriangleExample
 import Mettapedia.CognitiveArchitecture.GodelClaw.Ethics.MetaStability
 import Mettapedia.CognitiveArchitecture.GodelClaw.Ethics.ProtectedGoals
+import Mettapedia.CognitiveArchitecture.GodelClaw.Ethics.ProtectedFreedomBridge
 import Mettapedia.CognitiveArchitecture.GodelClaw.Ethics.PracticalEthicsKernel
 import Mettapedia.CognitiveArchitecture.GodelClaw.Ethics.PracticalResolution
 import Mettapedia.CognitiveArchitecture.GodelClaw.Ethics.EthicalComplexity

@@ -1,4 +1,6 @@
+import Mettapedia.Evidence.SourceScoped
 import Mettapedia.KR.ConceptGeometry.AbstractInheritanceWitness
+import Mettapedia.NARS.Bridges.PLN.InheritanceEvidence
 
 /-!
 # Stamp-Aware Witness Aggregation for Abstract Inheritance
@@ -27,6 +29,18 @@ namespace StampedBinaryEvidence
 
 variable {Stamp : Type u} [DecidableEq Stamp]
 
+open Mettapedia.Evidence
+
+/-- Stamped PLN evidence exposes its provenance stamp through the same neutral
+source-scope interface used by path-scoped NARS evidence. -/
+instance instSourceScoped :
+    SourceScoped (StampedBinaryEvidence Stamp) Stamp where
+  sourceScope := StampedBinaryEvidence.stamp
+
+omit [DecidableEq Stamp] in
+@[simp] theorem sourceScope_eq_stamp (packet : StampedBinaryEvidence Stamp) :
+    sourceScope packet = packet.stamp := rfl
+
 omit [DecidableEq Stamp] in
 @[ext] theorem ext {x y : StampedBinaryEvidence Stamp}
     (hEvidence : x.evidence = y.evidence) (hStamp : x.stamp = y.stamp) : x = y := by
@@ -36,7 +50,7 @@ omit [DecidableEq Stamp] in
 
 /-- NARS/PLN-style stamp independence. -/
 def StampDisjoint (x y : StampedBinaryEvidence Stamp) : Prop :=
-  Disjoint x.stamp y.stamp
+  SourceScoped.Independent x y
 
 instance instDecidableStampDisjoint
     (x y : StampedBinaryEvidence Stamp) :
@@ -46,7 +60,7 @@ instance instDecidableStampDisjoint
 
 /-- NARS/PLN-style stamp concatenation. -/
 def StampConcat (x y : StampedBinaryEvidence Stamp) : Finset Stamp :=
-  x.stamp ∪ y.stamp
+  SourceScope.merge x.stamp y.stamp
 
 /-- Revision on stamped evidence carries additive evidence and union provenance. -/
 noncomputable def revise (x y : StampedBinaryEvidence Stamp) : StampedBinaryEvidence Stamp where
@@ -67,14 +81,8 @@ noncomputable def guardedRevise (x y : StampedBinaryEvidence Stamp) :
 omit [DecidableEq Stamp] in
 theorem stampDisjoint_self_iff_stamp_eq_empty (x : StampedBinaryEvidence Stamp) :
     StampDisjoint x x ↔ x.stamp = ∅ := by
-  rw [StampDisjoint]
-  constructor
-  · intro h
-    apply Finset.eq_empty_iff_forall_notMem.mpr
-    intro a ha
-    exact (Finset.disjoint_left.mp h ha) ha
-  · intro h
-    simp [h]
+  simpa [StampDisjoint, SourceScoped.Independent] using
+    (SourceScope.independent_self_iff_eq_empty x.stamp)
 
 omit [DecidableEq Stamp] in
 theorem not_stampDisjoint_of_mem
@@ -119,7 +127,7 @@ theorem guardedRevise_self_eq_none_of_stamp_ne_empty
 omit [DecidableEq Stamp] in
 theorem stampDisjoint_symm (x y : StampedBinaryEvidence Stamp) :
     StampDisjoint x y ↔ StampDisjoint y x := by
-  constructor <;> intro h <;> simpa [StampDisjoint] using h.symm
+  exact SourceScoped.independent_comm x y
 
 /-! ### Iterated revision under pairwise stamp-disjointness
 
@@ -145,12 +153,12 @@ omit [DecidableEq Stamp] in
 omit [DecidableEq Stamp] in
 theorem stampDisjoint_empty_left (x : StampedBinaryEvidence Stamp) :
     StampDisjoint (empty : StampedBinaryEvidence Stamp) x := by
-  simp [StampDisjoint]
+  simp [StampDisjoint, SourceScoped.Independent]
 
 omit [DecidableEq Stamp] in
 theorem stampDisjoint_empty_right (x : StampedBinaryEvidence Stamp) :
     StampDisjoint x (empty : StampedBinaryEvidence Stamp) := by
-  simp [StampDisjoint]
+  simp [StampDisjoint, SourceScoped.Independent]
 
 /-- Iterated revision: chain `revise` across a list of stamped evidence packets.
 The whiteboard's multi-witness Revision pattern in formal form. -/
@@ -518,8 +526,11 @@ theorem positive_negative_stampDisjoint
       (positiveStampedEvidence A B)
       (negativeStampedEvidence A B) := by
   classical
-  rw [StampedBinaryEvidence.StampDisjoint, positiveStampedEvidence,
-    negativeStampedEvidence, StampedBinaryEvidence.revise_stamp]
+  rw [StampedBinaryEvidence.StampDisjoint]
+  simp only [Mettapedia.Evidence.SourceScoped.Independent,
+    StampedBinaryEvidence.sourceScope_eq_stamp]
+  rw [positiveStampedEvidence, negativeStampedEvidence,
+    StampedBinaryEvidence.revise_stamp]
   refine Finset.disjoint_left.2 ?_
   intro x hx hy
   cases x <;>
@@ -568,7 +579,8 @@ theorem finiteInheritanceStampedEvidence_stamp
     negativeStampedEvidence, positiveExtensionalStampedEvidence,
     negativeExtensionalStampedEvidence, positiveIntensionalStampedEvidence,
     negativeIntensionalStampedEvidence, StampedBinaryEvidence.revise,
-    StampedBinaryEvidence.StampConcat, Finset.union_assoc]
+    StampedBinaryEvidence.StampConcat, Mettapedia.Evidence.SourceScope.merge,
+    Finset.union_assoc]
 
 theorem negativeStampedEvidence_stamp_eq_empty_of_inherits
     {A B : DualConcept Obj Attr} (hAB : Inherits A B) :
@@ -637,7 +649,7 @@ end Interpretation
 
 end Mettapedia.KR.ConceptGeometry.AbstractInheritance
 
-namespace Mettapedia.PLN.Comparisons.NARS.NARSInheritance.Frame
+namespace Mettapedia.NARS.Bridges.PLN.InheritanceEvidence
 
 open Mettapedia.KR.ConceptGeometry.AbstractInheritance
 
@@ -647,10 +659,10 @@ variable [Fintype Obj] [Fintype Attr]
 
 /-- Stamped witness aggregation for NARS inheritance. -/
 noncomputable def inheritanceStampedEvidence
-    (F : Mettapedia.PLN.Comparisons.NARS.NARSInheritance.Frame Atom Obj Attr)
-    (s p : Mettapedia.PLN.Comparisons.NARS.NARSInheritance.Term Atom) :
+    (F : Mettapedia.NARS.Logic.Inheritance.Frame Atom Obj Attr)
+    (s p : Mettapedia.NARS.Logic.Inheritance.Term Atom) :
     StampedBinaryEvidence (DualConcept.WitnessStamp Obj Attr) where
-  evidence := F.inheritanceEvidence s p
+  evidence := evidence F s p
   stamp :=
     (F.positiveExtensionalWitnesses s p).map DualConcept.posExtEmbedding ∪
       (F.positiveIntensionalWitnesses s p).map DualConcept.posIntEmbedding ∪
@@ -659,24 +671,24 @@ noncomputable def inheritanceStampedEvidence
 
 omit [Fintype Obj] [Fintype Attr] in
 theorem inheritanceStampedEvidence_evidence_eq
-    (F : Mettapedia.PLN.Comparisons.NARS.NARSInheritance.Frame Atom Obj Attr)
-    (s p : Mettapedia.PLN.Comparisons.NARS.NARSInheritance.Term Atom) :
-    (F.inheritanceStampedEvidence s p).evidence = F.inheritanceEvidence s p := rfl
+    (F : Mettapedia.NARS.Logic.Inheritance.Frame Atom Obj Attr)
+    (s p : Mettapedia.NARS.Logic.Inheritance.Term Atom) :
+    (inheritanceStampedEvidence F s p).evidence = evidence F s p := rfl
 
 theorem inheritanceStampedEvidence_eq_finiteInheritanceStampedEvidence
-    (F : Mettapedia.PLN.Comparisons.NARS.NARSInheritance.Frame Atom Obj Attr)
-    (s p : Mettapedia.PLN.Comparisons.NARS.NARSInheritance.Term Atom) :
-    F.inheritanceStampedEvidence s p =
+    (F : Mettapedia.NARS.Logic.Inheritance.Frame Atom Obj Attr)
+    (s p : Mettapedia.NARS.Logic.Inheritance.Term Atom) :
+    inheritanceStampedEvidence F s p =
       DualConcept.finiteInheritanceStampedEvidence
         ((F.interpretation).meaning s) ((F.interpretation).meaning p) := by
   apply StampedBinaryEvidence.ext
   · ext <;>
       simp [inheritanceStampedEvidence,
-        Mettapedia.PLN.Comparisons.NARS.NARSInheritance.Frame.inheritanceEvidence,
-        Mettapedia.PLN.Comparisons.NARS.NARSInheritance.Frame.positiveExtensionalWitnesses,
-        Mettapedia.PLN.Comparisons.NARS.NARSInheritance.Frame.negativeExtensionalWitnesses,
-        Mettapedia.PLN.Comparisons.NARS.NARSInheritance.Frame.positiveIntensionalWitnesses,
-        Mettapedia.PLN.Comparisons.NARS.NARSInheritance.Frame.negativeIntensionalWitnesses,
+        evidence,
+        Mettapedia.NARS.Logic.Inheritance.Frame.positiveExtensionalWitnesses,
+        Mettapedia.NARS.Logic.Inheritance.Frame.negativeExtensionalWitnesses,
+        Mettapedia.NARS.Logic.Inheritance.Frame.positiveIntensionalWitnesses,
+        Mettapedia.NARS.Logic.Inheritance.Frame.negativeIntensionalWitnesses,
         DualConcept.finiteInheritanceStampedEvidence_evidence_eq,
         DualConcept.finiteInheritanceEvidence,
         DualConcept.finitePositiveExtensionalWitnesses,
@@ -685,37 +697,37 @@ theorem inheritanceStampedEvidence_eq_finiteInheritanceStampedEvidence
         DualConcept.finiteNegativeIntensionalWitnesses,
         DualConcept.finiteExtent,
         DualConcept.finiteIntent,
-        Mettapedia.PLN.Comparisons.NARS.NARSInheritance.Frame.interpretation]
+        Mettapedia.NARS.Logic.Inheritance.Frame.interpretation]
   · apply Finset.ext
     intro a
     rw [DualConcept.finiteInheritanceStampedEvidence_stamp]
     cases a <;>
       simp [inheritanceStampedEvidence,
-      Mettapedia.PLN.Comparisons.NARS.NARSInheritance.Frame.positiveExtensionalWitnesses,
-      Mettapedia.PLN.Comparisons.NARS.NARSInheritance.Frame.negativeExtensionalWitnesses,
-      Mettapedia.PLN.Comparisons.NARS.NARSInheritance.Frame.positiveIntensionalWitnesses,
-      Mettapedia.PLN.Comparisons.NARS.NARSInheritance.Frame.negativeIntensionalWitnesses,
+      Mettapedia.NARS.Logic.Inheritance.Frame.positiveExtensionalWitnesses,
+      Mettapedia.NARS.Logic.Inheritance.Frame.negativeExtensionalWitnesses,
+      Mettapedia.NARS.Logic.Inheritance.Frame.positiveIntensionalWitnesses,
+      Mettapedia.NARS.Logic.Inheritance.Frame.negativeIntensionalWitnesses,
       DualConcept.finitePositiveExtensionalWitnesses,
       DualConcept.finiteNegativeExtensionalWitnesses,
       DualConcept.finitePositiveIntensionalWitnesses,
       DualConcept.finiteNegativeIntensionalWitnesses,
       DualConcept.finiteExtent,
       DualConcept.finiteIntent,
-      Mettapedia.PLN.Comparisons.NARS.NARSInheritance.Frame.interpretation]
+      Mettapedia.NARS.Logic.Inheritance.Frame.interpretation]
 
 theorem inheritanceStampedEvidence_negative_stamp_eq_empty_of_inherits
-    (F : Mettapedia.PLN.Comparisons.NARS.NARSInheritance.Frame Atom Obj Attr)
-    {s p : Mettapedia.PLN.Comparisons.NARS.NARSInheritance.Term Atom}
+    (F : Mettapedia.NARS.Logic.Inheritance.Frame Atom Obj Attr)
+    {s p : Mettapedia.NARS.Logic.Inheritance.Term Atom}
     (hsp : F.Inherits s p) :
     (DualConcept.negativeStampedEvidence
       ((F.interpretation).meaning s) ((F.interpretation).meaning p)).stamp = ∅ := by
   exact DualConcept.negativeStampedEvidence_stamp_eq_empty_of_inherits hsp
 
-end Mettapedia.PLN.Comparisons.NARS.NARSInheritance.Frame
+end Mettapedia.NARS.Bridges.PLN.InheritanceEvidence
 
 namespace Mettapedia.KR.ConceptGeometry.AbstractInheritance.Interpretation
 
-open Mettapedia.PLN.Comparisons.NARS.NARSInheritance
+open Mettapedia.NARS.Logic.Inheritance
 
 variable {Carrier : Type u} {Obj : Type v} {Attr : Type w}
 variable [Fintype Obj] [DecidableEq Obj] [Fintype Attr] [DecidableEq Attr]
@@ -723,11 +735,12 @@ variable [Fintype Obj] [DecidableEq Obj] [Fintype Attr] [DecidableEq Attr]
 theorem toNARSFrame_inheritanceStampedEvidence_atom_eq_finiteInheritanceStampedEvidence
     (I : Mettapedia.KR.ConceptGeometry.AbstractInheritance.Interpretation Carrier Obj Attr)
     (a b : Carrier) :
-    I.toNARSFrame.inheritanceStampedEvidence (.atom a) (.atom b) =
+    Mettapedia.NARS.Bridges.PLN.InheritanceEvidence.inheritanceStampedEvidence
+        I.toNARSFrame (.atom a) (.atom b) =
       I.finiteInheritanceStampedEvidence a b := by
   simpa [finiteInheritanceStampedEvidence,
     Mettapedia.KR.ConceptGeometry.AbstractInheritance.Interpretation.toNARSFrame_meaning_atom_eq] using
-    (Mettapedia.PLN.Comparisons.NARS.NARSInheritance.Frame.inheritanceStampedEvidence_eq_finiteInheritanceStampedEvidence
+    (Mettapedia.NARS.Bridges.PLN.InheritanceEvidence.inheritanceStampedEvidence_eq_finiteInheritanceStampedEvidence
       I.toNARSFrame (.atom a) (.atom b))
 
 end Mettapedia.KR.ConceptGeometry.AbstractInheritance.Interpretation

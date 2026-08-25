@@ -225,20 +225,25 @@ Verification scope:
 - Spot-check moved theorem axiom footprints remain within the accepted project
   footprint.
 
-## Cluster 6b: PLN world-model core
+## Cluster 6b: general world-model core and PLN specializations
 
 Status: completed in the working tree.
 
 Moved paths:
-- Binary and generic world-model cores moved to `Mettapedia/PLN/WorldModel/*`.
-- Additive, calculus, profile, preorder, ITV, institution, conservation,
-  overlap, support-forgetting, and crisp-specialization world-model scopes
-  moved to `Mettapedia/PLN/WorldModel/*`.
+- The representation-neutral `WorldModel` hierarchy lives in
+  `Mettapedia/Logic/WorldModel/Basic.lean`; it does not assume probabilistic
+  values, additive evidence, or PLN.
+- Binary and additive evidence models, query calculi, profiles, preorders,
+  interval models, institutions, conservation packages, overlap models,
+  support-forgetting, and crisp specializations live in
+  `Mettapedia/PLN/WorldModel/*`.
 - A new `Mettapedia/PLN/WorldModel.lean` hub imports the world-model room and is
   imported by `Mettapedia/PLN.lean`.
 
 Namespace:
-- World-model definitions now live under `Mettapedia.PLN.WorldModel`.
+- General world-model interfaces are exported by
+  `Mettapedia.Logic.WorldModel`; PLN-specific definitions live under
+  `Mettapedia.PLN.WorldModel`.
 - Downstream logic and KR bridge files that intentionally remain outside `PLN/`
   now import or open the moved world-model namespaces explicitly.
 
@@ -4691,4 +4696,51 @@ Verification scope:
 - Check no old `Mettapedia.Logic.ModalQueryEncoder` import path, qualified
   namespace, or file path remains outside this ledger.
 - Check no migration facade marker remains.
+
+## Cluster 6c.96: NARS emancipation and shared source-scope extraction
+
+Status: completed in the working tree.
+
+Moved paths:
+- Source-faithful NARS truth functions, inheritance, and evidence-scope
+  semantics moved from `Mettapedia/PLN/Comparisons/NARS/` to the top-level
+  `Mettapedia/NARS/` hierarchy.
+- Cross-system material moved to explicit
+  `Mettapedia/NARS/Bridges/PLN/` and
+  `Mettapedia/NARS/Bridges/ProbabilityTheory/` modules.
+- The PLN-oriented semantics decision tree moved to
+  `Mettapedia/PLN/Comparisons/SemanticsDecisionTree.lean`.
+
+Shared extraction:
+- `Mettapedia/Evidence/SourceScope.lean` now owns the system-independent
+  source-independence predicate, scope union, and pairwise-family law.
+- `Mettapedia/Evidence/SourceScoped.lean` supplies the carrier-independent
+  interface from an evidence packet to its retained finite source scope.
+- NARS path-scoped revision and PLN stamped revision both import that module.
+  They share source geometry without identifying NARS truth values with PLN
+  binary evidence or selecting one conflict-resolution policy globally.
+
+Dependency correction:
+- `Mettapedia/NARS/Logic/Inheritance.lean` no longer imports PLN.
+- PLN binary-evidence and constructible-duality readings of NARS live only in
+  explicit bridge modules.
+- `Mettapedia/NARS/Evidence/EvidenceScopeIncoherence.lean` proves its path and
+  evidence-scope results without importing PLN; the constructible-duality
+  refinement theorem lives in the PLN bridge.
+
+Facade deletion:
+- No compatibility module or namespace remains at
+  `Mettapedia.PLN.Comparisons.NARS`.
+
+Verification scope:
+- Targeted builds include `Mettapedia.Evidence.SourceScope`,
+  `Mettapedia.NARS`, `Mettapedia.NARS.Bridges.PLN.ConstructibleDuality`,
+  `Mettapedia.PLN.Comparisons`, the abstract-inheritance stamped-witness
+  modules, and the guarded PLN Revision bridge.
+- Check no old NARS comparison import path, namespace, or file reference
+  remains outside this ledger.
+- Check the migrated and extracted modules contain no `sorry`, `admit`,
+  `_wanted`, `theorem_wanted`, or `native_decide`.
+- Spot-check theorem axiom footprints remain within the accepted project
+  footprint.
 -/

@@ -1,4 +1,5 @@
-import Mettapedia.PLN.Comparisons.NARS.NARSInheritance
+import Mettapedia.NARS.Logic.Inheritance
+import Mettapedia.NARS.Bridges.PLN.InheritanceEvidence
 
 /-!
 # Witness Geometry for Abstract Inheritance
@@ -16,7 +17,7 @@ finite evidence semantics of the abstract interpretation.
 namespace Mettapedia.KR.ConceptGeometry.AbstractInheritance
 
 open Mettapedia.PLN.Evidence.EvidenceQuantale
-open Mettapedia.PLN.Comparisons.NARS.NARSInheritance
+open Mettapedia.NARS.Logic.Inheritance
 open scoped ENNReal
 
 universe u v w
@@ -204,7 +205,7 @@ theorem finiteInheritanceEvidence_neg_eq_zero_of_inherits
 realizations of extents and intents. -/
 noncomputable def toNARSFrame
     (I : Interpretation Carrier Obj Attr) :
-    Mettapedia.PLN.Comparisons.NARS.NARSInheritance.Frame Carrier Obj Attr where
+    Mettapedia.NARS.Logic.Inheritance.Frame Carrier Obj Attr where
   atomExtension a := DualConcept.finiteExtent (I.meaning a)
   atomIntension a := DualConcept.finiteIntent (I.meaning a)
 
@@ -213,42 +214,43 @@ theorem toNARSFrame_meaning_atom_eq
     (I.toNARSFrame.interpretation).meaning (.atom a) = I.meaning a := by
   apply DualConcept.ext
   · ext x
-    simp [Interpretation.toNARSFrame, Mettapedia.PLN.Comparisons.NARS.NARSInheritance.Frame.interpretation,
+    simp [Interpretation.toNARSFrame, Mettapedia.NARS.Logic.Inheritance.Frame.interpretation,
       DualConcept.finiteExtent]
   · ext t
-    simp [Interpretation.toNARSFrame, Mettapedia.PLN.Comparisons.NARS.NARSInheritance.Frame.interpretation,
+    simp [Interpretation.toNARSFrame, Mettapedia.NARS.Logic.Inheritance.Frame.interpretation,
       DualConcept.finiteIntent]
 
 theorem toNARSFrame_extensionalInherits_atom_iff
     (I : Interpretation Carrier Obj Attr) (a b : Carrier) :
     I.toNARSFrame.ExtensionalInherits (.atom a) (.atom b) ↔ I.ExtensionalInherits a b := by
-  rw [← Mettapedia.PLN.Comparisons.NARS.NARSInheritance.Frame.abstract_extensionalInherits_iff (F := I.toNARSFrame)
+  rw [← Mettapedia.NARS.Logic.Inheritance.Frame.abstract_extensionalInherits_iff (F := I.toNARSFrame)
       (s := .atom a) (p := .atom b)]
   simp [Interpretation.ExtensionalInherits, toNARSFrame_meaning_atom_eq]
 
 theorem toNARSFrame_intensionalInherits_atom_iff
     (I : Interpretation Carrier Obj Attr) (a b : Carrier) :
     I.toNARSFrame.IntensionalInherits (.atom a) (.atom b) ↔ I.IntensionalInherits a b := by
-  rw [← Mettapedia.PLN.Comparisons.NARS.NARSInheritance.Frame.abstract_intensionalInherits_iff (F := I.toNARSFrame)
+  rw [← Mettapedia.NARS.Logic.Inheritance.Frame.abstract_intensionalInherits_iff (F := I.toNARSFrame)
       (s := .atom a) (p := .atom b)]
   simp [Interpretation.IntensionalInherits, toNARSFrame_meaning_atom_eq]
 
 theorem toNARSFrame_inherits_atom_iff
     (I : Interpretation Carrier Obj Attr) (a b : Carrier) :
     I.toNARSFrame.Inherits (.atom a) (.atom b) ↔ I.Inherits a b := by
-  rw [← Mettapedia.PLN.Comparisons.NARS.NARSInheritance.Frame.abstract_inherits_iff (F := I.toNARSFrame)
+  rw [← Mettapedia.NARS.Logic.Inheritance.Frame.abstract_inherits_iff (F := I.toNARSFrame)
       (s := .atom a) (p := .atom b)]
   simp [Interpretation.Inherits, toNARSFrame_meaning_atom_eq]
 
-theorem toNARSFrame_inheritanceEvidence_atom_eq_finiteInheritanceEvidence
+theorem toNARSFrame_plnEvidence_atom_eq_finiteInheritanceEvidence
     (I : Interpretation Carrier Obj Attr) (a b : Carrier) :
-    I.toNARSFrame.inheritanceEvidence (.atom a) (.atom b) =
+    Mettapedia.NARS.Bridges.PLN.InheritanceEvidence.evidence
+        I.toNARSFrame (.atom a) (.atom b) =
       I.finiteInheritanceEvidence a b := by
   rfl
 
 end Interpretation
 
-namespace Mettapedia.PLN.Comparisons.NARS.NARSInheritance.Frame
+namespace Mettapedia.NARS.Logic.Inheritance.Frame
 
 variable {Atom : Type u} {Obj : Type v} {Attr : Type w}
 variable [DecidableEq Obj] [DecidableEq Attr]
@@ -256,56 +258,64 @@ variable [Fintype Obj] [Fintype Attr]
 
 omit [Fintype Attr] in
 @[simp] theorem positiveExtensionalWitnesses_eq_finite
-    (F : Mettapedia.PLN.Comparisons.NARS.NARSInheritance.Frame Atom Obj Attr) (s p : Mettapedia.PLN.Comparisons.NARS.NARSInheritance.Term Atom) :
+    (F : Mettapedia.NARS.Logic.Inheritance.Frame Atom Obj Attr) (s p : Mettapedia.NARS.Logic.Inheritance.Term Atom) :
     F.positiveExtensionalWitnesses s p =
       DualConcept.finitePositiveExtensionalWitnesses
         ((F.interpretation).meaning s) ((F.interpretation).meaning p) := by
   ext x
-  simp [Mettapedia.PLN.Comparisons.NARS.NARSInheritance.Frame.positiveExtensionalWitnesses,
+  simp [Mettapedia.NARS.Logic.Inheritance.Frame.positiveExtensionalWitnesses,
     DualConcept.finitePositiveExtensionalWitnesses,
-    Mettapedia.PLN.Comparisons.NARS.NARSInheritance.Frame.interpretation]
+    Mettapedia.NARS.Logic.Inheritance.Frame.interpretation]
 
 omit [Fintype Attr] in
 @[simp] theorem negativeExtensionalWitnesses_eq_finite
-    (F : Mettapedia.PLN.Comparisons.NARS.NARSInheritance.Frame Atom Obj Attr) (s p : Mettapedia.PLN.Comparisons.NARS.NARSInheritance.Term Atom) :
+    (F : Mettapedia.NARS.Logic.Inheritance.Frame Atom Obj Attr) (s p : Mettapedia.NARS.Logic.Inheritance.Term Atom) :
     F.negativeExtensionalWitnesses s p =
       DualConcept.finiteNegativeExtensionalWitnesses
         ((F.interpretation).meaning s) ((F.interpretation).meaning p) := by
   ext x
-  simp [Mettapedia.PLN.Comparisons.NARS.NARSInheritance.Frame.negativeExtensionalWitnesses,
+  simp [Mettapedia.NARS.Logic.Inheritance.Frame.negativeExtensionalWitnesses,
     DualConcept.finiteNegativeExtensionalWitnesses,
-    Mettapedia.PLN.Comparisons.NARS.NARSInheritance.Frame.interpretation]
+    Mettapedia.NARS.Logic.Inheritance.Frame.interpretation]
 
 omit [Fintype Obj] in
 @[simp] theorem positiveIntensionalWitnesses_eq_finite
-    (F : Mettapedia.PLN.Comparisons.NARS.NARSInheritance.Frame Atom Obj Attr) (s p : Mettapedia.PLN.Comparisons.NARS.NARSInheritance.Term Atom) :
+    (F : Mettapedia.NARS.Logic.Inheritance.Frame Atom Obj Attr) (s p : Mettapedia.NARS.Logic.Inheritance.Term Atom) :
     F.positiveIntensionalWitnesses s p =
       DualConcept.finitePositiveIntensionalWitnesses
         ((F.interpretation).meaning s) ((F.interpretation).meaning p) := by
   ext a
-  simp [Mettapedia.PLN.Comparisons.NARS.NARSInheritance.Frame.positiveIntensionalWitnesses,
+  simp [Mettapedia.NARS.Logic.Inheritance.Frame.positiveIntensionalWitnesses,
     DualConcept.finitePositiveIntensionalWitnesses,
-    Mettapedia.PLN.Comparisons.NARS.NARSInheritance.Frame.interpretation]
+    Mettapedia.NARS.Logic.Inheritance.Frame.interpretation]
 
 omit [Fintype Obj] in
 @[simp] theorem negativeIntensionalWitnesses_eq_finite
-    (F : Mettapedia.PLN.Comparisons.NARS.NARSInheritance.Frame Atom Obj Attr) (s p : Mettapedia.PLN.Comparisons.NARS.NARSInheritance.Term Atom) :
+    (F : Mettapedia.NARS.Logic.Inheritance.Frame Atom Obj Attr) (s p : Mettapedia.NARS.Logic.Inheritance.Term Atom) :
     F.negativeIntensionalWitnesses s p =
       DualConcept.finiteNegativeIntensionalWitnesses
         ((F.interpretation).meaning s) ((F.interpretation).meaning p) := by
   ext a
-  simp [Mettapedia.PLN.Comparisons.NARS.NARSInheritance.Frame.negativeIntensionalWitnesses,
+  simp [Mettapedia.NARS.Logic.Inheritance.Frame.negativeIntensionalWitnesses,
     DualConcept.finiteNegativeIntensionalWitnesses,
-    Mettapedia.PLN.Comparisons.NARS.NARSInheritance.Frame.interpretation]
+    Mettapedia.NARS.Logic.Inheritance.Frame.interpretation]
 
-theorem inheritanceEvidence_eq_finiteInheritanceEvidence
-    (F : Mettapedia.PLN.Comparisons.NARS.NARSInheritance.Frame Atom Obj Attr) (s p : Mettapedia.PLN.Comparisons.NARS.NARSInheritance.Term Atom) :
-    F.inheritanceEvidence s p =
+end Mettapedia.NARS.Logic.Inheritance.Frame
+
+namespace Mettapedia.NARS.Bridges.PLN.InheritanceEvidence
+
+variable {Atom : Type u} {Obj : Type v} {Attr : Type w}
+variable [DecidableEq Obj] [DecidableEq Attr]
+variable [Fintype Obj] [Fintype Attr]
+
+theorem evidence_eq_finiteInheritanceEvidence
+    (F : Mettapedia.NARS.Logic.Inheritance.Frame Atom Obj Attr) (s p : Mettapedia.NARS.Logic.Inheritance.Term Atom) :
+    _root_.Mettapedia.NARS.Bridges.PLN.InheritanceEvidence.evidence F s p =
       DualConcept.finiteInheritanceEvidence
         ((F.interpretation).meaning s) ((F.interpretation).meaning p) := by
-  simp [Mettapedia.PLN.Comparisons.NARS.NARSInheritance.Frame.inheritanceEvidence,
+  simp [_root_.Mettapedia.NARS.Bridges.PLN.InheritanceEvidence.evidence,
     DualConcept.finiteInheritanceEvidence]
 
-end Mettapedia.PLN.Comparisons.NARS.NARSInheritance.Frame
+end Mettapedia.NARS.Bridges.PLN.InheritanceEvidence
 
 end Mettapedia.KR.ConceptGeometry.AbstractInheritance

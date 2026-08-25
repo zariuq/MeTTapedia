@@ -76,10 +76,10 @@ import Mettapedia.PLN.Bridges.ProbabilityTheory.PLNGaussianEMExtension
 import Mettapedia.PLN.Bridges.ProbabilityTheory.PLNKyburgReduction
 import Mettapedia.PLN.ConceptGeometry.AssocPat.PLNIntensionalWorldModel
 import Mettapedia.KR.ConceptGeometry.Bridges.UniversalAI.IntensionalInheritanceSolomonoffBridge
-import Mettapedia.PLN.Comparisons.NARS.PLNNARSRuleCorrespondence
+import Mettapedia.NARS.Bridges.PLN.RuleCorrespondence
 import Mettapedia.PLN.RuleFamilies.Temporal.PLNTemporalCausalInference
 import Mettapedia.PLN.RuleFamilies.Temporal.PLNProbabilisticEventCalculus
-import Mettapedia.PLN.Comparisons.NARS.SemanticsDecisionTree
+import Mettapedia.PLN.Comparisons.SemanticsDecisionTree
 import Mettapedia.PLN.InferenceControl.Counterexamples.PLNLargeScaleInferenceCounterexamples
 import Mettapedia.PLN.RuleFamilies.FirstOrder.PLNMultideductionResidual
 import Mettapedia.PLN.InferenceControl.ProtocolDynamics.PLNTrailFreeDampedConvergence

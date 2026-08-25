@@ -126,6 +126,30 @@ instance selfQModule (Q : Type*) [CommMonoid Q] [CompleteLattice Q] [IsCommQuant
     -- ⨆ y ∈ {θ₁, θ₂}, q * y = q * θ₁ ⊔ q * θ₂
     exact iSup_pair
 
+/-! ## Pointwise Modules -/
+
+/-- A family of `Q`-module states is a `Q`-module under pointwise action.
+
+This is the reusable construction behind architecture-specific state vectors:
+the index type names the components, while their quantale action is inherited
+from the component carrier rather than reproved for every architecture. -/
+instance piQModule (Index : Type*) : QModule Q (Index → Θ) where
+  smul q state := fun index => q • state index
+  smul_one state := by
+    funext index
+    exact one_smul (state index)
+  smul_assoc q₁ q₂ state := by
+    funext index
+    exact mul_smul q₁ q₂ (state index)
+  smul_sup q left right := by
+    funext index
+    exact smul_sup q (left index) (right index)
+
+@[simp]
+theorem pi_smul_apply {Index : Type*} (q : Q) (state : Index → Θ)
+    (index : Index) : (q • state) index = q • state index :=
+  rfl
+
 /-! ## Q-Module Endomorphisms
 
 A Q-module endomorphism is a map f : Θ → Θ that commutes with scalar multiplication.

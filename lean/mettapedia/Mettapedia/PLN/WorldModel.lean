@@ -9,7 +9,7 @@ import Mettapedia.PLN.WorldModel.PLNWorldModelAdditiveNoGo
 import Mettapedia.PLN.WorldModel.WorldModelAdditive
 import Mettapedia.PLN.WorldModel.PLNWorldModelCalculus
 import Mettapedia.PLN.WorldModel.WorldModelCalculus
-import Mettapedia.PLN.WorldModel.WorldModelBase
+import Mettapedia.Logic.WorldModel.Basic
 import Mettapedia.PLN.WorldModel.WorldModelBridge
 import Mettapedia.PLN.WorldModel.WorldModelCore
 import Mettapedia.PLN.WorldModel.WorldModelConservationPack

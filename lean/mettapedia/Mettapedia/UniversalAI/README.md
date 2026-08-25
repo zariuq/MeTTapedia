@@ -9,7 +9,7 @@ belief. AIXI is not runnable — its prior is uncomputable — but it serves as 
 precise upper bound against which real agents can be measured, and it makes the
 informal idea "general intelligence" provable.
 
-This directory is a Lean 4 formalization of Hutter's *Universal Artificial
+The historical core of this directory is a Lean 4 formalization of Hutter's *Universal Artificial
 Intelligence: Sequential Decisions Based on Algorithmic Probability* (Springer,
 2005), **Chapters 4–7**: the agent/environment model and AIXI itself (Ch 4); the
 Legg–Hutter intelligence measure and asymptotic optimality / grain-of-truth (Ch
@@ -17,7 +17,8 @@ Legg–Hutter intelligence measure and asymptotic optimality / grain-of-truth (C
 games, function minimization, supervised learning — to AIXI (Ch 6); and the
 *computable* approximation AIXI*tl* via Levin search (Ch 7). The companion
 directory `Mettapedia/UniversalAI/UniversalPrediction/` covers the prediction-theory
-prerequisites of Chapters 2–3 (~12,900 lines, sorry-free).
+prerequisites of Chapters 2–3. The directory also contains separately
+attributed extensions; they are not presented as chapters of Hutter's book.
 
 ## Coverage
 
@@ -80,7 +81,7 @@ in reflective environments. Includes measure-theoretic infrastructure:
 | `TimeBoundedAIXI/CoreProvability.lean` | 124 | Provability results |
 | `TimeBoundedAIXI/ProofEnumerationOracle.lean` | 61 | Oracle interface |
 
-## Extensions
+## Extensions and neighboring programmes
 
 ### Multi-Agent (`MultiAgent/`, ~2,560 lines, 0 sorries)
 
@@ -92,27 +93,43 @@ extending AIXI to multi-agent settings.
 Optimal self-modifying policies, realistic agents, value function
 preservation under self-modification.
 
+### Weakness and program priors
+
+- `WeaknessPrior.lean` formalizes Michael Timothy Bennett's finite task-coverage
+  weight, its normalization, and ordering preservation.
+- `ZetaProgramPrior.lean` formalizes Eray Ozkural's normalized zeta rank law,
+  transport through a duplicate-free program enumeration, the leading-zero
+  obstruction for naive binary arithmetization, and ordering disagreements
+  with Solomonoff-shaped and Bennett weights.
+- `BadUniversalPriors.lean`, `SimplicityUncertainty.lean`, and
+  `UniversalHyperprior/` study prior sensitivity and model uncertainty. These
+  modules have distinct proof status and should not be conflated.
+
+### Omega (`Omega/`)
+
+`Omega/Basic.lean` gives a source-faithful decomposition of Ozkural's 2018
+Omega architecture. It reuses the independently sourced Alpha and
+proof-backed-improvement substrates, while attributing Omega's explicit
+bootstrap premise, open-ended PSM registry, multiple-reference-machine memory,
+forecast-guided ensemble, and unknown-environment profile to Ozkural.
+`Omega/GodelMachineBridge.lean` proves the exact support-level bridge available
+from the current Gödel-machine model. Omega is not identified with OmegaClaw.
+
 ## Formalization status
 
-All 80 `.lean` files in this directory are **`sorry`-free**. The Chapter 5
-`GrainOfTruth/ROADMAP.lean` is a *prose-only* roadmap: its entire body is a `/-! …
--/` block comment sketching the measure-theoretic path (history↔filtration bridge,
-likelihood-ratio supermartingale, posterior concentration), and it intentionally
-declares no Lean terms, so the illustrative `sorry`s in those sketches are inside
-the comment and are not real proof obligations. (Earlier drafts of this README
-claimed "9 sorries remain in `GrainOfTruth/ROADMAP.lean`" — that is stale; the file
-no longer carries any Lean declarations.)
+Proof status is module-specific. The newly added `WeaknessPrior`,
+`ZetaProgramPrior`, `Omega`, and `ProofBackedImprovement` tranche has no proof
+holes. The older `UniversalHyperprior/` development still contains real
+`sorry` terms and must not be described as proved or complete.
+`GrainOfTruth/ROADMAP.lean` is prose containing illustrative code blocks; its
+textual `sorry` occurrences are not Lean declarations. Therefore a raw textual
+count is useful for discovery but must be inspected before interpretation.
 
-**Trusted base.** No source-level `axiom` declarations appear in this directory (a
-source grep, *not* a per-theorem `#print axioms` audit — proofs may still inherit
-Mathlib's axioms transitively, e.g. classical choice / propositional
-extensionality). There is **no `native_decide`** anywhere here, so nothing
-compile-evaluates in place of kernel-checking. The repository is mid-upgrade across
-Lean 4 toolchains; the formalization targets Lean 4 with Mathlib.
+No source-level `axiom` declaration should be introduced. Per-theorem
+`#print axioms` audits remain the appropriate check for the trusted
+dependencies of important results.
 
-Reproduce from this directory (raw scan — also matches the term in
-comments/strings, which is exactly the `ROADMAP.lean` situation, so the footer
-count below is authoritative):
+Useful audits from the Lean project root:
 
 ```bash
 rg -n --glob '*.lean' '^\s*sorry\b' .
@@ -125,6 +142,3 @@ rg -n --glob '*.lean' 'native_decide' .
 - Marcus Hutter, [*Universal Artificial Intelligence: Sequential Decisions Based on Algorithmic Probability*](https://www.hutter1.net/ai/uaibook.htm) (Springer, 2005) — the source text; this directory formalizes Chapters 4–7.
 - Shane Legg & Marcus Hutter, [*Universal Intelligence: A Definition of Machine Intelligence*](https://doi.org/10.1007/s11023-007-9079-x), *Minds and Machines* 17 (2007), 391–444 ([arXiv:0712.3329](https://arxiv.org/abs/0712.3329)) — the intelligence measure Υ formalized in `Intelligence/Basic.lean`.
 - Jan Leike, [*Nonparametric General Reinforcement Learning*](https://arxiv.org/abs/1611.08944) (PhD thesis, 2016) — the Thompson-sampling / grain-of-truth asymptotic-optimality results targeted by `GrainOfTruth/`.
-
----
-*Status (drafted 2026-06-22 by Claude Code, Opus 4.8): 80 .lean files, 0 with sorries.*

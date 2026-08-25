@@ -251,7 +251,7 @@ concrete DocTextClaimsEng of DocTextClaims = {
     Clm_00246 = {s = "The scope isn't blanket future-work parity"} ;
     Clm_00247 = {s = "The semantic bridge is GF -> Pattern -> Store -> QFormula -> Evidence -> NTT"} ;
     Clm_00248 = {s = "The semantic bridge targets OSLF evidence semantics"} ;
-    Clm_00249 = {s = "The semantics decision tree is `Mettapedia/PLN/Comparisons/NARS/SemanticsDecisionTree.lean`"} ;
+    Clm_00249 = {s = "The semantics decision tree is `Mettapedia/PLN/Comparisons/SemanticsDecisionTree.lean`"} ;
     Clm_00250 = {s = "The small-only test suite is 141 of 141"} ;
     Clm_00251 = {s = "The spec-facing MeTTa slice uses `Mettapedia/OSLF/MeTTaCore/FullLanguageDef.lean`"} ;
     Clm_00252 = {s = "The structure map lists core module paths and theorem hosts"} ;

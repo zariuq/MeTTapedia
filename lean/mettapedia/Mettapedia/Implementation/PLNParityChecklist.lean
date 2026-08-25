@@ -1,5 +1,5 @@
 import Mettapedia.Implementation.MettaVerification
-import Mettapedia.PLN.Comparisons.NARS.NARSMettaTruthFunctions
+import Mettapedia.NARS.TruthFunctions
 import Mettapedia.PLN.Evidence.PLN_KS_Bridge
 import Mettapedia.PLN.Evidence.PLNDerivedFromEvidence
 import Mettapedia.PLN.RuleFamilies.FirstOrder.PLNFrechetBounds
@@ -121,7 +121,7 @@ Selected WM-backed additions not present in current upstream PeTTa main:
 
 ### PeTTa NARS (`hyperon/PeTTa/lib/lib_nars.metta`)
 
-Lean mirror: `Mettapedia.PLN.Comparisons.NARS.NARSMettaTruthFunctions`
+Lean mirror: `Mettapedia.NARS.TruthFunctions`
 
 - Confidence↔weight helpers:
   - `c2w`, `w2c`
@@ -143,7 +143,7 @@ Lean mirror: `Mettapedia.PLN.Comparisons.NARS.NARSMettaTruthFunctions`
   - keep `[0,1]` strength/confidence as a lossy *view*, not the foundational carrier.
 
 - NARS parity:
-  - `Mettapedia.PLN.Comparisons.NARS.NARSMettaTruthFunctions` mirrors `lib_nars.metta` formulas.
+  - `Mettapedia.NARS.TruthFunctions` mirrors `lib_nars.metta` formulas.
   - `Mettapedia.PLN.RuleFamilies.FirstOrder.PLNDerivation` also contains a *paper-focused* PLN↔NARS power comparison
     (arXiv:2412.19524) in `PLNDerivation.lean`; it is intentionally separate from the PeTTa mirror.
 

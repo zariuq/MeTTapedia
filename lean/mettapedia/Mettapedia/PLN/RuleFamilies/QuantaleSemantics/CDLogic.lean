@@ -143,8 +143,8 @@ This is the key quantale property: ⊗ distributes over ⊔.
 /-- Helper: multiplication distributes over max for ENNReal -/
 theorem ENNReal_mul_max (a b c : ℝ≥0∞) : a * max b c = max (a * b) (a * c) := by
   rcases le_total b c with hbc | hcb
-  · simp only [max_eq_right hbc, max_eq_right (mul_le_mul_left' hbc a)]
-  · simp only [max_eq_left hcb, max_eq_left (mul_le_mul_left' hcb a)]
+  · simp only [max_eq_right hbc, max_eq_right (mul_le_mul_right hbc a)]
+  · simp only [max_eq_left hcb, max_eq_left (mul_le_mul_right hcb a)]
 
 /-- Tensor distributes over binary join -/
 theorem cdTensor_sup_left (a b c : BinaryEvidence) :

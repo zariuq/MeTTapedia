@@ -69,7 +69,7 @@ historyToPLNState h₁ = historyToPLNState h₂ →
 ```
 GodelMachine/
 ├── Basic.lean              # Core definitions: GodelMachineState, FormalSystem
-├── ProofSystem.lean        # Formal proof system: ArithFormula, Gödel numbering
+├── ProofSystem.lean        # Encodable syntax and proof-relevant derivations
 ├── SelfImprovement.lean    # Proof-based modification: global switch, safety
 ├── SolomonoffBridge.lean   # Universal prior: dominance, K-optimality
 ├── PLNSpecialCase.lean     # Exchangeable domains: PLN, O(1) updates
@@ -100,17 +100,6 @@ This MVP core builds on:
 - Everitt et al. (2016). "Self-Modification of Policy and Utility Function"
 - Wan & Mei (2025). "LLMs as Computable Approximations to Solomonoff Induction"
 
-## The Emulated Math Council Approval
-
-The formalization aims to satisfy:
-- **Knuth/Skilling**: Information-theoretic foundations are rigorous
-- **Kolmogorov/Solomonoff**: Universal prior correctly formalized
-- **Russell**: logical self-reference is handled honestly at the current abstraction layer
-- **Chad Brown/Buzzard**: Lean 4 proofs compile cleanly
-- **Mike Stay**: Category-theoretic structure is clean
-- **Tao**: Mathematical rigor throughout
-- **Goertzel**: PLN connection is precise and useful
-- **Schmidhuber**: the proof-backed self-modification essence is captured in MVP form
 -/
 
 namespace Mettapedia.UniversalAI.GodelMachine.Main

@@ -2,7 +2,7 @@ import Mettapedia.UniversalAI.SelfModification.Main
 import Mathlib.Logic.Basic
 
 /-!
-# Gödel Machine: Core Definitions
+# Gödel Machine: Proof-Backed Improvement Core
 
 This module formalizes the core structure of Schmidhuber's Gödel Machine:
 
@@ -17,10 +17,11 @@ that the modification will improve expected utility.
 
 ## Core Components
 
-1. **Formal System F**: A proof system that can reason about the machine itself
+1. **Formal System F**: An abstract sound proof system
 2. **Axiom Set A**: Describes the environment and the machine's own code
 3. **Global Switch**: Mechanism that executes proven-beneficial modifications
-4. **Self-Description**: The machine has access to its own Gödel number
+4. **Representation boundary**: Concrete self-description requires a separate
+   syntactic encoding theorem; it is not manufactured in this semantic core
 
 ## Connection to Existing Infrastructure
 
@@ -47,8 +48,10 @@ A formal system F that the Gödel Machine uses to prove statements about itself.
 We keep this abstract here; concrete instantiations can use ZFC, PA, etc.
 -/
 
-/-- A formula in the formal system. We use Prop for simplicity,
-    representing formulas as Lean propositions. -/
+/-- A formula in the semantic proof-system shell.
+
+Using `Prop` makes this an external semantic model.  It does not by itself
+supply syntax, proof codes, or self-reference. -/
 abbrev Formula := Prop
 
 /-- A proof witness is evidence that a formula is provable.
@@ -69,7 +72,7 @@ structure FormalSystem where
   axioms_provable : ∀ φ ∈ axioms, provable φ
   /-- Modus ponens: if φ and φ → ψ are provable, then ψ is provable -/
   modus_ponens : ∀ φ ψ, provable φ → provable (φ → ψ) → provable ψ
-  /-- Tautologies are provable (needed for self-description). -/
+  /-- The truth constant is provable. -/
   provable_true : provable True
 
 /-- A formal system is consistent if it cannot prove False. -/
@@ -113,39 +116,6 @@ structure GodelMachineState where
   γ : DiscountFactor
   /-- Planning horizon (for finite approximation) -/
   horizon : ℕ
-
-/-! ## Self-Description and Gödel Numbering
-
-The key feature of a Gödel Machine is that it can reason about its own code.
--/
-
-/-- Gödel number: encodes a Gödel Machine state as a natural number.
-    This enables self-reference: the machine can prove statements about itself. -/
-noncomputable def godelNumber (_G : GodelMachineState) : ℕ :=
-  -- In practice, this would be a concrete encoding
-  -- For formalization, we just assert it exists
-  0  -- Placeholder; the actual encoding is implementation-dependent
-
-/-- The self-description axiom: asserts "my code is n".
-    This is added to the axiom set to enable self-reference. -/
-def selfDescriptionAxiom (G : GodelMachineState) : Formula :=
-  godelNumber G = godelNumber G  -- Tautology placeholder; refined in ProofSystem.lean
-
-/-- A Gödel Machine state with self-description in its axioms. -/
-def GodelMachineState.withSelfDescription (G : GodelMachineState) : GodelMachineState :=
-  { G with formalSystem := {
-      G.formalSystem with
-      axioms := G.formalSystem.axioms ∪ {selfDescriptionAxiom G}
-      axioms_provable := fun φ hφ => by
-        cases hφ with
-        | inl h => exact G.formalSystem.axioms_provable φ h
-        | inr h =>
-          simp only [Set.mem_singleton_iff] at h
-          subst h
-          -- selfDescriptionAxiom is godelNumber G = godelNumber G = (0 = 0) = True
-          simp [selfDescriptionAxiom, godelNumber]
-          exact G.formalSystem.provable_true
-  }}
 
 /-! ## Expected Utility
 
@@ -191,12 +161,6 @@ theorem valid_modification_improves (G G' : GodelMachineState)
 The mechanism by which a Gödel Machine modifies itself.
 Only executes modifications that are proven beneficial.
 -/
-
-/-- Whether a proof of improvement from G to G' has been found by time t.
-    In practice, this involves enumerating proofs up to length t.
-    For formalization, we model this as a decidable property. -/
-def proofFoundByTime (G G' : GodelMachineState) (_t : ℕ) : Prop :=
-  validModification G G'  -- Simplified; full version bounds proof search
 
 /-- The global switch checks each candidate and returns the first with a valid proof.
     Uses Classical decidability for the condition check. -/

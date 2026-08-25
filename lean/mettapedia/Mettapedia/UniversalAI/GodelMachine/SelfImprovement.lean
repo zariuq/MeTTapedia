@@ -1,4 +1,4 @@
-import Mettapedia.UniversalAI.GodelMachine.ProofSystem
+import Mettapedia.UniversalAI.GodelMachine.Basic
 
 /-!
 # Proof-Based Self-Improvement for Gödel Machines
@@ -8,11 +8,12 @@ This module formalizes the key mechanism of Gödel Machines:
 - Proofs are sound, so modifications actually improve utility
 - Connection to Theorem 16 (realistic agents make safe modifications)
 
-## The Global Optimality Theorem
+## The proof-search contract
 
-Schmidhuber's main result: A Gödel Machine is globally optimal in the sense that
-any self-modification it makes is provably beneficial, and if no beneficial
-modification can be proven, it continues running the current policy.
+The theorems below are relative to an explicit `ProofSearchOracle`: returned
+modifications are sound, and the oracle's separately supplied completeness law
+gives eventual discovery of a provable improvement.  No global optimality claim
+is inferred from soundness alone.
 
 ## References
 
@@ -27,18 +28,10 @@ open SelfModification BayesianAgents Classical
 
 /-! ## Proof Search
 
-The Gödel Machine systematically searches for proofs of improvement.
+The Gödel Machine systematically searches for proofs of improvement.  Search is
+represented by an oracle contract here; no dummy candidate enumeration is
+installed as the actual search algorithm.
 -/
-
-/-- The set of all candidate modifications considered by time t.
-    In practice, this is an enumeration of possible code changes. -/
-def candidateModifications (_G : GodelMachineState) (t : ℕ) : List GodelMachineState :=
-  -- Simplified: in practice, enumerate all modifications up to size t
-  -- For formalization, we use an abstract representation
-  List.replicate t _G  -- Placeholder (includes self as candidate)
-
-/-- Time needed to verify a proof of length n. -/
-def proofVerificationTime (n : ℕ) : ℕ := n  -- Linear in proof size
 
 /-- A proof search oracle: given time budget, returns proven modifications. -/
 structure ProofSearchOracle where
@@ -131,33 +124,6 @@ theorem godelMachine_globally_safe (G : GodelMachineState)
       -- Some G' case: proven improvement
       simp only [h] at hswitched ⊢
       exact ⟨G', rfl, oracle.sound G t G' h⟩
-
-/-! ## Proof Enumeration Strategy
-
-The Gödel Machine can enumerate proofs systematically.
--/
-
-/-- Enumerate all proofs up to length n. -/
-def enumerateProofs (_F : FormalSystem) (n : ℕ) : List (List ArithFormula) :=
-  -- Placeholder: in practice, systematic enumeration of all proof sequences
-  -- For formalization, we just note this is finite and computable
-  List.range n |>.map fun _ => []
-
-/-- The number of proofs of length ≤ n is finite (trivially true for lists). -/
-theorem enumerate_proofs_finite (_F : FormalSystem) (n : ℕ) :
-    (enumerateProofs _F n).length ≤ n := by
-  simp only [enumerateProofs, List.length_map, List.length_range]
-  exact le_refl n
-
-/-- Optimal Ordered Problem Solver (OOPS) connection:
-    The Gödel Machine subsumes OOPS as a special case where
-    proofs are about program behavior rather than expected utility. -/
-def isOOPSInstance (G : GodelMachineState) : Prop :=
-  -- The machine focuses on proving program termination/correctness
-  -- rather than expected utility improvements
-  ∀ G' : GodelMachineState, validModification G G' →
-    ∃ _program : ℕ, ∃ correctness : Prop,
-      G.formalSystem.provable correctness
 
 /-! ## Time-Optimal Execution
 

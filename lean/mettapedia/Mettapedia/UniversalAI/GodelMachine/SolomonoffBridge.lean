@@ -55,10 +55,12 @@ open Mettapedia.UniversalAI.UniversalPrediction.SolomonoffBridge
 The Solomonoff prior M provides a universal model of the environment.
 -/
 
-/-- A Solomonoff environment model: uses the universal prior for prediction. -/
-structure SolomonoffEnv (U : PrefixFreeMachine) [UniversalPFM U] where
-  /-- Placeholder for future environment-specific data (e.g. an encoding of histories). -/
-  unit : Unit := ()
+/-- The canonical Solomonoff environment associated with `U`.
+
+There is no additional environment-specific payload at this layer: histories
+and percepts are encoded by the definitions below, and prediction uses the
+existing `M₃(U)` semimeasure. -/
+abbrev SolomonoffEnv (_U : PrefixFreeMachine) [_universal : UniversalPFM _U] := Unit
 
 /-- The universal semimeasure used for prediction.
 

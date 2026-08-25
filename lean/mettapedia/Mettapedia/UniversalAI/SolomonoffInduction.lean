@@ -131,7 +131,7 @@ theorem conditionalProb_le_one (ν : Semimeasure) (y x : BinString) (hpos : ν x
       -- ν x = ⊤, contradiction with being a semimeasure (root_le_one' implies bounded)
       -- But we don't have that ν x is necessarily the root. Let's just handle it.
       simp [hx, ENNReal.toReal_top]
-  · push_neg at h
+  · push Not at h
     -- Both are finite, so toReal preserves order
     have hxy_fin : ν (x ++ y) ≠ ⊤ := h.1
     have hx_fin : ν x ≠ ⊤ := h.2

@@ -7,6 +7,7 @@ rebuilds just the UniversalAI development.
 
 import Mettapedia.UniversalAI.SimplicityUncertainty
 import Mettapedia.UniversalAI.SolomonoffPrior
+import Mettapedia.UniversalAI.ZetaProgramPrior
 import Mettapedia.UniversalAI.SolomonoffInduction
 import Mettapedia.UniversalAI.SolomonoffMeasure
 import Mettapedia.UniversalAI.UniversalPrediction
@@ -31,3 +32,5 @@ import Mettapedia.UniversalAI.TimeBoundedAIXI.CoreProvability
 import Mettapedia.UniversalAI.UniversalAIBridge
 import Mettapedia.UniversalAI.UniversalAIBridgeCore
 import Mettapedia.UniversalAI.Intelligence.Basic
+import Mettapedia.UniversalAI.SelfModification.ProofBackedImprovement
+import Mettapedia.UniversalAI.Omega

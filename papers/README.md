@@ -23,6 +23,8 @@
 | `ks-foi-review.pdf` | Knuth-Skilling / Foundations of Inference review |
 | `governance-deontic-logic.pdf` | Governance via deontic logic |
 | `doctext-gf-readme-v1.pdf` | DocText / GF readme |
+| `source-scoped-evidence-path-relevant-truth-and-weakness.pdf` | Source-scoped evidence, NARS path relevance, PLN/constructible-duality bridges, Bennett and quantale weakness, Ozkural task laws and priors, and Hammer/ONA bounded control |
+| `open-ended-plural-intelligence.pdf` | Typed completion fibres, observer-relative variety, distinction conservation, processual individuation, constrained metasystems, relational worlds of views, stigmergy, weakest sufficient open-ended contexts, protected freedom, and source-scoped native realization |
 
 ### `meredith/` — Greg Meredith's framework papers
 | File | Topic |

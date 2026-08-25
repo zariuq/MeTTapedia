@@ -118,8 +118,6 @@ When we have an ordering on Q, higher sensitivity means more intense responses.
 
 section SensitivityOrdering
 
-variable [LE Q]
-
 /-- If the quantale has a notion of "stronger" elements affecting states more,
     this would give monotonicity in sensitivity. This requires additional
     structure: q₁ ≤ q₂ → q₁ • θ ≤ q₂ • θ for θ ≥ ⊥.
@@ -132,7 +130,7 @@ variable [LE Q]
 -/
 class PositiveQModule (Q : Type*) (Θ : Type*)
     [CommMonoid Q] [CompleteLattice Q] [IsCommQuantale Q]
-    [CompleteLattice Θ] [QModule Q Θ] [LE Q] where
+    [CompleteLattice Θ] [QModule Q Θ] where
   smul_mono_left : ∀ {q₁ q₂ : Q}, q₁ ≤ q₂ → ∀ θ : Θ, q₁ • θ ≤ q₂ • θ
 
 variable [PositiveQModule Q Θ]

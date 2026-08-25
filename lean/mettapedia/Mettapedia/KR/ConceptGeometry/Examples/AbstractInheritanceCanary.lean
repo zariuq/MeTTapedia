@@ -19,7 +19,8 @@ namespace Mettapedia.KR.ConceptGeometry.Examples.AbstractInheritanceCanary
 open Mettapedia.KR.ConceptOntology
 open Mettapedia.KR.ConceptOntology.Examples
 open Mettapedia.KR.ConceptGeometry.AbstractInheritance
-open Mettapedia.PLN.Comparisons.NARS.NARSInheritance
+open Mettapedia.NARS.Logic.Inheritance
+open Mettapedia.NARS.Bridges.PLN.InheritanceEvidence
 
 instance : Fintype Creature where
   elems := {Creature.tweety, Creature.pingu, Creature.plane}
@@ -37,7 +38,7 @@ noncomputable def wmInterpretation : Interpretation Concept Creature Concept :=
     (State := ToyState) gate toyWM membershipBuilder
 
 /-- The finite NARS frame reconstructed from the same abstract interpretation. -/
-noncomputable def wmNARSFrame : Mettapedia.PLN.Comparisons.NARS.NARSInheritance.Frame Concept Creature Concept :=
+noncomputable def wmNARSFrame : Mettapedia.NARS.Logic.Inheritance.Frame Concept Creature Concept :=
   wmInterpretation.toNARSFrame
 
 theorem wm_penguin_bird_inherits :
@@ -84,26 +85,26 @@ theorem wm_penguin_bird_abstract_negative_evidence_zero :
       penguin_extensionally_inherits_bird)
 
 theorem wmNARS_penguin_bird_evidence_eq_abstract :
-    wmNARSFrame.inheritanceEvidence (.atom Concept.penguin) (.atom Concept.bird) =
+    evidence wmNARSFrame (.atom Concept.penguin) (.atom Concept.bird) =
       wmInterpretation.finiteInheritanceEvidence Concept.penguin Concept.bird := by
   simpa [wmNARSFrame, wmInterpretation] using
-    (Interpretation.toNARSFrame_inheritanceEvidence_atom_eq_finiteInheritanceEvidence
+    (Interpretation.toNARSFrame_plnEvidence_atom_eq_finiteInheritanceEvidence
       (I := wmInterpretation) Concept.penguin Concept.bird)
 
 theorem wmNARS_penguin_bird_negative_evidence_zero :
-    (wmNARSFrame.inheritanceEvidence (.atom Concept.penguin) (.atom Concept.bird)).neg = 0 := by
+    (evidence wmNARSFrame (.atom Concept.penguin) (.atom Concept.bird)).neg = 0 := by
   rw [wmNARS_penguin_bird_evidence_eq_abstract]
   exact wm_penguin_bird_abstract_negative_evidence_zero
 
 theorem wmNARS_penguin_bird_stampedEvidence_eq_abstract :
-    wmNARSFrame.inheritanceStampedEvidence (.atom Concept.penguin) (.atom Concept.bird) =
+    inheritanceStampedEvidence wmNARSFrame (.atom Concept.penguin) (.atom Concept.bird) =
       wmInterpretation.finiteInheritanceStampedEvidence Concept.penguin Concept.bird := by
   simpa [wmNARSFrame, wmInterpretation] using
     (Interpretation.toNARSFrame_inheritanceStampedEvidence_atom_eq_finiteInheritanceStampedEvidence
       (I := wmInterpretation) Concept.penguin Concept.bird)
 
 theorem wmNARS_bird_fly_stampedEvidence_eq_abstract :
-    wmNARSFrame.inheritanceStampedEvidence (.atom Concept.bird) (.atom Concept.fly) =
+    inheritanceStampedEvidence wmNARSFrame (.atom Concept.bird) (.atom Concept.fly) =
       wmInterpretation.finiteInheritanceStampedEvidence Concept.bird Concept.fly := by
   simpa [wmNARSFrame, wmInterpretation] using
     (Interpretation.toNARSFrame_inheritanceStampedEvidence_atom_eq_finiteInheritanceStampedEvidence
