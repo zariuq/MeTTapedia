@@ -439,7 +439,14 @@ theorem haltingPrograms_prefixFree (U : PrefixFreeMachine) :
   simp only [Set.mem_setOf_eq] at hs ht
   exact ht (U.prefix_free s t hpref hne hs)
 
-/-- A universal prefix-free machine can simulate any other -/
+/-- Historical unrestricted simulation interface.
+
+Because `PrefixFreeMachine.compute` is an arbitrary set-theoretic function,
+quantifying over every `PrefixFreeMachine` is stronger than the standard
+effective-machine invariance theorem.  `UniversalAI.UniversalMachineBoundary`
+proves this unrestricted class uninhabited and supplies the indexed effective
+replacement.  This declaration remains temporarily for compatibility with
+the older conditional theorem stack. -/
 class UniversalPFM (U : PrefixFreeMachine) where
   universal : ∀ M : PrefixFreeMachine, ∃ c : ℕ, ∀ p x,
     M.compute p = some x → ∃ q : BinString, U.compute q = some x ∧ q.length ≤ p.length + c

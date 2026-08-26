@@ -19,7 +19,8 @@ measure Υ(π) is exactly the value of policy π in a universal mixture environm
 
 * `intelligence`: Intelligence of agent π in environment mixture ξ
 * `universalIntelligence`: Universal intelligence using K-complexity weights
-* `aixi_maximizes_intelligence`: AIXI maximizes intelligence (proven!)
+* `aixi_maximizes_intelligence`: the Bayes-optimal policy maximizes the
+  intelligence score for the supplied mixture
 
 ## References
 
@@ -229,26 +230,30 @@ This can be implemented by:
 See Intelligence/Properties.lean for the full implementation.
 -/
 
-/-! ## Main Theorem: AIXI Maximizes Intelligence
+/-! ## Chosen-mixture optimality
 
-**Theorem 1** from Legg & Hutter (2007): AIXI is the most intelligent agent.
+The result below is the finite-horizon Bayes-optimality statement for the
+*supplied* Bayesian mixture.  It is the corresponding formal analogue of the
+Legg--Hutter intelligence maximization argument, because `intelligence` in this
+file is defined to be value in that mixture.
 
-The proof is TRIVIAL: it's just a restatement of the existing AIXI optimality
-theorem from BayesianAgents.lean!
+It is not a machine-independent or prior-independent universal-optimality
+claim: the environment enumeration, weights, discount, and horizon remain part
+of the objective.  In particular, renaming an encoding-weighted mixture
+"universal" does not supply an invariance theorem for its induced policy.
 -/
 
-/-- **Theorem**: AIXI maximizes intelligence.
+/-- The Bayes-optimal policy maximizes the supplied-mixture intelligence score.
 
-    **Legg & Hutter (2007), Theorem 1**:
+    In Legg--Hutter notation the corresponding comparison is:
     ```
     ∀ π : Agent, Υ(AIXI) ≥ Υ(π)
     ```
 
-    **Proof**: By definition, intelligence is value in mixture environment.
-    AIXI (Bayes-optimal agent) maximizes value in mixture environment (proven
-    in BayesianAgents.lean). QED.
-
-    This is literally just a restatement of `bayes_optimal_maximizes_value`!
+    Here the score is definitionally the value in `mixtureEnvironment ξ`, so
+    the proof is exactly `bayes_optimal_maximizes_value`.  The theorem therefore
+    compares policies under one fixed `ξ`; it does not compare different
+    mixture priors or reference encodings.
 -/
 theorem aixi_maximizes_intelligence (ξ : BayesianMixture) (γ : DiscountFactor)
     (h : History) (hw : h.wellFormed) (horizon : ℕ) (π : Agent) :
@@ -259,9 +264,12 @@ theorem aixi_maximizes_intelligence (ξ : BayesianMixture) (γ : DiscountFactor)
   -- Use existing AIXI optimality theorem
   exact bayes_optimal_maximizes_value ξ γ horizon h hw π
 
-/-- Corollary: Universal intelligence is maximized by AIXI.
+/-- For the mixture induced by `encodeWeight`, its Bayes-optimal policy
+maximizes the associated encoding-relative intelligence score.
 
-    For the universal mixture (using encodeWeight), AIXI achieves maximum intelligence.
+The adjective "universal" in `universalIntelligence` records the intended
+enumeration of environments.  This corollary itself proves optimality only for
+that constructed mixture; it adds no prior- or machine-invariance conclusion.
 -/
 theorem aixi_maximizes_universal_intelligence {ι : Type*} [Encodable ι]
     (envs : ι → Environment) (horizon : ℕ) (π : Agent) :

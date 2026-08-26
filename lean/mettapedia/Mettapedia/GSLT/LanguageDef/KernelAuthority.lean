@@ -27,7 +27,7 @@ This module isolates the reusable distinctions.
   certificate remains finite.
 
 Infinitary claims require an additional, orthogonal global condition.  The
-ProofGSLT recurrent-trace development supplies the concrete Buechi instance;
+CertificateGSLT recurrent-trace development supplies the concrete Buechi instance;
 cyclic local replay alone is deliberately not treated as authority here.
 -/
 

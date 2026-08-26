@@ -1,5 +1,5 @@
 import Mettapedia.GSLT.LanguageDef.KernelAuthority
-import Mettapedia.GSLT.LanguageDef.ProofGSLTWireFormat
+import Mettapedia.GSLT.LanguageDef.CertificateGSLTWireFormat
 import Mettapedia.Languages.MeTTa.MeTTaRevisionedQueryBindEval
 
 /-!
@@ -30,7 +30,7 @@ open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Substitution
 open Mettapedia.GSLT.LanguageDef
 open Mettapedia.GSLT.LanguageDef.KernelAuthority
-open Mettapedia.GSLT.LanguageDef.ProofGSLT
+open Mettapedia.GSLT.LanguageDef.CertificateGSLT
 
 /-! ## Checked signed de Bruijn transport -/
 

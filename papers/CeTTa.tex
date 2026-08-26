@@ -95,7 +95,7 @@ LanguageDefs compiled to native readers with differential, mutation, and
 purity gates --- the pipeline caught two defects in the authored grammars
 before execution); \code{--lang zero}, a query-first occurrence-bag kernel
 whose semantics is carried through OSLF to native spatial/behavioral types,
-checked ProofGSLT articles, MeTTa inference-kernel (MIK) authority, and
+checked CertificateGSLT articles, MeTTa inference-kernel (MIK) authority, and
 native inference-kernel (NIK) replay obligations; and
 \code{--lang prime}, a \emph{distinct} lazy
 sibling language (branch-local call-by-need with call-time choice,
@@ -2683,7 +2683,7 @@ candidate-set equality remains conditional on completing the parser and
 byte-order refinements for arbitrary locations.  Finally, the generic OSLF
 construction maps each profile to predicate-valued native types, and exact
 target inhabitation is proved equivalent to one step of that same profile.
-The corresponding native claim is already in the generic ProofGSLT authority
+The corresponding native claim is already in the generic CertificateGSLT authority
 form.  A concrete MM2 wire presentation and native checker lowering remain
 realization obligations, not a second semantics.
 
@@ -3491,7 +3491,7 @@ the concrete Zero theorems are in
 \href{https://github.com/zariuq/MeTTapedia/blob/main/lean/mettapedia/Mettapedia/Languages/MeTTa/MeTTaZeroLanguageAdequacy.lean}{\code{MeTTaZeroLanguageAdequacy.lean}}.
 
 \paragraph{From a trace to an independently replayed proof.}
-ProofGSLT's open derivations now carry an ordered context of explicit
+CertificateGSLT's open derivations now carry an ordered context of explicit
 premises, with a generic semantic-induction theorem: if every local rule
 application preserves meaning and every open premise has its declared
 meaning, the derived conclusion has its meaning.  Zero instantiates this
@@ -3501,7 +3501,7 @@ by itself; it requires a query-row or evaluation-row premise tied to an
 actual occurrence in the interpreted Zero relation.
 
 The bridge in
-\href{https://github.com/zariuq/MeTTapedia/blob/main/lean/mettapedia/Mettapedia/OSLF/Framework/NativeTypeProofGSLT.lean}{\code{OSLF/Framework/NativeTypeProofGSLT.lean}}
+\href{https://github.com/zariuq/MeTTapedia/blob/main/lean/mettapedia/Mettapedia/OSLF/Framework/NativeTypeCertificateGSLT.lean}{\code{OSLF/Framework/NativeTypeCertificateGSLT.lean}}
 turns an accepted open \code{WireArticle} into MIK semantic authority and
 exposes the corresponding checked-lowering obligation for a native NIK.
 All eight Zero rule schemas have local semantic-preservation proofs.  A
@@ -3531,11 +3531,11 @@ nevertheless bounded: the certificate proves structural chain of custody,
 not yet that executing CGP1 or the generated C realizes all authored Zero
 observations.  The open row premises above are not yet closed by
 authenticated C execution receipts, and the C checker is not yet generated
-from the single ProofGSLT acceptance predicate.  These are the remaining
+from the single CertificateGSLT acceptance predicate.  These are the remaining
 seams between the working build attestation and end-to-end NIK replay.  The
 C checker is independent of the Python producer, but deliberately reuses the
 generic C parser, admission path, and plan decoder; the resulting common-mode
-boundary is another reason the ProofGSLT replay correspondence remains
+boundary is another reason the CertificateGSLT replay correspondence remains
 necessary.
 
 \section{MeTTa Prime: A Lazy Sibling Language}
@@ -3728,7 +3728,7 @@ MeTTa Zero makes the staged version of the same discipline concrete
 (Section~\ref{sec:zero-oslf-nik}): its public query and query-derived
 evaluator generate one relation-backed OSLF span; native types provide
 checked behavioral evidence and safe constructor-indexed planning; and
-open ProofGSLT articles cross into MIK authority and NIK replay without
+open CertificateGSLT articles cross into MIK authority and NIK replay without
 discarding their semantic row obligations.  The negative multiplicity
 theorem prevents that modal analysis from being mistaken for the exact-bag
 semantics it accelerates.
@@ -3775,7 +3775,7 @@ hidden---not global, ambient, or user-visible.}
   fallback, and keep an evaluate-by-iterating-one-step mode as reference
   oracle.
 \item \textbf{Zero NIK closure:} generate the native checker from the one
-  ProofGSLT acceptance predicate; define authenticated query-row and
+  CertificateGSLT acceptance predicate; define authenticated query-row and
   capability-receipt codecs that discharge open articles; prove native
   codec/replay correspondence; then compose the compilation certificate
   with a separate execution receipt.  Proof machinery remains a build-time

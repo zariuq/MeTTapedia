@@ -19,6 +19,7 @@ import Mettapedia.OSLF.Framework.LanguageEqCategory
 import Mettapedia.OSLF.Framework.LanguageEqCategoryLaws
 import Mettapedia.OSLF.Framework.ModeTheory
 import Mettapedia.OSLF.Framework.LanguageIndexedModalFunctor
+import Mettapedia.OSLF.Framework.IndexedModalFunctor
 import Mettapedia.OSLF.Framework.Mode2Skeleton
 import Mettapedia.OSLF.Framework.Mode2PureBoundary
 import Mettapedia.OSLF.Framework.Mode2SkeletonLaws
@@ -27,6 +28,7 @@ import Mettapedia.OSLF.Framework.MATTProvableNow
 import Mettapedia.OSLF.Framework.MATTClaimMap
 import Mettapedia.OSLF.Framework.FULLStatus
 import Mettapedia.OSLF.Framework.TypeSynthesis
+import Mettapedia.OSLF.Framework.RecursiveNativeType
 import Mettapedia.Languages.ProcessCalculi.RhoCalculus.LanguageDefDSL
 import Mettapedia.OSLF.Framework.GeneratedTyping
 import Mettapedia.OSLF.Framework.SynthesisBridge
@@ -522,6 +524,41 @@ export Mettapedia.OSLF.Framework.LanguageIndexedModalFunctor (
   runtimePredicatePullbackFunctor
   diamond_witness_transport
   diamond_witness_transport_comp
+  ModalTranslation
+  ModallyCoveredTheory
+  forgetIncoming
+  ModalPredicateTheory
+  oslfModalObject
+  oslfModalObject_agrees_gsltOSLF
+  oslfModalFunctor
+  ReifiedNativeTheory
+  NativeTypeEssentialImage
+  nativeType_obj_mem_essentialImage
+  reifiedOSLF
+  reifiedOSLF_obj_mem_essentialImage
+  OSLFComparison
+  EffectiveStructure.StepDecision
+  EffectiveStructure.EquationDecision
+  EffectiveStructure.SuccessorEnumeration
+  EffectiveStructure.PredecessorEnumeration
+  EffectiveStructure.CanonicalEquationNormalizer
+  EffectiveStructure.ReductionNormalizer
+  EffectiveStructure.ContextualClosure
+  EffectiveStructure.SubstitutionClosure
+  EffectiveStructure.ProofRelevantRequirement
+)
+
+export Mettapedia.OSLF.Framework.IndexedModalFunctor (
+  ForwardModalPredicateTheory
+  oslfForwardModalObject
+  oslfForwardModalFunctor
+  forgetExactModal
+  forwardIndexedOSLF
+  exactIndexedOSLF
+  forwardIndexedOSLFFunctor
+  exactIndexedOSLFFunctor
+  modal_pullback_diamond_exact
+  modal_pullback_box_exact
 )
 
 export Mettapedia.OSLF.Framework.Mode2Skeleton (

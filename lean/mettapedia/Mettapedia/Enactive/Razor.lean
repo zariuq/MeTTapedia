@@ -22,9 +22,10 @@ Modern razors use importantly different comparison data:
   Is the Weakest, Not the Shortest*, 2023) maximizes the number of semantic
   completions among correct hypotheses: explanations should be no more
   specific than necessary.
-* Ben Goertzel's draft *Weakness Is All You Need: Quantale Weakness as a
-  Unifying Generalized-Occam Principle* (2025) replaces a single numerical
-  range by quantale-valued relation scores.
+* Ben Goertzel's *Weakness Is All You Need: Quantale Weakness as a Unifying
+  Principle for Cognition* (2026) replaces a single numerical range by
+  quantale-valued relation scores while making their layer-relative valuation
+  explicit.
 
 The common abstraction below therefore retains only what all these methods
 actually share: an admissible fibre and a preorder of preference.  It does not

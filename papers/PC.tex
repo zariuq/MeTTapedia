@@ -640,6 +640,70 @@ near one alone does not predict verified-discovery parity.  The proposal that th
 successor lands near its backpropagation twin is therefore a timestamped pre-checker
 hypothesis, not a sealed preregistered prediction.
 
+\subsection{The successor arm's checked outcome}
+\label{sec:successor-outcome}
+
+That hypothesis was wrong, and the manner of its failure is the more useful result. Under
+the external checker the successor arm produced \textbf{zero} new verified targets from
+$1{,}843$ unique candidates, with zero direct hits and only $16$ already-known targets
+covered. Its matched reference-rule twin, same carrier and same corpus in the same round,
+produced $240$ new targets from $2{,}787$ candidates. The count is lower than the
+predecessor's $10$, not near the twin's $240$, so the account of the previous subsection
+is falsified on the terms it stated.
+
+What survives is the diagnosis made from training telemetry before any checker result
+existed. Over the run, evaluation accuracy peaked near update $1{,}400$ and then fell by
+more than half, task loss rose, and the gradient norm grew roughly fortyfold, from a
+median near $22$ early to $857$ late---while the credit cosine climbed monotonically to
+$0.9996$. Direction converged; magnitude diverged; the checker recorded the consequence.
+
+This is the sharpest available demonstration that a realized update has two independent
+coordinates: an arm at cosine $0.9998$ to the reference rule produced nothing
+a checker would accept, while its reference twin produced $240$ discoveries. A cosine
+gate, a relative-direction-error gate, or any normalized alignment statistic is blind to
+the failure by construction, because all of them quotient out exactly the coordinate that
+diverged. An admission criterion must observe direction \emph{and} scale, and---as
+\S\ref{sec:realized-displacement} makes precise---it must observe them on the transition
+actually executed.
+
+\section{Certifying the executed transition}
+\label{sec:realized-displacement}
+
+The finite-credit gate of \S\ref{sec:finite-settling} bounds a credit vector. An
+implementation does not apply that vector: it hands the vector to an optimizer whose
+state-dependent transform produces the realized parameter displacement. Between the
+certified object and the executed one sits momentum, adaptive per-coordinate
+preconditioning, and decoupled regularization. A certificate on the input therefore does
+not transfer to the step.
+
+The repair keeps the gate and moves its subject. Model the optimizer as an abstract
+transform from a complete pre-step snapshot and a proposed gradient to a candidate
+parameter-and-state pair, with realized displacement the difference of parameters. Because
+the gate then measures the transform's \emph{output}, it is sound for every transform,
+which is why no adaptive-optimizer internals appear in the statement. Two candidates are
+constructed from one immutable snapshot---one from the reference gradient, one from the
+settling credit---and the settling candidate is admitted only if its realized displacement
+passes the direction floor, the scale band, and a measured strict task decrease at the
+candidate itself.
+
+Four branch identities make the transaction exact rather than approximate: admission
+commits precisely the settling candidate; every rejection commits precisely the reference
+candidate, optimizer state included; a failed transaction returns the snapshot unchanged;
+and a declared zero-credit step \emph{skips the optimizer entirely}. The last is not
+pedantry. A zero gradient passed to a stateful optimizer still moves parameters through
+stored moments, so ``zero credit'' and ``no movement'' are different events, and only an
+explicit skip realizes the second. The counterexample that motivates the whole
+construction is small: a positive diagonal rescaling can carry a raw-gradient pair that
+passes both direction and scale bounds to a realized displacement that violates them.
+
+The boundary is worth stating plainly, because it is the reason this section exists rather
+than a longer chain of model refinements: the certificate binds the step that ran, so the
+analytical model of the update need only be adequate to the treatment's \emph{form}. Exact
+correspondence between a formal model and an implementation's every tensor detail is not
+an attainable acceptance criterion, and pursuing it converts theorem-proving into
+transcription. What is required is that each registered claim carry either a theorem or an
+executable, source-bound fixture.
+
 \section{The cost of depth}
 \label{sec:depth}
 
@@ -2033,6 +2097,149 @@ learning rule. Conversely, a rule that changes the mechanism must separate from 
 registered BP, PC, PC--ALM, and prior-art families under matched compute before it earns a
 new name. No current candidate meets that bar. Equivalence and collapse are evidence,
 not failures to be hidden.
+
+\section{Closing the credit-by-history factorial}
+\label{sec:credit-history-factorial}
+
+Two of the campaign's rounds left an identification gap. The unified carrier was run as
+PC-versus-BP under continuation, and as joint-retraining-versus-continuation under BP, but
+never as PC under joint retraining. With three of four cells the credit-by-history
+interaction is not merely imprecise; it is unidentified, since two completed worlds can
+agree on all three observed cells and disagree on the interaction. A further round
+supplied the missing cell, holding carrier, corpus, search, and checker fixed.
+
+The result is negative for the hypothesis that settling was being penalised by inherited
+state. Joint retraining helped both rules and helped the reference rule far more. In new
+targets per thousand unique candidates,
+\[
+  \bigl[(2.585-1.967)-(5.411-2.248)\bigr]=-2.545 ,
+\]
+and the normalized yield ratio moved from $0.875$ under continuation to $0.478$ under
+joint replay. Under leave-one-program-out stress---one reference-arm program covered $35$
+new targets---the interaction remains negative at $-0.724$ per thousand, and the ratio
+moves $0.902\to0.727$; program-level hit rates agree with the target projection, so the
+conclusion is not an artifact of one abstraction or of target counting.
+
+The scientifically important observation is not the sign but the state of the arm that
+produced it. Both settling cells were numerically healthy at their terminal authenticated
+updates: credit cosine to same-batch reference credit $0.969$ continued and $0.951$ joint,
+norm ratios $0.943$ and $0.930$, zero backtracks, no nonfinite values, task loss
+decreasing on the measured update. This is neither the collapse regime nor the divergence
+of \S\ref{sec:successor-outcome}. It is a third, stable, genuinely non-reference credit
+geometry---and it conferred no discovery advantage whatsoever.
+
+Three regimes have now been instantiated empirically on checker-adjudicated endpoints:
+collapse onto a positive multiple of the reference credit, where parity is predicted and
+uninformative; departure in direction with divergence in scale, where alignment statistics
+report success while the checker records nothing; and stable bounded departure with no
+behavioral consequence. Only the third is a clean null, and reaching it required the
+complete factorial. The conclusion it licenses is correspondingly narrow: these settling
+treatments, on these carriers, under these schedules, do not improve verified discovery.
+It does not license a claim about local credit assignment as such, and the sharpest
+case those carriers could not pose was a graph whose cyclic structure is the object being
+credited, rather than a largely feedforward carrier settled globally.  The next section
+tests a restricted version of that case in a small recurrent retrieval module.
+
+\section{Local predictive coding on a recurrent retrieval module}
+\label{sec:action-memory-pc}
+
+We next isolated precisely that remaining case.  Two frozen policy backbones---TGAD--GRU
+and TGAD--Transformer---were each given a $2{,}115$-parameter retrieval module.  The
+module was either feedforward or a fixed-depth recurrent refinement system with two
+coupled width-$32$ states.  Only this module was plastic.  Within each backbone and
+module type, backpropagation and local predictive coding started from the same anchor,
+used the same batches and AdamW state, and differed only in the module's learning rule.
+The predictive-coding transaction compared the \emph{post-optimizer parameter update}
+with the corresponding backpropagation update and committed the latter exactly whenever
+direction, scale, or task-decrease acceptance failed.
+
+The experiment also crossed the learning rule with verifier-certified hindsight replay.
+Sampling was hierarchical: select a sequence first, then one unique verified program for
+that sequence.  The baseline drew from the accumulated alternatives; the hindsight
+condition enlarged that support with deduplicated off-target successes.  Thus this was a
+replay/data-augmentation intervention, not an intervention on retrieval weights.  In
+particular, the originally proposed direct query-edge conserved-credit treatment had no
+eligible direct receipts, changed no retrieval weight, and was stopped before checker
+evaluation; it licenses no efficacy claim.
+
+At the initial $500$ updates, every retrieval-module condition tied its no-memory anchor
+on new-target count within each paired backbone and seed.  A separate $500$-update replay
+factorial was also neutral to slightly adverse: the baseline and hindsight portfolios
+each covered $34$ new targets, with a mean paired effect of $-0.125$ target across the
+eight module conditions.  A frozen selection rule compared registered endpoints, exact
+program identities, and retrieval-cascade counts; all eight conditions qualified and were
+then replicated from their common parents and extended to $2{,}500$ updates.  This makes
+the larger-budget analysis selection-conditioned, and its fresh searches are separate
+candidate draws rather than an independent confirmation of the $500$-update sign.  The
+aggregate checker counts over three paired seeds were:
+
+\begin{center}\small
+\begin{tabular}{@{}llrrr@{}}
+\toprule
+backbone & module learning rule & baseline replay & hindsight replay & difference \\
+\midrule
+TGAD--GRU & feedforward BP & 24 & 25 & $+1$ \\
+TGAD--GRU & feedforward PC & 24 & 26 & $+2$ \\
+TGAD--GRU & recurrent BP & 24 & 25 & $+1$ \\
+TGAD--GRU & recurrent PC & 24 & 27 & $+3$ \\
+TGAD--Transformer & feedforward BP & 26 & 26 & $0$ \\
+TGAD--Transformer & feedforward PC & 26 & 26 & $0$ \\
+TGAD--Transformer & recurrent BP & 26 & 26 & $0$ \\
+TGAD--Transformer & recurrent PC & 26 & 26 & $0$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+These are sums over three paired seeds, not twenty-four independent replications.  The
+mean hindsight effect was $+0.292$ target per module condition and $+0.051$ target per
+thousand unique candidates.  The predictive-coding main effect was $+0.125$ target and
+its interaction with recurrent refinement was $+0.083$ target.  Those effects are below
+one target at the unit of replication and are concentrated: the two hindsight-exclusive
+targets both occurred under TGAD--GRU at one seed.  One was shared by all four GRU
+conditions; the other, A6355, appeared only under recurrent PC with hindsight replay and
+had two distinct program witnesses.  This is a useful hypothesis for a targeted
+replication, not evidence of a general PC advantage.  Direct query-conditioned hit counts
+were nonzero, but the paired hindsight effect on them was exactly zero in every run.
+
+The mechanism trace is nevertheless informative.  Before AdamW, PC credit remained
+nearly aligned with backpropagation (median cosine about $0.990$--$0.996$ at $2{,}500$
+updates).  After the stateful optimizer transform, the median cosine ranged from roughly
+$0.63$ in the feedforward modules to $0.90$ in the recurrent modules, with corresponding
+norm ratios about $0.41$ and $0.84$.  Certifying raw credit would therefore have certified
+a different object from the update actually executed.  PC committed on roughly
+$97$--$98\%$ of updates, yet this sustained non-reference update geometry yielded only the
+small count differences above.
+
+The cost boundary is equally sharp.  Across the initial factorial, replay factorial, and
+replication-and-extension, the study executed $126$ training runs, $159{,}000$ optimizer
+updates, and $1{,}860{,}746$ objective evaluations, consuming $11.62$ summed GPU-hours.
+PC required eleven times as many objective evaluations as BP but about $1.7$ times its
+wall time on these small modules.  The $2{,}500$-update phase unnecessarily recomputed an
+already authenticated $500$-update prefix---$24{,}000$ updates, or one fifth of that
+phase---rather than continuing from it.  Future replications should continue from the
+exact checkpoint and reserve the larger budget for a small, prospectively selected set
+of mechanism contrasts.
+
+The warranted conclusion is scoped.  Local PC was operational, safe under the registered
+acceptance test, and measurably distinct after optimization; it did not show a robust
+verified-discovery advantage in this three-seed study.  Hindsight replay produced a small
+collateral portfolio expansion on TGAD--GRU and none on TGAD--Transformer, without changing
+direct-hit counts or the measured retrieval cascade.  The outstanding architectural
+question is therefore improved query-conditioned retrieval, followed by a focused test
+of the recurrent-PC interaction, not another broad factorial over unchanged retrieval.
+
+\paragraph{A local-module pilot, recorded but not evidential.}
+A subsequent pilot applied local predictive coding to a $2{,}115$-parameter recurrent
+adapter---two width-$32$ states, two scalar couplings, four damped iterations---attached to
+a frozen grammar-masked backbone, crossed against backpropagation on the same adapter over
+three seeds. The rule was operational and genuinely distinct after the optimizer transform
+(credit cosine to backpropagation $\approx0.63$ one-pass, $\approx0.90$ cyclic) and
+conferred no discovery advantage: main effect $+0.125$ targets, interaction with the cyclic
+adapter $+0.083$. The result carries little weight in either direction. The backbone was
+frozen after $500$ updates, so $99.96\%$ of the model was fixed; the cyclic structure was
+two coupled scalars rather than a graph whose cycles are the object being credited; and
+retrieval reached $19$ of $240$ queries. It tests an adapter, not the architecture-scale
+question of \S\ref{sec:credit-history-factorial}, which remains open.
 
 \section{Verdict}
 \label{sec:verdict}

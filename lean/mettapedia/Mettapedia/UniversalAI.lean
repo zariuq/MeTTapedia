@@ -7,6 +7,7 @@ rebuilds just the UniversalAI development.
 
 import Mettapedia.UniversalAI.SimplicityUncertainty
 import Mettapedia.UniversalAI.SolomonoffPrior
+import Mettapedia.UniversalAI.UniversalMachineBoundary
 import Mettapedia.UniversalAI.ZetaProgramPrior
 import Mettapedia.UniversalAI.SolomonoffInduction
 import Mettapedia.UniversalAI.SolomonoffMeasure

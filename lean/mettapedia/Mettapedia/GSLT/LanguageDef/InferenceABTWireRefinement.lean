@@ -18,7 +18,7 @@ namespace Mettapedia.GSLT.LanguageDef.InferenceABTWireRefinement
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.OSLF.MeTTaIL.Substitution
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
-open Mettapedia.GSLT.LanguageDef.ProofGSLT
+open Mettapedia.GSLT.LanguageDef.CertificateGSLT
 open Mettapedia.GSLT.LanguageDef.InferencePresentationWire
 open Mettapedia.GSLT.LanguageDef.InferenceSupportIndexedABTLowering
 open Mettapedia.GSLT.LanguageDef.InferenceCettaExecutionRefinement

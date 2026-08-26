@@ -9,7 +9,7 @@ certificate contains an intrinsically typed proof and the checker verifies
 that its conclusion is the submitted claim.  This gives exact provability,
 and Foundation soundness/completeness transports it to model semantics.
 
-This is not yet an untrusted native wire format.  A Prime ProofGSLT authority
+This is not yet an untrusted native wire format.  A Prime CertificateGSLT authority
 must separately provide a faithful codec or proof-term presentation and prove
 that native replay refines the same checker meaning.  Keeping the intrinsic
 authority explicit prevents the future serialization layer from becoming its

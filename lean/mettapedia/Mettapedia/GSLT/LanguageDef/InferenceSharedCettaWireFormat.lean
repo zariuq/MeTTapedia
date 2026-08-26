@@ -8,7 +8,7 @@ Version 2 of the physical `GProofDAG` carrier factors repeated Pattern
 subtrees into one chronological table.  Rule arguments and the submitted
 target refer to that table; proof nodes retain the version-1 chronological
 edge discipline.  Materialization is an untrusted transport step: the
-ordinary admitted ProofGSLT checker still decides acceptance.
+ordinary admitted CertificateGSLT checker still decides acceptance.
 -/
 
 namespace Mettapedia.GSLT.LanguageDef.InferenceSharedCettaWire
@@ -18,7 +18,7 @@ open Mettapedia.GSLT.LanguageDef.InferenceChecker
 open Mettapedia.GSLT.LanguageDef.InferenceCheckerDAG
 open Mettapedia.GSLT.LanguageDef.InferencePatternSharing
 open Mettapedia.GSLT.LanguageDef.InferenceCettaWire
-open Mettapedia.GSLT.LanguageDef.ProofGSLT
+open Mettapedia.GSLT.LanguageDef.CertificateGSLT
 
 def sharedArticleVersion : Nat := 2
 

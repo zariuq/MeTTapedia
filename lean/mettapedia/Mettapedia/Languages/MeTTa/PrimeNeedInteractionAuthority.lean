@@ -20,7 +20,7 @@ namespace Mettapedia.Languages.MeTTa.PrimeNeedInteractionAuthority
 
 open Mettapedia.GSLT
 open Mettapedia.GSLT.Core.InteractionEvent
-open Mettapedia.GSLT.LanguageDef.ProofGSLT
+open Mettapedia.GSLT.LanguageDef.CertificateGSLT
 open Mettapedia.GSLT.LanguageDef.InteractionEventAuthority
 open Mettapedia.Languages.MeTTa.PrimeNeedReference
 

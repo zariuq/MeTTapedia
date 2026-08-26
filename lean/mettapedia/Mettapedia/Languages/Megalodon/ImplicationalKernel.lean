@@ -6,7 +6,7 @@ import Mettapedia.GSLT.LanguageDef.InferenceChecker
 
 This module isolates the `Imp`, `Hyp`, `PPfAp`, and `PLam` fragment of
 Megalodon's checked `Mathdata` proof terms.  It gives the fragment an authored
-ProofGSLT presentation and compiles its intrinsic proof terms to generic NIK
+CertificateGSLT presentation and compiles its intrinsic proof terms to generic NIK
 articles.  The result is an exact fragment authority, not a claim of adequacy
 for the full Megalodon parser, dynamic-operator environment, polymorphism,
 definitions, or HOTG theory.
@@ -446,7 +446,7 @@ private theorem compile_hyp_checked
                 (tailIH hrecursive)
 
 /-- Every article emitted by the fragment compiler is accepted by the exact
-authored ProofGSLT presentation at the same inferred endpoint. -/
+authored CertificateGSLT presentation at the same inferred endpoint. -/
 theorem compile_checked
     {context : List Formula} {proof : Proof} {formula : Formula}
     {article : RawProof}

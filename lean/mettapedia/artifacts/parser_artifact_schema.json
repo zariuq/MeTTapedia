@@ -1,29 +1,38 @@
 {
-  "schemaVersion": 1,
+  "schemaVersion": 2,
   "title": "Shared Parser Artifact Schema for MeTTaIL-C",
-  "description": "Common artifact structure for language parser/syntax authority across all mettail-c language targets. Each language exports these artifacts; mettail-c consumes them generically.",
-  "council": "Meredith (abstraction), Stay (shared contracts), Tang (single-sourced), Russell (honest boundaries)",
+  "description": "Common artifact vocabulary for language parser metadata and, where separately proved, executable syntax authorities. An artifact name or checksum alone establishes neither parser correctness nor language authority.",
   "requiredArtifacts": {
     "syntax_spec": {
       "description": "Primary syntax specification: lexical tokens, statement kinds, comment syntax.",
-      "examples": ["mm0.syntax_spec.json", "he.syntax_spec.json"],
+      "examples": ["he.syntax_spec.json"],
       "requiredFields": ["schemaVersion", "language"]
     },
     "syntax_authority_profile": {
       "description": "Complete syntax authority bundling primary syntax, secondary parsing (if any), and reference sources.",
-      "examples": ["mm0.syntax_authority_profile.json", "metamath-full.syntax_authority_profile.json"],
+      "examples": ["metamath-full.syntax_authority_profile.json"],
       "requiredFields": ["schemaVersion", "language", "twoStageParsing"]
     }
   },
   "optionalArtifacts": {
+    "syntax_metadata_profile": {
+      "description": "Descriptive syntax metadata without an executable parser or correspondence theorem.",
+      "examples": ["mm0.syntax_metadata_profile.json"],
+      "requiredFields": ["schemaVersion", "language", "twoStageParsing"]
+    },
+    "primary_syntax_metadata": {
+      "description": "Descriptive lexical and statement-shape metadata; it is not a grammar or parser by itself.",
+      "examples": ["mm0.primary_syntax_metadata.json"],
+      "requiredFields": ["schemaVersion", "language"]
+    },
     "grammar_spec": {
       "description": "BNF-style grammar for languages with static grammars. Includes tree-sitter generation support.",
       "examples": ["he.grammar_spec.json"],
       "note": "Not applicable for languages with dynamic grammars (MM0 math-string notation)."
     },
-    "secondary_parse_contract": {
-      "description": "For two-stage languages: how the secondary parse phase works (operator precedence, notation declarations, etc.).",
-      "examples": ["mm0.secondary_parse_contract.json"],
+    "secondary_parse_metadata": {
+      "description": "Descriptive metadata for a secondary parse phase (operator precedence, notation declarations, etc.); it is not an executable contract.",
+      "examples": ["mm0.secondary_parse_metadata.json"],
       "requiredFields": ["isStaticGrammar", "isDynamicOperatorPrecedence"]
     },
     "parser_mode_contract": {
@@ -47,7 +56,8 @@
       "twoStageParsing": true,
       "isStaticGrammar": false,
       "isDynamicOperatorPrecedence": true,
-      "authority": "mm0/mm0.md + Lean MM0.SyntaxSpec"
+      "reference": "mm0/mm0.md",
+      "mettapediaStatus": "descriptive syntax metadata only; executable parsing and correspondence remain open"
     },
     "Metamath": {
       "twoStageParsing": false,

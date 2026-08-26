@@ -1868,6 +1868,56 @@ cold-output equality alone is not a storage-preservation certificate
 treatment, not a silent interpretation of the production carrier, which currently has
 no lineage-bound query-to-program sidecar.
 
+\paragraph{Where the evidence should sit, and what measurement says.}
+The production carrier broadcast evidence as dense per-slot planes carried at every
+decision. Two measurements argue against that placement. First, the addressability gap is
+severe and stable: across the unified arms of the latest round, between $10$ and $16$ of
+$240$ requested targets were globally available, of which $10$ to $14$ were reachable at
+their own query, while the same arms covered $1{,}442$ to $1{,}984$ already-known targets.
+Enormous stored competence, almost none of it produced on request. Second, dense placement
+is the wrong economy: attaching evidence only to the currently open construction hole
+replaces thousands of continuously live values with a few tens.
+
+The resulting design is a two-stage routed memory rather than a broadcast field. A target
+query selects verified program \emph{roots}; each selected root contributes its nearest
+construction-state action; the retrieved actions form a histogram that biases the next
+action through a gate initialized at zero and masked by the checker-derived legality
+predicate. Two failure modes of a flat nearest-neighbour lookup are excluded by
+construction: a syntactically common state cannot mix every unrelated target, because
+routing is query-addressed; and a long or duplicated trace cannot dominate the retrieved
+set, because selection is root-balanced---one causal root contributes one unit before its
+route weight applies.
+
+A census over a five-hundred-update screen sample shows the intended sparsity rather than a
+broadcast. Roughly $13.3\%$ of sampled decisions were routed at all; of those, $55.0\%$
+supported the gold next action and $44.2\%$ placed it among the maximum-evidence legal
+actions; $99.99\%$ of routed mass fell on legal actions; and no hub emerged, with $1{,}601$
+distinct roots used and a maximum root frequency of $11$ in $8{,}000$ draws. Memory that
+speaks at one decision in eight, is right about half the time when it speaks, and never
+proposes an illegal action is a prior, not a field.
+
+\paragraph{Three credit rules, three levels.}
+This architecture makes room for a distinction the earlier carriers could not express.
+Backpropagation and settling both act on continuous tensors and therefore compete for the
+same parameters; the routing ledger---query-to-root edges with weights, causal roots, and
+checker receipts---is discrete, non-differentiable structure that neither can touch. A
+conserved-credit rule---credit as a conserved quantum transported along provenance
+receipts, rather than a gradient---operates exactly
+there: a checker verification mints a fixed quantum, the quantum divides along the receipt
+chain that produced the verified program, and derived route weights are read from the
+resulting ledger. The three rules are then not competitors but occupants of different
+levels, and only the third has ground-truth supervision rather than a proxy signal: its
+credit source is a verification event.
+
+Two properties keep that rule from re-creating the pathology it is meant to cure. Credit
+is keyed by \emph{edge}, not by root: crediting $(q,r)$ leaves every $(q',r)$ untouched,
+so the address survives. Root-keyed credit would be a many-to-one projection of exactly
+the kind that provably cannot recover accessibility, and a two-ledger fixture makes the
+collision concrete---equal root totals, different routing behaviour. And collateral
+success, where a program solves a target other than the one it was generated for, is
+quarantined in a separate account that cannot influence primary routing, so a query that
+failed is never rewarded by a discovery it did not make.
+
 \paragraph{Continuous opinions retain uncertainty separately from prediction.}
 The $K$-class evidential chart of
 \href{https://arxiv.org/abs/1806.01768}{Sensoy, Kaplan, and
@@ -3545,10 +3595,78 @@ predictions differ---the first makes the effect follow the conditioning, the sec
 follow the recurrence---and distinguishing them requires the conditioning to be ablated
 rather than inferred, which no experiment here does.
 
+Two further rounds settle how much weight the interaction can carry, and the answer is
+less than the first two rounds suggested. The recurrent-minus-Unified difference in
+differences ran $+35$, then $+19$, then $-61$: in the third round the recurrent carrier's
+retrained and continued arms drew level ($204$ against $200$) while the Unified carrier
+reversed hard in favour of retraining ($94$ against $29$, and $59$ against $27$ after
+removing a single $35$-target program). The sign is therefore round- and
+carrier-dependent at this seed, and the interaction should be read as a measured
+contingency rather than a stable law. What does persist across all rounds is the
+projection split of the previous paragraph---retraining buys efficiency per proposal,
+continuation buys breadth over the known set---which is the claim the endpoint-specificity
+caveat was written to protect.
+
 Robustness qualifies the Unified result rather than reversing it. With $e_R(p)$ as above,
 the worst single-program removal costs the retrained Unified model $7$ of its $64$ targets
 and the continued model $2$ of its $76$: the larger coverage is also the less
 hub-dependent. Both recurrent cells lose $2$.
+
+\subsection{A verifier-indexed action datastore and local recurrent learning}
+\label{sec:tgad-action-datastore}
+
+The availability--addressability diagnosis above motivated a smaller intervention than
+another carrier-wide evidence plane.  A verifier-indexed datastore maps the current query
+to at most eight provenance-deduplicated program roots, then retrieves the nearest legal
+construction state inside each root and supplies a masked next-action histogram.  This
+retrieval bias is inserted only at the TGAD decoder's action decision.  Two frozen
+backbones, TGAD--GRU and TGAD--Transformer, were crossed with a feedforward module or a
+two-state width-$32$ recurrent refinement module.  Within each module, only its $2{,}115$
+parameters were trained, by either backpropagation or local predictive coding; the common
+backbone remained byte-identical to its anchor.
+
+The first $500$ updates did not establish an architectural benefit.  Within every paired
+backbone and seed, the no-memory anchor and all four datastore-module conditions produced
+the same number of checker-verified new targets.  The retrieval cascade also exposed the
+binding stage directly: each memory condition contained $8{,}854$ stored items but only
+$88$ registered items reached retrieval, use, beam entry, selection, and checker
+acceptance.  Downstream losses in that measured cascade were zero; the large loss was
+stored-to-retrieved.  That observation is descriptive for the registered state/query
+population, not a counterfactual claim that the unselected records could have helped.
+
+The follow-up crossed the module with target-first verifier-certified hindsight replay:
+a sequence was sampled first and then one unique verified program, with deduplicated
+off-target successes added only in the hindsight condition.  At $500$ updates this changed
+neither condition's union ($34$ new targets each).  At $2{,}500$ updates, the baseline
+portfolio covered $30$ new targets and the hindsight portfolio $32$.  Both added targets
+occurred only for TGAD--GRU at one of three seeds; all twelve paired
+TGAD--Transformer comparisons had zero target-count effect.  Direct query-conditioned
+hits existed, but the replay contrast changed their count in none of the twenty-four
+paired runs.  Thus the observed gain is a small collateral-discovery portfolio effect,
+not evidence that the datastore became more retrievable.  The larger-budget phase was
+selected from the $500$-update outputs under a frozen distinction rule and used fresh
+search draws, so it is a selection-conditioned extension rather than an independent
+confirmation.
+
+The learning-rule contrast is similarly narrow.  Averaged over paired seeds and the other
+factors, predictive coding added $0.125$ new target and its interaction with recurrent
+refinement added $0.083$; both are below the granularity of one target at the replication
+unit.  The sole hindsight-exclusive target confined to recurrent PC, A6355, had two
+program witnesses but occurred under one TGAD--GRU seed, so it motivates a focused
+replication rather than a general advantage claim.  Local PC was not merely inactive:
+its pre-optimizer credit had median cosine roughly $0.990$--$0.996$ to the BP credit,
+whereas the post-optimizer parameter update had median cosine about $0.63$ for feedforward
+modules and $0.90$ for recurrent modules.  The stateful optimizer materially changed the
+geometry, vindicating the requirement to accept or reject the update actually executed.
+
+Finally, the registered direct query-edge conserved-credit proposal never became an
+empirical treatment: its Stage-1 receipts contained no eligible direct success and hence
+changed no retrieval edge weight.  It was stopped before checker evaluation and replaced
+by hindsight replay.  The replay result therefore says nothing for or against conserved
+credit as a retrieval-weight rule.  It does say where the next economical architecture
+experiment belongs: improve the query/state retrieval function first, verify a larger
+stored-to-retrieved recall under fixed search, and only then cross that working retrieval
+mechanism with local recurrent credit.
 
 \subsection{A dependent-proof credit screen}
 \label{sec:dtt-credit-screen}

@@ -10,7 +10,7 @@ import Mettapedia.GSLT.LanguageDef.CalculusLanguageDef
 import Mettapedia.GSLT.LanguageDef.GradedLanguageDef
 import Mettapedia.GSLT.LanguageDef.CalculusAsLanguage
 import Mettapedia.GSLT.LanguageDef.CalculusExtension
-import Mettapedia.GSLT.LanguageDef.ProofGSLT
+import Mettapedia.GSLT.LanguageDef.CertificateGSLT
 import Mettapedia.GSLT.LanguageDef.RuleMachineCompilation
 import Mettapedia.GSLT.LanguageDef.CompiledPlanWireFormat
 import Mettapedia.GSLT.LanguageDef.CompiledPlanAdmission
@@ -40,6 +40,9 @@ import Mettapedia.GSLT.LanguageDef.GroundSubtermCacheCompilation
 import Mettapedia.GSLT.LanguageDef.WorklistRegionCompilation
 import Mettapedia.GSLT.LanguageDef.ReusableSlotBufferCompilation
 import Mettapedia.GSLT.LanguageDef.EpochStampedSlotCompilation
+import Mettapedia.GSLT.LanguageDef.AuthoritativeSlotTrailCompilation
+import Mettapedia.GSLT.LanguageDef.ScopedAuthoritativeSlotCompilation
+import Mettapedia.GSLT.LanguageDef.AuthoritativeMAMActivationProtocol
 import Mettapedia.GSLT.LanguageDef.PreparedIndexedValueTableCompilation
 import Mettapedia.GSLT.LanguageDef.MonotoneUniqueIndexCompilation
 import Mettapedia.GSLT.LanguageDef.CanonicalValueIdQueryCompilation
@@ -57,6 +60,7 @@ import Mettapedia.GSLT.LanguageDef.LogicExtension
 import Mettapedia.GSLT.LanguageDef.OracleExtension
 import Mettapedia.GSLT.LanguageDef.ReflectionExtension
 import Mettapedia.GSLT.LanguageDef.RuntimeProfileExtension
+import Mettapedia.GSLT.LanguageDef.PresentationSensitiveTransformation
 
 /-!
 # Compositional language definitions
@@ -230,7 +234,7 @@ admitted payloads compose only when their overlap conditions hold.  Pairwise
 gluing is not called descent: covers and coherent higher overlaps have not been
 chosen here.
 
-The strict `ProofGSLT` nucleus is included here.  Stronger proof-GSLT
+The strict `CertificateGSLT` nucleus is included here.  Stronger certificate-GSLT
 interpretation, cyclic, and ultrainfinite modules have their own imports so
 that this foundational entry point does not silently enlarge its authority.
 -/

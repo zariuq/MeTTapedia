@@ -4631,7 +4631,10 @@ noncomputable def ReaderAcceptedCompressedStatement.toVerified
         some runtimeTarget.1)
     (sourcePresentation :
       presentationOfSourcePrefix? before.toSourcePrefix =
-        some sourceTarget.1) :
+        some sourceTarget.1)
+    (headerAdmitted : ∀ explicitLabel ∈ header,
+      explicitLabel ∉
+        (mandatoryHypotheses before formula).map HypothesisView.label) :
     ReaderVerifiedCompressedStatement before after label formula header words
       final := by
   have actions_eq : accepted.program.actions = verifiedWords.actions :=
@@ -4644,7 +4647,7 @@ noncomputable def ReaderAcceptedCompressedStatement.toVerified
     sourceTarget (insertAssertion?_valid_before accepted.inserted)
       runtimePresentation sourcePresentation accepted.inserted
       accepted.program.decoded actions_verified db accepted.projectEq
-      accepted.runtimeBase accepted.headerExecution
+      accepted.runtimeBase accepted.headerExecution headerAdmitted
       accepted.program.execution accepted.program.finalStack
   exact ⟨step, accepted.nextPrefix⟩
 
@@ -4749,7 +4752,11 @@ noncomputable def SpelledCallTrace.verifiedCompressedStatement
         some runtimeTarget.1)
     (sourcePresentation :
       presentationOfSourcePrefix? before.toSourcePrefix =
-        some sourceTarget.1) :
+        some sourceTarget.1)
+    (headerAdmitted : ∀ explicitLabel ∈ header.map LocatedName.name,
+      explicitLabel ∉
+        (mandatoryHypotheses before
+          ⟨typecode.name, bodySymbols⟩).map HypothesisView.label) :
     ReaderVerifiedCompressedStatement before after label.name
       ⟨typecode.name, bodySymbols⟩
       (header.map LocatedName.name) (words.map (fun word => word.bytes))
@@ -4758,7 +4765,7 @@ noncomputable def SpelledCallTrace.verifiedCompressedStatement
     labelCharset typecodeCharset
     bodyCharsets headerCharsets wordCharsets taggedFormula inserted).toVerified
       verifiedWords runtimeTarget sourceTarget runtimePresentation
-        sourcePresentation
+        sourcePresentation headerAdmitted
 
 /-- Direct incomplete-admission interface from an exact reader trace. -/
 noncomputable def SpelledCallTrace.incompleteCompressedStatement

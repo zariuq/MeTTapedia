@@ -1,7 +1,7 @@
 import Mettapedia.Languages.MeTTa.MeTTaZeroQuiescence
 import Mettapedia.Languages.MeTTa.MeTTaZeroWorkClosure
 import Mettapedia.GSLT.Core.InferenceControl
-import Mettapedia.GSLT.LanguageDef.ProofGSLTRecurrentTraceAuthority
+import Mettapedia.GSLT.LanguageDef.CertificateGSLTRecurrentTraceAuthority
 
 /-!
 # An experimental inductive/coinductive control layer for MeTTa Zero
@@ -31,7 +31,7 @@ open Mettapedia.GSLT
 open Mettapedia.GSLT.Core.BranchingTemporal
 open Mettapedia.GSLT.Core.ClosureCriteria
 open Mettapedia.GSLT.Core.InferenceControl
-open Mettapedia.GSLT.LanguageDef.ProofGSLT
+open Mettapedia.GSLT.LanguageDef.CertificateGSLT
 open Mettapedia.Languages.MeTTa.MeTTaZero
 open Mettapedia.Languages.MeTTa.MeTTaZeroQuiescence
 open Mettapedia.OSLF.MeTTaIL.Syntax

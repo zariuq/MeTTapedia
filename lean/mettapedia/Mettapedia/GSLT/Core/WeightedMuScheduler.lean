@@ -20,8 +20,8 @@ parity-progress certificate.
 
 import Mettapedia.Algebra.QuantaleWeakness
 import Mettapedia.GSLT.Core.InferenceControl
-import Mettapedia.GSLT.LanguageDef.ProofGSLTMuCalculusBoundary
-import Mettapedia.GSLT.LanguageDef.ProofGSLTParityAuthority
+import Mettapedia.GSLT.LanguageDef.CertificateGSLTMuCalculusBoundary
+import Mettapedia.GSLT.LanguageDef.CertificateGSLTParityAuthority
 import Mettapedia.Logic.ModalMuCalculus
 import Provenance.Semirings.Bool
 
@@ -234,7 +234,7 @@ structure TemporalObjective (State : Type uState) (Act : Type uAct) where
   observed : Set State
   formula : Formula Act 1
   fixedPointsPositive :
-    Mettapedia.GSLT.LanguageDef.ProofGSLT.MuCalculusBoundary.fixedPointsPositive
+    Mettapedia.GSLT.LanguageDef.CertificateGSLT.MuCalculusBoundary.fixedPointsPositive
       formula = true
 
 namespace TemporalObjective
@@ -259,17 +259,17 @@ def alwaysEventuallyObserved (action : Act) : Formula Act 1 :=
   .nu (.conj eventuallyAtOuterLevel (.box action (.var 0)))
 
 theorem eventuallyObserved_positive (action : Act) :
-    Mettapedia.GSLT.LanguageDef.ProofGSLT.MuCalculusBoundary.fixedPointsPositive
+    Mettapedia.GSLT.LanguageDef.CertificateGSLT.MuCalculusBoundary.fixedPointsPositive
       (eventuallyObserved action) = true := by
   rfl
 
 theorem alwaysObserved_positive (action : Act) :
-    Mettapedia.GSLT.LanguageDef.ProofGSLT.MuCalculusBoundary.fixedPointsPositive
+    Mettapedia.GSLT.LanguageDef.CertificateGSLT.MuCalculusBoundary.fixedPointsPositive
       (alwaysObserved action) = true := by
   rfl
 
 theorem alwaysEventuallyObserved_positive (action : Act) :
-    Mettapedia.GSLT.LanguageDef.ProofGSLT.MuCalculusBoundary.fixedPointsPositive
+    Mettapedia.GSLT.LanguageDef.CertificateGSLT.MuCalculusBoundary.fixedPointsPositive
       (alwaysEventuallyObserved action) = true := by
   rfl
 
@@ -279,7 +279,7 @@ def negativeObjectiveFormula : Formula Unit 1 :=
   .mu (.neg (.var 0))
 
 theorem negativeObjectiveFormula_rejected :
-    Mettapedia.GSLT.LanguageDef.ProofGSLT.MuCalculusBoundary.fixedPointsPositive
+    Mettapedia.GSLT.LanguageDef.CertificateGSLT.MuCalculusBoundary.fixedPointsPositive
       negativeObjectiveFormula = false := by
   rfl
 
@@ -303,7 +303,7 @@ structure WeightedParityAutomaton
   pathUnit : Q
   pathUnit_mul : ∀ grade, pathUnit * grade = grade
   mul_pathUnit : ∀ grade, grade * pathUnit = grade
-  game : Mettapedia.GSLT.LanguageDef.ProofGSLT.Parity.Game State
+  game : Mettapedia.GSLT.LanguageDef.CertificateGSLT.Parity.Game State
   weight : State → State → Q
   nonbottom_authorized : ∀ source target,
     weight source target ≠ ⊥ → game.edge source target = true
@@ -339,7 +339,7 @@ existing parity game. -/
 noncomputable def uniform (pathUnit : Q)
     (pathUnit_mul : ∀ grade, pathUnit * grade = grade)
     (mul_pathUnit : ∀ grade, grade * pathUnit = grade)
-    (game : Mettapedia.GSLT.LanguageDef.ProofGSLT.Parity.Game State) :
+    (game : Mettapedia.GSLT.LanguageDef.CertificateGSLT.Parity.Game State) :
     WeightedParityAutomaton Q State where
   pathUnit := pathUnit
   pathUnit_mul := pathUnit_mul
@@ -359,15 +359,15 @@ structure CyclicProgressCertificate
     [Semigroup Q] [CompleteLattice Q] [IsQuantale Q]
     [Fintype State] [DecidableEq State]
     (automaton : WeightedParityAutomaton Q State)
-    (strategy : Mettapedia.GSLT.LanguageDef.ProofGSLT.Parity.Strategy State)
+    (strategy : Mettapedia.GSLT.LanguageDef.CertificateGSLT.Parity.Strategy State)
     (root : State) where
-  measure : Mettapedia.GSLT.LanguageDef.ProofGSLT.Parity.ProgressMeasure
+  measure : Mettapedia.GSLT.LanguageDef.CertificateGSLT.Parity.ProgressMeasure
     automaton.game
   accepted : measure.check automaton.game strategy root = true
 
 namespace CyclicProgressCertificate
 
-open Mettapedia.GSLT.LanguageDef.ProofGSLT.Parity
+open Mettapedia.GSLT.LanguageDef.CertificateGSLT.Parity
 
 variable {Q : Type uValue} {State : Type uState}
   [Semigroup Q] [CompleteLattice Q] [IsQuantale Q]
@@ -425,7 +425,7 @@ end CyclicProgressCertificate
 /-! ## Executable parity controls -/
 
 open scoped ENNReal
-open Mettapedia.GSLT.LanguageDef.ProofGSLT.Parity
+open Mettapedia.GSLT.LanguageDef.CertificateGSLT.Parity
 
 /-- The existing even-dominant two-state game with explicit nonnegative edge
 weights. -/

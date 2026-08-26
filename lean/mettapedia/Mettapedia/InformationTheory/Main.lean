@@ -3,6 +3,10 @@ import Mettapedia.InformationTheory.MutualInformation
 import Mettapedia.InformationTheory.ShannonEntropy.Main
 import Mettapedia.InformationTheory.EntropyKL
 import Mettapedia.InformationTheory.FiniteBrierInformation
+import Mettapedia.InformationTheory.CodebookRelativity
+import Mettapedia.InformationTheory.FinitePriorCoding
+import Mettapedia.InformationTheory.CountablePriorCoding
+import Mettapedia.InformationTheory.AdditiveMessageValuation
 
 /-!
 # Information Theory (Entry Point)

@@ -802,6 +802,62 @@ positive multiple of the reference credit; the expectation that the successor la
 its backpropagation twin is a timestamped pre-checker hypothesis, not a sealed
 registration.
 
+The checker has since answered, and the hypothesis was wrong. The successor arm produced
+\emph{zero} new verified targets from $1{,}843$ unique candidates, with no direct hits and
+only $16$ already-known targets covered; its matched backpropagation twin produced $240$
+new targets from $2{,}787$ candidates in the same round on the same corpus. The count fell
+below the predecessor's rather than approaching the twin's, so the account is refuted on
+the terms it named.
+
+The diagnosis drawn from training telemetry, before any checker result existed, is what
+survived. Evaluation accuracy on that arm peaked near update $1{,}400$ and then fell by
+more than half, task loss rose, and the gradient norm grew roughly fortyfold---from a
+median near $22$ early to $857$ late---while credit alignment to the reference climbed
+monotonically to $0.9996$. The direction converged and the magnitude diverged. For this
+carrier the practical consequence is blunt: an alignment statistic cannot serve as the
+health signal for a settling arm, because it quotients out precisely the coordinate that
+failed, and the arm consumed its entire budget while every direction-based indicator
+improved.
+
+Two smaller corrections follow. The joint-retraining contrast on this carrier, which had
+favoured retraining in earlier rounds, drew level in the latest one at $204$ against
+$200$, so the retraining advantage recorded here is a measured contingency rather than a
+property of the carrier. And the collateral-discovery role of this instrument is
+undiminished: of the targets sealed into the latest cumulative event, the $200$
+contributed by this carrier were private to it, none of them found by the higher-capacity
+arms running the same corpus and the same checker.
+
+The next experiment therefore moved the learning-rule contrast to a small module instead
+of repeating whole-carrier settling.  Exact TGAD--GRU and TGAD--Transformer anchors were
+frozen; only a $2{,}115$-parameter retrieval module learned, either as one feedforward pass
+or as a two-state fixed-depth recurrent refinement, by backpropagation or local predictive
+coding.  The program sampler selected a sequence first and then one unique verified
+program for it.  A paired replay condition additionally exposed deduplicated programs
+that the checker had found to solve an off-target sequence.
+
+At $500$ updates the replay portfolios tied at $34$ new target identities.  In a separate
+replication-and-extension to $2{,}500$ updates, baseline replay covered $30$ identities
+and verifier-hindsight replay $32$.  Both additions occurred only under TGAD--GRU at one
+of three seeds, and neither was a direct hit for the query that generated it.  All twelve
+paired TGAD--Transformer comparisons had zero target-count effect.  Predictive coding's
+mean main effect was $+0.125$ target and its interaction with recurrent refinement
+$+0.083$, both smaller than the granularity of one target at the replication unit.  One
+exclusive target, A6355, was confined to recurrent PC with hindsight replay and had two
+program witnesses; it is a concrete replication candidate, not a general advantage.
+The larger-budget phase was selected by registered differences at $500$ updates and used
+fresh search draws, so it is not an independent confirmation of the earlier endpoint.
+
+This local PC was numerically genuine.  Its credit remained nearly backpropagation-aligned
+before AdamW, but the post-optimizer update had median cosine about $0.63$ in feedforward
+modules and $0.90$ in recurrent modules.  The optimizer therefore created a scientifically
+different update geometry, yet the checker endpoint remained nearly unchanged.  The
+experiment also did \emph{not} test conserved retrieval credit: the proposed direct
+query-edge treatment had no eligible direct receipts and changed no retrieval weight, so
+it was stopped before checking and replaced by hindsight replay.  This distinction keeps
+three claims separate: local PC showed no robust benefit here; hindsight replay produced
+a small, concentrated collateral portfolio gain; learned query-conditioned retrieval
+weights remain untested.
+
 \section{What can and cannot be compared}
 
 The tree and recurrent systems are complementary, not two rows in an architecture
@@ -879,6 +935,44 @@ identical learners complementary, which argues for running both rather than choo
 the two draws share architecture and corpus they are positively dependent, so a
 Lincoln--Petersen reading of the overlap ($2674$ and $973$ reachable targets at the terminal
 budget) bounds the reachable pool from below rather than estimating it.
+
+\section{A retrieval-adapter pilot, and why it answers little}
+\label{sec:adapter-pilot}
+
+Recorded for replication honesty; the design does not support architectural inference.
+
+\textbf{Setup.} Fresh top-down grammar-masked backbones---a $5.24$M-parameter GRU and a
+one-layer $5.44$M-parameter Transformer---were trained from scratch for $500$ updates and
+then \emph{frozen}. All subsequent training ($2{,}500$ updates) modified only a
+$2{,}115$-parameter adapter: a width-$32$ two-state module with two learned scalar
+couplings, run either in one pass or as four damped $\tanh$ iterations, receiving retrieved
+verified action traces. Four crossed factors---backbone, one-pass versus cyclic adapter,
+backpropagation versus local predictive coding \emph{on the adapter only}, and whether
+training-program sampling included cross-target verified solutions---over three seeds,
+$126$ runs, $11.6$ summed GPU-hours.
+
+\textbf{Results.} Every retrieval-adapter condition tied its no-memory anchor within
+backbone and seed. The predictive-coding main effect on new-target count was $+0.125$
+targets and its interaction with the cyclic adapter $+0.083$; post-optimizer credit cosine
+to backpropagation was $\approx0.63$ (one-pass) and $\approx0.90$ (cyclic), so the rule was
+operational and distinct without being useful. Including cross-target solutions in training
+sampling moved the distinct-target portfolio from $30$ to $32$ and changed direct
+target-conditioned success in $0$ of $24$ paired comparisons; both additions were collateral
+solves under one backbone at one seed. The retrieval cascade was
+$8{,}854$ stored $\rightarrow$ $88$ retrieved, and retrieval reached $19$ of $240$
+evaluation queries.
+
+\textbf{Scope, stated plainly.} The backbones received $45\times$ fewer full-model updates
+than the production models of Section~\ref{sec:tree} and were frozen thereafter, so this
+compares adapters, not architectures. The $2{,}500$-update phase resampled only $753$
+distinct sequence groups rather than the accumulated corpus. Conserved-credit routing was
+\emph{not} tested: the direct-credit treatment found zero eligible receipts, because a
+direct receipt requires the generating query's own target to be solved and such solves are
+rare, so no route weight ever changed and no outcome claim is licensed. Finally, the
+sampling contrast is not a novel mechanism: checking each program against all sequences is
+hindsight experience replay in the sense of the original work~\cite{aliencoding} and is a
+standing feature of that loop, so the control arm withheld an existing component rather than
+the treatment adding one.
 
 \section{Limitations and current status}
 

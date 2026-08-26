@@ -9,13 +9,13 @@ An admitted source prefix determines three independently useful views of one
 Metamath judgment:
 
 * execution of an authored label list by the verified `mm-lean4` normal fold;
-* inhabitation of the generated ProofGSLT presentation; and
+* inhabitation of the generated CertificateGSLT presentation; and
 * supported declarative provability in the source-derived operational model.
 
 The existing reflection and declarative-adequacy theorems identify all three.
 This module packages that result as two exact certificate authorities with a
 single meaning.  A dependent NIK family retains the evidence-kind tag, so a
-native label list is never reinterpreted as a ProofGSLT wire article or vice
+native label list is never reinterpreted as a CertificateGSLT wire article or vice
 versa.
 -/
 
@@ -27,8 +27,8 @@ open Mettapedia.GSLT.LanguageDef.InferenceChecker
 open Mettapedia.GSLT.LanguageDef.KernelAuthority
 open Mettapedia.GSLT.LanguageDef.NIKGSLT.Indexed
 open Mettapedia.GSLT.LanguageDef.NIKGSLT.Indexed.InternalJudgment
-open Mettapedia.GSLT.LanguageDef.ProofGSLT
-open Mettapedia.GSLT.LanguageDef.ProofGSLT.CheckerCapabilities
+open Mettapedia.GSLT.LanguageDef.CertificateGSLT
+open Mettapedia.GSLT.LanguageDef.CertificateGSLT.CheckerCapabilities
 open Mettapedia.Languages.Metamath.InferenceEncoding
 open Mettapedia.Languages.Metamath.InferenceNormalFoldReflection
 open Mettapedia.Languages.Metamath.InferenceOperationalSpecStepSoundness
@@ -72,11 +72,11 @@ private instance : DecidableEq RuntimeFrame :=
   frameView_injective.decidableEq
 
 private def proofTokenParserView :
-    Metamath.Verify.ProofTokenParser → Nat × Nat
-  | .start => (0, 0)
-  | .preload => (1, 0)
-  | .normal => (2, 0)
-  | .compressed codepoint => (3, codepoint)
+    Metamath.Verify.ProofTokenParser → Sum Nat Metamath.Verify.CompressedPhase
+  | .start => .inl 0
+  | .preload => .inl 1
+  | .normal => .inl 2
+  | .compressed phase => .inr phase
 
 private theorem proofTokenParserView_injective :
     Function.Injective proofTokenParserView := by
@@ -181,7 +181,7 @@ def normalLabelChecker (scope : SourceScope) :
       FoldAccepted scope claim labels := by
   simp [normalLabelChecker]
 
-/-- The generated ProofGSLT derivability predicate. -/
+/-- The generated CertificateGSLT derivability predicate. -/
 def Derivable (scope : SourceScope) (claim : Claim scope) : Prop :=
   Nonempty (Derivation scope.presentation
     (proves (encodeFormula claim.formula)))
@@ -196,7 +196,7 @@ def Meaning (scope : SourceScope) (claim : Claim scope) : Prop :=
         (sourceOperationalCallerFrame scope.source))
       (operationalExpr claim.formula))
 
-/-- Generated ProofGSLT derivability is exactly existence of a native
+/-- Generated CertificateGSLT derivability is exactly existence of a native
 mm-lean4 label trace in the same admitted scope. -/
 theorem derivable_iff_exists_acceptedLabels
     (scope : SourceScope) (claim : Claim scope) :
@@ -233,7 +233,7 @@ def calculusExact (scope : SourceScope) :
   sound claim := (derivable_iff_meaning scope claim).mp
   complete claim := (derivable_iff_meaning scope claim).mpr
 
-/-- Native normal-label replay is exact for generated ProofGSLT
+/-- Native normal-label replay is exact for generated CertificateGSLT
 derivability. -/
 theorem normalLabelChecker_derivationalAuthority
     (scope : SourceScope) :
@@ -270,8 +270,8 @@ def completeJudgmentAuthority (scope : SourceScope) :
 
 /-- The already generated presentation, now equipped with its two-sided
 declarative adequacy theorem. -/
-def completeProofGSLT (scope : SourceScope) :
-    SemanticallyCompleteProofGSLT (Claim scope) (Meaning scope) where
+def completeCertificateGSLT (scope : SourceScope) :
+    SemanticallyCompleteCertificateGSLT (Claim scope) (Meaning scope) where
   presentation := scope.presentation
   adequacy :=
     { encode := fun claim => proves (encodeFormula claim.formula)
@@ -290,7 +290,7 @@ def proofArticleChecker (scope : SourceScope) :
     (wireArticleAuthority () scope.presentation).check
       (proves (encodeFormula claim.formula)) article
 
-/-- ProofGSLT wire articles give a second exact authority for the same
+/-- CertificateGSLT wire articles give a second exact authority for the same
 declarative Metamath meaning. -/
 theorem proofArticleChecker_semanticAuthority
     (scope : SourceScope) :
@@ -305,7 +305,7 @@ theorem proofArticleChecker_semanticAuthority
     exact ⟨articleOfDerivation derivation,
       wireArticleAuthority_complete () derivation⟩
 
-/-- A native label certificate exists exactly when a canonical ProofGSLT wire
+/-- A native label certificate exists exactly when a canonical CertificateGSLT wire
 article exists.  The equivalence is mediated by declarative meaning rather
 than by translating one certificate format into the other. -/
 theorem acceptedLabels_iff_acceptedArticle

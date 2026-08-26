@@ -3,7 +3,7 @@ import Mettapedia.GSLT.LanguageDef.NIKDefaultProfile
 import Mettapedia.PLN.Bridges.Languages.PLNWMOSLFBridge
 
 /-!
-# Occurrence-exact WM query evidence as a ProofGSLT/NIK authority
+# Occurrence-exact WM query evidence as a CertificateGSLT/NIK authority
 
 World-model state construction, query extraction, and semantic inference are
 different judgment families.  This module gives the first two a small exact
@@ -17,7 +17,7 @@ leaf multiset, resulting state, and the claimed binary evidence.
 The checker is exact for the independently defined `QueryMeaning`.  It also
 projects to the existing multiset-indexed and set-indexed WM judgments, and
 then to the existing OSLF atom semantics.  A separately admitted exact
-ProofGSLT presentation of the same judgment is proved extensionally equivalent
+CertificateGSLT presentation of the same judgment is proved extensionally equivalent
 to revision-tree replay.
 -/
 
@@ -28,7 +28,7 @@ open Mettapedia.GSLT.LanguageDef.CompletenessSpectrum
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
 open Mettapedia.GSLT.LanguageDef.KernelAuthority
 open Mettapedia.GSLT.LanguageDef.NIKDefaultProfile
-open Mettapedia.GSLT.LanguageDef.ProofGSLT
+open Mettapedia.GSLT.LanguageDef.CertificateGSLT
 open Mettapedia.OSLF.Framework.EvidenceSemantics
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.PLN.Bridges.Languages.PLNWMOSLFBridge
@@ -314,7 +314,7 @@ theorem accepted_implies_WMQueryJudgment
       observationAuthority) claim certificate accepted
   exact ⟨meaning.1.toWMJudgmentMulti.toWMJudgment, meaning.2⟩
 
-/-! ## NIK and ProofGSLT presentations of the same judgment -/
+/-! ## NIK and CertificateGSLT presentations of the same judgment -/
 
 /-- Occurrence-exact WM queries as one ordinary NIK authority fibre. -/
 def family
@@ -336,23 +336,23 @@ def family
     (replayChecker_authority observe observationChecker
       observationAuthority).toProjection
 
-/-- Any exact ProofGSLT presentation of occurrence-exact WM query meaning. -/
-def semanticProofGSLT
+/-- Any exact CertificateGSLT presentation of occurrence-exact WM query meaning. -/
+def semanticCertificateGSLT
     {State : Type uState} {Query : Type uQuery}
     {Observation : Type uObservation} [EvidenceType State]
     (observe : State → Query → Observation)
     {presentation : ValidatedPresentation}
     (adequacy : ExactJudgmentPresentation (QueryClaim State Query Observation)
       (QueryMeaning observe) presentation) :
-    SemanticallyCompleteProofGSLT (QueryClaim State Query Observation)
+    SemanticallyCompleteCertificateGSLT (QueryClaim State Query Observation)
       (QueryMeaning observe) where
   presentation := presentation
   adequacy := adequacy
 
-/-- Exact ProofGSLT article replay and native revision-tree replay agree on
+/-- Exact CertificateGSLT article replay and native revision-tree replay agree on
 every claim.  This is certificate-format agreement, not an identification of
 the two certificate types. -/
-theorem proofGSLT_article_iff_revisionTree
+theorem certificateGSLT_article_iff_revisionTree
     {AuthorityId : Type uAuthority} (authorityId : AuthorityId)
     {State : Type uState} {Query : Type uQuery}
     {Observation : Type uObservation} {ObservationCertificate : Type uCertificate}
@@ -367,21 +367,21 @@ theorem proofGSLT_article_iff_revisionTree
       (QueryMeaning observe) presentation)
     (claim : QueryClaim State Query Observation) :
     (∃ article,
-        ((semanticProofGSLT observe adequacy).checker authorityId).check
+        ((semanticCertificateGSLT observe adequacy).checker authorityId).check
           claim article = true) ↔
       ∃ certificate,
         (replayChecker observationChecker).check claim certificate = true := by
   constructor
   · rintro ⟨article, accepted⟩
     have meaningful :=
-      ((semanticProofGSLT observe adequacy).checker_authority authorityId).sound
+      ((semanticCertificateGSLT observe adequacy).checker_authority authorityId).sound
         claim article accepted
     exact (replayChecker_complete observe observationChecker
       observationAuthority) claim meaningful
   · rintro ⟨certificate, accepted⟩
     have meaningful := (replayChecker_sound observe observationChecker
       observationAuthority) claim certificate accepted
-    exact ((semanticProofGSLT observe adequacy).checker_authority
+    exact ((semanticCertificateGSLT observe adequacy).checker_authority
       authorityId).complete
       claim meaningful
 

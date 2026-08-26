@@ -1,5 +1,5 @@
 import Mettapedia.GSLT.LanguageDef.CheckerAuthorityFamily
-import Mettapedia.GSLT.LanguageDef.ProofGSLTCheckerCapabilities
+import Mettapedia.GSLT.LanguageDef.CertificateGSLTCheckerCapabilities
 
 /-!
 # Completeness properties at the proof-kernel boundary
@@ -28,8 +28,8 @@ namespace Mettapedia.GSLT.LanguageDef.CompletenessSpectrum
 open Mettapedia.GSLT.LanguageDef.KernelAuthority
 open Mettapedia.GSLT.LanguageDef.CheckerAuthorityFamily
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
-open Mettapedia.GSLT.LanguageDef.ProofGSLT
-open Mettapedia.GSLT.LanguageDef.ProofGSLT.CheckerCapabilities
+open Mettapedia.GSLT.LanguageDef.CertificateGSLT
+open Mettapedia.GSLT.LanguageDef.CertificateGSLT.CheckerCapabilities
 
 universe uKind uClaim uCertificate
 
@@ -192,30 +192,30 @@ def derivationalAuthorityProjection :
 
 end CompleteJudgmentAuthority
 
-/-! ## ProofGSLT instances and per-language admission -/
+/-! ## CertificateGSLT instances and per-language admission -/
 
-/-- A ProofGSLT presentation with a two-sided adequacy theorem for an
-independently stated meaning.  This is the unambiguous complete ProofGSLT
+/-- A CertificateGSLT presentation with a two-sided adequacy theorem for an
+independently stated meaning.  This is the unambiguous complete CertificateGSLT
 class: completeness is semantic, not merely completeness for its own
 inductive derivation type. -/
-structure SemanticallyCompleteProofGSLT
+structure SemanticallyCompleteCertificateGSLT
     (Claim : Type uClaim) (Meaning : Claim -> Prop) where
   presentation : ValidatedPresentation
   adequacy : ExactJudgmentPresentation Claim Meaning presentation
 
-namespace SemanticallyCompleteProofGSLT
+namespace SemanticallyCompleteCertificateGSLT
 
 variable {Claim : Type uClaim} {Meaning : Claim -> Prop}
-    (system : SemanticallyCompleteProofGSLT Claim Meaning)
+    (system : SemanticallyCompleteCertificateGSLT Claim Meaning)
 
-/-- The ordinary ProofGSLT wire replay checker interpreted through the
+/-- The ordinary CertificateGSLT wire replay checker interpreted through the
 system's semantic adequacy theorem. -/
 def checker {AuthorityId : Type uKind} (authorityId : AuthorityId) :=
   semanticChecker
     (judgmentWireAuthority authorityId
       system.adequacy.toJudgmentPresentationAdequacy)
 
-/-- A semantically complete ProofGSLT has exact wire-certificate authority
+/-- A semantically complete CertificateGSLT has exact wire-certificate authority
 for the named model meaning. -/
 theorem checker_authority {AuthorityId : Type uKind}
     (authorityId : AuthorityId) :
@@ -228,22 +228,22 @@ theorem checker_authority {AuthorityId : Type uKind}
     exact (judgmentWireAuthority_correspondence
       authorityId system.adequacy claim).mpr meaningful
 
-end SemanticallyCompleteProofGSLT
+end SemanticallyCompleteCertificateGSLT
 
-/-- A language implementation normally admits one complete ProofGSLT per
+/-- A language implementation normally admits one complete CertificateGSLT per
 judgment kind, not one checker for all judgments by representation accident.
 The index may itself be a pair of language and judgment identifiers. -/
-structure ExactProofGSLTFamily (Kind : Type uKind) where
+structure ExactCertificateGSLTFamily (Kind : Type uKind) where
   Claim : Kind -> Type uClaim
   Meaning : (kind : Kind) -> Claim kind -> Prop
   system : (kind : Kind) ->
-    SemanticallyCompleteProofGSLT (Claim kind) (Meaning kind)
+    SemanticallyCompleteCertificateGSLT (Claim kind) (Meaning kind)
 
-namespace ExactProofGSLTFamily
+namespace ExactCertificateGSLTFamily
 
-variable {Kind : Type uKind} (family : ExactProofGSLTFamily Kind)
+variable {Kind : Type uKind} (family : ExactCertificateGSLTFamily Kind)
 
-/-- Exact per-kind ProofGSLT admissions assemble into the generic dependent
+/-- Exact per-kind CertificateGSLT admissions assemble into the generic dependent
 NIK authority family. -/
 def toAuthorityFamily : AuthorityFamily Kind where
   Claim := family.Claim
@@ -255,7 +255,7 @@ def toAuthorityFamily : AuthorityFamily Kind where
     intro kind
     exact ((family.system kind).checker_authority kind).toProjection
 
-end ExactProofGSLTFamily
+end ExactCertificateGSLTFamily
 
 /-! ## Model completeness is not theory completeness -/
 

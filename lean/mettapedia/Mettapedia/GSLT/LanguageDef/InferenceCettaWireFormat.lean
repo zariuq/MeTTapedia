@@ -19,7 +19,7 @@ namespace Mettapedia.GSLT.LanguageDef.InferenceCettaWire
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
-open Mettapedia.GSLT.LanguageDef.ProofGSLT
+open Mettapedia.GSLT.LanguageDef.CertificateGSLT
 open Mettapedia.GSLT.LanguageDef.InferencePresentationWire
 
 /-! ## Physical S-expression carrier -/
@@ -493,7 +493,7 @@ theorem encodeRawProof_injective : Function.Injective encodeRawProof := by
   have decoded := congrArg decodeRawProof equality
   simpa using decoded
 
-/-! ## Exact chronological ProofGSLT article carrier -/
+/-! ## Exact chronological CertificateGSLT article carrier -/
 
 /-- Physical encoding of one ordered open-DAG edge.  Premise and node
 references remain different constructors, even though closed NIK articles can
@@ -581,7 +581,7 @@ theorem encodeWireArticle_injective : Function.Injective encodeWireArticle := by
   have decoded := congrArg decodeWireArticle equality
   simpa using decoded
 
-/-- Decode the physical article and invoke the exact logical ProofGSLT
+/-- Decode the physical article and invoke the exact logical CertificateGSLT
 checker.  This function performs no proof search and preserves sharing. -/
 def checkDAGPacket (presentation : ValidatedPresentation)
     (articleTerm : CettaTerm) : Bool :=

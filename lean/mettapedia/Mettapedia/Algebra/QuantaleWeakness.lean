@@ -1,8 +1,9 @@
 /-
 # Quantale Weakness Theory
 
-Formalization of Ben Goertzel's quantale-based weakness theory from
-"Weakness and Its Quantale: Plausibility Theory from First Principles"
+Formalization of Ben Goertzel's quantale-based weakness theory, including the
+published synthesis *Weakness Is All You Need: Quantale Weakness as a Unifying
+Principle for Cognition* (2026).
 
 The key insight is that several cardinality-based quantities admit quantale
 generalizations.  Two quantities that must remain distinct are:
@@ -25,7 +26,8 @@ numerical value.
 
 ## References
 
-- Goertzel, "Weakness and Its Quantale"
+- Ben Goertzel, "Weakness Is All You Need: Quantale Weakness as a Unifying
+  Principle for Cognition" (2026)
 - Michael Timothy Bennett, "The Optimal Choice of Hypothesis Is the Weakest,
   Not the Shortest" (2023), Definition 7
 - Michael Timothy Bennett, "Is Complexity an Illusion?" (2024), Definition 5
@@ -266,6 +268,32 @@ def pairDistinctionWeakness (event : Finset (U × U)) : ℕ := event.card
 def inducedPairEvent (worlds : Finset U) : Finset (U × U) :=
   worlds ×ˢ worlds
 
+/-- The injective diagonal embedding used to recover admitted-world counting
+inside a pair-event presentation. -/
+def diagonalEmbedding : U ↪ U × U where
+  toFun := fun world => (world, world)
+  inj' := fun _ _ equal => congrArg Prod.fst equal
+
+/-- The diagonal relation on a set of admitted worlds.  This is the relation
+used by Goertzel's published exact specialization of quantale weakness to
+Bennett's world-count weakness. -/
+def inducedDiagonalEvent (worlds : Finset U) : Finset (U × U) :=
+  worlds.map diagonalEmbedding
+
+/-- Diagonal pair-event cardinality recovers Bennett weakness exactly. -/
+theorem pairDistinctionWeakness_inducedDiagonalEvent (worlds : Finset U) :
+    pairDistinctionWeakness (inducedDiagonalEvent worlds) =
+      bennettWeakness worlds := by
+  simp [pairDistinctionWeakness, inducedDiagonalEvent, bennettWeakness]
+
+/-- The diagonal embedding preserves and reflects the finite weakness order. -/
+theorem pairDistinctionWeakness_inducedDiagonalEvent_le_iff
+    (left right : Finset U) :
+    pairDistinctionWeakness (inducedDiagonalEvent left) ≤
+        pairDistinctionWeakness (inducedDiagonalEvent right) ↔
+      bennettWeakness left ≤ bennettWeakness right := by
+  simp [pairDistinctionWeakness_inducedDiagonalEvent]
+
 /-- Passing from admitted worlds to their complete pair event squares
 cardinality.  This is the precise bridge between Bennett's measure and the
 pair-distinction instance. -/
@@ -355,10 +383,40 @@ section Graphtropy
 
 variable {U : Type*} [Fintype U] [DecidableEq U]
 
-/-- Graphtropy of a graph G on U is the weakness of its "non-edge" event divided by |U|². -/
-noncomputable def graphtropy (edges : Finset (U × U)) : ℚ :=
-  let nonEdges := univ.filter fun p => p ∉ edges ∧ p.1 ≠ p.2
-  nonEdges.card / (Fintype.card U * Fintype.card U : ℕ)
+/-- Pairs left indistinguished by a declared distinction graph.  Diagonal pairs
+are excluded: graphtropy measures missing distinctions among different
+objects, not reflexivity. -/
+def graphIndistinctionEvent (distinctionEdges : Finset (U × U)) :
+    Finset (U × U) :=
+  univ.filter fun pair => pair ∉ distinctionEdges ∧ pair.1 ≠ pair.2
+
+/-- Graphtropy is normalized pair-event cardinality of the graph's missing
+distinctions.  The argument is explicitly a distinction graph; reversing that
+interpretation reverses the polarity. -/
+noncomputable def graphtropy (distinctionEdges : Finset (U × U)) : ℚ :=
+  (graphIndistinctionEvent distinctionEdges).card /
+    (Fintype.card U * Fintype.card U : ℕ)
+
+/-- Adding distinction edges can only decrease the weakness left in the
+graph. -/
+theorem graphtropy_antitone {small large : Finset (U × U)}
+    (included : small ⊆ large) : graphtropy large ≤ graphtropy small := by
+  unfold graphtropy
+  apply div_le_div_of_nonneg_right _ (by positivity : (0 : ℚ) ≤ _)
+  exact_mod_cast Finset.card_le_card (by
+    intro pair member
+    simp only [graphIndistinctionEvent, mem_filter, mem_univ, true_and] at member ⊢
+    exact ⟨fun inSmall => member.1 (included inSmall), member.2⟩)
+
+/-- A complete distinction graph leaves zero off-diagonal indistinction. -/
+theorem graphtropy_univ :
+    graphtropy (univ : Finset (U × U)) = 0 := by
+  simp [graphtropy, graphIndistinctionEvent]
+
+/-- The empty distinction graph maximizes graphtropy among all graphs. -/
+theorem graphtropy_le_empty (edges : Finset (U × U)) :
+    graphtropy edges ≤ graphtropy (∅ : Finset (U × U)) :=
+  graphtropy_antitone (empty_subset edges)
 
 /-- A partition Π of U induces a distinction relation: (u,v) ∈ d(Π) iff u,v in different blocks. -/
 def partitionDistinction {n : ℕ} (π : Fin n → Finset U)
@@ -604,14 +662,15 @@ theorem indiscreteSetoid'_distinctionSet :
   show ¬¬True
   simp
 
-/-! ### Partition Entropy (Bennett/Uniform Weights)
+/-! ### Uniform logical entropy of partitions
 
 For uniform weights, the logical entropy of a partition is proportional to
 the cardinality of its distinction set. -/
 
-/-- Bennett entropy of a Setoid: |distinction set| / |U × U|
-    This is the probability that two uniform random draws are distinguished. -/
-noncomputable def setoidBennettEntropy (r : Setoid U) [DecidableRel r.r] : ℚ :=
+/-- Uniform logical entropy of a Setoid: `|distinction set| / |U × U|`.
+This is the probability that two uniform random draws are distinguished.  It
+is Ellerman-shaped logical entropy, not Bennett's admitted-world weakness. -/
+noncomputable def uniformLogicalEntropy (r : Setoid U) [DecidableRel r.r] : ℚ :=
   (setoidDistinctionSet r).card / (Fintype.card U * Fintype.card U : ℕ)
 
 omit [DecidableEq U] in
@@ -619,23 +678,23 @@ omit [DecidableEq U] in
 
 If r₁ ≤ r₂ (r₁ is finer), then entropy(r₁) ≥ entropy(r₂).
 Finer partitions have higher entropy because they make more distinctions. -/
-theorem setoidBennettEntropy_mono {r₁ r₂ : Setoid U}
+theorem uniformLogicalEntropy_mono {r₁ r₂ : Setoid U}
     [DecidableRel r₁.r] [DecidableRel r₂.r]
-    (h : r₁ ≤ r₂) : setoidBennettEntropy r₂ ≤ setoidBennettEntropy r₁ := by
-  unfold setoidBennettEntropy
+    (h : r₁ ≤ r₂) : uniformLogicalEntropy r₂ ≤ uniformLogicalEntropy r₁ := by
+  unfold uniformLogicalEntropy
   apply div_le_div_of_nonneg_right _ (by positivity : (0 : ℚ) ≤ _)
   exact Nat.cast_le.mpr (setoidDistinctionSet_card_mono h)
 
 /-- The discrete Setoid has maximal entropy. -/
-theorem setoidBennettEntropy_discrete_maximal (r : Setoid U) [DecidableRel r.r] :
-    setoidBennettEntropy r ≤ setoidBennettEntropy (discreteSetoid' U) :=
-  setoidBennettEntropy_mono (discreteSetoid'_le r)
+theorem uniformLogicalEntropy_discrete_maximal (r : Setoid U) [DecidableRel r.r] :
+    uniformLogicalEntropy r ≤ uniformLogicalEntropy (discreteSetoid' U) :=
+  uniformLogicalEntropy_mono (discreteSetoid'_le r)
 
 omit [DecidableEq U] in
 /-- The indiscrete Setoid has zero entropy. -/
-theorem setoidBennettEntropy_indiscrete :
-    setoidBennettEntropy (indiscreteSetoid' U) = 0 := by
-  unfold setoidBennettEntropy
+theorem uniformLogicalEntropy_indiscrete :
+    uniformLogicalEntropy (indiscreteSetoid' U) = 0 := by
+  unfold uniformLogicalEntropy
   simp only [indiscreteSetoid'_distinctionSet, Finset.card_empty, Nat.cast_zero, zero_div]
 
 end SetoidEntropy

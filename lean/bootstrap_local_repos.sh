@@ -31,6 +31,10 @@ clone_or_sync_repo() {
   fi
 
   if [ -n "$pinned_rev" ] && [ "$cloned_now" -eq 1 ]; then
+    if ! git -C "$dest" cat-file -e "${pinned_rev}^{commit}" 2>/dev/null &&
+        [ -n "$upstream_url" ]; then
+      git -C "$dest" fetch upstream "$pinned_rev"
+    fi
     git -C "$dest" checkout -B "$work_branch" "$pinned_rev"
     echo "pinned $rel_path -> $work_branch @ ${pinned_rev:0:12}"
   fi
@@ -62,6 +66,10 @@ clone_or_sync_repo "externals/provenance" "update/4.28" \
   "fe0bb6d4b2a7acf99edb13d672b7483da95937a5" "update/4.28" \
   "git@github.com:zariuq/provenance-lean.git" \
   "https://github.com/PierreSenellart/provenance-lean.git"
+clone_or_sync_repo "externals/lean4lean" "master" \
+  "ef849dfbd94ab5a6f3ad2793a57b8a1cbe19d923" "mettapedia-4.31" \
+  "git@github.com:zariuq/lean4lean.git" \
+  "https://github.com/digama0/lean4lean.git"
 clone_or_sync_repo "externals/mm-lean4" "verified-mm-latest" \
   "c5bbaa0d6d11dccf614dadd279ca56730887fe78" "verified-mm-latest" \
   "git@github.com:zariuq/mm-lean4.git" \

@@ -8,5 +8,5 @@ def main (args : List String) : IO UInt32 := do
   | ["check-all", outDir] => checkMM0ManifestBundle outDir
   | ["check-all"] => checkMM0ManifestBundle defaultOutDir
   | _ =>
-    IO.println "mm0-full artifact commands: export-all [outDir] | check-all [outDir]"
+    IO.println "MM0 syntax-metadata commands: export-all [outDir] | check-all [outDir]"
     pure 1

@@ -18,7 +18,7 @@ namespace Mettapedia.GSLT.Dynamics.ProofRelevantNeed
 
 open Mettapedia.GSLT
 open Mettapedia.GSLT.Core.InteractionEvent
-open Mettapedia.GSLT.LanguageDef.ProofGSLT
+open Mettapedia.GSLT.LanguageDef.CertificateGSLT
 open Mettapedia.GSLT.LanguageDef.InteractionEventAuthority
 
 universe uAuthority uCell uOrigin uValue uStableFault uRetryableFault
@@ -102,7 +102,7 @@ abbrev nikFiniteTraceAuthority {AuthorityId : Type uAuthority}
     {StableFault : Type uStableFault}
     [DecidableEq Origin] [DecidableEq Value] [DecidableEq StableFault]
     (RetryableFault : Type uRetryableFault) (cell : Cell) :=
-  Mettapedia.GSLT.LanguageDef.ProofGSLT.finiteTraceAuthority
+  Mettapedia.GSLT.LanguageDef.CertificateGSLT.finiteTraceAuthority
     (nikStepAuthority (Cell := Cell) (Origin := Origin) (Value := Value)
       (StableFault := StableFault) authorityId RetryableFault cell)
 
@@ -124,7 +124,7 @@ theorem nikFiniteTraceAuthority_correspondence
         (Value := Value) (StableFault := StableFault) authorityId
         RetryableFault cell).check
         claim certificate = true) ↔ claim.Meaning :=
-  Mettapedia.GSLT.LanguageDef.ProofGSLT.finiteTraceAuthority_correspondence
+  Mettapedia.GSLT.LanguageDef.CertificateGSLT.finiteTraceAuthority_correspondence
     (nikStepAuthority (Cell := Cell) (Origin := Origin) (Value := Value)
       (StableFault := StableFault) authorityId RetryableFault cell)
     (nikStepAuthority_complete (Cell := Cell) (Origin := Origin)

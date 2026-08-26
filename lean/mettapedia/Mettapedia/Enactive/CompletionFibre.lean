@@ -1,5 +1,6 @@
 import Mettapedia.Cybernetics.ObservedVariety
 import Mettapedia.Enactive.Finite
+import Mettapedia.Order.PrincipalCompletion
 
 /-!
 # Typed completion fibres
@@ -23,13 +24,13 @@ variable {World : Type uWorld} {layer : AbstractionLayer World}
 
 /-- The dependent family of targets completing `source`. -/
 abbrev Fibre (source : Aspect layer) : Type uWorld :=
-  {target : Aspect layer // Rel source target}
+  Mettapedia.Order.PrincipalCompletion.Fibre source
 
 namespace Fibre
 
 /-- Forget the completion witness while retaining its target. -/
 def target {source : Aspect layer} (completion : Fibre source) : Aspect layer :=
-  completion.1
+  Mettapedia.Order.PrincipalCompletion.Fibre.target completion
 
 /-- The typed completion fibre is exactly the subtype of the existing
 set-valued principal completion cone. -/
@@ -47,31 +48,16 @@ as an embedding of informative fibres rather than merely an inequality of
 their cardinalities. -/
 def contravariantEmbedding {left right : Aspect layer}
     (refines : left ≤ right) :
-    Fibre right ↪ Fibre left where
-  toFun completion := ⟨completion.1, refines.trans completion.2⟩
-  inj' := by
-    intro first second equal
-    exact Subtype.ext
-      (congrArg (fun completion : Fibre left => completion.1) equal)
+    Fibre right ↪ Fibre left :=
+  Mettapedia.Order.PrincipalCompletion.Fibre.contravariantEmbedding refines
 
 /-- An order isomorphism of aspect presentations transports the whole
 completion fibre. -/
 def congr {World' : Type uWorld'} {layer' : AbstractionLayer World'}
     (presentation : Aspect layer ≃o Aspect layer')
     (source : Aspect layer) :
-    Fibre source ≃ Fibre (presentation source) where
-  toFun completion :=
-    ⟨presentation completion.1, presentation.monotone completion.2⟩
-  invFun completion :=
-    ⟨presentation.symm completion.1, by
-      change source ≤ presentation.symm completion.1
-      simpa using presentation.symm.monotone completion.2⟩
-  left_inv completion := by
-    apply Subtype.ext
-    exact presentation.symm_apply_apply completion.1
-  right_inv completion := by
-    apply Subtype.ext
-    exact presentation.apply_symm_apply completion.1
+    Fibre source ≃ Fibre (presentation source) :=
+  Mettapedia.Order.PrincipalCompletion.Fibre.congr presentation source
 
 /-- The exact change of presentation also preserves completion variety as an
 observer-indexed family. -/

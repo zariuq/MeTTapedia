@@ -90,6 +90,67 @@ finite atom type. -/
 def saturate (program : PropProgram α) (facts : Finset α) : Finset α :=
   iterate program facts (maxSteps program facts)
 
+/-- Forward chaining with the same finite-support fuel as `saturate`, but stop
+as soon as one iteration adds no facts.  The fuel remains explicit so the
+definition is structurally recursive and its result can be related exactly to
+the existing proof-oriented iterator. -/
+def iterateUntilStable (program : PropProgram α) :
+    Nat → Finset α → Finset α
+  | 0, interpretation => interpretation
+  | fuel + 1, interpretation =>
+      let next := step program interpretation
+      if next = interpretation then interpretation
+      else iterateUntilStable program fuel next
+
+theorem iterate_step_start (program : PropProgram α)
+    (interpretation : Finset α) :
+    ∀ fuel,
+      iterate program (step program interpretation) fuel =
+        iterate program interpretation (fuel + 1)
+  | 0 => rfl
+  | fuel + 1 => by
+      change step program
+          (iterate program (step program interpretation) fuel) =
+        step program (iterate program interpretation (fuel + 1))
+      rw [iterate_step_start program interpretation fuel]
+
+theorem iterate_eq_of_step_eq (program : PropProgram α)
+    (interpretation : Finset α)
+    (fixed : step program interpretation = interpretation) :
+    ∀ fuel, iterate program interpretation fuel = interpretation
+  | 0 => rfl
+  | fuel + 1 => by
+      simp only [iterate]
+      rw [iterate_eq_of_step_eq program interpretation fixed fuel, fixed]
+
+/-- Early stopping changes cost, not meaning: for every fuel and starting
+interpretation it computes exactly the same iterate as the original chainer. -/
+theorem iterateUntilStable_eq_iterate (program : PropProgram α) :
+    ∀ fuel interpretation,
+      iterateUntilStable program fuel interpretation =
+        iterate program interpretation fuel
+  | 0, interpretation => rfl
+  | fuel + 1, interpretation => by
+      simp only [iterateUntilStable]
+      split
+      next fixed =>
+        symm
+        exact iterate_eq_of_step_eq program interpretation fixed (fuel + 1)
+      next notFixed =>
+        rw [iterateUntilStable_eq_iterate program fuel
+          (step program interpretation)]
+        exact iterate_step_start program interpretation fuel
+
+/-- Executable saturation that avoids traversing the entire support bound
+after reaching a fixed point. -/
+def saturateFast (program : PropProgram α) (facts : Finset α) : Finset α :=
+  iterateUntilStable program (maxSteps program facts) facts
+
+theorem saturateFast_eq_saturate
+    (program : PropProgram α) (facts : Finset α) :
+    saturateFast program facts = saturate program facts := by
+  exact iterateUntilStable_eq_iterate program (maxSteps program facts) facts
+
 theorem saturate_fixed (program : PropProgram α) (facts : Finset α) :
     step program (saturate program facts) = saturate program facts := by
   obtain ⟨fuel, fuelBound, fixed⟩ :=
@@ -147,6 +208,31 @@ theorem saturate_iff_derivable
     (program : PropProgram α) (facts : Finset α) (atom : α) :
     atom ∈ saturate program facts ↔ Derivable program facts atom :=
   ⟨saturate_sound program facts atom, saturate_complete program facts atom⟩
+
+theorem saturateFast_fixed (program : PropProgram α) (facts : Finset α) :
+    step program (saturateFast program facts) = saturateFast program facts := by
+  rw [saturateFast_eq_saturate]
+  exact saturate_fixed program facts
+
+theorem saturateFast_contains_facts
+    (program : PropProgram α) (facts : Finset α) :
+    facts ⊆ saturateFast program facts := by
+  rw [saturateFast_eq_saturate]
+  exact saturate_contains_facts program facts
+
+theorem saturateFast_rule_closed
+    (program : PropProgram α) (facts : Finset α)
+    {rule : PropRule α} (ruleMember : rule ∈ program)
+    (premises : rule.premises ⊆ saturateFast program facts) :
+    rule.head ∈ saturateFast program facts := by
+  rw [saturateFast_eq_saturate] at premises ⊢
+  exact saturate_rule_closed program facts ruleMember premises
+
+theorem saturateFast_iff_derivable
+    (program : PropProgram α) (facts : Finset α) (atom : α) :
+    atom ∈ saturateFast program facts ↔ Derivable program facts atom := by
+  rw [saturateFast_eq_saturate]
+  exact saturate_iff_derivable program facts atom
 
 /-! ## Executable controls -/
 

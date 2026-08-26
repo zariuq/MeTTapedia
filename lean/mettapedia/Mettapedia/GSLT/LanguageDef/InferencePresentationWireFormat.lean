@@ -1,9 +1,9 @@
-import Mettapedia.GSLT.LanguageDef.ProofGSLTWireFormat
+import Mettapedia.GSLT.LanguageDef.CertificateGSLTWireFormat
 
 /-!
 # Exact wire semantics for inference presentations
 
-`ProofGSLTWireFormat` gives chronological proof articles a canonical symbolic
+`CertificateGSLTWireFormat` gives chronological proof articles a canonical symbolic
 wire carrier.  This module gives the checker-facing projection of an admitted
 inference presentation the same treatment.  The projection retains every
 field consulted by generic replay: constructor arities, judgment arities,
@@ -19,7 +19,7 @@ namespace Mettapedia.GSLT.LanguageDef.InferencePresentationWire
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
-open Mettapedia.GSLT.LanguageDef.ProofGSLT
+open Mettapedia.GSLT.LanguageDef.CertificateGSLT
 
 /-- The part of a term declaration consulted by the generic inference
 checker.  Grammar categories and syntax remain authority-source data;

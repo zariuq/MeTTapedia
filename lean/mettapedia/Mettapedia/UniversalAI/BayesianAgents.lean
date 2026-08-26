@@ -2023,23 +2023,25 @@ theorem bayes_optimal_achieves_optimal (ξ : BayesianMixture) (γ : DiscountFact
   greedyAgent_ge_optimalValue ξ γ h horizon
 
 /-!
-### Universal Value Function and Intelligence Measure
+### Mixture value and intelligence measures
 
-The universal value function Υ(π) measures expected value under the mixture prior:
+The mixture value function Υ(π) measures expected value under a supplied prior:
   Υ(π) = ∑_μ w(μ) · V^π_μ
 
-AIXI maximizes this by construction.
+The corresponding Bayes-optimal policy maximizes this objective by
+construction.  This is an optimality statement relative to that mixture, not
+an invariance statement across reference machines or priors.
 -/
 
-/-- Universal value function: expected value under the mixture prior.
-    This is the objective that AIXI implicitly maximizes. -/
+/-- Encoding-relative value function: expected value under the supplied
+mixture prior.  This is the objective maximized by its Bayes-optimal policy. -/
 noncomputable def universalValue (envs : ℕ → Environment) (weights : ℕ → ENNReal)
     (π : Agent) (γ : DiscountFactor) (h : History) (horizon : ℕ) : ENNReal :=
   ∑' i, weights i * ENNReal.ofReal (max 0 (value (envs i) π γ h horizon))
 
-/-- AIXI maximizes the universal value function among all policies.
+/-- The Bayes-optimal policy maximizes value for the supplied mixture.
 
-    This is Theorem 5.21 reformulated in terms of the universal value function:
+    This is Theorem 5.21 reformulated for the chosen mixture:
     Υ(AIXI) ≥ Υ(π) for any policy π.
 -/
 theorem aixi_maximizes_universal_value (ξ : BayesianMixture) (γ : DiscountFactor)
@@ -2049,7 +2051,7 @@ theorem aixi_maximizes_universal_value (ξ : BayesianMixture) (γ : DiscountFact
   bayes_optimal_maximizes_value ξ γ horizon h hw π
 
 /-!
-### Pareto Optimality of AIXI (Theorem 5.32)
+### Pareto optimality and its limitation (Theorem 5.32)
 
 AIXI is Pareto optimal in the class of all computable environments. The proof uses
 a "buddy environment" construction: for any policy π that tries to dominate AIXI,

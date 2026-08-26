@@ -5,7 +5,7 @@ import Mettapedia.Languages.Metamath.NIKAuthority
 # Statusful default-NIK frontend for Metamath
 
 Metamath exposes two exact evidence representations for one admitted source
-scope: native postfix label lists and ProofGSLT articles.  This module places
+scope: native postfix label lists and CertificateGSLT articles.  This module places
 both in the common statusful NIK protocol without adding another Metamath
 semantics.
 
@@ -17,7 +17,7 @@ namespace Mettapedia.Languages.Metamath.NIKDefault
 
 open Mettapedia.GSLT.LanguageDef.CheckerAuthorityFamily
 open Mettapedia.GSLT.LanguageDef.NIKDefaultProfile
-open Mettapedia.GSLT.LanguageDef.ProofGSLT
+open Mettapedia.GSLT.LanguageDef.CertificateGSLT
 open Mettapedia.Languages.Metamath.NIKAuthority
 
 /-- The already proved two-evidence Metamath authority family. -/
@@ -111,7 +111,7 @@ theorem rejected_normal_labels (scope : SourceScope) (claim : Claim scope)
       .rejected ⟨EvidenceKind.normalLabels, claim⟩ := by
   simpa [rejected] using normal_labels_status scope claim labels
 
-/-- ProofGSLT article acceptance reaches the same common protocol under its
+/-- CertificateGSLT article acceptance reaches the same common protocol under its
 own evidence tag. -/
 theorem accepted_proof_article (scope : SourceScope) (claim : Claim scope)
     (article : WireArticle)

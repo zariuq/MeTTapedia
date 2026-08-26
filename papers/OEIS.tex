@@ -922,6 +922,128 @@ the independent recount from raw checker rows has SHA-256
 {\scriptsize\ttfamily
 9a85475b7de4301f324121d89f4b9ba6a168c452c3a27c9f307a595dc733ccbf}.
 
+\subsection{Two further rounds, and the corpus the observers cannot enter}
+\label{sec:later-rounds}
+
+Two subsequent rounds extended the design: the first added a settling arm on a refined
+recurrent cut, the second completed the unified credit-by-history factorial by supplying
+its missing cell. Every entry below is recounted from the checker's own rows.
+
+\begin{center}\small
+\begin{tabular}{@{}llrrrrr@{}}
+\toprule
+round & arm & new & existing & candidates & new/1k & direct \\
+\midrule
+5 & recurrent BP, continued & 240 & 969 & 2787 & 86.11 & 9 \\
+5 & recurrent BP, joint & 256 & 891 & 2913 & 87.88 & 9 \\
+5 & recurrent PC, refined cut & 0 & 16 & 1843 & 0.00 & 0 \\
+5 & Unified BP, continued & 63 & 1598 & 15080 & 4.18 & 8 \\
+5 & Unified BP, joint & 60 & 1733 & 14243 & 4.21 & 12 \\
+5 & Unified PC, continued & 35 & 1510 & 13630 & 2.57 & 11 \\
+\midrule
+6 & recurrent BP, continued & 200 & 1080 & 2805 & 71.30 & 11 \\
+6 & recurrent BP, joint & 204 & 1007 & 2810 & 72.60 & 9 \\
+6 & Unified BP, continued & 29 & 1442 & 12898 & 2.25 & 11 \\
+6 & Unified BP, joint & 94 & 1984 & 17373 & 5.41 & 14 \\
+6 & Unified PC, continued & 25 & 1475 & 12707 & 1.97 & 10 \\
+6 & Unified PC, joint & 44 & 1782 & 17021 & 2.59 & 12 \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+Three readings matter for the loop rather than for the learning rules. The settling arm on
+the refined cut returned \emph{zero} new targets from $1{,}843$ candidates, so a round's
+arm can consume a full budget and contribute nothing the checker accepts; a discovery
+campaign must be able to record that without ambiguity, which is what the fixed
+denominators provide. The recurrent carrier remains the collateral-discovery engine: of
+the $251$ targets sealed in the later event, $200$ came from the recurrent arm and were
+private to it, $29$ and $25$ from the two unified arms, with only three shared between
+them, so architectures that differ sharply in global count remain complementary in
+coverage.
+
+The third reading is an accounting problem the control created and the registration must
+answer. Quarantined observer arms produced $382$ fact witnesses over $339$ target
+identities, of which $322$ appear nowhere in the eligible union. Those targets are
+verified by the same checker under the same protocol; they are simply ineligible, because
+admitting them would let a measurement contaminate the lineage it exists to measure. The
+descriptive union across all arms is $573$ targets while the sealed event carries $251$.
+Both numbers are correct under their own declaration, and reporting either without the
+other misstates the campaign: one confuses what was found with what was admitted, the
+other discards evidence that a later prospectively declared pool could legitimately
+import. The selected ledger itself partitions into $126$ exact reproductions of catalog
+programs and $125$ program identities new to the reference catalog, with no selected row a
+known program merely reattributed to another sequence.
+
+\subsection{Target-first replay with a verifier-indexed action datastore}
+\label{sec:action-datastore-replay}
+
+A subsequent three-seed study tested a more economical use of the accumulated solution
+pool.  Its unit of sampling was a sequence, followed by one unique program generating that
+sequence; duplicate receipts did not multiply a program--target relation.  Baseline replay
+sampled the accumulated alternatives, while verifier-certified hindsight replay added
+deduplicated programs that had been proposed for one query but independently checked as
+solving another target.  The eligible population comprised $250$ current checker targets
+and four registered replay references, not the full accumulated generation-19 catalog.
+
+Two TGAD backbones were held fixed while a small retrieval module varied along two axes:
+feedforward versus fixed-depth recurrent refinement, and backpropagation versus local
+predictive coding.  At $500$ updates the eight baseline/hindsight pairs had new-target
+effects distributed as eighteen zero, three $+1$, and three $-2$ over the twenty-four
+paired runs; the net effect was $-3$, and both replay portfolios covered the same $34$
+target identities.  A frozen rule selected a pair when any seed differed in a registered
+endpoint, exact generated-program set, or retrieval-cascade count.  All eight pairs
+qualified, were replicated from their common parents, and were extended to $2{,}500$
+updates.  The larger-budget result is therefore selection-conditioned, and its fresh
+searches are separate candidate draws rather than an independent confirmation of the
+$500$-update sign.  The checker recount, summed over three paired seeds, is:
+
+\begin{center}\small
+\begin{tabular}{@{}llrrrr@{}}
+\toprule
+backbone & local module & baseline new & hindsight new & difference & candidates B/H \\
+\midrule
+TGAD--GRU & feedforward BP & 24 & 25 & $+1$ & $9150/9044$ \\
+TGAD--GRU & feedforward PC & 24 & 26 & $+2$ & $9002/8854$ \\
+TGAD--GRU & recurrent BP & 24 & 25 & $+1$ & $9154/9044$ \\
+TGAD--GRU & recurrent PC & 24 & 27 & $+3$ & $8835/8804$ \\
+TGAD--Transformer & feedforward BP & 26 & 26 & $0$ & $8376/8619$ \\
+TGAD--Transformer & feedforward PC & 26 & 26 & $0$ & $8376/8510$ \\
+TGAD--Transformer & recurrent BP & 26 & 26 & $0$ & $8362/8593$ \\
+TGAD--Transformer & recurrent PC & 26 & 26 & $0$ & $8203/8255$ \\
+\bottomrule
+\end{tabular}
+\end{center}
+
+The paired count effects are eighteen zero, five $+1$, and one $+2$, with no negative
+count effect; the mean is $+0.292$ target, or $+0.051$ target per thousand unique
+candidates.  Candidate-normalized signs are less uniform because the replay conditions
+produce different candidate counts: fourteen positive and ten negative.  Direct
+query-conditioned hits are present---six in each aggregate TGAD--GRU condition and one in
+each TGAD--Transformer condition---but their paired treatment effect is zero in all
+twenty-four runs.  Leave-one-program-out coverage changes by exactly the same amount as
+raw coverage, so no single hub program erases the paired differences.
+
+The portfolio statement is both more robust and more modest than the mean.  Baseline
+replay covered $30$ new target identities, hindsight replay $32$, with the baseline set a
+subset of the hindsight set.  The two additions were A6355 and A266257, both at seed $43$
+under TGAD--GRU.  A266257 was witnessed by the same program in all four GRU hindsight
+conditions.  A6355 appeared only under recurrent PC with hindsight replay and had two
+distinct program witnesses.  Every one of these witnesses was generated for query
+A293553, so they are collateral discoveries rather than query-conditioned successes.
+This concentration forbids a population-level claim from three paired seeds, but it
+identifies exact targets and witnesses for a cheaper replication.
+
+The complete study---initial factorial, $500$-update replay factorial, and
+$2{,}500$-update replication-and-extension---used $126$ training runs, $159{,}000$
+optimizer updates, and $1{,}860{,}746$ objective evaluations, or $11.62$ summed
+GPU-hours.  One fifth of the last phase was a byte-exact recomputation of the already
+authenticated $500$-update prefix.  That duplication bought an integrity check but was
+not necessary for the estimand; future designs should continue from the authenticated
+checkpoint.  The registered direct query-edge conserved-credit condition is not hidden
+inside these results: it had zero eligible direct receipts, changed no retrieval weights,
+and was stopped before checker evaluation.  The executed contrast was hindsight replay,
+not learned retrieval weighting.
+
 \section{From coverage to proof: adjudicating discoveries against their definitions}
 \label{sec:adjudication}
 

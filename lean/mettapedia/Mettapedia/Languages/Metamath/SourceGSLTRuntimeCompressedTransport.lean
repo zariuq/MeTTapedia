@@ -571,6 +571,9 @@ noncomputable def compressedTheoremStep_of_runtimePrefix
         (fun state label => db.preload state label)
         { runtimeBase with heap := #[], stack := #[] }) =
         .ok runtimeInitial)
+    (hheaderAdmitted : ∀ explicitLabel ∈ explicitHeaderLabels,
+      explicitLabel ∉
+        (mandatoryHypotheses before formula).map HypothesisView.label)
     (hactions :
       ParserState.applyCompressedActions db runtimeInitial
         (actions.map toMMLean4Action) = .ok runtimeFinal)
@@ -591,10 +594,24 @@ noncomputable def compressedTheoremStep_of_runtimePrefix
     · obtain ⟨candidate, candidateMember, equality⟩ :=
         List.mem_map.mp explicit
       exact nomatch equality
+  have admitted : ∀ item,
+      item ∈ headerItems before formula explicitHeaderLabels →
+      item.Admitted := by
+    intro item member
+    unfold headerItems at member
+    rcases List.mem_append.mp member with mandatory | explicit
+    · obtain ⟨hypothesis, _hypothesisMember, equality⟩ :=
+        List.mem_map.mp mandatory
+      subst item
+      trivial
+    · obtain ⟨explicitLabel, explicitMember, equality⟩ :=
+        List.mem_map.mp explicit
+      subst item
+      exact hheaderAdmitted explicitLabel explicitMember
   obtain ⟨runtimeInitialSource, runtimeHeader, initialAgreement⟩ :=
     headerBuild_runtimeReflected db hproject
       (emptyMachineAgrees db (runtimePrefix before) runtimeTarget runtimeBase)
-      hheader mandatoryMember
+      hheader mandatoryMember admitted
   obtain ⟨runtimeFinalSource, runtimeExecution, finalAgreement⟩ :=
     execute_mmLean4Reflected actions db runtimePresentation hproject
       runtimeInitial runtimeFinal initialAgreement hverified hactions

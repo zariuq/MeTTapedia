@@ -1,5 +1,5 @@
 import Mettapedia.GSLT.LanguageDef.ExactRuleSelectorCompilation
-import Mettapedia.GSLT.LanguageDef.ProofGSLTWireFormat
+import Mettapedia.GSLT.LanguageDef.CertificateGSLTWireFormat
 
 /-!
 # Chronological article compilation
@@ -11,14 +11,14 @@ its target.  It does not replay the accumulated article.
 
 The result is the formal boundary needed by a generated rule machine: every
 node is admitted when it is constructed, and the final wire article is
-accepted by the ordinary ProofGSLT checker.
+accepted by the ordinary CertificateGSLT checker.
 -/
 
 namespace Mettapedia.GSLT.LanguageDef.ChronologicalArticleCompilation
 
 open Mettapedia.OSLF.MeTTaIL.Syntax
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
-open Mettapedia.GSLT.LanguageDef.ProofGSLT
+open Mettapedia.GSLT.LanguageDef.CertificateGSLT
 
 universe uKey
 
@@ -211,7 +211,7 @@ def Builder.append? {presentation : ValidatedPresentation}
             rw [checkOpenDAGNodes?_append]
             simp [builder.checked, checkedNode, checkOpenDAGNodes?] }
 
-/-- One exact-selector action that emits a ProofGSLT node. -/
+/-- One exact-selector action that emits a CertificateGSLT node. -/
 def selectedNode? [DecidableEq Key]
     (index : ExactRuleSelectorCompilation.ExactIndex Key RuleInstance)
     (query : Key)

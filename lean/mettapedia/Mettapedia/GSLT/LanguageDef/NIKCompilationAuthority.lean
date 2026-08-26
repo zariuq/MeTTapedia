@@ -1,5 +1,5 @@
 import Mettapedia.GSLT.LanguageDef.NIKDefaultCertifiedCompilation
-import Mettapedia.GSLT.LanguageDef.ProofGSLTCheckerCapabilities
+import Mettapedia.GSLT.LanguageDef.CertificateGSLTCheckerCapabilities
 
 /-!
 # Compilation traces as a NIK authority
@@ -140,7 +140,7 @@ def authorityProjection
   authority := replayChecker_authority compilerChecker
   project := certified_implies_meaning compilerChecker
 
-/-! ## Agreement with OSLF/ProofGSLT finite reachability -/
+/-! ## Agreement with OSLF/CertificateGSLT finite reachability -/
 
 /-- Every path in the checker-induced compiler GSLT can be reified back into
 an accepted dependent compiler trace.  This is the converse of
@@ -202,7 +202,7 @@ def stepAuthority
     (authorityId : AuthorityId)
     (compilerChecker : CompilationTraceChecker State Observation)
     [DecidableEq State] :
-    ProofGSLT.StepAuthority AuthorityId compilerChecker.toGSLT where
+    CertificateGSLT.StepAuthority AuthorityId compilerChecker.toGSLT where
   id := authorityId
   Certificate := EdgeCertificate compilerChecker
   check := fun claim certificate =>
@@ -238,7 +238,7 @@ theorem stepAuthority_complete
     simp [stepAuthority, accepted]⟩
 
 /-- OSLF-generated finite-trace replay is an exact authority for compiler
-reachability.  This is the ProofGSLT/NIK route, rather than a second semantic
+reachability.  This is the CertificateGSLT/NIK route, rather than a second semantic
 definition of compilation. -/
 theorem generatedFiniteTrace_authority
     {AuthorityId : Type uClaim}
@@ -246,10 +246,10 @@ theorem generatedFiniteTrace_authority
     (authorityId : AuthorityId)
     (compilerChecker : CompilationTraceChecker State Observation)
     [DecidableEq State] :
-    (ProofGSLT.CheckerCapabilities.finiteTraceChecker
+    (CertificateGSLT.CheckerCapabilities.finiteTraceChecker
       (stepAuthority authorityId compilerChecker)).Authority
-        ProofGSLT.TraceClaim.Meaning :=
-  ProofGSLT.CheckerCapabilities.finiteTraceChecker_authority
+        CertificateGSLT.TraceClaim.Meaning :=
+  CertificateGSLT.CheckerCapabilities.finiteTraceChecker_authority
     (stepAuthority authorityId compilerChecker)
     (stepAuthority_complete authorityId compilerChecker)
 
@@ -260,67 +260,67 @@ theorem certified_iff_generatedFiniteTraceMeaning
     (compilerChecker : CompilationTraceChecker State Observation)
     (claim : Claim State) :
     Certified compilerChecker claim ↔
-      ProofGSLT.TraceClaim.Meaning
+      CertificateGSLT.TraceClaim.Meaning
         (theory := compilerChecker.toGSLT)
         ⟨claim.source, claim.artifact⟩ :=
   certified_iff_multiStep compilerChecker claim
 
-/-! ## ProofGSLT-presented compiler steps -/
+/-! ## CertificateGSLT-presented compiler steps -/
 
-/-- When compiler edges have a two-sided ProofGSLT presentation, its ordinary
+/-- When compiler edges have a two-sided CertificateGSLT presentation, its ordinary
 versioned articles become the local evidence inside the generated finite-trace
 checker. -/
-def proofGSLTFiniteTraceChecker
+def certificateGSLTFiniteTraceChecker
     {AuthorityId : Type uClaim}
     (authorityId : AuthorityId)
     {State : Type uState} {Observation : Type uObservation}
     (compilerChecker : CompilationTraceChecker State Observation)
     {presentation : InferenceChecker.ValidatedPresentation}
-    (adequacy : ProofGSLT.ExactStepPresentation
+    (adequacy : CertificateGSLT.ExactStepPresentation
       compilerChecker.toGSLT presentation)
     [DecidableEq State] :=
-  ProofGSLT.CheckerCapabilities.finiteTraceChecker
-    (ProofGSLT.exactWireStepAuthority authorityId adequacy)
+  CertificateGSLT.CheckerCapabilities.finiteTraceChecker
+    (CertificateGSLT.exactWireStepAuthority authorityId adequacy)
 
-/-- Exact local ProofGSLT adequacy lifts compositionally to exact compiler
+/-- Exact local CertificateGSLT adequacy lifts compositionally to exact compiler
 trace authority. -/
-theorem proofGSLTFiniteTraceChecker_authority
+theorem certificateGSLTFiniteTraceChecker_authority
     {AuthorityId : Type uClaim}
     (authorityId : AuthorityId)
     {State : Type uState} {Observation : Type uObservation}
     (compilerChecker : CompilationTraceChecker State Observation)
     {presentation : InferenceChecker.ValidatedPresentation}
-    (adequacy : ProofGSLT.ExactStepPresentation
+    (adequacy : CertificateGSLT.ExactStepPresentation
       compilerChecker.toGSLT presentation)
     [DecidableEq State] :
-    (proofGSLTFiniteTraceChecker authorityId compilerChecker adequacy).Authority
-      ProofGSLT.TraceClaim.Meaning :=
-  ProofGSLT.CheckerCapabilities.finiteTraceChecker_authority
-    (ProofGSLT.exactWireStepAuthority authorityId adequacy)
-    (ProofGSLT.exactWireStepAuthority_complete authorityId adequacy)
+    (certificateGSLTFiniteTraceChecker authorityId compilerChecker adequacy).Authority
+      CertificateGSLT.TraceClaim.Meaning :=
+  CertificateGSLT.CheckerCapabilities.finiteTraceChecker_authority
+    (CertificateGSLT.exactWireStepAuthority authorityId adequacy)
+    (CertificateGSLT.exactWireStepAuthority_complete authorityId adequacy)
 
-/-- The native dependent compiler article and a ProofGSLT-presented finite
+/-- The native dependent compiler article and a CertificateGSLT-presented finite
 article exist for exactly the same source/artifact pairs. -/
-theorem certified_iff_exists_proofGSLTTraceCertificate
+theorem certified_iff_exists_certificateGSLTTraceCertificate
     {AuthorityId : Type uClaim}
     (authorityId : AuthorityId)
     {State : Type uState} {Observation : Type uObservation}
     (compilerChecker : CompilationTraceChecker State Observation)
     {presentation : InferenceChecker.ValidatedPresentation}
-    (adequacy : ProofGSLT.ExactStepPresentation
+    (adequacy : CertificateGSLT.ExactStepPresentation
       compilerChecker.toGSLT presentation)
     [DecidableEq State] (claim : Claim State) :
     Certified compilerChecker claim ↔
       ∃ certificate,
-        (proofGSLTFiniteTraceChecker authorityId compilerChecker adequacy).check
+        (certificateGSLTFiniteTraceChecker authorityId compilerChecker adequacy).check
           (⟨claim.source, claim.artifact⟩ :
-            ProofGSLT.TraceClaim compilerChecker.toGSLT)
+            CertificateGSLT.TraceClaim compilerChecker.toGSLT)
           certificate = true := by
   exact (certified_iff_generatedFiniteTraceMeaning compilerChecker claim).trans
-    ((proofGSLTFiniteTraceChecker_authority authorityId compilerChecker
+    ((certificateGSLTFiniteTraceChecker_authority authorityId compilerChecker
       adequacy).meaning_iff_exists_certificate
         (⟨claim.source, claim.artifact⟩ :
-          ProofGSLT.TraceClaim compilerChecker.toGSLT))
+          CertificateGSLT.TraceClaim compilerChecker.toGSLT))
 
 /-! ## Admission into the default NIK family -/
 

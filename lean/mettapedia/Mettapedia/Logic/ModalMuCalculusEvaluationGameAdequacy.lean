@@ -20,7 +20,7 @@ namespace Mettapedia.Logic.ModalMuCalculus.EvaluationGame.Adequacy
 open Mettapedia.Logic.ModalMuCalculus
 open Mettapedia.Logic.ModalMuCalculus.EvaluationGame
 open Mettapedia.Logic.ModalQuantaleSemantics.Boolean
-open Mettapedia.GSLT.LanguageDef.ProofGSLT.MuCalculusBoundary
+open Mettapedia.GSLT.LanguageDef.CertificateGSLT.MuCalculusBoundary
 open Mettapedia.Order.FiniteSetFixedPoints
 
 universe uState uAction uObservation
@@ -2831,7 +2831,7 @@ noncomputable def localSemanticStrategy
     [DecidableEq State]
     (program : Program Action Observation)
     (model : FiniteModel State Action Observation) :
-    Mettapedia.GSLT.LanguageDef.ProofGSLT.Parity.Strategy
+    Mettapedia.GSLT.LanguageDef.CertificateGSLT.Parity.Strategy
       (Position State Action Observation program) := by
   classical
   exact {
@@ -2931,7 +2931,7 @@ end Mettapedia.Logic.ModalMuCalculus.EvaluationGame.Program
 namespace Mettapedia.Logic.ModalMuCalculus.EvaluationGame.Adequacy.Canary
 
 open Mettapedia.Logic.ModalMuCalculus.EvaluationGame
-open Mettapedia.GSLT.LanguageDef.ProofGSLT.Parity
+open Mettapedia.GSLT.LanguageDef.CertificateGSLT.Parity
 
 open EvaluationGame.Canary
 

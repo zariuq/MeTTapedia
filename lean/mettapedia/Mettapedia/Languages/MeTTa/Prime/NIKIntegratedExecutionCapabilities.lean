@@ -343,14 +343,10 @@ theorem semantic_and_profitability_do_not_imply_receipt_sufficiency :
   constructor
   · exact ⟨profitable⟩
   · rintro ⟨admission⟩
-    rcases admission.supports () with ⟨run, factors⟩
-    have atFalse := congrFun factors falseTrace
-    have atTrue := congrFun factors trueTrace
-    simp [request, singlePolicyRequest, finalState, collapsedKey, falseTrace]
-      at atFalse
-    simp [request, singlePolicyRequest, finalState, collapsedKey, trueTrace]
-      at atTrue
-    exact Bool.noConfusion (atFalse.symm.trans atTrue)
+    have collision : collapsedKey falseTrace = collapsedKey trueTrace := rfl
+    have impossible := admission.supports () collision
+    simp [request, singlePolicyRequest, finalState, falseTrace, trueTrace]
+      at impossible
 
 theorem relevant_change_is_stale : model.StaleAt (true, false) := by
   intro same

@@ -105,6 +105,21 @@ theorem presentation_eq_rawSourcePresentation_of_generated
   simpa [rawSourcePresentation, sourceInferencePresentation] using
     Option.some.inj generated.symm
 
+/-- Passing the three source-owned projection gates constructs exactly the
+raw presentation derived from that source prefix.  This is the forward
+counterpart of `sourceProjectionGates_of_generated`: callers need not execute
+the partial generator merely to recover its successful result. -/
+theorem presentationOfSourcePrefix_eq_some_rawSourcePresentation
+    (source : SourcePrefix) (gates : SourceProjectionGates source) :
+    presentationOfSourcePrefix? source =
+      some (rawSourcePresentation source) := by
+  unfold presentationOfSourcePrefix?
+  rw [gates.prefixValid]
+  simp only [guard]
+  rw [gates.vocabularyValid]
+  rw [gates.ruleIdsDisjoint]
+  rfl
+
 private theorem sourceVocabularyValid_nodup
     {heads : List String} (valid : sourceVocabularyValid heads = true) :
     heads.Nodup := by

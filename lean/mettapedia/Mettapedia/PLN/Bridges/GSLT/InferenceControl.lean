@@ -1,5 +1,5 @@
 import Mettapedia.GSLT.Core.InferenceControl
-import Mettapedia.GSLT.LanguageDef.ProofGSLTFiniteTraceAuthority
+import Mettapedia.GSLT.LanguageDef.CertificateGSLTFiniteTraceAuthority
 import Mettapedia.Languages.MeTTa.PrimeNeedInferenceControl
 import Mettapedia.PLN.InferenceControl.PremiseSelection.Fusion
 import Mettapedia.PLN.WorldModel.BinaryWorldModel
@@ -32,7 +32,7 @@ open scoped Classical ENNReal
 
 open Mettapedia.GSLT.Core.BranchingTemporal
 open Mettapedia.GSLT.Core.InferenceControl
-open Mettapedia.GSLT.LanguageDef.ProofGSLT
+open Mettapedia.GSLT.LanguageDef.CertificateGSLT
 open Mettapedia.PLN.Evidence.EvidenceQuantale
 open Mettapedia.PLN.InferenceControl.PremiseSelection
 

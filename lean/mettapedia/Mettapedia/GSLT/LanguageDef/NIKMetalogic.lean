@@ -2,7 +2,7 @@ import Mathlib.Order.Closure
 import Mathlib.CategoryTheory.Adjunction.Basic
 import Mathlib.Data.Finset.Max
 import Mettapedia.GSLT.LanguageDef.NIKIndexedOperational
-import Mettapedia.GSLT.LanguageDef.ProofGSLTClone
+import Mettapedia.GSLT.LanguageDef.CertificateGSLTClone
 
 /-!
 # The metalogic carried by NIK authorities
@@ -643,27 +643,27 @@ noncomputable def CloneProofFibre.thin
 
 end PiInstitution
 
-namespace ProofGSLTCloneCanary
+namespace CertificateGSLTCloneCanary
 
-open Mettapedia.GSLT.LanguageDef.ProofGSLT
+open Mettapedia.GSLT.LanguageDef.CertificateGSLT
 
-/-- The concrete ProofGSLT clone retains premise occurrence identity: two
+/-- The concrete CertificateGSLT clone retains premise occurrence identity: two
 equal formulas at different context positions give different projection
 proofs.  Thus the clone upgrade is genuinely proof relevant and is not the
 thin closure construction above. -/
 theorem repeated_assumption_occurrences_distinct
-    (object : ProofGSLT.Object)
+    (object : CertificateGSLT.Object)
     (formula : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern) :
-    (ProofGSLT.derivationClone object).project
+    (CertificateGSLT.derivationClone object).project
         (context := [formula, formula]) (0 : Fin 2) ≠
-      (ProofGSLT.derivationClone object).project
+      (CertificateGSLT.derivationClone object).project
         (context := [formula, formula]) (1 : Fin 2) := by
   intro equalProofs
   have equalIndices : (0 : Fin 2) = (1 : Fin 2) := by
     injection equalProofs
   omega
 
-end ProofGSLTCloneCanary
+end CertificateGSLTCloneCanary
 
 /-! ## The least closure extending a raw theorem set -/
 
@@ -3300,39 +3300,39 @@ def operationalSoundClone
       seedSound stepSound [] claim proof
       (fun impossible => Fin.elim0 impossible)
 
-/-- ProofGSLT's actual open-derivation clone is semantically sound whenever
+/-- CertificateGSLT's actual open-derivation clone is semantically sound whenever
 the admitted presentation rules are sound.  This is the concrete native
 proof-object flow theorem: semantic validity follows by induction over the
 typed derivation, not by replaying a separate trace language. -/
-def ProofGSLTCloneCanary.soundClone
-    (object : ProofGSLT.Object)
+def CertificateGSLTCloneCanary.soundClone
+    (object : CertificateGSLT.Object)
     (Meaning : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Prop)
     (ruleSound : ∀ ruleInstance premises conclusion,
       Mettapedia.GSLT.LanguageDef.InferenceChecker.RuleApplication
         object.presentation ruleInstance premises conclusion →
       (∀ premise ∈ premises, Meaning premise) → Meaning conclusion) :
-    SoundClone (ProofGSLT.derivationClone object) Meaning where
+    SoundClone (CertificateGSLT.derivationClone object) Meaning where
   closed_sound proof :=
-    ProofGSLT.OpenDerivation.sound_of_ruleApplications Meaning ruleSound
+    CertificateGSLT.OpenDerivation.sound_of_ruleApplications Meaning ruleSound
       (by simp) proof
 
-/-- ProofGSLT's native open-derivation clone has a direct computing checker:
+/-- CertificateGSLT's native open-derivation clone has a direct computing checker:
 the retained conclusion index is compared with the submitted claim while the
 derivation remains the certificate. -/
-def ProofGSLTCloneCanary.nativeKernel
-    (object : ProofGSLT.Object) :
+def CertificateGSLTCloneCanary.nativeKernel
+    (object : CertificateGSLT.Object) :
     NativeProofKernel
-      (cloneNativeProofSystem (ProofGSLT.derivationClone object)) :=
-  cloneNativeProofKernel (ProofGSLT.derivationClone object)
+      (cloneNativeProofSystem (CertificateGSLT.derivationClone object)) :=
+  cloneNativeProofKernel (CertificateGSLT.derivationClone object)
 
-/-- Consequently the direct ProofGSLT checker preserves the entire native
+/-- Consequently the direct CertificateGSLT checker preserves the entire native
 closed-derivation fibre. -/
-def ProofGSLTCloneCanary.certificateEquivalence
-    (object : ProofGSLT.Object) :
+def CertificateGSLTCloneCanary.certificateEquivalence
+    (object : CertificateGSLT.Object) :
     CertificateEquivalence
-      (ProofGSLTCloneCanary.nativeKernel object).toChecker
-      (cloneNativeProofSystem (ProofGSLT.derivationClone object)) :=
-  (ProofGSLTCloneCanary.nativeKernel object).certificateEquivalence
+      (CertificateGSLTCloneCanary.nativeKernel object).toChecker
+      (cloneNativeProofSystem (CertificateGSLT.derivationClone object)) :=
+  (CertificateGSLTCloneCanary.nativeKernel object).certificateEquivalence
 
 /-- Under a primary certificate boundary, a closed native clone proof is
 promoted to accepted NIK evidence without replaying its construction tree. -/
@@ -3366,24 +3366,24 @@ theorem closedCloneProof_flows_without_recheck
     semantics.closed_sound proof⟩
 
 /-- Concrete end-to-end witness for the proof-object tier: a closed
-ProofGSLT derivation is accepted by its direct native checker and denotes a
+CertificateGSLT derivation is accepted by its direct native checker and denotes a
 meaningful conclusion whenever the authored rules preserve that meaning.
 No auxiliary micro-trace is introduced. -/
-theorem ProofGSLTCloneCanary.native_derivation_flows
-    (object : ProofGSLT.Object)
+theorem CertificateGSLTCloneCanary.native_derivation_flows
+    (object : CertificateGSLT.Object)
     (Meaning : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern → Prop)
     (ruleSound : ∀ ruleInstance premises conclusion,
       Mettapedia.GSLT.LanguageDef.InferenceChecker.RuleApplication
         object.presentation ruleInstance premises conclusion →
       (∀ premise ∈ premises, Meaning premise) → Meaning conclusion)
     {claim : Mettapedia.OSLF.MeTTaIL.Syntax.Pattern}
-    (proof : (ProofGSLT.derivationClone object).Hom [] claim) :
+    (proof : (CertificateGSLT.derivationClone object).Hom [] claim) :
     (∃ certificate,
-      (ProofGSLTCloneCanary.nativeKernel object).toChecker.check
+      (CertificateGSLTCloneCanary.nativeKernel object).toChecker.check
         claim certificate = true) ∧ Meaning claim :=
   closedCloneProof_flows_without_recheck
-    (ProofGSLTCloneCanary.soundClone object Meaning ruleSound)
-    (ProofGSLTCloneCanary.certificateEquivalence object) proof
+    (CertificateGSLTCloneCanary.soundClone object Meaning ruleSound)
+    (CertificateGSLTCloneCanary.certificateEquivalence object) proof
 
 /-! ## Theory, authority contract, and realization -/
 
@@ -4175,7 +4175,7 @@ end RefinementCanary
 #print axioms PiInstitution.ProofCalculus.tagged_projection_not_injective
 #print axioms PiInstitution.ProofCalculus.theorem_forbids_empty_proof_fibre
 #print axioms PiInstitution.relativeClosure_empty
-#print axioms ProofGSLTCloneCanary.repeated_assumption_occurrences_distinct
+#print axioms CertificateGSLTCloneCanary.repeated_assumption_occurrences_distinct
 #print axioms SetEvidenceDoctrine.thinOfClosure_consequence
 #print axioms SetEvidenceDoctrine.proofErasureThinAdjunction
 #print axioms PiInstitution.thinEvidence_closure_roundtrip
@@ -4213,8 +4213,8 @@ end RefinementCanary
 #print axioms OptimizationLimits.finiteThresholdFragment_has_optimal_compiler
 #print axioms OptimizationLimits.impossibility_ladder_and_bounded_frontier
 #print axioms AdmittedCloneRules.toAdmissionHom_run
-#print axioms ProofGSLTCloneCanary.soundClone
-#print axioms ProofGSLTCloneCanary.native_derivation_flows
+#print axioms CertificateGSLTCloneCanary.soundClone
+#print axioms CertificateGSLTCloneCanary.native_derivation_flows
 #print axioms ProofCarryingAuthority.scopeAuthority
 #print axioms TheoryFamilyCanary.false_not_meaning
 #print axioms LowerContract.no_two_level_cycle

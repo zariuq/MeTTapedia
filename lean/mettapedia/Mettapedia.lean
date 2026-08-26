@@ -145,6 +145,18 @@ import Mettapedia.Logic.GunkyMereology
 import Mettapedia.Logic.StoneGunkDuality
 import Mettapedia.Logic.Metaphysics
 import Mettapedia.UniversalAI.SolomonoffPrior
+import Mettapedia.UniversalAI.UniversalMachineBoundary
+import Mettapedia.UniversalAI.IncrementalCompressionBridge
+import Mettapedia.UniversalAI.OpenEndedCompressionBridge
+import Mettapedia.Computability.KolmogorovComplexity.KraftChaitinStream
+import Mettapedia.Computability.KolmogorovComplexity.KraftChaitinEffective
+import Mettapedia.Computability.KolmogorovComplexity.SaturatedKraftChaitin
+import Mettapedia.Computability.KolmogorovComplexity.DyadicThresholdCoding
+import Mettapedia.Computability.KolmogorovComplexity.DiscreteSemimeasureCoding
+import Mettapedia.Computability.KolmogorovComplexity.ConditionalOutputSemimeasure
+import Mettapedia.Computability.KolmogorovComplexity.ConditionalLowerChainRule
+import Mettapedia.Computability.KolmogorovComplexity.EffectiveConditionalChainRule
+import Mettapedia.Computability.KolmogorovComplexity.EffectiveContainmentRepair
 import Mettapedia.UniversalAI.SolomonoffInduction
 import Mettapedia.UniversalAI.SolomonoffMeasure
 import Mettapedia.UniversalAI.UniversalPrediction
@@ -179,6 +191,7 @@ import Mettapedia.PLN.Bridges.Logic.WorldModel.PLNWorldModelKripkeNeighborhoodEm
 import Mettapedia.PLN.Bridges.Logic.WorldModel.PLNWorldModelKripkeNeighborhoodCanonical
 import Mettapedia.PLN.Bridges.Logic.WorldModel.PLNWorldModelKripkeWeighted
 import Mettapedia.KR.ConceptGeometry.AbstractInheritance
+import Mettapedia.KR.ConceptGeometry.Bridges
 import Mettapedia.NARS
 import Mettapedia.Evidence
 import Mettapedia.Enactive
@@ -191,6 +204,7 @@ import Mettapedia.PLN.TruthValues.PLNTruthTheoryIndex
 -- Universal AI (Hutter Chapters 2-7)
 import Mettapedia.UniversalAI.SimplicityUncertainty
 import Mettapedia.UniversalAI.BayesianAgents
+import Mettapedia.UniversalAI.OptimalityBoundary
 import Mettapedia.UniversalAI.ProblemClasses
 import Mettapedia.UniversalAI.TimeBoundedAIXI
 import Mettapedia.UniversalAI.Omega
@@ -218,6 +232,8 @@ import Mettapedia.Bridge.BitVectorEvidence
 
 -- Languages
 import Mettapedia.Languages.MeTTa
+import Mettapedia.Languages.MeTTa.PeTTa.MainlineTypeQueryGSLT
+import Mettapedia.Languages.MeTTa.PeTTa.CallGuardNativeKernel
 import Mettapedia.Languages.GF.GFWMConnections
 import Mettapedia.Languages.GF.GFWMConnectionsRegression
 import Mettapedia.Languages.GF.GFWMObligationAdapter
@@ -231,6 +247,7 @@ import Mettapedia.Conformance.SimplePeTTa
 -- Examples
 import Mettapedia.Examples.SymmetricMeasures
 import Mettapedia.Examples.PLN
+import Mettapedia.PLN.Bridges.GSLT.PeTTaTypedPLNNativeBridge
 
 -- 100 Creative Proofs
 import Mettapedia.HundredProofs
@@ -274,8 +291,17 @@ import Mettapedia.Computability.HutterComputability
 import Mettapedia.Computability.HutterComputabilityClosure
 import Mettapedia.Computability.HutterComputabilityENNReal
 import Mettapedia.Computability.HutterComputabilityRational
+import Mettapedia.Computability.KolmogorovComplexity.Conditional
+import Mettapedia.Computability.KolmogorovComplexity.ConditionalInterpreter
+import Mettapedia.Computability.KolmogorovComplexity.ConditionalPlainComplexity
+import Mettapedia.Computability.KolmogorovComplexity.CompressiveFeature
+import Mettapedia.Computability.KolmogorovComplexity.ConditionalChainRule
+import Mettapedia.Computability.KolmogorovComplexity.ConditionalPrefixBridge
+import Mettapedia.Computability.KolmogorovComplexity.ContainmentRepair
+import Mettapedia.Computability.KolmogorovComplexity.DirectionalInformation
 import Mettapedia.Computability.KolmogorovComplexity.Prefix
 import Mettapedia.Computability.KolmogorovComplexity.PrefixComplexity
+import Mettapedia.Computability.KolmogorovComplexity.SelfDelimitingCode
 import Mettapedia.Computability.KolmogorovComplexity.Uncomputability
 -- `OracleTM` is NOT imported: it is an older parallel variant of the oracle-machine
 -- development whose declarations (`oracleOutputOneSet`, …) collide in a single

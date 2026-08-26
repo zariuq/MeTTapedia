@@ -1,10 +1,15 @@
 import Mettapedia.Enactive.Basic
 import Mettapedia.Enactive.Finite
 import Mettapedia.Enactive.CompletionFibre
+import Mettapedia.Enactive.CompletionComposition
 import Mettapedia.Enactive.ProtectedFreedom
 import Mettapedia.Enactive.TwoLanguageBridge
 import Mettapedia.Enactive.Bennett2023
 import Mettapedia.Enactive.Razor
+import Mettapedia.Enactive.AxisIndependence
+import Mettapedia.Enactive.QuantaleRazorValuations
+import Mettapedia.Enactive.OckhamSteelman
+import Mettapedia.Enactive.BennettReparameterization
 import Mettapedia.Enactive.GeneralizationOptimality
 import Mettapedia.Enactive.StochasticTaskProcess
 import Mettapedia.Enactive.ComplexityIllusion
@@ -12,6 +17,7 @@ import Mettapedia.Enactive.PrimeSupport
 import Mettapedia.Enactive.PrimeGeneration
 import Mettapedia.Enactive.IndividuationGeneration
 import Mettapedia.Enactive.MetasystemTransition
+import Mettapedia.Enactive.HierarchicalComplexityBridge
 import Mettapedia.Enactive.GSLTPolicyBridge
 import Mettapedia.Enactive.CredalWeakness
 import Mettapedia.Enactive.AntiUnificationWeakness

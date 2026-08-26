@@ -1,5 +1,5 @@
 import Mettapedia.Languages.ProcessCalculi.MORK.GSLTSemantics
-import Mettapedia.OSLF.Framework.OSLFProofGSLTAuthority
+import Mettapedia.OSLF.Framework.OSLFCertificateGSLTAuthority
 
 /-!
 # OSLF native types for the MM2 GSLT family
@@ -10,7 +10,7 @@ type semantics.  An exact target type is the singleton-target diamond generated
 from the selected MM2 profile, and its meaning is definitionally the profile's
 one-step relation.
 
-The same native claim is also the input to the generic ProofGSLT authority.
+The same native claim is also the input to the generic CertificateGSLT authority.
 A concrete wire presentation and native lowering remain separate realization
 obligations; no checker is postulated here.
 -/
@@ -19,7 +19,7 @@ namespace Mettapedia.Languages.ProcessCalculi.MORK
 
 open Mettapedia.GSLT
 open Mettapedia.OSLF.Framework.GSLTTypeSynthesis
-open Mettapedia.OSLF.Framework.OSLFProofGSLTAuthority
+open Mettapedia.OSLF.Framework.OSLFCertificateGSLTAuthority
 
 /-! ## Generated native types -/
 
@@ -44,10 +44,10 @@ theorem satisfies_sourceExecExactTargetNativeType_iff_step
   satisfies_exactTargetNativeType_iff_step
     (sourceExecGSLT policy) source target
 
-/-! ## ProofGSLT authority claims -/
+/-! ## CertificateGSLT authority claims -/
 
 /-- The exact MM2 edge as a rich OSLF native claim suitable for the generic
-ProofGSLT authority path. -/
+CertificateGSLT authority path. -/
 noncomputable def sourceExecStepNativeClaim (policy : UnsupportedExecPolicy)
     (source target : Space) :
     NativeClaim (gsltOSLF (sourceExecGSLT policy)) :=

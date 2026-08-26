@@ -1,20 +1,20 @@
 import Mettapedia.GSLT.LanguageDef.CompletenessSpectrum
-import Mettapedia.GSLT.LanguageDef.ProofGSLTInterpretation
-import Mettapedia.GSLT.LanguageDef.SemanticProofGSLTCategory
+import Mettapedia.GSLT.LanguageDef.CertificateGSLTInterpretation
+import Mettapedia.GSLT.LanguageDef.SemanticCertificateGSLTCategory
 import Mettapedia.PLN.Bridges.Logic.WorldModel.PLNWorldModelKripkeNeighborhoodCanonical
 
 /-!
-# Neighborhood semantics as a ProofGSLT authority
+# Neighborhood semantics as a CertificateGSLT authority
 
 Neighborhood semantics is strictly broader than relational Kripke semantics:
 a world may select an arbitrary family of supported propositions rather than
 the supersets of one successor set.  This module connects that semantic breadth
 to proof-carrying GSLT presentations.
 
-An exact ProofGSLT presentation of a sound-and-complete neighborhood calculus
+An exact CertificateGSLT presentation of a sound-and-complete neighborhood calculus
 is promoted to exact authority for neighborhood WM consequence.  Consequently
 existence of an accepted wire article is equivalent to the independently
-defined neighborhood meaning.  Derivation-valued ProofGSLT interpretations
+defined neighborhood meaning.  Derivation-valued CertificateGSLT interpretations
 then transport source proofs into any target presentation that is sound for
 the same meaning.
 
@@ -29,7 +29,7 @@ namespace Mettapedia.PLN.Bridges.GSLT.NeighborhoodProofAuthority
 open LO
 open LO.Modal
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
-open Mettapedia.GSLT.LanguageDef.ProofGSLT
+open Mettapedia.GSLT.LanguageDef.CertificateGSLT
 open Mettapedia.GSLT.LanguageDef.CompletenessSpectrum
 open Mettapedia.PLN.WorldModel.PLNWorldModel
 open Mettapedia.PLN.Bridges.Logic.WorldModel.PLNWorldModelNeighborhood
@@ -74,7 +74,7 @@ strictly more claims. -/
 def restrictFrameClass
     {smaller larger : Neighborhood.FrameClass}
     (inclusion : smaller ⊆ larger) :
-    Mettapedia.GSLT.LanguageDef.ProofGSLT.Semantic.MeaningTranslation
+    Mettapedia.GSLT.LanguageDef.CertificateGSLT.Semantic.MeaningTranslation
       (Meaning larger) (Meaning smaller) where
   mapClaim := fun claim => claim
   preserves := meaning_antitone inclusion
@@ -110,19 +110,19 @@ def exactSemanticPresentation
     provability.derivation_complete claim
       ((provable_iff_meaning system frameClass claim).mpr meaningful)
 
-/-- Package the promoted presentation as a semantically complete ProofGSLT. -/
-def semanticProofGSLT
+/-- Package the promoted presentation as a semantically complete CertificateGSLT. -/
+def semanticCertificateGSLT
     {System : Type*} [Entailment System ModalQuery]
     (system : System) (frameClass : Neighborhood.FrameClass)
     [Sound system frameClass] [Complete system frameClass]
     {presentation : ValidatedPresentation}
     (provability :
       ExactJudgmentPresentation ImplicationClaim (Provable system) presentation) :
-    SemanticallyCompleteProofGSLT ImplicationClaim (Meaning frameClass) where
+    SemanticallyCompleteCertificateGSLT ImplicationClaim (Meaning frameClass) where
   presentation := presentation
   adequacy := exactSemanticPresentation system frameClass provability
 
-/-- The same authority as an object of the fixed-meaning semantic ProofGSLT
+/-- The same authority as an object of the fixed-meaning semantic CertificateGSLT
 category.  This is the appropriate stage object for later filtered growth; no
 colimit existence or preservation theorem is asserted here. -/
 def exactSemanticObject
@@ -132,12 +132,12 @@ def exactSemanticObject
     {presentation : ValidatedPresentation}
     (provability :
       ExactJudgmentPresentation ImplicationClaim (Provable system) presentation) :
-    Mettapedia.GSLT.LanguageDef.ProofGSLT.Semantic.ExactObject
+    Mettapedia.GSLT.LanguageDef.CertificateGSLT.Semantic.ExactObject
       ImplicationClaim (Meaning frameClass) where
-  toProofGSLT := ⟨presentation⟩
+  toCertificateGSLT := ⟨presentation⟩
   adequacy := exactSemanticPresentation system frameClass provability
 
-/-- Accepted ProofGSLT articles are neither merely sound certificates nor a
+/-- Accepted CertificateGSLT articles are neither merely sound certificates nor a
 restatement of derivability: their existence is exactly neighborhood-WM
 consequence for the declared frame class. -/
 theorem exists_accepted_article_iff_meaning
@@ -150,18 +150,18 @@ theorem exists_accepted_article_iff_meaning
       ExactJudgmentPresentation ImplicationClaim (Provable system) presentation)
     (claim : ImplicationClaim) :
     (∃ article,
-        ((semanticProofGSLT system frameClass provability).checker authorityId).check
+        ((semanticCertificateGSLT system frameClass provability).checker authorityId).check
           claim article = true) ↔
       Meaning frameClass claim := by
   constructor
   · rintro ⟨article, accepted⟩
-    exact ((semanticProofGSLT system frameClass provability).checker_authority
+    exact ((semanticCertificateGSLT system frameClass provability).checker_authority
       authorityId).sound claim article accepted
   · intro meaningful
-    exact ((semanticProofGSLT system frameClass provability).checker_authority
+    exact ((semanticCertificateGSLT system frameClass provability).checker_authority
       authorityId).complete claim meaningful
 
-/-- A derivation-valued ProofGSLT interpretation transports a source proof
+/-- A derivation-valued CertificateGSLT interpretation transports a source proof
 into a target presentation.  If the target presentation is sound for
 neighborhood meaning, the transported source proof therefore has that meaning.
 This is the theorem-preserving direction; reflection requires separate data. -/
@@ -306,7 +306,7 @@ def restrictEToEMN :=
 /-- The frame-class restriction is not reflecting: `EMN` validates a claim
 that fails over all neighborhood frames. -/
 theorem restrictEToEMN_not_reflects :
-    ¬ Mettapedia.GSLT.LanguageDef.ProofGSLT.Semantic.MeaningTranslation.Reflects
+    ¬ Mettapedia.GSLT.LanguageDef.CertificateGSLT.Semantic.MeaningTranslation.Reflects
       restrictEToEMN := by
   intro reflects
   exact boxTopClaim_not_meaning_E

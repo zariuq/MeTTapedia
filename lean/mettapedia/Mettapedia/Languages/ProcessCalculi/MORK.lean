@@ -14,7 +14,11 @@ import Mettapedia.Languages.ProcessCalculi.MORK.PathOfAtomEncodingContract
 import Mettapedia.Languages.ProcessCalculi.MORK.ExecutionBoundary
 import Mettapedia.Languages.ProcessCalculi.MORK.CapabilityProfile
 import Mettapedia.Languages.ProcessCalculi.MORK.GSLTSemantics
+import Mettapedia.Languages.ProcessCalculi.MORK.ReflectiveExecution
+import Mettapedia.Languages.ProcessCalculi.MORK.ReflectiveGSLTNativeTypes
 import Mettapedia.Languages.ProcessCalculi.MORK.GSLTNativeTypes
+import Mettapedia.Languages.ProcessCalculi.MORK.ProofRelevantGSLT
+import Mettapedia.Languages.ProcessCalculi.MORK.MM2Surface
 import Mettapedia.Languages.ProcessCalculi.MORK.ProviderExtension
 import Mettapedia.Languages.ProcessCalculi.MORK.MeTTaZeroBoundary
 
@@ -48,7 +52,7 @@ MORK/
   ExecutionBoundary.lean — Packages the proven morkTranslatable execution boundary
   CapabilityProfile.lean — Native support strengths and faithful-encoding obstruction
   GSLTSemantics.lean   — Indexed MM2 GSLTs, control reification, honest bounded reports
-  GSLTNativeTypes.lean — OSLF/ProofGSLT native judgments generated from the family
+  GSLTNativeTypes.lean — OSLF/CertificateGSLT native judgments generated from the family
   ProviderExtension.lean — Authored source/sink interfaces and realization laws
   MeTTaZeroBoundary.lean — Internal work-closure separation from bare Zero
 ```
@@ -173,7 +177,7 @@ MORK/
 - `runReport_expired_has_step`: expiration certifies retained pending work
 - `unsupported_exec_separates_source_profiles`: inert and consuming boundaries differ explicitly
 - `malformed_exec_canary_separates`: a concrete malformed exec distinguishes those profiles
-- `sourceExecStepNativeClaim_meaning_iff_step`: generated OSLF/ProofGSLT claim means one MM2 step
+- `sourceExecStepNativeClaim_meaning_iff_step`: generated OSLF/CertificateGSLT claim means one MM2 step
 - `cSourceContractFor_refines`: list source provider realizes its authored contract
 - `cSinkContractFor_refines`: staged list sink realizes its authored batch contract
 - `evaluationStatus_not_factors_through_answers`: Zero answer bags erase runner status
@@ -199,7 +203,7 @@ The spec currently covers:
 - Source-side conformance: 5 kernel-checked `rfl` tests for BTM and `==` constraints
 - Strict source-side decoding: unknown factors and sinks reject the whole directive
 - Source-side GSLTs for open-world inertness and remove-before-interpret consumption
-- Automatic OSLF native types and ProofGSLT claims generated from each GSLT member
+- Automatic OSLF native types and CertificateGSLT claims generated from each GSLT member
 - Catalog-indexed provider declarations, typed oracle projections, and
   observation-indexed native source/sink realization laws
 - Arithmetic/comparison extension interface: int/float sink lowerings and explicit `CmpSource` packaging

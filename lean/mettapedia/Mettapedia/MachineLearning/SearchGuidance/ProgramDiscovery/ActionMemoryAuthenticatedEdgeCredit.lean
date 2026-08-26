@@ -57,7 +57,11 @@ structure EdgeCreditAuthority
     (Root : Type uR) (Provenance : Type uV) where
   queryTarget : Query → Target
   payloadValid : Program → Provenance → List Action → Prop
-  checkerArtifactAccepted : CheckerArtifact → Prop
+  /-- The checker artifact authenticates this exact generated fact.  A unary
+  "artifact is accepted" predicate would permit transplanting a real receipt
+  to an unrelated query, program, or target. -/
+  checkerArtifactAccepted :
+    CheckerArtifact → Query → Target → Program → Target → Prop
   sourceReceiptValid : Root → Prop
 
 def AuthenticatedEdgeReceipt.SourceValid
@@ -70,7 +74,9 @@ def AuthenticatedEdgeReceipt.SourceValid
       CheckerArtifact Action Root Provenance) : Prop :=
   authority.payloadValid receipt.program receipt.provenance
       receipt.selectedActions ∧
-    authority.checkerArtifactAccepted receipt.checkerArtifact ∧
+    authority.checkerArtifactAccepted receipt.checkerArtifact
+      receipt.generatingQuery receipt.queriedTarget receipt.program
+      receipt.solvedTarget ∧
     receipt.queriedTarget = authority.queryTarget receipt.generatingQuery ∧
     ∀ root ∈ receipt.usedRoots, authority.sourceReceiptValid root
 
@@ -171,6 +177,16 @@ def hindsightAccountSupport
     (hindsightAccountSupport receipt).card = receipt.usedRoots.card := by
   exact Finset.card_image_of_injective _ fun _ _ equality => by
     injection equality
+
+theorem authenticatedAccountSupport_exact_split
+    {count : ℕ} (supported : SupportedRouteCount count) :
+    count * routeCreditShare count = routeCreditPacket := by
+  exact supportedRouteCount_exact_split supported
+
+theorem authenticatedAccountSupport_rejected_outside_registered_range
+    {count : ℕ} (unsupported : ¬ SupportedRouteCount count) :
+    exactEdgeCreditShare? count = none :=
+  exactEdgeCreditShare?_eq_none unsupported
 
 structure DirectCreditAuthorization
     {Query : Type uQ} {Program : Type uP} {Target : Type uT}
@@ -521,7 +537,9 @@ theorem direct_checkerArtifact_invalid_identity
     (receipt : AuthenticatedEdgeReceipt Query Program Target ReceiptId
       CheckerArtifact Action Root Provenance)
     (state : AuthenticatedEdgeCreditState Query Target Root ReceiptId)
-    (invalid : ¬ authority.checkerArtifactAccepted receipt.checkerArtifact) :
+    (invalid : ¬ authority.checkerArtifactAccepted receipt.checkerArtifact
+      receipt.generatingQuery receipt.queriedTarget receipt.program
+      receipt.solvedTarget) :
     redeemAuthenticatedDirectCredit authority receipt state = state := by
   apply redeemAuthenticatedDirectCredit_identity_of_not_authorized
   intro admitted
@@ -536,11 +554,45 @@ theorem hindsight_checkerArtifact_invalid_identity
     (receipt : AuthenticatedEdgeReceipt Query Program Target ReceiptId
       CheckerArtifact Action Root Provenance)
     (state : AuthenticatedEdgeCreditState Query Target Root ReceiptId)
-    (invalid : ¬ authority.checkerArtifactAccepted receipt.checkerArtifact) :
+    (invalid : ¬ authority.checkerArtifactAccepted receipt.checkerArtifact
+      receipt.generatingQuery receipt.queriedTarget receipt.program
+      receipt.solvedTarget) :
     redeemAuthenticatedHindsightCredit authority receipt state = state := by
   apply redeemAuthenticatedHindsightCredit_identity_of_not_authorized
   intro admitted
   exact invalid admitted.sourceValid.2.1
+
+theorem direct_sourceReceipt_invalid_identity
+    {Query Program Target ReceiptId CheckerArtifact Action Root Provenance : Type*}
+    [DecidableEq Query] [DecidableEq Target] [DecidableEq Root]
+    [DecidableEq ReceiptId]
+    (authority : EdgeCreditAuthority Query Program Target CheckerArtifact
+      Action Root Provenance)
+    (receipt : AuthenticatedEdgeReceipt Query Program Target ReceiptId
+      CheckerArtifact Action Root Provenance)
+    (state : AuthenticatedEdgeCreditState Query Target Root ReceiptId)
+    (root : Root) (used : root ∈ receipt.usedRoots)
+    (invalid : ¬ authority.sourceReceiptValid root) :
+    redeemAuthenticatedDirectCredit authority receipt state = state := by
+  apply redeemAuthenticatedDirectCredit_identity_of_not_authorized
+  intro admitted
+  exact invalid (admitted.sourceValid.2.2.2 root used)
+
+theorem hindsight_sourceReceipt_invalid_identity
+    {Query Program Target ReceiptId CheckerArtifact Action Root Provenance : Type*}
+    [DecidableEq Query] [DecidableEq Target] [DecidableEq Root]
+    [DecidableEq ReceiptId]
+    (authority : EdgeCreditAuthority Query Program Target CheckerArtifact
+      Action Root Provenance)
+    (receipt : AuthenticatedEdgeReceipt Query Program Target ReceiptId
+      CheckerArtifact Action Root Provenance)
+    (state : AuthenticatedEdgeCreditState Query Target Root ReceiptId)
+    (root : Root) (used : root ∈ receipt.usedRoots)
+    (invalid : ¬ authority.sourceReceiptValid root) :
+    redeemAuthenticatedHindsightCredit authority receipt state = state := by
+  apply redeemAuthenticatedHindsightCredit_identity_of_not_authorized
+  intro admitted
+  exact invalid (admitted.sourceValid.2.2.2 root used)
 
 theorem direct_queriedTarget_mismatch_identity
     {Query Program Target ReceiptId CheckerArtifact Action Root Provenance : Type*}
@@ -618,7 +670,8 @@ theorem direct_empty_support_identity
   apply redeemAuthenticatedDirectCredit_identity_of_not_authorized
   intro admitted
   have nonempty := admitted.supportNonempty
-  simpa [empty] using nonempty
+  rw [empty] at nonempty
+  exact Finset.not_nonempty_empty nonempty
 
 theorem hindsight_empty_support_identity
     {Query Program Target ReceiptId CheckerArtifact Action Root Provenance : Type*}
@@ -634,7 +687,8 @@ theorem hindsight_empty_support_identity
   apply redeemAuthenticatedHindsightCredit_identity_of_not_authorized
   intro admitted
   have nonempty := admitted.supportNonempty
-  simpa [empty] using nonempty
+  rw [empty] at nonempty
+  exact Finset.not_nonempty_empty nonempty
 
 theorem direct_unsupported_support_identity
     {Query Program Target ReceiptId CheckerArtifact Action Root Provenance : Type*}
@@ -928,6 +982,24 @@ theorem spendHindsight_directCredit_unchanged
   apply allocateRouteCredit_ineligible_root
   simp [hindsightAccountSupport]
 
+theorem redeemDirect_other_query_unchanged
+    {Query Program Target ReceiptId CheckerArtifact Action Root Provenance : Type*}
+    [DecidableEq Query] [DecidableEq Target] [DecidableEq Root]
+    [DecidableEq ReceiptId]
+    (authority : EdgeCreditAuthority Query Program Target CheckerArtifact
+      Action Root Provenance)
+    (receipt : AuthenticatedEdgeReceipt Query Program Target ReceiptId
+      CheckerArtifact Action Root Provenance)
+    (state : AuthenticatedEdgeCreditState Query Target Root ReceiptId)
+    (otherQuery : Query) (root : Root)
+    (different : otherQuery ≠ receipt.generatingQuery) :
+    (redeemAuthenticatedDirectCredit authority receipt state).directCredit
+        otherQuery root = state.directCredit otherQuery root := by
+  unfold redeemAuthenticatedDirectCredit
+  split
+  · exact spendDirect_other_query_unchanged receipt state otherQuery root different
+  · rfl
+
 theorem redeemHindsight_directCredit_unchanged
     {Query Program Target ReceiptId CheckerArtifact Action Root Provenance : Type*}
     [DecidableEq Query] [DecidableEq Target] [DecidableEq Root]
@@ -996,7 +1068,8 @@ def receiptFixtureAuthority : EdgeCreditAuthority Bool Unit Bool Unit Unit Unit 
   queryTarget := id
   payloadValid := fun program provenance actions =>
     program = () ∧ provenance = () ∧ actions = [()]
-  checkerArtifactAccepted := fun artifact => artifact = ()
+  checkerArtifactAccepted := fun artifact _query _queriedTarget _program _solvedTarget =>
+    artifact = ()
   sourceReceiptValid := fun root => root = ()
 
 def firstSameArtifactReceipt : ReceiptFixture where
@@ -1097,6 +1170,43 @@ theorem distinct_receiptIds_same_artifact_both_redeem :
     AuthenticatedEdgeCreditState.redeemedReceiptIds,
     AuthenticatedEdgeCreditState.reserve,
     allocateRouteCredit, routeCreditShare, routeCreditPacket]
+
+/-! The checker boundary is fact-indexed, not merely artifact-indexed. -/
+
+def factBoundFixtureAuthority :
+    EdgeCreditAuthority Bool Unit Bool Unit Unit Unit Unit where
+  queryTarget := id
+  payloadValid := fun program provenance actions =>
+    program = () ∧ provenance = () ∧ actions = [()]
+  checkerArtifactAccepted :=
+    fun artifact generatingQuery queriedTarget program solvedTarget =>
+      artifact = () ∧ generatingQuery = false ∧ queriedTarget = false ∧
+        program = () ∧ solvedTarget = false
+  sourceReceiptValid := fun root => root = ()
+
+/-- The artifact is genuine for the first fact, but has been transplanted to
+the claim that the same program solved a different target. -/
+def transplantedArtifactReceipt : ReceiptFixture where
+  receiptId := true
+  checkerArtifact := ()
+  generatingQuery := false
+  queriedTarget := false
+  solvedTarget := true
+  program := ()
+  provenance := ()
+  selectedActions := [()]
+  usedRoots := {()}
+  checkerAccepted := true
+
+theorem fact_bound_artifact_accepts_original_receipt :
+    firstSameArtifactReceipt.SourceValid factBoundFixtureAuthority := by
+  simp [AuthenticatedEdgeReceipt.SourceValid, firstSameArtifactReceipt,
+    factBoundFixtureAuthority]
+
+theorem accepted_artifact_cannot_be_transplanted_to_another_fact :
+    ¬ transplantedArtifactReceipt.SourceValid factBoundFixtureAuthority := by
+  simp [AuthenticatedEdgeReceipt.SourceValid, transplantedArtifactReceipt,
+    factBoundFixtureAuthority]
 
 /-- Deliberately wrong linearization: checker artifacts, rather than compound
 receipt identities, are treated as spent keys. -/
@@ -1283,6 +1393,7 @@ theorem exact_state_root_projection_collision :
 #print axioms duplicate_root_occurrence_does_not_multiply_packet
 #print axioms redeemHindsight_directCredit_unchanged
 #print axioms distinct_receiptIds_same_artifact_both_redeem
+#print axioms accepted_artifact_cannot_be_transplanted_to_another_fact
 #print axioms artifact_as_spent_key_wrongly_suppresses_second_receipt
 #print axioms collateral_quarantine_and_unsound_merge_change_routing_fixture
 #print axioms exact_state_root_projection_collision

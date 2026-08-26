@@ -314,7 +314,7 @@ def recurringPosition (address : Fin 9) :
   ⟨(), Fin.cast recurringProgram_nodes_length.symm address, true⟩
 
 def recurringStrategy :
-    Mettapedia.GSLT.LanguageDef.ProofGSLT.Parity.Strategy
+    Mettapedia.GSLT.LanguageDef.CertificateGSLT.Parity.Strategy
       (Position Unit Unit Unit recurringProgram) where
   active position := position.polarity &&
     [0, 1, 2, 3, 4, 7, 8].contains position.address.val
@@ -327,7 +327,7 @@ def recurringStrategy :
     else position
 
 def recurringMeasure :
-    Mettapedia.GSLT.LanguageDef.ProofGSLT.Parity.ProgressMeasure
+    Mettapedia.GSLT.LanguageDef.CertificateGSLT.Parity.ProgressMeasure
       (recurringProgram.game recurringSingletonPresentation.model) where
   rank _ position :=
     if [0, 1, 2, 7, 8].contains position.address.val then 1 else 0
@@ -346,9 +346,9 @@ def recurringCertificate :
 /-- The real nested objective satisfies the exact controlled-graph condition
 characterized by the generic parity authority. -/
 theorem recurringStrategy_noOddThresholdReturn :
-    Mettapedia.GSLT.LanguageDef.ProofGSLT.Parity.ProgressMeasure.NoOddThresholdReturn
+    Mettapedia.GSLT.LanguageDef.CertificateGSLT.Parity.ProgressMeasure.NoOddThresholdReturn
       recurringAutomaton.game recurringStrategy := by
-  open Mettapedia.GSLT.LanguageDef.ProofGSLT.Parity in
+  open Mettapedia.GSLT.LanguageDef.CertificateGSLT.Parity in
     have valid := (ProgressMeasure.check_eq_true_iff recurringAutomaton.game
       recurringStrategy recurringMeasure (recurringPosition 0)).1
         recurringCertificate.accepted
@@ -360,7 +360,7 @@ showing that the generic constructor consumes the same liveness boundary. -/
 noncomputable def recurringGeneratedCertificate :
     CyclicProgressCertificate recurringAutomaton recurringStrategy
       (recurringPosition 0) := by
-  open Mettapedia.GSLT.LanguageDef.ProofGSLT.Parity in
+  open Mettapedia.GSLT.LanguageDef.CertificateGSLT.Parity in
     have valid := (ProgressMeasure.check_eq_true_iff recurringAutomaton.game
       recurringStrategy recurringMeasure (recurringPosition 0)).1
         recurringCertificate.accepted

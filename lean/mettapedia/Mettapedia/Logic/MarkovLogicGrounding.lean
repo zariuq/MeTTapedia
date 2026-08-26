@@ -815,7 +815,8 @@ This composes the full chain:
   mixed templates → GroundMLN → CountableMLNSemantics → MassSemantics → BinaryWorldModel
 -/
 
-open MarkovLogicClauseWorldModel MarkovLogicClauseFactorGraph PLNWorldModel
+open MarkovLogicClauseWorldModel MarkovLogicClauseFactorGraph
+open Mettapedia.PLN.WorldModel.PLNWorldModel
 
 /-- **Semantic subsumption theorem:** For any finite-domain MLN with mixed
 universal/existential templates, the compiled WM `queryStrength` equals the

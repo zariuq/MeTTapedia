@@ -52,6 +52,53 @@ structure Presentation where
   members : List ClassMember
   deriving DecidableEq, Repr
 
+/-- Decode precisely the terminal-expression fragment accepted by a
+structural ParserPack item.  More general scannerless expressions are not
+silently approximated as terminals. -/
+def Expr.literalCodepoints? : Expr → Option (List Nat)
+  | .char codepoint => some [codepoint]
+  | .literal codepoints => some codepoints
+  | _ => none
+
+/-- Find a uniquely named definition.  Missing and duplicate names both fail
+closed because neither supplies an unambiguous authored meaning. -/
+def Presentation.uniqueDefinition?
+    (presentation : Presentation) (name : String) : Option Definition :=
+  match presentation.definitions.filter (fun definition =>
+      definition.name == name) with
+  | [definition] => some definition
+  | _ => none
+
+/-- Resolve a named terminal definition through the supplied presentation. -/
+def Presentation.literalCodepoints?
+    (presentation : Presentation) (name : String) : Option (List Nat) := do
+  let definition ← presentation.uniqueDefinition? name
+  definition.body.literalCodepoints?
+
+private def literalLookupCanary : Presentation := {
+  name := "LiteralLookupCanary"
+  definitions := [{ name := "letter-a", body := .char 97 }]
+  members := []
+}
+
+theorem literal_definition_lookup_positive :
+    literalLookupCanary.literalCodepoints? "letter-a" = some [97] := by
+  decide
+
+private def duplicateLiteralLookupCanary : Presentation := {
+  name := "DuplicateLiteralLookupCanary"
+  definitions := [
+    { name := "letter-a", body := .char 97 },
+    { name := "letter-a", body := .char 65 }]
+  members := []
+}
+
+/-- Negative control: a duplicate name cannot choose one terminal meaning by
+list order. -/
+theorem duplicate_literal_definition_is_rejected :
+    duplicateLiteralLookupCanary.literalCodepoints? "letter-a" = none := by
+  decide
+
 /-- A compiled terminal remembers both its authored spelling and the parser
 definition used to recognize it.  A compiled nonterminal likewise retains the
 authored parameter name and sort. -/
@@ -269,6 +316,7 @@ structure CompiledRule where
   source : GrammarRule
   atoms : List StructuralAtom
   body : Expr
+  deriving DecidableEq, Repr
 
 def compileRule? (binding : Binding) (rule : GrammarRule) :
     Option CompiledRule :=

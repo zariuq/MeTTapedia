@@ -3,6 +3,13 @@
  "packages":
  [{"type": "path",
    "scope": "",
+   "name": "lean4lean",
+   "manifestFile": "lake-manifest.json",
+   "inherited": false,
+   "dir": "../externals/lean4lean",
+   "configFile": "lakefile.toml"},
+  {"type": "path",
+   "scope": "",
    "name": "«ks-foundations-of-inference-lean»",
    "manifestFile": "lake-manifest.json",
    "inherited": false,

@@ -1,5 +1,5 @@
-import Mettapedia.GSLT.LanguageDef.ProofGSLTMuCalculusBoundary
-import Mettapedia.GSLT.LanguageDef.ProofGSLTParityAuthority
+import Mettapedia.GSLT.LanguageDef.CertificateGSLTMuCalculusBoundary
+import Mettapedia.GSLT.LanguageDef.CertificateGSLTParityAuthority
 import Mathlib.Data.Fintype.Prod
 
 /-!
@@ -22,9 +22,9 @@ set_option autoImplicit false
 namespace Mettapedia.Logic.ModalMuCalculus.EvaluationGame
 
 open Mettapedia.Logic.ModalMuCalculus
-open Mettapedia.GSLT.LanguageDef.ProofGSLT
-open Mettapedia.GSLT.LanguageDef.ProofGSLT.MuCalculusBoundary
-open Mettapedia.GSLT.LanguageDef.ProofGSLT.Parity
+open Mettapedia.GSLT.LanguageDef.CertificateGSLT
+open Mettapedia.GSLT.LanguageDef.CertificateGSLT.MuCalculusBoundary
+open Mettapedia.GSLT.LanguageDef.CertificateGSLT.Parity
 
 universe uState uAction uObservation
 

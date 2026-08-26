@@ -1,5 +1,14 @@
 import Mettapedia.KR.ConceptGeometry.Bridges.UniversalAI.IntensionalInheritanceApproximationBridge
 import Mettapedia.KR.ConceptGeometry.Bridges.UniversalAI.IntensionalInheritanceSolomonoffBridge
+import Mettapedia.KR.ConceptGeometry.Bridges.UniversalAI.AlgorithmicFeatureInheritanceBridge
+import Mettapedia.KR.ConceptGeometry.Bridges.UniversalAI.AlgorithmicFeatureConceptFormationBridge
+import Mettapedia.KR.ConceptGeometry.Bridges.UniversalAI.OpenEndedAlgorithmicConceptFormationBridge
+import Mettapedia.KR.ConceptGeometry.Bridges.UniversalAI.AlgorithmicFeatureEvidenceBridge
+import Mettapedia.KR.ConceptGeometry.Bridges.UniversalAI.AlgorithmicFeatureEvidenceGrowthBridge
+import Mettapedia.KR.ConceptGeometry.Bridges.UniversalAI.AlgorithmicFeatureEvidenceIndexedOSLFBridge
+import Mettapedia.KR.ConceptGeometry.Bridges.UniversalAI.AlgorithmicFeatureEvidenceRevisionLaws
+import Mettapedia.KR.ConceptGeometry.Bridges.UniversalAI.AlgorithmicFeatureConstructionBaseBridge
+import Mettapedia.KR.ConceptGeometry.Bridges.UniversalAI.OpenWorldObservationChannelsBridge
 
 /-!
 # Concept Geometry ↔ UniversalAI Bridges

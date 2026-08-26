@@ -48,10 +48,28 @@ structure ProofProjectionAdmission (state : SourceState) : Type where
     presentationOfSourcePrefix? state.toSourcePrefix =
       some sourceTarget.1
 
+/-- A compressed theorem additionally carries Appendix-B admissibility for
+its concrete explicit header.  Production-reader success alone cannot supply
+this source judgment under a permissive runtime header policy. -/
+structure CompressedProofProjectionAdmission (state : SourceState)
+    (typecode : LocatedName) (body header : List LocatedName) : Type where
+  proof : ProofProjectionAdmission state
+  headerAdmitted : ∀ bodySymbols,
+    tagBody state (typecode :: body) =
+        .ok (.const typecode.name :: bodySymbols) →
+      ∀ explicitLabel ∈ header.map LocatedName.name,
+        explicitLabel ∉
+          (mandatoryHypotheses state
+            ⟨typecode.name, bodySymbols⟩).map
+              (fun hypothesis => hypothesis.label)
+
 /-- Only theorem statements need a proof-presentation admission. -/
 def StatementProjectionAdmission (state : SourceState) :
     RawStatement → Type
-  | .provable _ _ _ _ _ _ _ => ProofProjectionAdmission state
+  | .provable _ _ _ _ (.normal _) _ _ => ProofProjectionAdmission state
+  | .provable _ _ typecode body
+      (.compressed _ header _ _) _ _ =>
+      CompressedProofProjectionAdmission state typecode body header
   | _ => PUnit
 
 /-- Reader validation of one source statement.  The normal and compressed
@@ -376,9 +394,12 @@ noncomputable def LocatedSignificantCallTrace.simulateStatement
                       spelled'
                     agreement.database agreement.interrupt_eq savePlacement
                     labelCharset typecodeCharset bodyCharsets headerCharsets
-                    wordCharsets taggedFormula inserted admission.runtimeTarget
-                    admission.sourceTarget admission.runtimePresentation
-                    admission.sourcePresentation
+                    wordCharsets taggedFormula inserted
+                    admission.proof.runtimeTarget
+                    admission.proof.sourceTarget
+                    admission.proof.runtimePresentation
+                    admission.proof.sourcePresentation
+                    (admission.headerAdmitted bodySymbols taggedFormula)
                   exact
                     { trace := trace
                       charsets :=

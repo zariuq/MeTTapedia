@@ -320,7 +320,8 @@ theorem current_weakening_preserves_old_completion :
       currentProofBackedWeakening.receipt.CurrentAt false := by
   have isProtected :
       protectedOldCompletion.target ∈ ({oldPolicy} : Set _) := by
-    simp [protectedOldCompletion, Completion.Fibre.target]
+    change oldPolicy ∈ ({oldPolicy} : Set _)
+    simp
   exact currentProofBackedWeakening.preserves_protected_completion
     {oldPolicy} protectedOldCompletion isProtected
 

@@ -1,5 +1,5 @@
 import Mettapedia.GSLT.Core.InteractionEvent
-import Mettapedia.GSLT.LanguageDef.ProofGSLTFiniteTraceAuthority
+import Mettapedia.GSLT.LanguageDef.CertificateGSLTFiniteTraceAuthority
 
 /-!
 # NIK authorities generated from proof-relevant interaction events
@@ -20,7 +20,7 @@ namespace Mettapedia.GSLT.LanguageDef.InteractionEventAuthority
 open Mettapedia.GSLT
 open Mettapedia.GSLT.Core.InteractionEvent
 open Mettapedia.GSLT.Core.InteractionEvent.InteractionPresentation
-open Mettapedia.GSLT.LanguageDef.ProofGSLT
+open Mettapedia.GSLT.LanguageDef.CertificateGSLT
 
 universe uAuthority uSite uEvent uIdentity
 
@@ -183,7 +183,7 @@ theorem stepAuthorityByIdentity_complete {AuthorityId : Type uAuthority}
 def finiteTraceAuthority {AuthorityId : Type uAuthority}
     (authorityId : AuthorityId) {theory : GSLT} [DecidableEq theory.Term]
     (presentation : InteractionPresentation.{uSite, uEvent} theory) :=
-  ProofGSLT.finiteTraceAuthority (stepAuthority authorityId presentation)
+  CertificateGSLT.finiteTraceAuthority (stepAuthority authorityId presentation)
 
 /-- Free finite-trace closure using exact endpoint identity for both local
 links and the final endpoint check. -/
@@ -192,7 +192,7 @@ def finiteTraceAuthorityByIdentity {AuthorityId : Type uAuthority}
     (identity : ExactEndpointIdentity.{uIdentity} theory.Term)
     (presentation : InteractionPresentation.{uSite, uEvent} theory) := by
   letI := identity.termDecidableEq
-  exact ProofGSLT.finiteTraceAuthority
+  exact CertificateGSLT.finiteTraceAuthority
     (stepAuthorityByIdentity authorityId identity presentation)
 
 /-- For a complete presentation, certificate existence is exactly finite
@@ -206,7 +206,7 @@ theorem finiteTraceAuthority_correspondence
         (finiteTraceAuthority authorityId presentation).Certificate =>
       (finiteTraceAuthority authorityId presentation).check claim certificate =
         true) ↔ claim.Meaning := by
-  exact ProofGSLT.finiteTraceAuthority_correspondence
+  exact CertificateGSLT.finiteTraceAuthority_correspondence
     (stepAuthority authorityId presentation)
     (stepAuthority_complete authorityId complete) claim
 
@@ -224,7 +224,7 @@ theorem finiteTraceAuthorityByIdentity_correspondence
       (finiteTraceAuthorityByIdentity authorityId identity presentation).check
         claim certificate = true) ↔ claim.Meaning := by
   letI := identity.termDecidableEq
-  exact ProofGSLT.finiteTraceAuthority_correspondence
+  exact CertificateGSLT.finiteTraceAuthority_correspondence
     (stepAuthorityByIdentity authorityId identity presentation)
     (stepAuthorityByIdentity_complete authorityId identity complete) claim
 

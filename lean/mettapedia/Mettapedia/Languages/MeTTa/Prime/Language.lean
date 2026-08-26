@@ -34,7 +34,7 @@ state its complete occurrence-bag meaning and proves that all internal and
 cross rewrites preserve it.  Quotation exposes semantic syntax, never host
 continuations or heap addresses.
 
-Proof-GSLT authoring is composed separately at the end of the module.  This is
+Certificate-GSLT authoring is composed separately at the end of the module.  This is
 intentional: a Prime point can host many proof calculi, while the selected
 base and lazy reflective layer remain explicit parameters.  Runtime scheduling
 and compilation likewise belong to certified realizations rather than to the
@@ -996,7 +996,7 @@ def operationalPointIdentity (model : Model) :
     RevisionedPoint.Hom (operationalPoint model) (operationalPoint model) :=
   RevisionedPoint.Hom.id (operationalPoint model)
 
-/-! ## Proof-GSLT authoring as a hosted service -/
+/-! ## Certificate-GSLT authoring as a hosted service -/
 
 /-- Runtime terms and proof-calculus documents may coexist in one authored
 GSLT document.  The proof-calculus summand retains its own equations and

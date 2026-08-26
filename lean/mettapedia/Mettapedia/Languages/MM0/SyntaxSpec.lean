@@ -2,25 +2,25 @@ import Lean.Data.Json
 import MeTTailCore.Crypto.SHA256
 
 /-!
-# Full MM0 Syntax Authority
+# MM0 Syntax Metadata Profile
 
-Lean-owned syntax specification for the full MM0 language, derived from
-the authoritative spec at `mm0/mm0.md` (Mario Carneiro).
+Serializable descriptive metadata derived from the MM0 language reference at
+`mm0/mm0.md` (Mario Carneiro).
 
-MM0 has **two-stage parsing**:
+The MM0 reference defines **two-stage parsing**:
 1. **Primary stage**: `.mm0` file structure — statements, binders, types
 2. **Secondary stage**: math-string interpretation via notation declarations
    (delimiter, prefix, infixl, infixr, coercion, notation)
 
-This module defines both stages as Lean structures, exports them as
-JSON artifacts, and explicitly encodes the two-stage boundary.
-
-Council: Knuth (spec is well-defined), Carneiro (two-stage is structural),
-  Tao (primary is CF, secondary is operator-precedence),
-  Pfenning (notation is well-studied), Tang (single-source in Lean).
+This module records both stages as Lean data, exports that data as JSON, and
+marks the two-stage boundary. It does not define an executable lexer or parser,
+recognize MM0 source text, specify the MM0/MMB transition systems, verify
+proofs, or establish NIK hosting. Consequently these records are metadata, not
+a syntax authority. Those stronger claims require executable GSLT
+presentations and correspondence theorems to the upstream languages.
 -/
 
-namespace Mettapedia.Languages.MM0.SyntaxSpec
+namespace Mettapedia.Languages.MM0.SyntaxMetadata
 
 -- ═══════════════════════════════════════════════════════════════════════
 -- § Primary Stage: .mm0 File Grammar
@@ -65,9 +65,9 @@ inductive BinderKind where
   | dummy   -- .x: sort — dummy variable (dot prefix, in defs only)
 deriving Repr, DecidableEq, BEq, Lean.ToJson, Lean.FromJson
 
-/-- Primary syntax specification for the .mm0 file format.
+/-- Descriptive primary-syntax metadata for the .mm0 file format.
     This covers the outer structure but NOT math-string interpretation. -/
-structure MM0PrimarySyntaxSpec where
+structure MM0PrimarySyntaxMetadata where
   schemaVersion : Nat := 1
   language : String := "MM0"
   lineCommentStart : String := "--"
@@ -90,7 +90,7 @@ structure MM0PrimarySyntaxSpec where
   binderKinds : List String := ["bound", "regular", "dummy"]
   maxPrecedenceKeyword : String := "max"
   notes : List String :=
-    [ "Primary stage parses the .mm0 outer statement structure only, including import statements."
+    [ "The primary stage covers the .mm0 outer statement structure, including import statements."
     , "Math strings remain opaque at the primary stage and are interpreted later."
     , "The MM0 spec only treats space and newline as whitespace for portability."
     ]
@@ -115,16 +115,16 @@ inductive NotationKind where
   | general                     -- arbitrary constant-variable sequence
 deriving Repr, DecidableEq, BEq
 
-/-- The secondary parsing contract: how math-strings are interpreted.
+/-- Descriptive metadata for how math-strings are interpreted.
     This is NOT a static grammar — it's a dynamic system where notation
     declarations extend the active operator table during parsing.
 
-    Positive example: the generic parser runtime can first parse statements,
-    then use exported notation authority for formulas.
+    Positive example: a parser implementation can use this metadata when
+    configuring a secondary notation-aware parsing phase.
 
     Negative example: do NOT pretend this is a single static tree-sitter
     grammar. Math-string parsing depends on preceding notation declarations. -/
-structure MM0SecondaryParseContract where
+structure MM0SecondaryParseMetadata where
   schemaVersion : Nat := 1
   language : String := "MM0"
   description : String :=
@@ -149,72 +149,72 @@ structure MM0SecondaryParseContract where
   notes : List String :=
     [ "Secondary parsing is driven by preceding notation declarations in the source file."
     , "This is an operator-precedence parser over math strings, not a static context-free grammar."
-    , "Out-of-order notation support is implementation-defined; the authority here records the semantic shape, not one parser implementation trick."
+    , "Out-of-order notation support is implementation-defined; this metadata records the intended shape, not one parser implementation trick."
     ]
 deriving Repr, Lean.ToJson, Lean.FromJson
 
 -- ═══════════════════════════════════════════════════════════════════════
--- § Syntax Authority Profile
+-- § Syntax Metadata Profile
 -- ═══════════════════════════════════════════════════════════════════════
 
-/-- Complete syntax authority for MM0, bundling both stages.
-    Follows the HE pattern: primary + secondary + tokenizer authority. -/
-structure MM0SyntaxAuthorityProfile where
+/-- Descriptive MM0 syntax metadata bundling the two documented stages.
+    This record makes no parser-completeness or parser-correctness claim. -/
+structure MM0SyntaxMetadataProfile where
   schemaVersion : Nat := 1
   language : String := "MM0"
-  primarySyntax : MM0PrimarySyntaxSpec
-  secondaryParseContract : MM0SecondaryParseContract
+  primarySyntax : MM0PrimarySyntaxMetadata
+  secondaryParseMetadata : MM0SecondaryParseMetadata
   twoStageParsing : Bool := true
-  primaryAuthoritySource : String := "mm0/mm0.md (grammar section)"
+  primaryReferenceSource : String := "mm0/mm0.md (grammar section)"
   cReferenceVerifier : String := "mm0/mm0-c/verifier.c"
   rustReferenceCompiler : String := "mm0/mm0-rs/ (mm0-rs compile)"
   sharedArtifactSchema : String := "Mettapedia/lean/mettapedia/artifacts/parser_artifact_schema.json"
   notes : List String :=
-    [ "Full MM0 has two-stage parsing: primary (.mm0 structure) + secondary (math-string notation)."
-    , "The MMB binary format (.mmb) is the trust boundary for proof verification."
-    , "The .mm0 text format is the human-readable spec and name-checking authority."
+    [ "The MM0 reference describes two-stage parsing: primary (.mm0 structure) + secondary (math-string notation)."
+    , "The executable MMB proof-machine semantics are not defined by this metadata."
+    , "The .mm0 text format is the upstream human-readable specification; this record does not implement its name checker."
     , "MM0Lite (in mettapedia) is a MINIMAL formalization, not the full language."
-    , "This authority covers the full MM0 as specified in mm0.md." ]
+    , "Completeness, parsing correctness, proof verification, and hosting remain separate obligations." ]
 deriving Repr, Lean.ToJson, Lean.FromJson
 
 -- ═══════════════════════════════════════════════════════════════════════
 -- § Canonical Instances
 -- ═══════════════════════════════════════════════════════════════════════
 
-def mm0PrimarySyntax : MM0PrimarySyntaxSpec := {}
+def mm0PrimarySyntaxMetadata : MM0PrimarySyntaxMetadata := {}
 
-def mm0SecondaryContract : MM0SecondaryParseContract := {}
+def mm0SecondaryParseMetadata : MM0SecondaryParseMetadata := {}
 
-def mm0SyntaxAuthority : MM0SyntaxAuthorityProfile :=
-  { primarySyntax := mm0PrimarySyntax
-    secondaryParseContract := mm0SecondaryContract }
+def mm0SyntaxMetadata : MM0SyntaxMetadataProfile :=
+  { primarySyntax := mm0PrimarySyntaxMetadata
+    secondaryParseMetadata := mm0SecondaryParseMetadata }
 
 -- ═══════════════════════════════════════════════════════════════════════
 -- § JSON Export
 -- ═══════════════════════════════════════════════════════════════════════
 
-def exportMM0SyntaxArtifacts (outDir : System.FilePath) : IO Unit := do
+def exportMM0SyntaxMetadataArtifacts (outDir : System.FilePath) : IO Unit := do
   IO.FS.createDirAll outDir
-  let primaryJson := Lean.toJson mm0PrimarySyntax
-  let secondaryJson := Lean.toJson mm0SecondaryContract
-  let authorityJson := Lean.toJson mm0SyntaxAuthority
-  IO.FS.writeFile (outDir / "mm0.syntax_spec.json") primaryJson.pretty
-  IO.FS.writeFile (outDir / "mm0.syntax_spec.json.checksum")
+  let primaryJson := Lean.toJson mm0PrimarySyntaxMetadata
+  let secondaryJson := Lean.toJson mm0SecondaryParseMetadata
+  let metadataJson := Lean.toJson mm0SyntaxMetadata
+  IO.FS.writeFile (outDir / "mm0.primary_syntax_metadata.json") primaryJson.pretty
+  IO.FS.writeFile (outDir / "mm0.primary_syntax_metadata.json.checksum")
     (MeTTailCore.Crypto.SHA256.sha256Hex primaryJson.pretty ++ "\n")
-  IO.FS.writeFile (outDir / "mm0.secondary_parse_contract.json") secondaryJson.pretty
-  IO.FS.writeFile (outDir / "mm0.secondary_parse_contract.json.checksum")
+  IO.FS.writeFile (outDir / "mm0.secondary_parse_metadata.json") secondaryJson.pretty
+  IO.FS.writeFile (outDir / "mm0.secondary_parse_metadata.json.checksum")
     (MeTTailCore.Crypto.SHA256.sha256Hex secondaryJson.pretty ++ "\n")
-  IO.FS.writeFile (outDir / "mm0.syntax_authority_profile.json") authorityJson.pretty
-  IO.FS.writeFile (outDir / "mm0.syntax_authority_profile.json.checksum")
-    (MeTTailCore.Crypto.SHA256.sha256Hex authorityJson.pretty ++ "\n")
+  IO.FS.writeFile (outDir / "mm0.syntax_metadata_profile.json") metadataJson.pretty
+  IO.FS.writeFile (outDir / "mm0.syntax_metadata_profile.json.checksum")
+    (MeTTailCore.Crypto.SHA256.sha256Hex metadataJson.pretty ++ "\n")
 
-def checkMM0SyntaxArtifacts (outDir : System.FilePath) : IO Bool := do
-  let ok1 ← (outDir / "mm0.syntax_spec.json").pathExists
-  let ok2 ← (outDir / "mm0.secondary_parse_contract.json").pathExists
-  let ok3 ← (outDir / "mm0.syntax_authority_profile.json").pathExists
-  let ok4 ← (outDir / "mm0.syntax_spec.json.checksum").pathExists
-  let ok5 ← (outDir / "mm0.secondary_parse_contract.json.checksum").pathExists
-  let ok6 ← (outDir / "mm0.syntax_authority_profile.json.checksum").pathExists
+def checkMM0SyntaxMetadataArtifacts (outDir : System.FilePath) : IO Bool := do
+  let ok1 ← (outDir / "mm0.primary_syntax_metadata.json").pathExists
+  let ok2 ← (outDir / "mm0.secondary_parse_metadata.json").pathExists
+  let ok3 ← (outDir / "mm0.syntax_metadata_profile.json").pathExists
+  let ok4 ← (outDir / "mm0.primary_syntax_metadata.json.checksum").pathExists
+  let ok5 ← (outDir / "mm0.secondary_parse_metadata.json.checksum").pathExists
+  let ok6 ← (outDir / "mm0.syntax_metadata_profile.json.checksum").pathExists
   pure (ok1 && ok2 && ok3 && ok4 && ok5 && ok6)
 
-end Mettapedia.Languages.MM0.SyntaxSpec
+end Mettapedia.Languages.MM0.SyntaxMetadata

@@ -9,8 +9,17 @@ import Mettapedia.Computability.HutterComputabilityClosure
 import Mettapedia.Computability.HutterComputabilityENNReal
 import Mettapedia.Computability.HutterComputabilityRational
 import Mettapedia.Computability.KolmogorovComplexity.Basic
+import Mettapedia.Computability.KolmogorovComplexity.Conditional
+import Mettapedia.Computability.KolmogorovComplexity.ConditionalInterpreter
+import Mettapedia.Computability.KolmogorovComplexity.ConditionalPlainComplexity
+import Mettapedia.Computability.KolmogorovComplexity.CompressiveFeature
+import Mettapedia.Computability.KolmogorovComplexity.ConditionalChainRule
+import Mettapedia.Computability.KolmogorovComplexity.ConditionalPrefixBridge
+import Mettapedia.Computability.KolmogorovComplexity.ContainmentRepair
+import Mettapedia.Computability.KolmogorovComplexity.DirectionalInformation
 import Mettapedia.Computability.KolmogorovComplexity.Prefix
 import Mettapedia.Computability.KolmogorovComplexity.PrefixComplexity
+import Mettapedia.Computability.KolmogorovComplexity.SelfDelimitingCode
 import Mettapedia.Computability.KolmogorovComplexity.Uncomputability
 -- `OracleTM.lean` is intentionally omitted: it defines legacy names that
 -- collide with the canonical `OracleTMReal` module.

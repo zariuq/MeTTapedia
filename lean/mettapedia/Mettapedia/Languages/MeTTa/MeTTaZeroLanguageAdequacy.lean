@@ -1,7 +1,7 @@
 import Mettapedia.Languages.MeTTa.MeTTaZero
 import Mettapedia.OSLF.MeTTaIL.ContextualStep
 import Mettapedia.OSLF.Framework.NativeTypeTheory
-import Mettapedia.OSLF.Framework.NativeTypeProofGSLT
+import Mettapedia.OSLF.Framework.NativeTypeCertificateGSLT
 import Mettapedia.GSLT.LanguageDef.CalculusLanguageDef
 import Mathlib.Tactic.NormNum
 
@@ -717,7 +717,7 @@ theorem query_request_ne_evaluation_request (model : Model)
   intro equal
   cases equal
 
-/-! ## ProofGSLT presentation of Zero's generated native judgments
+/-! ## CertificateGSLT presentation of Zero's generated native judgments
 
 The presentation below is a proof layer over the existing authored Zero
 language.  It does not redefine Zero reduction.  Spatial judgments are
@@ -729,8 +729,8 @@ namespace NativeProof
 
 open Mettapedia.GSLT.LanguageDef
 open Mettapedia.GSLT.LanguageDef.InferenceChecker
-open Mettapedia.GSLT.LanguageDef.ProofGSLT
-open Mettapedia.OSLF.Framework.NativeTypeProofGSLT
+open Mettapedia.GSLT.LanguageDef.CertificateGSLT
+open Mettapedia.OSLF.Framework.NativeTypeCertificateGSLT
 
 def topJ (term : Pattern) : Pattern :=
   .apply "ZeroNativeTop" [term]
@@ -1240,7 +1240,7 @@ theorem rule_application_sound (model : Model) (space : model.Space)
 
 /-- The admitted Zero native presentation is adequate for the interpreted
 OSLF span.  Open premise occurrences retain their semantic obligations; only
-locally sound rule applications are composed by ProofGSLT. -/
+locally sound rule applications are composed by CertificateGSLT. -/
 noncomputable def openAdequacy (model : Model) (space : model.Space)
     (spaceTerm : Pattern) :
     OpenPresentationAdequacy (nativeSpan model space spaceTerm) checked where

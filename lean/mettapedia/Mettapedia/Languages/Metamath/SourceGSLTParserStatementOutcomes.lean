@@ -638,7 +638,11 @@ noncomputable def SpelledCallTrace.compressedStatementOutcome
         some runtimeTarget.1)
     (sourcePresentation :
       presentationOfSourcePrefix? before.toSourcePrefix =
-        some sourceTarget.1) :
+        some sourceTarget.1)
+    (headerAdmitted : ∀ explicitLabel ∈ header.map LocatedName.name,
+      explicitLabel ∉
+        (mandatoryHypotheses before
+          ⟨typecode.name, bodySymbols⟩).map (fun hypothesis => hypothesis.label)) :
     ReaderCompressedStatementOutcome before after label.name
       ⟨typecode.name, bodySymbols⟩
       (header.map LocatedName.name) (words.map (fun word => word.bytes))
@@ -651,7 +655,7 @@ noncomputable def SpelledCallTrace.compressedStatementOutcome
   | inl verified =>
       exact .verified
         (accepted.toVerified verified runtimeTarget sourceTarget
-          runtimePresentation sourcePresentation)
+          runtimePresentation sourcePresentation headerAdmitted)
   | inr incomplete =>
       exact .incomplete (accepted.toIncomplete incomplete)
 

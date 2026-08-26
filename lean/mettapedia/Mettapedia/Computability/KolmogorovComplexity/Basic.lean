@@ -155,6 +155,12 @@ def machinePrefix : ℕ → BinString
   | 0 => [false]
   | n + 1 => true :: machinePrefix n
 
+theorem machinePrefix_primrec : Primrec machinePrefix := by
+  exact (Primrec.nat_rec₁ ([false] : BinString)
+    ((Primrec.list_cons.comp
+      (Primrec.const true) Primrec₂.right).to₂)).of_eq fun n => by
+        induction n <;> simp [machinePrefix, *]
+
 /-- Decode a unary prefix code, returning the index and the remaining program. -/
 def decodeMachinePrefix : BinString → Option (ℕ × BinString)
   | [] => none

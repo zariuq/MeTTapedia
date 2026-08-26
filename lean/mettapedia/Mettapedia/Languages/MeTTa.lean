@@ -68,6 +68,12 @@ import Mettapedia.Languages.MeTTa.Prime.LanguageOperationNIKAdmission
 import Mettapedia.Languages.MeTTa.Prime.GSLTILLayeredCrown
 import Mettapedia.Languages.MeTTa.Prime.GSLTILTypedOperationAdmission
 import Mettapedia.Languages.MeTTa.Prime.SourceScopedAdaptiveRealization
+import Mettapedia.Languages.MeTTa.Prime.IncrementalCompressionOptimizationSelection
+import Mettapedia.Languages.MeTTa.Prime.IncrementalCompressionExternalGuidanceReceipt
+import Mettapedia.Languages.MeTTa.Prime.IncrementalCompressionExternalArtifactChecker
+import Mettapedia.Languages.MeTTa.Prime.IncrementalCompressionRankingArtifact
+import Mettapedia.Languages.MeTTa.Prime.IncrementalCompressionBoundedRanking
+import Mettapedia.Languages.MeTTa.Prime.IncrementalCompressionEvidenceStageBridge
 import Mettapedia.Languages.MeTTa.Prime.InternalAdmission
 import Mettapedia.Languages.MeTTa.Prime.SelfInstance
 import Mettapedia.Languages.MeTTa.Prime.NativeKernel

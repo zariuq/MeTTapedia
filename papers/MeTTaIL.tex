@@ -1007,8 +1007,8 @@ The reviewer anchor in
 \codepath{Mettapedia/OSLF/SpecIndex.lean}:265 is labelled
 ``Conservative MaTT Claim Map (No Overclaim)''.
 
-\section{The ProofGSLT Layer: Generic Proof Checking over Presentations}
-\label{sec:proofgslt}
+\section{The CertificateGSLT Layer: Generic Proof Checking over Presentations}
+\label{sec:certificategslt}
 
 Beyond rewriting, a \code{LanguageDef} may declare \emph{judgment forms} and
 \emph{inference rules}.  The generic inference checker
@@ -1020,10 +1020,10 @@ signatures --- and checks untrusted proof trees against them, reconstructing
 \code{Pattern} terms of the same syntax IR, so the proof lane introduces no
 second syntax authority.
 
-The ProofGSLT modules
+The CertificateGSLT modules
 (\codepath{Mettapedia/GSLT/LanguageDef/}, canonical import
-\code{ProofGSLTFramework}, compiled fixtures in
-\code{ProofGSLTInterpretationCanary}) develop the categorical theory of
+\code{CertificateGSLTFramework}, compiled fixtures in
+\code{CertificateGSLTInterpretationCanary}) develop the categorical theory of
 these validated presentations:
 
 \begin{itemize}
@@ -1054,9 +1054,9 @@ these validated presentations:
 \end{itemize}
 
 The standalone treatment, with the full theorem inventory and verification
-statement, is \code{ProofGSLT.tex}.  For this companion the operative point
+statement, is \code{CertificateGSLT.tex}.  For this companion the operative point
 is that any validated presentation whose \code{LanguageDef} declares
-judgment forms and inference rules is already a ProofGSLT object: the proof
+judgment forms and inference rules is already a CertificateGSLT object: the proof
 calculus, interpretation category, models, and both checked evidence formats
 come from the framework with no per-language authorship.  The
 \code{languageDef!} macro does not yet author the proof-calculus fields;
@@ -1084,9 +1084,9 @@ extending it is a natural seam alongside the next steps below.
   (legacy), PeTTa (alias wrapper), all with REPL + oracle integration.
 \item MeTTa-IL as 2-mode adjoint doctrine fragment (MaTT, 9 proved claims).
 \item Generic inference checker over \code{LanguageDef} judgments/rules,
-  with the ProofGSLT categorical layer (strict refinement, open derivations,
+  with the CertificateGSLT categorical layer (strict refinement, open derivations,
   non-thin interpretations, models, exact DAG evidence);
-  Section~\ref{sec:proofgslt} and the standalone \code{ProofGSLT.tex}.
+  Section~\ref{sec:certificategslt} and the standalone \code{CertificateGSLT.tex}.
 \end{itemize}
 
 \textbf{Not yet full end-to-end by construction:}

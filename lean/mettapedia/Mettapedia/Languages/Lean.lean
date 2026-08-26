@@ -1,3 +1,8 @@
+import Mettapedia.Languages.Lean.Lean4LeanEnvironmentGrowth
+import Mettapedia.Languages.Lean.Lean4LeanDirectedReduction
+import Mettapedia.Languages.Lean.Lean4LeanRungZeroDecision
+import Mettapedia.Languages.Lean.Lean4LeanRungOneDeltaDecision
+import Mettapedia.Languages.Lean.Lean4LeanRungTwoTypedBoundary
 import Mettapedia.Languages.Lean.Lean4LessNIKGuest
 
 /-!
